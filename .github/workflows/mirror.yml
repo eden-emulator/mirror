@@ -1,0 +1,22 @@
+name: Mirror
+on:
+  push:
+    branches:
+        - -_mirror
+  schedule:
+    # every 15 minutes or so
+    - cron: '0/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    name: mirror
+    steps:
+      - uses: bridgelightcloud/github-mirror-action@v3
+        with:
+          origin: 'https://git.eden-emu.dev/eden-emu/eden.git'
