@@ -20,4 +20,4 @@ jobs:
       - uses: bridgelightcloud/github-mirror-action@v3
         with:
           origin: 'https://git.eden-emu.dev/eden-emu/eden.git'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PUSH_TOKEN }}
