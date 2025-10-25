@@ -2,7 +2,7 @@ name: Mirror
 on:
   push:
     branches:
-        - -_mirror
+        - __mirror
   schedule:
     # every 15 minutes or so
     - cron: '0/15 * * * *'
