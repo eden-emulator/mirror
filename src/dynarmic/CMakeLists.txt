@@ -102,10 +102,6 @@ else()
         -pedantic
         -Wno-missing-braces)
 
-    if (ARCHITECTURE STREQUAL "x86_64")
-        list(APPEND DYNARMIC_CXX_FLAGS -mtune=core2)
-    endif()
-
     if (CXX_GCC)
         # GCC produces bogus -Warray-bounds warnings from xbyak headers for code paths that are not
         # actually reachable.  Specifically, it happens in cases where some code casts an Operand&
