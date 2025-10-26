@@ -4,8 +4,8 @@ on:
     branches:
         - __mirror
   schedule:
-    # every 15 minutes or so
-    - cron: '0/15 * * * *'
+    # every 20 minutes or so
+    - cron: '0/20 * * * *'
   workflow_dispatch:
 
 permissions:
