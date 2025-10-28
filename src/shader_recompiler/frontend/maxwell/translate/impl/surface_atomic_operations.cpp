@@ -78,11 +78,11 @@ IR::Value MakeCoords(TranslatorVisitor& v, IR::Reg reg, Type type) {
     case Type::_1D:
     case Type::_1D_BUFFER:
         return v.X(reg);
-    case Type::_1D_ARRAY:
+    case Type::ARRAY_1D:
         return v.ir.CompositeConstruct(v.X(reg), array(1));
     case Type::_2D:
         return v.ir.CompositeConstruct(v.X(reg), v.X(reg + 1));
-    case Type::_2D_ARRAY:
+    case Type::ARRAY_2D:
         return v.ir.CompositeConstruct(v.X(reg), v.X(reg + 1), array(2));
     case Type::_3D:
         return v.ir.CompositeConstruct(v.X(reg), v.X(reg + 1), v.X(reg + 2));
