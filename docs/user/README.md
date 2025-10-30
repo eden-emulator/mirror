@@ -10,4 +10,4 @@ This handbook is primarily aimed at the end-user - baking useful knowledge for e
 - **[Platforms and Architectures](Architectures.md)**
 - **[Testing](Testing.md)**
 - **[Data, savefiles and storage](Storage.md)**
-- **[Orphaned Profiles](Orphaned.md)
+- **[Orphaned Profiles](Orphaned.md)**
