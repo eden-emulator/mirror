@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdio>
 #include <new>
 #include <sys/mman.h>
 
@@ -15,7 +16,7 @@ namespace Dynarmic::Backend::PPC64 {
 class CodeBlock {
 public:
     explicit CodeBlock(std::size_t size) noexcept : memsize(size) {
-        mem = (u8*)mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
+        mem = (u8*)mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         ASSERT(mem != nullptr);
     }
     ~CodeBlock() noexcept {
