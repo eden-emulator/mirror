@@ -423,7 +423,7 @@ void EmitIR<IR::Opcode::ArithmeticShiftRightMasked64>(powah::Context& code, Emit
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     powah::GPR const result = ctx.reg_alloc.ScratchGpr();
     powah::GPR const source = ctx.reg_alloc.UseGpr(args[0]);
-    code.SRAL(result, source, source);
+    code.SRAD(result, source, source);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 

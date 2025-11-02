@@ -16,12 +16,12 @@
 namespace Dynarmic::Backend::PPC64 {
 
 struct A32JitState {
-    alignas(16) std::array<u32, 64> vec{};
+    alignas(16) std::array<u32, 64> ext_regs{};
     std::array<u32, 16> regs{};
     u32 upper_location_descriptor;
     u32 exclusive_state = 0;
     u32 cpsr_nzcv = 0;
-    u32 fpsr = 0;
+    u32 fpscr = 0;
     IR::LocationDescriptor GetLocationDescriptor() const {
         return IR::LocationDescriptor{regs[15] | (u64(upper_location_descriptor) << 32)};
     }

@@ -8,9 +8,12 @@
 #include "dynarmic/common/assert.h"
 #include "dynarmic/common/common_types.h"
 
-#include "dynarmic/backend/ppc64/a64_core.h"
+#include "dynarmic/frontend/A64/a64_location_descriptor.h"
+#include "dynarmic/frontend/A64/translate/a64_translate.h"
+#include "dynarmic/interface/A64/config.h"
 #include "dynarmic/backend/ppc64/a64_core.h"
 #include "dynarmic/common/atomic.h"
+#include "dynarmic/ir/opt_passes.h"
 #include "dynarmic/interface/A64/a64.h"
 
 namespace Dynarmic::Backend::PPC64 {
@@ -22,28 +25,25 @@ A64AddressSpace::A64AddressSpace(const A64::UserConfig& conf)
     EmitPrelude();
 }
 
-IR::Block A64AddressSpace::GenerateIR(IR::LocationDescriptor descriptor) const {
-    IR::Block ir_block = A64::Translate(A64::LocationDescriptor{descriptor}, conf.callbacks, {conf.arch_version, conf.define_unpredictable_behaviour, conf.hook_hint_instructions});
-    Optimization::Optimize(ir_block, conf, {});
-    return ir_block;
-}
-
 CodePtr A64AddressSpace::Get(IR::LocationDescriptor descriptor) {
-    if (const auto iter = block_entries.find(descriptor.Value()); iter != block_entries.end())
+    if (auto const iter = block_entries.find(descriptor.Value()); iter != block_entries.end())
         return iter->second;
     return nullptr;
 }
 
-CodePtr A64AddressSpace::GetOrEmit(IR::LocationDescriptor descriptor) {
-    if (CodePtr block_entry = Get(descriptor)) {
+CodePtr A64AddressSpace::GetOrEmit(IR::LocationDescriptor desc) {
+    if (CodePtr block_entry = Get(desc))
         return block_entry;
-    }
 
-    IR::Block ir_block = GenerateIR(descriptor);
+    const auto get_code = [this](u64 vaddr) {
+        return conf.callbacks->MemoryReadCode(vaddr);
+    };
+    IR::Block ir_block = A64::Translate(A64::LocationDescriptor{desc}, get_code, {conf.define_unpredictable_behaviour, conf.wall_clock_cntpct});
+    Optimization::Optimize(ir_block, conf, {});
     const EmittedBlockInfo block_info = Emit(std::move(ir_block));
 
-    block_infos.insert_or_assign(descriptor.Value(), block_info);
-    block_entries.insert_or_assign(descriptor.Value(), block_info.entry_point);
+    block_infos.insert_or_assign(desc.Value(), block_info);
+    block_entries.insert_or_assign(desc.Value(), block_info.entry_point);
     return block_info.entry_point;
 }
 
@@ -59,7 +59,7 @@ void A64AddressSpace::EmitPrelude() {
 EmittedBlockInfo A64AddressSpace::Emit(IR::Block block) {
     EmittedBlockInfo block_info = EmitPPC64(as, std::move(block), {
         .enable_cycle_counting = conf.enable_cycle_counting,
-        .always_little_endian = conf.always_little_endian,
+        .always_little_endian = true,
     });
     Link(block_info);
     return block_info;
@@ -72,18 +72,19 @@ void A64AddressSpace::Link(EmittedBlockInfo& block_info) {
 
 namespace Dynarmic::A64 {
 
+using namespace Dynarmic::Backend::PPC64;
+
 struct Jit::Impl final {
     Impl(Jit* jit_interface, A64::UserConfig conf)
-        : jit_interface(jit_interface)
-        , conf(conf)
-        , current_address_space(conf)
-        , core(conf) {}
+        : conf(conf)
+        , emitter(conf) {}
 
     HaltReason Run() {
         ASSERT(!is_executing);
         //PerformRequestedCacheInvalidation(HaltReason(Atomic::Load(&jit_state.halt_reason)));
         is_executing = true;
-        const HaltReason hr = block_of_code.RunCode(&jit_state, current_code_ptr);
+        auto const current_loc = jit_state.GetLocationDescriptor();
+        const HaltReason hr = {};//block_of_code.RunCode(&jit_state, jit_state.GetOrEmit(current_loc));
         //PerformRequestedCacheInvalidation(hr);
         is_executing = false;
         return hr;
@@ -91,12 +92,13 @@ struct Jit::Impl final {
 
     HaltReason Step() {
         ASSERT(!is_executing);
-        //PerformRequestedCacheInvalidation(HaltReason(Atomic::Load(&jit_state.halt_reason)));
-        is_executing = true;
-        const HaltReason hr = block_of_code.StepCode(&jit_state, GetCurrentSingleStep());
-        //PerformRequestedCacheInvalidation(hr);
-        is_executing = false;
-        return hr;
+        // //PerformRequestedCacheInvalidation(HaltReason(Atomic::Load(&jit_state.halt_reason)));
+        // is_executing = true;
+        // //const HaltReason hr = block_of_code.StepCode(&jit_state, GetCurrentSingleStep());
+        // //PerformRequestedCacheInvalidation(hr);
+        // is_executing = false;
+        // return hr;
+        return {};
     }
 
     void ClearCache() {
@@ -142,23 +144,21 @@ struct Jit::Impl final {
     }
 
     u64 GetRegister(size_t index) const {
-        if (index == 31)
-            return GetSP();
-        return jit_state.reg.at(index);
+        return index == 31 ? GetSP() : jit_state.regs.at(index);
     }
 
     void SetRegister(size_t index, u64 value) {
         if (index == 31)
             return SetSP(value);
-        jit_state.reg.at(index) = value;
+        jit_state.regs.at(index) = value;
     }
 
     std::array<u64, 31> GetRegisters() const {
-        return jit_state.reg;
+        return jit_state.regs;
     }
 
     void SetRegisters(const std::array<u64, 31>& value) {
-        jit_state.reg = value;
+        jit_state.regs = value;
     }
 
     Vector GetVector(size_t index) const {
@@ -183,27 +183,27 @@ struct Jit::Impl final {
     }
 
     u32 GetFpcr() const {
-        return jit_state.GetFpcr();
+        return jit_state.fpcr;
     }
 
     void SetFpcr(u32 value) {
-        jit_state.SetFpcr(value);
+        jit_state.fpcr = value;
     }
 
     u32 GetFpsr() const {
-        return jit_state.GetFpsr();
+        return jit_state.fpsr;
     }
 
     void SetFpsr(u32 value) {
-        jit_state.SetFpsr(value);
+        jit_state.fpsr = value;
     }
 
     u32 GetPstate() const {
-        return jit_state.GetPstate();
+        return jit_state.pstate;
     }
 
     void SetPstate(u32 value) {
-        jit_state.SetPstate(value);
+        jit_state.pstate = value;
     }
 
     void ClearExclusiveState() {
@@ -212,6 +212,13 @@ struct Jit::Impl final {
 
     bool IsExecuting() const {
         return is_executing;
+    }
+
+    std::string Disassemble() const {
+        // const size_t size = reinterpret_cast<const char*>(block_of_code.getCurr()) - reinterpret_cast<const char*>(block_of_code.GetCodeBegin());
+        // auto const* p = reinterpret_cast<const char*>(block_of_code.GetCodeBegin());
+        // return Common::DisassemblePPC64(p, p + size);
+        return {};
     }
 
 private:
@@ -225,7 +232,6 @@ private:
     const UserConfig conf;
     A64JitState jit_state;
     A64AddressSpace emitter;
-    BlockOfCode block_of_code;
     Optimization::PolyfillOptions polyfill_options;
     bool invalidate_entire_cache = false;
     boost::icl::interval_set<u64> invalid_cache_ranges;

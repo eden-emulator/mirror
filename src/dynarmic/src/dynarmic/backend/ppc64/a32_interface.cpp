@@ -9,8 +9,12 @@
 #include <mcl/scope_exit.hpp>
 #include "dynarmic/common/common_types.h"
 
+#include "dynarmic/frontend/A32/a32_location_descriptor.h"
+#include "dynarmic/frontend/A32/translate/a32_translate.h"
+#include "dynarmic/interface/A32/config.h"
 #include "dynarmic/backend/ppc64/a32_core.h"
 #include "dynarmic/common/atomic.h"
+#include "dynarmic/ir/opt_passes.h"
 #include "dynarmic/interface/A32/a32.h"
 
 namespace Dynarmic::Backend::PPC64 {
@@ -69,7 +73,11 @@ void A32AddressSpace::Link(EmittedBlockInfo& block_info) {
     UNREACHABLE();
 }
 
+}
+
 namespace Dynarmic::A32 {
+
+using namespace Dynarmic::Backend::PPC64;
 
 struct Jit::Impl final {
     Impl(Jit* jit_interface, A32::UserConfig conf)
@@ -130,19 +138,19 @@ struct Jit::Impl final {
     }
 
     u32 Cpsr() const {
-        return current_state.Cpsr();
+        return current_state.cpsr_nzcv;
     }
 
     void SetCpsr(u32 value) {
-        current_state.SetCpsr(value);
+        current_state.cpsr_nzcv = value;
     }
 
     u32 Fpscr() const {
-        return current_state.Fpscr();
+        return current_state.fpscr;
     }
 
     void SetFpscr(u32 value) {
-        current_state.SetFpscr(value);
+        current_state.fpscr = value;
     }
 
     void ClearExclusiveState() {

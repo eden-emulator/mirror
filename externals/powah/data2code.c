@@ -51,30 +51,53 @@ int main(int argc, char *argv[]) {
                             int i_extopc = atoi(sec);
                             //printf("// %s\n", mem);
                             if (!strcmp(form, "XO")) {
-                                if (strcmp(mem, "ADDC") == 0 || strcmp(mem, "SUBFC") == 0)
-                                    printf("//");
-                                printf(
-                                    "void %s(GPR const rt, GPR const ra, GPR const rb) {"
-                                    " emit_%s(0x%08x, rt, ra, rb, false, false); "
-                                    "}\n"
-                                , mem, form, (i_opcode << 26) | (i_extopc << 1));
-                                printf(
-                                    "void %sC(GPR const rt, GPR const ra, GPR const rb) {"
-                                    " emit_%s(0x%08x, rt, ra, rb, true, false); "
-                                    "}\n"
-                                , mem, form, (i_opcode << 26) | (i_extopc << 1));
-                                if (strcmp(mem, "ADDC") == 0 || strcmp(mem, "SUBFC") == 0)
-                                    printf("//");
-                                printf(
-                                    "void %s_(GPR const rt, GPR const ra, GPR const rb) {"
-                                    " emit_%s(0x%08x, rt, ra, rb, false, true); "
-                                    "}\n"
-                                , mem, form, (i_opcode << 26) | (i_extopc << 1));
-                                printf(
-                                    "void %sC_(GPR const rt, GPR const ra, GPR const rb) {"
-                                    " emit_%s(0x%08x, rt, ra, rb, true, true); "
-                                    "}\n"
-                                , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                if (!strcmp(mem, "EXTSH")) {
+                                    printf(
+                                        "void %s(GPR const rt, GPR const ra) {"
+                                        " emit_%s(0x%08x, rt, ra, R0, false, false); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                    printf(
+                                        "void %sC(GPR const rt, GPR const ra) {"
+                                        " emit_%s(0x%08x, rt, ra, R0, true, false); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                    printf(
+                                        "void %s_(GPR const rt, GPR const ra) {"
+                                        " emit_%s(0x%08x, rt, ra, R0, false, true); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                    printf(
+                                        "void %sC_(GPR const rt, GPR const ra) {"
+                                        " emit_%s(0x%08x, rt, ra, R0, true, true); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                } else {
+                                    if (strcmp(mem, "ADDC") == 0 || strcmp(mem, "SUBFC") == 0)
+                                        printf("//");
+                                    printf(
+                                        "void %s(GPR const rt, GPR const ra, GPR const rb) {"
+                                        " emit_%s(0x%08x, rt, ra, rb, false, false); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                    printf(
+                                        "void %sC(GPR const rt, GPR const ra, GPR const rb) {"
+                                        " emit_%s(0x%08x, rt, ra, rb, true, false); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                    if (strcmp(mem, "ADDC") == 0 || strcmp(mem, "SUBFC") == 0)
+                                        printf("//");
+                                    printf(
+                                        "void %s_(GPR const rt, GPR const ra, GPR const rb) {"
+                                        " emit_%s(0x%08x, rt, ra, rb, false, true); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                    printf(
+                                        "void %sC_(GPR const rt, GPR const ra, GPR const rb) {"
+                                        " emit_%s(0x%08x, rt, ra, rb, true, true); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                }
                             } else if (!strcmp(form, "X")) {
                                 if (!strcmp(mem, "CMPL")
                             || !strcmp(mem, "CMP")) {
@@ -83,7 +106,8 @@ int main(int argc, char *argv[]) {
                                         " emit_%s(0x%08x, GPR{(bf << 2) | l}, ra, rb, false); "
                                         "}\n"
                                     , mem, form, i_opcode << 26);
-                                } else if (strcmp(mem, "CNTLZD") == 0 || strcmp(mem, "CNTLZW") == 0) {
+                                } else if (!strcmp(mem, "CNTLZD") || !strcmp(mem, "CNTLZW")
+                            || !strcmp(mem, "EXTSB") || !strcmp(mem, "EXTSH") || !strcmp(mem, "EXTSW")) {
                                     printf(
                                         "void %s(GPR const rt, GPR const ra) {"
                                         " emit_%s(0x%08x, rt, ra, R0, false); "
@@ -204,16 +228,29 @@ int main(int argc, char *argv[]) {
                                     , mem, form, (i_opcode << 26) | (i_extopc << 1));
                                 }
                             } else if (!strcmp(form, "M")) {
-                                printf(
-                                    "void %s(GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me = 0) {"
-                                    " emit_%s(0x%08x, rs, ra, sh, mb, me, false); "
-                                    "}\n"
-                                , mem, form, (i_opcode << 26) | (i_extopc << 1));
-                                printf(
-                                    "void %s_(GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me = 0) {"
-                                    " emit_%s(0x%08x, rs, ra, sh, mb, me, true); "
-                                    "}\n"
-                                , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                if (!strcmp(mem, "RLWNM")) {
+                                    printf(
+                                        "void %s(GPR const rs, GPR const ra, GPR const rb, uint32_t mb, uint32_t me = 0) {"
+                                        " emit_%s(0x%08x, rs, ra, rb.index, mb, me, false); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                    printf(
+                                        "void %s_(GPR const rs, GPR const ra, GPR const rb, uint32_t mb, uint32_t me = 0) {"
+                                        " emit_%s(0x%08x, rs, ra, rb.index, mb, me, true); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                } else {
+                                    printf(
+                                        "void %s(GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me = 0) {"
+                                        " emit_%s(0x%08x, rs, ra, sh, mb, me, false); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                    printf(
+                                        "void %s_(GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me = 0) {"
+                                        " emit_%s(0x%08x, rs, ra, sh, mb, me, true); "
+                                        "}\n"
+                                    , mem, form, (i_opcode << 26) | (i_extopc << 1));
+                                }
                             } else if (!strcmp(form, "MD")) {
                                 printf(
                                     "void %s(GPR const rs, GPR const ra, uint32_t mb, uint32_t sh) {"
