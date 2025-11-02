@@ -20,10 +20,15 @@ struct A64JitState {
     using ProgramCounterType = u32;
     alignas(16) std::array<u64, 64> vec{};
     std::array<u64, 31> regs{};
+    u64 sp = 0;
+    u64 pc = 0;
     u32 upper_location_descriptor;
     u32 exclusive_state = 0;
     u32 cpsr_nzcv = 0;
+    u32 pstate = 0;
+    u32 fpcr = 0;
     u32 fpsr = 0;
+    volatile u32 halt_reason = 0;
     IR::LocationDescriptor GetLocationDescriptor() const {
         return IR::LocationDescriptor{regs[15] | (u64(upper_location_descriptor) << 32)};
     }
@@ -32,15 +37,9 @@ struct A64JitState {
 class A64AddressSpace final {
 public:
     explicit A64AddressSpace(const A64::UserConfig& conf);
-
-    IR::Block GenerateIR(IR::LocationDescriptor) const;
-
     CodePtr Get(IR::LocationDescriptor descriptor);
-
     CodePtr GetOrEmit(IR::LocationDescriptor descriptor);
-
     void ClearCache();
-
 private:
     friend class A64Core;
 
@@ -49,16 +48,12 @@ private:
     void Link(EmittedBlockInfo& block);
 
     const A64::UserConfig conf;
-
     CodeBlock cb;
     powah::Context as;
-
     ankerl::unordered_dense::map<u64, CodePtr> block_entries;
     ankerl::unordered_dense::map<u64, EmittedBlockInfo> block_infos;
-
     struct PreludeInfo {
         CodePtr end_of_prelude;
-
         using RunCodeFuncType = HaltReason (*)(CodePtr entry_point, A64JitState* context, volatile u32* halt_reason);
         RunCodeFuncType run_code;
         CodePtr return_from_run_code;
