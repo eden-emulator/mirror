@@ -124,14 +124,14 @@ void EIEIO(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0006ac, rt, ra
 void EIEIO_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0006ac, rt, ra, rb, true); }
 void EQV(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000238, rt, ra, rb, false); }
 void EQV_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000238, rt, ra, rb, true); }
-void EXTSB(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000774, rt, ra, rb, false); }
-void EXTSB_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000774, rt, ra, rb, true); }
-void EXTSH(GPR const rt, GPR const ra, GPR const rb) { emit_XO(0x7c000734, rt, ra, rb, false, false); }
-void EXTSHC(GPR const rt, GPR const ra, GPR const rb) { emit_XO(0x7c000734, rt, ra, rb, true, false); }
-void EXTSH_(GPR const rt, GPR const ra, GPR const rb) { emit_XO(0x7c000734, rt, ra, rb, false, true); }
-void EXTSHC_(GPR const rt, GPR const ra, GPR const rb) { emit_XO(0x7c000734, rt, ra, rb, true, true); }
-void EXTSW(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0007b4, rt, ra, rb, false); }
-void EXTSW_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0007b4, rt, ra, rb, true); }
+void EXTSB(GPR const rt, GPR const ra) { emit_X(0x7c000774, rt, ra, R0, false); }
+void EXTSB_(GPR const rt, GPR const ra) { emit_X(0x7c000774, rt, ra, R0, true); }
+void EXTSH(GPR const rt, GPR const ra) { emit_XO(0x7c000734, rt, ra, R0, false, false); }
+void EXTSHC(GPR const rt, GPR const ra) { emit_XO(0x7c000734, rt, ra, R0, true, false); }
+void EXTSH_(GPR const rt, GPR const ra) { emit_XO(0x7c000734, rt, ra, R0, false, true); }
+void EXTSHC_(GPR const rt, GPR const ra) { emit_XO(0x7c000734, rt, ra, R0, true, true); }
+void EXTSW(GPR const rt, GPR const ra) { emit_X(0x7c0007b4, rt, ra, R0, false); }
+void EXTSW_(GPR const rt, GPR const ra) { emit_X(0x7c0007b4, rt, ra, R0, true); }
 void FABS(GPR const rt, GPR const ra, GPR const rb) { emit_X(0xfc000210, rt, ra, rb, false); }
 void FABS_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0xfc000210, rt, ra, rb, true); }
 void FADD(FPR const frt, FPR const fra, FPR const frb, FPR const frc) { emit_A(0xfc00002a, frt, fra, frb, frc, false); }
@@ -349,8 +349,8 @@ void RLWIMI(GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me = 
 void RLWIMI_(GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me = 0) { emit_M(0x50000000, rs, ra, sh, mb, me, true); }
 void RLWINM(GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me = 0) { emit_M(0x54000000, rs, ra, sh, mb, me, false); }
 void RLWINM_(GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me = 0) { emit_M(0x54000000, rs, ra, sh, mb, me, true); }
-void RLWNM(GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me = 0) { emit_M(0x5c000000, rs, ra, sh, mb, me, false); }
-void RLWNM_(GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me = 0) { emit_M(0x5c000000, rs, ra, sh, mb, me, true); }
+void RLWNM(GPR const rs, GPR const ra, GPR const rb, uint32_t mb, uint32_t me = 0) { emit_M(0x5c000000, rs, ra, rb.index, mb, me, false); }
+void RLWNM_(GPR const rs, GPR const ra, GPR const rb, uint32_t mb, uint32_t me = 0) { emit_M(0x5c000000, rs, ra, rb.index, mb, me, true); }
 void SC(uint32_t lev) { emit_SC(0x44000000, lev); }
 void SI(GPR const rt, GPR const ra, uint32_t d) { emit_D(0x30000000, rt, ra, d); }
 void SI_(GPR const rt, GPR const ra, uint32_t d) { emit_D(0x34000000, rt, ra, d); }

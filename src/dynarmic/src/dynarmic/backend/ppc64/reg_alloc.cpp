@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <ranges>
 
 #include "dynarmic/common/assert.h"
 #include <mcl/mp/metavalue/lift_value.hpp>
@@ -175,42 +176,42 @@ u32 RegAlloc::FindFreeSpill() const {
 }
 
 std::optional<HostLoc> RegAlloc::ValueLocation(const IR::Inst* value) const {
-    const auto contains_value = [value](const HostLocInfo& info) {
+    const auto fn = [value](const HostLocInfo& info) {
         return info.Contains(value);
     };
-    if (const auto iter = std::find_if(gprs.begin(), gprs.end(), contains_value); iter != gprs.end()) {
-        return HostLoc{HostLoc::Kind::Gpr, static_cast<u32>(iter - gprs.begin())};
-    } else if (const auto iter = std::find_if(fprs.begin(), fprs.end(), contains_value); iter != fprs.end()) {
-        return HostLoc{HostLoc::Kind::Fpr, static_cast<u32>(iter - fprs.begin())};
-    } else if (const auto iter = std::find_if(spills.begin(), spills.end(), contains_value); iter != spills.end()) {
-        return HostLoc{HostLoc::Kind::Spill, static_cast<u32>(iter - spills.begin())};
-    }
+    if (const auto iter = std::ranges::find_if(gprs, fn); iter != gprs.end())
+        return HostLoc(u32(HostLoc::R0) + u32(iter - gprs.begin()));
+    else if (const auto iter = std::ranges::find_if(fprs, fn); iter != fprs.end())
+        return HostLoc(u32(HostLoc::FR0) + u32(iter - fprs.begin()));
+    else if (const auto iter = std::ranges::find_if(vprs, fn); iter != vprs.end())
+        return HostLoc(u32(HostLoc::VR0) + u32(iter - vprs.begin()));
+    else if (const auto iter = std::ranges::find_if(spills, fn); iter != spills.end())
+        return HostLoc(u32(HostLoc::FirstSpill) + u32(iter - spills.begin()));
     return std::nullopt;
 }
 
 HostLocInfo& RegAlloc::ValueInfo(HostLoc host_loc) {
-    switch (host_loc.kind) {
-    case HostLoc::Kind::Gpr:
-        return gprs[size_t(host_loc.index)];
-    case HostLoc::Kind::Fpr:
-        return fprs[size_t(host_loc.index)];
-    case HostLoc::Kind::Spill:
-        return spills[size_t(host_loc.index)];
-    }
+    // switch (host_loc.kind) {
+    // case HostLoc::Kind::Gpr:
+    //     return gprs[size_t(host_loc.index)];
+    // case HostLoc::Kind::Fpr:
+    //     return fprs[size_t(host_loc.index)];
+    // case HostLoc::Kind::Spill:
+    //     return spills[size_t(host_loc.index)];
+    // }
     UNREACHABLE();
 }
 
 HostLocInfo& RegAlloc::ValueInfo(const IR::Inst* value) {
-    const auto contains_value = [value](const HostLocInfo& info) {
+    const auto fn = [value](const HostLocInfo& info) {
         return info.Contains(value);
     };
-    if (const auto iter = std::find_if(gprs.begin(), gprs.end(), contains_value); iter != gprs.end()) {
+    if (const auto iter = std::find_if(gprs.begin(), gprs.end(), fn); iter != gprs.end())
         return *iter;
-    } else if (const auto iter = std::find_if(fprs.begin(), fprs.end(), contains_value); iter != gprs.end()) {
+    else if (const auto iter = std::find_if(fprs.begin(), fprs.end(), fn); iter != fprs.end())
         return *iter;
-    } else if (const auto iter = std::find_if(spills.begin(), spills.end(), contains_value); iter != gprs.end()) {
+    else if (const auto iter = std::find_if(spills.begin(), spills.end(), fn); iter != spills.end())
         return *iter;
-    }
     UNREACHABLE();
 }
 

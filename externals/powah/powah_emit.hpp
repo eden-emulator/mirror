@@ -110,6 +110,7 @@ constexpr inline CPR CR6{24};
 constexpr inline CPR CR7{28};
 
 struct Context {
+    Context() = default;
     Context(void* ptr, size_t size)
         : base{reinterpret_cast<uint32_t*>(ptr)}
         , offset{0}
@@ -280,12 +281,17 @@ struct Context {
 
     // Extended Memmonics, hand coded :)
     void MR(GPR const ra, GPR const rs) { OR(ra, rs, rs); }
+    void NOP() { ORI(R0, R0, 0); }
+    void NOT(GPR const ra, GPR const rs) { NOR(ra, rs, rs); }
 
     void ROTLDI(GPR const ra, GPR const rs, uint32_t n) { RLDICL(ra, rs, n, 0); }
     void ROTRDI(GPR const ra, GPR const rs, uint32_t n) { RLDICL(ra, rs, 64 - n, 0); }
 
     void ROTLWI(GPR const ra, GPR const rs, uint32_t n) { RLWINM(ra, rs, n, 0, 31); }
     void ROTRWI(GPR const ra, GPR const rs, uint32_t n) { RLWINM(ra, rs, 32 - n, 0, 31); }
+
+    void ROTLW(GPR const ra, GPR const rs, GPR const rb) { RLWNM(ra, rs, rb, 0, 31); }
+    void ROTLD(GPR const ra, GPR const rs, GPR const rb) { RLDCL(ra, rs, rb, 0); }
 
     void EXTLDI(GPR const ra, GPR const rs, uint32_t n, uint32_t b) { RLDICR(ra, rs, b, n - 1); }
     void SLDI(GPR const ra, GPR const rs, uint32_t n) { RLDICR(ra, rs,  n, 63 - n); }
@@ -298,7 +304,7 @@ struct Context {
 
     void EXTLWI(GPR const ra, GPR const rs, uint32_t n, uint32_t b) { RLWINM(ra, rs, b, 0, n - 1); }
     void SRWI(GPR const ra, GPR const rs, uint32_t n) { RLWINM(ra, rs, 32 - n, n, 31); }
-    void CLRRWI(GPR const ra, GPR const rs, uint32_t n, uint32_t b) { RLWINM(ra, rs, 0, 0, 31 - n); }
+    void CLRRWI(GPR const ra, GPR const rs, uint32_t n) { RLWINM(ra, rs, 0, 0, 31 - n); }
 
     void CRSET(CPR const bx) { CREQV(bx, bx, bx); }
     void CRCLR(CPR const bx) { CRXOR(bx, bx, bx); }
@@ -320,8 +326,14 @@ struct Context {
     void CMPDI(CPR const cr, GPR const rx, uint32_t si) { CMPI(cr.index / 4, 1, rx, si); }
     void CMPD(CPR const cr, GPR const rx, GPR const ry) { CMP(cr.index / 4, 1, rx, ry); }
 
+    void BLR() { BCLR(R0, CR0, R0); }
+
     // TODO: PowerPC 11 stuff
     void ISEL(GPR const rd, GPR const ra, GPR const rb, uint32_t d) {
+        (void)rd;
+        (void)ra;
+        (void)rb;
+        (void)d;
         std::unreachable();
     }
     void ISELLT(GPR const rd, GPR const ra, GPR const rb) { ISEL(rd, ra, rb, 0); }

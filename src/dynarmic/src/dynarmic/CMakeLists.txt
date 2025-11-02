@@ -306,9 +306,13 @@ if ("ppc64" IN_LIST ARCHITECTURE)
         backend/ppc64/emit_ppc64_vector.cpp
         backend/ppc64/emit_ppc64.cpp
         backend/ppc64/emit_ppc64.h
+        backend/ppc64/exclusive_monitor.cpp
         backend/ppc64/reg_alloc.cpp
         backend/ppc64/reg_alloc.h
         backend/ppc64/stack_layout.h
+        backend/ppc64/hostloc.h
+        common/spin_lock_ppc64.cpp
+        common/spin_lock_ppc64.h
         # A32
         backend/ppc64/a32_core.h
         backend/ppc64/a32_interface.cpp
