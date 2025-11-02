@@ -93,34 +93,16 @@ qemu-aarch64 build/aarch64/bin/eden
 
 This is a guide for FreeBSD users mainly.
 
-Now you got a PowerPC sysroot - quickly decompress it somewhere, say `/home/user/opt/powerpc64le`.
+Now you got a PowerPC sysroot - quickly decompress it somewhere, say `/home/user/opt/powerpc64le`. Create a toolchain file, for example `powerpc64le-toolchain.cmake`; always [consult the manual](https://man.freebsd.org/cgi/man.cgi?query=cmake-toolchains&sektion=7&manpath=FreeBSD+13.2-RELEASE+and+Ports).
 
-```sh
-fetch https://download.freebsd.org/ftp/releases/powerpc/powerpc64le/14.3-RELEASE/base.txz
-mkdir -p ~/opt/powerpc64le/sysroot
-mkdir -p ~/opt/powerpc64le/staging
-cd ~/opt/powerpc64le/sysroot
-tar -xvzf base.txz
-```
-
-Create a toolchain file, for example `powerpc64le-toolchain.cmake`; always [consult the manual](https://man.freebsd.org/cgi/man.cgi?query=cmake-toolchains&sektion=7&manpath=FreeBSD+13.2-RELEASE+and+Ports).
-
-```sh
-set(CMAKE_SYSROOT "$ENV{HOME}/opt/powerpc64le/sysroot")
-set(CMAKE_STAGING_PREFIX "$ENV{HOME}/opt/powerpc64le/sysroot")
-
-set(CMAKE_C_COMPILER /usr/bin/clang)
-set(CMAKE_CXX_COMPILER /usr/bin/clang++)
-set(CMAKE_C_FLAGS "--target=ppc64le-pc-freebsd")
-set(CMAKE_CXX_FLAGS "--target=ppc64le-pc-freebsd")
-
-set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-```
+There is a script to automatically do all of this under `./tools/setup-cross-sysroot.sh`
 
 Specify:
 - `YUZU_USE_CPM`: Set this to `ON` so packages can be found and built if your sysroot doesn't have them.
 - `YUZU_USE_EXTERNAL_FFMPEG`: Set this to `ON` as well.
 
+Then run using a program such as QEMU to emulate userland syscalls:
+
+```sh
+cmake --build build-ppc64-pc-freebsd -t dynarmic_tests -- -j8 && qemu-ppc64-static -L $HOME/opt/ppc64-freebsd/sysroot ./build-ppc64-pc-freebsd/bin/dynarmic_tests
+```
