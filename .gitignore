@@ -19,6 +19,7 @@ log.txt
 # Generated source files
 src/common/scm_rev.cpp
 dist/english_plurals/generated_en.ts
+*-toolchain.cmake
 
 # Project/editor files
 *.swp

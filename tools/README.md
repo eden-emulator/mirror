@@ -19,6 +19,7 @@ Tools for Eden and other subprojects. When adding new scripts please use `#!/bin
 - `shellcheck.sh`: Ensure POSIX compliance (and syntax sanity) for all tools in this directory and subdirectories.
 - `llvmpipe-run.sh`: Sets environment variables needed to run any command (or Eden) with llvmpipe.
 - `optimize-assets.sh`: Optimizes PNG assets with OptiPng.
+- `setup-cross-sysroot.sh`: Allows to quickly create a sysroot of a given system for cross compilation (experimental).
 - `update-cpm.sh`: Updates CPM.cmake to the latest version.
 - `update-icons.sh`: Rebuild all icons (macOS, Windows, bitmaps) based on the master SVG file (`dist/dev.eden_emu.eden.svg`)
     * Also optimizes the master SVG
