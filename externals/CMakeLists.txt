@@ -255,7 +255,9 @@ endif()
 add_subdirectory(nx_tzdb)
 
 # PowerPC emitter
-add_subdirectory(powah)
+if (ARCHITECTURE_ppc64)
+    add_subdirectory(powah)
+endif()
 
 add_library(tz tz/tz/tz.cpp)
 target_include_directories(tz PUBLIC ./tz)
