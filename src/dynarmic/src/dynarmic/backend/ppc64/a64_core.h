@@ -52,12 +52,6 @@ private:
     powah::Context as;
     ankerl::unordered_dense::map<u64, CodePtr> block_entries;
     ankerl::unordered_dense::map<u64, EmittedBlockInfo> block_infos;
-    struct PreludeInfo {
-        CodePtr end_of_prelude;
-        using RunCodeFuncType = HaltReason (*)(CodePtr entry_point, A64JitState* context, volatile u32* halt_reason);
-        RunCodeFuncType run_code;
-        CodePtr return_from_run_code;
-    } prelude_info;
 };
 
 class A64Core final {
@@ -65,9 +59,10 @@ public:
     explicit A64Core(const A64::UserConfig&) {}
 
     HaltReason Run(A64AddressSpace& process, A64JitState& thread_ctx, volatile u32* halt_reason) {
-        const auto location_descriptor = thread_ctx.GetLocationDescriptor();
-        const auto entry_point = process.GetOrEmit(location_descriptor);
-        return process.prelude_info.run_code(entry_point, &thread_ctx, halt_reason);
+        const auto loc = thread_ctx.GetLocationDescriptor();
+        const auto entry = process.GetOrEmit(loc);
+        using CodeFn = HaltReason (*)(A64JitState*, volatile u32*);
+        return (CodeFn(entry))(&thread_ctx, halt_reason);
     }
 };
 
