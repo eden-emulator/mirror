@@ -31,46 +31,28 @@ void HostLocInfo::UpdateUses() {
     }
 }
 
-RegAlloc::ArgumentInfo RegAlloc::GetArgumentInfo(IR::Inst* inst) {
-    ArgumentInfo ret = {Argument{*this}, Argument{*this}, Argument{*this}, Argument{*this}};
-    for (size_t i = 0; i < inst->NumArgs(); i++) {
-        const IR::Value arg = inst->GetArg(i);
-        ret[i].value = arg;
-        if (!arg.IsImmediate() && !IsValuelessType(arg.GetType())) {
-            ASSERT(ValueLocation(arg.GetInst()) && "argument must already been defined");
-            ValueInfo(arg.GetInst()).uses_this_inst++;
-        }
-    }
-    return ret;
-}
-
 bool RegAlloc::IsValueLive(IR::Inst* inst) const {
     return !!ValueLocation(inst);
 }
 
 void RegAlloc::UpdateAllUses() {
-    for (auto& gpr : gprs) {
+    for (auto& gpr : gprs)
         gpr.UpdateUses();
-    }
-    for (auto& fpr : fprs) {
+    for (auto& fpr : fprs)
         fpr.UpdateUses();
-    }
-    for (auto& spill : spills) {
+    for (auto& spill : spills)
         spill.UpdateUses();
-    }
 }
 
-void RegAlloc::DefineAsExisting(IR::Inst* inst, Argument& arg) {
+void RegAlloc::DefineAsExisting(IR::Inst* inst, IR::Value arg) {
     ASSERT(!ValueLocation(inst));
-
-    if (arg.value.IsImmediate()) {
-        inst->ReplaceUsesWith(arg.value);
-        return;
+    if (arg.IsImmediate()) {
+        inst->ReplaceUsesWith(arg);
+    } else {
+        auto& info = ValueInfo(arg.GetInst());
+        info.values.emplace_back(inst);
+        info.expected_uses += inst->UseCount();
     }
-
-    auto& info = ValueInfo(arg.value.GetInst());
-    info.values.emplace_back(inst);
-    info.expected_uses += inst->UseCount();
 }
 
 void RegAlloc::AssertNoMoreUses() const {
@@ -129,8 +111,17 @@ std::optional<HostLoc> RegAlloc::ValueLocation(const IR::Inst* value) const {
     return std::nullopt;
 }
 
-static powah::GPR HostLocToReg(HostLoc h) noexcept {
-    if (u8(h) >= u8(HostLoc::R0) && u8(h) <= u8(HostLoc::R31))
+inline bool HostLocIsGpr(HostLoc h) noexcept {
+    return u8(h) >= u8(HostLoc::R0) && u8(h) <= u8(HostLoc::R31);
+}
+inline bool HostLocIsFpr(HostLoc h) noexcept {
+    return u8(h) >= u8(HostLoc::FR0) && u8(h) <= u8(HostLoc::FR31);
+}
+inline bool HostLocIsVpr(HostLoc h) noexcept {
+    return u8(h) >= u8(HostLoc::VR0) && u8(h) <= u8(HostLoc::VR31);
+}
+inline std::variant<powah::GPR, powah::FPR> HostLocToReg(HostLoc h) noexcept {
+    if (HostLocIsGpr(h))
         return powah::GPR{uint32_t(h)};
     ASSERT(false && "unimp");
 }
@@ -160,21 +151,30 @@ HostLocInfo& RegAlloc::ValueInfo(const IR::Inst* value) {
     ASSERT(false && "unimp");
 }
 
+/// @brief Defines a register temporal to use (and locks it)
 powah::GPR RegAlloc::ScratchGpr() {
     auto const r = AllocateRegister(gprs, PPC64::GPR_ORDER);
     return powah::GPR{*r};
 }
 
-powah::GPR RegAlloc::UseGpr(Argument& arg) {
-    ASSERT(!arg.allocated);
-    arg.allocated = true;
-    return ScratchGpr();
-}
-
-powah::GPR RegAlloc::UseScratchGpr(Argument& arg) {
-    ASSERT(!arg.allocated);
-    arg.allocated = true;
-    return ScratchGpr();
+/// @brief Uses the given GPR of the argument
+powah::GPR RegAlloc::UseGpr(IR::Value arg) {
+    if (arg.IsImmediate()) {
+        // HOLY SHIT EVIL HAXX
+        auto const reg = ScratchGpr();
+        auto const imm = arg.GetImmediateAsU64();
+        if (imm >= 0xffff) {
+            ASSERT(false && "big imms");
+        } else {
+            code.LI(reg, imm);
+        }
+        return reg;
+    } else {
+        ASSERT(arg.allocated && "undefined (non-imm) arg");
+        auto const loc = ValueLocation(arg.GetInst());
+        ASSERT(loc && HostLocIsGpr(*loc));
+        return std::get<powah::GPR>(HostLocToReg(*loc));
+    }
 }
 
 void RegAlloc::DefineValue(IR::Inst* inst, powah::GPR const gpr) noexcept {
@@ -182,22 +182,22 @@ void RegAlloc::DefineValue(IR::Inst* inst, powah::GPR const gpr) noexcept {
     ValueInfo(HostLoc(gpr.index)).values.push_back(inst);
 }
 
-void RegAlloc::DefineValue(IR::Inst* inst, Argument& arg) noexcept {
+void RegAlloc::DefineValue(IR::Inst* inst, IR::Value arg) noexcept {
+    ASSERT(!ValueLocation(inst) && "inst has already been defined");
     ASSERT(!arg.allocated);
     arg.allocated = true;
-    ASSERT(!ValueLocation(inst) && "inst has already been defined");
-    if (arg.value.IsImmediate()) {
+    if (arg.IsImmediate()) {
         HostLoc const loc{u8(ScratchGpr().index)};
         ValueInfo(loc).values.push_back(inst);
-        auto const value = arg.value.GetImmediateAsU64();
+        auto const value = arg.GetImmediateAsU64();
         if (value >= 0x7fff) {
             ASSERT(false && "unimp");
         } else {
             //code.LI(HostLocToReg(loc), value);
         }
     } else {
-        ASSERT(ValueLocation(arg.value.GetInst()) && "arg.value must already be defined");
-        const HostLoc loc = *ValueLocation(arg.value.GetInst());
+        ASSERT(ValueLocation(arg.GetInst()) && "arg must already be defined");
+        const HostLoc loc = *ValueLocation(arg.GetInst());
         ValueInfo(loc).values.push_back(inst);
     }
 }

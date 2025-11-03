@@ -24,59 +24,14 @@ namespace Dynarmic::Backend::PPC64 {
 
 class RegAlloc;
 
-struct Argument {
-public:
-    IR::Type GetType() const {
-        return value.GetType();
-    }
-    bool IsImmediate() const {
-        return value.IsImmediate();
-    }
-    bool GetImmediateU1() const {
-        return value.GetU1();
-    }
-    u8 GetImmediateU8() const {
-        const u64 imm = value.GetImmediateAsU64();
-        ASSERT(imm < 0x100);
-        return u8(imm);
-    }
-    u16 GetImmediateU16() const {
-        const u64 imm = value.GetImmediateAsU64();
-        ASSERT(imm < 0x10000);
-        return u16(imm);
-    }
-    u32 GetImmediateU32() const {
-        const u64 imm = value.GetImmediateAsU64();
-        ASSERT(imm < 0x100000000);
-        return u32(imm);
-    }
-    u64 GetImmediateU64() const {
-        return value.GetImmediateAsU64();
-    }
-    IR::Cond GetImmediateCond() const {
-        ASSERT(IsImmediate() && GetType() == IR::Type::Cond);
-        return value.GetCond();
-    }
-    IR::AccType GetImmediateAccType() const {
-        ASSERT(IsImmediate() && GetType() == IR::Type::AccType);
-        return value.GetAccType();
-    }
-private:
-    friend class RegAlloc;
-    explicit Argument(RegAlloc& reg_alloc) : reg_alloc{reg_alloc} {}
-    RegAlloc& reg_alloc;
-    IR::Value value;
-    bool allocated = false;
-};
-
 struct HostLocInfo final {
     std::vector<const IR::Inst*> values;
-    size_t locked = 0;
     size_t uses_this_inst = 0;
     size_t accumulated_uses = 0;
     size_t expected_uses = 0;
+    /// @brief Lock usage of this register UNTIL a DefineValue() is issued
+    bool locked = false;
     bool realized = false;
-
     bool Contains(const IR::Inst* value) const {
         return std::find(values.begin(), values.end(), value) != values.end();
     }
@@ -98,17 +53,16 @@ public:
 
     ArgumentInfo GetArgumentInfo(IR::Inst* inst);
     bool IsValueLive(IR::Inst* inst) const;
-    void DefineAsExisting(IR::Inst* inst, Argument& arg);
+    void DefineAsExisting(IR::Inst* inst, IR::Value arg);
 
     void SpillAll();
     void UpdateAllUses();
     void AssertNoMoreUses() const;
 
     powah::GPR ScratchGpr();
-    powah::GPR UseGpr(Argument& arg);
-    powah::GPR UseScratchGpr(Argument& arg);
+    powah::GPR UseGpr(IR::Value arg);
     void DefineValue(IR::Inst* inst, powah::GPR const gpr) noexcept;
-    void DefineValue(IR::Inst* inst, Argument& arg) noexcept;
+    void DefineValue(IR::Inst* inst, IR::Value arg) noexcept;
 private:
     std::optional<u32> AllocateRegister(const std::array<HostLocInfo, 32>& regs, const std::vector<u32>& order) const;
     void SpillGpr(u32 index);
