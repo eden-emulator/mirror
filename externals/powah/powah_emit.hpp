@@ -254,14 +254,15 @@ struct Context {
         );
     }
     void emit_M(uint32_t op, GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me, bool rc) {
-        (void)op;
-        (void)rs;
-        (void)ra;
-        (void)sh;
-        (void)mb;
-        (void)me;
-        (void)rc;
-        std::abort();
+        assert(sh <= 0x3f && mb <= 0x3f);
+        base[offset++] = (op |
+            bitExt(ra.index, 6, 5)
+            | bitExt(rs.index, 11, 5)
+            | bitExt(sh, 16, 5)
+            | bitExt(mb, 21, 4)
+            | bitExt(me, 26, 4)
+            | bitExt(rc, 31, 1)
+        );
     }
     void emit_MD(uint32_t op, GPR const rs, GPR const ra, GPR const rb, uint32_t mb, bool rc) {
         assert(mb <= 0x3f);

@@ -26,27 +26,47 @@ class RegAlloc;
 
 struct Argument {
 public:
-    using copyable_reference = std::reference_wrapper<Argument>;
-
-    IR::Type GetType() const;
-    bool IsImmediate() const;
-
-    bool GetImmediateU1() const;
-    u8 GetImmediateU8() const;
-    u16 GetImmediateU16() const;
-    u32 GetImmediateU32() const;
-    u64 GetImmediateU64() const;
-    IR::Cond GetImmediateCond() const;
-    IR::AccType GetImmediateAccType() const;
-
+    IR::Type GetType() const {
+        return value.GetType();
+    }
+    bool IsImmediate() const {
+        return value.IsImmediate();
+    }
+    bool GetImmediateU1() const {
+        return value.GetU1();
+    }
+    u8 GetImmediateU8() const {
+        const u64 imm = value.GetImmediateAsU64();
+        ASSERT(imm < 0x100);
+        return u8(imm);
+    }
+    u16 GetImmediateU16() const {
+        const u64 imm = value.GetImmediateAsU64();
+        ASSERT(imm < 0x10000);
+        return u16(imm);
+    }
+    u32 GetImmediateU32() const {
+        const u64 imm = value.GetImmediateAsU64();
+        ASSERT(imm < 0x100000000);
+        return u32(imm);
+    }
+    u64 GetImmediateU64() const {
+        return value.GetImmediateAsU64();
+    }
+    IR::Cond GetImmediateCond() const {
+        ASSERT(IsImmediate() && GetType() == IR::Type::Cond);
+        return value.GetCond();
+    }
+    IR::AccType GetImmediateAccType() const {
+        ASSERT(IsImmediate() && GetType() == IR::Type::AccType);
+        return value.GetAccType();
+    }
 private:
     friend class RegAlloc;
-    explicit Argument(RegAlloc& reg_alloc)
-            : reg_alloc{reg_alloc} {}
-
-    bool allocated = false;
+    explicit Argument(RegAlloc& reg_alloc) : reg_alloc{reg_alloc} {}
     RegAlloc& reg_alloc;
     IR::Value value;
+    bool allocated = false;
 };
 
 struct HostLocInfo final {
@@ -57,9 +77,16 @@ struct HostLocInfo final {
     size_t expected_uses = 0;
     bool realized = false;
 
-    bool Contains(const IR::Inst*) const;
-    void SetupScratchLocation();
-    bool IsCompletelyEmpty() const;
+    bool Contains(const IR::Inst* value) const {
+        return std::find(values.begin(), values.end(), value) != values.end();
+    }
+    void SetupScratchLocation() {
+        ASSERT(IsCompletelyEmpty());
+        realized = true;
+    }
+    bool IsCompletelyEmpty() const {
+        return values.empty() && !locked && !realized && !accumulated_uses && !expected_uses && !uses_this_inst;
+    }
     void UpdateUses();
 };
 
@@ -67,7 +94,7 @@ class RegAlloc {
 public:
     using ArgumentInfo = std::array<Argument, IR::max_arg_count>;
 
-    explicit RegAlloc(powah::Context& as) : as{as} {}
+    explicit RegAlloc(powah::Context& code) : code{code} {}
 
     ArgumentInfo GetArgumentInfo(IR::Inst* inst);
     bool IsValueLive(IR::Inst* inst) const;
@@ -77,15 +104,13 @@ public:
     void UpdateAllUses();
     void AssertNoMoreUses() const;
 
-    powah::GPR ScratchGpr(std::optional<std::initializer_list<HostLoc>> desired_locations = {});
-    void Use(Argument& arg, HostLoc host_loc);
-    void UseScratch(Argument& arg, HostLoc host_loc);
+    powah::GPR ScratchGpr();
     powah::GPR UseGpr(Argument& arg);
     powah::GPR UseScratchGpr(Argument& arg);
     void DefineValue(IR::Inst* inst, powah::GPR const gpr) noexcept;
     void DefineValue(IR::Inst* inst, Argument& arg) noexcept;
 private:
-    u32 AllocateRegister(const std::array<HostLocInfo, 32>& regs, const std::vector<u32>& order) const;
+    std::optional<u32> AllocateRegister(const std::array<HostLocInfo, 32>& regs, const std::vector<u32>& order) const;
     void SpillGpr(u32 index);
     void SpillFpr(u32 index);
     u32 FindFreeSpill() const;
@@ -94,7 +119,7 @@ private:
     HostLocInfo& ValueInfo(HostLoc host_loc);
     HostLocInfo& ValueInfo(const IR::Inst* value);
 
-    powah::Context& as;
+    powah::Context& code;
     std::array<HostLocInfo, 32> gprs;
     std::array<HostLocInfo, 32> fprs;
     std::array<HostLocInfo, 32> vprs;
