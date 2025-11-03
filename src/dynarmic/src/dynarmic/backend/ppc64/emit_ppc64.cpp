@@ -87,26 +87,33 @@ void EmitIR<IR::Opcode::NZCVFromPackedFlags>(powah::Context&, EmitContext&, IR::
     UNREACHABLE();
 }
 
-EmittedBlockInfo EmitPPC64(powah::Context& as, IR::Block block, const EmitConfig& emit_conf) {
+EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConfig& emit_conf) {
     EmittedBlockInfo ebi;
-    RegAlloc reg_alloc{as};
+    RegAlloc reg_alloc{code};
     EmitContext ctx{block, reg_alloc, emit_conf, ebi};
-    //ebi.entry_point = reinterpret_cast<CodePtr>(as.GetCursorPointer());
+    ebi.entry_point = CodePtr(code.base + code.offset);
+
+    code.BLR();
+
+    // Non-volatile saves
+    std::vector<u32> gpr_order{GPR_ORDER};
+    for (size_t i = 0; i < gpr_order.size(); ++i)
+        code.STD(powah::GPR{gpr_order[i]}, powah::R1, -(i * 8));
+
     for (auto iter = block.begin(); iter != block.end(); ++iter) {
         IR::Inst* inst = &*iter;
-
         switch (inst->GetOpcode()) {
 #define OPCODE(name, type, ...)                  \
     case IR::Opcode::name:                       \
-        EmitIR<IR::Opcode::name>(as, ctx, inst); \
+        EmitIR<IR::Opcode::name>(code, ctx, inst); \
         break;
 #define A32OPC(name, type, ...)                       \
     case IR::Opcode::A32##name:                       \
-        EmitIR<IR::Opcode::A32##name>(as, ctx, inst); \
+        EmitIR<IR::Opcode::A32##name>(code, ctx, inst); \
         break;
 #define A64OPC(name, type, ...)                       \
     case IR::Opcode::A64##name:                       \
-        EmitIR<IR::Opcode::A64##name>(as, ctx, inst); \
+        EmitIR<IR::Opcode::A64##name>(code, ctx, inst); \
         break;
 #include "dynarmic/ir/opcodes.inc"
 #undef OPCODE
@@ -116,8 +123,11 @@ EmittedBlockInfo EmitPPC64(powah::Context& as, IR::Block block, const EmitConfig
             UNREACHABLE();
         }
     }
-    //UNREACHABLE();
-    //ebi.size = reinterpret_cast<CodePtr>(as.GetCursorPointer()) - ebi.entry_point;
+
+    for (size_t i = 0; i < gpr_order.size(); ++i)
+        code.LD(powah::GPR{gpr_order[i]}, powah::R1, -(i * 8));
+    code.BLR();
+    ebi.size = code.offset;
     return ebi;
 }
 

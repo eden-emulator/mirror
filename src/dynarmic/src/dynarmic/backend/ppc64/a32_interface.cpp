@@ -23,7 +23,7 @@ A32AddressSpace::A32AddressSpace(const A32::UserConfig& conf)
     : conf(conf)
     , cb(conf.code_cache_size)
     , as(cb.ptr<u8*>(), conf.code_cache_size) {
-    EmitPrelude();
+
 }
 
 IR::Block A32AddressSpace::GenerateIR(IR::LocationDescriptor descriptor) const {
@@ -33,15 +33,13 @@ IR::Block A32AddressSpace::GenerateIR(IR::LocationDescriptor descriptor) const {
 }
 
 CodePtr A32AddressSpace::Get(IR::LocationDescriptor descriptor) {
-    if (const auto iter = block_entries.find(descriptor.Value()); iter != block_entries.end())
-        return iter->second;
-    return nullptr;
+    auto const it = block_entries.find(descriptor.Value());
+    return it != block_entries.end() ? it->second : nullptr;
 }
 
 CodePtr A32AddressSpace::GetOrEmit(IR::LocationDescriptor descriptor) {
-    if (CodePtr block_entry = Get(descriptor)) {
+    if (CodePtr block_entry = Get(descriptor); block_entry != nullptr)
         return block_entry;
-    }
 
     IR::Block ir_block = GenerateIR(descriptor);
     const EmittedBlockInfo block_info = Emit(std::move(ir_block));
@@ -56,10 +54,6 @@ void A32AddressSpace::ClearCache() {
     block_infos.clear();
 }
 
-void A32AddressSpace::EmitPrelude() {
-    UNREACHABLE();
-}
-
 EmittedBlockInfo A32AddressSpace::Emit(IR::Block block) {
     EmittedBlockInfo block_info = EmitPPC64(as, std::move(block), {
         .enable_cycle_counting = conf.enable_cycle_counting,
@@ -70,7 +64,7 @@ EmittedBlockInfo A32AddressSpace::Emit(IR::Block block) {
 }
 
 void A32AddressSpace::Link(EmittedBlockInfo& block_info) {
-    UNREACHABLE();
+    //UNREACHABLE();
 }
 
 }
@@ -160,7 +154,6 @@ struct Jit::Impl final {
 private:
     void RequestCacheInvalidation() {
         // UNREACHABLE();
-
         invalidate_entire_cache = false;
         invalid_cache_ranges.clear();
     }

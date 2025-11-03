@@ -22,7 +22,7 @@ A64AddressSpace::A64AddressSpace(const A64::UserConfig& conf)
     : conf(conf)
     , cb(conf.code_cache_size)
     , as(cb.ptr<u8*>(), conf.code_cache_size) {
-    EmitPrelude();
+
 }
 
 CodePtr A64AddressSpace::Get(IR::LocationDescriptor descriptor) {
@@ -52,10 +52,6 @@ void A64AddressSpace::ClearCache() {
     block_infos.clear();
 }
 
-void A64AddressSpace::EmitPrelude() {
-    UNREACHABLE();
-}
-
 EmittedBlockInfo A64AddressSpace::Emit(IR::Block block) {
     EmittedBlockInfo block_info = EmitPPC64(as, std::move(block), {
         .enable_cycle_counting = conf.enable_cycle_counting,
@@ -66,7 +62,8 @@ EmittedBlockInfo A64AddressSpace::Emit(IR::Block block) {
 }
 
 void A64AddressSpace::Link(EmittedBlockInfo& block_info) {
-    UNREACHABLE();
+    // TODO(lizzie): Block linking
+    // UNREACHABLE();
 }
 }
 
