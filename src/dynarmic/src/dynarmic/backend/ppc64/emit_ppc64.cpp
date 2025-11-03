@@ -24,76 +24,76 @@ void EmitIR<IR::Opcode::Void>(powah::Context&, EmitContext&, IR::Inst*) {}
 
 template<>
 void EmitIR<IR::Opcode::Identity>(powah::Context&, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::Breakpoint>(powah::Context&, EmitContext&, IR::Inst*) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::CallHostFunction>(powah::Context&, EmitContext&, IR::Inst*) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::PushRSB>(powah::Context&, EmitContext&, IR::Inst*) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::GetCarryFromOp>(powah::Context&, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::GetOverflowFromOp>(powah::Context&, EmitContext&, IR::Inst*) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::GetGEFromOp>(powah::Context&, EmitContext&, IR::Inst*) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::GetNZCVFromOp>(powah::Context&, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::GetNZFromOp>(powah::Context& as, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+void EmitIR<IR::Opcode::GetNZFromOp>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::GetUpperFromOp>(powah::Context&, EmitContext&, IR::Inst*) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::GetLowerFromOp>(powah::Context&, EmitContext&, IR::Inst*) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::GetCFlagFromNZCV>(powah::Context& as, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+void EmitIR<IR::Opcode::GetCFlagFromNZCV>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::NZCVFromPackedFlags>(powah::Context&, EmitContext&, IR::Inst*) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConfig& emit_conf) {
     EmittedBlockInfo ebi;
     RegAlloc reg_alloc{code};
     EmitContext ctx{block, reg_alloc, emit_conf, ebi};
-    ebi.entry_point = CodePtr(code.base + code.offset);
 
-    code.BLR();
+    auto const start_offset = code.offset;
+    ebi.entry_point = CodePtr(code.base + start_offset);
 
     // Non-volatile saves
     std::vector<u32> gpr_order{GPR_ORDER};
@@ -127,12 +127,20 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
     for (size_t i = 0; i < gpr_order.size(); ++i)
         code.LD(powah::GPR{gpr_order[i]}, powah::R1, -(i * 8));
     code.BLR();
-    ebi.size = code.offset;
+
+    /*
+    llvm-objcopy -I binary -O elf64-powerpc --rename-section=.data=.text,code test.bin test.elf
+    llvm-objdump -d test.elf
+    */
+    static FILE* fp = fopen("test.bin", "ab");
+    fwrite(code.base, code.offset - start_offset, sizeof(uint32_t), fp);
+
+    ebi.size = code.offset - start_offset;
     return ebi;
 }
 
-void EmitRelocation(powah::Context& as, EmitContext& ctx, LinkTarget link_target) {
-    UNREACHABLE();
+void EmitRelocation(powah::Context& code, EmitContext& ctx, LinkTarget link_target) {
+    ASSERT(false && "unimp");
 }
 
 }  // namespace Dynarmic::Backend::RV64
