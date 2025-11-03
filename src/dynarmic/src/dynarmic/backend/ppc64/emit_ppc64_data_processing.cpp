@@ -18,17 +18,17 @@ namespace Dynarmic::Backend::PPC64 {
 
 template<>
 void EmitIR<IR::Opcode::Pack2x32To1x64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::Pack2x64To1x128>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::LeastSignificantWord>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 /*
@@ -119,7 +119,7 @@ void EmitIR<IR::Opcode::TestBit>(powah::Context& code, EmitContext& ctx, IR::Ins
             code.RLDICL(result, source, (64 - shift - 1) & 0x3f, 63);
         }
     } else {
-        UNREACHABLE();
+        ASSERT(false && "unimp");
     }
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -244,7 +244,7 @@ static powah::GPR EmitConditionalSelectX(powah::Context& code, EmitContext& ctx,
         code.MR(nzcv, then_);
     } break;
     default:
-        UNREACHABLE();
+        ASSERT(false && "unimp");
     }
     return nzcv;
 }
@@ -773,7 +773,7 @@ void EmitIR<IR::Opcode::ZeroExtendWordToLong>(powah::Context& code, EmitContext&
 
 template<>
 void EmitIR<IR::Opcode::ZeroExtendLongToQuad>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 // __builtin_bswap32
@@ -856,22 +856,22 @@ void EmitIR<IR::Opcode::CountLeadingZeros64>(powah::Context& code, EmitContext& 
 
 template<>
 void EmitIR<IR::Opcode::ExtractRegister32>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::ExtractRegister64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::ReplicateBit32>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>
 void EmitIR<IR::Opcode::ReplicateBit64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
 template<>

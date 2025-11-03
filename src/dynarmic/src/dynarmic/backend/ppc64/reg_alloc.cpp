@@ -1,16 +1,15 @@
 // SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dynarmic/backend/ppc64/reg_alloc.h"
 
 #include <algorithm>
 #include <array>
 #include <ranges>
 
+#include "dynarmic/backend/ppc64/reg_alloc.h"
+#include "dynarmic/backend/ppc64/abi.h"
 #include "dynarmic/common/assert.h"
-#include <mcl/mp/metavalue/lift_value.hpp>
 #include "dynarmic/common/common_types.h"
-
 #include "dynarmic/common/always_false.h"
 
 namespace Dynarmic::Backend::PPC64 {
@@ -22,67 +21,9 @@ static bool IsValuelessType(IR::Type type) {
     return type == IR::Type::Table;
 }
 
-IR::Type Argument::GetType() const {
-    return value.GetType();
-}
-
-bool Argument::IsImmediate() const {
-    return value.IsImmediate();
-}
-
-bool Argument::GetImmediateU1() const {
-    return value.GetU1();
-}
-
-u8 Argument::GetImmediateU8() const {
-    const u64 imm = value.GetImmediateAsU64();
-    ASSERT(imm < 0x100);
-    return u8(imm);
-}
-
-u16 Argument::GetImmediateU16() const {
-    const u64 imm = value.GetImmediateAsU64();
-    ASSERT(imm < 0x10000);
-    return u16(imm);
-}
-
-u32 Argument::GetImmediateU32() const {
-    const u64 imm = value.GetImmediateAsU64();
-    ASSERT(imm < 0x100000000);
-    return u32(imm);
-}
-
-u64 Argument::GetImmediateU64() const {
-    return value.GetImmediateAsU64();
-}
-
-IR::Cond Argument::GetImmediateCond() const {
-    ASSERT(IsImmediate() && GetType() == IR::Type::Cond);
-    return value.GetCond();
-}
-
-IR::AccType Argument::GetImmediateAccType() const {
-    ASSERT(IsImmediate() && GetType() == IR::Type::AccType);
-    return value.GetAccType();
-}
-
-bool HostLocInfo::Contains(const IR::Inst* value) const {
-    return std::find(values.begin(), values.end(), value) != values.end();
-}
-
-void HostLocInfo::SetupScratchLocation() {
-    ASSERT(IsCompletelyEmpty());
-    realized = true;
-}
-
-bool HostLocInfo::IsCompletelyEmpty() const {
-    return values.empty() && !locked && !realized && !accumulated_uses && !expected_uses && !uses_this_inst;
-}
-
 void HostLocInfo::UpdateUses() {
     accumulated_uses += uses_this_inst;
     uses_this_inst = 0;
-
     if (accumulated_uses == expected_uses) {
         values.clear();
         accumulated_uses = 0;
@@ -139,34 +80,32 @@ void RegAlloc::AssertNoMoreUses() const {
     ASSERT(std::all_of(spills.begin(), spills.end(), is_empty));
 }
 
-u32 RegAlloc::AllocateRegister(const std::array<HostLocInfo, 32>& regs, const std::vector<u32>& order) const {
-    const auto empty = std::find_if(order.begin(), order.end(), [&](u32 i) { return regs[i].values.empty() && !regs[i].locked; });
-    if (empty != order.end())
-        return *empty;
-
+std::optional<u32> RegAlloc::AllocateRegister(const std::array<HostLocInfo, 32>& regs, const std::vector<u32>& order) const {
+    if (auto const it = std::find_if(order.begin(), order.end(), [&](u32 i) {
+        return regs[i].values.empty() && !regs[i].locked;
+    }); it != order.end())
+        return *it;
     std::vector<u32> candidates;
     std::copy_if(order.begin(), order.end(), std::back_inserter(candidates), [&](u32 i) { return !regs[i].locked; });
-    // TODO: LRU
-    return candidates[0];
+    return candidates.empty() ? std::nullopt : std::optional<u32>{candidates[0]}; // TODO: LRU
 }
 
 void RegAlloc::SpillGpr(u32 index) {
     ASSERT(!gprs[index].locked && !gprs[index].realized);
-    if (gprs[index].values.empty())
-        return;
-    const u32 new_location_index = FindFreeSpill();
-    //as.SD(powah::GPR{index}, spill_offset + new_location_index * spill_slot_size, powah::sp);
-    spills[new_location_index] = std::exchange(gprs[index], {});
+    if (!gprs[index].values.empty()) {
+        const u32 new_location_index = FindFreeSpill();
+        code.STD(powah::GPR{index}, powah::R1, spill_offset + new_location_index * spill_slot_size);
+        spills[new_location_index] = std::exchange(gprs[index], {});
+    }
 }
 
 void RegAlloc::SpillFpr(u32 index) {
     ASSERT(!fprs[index].locked && !fprs[index].realized);
-    if (fprs[index].values.empty()) {
-        return;
+    if (!fprs[index].values.empty()) {
+        const u32 new_location_index = FindFreeSpill();
+        //code.FSD(powah::FPR{index}, spill_offset + new_location_index * spill_slot_size, powah::sp);
+        spills[new_location_index] = std::exchange(fprs[index], {});
     }
-    const u32 new_location_index = FindFreeSpill();
-    //as.FSD(powah::FPR{index}, spill_offset + new_location_index * spill_slot_size, powah::sp);
-    spills[new_location_index] = std::exchange(fprs[index], {});
 }
 
 u32 RegAlloc::FindFreeSpill() const {
@@ -190,16 +129,22 @@ std::optional<HostLoc> RegAlloc::ValueLocation(const IR::Inst* value) const {
     return std::nullopt;
 }
 
-HostLocInfo& RegAlloc::ValueInfo(HostLoc host_loc) {
-    // switch (host_loc.kind) {
-    // case HostLoc::Kind::Gpr:
-    //     return gprs[size_t(host_loc.index)];
-    // case HostLoc::Kind::Fpr:
-    //     return fprs[size_t(host_loc.index)];
-    // case HostLoc::Kind::Spill:
-    //     return spills[size_t(host_loc.index)];
-    // }
-    UNREACHABLE();
+static powah::GPR HostLocToReg(HostLoc h) noexcept {
+    if (u8(h) >= u8(HostLoc::R0) && u8(h) <= u8(HostLoc::R31))
+        return powah::GPR{uint32_t(h)};
+    ASSERT(false && "unimp");
+}
+
+HostLocInfo& RegAlloc::ValueInfo(HostLoc h) {
+    if (u8(h) >= u8(HostLoc::R0) && u8(h) <= u8(HostLoc::R31))
+        return gprs[size_t(h)];
+    else if (u8(h) >= u8(HostLoc::FR0) && u8(h) <= u8(HostLoc::FR31))
+        return gprs[size_t(h) - size_t(HostLoc::FR0)];
+    else if (u8(h) >= u8(HostLoc::VR0) && u8(h) <= u8(HostLoc::VR31))
+        return vprs[size_t(h) - size_t(HostLoc::VR0)];
+    auto const index = size_t(h) - size_t(HostLoc::FirstSpill);
+    ASSERT(index <= spills.size());
+    return spills[index];
 }
 
 HostLocInfo& RegAlloc::ValueInfo(const IR::Inst* value) {
@@ -212,35 +157,49 @@ HostLocInfo& RegAlloc::ValueInfo(const IR::Inst* value) {
         return *iter;
     else if (const auto iter = std::find_if(spills.begin(), spills.end(), fn); iter != spills.end())
         return *iter;
-    UNREACHABLE();
+    ASSERT(false && "unimp");
 }
 
-powah::GPR RegAlloc::ScratchGpr(std::optional<std::initializer_list<HostLoc>> desired_locations) {
-    UNREACHABLE();
-}
-
-void RegAlloc::Use(Argument& arg, HostLoc host_loc) {
-    UNREACHABLE();
-}
-
-void RegAlloc::UseScratch(Argument& arg, HostLoc host_loc) {
-    UNREACHABLE();
+powah::GPR RegAlloc::ScratchGpr() {
+    auto const r = AllocateRegister(gprs, PPC64::GPR_ORDER);
+    return powah::GPR{*r};
 }
 
 powah::GPR RegAlloc::UseGpr(Argument& arg) {
-    UNREACHABLE();
+    ASSERT(!arg.allocated);
+    arg.allocated = true;
+    return ScratchGpr();
 }
 
 powah::GPR RegAlloc::UseScratchGpr(Argument& arg) {
-    UNREACHABLE();
+    ASSERT(!arg.allocated);
+    arg.allocated = true;
+    return ScratchGpr();
 }
 
 void RegAlloc::DefineValue(IR::Inst* inst, powah::GPR const gpr) noexcept {
-    UNREACHABLE();
+    ASSERT(!ValueLocation(inst) && "inst has already been defined");
+    ValueInfo(HostLoc(gpr.index)).values.push_back(inst);
 }
 
 void RegAlloc::DefineValue(IR::Inst* inst, Argument& arg) noexcept {
-    UNREACHABLE();
+    ASSERT(!arg.allocated);
+    arg.allocated = true;
+    ASSERT(!ValueLocation(inst) && "inst has already been defined");
+    if (arg.value.IsImmediate()) {
+        HostLoc const loc{u8(ScratchGpr().index)};
+        ValueInfo(loc).values.push_back(inst);
+        auto const value = arg.value.GetImmediateAsU64();
+        if (value >= 0x7fff) {
+            ASSERT(false && "unimp");
+        } else {
+            //code.LI(HostLocToReg(loc), value);
+        }
+    } else {
+        ASSERT(ValueLocation(arg.value.GetInst()) && "arg.value must already be defined");
+        const HostLoc loc = *ValueLocation(arg.value.GetInst());
+        ValueInfo(loc).values.push_back(inst);
+    }
 }
 
 }  // namespace Dynarmic::Backend::RV64
