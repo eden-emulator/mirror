@@ -138,14 +138,15 @@ struct Context {
     }
 
     void ApplyRelocs() {
-        for (auto const [index, info] : relocs) {
-            assert(labels[index] != 0); //label must have an addr
+        for (auto const &[index, info] : relocs) {
+            //assert(labels[index] != 0); //label must have an addr
+            int32_t rel = (int32_t)labels[index] - (int32_t)info.offset;
             switch (info.kind) {
             case RelocKind::FormB:
-                base[info.offset] |= bitExt(labels[index] - info.offset, 16, 14);
+                base[info.offset] |= bitExt(rel, 16, 14);
                 break;
             case RelocKind::FormI:
-                base[info.offset] |= bitExt(labels[index] - info.offset, 6, 24);
+                base[info.offset] |= bitExt(rel, 6, 24);
                 break;
             }
         }
@@ -176,7 +177,7 @@ struct Context {
     }
 
     uint32_t bitExt(uint32_t value, uint32_t offs, uint32_t n) {
-        uint32_t mask = (1UL << (n + 1)) - 1;
+        uint32_t mask = (1UL << n) - 1;
         return (value & mask) << (32 - (n + offs));
     }
     void emit_XO(uint32_t op, GPR const rt, GPR const ra, GPR const rb, bool oe, bool rc) {

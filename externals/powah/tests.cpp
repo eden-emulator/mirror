@@ -141,7 +141,19 @@ TEST_CASE("ppc64: rotldi", "[ppc64]") {
     REQUIRE(data[12] == EB32(0x7823837c));
 }
 
-#if 1 //&& defined(ARCHITECTURE_ppc64)
+TEST_CASE("ppc64: branch-backwards", "[ppc64]") {
+    std::vector<uint32_t> data(64);
+    powah::Context ctx(data.data(), data.size());
+    powah::Label l_3 = ctx.DefineLabel();
+    ctx.LABEL(l_3);
+    ctx.ADD(powah::R1, powah::R2, powah::R3);
+    ctx.B(l_3);
+    ctx.ApplyRelocs();
+    REQUIRE(data[0] == EB32(0x141a227c));
+    REQUIRE(data[1] == EB32(0xfcffff4b));
+}
+
+#if defined(ARCHITECTURE_ppc64)
 /*
     0: d619637c  	mullw 3, 3, 3
     4: 20006378  	clrldi	3, 3, 32
@@ -221,6 +233,7 @@ TEST_CASE("ppc64: live-exec xoralu", "[ppc64]") {
     };
     auto* fn = (int (*)(int, int, int))data;
     REQUIRE(fn(0, 1, 2) == orig(0, 1, 2));
+    REQUIRE(fn(6456, 4564, 4564561) == orig(6456, 4564, 4564561));
 
     munmap((void*)data, 4096);
 }
