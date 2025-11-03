@@ -4,6 +4,7 @@
 #include <powah_emit.hpp>
 #include <fmt/ostream.h>
 
+#include "dynarmic/frontend/A32/a32_types.h"
 #include "dynarmic/backend/ppc64/a32_core.h"
 #include "dynarmic/backend/ppc64/abi.h"
 #include "dynarmic/backend/ppc64/emit_context.h"
@@ -76,13 +77,14 @@ void EmitIR<IR::Opcode::A32SetCheckBit>(powah::Context&, EmitContext&, IR::Inst*
 
 template<>
 void EmitIR<IR::Opcode::A32GetRegister>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    powah::GPR const result = ctx.reg_alloc.ScratchGpr();
-    powah::GPR const index = ctx.reg_alloc.UseScratchGpr(args[1]);
-    code.SLDI(index, index, 3);
-    code.ADD(result, PPC64::RJIT, index);
-    code.LD(result, result, offsetof(A32JitState, regs));
-    ctx.reg_alloc.DefineValue(inst, result);
+    if (inst->GetArg(0).GetType() == IR::Type::A32Reg) {
+        powah::GPR const result = ctx.reg_alloc.ScratchGpr();
+        code.ADDI(result, PPC64::RJIT, A32::RegNumber(inst->GetArg(0).GetA32RegRef()) * sizeof(u32));
+        code.LD(result, result, offsetof(A32JitState, regs));
+        ctx.reg_alloc.DefineValue(inst, result);
+    } else {
+        ASSERT(false && "unimp");
+    }
 }
 
 template<>
@@ -102,13 +104,14 @@ void EmitIR<IR::Opcode::A32GetVector>(powah::Context&, EmitContext&, IR::Inst*) 
 
 template<>
 void EmitIR<IR::Opcode::A32SetRegister>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    powah::GPR const result = ctx.reg_alloc.ScratchGpr();
-    powah::GPR const index = ctx.reg_alloc.UseScratchGpr(args[1]);
-    code.SLDI(index, index, 3);
-    code.ADD(result, PPC64::RJIT, index);
-    code.STD(result, result, offsetof(A32JitState, regs));
-    ctx.reg_alloc.DefineValue(inst, result);
+    powah::GPR const value = ctx.reg_alloc.UseGpr(args[1]);
+    if (inst->GetArg(0).GetType() == IR::Type::A32Reg) {
+        powah::GPR const addr = ctx.reg_alloc.ScratchGpr();
+        code.ADDI(addr, PPC64::RJIT, A32::RegNumber(inst->GetArg(0).GetA32RegRef()) * sizeof(u32));
+        code.STD(value, addr, offsetof(A32JitState, regs));
+    } else {
+        ASSERT(false && "unimp");
+    }
 }
 
 template<>
