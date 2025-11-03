@@ -26,20 +26,20 @@ int main(int argc, char *argv[]) {
                         *opc++ = '\0';
                         char *sec = strchr(opc, ',');
                         if (sec) {
-                            struct b_info { const char *s; int o; } infos[] = {
-                                {"",1},
-                                {"LT",1},
-                                {"LE",2},
-                                {"NG",2},
-                                {"EQ",3},
-                                {"GE",1},
-                                {"NL",1},
-                                {"GT",2},
-                                {"NE",3},
-                                {"SO",4},
-                                {"UN",4},
-                                {"NS",4},
-                                {"NU",4},
+                            struct b_info { const char *s; int o; int p; } infos[] = {
+                                {"",1,0},
+                                {"LT",1,12},
+                                {"LE",2,4},
+                                {"NG",2,4},
+                                {"EQ",3,12},
+                                {"GE",1,4},
+                                {"NL",1,4},
+                                {"GT",2,12},
+                                {"NE",3,4},
+                                {"SO",4,12},
+                                {"UN",4,12},
+                                {"NS",4,4},
+                                {"NU",4,4},
                             };
 
                             if (strchr(mem, '[') != NULL) *strchr(mem, '[') = '\0';
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
                             || !strcmp(mem, "CMP")) {
                                     printf(
                                         "void %s(uint32_t bf, uint32_t l, GPR const ra, GPR const rb) {"
-                                        " emit_%s(0x%08x, GPR{(bf << 2) | l}, ra, rb, false); "
+                                        " emit_%s(0x%08x, ra, GPR{(bf << 2) | l}, rb, false); "
                                         "}\n"
                                     , mem, form, i_opcode << 26);
                                 } else if (!strcmp(mem, "CNTLZD") || !strcmp(mem, "CNTLZW")
@@ -133,26 +133,26 @@ int main(int argc, char *argv[]) {
                             } else if (!strcmp(form, "I")) {
                                 printf(
                                     "void %s(Label const& i) {"
-                                    " emit_reloc_%s(0x%08x, i); "
+                                    " emit_reloc_%s(0x%08x, i, false); "
                                     "}\n"
                                 , mem, form, i_opcode << 26);
                                 printf(
                                     "void %sL(Label const& i) {"
-                                    " emit_reloc_%s(0x%08x, i); "
+                                    " emit_reloc_%s(0x%08x, i, true); "
                                     "}\n"
                                 , mem, form, i_opcode << 26);
                             } else if (!strcmp(form, "B")) {
                                 for (int i = 0; i < 12; ++i) {
                                     printf(
                                         "void %s%s(CPR const cr, Label const& i) {"
-                                        " emit_reloc_%s(0x%08x, cr.index + %i, i, false); "
+                                        " emit_reloc_%s(0x%08x, %i, cr.index + %i, i, false); "
                                         "}\n"
-                                    , mem, infos[i].s, form, i_opcode << 26, infos[i].o);
+                                    , mem, infos[i].s, form, i_opcode << 26, infos[i].p, infos[i].o - 1);
                                     printf(
                                         "void %s%sL(CPR const cr, Label const& i) {"
-                                        " emit_reloc_%s(0x%08x, cr.index + %i, i, true); "
+                                        " emit_reloc_%s(0x%08x, %i, cr.index + %i, i, true); "
                                         "}\n"
-                                    , mem, infos[i].s, form, i_opcode << 26, infos[i].o);
+                                    , mem, infos[i].s, form, i_opcode << 26, infos[i].p, infos[i].o - 1);
                                     if (!strcmp(mem, "BC")) mem[1] = '\0';
                                 }
                             } else if (!strcmp(form, "D")) {
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
                             || !strcmp(mem, "CMPI")) {
                                     printf(
                                         "void %s(uint32_t bf, uint32_t l, GPR const ra, uint32_t d) {"
-                                        " emit_%s(0x%08x, GPR{(bf << 2) | l}, ra, d); "
+                                        " emit_%s(0x%08x, ra, GPR{(bf << 2) | l}, d); "
                                         "}\n"
                                     , mem, form, i_opcode << 26);
                                 } else {

@@ -30,32 +30,32 @@ void ANDC(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000078, rt, ra,
 void ANDC_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000078, rt, ra, rb, true); }
 void ANDI_(GPR const rt, GPR const ra, uint32_t d) { emit_D(0x70000000, rt, ra, d); }
 void ANDIS_(GPR const rt, GPR const ra, uint32_t d) { emit_D(0x74000000, rt, ra, d); }
-void B(Label const& i) { emit_reloc_I(0x48000000, i); }
-void BL(Label const& i) { emit_reloc_I(0x48000000, i); }
-void BC(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 1, i, false); }
-void BCL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 1, i, true); }
-void BLT(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 1, i, false); }
-void BLTL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 1, i, true); }
-void BLE(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 2, i, false); }
-void BLEL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 2, i, true); }
-void BNG(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 2, i, false); }
-void BNGL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 2, i, true); }
-void BEQ(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 3, i, false); }
-void BEQL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 3, i, true); }
-void BGE(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 1, i, false); }
-void BGEL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 1, i, true); }
-void BNL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 1, i, false); }
-void BNLL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 1, i, true); }
-void BGT(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 2, i, false); }
-void BGTL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 2, i, true); }
-void BNE(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 3, i, false); }
-void BNEL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 3, i, true); }
-void BSO(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 4, i, false); }
-void BSOL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 4, i, true); }
-void BUN(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 4, i, false); }
-void BUNL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 4, i, true); }
-void BNS(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 4, i, false); }
-void BNSL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, cr.index + 4, i, true); }
+void B(Label const& i) { emit_reloc_I(0x48000000, i, false); }
+void BL(Label const& i) { emit_reloc_I(0x48000000, i, true); }
+void BC(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 0, cr.index + 0, i, false); }
+void BCL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 0, cr.index + 0, i, true); }
+void BLT(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 12, cr.index + 0, i, false); }
+void BLTL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 12, cr.index + 0, i, true); }
+void BLE(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 1, i, false); }
+void BLEL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 1, i, true); }
+void BNG(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 1, i, false); }
+void BNGL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 1, i, true); }
+void BEQ(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 12, cr.index + 2, i, false); }
+void BEQL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 12, cr.index + 2, i, true); }
+void BGE(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 0, i, false); }
+void BGEL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 0, i, true); }
+void BNL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 0, i, false); }
+void BNLL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 0, i, true); }
+void BGT(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 12, cr.index + 1, i, false); }
+void BGTL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 12, cr.index + 1, i, true); }
+void BNE(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 2, i, false); }
+void BNEL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 2, i, true); }
+void BSO(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 12, cr.index + 3, i, false); }
+void BSOL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 12, cr.index + 3, i, true); }
+void BUN(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 12, cr.index + 3, i, false); }
+void BUNL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 12, cr.index + 3, i, true); }
+void BNS(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 3, i, false); }
+void BNSL(CPR const cr, Label const& i) { emit_reloc_B(0x40000000, 4, cr.index + 3, i, true); }
 void BCCTR(GPR const bt, CPR const ba, GPR const bb) { emit_XL(0x4c000420, bt.index, ba.index, bb.index, false); }
 void BCCTRL(GPR const bt, CPR const ba, GPR const bb) { emit_XL(0x4c000420, bt.index, ba.index, bb.index, true); }
 void BCCTR(GPR const bt, Cond const ba, GPR const bb) { emit_XL(0x4c000420, bt.index, cond2offset(ba), bb.index, false); }
@@ -64,10 +64,10 @@ void BCLR(GPR const bt, CPR const ba, GPR const bb) { emit_XL(0x4c000020, bt.ind
 void BCLRL(GPR const bt, CPR const ba, GPR const bb) { emit_XL(0x4c000020, bt.index, ba.index, bb.index, true); }
 void BCLR(GPR const bt, Cond const ba, GPR const bb) { emit_XL(0x4c000020, bt.index, cond2offset(ba), bb.index, false); }
 void BCLRL(GPR const bt, Cond const ba, GPR const bb) { emit_XL(0x4c000020, bt.index, cond2offset(ba), bb.index, true); }
-void CMP(uint32_t bf, uint32_t l, GPR const ra, GPR const rb) { emit_X(0x7c000000, GPR{(bf << 2) | l}, ra, rb, false); }
-void CMPI(uint32_t bf, uint32_t l, GPR const ra, uint32_t d) { emit_D(0x2c000000, GPR{(bf << 2) | l}, ra, d); }
-void CMPL(uint32_t bf, uint32_t l, GPR const ra, GPR const rb) { emit_X(0x7c000000, GPR{(bf << 2) | l}, ra, rb, false); }
-void CMPLI(uint32_t bf, uint32_t l, GPR const ra, uint32_t d) { emit_D(0x28000000, GPR{(bf << 2) | l}, ra, d); }
+void CMP(uint32_t bf, uint32_t l, GPR const ra, GPR const rb) { emit_X(0x7c000000, ra, GPR{(bf << 2) | l}, rb, false); }
+void CMPI(uint32_t bf, uint32_t l, GPR const ra, uint32_t d) { emit_D(0x2c000000, ra, GPR{(bf << 2) | l}, d); }
+void CMPL(uint32_t bf, uint32_t l, GPR const ra, GPR const rb) { emit_X(0x7c000000, ra, GPR{(bf << 2) | l}, rb, false); }
+void CMPLI(uint32_t bf, uint32_t l, GPR const ra, uint32_t d) { emit_D(0x28000000, ra, GPR{(bf << 2) | l}, d); }
 void CNTLZD(GPR const rt, GPR const ra) { emit_X(0x7c000074, rt, ra, R0, false); }
 void CNTLZD_(GPR const rt, GPR const ra) { emit_X(0x7c000074, rt, ra, R0, true); }
 void CNTLZW(GPR const rt, GPR const ra) { emit_X(0x7c000034, rt, ra, R0, false); }
