@@ -110,6 +110,15 @@ constexpr inline CPR CR5{20};
 constexpr inline CPR CR6{24};
 constexpr inline CPR CR7{28};
 
+enum class RelocKind : uint8_t {
+    FormB,
+    FormI,
+};
+struct RelocInfo {
+    uint32_t offset;
+    RelocKind kind;
+};
+
 struct Context {
     Context() = default;
     Context(void* ptr, size_t size)
@@ -121,10 +130,26 @@ struct Context {
     ~Context() = default;
 
     std::vector<uint32_t> labels;
+    std::vector<std::pair<uint32_t, RelocInfo>> relocs;
 
     Label DefineLabel() {
         labels.push_back(0);
-        return Label{ uint32_t(labels.size()) };
+        return Label{ uint32_t(labels.size() - 1) };
+    }
+
+    void ApplyRelocs() {
+        for (auto const [index, info] : relocs) {
+            assert(labels[index] != 0); //label must have an addr
+            switch (info.kind) {
+            case RelocKind::FormB:
+                base[info.offset] |= bitExt(labels[index] - info.offset, 16, 14);
+                break;
+            case RelocKind::FormI:
+                base[info.offset] |= bitExt(labels[index] - info.offset, 6, 24);
+                break;
+            }
+        }
+        relocs.clear();
     }
 
     void LABEL(Label l) {
@@ -155,16 +180,16 @@ struct Context {
         return (value & mask) << (32 - (n + offs));
     }
     void emit_XO(uint32_t op, GPR const rt, GPR const ra, GPR const rb, bool oe, bool rc) {
-        (void)op;
-        (void)rt;
-        (void)ra;
-        (void)rb;
-        (void)oe;
-        (void)rc;
-        std::abort();
+        base[offset++] = (op |
+            bitExt(rt.index, 6, 5)
+            | bitExt(ra.index, 11, 5)
+            | bitExt(rb.index, 16, 5)
+            | bitExt(oe, 21, 1)
+            | bitExt(rc, 31, 1)
+        );
     }
     void emit_D(uint32_t op, GPR const rt, GPR const ra, uint32_t d) {
-        base[offset++] = __bswap32(op |
+        base[offset++] = (op |
             (op == 0x74000000
                 ? (bitExt(ra.index, 6, 5) | bitExt(rt.index, 11, 5))
                 : (bitExt(rt.index, 6, 5) | bitExt(ra.index, 11, 5)))
@@ -172,7 +197,7 @@ struct Context {
         );
     }
     void emit_X(uint32_t op, GPR const ra, GPR const rt, GPR const rb, bool rc) {
-        base[offset++] = __bswap32(op |
+        base[offset++] = (op |
             bitExt(rt.index, 6, 5)
             | bitExt(ra.index, 11, 5)
             | bitExt(rb.index, 16, 5)
@@ -180,7 +205,7 @@ struct Context {
         );
     }
     void emit_XS(uint32_t op, GPR const rt, GPR const ra, uint32_t sh, bool rc) {
-        base[offset++] = __bswap32(op |
+        base[offset++] = (op |
             bitExt(rt.index, 6, 5)
             | bitExt(ra.index, 11, 5)
             | bitExt(sh, 16, 5)
@@ -188,20 +213,22 @@ struct Context {
             | bitExt(rc, 31, 1)
         );
     }
-    void emit_reloc_I(uint32_t op, Label const& l) {
-        (void)op;
-        (void)l;
-        std::abort();
+    void emit_reloc_I(uint32_t op, Label const& l, bool lk) {
+        relocs.emplace_back(l.index, RelocInfo{ offset, RelocKind::FormI });
+        base[offset++] = (op |
+            bitExt(lk, 31, 1)
+        );
     }
-    void emit_reloc_B(uint32_t op, uint32_t cri, Label const& l, bool lk) {
-        (void)op;
-        (void)cri;
-        (void)l;
-        (void)lk;
-        std::abort();
+    void emit_reloc_B(uint32_t op, uint32_t bo, uint32_t cri, Label const& l, bool lk) {
+        relocs.emplace_back(l.index, RelocInfo{ offset, RelocKind::FormB });
+        base[offset++] = (op |
+            bitExt(bo, 6, 5)
+            | bitExt(cri, 11, 5)
+            | bitExt(lk, 31, 1)
+        );
     }
     void emit_XL(uint32_t op, uint32_t bt, uint32_t ba, uint32_t bb, bool lk) {
-        base[offset++] = __bswap32(op |
+        base[offset++] = (op |
             bitExt(bt, 6, 5)
             | bitExt(ba, 11, 5)
             | bitExt(bb, 16, 5)
@@ -209,7 +236,7 @@ struct Context {
         );
     }
     void emit_A(uint32_t op, FPR const frt, FPR const fra, FPR const frb, FPR const frc, bool rc) {
-        base[offset++] = __bswap32(op |
+        base[offset++] = (op |
             bitExt(frt.index, 6, 5)
             | bitExt(fra.index, 11, 5)
             | bitExt(frb.index, 16, 5)
@@ -219,7 +246,7 @@ struct Context {
     }
     void emit_DS(uint32_t op, GPR const rt, GPR const ra, uint32_t d) {
         //assert(d & 0x03 == 0);
-        base[offset++] = __bswap32(op |
+        base[offset++] = (op |
             bitExt(rt.index, 6, 5)
             | bitExt(ra.index, 11, 5)
             | bitExt(d >> 2, 16, 14)
@@ -237,7 +264,7 @@ struct Context {
     }
     void emit_MD(uint32_t op, GPR const rs, GPR const ra, GPR const rb, uint32_t mb, bool rc) {
         assert(mb <= 0x3f);
-        base[offset++] = __bswap32(op |
+        base[offset++] = (op |
             bitExt(ra.index, 6, 5)
             | bitExt(rs.index, 11, 5)
             | bitExt(rb.index, 16, 5)
@@ -247,7 +274,7 @@ struct Context {
     }
     void emit_MD(uint32_t op, GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, bool rc) {
         assert(sh <= 0x3f && mb <= 0x3f);
-        base[offset++] = __bswap32(op |
+        base[offset++] = (op |
             bitExt(ra.index, 6, 5)
             | bitExt(rs.index, 11, 5)
             | ((mb & 0x1f) << 6) | (mb & 0x20)
@@ -256,7 +283,7 @@ struct Context {
         );
     }
     void emit_MDS(uint32_t op, GPR const rs, GPR const ra, GPR const rb, uint32_t mb, bool rc) {
-        base[offset++] = __bswap32(op |
+        base[offset++] = (op |
             bitExt(ra.index, 6, 5)
             | bitExt(rs.index, 11, 5)
             | bitExt(rb.index, 16, 5)
@@ -312,22 +339,27 @@ struct Context {
     void CRMOVE(CPR const bx, CPR const by) { CROR(bx, by, by); }
     void CRNOT(CPR const bx, CPR const by) { CRNOR(bx, by, by); }
 
+    void CMPLDI(CPR const cr, GPR const rx, uint32_t v) { CMPLI(cr.index, 1, rx, v); }
+    void CMPLWI(CPR const cr, GPR const rx, uint32_t v) { CMPLI(cr.index, 0, rx, v); }
+    void CMPLD(CPR const cr, GPR const rx, GPR const ry) { CMPL(cr.index, 1, rx, ry); }
+    void CMPLW(CPR const cr, GPR const rx, GPR const ry) { CMPL(cr.index, 0, rx, ry); }
     void CMPLDI(GPR const rx, uint32_t v) { CMPLI(0, 1, rx, v); }
     void CMPLWI(GPR const rx, uint32_t v) { CMPLI(0, 0, rx, v); }
     void CMPLD(GPR const rx, GPR const ry) { CMPL(0, 1, rx, ry); }
     void CMPLW(GPR const rx, GPR const ry) { CMPL(0, 0, rx, ry); }
 
-    void CMPLDI(CPR const cr, GPR const rx, uint32_t v) { CMPLI(cr.index / 4, 1, rx, v); }
-    void CMPLWI(CPR const cr, GPR const rx, uint32_t v) { CMPLI(cr.index / 4, 0, rx, v); }
-    void CMPLD(CPR const cr, GPR const rx, GPR const ry) { CMPL(cr.index / 4, 1, rx, ry); }
-    void CMPLW(CPR const cr, GPR const rx, GPR const ry) { CMPL(cr.index / 4, 0, rx, ry); }
+    void CMPWI(CPR const cr, GPR const rx, uint32_t si) { CMPI(cr.index, 0, rx, si); }
+    void CMPW(CPR const cr, GPR const rx, GPR const ry) { CMP(cr.index, 0, rx, ry); }
+    void CMPDI(CPR const cr, GPR const rx, uint32_t si) { CMPI(cr.index, 1, rx, si); }
+    void CMPD(CPR const cr, GPR const rx, GPR const ry) { CMP(cr.index, 1, rx, ry); }
+    void CMPWI(GPR const rx, uint32_t si) { CMPI(0, 0, rx, si); }
+    void CMPW(GPR const rx, GPR const ry) { CMP(0, 0, rx, ry); }
+    void CMPDI(GPR const rx, uint32_t si) { CMPI(0, 1, rx, si); }
+    void CMPD(GPR const rx, GPR const ry) { CMP(0, 1, rx, ry); }
 
-    void CMPWI(CPR const cr, GPR const rx, uint32_t si) { CMPI(cr.index / 4, 0, rx, si); }
-    void CMPW(CPR const cr, GPR const rx, GPR const ry) { CMP(cr.index / 4, 0, rx, ry); }
-    void CMPDI(CPR const cr, GPR const rx, uint32_t si) { CMPI(cr.index / 4, 1, rx, si); }
-    void CMPD(CPR const cr, GPR const rx, GPR const ry) { CMP(cr.index / 4, 1, rx, ry); }
-
-    void BLR() { BCLR(R0, CR0, R0); }
+    void BLR() {
+        base[offset++] = 0x4e800020; //BCLR(R0, CR0, R0);
+    }
 
     // TODO: PowerPC 11 stuff
     void ISEL(GPR const rd, GPR const ra, GPR const rb, uint32_t d) {
