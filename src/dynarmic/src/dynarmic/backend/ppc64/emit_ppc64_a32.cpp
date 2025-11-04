@@ -80,7 +80,7 @@ void EmitIR<IR::Opcode::A32GetRegister>(powah::Context& code, EmitContext& ctx, 
     if (inst->GetArg(0).GetType() == IR::Type::A32Reg) {
         powah::GPR const result = ctx.reg_alloc.ScratchGpr();
         code.ADDI(result, PPC64::RJIT, A32::RegNumber(inst->GetArg(0).GetA32RegRef()) * sizeof(u32));
-        code.LD(result, result, offsetof(A32JitState, regs));
+        code.LWZ(result, result, offsetof(A32JitState, regs));
         ctx.reg_alloc.DefineValue(inst, result);
     } else {
         ASSERT(false && "unimp");
@@ -108,7 +108,7 @@ void EmitIR<IR::Opcode::A32SetRegister>(powah::Context& code, EmitContext& ctx, 
     if (inst->GetArg(0).GetType() == IR::Type::A32Reg) {
         powah::GPR const addr = ctx.reg_alloc.ScratchGpr();
         code.ADDI(addr, PPC64::RJIT, A32::RegNumber(inst->GetArg(0).GetA32RegRef()) * sizeof(u32));
-        code.STD(value, addr, offsetof(A32JitState, regs));
+        code.STW(value, addr, offsetof(A32JitState, regs));
     } else {
         ASSERT(false && "unimp");
     }

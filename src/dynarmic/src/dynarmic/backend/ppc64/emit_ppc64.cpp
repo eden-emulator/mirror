@@ -23,8 +23,11 @@ template<>
 void EmitIR<IR::Opcode::Void>(powah::Context&, EmitContext&, IR::Inst*) {}
 
 template<>
-void EmitIR<IR::Opcode::Identity>(powah::Context&, EmitContext& ctx, IR::Inst* inst) {
-    ASSERT(false && "unimp");
+void EmitIR<IR::Opcode::Identity>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+    powah::GPR const result = ctx.reg_alloc.ScratchGpr();
+    powah::GPR const source = ctx.reg_alloc.UseGpr(inst->GetArg(0));
+    code.MR(result, source);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template<>
