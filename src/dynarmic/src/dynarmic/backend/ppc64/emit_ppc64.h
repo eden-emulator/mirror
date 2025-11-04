@@ -41,16 +41,13 @@ struct EmittedBlockInfo {
 struct EmitConfig {
     bool enable_cycle_counting;
     bool always_little_endian;
+    bool a64_variant;
 };
 
 struct EmitContext;
 
 EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConfig& emit_conf);
-
 template<IR::Opcode op>
 void EmitIR(powah::Context& code, EmitContext& ctx, IR::Inst* inst);
-void EmitRelocation(powah::Context& code, EmitContext& ctx, LinkTarget link_target);
-void EmitA32Cond(powah::Context& code, EmitContext& ctx, IR::Cond cond, powah::Label* label);
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx);
 
 }  // namespace Dynarmic::Backend::RV64

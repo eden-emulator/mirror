@@ -54,6 +54,7 @@ EmittedBlockInfo A64AddressSpace::Emit(IR::Block block) {
     EmittedBlockInfo block_info = EmitPPC64(as, std::move(block), {
         .enable_cycle_counting = conf.enable_cycle_counting,
         .always_little_endian = true,
+        .a64_variant = true
     });
     Link(block_info);
     return block_info;
