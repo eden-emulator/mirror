@@ -10,6 +10,7 @@
 #include <mcl/bit/bit_field.hpp>
 
 #include "dynarmic/backend/ppc64/a32_core.h"
+#include "dynarmic/backend/ppc64/a64_core.h"
 #include "dynarmic/backend/ppc64/abi.h"
 #include "dynarmic/backend/ppc64/emit_context.h"
 #include "dynarmic/backend/ppc64/reg_alloc.h"
@@ -90,6 +91,57 @@ void EmitIR<IR::Opcode::NZCVFromPackedFlags>(powah::Context&, EmitContext&, IR::
     ASSERT(false && "unimp");
 }
 
+namespace {
+void EmitTerminal(powah::Context&, EmitContext&, IR::Term::Interpret, IR::LocationDescriptor, bool) {
+    ASSERT(false && "unimp");
+}
+
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::ReturnToDispatch, IR::LocationDescriptor, bool) {
+    ASSERT(false && "unimp");
+}
+
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location, bool) {
+    powah::GPR const tmp = ctx.reg_alloc.ScratchGpr();
+    if (ctx.emit_conf.a64_variant) {
+        code.LI(tmp, terminal.next.Value());
+        code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
+    } else {
+        code.LI(tmp, terminal.next.Value());
+        code.STW(tmp, PPC64::RJIT, offsetof(A32JitState, regs) + sizeof(u32) * 15);
+    }
+}
+
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location, bool) {
+    ASSERT(false && "unimp");
+}
+
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::PopRSBHint, IR::LocationDescriptor, bool) {
+    ASSERT(false && "unimp");
+}
+
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::FastDispatchHint, IR::LocationDescriptor, bool) {
+    ASSERT(false && "unimp");
+}
+
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::If terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
+    ASSERT(false && "unimp");
+}
+
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckBit terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
+    ASSERT(false && "unimp");
+}
+
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckHalt terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
+    ASSERT(false && "unimp");
+}
+
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
+    boost::apply_visitor([&](const auto& t) {
+        EmitTerminal(code, ctx, t, initial_location, is_single_step);
+    }, terminal);
+}
+}
+
 EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConfig& emit_conf) {
     EmittedBlockInfo ebi;
     RegAlloc reg_alloc{code};
@@ -128,7 +180,10 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
     }
 
     // auto const cycles_to_add = block.CycleCount();
-    // Xticks
+
+    auto const location{ctx.block.Location()};
+    auto const term = ctx.block.GetTerminal();
+
     for (size_t i = 0; i < gpr_order.size(); ++i)
         code.LD(powah::GPR{gpr_order[i]}, powah::R1, -(i * 8));
     code.BLR();
@@ -142,10 +197,6 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
 
     ebi.size = code.offset - start_offset;
     return ebi;
-}
-
-void EmitRelocation(powah::Context& code, EmitContext& ctx, LinkTarget link_target) {
-    ASSERT(false && "unimp");
 }
 
 }  // namespace Dynarmic::Backend::RV64

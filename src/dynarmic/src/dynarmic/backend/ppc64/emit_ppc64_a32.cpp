@@ -16,60 +16,6 @@
 
 namespace Dynarmic::Backend::PPC64 {
 
-void EmitA32Cond(powah::Context& code, EmitContext&, IR::Cond cond, powah::Label* label) {
-    ASSERT(false && "unimp");
-}
-
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal terminal, IR::LocationDescriptor initial_location, bool is_single_step);
-
-void EmitA32Terminal(powah::Context&, EmitContext&, IR::Term::Interpret, IR::LocationDescriptor, bool) {
-    ASSERT(false && "unimp");
-}
-
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx, IR::Term::ReturnToDispatch, IR::LocationDescriptor, bool) {
-    EmitRelocation(code, ctx, LinkTarget::ReturnFromRunCode);
-}
-
-void EmitSetUpperLocationDescriptor(powah::Context& code, EmitContext& ctx, IR::LocationDescriptor new_location, IR::LocationDescriptor old_location) {
-    ASSERT(false && "unimp");
-}
-
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location, bool) {
-    ASSERT(false && "unimp");
-}
-
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location, bool) {
-    ASSERT(false && "unimp");
-}
-
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx, IR::Term::PopRSBHint, IR::LocationDescriptor, bool) {
-    ASSERT(false && "unimp");
-}
-
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx, IR::Term::FastDispatchHint, IR::LocationDescriptor, bool) {
-    ASSERT(false && "unimp");
-}
-
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx, IR::Term::If terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
-    ASSERT(false && "unimp");
-}
-
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckBit terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
-    ASSERT(false && "unimp");
-}
-
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckHalt terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
-    ASSERT(false && "unimp");
-}
-
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
-    ASSERT(false && "unimp");
-}
-
-void EmitA32Terminal(powah::Context& code, EmitContext& ctx) {
-    ASSERT(false && "unimp");
-}
-
 template<>
 void EmitIR<IR::Opcode::A32SetCheckBit>(powah::Context&, EmitContext&, IR::Inst*) {
     ASSERT(false && "unimp");
