@@ -25,8 +25,8 @@ void EmitIR<IR::Opcode::Void>(powah::Context&, EmitContext&, IR::Inst*) {}
 
 template<>
 void EmitIR<IR::Opcode::Identity>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    powah::GPR const result = ctx.reg_alloc.ScratchGpr();
-    powah::GPR const source = ctx.reg_alloc.UseGpr(inst->GetArg(0));
+    auto const result = ctx.reg_alloc.ScratchGpr();
+    auto const source = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     code.MR(result, source);
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -101,7 +101,7 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::ReturnToDisp
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location, bool) {
-    powah::GPR const tmp = ctx.reg_alloc.ScratchGpr();
+    auto const tmp = ctx.reg_alloc.ScratchGpr();
     if (ctx.emit_conf.a64_variant) {
         code.LI(tmp, terminal.next.Value());
         code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
