@@ -124,6 +124,8 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
         }
     }
 
+    // auto const cycles_to_add = block.CycleCount();
+    // Xticks
     for (size_t i = 0; i < gpr_order.size(); ++i)
         code.LD(powah::GPR{gpr_order[i]}, powah::R1, -(i * 8));
     code.BLR();

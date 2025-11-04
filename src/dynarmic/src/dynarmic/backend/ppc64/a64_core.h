@@ -37,12 +37,10 @@ struct A64JitState {
 class A64AddressSpace final {
 public:
     explicit A64AddressSpace(const A64::UserConfig& conf);
-    CodePtr Get(IR::LocationDescriptor descriptor);
     CodePtr GetOrEmit(IR::LocationDescriptor descriptor);
     void ClearCache();
 private:
     friend class A64Core;
-
     void EmitPrelude();
     EmittedBlockInfo Emit(IR::Block ir_block);
     void Link(EmittedBlockInfo& block);
@@ -57,7 +55,6 @@ private:
 class A64Core final {
 public:
     explicit A64Core(const A64::UserConfig&) {}
-
     HaltReason Run(A64AddressSpace& process, A64JitState& thread_ctx, volatile u32* halt_reason) {
         const auto loc = thread_ctx.GetLocationDescriptor();
         const auto entry = process.GetOrEmit(loc);

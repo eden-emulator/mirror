@@ -104,7 +104,7 @@ void EmitIR<IR::Opcode::A32GetVector>(powah::Context&, EmitContext&, IR::Inst*) 
 
 template<>
 void EmitIR<IR::Opcode::A32SetRegister>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    powah::GPR const value = ctx.reg_alloc.UseGpr(args[1]);
+    powah::GPR const value = ctx.reg_alloc.UseGpr(inst->GetArg(1));
     if (inst->GetArg(0).GetType() == IR::Type::A32Reg) {
         powah::GPR const addr = ctx.reg_alloc.ScratchGpr();
         code.ADDI(addr, PPC64::RJIT, A32::RegNumber(inst->GetArg(0).GetA32RegRef()) * sizeof(u32));
