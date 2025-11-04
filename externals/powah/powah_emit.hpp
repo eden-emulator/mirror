@@ -196,13 +196,12 @@ struct Context {
     }
     void emit_D(uint32_t op, GPR const rt, GPR const ra, uint32_t d) {
         base[offset++] = (op |
-            (op == 0x74000000
-                ? (bitExt(ra.index, 6, 5) | bitExt(rt.index, 11, 5))
-                : (bitExt(rt.index, 6, 5) | bitExt(ra.index, 11, 5)))
+            bitExt(rt.index, 6, 5)
+            | bitExt(ra.index, 11, 5)
             | (d & 0xffff)
         );
     }
-    void emit_X(uint32_t op, GPR const ra, GPR const rt, GPR const rb, bool rc) {
+    void emit_X(uint32_t op, GPR const rt, GPR const ra, GPR const rb, bool rc) {
         base[offset++] = (op |
             bitExt(rt.index, 6, 5)
             | bitExt(ra.index, 11, 5)
@@ -261,8 +260,8 @@ struct Context {
     void emit_M(uint32_t op, GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me, bool rc) {
         assert(sh <= 0x3f && mb <= 0x3f);
         base[offset++] = (op |
-            bitExt(ra.index, 6, 5)
-            | bitExt(rs.index, 11, 5)
+            bitExt(rs.index, 6, 5)
+            | bitExt(ra.index, 11, 5)
             | ((sh & 0x1f) << 11)
             | ((mb & 0x1f) << 6)
             | ((me & 0x1f) << 1)
@@ -272,8 +271,8 @@ struct Context {
     void emit_MD(uint32_t op, GPR const rs, GPR const ra, GPR const rb, uint32_t mb, bool rc) {
         assert(mb <= 0x3f);
         base[offset++] = (op |
-            bitExt(ra.index, 6, 5)
-            | bitExt(rs.index, 11, 5)
+            bitExt(rs.index, 6, 5)
+            | bitExt(ra.index, 11, 5)
             | bitExt(rb.index, 16, 5)
             | ((mb & 0x1f) << 6) | (mb & 0x20)
             | bitExt(rc, 31, 1)
@@ -282,8 +281,8 @@ struct Context {
     void emit_MD(uint32_t op, GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, bool rc) {
         assert(sh <= 0x3f && mb <= 0x3f);
         base[offset++] = (op |
-            bitExt(ra.index, 6, 5)
-            | bitExt(rs.index, 11, 5)
+            bitExt(rs.index, 6, 5)
+            | bitExt(ra.index, 11, 5)
             | ((mb & 0x1f) << 6) | (mb & 0x20)
             | ((sh & 0x1f) << 11) | ((sh >> 4) & 0x02)
             | bitExt(rc, 31, 1)
@@ -291,8 +290,8 @@ struct Context {
     }
     void emit_MDS(uint32_t op, GPR const rs, GPR const ra, GPR const rb, uint32_t mb, bool rc) {
         base[offset++] = (op |
-            bitExt(ra.index, 6, 5)
-            | bitExt(rs.index, 11, 5)
+            bitExt(rs.index, 6, 5)
+            | bitExt(ra.index, 11, 5)
             | bitExt(rb.index, 16, 5)
             | ((mb & 0x1f) << 6) | (mb & 0x20)
             | bitExt(rc, 31, 1)
