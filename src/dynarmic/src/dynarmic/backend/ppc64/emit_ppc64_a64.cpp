@@ -101,13 +101,12 @@ template<>
 void EmitIR<IR::Opcode::A64SetW>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const value = ctx.reg_alloc.UseGpr(inst->GetArg(1));
     if (inst->GetArg(0).GetType() == IR::Type::A64Reg) {
-        auto const addr = ctx.reg_alloc.ScratchGpr();
         auto const tmp = ctx.reg_alloc.ScratchGpr();
         auto const offs = offsetof(A64JitState, regs)
             + A64::RegNumber(inst->GetArg(0).GetA64RegRef()) * sizeof(u64);
         code.MR(tmp, value);
         code.RLDICL(tmp, tmp, 0, 32);
-        code.STD(tmp, addr, offs);
+        code.STD(tmp, PPC64::RJIT, offs);
     } else {
         ASSERT(false && "unimp");
     }
@@ -117,10 +116,9 @@ template<>
 void EmitIR<IR::Opcode::A64SetX>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const value = ctx.reg_alloc.UseGpr(inst->GetArg(1));
     if (inst->GetArg(0).GetType() == IR::Type::A64Reg) {
-        auto const addr = ctx.reg_alloc.ScratchGpr();
         auto const offs = offsetof(A64JitState, regs)
             + A64::RegNumber(inst->GetArg(0).GetA64RegRef()) * sizeof(u64);
-        code.STD(value, addr, offs);
+        code.STD(value, PPC64::RJIT, offs);
     } else {
         ASSERT(false && "unimp");
     }
