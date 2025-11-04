@@ -62,12 +62,32 @@ void BCCTR(GPR const bt, Cond const ba, GPR const bb) { emit_XL(0x4c000420, bt.i
 void BCCTRL(GPR const bt, Cond const ba, GPR const bb) { emit_XL(0x4c000420, bt.index, cond2offset(ba), bb.index, true); }
 void BCLR(GPR const bt, CPR const ba, GPR const bb) { emit_XL(0x4c000020, bt.index, ba.index, bb.index, false); }
 void BCLRL(GPR const bt, CPR const ba, GPR const bb) { emit_XL(0x4c000020, bt.index, ba.index, bb.index, true); }
-void BCLR(GPR const bt, Cond const ba, GPR const bb) { emit_XL(0x4c000020, bt.index, cond2offset(ba), bb.index, false); }
-void BCLRL(GPR const bt, Cond const ba, GPR const bb) { emit_XL(0x4c000020, bt.index, cond2offset(ba), bb.index, true); }
+void BLTLR(CPR const cr) { emit_XL(0x4c000020, 12, cr.index + 0, 0, false); }
+void BLTLRL(CPR const cr) { emit_XL(0x4c000020, 12, cr.index + 0, 0, true); }
+void BLELR(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 1, 0, false); }
+void BLELRL(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 1, 0, true); }
+void BNGLR(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 1, 0, false); }
+void BNGLRL(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 1, 0, true); }
+void BEQLR(CPR const cr) { emit_XL(0x4c000020, 12, cr.index + 2, 0, false); }
+void BEQLRL(CPR const cr) { emit_XL(0x4c000020, 12, cr.index + 2, 0, true); }
+void BGELR(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 0, 0, false); }
+void BGELRL(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 0, 0, true); }
+void BNLLR(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 0, 0, false); }
+void BNLLRL(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 0, 0, true); }
+void BGTLR(CPR const cr) { emit_XL(0x4c000020, 12, cr.index + 1, 0, false); }
+void BGTLRL(CPR const cr) { emit_XL(0x4c000020, 12, cr.index + 1, 0, true); }
+void BNELR(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 2, 0, false); }
+void BNELRL(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 2, 0, true); }
+void BSOLR(CPR const cr) { emit_XL(0x4c000020, 12, cr.index + 3, 0, false); }
+void BSOLRL(CPR const cr) { emit_XL(0x4c000020, 12, cr.index + 3, 0, true); }
+void BUNLR(CPR const cr) { emit_XL(0x4c000020, 12, cr.index + 3, 0, false); }
+void BUNLRL(CPR const cr) { emit_XL(0x4c000020, 12, cr.index + 3, 0, true); }
+void BNSLR(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 3, 0, false); }
+void BNSLRL(CPR const cr) { emit_XL(0x4c000020, 4, cr.index + 3, 0, true); }
 void CMP(uint32_t bf, uint32_t l, GPR const ra, GPR const rb) { emit_X(0x7c000000, GPR{(bf << 2) | l}, ra, rb, false); }
-void CMPI(uint32_t bf, uint32_t l, GPR const ra, uint32_t d) { emit_D(0x2c000000, ra, GPR{(bf << 2) | l}, d); }
-void CMPL(uint32_t bf, uint32_t l, GPR const ra, GPR const rb) { emit_X(0x7c000000, GPR{(bf << 2) | l}, ra, rb, false); }
-void CMPLI(uint32_t bf, uint32_t l, GPR const ra, uint32_t d) { emit_D(0x28000000, ra, GPR{(bf << 2) | l}, d); }
+void CMPI(uint32_t bf, uint32_t l, GPR const ra, uint32_t d) { emit_D(0x2c000000, GPR{(bf << 2) | l}, ra, d); }
+void CMPL(uint32_t bf, uint32_t l, GPR const ra, GPR const rb) { emit_X(0x7c000040, GPR{(bf << 2) | l}, ra, rb, false); }
+void CMPLI(uint32_t bf, uint32_t l, GPR const ra, uint32_t d) { emit_D(0x28000000, GPR{(bf << 2) | l}, ra, d); }
 void CNTLZD(GPR const rt, GPR const ra) { emit_X(0x7c000074, ra, rt, R0, false); }
 void CNTLZD_(GPR const rt, GPR const ra) { emit_X(0x7c000074, ra, rt, R0, true); }
 void CNTLZW(GPR const rt, GPR const ra) { emit_X(0x7c000034, ra, rt, R0, false); }
