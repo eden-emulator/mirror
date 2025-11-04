@@ -16,9 +16,15 @@
 
 namespace Dynarmic::Backend::PPC64 {
 
+// uint64_t pack2x1(uint32_t lo, uint32_t hi) { return (uint64_t)lo | ((uint64_t)hi << 32); }
 template<>
 void EmitIR<IR::Opcode::Pack2x32To1x64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    ASSERT(false && "unimp");
+    auto const lo = ctx.reg_alloc.UseGpr(inst->GetArg(0));
+    auto const hi = ctx.reg_alloc.UseGpr(inst->GetArg(1));
+    auto const result = ctx.reg_alloc.ScratchGpr();
+    code.SLDI(result, hi, 32);
+    code.OR(result, result, lo);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template<>
@@ -26,14 +32,16 @@ void EmitIR<IR::Opcode::Pack2x64To1x128>(powah::Context& code, EmitContext& ctx,
     ASSERT(false && "unimp");
 }
 
+// uint64_t lsw(uint64_t a) { return (uint32_t)a; }
 template<>
 void EmitIR<IR::Opcode::LeastSignificantWord>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    ASSERT(false && "unimp");
+    auto const result = ctx.reg_alloc.ScratchGpr();
+    auto const source = ctx.reg_alloc.UseGpr(inst->GetArg(0));
+    code.RLDICL(result, source, 0, 32);
+    ctx.reg_alloc.DefineValue(inst, result);
 }
 
-/*
-uint64_t f(uint64_t a) { return (uint16_t)a; }
-*/
+// uint64_t f(uint64_t a) { return (uint16_t)a; }
 template<>
 void EmitIR<IR::Opcode::LeastSignificantHalf>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const result = ctx.reg_alloc.ScratchGpr();
@@ -42,9 +50,7 @@ void EmitIR<IR::Opcode::LeastSignificantHalf>(powah::Context& code, EmitContext&
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-/*
-uint64_t f(uint64_t a) { return (uint8_t)a; }
-*/
+// uint64_t f(uint64_t a) { return (uint8_t)a; }
 template<>
 void EmitIR<IR::Opcode::LeastSignificantByte>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const result = ctx.reg_alloc.ScratchGpr();
@@ -53,9 +59,7 @@ void EmitIR<IR::Opcode::LeastSignificantByte>(powah::Context& code, EmitContext&
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
-/*
-uint64_t f(uint64_t a) { return (uint32_t)(a >> 32); }
-*/
+// uint64_t msw(uint64_t a) { return a >> 32; }
 template<>
 void EmitIR<IR::Opcode::MostSignificantWord>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const result = ctx.reg_alloc.ScratchGpr();
@@ -724,19 +728,21 @@ void EmitIR<IR::Opcode::ZeroExtendLongToQuad>(powah::Context& code, EmitContext&
 // __builtin_bswap32
 template<>
 void EmitIR<IR::Opcode::ByteReverseWord>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    auto const result = ctx.reg_alloc.ScratchGpr();
     auto const source = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     if (false) {
         //code.BRW(result, source);
-        code.RLDICL(result, result, 0, 32);
+        //code.RLDICL(result, result, 0, 32);
     } else {
-        code.ROTLWI(result, source, 8);
-        code.RLWIMI(result, source, 24, 16, 23);
-        code.RLWIMI(result, source, 24, 0, 7);
+        auto const result = ctx.reg_alloc.ScratchGpr();
+        code.ROTLWI(result, source, 24);
+        code.RLWIMI(result, source, 8, 8, 15);
+        code.RLWIMI(result, source, 8, 24, 31);
+        code.RLDICL(result, result, 0, 32);
+        ctx.reg_alloc.DefineValue(inst, result);
     }
-    ctx.reg_alloc.DefineValue(inst, result);
 }
 
+// __builtin_bswap64
 template<>
 void EmitIR<IR::Opcode::ByteReverseHalf>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const result = ctx.reg_alloc.ScratchGpr();
