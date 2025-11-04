@@ -34,6 +34,10 @@ CodePtr A64AddressSpace::GetOrEmit(IR::LocationDescriptor desc) {
     };
     IR::Block ir_block = A64::Translate(A64::LocationDescriptor{desc}, get_code, {conf.define_unpredictable_behaviour, conf.wall_clock_cntpct});
     Optimization::Optimize(ir_block, conf, {});
+
+    fmt::print("IR:\n");
+    fmt::print("{}\n", IR::DumpBlock(ir_block));
+
     const EmittedBlockInfo block_info = Emit(std::move(ir_block));
 
     block_infos.insert_or_assign(desc.Value(), block_info);

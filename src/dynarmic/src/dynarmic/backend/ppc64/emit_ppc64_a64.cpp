@@ -4,7 +4,8 @@
 #include <powah_emit.hpp>
 #include <fmt/ostream.h>
 
-#include "dynarmic/backend/ppc64/a32_core.h"
+#include "dynarmic/frontend/A64/a64_types.h"
+#include "dynarmic/backend/ppc64/a64_core.h"
 #include "dynarmic/backend/ppc64/abi.h"
 #include "dynarmic/backend/ppc64/emit_context.h"
 #include "dynarmic/backend/ppc64/emit_ppc64.h"
@@ -46,8 +47,15 @@ void EmitIR<IR::Opcode::A64GetW>(powah::Context&, EmitContext&, IR::Inst*) {
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetX>(powah::Context&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "unimp");
+void EmitIR<IR::Opcode::A64GetX>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+    if (inst->GetArg(0).GetType() == IR::Type::A64Reg) {
+        powah::GPR const result = ctx.reg_alloc.ScratchGpr();
+        code.ADDI(result, PPC64::RJIT, A64::RegNumber(inst->GetArg(0).GetA64RegRef()) * sizeof(u64));
+        code.LD(result, result, offsetof(A64JitState, regs));
+        ctx.reg_alloc.DefineValue(inst, result);
+    } else {
+        ASSERT(false && "unimp");
+    }
 }
 
 template<>
@@ -86,8 +94,15 @@ void EmitIR<IR::Opcode::A64SetW>(powah::Context&, EmitContext&, IR::Inst*) {
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetX>(powah::Context&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "unimp");
+void EmitIR<IR::Opcode::A64SetX>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+    powah::GPR const value = ctx.reg_alloc.UseGpr(inst->GetArg(1));
+    if (inst->GetArg(0).GetType() == IR::Type::A64Reg) {
+        powah::GPR const addr = ctx.reg_alloc.ScratchGpr();
+        code.ADDI(addr, PPC64::RJIT, A64::RegNumber(inst->GetArg(0).GetA64RegRef()) * sizeof(u64));
+        code.STD(value, addr, offsetof(A64JitState, regs));
+    } else {
+        ASSERT(false && "unimp");
+    }
 }
 
 template<>
