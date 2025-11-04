@@ -153,6 +153,69 @@ TEST_CASE("ppc64: branch-backwards", "[ppc64]") {
     REQUIRE(data[1] == EB32(0xfcffff4b));
 }
 
+TEST_CASE("ppc64: rlwimi madness", "[ppc64]") {
+    std::vector<uint32_t> data(64);
+    powah::Context ctx(data.data(), data.size());
+    ctx.ROTLWI(powah::R10, powah::R3, 24);
+    ctx.SRDI(powah::R9, powah::R3, 32);
+    ctx.RLWIMI(powah::R10, powah::R3, 8, 8, 15);
+    ctx.RLWIMI(powah::R10, powah::R3, 8, 24, 31);
+    ctx.ROTLWI(powah::R3, powah::R9, 24);
+    ctx.RLWIMI(powah::R3, powah::R9, 8, 8, 15);
+    ctx.RLWIMI(powah::R3, powah::R9, 8, 24, 31);
+    ctx.RLDIMI(powah::R3, powah::R10, 32, 0);
+    REQUIRE(data[0] == EB32(0x3ec06a54));
+    REQUIRE(data[1] == EB32(0x22006978));
+    REQUIRE(data[2] == EB32(0x1e426a50));
+    REQUIRE(data[3] == EB32(0x3e466a50));
+    REQUIRE(data[4] == EB32(0x3ec02355));
+    REQUIRE(data[5] == EB32(0x1e422351));
+    REQUIRE(data[6] == EB32(0x3e462351));
+    REQUIRE(data[7] == EB32(0x0e004379));
+}
+
+TEST_CASE("ppc64: functor-1", "[ppc64]") {
+    std::vector<uint32_t> data(64);
+    powah::Context ctx(data.data(), data.size());
+    powah::Label l_4 = ctx.DefineLabel();
+    powah::Label l_7 = ctx.DefineLabel();
+    ctx.CMPLD(powah::CR0, powah::R3, powah::R4);
+    ctx.MR(powah::R9, powah::R3);
+    ctx.BGT(powah::CR0, l_7);
+    ctx.CMPLDI(powah::CR0, powah::R3, 3781);
+    ctx.LI(powah::R3, 1);
+    ctx.BGTLR(powah::CR0);
+    ctx.CMPLD(powah::CR0, powah::R9, powah::R5);
+    ctx.BLE(powah::CR0, l_4);
+    ctx.SUBF(powah::R5, powah::R9, powah::R5);
+    ctx.XOR(powah::R3, powah::R5, powah::R4);
+    ctx.BLR();
+    ctx.LABEL(l_4);
+    ctx.ADD(powah::R5, powah::R4, powah::R5);
+    ctx.ADD(powah::R3, powah::R5, powah::R9);
+    ctx.BLR();
+    ctx.LABEL(l_7);
+    ctx.ADD(powah::R3, powah::R4, powah::R5);
+    ctx.BLR();
+    ctx.ApplyRelocs();
+    REQUIRE(data[0] == EB32(0x4020237c));
+    REQUIRE(data[1] == EB32(0x781b697c));
+    REQUIRE(data[2] == EB32(0x30008141));
+    REQUIRE(data[3] == EB32(0xc50e2328));
+    REQUIRE(data[4] == EB32(0x01006038));
+    REQUIRE(data[5] == EB32(0x2000814d));
+    REQUIRE(data[6] == EB32(0x4028297c));
+    REQUIRE(data[7] == EB32(0x10008140));
+    REQUIRE(data[8] == EB32(0x5028a97c));
+    REQUIRE(data[9] == EB32(0x7822a37c));
+    REQUIRE(data[10] == EB32(0x2000804e));
+    REQUIRE(data[11] == EB32(0x142aa47c));
+    REQUIRE(data[12] == EB32(0x144a657c));
+    REQUIRE(data[13] == EB32(0x2000804e));
+    REQUIRE(data[14] == EB32(0x142a647c));
+    REQUIRE(data[15] == EB32(0x2000804e));
+}
+
 #if defined(ARCHITECTURE_ppc64)
 /*
     0: d619637c  	mullw 3, 3, 3
