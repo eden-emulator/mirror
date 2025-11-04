@@ -25,15 +25,9 @@ A64AddressSpace::A64AddressSpace(const A64::UserConfig& conf)
 
 }
 
-CodePtr A64AddressSpace::Get(IR::LocationDescriptor descriptor) {
-    if (auto const iter = block_entries.find(descriptor.Value()); iter != block_entries.end())
-        return iter->second;
-    return nullptr;
-}
-
 CodePtr A64AddressSpace::GetOrEmit(IR::LocationDescriptor desc) {
-    if (CodePtr block_entry = Get(desc))
-        return block_entry;
+    if (auto const it = block_entries.find(desc.Value()); it != block_entries.end())
+        return it->second;
 
     const auto get_code = [this](u64 vaddr) {
         return conf.callbacks->MemoryReadCode(vaddr);
@@ -74,28 +68,23 @@ using namespace Dynarmic::Backend::PPC64;
 struct Jit::Impl final {
     Impl(Jit* jit_interface, A64::UserConfig conf)
         : conf(conf)
-        , emitter(conf) {}
+        , current_address_space(conf)
+        , core(conf)
+        , jit_interface(jit_interface) {}
 
     HaltReason Run() {
         ASSERT(!is_executing);
-        //PerformRequestedCacheInvalidation(HaltReason(Atomic::Load(&jit_state.halt_reason)));
         is_executing = true;
-        auto const current_loc = jit_state.GetLocationDescriptor();
-        const HaltReason hr = {};//block_of_code.RunCode(&jit_state, jit_state.GetOrEmit(current_loc));
-        //PerformRequestedCacheInvalidation(hr);
+        HaltReason hr = core.Run(current_address_space, jit_state, &halt_reason);
         is_executing = false;
+        RequestCacheInvalidation();
         return hr;
     }
 
     HaltReason Step() {
-        ASSERT(!is_executing);
-        // //PerformRequestedCacheInvalidation(HaltReason(Atomic::Load(&jit_state.halt_reason)));
-        // is_executing = true;
-        // //const HaltReason hr = block_of_code.StepCode(&jit_state, GetCurrentSingleStep());
-        // //PerformRequestedCacheInvalidation(hr);
-        // is_executing = false;
-        // return hr;
-        return {};
+        // HaltReason hr = core.Step(current_address_space, jit_state, &halt_reason);
+        // RequestCacheInvalidation();
+        return HaltReason{};
     }
 
     void ClearCache() {
@@ -225,13 +214,16 @@ private:
         invalid_cache_ranges.clear();
     }
 
+    A64::UserConfig conf;
+    A64JitState jit_state{};
+    A64AddressSpace current_address_space;
+    A64Core core;
+    Jit* jit_interface;
+    volatile u32 halt_reason = 0;
     bool is_executing = false;
-    const UserConfig conf;
-    A64JitState jit_state;
-    A64AddressSpace emitter;
-    Optimization::PolyfillOptions polyfill_options;
-    bool invalidate_entire_cache = false;
+
     boost::icl::interval_set<u64> invalid_cache_ranges;
+    bool invalidate_entire_cache = false;
     std::mutex invalidation_mutex;
 };
 

@@ -170,7 +170,6 @@ powah::GPR RegAlloc::UseGpr(IR::Value arg) {
         }
         return reg;
     } else {
-        ASSERT(arg.allocated && "undefined (non-imm) arg");
         auto const loc = ValueLocation(arg.GetInst());
         ASSERT(loc && HostLocIsGpr(*loc));
         return std::get<powah::GPR>(HostLocToReg(*loc));
@@ -184,8 +183,6 @@ void RegAlloc::DefineValue(IR::Inst* inst, powah::GPR const gpr) noexcept {
 
 void RegAlloc::DefineValue(IR::Inst* inst, IR::Value arg) noexcept {
     ASSERT(!ValueLocation(inst) && "inst has already been defined");
-    ASSERT(!arg.allocated);
-    arg.allocated = true;
     if (arg.IsImmediate()) {
         HostLoc const loc{u8(ScratchGpr().index)};
         ValueInfo(loc).values.push_back(inst);

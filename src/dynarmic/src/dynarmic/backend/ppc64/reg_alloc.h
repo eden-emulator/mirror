@@ -47,11 +47,7 @@ struct HostLocInfo final {
 
 class RegAlloc {
 public:
-    using ArgumentInfo = std::array<Argument, IR::max_arg_count>;
-
     explicit RegAlloc(powah::Context& code) : code{code} {}
-
-    ArgumentInfo GetArgumentInfo(IR::Inst* inst);
     bool IsValueLive(IR::Inst* inst) const;
     void DefineAsExisting(IR::Inst* inst, IR::Value arg);
 

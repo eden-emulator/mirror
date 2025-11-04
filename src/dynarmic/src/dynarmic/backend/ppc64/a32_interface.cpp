@@ -26,26 +26,16 @@ A32AddressSpace::A32AddressSpace(const A32::UserConfig& conf)
 
 }
 
-IR::Block A32AddressSpace::GenerateIR(IR::LocationDescriptor descriptor) const {
-    IR::Block ir_block = A32::Translate(A32::LocationDescriptor{descriptor}, conf.callbacks, {conf.arch_version, conf.define_unpredictable_behaviour, conf.hook_hint_instructions});
+CodePtr A32AddressSpace::GetOrEmit(IR::LocationDescriptor desc) {
+    if (auto const it = block_entries.find(desc.Value()); it != block_entries.end())
+        return it->second;
+
+    IR::Block ir_block = A32::Translate(A32::LocationDescriptor{desc}, conf.callbacks, {conf.arch_version, conf.define_unpredictable_behaviour, conf.hook_hint_instructions});
     Optimization::Optimize(ir_block, conf, {});
-    return ir_block;
-}
-
-CodePtr A32AddressSpace::Get(IR::LocationDescriptor descriptor) {
-    auto const it = block_entries.find(descriptor.Value());
-    return it != block_entries.end() ? it->second : nullptr;
-}
-
-CodePtr A32AddressSpace::GetOrEmit(IR::LocationDescriptor descriptor) {
-    if (CodePtr block_entry = Get(descriptor); block_entry != nullptr)
-        return block_entry;
-
-    IR::Block ir_block = GenerateIR(descriptor);
     const EmittedBlockInfo block_info = Emit(std::move(ir_block));
 
-    block_infos.insert_or_assign(descriptor.Value(), block_info);
-    block_entries.insert_or_assign(descriptor.Value(), block_info.entry_point);
+    block_infos.insert_or_assign(desc.Value(), block_info);
+    block_entries.insert_or_assign(desc.Value(), block_info.entry_point);
     return block_info.entry_point;
 }
 
@@ -75,19 +65,23 @@ using namespace Dynarmic::Backend::PPC64;
 
 struct Jit::Impl final {
     Impl(Jit* jit_interface, A32::UserConfig conf)
-        : jit_interface(jit_interface)
-        , conf(conf)
+        : conf(conf)
         , current_address_space(conf)
-        , core(conf) {}
+        , core(conf)
+        , jit_interface(jit_interface) {}
 
     HaltReason Run() {
-        HaltReason hr = core.Run(current_address_space, current_state, &halt_reason);
+        ASSERT(!is_executing);
+        is_executing = false;
+        HaltReason hr = core.Run(current_address_space, jit_state, &halt_reason);
+        is_executing = true;
         RequestCacheInvalidation();
         return hr;
     }
 
     HaltReason Step() {
-        RequestCacheInvalidation();
+        // HaltReason hr = core.Step(current_address_space, jit_state, &halt_reason);
+        // RequestCacheInvalidation();
         return HaltReason{};
     }
 
@@ -104,7 +98,7 @@ struct Jit::Impl final {
     }
 
     void Reset() {
-        current_state = {};
+        jit_state = {};
     }
 
     void HaltExecution(HaltReason hr) {
@@ -116,39 +110,39 @@ struct Jit::Impl final {
     }
 
     std::array<u32, 16>& Regs() {
-        return current_state.regs;
+        return jit_state.regs;
     }
 
     const std::array<u32, 16>& Regs() const {
-        return current_state.regs;
+        return jit_state.regs;
     }
 
     std::array<u32, 64>& ExtRegs() {
-        return current_state.ext_regs;
+        return jit_state.ext_regs;
     }
 
     const std::array<u32, 64>& ExtRegs() const {
-        return current_state.ext_regs;
+        return jit_state.ext_regs;
     }
 
     u32 Cpsr() const {
-        return current_state.cpsr_nzcv;
+        return jit_state.cpsr_nzcv;
     }
 
     void SetCpsr(u32 value) {
-        current_state.cpsr_nzcv = value;
+        jit_state.cpsr_nzcv = value;
     }
 
     u32 Fpscr() const {
-        return current_state.fpscr;
+        return jit_state.fpscr;
     }
 
     void SetFpscr(u32 value) {
-        current_state.fpscr = value;
+        jit_state.fpscr = value;
     }
 
     void ClearExclusiveState() {
-        current_state.exclusive_state = false;
+        jit_state.exclusive_state = false;
     }
 
 private:
@@ -158,15 +152,17 @@ private:
         invalid_cache_ranges.clear();
     }
 
-    Jit* jit_interface;
     A32::UserConfig conf;
-    A32JitState current_state{};
+    A32JitState jit_state{};
     A32AddressSpace current_address_space;
     A32Core core;
+    Jit* jit_interface;
     volatile u32 halt_reason = 0;
-    std::mutex invalidation_mutex;
+    bool is_executing = false;
+
     boost::icl::interval_set<u32> invalid_cache_ranges;
     bool invalidate_entire_cache = false;
+    std::mutex invalidation_mutex;
 };
 
 Jit::Jit(UserConfig conf) : impl(std::make_unique<Impl>(this, conf)) {}
