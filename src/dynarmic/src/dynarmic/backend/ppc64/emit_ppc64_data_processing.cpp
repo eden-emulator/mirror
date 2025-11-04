@@ -133,7 +133,7 @@ uint64_t f(jit *p, uint64_t a, uint64_t b) {
 static powah::GPR EmitConditionalSelectX(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     powah::GPR const nzcv = ctx.reg_alloc.ScratchGpr();
     powah::GPR const then_ = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    powah::GPR const else_ = ctx.reg_alloc.UseGpr(args[2]);
+    powah::GPR const else_ = ctx.reg_alloc.UseGpr(inst->GetArg(2));
     switch (inst->GetArg(0).GetCond()) {
     case IR::Cond::EQ: // Z == 1
         code.LD(nzcv, PPC64::RJIT, offsetof(A32JitState, cpsr_nzcv));

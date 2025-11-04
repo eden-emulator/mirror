@@ -30,8 +30,6 @@ struct A32JitState {
 class A32AddressSpace final {
 public:
     explicit A32AddressSpace(const A32::UserConfig& conf);
-    IR::Block GenerateIR(IR::LocationDescriptor) const;
-    CodePtr Get(IR::LocationDescriptor descriptor);
     CodePtr GetOrEmit(IR::LocationDescriptor descriptor);
     void ClearCache();
 private:
