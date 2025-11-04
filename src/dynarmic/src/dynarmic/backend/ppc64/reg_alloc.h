@@ -22,8 +22,6 @@
 
 namespace Dynarmic::Backend::PPC64 {
 
-class RegAlloc;
-
 struct HostLocInfo final {
     std::vector<const IR::Inst*> values;
     size_t uses_this_inst = 0;
@@ -45,8 +43,27 @@ struct HostLocInfo final {
     void UpdateUses();
 };
 
-class RegAlloc {
-public:
+struct RegAlloc;
+
+/// @brief Allows to use RAII to denote liveness/locking of a given register
+/// this basically means that we can use temporals and not need to go thru
+/// any weird deallocation stuffs :)
+template<typename T> struct RegLock {
+    inline RegLock(RegAlloc& reg_alloc, T const value) noexcept
+        : reg_alloc{reg_alloc}
+        , value{value}
+    {
+        SetLock(true);
+    }
+    inline ~RegLock() noexcept { SetLock(false); }
+    operator T const&() { return value; }
+    operator T() const { return value; }
+    inline void SetLock(bool v) noexcept;
+    RegAlloc& reg_alloc;
+    const T value;
+};
+
+struct RegAlloc {
     explicit RegAlloc(powah::Context& code) : code{code} {}
     bool IsValueLive(IR::Inst* inst) const;
     void DefineAsExisting(IR::Inst* inst, IR::Value arg);
@@ -55,12 +72,15 @@ public:
     void UpdateAllUses();
     void AssertNoMoreUses() const;
 
-    powah::GPR ScratchGpr();
-    powah::GPR UseGpr(IR::Value arg);
+    RegLock<powah::GPR> ScratchGpr();
+    RegLock<powah::GPR> UseGpr(IR::Value arg);
     void DefineValue(IR::Inst* inst, powah::GPR const gpr) noexcept;
     void DefineValue(IR::Inst* inst, IR::Value arg) noexcept;
 private:
-    std::optional<u32> AllocateRegister(const std::array<HostLocInfo, 32>& regs, const std::vector<u32>& order) const;
+    template<typename T>
+    friend struct RegLock;
+
+    std::optional<u32> AllocateRegister(const std::array<HostLocInfo, 32>& regs) const;
     void SpillGpr(u32 index);
     void SpillFpr(u32 index);
     u32 FindFreeSpill() const;
@@ -74,6 +94,17 @@ private:
     std::array<HostLocInfo, 32> fprs;
     std::array<HostLocInfo, 32> vprs;
     std::array<HostLocInfo, SpillCount> spills;
+    uint32_t lru_counter = 0;
 };
+
+template<> inline void RegLock<powah::GPR>::SetLock(bool v) noexcept {
+    reg_alloc.gprs[value.index].locked = v;
+}
+template<> inline void RegLock<powah::FPR>::SetLock(bool v) noexcept {
+    reg_alloc.fprs[value.index].locked = v;
+}
+template<> inline void RegLock<powah::VPR>::SetLock(bool v) noexcept {
+    reg_alloc.vprs[value.index].locked = v;
+}
 
 }  // namespace Dynarmic::Backend::RV64
