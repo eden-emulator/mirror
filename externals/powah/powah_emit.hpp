@@ -31,6 +31,7 @@ enum class Cond : uint8_t {
 
 struct GPR { uint32_t index; };
 struct FPR { uint32_t index; };
+struct VPR { uint32_t index; };
 struct CPR { uint32_t index; };
 struct Label { uint32_t index; };
 
@@ -109,6 +110,10 @@ constexpr inline CPR CR4{16};
 constexpr inline CPR CR5{20};
 constexpr inline CPR CR6{24};
 constexpr inline CPR CR7{28};
+
+constexpr uint32_t XER_SO = 32;
+constexpr uint32_t XER_OV = 33;
+constexpr uint32_t XER_CA = 34;
 
 enum class RelocKind : uint8_t {
     FormB,
@@ -298,10 +303,10 @@ struct Context {
         std::abort();
     }
     void emit_XFX(uint32_t op, GPR const rt, uint32_t spr) {
-        (void)op;
-        (void)rt;
-        (void)spr;
-        std::abort();
+        base[offset++] = (op |
+            (rt.index & 0x1f) << 21
+            | ((spr & 0xff) << 12)
+        );
     }
     void emit_SC(uint32_t op, uint32_t lev) {
         (void)op;

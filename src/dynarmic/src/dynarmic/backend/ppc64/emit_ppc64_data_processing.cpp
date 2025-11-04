@@ -4,6 +4,7 @@
 #include <powah_emit.hpp>
 #include <fmt/ostream.h>
 
+#include "abi.h"
 #include "dynarmic/common/assert.h"
 #include "dynarmic/backend/ppc64/a32_core.h"
 #include "dynarmic/backend/ppc64/abi.h"
@@ -436,17 +437,28 @@ void EmitIR<IR::Opcode::Add32>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.ADD(result, src_a, src_b);
+    code.ADDC_(result, src_a, src_b);
     code.RLDICL(result, result, 0, 32);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+/*
+struct jit {
+    uint32_t nzcv;
+};
+uint64_t addc(jit *p, uint64_t a, uint64_t b) {
+    long long unsigned int e;
+    uint64_t r = __builtin_addcll(a, b, p->nzcv & 0b0010, &e);
+    p->nzcv = (p->nzcv & 0b1101) | e;
+    return r;
+}
+*/
 template<>
 void EmitIR<IR::Opcode::Add64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.ADD(result, src_a, src_b);
+    code.ADDC_(result, src_a, src_b);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -455,7 +467,7 @@ void EmitIR<IR::Opcode::Sub32>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.SUBF(result, src_b, src_a);
+    code.SUBFC_(result, src_b, src_a);
     code.RLDICL(result, result, 0, 32);
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -465,7 +477,7 @@ void EmitIR<IR::Opcode::Sub64>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.SUBF(result, src_b, src_a);
+    code.SUBFC_(result, src_b, src_a);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -474,7 +486,7 @@ void EmitIR<IR::Opcode::Mul32>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.MULLW(result, src_a, src_b);
+    code.MULLWO_(result, src_a, src_b);
     code.RLDICL(result, result, 0, 32);
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -484,7 +496,7 @@ void EmitIR<IR::Opcode::Mul64>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.MULLD(result, src_a, src_b);
+    code.MULLDO_(result, src_a, src_b);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -493,7 +505,7 @@ void EmitIR<IR::Opcode::SignedMultiplyHigh64>(powah::Context& code, EmitContext&
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.MULLD(result, src_a, src_b);
+    code.MULLDO_(result, src_a, src_b);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -502,7 +514,7 @@ void EmitIR<IR::Opcode::UnsignedMultiplyHigh64>(powah::Context& code, EmitContex
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.MULLD(result, src_a, src_b);
+    code.MULLDO_(result, src_a, src_b);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -511,7 +523,7 @@ void EmitIR<IR::Opcode::UnsignedDiv32>(powah::Context& code, EmitContext& ctx, I
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.DIVDU(result, src_a, src_b);
+    code.DIVWU_(result, src_a, src_b);
     code.RLDICL(result, result, 0, 32);
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -521,7 +533,7 @@ void EmitIR<IR::Opcode::UnsignedDiv64>(powah::Context& code, EmitContext& ctx, I
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.DIVDU(result, src_a, src_b);
+    code.DIVDU_(result, src_a, src_b);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -530,7 +542,7 @@ void EmitIR<IR::Opcode::SignedDiv32>(powah::Context& code, EmitContext& ctx, IR:
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.DIVW(result, src_a, src_b);
+    code.DIVW_(result, src_a, src_b);
     code.EXTSW(result, result);
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -540,7 +552,7 @@ void EmitIR<IR::Opcode::SignedDiv64>(powah::Context& code, EmitContext& ctx, IR:
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.DIVD(result, src_a, src_b);
+    code.DIVD_(result, src_a, src_b);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -549,7 +561,8 @@ void EmitIR<IR::Opcode::And32>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.AND(result, src_a, src_b);
+    code.RLDICL(result, src_a, 0, 32); // Truncate
+    code.AND_(result, result, src_b);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -558,7 +571,8 @@ void EmitIR<IR::Opcode::And64>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.AND(result, src_a, src_b);
+    code.AND_(result, src_a, src_b);
+    code.ADDI(result, result, 0); //update cr0
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -567,7 +581,7 @@ void EmitIR<IR::Opcode::AndNot32>(powah::Context& code, EmitContext& ctx, IR::In
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.NAND(result, src_a, src_b);
+    code.NAND_(result, src_a, src_b);
     code.RLDICL(result, result, 0, 32);
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -577,7 +591,7 @@ void EmitIR<IR::Opcode::AndNot64>(powah::Context& code, EmitContext& ctx, IR::In
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.NAND(result, src_a, src_b);
+    code.NAND_(result, src_a, src_b);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -586,7 +600,7 @@ void EmitIR<IR::Opcode::Eor32>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.XOR(result, src_a, src_b);
+    code.XOR_(result, src_a, src_b);
     code.RLDICL(result, result, 0, 32);
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -596,7 +610,7 @@ void EmitIR<IR::Opcode::Eor64>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.XOR(result, src_a, src_b);
+    code.XOR_(result, src_a, src_b);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -605,7 +619,7 @@ void EmitIR<IR::Opcode::Or32>(powah::Context& code, EmitContext& ctx, IR::Inst* 
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.OR(result, src_a, src_b);
+    code.OR_(result, src_a, src_b);
     code.RLDICL(result, result, 0, 32);
     ctx.reg_alloc.DefineValue(inst, result);
 }
@@ -615,10 +629,11 @@ void EmitIR<IR::Opcode::Or64>(powah::Context& code, EmitContext& ctx, IR::Inst* 
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.OR(result, src_a, src_b);
+    code.OR_(result, src_a, src_b);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
+// TODO(lizzie): NZVC support for NOT
 template<>
 void EmitIR<IR::Opcode::Not32>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const result = ctx.reg_alloc.ScratchGpr();

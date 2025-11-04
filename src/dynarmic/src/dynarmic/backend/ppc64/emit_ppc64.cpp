@@ -62,8 +62,53 @@ void EmitIR<IR::Opcode::GetGEFromOp>(powah::Context&, EmitContext&, IR::Inst*) {
 }
 
 template<>
-void EmitIR<IR::Opcode::GetNZCVFromOp>(powah::Context&, EmitContext& ctx, IR::Inst* inst) {
-    ASSERT(false && "unimp");
+void EmitIR<IR::Opcode::GetNZCVFromOp>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+    if (ctx.reg_alloc.IsValueLive(inst)) {
+        ASSERT(false && "unimp value live");
+        return;
+    }
+    // CR0:
+    // 0 - N/LT, result is negative
+    // 1 - P/GT, result is positive
+    // 2 - Z/EQ, result is zero
+    // 3 - S/SO, summary overflow (carry?)
+    // XER:
+    // 32 - SO
+    // 33 - Overflow
+    // 34 - Carry
+    // NZCV -> (CR0.0, CR0.2, XER.34, XER.33)
+    if (false) {
+        //code.MFSPR(powah::GPR{1}, tmp4, powah::R0); // From XER
+        /*uint64_t nzcv(uint64_t cr0, uint64_t xer) {
+            return ((xer >> 33) & 1)
+                | (((xer >> 34) & 1) << 1)
+                | (((cr0 >> (32 + 2)) & 1) << 2)
+                | (((cr0 >> (32 + 0)) & 1) << 3);
+        }*/
+        // auto const tmp9 = ctx.reg_alloc.ScratchGpr();
+        // auto const tmp10 = ctx.reg_alloc.ScratchGpr();
+        // code.SRDI(tmp9, tmp3, 34);
+        // code.RLDICL(tmp10, tmp4, 31, 63);
+        // code.SRDI(tmp3, tmp3, 32);
+        // code.RLDIC(tmp9, tmp9, 2, 61);
+        // code.OR(tmp9, tmp9, tmp10);
+        // code.RLDIC(tmp3, tmp3, 3, 60);
+        // code.SRDI(tmp4, tmp4, 34);
+        // code.OR(tmp3, tmp9, tmp3);
+        // code.RLDIC(tmp4, tmp4, 1, 62);
+        // code.OR(tmp3, tmp3, tmp4);
+    } else {
+        // MFCR Fills RT 32:63, RT 0:31 left blank
+        auto const source = ctx.reg_alloc.UseGpr(inst->GetArg(0));
+        auto const tmp3 = ctx.reg_alloc.ScratchGpr();
+        auto const tmp = ctx.reg_alloc.ScratchGpr();
+        code.LI(tmp, -1);
+        code.RLDICR(tmp, tmp, 0, 0);
+        code.MFCR(powah::R0, tmp3, powah::R0);
+        code.CMPW(tmp, source);
+        code.MFCR(powah::R0, tmp3, powah::R0);
+        ctx.reg_alloc.DefineValue(inst, tmp3);
+    }
 }
 
 template<>
@@ -185,6 +230,7 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
     for (size_t i = 0; i < gpr_order.size(); ++i)
         code.LD(powah::GPR{gpr_order[i]}, powah::R1, -(i * 8));
     code.BLR();
+    code.ApplyRelocs();
 
     /*
     llvm-objcopy -I binary -O elf64-powerpc --rename-section=.data=.text,code test.bin test.elf && llvm-objdump -d test.elf
