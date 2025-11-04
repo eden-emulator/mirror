@@ -24,7 +24,7 @@ void EmitIR<IR::Opcode::A32SetCheckBit>(powah::Context&, EmitContext&, IR::Inst*
 template<>
 void EmitIR<IR::Opcode::A32GetRegister>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     if (inst->GetArg(0).GetType() == IR::Type::A32Reg) {
-        powah::GPR const result = ctx.reg_alloc.ScratchGpr();
+        auto const result = ctx.reg_alloc.ScratchGpr();
         code.ADDI(result, PPC64::RJIT, A32::RegNumber(inst->GetArg(0).GetA32RegRef()) * sizeof(u32));
         code.LWZ(result, result, offsetof(A32JitState, regs));
         ctx.reg_alloc.DefineValue(inst, result);
@@ -50,9 +50,9 @@ void EmitIR<IR::Opcode::A32GetVector>(powah::Context&, EmitContext&, IR::Inst*) 
 
 template<>
 void EmitIR<IR::Opcode::A32SetRegister>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    powah::GPR const value = ctx.reg_alloc.UseGpr(inst->GetArg(1));
+    auto const value = ctx.reg_alloc.UseGpr(inst->GetArg(1));
     if (inst->GetArg(0).GetType() == IR::Type::A32Reg) {
-        powah::GPR const addr = ctx.reg_alloc.ScratchGpr();
+        auto const addr = ctx.reg_alloc.ScratchGpr();
         code.ADDI(addr, PPC64::RJIT, A32::RegNumber(inst->GetArg(0).GetA32RegRef()) * sizeof(u32));
         code.STW(value, addr, offsetof(A32JitState, regs));
     } else {
@@ -112,7 +112,7 @@ void EmitIR<IR::Opcode::A32SetCpsrNZC>(powah::Context& code, EmitContext& ctx, I
 
 template<>
 void EmitIR<IR::Opcode::A32GetCFlag>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    powah::GPR const result = ctx.reg_alloc.ScratchGpr();
+    auto const result = ctx.reg_alloc.ScratchGpr();
     code.LD(result, PPC64::RJIT, offsetof(A32JitState, cpsr_nzcv));
     code.RLWINM(result, result, 31, 31, 31);
     ctx.reg_alloc.DefineValue(inst, result);
