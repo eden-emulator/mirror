@@ -18,10 +18,10 @@ namespace Dynarmic::Backend::PPC64 {
 
 struct A64JitState {
     using ProgramCounterType = u32;
-    alignas(16) std::array<u64, 64> vec{};
     std::array<u64, 31> regs{};
-    u64 sp = 0;
     u64 pc = 0;
+    alignas(16) std::array<u64, 64> vec{};
+    u64 sp = 0;
     u32 upper_location_descriptor;
     u32 exclusive_state = 0;
     u32 cpsr_nzcv = 0;
