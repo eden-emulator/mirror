@@ -191,6 +191,7 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
     */
     static FILE* fp = fopen("test.bin", "wb");
     fwrite(code.base, code.offset - start_offset, sizeof(uint32_t), fp);
+    fflush(fp);
 
     ebi.size = code.offset - start_offset;
     return ebi;
