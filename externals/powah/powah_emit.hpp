@@ -258,9 +258,9 @@ struct Context {
         base[offset++] = (op |
             bitExt(ra.index, 6, 5)
             | bitExt(rs.index, 11, 5)
-            | bitExt(sh, 16, 5)
-            | bitExt(mb, 21, 4)
-            | bitExt(me, 26, 4)
+            | ((sh & 0x1f) << 11)
+            | ((mb & 0x1f) << 6)
+            | ((me & 0x1f) << 1)
             | bitExt(rc, 31, 1)
         );
     }
@@ -358,6 +358,8 @@ struct Context {
     void CMPW(GPR const rx, GPR const ry) { CMP(0, 0, rx, ry); }
     void CMPDI(GPR const rx, uint32_t si) { CMPI(0, 1, rx, si); }
     void CMPD(GPR const rx, GPR const ry) { CMP(0, 1, rx, ry); }
+
+    void LI(GPR const rx, uint32_t value) { ADDI(rx, R0, value); }
 
     void BLR() {
         base[offset++] = 0x4e800020; //BCLR(R0, CR0, R0);
