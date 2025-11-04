@@ -17,41 +17,37 @@
 namespace Dynarmic::Backend::PPC64 {
 
 template<>
-void EmitIR<IR::Opcode::A64SetCheckBit>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64SetCheckBit>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetCFlag>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetCFlag>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetNZCVRaw>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetNZCVRaw>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetNZCVRaw>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64SetNZCVRaw>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetNZCV>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64SetNZCV>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetW>(powah::Context&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "unimp");
-}
-
-template<>
-void EmitIR<IR::Opcode::A64GetX>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+void EmitIR<IR::Opcode::A64GetW>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     if (inst->GetArg(0).GetType() == IR::Type::A64Reg) {
         powah::GPR const result = ctx.reg_alloc.ScratchGpr();
-        code.ADDI(result, PPC64::RJIT, A64::RegNumber(inst->GetArg(0).GetA64RegRef()) * sizeof(u64));
-        code.LD(result, result, offsetof(A64JitState, regs));
+        auto const offs = offsetof(A64JitState, regs)
+            + A64::RegNumber(inst->GetArg(0).GetA64RegRef()) * sizeof(u64);
+        code.LWZ(result, PPC64::RJIT, offs);
         ctx.reg_alloc.DefineValue(inst, result);
     } else {
         ASSERT(false && "unimp");
@@ -59,38 +55,58 @@ void EmitIR<IR::Opcode::A64GetX>(powah::Context& code, EmitContext& ctx, IR::Ins
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetS>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetX>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+    if (inst->GetArg(0).GetType() == IR::Type::A64Reg) {
+        powah::GPR const result = ctx.reg_alloc.ScratchGpr();
+        auto const offs = offsetof(A64JitState, regs)
+            + A64::RegNumber(inst->GetArg(0).GetA64RegRef()) * sizeof(u64);
+        code.LD(result, PPC64::RJIT, offs);
+        ctx.reg_alloc.DefineValue(inst, result);
+    } else {
+        ASSERT(false && "unimp");
+    }
+}
+
+template<>
+void EmitIR<IR::Opcode::A64GetS>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetD>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetD>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetQ>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetQ>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetSP>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetSP>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetFPCR>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetFPCR>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetFPSR>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetFPSR>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetW>(powah::Context&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "unimp");
+void EmitIR<IR::Opcode::A64SetW>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+    powah::GPR const value = ctx.reg_alloc.UseGpr(inst->GetArg(1));
+    if (inst->GetArg(0).GetType() == IR::Type::A64Reg) {
+        powah::GPR const addr = ctx.reg_alloc.ScratchGpr();
+        code.ADDI(addr, PPC64::RJIT, A64::RegNumber(inst->GetArg(0).GetA64RegRef()) * sizeof(u64));
+        code.STD(value, addr, offsetof(A64JitState, regs));
+    } else {
+        ASSERT(false && "unimp");
+    }
 }
 
 template<>
@@ -106,213 +122,213 @@ void EmitIR<IR::Opcode::A64SetX>(powah::Context& code, EmitContext& ctx, IR::Ins
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetS>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64SetS>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetD>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64SetD>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetQ>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64SetQ>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetSP>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64SetSP>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetFPCR>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64SetFPCR>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetFPSR>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64SetFPSR>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetPC>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64SetPC>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64CallSupervisor>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64CallSupervisor>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ExceptionRaised>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ExceptionRaised>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64DataCacheOperationRaised>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64DataCacheOperationRaised>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64InstructionCacheOperationRaised>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64InstructionCacheOperationRaised>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64DataSynchronizationBarrier>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64DataSynchronizationBarrier>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64DataMemoryBarrier>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64DataMemoryBarrier>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64InstructionSynchronizationBarrier>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64InstructionSynchronizationBarrier>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetCNTFRQ>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetCNTFRQ>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetCNTPCT>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetCNTPCT>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetCTR>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetCTR>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetDCZID>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetDCZID>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetTPIDR>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetTPIDR>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64GetTPIDRRO>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64GetTPIDRRO>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64SetTPIDR>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64SetTPIDR>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 // Memory
 template<>
-void EmitIR<IR::Opcode::A64ClearExclusive>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ClearExclusive>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ReadMemory8>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ReadMemory8>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ReadMemory16>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ReadMemory16>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ReadMemory32>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ReadMemory32>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ReadMemory64>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ReadMemory64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ReadMemory128>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ReadMemory128>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ExclusiveReadMemory8>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ExclusiveReadMemory8>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ExclusiveReadMemory16>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ExclusiveReadMemory16>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ExclusiveReadMemory32>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ExclusiveReadMemory32>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ExclusiveReadMemory64>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ExclusiveReadMemory64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ExclusiveReadMemory128>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ExclusiveReadMemory128>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64WriteMemory8>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64WriteMemory8>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64WriteMemory16>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64WriteMemory16>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64WriteMemory32>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64WriteMemory32>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64WriteMemory64>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64WriteMemory64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64WriteMemory128>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64WriteMemory128>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ExclusiveWriteMemory8>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ExclusiveWriteMemory8>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ExclusiveWriteMemory16>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ExclusiveWriteMemory16>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ExclusiveWriteMemory32>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ExclusiveWriteMemory32>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ExclusiveWriteMemory64>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ExclusiveWriteMemory64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 
 template<>
-void EmitIR<IR::Opcode::A64ExclusiveWriteMemory128>(powah::Context&, EmitContext&, IR::Inst*) {
+void EmitIR<IR::Opcode::A64ExclusiveWriteMemory128>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     ASSERT(false && "unimp");
 }
 

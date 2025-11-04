@@ -62,14 +62,14 @@ void RegAlloc::AssertNoMoreUses() const {
     ASSERT(std::all_of(spills.begin(), spills.end(), is_empty));
 }
 
-std::optional<u32> RegAlloc::AllocateRegister(const std::array<HostLocInfo, 32>& regs, const std::vector<u32>& order) const {
+std::optional<u32> RegAlloc::AllocateRegister(const std::array<HostLocInfo, 32>& regs) const {
+    auto const order = PPC64::GPR_ORDER;
     if (auto const it = std::find_if(order.begin(), order.end(), [&](u32 i) {
         return regs[i].values.empty() && !regs[i].locked;
     }); it != order.end())
         return *it;
-    std::vector<u32> candidates;
-    std::copy_if(order.begin(), order.end(), std::back_inserter(candidates), [&](u32 i) { return !regs[i].locked; });
-    return candidates.empty() ? std::nullopt : std::optional<u32>{candidates[0]}; // TODO: LRU
+    // TODO: Actual proper LRU
+    return std::nullopt;
 }
 
 void RegAlloc::SpillGpr(u32 index) {
@@ -151,14 +151,14 @@ HostLocInfo& RegAlloc::ValueInfo(const IR::Inst* value) {
     ASSERT(false && "unimp");
 }
 
-/// @brief Defines a register temporal to use (and locks it)
-powah::GPR RegAlloc::ScratchGpr() {
-    auto const r = AllocateRegister(gprs, PPC64::GPR_ORDER);
-    return powah::GPR{*r};
+/// @brief Defines a register RegLock to use (and locks it)
+RegLock<powah::GPR> RegAlloc::ScratchGpr() {
+    auto const r = AllocateRegister(gprs);
+    return RegLock(*this, powah::GPR{*r});
 }
 
 /// @brief Uses the given GPR of the argument
-powah::GPR RegAlloc::UseGpr(IR::Value arg) {
+RegLock<powah::GPR> RegAlloc::UseGpr(IR::Value arg) {
     if (arg.IsImmediate()) {
         // HOLY SHIT EVIL HAXX
         auto const reg = ScratchGpr();
@@ -172,7 +172,7 @@ powah::GPR RegAlloc::UseGpr(IR::Value arg) {
     } else {
         auto const loc = ValueLocation(arg.GetInst());
         ASSERT(loc && HostLocIsGpr(*loc));
-        return std::get<powah::GPR>(HostLocToReg(*loc));
+        return RegLock(*this, std::get<powah::GPR>(HostLocToReg(*loc)));
     }
 }
 
@@ -184,7 +184,7 @@ void RegAlloc::DefineValue(IR::Inst* inst, powah::GPR const gpr) noexcept {
 void RegAlloc::DefineValue(IR::Inst* inst, IR::Value arg) noexcept {
     ASSERT(!ValueLocation(inst) && "inst has already been defined");
     if (arg.IsImmediate()) {
-        HostLoc const loc{u8(ScratchGpr().index)};
+        HostLoc const loc{u8(ScratchGpr().value.index)};
         ValueInfo(loc).values.push_back(inst);
         auto const value = arg.GetImmediateAsU64();
         if (value >= 0x7fff) {

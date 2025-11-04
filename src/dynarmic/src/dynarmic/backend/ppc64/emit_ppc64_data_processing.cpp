@@ -754,26 +754,24 @@ void EmitIR<IR::Opcode::ByteReverseHalf>(powah::Context& code, EmitContext& ctx,
 
 template<>
 void EmitIR<IR::Opcode::ByteReverseDual>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    powah::GPR const result = ctx.reg_alloc.ScratchGpr();
     powah::GPR const source = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     if (false) {
         //code.BRD(result, source);
     } else {
-        powah::GPR const tmp = ctx.reg_alloc.ScratchGpr();
-        code.ROTLDI(tmp, source, 16);
-        code.ROTLDI(result, source, 8);
-        code.RLDIMI(result, tmp, 8, 48);
-        code.ROTLDI(tmp, source, 24);
-        code.RLDIMI(result, tmp, 16, 40);
-        code.ROTLDI(tmp, source, 32);
-        code.RLDIMI(result, tmp, 24, 32);
-        code.ROTLDI(tmp, source, 48);
-        code.RLDIMI(result, tmp, 40, 16);
-        code.ROTLDI(tmp, source, 56);
-        code.RLDIMI(result, tmp, 48, 8);
-        code.RLDIMI(result, source, 56, 0);
+        powah::GPR const tmp10 = ctx.reg_alloc.ScratchGpr();
+        powah::GPR const tmp9 = ctx.reg_alloc.ScratchGpr();
+        powah::GPR const tmp3 = ctx.reg_alloc.ScratchGpr();
+        code.MR(tmp3, source);
+        code.ROTLWI(tmp10, tmp3, 24);
+        code.SRDI(tmp9, tmp3, 32);
+        code.RLWIMI(tmp10, tmp3, 8, 8, 15);
+        code.RLWIMI(tmp10, tmp3, 8, 24, 31);
+        code.ROTLWI(tmp3, tmp9, 24);
+        code.RLWIMI(tmp3, tmp9, 8, 8, 15);
+        code.RLWIMI(tmp3, tmp9, 8, 24, 31);
+        code.RLDIMI(tmp3, tmp10, 32, 0);
+        ctx.reg_alloc.DefineValue(inst, tmp3);
     }
-    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 // __builtin_clz
