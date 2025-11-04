@@ -180,19 +180,16 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
     }
 
     // auto const cycles_to_add = block.CycleCount();
-
-    auto const location{ctx.block.Location()};
-    auto const term = ctx.block.GetTerminal();
+    EmitTerminal(code, ctx, ctx.block.GetTerminal(), ctx.block.Location(), false);
 
     for (size_t i = 0; i < gpr_order.size(); ++i)
         code.LD(powah::GPR{gpr_order[i]}, powah::R1, -(i * 8));
     code.BLR();
 
     /*
-    llvm-objcopy -I binary -O elf64-powerpc --rename-section=.data=.text,code test.bin test.elf
-    llvm-objdump -d test.elf
+    llvm-objcopy -I binary -O elf64-powerpc --rename-section=.data=.text,code test.bin test.elf && llvm-objdump -d test.elf
     */
-    static FILE* fp = fopen("test.bin", "ab");
+    static FILE* fp = fopen("test.bin", "wb");
     fwrite(code.base, code.offset - start_offset, sizeof(uint32_t), fp);
 
     ebi.size = code.offset - start_offset;
