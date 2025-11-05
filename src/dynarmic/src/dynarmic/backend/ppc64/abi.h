@@ -9,6 +9,7 @@
 namespace Dynarmic::Backend::PPC64 {
 
 constexpr powah::GPR RJIT = powah::R3; //yeah it's param, so what?
+constexpr powah::GPR RNZCV = powah::R31;
 
 constexpr powah::GPR ABI_PARAM1 = powah::R3;
 constexpr powah::GPR ABI_PARAM2 = powah::R4;
