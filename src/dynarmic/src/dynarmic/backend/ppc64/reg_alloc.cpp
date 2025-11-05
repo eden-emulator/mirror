@@ -163,9 +163,19 @@ RegLock<powah::GPR> RegAlloc::UseGpr(IR::Value arg) {
         // HOLY SHIT EVIL HAXX
         auto const reg = ScratchGpr();
         auto const imm = arg.GetImmediateAsU64();
-        if (imm >= 0xffff) {
-            ASSERT(false && "big imms");
-        } else {
+        if (imm >= 0xffffffff) {
+            auto const lo = uint32_t(imm >> 0), hi = uint32_t(imm >> 32);
+            if (lo == hi) {
+                code.LIS(reg, imm >> 16);
+                code.ORI(reg, reg, imm & 0xffff);
+                code.RLDIMI(reg, reg, 32, 0);
+            } else {
+                ASSERT(false && "larger >32bit imms");
+            }
+        } else if (imm > 0xffff && imm <= 0xffffffff) {
+            code.LIS(reg, imm >> 16);
+            code.ORI(reg, reg, imm & 0xffff);
+        } else if (imm <= 0xffff) {
             code.LI(reg, imm);
         }
         return reg;

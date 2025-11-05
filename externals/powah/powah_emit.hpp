@@ -364,6 +364,7 @@ struct Context {
     void CMPD(GPR const rx, GPR const ry) { CMP(0, 1, rx, ry); }
 
     void LI(GPR const rx, uint32_t value) { ADDI(rx, R0, value); }
+    void LIS(GPR const rx, uint32_t value) { ADDIS(rx, R0, value); }
 
     void BLR() {
         base[offset++] = 0x4e800020; //BCLR(R0, CR0, R0);
