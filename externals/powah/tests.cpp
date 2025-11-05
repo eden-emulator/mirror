@@ -174,6 +174,43 @@ TEST_CASE("ppc64: rlwimi madness", "[ppc64]") {
     REQUIRE(data[7] == EB32(0x0e004379));
 }
 
+/*
+       0: 78 1b 68 7c  	mr	8, 3
+       4: 38 28 83 7c  	and 3, 4, 5
+       8: 74 00 6a 7c  	cntlzd 10, 3
+       c: 76 06 69 7c  	sradi 9, 3, 32
+      10: 82 d1 4a 79  	rldicl 10, 10, 58, 6
+      14: 00 00 29 55  	rlwinm 9, 9, 0, 0, 0
+      18: 64 f0 4a 79  	sldi 10, 10, 30
+      1c: 78 53 29 7d  	or 9, 9, 10
+      20: 00 00 28 f9  	std 9, 0(8)
+      24: 20 00 80 4e  	blr
+*/
+TEST_CASE("ppc64: functor-2", "[ppc64]") {
+    std::vector<uint32_t> data(64);
+    powah::Context ctx(data.data(), data.size());
+    ctx.MR(powah::R8, powah::R3);
+    ctx.AND(powah::R3, powah::R4, powah::R5);
+    ctx.CNTLZD(powah::R10, powah::R3);
+    ctx.SRADI(powah::R9, powah::R3, 32);
+    ctx.RLDICL(powah::R10, powah::R10, 58, 6);
+    ctx.RLWINM(powah::R9, powah::R9, 0, 0, 0);
+    ctx.SLDI(powah::R10, powah::R10, 30);
+    ctx.OR(powah::R9, powah::R9, powah::R10);
+    ctx.STD(powah::R9, powah::R8, 8);
+    ctx.BLR();
+    REQUIRE(data[0] == EB32(0x781b687c));
+    REQUIRE(data[1] == EB32(0x3828837c));
+    REQUIRE(data[2] == EB32(0x74006a7c));
+    REQUIRE(data[3] == EB32(0x7606697c));
+    REQUIRE(data[4] == EB32(0x82d14a79));
+    REQUIRE(data[5] == EB32(0x00002955));
+    REQUIRE(data[6] == EB32(0x64f04a79));
+    REQUIRE(data[7] == EB32(0x7853297d));
+    REQUIRE(data[8] == EB32(0x000028f9));
+    REQUIRE(data[9] == EB32(0x2000804e));
+}
+
 TEST_CASE("ppc64: functor-1", "[ppc64]") {
     std::vector<uint32_t> data(64);
     powah::Context ctx(data.data(), data.size());

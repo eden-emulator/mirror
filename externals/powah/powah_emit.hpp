@@ -211,10 +211,10 @@ struct Context {
     }
     void emit_XS(uint32_t op, GPR const rt, GPR const ra, uint32_t sh, bool rc) {
         base[offset++] = (op |
-            bitExt(rt.index, 6, 5)
-            | bitExt(ra.index, 11, 5)
-            | bitExt(sh, 16, 5)
-            | bitExt(sh >> 5, 30, 1)
+            ((rt.index & 0x1f) << 16)
+            | ((ra.index & 0x1f) << 21)
+            | ((sh & 0x1f) << 11)
+            | ((sh >> 4) & 0x02)
             | bitExt(rc, 31, 1)
         );
     }

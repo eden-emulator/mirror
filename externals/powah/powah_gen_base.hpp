@@ -384,8 +384,8 @@ void SLW(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000030, ra, rt, 
 void SLW_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000030, ra, rt, rb, true); }
 void SRAD(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000634, ra, rt, rb, false); }
 void SRAD_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000634, ra, rt, rb, true); }
-void SRADI(GPR const rt, GPR const ra, uint32_t sh) { emit_XS(0x7c00033a, rt, ra, sh, false); }
-void SRADI_(GPR const rt, GPR const ra, uint32_t sh) { emit_XS(0x7c00033a, rt, ra, sh, true); }
+void SRADI(GPR const rt, GPR const ra, uint32_t sh) { emit_XS(0x7c000674, ra, rt, sh, false); }
+void SRADI_(GPR const rt, GPR const ra, uint32_t sh) { emit_XS(0x7c000674, ra, rt, sh, true); }
 void SRD(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000436, ra, rt, rb, false); }
 void SRD_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000436, ra, rt, rb, true); }
 void SRAW(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000630, ra, rt, rb, false); }
