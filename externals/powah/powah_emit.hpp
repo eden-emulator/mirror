@@ -254,7 +254,7 @@ struct Context {
         base[offset++] = (op |
             bitExt(rt.index, 6, 5)
             | bitExt(ra.index, 11, 5)
-            | bitExt(d >> 2, 16, 14)
+            | bitExt(d, 16, 14)
         );
     }
     void emit_M(uint32_t op, GPR const rs, GPR const ra, uint32_t sh, uint32_t mb, uint32_t me, bool rc) {
