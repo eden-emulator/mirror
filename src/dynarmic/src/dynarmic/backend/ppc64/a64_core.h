@@ -24,7 +24,6 @@ struct A64JitState {
     u64 sp = 0;
     u32 upper_location_descriptor;
     u32 exclusive_state = 0;
-    u32 cpsr_nzcv = 0;
     u32 pstate = 0;
     u32 fpcr = 0;
     u32 fpsr = 0;

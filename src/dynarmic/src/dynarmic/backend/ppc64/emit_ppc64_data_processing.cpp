@@ -81,26 +81,26 @@ void EmitIR<IR::Opcode::MostSignificantBit>(powah::Context& code, EmitContext& c
 }
 
 /*
-uint64_t f(uint64_t a) { return a == 0; }
+uint64_t f(uint64_t a) { return (uint32_t)a == 0; }
 */
 template<>
 void EmitIR<IR::Opcode::IsZero32>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const source = ctx.reg_alloc.UseGpr(inst->GetArg(0));
-    code.CNTLZD(result, source);
-    code.SRDI(result, result, 6);
+    code.CNTLZW(result, source);
+    code.SRWI(result, result, 5);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
 /*
-uint64_t f(uint64_t a) { return (uint32_t)a == 0; }
+uint64_t f(uint64_t a) { return a == 0; }
 */
 template<>
 void EmitIR<IR::Opcode::IsZero64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const source = ctx.reg_alloc.UseGpr(inst->GetArg(0));
-    code.CNTLZW(result, source);
-    code.SRWI(result, result, 5);
+    code.CNTLZD(result, source);
+    code.SRDI(result, result, 6);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
@@ -561,39 +561,33 @@ void EmitIR<IR::Opcode::And32>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
     auto const tmp3 = ctx.reg_alloc.ScratchGpr();
-    auto const tmp10 = ctx.reg_alloc.ScratchGpr();
+    auto const tmp8 = ctx.reg_alloc.ScratchGpr();
     auto const tmp9 = PPC64::RNZCV;
     code.RLDICL(tmp3, src_a, 0, 32); // Truncate
     code.AND(tmp3, tmp3, src_b);
+    code.CNTLZD(tmp9, tmp3);
+    code.RLWINM(tmp8, tmp3, 0, 0, 0);
+    code.SRDI(tmp9, tmp9, 6);
+    code.SLDI(tmp9, tmp9, 30);
+    code.OR(tmp9, tmp9, tmp8);
+    ctx.reg_alloc.DefineValue(inst, tmp3);
+}
+
+template<>
+void EmitIR<IR::Opcode::And64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+    auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
+    auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
+    auto const tmp3 = ctx.reg_alloc.ScratchGpr();
+    auto const tmp10 = ctx.reg_alloc.ScratchGpr();
+    auto const tmp9 = PPC64::RNZCV;
+    code.AND(tmp3, src_a, src_b);
     code.CNTLZD(tmp10, tmp3);
     code.SRADI(tmp9, tmp3, 32);
     code.SRDI(tmp10, tmp10, 6);
     code.RLWINM(tmp9, tmp9, 0, 0, 0);
     code.SLDI(tmp10, tmp10, 30);
     code.OR(tmp9, tmp9, tmp10);
-
-/*
-    and 3,4,5
-    cntlzd 10,3
-    sradi 9,3,32
-    srdi 10,10,6
-    rlwinm 9,9,0,0,0
-    sldi 10,10,30
-    or 9,9,10
-    std 9,0(8)
-    blr
-*/
-
     ctx.reg_alloc.DefineValue(inst, tmp3);
-}
-
-template<>
-void EmitIR<IR::Opcode::And64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    auto const result = ctx.reg_alloc.ScratchGpr();
-    auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
-    auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.AND_(result, src_a, src_b);
-    ctx.reg_alloc.DefineValue(inst, result);
 }
 
 template<>
