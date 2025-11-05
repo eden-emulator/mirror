@@ -9,6 +9,7 @@
 #include <fmt/ostream.h>
 #include <mcl/bit/bit_field.hpp>
 
+#include "abi.h"
 #include "dynarmic/backend/ppc64/a32_core.h"
 #include "dynarmic/backend/ppc64/a64_core.h"
 #include "dynarmic/backend/ppc64/abi.h"
@@ -67,11 +68,20 @@ void EmitIR<IR::Opcode::GetNZCVFromOp>(powah::Context& code, EmitContext& ctx, I
         ASSERT(false && "unimp value live");
         return;
     }
+
+    // All logical operations whom set (RC) are going to compute as the following:
+    // 1. Rt <- logical_op (Ra, Rb)
+    // 2. Compare as Signed(Rt) against 0
+    // Basically, it's equivalent to say:
+    //
+    // add r0, r1, r2   -> add. r0, r1, r2
+    // cmpli r0, 0
+    //
     // CR0:
-    // 0 - N/LT, result is negative
-    // 1 - P/GT, result is positive
-    // 2 - Z/EQ, result is zero
-    // 3 - S/SO, summary overflow (carry?)
+    // 0 - 0x08 - N/LT, result is negative
+    // 1 - 0x04 - P/GT, result is positive
+    // 2 - 0x02 - Z/EQ, result is zero
+    // 3 - 0x01 - S/SO, summary overflow (carry?)
     // XER:
     // 32 - SO
     // 33 - Overflow
@@ -99,14 +109,8 @@ void EmitIR<IR::Opcode::GetNZCVFromOp>(powah::Context& code, EmitContext& ctx, I
         // code.OR(tmp3, tmp3, tmp4);
     } else {
         // MFCR Fills RT 32:63, RT 0:31 left blank
-        auto const source = ctx.reg_alloc.UseGpr(inst->GetArg(0));
         auto const tmp3 = ctx.reg_alloc.ScratchGpr();
-        auto const tmp = ctx.reg_alloc.ScratchGpr();
-        code.LI(tmp, -1);
-        code.RLDICR(tmp, tmp, 0, 0);
-        code.MFCR(powah::R0, tmp3, powah::R0);
-        code.CMPW(tmp, source);
-        code.MFCR(powah::R0, tmp3, powah::R0);
+        code.MR(tmp3, PPC64::RNZCV);
         ctx.reg_alloc.DefineValue(inst, tmp3);
     }
 }

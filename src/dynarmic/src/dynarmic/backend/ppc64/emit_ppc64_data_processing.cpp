@@ -558,14 +558,33 @@ void EmitIR<IR::Opcode::SignedDiv64>(powah::Context& code, EmitContext& ctx, IR:
 
 template<>
 void EmitIR<IR::Opcode::And32>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
-    code.RLDICL(result, src_a, 0, 32); // Truncate
-    code.AND(result, result, src_b);
-    auto const tmp = ctx.reg_alloc.ScratchGpr();
-    code.ANDI_(tmp, result, 0);
-    ctx.reg_alloc.DefineValue(inst, result);
+    auto const tmp3 = ctx.reg_alloc.ScratchGpr();
+    auto const tmp10 = ctx.reg_alloc.ScratchGpr();
+    auto const tmp9 = PPC64::RNZCV;
+    code.RLDICL(tmp3, src_a, 0, 32); // Truncate
+    code.AND(tmp3, tmp3, src_b);
+    code.CNTLZD(tmp10, tmp3);
+    code.SRADI(tmp9, tmp3, 32);
+    code.SRDI(tmp10, tmp10, 6);
+    code.RLWINM(tmp9, tmp9, 0, 0, 0);
+    code.SLDI(tmp10, tmp10, 30);
+    code.OR(tmp9, tmp9, tmp10);
+
+/*
+    and 3,4,5
+    cntlzd 10,3
+    sradi 9,3,32
+    srdi 10,10,6
+    rlwinm 9,9,0,0,0
+    sldi 10,10,30
+    or 9,9,10
+    std 9,0(8)
+    blr
+*/
+
+    ctx.reg_alloc.DefineValue(inst, tmp3);
 }
 
 template<>
@@ -574,7 +593,6 @@ void EmitIR<IR::Opcode::And64>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
     code.AND_(result, src_a, src_b);
-    code.ADDI(result, result, 0); //update cr0
     ctx.reg_alloc.DefineValue(inst, result);
 }
 
