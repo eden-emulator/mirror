@@ -562,7 +562,9 @@ void EmitIR<IR::Opcode::And32>(powah::Context& code, EmitContext& ctx, IR::Inst*
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(1));
     code.RLDICL(result, src_a, 0, 32); // Truncate
-    code.AND_(result, result, src_b);
+    code.AND(result, result, src_b);
+    auto const tmp = ctx.reg_alloc.ScratchGpr();
+    code.ANDI_(tmp, result, 0);
     ctx.reg_alloc.DefineValue(inst, result);
 }
 

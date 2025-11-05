@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
                             };
 
 #define OP_EXT ((i_opcode << 26) | (i_extopc << 1))
+#define OP_EXT_XS ((i_opcode << 26) | (i_extopc << 2))
 
                             if (strchr(mem, '[') != NULL) *strchr(mem, '[') = '\0';
                             if (strchr(mem, '.') != NULL) *strchr(mem, '.') = '_';
@@ -186,16 +187,17 @@ int main(int argc, char *argv[]) {
                                     "}\n"
                                 , mem, form, OP_EXT);
                             } else if (!strcmp(form, "XS")) {
+                                /* HUGE DIFFERENCE DO NOT REMOVE */
                                 printf(
                                     "void %s(GPR const rt, GPR const ra, uint32_t sh) {"
-                                    " emit_%s(0x%08x, rt, ra, sh, false); "
+                                    " emit_%s(0x%08x, ra, rt, sh, false); "
                                     "}\n"
-                                , mem, form, OP_EXT);
+                                , mem, form, OP_EXT_XS);
                                 printf(
                                     "void %s_(GPR const rt, GPR const ra, uint32_t sh) {"
-                                    " emit_%s(0x%08x, rt, ra, sh, true); "
+                                    " emit_%s(0x%08x, ra, rt, sh, true); "
                                     "}\n"
-                                , mem, form, OP_EXT);
+                                , mem, form, OP_EXT_XS);
                             } else if (!strcmp(form, "XL")) {
                                 if (!strcmp(mem, "BCLR")) {
                                     printf(
