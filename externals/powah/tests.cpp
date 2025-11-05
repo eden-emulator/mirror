@@ -197,7 +197,7 @@ TEST_CASE("ppc64: functor-2", "[ppc64]") {
     ctx.RLWINM(powah::R9, powah::R9, 0, 0, 0);
     ctx.SLDI(powah::R10, powah::R10, 30);
     ctx.OR(powah::R9, powah::R9, powah::R10);
-    ctx.STD(powah::R9, powah::R8, 8);
+    ctx.STD(powah::R9, powah::R8, 0);
     ctx.BLR();
     REQUIRE(data[0] == EB32(0x781b687c));
     REQUIRE(data[1] == EB32(0x3828837c));
