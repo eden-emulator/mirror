@@ -9,6 +9,8 @@
 #include <fmt/ostream.h>
 #include <mcl/bit/bit_field.hpp>
 
+#include "a32_core.h"
+#include "a64_core.h"
 #include "abi.h"
 #include "dynarmic/backend/ppc64/a32_core.h"
 #include "dynarmic/backend/ppc64/a64_core.h"
@@ -141,6 +143,8 @@ void EmitIR<IR::Opcode::NZCVFromPackedFlags>(powah::Context&, EmitContext&, IR::
 }
 
 namespace {
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal terminal, IR::LocationDescriptor initial_location, bool is_single_step);
+
 void EmitTerminal(powah::Context&, EmitContext&, IR::Term::Interpret, IR::LocationDescriptor, bool) {
     ASSERT(false && "unimp");
 }
@@ -151,13 +155,11 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::ReturnToDisp
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location, bool) {
     auto const tmp = ctx.reg_alloc.ScratchGpr();
-    if (ctx.emit_conf.a64_variant) {
-        code.LI(tmp, terminal.next.Value());
+    code.LI(tmp, terminal.next.Value());
+    if (ctx.emit_conf.a64_variant)
         code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
-    } else {
-        code.LI(tmp, terminal.next.Value());
+    else
         code.STW(tmp, PPC64::RJIT, offsetof(A32JitState, regs) + sizeof(u32) * 15);
-    }
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location, bool) {
@@ -177,7 +179,19 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::If terminal,
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckBit terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
-    ASSERT(false && "unimp");
+    powah::Label const l_else = code.DefineLabel();
+    powah::Label const l_end = code.DefineLabel();
+    auto const tmp = ctx.reg_alloc.ScratchGpr();
+    code.LBZ(tmp, PPC64::RJIT, ctx.emit_conf.a64_variant ? offsetof(A64JitState, check_bit) : offsetof(A32JitState, check_bit));
+    code.CMPLWI(tmp, 0);
+    code.BEQ(powah::CR0, l_else);
+    // CheckBit == 1
+    EmitTerminal(code, ctx, terminal.then_, initial_location, is_single_step);
+    code.B(l_end);
+    // CheckBit == 0
+    code.LABEL(l_else);
+    EmitTerminal(code, ctx, terminal.else_, initial_location, is_single_step);
+    code.LABEL(l_end);
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckHalt terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
