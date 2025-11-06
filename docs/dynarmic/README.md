@@ -7,7 +7,7 @@ A dynamic recompiler for ARM.
 
 Cortex-A57 (32 and 64 bit) is the emulated guest target. See [ArchVersion](../../src/dynarmic/src/dynarmic/interface/A32/arch_version.h).
 
-The only supported host architectures are x86-64, and AArch64. There are no plans to support any 32-bit architectures.
+The only supported host architectures are x86-64, PowerPC 64, and AArch64. There are no plans to support any 32-bit architectures.
 
 See [an example usage](../../src/dynarmic/tests/print_info.cpp).
 

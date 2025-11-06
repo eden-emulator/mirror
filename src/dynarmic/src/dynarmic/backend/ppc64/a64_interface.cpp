@@ -81,6 +81,7 @@ struct Jit::Impl final {
         ASSERT(!is_executing);
         is_executing = true;
         HaltReason hr = core.Run(current_address_space, jit_state, &halt_reason);
+        current_address_space.ClearCache(); // TODO: dont just invalidate everything
         is_executing = false;
         RequestCacheInvalidation();
         return hr;
