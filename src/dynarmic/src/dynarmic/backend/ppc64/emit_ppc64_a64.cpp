@@ -18,7 +18,8 @@ namespace Dynarmic::Backend::PPC64 {
 
 template<>
 void EmitIR<IR::Opcode::A64SetCheckBit>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
-    ASSERT(false && "unimp");
+    auto const value = ctx.reg_alloc.UseGpr(inst->GetArg(0));
+    code.STB(value, PPC64::RJIT, offsetof(A64JitState, check_bit));
 }
 
 template<>

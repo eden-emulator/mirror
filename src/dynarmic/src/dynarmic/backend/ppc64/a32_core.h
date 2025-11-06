@@ -22,6 +22,7 @@ struct A32JitState {
     u32 exclusive_state = 0;
     u32 cpsr_nzcv = 0;
     u32 fpscr = 0;
+    u8 check_bit = 0;
     IR::LocationDescriptor GetLocationDescriptor() const {
         return IR::LocationDescriptor{regs[15] | (u64(upper_location_descriptor) << 32)};
     }
