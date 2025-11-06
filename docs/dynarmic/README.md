@@ -35,6 +35,7 @@ There are no plans to support v1 or v2.
 
 * x86-64
 * AArch64
+* PowerPC 64 (POWER 4 and up)
 
 There are no plans to support any 32-bit architecture.
 

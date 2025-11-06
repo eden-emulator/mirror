@@ -182,8 +182,8 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckBit ter
     powah::Label const l_else = code.DefineLabel();
     powah::Label const l_end = code.DefineLabel();
     auto const tmp = ctx.reg_alloc.ScratchGpr();
-    code.LBZ(tmp, PPC64::RJIT, ctx.emit_conf.a64_variant ? offsetof(A64JitState, check_bit) : offsetof(A32JitState, check_bit));
-    code.CMPLWI(tmp, 0);
+    code.LD(tmp, powah::R1, offsetof(StackLayout, check_bit));
+    code.CMPLDI(tmp, 0);
     code.BEQ(powah::CR0, l_else);
     // CheckBit == 1
     EmitTerminal(code, ctx, terminal.then_, initial_location, is_single_step);
