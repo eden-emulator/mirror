@@ -17,71 +17,83 @@
 #include "dynarmic/ir/opt_passes.h"
 #include "dynarmic/interface/A32/a32.h"
 
-namespace Dynarmic::Backend::PPC64 {
-
-A32AddressSpace::A32AddressSpace(const A32::UserConfig& conf)
-    : conf(conf)
-    , cb(conf.code_cache_size)
-    , as(cb.ptr<u8*>(), conf.code_cache_size) {
-
-}
-
-CodePtr A32AddressSpace::GetOrEmit(IR::LocationDescriptor desc) {
-    if (auto const it = block_entries.find(desc.Value()); it != block_entries.end())
-        return it->second;
-
-    IR::Block ir_block = A32::Translate(A32::LocationDescriptor{desc}, conf.callbacks, {conf.arch_version, conf.define_unpredictable_behaviour, conf.hook_hint_instructions});
-    Optimization::Optimize(ir_block, conf, {});
-    const EmittedBlockInfo block_info = Emit(std::move(ir_block));
-
-    block_infos.insert_or_assign(desc.Value(), block_info);
-    block_entries.insert_or_assign(desc.Value(), block_info.entry_point);
-    return block_info.entry_point;
-}
-
-void A32AddressSpace::ClearCache() {
-    block_entries.clear();
-    block_infos.clear();
-}
-
-EmittedBlockInfo A32AddressSpace::Emit(IR::Block block) {
-    EmittedBlockInfo block_info = EmitPPC64(as, std::move(block), {
-        .enable_cycle_counting = conf.enable_cycle_counting,
-        .always_little_endian = conf.always_little_endian,
-        .a64_variant = false
-    });
-    Link(block_info);
-    return block_info;
-}
-
-void A32AddressSpace::Link(EmittedBlockInfo& block_info) {
-    //UNREACHABLE();
-}
-
-}
-
 namespace Dynarmic::A32 {
 
 using namespace Dynarmic::Backend::PPC64;
+
+struct A32AddressSpace final {
+    explicit A32AddressSpace(const A32::UserConfig& conf)
+        : conf(conf)
+        , cb(conf.code_cache_size)
+        , as(cb.ptr<u8*>(), conf.code_cache_size) {
+
+    }
+
+    CodePtr GetOrEmit(IR::LocationDescriptor desc) {
+        if (auto const it = block_entries.find(desc.Value()); it != block_entries.end())
+            return it->second;
+
+        IR::Block ir_block = A32::Translate(A32::LocationDescriptor{desc}, conf.callbacks, {conf.arch_version, conf.define_unpredictable_behaviour, conf.hook_hint_instructions});
+        Optimization::Optimize(ir_block, conf, {});
+        const EmittedBlockInfo block_info = Emit(std::move(ir_block));
+
+        block_infos.insert_or_assign(desc.Value(), block_info);
+        block_entries.insert_or_assign(desc.Value(), block_info.entry_point);
+        return block_info.entry_point;
+    }
+
+    void ClearCache() {
+        block_entries.clear();
+        block_infos.clear();
+    }
+
+    EmittedBlockInfo Emit(IR::Block block) {
+        EmittedBlockInfo block_info = EmitPPC64(as, std::move(block), {
+            .enable_cycle_counting = conf.enable_cycle_counting,
+            .always_little_endian = conf.always_little_endian,
+            .a64_variant = false
+        });
+        Link(block_info);
+        return block_info;
+    }
+
+    void Link(EmittedBlockInfo& block_info) {
+        //UNREACHABLE();
+    }
+
+    const A32::UserConfig conf;
+    CodeBlock cb;
+    powah::Context as;
+    ankerl::unordered_dense::map<u64, CodePtr> block_entries;
+    ankerl::unordered_dense::map<u64, EmittedBlockInfo> block_infos;
+};
+
+struct A32Core final {
+    static HaltReason Run(A32AddressSpace& process, A32JitState& thread_ctx, volatile u32* halt_reason) {
+        auto const loc = thread_ctx.GetLocationDescriptor();
+        auto const entry = process.GetOrEmit(loc);
+        using CodeFn = HaltReason (*)(A32JitState*, volatile u32*);
+        return (CodeFn(entry))(&thread_ctx, halt_reason);
+    }
+};
 
 struct Jit::Impl final {
     Impl(Jit* jit_interface, A32::UserConfig conf)
         : conf(conf)
         , current_address_space(conf)
-        , core(conf)
         , jit_interface(jit_interface) {}
 
     HaltReason Run() {
         ASSERT(!is_executing);
         is_executing = false;
-        HaltReason hr = core.Run(current_address_space, jit_state, &halt_reason);
+        HaltReason hr = A32Core::Run(current_address_space, jit_state, &halt_reason);
         is_executing = true;
         RequestCacheInvalidation();
         return hr;
     }
 
     HaltReason Step() {
-        // HaltReason hr = core.Step(current_address_space, jit_state, &halt_reason);
+        // HaltReason hr = A32Core::Step(current_address_space, jit_state, &halt_reason);
         // RequestCacheInvalidation();
         return HaltReason{};
     }
@@ -156,7 +168,6 @@ private:
     A32::UserConfig conf;
     A32JitState jit_state{};
     A32AddressSpace current_address_space;
-    A32Core core;
     Jit* jit_interface;
     volatile u32 halt_reason = 0;
     bool is_executing = false;
