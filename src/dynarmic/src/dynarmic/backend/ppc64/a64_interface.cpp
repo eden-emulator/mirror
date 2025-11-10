@@ -16,79 +16,87 @@
 #include "dynarmic/ir/opt_passes.h"
 #include "dynarmic/interface/A64/a64.h"
 
-namespace Dynarmic::Backend::PPC64 {
-
-A64AddressSpace::A64AddressSpace(const A64::UserConfig& conf)
-    : conf(conf)
-    , cb(conf.code_cache_size)
-    , as(cb.ptr<u8*>(), conf.code_cache_size) {
-
-}
-
-CodePtr A64AddressSpace::GetOrEmit(IR::LocationDescriptor desc) {
-    if (auto const it = block_entries.find(desc.Value()); it != block_entries.end())
-        return it->second;
-
-    const auto get_code = [this](u64 vaddr) {
-        return conf.callbacks->MemoryReadCode(vaddr);
-    };
-    IR::Block ir_block = A64::Translate(A64::LocationDescriptor{desc}, get_code, {conf.define_unpredictable_behaviour, conf.wall_clock_cntpct});
-    Optimization::Optimize(ir_block, conf, {});
-
-    fmt::print("IR:\n");
-    fmt::print("{}\n", IR::DumpBlock(ir_block));
-
-    const EmittedBlockInfo block_info = Emit(std::move(ir_block));
-
-    block_infos.insert_or_assign(desc.Value(), block_info);
-    block_entries.insert_or_assign(desc.Value(), block_info.entry_point);
-    return block_info.entry_point;
-}
-
-void A64AddressSpace::ClearCache() {
-    block_entries.clear();
-    block_infos.clear();
-}
-
-EmittedBlockInfo A64AddressSpace::Emit(IR::Block block) {
-    EmittedBlockInfo block_info = EmitPPC64(as, std::move(block), {
-        .enable_cycle_counting = conf.enable_cycle_counting,
-        .always_little_endian = true,
-        .a64_variant = true
-    });
-    Link(block_info);
-    return block_info;
-}
-
-void A64AddressSpace::Link(EmittedBlockInfo& block_info) {
-    // TODO(lizzie): Block linking
-    // UNREACHABLE();
-}
-}
-
 namespace Dynarmic::A64 {
 
 using namespace Dynarmic::Backend::PPC64;
+
+struct A64AddressSpace final {
+    explicit A64AddressSpace(const A64::UserConfig& conf)
+        : conf(conf)
+        , cb(conf.code_cache_size)
+        , as(cb.ptr<u8*>(), conf.code_cache_size) {
+
+    }
+
+    CodePtr GetOrEmit(IR::LocationDescriptor desc) {
+        if (auto const it = block_entries.find(desc.Value()); it != block_entries.end())
+            return it->second;
+
+        const auto get_code = [this](u64 vaddr) {
+            return conf.callbacks->MemoryReadCode(vaddr);
+        };
+        IR::Block ir_block = A64::Translate(A64::LocationDescriptor{desc}, get_code, {conf.define_unpredictable_behaviour, conf.wall_clock_cntpct});
+        Optimization::Optimize(ir_block, conf, {});
+        fmt::print("IR:\n{}\n", IR::DumpBlock(ir_block));
+        const EmittedBlockInfo block_info = Emit(std::move(ir_block));
+        block_infos.insert_or_assign(desc.Value(), block_info);
+        block_entries.insert_or_assign(desc.Value(), block_info.entry_point);
+        return block_info.entry_point;
+    }
+
+    void ClearCache() {
+        block_entries.clear();
+        block_infos.clear();
+    }
+
+    EmittedBlockInfo Emit(IR::Block block) {
+        EmittedBlockInfo block_info = EmitPPC64(as, std::move(block), {
+            .enable_cycle_counting = conf.enable_cycle_counting,
+            .always_little_endian = true,
+            .a64_variant = true
+        });
+        Link(block_info);
+        return block_info;
+    }
+
+    void Link(EmittedBlockInfo& block_info) {
+        // TODO(lizzie): Block linking
+        // UNREACHABLE();
+    }
+
+    const A64::UserConfig conf;
+    CodeBlock cb;
+    powah::Context as;
+    ankerl::unordered_dense::map<u64, CodePtr> block_entries;
+    ankerl::unordered_dense::map<u64, EmittedBlockInfo> block_infos;
+};
+
+struct A64Core final {
+    static HaltReason Run(A64AddressSpace& process, A64JitState& thread_ctx, volatile u32* halt_reason) {
+        const auto loc = thread_ctx.GetLocationDescriptor();
+        const auto entry = process.GetOrEmit(loc);
+        using CodeFn = HaltReason (*)(A64JitState*, volatile u32*);
+        return (CodeFn(entry))(&thread_ctx, halt_reason);
+    }
+};
 
 struct Jit::Impl final {
     Impl(Jit* jit_interface, A64::UserConfig conf)
         : conf(conf)
         , current_address_space(conf)
-        , core(conf)
         , jit_interface(jit_interface) {}
 
     HaltReason Run() {
         ASSERT(!is_executing);
         is_executing = true;
-        HaltReason hr = core.Run(current_address_space, jit_state, &halt_reason);
-        current_address_space.ClearCache(); // TODO: dont just invalidate everything
+        HaltReason hr = A64Core::Run(current_address_space, jit_state, &halt_reason);
         is_executing = false;
         RequestCacheInvalidation();
         return hr;
     }
 
     HaltReason Step() {
-        // HaltReason hr = core.Step(current_address_space, jit_state, &halt_reason);
+        // HaltReason hr = A64Core::Step(current_address_space, jit_state, &halt_reason);
         // RequestCacheInvalidation();
         return HaltReason{};
     }
@@ -223,7 +231,6 @@ private:
     A64::UserConfig conf;
     A64JitState jit_state{};
     A64AddressSpace current_address_space;
-    A64Core core;
     Jit* jit_interface;
     volatile u32 halt_reason = 0;
     bool is_executing = false;
