@@ -34,33 +34,4 @@ struct A64JitState {
     }
 };
 
-class A64AddressSpace final {
-public:
-    explicit A64AddressSpace(const A64::UserConfig& conf);
-    CodePtr GetOrEmit(IR::LocationDescriptor descriptor);
-    void ClearCache();
-private:
-    friend class A64Core;
-    void EmitPrelude();
-    EmittedBlockInfo Emit(IR::Block ir_block);
-    void Link(EmittedBlockInfo& block);
-
-    const A64::UserConfig conf;
-    CodeBlock cb;
-    powah::Context as;
-    ankerl::unordered_dense::map<u64, CodePtr> block_entries;
-    ankerl::unordered_dense::map<u64, EmittedBlockInfo> block_infos;
-};
-
-class A64Core final {
-public:
-    explicit A64Core(const A64::UserConfig&) {}
-    HaltReason Run(A64AddressSpace& process, A64JitState& thread_ctx, volatile u32* halt_reason) {
-        const auto loc = thread_ctx.GetLocationDescriptor();
-        const auto entry = process.GetOrEmit(loc);
-        using CodeFn = HaltReason (*)(A64JitState*, volatile u32*);
-        return (CodeFn(entry))(&thread_ctx, halt_reason);
-    }
-};
-
 }  // namespace Dynarmic::Backend::RV64
