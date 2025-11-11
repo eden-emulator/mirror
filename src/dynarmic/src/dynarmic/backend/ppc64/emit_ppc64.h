@@ -21,21 +21,9 @@ enum class Opcode;
 
 namespace Dynarmic::Backend::PPC64 {
 
-using CodePtr = std::byte*;
-
-enum class LinkTarget {
-    ReturnFromRunCode,
-};
-
-struct Relocation {
-    std::ptrdiff_t code_offset;
-    LinkTarget target;
-};
-
 struct EmittedBlockInfo {
-    CodePtr entry_point;
+    std::uint32_t* entry_point;
     size_t size;
-    std::vector<Relocation> relocations;
 };
 
 struct EmitConfig {

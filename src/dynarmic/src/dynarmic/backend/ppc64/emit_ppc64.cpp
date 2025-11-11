@@ -4,6 +4,7 @@
 #include "dynarmic/backend/ppc64/emit_ppc64.h"
 
 #include <bit>
+#include <cstdint>
 
 #include <powah_emit.hpp>
 #include <fmt/ostream.h>
@@ -156,10 +157,21 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::ReturnToDisp
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location, bool) {
     auto const tmp = ctx.reg_alloc.ScratchGpr();
     code.LI(tmp, terminal.next.Value());
-    if (ctx.emit_conf.a64_variant)
+    if (ctx.emit_conf.a64_variant) {
         code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
-    else
+        code.MFLR(PPC64::RLINKFN);
+        for (u32 i = 0; i < 4; ++i)
+            code.STD(powah::GPR{3 + i}, powah::R1, -((GPR_ORDER.size() + i) * 8));
+        code.ADDIS(powah::R1, powah::R1, -sizeof(StackLayout));
+        code.BLR();
+        code.ADDI(powah::R1, powah::R1, sizeof(StackLayout));
+        for (u32 i = 0; i < 4; ++i)
+            code.LD(powah::GPR{3 + i}, powah::R1, -((GPR_ORDER.size() + i) * 8));
+        code.MTLR(PPC64::RLINKFN);
+    } else {
         code.STW(tmp, PPC64::RJIT, offsetof(A32JitState, regs) + sizeof(u32) * 15);
+        ASSERT(false && "unimp");
+    }
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location, bool) {
@@ -211,7 +223,7 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
     EmitContext ctx{block, reg_alloc, emit_conf, ebi};
 
     auto const start_offset = code.offset;
-    ebi.entry_point = CodePtr(code.base + start_offset);
+    ebi.entry_point = &code.base[start_offset];
 
     // Non-volatile saves
     std::vector<u32> gpr_order{GPR_ORDER};

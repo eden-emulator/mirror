@@ -31,8 +31,7 @@ struct A64AddressSpace final {
     CodePtr GetOrEmit(IR::LocationDescriptor desc) {
         if (auto const it = block_entries.find(desc.Value()); it != block_entries.end())
             return it->second;
-
-        const auto get_code = [this](u64 vaddr) {
+        auto const get_code = [this](u64 vaddr) {
             return conf.callbacks->MemoryReadCode(vaddr);
         };
         IR::Block ir_block = A64::Translate(A64::LocationDescriptor{desc}, get_code, {conf.define_unpredictable_behaviour, conf.wall_clock_cntpct});
@@ -75,8 +74,8 @@ struct A64Core final {
     static HaltReason Run(A64AddressSpace& process, A64JitState& thread_ctx, volatile u32* halt_reason) {
         const auto loc = thread_ctx.GetLocationDescriptor();
         const auto entry = process.GetOrEmit(loc);
-        using CodeFn = HaltReason (*)(A64JitState*, volatile u32*);
-        return (CodeFn(entry))(&thread_ctx, halt_reason);
+        using CodeFn = HaltReason (*)(A64AddressSpace*, A64JitState*, volatile u32*);
+        return (CodeFn(entry))(&process, &thread_ctx, halt_reason);
     }
 };
 
