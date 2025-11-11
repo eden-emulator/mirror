@@ -366,6 +366,9 @@ struct Context {
     void LI(GPR const rx, uint32_t value) { ADDI(rx, R0, value); }
     void LIS(GPR const rx, uint32_t value) { ADDIS(rx, R0, value); }
 
+    void MFLR(GPR const rt) { MFSPR(powah::GPR{8}, rt, powah::GPR{0}); }
+    void MTLR(GPR const rt) { MTSPR(powah::GPR{8}, rt, powah::GPR{0}); }
+
     void BLR() {
         base[offset++] = 0x4e800020; //BCLR(R0, CR0, R0);
     }

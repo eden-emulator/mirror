@@ -22,7 +22,7 @@ struct A64JitState {
     u64 pc = 0;
     alignas(16) std::array<u64, 64> vec{};
     u64 sp = 0;
-    u32 upper_location_descriptor;
+    u32 upper_location_descriptor = 0;
     u32 exclusive_state = 0;
     u32 pstate = 0;
     u32 fpcr = 0;
@@ -30,7 +30,9 @@ struct A64JitState {
     volatile u32 halt_reason = 0;
     u8 check_bit = 0;
     IR::LocationDescriptor GetLocationDescriptor() const {
-        return IR::LocationDescriptor{regs[15] | (u64(upper_location_descriptor) << 32)};
+        const u64 fpcr_u64 = u64(fpcr & A64::LocationDescriptor::fpcr_mask) << A64::LocationDescriptor::fpcr_shift;
+        const u64 pc_u64 = pc & A64::LocationDescriptor::pc_mask;
+        return IR::LocationDescriptor{pc_u64 | fpcr_u64};
     }
 };
 
