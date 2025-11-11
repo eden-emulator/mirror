@@ -8,7 +8,10 @@
 
 namespace Dynarmic::Backend::PPC64 {
 
-constexpr powah::GPR RJIT = powah::R3; //yeah it's param, so what?
+// Jit fn signature => (AXXAddressSpace& process, AXXJitState& thread_ctx, volatile u32* halt_reason)
+constexpr powah::GPR RPROCESS = powah::R3;
+constexpr powah::GPR RJIT = powah::R4;
+constexpr powah::GPR RHALTREASON = powah::R5;
 constexpr powah::GPR RNZCV = powah::R31;
 
 constexpr powah::GPR ABI_PARAM1 = powah::R3;
