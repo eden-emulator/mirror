@@ -20,6 +20,7 @@
 namespace Dynarmic::A32 {
 
 using namespace Dynarmic::Backend::PPC64;
+using CodePtr = std::uint32_t*;
 
 struct A32AddressSpace final {
     explicit A32AddressSpace(const A32::UserConfig& conf)
@@ -72,8 +73,8 @@ struct A32Core final {
     static HaltReason Run(A32AddressSpace& process, A32JitState& thread_ctx, volatile u32* halt_reason) {
         auto const loc = thread_ctx.GetLocationDescriptor();
         auto const entry = process.GetOrEmit(loc);
-        using CodeFn = HaltReason (*)(A32AddressSpace*, A32JitState*, volatile u32*);
-        return (CodeFn(entry))(&process, &thread_ctx, halt_reason);
+        using CodeFn = HaltReason (*)(A32AddressSpace*, A32JitState*, volatile u32*, void*);
+        return (CodeFn(entry))(&process, &thread_ctx, halt_reason, reinterpret_cast<void*>(&A32Core::Run));
     }
 };
 

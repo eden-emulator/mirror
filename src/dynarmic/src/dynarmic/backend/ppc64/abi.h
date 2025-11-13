@@ -8,10 +8,11 @@
 
 namespace Dynarmic::Backend::PPC64 {
 
-// Jit fn signature => (AXXAddressSpace& process, AXXJitState& thread_ctx, volatile u32* halt_reason)
+// Jit fn signature => (AXXAddressSpace& process, AXXJitState& thread_ctx, volatile u32* halt_reason, void* link_fn)
 constexpr powah::GPR RPROCESS = powah::R3;
 constexpr powah::GPR RJIT = powah::R4;
 constexpr powah::GPR RHALTREASON = powah::R5;
+constexpr powah::GPR RLINKFN = powah::R6;
 constexpr powah::GPR RNZCV = powah::R31;
 
 constexpr powah::GPR ABI_PARAM1 = powah::R3;
