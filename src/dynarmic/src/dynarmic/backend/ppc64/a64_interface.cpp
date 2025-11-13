@@ -19,6 +19,7 @@
 namespace Dynarmic::A64 {
 
 using namespace Dynarmic::Backend::PPC64;
+using CodePtr = std::uint32_t*;
 
 struct A64AddressSpace final {
     explicit A64AddressSpace(const A64::UserConfig& conf)
@@ -74,8 +75,8 @@ struct A64Core final {
     static HaltReason Run(A64AddressSpace& process, A64JitState& thread_ctx, volatile u32* halt_reason) {
         const auto loc = thread_ctx.GetLocationDescriptor();
         const auto entry = process.GetOrEmit(loc);
-        using CodeFn = HaltReason (*)(A64AddressSpace*, A64JitState*, volatile u32*);
-        return (CodeFn(entry))(&process, &thread_ctx, halt_reason);
+        using CodeFn = HaltReason (*)(A64AddressSpace*, A64JitState*, volatile u32*, void*);
+        return (CodeFn(entry))(&process, &thread_ctx, halt_reason, reinterpret_cast<void*>(&A64Core::Run));
     }
 };
 
