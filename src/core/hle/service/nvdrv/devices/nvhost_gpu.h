@@ -66,6 +66,12 @@ private:
         CtxChannelGPFIFO = 0xB06F,
     };
 
+    enum class ChannelPriority : u32 {
+        Low = 0x32,
+        Medium = 0x64,
+        High = 0x96,
+    };
+
     enum class NotifierStatus : u16_le {
         NoError      = 0xFFFF,
         GenericError = 0x0001,

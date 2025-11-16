@@ -272,7 +272,15 @@ void nvhost_gpu::PostErrorNotification(u32 info32, u16 info16, NotifierStatus st
 
 NvResult nvhost_gpu::SetChannelPriority(IoctlChannelSetPriority& params) {
     channel_priority = params.priority;
-    LOG_DEBUG(Service_NVDRV, "(STUBBED) called, priority={:X}", channel_priority);
+    LOG_INFO(Service_NVDRV, "called, priority={:X}", channel_priority);
+
+    switch (static_cast<ChannelPriority>(channel_priority)) {
+    case ChannelPriority::Low: channel_timeslice = 1300; break;
+    case ChannelPriority::Medium: channel_timeslice = 2600; break;
+    case ChannelPriority::High: channel_timeslice = 5200; break;
+    default : return NvResult::BadParameter;
+    }
+
     return NvResult::Success;
 }
 
@@ -283,13 +291,22 @@ NvResult nvhost_gpu::AllocGPFIFOEx(IoctlAllocGpfifoEx& params, DeviceFD fd) {
               params.reserved[2]);
 
     if (channel_state->initialized) {
-        LOG_CRITICAL(Service_NVDRV, "Already allocated!");
+        LOG_DEBUG(Service_NVDRV, "Channel already initialized; AllocGPFIFOEx returning AlreadyAllocated");
         return NvResult::AlreadyAllocated;
     }
 
     u64 program_id{};
     if (auto* const session = core.GetSession(sessions[fd]); session != nullptr) {
         program_id = session->process->GetProgramId();
+    }
+
+    // Store program id for later lazy initialization
+    channel_state->program_id = program_id;
+
+    // If address space is not yet bound, defer channel initialization.
+    if (!channel_state->memory_manager) {
+        params.fence_out = syncpoint_manager.GetSyncpointFence(channel_syncpoint);
+        return NvResult::Success;
     }
 
     system.GPU().InitChannel(*channel_state, program_id);
@@ -307,13 +324,22 @@ NvResult nvhost_gpu::AllocGPFIFOEx2(IoctlAllocGpfifoEx& params, DeviceFD fd) {
               params.reserved[2]);
 
     if (channel_state->initialized) {
-        LOG_CRITICAL(Service_NVDRV, "Already allocated!");
+        LOG_DEBUG(Service_NVDRV, "Channel already initialized; AllocGPFIFOEx2 returning AlreadyAllocated");
         return NvResult::AlreadyAllocated;
     }
 
     u64 program_id{};
     if (auto* const session = core.GetSession(sessions[fd]); session != nullptr) {
         program_id = session->process->GetProgramId();
+    }
+
+    // Store program id for later lazy initialization
+    channel_state->program_id = program_id;
+
+    // If address space is not yet bound, defer channel initialization.
+    if (!channel_state->memory_manager) {
+        params.fence_out = syncpoint_manager.GetSyncpointFence(channel_syncpoint);
+        return NvResult::Success;
     }
 
     system.GPU().InitChannel(*channel_state, program_id);
@@ -340,9 +366,10 @@ NvResult nvhost_gpu::AllocateObjectContext(IoctlAllocObjCtx& params) {
     LOG_DEBUG(Service_NVDRV, "called, class_num={:#X}, flags={:#X}, obj_id={:#X}", params.class_num,
               params.flags, params.obj_id);
 
-    if (!channel_state || !channel_state->initialized) {
-        LOG_CRITICAL(Service_NVDRV, "No address space bound to allocate a object context!");
-        return NvResult::NotInitialized;
+    // Do not require channel initialization here: some clients allocate contexts before binding.
+    if (!channel_state) {
+        LOG_ERROR(Service_NVDRV, "No channel state available!");
+        return NvResult::InvalidState;
     }
 
     std::scoped_lock lk(channel_mutex);
@@ -364,11 +391,12 @@ NvResult nvhost_gpu::AllocateObjectContext(IoctlAllocObjCtx& params) {
     }
 
     if (ctxObjs[ctx_class_number_index].has_value()) {
-        LOG_ERROR(Service_NVDRV, "Object context for class {:#X} already allocated on this channel",
-                  params.class_num);
+        LOG_WARNING(Service_NVDRV, "Object context for class {:#X} already allocated on this channel",
+                    params.class_num);
         return NvResult::AlreadyAllocated;
     }
 
+    // Defer actual hardware context binding until channel is initialized.
     ctxObjs[ctx_class_number_index] = params;
 
     return NvResult::Success;
@@ -421,6 +449,11 @@ NvResult nvhost_gpu::SubmitGPFIFOImpl(IoctlSubmitGpfifo& params, Tegra::CommandL
     auto& gpu = system.GPU();
 
     std::scoped_lock lock(channel_mutex);
+
+    // Lazily initialize channel when address space is available
+    if (!channel_state->initialized && channel_state->memory_manager) {
+        system.GPU().InitChannel(*channel_state, channel_state->program_id);
+    }
 
     const auto bind_id = channel_state->bind_id;
 
@@ -510,6 +543,10 @@ NvResult nvhost_gpu::ChannelSetTimeout(IoctlChannelSetTimeout& params) {
 
 NvResult nvhost_gpu::ChannelSetTimeslice(IoctlSetTimeslice& params) {
     LOG_INFO(Service_NVDRV, "called, timeslice={:#X}", params.timeslice);
+
+    if (params.timeslice < 1000 || params.timeslice > 5000) {
+        return NvResult::BadParameter;
+    }
 
     channel_timeslice = params.timeslice;
 
