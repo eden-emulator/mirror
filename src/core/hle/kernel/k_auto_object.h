@@ -185,7 +185,7 @@ protected:
 
 private:
     std::atomic<u32> m_ref_count{};
-    ClassTokenType m_class_token{}; // neu: gespeicherter Klassentoken zur Devitalisierung
+    ClassTokenType m_class_token{};
 };
 
 class KAutoObjectWithListContainer;
