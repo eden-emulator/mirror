@@ -61,6 +61,8 @@ public:
             {1, &NgcServiceImpl::Check, "Check"},
             {2, &NgcServiceImpl::Mask, "Mask"},
             {3, &NgcServiceImpl::Reload, "Reload"},
+            {4, &NgcServiceImpl::Check, "Check2"},
+            {5, &NgcServiceImpl::Mask, "Mask2"},
         };
         // clang-format on
 

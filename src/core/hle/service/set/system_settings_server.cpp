@@ -316,7 +316,7 @@ ISystemSettingsServer::ISystemSettingsServer(Core::System& system_)
         {301, nullptr, "GetPushNotificationDirtyFlags"}, //20.0.0+
         {306, nullptr, "GetPinCodeReregistrationGuideAccounts"}, //20.0.0+
         {307, nullptr, "SetPinCodeReregistrationGuideAccounts"}, //20.0.0+
-        {315, nullptr, "GetHttpAuthConfigs"}, //21.0.0+
+        {315, C<&ISystemSettingsServer::GetHttpAuthConfigs>, "GetHttpAuthConfigs"}, //21.0.0+
         {319, nullptr, "GetAccountUserSettings"}, //21.0.0+
         {320, nullptr, "SetAccountUserSettings"}, //21.0.0+
         {321, nullptr, "GetDefaultAccountUserSettings"}, //21.0.0+
@@ -1333,6 +1333,12 @@ Result ISystemSettingsServer::SetPanelCrcMode(s32 panel_crc_mode) {
 
     m_system_settings.panel_crc_mode = panel_crc_mode;
     SetSaveNeeded();
+    R_SUCCEED();
+}
+
+Result ISystemSettingsServer::GetHttpAuthConfigs(Out<s32> out_count, OutBuffer<BufferAttr_HipcMapAlias> out_configs) {
+    LOG_WARNING(Service_SET, "(STUBBED) called, buffer_size={}", out_configs.size());
+    *out_count = 0;
     R_SUCCEED();
 }
 
