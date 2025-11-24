@@ -5,10 +5,10 @@
 #include <cstdint>
 #include <cstddef>
 #include <cassert>
-#include <ranges>
-#include <bit>
+#include <vector>
 #include <utility>
 #include <sys/mman.h>
+#include <cstdlib>
 
 //#ifndef __cpp_lib_unreachable
 namespace std {
