@@ -3,6 +3,7 @@
 
 add_library(powah INTERFACE)
 target_include_directories(powah INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_options(powah INTERFACE -Wno-unused-parameter)
 
 add_executable(powah_tests tests.cpp)
 create_target_directory_groups(powah_tests)

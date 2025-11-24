@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <ranges>
+#include <variant>
 
 #include "dynarmic/backend/ppc64/reg_alloc.h"
 #include "dynarmic/backend/ppc64/abi.h"
