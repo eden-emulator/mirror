@@ -196,21 +196,23 @@ void TranslatorVisitor::SUATOM(u64 insn) {
 }
 
 void TranslatorVisitor::SURED(u64 insn) {
-
     union {
         u64 raw;
-        BitField<0, 8, IR::Reg> operand_reg; // RA
-        BitField<8, 8, IR::Reg> coord_reg; // RB
-        BitField<20, 3, Size> size; // 20–22
-        BitField<21, 3, AtomicOp> op; // 21–23
-        BitField<33, 3, Type> type; // Dim
-        BitField<36, 13, u64> bound_offset; // Texture binding index
-        BitField<49, 2, Clamp> clamp; // clamp
+        BitField<54, 1, u64> is_bindless;
+        BitField<29, 4, AtomicOp> op;
+        BitField<33, 3, Type> type;
+        BitField<51, 3, Size> size;
+        BitField<49, 2, Clamp> clamp;
+        BitField<8, 8, IR::Reg> coord_reg;
+        BitField<20, 8, IR::Reg> operand_reg;
+        BitField<36, 13, u64> bound_offset;
+        BitField<39, 8, IR::Reg> bindless_reg;
     } const sured{insn};
 
     ImageAtomOp(*this, IR::Reg::RZ, sured.operand_reg, sured.coord_reg,
-                std::nullopt, sured.op, sured.clamp, sured.size, sured.type,
-                sured.bound_offset, false, false);
+                sured.bindless_reg, sured.op, sured.clamp, sured.size,
+                sured.type, sured.bound_offset, sured.is_bindless != 0,
+                false);
 }
 
 } // namespace Shader::Maxwell
