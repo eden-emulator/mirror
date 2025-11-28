@@ -57,7 +57,7 @@ class SigHandler {
 public:
     SigHandler() noexcept {
         signal_stack_size = std::max<size_t>(SIGSTKSZ, 2 * 1024 * 1024);
-        signal_stack_memory = mmap(nullptr, signal_stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        signal_stack_memory = std::malloc(signal_stack_size);
 
         stack_t signal_stack{};
         signal_stack.ss_sp = signal_stack_memory;
@@ -89,7 +89,7 @@ public:
     }
 
     ~SigHandler() noexcept {
-        munmap(signal_stack_memory, signal_stack_size);
+        std::free(signal_stack_memory);
     }
 
     void AddCodeBlock(u64 offset, CodeBlockInfo cbi) noexcept {
