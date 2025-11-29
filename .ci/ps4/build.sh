@@ -6,8 +6,8 @@
 cat << EOF >"ps4-toolchain.cmake"
 set(CMAKE_SYSROOT "$OO_PS4_TOOLCHAIN")
 
-set(CMAKE_C_FLAGS "--target=x86_64-pc-freebsd12-elf -funwind-tables -fuse-ld=ldd")
-set(CMAKE_CXX_FLAGS "--target=x86_64-pc-freebsd12-elf -funwind-tables -fuse-ld=lld")
+set(CMAKE_C_FLAGS "-D_LIBCPP_HAS_MUSL_LIBC=1 -D_GNU_SOURCE=1 --target=x86_64-pc-freebsd12-elf -funwind-tables -isystem $OO_PS4_TOOLCHAIN/include -isystem $OO_PS4_TOOLCHAIN/include/c++/v1")
+set(CMAKE_CXX_FLAGS "-D_LIBCPP_HAS_MUSL_LIBC=1 -D_GNU_SOURCE=1 --target=x86_64-pc-freebsd12-elf -funwind-tables -isystem $OO_PS4_TOOLCHAIN/include -isystem $OO_PS4_TOOLCHAIN/include/c++/v1")
 
 set(CMAKE_EXE_LINKER_FLAGS "-m elf_x86_64 -pie --script $OO_PS4_TOOLCHAIN/link.x --eh-frame-hdr -L$OO_PS4_TOOLCHAIN/lib -lc -lkernel -lc++ -lSceUserService -lSceVideoOut -lSceAudioOut -lScePad -lSceSysmodule -lSceFreeType $OO_PS4_TOOLCHAIN/lib/crt1.o")
 set(CMAKE_C_LINK_FLAGS "-m elf_x86_64 -pie --script $OO_PS4_TOOLCHAIN/link.x --eh-frame-hdr -L$OO_PS4_TOOLCHAIN/lib -lc -lkernel -lSceUserService -lSceVideoOut -lSceAudioOut -lScePad -lSceSysmodule -lSceFreeType $OO_PS4_TOOLCHAIN/lib/crt1.o")
@@ -23,6 +23,9 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+# TODO: Why does cmake not set this?
+set(CMAKE_SIZEOF_VOID_P 8)
 EOF
 
 export ARCH_FLAGS="$ARCH_FLAGS -O3"
@@ -34,10 +37,10 @@ fi
 # PS4 does not, atleast not in the normal sense
 export EXTRA_CMAKE_FLAGS=("${EXTRA_CMAKE_FLAGS[@]}" $@)
 mkdir -p build
-cd build && cmake .. -G Ninja \
+cd build
+cmake .. -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="ps4-toolchain.cmake" \
     -DENABLE_QT_TRANSLATION=OFF \
-    -DUSE_DISCORD_PRESENCE=OFF \
     -DENABLE_CUBEB=OFF \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_FLAGS="$ARCH_FLAGS" \
@@ -45,8 +48,10 @@ cd build && cmake .. -G Ninja \
     -DENABLE_SDL2=OFF \
     -DENABLE_QT=OFF \
     -DENABLE_OPENSSL=OFF \
+    -DENABLE_WEB_SERVICE=OFF \
+    -DUSE_DISCORD_PRESENCE=OFF \
     -DCPMUTIL_FORCE_BUNDLED=ON \
+    -DYUZU_USE_EXTERNAL_FFMPEG=ON \
     -DYUZU_USE_CPM=ON \
     "${EXTRA_CMAKE_FLAGS[@]}" || exit
-
-cd build && ninja -j${NPROC} || exit
+ninja -j${NPROC} || exit
