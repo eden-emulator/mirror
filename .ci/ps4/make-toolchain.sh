@@ -135,6 +135,9 @@ finish_prefix() {
     cp -a ~/OpenOrbis/PS4Toolchain/lib/libkernel* $PREFIX/lib/
     cp -a ~/OpenOrbis/PS4Toolchain/lib/libSce* $PREFIX/lib/
 
+    cp -a ~/OpenOrbis/PS4Toolchain/lib/libSDL* $PREFIX/lib/
+    cp -r ~/OpenOrbis/PS4Toolchain/include/SDL2 $PREFIX/include/SDL2
+
     cp $WORK_PATH/llvm-build/compiler-rt/lib/freebsd/libclang_rt.builtins-x86_64.a $PREFIX/lib/
 
     # Combine libc++, libc++abi and libunwind into a single archive
