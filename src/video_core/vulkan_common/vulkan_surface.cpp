@@ -76,6 +76,8 @@ vk::SurfaceKHR CreateSurface(
             throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
         }
     }
+#elif defined(__OPENORBIS__)
+    // No native
 #else
     if (window_info.type == Core::Frontend::WindowSystemType::X11) {
         const VkXlibSurfaceCreateInfoKHR xlib_ci{
