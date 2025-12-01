@@ -185,7 +185,7 @@ bool IsFastmemEnabled() {
     // Only 4kb systems support host MMU right now
     // TODO: Support this
     return getpagesize() == 4096;
-#elif !defined(__APPLE__) && !defined(__ANDROID__) && !defined(_WIN32) && !defined(__linux__) && !defined(__FreeBSD__)
+#elif defined(__OPENORBIS__) || (!defined(__APPLE__) && !defined(__ANDROID__) && !defined(_WIN32) && !defined(__linux__) && !defined(__FreeBSD__))
     return false;
 #else
     return true;
