@@ -69,6 +69,5 @@ if (NOT MSVC)
 endif()
 
 if (PLATFORM_PS4)
-    create_ps4_fself(yuzu-cmd eden-cli)
-    create_ps4_pkg(yuzu-cmd eden-cli "IV0000-BREW00090_00-EDENEMULAT000000")
+    create_ps4_pkg(yuzu-cmd eden-cli IV0000-BREW00090_00-EDENEMULAT000000)
 endif()
