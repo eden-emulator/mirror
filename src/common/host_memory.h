@@ -4,6 +4,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include "common/common_funcs.h"
 #include "common/common_types.h"
 #include "common/virtual_buffer.h"
@@ -81,7 +82,7 @@ private:
     size_t virtual_base_offset{};
 
     // Fallback if fastmem is not supported on this platform
-    std::unique_ptr<Common::VirtualBuffer<u8>> fallback_buffer;
+    std::optional<Common::VirtualBuffer<u8>> fallback_buffer;
 };
 
 } // namespace Common
