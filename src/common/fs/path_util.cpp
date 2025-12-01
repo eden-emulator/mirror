@@ -130,6 +130,10 @@ public:
         ASSERT(!eden_path.empty());
         eden_path_cache = eden_path / CACHE_DIR;
         eden_path_config = eden_path / CONFIG_DIR;
+#elif defined(__OPENORBIS__)
+        eden_path = "/data/eden";
+        eden_path_cache = eden_path / CACHE_DIR;
+        eden_path_config = eden_path / CONFIG_DIR;
 #else
         eden_path = GetCurrentDir() / PORTABLE_DIR;
         if (!Exists(eden_path) || !IsDir(eden_path)) {
