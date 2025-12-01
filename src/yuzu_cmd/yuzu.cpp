@@ -61,8 +61,7 @@ STUB_WEAK(ZSTD_trace_decompress_begin)
 STUB_WEAK(ZSTD_trace_decompress_end)
 FILE* __stderrp = stdout;
 #   undef STUB_WEAK
-#endif
-#ifdef _WIN32
+#elif defined(_WIN32)
 extern "C" {
 // tells Nvidia and AMD drivers to use the dedicated GPU by default on laptops with switchable
 // graphics
