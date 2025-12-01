@@ -21,6 +21,7 @@ prepare_prefix() {
     [ -d create-fself ] || git clone --depth=1 https://github.com/OpenOrbis/create-fself
     [ -d create-gp4 ] || git clone --depth=1 https://github.com/OpenOrbis/create-gp4
     [ -d readoelf ] || git clone --depth=1 https://github.com/OpenOrbis/readoelf
+    [ -d LibOrbisPkg ] || git clone --depth=1 https://github.com/maxton/LibOrbisPkg
 
     mkdir -p $PREFIX "$PREFIX/bin" "$PREFIX/include"
     [ -f "$PREFIX/include/orbis/libkernel.h" ] || cp -r OpenOrbis-PS4-Toolchain/include/* "$PREFIX/include/"
@@ -101,31 +102,32 @@ build_llvm() {
 }
 
 build_tools() {
+
     # Build create-fself
     cd create-fself/cmd/create-fself
     cp go-linux.mod go.mod
-    go build -o create-fself
+    go build -ldflags "-linkmode external -extldflags -static" -o create-fself
     mv ./create-fself $PREFIX/bin/create-fself
     cd ../../../
 
     # Build create-gp4
     cd create-gp4/cmd/create-gp4
-    go build -o create-gp4
+    go build -ldflags "-linkmode external -extldflags -static" -o create-gp4
     mv ./create-gp4 $PREFIX/bin/create-gp4
     cd ../../../
 
     # Build readoelf
     cd readoelf/cmd/readoelf
-    go build -o readoelf
+    go build -ldflags "-linkmode external -extldflags -static" -o readoelf
     mv ./readoelf $PREFIX/bin/readoelf
     cd ../../../
 
-    # Pull maxton's publishing tools (<3)
-    # Sadly maxton has passed on, we have forked the repository and will continue to update it in the future. RIP <3
-    cd $PREFIX/bin
-    [ -f PkgTool.Core-linux-x64-0.2.231.zip ] || wget https://github.com/maxton/LibOrbisPkg/releases/download/v0.2/PkgTool.Core-linux-x64-0.2.231.zip
-    [ -f PkgTool.Core ] || unzip PkgTool.Core-linux-x64-0.2.231.zip
-    chmod +x PkgTool.Core
+    # # Pull maxton's publishing tools (<3)
+    # # Sadly maxton has passed on, we have forked the repository and will continue to update it in the future. RIP <3
+    # cd $PREFIX/bin
+    # [ -f PkgTool.Core-linux-x64-0.2.231.zip ] || wget https://github.com/maxton/LibOrbisPkg/releases/download/v0.2/PkgTool.Core-linux-x64-0.2.231.zip
+    # [ -f PkgTool.Core ] || unzip PkgTool.Core-linux-x64-0.2.231.zip
+    # chmod +x PkgTool.Core
 }
 
 finish_prefix() {
