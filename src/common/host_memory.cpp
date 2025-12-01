@@ -451,16 +451,14 @@ static void* ChooseVirtualBase(size_t virtual_size) {
 
 #else
 
-static void* ChooseVirtualBase(size_t virtual_size) {
-#if defined(__OPENORBIS__)
-    return mmap(nullptr, virtual_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_SYSTEM, -1, 0);
-#elif defined(__FreeBSD__) || defined(__DragonFly__) || defined(__OpenBSD__) || defined(__sun__) || defined(__HAIKU__) || defined(__managarm__) || defined(__AIX__)
-    void* virtual_base = mmap(nullptr, virtual_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_ALIGNED_SUPER, -1, 0);
+static void* ChooseVirtualBase(size_t size) {
+#if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__OpenBSD__) || defined(__sun__) || defined(__HAIKU__) || defined(__managarm__) || defined(__AIX__)
+    void* virtual_base = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_ALIGNED_SUPER, -1, 0);
     if (virtual_base != MAP_FAILED)
         return virtual_base;
-    return mmap(nullptr, virtual_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+    return mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
 #else
-    return mmap(nullptr, virtual_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+    return mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
 #endif
 }
 
@@ -713,6 +711,12 @@ private:
 #endif // ^^^ POSIX ^^^
 
 HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_) : backing_size(backing_size_), virtual_size(virtual_size_) {
+#ifdef __OPENORBIS__
+    LOG_WARNING(HW_Memory, "Platform doesn't support fastmem");
+    fallback_buffer = std::make_unique<Common::VirtualBuffer<u8>>(backing_size);
+    backing_base = fallback_buffer->data();
+    virtual_base = nullptr;
+#else
     // Try to allocate a fastmem arena.
     // The implementation will fail with std::bad_alloc on errors.
     impl = std::make_unique<HostMemory::Impl>(AlignUp(backing_size, PageAlignment), AlignUp(virtual_size, PageAlignment) + HugePageSize);
@@ -723,6 +727,7 @@ HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_) : backing_siz
         virtual_base = reinterpret_cast<u8*>(Common::AlignUp(uintptr_t(virtual_base), HugePageSize));
         virtual_base_offset = virtual_base - impl->virtual_base;
     }
+#endif
 }
 
 HostMemory::~HostMemory() = default;
