@@ -26,27 +26,22 @@ public:
 
     template <typename T>
     Common::PhysicalAddress GetPhysicalAddr(const T* ptr) const {
-        return (reinterpret_cast<uintptr_t>(ptr) -
-                reinterpret_cast<uintptr_t>(buffer.BackingBasePointer())) +
-               DramMemoryMap::Base;
+        return (uintptr_t(ptr) - uintptr_t(buffer.BackingBasePointer())) + DramMemoryMap::Base;
     }
 
     template <typename T>
     PAddr GetRawPhysicalAddr(const T* ptr) const {
-        return static_cast<PAddr>(reinterpret_cast<uintptr_t>(ptr) -
-                                  reinterpret_cast<uintptr_t>(buffer.BackingBasePointer()));
+        return PAddr(uintptr_t(ptr) - uintptr_t(buffer.BackingBasePointer()));
     }
 
     template <typename T>
     T* GetPointer(Common::PhysicalAddress addr) {
-        return reinterpret_cast<T*>(buffer.BackingBasePointer() +
-                                    (GetInteger(addr) - DramMemoryMap::Base));
+        return reinterpret_cast<T*>(buffer.BackingBasePointer() + (GetInteger(addr) - DramMemoryMap::Base));
     }
 
     template <typename T>
     const T* GetPointer(Common::PhysicalAddress addr) const {
-        return reinterpret_cast<T*>(buffer.BackingBasePointer() +
-                                    (GetInteger(addr) - DramMemoryMap::Base));
+        return reinterpret_cast<T*>(buffer.BackingBasePointer() + (GetInteger(addr) - DramMemoryMap::Base));
     }
 
     template <typename T>

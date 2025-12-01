@@ -161,7 +161,7 @@ struct DeviceMemoryManagerAllocator {
 
 template <typename Traits>
 DeviceMemoryManager<Traits>::DeviceMemoryManager(const DeviceMemory& device_memory_)
-    : physical_base{reinterpret_cast<const uintptr_t>(device_memory_.buffer.BackingBasePointer())},
+    : physical_base{uintptr_t(device_memory_.buffer.BackingBasePointer())},
       device_inter{nullptr}, compressed_physical_ptr(device_as_size >> Memory::YUZU_PAGEBITS),
       compressed_device_addr(1ULL << ((Settings::values.memory_layout_mode.GetValue() ==
                                                Settings::MemoryLayout::Memory_4Gb

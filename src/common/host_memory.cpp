@@ -46,17 +46,6 @@
 #ifndef MAP_ANONYMOUS
 #   define MAP_ANONYMOUS MAP_ANON
 #endif
-// PlayStation 4
-// Flag needs to be undef-ed on non PS4 since it has different semantics
-// on some platforms.
-#ifndef MAP_SYSTEM
-#   ifdef __OPENORBIS__
-#       define MAP_SYSTEM 0x2000
-#   else
-#       undef MAP_SYSTEM
-#       define MAP_SYSTEM 0
-#   endif
-#endif
 
 #endif // ^^^ POSIX ^^^
 

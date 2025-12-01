@@ -14,6 +14,19 @@
 
 #include "common/assert.h"
 #include "common/virtual_buffer.h"
+#include "common/logging/log.h"
+
+// PlayStation 4
+// Flag needs to be undef-ed on non PS4 since it has different semantics
+// on some platforms.
+#ifdef __OPENORBIS__
+#   ifndef MAP_SYSTEM
+#       define MAP_SYSTEM 0x2000
+#   endif
+#   ifndef MAP_VOID
+#       define MAP_VOID 0x100
+#   endif
+#endif
 
 namespace Common {
 
@@ -22,19 +35,8 @@ void* AllocateMemoryPages(std::size_t size) noexcept {
     void* addr = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
     ASSERT(addr != nullptr);
 #elif defined(__OPENORBIS__)
-    u64 align = 16384;
-    void *addr = nullptr;
-    off_t direct_mem_off;
-    int32_t rc;
-    if ((rc = sceKernelAllocateDirectMemory(0, sceKernelGetDirectMemorySize(), size, align, 3, &direct_mem_off)) < 0) {
-        ASSERT(false && "sceKernelAllocateDirectMemory");
-        return nullptr;
-    }
-    if ((rc = sceKernelMapDirectMemory(&addr, size, 0x33, 0, direct_mem_off, align)) < 0) {
-        ASSERT(false && "sceKernelMapDirectMemory");
-        return nullptr;
-    }
-    ASSERT(addr != nullptr);
+    void* addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    ASSERT(addr != MAP_FAILED);
 #else
     void* addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
     ASSERT(addr != MAP_FAILED);
@@ -47,7 +49,6 @@ void FreeMemoryPages(void* addr, [[maybe_unused]] std::size_t size) noexcept {
         return;
 #ifdef _WIN32
     VirtualFree(addr, 0, MEM_RELEASE)
-#elif defined(__OPENORBIS__)
 #else
     int rc = munmap(addr, size);
     ASSERT(rc == 0);
