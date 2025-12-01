@@ -59,6 +59,7 @@ STUB_WEAK(ZSTD_trace_compress_begin)
 STUB_WEAK(ZSTD_trace_compress_end)
 STUB_WEAK(ZSTD_trace_decompress_begin)
 STUB_WEAK(ZSTD_trace_decompress_end)
+FILE* __stderrp = stdout;
 #   undef STUB_WEAK
 #endif
 #ifdef _WIN32

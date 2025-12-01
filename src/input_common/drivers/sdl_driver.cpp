@@ -42,6 +42,7 @@ public:
     }
 
     void EnableMotion() {
+#if SDL_VERSION_ATLEAST(2, 26, 4)
         if (!sdl_controller) {
             return;
         }
@@ -58,12 +59,14 @@ public:
         if (has_gyro) {
             SDL_GameControllerSetSensorEnabled(controller, SDL_SENSOR_GYRO, SDL_TRUE);
         }
+#endif
     }
 
     bool HasMotion() const {
         return has_gyro || has_accel;
     }
 
+#if SDL_VERSION_ATLEAST(2, 26, 4)
     bool UpdateMotion(SDL_ControllerSensorEvent event) {
         constexpr float gravity_constant = 9.80665f;
         std::scoped_lock lock{mutex};
@@ -105,6 +108,7 @@ public:
         motion.delta_timestamp = time_difference * 1000;
         return true;
     }
+#endif
 
     const BasicMotion& GetMotion() const {
         return motion;
@@ -149,13 +153,15 @@ public:
     }
 
     bool HasHDRumble() const {
+#if SDL_VERSION_ATLEAST(2, 26, 4)
         if (sdl_controller) {
-            const auto type = SDL_GameControllerGetType(sdl_controller.get());
+            auto const type = SDL_GameControllerGetType(sdl_controller.get());
             return (type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO) ||
                    (type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT) ||
                    (type == SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT) ||
                    (type == SDL_CONTROLLER_TYPE_PS5);
         }
+#endif
         return false;
     }
 
@@ -252,26 +258,21 @@ public:
     }
 
     std::string GetControllerName() const {
+#if SDL_VERSION_ATLEAST(2, 26, 4)
         if (sdl_controller) {
             switch (SDL_GameControllerGetType(sdl_controller.get())) {
-            case SDL_CONTROLLER_TYPE_XBOX360:
-                return "Xbox 360 Controller";
-            case SDL_CONTROLLER_TYPE_XBOXONE:
-                return "Xbox One Controller";
-            case SDL_CONTROLLER_TYPE_PS3:
-                return "DualShock 3 Controller";
-            case SDL_CONTROLLER_TYPE_PS4:
-                return "DualShock 4 Controller";
-            case SDL_CONTROLLER_TYPE_PS5:
-                return "DualSense Controller";
+            case SDL_CONTROLLER_TYPE_XBOX360: return "Xbox 360 Controller";
+            case SDL_CONTROLLER_TYPE_XBOXONE: return "Xbox One Controller";
+            case SDL_CONTROLLER_TYPE_PS3: return "DualShock 3 Controller";
+            case SDL_CONTROLLER_TYPE_PS4: return "DualShock 4 Controller";
+            case SDL_CONTROLLER_TYPE_PS5: return "DualSense Controller";
             default:
+                if (auto const name = SDL_GameControllerName(sdl_controller.get()); name)
+                    return name;
                 break;
             }
-            const auto name = SDL_GameControllerName(sdl_controller.get());
-            if (name) {
-                return name;
-            }
         }
+#endif
 
         if (sdl_joystick) {
             const auto name = SDL_JoystickName(sdl_joystick.get());
@@ -456,6 +457,7 @@ void SDLDriver::HandleGameControllerEvent(const SDL_Event& event) {
         }
         break;
     }
+#if SDL_VERSION_ATLEAST(2, 26, 4)
     case SDL_CONTROLLERSENSORUPDATE: {
         if (auto joystick = GetSDLJoystickBySDLID(event.csensor.which)) {
             if (joystick->UpdateMotion(event.csensor)) {
@@ -472,6 +474,7 @@ void SDLDriver::HandleGameControllerEvent(const SDL_Event& event) {
         }
         break;
     }
+#endif
     case SDL_JOYDEVICEREMOVED:
         LOG_DEBUG(Input, "Controller removed with Instance_ID {}", event.jdevice.which);
         CloseJoystick(SDL_JoystickFromInstanceID(event.jdevice.which));
@@ -489,6 +492,7 @@ void SDLDriver::CloseJoysticks() {
 }
 
 SDLDriver::SDLDriver(std::string input_engine_) : InputEngine(std::move(input_engine_)) {
+#if SDL_VERSION_ATLEAST(2, 26, 4)
     // Set our application name. Currently passed to DBus by SDL and visible to the user through
     // their desktop environment.
     SDL_SetHint(SDL_HINT_APP_NAME, "Eden");
@@ -531,6 +535,7 @@ SDLDriver::SDLDriver(std::string input_engine_) : InputEngine(std::move(input_en
     // Disable hidapi driver for xbox. Already default on Windows, this causes conflict with native
     // driver on Linux.
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX, "0");
+#endif
 
     // If the frontend is going to manage the event loop, then we don't start one here
     start_thread = SDL_WasInit(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) == 0;
@@ -835,6 +840,7 @@ ButtonBindings SDLDriver::GetDefaultButtonBinding(
     auto slr_button = SDL_CONTROLLER_BUTTON_LEFTSHOULDER;
     auto srr_button = SDL_CONTROLLER_BUTTON_RIGHTSHOULDER;
 
+#if SDL_VERSION_ATLEAST(2, 26, 4)
     if (joystick->IsJoyconLeft()) {
         sll_button = SDL_CONTROLLER_BUTTON_PADDLE2;
         srl_button = SDL_CONTROLLER_BUTTON_PADDLE4;
@@ -843,6 +849,7 @@ ButtonBindings SDLDriver::GetDefaultButtonBinding(
         slr_button = SDL_CONTROLLER_BUTTON_PADDLE3;
         srr_button = SDL_CONTROLLER_BUTTON_PADDLE1;
     }
+#endif
 
     return {
         std::pair{Settings::NativeButton::A, SDL_CONTROLLER_BUTTON_B},
@@ -864,7 +871,9 @@ ButtonBindings SDLDriver::GetDefaultButtonBinding(
         {Settings::NativeButton::SLRight, slr_button},
         {Settings::NativeButton::SRRight, srr_button},
         {Settings::NativeButton::Home, SDL_CONTROLLER_BUTTON_GUIDE},
+#if SDL_VERSION_ATLEAST(2, 26, 4)
         {Settings::NativeButton::Screenshot, SDL_CONTROLLER_BUTTON_MISC1},
+#endif
     };
 }
 

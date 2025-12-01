@@ -500,9 +500,12 @@ class HostMemory::Impl {
 public:
     explicit Impl(size_t backing_size_, size_t virtual_size_)
         : backing_size{backing_size_}, virtual_size{virtual_size_} {
+#ifdef __OPENORBIS__
+
+#else
         long page_size = sysconf(_SC_PAGESIZE);
-        ASSERT_MSG(page_size == 0x1000, "page size {:#x} is incompatible with 4K paging",
-                   page_size);
+        ASSERT_MSG(page_size == 0x1000, "page size {:#x} is incompatible with 4K paging", page_size);
+#endif
         // Backing memory initialization
 #if defined(__sun__) || defined(__HAIKU__) || defined(__NetBSD__) || defined(__DragonFly__)
         fd = shm_open_anon(O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);

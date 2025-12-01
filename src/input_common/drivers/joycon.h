@@ -6,7 +6,14 @@
 #include <array>
 #include <span>
 #include <thread>
-#include <SDL_hidapi.h>
+
+#include <SDL.h>
+#if SDL_VERSION_ATLEAST(2, 26, 4)
+#   include <SDL_hidapi.h>
+#else
+struct SDL_hid_device;
+struct SDL_hid_device_info;
+#endif
 
 #include "input_common/input_engine.h"
 

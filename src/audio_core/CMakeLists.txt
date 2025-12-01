@@ -251,8 +251,8 @@ if (ENABLE_SDL2)
         sink/sdl2_sink.cpp
         sink/sdl2_sink.h
     )
-
-    target_link_libraries(audio_core PRIVATE SDL2::SDL2)
+    target_include_directories(audio_core PRIVATE ${CMAKE_SYSROOT}/include/SDL2)
+    target_link_libraries(audio_core PRIVATE SDL2)
     target_compile_definitions(audio_core PRIVATE HAVE_SDL2)
 endif()
 

@@ -38,8 +38,8 @@ Common::Input::DriverResult JoyconDriver::RequestDeviceAccess(SDL_hid_device_inf
         return Common::Input::DriverResult::UnsupportedControllerType;
     }
 
-    hidapi_handle->handle =
-        SDL_hid_open(device_info->vendor_id, device_info->product_id, device_info->serial_number);
+#if SDL_VERSION_ATLEAST(2, 26, 4)
+    hidapi_handle->handle = SDL_hid_open(device_info->vendor_id, device_info->product_id, device_info->serial_number);
     std::memcpy(&handle_serial_number, device_info->serial_number, 15);
     if (!hidapi_handle->handle) {
         LOG_ERROR(Input, "Yuzu can't gain access to this device: ID {:04X}:{:04X}.",
@@ -48,6 +48,9 @@ Common::Input::DriverResult JoyconDriver::RequestDeviceAccess(SDL_hid_device_inf
     }
     SDL_hid_set_nonblocking(hidapi_handle->handle, 1);
     return Common::Input::DriverResult::Success;
+#else
+    return Common::Input::DriverResult::UnsupportedControllerType;
+#endif
 }
 
 Common::Input::DriverResult JoyconDriver::InitializeDevice() {
@@ -138,8 +141,6 @@ void JoyconDriver::InputThread(std::stop_token stop_token) {
     Common::SetCurrentThreadName("JoyconInput");
     input_thread_running = true;
 
-    // Max update rate is 5ms, ensure we are always able to read a bit faster
-    constexpr int ThreadDelay = 3;
     std::vector<u8> buffer(MaxBufferSize);
 
     while (!stop_token.stop_requested()) {
@@ -150,14 +151,17 @@ void JoyconDriver::InputThread(std::stop_token stop_token) {
             continue;
         }
 
+#if SDL_VERSION_ATLEAST(2, 26, 4)
+        // Max update rate is 5ms, ensure we are always able to read a bit faster
+        int constexpr thread_delay = 3;
         // By disabling the input thread we can ensure custom commands will succeed as no package is
         // skipped
         if (!disable_input_thread) {
-            status = SDL_hid_read_timeout(hidapi_handle->handle, buffer.data(), buffer.size(),
-                                          ThreadDelay);
+            status = SDL_hid_read_timeout(hidapi_handle->handle, buffer.data(), buffer.size(), thread_delay);
         } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(ThreadDelay));
+            std::this_thread::sleep_for(std::chrono::milliseconds(thread_delay));
         }
+#endif
 
         if (IsPayloadCorrect(status, buffer)) {
             OnNewData(buffer);
@@ -690,19 +694,18 @@ void JoyconDriver::SetCallbacks(const JoyconCallbacks& callbacks) {
     joycon_poller->SetCallbacks(callbacks);
 }
 
-Common::Input::DriverResult JoyconDriver::GetDeviceType(SDL_hid_device_info* device_info,
-                                                        ControllerType& controller_type) {
+Common::Input::DriverResult JoyconDriver::GetDeviceType(SDL_hid_device_info* device_info, ControllerType& controller_type) {
+#if SDL_VERSION_ATLEAST(2, 26, 4)
     static constexpr std::array<std::pair<u32, ControllerType>, 6> supported_devices{
         std::pair<u32, ControllerType>{0x2006, ControllerType::Left},
         {0x2007, ControllerType::Right},
         {0x2009, ControllerType::Pro},
     };
-    constexpr u16 nintendo_vendor_id = 0x057e;
 
+    constexpr u16 nintendo_vendor_id = 0x057e;
     controller_type = ControllerType::None;
-    if (device_info->vendor_id != nintendo_vendor_id) {
+    if (device_info->vendor_id != nintendo_vendor_id)
         return Common::Input::DriverResult::UnsupportedControllerType;
-    }
 
     for (const auto& [product_id, type] : supported_devices) {
         if (device_info->product_id == static_cast<u16>(product_id)) {
@@ -710,16 +713,20 @@ Common::Input::DriverResult JoyconDriver::GetDeviceType(SDL_hid_device_info* dev
             return Common::Input::DriverResult::Success;
         }
     }
+#endif
     return Common::Input::DriverResult::UnsupportedControllerType;
 }
 
-Common::Input::DriverResult JoyconDriver::GetSerialNumber(SDL_hid_device_info* device_info,
-                                                          SerialNumber& serial_number) {
+Common::Input::DriverResult JoyconDriver::GetSerialNumber(SDL_hid_device_info* device_info, SerialNumber& serial_number) {
+#if SDL_VERSION_ATLEAST(2, 26, 4)
     if (device_info->serial_number == nullptr) {
         return Common::Input::DriverResult::Unknown;
     }
     std::memcpy(&serial_number, device_info->serial_number, 15);
     return Common::Input::DriverResult::Success;
+#else
+    return Common::Input::DriverResult::Unknown;
+#endif
 }
 
 } // namespace InputCommon::Joycon
