@@ -147,7 +147,11 @@ if (ENABLE_SDL2)
         AddJsonPackage(sdl2)
     endif()
 
-    find_package(SDL2 2.26.4 REQUIRED)
+    if (PLATFORM_PS4)
+        set(SDL2_LIBRARY ${CMAKE_SYSROOT}/lib/libSDL2.a)
+        set(SDL2_INCLUDE_DIR ${CMAKE_SYSROOT}/include/SDL2)
+    endif()
+    find_package(SDL2 REQUIRED)
 endif()
 
 set(BUILD_SHARED_LIBS OFF)

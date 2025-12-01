@@ -75,6 +75,12 @@ EmuWindow_SDL2_VK::EmuWindow_SDL2_VK(InputCommon::InputSubsystem* input_subsyste
         window_info.render_surface = reinterpret_cast<void*>(wm.info.android.window);
         break;
 #endif
+#ifdef SDL_VIDEO_DRIVER_DIRECTFB
+    case SDL_SYSWM_TYPE::SDL_SYSWM_DIRECTFB:
+        window_info.type = Core::Frontend::WindowSystemType::Headless;
+        window_info.render_surface = reinterpret_cast<void*>(wm.info.dfb.window);
+        break;
+#endif
     default:
         LOG_CRITICAL(Frontend, "Window manager subsystem {} not implemented", wm.subsystem);
         std::exit(EXIT_FAILURE);
