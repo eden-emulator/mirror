@@ -59,6 +59,8 @@ namespace {
     case Core::Frontend::WindowSystemType::Xcb:
         extensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
         break;
+#elif defined(__OPENORBIS__)
+    // No vulkan
 #else
     case Core::Frontend::WindowSystemType::X11:
         extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
