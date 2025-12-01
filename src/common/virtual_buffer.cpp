@@ -6,8 +6,6 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#elif defined(__OPENORBIS__)
-#include <orbis/libkernel.h>
 #else
 #include <sys/mman.h>
 #endif
