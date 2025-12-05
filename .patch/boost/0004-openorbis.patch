@@ -1,0 +1,17 @@
+diff --git a/libs/asio/include/boost/asio/detail/impl/socket_ops.ipp b/libs/asio/include/boost/asio/detail/impl/socket_ops.ipp
+index 0129511c..10fc9b04 100644
+--- a/libs/asio/include/boost/asio/detail/impl/socket_ops.ipp
++++ b/libs/asio/include/boost/asio/detail/impl/socket_ops.ipp
+@@ -15,6 +15,12 @@
+ # pragma once
+ #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
+ 
++// hacky fix for ps4
++#if defined(_LIBCPP_HAS_MUSL_LIBC)
++#  define FIONBIO 0
++#  define FIONREAD 1
++#endif
++
+ #include <boost/asio/detail/config.hpp>
+ 
+ #include <cctype>

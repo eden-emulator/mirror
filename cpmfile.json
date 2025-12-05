@@ -19,7 +19,8 @@
         "patches": [
             "0001-clang-cl.patch",
             "0002-use-marmasm.patch",
-            "0003-armasm-options.patch"
+            "0003-armasm-options.patch",
+            "0004-openorbis.patch"
         ]
     },
     "fmt": {

@@ -242,7 +242,10 @@ else()
                 --enable-pic
                 --cc="${FFmpeg_CC}"
                 --cxx="${FFmpeg_CXX}"
-                ${FFmpeg_CROSS_COMPILE_FLAG}
+                --ld="${CMAKE_LINKER}"
+                --ldflags="${CMAKE_C_LINK_FLAGS}"
+                --cflags="${CMAKE_C_FLAGS}"
+                --cxxflags="${CMAKE_CXX_FLAGS}"
                 ${FFmpeg_HWACCEL_FLAGS}
                 ${FFmpeg_CROSS_COMPILE_FLAGS}
         WORKING_DIRECTORY

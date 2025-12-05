@@ -113,7 +113,10 @@
         "hash": "a0d2fa8c957704dd49e00a726284ac5ca034b50b00d2b20a94fa1bbfbb80841467834bfdc84aa0ed0d6aab894608fd6c86c3b94eee46343f0e6d9c22e391dbf9",
         "version": "1.3",
         "git_version": "1.3.18",
-        "find_args": "MODULE"
+        "find_args": "MODULE",
+        "patches": [
+            "0001-openorbis.patch"
+        ]
     },
     "vulkan-utility-headers": {
         "package": "VulkanUtilityLibraries",
@@ -134,7 +137,8 @@
             "SPIRV_SKIP_EXECUTABLES ON"
         ],
         "patches": [
-            "0001-netbsd-fix.patch"
+            "0001-netbsd-fix.patch",
+            "0002-openorbis.patch"
         ]
     },
     "spirv-headers": {

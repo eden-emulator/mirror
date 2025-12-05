@@ -1,0 +1,13 @@
+diff --git a/unix.c b/unix.c
+index 6669216..86a2faa 100644
+--- a/unix.c
++++ b/unix.c
+@@ -53,7 +53,7 @@
+ #include <poll.h>
+ #endif
+ 
+-#if !defined(HAS_SOCKLEN_T) && !defined(__socklen_t_defined)
++#if !defined(_LIBCPP_HAS_MUSL_LIBC) && !defined(HAS_SOCKLEN_T) && !defined(__socklen_t_defined)
+ typedef int socklen_t;
+ #endif
+ 
