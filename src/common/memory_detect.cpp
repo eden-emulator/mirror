@@ -8,7 +8,7 @@
 // clang-format on
 #else
 #include <sys/types.h>
-#if defined(__APPLE__) || defined(__FreeBSD__)
+#if defined(__APPLE__) || (defined(__FreeBSD__) && !defined(_LIBCPP_HAS_MUSL_LIBC))
 #include <sys/sysctl.h>
 #elif defined(__linux__)
 #include <sys/sysinfo.h>
@@ -43,7 +43,7 @@ static MemoryInfo Detect() {
     sysctlbyname("vm.swapusage", &vmusage, &sizeof_vmusage, nullptr, 0);
     mem_info.TotalPhysicalMemory = ramsize;
     mem_info.TotalSwapMemory = vmusage.xsu_total;
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) && !defined(_LIBCPP_HAS_MUSL_LIBC)
     u_long physmem, swap_total;
     std::size_t sizeof_u_long = sizeof(u_long);
     // sysctlbyname(const char *, void *, size_t *, const void *, size_t);

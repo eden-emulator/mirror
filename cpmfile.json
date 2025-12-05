@@ -78,7 +78,10 @@
         "min_version": "1.3",
         "repo": "lsalzman/enet",
         "tag": "v%VERSION%",
-        "version": "1.3.18"
+        "version": "1.3.18",
+        "patches": [
+            "0001-openorbis.patch"
+        ]
     },
     "ffmpeg": {
         "bundled": true,
