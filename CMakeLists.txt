@@ -17,6 +17,7 @@ include(DownloadExternals)
 include(CMakeDependentOption)
 include(CTest)
 include(CPMUtil)
+include(OpenOrbis)
 
 DetectArchitecture()
 
