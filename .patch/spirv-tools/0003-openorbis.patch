@@ -1,0 +1,25 @@
+diff --git a/source/opt/loop_dependence.cpp b/source/opt/loop_dependence.cpp
+index e41c044..a51b53b 100644
+--- a/source/opt/loop_dependence.cpp
++++ b/source/opt/loop_dependence.cpp
+@@ -12,6 +12,12 @@
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ 
++// PS4: issue?
++#ifdef __PS4__
++#pragma clang diagnostic ignored "-Wabsolute-value"
++#pragma clang diagnostic ignored "-Wshorten-64-to-32"
++#endif
++
+ #include "source/opt/loop_dependence.h"
+ 
+ #include <functional>
+@@ -19,6 +25,7 @@
+ #include <string>
+ #include <utility>
+ #include <vector>
++#include <cstdlib>
+ 
+ #include "source/opt/instruction.h"
+ #include "source/opt/scalar_analysis_nodes.h"
