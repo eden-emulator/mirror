@@ -51,6 +51,16 @@
 #include <unistd.h>
 #endif
 
+#ifdef __OPENORBIS__
+#   define STUB_WEAK(name) extern "C" void name() { printf("called " #name); asm volatile("ud2"); }
+STUB_WEAK(__cxa_thread_atexit)
+STUB_WEAK(__assert)
+STUB_WEAK(ZSTD_trace_compress_begin)
+STUB_WEAK(ZSTD_trace_compress_end)
+STUB_WEAK(ZSTD_trace_decompress_begin)
+STUB_WEAK(ZSTD_trace_decompress_end)
+#   undef STUB_WEAK
+#endif
 #ifdef _WIN32
 extern "C" {
 // tells Nvidia and AMD drivers to use the dedicated GPU by default on laptops with switchable
