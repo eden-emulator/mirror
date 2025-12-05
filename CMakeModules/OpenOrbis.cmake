@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+function(add_fself project target)
+    add_custom_command(
+        OUTPUT "${target}.self"
+        COMMAND ${CMAKE_SYSROOT}/bin/create-fself
+            -in=${CMAKE_BINARY_DIR}/bin/${target}
+            -out=${CMAKE_BINARY_DIR}/bin/${target}.oelf
+            --eboot ${CMAKE_BINARY_DIR}/bin/eboot.bin
+        VERBATIM
+        DEPENDS "${project}"
+    )
+    add_custom_target("${project}_self" ALL DEPENDS "${target}.self")
+endfunction()
+
+function(add_pkg project target)
+    set(sce_sys_dir ${CMAKE_BINARY_DIR}/sce_sys)
+    set(sce_sys_param ${sce_sys_dir}/param.sfo)
+    add_custom_command(
+        OUTPUT "${target}.pkg"
+        COMMAND mkdir -p ${sce_sys_dir}
+        COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_new ${sce_sys_param}
+        COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} APP_TYPE --type Integer --maxsize 4 --value 1
+        COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} APP_VER --type Utf8 --maxsize 8 --value '1.03'
+        COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} ATTRIBUTE --type Integer --maxsize 4 --value 0
+        COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} CATEGORY --type Utf8 --maxsize 4 --value 'gd'
+        COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} CONTENT_ID --type Utf8 --maxsize 48 --value 'IV0000-BREW00090_00-EDENEMULAT000000'
+        COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} DOWNLOAD_DATA_SIZE --type Integer --maxsize 4 --value 0
+        COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} SYSTEM_VER --type Integer --maxsize 4 --value 0
+        COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} TITLE --type Utf8 --maxsize 128 --value 'Eden Emulator'
+        COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} TITLE_ID --type Utf8 --maxsize 12 --value 'BREW00090'
+        COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} VERSION --type Utf8 --maxsize 8 --value '1.03'
+        VERBATIM
+        DEPENDS "${target}.self"
+    )
+    add_custom_target("${project}_pkg" ALL DEPENDS "${target}.pkg")
+endfunction()
+
+if (NOT DEFINED ENV{OO_PS4_TOOLCHAIN})
+    set(ENV{OO_PS4_TOOLCHAIN} ${CMAKE_SYSROOT})
+endif ()

@@ -44,6 +44,8 @@ if (ENABLE_OPENGL)
 endif()
 if (MSVC)
     target_link_libraries(yuzu-cmd PRIVATE getopt)
+elseif(PLATFORM_PS4)
+    target_link_libraries(yuzu-cmd PRIVATE SceVideoOut SceAudioOut ScePad)
 endif()
 target_link_libraries(yuzu-cmd PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
 
@@ -74,4 +76,9 @@ if (NOT MSVC)
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-variable>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-parameter>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>)
+endif()
+
+if (PLATFORM_PS4)
+    add_fself(yuzu-cmd eden-cli)
+    add_pkg(yuzu-cmd eden-cli)
 endif()
