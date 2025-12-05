@@ -171,11 +171,14 @@ bool CreateDir(const fs::path& path) {
         return false;
     }
 
+    // TODO: Maybe this is what causes death?
+#ifndef __OPENORBIS__
     if (!Exists(path.parent_path())) {
         LOG_ERROR(Common_Filesystem, "Parent directory of path={} does not exist",
                   PathToUTF8String(path));
         return false;
     }
+#endif
 
     if (IsDir(path)) {
         LOG_DEBUG(Common_Filesystem, "Filesystem object at path={} exists and is a directory",
