@@ -39,22 +39,30 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
     elseif (NOT (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES CMAKE_SYSTEM_PROCESSOR
     AND CMAKE_HOST_SYSTEM_NAME MATCHES CMAKE_SYSTEM_NAME))
         string(TOLOWER "${CMAKE_SYSTEM_NAME}" FFmpeg_SYSTEM_NAME)
-        # TODO: Can we really do better? Auto-detection? Something clever?
-        if (NOT DEFINED FFmpeg_CROSS_PREFIX)
-            message(ERROR "Please set FFmpeg_CROSS_PREFIX to your cross toolchain prefix, for example: \${CMAKE_STAGING_PREFIX}/bin/${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}-")
+        if (FFmpeg_SYSTEM_NAME STREQUAL "openorbis")
+            set(FFmpeg_SYSTEM_NAME "freebsd") # Emulates FBSD :)
         endif()
+        # TODO: Can we really do better? Auto-detection? Something clever?
         list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
             --enable-cross-compile
             --arch="${CMAKE_SYSTEM_PROCESSOR}"
             --target-os="${FFmpeg_SYSTEM_NAME}"
             --sysroot="${CMAKE_SYSROOT}"
-            --cross-prefix="${FFmpeg_CROSS_PREFIX}"
         )
+        if (DEFINED FFmpeg_CROSS_PREFIX)
+            list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --cross-prefix="${FFmpeg_CROSS_PREFIX}")
+        else()
+            message(WARNING "Please set FFmpeg_CROSS_PREFIX to your cross toolchain prefix, for example: \${CMAKE_STAGING_PREFIX}/bin/${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}-")
+        endif()
         set(FFmpeg_IS_CROSS_COMPILING TRUE)
     endif()
 endif()
 
-if (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING)
+if (PLATFORM_PS4)
+    list(APPEND FFmpeg_HWACCEL_FLAGS
+        --disable-vaapi
+    )
+elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBVA libva)
     pkg_check_modules(CUDA cuda)
@@ -149,9 +157,19 @@ if (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING)
 endif()
 
 if (PLATFORM_PS4)
-    list(APPEND FFmpeg_HWACCEL_FLAGS
-        --enable-stdatomic
-        --disable-threads
+    list(APPEND FFmpeg_CROSS_COMPILE_LIBS
+        -lc
+        -lkernel
+        -lSceUserService
+        -lSceSysmodule
+        -lSceNet
+        -lSceLibcInternal
+    )
+    list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
+        --disable-pthreads
+        --extra-cflags=${CMAKE_SYSROOT}/usr/include
+        --extra-cxxflags=${CMAKE_SYSROOT}/usr/include
+        --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}"
     )
 endif()
 
@@ -247,12 +265,12 @@ else()
                 --enable-decoder=vp9
                 --enable-filter=yadif,scale
                 --enable-pic
-                --cc="${FFmpeg_CC}"
-                --cxx="${FFmpeg_CXX}"
-                --ld="${CMAKE_LINKER}"
-                --extra-ldflags="$CMAKE_C_LINK_FLAGS"
-                --extra-cflags="$CMAKE_C_FLAGS"
-                --extra-cxxflags="$CMAKE_CXX_FLAGS"
+                --cc=${FFmpeg_CC}
+                --cxx=${FFmpeg_CXX}
+                --ld=${CMAKE_LINKER}
+                --extra-cflags=${CMAKE_C_FLAGS}
+                --extra-cxxflags=${CMAKE_CXX_FLAGS}
+                --extra-ldflags=${CMAKE_C_LINK_FLAGS}
                 ${FFmpeg_HWACCEL_FLAGS}
                 ${FFmpeg_CROSS_COMPILE_FLAGS}
         WORKING_DIRECTORY
@@ -284,7 +302,7 @@ else()
         OUTPUT
             ${FFmpeg_BUILD_LIBRARIES}
         COMMAND
-            make ${FFmpeg_MAKE_ARGS}
+            gmake ${FFmpeg_MAKE_ARGS}
         WORKING_DIRECTORY
             ${FFmpeg_BUILD_DIR}
     )
