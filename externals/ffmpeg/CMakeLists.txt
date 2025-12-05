@@ -148,6 +148,13 @@ if (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING)
     endif()
 endif()
 
+if (PLATFORM_PS4)
+    list(APPEND FFmpeg_HWACCEL_FLAGS
+        --enable-stdatomic
+        --disable-threads
+    )
+endif()
+
 if (YUZU_USE_BUNDLED_FFMPEG)
     AddJsonPackage(ffmpeg-ci)
 
@@ -243,9 +250,9 @@ else()
                 --cc="${FFmpeg_CC}"
                 --cxx="${FFmpeg_CXX}"
                 --ld="${CMAKE_LINKER}"
-                --ldflags="${CMAKE_C_LINK_FLAGS}"
-                --cflags="${CMAKE_C_FLAGS}"
-                --cxxflags="${CMAKE_CXX_FLAGS}"
+                --extra-ldflags="$CMAKE_C_LINK_FLAGS"
+                --extra-cflags="$CMAKE_C_FLAGS"
+                --extra-cxxflags="$CMAKE_CXX_FLAGS"
                 ${FFmpeg_HWACCEL_FLAGS}
                 ${FFmpeg_CROSS_COMPILE_FLAGS}
         WORKING_DIRECTORY

@@ -59,12 +59,16 @@ public:
         signal_stack_size = std::max<size_t>(SIGSTKSZ, 2 * 1024 * 1024);
         signal_stack_memory = mmap(nullptr, signal_stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
+#ifdef __OPENORBIS__
+        fmt::print(stderr, "no fastmem on ps4\n");
+        supports_fast_mem = false;
+#else
         stack_t signal_stack{};
         signal_stack.ss_sp = signal_stack_memory;
         signal_stack.ss_size = signal_stack_size;
         signal_stack.ss_flags = 0;
         if (sigaltstack(&signal_stack, nullptr) != 0) {
-            fmt::print(stderr, "dynarmic: POSIX SigHandler: init failure at sigaltstack\n");
+            fmt::print(stderr, "POSIX SigHandler: init failure at sigaltstack\n");
             supports_fast_mem = false;
             return;
         }
@@ -75,16 +79,17 @@ public:
         sa.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_RESTART;
         sigemptyset(&sa.sa_mask);
         if (sigaction(SIGSEGV, &sa, &old_sa_segv) != 0) {
-            fmt::print(stderr, "dynarmic: POSIX SigHandler: could not set SIGSEGV handler\n");
+            fmt::print(stderr, "POSIX SigHandler: could not set SIGSEGV handler\n");
             supports_fast_mem = false;
             return;
         }
-#ifdef __APPLE__
+#   ifdef __APPLE__
         if (sigaction(SIGBUS, &sa, &old_sa_bus) != 0) {
-            fmt::print(stderr, "dynarmic: POSIX SigHandler: could not set SIGBUS handler\n");
+            fmt::print(stderr, "POSIX SigHandler: could not set SIGBUS handler\n");
             supports_fast_mem = false;
             return;
         }
+#   endif
 #endif
     }
 
@@ -145,6 +150,9 @@ void SigHandler::SigAction(int sig, siginfo_t* info, void* raw_context) {
 #    error "Invalid architecture"
 #endif
 
+#ifdef __OPENORBIS__
+    // No fastmem
+#else
     struct sigaction* retry_sa = sig == SIGSEGV ? &sig_handler->old_sa_segv : &sig_handler->old_sa_bus;
     if (retry_sa->sa_flags & SA_SIGINFO) {
         retry_sa->sa_sigaction(sig, info, raw_context);
@@ -158,6 +166,7 @@ void SigHandler::SigAction(int sig, siginfo_t* info, void* raw_context) {
         return;
     }
     retry_sa->sa_handler(sig);
+#endif
 }
 
 }  // anonymous namespace
