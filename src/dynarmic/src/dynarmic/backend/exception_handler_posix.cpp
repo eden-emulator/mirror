@@ -60,7 +60,7 @@ public:
         signal_stack_memory = mmap(nullptr, signal_stack_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
 #ifdef __OPENORBIS__
-        fmt::print(stderr, "no fastmem on ps4\n");
+        fmt::print(stderr, "no fastmem on PS4\n");
         supports_fast_mem = false;
 #else
         stack_t signal_stack{};

@@ -37,7 +37,7 @@ void* AllocateMemoryPages(std::size_t size) noexcept {
     void* addr = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
     ASSERT(addr != nullptr);
 #elif defined(__OPENORBIS__)
-    void* addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_VOID | MAP_PRIVATE, -1, 0);
+    void* addr = mmap(nullptr, size, PROT_NONE, MAP_VOID | MAP_PRIVATE, -1, 0);
     ASSERT(addr != MAP_FAILED);
 #else
     void* addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
@@ -60,15 +60,15 @@ void FreeMemoryPages(void* addr, [[maybe_unused]] std::size_t size) noexcept {
 #ifdef __OPENORBIS__
 static struct sigaction old_sa_segv;
 static void SwapHandler(int sig, siginfo_t* si, void* raw_context) {
-    void* a_addr = reinterpret_cast<void*>(uintptr_t(si->si_addr) & ~0xfff);
-    mmap(a_addr, 4096, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-    //mprotect(a_addr, 4096, PROT_READ | PROT_WRITE);
+    void* aligned_addr = reinterpret_cast<void*>(uintptr_t(si->si_addr) & ~0xfff);
+    void* res = mmap(aligned_addr, 4096, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0);
+    ASSERT(res != MAP_FAILED);
 }
 
 bool InitSwap() noexcept {
     struct sigaction sa;
     sa.sa_handler = NULL;
-    sa.sa_sigaction = &SwapHandler;
+    sa.__sa_handler.__sa_sigaction = &SwapHandler;
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_SIGINFO | SA_RESTART;
     return sigaction(SIGSEGV, &sa, &old_sa_segv) == 0;
