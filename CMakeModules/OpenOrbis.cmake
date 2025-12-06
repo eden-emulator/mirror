@@ -19,7 +19,7 @@ function(create_ps4_pkg project target content_id)
         COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} TITLE --type Utf8 --maxsize 128 --value ${target}
         COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} TITLE_ID --type Utf8 --maxsize 12 --value BREW00090
         COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} VERSION --type Utf8 --maxsize 8 --value 1.03
-        COMMAND ${CMAKE_SYSROOT}/bin/create-gp4 -out ${target}.gp4 --content-id=${content_id} --files "eboot.bin ${sce_sys_param}"
+        COMMAND ${CMAKE_SYSROOT}/bin/create-gp4 -out ${target}.gp4 --content-id=${content_id} --files "eboot.bin ${sce_sys_param} sce_module/libc.prx sce_module/libSceFios2.prx"
         COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core pkg_build ${target}.gp4 .
         VERBATIM
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
