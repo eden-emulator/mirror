@@ -104,7 +104,8 @@
         "skip_updates": true,
         "patches": [
             "0001-aesni-fix.patch",
-            "0002-arm64-aes-fix.patch"
+            "0002-arm64-aes-fix.patch",
+            "0003-openorbis.patch"
         ]
     },
     "enet": {
