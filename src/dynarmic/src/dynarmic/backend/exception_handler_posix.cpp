@@ -67,7 +67,7 @@ public:
         signal_stack_memory = std::make_unique<uint8_t[]>(stack_size);
 
 #ifdef __OPENORBIS__
-        fmt::print(stderr, "no fastmem on ps4\n");
+        fmt::print(stderr, "no fastmem on PS4\n");
         supports_fast_mem = false;
 #else
         stack_t signal_stack{};
