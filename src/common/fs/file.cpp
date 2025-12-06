@@ -13,6 +13,7 @@
 #include "common/fs/fs_android.h"
 #endif
 #include "common/logging/log.h"
+#include "common/literals.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -273,18 +274,59 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
     } else {
         file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
     }
-#elif defined(__unix__) && !defined(__HAIKU__) && !defined(__managarm__)
+#elif defined(__HAIKU__) || defined(__managarm__) || defined(__OPENORBIS__)
+    file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
+#else
     if (type == FileType::BinaryFile && mode == FileAccessMode::Read) {
         struct stat st;
         mmap_fd = open(path.c_str(), O_RDONLY);
         fstat(mmap_fd, &st);
         mmap_size = st.st_size;
-        mmap_base = (u8*)mmap(nullptr, mmap_size, PROT_READ, MAP_PRIVATE, mmap_fd, 0);
-    } else {
+
+        int map_flags = MAP_PRIVATE;
+#ifdef MAP_PREFAULT_READ
+        // Prefaults reads so the final resulting pagetable from this big stupid mmap()
+        // isn't comically lazily loaded, we just coalesce everything in-place for our
+        // lovely mmap flags; if we didn't prefault the reads the page table will be
+        // constructed in-place (i.e on a read-by-read basis) causing lovely soft-faults
+        // which would nuke any performance gains.
+        //
+        // This of course incurs a cost in the initial mmap(2) call, but that is fine.
+        map_flags |= MAP_PREFAULT_READ;
+#endif
+#ifdef MAP_NOSYNC
+        // This causes physical media to not be synched to our file/memory
+        // This means that if the read-only file is written to, we won't see changes
+        // or we may see changes which are just funnily scattered, in any case
+        // this presumes the files won't be changed during execution
+        //
+        // Do not ever use this on write files (if we ever support that); this will create
+        // a fun amount of fragmentation on the disk.
+        map_flags |= MAP_NOSYNC;
+#endif
+#ifdef MAP_ALIGNED_SUPER
+        // File must be big enough that it's worth to super align. We can't just super-align every
+        // file otherwise we will run out of alignments for actually important files :)
+        // System doesn't guarantee a super alignment, but if it's available it will delete
+        // about 3 layers(?) of the TLB tree for each read/write.
+        // Again the cost of faults may make this negligible gains, but hey, we gotta work
+        // what we gotta work with.
+        using namespace Common::Literals;
+        u64 big_file_threshold = 512_MiB;
+        map_flags |= u64(st.st_size) >= big_file_threshold ? MAP_ALIGNED_SUPER : 0;
+#endif
+        mmap_base = (u8*)mmap(nullptr, mmap_size, PROT_READ, map_flags, mmap_fd, 0);
+        if (mmap_base == MAP_FAILED) {
+            close(mmap_fd);
+            mmap_fd = -1;
+        } else {
+            posix_madvise(mmap_base, mmap_size, POSIX_MADV_WILLNEED);
+        }
+    }
+    // mmap(2) failed or simply we can't use it
+    if (mmap_fd == -1) {
         file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
     }
-#else
-    file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
 #endif
     if (!IsOpen()) {
         const auto ec = std::error_code{errno, std::generic_category()};
@@ -340,11 +382,7 @@ bool IOFile::Flush() const {
 #endif
     if (file) {
         errno = 0;
-#ifdef _WIN32
-        const auto flush_result = std::fflush(file) == 0;
-#else
-        const auto flush_result = std::fflush(file) == 0;
-#endif
+        auto const flush_result = std::fflush(file) == 0;
         if (!flush_result) {
             const auto ec = std::error_code{errno, std::generic_category()};
             LOG_ERROR(Common_Filesystem, "Failed to flush the file at path={}, ec_message={}",
