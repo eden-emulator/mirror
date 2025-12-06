@@ -183,19 +183,6 @@ public:
               FileType type = FileType::BinaryFile,
               FileShareFlag flag = FileShareFlag::ShareReadOnly);
 
-// #ifdef _WIN32
-//     template <typename Path>
-//     void Open(const Path& path, FileAccessMode mode, FileType type = FileType::BinaryFile,
-//               FileShareFlag flag = FileShareFlag::ShareReadOnly) {
-//         using ValueType = typename Path::value_type;
-//         if constexpr (IsChar<ValueType>) {
-//             Open(ToU8String(path), mode, type, flag);
-//         } else {
-//             Open(std::filesystem::path{path}, mode, type, flag);
-//         }
-//     }
-// #endif
-
     /// Closes the file if it is opened.
     void Close();
 
@@ -225,8 +212,7 @@ public:
     [[nodiscard]] size_t Read(T& data) const {
         if constexpr (IsContiguousContainer<T>) {
             using ContiguousType = typename T::value_type;
-            static_assert(std::is_trivially_copyable_v<ContiguousType>,
-                          "Data type must be trivially copyable.");
+            static_assert(std::is_trivially_copyable_v<ContiguousType>, "Data type must be trivially copyable.");
             return ReadSpan<ContiguousType>(data);
         } else {
             return ReadObject(data) ? 1 : 0;
@@ -251,8 +237,7 @@ public:
     [[nodiscard]] size_t Write(const T& data) const {
         if constexpr (IsContiguousContainer<T>) {
             using ContiguousType = typename T::value_type;
-            static_assert(std::is_trivially_copyable_v<ContiguousType>,
-                          "Data type must be trivially copyable.");
+            static_assert(std::is_trivially_copyable_v<ContiguousType>, "Data type must be trivially copyable.");
             return WriteSpan<ContiguousType>(data);
         } else {
             static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
@@ -279,12 +264,13 @@ public:
     template <typename T>
     [[nodiscard]] size_t ReadSpan(std::span<T> data) const {
         static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
-
-        if (!IsOpen()) {
-            return 0;
+#ifdef __unix__
+        if (mmap_fd != -1) {
+            std::memcpy(data.data(), mmap_base + mmap_offset, sizeof(T) * data.size());
+            return data.size();
         }
-
-        return std::fread(data.data(), sizeof(T), data.size(), file);
+#endif
+        return IsOpen() ? std::fread(data.data(), sizeof(T), data.size(), file) : 0;
     }
 
     /**
@@ -305,12 +291,13 @@ public:
     template <typename T>
     [[nodiscard]] size_t WriteSpan(std::span<const T> data) const {
         static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
-
-        if (!IsOpen()) {
-            return 0;
+#ifdef __unix__
+        if (mmap_fd != -1) {
+            std::memcpy(mmap_base + mmap_offset, data.data(), sizeof(T) * data.size());
+            return data.size();
         }
-
-        return std::fwrite(data.data(), sizeof(T), data.size(), file);
+#endif
+        return IsOpen() ? std::fwrite(data.data(), sizeof(T), data.size(), file) : 0;
     }
 
     /**
@@ -333,12 +320,13 @@ public:
     [[nodiscard]] bool ReadObject(T& object) const {
         static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
         static_assert(!std::is_pointer_v<T>, "T must not be a pointer to an object.");
-
-        if (!IsOpen()) {
-            return false;
+#ifdef __unix__
+        if (mmap_fd != -1) {
+            std::memcpy(&object, mmap_base + mmap_offset, sizeof(T));
+            return sizeof(T);
         }
-
-        return std::fread(&object, sizeof(T), 1, file) == 1;
+#endif
+        return IsOpen() ? std::fread(&object, sizeof(T), 1, file) == 1 : false;
     }
 
     /**
@@ -360,12 +348,13 @@ public:
     [[nodiscard]] bool WriteObject(const T& object) const {
         static_assert(std::is_trivially_copyable_v<T>, "Data type must be trivially copyable.");
         static_assert(!std::is_pointer_v<T>, "T must not be a pointer to an object.");
-
-        if (!IsOpen()) {
-            return false;
+#ifdef __unix__
+        if (mmap_fd != -1) {
+            std::memcpy(mmap_base + mmap_offset, &object, sizeof(T));
+            return sizeof(T);
         }
-
-        return std::fwrite(&object, sizeof(T), 1, file) == 1;
+#endif
+        return IsOpen() ? std::fwrite(&object, sizeof(T), 1, file) == 1 : false;
     }
 
     /**
@@ -452,8 +441,14 @@ private:
     std::filesystem::path file_path;
     FileAccessMode file_access_mode{};
     FileType file_type{};
-
     std::FILE* file = nullptr;
+#ifdef __unix__
+    int mmap_fd = -1;
+    u8* mmap_base = nullptr;
+    size_t mmap_size = 0;
+    // fuck you
+    mutable off_t mmap_offset = 0;
+#endif
 };
 
 } // namespace Common::FS
