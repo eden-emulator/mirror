@@ -1,5 +1,8 @@
 #!/usr/local/bin/bash -ex
 
+# SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Define global vars
 # These flags are used everywhere, so let's reuse them.
 export OO_PS4_TOOLCHAIN="$PWD/prefix"
