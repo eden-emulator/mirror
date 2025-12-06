@@ -45,7 +45,7 @@ endif()
 if (MSVC)
     target_link_libraries(yuzu-cmd PRIVATE getopt)
 elseif(PLATFORM_PS4)
-    target_link_libraries(yuzu-cmd PRIVATE SceVideoOut SceAudioOut ScePad)
+    target_link_libraries(yuzu-cmd PRIVATE SceVideoOut SceAudioOut ScePad SceSystemService)
 endif()
 target_link_libraries(yuzu-cmd PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
 
