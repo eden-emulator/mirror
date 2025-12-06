@@ -1,0 +1,13 @@
+diff --git a/library/entropy_poll.c b/library/entropy_poll.c
+index 611768c..8950ee4 100644
+--- a/library/entropy_poll.c
++++ b/library/entropy_poll.c
+@@ -118,7 +118,7 @@ static int getrandom_wrapper(void *buf, size_t buflen, unsigned int flags)
+  *
+  * Documentation: https://netbsd.gw.com/cgi-bin/man-cgi?sysctl+7
+  */
+-#if (defined(__FreeBSD__) || defined(__NetBSD__)) && !defined(HAVE_GETRANDOM)
++#if (defined(__FreeBSD__) || defined(__NetBSD__)) && !defined(HAVE_GETRANDOM) && !defined(__OPENORBIS__)
+ #include <sys/param.h>
+ #include <sys/sysctl.h>
+ #if defined(KERN_ARND)
