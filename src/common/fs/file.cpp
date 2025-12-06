@@ -19,6 +19,9 @@
 #include <share.h>
 #else
 #include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #endif
 
 #ifdef _MSC_VER
@@ -246,13 +249,10 @@ FileType IOFile::GetType() const {
 
 void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
     Close();
-
     file_path = path;
     file_access_mode = mode;
     file_type = type;
-
     errno = 0;
-
 #ifdef _WIN32
     if (flag != FileShareFlag::ShareNone) {
         file = _wfsopen(path.c_str(), AccessModeToWStr(mode, type), ToWindowsFileShareFlag(flag));
@@ -262,51 +262,63 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
 #elif ANDROID
     if (Android::IsContentUri(path)) {
         ASSERT_MSG(mode == FileAccessMode::Read, "Content URI file access is for read-only!");
-        const auto fd = Android::OpenContentUri(path, Android::OpenMode::Read);
+        auto const fd = Android::OpenContentUri(path, Android::OpenMode::Read);
         if (fd != -1) {
             file = fdopen(fd, "r");
-            const auto error_num = errno;
-            if (error_num != 0 && file == nullptr) {
-                LOG_ERROR(Common_Filesystem, "Error opening file: {}, error: {}", path.c_str(),
-                          strerror(error_num));
-            }
+            if (errno != 0 && file == nullptr)
+                LOG_ERROR(Common_Filesystem, "Error opening file: {}, error: {}", path.c_str(), strerror(errno));
         } else {
             LOG_ERROR(Common_Filesystem, "Error opening file: {}", path.c_str());
         }
     } else {
         file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
     }
+#elif defined(__unix__) && !defined(__HAIKU__) && !defined(__managarm__)
+    if (type == FileType::BinaryFile && mode == FileAccessMode::Read) {
+        struct stat st;
+        mmap_fd = open(path.c_str(), O_RDONLY);
+        fstat(mmap_fd, &st);
+        mmap_size = st.st_size;
+        mmap_base = (u8*)mmap(nullptr, mmap_size, PROT_READ, MAP_PRIVATE, mmap_fd, 0);
+    } else {
+        file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
+    }
 #else
     file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
 #endif
-
     if (!IsOpen()) {
         const auto ec = std::error_code{errno, std::generic_category()};
         LOG_ERROR(Common_Filesystem, "Failed to open the file at path={}, ec_message={}",
-                  PathToUTF8String(file_path), ec.message());
+            PathToUTF8String(file_path), ec.message());
     }
 }
 
 void IOFile::Close() {
-    if (!IsOpen()) {
-        return;
+#ifdef __unix__
+    if (mmap_fd != -1) {
+        munmap(mmap_base, mmap_size);
+        close(mmap_fd);
+        mmap_fd = -1;
     }
-
-    errno = 0;
-
-    const auto close_result = std::fclose(file) == 0;
-
-    if (!close_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to close the file at path={}, ec_message={}",
-                  PathToUTF8String(file_path), ec.message());
+#endif
+    if (file) {
+        errno = 0;
+        const auto close_result = std::fclose(file) == 0;
+        if (!close_result) {
+            const auto ec = std::error_code{errno, std::generic_category()};
+            LOG_ERROR(Common_Filesystem, "Failed to close the file at path={}, ec_message={}",
+                PathToUTF8String(file_path), ec.message());
+        }
+        file = nullptr;
     }
-
-    file = nullptr;
 }
 
 bool IOFile::IsOpen() const {
+#ifdef __unix__
+    return file != nullptr || mmap_fd != -1;
+#else
     return file != nullptr;
+#endif
 }
 
 std::string IOFile::ReadString(size_t length) const {
@@ -323,137 +335,148 @@ size_t IOFile::WriteString(std::span<const char> string) const {
 }
 
 bool IOFile::Flush() const {
-    if (!IsOpen()) {
-        return false;
-    }
-
-    errno = 0;
-
-#ifdef _WIN32
-    const auto flush_result = std::fflush(file) == 0;
-#else
-    const auto flush_result = std::fflush(file) == 0;
+#ifdef __unix__
+    ASSERT(mmap_fd == -1);
 #endif
-
-    if (!flush_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to flush the file at path={}, ec_message={}",
-                  PathToUTF8String(file_path), ec.message());
+    if (file) {
+        errno = 0;
+#ifdef _WIN32
+        const auto flush_result = std::fflush(file) == 0;
+#else
+        const auto flush_result = std::fflush(file) == 0;
+#endif
+        if (!flush_result) {
+            const auto ec = std::error_code{errno, std::generic_category()};
+            LOG_ERROR(Common_Filesystem, "Failed to flush the file at path={}, ec_message={}",
+                PathToUTF8String(file_path), ec.message());
+        }
+        return flush_result;
     }
-
-    return flush_result;
+    return false;
 }
 
 bool IOFile::Commit() const {
-    if (!IsOpen()) {
-        return false;
-    }
-
-    errno = 0;
-
-#ifdef _WIN32
-    const auto commit_result = std::fflush(file) == 0 && _commit(fileno(file)) == 0;
-#else
-    const auto commit_result = std::fflush(file) == 0 && fsync(fileno(file)) == 0;
+#ifdef __unix__
+    ASSERT(mmap_fd == -1);
 #endif
-
-    if (!commit_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to commit the file at path={}, ec_message={}",
-                  PathToUTF8String(file_path), ec.message());
+    if (file) {
+        errno = 0;
+#ifdef _WIN32
+        const auto commit_result = std::fflush(file) == 0 && _commit(fileno(file)) == 0;
+#else
+        const auto commit_result = std::fflush(file) == 0 && fsync(fileno(file)) == 0;
+#endif
+        if (!commit_result) {
+            const auto ec = std::error_code{errno, std::generic_category()};
+            LOG_ERROR(Common_Filesystem, "Failed to commit the file at path={}, ec_message={}",
+                PathToUTF8String(file_path), ec.message());
+        }
+        return commit_result;
     }
-
-    return commit_result;
+    return false;
 }
 
 bool IOFile::SetSize(u64 size) const {
-    if (!IsOpen()) {
-        return false;
-    }
-
-    errno = 0;
-
-#ifdef _WIN32
-    const auto set_size_result = _chsize_s(fileno(file), static_cast<s64>(size)) == 0;
-#else
-    const auto set_size_result = ftruncate(fileno(file), static_cast<s64>(size)) == 0;
+#ifdef __unix__
+    ASSERT(mmap_fd == -1);
 #endif
-
-    if (!set_size_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
-                  PathToUTF8String(file_path), size, ec.message());
+    if (file) {
+        errno = 0;
+#ifdef _WIN32
+        const auto set_size_result = _chsize_s(fileno(file), s64(size)) == 0;
+#else
+        const auto set_size_result = ftruncate(fileno(file), s64(size)) == 0;
+#endif
+        if (!set_size_result) {
+            const auto ec = std::error_code{errno, std::generic_category()};
+            LOG_ERROR(Common_Filesystem, "Failed to resize the file at path={}, size={}, ec_message={}",
+                PathToUTF8String(file_path), size, ec.message());
+        }
+        return set_size_result;
     }
-
-    return set_size_result;
+    return false;
 }
 
 u64 IOFile::GetSize() const {
-    if (!IsOpen()) {
-        return 0;
-    }
-
-    // Flush any unwritten buffered data into the file prior to retrieving the file size.
-    std::fflush(file);
-
+#ifdef __unix__
+    if (mmap_fd != -1)
+        return mmap_size;
+#endif
+    if (file) {
+        // Flush any unwritten buffered data into the file prior to retrieving the file mmap_size.
+        std::fflush(file);
 #if ANDROID
-    u64 file_size = 0;
-    if (Android::IsContentUri(file_path)) {
-        file_size = Android::GetSize(file_path);
-    } else {
+        u64 file_size = 0;
+        if (Android::IsContentUri(file_path)) {
+            file_size = Android::GetSize(file_path);
+        } else {
+            std::error_code ec;
+
+            file_size = fs::file_size(file_path, ec);
+
+            if (ec) {
+                LOG_ERROR(Common_Filesystem, "Failed to retrieve the file mmap_size of path={}, ec_message={}",
+                    PathToUTF8String(file_path), ec.message());
+                return 0;
+            }
+        }
+#else
         std::error_code ec;
-
-        file_size = fs::file_size(file_path, ec);
-
+        auto const file_size = fs::file_size(file_path, ec);
         if (ec) {
-            LOG_ERROR(Common_Filesystem,
-                      "Failed to retrieve the file size of path={}, ec_message={}",
-                      PathToUTF8String(file_path), ec.message());
+            LOG_ERROR(Common_Filesystem, "Failed to retrieve the file mmap_size of path={}, ec_message={}",
+                PathToUTF8String(file_path), ec.message());
             return 0;
         }
-    }
-#else
-    std::error_code ec;
-
-    const auto file_size = fs::file_size(file_path, ec);
-
-    if (ec) {
-        LOG_ERROR(Common_Filesystem, "Failed to retrieve the file size of path={}, ec_message={}",
-                  PathToUTF8String(file_path), ec.message());
-        return 0;
-    }
 #endif
-
-    return file_size;
+        return file_size;
+    }
+    return 0;
 }
 
 bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
-    if (!IsOpen()) {
-        return false;
+#ifdef __unix__
+    if (mmap_fd != -1) {
+        // fuck you to whoever made this method const
+        switch (origin) {
+        case SeekOrigin::SetOrigin:
+            mmap_offset = off_t(offset);
+            break;
+        case SeekOrigin::CurrentPosition:
+            mmap_offset += off_t(offset);
+            break;
+        case SeekOrigin::End:
+            mmap_offset = off_t(mmap_size) + off_t(offset);
+            break;
+        }
+        return true;
     }
-
-    errno = 0;
-
-    const auto seek_result = fseeko(file, offset, ToSeekOrigin(origin)) == 0;
-
-    if (!seek_result) {
-        const auto ec = std::error_code{errno, std::generic_category()};
-        LOG_ERROR(Common_Filesystem,
-                  "Failed to seek the file at path={}, offset={}, origin={}, ec_message={}",
-                  PathToUTF8String(file_path), offset, origin, ec.message());
+#endif
+    if (file) {
+        errno = 0;
+        const auto seek_result = fseeko(file, offset, ToSeekOrigin(origin)) == 0;
+        if (!seek_result) {
+            const auto ec = std::error_code{errno, std::generic_category()};
+            LOG_ERROR(Common_Filesystem, "Failed to seek the file at path={}, offset={}, origin={}, ec_message={}",
+                PathToUTF8String(file_path), offset, origin, ec.message());
+        }
+        return seek_result;
     }
-
-    return seek_result;
+    return false;
 }
 
 s64 IOFile::Tell() const {
-    if (!IsOpen()) {
-        return 0;
+#ifdef __unix__
+    if (mmap_fd != -1) {
+        errno = 0;
+        return s64(mmap_offset);
     }
-
-    errno = 0;
-
-    return ftello(file);
+#endif
+    if (file) {
+        errno = 0;
+        return ftello(file);
+    }
+    return 0;
 }
 
 } // namespace Common::FS
