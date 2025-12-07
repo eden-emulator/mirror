@@ -252,6 +252,11 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         // clang-format on
     };
 
+#ifdef __OPENORBIS__
+    // PS4 will use this path by default UNLESS overriden; this is so users
+    // can quickly launch whatever they want.
+    filepath = "/data/eden/games/test.nro";
+#endif
     while (optind < argc) {
         int arg = getopt_long(argc, argv, "g:fhvcip::c:u:d:", long_options, &option_index);
         if (arg != -1) {
