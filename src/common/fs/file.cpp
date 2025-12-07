@@ -274,9 +274,9 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
     } else {
         file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
     }
-#elif defined(__HAIKU__) || defined(__managarm__) || defined(__OPENORBIS__)
+#elif defined(__HAIKU__) || defined(__managarm__) || defined(__OPENORBIS__) || defined(__APPLE__)
     file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
-#else
+#elif defined(__unix__)
     if (type == FileType::BinaryFile && mode == FileAccessMode::Read) {
         struct stat st;
         mmap_fd = open(path.c_str(), O_RDONLY);
@@ -327,6 +327,9 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
     if (mmap_fd == -1) {
         file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
     }
+#else
+    // Some other fancy OS (ahem fucking Darwin/Mac OSX)
+    file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
 #endif
     if (!IsOpen()) {
         const auto ec = std::error_code{errno, std::generic_category()};
