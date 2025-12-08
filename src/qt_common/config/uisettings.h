@@ -159,7 +159,13 @@ struct Values {
     Setting<bool> enable_discord_presence{linkage, false, "enable_discord_presence", Category::Ui};
 
     // logging
-    Setting<bool> show_console{linkage, false, "showConsole", Category::Ui};
+    Setting<bool> show_console{linkage,
+#ifdef __OPENORBIS__
+        true,
+#else
+        false,
+#endif
+        "showConsole", Category::Ui};
 
     // Screenshots
     Setting<bool> enable_screenshot_save_as{linkage, true, "enable_screenshot_save_as",

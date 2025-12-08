@@ -53,8 +53,10 @@
 
 #ifdef __OPENORBIS__
 #include <orbis/SystemService.h>
+#include <cxxabi.h>
+#include <__thread/support.h>
 #   define STUB_WEAK(name) extern "C" void name() { printf("called " #name); asm volatile("ud2"); }
-STUB_WEAK(__cxa_thread_atexit)
+void *__cxa_thread_atexit_impl = nullptr;
 STUB_WEAK(__assert)
 STUB_WEAK(ZSTD_trace_compress_begin)
 STUB_WEAK(ZSTD_trace_compress_end)
@@ -235,7 +237,6 @@ int main(int argc, char** argv) {
         {0, 0, 0, 0},
         // clang-format on
     };
-
 #ifdef __OPENORBIS__
     // PS4 will use this path by default UNLESS overriden; this is so users
     // can quickly launch whatever they want.
