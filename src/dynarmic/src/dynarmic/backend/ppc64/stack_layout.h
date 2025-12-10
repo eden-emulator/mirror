@@ -12,11 +12,12 @@ namespace Dynarmic::Backend::PPC64 {
 constexpr size_t SpillCount = 16;
 
 struct alignas(16) StackLayout {
-    std::array<u64, 18> regs;
+    u64 resv0; //0
+    u64 resv1; //8
+    u64 lr; //16
+    u64 sp; //24
     std::array<u64, SpillCount> spill;
     u64 check_bit;
-    void* lr;
-    std::array<u64, 29> extra_regs;
 };
 
 static_assert(sizeof(StackLayout) % 16 == 0);
