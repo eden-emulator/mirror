@@ -21,6 +21,7 @@
 #include "dynarmic/ir/basic_block.h"
 #include "dynarmic/ir/microinstruction.h"
 #include "dynarmic/ir/opcodes.h"
+#include "stack_layout.h"
 
 namespace Dynarmic::Backend::PPC64 {
 
@@ -155,23 +156,28 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::ReturnToDisp
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location, bool) {
+    auto const tmp_lr = ctx.reg_alloc.ScratchGpr();
     auto const tmp = ctx.reg_alloc.ScratchGpr();
-    code.LI(tmp, terminal.next.Value());
+    code.LD(tmp_lr, PPC64::RJIT, offsetof(StackLayout, lr));
+    code.MFCTR(tmp_lr);
     if (ctx.emit_conf.a64_variant) {
+        code.LI(tmp, terminal.next.Value());
         code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
-        code.MFLR(PPC64::RLINKFN);
+        code.LD(tmp, PPC64::RJIT, offsetof(A64JitState, run_fn));
+        code.MTCTR(tmp);
         for (u32 i = 0; i < 4; ++i)
             code.STD(powah::GPR{3 + i}, powah::R1, -((GPR_ORDER.size() + i) * 8));
         code.ADDIS(powah::R1, powah::R1, -sizeof(StackLayout));
-        code.BLR();
+        code.BCTRL();
         code.ADDI(powah::R1, powah::R1, sizeof(StackLayout));
         for (u32 i = 0; i < 4; ++i)
             code.LD(powah::GPR{3 + i}, powah::R1, -((GPR_ORDER.size() + i) * 8));
-        code.MTLR(PPC64::RLINKFN);
     } else {
+        code.LI(tmp, terminal.next.Value());
         code.STW(tmp, PPC64::RJIT, offsetof(A32JitState, regs) + sizeof(u32) * 15);
         ASSERT(false && "unimp");
     }
+    code.MTCTR(tmp_lr);
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location, bool) {
