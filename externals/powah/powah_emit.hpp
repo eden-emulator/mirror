@@ -368,10 +368,11 @@ struct Context {
 
     void MFLR(GPR const rt) { MFSPR(powah::GPR{8}, rt, powah::GPR{0}); }
     void MTLR(GPR const rt) { MTSPR(powah::GPR{8}, rt, powah::GPR{0}); }
+    void BLR() { base[offset++] = 0x4e800020; } //BCLR(R0, CR0, R0);
 
-    void BLR() {
-        base[offset++] = 0x4e800020; //BCLR(R0, CR0, R0);
-    }
+    void MFCTR(GPR const rt) { MFSPR(powah::GPR{9}, rt, powah::GPR{0}); }
+    void MTCTR(GPR const rt) { MTSPR(powah::GPR{9}, rt, powah::GPR{0}); }
+    void BCTRL() { base[offset++] = 0x4e800421; } //BCCTRL(R0, CR0, R0);
 
     // TODO: PowerPC 11 stuff
     void ISEL(GPR const rd, GPR const ra, GPR const rb, uint32_t d) {
