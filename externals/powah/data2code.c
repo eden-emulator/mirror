@@ -41,10 +41,7 @@ int main(int argc, char *argv[]) {
                                 {"NS",4,4},
                                 {"NU",4,4},
                             };
-
 #define OP_EXT ((i_opcode << 26) | (i_extopc << 1))
-#define OP_EXT_XS ((i_opcode << 26) | (i_extopc << 2))
-
                             if (strchr(mem, '[') != NULL) *strchr(mem, '[') = '\0';
                             if (strchr(mem, '.') != NULL) *strchr(mem, '.') = '_';
                             *sec++ = '\0';
@@ -181,12 +178,15 @@ int main(int argc, char *argv[]) {
                                     "}\n"
                                 , mem, form, i_opcode << 26);
                             } else if (!strcmp(form, "DS")) {
+#define OP_EXT_DS ((i_opcode << 26) | (i_extopc << 0))
                                 printf(
                                     "void %s(GPR const rt, GPR const ra, uint32_t d) {"
                                     " emit_%s(0x%08x, rt, ra, d >> 2); "
                                     "}\n"
-                                , mem, form, OP_EXT);
+                                , mem, form, OP_EXT_DS);
+#undef OP_EXT_DS
                             } else if (!strcmp(form, "XS")) {
+#define OP_EXT_XS ((i_opcode << 26) | (i_extopc << 2))
                                 /* HUGE DIFFERENCE DO NOT REMOVE */
                                 printf(
                                     "void %s(GPR const rt, GPR const ra, uint32_t sh) {"
@@ -198,6 +198,7 @@ int main(int argc, char *argv[]) {
                                     " emit_%s(0x%08x, rt, ra, sh, true); "
                                     "}\n"
                                 , mem, form, OP_EXT_XS);
+#undef OP_EXT_XS
                             } else if (!strcmp(form, "XL")) {
                                 if (!strcmp(mem, "BCLR")) {
                                     printf(
