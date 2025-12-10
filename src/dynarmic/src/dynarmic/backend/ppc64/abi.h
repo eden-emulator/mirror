@@ -8,6 +8,40 @@
 
 namespace Dynarmic::Backend::PPC64 {
 
+/*
+https://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi.html#REG
+
+r0        Volatile register used in function prologs
+r1        Stack frame pointer
+r2        TOC pointer
+r3        Volatile parameter and return value register
+r4-r10    Volatile registers used for function parameters
+r11       Volatile register used in calls by pointer and as an environment pointer for languages which require one
+r12       Volatile register used for exception handling and glink code
+r13       Reserved for use as system thread ID
+r14-r31   Nonvolatile registers used for local variables
+
+f0        Volatile scratch register
+f1-f4     Volatile floating point parameter and return value registers
+f5-f13    Volatile floating point parameter registers
+f14-f31   Nonvolatile registers
+
+LR        Link register (volatile)
+CTR       Loop counter register (volatile)
+XER       Fixed point exception register (volatile)
+FPSCR     Floating point status and control register (volatile)
+
+CR0-CR1   Volatile condition code register fields
+CR2-CR4   Nonvolatile condition code register fields
+CR5-CR7   Volatile condition code register fields
+
+v0-v1     Volatile scratch registers
+v2-v13    Volatile vector parameters registers
+v14-v19   Volatile scratch registers
+v20-v31   Non-volatile registers
+vrsave    Non-volatile 32-bit register
+*/
+
 // Jit fn signature => (AXXAddressSpace& process, AXXJitState& thread_ctx, volatile u32* halt_reason)
 constexpr powah::GPR RPROCESS = powah::R3;
 constexpr powah::GPR RJIT = powah::R4;
