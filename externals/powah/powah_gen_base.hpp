@@ -227,7 +227,7 @@ void LBZX_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0000ae, ra, rt
 void LD(GPR const rt, GPR const ra, uint32_t d) { emit_DS(0xe8000000, rt, ra, d >> 2); }
 void LDARX(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0000a8, ra, rt, rb, false); }
 void LDARX_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0000a8, ra, rt, rb, true); }
-void LDU(GPR const rt, GPR const ra, uint32_t d) { emit_DS(0xe8000002, rt, ra, d >> 2); }
+void LDU(GPR const rt, GPR const ra, uint32_t d) { emit_DS(0xe8000001, rt, ra, d >> 2); }
 void LDUX(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c00006a, ra, rt, rb, false); }
 void LDUX_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c00006a, ra, rt, rb, true); }
 void LDX(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c00002a, ra, rt, rb, false); }
@@ -263,7 +263,7 @@ void LSWI(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0004aa, ra, rt,
 void LSWI_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0004aa, ra, rt, rb, true); }
 void LSWX(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c00042a, ra, rt, rb, false); }
 void LSWX_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c00042a, ra, rt, rb, true); }
-void LWA(GPR const rt, GPR const ra, uint32_t d) { emit_DS(0xe8000004, rt, ra, d >> 2); }
+void LWA(GPR const rt, GPR const ra, uint32_t d) { emit_DS(0xe8000002, rt, ra, d >> 2); }
 void LWARX(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000028, ra, rt, rb, false); }
 void LWARX_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c000028, ra, rt, rb, true); }
 void LWAUX(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0002ea, ra, rt, rb, false); }
@@ -403,7 +403,7 @@ void STBX_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0001ae, ra, rt
 void STD(GPR const rt, GPR const ra, uint32_t d) { emit_DS(0xf8000000, rt, ra, d >> 2); }
 void STDCX(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0001ac, ra, rt, rb, false); }
 void STDCX_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c0001ac, ra, rt, rb, true); }
-void STDU(GPR const rt, GPR const ra, uint32_t d) { emit_DS(0xf8000002, rt, ra, d >> 2); }
+void STDU(GPR const rt, GPR const ra, uint32_t d) { emit_DS(0xf8000001, rt, ra, d >> 2); }
 void STDUX(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c00016a, ra, rt, rb, false); }
 void STDUX_(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c00016a, ra, rt, rb, true); }
 void STDX(GPR const rt, GPR const ra, GPR const rb) { emit_X(0x7c00012a, ra, rt, rb, false); }
