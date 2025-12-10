@@ -1,27 +1,25 @@
 // SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "dynarmic/backend/ppc64/emit_ppc64.h"
-
 #include <bit>
 #include <cstdint>
 
 #include <powah_emit.hpp>
 #include <fmt/ostream.h>
-#include <mcl/bit/bit_field.hpp>
 
-#include "a32_core.h"
-#include "a64_core.h"
-#include "abi.h"
+#include "dynarmic/backend/ppc64/emit_ppc64.h"
+#include "dynarmic/backend/ppc64/a32_core.h"
+#include "dynarmic/backend/ppc64/a64_core.h"
+#include "dynarmic/backend/ppc64/abi.h"
 #include "dynarmic/backend/ppc64/a32_core.h"
 #include "dynarmic/backend/ppc64/a64_core.h"
 #include "dynarmic/backend/ppc64/abi.h"
 #include "dynarmic/backend/ppc64/emit_context.h"
 #include "dynarmic/backend/ppc64/reg_alloc.h"
+#include "dynarmic/backend/ppc64/stack_layout.h"
 #include "dynarmic/ir/basic_block.h"
 #include "dynarmic/ir/microinstruction.h"
 #include "dynarmic/ir/opcodes.h"
-#include "stack_layout.h"
 
 namespace Dynarmic::Backend::PPC64 {
 
@@ -156,28 +154,24 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::ReturnToDisp
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location, bool) {
-    auto const tmp_lr = ctx.reg_alloc.ScratchGpr();
     auto const tmp = ctx.reg_alloc.ScratchGpr();
-    code.LD(tmp_lr, PPC64::RJIT, offsetof(StackLayout, lr));
-    code.MFCTR(tmp_lr);
     if (ctx.emit_conf.a64_variant) {
         code.LI(tmp, terminal.next.Value());
         code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
         code.LD(tmp, PPC64::RJIT, offsetof(A64JitState, run_fn));
         code.MTCTR(tmp);
-        for (u32 i = 0; i < 4; ++i)
-            code.STD(powah::GPR{3 + i}, powah::R1, -((GPR_ORDER.size() + i) * 8));
+        for (u32 i = 0; i < 16; ++i)
+            code.STD(powah::GPR{14 + i}, powah::R1, -(offsetof(StackLayout, extra_regs) + (i * 8)));
         code.ADDIS(powah::R1, powah::R1, -sizeof(StackLayout));
         code.BCTRL();
         code.ADDI(powah::R1, powah::R1, sizeof(StackLayout));
-        for (u32 i = 0; i < 4; ++i)
-            code.LD(powah::GPR{3 + i}, powah::R1, -((GPR_ORDER.size() + i) * 8));
+        for (u32 i = 0; i < 16; ++i)
+            code.LD(powah::GPR{14 + i}, powah::R1, -(offsetof(StackLayout, extra_regs) + (i * 8)));
     } else {
         code.LI(tmp, terminal.next.Value());
         code.STW(tmp, PPC64::RJIT, offsetof(A32JitState, regs) + sizeof(u32) * 15);
         ASSERT(false && "unimp");
     }
-    code.MTCTR(tmp_lr);
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location, bool) {
