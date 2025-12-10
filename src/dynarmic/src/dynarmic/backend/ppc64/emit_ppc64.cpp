@@ -20,6 +20,7 @@
 #include "dynarmic/ir/basic_block.h"
 #include "dynarmic/ir/microinstruction.h"
 #include "dynarmic/ir/opcodes.h"
+#include "stack_layout.h"
 
 namespace Dynarmic::Backend::PPC64 {
 
@@ -154,20 +155,16 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::ReturnToDisp
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location, bool) {
-    auto const tmp = ctx.reg_alloc.ScratchGpr();
     if (ctx.emit_conf.a64_variant) {
+        auto const tmp = ctx.reg_alloc.ScratchGpr();
         code.LI(tmp, terminal.next.Value());
         code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
         code.LD(tmp, PPC64::RJIT, offsetof(A64JitState, run_fn));
         code.MTCTR(tmp);
-        for (u32 i = 0; i < 16; ++i)
-            code.STD(powah::GPR{14 + i}, powah::R1, -(offsetof(StackLayout, extra_regs) + (i * 8)));
-        code.ADDIS(powah::R1, powah::R1, -sizeof(StackLayout));
         code.BCTRL();
-        code.ADDI(powah::R1, powah::R1, sizeof(StackLayout));
-        for (u32 i = 0; i < 16; ++i)
-            code.LD(powah::GPR{14 + i}, powah::R1, -(offsetof(StackLayout, extra_regs) + (i * 8)));
+        code.LD(powah::R2, powah::R1, offsetof(StackLayout, sp));
     } else {
+        auto const tmp = ctx.reg_alloc.ScratchGpr();
         code.LI(tmp, terminal.next.Value());
         code.STW(tmp, PPC64::RJIT, offsetof(A32JitState, regs) + sizeof(u32) * 15);
         ASSERT(false && "unimp");
@@ -225,10 +222,14 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
     auto const start_offset = code.offset;
     ebi.entry_point = &code.base[start_offset];
 
+    code.MFLR(powah::R0);
+    code.STD(powah::R0, powah::R1, offsetof(StackLayout, lr));
     // Non-volatile saves
-    std::vector<u32> gpr_order{GPR_ORDER};
-    for (size_t i = 0; i < gpr_order.size(); ++i)
-        code.STD(powah::GPR{gpr_order[i]}, powah::R1, -(i * 8));
+    std::vector<powah::GPR> abi_callee_saved{ABI_CALLEE_SAVED};
+    for (size_t i = 0; i < abi_callee_saved.size(); ++i)
+        code.STD(abi_callee_saved[i], powah::R1, -(8 + i * 8));
+    code.STDU(powah::R1, powah::R1, -sizeof(StackLayout));
+    code.STD(powah::R2, powah::R1, offsetof(StackLayout, sp));
 
     for (auto iter = block.begin(); iter != block.end(); ++iter) {
         IR::Inst* inst = &*iter;
@@ -257,8 +258,11 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
     // auto const cycles_to_add = block.CycleCount();
     EmitTerminal(code, ctx, ctx.block.GetTerminal(), ctx.block.Location(), false);
 
-    for (size_t i = 0; i < gpr_order.size(); ++i)
-        code.LD(powah::GPR{gpr_order[i]}, powah::R1, -(i * 8));
+    code.ADDI(powah::R1, powah::R1, sizeof(StackLayout));
+    code.LD(powah::R0, powah::R1, offsetof(StackLayout, lr));
+    code.MTLR(powah::R0);
+    for (size_t i = 0; i < abi_callee_saved.size(); ++i)
+        code.LD(abi_callee_saved[i], powah::R1, -(8 + i * 8));
     code.BLR();
     code.ApplyRelocs();
 

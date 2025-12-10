@@ -55,9 +55,16 @@ constexpr powah::GPR ABI_PARAM4 = powah::R6;
 
 // See https://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi.html#REG
 constexpr std::initializer_list<u32> GPR_ORDER{
-    14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
+    //6, 7, 8, 9, 10, 11, 12, //volatile
+    // r13 is thread-id
+    14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 //non-volatile
 };
 
+constexpr std::initializer_list<powah::GPR> ABI_CALLEER_SAVED{
+    powah::R3, powah::R4, powah::R5, powah::R6,
+    powah::R7, powah::R8, powah::R9, powah::R10,
+    powah::R11, powah::R12
+};
 constexpr std::initializer_list<powah::GPR> ABI_CALLEE_SAVED{
     powah::R14, powah::R15, powah::R16, powah::R17,
     powah::R18, powah::R19, powah::R20, powah::R21,
