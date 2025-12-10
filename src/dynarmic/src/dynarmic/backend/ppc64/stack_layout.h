@@ -15,6 +15,7 @@ struct alignas(16) StackLayout {
     std::array<u64, 18> regs;
     std::array<u64, SpillCount> spill;
     u64 check_bit;
+    void* lr;
 };
 
 static_assert(sizeof(StackLayout) % 16 == 0);

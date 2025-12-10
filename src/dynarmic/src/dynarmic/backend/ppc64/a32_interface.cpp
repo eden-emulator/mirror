@@ -74,6 +74,7 @@ struct A32Core final {
         auto const loc = thread_ctx.GetLocationDescriptor();
         auto const entry = process.GetOrEmit(loc);
         using CodeFn = HaltReason (*)(A32AddressSpace*, A32JitState*, volatile u32*, void*);
+        thread_ctx.run_fn = (void*)&A32Core::Run;
         return (CodeFn(entry))(&process, &thread_ctx, halt_reason, reinterpret_cast<void*>(&A32Core::Run));
     }
 };

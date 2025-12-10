@@ -76,6 +76,7 @@ struct A64Core final {
         const auto loc = thread_ctx.GetLocationDescriptor();
         const auto entry = process.GetOrEmit(loc);
         using CodeFn = HaltReason (*)(A64AddressSpace*, A64JitState*, volatile u32*, void*);
+        thread_ctx.run_fn = (void*)&A64Core::Run;
         return (CodeFn(entry))(&process, &thread_ctx, halt_reason, reinterpret_cast<void*>(&A64Core::Run));
     }
 };
