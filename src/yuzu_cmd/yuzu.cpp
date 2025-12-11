@@ -56,6 +56,7 @@
 #endif
 
 #ifdef __OPENORBIS__
+#include <orbis/SystemService.h>
 #   define STUB_WEAK(name) extern "C" void name() { printf("called " #name); asm volatile("ud2"); }
 STUB_WEAK(__cxa_thread_atexit)
 STUB_WEAK(__assert)

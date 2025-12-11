@@ -12,6 +12,7 @@ namespace Common {
 
 void* AllocateMemoryPages(std::size_t size) noexcept;
 void FreeMemoryPages(void* base, std::size_t size) noexcept;
+bool InitSwap() noexcept;
 
 template <typename T>
 class VirtualBuffer final {
