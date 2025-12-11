@@ -53,6 +53,7 @@
 #endif
 
 #ifdef __OPENORBIS__
+#include <orbis/SystemService.h>
 #   define STUB_WEAK(name) extern "C" void name() { printf("called " #name); asm volatile("ud2"); }
 STUB_WEAK(__cxa_thread_atexit)
 STUB_WEAK(__assert)
@@ -448,10 +449,20 @@ int main(int argc, char** argv) {
             [](VideoCore::LoadCallbackStage, size_t value, size_t total) {});
     }
 
-    system.RegisterExitCallback([&] {
+    auto const exit_fn = [&] {
+#ifdef __OPENORBIS__
+        sceSystemServiceLoadExec("EXIT", nullptr);
+#else
         // Just exit right away.
         exit(0);
-    });
+#endif
+    };
+    system.RegisterExitCallback(exit_fn);
+
+#ifdef __linux__
+    Common::Linux::StartGamemode();
+#endif
+
     void(system.Run());
     if (system.DebuggerEnabled()) {
         system.InitializeDebugger();
@@ -463,6 +474,7 @@ int main(int argc, char** argv) {
     void(system.Pause());
     system.ShutdownMainProcess();
     detached_tasks.WaitForAllTasks();
+    exit_fn();
     return 0;
 }
 
