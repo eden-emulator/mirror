@@ -701,6 +701,7 @@ private:
 
 HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_) : backing_size(backing_size_), virtual_size(virtual_size_) {
 #ifdef __OPENORBIS__
+    Common::InitSwap();
     LOG_WARNING(HW_Memory, "Platform doesn't support fastmem");
     fallback_buffer.emplace(backing_size);
     backing_base = fallback_buffer->data();
