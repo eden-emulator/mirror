@@ -310,14 +310,14 @@ struct Values {
 
     // Renderer
     SwitchableSetting<RendererBackend, true> renderer_backend{linkage,
-#if defined(__sun__) || defined(__managarm__)
+#if defined(__sun__) || defined(__managarm__) || defined(__OPENORBIS__)
                                                               RendererBackend::OpenGL,
 #else
                                                               RendererBackend::Vulkan,
 #endif
                                                               "backend", Category::Renderer};
     SwitchableSetting<ShaderBackend, true> shader_backend{linkage,
-#if defined(__sun__) || defined(__managarm__)
+#if defined(__sun__) || defined(__managarm__) || defined(__OPENORBIS__)
                                                           ShaderBackend::Glsl,
 #else
                                                           ShaderBackend::SpirV,
