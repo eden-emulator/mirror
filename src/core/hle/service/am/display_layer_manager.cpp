@@ -36,10 +36,6 @@ void DisplayLayerManager::Initialize(Core::System& system, Kernel::KProcess* pro
     m_buffer_sharing_enabled = false;
     m_blending_enabled = mode == LibraryAppletMode::PartialForeground ||
                          mode == LibraryAppletMode::PartialForegroundIndirectDisplay;
-
-    if (m_applet_id != AppletId::Application) {
-        (void)this->IsSystemBufferSharingEnabled();
-    }
 }
 
 void DisplayLayerManager::Finalize() {
