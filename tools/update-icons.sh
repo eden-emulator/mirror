@@ -8,9 +8,13 @@
 which magick || exit
 which optipng || exit
 
-EDEN_BASE_SVG="dist/icon_variations/base.svg"
-EDEN_NAMED_SVG="dist/icon_variations/base_named.svg"
+VARIATION=${VARIATION:-base}
+
+EDEN_BASE_SVG="dist/icon_variations/${VARIATION}.svg"
+EDEN_NAMED_SVG="dist/icon_variations/${VARIATION}_named.svg"
 ANDROID_RES="src/android/app/src/main/res"
+
+[ -f "$EDEN_BASE_SVG" ] && [ -f "$EDEN_NAMED_SVG" ] || { echo "Error: missing SVG" >&2; exit; }
 
 # Desktop / Windows / Qt icons
 
