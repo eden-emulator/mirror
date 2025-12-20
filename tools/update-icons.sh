@@ -18,7 +18,8 @@ ANDROID_BG_COLOR=$(cat "dist/icon_variations/${VARIATION}_bgcolor")
 
 # DraVee: 'VARIATION=newyear2025' needs a slight adjutment
 #EDEN_BASE_ADJUSTED="tmp_adjusted.svg"
-#magick "${EDEN_BASE_SVG}" -roll -15-5 "${EDEN_BASE_ADJUSTED}"
+#cp ${EDEN_BASE_SVG} ${EDEN_BASE_ADJUSTED}
+#magick mogrify -roll -15-5 "${EDEN_BASE_ADJUSTED}"
 #EDEN_BASE_SVG="${EDEN_BASE_ADJUSTED}"
 
 # Desktop / Windows / Qt icons
