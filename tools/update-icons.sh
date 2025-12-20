@@ -16,6 +16,11 @@ ANDROID_BG_COLOR=$(cat "dist/icon_variations/${VARIATION}_bgcolor")
 
 [ -f "$EDEN_BASE_SVG" ] && [ -f "$EDEN_NAMED_SVG" ] || { echo "Error: missing SVG" >&2; exit; }
 
+# DraVee: 'VARIATION=newyear2025' needs a slight adjutment
+#EDEN_BASE_ADJUSTED="tmp_adjusted.svg"
+#magick "${EDEN_BASE_SVG}" -roll -15-5 "${EDEN_BASE_ADJUSTED}"
+#EDEN_BASE_SVG="${EDEN_BASE_ADJUSTED}"
+
 # Desktop / Windows / Qt icons
 
 magick -density 256x256 -background transparent "$EDEN_BASE_SVG" -define icon:auto-resize -colors 256 dist/eden.ico || exit
@@ -34,13 +39,9 @@ optipng -o7 dist/qt_themes/default/icons/256x256/eden*.png
 ANDROID_RES="src/android/app/src/main/res"
 ANDROID_FG="$ANDROID_RES/drawable/ic_launcher_foreground.png"
 
-# Android adaptive icon (API 26+)
-
 echo "<?xml version='1.0' encoding='utf-8'?><resources><color name='ic_launcher_background'>${ANDROID_BG_COLOR}</color></resources>" > "$ANDROID_RES/values/colors.xml"
-magick -size 1080x1080 -background transparent "$EDEN_BASE_SVG" -gravity center -resize 660x660 -extent 1080x1080 "${ANDROID_FG}" || exit
 
-# DraVee: 'VARIATION=newyear2025' needs a slight adjutment
-#magick mogrify -roll -15-5 ${ANDROID_FG}
+magick -size 1080x1080 -background transparent "$EDEN_BASE_SVG" -gravity center -resize 660x660 -extent 1080x1080 "${ANDROID_FG}" || exit
 
 optipng -o7 "$ANDROID_FG"
 
@@ -67,3 +68,4 @@ png2icns dist/eden.icns "$TMP_PNG" || echo 'non fatal'
 cp dist/eden.icns dist/yuzu.icns
 
 rm "$TMP_PNG"
+#rm "${EDEN_BASE_ADJUSTED}"
