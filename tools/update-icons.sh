@@ -5,33 +5,114 @@
 
 # Updates main icons for eden
 
-#which png2icns || (which yay && yay libicns) || exit
 which magick || exit
+which optipng || exit
 
 EDEN_BASE_SVG="dist/icon_variations/base.svg"
-#EDEN_SMALL_SVG="dist/icon_variations/base_small.svg"
 EDEN_NAMED_SVG="dist/icon_variations/base_named.svg"
+ANDROID_RES="src/android/app/src/main/res"
 
-magick -density 256x256 -background transparent $EDEN_BASE_SVG -define icon:auto-resize -colors 256 dist/eden.ico || exit
-convert -density 256x256 -resize 256x256 -background transparent $EDEN_BASE_SVG dist/yuzu.bmp || exit
+# Desktop / Windows / Qt icons
 
-magick -size 256x256 -background transparent $EDEN_BASE_SVG dist/qt_themes/default/icons/256x256/eden.png || exit
-magick -size 256x256 -background transparent $EDEN_NAMED_SVG dist/qt_themes/default/icons/256x256/eden_named.png || exit
-magick dist/qt_themes/default/icons/256x256/eden.png -resize 256x256! dist/qt_themes/default/icons/256x256/eden.png || exit
-magick dist/qt_themes/default/icons/256x256/eden_named.png -resize 256x256! dist/qt_themes/default/icons/256x256/eden_named.png || exit
+magick \
+    -density 256x256 \
+    -background transparent \
+    "$EDEN_BASE_SVG" \
+    -define icon:auto-resize \
+    -colors 256 \
+    dist/eden.ico || exit
 
-# Now do more fancy things (like composition)
+magick \
+    -density 256x256 \
+    -background transparent \
+    "$EDEN_BASE_SVG" \
+    -resize 256x256 \
+    dist/yuzu.bmp || exit
+
+magick \
+    -size 256x256 \
+    -background transparent \
+    "$EDEN_BASE_SVG" \
+    dist/qt_themes/default/icons/256x256/eden.png || exit
+
+magick \
+    -size 256x256 \
+    -background transparent \
+    "$EDEN_NAMED_SVG" \
+    dist/qt_themes/default/icons/256x256/eden_named.png || exit
+
+magick \
+    dist/qt_themes/default/icons/256x256/eden.png \
+    -resize 256x256! \
+    dist/qt_themes/default/icons/256x256/eden.png || exit
+
+magick \
+    dist/qt_themes/default/icons/256x256/eden_named.png \
+    -resize 256x256! \
+    dist/qt_themes/default/icons/256x256/eden_named.png || exit
+
+# Android adaptive icon (API 26+)
+
+ANDROID_FG="$ANDROID_RES/drawable/ic_launcher_foreground.png"
+
+magick \
+    -size 1080x1080 \
+    -background transparent \
+    "$EDEN_BASE_SVG" \
+    -gravity center \
+    -resize 660x660 \
+    -extent 1080x1080 \
+    "$ANDROID_FG" || exit
+
+optipng -o7 "$ANDROID_FG"
+
+# Android legacy launcher icon (API <= 24)
+
+ANDROID_MIPMAP="$ANDROID_RES"
+BASE_LEGACY="$ANDROID_MIPMAP/mipmap-xxxhdpi/ic_launcher.png"
+
+magick \
+    -size 512x512 \
+    xc:black \
+    "$ANDROID_FG" \
+    -gravity center \
+    -resize 384x384 \
+    -composite \
+    "$BASE_LEGACY" || exit
+
+magick \
+    "$BASE_LEGACY" \
+    -resize 192x192 \
+    "$ANDROID_MIPMAP/mipmap-xxhdpi/ic_launcher.png"
+
+magick \
+    "$BASE_LEGACY" \
+    -resize 144x144 \
+    "$ANDROID_MIPMAP/mipmap-xhdpi/ic_launcher.png"
+
+magick \
+    "$BASE_LEGACY" \
+    -resize 96x96 \
+    "$ANDROID_MIPMAP/mipmap-hdpi/ic_launcher.png"
+
+magick \
+    "$BASE_LEGACY" \
+    -resize 72x72 \
+    "$ANDROID_MIPMAP/mipmap-mdpi/ic_launcher.png"
+
+optipng -o7 "$ANDROID_MIPMAP"/mipmap-*/ic_launcher.png
+
+# macOS
+
 TMP_PNG="dist/eden-tmp.png"
-magick -size 1024x1024 -background transparent $EDEN_BASE_SVG $TMP_PNG || exit
-composite $TMP_PNG -gravity center -geometry 2048x2048+0+0 \
-    src/android/app/src/main/res/drawable/ic_icon_bg_orig.png \
-    src/android/app/src/main/res/drawable/ic_launcher.png || exit
-magick src/android/app/src/main/res/drawable/ic_launcher.png -resize 512x512! src/android/app/src/main/res/drawable/ic_launcher.png || exit
 
-optipng -o7 src/android/app/src/main/res/drawable/ic_launcher.png
-optipng -o7 dist/qt_themes/default/icons/256x256/eden_named.png
-optipng -o7 dist/qt_themes/default/icons/256x256/eden.png
+magick \
+    -size 1024x1024 \
+    -background transparent \
+    "$EDEN_BASE_SVG" \
+    "$TMP_PNG" || exit
 
-png2icns dist/eden.icns $TMP_PNG || echo 'non fatal'
+png2icns dist/eden.icns "$TMP_PNG" || echo 'non fatal'
 cp dist/eden.icns dist/yuzu.icns
-rm $TMP_PNG
+
+rm "$TMP_PNG"
