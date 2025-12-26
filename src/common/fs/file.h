@@ -433,22 +433,24 @@ public:
     */
     [[nodiscard]] s64 Tell() const;
 
-private:
+#ifdef _WIN32
+    inline bool IsMappedFile() const noexcept { return file_handle != nullptr; }
+#else // POSIX
+    inline bool IsMappedFile() const noexcept { return mmap_fd != -1; }
+#endif
+
     std::filesystem::path file_path;
     FileAccessMode file_access_mode{};
     FileType file_type{};
     std::FILE* file = nullptr;
-
     // Any decent system should have mmap() for files
     // Systems with artifical mmap() limitations should simply change the logic within file.cpp
     // and reduce the threshold for which the mmap() is set to
 #ifdef _WIN32
     void *mapping_handle = nullptr;
     void *file_handle = nullptr;
-    bool IsMappedFile() { return file_handle != nullptr; }
 #else // POSIX
     int mmap_fd = -1;
-    bool IsMappedFile() { return mmap_fd != -1; }
 #endif
     u8* mmap_base = nullptr;
     size_t mmap_size = 0;
