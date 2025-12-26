@@ -196,7 +196,14 @@ struct Values {
                                              linkage, false, "dump_audio_commands", Category::Audio, Specialization::Default, false};
 
     // Core
-    SwitchableSetting<bool> use_multi_core{linkage, true, "use_multi_core", Category::Core};
+    SwitchableSetting<bool> use_multi_core{linkage,
+#ifdef __OPENORBIS__
+        // Re-enable once proper TLS support is added
+        false,
+#else
+        true,
+#endif
+        "use_multi_core", Category::Core};
     SwitchableSetting<MemoryLayout, true> memory_layout_mode{linkage,
                                                              MemoryLayout::Memory_4Gb,
                                                              "memory_layout_mode",
