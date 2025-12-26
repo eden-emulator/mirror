@@ -104,6 +104,7 @@ struct Ucontext {
 }
 
 static boost::container::static_vector<std::pair<void*, size_t>, 16> swap_regions;
+extern "C" int sceKernelRemoveExceptionHandler(s32 sig_num);
 static void SwapHandler(int sig, void* raw_context) {
     auto& mctx = ((Orbis::Ucontext*)raw_context)->uc_mcontext;
     if (std::ranges::find_if(swap_regions, [addr = mctx.mc_addr](auto const& e) {
@@ -116,8 +117,8 @@ static void SwapHandler(int sig, void* raw_context) {
         void* res = mmap(aligned_addr, page_size, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0);
         ASSERT(res != MAP_FAILED);
     } else {
-        LOG_ERROR(HW_Memory, "fault in addr {:#x}", mctx.mc_addr);
-        sceSystemServiceLoadExec("EXIT", nullptr);
+        LOG_ERROR(HW_Memory, "fault in addr {:#x} at {:#x}", mctx.mc_addr, mctx.mc_rip); // print caller address
+        sceKernelRemoveExceptionHandler(SIGSEGV); // to not catch the next signal
     }
 }
 void InitSwap() noexcept {

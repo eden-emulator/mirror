@@ -69,7 +69,9 @@ struct KernelCore::Impl {
         global_object_list_container = std::make_unique<KAutoObjectWithListContainer>(kernel);
         global_scheduler_context = std::make_unique<Kernel::GlobalSchedulerContext>(kernel);
 
+#ifndef __OPENORBIS__
         is_phantom_mode_for_singlecore = false;
+#endif
 
         // Derive the initial memory layout from the emulated board
         Init::InitializeSlabResourceCounts(kernel);
@@ -356,7 +358,11 @@ struct KernelCore::Impl {
         application_process->Open();
     }
 
+#ifdef __OPENORBIS__
+    static inline u8 host_thread_id = UINT8_MAX;
+#else
     static inline thread_local u8 host_thread_id = UINT8_MAX;
+#endif
 
     /// Sets the host thread ID for the caller.
     u32 SetHostThreadId(std::size_t core_id) {
@@ -380,8 +386,14 @@ struct KernelCore::Impl {
             ASSERT(KThread::InitializeDummyThread(thread, nullptr).IsSuccess());
             return thread;
         }};
+#ifdef __OPENORBIS__
+        // No proper TLS yet
+        static KThread raw_thread{system.Kernel()};
+        static KThread* thread = existing_thread ? existing_thread : initialize(&raw_thread);
+#else
         thread_local KThread raw_thread{system.Kernel()};
         thread_local KThread* thread = existing_thread ? existing_thread : initialize(&raw_thread);
+#endif
         return thread;
     }
 
@@ -407,22 +419,33 @@ struct KernelCore::Impl {
         return this_id;
     }
 
+#ifdef __OPENORBIS__
+    bool IsPhantomModeForSingleCore() const {
+        return true;
+    }
+    void SetIsPhantomModeForSingleCore(bool value) {}
+#else
+    // Forces singlecore
     static inline thread_local bool is_phantom_mode_for_singlecore{false};
-
     bool IsPhantomModeForSingleCore() const {
         return is_phantom_mode_for_singlecore;
     }
-
     void SetIsPhantomModeForSingleCore(bool value) {
         ASSERT(!is_multicore);
         is_phantom_mode_for_singlecore = value;
     }
+#endif
 
     bool IsShuttingDown() const {
         return is_shutting_down.load(std::memory_order_relaxed);
     }
 
+#ifdef __OPENORBIS__
+    // PS4 doesn't have proper TLS handling
+    static inline KThread* current_thread{nullptr};
+#else
     static inline thread_local KThread* current_thread{nullptr};
+#endif
 
     KThread* GetCurrentEmuThread() {
         if (!current_thread) {
