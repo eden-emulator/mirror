@@ -18,6 +18,7 @@
 #ifdef _WIN32
 #include <io.h>
 #include <share.h>
+#include <windows.h>
 #else
 #include <unistd.h>
 #include <sys/mman.h>
@@ -40,13 +41,13 @@ namespace {
 #ifdef _WIN32
 
 /**
- * Converts the file access mode and file type enums to a file access mode wide string.
- *
- * @param mode File access mode
- * @param type File type
- *
- * @returns A pointer to a wide string representing the file access mode.
- */
+* Converts the file access mode and file type enums to a file access mode wide string.
+*
+* @param mode File access mode
+* @param type File type
+*
+* @returns A pointer to a wide string representing the file access mode.
+*/
 [[nodiscard]] constexpr const wchar_t* AccessModeToWStr(FileAccessMode mode, FileType type) {
     switch (type) {
     case FileType::BinaryFile:
@@ -83,12 +84,12 @@ namespace {
 }
 
 /**
- * Converts the file-share access flag enum to a Windows defined file-share access flag.
- *
- * @param flag File-share access flag
- *
- * @returns Windows defined file-share access flag.
- */
+* Converts the file-share access flag enum to a Windows defined file-share access flag.
+*
+* @param flag File-share access flag
+*
+* @returns Windows defined file-share access flag.
+*/
 [[nodiscard]] constexpr int ToWindowsFileShareFlag(FileShareFlag flag) {
     switch (flag) {
     case FileShareFlag::ShareNone:
@@ -106,13 +107,13 @@ namespace {
 #else
 
 /**
- * Converts the file access mode and file type enums to a file access mode string.
- *
- * @param mode File access mode
- * @param type File type
- *
- * @returns A pointer to a string representing the file access mode.
- */
+* Converts the file access mode and file type enums to a file access mode string.
+*
+* @param mode File access mode
+* @param type File type
+*
+* @returns A pointer to a string representing the file access mode.
+*/
 [[nodiscard]] constexpr const char* AccessModeToStr(FileAccessMode mode, FileType type) {
     switch (type) {
     case FileType::BinaryFile:
@@ -151,12 +152,12 @@ namespace {
 #endif
 
 /**
- * Converts the seek origin enum to a seek origin integer.
- *
- * @param origin Seek origin
- *
- * @returns Seek origin integer.
- */
+* Converts the seek origin enum to a seek origin integer.
+*
+* @param origin Seek origin
+*
+* @returns Seek origin integer.
+*/
 [[nodiscard]] constexpr int ToSeekOrigin(SeekOrigin origin) {
     switch (origin) {
     case SeekOrigin::SetOrigin:
@@ -182,7 +183,7 @@ std::string ReadStringFromFile(const std::filesystem::path& path, FileType type)
 }
 
 size_t WriteStringToFile(const std::filesystem::path& path, FileType type,
-                         std::string_view string) {
+                        std::string_view string) {
     if (Exists(path) && !IsFile(path)) {
         return 0;
     }
@@ -193,7 +194,7 @@ size_t WriteStringToFile(const std::filesystem::path& path, FileType type,
 }
 
 size_t AppendStringToFile(const std::filesystem::path& path, FileType type,
-                          std::string_view string) {
+                        std::string_view string) {
     if (Exists(path) && !IsFile(path)) {
         return 0;
     }
@@ -248,40 +249,13 @@ FileType IOFile::GetType() const {
     return file_type;
 }
 
-void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
-    Close();
-    file_path = path;
-    file_access_mode = mode;
-    file_type = type;
-    errno = 0;
-#ifdef _WIN32
-    if (flag != FileShareFlag::ShareNone) {
-        file = _wfsopen(path.c_str(), AccessModeToWStr(mode, type), ToWindowsFileShareFlag(flag));
-    } else {
-        _wfopen_s(&file, path.c_str(), AccessModeToWStr(mode, type));
-    }
-#elif ANDROID
-    if (Android::IsContentUri(path)) {
-        ASSERT_MSG(mode == FileAccessMode::Read, "Content URI file access is for read-only!");
-        auto const fd = Android::OpenContentUri(path, Android::OpenMode::Read);
-        if (fd != -1) {
-            file = fdopen(fd, "r");
-            if (errno != 0 && file == nullptr)
-                LOG_ERROR(Common_Filesystem, "Error opening file: {}, error: {}", path.c_str(), strerror(errno));
-        } else {
-            LOG_ERROR(Common_Filesystem, "Error opening file: {}", path.c_str());
-        }
-    } else {
-        file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
-    }
-#elif defined(__HAIKU__) || defined(__managarm__) || defined(__OPENORBIS__) || defined(__APPLE__)
-    file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
-#elif defined(__unix__)
-    if (type == FileType::BinaryFile && mode == FileAccessMode::Read) {
+#ifdef __unix__
+int PlatformMapReadOnly(IOFile& io, const char* path) {
+    io.mmap_fd = open(path., O_RDONLY);
+    if (io.mmap_fd > 0) {
         struct stat st;
-        mmap_fd = open(path.c_str(), O_RDONLY);
-        fstat(mmap_fd, &st);
-        mmap_size = st.st_size;
+        fstat(io.mmap_fd, &st);
+        io.mmap_size = st.st_size;
 
         int map_flags = MAP_PRIVATE;
 #ifdef MAP_PREFAULT_READ
@@ -315,17 +289,96 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
         u64 big_file_threshold = 512_MiB;
         map_flags |= u64(st.st_size) >= big_file_threshold ? MAP_ALIGNED_SUPER : 0;
 #endif
-        mmap_base = (u8*)mmap(nullptr, mmap_size, PROT_READ, map_flags, mmap_fd, 0);
-        if (mmap_base == MAP_FAILED) {
-            close(mmap_fd);
-            mmap_fd = -1;
+        io.mmap_base = (u8*)mmap(nullptr, io.mmap_size, PROT_READ, map_flags, io.mmap_fd, 0);
+        if (io.mmap_base == MAP_FAILED) {
+            close(io.mmap_fd);
+            io.mmap_fd = -1;
         } else {
-            posix_madvise(mmap_base, mmap_size, POSIX_MADV_WILLNEED);
+            posix_madvise(mmap_base, io.mmap_size, POSIX_MADV_WILLNEED);
         }
     }
-    // mmap(2) failed or simply we can't use it
-    if (mmap_fd == -1) {
+    return io.mmap_fd;
+}
+void PlatformUnmap(IOFile& io) {
+    if (io.mmap_fd != -1) {
+        munmap(io.mmap_base, io.mmap_size);
+        close(io.mmap_fd);
+        io.mmap_fd = -1;
+    }
+}
+#else
+int PlatformMapReadOnly(IOFile& io, const char* path) {
+    io.file_handle = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
+    if (HANDLE(io.file_handle) != INVALID_HANDLE_VALUE) {
+        io.mapping_handle = CreateFileMappingW(file_handle, nullptr, PAGE_READONLY, 0, 0, nullptr);
+        if (io.mapping_handle) {
+            io.mmap_base = (char const*)MapViewOfFile(HANDLE(io.mapping_handle), FILE_MAP_READ, 0, 0, 0);
+            if (io.mmap_base) {
+                _LARGE_INTEGER pvalue;
+                GetFileSizeEx(file_handle, &pvalue);
+                io.mmap_size = uint32_t(pvalue.QuadPart);
+            } else {
+                CloseHandle(io.mapping_handle);
+                CloseHandle(io.file_handle);
+                return -1;
+            }
+        } else {
+            CloseHandle(io.file_handle);
+            return -1;
+        }
+    }
+    return 0;
+}
+void PlatformUnmap(IOFile& io) {
+    if(io.mapping_handle) {
+        if(io.mmap_base)
+            UnmapViewOfFile(HANDLE(io.mmap_base));
+        CloseHandle(HANDLE(io.mapping_handle));
+    }
+    if(io.file_handle != INVALID_HANDLE_VALUE)
+        CloseHandle(HANDLE(io.file_handle));
+}
+#endif
+
+void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, FileShareFlag flag) {
+    Close();
+    file_path = path;
+    file_access_mode = mode;
+    file_type = type;
+    errno = 0;
+#ifdef _WIN32
+    if (flag != FileShareFlag::ShareNone) {
+        file = _wfsopen(path.c_str(), AccessModeToWStr(mode, type), ToWindowsFileShareFlag(flag));
+    } else {
+        _wfopen_s(&file, path.c_str(), AccessModeToWStr(mode, type));
+    }
+#elif ANDROID
+    if (Android::IsContentUri(path)) {
+        ASSERT_MSG(mode == FileAccessMode::Read, "Content URI file access is for read-only!");
+        if (PlatformMapReadOnly(*this, path.c_str()) == -1) {
+            LOG_ERROR(Common_Filesystem, "Error mmap'ing file: {}", path.c_str());
+            int const fd = Android::OpenContentUri(path, Android::OpenMode::Read);
+            if (fd != -1) {
+                file = fdopen(fd, "r");
+                if (errno != 0 && file == nullptr)
+                    LOG_ERROR(Common_Filesystem, "Error opening file: {}, error: {}", path.c_str(), strerror(errno));
+            } else {
+                LOG_ERROR(Common_Filesystem, "Error opening file: {}", path.c_str());
+            }
+        }
+    } else {
         file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
+    }
+#elif defined(__HAIKU__) || defined(__managarm__) || defined(__OPENORBIS__) || defined(__APPLE__)
+    file = std::fopen(path.c_str(), AccessModeToStr(mode, type));
+#elif defined(__unix__)
+    if (type == FileType::BinaryFile && mode == FileAccessMode::Read) {
+        if (PlatformMapReadOnly(*this, path.c_str()) == -1) {
+            LOG_ERROR(Common_Filesystem, "Error mmap'ing file: {}", path.c_str());
+        }
+    }
+    if (mmap_fd == -1) {
+        file = std::fopen(path.c_str(), AccessModeToStr(mode, type)); // mmap(2) failed or simply we can't use it
     }
 #else
     // Some other fancy OS (ahem fucking Darwin/Mac OSX)
@@ -339,13 +392,7 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
 }
 
 void IOFile::Close() {
-#ifdef __unix__
-    if (mmap_fd != -1) {
-        munmap(mmap_base, mmap_size);
-        close(mmap_fd);
-        mmap_fd = -1;
-    }
-#endif
+    PlatformUnmap(*this);
     if (file) {
         errno = 0;
         const auto close_result = std::fclose(file) == 0;
@@ -359,11 +406,7 @@ void IOFile::Close() {
 }
 
 bool IOFile::IsOpen() const {
-#ifdef __unix__
-    return file != nullptr || mmap_fd != -1;
-#else
-    return file != nullptr;
-#endif
+    return file != nullptr || IsMappedFile();
 }
 
 std::string IOFile::ReadString(size_t length) const {
@@ -380,9 +423,7 @@ size_t IOFile::WriteString(std::span<const char> string) const {
 }
 
 bool IOFile::Flush() const {
-#ifdef __unix__
-    ASSERT(mmap_fd == -1);
-#endif
+    ASSERT(!IsMappedFile());
     if (file) {
         errno = 0;
         auto const flush_result = std::fflush(file) == 0;
@@ -397,9 +438,7 @@ bool IOFile::Flush() const {
 }
 
 bool IOFile::Commit() const {
-#ifdef __unix__
-    ASSERT(mmap_fd == -1);
-#endif
+    ASSERT(!IsMappedFile());
     if (file) {
         errno = 0;
 #ifdef _WIN32
@@ -418,9 +457,7 @@ bool IOFile::Commit() const {
 }
 
 bool IOFile::SetSize(u64 size) const {
-#ifdef __unix__
-    ASSERT(mmap_fd == -1);
-#endif
+    ASSERT(!IsMappedFile());
     if (file) {
         errno = 0;
 #ifdef _WIN32
@@ -439,10 +476,8 @@ bool IOFile::SetSize(u64 size) const {
 }
 
 u64 IOFile::GetSize() const {
-#ifdef __unix__
-    if (mmap_fd != -1)
+    if (IsMappedFile())
         return mmap_size;
-#endif
     if (file) {
         // Flush any unwritten buffered data into the file prior to retrieving the file mmap_size.
         std::fflush(file);
@@ -476,8 +511,7 @@ u64 IOFile::GetSize() const {
 }
 
 bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
-#ifdef __unix__
-    if (mmap_fd != -1) {
+    if (IsMappedFile()) {
         // fuck you to whoever made this method const
         switch (origin) {
         case SeekOrigin::SetOrigin:
@@ -492,7 +526,6 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
         }
         return true;
     }
-#endif
     if (file) {
         errno = 0;
         const auto seek_result = fseeko(file, offset, ToSeekOrigin(origin)) == 0;
@@ -507,12 +540,10 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
 }
 
 s64 IOFile::Tell() const {
-#ifdef __unix__
-    if (mmap_fd != -1) {
+    if (IsMappedFile()) {
         errno = 0;
         return s64(mmap_offset);
     }
-#endif
     if (file) {
         errno = 0;
         return ftello(file);
