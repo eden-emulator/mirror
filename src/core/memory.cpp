@@ -257,7 +257,7 @@ struct Memory::Impl {
             const auto current_vaddr =
                 static_cast<u64>((page_index << YUZU_PAGEBITS) + page_offset);
 
-            const auto [pointer, type] = page_table.pointers[page_index].PointerType();
+            const auto [pointer, type] = page_table.entries[page_index].ptr.PointerType();
             switch (type) {
             case Common::PageType::Unmapped: {
                 user_accessible = false;
@@ -628,15 +628,14 @@ struct Memory::Impl {
                   base * YUZU_PAGESIZE, (base + size) * YUZU_PAGESIZE);
 
         const auto end = base + size;
-        ASSERT_MSG(end <= page_table.pointers.size(), "out of range mapping at {:016X}",
-                   base + page_table.pointers.size());
+        ASSERT_MSG(end <= page_table.entries.size(), "out of range mapping at {:016X}", base + page_table.entries.size());
 
         if (!target) {
             ASSERT_MSG(type != Common::PageType::Memory,
                        "Mapping memory page without a pointer @ {:016x}", base * YUZU_PAGESIZE);
 
             while (base != end) {
-                page_table.pointers[base].Store(0, type);
+                page_table.entries[base].ptr.Store(0, type);
                 page_table.entries[base].addr = 0;
                 page_table.entries[base].block = 0;
                 base += 1;
@@ -646,11 +645,11 @@ struct Memory::Impl {
             while (base != end) {
                 auto host_ptr = uintptr_t(system.DeviceMemory().GetPointer<u8>(target)) - (base << YUZU_PAGEBITS);
                 auto backing = GetInteger(target) - (base << YUZU_PAGEBITS);
-                page_table.pointers[base].Store(host_ptr, type);
+                page_table.entries[base].ptr.Store(host_ptr, type);
                 page_table.entries[base].addr = backing;
                 page_table.entries[base].block = orig_base << YUZU_PAGEBITS;
 
-                ASSERT_MSG(page_table.pointers[base].Pointer(),
+                ASSERT_MSG(page_table.entries[base].ptr.Pointer(),
                            "memory mapping base yield a nullptr within the table");
 
                 base += 1;
@@ -910,10 +909,10 @@ void Memory::ProtectRegion(Common::PageTable& page_table, Common::ProcessAddress
 bool Memory::IsValidVirtualAddress(const Common::ProcessAddress vaddr) const {
     const auto& page_table = *impl->current_page_table;
     const size_t page = vaddr >> YUZU_PAGEBITS;
-    if (page >= page_table.pointers.size()) {
+    if (page >= page_table.entries.size()) {
         return false;
     }
-    const auto [pointer, type] = page_table.pointers[page].PointerType();
+    const auto [pointer, type] = page_table.entries[page].ptr.PointerType();
     return pointer != 0 || type == Common::PageType::RasterizerCachedMemory ||
            type == Common::PageType::DebugMemory;
 }
