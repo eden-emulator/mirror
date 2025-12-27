@@ -84,9 +84,8 @@ template<>
 
     code.mov(tmp, vaddr.cvt32());
     code.shr(tmp, int(page_bits));
-
-    auto const entry_size = 1 << ctx.conf.page_table_log2_stride;
-    code.mov(page, qword[r14 + tmp.cvt64() * entry_size]);
+    code.shl(tmp, int(ctx.conf.page_table_log2_stride));
+    code.mov(page, qword[r14 + tmp.cvt64()]);
     if (ctx.conf.page_table_pointer_mask_bits == 0) {
         code.test(page, page);
     } else {
@@ -140,8 +139,8 @@ template<>
         code.jnz(abort, code.T_NEAR);
     }
 
-    auto const entry_size = 1 << ctx.conf.page_table_log2_stride;
-    code.mov(page, qword[r14 + tmp * entry_size]);
+    code.shl(tmp, int(ctx.conf.page_table_log2_stride));
+    code.mov(page, qword[r14 + tmp]);
     if (ctx.conf.page_table_pointer_mask_bits == 0) {
         code.test(page, page);
     } else {
