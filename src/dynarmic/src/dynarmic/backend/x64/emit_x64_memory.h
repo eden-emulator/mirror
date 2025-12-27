@@ -83,9 +83,10 @@ template<>
     // TODO: This code assumes vaddr has been zext from 32-bits to 64-bits.
 
     code.mov(tmp, vaddr.cvt32());
-    code.shr(tmp, static_cast<int>(page_bits));
+    code.shr(tmp, int(page_bits));
 
-    code.mov(page, qword[r14 + tmp.cvt64() * sizeof(void*)]);
+    auto const entry_size = 1 << ctx.conf.page_table_log2_stride;
+    code.mov(page, qword[r14 + tmp.cvt64() * entry_size]);
     if (ctx.conf.page_table_pointer_mask_bits == 0) {
         code.test(page, page);
     } else {
@@ -138,7 +139,9 @@ template<>
         code.test(tmp, u32(-(1 << valid_page_index_bits)));
         code.jnz(abort, code.T_NEAR);
     }
-    code.mov(page, qword[r14 + tmp * sizeof(void*)]);
+
+    auto const entry_size = 1 << ctx.conf.page_table_log2_stride;
+    code.mov(page, qword[r14 + tmp * entry_size]);
     if (ctx.conf.page_table_pointer_mask_bits == 0) {
         code.test(page, page);
     } else {
