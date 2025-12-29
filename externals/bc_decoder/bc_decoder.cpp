@@ -107,36 +107,32 @@ namespace {
             int32_t c[8] = {0};
 
             if (isSigned) {
-                c[0] = static_cast<signed char>(data & 0xFF);
-                c[1] = static_cast<signed char>((data & 0xFF00) >> 8);
+                c[0] = int8_t(data & 0xFF);
+                c[1] = int8_t((data & 0xFF00) >> 8);
             } else {
-                c[0] = static_cast<uint8_t>(data & 0xFF);
-                c[1] = static_cast<uint8_t>((data & 0xFF00) >> 8);
+                c[0] = uint8_t(data & 0xFF);
+                c[1] = uint8_t((data & 0xFF00) >> 8);
             }
 
             if (c[0] > c[1]) {
-                for (int32_t i = 2; i < 8; ++i) {
+                for (int32_t i = 2; i < 8; ++i)
                     c[i] = ((8 - i) * c[0] + (i - 1) * c[1]) / 7;
-                }
             } else {
-                for (int32_t i = 2; i < 6; ++i) {
+                for (int32_t i = 2; i < 6; ++i)
                     c[i] = ((6 - i) * c[0] + (i - 1) * c[1]) / 5;
-                }
                 c[6] = isSigned ? -128 : 0;
                 c[7] = isSigned ? 127 : 255;
             }
 
-            for (size_t j = 0; j < BlockHeight && (y + j) < dstH; j++) {
-                for (size_t i = 0; i < BlockWidth && (x + i) < dstW; i++) {
-                    dst[channel + (i * dstBpp) + (j * dstPitch)] = static_cast<uint8_t>(c[getIdx((j * BlockHeight) + i)]);
-                }
-            }
+            for (size_t j = 0; j < BlockHeight && (y + j) < dstH; j++)
+                for (size_t i = 0; i < BlockWidth && (x + i) < dstW; i++)
+                    dst[channel + (i * dstBpp) + (j * dstPitch)] = uint8_t(c[getIdx((j * BlockHeight) + i)]);
         }
 
       private:
         uint8_t getIdx(int32_t i) const {
             int32_t offset = i * 3 + 16;
-            return static_cast<uint8_t>((data & (0x7ull << offset)) >> offset);
+            return uint8_t((data & (0x7ull << offset)) >> offset);
         }
 
         uint64_t data;
@@ -148,9 +144,8 @@ namespace {
             dst += 3;  // Write only to alpha (channel 3)
             for (size_t j = 0; j < BlockHeight && (y + j) < dstH; j++, dst += dstPitch) {
                 uint8_t *dstRow = dst;
-                for (size_t i = 0; i < BlockWidth && (x + i) < dstW; i++, dstRow += dstBpp) {
+                for (size_t i = 0; i < BlockWidth && (x + i) < dstW; i++, dstRow += dstBpp)
                     *dstRow = getAlpha(j * BlockHeight + i);
-                }
             }
         }
 
@@ -158,7 +153,7 @@ namespace {
         uint8_t getAlpha(int32_t i) const {
             int32_t offset = i << 2;
             int32_t alpha = (data & (0xFull << offset)) >> offset;
-            return static_cast<uint8_t>(alpha | (alpha << 4));
+            return uint8_t(alpha | (alpha << 4));
         }
 
         uint64_t data;
@@ -746,15 +741,9 @@ namespace {
                     0b01010000010100000101010100000000, 0b00000000010101010101000001010000,
                     0b00010101000101010001000000010000, 0b01010100010101000000010000000100,
                 };
-                static const uint8_t AnchorTable2[MaxPartitions] = {
-                    0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf,
-                    0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf,
-                    0xf, 0x2, 0x8, 0x2, 0x2, 0x8, 0x8, 0xf,
-                    0x2, 0x8, 0x2, 0x2, 0x8, 0x8, 0x2, 0x2,
-                    0xf, 0xf, 0x6, 0x8, 0x2, 0x8, 0xf, 0xf,
-                    0x2, 0x8, 0x2, 0x2, 0x2, 0xf, 0xf, 0x6,
-                    0x6, 0x2, 0x6, 0x8, 0xf, 0xf, 0x2, 0x2,
-                    0xf, 0xf, 0xf, 0xf, 0xf, 0x2, 0x2, 0xf,
+                static const uint32_t a_table[MaxPartitions / 8] = {
+                    0xffffffff, 0xffffffff, 0xf882282f, 0x22882282,
+                    0xff8286ff, 0x6ff22282, 0x22ff8626, 0xf22fffff,
                 };
                 // @fmt:on
 
@@ -836,12 +825,11 @@ namespace {
                 }
 
                 // Get the indices, calculate final colors, and output
-                for (int32_t y = 0; y < 4; y++) {
-                    for (int32_t x = 0; x < 4; x++) {
-                        int32_t pixelNum = x + y * 4;
+                for (uint32_t y = 0; y < 4; y++) {
+                    for (uint32_t x = 0; x < 4; x++) {
+                        uint32_t pixelNum = x + y * 4, firstEndpoint = 0;
                         IndexInfo idx;
                         bool isAnchor = false;
-                        int32_t firstEndpoint = 0;
                         // Bc6H can have either 1 or 2 petitions depending on the mode.
                         // The number of petitions affects the number of indices with implicit
                         // leading 0 bits and the number of bits per index.
@@ -852,7 +840,8 @@ namespace {
                         } else {
                             idx.num_bits = 3;
                             // There are 2 indices with implicit leading 0-bits.
-                            isAnchor = ((pixelNum == 0) || (pixelNum == AnchorTable2[partition]));
+                            uint32_t anchor_value = (a_table[partition / 8] >> (partition * 4)) & 0x0f;
+                            isAnchor = ((pixelNum == 0) || (pixelNum == anchor_value));
                             firstEndpoint = ((p_table[partition] >> pixelNum) & 0x03) * 2;
                         }
 
@@ -1216,40 +1205,14 @@ namespace {
                 // Table.A2 and Table.A3.""
                 // Note: This is really confusing - I believe they meant subset instead of partition here.
                 // s_index >= 0 && s_index <= 2
-                alignas(64) static const uint8_t a_table[3][64] = {
-                    {
-                        0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf,
-                        0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf,
-                        0xf, 0x2, 0x8, 0x2, 0x2, 0x8, 0x8, 0xf,
-                        0x2, 0x8, 0x2, 0x2, 0x8, 0x8, 0x2, 0x2,
-                        0xf, 0xf, 0x6, 0x8, 0x2, 0x8, 0xf, 0xf,
-                        0x2, 0x8, 0x2, 0x2, 0x2, 0xf, 0xf, 0x6,
-                        0x6, 0x2, 0x6, 0x8, 0xf, 0xf, 0x2, 0x2,
-                        0xf, 0xf, 0xf, 0xf, 0xf, 0x2, 0x2, 0xf,
-                    }, {
-                        0x3, 0x3, 0xf, 0xf, 0x8, 0x3, 0xf, 0xf,
-                        0x8, 0x8, 0x6, 0x6, 0x6, 0x5, 0x3, 0x3,
-                        0x3, 0x3, 0x8, 0xf, 0x3, 0x3, 0x6, 0xa,
-                        0x5, 0x8, 0x8, 0x6, 0x8, 0x5, 0xf, 0xf,
-                        0x8, 0xf, 0x3, 0x5, 0x6, 0xa, 0x8, 0xf,
-                        0xf, 0x3, 0xf, 0x5, 0xf, 0xf, 0xf, 0xf,
-                        0x3, 0xf, 0x5, 0x5, 0x5, 0x8, 0x5, 0xa,
-                        0x5, 0xa, 0x8, 0xd, 0xf, 0xc, 0x3, 0x3,
-                    }, {
-                        0xf, 0x8, 0x8, 0x3, 0xf, 0xf, 0x3, 0x8,
-                        0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf, 0x8,
-                        0xf, 0x8, 0xf, 0x3, 0xf, 0x8, 0xf, 0x8,
-                        0x3, 0xf, 0x6, 0xa, 0xf, 0xf, 0xa, 0x8,
-                        0xf, 0x3, 0xf, 0xa, 0xa, 0x8, 0x9, 0xa,
-                        0x6, 0xf, 0x8, 0xf, 0x3, 0x6, 0x6, 0x8,
-                        0xf, 0x3, 0xf, 0xf, 0xf, 0xf, 0xf, 0xf,
-                        0xf, 0xf, 0xf, 0xf, 0x3, 0xf, 0xf, 0x8,
-                    }
+                alignas(64) static const uint32_t a_table[3][64 / 8] = {
+                    { 0xffffffff, 0xffffffff, 0xf882282f, 0x22882282, 0xff8286ff, 0x6ff22282, 0x22ff8626, 0xf22fffff },
+                    { 0xff38ff33, 0x33566688, 0xa633f833, 0xff586885, 0xf8a653f8, 0xffff5f3f, 0xa58555f3, 0x33cfd8a5 },
+                    { 0x83ff388f, 0x8fffffff, 0x8f8f3f8f, 0x8affa6f3, 0xa98aaf3f, 0x8663f8f6, 0xffffff3f, 0x8ff3ffff },
                 };
-                // reading all faster because ternary logic is good
-                uint64_t const g0 = a_table[0][p_index];
-                uint64_t const g1 = a_table[1][p_index];
-                uint64_t const g2 = a_table[2][p_index];
+                uint64_t const g0 = (a_table[0][p_index / 8] >> (p_index * 4)) & 0x0f; // reading all faster because ternary logic is good
+                uint64_t const g1 = (a_table[1][p_index / 8] >> (p_index * 4)) & 0x0f;
+                uint64_t const g2 = (a_table[2][p_index / 8] >> (p_index * 4)) & 0x0f;
                 uint64_t const lookup_table = 0x0000
                     | ((g1 << 16) | (g1 << 20) | (g0 << 24) | (g1 << 28))
                     | ((g2 << 32) | (g2 << 36) | (g2 << 40) | (g2 << 44));
