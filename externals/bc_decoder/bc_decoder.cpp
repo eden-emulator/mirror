@@ -18,7 +18,7 @@ namespace {
 
     struct BC_color {
         void decode(uint8_t *dst, size_t x, size_t y, size_t dstW, size_t dstH, size_t dstPitch, size_t dstBpp, bool hasAlphaChannel, bool hasSeparateAlpha) const {
-            Color c[4];
+            Color c[4] = {};
             c[0].extract565(c0);
             c[1].extract565(c1);
             if (hasSeparateAlpha || (c0 > c1)) {
@@ -27,14 +27,13 @@ namespace {
             } else {
                 c[2] = (c[0] + c[1]) >> 1;
                 if (hasAlphaChannel)
-                    c[3].clearAlpha();
+                    c[3].c[3] = 0;
             }
 
-            for (int32_t j = 0; j < BlockHeight && (y + j) < dstH; j++) {
-                size_t dstOffset = j * dstPitch, idxOffset = j * BlockHeight;
-                for (size_t i = 0; i < BlockWidth && (x + i) < dstW; i++, idxOffset++, dstOffset += dstBpp) {
-                    *reinterpret_cast<uint32_t *>(dst + dstOffset) = c[getIdx(idxOffset)].pack8888();
-                }
+            for (uint32_t j = 0; j < BlockHeight && (y + j) < dstH; j++) {
+                uint32_t dstOffset = j * dstPitch, idxOffset = j * BlockHeight;
+                for (uint32_t i = 0; i < BlockWidth && (x + i) < dstW; i++, idxOffset++, dstOffset += dstBpp)
+                    *reinterpret_cast<uint32_t*>(dst + dstOffset) = c[getIdx(idxOffset)].pack8888();
             }
         }
 
@@ -87,7 +86,6 @@ namespace {
                     res.c[i] = c[i] + obj.c[i];
                 return res;
             }
-        private:
             int32_t c[4];
         };
 
@@ -1100,7 +1098,7 @@ namespace {
                         auto const subsetIdx = subsetIndex(mode.NS, partitionIdx, texelIdx);
                         assert(subsetIdx < 3);
                         auto const& subset = subsets[subsetIdx];
-                        auto const anchorIdx = anchorIndex(mode.NS, partitionIdx, subsetIdx);
+                        auto const anchorIdx = anchorIndex(mode.NS, partitionIdx, texelIdx);
                         auto const isAnchor = anchorIdx == texelIdx;
                         auto const colorIdx = colorIndex(mode, isAnchor, colorIndexBitOffset);
                         auto const alphaIdx = alphaIndex(mode, isAnchor, alphaIndexBitOffset);
@@ -1199,34 +1197,20 @@ namespace {
                 return (p_table[ns & 0x01][p_index] >> (t_index << 1)) & mask;
             }
 
-            uint32_t anchorIndex(uint32_t ns, uint32_t p_index, uint32_t s_index)const {
+            uint32_t anchorIndex(uint32_t ns, uint32_t p_index, uint32_t t_index) const {
                 // ARB_texture_compression_bptc states: "In partition zero, the anchor index is always index zero.
                 // In other partitions, the anchor index is specified by tables
                 // Table.A2 and Table.A3.""
                 // Note: This is really confusing - I believe they meant subset instead of partition here.
                 // s_index >= 0 && s_index <= 2
-                alignas(64) static const uint64_t a_table[64] = {
-                    0xffff3f33, 0x88883f33, 0x8888ffff, 0x3333ffff,
-                    0xffff8f88, 0xffff3f33, 0x3333ffff, 0x8888ffff,
-                    0xffff8f88, 0xffff8f88, 0xffff6f66, 0xffff6f66,
-                    0xffff6f66, 0xffff5f55, 0xffff3f33, 0x88883f33,
-                    0xffff3f33, 0x88883233, 0xffff8888, 0x3333f2ff,
-                    0xffff3233, 0x88883833, 0xffff6866, 0x8888afaa,
-                    0x33335255, 0xffff8888, 0x66668288, 0xaaaa6266,
-                    0xffff8888, 0xffff5855, 0xaaaaf2ff, 0x8888f2ff,
-                    0xffff8f88, 0x3333ffff, 0xffff3633, 0xaaaa5855,
-                    0xaaaa6266, 0x8888a8aa, 0x99998f88, 0xaaaaffff,
-                    0x6666f2ff, 0xffff3833, 0x8888f2ff, 0xffff5255,
-                    0x3333f2ff, 0x6666ffff, 0x6666ffff, 0x8888f6ff,
-                    0xffff3633, 0x3333f2ff, 0xffff5655, 0xffff5855,
-                    0xffff5f55, 0xffff8f88, 0xffff5255, 0xffffa2aa,
-                    0xffff5f55, 0xffffafaa, 0xffff8f88, 0xffffdfdd,
-                    0x3333ffff, 0xffffc2cc, 0xffff3233, 0x88883f33,
+                alignas(64) static const uint64_t a_table[2][64] = {
+                    {0xff00ff00ff00ff00, 0xf000f000f000f000, 0xfff0fff0fff0fff0, 0xfff0ff00ff00f000, 0xff00f000f0000000, 0xfffffff0fff0ff00, 0xfffffff0ff00f000, 0xfff0ff00f0000000, 0xff00f00000000000, 0xfffffffffff0ff00, 0xfffffff0f0000000, 0xfff0f00000000000, 0xfffffffffff0f000, 0xffffffff00000000, 0xffffffffffff0000, 0xffff000000000000, 0xffff0fff000f0000, 0x0000000020002220, 0x0888000800000000, 0x0000200022002220, 0x0000000020002200, 0x0888008800080000, 0x0088000800000000, 0xf000ff00ff00fff0, 0x0000200020002200, 0x0088000800080000, 0x0220022002200220, 0x0022022002202200, 0x0008088888808000, 0x0000888888880000, 0x0222000220002220, 0x0022200220022200, 0xf0f0f0f0f0f0f0f0, 0xffff0000ffff0000, 0x0606606006066060, 0x0088008888008800, 0x0022220000222200, 0x0808080880808080, 0xf00f0ff0f00f0ff0, 0xf0f00f0f0f0ff0f0, 0x0222002222002220, 0x0008008888008000, 0x0022002002002200, 0x0022202222022200, 0x0220200220020220, 0xff0000ff00ffff00, 0xf00ff00f0ff00ff0, 0x0000066006600000, 0x0000006006660060, 0x0000020022200200, 0x0600666006000000, 0x0080088800800000, 0xff00f00f00ff0ff0, 0xf00f00ff0ff0ff00, 0x0022200222000220, 0x0220002220022200, 0xf00f00ff00ff0ff0, 0xf00fff00ff000ff0, 0xf000000f0ffffff0, 0xfff00fff000ff000, 0xff00ff00ffff0000, 0x0000222222002200, 0x0222022202000200, 0xfff0fff000f000f0, },
+                    {0xffff3ff033003300, 0x3888338833003000, 0xff88ff88f0080000, 0xfff0ff0033003330, 0xff88ff8800000000, 0xff00ff0033003300, 0xffffffff33003300, 0xff88ff88ff00ff00, 0xffff888800000000, 0xffff888888880000, 0xffffffff66660000, 0xf600f600f600f600, 0xf660f660f660f660, 0xff50ff50ff50ff50, 0xfff3ff33f3303300, 0x0888008830083300, 0xff33f33033003000, 0x0088300833003330, 0xff88ff88ff880000, 0xffff330033003300, 0xfff0fff033303330, 0x3888388830003000, 0xff60ff6066000000, 0x0a880a8800aa0000, 0x0000550033503350, 0xffffff88f800f800, 0x0880866886680880, 0x6aa66aa606600000, 0xff00f088f088ff00, 0xfffff00f05500550, 0xff00aaf0aaf0ff00, 0xf888ff8800080000, 0xfff8ff88f0000000, 0xff003f0033003330, 0xfff0ff00f3003300, 0x0a500a500a500a50, 0x0000aaaa66660000, 0x08a08a08a08a08a0, 0x0980809898090980, 0xff00aaff00aaff00, 0xff00006666ffff00, 0xffffffff30303030, 0xf8f8f8f800000000, 0xff55ff00ff55ff00, 0xff003300ff003300, 0xf66f0660f66f0660, 0xf0f066666666f0f0, 0xf8f8f8f8f8f80000, 0xffff303030303030, 0xfff03330fff03330, 0xf555f000f555f000, 0xf55ff55ff55f0000, 0xfff055505550fff0, 0xf000f888f888f000, 0xffff055005500550, 0xfaaffaaf00000000, 0xffffffff05500550, 0xff00aa00aa00ff00, 0xff00ff88ff88ff00, 0xfddf000000000000, 0xf0003000f0003000, 0xfffcfff0fffcfff0, 0xffffffffffff3030, 0x0888308833083330, },
                 };
                 // Using an uint64_t in this table ain't faster than using a uint32_t it just looks prettier
                 // (definitely still faster than using an uint8_t), reading all faster because ternary logic is good
-                uint64_t const value = uint64_t(a_table[p_index]) << 16;
-                return (value >> (((s_index * 4) + ns) * 4)) & 0x0f;
+                uint64_t mask = (0xff00 >> (ns * 4)) & 0x0f;
+                return (a_table[ns & 0x01][p_index] >> uint64_t(t_index * 4)) & mask;
             }
 
             IndexInfo colorIndex(const Mode &mode, bool isAnchor, int32_t &indexBitOffset) const {
