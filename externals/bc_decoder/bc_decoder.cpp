@@ -1205,18 +1205,28 @@ namespace {
                 // Table.A2 and Table.A3.""
                 // Note: This is really confusing - I believe they meant subset instead of partition here.
                 // s_index >= 0 && s_index <= 2
-                alignas(64) static const uint32_t a_table[3][64 / 8] = {
-                    { 0xffffffff, 0xffffffff, 0xf882282f, 0x22882282, 0xff8286ff, 0x6ff22282, 0x22ff8626, 0xf22fffff },
-                    { 0xff38ff33, 0x33566688, 0xa633f833, 0xff586885, 0xf8a653f8, 0xffff5f3f, 0xa58555f3, 0x33cfd8a5 },
-                    { 0x83ff388f, 0x8fffffff, 0x8f8f3f8f, 0x8affa6f3, 0xa98aaf3f, 0x8663f8f6, 0xffffff3f, 0x8ff3ffff },
+                alignas(64) static const uint64_t a_table[64] = {
+                    0xffff3f33, 0x88883f33, 0x8888ffff, 0x3333ffff,
+                    0xffff8f88, 0xffff3f33, 0x3333ffff, 0x8888ffff,
+                    0xffff8f88, 0xffff8f88, 0xffff6f66, 0xffff6f66,
+                    0xffff6f66, 0xffff5f55, 0xffff3f33, 0x88883f33,
+                    0xffff3f33, 0x88883233, 0xffff8888, 0x3333f2ff,
+                    0xffff3233, 0x88883833, 0xffff6866, 0x8888afaa,
+                    0x33335255, 0xffff8888, 0x66668288, 0xaaaa6266,
+                    0xffff8888, 0xffff5855, 0xaaaaf2ff, 0x8888f2ff,
+                    0xffff8f88, 0x3333ffff, 0xffff3633, 0xaaaa5855,
+                    0xaaaa6266, 0x8888a8aa, 0x99998f88, 0xaaaaffff,
+                    0x6666f2ff, 0xffff3833, 0x8888f2ff, 0xffff5255,
+                    0x3333f2ff, 0x6666ffff, 0x6666ffff, 0x8888f6ff,
+                    0xffff3633, 0x3333f2ff, 0xffff5655, 0xffff5855,
+                    0xffff5f55, 0xffff8f88, 0xffff5255, 0xffffa2aa,
+                    0xffff5f55, 0xffffafaa, 0xffff8f88, 0xffffdfdd,
+                    0x3333ffff, 0xffffc2cc, 0xffff3233, 0x88883f33,
                 };
-                uint64_t const g0 = (a_table[0][p_index / 8] >> (p_index * 4)) & 0x0f; // reading all faster because ternary logic is good
-                uint64_t const g1 = (a_table[1][p_index / 8] >> (p_index * 4)) & 0x0f;
-                uint64_t const g2 = (a_table[2][p_index / 8] >> (p_index * 4)) & 0x0f;
-                uint64_t const lookup_table = 0x0000
-                    | ((g1 << 16) | (g1 << 20) | (g0 << 24) | (g1 << 28))
-                    | ((g2 << 32) | (g2 << 36) | (g2 << 40) | (g2 << 44));
-                return (lookup_table >> (((s_index * 4) + ns) * 4)) & 0x0f;
+                // Using an uint64_t in this table ain't faster than using a uint32_t it just looks prettier
+                // (definitely still faster than using an uint8_t), reading all faster because ternary logic is good
+                uint64_t const value = uint64_t(a_table[p_index]) << 16;
+                return (value >> (((s_index * 4) + ns) * 4)) & 0x0f;
             }
 
             IndexInfo colorIndex(const Mode &mode, bool isAnchor, int32_t &indexBitOffset) const {
