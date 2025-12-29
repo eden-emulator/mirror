@@ -4,10 +4,10 @@
 
 : "${VULKAN_SDK_VER:=1.4.335.0}"
 : "${VULKAN_ROOT:=C:/VulkanSDK/$VULKAN_SDK_VER}"
-VULKAN_SDK_ARCH="X64"
-if [[ $(uname) == *"ARM64"* ]]; then
-    VULKAN_SDK_ARCH="ARM64"
-fi
+VULKAN_SDK_ARCH=X64
+case "$(uname)" in
+    *ARM64*) VULKAN_SDK_ARCH=ARM64 ;;
+esac
 EXE_FILE="vulkansdk-windows-$VULKAN_SDK_ARCH-$VULKAN_SDK_VER.exe"
 URI="https://sdk.lunarg.com/sdk/download/$VULKAN_SDK_VER/windows/$EXE_FILE"
 VULKAN_ROOT_UNIX=$(cygpath -u "$VULKAN_ROOT")
