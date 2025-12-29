@@ -8,10 +8,9 @@
 
 #include <array>
 #include <assert.h>
-#include <bit>
 #include <stddef.h>
 #include <stdint.h>
-#include <strings.h>
+#include <bit>
 
 namespace {
     constexpr int32_t BlockWidth = 4;
@@ -1040,7 +1039,21 @@ namespace {
                     /**/ {0x6, 0x1, 0x0, 0x0, 0x0, 0x7, 0x7, 0x1, 0x0, 0x4, 0x3f, 0x0},
                     /**/ {0x7, 0x2, 0x6, 0x0, 0x0, 0x5, 0x5, 0x1, 0x0, 0x2, 0x1e, 0x0},
                 };
-                return m_table[::ffs(low & 0b11111111)];
+                // Fun historical fact: this is basically ffs(), however, windows does NOT have ffs()
+                // This is because ffs() comes from VAX which had an instruction for ffs(), but
+                // to the surprise of absolutely nobody, VAX ended up dying, alongside ffs()... or so
+                // I tought. It turns out only *NIX world kept ffs() while windows, not bound by POSIX
+                // standards, just dropped it altogether. Even through Windows had a VAX port at once time
+                // there isn't much one can do other than scream.
+                if ((low & 0b00000001) != 0) return m_table[0];
+                else if ((low & 0b00000010) != 0) return m_table[1];
+                else if ((low & 0b00000100) != 0) return m_table[2];
+                else if ((low & 0b00001000) != 0) return m_table[3];
+                else if ((low & 0b00010000) != 0) return m_table[4];
+                else if ((low & 0b00100000) != 0) return m_table[5];
+                else if ((low & 0b01000000) != 0) return m_table[6];
+                else if ((low & 0b10000000) != 0) return m_table[7];
+                return m_table[0]; //invalid but pretend it's fine
             }
 
             struct IndexInfo {
