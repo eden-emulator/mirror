@@ -922,8 +922,7 @@ boost::container::small_vector<BufferImageCopy, 16> UnswizzleImage(Tegra::Memory
     return copies;
 }
 
-void ConvertImage(std::span<const u8> input, const ImageInfo& info, std::span<u8> output,
-                  std::span<BufferImageCopy> copies) {
+void ConvertImage(std::span<const u8> input, const ImageInfo& info, std::span<u8> output, std::span<BufferImageCopy> copies) {
     u32 output_offset = 0;
     Common::ScratchBuffer<u8> decode_scratch;
 
@@ -955,10 +954,10 @@ void ConvertImage(std::span<const u8> input, const ImageInfo& info, std::span<u8
         } else if (astc) {
             // BC1 uses 0.5 bytes per texel
             // BC3 uses 1 byte per texel
-            const auto compress = recompression_setting == Settings::AstcRecompression::Bc1
-                                      ? Tegra::Texture::BCN::CompressBC1
-                                      : Tegra::Texture::BCN::CompressBC3;
-            const auto bpp_div = recompression_setting == Settings::AstcRecompression::Bc1 ? 2 : 1;
+            auto const compress = recompression_setting == Settings::AstcRecompression::Bc1
+                ? Tegra::Texture::BCN::CompressBC1
+                : Tegra::Texture::BCN::CompressBC3;
+            const auto bpp_div = compress == Tegra::Texture::BCN::CompressBC1 ? 2 : 1;
 
             const u32 plane_dim = copy.image_extent.width * copy.image_extent.height;
             const u32 level_size = plane_dim * copy.image_extent.depth *
@@ -975,18 +974,12 @@ void ConvertImage(std::span<const u8> input, const ImageInfo& info, std::span<u8
                      copy.image_subresource.num_layers * copy.image_extent.depth,
                      output.subspan(output_offset));
 
-            const u32 aligned_plane_dim = Common::AlignUp(copy.image_extent.width, 4) *
-                                          Common::AlignUp(copy.image_extent.height, 4);
-
-            copy.buffer_size =
-                (aligned_plane_dim * copy.image_extent.depth * copy.image_subresource.num_layers) /
-                bpp_div;
-            output_offset += static_cast<u32>(copy.buffer_size);
+            const u32 aligned_plane_dim = Common::AlignUp(copy.image_extent.width, 4) * Common::AlignUp(copy.image_extent.height, 4);
+            copy.buffer_size = (aligned_plane_dim * copy.image_extent.depth * copy.image_subresource.num_layers) / bpp_div;
+            output_offset += u32(copy.buffer_size);
         } else {
             DecompressBCn(input_offset, output.subspan(output_offset), copy, info.format);
-            output_offset += copy.image_extent.width * copy.image_extent.height *
-                             copy.image_subresource.num_layers *
-                             ConvertedBytesPerBlock(info.format);
+            output_offset += copy.image_extent.width * copy.image_extent.height * copy.image_subresource.num_layers * ConvertedBytesPerBlock(info.format);
         }
 
         copy.buffer_row_length = mip_size.width;
