@@ -23,11 +23,8 @@ using VideoCore::Surface::PixelFormat;
 constexpr bool IsSigned(PixelFormat pixel_format) {
     switch (pixel_format) {
     case PixelFormat::BC4_SNORM:
-    case PixelFormat::BC4_UNORM:
     case PixelFormat::BC5_SNORM:
-    case PixelFormat::BC5_UNORM:
     case PixelFormat::BC6H_SFLOAT:
-    case PixelFormat::BC6H_UFLOAT:
         return true;
     default:
         return false;
