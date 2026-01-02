@@ -144,7 +144,7 @@ RegAlloc::ArgumentInfo RegAlloc::GetArgumentInfo(IR::Inst* inst) {
 }
 
 bool RegAlloc::WasValueDefined(IR::Inst* inst) const {
-    return defined_insts.count(inst) > 0;
+    return defined_insts_count > 0;
 }
 
 void RegAlloc::PrepareForCall(std::optional<Argument::copyable_reference> arg0, std::optional<Argument::copyable_reference> arg1, std::optional<Argument::copyable_reference> arg2, std::optional<Argument::copyable_reference> arg3) {
@@ -192,7 +192,7 @@ void RegAlloc::PrepareForCall(std::optional<Argument::copyable_reference> arg0, 
 }
 
 void RegAlloc::DefineAsExisting(IR::Inst* inst, Argument& arg) {
-    defined_insts.insert(inst);
+    ++defined_insts_count;
 
     ASSERT(!ValueLocation(inst));
 
@@ -207,7 +207,7 @@ void RegAlloc::DefineAsExisting(IR::Inst* inst, Argument& arg) {
 }
 
 void RegAlloc::DefineAsRegister(IR::Inst* inst, oaknut::Reg reg) {
-    defined_insts.insert(inst);
+    ++defined_insts_count;
 
     ASSERT(!ValueLocation(inst));
     auto& info = reg.is_vector() ? fprs[reg.index()] : gprs[reg.index()];
@@ -374,7 +374,7 @@ int RegAlloc::RealizeReadImpl(const IR::Value& value) {
 
 template<HostLoc::Kind kind>
 int RegAlloc::RealizeWriteImpl(const IR::Inst* value) {
-    defined_insts.insert(value);
+    ++defined_insts_count;
 
     ASSERT(!ValueLocation(value));
 
@@ -399,7 +399,7 @@ int RegAlloc::RealizeWriteImpl(const IR::Inst* value) {
 
 template<HostLoc::Kind kind>
 int RegAlloc::RealizeReadWriteImpl(const IR::Value& read_value, const IR::Inst* write_value) {
-    defined_insts.insert(write_value);
+    ++defined_insts_count;
 
     // TODO: Move elimination
 
@@ -463,7 +463,7 @@ void RegAlloc::SpillFpr(int index) {
 }
 
 void RegAlloc::ReadWriteFlags(Argument& read, IR::Inst* write) {
-    defined_insts.insert(write);
+    ++defined_insts_count;
 
     const auto current_location = ValueLocation(read.value.GetInst());
     ASSERT(current_location);

@@ -33,7 +33,7 @@
 namespace Dynarmic::Optimization {
 
 static void ConstantMemoryReads(IR::Block& block, A32::UserCallbacks* cb) {
-    for (auto& inst : block) {
+    for (auto& inst : block.instructions) {
         switch (inst.GetOpcode()) {
         case IR::Opcode::A32ReadMemory8:
         case IR::Opcode::A64ReadMemory8: {
@@ -131,7 +131,7 @@ static void FlagsPass(IR::Block& block) {
 
     A32::IREmitter ir{block, A32::LocationDescriptor{block.Location()}, {}};
 
-    for (auto inst = block.rbegin(); inst != block.rend(); ++inst) {
+    for (auto inst = block.instructions.rbegin(); inst != block.instructions.rend(); ++inst) {
         auto const opcode = inst->GetOpcode();
         switch (opcode) {
         case IR::Opcode::A32GetCFlag: {
@@ -318,7 +318,7 @@ static void RegisterPass(IR::Block& block) {
     // Location and version don't matter here.
     A32::IREmitter ir{block, A32::LocationDescriptor{block.Location()}, {}};
 
-    for (auto inst = block.begin(); inst != block.end(); ++inst) {
+    for (auto inst = block.instructions.begin(); inst != block.instructions.end(); ++inst) {
         auto const opcode = inst->GetOpcode();
         switch (opcode) {
         case IR::Opcode::A32GetRegister: {
@@ -448,7 +448,7 @@ static void A64CallbackConfigPass(IR::Block& block, const A64::UserConfig& conf)
         return;
     }
 
-    for (auto& inst : block) {
+    for (auto& inst : block.instructions) {
         if (inst.GetOpcode() != IR::Opcode::A64DataCacheOperationRaised) {
             continue;
         }
@@ -541,7 +541,7 @@ static void A64GetSetElimination(IR::Block& block) {
         do_nothing();
     };
 
-    for (auto inst = block.begin(); inst != block.end(); ++inst) {
+    for (auto inst = block.instructions.begin(); inst != block.instructions.end(); ++inst) {
         auto const opcode = inst->GetOpcode();
         switch (opcode) {
         case IR::Opcode::A64GetW: {
@@ -1041,7 +1041,7 @@ static void FoldZeroExtendXToLong(IR::Inst& inst) {
 }
 
 static void ConstantPropagation(IR::Block& block) {
-    for (auto& inst : block) {
+    for (auto& inst : block.instructions) {
         auto const opcode = inst.GetOpcode();
         switch (opcode) {
         case Op::LeastSignificantWord:
@@ -1221,43 +1221,34 @@ static void ConstantPropagation(IR::Block& block) {
 static void DeadCodeElimination(IR::Block& block) {
     // We iterate over the instructions in reverse order.
     // This is because removing an instruction reduces the number of uses for earlier instructions.
-    for (auto it = block.rbegin(); it != block.rend(); ++it)
+    for (auto it = block.instructions.rbegin(); it != block.instructions.rend(); ++it)
         if (!it->HasUses() && !MayHaveSideEffects(it->GetOpcode()))
             it->Invalidate();
 }
 
 static void IdentityRemovalPass(IR::Block& block) {
     boost::container::small_vector<IR::Inst*, 128> to_invalidate;
-
-    auto iter = block.begin();
-    while (iter != block.end()) {
-        IR::Inst& inst = *iter;
-
-        const size_t num_args = inst.NumArgs();
-        for (size_t i = 0; i < num_args; i++) {
-            while (true) {
-                IR::Value arg = inst.GetArg(i);
-                if (!arg.IsIdentity())
-                    break;
-                inst.SetArg(i, arg.GetInst()->GetArg(0));
+    for (auto it = block.instructions.begin(); it != block.instructions.end();) {
+        auto const num_args = it->NumArgs();
+        for (size_t i = 0; i < num_args; ++i)
+            if (IR::Value arg = it->GetArg(i); arg.IsIdentity()) {
+                do arg = arg.GetInst()->GetArg(0); while (arg.IsIdentity());
+                it->SetArg(i, arg);
             }
-        }
-
-        if (inst.GetOpcode() == IR::Opcode::Identity || inst.GetOpcode() == IR::Opcode::Void) {
-            iter = block.Instructions().erase(inst);
-            to_invalidate.push_back(&inst);
+        if (it->GetOpcode() == IR::Opcode::Identity || it->GetOpcode() == IR::Opcode::Void) {
+            to_invalidate.push_back(&*it);
+            it = block.Instructions().erase(it);
         } else {
-            ++iter;
+            ++it;
         }
     }
-    for (IR::Inst* inst : to_invalidate) {
+    for (IR::Inst* const inst : to_invalidate)
         inst->Invalidate();
-    }
 }
 
 static void NamingPass(IR::Block& block) {
     u32 name = 1;
-    for (auto& inst : block)
+    for (auto& inst : block.instructions)
         inst.SetName(name++);
 }
 
@@ -1406,7 +1397,7 @@ static void PolyfillPass(IR::Block& block, const PolyfillOptions& polyfill) {
 
     IR::IREmitter ir{block};
 
-    for (auto& inst : block) {
+    for (auto& inst : block.instructions) {
         ir.SetInsertionPointBefore(&inst);
 
         switch (inst.GetOpcode()) {
@@ -1462,7 +1453,7 @@ static void PolyfillPass(IR::Block& block, const PolyfillOptions& polyfill) {
 }
 
 static void VerificationPass(const IR::Block& block) {
-    for (auto const& inst : block) {
+    for (auto const& inst : block.instructions) {
         for (size_t i = 0; i < inst.NumArgs(); i++) {
             const IR::Type t1 = inst.GetArg(i).GetType();
             const IR::Type t2 = IR::GetArgTypeOf(inst.GetOpcode(), i);
@@ -1470,7 +1461,7 @@ static void VerificationPass(const IR::Block& block) {
         }
     }
     ankerl::unordered_dense::map<IR::Inst*, size_t> actual_uses;
-    for (auto const& inst : block) {
+    for (auto const& inst : block.instructions) {
         for (size_t i = 0; i < inst.NumArgs(); i++)
             if (IR::Value const arg = inst.GetArg(i); !arg.IsImmediate())
                 actual_uses[arg.GetInst()]++;

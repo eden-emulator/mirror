@@ -15,15 +15,13 @@
 
 namespace Dynarmic::Backend {
 
-template<typename ProgramCounterType>
+template<typename P>
 class BlockRangeInformation {
 public:
-    void AddRange(boost::icl::discrete_interval<ProgramCounterType> range, IR::LocationDescriptor location);
+    void AddRange(boost::icl::discrete_interval<P> range, IR::LocationDescriptor location);
     void ClearCache();
-    ankerl::unordered_dense::set<IR::LocationDescriptor> InvalidateRanges(const boost::icl::interval_set<ProgramCounterType>& ranges);
-
-private:
-    boost::icl::interval_map<ProgramCounterType, std::set<IR::LocationDescriptor>> block_ranges;
+    ankerl::unordered_dense::set<IR::LocationDescriptor> InvalidateRanges(const boost::icl::interval_set<P>& ranges);
+    boost::icl::interval_map<P, ankerl::unordered_dense::set<IR::LocationDescriptor>> block_ranges;
 };
 
 }  // namespace Dynarmic::Backend

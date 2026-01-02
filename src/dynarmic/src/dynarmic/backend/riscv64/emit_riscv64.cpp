@@ -122,7 +122,7 @@ EmittedBlockInfo EmitRV64(biscuit::Assembler& as, IR::Block block, const EmitCon
 
     ebi.entry_point = reinterpret_cast<CodePtr>(as.GetCursorPointer());
 
-    for (auto iter = block.begin(); iter != block.end(); ++iter) {
+    for (auto iter = block.instructions.begin(); iter != block.instructions.end(); ++iter) {
         IR::Inst* inst = &*iter;
 
         switch (inst->GetOpcode()) {

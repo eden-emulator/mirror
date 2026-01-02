@@ -218,7 +218,7 @@ EmittedBlockInfo EmitArm64(oaknut::CodeGenerator& code, IR::Block block, const E
         code.l(pass);
     }
 
-    for (auto iter = block.begin(); iter != block.end(); ++iter) {
+    for (auto iter = block.instructions.begin(); iter != block.instructions.end(); ++iter) {
         IR::Inst* inst = &*iter;
 
         switch (inst->GetOpcode()) {

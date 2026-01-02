@@ -582,11 +582,9 @@ void EmitIR<IR::Opcode::A32BXWritePC>(oaknut::CodeGenerator& code, EmitContext& 
 
 template<>
 void EmitIR<IR::Opcode::A32UpdateUpperLocationDescriptor>(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst*) {
-    for (auto& inst : ctx.block) {
-        if (inst.GetOpcode() == IR::Opcode::A32BXWritePC) {
+    for (auto& inst : ctx.block.instructions)
+        if (inst.GetOpcode() == IR::Opcode::A32BXWritePC)
             return;
-        }
-    }
     EmitSetUpperLocationDescriptor(code, ctx, ctx.block.EndLocation(), ctx.block.Location());
 }
 

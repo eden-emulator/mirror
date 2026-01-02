@@ -120,7 +120,7 @@ A64EmitX64::BlockDescriptor A64EmitX64::Emit(IR::Block& block) noexcept {
 #undef A64OPC
     };
 
-    for (auto& inst : block) {
+    for (auto& inst : block.instructions) {
         auto const opcode = inst.GetOpcode();
         // Call the relevant Emit* member function.
         switch (opcode) {

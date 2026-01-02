@@ -36,9 +36,9 @@ TEST_CASE("ASIMD Decoder: Ensure table order correctness", "[decode][a32][.]") {
 
     const auto is_decode_error = [&get_ir](const A32::ASIMDMatcher<A32::TranslatorVisitor>& matcher, u32 instruction) {
         const auto block = get_ir(matcher, instruction);
-        return std::find_if(block.cbegin(), block.cend(), [](auto const& e) {
+        return std::find_if(block.instructions.cbegin(), block.instructions.cend(), [](auto const& e) {
             return e.GetOpcode() == IR::Opcode::A32ExceptionRaised && A32::Exception(e.GetArg(1).GetU64()) == A32::Exception::DecodeError;
-        }) != block.cend();
+        }) != block.instructions.cend();
     };
 
     for (auto iter = table.cbegin(); iter != table.cend(); ++iter) {

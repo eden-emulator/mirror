@@ -54,7 +54,7 @@ bool ShouldTestInst(IR::Block& block) {
         return false;
     }
 
-    for (const auto& ir_inst : block) {
+    for (const auto& ir_inst : block.instructions) {
         switch (ir_inst.GetOpcode()) {
         // A32
         case IR::Opcode::A32GetFpscr:

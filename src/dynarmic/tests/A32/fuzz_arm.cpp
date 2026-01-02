@@ -93,7 +93,7 @@ bool ShouldTestInst(u32 instruction, u32 pc, bool is_thumb, bool is_last_inst, A
         return false;
     }
 
-    for (const auto& ir_inst : block) {
+    for (const auto& ir_inst : block.instructions) {
         switch (ir_inst.GetOpcode()) {
         case IR::Opcode::A32ExceptionRaised:
         case IR::Opcode::A32CallSupervisor:

@@ -38,11 +38,6 @@ EmitContext::EmitContext(RegAlloc& reg_alloc, IR::Block& block)
 
 EmitContext::~EmitContext() = default;
 
-void EmitContext::EraseInstruction(IR::Inst* inst) {
-    block.Instructions().erase(inst);
-    inst->ClearArgs();
-}
-
 EmitX64::EmitX64(BlockOfCode& code)
         : code(code) {
     exception_handler.Register(code);
