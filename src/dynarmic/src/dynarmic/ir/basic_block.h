@@ -33,7 +33,7 @@ enum class Opcode;
 /// Note that this is a linear IR and not a pure tree-based IR: i.e.: there is an ordering to
 /// the microinstructions. This only matters before chaining is done in order to correctly
 /// order memory accesses.
-class Block final {
+class alignas(4096) Block final {
 public:
     //using instruction_list_type = dense_list<Inst>;
     using instruction_list_type = mcl::intrusive_list<Inst>;
