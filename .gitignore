@@ -63,3 +63,6 @@ artifacts
 /install*
 vulkansdk*.exe
 *.tar.zst
+
+# PS4 toolchain stuff
+ps4-toolchain.cmake
