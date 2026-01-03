@@ -469,6 +469,8 @@
     <string name="renderer_anti_aliasing">Anti-aliasing method</string>
     <string name="renderer_optimize_spirv_output">Optimize SPIRV output</string>
     <string name="renderer_optimize_spirv_output_description">Optimizes compiled shaders to improve GPU efficiency, but may introduce longer loading times and initial slowdowns.</string>
+    <string name="renderer_enable_raii">RAII</string>
+    <string name="renderer_enable_raii_description">A method of automatic resource management in Vulkan that ensures proper release of resources when they are no longer needed, but may cause crashes in bundled games.</string>
 
 
     <string name="advanced">Advanced</string>

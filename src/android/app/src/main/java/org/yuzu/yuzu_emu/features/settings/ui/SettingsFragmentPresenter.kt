@@ -273,6 +273,7 @@ class SettingsFragmentPresenter(
             add(IntSetting.RENDERER_ASTC_DECODE_METHOD.key)
             add(IntSetting.RENDERER_ASTC_RECOMPRESSION.key)
 
+            add(BooleanSetting.RENDERER_ENABLE_RAII.key)
             add(BooleanSetting.SYNC_MEMORY_OPERATIONS.key)
             add(BooleanSetting.RENDERER_USE_DISK_SHADER_CACHE.key)
             add(BooleanSetting.RENDERER_FORCE_MAX_CLOCK.key)

@@ -260,6 +260,13 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent)
     // Renderer (Advanced Graphics)
     INSERT(Settings, use_asynchronous_gpu_emulation, QString(), QString());
 
+    INSERT(Settings,
+           renderer_enable_raii,
+           tr("RAII"),
+           tr("A method of automatic resource management in Vulkan "
+           "that ensures proper release of resources "
+           "when they are no longer needed, but may cause crashes in bundled games."));
+
     INSERT(Settings, sync_memory_operations, tr("Sync Memory Operations"),
            tr("Ensures data consistency between compute and memory operations.\nThis option fixes issues in games, but may degrade performance.\nUnreal Engine 4 games often see the most significant changes thereof."));
     INSERT(Settings,

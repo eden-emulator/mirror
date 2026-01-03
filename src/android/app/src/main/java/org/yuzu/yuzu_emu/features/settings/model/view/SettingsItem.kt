@@ -655,6 +655,14 @@ abstract class SettingsItem(
                 )
             )
             put(
+                SwitchSetting(
+                    BooleanSetting.RENDERER_ENABLE_RAII,
+                    titleId = R.string.renderer_enable_raii,
+                    descriptionId = R.string.renderer_enable_raii_description
+                )
+            )
+
+            put(
                 SingleChoiceSetting(
                     IntSetting.DMA_ACCURACY,
                     titleId = R.string.dma_accuracy,

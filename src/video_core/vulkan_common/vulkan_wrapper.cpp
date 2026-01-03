@@ -12,6 +12,7 @@
 
 #include "common/common_types.h"
 #include "common/logging/log.h"
+#include "common/settings.h"
 #include "video_core/vulkan_common/vk_enum_string_helper.h"
 #include "video_core/vulkan_common/vma.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
@@ -313,7 +314,10 @@ const char* Exception::what() const noexcept {
 }
 
 void Destroy(VkInstance instance, const InstanceDispatch& dld) noexcept {
-    dld.vkDestroyInstance(instance, nullptr);
+    // FIXME: A double free occurs here if RAII is enabled.
+    if (!Settings::values.renderer_enable_raii.GetValue()) {
+        dld.vkDestroyInstance(instance, nullptr);
+    }
 }
 
 void Destroy(VkDevice device, const InstanceDispatch& dld) noexcept {
@@ -416,7 +420,10 @@ void Destroy(VkInstance instance, VkDebugReportCallbackEXT handle,
 }
 
 void Destroy(VkInstance instance, VkSurfaceKHR handle, const InstanceDispatch& dld) noexcept {
-    dld.vkDestroySurfaceKHR(instance, handle, nullptr);
+    // FIXME: A double free occurs here if RAII is enabled.
+    if (!Settings::values.renderer_enable_raii.GetValue()) {
+        dld.vkDestroySurfaceKHR(instance, handle, nullptr);
+    }
 }
 
 VkResult Free(VkDevice device, VkDescriptorPool handle, Span<VkDescriptorSet> sets,
