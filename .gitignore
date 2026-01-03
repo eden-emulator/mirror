@@ -64,5 +64,5 @@ artifacts
 vulkansdk*.exe
 *.tar.zst
 
-# Build-time generated external sources
-externals/generated
+# PS4 toolchain stuff
+ps4-toolchain.cmake

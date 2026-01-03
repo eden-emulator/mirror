@@ -12,6 +12,7 @@
 - [NetBSD](#netbsd)
 - [MSYS2](#msys2)
 - [RedoxOS](#redoxos)
+- [PlayStation 4](#playstation-4)
 <!-- /TOC -->
 
 ## Arch Linux
@@ -242,3 +243,10 @@ find ./*/ -name "*.dll" | while read -r dll; do deps "$dll"; done
 The package install may randomly hang at times, in which case it has to be restarted. ALWAYS do a `sudo pkg update` or the chances of it hanging will be close to 90%. If "multiple" installs fail at once, try installing 1 by 1 the packages.
 
 When CMake invokes certain file syscalls - it may sometimes cause crashes or corruptions on the (kernel?) address space - so reboot the system if there is a "hang" in CMake.
+
+## PlayStation 4
+
+```sh
+export OO_PS4_TOOLCHAIN="$HOME/OpenOrbis/PS4Toolchain"
+export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+```
