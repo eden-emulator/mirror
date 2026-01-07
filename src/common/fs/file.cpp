@@ -403,7 +403,11 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
 }
 
 void IOFile::Close() {
+#if defined(__APPLE__)
+    // NO IMPLEMENTATION YET
+#else
     PlatformUnmap(*this);
+#endif
     if (file) {
         errno = 0;
         const auto close_result = std::fclose(file) == 0;
