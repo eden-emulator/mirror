@@ -322,7 +322,11 @@ public:
         static_assert(!std::is_pointer_v<T>, "T must not be a pointer to an object.");
         if (IsMappedFile()) {
             std::memcpy(&object, mmap_base + mmap_offset, sizeof(T));
+#ifdef _WIN32
+            return sizeof(T) != 0;
+#else
             return sizeof(T);
+#endif
         }
         return IsOpen() ? std::fread(&object, sizeof(T), 1, file) == 1 : false;
     }
@@ -348,7 +352,11 @@ public:
         static_assert(!std::is_pointer_v<T>, "T must not be a pointer to an object.");
         if (IsMappedFile()) {
             std::memcpy(mmap_base + mmap_offset, &object, sizeof(T));
+#ifdef _WIN32
+            return sizeof(T) != 0;
+#else
             return sizeof(T);
+#endif
         }
         return IsOpen() ? std::fwrite(&object, sizeof(T), 1, file) == 1 : false;
     }
