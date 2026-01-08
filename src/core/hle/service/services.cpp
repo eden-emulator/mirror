@@ -75,6 +75,13 @@ Services::Services(std::shared_ptr<SM::ServiceManager>& sm, Core::System& system
 
     system.GetFileSystemController().CreateFactories(*system.GetFilesystem(), false);
 
+#ifdef __OPENORBIS__
+    // PS4 requires us to run this on a single thread so we don't immediately die
+    bool const run_on_host = false;
+#else
+    bool const run_on_host = true;
+#endif
+
     // Just a quick C++ lesson
     // Capturing lambdas will silently create new variables for the objects referenced via <ident> = <expr>
     // and create a `auto&` sorts of for `&`; with all your usual reference shenanigans.
@@ -94,9 +101,12 @@ Services::Services(std::shared_ptr<SM::ServiceManager>& sm, Core::System& system
         {"Loader",     &LDR::LoopProcess},
         {"nvservices", &Nvidia::LoopProcess},
         {"bsdsocket",  &Sockets::LoopProcess},
-    })
-        kernel.RunOnHostCoreProcess(std::string(e.first), [&system, f = e.second] { f(system); }).detach();
-    kernel.RunOnHostCoreProcess("vi",         [&, token] { VI::LoopProcess(system, token); }).detach();
+    }) {
+        if (run_on_host) kernel.RunOnHostCoreProcess("vi", [&, token] { VI::LoopProcess(system, token); }).detach();
+        else kernel.RunOnGuestCoreProcess(std::string(e.first), [&system, f = e.second] { f(system); });
+    }
+    if (run_on_host) kernel.RunOnHostCoreProcess("vi", [&, token] { VI::LoopProcess(system, token); }).detach();
+    else kernel.RunOnGuestCoreProcess("vi", [&, token] { VI::LoopProcess(system, token); });
     // Avoid cold clones of lambdas -- succintly
     for (auto const& e : std::vector<std::pair<std::string_view, void (*)(Core::System&)>>{
         {"sm",         &SM::LoopProcess},
