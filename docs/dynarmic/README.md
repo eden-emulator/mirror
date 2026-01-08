@@ -12,6 +12,7 @@ The only supported host architectures are x86-64, PowerPC 64, and AArch64. There
 See [an example usage](../../src/dynarmic/tests/print_info.cpp).
 
 Design documentation can be found at [./Design.md](./Design.md).
+PowerPC design documentation can be found at [./PowerPC](./PowerPC.md).
 
 Alternatives to Dynarmic
 ------------------------
