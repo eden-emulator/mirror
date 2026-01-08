@@ -199,7 +199,9 @@ void ArmDynarmic32::MakeJit(Common::PageTable* page_table) {
     config.enable_cycle_counting = !m_uses_wall_clock;
 
     // Code cache size
-#if defined(ARCHITECTURE_arm64) || defined(__sun__) || defined(__NetBSD__) || defined(__DragonFly__) || defined(__OpenBSD__)
+#if defined(__OPENORBIS__)
+    config.code_cache_size = std::uint32_t(32_MiB);
+#elif defined(ARCHITECTURE_arm64) || defined(__sun__) || defined(__NetBSD__) || defined(__DragonFly__) || defined(__OpenBSD__)
     config.code_cache_size = std::uint32_t(128_MiB);
 #else
     config.code_cache_size = std::uint32_t(512_MiB);

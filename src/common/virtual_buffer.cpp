@@ -13,6 +13,7 @@
 #ifdef __OPENORBIS__
 #include <ranges>
 #include <csignal>
+#include <fcntl.h>
 #include <boost/container/static_vector.hpp>
 #include <orbis/SystemService.h>
 typedef void (*SceKernelExceptionHandler)(int32_t, void*);
@@ -107,15 +108,19 @@ static boost::container::static_vector<std::pair<void*, size_t>, 16> swap_region
 extern "C" int sceKernelRemoveExceptionHandler(s32 sig_num);
 static void SwapHandler(int sig, void* raw_context) {
     auto& mctx = ((Orbis::Ucontext*)raw_context)->uc_mcontext;
-    if (std::ranges::find_if(swap_regions, [addr = mctx.mc_addr](auto const& e) {
+    if (auto const it = std::ranges::find_if(swap_regions, [addr = mctx.mc_addr](auto const& e) {
         return uintptr_t(addr) >= uintptr_t(e.first) && uintptr_t(addr) < uintptr_t(e.first) + e.second;
-    }) != swap_regions.end()) {
-        size_t const page_size = 4096;
-        size_t const page_mask = ~0xfff;
+    }); it != swap_regions.end()) {
+        size_t const page_size = 4096 * 8;
+        size_t const page_mask = ~(page_size - 1);
         // should replace the existing mapping... ugh
         void* aligned_addr = reinterpret_cast<void*>(uintptr_t(mctx.mc_addr) & page_mask);
         void* res = mmap(aligned_addr, page_size, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0);
-        ASSERT(res != MAP_FAILED);
+        if (res == MAP_FAILED) {
+            LOG_ERROR(HW_Memory, "FAIL mapped addr {},{} @ {}:{}", mctx.mc_addr, aligned_addr, it->first, it->second);
+        } else {
+            LOG_INFO(HW_Memory, "OK mapped addr {},{} @ {}:{}", mctx.mc_addr, aligned_addr, it->first, it->second);
+        }
     } else {
         LOG_ERROR(HW_Memory, "fault in addr {:#x} at {:#x}", mctx.mc_addr, mctx.mc_rip); // print caller address
         sceKernelRemoveExceptionHandler(SIGSEGV); // to not catch the next signal
@@ -128,6 +133,15 @@ void InitSwap() noexcept {
 void InitSwap() noexcept {}
 #endif
 
+static const char *swapfile_names[] {
+    "/data/eden/games/swap0.bin",
+    "/data/eden/games/swap1.bin",
+    "/data/eden/games/swap2.bin",
+    "/data/eden/games/swap3.bin",
+    "/data/eden/games/swap4.bin"
+};
+static size_t swapfile_count = 0;
+
 void* AllocateMemoryPages(std::size_t size) noexcept {
 #ifdef _WIN32
     void* base = VirtualAlloc(nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
@@ -136,9 +150,22 @@ void* AllocateMemoryPages(std::size_t size) noexcept {
         base = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
     }
 #elif defined(__OPENORBIS__)
-    void* addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_VOID | MAP_PRIVATE, -1, 0);
-    ASSERT(addr != MAP_FAILED);
-    swap_regions.emplace_back(addr, size);
+    void* addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    if (addr == MAP_FAILED) {
+        LOG_WARNING(HW_Memory, "failed to mmap({} bytes) using swapfile {}", size, swapfile_names[swapfile_count]);
+        // int fd = open(swapfile_names[swapfile_count], O_TRUNC | O_RDWR | O_CREAT, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+        // ASSERT(fd > 0);
+        // ftruncate(fd, size);
+        // addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+        // ASSERT(addr != MAP_FAILED);
+        // ++swapfile_count;
+
+        addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_VOID | MAP_PRIVATE, -1, 0);
+        ASSERT(addr != MAP_FAILED);
+        swap_regions.emplace_back(addr, size);
+    } else {
+        LOG_INFO(HW_Memory, "mmap {} bytes", size);
+    }
 #else
     void* addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
     ASSERT(addr != MAP_FAILED);
