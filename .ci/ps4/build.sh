@@ -30,6 +30,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 set(CMAKE_SIZEOF_VOID_P 8)
 EOF
 
+NPROC=$(nproc || 1)
+
 # Normally a platform has a package manager
 # PS4 does not, atleast not in the normal sense
 export EXTRA_CMAKE_FLAGS=("${EXTRA_CMAKE_FLAGS[@]}" $@)
@@ -51,4 +53,4 @@ cmake -S . -B build -G "Unix Makefiles" \
     -DYUZU_USE_EXTERNAL_FFMPEG=ON \
     -DYUZU_USE_CPM=ON \
     "${EXTRA_CMAKE_FLAGS[@]}" || exit
-cmake --build build -t yuzu-cmd_pkg -- -j8
+cmake --build build -t yuzu-cmd_pkg -- -j$NPROC
