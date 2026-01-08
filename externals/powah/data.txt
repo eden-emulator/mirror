@@ -1,0 +1,222 @@
+add[o][.],Add,XO,31,266
+addc[o][.],Add Carrying,XO,31,10
+adde[o][.],Add Extended,XO,31,138
+addi,Add Immediate,D,14,
+addic,Add Immediate Carrying,D,12,
+addic.,Add Immediate Carrying and Record,D,13,
+addis,Add Immediate Shifted,D,15,
+addme[o][.],Add to Minus One Extended,XO,31,234
+addze[o][.],Add to Zero Extended,XO,31,202
+and[.],AND,X,31,28
+andc[.],AND with Complement,X,31,60
+andi.,AND Immediate,D,28,
+andis.,AND Immediate Shifted,D,29,
+b[l][a],Branch,I,18,
+bc[l][a],Branch Conditional,B,16,
+bcctr[l],Branch Conditional to Count Register,XL,19,528
+bclr[l],Branch Conditional Link Register,XL,19,16
+cmp,Compare,X,31,0
+cmpi,Compare Immediate,D,11,
+cmpl,Compare Logical,X,31,32
+cmpli,Compare Logical Immediate,D,10,
+cntlzd,Count Leading Zeros Doubleword,X,31,58
+cntlzw[.],Count Leading Zeros Word,X,31,26
+crand,Condition Register AND,XL,19,257
+crandc,Condition Register AND with Complement,XL,19,129
+creqv,Condition Register Equivalent,XL,19,289
+crnand,Condition Register NAND,XL,19,225
+crnor,Condition Register NOR,XL,19,33
+cror,Condition Register OR,XL,19,449
+crorc,Condition Register OR with Complement,XL,19,417
+crxor,Condition Register XOR,XL,19,193
+dcbf,Data Cache Block Flush,X,31,86
+dcbi,Data Cache Block Invalidate,X,31,470
+dcbst,Data Cache Block Store,X,31,54
+dcbt,Data Cache Block Touch,X,31,278
+dcbtst,Data Cache Block Touch for Store,X,31,246
+dcbz,Data Cache Block Set to Zero,X,31,1014
+divd,Divide Doubleword,XO,31,489
+divdu,Divide Doubleword Unsigned,XO,31,457
+divw[o][.],Divide Word,XO,31,491
+divwu[o][.],Divide Word Unsigned,XO,31,459
+eciwx,External Control in Word Indexed (opt.),X,31,310
+ecowx,External Control out Word Indexed (opt.),X,31,438
+eieio,Enforce In-order Execution of I/O,X,31,854
+eqv[.],Equivalent,X,31,284
+extsb[.],Extend Sign Byte,X,31,954
+extsh[.],Extend Sign Halfword,XO,31,922
+extsw,Extend Sign Word,X,31,986
+fabs[.],Floating Absolute Value,X,63,264
+fadd[.],Floating Add,A,63,21
+fadds[.],Floating Add Single,A,59,21
+fcfid,Floating Convert from Integer Doubleword,X,63,846
+fcmpo,Floating Compare Ordered,X,63,32
+fcmpu,Floating Compare Unordered,XL,63,0
+fctid,Floating Convert to Integer Doubleword,X,63,814
+fctidz,Floating Convert to Integer Doubleword with Round Toward Zero,X,63,815
+fctiw[.],Floating Convert to Integer Word,X,63,14
+fctiwz[.],Floating Convert to Integer Word with Round to Zero,XL,63,15
+fdiv[.],Floating Divide,A,63,18
+fdivs[.],Floating Divide Single,A,59,18
+fmadd[.],Floating Multiply-Add,A,63,29
+fmadds[.],Floating Multiply-Add Single,A,59,29
+fmr[.],Floating Move Register,X,63,72
+fmsub[.],Floating Multiply-Subtract,A,63,28
+fmsubs[.],Floating Multiply-Subtract Single,A,59,28
+fmul[.],Floating Multiply,A,63,25
+fmuls[.],Floating Multiply Single,A,59,25
+fnabs[.],Floating Negative Absolute Value,X,63,136
+fneg[.],Floating Negate,X,63,40
+fnmadd[.],Floating Negative Multiply-Add,A,63,31
+fnmadds[.],Floating Negative Multiply-Add Single,A,59,31
+fnmsub[.],Floating Negative Multiply-Subtract,A,63,30
+fnmsubs[.],Floating Negative Multiply-Subtract Single,A,59,30
+fres[.],Floating Reciprocal Estimate Single (optional),A,59,24
+frsp[.],Floating Round to Single Precision,X,63,12
+frsqrte[.],Floating Reciprocal Square Root Estimate (optional),A,63,26
+fsel[.],Floating-Point Select (optional),A,63,23
+fsub[.],Floating Subtract,A,63,20
+fsubs[.],Floating Subtract Single,A,59,20
+icbi,Instruction Cache Block Invalidate,X,31,982
+isync,Instruction Synchronize,X,19,150
+lbz,Load Byte and Zero,D,34,
+lbzu,Load Byte and Zero with Update,D,35,
+lbzux,Load Byte and Zero with Update Indexed,X,31,119
+lbzx,Load Byte and Zero Indexed,X,31,87
+ld,Load Doubleword,DS,58,0
+ldarx,Load Doubleword and Reserve Indexed,X,31,84
+ldu,Load Doubleword with Update,DS,58,1
+ldux,Load Doubleword with Update Indexed,X,31,53
+ldx,Load Doubleword Indexed,X,31,21
+lfd,Load Floating-Point Double,D,50,
+lfdu,Load Floating-Point Double with Update,D,51,
+lfdux,Load Floating-Point Double with Update Indexed,X,31,631
+lfdx,Load Floating-Point Double Indexed,X,31,599
+lfs,Load Floating-Point Single,D,48,
+lfsu,Load Floating-Point Single with Update,D,49,
+lfsux,Load Floating-Point Single with Update Indexed,X,31,567
+lfsx,Load Floating-Point Single Indexed,X,31,535
+lha,Load Half Algebraic,D,42,
+lhau,Load Half Algebraic with Update,D,43,
+lhaux,Load Half Algebraic with Update Indexed,X,31,375
+lhax,Load Half Algebraic Indexed,X,31,343
+lhbrx,Load Half Byte-Reversed Indexed,X,31,790
+lhz,Load Half and Zero,D,40,
+lhzu,Load Half and Zero with Update,D,41,
+lhzux,Load Half and Zero with Update Indexed,X,31,331
+lhzx,Load Half and Zero Indexed,X,31,279
+lmw,Load Multiple Word,D,46,
+lswi,Load String Word Immediate,X,31,597
+lswx,Load String Word Indexed,X,31,533
+lwa,Load Word Algebraic,DS,58,2
+lwarx,Load Word and Reserve Indexed,X,31,20
+lwaux,Load Word Algebraic with Update Indexed,X,31,373
+lwax,Load Word Algebraic Indexed,X,31,341
+lwbrx,Load Word Byte-Reversed Indexed,X,31,534
+lwz,Load Word and Zero,D,32,
+lwzu,Load Word with Zero Update,D,33,
+lwzux,Load Word and Zero with Update Indexed,X,31,55
+lwzx,Load Word and Zero Indexed,X,31,23
+mcrf,Move Condition Register Field,XL,19,0
+mcrfs,Move to Condition Register from FPSCR,X,63,64
+mcrxr,Move to Condition Register from XER,X,31,512
+mfcr,Move from Condition Register,X,31,19
+mffs[.],Move from FPSCR,X,63,583
+mfmsr,Move from Machine State Register,X,31,83
+mfspr,Move from Special-Purpose Register,X,31,339
+mfsr,Move from Segment Register,X,31,595
+mfsrin,Move from Segment Register Indirect,X,31,659
+mtcrf,Move to Condition Register Fields,XFX,31,144
+mtfsb0[.],Move to FPSCR Bit 0,X,63,70
+mtfsb1[.],Move to FPSCR Bit 1,X,63,38
+mtfsf[.],Move to FPSCR Fields,XFL,63,711
+mtfsfi[.],Move to FPSCR Field Immediate,X,63,134
+mtmsr,Move to Machine State Register,X,31,146
+mtspr,Move to Special-Purpose Register,X,31,467
+mtsr,Move to Segment Register,X,31,210
+mtsrin,Move to Segment Register Indirect,X,31,242
+mulhd,Multiply High Doubleword,XO,31,73
+mulhdu,Multiply High Doubleword Unsigned,XO,31,9
+mulhw[.],Multiply High Word,XO,31,75
+mulhwu[.],Multiply High Word Unsigned,XO,31,11
+mulld,Multiply Low Doubleword,XO,31,233
+mulli,Multiply Low Immediate,D,07,
+mullw[o][.],Multiply Low Word,XO,31,235
+nand[.],NAND,X,31,476
+neg[o][.],Negate,XO,31,104
+nor[.],NOR,X,31,124
+or[.],OR,X,31,444
+orc[.],OR with Complement,X,31,412
+ori,OR Immediate,D,24,
+oris,OR Immediate Shifted,D,25,
+rfi,Return from Interrupt,X,19,50
+rldcl,Rotate Left Doubleword then Clear Left,MDS,30,8
+rldcr,Rotate Left Doubleword then Clear Right,MDS,30,9
+rldic,Rotate Left Doubleword Immediate then Clear,MD,30,2
+rldicl,Rotate Left Doubleword Immediate then Clear Left,MD,30,0
+rldicr,Rotate Left Doubleword Immediate then Clear Right,MD,30,1
+rldimi,Rotate Left Doubleword Immediate then Mask Insert,MD,30,3
+rlwimi[.],Rotate Left Word Immediate then Mask Insert,M,20,
+rlwinm[.],Rotate Left Word Immediate then AND with Mask,M,21,
+rlwnm[.],Rotate Left Word then AND with Mask,M,23,
+sc,System Call,SC,17,
+si,Subtract Immediate,D,12,
+si.,Subtract Immediate and Record,D,13,
+slbia,SLB Invalidate All,X,31,498
+slbie,SLB Invalidate Entry,X,31,434
+sld,Shift Left Doubleword,X,31,27
+slw[.],Shift Left Word,X,31,24
+srad,Shift Right Algebraic Doubleword,X,31,794
+sradi,Shift Right Algebraic Doubleword Immediate,XS,31,413
+srd,Shift Right Doubleword,X,31,539
+sraw[.],Shift Right Algebraic Word,X,31,792
+srawi[.],Shift Right Algebraic Word Immediate,X,31,824
+srw[.],Shift Right Word,X,31,536
+stb,Store Byte,D,38,
+stbu,Store Byte with Update,D,39,
+stbux,Store Byte with Update Indexed,X,31,247
+stbx,Store Byte Indexed,X,31,215
+std,Store Doubleword,DS,62,0
+stdcx,Store Doubleword Conditional Indexed,X,31,214
+stdu,Store Doubleword with Update,DS,62,1
+stdux,Store Doubleword with Update Indexed,X,31,181
+stdx,Store Doubleword Indexed,X,31,149
+stfd,Store Floating-Point Double,D,54,
+stfdu,Store Floating-Point Double with Update,D,55,
+stfdux,Store Floating-Point Double with Update Indexed,X,31,759
+stfdx,Store Floating-Point Double Indexed,X,31,727
+stfiwx,Store Floating-Point as Integer Word Indexed (optional),X,31,983
+stfs,Store Floating-Point Single,D,52,
+stfsu,Store Floating-Point Single with Update,D,53,
+stfsux,Store Floating-Point Single with Update Indexed,X,31,695
+stfsx,Store Floating-Point Single Indexed,X,31,663
+sth,Store Half,D,44,
+sthbrx,Store Half Byte-Reverse Indexed,X,31,918
+sthu,Store Half with Update,D,45,
+sthux,Store Half with Update Indexed,X,31,439
+sthx,Store Half Indexed,X,31,407
+stmw,Store Multiple Word,D,47,
+stswi,Store String Word Immediate,X,31,725
+stswx,Store String Word Indexed,X,31,661
+stw,Store,D,36,
+stwbrx,Store Word Byte-Reversed Indexed,X,31,662
+stwcx.,Store Word Conditional Indexed,X,31,150
+stwu,Store Word with Update,D,37,
+stwux,Store Word with Update Indexed,X,31,183
+stwx,Store Word Indexed,X,31,151
+subf[o][.],Subtract from,XO,31,40
+subfc[o][.],Subtract from Carrying,XO,31,08
+subfe[o][.],Subtract from Extended,XO,31,136
+subfic,Subtract from Immediate Carrying,D,08,
+subfme[o][.],Subtract from Minus One Extended,XO,31,232
+subfze[o][.],Subtract from Zero Extended,XO,31,200
+sync,Synchronize,X,31,598
+td,Trap Doubleword,X,31,68
+tdi,Trap Doubleword Immediate,D,2,
+tlbie,Translation Look-aside Buffer Invalidate Entry (optional),X,31,306
+tlbsync,Translation Look-aside Buffer Synchronize (optional),X,31,566
+tw,Trap Word,X,31,04
+twi,Trap Word Immediate,D,03,
+xor[.],XOR,X,31,316
+xori,XOR Immediate,D,26,
+xoris,XOR Immediate Shift,D,27,
