@@ -51,6 +51,7 @@ Documentation
 -------------
 
 Design documentation can be found at [./Design.md](./Design.md).
+PowerPC design documentation can be found at [./PowerPC](./PowerPC.md).
 
 
 Usage Example
