@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -163,6 +166,14 @@ template <typename Traits>
 DeviceMemoryManager<Traits>::DeviceMemoryManager(const DeviceMemory& device_memory_)
     : physical_base{reinterpret_cast<const uintptr_t>(device_memory_.buffer.BackingBasePointer())},
       device_inter{nullptr}, compressed_physical_ptr(device_as_size >> Memory::YUZU_PAGEBITS),
+#if defined(YUZU_TESTS)
+      update_pages_cached_calls{0}, update_pages_cached_total_ns{0}, update_pages_cached_max_ns{0}, update_pages_cached_total_bytes{0},
+#endif
+      compressed_device_addr(1ULL << ((Settings::values.memory_layout_mode.GetValue() ==
+                                               Settings::MemoryLayout::Memory_4Gb
+                                           ? physical_min_bits
+                                           : physical_max_bits) -
+                                      Memory::YUZU_PAGEBITS)),
       compressed_device_addr(1ULL << ((Settings::values.memory_layout_mode.GetValue() ==
                                                Settings::MemoryLayout::Memory_4Gb
                                            ? physical_min_bits
@@ -484,7 +495,7 @@ void DeviceMemoryManager<Traits>::WriteBlockUnsafe(DAddr address, const void* sr
         [&](const std::size_t copy_amount) {
             src_pointer = static_cast<const u8*>(src_pointer) + copy_amount;
         });
-}
+}#include <chrono>
 
 template <typename Traits>
 Asid DeviceMemoryManager<Traits>::RegisterProcess(Memory::Memory* memory_device_inter) {
@@ -508,6 +519,9 @@ void DeviceMemoryManager<Traits>::UnregisterProcess(Asid asid) {
 
 template <typename Traits>
 void DeviceMemoryManager<Traits>::UpdatePagesCachedCount(DAddr addr, size_t size, s32 delta) {
+#if defined(YUZU_TESTS)
+    const auto start_time = std::chrono::steady_clock::now();
+#endif
     Common::ScopedRangeLock lk(counter_guard, addr, size);
     u64 uncache_begin = 0;
     u64 cache_begin = 0;
@@ -584,6 +598,19 @@ void DeviceMemoryManager<Traits>::UpdatePagesCachedCount(DAddr addr, size_t size
         }
     }
     release_pending();
+
+#if defined(YUZU_TESTS)
+    const auto end_time = std::chrono::steady_clock::now();
+    const uint64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count();
+    update_pages_cached_calls.fetch_add(1, std::memory_order_relaxed);
+    update_pages_cached_total_ns.fetch_add(ns, std::memory_order_relaxed);
+    update_pages_cached_total_bytes.fetch_add(size, std::memory_order_relaxed);
+    // Update max
+    uint64_t old_max = update_pages_cached_max_ns.load(std::memory_order_relaxed);
+    while (old_max < ns && !update_pages_cached_max_ns.compare_exchange_weak(old_max, ns, std::memory_order_relaxed)) {
+        // loop until updated
+    }
+#endif
 }
 
 } // namespace Core

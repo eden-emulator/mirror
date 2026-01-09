@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -117,6 +120,20 @@ public:
 
     void UpdatePagesCachedCount(DAddr addr, size_t size, s32 delta);
 
+#if defined(YUZU_TESTS)
+    // Instrumentation getters for testing
+    [[nodiscard]] size_t UpdatePagesCachedCalls() const noexcept { return update_pages_cached_calls.load(std::memory_order_relaxed); }
+    [[nodiscard]] uint64_t UpdatePagesCachedTotalNs() const noexcept { return update_pages_cached_total_ns.load(std::memory_order_relaxed); }
+    [[nodiscard]] uint64_t UpdatePagesCachedMaxNs() const noexcept { return update_pages_cached_max_ns.load(std::memory_order_relaxed); }
+    [[nodiscard]] size_t UpdatePagesCachedTotalBytes() const noexcept { return update_pages_cached_total_bytes.load(std::memory_order_relaxed); }
+    void ResetUpdatePagesCachedMetrics() noexcept {
+        update_pages_cached_calls.store(0, std::memory_order_relaxed);
+        update_pages_cached_total_ns.store(0, std::memory_order_relaxed);
+        update_pages_cached_max_ns.store(0, std::memory_order_relaxed);
+        update_pages_cached_total_bytes.store(0, std::memory_order_relaxed);
+    }
+#endif
+
     static constexpr size_t AS_BITS = Traits::device_virtual_bits;
 
 private:
@@ -214,6 +231,14 @@ private:
     std::unique_ptr<CachedPages> cached_pages;
     Common::RangeMutex counter_guard;
     std::mutex mapping_guard;
+
+#if defined(YUZU_TESTS)
+    // Instrumentation counters for UpdatePagesCachedCount
+    mutable std::atomic_size_t update_pages_cached_calls{0};
+    mutable std::atomic<uint64_t> update_pages_cached_total_ns{0};
+    mutable std::atomic<uint64_t> update_pages_cached_max_ns{0};
+    mutable std::atomic_size_t update_pages_cached_total_bytes{0};
+#endif
 };
 
 } // namespace Core

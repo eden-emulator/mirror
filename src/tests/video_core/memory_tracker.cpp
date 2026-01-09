@@ -11,6 +11,8 @@
 
 #include "common/common_types.h"
 #include "video_core/buffer_cache/memory_tracker_base.h"
+#include "core/device_memory.h"
+#include "video_core/host1x/gpu_device_memory_manager.h"
 
 namespace {
 using Range = std::pair<u64, u64>;
@@ -570,4 +572,20 @@ TEST_CASE("MemoryTracker: FlushCachedWrites batching") {
     REQUIRE(std::get<1>(calls[0]) == PAGE * 2);
     REQUIRE(std::get<0>(calls[1]) == c + PAGE * 4);
     REQUIRE(std::get<1>(calls[1]) == PAGE);
+}
+
+TEST_CASE("DeviceMemoryManager: UpdatePagesCachedCount instrumentation") {
+    Core::DeviceMemory device_memory;
+    Tegra::MaxwellDeviceMemoryManager manager(device_memory);
+#if defined(YUZU_TESTS)
+    manager.ResetUpdatePagesCachedMetrics();
+    REQUIRE(manager.UpdatePagesCachedCalls() == 0);
+    manager.UpdatePagesCachedCount(0, Core::Memory::YUZU_PAGESIZE, 1);
+    REQUIRE(manager.UpdatePagesCachedCalls() == 1);
+    REQUIRE(manager.UpdatePagesCachedTotalBytes() >= Core::Memory::YUZU_PAGESIZE);
+    REQUIRE(manager.UpdatePagesCachedTotalNs() > 0);
+    REQUIRE(manager.UpdatePagesCachedMaxNs() > 0);
+#else
+    SUCCEED("Instrumentation only available in test builds");
+#endif
 }
