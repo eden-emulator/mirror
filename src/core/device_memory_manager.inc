@@ -8,6 +8,7 @@
 #include <limits>
 #include <memory>
 #include <type_traits>
+#include <chrono>
 
 #include "common/address_space.h"
 #include "common/address_space.inc"
@@ -169,11 +170,6 @@ DeviceMemoryManager<Traits>::DeviceMemoryManager(const DeviceMemory& device_memo
 #if defined(YUZU_TESTS)
       update_pages_cached_calls{0}, update_pages_cached_total_ns{0}, update_pages_cached_max_ns{0}, update_pages_cached_total_bytes{0},
 #endif
-      compressed_device_addr(1ULL << ((Settings::values.memory_layout_mode.GetValue() ==
-                                               Settings::MemoryLayout::Memory_4Gb
-                                           ? physical_min_bits
-                                           : physical_max_bits) -
-                                      Memory::YUZU_PAGEBITS)),
       compressed_device_addr(1ULL << ((Settings::values.memory_layout_mode.GetValue() ==
                                                Settings::MemoryLayout::Memory_4Gb
                                            ? physical_min_bits
@@ -495,7 +491,7 @@ void DeviceMemoryManager<Traits>::WriteBlockUnsafe(DAddr address, const void* sr
         [&](const std::size_t copy_amount) {
             src_pointer = static_cast<const u8*>(src_pointer) + copy_amount;
         });
-}#include <chrono>
+}
 
 template <typename Traits>
 Asid DeviceMemoryManager<Traits>::RegisterProcess(Memory::Memory* memory_device_inter) {
