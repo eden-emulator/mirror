@@ -4,6 +4,8 @@
 #include <memory>
 #include <stdexcept>
 #include <unordered_map>
+#include <tuple>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -23,6 +25,8 @@ constexpr VAddr c = 16 * HIGH_PAGE_SIZE;
 class RasterizerInterface {
 public:
     void UpdatePagesCachedCount(VAddr addr, u64 size, int delta) {
+        ++update_calls;
+        calls.emplace_back(addr, size, delta);
         const u64 page_start{addr >> Core::DEVICE_PAGEBITS};
         const u64 page_end{(addr + size + Core::DEVICE_PAGESIZE - 1) >> Core::DEVICE_PAGEBITS};
         for (u64 page = page_start; page < page_end; ++page) {
@@ -35,6 +39,9 @@ public:
             }
         }
     }
+
+    [[nodiscard]] size_t UpdateCalls() const noexcept { return update_calls; }
+    [[nodiscard]] const std::vector<std::tuple<VAddr, u64, int>>& UpdateCallsList() const noexcept { return calls; }
 
     [[nodiscard]] int Count(VAddr addr) const noexcept {
         const auto it = page_table.find(addr >> Core::DEVICE_PAGEBITS);
@@ -51,7 +58,10 @@ public:
 
 private:
     std::unordered_map<u64, int> page_table;
+    size_t update_calls = 0;
+    std::vector<std::tuple<VAddr, u64, int>> calls;
 };
+
 } // Anonymous namespace
 
 using MemoryTracker = VideoCommon::MemoryTrackerBase<RasterizerInterface>;
@@ -543,4 +553,21 @@ TEST_CASE("MemoryTracker: Cached write downloads") {
     REQUIRE(!memory_track->IsRegionGpuModified(c + PAGE, PAGE));
     memory_track->MarkRegionAsCpuModified(c, WORD);
     REQUIRE(rasterizer.Count() == 0);
+}
+
+TEST_CASE("MemoryTracker: FlushCachedWrites batching") {
+    RasterizerInterface rasterizer;
+    std::unique_ptr<MemoryTracker> memory_track(std::make_unique<MemoryTracker>(rasterizer));
+    memory_track->UnmarkRegionAsCpuModified(c, WORD * 2);
+    memory_track->CachedCpuWrite(c + PAGE, PAGE);
+    memory_track->CachedCpuWrite(c + PAGE * 2, PAGE);
+    memory_track->CachedCpuWrite(c + PAGE * 4, PAGE);
+    REQUIRE(rasterizer.UpdateCalls() == 0);
+    memory_track->FlushCachedWrites();
+    REQUIRE(rasterizer.UpdateCalls() == 2);
+    const auto& calls = rasterizer.UpdateCallsList();
+    REQUIRE(std::get<0>(calls[0]) == c + PAGE);
+    REQUIRE(std::get<1>(calls[0]) == PAGE * 2);
+    REQUIRE(std::get<0>(calls[1]) == c + PAGE * 4);
+    REQUIRE(std::get<1>(calls[1]) == PAGE);
 }
