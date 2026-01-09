@@ -1,5 +1,5 @@
-# SPDX-FileCopyrightText: Copyright 2025 crueter
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileCopyrightText: Copyright 2026 crueter
+# SPDX-License-Identifier: LGPL-3.0-or-later
 
 set(CPM_SOURCE_CACHE "${PROJECT_SOURCE_DIR}/.cache/cpm" CACHE STRING "" FORCE)
 
@@ -124,8 +124,7 @@ function(AddJsonPackage)
             PACKAGE ${package}
             EXTENSION ${extension}
             MIN_VERSION ${min_version}
-            DISABLED_PLATFORMS ${disabled_platforms}
-        )
+            DISABLED_PLATFORMS ${disabled_platforms})
 
         # pass stuff to parent scope
         set(${package}_ADDED "${${package}_ADDED}"
@@ -223,8 +222,7 @@ function(AddJsonPackage)
         GIT_HOST ${git_host}
 
         ARTIFACT ${artifact}
-        TAG ${tag}
-    )
+        TAG ${tag})
 
     # pass stuff to parent scope
     set(${package}_ADDED "${${package}_ADDED}"
@@ -280,8 +278,7 @@ function(AddPackage)
         KEY
         BUNDLED_PACKAGE
         FORCE_BUNDLED_PACKAGE
-        FIND_PACKAGE_ARGUMENTS
-    )
+        FIND_PACKAGE_ARGUMENTS)
 
     set(multiValueArgs OPTIONS PATCHES)
 
@@ -343,7 +340,7 @@ function(AddPackage)
         cpm_utils_message(FATAL_ERROR ${PKG_ARGS_NAME} "No URL or repository defined")
     endif()
 
-    cpm_utils_message(STATUS ${PKG_ARGS_NAME} "Download URL is ${pkg_url}")
+    cpm_utils_message(DEBUG ${PKG_ARGS_NAME} "Download URL is ${pkg_url}")
 
     if(NOT DEFINED PKG_ARGS_KEY)
         if(DEFINED PKG_ARGS_SHA)
@@ -453,8 +450,7 @@ function(AddPackage)
 
     if(DEFINED PKG_ARGS_VERSION)
         list(APPEND EXTRA_ARGS
-            VERSION ${PKG_ARGS_VERSION}
-        )
+            VERSION ${PKG_ARGS_VERSION})
     endif()
 
     CPMAddPackage(
@@ -471,8 +467,7 @@ function(AddPackage)
 
         ${EXTRA_ARGS}
 
-        ${PKG_ARGS_UNPARSED_ARGUMENTS}
-    )
+        ${PKG_ARGS_UNPARSED_ARGUMENTS})
 
     set_property(GLOBAL APPEND PROPERTY CPM_PACKAGE_NAMES ${PKG_ARGS_NAME})
     set_property(GLOBAL APPEND PROPERTY CPM_PACKAGE_URLS ${pkg_git_url})
@@ -516,24 +511,6 @@ function(AddPackage)
 
 endfunction()
 
-function(add_ci_package key)
-    set(ARTIFACT ${ARTIFACT_NAME}-${key}-${ARTIFACT_VERSION}.${ARTIFACT_EXT})
-
-    AddPackage(
-        NAME ${ARTIFACT_PACKAGE}
-        REPO ${ARTIFACT_REPO}
-        TAG v${ARTIFACT_VERSION}
-        GIT_VERSION ${ARTIFACT_VERSION}
-        ARTIFACT ${ARTIFACT}
-
-        KEY ${key}-${ARTIFACT_VERSION}
-        HASH_SUFFIX sha512sum
-        FORCE_BUNDLED_PACKAGE ON
-    )
-
-    set(ARTIFACT_DIR ${${ARTIFACT_PACKAGE}_SOURCE_DIR} PARENT_SCOPE)
-endfunction()
-
 # TODO(crueter): we could do an AddMultiArchPackage, multiplatformpackage?
 # name is the artifact name, package is for find_package override
 function(AddCIPackage)
@@ -543,12 +520,13 @@ function(AddCIPackage)
         REPO
         PACKAGE
         EXTENSION
-        MIN_VERSION
-    )
+        MIN_VERSION)
 
     set(multiValueArgs DISABLED_PLATFORMS)
 
-    cmake_parse_arguments(PKG_ARGS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    set(optionArgs MODULE)
+
+    cmake_parse_arguments(PKG_ARGS "${optionArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(NOT DEFINED PKG_ARGS_VERSION)
         message(FATAL_ERROR "[CPMUtil] VERSION is required")
@@ -589,55 +567,73 @@ function(AddCIPackage)
     set(ARTIFACT_REPO ${PKG_ARGS_REPO})
     set(ARTIFACT_PACKAGE ${PKG_ARGS_PACKAGE})
 
-    if((MSVC AND ARCHITECTURE_x86_64) AND NOT "windows-amd64" IN_LIST DISABLED_PLATFORMS)
-        add_ci_package(windows-amd64)
+    if(MSVC AND ARCHITECTURE_x86_64)
+        set(pkgname windows-amd64)
+    elseif(MSVC AND ARCHITECTURE_arm64)
+        set(pkgname windows-arm64)
+    elseif(MINGW AND ARCHITECTURE_x86_64)
+        set(pkgname mingw-amd64)
+    elseif(MINGW AND ARCHITECTURE_arm64)
+        set(pkgname mingw-arm64)
+    elseif(ANDROID AND ARCHITECTURE_x86_64)
+        set(pkgname android-x86_64)
+    elseif(ANDROID AND ARCHITECTURE_arm64)
+        set(pkgname android-aarch64)
+    elseif(PLATFORM_SUN)
+        set(pkgname solaris-amd64)
+    elseif(PLATFORM_FREEBSD)
+        set(pkgname freebsd-amd64)
+    elseif(PLATFORM_LINUX AND ARCHITECTURE_x86_64)
+        set(pkgname linux-amd64)
+    elseif(PLATFORM_LINUX AND ARCHITECTURE_arm64)
+        set(pkgname linux-aarch64)
+    elseif(APPLE)
+        set(pkgname macos-universal)
     endif()
 
-    if((MSVC AND ARCHITECTURE_arm64) AND NOT "windows-arm64" IN_LIST DISABLED_PLATFORMS)
-        add_ci_package(windows-arm64)
-    endif()
+    if (DEFINED pkgname AND NOT "${pkgname}" IN_LIST DISABLED_PLATFORMS)
+        set(ARTIFACT "${ARTIFACT_NAME}-${pkgname}-${ARTIFACT_VERSION}.${ARTIFACT_EXT}")
 
-    if((MINGW AND ARCHITECTURE_x86_64) AND NOT "mingw-amd64" IN_LIST DISABLED_PLATFORMS)
-        add_ci_package(mingw-amd64)
-    endif()
+        AddPackage(
+            NAME ${ARTIFACT_PACKAGE}
+            REPO ${ARTIFACT_REPO}
+            TAG "v${ARTIFACT_VERSION}"
+            GIT_VERSION ${ARTIFACT_VERSION}
+            ARTIFACT ${ARTIFACT}
 
-    if((MINGW AND ARCHITECTURE_arm64) AND NOT "mingw-arm64" IN_LIST DISABLED_PLATFORMS)
-        add_ci_package(mingw-arm64)
-    endif()
+            KEY "${pkgname}-${ARTIFACT_VERSION}"
+            HASH_SUFFIX sha512sum
+            FORCE_BUNDLED_PACKAGE ON
+            DOWNLOAD_ONLY ${PKG_ARGS_MODULE})
 
-    if((ANDROID AND ARCHITECTURE_x86_64) AND NOT "android-x86_64" IN_LIST DISABLED_PLATFORMS)
-        add_ci_package(android-x86_64)
-    endif()
-
-    if((ANDROID AND ARCHITECTURE_arm64) AND NOT "android-aarch64" IN_LIST DISABLED_PLATFORMS)
-        add_ci_package(android-aarch64)
-    endif()
-
-    if(PLATFORM_SUN AND NOT "solaris-amd64" IN_LIST DISABLED_PLATFORMS)
-        add_ci_package(solaris-amd64)
-    endif()
-
-    if(PLATFORM_FREEBSD AND NOT "freebsd-amd64" IN_LIST DISABLED_PLATFORMS)
-        add_ci_package(freebsd-amd64)
-    endif()
-
-    if((PLATFORM_LINUX AND ARCHITECTURE_x86_64) AND NOT "linux-amd64" IN_LIST DISABLED_PLATFORMS)
-        add_ci_package(linux-amd64)
-    endif()
-
-    if((PLATFORM_LINUX AND ARCHITECTURE_arm64) AND NOT "linux-aarch64" IN_LIST DISABLED_PLATFORMS)
-        add_ci_package(linux-aarch64)
-    endif()
-
-    # TODO(crueter): macOS amd64/aarch64 split mayhaps
-    if(APPLE AND NOT "macos-universal" IN_LIST DISABLED_PLATFORMS)
-        add_ci_package(macos-universal)
-    endif()
-
-    if(DEFINED ARTIFACT_DIR)
         set(${ARTIFACT_PACKAGE}_ADDED TRUE PARENT_SCOPE)
-        set(${ARTIFACT_PACKAGE}_SOURCE_DIR "${ARTIFACT_DIR}" PARENT_SCOPE)
+        set(${ARTIFACT_PACKAGE}_SOURCE_DIR "${${ARTIFACT_PACKAGE}_SOURCE_DIR}" PARENT_SCOPE)
+
+        if (PKG_ARGS_MODULE)
+            list(PREPEND CMAKE_PREFIX_PATH "${${ARTIFACT_PACKAGE}_SOURCE_DIR}")
+            set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
+        endif()
     else()
         find_package(${ARTIFACT_PACKAGE} ${ARTIFACT_MIN_VERSION} REQUIRED)
     endif()
+endfunction()
+
+# Utility function for Qt
+function(AddQt version)
+    if (NOT DEFINED version)
+        message(FATAL_ERROR "[CPMUtil] AddQt: version is required")
+    endif()
+
+    AddCIPackage(
+        NAME Qt
+        PACKAGE Qt6
+        VERSION 6.9.3
+        MIN_VERSION 6
+        REPO crueter-ci/Qt
+        DISABLED_PLATFORMS
+            android-x86_64 android-aarch64
+            freebsd-amd64 solaris-amd64 openbsd-amd64
+        MODULE)
+
+    set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} PARENT_SCOPE)
 endfunction()

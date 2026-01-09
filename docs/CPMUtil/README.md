@@ -13,6 +13,7 @@ You are highly encouraged to read AddPackage first, even if you plan to only int
 - [AddPackage](#addpackage)
 - [AddCIPackage](#addcipackage)
 - [AddJsonPackage](#addjsonpackage)
+- [AddQt](#addqt)
 - [Lists](#lists)
 - [For Packagers](#for-packagers)
   - [Network Sandbox](#network-sandbox)
@@ -29,6 +30,10 @@ The core of CPMUtil is the [`AddPackage`](./AddPackage.md) function. [`AddPackag
 ## AddJsonPackage
 
 [`AddJsonPackage`](./AddJsonPackage.md) is the recommended method of usage for CPMUtil.
+
+## AddQt
+
+[`AddQt`](./AddQt.md) adds a specific version of Qt to your project.
 
 ## Lists
 
