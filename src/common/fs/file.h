@@ -323,7 +323,7 @@ public:
         if (IsMappedFile()) {
             std::memcpy(&object, mmap_base + mmap_offset, sizeof(T));
 #ifdef _WIN32
-            return sizeof(T) != 0;
+            return bool(sizeof(T));
 #else
             return sizeof(T);
 #endif
@@ -442,7 +442,7 @@ public:
     [[nodiscard]] s64 Tell() const;
 
 #ifdef _WIN32
-    inline bool IsMappedFile() const noexcept { return file_handle != nullptr; }
+    inline bool IsMappedFile() const noexcept { return mapping_handle != nullptr; }
 #else // POSIX
     inline bool IsMappedFile() const noexcept { return mmap_fd != -1; }
 #endif
@@ -462,7 +462,7 @@ public:
 #endif
     u8* mmap_base = nullptr;
     size_t mmap_size = 0;
-    mutable off_t mmap_offset = 0; // fuck you
+    mutable s64 mmap_offset = 0; // fuck you
 };
 
 } // namespace Common::FS
