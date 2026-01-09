@@ -530,13 +530,13 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
         // fuck you to whoever made this method const
         switch (origin) {
         case SeekOrigin::SetOrigin:
-            mmap_offset = off_t(offset);
+            mmap_offset = s64(offset);
             break;
         case SeekOrigin::CurrentPosition:
-            mmap_offset += off_t(offset);
+            mmap_offset += s64(offset);
             break;
         case SeekOrigin::End:
-            mmap_offset = off_t(mmap_size) + off_t(offset);
+            mmap_offset = s64(mmap_size) + s64(offset);
             break;
         }
         return true;
