@@ -22,7 +22,7 @@ if (MSVC AND NOT CXX_CLANG)
     set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE STRING "" FORCE)
 
     # Silence "deprecation" warnings
-    add_compile_definitions(_CRT_SECURE_NO_WARNINGS _CRT_NONSTDC_NO_DEPRECATE _SCL_SECURE_NO_WARNINGS)
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 
     # Avoid windows.h junk
     add_compile_definitions(NOMINMAX)
@@ -35,7 +35,6 @@ if (MSVC AND NOT CXX_CLANG)
 
     # /W4                 - Level 4 warnings
     # /MP                 - Multi-threaded compilation
-    # /Zm                 - Specifies the precompiled header memory allocation limit
     # /Zo                 - Enhanced debug info for optimized builds
     # /permissive-        - Enables stricter C++ standards conformance checks
     # /EHsc               - C++-only exception handling semantics
@@ -48,7 +47,6 @@ if (MSVC AND NOT CXX_CLANG)
     # /GT                 - Supports fiber safety for data allocated using static thread-local storage
     add_compile_options(
         /MP
-        /Zm200
         /Zo
         /permissive-
         /EHsc
@@ -59,7 +57,13 @@ if (MSVC AND NOT CXX_CLANG)
         /Zc:inline
         /Zc:preprocessor
         /Zc:throwingNew
+        /Zc:__cplusplus
+        /Zc:lambda
+        /Zc:enumTypes
+        /Zc:ternary
+        /bigobj             # Increase number of sections in .obj files
         /GT
+        /W4
 
         # External headers diagnostics
         /external:anglebrackets # Treats all headers included by #include <header>, where the header file is enclosed in angle brackets (< >), as external headers
@@ -88,14 +92,6 @@ if (MSVC AND NOT CXX_CLANG)
         /wd4201 # nonstandard extension used : nameless struct/union
         /wd4702 # unreachable code (when used with LTO)
     )
-
-    if (NOT CXX_CLANG)
-        add_compile_options(
-            # Warnings
-            /W4
-            /WX-
-        )
-    endif()
 
     if (ARCHITECTURE_x86_64)
         add_compile_options(/QIntel-jcc-erratum)

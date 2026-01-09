@@ -133,6 +133,10 @@ if (CXX_CLANG_CL)
     endif()
 endif()
 
+if (MSVC AND NOT CXX_CLANG)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+endif()
+
 # Set bundled sdl2/qt as dependent options.
 # On Linux system SDL2 is likely to be lacking HIDAPI support which have drawbacks but is needed for SDL motion
 cmake_dependent_option(ENABLE_SDL2 "Enable the SDL2 frontend" ON "NOT ANDROID" OFF)
