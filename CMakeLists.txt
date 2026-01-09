@@ -164,7 +164,7 @@ cmake_dependent_option(YUZU_USE_EXTERNAL_FFMPEG "Build FFmpeg from external sour
 
 # sirit
 set(BUNDLED_SIRIT_DEFAULT OFF)
-if ((MSVC AND NOT (CMAKE_BUILD_TYPE MATCHES "Debug|RelWithDebInfo") OR ANDROID))
+if((MSVC AND NOT (CMAKE_BUILD_TYPE MATCHES "Debug|RelWithDebInfo")) OR (ANDROID))
     set(BUNDLED_SIRIT_DEFAULT ON)
 endif()
 option(YUZU_USE_BUNDLED_SIRIT "Download bundled sirit" ${BUNDLED_SIRIT_DEFAULT})
@@ -175,7 +175,12 @@ cmake_dependent_option(ENABLE_LIBUSB "Enable the use of LibUSB" ON "WIN32 OR PLA
 cmake_dependent_option(ENABLE_OPENGL "Enable OpenGL" ON "NOT WIN32 OR NOT ARCHITECTURE_arm64" OFF)
 mark_as_advanced(FORCE ENABLE_OPENGL)
 
-option(ENABLE_WEB_SERVICE "Enable web services (telemetry, etc.)" ON)
+set(DEFAULT_ENABLE_WEB_SERVICE ON)
+if((MSVC AND (CMAKE_BUILD_TYPE MATCHES "Debug|RelWithDebInfo")))
+    set(DEFAULT_ENABLE_WEB_SERVICE OFF)
+endif()
+option(ENABLE_WEB_SERVICE "Enable web services for multiplayer" ${DEFAULT_ENABLE_WEB_SERVICE})
+
 option(ENABLE_WIFI_SCAN "Enable WiFi scanning" OFF)
 
 cmake_dependent_option(USE_DISCORD_PRESENCE "Enables Discord Rich Presence" OFF "ENABLE_QT" OFF)
