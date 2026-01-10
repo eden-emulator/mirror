@@ -48,6 +48,7 @@ public:
     ~DeviceMemoryManager();
 
     static constexpr bool HAS_FLUSH_INVALIDATION = true;
+    static constexpr size_t AS_BITS = Traits::device_virtual_bits;
 
     void BindInterface(DeviceInterface* device_inter);
 
@@ -127,8 +128,6 @@ public:
 private:
     // Internal helper that performs the update assuming the caller already holds the necessary lock.
     void UpdatePagesCachedCountNoLock(DAddr addr, size_t size, s32 delta);
-
-    static constexpr size_t AS_BITS = Traits::device_virtual_bits;
 
 private:
     static constexpr size_t device_virtual_bits = Traits::device_virtual_bits;
