@@ -503,12 +503,14 @@ private:
             if (cur_addr + cur_size == ranges[i].first) {
                 cur_size += ranges[i].second;
             } else {
-                tracker->UpdatePagesCachedCount(cur_addr, cur_size, delta);
+                coalesced.emplace_back(cur_addr, cur_size);
                 cur_addr = ranges[i].first;
                 cur_size = ranges[i].second;
             }
         }
-        tracker->UpdatePagesCachedCount(cur_addr, cur_size, delta);
+        coalesced.emplace_back(cur_addr, cur_size);
+        // Use batch API to reduce lock acquisitions and contention.
+        tracker->UpdatePagesCachedBatch(coalesced, delta);
         ranges.clear();
     }
 

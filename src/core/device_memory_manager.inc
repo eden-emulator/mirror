@@ -8,7 +8,8 @@
 #include <limits>
 #include <memory>
 #include <type_traits>
-#include <chrono>
+#include <algorithm>
+#include <vector>
 
 #include "common/address_space.h"
 #include "common/address_space.inc"
@@ -167,9 +168,6 @@ template <typename Traits>
 DeviceMemoryManager<Traits>::DeviceMemoryManager(const DeviceMemory& device_memory_)
     : physical_base{reinterpret_cast<const uintptr_t>(device_memory_.buffer.BackingBasePointer())},
       device_inter{nullptr}, compressed_physical_ptr(device_as_size >> Memory::YUZU_PAGEBITS),
-#if defined(YUZU_TESTS)
-      update_pages_cached_calls{0}, update_pages_cached_total_ns{0}, update_pages_cached_max_ns{0}, update_pages_cached_total_bytes{0},
-#endif
       compressed_device_addr(1ULL << ((Settings::values.memory_layout_mode.GetValue() ==
                                                Settings::MemoryLayout::Memory_4Gb
                                            ? physical_min_bits
@@ -514,11 +512,7 @@ void DeviceMemoryManager<Traits>::UnregisterProcess(Asid asid) {
 }
 
 template <typename Traits>
-void DeviceMemoryManager<Traits>::UpdatePagesCachedCount(DAddr addr, size_t size, s32 delta) {
-#if defined(YUZU_TESTS)
-    const auto start_time = std::chrono::steady_clock::now();
-#endif
-    Common::ScopedRangeLock lk(counter_guard, addr, size);
+void DeviceMemoryManager<Traits>::UpdatePagesCachedCountNoLock(DAddr addr, size_t size, s32 delta) {
     u64 uncache_begin = 0;
     u64 cache_begin = 0;
     u64 uncache_bytes = 0;
@@ -594,19 +588,49 @@ void DeviceMemoryManager<Traits>::UpdatePagesCachedCount(DAddr addr, size_t size
         }
     }
     release_pending();
+}
 
-#if defined(YUZU_TESTS)
-    const auto end_time = std::chrono::steady_clock::now();
-    const uint64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count();
-    update_pages_cached_calls.fetch_add(1, std::memory_order_relaxed);
-    update_pages_cached_total_ns.fetch_add(ns, std::memory_order_relaxed);
-    update_pages_cached_total_bytes.fetch_add(size, std::memory_order_relaxed);
-    // Update max
-    uint64_t old_max = update_pages_cached_max_ns.load(std::memory_order_relaxed);
-    while (old_max < ns && !update_pages_cached_max_ns.compare_exchange_weak(old_max, ns, std::memory_order_relaxed)) {
-        // loop until updated
+template <typename Traits>
+void DeviceMemoryManager<Traits>::UpdatePagesCachedCount(DAddr addr, size_t size, s32 delta) {
+    Common::ScopedRangeLock lk(counter_guard, addr, size);
+    UpdatePagesCachedCountNoLock(addr, size, delta);
+} 
+
+template <typename Traits>
+void DeviceMemoryManager<Traits>::UpdatePagesCachedBatch(const std::vector<std::pair<DAddr, size_t>>& ranges, s32 delta) {
+    if (ranges.empty()) {
+        return;
     }
-#endif
+    // Make a local copy and sort by address
+    std::vector<std::pair<DAddr, size_t>> tmp = ranges;
+    std::sort(tmp.begin(), tmp.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+
+    // Coalesce adjacent/overlapping ranges
+    std::vector<std::pair<DAddr, size_t>> coalesced;
+    DAddr cur_addr = tmp[0].first;
+    size_t cur_size = tmp[0].second;
+    for (size_t i = 1; i < tmp.size(); ++i) {
+        DAddr next_addr = tmp[i].first;
+        size_t next_size = tmp[i].second;
+        if (cur_addr + cur_size >= next_addr) {
+            // overlapping or contiguous
+            const DAddr end = std::max(cur_addr + cur_size, next_addr + next_size);
+            cur_size = end - cur_addr;
+        } else {
+            coalesced.emplace_back(cur_addr, cur_size);
+            cur_addr = next_addr;
+            cur_size = next_size;
+        }
+    }
+    coalesced.emplace_back(cur_addr, cur_size);
+
+    const DAddr lock_begin = coalesced.front().first;
+    const DAddr lock_end = coalesced.back().first + coalesced.back().second;
+    Common::ScopedRangeLock lk(counter_guard, lock_begin, static_cast<size_t>(lock_end - lock_begin));
+
+    for (const auto& [addr, size] : coalesced) {
+        UpdatePagesCachedCountNoLock(addr, size, delta);
+    }
 }
 
 } // namespace Core

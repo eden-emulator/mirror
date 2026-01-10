@@ -566,26 +566,24 @@ TEST_CASE("MemoryTracker: FlushCachedWrites batching") {
     memory_track->CachedCpuWrite(c + PAGE * 4, PAGE);
     REQUIRE(rasterizer.UpdateCalls() == 0);
     memory_track->FlushCachedWrites();
-    REQUIRE(rasterizer.UpdateCalls() == 2);
+    // Now we expect a single batch call (coalesced ranges) to the device memory manager
+    REQUIRE(rasterizer.UpdateCalls() == 1);
     const auto& calls = rasterizer.UpdateCallsList();
     REQUIRE(std::get<0>(calls[0]) == c + PAGE);
-    REQUIRE(std::get<1>(calls[0]) == PAGE * 2);
-    REQUIRE(std::get<0>(calls[1]) == c + PAGE * 4);
-    REQUIRE(std::get<1>(calls[1]) == PAGE);
+    REQUIRE(std::get<1>(calls[0]) == PAGE * 3);
 }
 
-TEST_CASE("DeviceMemoryManager: UpdatePagesCachedCount instrumentation") {
+TEST_CASE("DeviceMemoryManager: UpdatePagesCachedBatch basic") {
     Core::DeviceMemory device_memory;
     Tegra::MaxwellDeviceMemoryManager manager(device_memory);
-#if defined(YUZU_TESTS)
-    manager.ResetUpdatePagesCachedMetrics();
-    REQUIRE(manager.UpdatePagesCachedCalls() == 0);
-    manager.UpdatePagesCachedCount(0, Core::Memory::YUZU_PAGESIZE, 1);
-    REQUIRE(manager.UpdatePagesCachedCalls() == 1);
-    REQUIRE(manager.UpdatePagesCachedTotalBytes() >= Core::Memory::YUZU_PAGESIZE);
-    REQUIRE(manager.UpdatePagesCachedTotalNs() > 0);
-    REQUIRE(manager.UpdatePagesCachedMaxNs() > 0);
-#else
-    SUCCEED("Instrumentation only available in test builds");
-#endif
+    // empty should be a no-op
+    std::vector<std::pair<Core::DAddr, size_t>> empty;
+    manager.UpdatePagesCachedBatch(empty, 1);
+
+    // small ranges should be accepted and not crash
+    std::vector<std::pair<Core::DAddr, size_t>> ranges;
+    ranges.emplace_back(0, Core::Memory::YUZU_PAGESIZE);
+    ranges.emplace_back(Core::Memory::YUZU_PAGESIZE, Core::Memory::YUZU_PAGESIZE);
+    manager.UpdatePagesCachedBatch(ranges, 1);
+    SUCCEED("UpdatePagesCachedBatch executed without error");
 }
