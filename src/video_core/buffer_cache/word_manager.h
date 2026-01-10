@@ -497,6 +497,9 @@ private:
         if (ranges.empty()) return;
         std::sort(ranges.begin(), ranges.end(),
                   [](const auto& a, const auto& b) { return a.first < b.first; });
+        // Coalesce adjacent/contiguous ranges
+        std::vector<std::pair<VAddr, u64>> coalesced;
+        coalesced.reserve(ranges.size());
         VAddr cur_addr = ranges[0].first;
         u64 cur_size = ranges[0].second;
         for (size_t i = 1; i < ranges.size(); ++i) {
