@@ -13,7 +13,7 @@
 [ "$HASH_URL" = null ] || exit 0
 [ "$HASH_SUFFIX" = null ] || exit 0
 
-[ "$HASH" != null ] || echo "-- * Package has no hash specified" && exit 0
+[ "$HASH" != null ] || { echo "-- * Package has no hash specified" && exit 0; }
 
 ACTUAL=$("$SCRIPTS"/util/url-hash.sh "$DOWNLOAD")
 

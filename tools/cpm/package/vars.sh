@@ -9,7 +9,7 @@ value() {
 	echo "$JSON" | jq -r ".$1"
 }
 
-[ -n "$PACKAGE" ] || echo "Package was not specified" && exit 0
+[ -n "$PACKAGE" ] || { echo "Package was not specified" && exit 0; }
 
 # shellcheck disable=SC2153
 JSON=$(echo "$PACKAGES" | jq -r ".\"$PACKAGE\" | select( . != null )")
