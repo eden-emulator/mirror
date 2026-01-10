@@ -578,8 +578,6 @@ std::vector<std::string> ProfileManager::FindOrphanedProfiles()
                     }
                 } catch (const fs::filesystem_error& e) {
                     // if we get an error--no worries, just pretend it's not empty
-                    LOG_WARNING(Service_ACC, "Failed to iterate profile directory '{}': {}",
-                                entry.path().string(), e.what());
                     return true;
                 }
 
