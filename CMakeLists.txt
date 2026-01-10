@@ -562,6 +562,8 @@ endif()
 if (ENABLE_QT)
     if (YUZU_USE_BUNDLED_QT)
         AddQt(6.9.3)
+
+        set(YUZU_STATIC_BUILD ON)
     else()
         message(STATUS "Using system Qt")
         if (NOT Qt6_DIR)
