@@ -471,7 +471,7 @@ struct Values {
                                                                   "astc_recompression",
                                                                   Category::RendererAdvanced};
 
-    SwitchableSetting<bool> renderer_enable_raii{linkage, true, "renderer_enable_raii", Category::Renderer};
+    SwitchableSetting<bool> renderer_enable_raii{linkage, true, "renderer_enable_raii", Category::RendererAdvanced};
 
     SwitchableSetting<bool> sync_memory_operations{linkage,
                                                    false,
