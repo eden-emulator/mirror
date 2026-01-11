@@ -14,6 +14,10 @@
 #include "video_core/rasterizer_interface.h"
 #include "video_core/texture_cache/util.h"
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+
 namespace Tegra {
 
 constexpr u32 MacroRegistersStart = 0xE00;
@@ -113,7 +117,11 @@ void DmaPusher::ProcessCommands(std::span<const CommandHeader> commands) {
     for (std::size_t index = 0; index < total_commands;) {
         const std::size_t prefetch_index = index + BATCH_SIZE;
         if (prefetch_index < total_commands) {
+#ifdef _MSC_VER
+            _mm_prefetch(reinterpret_cast<const char*>(&commands[prefetch_index]), _MM_HINT_T0);
+#else
             __builtin_prefetch(&commands[prefetch_index], 0, 1);
+#endif
         }
 
         const CommandHeader& command_header = commands[index];
