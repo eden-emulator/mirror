@@ -333,7 +333,7 @@ private:
 
     mutable std::mt19937 rand_gen;
 
-    size_t defined_insts_count;
+    size_t defined_insts_count = 0;
 };
 
 template<typename T>
