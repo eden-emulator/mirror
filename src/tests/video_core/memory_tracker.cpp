@@ -60,8 +60,8 @@ public:
 
 private:
     std::unordered_map<u64, int> page_table;
-    size_t update_calls = 0;
     std::vector<std::tuple<VAddr, u64, int>> calls;
+    size_t update_calls = 0;
 };
 
 } // Anonymous namespace

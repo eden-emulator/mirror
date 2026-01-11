@@ -498,17 +498,17 @@ private:
         std::sort(ranges.begin(), ranges.end(),
                   [](const auto& a, const auto& b) { return a.first < b.first; });
         // Coalesce adjacent/contiguous ranges
-        std::vector<std::pair<VAddr, u64>> coalesced;
+        std::vector<std::pair<VAddr, size_t>> coalesced;
         coalesced.reserve(ranges.size());
         VAddr cur_addr = ranges[0].first;
-        u64 cur_size = ranges[0].second;
+        size_t cur_size = static_cast<size_t>(ranges[0].second);
         for (size_t i = 1; i < ranges.size(); ++i) {
             if (cur_addr + cur_size == ranges[i].first) {
-                cur_size += ranges[i].second;
+                cur_size += static_cast<size_t>(ranges[i].second);
             } else {
                 coalesced.emplace_back(cur_addr, cur_size);
                 cur_addr = ranges[i].first;
-                cur_size = ranges[i].second;
+                cur_size = static_cast<size_t>(ranges[i].second);
             }
         }
         coalesced.emplace_back(cur_addr, cur_size);
