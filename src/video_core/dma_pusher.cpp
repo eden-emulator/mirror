@@ -107,7 +107,15 @@ bool DmaPusher::Step() {
 }
 
 void DmaPusher::ProcessCommands(std::span<const CommandHeader> commands) {
-    for (std::size_t index = 0; index < commands.size();) {
+    constexpr std::size_t BATCH_SIZE = 16;
+    const std::size_t total_commands = commands.size();
+    
+    for (std::size_t index = 0; index < total_commands;) {
+        const std::size_t prefetch_index = index + BATCH_SIZE;
+        if (prefetch_index < total_commands) {
+            __builtin_prefetch(&commands[prefetch_index], 0, 1);
+        }
+
         const CommandHeader& command_header = commands[index];
 
         if (dma_state.method_count) {
@@ -115,7 +123,7 @@ void DmaPusher::ProcessCommands(std::span<const CommandHeader> commands) {
             dma_state.dma_word_offset = static_cast<u32>(index * sizeof(u32));
             if (dma_state.non_incrementing) {
                 const u32 max_write = static_cast<u32>(
-                    std::min<std::size_t>(index + dma_state.method_count, commands.size()) - index);
+                    std::min<std::size_t>(index + dma_state.method_count, total_commands) - index);
                 CallMultiMethod(&command_header.argument, max_write);
                 dma_state.method_count -= max_write;
                 dma_state.is_last_call = true;
