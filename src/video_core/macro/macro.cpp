@@ -64,14 +64,30 @@ void MacroEngine::AddCode(u32 method, u32 data) {
 }
 
 void MacroEngine::ClearCode(u32 method) {
+    if (method == last_macro_method) {
+        last_macro_method = 0xFFFFFFFF;
+        last_macro_cache = nullptr;
+    }
     macro_cache.erase(method);
     uploaded_macro_code.erase(method);
 }
 
 void MacroEngine::Execute(u32 method, const std::vector<u32>& parameters) {
+    if (method == last_macro_method && last_macro_cache != nullptr) [[likely]] {
+        if (last_macro_cache->has_hle_program) {
+            last_macro_cache->hle_program->Execute(parameters, method);
+        } else {
+            maxwell3d.RefreshParameters();
+            last_macro_cache->lle_program->Execute(parameters, method);
+        }
+        return;
+    }
+
     auto compiled_macro = macro_cache.find(method);
     if (compiled_macro != macro_cache.end()) {
         const auto& cache_info = compiled_macro->second;
+        last_macro_method = method;
+        last_macro_cache = &compiled_macro->second;
         if (cache_info.has_hle_program) {
             cache_info.hle_program->Execute(parameters, method);
         } else {
@@ -95,6 +111,8 @@ void MacroEngine::Execute(u32 method, const std::vector<u32>& parameters) {
             }
         }
         auto& cache_info = macro_cache[method];
+        last_macro_method = method;
+        last_macro_cache = &cache_info;
 
         if (!mid_method.has_value()) {
             cache_info.lle_program = Compile(macro_code->second);

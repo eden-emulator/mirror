@@ -138,6 +138,9 @@ private:
     std::unordered_map<u32, std::vector<u32>> uploaded_macro_code;
     std::unique_ptr<HLEMacro> hle_macros;
     Engines::Maxwell3D& maxwell3d;
+    
+    u32 last_macro_method{0xFFFFFFFF};
+    CacheInfo* last_macro_cache{nullptr};
 };
 
 std::unique_ptr<MacroEngine> GetMacroEngine(Engines::Maxwell3D& maxwell3d);
