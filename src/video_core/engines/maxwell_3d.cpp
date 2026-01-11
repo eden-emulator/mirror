@@ -198,15 +198,19 @@ bool Maxwell3D::IsMethodExecutable(u32 method) {
 
 void Maxwell3D::ProcessMacro(u32 method, const u32* base_start, u32 amount, bool is_last_call) {
     if (executing_macro == 0) {
-        // A macro call must begin by writing the macro method's register, not its argument.
         ASSERT_MSG((method % 2) == 0,
                    "Can't start macro execution by writing to the ARGS register");
         executing_macro = method;
+        macro_params.reserve(64);
+        macro_addresses.reserve(64);
+        macro_segments.reserve(8);
     }
 
     macro_params.insert(macro_params.end(), base_start, base_start + amount);
+    const size_t old_size = macro_addresses.size();
+    macro_addresses.resize(old_size + amount);
     for (size_t i = 0; i < amount; i++) {
-        macro_addresses.push_back(current_dma_segment + i * sizeof(u32));
+        macro_addresses[old_size + i] = current_dma_segment + i * sizeof(u32);
     }
     macro_segments.emplace_back(current_dma_segment, amount);
     current_macro_dirty |= current_dirty;
