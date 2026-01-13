@@ -33,6 +33,9 @@ struct Fiber::FiberImpl {
     boost::context::detail::fcontext_t context{};
     boost::context::detail::fcontext_t rewind_context{};
 
+    boost::context::detail::fcontext_t context{};
+    boost::context::detail::fcontext_t rewind_context{};
+
     std::mutex guard;
     std::function<void()> entry_point;
     std::function<void()> rewind_point;
