@@ -56,7 +56,9 @@
 #include <cxxabi.h>
 #include <__thread/support.h>
 #   define STUB_WEAK(name) extern "C" void name() { printf("called " #name); asm volatile("ud2"); }
-void *__cxa_thread_atexit_impl = nullptr;
+extern "C" void __cxa_thread_atexit_impl() {
+    //printf("atexit called");
+}
 STUB_WEAK(__assert)
 STUB_WEAK(ZSTD_trace_compress_begin)
 STUB_WEAK(ZSTD_trace_compress_end)
