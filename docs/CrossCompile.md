@@ -210,7 +210,9 @@ This is a guide for FreeBSD users mainly.
 
 Now you got a PowerPC sysroot - quickly decompress it somewhere, say `/home/user/opt/powerpc64le`. Create a toolchain file, for example `powerpc64le-toolchain.cmake`; always [consult the manual](https://man.freebsd.org/cgi/man.cgi?query=cmake-toolchains&sektion=7&manpath=FreeBSD+13.2-RELEASE+and+Ports).
 
-There is a script to automatically do all of this under `./tools/setup-cross-sysroot.sh`
+There is a script to automatically do all of this under `./tools/setup-cross-sysroot.sh`.
+
+Remember to add `-mabi=elfv1` to `CFLAGS`/`CXXFLAGS` otherwise the program will crash.
 
 Specify:
 
