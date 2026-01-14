@@ -159,10 +159,11 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock te
         auto const tmp = ctx.reg_alloc.ScratchGpr();
         code.LI(tmp, terminal.next.Value());
         code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
-        code.LD(tmp, PPC64::RJIT, offsetof(A64JitState, run_fn));
+        code.LD(tmp, PPC64::RTOCPTR, 0);
         code.MTCTR(tmp);
-        code.BCTRL();
-        code.LD(powah::R2, powah::R1, offsetof(StackLayout, sp));
+        code.LD(powah::R2, PPC64::RTOCPTR, 8);
+        code.LD(powah::R11, PPC64::RTOCPTR, 16);
+        code.BCTR();
     } else {
         auto const tmp = ctx.reg_alloc.ScratchGpr();
         code.LI(tmp, terminal.next.Value());
@@ -191,7 +192,7 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckBit ter
     powah::Label const l_else = code.DefineLabel();
     powah::Label const l_end = code.DefineLabel();
     auto const tmp = ctx.reg_alloc.ScratchGpr();
-    code.LD(tmp, powah::R1, offsetof(StackLayout, check_bit));
+    code.MR(tmp, PPC64::RCHECKBIT);
     code.CMPLDI(tmp, 0);
     code.BEQ(powah::CR0, l_else);
     // CheckBit == 1
@@ -219,51 +220,53 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
     RegAlloc reg_alloc{code};
     EmitContext ctx{block, reg_alloc, emit_conf, ebi};
 
+    size_t const stack_size = 112 + ABI_CALLEE_SAVED.size() * 8;
     auto const start_offset = code.offset;
     ebi.entry_point = &code.base[start_offset];
+    if (!block.empty()) {
+        code.MFLR(powah::R0);
+        code.STD(powah::R0, powah::R1, 16);
+        // Non-volatile saves
+        std::vector<powah::GPR> gp_regs{ABI_CALLEE_SAVED};
+        for (size_t i = 0; i < gp_regs.size(); ++i)
+            code.STD(gp_regs[i], powah::R1, -int32_t(gp_regs.size() - i) * 8);
+        code.STDU(powah::R1, powah::R1, uint32_t(-stack_size));
+        code.STD(powah::R2, powah::R1, 40);
 
-    code.MFLR(powah::R0);
-    code.STD(powah::R0, powah::R1, offsetof(StackLayout, lr));
-    // Non-volatile saves
-    std::vector<powah::GPR> abi_callee_saved{ABI_CALLEE_SAVED};
-    for (size_t i = 0; i < abi_callee_saved.size(); ++i)
-        code.STD(abi_callee_saved[i], powah::R1, -(8 + i * 8));
-    code.STDU(powah::R1, powah::R1, -sizeof(StackLayout));
-    code.STD(powah::R2, powah::R1, offsetof(StackLayout, sp));
-
-    for (auto iter = block.begin(); iter != block.end(); ++iter) {
-        IR::Inst* inst = &*iter;
-        switch (inst->GetOpcode()) {
+        for (auto iter = block.begin(); iter != block.end(); ++iter) {
+            IR::Inst* inst = &*iter;
+            switch (inst->GetOpcode()) {
 #define OPCODE(name, type, ...)                  \
-    case IR::Opcode::name:                       \
-        EmitIR<IR::Opcode::name>(code, ctx, inst); \
-        break;
+        case IR::Opcode::name:                       \
+            EmitIR<IR::Opcode::name>(code, ctx, inst); \
+            break;
 #define A32OPC(name, type, ...)                       \
-    case IR::Opcode::A32##name:                       \
-        EmitIR<IR::Opcode::A32##name>(code, ctx, inst); \
-        break;
+        case IR::Opcode::A32##name:                       \
+            EmitIR<IR::Opcode::A32##name>(code, ctx, inst); \
+            break;
 #define A64OPC(name, type, ...)                       \
-    case IR::Opcode::A64##name:                       \
-        EmitIR<IR::Opcode::A64##name>(code, ctx, inst); \
-        break;
+        case IR::Opcode::A64##name:                       \
+            EmitIR<IR::Opcode::A64##name>(code, ctx, inst); \
+            break;
 #include "dynarmic/ir/opcodes.inc"
 #undef OPCODE
 #undef A32OPC
 #undef A64OPC
-        default:
-            UNREACHABLE();
+            default:
+                UNREACHABLE();
+            }
         }
+
+        // auto const cycles_to_add = block.CycleCount();
+        code.ADDI(powah::R1, powah::R1, stack_size);
+        for (size_t i = 0; i < gp_regs.size(); ++i)
+            code.LD(gp_regs[i], powah::R1, -int32_t(gp_regs.size() - i) * 8);
+        code.LD(powah::R0, powah::R1, 16);
+        code.MTLR(powah::R0);
+        EmitTerminal(code, ctx, ctx.block.GetTerminal(), ctx.block.Location(), false);
+    } else {
+        EmitTerminal(code, ctx, ctx.block.GetTerminal(), ctx.block.Location(), false);
     }
-
-    // auto const cycles_to_add = block.CycleCount();
-    EmitTerminal(code, ctx, ctx.block.GetTerminal(), ctx.block.Location(), false);
-
-    code.ADDI(powah::R1, powah::R1, sizeof(StackLayout));
-    code.LD(powah::R0, powah::R1, offsetof(StackLayout, lr));
-    code.MTLR(powah::R0);
-    for (size_t i = 0; i < abi_callee_saved.size(); ++i)
-        code.LD(abi_callee_saved[i], powah::R1, -(8 + i * 8));
-    code.BLR();
     code.ApplyRelocs();
 
     /*
