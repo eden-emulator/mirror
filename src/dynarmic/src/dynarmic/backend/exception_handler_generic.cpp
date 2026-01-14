@@ -17,24 +17,21 @@ ExceptionHandler::ExceptionHandler() = default;
 ExceptionHandler::~ExceptionHandler() = default;
 
 #if defined(ARCHITECTURE_x86_64)
-void ExceptionHandler::Register(X64::BlockOfCode&) {
-    // Do nothing
-}
+void ExceptionHandler::Register(X64::BlockOfCode&)
 #elif defined(ARCHITECTURE_arm64)
-void ExceptionHandler::Register(oaknut::CodeBlock&, std::size_t) {
-    // Do nothing
-}
+void ExceptionHandler::Register(oaknut::CodeBlock&, std::size_t)
 #elif defined(ARCHITECTURE_riscv64)
-void ExceptionHandler::Register(RV64::CodeBlock&, std::size_t) {
-    // Do nothing
-}
+void ExceptionHandler::Register(RV64::CodeBlock&, std::size_t)
 #elif defined(ARCHITECTURE_loongarch64)
-void ExceptionHandler::Register(LoongArch64::CodeBlock&, std::size_t) {
-    // Do nothing
-}
+void ExceptionHandler::Register(LoongArch64::CodeBlock&, std::size_t)
+#elif defined(ARCHITECTURE_ppc64)
+void ExceptionHandler::Register(PPC64::CodeBlock&, std::size_t)
 #else
 #    error "Invalid architecture"
 #endif
+{
+    // Do nothing
+}
 
 bool ExceptionHandler::SupportsFastmem() const noexcept {
     return false;

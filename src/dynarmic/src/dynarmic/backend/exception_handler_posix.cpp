@@ -35,6 +35,8 @@
 #    include "dynarmic/backend/riscv64/code_block.h"
 #elif defined(ARCHITECTURE_loongarch64)
 #    include "dynarmic/backend/loongarch64/code_block.h"
+#elif defined(ARCHITECTURE_ppc64)
+#    include "dynarmic/backend/ppc64/code_block.h"
 #else
 #    error "Invalid architecture"
 #endif
@@ -203,6 +205,10 @@ void ExceptionHandler::Register(RV64::CodeBlock& mem, std::size_t size) {
 }
 #elif defined(ARCHITECTURE_loongarch64)
 void ExceptionHandler::Register(LoongArch64::CodeBlock& mem, std::size_t size) {
+    impl = std::make_unique<Impl>(std::bit_cast<u64>(mem.ptr<u64>()), size);
+}
+#elif defined(ARCHITECTURE_ppc64)
+void ExceptionHandler::Register(PPC64::CodeBlock& mem, std::size_t size) {
     impl = std::make_unique<Impl>(std::bit_cast<u64>(mem.ptr<u64>()), size);
 }
 #else

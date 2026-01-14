@@ -17,7 +17,7 @@
 #if defined(ARCHITECTURE_x86_64)
 namespace Dynarmic::Backend::X64 {
 class BlockOfCode;
-}  // namespace Dynarmic::Backend::X64
+}
 #elif defined(ARCHITECTURE_arm64)
 namespace oaknut {
 class CodeBlock;
@@ -30,6 +30,10 @@ class CodeBlock;
 namespace Dynarmic::Backend::LoongArch64 {
 class CodeBlock;
 }  // namespace Dynarmic::Backend::LoongArch64
+#elif defined(ARCHITECTURE_ppc64)
+namespace Dynarmic::Backend::PPC64 {
+class CodeBlock;
+}
 #else
 #    error "Invalid architecture"
 #endif
@@ -53,6 +57,9 @@ struct FakeCall {
 struct FakeCall {
     u64 call_pc;
 };
+#elif defined(ARCHITECTURE_ppc64)
+struct FakeCall {
+};
 #else
 #    error "Invalid architecture"
 #endif
@@ -70,6 +77,8 @@ public:
     void Register(RV64::CodeBlock& mem, std::size_t mem_size);
 #elif defined(ARCHITECTURE_loongarch64)
     void Register(LoongArch64::CodeBlock& mem, std::size_t mem_size);
+#elif defined(ARCHITECTURE_ppc64)
+    void Register(PPC64::CodeBlock& mem, std::size_t mem_size);
 #else
 #    error "Invalid architecture"
 #endif
