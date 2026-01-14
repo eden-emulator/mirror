@@ -254,6 +254,9 @@ endif()
 # TZDB (Time Zone Database)
 add_subdirectory(nx_tzdb)
 
+# PowerPC emitter
+add_subdirectory(powah)
+
 add_library(tz tz/tz/tz.cpp)
 target_include_directories(tz PUBLIC ./tz)
 

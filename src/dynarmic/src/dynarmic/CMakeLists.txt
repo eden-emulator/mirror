@@ -74,6 +74,7 @@ add_library(dynarmic STATIC
     interface/halt_reason.h
     interface/exclusive_monitor.h
     interface/optimization_flags.h
+    interface/halt_reason.h
     ir/acc_type.h
     ir/basic_block.cpp
     ir/basic_block.h
@@ -139,10 +140,8 @@ if ("x86_64" IN_LIST ARCHITECTURE)
     # Newer versions of xbyak (>= 7.25.0) have stricter checks that currently
     # fail in dynarmic
     target_compile_definitions(dynarmic PRIVATE XBYAK_STRICT_CHECK_MEM_REG_SIZE=0)
-
     target_compile_definitions(dynarmic PRIVATE XBYAK_OLD_DISP_CHECK=1)
     target_link_libraries(dynarmic PRIVATE xbyak::xbyak)
-
     target_architecture_specific_sources(dynarmic "x86_64"
         backend/x64/abi.cpp
         backend/x64/abi.h
@@ -293,6 +292,31 @@ if ("riscv64" IN_LIST ARCHITECTURE)
         common/spin_lock_riscv64.cpp
     )
     message(WARNING "TODO: Incomplete frontend for this host architecture")
+endif()
+if ("ppc64" IN_LIST ARCHITECTURE)
+    target_link_libraries(dynarmic PRIVATE powah)
+    target_sources(dynarmic PRIVATE
+        backend/ppc64/abi.h
+        backend/ppc64/emit_context.h
+        backend/ppc64/emit_ppc64_a32.cpp
+        backend/ppc64/emit_ppc64_a64.cpp
+        backend/ppc64/emit_ppc64_misc.cpp
+        backend/ppc64/emit_ppc64_data_processing.cpp
+        backend/ppc64/emit_ppc64_floating_point.cpp
+        backend/ppc64/emit_ppc64_vector.cpp
+        backend/ppc64/emit_ppc64.cpp
+        backend/ppc64/emit_ppc64.h
+        backend/ppc64/reg_alloc.cpp
+        backend/ppc64/reg_alloc.h
+        backend/ppc64/stack_layout.h
+        # A32
+        backend/ppc64/a32_core.h
+        backend/ppc64/a32_interface.cpp
+        # A64
+        backend/ppc64/a64_core.h
+        backend/ppc64/a64_interface.cpp
+        backend/ppc64/code_block.h
+    )
 endif()
 
 if ("loongarch64" IN_LIST ARCHITECTURE)
