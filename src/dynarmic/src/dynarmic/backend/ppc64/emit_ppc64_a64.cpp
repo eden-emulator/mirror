@@ -19,7 +19,7 @@ namespace Dynarmic::Backend::PPC64 {
 template<>
 void EmitIR<IR::Opcode::A64SetCheckBit>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const value = ctx.reg_alloc.UseGpr(inst->GetArg(0));
-    code.STD(value, powah::R1, offsetof(StackLayout, check_bit));
+    code.MR(PPC64::RCHECKBIT, value);
 }
 
 template<>

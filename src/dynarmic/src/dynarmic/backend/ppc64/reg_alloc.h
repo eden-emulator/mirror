@@ -49,15 +49,15 @@ struct RegAlloc;
 /// this basically means that we can use temporals and not need to go thru
 /// any weird deallocation stuffs :)
 template<typename T> struct RegLock {
-    inline RegLock(RegAlloc& reg_alloc, T const value) noexcept
+    constexpr RegLock(RegAlloc& reg_alloc, T const value) noexcept
         : reg_alloc{reg_alloc}
         , value{value}
     {
         SetLock(true);
     }
     inline ~RegLock() noexcept { SetLock(false); }
-    operator T const&() { return value; }
-    operator T() const { return value; }
+    constexpr operator T const&() noexcept { return value; }
+    constexpr operator T() const noexcept { return value; }
     inline void SetLock(bool v) noexcept;
     RegAlloc& reg_alloc;
     const T value;
@@ -94,7 +94,6 @@ private:
     std::array<HostLocInfo, 32> fprs;
     std::array<HostLocInfo, 32> vprs;
     std::array<HostLocInfo, SpillCount> spills;
-    uint32_t lru_counter = 0;
 };
 
 template<> inline void RegLock<powah::GPR>::SetLock(bool v) noexcept {
