@@ -373,6 +373,7 @@ struct Context {
     void MFCTR(GPR const rt) { MFSPR(powah::GPR{9}, rt, powah::GPR{0}); }
     void MTCTR(GPR const rt) { MTSPR(powah::GPR{9}, rt, powah::GPR{0}); }
     void BCTRL() { base[offset++] = 0x4e800421; } //BCCTRL(R0, CR0, R0);
+    void BCTR() { base[offset++] = 0x4e800420; } //BCCTR(R0, CR0, R0);
 
     // TODO: PowerPC 11 stuff
     void ISEL(GPR const rd, GPR const ra, GPR const rb, uint32_t d) {

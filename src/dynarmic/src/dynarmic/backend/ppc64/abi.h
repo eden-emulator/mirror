@@ -46,7 +46,10 @@ vrsave    Non-volatile 32-bit register
 constexpr powah::GPR RPROCESS = powah::R3;
 constexpr powah::GPR RJIT = powah::R4;
 constexpr powah::GPR RHALTREASON = powah::R5;
-constexpr powah::GPR RNZCV = powah::R31;
+constexpr powah::GPR RTOCPTR = powah::R6;
+// temporals
+constexpr powah::GPR RNZCV = powah::R7;
+constexpr powah::GPR RCHECKBIT = powah::R8;
 
 constexpr powah::GPR ABI_PARAM1 = powah::R3;
 constexpr powah::GPR ABI_PARAM2 = powah::R4;
@@ -55,7 +58,6 @@ constexpr powah::GPR ABI_PARAM4 = powah::R6;
 
 // See https://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi.html#REG
 constexpr std::initializer_list<u32> GPR_ORDER{
-    //6, 7, 8, 9, 10, 11, 12, //volatile
     // r13 is thread-id
     14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 //non-volatile
 };
