@@ -105,21 +105,24 @@ struct Ucontext {
 }
 
 static boost::container::static_vector<std::pair<void*, size_t>, 16> swap_regions;
+static std::mutex evil_swap_mutex;
 extern "C" int sceKernelRemoveExceptionHandler(s32 sig_num);
 static void SwapHandler(int sig, void* raw_context) {
+    std::unique_lock lk{evil_swap_mutex};
     auto& mctx = ((Orbis::Ucontext*)raw_context)->uc_mcontext;
     if (auto const it = std::ranges::find_if(swap_regions, [addr = mctx.mc_addr](auto const& e) {
         return uintptr_t(addr) >= uintptr_t(e.first) && uintptr_t(addr) < uintptr_t(e.first) + e.second;
     }); it != swap_regions.end()) {
-        size_t const page_size = 4096 * 4; //16K
+        size_t const page_size = 4096 * 8; //16K
         size_t const page_mask = ~(page_size - 1);
         // should replace the existing mapping... ugh
         void* aligned_addr = reinterpret_cast<void*>(uintptr_t(mctx.mc_addr) & page_mask);
         void* res = mmap(aligned_addr, page_size, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0);
         if (res == MAP_FAILED) {
-            LOG_ERROR(HW_Memory, "{},{} @ {}:{}", mctx.mc_addr, aligned_addr, it->first, it->second);
+            LOG_ERROR(HW_Memory, "{:#x},{} @ {}:{:#x}", mctx.mc_addr, aligned_addr, it->first, it->second);
+            sceKernelRemoveExceptionHandler(SIGSEGV); // to not catch the next signal
         } else {
-            LOG_TRACE(HW_Memory, "{},{} @ {}:{}", mctx.mc_addr, aligned_addr, it->first, it->second);
+            LOG_TRACE(HW_Memory, "{:#x},{} @ {}:{:#x}", mctx.mc_addr, aligned_addr, it->first, it->second);
         }
     } else {
         LOG_ERROR(HW_Memory, "fault in addr {:#x} at {:#x}", mctx.mc_addr, mctx.mc_rip); // print caller address
@@ -141,15 +144,17 @@ void* AllocateMemoryPages(std::size_t size) noexcept {
         base = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
     }
 #elif defined(__OPENORBIS__)
-    // void* addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-    // if (addr == MAP_FAILED) {
-    LOG_WARNING(HW_Memory, "Using VoidMem for {}B area", size);
-    void* addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_VOID | MAP_PRIVATE, -1, 0);
-    ASSERT(addr != MAP_FAILED);
-    swap_regions.emplace_back(addr, size);
-    // } else {
-    //     LOG_INFO(HW_Memory, "mmap {} bytes", size);
-    // }
+    void* addr;
+    if (size <= 8192 * 4096) {
+        addr = malloc(size);
+        LOG_WARNING(HW_Memory, "Using DMem for {} bytes area @ {}", size, addr);
+        ASSERT(addr != nullptr);
+    } else {
+        addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_VOID | MAP_PRIVATE, -1, 0);
+        LOG_WARNING(HW_Memory, "Using VoidMem for {} bytes area @ {}", size, addr);
+        ASSERT(addr != MAP_FAILED);
+        swap_regions.emplace_back(addr, size);
+    }
 #else
     void* addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
     ASSERT(addr != MAP_FAILED);
@@ -162,6 +167,13 @@ void FreeMemoryPages(void* addr, [[maybe_unused]] std::size_t size) noexcept {
         return;
 #ifdef _WIN32
     VirtualFree(addr, 0, MEM_RELEASE);
+#elif defined(__OPENORBIS__)
+    if (size <= 8192 * 4096) {
+        free(addr);
+    } else {
+        int rc = munmap(addr, size);
+        ASSERT(rc == 0);
+    }
 #else
     int rc = munmap(addr, size);
     ASSERT(rc == 0);
