@@ -330,7 +330,7 @@ struct Values {
 
     // Renderer
     SwitchableSetting<RendererBackend, true> renderer_backend{linkage,
-#if defined(__sun__) || defined(__managarm__)
+#if defined(__sun__) || defined(__managarm__) || defined(__OPENORBIS__)
         RendererBackend::OpenGL_GLSL,
 #else
         RendererBackend::Vulkan,
