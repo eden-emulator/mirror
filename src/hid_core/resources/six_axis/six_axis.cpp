@@ -27,7 +27,7 @@ void SixAxis::OnInit() {}
 void SixAxis::OnRelease() {}
 
 void SixAxis::OnUpdate(const Core::Timing::CoreTiming& core_timing) {
-    std::scoped_lock shared_lock{*shared_mutex};
+    //std::scoped_lock shared_lock{*shared_mutex};
 
     for (std::size_t aruid_index = 0; aruid_index < AruidIndexMax; ++aruid_index) {
         const auto* data = applet_resource->GetAruidDataByIndex(aruid_index);
