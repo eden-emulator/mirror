@@ -34,6 +34,7 @@ add_executable(yuzu-cmd
     sdl_config.cpp
     sdl_config.h
     yuzu.cpp
+    emutls.c
     yuzu.rc
     ${OPENGL_SOURCES}
 )
@@ -79,5 +80,6 @@ if (NOT MSVC)
 endif()
 
 if (PLATFORM_PS4)
-    create_ps4_pkg(yuzu-cmd eden-cli IV0000-BREW00090_00-EDENEMULAT000000)
+    create_ps4_eboot(yuzu-cmd eden-cli IV0000-BREW00090_00-EDENEMULAT000000)
+    #create_ps4_pkg(yuzu-cmd eden-cli IV0000-BREW00090_00-EDENEMULAT000000)
 endif()
