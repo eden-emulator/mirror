@@ -40,6 +40,7 @@ constexpr u32 EXPECTED_MAGIC = 0x36f81a1e;  // What we expect the encrypted bftt
 constexpr u64 SHARED_FONT_MEM_SIZE = 0x1100000;
 constexpr FontRegion EMPTY_REGION{0, 0};
 
+#ifndef __OPENORBIS__
 static void DecryptSharedFont(const std::span<u32 const> input, std::span<u8> output, std::size_t& offset) {
     ASSERT(offset + (input.size() * sizeof(u32)) < SHARED_FONT_MEM_SIZE && "Shared fonts exceeds 17mb!");
     ASSERT(input[0] == EXPECTED_MAGIC && "Failed to derive key, unexpected magic number");
@@ -51,6 +52,7 @@ static void DecryptSharedFont(const std::span<u32 const> input, std::span<u8> ou
     std::memcpy(output.data() + offset, transformed_font.data(), transformed_font.size() * sizeof(u32));
     offset += transformed_font.size() * sizeof(u32);
 }
+#endif
 
 void DecryptSharedFontToTTF(const std::vector<u32>& input, std::vector<u8>& output) {
     ASSERT_MSG(input[0] == EXPECTED_MAGIC, "Failed to derive key, unexpected magic number");
@@ -83,8 +85,10 @@ struct IPlatformServiceManager::Impl {
     // Automatically populated based on shared_fonts dump or system archives.
     // 6 builtin fonts + extra 2 for whatever may come after
     boost::container::static_vector<FontRegion, 8> shared_font_regions;
+#ifndef __OPENORBIS__
     /// Backing memory for the shared font data
     std::array<u8, SHARED_FONT_MEM_SIZE> shared_font;
+#endif
 };
 
 IPlatformServiceManager::IPlatformServiceManager(Core::System& system_, const char* service_name_)
@@ -111,8 +115,8 @@ IPlatformServiceManager::IPlatformServiceManager(Core::System& system_, const ch
     // clang-format on
     RegisterHandlers(functions);
 
+#ifndef __OPENORBIS__
     auto& fsc = system.GetFileSystemController();
-
     // Attempt to load shared font data from disk
     const auto* nand = fsc.GetSystemNANDContents();
     std::size_t offset = 0;
@@ -144,6 +148,7 @@ IPlatformServiceManager::IPlatformServiceManager(Core::System& system_, const ch
             LOG_ERROR(Service_NS, "Failed to find or synthesize {:016X}! Skipping", font.first);
         }
     }
+#endif
 }
 
 IPlatformServiceManager::~IPlatformServiceManager() = default;
@@ -177,8 +182,10 @@ Result IPlatformServiceManager::GetSharedMemoryNativeHandle(OutCopyHandle<Kernel
     // Map backing memory for the font data
     LOG_DEBUG(Service_NS, "called");
 
+#ifndef __OPENORBIS__
     // Create shared font memory object
     std::memcpy(kernel.GetFontSharedMem().GetPointer(), impl->shared_font.data(), impl->shared_font.size());
+#endif
 
     // FIXME: this shouldn't belong to the kernel
     *out_shared_memory_native_handle = &kernel.GetFontSharedMem();
