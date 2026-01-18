@@ -1,6 +1,19 @@
 # SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+function(create_ps4_eboot project target content_id)
+    set(sce_sys_dir sce_sys)
+    set(sce_sys_param ${sce_sys_dir}/param.sfo)
+    add_custom_command(
+        OUTPUT "${target}.pkg"
+        COMMAND ${CMAKE_SYSROOT}/bin/create-fself -in=bin/${target} -out=${target}.oelf --eboot eboot.bin
+        VERBATIM
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        DEPENDS ${project}
+    )
+    add_custom_target(${project}_pkg ALL DEPENDS "${target}.pkg")
+endfunction()
+
 function(create_ps4_pkg project target content_id)
     set(sce_sys_dir sce_sys)
     set(sce_sys_param ${sce_sys_dir}/param.sfo)
