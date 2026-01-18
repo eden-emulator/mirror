@@ -286,7 +286,7 @@ void AbstractPad::Update() {
 
     interface_type = properties_handler.GetInterfaceType();
 
-    std::scoped_lock lock{*applet_resource_holder->shared_mutex};
+    //std::scoped_lock lock{*applet_resource_holder->shared_mutex};
     properties_handler.UpdateAllDeviceProperties();
     battery_handler.UpdateCoreBatteryState();
     button_handler.UpdateCoreBatteryState();
