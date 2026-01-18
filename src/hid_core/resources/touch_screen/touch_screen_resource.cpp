@@ -34,7 +34,7 @@ Result TouchResource::ActivateTouch() {
     }
 
     if (global_ref_counter == 0) {
-        std::scoped_lock lock{*shared_mutex};
+        //std::scoped_lock lock{*shared_mutex};
 
         const auto result = touch_driver->StartTouchSensor();
         if (result.IsError()) {
@@ -60,7 +60,7 @@ Result TouchResource::ActivateTouch() {
 }
 
 Result TouchResource::ActivateTouch(u64 aruid) {
-    std::scoped_lock lock{*shared_mutex};
+    //std::scoped_lock lock{*shared_mutex};
 
     for (std::size_t aruid_index = 0; aruid_index < AruidIndexMax; aruid_index++) {
         auto* applet_data = applet_resource->GetAruidDataByIndex(aruid_index);
@@ -121,7 +121,7 @@ Result TouchResource::ActivateGesture() {
 }
 
 Result TouchResource::ActivateGesture(u64 aruid, u32 basic_gesture_id) {
-    std::scoped_lock lock{*shared_mutex};
+    //std::scoped_lock lock{*shared_mutex};
 
     for (std::size_t aruid_index = 0; aruid_index < AruidIndexMax; aruid_index++) {
         auto* applet_data = applet_resource->GetAruidDataByIndex(aruid_index);
@@ -300,7 +300,7 @@ void TouchResource::SetTouchScreenMagnification(f32 point1_x, f32 point1_y, f32 
 }
 
 Result TouchResource::SetTouchScreenResolution(u32 width, u32 height, u64 aruid) {
-    std::scoped_lock lock{*shared_mutex};
+    //std::scoped_lock lock{*shared_mutex};
 
     for (std::size_t aruid_index = 0; aruid_index < AruidIndexMax; aruid_index++) {
         const auto* applet_data = applet_resource->GetAruidDataByIndex(aruid_index);
@@ -321,7 +321,7 @@ Result TouchResource::SetTouchScreenResolution(u32 width, u32 height, u64 aruid)
 
 Result TouchResource::SetTouchScreenConfiguration(
     const Core::HID::TouchScreenConfigurationForNx& touch_configuration, u64 aruid) {
-    std::scoped_lock lock{*shared_mutex};
+    //std::scoped_lock lock{*shared_mutex};
 
     for (std::size_t aruid_index = 0; aruid_index < AruidIndexMax; aruid_index++) {
         const auto* applet_data = applet_resource->GetAruidDataByIndex(aruid_index);
@@ -341,7 +341,7 @@ Result TouchResource::SetTouchScreenConfiguration(
 
 Result TouchResource::GetTouchScreenConfiguration(
     Core::HID::TouchScreenConfigurationForNx& out_touch_configuration, u64 aruid) const {
-    std::scoped_lock lock{*shared_mutex};
+    //std::scoped_lock lock{*shared_mutex};
 
     for (std::size_t aruid_index = 0; aruid_index < AruidIndexMax; aruid_index++) {
         const auto* applet_data = applet_resource->GetAruidDataByIndex(aruid_index);
@@ -508,7 +508,7 @@ void TouchResource::OnTouchUpdate(s64 timestamp) {
     gesture_handler.SetTouchState(current_touch_state.states, current_touch_state.entry_count,
                                   timestamp);
 
-    std::scoped_lock lock{*shared_mutex};
+    //std::scoped_lock lock{*shared_mutex};
 
     for (std::size_t aruid_index = 0; aruid_index < AruidIndexMax; aruid_index++) {
         const auto* applet_data = applet_resource->GetAruidDataByIndex(aruid_index);
