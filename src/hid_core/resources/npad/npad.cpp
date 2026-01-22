@@ -77,7 +77,7 @@ Result NPad::Activate() {
 
 Result NPad::Activate(u64 aruid) {
     std::scoped_lock lock{mutex};
-    //std::scoped_lock shared_lock{*applet_resource_holder.shared_mutex};
+    std::scoped_lock shared_lock{*applet_resource_holder.shared_mutex};
 
     auto* data = applet_resource_holder.applet_resource->GetAruidData(aruid);
     const auto aruid_index = applet_resource_holder.applet_resource->GetIndexFromAruid(aruid);
@@ -413,7 +413,7 @@ void NPad::WriteEmptyEntry(NpadInternalState* npad) {
 }
 
 void NPad::RequestPadStateUpdate(Kernel::KernelCore& kernel, u64 aruid, Core::HID::NpadIdType npad_id) {
-    //std::scoped_lock lock{*applet_resource_holder.shared_mutex};
+    std::scoped_lock lock{*applet_resource_holder.shared_mutex};
     auto& controller = GetControllerFromNpadIdType(aruid, npad_id);
     const auto controller_type = controller.device->GetNpadStyleIndex();
 
@@ -486,7 +486,7 @@ void NPad::OnUpdate(Kernel::KernelCore& kernel, const Core::Timing::CoreTiming& 
         return;
     }
 
-    //std::scoped_lock lock{*applet_resource_holder.shared_mutex};
+    std::scoped_lock lock{*applet_resource_holder.shared_mutex};
     for (std::size_t aruid_index = 0; aruid_index < AruidIndexMax; ++aruid_index) {
         const auto* data = applet_resource_holder.applet_resource->GetAruidDataByIndex(aruid_index);
 
@@ -1245,7 +1245,7 @@ Result NPad::SetNpadSystemExtStateEnabled(u64 aruid, bool is_enabled) {
     const auto result = npad_resource.SetNpadSystemExtStateEnabled(aruid, is_enabled);
 
     if (result.IsSuccess()) {
-        //std::scoped_lock shared_lock{*applet_resource_holder.shared_mutex};
+        std::scoped_lock shared_lock{*applet_resource_holder.shared_mutex};
         // TODO: abstracted_pad->EnableAppletToGetInput(aruid);
     }
 
@@ -1363,7 +1363,7 @@ void NPad::UpdateHandheldAbstractState() {
 
 void NPad::EnableAppletToGetInput(u64 aruid) {
     std::scoped_lock lock{mutex};
-    //std::scoped_lock shared_lock{*applet_resource_holder.shared_mutex};
+    std::scoped_lock shared_lock{*applet_resource_holder.shared_mutex};
     for (auto& abstract_pad : abstracted_pads) {
         abstract_pad.EnableAppletToGetInput(aruid);
     }
