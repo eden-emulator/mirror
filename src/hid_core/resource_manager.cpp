@@ -204,7 +204,7 @@ Result ResourceManager::CreateAppletResource(u64 aruid) {
 }
 
 Result ResourceManager::CreateAppletResourceImpl(u64 aruid) {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     return applet_resource->CreateAppletResource(aruid);
 }
 
@@ -294,17 +294,17 @@ void ResourceManager::InitializeAHidSampler() {
 }
 
 Result ResourceManager::RegisterCoreAppletResource() {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     return applet_resource->RegisterCoreAppletResource();
 }
 
 Result ResourceManager::UnregisterCoreAppletResource() {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     return applet_resource->UnregisterCoreAppletResource();
 }
 
 Result ResourceManager::RegisterAppletResourceUserId(u64 aruid, bool bool_value) {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     auto result = applet_resource->RegisterAppletResourceUserId(aruid, bool_value);
     if (result.IsSuccess()) {
         result = npad->RegisterAppletResourceUserId(aruid);
@@ -313,40 +313,40 @@ Result ResourceManager::RegisterAppletResourceUserId(u64 aruid, bool bool_value)
 }
 
 void ResourceManager::UnregisterAppletResourceUserId(u64 aruid) {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     applet_resource->UnregisterAppletResourceUserId(aruid);
     npad->UnregisterAppletResourceUserId(aruid);
     // palma->UnregisterAppletResourceUserId(aruid);
 }
 
 Result ResourceManager::GetSharedMemoryHandle(Kernel::KSharedMemory** out_handle, u64 aruid) {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     return applet_resource->GetSharedMemoryHandle(out_handle, aruid);
 }
 
 void ResourceManager::FreeAppletResourceId(u64 aruid) {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     applet_resource->FreeAppletResourceId(aruid);
     npad->FreeAppletResourceId(aruid);
 }
 
 void ResourceManager::EnableInput(u64 aruid, bool is_enabled) {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     applet_resource->EnableInput(aruid, is_enabled);
 }
 
 void ResourceManager::EnableSixAxisSensor(u64 aruid, bool is_enabled) {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     applet_resource->EnableSixAxisSensor(aruid, is_enabled);
 }
 
 void ResourceManager::EnablePadInput(u64 aruid, bool is_enabled) {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     applet_resource->EnablePadInput(aruid, is_enabled);
 }
 
 void ResourceManager::EnableTouchScreen(u64 aruid, bool is_enabled) {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     applet_resource->EnableTouchScreen(aruid, is_enabled);
 }
 
@@ -371,7 +371,7 @@ NpadGcVibrationDevice* ResourceManager::GetGcVibrationDevice(
 }
 
 Result ResourceManager::SetAruidValidForVibration(u64 aruid, bool is_enabled) {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     const bool has_changed = applet_resource->SetAruidValidForVibration(aruid, is_enabled);
 
     if (has_changed) {
@@ -394,7 +394,7 @@ void ResourceManager::SetForceHandheldStyleVibration(bool is_forced) {
 }
 
 Result ResourceManager::IsVibrationAruidActive(u64 aruid, bool& is_active) const {
-    //std::scoped_lock lock{shared_mutex};
+    std::scoped_lock lock{shared_mutex};
     is_active = applet_resource->IsVibrationAruidActive(aruid);
     return ResultSuccess;
 }

@@ -34,7 +34,6 @@ add_executable(yuzu-cmd
     sdl_config.cpp
     sdl_config.h
     yuzu.cpp
-    emutls.c
     yuzu.rc
     ${OPENGL_SOURCES}
 )
@@ -45,8 +44,6 @@ if (ENABLE_OPENGL)
 endif()
 if (MSVC)
     target_link_libraries(yuzu-cmd PRIVATE getopt)
-elseif(PLATFORM_PS4)
-    target_link_libraries(yuzu-cmd PRIVATE SceVideoOut SceAudioOut ScePad SceSystemService)
 endif()
 target_link_libraries(yuzu-cmd PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
 
@@ -80,6 +77,7 @@ if (NOT MSVC)
 endif()
 
 if (PLATFORM_PS4)
+    target_link_libraries(yuzu-cmd PRIVATE SceVideoOut SceAudioOut ScePad SceSystemService)
+    target_link_libraries(yuzu-cmd PRIVATE ps4sup)
     create_ps4_eboot(yuzu-cmd eden-cli IV0000-BREW00090_00-EDENEMULAT000000)
-    #create_ps4_pkg(yuzu-cmd eden-cli IV0000-BREW00090_00-EDENEMULAT000000)
 endif()
