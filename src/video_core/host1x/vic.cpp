@@ -672,7 +672,9 @@ void Vic::Blend(const ConfigStruct& config, const SlotStruct& slot, VideoPixelFo
                     g = std::clamp(g, clamp_min, clamp_max);
                     b = std::clamp(b, clamp_min, clamp_max);
                     a = std::clamp(a, clamp_min, clamp_max);
-                    output_surface[dst + x] = {u16(r), u16(g), u16(b), u16(a)};
+                    output_surface[dst + x] = format == VideoPixelFormat::A8R8G8B8
+                        ? {u16(b), u16(g), u16(r), u16(a)}
+                        : {u16(r), u16(g), u16(b), u16(a)};
                 }
             }
         }
