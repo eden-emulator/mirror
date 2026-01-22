@@ -134,3 +134,9 @@ target_compile_options(dynarmic_tests PRIVATE ${DYNARMIC_CXX_FLAGS})
 target_compile_definitions(dynarmic_tests PRIVATE FMT_USE_USER_DEFINED_LITERALS=1)
 
 add_test(NAME dynarmic_tests COMMAND dynarmic_tests --durations yes)
+
+if (PLATFORM_PS4)
+    target_link_libraries(dynarmic_tests PRIVATE SceVideoOut SceAudioOut ScePad SceSystemService)
+    target_link_libraries(dynarmic_tests PRIVATE ps4sup)
+    create_ps4_eboot(dynarmic_tests dynarmic_tests IV0000-BREW00090_00-DYNARMICTS000000)
+endif()

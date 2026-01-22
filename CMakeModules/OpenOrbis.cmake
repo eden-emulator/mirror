@@ -6,7 +6,7 @@ function(create_ps4_eboot project target content_id)
     set(sce_sys_param ${sce_sys_dir}/param.sfo)
     add_custom_command(
         OUTPUT "${target}.pkg"
-        COMMAND ${CMAKE_SYSROOT}/bin/create-fself -in=bin/${target} -out=${target}.oelf --eboot eboot.bin
+        COMMAND ${CMAKE_SYSROOT}/bin/create-fself -in=bin/${target} -out=${target}.oelf --eboot ${target}_eboot.bin
         VERBATIM
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         DEPENDS ${project}
@@ -19,7 +19,7 @@ function(create_ps4_pkg project target content_id)
     set(sce_sys_param ${sce_sys_dir}/param.sfo)
     add_custom_command(
         OUTPUT "${target}.pkg"
-        COMMAND ${CMAKE_SYSROOT}/bin/create-fself -in=bin/${target} -out=${target}.oelf --eboot eboot.bin
+        COMMAND ${CMAKE_SYSROOT}/bin/create-fself -in=bin/${target} -out=${target}.oelf --eboot ${target}_eboot.bin
         COMMAND mkdir -p ${sce_sys_dir}
         COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_new ${sce_sys_param}
         COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} APP_TYPE --type Integer --maxsize 4 --value 1
@@ -32,7 +32,7 @@ function(create_ps4_pkg project target content_id)
         COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} TITLE --type Utf8 --maxsize 128 --value ${target}
         COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} TITLE_ID --type Utf8 --maxsize 12 --value BREW00090
         COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core sfo_setentry ${sce_sys_param} VERSION --type Utf8 --maxsize 8 --value 1.03
-        COMMAND ${CMAKE_SYSROOT}/bin/create-gp4 -out ${target}.gp4 --content-id=${content_id} --files "eboot.bin ${sce_sys_param} sce_module/libc.prx sce_module/libSceFios2.prx"
+        COMMAND ${CMAKE_SYSROOT}/bin/create-gp4 -out ${target}.gp4 --content-id=${content_id} --files "${target}_eboot.bin ${sce_sys_param} sce_module/libc.prx sce_module/libSceFios2.prx"
         COMMAND ${CMAKE_SYSROOT}/bin/PkgTool.Core pkg_build ${target}.gp4 .
         VERBATIM
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

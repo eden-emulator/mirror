@@ -24,7 +24,7 @@ void Mouse::OnInit() {}
 void Mouse::OnRelease() {}
 
 void Mouse::OnUpdate(const Core::Timing::CoreTiming& core_timing) {
-    //std::scoped_lock shared_lock{*shared_mutex};
+    std::scoped_lock shared_lock{*shared_mutex};
     const u64 aruid = applet_resource->GetActiveAruid();
     auto* data = applet_resource->GetAruidData(aruid);
 
