@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
@@ -23,14 +23,12 @@ Joycons::Joycons(const std::string& input_engine_) : InputEngine(input_engine_) 
         return;
     }
     LOG_INFO(Input, "Joycon driver Initialization started");
-#if SDL_VERSION_ATLEAST(2, 26, 4)
-    int const res = SDL_hid_init();
-    if (res == 0) {
+    const int init_res = SDL_hid_init();
+    if (init_res == 0) {
         Setup();
     } else {
-        LOG_ERROR(Input, "Hidapi could not be initialized. failed with error = {}", res);
+        LOG_ERROR(Input, "Hidapi could not be initialized. failed with error = {}", init_res);
     }
-#endif
 }
 
 Joycons::~Joycons() {
@@ -57,9 +55,7 @@ void Joycons::Reset() {
         }
         device->Stop();
     }
-#if SDL_VERSION_ATLEAST(2, 26, 4)
     SDL_hid_exit();
-#endif
 }
 
 void Joycons::Setup() {
@@ -84,9 +80,9 @@ void Joycons::Setup() {
 }
 
 void Joycons::ScanThread(std::stop_token stop_token) {
-#if SDL_VERSION_ATLEAST(2, 26, 4)
     constexpr u16 nintendo_vendor_id = 0x057e;
     Common::SetCurrentThreadName("JoyconScanThread");
+
     do {
         SDL_hid_device_info* devs = SDL_hid_enumerate(nintendo_vendor_id, 0x0);
         SDL_hid_device_info* cur_dev = devs;
@@ -102,7 +98,6 @@ void Joycons::ScanThread(std::stop_token stop_token) {
 
         SDL_hid_free_enumeration(devs);
     } while (Common::StoppableTimedWait(stop_token, std::chrono::seconds{5}));
-#endif
 }
 
 bool Joycons::IsDeviceNew(SDL_hid_device_info* device_info) const {

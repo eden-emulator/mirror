@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -18,15 +15,11 @@ u8 JoyconCommonProtocol::GetCounter() {
 }
 
 void JoyconCommonProtocol::SetBlocking() {
-#if SDL_VERSION_ATLEAST(2, 26, 4)
     SDL_hid_set_nonblocking(hidapi_handle->handle, 0);
-#endif
 }
 
 void JoyconCommonProtocol::SetNonBlocking() {
-#if SDL_VERSION_ATLEAST(2, 26, 4)
     SDL_hid_set_nonblocking(hidapi_handle->handle, 1);
-#endif
 }
 
 Common::Input::DriverResult JoyconCommonProtocol::GetDeviceType(ControllerType& controller_type) {
@@ -42,23 +35,26 @@ Common::Input::DriverResult JoyconCommonProtocol::GetDeviceType(ControllerType& 
     return result;
 }
 
-Common::Input::DriverResult JoyconCommonProtocol::CheckDeviceAccess(SDL_hid_device_info* device_info) {
+Common::Input::DriverResult JoyconCommonProtocol::CheckDeviceAccess(
+    SDL_hid_device_info* device_info) {
     ControllerType controller_type{ControllerType::None};
     const auto result = GetDeviceType(controller_type);
+
     if (result != Common::Input::DriverResult::Success || controller_type == ControllerType::None) {
         return Common::Input::DriverResult::UnsupportedControllerType;
     }
-#if SDL_VERSION_ATLEAST(2, 26, 4)
-    hidapi_handle->handle = SDL_hid_open(device_info->vendor_id, device_info->product_id, device_info->serial_number);
+
+    hidapi_handle->handle =
+        SDL_hid_open(device_info->vendor_id, device_info->product_id, device_info->serial_number);
+
     if (!hidapi_handle->handle) {
-        LOG_ERROR(Input, "Yuzu can't gain access to this device: ID {:04X}:{:04X}.", device_info->vendor_id, device_info->product_id);
+        LOG_ERROR(Input, "Yuzu can't gain access to this device: ID {:04X}:{:04X}.",
+                  device_info->vendor_id, device_info->product_id);
         return Common::Input::DriverResult::HandleInUse;
     }
+
     SetNonBlocking();
     return Common::Input::DriverResult::Success;
-#else
-    return Common::Input::DriverResult::UnsupportedControllerType;
-#endif
 }
 
 Common::Input::DriverResult JoyconCommonProtocol::SetReportMode(ReportMode report_mode) {
@@ -67,21 +63,21 @@ Common::Input::DriverResult JoyconCommonProtocol::SetReportMode(ReportMode repor
 }
 
 Common::Input::DriverResult JoyconCommonProtocol::SendRawData(std::span<const u8> buffer) {
-#if SDL_VERSION_ATLEAST(2, 26, 4)
-    auto const result = SDL_hid_write(hidapi_handle->handle, buffer.data(), buffer.size());
-    if (result == -1)
+    const auto result = SDL_hid_write(hidapi_handle->handle, buffer.data(), buffer.size());
+
+    if (result == -1) {
         return Common::Input::DriverResult::ErrorWritingData;
+    }
+
     return Common::Input::DriverResult::Success;
-#else
-    return Common::Input::DriverResult::ErrorWritingData;
-#endif
 }
 
-Common::Input::DriverResult JoyconCommonProtocol::GetSubCommandResponse(SubCommand sc, SubCommandResponse& output) {
-#if SDL_VERSION_ATLEAST(2, 26, 4)
+Common::Input::DriverResult JoyconCommonProtocol::GetSubCommandResponse(
+    SubCommand sc, SubCommandResponse& output) {
     constexpr int timeout_mili = 66;
     constexpr int MaxTries = 10;
     int tries = 0;
+
     do {
         int result = SDL_hid_read_timeout(hidapi_handle->handle, reinterpret_cast<u8*>(&output),
                                           sizeof(SubCommandResponse), timeout_mili);
@@ -92,8 +88,9 @@ Common::Input::DriverResult JoyconCommonProtocol::GetSubCommandResponse(SubComma
         if (tries++ > MaxTries) {
             return Common::Input::DriverResult::Timeout;
         }
-    } while (output.input_report.report_mode != ReportMode::SUBCMD_REPLY && output.sub_command != sc);
-#endif
+    } while (output.input_report.report_mode != ReportMode::SUBCMD_REPLY &&
+             output.sub_command != sc);
+
     return Common::Input::DriverResult::Success;
 }
 
@@ -221,11 +218,12 @@ Common::Input::DriverResult JoyconCommonProtocol::ConfigureMCU(const MCUConfig& 
     return result;
 }
 
-Common::Input::DriverResult JoyconCommonProtocol::GetMCUDataResponse(ReportMode report_mode, MCUCommandResponse& output) {
-#if SDL_VERSION_ATLEAST(2, 26, 4)
+Common::Input::DriverResult JoyconCommonProtocol::GetMCUDataResponse(ReportMode report_mode,
+                                                                     MCUCommandResponse& output) {
     constexpr int TimeoutMili = 200;
     constexpr int MaxTries = 9;
     int tries = 0;
+
     do {
         int result = SDL_hid_read_timeout(hidapi_handle->handle, reinterpret_cast<u8*>(&output),
                                           sizeof(MCUCommandResponse), TimeoutMili);
@@ -236,8 +234,9 @@ Common::Input::DriverResult JoyconCommonProtocol::GetMCUDataResponse(ReportMode 
         if (tries++ > MaxTries) {
             return Common::Input::DriverResult::Timeout;
         }
-    } while (output.input_report.report_mode != report_mode || output.mcu_report == MCUReport::EmptyAwaitingCmd);
-#endif
+    } while (output.input_report.report_mode != report_mode ||
+             output.mcu_report == MCUReport::EmptyAwaitingCmd);
+
     return Common::Input::DriverResult::Success;
 }
 
