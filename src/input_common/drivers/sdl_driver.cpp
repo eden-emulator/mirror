@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2018 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -94,7 +94,6 @@ public:
     }
 
     void EnableMotion() {
-#if SDL_VERSION_ATLEAST(2, 26, 4)
         if (!sdl_controller) {
             return;
         }
@@ -177,7 +176,6 @@ public:
         motion.delta_timestamp = time_difference;
         return true;
     }
-#endif
 
     const BasicMotion& GetMotion() const {
         return motion;
@@ -356,7 +354,6 @@ public:
     }
 
     std::string GetControllerName() const {
-#if SDL_VERSION_ATLEAST(2, 26, 4)
         if (sdl_controller) {
             switch (SDL_GetGamepadType(sdl_controller.get())) {
             case SDL_GAMEPAD_TYPE_XBOX360:
@@ -370,8 +367,6 @@ public:
             case SDL_GAMEPAD_TYPE_PS5:
                 return "DualSense Controller";
             default:
-                if (auto const name = SDL_GameControllerName(sdl_controller.get()); name)
-                    return name;
                 break;
             }
             const auto name = SDL_GetGamepadName(sdl_controller.get());
@@ -379,7 +374,6 @@ public:
                 return name;
             }
         }
-#endif
 
         if (sdl_joystick) {
             const auto name = SDL_GetJoystickName(sdl_joystick.get());
@@ -647,7 +641,6 @@ void SDLDriver::CloseJoysticks() {
 }
 
 SDLDriver::SDLDriver(std::string input_engine_) : InputEngine(std::move(input_engine_)) {
-#if SDL_VERSION_ATLEAST(2, 26, 4)
     // Set our application name. Currently passed to DBus by SDL and visible to the user through
     // their desktop environment.
     SDL_SetHint(SDL_HINT_APP_NAME, "Eden");
@@ -686,7 +679,6 @@ SDLDriver::SDLDriver(std::string input_engine_) : InputEngine(std::move(input_en
     // Disable hidapi driver for xbox. Already default on Windows, this causes conflict with native
     // driver on Linux.
     SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_XBOX, "0");
-#endif
 
     // If the frontend is going to manage the event loop, then we don't start one here
     start_thread = SDL_WasInit(SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD) == 0;
@@ -1001,7 +993,6 @@ ButtonBindings SDLDriver::GetDefaultButtonBinding(
     auto slr_button = SDL_GAMEPAD_BUTTON_LEFT_SHOULDER;
     auto srr_button = SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER;
 
-#if SDL_VERSION_ATLEAST(2, 26, 4)
     if (joystick->IsJoyconLeft()) {
         sll_button = SDL_GAMEPAD_BUTTON_LEFT_PADDLE1;
         srl_button = SDL_GAMEPAD_BUTTON_LEFT_PADDLE2;
@@ -1010,7 +1001,6 @@ ButtonBindings SDLDriver::GetDefaultButtonBinding(
         slr_button = SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2;
         srr_button = SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1;
     }
-#endif
 
     return {
         std::pair{Settings::NativeButton::A, SDL_GAMEPAD_BUTTON_EAST},
