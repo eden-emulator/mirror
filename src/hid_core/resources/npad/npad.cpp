@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
@@ -1364,6 +1364,7 @@ void NPad::UpdateHandheldAbstractState() {
 void NPad::EnableAppletToGetInput(u64 aruid) {
     std::scoped_lock lock{mutex};
     std::scoped_lock shared_lock{*applet_resource_holder.shared_mutex};
+
     for (auto& abstract_pad : abstracted_pads) {
         abstract_pad.EnableAppletToGetInput(aruid);
     }
