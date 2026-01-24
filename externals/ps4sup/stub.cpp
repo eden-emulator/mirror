@@ -19,3 +19,7 @@ STUB_WEAK(ZSTD_trace_decompress_end)
 FILE* __stderrp = stdout;
 
 #undef STUB_WEAK
+
+// THIS MAKES STD::COUT AND SUCH WORK :)
+#include <iostream>
+std::ios_base::Init init;
