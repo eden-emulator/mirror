@@ -239,12 +239,12 @@ static const auto default_cg_mode = Xbyak::DontSetProtectRWE;
 static const auto default_cg_mode = nullptr; //Allow RWE
 #endif
 
-BlockOfCode::BlockOfCode(RunCodeCallbacks cb, JitStateInfo jsi, size_t total_code_size, std::function<void(BlockOfCode&)> rcp)
-        : Xbyak::CodeGenerator(total_code_size, default_cg_mode, &s_allocator)
-        , cb(std::move(cb))
-        , jsi(jsi)
-        , constant_pool(*this, CONSTANT_POOL_SIZE)
-        , host_features(GetHostFeatures()) {
+BlockOfCode::BlockOfCode(RunCodeCallbacks cb, JitStateInfo jsi, size_t total_code_size, std::function<void(BlockOfCode&)> rcp) noexcept
+    : Xbyak::CodeGenerator(total_code_size, default_cg_mode, &s_allocator)
+    , cb(std::move(cb))
+    , jsi(jsi)
+    , constant_pool(*this, CONSTANT_POOL_SIZE)
+    , host_features(GetHostFeatures()) {
     EnableWriting();
     EnsureMemoryCommitted(PRELUDE_COMMIT_SIZE);
     GenRunCode(rcp);
