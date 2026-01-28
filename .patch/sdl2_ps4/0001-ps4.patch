@@ -1,0 +1,359 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7c230473ac..b1275edb61 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -331,6 +331,13 @@ if(CYGWIN)
+   list(APPEND SDL_CFLAGS "-I/usr/include/mingw")
+ endif()
+ 
++######### *FIXME*
++if(PS4 OR ORBIS)
++  set(USE_GENERATED_CONFIG Off)
++else()
++  set(USE_GENERATED_CONFIG On)
++endif()
++
+ # General includes
+ target_compile_definitions(sdl-build-options INTERFACE "-DUSING_GENERATED_CONFIG_H")
+ target_include_directories(sdl-build-options BEFORE INTERFACE "${SDL2_BINARY_DIR}/include" "${SDL2_BINARY_DIR}/include-config-$<LOWER_CASE:$<CONFIG>>")
+@@ -359,6 +366,15 @@ if(EMSCRIPTEN)
+   set(SDL_CPUINFO_ENABLED_BY_DEFAULT OFF)
+ endif()
+ 
++if(PS4 OR ORBIS)
++  set(SDL_ATOMIC_ENABLED_BY_DEFAULT ON)
++  set(SDL_SHARED_ENABLED_BY_DEFAULT OFF)
++  set(SDL_THREADS_ENABLED_BY_DEFAULT ON)
++  set(SDL_PTHREADS_ENABLED_BY_DEFAULT ON)
++  set(SDL_LOADSO_ENABLED_BY_DEFAULT OFF)
++  set(SDL_DLOPEN_ENABLED_BY_DEFAULT OFF)
++endif()
++
+ if(VITA OR PSP OR PS2 OR N3DS)
+   set(SDL_SHARED_ENABLED_BY_DEFAULT OFF)
+   set(SDL_LOADSO_ENABLED_BY_DEFAULT OFF)
+@@ -1478,7 +1494,42 @@ elseif(EMSCRIPTEN)
+ 
+   CheckPTHREAD()
+   CheckLibUnwind()
++elseif(PS4 OR ORBIS)
++  CheckPTHREAD()
++  if(SDL_AUDIO)
++    set(SDL_AUDIO_DRIVER_PS4 1)
++    file(GLOB PS4_AUDIO_SOURCES ${SDL2_SOURCE_DIR}/src/audio/ps4/*.c)
++    set(SOURCE_FILES ${SOURCE_FILES} ${PS4_AUDIO_SOURCES})
++    set(HAVE_SDL_AUDIO TRUE)
++  endif()
++#  if(SDL_FILESYSTEM)
++#    set(SDL_FILESYSTEM_PS4 1)
++#    file(GLOB PS4_FILESYSTEM_SOURCES ${SDL2_SOURCE_DIR}/src/filesystem/ps4/*.c)
++#    set(SOURCE_FILES ${SOURCE_FILES} ${PS4_FILESYSTEM_SOURCES})
++#    set(HAVE_SDL_FILESYSTEM TRUE)
++#  endif()
++  if(SDL_JOYSTICK)
++    set(SDL_JOYSTICK_PS4 1)
++    file(GLOB PS4_JOYSTICK_SOURCES ${SDL2_SOURCE_DIR}/src/joystick/ps4/*.c)
++    set(SOURCE_FILES ${SOURCE_FILES} ${PS4_JOYSTICK_SOURCES})
++    set(HAVE_SDL_JOYSTICK TRUE)
++  endif()
++  if(SDL_TIMERS)
++    set(SDL_TIMER_UNIX 1)
++    file(GLOB TIMER_SOURCES ${SDL2_SOURCE_DIR}/src/timer/unix/*.c)
++    set(SOURCE_FILES ${SOURCE_FILES} ${TIMER_SOURCES})
++    set(HAVE_SDL_TIMERS TRUE)
+ 
++    if(CLOCK_GETTIME)
++      set(HAVE_CLOCK_GETTIME 1)
++    endif()
++  endif()
++  if(SDL_VIDEO)
++    set(SDL_VIDEO_DRIVER_PS4 1)
++    file(GLOB PS4_VIDEO_SOURCES ${SDL2_SOURCE_DIR}/src/video/ps4/*.c)
++    set(SOURCE_FILES ${SOURCE_FILES} ${PS4_VIDEO_SOURCES})
++    set(HAVE_SDL_VIDEO TRUE)
++  endif()
+ elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
+   if(SDL_AUDIO)
+     if(SYSV5 OR SOLARIS OR HPUX)
+@@ -3039,7 +3090,7 @@ endif()
+ # We always need to have threads and timers around
+ if(NOT HAVE_SDL_THREADS)
+   # The emscripten platform has been carefully vetted to work without threads
+-  if (EMSCRIPTEN)
++  if (EMSCRIPTEN OR PS4 OR ORBIS)
+     set(SDL_THREADS_DISABLED 1)
+     file(GLOB THREADS_SOURCES ${SDL2_SOURCE_DIR}/src/thread/generic/*.c)
+     list(APPEND SOURCE_FILES ${THREADS_SOURCES})
+diff --git a/README.md b/README.md
+index fa7f7ba0b5..8d5a375694 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,5 @@
+ 
+-# Simple DirectMedia Layer (SDL) Version 2.0
++# Simple DirectMedia Layer (SDL) Version 2.0 (For OpenOrbis PS4 SDK)
+ 
+ https://www.libsdl.org/
+ 
+diff --git a/include/SDL_config.h b/include/SDL_config.h
+index a628d86252..a101532d16 100644
+--- a/include/SDL_config.h
++++ b/include/SDL_config.h
+@@ -41,6 +41,10 @@
+ #include "SDL_config_iphoneos.h"
+ #elif defined(__ANDROID__)
+ #include "SDL_config_android.h"
++#elif defined(__PSP__)
++#include "SDL_config_psp.h"
++#elif defined(__OPENORBIS__)
++#include "SDL_config_ps4.h"
+ #elif defined(__OS2__)
+ #include "SDL_config_os2.h"
+ #elif defined(__EMSCRIPTEN__)
+diff --git a/include/SDL_platform.h b/include/SDL_platform.h
+index 36df782a4e..0cc20dc4e2 100644
+--- a/include/SDL_platform.h
++++ b/include/SDL_platform.h
+@@ -214,6 +214,10 @@
+ #if defined(PS2)
+ #define __PS2__ 1
+ #endif
++#if defined(__OPENORBIS__)
++#undef __PS4__
++#define __PS4__ 1
++#endif
+ 
+ /* The NACL compiler defines __native_client__ and __pnacl__
+  * Ref: http://www.chromium.org/nativeclient/pnacl/stability-of-the-pnacl-bitcode-abi
+diff --git a/src/SDL.c b/src/SDL.c
+index cfeea077e7..33fce965c0 100644
+--- a/src/SDL.c
++++ b/src/SDL.c
+@@ -642,6 +642,8 @@ const char *SDL_GetPlatform(void)
+     return "Nokia N-Gage";
+ #elif defined(__3DS__)
+     return "Nintendo 3DS";
++#elif defined(__PS4__)
++	return "PlayStation4";
+ #else
+     return "Unknown (see SDL_platform.h)";
+ #endif
+diff --git a/src/SDL_error.c b/src/SDL_error.c
+index 993f5bac55..083ebf3027 100644
+--- a/src/SDL_error.c
++++ b/src/SDL_error.c
+@@ -50,11 +50,14 @@ int SDL_SetError(SDL_PRINTF_FORMAT_STRING const char *fmt, ...)
+                 va_end(ap);
+             }
+         }
+-
++#ifndef __OPENORBIS__	// Yeah this is stupid but whatever
+         if (SDL_LogGetPriority(SDL_LOG_CATEGORY_ERROR) <= SDL_LOG_PRIORITY_DEBUG) {
++#endif
+             /* If we are in debug mode, print out the error message */
+             SDL_LogDebug(SDL_LOG_CATEGORY_ERROR, "%s", error->str);
++#ifndef __OPENORBIS__	// Yeah this is stupid but whatever
+         }
++#endif
+     }
+ 
+     return -1;
+diff --git a/src/SDL_log.c b/src/SDL_log.c
+index 7a5f1dbc03..a7f3d85782 100644
+--- a/src/SDL_log.c
++++ b/src/SDL_log.c
+@@ -390,10 +390,12 @@ void SDL_LogMessageV(int category, SDL_LogPriority priority, const char *fmt, va
+     int len;
+     va_list aq;
+ 
++#ifndef __OPENORBIS__
+     /* Nothing to do if we don't have an output function */
+     if (!SDL_log_function) {
+         return;
+     }
++#endif
+ 
+     /* Make sure we don't exceed array bounds */
+     if ((int)priority < 0 || priority >= SDL_NUM_LOG_PRIORITIES) {
+@@ -442,7 +444,11 @@ void SDL_LogMessageV(int category, SDL_LogPriority priority, const char *fmt, va
+     }
+ 
+     SDL_LockMutex(log_function_mutex);
++#ifdef __OPENORBIS__
++	printf("%s\n", message);	// just fucking do it 
++#else
+     SDL_log_function(SDL_log_userdata, category, priority, message);
++#endif
+     SDL_UnlockMutex(log_function_mutex);
+ 
+     /* Free only if dynamically allocated */
+diff --git a/src/audio/SDL_audio.c b/src/audio/SDL_audio.c
+index 421adbc76a..82d087a2f8 100644
+--- a/src/audio/SDL_audio.c
++++ b/src/audio/SDL_audio.c
+@@ -114,7 +114,10 @@ static const AudioBootStrap *const bootstrap[] = {
+ #ifdef SDL_AUDIO_DRIVER_N3DS
+     &N3DSAUDIO_bootstrap,
+ #endif
+-#ifdef SDL_AUDIO_DRIVER_EMSCRIPTEN
++#if SDL_AUDIO_DRIVER_PS4
++	&PS4AUDIO_bootstrap,
++#endif
++#if SDL_AUDIO_DRIVER_EMSCRIPTEN
+     &EMSCRIPTENAUDIO_bootstrap,
+ #endif
+ #ifdef SDL_AUDIO_DRIVER_JACK
+diff --git a/src/audio/SDL_sysaudio.h b/src/audio/SDL_sysaudio.h
+index 87387692ce..b1c00ba9dc 100644
+--- a/src/audio/SDL_sysaudio.h
++++ b/src/audio/SDL_sysaudio.h
+@@ -207,6 +207,7 @@ extern AudioBootStrap PS2AUDIO_bootstrap;
+ extern AudioBootStrap PSPAUDIO_bootstrap;
+ extern AudioBootStrap VITAAUD_bootstrap;
+ extern AudioBootStrap N3DSAUDIO_bootstrap;
++extern AudioBootStrap PS4AUDIO_bootstrap;
+ extern AudioBootStrap EMSCRIPTENAUDIO_bootstrap;
+ extern AudioBootStrap OS2AUDIO_bootstrap;
+ 
+diff --git a/src/dynapi/SDL_dynapi.h b/src/dynapi/SDL_dynapi.h
+index 178218c053..a6e298a9fe 100644
+--- a/src/dynapi/SDL_dynapi.h
++++ b/src/dynapi/SDL_dynapi.h
+@@ -69,6 +69,8 @@
+ #define SDL_DYNAMIC_API 0 /* devkitARM doesn't support dynamic linking */
+ #elif defined(DYNAPI_NEEDS_DLOPEN) && !defined(HAVE_DLOPEN)
+ #define SDL_DYNAMIC_API 0 /* we need dlopen(), but don't have it.... */
++#elif defined(__OPENORBIS__)	// Apparently __PS4__ getting defined is missed somewhere, I get broken static builds so force the issue
++#define SDL_DYNAMIC_API 0
+ #endif
+ 
+ /* everyone else. This is where we turn on the API if nothing forced it off. */
+diff --git a/src/joystick/SDL_joystick.c b/src/joystick/SDL_joystick.c
+index 60b0daf790..34433166e8 100644
+--- a/src/joystick/SDL_joystick.c
++++ b/src/joystick/SDL_joystick.c
+@@ -106,6 +106,9 @@ static SDL_JoystickDriver *SDL_joystick_drivers[] = {
+ #ifdef SDL_JOYSTICK_N3DS
+     &SDL_N3DS_JoystickDriver
+ #endif
++#ifdef SDL_JOYSTICK_PS4
++	&SDL_PS4_JoystickDriver,
++#endif
+ #if defined(SDL_JOYSTICK_DUMMY) || defined(SDL_JOYSTICK_DISABLED)
+         &SDL_DUMMY_JoystickDriver
+ #endif
+diff --git a/src/joystick/SDL_sysjoystick.h b/src/joystick/SDL_sysjoystick.h
+index d36f784143..6671aff2fd 100644
+--- a/src/joystick/SDL_sysjoystick.h
++++ b/src/joystick/SDL_sysjoystick.h
+@@ -243,6 +243,7 @@ extern SDL_JoystickDriver SDL_HAIKU_JoystickDriver;
+ extern SDL_JoystickDriver SDL_HIDAPI_JoystickDriver;
+ extern SDL_JoystickDriver SDL_RAWINPUT_JoystickDriver;
+ extern SDL_JoystickDriver SDL_IOS_JoystickDriver;
++extern SDL_JoystickDriver SDL_PS4_JoystickDriver;
+ extern SDL_JoystickDriver SDL_LINUX_JoystickDriver;
+ extern SDL_JoystickDriver SDL_VIRTUAL_JoystickDriver;
+ extern SDL_JoystickDriver SDL_WGI_JoystickDriver;
+diff --git a/src/render/SDL_render.c b/src/render/SDL_render.c
+index 35f80664ab..cd8f9d3615 100644
+--- a/src/render/SDL_render.c
++++ b/src/render/SDL_render.c
+@@ -137,6 +137,10 @@ static const SDL_RenderDriver *render_drivers[] = {
+ #if SDL_VIDEO_RENDER_VITA_GXM
+     &VITA_GXM_RenderDriver,
+ #endif
++#if SDL_VIDEO_RENDER_PS4 && 0	// *FIXME* PS4_RenderDriver Disabled, it's software anyhow lets not reinvent...
++#error Use SoftRender for PS4 currently!
++	&PS4_RenderDriver,
++#endif
+ #if SDL_VIDEO_RENDER_SW
+     &SW_RenderDriver
+ #endif
+diff --git a/src/render/SDL_sysrender.h b/src/render/SDL_sysrender.h
+index ac5426b676..d9b5bfbc39 100644
+--- a/src/render/SDL_sysrender.h
++++ b/src/render/SDL_sysrender.h
+@@ -307,6 +307,7 @@ extern SDL_RenderDriver DirectFB_RenderDriver;
+ extern SDL_RenderDriver METAL_RenderDriver;
+ extern SDL_RenderDriver PS2_RenderDriver;
+ extern SDL_RenderDriver PSP_RenderDriver;
++extern SDL_RenderDriver PS4_RenderDriver;
+ extern SDL_RenderDriver SW_RenderDriver;
+ extern SDL_RenderDriver VITA_GXM_RenderDriver;
+ 
+diff --git a/src/thread/pthread/SDL_systhread.c b/src/thread/pthread/SDL_systhread.c
+index 212fe9c000..a920afba0b 100644
+--- a/src/thread/pthread/SDL_systhread.c
++++ b/src/thread/pthread/SDL_systhread.c
+@@ -29,8 +29,10 @@
+ #include <pthread_np.h>
+ #endif
+ 
++#ifdef HAVE_SIGNAL_H
+ #include <signal.h>
+ #include <errno.h>
++#endif
+ 
+ #ifdef __LINUX__
+ #include <sys/time.h>
+@@ -60,7 +62,7 @@
+ #endif
+ 
+ 
+-#ifndef __NACL__
++#if !defined(__NACL__) && !defined(__OPENORBIS__)
+ /* List of signals to mask in the subthreads */
+ static const int sig_list[] = {
+     SIGHUP, SIGINT, SIGQUIT, SIGPIPE, SIGALRM, SIGTERM, SIGCHLD, SIGWINCH,
+@@ -162,7 +164,7 @@ void SDL_SYS_SetupThread(const char *name)
+     }
+ 
+    /* NativeClient does not yet support signals.*/
+-#if !defined(__NACL__)
++#if !defined(__NACL__) && !defined(__OPENORBIS__)
+     /* Mask asynchronous signals for this thread */
+     sigemptyset(&mask);
+     for (i = 0; sig_list[i]; ++i) {
+diff --git a/src/video/SDL_sysvideo.h b/src/video/SDL_sysvideo.h
+index badb1a3edc..e17beb9f5c 100644
+--- a/src/video/SDL_sysvideo.h
++++ b/src/video/SDL_sysvideo.h
+@@ -471,6 +471,7 @@ extern VideoBootStrap PSP_bootstrap;
+ extern VideoBootStrap VITA_bootstrap;
+ extern VideoBootStrap RISCOS_bootstrap;
+ extern VideoBootStrap N3DS_bootstrap;
++extern VideoBootStrap PS4_bootstrap;
+ extern VideoBootStrap RPI_bootstrap;
+ extern VideoBootStrap KMSDRM_bootstrap;
+ extern VideoBootStrap KMSDRM_LEGACY_bootstrap;
+diff --git a/src/video/SDL_video.c b/src/video/SDL_video.c
+index 134cc05e13..f40d6104e2 100644
+--- a/src/video/SDL_video.c
++++ b/src/video/SDL_video.c
+@@ -121,6 +121,9 @@ static VideoBootStrap *bootstrap[] = {
+ #ifdef SDL_VIDEO_DRIVER_N3DS
+     &N3DS_bootstrap,
+ #endif
++#ifdef SDL_VIDEO_DRIVER_PS4
++	&PS4_bootstrap,
++#endif
+ #ifdef SDL_VIDEO_DRIVER_KMSDRM
+     &KMSDRM_bootstrap,
+ #endif
+@@ -241,6 +244,7 @@ static int SDL_CreateWindowTexture(SDL_VideoDevice *_this, SDL_Window *window, U
+     SDL_GetWindowSizeInPixels(window, &w, &h);
+ 
+     if (!data) {
++
+         SDL_Renderer *renderer = NULL;
+         const char *render_driver = NULL;
+         const char *hint;
+@@ -297,7 +301,7 @@ static int SDL_CreateWindowTexture(SDL_VideoDevice *_this, SDL_Window *window, U
+         SDL_assert(renderer != NULL); /* should have explicitly checked this above. */
+ 
+         /* Create the data after we successfully create the renderer (bug #1116) */
+-        data = (SDL_WindowTextureData *)SDL_calloc(1, sizeof(*data));
++        data = (SDL_WindowTextureData *)SDL_calloc(1, sizeof(SDL_WindowTextureData));
+         if (!data) {
+             SDL_DestroyRenderer(renderer);
+             return SDL_OutOfMemory();
