@@ -51,22 +51,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef __OPENORBIS__
-#include <orbis/SystemService.h>
-#include <cxxabi.h>
-#include <__thread/support.h>
-#   define STUB_WEAK(name) extern "C" void name() { printf("called " #name); asm volatile("ud2"); }
-extern "C" void __cxa_thread_atexit_impl() {
-    //printf("atexit called");
-}
-STUB_WEAK(__assert)
-STUB_WEAK(ZSTD_trace_compress_begin)
-STUB_WEAK(ZSTD_trace_compress_end)
-STUB_WEAK(ZSTD_trace_decompress_begin)
-STUB_WEAK(ZSTD_trace_decompress_end)
-FILE* __stderrp = stdout;
-#   undef STUB_WEAK
-#elif defined(_WIN32)
+#if defined(_WIN32)
 extern "C" {
 // tells Nvidia and AMD drivers to use the dedicated GPU by default on laptops with switchable
 // graphics
