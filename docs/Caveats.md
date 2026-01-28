@@ -247,6 +247,10 @@ When CMake invokes certain file syscalls - it may sometimes cause crashes or cor
 ## PlayStation 4
 
 ```sh
-export OO_PS4_TOOLCHAIN="$HOME/OpenOrbis/PS4Toolchain"
+export OO_PS4_TOOLCHAIN="$HOME/OpenOrbis/PS4Toolchain/prefix"
 export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+```
+
+```sh
+cp $OO_PS4_TOOLCHAIN/include/endian.h $OO_PS4_TOOLCHAIN/include/sys/endian.h
 ```
