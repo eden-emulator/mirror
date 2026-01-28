@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -29,22 +26,27 @@ public:
 
     template <typename T>
     Common::PhysicalAddress GetPhysicalAddr(const T* ptr) const {
-        return (uintptr_t(ptr) - uintptr_t(buffer.BackingBasePointer())) + DramMemoryMap::Base;
+        return (reinterpret_cast<uintptr_t>(ptr) -
+                reinterpret_cast<uintptr_t>(buffer.BackingBasePointer())) +
+               DramMemoryMap::Base;
     }
 
     template <typename T>
     PAddr GetRawPhysicalAddr(const T* ptr) const {
-        return PAddr(uintptr_t(ptr) - uintptr_t(buffer.BackingBasePointer()));
+        return static_cast<PAddr>(reinterpret_cast<uintptr_t>(ptr) -
+                                  reinterpret_cast<uintptr_t>(buffer.BackingBasePointer()));
     }
 
     template <typename T>
     T* GetPointer(Common::PhysicalAddress addr) {
-        return reinterpret_cast<T*>(buffer.BackingBasePointer() + (GetInteger(addr) - DramMemoryMap::Base));
+        return reinterpret_cast<T*>(buffer.BackingBasePointer() +
+                                    (GetInteger(addr) - DramMemoryMap::Base));
     }
 
     template <typename T>
     const T* GetPointer(Common::PhysicalAddress addr) const {
-        return reinterpret_cast<T*>(buffer.BackingBasePointer() + (GetInteger(addr) - DramMemoryMap::Base));
+        return reinterpret_cast<T*>(buffer.BackingBasePointer() +
+                                    (GetInteger(addr) - DramMemoryMap::Base));
     }
 
     template <typename T>
