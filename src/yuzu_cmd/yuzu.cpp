@@ -452,10 +452,6 @@ int main(int argc, char** argv) {
     };
     system.RegisterExitCallback(exit_fn);
 
-#ifdef __linux__
-    Common::Linux::StartGamemode();
-#endif
-
     void(system.Run());
     if (system.DebuggerEnabled()) {
         system.InitializeDebugger();
