@@ -3,6 +3,8 @@
 # SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+[ -z ${OO_PS4_TOOLCHAIN+x} ] && exit
+
 [ -f "ps4-toolchain.cmake" ] || cat << EOF >"ps4-toolchain.cmake"
 set(CMAKE_SYSROOT "$OO_PS4_TOOLCHAIN")
 set(CMAKE_STAGING_PREFIX "$OO_PS4_TOOLCHAIN")
