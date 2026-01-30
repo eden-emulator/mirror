@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 Torzu Emulator Project
@@ -22,7 +22,8 @@ BlitScreen::BlitScreen(Tegra::MaxwellDeviceMemoryManager& device_memory_, const 
                        MemoryAllocator& memory_allocator_, PresentManager& present_manager_,
                        Scheduler& scheduler_, const PresentFilters& filters_)
     : device_memory{device_memory_}, device{device_}, memory_allocator{memory_allocator_},
-      present_manager{present_manager_}, scheduler{scheduler_}, filters{filters_}, image_count{1},
+      present_manager{present_manager_}, scheduler{scheduler_}, filters{filters_},
+      image_count{1}, image_index{0},
       swapchain_view_format{VK_FORMAT_B8G8R8A8_UNORM} {}
 
 BlitScreen::~BlitScreen() = default;
@@ -121,6 +122,8 @@ void BlitScreen::DrawToFrame(RasterizerVulkan& rasterizer, Frame* frame,
             present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format,
                                           window_adapt->GetRenderPass());
         }
+
+        image_index = 0;
     }
 
     // Add additional layers if needed
@@ -151,6 +154,7 @@ vk::Framebuffer BlitScreen::CreateFramebuffer(const Layout::FramebufferLayout& l
     if (!window_adapt || scaling_filter != filters.get_scaling_filter() || format_updated) {
         WaitIdle();
         SetWindowAdaptPass();
+        image_index = 0;
     }
     const VkExtent2D extent{
         .width = layout.width,
