@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+# SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 set(CROSS_TARGET "powerpc64le" CACHE STRING "Cross-compilation target (aarch64, powerpc64le, riscv64, etc)")
