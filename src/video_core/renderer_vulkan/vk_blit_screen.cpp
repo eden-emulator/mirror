@@ -88,36 +88,26 @@ void BlitScreen::DrawToFrame(RasterizerVulkan& rasterizer, Frame* frame,
     bool resource_update_required = false;
     bool presentation_recreate_required = false;
 
-    // Recreate dynamic resources if the adapting filter changed
     if (!window_adapt || scaling_filter != filters.get_scaling_filter()) {
         resource_update_required = true;
     }
 
-    // Recreate dynamic resources if the image count changed
-    const size_t old_swapchain_image_count =
-        std::exchange(image_count, current_swapchain_image_count);
-    if (old_swapchain_image_count != current_swapchain_image_count) {
+    if (image_count != current_swapchain_image_count) {
         resource_update_required = true;
+        image_count = current_swapchain_image_count;
     }
 
-    // Recreate the presentation frame if the format or dimensions of the window changed
-    const VkFormat old_swapchain_view_format =
-        std::exchange(swapchain_view_format, current_swapchain_view_format);
-    if (old_swapchain_view_format != current_swapchain_view_format ||
+    if (swapchain_view_format != current_swapchain_view_format ||
         layout.width != frame->width || layout.height != frame->height) {
         resource_update_required = true;
         presentation_recreate_required = true;
+        swapchain_view_format = current_swapchain_view_format;
     }
 
-    // If we have a pending resource update, perform it
     if (resource_update_required) {
-        // Wait for idle to ensure no resources are in use
         WaitIdle();
-
-        // Update window adapt pass
         SetWindowAdaptPass();
 
-        // Update frame format if needed
         if (presentation_recreate_required) {
             present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format,
                                           window_adapt->GetRenderPass());
@@ -126,21 +116,21 @@ void BlitScreen::DrawToFrame(RasterizerVulkan& rasterizer, Frame* frame,
         image_index = 0;
     }
 
-    // Add additional layers if needed
     const VkExtent2D window_size{
         .width = layout.screen.GetWidth(),
         .height = layout.screen.GetHeight(),
     };
 
-    while (layers.size() < framebuffers.size()) {
-        layers.emplace_back(device, memory_allocator, scheduler, device_memory, image_count,
-                            window_size, window_adapt->GetDescriptorSetLayout(), filters);
+    if (layers.size() != framebuffers.size()) {
+        layers.clear();
+        for (size_t i = 0; i < framebuffers.size(); ++i) {
+            layers.emplace_back(device, memory_allocator, scheduler, device_memory, image_count,
+                                window_size, window_adapt->GetDescriptorSetLayout(), filters);
+        }
     }
 
-    // Perform the draw
     window_adapt->Draw(rasterizer, scheduler, image_index, layers, framebuffers, layout, frame);
 
-    // Advance to next image
     if (++image_index >= image_count) {
         image_index = 0;
     }
@@ -149,17 +139,20 @@ void BlitScreen::DrawToFrame(RasterizerVulkan& rasterizer, Frame* frame,
 vk::Framebuffer BlitScreen::CreateFramebuffer(const Layout::FramebufferLayout& layout,
                                               VkImageView image_view,
                                               VkFormat current_view_format) {
-    const bool format_updated =
-        std::exchange(swapchain_view_format, current_view_format) != current_view_format;
+    bool format_updated = swapchain_view_format != current_view_format;
+    swapchain_view_format = current_view_format;
+
     if (!window_adapt || scaling_filter != filters.get_scaling_filter() || format_updated) {
         WaitIdle();
         SetWindowAdaptPass();
         image_index = 0;
     }
+
     const VkExtent2D extent{
         .width = layout.width,
         .height = layout.height,
     };
+
     return CreateFramebuffer(image_view, extent, window_adapt->GetRenderPass());
 }
 
