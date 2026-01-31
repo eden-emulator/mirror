@@ -58,8 +58,13 @@ const std::array<Xbyak::Reg64, ABI_PARAM_COUNT> BlockOfCode::ABI_PARAMS = {Block
 
 namespace {
 
+#ifdef __OPENORBIS__
+constexpr size_t CONSTANT_POOL_SIZE = 8 * 4096;
+constexpr size_t PRELUDE_COMMIT_SIZE = 8 * 4096;
+#else
 constexpr size_t CONSTANT_POOL_SIZE = 2 * 1024 * 1024;
 constexpr size_t PRELUDE_COMMIT_SIZE = 16 * 1024 * 1024;
+#endif
 
 class CustomXbyakAllocator : public Xbyak::Allocator {
 public:
@@ -67,8 +72,12 @@ public:
     uint8_t* alloc(size_t size) override {
         void* p = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_READWRITE);
         if (p == nullptr) {
+#ifndef XBYAK_NO_EXCEPTION
             using Xbyak::Error;
             XBYAK_THROW(Xbyak::ERR_CANT_ALLOC);
+#else
+            std::abort();
+#endif
         }
         return static_cast<uint8_t*>(p);
     }
@@ -106,8 +115,12 @@ public:
 #endif
         void* p = mmap(nullptr, size, prot, mode, -1, 0);
         if (p == MAP_FAILED) {
+#ifndef XBYAK_NO_EXCEPTION
             using Xbyak::Error;
             XBYAK_THROW(Xbyak::ERR_CANT_ALLOC);
+#else
+            std::abort();
+#endif
         }
         std::memcpy(p, &size, sizeof(size_t));
         return static_cast<uint8_t*>(p) + DYNARMIC_PAGE_SIZE;
@@ -233,14 +246,14 @@ bool IsUnderRosetta() {
 
 }  // anonymous namespace
 
-#ifdef DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT
-static const auto default_cg_mode = Xbyak::DontSetProtectRWE;
-#else
-static const auto default_cg_mode = nullptr; //Allow RWE
-#endif
-
 BlockOfCode::BlockOfCode(RunCodeCallbacks cb, JitStateInfo jsi, size_t total_code_size, std::function<void(BlockOfCode&)> rcp) noexcept
-    : Xbyak::CodeGenerator(total_code_size, default_cg_mode, &s_allocator)
+#ifdef __OPENORBIS__
+    : Xbyak::CodeGenerator(total_code_size, Xbyak::AutoGrow, &s_allocator)
+#elif defined(DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT)
+    : Xbyak::CodeGenerator(total_code_size, Xbyak::DontSetProtectRWE, &s_allocator)
+#else
+    : Xbyak::CodeGenerator(total_code_size, nullptr, &s_allocator)
+#endif
     , cb(std::move(cb))
     , jsi(jsi)
     , constant_pool(*this, CONSTANT_POOL_SIZE)
@@ -533,8 +546,12 @@ size_t BlockOfCode::GetTotalCodeSize() const {
 
 void* BlockOfCode::AllocateFromCodeSpace(size_t alloc_size) {
     if (size_ + alloc_size >= maxSize_) {
+#ifndef XBYAK_NO_EXCEPTION
         using Xbyak::Error;
         XBYAK_THROW(Xbyak::ERR_CODE_IS_TOO_BIG);
+#else
+        std::abort();
+#endif
     }
 
     EnsureMemoryCommitted(alloc_size);
