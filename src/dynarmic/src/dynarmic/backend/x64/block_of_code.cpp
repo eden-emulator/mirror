@@ -58,8 +58,13 @@ const std::array<Xbyak::Reg64, ABI_PARAM_COUNT> BlockOfCode::ABI_PARAMS = {Block
 
 namespace {
 
+#ifdef __OPENORBIS__
+constexpr size_t CONSTANT_POOL_SIZE = 8 * 4096;
+constexpr size_t PRELUDE_COMMIT_SIZE = 8 * 4096;
+#else
 constexpr size_t CONSTANT_POOL_SIZE = 2 * 1024 * 1024;
 constexpr size_t PRELUDE_COMMIT_SIZE = 16 * 1024 * 1024;
+#endif
 
 #ifdef DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT
 void ProtectMemory(const void* base, size_t size, bool is_executable) {
@@ -446,8 +451,12 @@ size_t BlockOfCode::GetTotalCodeSize() const {
 
 void* BlockOfCode::AllocateFromCodeSpace(size_t alloc_size) {
     if (size_ + alloc_size >= maxSize_) {
+#ifndef XBYAK_NO_EXCEPTION
         using Xbyak::Error;
         XBYAK_THROW(Xbyak::ERR_CODE_IS_TOO_BIG);
+#else
+        std::abort();
+#endif
     }
 
     EnsureMemoryCommitted(alloc_size);
