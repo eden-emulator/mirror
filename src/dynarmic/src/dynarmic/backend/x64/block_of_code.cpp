@@ -58,13 +58,8 @@ const std::array<Xbyak::Reg64, ABI_PARAM_COUNT> BlockOfCode::ABI_PARAMS = {Block
 
 namespace {
 
-#ifdef __OPENORBIS__
-constexpr size_t CONSTANT_POOL_SIZE = 8 * 4096;
-constexpr size_t PRELUDE_COMMIT_SIZE = 8 * 4096;
-#else
 constexpr size_t CONSTANT_POOL_SIZE = 2 * 1024 * 1024;
 constexpr size_t PRELUDE_COMMIT_SIZE = 16 * 1024 * 1024;
-#endif
 
 class CustomXbyakAllocator : public Xbyak::Allocator {
 public:
@@ -247,9 +242,7 @@ bool IsUnderRosetta() {
 }  // anonymous namespace
 
 BlockOfCode::BlockOfCode(RunCodeCallbacks cb, JitStateInfo jsi, size_t total_code_size, std::function<void(BlockOfCode&)> rcp) noexcept
-#ifdef __OPENORBIS__
-    : Xbyak::CodeGenerator(total_code_size, Xbyak::AutoGrow, &s_allocator)
-#elif defined(DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT)
+#if defined(DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT)
     : Xbyak::CodeGenerator(total_code_size, Xbyak::DontSetProtectRWE, &s_allocator)
 #else
     : Xbyak::CodeGenerator(total_code_size, nullptr, &s_allocator)
