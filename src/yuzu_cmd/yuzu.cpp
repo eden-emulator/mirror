@@ -51,7 +51,10 @@
 #include <unistd.h>
 #endif
 
-#if defined(_WIN32)
+#if defined(__OPENORBIS__)
+#include <orbis/libkernel.h>
+#include <orbis/SystemService.h>
+#elif defined(_WIN32)
 extern "C" {
 // tells Nvidia and AMD drivers to use the dedicated GPU by default on laptops with switchable
 // graphics
