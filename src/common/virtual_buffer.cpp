@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <boost/container/static_vector.hpp>
 #include <orbis/SystemService.h>
+#include <orbis/libkernel.h>
 typedef void (*SceKernelExceptionHandler)(int32_t, void*);
 extern "C" int32_t sceKernelInstallExceptionHandler(int32_t signum, SceKernelExceptionHandler handler);
 #endif
@@ -146,8 +147,13 @@ void* AllocateMemoryPages(std::size_t size) noexcept {
 #elif defined(__OPENORBIS__)
     void* addr;
     if (size <= 8192 * 4096) {
-        addr = malloc(size);
-        LOG_WARNING(HW_Memory, "Using DMem for {} bytes area @ {}", size, addr);
+        size_t align = 16384;
+        size_t len = (size + align - 1) / align * align;
+        off_t offset = 0;
+        ASSERT(sceKernelAllocateDirectMemory(0, ORBIS_KERNEL_MAIN_DMEM_SIZE, len, align, ORBIS_KERNEL_WB_ONION, &offset) == 0);
+        ASSERT(sceKernelMapDirectMemory(&addr, len, ORBIS_KERNEL_PROT_CPU_RW, 0, offset, len) == 0);
+        ASSERT(sceKernelMprotect(addr, len, VM_PROT_ALL) == 0);
+        LOG_WARNING(HW_Memory, "Using DMem for {} bytes area @ {}", len, addr);
         ASSERT(addr != nullptr);
     } else {
         addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_VOID | MAP_PRIVATE, -1, 0);
@@ -169,7 +175,7 @@ void FreeMemoryPages(void* addr, [[maybe_unused]] std::size_t size) noexcept {
     VirtualFree(addr, 0, MEM_RELEASE);
 #elif defined(__OPENORBIS__)
     if (size <= 8192 * 4096) {
-        free(addr);
+        sceKernelCheckedReleaseDirectMemory(off_t(addr), size_t(size));
     } else {
         int rc = munmap(addr, size);
         ASSERT(rc == 0);
