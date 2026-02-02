@@ -152,6 +152,7 @@ void* AllocateMemoryPages(std::size_t size) noexcept {
         off_t offset = 0;
         ASSERT(sceKernelAllocateDirectMemory(0, ORBIS_KERNEL_MAIN_DMEM_SIZE, len, align, ORBIS_KERNEL_WB_ONION, &offset) == 0);
         ASSERT(sceKernelMapDirectMemory(&addr, len, ORBIS_KERNEL_PROT_CPU_RW, 0, offset, len) == 0);
+        ASSERT(sceKernelMprotect(addr, len, VM_PROT_ALL) == 0);
         LOG_WARNING(HW_Memory, "Using DMem for {} bytes area @ {}", len, addr);
         ASSERT(addr != nullptr);
     } else {
