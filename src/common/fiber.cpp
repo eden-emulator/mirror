@@ -16,7 +16,7 @@
 namespace Common {
 
 #ifdef __OPENORBIS__
-constexpr size_t DEFAULT_STACK_SIZE = 256 * 4096;
+constexpr size_t DEFAULT_STACK_SIZE = 32 * 4096;
 #else
 constexpr size_t DEFAULT_STACK_SIZE = 512 * 4096;
 #endif
