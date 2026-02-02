@@ -253,7 +253,7 @@ void ArmDynarmic64::MakeJit(Common::PageTable* page_table, std::size_t address_s
 
     // Code cache size
 #if defined(__OPENORBIS__)
-    config.code_cache_size = std::uint32_t(128_MiB);
+    config.code_cache_size = std::uint32_t(8_MiB);
 #elif defined(ARCHITECTURE_arm64) || defined(__sun__) || defined(__NetBSD__) || defined(__DragonFly__) || defined(__OpenBSD__)
     config.code_cache_size = std::uint32_t(128_MiB);
 #else
