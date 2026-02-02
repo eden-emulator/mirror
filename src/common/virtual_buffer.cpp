@@ -114,7 +114,7 @@ static void SwapHandler(int sig, void* raw_context) {
     if (auto const it = std::ranges::find_if(swap_regions, [addr = mctx.mc_addr](auto const& e) {
         return uintptr_t(addr) >= uintptr_t(e.first) && uintptr_t(addr) < uintptr_t(e.first) + e.second;
     }); it != swap_regions.end()) {
-        size_t const page_size = 4096 * 8; //16K
+        size_t const page_size = 0x200000; //2M
         size_t const page_mask = ~(page_size - 1);
         // should replace the existing mapping... ugh
         void* aligned_addr = reinterpret_cast<void*>(uintptr_t(mctx.mc_addr) & page_mask);
@@ -152,7 +152,6 @@ void* AllocateMemoryPages(std::size_t size) noexcept {
         off_t offset = 0;
         ASSERT(sceKernelAllocateDirectMemory(0, ORBIS_KERNEL_MAIN_DMEM_SIZE, len, align, ORBIS_KERNEL_WB_ONION, &offset) == 0);
         ASSERT(sceKernelMapDirectMemory(&addr, len, ORBIS_KERNEL_PROT_CPU_RW, 0, offset, len) == 0);
-        ASSERT(sceKernelMprotect(addr, len, VM_PROT_ALL) == 0);
         LOG_WARNING(HW_Memory, "Using DMem for {} bytes area @ {}", len, addr);
         ASSERT(addr != nullptr);
     } else {
