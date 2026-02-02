@@ -10,8 +10,8 @@ set(CMAKE_SYSROOT "$OO_PS4_TOOLCHAIN")
 set(CMAKE_STAGING_PREFIX "$OO_PS4_TOOLCHAIN")
 set(CMAKE_SYSTEM_NAME "OpenOrbis")
 
-set(CMAKE_C_FLAGS " -D__OPENORBIS__ -D_LIBCPP_HAS_MUSL_LIBC=1 -D_GNU_SOURCE=1 --target=x86_64-pc-freebsd12-elf -mtune=x86-64 -march=x86-64 -fPIC -funwind-tables")
-set(CMAKE_CXX_FLAGS " -D__OPENORBIS__ -D_LIBCPP_HAS_MUSL_LIBC=1 -D_GNU_SOURCE=1 --target=x86_64-pc-freebsd12-elf -mtune=x86-64 -march=x86-64 -fPIC -funwind-tables")
+set(CMAKE_C_FLAGS " -D__OPENORBIS__ -D_LIBCPP_HAS_MUSL_LIBC=1 -D_GNU_SOURCE=1 --target=x86_64-pc-freebsd12-elf -mtune=btver2 -march=btver2 -fPIC -funwind-tables")
+set(CMAKE_CXX_FLAGS " -D__OPENORBIS__ -D_LIBCPP_HAS_MUSL_LIBC=1 -D_GNU_SOURCE=1 --target=x86_64-pc-freebsd12-elf -mtune=btver2 -march=btver2 -fPIC -funwind-tables")
 
 set(CMAKE_EXE_LINKER_FLAGS "-m elf_x86_64 -pie -T $OO_PS4_TOOLCHAIN/link.x --eh-frame-hdr -L$OO_PS4_TOOLCHAIN/lib")
 set(CMAKE_C_LINK_FLAGS "-m elf_x86_64 -pie -T $OO_PS4_TOOLCHAIN/link.x --eh-frame-hdr -L$OO_PS4_TOOLCHAIN/lib")
@@ -59,3 +59,5 @@ cmake -S . -B build -G "Unix Makefiles" \
     -DYUZU_USE_EXTERNAL_SDL2=ON \
     "${EXTRA_CMAKE_FLAGS[@]}" || exit
 cmake --build build -t yuzu-cmd_pkg -- -j$NPROC
+#cmake --build build -t dynarmic_tests_pkg -- -j$NPROC
+#cmake --build build -t testps4_pkg -- -j$NPROC
