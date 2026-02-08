@@ -44,6 +44,7 @@ enum class PatchMode : u32 {
     Split,    ///< Patch sections are inserted before .text and after .data
 };
 
+
 using ModuleTextAddress = u64;
 using PatchTextAddress = u64;
 using EntryTrampolines = ankerl::unordered_dense::map<ModuleTextAddress, PatchTextAddress>;
