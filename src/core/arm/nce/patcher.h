@@ -9,6 +9,7 @@
 #include <oaknut/code_block.hpp>
 #include <oaknut/oaknut.hpp>
 
+#include "common/logging/log.h"
 #include "common/common_types.h"
 #include "common/settings.h"
 #include "core/hle/kernel/code_set.h"
@@ -99,7 +100,7 @@ private:
 
 private:
     void BranchToPatch(uintptr_t module_dest) {
-        LOG_DEBUG(Core_ARM, "LRU cache disabled - direct patch for offset {:#x}", module_dest);
+        LOG_DEBUG(Core_ARM, "Patch for offset {:#x}", module_dest);
         curr_patch->m_branch_to_patch_relocations.push_back({c.offset(), module_dest});
     }
 
