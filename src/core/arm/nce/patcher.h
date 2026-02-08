@@ -14,7 +14,6 @@
 #include "core/hle/kernel/code_set.h"
 #include "core/hle/kernel/k_typed_address.h"
 #include "core/hle/kernel/physical_memory.h"
-#include "lru_cache.h"
 #include <utility>
 using ModuleID = std::array<u8, 32>;  // NSO build ID
 struct PatchCacheKey {
@@ -99,28 +98,9 @@ private:
     void WriteCntpctHandler(ModuleDestLabel module_dest, oaknut::XReg dest_reg) { WriteCntpctHandler(module_dest, dest_reg, c); }
 
 private:
-    static constexpr size_t CACHE_SIZE = 16384;  // Cache size for patch entries
-    LRUCache<PatchCacheKey, PatchTextAddress> patch_cache{CACHE_SIZE, Settings::values.lru_cache_enabled.GetValue()};
-
     void BranchToPatch(uintptr_t module_dest) {
-        if (patch_cache.isEnabled()) {
-            PatchCacheKey key{module_id, module_dest};
-            LOG_DEBUG(Core_ARM, "LRU cache lookup for module={}, offset={:#x}", fmt::ptr(module_id.data()), module_dest);
-            // Try to get existing patch entry from cache
-            if (auto* cached_patch = patch_cache.get(key)) {
-                LOG_WARNING(Core_ARM, "LRU cache hit for module offset {:#x}", module_dest);
-                curr_patch->m_branch_to_patch_relocations.push_back({c.offset(), *cached_patch});
-                return;
-            }
-            LOG_DEBUG(Core_ARM, "LRU cache miss for module offset {:#x}, creating new patch", module_dest);
-            // Not in cache: create and store
-            const auto patch_addr = c.offset();
-            curr_patch->m_branch_to_patch_relocations.push_back({patch_addr, module_dest});
-            patch_cache.put(key, patch_addr);
-        } else {
-            LOG_DEBUG(Core_ARM, "LRU cache disabled - direct patch for offset {:#x}", module_dest);
-            curr_patch->m_branch_to_patch_relocations.push_back({c.offset(), module_dest});
-        }
+        LOG_DEBUG(Core_ARM, "LRU cache disabled - direct patch for offset {:#x}", module_dest);
+        curr_patch->m_branch_to_patch_relocations.push_back({c.offset(), module_dest});
     }
 
     void BranchToPatchPre(uintptr_t module_dest) {
