@@ -53,10 +53,6 @@ public:
     void SetModuleID(const ModuleID& id) {
         module_id = id;
     }
-    Patcher(const Patcher&) = delete;
-    Patcher& operator=(const Patcher&) = delete;
-    Patcher(Patcher&& other) noexcept;
-    Patcher& operator=(Patcher&&) noexcept = delete;
     explicit Patcher();
     ~Patcher();
     bool PatchText(const Kernel::PhysicalMemory& program_image,
