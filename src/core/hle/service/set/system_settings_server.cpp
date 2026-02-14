@@ -980,7 +980,7 @@ Result ISystemSettingsServer::SetPrimaryAlbumStorage(PrimaryAlbumStorage primary
     R_SUCCEED();
 }
 
-void Fill3DS_CRC(u32 d, char* data) {
+static void Fill3DS_CRC(u32 d, char* data) {
     std::array<u8, 10> digits = {
         u8((d / 1000000000) % 100),
         u8((d / 100000000) % 10),
