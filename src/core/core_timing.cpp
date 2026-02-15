@@ -294,12 +294,18 @@ void CoreTiming::ThreadLoop() {
                         if (wait_time >= timer_resolution_ns) {
                             Common::Windows::SleepForOneTick();
                         } else {
-                            auto const& caps = GetCPUCaps();
+                            // 100,000 cycles is a reasonable amount of time to wait to save on CPU resources.
+                            // For reference:
+                            // At 1 GHz, 100K cycles is 100us
+                            // At 2 GHz, 100K cycles is 50us
+                            // At 4 GHz, 100K cycles is 25us
+                            constexpr auto PauseCycles = 100'000U;
+                            auto const& caps = Common::GetCPUCaps();
                             if (caps.waitpkg) {
                                 static constexpr auto RequestC02State = 0U;
-                                const auto tsc = FencedRDTSC() + PauseCycles;
-                                const auto eax = static_cast<u32>(tsc & 0xFFFFFFFF);
-                                const auto edx = static_cast<u32>(tsc >> 32);
+                                const auto tsc = Common::X64::FencedRDTSC() + PauseCycles;
+                                const auto eax = u32(tsc & 0xFFFFFFFF);
+                                const auto edx = u32(tsc >> 32);
                                 asm volatile("tpause %0" : : "r"(RequestC02State), "d"(edx), "a"(eax));
                             } else if (caps.monitorx) {
                                 static constexpr auto EnableWaitTimeFlag = 1U << 1;
