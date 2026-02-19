@@ -80,13 +80,9 @@ public struct AppUI {
     public func gyroMoved(x: Float, y: Float, z: Float, accelX: Float, accelY: Float, accelZ: Float, controllerId: Int32, deltaTimestamp: Int32) {
         // Calling the Objective-C function with both gyroscope and accelerometer data
         appUIObjC.virtualControllerGyro(controllerId,
-                                          deltaTimestamp: deltaTimestamp,
-                                          gyroX: x,
-                                          gyroY: y,
-                                          gyroZ: z,
-                                          accelX: accelX,
-                                          accelY: accelY,
-                                          accelZ: accelZ)
+            deltaTimestamp: deltaTimestamp,
+            gyroX: x, gyroY: y, gyroZ: z,
+            accelX: accelX, accelY: accelY, accelZ: accelZ)
     }
 
 
