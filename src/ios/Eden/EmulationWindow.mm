@@ -7,7 +7,7 @@
 //
 
 #import "EmulationWindow.h"
-#import "../EmulationSession/EmulationSession.h"
+#import "EmulationSession/EmulationSession.h"
 
 #include <SDL.h>
 
@@ -58,9 +58,7 @@ void EmulationWindow::OnGamepadJoystickEvent(int player_index, int stick_id, flo
     m_input_subsystem->GetVirtualGamepad()->SetStickPosition(player_index, stick_id, x, y);
 }
 
-void EmulationWindow::OnGamepadMotionEvent(int player_index, u64 delta_timestamp, float gyro_x,
-                                                 float gyro_y, float gyro_z, float accel_x,
-                                                 float accel_y, float accel_z) {
+void EmulationWindow::OnGamepadMotionEvent(int player_index, u64 delta_timestamp, float gyro_x, float gyro_y, float gyro_z, float accel_x, float accel_y, float accel_z) {
     m_input_subsystem->GetVirtualGamepad()->SetMotionState(player_index, delta_timestamp, gyro_x, gyro_y, gyro_z, accel_x, accel_y, accel_z);
 }
 
@@ -70,9 +68,7 @@ void EmulationWindow::OnFrameDisplayed() {
     }
 }
 
-EmulationWindow::EmulationWindow(InputCommon::InputSubsystem* input_subsystem, CA::MetalLayer* surface, CGSize size,
-                                     std::shared_ptr<Common::DynamicLibrary> driver_library)
-: m_input_subsystem{input_subsystem}, m_size{size}, m_driver_library{driver_library} {
+EmulationWindow::EmulationWindow(InputCommon::InputSubsystem* input_subsystem, CA::MetalLayer* surface, CGSize size, std::shared_ptr<Common::DynamicLibrary> driver_library) : m_input_subsystem{input_subsystem}, m_size{size}, m_driver_library{driver_library} {
     LOG_INFO(Frontend, "initializing");
 
     if (!surface) {

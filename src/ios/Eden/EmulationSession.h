@@ -11,7 +11,7 @@
 #import <QuartzCore/CAMetalLayer.h>
 
 #import <Metal/Metal.hpp>
-#import "../EmulationWindow/EmulationWindow.h"
+#import "EmulationWindow/EmulationWindow.h"
 
 #include "common/detached_tasks.h"
 #include "core/core.h"
