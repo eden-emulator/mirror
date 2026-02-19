@@ -252,4 +252,8 @@ if (ANDROID)
     target_include_directories(yuzu-android PRIVATE android/app/src/main)
 endif()
 
+if (IOS)
+    add_subdirectory(ios)
+endif()
+
 include(GenerateDepHashes)
