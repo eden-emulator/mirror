@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //
 //  AppUI-Bridging-Header.h - Sudachi
 //  Created by Jarrod Norwell on 4/3/2024.
