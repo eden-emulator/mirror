@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 //
 //  EmulationSession.m - Sudachi
 //  Created by Jarrod Norwell on 1/20/24.
@@ -204,7 +207,7 @@ Core::SystemResultStatus EmulationSession::InitializeEmulation(const std::string
     // Initialize system.
     m_system.SetShuttingDown(false);
     m_system.ApplySettings();
-    YuzuSettings::LogSettings();
+    Settings::LogSettings();
     m_system.HIDCore().ReloadInputDevices();
     m_system.SetFrontendAppletSet({
         nullptr,                     // Amiibo Settings
@@ -238,7 +241,7 @@ Core::SystemResultStatus EmulationSession::InitializeEmulation(const std::string
     m_system.GetCpuManager().OnGpuReady();
     m_system.RegisterExitCallback([&] { HaltEmulation(); });
 
-    if (YuzuSettings::values.use_disk_shader_cache.GetValue()) {
+    if (Settings::values.use_disk_shader_cache.GetValue()) {
         m_system.Renderer().ReadRasterizer()->LoadDiskResources(
                                                               m_system.GetApplicationProcessProgramID(), std::stop_token{},
                                                               [](VideoCore::LoadCallbackStage, size_t value, size_t total) {});
@@ -265,7 +268,7 @@ Core::SystemResultStatus EmulationSession::BootOS() {
     // Initialize system.
     m_system.SetShuttingDown(false);
     m_system.ApplySettings();
-    YuzuSettings::LogSettings();
+    Settings::LogSettings();
     m_system.HIDCore().ReloadInputDevices();
     m_system.SetFrontendAppletSet({
         nullptr,                     // Amiibo Settings
@@ -305,7 +308,7 @@ Core::SystemResultStatus EmulationSession::BootOS() {
     m_system.GetCpuManager().OnGpuReady();
     m_system.RegisterExitCallback([&] { HaltEmulation(); });
 
-    if (YuzuSettings::values.use_disk_shader_cache.GetValue()) {
+    if (Settings::values.use_disk_shader_cache.GetValue()) {
         m_system.Renderer().ReadRasterizer()->LoadDiskResources(
                                                               m_system.GetApplicationProcessProgramID(), std::stop_token{},
                                                               [](VideoCore::LoadCallbackStage, size_t value, size_t total) {});
@@ -377,7 +380,7 @@ void EmulationSession::RunEmulation() {
     }
 
     // Load the disk shader cache.
-    if (YuzuSettings::values.use_disk_shader_cache.GetValue()) {
+    if (Settings::values.use_disk_shader_cache.GetValue()) {
         LoadDiskCacheProgress(VideoCore::LoadCallbackStage::Prepare, 0, 0);
         m_system.Renderer().ReadRasterizer()->LoadDiskResources(
             m_system.GetApplicationProcessProgramID(), std::stop_token{}, LoadDiskCacheProgress);
@@ -484,7 +487,7 @@ bool EmulationSession::IsHandheldOnly() {
         return false;
     }
 
-    return !YuzuSettings::IsDockedMode();
+    return !Settings::IsDockedMode();
 }
 
 void EmulationSession::SetDeviceType([[maybe_unused]] int index, int type) {
