@@ -6,9 +6,9 @@
 //  Created by Jarrod Norwell on 1/20/24.
 //
 
+#import <Foundation/Foundation.h>
 #import "AppUIGameInformation.h"
-#import "../DirectoryManager/DirectoryManager.h"
-#import "../EmulationSession/EmulationSession.h"
+#import "EmulationSession/EmulationSession.h"
 
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
@@ -382,7 +382,9 @@ GameMetadata CacheGameMetadata(const std::string& path) {
 
 GameMetadata GameMetadata(const std::string& path, bool reload = false) {
     if (!EmulationSession::GetInstance().IsInitialized()) {
-        Common::FS::SetAppDirectory(DirectoryManager::AppUIDirectory());
+        NSURL *dir_url = [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] firstObject];
+        const char *directory_cstr = [[dir_url path] UTF8String];
+        Common::FS::SetAppDirectory(directory_cstr);
 
         EmulationSession::GetInstance().System().Initialize();
         EmulationSession::GetInstance().InitializeSystem(false);

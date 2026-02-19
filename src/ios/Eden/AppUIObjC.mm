@@ -73,8 +73,10 @@
     if (self = [super init]) {
         _gameInformation = [AppUIGameInformation sharedInstance];
 
+        NSURL *dir_url = [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] firstObject];
+        const char *directory_cstr = [[dir_url path] UTF8String];
 
-        Common::FS::SetAppDirectory(DirectoryManager::AppUIDirectory());
+        Common::FS::SetAppDirectory(directory_cstr);
         Config{"config", Config::ConfigType::GlobalConfig};
 
         EmulationSession::GetInstance().System().Initialize();
