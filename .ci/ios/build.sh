@@ -9,7 +9,7 @@ if [ -z "$NPROC" ]; then
 fi
 
 cmake -G Xcode -B build \
-    -DCMAKE_TOOLCHAIN_FILE="$WORK_DIR/ios-toolchain.cmake" \
+    -DCMAKE_TOOLCHAIN_FILE="$WORK_DIR/.ci/ios/ios-toolchain.cmake" \
     -DPLATFORM=OS64 \
     -DENABLE_LIBUSB=OFF \
     -DENABLE_UPDATE_CHECKER=OFF \
