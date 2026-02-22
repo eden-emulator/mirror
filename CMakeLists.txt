@@ -243,7 +243,7 @@ option(YUZU_LEGACY "Apply patches that improve compatibility with older GPUs (e.
 
 option(NIGHTLY_BUILD "Use Nightly qualifiers in the update checker and build metadata" OFF)
 
-cmake_dependent_option(YUZU_ROOM "Enable dedicated room functionality" ON "NOT ANDROID" OFF)
+cmake_dependent_option(YUZU_ROOM "Enable dedicated room functionality" ON "NOT ANDROID AND NOT IOS" OFF)
 cmake_dependent_option(YUZU_ROOM_STANDALONE "Enable standalone room executable" ON "YUZU_ROOM" OFF)
 
 cmake_dependent_option(YUZU_CMD "Compile the eden-cli executable" ON "NOT ANDROID" OFF)
