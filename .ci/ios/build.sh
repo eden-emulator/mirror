@@ -8,9 +8,12 @@ if [ -z "$NPROC" ]; then
     NPROC="$(nproc)"
 fi
 
+[ ! -z "$IOS_SDK" ]
+
 cmake -G Xcode -B build \
     -DCMAKE_TOOLCHAIN_FILE="$WORK_DIR/.ci/ios/ios-toolchain.cmake" \
     -DPLATFORM=OS64 \
+    -DCOCOA_LIBRARY="$IOS_SDK/System/Library/Frameworks/Cocoa.framework" \
     -DENABLE_LIBUSB=OFF \
     -DENABLE_UPDATE_CHECKER=OFF \
     -DENABLE_QT=OFF \
