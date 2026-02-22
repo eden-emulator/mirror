@@ -182,6 +182,10 @@ else()
     find_program(BASH_PROGRAM bash REQUIRED)
 
     set(FFmpeg_CROSS_COMPILE_FLAGS "")
+    # `configure` parameters builds only exactly what yuzu needs from FFmpeg
+    # `--disable-vdpau` is needed to avoid linking issues
+    set(FFmpeg_CC ${CMAKE_C_COMPILER_LAUNCHER}  ${CMAKE_C_COMPILER})
+    set(FFmpeg_CXX ${CMAKE_CXX_COMPILER_LAUNCHER}  ${CMAKE_CXX_COMPILER})
     if (ANDROID)
         string(TOLOWER "${CMAKE_HOST_SYSTEM_NAME}" FFmpeg_HOST_SYSTEM_NAME)
         set(TOOLCHAIN "${ANDROID_NDK}/toolchains/llvm/prebuilt/${FFmpeg_HOST_SYSTEM_NAME}-${CMAKE_HOST_SYSTEM_PROCESSOR}")
@@ -197,12 +201,21 @@ else()
             --extra-ldflags="--ld-path=${TOOLCHAIN}/bin/ld.lld"
             --extra-ldflags="-nostdlib"
         )
+    elseif(IOS)
+        execute_process(COMMAND xcrun --sdk iphoneos --show-sdk-path OUTPUT_VARIABLE SYSROOT)
+        set(FFmpeg_CC "xcrun --sdk iphoneos clang -arch arm64")
+        set(FFmpeg_CXX "xcrun --sdk iphoneos clang++ -arch arm64")
+        list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
+            --arch=arm64
+            --enable-cross-compile
+            --sysroot=${SYSROOT}
+            --target-os=darwin
+            --extra-ldflags="-miphoneos-version-min=16.0"
+            --install-name-dir="@rpath"
+            --disable-audiotoolbox
+        )
     endif()
 
-    # `configure` parameters builds only exactly what yuzu needs from FFmpeg
-    # `--disable-vdpau` is needed to avoid linking issues
-    set(FFmpeg_CC ${CMAKE_C_COMPILER_LAUNCHER}  ${CMAKE_C_COMPILER})
-    set(FFmpeg_CXX ${CMAKE_CXX_COMPILER_LAUNCHER}  ${CMAKE_CXX_COMPILER})
     add_custom_command(
         OUTPUT
             ${FFmpeg_MAKEFILE}
