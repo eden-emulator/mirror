@@ -64,7 +64,7 @@ elseif (ANDROID)
         --enable-mediacodec
         --enable-jni
     )
-elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
+elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID AND NOT IOS)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBVA libva)
     pkg_check_modules(CUDA cuda)
