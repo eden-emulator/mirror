@@ -33,6 +33,9 @@
         "find_args": "MODULE GLOBAL",
         "patches": [
             "0001-mingw.patch"
+        ],
+        "options": [
+            "HTTPLIB_REQUIRE_OPENSSL ON"
         ]
     },
     "cpp-jwt": {

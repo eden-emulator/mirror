@@ -6,18 +6,16 @@
 
 #include <openssl/err.h>
 #include <openssl/evp.h>
-#include <openssl/sha.h>
 
-#include "common/scope_exit.h"
 #include "core/hle/kernel/k_process.h"
 
-#include "core/hle/service/cmif_serialization.h"
-#include "core/hle/service/ipc_helpers.h"
+#include "core/hle/service/cmif_types.h"
 #include "core/hle/service/ro/ro.h"
 #include "core/hle/service/ro/ro_nro_utils.h"
 #include "core/hle/service/ro/ro_results.h"
 #include "core/hle/service/ro/ro_types.h"
 #include "core/hle/service/server_manager.h"
+#include "core/hle/service/service.h"
 
 namespace Service::RO {
 
@@ -183,15 +181,8 @@ struct ProcessContext {
             std::vector<u8> nro_data(size);
             m_process->GetMemory().ReadBlock(base_address, nro_data.data(), size);
 
-            EVP_MD_CTX *ctx = EVP_MD_CTX_new();
-            ASSERT(ctx);
-
-            EVP_DigestInit(ctx, EVP_sha256());
-            EVP_DigestUpdate(ctx, nro_data.data(), nro_data.size());
-            u32 length = 0;
-            EVP_DigestFinal_ex(ctx, hash.data(), &length);
-
-            EVP_MD_CTX_free(ctx);
+            u32 hash_len = 0;
+            EVP_Digest(nro_data.data(), nro_data.size(), hash.data(), &hash_len, EVP_sha256(), nullptr);
         }
 
         for (size_t i = 0; i < MaxNrrInfos; i++) {
