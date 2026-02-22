@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-enable_language(Swift OBJC)
+enable_language(Swift OBJCXX)
 
 add_executable(eden-ios
     AppUI-Bridging-Header.h
