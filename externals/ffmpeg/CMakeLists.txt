@@ -31,6 +31,20 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
             --extra-ldflags="-nostdlib"
         )
         set(FFmpeg_IS_CROSS_COMPILING TRUE)
+    elseif(IOS)
+        execute_process(COMMAND xcrun --sdk iphoneos --show-sdk-path OUTPUT_VARIABLE SYSROOT)
+        set(FFmpeg_CC "xcrun --sdk iphoneos clang -arch arm64")
+        set(FFmpeg_CXX "xcrun --sdk iphoneos clang++ -arch arm64")
+        list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
+            --arch=arm64
+            --enable-cross-compile
+            --sysroot=${SYSROOT}
+            --target-os=darwin
+            --extra-ldflags="-miphoneos-version-min=16.0"
+            --install-name-dir="@rpath"
+            --disable-audiotoolbox
+        )
+        set(FFmpeg_IS_CROSS_COMPILING TRUE)
     # User attempts to do a FFmpeg cross compilation because...
     # Here we just quickly test against host/system processors not matching
     # TODO: Test for versions not matching as well?
