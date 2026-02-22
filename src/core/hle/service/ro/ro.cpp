@@ -9,7 +9,7 @@
 
 #include "core/hle/kernel/k_process.h"
 
-#include "core/hle/service/cmif_types.h"
+#include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/ro/ro.h"
 #include "core/hle/service/ro/ro_nro_utils.h"
 #include "core/hle/service/ro/ro_results.h"

@@ -9,31 +9,24 @@
 #include <bitset>
 #include <cctype>
 #include <fstream>
-#include <locale>
 #include <map>
 #include <sstream>
 #include <tuple>
 #include <vector>
-#include <openssl/bn.h>
-#include <openssl/crypto.h>
-#include <openssl/rand.h>
-#include <openssl/cmac.h>
+
 #include <openssl/evp.h>
-#include <openssl/sha.h>
+
 #include "common/fs/file.h"
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
 #include "common/hex_util.h"
 #include "common/logging/log.h"
-#include "common/settings.h"
 #include "common/string_util.h"
 #include "core/crypto/aes_util.h"
 #include "core/crypto/key_manager.h"
 #include "core/crypto/partition_data_manager.h"
 #include "core/file_sys/content_archive.h"
-#include "core/file_sys/nca_metadata.h"
 #include "core/file_sys/registered_cache.h"
-#include "core/hle/service/filesystem/filesystem.h"
 #include "core/loader/loader.h"
 
 namespace Core::Crypto {
@@ -530,10 +523,9 @@ static std::array<u8, target_size> MGF1(const std::array<u8, in_size>& seed) {
     while (out.size() < target_size) {
         out.resize(out.size() + 0x20);
         seed_exp[in_size + 3] = u8(i);
-        SHA256_CTX sha256;
-        SHA256_Init(&sha256);
-        SHA256_Update(&sha256, seed_exp.data(), seed_exp.size());
-        SHA256_Final(out.data() + out.size() - 0x20, &sha256);
+
+        u32 hash_len = 0;
+        EVP_Digest(seed_exp.data(), seed_exp.size(), out.data(), &hash_len, EVP_sha256(), nullptr);
         ++i;
     }
 
