@@ -38,13 +38,18 @@ This file is based off of Yuzu and Dynarmic.
 if (CMAKE_OSX_ARCHITECTURES)
     set(MULTIARCH_BUILD 1)
     set(ARCHITECTURE "${CMAKE_OSX_ARCHITECTURES}")
-
-    # hope and pray the architecture names match
-    foreach(ARCH IN ${CMAKE_OSX_ARCHITECTURES})
-        set(ARCHITECTURE_${ARCH} 1 PARENT_SCOPE)
-        add_definitions(-DARCHITECTURE_${ARCH}=1)
-    endforeach()
-
+    if (IOS)
+        # TODO: Right... the toolchain file won't properly accomodate OSX_ARCHITECTURE
+        # they aren't defining it as a list properly I assume?
+        set(ARCHITECTURE_arm64 1 PARENT_SCOPE)
+        add_definitions(-DARCHITECTURE_arm64=1)
+    else ()
+        # hope and pray the architecture names match
+        foreach(ARCH IN ${CMAKE_OSX_ARCHITECTURES})
+            set(ARCHITECTURE_${ARCH} 1 PARENT_SCOPE)
+            add_definitions(-DARCHITECTURE_${ARCH}=1)
+        endforeach()
+    endif()
     return()
 endif()
 
