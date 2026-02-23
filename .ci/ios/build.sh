@@ -4,9 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 WORK_DIR="$PWD"
-if [ -z "$NPROC" ]; then
-    NPROC="$(nproc)"
-fi
+export IOS_SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
 
 [ ! -z "$IOS_SDK" ]
 
@@ -33,4 +31,4 @@ cmake -G Xcode -B build \
     -DCPMUTIL_FORCE_BUNDLED=ON \
     -DCMAKE_BUILD_TYPE=Release
 
-cmake --build build -- -j${NPROC}
+cmake --build build
