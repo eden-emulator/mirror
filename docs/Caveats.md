@@ -6,6 +6,7 @@
 - [macOS](#macos)
 - [OpenIndiana](#openindiana)
 - [OmniOS](#omnios)
+- [iOS](#ios)
 - [HaikuOS](#haikuos)
 - [OpenBSD](#openbsd)
 - [FreeBSD](#freebsd)
@@ -89,6 +90,16 @@ You may also need to install `gmake` in order to properly build FFmpeg, this is 
 If it wasn't obvious already, you require a X11 server to properly run the emulator within OmniOS, [this guide](https://web.archive.org/web/20260424200928/https://geekblood.wordpress.com/2017/10/26/installing-x11-and-a-desktop-environment-on-omnios/) is a great starting point for that, the links to pkgsrc are outdated so follow [this exemplar](https://pkgsrc.smartos.org/install-on-illumos/) as well.
 
 For Solaris based OSes, `${CMAKE_SYSTEM_NAME}` isn't properly set on CMake (it's set to i686 on AMD64), you may find issues when building OpenSSL from `openssl-cmake`.
+
+## iOS
+
+iOS has a dedicated build script, we **highly** recommend using that instead of doing anything else, we don't support any other configuration than the one present in said build script.
+
+To build, it's simply as easy as doing
+```sh
+chmod +x .ci/ios/build.sh
+.ci/ios/build.sh
+```
 
 ## HaikuOS
 
