@@ -14,11 +14,10 @@ extern std::atomic<bool> g_has_battery;
 
 #elif defined(__APPLE__)
 #include <TargetConditionals.h>
-#if TARGET_OS_MAC
+#if defined(TARGET_OS_MAC) && TARGET_OS_MAC
 #include <IOKit/ps/IOPSKeys.h>
 #include <IOKit/ps/IOPowerSources.h>
 #endif
-
 #elif defined(__linux__)
 #include <fstream>
 #include <string>

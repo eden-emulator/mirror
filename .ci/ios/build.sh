@@ -15,6 +15,8 @@ cmake -G Xcode -B build \
     -DPLATFORM=OS64 \
     -DDEPLOYMENT_TARGET=16.0 \
     -DCOCOA_LIBRARY="$IOS_SDK/System/Library/Frameworks/Cocoa.framework" \
+    -DCMAKE_C_COMPILER="$(xcrun --sdk iphoneos clang -arch arm64)" \
+    -DCMAKE_CXX_COMPILER="$(xcrun --sdk iphoneos clang++ -arch arm64)" \
     -DENABLE_LIBUSB=OFF \
     -DENABLE_UPDATE_CHECKER=OFF \
     -DENABLE_QT=OFF \
