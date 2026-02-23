@@ -55,6 +55,12 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     set(CXX_APPLE ON)
 endif()
 
+# This fixes some quirks with xcrun or weird iOS toolchain cmake files
+if (IOS)
+    unser(CXX_CLANG)
+    set(CXX_APPLE ON)
+endif()
+
 # https://gitlab.kitware.com/cmake/cmake/-/merge_requests/11112
 # This works totally fine on MinGW64, but not CLANG{,ARM}64
 if(MINGW AND CXX_CLANG)
