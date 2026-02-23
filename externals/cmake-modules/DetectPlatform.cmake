@@ -57,7 +57,7 @@ endif()
 
 # This fixes some quirks with xcrun or weird iOS toolchain cmake files
 if (IOS)
-    unser(CXX_CLANG)
+    unset(CXX_CLANG)
     set(CXX_APPLE ON)
 endif()
 
