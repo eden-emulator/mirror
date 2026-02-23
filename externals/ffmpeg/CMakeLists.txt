@@ -33,8 +33,8 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
         set(FFmpeg_IS_CROSS_COMPILING TRUE)
     elseif(IOS)
         execute_process(COMMAND xcrun --sdk iphoneos --show-sdk-path OUTPUT_VARIABLE SYSROOT)
-        set(FFmpeg_CC "xcrun --sdk iphoneos clang -arch arm64")
-        set(FFmpeg_CXX "xcrun --sdk iphoneos clang++ -arch arm64")
+        set(FFmpeg_CC xcrun --sdk iphoneos clang -arch arm64)
+        set(FFmpeg_CXX xcrun --sdk iphoneos clang++ -arch arm64)
         list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
             --arch=arm64
             --enable-cross-compile
