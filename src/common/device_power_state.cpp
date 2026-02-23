@@ -15,8 +15,12 @@ extern std::atomic<bool> g_has_battery;
 #elif defined(__APPLE__)
 #include <TargetConditionals.h>
 #if defined(TARGET_OS_MAC) && TARGET_OS_MAC
+#if TARGET_OS_IPHONE
+// ios doesnt have this
+#else
 #include <IOKit/ps/IOPSKeys.h>
 #include <IOKit/ps/IOPowerSources.h>
+#endif
 #endif
 #elif defined(__linux__)
 #include <fstream>
@@ -47,7 +51,9 @@ namespace Common {
         info.percentage = g_battery_percentage.load(std::memory_order_relaxed);
         info.charging = g_is_charging.load(std::memory_order_relaxed);
         info.has_battery = g_has_battery.load(std::memory_order_relaxed);
-
+#elif defined(__APPLE__) && TARGET_OS_IPHONE
+        // Not implemented
+        info.has_battery = false;
 #elif defined(__APPLE__) && TARGET_OS_MAC
         CFTypeRef info_ref = IOPSCopyPowerSourcesInfo();
         CFArrayRef sources = IOPSCopyPowerSourcesList(info_ref);
@@ -95,7 +101,6 @@ namespace Common {
 #else
         info.has_battery = false;
 #endif
-
         return info;
     }
 }
