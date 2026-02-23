@@ -27,17 +27,17 @@
 #include <sys/random.h>
 #elif defined(__APPLE__)
 #include <sys/types.h>
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+// Not available on iOS for some fucking stupid reason...
+#else
+#include <sys/random.h>
+#endif
 #include <mach/vm_map.h>
 #include <mach/mach.h>
 #elif defined(__FreeBSD__)
 #include <sys/shm.h>
 #elif defined(__OPENORBIS__)
 #include <orbis/libkernel.h>
-#endif
-
-// Not available on iOS for some fucking stupid reason...
-#if defined(__APPLE__) && TARGET_OS_MAC
-#include <sys/random.h>
 #endif
 
 // FreeBSD
