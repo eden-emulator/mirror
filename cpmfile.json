@@ -12,7 +12,8 @@
         "min_version": "1.57",
         "package": "Boost",
         "patches": [
-            "0001-clang-cl.patch"
+            "0001-clang-cl.patch",
+            "0002-ios-fix.patch"
         ],
         "repo": "boostorg/boost",
         "version": "boost-1.90.0"
