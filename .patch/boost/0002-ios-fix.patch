@@ -1,5 +1,5 @@
 diff --git a/libs/process/src/shell.cpp b/libs/process/src/shell.cpp
-index bf4bbfd8..e45ba39c 100644
+index bf4bbfd8..bc4aae89 100644
 --- a/libs/process/src/shell.cpp
 +++ b/libs/process/src/shell.cpp
 @@ -19,7 +19,7 @@
@@ -11,6 +11,15 @@ index bf4bbfd8..e45ba39c 100644
  #include <wordexp.h>
  #endif
  
+@@ -30,7 +30,7 @@ BOOST_PROCESS_V2_DECL const error_category& get_shell_category()
+ {
+     return system_category();
+ }
+-#elif !defined(__OpenBSD__) && !defined(__ANDROID__)
++#elif !defined(__OpenBSD__) && !defined(__ANDROID__) && !(defined(__APPLE__) && TARGET_OS_IPHONE)
+ 
+ struct shell_category_t final : public error_category
+ {
 @@ -99,7 +99,7 @@ auto shell::args() const-> args_type
      return input_.c_str();
  }
