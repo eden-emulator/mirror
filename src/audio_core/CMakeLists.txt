@@ -231,38 +231,29 @@ endif()
 target_include_directories(audio_core PRIVATE ${OPUS_INCLUDE_DIRS})
 target_link_libraries(audio_core PUBLIC common core Opus::opus)
 
-# what?
-# if (ARCHITECTURE_x86_64 OR ARCHITECTURE_arm64)
-#     target_link_libraries(audio_core PRIVATE dynarmic::dynarmic)
-# endif()
-
 if (ENABLE_CUBEB)
     target_sources(audio_core PRIVATE
         sink/cubeb_sink.cpp
-        sink/cubeb_sink.h
-    )
+        sink/cubeb_sink.h)
 
     target_link_libraries(audio_core PRIVATE cubeb::cubeb)
     target_compile_definitions(audio_core PRIVATE HAVE_CUBEB=1)
 endif()
 
-if (ENABLE_SDL2)
-    target_sources(audio_core PRIVATE
-        sink/sdl2_sink.cpp
-        sink/sdl2_sink.h
-    )
-
-    target_link_libraries(audio_core PRIVATE SDL2::SDL2)
-    target_compile_definitions(audio_core PRIVATE HAVE_SDL2)
-endif()
-
 if(ANDROID)
     target_sources(audio_core PRIVATE
         sink/oboe_sink.cpp
-        sink/oboe_sink.h
-    )
+        sink/oboe_sink.h)
+
     target_link_libraries(audio_core PRIVATE oboe)
     target_compile_definitions(audio_core PUBLIC HAVE_OBOE)
+else()
+    target_sources(audio_core PRIVATE
+        sink/sdl2_sink.cpp
+        sink/sdl2_sink.h)
+
+    target_link_libraries(audio_core PRIVATE SDL2::SDL2)
+    target_compile_definitions(audio_core PRIVATE HAVE_SDL2)
 endif()
 
 create_target_directory_groups(audio_core)
