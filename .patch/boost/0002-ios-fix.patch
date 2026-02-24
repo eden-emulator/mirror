@@ -1,0 +1,22 @@
+diff --git a/libs/process/src/shell.cpp b/libs/process/src/shell.cpp
+index bf4bbfd8..e45ba39c 100644
+--- a/libs/process/src/shell.cpp
++++ b/libs/process/src/shell.cpp
+@@ -19,7 +19,7 @@
+ #if defined(BOOST_PROCESS_V2_WINDOWS)
+ #include <windows.h>
+ #include <shellapi.h>
+-#elif !defined(__OpenBSD__) && !defined(__ANDROID__)
++#elif !defined(__OpenBSD__) && !defined(__ANDROID__) && !(defined(__APPLE__) && TARGET_OS_IPHONE)
+ #include <wordexp.h>
+ #endif
+ 
+@@ -99,7 +99,7 @@ auto shell::args() const-> args_type
+     return input_.c_str();
+ }
+ 
+-#elif !defined(__OpenBSD__) && !defined(__ANDROID__)
++#elif !defined(__OpenBSD__) && !defined(__ANDROID__) && !(defined(__APPLE__) && TARGET_OS_IPHONE)
+ 
+ void shell::parse_()
+ {
