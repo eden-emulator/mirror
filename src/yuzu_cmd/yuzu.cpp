@@ -195,6 +195,11 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         freopen("CONOUT$", "wb", stderr);
     }
 #endif
+#ifdef __OPENORBIS__
+    // May prevent spurious crashes on swap handlers...
+    setvbuf(stdout, nullptr, _IONBF, 0);
+    setvbuf(stderr, nullptr, _IONBF, 0);
+#endif
 
     Common::Log::Initialize();
     Common::Log::SetColorConsoleBackendEnabled(true);
