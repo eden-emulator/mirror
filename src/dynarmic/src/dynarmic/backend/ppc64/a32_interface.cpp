@@ -10,6 +10,7 @@
 #include "dynarmic/common/common_types.h"
 #include "dynarmic/frontend/A32/a32_location_descriptor.h"
 #include "dynarmic/frontend/A32/translate/a32_translate.h"
+#include "dynarmic/frontend/A32/FPSCR.h"
 #include "dynarmic/interface/A32/config.h"
 #include "dynarmic/backend/ppc64/a32_core.h"
 #include "dynarmic/common/atomic.h"
@@ -33,7 +34,8 @@ struct A32AddressSpace final {
         if (auto const it = block_entries.find(desc.Value()); it != block_entries.end())
             return it->second;
 
-        IR::Block ir_block = A32::Translate(A32::LocationDescriptor{desc}, conf.callbacks, {conf.arch_version, conf.define_unpredictable_behaviour, conf.hook_hint_instructions});
+        ir_block.Reset(A32::LocationDescriptor{desc});
+        A32::Translate(ir_block, A32::LocationDescriptor{desc}, conf.callbacks, {conf.arch_version, conf.define_unpredictable_behaviour, conf.hook_hint_instructions});
         Optimization::Optimize(ir_block, conf, {});
         const EmittedBlockInfo block_info = Emit(std::move(ir_block));
 
@@ -61,6 +63,7 @@ struct A32AddressSpace final {
         //UNREACHABLE();
     }
 
+    IR::Block ir_block = {LocationDescriptor(0, PSR(0), FPSCR(0), false)};
     const A32::UserConfig conf;
     CodeBlock cb;
     powah::Context as;

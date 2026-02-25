@@ -146,10 +146,6 @@ void EmitIR<IR::Opcode::NZCVFromPackedFlags>(powah::Context&, EmitContext&, IR::
 namespace {
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal terminal, IR::LocationDescriptor initial_location, bool is_single_step);
 
-void EmitTerminal(powah::Context&, EmitContext&, IR::Term::Interpret, IR::LocationDescriptor, bool) {
-    ASSERT(false && "unimp");
-}
-
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::ReturnToDispatch, IR::LocationDescriptor, bool) {
     ASSERT(false && "unimp");
 }
@@ -223,7 +219,7 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
     size_t const stack_size = 112 + ABI_CALLEE_SAVED.size() * 8;
     auto const start_offset = code.offset;
     ebi.entry_point = &code.base[start_offset];
-    if (!block.empty()) {
+    if (!block.instructions.empty()) {
         code.MFLR(powah::R0);
         code.STD(powah::R0, powah::R1, 16);
         // Non-volatile saves
@@ -233,7 +229,7 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
         code.STDU(powah::R1, powah::R1, uint32_t(-stack_size));
         code.STD(powah::R2, powah::R1, 40);
 
-        for (auto iter = block.begin(); iter != block.end(); ++iter) {
+        for (auto iter = block.instructions.begin(); iter != block.instructions.end(); ++iter) {
             IR::Inst* inst = &*iter;
             switch (inst->GetOpcode()) {
 #define OPCODE(name, type, ...)                  \
