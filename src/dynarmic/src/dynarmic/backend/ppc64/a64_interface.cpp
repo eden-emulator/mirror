@@ -25,7 +25,8 @@ struct A64AddressSpace final {
     explicit A64AddressSpace(const A64::UserConfig& conf)
         : conf(conf)
         , cb(conf.code_cache_size)
-        , as(cb.ptr<u8*>(), conf.code_cache_size) {
+        , as(cb.ptr<u8*>(), conf.code_cache_size)
+    {
 
     }
 
@@ -35,7 +36,8 @@ struct A64AddressSpace final {
         auto const get_code = [this](u64 vaddr) {
             return conf.callbacks->MemoryReadCode(vaddr);
         };
-        IR::Block ir_block = A64::Translate(A64::LocationDescriptor{desc}, get_code, {conf.define_unpredictable_behaviour, conf.wall_clock_cntpct});
+        ir_block.Reset(A64::LocationDescriptor{desc});
+        A64::Translate(ir_block, A64::LocationDescriptor{desc}, get_code, {conf.define_unpredictable_behaviour, conf.wall_clock_cntpct});
         Optimization::Optimize(ir_block, conf, {});
         fmt::print("IR:\n{}\n", IR::DumpBlock(ir_block));
         const EmittedBlockInfo block_info = Emit(std::move(ir_block));
@@ -64,6 +66,7 @@ struct A64AddressSpace final {
         // UNREACHABLE();
     }
 
+    IR::Block ir_block = {LocationDescriptor(0, FP::FPCR(0), false)};
     const A64::UserConfig conf;
     CodeBlock cb;
     powah::Context as;
