@@ -17,7 +17,7 @@
 #include <cerrno>
 #include <ifaddrs.h>
 #include <net/if.h>
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -33,6 +33,13 @@
 #include <netinet/if_ether.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+// Darwin doesn't define this for some very odd reason
+// See https://stackoverflow.com/questions/5390164/getting-routing-table-on-macosx-programmatically
+#ifndef SA_SIZE
+#define SA_SIZE(sa) \
+    ((!(sa) || ((struct sockaddr *)(sa))->sa_len == 0) ? sizeof(long) \
+        : 1 + ( (((struct sockaddr *)(sa))->sa_len - 1) | (sizeof(long) - 1) ) )
+#endif
 #endif
 
 #include "common/common_types.h"
@@ -158,7 +165,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
     }
     freeifaddrs(ifaddr);
     return ifaces;
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__APPLE__)
     std::vector<Network::NetworkInterface> ifaces;
     int fd = ::socket(PF_ROUTE, SOCK_RAW, AF_UNSPEC);
     if (fd < 0) {
