@@ -205,11 +205,15 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
                     if (msglen == 0 || msglen < SA_SIZE(sa))
                         break;
                     if (i == RTA_NETMASK && sa->sa_family == AF_LINK) {
-                        size_t namelen = 0;
                         struct sockaddr_dl const* sdl = reinterpret_cast<struct sockaddr_dl const*>(sa);
+#if defined(__APPLE__) || (defined(__FreeBSD__) && __FreeBSD__ < 15)
+                        iface.name = std::string{::link_ntoa(sdl)};
+#else
+                        size_t namelen = 0;
                         ::link_ntoa_r(sdl, nullptr, &namelen);
                         iface.name = std::string(namelen, ' ');
                         ::link_ntoa_r(sdl, iface.name.data(), &namelen);
+#endif
                         std::memcpy(&iface.ip_address, sa, sizeof(struct sockaddr_in));
                     }
                     msglen -= SA_SIZE(sa);
