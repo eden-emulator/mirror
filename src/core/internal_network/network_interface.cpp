@@ -206,7 +206,9 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
                         break;
                     if (i == RTA_NETMASK && sa->sa_family == AF_LINK) {
                         struct sockaddr_dl const* sdl = reinterpret_cast<struct sockaddr_dl const*>(sa);
-#if defined(__APPLE__) || (defined(__FreeBSD__) && __FreeBSD__ < 15)
+#if defined(__APPLE__)
+                        iface.name = std::string(sdl->sdl_data, sdl->sdl_nlen);
+#elif defined(__FreeBSD__) && __FreeBSD__ < 15
                         iface.name = std::string{::link_ntoa(sdl)};
 #else
                         size_t namelen = 0;
