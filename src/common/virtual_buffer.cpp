@@ -145,17 +145,32 @@ void* AllocateMemoryPages(std::size_t size) noexcept {
         base = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
     }
 #elif defined(__OPENORBIS__)
-    void* addr;
+    bool use_void_mem = true;
+    void* addr = nullptr;
     if (size <= 8192 * 4096) {
         size_t align = 16384;
-        size_t len = (size + align - 1) / align * align;
-        off_t offset = 0;
-        ASSERT(sceKernelAllocateDirectMemory(0, ORBIS_KERNEL_MAIN_DMEM_SIZE, len, align, ORBIS_KERNEL_WB_ONION, &offset) == 0);
-        ASSERT(sceKernelMapDirectMemory(&addr, len, ORBIS_KERNEL_PROT_CPU_RW, 0, offset, len) == 0);
-        ASSERT(sceKernelMprotect(addr, len, VM_PROT_ALL) == 0);
-        LOG_WARNING(HW_Memory, "Using DMem for {} bytes area @ {}", len, addr);
-        ASSERT(addr != nullptr);
-    } else {
+        off_t offset;
+        int32_t res;
+        size = (size + align - 1) / align * align;
+        if ((res = sceKernelAllocateDirectMemory(0, ORBIS_KERNEL_MAIN_DMEM_SIZE, size, align, ORBIS_KERNEL_WB_ONION, &offset)) == 0) {
+            if ((res = sceKernelMapDirectMemory(&addr, size, ORBIS_KERNEL_PROT_CPU_READ | ORBIS_KERNEL_PROT_CPU_WRITE, 0, offset, size)) == 0) {
+                if ((res = sceKernelMprotect(addr, size, VM_PROT_ALL)) == 0 && addr != nullptr) {
+                    LOG_WARNING(HW_Memory, "Using DMem for {} bytes area @ {}", size, addr);
+                    use_void_mem = false; //Memory properly mapped
+                } else {
+                    sceKernelReleaseDirectMemory(offset, size);
+                    LOG_ERROR(HW_Memory, "{} = sceKernelMprotect({}, {})", res, offset, size);
+                }
+            } else {
+                sceKernelReleaseDirectMemory(offset, size);
+                LOG_ERROR(HW_Memory, "{} = sceKernelMapDirectMemory({}, {})", res, offset, size);
+            }
+        } else {
+            sceKernelReleaseDirectMemory(offset, size);
+            LOG_ERROR(HW_Memory, "{} = sceKernelAllocateDirectMemory({}, {}, {})", res, size, align, offset);
+        }
+    }
+    if (use_void_mem) {
         addr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_VOID | MAP_PRIVATE, -1, 0);
         LOG_WARNING(HW_Memory, "Using VoidMem for {} bytes area @ {}", size, addr);
         ASSERT(addr != MAP_FAILED);
