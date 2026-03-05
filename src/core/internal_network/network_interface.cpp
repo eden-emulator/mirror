@@ -13,11 +13,11 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <iphlpapi.h>
-#elif defined(__linux__) || defined(__ANDROID__)
+#elif defined(__linux__) || defined(__ANDROID__) || defined(__APPLE__)
 #include <cerrno>
 #include <ifaddrs.h>
 #include <net/if.h>
-#elif defined(__FreeBSD__) || defined(__APPLE__)
+#elif defined(__FreeBSD__)
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/socket.h>
