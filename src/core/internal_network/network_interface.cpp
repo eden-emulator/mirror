@@ -111,7 +111,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
 #else
 
 std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
-#if defined(__ANDROID__) || defined(__linux__)
+#if defined(__ANDROID__) || defined(__linux__) || defined(__APPLE__)
     struct ifaddrs* ifaddr = nullptr;
     if (getifaddrs(&ifaddr) != 0) {
         LOG_ERROR(Network, "getifaddrs: {}", std::strerror(errno));
@@ -126,8 +126,9 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
         u32 flags;
     };
     std::vector<RoutingEntry> routes{};
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || defined(__APPLE__)
     // Even through Linux based, we can't reliably obtain routing information from there :(
+    // macOS not Linux based and would murder us if we attempt to access /proc
 #else
     if (std::ifstream file("/proc/net/route"); file.is_open()) {
         file.ignore((std::numeric_limits<std::streamsize>::max)(), '\n'); //ignore header
@@ -165,7 +166,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
     }
     freeifaddrs(ifaddr);
     return ifaces;
-#elif defined(__FreeBSD__) || defined(__APPLE__)
+#elif defined(__FreeBSD__)
     std::vector<Network::NetworkInterface> ifaces;
     int fd = ::socket(PF_ROUTE, SOCK_RAW, AF_UNSPEC);
     if (fd < 0) {
@@ -206,9 +207,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
                         break;
                     if (i == RTA_NETMASK && sa->sa_family == AF_LINK) {
                         struct sockaddr_dl const* sdl = reinterpret_cast<struct sockaddr_dl const*>(sa);
-#if defined(__APPLE__)
-                        iface.name = std::string(sdl->sdl_data, sdl->sdl_nlen);
-#elif defined(__FreeBSD__) && __FreeBSD__ < 15
+#if defined(__FreeBSD__) && __FreeBSD__ < 15
                         iface.name = std::string{::link_ntoa(sdl)};
 #else
                         size_t namelen = 0;
