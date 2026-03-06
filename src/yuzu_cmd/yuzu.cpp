@@ -20,6 +20,7 @@
 #include "common/logging.h"
 #include "common/scm_rev.h"
 #include "common/settings.h"
+#include "common/settings_enums.h"
 #include "common/string_util.h"
 #include "core/core.h"
 #include "core/core_timing.h"
@@ -58,6 +59,8 @@
 #if defined(__OPENORBIS__)
 #include <orbis/libkernel.h>
 #include <orbis/SystemService.h>
+#include <orbis/AudioOut.h>
+#include <orbis/UserService.h>
 #elif defined(_WIN32)
 extern "C" {
 // tells Nvidia and AMD drivers to use the dedicated GPU by default on laptops with switchable
