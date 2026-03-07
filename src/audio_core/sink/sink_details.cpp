@@ -16,6 +16,9 @@
 #ifdef HAVE_SDL3
 #include "audio_core/sink/sdl3_sink.h"
 #endif
+#ifdef __OPENORBIS__
+#include "audio_core/sink/ps4_sink.h"
+#endif
 #include "audio_core/sink/null_sink.h"
 #include "common/logging.h"
 #include "common/settings_enums.h"
@@ -42,6 +45,26 @@ struct SinkDetails {
 
 // sink_details is ordered in terms of desirability, with the best choice at the top.
 constexpr SinkDetails sink_details[] = {
+#ifdef __OPENORBIS__
+    SinkDetails{
+        Settings::AudioEngine::Ps4,
+        [](std::string_view device_id) -> std::unique_ptr<Sink> {
+            return std::make_unique<PS4Sink>(device_id);
+        },
+        &ListPS4SinkDevices,
+        &GetPS4Latency,
+    },
+#endif
+#ifdef HAVE_OBOE
+    SinkDetails{
+        Settings::AudioEngine::Oboe,
+        [](std::string_view device_id) -> std::unique_ptr<Sink> {
+            return std::make_unique<OboeSink>();
+        },
+        [](bool capture) { return std::vector<std::string>{"Default"}; },
+        []() { return 0u; },
+    },
+#endif
 #ifdef HAVE_CUBEB
     SinkDetails{
         Settings::AudioEngine::Cubeb,
@@ -96,7 +119,9 @@ const SinkDetails& GetOutputSinkDetails(Settings::AudioEngine sink_id) {
         // BEGIN REINTRODUCED FROM 3833 - REPLACED CODE BLOCK ABOVE - DIABLO 3 FIX
         // Auto-select a backend. Prefer CubeB, but it may report a large minimum latency which
         // causes audio issues, in that case go with SDL.
-#if defined(HAVE_CUBEB) && defined(HAVE_SDL3)
+#if defined(__OPENORBIS__)
+        iter = find_backend(Settings::AudioEngine::Ps4);
+#elif defined(HAVE_CUBEB) && defined(HAVE_SDL3)
         iter = find_backend(Settings::AudioEngine::Cubeb);
         if (iter->latency() > TargetSampleCount * 3) {
         iter = find_backend(Settings::AudioEngine::Sdl3);

@@ -245,4 +245,10 @@ target_sources(audio_core PRIVATE
 target_link_libraries(audio_core PRIVATE SDL3::SDL3)
 target_compile_definitions(audio_core PRIVATE HAVE_SDL3)
 
+if(PLATFORM_PS4)
+    target_sources(audio_core PRIVATE
+        sink/ps4_sink.cpp
+        sink/ps4_sink.h)
+endif()
+
 create_target_directory_groups(audio_core)
