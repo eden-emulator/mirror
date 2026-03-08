@@ -10,8 +10,8 @@
 #include <memory>
 #include <ankerl/unordered_dense.h>
 
-#include <dynarmic/interface/A64/a64.h>
-#include <dynarmic/interface/code_page.h>
+#include "dynarmic/interface/A64/a64.h"
+#include "dynarmic/interface/code_page.h"
 #include "common/common_types.h"
 #include "common/hash.h"
 #include "core/arm/arm_interface.h"

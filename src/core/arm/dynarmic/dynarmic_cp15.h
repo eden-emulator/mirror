@@ -5,7 +5,7 @@
 
 #include <optional>
 
-#include <dynarmic/interface/A32/coprocessor.h>
+#include "dynarmic/interface/A32/coprocessor.h"
 #include "common/common_types.h"
 
 namespace Core {

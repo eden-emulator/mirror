@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <dynarmic/interface/exclusive_monitor.h>
+#include "dynarmic/interface/exclusive_monitor.h"
 
 #include "common/common_types.h"
 #include "core/arm/exclusive_monitor.h"
