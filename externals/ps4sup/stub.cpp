@@ -9,7 +9,11 @@
         asm volatile("ud2"); \
     }
 
-extern "C" void __cxa_thread_atexit_impl() {}
+extern "C" int __pthread_cxa_finalize();
+extern "C" void __cxa_thread_atexit_impl() {
+    //printf("__cxa_thread_atexit_impl called!\n");
+    //__pthread_cxa_finalize();
+}
 
 STUB_WEAK(__assert)
 STUB_WEAK(ZSTD_trace_compress_begin)
@@ -19,14 +23,6 @@ STUB_WEAK(ZSTD_trace_decompress_end)
 
 FILE* __stderrp = stdout;
 FILE* __stdinp = stdin;
-
-extern "C" {
-struct _RuneLocale;
-thread_local const _RuneLocale *_ThreadRuneLocale = NULL;
-const _RuneLocale *_CurrentRuneLocale = NULL;
-int __isthreaded = 0;
-int __mb_sb_limit = 0;
-}
 
 #undef STUB_WEAK
 
