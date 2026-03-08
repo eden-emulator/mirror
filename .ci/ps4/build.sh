@@ -20,8 +20,8 @@ set(CMAKE_CXX_LINK_FLAGS "-m elf_x86_64 -pie -T $OO_PS4_TOOLCHAIN/link.x --eh-fr
 set(CMAKE_C_COMPILER clang)
 set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_LINKER ld.lld)
-set(CMAKE_C_LINK_EXECUTABLE "<CMAKE_LINKER> <CMAKE_C_LINK_FLAGS> <OBJECTS> -o <TARGET> -lc -lkernel -lSceUserService  -lSceSysmodule -lSceNet $OO_PS4_TOOLCHAIN/lib/crt1.o <LINK_LIBRARIES>")
-set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_LINKER> <CMAKE_CXX_LINK_FLAGS> <OBJECTS> -o <TARGET> -lc -lkernel -lc++ -lSceUserService -lSceSysmodule -lSceNet $OO_PS4_TOOLCHAIN/lib/crt1.o <LINK_LIBRARIES>")
+set(CMAKE_C_LINK_EXECUTABLE "<CMAKE_LINKER> <CMAKE_C_LINK_FLAGS> <OBJECTS> -o <TARGET> -lc -lkernel -lSceUserService  -lSceSysmodule -lSceNet -lSceLibcInternal $OO_PS4_TOOLCHAIN/lib/crt1.o <LINK_LIBRARIES>")
+set(CMAKE_CXX_LINK_EXECUTABLE "<CMAKE_LINKER> <CMAKE_CXX_LINK_FLAGS> <OBJECTS> -o <TARGET> -lc -lkernel -lc++ -lSceUserService -lSceSysmodule -lSceNet -lSceLibcInternal $OO_PS4_TOOLCHAIN/lib/crt1.o <LINK_LIBRARIES>")
 
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
