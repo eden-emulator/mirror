@@ -14,7 +14,7 @@
 #include <cstring>
 #include <boost/container/static_vector.hpp>
 
-#include <dynarmic/common/spin_lock.h>
+#include "dynarmic/common/spin_lock.h"
 
 namespace Dynarmic {
 

@@ -8,9 +8,9 @@
 #include <map>
 #include <span>
 #include <boost/icl/interval_set.hpp>
-#include <dynarmic/interface/A64/a64.h>
-#include <dynarmic/interface/A64/config.h>
-#include <dynarmic/interface/code_page.h>
+#include "dynarmic/interface/A64/a64.h"
+#include "dynarmic/interface/A64/config.h"
+#include "dynarmic/interface/code_page.h"
 
 #include "common/alignment.h"
 #include "common/common_funcs.h"
