@@ -83,17 +83,14 @@ void nvmap::OnClose(DeviceFD fd) {
 NvResult nvmap::IocCreate(IocCreateParams& params) {
     LOG_DEBUG(Service_NVDRV, "called, size={:#08x}", params.size);
 
-    std::shared_ptr<NvCore::NvMap::Handle> handle_description{};
-    auto result =
-        file.CreateHandle(Common::AlignUp(params.size, YUZU_PAGESIZE), handle_description);
+    NvCore::NvMap::Handle handle_description(0, 0);
+    // Orig size is the unaligned size, set the handle to that
+    auto result = file.CreateHandle(params.size, params.handle);
     if (result != NvResult::Success) {
         LOG_CRITICAL(Service_NVDRV, "Failed to create Object");
         return result;
     }
-    handle_description->orig_size = params.size; // Orig size is the unaligned size
-    params.handle = handle_description->id;
-    LOG_DEBUG(Service_NVDRV, "handle: {}, size: {:#x}", handle_description->id, params.size);
-
+    LOG_DEBUG(Service_NVDRV, "handle: {}, size: {:#x}", params.handle, params.size);
     return NvResult::Success;
 }
 
@@ -115,30 +112,26 @@ NvResult nvmap::IocAlloc(IocAllocParams& params, DeviceFD fd) {
         params.align = YUZU_PAGESIZE;
     }
 
-    auto handle_description{file.GetHandle(params.handle)};
-    if (!handle_description) {
+    auto o = file.GetHandle(params.handle);
+    if (!o) {
         LOG_CRITICAL(Service_NVDRV, "Object does not exist, handle={:08X}", params.handle);
         return NvResult::BadValue;
     }
 
+    auto handle_description = &o->get();
     if (handle_description->allocated) {
         LOG_CRITICAL(Service_NVDRV, "Object is already allocated, handle={:08X}", params.handle);
         return NvResult::InsufficientMemory;
     }
 
-    const auto result = handle_description->Alloc(params.flags, params.align, params.kind,
-                                                  params.address, sessions[fd]);
+    const auto result = handle_description->Alloc(params.flags, params.align, params.kind, params.address, sessions[fd]);
     if (result != NvResult::Success) {
         LOG_CRITICAL(Service_NVDRV, "Object failed to allocate, handle={:08X}", params.handle);
         return result;
     }
     bool is_out_io{};
     auto process = container.GetSession(sessions[fd])->process;
-    ASSERT(process->GetPageTable()
-               .LockForMapDeviceAddressSpace(&is_out_io, handle_description->address,
-                                             handle_description->size,
-                                             Kernel::KMemoryPermission::None, true, false)
-               .IsSuccess());
+    ASSERT(process->GetPageTable().LockForMapDeviceAddressSpace(&is_out_io, handle_description->address, handle_description->size, Kernel::KMemoryPermission::None, true, false).IsSuccess());
     return result;
 }
 
@@ -151,13 +144,12 @@ NvResult nvmap::IocGetId(IocGetIdParams& params) {
         return NvResult::BadValue;
     }
 
-    auto handle_description{file.GetHandle(params.handle)};
-    if (!handle_description) {
+    auto o = file.GetHandle(params.handle);
+    if (!o) {
         LOG_CRITICAL(Service_NVDRV, "Error!");
-        return NvResult::AccessDenied; // This will always return EPERM irrespective of if the
-                                       // handle exists or not
+        return NvResult::AccessDenied; // This will always return EPERM irrespective of if the handle exists or not
     }
-
+    auto handle_description = &o->get();
     params.id = handle_description->id;
     return NvResult::Success;
 }
@@ -174,12 +166,13 @@ NvResult nvmap::IocFromId(IocFromIdParams& params) {
         return NvResult::BadValue;
     }
 
-    auto handle_description{file.GetHandle(params.id)};
-    if (!handle_description) {
+    auto o = file.GetHandle(params.id);
+    if (!o) {
         LOG_CRITICAL(Service_NVDRV, "Unregistered handle!");
         return NvResult::BadValue;
     }
 
+    auto handle_description = &o->get();
     auto result = handle_description->Duplicate(false);
     if (result != NvResult::Success) {
         LOG_CRITICAL(Service_NVDRV, "Could not duplicate handle!");
@@ -199,12 +192,13 @@ NvResult nvmap::IocParam(IocParamParams& params) {
         return NvResult::BadValue;
     }
 
-    auto handle_description{file.GetHandle(params.handle)};
-    if (!handle_description) {
+    auto o = file.GetHandle(params.handle);
+    if (!o) {
         LOG_CRITICAL(Service_NVDRV, "Not registered handle!");
         return NvResult::BadValue;
     }
 
+    auto handle_description = &o->get();
     switch (params.param) {
     case HandleParameterType::Size:
         params.result = static_cast<u32_le>(handle_description->orig_size);

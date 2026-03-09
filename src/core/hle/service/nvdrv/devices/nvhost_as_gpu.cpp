@@ -328,10 +328,11 @@ NvResult nvhost_as_gpu::MapBufferEx(IoctlMapBufferEx& params) {
         }
     }
 
-    auto handle{nvmap.GetHandle(params.handle)};
-    if (!handle) {
+    auto o = nvmap.GetHandle(params.handle);
+    if (!o) {
         return NvResult::BadValue;
     }
+    auto handle = &o->get();
 
     DAddr device_address = DAddr(nvmap.PinHandle(params.handle, false) + params.buffer_offset);
     u64 size{params.mapping_size ? params.mapping_size : handle->orig_size};
