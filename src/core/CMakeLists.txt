@@ -1261,6 +1261,10 @@ if (ARCHITECTURE_x86_64 OR ARCHITECTURE_arm64 OR ARCHITECTURE_riscv64 OR ARCHITE
         hle/service/jit/jit.cpp
         hle/service/jit/jit.h)
     target_link_libraries(core PRIVATE dynarmic::dynarmic)
+    # Quick hack for XCode generator...
+    if (IOS)
+        target_include_directories(core PRIVATE "${CMAKE_SOURCE_DIR}/dynarmic/src")
+    endif()
 endif()
 
 if (TARGET OpenSSL::SSL)
