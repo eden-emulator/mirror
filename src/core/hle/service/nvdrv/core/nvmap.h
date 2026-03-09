@@ -161,8 +161,7 @@ private:
     std::list<std::shared_ptr<Handle>> unmap_queue{};
     std::mutex unmap_queue_lock{}; //!< Protects access to `unmap_queue`
 
-    ankerl::unordered_dense::map<Handle::Id, std::shared_ptr<Handle>>
-        handles{};           //!< Main owning map of handles
+    std::unordered_map<Handle::Id, std::shared_ptr<Handle>> handles{}; //!< Main owning map of handles
     std::mutex handles_lock; //!< Protects access to `handles`
 
     static constexpr u32 HandleIdIncrement{
