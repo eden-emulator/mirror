@@ -103,17 +103,13 @@ NvResult nvhost_nvdec_common::Submit(IoctlSubmit& params, std::span<u8> data, De
 
     for (std::size_t i = 0; i < syncpt_increments.size(); i++) {
         const SyncptIncr& syncpt_incr = syncpt_increments[i];
-        fence_thresholds[i] =
-            syncpoint_manager.IncrementSyncpointMaxExt(syncpt_incr.id, syncpt_incr.increments);
+        fence_thresholds[i] = syncpoint_manager.IncrementSyncpointMaxExt(syncpt_incr.id, syncpt_incr.increments);
     }
 
     for (const auto& cmd_buffer : command_buffers) {
         const auto object = nvmap.GetHandle(cmd_buffer.memory_id);
         ASSERT_OR_EXECUTE(object, return NvResult::InvalidState;);
-        Core::Memory::CpuGuestMemory<Tegra::ChCommandHeader,
-                                     Core::Memory::GuestMemoryFlags::SafeRead>
-            cmdlist(session->process->GetMemory(), object->address + cmd_buffer.offset,
-                    cmd_buffer.word_count);
+        Core::Memory::CpuGuestMemory<Tegra::ChCommandHeader, Core::Memory::GuestMemoryFlags::SafeRead> cmdlist(session->process->GetMemory(), object->get().address + cmd_buffer.offset, cmd_buffer.word_count);
         host1x.PushEntries(fd, std::move(cmdlist));
     }
 
