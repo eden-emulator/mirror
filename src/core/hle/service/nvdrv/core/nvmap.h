@@ -38,7 +38,6 @@ public:
     /// @brief A handle to a contiguous block of memory in an application's address space
     struct Handle {
         using Id = u32;
-        std::mutex mutex;
         std::optional<typename std::list<Handle::Id>::iterator> unmap_queue_entry{};
         u64 align{};      //!< The alignment to use when pinning the handle onto the SMMU
         u64 size;         //!< Page-aligned size of the memory the handle refers to
@@ -64,7 +63,6 @@ public:
         bool in_heap : 1 = false;
         bool is_shared_mem_mapped : 1 = false; //!< If this nvmap has been mapped with the MapSharedMem IPC < call
 
-        Handle() = default;
         Handle(u64 size, Id id);
 
         /**
@@ -142,15 +140,14 @@ public:
 
     void UnmapAllHandles(NvCore::SessionId session_id);
 
-private:
     std::list<Handle::Id> unmap_queue{};
     boost::unordered_node_map<Handle::Id, Handle> handles{}; //!< Main owning map of handles
     std::mutex unmap_queue_lock{}; //!< Protects access to `unmap_queue`
     std::mutex handles_lock; //!< Protects access to `handles`
-
     static constexpr u32 HandleIdIncrement{4}; //!< Each new handle ID is an increment of 4 from the previous
     std::atomic<u32> next_handle_id{HandleIdIncrement};
     Tegra::Host1x::Host1x& host1x;
+    Container& core;
 
     void AddHandle(Handle&& handle);
 
@@ -166,7 +163,5 @@ private:
      * @return If the handle was removed from the map
      */
     bool TryRemoveHandle(const Handle& handle_description);
-
-    Container& core;
 };
 } // namespace Service::Nvidia::NvCore

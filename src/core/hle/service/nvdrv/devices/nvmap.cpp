@@ -112,6 +112,7 @@ NvResult nvmap::IocAlloc(IocAllocParams& params, DeviceFD fd) {
         params.align = YUZU_PAGESIZE;
     }
 
+    std::scoped_lock lock(file.handles_lock);
     auto o = file.GetHandle(params.handle);
     if (!o) {
         LOG_CRITICAL(Service_NVDRV, "Object does not exist, handle={:08X}", params.handle);
@@ -144,6 +145,7 @@ NvResult nvmap::IocGetId(IocGetIdParams& params) {
         return NvResult::BadValue;
     }
 
+    std::scoped_lock lock(file.handles_lock);
     auto o = file.GetHandle(params.handle);
     if (!o) {
         LOG_CRITICAL(Service_NVDRV, "Error!");
@@ -166,6 +168,7 @@ NvResult nvmap::IocFromId(IocFromIdParams& params) {
         return NvResult::BadValue;
     }
 
+    std::scoped_lock lock(file.handles_lock);
     auto o = file.GetHandle(params.id);
     if (!o) {
         LOG_CRITICAL(Service_NVDRV, "Unregistered handle!");
@@ -192,6 +195,7 @@ NvResult nvmap::IocParam(IocParamParams& params) {
         return NvResult::BadValue;
     }
 
+    std::scoped_lock lock(file.handles_lock);
     auto o = file.GetHandle(params.handle);
     if (!o) {
         LOG_CRITICAL(Service_NVDRV, "Not registered handle!");

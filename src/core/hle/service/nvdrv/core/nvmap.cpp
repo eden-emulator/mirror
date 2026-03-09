@@ -25,42 +25,33 @@ NvMap::Handle::Handle(u64 size_, Id id_)
     flags.raw = 0;
 }
 
-NvResult NvMap::Handle::Alloc(Flags pFlags, u32 pAlign, u8 pKind, u64 pAddress,
-                              NvCore::SessionId pSessionId) {
-    std::scoped_lock lock(mutex);
+NvResult NvMap::Handle::Alloc(Flags pFlags, u32 pAlign, u8 pKind, u64 pAddress, NvCore::SessionId pSessionId) {
     // Handles cannot be allocated twice
     if (allocated) {
         return NvResult::AccessDenied;
     }
-
     flags = pFlags;
     kind = pKind;
     align = pAlign < YUZU_PAGESIZE ? YUZU_PAGESIZE : pAlign;
     session_id = pSessionId;
-
     // This flag is only applicable for handles with an address passed
     if (pAddress) {
         flags.keep_uncached_after_free.Assign(0);
     } else {
-        LOG_CRITICAL(Service_NVDRV,
-                     "Mapping nvmap handles without a CPU side address is unimplemented!");
+        LOG_CRITICAL(Service_NVDRV, "Mapping nvmap handles without a CPU side address is unimplemented!");
     }
-
     size = Common::AlignUp(size, YUZU_PAGESIZE);
     aligned_size = Common::AlignUp(size, align);
     address = pAddress;
     allocated = true;
-
     return NvResult::Success;
 }
 
 NvResult NvMap::Handle::Duplicate(bool internal_session) {
-    std::scoped_lock lock(mutex);
     // Unallocated handles cannot be duplicated as duplication requires memory accounting (in HOS)
     if (!allocated) [[unlikely]] {
         return NvResult::BadValue;
     }
-
     // If we internally use FromId the duplication tracking of handles won't work accurately due to
     // us not implementing per-process handle refs.
     if (internal_session) {
@@ -68,7 +59,6 @@ NvResult NvMap::Handle::Duplicate(bool internal_session) {
     } else {
         dupes++;
     }
-
     return NvResult::Success;
 }
 
@@ -76,7 +66,7 @@ NvMap::NvMap(Container& core_, Tegra::Host1x::Host1x& host1x_) : host1x{host1x_}
 
 void NvMap::AddHandle(Handle&& handle_description) {
     std::scoped_lock l(handles_lock);
-    handles.emplace(handle_description.id, std::move(handle_description));
+    handles.insert_or_assign(handle_description.id, std::move(handle_description));
 }
 
 void NvMap::UnmapHandle(Handle& handle_description) {
@@ -137,20 +127,19 @@ NvResult NvMap::CreateHandle(u64 size, Handle::Id& out_handle) {
 }
 
 std::optional<std::reference_wrapper<NvMap::Handle>> NvMap::GetHandle(Handle::Id handle) {
-    std::scoped_lock lock(handles_lock);
     if (auto const it = handles.find(handle); it != handles.end())
         return {it->second};
     return std::nullopt;
 }
 
 DAddr NvMap::GetHandleAddress(Handle::Id handle) {
-    std::scoped_lock lock(handles_lock);
     if (auto const it = handles.find(handle); it != handles.end())
         return it->second.d_address;
     return 0;
 }
 
 DAddr NvMap::PinHandle(NvMap::Handle::Id handle, bool low_area_pin) {
+    std::scoped_lock lock(handles_lock);
     auto o = GetHandle(handle);
     if (!o) [[unlikely]] {
         return 0;
@@ -158,7 +147,6 @@ DAddr NvMap::PinHandle(NvMap::Handle::Id handle, bool low_area_pin) {
 
     auto handle_description = &o->get();
 
-    std::scoped_lock lock(handle_description->mutex);
     const auto map_low_area = [&] {
         if (handle_description->pin_virt_address == 0) {
             u32 address = host1x.Allocator().Allocate(u32(handle_description->aligned_size));
@@ -204,7 +192,6 @@ DAddr NvMap::PinHandle(NvMap::Handle::Id handle, bool low_area_pin) {
                 if (auto free_handle = handles.find(unmap_queue.front()); free_handle != handles.end()) {
                     // Handles in the unmap queue are guaranteed not to be pinned so don't bother
                     // checking if they are before unmapping
-                    std::scoped_lock fl(free_handle->second.mutex);
                     if (handle_description->d_address)
                         UnmapHandle(free_handle->second);
                 } else {
@@ -230,9 +217,9 @@ DAddr NvMap::PinHandle(NvMap::Handle::Id handle, bool low_area_pin) {
 }
 
 void NvMap::UnpinHandle(Handle::Id handle) {
+    std::scoped_lock lock(handles_lock);
     if (auto o = GetHandle(handle); o) {
         auto handle_description = &o->get();
-        std::scoped_lock lock(handle_description->mutex);
         if (--handle_description->pins < 0) {
             LOG_WARNING(Service_NVDRV, "Pin count imbalance detected!");
         } else if (!handle_description->pins) {
@@ -245,6 +232,7 @@ void NvMap::UnpinHandle(Handle::Id handle) {
 }
 
 void NvMap::DuplicateHandle(Handle::Id handle, bool internal_session) {
+    std::scoped_lock lock(handles_lock);
     auto o = GetHandle(handle);
     if (!o) {
         LOG_CRITICAL(Service_NVDRV, "Unregistered handle!");
@@ -257,11 +245,10 @@ void NvMap::DuplicateHandle(Handle::Id handle, bool internal_session) {
 }
 
 std::optional<NvMap::FreeInfo> NvMap::FreeHandle(Handle::Id handle, bool internal_session) {
-    // We use a weak ptr here so we can tell when the handle has been freed and report that back to
-    // guest
+    // We use a weak ptr here so we can tell when the handle has been freed and report that back to guest
+    std::scoped_lock lock(handles_lock);
     if (auto o = GetHandle(handle); o) {
         auto handle_description = &o->get();
-        std::scoped_lock l(handle_description->mutex);
         if (internal_session) {
             if (--handle_description->internal_dupes < 0)
                 LOG_WARNING(Service_NVDRV, "Internal duplicate count imbalance detected!");
@@ -301,19 +288,12 @@ std::optional<NvMap::FreeInfo> NvMap::FreeHandle(Handle::Id handle, bool interna
 }
 
 void NvMap::UnmapAllHandles(NvCore::SessionId session_id) {
-    auto handles_copy = [&] {
-        std::scoped_lock lk{handles_lock};
-        return handles;
-    }();
-
-    for (auto& [id, handle] : handles_copy) {
-        {
-            std::scoped_lock lk{handle.mutex};
-            if (handle.session_id.id != session_id.id || handle.dupes <= 0) {
-                continue;
-            }
+    std::scoped_lock lk{handles_lock};
+    for (auto it = handles.begin(); it != handles.end(); ++it) {
+        if (it->second.session_id.id != session_id.id || it->second.dupes <= 0) {
+            continue;
         }
-        FreeHandle(id, false);
+        FreeHandle(it->first, false);
     }
 }
 
