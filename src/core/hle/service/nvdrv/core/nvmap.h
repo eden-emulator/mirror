@@ -12,6 +12,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <unordered_map>
 #include <ankerl/unordered_dense.h>
 #include <assert.h>
 
