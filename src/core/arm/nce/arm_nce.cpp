@@ -175,8 +175,6 @@ bool ArmNce::HandleGuestAccessFault(GuestContext* guest_ctx, void* raw_info, voi
     } else {
         // Corresponds to the 2nd page, this means the access is split between two pages
         auto const addr_c2 = (addr_c1 & ~Memory::YUZU_PAGEMASK) + Memory::YUZU_PAGESIZE;
-        auto const count_c2 = (addr_c1 + acc_size) & Memory::YUZU_PAGEMASK;
-        auto const count_c1 = acc_size - count_c2;
         // Heres the stupid part, how the fuck do we decide if either the first
         // or second pages should be the ones to propagate the fault?
         if (memory.InvalidateNCE(addr_c1, Memory::YUZU_PAGESIZE))
