@@ -12,7 +12,11 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#if BOOST_VERSION >= 109000
 #include <boost/unordered/unordered_node_map.hpp>
+#else
+#include <unordered_map>
+#endif
 #include <ankerl/unordered_dense.h>
 #include <assert.h>
 
@@ -141,7 +145,12 @@ public:
     void UnmapAllHandles(NvCore::SessionId session_id);
 
     std::list<Handle::Id> unmap_queue{};
-    boost::unordered_node_map<Handle::Id, Handle> handles{}; //!< Main owning map of handles
+    /// Main owning map of handles
+#if BOOST_VERSION >= 109000
+    boost::unordered_node_map<Handle::Id, Handle> handles{};
+#else
+    std::unordered_map<Handle::Id, Handle> handles{};
+#endif
     std::mutex unmap_queue_lock{}; //!< Protects access to `unmap_queue`
     std::mutex handles_lock; //!< Protects access to `handles`
     static constexpr u32 HandleIdIncrement{4}; //!< Each new handle ID is an increment of 4 from the previous
