@@ -13,7 +13,7 @@
 namespace QtCommon::Content {
 
 //
-bool CheckGameFirmware(u64 program_id, QObject *parent);
+bool CheckGameFirmware(u64 program_id);
 
 enum class FirmwareInstallResult {
     Success,
