@@ -1500,7 +1500,6 @@ void MainWindow::ConnectMenuEvents() {
     connect_menu(ui->action_Pause, &MainWindow::OnPauseContinueGame);
     connect_menu(ui->action_Stop, &MainWindow::OnStopGame);
     connect_menu(ui->action_Open_Mods_Page, &MainWindow::OnOpenModsPage);
-    connect_menu(ui->action_Open_Quickstart_Guide, &MainWindow::OnOpenQuickstartGuide);
     connect_menu(ui->action_Open_FAQ, &MainWindow::OnOpenFAQ);
     connect_menu(ui->action_Restart, &MainWindow::OnRestartGame);
     connect_menu(ui->action_Configure, &MainWindow::OnConfigure);
@@ -1837,12 +1836,10 @@ bool MainWindow::LoadROM(const QString& filename, Service::AM::FrontendAppletPar
         case Core::SystemResultStatus::ErrorVideoCore:
             QMessageBox::critical(
                 this, tr("An error occurred initializing the video core."),
-                tr("Eden has encountered an error while running the video core. "
-                   "This is usually caused by outdated GPU drivers, including integrated ones. "
-                   "Please see the log for more details. "
-                   "For more information on accessing the log, please see the following page: "
-                   "<a href='https://yuzu-mirror.github.io/help/reference/log-files/'>"
-                   "How to Upload the Log File</a>. "));
+                tr("This is usually caused by outdated GPU drivers, including integrated ones. "
+                   "Please see the log for more details. See: "
+                   "<a href='https://git.eden-emu.dev/eden-emu/eden/src/branch/master/docs/user/HowToAccessLogs.md'>"
+                   "How to access log files</a>."));
             break;
         default:
             if (result > Core::SystemResultStatus::ErrorLoader) {
@@ -3149,12 +3146,8 @@ void MainWindow::OnOpenModsPage() {
     OpenURL(QUrl(QStringLiteral("https://github.com/eden-emulator/yuzu-mod-archive")));
 }
 
-void MainWindow::OnOpenQuickstartGuide() {
-    OpenURL(QUrl(QStringLiteral("https://yuzu-mirror.github.io/help/quickstart/")));
-}
-
 void MainWindow::OnOpenFAQ() {
-    OpenURL(QUrl(QStringLiteral("https://yuzu-mirror.github.io/help")));
+    OpenURL(QUrl(QStringLiteral("https://git.eden-emu.dev/eden-emu/eden/src/branch/master/docs/user/README.md")));
 }
 
 void MainWindow::ToggleFullscreen() {

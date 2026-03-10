@@ -28,9 +28,8 @@ bool CheckGameFirmware(u64 program_id) {
         !FirmwareManager::CheckFirmwarePresence(*system)) {
         auto result = QtCommon::Frontend::Warning(
             tr("Game Requires Firmware"),
-            tr("The game you are trying to launch requires firmware to boot or to get past the "
-               "opening menu. Please <a href='https://yuzu-mirror.github.io/help/quickstart'>"
-               "dump and install firmware</a>, or press \"OK\" to launch anyways."),
+            tr("The game you are trying to launch requires firmware to work. "
+                "Press \"OK\" to launch anyways."),
             QtCommon::Frontend::Ok | QtCommon::Frontend::Cancel);
 
         return result == QtCommon::Frontend::Ok;

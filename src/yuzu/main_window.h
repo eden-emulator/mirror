@@ -336,7 +336,6 @@ private slots:
     void OnPrepareForSleep(bool prepare_sleep);
     void OnMenuReportCompatibility();
     void OnOpenModsPage();
-    void OnOpenQuickstartGuide();
     void OnOpenFAQ();
 
     /// Called whenever a user selects a game in the game list widget.

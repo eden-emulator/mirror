@@ -233,7 +233,6 @@
     </property>
     <addaction name="action_Report_Compatibility"/>
     <addaction name="action_Open_Mods_Page"/>
-    <addaction name="action_Open_Quickstart_Guide"/>
     <addaction name="action_Open_FAQ"/>
     <addaction name="separator"/>
     <addaction name="action_About"/>
@@ -405,11 +404,6 @@
   <action name="action_Open_Mods_Page">
    <property name="text">
     <string>Open &amp;Mods Page</string>
-   </property>
-  </action>
-  <action name="action_Open_Quickstart_Guide">
-   <property name="text">
-    <string>Open &amp;Quickstart Guide</string>
    </property>
   </action>
   <action name="action_Open_FAQ">
