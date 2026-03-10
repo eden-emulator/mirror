@@ -160,16 +160,36 @@ bool ArmNce::HandleGuestAlignmentFault(GuestContext* guest_ctx, void* raw_info, 
 bool ArmNce::HandleGuestAccessFault(GuestContext* guest_ctx, void* raw_info, void* raw_context) {
     auto* info = static_cast<siginfo_t*>(raw_info);
 
-    // Try to handle an invalid access.
-    // TODO: handle accesses which split a page?
-    const Common::ProcessAddress addr =
-        (reinterpret_cast<u64>(info->si_addr) & ~Memory::YUZU_PAGEMASK);
     auto& memory = guest_ctx->parent->m_running_thread->GetOwnerProcess()->GetMemory();
-    if (memory.InvalidateNCE(addr, Memory::YUZU_PAGESIZE)) {
-        // We handled the access successfully and are returning to guest code.
-        return true;
-    }
 
+    // Try to handle an invalid access.
+    // This computes the addr for the (first) page corresponding to the access
+    auto const acc_size = 16; // Max architectural access size
+    // Please note accesses can be wider than 16-bytes on some(which?) cases
+    // but this should handle **most** of the fragant issues with cases like 128-bit vector
+    // load/stores or GPU writes.
+    auto const addr_c1 = Common::ProcessAddress(u64(info->si_addr) & ~Memory::YUZU_PAGEMASK);
+    if (!(acc_size > 1 && (addr_c1 & Memory::YUZU_PAGEMASK) + acc_size > Memory::YUZU_PAGESIZE)) {
+        if (memory.InvalidateNCE(addr_c1, Memory::YUZU_PAGESIZE))
+            return true;
+    } else {
+        // Corresponds to the 2nd page, this means the access is split between two pages
+        auto const addr_c2 = (addr_c1 & ~Memory::YUZU_PAGEMASK) + Memory::YUZU_PAGESIZE;
+        auto const count_c2 = (addr_c1 + acc_size) & Memory::YUZU_PAGEMASK;
+        auto const count_c1 = acc_size - count_c2;
+        // Heres the stupid part, how the fuck do we decide if either the first
+        // or second pages should be the ones to propagate the fault?
+        if (memory.InvalidateNCE(addr_c1, Memory::YUZU_PAGESIZE))
+            return true;
+        // ... well my solution is stupid, but basically we just ignore the second page
+        // IS THIS A REASONABLE SOLUTION? Absolutely. If we were to cross page boundaries
+        // we would need to fetch our stuff from **somewhere**, by then it would
+        // likely be too late to handle the "invalidate case".
+        //
+        // Or simply put, the architecture might expect us to invalidate the unaligned access
+        // this should especially reflect on any game that had unaligned issues with JIT before.
+        memory.InvalidateNCE(addr_c2, Memory::YUZU_PAGESIZE);
+    }
     // We couldn't handle the access.
     return HandleFailedGuestFault(guest_ctx, raw_info, raw_context);
 }
