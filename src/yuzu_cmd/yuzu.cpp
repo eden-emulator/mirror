@@ -202,6 +202,8 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     // May prevent spurious crashes on swap handlers...
     setvbuf(stdout, nullptr, _IONBF, 0);
     setvbuf(stderr, nullptr, _IONBF, 0);
+
+    sceUserServiceInitialize(nullptr);
 #endif
 
     Common::Log::Initialize();
