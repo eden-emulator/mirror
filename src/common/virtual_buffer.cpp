@@ -23,7 +23,7 @@ extern "C" int32_t sceKernelInstallExceptionHandler(int32_t signum, SceKernelExc
 
 #include "common/assert.h"
 #include "common/virtual_buffer.h"
-#include "common/logging/log.h"
+#include "common/logging.h"
 
 // PlayStation 4
 // Flag needs to be undef-ed on non PS4 since it has different semantics
