@@ -32,7 +32,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 set(CMAKE_SIZEOF_VOID_P 8)
 EOF
 
-NPROC=$(nproc || 1)
+[ -z ${NPROC+x} ] && NPROC=$(nproc || 1)
 
 # Normally a platform has a package manager
 # PS4 does not, atleast not in the normal sense
