@@ -23,7 +23,7 @@
 namespace Vulkan {
 using namespace FSR;
 
-using PushConstants = std::array<u32, 4 * 4>;
+using FsrPushConstants = std::array<u32, 4 * 4>;
 
 FSR::FSR(const Device& device, MemoryAllocator& memory_allocator, size_t image_count, VkExtent2D extent)
     : m_memory_allocator{memory_allocator}
@@ -96,7 +96,7 @@ void FSR::CreatePipelineLayouts(const Device& device) {
     const VkPushConstantRange range{
         .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
         .offset = 0,
-        .size = sizeof(PushConstants),
+        .size = sizeof(FsrPushConstants),
     };
     VkPipelineLayoutCreateInfo ci{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -168,8 +168,8 @@ VkImageView FSR::Draw(const Device& device, Scheduler& scheduler, size_t image_i
     const f32 viewport_height = (crop_rect.bottom - crop_rect.top) * input_image_height;
     const f32 viewport_y = crop_rect.top * input_image_height;
 
-    PushConstants easu_con{};
-    PushConstants rcas_con{};
+    FsrPushConstants easu_con{};
+    FsrPushConstants rcas_con{};
     FsrEasuConOffset(easu_con.data() + 0, easu_con.data() + 4, easu_con.data() + 8,
                      easu_con.data() + 12, viewport_width, viewport_height, input_image_width,
                      input_image_height, output_image_width, output_image_height, viewport_x,
@@ -190,7 +190,7 @@ VkImageView FSR::Draw(const Device& device, Scheduler& scheduler, size_t image_i
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, easu_pipeline);
         cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
                                   easu_descriptor_set, {});
-        cmdbuf.PushConstants(pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, easu_con);
+        cmdbuf.FsrPushConstants(pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, easu_con);
         cmdbuf.Draw(3, 1, 0, 0);
         cmdbuf.EndRenderPass();
 
@@ -200,7 +200,7 @@ VkImageView FSR::Draw(const Device& device, Scheduler& scheduler, size_t image_i
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, rcas_pipeline);
         cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0,
                                   rcas_descriptor_set, {});
-        cmdbuf.PushConstants(pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, rcas_con);
+        cmdbuf.FsrPushConstants(pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, rcas_con);
         cmdbuf.Draw(3, 1, 0, 0);
         cmdbuf.EndRenderPass();
 
