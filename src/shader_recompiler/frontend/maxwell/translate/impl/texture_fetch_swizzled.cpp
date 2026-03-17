@@ -134,7 +134,7 @@ IR::Value SampleTFS(TranslatorVisitor& v, u64 insn) {
     }
 }
 
-unsigned Swizzle(u64 insn) {
+unsigned FetchSwizzle(u64 insn) {
 #define R 1
 #define G 2
 #define B 4
@@ -173,7 +173,7 @@ unsigned Swizzle(u64 insn) {
     }
 }
 
-IR::F32 Extract(TranslatorVisitor& v, const IR::Value& sample, unsigned component) {
+IR::F32 FetchExtract(TranslatorVisitor& v, const IR::Value& sample, unsigned component) {
     const bool is_shadow{sample.Type() == IR::Type::F32};
     if (is_shadow) {
         const bool is_alpha{component == 3};
@@ -183,7 +183,7 @@ IR::F32 Extract(TranslatorVisitor& v, const IR::Value& sample, unsigned componen
     }
 }
 
-IR::Reg RegStoreComponent32(u64 insn, unsigned index) {
+IR::Reg FetchRegStoreComponent32(u64 insn, unsigned index) {
     const EncodinTFS texs{insn};
     switch (index) {
     case 0:
@@ -201,14 +201,14 @@ IR::Reg RegStoreComponent32(u64 insn, unsigned index) {
 }
 
 void Store32TFS(TranslatorVisitor& v, u64 insn, const IR::Value& sample) {
-    const unsigned swizzle{Swizzle(insn)};
+    const unsigned swizzle{FetchSwizzle(insn)};
     unsigned store_index{0};
     for (unsigned component = 0; component < 4; ++component) {
         if (((swizzle >> component) & 1) == 0) {
             continue;
         }
-        const IR::Reg dest{RegStoreComponent32(insn, store_index)};
-        v.F(dest, Extract(v, sample, component));
+        const IR::Reg dest{FetchRegStoreComponent32(insn, store_index)};
+        v.F(dest, FetchExtract(v, sample, component));
         ++store_index;
     }
 }
@@ -218,14 +218,14 @@ IR::U32 PackTFS(TranslatorVisitor& v, const IR::F32& lhs, const IR::F32& rhs) {
 }
 
 void Store16TFS(TranslatorVisitor& v, u64 insn, const IR::Value& sample) {
-    const unsigned swizzle{Swizzle(insn)};
+    const unsigned swizzle{FetchSwizzle(insn)};
     unsigned store_index{0};
     std::array<IR::F32, 4> swizzled;
     for (unsigned component = 0; component < 4; ++component) {
         if (((swizzle >> component) & 1) == 0) {
             continue;
         }
-        swizzled[store_index] = Extract(v, sample, component);
+        swizzled[store_index] = FetchExtract(v, sample, component);
         ++store_index;
     }
     const IR::F32 zero{v.ir.Imm32(0.0f)};

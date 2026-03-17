@@ -32,10 +32,6 @@ std::string InputVertexIndex(EmitContext& ctx, std::string_view vertex) {
     return IsInputArray(ctx.stage) ? fmt::format("[{}]", vertex) : "";
 }
 
-std::string_view OutputVertexIndex(EmitContext& ctx) {
-    return ctx.stage == Stage::TessellationControl ? "[gl_InvocationID]" : "";
-}
-
 std::string ChooseCbuf(EmitContext& ctx, const IR::Value& binding, std::string_view index) {
     if (binding.IsImmediate()) {
         return fmt::format("{}_cbuf{}[{}]", ctx.stage_name, binding.U32(), index);
@@ -281,7 +277,7 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, std::string_view val
         const u32 index{IR::GenericAttributeIndex(attr)};
         const u32 attr_element{IR::GenericAttributeElement(attr)};
         const GenericElementInfo& info{ctx.output_generics.at(index).at(attr_element)};
-        const auto output_decorator{OutputVertexIndex(ctx)};
+        const auto output_decorator = ctx.stage == Stage::TessellationControl ? "[gl_InvocationID]" : "";
         if (info.num_components == 1) {
             ctx.Add("{}{}={};", info.name, output_decorator, value);
         } else {

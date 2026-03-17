@@ -40,7 +40,7 @@ void CheckAlignmentTLS(IR::Reg reg, size_t alignment) {
     }
 }
 
-IR::Value MakeOffset(TranslatorVisitor& v, IR::Reg reg) {
+IR::Value MakeLoadOffset(TranslatorVisitor& v, IR::Reg reg) {
     const IR::U32 value{v.X(reg)};
     return v.ir.CompositeConstruct(v.ir.BitFieldExtract(value, v.ir.Imm32(0), v.ir.Imm32(4), true),
                                    v.ir.BitFieldExtract(value, v.ir.Imm32(4), v.ir.Imm32(4), true));
@@ -74,7 +74,7 @@ IR::Value SampleTLS(TranslatorVisitor& v, u64 insn) {
         CheckAlignmentTLS(reg_a, 2);
         texture_type = Shader::TextureType::Color2D;
         coords = v.ir.CompositeConstruct(v.X(reg_a), v.X(reg_a + 1));
-        offsets = MakeOffset(v, reg_b);
+        offsets = MakeLoadOffset(v, reg_b);
         break;
     case 5:
         CheckAlignmentTLS(reg_a, 2);
@@ -106,7 +106,7 @@ IR::Value SampleTLS(TranslatorVisitor& v, u64 insn) {
         texture_type = Shader::TextureType::Color2D;
         coords = v.ir.CompositeConstruct(v.X(reg_a), v.X(reg_a + 1));
         lod = v.X(reg_b);
-        offsets = MakeOffset(v, reg_b + 1);
+        offsets = MakeLoadOffset(v, reg_b + 1);
         break;
     default:
         throw NotImplementedException("Illegal encoding {}", tlds.encoding.Value());
@@ -119,7 +119,7 @@ IR::Value SampleTLS(TranslatorVisitor& v, u64 insn) {
     return v.ir.ImageFetch(handle, coords, offsets, lod, multisample, info);
 }
 
-unsigned Swizzle(u64 insn) {
+unsigned LoadSwizzle(u64 insn) {
 #define R 1
 #define G 2
 #define B 4
@@ -160,11 +160,11 @@ unsigned Swizzle(u64 insn) {
     }
 }
 
-IR::F32 Extract(TranslatorVisitor& v, const IR::Value& sample, unsigned component) {
+IR::F32 LoadExtract(TranslatorVisitor& v, const IR::Value& sample, unsigned component) {
     return IR::F32{v.ir.CompositeExtract(sample, component)};
 }
 
-IR::Reg RegStoreComponent32(u64 insn, unsigned index) {
+IR::Reg LoadRegStoreComponent32(u64 insn, unsigned index) {
     const EncodinTLS tlds{insn};
     switch (index) {
     case 0:
@@ -182,14 +182,14 @@ IR::Reg RegStoreComponent32(u64 insn, unsigned index) {
 }
 
 void Store32TLS(TranslatorVisitor& v, u64 insn, const IR::Value& sample) {
-    const unsigned swizzle{Swizzle(insn)};
+    const unsigned swizzle{LoadSwizzle(insn)};
     unsigned store_index{0};
     for (unsigned component = 0; component < 4; ++component) {
         if (((swizzle >> component) & 1) == 0) {
             continue;
         }
-        const IR::Reg dest{RegStoreComponent32(insn, store_index)};
-        v.F(dest, Extract(v, sample, component));
+        const IR::Reg dest{LoadRegStoreComponent32(insn, store_index)};
+        v.F(dest, LoadExtract(v, sample, component));
         ++store_index;
     }
 }
@@ -199,14 +199,14 @@ IR::U32 PackTLS(TranslatorVisitor& v, const IR::F32& lhs, const IR::F32& rhs) {
 }
 
 void Store16TLS(TranslatorVisitor& v, u64 insn, const IR::Value& sample) {
-    const unsigned swizzle{Swizzle(insn)};
+    const unsigned swizzle{LoadSwizzle(insn)};
     unsigned store_index{0};
     std::array<IR::F32, 4> swizzled;
     for (unsigned component = 0; component < 4; ++component) {
         if (((swizzle >> component) & 1) == 0) {
             continue;
         }
-        swizzled[store_index] = Extract(v, sample, component);
+        swizzled[store_index] = LoadExtract(v, sample, component);
         ++store_index;
     }
     const IR::F32 zero{v.ir.Imm32(0.0f)};

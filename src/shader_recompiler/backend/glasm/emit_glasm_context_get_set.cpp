@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -43,11 +46,6 @@ void GetCbuf(EmitContext& ctx, IR::Inst& inst, const IR::Value& binding, ScalarU
     for (u32 i = 0; i < Info::MAX_INDIRECT_CBUFS; i++) {
         ctx.Add("ENDIF;");
     }
-}
-
-bool IsInputArray(Stage stage) {
-    return stage == Stage::Geometry || stage == Stage::TessellationControl ||
-           stage == Stage::TessellationEval;
 }
 
 std::string VertexIndex(EmitContext& ctx, ScalarU32 vertex) {

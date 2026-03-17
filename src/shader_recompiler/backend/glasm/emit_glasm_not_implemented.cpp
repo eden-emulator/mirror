@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,94 +10,92 @@
 
 namespace Shader::Backend::GLASM {
 
-#define NotImplemented() throw NotImplementedException("GLASM instruction {}", __LINE__)
-
 void EmitGetRegister(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitSetRegister(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetPred(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitSetPred(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitSetGotoVariable(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetGotoVariable(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitSetIndirectBranchVariable(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetIndirectBranchVariable(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetZFlag(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetSFlag(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetCFlag(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetOFlag(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitSetZFlag(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitSetSFlag(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitSetCFlag(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitSetOFlag(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetZeroFromOp(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetSignFromOp(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetCarryFromOp(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetOverflowFromOp(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetSparseFromOp(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 void EmitGetInBoundsFromOp(EmitContext& ctx) {
-    NotImplemented();
+    throw NotImplementedException("GLASM instruction {}", __LINE__);
 }
 
 } // namespace Shader::Backend::GLASM

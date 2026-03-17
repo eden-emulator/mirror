@@ -11,7 +11,7 @@
 
 namespace Shader::Maxwell {
 namespace {
-enum class FloatFormat : u64 {
+enum class IntegerToFloatFormat : u64 {
     F16 = 1,
     F32 = 2,
     F64 = 3,
@@ -27,7 +27,7 @@ enum class IntFormat : u64 {
 union EncodingIFPC {
     u64 raw;
     BitField<0, 8, IR::Reg> dest_reg;
-    BitField<8, 2, FloatFormat> float_format;
+    BitField<8, 2, IntegerToFloatFormat> float_format;
     BitField<10, 2, IntFormat> int_format;
     BitField<13, 1, u64> is_signed;
     BitField<39, 2, FpRounding> fp_rounding;
@@ -41,13 +41,13 @@ bool Is64(u64 insn) {
     return EncodingIFPC{insn}.int_format == IntFormat::U64;
 }
 
-int BitSize(FloatFormat format) {
+int BitSize(IntegerToFloatFormat format) {
     switch (format) {
-    case FloatFormat::F16:
+    case IntegerToFloatFormat::F16:
         return 16;
-    case FloatFormat::F32:
+    case IntegerToFloatFormat::F32:
         return 32;
-    case FloatFormat::F64:
+    case IntegerToFloatFormat::F64:
         return 64;
     }
     throw NotImplementedException("Invalid float format {}", format);
@@ -119,15 +119,15 @@ void I2F(TranslatorVisitor& v, u64 insn, IR::U32U64 src) {
         }
     }
     switch (i2f.float_format) {
-    case FloatFormat::F16: {
+    case IntegerToFloatFormat::F16: {
         const IR::F16 zero{v.ir.FPConvert(16, v.ir.Imm32(0.0f))};
         v.X(i2f.dest_reg, v.ir.PackFloat2x16(v.ir.CompositeConstruct(value, zero)));
         break;
     }
-    case FloatFormat::F32:
+    case IntegerToFloatFormat::F32:
         v.F(i2f.dest_reg, value);
         break;
-    case FloatFormat::F64: {
+    case IntegerToFloatFormat::F64: {
         if (!IR::IsAligned(i2f.dest_reg, 2)) {
             throw NotImplementedException("Unaligned destination {}", i2f.dest_reg.Value());
         }
