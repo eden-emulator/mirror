@@ -43,7 +43,7 @@ void CheckAlignmentTGS(IR::Reg reg, size_t alignment) {
     }
 }
 
-IR::Value MakeOffset(TranslatorVisitor& v, IR::Reg reg) {
+IR::Value MakeGatherOffset(TranslatorVisitor& v, IR::Reg reg) {
     const IR::U32 value{v.X(reg)};
     return v.ir.CompositeConstruct(v.ir.BitFieldExtract(value, v.ir.Imm32(0), v.ir.Imm32(6), true),
                                    v.ir.BitFieldExtract(value, v.ir.Imm32(8), v.ir.Imm32(6), true));
@@ -65,7 +65,7 @@ IR::Value SampleTGS(TranslatorVisitor& v, u64 insn) {
     if (tld4s.aoffi != 0) {
         CheckAlignmentTGS(reg_a, 2);
         coords = v.ir.CompositeConstruct(v.F(reg_a), v.F(reg_a + 1));
-        IR::Value offset = MakeOffset(v, reg_b);
+        IR::Value offset = MakeGatherOffset(v, reg_b);
         if (tld4s.dc != 0) {
             CheckAlignmentTGS(reg_b, 2);
             IR::F32 dref = v.F(reg_b + 1);

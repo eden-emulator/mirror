@@ -64,14 +64,14 @@ enum class SurfaceLoadStoreClamp : u64 {
 };
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#cache-operators
-enum class LoadCache : u64 {
+enum class SURFLoadCache : u64 {
     CA, // Cache at all levels, likely to be accessed again
     CG, // Cache at global level (L2 and below, not L1)
     CI, // ???
     CV, // Don't cache and fetch again (volatile)
 };
 
-enum class StoreCache : u64 {
+enum class SURFStoreCache : u64 {
     WB, // Cache write-back all coherent levels
     CG, // Cache at global level (L2 and below, not L1)
     CS, // Cache streaming, likely to be accessed once
@@ -178,7 +178,7 @@ void TranslatorVisitor::SULD(u64 insn) {
         BitField<52, 1, u64> d;
         BitField<23, 1, u64> ba;
         BitField<33, 3, SurfaceLoadStoreType> type;
-        BitField<24, 2, LoadCache> cache;
+        BitField<24, 2, SURFLoadCache> cache;
         BitField<20, 3, SurfaceLoadStoreSize> size;   // .D
         BitField<20, 4, u64> swizzle; // .P
         BitField<49, 2, SurfaceLoadStoreClamp> clamp;
@@ -191,7 +191,7 @@ void TranslatorVisitor::SULD(u64 insn) {
     if (suld.clamp != SurfaceLoadStoreClamp::IGN) {
         throw NotImplementedException("SurfaceLoadStoreClamp {}", suld.clamp.Value());
     }
-    if (suld.cache != LoadCache::CA && suld.cache != LoadCache::CG) {
+    if (suld.cache != SURFLoadCache::CA && suld.cache != SURFLoadCache::CG) {
         throw NotImplementedException("Cache {}", suld.cache.Value());
     }
     const bool is_typed{suld.d != 0};
@@ -238,7 +238,7 @@ void TranslatorVisitor::SUST(u64 insn) {
         BitField<52, 1, u64> d;
         BitField<23, 1, u64> ba;
         BitField<33, 3, SurfaceLoadStoreType> type;
-        BitField<24, 2, StoreCache> cache;
+        BitField<24, 2, SURFStoreCache> cache;
         BitField<20, 3, SurfaceLoadStoreSize> size;   // .D
         BitField<20, 4, u64> swizzle; // .P
         BitField<49, 2, SurfaceLoadStoreClamp> clamp;
@@ -251,7 +251,7 @@ void TranslatorVisitor::SUST(u64 insn) {
     if (sust.clamp != SurfaceLoadStoreClamp::IGN) {
         throw NotImplementedException("SurfaceLoadStoreClamp {}", sust.clamp.Value());
     }
-    if (sust.cache != StoreCache::WB && sust.cache != StoreCache::CG) {
+    if (sust.cache != SURFStoreCache::WB && sust.cache != SURFStoreCache::CG) {
         throw NotImplementedException("Cache {}", sust.cache.Value());
     }
     const bool is_typed{sust.d != 0};

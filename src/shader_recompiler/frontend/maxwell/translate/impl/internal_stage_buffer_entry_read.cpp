@@ -24,17 +24,17 @@ enum class SZ : u64 {
     F32
 };
 
-enum class Shift : u64 {
+enum class ISBERDShift : u64 {
     Default,
     U16,
     B32,
 };
 
-IR::U32 scaleIndex(IR::IREmitter& ir, IR::U32 index, Shift shift) {
+IR::U32 scaleIndex(IR::IREmitter& ir, IR::U32 index, ISBERDShift shift) {
     switch (shift) {
-        case Shift::Default: return index;
-        case Shift::U16: return ir.ShiftLeftLogical(index, ir.Imm32(1));
-        case Shift::B32: return ir.ShiftLeftLogical(index, ir.Imm32(2));
+        case ISBERDShift::Default: return index;
+        case ISBERDShift::U16: return ir.ShiftLeftLogical(index, ir.Imm32(1));
+        case ISBERDShift::B32: return ir.ShiftLeftLogical(index, ir.Imm32(2));
         default: UNREACHABLE();
     }
 }
@@ -65,7 +65,7 @@ void TranslatorVisitor::ISBERD(u64 insn) {
         BitField<32, 1, u64> o;
         BitField<33, 2, ISBERDMode> mode;
         BitField<36, 4, SZ> sz;
-        BitField<47, 2, Shift> shift;
+        BitField<47, 2, ISBERDShift> shift;
     } const isberd{insn};
 
     IR::U32 index{};

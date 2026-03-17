@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -9,9 +12,6 @@
 
 namespace Shader::Backend::GLSL {
 namespace {
-std::string_view OutputVertexIndex(EmitContext& ctx) {
-    return ctx.stage == Stage::TessellationControl ? "[gl_InvocationID]" : "";
-}
 
 void InitializeOutputVaryings(EmitContext& ctx) {
     if (ctx.uses_geometry_passthrough) {
@@ -25,7 +25,7 @@ void InitializeOutputVaryings(EmitContext& ctx) {
             continue;
         }
         const auto& info_array{ctx.output_generics.at(index)};
-        const auto output_decorator{OutputVertexIndex(ctx)};
+        const auto output_decorator = ctx.stage == Stage::TessellationControl ? "[gl_InvocationID]" : "";
         size_t element{};
         while (element < info_array.size()) {
             const auto& info{info_array.at(element)};

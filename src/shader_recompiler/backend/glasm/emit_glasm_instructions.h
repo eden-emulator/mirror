@@ -18,6 +18,11 @@ class Value;
 
 namespace Shader::Backend::GLASM {
 
+[[nodiscard]] inline bool IsInputArray(Stage stage) {
+    return stage == Stage::Geometry || stage == Stage::TessellationControl
+        || stage == Stage::TessellationEval;
+}
+
 class EmitContext;
 
 // Microinstruction emitters

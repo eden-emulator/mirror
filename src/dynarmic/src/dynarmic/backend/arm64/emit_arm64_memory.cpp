@@ -31,7 +31,7 @@ using namespace oaknut::util;
 
 namespace {
 
-bool IsOrdered(IR::AccType acctype) {
+[[nodiscard]] inline bool IsOrdered(IR::AccType acctype) {
     return acctype == IR::AccType::ORDERED || acctype == IR::AccType::ORDEREDRW || acctype == IR::AccType::LIMITEDORDERED;
 }
 
