@@ -51,8 +51,6 @@
 
 namespace Vulkan {
 
-using VideoCommon::ImageViewType;
-
 namespace {
 
 [[nodiscard]] VkImageAspectFlags AspectMaskFromFormat(VideoCore::Surface::PixelFormat format) {
@@ -438,7 +436,7 @@ void BindBlitState(vk::CommandBuffer cmdbuf, VkPipelineLayout layout, const Regi
                        static_cast<float>(src_region.start.y) /
                            static_cast<float>(src_size.height)},
     };
-    cmdbuf.BlitPushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
+    cmdbuf.PushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
 }
 
 VkExtent2D GetConversionExtent(const ImageView& src_image_view) {
@@ -892,7 +890,7 @@ void BlitImageHelper::ClearColor(const Framebuffer* dst_framebuffer, u8 color_ma
                 (color_mask & 0x4) ? 1.0f : 0.0f, (color_mask & 0x8) ? 1.0f : 0.0f};
             cmdbuf.SetBlendConstants(blend_color.data());
             BindBlitState(cmdbuf, dst_region);
-            cmdbuf.BlitPushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, clear_color);
+            cmdbuf.PushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, clear_color);
             cmdbuf.Draw(3, 1, 0, 0);
         });
     scheduler.InvalidateState();
@@ -916,7 +914,7 @@ void BlitImageHelper::ClearDepthStencil(const Framebuffer* dst_framebuffer, bool
         cmdbuf.SetBlendConstants(blend_constants.data());
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         BindBlitState(cmdbuf, dst_region);
-        cmdbuf.BlitPushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, clear_depth);
+        cmdbuf.PushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, clear_depth);
         cmdbuf.Draw(3, 1, 0, 0);
     });
     scheduler.InvalidateState();
@@ -1178,7 +1176,7 @@ void BlitImageHelper::Convert(VkPipeline pipeline, const Framebuffer* dst_frameb
                                   nullptr);
         cmdbuf.SetViewport(0, viewport);
         cmdbuf.SetScissor(0, scissor);
-        cmdbuf.BlitPushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
+        cmdbuf.PushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
         cmdbuf.Draw(3, 1, 0, 0);
     });
     scheduler.InvalidateState();
@@ -1224,7 +1222,7 @@ void BlitImageHelper::ConvertDepthStencil(VkPipeline pipeline, const Framebuffer
                                   nullptr);
         cmdbuf.SetViewport(0, viewport);
         cmdbuf.SetScissor(0, scissor);
-        cmdbuf.BlitPushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
+        cmdbuf.PushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
         cmdbuf.Draw(3, 1, 0, 0);
     });
     scheduler.InvalidateState();
