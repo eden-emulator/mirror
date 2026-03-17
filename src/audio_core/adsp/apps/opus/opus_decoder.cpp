@@ -22,10 +22,6 @@ namespace AudioCore::ADSP::OpusDecoder {
 namespace {
 constexpr size_t OpusStreamCountMax = 255;
 
-bool IsValidChannelCount(u32 channel_count) {
-    return channel_count == 1 || channel_count == 2;
-}
-
 bool IsValidMultiStreamChannelCount(u32 channel_count) {
     return channel_count <= OpusStreamCountMax;
 }

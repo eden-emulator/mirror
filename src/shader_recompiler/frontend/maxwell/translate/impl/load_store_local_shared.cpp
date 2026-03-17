@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,7 +10,7 @@
 
 namespace Shader::Maxwell {
 namespace {
-enum class Size : u64 {
+enum class LoadStoreLocalSharedSize : u64 {
     U8,
     S8,
     U16,
@@ -45,23 +48,23 @@ std::pair<IR::U32, IR::U32> WordOffset(TranslatorVisitor& v, u64 insn) {
 std::pair<int, bool> GetSize(u64 insn) {
     union {
         u64 raw;
-        BitField<48, 3, Size> size;
+        BitField<48, 3, LoadStoreLocalSharedSize> size;
     } const encoding{insn};
 
     switch (encoding.size) {
-    case Size::U8:
+    case LoadStoreLocalSharedSize::U8:
         return {8, false};
-    case Size::S8:
+    case LoadStoreLocalSharedSize::S8:
         return {8, true};
-    case Size::U16:
+    case LoadStoreLocalSharedSize::U16:
         return {16, false};
-    case Size::S16:
+    case LoadStoreLocalSharedSize::S16:
         return {16, true};
-    case Size::B32:
+    case LoadStoreLocalSharedSize::B32:
         return {32, false};
-    case Size::B64:
+    case LoadStoreLocalSharedSize::B64:
         return {64, false};
-    case Size::B128:
+    case LoadStoreLocalSharedSize::B128:
         return {128, false};
     default:
         throw NotImplementedException("Invalid size {}", encoding.size.Value());

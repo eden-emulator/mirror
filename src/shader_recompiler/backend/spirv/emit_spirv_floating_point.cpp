@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -9,7 +9,7 @@
 
 namespace Shader::Backend::SPIRV {
 namespace {
-Id Decorate(EmitContext& ctx, IR::Inst* inst, Id op) {
+Id DecorateNoContraction(EmitContext& ctx, IR::Inst* inst, Id op) {
     const auto flags{inst->Flags<IR::FpControl>()};
     if (flags.no_contraction) {
         ctx.Decorate(op, spv::Decoration::NoContraction);
@@ -61,27 +61,27 @@ Id EmitFPAbs64(EmitContext& ctx, Id value) {
 }
 
 Id EmitFPAdd16(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return Decorate(ctx, inst, ctx.OpFAdd(ctx.F16[1], a, b));
+    return DecorateNoContraction(ctx, inst, ctx.OpFAdd(ctx.F16[1], a, b));
 }
 
 Id EmitFPAdd32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return Decorate(ctx, inst, ctx.OpFAdd(ctx.F32[1], a, b));
+    return DecorateNoContraction(ctx, inst, ctx.OpFAdd(ctx.F32[1], a, b));
 }
 
 Id EmitFPAdd64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return Decorate(ctx, inst, ctx.OpFAdd(ctx.F64[1], a, b));
+    return DecorateNoContraction(ctx, inst, ctx.OpFAdd(ctx.F64[1], a, b));
 }
 
 Id EmitFPFma16(EmitContext& ctx, IR::Inst* inst, Id a, Id b, Id c) {
-    return Decorate(ctx, inst, ctx.OpFma(ctx.F16[1], a, b, c));
+    return DecorateNoContraction(ctx, inst, ctx.OpFma(ctx.F16[1], a, b, c));
 }
 
 Id EmitFPFma32(EmitContext& ctx, IR::Inst* inst, Id a, Id b, Id c) {
-    return Decorate(ctx, inst, ctx.OpFma(ctx.F32[1], a, b, c));
+    return DecorateNoContraction(ctx, inst, ctx.OpFma(ctx.F32[1], a, b, c));
 }
 
 Id EmitFPFma64(EmitContext& ctx, IR::Inst* inst, Id a, Id b, Id c) {
-    return Decorate(ctx, inst, ctx.OpFma(ctx.F64[1], a, b, c));
+    return DecorateNoContraction(ctx, inst, ctx.OpFma(ctx.F64[1], a, b, c));
 }
 
 Id EmitFPMax32(EmitContext& ctx, Id a, Id b) {
@@ -101,15 +101,15 @@ Id EmitFPMin64(EmitContext& ctx, Id a, Id b) {
 }
 
 Id EmitFPMul16(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return Decorate(ctx, inst, ctx.OpFMul(ctx.F16[1], a, b));
+    return DecorateNoContraction(ctx, inst, ctx.OpFMul(ctx.F16[1], a, b));
 }
 
 Id EmitFPMul32(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return Decorate(ctx, inst, ctx.OpFMul(ctx.F32[1], a, b));
+    return DecorateNoContraction(ctx, inst, ctx.OpFMul(ctx.F32[1], a, b));
 }
 
 Id EmitFPMul64(EmitContext& ctx, IR::Inst* inst, Id a, Id b) {
-    return Decorate(ctx, inst, ctx.OpFMul(ctx.F64[1], a, b));
+    return DecorateNoContraction(ctx, inst, ctx.OpFMul(ctx.F64[1], a, b));
 }
 
 Id EmitFPNeg16(EmitContext& ctx, Id value) {

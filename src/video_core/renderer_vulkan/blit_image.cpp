@@ -414,7 +414,7 @@ VkExtent2D GetConversionExtent(const ImageView& src_image_view) {
     };
 }
 
-void TransitionImageLayout(vk::CommandBuffer& cmdbuf, VkImage image, VkImageLayout target_layout,
+void BlitImageTransitionImageLayout(vk::CommandBuffer& cmdbuf, VkImage image, VkImageLayout target_layout,
                            VkImageLayout source_layout = VK_IMAGE_LAYOUT_GENERAL) {
     constexpr VkFlags flags{VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
                             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT};
@@ -578,7 +578,7 @@ void BlitImageHelper::BlitColor(const Framebuffer* dst_framebuffer, VkImageView 
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([this, dst_framebuffer, src_image_view, src_image, src_sampler, dst_region,
                       src_region, src_size, pipeline, layout](vk::CommandBuffer cmdbuf) {
-        TransitionImageLayout(cmdbuf, src_image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        BlitImageTransitionImageLayout(cmdbuf, src_image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         BeginRenderPass(cmdbuf, dst_framebuffer);
         const VkDescriptorSet descriptor_set = one_texture_descriptor_allocator.Commit();
         UpdateOneTextureDescriptorSet(device, descriptor_set, src_sampler, src_image_view);

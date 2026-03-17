@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -49,7 +52,7 @@ IR::Value F32ToPackedF64(IR::IREmitter& ir, const IR::Value& raw) {
     return ir.CompositeConstruct(lo, hi);
 }
 
-IR::Opcode Replace(IR::Opcode op) {
+IR::Opcode ReplaceFP64ToFP32(IR::Opcode op) {
     switch (op) {
     case IR::Opcode::FPAbs64:
         return IR::Opcode::FPAbs32;
@@ -154,7 +157,7 @@ IR::Opcode Replace(IR::Opcode op) {
     }
 }
 
-void Lower(IR::Block& block, IR::Inst& inst) {
+void LowerFP64ToFP32(IR::Block& block, IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::PackDouble2x32: {
         IR::IREmitter ir(block, IR::Block::InstructionList::s_iterator_to(inst));
@@ -167,7 +170,7 @@ void Lower(IR::Block& block, IR::Inst& inst) {
         break;
     }
     default:
-        inst.ReplaceOpcode(Replace(inst.GetOpcode()));
+        inst.ReplaceOpcode(ReplaceFP64ToFP32(inst.GetOpcode()));
         break;
     }
 }
@@ -177,7 +180,7 @@ void Lower(IR::Block& block, IR::Inst& inst) {
 void LowerFp64ToFp32(IR::Program& program) {
     for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            Lower(*block, inst);
+            LowerFP64ToFP32(*block, inst);
         }
     }
 }

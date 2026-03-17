@@ -14,15 +14,12 @@
 #include <cstring>
 
 namespace Service::News {
-namespace {
 
-std::string_view ToStringView(std::span<const char> buf) {
+[[nodiscard]] inline std::string_view ToStringViewNDS(std::span<const char> buf) {
     const std::string_view sv{buf.data(), buf.size()};
     const auto nul = sv.find('\0');
     return nul == std::string_view::npos ? sv : sv.substr(0, nul);
 }
-
-} // namespace
 
 INewsDataService::INewsDataService(Core::System& system_)
     : ServiceFramework{system_, "INewsDataService"} {
@@ -55,7 +52,7 @@ bool INewsDataService::TryOpen(std::string_view key, std::string_view user) {
 
     const auto list = NewsStorage::Instance().ListAll();
     if (!list.empty()) {
-        if (auto found = NewsStorage::Instance().FindByNewsId(ToStringView(list.front().news_id))) {
+        if (auto found = NewsStorage::Instance().FindByNewsId(ToStringViewNDS(list.front().news_id))) {
             opened_payload = std::move(found->payload);
             return true;
         }
@@ -67,7 +64,7 @@ bool INewsDataService::TryOpen(std::string_view key, std::string_view user) {
 Result INewsDataService::Open(InBuffer<BufferAttr_HipcMapAlias> name) {
     EnsureBuiltinNewsLoaded();
 
-    const auto key = ToStringView({reinterpret_cast<const char*>(name.data()), name.size()});
+    const auto key = ToStringViewNDS({reinterpret_cast<const char*>(name.data()), name.size()});
 
     if (TryOpen(key, {})) {
         R_SUCCEED();
@@ -79,8 +76,8 @@ Result INewsDataService::Open(InBuffer<BufferAttr_HipcMapAlias> name) {
 Result INewsDataService::OpenWithNewsRecordV1(NewsRecordV1 record) {
     EnsureBuiltinNewsLoaded();
 
-    const auto key = ToStringView(record.news_id);
-    const auto user = ToStringView(record.user_id);
+    const auto key = ToStringViewNDS(record.news_id);
+    const auto user = ToStringViewNDS(record.user_id);
 
     if (TryOpen(key, user)) {
         R_SUCCEED();
@@ -92,8 +89,8 @@ Result INewsDataService::OpenWithNewsRecordV1(NewsRecordV1 record) {
 Result INewsDataService::OpenWithNewsRecord(NewsRecord record) {
     EnsureBuiltinNewsLoaded();
 
-    const auto key = ToStringView(record.news_id);
-    const auto user = ToStringView(record.user_id);
+    const auto key = ToStringViewNDS(record.news_id);
+    const auto user = ToStringViewNDS(record.user_id);
 
     if (TryOpen(key, user)) {
         R_SUCCEED();

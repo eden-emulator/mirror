@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,7 +10,7 @@
 
 namespace Shader::Maxwell {
 namespace {
-enum class Mode : u64 {
+enum class FPReduceMode : u64 {
     SINCOS,
     EX2,
 };
@@ -16,7 +19,7 @@ void RRO(TranslatorVisitor& v, u64 insn, const IR::F32& src) {
     union {
         u64 raw;
         BitField<0, 8, IR::Reg> dest_reg;
-        BitField<39, 1, Mode> mode;
+        BitField<39, 1, FPReduceMode> mode;
         BitField<45, 1, u64> neg;
         BitField<49, 1, u64> abs;
     } const rro{insn};

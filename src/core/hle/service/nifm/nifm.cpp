@@ -212,8 +212,9 @@ struct NifmNetworkProfileData {
     NifmWirelessSettingData wireless_setting_data{};
     IpSettingData ip_setting_data{};
 };
+static_assert(sizeof(NifmNetworkProfileData) == 0x18E,
+              "NifmNetworkProfileData has incorrect size.");
 #pragma pack(pop)
-static_assert(sizeof(NifmNetworkProfileData) == 0x18E, "NifmNetworkProfileData has incorrect size.");
 
 struct PendingProfile {
     std::array<char, 0x21> ssid{};

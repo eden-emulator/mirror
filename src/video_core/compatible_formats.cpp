@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -23,10 +26,9 @@ constexpr std::array VIEW_CLASS_128_BITS{
 
 constexpr std::array VIEW_CLASS_96_BITS{
     PixelFormat::R32G32B32_FLOAT,
+    PixelFormat::R32G32B32A32_SINT,
+    PixelFormat::R32G32B32A32_UINT,
 };
-// Missing formats:
-// PixelFormat::RGB32UI,
-// PixelFormat::RGB32I,
 
 constexpr std::array VIEW_CLASS_64_BITS{
     PixelFormat::R32G32_FLOAT,       PixelFormat::R32G32_UINT,

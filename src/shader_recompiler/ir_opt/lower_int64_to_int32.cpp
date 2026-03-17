@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -181,7 +184,7 @@ void ShiftRightArithmetic64To32(IR::Block& block, IR::Inst& inst) {
     inst.ReplaceUsesWith(ir.CompositeConstruct(ret_lo, ret_hi));
 }
 
-void Lower(IR::Block& block, IR::Inst& inst) {
+void LowerI64ToI32(IR::Block& block, IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::PackUint2x32:
     case IR::Opcode::UnpackUint2x32:
@@ -229,7 +232,7 @@ void LowerInt64ToInt32(IR::Program& program) {
     for (auto it = program.post_order_blocks.rbegin(); it != end; ++it) {
         IR::Block* const block{*it};
         for (IR::Inst& inst : block->Instructions()) {
-            Lower(*block, inst);
+            LowerI64ToI32(*block, inst);
         }
     }
 }

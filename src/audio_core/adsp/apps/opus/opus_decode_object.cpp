@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -5,17 +8,11 @@
 #include "common/assert.h"
 
 namespace AudioCore::ADSP::OpusDecoder {
-namespace {
-bool IsValidChannelCount(u32 channel_count) {
-    return channel_count == 1 || channel_count == 2;
-}
-} // namespace
 
 u32 OpusDecodeObject::GetWorkBufferSize(u32 channel_count) {
-    if (!IsValidChannelCount(channel_count)) {
+    if (channel_count == 1 || channel_count == 2)
         return 0;
-    }
-    return static_cast<u32>(sizeof(OpusDecodeObject)) + opus_decoder_get_size(channel_count);
+    return u32(sizeof(OpusDecodeObject)) + opus_decoder_get_size(channel_count);
 }
 
 OpusDecodeObject& OpusDecodeObject::Initialize(u64 buffer, u64 buffer2) {

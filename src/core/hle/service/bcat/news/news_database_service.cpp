@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -15,13 +15,13 @@
 namespace Service::News {
 namespace {
 
-std::string_view ToStringView(std::span<const u8> buf) {
+[[nodiscard]] inline std::string_view ToStringView(std::span<const u8> buf) {
     if (buf.empty()) return {};
     auto data = reinterpret_cast<const char*>(buf.data());
     return {data, strnlen(data, buf.size())};
 }
 
-std::string_view ToStringView(std::span<const char> buf) {
+[[nodiscard]] inline std::string_view ToStringView(std::span<const char> buf) {
     if (buf.empty()) return {};
     return {buf.data(), strnlen(buf.data(), buf.size())};
 }

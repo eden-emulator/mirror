@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,7 +10,7 @@
 
 namespace Shader::Maxwell {
 namespace {
-enum class Mode : u64 {
+enum class MovePredicateFlagMode : u64 {
     PR,
     CC,
 };
@@ -26,12 +29,12 @@ void TranslatorVisitor::P2R_imm(u64 insn) {
         u64 raw;
         BitField<0, 8, IR::Reg> dest_reg;
         BitField<8, 8, IR::Reg> src;
-        BitField<40, 1, Mode> mode;
+        BitField<40, 1, MovePredicateFlagMode> mode;
         BitField<41, 2, u64> byte_selector;
     } const p2r{insn};
 
     const u32 mask{GetImm20(insn).U32()};
-    const bool pr_mode{p2r.mode == Mode::PR};
+    const bool pr_mode{p2r.mode == MovePredicateFlagMode::PR};
     const u32 num_items{pr_mode ? 7U : 4U};
     const u32 offset{static_cast<u32>(p2r.byte_selector) * 8};
     IR::U32 insert{ir.Imm32(0)};

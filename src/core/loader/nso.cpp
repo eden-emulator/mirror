@@ -41,8 +41,8 @@ struct MODHeader {
 };
 static_assert(sizeof(MODHeader) == 0x1c, "MODHeader has incorrect size.");
 
-constexpr u32 PageAlignSize(u32 size) {
-    return static_cast<u32>((size + Core::Memory::YUZU_PAGEMASK) & ~Core::Memory::YUZU_PAGEMASK);
+[[nodiscard]] inline constexpr u32 PageAlignSizeNSO(u32 size) {
+    return u32((size + Core::Memory::YUZU_PAGEMASK) & ~Core::Memory::YUZU_PAGEMASK);
 }
 } // Anonymous namespace
 
@@ -128,11 +128,11 @@ std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::
     }
 
     codeset.DataSegment().size += nso_header.segments[2].bss_size;
-    u32 image_size = PageAlignSize(u32(codeset.memory.size()) + nso_header.segments[2].bss_size);
+    u32 image_size = PageAlignSizeNSO(u32(codeset.memory.size()) + nso_header.segments[2].bss_size);
     codeset.memory.resize(image_size);
 
     for (std::size_t i = 0; i < nso_header.segments.size(); ++i) {
-        codeset.segments[i].size = PageAlignSize(codeset.segments[i].size);
+        codeset.segments[i].size = PageAlignSizeNSO(codeset.segments[i].size);
     }
 
     // Apply patches if necessary

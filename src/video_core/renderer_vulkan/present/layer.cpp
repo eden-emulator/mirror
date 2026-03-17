@@ -7,9 +7,6 @@
 #include <variant>
 #include "video_core/present.h"
 #include "video_core/renderer_vulkan/present/anti_alias_pass.h"
-/* X11 defines */
-#undef Success
-#undef BadValue
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 #include "common/settings.h"

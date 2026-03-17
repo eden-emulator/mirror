@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,7 +10,7 @@
 
 namespace Shader::Maxwell {
 namespace {
-enum class Mode : u64 {
+enum class PixelLoadMode : u64 {
     Default,
     CovMask,
     Covered,
@@ -20,7 +23,7 @@ enum class Mode : u64 {
 void TranslatorVisitor::PIXLD(u64 insn) {
     union {
         u64 raw;
-        BitField<31, 3, Mode> mode;
+        BitField<31, 3, PixelLoadMode> mode;
         BitField<0, 8, IR::Reg> dest_reg;
         BitField<8, 8, IR::Reg> addr_reg;
         BitField<20, 8, s64> addr_offset;
@@ -34,11 +37,11 @@ void TranslatorVisitor::PIXLD(u64 insn) {
         throw NotImplementedException("Non-zero source register");
     }
     switch (pixld.mode) {
-    case Mode::MyIndex:
+    case PixelLoadMode::MyIndex:
         X(pixld.dest_reg, ir.SampleId());
         break;
     default:
-        throw NotImplementedException("Mode {}", pixld.mode.Value());
+        throw NotImplementedException("PixelLoadMode {}", pixld.mode.Value());
     }
 }
 

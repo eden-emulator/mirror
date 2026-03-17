@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -10,7 +10,7 @@
 
 namespace Shader::Maxwell {
 namespace {
-enum class Mode : u64 {
+enum class ISBERDMode : u64 {
     Default,
     Patch,
     Prim,
@@ -63,7 +63,7 @@ void TranslatorVisitor::ISBERD(u64 insn) {
         BitField<24, 8, u32> imm;
         BitField<31, 1, u64> skew;
         BitField<32, 1, u64> o;
-        BitField<33, 2, Mode> mode;
+        BitField<33, 2, ISBERDMode> mode;
         BitField<36, 4, SZ> sz;
         BitField<47, 2, Shift> shift;
     } const isberd{insn};
@@ -95,18 +95,18 @@ void TranslatorVisitor::ISBERD(u64 insn) {
         return;
     }
 
-    if (isberd.mode.Value() != Mode::Default) {
+    if (isberd.mode.Value() != ISBERDMode::Default) {
         if (isberd.skew.Value()) {
             index = ir.IAdd(index, skewBytes(ir, SZ::U32));
         }
 
         IR::F32 float_index{};
         switch (isberd.mode.Value()) {
-        case Mode::Patch: float_index = ir.GetPatch(index.Patch());
+        case ISBERDMode::Patch: float_index = ir.GetPatch(index.Patch());
             break;
-        case Mode::Prim:  float_index = ir.GetAttribute(index.Attribute());
+        case ISBERDMode::Prim:  float_index = ir.GetAttribute(index.Attribute());
             break;
-        case Mode::Attr:  float_index = ir.GetAttributeIndexed(index);
+        case ISBERDMode::Attr:  float_index = ir.GetAttributeIndexed(index);
             break;
         default: UNREACHABLE();
         }

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -8,22 +11,22 @@
 
 namespace Shader::Maxwell {
 namespace {
-enum class Precision : u64 {
+enum class TextureGatherSwizzledPrecision : u64 {
     F32,
     F16,
 };
 
-enum class ComponentType : u64 {
+enum class TextureGatherSwizzledComponentType : u64 {
     R = 0,
     G = 1,
     B = 2,
     A = 3,
 };
 
-union Encoding {
+union EncodinTGS {
     u64 raw;
-    BitField<55, 1, Precision> precision;
-    BitField<52, 2, ComponentType> component_type;
+    BitField<55, 1, TextureGatherSwizzledPrecision> precision;
+    BitField<52, 2, TextureGatherSwizzledComponentType> component_type;
     BitField<51, 1, u64> aoffi;
     BitField<50, 1, u64> dc;
     BitField<49, 1, u64> nodep;
@@ -34,7 +37,7 @@ union Encoding {
     BitField<36, 13, u64> cbuf_offset;
 };
 
-void CheckAlignment(IR::Reg reg, size_t alignment) {
+void CheckAlignmentTGS(IR::Reg reg, size_t alignment) {
     if (!IR::IsAligned(reg, alignment)) {
         throw NotImplementedException("Unaligned source register {}", reg);
     }
@@ -46,13 +49,13 @@ IR::Value MakeOffset(TranslatorVisitor& v, IR::Reg reg) {
                                    v.ir.BitFieldExtract(value, v.ir.Imm32(8), v.ir.Imm32(6), true));
 }
 
-IR::Value Sample(TranslatorVisitor& v, u64 insn) {
-    const Encoding tld4s{insn};
+IR::Value SampleTGS(TranslatorVisitor& v, u64 insn) {
+    const EncodinTGS tld4s{insn};
     const IR::U32 handle{v.ir.Imm32(static_cast<u32>(tld4s.cbuf_offset * 4))};
     const IR::Reg reg_a{tld4s.src_reg_a};
     const IR::Reg reg_b{tld4s.src_reg_b};
     IR::TextureInstInfo info{};
-    if (tld4s.precision == Precision::F16) {
+    if (tld4s.precision == TextureGatherSwizzledPrecision::F16) {
         info.relaxed_precision.Assign(1);
     }
     info.gather_component.Assign(static_cast<u32>(tld4s.component_type.Value()));
@@ -60,18 +63,18 @@ IR::Value Sample(TranslatorVisitor& v, u64 insn) {
     info.is_depth.Assign(tld4s.dc != 0 ? 1 : 0);
     IR::Value coords;
     if (tld4s.aoffi != 0) {
-        CheckAlignment(reg_a, 2);
+        CheckAlignmentTGS(reg_a, 2);
         coords = v.ir.CompositeConstruct(v.F(reg_a), v.F(reg_a + 1));
         IR::Value offset = MakeOffset(v, reg_b);
         if (tld4s.dc != 0) {
-            CheckAlignment(reg_b, 2);
+            CheckAlignmentTGS(reg_b, 2);
             IR::F32 dref = v.F(reg_b + 1);
             return v.ir.ImageGatherDref(handle, coords, offset, {}, dref, info);
         }
         return v.ir.ImageGather(handle, coords, offset, {}, info);
     }
     if (tld4s.dc != 0) {
-        CheckAlignment(reg_a, 2);
+        CheckAlignmentTGS(reg_a, 2);
         coords = v.ir.CompositeConstruct(v.F(reg_a), v.F(reg_a + 1));
         IR::F32 dref = v.F(reg_b);
         return v.ir.ImageGatherDref(handle, coords, {}, {}, dref, info);
@@ -81,50 +84,50 @@ IR::Value Sample(TranslatorVisitor& v, u64 insn) {
 }
 
 IR::Reg RegStoreComponent32(u64 insn, size_t index) {
-    const Encoding tlds4{insn};
+    const EncodinTGS tlds4{insn};
     switch (index) {
     case 0:
         return tlds4.dest_reg_a;
     case 1:
-        CheckAlignment(tlds4.dest_reg_a, 2);
+        CheckAlignmentTGS(tlds4.dest_reg_a, 2);
         return tlds4.dest_reg_a + 1;
     case 2:
         return tlds4.dest_reg_b;
     case 3:
-        CheckAlignment(tlds4.dest_reg_b, 2);
+        CheckAlignmentTGS(tlds4.dest_reg_b, 2);
         return tlds4.dest_reg_b + 1;
     }
     throw LogicError("Invalid store index {}", index);
 }
 
-void Store32(TranslatorVisitor& v, u64 insn, const IR::Value& sample) {
+void Store32TGS(TranslatorVisitor& v, u64 insn, const IR::Value& sample) {
     for (size_t component = 0; component < 4; ++component) {
         const IR::Reg dest{RegStoreComponent32(insn, component)};
         v.F(dest, IR::F32{v.ir.CompositeExtract(sample, component)});
     }
 }
 
-IR::U32 Pack(TranslatorVisitor& v, const IR::F32& lhs, const IR::F32& rhs) {
+IR::U32 PackTGS(TranslatorVisitor& v, const IR::F32& lhs, const IR::F32& rhs) {
     return v.ir.PackHalf2x16(v.ir.CompositeConstruct(lhs, rhs));
 }
 
-void Store16(TranslatorVisitor& v, u64 insn, const IR::Value& sample) {
+void Store16TGS(TranslatorVisitor& v, u64 insn, const IR::Value& sample) {
     std::array<IR::F32, 4> swizzled;
     for (size_t component = 0; component < 4; ++component) {
         swizzled[component] = IR::F32{v.ir.CompositeExtract(sample, component)};
     }
-    const Encoding tld4s{insn};
-    v.X(tld4s.dest_reg_a, Pack(v, swizzled[0], swizzled[1]));
-    v.X(tld4s.dest_reg_b, Pack(v, swizzled[2], swizzled[3]));
+    const EncodinTGS tld4s{insn};
+    v.X(tld4s.dest_reg_a, PackTGS(v, swizzled[0], swizzled[1]));
+    v.X(tld4s.dest_reg_b, PackTGS(v, swizzled[2], swizzled[3]));
 }
 } // Anonymous namespace
 
 void TranslatorVisitor::TLD4S(u64 insn) {
-    const IR::Value sample{Sample(*this, insn)};
-    if (Encoding{insn}.precision == Precision::F32) {
-        Store32(*this, insn, sample);
+    const IR::Value sample{SampleTGS(*this, insn)};
+    if (EncodinTGS{insn}.precision == TextureGatherSwizzledPrecision::F32) {
+        Store32TGS(*this, insn, sample);
     } else {
-        Store16(*this, insn, sample);
+        Store16TGS(*this, insn, sample);
     }
 }
 

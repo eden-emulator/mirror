@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,7 +10,6 @@
 #include "core/hle/service/cmif_serialization.h"
 
 namespace Service::Audio {
-using namespace AudioCore::AudioIn;
 
 IAudioInManager::IAudioInManager(Core::System& system_)
     : ServiceFramework{system_, "audin:u"}, impl{std::make_unique<AudioCore::AudioIn::Manager>(
@@ -34,11 +36,11 @@ Result IAudioInManager::ListAudioIns(
     R_RETURN(this->ListAudioInsAutoFiltered(out_audio_ins, out_count));
 }
 
-Result IAudioInManager::OpenAudioIn(Out<AudioInParameterInternal> out_parameter_internal,
+Result IAudioInManager::OpenAudioIn(Out<AudioCore::AudioIn::AudioInParameterInternal> out_parameter_internal,
                                     Out<SharedPointer<IAudioIn>> out_audio_in,
                                     OutArray<AudioDeviceName, BufferAttr_HipcMapAlias> out_name,
                                     InArray<AudioDeviceName, BufferAttr_HipcMapAlias> name,
-                                    AudioInParameter parameter,
+                                    AudioCore::AudioIn::AudioInParameter parameter,
                                     InCopyHandle<Kernel::KProcess> process_handle,
                                     ClientAppletResourceUserId aruid) {
     LOG_DEBUG(Service_Audio, "called");
@@ -53,9 +55,9 @@ Result IAudioInManager::ListAudioInsAuto(
 }
 
 Result IAudioInManager::OpenAudioInAuto(
-    Out<AudioInParameterInternal> out_parameter_internal, Out<SharedPointer<IAudioIn>> out_audio_in,
+    Out<AudioCore::AudioIn::AudioInParameterInternal> out_parameter_internal, Out<SharedPointer<IAudioIn>> out_audio_in,
     OutArray<AudioDeviceName, BufferAttr_HipcAutoSelect> out_name,
-    InArray<AudioDeviceName, BufferAttr_HipcAutoSelect> name, AudioInParameter parameter,
+    InArray<AudioDeviceName, BufferAttr_HipcAutoSelect> name, AudioCore::AudioIn::AudioInParameter parameter,
     InCopyHandle<Kernel::KProcess> process_handle, ClientAppletResourceUserId aruid) {
     LOG_DEBUG(Service_Audio, "called");
     R_RETURN(this->OpenAudioInProtocolSpecified(out_parameter_internal, out_audio_in, out_name,
@@ -70,10 +72,10 @@ Result IAudioInManager::ListAudioInsAutoFiltered(
 }
 
 Result IAudioInManager::OpenAudioInProtocolSpecified(
-    Out<AudioInParameterInternal> out_parameter_internal, Out<SharedPointer<IAudioIn>> out_audio_in,
+    Out<AudioCore::AudioIn::AudioInParameterInternal> out_parameter_internal, Out<SharedPointer<IAudioIn>> out_audio_in,
     OutArray<AudioDeviceName, BufferAttr_HipcAutoSelect> out_name,
     InArray<AudioDeviceName, BufferAttr_HipcAutoSelect> name, Protocol protocol,
-    AudioInParameter parameter, InCopyHandle<Kernel::KProcess> process_handle,
+    AudioCore::AudioIn::AudioInParameter parameter, InCopyHandle<Kernel::KProcess> process_handle,
     ClientAppletResourceUserId aruid) {
     LOG_DEBUG(Service_Audio, "called");
 
@@ -104,7 +106,7 @@ Result IAudioInManager::OpenAudioInProtocolSpecified(
 
     auto& out_system = impl->sessions[new_session_id]->GetSystem();
     *out_parameter_internal =
-        AudioInParameterInternal{.sample_rate = out_system.GetSampleRate(),
+        AudioCore::AudioIn::AudioInParameterInternal{.sample_rate = out_system.GetSampleRate(),
                                  .channel_count = out_system.GetChannelCount(),
                                  .sample_format = static_cast<u32>(out_system.GetSampleFormat()),
                                  .state = static_cast<u32>(out_system.GetState())};
