@@ -33,14 +33,6 @@ class Image;
 class ImageView;
 class Sampler;
 
-using Common::SlotVector;
-using VideoCommon::ImageId;
-using VideoCommon::ImageViewId;
-using VideoCommon::ImageViewType;
-using VideoCommon::NUM_RT;
-using VideoCommon::Region2D;
-using VideoCommon::RenderTargets;
-
 struct FormatProperties {
     GLenum compatibility_class;
     bool compatibility_by_size;
@@ -114,8 +106,8 @@ public:
 
     void EmulateCopyImage(Image& dst, Image& src, std::span<const VideoCommon::ImageCopy> copies);
 
-    void BlitFramebuffer(Framebuffer* dst, Framebuffer* src, const Region2D& dst_region,
-                         const Region2D& src_region, Tegra::Engines::Fermi2D::Filter filter,
+    void BlitFramebuffer(Framebuffer* dst, Framebuffer* src, const VideoCommon::Region2D& dst_region,
+                         const VideoCommon::Region2D& src_region, Tegra::Engines::Fermi2D::Filter filter,
                          Tegra::Engines::Fermi2D::Operation operation);
 
     void AccelerateImageUpload(Image& image, const StagingBufferMap& map,
@@ -251,8 +243,8 @@ class ImageView : public VideoCommon::ImageViewBase {
     friend Image;
 
 public:
-    explicit ImageView(TextureCacheRuntime&, const VideoCommon::ImageViewInfo&, ImageId, Image&,
-                       const SlotVector<Image>&);
+    explicit ImageView(TextureCacheRuntime&, const VideoCommon::ImageViewInfo&, VideoCommon::ImageId, Image&,
+                       const Common::SlotVector<Image>&);
     explicit ImageView(TextureCacheRuntime&, const VideoCommon::ImageInfo&,
                        const VideoCommon::ImageViewInfo&, GPUVAddr);
     explicit ImageView(TextureCacheRuntime&, const VideoCommon::ImageInfo& info,
@@ -340,7 +332,7 @@ private:
 
 class Framebuffer {
 public:
-    explicit Framebuffer(TextureCacheRuntime&, std::span<ImageView*, NUM_RT> color_buffers,
+    explicit Framebuffer(TextureCacheRuntime&, std::span<ImageView*, VideoCommon::NUM_RT> color_buffers,
                          ImageView* depth_buffer, const VideoCommon::RenderTargets& key);
 
     ~Framebuffer();

@@ -45,11 +45,6 @@
 
 namespace Vulkan {
 
-using Maxwell = Tegra::Engines::Maxwell3D::Regs;
-using VideoCommon::ImageViewId;
-using VideoCommon::ImageViewType;
-
-
 namespace {
 struct DrawParams {
     u32 base_instance;
@@ -60,7 +55,7 @@ struct DrawParams {
     bool is_indexed;
 };
 
-VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t index, float scale) {
+VkViewport GetViewportState(const Device& device, const Tegra::Engines::Maxwell3D::Regs& regs, size_t index, float scale) {
     const auto& src = regs.viewport_transform[index];
     const auto conv = [scale](float value) {
         float new_value = value * scale;
@@ -76,9 +71,9 @@ VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t in
     float y = conv(src.translate_y - src.scale_y);
     float height = conv(src.scale_y * 2.0f);
 
-    const bool lower_left = regs.window_origin.mode != Maxwell::WindowOrigin::Mode::UpperLeft;
+    const bool lower_left = regs.window_origin.mode != Tegra::Engines::Maxwell3D::Regs::WindowOrigin::Mode::UpperLeft;
     const bool y_negate = !device.IsNvViewportSwizzleSupported() &&
-                          src.swizzle.y == Maxwell::ViewportSwizzle::NegativeY;
+                          src.swizzle.y == Tegra::Engines::Maxwell3D::Regs::ViewportSwizzle::NegativeY;
 
     if (lower_left) {
         // Flip by surface clip height
@@ -92,7 +87,7 @@ VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t in
         height = -height;
     }
 
-    const float reduce_z = regs.depth_mode == Maxwell::DepthMode::MinusOneToOne ? 1.0f : 0.0f;
+    const float reduce_z = regs.depth_mode == Tegra::Engines::Maxwell3D::Regs::DepthMode::MinusOneToOne ? 1.0f : 0.0f;
     VkViewport viewport{
         .x = x,
         .y = y,
@@ -108,7 +103,7 @@ VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t in
     return viewport;
 }
 
-VkRect2D GetScissorState(const Maxwell& regs, size_t index, u32 up_scale = 1, u32 down_shift = 0) {
+VkRect2D GetScissorState(const Tegra::Engines::Maxwell3D::Regs& regs, size_t index, u32 up_scale = 1, u32 down_shift = 0) {
     const auto& src = regs.scissor_test[index];
     VkRect2D scissor{};
     const auto scale_up = [&](s32 value) -> s32 {
@@ -125,7 +120,7 @@ VkRect2D GetScissorState(const Maxwell& regs, size_t index, u32 up_scale = 1, u3
                          : std::max<s32>(converted_value + acumm, 1);
     };
 
-    const bool lower_left = regs.window_origin.mode != Maxwell::WindowOrigin::Mode::UpperLeft;
+    const bool lower_left = regs.window_origin.mode != Tegra::Engines::Maxwell3D::Regs::WindowOrigin::Mode::UpperLeft;
     const s32 clip_height = regs.surface_clip.height;
 
     // Flip coordinates if lower left
@@ -150,7 +145,7 @@ VkRect2D GetScissorState(const Maxwell& regs, size_t index, u32 up_scale = 1, u3
     return scissor;
 }
 
-DrawParams MakeDrawParams(const Tegra::Engines::Maxwell3D::DrawManager::State& draw_state, u32 num_instances, bool is_indexed) {
+DrawParams MakeDrawParams(const Tegra::Engines::DrawManager::State& draw_state, u32 num_instances, bool is_indexed) {
     DrawParams params{
         .base_instance = draw_state.base_instance,
         .num_instances = num_instances,
@@ -161,11 +156,11 @@ DrawParams MakeDrawParams(const Tegra::Engines::Maxwell3D::DrawManager::State& d
     };
     // 6 triangle vertices per quad, base vertex is part of the index
     // See BindQuadIndexBuffer for more details
-    if (draw_state.topology == Maxwell::PrimitiveTopology::Quads) {
+    if (draw_state.topology == Tegra::Engines::Maxwell3D::Regs::PrimitiveTopology::Quads) {
         params.num_vertices = (params.num_vertices / 4) * 6;
         params.base_vertex = 0;
         params.is_indexed = true;
-    } else if (draw_state.topology == Maxwell::PrimitiveTopology::QuadStrip) {
+    } else if (draw_state.topology == Tegra::Engines::Maxwell3D::Regs::PrimitiveTopology::QuadStrip) {
         params.num_vertices = (params.num_vertices - 2) / 2 * 6;
         params.base_vertex = 0;
         params.is_indexed = true;
@@ -1118,8 +1113,8 @@ void RasterizerVulkan::HandleTransformFeedback() {
             GPU::Logging::GPULogger::GetInstance().LogExtensionUsage(
                 "VK_EXT_transform_feedback", "HandleTransformFeedback");
         }
-        UNIMPLEMENTED_IF(regs.IsShaderConfigEnabled(Maxwell::ShaderType::TessellationInit) ||
-                         regs.IsShaderConfigEnabled(Maxwell::ShaderType::Tessellation));
+        UNIMPLEMENTED_IF(regs.IsShaderConfigEnabled(Tegra::Engines::Maxwell3D::Regs::ShaderType::TessellationInit) ||
+                         regs.IsShaderConfigEnabled(Tegra::Engines::Maxwell3D::Regs::ShaderType::Tessellation));
     }
 }
 
@@ -1135,7 +1130,7 @@ void RasterizerVulkan::UpdateViewportsState(Tegra::Engines::Maxwell3D::Regs& reg
         float y = static_cast<float>(regs.surface_clip.y);
         float width = (std::max)(1.0f, static_cast<float>(regs.surface_clip.width));
         float height = (std::max)(1.0f, static_cast<float>(regs.surface_clip.height));
-        if (regs.window_origin.mode != Maxwell::WindowOrigin::Mode::UpperLeft) {
+        if (regs.window_origin.mode != Tegra::Engines::Maxwell3D::Regs::WindowOrigin::Mode::UpperLeft) {
             y += height;
             height = -height;
         }
@@ -1169,7 +1164,7 @@ void RasterizerVulkan::UpdateViewportsState(Tegra::Engines::Maxwell3D::Regs& reg
         GetViewportState(device, regs, 14, scale), GetViewportState(device, regs, 15, scale),
     };
     scheduler.Record([this, viewport_list](vk::CommandBuffer cmdbuf) {
-        const u32 num_viewports = std::min<u32>(device.GetMaxViewports(), Maxwell::NumViewports);
+        const u32 num_viewports = std::min<u32>(device.GetMaxViewports(), Tegra::Engines::Maxwell3D::Regs::NumViewports);
         const vk::Span<VkViewport> viewports(viewport_list.data(), num_viewports);
         cmdbuf.SetViewport(0, viewports);
     });
@@ -1184,7 +1179,7 @@ void RasterizerVulkan::UpdateScissorsState(Tegra::Engines::Maxwell3D::Regs& regs
         u32 y = regs.surface_clip.y;
         u32 width = (std::max)(1u, static_cast<u32>(regs.surface_clip.width));
         u32 height = (std::max)(1u, static_cast<u32>(regs.surface_clip.height));
-        if (regs.window_origin.mode != Maxwell::WindowOrigin::Mode::UpperLeft) {
+        if (regs.window_origin.mode != Tegra::Engines::Maxwell3D::Regs::WindowOrigin::Mode::UpperLeft) {
             y = regs.surface_clip.height - (y + height);
         }
         VkRect2D scissor{};
@@ -1226,7 +1221,7 @@ void RasterizerVulkan::UpdateScissorsState(Tegra::Engines::Maxwell3D::Regs& regs
         GetScissorState(regs, 15, up_scale, down_shift),
     };
     scheduler.Record([this, scissor_list](vk::CommandBuffer cmdbuf) {
-        const u32 num_scissors = std::min<u32>(device.GetMaxViewports(), Maxwell::NumViewports);
+        const u32 num_scissors = std::min<u32>(device.GetMaxViewports(), Tegra::Engines::Maxwell3D::Regs::NumViewports);
         const vk::Span<VkRect2D> scissors(scissor_list.data(), num_scissors);
         cmdbuf.SetScissor(0, scissors);
     });
@@ -1586,11 +1581,11 @@ void RasterizerVulkan::UpdateDepthClampEnable(Tegra::Engines::Maxwell3D::Regs& r
         return;
     }
     bool is_enabled = !(regs.viewport_clip_control.geometry_clip ==
-                            Maxwell::ViewportClipControl::GeometryClip::Passthrough ||
+                            Tegra::Engines::Maxwell3D::Regs::ViewportClipControl::GeometryClip::Passthrough ||
                         regs.viewport_clip_control.geometry_clip ==
-                            Maxwell::ViewportClipControl::GeometryClip::FrustumXYZ ||
+                            Tegra::Engines::Maxwell3D::Regs::ViewportClipControl::GeometryClip::FrustumXYZ ||
                         regs.viewport_clip_control.geometry_clip ==
-                            Maxwell::ViewportClipControl::GeometryClip::FrustumZ);
+                            Tegra::Engines::Maxwell3D::Regs::ViewportClipControl::GeometryClip::FrustumZ);
     scheduler.Record(
         [is_enabled](vk::CommandBuffer cmdbuf) { cmdbuf.SetDepthClampEnableEXT(is_enabled); });
 }
@@ -1657,16 +1652,16 @@ void RasterizerVulkan::UpdateStencilOp(Tegra::Engines::Maxwell3D::Regs& regs) {
     if (!state_tracker.TouchStencilOp()) {
         return;
     }
-    const Maxwell::StencilOp::Op fail = regs.stencil_front_op.fail;
-    const Maxwell::StencilOp::Op zfail = regs.stencil_front_op.zfail;
-    const Maxwell::StencilOp::Op zpass = regs.stencil_front_op.zpass;
-    const Maxwell::ComparisonOp compare = regs.stencil_front_op.func;
+    const Tegra::Engines::Maxwell3D::Regs::StencilOp::Op fail = regs.stencil_front_op.fail;
+    const Tegra::Engines::Maxwell3D::Regs::StencilOp::Op zfail = regs.stencil_front_op.zfail;
+    const Tegra::Engines::Maxwell3D::Regs::StencilOp::Op zpass = regs.stencil_front_op.zpass;
+    const Tegra::Engines::Maxwell3D::Regs::ComparisonOp compare = regs.stencil_front_op.func;
     if (regs.stencil_two_side_enable) {
         // Separate stencil op per face
-        const Maxwell::StencilOp::Op back_fail = regs.stencil_back_op.fail;
-        const Maxwell::StencilOp::Op back_zfail = regs.stencil_back_op.zfail;
-        const Maxwell::StencilOp::Op back_zpass = regs.stencil_back_op.zpass;
-        const Maxwell::ComparisonOp back_compare = regs.stencil_back_op.func;
+        const Tegra::Engines::Maxwell3D::Regs::StencilOp::Op back_fail = regs.stencil_back_op.fail;
+        const Tegra::Engines::Maxwell3D::Regs::StencilOp::Op back_zfail = regs.stencil_back_op.zfail;
+        const Tegra::Engines::Maxwell3D::Regs::StencilOp::Op back_zpass = regs.stencil_back_op.zpass;
+        const Tegra::Engines::Maxwell3D::Regs::ComparisonOp back_compare = regs.stencil_back_op.func;
         scheduler.Record([fail, zfail, zpass, compare, back_fail, back_zfail, back_zpass,
                           back_compare](vk::CommandBuffer cmdbuf) {
             cmdbuf.SetStencilOpEXT(VK_STENCIL_FACE_FRONT_BIT, MaxwellToVK::StencilOp(fail),
@@ -1703,8 +1698,8 @@ void RasterizerVulkan::UpdateBlending(Tegra::Engines::Maxwell3D::Regs& regs) {
     }
 
     if (state_tracker.TouchColorMask()) {
-        std::array<VkColorComponentFlags, Maxwell::NumRenderTargets> setup_masks{};
-        for (size_t index = 0; index < Maxwell::NumRenderTargets; index++) {
+        std::array<VkColorComponentFlags, Tegra::Engines::Maxwell3D::Regs::NumRenderTargets> setup_masks{};
+        for (size_t index = 0; index < Tegra::Engines::Maxwell3D::Regs::NumRenderTargets; index++) {
             const auto& mask = regs.color_mask[regs.color_mask_common ? 0 : index];
             auto& current = setup_masks[index];
             if (mask.R) {
@@ -1726,8 +1721,8 @@ void RasterizerVulkan::UpdateBlending(Tegra::Engines::Maxwell3D::Regs& regs) {
     }
 
     if (state_tracker.TouchBlendEnable()) {
-        std::array<VkBool32, Maxwell::NumRenderTargets> setup_enables{};
-        for (size_t index = 0; index < Maxwell::NumRenderTargets; index++) {
+        std::array<VkBool32, Tegra::Engines::Maxwell3D::Regs::NumRenderTargets> setup_enables{};
+        for (size_t index = 0; index < Tegra::Engines::Maxwell3D::Regs::NumRenderTargets; index++) {
             bool is_integer = false;
             if (regs.rt[index].format != Tegra::RenderTargetFormat::NONE) {
                 const auto format =
@@ -1743,7 +1738,7 @@ void RasterizerVulkan::UpdateBlending(Tegra::Engines::Maxwell3D::Regs& regs) {
     }
 
     if (state_tracker.TouchBlendEquations()) {
-        std::array<VkColorBlendEquationEXT, Maxwell::NumRenderTargets> setup_blends{};
+        std::array<VkColorBlendEquationEXT, Tegra::Engines::Maxwell3D::Regs::NumRenderTargets> setup_blends{};
 
         const auto blend_setup = [&](auto& host_blend, const auto& guest_blend) {
             host_blend.srcColorBlendFactor = MaxwellToVK::BlendFactor(guest_blend.color_source);
@@ -1769,12 +1764,12 @@ void RasterizerVulkan::UpdateBlending(Tegra::Engines::Maxwell3D::Regs& regs) {
             }
 
             // Copy first blend state to all other targets
-            for (size_t index = 1; index < Maxwell::NumRenderTargets; index++) {
+            for (size_t index = 1; index < Tegra::Engines::Maxwell3D::Regs::NumRenderTargets; index++) {
                 setup_blends[index] = setup_blends[0];
             }
         } else {
             // Per-target blending
-            for (size_t index = 0; index < Maxwell::NumRenderTargets; index++) {
+            for (size_t index = 0; index < Tegra::Engines::Maxwell3D::Regs::NumRenderTargets; index++) {
                 blend_setup(setup_blends[index], regs.blend_per_target[index]);
             }
         }
@@ -1820,16 +1815,10 @@ void RasterizerVulkan::UpdateVertexInput(Tegra::Engines::Maxwell3D::Regs& regs) 
     boost::container::static_vector<VkVertexInputBindingDescription2EXT, 32> bindings;
     boost::container::static_vector<VkVertexInputAttributeDescription2EXT, 32> attributes;
 
-    const u32 max_attributes =
-        static_cast<u32>(std::min<size_t>(Maxwell::NumVertexAttributes,
-                                          device.GetMaxVertexInputAttributes()));
-    const u32 max_bindings =
-        static_cast<u32>(std::min<size_t>(Maxwell::NumVertexArrays,
-                                          device.GetMaxVertexInputBindings()));
-
-
+    const u32 max_attributes = u32(std::min<size_t>(Tegra::Engines::Maxwell3D::NumVertexAttributes, device.GetMaxVertexInputAttributes()));
+    const u32 max_bindings = u32(std::min<size_t>(Tegra::Engines::Maxwell3D::NumVertexArrays, device.GetMaxVertexInputBindings()));
     for (u32 index = 0; index < max_attributes; ++index) {
-        const Maxwell::VertexAttribute attribute{regs.vertex_attrib_format[index]};
+        const Tegra::Engines::Maxwell3D::VertexAttribute attribute{regs.vertex_attrib_format[index]};
         const u32 binding{attribute.buffer};
         if (attribute.constant || binding >= max_bindings) {
             continue;
