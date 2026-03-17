@@ -17,11 +17,9 @@
 
 namespace Loader {
 
-namespace {
-constexpr u32 PageAlignSize(u32 size) {
-    return static_cast<u32>((size + Core::Memory::YUZU_PAGEMASK) & ~Core::Memory::YUZU_PAGEMASK);
+[[nodiscard]] inline constexpr u32 PageAlignSizeKIP(u32 size) {
+    return u32((size + Core::Memory::YUZU_PAGEMASK) & ~Core::Memory::YUZU_PAGEMASK);
 }
-} // Anonymous namespace
 
 AppLoader_KIP::AppLoader_KIP(FileSys::VirtualFile file_)
     : AppLoader(std::move(file_)), kip(std::make_unique<FileSys::KIP>(file)) {}
@@ -76,11 +74,11 @@ AppLoader::LoadResult AppLoader_KIP::Load(Kernel::KProcess& process,
                         kip->GetKernelCapabilities());
 
     Kernel::CodeSet codeset;
-    codeset.memory.resize(PageAlignSize(kip->GetBSSOffset()) + kip->GetBSSSize());
+    codeset.memory.resize(PageAlignSizeKIP(kip->GetBSSOffset()) + kip->GetBSSSize());
     const auto load_segment = [&codeset](Kernel::CodeSet::Segment& segment, std::span<const u8> data, u32 offset) {
         segment.addr = offset;
         segment.offset = offset;
-        segment.size = PageAlignSize(u32(data.size()));
+        segment.size = PageAlignSizeKIP(u32(data.size()));
         std::memcpy(codeset.memory.data() + offset, data.data(), data.size());
     };
     load_segment(codeset.CodeSegment(), kip->GetTextSection(), kip->GetTextOffset());

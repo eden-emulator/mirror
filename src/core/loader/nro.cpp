@@ -148,8 +148,8 @@ bool AppLoader_NRO::IsHomebrew() {
            nro_header.magic_ext2 == Common::MakeMagic('B', 'R', 'E', 'W');
 }
 
-static constexpr u32 PageAlignSize(u32 size) {
-    return static_cast<u32>((size + Core::Memory::YUZU_PAGEMASK) & ~Core::Memory::YUZU_PAGEMASK);
+[[nodiscard]] inline constexpr u32 PageAlignSizeNRO(u32 size) {
+    return u32((size + Core::Memory::YUZU_PAGEMASK) & ~Core::Memory::YUZU_PAGEMASK);
 }
 
 static bool LoadNroImpl(Core::System& system, Kernel::KProcess& process,
@@ -166,9 +166,9 @@ static bool LoadNroImpl(Core::System& system, Kernel::KProcess& process,
     }
 
     // Build program image
-    std::vector<u8> program_image(PageAlignSize(nro_header.file_size));
+    std::vector<u8> program_image(PageAlignSizeNRO(nro_header.file_size));
     std::memcpy(program_image.data(), data.data(), program_image.size());
-    if (program_image.size() != PageAlignSize(nro_header.file_size)) {
+    if (program_image.size() != PageAlignSizeNRO(nro_header.file_size)) {
         return {};
     }
 
@@ -176,11 +176,11 @@ static bool LoadNroImpl(Core::System& system, Kernel::KProcess& process,
     for (std::size_t i = 0; i < nro_header.segments.size(); ++i) {
         codeset.segments[i].addr = nro_header.segments[i].offset;
         codeset.segments[i].offset = nro_header.segments[i].offset;
-        codeset.segments[i].size = PageAlignSize(nro_header.segments[i].size);
+        codeset.segments[i].size = PageAlignSizeNRO(nro_header.segments[i].size);
     }
 
     // Default .bss to NRO header bss size if MOD0 section doesn't exist
-    u32 bss_size{PageAlignSize(nro_header.bss_size)};
+    u32 bss_size{PageAlignSizeNRO(nro_header.bss_size)};
 
     // Read MOD header
     ModHeader mod_header{};
@@ -190,7 +190,7 @@ static bool LoadNroImpl(Core::System& system, Kernel::KProcess& process,
     const bool has_mod_header{mod_header.magic == Common::MakeMagic('M', 'O', 'D', '0')};
     if (has_mod_header) {
         // Resize program image to include .bss section and page align each section
-        bss_size = PageAlignSize(mod_header.bss_end_offset - mod_header.bss_start_offset);
+        bss_size = PageAlignSizeNRO(mod_header.bss_end_offset - mod_header.bss_start_offset);
     }
 
     codeset.DataSegment().size += bss_size;

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -9,14 +12,13 @@
 
 namespace Shader::Backend::GLSL {
 namespace {
-constexpr std::string_view SWIZZLE{"xyzw"};
 void CompositeInsert(EmitContext& ctx, std::string_view result, std::string_view composite,
                      std::string_view object, u32 index) {
     if (result == composite) {
         // The result is aliased with the composite
-        ctx.Add("{}.{}={};", composite, SWIZZLE[index], object);
+        ctx.Add("{}.{}={};", composite, "xyzw"[index], object);
     } else {
-        ctx.Add("{}={};{}.{}={};", result, composite, result, SWIZZLE[index], object);
+        ctx.Add("{}={};{}.{}={};", result, composite, result, "xyzw"[index], object);
     }
 }
 } // Anonymous namespace
@@ -38,17 +40,17 @@ void EmitCompositeConstructU32x4(EmitContext& ctx, IR::Inst& inst, std::string_v
 
 void EmitCompositeExtractU32x2(EmitContext& ctx, IR::Inst& inst, std::string_view composite,
                                u32 index) {
-    ctx.AddU32("{}={}.{};", inst, composite, SWIZZLE[index]);
+    ctx.AddU32("{}={}.{};", inst, composite, "xyzw"[index]);
 }
 
 void EmitCompositeExtractU32x3(EmitContext& ctx, IR::Inst& inst, std::string_view composite,
                                u32 index) {
-    ctx.AddU32("{}={}.{};", inst, composite, SWIZZLE[index]);
+    ctx.AddU32("{}={}.{};", inst, composite, "xyzw"[index]);
 }
 
 void EmitCompositeExtractU32x4(EmitContext& ctx, IR::Inst& inst, std::string_view composite,
                                u32 index) {
-    ctx.AddU32("{}={}.{};", inst, composite, SWIZZLE[index]);
+    ctx.AddU32("{}={}.{};", inst, composite, "xyzw"[index]);
 }
 
 void EmitCompositeInsertU32x2(EmitContext& ctx, IR::Inst& inst, std::string_view composite,
@@ -146,17 +148,17 @@ void EmitCompositeConstructF32x4(EmitContext& ctx, IR::Inst& inst, std::string_v
 
 void EmitCompositeExtractF32x2(EmitContext& ctx, IR::Inst& inst, std::string_view composite,
                                u32 index) {
-    ctx.AddF32("{}={}.{};", inst, composite, SWIZZLE[index]);
+    ctx.AddF32("{}={}.{};", inst, composite, "xyzw"[index]);
 }
 
 void EmitCompositeExtractF32x3(EmitContext& ctx, IR::Inst& inst, std::string_view composite,
                                u32 index) {
-    ctx.AddF32("{}={}.{};", inst, composite, SWIZZLE[index]);
+    ctx.AddF32("{}={}.{};", inst, composite, "xyzw"[index]);
 }
 
 void EmitCompositeExtractF32x4(EmitContext& ctx, IR::Inst& inst, std::string_view composite,
                                u32 index) {
-    ctx.AddF32("{}={}.{};", inst, composite, SWIZZLE[index]);
+    ctx.AddF32("{}={}.{};", inst, composite, "xyzw"[index]);
 }
 
 void EmitCompositeInsertF32x2(EmitContext& ctx, IR::Inst& inst, std::string_view composite,
@@ -203,16 +205,16 @@ void EmitCompositeExtractF64x4([[maybe_unused]] EmitContext& ctx) {
 
 void EmitCompositeInsertF64x2(EmitContext& ctx, std::string_view composite, std::string_view object,
                               u32 index) {
-    ctx.Add("{}.{}={};", composite, SWIZZLE[index], object);
+    ctx.Add("{}.{}={};", composite, "xyzw"[index], object);
 }
 
 void EmitCompositeInsertF64x3(EmitContext& ctx, std::string_view composite, std::string_view object,
                               u32 index) {
-    ctx.Add("{}.{}={};", composite, SWIZZLE[index], object);
+    ctx.Add("{}.{}={};", composite, "xyzw"[index], object);
 }
 
 void EmitCompositeInsertF64x4(EmitContext& ctx, std::string_view composite, std::string_view object,
                               u32 index) {
-    ctx.Add("{}.{}={};", composite, SWIZZLE[index], object);
+    ctx.Add("{}.{}={};", composite, "xyzw"[index], object);
 }
 } // namespace Shader::Backend::GLSL

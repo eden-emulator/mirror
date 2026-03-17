@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,7 +10,7 @@
 
 namespace Shader::Maxwell {
 namespace {
-enum class Mode : u64 {
+enum class PredicateFlagMode : u64 {
     PR,
     CC,
 };
@@ -31,12 +34,12 @@ void R2P(TranslatorVisitor& v, u64 insn, const IR::U32& mask) {
     union {
         u64 raw;
         BitField<8, 8, IR::Reg> src_reg;
-        BitField<40, 1, Mode> mode;
+        BitField<40, 1, PredicateFlagMode> mode;
         BitField<41, 2, u64> byte_selector;
     } const r2p{insn};
     const IR::U32 src{v.X(r2p.src_reg)};
     const IR::U32 count{v.ir.Imm32(1)};
-    const bool pr_mode{r2p.mode == Mode::PR};
+    const bool pr_mode{r2p.mode == PredicateFlagMode::PR};
     const u32 num_items{pr_mode ? 7U : 4U};
     const u32 offset_base{static_cast<u32>(r2p.byte_selector) * 8};
     for (u32 index = 0; index < num_items; ++index) {

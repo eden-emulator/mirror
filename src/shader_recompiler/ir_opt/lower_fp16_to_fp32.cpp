@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -6,7 +9,7 @@
 
 namespace Shader::Optimization {
 namespace {
-IR::Opcode Replace(IR::Opcode op) {
+IR::Opcode ReplaceFP16ToFP32(IR::Opcode op) {
     switch (op) {
     case IR::Opcode::FPAbs16:
         return IR::Opcode::FPAbs32;
@@ -131,7 +134,7 @@ IR::Opcode Replace(IR::Opcode op) {
 void LowerFp16ToFp32(IR::Program& program) {
     for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            inst.ReplaceOpcode(Replace(inst.GetOpcode()));
+            inst.ReplaceOpcode(ReplaceFP16ToFP32(inst.GetOpcode()));
         }
     }
 }

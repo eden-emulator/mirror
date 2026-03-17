@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -8,9 +11,6 @@
 #include "hid_core/irsensor/moment_processor.h"
 
 namespace Service::IRS {
-static constexpr auto format = Core::IrSensor::ImageTransferProcessorFormat::Size40x30;
-static constexpr std::size_t ImageWidth = 40;
-static constexpr std::size_t ImageHeight = 30;
 
 MomentProcessor::MomentProcessor(Core::System& system_, Core::IrSensor::DeviceFormat& device_format,
                                  std::size_t npad_index)
@@ -80,9 +80,9 @@ void MomentProcessor::OnControllerUpdate(Core::HID::ControllerTriggerType type) 
 }
 
 u8 MomentProcessor::GetPixel(const std::vector<u8>& data, std::size_t x, std::size_t y) const {
-    if ((y * ImageWidth) + x >= data.size()) {
+    constexpr std::size_t ImageWidth = 40;
+    if ((y * ImageWidth) + x >= data.size())
         return 0;
-    }
     return data[(y * ImageWidth) + x];
 }
 
@@ -92,9 +92,12 @@ MomentProcessor::MomentStatistic MomentProcessor::GetStatistic(const std::vector
                                                                std::size_t width,
                                                                std::size_t height) const {
     // The actual implementation is always 320x240
-    static constexpr std::size_t RealWidth = 320;
-    static constexpr std::size_t RealHeight = 240;
-    static constexpr std::size_t Threshold = 30;
+    constexpr std::size_t RealWidth = 320;
+    constexpr std::size_t RealHeight = 240;
+    constexpr std::size_t Threshold = 30;
+    constexpr std::size_t ImageWidth = 40;
+    constexpr std::size_t ImageHeight = 30;
+
     MomentStatistic statistic{};
     std::size_t active_points{};
 
@@ -143,7 +146,7 @@ void MomentProcessor::SetConfig(Core::IrSensor::PackedMomentProcessorConfig conf
         static_cast<Core::IrSensor::MomentProcessorPreprocess>(config.preprocess);
     current_config.preprocess_intensity_threshold = config.preprocess_intensity_threshold;
 
-    npad_device->SetCameraFormat(format);
+    npad_device->SetCameraFormat(Core::IrSensor::ImageTransferProcessorFormat::Size40x30);
 }
 
 } // namespace Service::IRS

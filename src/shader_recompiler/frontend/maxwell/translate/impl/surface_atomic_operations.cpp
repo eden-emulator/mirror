@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -11,7 +11,7 @@
 
 namespace Shader::Maxwell {
 namespace {
-enum class Type : u64 {
+enum class SurfaceAtomicType : u64 {
     _1D = 0,
     _1D_BUFFER = 1,
     _1D_ARRAY = 2,
@@ -25,7 +25,7 @@ enum class Type : u64 {
 /// For any would be newcomer to here: Yes - GPU dissasembly says S64 should
 /// be after F16x2FTZRN. However if you do plan to revert this, you MUST test
 /// ToTK beforehand. As the game will break with the subtle change
-enum class Size : u64 {
+enum class SurfaceAtomicSize : u64 {
     U32,
     S32,
     U64,
@@ -48,46 +48,46 @@ enum class AtomicOp : u64 {
     EXCH,
 };
 
-enum class Clamp : u64 {
+enum class SurfaceAtomicClamp : u64 {
     IGN,
     Default,
     TRAP,
 };
 
-TextureType GetType(Type type) {
+TextureType GetType(SurfaceAtomicType type) {
     switch (type) {
-    case Type::_1D:
+    case SurfaceAtomicType::_1D:
         return TextureType::Color1D;
-    case Type::_1D_BUFFER:
+    case SurfaceAtomicType::_1D_BUFFER:
         return TextureType::Buffer;
-    case Type::_1D_ARRAY:
+    case SurfaceAtomicType::_1D_ARRAY:
         return TextureType::ColorArray1D;
-    case Type::_2D:
+    case SurfaceAtomicType::_2D:
         return TextureType::Color2D;
-    case Type::_2D_ARRAY:
+    case SurfaceAtomicType::_2D_ARRAY:
         return TextureType::ColorArray2D;
-    case Type::_3D:
+    case SurfaceAtomicType::_3D:
         return TextureType::Color3D;
     default:
         throw NotImplementedException("Invalid type {}", type);
     }
 }
 
-IR::Value MakeCoords(TranslatorVisitor& v, IR::Reg reg, Type type) {
+IR::Value MakeCoords(TranslatorVisitor& v, IR::Reg reg, SurfaceAtomicType type) {
     const auto array{[&](int index) {
         return v.ir.BitFieldExtract(v.X(reg + index), v.ir.Imm32(0), v.ir.Imm32(16));
     }};
     switch (type) {
-    case Type::_1D:
-    case Type::_1D_BUFFER:
+    case SurfaceAtomicType::_1D:
+    case SurfaceAtomicType::_1D_BUFFER:
         return v.X(reg);
-    case Type::_1D_ARRAY:
+    case SurfaceAtomicType::_1D_ARRAY:
         return v.ir.CompositeConstruct(v.X(reg), array(1));
-    case Type::_2D:
+    case SurfaceAtomicType::_2D:
         return v.ir.CompositeConstruct(v.X(reg), v.X(reg + 1));
-    case Type::_2D_ARRAY:
+    case SurfaceAtomicType::_2D_ARRAY:
         return v.ir.CompositeConstruct(v.X(reg), v.X(reg + 1), array(2));
-    case Type::_3D:
+    case SurfaceAtomicType::_3D:
         return v.ir.CompositeConstruct(v.X(reg), v.X(reg + 1), v.X(reg + 2));
     default:
         throw NotImplementedException("Invalid type {}", type);
@@ -121,11 +121,11 @@ IR::Value ApplyAtomicOp(IR::IREmitter& ir, const IR::U32& handle, const IR::Valu
     }
 }
 
-ImageFormat Format(Size size) {
+ImageFormat Format(SurfaceAtomicSize size) {
     switch (size) {
-    case Size::U32:
-    case Size::S32:
-    case Size::SD32:
+    case SurfaceAtomicSize::U32:
+    case SurfaceAtomicSize::S32:
+    case SurfaceAtomicSize::SD32:
         return ImageFormat::R32_UINT;
     default:
         break;
@@ -133,11 +133,11 @@ ImageFormat Format(Size size) {
     throw NotImplementedException("Invalid size {}", size);
 }
 
-bool IsSizeInt32(Size size) {
+bool IsSizeInt32(SurfaceAtomicSize size) {
     switch (size) {
-    case Size::U32:
-    case Size::S32:
-    case Size::SD32:
+    case SurfaceAtomicSize::U32:
+    case SurfaceAtomicSize::S32:
+    case SurfaceAtomicSize::SD32:
         return true;
     default:
         return false;
@@ -145,15 +145,15 @@ bool IsSizeInt32(Size size) {
 }
 
 void ImageAtomOp(TranslatorVisitor& v, IR::Reg dest_reg, IR::Reg operand_reg, IR::Reg coord_reg,
-                 std::optional<IR::Reg> bindless_reg, AtomicOp op, Clamp clamp, Size size, Type type,
+                 std::optional<IR::Reg> bindless_reg, AtomicOp op, SurfaceAtomicClamp clamp, SurfaceAtomicSize size, SurfaceAtomicType type,
                  u64 bound_offset, bool is_bindless, bool write_result) {
-    if (clamp != Clamp::IGN) {
-        throw NotImplementedException("Clamp {}", clamp);
+    if (clamp != SurfaceAtomicClamp::IGN) {
+        throw NotImplementedException("SurfaceAtomicClamp {}", clamp);
     }
     if (!IsSizeInt32(size)) {
-        throw NotImplementedException("Size {}", size);
+        throw NotImplementedException("SurfaceAtomicSize {}", size);
     }
-    const bool is_signed{size == Size::S32};
+    const bool is_signed{size == SurfaceAtomicSize::S32};
     const ImageFormat format{Format(size)};
     const TextureType tex_type{GetType(type)};
     const IR::Value coords{MakeCoords(v, coord_reg, type)};
@@ -178,9 +178,9 @@ void TranslatorVisitor::SUATOM(u64 insn) {
         u64 raw;
         BitField<54, 1, u64> is_bindless;
         BitField<29, 4, AtomicOp> op;
-        BitField<33, 3, Type> type;
-        BitField<51, 3, Size> size;
-        BitField<49, 2, Clamp> clamp;
+        BitField<33, 3, SurfaceAtomicType> type;
+        BitField<51, 3, SurfaceAtomicSize> size;
+        BitField<49, 2, SurfaceAtomicClamp> clamp;
         BitField<0, 8, IR::Reg> dest_reg;
         BitField<8, 8, IR::Reg> coord_reg;
         BitField<20, 8, IR::Reg> operand_reg;
@@ -199,9 +199,9 @@ void TranslatorVisitor::SURED(u64 insn) {
         u64 raw;
         BitField<51, 1, u64> is_bound;
         BitField<24, 3, AtomicOp> op; //OK - 24 (SURedOp)
-        BitField<33, 3, Type> type; //OK? - 33 (Dim)
-        BitField<20, 3, Size> size; //?
-        BitField<49, 2, Clamp> clamp; //OK - 49 (Clamp4)
+        BitField<33, 3, SurfaceAtomicType> type; //OK? - 33 (Dim)
+        BitField<20, 3, SurfaceAtomicSize> size; //?
+        BitField<49, 2, SurfaceAtomicClamp> clamp; //OK - 49 (Clamp4)
         BitField<0, 8, IR::Reg> operand_reg; //RA?
         BitField<8, 8, IR::Reg> coord_reg; //RB?
         BitField<36, 13, u64> bound_offset; //OK 33 (TidB)

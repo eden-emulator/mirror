@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -10,7 +10,7 @@
 
 namespace Shader::Maxwell {
 namespace {
-enum class AtomOp : u64 {
+enum class AtomicGlobalMemoryOp : u64 {
     ADD,
     MIN,
     MAX,
@@ -32,33 +32,33 @@ enum class AtomSize : u64 {
     S64,
 };
 
-IR::U32U64 ApplyIntegerAtomOp(IR::IREmitter& ir, const IR::U32U64& offset, const IR::U32U64& op_b, AtomOp op, AtomSize size) {
+IR::U32U64 ApplyIntegerAtomOp(IR::IREmitter& ir, const IR::U32U64& offset, const IR::U32U64& op_b, AtomicGlobalMemoryOp op, AtomSize size) {
     bool const is_signed = size == AtomSize::S64 || size == AtomSize::S32;
     switch (op) {
-    case AtomOp::ADD:
+    case AtomicGlobalMemoryOp::ADD:
         return ir.GlobalAtomicIAdd(offset, op_b);
-    case AtomOp::MIN:
+    case AtomicGlobalMemoryOp::MIN:
         return ir.GlobalAtomicIMin(offset, op_b, is_signed);
-    case AtomOp::MAX:
+    case AtomicGlobalMemoryOp::MAX:
         return ir.GlobalAtomicIMax(offset, op_b, is_signed);
-    case AtomOp::INC:
+    case AtomicGlobalMemoryOp::INC:
         return ir.GlobalAtomicInc(offset, op_b);
-    case AtomOp::DEC:
+    case AtomicGlobalMemoryOp::DEC:
         return ir.GlobalAtomicDec(offset, op_b);
-    case AtomOp::AND:
+    case AtomicGlobalMemoryOp::AND:
         return ir.GlobalAtomicAnd(offset, op_b);
-    case AtomOp::OR:
+    case AtomicGlobalMemoryOp::OR:
         return ir.GlobalAtomicOr(offset, op_b);
-    case AtomOp::XOR:
+    case AtomicGlobalMemoryOp::XOR:
         return ir.GlobalAtomicXor(offset, op_b);
-    case AtomOp::EXCH:
+    case AtomicGlobalMemoryOp::EXCH:
         return ir.GlobalAtomicExchange(offset, op_b);
     default:
         throw NotImplementedException("Integer Atom Operation {}", op);
     }
 }
 
-IR::Value ApplyFpAtomOp(IR::IREmitter& ir, const IR::U64& offset, const IR::Value& op_b, AtomOp op,
+IR::Value ApplyFpAtomOp(IR::IREmitter& ir, const IR::U64& offset, const IR::Value& op_b, AtomicGlobalMemoryOp op,
                         AtomSize size) {
     static constexpr IR::FpControl f16_control{
         .no_contraction = false,
@@ -71,12 +71,12 @@ IR::Value ApplyFpAtomOp(IR::IREmitter& ir, const IR::U64& offset, const IR::Valu
         .fmz_mode = IR::FmzMode::FTZ,
     };
     switch (op) {
-    case AtomOp::ADD:
+    case AtomicGlobalMemoryOp::ADD:
         return size == AtomSize::F32 ? ir.GlobalAtomicF32Add(offset, op_b, f32_control)
             : ir.GlobalAtomicF16x2Add(offset, op_b, f16_control);
-    case AtomOp::MIN:
+    case AtomicGlobalMemoryOp::MIN:
         return ir.GlobalAtomicF16x2Min(offset, op_b, f16_control);
-    case AtomOp::MAX:
+    case AtomicGlobalMemoryOp::MAX:
         return ir.GlobalAtomicF16x2Max(offset, op_b, f16_control);
     default:
         throw NotImplementedException("FP Atom Operation {}", op);
@@ -112,19 +112,19 @@ IR::U64 AtomOffset(TranslatorVisitor& v, u64 insn) {
 // ADD, INC, DEC for S64 does nothing
 // Only ADD does something for F32
 // Only ADD, MIN and MAX does something for F16x2
-bool AtomOpNotApplicable(AtomSize size, AtomOp op) {
+bool AtomOpNotApplicable(AtomSize size, AtomicGlobalMemoryOp op) {
     // TODO: SAFEADD
     switch (size) {
     case AtomSize::U32:
     case AtomSize::S32:
     case AtomSize::U64:
-        return (op == AtomOp::INC || op == AtomOp::DEC);
+        return (op == AtomicGlobalMemoryOp::INC || op == AtomicGlobalMemoryOp::DEC);
     case AtomSize::S64:
-        return (op == AtomOp::ADD || op == AtomOp::INC || op == AtomOp::DEC);
+        return (op == AtomicGlobalMemoryOp::ADD || op == AtomicGlobalMemoryOp::INC || op == AtomicGlobalMemoryOp::DEC);
     case AtomSize::F32:
-        return op != AtomOp::ADD;
+        return op != AtomicGlobalMemoryOp::ADD;
     case AtomSize::F16x2:
-        return !(op == AtomOp::ADD || op == AtomOp::MIN || op == AtomOp::MAX);
+        return !(op == AtomicGlobalMemoryOp::ADD || op == AtomicGlobalMemoryOp::MIN || op == AtomicGlobalMemoryOp::MAX);
     default:
         return false;
     }
@@ -162,7 +162,7 @@ void StoreResult(TranslatorVisitor& v, IR::Reg dest_reg, const IR::Value& result
 }
 
 IR::Value ApplyAtomOp(TranslatorVisitor& v, IR::Reg operand_reg, const IR::U64& offset,
-                      AtomSize size, AtomOp op) {
+                      AtomSize size, AtomicGlobalMemoryOp op) {
     switch (size) {
     case AtomSize::U32:
     case AtomSize::S32:
@@ -180,7 +180,7 @@ IR::Value ApplyAtomOp(TranslatorVisitor& v, IR::Reg operand_reg, const IR::U64& 
 }
 
 void GlobalAtomic(TranslatorVisitor& v, IR::Reg dest_reg, IR::Reg operand_reg,
-                  const IR::U64& offset, AtomSize size, AtomOp op, bool write_dest) {
+                  const IR::U64& offset, AtomSize size, AtomicGlobalMemoryOp op, bool write_dest) {
     IR::Value result = AtomOpNotApplicable(size, op)
         ? LoadGlobal(v.ir, offset, size)
         : ApplyAtomOp(v, operand_reg, offset, size, op);
@@ -195,7 +195,7 @@ void TranslatorVisitor::ATOM(u64 insn) {
         BitField<0, 8, IR::Reg> dest_reg;
         BitField<20, 8, IR::Reg> operand_reg;
         BitField<49, 3, AtomSize> size;
-        BitField<52, 4, AtomOp> op;
+        BitField<52, 4, AtomicGlobalMemoryOp> op;
     } const atom{insn};
     const IR::U64 offset{AtomOffset(*this, insn)};
     GlobalAtomic(*this, atom.dest_reg, atom.operand_reg, offset, atom.size, atom.op, true);
@@ -206,7 +206,7 @@ void TranslatorVisitor::RED(u64 insn) {
         u64 raw;
         BitField<0, 8, IR::Reg> operand_reg;
         BitField<20, 3, AtomSize> size;
-        BitField<23, 3, AtomOp> op;
+        BitField<23, 3, AtomicGlobalMemoryOp> op;
     } const red{insn};
     const IR::U64 offset{AtomOffset(*this, insn)};
     GlobalAtomic(*this, IR::Reg::RZ, red.operand_reg, offset, red.size, red.op, true);

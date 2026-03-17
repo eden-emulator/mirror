@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,14 +10,13 @@
 
 namespace Shader::Backend::GLSL {
 namespace {
-constexpr char cas_loop[]{"for(;;){{uint old_value={};uint "
-                          "cas_result=atomicCompSwap({},old_value,bitfieldInsert({},{},{},{}));"
-                          "if(cas_result==old_value){{break;}}}}"};
-
 void SharedWriteCas(EmitContext& ctx, std::string_view offset, std::string_view value,
                     std::string_view bit_offset, u32 num_bits) {
     const auto smem{fmt::format("smem[{}>>2]", offset)};
-    ctx.Add(cas_loop, smem, smem, smem, value, bit_offset, num_bits);
+    ctx.Add(
+        "for(;;){{uint old_value={};uint "
+        "cas_result=atomicCompSwap({},old_value,bitfieldInsert({},{},{},{}));"
+        "if(cas_result==old_value){{break;}}}}", smem, smem, smem, value, bit_offset, num_bits);
 }
 } // Anonymous namespace
 

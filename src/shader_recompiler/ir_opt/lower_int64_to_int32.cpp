@@ -250,7 +250,7 @@ void FloatToInt64To32(IR::Block& block, IR::Inst& inst, bool is_signed, size_t s
     inst.ReplaceUsesWith(ir.CompositeConstruct(lo, hi));
 }
 
-void Lower(IR::Block& block, IR::Inst& inst) {
+void LowerI64ToI32(IR::Block& block, IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::PackUint2x32:
     case IR::Opcode::UnpackUint2x32:
@@ -354,7 +354,7 @@ void LowerInt64ToInt32(IR::Program& program) {
     for (auto it = program.post_order_blocks.rbegin(); it != end; ++it) {
         IR::Block* const block{*it};
         for (IR::Inst& inst : block->Instructions()) {
-            Lower(*block, inst);
+            LowerI64ToI32(*block, inst);
         }
     }
 }

@@ -8,6 +8,7 @@
 
 #include <string>
 
+#include <fmt/base.h>
 #include <fmt/ranges.h>
 
 #include "video_core/surface.h"
@@ -65,8 +66,7 @@ struct fmt::formatter<VideoCommon::Extent3D> {
 
     template <typename FormatContext>
     auto format(const VideoCommon::Extent3D& extent, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{{{}, {}, {}}}", extent.width, extent.height,
-                              extent.depth);
+        return fmt::format_to(ctx.out(), "{{{}, {}, {}}}", extent.width, extent.height, extent.depth);
     }
 };
 

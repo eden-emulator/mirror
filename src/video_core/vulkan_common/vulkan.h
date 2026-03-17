@@ -22,6 +22,14 @@
 
 #include <vulkan/vulkan.h>
 
+// X11 defines
+#ifdef Success
+#   undef Success
+#endif
+#ifdef BadValue
+#   undef BadValue
+#endif
+
 // Define maintenance 7-8 extension names (not yet in official Vulkan headers)
 #ifndef VK_KHR_MAINTENANCE_7_EXTENSION_NAME
 #define VK_KHR_MAINTENANCE_7_EXTENSION_NAME "VK_KHR_maintenance7"

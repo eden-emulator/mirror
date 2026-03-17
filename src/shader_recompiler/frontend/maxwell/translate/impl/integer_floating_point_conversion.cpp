@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -24,7 +24,7 @@ enum class IntFormat : u64 {
     U64 = 3,
 };
 
-union Encoding {
+union EncodingIFPC {
     u64 raw;
     BitField<0, 8, IR::Reg> dest_reg;
     BitField<8, 2, FloatFormat> float_format;
@@ -38,7 +38,7 @@ union Encoding {
 };
 
 bool Is64(u64 insn) {
-    return Encoding{insn}.int_format == IntFormat::U64;
+    return EncodingIFPC{insn}.int_format == IntFormat::U64;
 }
 
 int BitSize(FloatFormat format) {
@@ -62,7 +62,7 @@ IR::U32 SmallAbs(TranslatorVisitor& v, const IR::U32& value, int bitsize) {
 }
 
 void I2F(TranslatorVisitor& v, u64 insn, IR::U32U64 src) {
-    const Encoding i2f{insn};
+    const EncodingIFPC i2f{insn};
     if (i2f.cc != 0) {
         throw NotImplementedException("I2F CC");
     }

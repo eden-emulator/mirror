@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -11,7 +14,7 @@
 
 namespace Shader::Maxwell {
 namespace {
-enum class Type : u64 {
+enum class SurfaceLoadStoreType : u64 {
     _1D,
     BUFFER_1D,
     ARRAY_1D,
@@ -44,7 +47,7 @@ constexpr std::array MASK{
     R | G | B | A, //
 };
 
-enum class Size : u64 {
+enum class SurfaceLoadStoreSize : u64 {
     U8,
     S8,
     U16,
@@ -54,7 +57,7 @@ enum class Size : u64 {
     B128,
 };
 
-enum class Clamp : u64 {
+enum class SurfaceLoadStoreClamp : u64 {
     IGN,
     Default,
     TRAP,
@@ -75,75 +78,75 @@ enum class StoreCache : u64 {
     WT, // Cache write-through (to system memory, volatile?)
 };
 
-ImageFormat Format(Size size) {
+ImageFormat Format(SurfaceLoadStoreSize size) {
     switch (size) {
-    case Size::U8:
+    case SurfaceLoadStoreSize::U8:
         return ImageFormat::R8_UINT;
-    case Size::S8:
+    case SurfaceLoadStoreSize::S8:
         return ImageFormat::R8_SINT;
-    case Size::U16:
+    case SurfaceLoadStoreSize::U16:
         return ImageFormat::R16_UINT;
-    case Size::S16:
+    case SurfaceLoadStoreSize::S16:
         return ImageFormat::R16_SINT;
-    case Size::B32:
+    case SurfaceLoadStoreSize::B32:
         return ImageFormat::R32_UINT;
-    case Size::B64:
+    case SurfaceLoadStoreSize::B64:
         return ImageFormat::R32G32_UINT;
-    case Size::B128:
+    case SurfaceLoadStoreSize::B128:
         return ImageFormat::R32G32B32A32_UINT;
     }
     throw NotImplementedException("Invalid size {}", size);
 }
 
-int SizeInRegs(Size size) {
+int SizeInRegs(SurfaceLoadStoreSize size) {
     switch (size) {
-    case Size::U8:
-    case Size::S8:
-    case Size::U16:
-    case Size::S16:
-    case Size::B32:
+    case SurfaceLoadStoreSize::U8:
+    case SurfaceLoadStoreSize::S8:
+    case SurfaceLoadStoreSize::U16:
+    case SurfaceLoadStoreSize::S16:
+    case SurfaceLoadStoreSize::B32:
         return 1;
-    case Size::B64:
+    case SurfaceLoadStoreSize::B64:
         return 2;
-    case Size::B128:
+    case SurfaceLoadStoreSize::B128:
         return 4;
     }
     throw NotImplementedException("Invalid size {}", size);
 }
 
-TextureType GetType(Type type) {
+TextureType GetType(SurfaceLoadStoreType type) {
     switch (type) {
-    case Type::_1D:
+    case SurfaceLoadStoreType::_1D:
         return TextureType::Color1D;
-    case Type::BUFFER_1D:
+    case SurfaceLoadStoreType::BUFFER_1D:
         return TextureType::Buffer;
-    case Type::ARRAY_1D:
+    case SurfaceLoadStoreType::ARRAY_1D:
         return TextureType::ColorArray1D;
-    case Type::_2D:
+    case SurfaceLoadStoreType::_2D:
         return TextureType::Color2D;
-    case Type::ARRAY_2D:
+    case SurfaceLoadStoreType::ARRAY_2D:
         return TextureType::ColorArray2D;
-    case Type::_3D:
+    case SurfaceLoadStoreType::_3D:
         return TextureType::Color3D;
     }
     throw NotImplementedException("Invalid type {}", type);
 }
 
-IR::Value MakeCoords(TranslatorVisitor& v, IR::Reg reg, Type type) {
+IR::Value MakeCoords(TranslatorVisitor& v, IR::Reg reg, SurfaceLoadStoreType type) {
     const auto array{[&](int index) {
         return v.ir.BitFieldExtract(v.X(reg + index), v.ir.Imm32(0), v.ir.Imm32(16));
     }};
     switch (type) {
-    case Type::_1D:
-    case Type::BUFFER_1D:
+    case SurfaceLoadStoreType::_1D:
+    case SurfaceLoadStoreType::BUFFER_1D:
         return v.X(reg);
-    case Type::ARRAY_1D:
+    case SurfaceLoadStoreType::ARRAY_1D:
         return v.ir.CompositeConstruct(v.X(reg), array(1));
-    case Type::_2D:
+    case SurfaceLoadStoreType::_2D:
         return v.ir.CompositeConstruct(v.X(reg), v.X(reg + 1));
-    case Type::ARRAY_2D:
+    case SurfaceLoadStoreType::ARRAY_2D:
         return v.ir.CompositeConstruct(v.X(reg), v.X(reg + 1), array(2));
-    case Type::_3D:
+    case SurfaceLoadStoreType::_3D:
         return v.ir.CompositeConstruct(v.X(reg), v.X(reg + 1), v.X(reg + 2));
     }
     throw NotImplementedException("Invalid type {}", type);
@@ -174,19 +177,19 @@ void TranslatorVisitor::SULD(u64 insn) {
         BitField<51, 1, u64> is_bound;
         BitField<52, 1, u64> d;
         BitField<23, 1, u64> ba;
-        BitField<33, 3, Type> type;
+        BitField<33, 3, SurfaceLoadStoreType> type;
         BitField<24, 2, LoadCache> cache;
-        BitField<20, 3, Size> size;   // .D
+        BitField<20, 3, SurfaceLoadStoreSize> size;   // .D
         BitField<20, 4, u64> swizzle; // .P
-        BitField<49, 2, Clamp> clamp;
+        BitField<49, 2, SurfaceLoadStoreClamp> clamp;
         BitField<0, 8, IR::Reg> dest_reg;
         BitField<8, 8, IR::Reg> coord_reg;
         BitField<36, 13, u64> bound_offset;    // is_bound
         BitField<39, 8, IR::Reg> bindless_reg; // !is_bound
     } const suld{insn};
 
-    if (suld.clamp != Clamp::IGN) {
-        throw NotImplementedException("Clamp {}", suld.clamp.Value());
+    if (suld.clamp != SurfaceLoadStoreClamp::IGN) {
+        throw NotImplementedException("SurfaceLoadStoreClamp {}", suld.clamp.Value());
     }
     if (suld.cache != LoadCache::CA && suld.cache != LoadCache::CG) {
         throw NotImplementedException("Cache {}", suld.cache.Value());
@@ -234,19 +237,19 @@ void TranslatorVisitor::SUST(u64 insn) {
         BitField<51, 1, u64> is_bound;
         BitField<52, 1, u64> d;
         BitField<23, 1, u64> ba;
-        BitField<33, 3, Type> type;
+        BitField<33, 3, SurfaceLoadStoreType> type;
         BitField<24, 2, StoreCache> cache;
-        BitField<20, 3, Size> size;   // .D
+        BitField<20, 3, SurfaceLoadStoreSize> size;   // .D
         BitField<20, 4, u64> swizzle; // .P
-        BitField<49, 2, Clamp> clamp;
+        BitField<49, 2, SurfaceLoadStoreClamp> clamp;
         BitField<0, 8, IR::Reg> data_reg;
         BitField<8, 8, IR::Reg> coord_reg;
         BitField<36, 13, u64> bound_offset;    // is_bound
         BitField<39, 8, IR::Reg> bindless_reg; // !is_bound
     } const sust{insn};
 
-    if (sust.clamp != Clamp::IGN) {
-        throw NotImplementedException("Clamp {}", sust.clamp.Value());
+    if (sust.clamp != SurfaceLoadStoreClamp::IGN) {
+        throw NotImplementedException("SurfaceLoadStoreClamp {}", sust.clamp.Value());
     }
     if (sust.cache != StoreCache::WB && sust.cache != StoreCache::CG) {
         throw NotImplementedException("Cache {}", sust.cache.Value());
