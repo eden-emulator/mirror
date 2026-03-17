@@ -69,7 +69,7 @@ namespace {
     };
 }
 
-struct PushConstants {
+struct BlitPushConstants {
     std::array<float, 2> tex_scale;
     std::array<float, 2> tex_offset;
 };
@@ -394,13 +394,13 @@ void BindBlitState(vk::CommandBuffer cmdbuf, VkPipelineLayout layout, const Regi
                           static_cast<float>(src_size.width);
     const float scale_y = static_cast<float>(src_region.end.y - src_region.start.y) /
                           static_cast<float>(src_size.height);
-    const PushConstants push_constants{
+    const BlitPushConstants push_constants{
         .tex_scale = {scale_x, scale_y},
         .tex_offset = {static_cast<float>(src_region.start.x) / static_cast<float>(src_size.width),
                        static_cast<float>(src_region.start.y) /
                            static_cast<float>(src_size.height)},
     };
-    cmdbuf.PushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
+    cmdbuf.BlitPushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
 }
 
 VkExtent2D GetConversionExtent(const ImageView& src_image_view) {
@@ -507,11 +507,11 @@ BlitImageHelper::BlitImageHelper(const Device& device_, Scheduler& scheduler_,
           descriptor_pool.Allocator(device_, scheduler_, *two_textures_set_layout, TEXTURE_DESCRIPTOR_BANK_INFO<2>)},
       one_texture_pipeline_layout(device.GetLogical().CreatePipelineLayout(PipelineLayoutCreateInfo(
           one_texture_set_layout.address(),
-          PUSH_CONSTANT_RANGE<VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants)>))),
+          PUSH_CONSTANT_RANGE<VK_SHADER_STAGE_VERTEX_BIT, sizeof(BlitPushConstants)>))),
       two_textures_pipeline_layout(
           device.GetLogical().CreatePipelineLayout(PipelineLayoutCreateInfo(
               two_textures_set_layout.address(),
-              PUSH_CONSTANT_RANGE<VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants)>))),
+              PUSH_CONSTANT_RANGE<VK_SHADER_STAGE_VERTEX_BIT, sizeof(BlitPushConstants)>))),
       clear_color_pipeline_layout(device.GetLogical().CreatePipelineLayout(PipelineLayoutCreateInfo(
           nullptr, PUSH_CONSTANT_RANGE<VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(float) * 4>))),
       full_screen_vert(BuildShader(device, FULL_SCREEN_TRIANGLE_VERT_SPV)),
@@ -709,7 +709,7 @@ void BlitImageHelper::ClearColor(const Framebuffer* dst_framebuffer, u8 color_ma
                 (color_mask & 0x4) ? 1.0f : 0.0f, (color_mask & 0x8) ? 1.0f : 0.0f};
             cmdbuf.SetBlendConstants(blend_color.data());
             BindBlitState(cmdbuf, dst_region);
-            cmdbuf.PushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, clear_color);
+            cmdbuf.BlitPushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, clear_color);
             cmdbuf.Draw(3, 1, 0, 0);
         });
     scheduler.InvalidateState();
@@ -733,7 +733,7 @@ void BlitImageHelper::ClearDepthStencil(const Framebuffer* dst_framebuffer, bool
         cmdbuf.SetBlendConstants(blend_constants.data());
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         BindBlitState(cmdbuf, dst_region);
-        cmdbuf.PushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, clear_depth);
+        cmdbuf.BlitPushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, clear_depth);
         cmdbuf.Draw(3, 1, 0, 0);
     });
     scheduler.InvalidateState();
@@ -765,7 +765,7 @@ void BlitImageHelper::Convert(VkPipeline pipeline, const Framebuffer* dst_frameb
             .offset = offset,
             .extent = extent,
         };
-        const PushConstants push_constants{
+        const BlitPushConstants push_constants{
             .tex_scale = {viewport.width, viewport.height},
             .tex_offset = {0.0f, 0.0f},
         };
@@ -777,7 +777,7 @@ void BlitImageHelper::Convert(VkPipeline pipeline, const Framebuffer* dst_frameb
                                   nullptr);
         cmdbuf.SetViewport(0, viewport);
         cmdbuf.SetScissor(0, scissor);
-        cmdbuf.PushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
+        cmdbuf.BlitPushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
         cmdbuf.Draw(3, 1, 0, 0);
     });
     scheduler.InvalidateState();
@@ -811,7 +811,7 @@ void BlitImageHelper::ConvertDepthStencil(VkPipeline pipeline, const Framebuffer
             .offset = offset,
             .extent = extent,
         };
-        const PushConstants push_constants{
+        const BlitPushConstants push_constants{
             .tex_scale = {viewport.width, viewport.height},
             .tex_offset = {0.0f, 0.0f},
         };
@@ -823,7 +823,7 @@ void BlitImageHelper::ConvertDepthStencil(VkPipeline pipeline, const Framebuffer
                                   nullptr);
         cmdbuf.SetViewport(0, viewport);
         cmdbuf.SetScissor(0, scissor);
-        cmdbuf.PushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
+        cmdbuf.BlitPushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, push_constants);
         cmdbuf.Draw(3, 1, 0, 0);
     });
     scheduler.InvalidateState();
