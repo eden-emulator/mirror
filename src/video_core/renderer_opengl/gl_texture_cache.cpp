@@ -629,9 +629,10 @@ void TextureCacheRuntime::EmulateCopyImage(Image& dst, Image& src,
 }
 
 void TextureCacheRuntime::BlitFramebuffer(Framebuffer* dst, Framebuffer* src,
-                                          const Region2D& dst_region, const Region2D& src_region,
-                                          Tegra::Engines::Fermi2D::Filter filter,
-                                          Tegra::Engines::Fermi2D::Operation operation) {
+    const VideoCommon::Region2D& dst_region, const VideoCommon::Region2D& src_region,
+    Tegra::Engines::Fermi2D::Filter filter,
+    Tegra::Engines::Fermi2D::Operation operation
+) {
     state_tracker.NotifyScissor0();
     state_tracker.NotifyRasterizeEnable();
     state_tracker.NotifyFramebufferSRGB();
@@ -1103,10 +1104,10 @@ bool Image::ScaleDown(bool ignore) {
     return true;
 }
 
-ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewInfo& info,
-                     ImageId image_id_, Image& image, const Common::SlotVector<Image>&)
-    : VideoCommon::ImageViewBase{info, image.info, image_id_, image.gpu_addr},
-      views{runtime.null_image_views} {
+ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewInfo& info, VideoCommon::ImageId image_id_, Image& image, const Common::SlotVector<Image>&)
+    : VideoCommon::ImageViewBase{info, image.info, image_id_, image.gpu_addr}
+    , views{runtime.null_image_views}
+{
     const Device& device = runtime.device;
     if (True(image.flags & ImageFlagBits::Converted)) {
         const bool is_srgb = IsPixelFormatSRGB(info.format);
