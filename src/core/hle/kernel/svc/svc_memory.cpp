@@ -11,7 +11,11 @@
 namespace Kernel::Svc {
 namespace {
 
-constexpr bool IsValidSetMemoryPermission(MemoryPermission perm) {
+[[nodiscard]] inline constexpr bool IsValidSetAddressRange(u64 address, u64 size) {
+    return address + size > address;
+}
+
+[[nodiscard]] inline constexpr bool IsValidSetMemoryPermission(MemoryPermission perm) {
     switch (perm) {
     case MemoryPermission::None:
     case MemoryPermission::Read:
@@ -20,13 +24,6 @@ constexpr bool IsValidSetMemoryPermission(MemoryPermission perm) {
     default:
         return false;
     }
-}
-
-// Checks if address + size is greater than the given address
-// This can return false if the size causes an overflow of a 64-bit type
-// or if the given size is zero.
-constexpr bool IsValidAddressRange(u64 address, u64 size) {
-    return address + size > address;
 }
 
 // Helper function that performs the common sanity checks for svcMapMemory
@@ -53,14 +50,17 @@ Result MapUnmapMemorySanityChecks(const KProcessPageTable& manager, u64 dst_addr
         R_THROW(ResultInvalidSize);
     }
 
-    if (!IsValidAddressRange(dst_addr, size)) {
+    // Checks if address + size is greater than the given address
+    // This can return false if the size causes an overflow of a 64-bit type
+    // or if the given size is zero.
+    if (!IsValidSetAddressRange(dst_addr, size)) {
         LOG_ERROR(Kernel_SVC,
                   "Destination is not a valid address range, addr=0x{:016X}, size=0x{:016X}",
                   dst_addr, size);
         R_THROW(ResultInvalidCurrentMemory);
     }
 
-    if (!IsValidAddressRange(src_addr, size)) {
+    if (!IsValidSetAddressRange(src_addr, size)) {
         LOG_ERROR(Kernel_SVC, "Source is not a valid address range, addr=0x{:016X}, size=0x{:016X}",
                   src_addr, size);
         R_THROW(ResultInvalidCurrentMemory);
