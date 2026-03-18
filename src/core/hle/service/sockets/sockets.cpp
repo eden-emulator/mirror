@@ -12,8 +12,8 @@ namespace Service::Sockets {
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
 
-    server_manager->RegisterNamedService("bsd:s", std::make_shared<BSD>(system, "bsd:s"));
-    server_manager->RegisterNamedService("bsd:u", std::make_shared<BSD>(system, "bsd:u"));
+    server_manager->RegisterNamedService("bsd:s", std::make_shared<NetworkBSD>(system, "bsd:s"));
+    server_manager->RegisterNamedService("bsd:u", std::make_shared<NetworkBSD>(system, "bsd:u"));
     server_manager->RegisterNamedService("bsdcfg", std::make_shared<BSDCFG>(system));
     server_manager->RegisterNamedService("nsd:a", std::make_shared<NSD>(system, "nsd:a"));
     server_manager->RegisterNamedService("nsd:u", std::make_shared<NSD>(system, "nsd:u"));

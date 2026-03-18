@@ -129,7 +129,7 @@ public:
                 LOG_ERROR(Service_SSL,
                           "do_not_close_socket was changed after setting socket; is this right?");
             } else {
-                auto bsd = system.ServiceManager().GetService<Service::Sockets::BSD>("bsd:u");
+                auto bsd = system.ServiceManager().GetService<Service::Sockets::NetworkBSD>("bsd:u");
                 if (bsd) {
                     auto err = bsd->CloseImpl(fd);
                     if (err != Service::Sockets::Errno::SUCCESS) {
@@ -157,7 +157,7 @@ private:
     Result SetSocketDescriptorImpl(s32* out_fd, s32 fd) {
         LOG_DEBUG(Service_SSL, "called, fd={}", fd);
         ASSERT(!did_handshake);
-        auto bsd = system.ServiceManager().GetService<Service::Sockets::BSD>("bsd:u");
+        auto bsd = system.ServiceManager().GetService<Service::Sockets::NetworkBSD>("bsd:u");
         ASSERT_OR_EXECUTE(bsd, { return ResultInternalError; });
 
         auto const res_v = bsd->DuplicateSocketImpl(fd);

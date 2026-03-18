@@ -27,10 +27,10 @@ class Socket;
 
 namespace Service::Sockets {
 
-class BSD final : public ServiceFramework<BSD> {
+class NetworkBSD final : public ServiceFramework<NetworkBSD> {
 public:
-    explicit BSD(Core::System& system_, const char* name);
-    ~BSD() override;
+    explicit NetworkBSD(Core::System& system_, const char* name);
+    ~NetworkBSD() override;
 
     // These methods are called from SSL; the first two are also called from
     // this class for the corresponding IPC methods.
@@ -50,7 +50,7 @@ private:
     };
 
     struct PollWork {
-        void Execute(BSD* bsd);
+        void Execute(NetworkBSD* bsd);
         void Response(HLERequestContext& ctx);
 
         s32 nfds;
@@ -62,7 +62,7 @@ private:
     };
 
     struct AcceptWork {
-        void Execute(BSD* bsd);
+        void Execute(NetworkBSD* bsd);
         void Response(HLERequestContext& ctx);
 
         s32 fd;
@@ -72,7 +72,7 @@ private:
     };
 
     struct ConnectWork {
-        void Execute(BSD* bsd);
+        void Execute(NetworkBSD* bsd);
         void Response(HLERequestContext& ctx);
 
         s32 fd;
@@ -81,7 +81,7 @@ private:
     };
 
     struct RecvWork {
-        void Execute(BSD* bsd);
+        void Execute(NetworkBSD* bsd);
         void Response(HLERequestContext& ctx);
 
         s32 fd;
@@ -92,7 +92,7 @@ private:
     };
 
     struct RecvFromWork {
-        void Execute(BSD* bsd);
+        void Execute(NetworkBSD* bsd);
         void Response(HLERequestContext& ctx);
 
         s32 fd;
@@ -104,7 +104,7 @@ private:
     };
 
     struct SendWork {
-        void Execute(BSD* bsd);
+        void Execute(NetworkBSD* bsd);
         void Response(HLERequestContext& ctx);
 
         s32 fd;
@@ -115,7 +115,7 @@ private:
     };
 
     struct SendToWork {
-        void Execute(BSD* bsd);
+        void Execute(NetworkBSD* bsd);
         void Response(HLERequestContext& ctx);
 
         s32 fd;
