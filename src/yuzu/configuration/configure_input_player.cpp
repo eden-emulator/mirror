@@ -187,7 +187,7 @@ QString ConfigureInputPlayer::ButtonToText(const Common::ParamPackage& param) {
     const QString inverted = QString::fromStdString(param.Get("inverted", false) ? "!" : "");
     const QString invert = QString::fromStdString(param.Get("invert", "+") == "-" ? "-" : "");
     const QString turbo = QString::fromStdString(param.Get("turbo", false) ? "$" : "");
-    const auto common_button_name = input_subsystem->GetInputButtonName(param);
+    const auto common_button_name = input_subsystem->GetButtonName(param);
 
     // Retrieve the names from Qt
     if (param.Get("engine", "") == "keyboard") {
