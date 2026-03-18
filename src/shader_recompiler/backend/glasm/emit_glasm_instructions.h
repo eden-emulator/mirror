@@ -7,6 +7,7 @@
 #pragma once
 
 #include "common/common_types.h"
+#include "shader_recompiler/stage.h"
 #include "shader_recompiler/backend/glasm/reg_alloc.h"
 
 namespace Shader::IR {
