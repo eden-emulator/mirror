@@ -1531,25 +1531,25 @@ void RasterizerVulkan::UpdateDepthBiasEnable(Tegra::Engines::Maxwell3D::Regs& re
     if (!state_tracker.TouchDepthBiasEnable()) {
         return;
     }
-    constexpr size_t POINT = 0;
-    constexpr size_t LINE = 1;
-    constexpr size_t POLYGON = 2;
+    constexpr size_t ENABLE_POINT = 0;
+    constexpr size_t ENABLE_LINE = 1;
+    constexpr size_t ENABLE_POLYGON = 2;
     static constexpr std::array POLYGON_OFFSET_ENABLE_LUT = {
-        POINT,   // Points
-        LINE,    // Lines
-        LINE,    // LineLoop
-        LINE,    // LineStrip
-        POLYGON, // Triangles
-        POLYGON, // TriangleStrip
-        POLYGON, // TriangleFan
-        POLYGON, // Quads
-        POLYGON, // QuadStrip
-        POLYGON, // Polygon
-        LINE,    // LinesAdjacency
-        LINE,    // LineStripAdjacency
-        POLYGON, // TrianglesAdjacency
-        POLYGON, // TriangleStripAdjacency
-        POLYGON, // Patches
+        ENABLE_POINT,   // Points
+        ENABLE_LINE,    // Lines
+        ENABLE_LINE,    // LineLoop
+        ENABLE_LINE,    // LineStrip
+        ENABLE_POLYGON, // Triangles
+        ENABLE_POLYGON, // TriangleStrip
+        ENABLE_POLYGON, // TriangleFan
+        ENABLE_POLYGON, // Quads
+        ENABLE_POLYGON, // QuadStrip
+        ENABLE_POLYGON, // Polygon
+        ENABLE_LINE,    // LinesAdjacency
+        ENABLE_LINE,    // LineStripAdjacency
+        ENABLE_POLYGON, // TrianglesAdjacency
+        ENABLE_POLYGON, // TriangleStripAdjacency
+        ENABLE_POLYGON, // Patches
     };
     const std::array enabled_lut{
         regs.polygon_offset_point_enable,
