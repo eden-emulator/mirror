@@ -9,7 +9,7 @@
 #include "common/common_types.h"
 #include "core/file_sys/vfs/vfs.h"
 
-namespace FileSys {
+namespace FileSys::RomFSBuilder {
 
 struct RomFSBuildDirectoryContext;
 struct RomFSBuildFileContext;
