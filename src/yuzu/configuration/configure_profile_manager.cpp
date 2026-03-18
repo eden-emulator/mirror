@@ -36,7 +36,7 @@
 
 namespace {
 
-QString GetImagePath(const Common::UUID& uuid) {
+QString GetImagePath(const Common::UUID uuid) {
     const auto path =
         Common::FS::GetEdenPath(Common::FS::EdenPath::NANDDir) /
         fmt::format("system/save/8000000000000010/su/avators/{}.jpg", uuid.FormattedString());

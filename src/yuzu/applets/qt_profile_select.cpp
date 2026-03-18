@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
@@ -24,22 +24,22 @@
 #include "yuzu/util/controller_navigation.h"
 
 namespace {
-QString FormatUserEntryText(const QString& username, Common::UUID uuid) {
+QString FormatProfileUserEntryText(const QString& username, Common::UUID uuid) {
     return QtProfileSelectionDialog::tr(
                "%1\n%2", "%1 is the profile username, %2 is the formatted UUID (e.g. "
                          "00112233-4455-6677-8899-AABBCCDDEEFF))")
         .arg(username, QString::fromStdString(uuid.FormattedString()));
 }
 
-QString GetImagePath(Common::UUID uuid) {
+QString GetProfileImagePath(const Common::UUID uuid) {
     const auto path =
         Common::FS::GetEdenPath(Common::FS::EdenPath::NANDDir) /
         fmt::format("system/save/8000000000000010/su/avators/{}.jpg", uuid.FormattedString());
     return QString::fromStdString(Common::FS::PathToUTF8String(path));
 }
 
-QPixmap GetIcon(Common::UUID uuid) {
-    QPixmap icon{GetImagePath(uuid)};
+QPixmap GetProfileIcon(Common::UUID uuid) {
+    QPixmap icon{GetProfileImagePath(uuid)};
 
     if (!icon) {
         icon.fill(Qt::black);
@@ -118,8 +118,11 @@ QtProfileSelectionDialog::QtProfileSelectionDialog(
         const auto username = Common::StringFromFixedZeroTerminatedBuffer(
             reinterpret_cast<const char*>(profile.username.data()), profile.username.size());
 
-        list_items.push_back(QList<QStandardItem*>{new QStandardItem{
-            GetIcon(user), FormatUserEntryText(QString::fromStdString(username), user)}});
+        auto const text = QtProfileSelectionDialog::tr(
+            "%1\n%2", "%1 is the profile username, %2 is the formatted UUID (e.g. "
+            "00112233-4455-6677-8899-AABBCCDDEEFF))")
+            .arg(QString::fromStdString(username), QString::fromStdString(user.FormattedString()));
+        list_items.push_back(QList<QStandardItem*>{new QStandardItem{GetProfileIcon(user), text}});
     }
 
     for (const auto& item : list_items)

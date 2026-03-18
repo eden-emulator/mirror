@@ -29,7 +29,7 @@ const std::array<std::string, ConfigureRingController::ANALOG_SUB_BUTTONS_NUM>
 
 namespace {
 
-QString GetKeyName(int key_code) {
+QString GetRingconKeyName(int key_code) {
     switch (key_code) {
     case Qt::Key_Shift:
         return QObject::tr("Shift");
@@ -44,7 +44,7 @@ QString GetKeyName(int key_code) {
     }
 }
 
-QString GetButtonName(Common::Input::ButtonNames button_name) {
+QString GetRingconButtonName(Common::Input::ButtonNames button_name) {
     switch (button_name) {
     case Common::Input::ButtonNames::ButtonLeft:
         return QObject::tr("Left");
@@ -397,11 +397,11 @@ QString ConfigureRingController::ButtonToText(const Common::ParamPackage& param)
 
     const QString toggle = QString::fromStdString(param.Get("toggle", false) ? "~" : "");
     const QString inverted = QString::fromStdString(param.Get("inverted", false) ? "!" : "");
-    const auto common_button_name = input_subsystem->GetButtonName(param);
+    const auto common_button_name = input_subsystem->GetRingconButtonName(param);
 
     // Retrieve the names from Qt
     if (param.Get("engine", "") == "keyboard") {
-        const QString button_str = GetKeyName(param.Get("code", 0));
+        const QString button_str = GetRingconKeyName(param.Get("code", 0));
         return QObject::tr("%1%2").arg(toggle, button_str);
     }
 
@@ -438,7 +438,7 @@ QString ConfigureRingController::ButtonToText(const Common::ParamPackage& param)
         }
     }
 
-    QString button_name = GetButtonName(common_button_name);
+    QString button_name = GetRingconButtonName(common_button_name);
     if (param.Has("hat")) {
         return QObject::tr("%1%2Hat %3").arg(toggle, inverted, button_name);
     }

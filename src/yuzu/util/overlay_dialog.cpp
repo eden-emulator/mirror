@@ -13,15 +13,6 @@
 #include "ui_overlay_dialog.h"
 #include "yuzu/util/overlay_dialog.h"
 
-namespace {
-
-constexpr float BASE_TITLE_FONT_SIZE = 14.0f;
-constexpr float BASE_FONT_SIZE = 18.0f;
-constexpr float BASE_WIDTH = 1280.0f;
-constexpr float BASE_HEIGHT = 720.0f;
-
-} // Anonymous namespace
-
 OverlayDialog::OverlayDialog(QWidget* parent, Core::System& system, const QString& title_text,
                              const QString& body_text, const QString& left_button_text,
                              const QString& right_button_text, Qt::Alignment alignment,
