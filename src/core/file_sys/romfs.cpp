@@ -163,7 +163,7 @@ VirtualFile CreateRomFS(VirtualDir dir, VirtualDir ext) {
     if (dir == nullptr)
         return nullptr;
 
-    RomFSBuildContext ctx{dir, ext};
+    RomFSBuilder::RomFSBuildContext ctx{dir, ext};
     return ConcatenatedVfsFile::MakeConcatenatedFile(0, dir->GetName(), ctx.Build());
 }
 

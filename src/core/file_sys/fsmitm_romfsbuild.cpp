@@ -11,7 +11,7 @@
 #include "core/file_sys/vfs/vfs.h"
 #include "core/file_sys/vfs/vfs_vector.h"
 
-namespace FileSys {
+namespace FileSys::RomFSBuilder {
 
 constexpr u64 FS_MAX_PATH = 0x301;
 
