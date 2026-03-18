@@ -11,11 +11,11 @@
 namespace Kernel::Svc {
 namespace {
 
-constexpr bool IsValidAddressRange(u64 address, u64 size) {
+[[nodiscard]] inline constexpr bool IsValidAddressRange(u64 address, u64 size) {
     return address + size > address;
 }
 
-constexpr bool IsValidProcessMemoryPermission(Svc::MemoryPermission perm) {
+[[nodiscard]] inline constexpr bool IsValidProcessMemoryPermission(Svc::MemoryPermission perm) {
     switch (perm) {
     case Svc::MemoryPermission::None:
     case Svc::MemoryPermission::Read:
