@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2015 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -256,7 +259,7 @@ private:
     BlitImageHelper blit_image;
 
     boost::container::static_vector<u32, MAX_IMAGE_VIEWS> image_view_indices;
-    std::array<ImageViewId, MAX_IMAGE_VIEWS> image_view_ids;
+    std::array<VideoCommon::ImageViewId, MAX_IMAGE_VIEWS> image_view_ids;
     boost::container::static_vector<GLuint, MAX_TEXTURES> sampler_handles;
     std::array<GLuint, MAX_TEXTURES> texture_handles{};
     std::array<GLuint, MAX_IMAGES> image_handles{};
