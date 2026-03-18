@@ -2223,7 +2223,7 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
     }
 }
 
-ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewInfo& info, ImageId image_id_, Image& image, const SlotVector<Image>& slot_imgs)
+ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewInfo& info, ImageId image_id_, Image& image, const Common::SlotVector<Image>& slot_imgs)
     : ImageView{runtime, info, image_id_, image}
 {
     slot_images = &slot_imgs;

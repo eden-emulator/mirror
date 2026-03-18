@@ -36,8 +36,8 @@ using Shader::TextureDescriptor;
 using Tegra::Texture::TexturePair;
 using VideoCommon::ImageId;
 
-constexpr u32 MAX_TEXTURES = 64;
-constexpr u32 MAX_IMAGES = 8;
+constexpr u32 MAX_GRAPHICS_TEXTURES = 64;
+constexpr u32 MAX_GRAPHICS_IMAGES = 8;
 
 GLenum Stage(size_t stage_index) {
     switch (stage_index) {
@@ -221,8 +221,8 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, TextureCache& texture_c
             info.storage_buffers_descriptors, [](const auto& desc) { return desc.is_written; });
         uses_local_memory |= info.uses_local_memory;
     }
-    ASSERT(num_textures <= MAX_TEXTURES);
-    ASSERT(num_images <= MAX_IMAGES);
+    ASSERT(num_textures <= MAX_GRAPHICS_TEXTURES);
+    ASSERT(num_images <= MAX_GRAPHICS_IMAGES);
 
     const auto backend = ::Settings::values.renderer_backend.GetValue();
     const bool assembly_shaders = backend == Settings::RendererBackend::OpenGL_GLASM;
@@ -278,8 +278,8 @@ GraphicsPipeline::GraphicsPipeline(const Device& device, TextureCache& texture_c
 
 template <typename Spec>
 bool GraphicsPipeline::ConfigureImpl(bool is_indexed) {
-    std::array<VideoCommon::ImageViewInOut, MAX_TEXTURES + MAX_IMAGES> views;
-    std::array<VideoCommon::SamplerId, MAX_TEXTURES> samplers;
+    std::array<VideoCommon::ImageViewInOut, MAX_GRAPHICS_TEXTURES + MAX_GRAPHICS_IMAGES> views;
+    std::array<VideoCommon::SamplerId, MAX_GRAPHICS_TEXTURES> samplers;
     size_t views_index{};
     size_t samplers_index{};
 
@@ -452,9 +452,9 @@ bool GraphicsPipeline::ConfigureImpl(bool is_indexed) {
     GLsizei texture_binding = 0;
     GLsizei image_binding = 0;
     GLsizei sampler_binding{};
-    std::array<GLuint, MAX_TEXTURES> textures;
-    std::array<GLuint, MAX_IMAGES> images;
-    std::array<GLuint, MAX_TEXTURES> gl_samplers;
+    std::array<GLuint, MAX_GRAPHICS_TEXTURES> textures;
+    std::array<GLuint, MAX_GRAPHICS_IMAGES> images;
+    std::array<GLuint, MAX_GRAPHICS_TEXTURES> gl_samplers;
     const auto prepare_stage{[&](size_t stage) {
         buffer_cache.runtime.SetImagePointers(&textures[texture_binding], &images[image_binding]);
         buffer_cache.BindHostStageBuffers(stage);

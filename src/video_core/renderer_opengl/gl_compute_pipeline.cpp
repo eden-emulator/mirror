@@ -19,8 +19,8 @@ using Shader::ImageBufferDescriptor;
 using Tegra::Texture::TexturePair;
 using VideoCommon::ImageId;
 
-constexpr u32 MAX_TEXTURES = 64;
-constexpr u32 MAX_IMAGES = 16;
+constexpr u32 MAX_COMPUTE_TEXTURES = 64;
+constexpr u32 MAX_COMPUTE_IMAGES = 16;
 
 size_t ComputePipelineKey::Hash() const noexcept {
     return static_cast<size_t>(
@@ -56,10 +56,10 @@ ComputePipeline::ComputePipeline(const Device& device, TextureCache& texture_cac
     num_image_buffers = Shader::NumDescriptors(info.image_buffer_descriptors);
 
     const u32 num_textures{num_texture_buffers + Shader::NumDescriptors(info.texture_descriptors)};
-    ASSERT(num_textures <= MAX_TEXTURES);
+    ASSERT(num_textures <= MAX_COMPUTE_TEXTURES);
 
     const u32 num_images{num_image_buffers + Shader::NumDescriptors(info.image_descriptors)};
-    ASSERT(num_images <= MAX_IMAGES);
+    ASSERT(num_images <= MAX_COMPUTE_IMAGES);
 
     const bool is_glasm{assembly_program.handle != 0};
     const u32 num_storage_buffers{Shader::NumDescriptors(info.storage_buffers_descriptors)};
@@ -92,11 +92,11 @@ void ComputePipeline::Configure() {
     }
     texture_cache.SynchronizeDescriptors(true);
 
-    boost::container::static_vector<VideoCommon::ImageViewInOut, MAX_TEXTURES + MAX_IMAGES> views;
-    boost::container::static_vector<VideoCommon::SamplerId, MAX_TEXTURES> samplers;
-    std::array<GLuint, MAX_TEXTURES> gl_samplers;
-    std::array<GLuint, MAX_TEXTURES> textures;
-    std::array<GLuint, MAX_IMAGES> images;
+    boost::container::static_vector<VideoCommon::ImageViewInOut, MAX_COMPUTE_TEXTURES + MAX_COMPUTE_IMAGES> views;
+    boost::container::static_vector<VideoCommon::SamplerId, MAX_COMPUTE_TEXTURES> samplers;
+    std::array<GLuint, MAX_COMPUTE_TEXTURES> gl_samplers;
+    std::array<GLuint, MAX_COMPUTE_TEXTURES> textures;
+    std::array<GLuint, MAX_COMPUTE_IMAGES> images;
     GLsizei sampler_binding{};
     GLsizei texture_binding{};
     GLsizei image_binding{};

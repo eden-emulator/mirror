@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
@@ -12,17 +12,11 @@
 #include "video_core/renderer_opengl/gl_buffer_cache.h"
 #include "video_core/renderer_opengl/gl_device.h"
 #include "video_core/renderer_opengl/maxwell_to_gl.h"
+#include "video_core/renderer_opengl/gl_rasterizer.h"
 
 namespace OpenGL {
 namespace {
 using VideoCore::Surface::PixelFormat;
-
-struct BindlessSSBO {
-    GLuint64EXT address;
-    GLsizei length;
-    GLsizei padding;
-};
-static_assert(sizeof(BindlessSSBO) == sizeof(GLuint) * 4);
 
 constexpr std::array PROGRAM_LUT{
     GL_VERTEX_PROGRAM_NV,   GL_TESS_CONTROL_PROGRAM_NV, GL_TESS_EVALUATION_PROGRAM_NV,

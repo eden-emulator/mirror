@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
@@ -1103,7 +1103,7 @@ bool Image::ScaleDown(bool ignore) {
 }
 
 ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewInfo& info,
-                     ImageId image_id_, Image& image, const SlotVector<Image>&)
+                     ImageId image_id_, Image& image, const Common::SlotVector<Image>&)
     : VideoCommon::ImageViewBase{info, image.info, image_id_, image.gpu_addr},
       views{runtime.null_image_views} {
     const Device& device = runtime.device;
@@ -1130,18 +1130,18 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
         swizzle[3] = info.w_source;
     }
     switch (info.type) {
-    case ImageViewType::e1DArray:
+    case VideoCommon::ImageViewType::e1DArray:
         flat_range.extent.layers = 1;
         [[fallthrough]];
-    case ImageViewType::e1D:
+    case VideoCommon::ImageViewType::e1D:
         SetupView(Shader::TextureType::Color1D);
         SetupView(Shader::TextureType::ColorArray1D);
         break;
-    case ImageViewType::e2DArray:
+    case VideoCommon::ImageViewType::e2DArray:
         flat_range.extent.layers = 1;
         [[fallthrough]];
-    case ImageViewType::e2D:
-    case ImageViewType::Rect:
+    case VideoCommon::ImageViewType::e2D:
+    case VideoCommon::ImageViewType::Rect:
         if (True(flags & VideoCommon::ImageViewFlagBits::Slice)) {
             // 2D and 2D array views on a 3D textures are used exclusively for render targets
             ASSERT(info.range.extent.levels == 1);
@@ -1157,41 +1157,41 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
             SetupView(Shader::TextureType::ColorArray2D);
         }
         break;
-    case ImageViewType::e3D:
+    case VideoCommon::ImageViewType::e3D:
         SetupView(Shader::TextureType::Color3D);
         break;
-    case ImageViewType::CubeArray:
+    case VideoCommon::ImageViewType::CubeArray:
         flat_range.extent.layers = 6;
         [[fallthrough]];
-    case ImageViewType::Cube:
+    case VideoCommon::ImageViewType::Cube:
         SetupView(Shader::TextureType::ColorCube);
         SetupView(Shader::TextureType::ColorArrayCube);
         break;
-    case ImageViewType::Buffer:
+    case VideoCommon::ImageViewType::Buffer:
         ASSERT(false);
         break;
     }
     switch (info.type) {
-    case ImageViewType::e1D:
+    case VideoCommon::ImageViewType::e1D:
         default_handle = Handle(Shader::TextureType::Color1D);
         break;
-    case ImageViewType::e1DArray:
+    case VideoCommon::ImageViewType::e1DArray:
         default_handle = Handle(Shader::TextureType::ColorArray1D);
         break;
-    case ImageViewType::e2D:
-    case ImageViewType::Rect:
+    case VideoCommon::ImageViewType::e2D:
+    case VideoCommon::ImageViewType::Rect:
         default_handle = Handle(Shader::TextureType::Color2D);
         break;
-    case ImageViewType::e2DArray:
+    case VideoCommon::ImageViewType::e2DArray:
         default_handle = Handle(Shader::TextureType::ColorArray2D);
         break;
-    case ImageViewType::e3D:
+    case VideoCommon::ImageViewType::e3D:
         default_handle = Handle(Shader::TextureType::Color3D);
         break;
-    case ImageViewType::Cube:
+    case VideoCommon::ImageViewType::Cube:
         default_handle = Handle(Shader::TextureType::ColorCube);
         break;
-    case ImageViewType::CubeArray:
+    case VideoCommon::ImageViewType::CubeArray:
         default_handle = Handle(Shader::TextureType::ColorArrayCube);
         break;
     default:
