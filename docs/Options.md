@@ -39,6 +39,7 @@ These options control dependencies.
   - This option is subject for removal.
 - `YUZU_TESTS` (ON) Compile tests - requires Catch2
 - `ENABLE_LTO` (OFF) Enable link-time optimization
+- `ENABLE_UNITY_BUILD` (OFF) Enables "Unity/Jumbo" builds
   - Not recommended on Windows
   - UNIX may be better off appending `-flto=thin` to compiler args
 - `USE_FASTER_LINKER` (OFF) Check if a faster linker is available

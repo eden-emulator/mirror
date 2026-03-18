@@ -69,6 +69,9 @@ if (YUZU_STATIC_ROOM)
     set(fmt_FORCE_BUNDLED ON)
 endif()
 
+# my unity/jumbo build
+option(ENABLE_UNITY_BUILD "Enable Unity/Jumbo build" OFF)
+
 # qt stuff
 option(ENABLE_QT "Enable the Qt frontend" ON)
 option(ENABLE_QT_TRANSLATION "Enable translations for the Qt frontend" OFF)
