@@ -71,6 +71,10 @@ endif()
 
 # my unity/jumbo build
 option(ENABLE_UNITY_BUILD "Enable Unity/Jumbo build" OFF)
+if(MSVC AND ENABLE_UNITY_BUILD)
+    # Unity builds need big objects for MSVC...
+    add_compile_options(/bigobj)
+endif()
 
 # qt stuff
 option(ENABLE_QT "Enable the Qt frontend" ON)
