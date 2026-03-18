@@ -7,6 +7,11 @@
 # Enable modules to include each other's files
 include_directories(.)
 
+if (ENABLE_UNITY_BUILD)
+    set(CMAKE_UNITY_BUILD ON)
+    set(CMAKE_UNITY_BUILD_BATCH_SIZE 5000)
+endif()
+
 # Dynarmic
 if ((ARCHITECTURE_x86_64 OR ARCHITECTURE_arm64 OR ARCHITECTURE_riscv64 OR ARCHITECTURE_loongarch64) AND NOT YUZU_STATIC_ROOM)
     add_subdirectory(dynarmic)
