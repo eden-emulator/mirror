@@ -955,12 +955,12 @@ void PlayerControlPreview::DrawGCController(QPainter& p, const QPointF center) {
                 battery_values[Core::HID::EmulatedDeviceIndex::LeftIndex]);
 }
 
-constexpr std::array<float, 13 * 2> symbol_a = {
+static constexpr std::array<float, 13 * 2> symbol_a = {
     -1.085f, -5.2f,   1.085f, -5.2f,   5.085f, 5.0f,    2.785f,  5.0f,  1.785f,
     2.65f,   -1.785f, 2.65f,  -2.785f, 5.0f,   -5.085f, 5.0f,    -1.4f, 1.0f,
     0.0f,    -2.8f,   1.4f,   1.0f,    -1.4f,  1.0f,    -5.085f, 5.0f,
 };
-constexpr std::array<float, 134 * 2> symbol_b = {
+static constexpr std::array<float, 134 * 2> symbol_b = {
     -4.0f, 0.0f,  -4.0f, 0.0f,  -4.0f, -0.1f, -3.8f, -5.1f, 1.8f,  -5.0f, 2.3f,  -4.9f, 2.6f,
     -4.8f, 2.8f,  -4.7f, 2.9f,  -4.6f, 3.1f,  -4.5f, 3.2f,  -4.4f, 3.4f,  -4.3f, 3.4f,  -4.2f,
     3.5f,  -4.1f, 3.7f,  -4.0f, 3.7f,  -3.9f, 3.8f,  -3.8f, 3.8f,  -3.7f, 3.9f,  -3.6f, 3.9f,
@@ -986,24 +986,19 @@ constexpr std::array<float, 134 * 2> symbol_b = {
     1.9f,  -2.9f, 1.9f,  -3.0f, 1.8f,  -3.1f, 1.6f,  -3.2f, 1.6f,  -3.3f, 1.3f,  -3.4f, -1.9f,
     -3.3f, -1.9f, -3.2f, -1.8f, -1.0f, 0.2f,  -1.1f, 0.3f,  -1.1f, -4.0f, 0.0f,
 };
-
-constexpr std::array<float, 9 * 2> symbol_y = {
+static constexpr std::array<float, 9 * 2> symbol_y = {
     -4.79f, -4.9f, -2.44f, -4.9f, 0.0f,  -0.9f,  2.44f, -4.9f,  4.79f,
     -4.9f,  1.05f, 1.0f,   1.05f, 5.31f, -1.05f, 5.31f, -1.05f, 1.0f,
 
 };
-
-constexpr std::array<float, 12 * 2> symbol_x = {
+static constexpr std::array<float, 12 * 2> symbol_x = {
     -4.4f, -5.0f, -2.0f, -5.0f, 0.0f, -1.7f, 2.0f,  -5.0f, 4.4f,  -5.0f, 1.2f,  0.0f,
     4.4f,  5.0f,  2.0f,  5.0f,  0.0f, 1.7f,  -2.0f, 5.0f,  -4.4f, 5.0f,  -1.2f, 0.0f,
-
 };
-
-constexpr std::array<float, 7 * 2> symbol_l = {
+static constexpr std::array<float, 7 * 2> symbol_l = {
     2.4f, -3.23f, 2.4f, 2.1f, 5.43f, 2.1f, 5.43f, 3.22f, 0.98f, 3.22f, 0.98f, -3.23f, 2.4f, -3.23f,
 };
-
-constexpr std::array<float, 98 * 2> symbol_r = {
+static constexpr std::array<float, 98 * 2> symbol_r = {
     1.0f, 0.0f,  1.0f, -0.1f, 1.1f, -3.3f, 4.3f, -3.2f, 5.1f, -3.1f, 5.4f, -3.0f, 5.6f, -2.9f,
     5.7f, -2.8f, 5.9f, -2.7f, 5.9f, -2.6f, 6.0f, -2.5f, 6.1f, -2.3f, 6.2f, -2.2f, 6.2f, -2.1f,
     6.3f, -2.0f, 6.3f, -1.9f, 6.2f, -0.8f, 6.2f, -0.7f, 6.1f, -0.6f, 6.1f, -0.5f, 6.0f, -0.4f,
@@ -1021,14 +1016,12 @@ constexpr std::array<float, 98 * 2> symbol_r = {
     4.9f, -1.7f, 4.9f, -1.8f, 4.8f, -1.9f, 4.8f, -2.0f, 4.6f, -2.1f, 4.3f, -2.2f, 2.3f, -2.1f,
     2.3f, -2.0f, 2.4f, -0.5f, 4.2f, -0.5f, 1.0f, 0.0f,
 };
-
-constexpr std::array<float, 18 * 2> symbol_zl = {
+static constexpr std::array<float, 18 * 2> symbol_zl = {
     -2.6f, -2.13f, -5.6f, -2.13f, -5.6f, -3.23f, -0.8f, -3.23f, -0.8f, -2.13f, -4.4f, 2.12f,
     -0.7f, 2.12f,  -0.7f, 3.22f,  -6.0f, 3.22f,  -6.0f, 2.12f,  2.4f,  -3.23f, 2.4f,  2.1f,
     5.43f, 2.1f,   5.43f, 3.22f,  0.98f, 3.22f,  0.98f, -3.23f, 2.4f,  -3.23f, -6.0f, 2.12f,
 };
-
-constexpr std::array<float, 57 * 2> symbol_sl = {
+static constexpr std::array<float, 57 * 2> symbol_sl = {
     -3.0f,  -3.65f, -2.76f, -4.26f, -2.33f, -4.76f, -1.76f, -5.09f, -1.13f, -5.26f, -0.94f,
     -4.77f, -0.87f, -4.11f, -1.46f, -3.88f, -1.91f, -3.41f, -2.05f, -2.78f, -1.98f, -2.13f,
     -1.59f, -1.61f, -0.96f, -1.53f, -0.56f, -2.04f, -0.38f, -2.67f, -0.22f, -3.31f, 0.0f,
@@ -1042,7 +1035,7 @@ constexpr std::array<float, 57 * 2> symbol_sl = {
     3.23f,  2.4f,   -2.1f,  2.4f,   -2.1f,  5.43f,  -3.22f, 5.43f,  -3.22f, 0.98f,  3.23f,
     0.98f,  3.23f,  2.4f,   -3.09f, -2.34f,
 };
-constexpr std::array<float, 109 * 2> symbol_zr = {
+static constexpr std::array<float, 109 * 2> symbol_zr = {
     -2.6f, -2.13f, -5.6f, -2.13f, -5.6f, -3.23f, -0.8f, -3.23f, -0.8f, -2.13f, -4.4f, 2.12f, -0.7f,
     2.12f, -0.7f,  3.22f, -6.0f,  3.22f, -6.0f,  2.12f,
 
@@ -1064,8 +1057,7 @@ constexpr std::array<float, 109 * 2> symbol_zr = {
     -1.2f, 4.9f,   -1.7f, 4.9f,   -1.8f, 4.8f,   -1.9f, 4.8f,   -2.0f, 4.6f,   -2.1f, 4.3f,  -2.2f,
     2.3f,  -2.1f,  2.3f,  -2.0f,  2.4f,  -0.5f,  4.2f,  -0.5f,  1.0f,  0.0f,   -6.0f, 2.12f,
 };
-
-constexpr std::array<float, 148 * 2> symbol_sr = {
+static constexpr std::array<float, 148 * 2> symbol_sr = {
     -3.0f,  -3.65f, -2.76f, -4.26f, -2.33f, -4.76f, -1.76f, -5.09f, -1.13f, -5.26f, -0.94f, -4.77f,
     -0.87f, -4.11f, -1.46f, -3.88f, -1.91f, -3.41f, -2.05f, -2.78f, -1.98f, -2.13f, -1.59f, -1.61f,
     -0.96f, -1.53f, -0.56f, -2.04f, -0.38f, -2.67f, -0.22f, -3.31f, 0.0f,   -3.93f, 0.34f,  -4.49f,
@@ -1097,34 +1089,28 @@ constexpr std::array<float, 148 * 2> symbol_sr = {
     -3.09f, -2.34f,
 
 };
-
-constexpr std::array<float, 30 * 2> symbol_c = {
+static constexpr std::array<float, 30 * 2> symbol_c = {
     2.86f,  7.57f,  0.99f,  7.94f,  -0.91f, 7.87f,  -2.73f, 7.31f,  -4.23f, 6.14f,  -5.2f,  4.51f,
     -5.65f, 2.66f,  -5.68f, 0.75f,  -5.31f, -1.12f, -4.43f, -2.81f, -3.01f, -4.08f, -1.24f, -4.78f,
     0.66f,  -4.94f, 2.54f,  -4.67f, 4.33f,  -4.0f,  4.63f,  -2.27f, 3.37f,  -2.7f,  1.6f,   -3.4f,
     -0.3f,  -3.5f,  -2.09f, -2.87f, -3.34f, -1.45f, -3.91f, 0.37f,  -3.95f, 2.27f,  -3.49f, 4.12f,
     -2.37f, 5.64f,  -0.65f, 6.44f,  1.25f,  6.47f,  3.06f,  5.89f,  4.63f,  4.92f,  4.63f,  6.83f,
 };
-
-constexpr std::array<float, 6 * 2> symbol_charging = {
+static constexpr std::array<float, 6 * 2> symbol_charging = {
     6.5f, -1.0f, 1.0f, -1.0f, 1.0f, -3.0f, -6.5f, 1.0f, -1.0f, 1.0f, -1.0f, 3.0f,
 };
-
-constexpr std::array<float, 12 * 2> house = {
+static constexpr std::array<float, 12 * 2> house = {
     -1.3f, 0.0f,  -0.93f, 0.0f, -0.93f, 1.15f, 0.93f,  1.15f, 0.93f, 0.0f, 1.3f,  0.0f,
     0.0f,  -1.2f, -1.3f,  0.0f, -0.43f, 0.0f,  -0.43f, .73f,  0.43f, .73f, 0.43f, 0.0f,
 };
-
-constexpr std::array<float, 11 * 2> up_arrow_button = {
+static constexpr std::array<float, 11 * 2> up_arrow_button = {
     9.1f,   -9.1f, 9.1f,   -30.0f, 8.1f,   -30.1f, 7.7f,   -30.1f, -8.6f, -30.0f, -9.0f,
     -29.8f, -9.3f, -29.5f, -9.5f,  -29.1f, -9.1f,  -28.7f, -9.1f,  -9.1f, 0.0f,   0.6f,
 };
-
-constexpr std::array<float, 3 * 2> up_arrow_symbol = {
+static constexpr std::array<float, 3 * 2> up_arrow_symbol = {
     0.0f, -3.0f, -3.0f, 2.0f, 3.0f, 2.0f,
 };
-
-constexpr std::array<float, 64 * 2> trigger_button = {
+static constexpr std::array<float, 64 * 2> trigger_button = {
     5.5f,   -12.6f, 5.8f,   -12.6f, 6.7f,   -12.5f, 8.1f,   -12.3f, 8.6f,   -12.2f, 9.2f,   -12.0f,
     9.5f,   -11.9f, 9.9f,   -11.8f, 10.6f,  -11.5f, 11.0f,  -11.3f, 11.2f,  -11.2f, 11.4f,  -11.1f,
     11.8f,  -10.9f, 12.0f,  -10.8f, 12.2f,  -10.7f, 12.4f,  -10.5f, 12.6f,  -10.4f, 12.8f,  -10.3f,
@@ -1137,8 +1123,7 @@ constexpr std::array<float, 64 * 2> trigger_button = {
     -17.0f, 13.8f,  -17.0f, 13.6f,  -16.4f, -11.4f, -16.3f, -11.6f, -16.1f, -11.8f, -15.7f, -12.0f,
     -15.5f, -12.1f, -15.1f, -12.3f, -14.6f, -12.4f, -13.4f, -12.5f,
 };
-
-constexpr std::array<float, 36 * 2> pro_left_trigger = {
+static constexpr std::array<float, 36 * 2> pro_left_trigger = {
     -65.2f,  -132.6f, -68.2f,  -134.1f, -71.3f,  -135.5f, -74.4f,  -136.7f, -77.6f,
     -137.6f, -80.9f,  -138.1f, -84.3f,  -138.3f, -87.6f,  -138.3f, -91.0f,  -138.1f,
     -94.3f,  -137.8f, -97.6f,  -137.3f, -100.9f, -136.7f, -107.5f, -135.3f, -110.7f,
@@ -1148,14 +1133,12 @@ constexpr std::array<float, 36 * 2> pro_left_trigger = {
     -155.3f, -104.0f, -152.0f, -104.3f, -148.7f, -104.5f, -145.3f, -104.8f, -35.5f,
     -117.2f, -38.5f,  -118.7f, -41.4f,  -120.3f, -44.4f,  -121.8f, -50.4f,  -124.9f,
 };
-
-constexpr std::array<float, 14 * 2> pro_body_top = {
+static constexpr std::array<float, 14 * 2> pro_body_top = {
     0.0f,   -115.4f, -4.4f,  -116.1f, -69.7f, -131.3f, -66.4f, -131.9f, -63.1f, -132.3f,
     -56.4f, -133.0f, -53.1f, -133.3f, -49.8f, -133.5f, -43.1f, -133.8f, -39.8f, -134.0f,
     -36.5f, -134.1f, -16.4f, -134.4f, -13.1f, -134.4f, 0.0f,   -134.1f,
 };
-
-constexpr std::array<float, 145 * 2> pro_left_handle = {
+static constexpr std::array<float, 145 * 2> pro_left_handle = {
     -178.7f, -47.5f, -179.0f, -46.1f, -179.3f, -44.6f, -182.0f, -29.8f, -182.3f, -28.4f,
     -182.6f, -26.9f, -182.8f, -25.4f, -183.1f, -23.9f, -183.3f, -22.4f, -183.6f, -21.0f,
     -183.8f, -19.5f, -184.1f, -18.0f, -184.3f, -16.5f, -184.6f, -15.1f, -184.8f, -13.6f,
@@ -1186,8 +1169,7 @@ constexpr std::array<float, 145 * 2> pro_left_handle = {
     -104.0f, 66.8f,  -103.1f, 65.6f,  -101.1f, 63.3f,  -100.0f, 62.3f,  -98.8f,  61.4f,
     -97.6f,  60.6f,  -97.9f,  59.5f,  -98.8f,  58.3f,  -101.5f, 54.6f,  -102.4f, 53.4f,
 };
-
-constexpr std::array<float, 245 * 2> pro_body = {
+static constexpr std::array<float, 245 * 2> pro_body = {
     -0.7f,   -129.1f, -54.3f,  -129.1f, -55.0f,  -129.1f, -57.8f,  -129.0f, -58.5f,  -129.0f,
     -60.7f,  -128.9f, -61.4f,  -128.9f, -62.8f,  -128.8f, -63.5f,  -128.8f, -65.7f,  -128.7f,
     -66.4f,  -128.7f, -67.8f,  -128.6f, -68.5f,  -128.6f, -69.2f,  -128.5f, -70.0f,  -128.5f,
@@ -1238,8 +1220,7 @@ constexpr std::array<float, 245 * 2> pro_body = {
     -81.2f,  57.2f,   -80.5f,  57.1f,   -79.8f,  57.1f,   -78.4f,  57.0f,   -77.7f,  57.0f,
     -75.5f,  56.9f,   -74.8f,  56.9f,   -71.9f,  56.8f,   -71.2f,  56.8f,   0.0f,    56.8f,
 };
-
-constexpr std::array<float, 199 * 2> gc_body = {
+static constexpr std::array<float, 199 * 2> gc_body = {
     0.0f,     -138.03f, -4.91f,   -138.01f, -8.02f,   -137.94f, -11.14f,  -137.82f, -14.25f,
     -137.67f, -17.37f,  -137.48f, -20.48f,  -137.25f, -23.59f,  -137.0f,  -26.69f,  -136.72f,
     -29.8f,   -136.41f, -32.9f,   -136.07f, -35.99f,  -135.71f, -39.09f,  -135.32f, -42.18f,
@@ -1286,8 +1267,7 @@ constexpr std::array<float, 199 * 2> gc_body = {
     -23.7f,   -12.78f,  -24.05f,  -9.68f,   -24.33f,  -6.57f,   -24.55f,  -3.45f,   -24.69f,
     0.0f,     -24.69f,
 };
-
-constexpr std::array<float, 99 * 2> gc_left_body = {
+static constexpr std::array<float, 99 * 2> gc_left_body = {
     -74.59f,  -97.22f,  -70.17f,  -94.19f,  -65.95f,  -90.89f,  -62.06f,  -87.21f,  -58.58f,
     -83.14f,  -55.58f,  -78.7f,   -53.08f,  -73.97f,  -51.05f,  -69.01f,  -49.46f,  -63.89f,
     -48.24f,  -58.67f,  -47.36f,  -53.39f,  -46.59f,  -48.09f,  -45.7f,   -42.8f,   -44.69f,
@@ -1311,8 +1291,7 @@ constexpr std::array<float, 99 * 2> gc_left_body = {
     -125.62f, -106.86f, -120.37f, -107.95f, -115.05f, -108.56f, -109.7f,  -108.69f, -104.35f,
     -108.36f, -99.05f,  -107.6f,  -93.82f,  -106.41f, -88.72f,  -104.79f, -83.78f,  -102.7f,
 };
-
-constexpr std::array<float, 47 * 2> left_gc_trigger = {
+static constexpr std::array<float, 47 * 2> left_gc_trigger = {
     -99.69f,  -125.04f, -101.81f, -126.51f, -104.02f, -127.85f, -106.3f,  -129.06f, -108.65f,
     -130.12f, -111.08f, -130.99f, -113.58f, -131.62f, -116.14f, -131.97f, -121.26f, -131.55f,
     -123.74f, -130.84f, -126.17f, -129.95f, -128.53f, -128.9f,  -130.82f, -127.71f, -133.03f,
@@ -1325,8 +1304,7 @@ constexpr std::array<float, 47 * 2> left_gc_trigger = {
     -116.58f, -114.72f, -117.51f, -112.3f,  -118.41f, -109.87f, -119.29f, -107.44f, -120.16f,
     -105.0f,  -121.0f,  -100.11f, -122.65f,
 };
-
-constexpr std::array<float, 50 * 2> gc_button_x = {
+static constexpr std::array<float, 50 * 2> gc_button_x = {
     142.1f,  -50.67f, 142.44f, -48.65f, 142.69f, -46.62f, 142.8f,  -44.57f, 143.0f,  -42.54f,
     143.56f, -40.57f, 144.42f, -38.71f, 145.59f, -37.04f, 147.08f, -35.64f, 148.86f, -34.65f,
     150.84f, -34.11f, 152.88f, -34.03f, 154.89f, -34.38f, 156.79f, -35.14f, 158.49f, -36.28f,
@@ -1338,8 +1316,7 @@ constexpr std::array<float, 50 * 2> gc_button_x = {
     140.0f,  -69.99f, 138.82f, -68.32f, 138.13f, -66.4f,  138.09f, -64.36f, 138.39f, -62.34f,
     139.05f, -60.41f, 139.91f, -58.55f, 140.62f, -56.63f, 141.21f, -54.67f, 141.67f, -52.67f,
 };
-
-constexpr std::array<float, 50 * 2> gc_button_y = {
+static constexpr std::array<float, 50 * 2> gc_button_y = {
     104.02f, -75.23f, 106.01f, -75.74f, 108.01f, -76.15f, 110.04f, -76.42f, 112.05f, -76.78f,
     113.97f, -77.49f, 115.76f, -78.49f, 117.33f, -79.79f, 118.6f,  -81.39f, 119.46f, -83.25f,
     119.84f, -85.26f, 119.76f, -87.3f,  119.24f, -89.28f, 118.33f, -91.11f, 117.06f, -92.71f,
@@ -1351,8 +1328,7 @@ constexpr std::array<float, 50 * 2> gc_button_y = {
     84.92f,  -71.61f, 86.68f,  -70.57f, 88.65f,  -70.03f, 90.69f,  -70.15f, 92.68f,  -70.61f,
     94.56f,  -71.42f, 96.34f,  -72.43f, 98.2f,   -73.29f, 100.11f, -74.03f, 102.06f, -74.65f,
 };
-
-constexpr std::array<float, 47 * 2> gc_button_z = {
+static constexpr std::array<float, 47 * 2> gc_button_z = {
     95.74f,  -126.41f, 98.34f,  -126.38f, 100.94f, -126.24f, 103.53f, -126.01f, 106.11f, -125.7f,
     108.69f, -125.32f, 111.25f, -124.87f, 113.8f,  -124.34f, 116.33f, -123.73f, 118.84f, -123.05f,
     121.33f, -122.3f,  123.79f, -121.47f, 126.23f, -120.56f, 128.64f, -119.58f, 131.02f, -118.51f,
@@ -1364,8 +1340,7 @@ constexpr std::array<float, 47 * 2> gc_button_z = {
     111.08f, -116.93f, 108.7f,  -117.99f, 106.33f, -119.05f, 103.95f, -120.11f, 99.2f,   -122.23f,
     96.82f,  -123.29f, 94.44f,  -124.34f,
 };
-
-constexpr std::array<float, 84 * 2> left_joycon_body = {
+static constexpr std::array<float, 84 * 2> left_joycon_body = {
     -145.0f, -78.9f, -145.0f, -77.9f, -145.0f, 85.6f,  -145.0f, 85.6f,  -168.3f, 85.5f,
     -169.3f, 85.4f,  -171.3f, 85.1f,  -172.3f, 84.9f,  -173.4f, 84.7f,  -174.3f, 84.5f,
     -175.3f, 84.2f,  -176.3f, 83.8f,  -177.3f, 83.5f,  -178.2f, 83.1f,  -179.2f, 82.7f,
@@ -1384,8 +1359,7 @@ constexpr std::array<float, 84 * 2> left_joycon_body = {
     -175.9f, -79.1f, -174.9f, -79.5f, -173.9f, -79.8f, -170.9f, -80.6f, -169.9f, -80.8f,
     -167.9f, -81.1f, -166.9f, -81.2f, -165.8f, -81.2f, -145.0f, -80.9f,
 };
-
-constexpr std::array<float, 84 * 2> left_joycon_trigger = {
+static constexpr std::array<float, 84 * 2> left_joycon_trigger = {
     -166.8f, -83.3f, -167.9f, -83.2f, -168.9f, -83.1f, -170.0f, -83.0f, -171.0f, -82.8f,
     -172.1f, -82.6f, -173.1f, -82.4f, -174.2f, -82.1f, -175.2f, -81.9f, -176.2f, -81.5f,
     -177.2f, -81.2f, -178.2f, -80.8f, -180.1f, -80.0f, -181.1f, -79.5f, -182.0f, -79.0f,
@@ -1404,8 +1378,7 @@ constexpr std::array<float, 84 * 2> left_joycon_trigger = {
     -158.7f, -79.0f, -157.7f, -79.5f, -156.8f, -80.0f, -155.8f, -80.4f, -154.9f, -80.9f,
     -154.2f, -81.6f, -154.3f, -82.6f, -155.2f, -83.3f, -156.2f, -83.3f,
 };
-
-constexpr std::array<float, 70 * 2> handheld_body = {
+static constexpr std::array<float, 70 * 2> handheld_body = {
     -137.3f, -81.9f, -137.6f, -81.8f, -137.8f, -81.6f, -138.0f, -81.3f, -138.1f, -81.1f,
     -138.1f, -80.8f, -138.2f, -78.7f, -138.2f, -78.4f, -138.3f, -78.1f, -138.7f, -77.3f,
     -138.9f, -77.0f, -139.0f, -76.8f, -139.2f, -76.5f, -139.5f, -76.3f, -139.7f, -76.1f,
@@ -1421,8 +1394,7 @@ constexpr std::array<float, 70 * 2> handheld_body = {
     137.8f,  -81.6f, 137.6f,  -81.8f, 137.3f,  -81.9f, 137.1f,  -81.9f, 120.0f,  -70.0f,
     -120.0f, -70.0f, -120.0f, 70.0f,  120.0f,  70.0f,  120.0f,  -70.0f, 137.1f,  -81.9f,
 };
-
-constexpr std::array<float, 40 * 2> handheld_bezel = {
+static constexpr std::array<float, 40 * 2> handheld_bezel = {
     -131.4f, -75.9f, -132.2f, -75.7f, -132.9f, -75.3f, -134.2f, -74.3f, -134.7f, -73.6f,
     -135.1f, -72.8f, -135.4f, -72.0f, -135.5f, -71.2f, -135.5f, -70.4f, -135.2f, 76.7f,
     -134.8f, 77.5f,  -134.3f, 78.1f,  -133.7f, 78.8f,  -133.1f, 79.2f,  -132.3f, 79.6f,
@@ -1432,8 +1404,7 @@ constexpr std::array<float, 40 * 2> handheld_bezel = {
     133.1f,  -75.3f, 132.3f,  -75.6f, 130.7f,  -76.0f, 129.8f,  -76.0f, -112.9f, -62.2f,
     112.9f,  -62.2f, 112.9f,  62.2f,  -112.9f, 62.2f,  -112.9f, -62.2f, 129.8f,  -76.0f,
 };
-
-constexpr std::array<float, 58 * 2> handheld_buttons = {
+static constexpr std::array<float, 58 * 2> handheld_buttons = {
     -82.48f,  -82.95f, -82.53f,  -82.95f, -106.69f, -82.96f, -106.73f, -82.98f, -106.78f, -83.01f,
     -106.81f, -83.05f, -106.83f, -83.1f,  -106.83f, -83.15f, -106.82f, -83.93f, -106.81f, -83.99f,
     -106.8f,  -84.04f, -106.78f, -84.08f, -106.76f, -84.13f, -106.73f, -84.18f, -106.7f,  -84.22f,
@@ -1447,8 +1418,7 @@ constexpr std::array<float, 58 * 2> handheld_buttons = {
     -82.24f,  -83.93f, -82.23f,  -83.83f, -82.23f,  -83.78f, -82.24f,  -83.1f,  -82.26f,  -83.05f,
     -82.29f,  -83.01f, -82.33f,  -82.97f, -82.38f,  -82.95f,
 };
-
-constexpr std::array<float, 47 * 2> left_joycon_slider = {
+static constexpr std::array<float, 47 * 2> left_joycon_slider = {
     -23.7f, -118.2f, -23.7f, -117.3f, -23.7f, 96.6f,   -22.8f, 96.6f,  -21.5f, 97.2f,  -21.5f,
     98.1f,  -21.2f,  106.7f, -20.8f,  107.5f, -20.1f,  108.2f, -19.2f, 108.2f, -16.4f, 108.1f,
     -15.8f, 107.5f,  -15.8f, 106.5f,  -15.8f, 62.8f,   -16.3f, 61.9f,  -15.8f, 61.0f,  -17.3f,
@@ -1459,8 +1429,7 @@ constexpr std::array<float, 47 * 2> left_joycon_slider = {
     -75.2f, -16.4f,  -76.7f, -16.0f,  -77.6f, -15.8f,  -78.5f, -15.8f, -79.4f, -15.8f, -80.4f,
     -15.8f, -118.2f, -15.8f, -118.2f, -18.3f, -118.2f,
 };
-
-constexpr std::array<float, 66 * 2> left_joycon_sideview = {
+static constexpr std::array<float, 66 * 2> left_joycon_sideview = {
     -158.8f, -133.5f, -159.8f, -133.5f, -173.5f, -133.3f, -174.5f, -133.0f, -175.4f, -132.6f,
     -176.2f, -132.1f, -177.0f, -131.5f, -177.7f, -130.9f, -178.3f, -130.1f, -179.4f, -128.5f,
     -179.8f, -127.6f, -180.4f, -125.7f, -180.6f, -124.7f, -180.7f, -123.8f, -180.7f, -122.8f,
@@ -1476,8 +1445,7 @@ constexpr std::array<float, 66 * 2> left_joycon_sideview = {
     -151.4f, -131.4f, -152.2f, -131.9f, -153.1f, -132.3f, -155.9f, -133.3f, -156.8f, -133.5f,
     -157.8f, -133.5f,
 };
-
-constexpr std::array<float, 40 * 2> left_joycon_body_trigger = {
+static constexpr std::array<float, 40 * 2> left_joycon_body_trigger = {
     -146.1f, -124.3f, -146.0f, -122.0f, -145.8f, -119.7f, -145.7f, -117.4f, -145.4f, -112.8f,
     -145.3f, -110.5f, -145.0f, -105.9f, -144.9f, -103.6f, -144.6f, -99.1f,  -144.5f, -96.8f,
     -144.5f, -89.9f,  -144.5f, -87.6f,  -144.5f, -83.0f,  -144.5f, -80.7f,  -144.5f, -80.3f,
@@ -1487,8 +1455,7 @@ constexpr std::array<float, 40 * 2> left_joycon_body_trigger = {
     -129.7f, -110.3f, -134.2f, -110.5f, -136.4f, -111.4f, -138.1f, -112.8f, -139.4f, -114.7f,
     -140.5f, -116.8f, -141.4f, -118.9f, -143.3f, -123.1f, -144.6f, -124.9f, -146.2f, -126.0f,
 };
-
-constexpr std::array<float, 49 * 2> left_joycon_topview = {
+static constexpr std::array<float, 49 * 2> left_joycon_topview = {
     -184.8f, -20.8f, -185.6f, -21.1f, -186.4f, -21.5f, -187.1f, -22.1f, -187.8f, -22.6f,
     -188.4f, -23.2f, -189.6f, -24.5f, -190.2f, -25.2f, -190.7f, -25.9f, -191.1f, -26.7f,
     -191.4f, -27.5f, -191.6f, -28.4f, -191.7f, -29.2f, -191.7f, -30.1f, -191.5f, -47.7f,
@@ -1500,8 +1467,7 @@ constexpr std::array<float, 49 * 2> left_joycon_topview = {
     -143.0f, -60.6f, -136.9f, -60.7f, -130.7f, -60.8f, -123.7f, -60.9f, -117.5f, -61.0f,
     -110.5f, -61.1f, -94.4f,  -60.4f, -94.4f,  -59.5f, -94.4f,  -20.6f,
 };
-
-constexpr std::array<float, 41 * 2> left_joycon_slider_topview = {
+static constexpr std::array<float, 41 * 2> left_joycon_slider_topview = {
     -95.1f, -51.5f, -95.0f, -51.5f, -91.2f, -51.6f, -91.2f, -51.7f, -91.1f, -52.4f, -91.1f, -52.6f,
     -91.0f, -54.1f, -86.3f, -54.0f, -86.0f, -53.9f, -85.9f, -53.8f, -85.6f, -53.4f, -85.5f, -53.2f,
     -85.5f, -53.1f, -85.4f, -52.9f, -85.4f, -52.8f, -85.3f, -52.4f, -85.3f, -52.3f, -85.4f, -27.2f,
@@ -1510,8 +1476,7 @@ constexpr std::array<float, 41 * 2> left_joycon_slider_topview = {
     -90.4f, -25.8f, -90.7f, -25.9f, -90.8f, -26.0f, -90.9f, -26.3f, -91.0f, -26.4f, -91.0f, -26.5f,
     -91.1f, -26.7f, -91.1f, -26.9f, -91.2f, -28.9f, -95.2f, -29.1f, -95.2f, -29.2f,
 };
-
-constexpr std::array<float, 42 * 2> left_joycon_sideview_zl = {
+static constexpr std::array<float, 42 * 2> left_joycon_sideview_zl = {
     -148.9f, -128.2f, -148.7f, -126.6f, -148.4f, -124.9f, -148.2f, -123.3f, -147.9f, -121.7f,
     -147.7f, -120.1f, -147.4f, -118.5f, -147.2f, -116.9f, -146.9f, -115.3f, -146.4f, -112.1f,
     -146.1f, -110.5f, -145.9f, -108.9f, -145.6f, -107.3f, -144.2f, -107.3f, -142.6f, -107.5f,
@@ -1522,8 +1487,7 @@ constexpr std::array<float, 42 * 2> left_joycon_sideview_zl = {
     -138.3f, -126.4f, -139.9f, -126.9f, -141.4f, -127.5f, -142.9f, -128.0f, -144.5f, -128.5f,
     -146.0f, -129.0f, -147.6f, -129.4f,
 };
-
-constexpr std::array<float, 72 * 2> left_joystick_sideview = {
+static constexpr std::array<float, 72 * 2> left_joystick_sideview = {
     -14.7f, -3.8f,  -15.2f, -5.6f,  -15.2f, -7.6f,  -15.5f, -17.6f, -17.4f, -18.3f, -19.4f, -18.2f,
     -21.3f, -17.6f, -22.8f, -16.4f, -23.4f, -14.5f, -23.4f, -12.5f, -24.1f, -8.6f,  -24.8f, -6.7f,
     -25.3f, -4.8f,  -25.7f, -2.8f,  -25.9f, -0.8f,  -26.0f, 1.2f,   -26.0f, 3.2f,   -25.8f, 5.2f,
@@ -1537,8 +1501,7 @@ constexpr std::array<float, 72 * 2> left_joystick_sideview = {
     3.5f,   -11.5f, 1.5f,   -11.9f, -0.5f,  -12.0f, -2.5f,  -11.8f, -4.4f,  -11.3f, -6.2f,  -10.4f,
     -8.0f,  -9.4f,  -9.6f,  -8.2f,  -10.9f, -6.7f,  -11.9f, -4.9f,  -12.8f, -3.2f,  -13.5f, -3.8f,
 };
-
-constexpr std::array<float, 63 * 2> left_joystick_L_topview = {
+static constexpr std::array<float, 63 * 2> left_joystick_L_topview = {
     -186.7f, -43.7f, -186.4f, -43.7f, -110.6f, -43.4f, -110.6f, -43.1f, -110.7f, -34.3f,
     -110.7f, -34.0f, -110.8f, -33.7f, -111.1f, -32.9f, -111.2f, -32.6f, -111.4f, -32.3f,
     -111.5f, -32.1f, -111.7f, -31.8f, -111.8f, -31.5f, -112.0f, -31.3f, -112.2f, -31.0f,
@@ -1553,8 +1516,7 @@ constexpr std::array<float, 63 * 2> left_joystick_L_topview = {
     -188.8f, -40.2f, -188.7f, -41.1f, -188.7f, -41.4f, -188.6f, -41.7f, -188.0f, -43.1f,
     -187.9f, -43.4f, -187.6f, -43.6f, -187.3f, -43.7f,
 };
-
-constexpr std::array<float, 44 * 2> left_joystick_ZL_topview = {
+static constexpr std::array<float, 44 * 2> left_joystick_ZL_topview = {
     -179.4f, -53.3f, -177.4f, -53.3f, -111.2f, -53.3f, -111.3f, -53.3f, -111.5f, -58.6f,
     -111.8f, -60.5f, -112.2f, -62.4f, -113.1f, -66.1f, -113.8f, -68.0f, -114.5f, -69.8f,
     -115.3f, -71.5f, -116.3f, -73.2f, -117.3f, -74.8f, -118.5f, -76.4f, -119.8f, -77.8f,
