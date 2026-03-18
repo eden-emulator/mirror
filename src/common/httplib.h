@@ -16,3 +16,5 @@
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
+
+#undef INVALID_SOCKET
