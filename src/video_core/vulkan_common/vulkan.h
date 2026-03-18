@@ -29,6 +29,12 @@
 #ifdef BadValue
 #   undef BadValue
 #endif
+#ifdef GrayScale
+#   undef GrayScale
+#endif
+#ifdef KeyPress
+#   undef KeyPress
+#endif
 
 // Define maintenance 7-8 extension names (not yet in official Vulkan headers)
 #ifndef VK_KHR_MAINTENANCE_7_EXTENSION_NAME

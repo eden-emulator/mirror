@@ -100,4 +100,9 @@ private:
 
     std::unique_ptr<InputInterpreter> input_interpreter;
     std::jthread input_thread;
+
+    static constexpr float BASE_TITLE_FONT_SIZE = 14.0f;
+    static constexpr float BASE_FONT_SIZE = 18.0f;
+    static constexpr float BASE_WIDTH = 1280.0f;
+    static constexpr float BASE_HEIGHT = 720.0f;
 };
