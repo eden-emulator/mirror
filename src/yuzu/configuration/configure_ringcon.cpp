@@ -99,7 +99,7 @@ QString GetRingconButtonName(Common::Input::ButtonNames button_name) {
     }
 }
 
-void SetAnalogParam(const Common::ParamPackage& input_param, Common::ParamPackage& analog_param,
+void SetRingconAnalogParam(const Common::ParamPackage& input_param, Common::ParamPackage& analog_param,
                     const std::string& button_name) {
     // The poller returned a complete axis, so set all the buttons
     if (input_param.Has("axis_x") && input_param.Has("axis_y")) {
@@ -156,7 +156,7 @@ ConfigureRingController::ConfigureRingController(QWidget* parent,
                 analog_map_buttons[sub_button_id],
                 [=, this](const Common::ParamPackage& params) {
                     Common::ParamPackage param = emulated_controller->GetRingParam();
-                    SetAnalogParam(params, param, analog_sub_buttons[sub_button_id]);
+                    SetRingconAnalogParam(params, param, analog_sub_buttons[sub_button_id]);
                     emulated_controller->SetRingParam(param);
                 },
                 InputCommon::Polling::InputType::Stick);
@@ -397,7 +397,7 @@ QString ConfigureRingController::ButtonToText(const Common::ParamPackage& param)
 
     const QString toggle = QString::fromStdString(param.Get("toggle", false) ? "~" : "");
     const QString inverted = QString::fromStdString(param.Get("inverted", false) ? "!" : "");
-    const auto common_button_name = input_subsystem->GetRingconButtonName(param);
+    const auto common_button_name = input_subsystem->GetButtonName(param);
 
     // Retrieve the names from Qt
     if (param.Get("engine", "") == "keyboard") {
