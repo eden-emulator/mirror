@@ -18,27 +18,6 @@
 
 namespace Vulkan {
 namespace {
-constexpr size_t POINT = 0;
-constexpr size_t LINE = 1;
-constexpr size_t POLYGON = 2;
-constexpr std::array POLYGON_OFFSET_ENABLE_LUT = {
-    POINT,   // Points
-    LINE,    // Lines
-    LINE,    // LineLoop
-    LINE,    // LineStrip
-    POLYGON, // Triangles
-    POLYGON, // TriangleStrip
-    POLYGON, // TriangleFan
-    POLYGON, // Quads
-    POLYGON, // QuadStrip
-    POLYGON, // Polygon
-    LINE,    // LinesAdjacency
-    LINE,    // LineStripAdjacency
-    POLYGON, // TrianglesAdjacency
-    POLYGON, // TriangleStripAdjacency
-    POLYGON, // Patches
-};
-
 constexpr std::array TOPOLOGY_CLASS_REPRESENTATIVE_LUT = {
     Maxwell::PrimitiveTopology::Points,              // Points
     Maxwell::PrimitiveTopology::Lines,               // Lines
@@ -57,17 +36,16 @@ constexpr std::array TOPOLOGY_CLASS_REPRESENTATIVE_LUT = {
     Maxwell::PrimitiveTopology::Patches,             // Patches
 };
 
-bool IsDualSourceBlendFactor(Maxwell::Blend::Factor factor) {
-    using F = Maxwell::Blend::Factor;
+bool IsDualSourceBlendFactor(Tegra::Engines::Maxwell3D::Regs::Blend::Factor factor) {
     switch (factor) {
-    case F::Source1Color_D3D:
-    case F::OneMinusSource1Color_D3D:
-    case F::Source1Alpha_D3D:
-    case F::OneMinusSource1Alpha_D3D:
-    case F::Source1Color_GL:
-    case F::OneMinusSource1Color_GL:
-    case F::Source1Alpha_GL:
-    case F::OneMinusSource1Alpha_GL:
+    case Tegra::Engines::Maxwell3D::Regs::Blend::Factor::Source1Color_D3D:
+    case Tegra::Engines::Maxwell3D::Regs::Blend::Factor::OneMinusSource1Color_D3D:
+    case Tegra::Engines::Maxwell3D::Regs::Blend::Factor::Source1Alpha_D3D:
+    case Tegra::Engines::Maxwell3D::Regs::Blend::Factor::OneMinusSource1Alpha_D3D:
+    case Tegra::Engines::Maxwell3D::Regs::Blend::Factor::Source1Color_GL:
+    case Tegra::Engines::Maxwell3D::Regs::Blend::Factor::OneMinusSource1Color_GL:
+    case Tegra::Engines::Maxwell3D::Regs::Blend::Factor::Source1Alpha_GL:
+    case Tegra::Engines::Maxwell3D::Regs::Blend::Factor::OneMinusSource1Alpha_GL:
         return true;
     default:
         return false;
@@ -357,6 +335,27 @@ void FixedPipelineState::DynamicState::Refresh2(const Maxwell& regs,
 
     rasterize_enable.Assign(regs.rasterize_enable != 0 ? 1 : 0);
     primitive_restart_enable.Assign(regs.primitive_restart.enabled != 0 ? 1 : 0);
+
+    constexpr size_t ENABLE_POINT = 0;
+    constexpr size_t ENABLE_LINE = 1;
+    constexpr size_t ENABLE_POLYGON = 2;
+    constexpr std::array POLYGON_OFFSET_ENABLE_LUT = {
+        ENABLE_POINT,   // Points
+        ENABLE_LINE,    // Lines
+        ENABLE_LINE,    // LineLoop
+        ENABLE_LINE,    // LineStrip
+        ENABLE_POLYGON, // Triangles
+        ENABLE_POLYGON, // TriangleStrip
+        ENABLE_POLYGON, // TriangleFan
+        ENABLE_POLYGON, // Quads
+        ENABLE_POLYGON, // QuadStrip
+        ENABLE_POLYGON, // Polygon
+        ENABLE_LINE,    // LinesAdjacency
+        ENABLE_LINE,    // LineStripAdjacency
+        ENABLE_POLYGON, // TrianglesAdjacency
+        ENABLE_POLYGON, // TriangleStripAdjacency
+        ENABLE_POLYGON, // Patches
+    };
     depth_bias_enable.Assign(enabled_lut[POLYGON_OFFSET_ENABLE_LUT[topology_index]] != 0 ? 1 : 0);
 }
 
