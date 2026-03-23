@@ -8,10 +8,15 @@
 
 #pragma once
 
+#import <QuartzCore/QuartzCore.h>
 #import <QuartzCore/CAMetalLayer.h>
 
+#if __has_include(<Metal/Metal.hpp>)
 #import <Metal/Metal.hpp>
-#import "EmulationWindow/EmulationWindow.h"
+#else
+#import <Metal/Metal.h>
+#endif
+#import "EmulationWindow.h"
 
 #include "common/detached_tasks.h"
 #include "core/core.h"
@@ -34,8 +39,8 @@ public:
 
     const EmulationWindow& Window() const;
     EmulationWindow& Window();
-    CA::MetalLayer* NativeWindow() const;
-    void SetNativeWindow(CA::MetalLayer* native_window, CGSize size);
+    CAMetalLayer* NativeWindow() const;
+    void SetNativeWindow(CAMetalLayer* native_window, CGSize size);
     void SurfaceChanged();
 
     void InitializeGpuDriver();
@@ -73,7 +78,7 @@ private:
 private:
     // Window management
     std::unique_ptr<EmulationWindow> m_window;
-    CA::MetalLayer* m_native_window{};
+    CAMetalLayer* m_native_window{};
 
     // Core emulation
     Core::System m_system;

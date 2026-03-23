@@ -8,9 +8,15 @@
 
 #pragma once
 
+#if __has_include(<Metal/Metal.hpp>)
 #import <Metal/Metal.hpp>
+#else
+#import <Metal/Metal.h>
+#endif
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
+#import <QuartzCore/QuartzCore.h>
+#import <QuartzCore/CAMetalLayer.h>
 
 #include <memory>
 #include <span>
@@ -38,12 +44,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 class EmulationWindow final : public Core::Frontend::EmuWindow {
 public:
-    EmulationWindow(InputCommon::InputSubsystem* input_subsystem, CA::MetalLayer* surface, CGSize size,
+    EmulationWindow(InputCommon::InputSubsystem* input_subsystem, CAMetalLayer* surface, CGSize size,
                       std::shared_ptr<Common::DynamicLibrary> driver_library);
 
     ~EmulationWindow() = default;
 
-    void OnSurfaceChanged(CA::MetalLayer* surface, CGSize size);
+    void OnSurfaceChanged(CAMetalLayer* surface, CGSize size);
     void OrientationChanged(UIInterfaceOrientation orientation);
     void OnFrameDisplayed() override;
 

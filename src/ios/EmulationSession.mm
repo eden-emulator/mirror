@@ -27,7 +27,6 @@
 #include "common/fs/path_util.h"
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
-#include "common/microprofile.h"
 #include "common/scm_rev.h"
 #include "common/scope_exit.h"
 #include "common/settings.h"
@@ -53,7 +52,7 @@
 #include "core/hle/service/am/frontend/applets.h"
 #include "core/hle/service/filesystem/filesystem.h"
 #include "core/loader/loader.h"
-#include "frontend_common/yuzu_config.h"
+#include "frontend_common/config.h"
 #include "hid_core/frontend/emulated_controller.h"
 #include "hid_core/hid_core.h"
 #include "hid_core/hid_types.h"
@@ -99,11 +98,11 @@ EmulationWindow& EmulationSession::Window() {
     return *m_window;
 }
 
-CA::MetalLayer* EmulationSession::NativeWindow() const {
+CAMetalLayer* EmulationSession::NativeWindow() const {
     return m_native_window;
 }
 
-void EmulationSession::SetNativeWindow(CA::MetalLayer* native_window, CGSize size) {
+void EmulationSession::SetNativeWindow(CAMetalLayer* native_window, CGSize size) {
     m_native_window = native_window;
     m_size = size;
 }
@@ -209,17 +208,7 @@ Core::SystemResultStatus EmulationSession::InitializeEmulation(const std::string
     m_system.ApplySettings();
     Settings::LogSettings();
     m_system.HIDCore().ReloadInputDevices();
-    m_system.SetFrontendAppletSet({
-        nullptr,                     // Amiibo Settings
-        nullptr,                     // Controller Selector
-        nullptr,                     // Error Display
-        nullptr,                     // Mii Editor
-        nullptr,                     // Parental Controls
-        nullptr,                     // Photo Viewer
-        nullptr,                     // Profile Selector
-        nullptr, // std::move(android_keyboard), // Software Keyboard
-        nullptr,                     // Web Browser
-    });
+    m_system.SetFrontendAppletSet(Service::AM::Frontend::FrontendAppletSet{});
 
     // Initialize filesystem.
     ConfigureFilesystemProvider(filepath);
@@ -270,17 +259,7 @@ Core::SystemResultStatus EmulationSession::BootOS() {
     m_system.ApplySettings();
     Settings::LogSettings();
     m_system.HIDCore().ReloadInputDevices();
-    m_system.SetFrontendAppletSet({
-        nullptr,                     // Amiibo Settings
-        nullptr,                     // Controller Selector
-        nullptr,                     // Error Display
-        nullptr,                     // Mii Editor
-        nullptr,                     // Parental Controls
-        nullptr,                     // Photo Viewer
-        nullptr,                     // Profile Selector
-        nullptr, // std::move(android_keyboard), // Software Keyboard
-        nullptr,                     // Web Browser
-    });
+    m_system.SetFrontendAppletSet(Service::AM::Frontend::FrontendAppletSet{});
 
     constexpr u64 QLaunchId = static_cast<u64>(Service::AM::AppletProgramId::QLaunch);
     auto bis_system = m_system.GetFileSystemController().GetSystemNANDContents();
@@ -443,38 +422,6 @@ u64 EmulationSession::GetProgramId(std::string programId) {
         return 0;
     }
 }
-
-static Core::SystemResultStatus RunEmulation(const std::string& filepath,
-                                             const size_t program_index,
-                                             const bool frontend_initiated) {
-    MicroProfileOnThreadCreate("EmuThread");
-    SCOPE_EXIT {
-        MicroProfileShutdown();
-    };
-
-    LOG_INFO(Frontend, "starting");
-
-    if (filepath.empty()) {
-        LOG_CRITICAL(Frontend, "failed to load: filepath empty!");
-        return Core::SystemResultStatus::ErrorLoader;
-    }
-
-    SCOPE_EXIT {
-        EmulationSession::GetInstance().ShutdownEmulation();
-    };
-
-    jconst result = EmulationSession::GetInstance().InitializeEmulation(filepath, program_index,
-                                                                        frontend_initiated);
-    if (result != Core::SystemResultStatus::Success) {
-        return result;
-    }
-
-    EmulationSession::GetInstance().RunEmulation();
-
-    return Core::SystemResultStatus::Success;
-}
-
-
 
 bool EmulationSession::IsHandheldOnly() {
     jconst npad_style_set = m_system.HIDCore().GetSupportedStyleTag();

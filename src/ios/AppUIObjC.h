@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 #import <MetalKit/MetalKit.h>
 
-#import "AppUIGameInformation/AppUIGameInformation.h"
+#import "AppUIGameInformation.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

@@ -9,6 +9,6 @@
 #ifndef AppUI_Bridging_Header_h
 #define AppUI_Bridging_Header_h
 
-#import "Wrapper/AppUIObjC.h"
+#import "AppUIObjC.h"
 
 #endif /* AppUI_Bridging_Header_h */
