@@ -7,7 +7,7 @@
 //
 
 #import "EmulationWindow.h"
-#import "EmulationSession/EmulationSession.h"
+#import "EmulationSession.h"
 
 #include <SDL.h>
 
@@ -17,7 +17,7 @@
 #include "input_common/drivers/virtual_gamepad.h"
 #include "input_common/main.h"
 
-void EmulationWindow::OnSurfaceChanged(CA::MetalLayer* surface, CGSize size) {
+void EmulationWindow::OnSurfaceChanged(CAMetalLayer* surface, CGSize size) {
     m_size = size;
 
     m_window_width = size.width;
@@ -26,7 +26,7 @@ void EmulationWindow::OnSurfaceChanged(CA::MetalLayer* surface, CGSize size) {
     // Ensures that we emulate with the correct aspect ratio.
     // UpdateCurrentFramebufferLayout(m_window_width, m_window_height);
 
-    window_info.render_surface = reinterpret_cast<void*>(surface);
+    window_info.render_surface = (__bridge void *)surface;
     window_info.render_surface_scale = [[UIScreen mainScreen] nativeScale];
 }
 
@@ -68,7 +68,8 @@ void EmulationWindow::OnFrameDisplayed() {
     }
 }
 
-EmulationWindow::EmulationWindow(InputCommon::InputSubsystem* input_subsystem, CA::MetalLayer* surface, CGSize size, std::shared_ptr<Common::DynamicLibrary> driver_library) : m_input_subsystem{input_subsystem}, m_size{size}, m_driver_library{driver_library} {
+EmulationWindow::EmulationWindow(InputCommon::InputSubsystem* input_subsystem, CAMetalLayer* surface, CGSize size, std::shared_ptr<Common::DynamicLibrary> driver_library)
+    : m_window_width{}, m_window_height{}, m_size{size}, is_portrait{true}, m_input_subsystem{input_subsystem}, m_driver_library{driver_library}, m_first_frame{false} {
     LOG_INFO(Frontend, "initializing");
 
     if (!surface) {

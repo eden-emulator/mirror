@@ -8,9 +8,8 @@
 
 #import "AppUIObjC.h"
 
-#import "Config/Config.h"
-#import "EmulationSession/EmulationSession.h"
-#import "DirectoryManager/DirectoryManager.h"
+#import "Config.h"
+#import "EmulationSession.h"
 
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
@@ -30,8 +29,6 @@
 #include "common/fs/path_util.h"
 #include "common/logging/backend.h"
 #include "common/logging/log.h"
-#include "common/microprofile.h"
-#include "common/scm_rev.h"
 #include "common/scope_exit.h"
 #include "common/settings.h"
 #include "common/string_util.h"
@@ -56,8 +53,6 @@
 #include "core/hle/service/am/frontend/applets.h"
 #include "core/hle/service/filesystem/filesystem.h"
 #include "core/loader/loader.h"
-#include "frontend_common/yuzu_config.h"
-#include "hid_core/frontend/emulated_controller.h"
 #include "hid_core/hid_core.h"
 #include "hid_core/hid_types.h"
 #include "video_core/renderer_base.h"
@@ -77,7 +72,7 @@
         const char *directory_cstr = [[dir_url path] UTF8String];
 
         Common::FS::SetAppDirectory(directory_cstr);
-        Config{"config", Config::ConfigType::GlobalConfig};
+        // Config{"config", Config::ConfigType::GlobalConfig};
 
         EmulationSession::GetInstance().System().Initialize();
         EmulationSession::GetInstance().InitializeSystem(false);
@@ -87,7 +82,6 @@
         Settings::values.dump_shaders.SetValue(true);
         Settings::values.use_asynchronous_shaders.SetValue(true);
         // Settings::values.astc_recompression.SetValue(Settings::AstcRecompression::Bc3);
-        Settings::values.shader_backend.SetValue(Settings::ShaderBackend::SpirV);
         // Settings::values.resolution_setup.SetValue(Settings::ResolutionSetup::Res1X);
         // Settings::values.scaling_filter.SetValue(Settings::ScalingFilter::Bilinear);
     } return self;
@@ -168,7 +162,7 @@
 -(void) configureLayer:(CAMetalLayer *)layer withSize:(CGSize)size {
     _layer = layer;
     _size = size;
-    EmulationSession::GetInstance().SetNativeWindow((__bridge CA::MetalLayer*)layer, size);
+    EmulationSession::GetInstance().SetNativeWindow(layer, size);
 }
 
 -(void) bootOS {
@@ -251,13 +245,11 @@
 -(void) orientationChanged:(UIInterfaceOrientation)orientation with:(CAMetalLayer *)layer size:(CGSize)size {
     _layer = layer;
     _size = size;
-    EmulationSession::GetInstance().Window().OnSurfaceChanged((__bridge CA::MetalLayer*)layer, size);
+    EmulationSession::GetInstance().Window().OnSurfaceChanged(layer, size);
 }
 
 -(void) settingsChanged {
-    Config{"config", Config::ConfigType::GlobalConfig};
+    //
 }
-
-
 
 @end

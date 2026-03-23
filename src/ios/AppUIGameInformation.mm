@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-# SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
-# SPDX-License-Identifier: GPL-3.0-or-later
-
 //
 //  AppUIGameInformation.mm - Sudachi
 //  Created by Jarrod Norwell on 1/20/24.
@@ -11,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import "AppUIGameInformation.h"
-#import "EmulationSession/EmulationSession.h"
+#import "EmulationSession.h"
 
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
@@ -20,7 +17,7 @@
 #include "core/file_sys/patch_manager.h"
 #include "core/loader/loader.h"
 #include "core/loader/nro.h"
-#include "frontend_common/yuzu_config.h"
+#include "frontend_common/config.h"
 
 struct GameMetadata {
     std::string title;
