@@ -10,6 +10,7 @@
 #include <queue>
 
 #include "common/settings.h"
+#include "shader_recompiler/shader_pool.h"
 #include "shader_recompiler/exception.h"
 #include "shader_recompiler/frontend/ir/basic_block.h"
 #include "shader_recompiler/frontend/ir/ir_emitter.h"
@@ -234,13 +235,12 @@ void LowerGeometryPassthrough(const IR::Program& program, const HostTranslateInf
 
 } // Anonymous namespace
 
-IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Block>& block_pool,
-                             Environment& env, Flow::CFG& cfg, const HostTranslateInfo& host_info) {
+IR::Program TranslateProgram(ShaderPools& pools, Environment& env, Flow::CFG& cfg, const HostTranslateInfo& host_info) {
     HostTranslateInfo normalized_host_info{host_info};
     normalized_host_info.ApplyDescriptorLimitPolicy();
 
     IR::Program program;
-    program.syntax_list = BuildASL(inst_pool, block_pool, env, cfg, normalized_host_info);
+    program.syntax_list = BuildASL(pools, env, cfg, host_info);
     program.blocks = GenerateBlocks(program.syntax_list);
     program.post_order_blocks = PostOrder(program.syntax_list.front());
     program.stage = env.ShaderStage();
@@ -410,11 +410,7 @@ void ConvertLegacyToGeneric(IR::Program& program, const Shader::RuntimeInfo& run
     }
 }
 
-IR::Program GenerateGeometryPassthrough(ObjectPool<IR::Inst>& inst_pool,
-                                        ObjectPool<IR::Block>& block_pool,
-                                        const HostTranslateInfo& host_info,
-                                        IR::Program& source_program,
-                                        Shader::OutputTopology output_topology) {
+IR::Program GenerateGeometryPassthrough(ShaderPools& pools, const HostTranslateInfo& host_info, IR::Program& source_program, Shader::OutputTopology output_topology) {
     IR::Program program;
     program.stage = Stage::Geometry;
     program.output_topology = output_topology;
@@ -426,16 +422,15 @@ IR::Program GenerateGeometryPassthrough(ObjectPool<IR::Inst>& inst_pool,
     program.info.stores.Set(IR::Attribute::Layer, true);
     program.info.stores.Set(source_program.info.emulated_layer, false);
 
-    IR::Block* current_block = block_pool.Create(inst_pool);
+    IR::Block* current_block = &pools.block.emplace_back(pools.inst);
     auto& node{program.syntax_list.emplace_back()};
     node.type = IR::AbstractSyntaxNode::Type::Block;
     node.data.block = current_block;
 
     IR::IREmitter ir{*current_block};
-    EmitGeometryPassthrough(ir, program, program.info.stores, true,
-                            source_program.info.emulated_layer);
+    EmitGeometryPassthrough(ir, program, program.info.stores, true, source_program.info.emulated_layer);
 
-    IR::Block* return_block{block_pool.Create(inst_pool)};
+    IR::Block* return_block{&pools.block.emplace_back(pools.inst)};
     IR::IREmitter{*return_block}.Epilogue();
     current_block->AddBranch(return_block);
 
