@@ -513,7 +513,6 @@ endfunction()
 # Platform-specific library requirements
 # Put these BEFORE EXTERNALS or Boost WILL die
 # =============================================
-
 if (APPLE)
     foreach(fw Carbon Metal Cocoa IOKit CoreVideo CoreMedia Security UniformTypeIdentifiers)
         find_library(${fw}_LIBRARY ${fw} REQUIRED)
