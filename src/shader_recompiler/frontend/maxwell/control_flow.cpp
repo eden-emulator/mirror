@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -174,11 +174,10 @@ bool Block::Contains(Location pc) const noexcept {
     return pc >= begin && pc < end;
 }
 
-Function::Function(ObjectPool<Block>& block_pool, Location start_address)
-    : entrypoint{start_address} {
+Function::Function(boost::container::stable_vector<Block>& block_pool, Location start_address) : entrypoint{start_address} {
     Label& label{labels.emplace_back()};
     label.address = start_address;
-    label.block = block_pool.Create(Block{});
+    label.block = &block_pool.emplace_back(Block{});
     label.block->begin = start_address;
     label.block->end = start_address;
     label.block->end_class = EndClass::Branch;
@@ -187,12 +186,13 @@ Function::Function(ObjectPool<Block>& block_pool, Location start_address)
     label.block->branch_false = nullptr;
 }
 
-CFG::CFG(Environment& env_, ObjectPool<Block>& block_pool_, Location start_address,
-         bool exits_to_dispatcher_)
-    : env{env_}, block_pool{block_pool_}, program_start{start_address}, exits_to_dispatcher{
-                                                                            exits_to_dispatcher_} {
+CFG::CFG(Environment& env_, boost::container::stable_vector<Block>& block_pool_, Location start_address, bool exits_to_dispatcher_)
+    : env{env_}
+    , block_pool{block_pool_}
+    , program_start{start_address}
+    , exits_to_dispatcher{exits_to_dispatcher_} {
     if (exits_to_dispatcher) {
-        dispatch_block = block_pool.Create(Block{});
+        dispatch_block = &block_pool.emplace_back(Block{});
         dispatch_block->begin = {};
         dispatch_block->end = {};
         dispatch_block->end_class = EndClass::Exit;
@@ -371,7 +371,7 @@ void CFG::AnalyzeCondInst(Block* block, FunctionId function_id, Location pc,
         return;
     }
     // Create a virtual block and a conditional block
-    Block* const conditional_block{block_pool.Create()};
+    Block* const conditional_block{&block_pool.emplace_back()};
     Block virtual_block{};
     virtual_block.begin = block->begin.Virtual();
     virtual_block.end = block->begin.Virtual();
@@ -546,7 +546,7 @@ Block* CFG::AddLabel(Block* block, Stack stack, Location pc, FunctionId function
     if (label_it != function.labels.end()) {
         return label_it->block;
     }
-    Block* const new_block{block_pool.Create()};
+    Block* const new_block{&block_pool.emplace_back()};
     new_block->begin = pc;
     new_block->end = pc;
     new_block->end_class = EndClass::Branch;

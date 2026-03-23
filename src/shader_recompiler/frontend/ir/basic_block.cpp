@@ -14,7 +14,7 @@
 
 namespace Shader::IR {
 
-Block::Block(ObjectPool<Inst>& inst_pool_) : inst_pool{&inst_pool_} {}
+Block::Block(boost::container::stable_vector<Inst>& inst_pool_) : inst_pool{&inst_pool_} {}
 
 Block::~Block() = default;
 
@@ -23,13 +23,12 @@ void Block::AppendNewInst(Opcode op, std::initializer_list<Value> args) {
 }
 
 Block::iterator Block::PrependNewInst(iterator insertion_point, const Inst& base_inst) {
-    Inst* const inst{inst_pool->Create(base_inst)};
+    Inst* const inst{&inst_pool->emplace_back(base_inst)};
     return instructions.insert(insertion_point, *inst);
 }
 
-Block::iterator Block::PrependNewInst(iterator insertion_point, Opcode op,
-                                      std::initializer_list<Value> args, u32 flags) {
-    Inst* const inst{inst_pool->Create(op, flags)};
+Block::iterator Block::PrependNewInst(iterator insertion_point, Opcode op, std::initializer_list<Value> args, u32 flags) {
+    Inst* const inst{&inst_pool->emplace_back(op, flags)};
     const auto result_it{instructions.insert(insertion_point, *inst)};
 
     if (inst->NumArgs() != args.size()) {
@@ -53,12 +52,10 @@ void Block::AddBranch(Block* block) {
     block->imm_predecessors.push_back(this);
 }
 
-static std::string BlockToIndex(const std::map<const Block*, size_t>& block_to_index,
-                                Block* block) {
-    if (const auto it{block_to_index.find(block)}; it != block_to_index.end()) {
+static std::string BlockToIndex(const std::map<const Block*, size_t>& block_to_index, Block* block) {
+    if (const auto it{block_to_index.find(block)}; it != block_to_index.end())
         return fmt::format("{{Block ${}}}", it->second);
-    }
-    return fmt::format("$<unknown block {:016x}>", reinterpret_cast<u64>(block));
+    return fmt::format("$<unknown block {:016x}>", u64(block));
 }
 
 static size_t InstIndex(std::map<const Inst*, size_t>& inst_to_index, size_t& inst_index,
