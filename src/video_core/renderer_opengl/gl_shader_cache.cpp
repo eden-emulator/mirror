@@ -43,7 +43,6 @@ using Shader::Backend::GLASM::EmitGLASM;
 using Shader::Backend::GLSL::EmitGLSL;
 using Shader::Backend::SPIRV::EmitSPIRV;
 using Shader::Maxwell::ConvertLegacyToGeneric;
-using Shader::Maxwell::GenerateGeometryPassthrough;
 using Shader::Maxwell::MergeDualVertexPrograms;
 using Shader::Maxwell::TranslateProgram;
 using VideoCommon::ComputeEnvironment;
@@ -316,7 +315,7 @@ void ShaderCache::LoadDiskResources(u64 title_id, std::stop_token stop_loading,
         ComputePipelineKey key;
         file.read(reinterpret_cast<char*>(&key), sizeof(key));
         queue_work([this, key, env_ = std::move(env), &state, &callback](Context* ctx) mutable {
-            ctx->pools.ReleaseContents();
+            ctx->pools.clear();
             auto pipeline{CreateComputePipeline(ctx->pools, key, env_, true)};
             std::scoped_lock lock{state.mutex};
             if (pipeline) {
@@ -337,7 +336,7 @@ void ShaderCache::LoadDiskResources(u64 title_id, std::stop_token stop_loading,
             for (auto& env : envs_) {
                 env_ptrs.push_back(&env);
             }
-            ctx->pools.ReleaseContents();
+            ctx->pools.clear();
             auto pipeline{CreateGraphicsPipeline(ctx->pools, key, MakeSpan(env_ptrs), false, true)};
             std::scoped_lock lock{state.mutex};
             if (pipeline) {
@@ -447,9 +446,8 @@ std::unique_ptr<GraphicsPipeline> ShaderCache::CreateGraphicsPipeline() {
     GraphicsEnvironments environments;
     GetGraphicsEnvironments(environments, graphics_key.unique_hashes);
 
-    main_pools.ReleaseContents();
-    auto pipeline{CreateGraphicsPipeline(main_pools, graphics_key, environments.Span(),
-                                         use_asynchronous_shaders)};
+    main_pools.clear();
+    auto pipeline{CreateGraphicsPipeline(main_pools, graphics_key, environments.Span(), use_asynchronous_shaders)};
     if (!pipeline || shader_cache_filename.empty()) {
         return pipeline;
     }
@@ -463,10 +461,7 @@ std::unique_ptr<GraphicsPipeline> ShaderCache::CreateGraphicsPipeline() {
     return pipeline;
 }
 
-std::unique_ptr<GraphicsPipeline> ShaderCache::CreateGraphicsPipeline(
-    ShaderContext::ShaderPools& pools, const GraphicsPipelineKey& key,
-    std::span<Shader::Environment* const> envs, bool use_shader_workers,
-    bool force_context_flush) try {
+std::unique_ptr<GraphicsPipeline> ShaderCache::CreateGraphicsPipeline(Shader::Maxwell::ShaderPools& pools, const GraphicsPipelineKey& key, std::span<Shader::Environment* const> envs, bool use_shader_workers, bool force_context_flush) try {
     auto hash = key.Hash();
     LOG_INFO(Render_OpenGL, "0x{:016x}", hash);
     size_t env_index{};
@@ -479,12 +474,10 @@ std::unique_ptr<GraphicsPipeline> ShaderCache::CreateGraphicsPipeline(
     Shader::IR::Program* layer_source_program{};
 
     for (size_t index = 0; index < Maxwell::MaxShaderProgram; ++index) {
-        const bool is_emulated_stage = layer_source_program != nullptr
-            && index == u32(Maxwell::ShaderType::Geometry);
+        const bool is_emulated_stage = layer_source_program != nullptr && index == u32(Maxwell::ShaderType::Geometry);
         if (key.unique_hashes[index] == 0 && is_emulated_stage) {
             auto topology = MaxwellToOutputTopology(key.gs_input_topology);
-            programs[index] = GenerateGeometryPassthrough(pools.inst, pools.block, host_info,
-                                                          *layer_source_program, topology);
+            programs[index] = Shader::Maxwell::GenerateGeometryPassthrough(pools, host_info, *layer_source_program, topology);
             continue;
         }
         if (key.unique_hashes[index] == 0) {
@@ -502,13 +495,13 @@ std::unique_ptr<GraphicsPipeline> ShaderCache::CreateGraphicsPipeline(
 
         if (!uses_vertex_a || index != 1) {
             // Normal path
-            programs[index] = TranslateProgram(pools.inst, pools.block, env, cfg, host_info);
+            programs[index] = TranslateProgram(pools, env, cfg, host_info);
 
             total_storage_buffers += Shader::NumDescriptors(programs[index].info.storage_buffers_descriptors);
         } else {
             // VertexB path when VertexA is present.
             auto& program_va{programs[0]};
-            auto program_vb{TranslateProgram(pools.inst, pools.block, env, cfg, host_info)};
+            auto program_vb{TranslateProgram(pools, env, cfg, host_info)};
             total_storage_buffers += Shader::NumDescriptors(program_vb.info.storage_buffers_descriptors);
             programs[index] = MergeDualVertexPrograms(program_va, program_vb, env);
         }
@@ -575,7 +568,7 @@ std::unique_ptr<ComputePipeline> ShaderCache::CreateComputePipeline(
     ComputeEnvironment env{*kepler_compute, *gpu_memory, program_base, qmd.program_start};
     env.SetCachedSize(shader->size_bytes);
 
-    main_pools.ReleaseContents();
+    main_pools.clear();
     auto pipeline{CreateComputePipeline(main_pools, key, env)};
     if (!pipeline || shader_cache_filename.empty()) {
         return pipeline;
@@ -585,9 +578,7 @@ std::unique_ptr<ComputePipeline> ShaderCache::CreateComputePipeline(
     return pipeline;
 }
 
-std::unique_ptr<ComputePipeline> ShaderCache::CreateComputePipeline(
-    ShaderContext::ShaderPools& pools, const ComputePipelineKey& key, Shader::Environment& env,
-    bool force_context_flush) try {
+std::unique_ptr<ComputePipeline> ShaderCache::CreateComputePipeline(Shader::Maxwell::ShaderPools& pools, const ComputePipelineKey& key, Shader::Environment& env, bool force_context_flush) try {
     auto hash = key.Hash();
     LOG_INFO(Render_OpenGL, "0x{:016x}", hash);
 
@@ -597,7 +588,7 @@ std::unique_ptr<ComputePipeline> ShaderCache::CreateComputePipeline(
         env.Dump(hash, key.unique_hash);
     }
 
-    auto program{TranslateProgram(pools.inst, pools.block, env, cfg, host_info)};
+    auto program{TranslateProgram(pools, env, cfg, host_info)};
     const u32 num_storage_buffers{Shader::NumDescriptors(program.info.storage_buffers_descriptors)};
     Shader::RuntimeInfo info;
     info.glasm_use_storage_buffers = num_storage_buffers <= device.GetMaxGLASMStorageBufferBlocks();

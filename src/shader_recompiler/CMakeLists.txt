@@ -234,13 +234,12 @@ add_library(shader_recompiler STATIC
     ir_opt/texture_pass.cpp
     ir_opt/vendor_workaround_pass.cpp
     ir_opt/verification_pass.cpp
-    object_pool.h
     profile.h
     program_header.h
     runtime_info.h
     shader_info.h
     varying_state.h
-
+    shader_pool.h
 )
 
 target_link_libraries(shader_recompiler PUBLIC common fmt::fmt sirit::sirit)

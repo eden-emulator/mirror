@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -9,6 +12,7 @@
 #include <vector>
 
 #include <boost/container/small_vector.hpp>
+#include <boost/container/stable_vector.hpp>
 #include <boost/intrusive/set.hpp>
 
 #include "shader_recompiler/environment.h"
@@ -17,7 +21,6 @@
 #include "shader_recompiler/frontend/maxwell/instruction.h"
 #include "shader_recompiler/frontend/maxwell/location.h"
 #include "shader_recompiler/frontend/maxwell/opcodes.h"
-#include "shader_recompiler/object_pool.h"
 
 namespace Shader::Maxwell::Flow {
 
@@ -96,7 +99,7 @@ struct Label {
 };
 
 struct Function {
-    explicit Function(ObjectPool<Block>& block_pool, Location start_address);
+    explicit Function(boost::container::stable_vector<Block>& block_pool, Location start_address);
 
     Location entrypoint;
     boost::container::small_vector<Label, 16> labels;
@@ -110,8 +113,7 @@ class CFG {
     };
 
 public:
-    explicit CFG(Environment& env, ObjectPool<Block>& block_pool, Location start_address,
-                 bool exits_to_dispatcher = false);
+    explicit CFG(Environment& env, boost::container::stable_vector<Block>& block_pool, Location start_address, bool exits_to_dispatcher = false);
 
     CFG& operator=(const CFG&) = delete;
     CFG(const CFG&) = delete;
@@ -138,27 +140,20 @@ private:
     /// Inspect already visited blocks.
     /// Return true when the block has already been visited
     bool InspectVisitedBlocks(FunctionId function_id, const Label& label);
-
     AnalysisState AnalyzeInst(Block* block, FunctionId function_id, Location pc);
-
-    void AnalyzeCondInst(Block* block, FunctionId function_id, Location pc, EndClass insn_end_class,
-                         IR::Condition cond);
+    void AnalyzeCondInst(Block* block, FunctionId function_id, Location pc, EndClass insn_end_class, IR::Condition cond);
 
     /// Return true when the branch instruction is confirmed to be a branch
-    bool AnalyzeBranch(Block* block, FunctionId function_id, Location pc, Instruction inst,
-                       Opcode opcode);
-
-    void AnalyzeBRA(Block* block, FunctionId function_id, Location pc, Instruction inst,
-                    bool is_absolute);
-    AnalysisState AnalyzeBRX(Block* block, Location pc, Instruction inst, bool is_absolute,
-                             FunctionId function_id);
+    bool AnalyzeBranch(Block* block, FunctionId function_id, Location pc, Instruction inst, Opcode opcode);
+    void AnalyzeBRA(Block* block, FunctionId function_id, Location pc, Instruction inst, bool is_absolute);
+    AnalysisState AnalyzeBRX(Block* block, Location pc, Instruction inst, bool is_absolute, FunctionId function_id);
     AnalysisState AnalyzeEXIT(Block* block, FunctionId function_id, Location pc, Instruction inst);
 
     /// Return the branch target block id
     Block* AddLabel(Block* block, Stack stack, Location pc, FunctionId function_id);
 
     Environment& env;
-    ObjectPool<Block>& block_pool;
+    boost::container::stable_vector<Block>& block_pool;
     boost::container::small_vector<Function, 1> functions;
     Location program_start;
     bool exits_to_dispatcher{};

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -13,11 +13,11 @@
 #include <bit>
 #include <numeric>
 #include <boost/intrusive/list.hpp>
+#include <boost/container/stable_vector.hpp>
 
 #include "common/common_types.h"
 #include "shader_recompiler/frontend/ir/condition.h"
 #include "shader_recompiler/frontend/ir/value.h"
-#include "shader_recompiler/object_pool.h"
 
 namespace Shader::IR {
 
@@ -30,7 +30,7 @@ public:
     using reverse_iterator = InstructionList::reverse_iterator;
     using const_reverse_iterator = InstructionList::const_reverse_iterator;
 
-    explicit Block(ObjectPool<Inst>& inst_pool_);
+    explicit Block(boost::container::stable_vector<Inst>& inst_pool_);
     ~Block();
 
     Block(const Block&) = delete;
@@ -170,7 +170,7 @@ public:
 
 private:
     /// Memory pool for instruction list
-    ObjectPool<Inst>* inst_pool;
+    boost::container::stable_vector<Inst>* inst_pool;
 
     /// List of instructions in this block
     InstructionList instructions;

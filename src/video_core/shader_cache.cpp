@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -11,7 +11,6 @@
 
 #include "common/assert.h"
 #include "shader_recompiler/frontend/maxwell/control_flow.h"
-#include "shader_recompiler/object_pool.h"
 #include "video_core/control/channel_state.h"
 #include "video_core/dirty_flags.h"
 #include "video_core/engines/kepler_compute.h"
@@ -236,7 +235,7 @@ const ShaderInfo* ShaderCache::MakeShaderInfo(GenericEnvironment& env, VAddr cpu
     } else {
         // Slow path, not really hit on commercial games
         // Build a control flow graph to get the real shader size
-        Shader::ObjectPool<Shader::Maxwell::Flow::Block> flow_block;
+        boost::container::stable_vector<Shader::Maxwell::Flow::Block> flow_block;
         Shader::Maxwell::Flow::CFG cfg{env, flow_block, env.StartAddress()};
         info->unique_hash = env.CalculateHash();
         info->size_bytes = env.ReadSizeBytes();

@@ -12,6 +12,7 @@
 #include "common/common_types.h"
 #include "common/thread_worker.h"
 #include "shader_recompiler/host_translate_info.h"
+#include "shader_recompiler/shader_pool.h"
 #include "shader_recompiler/profile.h"
 #include "video_core/renderer_opengl/gl_compute_pipeline.h"
 #include "video_core/renderer_opengl/gl_graphics_pipeline.h"
@@ -51,20 +52,9 @@ private:
     [[nodiscard]] GraphicsPipeline* BuiltPipeline(GraphicsPipeline* pipeline) const noexcept;
 
     std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline();
-
-    std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(
-        ShaderContext::ShaderPools& pools, const GraphicsPipelineKey& key,
-        std::span<Shader::Environment* const> envs, bool use_shader_workers,
-        bool force_context_flush = false);
-
-    std::unique_ptr<ComputePipeline> CreateComputePipeline(const ComputePipelineKey& key,
-                                                           const VideoCommon::ShaderInfo* shader);
-
-    std::unique_ptr<ComputePipeline> CreateComputePipeline(ShaderContext::ShaderPools& pools,
-                                                           const ComputePipelineKey& key,
-                                                           Shader::Environment& env,
-                                                           bool force_context_flush = false);
-
+    std::unique_ptr<GraphicsPipeline> CreateGraphicsPipeline(Shader::Maxwell::ShaderPools& pools, const GraphicsPipelineKey& key, std::span<Shader::Environment* const> envs, bool use_shader_workers, bool force_context_flush = false);
+    std::unique_ptr<ComputePipeline> CreateComputePipeline(const ComputePipelineKey& key, const VideoCommon::ShaderInfo* shader);
+    std::unique_ptr<ComputePipeline> CreateComputePipeline(Shader::Maxwell::ShaderPools& pools, const ComputePipelineKey& key, Shader::Environment& env, bool force_context_flush = false);
     std::unique_ptr<ShaderWorker> CreateWorkers() const;
 
     Core::Frontend::EmuWindow& emu_window;
@@ -80,7 +70,7 @@ private:
     GraphicsPipelineKey graphics_key{};
     GraphicsPipeline* current_pipeline{};
 
-    ShaderContext::ShaderPools main_pools;
+    Shader::Maxwell::ShaderPools main_pools;
     ankerl::unordered_dense::map<GraphicsPipelineKey, std::unique_ptr<GraphicsPipeline>> graphics_cache;
     ankerl::unordered_dense::map<ComputePipelineKey, std::unique_ptr<ComputePipeline>> compute_cache;
 
