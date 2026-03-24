@@ -14,7 +14,7 @@
 #include <memory>
 #include <optional>
 
-#include "dynarmic/interface/optimization_flags.h"
+#include "../optimization_flags.h"
 
 namespace Dynarmic {
 class ExclusiveMonitor;

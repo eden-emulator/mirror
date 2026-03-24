@@ -10,12 +10,12 @@
 #include <memory>
 #include <ankerl/unordered_dense.h>
 
-#include "dynarmic/interface/A64/a64.h"
-#include "dynarmic/interface/code_page.h"
-#include "common/common_types.h"
-#include "common/hash.h"
-#include "core/arm/arm_interface.h"
-#include "core/arm/dynarmic/dynarmic_exclusive_monitor.h"
+#include "../../../dynarmic/src/dynarmic/interface/A64/a64.h"
+#include "../../../dynarmic/src/dynarmic/interface/code_page.h"
+#include "../../../common/common_types.h"
+#include "../../../common/hash.h"
+#include "../arm_interface.h"
+#include "dynarmic_exclusive_monitor.h"
 
 namespace Core::Memory {
 class Memory;
