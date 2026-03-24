@@ -137,7 +137,7 @@ IApplicationManagerInterface::IApplicationManagerInterface(Core::System& system_
         {405, nullptr, "ListApplicationControlCacheEntryInfo"},
         {406, nullptr, "GetApplicationControlProperty"},
         {407, &IApplicationManagerInterface::ListApplicationTitle, "ListApplicationTitle"},
-        {408, nullptr, "ListApplicationIcon"},
+        {408, &IApplicationManagerInterface::ListApplicationIcon, "ListApplicationIcon"},
         {411, nullptr, "Unknown411"}, //19.0.0+
         {412, nullptr, "Unknown412"}, //19.0.0+
         {413, nullptr, "Unknown413"}, //19.0.0+
@@ -846,6 +846,11 @@ Result IApplicationManagerInterface::Unknown4053() {
 void IApplicationManagerInterface::ListApplicationTitle(HLERequestContext& ctx) {
     LOG_DEBUG(Service_NS, "called");
     IReadOnlyApplicationControlDataInterface(system).ListApplicationTitle(ctx);
+}
+
+void IApplicationManagerInterface::ListApplicationIcon(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_NS, "called");
+    IReadOnlyApplicationControlDataInterface(system).ListApplicationIcon(ctx);
 }
 
 } // namespace Service::NS

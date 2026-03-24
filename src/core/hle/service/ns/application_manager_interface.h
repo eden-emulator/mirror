@@ -75,6 +75,7 @@ public:
                                                              u64 application_id);
 
     void ListApplicationTitle(HLERequestContext& ctx);
+    void ListApplicationIcon(HLERequestContext& ctx);
 
 private:
     KernelHelpers::ServiceContext service_context;
