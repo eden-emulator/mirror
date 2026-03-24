@@ -34,6 +34,7 @@ public:
         u8 flag1,
         u8 flag2,
         u64 application_id);
+    void ListApplicationIcon(HLERequestContext& ctx);
     void ListApplicationTitle(HLERequestContext& ctx);
     Result GetApplicationControlData3(
         OutBuffer<BufferAttr_HipcMapAlias> out_buffer,

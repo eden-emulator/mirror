@@ -78,6 +78,7 @@ public:
 
     void PushApplicationRecord(HLERequestContext& ctx);
     void ListApplicationTitle(HLERequestContext& ctx);
+    void ListApplicationIcon(HLERequestContext& ctx);
 
 private:
     KernelHelpers::ServiceContext service_context;
