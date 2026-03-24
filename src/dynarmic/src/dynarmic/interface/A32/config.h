@@ -14,9 +14,9 @@
 #include <memory>
 #include <optional>
 
-#include "dynarmic/frontend/A32/translate/translate_callbacks.h"
-#include "dynarmic/interface/A32/arch_version.h"
-#include "dynarmic/interface/optimization_flags.h"
+#include "../../frontend/A32/translate/translate_callbacks.h"
+#include "arch_version.h"
+#include "../optimization_flags.h"
 
 namespace Dynarmic {
 class ExclusiveMonitor;
