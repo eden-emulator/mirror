@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "dynarmic/interface/A32/a32.h"
-#include "dynarmic/interface/code_page.h"
+#include "dynarmic/src/dynarmic/interface/A32/a32.h"
+#include "dynarmic/src/dynarmic/interface/code_page.h"
 
 #include "core/arm/arm_interface.h"
 #include "core/arm/dynarmic/dynarmic_exclusive_monitor.h"

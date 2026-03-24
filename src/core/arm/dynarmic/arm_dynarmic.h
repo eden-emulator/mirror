@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "dynarmic/interface/halt_reason.h"
+#include "dynarmic/src/dynarmic/interface/halt_reason.h"
 
 #include "core/arm/arm_interface.h"
 

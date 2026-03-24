@@ -15,8 +15,8 @@
 #include <string>
 #include <vector>
 
-#include "dynarmic/interface/A64/config.h"
-#include "dynarmic/interface/halt_reason.h"
+#include "config.h"
+#include "../halt_reason.h"
 
 namespace Dynarmic {
 namespace A64 {
