@@ -11,6 +11,7 @@ export IOS_SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
 cmake -G Xcode -B build \
     -DCMAKE_TOOLCHAIN_FILE="$WORK_DIR/.ci/ios/ios-toolchain.cmake" \
     -DPLATFORM=OS64 \
+    -DARCHS="arm64" \
     -DDEPLOYMENT_TARGET=16.0 \
     -DCOCOA_LIBRARY="$IOS_SDK/System/Library/Frameworks/Cocoa.framework" \
     -DCMAKE_C_COMPILER="$(xcrun --sdk iphoneos clang -arch arm64)" \
@@ -19,6 +20,9 @@ cmake -G Xcode -B build \
     -DENABLE_UPDATE_CHECKER=OFF \
     -DENABLE_QT=OFF \
     -DENABLE_OPENSSL=OFF \
+    -DHTTPLIB_USE_OPENSSL=OFF \
+    -DCPPHTTPLIB_USE_OPENSSL=OFF \
+    -DHTTPLIB_USE_OPENSSL_IF_AVAILABLE=OFF \
     -DENABLE_WEB_SERVICE=OFF \
     -DENABLE_CUBEB=OFF \
     -DYUZU_ROOM=OFF \

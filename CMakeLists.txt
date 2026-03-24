@@ -381,7 +381,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-find_package(RenderDoc MODULE)
+find_package(RenderDoc MODULE QUIET)
+if (NOT RenderDoc_FOUND)
+    message(WARNING "RenderDoc not found. Some debugging features may be disabled.")
+endif()
 
 # openssl funniness
 if (YUZU_USE_BUNDLED_OPENSSL)

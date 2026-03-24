@@ -23,6 +23,9 @@ if (ENABLE_UPDATE_CHECKER)
         update_checker.cpp
         update_checker.h)
     target_link_libraries(frontend_common PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+    if (NOT IOS)
+        target_compile_definitions(frontend_common PUBLIC CPPHTTPLIB_OPENSSL_SUPPORT)
+    endif()
 endif()
 
 create_target_directory_groups(frontend_common)
