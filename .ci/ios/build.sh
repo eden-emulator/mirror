@@ -35,4 +35,4 @@ cmake -G Xcode -B build \
     -DCPMUTIL_FORCE_BUNDLED=ON \
     -DCMAKE_BUILD_TYPE=Release
 
-cmake --build build
+cmake --build build -t eden-ios
