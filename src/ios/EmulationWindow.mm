@@ -8,7 +8,7 @@
 
 #include <SDL.h>
 
-#include "common/logging/log.h"
+#include "common/logging.h"
 #include "input_common/drivers/touch_screen.h"
 #include "input_common/drivers/virtual_amiibo.h"
 #include "input_common/drivers/virtual_gamepad.h"
