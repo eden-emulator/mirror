@@ -66,6 +66,7 @@
 #include "core/hle/service/ssl/ssl.h"
 #include "core/hle/service/wlan/wlan.h"
 #include "core/hle/service/tma/tma.h"
+#include "core/hle/service/ulsf/ulsf.h"
 #include "core/hle/service/usb/usb.h"
 #include "core/hle/service/vi/vi.h"
 
