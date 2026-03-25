@@ -25,9 +25,9 @@ set_target_properties(eden-ios PROPERTIES
     XCODE_ATTRIBUTE_SWIFT_OBJC_BRIDGING_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/AppUI-Bridging-Header.h"
 )
 
-target_link_libraries(eden-ios PRIVATE common core input_common frontend_common video_core glad)
+target_link_libraries(eden-ios PRIVATE common core input_common frontend_common shader_recompiler video_core glad)
 target_link_libraries(eden-ios PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
-target_link_libraries(eden-ios PRIVATE SDL2::SDL2)
+target_link_libraries(eden-ios PRIVATE SDL2::SDL2 sirit::sirit)
 create_target_directory_groups(eden-ios)
 target_compile_options(eden-ios PRIVATE
     $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-conversion>
