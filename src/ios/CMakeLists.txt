@@ -18,9 +18,12 @@ add_executable(eden-ios
     EmulationWindow.mm
 )
 
-# Keep identifier as-is, for compatibility sake
-set_property(TARGET eden-ios PROPERTY XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.yuzu-emu.yuzu")
-set_property(TARGET eden-ios PROPERTY XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "YUZU1234")
+# Keep bundle identifier as-is, for compatibility sake
+set_target_properties(eden-ios PROPERTIES
+    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.yuzu-emu.yuzu"
+    XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "YUZU1234"
+    SWIFT_OBJC_BRIDGING_HEADER "AppUI-Bridging-Header.h"
+)
 
 target_link_libraries(eden-ios PRIVATE common core input_common frontend_common video_core glad)
 target_link_libraries(eden-ios PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)

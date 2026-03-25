@@ -1,10 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
-
-//
-//  AppUIObjC.mm - Sudachi
-//  Created by Jarrod Norwell on 1/8/24.
-//
+// SPDX-FileCopyrightText: Copyright 2024 Jarrod Norwell
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #import "AppUIObjC.h"
 
