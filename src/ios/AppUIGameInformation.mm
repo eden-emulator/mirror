@@ -73,7 +73,7 @@ public:
 #define SDL_MAIN_HANDLED
 #include <SDL.h>
 
-#include "common/logging/log.h"
+#include "common/logging.h"
 #include "input_common/main.h"
 
 const std::array<int, Settings::NativeButton::NumButtons> SdlConfig::default_buttons = {
