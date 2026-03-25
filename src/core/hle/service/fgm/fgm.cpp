@@ -45,7 +45,7 @@ private:
 
         IPC::ResponseBuilder rb{ctx, 2, 0, 1};
         rb.Push(ResultSuccess);
-        rb.PushIpcInterface<IRequest>(system);
+        rb.PushIpcInterface<IRequest>(ctx, system);
     }
 };
 

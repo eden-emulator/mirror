@@ -124,7 +124,7 @@ private:
 
         IPC::ResponseBuilder rb{ctx, 2, 0, 1};
         rb.Push(ResultSuccess);
-        rb.PushIpcInterface<IClkrstSession>(system, device_code);
+        rb.PushIpcInterface<IClkrstSession>(ctx, system, device_code);
     }
 };
 

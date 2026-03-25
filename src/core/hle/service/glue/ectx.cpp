@@ -56,7 +56,7 @@ ECTX_AW::~ECTX_AW() = default;
 void ECTX_AW::CreateContextRegistrar(HLERequestContext& ctx) {
     IPC::ResponseBuilder rb{ctx, 2, 0, 1};
     rb.Push(ResultSuccess);
-    rb.PushIpcInterface<IContextRegistrar>(std::make_shared<IContextRegistrar>(system));
+    rb.PushIpcInterface<IContextRegistrar>(ctx, system);
 }
 
 } // namespace Service::Glue
