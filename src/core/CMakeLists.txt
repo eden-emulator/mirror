@@ -1083,6 +1083,8 @@ add_library(core STATIC
     hle/service/ssl/ssl_types.h
     hle/service/tma/tma.cpp
     hle/service/tma/tma.h
+    hle/service/ulsf/ulsf.cpp
+    hle/service/ulsf/ulsf.h
     hle/service/usb/usb.cpp
     hle/service/usb/usb.h
     hle/service/vi/application_display_service.cpp
