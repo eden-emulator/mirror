@@ -22,7 +22,7 @@ add_executable(eden-ios
 set_target_properties(eden-ios PROPERTIES
     XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.yuzu-emu.yuzu"
     XCODE_ATTRIBUTE_DEVELOPMENT_TEAM "YUZU1234"
-    XCODE_ATTRIBUTE_SWIFT_OBJC_BRIDGING_HEADER "AppUI-Bridging-Header.h"
+    XCODE_ATTRIBUTE_SWIFT_OBJC_BRIDGING_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/AppUI-Bridging-Header.h"
 )
 
 target_link_libraries(eden-ios PRIVATE common core input_common frontend_common video_core glad)
