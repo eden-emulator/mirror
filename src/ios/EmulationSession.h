@@ -1,10 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
-
-//
-//  EmulationSession.h - Sudachi
-//  Created by Jarrod Norwell on 1/20/24.
-//
+// SPDX-FileCopyrightText: Copyright 2024 Jarrod Norwell
+// SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
