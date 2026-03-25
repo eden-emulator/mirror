@@ -27,7 +27,8 @@ target_link_libraries(eden-ios PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
 target_link_libraries(eden-ios PRIVATE SDL2::SDL2)
 create_target_directory_groups(eden-ios)
 target_compile_options(eden-ios PRIVATE
-    -Wno-conversion
-    -Wno-unused-variable
-    -Wno-unused-parameter
-    -Wno-missing-field-initializers)
+    $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-conversion>
+    $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-variable>
+    $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-parameter>
+    $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>
+)
