@@ -153,7 +153,8 @@ Services::Services(std::shared_ptr<SM::ServiceManager>& sm, Core::System& system
         {"tma",        &TMA::LoopProcess},
         {"usb",        &USB::LoopProcess},
         {"i2c",        &I2C::LoopProcess},
-        {"gpio",        &GPIO::LoopProcess},
+        {"gpio",       &GPIO::LoopProcess},
+        {"ulsf",       &ULSF::LoopProcess},
     })
         kernel.RunOnGuestCoreProcess(std::string(e.first), [&system, f = e.second] { f(system); });
 }
