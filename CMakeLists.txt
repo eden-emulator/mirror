@@ -214,7 +214,7 @@ cmake_dependent_option(YUZU_USE_EXTERNAL_FFMPEG "Build FFmpeg from external sour
 
 # sirit
 set(BUNDLED_SIRIT_DEFAULT OFF)
-if (MSVC AND NOT (CMAKE_BUILD_TYPE MATCHES "Deb") OR ANDROID)
+if (((MSVC AND NOT (CMAKE_BUILD_TYPE MATCHES "Deb")) OR ANDROID) AND NOT IOS)
     set(BUNDLED_SIRIT_DEFAULT ON)
 endif()
 
