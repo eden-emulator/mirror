@@ -158,13 +158,15 @@ else()
     add_compile_options(
         $<$<COMPILE_LANGUAGE:C,CXX>:-Werror=all>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Werror=extra>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-Werror=missing-declarations>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Werror=shadow>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Werror=unused>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-attributes>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-invalid-offsetof>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-parameter>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>)
+    if (NOT IOS)
+        add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Werror=missing-declarations>)
+    endif()
 
     if (CXX_CLANG OR CXX_ICC OR CXX_APPLE) # Clang, AppleClang, or Intel C++
         if (NOT MSVC)
