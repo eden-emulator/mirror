@@ -15,6 +15,7 @@ add_executable(eden-ios
     EmulationSession.mm
     EmulationWindow.h
     EmulationWindow.mm
+    VMA.cpp
 )
 # Keep bundle identifier as-is, for compatibility sake
 set_target_properties(eden-ios PROPERTIES
@@ -26,5 +27,5 @@ set_target_properties(eden-ios PROPERTIES
 )
 target_link_libraries(eden-ios PRIVATE common core input_common frontend_common video_core sirit::sirit)
 target_link_libraries(eden-ios PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
-target_link_libraries(eden-ios PRIVATE SDL2::SDL2 glad)
+target_link_libraries(eden-ios PRIVATE SDL2::SDL2 glad stb::headers)
 create_target_directory_groups(eden-ios)
