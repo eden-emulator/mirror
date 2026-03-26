@@ -16,6 +16,9 @@ add_executable(eden-ios
     EmulationWindow.h
     EmulationWindow.mm
     VMA.cpp
+
+    PomeloApp.swift
+    ContentView.swift
 )
 # Keep bundle identifier as-is, for compatibility sake
 set_target_properties(eden-ios PROPERTIES
