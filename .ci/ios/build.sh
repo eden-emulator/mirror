@@ -33,6 +33,7 @@ cmake -G Xcode -B build \
     -DYUZU_USE_EXTERNAL_FFMPEG=ON \
     -DYUZU_USE_EXTERNAL_SDL2=ON \
     -DCPMUTIL_FORCE_BUNDLED=ON \
+    -DYUZU_USE_BUNDLED_SIRIT=OFF \
     -DCMAKE_BUILD_TYPE=Release
 
 cmake --build build -t eden-ios
