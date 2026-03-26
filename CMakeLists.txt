@@ -44,7 +44,7 @@ if (PLATFORM_NETBSD)
     set(ENV{PKG_CONFIG_PATH} "${PKG_CONFIG_PATH}:${CMAKE_SYSROOT}/usr/pkg/lib/ffmpeg7/pkgconfig")
 endif()
 
-cmake_dependent_option(YUZU_STATIC_ROOM "Build a static room executable only (CI only)" OFF "PLATFORM_LINUX" OFF)
+cmake_dependent_option(YUZU_STATIC_ROOM "Build a static room executable only (CI only)" OFF "PLATFORM_LINUX OR WIN32 OR (APPLE AND NOT IOS)" OFF)
 if (YUZU_STATIC_ROOM)
     set(YUZU_ROOM ON)
     set(YUZU_ROOM_STANDALONE ON)
@@ -72,7 +72,7 @@ endif()
 # qt stuff
 option(ENABLE_QT "Enable the Qt frontend" ON)
 option(ENABLE_QT_TRANSLATION "Enable translations for the Qt frontend" OFF)
-option(ENABLE_UPDATE_CHECKER "Enable update checker (for Qt and Android)" OFF)
+cmake_dependent_option(ENABLE_UPDATE_CHECKER "Enable update checker (for Qt and Android)" OFF "ENABLE_QT OR ANDROID" OFF)
 cmake_dependent_option(YUZU_USE_QT_MULTIMEDIA "Use QtMultimedia for Camera"  OFF "NOT YUZU_USE_BUNDLED_QT" OFF)
 cmake_dependent_option(YUZU_USE_QT_WEB_ENGINE "Use QtWebEngine for web applet implementation" OFF "NOT YUZU_USE_BUNDLED_QT" OFF)
 set(YUZU_QT_MIRROR "" CACHE STRING "What mirror to use for downloading the bundled Qt libraries")
@@ -204,7 +204,7 @@ cmake_dependent_option(YUZU_USE_BUNDLED_SDL3 "Download bundled SDL3 build" "${MS
 option(ENABLE_CUBEB "Enables the cubeb audio backend" ON)
 
 set(EXT_DEFAULT OFF)
-if (MSVC OR ANDROID)
+if (MSVC OR ANDROID OR IOS)
     set(EXT_DEFAULT ON)
 endif()
 
@@ -214,7 +214,7 @@ cmake_dependent_option(YUZU_USE_EXTERNAL_FFMPEG "Build FFmpeg from external sour
 
 # sirit
 set(BUNDLED_SIRIT_DEFAULT OFF)
-if (((MSVC AND NOT (CMAKE_BUILD_TYPE MATCHES "Deb")) OR ANDROID) AND NOT IOS)
+if ((MSVC AND NOT (CMAKE_BUILD_TYPE MATCHES "Deb")) OR ANDROID)
     set(BUNDLED_SIRIT_DEFAULT ON)
 endif()
 
@@ -246,7 +246,7 @@ option(NIGHTLY_BUILD "Use Nightly qualifiers in the update checker and build met
 cmake_dependent_option(YUZU_ROOM "Enable dedicated room functionality" ON "NOT ANDROID AND NOT IOS" OFF)
 cmake_dependent_option(YUZU_ROOM_STANDALONE "Enable standalone room executable" ON "YUZU_ROOM" OFF)
 
-cmake_dependent_option(YUZU_CMD "Compile the eden-cli executable" ON "NOT ANDROID" OFF)
+cmake_dependent_option(YUZU_CMD "Compile the eden-cli executable" ON "NOT ANDROID AND NOT IOS" OFF)
 
 cmake_dependent_option(YUZU_CRASH_DUMPS "Compile crash dump (Minidump) support" OFF "WIN32 OR PLATFORM_LINUX" OFF)
 
