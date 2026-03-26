@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -13,9 +13,14 @@
 #ifdef _MSC_VER
 #pragma warning( push )
 #pragma warning( disable : 4189 )
+#elif defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-variable"
 #endif
 #include "vk_mem_alloc.h"
 
 #ifdef _MSC_VER
 #pragma warning( pop )
+#elif defined(__clang__)
+#pragma clang diagnostic pop
 #endif

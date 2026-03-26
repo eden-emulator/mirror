@@ -6,9 +6,9 @@
 WORK_DIR="$PWD"
 xcrun --sdk iphoneos --show-sdk-path
 
-# TODO(crueter): FFmpeg for iOS
+# TODO: support iphonesimulator sdk
 
-cmake -G Xcode -B build \
+cmake -G Xcode -B build/ios \
     -DCMAKE_TOOLCHAIN_FILE="$WORK_DIR/.ci/ios/ios-toolchain.cmake" \
     -DPLATFORM=OS64 \
     -DARCHS="arm64" \
@@ -19,8 +19,7 @@ cmake -G Xcode -B build \
     -DENABLE_QT=OFF \
     -DENABLE_WEB_SERVICE=OFF \
     -DENABLE_CUBEB=OFF \
-    -DYUZU_USE_EXTERNAL_FFMPEG=ON \
-    -DYUZU_USE_EXTERNAL_SDL2=ON \
-    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_BUILD_TYPE=Release \
+    "$@"
 
-cmake --build build -t eden-ios
+cmake --build build/ios -t eden-ios --config Release

@@ -57,9 +57,6 @@ if (USE_DISCORD_PRESENCE)
 
     if (YUZU_USE_BUNDLED_OPENSSL)
         target_link_libraries(qt_common PUBLIC OpenSSL::SSL OpenSSL::Crypto)
-        if (NOT IOS)
-            target_compile_definitions(qt_common PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT)
-        endif()
     endif()
 
     target_compile_definitions(qt_common PUBLIC USE_DISCORD_PRESENCE)
