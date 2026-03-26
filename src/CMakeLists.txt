@@ -177,6 +177,9 @@ else()
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-invalid-offsetof>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-parameter>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>)
+    if (NOT IOS)
+        add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Werror=missing-declarations>)
+    endif()
 
     if (CXX_CLANG OR CXX_ICC OR CXX_APPLE) # Clang, AppleClang, or Intel C++
         if (NOT MSVC)
