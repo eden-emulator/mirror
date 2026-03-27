@@ -7,7 +7,6 @@ import UIKit
 import Foundation
 import QuartzCore.CAMetalLayer
 
-@main
 public struct AppUI {
 
     public static let shared = AppUI()

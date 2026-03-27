@@ -4,16 +4,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import SwiftUI
-import Sudachi
+//import AppUI
 
 struct ContentView: View {
-    @State var core = Core(games: [], root: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0])
+//    @State var core = Core(games: [], root: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0])
     var body: some View {
-        HomeView(core: core).onAppear() {
-            Air.play(AnyView(
-                Text("Select Game").font(.system(size: 100))
-            ))
-            // rest of death
-        }
+//        HomeView(core: core).onAppear() {
+//            Air.play(AnyView(
+//                Text("Select Game").font(.system(size: 100))
+//            ))
+//            // rest of death
+//        }
     }
 }

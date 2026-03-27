@@ -35,7 +35,7 @@ This file is based off of Yuzu and Dynarmic.
 # Do note that situations where multiple architectures are defined
 # should NOT be too dependent on the architecture
 # otherwise, you may end up with duplicate code
-if (CMAKE_OSX_ARCHITECTURES)
+if (DEFINED CMAKE_OSX_ARCHITECTURES)
     set(MULTIARCH_BUILD 1)
     set(ARCHITECTURE "${CMAKE_OSX_ARCHITECTURES}")
     if (IOS)
