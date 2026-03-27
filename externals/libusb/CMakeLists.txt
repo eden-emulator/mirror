@@ -24,7 +24,8 @@ if (MINGW OR PLATFORM_LINUX OR APPLE)
         message(FATAL_ERROR "Required program `autoconf` not found.")
     endif()
 
-    find_program(LIBTOOLIZE libtoolize)
+    find_program(LIBTOOLIZE
+        NAMES libtoolize glibtoolize)
     if ("${LIBTOOLIZE}" STREQUAL "LIBTOOLIZE-NOTFOUND")
         message(FATAL_ERROR "Required program `libtoolize` not found.")
     endif()

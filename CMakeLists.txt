@@ -23,6 +23,29 @@ include(CMakeDependentOption)
 include(CTest)
 include(CPMUtil)
 
+# TODO(crueter): Make this more automatic.
+if (IOS)
+    list(APPEND CMAKE_FIND_ROOT_PATH "${CMAKE_OSX_SYSROOT_INT}" CACHE INTERNAL "")
+    list(APPEND CMAKE_PROGRAM_PATH "/opt/homebrew/bin" CACHE INTERNAL "")
+
+    set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH CACHE INTERNAL "")
+    set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH CACHE INTERNAL "")
+    set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH CACHE INTERNAL "")
+    set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH CACHE INTERNAL "")
+
+    list(LENGTH CMAKE_OSX_ARCHITECTURES _arch_len)
+    if (NOT _arch_len EQUAL 1)
+        message(FATAL_ERROR "CMAKE_OSX_ARCHITECTURES must contain exactly one architecture.")
+    endif()
+
+    # TODO(crueter): Proper handling for this.
+    if (CMAKE_OSX_ARCHITECTURES STREQUAL arm64)
+        set(CMAKE_SYSTEM_PROCESSOR aarch64)
+    else()
+        set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_OSX_ARCHITECTURES})
+    endif()
+endif()
+
 if (NOT DEFINED ARCHITECTURE)
     message(FATAL_ERROR "Architecture didn't make it out of scope, did you delete DetectArchitecture.cmake?")
 endif()
@@ -70,7 +93,13 @@ if (YUZU_STATIC_ROOM)
 endif()
 
 # qt stuff
-option(ENABLE_QT "Enable the Qt frontend" ON)
+if (IOS OR ANDROID)
+    set(_default_qt OFF)
+else()
+    set(_default_qt ON)
+endif()
+
+option(ENABLE_QT "Enable the Qt frontend" ${_default_qt})
 option(ENABLE_QT_TRANSLATION "Enable translations for the Qt frontend" OFF)
 cmake_dependent_option(ENABLE_UPDATE_CHECKER "Enable update checker (for Qt and Android)" OFF "ENABLE_QT OR ANDROID" OFF)
 cmake_dependent_option(YUZU_USE_QT_MULTIMEDIA "Use QtMultimedia for Camera"  OFF "NOT YUZU_USE_BUNDLED_QT" OFF)
@@ -212,7 +241,8 @@ endif()
 cmake_dependent_option(YUZU_USE_EXTERNAL_SDL2 "Build SDL2 from external source" OFF "NOT MSVC;NOT ANDROID" OFF)
 cmake_dependent_option(YUZU_USE_BUNDLED_SDL2 "Download bundled SDL2 build" "${EXT_DEFAULT}" "NOT ANDROID" OFF)
 
-option(ENABLE_CUBEB "Enables the cubeb audio backend" ON)
+# TODO(crueter): did not find header 'AudioHardware.h' in framework 'CoreAudio'
+cmake_dependent_option(ENABLE_CUBEB "Enables the cubeb audio backend" ON "NOT IOS" OFF)
 
 # ffmpeg
 option(YUZU_USE_BUNDLED_FFMPEG "Download bundled FFmpeg" ${EXT_DEFAULT})
@@ -227,7 +257,7 @@ endif()
 option(YUZU_USE_BUNDLED_SIRIT "Download bundled sirit" ${BUNDLED_SIRIT_DEFAULT})
 
 # FreeBSD 15+ has libusb, versions below should disable it
-cmake_dependent_option(ENABLE_LIBUSB "Enable the use of LibUSB" ON "WIN32 OR PLATFORM_LINUX OR PLATFORM_FREEBSD OR APPLE" OFF)
+cmake_dependent_option(ENABLE_LIBUSB "Enable the use of LibUSB" ON "WIN32 OR PLATFORM_LINUX OR PLATFORM_FREEBSD OR (APPLE AND NOT IOS)" OFF)
 
 cmake_dependent_option(ENABLE_OPENGL "Enable OpenGL" ON "NOT (WIN32 AND ARCHITECTURE_arm64) AND NOT APPLE" OFF)
 mark_as_advanced(FORCE ENABLE_OPENGL)
