@@ -15,10 +15,6 @@ cmake -G Xcode -B build/ios \
     -DDEPLOYMENT_TARGET=16.0 \
     -DCMAKE_C_COMPILER="$(xcrun --sdk iphoneos --find clang)" \
     -DCMAKE_CXX_COMPILER="$(xcrun --sdk iphoneos --find clang++)" \
-    -DENABLE_LIBUSB=OFF \
-    -DENABLE_QT=OFF \
-    -DENABLE_WEB_SERVICE=OFF \
-    -DENABLE_CUBEB=OFF \
     -DCMAKE_BUILD_TYPE=Release \
     "$@"
 
