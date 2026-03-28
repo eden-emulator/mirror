@@ -9,12 +9,10 @@ xcrun --sdk iphoneos --show-sdk-path
 # TODO: support iphonesimulator sdk
 
 cmake -G Xcode -B build/ios \
-    -DCMAKE_TOOLCHAIN_FILE="$WORK_DIR/.ci/ios/ios-toolchain.cmake" \
-    -DPLATFORM=OS64 \
-    -DARCHS="arm64" \
-    -DDEPLOYMENT_TARGET=16.0 \
-    -DCMAKE_C_COMPILER="$(xcrun --sdk iphoneos --find clang)" \
-    -DCMAKE_CXX_COMPILER="$(xcrun --sdk iphoneos --find clang++)" \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
+    -DCMAKE_OSX_SYSROOT=iphoneos \
+    -DCMAKE_SYSTEM_NAME=iOS \
+    -DCMAKE_OSX_ARCHITECTURES="arm64" \
     -DCMAKE_BUILD_TYPE=Release \
     "$@"
 
