@@ -5,6 +5,7 @@
 
 #import <Foundation/Foundation.h>
 #import <MetalKit/MetalKit.h>
+#import <UIKit/UIKit.h>
 
 #import "AppUIGameInformation.h"
 
