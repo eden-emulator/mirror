@@ -44,6 +44,7 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
             --extra-ldflags="-miphoneos-version-min=16.0"
             --install-name-dir='@rpath'
             --disable-audiotoolbox
+            --disable-videotoolbox
         )
         set(FFmpeg_IS_CROSS_COMPILING TRUE)
     # User attempts to do a FFmpeg cross compilation because...
