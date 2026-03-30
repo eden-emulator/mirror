@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 # SPDX-License-Identifier: GPL-3.0-or-later
-include(TargetArchitectureSpecificSources)
 
 add_executable(dynarmic_tests
     fp/FPToFixed.cpp
@@ -50,7 +49,7 @@ endif()
 
 if ("x86_64" IN_LIST ARCHITECTURE)
     target_link_libraries(dynarmic_tests PRIVATE xbyak::xbyak)
-    target_architecture_specific_sources(dynarmic_tests "x86_64"
+    target_sources(dynarmic PRIVATE
         x64_cpu_info.cpp
         native/preserve_xmm.cpp
     )
