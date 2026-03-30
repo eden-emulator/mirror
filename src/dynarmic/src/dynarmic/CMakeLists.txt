@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 # SPDX-License-Identifier: GPL-3.0-or-later
-include(TargetArchitectureSpecificSources)
 
 add_library(dynarmic STATIC
     mcl/bit.hpp
@@ -143,7 +142,7 @@ if ("x86_64" IN_LIST ARCHITECTURE)
     target_compile_definitions(dynarmic PRIVATE XBYAK_OLD_DISP_CHECK=1)
     target_link_libraries(dynarmic PRIVATE xbyak::xbyak)
 
-    target_architecture_specific_sources(dynarmic "x86_64"
+    target_sources(dynarmic PRIVATE
         backend/x64/abi.cpp
         backend/x64/abi.h
         backend/x64/block_of_code.cpp
@@ -204,7 +203,7 @@ endif()
 if ("arm64" IN_LIST ARCHITECTURE)
     target_link_libraries(dynarmic PRIVATE merry::oaknut)
 
-    target_architecture_specific_sources(dynarmic "arm64"
+    target_sources(dynarmic PRIVATE
         backend/arm64/a32_jitstate.cpp
         backend/arm64/a32_jitstate.h
         backend/arm64/a64_jitstate.h
