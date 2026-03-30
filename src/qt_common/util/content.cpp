@@ -28,8 +28,8 @@ bool CheckGameFirmware(u64 program_id) {
         !FirmwareManager::CheckFirmwarePresence(*system)) {
         auto result = QtCommon::Frontend::Warning(
             tr("Game Requires Firmware"),
-            tr("The game you are trying to launch requires firmware to work. "
-                "Press \"OK\" to launch anyways."),
+            tr("This game may require firmware to function properly, and you don't have any installed. "
+                "Please install firmware before launching, or press \"OK\" to launch anyways."),
             QtCommon::Frontend::Ok | QtCommon::Frontend::Cancel);
 
         return result == QtCommon::Frontend::Ok;
