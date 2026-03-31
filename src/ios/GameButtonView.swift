@@ -165,7 +165,6 @@ struct HomeView: View {
     }
 }
 
-
 struct GameCarouselView: View {
     // let games: [EmulationGame]
     @State var core: Core

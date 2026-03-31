@@ -5,7 +5,7 @@
 
 import SwiftUI
 import GameController
-import AppUI
+
 import SwiftUIJoystick
 
 struct ControllerView: View {
@@ -332,6 +332,18 @@ struct ABXYView: View {
                 .padding(.horizontal)
         }
         .frame(width: 145, height: 145)
+    }
+}
+
+class Haptics {
+    static let shared = Haptics()
+    private init() { }
+    func play(_ feedbackStyle: UIImpactFeedbackGenerator.FeedbackStyle) {
+        print("haptics")
+        UIImpactFeedbackGenerator(style: feedbackStyle).impactOccurred()
+    }
+    func notify(_ feedbackType: UINotificationFeedbackGenerator.FeedbackType) {
+        UINotificationFeedbackGenerator().notificationOccurred(feedbackType)
     }
 }
 

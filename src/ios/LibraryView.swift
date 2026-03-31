@@ -5,7 +5,7 @@
 
 import SwiftUI
 import CryptoKit
-import AppUI
+
 
 struct LibraryView: View {
     @Binding var core: Core
