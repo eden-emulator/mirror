@@ -16,6 +16,7 @@
 #include "common/tiny_mt.h"
 #include "common/random.h"
 #include "core/hle/kernel/k_system_control.h"
+#include "common/random.h"
 
 namespace Kernel {
 
