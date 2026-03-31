@@ -169,7 +169,21 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock te
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location, bool) {
-    ASSERT(false && "unimp");
+    if (ctx.emit_conf.a64_variant) {
+        auto const tmp = ctx.reg_alloc.ScratchGpr();
+        code.LI(tmp, terminal.next.Value());
+        code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
+        code.LD(tmp, PPC64::RTOCPTR, 0);
+        code.MTCTR(tmp);
+        code.LD(powah::R2, PPC64::RTOCPTR, 8);
+        code.LD(powah::R11, PPC64::RTOCPTR, 16);
+        code.BCTR();
+    } else {
+        auto const tmp = ctx.reg_alloc.ScratchGpr();
+        code.LI(tmp, terminal.next.Value());
+        code.STW(tmp, PPC64::RJIT, offsetof(A32JitState, regs) + sizeof(u32) * 15);
+        ASSERT(false && "unimp");
+    }
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::PopRSBHint, IR::LocationDescriptor, bool) {
