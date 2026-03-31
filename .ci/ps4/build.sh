@@ -59,7 +59,8 @@ cmake -S . -B build -G "Unix Makefiles" \
     -DYUZU_USE_EXTERNAL_FFMPEG=ON \
     -DYUZU_USE_CPM=ON \
     -DDYNARMIC_ENABLE_NO_EXECUTE_SUPPORT=OFF \
-    -DDYNARMIC_TESTS=ON \
+    -DDYNARMIC_TESTS=OFF \
+    -DYUZU_TESTS=OFF \
     -DYUZU_USE_EXTERNAL_SDL2=ON \
     "${EXTRA_CMAKE_FLAGS[@]}" || exit
 cmake --build build -t yuzu-cmd_pkg -- -j$NPROC
