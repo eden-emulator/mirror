@@ -14,6 +14,7 @@ cmake -G Xcode -B build/ios \
     -DCMAKE_SYSTEM_NAME=iOS \
     -DCMAKE_OSX_ARCHITECTURES="arm64" \
     -DCMAKE_BUILD_TYPE=Release \
+    -DYUZU_USE_EXTERNAL_SDL2=ON \
     "$@"
 
 cmake --build build/ios -t eden-ios --config Release
