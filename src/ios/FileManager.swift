@@ -6,7 +6,6 @@
 import SwiftUI
 import Foundation
 import UIKit
-
 import Zip
 
 struct Core : Comparable, Hashable {
@@ -40,55 +39,6 @@ struct Core : Comparable, Hashable {
     }
 }
 
-class YuzuFileManager {
-    static var shared = YuzuFileManager()
-
-    func directories() -> [String : [String : String]] {
-        [
-            "themes" : [:],
-            "amiibo" : [:],
-            "cache" : [:],
-            "config" : [:],
-            "crash_dumps" : [:],
-            "dump" : [:],
-            "keys" : [:],
-            "load" : [:],
-            "log" : [:],
-            "nand" : [:],
-            "play_time" : [:],
-            "roms" : [:],
-            "screenshots" : [:],
-            "sdmc" : [:],
-            "shader" : [:],
-            "tas" : [:],
-            "icons" : [:]
-        ]
-    }
-
-    func createdirectories() throws {
-        let documentdir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        try directories().forEach() { directory, filename in
-            let directoryURL = documentdir.appendingPathComponent(directory)
-
-            if !FileManager.default.fileExists(atPath: directoryURL.path) {
-                print("creating dir at \(directoryURL.path)") // yippee
-                try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: false, attributes: nil)
-            }
-        }
-    }
-
-    func DetectKeys() -> (Bool, Bool) {
-        var prodkeys = false
-        var titlekeys = false
-        let filemanager = FileManager.default
-        let documentdir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let KeysFolderURL = documentdir.appendingPathComponent("keys")
-        prodkeys = filemanager.fileExists(atPath: KeysFolderURL.appendingPathComponent("prod.keys").path)
-        titlekeys = filemanager.fileExists(atPath: KeysFolderURL.appendingPathComponent("title.keys").path)
-        return (prodkeys, titlekeys)
-    }
-}
-
 enum LibManError : Error {
     case ripenum, urlgobyebye
 }
@@ -96,7 +46,6 @@ enum LibManError : Error {
 class LibraryManager {
     static let shared = LibraryManager()
     let documentdir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("roms", conformingTo: .folder)
-
 
     func removerom(_ game: EmulationGame) throws {
         do {

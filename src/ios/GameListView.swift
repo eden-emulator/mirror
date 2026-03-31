@@ -55,7 +55,6 @@ struct GameListView: View {
             guard let EmulationGame = game as? PoYuzume else { return false }
             return searchText.isEmpty || EmulationGame.title.localizedCaseInsensitiveContains(searchText)
         }
-
         ScrollView {
             VStack {
                 VStack(alignment: .leading) {

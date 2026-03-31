@@ -9,6 +9,18 @@ import UIKit
 import UniformTypeIdentifiers
 import Combine
 
+struct SettingsView: View {
+    @State var core: Core
+    @State var showprompt = false
+
+    @AppStorage("icon") var iconused = 1
+    var body: some View {
+        NavigationStack {
+
+        }
+    }
+}
+
 struct GameIconView: View {
     var game: EmulationGame
     @Binding var selectedGame: EmulationGame?
