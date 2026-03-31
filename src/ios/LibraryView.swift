@@ -6,7 +6,6 @@
 import SwiftUI
 import CryptoKit
 
-
 struct LibraryView: View {
     @Binding var core: Core
     @State var isGridView: Bool = true

@@ -20,16 +20,11 @@ add_executable(eden-ios
     EmulationGame.swift
     JoystickView.swift
     EmulationHandler.swift
-    NavView.swift
     PomeloApp.swift
-    SettingsView.swift
     FileManager.swift
     EmulationView.swift
     LibraryView.swift
     KeyboardHostingController.swift
-    MetalView.swift
-    ControllerView.swift
-    InfoView.swift
     FolderMonitor.swift
     GameButtonView.swift
     EmulationScreenView.swift
