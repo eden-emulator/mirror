@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <mutex>
+#include <cstddef>
 
 #include <boost/icl/interval_set.hpp>
 #include "dynarmic/common/assert.h"
