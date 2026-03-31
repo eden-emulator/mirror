@@ -9,6 +9,7 @@
 #include "common/literals.h"
 #include "common/random.h"
 #include "common/settings.h"
+#include "common/random.h"
 
 #include "core/hle/kernel/board/nintendo/nx/k_system_control.h"
 #include "core/hle/kernel/board/nintendo/nx/secure_monitor.h"
