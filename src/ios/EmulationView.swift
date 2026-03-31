@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import SwiftUI
-import AppUI
+
 import Foundation
 import GameController
 import UIKit

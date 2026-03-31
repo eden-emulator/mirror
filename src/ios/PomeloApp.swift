@@ -11,6 +11,14 @@ func --(lhs: Bool, rhs: Bool) -> Bool {
     return lhs || rhs
 }
 
+struct ContentView: View {
+@State var core = Core(games: [], root: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0])
+    var body: some View {
+        HomeView(core: core).onAppear() {
+        }
+    }
+}
+
 @main
 struct PomeloApp: App {
     var body: some Scene {
