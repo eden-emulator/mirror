@@ -4,12 +4,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import SwiftUI
-import AppUI
 
-struct ContentView: View {
-@State var core = Core(games: [], root: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0])
+struct SettingsView: View {
+    @State var core: Core
+    @State var showprompt = false
+
+    @AppStorage("icon") var iconused = 1
     var body: some View {
-        HomeView(core: core).onAppear() {
+        NavigationStack {
+
         }
     }
 }
