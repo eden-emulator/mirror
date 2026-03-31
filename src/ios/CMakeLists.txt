@@ -17,8 +17,33 @@ add_executable(eden-ios
     EmulationWindow.mm
     VMA.cpp
 
-    PomeloApp.swift
+    EnableJIT.swift
+    EmulationGame.swift
+    JoystickView.swift
+    CoreSettingsView.swift
     ContentView.swift
+    EmulationHandler.swift
+    DetectServer.swift
+    NavView.swift
+    PomeloApp.swift
+    SettingsView.swift
+    FileManager.swift
+    EmulationView.swift
+    LibraryView.swift
+    GameButtonListView.swift
+    KeyboardHostingController.swift
+    MetalView.swift
+    BootOSView.swift
+    ControllerView.swift
+    AppUI.swift
+    InfoView.swift
+    FolderMonitor.swift
+    AdvancedSettingsView.swift
+    GameButtonView.swift
+    AppIconProvider.swift
+    Haptics.swift
+    EmulationScreenView.swift
+    GameListView.swift
 )
 
 set(MACOSX_BUNDLE_GUI_IDENTIFIER "dev.eden-emu.eden")

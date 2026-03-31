@@ -8,9 +8,7 @@ import Foundation
 import QuartzCore.CAMetalLayer
 
 public struct AppUI {
-
     public static let shared = AppUI()
-
     fileprivate let appUIObjC = AppUIObjC.shared()
 
     public func configure(layer: CAMetalLayer, with size: CGSize) {
