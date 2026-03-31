@@ -7,7 +7,6 @@ import SwiftUI
 import UIKit
 
 class KeyboardHostingController<Content: View>: UIHostingController<Content> {
-
     override var canBecomeFirstResponder: Bool {
         return true
     }
@@ -55,7 +54,6 @@ class KeyboardHostingController<Content: View>: UIHostingController<Content> {
         }
     }
 }
-
 
 struct KeyboardSupportView: UIViewControllerRepresentable {
     let content: Text

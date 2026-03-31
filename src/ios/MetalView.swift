@@ -5,7 +5,7 @@
 
 import SwiftUI
 import Metal
-import AppUI
+
 
 struct MetalView: UIViewRepresentable {
     let device: MTLDevice?
