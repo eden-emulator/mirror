@@ -45,6 +45,8 @@ namespace Common {
 #ifdef __OPENORBIS__
 
 namespace Orbis {
+constexpr size_t ORBIS_PAGE_SIZE = 16384;
+
 struct Ucontext {
     struct Sigset {
         u64 bits[2];
@@ -114,7 +116,7 @@ static void SwapHandler(int sig, void* raw_context) {
     if (auto const it = std::ranges::find_if(swap_regions, [addr = mctx.mc_addr](auto const& e) {
         return uintptr_t(addr) >= uintptr_t(e.first) && uintptr_t(addr) < uintptr_t(e.first) + e.second;
     }); it != swap_regions.end()) {
-        size_t const page_size = 0x200000; //2M
+        size_t const page_size = Orbis::ORBIS_PAGE_SIZE; //16K
         size_t const page_mask = ~(page_size - 1);
         // should replace the existing mapping... ugh
         void* aligned_addr = reinterpret_cast<void*>(uintptr_t(mctx.mc_addr) & page_mask);
@@ -147,8 +149,8 @@ void* AllocateMemoryPages(std::size_t size) noexcept {
 #elif defined(__OPENORBIS__)
     bool use_void_mem = true;
     void* addr = nullptr;
-    if (size <= 8192 * 4096) {
-        size_t align = 16384;
+    if (size < 4294967296ull) {
+        size_t align = Orbis::ORBIS_PAGE_SIZE;
         off_t offset;
         int32_t res;
         size = (size + align - 1) / align * align;
@@ -166,7 +168,6 @@ void* AllocateMemoryPages(std::size_t size) noexcept {
                 LOG_ERROR(HW_Memory, "{} = sceKernelMapDirectMemory({}, {})", res, offset, size);
             }
         } else {
-            sceKernelReleaseDirectMemory(offset, size);
             LOG_ERROR(HW_Memory, "{} = sceKernelAllocateDirectMemory({}, {}, {})", res, size, align, offset);
         }
     }
@@ -189,11 +190,13 @@ void FreeMemoryPages(void* addr, [[maybe_unused]] std::size_t size) noexcept {
 #ifdef _WIN32
     VirtualFree(addr, 0, MEM_RELEASE);
 #elif defined(__OPENORBIS__)
-    if (size <= 8192 * 4096) {
-        sceKernelCheckedReleaseDirectMemory(off_t(addr), size_t(size));
-    } else {
+    if (auto const it = std::ranges::find_if(swap_regions, [=](auto const& e) {
+        return uintptr_t(addr) >= uintptr_t(e.first) && uintptr_t(addr) < uintptr_t(e.first) + e.second;
+    }); it != swap_regions.end()) {
         int rc = munmap(addr, size);
         ASSERT(rc == 0);
+    } else {
+        sceKernelCheckedReleaseDirectMemory(off_t(addr), size_t(size));
     }
 #else
     int rc = munmap(addr, size);
