@@ -71,6 +71,10 @@ endif()
 
 # my unity/jumbo build
 option(ENABLE_UNITY_BUILD "Enable Unity/Jumbo build" OFF)
+
+# 0 compiles all files in
+set(UNITY_BATCH_SIZE 0 CACHE STRING "Unity build batch size")
+
 if(MSVC AND ENABLE_UNITY_BUILD)
     message(STATUS "Unity build")
     # Unity builds need big objects for MSVC...

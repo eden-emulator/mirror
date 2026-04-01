@@ -27,6 +27,8 @@
 #include "core/hle/service/ipc_helpers.h"
 #include "core/memory.h"
 
+#undef SendMessage
+
 namespace Service {
 
 SessionRequestHandler::SessionRequestHandler(Kernel::KernelCore& kernel_, const char* service_name_)
