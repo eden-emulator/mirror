@@ -65,8 +65,6 @@ if(WIN32)
     endif()
 endif()
 
-create_target_directory_groups(yuzu-cmd)
-
 # needed for vma
 if (NOT MSVC)
     target_compile_options(yuzu-cmd PRIVATE
@@ -75,3 +73,7 @@ if (NOT MSVC)
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-parameter>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>)
 endif()
+
+set_target_properties(yuzu-cmd PROPERTIES UNITY_BUILD OFF)
+
+create_target_directory_groups(yuzu-cmd)
