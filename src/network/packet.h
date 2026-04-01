@@ -5,6 +5,7 @@
 
 #include <array>
 #include <vector>
+#include <string>
 #include "common/common_types.h"
 
 namespace Network {
