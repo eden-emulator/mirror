@@ -23,28 +23,28 @@ enum class SurfaceLoadStoreType : u64 {
     _3D,
 };
 
-constexpr unsigned R = 1 << 0;
-constexpr unsigned G = 1 << 1;
-constexpr unsigned B = 1 << 2;
-constexpr unsigned A = 1 << 3;
+constexpr unsigned SHADER_R = 1 << 0;
+constexpr unsigned SHADER_G = 1 << 1;
+constexpr unsigned SHADER_B = 1 << 2;
+constexpr unsigned SHADER_A = 1 << 3;
 
 constexpr std::array MASK{
     0U,            //
-    R,             //
-    G,             //
-    R | G,         //
-    B,             //
-    R | B,         //
-    G | B,         //
-    R | G | B,     //
-    A,             //
-    R | A,         //
-    G | A,         //
-    R | G | A,     //
-    B | A,         //
-    R | B | A,     //
-    G | B | A,     //
-    R | G | B | A, //
+    SHADER_R,             //
+    SHADER_G,             //
+    SHADER_R | SHADER_G,         //
+    SHADER_B,             //
+    SHADER_R | SHADER_B,         //
+    SHADER_G | SHADER_B,         //
+    SHADER_R | SHADER_G | SHADER_B,     //
+    SHADER_A,             //
+    SHADER_R | SHADER_A,         //
+    SHADER_G | SHADER_A,         //
+    SHADER_R | SHADER_G | SHADER_A,     //
+    SHADER_B | SHADER_A,         //
+    SHADER_R | SHADER_B | SHADER_A,     //
+    SHADER_G | SHADER_B | SHADER_A,     //
+    SHADER_R | SHADER_G | SHADER_B | SHADER_A, //
 };
 
 enum class SurfaceLoadStoreSize : u64 {
