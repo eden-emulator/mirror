@@ -27,7 +27,7 @@
 #include "common/settings.h"
 #include "common/time_zone.h"
 
-#if defined(__linux__ ) && defined(ARCHITECTURE_arm64)
+#ifdef __unix__
 #include <unistd.h>
 #endif
 
@@ -181,12 +181,9 @@ bool IsFastmemEnabled() {
         return bool(values.cpuopt_fastmem);
     else if (values.cpu_accuracy.GetValue() == CpuAccuracy::Unsafe)
         return bool(values.cpuopt_unsafe_host_mmu);
-#if defined(__linux__) && defined(ARCHITECTURE_arm64)
-    // Only 4kb systems support host MMU right now
-    // TODO: Support this
+#if defined(__unix__)
+    // TODO: Support this since only 4kb systems support host MMU right now
     return getpagesize() == 4096;
-#elif defined(__OPENORBIS__) || (!defined(__APPLE__) && !defined(__ANDROID__) && !defined(_WIN32) && !defined(__linux__) && !defined(__FreeBSD__))
-    return false;
 #else
     return true;
 #endif
