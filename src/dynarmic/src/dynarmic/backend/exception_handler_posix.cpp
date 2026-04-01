@@ -49,14 +49,11 @@ struct CodeBlockInfo {
 };
 
 class SigHandler {
-    static constexpr std::size_t signal_stack_size = std::max<std::size_t>(SIGSTKSZ, 2 * 1024 * 1024);
-
     auto FindCodeBlockInfo(u64 offset) noexcept {
         return std::find_if(code_block_infos.begin(), code_block_infos.end(), [&](auto const& e) {
             return e.first <= offset && e.first + e.second.size > offset;
         });
     }
-
     ankerl::unordered_dense::map<u64, CodeBlockInfo> code_block_infos;
     std::shared_mutex code_block_infos_mutex;
     struct sigaction old_sa_segv;
