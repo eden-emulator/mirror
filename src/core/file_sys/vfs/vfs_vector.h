@@ -99,6 +99,10 @@ private:
     std::string name;
 };
 
+#undef CreateFile
+#undef DeleteFile
+#undef CreateDirectory
+
 // An implementation of VfsDirectory that maintains two vectors for subdirectories and files.
 // Vector data is supplied upon construction.
 class VectorVfsDirectory : public VfsDirectory {

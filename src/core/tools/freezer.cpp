@@ -52,6 +52,8 @@ void MemoryWriteWidth(Core::Memory::Memory& memory, u32 width, VAddr addr, u64 v
 
 } // Anonymous namespace
 
+#undef CreateEvent
+
 Freezer::Freezer(Core::Timing::CoreTiming& core_timing_, Core::Memory::Memory& memory_)
     : core_timing{core_timing_}, memory{memory_} {
     event = Core::Timing::CreateEvent("MemoryFreezer::FrameCallback",

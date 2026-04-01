@@ -28,6 +28,8 @@
 #include "core/memory.h"
 #include "core/reporter.h"
 
+#undef far
+
 namespace {
 
 std::filesystem::path GetPath(std::string_view type, u64 title_id, std::string_view timestamp) {

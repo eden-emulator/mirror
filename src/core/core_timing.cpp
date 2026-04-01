@@ -38,6 +38,7 @@ constexpr u32 CpuClockTargetMhz(Settings::CpuClock clock) {
     }
 }
 
+#undef CreateEvent
 std::shared_ptr<EventType> CreateEvent(std::string name, TimedCallback&& callback) {
     return std::make_shared<EventType>(std::move(callback), std::move(name));
 }

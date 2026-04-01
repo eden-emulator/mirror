@@ -10,6 +10,8 @@
 namespace Service::PSC::Time {
 class ContextWriter;
 
+#undef GetCurrentTime
+
 class SystemClockCore {
 public:
     explicit SystemClockCore(SteadyClockCore& steady_clock) : m_steady_clock{steady_clock} {}

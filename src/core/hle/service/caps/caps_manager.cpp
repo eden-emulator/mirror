@@ -18,6 +18,8 @@
 #include "core/hle/service/service.h"
 #include "core/hle/service/sm/sm.h"
 
+#undef GetCurrentTime
+
 namespace Service::Capture {
 
 AlbumManager::AlbumManager(Core::System& system_) : system{system_} {}
