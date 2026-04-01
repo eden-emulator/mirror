@@ -4,9 +4,6 @@
 // SPDX-FileCopyrightText: 2019 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#define VMA_IMPLEMENTATION
-#include "video_core/vulkan_common/vma.h"
-
 #include <array>
 #include <cstring>
 #include <type_traits>
@@ -93,3 +90,6 @@ TEST_CASE("BitField", "[common]") {
                        0b11000111,
                    }});
 }
+
+#define VMA_IMPLEMENTATION
+#include "video_core/vulkan_common/vma.h"

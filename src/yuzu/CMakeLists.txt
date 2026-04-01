@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC OFF)
+set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -258,10 +258,6 @@ endif()
 file(GLOB_RECURSE ICONS ${PROJECT_SOURCE_DIR}/dist/icons/*)
 file(GLOB_RECURSE THEMES ${PROJECT_SOURCE_DIR}/dist/qt_themes/*)
 
-file(GLOB QRC_COMPAT_LIST ${PROJECT_BINARY_DIR}/dist/compatibility_list/compatibility_list.qrc)
-file(GLOB_RECURSE QRC_ICONS ${PROJECT_SOURCE_DIR}/dist/icons/*.qrc)
-file(GLOB_RECURSE QRC_THEMES ${PROJECT_SOURCE_DIR}/dist/qt_themes/*.qrc)
-
 if (ENABLE_UPDATE_CHECKER)
     target_compile_definitions(yuzu PUBLIC ENABLE_UPDATE_CHECKER)
 endif()
@@ -334,13 +330,16 @@ if (ENABLE_QT_TRANSLATION)
     qt_add_translation(LANGUAGES_QM ${PROJECT_SOURCE_DIR}/dist/english_plurals/en.ts)
 
     # Build a QRC file from the QM file list
-    set(QRC_LANGUAGES ${CMAKE_CURRENT_BINARY_DIR}/languages.qrc)
-    file(WRITE ${QRC_LANGUAGES} "<RCC><qresource prefix=\"languages\">\n")
+    set(LANGUAGES_QRC ${CMAKE_CURRENT_BINARY_DIR}/languages.qrc)
+    file(WRITE ${LANGUAGES_QRC} "<RCC><qresource prefix=\"languages\">\n")
     foreach (QM ${LANGUAGES_QM})
         get_filename_component(QM_FILE ${QM} NAME)
-        file(APPEND ${QRC_LANGUAGES} "<file>${QM_FILE}</file>\n")
+        file(APPEND ${LANGUAGES_QRC} "<file>${QM_FILE}</file>\n")
     endforeach (QM)
-    file(APPEND ${QRC_LANGUAGES} "</qresource></RCC>")
+    file(APPEND ${LANGUAGES_QRC} "</qresource></RCC>")
+
+    # Add the QRC file to package in all QM files
+    qt_add_resources(LANGUAGES ${LANGUAGES_QRC})
 else()
     set(LANGUAGES)
 endif()
@@ -450,5 +449,7 @@ endif()
 
 # Remember that the linker is incredibly stupid.
 target_link_libraries(yuzu PRIVATE OpenSSL::SSL OpenSSL::Crypto SDL3::SDL3)
+
+set_target_properties(yuzu PROPERTIES UNITY_BUILD OFF)
 
 create_target_directory_groups(yuzu)
