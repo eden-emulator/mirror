@@ -72,6 +72,7 @@ endif()
 # my unity/jumbo build
 option(ENABLE_UNITY_BUILD "Enable Unity/Jumbo build" OFF)
 if(MSVC AND ENABLE_UNITY_BUILD)
+    message(STATUS "Unity build")
     # Unity builds need big objects for MSVC...
     add_compile_options(/bigobj)
 endif()

@@ -361,7 +361,7 @@ target_sources(yuzu PRIVATE
 )
 
 # Add the QRC file to package in all QM files
-qt_add_resources(
+qt_add_resources(yuzu
     ${QRC_COMPAT_LIST}
     ${QRC_ICONS}
     ${QRC_THEMES}
