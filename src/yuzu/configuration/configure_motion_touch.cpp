@@ -37,17 +37,17 @@ CalibrationConfigurationDialog::CalibrationConfigurationDialog(QWidget* parent,
     using namespace InputCommon::CemuhookUDP;
     job = std::make_unique<CalibrationConfigurationJob>(
         host, port,
-        [this](CalibrationConfigurationJob::Status status) {
+        [this](CalibrationConfigurationJob::CalibrationStatus status) {
             QMetaObject::invokeMethod(this, [status, this] {
                 QString text;
                 switch (status) {
-                case CalibrationConfigurationJob::Status::Ready:
+                case CalibrationConfigurationJob::CalibrationStatus::Ready:
                     text = tr("Touch the top left corner <br>of your touchpad.");
                     break;
-                case CalibrationConfigurationJob::Status::Stage1Completed:
+                case CalibrationConfigurationJob::CalibrationStatus::Stage1Completed:
                     text = tr("Now touch the bottom right corner <br>of your touchpad.");
                     break;
-                case CalibrationConfigurationJob::Status::Completed:
+                case CalibrationConfigurationJob::CalibrationStatus::Completed:
                     text = tr("Configuration completed!");
                     break;
                 default:
@@ -55,7 +55,7 @@ CalibrationConfigurationDialog::CalibrationConfigurationDialog(QWidget* parent,
                 }
                 UpdateLabelText(text);
             });
-            if (status == CalibrationConfigurationJob::Status::Completed) {
+            if (status == CalibrationConfigurationJob::CalibrationStatus::Completed) {
                 QMetaObject::invokeMethod(this, [this] { UpdateButtonText(tr("OK")); });
             }
         },

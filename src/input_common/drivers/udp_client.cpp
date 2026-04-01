@@ -600,7 +600,7 @@ void TestCommunication(const std::string& host, u16 port, const std::function<vo
 }
 
 CalibrationConfigurationJob::CalibrationConfigurationJob(
-    const std::string& host, u16 port, std::function<void(Status)> status_callback,
+    const std::string& host, u16 port, std::function<void(CalibrationStatus)> status_callback,
     std::function<void(u16, u16, u16, u16)> data_callback) {
 
     std::thread([=, this] {
@@ -609,13 +609,13 @@ CalibrationConfigurationJob::CalibrationConfigurationJob(
         u16 max_x{};
         u16 max_y{};
 
-        Status current_status{Status::Initialized};
+        auto current_status = CalibrationStatus::Initialized;
         SocketCallback callback{[](Response::Version) {}, [](Response::PortInfo) {}, [&](Response::PadData data) {
             constexpr u16 CALIBRATION_THRESHOLD = 100;
 
-            if (current_status == Status::Initialized) {
+            if (current_status == CalibrationStatus::Initialized) {
                 // Receiving data means the communication is ready now
-                current_status = Status::Ready;
+                current_status = CalibrationStatus::Ready;
                 status_callback(current_status);
             }
             if (data.touch[0].is_active == 0) {
@@ -624,9 +624,9 @@ CalibrationConfigurationJob::CalibrationConfigurationJob(
             LOG_DEBUG(Input, "Current touch: {} {}", data.touch[0].x, data.touch[0].y);
             min_x = (std::min)(min_x, u16(data.touch[0].x));
             min_y = (std::min)(min_y, u16(data.touch[0].y));
-            if (current_status == Status::Ready) {
+            if (current_status == CalibrationStatus::Ready) {
                 // First touch - min data (min_x/min_y)
-                current_status = Status::Stage1Completed;
+                current_status = CalibrationStatus::Stage1Completed;
                 status_callback(current_status);
             }
             if (data.touch[0].x - min_x > CALIBRATION_THRESHOLD &&
@@ -635,7 +635,7 @@ CalibrationConfigurationJob::CalibrationConfigurationJob(
                 // configuration
                 max_x = data.touch[0].x;
                 max_y = data.touch[0].y;
-                current_status = Status::Completed;
+                current_status = CalibrationStatus::Completed;
                 data_callback(min_x, min_y, max_x, max_y);
                 status_callback(current_status);
 

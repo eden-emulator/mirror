@@ -832,7 +832,7 @@ void Room::RoomImpl::HandleProxyPacket(const ENetEvent* event) {
 
     in_packet.IgnoreBytes(sizeof(u8)); // Protocol
 
-    bool broadcast;
+    bool broadcast = false;
     in_packet.Read(broadcast); // Broadcast
 
     Packet out_packet;
@@ -886,7 +886,7 @@ void Room::RoomImpl::HandleLdnPacket(const ENetEvent* event) {
     IPv4Address remote_ip;
     in_packet.Read(remote_ip); // Remote IP
 
-    bool broadcast;
+    bool broadcast = false;
     in_packet.Read(broadcast); // Broadcast
 
     Packet out_packet;
