@@ -37,3 +37,8 @@ if (NOT MSVC)
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-parameter>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>)
 endif()
+
+if (PLATFORM_PS4)
+    target_link_libraries(tests PRIVATE SceVideoOut SceAudioOut ScePad SceSystemService ps4sup)
+    create_ps4_eboot(tests tests IV0000-BREW00090_00-DYNARMICTS000000)
+endif()
