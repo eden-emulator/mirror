@@ -263,6 +263,7 @@ endif()
 file(GLOB COMPAT_LIST
      ${PROJECT_BINARY_DIR}/dist/compatibility_list/compatibility_list.qrc
      ${PROJECT_BINARY_DIR}/dist/compatibility_list/compatibility_list.json)
+
 file(GLOB_RECURSE ICONS ${PROJECT_SOURCE_DIR}/dist/icons/*)
 file(GLOB_RECURSE THEMES ${PROJECT_SOURCE_DIR}/dist/qt_themes/*)
 

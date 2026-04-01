@@ -7,6 +7,11 @@
 
 #include "video_core/vulkan_common/vulkan.h"
 
+// #if !defined(VMA_IMPLEMENTATION) && !defined(VMA_IMPLEMENTED)
+// #define VMA_IMPLEMENTED
+// #define VMA_IMPLEMENTATION
+// #endif
+
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 
@@ -19,3 +24,5 @@
 #ifdef _MSC_VER
 #pragma warning( pop )
 #endif
+
+// #undef VMA_IMPLEMENTATION

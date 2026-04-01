@@ -9,7 +9,7 @@ include_directories(.)
 
 if (ENABLE_UNITY_BUILD)
     set(CMAKE_UNITY_BUILD ON)
-    set(CMAKE_UNITY_BUILD_BATCH_SIZE 5000)
+    set(CMAKE_UNITY_BUILD_BATCH_SIZE 100)
 endif()
 
 # Dynarmic
