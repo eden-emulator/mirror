@@ -82,8 +82,6 @@ private:
 
     std::thread thread;
     mach_port_t server_port;
-
-    void MessagePump();
 };
 
 MachHandler::MachHandler() {
@@ -97,37 +95,35 @@ MachHandler::MachHandler() {
     KCHECK(mach_port_request_notification(mach_task_self(), server_port, MACH_NOTIFY_PORT_DESTROYED, 0, server_port, MACH_MSG_TYPE_MAKE_SEND_ONCE, &prev));
 #undef KCHECK
 
-    thread = std::thread(&MachHandler::MessagePump, this);
+    thread = std::thread([this] {
+        mach_msg_return_t mr;
+        MachMessage request;
+        MachMessage reply;
+
+        while (true) {
+            mr = mach_msg(&request.head, MACH_RCV_MSG | MACH_RCV_LARGE, 0, sizeof(request), server_port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+            if (mr != MACH_MSG_SUCCESS) {
+                fmt::print(stderr, "dynarmic: macOS MachHandler: Failed to receive mach message. error: {:#08x} ({})\n", mr, mach_error_string(mr));
+                return;
+            }
+
+            if (!mach_exc_server(&request.head, &reply.head)) {
+                fmt::print(stderr, "dynarmic: macOS MachHandler: Unexpected mach message\n");
+                return;
+            }
+
+            mr = mach_msg(&reply.head, MACH_SEND_MSG, reply.head.msgh_size, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+            if (mr != MACH_MSG_SUCCESS) {
+                fmt::print(stderr, "dynarmic: macOS MachHandler: Failed to send mach message. error: {:#08x} ({})\n", mr, mach_error_string(mr));
+                return;
+            }
+        }
+    });
     thread.detach();
 }
 
 MachHandler::~MachHandler() {
     mach_port_deallocate(mach_task_self(), server_port);
-}
-
-void MachHandler::MessagePump() {
-    mach_msg_return_t mr;
-    MachMessage request;
-    MachMessage reply;
-
-    while (true) {
-        mr = mach_msg(&request.head, MACH_RCV_MSG | MACH_RCV_LARGE, 0, sizeof(request), server_port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
-        if (mr != MACH_MSG_SUCCESS) {
-            fmt::print(stderr, "dynarmic: macOS MachHandler: Failed to receive mach message. error: {:#08x} ({})\n", mr, mach_error_string(mr));
-            return;
-        }
-
-        if (!mach_exc_server(&request.head, &reply.head)) {
-            fmt::print(stderr, "dynarmic: macOS MachHandler: Unexpected mach message\n");
-            return;
-        }
-
-        mr = mach_msg(&reply.head, MACH_SEND_MSG, reply.head.msgh_size, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
-        if (mr != MACH_MSG_SUCCESS) {
-            fmt::print(stderr, "dynarmic: macOS MachHandler: Failed to send mach message. error: {:#08x} ({})\n", mr, mach_error_string(mr));
-            return;
-        }
-    }
 }
 
 #if defined(ARCHITECTURE_x86_64)

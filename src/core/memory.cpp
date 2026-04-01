@@ -16,7 +16,6 @@
 #include "common/assert.h"
 #include "common/atomic_ops.h"
 #include "common/common_types.h"
-#include "common/heap_tracker.h"
 #include "common/logging.h"
 #include "common/page_table.h"
 #include "common/scope_exit.h"
@@ -55,36 +54,24 @@ struct Memory::Impl {
         } else {
             current_page_table->fastmem_arena = nullptr;
         }
-
-#ifdef __ANDROID__
-        heap_tracker.emplace(system.DeviceMemory().buffer);
-        host_buffer = std::addressof(*heap_tracker);
-#else
         host_buffer = std::addressof(system.DeviceMemory().buffer);
-#endif
     }
 
-    void MapMemoryRegion(Common::PageTable& page_table, Common::ProcessAddress base, u64 size,
-                         Common::PhysicalAddress target, Common::MemoryPermission perms,
-                         bool separate_heap) {
+    void MapMemoryRegion(Common::PageTable& page_table, Common::ProcessAddress base, u64 size, Common::PhysicalAddress target, Common::MemoryPermission perms, bool separate_heap) {
         ASSERT_MSG((size & YUZU_PAGEMASK) == 0, "non-page aligned size: {:016X}", size);
         ASSERT_MSG((base & YUZU_PAGEMASK) == 0, "non-page aligned base: {:016X}", GetInteger(base));
-        ASSERT_MSG(target >= DramMemoryMap::Base, "Out of bounds target: {:016X}",
-                   GetInteger(target));
-        MapPages(page_table, base / YUZU_PAGESIZE, size / YUZU_PAGESIZE, target,
-                 Common::PageType::Memory);
+        ASSERT_MSG(target >= DramMemoryMap::Base, "Out of bounds target: {:016X}", GetInteger(target));
+        MapPages(page_table, base / YUZU_PAGESIZE, size / YUZU_PAGESIZE, target, Common::PageType::Memory);
 
         if (current_page_table->fastmem_arena) {
             host_buffer->Map(GetInteger(base), GetInteger(target) - DramMemoryMap::Base, size, perms, separate_heap);
         }
     }
 
-    void UnmapRegion(Common::PageTable& page_table, Common::ProcessAddress base, u64 size,
-                     bool separate_heap) {
+    void UnmapRegion(Common::PageTable& page_table, Common::ProcessAddress base, u64 size, bool separate_heap) {
         ASSERT_MSG((size & YUZU_PAGEMASK) == 0, "non-page aligned size: {:016X}", size);
         ASSERT_MSG((base & YUZU_PAGEMASK) == 0, "non-page aligned base: {:016X}", GetInteger(base));
-        MapPages(page_table, base / YUZU_PAGESIZE, size / YUZU_PAGESIZE, 0,
-                 Common::PageType::Unmapped);
+        MapPages(page_table, base / YUZU_PAGESIZE, size / YUZU_PAGESIZE, 0, Common::PageType::Unmapped);
 
         if (current_page_table->fastmem_arena) {
             host_buffer->Unmap(GetInteger(base), size, separate_heap);
@@ -767,12 +754,7 @@ struct Memory::Impl {
     std::array<Common::ScratchBuffer<u32>, Core::Hardware::NUM_CPU_CORES> scratch_buffers{};
     std::span<Core::GPUDirtyMemoryManager> gpu_dirty_managers;
     std::mutex sys_core_guard;
-#ifdef __ANDROID__
-    std::optional<Common::HeapTracker> heap_tracker;
-    Common::HeapTracker* host_buffer{};
-#else
     Common::HostMemory* host_buffer{};
-#endif
 };
 
 Memory::Memory(Core::System& system_) : system{system_} {
@@ -965,8 +947,7 @@ bool Memory::InvalidateNCE(Common::ProcessAddress vaddr, size_t size) {
     u8* const ptr = impl->GetPointerImpl(
         GetInteger(vaddr),
         [&] {
-            LOG_ERROR(HW_Memory, "Unmapped InvalidateNCE for {} bytes @ {:#x}", size,
-                      GetInteger(vaddr));
+            LOG_ERROR(HW_Memory, "Unmapped InvalidateNCE for {} bytes @ {:#x}", size, GetInteger(vaddr));
             mapped = false;
         },
         [&] { rasterizer = true; });
