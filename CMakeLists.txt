@@ -73,7 +73,15 @@ endif()
 option(ENABLE_UNITY_BUILD "Enable Unity/Jumbo build" OFF)
 
 # 0 compiles all files in
-set(UNITY_BATCH_SIZE 0 CACHE STRING "Unity build batch size")
+# not ideal, but if you're going gung-ho with a unity build, expect failure
+# MSVC physically can't compile that many files into one TU, so we limit it to 100.
+if (MSVC)
+    set(_unity_default 100)
+else()
+    set(_unity_default 0)
+endif()
+
+set(UNITY_BATCH_SIZE ${_unity_default} CACHE STRING "Unity build batch size")
 
 if(MSVC AND ENABLE_UNITY_BUILD)
     message(STATUS "Unity build")
