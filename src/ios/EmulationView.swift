@@ -153,7 +153,6 @@ struct ControllerView: View {
                 motion.valueChangedHandler = { motion in
                     // Get current time
                     let currentTimestamp = Date().timeIntervalSince1970
-                    let deltaTimestamp = Int32((currentTimestamp - lastTimestamp) * 1000) // Difference in milliseconds
 
                     // Update last timestamp
                     lastTimestamp = currentTimestamp

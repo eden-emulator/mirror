@@ -21,11 +21,11 @@ struct EmulationGame : Comparable, Hashable, Identifiable {
         hasher.combine(title)
     }
 
-    static func < (lhs: EmulationGame, rhs: Yuzu) -> Bool {
+    static func < (lhs: EmulationGame, rhs: EmulationGame) -> Bool {
         lhs.title < rhs.title
     }
 
-    static func == (lhs: EmulationGame, rhs: Yuzu) -> Bool {
+    static func == (lhs: EmulationGame, rhs: EmulationGame) -> Bool {
         lhs.title == rhs.title
     }
 }

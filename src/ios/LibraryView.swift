@@ -32,7 +32,7 @@ struct LibraryView: View {
                 if doesitexist.0, doesitexist.1 {
                     HomeView(core: core)
                 } else {
-                    let (doesKeyExist, doesProdExist) = doeskeysexist()
+                    let (doesKeyExist, doesProdExist) = doesKeysExist()
                     ScrollView {
                         Text("You Are Missing These Files:")
                             .font(.headline)
@@ -73,7 +73,7 @@ struct LibraryView: View {
                         }
                     }
                     .refreshable {
-                        doesitexist = doeskeysexist()
+                        doesitexist = doesKeysExist()
                     }
 
 
@@ -116,7 +116,7 @@ struct LibraryView: View {
                 }
             })
             .onAppear() {
-                doesitexist = doeskeysexist()
+                doesitexist = doesKeysExist()
             }
             .navigationBarTitle("Library", displayMode: .inline)
             .toolbar {
@@ -155,36 +155,30 @@ struct LibraryView: View {
         }
     }
 
-
-    func doeskeysexist() -> (Bool, Bool) {
+    func doesKeysExist() -> (Bool, Bool) {
         var doesprodexist = false
         var doestitleexist = false
-
-
         let title = core.root.appendingPathComponent("keys").appendingPathComponent("title.keys")
         let prod = core.root.appendingPathComponent("keys").appendingPathComponent("prod.keys")
         let fileManager = FileManager.default
-        let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-
         if fileManager.fileExists(atPath: prod.path) {
             doesprodexist = true
         } else {
             print("File does not exist")
         }
-
         if fileManager.fileExists(atPath: title.path) {
             doestitleexist = true
         } else {
             print("File does not exist")
         }
-
         return (doestitleexist, doesprodexist)
     }
 }
 
 func getDeveloperNames() -> String {
-    guard let s = infoDictionary?["CFBundleIdentifier"] as? String else {
-        return "Unknown"
-    }
-    return s
+    // guard let s = infoDictionary?["CFBundleIdentifier"] as? String else {
+    //     return "Unknown"
+    // }
+    // return s
+    return "what"
 }
