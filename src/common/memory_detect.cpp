@@ -46,8 +46,6 @@ static MemoryInfo Detect() {
     sysctlbyname("vm.swapusage", &vmusage, &sizeof_vmusage, nullptr, 0);
     mem_info.TotalPhysicalMemory = ramsize;
     mem_info.TotalSwapMemory = vmusage.xsu_total;
-#elif defined(__OPENORBIS__)
-    mem_info.TotalPhysicalMemory = mem_info.TotalSwapMemory = 0;
 #elif defined(__FreeBSD__)
     u_long physmem, swap_total;
     std::size_t sizeof_u_long = sizeof(u_long);
