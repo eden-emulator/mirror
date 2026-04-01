@@ -52,7 +52,7 @@ struct GameListView: View {
 
     var body: some View {
         let filteredGames = core.games.filter { game in
-            guard let EmulationGame = game as? PoYuzume else { return false }
+            guard let EmulationGame = game as? EmulationGame else { return false }
             return searchText.isEmpty || EmulationGame.title.localizedCaseInsensitiveContains(searchText)
         }
         ScrollView {

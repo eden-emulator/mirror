@@ -18,10 +18,10 @@ class KeyboardHostingController<Content: View>: UIHostingController<Content> {
 
     override var keyCommands: [UIKeyCommand]? {
         return [
-            UIKeyCommand(input: UIKeyCommand.inputUpArrow, modifierFlags: [], action: #selector(handleKeyCommand)),
-            UIKeyCommand(input: UIKeyCommand.inputDownArrow, modifierFlags: [], action: #selector(handleKeyCommand)),
-            UIKeyCommand(input: UIKeyCommand.inputLeftArrow, modifierFlags: [], action: #selector(handleKeyCommand)),
-            UIKeyCommand(input: UIKeyCommand.inputRightArrow, modifierFlags: [], action: #selector(handleKeyCommand)),
+            UIKeyCommand(input: UIKeyInputUpArrow, modifierFlags: [], action: #selector(handleKeyCommand)),
+            UIKeyCommand(input: UIKeyInputDownArrow, modifierFlags: [], action: #selector(handleKeyCommand)),
+            UIKeyCommand(input: UIKeyInputLeftArrow, modifierFlags: [], action: #selector(handleKeyCommand)),
+            UIKeyCommand(input: UIKeyInputRightArrow, modifierFlags: [], action: #selector(handleKeyCommand)),
             UIKeyCommand(input: "w", modifierFlags: [], action: #selector(handleKeyCommand)),
             UIKeyCommand(input: "s", modifierFlags: [], action: #selector(handleKeyCommand)),
             UIKeyCommand(input: "a", modifierFlags: [], action: #selector(handleKeyCommand)),
@@ -32,13 +32,13 @@ class KeyboardHostingController<Content: View>: UIHostingController<Content> {
     @objc func handleKeyCommand(_ sender: UIKeyCommand) {
         if let input = sender.input {
             switch input {
-            case UIKeyCommand.inputUpArrow:
+            case UIKeyInputUpArrow:
                 print("Up Arrow Pressed")
-            case UIKeyCommand.inputDownArrow:
+            case UIKeyInputDownArrow:
                 print("Down Arrow Pressed")
-            case UIKeyCommand.inputLeftArrow:
+            case UIKeyInputLeftArrow:
                 print("Left Arrow Pressed")
-            case UIKeyCommand.inputRightArrow:
+            case UIKeyInputRightArrow:
                 print("Right Arrow Pressed")
             case "w":
                 print("W Key Pressed")
