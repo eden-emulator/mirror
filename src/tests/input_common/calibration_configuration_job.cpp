@@ -15,7 +15,8 @@
 #include "input_common/drivers/udp_client.h"
 #include "input_common/helpers/udp_protocol.h"
 
-
+// PS4 doesn't support cemuhook
+#ifndef __OPENORBIS__
 class FakeCemuhookServer {
 public:
     FakeCemuhookServer()
@@ -132,3 +133,4 @@ TEST_CASE("CalibrationConfigurationJob completed", "[input_common]") {
     REQUIRE(max_x == 200);
     REQUIRE(max_y == 200);
 }
+#endif
