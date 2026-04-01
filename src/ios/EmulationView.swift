@@ -488,10 +488,10 @@ struct EmulationView: View {
             viewModel.customButtonTapped()
         }
         .navigationBarBackButtonHidden(true)
-        .introspect(.tabView, on: .iOS(.v13, .v14, .v15, .v16, .v17)) { (tabBarController) in
-            tabBarController.tabBar.isHidden = true
-            uiTabBarController = tabBarController
-        }
+        // .introspect(.tabView, on: .iOS(.v13, .v14, .v15, .v16, .v17)) { (tabBarController) in
+        //     tabBarController.tabBar.isHidden = true
+        //     uiTabBarController = tabBarController
+        // }
     }
 
     private func startPollingFirstFrameShowed() {
