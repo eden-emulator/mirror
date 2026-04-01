@@ -4,7 +4,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import SwiftUI
-import SwiftUIJoystick
 
 
 public struct Joystick: View {
