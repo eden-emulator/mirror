@@ -10,6 +10,12 @@
 #include "common/fs/path_util.h"
 #include "core/file_sys/vfs/vfs.h"
 
+#undef CreateFile
+#undef DeleteFile
+#undef CreateDirectory
+#undef CopyFile
+#undef MoveFile
+
 namespace FileSys {
 
 VfsFilesystem::VfsFilesystem(VirtualDir root_) : root(std::move(root_)) {}

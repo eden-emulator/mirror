@@ -32,6 +32,10 @@
 #include "core/hle/service/server_manager.h"
 #include "core/loader/loader.h"
 
+#undef CreateFile
+#undef DeleteFile
+#undef CreateDirectory
+
 namespace Service::FileSystem {
 
 static FileSys::VirtualDir GetDirectoryRelativeWrapped(FileSys::VirtualDir base,

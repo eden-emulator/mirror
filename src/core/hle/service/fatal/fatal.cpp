@@ -19,6 +19,8 @@
 #include "core/hle/service/server_manager.h"
 #include "core/reporter.h"
 
+#undef far
+
 namespace Service::Fatal {
 
 Module::Interface::Interface(std::shared_ptr<Module> module_, Core::System& system_,

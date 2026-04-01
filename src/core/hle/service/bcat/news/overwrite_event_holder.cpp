@@ -6,6 +6,8 @@
 
 namespace Service::News {
 
+#undef CreateEvent
+
 IOverwriteEventHolder::IOverwriteEventHolder(Core::System& system_)
     : ServiceFramework{system_, "IOverwriteEventHolder"}, service_context{system_,
                                                                           "IOverwriteEventHolder"} {

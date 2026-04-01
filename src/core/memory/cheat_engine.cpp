@@ -21,6 +21,8 @@
 #include "hid_core/resource_manager.h"
 #include "hid_core/resources/npad/npad.h"
 
+#undef CreateEvent
+
 namespace Core::Memory {
 namespace {
 constexpr auto CHEAT_ENGINE_NS = std::chrono::nanoseconds{1000000000 / 12};
