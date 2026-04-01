@@ -23,16 +23,11 @@ struct Core : Comparable, Hashable {
             let fileManager = FileManager.default
             let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
             let destinationURL = documentsDirectory.appendingPathComponent("nand/system/Contents/registered")
-
-
             if !fileManager.fileExists(atPath: destinationURL.path) {
                 try fileManager.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
             }
-
-
-            try Zip.unzipFile(fileURL, destination: destinationURL, overwrite: true, password: nil)
+            //try Zip.unzipFile(fileURL, destination: destinationURL, overwrite: true, password: nil)
             print("File unzipped successfully to \(destinationURL.path)")
-
         } catch {
             print("Failed to unzip file: \(error)")
         }

@@ -19,13 +19,13 @@ public struct Joystick: View {
 
     let appui = AppUI.shared
 
-    @ObservedObject public var joystickMonitor = JoystickMonitor()
+    @ObservedObject public var joystickMonitor = SwiftUIJoystick.JoystickMonitor()
     private let dragDiameter: CGFloat = 160
-    private let shape: JoystickShape = .circle
+    private let shape: SwiftUIJoystick.JoystickShape = .circle
 
     public var body: some View {
         VStack{
-            JoystickBuilder(
+            SwiftUIJoystick.JoystickBuilder(
                 monitor: self.joystickMonitor,
                 width: self.dragDiameter,
                 shape: .circle,
