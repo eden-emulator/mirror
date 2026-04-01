@@ -954,22 +954,7 @@ bool Memory::InvalidateNCE(Common::ProcessAddress vaddr, size_t size) {
     if (rasterizer) {
         impl->InvalidateGPUMemory(ptr, size);
     }
-
-#ifdef __ANDROID__
-    if (!rasterizer && mapped) {
-        impl->host_buffer->DeferredMapSeparateHeap(GetInteger(vaddr));
-    }
-#endif
-
     return mapped && ptr != nullptr;
-}
-
-bool Memory::InvalidateSeparateHeap(void* fault_address) {
-#ifdef __ANDROID__
-    return impl->host_buffer->DeferredMapSeparateHeap(static_cast<u8*>(fault_address));
-#else
-    return false;
-#endif
 }
 
 } // namespace Core::Memory
