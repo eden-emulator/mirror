@@ -29,6 +29,9 @@ add_executable(eden-ios
     GameButtonView.swift
     EmulationScreenView.swift
     GameListView.swift
+
+    # Extensions
+    SwiftUIJoystick.swift
 )
 
 set(MACOSX_BUNDLE_GUI_IDENTIFIER "dev.eden-emu.eden")
