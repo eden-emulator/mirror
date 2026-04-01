@@ -17,6 +17,7 @@
 #include "common/settings.h"
 #include "common/settings_enums.h"
 #include "common/string_util.h"
+#include "common/virtual_buffer.h"
 #include "core/core.h"
 #include "core/core_timing.h"
 #include "core/cpu_manager.h"
