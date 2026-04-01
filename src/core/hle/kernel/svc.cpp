@@ -13,6 +13,10 @@
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/svc.h"
 
+#undef OutputDebugString
+#undef GetObject
+#undef CreateProcess
+
 namespace Kernel::Svc {
 
 static uint32_t GetArg32(std::span<uint64_t, 8> args, int n) {
