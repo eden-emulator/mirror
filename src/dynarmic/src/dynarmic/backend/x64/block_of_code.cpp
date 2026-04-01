@@ -7,6 +7,7 @@
  */
 
 #include "dynarmic/backend/x64/block_of_code.h"
+#include "xbyak/xbyak.h"
 
 #ifdef _WIN32
 #    define WIN32_LEAN_AND_MEAN
