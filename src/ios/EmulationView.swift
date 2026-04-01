@@ -8,8 +8,6 @@ import SwiftUI
 import Foundation
 import GameController
 import UIKit
-import SwiftUIIntrospect
-import SwiftUIJoystick
 import Metal
 
 struct MetalView: UIViewRepresentable {

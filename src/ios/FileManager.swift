@@ -6,7 +6,6 @@
 import SwiftUI
 import Foundation
 import UIKit
-import Zip
 
 struct Core : Comparable, Hashable {
 
