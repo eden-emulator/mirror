@@ -236,7 +236,6 @@ struct ColorConsoleBackend final : public Backend {
 #endif
 };
 
-#ifndef __OPENORBIS__
 /// @brief Backend that writes to a file passed into the constructor
 struct FileBackend final : public Backend {
     explicit FileBackend(const std::filesystem::path filename) noexcept {
@@ -343,10 +342,8 @@ struct Impl {
     template<typename F>
     void ForEachBackend(F&& lambda) noexcept {
         lambda(static_cast<Backend&>(color_console_backend));
-#ifndef __OPENORBIS__
         if (file_backend)
             lambda(static_cast<Backend&>(*file_backend));
-#endif
 #ifdef _WIN32
         lambda(static_cast<Backend&>(debugger_backend));
 #endif
@@ -357,9 +354,7 @@ struct Impl {
 
     Filter filter;
     ColorConsoleBackend color_console_backend{};
-#ifndef __OPENORBIS__
     std::optional<FileBackend> file_backend;
-#endif
 #ifdef _WIN32
     DebuggerBackend debugger_backend{};
 #endif
@@ -396,12 +391,10 @@ void Initialize() {
     } else {
         logging_instance.emplace();
         logging_instance->filter.ParseFilterString(Settings::values.log_filter.GetValue());
-#ifndef __OPENORBIS__
         using namespace Common::FS;
         const auto& log_dir = GetEdenPath(EdenPath::LogDir);
         void(CreateDir(log_dir));
         logging_instance->file_backend.emplace(log_dir / LOG_FILE);
-#endif
     }
 }
 
