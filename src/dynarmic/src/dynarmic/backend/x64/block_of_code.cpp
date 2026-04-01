@@ -7,6 +7,7 @@
  */
 
 #include "dynarmic/backend/x64/block_of_code.h"
+#include "xbyak/xbyak.h"
 
 #ifdef _WIN32
 #    define WIN32_LEAN_AND_MEAN
@@ -83,13 +84,12 @@ public:
 
     bool useProtect() const override { return false; }
 #else
-    static constexpr size_t DYNARMIC_PAGE_SIZE = 4096;
-
     // Can't subclass Xbyak::MmapAllocator because it is not a pure interface
     // and doesn't expose its construtor
     uint8_t* alloc(size_t size) override {
+        auto const page_size = Xbyak::inner::getPageSize();
         // Waste a page to store the size
-        size += DYNARMIC_PAGE_SIZE;
+        size += page_size;
 
         int mode = MAP_PRIVATE;
 #if defined(MAP_ANONYMOUS)
@@ -118,13 +118,14 @@ public:
 #endif
         }
         std::memcpy(p, &size, sizeof(size_t));
-        return static_cast<uint8_t*>(p) + DYNARMIC_PAGE_SIZE;
+        return static_cast<uint8_t*>(p) + page_size;
     }
 
     void free(uint8_t* p) override {
+        auto const page_size = Xbyak::inner::getPageSize();
         size_t size;
-        std::memcpy(&size, p - DYNARMIC_PAGE_SIZE, sizeof(size_t));
-        munmap(p - DYNARMIC_PAGE_SIZE, size);
+        std::memcpy(&size, p - page_size, sizeof(size_t));
+        munmap(p - page_size, size);
     }
 
 #    ifdef DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT

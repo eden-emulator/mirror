@@ -40,9 +40,10 @@ EmitContext::EmitContext(RegAlloc& reg_alloc, IR::Block& block, boost::container
 
 EmitContext::~EmitContext() = default;
 
-EmitX64::EmitX64(BlockOfCode& code)
-        : code(code) {
+EmitX64::EmitX64(BlockOfCode& code) : code(code) {
+#ifndef __OPENORBIS__
     exception_handler.Register(code);
+#endif
 }
 
 EmitX64::~EmitX64() = default;
