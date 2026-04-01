@@ -163,7 +163,7 @@ private:
 /// An async job allowing configuration of the touchpad calibration.
 class CalibrationConfigurationJob {
 public:
-    enum class Status {
+    enum class CalibrationStatus {
         Initialized,
         Ready,
         Stage1Completed,
@@ -176,7 +176,7 @@ public:
      * @param data_callback Called when calibration data is ready
      */
     explicit CalibrationConfigurationJob(const std::string& host, u16 port,
-                                         std::function<void(Status)> status_callback,
+                                         std::function<void(CalibrationStatus)> status_callback,
                                          std::function<void(u16, u16, u16, u16)> data_callback);
     ~CalibrationConfigurationJob();
     void Stop();

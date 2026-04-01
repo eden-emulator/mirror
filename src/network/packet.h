@@ -119,26 +119,21 @@ private:
 
 template <typename T>
 Packet& Packet::Read(std::vector<T>& out_data) {
-    // First extract the size
     u32 size = 0;
     Read(size);
     out_data.resize(size);
 
-    // Then extract the data
-    for (std::size_t i = 0; i < out_data.size(); ++i) {
-        T character;
-        Read(character);
-        out_data[i] = character;
+    for (auto& elem : out_data) {
+        Read(elem);
     }
+
     return *this;
 }
 
 template <typename T, std::size_t S>
 Packet& Packet::Read(std::array<T, S>& out_data) {
-    for (std::size_t i = 0; i < out_data.size(); ++i) {
-        T character;
-        Read(character);
-        out_data[i] = character;
+    for (auto& elem : out_data) {
+        Read(elem);
     }
     return *this;
 }

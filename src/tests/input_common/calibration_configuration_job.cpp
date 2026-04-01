@@ -103,7 +103,7 @@ TEST_CASE("CalibrationConfigurationJob completed", "[input_common]") {
                     .y = 200,
                 }});
 
-    InputCommon::CemuhookUDP::CalibrationConfigurationJob::Status status{};
+    InputCommon::CemuhookUDP::CalibrationConfigurationJob::CalibrationStatus status{};
     u16 min_x{};
     u16 min_y{};
     u16 max_x{};
@@ -111,10 +111,10 @@ TEST_CASE("CalibrationConfigurationJob completed", "[input_common]") {
     InputCommon::CemuhookUDP::CalibrationConfigurationJob job(
         server.GetHost(), server.GetPort(),
         [&status,
-         &complete_event](InputCommon::CemuhookUDP::CalibrationConfigurationJob::Status status_) {
+         &complete_event](InputCommon::CemuhookUDP::CalibrationConfigurationJob::CalibrationStatus status_) {
             status = status_;
             if (status ==
-                InputCommon::CemuhookUDP::CalibrationConfigurationJob::Status::Completed) {
+                InputCommon::CemuhookUDP::CalibrationConfigurationJob::CalibrationStatus::Completed) {
                 complete_event.Set();
             }
         },
@@ -126,7 +126,7 @@ TEST_CASE("CalibrationConfigurationJob completed", "[input_common]") {
         });
 
     complete_event.WaitUntil(std::chrono::system_clock::now() + std::chrono::seconds(10));
-    REQUIRE(status == InputCommon::CemuhookUDP::CalibrationConfigurationJob::Status::Completed);
+    REQUIRE(status == InputCommon::CemuhookUDP::CalibrationConfigurationJob::CalibrationStatus::Completed);
     REQUIRE(min_x == 0);
     REQUIRE(min_y == 0);
     REQUIRE(max_x == 200);
