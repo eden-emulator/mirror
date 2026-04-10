@@ -196,6 +196,7 @@ int main(int argc, char** argv) {
     setvbuf(stderr, nullptr, _IONBF, 0);
 
     sceUserServiceInitialize(nullptr);
+    Common::InitSwap();
 #endif
 
     Common::Log::Initialize();
