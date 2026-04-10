@@ -205,6 +205,7 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     setvbuf(stderr, nullptr, _IONBF, 0);
 
     sceUserServiceInitialize(nullptr);
+    Common::InitSwap();
 #endif
 
     Common::Log::Initialize();
