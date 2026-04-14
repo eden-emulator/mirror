@@ -10,7 +10,7 @@
 #include "common/bit_util.h"
 #include "common/fs/file.h"
 #include "common/fs/fs.h"
-#include "common/fs_types.h"
+#include "common/fs/fs_types.h"
 #ifdef __ANDROID__
 #include "common/fs/fs_android.h"
 #endif
@@ -302,9 +302,10 @@ static int PlatformMapReadOnly(IOFile& io, const char* path) {
             close(io.mmap_fd);
             io.mmap_fd = -1;
         } else {
+            using namespace Common::Literals;
             // For small files it is acceptable to use a full readahead
             // See https://github.com/torvalds/linux/blob/e80d033851b3bc94c3d254ac66660ddd0a49d72c/include/linux/pagemap.h#L1392
-            if (st.st_size >= 256_MiB) {
+            if (u64(st.st_size) >= 256_MiB) {
                 posix_madvise(io.mmap_base, io.mmap_size, POSIX_MADV_RANDOM);
             } else {
                 posix_madvise(io.mmap_base, io.mmap_size, POSIX_MADV_SEQUENTIAL);
