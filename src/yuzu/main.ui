@@ -233,7 +233,7 @@
     </property>
     <addaction name="action_Report_Compatibility"/>
     <addaction name="action_Open_Mods_Page"/>
-    <addaction name="action_Open_FAQ"/>
+    <addaction name="action_Open_UserHandbook"/>
     <addaction name="separator"/>
     <addaction name="action_About"/>
     <addaction name="action_Eden_Dependencies"/>
@@ -406,9 +406,9 @@
     <string>Open &amp;Mods Page</string>
    </property>
   </action>
-  <action name="action_Open_FAQ">
+  <action name="action_Open_UserHandbook">
    <property name="text">
-    <string>&amp;FAQ</string>
+    <string>&amp;User Handbook</string>
    </property>
   </action>
   <action name="action_Capture_Screenshot">

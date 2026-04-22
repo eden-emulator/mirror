@@ -336,7 +336,7 @@ private slots:
     void OnPrepareForSleep(bool prepare_sleep);
     void OnMenuReportCompatibility();
     void OnOpenModsPage();
-    void OnOpenFAQ();
+    void OnOpenUserHandbook();
 
     /// Called whenever a user selects a game in the game list widget.
     void OnGameListLoadFile(QString game_path, u64 program_id);
