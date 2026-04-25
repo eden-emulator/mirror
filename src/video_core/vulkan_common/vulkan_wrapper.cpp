@@ -246,6 +246,7 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdSetDescriptorBufferOffsetsEXT);
     X(vkWaitForFences);
     X(vkWaitSemaphores);
+    X(vkGetDeviceFaultInfoEXT);
 
     // Support for timeline semaphores is mandatory in Vulkan 1.2
     if (!dld.vkGetSemaphoreCounterValue) {
