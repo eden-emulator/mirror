@@ -867,7 +867,7 @@
     <string name="loader_error_file_not_found">ROM file does not exist</string>
 
     <string name="loader_requires_firmware">Game Requires Firmware</string>
-    <string name="loader_requires_firmware_description"><![CDATA[This game may require firmware to function properly, and you don't have any installed. Please install firmware before launching, or press \"OK\" to launch anyways.]]></string>
+    <string name="loader_requires_firmware_description"><![CDATA[This game may require firmware to function properly, and you don\'t have any installed. Please install firmware before launching, or press \"OK\" to launch anyways.]]></string>
 
     <!-- Intent Launch strings -->
     <string name="searching_for_game">Searching for game...</string>
