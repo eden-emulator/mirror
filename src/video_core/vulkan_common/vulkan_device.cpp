@@ -843,6 +843,7 @@ void Device::ReportLoss() const {
                 s += fmt::format("{:02x} ", vendor_binary_data[i]);
             s += "\n";
         }
+        LOG_INFO(Render_Vulkan, "{}", s);
     }
 
     // Wait for the log to flush and for Nsight Aftermath to dump the results
