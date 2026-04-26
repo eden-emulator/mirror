@@ -835,7 +835,7 @@ void Device::ReportLoss() const {
         if (vendor_info.size() > 0) {
             s += "vendor-info\n";
             for (auto const& vi : vendor_info)
-                s += fmt::format("{:#x}-{:#x}: {}\n", vi.vendorFaultCode, vi.vendorFaultCode, vi.description);
+                s += fmt::format("{:#x}-{:#x}: {}\n", vi.vendorFaultCode, vi.vendorFaultData, vi.description);
         }
         if (vendor_binary_data.size() > 0) {
             s += "vendor-binary-data\n";
