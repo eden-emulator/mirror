@@ -46,12 +46,20 @@ object SoftwareKeyboard {
         // There isn't a good way to know that the IMM is dismissed, so poll every 500ms to submit inline keyboard result.
         val handler = Handler(Looper.myLooper()!!)
         val delayMs = 500
+        var keyboardEverShown = false
         handler.postDelayed(
             object : Runnable {
                 override fun run() {
                     val insets = ViewCompat.getRootWindowInsets(overlayView)
-                    val isKeyboardVisible = insets!!.isVisible(WindowInsets.Type.ime())
+                    val isKeyboardVisible = insets?.isVisible(WindowInsets.Type.ime()) == true
                     if (isKeyboardVisible) {
+                        keyboardEverShown = true
+                        handler.postDelayed(this, delayMs.toLong())
+                        return
+                    }
+
+                    if (!keyboardEverShown) {
+                        // Keyboard hasn't appeared yet; keep polling instead of submitting empty input.
                         handler.postDelayed(this, delayMs.toLong())
                         return
                     }
