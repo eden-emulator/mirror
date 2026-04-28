@@ -795,8 +795,7 @@ VkFormat Device::GetSupportedFormat(VkFormat wanted_format, VkFormatFeatureFlags
 }
 
 void Device::ReportLoss() const {
-    LOG_CRITICAL(Render_Vulkan, "Device loss occurred!");
-
+    LOG_CRITICAL(Render_Vulkan, "Device loss occurred! {},{}", extensions.device_fault, properties.device_fault.deviceFault);
     if (extensions.device_fault) {
         VkDeviceFaultCountsEXT fault_counts{
             .sType = VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT
@@ -844,8 +843,7 @@ void Device::ReportLoss() const {
             s += "\n";
         }
         LOG_INFO(Render_Vulkan, "{}", s);
-    } else if ()
-
+    }
     // Wait for the log to flush and for Nsight Aftermath to dump the results
     std::this_thread::sleep_for(std::chrono::seconds{15});
 }
