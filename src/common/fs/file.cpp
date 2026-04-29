@@ -283,19 +283,16 @@ static int PlatformMapReadOnly(IOFile& io, const char* path) {
 #if defined(NDEBUG) && defined(MAP_NOCORE)
         map_flags |= MAP_NOCORE;
 #endif
-#ifdef MAP_ALIGNED
+#ifdef MAP_HUGE_2MB
+        map_flags |= MAP_HUGE_2MB; //2mb pages
+#elif defined(MAP_ALIGNED)
         // File must be big enough that it's worth to super align. We can't just super-align every
         // file otherwise we will run out of alignments for actually important files :)
         // System doesn't guarantee a super alignment, but if it's available it will delete
         // about 3 layers(?) of the TLB tree for each read/write.
         // Again the cost of faults may make this negligible gains, but hey, we gotta work
         // what we gotta work with.
-        auto const align_log = Common::Log2Ceil64(u64(st.st_size));
-        map_flags |= align_log > 12 ? MAP_ALIGNED(align_log) : 0;
-#elif defined(MAP_ALIGNED_SUPER)
-        using namespace Common::Literals;
-        u64 big_file_threshold = 512_MiB;
-        map_flags |= u64(st.st_size) >= big_file_threshold ? MAP_ALIGNED_SUPER : 0;
+        map_flags |= MAP_ALIGNED(21); //2^21 = 2mb use 2MB pages
 #endif
         io.mmap_base = (u8*)mmap(nullptr, io.mmap_size, PROT_READ, map_flags, io.mmap_fd, 0);
         if (io.mmap_base == MAP_FAILED) {
