@@ -7,9 +7,12 @@
 #pragma once
 
 #include <atomic>
+#include <cstdint>
 #include <deque>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include <QList>
 #include <QObject>
@@ -97,4 +100,23 @@ private:
     Common::Event processing_completed;
 
     Core::System& system;
+
+    struct PathCacheGame {
+        std::uint64_t program_id{};
+        std::string name;
+        std::string file_type;
+        std::vector<std::uint8_t> icon;
+    };
+
+    struct PathCacheEntry {
+        std::int64_t mtime{};
+        std::uint64_t size{};
+        std::vector<PathCacheGame> games;
+    };
+
+    void LoadPathCache();
+    void SavePathCache();
+
+    std::unordered_map<std::string, PathCacheEntry> path_cache;
+    bool path_cache_dirty{false};
 };
