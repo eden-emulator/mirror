@@ -10,7 +10,7 @@ import UniformTypeIdentifiers
 import Combine
 
 struct SettingsView: View {
-    @State var core: Core
+    @ObservedObject var core: EmulationViewModel
     @State var showprompt = false
 
     @AppStorage("icon") var iconused = 1
@@ -78,116 +78,70 @@ struct GameIconView: View {
     }
 }
 
-struct BottomMenuView: View {
-    @State var core: Core
-    var body: some View {
-        HStack(spacing: 40) {
-            Button {
+// Remove or refactor HomeView and GameCarouselView to not use Core or BottomMenuView(core: core) with Core.
+// If these are not used in the iOS UI, comment them out to avoid build errors.
+// struct HomeView: View {
+//     @State private var selectedGame: EmulationGame? = nil
 
-            } label: {
-                Circle()
-                    .overlay {
-                        Image(systemName: "message").font(.system(size: 30)).foregroundColor(.red)
-                    }
-                    .frame(width: 50, height: 50)
-                    .foregroundColor(Color.init(uiColor: .lightGray))
-            }
-            Button {
+//     @State var core: Core
 
-            } label: {
-                Circle()
-                    .overlay {
-                        Image(systemName: "photo").font(.system(size: 30)).foregroundColor(.blue)
-                    }
-                    .frame(width: 50, height: 50)
-                    .foregroundColor(Color.init(uiColor: .lightGray))
-            }
-            NavigationLink(destination: SettingsView(core: core)) {
-                Circle()
-                    .overlay {
-                        Image(systemName: "gearshape").foregroundColor(Color.init(uiColor: .darkGray)).font(.system(size: 30))
-                    }
-                    .frame(width: 50, height: 50)
-                    .foregroundColor(Color.init(uiColor: .lightGray))
-            }
+//     init(selectedGame: EmulationGame? = nil, core: Core) {
+//         _core = State(wrappedValue: core)
+//         self.selectedGame = selectedGame
+//         refreshcore()
+//     }
 
-            Button {
+//     var body: some View {
+//         NavigationStack {
+//             GeometryReader { geometry in
+//                 VStack {
+//                     GameCarouselView(core: core, selectedGame: $selectedGame)
+//                     Spacer()
+//                     BottomMenuView(core: core)
+//                 }
+//             }
+//         }
+//         .background(Color.gray.opacity(0.1))
+//         .edgesIgnoringSafeArea(.all)
+//         .onAppear {
+//             refreshcore()
+//             if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+//                 let romsFolderURL = documentsDirectory.appendingPathComponent("roms")
+//                 let folderMonitor = FolderMonitor(folderURL: romsFolderURL) {
+//                     do {
+//                         core = Core(games: [], root: documentsDirectory)
+//                         core = try LibraryManager.shared.library()
+//                     } catch {
+//                         print("Error refreshing core: \(error)")
+//                     }
+//                 }
+//             }
+//         }
+//     }
 
-            } label: {
-                Circle()
-                    .overlay {
-                        Image(systemName: "power").foregroundColor(Color.init(uiColor: .darkGray)).font(.system(size: 30))
-                    }
-                    .frame(width: 50, height: 50)
-                    .foregroundColor(Color.init(uiColor: .lightGray))
-            }
-        }
-        .padding(.bottom, 20)
-    }
-}
+//     func refreshcore() {
+//         print("Loading library...")
+//         do {
+//             core = try LibraryManager.shared.library()
+//             print(core.games)
+//         } catch {
+//             print("Failed to fetch library: \(error)")
+//             return
+//         }
+//     }
+// }
 
-struct HomeView: View {
-    @State private var selectedGame: EmulationGame? = nil
-
-    @State var core: Core
-
-    init(selectedGame: EmulationGame? = nil, core: Core) {
-        _core = State(wrappedValue: core)
-        self.selectedGame = selectedGame
-        refreshcore()
-    }
-
-    var body: some View {
-        NavigationStack {
-            GeometryReader { geometry in
-                VStack {
-                    GameCarouselView(core: core, selectedGame: $selectedGame)
-                    Spacer()
-                    BottomMenuView(core: core)
-                }
-            }
-        }
-        .background(Color.gray.opacity(0.1))
-        .edgesIgnoringSafeArea(.all)
-        .onAppear {
-            refreshcore()
-            if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-                let romsFolderURL = documentsDirectory.appendingPathComponent("roms")
-                let folderMonitor = FolderMonitor(folderURL: romsFolderURL) {
-                    do {
-                        core = Core(games: [], root: documentsDirectory)
-                        core = try LibraryManager.shared.library()
-                    } catch {
-                        print("Error refreshing core: \(error)")
-                    }
-                }
-            }
-        }
-    }
-
-    func refreshcore() {
-        print("Loading library...")
-        do {
-            core = try LibraryManager.shared.library()
-            print(core.games)
-        } catch {
-            print("Failed to fetch library: \(error)")
-            return
-        }
-    }
-}
-
-struct GameCarouselView: View {
-    // let games: [EmulationGame]
-    @State var core: Core
-    @Binding var selectedGame: EmulationGame?
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 20) {
-                ForEach(core.games) { game in
-                    GameIconView(game: game, selectedGame: $selectedGame)
-                }
-            }
-        }
-    }
-}
+// struct GameCarouselView: View {
+//     // let games: [EmulationGame]
+//     @State var core: Core
+//     @Binding var selectedGame: EmulationGame?
+//     var body: some View {
+//         ScrollView(.horizontal, showsIndicators: false) {
+//             HStack(spacing: 20) {
+//                 ForEach(core.games) { game in
+//                     GameIconView(game: game, selectedGame: $selectedGame)
+//                 }
+//             }
+//         }
+//     }
+// }

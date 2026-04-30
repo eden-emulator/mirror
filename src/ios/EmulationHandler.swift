@@ -8,7 +8,7 @@ import SwiftUI
 import Metal
 import Foundation
 
-class EmulationViewModel: ObservableObject {
+class EmulationSessionViewModel: ObservableObject {
     @Published var isShowingCustomButton = true
     @State var should = false
     var device: MTLDevice?
