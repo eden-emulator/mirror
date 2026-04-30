@@ -50,28 +50,10 @@ class YuzuFileManager {
     }
 }
 
-struct ContentView: View {
-@State var core = Core(games: [], root: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0])
-    var body: some View {
-        HomeView(core: core).onAppear() {
-            do {
-                try YuzuFileManager.shared.createdirectories() // this took a while to create the proper directories
-                do {
-                    core = try LibraryManager.shared.library() // this shit is like you tried to throw a egg into a blender with no lid on
-                } catch {
-                    print("Failed to fetch library: \(error)") // aaaaaaaaa
-                }
-            } catch {
-                print("Failed to create directories: \(error)") // i wonder why hmmmmmmm
-                return
-            }
-        }
-    }
-}
-
 @main
 struct PomeloApp: App {
+    @StateObject private var core = EmulationViewModel(game: nil)
     var body: some Scene {
-        WindowGroup { ContentView() }
+        WindowGroup { ContentView(core: core) }
     }
 }

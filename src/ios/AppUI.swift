@@ -6,6 +6,7 @@
 import UIKit
 import Foundation
 import QuartzCore.CAMetalLayer
+import SwiftUI
 
 public struct AppUI {
     public static let shared = AppUI()
@@ -99,5 +100,14 @@ public struct AppUI {
 
     public func settingsSaved() {
         appUIObjC.settingsChanged()
+    }
+}
+
+struct EdenApp: App {
+    @StateObject private var core = EmulationViewModel()
+    var body: some Scene {
+        WindowGroup {
+            ContentView(core: core)
+        }
     }
 }

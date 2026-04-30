@@ -349,7 +349,7 @@ class Haptics {
 
 struct ButtonView: View {
     var button: VirtualControllerButtonType
-    @StateObject private var viewModel: EmulationViewModel = EmulationViewModel(game: nil)
+    @StateObject private var viewModel: EmulationViewModel = EmulationViewModel()
     let appui = AppUI.shared
     @State var mtkView: MTKView?
     @State var width: CGFloat = 45
@@ -446,7 +446,7 @@ struct EmulationView: View {
     @Environment(\.scenePhase) var scenePhase
 
     init(game: EmulationGame?) {
-        _viewModel = StateObject(wrappedValue: EmulationViewModel(game: game))
+        _viewModel = StateObject(wrappedValue: EmulationViewModel())
     }
 
     var body: some View {
