@@ -471,7 +471,11 @@ bool ISystemSettingsServer::StoreSettingsFile(std::filesystem::path& path, auto&
     }
     file.close();
 
-    std::filesystem::rename(settings_tmp_file, settings_base.replace_extension("dat"));
+    std::error_code ec;
+    std::filesystem::rename(settings_tmp_file, settings_base.replace_extension("dat"), ec);
+    if (ec) {
+        return false;
+    }
 
     return true;
 }
