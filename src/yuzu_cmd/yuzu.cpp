@@ -396,6 +396,8 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
     // Apply the command line arguments
     state->system.ApplySettings();
+    Settings::values.renderer_backend.SetValue(Settings::RendererBackend::Null);
+    Common::Log::SetGlobalFilter(Common::Log::Filter(Common::Log::Level::Trace));
 
     switch (Settings::values.renderer_backend.GetValue()) {
 #ifdef HAS_OPENGL
