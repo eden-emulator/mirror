@@ -13,7 +13,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
     <key>CFBundleDevelopmentRegion</key>
     <string>English</string>
     <key>CFBundleExecutable</key>
-    <string>${EXECUTABLE_NAME}</string>
+    <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleGetInfoString</key>
     <string></string>
     <key>CFBundleIconFile</key>
