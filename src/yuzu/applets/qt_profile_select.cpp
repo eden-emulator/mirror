@@ -7,14 +7,17 @@
 #include <mutex>
 #include <QApplication>
 #include <QDialogButtonBox>
+#include <QTimer>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
+#include <QItemSelectionModel>
 #include <QScrollArea>
 #include <QStandardItemModel>
 #include <QTreeView>
 #include <QVBoxLayout>
 #include "common/fs/path_util.h"
+#include "common/settings.h"
 #include "common/string_util.h"
 #include "core/constants.h"
 #include "core/core.h"
@@ -25,10 +28,9 @@
 
 namespace {
 QString FormatUserEntryText(const QString& username, Common::UUID uuid) {
-    return QtProfileSelectionDialog::tr(
-               "%1\n%2", "%1 is the profile username, %2 is the formatted UUID (e.g. "
-                         "00112233-4455-6677-8899-AABBCCDDEEFF))")
-        .arg(username, QString::fromStdString(uuid.FormattedString()));
+    if (!username.isEmpty())
+        return username;
+    return QString::fromStdString(uuid.FormattedString());
 }
 
 QString GetImagePath(Common::UUID uuid) {
@@ -97,16 +99,30 @@ QtProfileSelectionDialog::QtProfileSelectionDialog(
     layout->setSpacing(0);
     layout->addWidget(tree_view);
 
-    connect(tree_view, &QTreeView::clicked, this, &QtProfileSelectionDialog::SelectUser);
+    // Keep selection index in sync with whatever moves the current row (mouse or gamepad).
+    connect(tree_view->selectionModel(), &QItemSelectionModel::currentRowChanged,
+            this, [this](const QModelIndex& current, const QModelIndex&) {
+                SelectUser(current);
+            });
     connect(tree_view, &QTreeView::doubleClicked, this, &QtProfileSelectionDialog::accept);
     connect(controller_navigation, &ControllerNavigation::TriggerKeyboardEvent,
             [this](Qt::Key key) {
-                if (!this->isActiveWindow()) {
+                if (!this->isActiveWindow())
+                    return;
+                switch (key) {
+                case Qt::Key_Return: // + button
+                case Qt::Key_Enter:  // A button — confirm currently highlighted profile
+                    accept();
+                    return;
+                case Qt::Key_Escape: // B button — cancel, keep default profile
+                    reject();
+                    return;
+                default:
+                    // Up/Down (D-pad or L-stick) — move selection in the list.
+                    QKeyEvent* event = new QKeyEvent(QEvent::KeyPress, key, Qt::NoModifier);
+                    QCoreApplication::sendEvent(tree_view, event);
                     return;
                 }
-                QKeyEvent* event = new QKeyEvent(QEvent::KeyPress, key, Qt::NoModifier);
-                QCoreApplication::postEvent(tree_view, event);
-                SelectUser(tree_view->currentIndex());
             });
 
     const auto& profiles = profile_manager.GetAllUsers();
@@ -125,9 +141,27 @@ QtProfileSelectionDialog::QtProfileSelectionDialog(
     for (const auto& item : list_items)
         item_model->appendRow(item);
 
+    // Pre-select the active user, matching how configure_profile_manager identifies current user.
+    preselect_row = std::clamp<int>(Settings::values.current_user.GetValue(), 0,
+                                    static_cast<int>(profile_manager.GetUserCount()) - 1);
+    user_index = preselect_row;
+
     SetWindowTitle(parameters);
     SetDialogPurpose(parameters);
     resize(550, 400);
+}
+
+void QtProfileSelectionDialog::showEvent(QShowEvent* event) {
+    QDialog::showEvent(event);
+    // Defer initial selection highlight until after exec() starts the event loop.
+    // setCurrentIndex in the constructor fires before the widget is visible, so Qt
+    // never paints the highlight. QTimer::singleShot(0) fires after the first paint.
+    QTimer::singleShot(0, this, [this]() {
+        const auto idx = item_model->index(preselect_row, 0);
+        tree_view->setCurrentIndex(idx);
+        tree_view->scrollTo(idx);
+        tree_view->setFocus();
+    });
 }
 
 QtProfileSelectionDialog::~QtProfileSelectionDialog() {

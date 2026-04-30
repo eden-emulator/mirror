@@ -44,6 +44,9 @@ public:
 
     int GetIndex() const;
 
+protected:
+    void showEvent(QShowEvent* event) override;
+
 private:
     void SelectUser(const QModelIndex& index);
 
@@ -51,6 +54,7 @@ private:
     void SetDialogPurpose(const Core::Frontend::ProfileSelectParameters& parameters);
 
     int user_index = 0;
+    int preselect_row = 0;
 
     QVBoxLayout* layout;
     QTreeView* tree_view;
