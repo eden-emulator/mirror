@@ -63,6 +63,7 @@ cmake -S . -B build -G "Unix Makefiles" \
     -DYUZU_TESTS=OFF \
     -DYUZU_USE_EXTERNAL_SDL2=ON \
     "${EXTRA_CMAKE_FLAGS[@]}" || exit
+
 cmake --build build -t yuzu-cmd_pkg -- -j$NPROC
 #cmake --build build -t dynarmic_tests_pkg -- -j$NPROC
 #cmake --build build -t testps4_pkg -- -j$NPROC

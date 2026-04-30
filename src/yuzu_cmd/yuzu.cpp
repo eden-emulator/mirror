@@ -367,6 +367,8 @@ int main(int argc, char** argv) {
 
     // Apply the command line arguments
     system.ApplySettings();
+    Settings::values.renderer_backend.SetValue(Settings::RendererBackend::Null);
+    Common::Log::SetGlobalFilter(Common::Log::Filter(Common::Log::Level::Trace));
 
     std::unique_ptr<EmuWindow_SDL3> emu_window;
     switch (Settings::values.renderer_backend.GetValue()) {
