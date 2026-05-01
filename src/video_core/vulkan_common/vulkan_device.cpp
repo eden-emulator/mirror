@@ -795,8 +795,8 @@ VkFormat Device::GetSupportedFormat(VkFormat wanted_format, VkFormatFeatureFlags
 }
 
 void Device::ReportLoss() const {
-    LOG_CRITICAL(Render_Vulkan, "Device loss occurred! {},{}", extensions.device_fault, properties.device_fault.deviceFault);
-    if (extensions.device_fault) {
+    LOG_CRITICAL(Render_Vulkan, "Device loss occurred! {},{}", extensions.device_fault, features.device_fault.deviceFault);
+    if (extensions.device_fault && features.device_fault.deviceFault) {
         VkDeviceFaultCountsEXT fault_counts{
             .sType = VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT
         };
