@@ -3,10 +3,11 @@
 
 #include <algorithm>
 #include <cstring>
-#include <map>
 #include <sstream>
 #include <string>
 #include <utility>
+#include <span>
+#include <ankerl/unordered_dense.h>
 
 #include "common/hex_util.h"
 #include "common/logging.h"
@@ -22,60 +23,29 @@ enum class IPSFileType {
     Error,
 };
 
-constexpr std::array<std::pair<const char*, const char*>, 11> ESCAPE_CHARACTER_MAP{{
-    {"\\a", "\a"},
-    {"\\b", "\b"},
-    {"\\f", "\f"},
-    {"\\n", "\n"},
-    {"\\r", "\r"},
-    {"\\t", "\t"},
-    {"\\v", "\v"},
-    {"\\\\", "\\"},
-    {"\\\'", "\'"},
-    {"\\\"", "\""},
-    {"\\\?", "\?"},
-}};
-
-static IPSFileType IdentifyMagic(const std::vector<u8>& magic) {
-    if (magic.size() != 5) {
-        return IPSFileType::Error;
+static IPSFileType IdentifyMagic(std::span<const u8> magic) {
+    if (magic.size() >= 5) {
+        if (std::memcmp(magic.data(), "PATCH", 5) == 0)
+            return IPSFileType::IPS;
+        if (std::memcmp(magic.data(), "IPS32", 5) == 0)
+            return IPSFileType::IPS32;
     }
-
-    static constexpr std::array<u8, 5> patch_magic{{'P', 'A', 'T', 'C', 'H'}};
-    if (std::equal(magic.begin(), magic.end(), patch_magic.begin())) {
-        return IPSFileType::IPS;
-    }
-
-    static constexpr std::array<u8, 5> ips32_magic{{'I', 'P', 'S', '3', '2'}};
-    if (std::equal(magic.begin(), magic.end(), ips32_magic.begin())) {
-        return IPSFileType::IPS32;
-    }
-
     return IPSFileType::Error;
 }
 
-static bool IsEOF(IPSFileType type, const std::vector<u8>& data) {
-    static constexpr std::array<u8, 3> eof{{'E', 'O', 'F'}};
-    if (type == IPSFileType::IPS && std::equal(data.begin(), data.end(), eof.begin())) {
-        return true;
-    }
-
-    static constexpr std::array<u8, 4> eeof{{'E', 'E', 'O', 'F'}};
-    return type == IPSFileType::IPS32 && std::equal(data.begin(), data.end(), eeof.begin());
+static bool IsEOF(IPSFileType type, std::span<const u8> magic) {
+    return (type == IPSFileType::IPS && magic.size() > 3 && std::memcmp(magic.data(), "EOF", 3) == 0)
+        || (type == IPSFileType::IPS32 && magic.size() > 4 && std::memcmp(magic.data(), "EEOF", 4) == 0);
 }
 
 VirtualFile PatchIPS(const VirtualFile& in, const VirtualFile& ips) {
     if (in == nullptr || ips == nullptr)
         return nullptr;
 
-    const auto type = IdentifyMagic(ips->ReadBytes(0x5));
+    auto in_data = in->ReadAllBytes();
+    auto const type = IdentifyMagic(in_data);
     if (type == IPSFileType::Error)
         return nullptr;
-
-    auto in_data = in->ReadAllBytes();
-    if (in_data.size() == 0) {
-        return nullptr;
-    }
 
     std::vector<u8> temp(type == IPSFileType::IPS ? 3 : 4);
     u64 offset = 5; // After header
@@ -85,12 +55,9 @@ VirtualFile PatchIPS(const VirtualFile& in, const VirtualFile& ips) {
             break;
         }
 
-        u32 real_offset{};
-        if (type == IPSFileType::IPS32)
-            real_offset = (temp[0] << 24) | (temp[1] << 16) | (temp[2] << 8) | temp[3];
-        else
-            real_offset = (temp[0] << 16) | (temp[1] << 8) | temp[2];
-
+        u32 real_offset = (type == IPSFileType::IPS32)
+            ? ((temp[0] << 24) | (temp[1] << 16) | (temp[2] << 8) | temp[3])
+            : ((temp[0] << 16) | (temp[1] << 8) | temp[2]);
         if (real_offset > in_data.size()) {
             return nullptr;
         }
@@ -113,30 +80,31 @@ VirtualFile PatchIPS(const VirtualFile& in, const VirtualFile& ips) {
                 return nullptr;
 
             if (real_offset + rle_size > in_data.size())
-                rle_size = static_cast<u16>(in_data.size() - real_offset);
+                rle_size = u16(in_data.size() - real_offset);
             std::memset(in_data.data() + real_offset, *data, rle_size);
         } else { // Standard Patch
             auto read = data_size;
             if (real_offset + read > in_data.size())
-                read = static_cast<u16>(in_data.size() - real_offset);
+                read = u16(in_data.size() - real_offset);
             if (ips->Read(in_data.data() + real_offset, read, offset) != data_size)
                 return nullptr;
             offset += data_size;
         }
     }
-
-    if (!IsEOF(type, temp)) {
-        return nullptr;
+    if (IsEOF(type, temp)) {
+        return std::make_shared<VectorVfsFile>(std::move(in_data), in->GetName(), in->GetContainingDirectory());
     }
-
-    return std::make_shared<VectorVfsFile>(std::move(in_data), in->GetName(),
-                                           in->GetContainingDirectory());
+    return nullptr;
 }
 
+
+struct IPSwitchRecord {
+    std::array<uint8_t, 256 - sizeof(size_t)> data;
+    size_t count;
+};
 struct IPSwitchCompiler::IPSwitchPatch {
-    std::string name;
+    ankerl::unordered_dense::map<u32, IPSwitchRecord> records;
     bool enabled;
-    std::map<u32, std::vector<u8>> records;
 };
 
 IPSwitchCompiler::IPSwitchCompiler(VirtualFile patch_text_) : patch_text(std::move(patch_text_)) {
@@ -149,40 +117,33 @@ std::array<u8, 32> IPSwitchCompiler::GetBuildID() const {
     return nso_build_id;
 }
 
-bool IPSwitchCompiler::IsValid() const {
-    return valid;
+template<size_t N>
+[[nodiscard]] constexpr inline bool StartsWith(std::string_view base, const char (&check)[N]) {
+    return base.size() >= N && std::memcmp(base.data(), check, N - 1) == 0;
 }
 
-static bool StartsWith(std::string_view base, std::string_view check) {
-    return base.size() >= check.size() && base.substr(0, check.size()) == check;
-}
-
-static std::string EscapeStringSequences(std::string in) {
-    for (const auto& seq : ESCAPE_CHARACTER_MAP) {
-        for (auto index = in.find(seq.first); index != std::string::npos;
-             index = in.find(seq.first, index)) {
-            in.replace(index, std::strlen(seq.first), seq.second);
-            index += std::strlen(seq.second);
+static IPSwitchRecord EscapeStringSequences(std::string_view sv) {
+    IPSwitchRecord r{};
+    for (auto it = sv.cbegin(); it != sv.cend(); ) {
+        if (*it == '\\') {
+            switch (it[1]) {
+            case 'n': r.data[r.count] = '\n'; break;
+            case 't': r.data[r.count] = '\t'; break;
+            case 'b': r.data[r.count] = '\b'; break;
+            case 'r': r.data[r.count] = '\r'; break;
+            case 'e': r.data[r.count] = '\e'; break;
+            case 'v': r.data[r.count] = '\v'; break;
+            case '?': r.data[r.count] = '\?'; break;
+            default: r.data[r.count] = it[1]; break;
+            }
+            ++r.count;
+            it += 2;
+        } else {
+            ++r.count;
+            ++it;
         }
     }
-
-    return in;
-}
-
-void IPSwitchCompiler::ParseFlag(const std::string& line) {
-    if (StartsWith(line, "@flag offset_shift ")) {
-        // Offset Shift Flag
-        offset_shift = std::strtoll(line.substr(19).c_str(), nullptr, 0);
-    } else if (StartsWith(line, "@little-endian")) {
-        // Set values to read as little endian
-        is_little_endian = true;
-    } else if (StartsWith(line, "@big-endian")) {
-        // Set values to read as big endian
-        is_little_endian = false;
-    } else if (StartsWith(line, "@flag print_values")) {
-        // Force printing of applied values
-        print_values = true;
-    }
+    return r;
 }
 
 void IPSwitchCompiler::Parse() {
@@ -191,159 +152,124 @@ void IPSwitchCompiler::Parse() {
     s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
 
     std::vector<std::string> lines;
-    std::string stream_line;
-    while (std::getline(s, stream_line)) {
+    std::string sline{};
+    while (std::getline(s, sline)) {
         // Remove a trailing \r
-        if (!stream_line.empty() && stream_line.back() == '\r')
-            stream_line.pop_back();
-        lines.push_back(std::move(stream_line));
-    }
+        if (!sline.empty() && sline.back() == '\r')
+            sline.pop_back();
 
-    for (std::size_t i = 0; i < lines.size(); ++i) {
-        auto line = lines[i];
-
-        // Remove midline comments
-        std::size_t comment_index = std::string::npos;
-        bool within_string = false;
-        for (std::size_t k = 0; k < line.size(); ++k) {
-            if (line[k] == '\"' && (k > 0 && line[k - 1] != '\\')) {
-                within_string = !within_string;
-            } else if (line[k] == '\\' && (k < line.size() - 1 && line[k + 1] == '\\')) {
-                comment_index = k;
+        // Remove comments
+        std::string pp_str{};
+        char has_comment = '\0';
+        pp_str.resize(sline.size());
+        for (size_t i = 0, j = 0; i < sline.size(); ) {
+            if (sline[i] == '\"' || sline[i] == '\'') {
+                if (sline[i] == has_comment) {
+                    has_comment = '\0';
+                } else {
+                    pp_str[j++] = sline[i++];
+                    has_comment = sline[i];
+                }
+            } else if (sline[i] == '\\') {
+                pp_str[j++] = sline[i++];
+                pp_str[j++] = sline[i++];
+            } else if ((!has_comment && i + 1 < sline.size() && sline[i + 0] == '/' && sline[i + 1] == '/')
+            || (!has_comment && sline[i] == '#')) {
+                pp_str.resize(j);
                 break;
+            } else {
+                pp_str[j++] = sline[i++];
             }
         }
+        if (pp_str.size() > 0)
+            lines.push_back(std::move(pp_str));
+    }
 
-        if (!StartsWith(line, "//") && comment_index != std::string::npos) {
-            last_comment = line.substr(comment_index + 2);
-            line = line.substr(0, comment_index);
-        }
-
+    LOG_INFO(Loader, "IPSwitchCompiler: '{}'", patch_text->GetName());
+    bool is_little_endian = false;
+    s64 offset_shift = 0;
+    //bool print_values = false;
+    for (std::size_t i = 0; i < lines.size(); ++i) {
+        std::string_view line = lines[i];
+        LOG_INFO(Loader, "<{}>", line);
         if (StartsWith(line, "@stop")) {
             // Force stop
             break;
-        } else if (StartsWith(line, "@nsobid-")) {
-            // NSO Build ID Specifier
-            const auto raw_build_id = fmt::format("{:0<64}", line.substr(8));
-            nso_build_id = Common::HexStringToArray<0x20>(raw_build_id);
-        } else if (StartsWith(line, "#")) {
-            // Mandatory Comment
-            LOG_INFO(Loader, "[IPSwitchCompiler ('{}')] Forced output comment: {}",
-                     patch_text->GetName(), line.substr(1));
-        } else if (StartsWith(line, "//")) {
-            // Normal Comment
-            last_comment = line.substr(2);
-            if (last_comment.find_first_not_of(' ') == std::string::npos)
-                continue;
-            if (last_comment.find_first_not_of(' ') != 0)
-                last_comment = last_comment.substr(last_comment.find_first_not_of(' '));
-        } else if (StartsWith(line, "@enabled") || StartsWith(line, "@disabled")) {
-            // Start of patch
-            const auto enabled = StartsWith(line, "@enabled");
-            if (i == 0)
-                return;
-            LOG_INFO(Loader, "[IPSwitchCompiler ('{}')] Parsing patch '{}' ({})",
-                     patch_text->GetName(), last_comment, line.substr(1));
-
-            IPSwitchPatch patch{last_comment, enabled, {}};
-
-            // Read rest of patch
-            while (true) {
-                if (i + 1 >= lines.size()) {
-                    break;
-                }
-
-                const auto& patch_line = lines[++i];
-
-                // Patch line may contain comments
-                if (StartsWith(patch_line, "//") || StartsWith(patch_line, "#")) {
-                    continue;
-                }
-
-                // Start of new patch
-                if (StartsWith(patch_line, "@enabled") || StartsWith(patch_line, "@disabled")) {
-                    --i;
-                    break;
-                }
-
-                // Check for a flag
-                if (StartsWith(patch_line, "@")) {
-                    ParseFlag(patch_line);
-                    continue;
-                }
-
-                // 11 - 8 hex digit offset + space + minimum two digit overwrite val
-                if (patch_line.length() < 11)
-                    break;
-                auto offset = std::strtoul(patch_line.substr(0, 8).c_str(), nullptr, 16);
-                offset += static_cast<unsigned long>(offset_shift);
-
-                std::vector<u8> replace;
-                // 9 - first char of replacement val
-                if (patch_line[9] == '\"') {
-                    // string replacement
-                    auto end_index = patch_line.find('\"', 10);
-                    if (end_index == std::string::npos || end_index < 10)
-                        return;
-                    while (patch_line[end_index - 1] == '\\') {
-                        end_index = patch_line.find('\"', end_index + 1);
-                        if (end_index == std::string::npos || end_index < 10)
-                            return;
-                    }
-
-                    auto value = patch_line.substr(10, end_index - 10);
-                    value = EscapeStringSequences(value);
-                    replace.reserve(value.size());
-                    std::copy(value.begin(), value.end(), std::back_inserter(replace));
-                } else {
-                    // hex replacement
-                    const auto value =
-                        patch_line.substr(9, patch_line.find_first_of(" /\r\n", 9) - 9);
-                    replace = Common::HexStringToVector(value, is_little_endian);
-                }
-
-                if (print_values) {
-                    LOG_INFO(Loader,
-                             "[IPSwitchCompiler ('{}')]     - Patching value at offset {:#08x} "
-                             "with byte string '{}'",
-                             patch_text->GetName(), offset, Common::HexToString(replace));
-                }
-
-                patch.records.insert_or_assign(static_cast<u32>(offset), std::move(replace));
-            }
-
-            patches.push_back(std::move(patch));
+        } else if (StartsWith(line, "@nsobid-")) { // NSO Build ID Specifier
+            nso_build_id = Common::HexStringToArray<0x20>(line.substr(8));
+        } else if (StartsWith(line, "@flag offset_shift ")) {
+            offset_shift = std::strtoll(line.data() + 19, nullptr, 0);  // Offset Shift Flag
+        } else if (StartsWith(line, "@flag print_values")) {
+            //print_values = true; // Force printing of applied values
+        } else if (StartsWith(line, "@enabled")) {
+            patches.push_back({{}, true}); //enabled patch
+        } else if (StartsWith(line, "@disabled")) {
+            patches.push_back({{}, false}); //disabled patch
+        } else if (StartsWith(line, "@little-endian")) {
+            is_little_endian = true;  // Set values to read as little endian
+        } else if (StartsWith(line, "@big-endian")) {
+            is_little_endian = false;  // Set values to read as big endian
         } else if (StartsWith(line, "@")) {
-            ParseFlag(line);
+            LOG_WARNING(Loader, "Unknown flag {}", line);
+        } else {
+            auto offset = std::strtoul(line.data(), nullptr, 16);
+            offset += size_t(offset_shift);
+            if (auto const first_quote = line.find_first_of("\"\'"); first_quote != std::string::npos) {
+                // string replacement
+                char quote = line[first_quote];
+                auto const start = line.cbegin() + first_quote + 1;
+                auto end = start;
+                for (; end < line.cend() && *end != quote; )
+                    end += (*end == '\\') ? 2 : 1;
+                if (start <= line.cend() && end <= line.cend()) {
+                    LOG_INFO(Loader, "[S] value @ {:#08X} ", offset);
+                    patches.back().records.insert_or_assign(u32(offset), EscapeStringSequences({start, end}));
+                } else {
+                    LOG_WARNING(Loader, "invalid string");
+                }
+            } else if (auto const first_space = line.find_first_of(" /\r\n", 9); first_space != std::string::npos) {
+                IPSwitchRecord r; // hex replacement
+                auto const start = line.cbegin() + first_space;
+                if (auto const last_space = line.find_last_of(" /\r\n"); last_space != std::string::npos) {
+                    auto const end = line.cbegin() + last_space;
+                    if (start <= line.cend() && end <= line.cend()) {
+                        auto const hs = Common::HexStringToVector({start, end}, is_little_endian);
+                        std::memcpy(r.data.data(), hs.data(), hs.size());
+                        r.count = hs.size();
+                        LOG_INFO(Loader, "[H] value @ {:#08X} ", offset);
+                        patches.back().records.insert_or_assign(u32(offset), std::move(r));
+                    } else {
+                        LOG_WARNING(Loader, "invalid line");
+                    }
+                } else {
+                    LOG_WARNING(Loader, "no last space");
+                }
+            } else {
+                LOG_WARNING(Loader, "unhandled line!");
+            }
         }
     }
-
-    valid = true;
 }
 
 VirtualFile IPSwitchCompiler::Apply(const VirtualFile& in) const {
-    if (in == nullptr || !valid)
+    if (in == nullptr)
         return nullptr;
 
     auto in_data = in->ReadAllBytes();
 
     for (const auto& patch : patches) {
-        if (!patch.enabled)
-            continue;
-
-        for (const auto& record : patch.records) {
-            if (record.first >= in_data.size())
-                continue;
-            auto replace_size = record.second.size();
-            if (record.first + replace_size > in_data.size())
-                replace_size = in_data.size() - record.first;
-            for (std::size_t i = 0; i < replace_size; ++i)
-                in_data[i + record.first] = record.second[i];
+        if (patch.enabled) {
+            for (const auto& record : patch.records) {
+                if (record.first < in_data.size()) {
+                    auto replace_size = record.second.count;
+                    if (record.first + replace_size > in_data.size())
+                        replace_size = in_data.size() - record.first;
+                    std::memcpy(in_data.data() + record.first, record.second.data.data(), replace_size);
+                }
+            }
         }
     }
-
-    return std::make_shared<VectorVfsFile>(std::move(in_data), in->GetName(),
-                                           in->GetContainingDirectory());
+    return std::make_shared<VectorVfsFile>(std::move(in_data), in->GetName(), in->GetContainingDirectory());
 }
 
 } // namespace FileSys

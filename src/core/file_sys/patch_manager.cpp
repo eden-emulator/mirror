@@ -345,8 +345,7 @@ VirtualDir PatchManager::PatchExeFS(VirtualDir exefs) const {
     return exefs;
 }
 
-std::vector<VirtualFile> PatchManager::CollectPatches(const std::vector<VirtualDir>& patch_dirs,
-                                                      const std::string& build_id) const {
+std::vector<VirtualFile> PatchManager::CollectPatches(const std::vector<VirtualDir>& patch_dirs, const std::string& build_id) const {
     const auto& disabled = Settings::values.disabled_addons[title_id];
     const auto nso_build_id = fmt::format("{:0<64}", build_id);
 
@@ -361,16 +360,11 @@ std::vector<VirtualFile> PatchManager::CollectPatches(const std::vector<VirtualD
             for (const auto& file : exefs_dir->GetFiles()) {
                 if (file->GetExtension() == "ips") {
                     auto name = file->GetName();
-
-                    const auto this_build_id =
-                        fmt::format("{:0<64}", name.substr(0, name.find('.')));
+                    const auto this_build_id = fmt::format("{:0<64}", name.substr(0, name.find('.')));
                     if (nso_build_id == this_build_id)
                         out.push_back(file);
                 } else if (file->GetExtension() == "pchtxt") {
                     IPSwitchCompiler compiler{file};
-                    if (!compiler.IsValid())
-                        continue;
-
                     const auto this_build_id = Common::HexToString(compiler.GetBuildID());
                     if (nso_build_id == this_build_id)
                         out.push_back(file);
@@ -378,7 +372,6 @@ std::vector<VirtualFile> PatchManager::CollectPatches(const std::vector<VirtualD
             }
         }
     }
-
     return out;
 }
 
