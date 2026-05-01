@@ -18,6 +18,7 @@
 #include "common/logging.h"
 #include "common/settings.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
+#include "vulkan/vulkan_core.h"
 
 VK_DEFINE_HANDLE(VmaAllocator)
 
@@ -93,9 +94,12 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION(EXT, SHADER_VIEWPORT_INDEX_LAYER, shader_viewport_index_layer)                       \
     EXTENSION(EXT, TOOLING_INFO, tooling_info)                                                     \
     EXTENSION(EXT, VERTEX_ATTRIBUTE_DIVISOR, vertex_attribute_divisor)                             \
+<<<<<<< HEAD
     EXTENSION(KHR, CREATE_RENDERPASS_2, create_renderpass2)                                        \
     EXTENSION(KHR, DEPTH_STENCIL_RESOLVE, depth_stencil_resolve)                                   \
     EXTENSION(EXT, DEVICE_FAULT, device_fault)                                                     \
+=======
+>>>>>>> 6e75e5837b (oops, fixup)
     EXTENSION(KHR, DRAW_INDIRECT_COUNT, draw_indirect_count)                                       \
     EXTENSION(KHR, DRIVER_PROPERTIES, driver_properties)                                           \
     EXTENSION(KHR, PUSH_DESCRIPTOR, push_descriptor)                                               \
@@ -1143,33 +1147,28 @@ private:
     struct Extensions {
 #define EXTENSION(prefix, macro_name, var_name) bool var_name{};
 #define FEATURE(prefix, struct_name, macro_name, var_name) bool var_name{};
-
         FOR_EACH_VK_FEATURE_1_1(FEATURE);
         FOR_EACH_VK_FEATURE_1_2(FEATURE);
         FOR_EACH_VK_FEATURE_1_3(FEATURE);
         FOR_EACH_VK_FEATURE_1_4(FEATURE);
         FOR_EACH_VK_FEATURE_EXT(FEATURE);
         FOR_EACH_VK_EXTENSION(EXTENSION);
-
 #undef EXTENSION
 #undef FEATURE
+        bool device_fault;
     };
 
     struct Features {
-#define FEATURE_CORE(prefix, struct_name, macro_name, var_name)                                    \
-    VkPhysicalDevice##struct_name##Features var_name{};
-#define FEATURE_EXT(prefix, struct_name, macro_name, var_name)                                     \
-    VkPhysicalDevice##struct_name##Features##prefix var_name{};
-
+#define FEATURE_CORE(prefix, struct_name, macro_name, var_name) VkPhysicalDevice##struct_name##Features var_name{};
+#define FEATURE_EXT(prefix, struct_name, macro_name, var_name) VkPhysicalDevice##struct_name##Features##prefix var_name{};
         FOR_EACH_VK_FEATURE_1_1(FEATURE_CORE);
         FOR_EACH_VK_FEATURE_1_2(FEATURE_CORE);
         FOR_EACH_VK_FEATURE_1_3(FEATURE_CORE);
         FOR_EACH_VK_FEATURE_1_4(FEATURE_CORE);
         FOR_EACH_VK_FEATURE_EXT(FEATURE_EXT);
-
 #undef FEATURE_CORE
 #undef FEATURE_EXT
-
+        VkPhysicalDeviceFaultFeaturesEXT device_fault{};
         VkPhysicalDeviceFeatures features{};
     };
 
