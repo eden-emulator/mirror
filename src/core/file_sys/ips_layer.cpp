@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <span>
+#include <cctype>
 #include <ankerl/unordered_dense.h>
 
 #include "common/hex_util.h"
@@ -146,43 +147,53 @@ static IPSwitchRecord EscapeStringSequences(std::string_view sv) {
     return r;
 }
 
+[[nodiscard]] static inline std::array<u8, 32> ReadNSOBuildId(std::string_view const s) {
+    std::array<u8, 32> r{};
+    for (std::size_t i = 0; i < s.size(); ++i)
+        r[i / 2] |= Common::ToHexNibble(s[i]) << ((i % 2) * 4);
+    return r;
+}
+
 void IPSwitchCompiler::Parse() {
-    const auto bytes = patch_text->ReadAllBytes();
-    std::stringstream s;
-    s.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
-
-    std::vector<std::string> lines;
-    std::string sline{};
-    while (std::getline(s, sline)) {
-        // Remove a trailing \r
-        if (!sline.empty() && sline.back() == '\r')
-            sline.pop_back();
-
-        // Remove comments
-        std::string pp_str{};
-        char has_comment = '\0';
-        pp_str.resize(sline.size());
-        for (size_t i = 0, j = 0; i < sline.size(); ) {
-            if (sline[i] == '\"' || sline[i] == '\'') {
-                if (sline[i] == has_comment) {
-                    has_comment = '\0';
+    auto const bytes = patch_text->ReadAllBytes();
+    std::vector<std::string> lines{};
+    for (auto it = bytes.cbegin(); it < bytes.cend(); ) {
+        auto const start = it;
+        auto end = start;
+        for (; end < bytes.cend() && *end != '\n' && *end != '\r'; ++end)
+            ;
+        it = end + 1; //prepare for next line
+        std::string_view const sline{
+            reinterpret_cast<const char*>(bytes.data() + std::distance(bytes.cbegin(), start)),
+            size_t(std::distance(start, end))
+        };
+        if (sline.size() > 0) {
+            auto p = sline.cbegin();
+            // skip space off line
+            for (; p < sline.cend() && std::isspace(*p); ++p)
+                ;
+            // now make a nominal preprocessed line: remove comments
+            char quote = '\0';
+            auto const sline_start = p;
+            for (; p < sline.cend(); ) {
+                if ((!quote && p + 1 < sline.cend() && p[0] == '/' && p[1] == '/')
+                || (!quote && p[0] == '#')) {
+                    break;
+                } else if (p[0] == '\"' || p[0] == '\'') {
+                    quote = (p[0] == quote) ? '\0' : p[0];
+                    ++p;
+                } else if (p + 1 < sline.cend() && p[0] == '\\') {
+                    p += 2;
                 } else {
-                    pp_str[j++] = sline[i++];
-                    has_comment = sline[i];
+                    ++p;
                 }
-            } else if (sline[i] == '\\') {
-                pp_str[j++] = sline[i++];
-                pp_str[j++] = sline[i++];
-            } else if ((!has_comment && i + 1 < sline.size() && sline[i + 0] == '/' && sline[i + 1] == '/')
-            || (!has_comment && sline[i] == '#')) {
-                pp_str.resize(j);
-                break;
-            } else {
-                pp_str[j++] = sline[i++];
             }
+            std::string pp_str(sline_start, p);
+            while (pp_str.size() > 0 && std::isspace(pp_str.back()))
+                pp_str.pop_back();
+            if (pp_str.size() > 0)
+                lines.push_back(pp_str);
         }
-        if (pp_str.size() > 0)
-            lines.push_back(std::move(pp_str));
     }
 
     LOG_INFO(Loader, "IPSwitchCompiler: '{}'", patch_text->GetName());
@@ -196,7 +207,7 @@ void IPSwitchCompiler::Parse() {
             // Force stop
             break;
         } else if (StartsWith(line, "@nsobid-")) { // NSO Build ID Specifier
-            nso_build_id = Common::HexStringToArray<0x20>(line.substr(8));
+            nso_build_id = ReadNSOBuildId(line.substr(8));
         } else if (StartsWith(line, "@flag offset_shift ")) {
             offset_shift = std::strtoll(line.data() + 19, nullptr, 0);  // Offset Shift Flag
         } else if (StartsWith(line, "@flag print_values")) {
