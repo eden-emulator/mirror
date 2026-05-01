@@ -150,7 +150,7 @@ static IPSwitchRecord EscapeStringSequences(std::string_view sv) {
 [[nodiscard]] static inline std::array<u8, 32> ReadNSOBuildId(std::string_view const s) {
     std::array<u8, 32> r{};
     for (std::size_t i = 0; i < s.size(); ++i)
-        r[i / 2] |= Common::ToHexNibble(s[i]) << ((i % 2) * 4);
+        r[i / 2] |= u8(Common::ToHexNibble(s[i])) << u8((i % 2) * 4);
     return r;
 }
 
