@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <filesystem>
+#include <system_error>
 #include <JlCompress.h>
 #include "frontend_common/mod_manager.h"
 #include "mod.h"
@@ -124,8 +125,8 @@ const QString ExtractMod(const QString& path) {
     fs::remove_all(tmp, ec);
     if (!fs::create_directories(tmp, ec)) {
         QtCommon::Frontend::Critical(tr("Mod Extract Failed"),
-                                     tr("Failed to create temporary directory %1")
-                                         .arg(QString::fromStdString(tmp.string())));
+                                    tr("Failed to create temporary directory %1")
+                                        .arg(QString::fromStdString(tmp.string())));
         return QString();
     }
 
