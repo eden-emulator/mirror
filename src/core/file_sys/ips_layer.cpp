@@ -223,7 +223,7 @@ void IPSwitchCompiler::Parse() {
         } else if (StartsWith(line, "@")) {
             LOG_WARNING(Loader, "Unknown flag {}", line);
         } else {
-            auto offset = std::strtoul(line.data(), nullptr, 16);
+            size_t offset = size_t(std::strtoul(line.data(), nullptr, 16));
             offset += size_t(offset_shift);
             if (auto const first_quote = line.find_first_of("\"\'"); first_quote != std::string::npos) {
                 // string replacement
