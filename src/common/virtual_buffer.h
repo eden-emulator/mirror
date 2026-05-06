@@ -39,8 +39,7 @@ public:
     VirtualBuffer& operator=(const VirtualBuffer&) = delete;
 
     VirtualBuffer(VirtualBuffer&& other) noexcept
-        : alloc_size{std::exchange(other.alloc_size, 0)}
-        , base_ptr{std::exchange(other.base_ptr, nullptr)}
+        : alloc_size{std::exchange(other.alloc_size, 0)}, base_ptr{std::exchange(other.base_ptr), nullptr}
     {}
 
     VirtualBuffer& operator=(VirtualBuffer&& other) noexcept {
