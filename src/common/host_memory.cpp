@@ -731,9 +731,8 @@ void HostMemory::Map(size_t virtual_offset, size_t host_offset, size_t length, M
     ASSERT(length % PageAlignment == 0);
     ASSERT(virtual_offset + length <= virtual_size);
     ASSERT(host_offset + length <= backing_size);
-    if (length == 0 || !virtual_base || !impl) {
+    if (length == 0 || !virtual_base || !impl)
         return;
-    }
     impl->Map(virtual_offset + virtual_base_offset, host_offset, length, perms);
 #endif
 }
@@ -743,9 +742,8 @@ void HostMemory::Unmap(size_t virtual_offset, size_t length, bool separate_heap)
     ASSERT(virtual_offset % PageAlignment == 0);
     ASSERT(length % PageAlignment == 0);
     ASSERT(virtual_offset + length <= virtual_size);
-    if (length == 0 || !virtual_base || !impl) {
+    if (length == 0 || !virtual_base || !impl)
         return;
-    }
     impl->Unmap(virtual_offset + virtual_base_offset, length);
 #endif
 }
@@ -766,7 +764,8 @@ void HostMemory::Protect(size_t virtual_offset, size_t length, MemoryPermission 
 }
 
 void HostMemory::ClearBackingRegion(size_t physical_offset, size_t length, u32 fill_value) {
-    std::memset(backing_base + physical_offset, fill_value, length);
+    if (!impl)
+        std::memset(backing_base + physical_offset, fill_value, length);
 }
 
 void HostMemory::EnableDirectMappedAddress() {
