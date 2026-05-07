@@ -30,6 +30,7 @@ Tools for Eden and other subprojects. When adding new scripts please use `#!/bin
 - `find-unused-strings.sh`: Find any unused strings in the Android app (XML -> Kotlin).
 - `cpp-lint.sh`: Homemade dumb C++ linter.
 - `fuzzsettings.cpp`: Fuzz settings files.
+- `sysvpatch.c`: Patches ELF files so their OS/ABI is SYSV (managarm workaround).
 
 ## Android
 It's recommended to run these scritps after almost any Android change, as they are relatively fast and important both for APK bloat and CI.
