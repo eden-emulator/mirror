@@ -173,11 +173,11 @@ if (OPENORBIS)
         --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}"
     )
 elseif (MANAGARM)
-    # Required for proper stuff
-    list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
+    # Required for proper stuff, otherwise truncf and cosf won't get detected
+    list(APPEND FFmpeg_CROSS_COMPILE_LIBS -lm)
+    list(APPEND FFmpeg_CROSS_COMPILE_FLAGS 
         --disable-pthreads
-        --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}"
-    )
+        --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}")
 endif()
 
 if (YUZU_USE_BUNDLED_FFMPEG)
