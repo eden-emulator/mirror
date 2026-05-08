@@ -118,11 +118,6 @@ std::array<u8, 32> IPSwitchCompiler::GetBuildID() const {
     return nso_build_id;
 }
 
-template<size_t N>
-[[nodiscard]] constexpr inline bool StartsWith(std::string_view base, const char (&check)[N]) {
-    return base.size() >= N && std::memcmp(base.data(), check, N - 1) == 0;
-}
-
 static IPSwitchRecord EscapeStringSequences(std::string_view sv) {
     IPSwitchRecord r{};
     for (auto it = sv.cbegin(); it != sv.cend(); ) {
@@ -203,24 +198,24 @@ void IPSwitchCompiler::Parse() {
     for (std::size_t i = 0; i < lines.size(); ++i) {
         std::string_view line = lines[i];
         LOG_INFO(Loader, "<{}>", line);
-        if (StartsWith(line, "@stop")) {
+        if (line.starts_with("@stop")) {
             // Force stop
             break;
-        } else if (StartsWith(line, "@nsobid-")) { // NSO Build ID Specifier
+        } else if (line.starts_with("@nsobid-")) { // NSO Build ID Specifier
             nso_build_id = ReadNSOBuildId(line.substr(8));
-        } else if (StartsWith(line, "@flag offset_shift ")) {
-            offset_shift = std::strtoll(line.data() + 19, nullptr, 0);  // Offset Shift Flag
-        } else if (StartsWith(line, "@flag print_values")) {
-            //print_values = true; // Force printing of applied values
-        } else if (StartsWith(line, "@enabled")) {
+        } else if (line.starts_with("@enabled")) {
             patches.push_back({{}, true}); //enabled patch
-        } else if (StartsWith(line, "@disabled")) {
+        } else if (line.starts_with("@disabled")) {
             patches.push_back({{}, false}); //disabled patch
-        } else if (StartsWith(line, "@little-endian")) {
+        } else if (line.starts_with("@flag offset_shift ")) {
+            offset_shift = std::strtoll(line.data() + 19, nullptr, 0);  // Offset Shift Flag
+        } else if (line.starts_with("@little-endian")) {
             is_little_endian = true;  // Set values to read as little endian
-        } else if (StartsWith(line, "@big-endian")) {
+        } else if (line.starts_with("@big-endian")) {
             is_little_endian = false;  // Set values to read as big endian
-        } else if (StartsWith(line, "@")) {
+        } else if (line.starts_with("@flag print_values")) {
+            //print_values = true; // Force printing of applied values
+        } else if (line.starts_with("@")) {
             LOG_WARNING(Loader, "Unknown flag {}", line);
         } else {
             size_t offset = size_t(std::strtoul(line.data(), nullptr, 16));
