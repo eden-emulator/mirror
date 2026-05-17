@@ -20,6 +20,9 @@
 #else
 #include <unistd.h>
 #endif
+#ifdef __OPENORBIS__
+#include <sys/stat.h>
+#endif
 
 #ifdef _MSC_VER
 #define fileno _fileno
@@ -402,28 +405,27 @@ u64 IOFile::GetSize() const {
         file_size = Android::GetSize(file_path);
     } else {
         std::error_code ec;
-
         file_size = fs::file_size(file_path, ec);
-
         if (ec) {
-            LOG_ERROR(Common_Filesystem,
-                      "Failed to retrieve the file size of path={}, ec_message={}",
-                      PathToUTF8String(file_path), ec.message());
+            LOG_ERROR(Common_Filesystem, "Failed to retrieve the file size of path={}, ec_message={}", PathToUTF8String(file_path), ec.message());
             return 0;
         }
     }
+#elif defined(__OPENORBIS__)
+    // TODO: implementation of fs::file_size() is buggy on PS4, why?
+    // probably toolchain issue... ugh
+    OrbisKernelStat st{};
+    stat(file_path.c_str(), reinterpret_cast<struct stat *>(std::addressof(st)));
+    auto const file_size = st.st_size;
+    LOG_DEBUG(Common_Filesystem, "size for {} = {}", file_path.c_str(), file_size);
 #else
     std::error_code ec;
-
     const auto file_size = fs::file_size(file_path, ec);
-
     if (ec) {
-        LOG_ERROR(Common_Filesystem, "Failed to retrieve the file size of path={}, ec_message={}",
-                  PathToUTF8String(file_path), ec.message());
+        LOG_ERROR(Common_Filesystem, "Failed to retrieve the file size of path={}, ec_message={}", PathToUTF8String(file_path), ec.message());
         return 0;
     }
 #endif
-
     return file_size;
 }
 
