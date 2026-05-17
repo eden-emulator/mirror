@@ -32,24 +32,28 @@ struct PS4SinkStream final : public SinkStream {
         system_channels = system_channels_;
         device_channels = device_channels_;
 
-        auto const length = 0x800;
+        auto const length = 240 * 2;
         auto const sample_rate = 48000;
         auto const num_channels = this->GetDeviceChannels();
-        output_buffer.resize(length * num_channels * sizeof(s16));
 
         auto const param_type = num_channels == 1 ? ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO : ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO;
         audio_dev = sceAudioOutOpen(ORBIS_USER_SERVICE_USER_ID_SYSTEM, ORBIS_AUDIO_OUT_PORT_TYPE_MAIN, 0, length, sample_rate, param_type);
         if (audio_dev > 0) {
             audio_thread = std::jthread([=, this](std::stop_token stop_token) {
+                std::vector<s16> output_buffer(length * num_channels);
                 while (!stop_token.stop_requested()) {
                     if (this->type == StreamType::In) {
                         // this->ProcessAudioIn(input_buffer, length);
                     } else {
+                        int err = 0;
                         sceAudioOutOutput(audio_dev, nullptr);
                         this->ProcessAudioOutAndRender(output_buffer, length);
-                        sceAudioOutOutput(audio_dev, output_buffer.data());
+                        if ((err = sceAudioOutOutput(audio_dev, output_buffer.data())) < 0) {
+                            LOG_ERROR(Service_Audio, "{}", err);
+                        }
                     }
                 }
+                sceAudioOutClose(audio_dev);
             });
         } else {
             LOG_ERROR(Service_Audio, "Failed to create audio device! {:#x}", uint32_t(audio_dev));
@@ -58,7 +62,6 @@ struct PS4SinkStream final : public SinkStream {
 
     ~PS4SinkStream() override {
         LOG_DEBUG(Service_Audio, "Destroying PS4 stream {}", name);
-        sceAudioOutClose(audio_dev);
         if (audio_thread.joinable()) {
             audio_thread.request_stop();
             audio_thread.join();
@@ -67,8 +70,7 @@ struct PS4SinkStream final : public SinkStream {
 
     void Finalize() override {
         if (audio_dev > 0) {
-            Stop();
-            sceAudioOutClose(audio_dev);
+
         }
     }
 
@@ -84,7 +86,6 @@ struct PS4SinkStream final : public SinkStream {
         }
     }
 
-    std::vector<s16> output_buffer;
     std::jthread audio_thread;
     int32_t audio_dev{};
 };
