@@ -46,11 +46,10 @@ struct PS4SinkStream final : public SinkStream {
                         // this->ProcessAudioIn(input_buffer, length);
                     } else {
                         int err = 0;
-                        sceAudioOutOutput(audio_dev, nullptr);
                         this->ProcessAudioOutAndRender(output_buffer, length);
-                        if ((err = sceAudioOutOutput(audio_dev, output_buffer.data())) < 0) {
+                        sceAudioOutOutput(audio_dev, nullptr);
+                        if ((err = sceAudioOutOutput(audio_dev, output_buffer.data())) < 0)
                             LOG_ERROR(Service_Audio, "{}", err);
-                        }
                     }
                 }
                 sceAudioOutClose(audio_dev);
