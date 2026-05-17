@@ -32,7 +32,7 @@ struct PS4SinkStream final : public SinkStream {
         system_channels = system_channels_;
         device_channels = device_channels_;
 
-        auto const length = 240 * 2;
+        auto const length = 0x800;
         auto const sample_rate = 48000;
         auto const num_channels = this->GetDeviceChannels();
 
