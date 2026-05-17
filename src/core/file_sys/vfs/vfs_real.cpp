@@ -449,8 +449,19 @@ std::vector<VirtualFile> RealVfsDirectory::GetFiles() const {
 
 FileTimeStampRaw RealVfsDirectory::GetFileTimeStamp(std::string_view path_) const {
     const auto full_path = FS::SanitizePath(path + '/' + std::string(path_));
+#ifdef __OPENORBIS__
+    // DO NOT USE NORMAL STAT, it's bugged on OO toolchain
+    OrbisKernelStat st{};
+    const auto stat_result = stat(full_path.c_str(), reinterpret_cast<struct stat *>(std::addressof(st)));
+    if (stat_result != 0)
+        return {};
+    return {
+        .created{u64(st.st_ctime)},
+        .accessed{u64(st.st_atime)},
+        .modified{u64(st.st_mtime)},
+    };
+#else
     const auto fs_path = std::filesystem::path{FS::ToU8String(full_path)};
-
 #ifdef _WIN32
     struct _stat64 file_status;
     const auto stat_result = _wstat64(fs_path.c_str(), &file_status);
@@ -458,16 +469,14 @@ FileTimeStampRaw RealVfsDirectory::GetFileTimeStamp(std::string_view path_) cons
     struct stat file_status;
     const auto stat_result = stat(fs_path.c_str(), &file_status);
 #endif
-
-    if (stat_result != 0) {
+    if (stat_result != 0)
         return {};
-    }
-
     return {
-        .created{static_cast<u64>(file_status.st_ctime)},
-        .accessed{static_cast<u64>(file_status.st_atime)},
-        .modified{static_cast<u64>(file_status.st_mtime)},
+        .created{u64(file_status.st_ctime)},
+        .accessed{u64(file_status.st_atime)},
+        .modified{u64(file_status.st_mtime)},
     };
+#endif
 }
 
 std::vector<VirtualDir> RealVfsDirectory::GetSubdirectories() const {
