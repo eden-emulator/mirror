@@ -116,7 +116,7 @@ static void SwapHandler(int sig, void* raw_context) {
     if (auto const it = std::ranges::find_if(swap_regions, [addr = mctx.mc_addr](auto const& e) {
         return uintptr_t(addr) >= uintptr_t(e.first) && uintptr_t(addr) < uintptr_t(e.first) + e.second;
     }); it != swap_regions.end()) {
-        size_t const page_size = Orbis::ORBIS_PAGE_SIZE; //16K
+        size_t const page_size = Orbis::ORBIS_PAGE_SIZE * 128; //128K
         size_t const page_mask = ~(page_size - 1);
         // should replace the existing mapping... ugh
         void* aligned_addr = reinterpret_cast<void*>(uintptr_t(mctx.mc_addr) & page_mask);
