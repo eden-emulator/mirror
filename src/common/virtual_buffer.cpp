@@ -125,7 +125,7 @@ static void SwapHandler(int sig, void* raw_context) {
             LOG_ERROR(HW_Memory, "{:#x},{} @ {}:{:#x}", mctx.mc_addr, aligned_addr, it->first, it->second);
             sceKernelRemoveExceptionHandler(SIGSEGV); // to not catch the next signal
         } else {
-            LOG_TRACE(HW_Memory, "{:#x},{} @ {}:{:#x}", mctx.mc_addr, aligned_addr, it->first, it->second);
+            LOG_DEBUG(HW_Memory, "{:#x},{} @ {}:{:#x}", mctx.mc_addr, aligned_addr, it->first, it->second);
         }
     } else {
         LOG_ERROR(HW_Memory, "fault in addr {:#x} at {:#x}", mctx.mc_addr, mctx.mc_rip); // print caller address
