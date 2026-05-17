@@ -10,6 +10,7 @@
 #include "audio_core/common/common.h"
 #include "audio_core/sink/ps4_sink.h"
 #include "audio_core/sink/sink_stream.h"
+#include "common/alignment.h"
 #include "common/logging.h"
 #include "common/scope_exit.h"
 #include "core/core.h"
@@ -32,25 +33,26 @@ struct PS4SinkStream final : public SinkStream {
         system_channels = system_channels_;
         device_channels = device_channels_;
 
-        auto const length = 0x800;
-        auto const sample_rate = 48000;
-        auto const num_channels = this->GetDeviceChannels();
-
-        auto const param_type = num_channels == 1 ? ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO : ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO;
-        audio_dev = sceAudioOutOpen(ORBIS_USER_SERVICE_USER_ID_SYSTEM, ORBIS_AUDIO_OUT_PORT_TYPE_MAIN, 0, length, sample_rate, param_type);
+        audio_dev = sceAudioOutOpen(ORBIS_USER_SERVICE_USER_ID_SYSTEM, ORBIS_AUDIO_OUT_PORT_TYPE_MAIN, 0, Common::AlignUp(TargetSampleCount, 0x100), TargetSampleRate, device_channels > 1 ? ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO : ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO);
         if (audio_dev > 0) {
             audio_thread = std::jthread([=, this](std::stop_token stop_token) {
-                std::vector<s16> output_buffer(length * num_channels);
+                std::array<s16, TargetSampleCount * MaxChannels> buffer;
                 while (!stop_token.stop_requested()) {
                     if (this->type == StreamType::In) {
-                        // this->ProcessAudioIn(input_buffer, length);
+                        this->ProcessAudioIn(buffer, TargetSampleCount);
+                        (void)buffer; // TODO: microphone support
                     } else {
                         int err = 0;
-                        this->ProcessAudioOutAndRender(output_buffer, length);
+                        std::fill(buffer.begin(), buffer.end(), 0);
+                        this->ProcessAudioOutAndRender(buffer, TargetSampleCount);
                         sceAudioOutOutput(audio_dev, nullptr);
-                        if ((err = sceAudioOutOutput(audio_dev, output_buffer.data())) < 0)
+                        if ((err = sceAudioOutOutput(audio_dev, buffer.data())) < 0)
                             LOG_ERROR(Service_Audio, "{}", err);
                     }
+                    // Wait for pause, we don't really have a native pause
+                    // so this is the best i can do
+                    while (paused && !stop_token.stop_requested())
+                        ;
                 }
                 sceAudioOutClose(audio_dev);
             });
@@ -81,7 +83,7 @@ struct PS4SinkStream final : public SinkStream {
 
     void Stop() override {
         if (audio_dev > 0 && !paused) {
-
+            SignalPause();
         }
     }
 
@@ -150,7 +152,7 @@ std::vector<std::string> ListPS4SinkDevices(bool capture) {
 }
 
 u32 GetPS4Latency() {
-    return TargetSampleCount * 2;
+    return TargetSampleCount;
 }
 
 } // namespace AudioCore::Sink
