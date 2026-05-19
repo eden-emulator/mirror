@@ -6,6 +6,7 @@
 // You must ensure this matches with src/common/x64/xbyak.h on root dir
 #include <ankerl/unordered_dense.h>
 #include <boost/unordered_map.hpp>
+#define XBYAK_NO_EXCEPTION 1
 #define XBYAK_STD_UNORDERED_SET ankerl::unordered_dense::set
 #define XBYAK_STD_UNORDERED_MAP ankerl::unordered_dense::map
 #define XBYAK_STD_UNORDERED_MULTIMAP boost::unordered_multimap

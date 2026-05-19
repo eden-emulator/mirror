@@ -66,10 +66,7 @@ public:
 #ifdef _WIN32
     uint8_t* alloc(size_t size) override {
         void* p = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_READWRITE);
-        if (p == nullptr) {
-            using Xbyak::Error;
-            XBYAK_THROW(Xbyak::ERR_CANT_ALLOC);
-        }
+        ASSERT(p != nullptr);
         return static_cast<uint8_t*>(p);
     }
 
@@ -105,10 +102,7 @@ public:
         prot |= PROT_MPROTECT(PROT_READ) | PROT_MPROTECT(PROT_WRITE) | PROT_MPROTECT(PROT_EXEC);
 #endif
         void* p = mmap(nullptr, size, prot, mode, -1, 0);
-        if (p == MAP_FAILED) {
-            using Xbyak::Error;
-            XBYAK_THROW(Xbyak::ERR_CANT_ALLOC);
-        }
+        ASSERT(p != MAP_FAILED);
         std::memcpy(p, &size, sizeof(size_t));
         return static_cast<uint8_t*>(p) + DYNARMIC_PAGE_SIZE;
     }
@@ -532,13 +526,8 @@ size_t BlockOfCode::GetTotalCodeSize() const {
 }
 
 void* BlockOfCode::AllocateFromCodeSpace(size_t alloc_size) {
-    if (size_ + alloc_size >= maxSize_) {
-        using Xbyak::Error;
-        XBYAK_THROW(Xbyak::ERR_CODE_IS_TOO_BIG);
-    }
-
+    ASSERT(size_ + alloc_size < maxSize_);
     EnsureMemoryCommitted(alloc_size);
-
     void* ret = getCurr<void*>();
     size_ += alloc_size;
     memset(ret, 0, alloc_size);
