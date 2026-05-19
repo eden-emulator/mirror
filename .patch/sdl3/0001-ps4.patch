@@ -1,0 +1,166 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 8872895..00613c3 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1770,7 +1770,6 @@ elseif(EMSCRIPTEN)
+ 
+   CheckPTHREAD()
+   CheckLibUnwind()
+-
+ elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
+ 
+   set(SDL_DISABLE_DLOPEN_NOTES TRUE)
+@@ -3647,10 +3646,17 @@ if(NOT HAVE_CAMERA)
+   )
+ endif()
+ 
++# Always on?
++if (PLATFORM_PS4)
++  set(HAVE_SDL_THREADS TRUE)
++  set(HAVE_SDL_TIMERS TRUE)
++  set(SDL_THREAD_PTHREAD 1)
++endif ()
++
+ # We always need to have threads and timers around
+ if(NOT HAVE_SDL_THREADS)
+   # The Emscripten and N-Gage platform has been carefully vetted to work without threads
+-  if(EMSCRIPTEN OR NGAGE)
++  if(EMSCRIPTEN OR NGAGE OR PLATFORM_PS4)
+     set(SDL_THREADS_DISABLED 1)
+     sdl_glob_sources(
+       "${SDL3_SOURCE_DIR}/src/thread/generic/*.c"
+diff --git a/build-scripts/rename_macros.py b/build-scripts/rename_macros.py
+index 978120c..b6063dd 100755
+--- a/build-scripts/rename_macros.py
++++ b/build-scripts/rename_macros.py
+@@ -124,6 +124,7 @@ RENAMED_MACROS = {
+     "__RISCOS__": "SDL_PLATFORM_RISCOS",
+     "__SOLARIS__": "SDL_PLATFORM_SOLARIS",
+     "__PSP__": "SDL_PLATFORM_PSP",
++    "__PS4__": "SDL_PLATFORM_PS4",
+     "__PS2__": "SDL_PLATFORM_PS2",
+     "__VITA__": "SDL_PLATFORM_VITA",
+     "__3DS__": "SDL_PLATFORM_3DS",
+diff --git a/include/SDL3/SDL_platform_defines.h b/include/SDL3/SDL_platform_defines.h
+index 7963149..7465530 100644
+--- a/include/SDL3/SDL_platform_defines.h
++++ b/include/SDL3/SDL_platform_defines.h
+@@ -442,6 +442,16 @@
+ #define SDL_PLATFORM_PSP 1
+ #endif
+ 
++#if defined(__PS4__) || defined(__OPENROBIS__)
++
++/**
++ * A preprocessor macro that is only defined if compiling for Sony PSP.
++ *
++ * \since This macro is available since SDL 3.2.0.
++ */
++#define SDL_PLATFORM_PS4 1
++#endif
++
+ #if defined(__PS2__) || defined(PS2)
+ 
+ /**
+diff --git a/src/SDL.c b/src/SDL.c
+index b1a1a56..e6563ee 100644
+--- a/src/SDL.c
++++ b/src/SDL.c
+@@ -813,6 +813,8 @@ const char *SDL_GetPlatform(void)
+     return "tvOS";
+ #elif defined(SDL_PLATFORM_PS2)
+     return "PlayStation 2";
++#elif defined(SDL_PLATFORM_PS4)
++    return "PlayStation 4";
+ #elif defined(SDL_PLATFORM_PSP)
+     return "PlayStation Portable";
+ #elif defined(SDL_PLATFORM_VITA)
+diff --git a/src/audio/SDL_audio.c b/src/audio/SDL_audio.c
+index c1e4241..2393b3f 100644
+--- a/src/audio/SDL_audio.c
++++ b/src/audio/SDL_audio.c
+@@ -80,7 +80,10 @@ static const AudioBootStrap *const bootstrap[] = {
+ #ifdef SDL_AUDIO_DRIVER_NGAGE
+     &NGAGEAUDIO_bootstrap,
+ #endif
+-#ifdef SDL_AUDIO_DRIVER_EMSCRIPTEN
++#if SDL_AUDIO_DRIVER_PS4
++	&PS4AUDIO_bootstrap,
++#endif
++#if SDL_AUDIO_DRIVER_EMSCRIPTEN
+     &EMSCRIPTENAUDIO_bootstrap,
+ #endif
+ #ifdef SDL_AUDIO_DRIVER_JACK
+diff --git a/src/joystick/SDL_joystick.c b/src/joystick/SDL_joystick.c
+index 60c9743..2d12c3a 100644
+--- a/src/joystick/SDL_joystick.c
++++ b/src/joystick/SDL_joystick.c
+@@ -106,6 +106,9 @@ static SDL_JoystickDriver *SDL_joystick_drivers[] = {
+ #ifdef SDL_JOYSTICK_N3DS
+     &SDL_N3DS_JoystickDriver,
+ #endif
++#ifdef SDL_JOYSTICK_PS4
++	&SDL_PS4_JoystickDriver,
++#endif
+ #if defined(SDL_JOYSTICK_DUMMY) || defined(SDL_JOYSTICK_DISABLED)
+     &SDL_DUMMY_JoystickDriver
+ #endif
+diff --git a/src/joystick/SDL_sysjoystick.h b/src/joystick/SDL_sysjoystick.h
+index 47ce42c..42ab9de 100644
+--- a/src/joystick/SDL_sysjoystick.h
++++ b/src/joystick/SDL_sysjoystick.h
+@@ -253,6 +253,7 @@ extern SDL_JoystickDriver SDL_HAIKU_JoystickDriver;
+ extern SDL_JoystickDriver SDL_HIDAPI_JoystickDriver;
+ extern SDL_JoystickDriver SDL_RAWINPUT_JoystickDriver;
+ extern SDL_JoystickDriver SDL_IOS_JoystickDriver;
++extern SDL_JoystickDriver SDL_PS4_JoystickDriver;
+ extern SDL_JoystickDriver SDL_LINUX_JoystickDriver;
+ extern SDL_JoystickDriver SDL_VIRTUAL_JoystickDriver;
+ extern SDL_JoystickDriver SDL_WGI_JoystickDriver;
+diff --git a/src/render/SDL_sysrender.h b/src/render/SDL_sysrender.h
+index a1bb44a..51843c4 100644
+--- a/src/render/SDL_sysrender.h
++++ b/src/render/SDL_sysrender.h
+@@ -381,6 +381,7 @@ extern SDL_RenderDriver NGAGE_RenderDriver;
+ extern SDL_RenderDriver VULKAN_RenderDriver;
+ extern SDL_RenderDriver PS2_RenderDriver;
+ extern SDL_RenderDriver PSP_RenderDriver;
++extern SDL_RenderDriver PS4_RenderDriver;
+ extern SDL_RenderDriver SW_RenderDriver;
+ extern SDL_RenderDriver VITA_GXM_RenderDriver;
+ extern SDL_RenderDriver GPU_RenderDriver;
+diff --git a/src/stdlib/SDL_string.c b/src/stdlib/SDL_string.c
+index 4a870f6..68dc7e1 100644
+--- a/src/stdlib/SDL_string.c
++++ b/src/stdlib/SDL_string.c
+@@ -38,6 +38,8 @@
+ #define SDL_SIZEOF_WCHAR_T 2
+ #elif defined(SDL_PLATFORM_WINDOWS)
+ #define SDL_SIZEOF_WCHAR_T 2
++#elif defined(SDL_PLATFORM_PS4)
++#define SDL_SIZEOF_WCHAR_T 2
+ #else  // assume everything else is UTF-32 (add more tests if compiler-assert fails below!)
+ #define SDL_SIZEOF_WCHAR_T 4
+ #endif
+diff --git a/src/video/SDL_video.c b/src/video/SDL_video.c
+index f650f27..e23424f 100644
+--- a/src/video/SDL_video.c
++++ b/src/video/SDL_video.c
+@@ -131,6 +131,9 @@ static VideoBootStrap *bootstrap[] = {
+ #ifdef SDL_VIDEO_DRIVER_NGAGE
+     &NGAGE_bootstrap,
+ #endif
++#ifdef SDL_VIDEO_DRIVER_PS4
++	&PS4_bootstrap,
++#endif
+ #ifdef SDL_VIDEO_DRIVER_KMSDRM
+     &KMSDRM_bootstrap,
+ #endif
+@@ -314,6 +317,7 @@ static bool SDL_CreateWindowTexture(SDL_VideoDevice *_this, SDL_Window *window,
+     SDL_GetWindowSizeInPixels(window, &w, &h);
+ 
+     if (!data) {
++
+         SDL_Renderer *renderer = NULL;
+         const char *render_driver = NULL;
+ 
