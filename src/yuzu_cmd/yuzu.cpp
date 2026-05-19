@@ -220,12 +220,18 @@ int main(int argc, char** argv) {
     std::optional<int> selected_user{};
     std::optional<u16> override_gdb_port{};
     bool use_multiplayer = false;
-    bool fullscreen = false;
     std::string nickname{};
     std::string password{};
     std::string address{};
     std::string input_profile{};
     u16 port = Network::DefaultRoomPort;
+
+    // Platforms that start with fullscreen
+#if defined(__OPENORBIS__) || defined(__ANDROID__)
+    bool fullscreen = true;
+#else
+    bool fullscreen = false;
+#endif
 
     static struct option long_options[] = {
         // clang-format off
