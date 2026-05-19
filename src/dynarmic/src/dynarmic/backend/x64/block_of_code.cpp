@@ -465,13 +465,8 @@ size_t BlockOfCode::GetTotalCodeSize() const {
 }
 
 void* BlockOfCode::AllocateFromCodeSpace(size_t alloc_size) {
-    if (size_ + alloc_size >= maxSize_) {
-        using Xbyak::Error;
-        XBYAK_THROW(Xbyak::ERR_CODE_IS_TOO_BIG);
-    }
-
+    ASSERT(size_ + alloc_size < maxSize_);
     EnsureMemoryCommitted(alloc_size);
-
     void* ret = getCurr<void*>();
     size_ += alloc_size;
     memset(ret, 0, alloc_size);

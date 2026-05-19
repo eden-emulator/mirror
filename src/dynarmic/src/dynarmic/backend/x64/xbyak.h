@@ -7,6 +7,7 @@
 #include "common/container/unordered_map.h"
 #include "common/container/unordered_set.h"
 #include <boost/unordered_map.hpp>
+#define XBYAK_NO_EXCEPTION 1
 #define XBYAK_STD_UNORDERED_SET ::Common::unordered_set
 #define XBYAK_STD_UNORDERED_MAP ::Common::unordered_map
 #define XBYAK_STD_UNORDERED_MULTIMAP boost::unordered_multimap

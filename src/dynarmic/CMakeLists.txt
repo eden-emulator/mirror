@@ -113,6 +113,10 @@ else()
         # Clang mistakenly blames CMake for using unused arguments during compilation
         list(APPEND DYNARMIC_CXX_FLAGS -Wno-unused-command-line-argument)
     endif()
+    # TODO: oaknut exceptions
+    if ("x86_64" IN_LIST ARCHITECTURE)
+        list(APPEND DYNARMIC_CXX_FLAGS -fno-exceptions)
+    endif()
 endif()
 
 if (NOT Boost_FOUND)
