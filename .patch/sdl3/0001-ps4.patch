@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 8872895..00613c3 100644
+index 8872895..b0eeca8 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1770,7 +1770,6 @@ elseif(EMSCRIPTEN)
@@ -10,14 +10,27 @@ index 8872895..00613c3 100644
  elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
  
    set(SDL_DISABLE_DLOPEN_NOTES TRUE)
-@@ -3647,10 +3646,17 @@ if(NOT HAVE_CAMERA)
+@@ -3647,10 +3646,30 @@ if(NOT HAVE_CAMERA)
    )
  endif()
  
 +# Always on?
 +if (PLATFORM_PS4)
++  sdl_sources(
++    "${SDL3_SOURCE_DIR}/src/thread/pthread/SDL_systhread.c"
++    "${SDL3_SOURCE_DIR}/src/thread/pthread/SDL_sysmutex.c"   # Can be faked, if necessary
++    "${SDL3_SOURCE_DIR}/src/thread/pthread/SDL_syscond.c"    # Can be faked, if necessary
++    "${SDL3_SOURCE_DIR}/src/thread/pthread/SDL_sysrwlock.c"   # Can be faked, if necessary
++    "${SDL3_SOURCE_DIR}/src/thread/pthread/SDL_systls.c"
++    "${SDL3_SOURCE_DIR}/src/thread/generic/SDL_syssem.c"
++  )
++  sdl_glob_sources("${SDL3_SOURCE_DIR}/src/time/unix/*.c")
++  sdl_glob_sources("${SDL3_SOURCE_DIR}/src/timer/unix/*.c")
 +  set(HAVE_SDL_THREADS TRUE)
 +  set(HAVE_SDL_TIMERS TRUE)
++  set(HAVE_SDL_TIME TRUE)
++  set(SDL_TIME_UNIX 1)
++  set(SDL_TIMER_UNIX 1)
 +  set(SDL_THREAD_PTHREAD 1)
 +endif ()
 +
@@ -42,14 +55,14 @@ index 978120c..b6063dd 100755
      "__VITA__": "SDL_PLATFORM_VITA",
      "__3DS__": "SDL_PLATFORM_3DS",
 diff --git a/include/SDL3/SDL_platform_defines.h b/include/SDL3/SDL_platform_defines.h
-index 7963149..7465530 100644
+index 7963149..6c0dd5d 100644
 --- a/include/SDL3/SDL_platform_defines.h
 +++ b/include/SDL3/SDL_platform_defines.h
 @@ -442,6 +442,16 @@
  #define SDL_PLATFORM_PSP 1
  #endif
  
-+#if defined(__PS4__) || defined(__OPENROBIS__)
++#if defined(__PS4__) || defined(__OPENORBIS__)
 +
 +/**
 + * A preprocessor macro that is only defined if compiling for Sony PSP.
@@ -63,9 +76,18 @@ index 7963149..7465530 100644
  
  /**
 diff --git a/src/SDL.c b/src/SDL.c
-index b1a1a56..e6563ee 100644
+index b1a1a56..0a3fec6 100644
 --- a/src/SDL.c
 +++ b/src/SDL.c
+@@ -714,7 +714,7 @@ void SDL_Quit(void)
+     SDL_DBus_Quit();
+ #endif
+ 
+-#if defined(SDL_PLATFORM_UNIX) && !defined(SDL_PLATFORM_ANDROID) && !defined(SDL_PLATFORM_EMSCRIPTEN) && !defined(SDL_PLATFORM_PRIVATE)
++#if defined(SDL_PLATFORM_UNIX) && !defined(SDL_PLATFORM_ANDROID) && !defined(SDL_PLATFORM_EMSCRIPTEN) && !defined(SDL_PLATFORM_PRIVATE) && !defined(SDL_PLATFORM_PS4)
+     SDL_Gtk_Quit();
+ #endif
+ 
 @@ -813,6 +813,8 @@ const char *SDL_GetPlatform(void)
      return "tvOS";
  #elif defined(SDL_PLATFORM_PS2)
@@ -76,21 +98,19 @@ index b1a1a56..e6563ee 100644
      return "PlayStation Portable";
  #elif defined(SDL_PLATFORM_VITA)
 diff --git a/src/audio/SDL_audio.c b/src/audio/SDL_audio.c
-index c1e4241..2393b3f 100644
+index c1e4241..65b1e6d 100644
 --- a/src/audio/SDL_audio.c
 +++ b/src/audio/SDL_audio.c
-@@ -80,7 +80,10 @@ static const AudioBootStrap *const bootstrap[] = {
+@@ -80,6 +80,9 @@ static const AudioBootStrap *const bootstrap[] = {
  #ifdef SDL_AUDIO_DRIVER_NGAGE
      &NGAGEAUDIO_bootstrap,
  #endif
--#ifdef SDL_AUDIO_DRIVER_EMSCRIPTEN
-+#if SDL_AUDIO_DRIVER_PS4
++#ifdef SDL_AUDIO_DRIVER_PS4
 +	&PS4AUDIO_bootstrap,
 +#endif
-+#if SDL_AUDIO_DRIVER_EMSCRIPTEN
+ #ifdef SDL_AUDIO_DRIVER_EMSCRIPTEN
      &EMSCRIPTENAUDIO_bootstrap,
  #endif
- #ifdef SDL_AUDIO_DRIVER_JACK
 diff --git a/src/joystick/SDL_joystick.c b/src/joystick/SDL_joystick.c
 index 60c9743..2d12c3a 100644
 --- a/src/joystick/SDL_joystick.c
@@ -130,18 +150,28 @@ index a1bb44a..51843c4 100644
  extern SDL_RenderDriver VITA_GXM_RenderDriver;
  extern SDL_RenderDriver GPU_RenderDriver;
 diff --git a/src/stdlib/SDL_string.c b/src/stdlib/SDL_string.c
-index 4a870f6..68dc7e1 100644
+index 4a870f6..69ca1db 100644
 --- a/src/stdlib/SDL_string.c
 +++ b/src/stdlib/SDL_string.c
-@@ -38,6 +38,8 @@
- #define SDL_SIZEOF_WCHAR_T 2
- #elif defined(SDL_PLATFORM_WINDOWS)
- #define SDL_SIZEOF_WCHAR_T 2
-+#elif defined(SDL_PLATFORM_PS4)
+@@ -32,7 +32,9 @@
+ 
+ #include "SDL_casefolding.h"
+ 
+-#if defined(__SIZEOF_WCHAR_T__)
++#if defined(SDL_PLATFORM_PS4)
 +#define SDL_SIZEOF_WCHAR_T 2
- #else  // assume everything else is UTF-32 (add more tests if compiler-assert fails below!)
- #define SDL_SIZEOF_WCHAR_T 4
++#elif defined(__SIZEOF_WCHAR_T__)
+ #define SDL_SIZEOF_WCHAR_T __SIZEOF_WCHAR_T__
+ #elif defined(SDL_PLATFORM_NGAGE)
+ #define SDL_SIZEOF_WCHAR_T 2
+@@ -43,7 +45,6 @@
  #endif
+ SDL_COMPILE_TIME_ASSERT(sizeof_wchar_t, sizeof(wchar_t) == SDL_SIZEOF_WCHAR_T);
+ 
+-
+ char *SDL_UCS4ToUTF8(Uint32 codepoint, char *dst)
+ {
+     if (!dst) {
 diff --git a/src/video/SDL_video.c b/src/video/SDL_video.c
 index f650f27..e23424f 100644
 --- a/src/video/SDL_video.c
