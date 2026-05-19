@@ -37,7 +37,7 @@ EOF
 # Normally a platform has a package manager
 # PS4 does not, atleast not in the normal sense
 export EXTRA_CMAKE_FLAGS=("${EXTRA_CMAKE_FLAGS[@]}" $@)
-cmake -S . -B build -G "Unix Makefiles" \
+[ -f "build/Makefile" ] || cmake -S . -B build -G "Unix Makefiles" \
     -DCMAKE_TOOLCHAIN_FILE="ps4-toolchain.cmake" \
     -DENABLE_QT_TRANSLATION=OFF \
     -DENABLE_CUBEB=OFF \

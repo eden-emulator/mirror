@@ -237,6 +237,13 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     std::optional<std::string> log_filter{};
     u16 port = Network::DefaultRoomPort;
 
+    // Platforms that start with fullscreen
+#if defined(__OPENORBIS__) || defined(__ANDROID__)
+    bool fullscreen = true;
+#else
+    bool fullscreen = false;
+#endif
+
     static struct option long_options[] = {
         // clang-format off
         {"debug", no_argument, 0, 'd'},
