@@ -7,7 +7,7 @@ index 6669216..86a2faa 100644
  #endif
  
 -#if !defined(HAS_SOCKLEN_T) && !defined(__socklen_t_defined)
-+#if !defined(_LIBCPP_HAS_MUSL_LIBC) && !defined(HAS_SOCKLEN_T) && !defined(__socklen_t_defined)
++#if !defined(__OPENORBIS__) && !defined(HAS_SOCKLEN_T) && !defined(__socklen_t_defined)
  typedef int socklen_t;
  #endif
  
