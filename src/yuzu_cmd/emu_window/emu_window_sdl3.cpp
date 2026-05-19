@@ -165,11 +165,11 @@ void EmuWindow_SDL3::Fullscreen() {
 
 void EmuWindow_SDL3::WaitEvent() {
     // Called on main thread
-    SDL_Event event;
+    SDL_Event event{};
 
-    if (!SDL_WaitEvent(&event)) {
+    if (!SDL_WaitEventTimeout(&event, -1)) {
         const char* error = SDL_GetError();
-        if (!error || strcmp(error, "") == 0) {
+        if (!error || strlen(error) == 0) {
             // https://github.com/libsdl-org/SDL/issues/5780
             // Sometimes SDL will return without actually having hit an error condition;
             // just ignore it in this case.
@@ -236,12 +236,7 @@ void EmuWindow_SDL3::WaitEvent() {
     const u32 current_time = SDL_GetTicks();
     if (current_time > last_time + 2000) {
         const auto results = system.GetAndResetPerfStats();
-        const auto title = fmt::format("{} | {}-{} | FPS: {:.0f} ({:.0f}%)",
-                                       Common::g_build_fullname,
-                                       Common::g_scm_branch,
-                                       Common::g_scm_desc,
-                                       results.average_game_fps,
-                                       results.emulation_speed * 100.0);
+        const auto title = fmt::format("{} | {}-{} | FPS: {:.0f} ({:.0f}%)", Common::g_build_fullname, Common::g_scm_branch, Common::g_scm_desc, results.average_game_fps, results.emulation_speed * 100.0);
         SDL_SetWindowTitle(render_window, title.c_str());
         last_time = current_time;
     }

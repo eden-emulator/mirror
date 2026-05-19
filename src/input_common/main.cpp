@@ -160,6 +160,7 @@ struct InputSubsystem::Impl {
 #ifndef __OPENORBIS__
         auto udp_devices = udp_client->GetInputDevices();
         devices.insert(devices.end(), udp_devices.begin(), udp_devices.end());
+#endif
 #ifdef HAVE_SDL3
         auto joycon_devices = joycon->GetInputDevices();
         devices.insert(devices.end(), joycon_devices.begin(), joycon_devices.end());
@@ -196,6 +197,7 @@ struct InputSubsystem::Impl {
         if (engine == udp_client->GetEngineName()) {
             return udp_client;
         }
+#endif
 #ifdef HAVE_SDL3
         if (engine == sdl->GetEngineName()) {
             return sdl;
@@ -311,6 +313,7 @@ struct InputSubsystem::Impl {
 #endif
 #ifndef __OPENORBIS__
         udp_client->BeginConfiguration();
+#endif
 #ifdef HAVE_SDL3
         sdl->BeginConfiguration();
         joycon->BeginConfiguration();
@@ -328,6 +331,7 @@ struct InputSubsystem::Impl {
 #endif
 #ifndef __OPENORBIS__
         udp_client->EndConfiguration();
+#endif
 #ifdef HAVE_SDL3
         sdl->EndConfiguration();
         joycon->EndConfiguration();
