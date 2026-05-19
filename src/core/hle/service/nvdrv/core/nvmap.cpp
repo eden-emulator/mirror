@@ -150,7 +150,7 @@ DAddr NvMap::PinHandle(NvMap::Handle::Id handle, bool low_area_pin) {
     const auto map_low_area = [&] {
         if (handle_description->pin_virt_address == 0) {
             u32 address = host1x.Allocator().Allocate(u32(handle_description->aligned_size));
-            host1x.GMMU().Map(GPUVAddr(address), handle_description->d_address, handle_description->aligned_size);
+            host1x.gmmu_manager.Map(GPUVAddr(address), handle_description->d_address, handle_description->aligned_size);
             handle_description->pin_virt_address = address;
         }
     };
