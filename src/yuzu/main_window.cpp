@@ -2792,7 +2792,7 @@ void MainWindow::OnMenuLoadFolder() {
 
     const QDir dir{dir_path};
     const QStringList matching_main = dir.entryList({QStringLiteral("main")}, QDir::Files);
-    if (matching_main.size() == 1) {
+    if (matching_main.size() > 0) {
         BootGame(dir.path() + QDir::separator() + matching_main[0], ApplicationAppletParameters());
     } else {
         QMessageBox::warning(this, tr("Invalid Directory Selected"),

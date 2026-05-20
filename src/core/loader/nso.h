@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -90,11 +93,9 @@ public:
     }
 
     static std::optional<VAddr> LoadModule(Kernel::KProcess& process, Core::System& system,
-                                           const FileSys::VfsFile& nso_file, VAddr load_base,
-                                           bool should_pass_arguments, bool load_into_process,
-                                           std::optional<FileSys::PatchManager> pm = {},
-                                           std::vector<Core::NCE::Patcher>* patches = nullptr,
-                                           s32 patch_index = -1);
+        const FileSys::VfsFile& nso_file, FileSys::VirtualFile npdm_file, const VAddr load_base,
+        const bool should_pass_arguments, const bool load_into_process, VAddr* out_load_base,
+        std::optional<FileSys::PatchManager> pm = {}, std::vector<Core::NCE::Patcher>* patches = nullptr, s32 patch_index = -1);
 
     LoadResult Load(Kernel::KProcess& process, Core::System& system) override;
 

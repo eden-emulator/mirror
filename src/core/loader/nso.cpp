@@ -17,6 +17,7 @@
 #include "common/swap.h"
 #include "core/core.h"
 #include "core/file_sys/patch_manager.h"
+#include "core/file_sys/vfs/vfs_types.h"
 #include "core/hle/kernel/code_set.h"
 #include "core/hle/kernel/k_page_table.h"
 #include "core/hle/kernel/k_process.h"
@@ -66,7 +67,7 @@ FileType AppLoader_NSO::IdentifyType(const FileSys::VirtualFile& in_file) {
     return FileType::NSO;
 }
 
-std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::System& system, const FileSys::VfsFile& nso_file, VAddr load_base, bool should_pass_arguments, bool load_into_process, std::optional<FileSys::PatchManager> pm, std::vector<Core::NCE::Patcher>* patches, s32 patch_index) {
+std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::System& system, const FileSys::VfsFile& nso_file, FileSys::VirtualFile npdm_file, const VAddr load_base, const bool should_pass_arguments, const bool load_into_process, VAddr* out_load_base, std::optional<FileSys::PatchManager> pm, std::vector<Core::NCE::Patcher>* patches, s32 patch_index) {
     if (nso_file.GetSize() < sizeof(NSOHeader))
         return std::nullopt;
     NSOHeader nso_header{};
@@ -219,9 +220,29 @@ std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::
         }
     }
 
+    FileSys::ProgramMetadata metadata = FileSys::ProgramMetadata::GetDefault();
+    if (npdm_file) {
+        LOG_DEBUG(Loader, "loading associated npdm file {}", npdm_file->GetName());
+        metadata.Load(npdm_file);
+    } else {
+        LOG_WARNING(Loader, "no associated npdm for {}, using default", nso_file.GetName());
+    }
+
+    const bool is_hbl = true;
+    if (process
+        .LoadFromMetadata(metadata, image_size, 0, 0, is_hbl)
+        .IsError()) {
+        return false;
+    }
+
+    auto const new_load_base = npdm_file ? process.GetEntryPoint().GetValue() : load_base;
+    if (npdm_file)
+        LOG_WARNING(Loader, "overriden load base with {:#016x}", new_load_base);
+    if (out_load_base)
+        *out_load_base = load_base; // no change
     // Load codeset for current process
-    process.LoadModule(system.Kernel(), std::move(codeset), load_base);
-    return load_base + image_size;
+    process.LoadModule(system.Kernel(), std::move(codeset), new_load_base);
+    return new_load_base + image_size;
 }
 
 AppLoader_NSO::LoadResult AppLoader_NSO::Load(Kernel::KProcess& process, Core::System& system) {
@@ -229,11 +250,14 @@ AppLoader_NSO::LoadResult AppLoader_NSO::Load(Kernel::KProcess& process, Core::S
         return {ResultStatus::ErrorAlreadyLoaded, {}};
     }
 
-    modules.clear();
+    FileSys::VirtualFile npdm_file{};
+    if (auto const dir = file->GetContainingDirectory())
+        npdm_file = dir->GetFile("main.npdm");
 
+    modules.clear();
     // Load module
-    const VAddr base_address = GetInteger(process.GetEntryPoint());
-    if (!LoadModule(process, system, *file, base_address, true, true)) {
+    VAddr base_address = GetInteger(process.GetEntryPoint());
+    if (!LoadModule(process, system, *file, npdm_file, base_address, true, true, &base_address)) {
         return {ResultStatus::ErrorLoadingNSO, {}};
     }
 

@@ -207,7 +207,7 @@ AppLoader_DeconstructedRomDirectory::LoadResult AppLoader_DeconstructedRomDirect
 
         const bool should_pass_arguments = std::strcmp(module, "rtld") == 0;
         const auto tentative_next_load_addr = AppLoader_NSO::LoadModule(
-            process, system, *module_file, code_size, should_pass_arguments, false, {},
+            process, system, *module_file, {}, code_size, should_pass_arguments, false, nullptr, {},
             patch_ctx.GetPatchers(), patch_ctx.GetLastIndex());
         if (!tentative_next_load_addr) {
             return {ResultStatus::ErrorLoadingNSO, {}};
@@ -255,7 +255,7 @@ AppLoader_DeconstructedRomDirectory::LoadResult AppLoader_DeconstructedRomDirect
         const VAddr load_addr{next_load_addr};
         const bool should_pass_arguments = std::strcmp(module, "rtld") == 0;
         const auto tentative_next_load_addr = AppLoader_NSO::LoadModule(
-            process, system, *module_file, load_addr, should_pass_arguments, true, pm,
+            process, system, *module_file, {}, load_addr, should_pass_arguments, true, nullptr, pm,
             patch_ctx.GetPatchers(), patch_ctx.GetIndex(i));
         if (!tentative_next_load_addr) {
             return {ResultStatus::ErrorLoadingNSO, {}};
