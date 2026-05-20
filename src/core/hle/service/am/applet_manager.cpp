@@ -294,11 +294,12 @@ void AppletManager::SetWindowSystem(WindowSystem* window_system) {
     // Or ulaunch initialization where we push parameters willingly!
     if (params.launch_type == LaunchType::ApplicationInitiated) {
         applet->user_channel_launch_parameter.swap(m_system.GetUserChannel());
-    } else if (params.launch_type == LaunchType::FrontendUlaunchInitiated) {
+    } else if (params.launch_type == LaunchType::FrontendUlaunchInitiated
+        || params.launch_type == LaunchType::FrontendUmenuInitiated) {
         constexpr size_t NroPathSize = 512;
         constexpr size_t NroArgvSize = 2048;
         constexpr size_t MenuCaptionSize = 1024;
-        struct UlauncherTargetInput {
+        struct UloaderTargetInput {
             u32 magic;
             bool target_once;
             bool is_auto_game_recording;
@@ -306,17 +307,42 @@ void AppletManager::SetWindowSystem(WindowSystem* window_system) {
             std::array<char, NroPathSize> nro_path;
             std::array<char, NroArgvSize> nro_argv;
             std::array<char, MenuCaptionSize> menu_caption;
-        } target_ipt = {};
-        static_assert(sizeof(target_ipt) == 3592);
+        };
+        static_assert(sizeof(UloaderTargetInput) == 3592);
 
-        target_ipt.magic = 0x49444C55; // "ULDI"
-        target_ipt.nro_path = {"sdmc:/hbmenu.nro"};
-        target_ipt.menu_caption = {"Loaded by uLoader v1.2.4 - uLaunch's custom hbloader replacement ;)"};
+        if (params.launch_type == LaunchType::FrontendUlaunchInitiated) {
+            UloaderTargetInput target_ipt = {};
+            target_ipt.magic = 0x49444C55; // "ULDI"
+            target_ipt.nro_path = {"sdmc:/hbmenu.nro"};
+            target_ipt.menu_caption = {"Loaded by uLoader v1.2.4 - uLaunch's custom hbloader replacement ;)"};
 
-        std::vector<u8> v(sizeof(target_ipt));
-        std::memcpy(v.data(), &target_ipt, sizeof(target_ipt));
-        applet->user_channel_launch_parameter.clear();
-        applet->user_channel_launch_parameter.push_back(std::move(v));
+            std::vector<u8> v(sizeof(target_ipt));
+            std::memcpy(v.data(), std::addressof(target_ipt), sizeof(target_ipt));
+            applet->user_channel_launch_parameter.clear();
+            applet->user_channel_launch_parameter.push_back(std::move(v));
+        } else {
+            typedef u64 AccountUid;
+            struct UmenuInput {
+                AccountUid selected_user;
+                UloaderTargetInput suspended_hb_target_ipt; // Set if homebrew (launched as an application) is currently suspended
+                u64 suspended_app_id; // Set if any normal application is suspended
+                std::array<char, 0x301> last_menu_fs_path; //FS_MAX_PATH
+                std::array<char, 0x301> last_menu_path;
+                u32 last_menu_index;
+                bool reload_theme_cache;
+                bool warned_about_outdated_theme;
+                u32 last_added_app_count;
+                u32 last_deleted_app_count;
+                u32 in_verify_app_count;
+            };
+
+            UmenuInput target_umenu_ipt = {};
+
+            std::vector<u8> v(sizeof(target_umenu_ipt));
+            std::memcpy(v.data(), std::addressof(target_umenu_ipt), sizeof(target_umenu_ipt));
+            applet->user_channel_launch_parameter.clear();
+            applet->user_channel_launch_parameter.push_back(std::move(v));
+        }
     }
 
     // TODO: Read whether we need a preselected user from NACP?

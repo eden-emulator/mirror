@@ -520,6 +520,7 @@ MainWindow::MainWindow(bool has_broken_vulkan)
     QString game_path;
     bool should_launch_qlaunch = false;
     bool should_launch_hlaunch = false;
+    bool should_launch_hlaunch_uloader = false;
     bool should_launch_ulaunch = false;
     bool should_launch_setup = false;
     bool has_gamepath = false;
@@ -564,6 +565,8 @@ MainWindow::MainWindow(bool has_broken_vulkan)
             should_launch_qlaunch = true;
         } else if (args[i] == QStringLiteral("-hlaunch")) {
             should_launch_hlaunch = true;
+        } else if (args[i] == QStringLiteral("-hlaunch-uloader")) {
+            should_launch_hlaunch_uloader = true;
         } else if (args[i] == QStringLiteral("-ulaunch")) {
             should_launch_ulaunch = true;
         } else if (args[i] == QStringLiteral("-setup")) {
@@ -595,9 +598,20 @@ MainWindow::MainWindow(bool has_broken_vulkan)
                 LibraryAppletParameters(0x010000000000100Dull, Service::AM::AppletId::QLaunch));
         } else if (should_launch_ulaunch) {
             std::filesystem::path const sd_dir = Common::FS::GetEdenPathString(Common::FS::EdenPath::SDMCDir);
+            auto const path = (sd_dir / "atmosphere" / "hbl.nsp").string();
+            BootGame(QString::fromStdString(path), ApplicationAppletParameters());
+        } else if (should_launch_hlaunch_uloader) {
+            std::filesystem::path const sd_dir = Common::FS::GetEdenPathString(Common::FS::EdenPath::SDMCDir);
             auto const path = (sd_dir / "ulaunch" / "bin" / "uLoader" / "application" / "main").string();
             auto params = ApplicationAppletParameters();
             params.launch_type = Service::AM::LaunchType::FrontendUlaunchInitiated;
+            BootGame(QString::fromStdString(path), params);
+        } else if (should_launch_ulaunch) {
+            std::filesystem::path const sd_dir = Common::FS::GetEdenPathString(Common::FS::EdenPath::SDMCDir);
+            auto const path = (sd_dir / "ulaunch" / "bin" / "uMenu" / "main").string();
+            auto const program_id = 0x0100000000010000;
+            auto params = LibraryAppletParameters(u64(program_id), Service::AM::AppletId::Cabinet);
+            params.launch_type = Service::AM::LaunchType::FrontendUmenuInitiated;
             BootGame(QString::fromStdString(path), params);
         }
     }
