@@ -272,13 +272,9 @@ else()
     # `--disable-vdpau` is needed to avoid linking issues
     set(FFmpeg_CC ${CMAKE_C_COMPILER_LAUNCHER} ${CMAKE_C_COMPILER})
     set(FFmpeg_CXX ${CMAKE_CXX_COMPILER_LAUNCHER} ${CMAKE_CXX_COMPILER})
-    # A C++ compiler ought to make C++ binaries, unfortunely using raw `ld` often
-    # doesn't properly link libc/libstdc++, we don't exactly have `LD_C + LD_CXX` to diff
-    # between them, so use the C++ compiler wrapper launcher as a form of.. well...
-    # avoiding the issue of stdc++ not being linked, yes, this affects C libraries
-    # but due to the fact 99% of LD linkers use GC nowadays, this basically should resolve
-    # into a nop, MSVC untested.
-    set(FFmpeg_LD ${CMAKE_CXX_COMPILER_LAUNCHER} ${CMAKE_CXX_COMPILER})
+    if (FFmpeg_IS_CROSS_COMPILING)
+        list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --ld=${CMAKE_LINKER})
+    endif ()
     add_custom_command(
         OUTPUT
             ${FFmpeg_MAKEFILE}
@@ -299,7 +295,6 @@ else()
                 --enable-pic
                 --cc=${FFmpeg_CC}
                 --cxx=${FFmpeg_CXX}
-                --ld=${FFmpeg_LD}
                 --extra-cflags=${CMAKE_C_FLAGS}
                 --extra-cxxflags=${CMAKE_CXX_FLAGS}
                 --extra-ldflags=${CMAKE_C_LINK_FLAGS}
