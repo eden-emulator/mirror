@@ -198,13 +198,13 @@ public:
         if constexpr (std::is_same_v<Type, std::string>) {
             this->SetValue(input);
         } else if constexpr (std::is_same_v<Type, std::optional<u32>>) {
-            this->SetValue(u32(std::strtoul(input.c_str(), NULL, 10)));
+            this->SetValue(u32(std::strtoul(input.c_str(), nullptr, 10)));
         } else if constexpr (std::is_same_v<Type, bool>) {
             this->SetValue(input == "true");
         } else if constexpr (std::is_same_v<Type, float>) {
-            this->SetValue(std::strtof(input.c_str(), NULL));
+            this->SetValue(std::strtof(input.c_str(), nullptr));
         } else {
-            this->SetValue(Type(std::strtoll(input.c_str(), NULL)));
+            this->SetValue(Type(std::strtoll(input.c_str(), nullptr, 10)));
         }
     }
 
