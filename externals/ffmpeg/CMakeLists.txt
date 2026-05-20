@@ -35,7 +35,15 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
     elseif (NOT ("${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}"
     AND "${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "${CMAKE_SYSTEM_NAME}"))
         string(TOLOWER "${CMAKE_SYSTEM_NAME}" FFmpeg_SYSTEM_NAME)
-        if (FFmpeg_SYSTEM_NAME STREQUAL "openorbis" OR FFmpeg_SYSTEM_NAME STREQUAL "managarm")
+        # All of these platforms are supported by ffmpeg as native build OSes
+        # anything else (like Redox or Managarm or PS4) is NOT natively supported
+        # hence, assume the "unix like" is just "none" for the sake of OUR sanity.
+        # If YOUR OS/platform has actual native support:
+        # 1. congrats
+        # 2. feel free to add it on the condition below
+        if (NOT (NETBSD OR SOLARIS OR FREEBSD
+        OR OPENBSD OR DRAGONFLYBSD OR HAIKU
+        OR LINUX OR MSYS OR WIN32 OR ANDROID OR APPLE))
             set(FFmpeg_SYSTEM_NAME "none")
         endif()
         # TODO: Can we really do better? Auto-detection? Something clever?
@@ -57,7 +65,7 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
     endif()
 endif()
 
-if (OPENORBIS OR MANAGARM)
+if (OPENORBIS OR MANAGARM OR EMSCRIPTEN)
     # Doesn't support VA-API, don't go thru the embarrassment of trying to enable it
     list(APPEND FFmpeg_HWACCEL_FLAGS --disable-vaapi)
 elseif (ANDROID)
@@ -182,20 +190,28 @@ if (OPENORBIS)
         -lSceUserService
         -lSceSysmodule
         -lSceNet
-        -lSceLibcInternal
-    )
+        -lSceLibcInternal)
     list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
         --disable-pthreads
         --extra-cflags=${CMAKE_SYSROOT}/usr/include
         --extra-cxxflags=${CMAKE_SYSROOT}/usr/include
-        --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}"
-    )
+        --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}")
 elseif (MANAGARM)
     # Required for proper stuff
     list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
         --disable-pthreads
-        --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}"
-    )
+        --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}")
+endif()
+
+# Usually used by Emscripten
+if (DEFINED CMAKE_AR)
+    list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --ar=${CMAKE_AR})
+endif()
+if (DEFINED CMAKE_NM)
+    list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --nm=${CMAKE_NM})
+endif()
+if (DEFINED CMAKE_RANLIB)
+    list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --ranlib=${CMAKE_RANLIB})
 endif()
 
 if (YUZU_USE_BUNDLED_FFMPEG)
@@ -311,26 +327,27 @@ else()
 
     # Workaround for Ubuntu 18.04's older version of make not being able to call make as a child
     # with context of the jobserver. Also helps ninja users.
-    execute_process(
-        COMMAND
-            nproc
-        OUTPUT_VARIABLE
-            SYSTEM_THREADS)
+    cmake_host_system_information(RESULT SYSTEM_THREADS QUERY NUMBER_OF_LOGICAL_CORES)
 
     set(FFmpeg_BUILD_LIBRARIES ${FFmpeg_LIBRARIES})
 
     # BSD make or Solaris make don't support ffmpeg make-j8
-    if (LINUX OR ANDROID OR APPLE OR WIN32 OR FREEBSD)
+    if (DEFINED SYSTEM_THREADS AND (LINUX OR ANDROID OR APPLE OR WIN32))
         set(FFmpeg_MAKE_ARGS -j${SYSTEM_THREADS})
     else()
         set(FFmpeg_MAKE_ARGS "")
+    endif()
+    find_program(MAKE gmake)
+    if (NOT MAKE_FOUND)
+        # Arch famously names 'gmake' as 'make'
+        find_program(MAKE make REQUIRED)
     endif()
 
     add_custom_command(
         OUTPUT
             ${FFmpeg_BUILD_LIBRARIES}
         COMMAND
-            gmake ${FFmpeg_MAKE_ARGS}
+            ${MAKE} ${FFmpeg_MAKE_ARGS}
         WORKING_DIRECTORY
             ${FFmpeg_BUILD_DIR}
     )
