@@ -102,17 +102,82 @@ Result ILibraryAppletSelfAccessor::PushOutData(SharedPointer<IStorage> storage) 
     m_broker->GetOutData().Push(system.Kernel(), storage);
     if (m_applet->applet_id == AppletId::UlauncherUmenu) {
         LOG_WARNING(Service_AM, "emulating uLauncher IPC");
-        std::shared_ptr<IStorage> tmp_storage;
-        m_broker->GetOutData().Pop(&tmp_storage);
-        std::vector<u8> result_data(0x8000);
+
+        enum class SystemMessage : u32 {
+            Invalid,
+            SetSelectedUser,
+            LaunchApplication,
+            ResumeApplication,
+            TerminateApplication,
+            LaunchHomebrewLibraryApplet,
+            LaunchHomebrewApplication,
+            ChooseHomebrew,
+            OpenWebPage,
+            OpenAlbum,
+            RestartMenu,
+            ReloadConfig,
+            UpdateMenuPaths,
+            UpdateMenuIndex,
+            OpenUserPage,
+            OpenMiiEdit,
+            OpenAddUser,
+            OpenNetConnect,
+            ListAddedApplications,
+            ListDeletedApplications,
+            OpenCabinet,
+            StartVerifyApplication,
+            ListInVerifyApplications,
+            NotifyWarnedAboutOutdatedTheme,
+            TerminateMenu,
+            OpenControllerKeyRemapping
+        };
         struct CommandCommonHeader {
             u32 magic;
             u32 val;
-        } cmd;
-        cmd.magic = 0x21494D53;
-        cmd.val = u32(ResultSuccess.raw);
-        std::memcpy(result_data.data(), &cmd, sizeof(cmd));
-        m_broker->GetInData().Push(system.Kernel(), std::make_shared<IStorage>(system, std::move(result_data)));
+        };
+        std::shared_ptr<IStorage> req_storage;
+        m_broker->GetOutData().Pop(&req_storage);
+        auto req_data = req_storage->GetData();
+        CommandCommonHeader req_cmd{};
+        std::memcpy(req_data.data(), &req_cmd, sizeof(req_cmd));
+
+        switch (SystemMessage(req_cmd.val)) {
+        case SystemMessage::SetSelectedUser:
+        case SystemMessage::LaunchApplication:
+        case SystemMessage::ResumeApplication:
+        case SystemMessage::TerminateApplication:
+        case SystemMessage::LaunchHomebrewLibraryApplet:
+        case SystemMessage::LaunchHomebrewApplication:
+        case SystemMessage::ChooseHomebrew:
+        case SystemMessage::OpenWebPage:
+        case SystemMessage::OpenAlbum:
+        case SystemMessage::RestartMenu:
+        case SystemMessage::ReloadConfig:
+        case SystemMessage::UpdateMenuPaths:
+        case SystemMessage::UpdateMenuIndex:
+        case SystemMessage::OpenUserPage:
+        case SystemMessage::OpenMiiEdit:
+        case SystemMessage::OpenAddUser:
+        case SystemMessage::OpenNetConnect:
+        case SystemMessage::ListAddedApplications:
+        case SystemMessage::ListDeletedApplications:
+        case SystemMessage::OpenCabinet:
+        case SystemMessage::StartVerifyApplication:
+        case SystemMessage::ListInVerifyApplications:
+        case SystemMessage::NotifyWarnedAboutOutdatedTheme:
+        case SystemMessage::TerminateMenu:
+        case SystemMessage::OpenControllerKeyRemapping:
+            break;
+        case SystemMessage::Invalid:
+            break;
+        }
+
+        CommandCommonHeader res_cmd{};
+        std::vector<u8> res_data(0x8000);
+        res_cmd.magic = 0x21494D53;
+        res_cmd.val = u32(ResultSuccess.raw);
+        std::memcpy(res_data.data(), &res_cmd, sizeof(res_cmd));
+        m_broker->GetInData().Push(std::make_shared<IStorage>(system, std::move(res_data)));
     }
     R_SUCCEED();
 }
