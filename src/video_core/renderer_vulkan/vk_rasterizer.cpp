@@ -145,7 +145,7 @@ VkRect2D GetScissorState(const Tegra::Engines::Maxwell3D::Regs& regs, size_t ind
     return scissor;
 }
 
-DrawParams MakeDrawParams(const Tegra::Engines::DrawManager::State& draw_state, u32 num_instances, bool is_indexed) {
+DrawParams MakeDrawParams(const Tegra::Engines::Maxwell3D::DrawManager::State& draw_state, u32 num_instances, bool is_indexed) {
     DrawParams params{
         .base_instance = draw_state.base_instance,
         .num_instances = num_instances,
@@ -1815,10 +1815,10 @@ void RasterizerVulkan::UpdateVertexInput(Tegra::Engines::Maxwell3D::Regs& regs) 
     boost::container::static_vector<VkVertexInputBindingDescription2EXT, 32> bindings;
     boost::container::static_vector<VkVertexInputAttributeDescription2EXT, 32> attributes;
 
-    const u32 max_attributes = u32(std::min<size_t>(Tegra::Engines::Maxwell3D::NumVertexAttributes, device.GetMaxVertexInputAttributes()));
-    const u32 max_bindings = u32(std::min<size_t>(Tegra::Engines::Maxwell3D::NumVertexArrays, device.GetMaxVertexInputBindings()));
+    const u32 max_attributes = u32(std::min<size_t>(Tegra::Engines::Maxwell3D::Regs::NumVertexAttributes, device.GetMaxVertexInputAttributes()));
+    const u32 max_bindings = u32(std::min<size_t>(Tegra::Engines::Maxwell3D::Regs::NumVertexArrays, device.GetMaxVertexInputBindings()));
     for (u32 index = 0; index < max_attributes; ++index) {
-        const Tegra::Engines::Maxwell3D::VertexAttribute attribute{regs.vertex_attrib_format[index]};
+        const Tegra::Engines::Maxwell3D::Regs::VertexAttribute attribute{regs.vertex_attrib_format[index]};
         const u32 binding{attribute.buffer};
         if (attribute.constant || binding >= max_bindings) {
             continue;

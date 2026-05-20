@@ -16,26 +16,6 @@
 #include <fmt/base.h>
 #else
 template <>
-struct fmt::formatter<VideoCommon::ImageType> : fmt::formatter<fmt::string_view> {
-    template <typename FormatContext>
-    auto format(VideoCommon::ImageType type, FormatContext& ctx) const {
-        const string_view name = [type] {
-            using VideoCommon::ImageType;
-            switch (type) {
-            case ImageType::e1D: return "1D";
-            case ImageType::e2D: return "2D";
-            case ImageType::e3D: return "3D";
-            case ImageType::Linear: return "Linear";
-            case ImageType::Buffer: return "Buffer";
-            }
-            return "Invalid";
-        }();
-        return formatter<string_view>::format(name, ctx);
-    }
-};
-#endif
-
-template <>
 struct fmt::formatter<VideoCore::Surface::PixelFormat> : fmt::formatter<fmt::string_view> {
     template <typename FormatContext>
     auto format(VideoCore::Surface::PixelFormat format, FormatContext& ctx) const {
@@ -78,6 +58,7 @@ struct fmt::formatter<VideoCommon::ImageType> : fmt::formatter<fmt::string_view>
         return formatter<string_view>::format(name, ctx);
     }
 };
+#endif
 
 template <>
 struct fmt::formatter<VideoCommon::Extent3D> {
