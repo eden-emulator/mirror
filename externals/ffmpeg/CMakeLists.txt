@@ -32,8 +32,8 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
     # User attempts to do a FFmpeg cross compilation because...
     # Here we just quickly test against host/system processors not matching
     # TODO: Test for versions not matching as well?
-    elseif (NOT (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES CMAKE_SYSTEM_PROCESSOR
-    AND CMAKE_HOST_SYSTEM_NAME MATCHES CMAKE_SYSTEM_NAME))
+    elseif (NOT ("${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}"
+    AND "${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "${CMAKE_SYSTEM_NAME}"))
         string(TOLOWER "${CMAKE_SYSTEM_NAME}" FFmpeg_SYSTEM_NAME)
         if (FFmpeg_SYSTEM_NAME STREQUAL "openorbis" OR FFmpeg_SYSTEM_NAME STREQUAL "managarm")
             set(FFmpeg_SYSTEM_NAME "none")
@@ -48,7 +48,10 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
         if (DEFINED FFmpeg_CROSS_PREFIX)
             list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --cross-prefix="${FFmpeg_CROSS_PREFIX}")
         else()
-            message(WARNING "Please set FFmpeg_CROSS_PREFIX to your cross toolchain prefix, for example: \${CMAKE_STAGING_PREFIX}/bin/${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}-")
+            message(FATAL_ERROR "Please set FFmpeg_CROSS_PREFIX to your cross toolchain prefix, for example: \${CMAKE_STAGING_PREFIX}/bin/${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}-"
+                "If this is not intended, check that:"
+                "${CMAKE_HOST_SYSTEM_PROCESSOR} = ${CMAKE_SYSTEM_PROCESSOR}"
+                "${CMAKE_HOST_SYSTEM_NAME} = ${CMAKE_SYSTEM_NAME}")
         endif()
         set(FFmpeg_IS_CROSS_COMPILING TRUE)
     endif()
@@ -68,8 +71,10 @@ elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
     pkg_check_modules(CUDA cuda)
     pkg_check_modules(FFNVCODEC ffnvcodec)
     pkg_check_modules(VDPAU vdpau)
-
+    pkg_check_modules(VULKAN vulkan)
+    find_package(spirv-headers)
     find_package(X11)
+    
     if(X11_FOUND)
         if (NOT APPLE)
             # In Solaris needs explicit linking for ffmpeg which links to /lib/amd64/libX11.so
@@ -140,7 +145,7 @@ elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
         endif(CUDA_FOUND)
     endif()
 
-    if (VDPAU_FOUND AND NOT APPLE)
+    if (VDPAU_FOUND)
         list(APPEND FFmpeg_HWACCEL_FLAGS
             --enable-vdpau
             --enable-hwaccel=h264_vdpau
@@ -153,6 +158,21 @@ elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
     else()
         list(APPEND FFmpeg_HWACCEL_FLAGS --disable-vdpau)
         message(WARNING "ffmpeg: libvdpau-dev not found, disabling Video Decode and Presentation API for Unix (VDPAU)...")
+    endif()
+
+    if (VULKAN_FOUND)
+        list(APPEND FFmpeg_HWACCEL_FLAGS --enable-vulkan)
+        list(APPEND FFmpeg_HWACCEL_LIBRARIES ${VULKAN_LIBRARIES})
+        list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${VULKAN_INCLUDE_DIRS})
+        list(APPEND FFmpeg_HWACCEL_LDFLAGS ${VULKAN_LDFLAGS})
+        message(STATUS "ffmpeg: vulkan libraries version ${VULKAN_VERSION} found")
+    endif()
+
+    if (SPIRV_HEADERS_FOUND)
+        list(APPEND FFmpeg_HWACCEL_LIBRARIES ${SPIRV_HEADERS_LIBRARIES})
+        list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${SPIRV_HEADERS_INCLUDE_DIRS})
+        list(APPEND FFmpeg_HWACCEL_LDFLAGS ${SPIRV_HEADERS_LDFLAGS})
+        message(STATUS "ffmpeg: spirv-headers libraries version ${SPIRV_HEADERS_VERSION} found")
     endif()
 endif()
 
@@ -250,8 +270,15 @@ else()
 
     # `configure` parameters builds only exactly what yuzu needs from FFmpeg
     # `--disable-vdpau` is needed to avoid linking issues
-    set(FFmpeg_CC ${CMAKE_C_COMPILER_LAUNCHER}  ${CMAKE_C_COMPILER})
-    set(FFmpeg_CXX ${CMAKE_CXX_COMPILER_LAUNCHER}  ${CMAKE_CXX_COMPILER})
+    set(FFmpeg_CC ${CMAKE_C_COMPILER_LAUNCHER} ${CMAKE_C_COMPILER})
+    set(FFmpeg_CXX ${CMAKE_CXX_COMPILER_LAUNCHER} ${CMAKE_CXX_COMPILER})
+    # A C++ compiler ought to make C++ binaries, unfortunely using raw `ld` often
+    # doesn't properly link libc/libstdc++, we don't exactly have `LD_C + LD_CXX` to diff
+    # between them, so use the C++ compiler wrapper launcher as a form of.. well...
+    # avoiding the issue of stdc++ not being linked, yes, this affects C libraries
+    # but due to the fact 99% of LD linkers use GC nowadays, this basically should resolve
+    # into a nop, MSVC untested.
+    set(FFmpeg_LD ${CMAKE_CXX_COMPILER_LAUNCHER} ${CMAKE_CXX_COMPILER})
     add_custom_command(
         OUTPUT
             ${FFmpeg_MAKEFILE}
@@ -272,7 +299,7 @@ else()
                 --enable-pic
                 --cc=${FFmpeg_CC}
                 --cxx=${FFmpeg_CXX}
-                --ld=${CMAKE_LINKER}
+                --ld=${FFmpeg_LD}
                 --extra-cflags=${CMAKE_C_FLAGS}
                 --extra-cxxflags=${CMAKE_CXX_FLAGS}
                 --extra-ldflags=${CMAKE_C_LINK_FLAGS}
@@ -283,6 +310,7 @@ else()
     )
     unset(FFmpeg_CC)
     unset(FFmpeg_CXX)
+    unset(FFmpeg_LD)
     unset(FFmpeg_HWACCEL_FLAGS)
     unset(FFmpeg_CROSS_COMPILE_FLAGS)
 
