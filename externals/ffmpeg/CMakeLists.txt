@@ -145,7 +145,7 @@ elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
         endif(CUDA_FOUND)
     endif()
 
-    if (VDPAU_FOUND)
+    if (VDPAU_FOUND AND NOT APPLE)
         list(APPEND FFmpeg_HWACCEL_FLAGS
             --enable-vdpau
             --enable-hwaccel=h264_vdpau
@@ -160,7 +160,7 @@ elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
         message(WARNING "ffmpeg: libvdpau-dev not found, disabling Video Decode and Presentation API for Unix (VDPAU)...")
     endif()
 
-    if (VULKAN_FOUND)
+    if (VULKAN_FOUND AND NOT APPLE)
         list(APPEND FFmpeg_HWACCEL_FLAGS --enable-vulkan)
         list(APPEND FFmpeg_HWACCEL_LIBRARIES ${VULKAN_LIBRARIES})
         list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${VULKAN_INCLUDE_DIRS})
