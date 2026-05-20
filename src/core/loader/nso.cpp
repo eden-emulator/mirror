@@ -17,11 +17,14 @@
 #include "common/swap.h"
 #include "core/core.h"
 #include "core/file_sys/patch_manager.h"
+#include "core/file_sys/romfs_factory.h"
 #include "core/file_sys/vfs/vfs_types.h"
 #include "core/hle/kernel/code_set.h"
 #include "core/hle/kernel/k_page_table.h"
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/k_thread.h"
+#include "core/hle/service/filesystem/filesystem.h"
+#include "core/loader/loader.h"
 #include "core/loader/nso.h"
 #include "core/memory.h"
 
@@ -67,7 +70,7 @@ FileType AppLoader_NSO::IdentifyType(const FileSys::VirtualFile& in_file) {
     return FileType::NSO;
 }
 
-std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::System& system, const FileSys::VfsFile& nso_file, FileSys::VirtualFile npdm_file, const VAddr load_base, const bool should_pass_arguments, const bool load_into_process, VAddr* out_load_base, std::optional<FileSys::PatchManager> pm, std::vector<Core::NCE::Patcher>* patches, s32 patch_index) {
+std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::System& system, const FileSys::VfsFile& nso_file, const VAddr load_base, const bool should_pass_arguments, const bool load_into_process, VAddr* out_load_base, FileSys::ProgramMetadata metadata, std::optional<FileSys::PatchManager> pm, std::vector<Core::NCE::Patcher>* patches, s32 patch_index) {
     if (nso_file.GetSize() < sizeof(NSOHeader))
         return std::nullopt;
     NSOHeader nso_header{};
@@ -220,14 +223,6 @@ std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::
         }
     }
 
-    FileSys::ProgramMetadata metadata = FileSys::ProgramMetadata::GetDefault();
-    if (npdm_file) {
-        LOG_DEBUG(Loader, "loading associated npdm file {}", npdm_file->GetName());
-        metadata.Load(npdm_file);
-    } else {
-        LOG_WARNING(Loader, "no associated npdm for {}, using default", nso_file.GetName());
-    }
-
     const bool is_hbl = true;
     if (process
         .LoadFromMetadata(metadata, image_size, 0, 0, is_hbl)
@@ -235,11 +230,9 @@ std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::
         return false;
     }
 
-    auto const new_load_base = npdm_file ? process.GetEntryPoint().GetValue() : load_base;
-    if (npdm_file)
-        LOG_WARNING(Loader, "overriden load base with {:#016x}", new_load_base);
+    auto const new_load_base = process.GetEntryPoint().GetValue();
     if (out_load_base)
-        *out_load_base = load_base; // no change
+        *out_load_base = new_load_base; // no change
     // Load codeset for current process
     process.LoadModule(system.Kernel(), std::move(codeset), new_load_base);
     return new_load_base + image_size;
@@ -251,26 +244,51 @@ AppLoader_NSO::LoadResult AppLoader_NSO::Load(Kernel::KProcess& process, Core::S
     }
 
     FileSys::VirtualFile npdm_file{};
-    if (auto const dir = file->GetContainingDirectory())
+    metadata = FileSys::ProgramMetadata::GetDefault();
+    if (auto const dir = file->GetContainingDirectory()) {
         npdm_file = dir->GetFile("main.npdm");
+        if (npdm_file) {
+            metadata.Load(npdm_file);
+        }
+    }
 
     modules.clear();
     // Load module
     VAddr base_address = GetInteger(process.GetEntryPoint());
-    if (!LoadModule(process, system, *file, npdm_file, base_address, true, true, &base_address)) {
+    if (!LoadModule(process, system, *file, base_address, true, true, &base_address, metadata)) {
         return {ResultStatus::ErrorLoadingNSO, {}};
     }
 
     modules.insert_or_assign(base_address, file->GetName());
     LOG_DEBUG(Loader, "loaded module {} @ {:#x}", file->GetName(), base_address);
 
+    if (npdm_file) {
+        LOG_WARNING(Loader, "creating associated rom-fs factories for likely standalone NSO");
+        u64 program_id{};
+        ReadProgramId(program_id);
+        system.GetFileSystemController().RegisterProcess(process.GetProcessId(), program_id, std::make_unique<FileSys::RomFSFactory>(*this, system.GetContentProvider(), system.GetFileSystemController()));
+    }
+
     is_loaded = true;
-    return {ResultStatus::Success, LoadParameters{Kernel::KThread::DefaultThreadPriority,
-                                                  Core::Memory::DEFAULT_STACK_SIZE}};
+    return {ResultStatus::Success, LoadParameters{Kernel::KThread::DefaultThreadPriority, Core::Memory::DEFAULT_STACK_SIZE}};
 }
 
 ResultStatus AppLoader_NSO::ReadNSOModules(Modules& out_modules) {
     out_modules = this->modules;
+    return ResultStatus::Success;
+}
+
+ResultStatus AppLoader_NSO::ReadProgramId(u64& out_program_id) {
+    if (metadata.GetTitleID() == 0)
+        return ResultStatus::ErrorNoControl;
+    out_program_id = metadata.GetTitleID();
+    return ResultStatus::Success;
+}
+
+ResultStatus AppLoader_NSO::ReadTitle(std::string& out_title) {
+    auto const raw_name = metadata.GetName();
+    out_title.resize(raw_name.size());
+    std::memcpy(out_title.data(), raw_name.data(), raw_name.size());
     return ResultStatus::Success;
 }
 

@@ -12,6 +12,7 @@
 #include "common/common_types.h"
 #include "common/swap.h"
 #include "core/file_sys/patch_manager.h"
+#include "core/file_sys/program_metadata.h"
 #include "core/loader/loader.h"
 
 namespace Core {
@@ -93,16 +94,20 @@ public:
     }
 
     static std::optional<VAddr> LoadModule(Kernel::KProcess& process, Core::System& system,
-        const FileSys::VfsFile& nso_file, FileSys::VirtualFile npdm_file, const VAddr load_base,
+        const FileSys::VfsFile& nso_file, const VAddr load_base,
         const bool should_pass_arguments, const bool load_into_process, VAddr* out_load_base,
+        FileSys::ProgramMetadata metadata,
         std::optional<FileSys::PatchManager> pm = {}, std::vector<Core::NCE::Patcher>* patches = nullptr, s32 patch_index = -1);
 
     LoadResult Load(Kernel::KProcess& process, Core::System& system) override;
 
     ResultStatus ReadNSOModules(Modules& out_modules) override;
+    ResultStatus ReadProgramId(u64& out_program_id) override;
+    ResultStatus ReadTitle(std::string& title) override;
 
 private:
     Modules modules;
+    FileSys::ProgramMetadata metadata;
 };
 
 } // namespace Loader

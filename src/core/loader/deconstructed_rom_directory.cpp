@@ -12,6 +12,7 @@
 #include "core/file_sys/content_archive.h"
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/patch_manager.h"
+#include "core/file_sys/program_metadata.h"
 #include "core/file_sys/romfs_factory.h"
 #include "core/hle/kernel/k_page_table.h"
 #include "core/hle/kernel/k_process.h"
@@ -207,7 +208,7 @@ AppLoader_DeconstructedRomDirectory::LoadResult AppLoader_DeconstructedRomDirect
 
         const bool should_pass_arguments = std::strcmp(module, "rtld") == 0;
         const auto tentative_next_load_addr = AppLoader_NSO::LoadModule(
-            process, system, *module_file, {}, code_size, should_pass_arguments, false, nullptr, {},
+            process, system, *module_file, code_size, should_pass_arguments, false, nullptr, metadata, {},
             patch_ctx.GetPatchers(), patch_ctx.GetLastIndex());
         if (!tentative_next_load_addr) {
             return {ResultStatus::ErrorLoadingNSO, {}};
@@ -254,8 +255,9 @@ AppLoader_DeconstructedRomDirectory::LoadResult AppLoader_DeconstructedRomDirect
 
         const VAddr load_addr{next_load_addr};
         const bool should_pass_arguments = std::strcmp(module, "rtld") == 0;
+        FileSys::ProgramMetadata tmp_metadata{};
         const auto tentative_next_load_addr = AppLoader_NSO::LoadModule(
-            process, system, *module_file, {}, load_addr, should_pass_arguments, true, nullptr, pm,
+            process, system, *module_file, load_addr, should_pass_arguments, true, nullptr, metadata, pm,
             patch_ctx.GetPatchers(), patch_ctx.GetIndex(i));
         if (!tentative_next_load_addr) {
             return {ResultStatus::ErrorLoadingNSO, {}};
