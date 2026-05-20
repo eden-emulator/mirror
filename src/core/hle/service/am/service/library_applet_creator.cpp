@@ -55,6 +55,7 @@ AppletProgramId AppletIdToProgramId(AppletId applet_id) {
     case AppletId::OverlayDisplay:
         return AppletProgramId::OverlayDisplay;
     case AppletId::QLaunch:
+    case AppletId::UlauncherUmenu: //reuses same id as Qlaunch
         return AppletProgramId::QLaunch;
     case AppletId::Starter:
         return AppletProgramId::Starter;

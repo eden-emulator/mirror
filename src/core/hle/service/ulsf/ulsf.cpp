@@ -33,6 +33,8 @@ void ULSF_U::GetVersion(HLERequestContext& ctx) {
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
     server_manager->RegisterNamedService("ulsf:u", std::make_shared<ULSF_U>(system));
+    server_manager->RegisterNamedService("ulsf:p", std::make_shared<ULSF_P>(system));
+
     ServerManager::RunServer(std::move(server_manager));
 }
 

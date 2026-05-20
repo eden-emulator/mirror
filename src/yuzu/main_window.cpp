@@ -521,6 +521,7 @@ MainWindow::MainWindow(bool has_broken_vulkan)
     bool should_launch_qlaunch = false;
     bool should_launch_hlaunch = false;
     bool should_launch_hlaunch_uloader = false;
+    bool should_launch_umenu = false;
     bool should_launch_ulaunch = false;
     bool should_launch_setup = false;
     bool has_gamepath = false;
@@ -568,7 +569,10 @@ MainWindow::MainWindow(bool has_broken_vulkan)
         } else if (args[i] == QStringLiteral("-hlaunch-uloader")) {
             should_launch_hlaunch_uloader = true;
         } else if (args[i] == QStringLiteral("-ulaunch")) {
-            should_launch_ulaunch = true;
+            //should_launch_ulaunch = true;
+            should_launch_umenu = true;
+        } else if (args[i] == QStringLiteral("-umenu")) {
+            should_launch_umenu = true;
         } else if (args[i] == QStringLiteral("-setup")) {
             should_launch_setup = true;
         } else {
@@ -608,9 +612,13 @@ MainWindow::MainWindow(bool has_broken_vulkan)
             BootGame(QString::fromStdString(path), params);
         } else if (should_launch_ulaunch) {
             std::filesystem::path const sd_dir = Common::FS::GetEdenPathString(Common::FS::EdenPath::SDMCDir);
+            auto const path = (sd_dir / "ulaunch" / "bin" / "uSystem" / "exefs.nsp").string();
+            BootGame(QString::fromStdString(path), ApplicationAppletParameters());
+        } else if (should_launch_umenu) {
+            std::filesystem::path const sd_dir = Common::FS::GetEdenPathString(Common::FS::EdenPath::SDMCDir);
             auto const path = (sd_dir / "ulaunch" / "bin" / "uMenu" / "main").string();
-            auto const program_id = 0x0100000000010000;
-            auto params = LibraryAppletParameters(u64(program_id), Service::AM::AppletId::Cabinet);
+            auto const program_id = 0x010000000000FFFF;
+            auto params = LibraryAppletParameters(program_id, Service::AM::AppletId::UlauncherUmenu);
             params.launch_type = Service::AM::LaunchType::FrontendUmenuInitiated;
             BootGame(QString::fromStdString(path), params);
         }

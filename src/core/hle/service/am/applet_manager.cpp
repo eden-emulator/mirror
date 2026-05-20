@@ -24,6 +24,20 @@ namespace Service::AM {
 
 namespace {
 
+constexpr size_t NroPathSize = 512;
+constexpr size_t NroArgvSize = 2048;
+constexpr size_t MenuCaptionSize = 1024;
+struct UloaderTargetInput {
+    u32 magic;
+    bool target_once;
+    bool is_auto_game_recording;
+    std::array<u8, 2> unused;
+    std::array<char, NroPathSize> nro_path;
+    std::array<char, NroArgvSize> nro_argv;
+    std::array<char, MenuCaptionSize> menu_caption;
+};
+static_assert(sizeof(UloaderTargetInput) == 3592);
+
 constexpr u32 LaunchParameterAccountPreselectedUserMagic = 0xC79497CA;
 
 struct LaunchParameterAccountPreselectedUser {
@@ -118,6 +132,44 @@ void PushInShowController(Core::System& system, AppletStorageChannel& channel) {
     channel.Push(system.Kernel(), std::make_shared<IStorage>(system, std::move(common_args_data)));
     channel.Push(system.Kernel(), std::make_shared<IStorage>(system, std::move(private_args_data)));
     channel.Push(system.Kernel(), std::make_shared<IStorage>(system, std::move(user_args_data)));
+}
+
+void PushInShowUlauncherUmenu(Core::System& system, AppletStorageChannel& channel) {
+    typedef std::array<u64, 2> AccountUid;
+    const CommonArguments common_args = {
+        .arguments_version = CommonArgumentVersion::Version3,
+        .size = CommonArgumentSize::Version3,
+        .library_version = 2,
+        .theme_color = ThemeColor::BasicBlack,
+        .play_startup_sound = true,
+        .system_tick = system.CoreTiming().GetClockTicks(),
+    };
+    struct UmenuInput {
+        AccountUid selected_user;
+        UloaderTargetInput suspended_hb_target_ipt; // Set if homebrew (launched as an application) is currently suspended
+        u64 suspended_app_id; // Set if any normal application is suspended
+        std::array<char, 0x301> last_menu_fs_path; //FS_MAX_PATH
+        std::array<char, 0x301> last_menu_path;
+        u32 last_menu_index;
+        bool reload_theme_cache;
+        bool warned_about_outdated_theme;
+        u32 last_added_app_count;
+        u32 last_deleted_app_count;
+        u32 in_verify_app_count;
+    } user_args = {};
+    static_assert(sizeof(UmenuInput) == 5176);
+
+    auto const user = system.GetProfileManager().GetUser(0);
+    user_args.selected_user[0] = user->uuid[0];
+    user_args.selected_user[1] = user->uuid[1];
+    user_args.warned_about_outdated_theme = true;
+
+    std::vector<u8> common_args_data(sizeof(common_args));
+    std::vector<u8> user_args_data(sizeof(user_args));
+    std::memcpy(common_args_data.data(), std::addressof(common_args), sizeof(common_args));
+    std::memcpy(user_args_data.data(), std::addressof(user_args), sizeof(user_args));
+    channel.Push(std::make_shared<IStorage>(system, std::move(common_args_data)));
+    channel.Push(std::make_shared<IStorage>(system, std::move(user_args_data)));
 }
 
 void PushInShowCabinetData(Core::System& system, AppletStorageChannel& channel) {
@@ -294,55 +346,15 @@ void AppletManager::SetWindowSystem(WindowSystem* window_system) {
     // Or ulaunch initialization where we push parameters willingly!
     if (params.launch_type == LaunchType::ApplicationInitiated) {
         applet->user_channel_launch_parameter.swap(m_system.GetUserChannel());
-    } else if (params.launch_type == LaunchType::FrontendUlaunchInitiated
-        || params.launch_type == LaunchType::FrontendUmenuInitiated) {
-        constexpr size_t NroPathSize = 512;
-        constexpr size_t NroArgvSize = 2048;
-        constexpr size_t MenuCaptionSize = 1024;
-        struct UloaderTargetInput {
-            u32 magic;
-            bool target_once;
-            bool is_auto_game_recording;
-            std::array<u8, 2> unused;
-            std::array<char, NroPathSize> nro_path;
-            std::array<char, NroArgvSize> nro_argv;
-            std::array<char, MenuCaptionSize> menu_caption;
-        };
-        static_assert(sizeof(UloaderTargetInput) == 3592);
-
-        if (params.launch_type == LaunchType::FrontendUlaunchInitiated) {
-            UloaderTargetInput target_ipt = {};
-            target_ipt.magic = 0x49444C55; // "ULDI"
-            target_ipt.nro_path = {"sdmc:/hbmenu.nro"};
-            target_ipt.menu_caption = {"Loaded by uLoader v1.2.4 - uLaunch's custom hbloader replacement ;)"};
-
-            std::vector<u8> v(sizeof(target_ipt));
-            std::memcpy(v.data(), std::addressof(target_ipt), sizeof(target_ipt));
-            applet->user_channel_launch_parameter.clear();
-            applet->user_channel_launch_parameter.push_back(std::move(v));
-        } else {
-            typedef u64 AccountUid;
-            struct UmenuInput {
-                AccountUid selected_user;
-                UloaderTargetInput suspended_hb_target_ipt; // Set if homebrew (launched as an application) is currently suspended
-                u64 suspended_app_id; // Set if any normal application is suspended
-                std::array<char, 0x301> last_menu_fs_path; //FS_MAX_PATH
-                std::array<char, 0x301> last_menu_path;
-                u32 last_menu_index;
-                bool reload_theme_cache;
-                bool warned_about_outdated_theme;
-                u32 last_added_app_count;
-                u32 last_deleted_app_count;
-                u32 in_verify_app_count;
-            };
-
-            UmenuInput target_umenu_ipt = {};
-
-            std::vector<u8> v(sizeof(target_umenu_ipt));
-            std::memcpy(v.data(), std::addressof(target_umenu_ipt), sizeof(target_umenu_ipt));
-            applet->user_channel_launch_parameter.clear();
-            applet->user_channel_launch_parameter.push_back(std::move(v));
-        }
+    } else if (params.launch_type == LaunchType::FrontendUlaunchInitiated) {
+        UloaderTargetInput target_ipt = {};
+        target_ipt.magic = 0x49444C55; // "ULDI"
+        target_ipt.nro_path = {"sdmc:/hbmenu.nro"};
+        target_ipt.menu_caption = {"Loaded by uLoader v1.2.4 - uLaunch's custom hbloader replacement ;)"};
+        std::vector<u8> v(sizeof(target_ipt));
+        std::memcpy(v.data(), std::addressof(target_ipt), sizeof(target_ipt));
+        applet->user_channel_launch_parameter.clear();
+        applet->user_channel_launch_parameter.push_back(std::move(v));
     }
 
     // TODO: Read whether we need a preselected user from NACP?
@@ -383,6 +395,9 @@ void AppletManager::SetWindowSystem(WindowSystem* window_system) {
         break;
     case AppletId::Controller:
         PushInShowController(m_system, InitializeFakeCallerApplet(m_system, applet));
+        break;
+    case AppletId::UlauncherUmenu:
+        PushInShowUlauncherUmenu(m_system, InitializeFakeCallerApplet(m_system, applet));
         break;
     default:
         break;

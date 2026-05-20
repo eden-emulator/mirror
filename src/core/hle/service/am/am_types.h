@@ -94,7 +94,9 @@ enum class AppletId : u32 {
     LoginShare = 0x18,
     WebAuth = 0x19,
     MyPage = 0x1A,
-    Lhub = 0x35
+    Lhub = 0x35,
+    // Homebrew -- uses same ProgramId as qlaunch
+    UlauncherUmenu = 0xF000'0000,
 };
 
 enum class AppletProgramId : u64 {
