@@ -695,10 +695,21 @@ HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_)
     backing_base = fallback_buffer->data();
     virtual_base = nullptr;
 #else
+    bool has_memfd = true; // all platforms support it
+#ifdef _WIN32
+    // EXCEPT WINDOWS who may not (Windows 8.1, 7, Vista, etc)
+    DynamicLibrary kernelbase_dll("KernelBase");
+    has_memfd = kernelbase_dll.IsOpen();
+    if (has_memfd) {
+        PFN_CreateFileMapping2 p{};
+        GetFuncAddress(kernelbase_dll, "CreateFileMapping2", p);
+        has_memfd = p != nullptr;
+    }
+#endif
     // Try to allocate a fastmem arena.
     // The implementation will fail with std::bad_alloc on errors.
     impl = std::make_unique<HostMemory::Impl>(AlignUp(backing_size, PageAlignment), AlignUp(virtual_size, PageAlignment) + HugePageSize);
-    if (impl->Init()) {
+    if (has_memfd && impl->Init()) {
         backing_base = impl->backing_base;
         virtual_base = impl->virtual_base;
         if (virtual_base) {
@@ -708,10 +719,12 @@ HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_)
         }
     } else {
         impl.reset();
-        LOG_WARNING(HW_Memory, "Platform can support fastmem, but can't create it");
+        LOG_WARNING(HW_Memory, "Platform doesn't support fastmem");
+#ifdef _WIN32
         fallback_buffer.emplace(backing_size);
         backing_base = fallback_buffer->data();
         virtual_base = nullptr;
+#endif
     }
 #endif
 }

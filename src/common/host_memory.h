@@ -86,7 +86,9 @@ private:
     u8* virtual_base{};
     size_t virtual_base_offset{};
     // Windows requires it for kernels whom lack proper support for some functions!
+#if defined(__OPENORBIS__) || defined(__managarm__) || defined(_WIN32) || defined(__EMSCRIPTEN__)
     std::optional<Common::VirtualBuffer<u8>> fallback_buffer;
+#endif
 };
 
 } // namespace Common
