@@ -517,14 +517,12 @@ MainWindow::MainWindow(bool has_broken_vulkan)
         return;
     }
 
-    QString game_path;
+    QString game_path{};
     bool should_launch_qlaunch = false;
     bool should_launch_hlaunch = false;
     bool should_launch_hlaunch_uloader = false;
-    bool should_launch_umenu = false;
     bool should_launch_ulaunch = false;
     bool should_launch_setup = false;
-    bool has_gamepath = false;
     bool is_fullscreen = false;
 
     // Preserves drag/drop functionality
@@ -558,7 +556,6 @@ MainWindow::MainWindow(bool has_broken_vulkan)
         } else if (args[i] == QStringLiteral("-g") && i < args.size() - 1) {
             // Launch game at path
             game_path = args[++i];
-            has_gamepath = true;
         } else if (args[i] == QStringLiteral("-input-profile") && i < args.size() - 1) {
             auto& players = Settings::values.players.GetValue();
             players[0].profile_name = args[++i].toStdString();
@@ -569,20 +566,16 @@ MainWindow::MainWindow(bool has_broken_vulkan)
         } else if (args[i] == QStringLiteral("-hlaunch-uloader")) {
             should_launch_hlaunch_uloader = true;
         } else if (args[i] == QStringLiteral("-ulaunch")) {
-            //should_launch_ulaunch = true;
-            should_launch_umenu = true;
-        } else if (args[i] == QStringLiteral("-umenu")) {
-            should_launch_umenu = true;
+            should_launch_ulaunch = true;
         } else if (args[i] == QStringLiteral("-setup")) {
             should_launch_setup = true;
         } else {
             game_path = args[i];
-            has_gamepath = true;
         }
     }
 
     // Override fullscreen setting if gamepath or argument is provided
-    if (has_gamepath || is_fullscreen) {
+    if (!game_path.isEmpty() || is_fullscreen) {
         ui->action_Fullscreen->setChecked(is_fullscreen);
     }
 
@@ -612,14 +605,10 @@ MainWindow::MainWindow(bool has_broken_vulkan)
             BootGame(QString::fromStdString(path), params);
         } else if (should_launch_ulaunch) {
             std::filesystem::path const sd_dir = Common::FS::GetEdenPathString(Common::FS::EdenPath::SDMCDir);
-            auto const path = (sd_dir / "ulaunch" / "bin" / "uSystem" / "exefs.nsp").string();
-            BootGame(QString::fromStdString(path), ApplicationAppletParameters());
-        } else if (should_launch_umenu) {
-            std::filesystem::path const sd_dir = Common::FS::GetEdenPathString(Common::FS::EdenPath::SDMCDir);
             auto const path = (sd_dir / "ulaunch" / "bin" / "uMenu" / "main").string();
             auto const program_id = 0x010000000000FFFF;
             auto params = LibraryAppletParameters(program_id, Service::AM::AppletId::UlauncherUmenu);
-            params.launch_type = Service::AM::LaunchType::FrontendUmenuInitiated;
+            params.launch_type = Service::AM::LaunchType::FrontendInitiated;
             BootGame(QString::fromStdString(path), params);
         }
     }

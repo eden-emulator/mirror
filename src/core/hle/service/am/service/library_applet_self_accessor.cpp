@@ -8,6 +8,7 @@
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/patch_manager.h"
 #include "core/file_sys/registered_cache.h"
+#include "core/hle/result.h"
 #include "core/hle/service/acc/profile_manager.h"
 #include "core/hle/service/am/applet_data_broker.h"
 #include "core/hle/service/am/applet_manager.h"
@@ -99,6 +100,20 @@ Result ILibraryAppletSelfAccessor::PopInData(Out<SharedPointer<IStorage>> out_st
 Result ILibraryAppletSelfAccessor::PushOutData(SharedPointer<IStorage> storage) {
     LOG_INFO(Service_AM, "called");
     m_broker->GetOutData().Push(system.Kernel(), storage);
+    if (m_applet->applet_id == AppletId::UlauncherUmenu) {
+        LOG_WARNING(Service_AM, "emulating uLauncher IPC");
+        std::shared_ptr<IStorage> tmp_storage;
+        m_broker->GetOutData().Pop(&tmp_storage);
+        std::vector<u8> result_data(0x8000);
+        struct CommandCommonHeader {
+            u32 magic;
+            u32 val;
+        } cmd;
+        cmd.magic = 0x21494D53;
+        cmd.val = u32(ResultSuccess.raw);
+        std::memcpy(result_data.data(), &cmd, sizeof(cmd));
+        m_broker->GetInData().Push(system.Kernel(), std::make_shared<IStorage>(system, std::move(result_data)));
+    }
     R_SUCCEED();
 }
 
