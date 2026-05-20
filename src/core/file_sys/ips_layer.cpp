@@ -233,10 +233,10 @@ void IPSwitchCompiler::Parse() {
                 } else {
                     LOG_WARNING(Loader, "invalid string");
                 }
-            } else if (auto const first_space = line.find_first_of(" /\r\n", 9); first_space != std::string::npos) {
+            } else if (auto const first_space = line.find_first_of(" /\t\r\n"); first_space != std::string::npos) {
                 IPSwitchRecord r; // hex replacement
                 auto const start = line.cbegin() + first_space;
-                if (auto const last_space = line.find_last_of(" /\r\n"); last_space != std::string::npos) {
+                if (auto const last_space = line.find_last_of(" /\t\r\n"); last_space != std::string::npos) {
                     auto const end = line.cbegin() + last_space;
                     if (start <= line.cend() && end <= line.cend()) {
                         auto const hs = Common::HexStringToVector({start, end}, is_little_endian);
