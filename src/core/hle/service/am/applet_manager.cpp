@@ -291,8 +291,32 @@ void AppletManager::SetWindowSystem(WindowSystem* window_system) {
     applet->previous_program_index = params.previous_program_index;
 
     // Push UserChannel data from previous application
+    // Or ulaunch initialization where we push parameters willingly!
     if (params.launch_type == LaunchType::ApplicationInitiated) {
         applet->user_channel_launch_parameter.swap(m_system.GetUserChannel());
+    } else if (params.launch_type == LaunchType::FrontendUlaunchInitiated) {
+        constexpr size_t NroPathSize = 512;
+        constexpr size_t NroArgvSize = 2048;
+        constexpr size_t MenuCaptionSize = 1024;
+        struct UlauncherTargetInput {
+            u32 magic;
+            bool target_once;
+            bool is_auto_game_recording;
+            std::array<u8, 2> unused;
+            std::array<char, NroPathSize> nro_path;
+            std::array<char, NroArgvSize> nro_argv;
+            std::array<char, MenuCaptionSize> menu_caption;
+        } target_ipt = {};
+        static_assert(sizeof(target_ipt) == 3592);
+
+        target_ipt.magic = 0x49444C55; // "ULDI"
+        target_ipt.nro_path = {"sdmc:/hbmenu.nro"};
+        target_ipt.menu_caption = {"Loaded by uLoader v1.2.4 - uLaunch's custom hbloader replacement ;)"};
+
+        std::vector<u8> v(sizeof(target_ipt));
+        std::memcpy(v.data(), &target_ipt, sizeof(target_ipt));
+        applet->user_channel_launch_parameter.clear();
+        applet->user_channel_launch_parameter.push_back(std::move(v));
     }
 
     // TODO: Read whether we need a preselected user from NACP?

@@ -594,27 +594,10 @@ MainWindow::MainWindow(bool has_broken_vulkan)
                 QString::fromStdString(hbl_path),
                 LibraryAppletParameters(0x010000000000100Dull, Service::AM::AppletId::QLaunch));
         } else if (should_launch_ulaunch) {
-            constexpr size_t NroPathSize = 512;
-            constexpr size_t NroArgvSize = 2048;
-            constexpr size_t MenuCaptionSize = 1024;
-            struct UlauncherTargetInput {
-                u32 magic;
-                bool target_once;
-                bool is_auto_game_recording;
-                std::array<u8, 2> unused;
-                std::array<char, NroPathSize> nro_path;
-                std::array<char, NroArgvSize> nro_argv;
-                std::array<char, MenuCaptionSize> menu_caption;
-            } target_ipt = {};
-
-            target_ipt.magic = 0x49444C55; // "ULDI"
-            QtCommon::system->GetUserChannel().resize(sizeof(target_ipt));
-            std::memcpy(QtCommon::system->GetUserChannel().data(), &target_ipt, sizeof(target_ipt));
-
             std::filesystem::path const sd_dir = Common::FS::GetEdenPathString(Common::FS::EdenPath::SDMCDir);
             auto const path = (sd_dir / "ulaunch" / "bin" / "uLoader" / "application" / "main").string();
             auto params = ApplicationAppletParameters();
-            params.launch_type = Service::AM::LaunchType::ApplicationInitiated;
+            params.launch_type = Service::AM::LaunchType::FrontendUlaunchInitiated;
             BootGame(QString::fromStdString(path), params);
         }
     }
