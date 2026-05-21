@@ -49,8 +49,9 @@ AppletIdentityInfo GetCallerIdentity(Applet& applet) {
 
 ILibraryAppletSelfAccessor::ILibraryAppletSelfAccessor(Core::System& system_,
                                                        std::shared_ptr<Applet> applet)
-    : ServiceFramework{system_, "ILibraryAppletSelfAccessor"}, m_applet{std::move(applet)},
-      m_broker{m_applet->caller_applet_broker} {
+    : ServiceFramework{system_, "ILibraryAppletSelfAccessor"}, m_applet{std::move(applet)}
+    , m_broker{m_applet->caller_applet_broker}
+{
     // clang-format off
     static const FunctionInfo functions[] = {
         {0, D<&ILibraryAppletSelfAccessor::PopInData>, "PopInData"},
@@ -102,7 +103,7 @@ Result ILibraryAppletSelfAccessor::PopInData(Out<SharedPointer<IStorage>> out_st
 }
 
 // uLauncher emulation
-static Result UloaderCreateApplication(Core::System& system, u64 program_id) {
+static Result UloaderCreateApplication(Core::System& system, u64 program_id, std::shared_ptr<Applet> caller_applet) {
     // Get the program NCA from storage.
     auto& storage = system.GetContentProviderUnion();
     FileSys::VirtualFile nca_raw = storage.GetEntryRaw(program_id, FileSys::ContentRecordType::Program);
@@ -118,6 +119,12 @@ static Result UloaderCreateApplication(Core::System& system, u64 program_id) {
     applet->applet_id = AppletId::Application;
     applet->type = AppletType::Application;
     applet->library_applet_mode = LibraryAppletMode::AllForeground;
+
+    applet->caller_applet = caller_applet;
+    applet->caller_applet_broker = std::make_shared<AppletDataBroker>(system);
+    applet->frontend = caller_applet->frontend;
+    caller_applet->child_applets.push_back(applet);
+
     system.GetAppletManager().GetWindowSystem()->TrackApplet(applet, true);
     R_SUCCEED();
 }
@@ -175,7 +182,7 @@ Result ILibraryAppletSelfAccessor::PushOutData(SharedPointer<IStorage> storage) 
             u64 args_value{};
             std::memcpy(std::addressof(args_value), req_data.data() + sizeof(req_cmd), sizeof(args_value));
             LOG_WARNING(Service_AM, "program_id={:016x}", args_value);
-            UloaderCreateApplication(system, args_value);
+            UloaderCreateApplication(system, args_value, m_applet);
             break;
         }
         case SystemMessage::ResumeApplication:
@@ -201,8 +208,8 @@ Result ILibraryAppletSelfAccessor::PushOutData(SharedPointer<IStorage> storage) 
         case SystemMessage::NotifyWarnedAboutOutdatedTheme:
             break;
         case SystemMessage::TerminateMenu:
-            m_applet->process->Terminate();
-            system.GetAppletManager().GetWindowSystem()->RequestApplicationToGetForeground();
+            system.GetUserChannel() = m_applet->user_channel_launch_parameter;
+            system.ExecuteProgram(0);
             break;
         case SystemMessage::OpenControllerKeyRemapping:
             break;
