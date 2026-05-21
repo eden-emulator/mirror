@@ -406,7 +406,7 @@ void AppletManager::SetWindowSystem(WindowSystem* window_system) {
     // Applet was started by frontend, so it is foreground.
     applet->lifecycle_manager.SetFocusState(m_system.Kernel(), FocusState::InFocus);
 
-    if (applet->applet_id == AppletId::QLaunch) {
+    if (applet->applet_id == AppletId::QLaunch || applet->applet_id == AppletId::UlauncherUmenu) {
         applet->lifecycle_manager.SetFocusHandlingMode(false);
         applet->lifecycle_manager.SetOutOfFocusSuspendingEnabled(false);
         m_window_system->TrackApplet(applet, false);

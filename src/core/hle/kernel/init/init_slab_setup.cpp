@@ -86,7 +86,9 @@ constexpr size_t SlabCountKDeviceAddressSpace = 300;
 constexpr size_t SlabCountKSession = 1133;
 constexpr size_t SlabCountKLightSession = 100;
 constexpr size_t SlabCountKObjectName = 7;
-constexpr size_t SlabCountKResourceLimit = 5;
+// Slight divergence to allow for uLaunch to work properly
+// TODO(lizzie): This should be 5, shouldn't it?
+constexpr size_t SlabCountKResourceLimit = 5 + 8;
 constexpr size_t SlabCountKDebug = Core::Hardware::NUM_CPU_CORES;
 constexpr size_t SlabCountKIoPool = 1;
 constexpr size_t SlabCountKIoRegion = 6;

@@ -607,8 +607,9 @@ MainWindow::MainWindow(bool has_broken_vulkan)
             std::filesystem::path const sd_dir = Common::FS::GetEdenPathString(Common::FS::EdenPath::SDMCDir);
             auto const path = (sd_dir / "ulaunch" / "bin" / "uMenu" / "main").string();
             auto const program_id = 0x010000000000FFFF;
-            auto params = LibraryAppletParameters(program_id, Service::AM::AppletId::UlauncherUmenu);
-            params.launch_type = Service::AM::LaunchType::FrontendInitiated;
+            auto const applet_id = Service::AM::AppletId::UlauncherUmenu;
+            auto params = LibraryAppletParameters(program_id, applet_id);
+            QtCommon::system->GetFrontendAppletHolder().SetCurrentAppletId(applet_id);
             BootGame(QString::fromStdString(path), params);
         }
     }

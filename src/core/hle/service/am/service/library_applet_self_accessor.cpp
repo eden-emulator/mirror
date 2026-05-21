@@ -16,6 +16,7 @@
 #include "core/hle/service/am/process_creation.h"
 #include "core/hle/service/am/service/library_applet_self_accessor.h"
 #include "core/hle/service/am/service/storage.h"
+#include "core/hle/service/am/window_system.h"
 #include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/filesystem/filesystem.h"
 #include "core/hle/service/glue/glue_manager.h"
@@ -102,10 +103,9 @@ Result ILibraryAppletSelfAccessor::PopInData(Out<SharedPointer<IStorage>> out_st
 
 // uLauncher emulation
 static Result UloaderCreateApplication(Core::System& system, u64 program_id) {
-    FileSys::VirtualFile nca_raw{};
     // Get the program NCA from storage.
     auto& storage = system.GetContentProviderUnion();
-    nca_raw = storage.GetEntryRaw(program_id, FileSys::ContentRecordType::Program);
+    FileSys::VirtualFile nca_raw = storage.GetEntryRaw(program_id, FileSys::ContentRecordType::Program);
     // Ensure we retrieved a program NCA.
     R_UNLESS(nca_raw != nullptr, ResultUnknown);
     std::vector<u8> control;
@@ -118,7 +118,7 @@ static Result UloaderCreateApplication(Core::System& system, u64 program_id) {
     applet->applet_id = AppletId::Application;
     applet->type = AppletType::Application;
     applet->library_applet_mode = LibraryAppletMode::AllForeground;
-    //window_system.TrackApplet(applet, true);
+    system.GetAppletManager().GetWindowSystem()->TrackApplet(applet, true);
     R_SUCCEED();
 }
 
@@ -175,9 +175,8 @@ Result ILibraryAppletSelfAccessor::PushOutData(SharedPointer<IStorage> storage) 
             u64 args_value{};
             std::memcpy(std::addressof(args_value), req_data.data() + sizeof(req_cmd), sizeof(args_value));
             LOG_WARNING(Service_AM, "program_id={:016x}", args_value);
-            m_applet->process->Terminate();
             UloaderCreateApplication(system, args_value);
-            R_SUCCEED();
+            break;
         }
         case SystemMessage::ResumeApplication:
         case SystemMessage::TerminateApplication:
@@ -202,6 +201,8 @@ Result ILibraryAppletSelfAccessor::PushOutData(SharedPointer<IStorage> storage) 
         case SystemMessage::NotifyWarnedAboutOutdatedTheme:
             break;
         case SystemMessage::TerminateMenu:
+            m_applet->process->Terminate();
+            system.GetAppletManager().GetWindowSystem()->RequestApplicationToGetForeground();
             break;
         case SystemMessage::OpenControllerKeyRemapping:
             break;
