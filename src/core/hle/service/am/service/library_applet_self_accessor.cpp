@@ -13,6 +13,7 @@
 #include "core/hle/service/am/applet_data_broker.h"
 #include "core/hle/service/am/applet_manager.h"
 #include "core/hle/service/am/frontend/applets.h"
+#include "core/hle/service/am/process_creation.h"
 #include "core/hle/service/am/service/library_applet_self_accessor.h"
 #include "core/hle/service/am/service/storage.h"
 #include "core/hle/service/cmif_serialization.h"
@@ -20,7 +21,9 @@
 #include "core/hle/service/glue/glue_manager.h"
 #include "core/hle/service/ns/application_manager_interface.h"
 #include "core/hle/service/ns/service_getter_interface.h"
+#include "core/hle/service/server_manager.h"
 #include "core/hle/service/sm/sm.h"
+#include "core/loader/loader.h"
 
 namespace Service::AM {
 
@@ -97,12 +100,32 @@ Result ILibraryAppletSelfAccessor::PopInData(Out<SharedPointer<IStorage>> out_st
     R_RETURN(m_broker->GetInData().Pop(system.Kernel(), out_storage));
 }
 
+// uLauncher emulation
+static Result UloaderCreateApplication(Core::System& system, u64 program_id) {
+    FileSys::VirtualFile nca_raw{};
+    // Get the program NCA from storage.
+    auto& storage = system.GetContentProviderUnion();
+    nca_raw = storage.GetEntryRaw(program_id, FileSys::ContentRecordType::Program);
+    // Ensure we retrieved a program NCA.
+    R_UNLESS(nca_raw != nullptr, ResultUnknown);
+    std::vector<u8> control;
+    std::unique_ptr<Loader::AppLoader> loader;
+    Loader::ResultStatus result;
+    auto process = CreateApplicationProcess(control, loader, result, system, nca_raw, program_id, 0);
+    R_UNLESS(process != nullptr, ResultUnknown);
+    const auto applet = std::make_shared<Applet>(system, std::move(process), true);
+    applet->program_id = program_id;
+    applet->applet_id = AppletId::Application;
+    applet->type = AppletType::Application;
+    applet->library_applet_mode = LibraryAppletMode::AllForeground;
+    //window_system.TrackApplet(applet, true);
+    R_SUCCEED();
+}
+
 Result ILibraryAppletSelfAccessor::PushOutData(SharedPointer<IStorage> storage) {
     LOG_INFO(Service_AM, "called");
     m_broker->GetOutData().Push(system.Kernel(), storage);
     if (m_applet->applet_id == AppletId::UlauncherUmenu) {
-        LOG_WARNING(Service_AM, "emulating uLauncher IPC");
-
         enum class SystemMessage : u32 {
             Invalid,
             SetSelectedUser,
@@ -139,11 +162,23 @@ Result ILibraryAppletSelfAccessor::PushOutData(SharedPointer<IStorage> storage) 
         m_broker->GetOutData().Pop(&req_storage);
         auto req_data = req_storage->GetData();
         CommandCommonHeader req_cmd{};
-        std::memcpy(req_data.data(), &req_cmd, sizeof(req_cmd));
+        std::memcpy(&req_cmd, req_data.data(), sizeof(req_cmd));
 
+        LOG_WARNING(Service_AM, "uLauncher:IPC {}, {}", req_cmd.magic, req_cmd.val);
         switch (SystemMessage(req_cmd.val)) {
         case SystemMessage::SetSelectedUser:
-        case SystemMessage::LaunchApplication:
+            break;
+        case SystemMessage::LaunchApplication: {
+            // all applet proxies OpenSystemAppletProxy
+            // applet proxy GetApplicationCreator
+            // application creator CreateApplication
+            u64 args_value{};
+            std::memcpy(std::addressof(args_value), req_data.data() + sizeof(req_cmd), sizeof(args_value));
+            LOG_WARNING(Service_AM, "program_id={:016x}", args_value);
+            m_applet->process->Terminate();
+            UloaderCreateApplication(system, args_value);
+            R_SUCCEED();
+        }
         case SystemMessage::ResumeApplication:
         case SystemMessage::TerminateApplication:
         case SystemMessage::LaunchHomebrewLibraryApplet:
@@ -165,7 +200,9 @@ Result ILibraryAppletSelfAccessor::PushOutData(SharedPointer<IStorage> storage) 
         case SystemMessage::StartVerifyApplication:
         case SystemMessage::ListInVerifyApplications:
         case SystemMessage::NotifyWarnedAboutOutdatedTheme:
+            break;
         case SystemMessage::TerminateMenu:
+            break;
         case SystemMessage::OpenControllerKeyRemapping:
             break;
         case SystemMessage::Invalid:
