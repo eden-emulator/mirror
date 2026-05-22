@@ -724,7 +724,6 @@ HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_)
         fallback_buffer.emplace(backing_size);
         backing_base = fallback_buffer->data();
         virtual_base = nullptr;
-#endif
     }
 #endif
 }
