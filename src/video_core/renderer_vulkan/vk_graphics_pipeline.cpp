@@ -79,16 +79,18 @@ VkStencilOpState GetStencilFaceState(const StencilFace& face) {
 }
 
 bool SupportsPrimitiveRestart(VkPrimitiveTopology topology) {
-    static constexpr std::array unsupported_topologies{
-        VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
-        VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
-        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-        VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,
-        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,
-        VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
-        // VK_PRIMITIVE_TOPOLOGY_QUAD_LIST_EXT,
-    };
-    return std::ranges::find(unsupported_topologies, topology) == unsupported_topologies.end();
+    switch (topology) {
+    case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+    case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+    case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+    case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+    // case VK_PRIMITIVE_TOPOLOGY_QUAD_LIST_EXT:
+        return false;
+    default:
+        return true;
+    }
 }
 
 bool IsLine(VkPrimitiveTopology topology) {

@@ -168,26 +168,22 @@ DrawParams MakeDrawParams(const Tegra::Engines::Maxwell3D::DrawManager::State& d
     return params;
 }
 
-bool SupportsPrimitiveRestart(VkPrimitiveTopology topology) {
-    switch (topology) {
-    case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
-    case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
-    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
-    case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
-    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
-    case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
-        return false;
-    default:
-        return true;
-    }
-}
-
 bool IsPrimitiveRestartSupported(const Device& device, VkPrimitiveTopology topology) {
-    return ((topology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST &&
-             device.IsTopologyListPrimitiveRestartSupported()) ||
-            SupportsPrimitiveRestart(topology) ||
-            (topology == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST &&
-             device.IsPatchListPrimitiveRestartSupported()));
+    auto const supports_primitive_restart = [](VkPrimitiveTopology topology) {
+        switch (topology) {
+        case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+        case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+        case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+        case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+        case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+        case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+            return false;
+        default:
+            return true;
+        }
+    };
+    return ((topology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST && device.IsTopologyListPrimitiveRestartSupported())
+        || supports_primitive_restart(topology) || (topology == VK_PRIMITIVE_TOPOLOGY_PATCH_LIST && device.IsPatchListPrimitiveRestartSupported()));
 }
 } // Anonymous namespace
 
