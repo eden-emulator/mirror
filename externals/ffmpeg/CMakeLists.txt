@@ -310,6 +310,7 @@ else()
                 --disable-ffprobe
                 --disable-network
                 --disable-swresample
+                --disable-iconv
                 --enable-decoder=h264
                 --enable-decoder=vp8
                 --enable-decoder=vp9
