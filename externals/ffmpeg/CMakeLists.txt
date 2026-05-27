@@ -67,30 +67,27 @@ endif()
 
 if (OPENORBIS OR MANAGARM OR EMSCRIPTEN)
     # Doesn't support VA-API, don't go thru the embarrassment of trying to enable it
-    list(APPEND FFmpeg_HWACCEL_FLAGS --disable-vaapi)
-elseif (ANDROID)
     list(APPEND FFmpeg_HWACCEL_FLAGS
-        --enable-mediacodec
-        --enable-jni
-    )
+        --disable-vaapi
+        --disnable-cuvid
+        --disnable-ffnvcodec
+        --disnable-nvdec
+        --disable-vulkan
+        --disable-libdrm)
 elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(LIBVA libva)
-    pkg_check_modules(CUDA cuda)
-    pkg_check_modules(FFNVCODEC ffnvcodec)
-    pkg_check_modules(VDPAU vdpau)
-    pkg_check_modules(VULKAN vulkan)
-    find_package(spirv-headers)
+    find_package(PkgConfig)
     find_package(X11)
-    
     if(X11_FOUND)
+        # Include X11 if possible, some APIs such as VDPAU heavily depend
+        # upon it's existence!
+        list(APPEND FFmpeg_HWACCEL_LIBRARIES ${X11_LIBRARIES})
+        list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${X11_INCLUDE_DIRS})
+        list(APPEND FFmpeg_HWACCEL_LDFLAGS ${X11_LDFLAGS})
         if (NOT APPLE)
             # In Solaris needs explicit linking for ffmpeg which links to /lib/amd64/libX11.so
             if(SOLARIS)
-                list(APPEND FFmpeg_HWACCEL_LIBRARIES
-                    X11
-                    "${CMAKE_SYSROOT}/usr/lib/xorg/amd64/libdrm.so")
-            else()
+                list(APPEND FFmpeg_HWACCEL_LIBRARIES X11 "${CMAKE_SYSROOT}/usr/lib/xorg/amd64/libdrm.so")
+            elseif(PkgConfig_FOUND)
                 pkg_check_modules(LIBDRM libdrm REQUIRED)
                 list(APPEND FFmpeg_HWACCEL_LIBRARIES
                     ${LIBDRM_LIBRARIES})
@@ -100,7 +97,7 @@ elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
             list(APPEND FFmpeg_HWACCEL_FLAGS
                 --enable-libdrm)
         endif()
-        if(LIBVA_FOUND)
+        if(PkgConfig_FOUND AND LIBVA_FOUND)
             pkg_check_modules(LIBVA-DRM libva-drm REQUIRED)
             pkg_check_modules(LIBVA-X11 libva-x11 REQUIRED)
             list(APPEND FFmpeg_HWACCEL_LIBRARIES
@@ -127,60 +124,70 @@ elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
         list(APPEND FFmpeg_HWACCEL_FLAGS --disable-vaapi)
         message(WARNING "ffmpeg: X11 libraries not found, disabling VA-API...")
     endif()
+    if (PkgConfig_FOUND)
+        pkg_check_modules(LIBVA libva)
+        pkg_check_modules(CUDA cuda)
+        pkg_check_modules(FFNVCODEC ffnvcodec)
+        pkg_check_modules(VDPAU vdpau)
+        pkg_check_modules(VULKAN vulkan)
+        find_package(spirv-headers)
 
-    if (FFNVCODEC_FOUND)
-        list(APPEND FFmpeg_HWACCEL_FLAGS
-            --enable-cuvid
-            --enable-ffnvcodec
-            --enable-nvdec
-            --enable-hwaccel=h264_nvdec
-            --enable-hwaccel=vp8_nvdec
-            --enable-hwaccel=vp9_nvdec
-        )
-        list(APPEND FFmpeg_HWACCEL_LIBRARIES ${FFNVCODEC_LIBRARIES})
-        list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${FFNVCODEC_INCLUDE_DIRS})
-        list(APPEND FFmpeg_HWACCEL_LDFLAGS ${FFNVCODEC_LDFLAGS})
-        message(STATUS "ffmpeg: ffnvcodec libraries version ${FFNVCODEC_VERSION} found")
-        # ffnvenc could load CUDA libraries at the runtime using dlopen/dlsym or LoadLibrary/GetProcAddress
-        # here we handle the hard-linking scenario where CUDA is linked during compilation
-        if (CUDA_FOUND)
-            # This line causes build error if CUDA_INCLUDE_DIRS is anything but a single non-empty value
-            #list(APPEND FFmpeg_HWACCEL_FLAGS --extra-cflags=-I${CUDA_INCLUDE_DIRS})
-            list(APPEND FFmpeg_HWACCEL_LIBRARIES ${CUDA_LIBRARIES})
-            list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS})
-            list(APPEND FFmpeg_HWACCEL_LDFLAGS ${CUDA_LDFLAGS})
-            message(STATUS "ffmpeg: CUDA libraries version ${CUDA_VERSION} found, hard-linking will be performed")
-        endif(CUDA_FOUND)
-    endif()
+        if (FFNVCODEC_FOUND)
+            list(APPEND FFmpeg_HWACCEL_FLAGS
+                --enable-cuvid
+                --enable-ffnvcodec
+                --enable-nvdec
+                --enable-hwaccel=h264_nvdec
+                --enable-hwaccel=vp8_nvdec
+                --enable-hwaccel=vp9_nvdec
+            )
+            list(APPEND FFmpeg_HWACCEL_LIBRARIES ${FFNVCODEC_LIBRARIES})
+            list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${FFNVCODEC_INCLUDE_DIRS})
+            list(APPEND FFmpeg_HWACCEL_LDFLAGS ${FFNVCODEC_LDFLAGS})
+            message(STATUS "ffmpeg: ffnvcodec libraries version ${FFNVCODEC_VERSION} found")
+            # ffnvenc could load CUDA libraries at the runtime using dlopen/dlsym or LoadLibrary/GetProcAddress
+            # here we handle the hard-linking scenario where CUDA is linked during compilation
+            if (CUDA_FOUND)
+                # This line causes build error if CUDA_INCLUDE_DIRS is anything but a single non-empty value
+                #list(APPEND FFmpeg_HWACCEL_FLAGS --extra-cflags=-I${CUDA_INCLUDE_DIRS})
+                list(APPEND FFmpeg_HWACCEL_LIBRARIES ${CUDA_LIBRARIES})
+                list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS})
+                list(APPEND FFmpeg_HWACCEL_LDFLAGS ${CUDA_LDFLAGS})
+                message(STATUS "ffmpeg: CUDA libraries version ${CUDA_VERSION} found, hard-linking will be performed")
+            endif(CUDA_FOUND)
+        endif()
 
-    if (VDPAU_FOUND AND NOT APPLE)
-        list(APPEND FFmpeg_HWACCEL_FLAGS
-            --enable-vdpau
-            --enable-hwaccel=h264_vdpau
-            --enable-hwaccel=vp9_vdpau
-        )
-        list(APPEND FFmpeg_HWACCEL_LIBRARIES ${VDPAU_LIBRARIES})
-        list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${VDPAU_INCLUDE_DIRS})
-        list(APPEND FFmpeg_HWACCEL_LDFLAGS ${VDPAU_LDFLAGS})
-        message(STATUS "ffmpeg: vdpau libraries version ${VDPAU_VERSION} found")
-    else()
-        list(APPEND FFmpeg_HWACCEL_FLAGS --disable-vdpau)
-        message(WARNING "ffmpeg: libvdpau-dev not found, disabling Video Decode and Presentation API for Unix (VDPAU)...")
-    endif()
+        if (VDPAU_FOUND AND NOT APPLE)
+            list(APPEND FFmpeg_HWACCEL_FLAGS
+                --enable-vdpau
+                --enable-hwaccel=h264_vdpau
+                --enable-hwaccel=vp9_vdpau)
+            list(APPEND FFmpeg_HWACCEL_LIBRARIES ${VDPAU_LIBRARIES})
+            list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${VDPAU_INCLUDE_DIRS})
+            list(APPEND FFmpeg_HWACCEL_LDFLAGS ${VDPAU_LDFLAGS})
+            message(STATUS "ffmpeg: vdpau libraries version ${VDPAU_VERSION} found")
+        else()
+            list(APPEND FFmpeg_HWACCEL_FLAGS --disable-vdpau)
+            message(WARNING "ffmpeg: libvdpau-dev not found, disabling Video Decode and Presentation API for Unix (VDPAU)...")
+        endif()
 
-    if (VULKAN_FOUND AND NOT APPLE)
-        list(APPEND FFmpeg_HWACCEL_FLAGS --enable-vulkan)
-        list(APPEND FFmpeg_HWACCEL_LIBRARIES ${VULKAN_LIBRARIES})
-        list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${VULKAN_INCLUDE_DIRS})
-        list(APPEND FFmpeg_HWACCEL_LDFLAGS ${VULKAN_LDFLAGS})
-        message(STATUS "ffmpeg: vulkan libraries version ${VULKAN_VERSION} found")
-    endif()
+        if (VULKAN_FOUND AND NOT APPLE)
+            list(APPEND FFmpeg_HWACCEL_FLAGS
+                --enable-vulkan
+                --enable-hwaccel=h264_vulkan
+                --enable-hwaccel=vp9_vulkan)
+            list(APPEND FFmpeg_HWACCEL_LIBRARIES ${VULKAN_LIBRARIES})
+            list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${VULKAN_INCLUDE_DIRS})
+            list(APPEND FFmpeg_HWACCEL_LDFLAGS ${VULKAN_LDFLAGS})
+            message(STATUS "ffmpeg: vulkan libraries version ${VULKAN_VERSION} found")
+        endif()
 
-    if (SPIRV_HEADERS_FOUND)
-        list(APPEND FFmpeg_HWACCEL_LIBRARIES ${SPIRV_HEADERS_LIBRARIES})
-        list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${SPIRV_HEADERS_INCLUDE_DIRS})
-        list(APPEND FFmpeg_HWACCEL_LDFLAGS ${SPIRV_HEADERS_LDFLAGS})
-        message(STATUS "ffmpeg: spirv-headers libraries version ${SPIRV_HEADERS_VERSION} found")
+        if (SPIRV_HEADERS_FOUND)
+            list(APPEND FFmpeg_HWACCEL_LIBRARIES ${SPIRV_HEADERS_LIBRARIES})
+            list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${SPIRV_HEADERS_INCLUDE_DIRS})
+            list(APPEND FFmpeg_HWACCEL_LDFLAGS ${SPIRV_HEADERS_LDFLAGS})
+            message(STATUS "ffmpeg: spirv-headers libraries version ${SPIRV_HEADERS_VERSION} found")
+        endif()
     endif()
 endif()
 
