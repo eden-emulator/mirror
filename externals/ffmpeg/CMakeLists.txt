@@ -86,20 +86,24 @@ elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
         if (NOT APPLE)
             # In Solaris needs explicit linking for ffmpeg which links to /lib/amd64/libX11.so
             if(SOLARIS)
-                list(APPEND FFmpeg_HWACCEL_LIBRARIES X11 "${CMAKE_SYSROOT}/usr/lib/xorg/amd64/libdrm.so")
-            elseif(PkgConfig_FOUND)
-                pkg_check_modules(LIBDRM libdrm REQUIRED)
                 list(APPEND FFmpeg_HWACCEL_LIBRARIES
-                    ${LIBDRM_LIBRARIES})
-                list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS
-                    ${LIBDRM_INCLUDE_DIRS})
+                    X11
+                    "${CMAKE_SYSROOT}/usr/lib/xorg/amd64/libdrm.so")
+            else()
+                pkg_check_modules(LIBDRM libdrm)
+                if (LIBDRM_FOUND)
+                    list(APPEND FFmpeg_HWACCEL_LIBRARIES
+                        ${LIBDRM_LIBRARIES})
+                    list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS
+                        ${LIBDRM_INCLUDE_DIRS})
+                endif()
             endif()
             list(APPEND FFmpeg_HWACCEL_FLAGS
                 --enable-libdrm)
         endif()
-        if(PkgConfig_FOUND AND LIBVA_FOUND)
-            pkg_check_modules(LIBVA-DRM libva-drm REQUIRED)
-            pkg_check_modules(LIBVA-X11 libva-x11 REQUIRED)
+        if(PkgConfig_FOUND OR LIBVA_FOUND)
+            pkg_check_modules(LIBVA-DRM libva-drm)
+            pkg_check_modules(LIBVA-X11 libva-x11)
             list(APPEND FFmpeg_HWACCEL_LIBRARIES
                 ${LIBVA-DRM_LIBRARIES}
                 ${LIBVA-X11_LIBRARIES}
