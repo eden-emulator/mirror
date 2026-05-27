@@ -101,7 +101,6 @@ elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
             pkg_check_modules(LIBVA-DRM libva-drm REQUIRED)
             pkg_check_modules(LIBVA-X11 libva-x11 REQUIRED)
             list(APPEND FFmpeg_HWACCEL_LIBRARIES
-                ${X11_LIBRARIES}
                 ${LIBVA-DRM_LIBRARIES}
                 ${LIBVA-X11_LIBRARIES}
                 ${LIBVA_LIBRARIES})
@@ -110,11 +109,9 @@ elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
                 --enable-hwaccel=vp8_vaapi
                 --enable-hwaccel=vp9_vaapi)
             list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS
-                ${X11_INCLUDE_DIRS}
                 ${LIBVA-DRM_INCLUDE_DIRS}
                 ${LIBVA-X11_INCLUDE_DIRS}
-                ${LIBVA_INCLUDE_DIRS}
-            )
+                ${LIBVA_INCLUDE_DIRS})
             message(STATUS "ffmpeg: va-api libraries version ${LIBVA_VERSION} found")
         else()
             list(APPEND FFmpeg_HWACCEL_FLAGS --disable-vaapi)
@@ -139,8 +136,7 @@ elseif (UNIX AND NOT DEFINED FFmpeg_IS_CROSS_COMPILING AND NOT ANDROID)
                 --enable-nvdec
                 --enable-hwaccel=h264_nvdec
                 --enable-hwaccel=vp8_nvdec
-                --enable-hwaccel=vp9_nvdec
-            )
+                --enable-hwaccel=vp9_nvdec)
             list(APPEND FFmpeg_HWACCEL_LIBRARIES ${FFNVCODEC_LIBRARIES})
             list(APPEND FFmpeg_HWACCEL_INCLUDE_DIRS ${FFNVCODEC_INCLUDE_DIRS})
             list(APPEND FFmpeg_HWACCEL_LDFLAGS ${FFNVCODEC_LDFLAGS})
@@ -298,6 +294,9 @@ else()
     if (FFmpeg_IS_CROSS_COMPILING)
         list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --ld=${CMAKE_LINKER})
     endif ()
+    # TODO: This is a bit fragile, it depends on FFmpeg_HWACCEL_LDFLAGS being a list
+    # whereas CMAKE_C_FLAGS (and likewise) is meant to NOT be a list, but rather
+    # an elongated piece of string
     add_custom_command(
         OUTPUT
             ${FFmpeg_MAKEFILE}
@@ -320,7 +319,7 @@ else()
                 --cxx=${FFmpeg_CXX}
                 --extra-cflags=${CMAKE_C_FLAGS}
                 --extra-cxxflags=${CMAKE_CXX_FLAGS}
-                --extra-ldflags=${CMAKE_C_LINK_FLAGS}
+                --extra-ldflags="${FFmpeg_HWACCEL_LDFLAGS}"
                 ${FFmpeg_HWACCEL_FLAGS}
                 ${FFmpeg_CROSS_COMPILE_FLAGS}
         WORKING_DIRECTORY
