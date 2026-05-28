@@ -77,7 +77,7 @@ private:
     size_t backing_size{};
     size_t virtual_size{};
 
-#if !(defined(__OPENORBIS__) || defined(__managarm__))
+#if !defined(__OPENORBIS__)
     // Low level handler for the platform dependent memory routines
     class Impl;
     std::unique_ptr<Impl> impl;
