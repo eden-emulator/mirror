@@ -394,7 +394,7 @@ private:
     ankerl::unordered_dense::map<size_t, size_t> placeholder_host_pointers; ///< Placeholder backing offset
 };
 
-#elif defined(__OPENORBIS__) || defined(__managarm__)
+#elif defined(__OPENORBIS__)
 // None of the luxuries of POSIX, all of the suffering
 // For managarm: see https://github.com/managarm/managarm/issues/1370
 #else // ^^^ Windows ^^^ vvv POSIX vvv
@@ -689,7 +689,7 @@ HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_)
     : backing_size(backing_size_)
     , virtual_size(virtual_size_)
 {
-#if defined(__OPENORBIS__) || defined(__managarm__)
+#if defined(__OPENORBIS__)
     LOG_WARNING(HW_Memory, "Platform doesn't support fastmem");
     fallback_buffer.emplace(backing_size);
     backing_base = fallback_buffer->data();
