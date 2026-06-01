@@ -325,7 +325,7 @@ void SoftwareKeyboard::ProcessInlineKeyboardRequest() {
 
     std::memcpy(&request_command, request_data.data(), sizeof(SwkbdRequestCommand));
 
-    switch (request_command) {
+    switch (SwkbdRequestCommand(u8(request_command) & 0x0f)) {
     case SwkbdRequestCommand::Finalize:
         RequestFinalize(request_data);
         break;
