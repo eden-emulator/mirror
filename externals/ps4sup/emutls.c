@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /* ===---------- emutls.c - Implements __emutls_get_address ---------------===
  *
  *                     The LLVM Compiler Infrastructure
