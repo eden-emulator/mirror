@@ -227,6 +227,7 @@ if(CXX_CLANG)
         $<$<VERSION_LESS:$<CXX_COMPILER_VERSION>,15>:CANNOT_EXPLICITLY_INSTANTIATE>)
 endif()
 
+# Has to be BEFORE httplib
 if (BOOST_NO_HEADERS)
     target_link_libraries(common PUBLIC Boost::algorithm Boost::heap Boost::icl Boost::pool)
 else()
