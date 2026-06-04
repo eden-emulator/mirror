@@ -1,0 +1,15 @@
+diff --git a/libavutil/cpu.c b/libavutil/cpu.c
+index 03e2720..874258f 100644
+--- a/libavutil/cpu.c
++++ b/libavutil/cpu.c
+@@ -43,8 +43,10 @@
+ #include <sys/param.h>
+ #endif
+ #include <sys/types.h>
++#ifndef __OPENORBIS__
+ #include <sys/sysctl.h>
+ #endif
++#endif
+ #if HAVE_UNISTD_H
+ #include <unistd.h>
+ #endif
