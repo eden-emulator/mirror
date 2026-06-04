@@ -1,0 +1,13 @@
+diff --git a/crypto/o_str.c b/crypto/o_str.c
+index 8aadff5..ba427c9 100644
+--- a/crypto/o_str.c
++++ b/crypto/o_str.c
+@@ -385,7 +385,7 @@ int openssl_strerror_r(int errnum, char *buf, size_t buflen)
+      * It can return a pointer to some (immutable) static string in which case
+      * buf is left unused.
+      */
+-    err = strerror_r(errnum, buf, buflen);
++    err = (char *)strerror_r(errnum, buf, buflen);
+     if (err == NULL || buflen == 0)
+         return 0;
+     /*
