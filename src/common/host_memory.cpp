@@ -394,7 +394,7 @@ private:
     ankerl::unordered_dense::map<size_t, size_t> placeholder_host_pointers; ///< Placeholder backing offset
 };
 
-#elif defined(__OPENORBIS__) || defined(__managarm__)
+#elif defined(__OPENORBIS__) || defined(__managarm__) || defined(__wasi__) || defined(__EMSCRIPTEN__)
 // None of the luxuries of POSIX, all of the suffering
 // For managarm: see https://github.com/managarm/managarm/issues/1370
 #else // ^^^ Windows ^^^ vvv POSIX vvv
@@ -689,7 +689,7 @@ HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_)
     : backing_size(backing_size_)
     , virtual_size(virtual_size_)
 {
-#if defined(__OPENORBIS__) || defined(__managarm__)
+#if defined(__OPENORBIS__) || defined(__managarm__) || defined(__wasi__) || defined(__EMSCRIPTEN__)
     LOG_WARNING(HW_Memory, "Platform doesn't support fastmem");
     fallback_buffer.emplace(backing_size);
     backing_base = fallback_buffer->data();
@@ -734,8 +734,13 @@ HostMemory::HostMemory(HostMemory&&) noexcept = default;
 
 HostMemory& HostMemory::operator=(HostMemory&&) noexcept = default;
 
+#if defined(__OPENORBIS__) || defined(__managarm__) || defined(__wasi__) || defined(__EMSCRIPTEN__)
+void HostMemory::Map(size_t virtual_offset, size_t host_offset, size_t length, MemoryPermission perms, bool separate_heap) {}
+void HostMemory::Unmap(size_t virtual_offset, size_t length, bool separate_heap) {}
+void HostMemory::Protect(size_t virtual_offset, size_t length, MemoryPermission perm) {}
+void HostMemory::EnableDirectMappedAddress() {}
+#else
 void HostMemory::Map(size_t virtual_offset, size_t host_offset, size_t length, MemoryPermission perms, bool separate_heap) {
-#if !(defined(__OPENORBIS__) || defined(__managarm__))
     ASSERT(virtual_offset % PageAlignment == 0);
     ASSERT(host_offset % PageAlignment == 0);
     ASSERT(length % PageAlignment == 0);
@@ -745,11 +750,9 @@ void HostMemory::Map(size_t virtual_offset, size_t host_offset, size_t length, M
         return;
     }
     impl->Map(virtual_offset + virtual_base_offset, host_offset, length, perms);
-#endif
 }
 
 void HostMemory::Unmap(size_t virtual_offset, size_t length, bool separate_heap) {
-#if !(defined(__OPENORBIS__) || defined(__managarm__))
     ASSERT(virtual_offset % PageAlignment == 0);
     ASSERT(length % PageAlignment == 0);
     ASSERT(virtual_offset + length <= virtual_size);
@@ -757,11 +760,9 @@ void HostMemory::Unmap(size_t virtual_offset, size_t length, bool separate_heap)
         return;
     }
     impl->Unmap(virtual_offset + virtual_base_offset, length);
-#endif
 }
 
 void HostMemory::Protect(size_t virtual_offset, size_t length, MemoryPermission perm) {
-#if !(defined(__OPENORBIS__) || defined(__managarm__))
     ASSERT(virtual_offset % PageAlignment == 0);
     ASSERT(length % PageAlignment == 0);
     ASSERT(virtual_offset + length <= virtual_size);
@@ -772,20 +773,18 @@ void HostMemory::Protect(size_t virtual_offset, size_t length, MemoryPermission 
     const bool write = True(perm & MemoryPermission::Write);
     const bool execute = True(perm & MemoryPermission::Execute);
     impl->Protect(virtual_offset + virtual_base_offset, length, read, write, execute);
-#endif
-}
-
-void HostMemory::ClearBackingRegion(size_t physical_offset, size_t length, u32 fill_value) {
-    std::memset(backing_base + physical_offset, fill_value, length);
 }
 
 void HostMemory::EnableDirectMappedAddress() {
-#if !(defined(__OPENORBIS__) || defined(__managarm__))
     if (impl) {
         impl->EnableDirectMappedAddress();
         virtual_size += reinterpret_cast<uintptr_t>(virtual_base);
     }
+}
 #endif
+
+void HostMemory::ClearBackingRegion(size_t physical_offset, size_t length, u32 fill_value) {
+    std::memset(backing_base + physical_offset, fill_value, length);
 }
 
 } // namespace Common
