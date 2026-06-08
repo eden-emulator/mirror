@@ -15,8 +15,6 @@ add_library(input_common STATIC
     drivers/tas_input.h
     drivers/touch_screen.cpp
     drivers/touch_screen.h
-    drivers/udp_client.cpp
-    drivers/udp_client.h
     drivers/virtual_amiibo.cpp
     drivers/virtual_amiibo.h
     drivers/virtual_gamepad.cpp
@@ -34,8 +32,12 @@ add_library(input_common STATIC
     input_poller.cpp
     input_poller.h
     main.cpp
-    main.h
-)
+    main.h)
+if (NOT PLATFORM_EMSCRIPTEN)
+    target_sources(input_common PRIVATE
+        drivers/udp_client.cpp
+        drivers/udp_client.h)
+endif()
 
 if (MSVC)
     target_compile_options(input_common PRIVATE

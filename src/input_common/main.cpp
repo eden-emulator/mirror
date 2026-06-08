@@ -12,7 +12,6 @@
 #include "input_common/drivers/mouse.h"
 #include "input_common/drivers/tas_input.h"
 #include "input_common/drivers/touch_screen.h"
-#include "input_common/drivers/udp_client.h"
 #include "input_common/drivers/virtual_amiibo.h"
 #include "input_common/drivers/virtual_gamepad.h"
 #include "input_common/helpers/stick_from_buttons.h"
@@ -21,6 +20,9 @@
 #include "input_common/input_mapping.h"
 #include "input_common/input_poller.h"
 #include "input_common/main.h"
+#ifndef __EMSCRIPTEN__
+#include "input_common/drivers/udp_client.h"
+#endif
 
 #ifdef ENABLE_LIBUSB
 #include "input_common/drivers/gc_adapter.h"
@@ -82,7 +84,9 @@ struct InputSubsystem::Impl {
 #ifdef ENABLE_LIBUSB
         RegisterEngine("gcpad", gcadapter);
 #endif
+#ifndef __EMSCRIPTEN__
         RegisterEngine("cemuhookudp", udp_client);
+#endif
         RegisterEngine("tas", tas_input);
         RegisterEngine("camera", camera);
 #ifdef __ANDROID__
@@ -116,7 +120,9 @@ struct InputSubsystem::Impl {
 #ifdef ENABLE_LIBUSB
         UnregisterEngine(gcadapter);
 #endif
+#ifndef __EMSCRIPTEN__
         UnregisterEngine(udp_client);
+#endif
         UnregisterEngine(tas_input);
         UnregisterEngine(camera);
 #ifdef __ANDROID__
@@ -152,8 +158,10 @@ struct InputSubsystem::Impl {
         auto gcadapter_devices = gcadapter->GetInputDevices();
         devices.insert(devices.end(), gcadapter_devices.begin(), gcadapter_devices.end());
 #endif
+#ifndef __EMSCRIPTEN__
         auto udp_devices = udp_client->GetInputDevices();
         devices.insert(devices.end(), udp_devices.begin(), udp_devices.end());
+#endif
 #ifdef HAVE_SDL3
         auto joycon_devices = joycon->GetInputDevices();
         devices.insert(devices.end(), joycon_devices.begin(), joycon_devices.end());
@@ -186,9 +194,11 @@ struct InputSubsystem::Impl {
             return gcadapter;
         }
 #endif
+#ifndef __EMSCRIPTEN__
         if (engine == udp_client->GetEngineName()) {
             return udp_client;
         }
+#endif
 #ifdef HAVE_SDL3
         if (engine == sdl->GetEngineName()) {
             return sdl;
@@ -271,9 +281,11 @@ struct InputSubsystem::Impl {
             return true;
         }
 #endif
+#ifndef __EMSCRIPTEN__
         if (engine == udp_client->GetEngineName()) {
             return true;
         }
+#endif
         if (engine == tas_input->GetEngineName()) {
             return true;
         }
@@ -300,7 +312,9 @@ struct InputSubsystem::Impl {
 #ifdef ENABLE_LIBUSB
         gcadapter->BeginConfiguration();
 #endif
+#ifndef __EMSCRIPTEN__
         udp_client->BeginConfiguration();
+#endif
 #ifdef HAVE_SDL3
         sdl->BeginConfiguration();
         joycon->BeginConfiguration();
@@ -316,7 +330,9 @@ struct InputSubsystem::Impl {
 #ifdef ENABLE_LIBUSB
         gcadapter->EndConfiguration();
 #endif
+#ifndef __EMSCRIPTEN__
         udp_client->EndConfiguration();
+#endif
 #ifdef HAVE_SDL3
         sdl->EndConfiguration();
         joycon->EndConfiguration();
@@ -341,7 +357,9 @@ struct InputSubsystem::Impl {
     std::shared_ptr<Mouse> mouse;
     std::shared_ptr<TouchScreen> touch_screen;
     std::shared_ptr<TasInput::Tas> tas_input;
+#ifndef __EMSCRIPTEN__
     std::shared_ptr<CemuhookUDP::UDPClient> udp_client;
+#endif
     std::shared_ptr<Camera> camera;
     std::shared_ptr<VirtualAmiibo> virtual_amiibo;
     std::shared_ptr<VirtualGamepad> virtual_gamepad;
@@ -470,7 +488,9 @@ bool InputSubsystem::IsStickInverted(const Common::ParamPackage& params) const {
 }
 
 void InputSubsystem::ReloadInputDevices() {
+#ifndef __EMSCRIPTEN__
     impl->udp_client.get()->ReloadSockets();
+#endif
 }
 
 void InputSubsystem::BeginMapping(Polling::InputType type) {

@@ -14,7 +14,9 @@
 namespace Tz {
 
 namespace {
+#ifndef EINVAL
 #define EINVAL 22
+#endif
 
 static Rule gmtmem{};
 static Rule* const gmtptr = &gmtmem;

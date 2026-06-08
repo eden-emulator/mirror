@@ -38,10 +38,6 @@ add_library(core STATIC
     debugger/debugger.cpp
     debugger/debugger.h
     debugger/debugger_interface.h
-    debugger/gdbstub.cpp
-    debugger/gdbstub.h
-    debugger/gdbstub_arch.cpp
-    debugger/gdbstub_arch.h
     device_memory.cpp
     device_memory.h
     device_memory_manager.h
@@ -1170,6 +1166,14 @@ add_library(core STATIC
     tools/freezer.h
     tools/renderdoc.cpp
     tools/renderdoc.h)
+if (NOT PLATFORM_EMSCRIPTEN)
+    # incompatible with wasm's async model
+    target_sources(core PRIVATE
+        debugger/gdbstub.cpp
+        debugger/gdbstub.h
+        debugger/gdbstub_arch.cpp
+        debugger/gdbstub_arch.h)
+endif()
 
 if (ENABLE_WIFI_SCAN)
     target_sources(core PRIVATE internal_network/wifi_scanner.cpp)
@@ -1213,7 +1217,10 @@ target_include_directories(core PRIVATE ${OPUS_INCLUDE_DIRS})
 target_link_libraries(core PUBLIC common PRIVATE audio_core hid_core network video_core nx_tzdb tz)
 
 if (BOOST_NO_HEADERS)
-    target_link_libraries(core PUBLIC Boost::container Boost::heap Boost::asio Boost::process Boost::crc)
+    target_link_libraries(core PUBLIC Boost::container Boost::heap Boost::crc)
+    if (NOT PLATFORM_EMSCRIPTEN)
+        target_link_libraries(core PRIVATE Boost::asio Boost::process)
+    endif()
 else()
     target_link_libraries(core PUBLIC Boost::headers)
 endif()

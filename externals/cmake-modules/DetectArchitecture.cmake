@@ -94,12 +94,21 @@ function(detect_architecture_symbols)
 endfunction()
 
 # arches here are put in a sane default order of importance
+# EXCEPT FOR WASM, which must be probed for FIRST, because some genius
+# decided to also allow the host architecture to be defined when building
+# for the emscripten target, absolutely lovely detail.
+#
 # notably, amd64, arm64, and riscv (in order) are BY FAR the most common
 # mips is pretty popular in embedded
 # ppc64 is pretty popular in supercomputing
 # sparc is uh
 # ia64 exists
 # the rest exist, but are probably less popular than ia64
+
+detect_architecture_symbols(
+    ARCH wasm
+    SYMBOLS
+        "__EMSCRIPTEN__")
 
 detect_architecture_symbols(
     ARCH arm64
@@ -202,11 +211,6 @@ detect_architecture_symbols(
     SYMBOLS
         "__loongarch__"
         "__loongarch64")
-
-detect_architecture_symbols(
-    ARCH wasm
-    SYMBOLS
-        "__EMSCRIPTEN__")
 
 # "generic" target
 # If you have reached this point, you're on some as-of-yet unsupported architecture.

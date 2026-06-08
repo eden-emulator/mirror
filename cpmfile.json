@@ -213,7 +213,8 @@
             "0001-cpmutil-compat.patch",
             "0002-use-ccache.patch",
             "0003-use-cmake-compiler-flags.patch",
-            "0004-use-shell-wrapper.patch"
+            "0004-use-shell-wrapper.patch",
+            "0005-wasm-support.patch"
         ],
         "repo": "jimmy-park/openssl-cmake",
         "version": "3.6.2"

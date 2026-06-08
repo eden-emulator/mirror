@@ -177,7 +177,6 @@ else()
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-invalid-offsetof>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-parameter>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>)
-
     if (CXX_CLANG OR CXX_ICC OR CXX_APPLE) # Clang, AppleClang, or Intel C++
         if (NOT MSVC)
             add_compile_options(
@@ -191,7 +190,11 @@ else()
             $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-nullability-completeness>)
     endif()
 
-    if (ARCHITECTURE_x86_64)
+    if (ARCHITECTURE_wasm)
+        # we are evil but fmt is even more evil
+        add_compile_options(
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-shorten-64-to-32>)
+    elseif (ARCHITECTURE_x86_64)
         add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-mcx16>)
         if (LINUX OR FREEBSD)
             add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-mtls-dialect=gnu2>)

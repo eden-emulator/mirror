@@ -403,7 +403,12 @@ set(BUILD_TESTING OFF)
 set(ENABLE_TESTING OFF)
 
 # boost
-set(BOOST_INCLUDE_LIBRARIES algorithm icl pool container heap asio headers process filesystem crc variant)
+if (PLATFORM_EMSCRIPTEN)
+    set(BOOST_INCLUDE_LIBRARIES algorithm icl pool container heap headers filesystem crc variant)
+    set(BOOST_CONTAINER_HEADER_ONLY ON)
+else()
+    set(BOOST_INCLUDE_LIBRARIES algorithm icl pool container heap asio headers process filesystem crc variant)
+endif()
 
 AddJsonPackage(boost)
 
@@ -424,10 +429,12 @@ if (Boost_ADDED)
 
         target_compile_options(boost_heap INTERFACE $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-shadow>)
         target_compile_options(boost_icl INTERFACE $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-shadow>)
-        target_compile_options(boost_asio INTERFACE
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-conversion>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-fallthrough>
-        )
+        # May not exist (i.e emscripten)
+        if (TARGET boost_asio)
+            target_compile_options(boost_asio INTERFACE
+                $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-conversion>
+                $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-fallthrough>)
+        endif()
     endif()
 endif()
 

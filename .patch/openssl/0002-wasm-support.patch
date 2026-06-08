@@ -1,0 +1,108 @@
+diff --git a/Configurations/10-main.conf b/Configurations/10-main.conf
+index e62721e..6fcea0d 100644
+--- a/Configurations/10-main.conf
++++ b/Configurations/10-main.conf
+@@ -1970,6 +1970,26 @@ my %targets = (
+         multilib         => "64",
+     },
+ 
++    "wasm32" => {
++        inherit_from     => [ "BASE_unix" ],
++        CC               => "emcc",
++        CXX              => "emc++",
++        cflags           => add("--target=wasm32-unknown-emscripten"),
++        cxxflags         => add("--target=wasm32-unknown-emscripten"),
++        lib_cppflags     => add("-DL_ENDIAN"),
++        bn_ops           => "THIRTY_TWO_BIT",
++    },
++    "wasm64" => {
++        inherit_from     => [ "BASE_unix" ],
++        CC               => "emcc",
++        CXX              => "emc++",
++        cflags           => add("--target=wasm64-unknown-emscripten"),
++        cxxflags         => add("--target=wasm64-unknown-emscripten"),
++        lib_cppflags     => add("-DL_ENDIAN"),
++        bn_ops           => "SIXTY_FOUR_BIT_LONG",
++    },
++
++
+ #### uClinux
+     "uClinux-dist" => {
+         inherit_from     => [ "BASE_unix" ],
+diff --git a/crypto/rand/rand_lib.c b/crypto/rand/rand_lib.c
+index d9e8f02..0bd63b0 100644
+--- a/crypto/rand/rand_lib.c
++++ b/crypto/rand/rand_lib.c
+@@ -379,17 +379,25 @@ void RAND_add(const void *buf, int num, double randomness)
+ #if !defined(OPENSSL_NO_DEPRECATED_1_1_0)
+ int RAND_pseudo_bytes(unsigned char *buf, int num)
+ {
++#ifdef __EMSCRIPTEN__
++    arc4random_buf(buf, num);
++    return 1;
++#else
+     const RAND_METHOD *meth = RAND_get_rand_method();
+ 
+     if (meth != NULL && meth->pseudorand != NULL)
+         return meth->pseudorand(buf, num);
+     ERR_raise(ERR_LIB_RAND, RAND_R_FUNC_NOT_IMPLEMENTED);
+     return -1;
++#endif
+ }
+ #endif
+ 
+ int RAND_status(void)
+ {
++#ifdef __EMSCRIPTEN__
++    return 1;
++#else
+     EVP_RAND_CTX *rand;
+ #ifndef OPENSSL_NO_DEPRECATED_3_0
+     const RAND_METHOD *meth = RAND_get_rand_method();
+@@ -401,6 +409,7 @@ int RAND_status(void)
+     if ((rand = RAND_get0_primary(NULL)) == NULL)
+         return 0;
+     return EVP_RAND_get_state(rand) == EVP_RAND_STATE_READY;
++#endif
+ }
+ #else /* !FIPS_MODULE */
+ 
+@@ -420,6 +429,10 @@ const RAND_METHOD *RAND_get_rand_method(void)
+ int RAND_priv_bytes_ex(OSSL_LIB_CTX *ctx, unsigned char *buf, size_t num,
+     unsigned int strength)
+ {
++#ifdef __EMSCRIPTEN__
++    arc4random_buf(buf, num);
++    return 1;
++#else
+     RAND_GLOBAL *dgbl;
+     EVP_RAND_CTX *rand;
+ #if !defined(OPENSSL_NO_DEPRECATED_3_0) && !defined(FIPS_MODULE)
+@@ -451,6 +464,7 @@ int RAND_priv_bytes_ex(OSSL_LIB_CTX *ctx, unsigned char *buf, size_t num,
+         return EVP_RAND_generate(rand, buf, num, strength, 0, NULL, 0);
+ 
+     return 0;
++#endif
+ }
+ 
+ int RAND_priv_bytes(unsigned char *buf, int num)
+diff --git a/ssl/ssl_cert.c b/ssl/ssl_cert.c
+index 3d21801..e026f8f 100644
+--- a/ssl/ssl_cert.c
++++ b/ssl/ssl_cert.c
+@@ -941,6 +941,7 @@ done:
+     return ret;
+ }
+ 
++#ifndef OPENSSL_NO_POSIX_IO
+ int SSL_add_dir_cert_subjects_to_stack(STACK_OF(X509_NAME) *stack,
+     const char *dir)
+ {
+@@ -1016,6 +1017,7 @@ err:
+ 
+     return ret;
+ }
++#endif
+ 
+ static int add_uris_recursive(STACK_OF(X509_NAME) *stack,
+     const char *uri, int depth)

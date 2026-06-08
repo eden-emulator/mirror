@@ -33,9 +33,15 @@ public:
     bool is_created{};
     bool is_mapped{};
     INSERT_PADDING_BYTES(0x5);
-    Kernel::KSharedMemory* shared_memory;
+    union {
+        Kernel::KSharedMemory* shared_memory = nullptr;
+        u64 shared_memory_raw;
+    };
     INSERT_PADDING_BYTES(0x38);
-    SharedMemoryFormat* address = nullptr;
+    union {
+        SharedMemoryFormat* address = nullptr;
+        u64 address_raw;
+    };
 };
 // Correct size is 0x50 bytes
 static_assert(sizeof(SharedMemoryHolder) == 0x50, "SharedMemoryHolder is an invalid size");

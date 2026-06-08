@@ -37,26 +37,39 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
     elseif (NOT (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES CMAKE_SYSTEM_PROCESSOR
     AND CMAKE_HOST_SYSTEM_NAME MATCHES CMAKE_SYSTEM_NAME))
         string(TOLOWER "${CMAKE_SYSTEM_NAME}" FFmpeg_SYSTEM_NAME)
-        if (FFmpeg_SYSTEM_NAME STREQUAL "openorbis" OR FFmpeg_SYSTEM_NAME STREQUAL "managarm")
+        # All of these platforms are supported by ffmpeg as native build OSes
+        # anything else (like Redox or Managarm or PS4) is NOT natively supported
+        # hence, assume the "unix like" is just "none" for the sake of OUR sanity.
+        # If YOUR OS/platform has actual native support:
+        # 1. fucking congrats
+        # 2. feel free to add it on the condition below
+        if (NOT (PLATFORM_NETBSD OR PLATFORM_SUN OR PLATFORM_FREEBSD
+        OR PLATFORM_OPENBSD OR PLATFORM_DRAGONFLYBSD OR PLATFORM_HAIKU
+        OR PLATFORM_LINUX OR PLATFORM_MSYS OR WIN32 OR ANDROID OR APPLE))
             set(FFmpeg_SYSTEM_NAME "none")
         endif()
         # TODO: Can we really do better? Auto-detection? Something clever?
         list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
             --enable-cross-compile
             --arch="${CMAKE_SYSTEM_PROCESSOR}"
-            --target-os="${FFmpeg_SYSTEM_NAME}"
-            --sysroot="${CMAKE_SYSROOT}"
-        )
+            --target-os="${FFmpeg_SYSTEM_NAME}")
+        if (PLATFORM_EMSCRIPTEN)
+            # funniest trolling from emscripten, such a classic!
+            # maybe I should PR so they use CMAKE_SYSROOT... y'know?
+            list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --sysroot="${EMSCRIPTEN_SYSROOT}")
+        else()
+            list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --sysroot="${CMAKE_SYSROOT}")
+        endif()
         if (DEFINED FFmpeg_CROSS_PREFIX)
             list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --cross-prefix="${FFmpeg_CROSS_PREFIX}")
         else()
-            message(WARNING "Please set FFmpeg_CROSS_PREFIX to your cross toolchain prefix, for example: \${CMAKE_STAGING_PREFIX}/bin/${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}-")
+            message(WARNING "Please set FFmpeg_CROSS_PREFIX to your cross toolchain prefix, for example: ${CMAKE_STAGING_PREFIX}/bin/${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}")
         endif()
         set(FFmpeg_IS_CROSS_COMPILING TRUE)
     endif()
 endif()
 
-if (OPENORBIS OR MANAGARM)
+if (OPENORBIS OR MANAGARM OR EMSCRIPTEN)
     # Doesn't support VA-API, don't go thru the embarrassment of trying to enable it
     list(APPEND FFmpeg_HWACCEL_FLAGS --disable-vaapi)
 elseif (ANDROID)
@@ -164,8 +177,7 @@ if (OPENORBIS)
         -lSceUserService
         -lSceSysmodule
         -lSceNet
-        -lSceLibcInternal
-    )
+        -lSceLibcInternal)
     list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
         --disable-pthreads
         --extra-cflags=${CMAKE_SYSROOT}/usr/include
@@ -176,8 +188,18 @@ elseif (MANAGARM)
     # Required for proper stuff
     list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
         --disable-pthreads
-        --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}"
-    )
+        --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}")
+endif()
+
+# Usually used by Emscripten
+if (DEFINED CMAKE_AR)
+    list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --ar=${CMAKE_AR})
+endif()
+if (DEFINED CMAKE_NM)
+    list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --nm=${CMAKE_NM})
+endif()
+if (DEFINED CMAKE_RANLIB)
+    list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --ranlib=${CMAKE_RANLIB})
 endif()
 
 if (YUZU_USE_BUNDLED_FFMPEG)
@@ -207,6 +229,7 @@ else()
     # Build FFmpeg from externals
     message(STATUS "Using FFmpeg from externals")
 
+    set(FFmpeg_LD ${CMAKE_LINKER})
     if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86_64|amd64)")
         # FFmpeg has source that requires one of nasm or yasm to assemble it.
         # REQUIRED throws an error if not found here during configuration rather than during compilation.
@@ -214,6 +237,12 @@ else()
         if ("${ASSEMBLER}" STREQUAL "ASSEMBLER-NOTFOUND")
             message(FATAL_ERROR "One of either `nasm` or `yasm` not found but is required.")
         endif()
+    endif()
+    if (CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+        # TODO: this is 100% redundant but we need it because CMAKE_LINKER can resolve to ld.lld
+        # which is NOT compatible
+        find_program(EMCC NAMES emcc REQUIRED)
+        set(FFmpeg_LD ${EMCC})
     endif()
 
     find_program(AUTOCONF autoconf)
@@ -248,7 +277,13 @@ else()
             CACHE PATH "Paths to FFmpeg libraries" FORCE)
     endforeach()
 
-    find_program(BASH_PROGRAM bash REQUIRED)
+    # Some SDKs (especially wasm) require us, actually, WANT us to use their "emconfigure"
+    # otherwise they will cry a billion tears
+    if (PLATFORM_EMSCRIPTEN)
+        find_program(FFmpeg_CONFIGURE_WRAPPER emconfigure REQUIRED)
+    else()
+        find_program(FFmpeg_CONFIGURE_WRAPPER bash REQUIRED)
+    endif()
 
     # `configure` parameters builds only exactly what yuzu needs from FFmpeg
     # `--disable-vdpau` is needed to avoid linking issues
@@ -258,7 +293,7 @@ else()
         OUTPUT
             ${FFmpeg_MAKEFILE}
         COMMAND
-            ${BASH_PROGRAM} ${FFmpeg_PREFIX}/configure
+            ${FFmpeg_CONFIGURE_WRAPPER} ${FFmpeg_PREFIX}/configure
                 --disable-avdevice
                 --disable-avformat
                 --disable-doc
@@ -267,6 +302,10 @@ else()
                 --disable-ffprobe
                 --disable-network
                 --disable-swresample
+                --disable-autodetect
+                --disable-runtime-cpudetect
+                --disable-debug
+                --disable-programs
                 --enable-decoder=h264
                 --enable-decoder=vp8
                 --enable-decoder=vp9
@@ -274,7 +313,7 @@ else()
                 --enable-pic
                 --cc=${FFmpeg_CC}
                 --cxx=${FFmpeg_CXX}
-                --ld=${CMAKE_LINKER}
+                --ld=${FFmpeg_LD}
                 --extra-cflags=${CMAKE_C_FLAGS}
                 --extra-cxxflags=${CMAKE_CXX_FLAGS}
                 --extra-ldflags=${CMAKE_C_LINK_FLAGS}
@@ -290,11 +329,7 @@ else()
 
     # Workaround for Ubuntu 18.04's older version of make not being able to call make as a child
     # with context of the jobserver. Also helps ninja users.
-    execute_process(
-        COMMAND
-            nproc
-        OUTPUT_VARIABLE
-            SYSTEM_THREADS)
+    cmake_host_system_information(RESULT SYSTEM_THREADS QUERY NUMBER_OF_LOGICAL_CORES)
 
     set(FFmpeg_BUILD_LIBRARIES ${FFmpeg_LIBRARIES})
 
@@ -302,6 +337,8 @@ else()
     if (LINUX OR ANDROID OR APPLE OR WIN32 OR FREEBSD)
         set(FFmpeg_MAKE_ARGS -j${SYSTEM_THREADS})
     else()
+        # No GNU make implies that this system may be highly non-GNU
+        find_program(MAKE make required)
         set(FFmpeg_MAKE_ARGS "")
     endif()
 
@@ -309,7 +346,7 @@ else()
         OUTPUT
             ${FFmpeg_BUILD_LIBRARIES}
         COMMAND
-            gmake ${FFmpeg_MAKE_ARGS}
+            ${MAKE} ${FFmpeg_MAKE_ARGS}
         WORKING_DIRECTORY
             ${FFmpeg_BUILD_DIR}
     )
