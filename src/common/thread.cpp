@@ -490,6 +490,8 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
         LOG_DEBUG(Common, "Could not set thread nice value to {}: {}", nice_value,
                   GetLastErrorMsg());
     }
+#elif defined(__EMSCRIPTEN__)
+    // TODO: set priority?
 #else
     const s32 max_prio = sched_get_priority_max(SCHED_OTHER);
     const s32 min_prio = sched_get_priority_min(SCHED_OTHER);
@@ -534,6 +536,8 @@ void SetCurrentThreadName(const char* name) {
     // See for reference
     // https://gitlab.freedesktop.org/mesa/mesa/-/blame/main/src/util/u_thread.c?ref_type=heads#L75
     (void)name;
+#elif defined(__EMSCRIPTEN__)
+    // TODO: set thread name?
 #else
     pthread_setname_np(pthread_self(), name);
 #endif
