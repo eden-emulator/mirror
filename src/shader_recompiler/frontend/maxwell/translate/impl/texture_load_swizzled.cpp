@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -142,16 +145,14 @@ IR::Value Sample(TranslatorVisitor& v, u64 insn) {
 
 unsigned Swizzle(u64 insn) {
     const Encoding tlds{insn};
-    const size_t encoding{tlds.swizzle};
+    u8 const encoding = u8(tlds.swizzle);
     if (tlds.dest_reg_b == IR::Reg::RZ) {
-        if (encoding >= RG_LUT.size()) {
+        if (encoding >= RG_LUT.size())
             throw NotImplementedException("Illegal RG encoding {}", encoding);
-        }
         return RG_LUT[encoding];
     } else {
-        if (encoding >= RGBA_LUT.size()) {
+        if (encoding >= RGBA_LUT.size())
             throw NotImplementedException("Illegal RGBA encoding {}", encoding);
-        }
         return RGBA_LUT[encoding];
     }
 }

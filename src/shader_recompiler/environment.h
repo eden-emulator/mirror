@@ -31,7 +31,7 @@ struct CbufWordKey {
 
 struct CbufWordKeyHash {
     constexpr size_t operator()(const CbufWordKey& k) const noexcept {
-        return (size_t(k.index) << 32) ^ k.offset;
+        return size_t((u64(k.index) << 32) ^ u64(k.offset));
     }
 };
 

@@ -28,7 +28,10 @@ enum class NpadMcuState : u32 {
 struct NpadMcuHolder {
     NpadMcuState state;
     INSERT_PADDING_BYTES(0x4);
-    IAbstractedPad* abstracted_pad;
+    union {
+        IAbstractedPad* abstracted_pad;
+        u64 abstracted_pad_raw;
+    };
 };
 static_assert(sizeof(NpadMcuHolder) == 0x10, "NpadMcuHolder is an invalid size");
 

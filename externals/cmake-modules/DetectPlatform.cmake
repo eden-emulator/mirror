@@ -20,6 +20,9 @@ elseif (${CMAKE_SYSTEM_NAME} STREQUAL "managarm")
     set(MANAGARM ON)
 elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Haiku")
     set(HAIKUOS ON)
+elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
+    set(EMSCRIPTEN ON)
+    message(WARNING "${CMAKE_LIBRARY_ARCHITECTURE} support is highly experimental!!!")
 endif()
 
 # BSD
