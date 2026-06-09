@@ -7,7 +7,7 @@
 #include <mutex>
 #include <utility>
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__wasi__)
 // TODO: gdb stub compat with emscripten?
 #else
 #include <boost/asio.hpp>
@@ -27,7 +27,9 @@
 #include "common/thread.h"
 #include "core/core.h"
 #include "core/debugger/debugger.h"
-#ifndef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__wasi__)
+// TODO: gdbstub with emscripten?
+#else
 #include "core/debugger/debugger_interface.h"
 #include "core/debugger/gdbstub.h"
 #endif
@@ -35,10 +37,10 @@
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/k_scheduler.h"
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__wasi__)
 namespace Core {
 // Dummy
-struct DebuggerImpl {
+class DebuggerImpl {
     char pad;
 };
 Debugger::Debugger(Core::System& system, u16 port) {}
