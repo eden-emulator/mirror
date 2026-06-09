@@ -1,33 +1,18 @@
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 1ca57e1..d38c0c6 100644
---- a/CMakeLists.txt
-+++ b/CMakeLists.txt
-@@ -113,9 +113,10 @@ elseif(MINGW)
-     find_program(MAKE mingw32-make REQUIRED)
-     set(OPENSSL_BUILD_TOOL ${MAKE})
- else()
--    find_program(MAKE make REQUIRED)
-+    find_program(MAKE gmake REQUIRED)
-     set(OPENSSL_BUILD_TOOL ${MAKE})
- endif()
-+set(OPENSSL_BUILD_TOOL gmake)
- 
- # Modify configure/build options
- if(OPENSSL_TEST AND NOT CMAKE_CROSSCOMPILING)
-@@ -140,7 +141,7 @@ if(NUMBER_OF_THREADS GREATER 1)
-         list(APPEND OPENSSL_CONFIGURE_OPTIONS /FS)
-         list(APPEND OPENSSL_BUILD_OPTIONS /J ${NUMBER_OF_THREADS})
-     else()
--        list(APPEND OPENSSL_BUILD_OPTIONS -j ${NUMBER_OF_THREADS})
-+#        list(APPEND OPENSSL_BUILD_OPTIONS -j ${NUMBER_OF_THREADS})
-     endif()
- endif()
- 
 diff --git a/cmake/ConfigureOpenSSL.cmake b/cmake/ConfigureOpenSSL.cmake
-index 3012e05..9862aa0 100644
+index 3012e05..eda6cfb 100644
 --- a/cmake/ConfigureOpenSSL.cmake
 +++ b/cmake/ConfigureOpenSSL.cmake
-@@ -134,10 +134,24 @@ function(configure_openssl)
+@@ -108,7 +108,8 @@ function(configure_openssl)
+     )
+ 
+     if(NOT "${CONFIGURE_OPTIONS_OLD}" STREQUAL "")
+-        if(CONFIGURE_OPTIONS STREQUAL CONFIGURE_OPTIONS_OLD)
++        # TODO(lizzie): Emscripten has issues with rebuilding due to the wrapper it uses
++        if(CMAKE_SYSTEM_NAME MATCHES "Emscripten" OR CONFIGURE_OPTIONS STREQUAL CONFIGURE_OPTIONS_OLD)
+             message(STATUS "Found previous configure results. Don't perform configuration")
+             return()
+         endif()
+@@ -134,10 +135,24 @@ function(configure_openssl)
          set(VERBOSE_OPTION OUTPUT_QUIET)
      endif()
  

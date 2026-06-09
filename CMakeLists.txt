@@ -375,6 +375,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 # Prefer the -pthread flag on Linux.
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
+# It is absolutely promordial to enable on Emscripten
+# Not only this allows to use std::thread and std::jthread without exceptions
+# but it also fixes several issues related to MT operations.
+# ...and CMake doesn't include it by default even when we specify
+# that we prefer the pthread flag; why is that? I don't know.
+if (PLATFORM_EMSCRIPTEN)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-pthread>)
+endif()
 
 find_package(RenderDoc MODULE)
 

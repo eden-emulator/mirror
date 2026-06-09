@@ -136,6 +136,11 @@ public:
             eden_path = GetDataDirectory("XDG_DATA_HOME") / EDEN_DIR;
             eden_path_cache = GetDataDirectory("XDG_CACHE_HOME") / EDEN_DIR;
             eden_path_config = GetDataDirectory("XDG_CONFIG_HOME") / EDEN_DIR;
+#if defined(__EMSCRIPTEN__) || defined(__wasi__) || defined(__managarm__)
+            // folders MAY not exist in this distrobution/OS
+            CreateParentDir(GetDataDirectory("XDG_CONFIG_HOME"));
+            CreateParentDir(GetDataDirectory("XDG_CACHE_HOME"));
+#endif
         } else {
             eden_path_cache = eden_path / CACHE_DIR;
             eden_path_config = eden_path / CONFIG_DIR;
