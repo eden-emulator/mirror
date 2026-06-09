@@ -118,7 +118,10 @@ Services::Services(std::shared_ptr<SM::ServiceManager>& sm, Core::System& system
         {"glue",       &Glue::LoopProcess},
         {"grc",        &GRC::LoopProcess},
         {"hid",        &HID::LoopProcess},
+// Must match with src/core/CMakeLists.txt for target_source of jit.cpp
+#if defined(ARCHITECTURE_x86_64) || defined(ARCHITECTURE_arm64) || defined(ARCHITECTURE_riscv64) || defined(ARCHITECTURE_loongarch64)
         {"jit",        &JIT::LoopProcess},
+#endif
         {"lbl",        &LBL::LoopProcess},
         {"Loader",     &LDR::LoopProcess},
         {"LogManager.Prod", &LM::LoopProcess},
