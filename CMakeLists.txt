@@ -382,6 +382,7 @@ find_package(Threads REQUIRED)
 # that we prefer the pthread flag; why is that? I don't know.
 if (PLATFORM_EMSCRIPTEN)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-pthread>)
+    add_link_options($<$<COMPILE_LANGUAGE:C,CXX>:-pthread>)
 endif()
 
 find_package(RenderDoc MODULE)
