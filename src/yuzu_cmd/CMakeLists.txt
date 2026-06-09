@@ -77,5 +77,8 @@ if (NOT MSVC)
 endif()
 
 if (PLATFORM_EMSCRIPTEN)
-    set_target_properties(yuzu-cmd PROPERTIES LINK_FLAGS_RELEASE "--global-base=16777216")
+    target_link_options(yuzu-cmd PRIVATE
+        -sGLOBAL_BASE=16777216
+        -sPTHREAD_POOL_SIZE_STRICT=0
+        -sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency)
 endif()
