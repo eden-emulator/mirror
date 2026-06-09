@@ -54,6 +54,15 @@ done
 : "${DEVEL:=true}"
 : "${OUTDIR:=build}"
 
+# -sMEMORY64 must be specified twice, see below
+# The CMake toolchain file will match against MEMORY64 but will fail to match if:
+# - it's either -sMEMORY64
+# - or it's either -sMEMORY64=1
+# The line in question:
+# if (CMAKE_C_FLAGS MATCHES "MEMORY64")
+# However why need to specify -sMEMORY64=1 then? Oh that's because if you didn't set
+# the =1, it would assume you meant =0, which equates to not specifying it at all
+# This seems to be fixed in later versions but occurs atleast on 4.0.3-git and below.
 emcmake cmake -B "$OUTDIR" -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=${TYPE} \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
@@ -75,8 +84,8 @@ emcmake cmake -B "$OUTDIR" -G "Unix Makefiles" \
     -DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm \
     -DCMAKE_C_FLAGS="-s MEMORY64 -m64 -pipe -sMEMORY64=1" \
     -DCMAKE_CXX_FLAGS="-s MEMORY64 -m64 -pipe -sMEMORY64=1" \
-    -DCMAKE_EXE_LINKER_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1" \
-    -DCMAKE_C_LINK_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1" \
-    -DCMAKE_CXX_LINK_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1" \
+    -DCMAKE_EXE_LINKER_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1 -pthread" \
+    -DCMAKE_C_LINK_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1 -pthread" \
+    -DCMAKE_CXX_LINK_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1 -pthread" \
 
 cmake --build "$OUTDIR" -- -j$NUM_JOBS
