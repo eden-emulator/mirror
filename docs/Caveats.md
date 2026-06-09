@@ -12,6 +12,7 @@
 - [NetBSD](#netbsd)
 - [MSYS2](#msys2)
 - [RedoxOS](#redoxos)
+- [WebAssembly](#webassembly)
 - [Windows](#windows)
   - [Windows 7, Windows 8 and Windows 8.1](#windows-7-windows-8-and-windows-81)
   - [Windows Vista and below](#windows-vista-and-below)
@@ -244,6 +245,18 @@ find ./*/ -name "*.dll" | while read -r dll; do deps "$dll"; done
 The package install may randomly hang at times, in which case it has to be restarted. ALWAYS do a `sudo pkg update` or the chances of it hanging will be close to 90%. If "multiple" installs fail at once, try installing 1 by 1 the packages.
 
 When CMake invokes certain file syscalls - it may sometimes cause crashes or corruptions on the (kernel?) address space - so reboot the system if there is a "hang" in CMake.
+
+## WebAssembly
+
+**It doesn't run on a browser yet.**
+
+WebAssembly or "WASM" for short is a *mainly 32-bit* virtual "architecture" which we only bootstrap on 64-bit only. This means not only the program runs 2x slower than it would due to using JS BigInt, it also means we need to go out of our way to enable proper 64-bit support via `-sMEMORY64=1`, however once again, some Emscripten quirks force us to specify `-s MEMORY64` and `-sMEMORY64=1` at the same time: see the [CI build script](../.ci/wasm/build.sh).
+
+The WebAssembly target is very heavy on resources and requires at least 4 times the normal amount of resources that a native build would. Additionally, the only supported environment is `node.js` and `wasmtime`, with browser support being an afterthought (PRs welcome!).
+
+To run the binary (after building) you should be fine with `node ./eden-cli.js`. For obvious reasons no Qt frontend is available on WASM, support for Vulkan is done charily via [llvmpipe2wasm](https://github.com/Devsh-Graphics-Programming/llvmpipe2wasm).
+
+2026-06-09: As of writing, no Dynarmic-based JIT is possible on this target, full interpreted emulation is the only reasonable option. While there is some efforts on making a JIT like [here](https://github.com/wingo/wasm-jit) or [here](https://wingolog.org/archives/2022/08/18/just-in-time-code-generation-within-webassembly), the result is so latency expensive we're better off using an interpreter instead.
 
 ## Windows
 

@@ -361,6 +361,14 @@ pkgman install git cmake patch libfmt_devel nlohmann_json lz4_devel opus_devel b
 
 </details>
 <details>
+<summary>WebAssembly</summary>
+
+Emscripten: The default installation should provide enough.
+
+[Caveats](./Caveats.md#wasm).
+
+</details>
+<details>
 <summary>RedoxOS</summary>
 
 ```sh

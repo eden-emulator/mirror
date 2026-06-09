@@ -1,5 +1,5 @@
 diff --git a/cmake/ConfigureOpenSSL.cmake b/cmake/ConfigureOpenSSL.cmake
-index 3012e05..eda6cfb 100644
+index 3012e05..2ae23ff 100644
 --- a/cmake/ConfigureOpenSSL.cmake
 +++ b/cmake/ConfigureOpenSSL.cmake
 @@ -108,7 +108,8 @@ function(configure_openssl)
@@ -31,7 +31,7 @@ index 3012e05..eda6cfb 100644
 +        COMMAND ${EMSCRIPTEN_CMAKE_WRAPPER} ${CMAKE_COMMAND} -E env
              "CFLAGS=${CMAKE_C_FLAGS}"
              "CXXFLAGS=${CMAKE_CXX_FLAGS}"
-+            "LDFLAGS=${CMAKE_CXX_LINKER_FLAGS}"
++            "LDFLAGS=${CMAKE_CXX_LINK_FLAGS}"
 +            "CC=${CMAKE_C_COMPILER}"
 +            "CXX=${CMAKE_CXX_COMPILER}"
 +            "LD=${EMSCRIPTEN_LINKER}"

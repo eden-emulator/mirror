@@ -1,5 +1,5 @@
 diff --git a/Configurations/10-main.conf b/Configurations/10-main.conf
-index e62721e..6fcea0d 100644
+index e62721e..243feb4 100644
 --- a/Configurations/10-main.conf
 +++ b/Configurations/10-main.conf
 @@ -1970,6 +1970,26 @@ my %targets = (
@@ -10,8 +10,8 @@ index e62721e..6fcea0d 100644
 +        inherit_from     => [ "BASE_unix" ],
 +        CC               => "emcc",
 +        CXX              => "emc++",
-+        cflags           => add("--target=wasm32-unknown-emscripten"),
-+        cxxflags         => add("--target=wasm32-unknown-emscripten"),
++        cflags           => combine("--target=wasm32-unknown-emscripten", threads("-pthread")),
++        cxxflags         => combine("--target=wasm32-unknown-emscripten", threads("-pthread")),
 +        lib_cppflags     => add("-DL_ENDIAN"),
 +        bn_ops           => "THIRTY_TWO_BIT",
 +    },
@@ -19,8 +19,8 @@ index e62721e..6fcea0d 100644
 +        inherit_from     => [ "BASE_unix" ],
 +        CC               => "emcc",
 +        CXX              => "emc++",
-+        cflags           => add("--target=wasm64-unknown-emscripten"),
-+        cxxflags         => add("--target=wasm64-unknown-emscripten"),
++        cflags           => combine("--target=wasm64-unknown-emscripten", threads("-pthread")),
++        cxxflags         => combine("--target=wasm64-unknown-emscripten", threads("-pthread")),
 +        lib_cppflags     => add("-DL_ENDIAN"),
 +        bn_ops           => "SIXTY_FOUR_BIT_LONG",
 +    },
