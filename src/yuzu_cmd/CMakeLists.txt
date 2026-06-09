@@ -78,6 +78,7 @@ endif()
 
 if (PLATFORM_EMSCRIPTEN)
     target_link_options(yuzu-cmd PRIVATE
+        -sINITIAL_MEMORY=33554432
         -sGLOBAL_BASE=16777216
         -sPTHREAD_POOL_SIZE_STRICT=0
         -sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency)
