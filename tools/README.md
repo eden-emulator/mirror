@@ -30,6 +30,7 @@ Tools for Eden and other subprojects. When adding new scripts please use `#!/bin
 - `find-unused-strings.sh`: Find any unused strings in the Android app (XML -> Kotlin).
 - `cpp-lint.sh`: Homemade dumb C++ linter.
 - `fuzzsettings.cpp`: Fuzz settings files.
+- `miniserver.js`: Make a quick server that serves a page with the WASM on it, takes a single argument which is the path to the build directory containing *both* `eden-cli.js` and `eden-cli.wasm`. Run via `node.js`, `wasmtime` isn't supported.
 
 ## Android
 It's recommended to run these scritps after almost any Android change, as they are relatively fast and important both for APK bloat and CI.

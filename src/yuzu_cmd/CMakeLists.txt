@@ -79,8 +79,10 @@ endif()
 if (PLATFORM_EMSCRIPTEN)
     # 10GB is required... yikes!
     target_link_options(yuzu-cmd PRIVATE
-        -sINITIAL_MEMORY=10737418240
+        -sALLOW_MEMORY_GROWTH=1
+        -sMAXIMUM_MEMORY=10737418240
         -sGLOBAL_BASE=16777216
+        -sEXPORTED_RUNTIME_METHODS="['FS']"
         -sPTHREAD_POOL_SIZE_STRICT=0
         -sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency)
 endif()

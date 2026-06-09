@@ -252,7 +252,9 @@ When CMake invokes certain file syscalls - it may sometimes cause crashes or cor
 
 WebAssembly or "WASM" for short is a *mainly 32-bit* virtual "architecture" which we only bootstrap on 64-bit only. This means not only the program runs 2x slower than it would due to using JS BigInt, it also means we need to go out of our way to enable proper 64-bit support via `-sMEMORY64=1`, however once again, some Emscripten quirks force us to specify `-s MEMORY64` and `-sMEMORY64=1` at the same time: see the [CI build script](../.ci/wasm/build.sh).
 
-The WebAssembly target is very heavy on resources and requires at least 4 times the normal amount of resources that a native build would. Additionally, the only supported environment is `node.js` and `wasmtime`, with browser support being an afterthought (PRs welcome!).
+The WebAssembly target is very heavy on resources and requires at least 4 times the normal amount of resources that a native build would. Additionally, the only supported environment is Firefox at the moment, node.js and `wasmtime are not supported (PRs welcome!)
+
+If running under Firefox and you hit "out of memory" on dev console, close the entire tab, then open it back again, see [this issue](https://github.com/emscripten-core/emscripten/issues/8126).
 
 To run the binary (after building) you should be fine with `node ./eden-cli.js`. For obvious reasons no Qt frontend is available on WASM, support for Vulkan is done charily via [llvmpipe2wasm](https://github.com/Devsh-Graphics-Programming/llvmpipe2wasm).
 
