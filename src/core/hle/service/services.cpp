@@ -86,15 +86,22 @@ Services::Services(std::shared_ptr<SM::ServiceManager>& sm, Core::System& system
 
     // BEGONE cold clones of lambdas, for I have merged you all into a SINGLE lambda instead of
     // spamming lambdas like it's some kind of lambda calculus class
-    for (auto const& e : std::vector<std::pair<std::string_view, void (*)(Core::System&)>>{
+    std::vector<std::pair<std::string_view, void (*)(Core::System&)>> rt_services{
         {"audio",      &Audio::LoopProcess},
         {"FS",         &FileSystem::LoopProcess},
         {"ldn",        &LDN::LoopProcess},
         {"nvservices", &Nvidia::LoopProcess},
         {"bsdsocket",  &Sockets::LoopProcess},
-    })
+    };
+#if defined(__EMSCRIPTEN__) || defined(__wasi__) || defined(__OPENORBIS__)
+    for (auto const& e : rt_services)
+        kernel.RunOnGuestCoreProcess(std::string(e.first), [&system, f = e.second] { f(system); });
+    kernel.RunOnGuestCoreProcess("vi", [&, token] { VI::LoopProcess(system, token); });
+#else
+    for (auto const& e : rt_services)
         kernel.RunOnHostCoreProcess(std::string(e.first), [&system, f = e.second] { f(system); }).detach();
-    kernel.RunOnHostCoreProcess("vi",         [&, token] { VI::LoopProcess(system, token); }).detach();
+    kernel.RunOnHostCoreProcess("vi", [&, token] { VI::LoopProcess(system, token); }).detach();
+#endif
     // Avoid cold clones of lambdas -- succintly
     for (auto const& e : std::vector<std::pair<std::string_view, void (*)(Core::System&)>>{
         {"sm",         &SM::LoopProcess},

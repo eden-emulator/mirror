@@ -5,8 +5,7 @@
 import { createServer } from 'http';
 import { readFile } from 'fs';
 import { join } from 'path';
-
-// DO NOT RUN THIS IN ANY PRODUCTION ENVIRONMENT EVER
+console.log(`dont forget to run: "npm --global install @jdmichaud/dwarf-2-sourcemap" for better debugging!`);
 const server = createServer((req, res) => {
     console.log(`get ${req.url}`);
     if (req.url === '/') {
@@ -22,15 +21,15 @@ const server = createServer((req, res) => {
 <head>
 <title>eden-cli</title>
 </head>
-<body style="margin:0;padding:0;background-color:black;font-family:Monospace,Tahoma,Arial;width:100%;height:100%;">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;width:100%;height:100%;">
+<body style="margin:0;padding:0;background-color:black;color:white;font-family:Monospace,Tahoma,Arial;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;width:100%;height:100vh;">
     <canvas id="canvas" oncontextmenu="event.preventDefault()" style="width:100%;height:100%;background-color:gray;"></canvas>
     <div id="tty-stdout"></div>
 </div>
 <script>
 var Module = { //do not prepend var
     mainScriptUrlOrBlob: 'eden-cli.js',
-    arguments: ['--null-render', '-F', '*:Trace', 'game.nro'],
+    arguments: ['--null-render', '--singlecore', '--filter', '*:Trace', 'game.nro'],
     canvas: document.getElementById('canvas'),
     print: (e) => {
         e = e.replace('[1;31m', '<span style="color:red;font-weight:bold;">');
@@ -52,9 +51,7 @@ var Module = { //do not prepend var
     monitorRunDependencies: (e) => { Module.printInternal("monitor deps: " + e); },
     __wasm_call_ctors: () => { Module.printInternal("ctors beep"); },
 };
-
 var gameNroFileBuffer = {};
-
 Module.printInternal(\`Atomics: \${window.Atomics}, SharedArrayBuffer: \${window.SharedArrayBuffer}\`);
 Module.printInternal("trying to load script (if it hangs here check console)");
 fetch('game.nro').then((resp) => {
@@ -63,8 +60,7 @@ fetch('game.nro').then((resp) => {
     return resp.arrayBuffer();
 }).then((buffer) => {
     gameNroFileBuffer = buffer;
-    Module.printInternal("buffer: " + gameNroFileBuffer);
-
+    Module.printInternal(\`buffer: \${gameNroFileBuffer}\`);
     // load the thingy AFTER loading the nro
     Module.printInternal(\`loading from ${build_dir}/\${Module.mainScriptUrlOrBlob}\`);
     var script = document.createElement('script');
@@ -95,16 +91,16 @@ fetch('game.nro').then((resp) => {
                 'Cross-Origin-Opener-Policy': 'same-origin',
                 'Cross-Origin-Embedder-Policy': 'require-corp'
             });
-            res.end(content, 'utf-8');
+            res.end(content);
         });
     } else if (req.url === '/game.nro') {
         readFile(nro_file, (err, content) => {
             res.writeHead(200, {
-                'Content-Type': 'application/wasm',
+                'Content-Type': 'application/octet-stream',
                 'Cross-Origin-Opener-Policy': 'same-origin',
                 'Cross-Origin-Embedder-Policy': 'require-corp'
             });
-            res.end(content, 'utf-8');
+            res.end(content);
         });
     } else {
         res.writeHead(404, {});
