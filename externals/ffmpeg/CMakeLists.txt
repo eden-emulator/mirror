@@ -346,7 +346,7 @@ else()
         OUTPUT
             ${FFmpeg_BUILD_LIBRARIES}
         COMMAND
-            ${MAKE_PROGRAM} ${FFmpeg_MAKE_ARGS}
+            ${MAKE} ${FFmpeg_MAKE_ARGS}
         WORKING_DIRECTORY
             ${FFmpeg_BUILD_DIR}
     )
