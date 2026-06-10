@@ -171,6 +171,7 @@ else()
 
     if (MSVC)
         add_compile_options(
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++98-compat>
             $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c99-compat>
             $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c98-compat>)
     endif()
