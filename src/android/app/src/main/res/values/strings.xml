@@ -1167,6 +1167,7 @@
     <string name="anti_aliasing_none">None</string>
     <string name="anti_aliasing_fxaa" translatable="false">FXAA</string>
     <string name="anti_aliasing_smaa" translatable="false">SMAA</string>
+    <string name="anti_aliasing_smaa" translatable="false">SSAA</string>
 
     <!-- Screen Layouts -->
     <string name="screen_layout_auto">Auto</string>

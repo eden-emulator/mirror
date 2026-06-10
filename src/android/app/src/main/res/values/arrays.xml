@@ -301,6 +301,7 @@
         <item>@string/anti_aliasing_none</item>
         <item>@string/anti_aliasing_fxaa</item>
         <item>@string/anti_aliasing_smaa</item>
+        <item>@string/anti_aliasing_ssaa</item>
     </string-array>
 
     <integer-array name="rendererAntiAliasingValues">

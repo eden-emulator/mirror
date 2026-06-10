@@ -113,6 +113,8 @@ void Layer::ConfigureDraw(const Device& device, PresentPushConstants* out_push_c
         fxaa->Draw(device, scheduler, image_index, &source_image, &source_image_view);
     } else if (auto* smaa = std::get_if<SMAA>(&anti_alias)) {
         smaa->Draw(device, scheduler, image_index, &source_image, &source_image_view);
+    } else if (auto* ssaa = std::get_if<SSAA>(&anti_alias)) {
+        ssaa->Draw(device, scheduler, image_index, &source_image, &source_image_view);
     }
 
     auto crop_rect = Tegra::NormalizeCrop(framebuffer, texture_width, texture_height);

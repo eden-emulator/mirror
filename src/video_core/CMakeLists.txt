@@ -125,6 +125,8 @@ add_library(video_core STATIC
     renderer_vulkan/present/fsr.h
     renderer_vulkan/present/fxaa.cpp
     renderer_vulkan/present/fxaa.h
+    renderer_vulkan/present/ssaa.cpp
+    renderer_vulkan/present/ssaa.h
     renderer_vulkan/present/layer.cpp
     renderer_vulkan/present/layer.h
     renderer_vulkan/present/present_push_constants.h

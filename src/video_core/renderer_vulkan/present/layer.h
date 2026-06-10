@@ -16,6 +16,7 @@
 #include "video_core/renderer_vulkan/present/sgsr.h"
 #include "video_core/renderer_vulkan/present/fxaa.h"
 #include "video_core/renderer_vulkan/present/smaa.h"
+#include "video_core/renderer_vulkan/present/ssaa.h"
 
 namespace Layout {
 struct FramebufferLayout;
@@ -93,7 +94,7 @@ private:
     Service::android::PixelFormat pixel_format{};
 
     Settings::AntiAliasing anti_alias_setting{};
-    std::variant<std::monostate, FXAA, SMAA> anti_alias{};
+    std::variant<std::monostate, FXAA, SMAA, SSAA> anti_alias{};
     std::variant<std::monostate, SGSR, FSR> sr_filter{};
     std::vector<u64> resource_ticks{};
 };

@@ -750,8 +750,6 @@
 
     <!-- Anti-Aliasing -->
     <string name="anti_aliasing_none">هیچ</string>
-    <string name="anti_aliasing_fxaa">FXAA</string>
-    <string name="anti_aliasing_smaa">SMAA</string>
 
     <!-- Screen Layouts -->
     <string name="screen_layout_auto">خودکار</string>
