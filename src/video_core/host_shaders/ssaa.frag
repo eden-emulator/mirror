@@ -10,7 +10,6 @@
 #define BINDING_COLOR_TEXTURE 0
 #endif
 
-layout (location = 0) in vec2 texcoord;
 layout (location = 0) out vec4 frag_color;
 layout (binding = BINDING_COLOR_TEXTURE) uniform sampler2DMS input_texture;
 

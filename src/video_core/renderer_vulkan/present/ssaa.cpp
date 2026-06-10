@@ -4,12 +4,13 @@
 #include "common/common_types.h"
 
 #include "video_core/host_shaders/ssaa_frag_spv.h"
-#include "video_core/host_shaders/full_screen_triangle_vert_spv.h"
+#include "video_core/host_shaders/ssaa_vert_spv.h"
 #include "video_core/renderer_vulkan/present/ssaa.h"
 #include "video_core/renderer_vulkan/present/util.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/vulkan_common/vulkan_device.h"
+#include "vulkan/vulkan_core.h"
 
 namespace Vulkan {
 
@@ -33,16 +34,32 @@ SSAA::~SSAA() = default;
 void SSAA::CreateImages() {
     for (u32 i = 0; i < m_image_count; i++) {
         Image& image = m_dynamic_images.emplace_back();
-        image.image = CreateWrappedImage(m_allocator, m_extent, VK_FORMAT_R16G16B16A16_SFLOAT);
-        image.image_view = CreateWrappedImageView(m_device, image.image, VK_FORMAT_R16G16B16A16_SFLOAT);
+        image.image = m_allocator.CreateImage(VkImageCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format = VK_FORMAT_R8G8B8A8_UNORM,
+            .extent = {.width = m_extent.width, .height = m_extent.height, .depth = 1},
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = VK_SAMPLE_COUNT_2_BIT,
+            .tiling = VK_IMAGE_TILING_OPTIMAL,
+            .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = nullptr,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        });
+        image.image_view = CreateWrappedImageView(m_device, image.image, VK_FORMAT_R8G8B8A8_UNORM);
     }
 }
 
 void SSAA::CreateRenderPasses() {
     const VkAttachmentDescription attachment{
         .flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        .format = VK_FORMAT_R16G16B16A16_SFLOAT,
-        .samples = VK_SAMPLE_COUNT_4_BIT,
+        .format = VK_FORMAT_R8G8B8A8_UNORM,
+        .samples = VK_SAMPLE_COUNT_2_BIT,
         .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
         .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
@@ -96,7 +113,7 @@ void SSAA::CreateSampler() {
 }
 
 void SSAA::CreateShaders() {
-    m_vertex_shader = CreateWrappedShaderModule(m_device, FULL_SCREEN_TRIANGLE_VERT_SPV);
+    m_vertex_shader = CreateWrappedShaderModule(m_device, SSAA_VERT_SPV);
     m_fragment_shader = CreateWrappedShaderModule(m_device, SSAA_FRAG_SPV);
 }
 
@@ -194,7 +211,7 @@ void SSAA::CreatePipelines() {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .rasterizationSamples = VK_SAMPLE_COUNT_4_BIT,
+        .rasterizationSamples = VK_SAMPLE_COUNT_2_BIT,
         .sampleShadingEnable = Settings::values.sample_shading.GetValue() > 0 ? VK_TRUE : VK_FALSE,
         .minSampleShading = f32(Settings::values.sample_shading.GetValue()) / 100.0f,
         .pSampleMask = nullptr,
