@@ -159,6 +159,18 @@ if (CXX_CLANG_CL)
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-deprecated-declarations>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-cast-function-type-mismatch>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c99-extensions>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++17-compat>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++11-compat-reserved-user-defined-literal>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++11-compat-deprecated-writable-strings>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++11-compat-pedantic>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++11-compat>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++0x-compat>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++98-c++11-compat-binary-literal>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++98-compat-pedantic>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++98-compat>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c99-compat>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c98-compat>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c99-extensions>
         $<$<COMPILE_LANGUAGE:C,CXX>:/EHsc>)
     # REQUIRED CPU features IN Windows-amd64
     if (ARCHITECTURE_x86_64)
