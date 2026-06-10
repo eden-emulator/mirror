@@ -36,6 +36,7 @@ var Module = { //do not prepend var
         e = e.replace('[0;37m', '<span style="color:white;font-weight:bold;">');
         e = e.replace('[1;35m', '<span style="color:pink;font-weight:bold;">');
         e = e.replace('[1;33m', '<span style="color:yellow;font-weight:bold;">');
+        e = e.replace('[0;36m', '<span style="color:white;font-weight:bold;">');
         e = e.replace('[0m', '</span>');
         document.getElementById('tty-stdout').innerHTML += \`\${e}</br>\`;
     },
