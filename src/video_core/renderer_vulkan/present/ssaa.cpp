@@ -39,7 +39,53 @@ void SSAA::CreateImages() {
 }
 
 void SSAA::CreateRenderPasses() {
-    m_renderpass = CreateWrappedRenderPass(m_device, VK_FORMAT_R16G16B16A16_SFLOAT);
+    const VkAttachmentDescription attachment{
+        .flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
+        .format = VK_FORMAT_R16G16B16A16_SFLOAT,
+        .samples = VK_SAMPLE_COUNT_4_BIT,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .initialLayout = VK_IMAGE_LAYOUT_GENERAL,
+        .finalLayout = VK_IMAGE_LAYOUT_GENERAL,
+    };
+    constexpr VkAttachmentReference color_attachment_ref{
+        .attachment = 0,
+        .layout = VK_IMAGE_LAYOUT_GENERAL,
+    };
+    const VkSubpassDescription subpass_description{
+        .flags = 0,
+        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .inputAttachmentCount = 0,
+        .pInputAttachments = nullptr,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &color_attachment_ref,
+        .pResolveAttachments = nullptr,
+        .pDepthStencilAttachment = nullptr,
+        .preserveAttachmentCount = 0,
+        .pPreserveAttachments = nullptr,
+    };
+    constexpr VkSubpassDependency dependency{
+        .srcSubpass = VK_SUBPASS_EXTERNAL,
+        .dstSubpass = 0,
+        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .srcAccessMask = 0,
+        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        .dependencyFlags = 0,
+    };
+    m_renderpass = m_device.GetLogical().CreateRenderPass(VkRenderPassCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .attachmentCount = 1,
+        .pAttachments = &attachment,
+        .subpassCount = 1,
+        .pSubpasses = &subpass_description,
+        .dependencyCount = 1,
+        .pDependencies = &dependency,
+    });
     for (auto& image : m_dynamic_images) {
         image.framebuffer = CreateWrappedFramebuffer(m_device, m_renderpass, image.image_view, m_extent);
     }
@@ -144,13 +190,13 @@ void SSAA::CreatePipelines() {
         .depthBiasSlopeFactor = 0.0f,
         .lineWidth = 1.0f,
     };
-    constexpr VkPipelineMultisampleStateCreateInfo multisampling_ci{
+    const VkPipelineMultisampleStateCreateInfo multisampling_ci{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
         .rasterizationSamples = VK_SAMPLE_COUNT_4_BIT,
-        .sampleShadingEnable = VK_TRUE,
-        .minSampleShading = 1.0f,
+        .sampleShadingEnable = Settings::values.sample_shading.GetValue() > 0 ? VK_TRUE : VK_FALSE,
+        .minSampleShading = f32(Settings::values.sample_shading.GetValue()) / 100.0f,
         .pSampleMask = nullptr,
         .alphaToCoverageEnable = VK_FALSE,
         .alphaToOneEnable = VK_FALSE,
