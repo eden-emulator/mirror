@@ -1219,7 +1219,7 @@ target_link_libraries(core PUBLIC common PRIVATE audio_core hid_core network vid
 if (BOOST_NO_HEADERS)
     target_link_libraries(core PUBLIC Boost::container Boost::heap Boost::crc)
     if (NOT PLATFORM_EMSCRIPTEN)
-        target_link_libraries(core PRIVATE Boost::asio Boost::process)
+        target_link_libraries(core PUBLIC Boost::asio Boost::process)
     endif()
 else()
     target_link_libraries(core PUBLIC Boost::headers)
