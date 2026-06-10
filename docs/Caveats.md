@@ -258,6 +258,8 @@ If running under Firefox and you hit "out of memory" on dev console, close the e
 
 To run the binary (after building) you should be fine with `node ./eden-cli.js`. For obvious reasons no Qt frontend is available on WASM, support for Vulkan is done charily via [llvmpipe2wasm](https://github.com/Devsh-Graphics-Programming/llvmpipe2wasm).
 
+If you run into the error "acorn.js can't be found" check [this associated issue](https://github.com/emscripten-core/emscripten/issues/13368), the fix in short is `npm --global install acorn`. On FreeBSD you could run `npm` under root, or you could do the sane thing and do `sudo chown -R $USER /usr/local/lib/node_modules/ /usr/local/bin/` (remember to restore permissions afterwards!) unless you wish to run `npm` under root which is generally a bad idea.
+
 2026-06-09: As of writing, no Dynarmic-based JIT is possible on this target, full interpreted emulation is the only reasonable option. While there is some efforts on making a JIT like [here](https://github.com/wingo/wasm-jit) or [here](https://wingolog.org/archives/2022/08/18/just-in-time-code-generation-within-webassembly), the result is so latency expensive we're better off using an interpreter instead.
 
 ## Windows
