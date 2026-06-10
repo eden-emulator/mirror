@@ -74,7 +74,129 @@ void SSAA::CreatePipelineLayouts() {
 }
 
 void SSAA::CreatePipelines() {
-    m_pipeline = CreateWrappedPipeline(m_device, m_renderpass, m_pipeline_layout, std::tie(m_vertex_shader, m_fragment_shader));
+    constexpr VkPipelineColorBlendAttachmentState color_blend_attachment_disabled{
+        .blendEnable = VK_FALSE,
+        .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+        .colorBlendOp = VK_BLEND_OP_ADD,
+        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+        .alphaBlendOp = VK_BLEND_OP_ADD,
+        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+    };
+    const std::array<VkPipelineShaderStageCreateInfo, 2> shader_stages{{
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT,
+            .module = *m_vertex_shader,
+            .pName = "main",
+            .pSpecializationInfo = nullptr,
+        },
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .module = *m_fragment_shader,
+            .pName = "main",
+            .pSpecializationInfo = nullptr,
+        },
+    }};
+    constexpr VkPipelineVertexInputStateCreateInfo vertex_input_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .vertexBindingDescriptionCount = 0,
+        .pVertexBindingDescriptions = nullptr,
+        .vertexAttributeDescriptionCount = 0,
+        .pVertexAttributeDescriptions = nullptr,
+    };
+    const VkPipelineInputAssemblyStateCreateInfo input_assembly_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+        .primitiveRestartEnable = m_device.IsMoltenVK() ? VK_TRUE : VK_FALSE,
+    };
+    constexpr VkPipelineViewportStateCreateInfo viewport_state_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .viewportCount = 1,
+        .pViewports = nullptr,
+        .scissorCount = 1,
+        .pScissors = nullptr,
+    };
+    constexpr VkPipelineRasterizationStateCreateInfo rasterization_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .depthClampEnable = VK_FALSE,
+        .rasterizerDiscardEnable = VK_FALSE,
+        .polygonMode = VK_POLYGON_MODE_FILL,
+        .cullMode = VK_CULL_MODE_NONE,
+        .frontFace = VK_FRONT_FACE_CLOCKWISE,
+        .depthBiasEnable = VK_FALSE,
+        .depthBiasConstantFactor = 0.0f,
+        .depthBiasClamp = 0.0f,
+        .depthBiasSlopeFactor = 0.0f,
+        .lineWidth = 1.0f,
+    };
+    constexpr VkPipelineMultisampleStateCreateInfo multisampling_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .rasterizationSamples = VK_SAMPLE_COUNT_4_BIT,
+        .sampleShadingEnable = VK_TRUE,
+        .minSampleShading = 1.0f,
+        .pSampleMask = nullptr,
+        .alphaToCoverageEnable = VK_FALSE,
+        .alphaToOneEnable = VK_FALSE,
+    };
+    const VkPipelineColorBlendStateCreateInfo color_blend_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .logicOpEnable = VK_FALSE,
+        .logicOp = VK_LOGIC_OP_COPY,
+        .attachmentCount = 1,
+        .pAttachments = &color_blend_attachment_disabled,
+        .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
+    };
+    constexpr std::array dynamic_states{
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR,
+    };
+    const VkPipelineDynamicStateCreateInfo dynamic_state_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .dynamicStateCount = u32(dynamic_states.size()),
+        .pDynamicStates = dynamic_states.data(),
+    };
+    m_pipeline = m_device.GetLogical().CreateGraphicsPipeline(VkGraphicsPipelineCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .stageCount = static_cast<u32>(shader_stages.size()),
+        .pStages = shader_stages.data(),
+        .pVertexInputState = &vertex_input_ci,
+        .pInputAssemblyState = &input_assembly_ci,
+        .pTessellationState = nullptr,
+        .pViewportState = &viewport_state_ci,
+        .pRasterizationState = &rasterization_ci,
+        .pMultisampleState = &multisampling_ci,
+        .pDepthStencilState = nullptr,
+        .pColorBlendState = &color_blend_ci,
+        .pDynamicState = &dynamic_state_ci,
+        .layout = *m_pipeline_layout,
+        .renderPass = *m_renderpass,
+        .subpass = 0,
+        .basePipelineHandle = 0,
+        .basePipelineIndex = 0,
+    });
 }
 
 void SSAA::UpdateDescriptorSets(VkImageView image_view, size_t image_index) {

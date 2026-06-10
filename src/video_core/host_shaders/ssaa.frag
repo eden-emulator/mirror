@@ -12,8 +12,8 @@
 
 layout (location = 0) in vec4 posPos;
 layout (location = 0) out vec4 frag_color;
-layout (binding = BINDING_COLOR_TEXTURE) uniform sampler2D input_texture;
+layout (binding = BINDING_COLOR_TEXTURE) uniform sampler2DMS input_texture;
 
 void main() {
-  frag_color = texelFetch(input_texture, ivec2(posPos.xy * textureSize(input_texture, 0)), gl_SampleID);
+    frag_color = texelFetch(input_texture, ivec2(gl_FragCoord.xy), gl_SampleID);
 }
