@@ -210,6 +210,9 @@ void Layer::SetAntiAliasPass(const Device& device) {
     case Settings::AntiAliasing::Smaa:
         anti_alias.emplace<SMAA>(device, memory_allocator, image_count, render_area);
         break;
+    case Settings::AntiAliasing::Ssaa:
+        anti_alias.emplace<SSAA>(device, memory_allocator, image_count, render_area);
+        break;
     default:
         anti_alias.emplace<std::monostate>();
         break;
