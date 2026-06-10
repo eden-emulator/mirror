@@ -48,7 +48,7 @@ var Module = { //do not prepend var
 };
 var tty_stdout = document.createElement('div');
 document.body.appendChild(tty_stdout);
-Module.arguments = ['game.nro'];
+Module.arguments = ['--null-render', 'game.nro'];
 
 var gameNroFileBuffer = {};
 
