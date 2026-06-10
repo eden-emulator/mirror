@@ -29,7 +29,7 @@ const server = createServer((req, res) => {
 <script>
 var Module = { //do not prepend var
     mainScriptUrlOrBlob: 'eden-cli.js',
-    arguments: ['--null-render', '--singlecore', '--filter', '*:Trace', 'game.nro'],
+    arguments: ['--null-render', '--singlecore', '--filter', '*:Trace', '/home/web_user/game.nro'],
     canvas: document.getElementById('canvas'),
     print: (e) => {
         e = e.replace('[1;31m', '<span style="color:red;font-weight:bold;">');
@@ -47,6 +47,17 @@ var Module = { //do not prepend var
     printInternal: (e) => {
         document.getElementById('tty-stdout').innerHTML += \`<span style="color:white">Internal WASM: \${e}</span></br>\`;
     },
+    preInit: [
+        () => {
+            // copy just most relevant :)
+            Module.FS.mkdir('/home/web_user/.local');
+            Module.FS.mkdir('/home/web_user/.local/share');
+            Module.FS.mkdir('/home/web_user/.local/share/eden');
+            Module.FS.mkdir('/home/web_user/.config');
+            Module.FS.mkdir('/home/web_user/.config/eden');
+            Module.FS.createDataFile('/home/web_user', 'game.nro', gameNroFileBuffer, true, false, true);
+        }
+    ],
     onRuntimeInitialized: () => { Module.printInternal("runtime ok"); },
     setStatus: (e) => { Module.printInternal(e); },
     monitorRunDependencies: (e) => { Module.printInternal("monitor deps: " + e); },
@@ -58,19 +69,14 @@ Module.printInternal("trying to load script (if it hangs here check console)");
 fetch('game.nro').then((resp) => {
     if (!resp.ok)
         throw Error(\`\${resp.status}\`);
-    return resp.arrayBuffer();
+    return resp.bytes();
 }).then((buffer) => {
     gameNroFileBuffer = buffer;
-    Module.printInternal(\`buffer: \${gameNroFileBuffer}\`);
     // load the thingy AFTER loading the nro
     Module.printInternal(\`loading from ${build_dir}/\${Module.mainScriptUrlOrBlob}\`);
     var script = document.createElement('script');
     script.src = '/eden-cli.js';
-    script.onload = () => {
-        // copy just most relevant :)
-        console.log(Module);
-        Module.FS.writeFile('/game.nro', new DataView(gameNroFileBuffer));
-    };
+    script.onload = (e) => Module.printInternal(\`loaded WASMy script \${e}!!\`);
     document.head.appendChild(script);
 }).catch(Module.printErr);
 </script>
