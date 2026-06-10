@@ -169,21 +169,6 @@ else()
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-parameter>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>)
 
-    if (MSVC)
-        add_compile_options(
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++17-compat>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++11-compat-reserved-user-defined-literal>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++11-compat-deprecated-writable-strings>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++11-compat-pedantic>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++11-compat>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++0x-compat>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++98-c++11-compat-binary-literal>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++98-compat-pedantic>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c++98-compat>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c99-compat>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c98-compat>)
-    endif()
-
     if (CXX_CLANG OR CXX_ICC OR CXX_APPLE) # Clang, AppleClang, or Intel C++
         if (NOT MSVC)
             add_compile_options(

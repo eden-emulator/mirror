@@ -158,6 +158,7 @@ if (CXX_CLANG_CL)
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-reserved-identifier>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-deprecated-declarations>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-cast-function-type-mismatch>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-c99-extensions>
         $<$<COMPILE_LANGUAGE:C,CXX>:/EHsc>)
     # REQUIRED CPU features IN Windows-amd64
     if (ARCHITECTURE_x86_64)
