@@ -1,9 +1,17 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <memory>
+#include <vector>
 
+#include "core/core.h"
+#include "core/file_sys/registered_cache.h"
 #include "core/file_sys/romfs_factory.h"
+#include "core/hle/api_version.h"
+#include "core/hle/service/filesystem/filesystem.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/ncm/ncm.h"
 #include "core/hle/service/server_manager.h"
@@ -88,6 +96,163 @@ public:
     }
 };
 
+class IContentStorage final : public ServiceFramework<IContentStorage> {
+public:
+    explicit IContentStorage(Core::System& system_, FileSys::StorageId id)
+        : ServiceFramework{system_, "IContentStorage"}, storage{id} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &IContentStorage::GeneratePlaceHolderId, "GeneratePlaceHolderId"},
+            {1, &IContentStorage::CreatePlaceHolder, "CreatePlaceHolder"},
+            {2, &IContentStorage::DeletePlaceHolder, "DeletePlaceHolder"},
+            {4, &IContentStorage::WritePlaceHolder, "WritePlaceHolder"},
+            {5, &IContentStorage::Register, "Register"},
+            {6, &IContentStorage::Delete, "Delete"},
+        };
+        // clang-format on
+
+        RegisterHandlers(functions);
+    }
+
+private:
+    void GeneratePlaceHolderId(HLERequestContext& ctx) {
+        LOG_DEBUG(Service_NCM, "called");
+
+        IPC::ResponseBuilder rb{ctx, 6};
+        rb.Push(ResultSuccess);
+        rb.PushRaw(FileSys::PlaceholderCache::Generate());
+    }
+
+    void CreatePlaceHolder(HLERequestContext& ctx) {
+        IPC::RequestParser rp{ctx};
+        [[maybe_unused]] FileSys::NcaID content_id{};
+        FileSys::NcaID placeholder_id{};
+        if constexpr (HLE::ApiVersion::HOS_VERSION_MAJOR >= 16) {
+            placeholder_id = rp.PopRaw<FileSys::NcaID>();
+            content_id = rp.PopRaw<FileSys::NcaID>();
+        } else {
+            content_id = rp.PopRaw<FileSys::NcaID>();
+            placeholder_id = rp.PopRaw<FileSys::NcaID>();
+        }
+        const auto size = rp.Pop<s64>();
+
+        auto* const placeholder_cache =
+            system.GetFileSystemController().GetPlaceholderCacheForStorage(storage);
+        const bool succeeded =
+            placeholder_cache != nullptr && size >= 0 &&
+            (placeholder_cache->Exists(placeholder_id) ||
+             placeholder_cache->Create(placeholder_id, static_cast<u64>(size)));
+
+        if (succeeded) {
+            LOG_DEBUG(Service_NCM, "called, storage_id={}, size={}", static_cast<u32>(storage),
+                      size);
+        } else {
+            LOG_WARNING(Service_NCM, "failed, storage_id={}, size={}", static_cast<u32>(storage),
+                        size);
+        }
+
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(succeeded ? ResultSuccess : ResultUnknown);
+    }
+
+    void DeletePlaceHolder(HLERequestContext& ctx) {
+        IPC::RequestParser rp{ctx};
+        const auto placeholder_id = rp.PopRaw<FileSys::NcaID>();
+
+        auto* const placeholder_cache =
+            system.GetFileSystemController().GetPlaceholderCacheForStorage(storage);
+        const bool succeeded =
+            placeholder_cache != nullptr &&
+            (!placeholder_cache->Exists(placeholder_id) || placeholder_cache->Delete(placeholder_id));
+
+        if (succeeded) {
+            LOG_DEBUG(Service_NCM, "called, storage_id={}", static_cast<u32>(storage));
+        } else {
+            LOG_WARNING(Service_NCM, "failed, storage_id={}", static_cast<u32>(storage));
+        }
+
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(succeeded ? ResultSuccess : ResultUnknown);
+    }
+
+    void WritePlaceHolder(HLERequestContext& ctx) {
+        IPC::RequestParser rp{ctx};
+        const auto placeholder_id = rp.PopRaw<FileSys::NcaID>();
+        const auto offset = rp.Pop<u64>();
+        const auto data = ctx.ReadBuffer();
+
+        auto* const placeholder_cache =
+            system.GetFileSystemController().GetPlaceholderCacheForStorage(storage);
+        const std::vector<u8> write_data{data.begin(), data.end()};
+        const bool succeeded =
+            placeholder_cache != nullptr &&
+            placeholder_cache->Write(placeholder_id, offset, write_data);
+
+        if (succeeded) {
+            LOG_DEBUG(Service_NCM, "called, storage_id={}, offset={}, size={}",
+                      static_cast<u32>(storage), offset, data.size());
+        } else {
+            LOG_WARNING(Service_NCM, "failed, storage_id={}, offset={}, size={}",
+                        static_cast<u32>(storage), offset, data.size());
+        }
+
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(succeeded ? ResultSuccess : ResultUnknown);
+    }
+
+    void Register(HLERequestContext& ctx) {
+        IPC::RequestParser rp{ctx};
+        FileSys::NcaID content_id{};
+        FileSys::NcaID placeholder_id{};
+        if constexpr (HLE::ApiVersion::HOS_VERSION_MAJOR >= 16) {
+            placeholder_id = rp.PopRaw<FileSys::NcaID>();
+            content_id = rp.PopRaw<FileSys::NcaID>();
+        } else {
+            content_id = rp.PopRaw<FileSys::NcaID>();
+            placeholder_id = rp.PopRaw<FileSys::NcaID>();
+        }
+
+        auto& fsc = system.GetFileSystemController();
+        auto* const placeholder_cache = fsc.GetPlaceholderCacheForStorage(storage);
+        auto* const registered_cache = fsc.GetRegisteredCacheForStorage(storage);
+        const bool succeeded =
+            placeholder_cache != nullptr && registered_cache != nullptr &&
+            placeholder_cache->Register(registered_cache, placeholder_id, content_id);
+
+        if (succeeded) {
+            LOG_DEBUG(Service_NCM, "called, storage_id={}", static_cast<u32>(storage));
+        } else {
+            LOG_WARNING(Service_NCM, "failed, storage_id={}", static_cast<u32>(storage));
+        }
+
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(succeeded ? ResultSuccess : ResultUnknown);
+    }
+
+    void Delete(HLERequestContext& ctx) {
+        IPC::RequestParser rp{ctx};
+        const auto content_id = rp.PopRaw<FileSys::NcaID>();
+
+        auto* const registered_cache =
+            system.GetFileSystemController().GetRegisteredCacheForStorage(storage);
+        const bool succeeded = registered_cache != nullptr && registered_cache->Delete(content_id);
+        if (succeeded) {
+            registered_cache->Refresh();
+        }
+
+        if (succeeded) {
+            LOG_DEBUG(Service_NCM, "called, storage_id={}", static_cast<u32>(storage));
+        } else {
+            LOG_WARNING(Service_NCM, "failed, storage_id={}", static_cast<u32>(storage));
+        }
+
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(succeeded ? ResultSuccess : ResultUnknown);
+    }
+
+    FileSys::StorageId storage;
+};
+
 class LR final : public ServiceFramework<LR> {
 public:
     explicit LR(Core::System& system_) : ServiceFramework{system_, "lr"} {
@@ -113,7 +278,7 @@ public:
             {1, nullptr, "CreateContentMetaDatabase"},
             {2, nullptr, "VerifyContentStorage"},
             {3, nullptr, "VerifyContentMetaDatabase"},
-            {4, nullptr, "OpenContentStorage"},
+            {4, &NCM::OpenContentStorage, "OpenContentStorage"},
             {5, nullptr, "OpenContentMetaDatabase"},
             {6, nullptr, "CloseContentStorageForcibly"},
             {7, nullptr, "CloseContentMetaDatabaseForcibly"},
@@ -130,6 +295,19 @@ public:
 
         RegisterHandlers(functions);
     }
+
+private:
+    void OpenContentStorage(HLERequestContext& ctx) {
+        IPC::RequestParser rp{ctx};
+        const auto storage_id = rp.PopEnum<FileSys::StorageId>();
+
+        LOG_DEBUG(Service_NCM, "called, storage_id={}", static_cast<u32>(storage_id));
+
+        IPC::ResponseBuilder rb{ctx, 2, 0, 1};
+        rb.Push(ResultSuccess);
+        rb.PushIpcInterface<IContentStorage>(system, storage_id);
+    }
+
 };
 
 void LoopProcess(Core::System& system) {
