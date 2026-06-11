@@ -47,7 +47,7 @@ These options control dependencies.
   - Needed for gyroscopes
   - Only available on Linux
 - `ENABLE_DEBUG_TOOLS` (OFF) Enables debugging and development tools, see [tools](../tools/README.md).
-- `ENABLE_WERROR` (OFF) Enables warnings as errors (-Werror).
+- `ENABLE_WERROR` (ON) Enables warnings as errors (-Werror).
 
 ### Flavors
 

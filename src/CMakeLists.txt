@@ -156,14 +156,21 @@ else()
     endif()
 
     if (ENABLE_WERROR)
-        add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-Werror>)
+        add_compile_options(
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Werror=all>
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Werror=extra>
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Werror=missing-declarations>
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Werror=shadow>
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Werror=unused>)
+    else()
+        add_compile_options(
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Wall>
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Wextra>
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Wmissing-declarations>
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Wshadow>
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Wunused>)
     endif()
     add_compile_options(
-        $<$<COMPILE_LANGUAGE:C,CXX>:-Wall>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-Wextra>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-Wmissing-declarations>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-Wshadow>
-        $<$<COMPILE_LANGUAGE:C,CXX>:-Wunused>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-attributes>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-invalid-offsetof>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-unused-parameter>
