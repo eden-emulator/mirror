@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <array>
 #include <memory>
 #include <vector>
 
@@ -253,6 +255,111 @@ private:
     FileSys::StorageId storage;
 };
 
+class IContentMetaDatabase final : public ServiceFramework<IContentMetaDatabase> {
+public:
+    explicit IContentMetaDatabase(Core::System& system_, FileSys::StorageId id)
+        : ServiceFramework{system_, "IContentMetaDatabase"}, storage{id} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &IContentMetaDatabase::Set, "Set"},
+            {2, &IContentMetaDatabase::Remove, "Remove"},
+            {8, &IContentMetaDatabase::Has, "Has"},
+            {15, &IContentMetaDatabase::Commit, "Commit"},
+        };
+        // clang-format on
+
+        RegisterHandlers(functions);
+    }
+
+private:
+    struct ContentMetaKey {
+        u64 id;
+        u32 version;
+        FileSys::TitleType type;
+        u8 install_type;
+        std::array<u8, 2> padding;
+    };
+    static_assert(sizeof(ContentMetaKey) == 0x10);
+
+    void Set(HLERequestContext& ctx) {
+        IPC::RequestParser rp{ctx};
+        const auto key = rp.PopRaw<ContentMetaKey>();
+
+        const auto entry_matches = [&key](const ContentMetaKey& entry) {
+            return entry.id == key.id && entry.version == key.version && entry.type == key.type &&
+                   entry.install_type == key.install_type;
+        };
+        if (std::find_if(entries.begin(), entries.end(), entry_matches) == entries.end()) {
+            entries.push_back(key);
+        }
+
+        LOG_DEBUG(Service_NCM,
+                  "called, storage_id={}, title_id={:016X}, version={}, type={}, size={}",
+                  static_cast<u32>(storage), key.id, key.version, static_cast<u8>(key.type),
+                  ctx.GetReadBufferSize());
+
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(ResultSuccess);
+    }
+
+    void Remove(HLERequestContext& ctx) {
+        IPC::RequestParser rp{ctx};
+        const auto key = rp.PopRaw<ContentMetaKey>();
+
+        std::erase_if(entries, [&key](const ContentMetaKey& entry) {
+            return entry.id == key.id && entry.version == key.version && entry.type == key.type &&
+                   entry.install_type == key.install_type;
+        });
+
+        LOG_DEBUG(Service_NCM, "called, storage_id={}, title_id={:016X}, version={}, type={}",
+                  static_cast<u32>(storage), key.id, key.version, static_cast<u8>(key.type));
+
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(ResultSuccess);
+    }
+
+    void Has(HLERequestContext& ctx) {
+        IPC::RequestParser rp{ctx};
+        const auto key = rp.PopRaw<ContentMetaKey>();
+
+        const bool has_pending =
+            std::find_if(entries.begin(), entries.end(), [&key](const ContentMetaKey& entry) {
+                return entry.id == key.id && entry.version == key.version &&
+                       entry.type == key.type && entry.install_type == key.install_type;
+            }) != entries.end();
+
+        auto* const registered_cache =
+            system.GetFileSystemController().GetRegisteredCacheForStorage(storage);
+        const bool has_registered =
+            registered_cache != nullptr &&
+            registered_cache->HasEntry(key.id, FileSys::ContentRecordType::Meta);
+
+        LOG_DEBUG(Service_NCM, "called, storage_id={}, title_id={:016X}, version={}, type={}, has={}",
+                  static_cast<u32>(storage), key.id, key.version, static_cast<u8>(key.type),
+                  has_pending || has_registered);
+
+        IPC::ResponseBuilder rb{ctx, 3};
+        rb.Push(ResultSuccess);
+        rb.Push(has_pending || has_registered);
+    }
+
+    void Commit(HLERequestContext& ctx) {
+        auto* const registered_cache =
+            system.GetFileSystemController().GetRegisteredCacheForStorage(storage);
+        if (registered_cache != nullptr) {
+            registered_cache->Refresh();
+        }
+
+        LOG_DEBUG(Service_NCM, "called, storage_id={}", static_cast<u32>(storage));
+
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(ResultSuccess);
+    }
+
+    FileSys::StorageId storage;
+    std::vector<ContentMetaKey> entries;
+};
+
 class LR final : public ServiceFramework<LR> {
 public:
     explicit LR(Core::System& system_) : ServiceFramework{system_, "lr"} {
@@ -279,7 +386,7 @@ public:
             {2, nullptr, "VerifyContentStorage"},
             {3, nullptr, "VerifyContentMetaDatabase"},
             {4, &NCM::OpenContentStorage, "OpenContentStorage"},
-            {5, nullptr, "OpenContentMetaDatabase"},
+            {5, &NCM::OpenContentMetaDatabase, "OpenContentMetaDatabase"},
             {6, nullptr, "CloseContentStorageForcibly"},
             {7, nullptr, "CloseContentMetaDatabaseForcibly"},
             {8, nullptr, "CleanupContentMetaDatabase"},
@@ -308,6 +415,16 @@ private:
         rb.PushIpcInterface<IContentStorage>(system, storage_id);
     }
 
+    void OpenContentMetaDatabase(HLERequestContext& ctx) {
+        IPC::RequestParser rp{ctx};
+        const auto storage_id = rp.PopEnum<FileSys::StorageId>();
+
+        LOG_DEBUG(Service_NCM, "called, storage_id={}", static_cast<u32>(storage_id));
+
+        IPC::ResponseBuilder rb{ctx, 2, 0, 1};
+        rb.Push(ResultSuccess);
+        rb.PushIpcInterface<IContentMetaDatabase>(system, storage_id);
+    }
 };
 
 void LoopProcess(Core::System& system) {
