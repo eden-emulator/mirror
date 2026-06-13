@@ -619,7 +619,7 @@ if (ENABLE_QT)
 
     # Best practice is to ask for all components at once, so they are from the same version
     set(YUZU_QT_COMPONENTS Core Widgets Charts Concurrent Gui)
-    if (LINUX OR FREEBSD)
+    if (NOT WIN32 AND NOT APPLE)
         list(APPEND YUZU_QT_COMPONENTS DBus)
         # yes Qt, we get it
         set(QT_NO_PRIVATE_MODULE_WARNING ON)
