@@ -62,6 +62,16 @@ if (USE_DISCORD_PRESENCE)
     target_compile_definitions(qt_common PUBLIC USE_DISCORD_PRESENCE)
 endif()
 
+# Qt itself may use Vulkan stuffs so we'd need to account for that as well
+# must match src/video_core/vulkan_common/vulkan.h logic
+if (WIN32 OR APPLE OR ANDROID OR PLATFORM_HAIKU OR PLATFORM_PS4)
+    # ...
+else()
+    find_package(X11 REQUIRED)
+    target_include_directories(video_core PUBLIC ${X11_INCLUDE_DIR})
+    target_link_libraries(video_core PUBLIC ${X11_LIBRARIES})
+endif()
+
 # TODO(crueter)
 target_link_libraries(qt_common PRIVATE Qt6::Widgets)
 
