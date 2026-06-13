@@ -273,7 +273,7 @@ If using FreeBSD 12 or prior, use `devel/pkg-config` instead.
 For NetBSD +10.1:
 
 ```sh
-pkgin install git cmake boost fmtlib SDL3 catch2 libjwt spirv-headers spirv-tools ffmpeg7 libva nlohmann-json jq libopus qt6 cpp-httplib lz4 vulkan-headers nasm autoconf enet pkg-config libusb1 libcxx frozen
+pkgin install git cmake boost fmtlib SDL3 catch2 libjwt spirv-headers spirv-tools ffmpeg7 libva nlohmann-json jq libopus qt6-qtbase qt6-qtcharts qt6-qtmultimedia qt6-qttools cpp-httplib lz4 vulkan-headers nasm autoconf enet pkg-config libusb1 libcxx frozen
 ```
 
 [Caveats](./Caveats.md#netbsd).
