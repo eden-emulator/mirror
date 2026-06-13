@@ -30,13 +30,12 @@ endif()
 # Needed for FFmpeg w/ VAAPI and DRM
 if (OPENBSD)
     # OpenBSD 7.8 broke libcxx when upgrading, so we must define the PSTL backend manually
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SYSROOT}/usr/X11R6/include -D_LIBCPP_PSTL_BACKEND_SERIAL=1")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${CMAKE_SYSROOT}/usr/X11R6/include -D_LIBCPP_PSTL_BACKEND_SERIAL=1")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${CMAKE_SYSROOT}/usr/X11R6/lib")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_LIBCPP_PSTL_BACKEND_SERIAL=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_LIBCPP_PSTL_BACKEND_SERIAL=1")
 elseif (NETBSD)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I${CMAKE_SYSROOT}/usr/X11R7/include -I${CMAKE_SYSROOT}/usr/pkg/include/c++/v1")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${CMAKE_SYSROOT}/usr/X11R7/include -I${CMAKE_SYSROOT}/usr/pkg/include/c++/v1")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${CMAKE_SYSROOT}/usr/X11R7/lib")
+    if (NOT CXX_GCC OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS "14.0")
+        message(FATAL_ERROR "You must use gcc14 (or newer) from pkgin; feel free to fix clang yourself otherwise.")
+    endif()
 endif()
 
 # NetBSD: Fun for the whole family!
