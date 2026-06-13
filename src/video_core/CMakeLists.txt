@@ -324,6 +324,19 @@ if (ENABLE_OPENGL)
     )
 endif()
 
+# Since this is also used by header-only whom is public:
+# a) you must also make it public
+# b) should precede the headers themselves
+# c) since targets also export targets publicly, this should precede them as well
+# must match src/video_core/vulkan_common/vulkan.h logic
+if (WIN32 OR APPLE OR ANDROID OR PLATFORM_HAIKU OR PLATFORM_PS4)
+    # ...
+else()
+    find_package(X11 REQUIRED)
+    target_include_directories(video_core PUBLIC ${X11_INCLUDE_DIR})
+    target_link_libraries(video_core PUBLIC ${X11_LIBRARIES})
+endif()
+
 target_link_libraries(video_core PUBLIC common core)
 target_link_libraries(video_core PUBLIC shader_recompiler stb bc_decoder gpu_logging)
 if (ENABLE_OPENGL)
@@ -343,16 +356,6 @@ add_dependencies(video_core host_shaders)
 target_include_directories(video_core PRIVATE ${HOST_SHADERS_INCLUDE})
 
 target_link_libraries(video_core PRIVATE sirit::sirit)
-
-# Since this is also used by header-only whom is public:
-# a) you must also make it public
-# b) should precede the headers themselves
-# must match src/video_core/vulkan_common/vulkan.h logic
-if (WIN32 OR APPLE OR ANDROID OR PLATFORM_HAIKU OR PLATFORM_PS4)
-    # ...
-else()
-    target_link_libraries(video_core PUBLIC X11)
-endif()
 
 # Header-only stuff needed by all dependent targets
 target_link_libraries(video_core PUBLIC Vulkan::Headers Vulkan::UtilityHeaders GPUOpen::VulkanMemoryAllocator)
