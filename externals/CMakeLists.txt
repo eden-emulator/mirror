@@ -411,11 +411,3 @@ if (APPLE)
         set(MOLTENVK_LIBRARY "${moltenvk_SOURCE_DIR}/MoltenVK/dylib/macOS/libMoltenVK.dylib" CACHE STRING "" FORCE)
     endif()
 endif()
-
-# must match src/video_core/vulkan_common/vulkan.h logic
-# No we can't "bundle" this... never... NEVER
-if (WIN32 OR APPLE OR ANDROID OR PLATFORM_HAIKU OR PLATFORM_PS4)
-    # ...
-else()
-    find_package(X11 REQUIRED)
-endif()
