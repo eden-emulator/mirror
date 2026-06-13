@@ -67,9 +67,7 @@
 #else
 #   define CTX_SP (_UC_MACHINE_SP(ucontext))
 #endif
-#endif
-
-#if defined(ARCHITECTURE_arm64)
+#elif defined(ARCHITECTURE_arm64)
 #    if defined(__APPLE__)
 #        define CTX_PC (mctx->__ss.__pc)
 #        define CTX_SP (mctx->__ss.__sp)
