@@ -351,7 +351,7 @@ target_link_libraries(video_core PRIVATE sirit::sirit)
 if (WIN32 OR APPLE OR ANDROID OR PLATFORM_HAIKU OR PLATFORM_PS4)
     # ...
 else()
-    target_link_libraries(video_core PUBLIC X11::X11)
+    target_link_libraries(video_core PUBLIC X11)
 endif()
 
 # Header-only stuff needed by all dependent targets
