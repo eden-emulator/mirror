@@ -211,7 +211,7 @@ if (OPENORBIS)
         --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}")
 elseif (MANAGARM)
     # Required for proper stuff
-    list(APPEND FFmpeg_CROSS_COMPILE_FLAGS
+    list(APPEND FFmpeg_CROSS_COMPILE_FLAGS 
         --disable-pthreads
         --extra-libs="${FFmpeg_CROSS_COMPILE_LIBS}")
 endif()
