@@ -32,8 +32,8 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
     # User attempts to do a FFmpeg cross compilation because...
     # Here we just quickly test against host/system processors not matching
     # TODO: Test for versions not matching as well?
-    elseif (NOT ("${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "${CMAKE_SYSTEM_PROCESSOR}"
-    AND "${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "${CMAKE_SYSTEM_NAME}"))
+    elseif (NOT (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES CMAKE_SYSTEM_PROCESSOR
+    AND CMAKE_HOST_SYSTEM_NAME MATCHES CMAKE_SYSTEM_NAME))
         string(TOLOWER "${CMAKE_SYSTEM_NAME}" FFmpeg_SYSTEM_NAME)
         # All of these platforms are supported by ffmpeg as native build OSes
         # anything else (like Redox or Managarm or PS4) is NOT natively supported
@@ -56,10 +56,7 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
         if (DEFINED FFmpeg_CROSS_PREFIX)
             list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --cross-prefix="${FFmpeg_CROSS_PREFIX}")
         else()
-            message(FATAL_ERROR "Please set FFmpeg_CROSS_PREFIX to your cross toolchain prefix, for example: \${CMAKE_STAGING_PREFIX}/bin/${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}-"
-                "If this is not intended, check that:"
-                "${CMAKE_HOST_SYSTEM_PROCESSOR} = ${CMAKE_SYSTEM_PROCESSOR}"
-                "${CMAKE_HOST_SYSTEM_NAME} = ${CMAKE_SYSTEM_NAME}")
+            message(WARNING "Please set FFmpeg_CROSS_PREFIX to your cross toolchain prefix, for example: \${CMAKE_STAGING_PREFIX}/bin/${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_SYSTEM_NAME}-")
         endif()
         set(FFmpeg_IS_CROSS_COMPILING TRUE)
     endif()
