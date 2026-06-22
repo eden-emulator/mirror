@@ -14,6 +14,7 @@
 
 struct SDL_Window;
 union SDL_Event;
+typedef int SDL_TimerID;
 
 namespace Core {
 class System;
