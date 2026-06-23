@@ -111,7 +111,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
 #else
 
 std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
-#if defined(__ANDROID__) || defined(__linux__)
+#if defined(__ANDROID__) || defined(__linux__) || defined(__APPLE__) || defined(__managarm__)
     struct ifaddrs* ifaddr = nullptr;
     if (getifaddrs(&ifaddr) != 0) {
         LOG_ERROR(Network, "getifaddrs: {}", std::strerror(errno));
@@ -126,7 +126,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
         u32 flags;
     };
     std::vector<RoutingEntry> routes{};
-#if defined(__ANDROID__)
+#if defined(__ANDROID__) || defined(__APPLE__)
     // Even through Linux based, we can't reliably obtain routing information from there :(
     // macOS not Linux based and would murder us if we attempt to access /proc
 #else
@@ -146,7 +146,10 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
     std::vector<Network::NetworkInterface> ifaces;
     for (auto ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
         if (ifa->ifa_addr == nullptr || ifa->ifa_netmask == nullptr /* Have a netmask and address */
+        // Apple hates human beings so lets pretend all families are fine
+#if !defined(__APPLE__) && !defined(__managarm__)
         || ifa->ifa_addr->sa_family != AF_INET /* Must be of kind AF_INET */
+#endif
         || (ifa->ifa_flags & IFF_UP) == 0 || (ifa->ifa_flags & IFF_LOOPBACK) != 0) /* Not loopback */
             continue;
         // Just use 0 as the gateway address if not found OR routes are empty :)
