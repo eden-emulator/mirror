@@ -9,12 +9,11 @@
 #include <tuple>
 #include <utility>
 
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_timer.h>
+
 #include "core/frontend/emu_window.h"
 #include "core/frontend/graphics_context.h"
-
-struct SDL_Window;
-union SDL_Event;
-typedef int SDL_TimerID;
 
 namespace Core {
 class System;
