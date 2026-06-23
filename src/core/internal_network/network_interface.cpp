@@ -126,7 +126,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
         u32 flags;
     };
     std::vector<RoutingEntry> routes{};
-#if defined(__ANDROID__
+#if defined(__ANDROID__)
     // Even through Linux based, we can't reliably obtain routing information from there :(
     // macOS not Linux based and would murder us if we attempt to access /proc
 #else
