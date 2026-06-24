@@ -449,6 +449,13 @@ void RememberCurrentThreadNice(pid_t tid, s32 nice_value) {
 
 namespace Common {
 
+// The use of TLS is justified as it is faster than using pthread_* functions
+// and generally will be better long term... yeah %fs/%gs reloads aren't great
+// but it's better than doing a potential call-stack-fuckery...
+thread_local struct {
+    std::string name{};
+} per_thread_data = {};
+
 void SetCurrentThreadPriority(ThreadPriority new_priority) {
 #ifdef _WIN32
     int windows_priority = [&]() {
@@ -503,7 +510,7 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
 #endif
 }
 
-void SetCurrentThreadName(const char* name) {
+void SetCurrentThreadName(const char* name) noexcept {
 #ifdef _MSC_VER
     // Sets the debugger-visible name of the current thread.
     if (auto pf = (decltype(&SetThreadDescription))(void*)GetProcAddress(GetModuleHandle(TEXT("KernelBase.dll")), "SetThreadDescription"); pf)
@@ -537,6 +544,11 @@ void SetCurrentThreadName(const char* name) {
 #else
     pthread_setname_np(pthread_self(), name);
 #endif
+    per_thread_data.name = std::string{name};
+}
+
+std::string_view GetCurrentThreadName() noexcept {
+    return per_thread_data.name;
 }
 
 void SetCurrentThreadToPerformanceCores() {

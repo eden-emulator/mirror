@@ -54,6 +54,19 @@ struct Entry {
 
 namespace {
 
+/// @brief A log entry. Log entries are store in a structured format to permit more varied output
+/// formatting on different frontends, as well as facilitating filtering and aggregation.
+struct Entry {
+    std::string_view thread_name;
+    std::string message;
+    std::chrono::microseconds timestamp;
+    Class log_class{};
+    Level log_level{};
+    const char* filename = nullptr;
+    const char* function = nullptr;
+    unsigned int line_num = 0;
+};
+
 /// @brief Returns the name of the passed log class as a C-string. Subclasses are separated by periods
 /// instead of underscores as in the enumeration.
 /// @note GetClassName is a macro defined by Windows.h, grrr...
@@ -90,7 +103,7 @@ std::string FormatLogMessage(const Entry& entry) noexcept {
     auto const time_fractional = uint32_t(entry.timestamp.count() % 1000000);
     auto const class_name = GetLogClassName(entry.log_class);
     auto const level_name = GetLevelName(entry.log_level);
-    return fmt::format("[{:4d}.{:06d}] {} <{}> {}:{}:{}: {}\n", time_seconds, time_fractional, class_name, level_name, entry.filename, entry.line_num, entry.function, entry.message);
+    return fmt::format("[{:4d}.{:06d}] {} <{}> ({}) {}:{}:{}: {}\n", time_seconds, time_fractional, class_name, level_name, entry.thread_name.data(), entry.filename, entry.line_num, entry.function, entry.message);
 }
 
 template <typename It>
@@ -156,7 +169,7 @@ struct Backend {
 };
 
 /// @brief Formatting specifier (to use with printf) of the equivalent fmt::format() expression
-#define CCB_PRINTF_FMT "[%4d.%06d] %s <%s> %s:%u:%s: %s"
+#define CCB_PRINTF_FMT "[%4d.%06d] %s <%s> (eden:%s) %s:%u:%s: %s"
 
 /// @brief Instead of using fmt::format() just use the system's formatting capabilities directly
 struct DirectFormatArgs {
@@ -199,7 +212,7 @@ struct ColorConsoleBackend final : public Backend {
             }());
             SetConsoleTextAttribute(console_handle, color);
             auto const df = GetDirectFormatArgs(entry);
-            std::fprintf(stdout, CCB_PRINTF_FMT "\n", df.time_seconds, df.time_fractional, df.class_name, df.level_name, entry.filename, entry.line_num, entry.function, entry.message);
+            std::fprintf(stdout, CCB_PRINTF_FMT "\n", df.time_seconds, df.time_fractional, df.class_name, df.level_name, entry.thread_name.data(), entry.filename, entry.line_num, entry.function, entry.message);
         }
     }
     void Flush() noexcept override {}
@@ -225,7 +238,7 @@ struct ColorConsoleBackend final : public Backend {
             // more restrictive, because take for example this simple prelude:
             // [  50.872256] Config <Info> common/settings.cpp:142:LogSettings:
             char buffer[256];
-            auto result = fmt::format_to_n(buffer, sizeof(buffer) - 1, "\x1b{}[{:4d}.{:06d}] {} <{}> {}:{}:{}: ", color_str, df.time_seconds, df.time_fractional, df.class_name, df.level_name, entry.filename, entry.line_num, entry.function, entry.message);
+            auto result = fmt::format_to_n(buffer, sizeof(buffer) - 1, "\x1b{}[{:4d}.{:06d}] {} <{}> {}:{}:{}: ", color_str, df.time_seconds, df.time_fractional, df.class_name, df.level_name, entry.thread_name.data(), entry.filename, entry.line_num, entry.function, entry.message);
             std::fwrite(buffer, 1, (std::min)(sizeof(buffer) - 1, result.size), stdout);
             std::fwrite(entry.message, 1, entry.message_len, stdout);
             std::fwrite("\x1b[0m\n", 1, sizeof("\x1b[0m\n"), stdout);
@@ -329,7 +342,7 @@ struct LogcatBackend : public Backend {
             }
         }();
         auto const df = GetDirectFormatArgs(entry);
-        __android_log_print(android_log_priority, "YuzuNative", CCB_PRINTF_FMT, df.time_seconds, df.time_fractional, df.class_name, df.level_name, entry.filename, entry.line_num, entry.function, entry.message);
+        __android_log_print(android_log_priority, "YuzuNative", CCB_PRINTF_FMT, df.time_seconds, df.time_fractional, df.class_name, df.level_name, entry.thread_name.data(), entry.filename, entry.line_num, entry.function, entry.message);
     }
     void Flush() noexcept override {}
 };
@@ -431,6 +444,7 @@ void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename, u
         buffer[(std::min)(result.size, sizeof(buffer) - 1)] = '\0';
         logging_instance->ForEachBackend([=](Backend& backend) {
             backend.Write(Entry{
+                .thread_name = Common::GetCurrentThreadName(),
                 .message = buffer,
                 .message_len = (std::min)(result.size, sizeof(buffer) - 1),
                 .timestamp = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - logging_instance->time_origin),
