@@ -100,7 +100,8 @@ enum class ThreadPriority : u32 {
 };
 
 void SetCurrentThreadPriority(ThreadPriority new_priority);
-void SetCurrentThreadName(const char* name);
+void SetCurrentThreadName(const char* name) noexcept;
+std::string_view GetCurrentThreadName() noexcept;
 void PinCurrentThreadToPerformanceCore(size_t core_id);
 
 } // namespace Common

@@ -140,25 +140,4 @@ void Stop();
 void SetGlobalFilter(const Filter& filter);
 void SetColorConsoleBackendEnabled(bool enabled);
 
-/// @brief A log entry. Log entries are store in a structured format to permit more varied output
-/// formatting on different frontends, as well as facilitating filtering and aggregation.
-struct Entry {
-    std::string message;
-    std::chrono::microseconds timestamp;
-    Class log_class{};
-    Level log_level{};
-    const char* filename = nullptr;
-    const char* function = nullptr;
-    unsigned int line_num = 0;
-};
-
-/// Formats a log entry into the provided text buffer.
-std::string FormatLogMessage(const Entry& entry) noexcept;
-
-/// Prints the same message as `PrintMessage`, but colored according to the severity level.
-void PrintColoredMessage(const Entry& entry) noexcept;
-
-/// Formats and prints a log entry to the android logcat.
-void PrintMessageToLogcat(const Entry& entry) noexcept;
-
 } // namespace Common::Log
