@@ -21,6 +21,13 @@ STUB_WEAK(ZSTD_trace_compress_end)
 STUB_WEAK(ZSTD_trace_decompress_begin)
 STUB_WEAK(ZSTD_trace_decompress_end)
 
+extern "C" thread_local struct {
+    char pad[512];
+} _ThreadRuneLocale = {};
+extern "C" struct {
+    char pad[512];
+} __h_errno = {};
+
 FILE* __stderrp = stdout;
 FILE* __stdinp = stdin;
 
