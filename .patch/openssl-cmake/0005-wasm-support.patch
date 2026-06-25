@@ -1,0 +1,40 @@
+diff --git a/cmake/ConfigureOpenSSL.cmake b/cmake/ConfigureOpenSSL.cmake
+index 3012e05..2ae23ff 100644
+--- a/cmake/ConfigureOpenSSL.cmake
++++ b/cmake/ConfigureOpenSSL.cmake
+@@ -108,7 +108,8 @@ function(configure_openssl)
+     )
+ 
+     if(NOT "${CONFIGURE_OPTIONS_OLD}" STREQUAL "")
+-        if(CONFIGURE_OPTIONS STREQUAL CONFIGURE_OPTIONS_OLD)
++        # TODO(lizzie): Emscripten has issues with rebuilding due to the wrapper it uses
++        if(CMAKE_SYSTEM_NAME MATCHES "Emscripten" OR CONFIGURE_OPTIONS STREQUAL CONFIGURE_OPTIONS_OLD)
+             message(STATUS "Found previous configure results. Don't perform configuration")
+             return()
+         endif()
+@@ -134,10 +135,24 @@ function(configure_openssl)
+         set(VERBOSE_OPTION OUTPUT_QUIET)
+     endif()
+ 
++    if (CMAKE_SYSTEM_NAME MATCHES "Emscripten")
++        set(EMSCRIPTEN_CMAKE_WRAPPER "emcmake")
++        find_program(EMCC emcc REQUIRED)
++        set(EMSCRIPTEN_LINKER ${EMCC})
++        list(APPEND CONFIGURE_COMMAND wasm64)
++    else()
++        set(EMSCRIPTEN_CMAKE_WRAPPER "")
++        set(EMSCRIPTEN_LINKER ${CMAKE_LINKER})
++    endif ()
++
+     execute_process(
+-        COMMAND ${CMAKE_COMMAND} -E env
++        COMMAND ${EMSCRIPTEN_CMAKE_WRAPPER} ${CMAKE_COMMAND} -E env
+             "CFLAGS=${CMAKE_C_FLAGS}"
+             "CXXFLAGS=${CMAKE_CXX_FLAGS}"
++            "LDFLAGS=${CMAKE_CXX_LINK_FLAGS}"
++            "CC=${CMAKE_C_COMPILER}"
++            "CXX=${CMAKE_CXX_COMPILER}"
++            "LD=${EMSCRIPTEN_LINKER}"
+             ${CONFIGURE_COMMAND}
+         WORKING_DIRECTORY ${CONFIGURE_BUILD_DIR}
+         ${VERBOSE_OPTION}
