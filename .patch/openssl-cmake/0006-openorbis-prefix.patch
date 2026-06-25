@@ -1,0 +1,33 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 1ca57e1..593fd62 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -148,6 +148,16 @@ if(NOT BUILD_SHARED_LIBS)
+     list(APPEND OPENSSL_CONFIGURE_OPTIONS no-shared)
+ endif()
+ 
++list(APPEND OPENSSL_CONFIGURE_OPTIONS
++    no-threads no-thread-pool no-shared no-afalgeng no-async no-capieng no-cmp no-cms no-comp no-ct
++    no-docs no-dgram no-dso no-dynamic-engine no-engine no-filenames no-gost
++    no-http no-legacy no-module no-nextprotoneg no-ocsp no-padlockeng no-quic
++    no-srp no-srtp no-ssl-trace no-static-engine no-tests no-thread-pool no-ts
++    no-ui-console no-uplink no-ssl3-method no-tls1-method no-tls1_1-method
++    no-dtls1-method no-dtls1_2-method no-argon2 no-bf no-blake2 no-cast
++    no-dsa no-idea no-md4 no-mdc2 no-ocb no-rc2 no-rc4 no-rmd160 no-scrypt
++    no-siphash no-siv no-sm2 no-sm3 no-sm4 no-whirlpool no-apps)
++
+ list(SORT OPENSSL_CONFIGURE_OPTIONS)
+ list(REMOVE_DUPLICATES OPENSSL_CONFIGURE_OPTIONS)
+ list(PREPEND OPENSSL_CONFIGURE_OPTIONS ${OPENSSL_TARGET_PLATFORM})
+diff --git a/cmake/ConfigureOpenSSL.cmake b/cmake/ConfigureOpenSSL.cmake
+index 2ae23ff..22a4a27 100644
+--- a/cmake/ConfigureOpenSSL.cmake
++++ b/cmake/ConfigureOpenSSL.cmake
+@@ -154,6 +154,7 @@ function(configure_openssl)
+             "CXX=${CMAKE_CXX_COMPILER}"
+             "LD=${EMSCRIPTEN_LINKER}"
+             ${CONFIGURE_COMMAND}
++            "--prefix=${CMAKE_SYSROOT}"
+         WORKING_DIRECTORY ${CONFIGURE_BUILD_DIR}
+         ${VERBOSE_OPTION}
+         COMMAND_ERROR_IS_FATAL ANY
