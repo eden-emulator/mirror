@@ -51,7 +51,7 @@ ChannelState::ChannelState(s32 bind_id_)
     : bind_id{bind_id_}
 {}
 
-void ChannelState::Init(Core::System& system, GPU& gpu, u64 program_id_) {
+void ChannelState::Init(Core::System& system, u64 program_id_) {
     ASSERT(memory_manager);
     program_id = program_id_;
     payload.emplace(system, *memory_manager, *this);
