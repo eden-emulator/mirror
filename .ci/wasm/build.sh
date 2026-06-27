@@ -65,7 +65,6 @@ done
 # This seems to be fixed in later versions but occurs atleast on 4.0.3-git and below.
 emcmake cmake -B "$OUTDIR" -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=${TYPE} \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
     -DENABLE_OPENGL=OFF \
     -DENABLE_LTO=OFF \
     -DENABLE_QT=OFF \
@@ -76,7 +75,9 @@ emcmake cmake -B "$OUTDIR" -G "Unix Makefiles" \
     -DENABLE_UPDATE_CHECKER=OFF \
     -DENABLE_WEB_SERVICE=OFF \
     -DUSE_DISCORD_PRESENCE=OFF \
+    -DENABLE_WIFI_SCAN=OFF \
     -DUSE_FASTER_LINKER=ON \
+    -DYUZU_STATIC_BUILD=ON \
     -DYUZU_USE_BUNDLED_OPENSSL=OFF \
     -DYUZU_USE_EXTERNAL_FFMPEG=ON \
     -Dzstd_FORCE_BUNDLED=ON \
@@ -84,8 +85,8 @@ emcmake cmake -B "$OUTDIR" -G "Unix Makefiles" \
     -DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm \
     -DCMAKE_C_FLAGS="-s MEMORY64 -m64 -pipe -sMEMORY64=1" \
     -DCMAKE_CXX_FLAGS="-s MEMORY64 -m64 -pipe -sMEMORY64=1" \
-    -DCMAKE_EXE_LINKER_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1 -pthread" \
-    -DCMAKE_C_LINK_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1 -pthread" \
-    -DCMAKE_CXX_LINK_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1 -pthread" \
+    -DCMAKE_EXE_LINKER_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1" \
+    -DCMAKE_C_LINK_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1" \
+    -DCMAKE_CXX_LINK_FLAGS="-sMEMORY64=1 -m64 -Wl,-mwasm64 -sASYNCIFY=1"
 
 cmake --build "$OUTDIR" -- -j$NUM_JOBS
