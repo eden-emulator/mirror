@@ -27,7 +27,6 @@ if (NOT DEFINED ARCHITECTURE)
     message(FATAL_ERROR "Architecture didn't make it out of scope, did you delete DetectArchitecture.cmake?")
 endif()
 
-# Needed for FFmpeg w/ VAAPI and DRM
 if (PLATFORM_OPENBSD)
     # OpenBSD 7.8 broke libcxx when upgrading, so we must define the PSTL backend manually
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_LIBCPP_PSTL_BACKEND_SERIAL=1")
