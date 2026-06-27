@@ -12,11 +12,6 @@
 #include "video_core/guest_memory.h"
 #include "video_core/memory_manager.h"
 #include "video_core/rasterizer_interface.h"
-#include "video_core/texture_cache/util.h"
-
-#ifdef _MSC_VER
-#include <intrin.h>
-#endif
 
 namespace Tegra {
 
@@ -34,18 +29,15 @@ DmaPusher::DmaPusher(Core::System& system_, MemoryManager& memory_manager_, Cont
 DmaPusher::~DmaPusher() = default;
 
 void DmaPusher::DispatchCalls() {
-
     dma_pushbuffer_subindex = 0;
-
     dma_state.is_last_call = true;
-
     while (system.IsPoweredOn()) {
         if (!Step()) {
             break;
         }
     }
-    gpu.FlushCommands();
-    gpu.OnCommandListEnd();
+    system.GPU().FlushCommands();
+    system.GPU().OnCommandListEnd();
 }
 
 bool DmaPusher::Step() {
@@ -175,9 +167,9 @@ void DmaPusher::SetState(const CommandHeader& command_header) {
     dma_state.method_count = command_header.method_count;
 }
 
-void DmaPusher::CallMethod(u32 argument) const {
+void DmaPusher::CallMethod(u32 argument) {
     if (dma_state.method < non_puller_methods) {
-        puller.CallPullerMethod(Engines::Puller::MethodCall{
+        puller.CallPullerMethod(*this, Engines::Puller::MethodCall{
             dma_state.method,
             argument,
             dma_state.subchannel,
@@ -195,9 +187,9 @@ void DmaPusher::CallMethod(u32 argument) const {
     }
 }
 
-void DmaPusher::CallMultiMethod(const u32* base_start, u32 num_methods) const {
+void DmaPusher::CallMultiMethod(const u32* base_start, u32 num_methods) {
     if (dma_state.method < non_puller_methods) {
-        puller.CallMultiMethod(dma_state.method, dma_state.subchannel, base_start, num_methods, dma_state.method_count);
+        puller.CallMultiMethod(*this, dma_state.method, dma_state.subchannel, base_start, num_methods, dma_state.method_count);
     } else {
         auto subchannel = subchannels[dma_state.subchannel];
         subchannel->ConsumeSink(system);
@@ -208,7 +200,6 @@ void DmaPusher::CallMultiMethod(const u32* base_start, u32 num_methods) const {
 
 void DmaPusher::BindRasterizer(VideoCore::RasterizerInterface* rasterizer_) {
     rasterizer = rasterizer_;
-    puller.BindRasterizer(rasterizer);
 }
 
 } // namespace Tegra

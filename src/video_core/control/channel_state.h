@@ -35,7 +35,7 @@ namespace Control {
 struct ChannelState {
     explicit ChannelState(s32 bind_id);
 
-    void Init(Core::System& system, GPU& gpu, u64 program_id);
+    void Init(Core::System& system, u64 program_id);
 
     void BindRasterizer(VideoCore::RasterizerInterface* rasterizer);
 
