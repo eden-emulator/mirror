@@ -88,7 +88,7 @@ std::vector<u8> DownloadImage(const std::string& url_path, const std::filesystem
         cli.set_connection_timeout(std::chrono::seconds(2));
         cli.set_read_timeout(std::chrono::seconds(2));
 
-#ifdef YUZU_BUNDLED_OPENSSL
+#if defined(YUZU_BUNDLED_OPENSSL) && !defined(__OPENORBIS__)
         cli.load_ca_cert_store(kCert, sizeof(kCert));
 #endif
 
