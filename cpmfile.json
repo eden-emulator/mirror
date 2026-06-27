@@ -108,7 +108,7 @@
         "find_args": "MODULE GLOBAL",
         "hash": "159ed94965018f2a371d45a3bfc1961e5fb1549e501ded70a6b4532d7fe99d0579c18b5195aff6e35f96f399b426cea2650ec9fb75ef80d4c9edeccb51f2e6c9",
         "options": [
-            "HTTPLIB_REQUIRE_OPENSSL ON",
+            "HTTPLIB_REQUIRE_OPENSSL OFF",
             "HTTPLIB_DISABLE_MACOSX_AUTOMATIC_ROOT_CERTIFICATES ON"
         ],
         "patches": [
@@ -190,7 +190,8 @@
         "min_version": "3.0.0",
         "package": "OpenSSL",
         "patches": [
-            "0001-add-bundled-cert.patch"
+            "0001-add-bundled-cert.patch",
+            "0002-wasm-support.patch"
         ],
         "repo": "openssl/openssl",
         "version": "openssl-3.6.2"
