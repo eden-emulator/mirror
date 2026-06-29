@@ -145,7 +145,7 @@ Result System::Initialize(const AudioRendererParameterInternal& params,
     PoolMapper pool_mapper(process_handle, false);
     pool_mapper.InitializeSystemPool(memory_pool_info, workbuffer.get(), workbuffer_size);
 
-    WorkbufferAllocator allocator({workbuffer.get(), workbuffer_size}, workbuffer_size);
+    WorkbufferAllocator allocator({workbuffer.get(), workbuffer_size});
 
     samples_workbuffer =
         allocator.Allocate<s32>((voice_channels + mix_buffer_count) * sample_count, 0x10);

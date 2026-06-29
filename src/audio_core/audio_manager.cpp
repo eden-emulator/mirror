@@ -11,8 +11,8 @@
 
 namespace AudioCore {
 
-AudioManager::AudioManager() {
-    thread = std::jthread([this](std::stop_token stop_token) {
+AudioManager::AudioManager(Core::System& system) {
+    thread = std::jthread([&](std::stop_token stop_token) {
         Common::SetCurrentThreadName("AudioManager");
         std::unique_lock l{events.GetAudioEventLock()};
         events.ClearEvents();
@@ -25,7 +25,7 @@ AudioManager::AudioManager() {
                 const auto event_type = Event::Type(i);
                 if (events.CheckAudioEventSet(event_type) || timed_out) {
                     if (buffer_events[i]) {
-                        buffer_events[i]();
+                        buffer_events[i](this, system);
                     }
                 }
                 events.SetAudioEvent(event_type, false);

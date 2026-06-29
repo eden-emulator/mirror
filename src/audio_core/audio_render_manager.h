@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -71,7 +74,7 @@ public:
      * @param system - The system to add.
      * @return True if the system was successfully added, otherwise false.
      */
-    bool AddSystem(System& system);
+    bool AddSystem(Renderer::System& system);
 
     /**
      * Remove a renderer system from the manager.
@@ -79,7 +82,7 @@ public:
      * @param system - The system to remove.
      * @return True if the system was successfully removed, otherwise false.
      */
-    bool RemoveSystem(System& system);
+    bool RemoveSystem(Renderer::System& system);
 
     /**
      * Free a session id when the system wants to shut down.
@@ -89,8 +92,6 @@ public:
     void ReleaseSessionId(s32 session_id);
 
 private:
-    /// Core system
-    Core::System& system;
     /// Session ids, -1 when in use
     std::array<s32, MaxRendererSessions> session_ids{};
     /// Number of active renderers

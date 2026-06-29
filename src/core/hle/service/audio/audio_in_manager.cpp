@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -65,7 +68,7 @@ Result IAudioInManager::OpenAudioInAuto(
 Result IAudioInManager::ListAudioInsAutoFiltered(
     OutArray<AudioDeviceName, BufferAttr_HipcAutoSelect> out_audio_ins, Out<u32> out_count) {
     LOG_DEBUG(Service_Audio, "called");
-    *out_count = impl->GetDeviceNames(out_audio_ins, true);
+    *out_count = impl->GetDeviceNames(system, out_audio_ins, true);
     R_SUCCEED();
 }
 
@@ -90,8 +93,8 @@ Result IAudioInManager::OpenAudioInProtocolSpecified(
 
     size_t new_session_id{};
 
-    R_TRY(impl->LinkToManager());
-    R_TRY(impl->AcquireSessionId(new_session_id));
+    R_TRY(impl->LinkToManager(system));
+    R_TRY(impl->AcquireSessionId(system, new_session_id));
 
     LOG_DEBUG(Service_Audio, "Opening new AudioIn, session_id={}, free sessions={}", new_session_id,
               impl->num_free_sessions);
