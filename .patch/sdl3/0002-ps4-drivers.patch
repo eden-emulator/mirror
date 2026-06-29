@@ -1,0 +1,1103 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index b0eeca8..076cbe4 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -3655,15 +3655,21 @@ if (PLATFORM_PS4)
+     "${SDL3_SOURCE_DIR}/src/thread/pthread/SDL_sysrwlock.c"   # Can be faked, if necessary
+     "${SDL3_SOURCE_DIR}/src/thread/pthread/SDL_systls.c"
+     "${SDL3_SOURCE_DIR}/src/thread/generic/SDL_syssem.c"
++    "${SDL3_SOURCE_DIR}/src/joystick/ps4/SDL_sysjoystick.c"
++    "${SDL3_SOURCE_DIR}/src/video/ps4/SDL_ps4video.c"
+   )
+   sdl_glob_sources("${SDL3_SOURCE_DIR}/src/time/unix/*.c")
+   sdl_glob_sources("${SDL3_SOURCE_DIR}/src/timer/unix/*.c")
+   set(HAVE_SDL_THREADS TRUE)
+   set(HAVE_SDL_TIMERS TRUE)
+   set(HAVE_SDL_TIME TRUE)
++  set(HAVE_SDL_JOYSTICK TRUE)
++  set(HAVE_SDL_VIDEO TRUE)
+   set(SDL_TIME_UNIX 1)
+   set(SDL_TIMER_UNIX 1)
+   set(SDL_THREAD_PTHREAD 1)
++  set(SDL_JOYSTICK_PS4 1)
++  set(SDL_VIDEO_DRIVER_PS4 1)
+ endif ()
+ 
+ # We always need to have threads and timers around
+diff --git a/build-scripts/rename_macros.py b/build-scripts/rename_macros.py
+index b6063dd..9360042 100755
+--- a/build-scripts/rename_macros.py
++++ b/build-scripts/rename_macros.py
+@@ -236,6 +236,7 @@ DEPRECATED_PLATFORM_MACROS = {
+     "SDL_JOYSTICK_N3DS",
+     "SDL_JOYSTICK_OS2",
+     "SDL_JOYSTICK_PS2",
++    "SDL_JOYSTICK_PS4",
+     "SDL_JOYSTICK_PSP",
+     "SDL_JOYSTICK_RAWINPUT",
+     "SDL_JOYSTICK_USBHID",
+@@ -315,6 +316,7 @@ DEPRECATED_PLATFORM_MACROS = {
+     "SDL_VIDEO_DRIVER_OFFSCREEN",
+     "SDL_VIDEO_DRIVER_OS2",
+     "SDL_VIDEO_DRIVER_PS2",
++    "SDL_VIDEO_DRIVER_PS4",
+     "SDL_VIDEO_DRIVER_PSP",
+     "SDL_VIDEO_DRIVER_QNX",
+     "SDL_VIDEO_DRIVER_RISCOS",
+diff --git a/include/build_config/SDL_build_config.h.cmake b/include/build_config/SDL_build_config.h.cmake
+index 520b721..239a874 100644
+--- a/include/build_config/SDL_build_config.h.cmake
++++ b/include/build_config/SDL_build_config.h.cmake
+@@ -313,6 +313,7 @@
+ #cmakedefine SDL_JOYSTICK_MFI 1
+ #cmakedefine SDL_JOYSTICK_N3DS 1
+ #cmakedefine SDL_JOYSTICK_PS2 1
++#cmakedefine SDL_JOYSTICK_PS4 1
+ #cmakedefine SDL_JOYSTICK_PSP 1
+ #cmakedefine SDL_JOYSTICK_RAWINPUT 1
+ #cmakedefine SDL_JOYSTICK_USBHID 1
+@@ -408,6 +409,7 @@
+ #cmakedefine SDL_VIDEO_DRIVER_NGAGE 1
+ #cmakedefine SDL_VIDEO_DRIVER_OFFSCREEN 1
+ #cmakedefine SDL_VIDEO_DRIVER_PS2 1
++#cmakedefine SDL_VIDEO_DRIVER_PS4 1
+ #cmakedefine SDL_VIDEO_DRIVER_PSP 1
+ #cmakedefine SDL_VIDEO_DRIVER_RISCOS 1
+ #cmakedefine SDL_VIDEO_DRIVER_ROCKCHIP 1
+diff --git a/src/joystick/ps4/SDL_sysjoystick.c b/src/joystick/ps4/SDL_sysjoystick.c
+new file mode 100644
+index 0000000..bd67ef6
+--- /dev/null
++++ b/src/joystick/ps4/SDL_sysjoystick.c
+@@ -0,0 +1,339 @@
++/*
++Simple DirectMedia Layer
++Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
++
++This software is provided 'as-is', without any express or implied
++warranty.  In no event will the authors be held liable for any damages
++arising from the use of this software.
++
++Permission is granted to anyone to use this software for any purpose,
++including commercial applications, and to alter it and redistribute it
++freely, subject to the following restrictions:
++
++1. The origin of this software must not be misrepresented; you must not
++	claim that you wrote the original software. If you use this software
++	in a product, an acknowledgment in the product documentation would be
++	appreciated but is not required.
++2. Altered source versions must be plainly marked as such, and must not be
++	misrepresented as being the original software.
++3. This notice may not be removed or altered from any source distribution.
++*/
++#include "../../SDL_internal.h"
++
++#ifdef __INTELLISENSE__
++#define SDL_JOYSTICK_PS4 1
++#endif
++
++#if SDL_JOYSTICK_PS4
++
++/* This is the PSP implementation of the SDL joystick API */
++#include <orbis/Pad.h>
++#include <orbis/UserService.h>
++#include <orbis/libkernel.h>
++
++#include <stdio.h>      /* For the definition of NULL */
++#include <stdlib.h>
++
++#include "../SDL_sysjoystick.h"
++#include "../SDL_joystick_c.h"
++
++// #include "SDL_events.h"
++// #include "SDL_error.h"
++// #include "SDL_mutex.h"
++// #include "SDL_timer.h"
++#include "../../thread/SDL_systhread.h"
++
++#define MAX_PADS 4
++#define DS4_BTN_COUNT 20
++#define DS4_AXE_COUNT 6		// lsX/Y, rsX/Y, L2, R2
++#define DS4_HAT_COUNT 1
++
++uint32_t nPads = 0;
++
++OrbisUserServiceUserId userId, pad_users[MAX_PADS];
++OrbisUserServiceLoginUserIdList userIdList;
++
++int PS4_JoystickGetCount(void)
++{
++	return nPads;
++}
++
++void PS4_JoystickDetect(void)
++{
++	if(ORBIS_OK != sceUserServiceGetLoginUserIdList(&userIdList)) {
++		printf("WARNING, sceUserServiceGetLoginUserIdList() failed for JoystickDetect()!\n");
++	}
++
++	nPads = 0;
++	for (int i = 0; i < ORBIS_USER_SERVICE_MAX_LOGIN_USERS; i++) {
++		userId = userIdList.userId[i];
++		if (ORBIS_USER_SERVICE_USER_ID_INVALID != userId) {
++			int32_t handle = scePadOpen(userId, ORBIS_PAD_PORT_TYPE_STANDARD, 0, NULL);
++			if (handle > 0 || handle== ORBIS_PAD_ERROR_ALREADY_OPENED) {
++				if(handle>0) {
++					printf("@@@@ got pad[%d] handle %X\n", nPads, handle);
++				}
++				pad_users[nPads++] = userId;
++				if (nPads >= MAX_PADS) {
++					break;
++				}
++			}
++		}
++	}
++}
++
++//#include "SDL_hints.h"
++
++
++/* Function to scan the system for joysticks.
++* Joystick 0 should be the system default joystick.
++* It should return number of joysticks, or -1 on an unrecoverable fatal error.
++*/
++static bool PS4_JoystickInit(void)
++{
++	SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");	// Checks for keyboard focus ability, 'or something'
++
++	int32_t res = sceUserServiceInitialize(NULL);
++	if(ORBIS_OK != res && ORBIS_USER_SERVICE_ERROR_ALREADY_INITIALIZED != res) {
++		return SDL_SetError("Error sceUserServiceInitialize() failed!");
++	}
++
++	if (ORBIS_OK != sceUserServiceGetInitialUser(&userId)) {
++		return SDL_SetError("Error sceUserServiceGetInitialUser() failed!");
++	}
++
++	if(ORBIS_OK != scePadInit()) {
++		return SDL_SetError("Error scePadInit() failed!");
++	}
++
++	PS4_JoystickDetect();
++	return nPads;
++}
++
++/* Function to get the device-dependent name of a joystick */
++static const char * PS4_JoystickGetDeviceName(int device_index)
++{
++	return "Dualshock4";
++}
++
++/* Function to get the player index of a joystick */
++static int PS4_JoystickGetDevicePlayerIndex(int device_index)
++{
++	if (device_index >= MAX_PADS) {
++		device_index = MAX_PADS - 1;
++	}
++
++	for (int i = 0; i < ORBIS_USER_SERVICE_MAX_LOGIN_USERS; i++) {
++		if(pad_users[device_index] == userIdList.userId[i]) {
++			return i;
++		}
++	}
++	return -1;
++}
++
++static SDL_GUID PS4_JoystickGetDeviceGUID(int device_index)
++{
++	if (device_index >= MAX_PADS) {
++		device_index = MAX_PADS - 1;
++	}
++
++	SDL_GUID guid;
++	SDL_zero(guid);
++	((Uint32*)guid.data)[0] = 0x00000005;	// 05000000;
++	((Uint32*)guid.data)[0] = 0x00004c05;	// 4c050000;
++	((Uint32*)guid.data)[0] = 0x000009cc;	// cc090000;
++	((Uint32*)guid.data)[0] = 0x00008001;	// 01800000;
++	// "050000004c050000cc09000001800000,PS4 Controller,
++	return guid;
++}
++
++
++/* Function to perform the mapping from device index to the instance id for this index */
++static SDL_JoystickID PS4_JoystickGetDeviceInstanceID(int device_index)
++{
++	if (device_index >= MAX_PADS) {
++		device_index = MAX_PADS - 1;
++	}
++	return scePadGetHandle(pad_users[device_index], ORBIS_PAD_PORT_TYPE_STANDARD, 0);
++}
++
++/* Function to open a joystick for use.
++The joystick to open is specified by the device index.
++This should fill the nbuttons and naxes fields of the joystick structure.
++It returns 0, or -1 if there is an error.
++*/
++static bool PS4_JoystickOpen(SDL_Joystick *joystick, int device_index)
++{
++	if (device_index >= MAX_PADS) {
++		device_index = MAX_PADS - 1;
++	}
++
++	PS4_JoystickDetect();	// should already be done but ...
++
++	int32_t handle = PS4_JoystickGetDeviceInstanceID(device_index);	// They are already open , 
++	if (handle > 0) {
++		joystick->nbuttons	= DS4_BTN_COUNT;
++		joystick->naxes		= DS4_AXE_COUNT;
++		joystick->nhats		= DS4_HAT_COUNT;
++		/* Create the joystick data structure */
++		joystick->instance_id = handle;
++		return true;
++	}
++	printf("PS4_JoystickOpen(idx: %d) failed to get handled!\n", device_index);
++	return false;
++}
++
++static bool PS4_JoystickRumble(SDL_Joystick *joystick, Uint16 low_frequency_rumble, Uint16 high_frequency_rumble)
++{
++	return SDL_Unsupported();
++}
++
++/* Function to update the state of a joystick - called as a device poll.
++* This function shouldn't update the joystick structure directly,
++* but instead should call SDL_PrivateJoystick*() to deliver events
++* and update joystick device state.
++*/
++static void PS4_JoystickUpdate(SDL_Joystick *joystick)
++{
++	OrbisPadData data;
++
++	int ret = scePadReadState(joystick->instance_id, &data);
++	if (ret != ORBIS_OK || !data.connected) {
++		printf("Warning, Controller is not connected or failed to read data! \n");
++		return;
++	}
++
++	//a:b0,b:b1,x:b3,y:b2,leftshoulder:b4,rightshoulder:b5
++	//back:b8,start:b9,guide:b10,leftstick:b11,rightstick:b12,
++	//dpdown:h0.4, dpleft:h0.8, dpright:h0.2, dpup:h0.1,
++	//leftx:a0,lefty:a1,lefttrigger:a2,rightx:a3,righty:a4,righttrigger:a5,
++	const static uint32_t ds4_map[DS4_BTN_COUNT] = {
++		ORBIS_PAD_BUTTON_CROSS, ORBIS_PAD_BUTTON_CIRCLE, ORBIS_PAD_BUTTON_SQUARE, ORBIS_PAD_BUTTON_TRIANGLE, ORBIS_PAD_BUTTON_L1, ORBIS_PAD_BUTTON_R1,
++		0, /* b6? */ 0, /* b7? */ 0, /* no share/back btn atm */
++		ORBIS_PAD_BUTTON_OPTIONS, 0 /* no guide button atm */, ORBIS_PAD_BUTTON_L3, ORBIS_PAD_BUTTON_R3,
++		ORBIS_PAD_BUTTON_UP, ORBIS_PAD_BUTTON_DOWN, ORBIS_PAD_BUTTON_LEFT, ORBIS_PAD_BUTTON_RIGHT,
++		ORBIS_PAD_BUTTON_TOUCH_PAD, ORBIS_PAD_BUTTON_L2, ORBIS_PAD_BUTTON_R2,
++	};
++
++	Uint32 s_btns = data.buttons;
++	Uint64 timestamp = SDL_GetTicksNS();
++
++	for (uint32_t bn = 0; bn < DS4_BTN_COUNT; bn++) {
++		SDL_SendJoystickButton(timestamp, joystick, bn, s_btns & ds4_map[bn]);
++	}
++
++#define aS16(axe) -32768 + ((axe) << 8)
++
++#define setA(n,axe) { Sint16 tmp = aS16(axe); if (tmp < -1000 || tmp > 1000) { SDL_SendJoystickButton(timestamp, joystick, (n), tmp); } }
++	setA(0, data.leftStick.x);
++	setA(1, data.leftStick.y);
++	setA(2, data.analogButtons.l2);
++
++	setA(4, data.rightStick.x);
++	setA(5, data.rightStick.y);
++	setA(6, data.analogButtons.r2);
++
++	Uint8 hat = SDL_HAT_CENTERED;
++	if (s_btns & ORBIS_PAD_BUTTON_UP) { hat |= SDL_HAT_UP; }
++	if (s_btns & ORBIS_PAD_BUTTON_DOWN)	{ hat |= SDL_HAT_DOWN; }
++	if (s_btns & ORBIS_PAD_BUTTON_LEFT)	{ hat |= SDL_HAT_LEFT; }
++	if (s_btns & ORBIS_PAD_BUTTON_RIGHT) { hat |= SDL_HAT_RIGHT; }
++	SDL_SendJoystickAxis(timestamp, joystick, 0, hat);
++}
++
++/* Function to close a joystick after use */
++void PS4_JoystickClose(SDL_Joystick *joystick)
++{
++	scePadClose(joystick->instance_id);
++#if 0
++	if (joystick->hwdata)
++		SDL_free(joystick->hwdata);
++#endif
++}
++
++/* Function to perform any system-specific joystick related cleanup */
++static void PS4_JoystickQuit(void)
++{
++	nPads = 0;
++}
++
++/* New shit in SDL3 */
++static bool PS4_JoystickIsDevicePresent(Uint16 vendor_id, Uint16 product_id, Uint16 version, const char *name)
++{
++    // We don't override any other drivers
++    return false;
++}
++
++// Function to get the device-dependent path of a joystick
++static const char *PS4_JoystickGetDevicePath(int index)
++{
++    return NULL;
++}
++
++// Function to get the Steam virtual gamepad slot of a joystick
++static int PS4_JoystickGetDeviceSteamVirtualGamepadSlot(int device_index)
++{
++    return -1;
++}
++
++// Function to set the player index of a joystick
++static void PS4_JoystickSetDevicePlayerIndex(int device_index, int player_index)
++{
++}
++
++// Rumble functionality
++static bool PS4_JoystickRumbleTriggers(SDL_Joystick *joystick, Uint16 left, Uint16 right)
++{
++    return SDL_Unsupported();
++}
++
++// LED functionality
++static bool PS4_JoystickSetLED(SDL_Joystick *joystick, Uint8 red, Uint8 green, Uint8 blue)
++{
++    return SDL_Unsupported();
++}
++
++// General effects
++static bool PS4_JoystickSendEffect(SDL_Joystick *joystick, const void *data, int size)
++{
++    return SDL_Unsupported();
++}
++
++// Sensor functionality
++static bool PS4_JoystickSetSensorsEnabled(SDL_Joystick *joystick, bool enabled)
++{
++    return SDL_Unsupported();
++}
++
++static bool PS4_GetGamepadMapping(int device_index, SDL_GamepadMapping *out)
++{
++    return false;
++}
++
++SDL_JoystickDriver SDL_PS4_JoystickDriver =
++{
++    PS4_JoystickInit,
++    PS4_JoystickGetCount,
++    PS4_JoystickDetect,
++    PS4_JoystickIsDevicePresent,
++    PS4_JoystickGetDeviceName,
++    PS4_JoystickGetDevicePath,
++    PS4_JoystickGetDeviceSteamVirtualGamepadSlot,
++    PS4_JoystickGetDevicePlayerIndex,
++    PS4_JoystickSetDevicePlayerIndex,
++    PS4_JoystickGetDeviceGUID,
++    PS4_JoystickGetDeviceInstanceID,
++    PS4_JoystickOpen,
++    PS4_JoystickRumble,
++    PS4_JoystickRumbleTriggers,
++    PS4_JoystickSetLED,
++    PS4_JoystickSendEffect,
++    PS4_JoystickSetSensorsEnabled,
++    PS4_JoystickUpdate,
++    PS4_JoystickClose,
++    PS4_JoystickQuit,
++    PS4_GetGamepadMapping,
++};
++
++
++#endif /* SDL_JOYSTICK_PS4 */
+\ No newline at end of file
+diff --git a/src/video/SDL_sysvideo.h b/src/video/SDL_sysvideo.h
+index 1fdc5bf..5c083bc 100644
+--- a/src/video/SDL_sysvideo.h
++++ b/src/video/SDL_sysvideo.h
+@@ -530,6 +530,7 @@ extern VideoBootStrap HAIKU_bootstrap;
+ extern VideoBootStrap UIKIT_bootstrap;
+ extern VideoBootStrap Android_bootstrap;
+ extern VideoBootStrap PS2_bootstrap;
++extern VideoBootStrap PS4_bootstrap;
+ extern VideoBootStrap PSP_bootstrap;
+ extern VideoBootStrap VITA_bootstrap;
+ extern VideoBootStrap RISCOS_bootstrap;
+diff --git a/src/video/ps4/SDL_ps4video.c b/src/video/ps4/SDL_ps4video.c
+new file mode 100644
+index 0000000..ef8b8d7
+--- /dev/null
++++ b/src/video/ps4/SDL_ps4video.c
+@@ -0,0 +1,541 @@
++/*
++  Simple DirectMedia Layer
++  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
++
++  This software is provided 'as-is', without any express or implied
++  warranty.  In no event will the authors be held liable for any damages
++  arising from the use of this software.
++
++  Permission is granted to anyone to use this software for any purpose,
++  including commercial applications, and to alter it and redistribute it
++  freely, subject to the following restrictions:
++
++  1. The origin of this software must not be misrepresented; you must not
++     claim that you wrote the original software. If you use this software
++     in a product, an acknowledgment in the product documentation would be
++     appreciated but is not required.
++  2. Altered source versions must be plainly marked as such, and must not be
++     misrepresented as being the original software.
++  3. This notice may not be removed or altered from any source distribution.
++*/
++
++#include "../../SDL_internal.h"
++#include "SDL3/SDL_error.h"
++
++#if SDL_VIDEO_DRIVER_PS4
++
++//#include <gnm.h>
++#include <orbis/Pad.h>
++#include <orbis/UserService.h>
++#include <orbis/VideoOut.h>
++#include <orbis/libkernel.h>
++
++/* SDL internals */
++#include "../SDL_sysvideo.h"
++//#include "SDL_version.h"
++//#include "SDL_syswm.h"
++//#include "SDL_events.h"
++#include "../../events/SDL_mouse_c.h"
++#include "../../events/SDL_keyboard_c.h"
++
++#include "SDL_ps4video.h"
++
++static int PS4_Available(void);
++static SDL_VideoDevice *PS4_Create();
++
++VideoBootStrap PS4_bootstrap = {
++	"PS4",
++	"PS4 Video Driver",
++	PS4_Create,
++	PS4_ShowMessageBox,
++    false
++};
++
++#define D_FN()
++
++static SDL_VideoData * getVideoData(SDL_VideoDevice *_this) {
++	return ((SDL_VideoData *)_this->internal);
++}
++#define VData getVideoData(_this)
++#define PS4_VideoData SDL_VideoData *videoData = VData
++
++static void setHandle(SDL_VideoDevice *_this, int handle) {
++	VData->h_vout = handle;
++}
++
++static int32_t Handle(SDL_VideoDevice *_this) { return VData->h_vout; }
++
++static size_t Width(SDL_VideoDevice *_this) { return VData->attr.width; }
++static size_t Height(SDL_VideoDevice *_this) { return VData->attr.height; }
++
++static size_t MemSize(SDL_VideoDevice *_this) { return VData->memSize; }
++static size_t BufferSize(SDL_VideoDevice *_this) { return VData->bufSize; }
++static size_t BufferCount(SDL_VideoDevice *_this) { return VOUT_NUM_BUFFERS; } // (tripleBuffer ? 3 : 2); }
++
++static uint8_t* GetBuffer(SDL_VideoDevice *_this, size_t n) { return VData->addrList[n & 3]; }
++static uint8_t* CurrentBuffer(SDL_VideoDevice *_this) { return GetBuffer(_this, VData->currBuffer); }
++static uint8_t* NextBuffer(SDL_VideoDevice *_this) { return GetBuffer(_this, ((VData->currBuffer + 1) % VOUT_NUM_BUFFERS)); }
++
++static int32_t IsFlipPending(SDL_VideoDevice *_this) {
++	return sceVideoOutIsFlipPending(Handle(_this)) > 0;
++}
++
++static void WaitOnFlip(SDL_VideoDevice *_this) {
++	int out = 0;
++	OrbisKernelEvent ev;
++	while (IsFlipPending(_this)) {
++		sceKernelWaitEqueue(VData->flipQueue, &ev, 1, &out, 0); 
++	}
++}
++
++static void SubmitFlip(SDL_VideoDevice *_this) //s64 buffer = -1, u64 arg = 0)
++{
++	sceVideoOutSubmitFlip(Handle(_this), VData->currBuffer, ORBIS_VIDEO_OUT_FLIP_VSYNC, 0);
++	VData->currBuffer = ((VData->currBuffer + 1) % BufferCount(_this));
++	WaitOnFlip(_this);
++}
++
++static void FreeFramebuffers(SDL_VideoDevice *_this)
++{
++	for (uint32_t i = 0; i < VOUT_NUM_BUFFERS; i++)
++		sceVideoOutUnregisterBuffers(VData->h_vout, i);
++
++	sceKernelMunmap((void*)VData->mapAddr, VData->memSize);
++	sceKernelReleaseDirectMemory(VData->phyAddr, VData->memSize);
++}
++
++static size_t AlignUp(size_t v, size_t a)
++{
++	return ((v) + (a - 1)) & ~(a - 1);
++}
++
++static int AllocFramebuffers(SDL_VideoDevice *_this)
++{
++	size_t alignTo = 1024 * 1024;
++	size_t pixelCount = VData->attr.width * VData->attr.height, Bpp = 4; // 32bpp
++	size_t alignedSize = AlignUp(pixelCount * Bpp, alignTo);
++
++	VData->bufSize = pixelCount * Bpp;
++	VData->memSize = alignedSize * VOUT_NUM_BUFFERS;
++
++	int32_t res = ORBIS_OK;
++
++	if (ORBIS_OK != (res = sceKernelAllocateDirectMemory(0, ORBIS_KERNEL_MAIN_DMEM_SIZE, VData->memSize, alignTo, ORBIS_KERNEL_WC_GARLIC, &VData->phyAddr))) {
++		SDL_SetError("sceKernelAllocateDirectMemory() Failed ");	// printf("Error, sceKernelAllocateDirectMemory() Failed with 0x%08X\n", (uint32_t)res);
++		return -1;
++	}
++	if (ORBIS_OK != (res = sceKernelMapDirectMemory((void**)&VData->mapAddr, VData->memSize, ORBIS_KERNEL_PROT_CPU_RW | ORBIS_KERNEL_PROT_GPU_RW, 0, VData->phyAddr, alignTo))) {
++		SDL_SetError("sceKernelMapDirectMemory() Failed ");	// printf("Error, sceKernelMapDirectMemory() Failed with 0x%08X\n", (uint32_t)res);
++		return -1;
++	}
++
++	for (uint32_t i = 0; i < VOUT_NUM_BUFFERS; i++) {
++		VData->addrList[i] = VData->mapAddr + (i * alignedSize);	// fbAlloc(memSize, alignTo)
++	//	printf("Buffer[%X] %p \n", i, (void*)VData->addrList[i]);
++	}
++
++	if (ORBIS_OK != (res = sceVideoOutRegisterBuffers(VData->h_vout, 0, (void* const*)VData->addrList, VOUT_NUM_BUFFERS, &VData->attr))) {
++		SDL_SetError("sceVideoOutRegisterBuffers() Failed ");	// printf("Error, sceVideoOutRegisterBuffers() Failed with 0x%08X\n", (uint32_t)res);
++		FreeFramebuffers(_this);
++		return -1;
++	}
++	return res;
++}
++
++
++static int vout_init(SDL_VideoDevice *_this)
++{
++	int handle = 0;
++	OrbisVideoOutResolutionStatus res;
++	
++	handle = sceVideoOutOpen(ORBIS_USER_SERVICE_USER_ID_SYSTEM, ORBIS_VIDEO_OUT_BUS_MAIN, 0, NULL);
++	if(handle <= 0) {
++		SDL_SetError("sceVideoOutOpen() failed");
++		return -1;
++	}
++	setHandle(_this, handle);
++
++	if (0 == sceVideoOutGetResolutionStatus(handle, &res)) {
++		VData->width  = res.width;
++		VData->height = res.height;
++	}
++
++	memset(&VData->attr, 0, sizeof(VData->attr));
++	VData->attr.width	   = VData->width;
++	VData->attr.height	   = VData->height;
++	VData->attr.aspect	   = ORBIS_VIDEO_OUT_ASPECT_RATIO_16_9;
++	VData->attr.format	   = ORBIS_VIDEO_OUT_PIXEL_FORMAT_A8B8G8R8_SRGB;
++	VData->attr.tmode	   = ORBIS_VIDEO_OUT_TILING_MODE_LINEAR; // (!tile) ? : 0;		// change to tiled later, GpuMode must be NEO for pro
++	VData->attr.pixelPitch = VData->width;
++
++	if (ORBIS_OK != sceKernelCreateEqueue(&VData->flipQueue, "flipQueue") ||
++		ORBIS_OK != sceVideoOutAddFlipEvent(VData->flipQueue, handle, NULL)) {
++		SDL_SetError("Failed to create/add flip queue\n");
++		return -1;
++	}
++
++	if (ORBIS_OK != AllocFramebuffers(_this)) {
++		SDL_SetError("Failed to AllocFramebuffers!\n");
++		return -1;
++	}
++	sceVideoOutSetFlipRate(handle, 0);	// 0=60fps , 1=30fps, 2=20fps?
++	return 0;
++}
++
++void vout_term(SDL_VideoDevice *_this) {
++	FreeFramebuffers(_this);
++	sceVideoOutClose(VData->h_vout);
++	VData->h_vout = 0;
++}
++
++
++/* unused
++static bool PS4_initialized = false;
++*/
++static int PS4_Available(void)
++{
++    return 1;
++}
++
++static void PS4_Destroy(SDL_VideoDevice * device)
++{
++    if (device->internal != NULL) {
++        device->internal = NULL;
++    }
++}
++
++static SDL_VideoDevice *PS4_Create()
++{
++    SDL_VideoDevice *device;
++    SDL_VideoData *phdata;
++#if PS4_VIDEO_GL
++  SDL_GLDriverData *gldata;
++#endif
++
++    int status;
++
++    /* Check if PS4 could be initialized */
++    status = PS4_Available();
++    if (status == 0) {
++        /* PS4 could not be used */
++        return NULL;
++    }
++
++    /* Initialize SDL_VideoDevice structure */
++    device = (SDL_VideoDevice *) SDL_calloc(1, sizeof(SDL_VideoDevice));
++    if (device == NULL) {
++        SDL_OutOfMemory();
++        return NULL;
++    }
++
++    /* Initialize internal PS4 specific data */
++    phdata = (SDL_VideoData *) SDL_calloc(1, sizeof(SDL_VideoData));
++    if (phdata == NULL) {
++        SDL_OutOfMemory();
++        SDL_free(device);
++        return NULL;
++    }
++
++#if PS4_VIDEO_GL
++	gldata = (SDL_GLDriverData *) SDL_calloc(1, sizeof(SDL_GLDriverData));
++    if (gldata == NULL) {
++        SDL_OutOfMemory();
++        SDL_free(device);
++        SDL_free(phdata);
++        return NULL;
++    }
++    phdata->egl_initialized = false;
++    device->gl_data = gldata;
++#endif
++
++	phdata->h_vout = 0;		// VideoOut handle
++	phdata->width  = 1920;
++	phdata->height = 1080;	// defaults
++
++    device->internal = phdata;
++
++    /* Setup amount of available displays */
++    device->num_displays = 0;
++
++    /* Set device free function */
++    device->free = PS4_Destroy;
++
++    /* Setup all functions which we can handle */
++    device->VideoInit			= PS4_VideoInit;
++    device->VideoQuit			= PS4_VideoQuit;
++    device->GetDisplayModes		= PS4_GetDisplayModes;
++    device->SetDisplayMode		= PS4_SetDisplayMode;
++    device->CreateSDLWindow		= PS4_CreateWindow;
++    device->SetWindowTitle		= PS4_SetWindowTitle;
++    device->SetWindowIcon		= PS4_SetWindowIcon;
++    device->SetWindowPosition	= PS4_SetWindowPosition;
++    device->SetWindowSize		= PS4_SetWindowSize;
++    device->ShowWindow			= PS4_ShowWindow;
++    device->HideWindow			= PS4_HideWindow;
++    device->RaiseWindow			= PS4_RaiseWindow;
++    device->MaximizeWindow		= PS4_MaximizeWindow;
++    device->MinimizeWindow		= PS4_MinimizeWindow;
++    device->RestoreWindow		= PS4_RestoreWindow;
++    device->DestroyWindow		= PS4_DestroyWindow;
++#if PS4_VIDEO_GL
++    device->GetWindowWMInfo		= PS4_GetWindowWMInfo;
++    device->GL_LoadLibrary		= PS4_GL_LoadLibrary;
++    device->GL_GetProcAddress	= PS4_GL_GetProcAddress;
++    device->GL_UnloadLibrary	= PS4_GL_UnloadLibrary;
++    device->GL_CreateContext	= PS4_GL_CreateContext;
++    device->GL_MakeCurrent		= PS4_GL_MakeCurrent;
++    device->GL_SetSwapInterval	= PS4_GL_SetSwapInterval;
++    device->GL_GetSwapInterval	= PS4_GL_GetSwapInterval;
++    device->GL_SwapWindow		= PS4_GL_SwapWindow;
++    device->GL_DeleteContext	= PS4_GL_DeleteContext;
++#endif
++    device->HasScreenKeyboardSupport	= PS4_HasScreenKeyboardSupport;
++    /*
++    device->ShowScreenKeyboard			= PS4_ShowScreenKeyboard;
++    device->HideScreenKeyboard			= PS4_HideScreenKeyboard;
++    */
++    /*device->IsScreenKeyboardShown		= PS4_IsScreenKeyboardShown;*/
++#if 1
++	device->CreateWindowFramebuffer		= PS4_CreateWindowFramebuffer;
++	device->UpdateWindowFramebuffer		= PS4_UpdateWindowFramebuffer;
++	device->DestroyWindowFramebuffer	= PS4_DestroyWindowFramebuffer;
++#endif
++    device->PumpEvents			= PS4_PumpEvents;
++
++    return device;
++}
++
++/*****************************************************************************/
++/* SDL Video and Display initialization/handling functions                   */
++/*****************************************************************************/
++bool PS4_VideoInit(SDL_VideoDevice *_this)
++{
++	uint8_t *ppp = (uint8_t*)SDL_malloc(1024 * 1024 * 128);
++	if (!ppp) {
++		return SDL_OutOfMemory();
++	}
++    SDL_free(ppp);
++
++    SDL_VideoDisplay display;
++    SDL_DisplayMode current_mode;
++    SDL_zero(current_mode);
++	if (ORBIS_OK != vout_init(_this)) {
++		return false;
++    }
++
++    current_mode.w = getVideoData(_this)->width;
++    current_mode.h = getVideoData(_this)->height;
++
++    current_mode.refresh_rate = 60;
++    /* 32 bpp for default */
++    current_mode.format = SDL_PIXELFORMAT_ABGR8888;
++    current_mode.internal = NULL;
++
++    SDL_zero(display);
++    display.desktop_mode = current_mode;
++    display.current_mode = &display.desktop_mode;
++    display.internal = NULL;
++    SDL_AddVideoDisplay(&display, false);
++    return true;
++}
++
++void PS4_VideoQuit(SDL_VideoDevice *_this)
++{
++	vout_term(_this);
++}
++
++bool PS4_GetDisplayModes(SDL_VideoDevice *_this, SDL_VideoDisplay * display)
++{
++    return true;
++}
++
++bool PS4_SetDisplayMode(SDL_VideoDevice *_this, SDL_VideoDisplay * display, SDL_DisplayMode * mode)
++{
++    return 0;
++}
++
++bool PS4_CreateWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window * window, Uint32 * format, void ** pixels, int *pitch)
++{
++
++	//PS4_VideoData;	// videoData *
++    /* Free the old framebuffer surface */
++    SDL_WindowData *data = (SDL_WindowData *) window->internal;
++    SDL_Surface *surface = data->surface;
++    SDL_FreeSurface(surface);
++
++    /* Create a new one */
++    int w, h;
++    SDL_GetWindowSize(window, &w, &h);
++    surface = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_XBGR8888);
++    if (!surface) {
++		SDL_SetError("SDL_CreateSurface() FAILED");
++        return false;
++    }
++
++    /* Save the info and return! */
++    data->surface = surface;
++    *format = SDL_PIXELFORMAT_XBGR8888;
++    *pixels = surface->pixels;
++    *pitch = surface->pitch;
++    return true;
++}
++
++bool PS4_UpdateWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window * window, const SDL_Rect * rects, int numrects)
++{
++//	D_FN();
++
++    SDL_Surface *surface;
++
++    SDL_WindowData *data = (SDL_WindowData *) window->internal;
++    surface = data->surface;
++    if (!surface) {
++        return SDL_SetError("Couldn't find framebuffer surface for window");
++    }
++    /* Send the data to the display */
++
++
++
++	uint32_t * pDst = (uint32_t*)CurrentBuffer(_this);
++	if (!pDst) {
++		SDL_SetError("GOT INVALID FB PTR");
++		return false;
++	}
++	memset(pDst, 0, BufferSize(_this));
++
++	/// annoyances ...  calculate actual window coords and clip
++
++	PS4_VideoData;	// videoData *
++	uint32_t xOffs = window->x, yOffs = window->y;
++	uint32_t drawW = window->w, drawH = window->h;
++
++	xOffs = (xOffs < videoData->width) ? xOffs : videoData->width - 1;
++	yOffs = (yOffs < videoData->height)? yOffs : videoData->height- 1;
++
++	drawW = ((xOffs + drawW) <= videoData->width) ? drawW : (videoData->width - xOffs);
++	drawH = ((yOffs + drawH) <= videoData->height)? drawH : (videoData->height- yOffs);
++
++	for (uint32_t y = 0; y < drawH; y++) {
++		memcpy(&pDst[videoData->width * (yOffs+y) + xOffs], &((uint8_t*)surface->pixels)[y*surface->pitch], sizeof(uint32_t)*drawW);	// surface->pitch);
++    }
++
++	SubmitFlip(_this);
++    return true;
++}
++
++void PS4_DestroyWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window * window)
++{
++
++    SDL_WindowData *data = (SDL_WindowData *) window->internal;
++
++    SDL_FreeSurface(data->surface);
++    data->surface = NULL;
++}
++
++void PS4_PumpEvents(SDL_VideoDevice *_this)
++{
++//	D_FN();
++}
++
++bool PS4_CreateWindow(SDL_VideoDevice *_this, SDL_Window * window, SDL_PropertiesID properties)
++{
++    SDL_WindowData *wdata;
++
++    /* Allocate window internal data */
++    wdata = (SDL_WindowData *) SDL_calloc(1, sizeof(SDL_WindowData));
++    if (wdata == NULL) {
++        return SDL_OutOfMemory();
++    }
++	//PS4_VideoData;	// videoData *
++
++    /* Setup driver data for this window */
++	if (window) {
++		window->internal = wdata;
++		/*if (_this->num_displays > 0) {
++			_this->displays[0].fullscreen_window = window;
++			window->fullscreen_mode = _this->displays[0].current_mode;
++		}*/
++	}
++    /* Window has been successfully created */
++    return 0;
++}
++
++void PS4_SetWindowTitle(SDL_VideoDevice *_this, SDL_Window * window)
++{
++}
++bool PS4_SetWindowIcon(SDL_VideoDevice *_this, SDL_Window * window, SDL_Surface * icon)
++{
++    return false;
++}
++bool PS4_SetWindowPosition(SDL_VideoDevice *_this, SDL_Window * window)
++{
++    return false;
++}
++void PS4_SetWindowSize(SDL_VideoDevice *_this, SDL_Window * window)
++{
++}
++void PS4_ShowWindow(SDL_VideoDevice *_this, SDL_Window * window)
++{
++}
++void PS4_HideWindow(SDL_VideoDevice *_this, SDL_Window * window)
++{
++}
++void PS4_RaiseWindow(SDL_VideoDevice *_this, SDL_Window * window)
++{
++}
++void PS4_MaximizeWindow(SDL_VideoDevice *_this, SDL_Window * window)
++{
++}
++void PS4_MinimizeWindow(SDL_VideoDevice *_this, SDL_Window * window)
++{
++}
++void PS4_RestoreWindow(SDL_VideoDevice *_this, SDL_Window * window)
++{
++}
++void PS4_DestroyWindow(SDL_VideoDevice *_this, SDL_Window * window)
++{
++}
++
++/*****************************************************************************/
++/* SDL Window Manager function                                               */
++/*****************************************************************************/
++#if 0
++bool PS4_GetWindowWMInfo(SDL_VideoDevice *_this, SDL_Window * window, struct SDL_SysWMinfo *info)
++{
++    if (info->version.major <= SDL_MAJOR_VERSION) {
++        return true;
++    } else {
++        SDL_SetError("Application not compiled with SDL %d.%d",
++                     SDL_MAJOR_VERSION, SDL_MINOR_VERSION);
++        return false;
++    }
++
++    /* Failed to get window manager information */
++    return false;
++}
++#endif
++
++
++/* TO Write Me */
++bool PS4_HasScreenKeyboardSupport(SDL_VideoDevice *_this)
++{
++    return false;
++}
++void PS4_ShowScreenKeyboard(SDL_VideoDevice *_this, SDL_Window *window)
++{
++}
++void PS4_HideScreenKeyboard(SDL_VideoDevice *_this, SDL_Window *window)
++{
++}
++bool PS4_IsScreenKeyboardShown(SDL_VideoDevice *_this, SDL_Window *window)
++{
++    return false;
++}
++
++bool PS4_ShowMessageBox(const SDL_MessageBoxData *messageboxdata, int *buttonID)
++{
++    return false;
++}
++
++#endif /* SDL_VIDEO_DRIVER_PS4 */
++
++/* vi: set ts=4 sw=4 expandtab: */
+diff --git a/src/video/ps4/SDL_ps4video.h b/src/video/ps4/SDL_ps4video.h
+new file mode 100644
+index 0000000..6cce9a2
+--- /dev/null
++++ b/src/video/ps4/SDL_ps4video.h
+@@ -0,0 +1,126 @@
++/*
++  Simple DirectMedia Layer
++  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
++
++  This software is provided 'as-is', without any express or implied
++  warranty.  In no event will the authors be held liable for any damages
++  arising from the use of this software.
++
++  Permission is granted to anyone to use this software for any purpose,
++  including commercial applications, and to alter it and redistribute it
++  freely, subject to the following restrictions:
++
++  1. The origin of this software must not be misrepresented; you must not
++     claim that you wrote the original software. If you use this software
++     in a product, an acknowledgment in the product documentation would be
++     appreciated but is not required.
++  2. Altered source versions must be plainly marked as such, and must not be
++     misrepresented as being the original software.
++  3. This notice may not be removed or altered from any source distribution.
++*/
++
++#ifndef SDL_ps4video_h_
++#define SDL_ps4video_h_
++
++
++#include "../../SDL_internal.h"
++#include "../SDL_sysvideo.h"
++
++#include <orbis/UserService.h>
++#include <orbis/VideoOut.h>
++#include <orbis/libkernel.h>
++
++#define VOUT_NUM_BUFFERS 2
++
++typedef struct SDL_VideoData
++{
++	int h_vout;		// VideoOut handle
++	uint32_t width, height;
++
++	OrbisKernelEqueue flipQueue;
++	OrbisVideoOutBufferAttribute attr;
++
++	uint32_t currBuffer;
++	uint8_t * addrList[VOUT_NUM_BUFFERS];
++
++	off_t phyAddr;
++	uint8_t * mapAddr;
++	uint32_t bufSize, memSize;
++#if PS4_VIDEO_GL
++	SDL_bool egl_initialized;   /* OpenGL ES device initialization status */
++	uint32_t egl_refcount;      /* OpenGL ES reference count              */
++#endif
++} SDL_VideoData;
++
++
++typedef struct SDL_DisplayData
++{
++
++} SDL_DisplayData;
++
++
++typedef struct SDL_WindowData
++{
++	SDL_Surface *surface;
++#if PS4_VIDEO_GL
++	SDL_bool uses_gles;         /* if true window must support OpenGL ES */
++#endif
++} SDL_WindowData;
++
++/****************************************************************************/
++/* SDL_VideoDevice functions declaration                                    */
++/****************************************************************************/
++extern void PS4_PumpEvents(SDL_VideoDevice *_this);
++
++/* Display and window functions */
++extern bool PS4_VideoInit(SDL_VideoDevice *_this);
++extern void PS4_VideoQuit(SDL_VideoDevice *_this);
++extern bool PS4_GetDisplayModes(SDL_VideoDevice *_this, SDL_VideoDisplay * display);
++extern bool PS4_SetDisplayMode(SDL_VideoDevice *_this, SDL_VideoDisplay * display, SDL_DisplayMode * mode);
++extern bool PS4_CreateWindow(SDL_VideoDevice *_this, SDL_Window * window, SDL_PropertiesID properties);
++extern bool PS4_CreateWindowFrom(SDL_VideoDevice *_this, SDL_Window * window, const void *data);
++extern void PS4_SetWindowTitle(SDL_VideoDevice *_this, SDL_Window * window);
++extern bool PS4_SetWindowIcon(SDL_VideoDevice *_this, SDL_Window * window, SDL_Surface * icon);
++extern bool PS4_SetWindowPosition(SDL_VideoDevice *_this, SDL_Window * window);
++extern void PS4_SetWindowSize(SDL_VideoDevice *_this, SDL_Window * window);
++extern void PS4_ShowWindow(SDL_VideoDevice *_this, SDL_Window * window);
++extern void PS4_HideWindow(SDL_VideoDevice *_this, SDL_Window * window);
++extern void PS4_RaiseWindow(SDL_VideoDevice *_this, SDL_Window * window);
++extern void PS4_MaximizeWindow(SDL_VideoDevice *_this, SDL_Window * window);
++extern void PS4_MinimizeWindow(SDL_VideoDevice *_this, SDL_Window * window);
++extern void PS4_RestoreWindow(SDL_VideoDevice *_this, SDL_Window * window);
++extern void PS4_SetWindowGrab(SDL_VideoDevice *_this, SDL_Window * window, bool grabbed);
++extern void PS4_DestroyWindow(SDL_VideoDevice *_this, SDL_Window * window);
++
++extern bool PS4_CreateWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window * window, Uint32 * format, void ** pixels, int *pitch);
++extern bool PS4_UpdateWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window * window, const SDL_Rect * rects, int numrects);
++extern void PS4_DestroyWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window * window);
++
++/* Window manager function */
++extern bool PS4_GetWindowWMInfo(SDL_VideoDevice *_this, SDL_Window * window, struct SDL_SysWMinfo *info);
++
++#if PS4_VIDEO_GL
++/* OpenGL/OpenGL ES functions */
++extern int PS4_GL_LoadLibrary(SDL_VideoDevice *_this, const char *path);
++extern void *PS4_GL_GetProcAddress(SDL_VideoDevice *_this, const char *proc);
++extern void PS4_GL_UnloadLibrary(SDL_VideoDevice *_this);
++extern SDL_GLContext PS4_GL_CreateContext(SDL_VideoDevice *_this, SDL_Window * window);
++extern int PS4_GL_MakeCurrent(SDL_VideoDevice *_this, SDL_Window * window, SDL_GLContext context);
++extern int PS4_GL_SetSwapInterval(SDL_VideoDevice *_this, int interval);
++extern int PS4_GL_GetSwapInterval(SDL_VideoDevice *_this);
++extern int PS4_GL_SwapWindow(SDL_VideoDevice *_this, SDL_Window * window);
++extern void PS4_GL_DeleteContext(SDL_VideoDevice *_this, SDL_GLContext context);
++#endif
++
++/* PS4 on screen keyboard */
++extern bool PS4_HasScreenKeyboardSupport(SDL_VideoDevice *_this);
++extern void PS4_ShowScreenKeyboard(SDL_VideoDevice *_this, SDL_Window *window);
++extern void PS4_HideScreenKeyboard(SDL_VideoDevice *_this, SDL_Window *window);
++extern bool PS4_IsScreenKeyboardShown(SDL_VideoDevice *_this, SDL_Window *window);
++
++/* Message boxes */
++extern bool PS4_ShowMessageBox(const SDL_MessageBoxData *messageboxdata, int *buttonID);
++
++#endif /* SDL_ps4video_h_ */
++
++/* vi: set ts=4 sw=4 expandtab: */
