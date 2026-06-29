@@ -6,14 +6,14 @@
 
 #include "audio_core/audio_render_manager.h"
 #include "audio_core/common/audio_renderer_parameter.h"
+#include "audio_core/renderer/system_manager.h"
 #include "audio_core/common/feature_support.h"
 #include "core/core.h"
 
 namespace AudioCore::Renderer {
 
 Manager::Manager(Core::System& system_)
-    : system{system_}
-    , system_manager{std::make_unique<SystemManager>(system)}
+    : system_manager{std::make_unique<SystemManager>(system_)}
 {
     std::iota(session_ids.begin(), session_ids.end(), 0);
 }
@@ -62,11 +62,11 @@ u32 Manager::GetSessionCount() const {
     return session_count;
 }
 
-bool Manager::AddSystem(System& system_) {
+bool Manager::AddSystem(Renderer::System& system_) {
     return system_manager->Add(system_);
 }
 
-bool Manager::RemoveSystem(System& system_) {
+bool Manager::RemoveSystem(Renderer::System& system_) {
     return system_manager->Remove(system_);
 }
 

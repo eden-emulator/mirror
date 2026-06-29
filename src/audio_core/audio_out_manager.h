@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -29,42 +32,32 @@ public:
      * @param session_id - Output session_id.
      * @return Result code.
      */
-    Result AcquireSessionId(size_t& session_id);
+    Result AcquireSessionId(Core::System& system, size_t& session_id);
 
     /**
      * Release a session id on close.
      *
      * @param session_id - Session id to free.
      */
-    void ReleaseSessionId(size_t session_id);
+    void ReleaseSessionId(Core::System& system, const size_t session_id);
 
     /**
      * Link this manager to the main audio manager.
      *
      * @return Result code.
      */
-    Result LinkToManager();
+    Result LinkToManager(Core::System& system);
 
     /**
      * Start the audio out manager.
      */
-    void Start();
+    void Start(Core::System& system);
 
     /**
      * Callback function, called by the audio manager when the audio out event is signalled.
      */
-    void BufferReleaseAndRegister();
+    static void BufferReleaseAndRegister(void* data, Core::System& system) noexcept;
 
-    /**
-     * Get a list of audio out device names.
-     *
-     * @param names     - Output container to write names to.
-     * @return Number of names written.
-     */
-    u32 GetAudioOutDeviceNames(std::vector<Renderer::AudioDevice::AudioDeviceName>& names) const;
-
-    /// Core system
-    Core::System& system;
     /// Array of session ids
     std::array<size_t, MaxOutSessions> session_ids{};
     /// Array of resource user ids

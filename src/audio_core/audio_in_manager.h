@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -30,31 +33,29 @@ public:
      * @param session_id - Output session_id.
      * @return Result code.
      */
-    Result AcquireSessionId(size_t& session_id);
+    Result AcquireSessionId(Core::System& system, size_t& session_id);
 
     /**
      * Release a session id on close.
      *
      * @param session_id - Session id to free.
      */
-    void ReleaseSessionId(size_t session_id);
+    void ReleaseSessionId(Core::System& system, const size_t session_id);
 
     /**
      * Link the audio in manager to the main audio manager.
      *
      * @return Result code.
      */
-    Result LinkToManager();
+    Result LinkToManager(Core::System& system);
 
     /**
      * Start the audio in manager.
      */
-    void Start();
+    void Start(Core::System& system);
 
-    /**
-     * Callback function, called by the audio manager when the audio in event is signalled.
-     */
-    void BufferReleaseAndRegister();
+    /// @brief Callback function, called by the audio manager when the audio in event is signalled.
+    static void BufferReleaseAndRegister(void *data, Core::System& system) noexcept;
 
     /**
      * Get a list of audio in device names.
@@ -64,10 +65,8 @@ public:
      *
      * @return Number of names written.
      */
-    u32 GetDeviceNames(std::span<Renderer::AudioDevice::AudioDeviceName> names, bool filter);
+    u32 GetDeviceNames(Core::System& system, std::span<Renderer::AudioDevice::AudioDeviceName> names, bool filter);
 
-    /// Core system
-    Core::System& system;
     /// Array of session ids
     std::array<size_t, MaxInSessions> session_ids{};
     /// Array of resource user ids

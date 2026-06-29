@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -13,56 +16,48 @@
 namespace AudioCore::Renderer {
 
 Renderer::Renderer(Core::System& system_, Manager& manager_, Kernel::KEvent* rendered_event)
-    : core{system_}, manager{manager_}, system{system_, rendered_event} {}
+    : system{system_}, manager{manager_}
+    , audio_system{system_, rendered_event}
+{}
 
-Result Renderer::Initialize(const AudioRendererParameterInternal& params,
-                            Kernel::KTransferMemory* transfer_memory,
-                            const u64 transfer_memory_size, Kernel::KProcess* process_handle,
-                            const u64 applet_resource_user_id, const s32 session_id) {
+Result Renderer::Initialize(const AudioRendererParameterInternal& params, Kernel::KTransferMemory* transfer_memory, const u64 transfer_memory_size, Kernel::KProcess* process_handle, const u64 applet_resource_user_id, const s32 session_id) {
     if (params.execution_mode == ExecutionMode::Auto) {
-        if (!manager.AddSystem(system)) {
-            LOG_ERROR(Service_Audio,
-                      "Both Audio Render sessions are in use, cannot create any more");
+        if (!manager.AddSystem(audio_system)) {
+            LOG_ERROR(Service_Audio, "Both Audio Render sessions are in use, cannot create any more");
             return Service::Audio::ResultOutOfSessions;
         }
         system_registered = true;
     }
 
     initialized = true;
-    system.Initialize(params, transfer_memory, transfer_memory_size, process_handle,
-                      applet_resource_user_id, session_id);
-
+    audio_system.Initialize(params, transfer_memory, transfer_memory_size, process_handle, applet_resource_user_id, session_id);
     return ResultSuccess;
 }
 
 void Renderer::Finalize() {
-    auto session_id{system.GetSessionId()};
-
-    system.Finalize();
-
+    auto const session_id{audio_system.GetSessionId()};
+    audio_system.Finalize();
     if (system_registered) {
-        manager.RemoveSystem(system);
+        manager.RemoveSystem(audio_system);
         system_registered = false;
     }
-
     manager.ReleaseSessionId(session_id);
 }
 
 System& Renderer::GetSystem() {
-    return system;
+    return audio_system;
 }
 
 void Renderer::Start() {
-    system.Start();
+    audio_system.Start();
 }
 
 void Renderer::Stop() {
-    system.Stop();
+    audio_system.Stop();
 }
 
-Result Renderer::RequestUpdate(std::span<const u8> input, std::span<u8> performance,
-                               std::span<u8> output) {
-    return system.Update(input, performance, output);
+Result Renderer::RequestUpdate(std::span<const u8> input, std::span<u8> performance, std::span<u8> output) {
+    return audio_system.Update(input, performance, output);
 }
 
 } // namespace AudioCore::Renderer
