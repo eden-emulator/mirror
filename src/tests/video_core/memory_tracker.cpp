@@ -573,7 +573,6 @@ TEST_CASE("MemoryTracker: FlushCachedWrites batching") {
     REQUIRE(std::get<1>(calls[0]) == PAGE * 3);
 }
 
-#if 0
 TEST_CASE("DeviceMemoryManager: UpdatePagesCachedBatch basic") {
     Core::DeviceMemory device_memory;
     Tegra::MaxwellDeviceMemoryManager manager(device_memory);
@@ -588,4 +587,3 @@ TEST_CASE("DeviceMemoryManager: UpdatePagesCachedBatch basic") {
     manager.UpdatePagesCachedBatch(ranges, 1);
     SUCCEED("UpdatePagesCachedBatch executed without error");
 }
-#endif

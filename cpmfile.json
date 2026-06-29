@@ -254,7 +254,11 @@
         "min_version": "3.2.10",
         "package": "SDL3",
         "repo": "libsdl-org/SDL",
-        "version": "release-3.4.8"
+        "version": "release-3.4.8",
+        "patches": [
+            "0001-ps4.patch",
+            "0002-ps4-joystick-driver.patch"
+        ]
     },
     "sdl3-ci": {
         "ci": true,
