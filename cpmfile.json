@@ -257,7 +257,7 @@
         "version": "release-3.4.8",
         "patches": [
             "0001-ps4.patch",
-            "0002-ps4-joystick-driver.patch"
+            "0002-ps4-drivers.patch"
         ]
     },
     "sdl3-ci": {
