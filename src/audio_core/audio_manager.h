@@ -16,6 +16,10 @@
 
 #include "audio_core/audio_event.h"
 
+namespace Core {
+class System;
+}
+
 union Result;
 
 namespace AudioCore {
@@ -34,10 +38,9 @@ namespace AudioCore {
  * This is only used by audio in and audio out.
  */
 class AudioManager {
-    using BufferEventFunc = std::function<void()>;
-
+    using BufferEventFunc = void (*)(void *data, Core::System& system) noexcept;
 public:
-    explicit AudioManager();
+    explicit AudioManager(Core::System& system);
 
     /**
      * Shutdown the audio manager.

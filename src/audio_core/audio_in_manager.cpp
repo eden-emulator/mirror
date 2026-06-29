@@ -15,12 +15,12 @@
 
 namespace AudioCore::AudioIn {
 
-Manager::Manager(Core::System& system_) : system{system_} {
+Manager::Manager(Core::System& system) {
     std::iota(session_ids.begin(), session_ids.end(), 0);
     num_free_sessions = MaxInSessions;
 }
 
-Result Manager::AcquireSessionId(size_t& session_id) {
+Result Manager::AcquireSessionId(Core::System& system, size_t& session_id) {
     if (num_free_sessions == 0) {
         LOG_ERROR(Service_Audio, "All 4 AudioIn sessions are in use, cannot create any more");
         return Service::Audio::ResultOutOfSessions;
@@ -31,7 +31,7 @@ Result Manager::AcquireSessionId(size_t& session_id) {
     return ResultSuccess;
 }
 
-void Manager::ReleaseSessionId(const size_t session_id) {
+void Manager::ReleaseSessionId(Core::System& system, const size_t session_id) {
     std::scoped_lock l{mutex};
     LOG_DEBUG(Service_Audio, "Freeing AudioIn session {}", session_id);
     session_ids[free_session_id] = session_id;
@@ -41,21 +41,20 @@ void Manager::ReleaseSessionId(const size_t session_id) {
     applet_resource_user_ids[session_id] = 0;
 }
 
-Result Manager::LinkToManager() {
+Result Manager::LinkToManager(Core::System& system) {
     std::scoped_lock l{mutex};
     if (!linked_to_manager) {
-        system.AudioCore().GetAudioManager().SetInManager(std::bind(&Manager::BufferReleaseAndRegister, this));
+        system.AudioCore().GetAudioManager().SetInManager(&Manager::BufferReleaseAndRegister);
         linked_to_manager = true;
     }
 
     return ResultSuccess;
 }
 
-void Manager::Start() {
+void Manager::Start(Core::System& system) {
     if (sessions_started) {
         return;
     }
-
     std::scoped_lock l{mutex};
     for (auto& session : sessions) {
         if (session) {
@@ -66,21 +65,19 @@ void Manager::Start() {
     sessions_started = true;
 }
 
-void Manager::BufferReleaseAndRegister() {
-    std::scoped_lock l{mutex};
-    for (auto& session : sessions) {
+void Manager::BufferReleaseAndRegister(void *data, Core::System& system) noexcept {
+    Manager* this_ = (Manager*)data;
+    std::scoped_lock l{this_->mutex};
+    for (auto& session : this_->sessions) {
         if (session != nullptr) {
             session->ReleaseAndRegisterBuffers();
         }
     }
 }
 
-u32 Manager::GetDeviceNames(std::span<Renderer::AudioDevice::AudioDeviceName> names,
-                            [[maybe_unused]] const bool filter) {
+u32 Manager::GetDeviceNames(Core::System& system, std::span<Renderer::AudioDevice::AudioDeviceName> names, [[maybe_unused]] const bool filter) {
     std::scoped_lock l{mutex};
-
-    LinkToManager();
-
+    LinkToManager(system);
     auto input_devices{Sink::GetDeviceListForSink(Settings::values.sink_id.GetValue(), true)};
     if (!input_devices.empty() && !names.empty()) {
         names[0] = Renderer::AudioDevice::AudioDeviceName("Uac");

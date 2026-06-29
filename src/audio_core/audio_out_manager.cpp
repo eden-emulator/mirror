@@ -14,12 +14,12 @@
 
 namespace AudioCore::AudioOut {
 
-Manager::Manager(Core::System& system_) : system{system_} {
+Manager::Manager(Core::System& system) {
     std::iota(session_ids.begin(), session_ids.end(), 0);
     num_free_sessions = MaxOutSessions;
 }
 
-Result Manager::AcquireSessionId(size_t& session_id) {
+Result Manager::AcquireSessionId(Core::System& system, size_t& session_id) {
     if (num_free_sessions == 0) {
         LOG_ERROR(Service_Audio, "All 12 Audio Out sessions are in use, cannot create any more");
         return Service::Audio::ResultOutOfSessions;
@@ -30,7 +30,7 @@ Result Manager::AcquireSessionId(size_t& session_id) {
     return ResultSuccess;
 }
 
-void Manager::ReleaseSessionId(const size_t session_id) {
+void Manager::ReleaseSessionId(Core::System& system, const size_t session_id) {
     std::scoped_lock l{mutex};
     LOG_DEBUG(Service_Audio, "Freeing AudioOut session {}", session_id);
     session_ids[free_session_id] = session_id;
@@ -40,17 +40,17 @@ void Manager::ReleaseSessionId(const size_t session_id) {
     applet_resource_user_ids[session_id] = 0;
 }
 
-Result Manager::LinkToManager() {
+Result Manager::LinkToManager(Core::System& system) {
     std::scoped_lock l{mutex};
     if (!linked_to_manager) {
-        system.AudioCore().GetAudioManager().SetOutManager(std::bind(&Manager::BufferReleaseAndRegister, this));
+        system.AudioCore().GetAudioManager().SetOutManager(&Manager::BufferReleaseAndRegister);
         linked_to_manager = true;
     }
 
     return ResultSuccess;
 }
 
-void Manager::Start() {
+void Manager::Start(Core::System& system) {
     if (sessions_started) {
         return;
     }
@@ -65,19 +65,14 @@ void Manager::Start() {
     sessions_started = true;
 }
 
-void Manager::BufferReleaseAndRegister() {
-    std::scoped_lock l{mutex};
-    for (auto& session : sessions) {
+void Manager::BufferReleaseAndRegister(void *data, Core::System& system) noexcept {
+    Manager* this_ = (Manager*)data;
+    std::scoped_lock l{this_->mutex};
+    for (auto& session : this_->sessions) {
         if (session != nullptr) {
             session->ReleaseAndRegisterBuffers();
         }
     }
-}
-
-u32 Manager::GetAudioOutDeviceNames(
-    std::vector<Renderer::AudioDevice::AudioDeviceName>& names) const {
-    names.emplace_back("DeviceOut");
-    return 1;
 }
 
 } // namespace AudioCore::AudioOut

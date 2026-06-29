@@ -77,8 +77,8 @@ Result IAudioOutManager::OpenAudioOutAuto(
     }
 
     size_t new_session_id{};
-    R_TRY(impl->LinkToManager());
-    R_TRY(impl->AcquireSessionId(new_session_id));
+    R_TRY(impl->LinkToManager(system));
+    R_TRY(impl->AcquireSessionId(system, new_session_id));
 
     const auto device_name = Common::StringFromBuffer(name[0].name);
     LOG_DEBUG(Service_Audio, "Opening new AudioOut, sessionid={}, free sessions={}", new_session_id,

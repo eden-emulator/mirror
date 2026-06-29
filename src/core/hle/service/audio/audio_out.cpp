@@ -46,7 +46,7 @@ IAudioOut::IAudioOut(Core::System& system_, Manager& manager, size_t session_id,
 }
 
 IAudioOut::~IAudioOut() {
-    impl->Free();
+    impl->Free(system);
     service_context.CloseEvent(event);
     process->Close(system.Kernel());
 }
