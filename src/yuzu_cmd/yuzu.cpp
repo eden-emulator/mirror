@@ -18,6 +18,7 @@
 #include <fmt/ostream.h>
 
 #include "common/logging.h"
+#include "common/param_package.h"
 #include "common/scm_rev.h"
 #include "common/settings.h"
 #include "common/settings_enums.h"
@@ -33,6 +34,8 @@
 #include "core/hle/service/filesystem/filesystem.h"
 #include "core/loader/loader.h"
 #include "frontend_common/config.h"
+#include "hid_core/frontend/emulated_controller.h"
+#include "hid_core/hid_core.h"
 #include "input_common/main.h"
 #include "network/network.h"
 #include "sdl_config.h"
@@ -61,6 +64,7 @@
 #include <orbis/libkernel.h>
 #include <orbis/SystemService.h>
 #include <orbis/AudioOut.h>
+#include <orbis/Pad.h>
 #include <orbis/UserService.h>
 #elif defined(_WIN32)
 extern "C" {
@@ -404,7 +408,7 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     // Apply the command line arguments
     state->system.ApplySettings();
     Settings::values.renderer_backend.SetValue(Settings::RendererBackend::Null);
-    Common::Log::SetGlobalFilter(Common::Log::Filter(Common::Log::Level::Trace));
+    Common::Log::SetGlobalFilter(Common::Log::Filter(Common::Log::Level::Info));
 
     switch (Settings::values.renderer_backend.GetValue()) {
 #ifdef HAS_OPENGL
@@ -476,6 +480,41 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         } else {
             LOG_ERROR(Network, "Could not access RoomMember");
             return SDL_APP_FAILURE;
+        }
+    }
+
+    {
+        auto emulated_controller = system.HIDCore().GetEmulatedController(Core::HID::NpadIdType::Player1);
+        auto const input_devices = input_subsystem.GetInputDevices();
+        for (const auto& e : input_devices) {
+            LOG_INFO(Input, "FOUND=Device -> {} {}", e.Get("display", "Unknown"), e.Serialize());
+        }
+        auto const& device = input_devices[3];
+        LOG_INFO(Input, "selected? {}", device.Serialize());
+        auto const button_mappings = input_subsystem.GetButtonMappingForDevice(device);
+        auto const analog_mappings = input_subsystem.GetAnalogMappingForDevice(device);
+        auto const motion_mappings = input_subsystem.GetMotionMappingForDevice(device);
+        for (const auto& pair : button_mappings)
+            emulated_controller->SetButtonParam(pair.first, pair.second);
+        for (const auto& pair : analog_mappings)
+            emulated_controller->SetStickParam(pair.first, pair.second);
+        for (const auto& pair : motion_mappings)
+            emulated_controller->SetMotionParam(pair.first, pair.second);
+
+        for (const auto& pair : button_mappings)
+            LOG_INFO(Input, "btn:{}:{}", pair.first, pair.second.Serialize());
+        for (const auto& pair : analog_mappings)
+            LOG_INFO(Input, "ang:{}:{}", pair.first, pair.second.Serialize());
+        for (const auto& pair : motion_mappings)
+            LOG_INFO(Input, "mot:{}:{}", pair.first, pair.second.Serialize());
+
+        emulated_controller->SaveCurrentConfig();
+        emulated_controller->ReloadFromSettings();
+
+        auto const mapped_devices = emulated_controller->GetMappedDevices();
+        LOG_INFO(Input, "AND SO, WHAT MAPPED DEVICES WE GOT?");
+        for (const auto& e : mapped_devices) {
+            LOG_INFO(Input, "Mapped=Device? -> {}", e.Get("display", "Unknown"));
         }
     }
 
