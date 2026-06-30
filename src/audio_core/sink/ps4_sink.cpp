@@ -33,18 +33,20 @@ struct PS4SinkStream final : public SinkStream {
         system_channels = system_channels_;
         device_channels = device_channels_;
 
-        audio_dev = sceAudioOutOpen(ORBIS_USER_SERVICE_USER_ID_SYSTEM, ORBIS_AUDIO_OUT_PORT_TYPE_MAIN, 0, Common::AlignUp(TargetSampleCount, 0x100), TargetSampleRate, device_channels > 1 ? ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO : ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO);
+        constexpr size_t PREFERRED_SAMPLE_COUNT = 1024;
+        auto const param = (device_channels > 1 ? ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_STEREO : ORBIS_AUDIO_OUT_PARAM_FORMAT_S16_MONO);
+        audio_dev = sceAudioOutOpen(ORBIS_USER_SERVICE_USER_ID_SYSTEM, ORBIS_AUDIO_OUT_PORT_TYPE_MAIN, 0, PREFERRED_SAMPLE_COUNT, TargetSampleRate, param);
         if (audio_dev > 0) {
             audio_thread = std::jthread([=, this](std::stop_token stop_token) {
-                std::array<s16, TargetSampleCount * MaxChannels> buffer;
+                std::array<s16, PREFERRED_SAMPLE_COUNT * MaxChannels> buffer;
                 while (!stop_token.stop_requested()) {
                     if (this->type == StreamType::In) {
-                        this->ProcessAudioIn(buffer, TargetSampleCount);
+                        this->ProcessAudioIn(buffer, PREFERRED_SAMPLE_COUNT);
                         (void)buffer; // TODO: microphone support
                     } else {
                         int err = 0;
                         std::fill(buffer.begin(), buffer.end(), 0);
-                        this->ProcessAudioOutAndRender(buffer, TargetSampleCount);
+                        this->ProcessAudioOutAndRender(buffer, PREFERRED_SAMPLE_COUNT);
                         sceAudioOutOutput(audio_dev, nullptr);
                         if ((err = sceAudioOutOutput(audio_dev, buffer.data())) < 0)
                             LOG_ERROR(Service_Audio, "{}", err);
@@ -52,7 +54,7 @@ struct PS4SinkStream final : public SinkStream {
                     // Wait for pause, we don't really have a native pause
                     // so this is the best i can do
                     while (paused && !stop_token.stop_requested())
-                        ;
+                        asm volatile ("pause"); //dont shootup cpu usage to 100%
                 }
                 sceAudioOutClose(audio_dev);
             });
