@@ -66,10 +66,10 @@ index 520b721..239a874 100644
  #cmakedefine SDL_VIDEO_DRIVER_ROCKCHIP 1
 diff --git a/src/joystick/ps4/SDL_sysjoystick.c b/src/joystick/ps4/SDL_sysjoystick.c
 new file mode 100644
-index 0000000..bd67ef6
+index 0000000..4455ca6
 --- /dev/null
 +++ b/src/joystick/ps4/SDL_sysjoystick.c
-@@ -0,0 +1,339 @@
+@@ -0,0 +1,367 @@
 +/*
 +Simple DirectMedia Layer
 +Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
@@ -267,36 +267,56 @@ index 0000000..bd67ef6
 +*/
 +static void PS4_JoystickUpdate(SDL_Joystick *joystick)
 +{
++	static Uint32 old_buttons = 0;
++	Uint64 timestamp = SDL_GetTicksNS();
++	
 +	OrbisPadData data;
-+
 +	int ret = scePadReadState(joystick->instance_id, &data);
 +	if (ret != ORBIS_OK || !data.connected) {
 +		printf("Warning, Controller is not connected or failed to read data! \n");
 +		return;
 +	}
 +
++	Uint32 buttons = data.buttons;
++	Uint32 changed = old_buttons ^ buttons;
++	old_buttons = data.buttons;
++
 +	//a:b0,b:b1,x:b3,y:b2,leftshoulder:b4,rightshoulder:b5
 +	//back:b8,start:b9,guide:b10,leftstick:b11,rightstick:b12,
 +	//dpdown:h0.4, dpleft:h0.8, dpright:h0.2, dpup:h0.1,
 +	//leftx:a0,lefty:a1,lefttrigger:a2,rightx:a3,righty:a4,righttrigger:a5,
-+	const static uint32_t ds4_map[DS4_BTN_COUNT] = {
-+		ORBIS_PAD_BUTTON_CROSS, ORBIS_PAD_BUTTON_CIRCLE, ORBIS_PAD_BUTTON_SQUARE, ORBIS_PAD_BUTTON_TRIANGLE, ORBIS_PAD_BUTTON_L1, ORBIS_PAD_BUTTON_R1,
-+		0, /* b6? */ 0, /* b7? */ 0, /* no share/back btn atm */
-+		ORBIS_PAD_BUTTON_OPTIONS, 0 /* no guide button atm */, ORBIS_PAD_BUTTON_L3, ORBIS_PAD_BUTTON_R3,
-+		ORBIS_PAD_BUTTON_UP, ORBIS_PAD_BUTTON_DOWN, ORBIS_PAD_BUTTON_LEFT, ORBIS_PAD_BUTTON_RIGHT,
-+		ORBIS_PAD_BUTTON_TOUCH_PAD, ORBIS_PAD_BUTTON_L2, ORBIS_PAD_BUTTON_R2,
++	const static uint32_t ds4_map[] = {
++		[SDL_GAMEPAD_BUTTON_SOUTH] = ORBIS_PAD_BUTTON_CROSS,
++		[SDL_GAMEPAD_BUTTON_EAST] = ORBIS_PAD_BUTTON_CIRCLE,
++		[SDL_GAMEPAD_BUTTON_WEST] = ORBIS_PAD_BUTTON_SQUARE,
++		[SDL_GAMEPAD_BUTTON_NORTH] = ORBIS_PAD_BUTTON_TRIANGLE,
++		[SDL_GAMEPAD_BUTTON_BACK] = ORBIS_PAD_BUTTON_L1,
++		[SDL_GAMEPAD_BUTTON_GUIDE] = ORBIS_PAD_BUTTON_R1,
++		[SDL_GAMEPAD_BUTTON_START] = ORBIS_PAD_BUTTON_OPTIONS,
++		[SDL_GAMEPAD_BUTTON_LEFT_SHOULDER] = ORBIS_PAD_BUTTON_L3,
++		[SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER] = ORBIS_PAD_BUTTON_R3,
++		[SDL_GAMEPAD_BUTTON_DPAD_UP] = ORBIS_PAD_BUTTON_UP,
++		[SDL_GAMEPAD_BUTTON_DPAD_DOWN] = ORBIS_PAD_BUTTON_DOWN,
++		[SDL_GAMEPAD_BUTTON_DPAD_LEFT] = ORBIS_PAD_BUTTON_LEFT,
++		[SDL_GAMEPAD_BUTTON_DPAD_RIGHT] = ORBIS_PAD_BUTTON_RIGHT,
++		[SDL_GAMEPAD_BUTTON_MISC1] = ORBIS_PAD_BUTTON_TOUCH_PAD,
++		[SDL_GAMEPAD_BUTTON_LEFT_STICK] = ORBIS_PAD_BUTTON_L2,
++		[SDL_GAMEPAD_BUTTON_RIGHT_STICK] = ORBIS_PAD_BUTTON_R2,
 +	};
-+
-+	Uint32 s_btns = data.buttons;
-+	Uint64 timestamp = SDL_GetTicksNS();
-+
-+	for (uint32_t bn = 0; bn < DS4_BTN_COUNT; bn++) {
-+		SDL_SendJoystickButton(timestamp, joystick, bn, s_btns & ds4_map[bn]);
++	for (uint32_t bn = 0; bn < sizeof(ds4_map) / sizeof(ds4_map[0]); bn++) {
++		if (changed & ds4_map[bn]) {
++			SDL_SendJoystickButton(timestamp, joystick, bn, buttons & ds4_map[bn]);
++		}
 +	}
 +
-+#define aS16(axe) -32768 + ((axe) << 8)
++#define setA(n, axe) \
++	do { \
++		Sint16 tmp = (-32768 + ((axe) << 8)); \
++		if (tmp < -1000 || tmp > 1000) { \
++			SDL_SendJoystickButton(timestamp, joystick, (n), tmp); \
++		} \
++	} while (0);
 +
-+#define setA(n,axe) { Sint16 tmp = aS16(axe); if (tmp < -1000 || tmp > 1000) { SDL_SendJoystickButton(timestamp, joystick, (n), tmp); } }
 +	setA(0, data.leftStick.x);
 +	setA(1, data.leftStick.y);
 +	setA(2, data.analogButtons.l2);
@@ -306,10 +326,18 @@ index 0000000..bd67ef6
 +	setA(6, data.analogButtons.r2);
 +
 +	Uint8 hat = SDL_HAT_CENTERED;
-+	if (s_btns & ORBIS_PAD_BUTTON_UP) { hat |= SDL_HAT_UP; }
-+	if (s_btns & ORBIS_PAD_BUTTON_DOWN)	{ hat |= SDL_HAT_DOWN; }
-+	if (s_btns & ORBIS_PAD_BUTTON_LEFT)	{ hat |= SDL_HAT_LEFT; }
-+	if (s_btns & ORBIS_PAD_BUTTON_RIGHT) { hat |= SDL_HAT_RIGHT; }
++	if (buttons & ORBIS_PAD_BUTTON_UP) {
++		hat |= SDL_HAT_UP;
++	}
++	if (buttons & ORBIS_PAD_BUTTON_DOWN) {
++		hat |= SDL_HAT_DOWN;
++	}
++	if (buttons & ORBIS_PAD_BUTTON_LEFT) {
++		hat |= SDL_HAT_LEFT;
++	}
++	if (buttons & ORBIS_PAD_BUTTON_RIGHT) {
++		hat |= SDL_HAT_RIGHT;
++	}
 +	SDL_SendJoystickAxis(timestamp, joystick, 0, hat);
 +}
 +
@@ -424,10 +452,10 @@ index 1fdc5bf..5c083bc 100644
  extern VideoBootStrap RISCOS_bootstrap;
 diff --git a/src/video/ps4/SDL_ps4video.c b/src/video/ps4/SDL_ps4video.c
 new file mode 100644
-index 0000000..ef8b8d7
+index 0000000..34ca5a4
 --- /dev/null
 +++ b/src/video/ps4/SDL_ps4video.c
-@@ -0,0 +1,541 @@
+@@ -0,0 +1,498 @@
 +/*
 +  Simple DirectMedia Layer
 +  Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
@@ -483,31 +511,16 @@ index 0000000..ef8b8d7
 +
 +#define D_FN()
 +
-+static SDL_VideoData * getVideoData(SDL_VideoDevice *_this) {
++static SDL_VideoData * GetVideoInternalData(SDL_VideoDevice *_this) {
 +	return ((SDL_VideoData *)_this->internal);
 +}
-+#define VData getVideoData(_this)
-+#define PS4_VideoData SDL_VideoData *videoData = VData
-+
-+static void setHandle(SDL_VideoDevice *_this, int handle) {
-+	VData->h_vout = handle;
++#define VData GetVideoInternalData(_this)
++static uint8_t* CurrentBuffer(SDL_VideoDevice *_this) {
++    return VData->addrList[(VData->currBuffer) & 3];
 +}
 +
-+static int32_t Handle(SDL_VideoDevice *_this) { return VData->h_vout; }
-+
-+static size_t Width(SDL_VideoDevice *_this) { return VData->attr.width; }
-+static size_t Height(SDL_VideoDevice *_this) { return VData->attr.height; }
-+
-+static size_t MemSize(SDL_VideoDevice *_this) { return VData->memSize; }
-+static size_t BufferSize(SDL_VideoDevice *_this) { return VData->bufSize; }
-+static size_t BufferCount(SDL_VideoDevice *_this) { return VOUT_NUM_BUFFERS; } // (tripleBuffer ? 3 : 2); }
-+
-+static uint8_t* GetBuffer(SDL_VideoDevice *_this, size_t n) { return VData->addrList[n & 3]; }
-+static uint8_t* CurrentBuffer(SDL_VideoDevice *_this) { return GetBuffer(_this, VData->currBuffer); }
-+static uint8_t* NextBuffer(SDL_VideoDevice *_this) { return GetBuffer(_this, ((VData->currBuffer + 1) % VOUT_NUM_BUFFERS)); }
-+
 +static int32_t IsFlipPending(SDL_VideoDevice *_this) {
-+	return sceVideoOutIsFlipPending(Handle(_this)) > 0;
++	return sceVideoOutIsFlipPending(VData->h_vout) > 0;
 +}
 +
 +static void WaitOnFlip(SDL_VideoDevice *_this) {
@@ -520,8 +533,8 @@ index 0000000..ef8b8d7
 +
 +static void SubmitFlip(SDL_VideoDevice *_this) //s64 buffer = -1, u64 arg = 0)
 +{
-+	sceVideoOutSubmitFlip(Handle(_this), VData->currBuffer, ORBIS_VIDEO_OUT_FLIP_VSYNC, 0);
-+	VData->currBuffer = ((VData->currBuffer + 1) % BufferCount(_this));
++	sceVideoOutSubmitFlip(VData->h_vout, VData->currBuffer, ORBIS_VIDEO_OUT_FLIP_VSYNC, 0);
++	VData->currBuffer = ((VData->currBuffer + 1) % VOUT_NUM_BUFFERS);
 +	WaitOnFlip(_this);
 +}
 +
@@ -583,7 +596,7 @@ index 0000000..ef8b8d7
 +		SDL_SetError("sceVideoOutOpen() failed");
 +		return -1;
 +	}
-+	setHandle(_this, handle);
++	VData->h_vout = handle;
 +
 +	if (0 == sceVideoOutGetResolutionStatus(handle, &res)) {
 +		VData->width  = res.width;
@@ -753,8 +766,8 @@ index 0000000..ef8b8d7
 +		return false;
 +    }
 +
-+    current_mode.w = getVideoData(_this)->width;
-+    current_mode.h = getVideoData(_this)->height;
++    current_mode.w = GetVideoInternalData(_this)->width;
++    current_mode.h = GetVideoInternalData(_this)->height;
 +
 +    current_mode.refresh_rate = 60;
 +    /* 32 bpp for default */
@@ -786,12 +799,10 @@ index 0000000..ef8b8d7
 +
 +bool PS4_CreateWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window * window, Uint32 * format, void ** pixels, int *pitch)
 +{
-+
-+	//PS4_VideoData;	// videoData *
 +    /* Free the old framebuffer surface */
 +    SDL_WindowData *data = (SDL_WindowData *) window->internal;
 +    SDL_Surface *surface = data->surface;
-+    SDL_FreeSurface(surface);
++    SDL_DestroySurface(surface);
 +
 +    /* Create a new one */
 +    int w, h;
@@ -812,29 +823,22 @@ index 0000000..ef8b8d7
 +
 +bool PS4_UpdateWindowFramebuffer(SDL_VideoDevice *_this, SDL_Window * window, const SDL_Rect * rects, int numrects)
 +{
-+//	D_FN();
-+
-+    SDL_Surface *surface;
-+
 +    SDL_WindowData *data = (SDL_WindowData *) window->internal;
-+    surface = data->surface;
++    SDL_Surface *surface = data->surface;
 +    if (!surface) {
 +        return SDL_SetError("Couldn't find framebuffer surface for window");
 +    }
++
 +    /* Send the data to the display */
-+
-+
-+
 +	uint32_t * pDst = (uint32_t*)CurrentBuffer(_this);
 +	if (!pDst) {
 +		SDL_SetError("GOT INVALID FB PTR");
 +		return false;
 +	}
-+	memset(pDst, 0, BufferSize(_this));
++	memset(pDst, 0, VData->bufSize);
 +
 +	/// annoyances ...  calculate actual window coords and clip
-+
-+	PS4_VideoData;	// videoData *
++	SDL_VideoData *videoData = VData;
 +	uint32_t xOffs = window->x, yOffs = window->y;
 +	uint32_t drawW = window->w, drawH = window->h;
 +
@@ -856,14 +860,12 @@ index 0000000..ef8b8d7
 +{
 +
 +    SDL_WindowData *data = (SDL_WindowData *) window->internal;
-+
-+    SDL_FreeSurface(data->surface);
++    SDL_DestroySurface(data->surface);
 +    data->surface = NULL;
 +}
 +
 +void PS4_PumpEvents(SDL_VideoDevice *_this)
 +{
-+//	D_FN();
 +}
 +
 +bool PS4_CreateWindow(SDL_VideoDevice *_this, SDL_Window * window, SDL_PropertiesID properties)
@@ -875,11 +877,11 @@ index 0000000..ef8b8d7
 +    if (wdata == NULL) {
 +        return SDL_OutOfMemory();
 +    }
-+	//PS4_VideoData;	// videoData *
 +
 +    /* Setup driver data for this window */
 +	if (window) {
 +		window->internal = wdata;
++	    SDL_VideoData *videoData = VData;
 +		/*if (_this->num_displays > 0) {
 +			_this->displays[0].fullscreen_window = window;
 +			window->fullscreen_mode = _this->displays[0].current_mode;
@@ -928,23 +930,6 @@ index 0000000..ef8b8d7
 +/*****************************************************************************/
 +/* SDL Window Manager function                                               */
 +/*****************************************************************************/
-+#if 0
-+bool PS4_GetWindowWMInfo(SDL_VideoDevice *_this, SDL_Window * window, struct SDL_SysWMinfo *info)
-+{
-+    if (info->version.major <= SDL_MAJOR_VERSION) {
-+        return true;
-+    } else {
-+        SDL_SetError("Application not compiled with SDL %d.%d",
-+                     SDL_MAJOR_VERSION, SDL_MINOR_VERSION);
-+        return false;
-+    }
-+
-+    /* Failed to get window manager information */
-+    return false;
-+}
-+#endif
-+
-+
 +/* TO Write Me */
 +bool PS4_HasScreenKeyboardSupport(SDL_VideoDevice *_this)
 +{
