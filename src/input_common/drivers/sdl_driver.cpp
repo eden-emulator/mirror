@@ -1026,27 +1026,20 @@ ButtonBindings SDLDriver::GetDefaultButtonBinding(
     };
 }
 
-ButtonMapping SDLDriver::GetSingleControllerMapping(
-    const std::shared_ptr<SDLJoystick>& joystick, const ButtonBindings& switch_to_sdl_button,
-    const ZButtonBindings& switch_to_sdl_axis) const {
+ButtonMapping SDLDriver::GetSingleControllerMapping(const std::shared_ptr<SDLJoystick>& joystick, const ButtonBindings& switch_to_sdl_button, const ZButtonBindings& switch_to_sdl_axis) const {
     ButtonMapping mapping;
     mapping.reserve(switch_to_sdl_button.size() + switch_to_sdl_axis.size());
-    auto* controller = joystick->GetSDLGameController();
+    if (auto* controller = joystick->GetSDLGameController(); controller) {
     const auto bindings = GetBindings(controller);
-
     for (const auto& [switch_button, sdl_button] : switch_to_sdl_button) {
         const auto binding = GetBindingForButton(bindings, sdl_button);
-        mapping.insert_or_assign(
-            switch_button,
-            BuildParamPackageForBinding(joystick->GetPort(), joystick->GetGUID(), binding));
+            mapping.insert_or_assign(switch_button, BuildParamPackageForBinding(joystick->GetPort(), joystick->GetGUID(), binding));
     }
     for (const auto& [switch_button, sdl_axis] : switch_to_sdl_axis) {
         const auto binding = GetBindingForAxis(bindings, sdl_axis);
-        mapping.insert_or_assign(
-            switch_button,
-            BuildParamPackageForBinding(joystick->GetPort(), joystick->GetGUID(), binding));
+            mapping.insert_or_assign(switch_button, BuildParamPackageForBinding(joystick->GetPort(), joystick->GetGUID(), binding));
     }
-
+    }
     return mapping;
 }
 
