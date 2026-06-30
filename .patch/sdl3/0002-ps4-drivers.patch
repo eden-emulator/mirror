@@ -66,10 +66,10 @@ index 520b721..239a874 100644
  #cmakedefine SDL_VIDEO_DRIVER_ROCKCHIP 1
 diff --git a/src/joystick/ps4/SDL_sysjoystick.c b/src/joystick/ps4/SDL_sysjoystick.c
 new file mode 100644
-index 0000000..4455ca6
+index 0000000..975b419
 --- /dev/null
 +++ b/src/joystick/ps4/SDL_sysjoystick.c
-@@ -0,0 +1,367 @@
+@@ -0,0 +1,363 @@
 +/*
 +Simple DirectMedia Layer
 +Copyright (C) 1997-2019 Sam Lantinga <slouken@libsdl.org>
@@ -116,11 +116,30 @@ index 0000000..4455ca6
 +#include "../../thread/SDL_systhread.h"
 +
 +#define MAX_PADS 4
-+#define DS4_BTN_COUNT 20
-+#define DS4_AXE_COUNT 6		// lsX/Y, rsX/Y, L2, R2
-+#define DS4_HAT_COUNT 1
-+
 +uint32_t nPads = 0;
++
++//a:b0,b:b1,x:b3,y:b2,leftshoulder:b4,rightshoulder:b5
++//back:b8,start:b9,guide:b10,leftstick:b11,rightstick:b12,
++//dpdown:h0.4, dpleft:h0.8, dpright:h0.2, dpup:h0.1,
++//leftx:a0,lefty:a1,lefttrigger:a2,rightx:a3,righty:a4,righttrigger:a5,
++static const uint32_t button_map[] = {
++	[SDL_GAMEPAD_BUTTON_SOUTH] = ORBIS_PAD_BUTTON_CROSS,
++	[SDL_GAMEPAD_BUTTON_EAST] = ORBIS_PAD_BUTTON_CIRCLE,
++	[SDL_GAMEPAD_BUTTON_WEST] = ORBIS_PAD_BUTTON_SQUARE,
++	[SDL_GAMEPAD_BUTTON_NORTH] = ORBIS_PAD_BUTTON_TRIANGLE,
++	[SDL_GAMEPAD_BUTTON_BACK] = ORBIS_PAD_BUTTON_L1,
++	[SDL_GAMEPAD_BUTTON_GUIDE] = ORBIS_PAD_BUTTON_R1,
++	[SDL_GAMEPAD_BUTTON_START] = ORBIS_PAD_BUTTON_OPTIONS,
++	[SDL_GAMEPAD_BUTTON_LEFT_SHOULDER] = ORBIS_PAD_BUTTON_L3,
++	[SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER] = ORBIS_PAD_BUTTON_R3,
++	[SDL_GAMEPAD_BUTTON_DPAD_UP] = ORBIS_PAD_BUTTON_UP,
++	[SDL_GAMEPAD_BUTTON_DPAD_DOWN] = ORBIS_PAD_BUTTON_DOWN,
++	[SDL_GAMEPAD_BUTTON_DPAD_LEFT] = ORBIS_PAD_BUTTON_LEFT,
++	[SDL_GAMEPAD_BUTTON_DPAD_RIGHT] = ORBIS_PAD_BUTTON_RIGHT,
++	[SDL_GAMEPAD_BUTTON_MISC1] = ORBIS_PAD_BUTTON_TOUCH_PAD,
++	[SDL_GAMEPAD_BUTTON_LEFT_STICK] = ORBIS_PAD_BUTTON_L2,
++	[SDL_GAMEPAD_BUTTON_RIGHT_STICK] = ORBIS_PAD_BUTTON_R2,
++};
 +
 +OrbisUserServiceUserId userId, pad_users[MAX_PADS];
 +OrbisUserServiceLoginUserIdList userIdList;
@@ -185,7 +204,7 @@ index 0000000..4455ca6
 +/* Function to get the device-dependent name of a joystick */
 +static const char * PS4_JoystickGetDeviceName(int device_index)
 +{
-+	return "Dualshock4";
++	return "DualShock 4 Controller";
 +}
 +
 +/* Function to get the player index of a joystick */
@@ -212,9 +231,9 @@ index 0000000..4455ca6
 +	SDL_GUID guid;
 +	SDL_zero(guid);
 +	((Uint32*)guid.data)[0] = 0x00000005;	// 05000000;
-+	((Uint32*)guid.data)[0] = 0x00004c05;	// 4c050000;
-+	((Uint32*)guid.data)[0] = 0x000009cc;	// cc090000;
-+	((Uint32*)guid.data)[0] = 0x00008001;	// 01800000;
++	((Uint32*)guid.data)[1] = 0x00004c05;	// 4c050000;
++	((Uint32*)guid.data)[2] = 0x000009cc;	// cc090000;
++	((Uint32*)guid.data)[3] = 0x00008001;	// 01800000;
 +	// "050000004c050000cc09000001800000,PS4 Controller,
 +	return guid;
 +}
@@ -244,9 +263,9 @@ index 0000000..4455ca6
 +
 +	int32_t handle = PS4_JoystickGetDeviceInstanceID(device_index);	// They are already open , 
 +	if (handle > 0) {
-+		joystick->nbuttons	= DS4_BTN_COUNT;
-+		joystick->naxes		= DS4_AXE_COUNT;
-+		joystick->nhats		= DS4_HAT_COUNT;
++		joystick->nbuttons	= SDL_arraysize(button_map);
++		joystick->naxes		= 6; // lsX/Y, rsX/Y, L2, R2
++		joystick->nhats		= 1;
 +		/* Create the joystick data structure */
 +		joystick->instance_id = handle;
 +		return true;
@@ -280,32 +299,9 @@ index 0000000..4455ca6
 +	Uint32 buttons = data.buttons;
 +	Uint32 changed = old_buttons ^ buttons;
 +	old_buttons = data.buttons;
-+
-+	//a:b0,b:b1,x:b3,y:b2,leftshoulder:b4,rightshoulder:b5
-+	//back:b8,start:b9,guide:b10,leftstick:b11,rightstick:b12,
-+	//dpdown:h0.4, dpleft:h0.8, dpright:h0.2, dpup:h0.1,
-+	//leftx:a0,lefty:a1,lefttrigger:a2,rightx:a3,righty:a4,righttrigger:a5,
-+	const static uint32_t ds4_map[] = {
-+		[SDL_GAMEPAD_BUTTON_SOUTH] = ORBIS_PAD_BUTTON_CROSS,
-+		[SDL_GAMEPAD_BUTTON_EAST] = ORBIS_PAD_BUTTON_CIRCLE,
-+		[SDL_GAMEPAD_BUTTON_WEST] = ORBIS_PAD_BUTTON_SQUARE,
-+		[SDL_GAMEPAD_BUTTON_NORTH] = ORBIS_PAD_BUTTON_TRIANGLE,
-+		[SDL_GAMEPAD_BUTTON_BACK] = ORBIS_PAD_BUTTON_L1,
-+		[SDL_GAMEPAD_BUTTON_GUIDE] = ORBIS_PAD_BUTTON_R1,
-+		[SDL_GAMEPAD_BUTTON_START] = ORBIS_PAD_BUTTON_OPTIONS,
-+		[SDL_GAMEPAD_BUTTON_LEFT_SHOULDER] = ORBIS_PAD_BUTTON_L3,
-+		[SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER] = ORBIS_PAD_BUTTON_R3,
-+		[SDL_GAMEPAD_BUTTON_DPAD_UP] = ORBIS_PAD_BUTTON_UP,
-+		[SDL_GAMEPAD_BUTTON_DPAD_DOWN] = ORBIS_PAD_BUTTON_DOWN,
-+		[SDL_GAMEPAD_BUTTON_DPAD_LEFT] = ORBIS_PAD_BUTTON_LEFT,
-+		[SDL_GAMEPAD_BUTTON_DPAD_RIGHT] = ORBIS_PAD_BUTTON_RIGHT,
-+		[SDL_GAMEPAD_BUTTON_MISC1] = ORBIS_PAD_BUTTON_TOUCH_PAD,
-+		[SDL_GAMEPAD_BUTTON_LEFT_STICK] = ORBIS_PAD_BUTTON_L2,
-+		[SDL_GAMEPAD_BUTTON_RIGHT_STICK] = ORBIS_PAD_BUTTON_R2,
-+	};
-+	for (uint32_t bn = 0; bn < sizeof(ds4_map) / sizeof(ds4_map[0]); bn++) {
-+		if (changed & ds4_map[bn]) {
-+			SDL_SendJoystickButton(timestamp, joystick, bn, buttons & ds4_map[bn]);
++	for (uint32_t bn = 0; bn < SDL_arraysize(button_map); bn++) {
++		if (changed & button_map[bn]) {
++			SDL_SendJoystickButton(timestamp, joystick, bn, buttons & button_map[bn]);
 +		}
 +	}
 +
