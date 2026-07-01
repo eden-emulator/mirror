@@ -952,11 +952,6 @@ Errno Socket::SetSockOpt(SOCKET fd_so, int option, T value) {
 }
 
 Errno Socket::Initialize(Domain domain, Type type, Protocol protocol) {
-    if (type == Type::STREAM && protocol == Protocol::UDP) {
-        LOG_WARNING(Network, "Using IPPROTO_UDP with SOCK_STREAM");
-        type = Type::DGRAM;
-    }
-
     fd = socket(TranslateDomainToNative(domain), TranslateTypeToNative(type), TranslateProtocolToNative(protocol));
     if (fd != INVALID_SOCKET)
         return Errno::SUCCESS;
@@ -1217,15 +1212,30 @@ Errno Socket::SetRcvTimeo(u32 value) {
 }
 
 Errno Socket::SetReusePort(u32 value) {
+#ifdef SO_REUSEPORT
     return SetSockOpt(fd, SO_REUSEPORT, value);
+#else
+    LOG_WARNING(Network, "(stubbed)");
+    return Errno::SUCCESS;
+#endif
 }
 
 Errno Socket::SetTimeStamp(u32 value) {
+#ifdef SO_TIMESTAMP
     return SetSockOpt(fd, SO_TIMESTAMP, value);
+#else
+    LOG_WARNING(Network, "(stubbed)");
+    return Errno::SUCCESS;
+#endif
 }
 
 Errno Socket::SetAcceptFilter(u32 value) {
+#ifdef SO_ACCEPTFILTER
     return SetSockOpt(fd, SO_ACCEPTFILTER, value);
+#else
+    LOG_WARNING(Network, "(stubbed)");
+    return Errno::SUCCESS;
+#endif
 }
 
 Errno Socket::SetNonBlock(bool enable) {
