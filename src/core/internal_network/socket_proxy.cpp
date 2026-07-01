@@ -52,7 +52,7 @@ Errno ProxySocket::SetNonBlock(bool enable) {
     return Errno::SUCCESS;
 }
 
-Errno ProxySocket::SetSockOpt(SOCKET fd_, Network::SocketLevel level, Network::OptName option, std::span<const u8> optval) {
+Errno ProxySocket::SetSockOpt(Network::SocketLevel level, Network::OptName option, std::span<const u8> optval) {
     LOG_DEBUG(Network, "(stubbed) called");
     // numeric values?
     if (optval.size() >= sizeof(u32)) {

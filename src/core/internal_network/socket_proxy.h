@@ -57,7 +57,7 @@ public:
 
     Errno SetNonBlock(bool enable) override;
 
-    Errno SetSockOpt(SOCKET fd, Network::SocketLevel level, Network::OptName option, std::span<const u8> value) override;
+    Errno SetSockOpt(Network::SocketLevel level, Network::OptName option, std::span<const u8> value) override;
 
     std::pair<Errno, Errno> GetPendingError() override;
 
