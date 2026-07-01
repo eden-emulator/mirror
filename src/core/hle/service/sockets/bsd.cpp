@@ -170,12 +170,8 @@ void BSD::Socket(HLERequestContext& ctx) {
     const u32 domain = rp.Pop<u32>();
     const u32 type = rp.Pop<u32>();
     const u32 protocol = rp.Pop<u32>();
-
     LOG_DEBUG(Service, "called. domain={} type={} protocol={}", domain, type, protocol);
-
-    const auto [fd, bsd_errno] = SocketImpl(static_cast<Network::Domain>(domain), static_cast<Network::Type>(type),
-                                            static_cast<Network::Protocol>(protocol));
-
+    const auto [fd, bsd_errno] = SocketImpl(Network::Domain(domain), Network::Type(type), Network::Protocol(protocol));
     IPC::ResponseBuilder rb{ctx, 4};
     rb.Push(ResultSuccess);
     rb.Push<s32>(fd);
@@ -523,15 +519,17 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     } else {
         descriptor.socket = std::make_shared<Network::Socket>();
     }
-
-    descriptor.socket->Initialize(domain, type, protocol);
+    auto const bsd_errno = descriptor.socket->Initialize(domain, type, protocol);
     descriptor.is_connection_based = IsConnectionBased(type);
-
     if (Settings::values.airplane_mode.GetValue() && descriptor.is_connection_based) {
         LOG_ERROR(Service, "Airplane mode is enabled, cannot create socket");
+        file_descriptors[fd].reset();
         return {-1, Network::Errno::NOTCONN};
     }
-
+    if (descriptor.socket->fd < 0) {
+        file_descriptors[fd].reset();
+        return {-1, bsd_errno};
+    }
     return {fd, Network::Errno::SUCCESS};
 }
 
@@ -786,7 +784,7 @@ Network::Errno BSD::SetSockOptImpl(s32 fd, u32 level, Network::OptName optname, 
         return Network::Errno::BADF;
     }
 
-    if (level != static_cast<u32>(Network::SocketLevel::SOCKET)) {
+    if (level != u32(Network::SocketLevel::SOCKET)) {
         LOG_WARNING(Service, "(STUBBED) setsockopt with level={}, optname={}", level, optname);
         return Network::Errno::SUCCESS;
     }
@@ -797,8 +795,11 @@ Network::Errno BSD::SetSockOptImpl(s32 fd, u32 level, Network::OptName optname, 
         ASSERT(optval.size() == sizeof(Network::Linger));
         auto linger = GetValue<Network::Linger>(optval);
         ASSERT(linger.onoff == 0 || linger.onoff == 1);
-
         return (socket->SetLinger(linger.onoff != 0, linger.linger));
+    } else if (optname == Network::OptName::TIMESTAMP) {
+        ASSERT(optval.size() == 4);
+        auto value = GetValue<u32>(optval);
+        return socket->SetTimeStamp(value);
     }
 
     ASSERT(optval.size() == sizeof(u32));
@@ -826,8 +827,6 @@ Network::Errno BSD::SetSockOptImpl(s32 fd, u32 level, Network::OptName optname, 
         return Network::Errno::SUCCESS;
     case Network::OptName::REUSEPORT:
         return socket->SetReusePort(value);
-    case Network::OptName::TIMESTAMP:
-        return socket->SetTimeStamp(value);
     case Network::OptName::ACCEPTFILTER:
         return socket->SetAcceptFilter(value);
     default:
@@ -1001,16 +1000,16 @@ std::optional<std::shared_ptr<Network::SocketBase>> BSD::GetSocket(s32 fd) {
 }
 
 s32 BSD::FindFreeFileDescriptorHandle() noexcept {
-    for (s32 fd = 0; fd < static_cast<s32>(file_descriptors.size()); ++fd) {
-        if (!file_descriptors[fd]) {
+    // first three file descriptors are reserved for:
+    // STDOUT_FILENO, STDIN_FILENO and STDERR_FILENO
+    for (s32 fd = 0; fd < s32(file_descriptors.size()); ++fd)
+        if (!file_descriptors[fd])
             return fd;
-        }
-    }
     return -1;
 }
 
 bool BSD::IsFileDescriptorValid(s32 fd) const noexcept {
-    if (fd > static_cast<s32>(MAX_FD) || fd < 0) {
+    if (fd > s32(MAX_FD) || fd < 0) {
         LOG_ERROR(Service, "Invalid file descriptor handle={}", fd);
         return false;
     }
