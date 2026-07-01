@@ -164,8 +164,8 @@ private:
     Network::Errno GetSockNameImpl(s32 fd, std::vector<u8>& write_buffer);
     Network::Errno ListenImpl(s32 fd, s32 backlog);
     std::pair<s32, Network::Errno> FcntlImpl(s32 fd, Network::FcntlCmd cmd, s32 arg);
-    Network::Errno GetSockOptImpl(s32 fd, u32 level, Network::OptName optname, std::vector<u8>& optval);
-    Network::Errno SetSockOptImpl(s32 fd, u32 level, Network::OptName optname, std::span<const u8> optval);
+    Network::Errno GetSockOptImpl(s32 fd, Network::SocketLevel level, Network::OptName optname, std::vector<u8>& optval);
+    Network::Errno SetSockOptImpl(s32 fd, Network::SocketLevel level, Network::OptName optname, std::span<const u8> optval);
     Network::Errno ShutdownImpl(s32 fd, s32 how);
     std::pair<s32, Network::Errno> RecvImpl(s32 fd, u32 flags, std::vector<u8>& message);
     std::pair<s32, Network::Errno> RecvFromImpl(s32 fd, u32 flags, std::vector<u8>& message,
