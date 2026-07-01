@@ -25,6 +25,7 @@ enum class Errno : u32 {
     INVAL = 22,
     MFILE = 24,
     PIPE = 32,
+    NOTSOCK = 88,
     MSGSIZE = 90,
     PROTOTYPE = 91,
     NOPROTOOPT = 92,
@@ -234,7 +235,10 @@ enum class Protocol : u32 {
 
 enum class SocketLevel : u32 {
     IP = 0,
+    ICMP = 1,
     TCP = 6,
+    UDP = 17,
+    CONFIG = 0xfffe,
     SOCKET = 0xffff, // i.e. SOL_SOCKET
 };
 

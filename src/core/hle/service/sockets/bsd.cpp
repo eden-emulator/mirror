@@ -274,14 +274,12 @@ void BSD::GetSockName(HLERequestContext& ctx) {
 void BSD::GetSockOpt(HLERequestContext& ctx) {
     IPC::RequestParser rp{ctx};
     const s32 fd = rp.Pop<s32>();
-    const u32 level = rp.Pop<u32>();
-    const auto optname = static_cast<Network::OptName>(rp.Pop<u32>());
+    const auto level = Network::SocketLevel(rp.Pop<u32>());
+    const auto optname = Network::OptName(rp.Pop<u32>());
 
     std::vector<u8> optval(ctx.GetWriteBufferSize());
 
-    LOG_DEBUG(Service, "called. fd={} level={} optname=0x{:x} len=0x{:x}", fd, level, optname,
-              optval.size());
-
+    LOG_DEBUG(Service, "called. fd={} level={} optname=0x{:x} len=0x{:x}", fd, level, optname, optval.size());
     const Network::Errno err = GetSockOptImpl(fd, level, optname, optval);
 
     ctx.WriteBuffer(optval);
@@ -323,7 +321,7 @@ void BSD::SetSockOpt(HLERequestContext& ctx) {
     IPC::RequestParser rp{ctx};
 
     const s32 fd = rp.Pop<s32>();
-    const u32 level = rp.Pop<u32>();
+    const Network::SocketLevel level = Network::SocketLevel(rp.Pop<u32>());
     const Network::OptName optname = Network::OptName(rp.Pop<u32>());
     const auto optval = ctx.ReadBuffer();
 
@@ -526,7 +524,7 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
         file_descriptors[fd].reset();
         return {-1, Network::Errno::NOTCONN};
     }
-    if (descriptor.socket->fd < 0) {
+    if (descriptor.socket->fd == Network::Socket::INVALID_SOCKET) {
         file_descriptors[fd].reset();
         return {-1, bsd_errno};
     }
@@ -741,7 +739,7 @@ std::pair<s32, Network::Errno> BSD::FcntlImpl(s32 fd, Network::FcntlCmd cmd, s32
     }
 }
 
-Network::Errno BSD::GetSockOptImpl(s32 fd, u32 level, Network::OptName optname, std::vector<u8>& optval) {
+Network::Errno BSD::GetSockOptImpl(s32 fd, Network::SocketLevel level, Network::OptName optname, std::vector<u8>& optval) {
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::BADF;
     }
@@ -750,9 +748,8 @@ Network::Errno BSD::GetSockOptImpl(s32 fd, u32 level, Network::OptName optname, 
         return Network::Errno::BADF;
     }
 
-    if (level != static_cast<u32>(Network::SocketLevel::SOCKET)) {
-        UNIMPLEMENTED_MSG("Unknown getsockopt level");
-        return Network::Errno::SUCCESS;
+    if (level != Network::SocketLevel::SOCKET) {
+        LOG_WARNING(Service, "(stubbed) level fd={}, level={}, optname={}", fd, level, optname);
     }
 
     Network::SocketBase* const socket = file_descriptors[fd]->socket.get();
@@ -775,7 +772,8 @@ Network::Errno BSD::GetSockOptImpl(s32 fd, u32 level, Network::OptName optname, 
     }
 }
 
-Network::Errno BSD::SetSockOptImpl(s32 fd, u32 level, Network::OptName optname, std::span<const u8> optval) {
+Network::Errno BSD::SetSockOptImpl(s32 fd, Network::SocketLevel level, Network::OptName optname, std::span<const u8> optval) {
+    LOG_DEBUG(Service, "fd={},level={},optname={}", fd, level, optname);
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::BADF;
     }
@@ -784,14 +782,11 @@ Network::Errno BSD::SetSockOptImpl(s32 fd, u32 level, Network::OptName optname, 
         return Network::Errno::BADF;
     }
 
-    if (level != u32(Network::SocketLevel::SOCKET)) {
-        LOG_WARNING(Service, "(STUBBED) setsockopt with level={}, optname={}", level, optname);
-        return Network::Errno::SUCCESS;
-    }
-
     Network::SocketBase* const socket = file_descriptors[fd]->socket.get();
-    ASSERT(optval.size() == sizeof(u32));
-    return socket->SetSockOpt(fd, optname, optval);
+    if (level != Network::SocketLevel::SOCKET) {
+        LOG_WARNING(Service, "(stubbed) level fd={}, level={}, optname={}", fd, level, optname);
+    }
+    return socket->SetSockOpt(fd, level, optname, optval);
 }
 
 Network::Errno BSD::ShutdownImpl(s32 fd, s32 how) {

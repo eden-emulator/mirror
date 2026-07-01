@@ -129,48 +129,30 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
         } else {
             return Errno::CONNABORTED;
         }
-    case WSAEBADF:
-        return Errno::BADF;
-    case WSAEINVAL:
-        return Errno::INVAL;
-    case WSAEMFILE:
-        return Errno::MFILE;
-    case WSAENOTCONN:
-        return Errno::NOTCONN;
-    case WSAEWOULDBLOCK:
-        return Errno::AGAIN;
-    case WSAECONNREFUSED:
-        return Errno::CONNREFUSED;
-    case WSAECONNRESET:
-        return Errno::CONNRESET;
-    case WSAEHOSTUNREACH:
-        return Errno::HOSTUNREACH;
-    case WSAENETDOWN:
-        return Errno::NETDOWN;
-    case WSAENETUNREACH:
-        return Errno::NETUNREACH;
-    case WSAEMSGSIZE:
-        return Errno::MSGSIZE;
-    case WSAETIMEDOUT:
-        return Errno::TIMEDOUT;
-    case WSAEINPROGRESS:
-        return Errno::INPROGRESS;
-    case WSAEISCONN:
-        return Errno::ISCONN;
-    case WSAEADDRINUSE:
-        return Errno::ADDRINUSE;
-    case WSAEADDRNOTAVAIL:
-        return Errno::ADDRNOTAVAIL;
-    case WSAEPROTOTYPE:
-        return Errno::PROTOTYPE;
-    case WSAENOPROTOOPT:
-        return Errno::NOPROTOOPT;
-    case WSAEPROTONOSUPPORT:
-        return Errno::PROTONOSUPPORT;
-    case WSAESOCKTNOSUPPORT:
-        return Errno::SOCKTNOSUPPORT;
-    case WSAENOTSUP:
-        return Errno::NOTSUP;
+    case WSAEBADF: return Errno::BADF;
+    case WSAEINVAL: return Errno::INVAL;
+    case WSAEMFILE: return Errno::MFILE;
+    case WSAENOTCONN: return Errno::NOTCONN;
+    case WSAEWOULDBLOCK: return Errno::AGAIN;
+    case WSAECONNREFUSED: return Errno::CONNREFUSED;
+    case WSAECONNRESET: return Errno::CONNRESET;
+    case WSAEHOSTUNREACH: return Errno::HOSTUNREACH;
+    case WSAENETDOWN: return Errno::NETDOWN;
+    case WSAENETUNREACH: return Errno::NETUNREACH;
+    case WSAEMSGSIZE: return Errno::MSGSIZE;
+    case WSAETIMEDOUT: return Errno::TIMEDOUT;
+    case WSAEINPROGRESS: return Errno::INPROGRESS;
+    case WSAEISCONN: return Errno::ISCONN;
+    case WSAEADDRINUSE: return Errno::ADDRINUSE;
+    case WSAEADDRNOTAVAIL: return Errno::ADDRNOTAVAIL;
+    case WSAEPROTOTYPE: return Errno::PROTOTYPE;
+    case WSAENOPROTOOPT: return Errno::NOPROTOOPT;
+    case WSAEPROTONOSUPPORT: return Errno::PROTONOSUPPORT;
+    case WSAESOCKTNOSUPPORT: return Errno::SOCKTNOSUPPORT;
+#ifdef WSAENOTSUP
+    // Not defined by fucking MSVC because MSVC is stupid as shitfuckery
+    case WSAENOTSUP: return Errno::NOTSUP;
+#endif
     default:
         UNIMPLEMENTED_MSG("Unimplemented errno={}", e);
         return Errno::OTHER;
@@ -257,7 +239,7 @@ int closesocket(SOCKET fd) {
 }
 
 linger MakeLinger(bool enable, u32 linger_value) {
-    linger value;
+    linger value{};
     value.l_onoff = enable ? 1 : 0;
     value.l_linger = linger_value;
     return value;
@@ -302,7 +284,8 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     NETWORK_ERROR_ELEM(SOCKTNOSUPPORT) \
     NETWORK_ERROR_ELEM(NOTSUP) \
     NETWORK_ERROR_ELEM(ADDRINUSE) \
-    NETWORK_ERROR_ELEM(ADDRNOTAVAIL)
+    NETWORK_ERROR_ELEM(ADDRNOTAVAIL) \
+    NETWORK_ERROR_ELEM(NOTSOCK)
 #define NETWORK_ERROR_ELEM(name) case E##name: return Errno::name;
     NETWORK_ERROR_LIST
 #undef NETWORK_ERROR_ELEM
@@ -945,35 +928,30 @@ std::pair<T, Errno> Socket::GetSockOpt(SOCKET fd_so, int option) {
 
 static s32 TranslateOptNameToNative(Network::OptName optname) {
     switch (optname) {
-    case Network::OptName::LINGER:
-        return SO_LINGER;
-    case Network::OptName::REUSEADDR:
-        return SO_REUSEADDR;
-    case Network::OptName::KEEPALIVE:
-        return SO_KEEPALIVE;
-    case Network::OptName::BROADCAST:
-        return SO_BROADCAST;
-    case Network::OptName::SNDBUF:
-        return SO_SNDBUF;
-    case Network::OptName::RCVBUF:
-        return SO_RCVBUF;
-    case Network::OptName::SNDTIMEO:
-        return SO_SNDTIMEO;
-    case Network::OptName::RCVTIMEO:
-        return SO_RCVTIMEO;
-    case Network::OptName::NOSIGPIPE:
-        return SO_NOSIGPIPE;
+    // managarm doesn't like these
+#ifdef SO_DEBUG
+    case Network::OptName::DEBUG: return SO_DEBUG;
+#endif
+#ifdef SO_ACCEPTCONN
+    case Network::OptName::ACCEPTCONN: return SO_ACCEPTCONN;
+#endif
+    case Network::OptName::LINGER: return SO_LINGER;
+    case Network::OptName::REUSEADDR: return SO_REUSEADDR;
+    case Network::OptName::KEEPALIVE: return SO_KEEPALIVE;
+    case Network::OptName::BROADCAST: return SO_BROADCAST;
+    case Network::OptName::SNDBUF: return SO_SNDBUF;
+    case Network::OptName::RCVBUF: return SO_RCVBUF;
+    case Network::OptName::SNDTIMEO: return SO_SNDTIMEO;
+    case Network::OptName::RCVTIMEO: return SO_RCVTIMEO;
+    case Network::OptName::NOSIGPIPE: return SO_NOSIGPIPE;
 #ifdef SO_REUSEPORT
-    case Network::OptName::REUSEPORT:
-        return SO_REUSEPORT;
+    case Network::OptName::REUSEPORT: return SO_REUSEPORT;
 #endif
 #ifdef SO_ACCEPTFILTER
-    case Network::OptName::ACCEPTFILTER:
-        return SO_ACCEPTFILTER;
+    case Network::OptName::ACCEPTFILTER: return SO_ACCEPTFILTER;
 #endif
 #ifdef SO_TIMESTAMP
-    case Network::OptName::TIMESTAMP:
-        return SO_TIMESTAMP;
+    case Network::OptName::TIMESTAMP: return SO_TIMESTAMP;
 #endif
     default:
         UNIMPLEMENTED_MSG("Unimplemented optname={}", optname);
@@ -981,6 +959,30 @@ static s32 TranslateOptNameToNative(Network::OptName optname) {
     }
 }
 
+static s32 TranslateSocketLevelToNative(Network::SocketLevel level) {
+    switch (level) {
+    case Network::SocketLevel::SOCKET: return SOL_SOCKET;
+    // FreeBSD doesn't define below but Linux does :-(
+#ifdef SOL_IP
+    case Network::SocketLevel::IP: return SOL_IP;
+#endif
+#ifdef SOL_ICMP
+    case Network::SocketLevel::ICMP: return SOL_ICMP;
+#endif
+#ifdef SOL_TCP
+    case Network::SocketLevel::TCP: return SOL_TCP;
+#endif
+#ifdef SOL_UDP
+    case Network::SocketLevel::UDP: return SOL_UDP;
+#endif
+#ifdef SOL_CONFIG
+    case Network::SocketLevel::CONFIG: return SOL_CONFIG;
+#endif
+    default:
+        UNIMPLEMENTED_MSG("Unimplemented level={}", level);
+        return SOL_SOCKET;
+    }
+}
 
 Errno Socket::SetNonBlock(bool enable) {
     if (EnableNonBlock(fd, enable)) {
@@ -990,29 +992,27 @@ Errno Socket::SetNonBlock(bool enable) {
     return GetAndLogLastError();
 }
 
-Errno Socket::SetSockOpt(SOCKET fd_so, Network::OptName optname, std::span<const u8> optval) {
+Errno Socket::SetSockOpt(SOCKET fd_so, Network::SocketLevel level, Network::OptName optname, std::span<const u8> optval) {
+    auto const native_level = TranslateSocketLevelToNative(level);
+    auto const native_optname = TranslateOptNameToNative(optname);
     // TODO: is it >= or ==? for sizes
     if (optname == Network::OptName::LINGER) {
         if (optval.size() >= sizeof(Network::Linger)) {
             Network::Linger linger{};
             std::memcpy(&linger, optval.data(), sizeof(linger));
-            auto const linkger_optval = MakeLinger(bool(linger.onoff), linger.linger);
-            return setsockopt(fd_so, SOL_SOCKET, TranslateOptNameToNative(optname), reinterpret_cast<const char*>(linkger_optval.data()), socklen_t(linkger_optval.size())) != SOCKET_ERROR
+            auto const linger_optval = MakeLinger(bool(linger.onoff), linger.linger);
+            return setsockopt(fd_so, native_level, native_optname, reinterpret_cast<const char*>(&linger_optval), sizeof(linger_optval)) != SOCKET_ERROR
                 ? Errno::SUCCESS
                 : GetAndLogLastError();
         }
         return Errno::INVAL;
     }
-    return setsockopt(fd_so, SOL_SOCKET, TranslateOptNameToNative(optname), reinterpret_cast<const char*>(optval.data()), socklen_t(optval.size())) != SOCKET_ERROR
+    return setsockopt(fd_so, native_level, native_optname, reinterpret_cast<const char*>(optval.data()), socklen_t(optval.size())) != SOCKET_ERROR
         ? Errno::SUCCESS
         : GetAndLogLastError();
 }
 
 Errno Socket::Initialize(Domain domain, Type type, Protocol protocol) {
-    if (type == Type::STREAM && protocol == Protocol::UDP) {
-        LOG_WARNING(Network, "UDP used with STREAM");
-        type = Type::DGRAM;
-    }
     fd = socket(TranslateDomainToNative(domain), TranslateTypeToNative(type), TranslateProtocolToNative(protocol));
     if (fd != INVALID_SOCKET)
         return Errno::SUCCESS;
