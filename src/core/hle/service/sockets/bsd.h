@@ -11,7 +11,7 @@
 #include <variant>
 
 #include "common/common_types.h"
-#include "common/socket_types.h"
+#include "core/internal_network/socket_types.h"
 #include "core/hle/service/service.h"
 #include "core/hle/service/sockets/sockets.h"
 #include "network/network.h"
@@ -35,8 +35,8 @@ public:
     // These methods are called from SSL; the first two are also called from
     // this class for the corresponding IPC methods.
     // On the real device, the SSL service makes IPC calls to this service.
-    std::variant<s32, Errno> DuplicateSocketImpl(s32 fd);
-    Errno CloseImpl(s32 fd);
+    std::variant<s32, Network::Errno> DuplicateSocketImpl(s32 fd);
+    Network::Errno CloseImpl(s32 fd);
     std::optional<std::shared_ptr<Network::SocketBase>> GetSocket(s32 fd);
 
 private:
@@ -58,7 +58,7 @@ private:
         std::span<const u8> read_buffer;
         std::vector<u8> write_buffer;
         s32 ret{};
-        Errno bsd_errno{};
+        Network::Errno bsd_errno{};
     };
 
     struct AcceptWork {
@@ -68,7 +68,7 @@ private:
         s32 fd;
         std::vector<u8> write_buffer;
         s32 ret{};
-        Errno bsd_errno{};
+        Network::Errno bsd_errno{};
     };
 
     struct ConnectWork {
@@ -77,7 +77,7 @@ private:
 
         s32 fd;
         std::span<const u8> addr;
-        Errno bsd_errno{};
+        Network::Errno bsd_errno{};
     };
 
     struct RecvWork {
@@ -88,7 +88,7 @@ private:
         u32 flags;
         std::vector<u8> message;
         s32 ret{};
-        Errno bsd_errno{};
+        Network::Errno bsd_errno{};
     };
 
     struct RecvFromWork {
@@ -100,7 +100,7 @@ private:
         std::vector<u8> message;
         std::vector<u8> addr;
         s32 ret{};
-        Errno bsd_errno{};
+        Network::Errno bsd_errno{};
     };
 
     struct SendWork {
@@ -111,7 +111,7 @@ private:
         u32 flags;
         std::span<const u8> message;
         s32 ret{};
-        Errno bsd_errno{};
+        Network::Errno bsd_errno{};
     };
 
     struct SendToWork {
@@ -123,7 +123,7 @@ private:
         std::span<const u8> message;
         std::span<const u8> addr;
         s32 ret{};
-        Errno bsd_errno{};
+        Network::Errno bsd_errno{};
     };
 
     void RegisterClient(HLERequestContext& ctx);
@@ -154,30 +154,30 @@ private:
     template <typename Work>
     void ExecuteWork(HLERequestContext& ctx, Work work);
 
-    std::pair<s32, Errno> SocketImpl(Domain domain, Type type, Protocol protocol);
-    std::pair<s32, Errno> PollImpl(std::vector<u8>& write_buffer, std::span<const u8> read_buffer,
+    std::pair<s32, Network::Errno> SocketImpl(Network::Domain domain, Network::Type type, Network::Protocol protocol);
+    std::pair<s32, Network::Errno> PollImpl(std::vector<u8>& write_buffer, std::span<const u8> read_buffer,
                                    s32 nfds, s32 timeout);
-    std::pair<s32, Errno> AcceptImpl(s32 fd, std::vector<u8>& write_buffer);
-    Errno BindImpl(s32 fd, std::span<const u8> addr);
-    Errno ConnectImpl(s32 fd, std::span<const u8> addr);
-    Errno GetPeerNameImpl(s32 fd, std::vector<u8>& write_buffer);
-    Errno GetSockNameImpl(s32 fd, std::vector<u8>& write_buffer);
-    Errno ListenImpl(s32 fd, s32 backlog);
-    std::pair<s32, Errno> FcntlImpl(s32 fd, FcntlCmd cmd, s32 arg);
-    Errno GetSockOptImpl(s32 fd, u32 level, OptName optname, std::vector<u8>& optval);
-    Errno SetSockOptImpl(s32 fd, u32 level, OptName optname, std::span<const u8> optval);
-    Errno ShutdownImpl(s32 fd, s32 how);
-    std::pair<s32, Errno> RecvImpl(s32 fd, u32 flags, std::vector<u8>& message);
-    std::pair<s32, Errno> RecvFromImpl(s32 fd, u32 flags, std::vector<u8>& message,
+    std::pair<s32, Network::Errno> AcceptImpl(s32 fd, std::vector<u8>& write_buffer);
+    Network::Errno BindImpl(s32 fd, std::span<const u8> addr);
+    Network::Errno ConnectImpl(s32 fd, std::span<const u8> addr);
+    Network::Errno GetPeerNameImpl(s32 fd, std::vector<u8>& write_buffer);
+    Network::Errno GetSockNameImpl(s32 fd, std::vector<u8>& write_buffer);
+    Network::Errno ListenImpl(s32 fd, s32 backlog);
+    std::pair<s32, Network::Errno> FcntlImpl(s32 fd, Network::FcntlCmd cmd, s32 arg);
+    Network::Errno GetSockOptImpl(s32 fd, u32 level, Network::OptName optname, std::vector<u8>& optval);
+    Network::Errno SetSockOptImpl(s32 fd, u32 level, Network::OptName optname, std::span<const u8> optval);
+    Network::Errno ShutdownImpl(s32 fd, s32 how);
+    std::pair<s32, Network::Errno> RecvImpl(s32 fd, u32 flags, std::vector<u8>& message);
+    std::pair<s32, Network::Errno> RecvFromImpl(s32 fd, u32 flags, std::vector<u8>& message,
                                        std::vector<u8>& addr);
-    std::pair<s32, Errno> SendImpl(s32 fd, u32 flags, std::span<const u8> message);
-    std::pair<s32, Errno> SendToImpl(s32 fd, u32 flags, std::span<const u8> message,
+    std::pair<s32, Network::Errno> SendImpl(s32 fd, u32 flags, std::span<const u8> message);
+    std::pair<s32, Network::Errno> SendToImpl(s32 fd, u32 flags, std::span<const u8> message,
                                      std::span<const u8> addr);
 
     s32 FindFreeFileDescriptorHandle() noexcept;
     bool IsFileDescriptorValid(s32 fd) const noexcept;
 
-    void BuildErrnoResponse(HLERequestContext& ctx, Errno bsd_errno) const noexcept;
+    void BuildErrnoResponse(HLERequestContext& ctx, Network::Errno bsd_errno) const noexcept;
 
     static inline std::array<std::optional<FileDescriptor>, MAX_FD> file_descriptors{};
 

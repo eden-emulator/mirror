@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2017 Citra Emulator Project
@@ -12,7 +12,7 @@
 #include <vector>
 #include "common/announce_multiplayer_room.h"
 #include "common/common_types.h"
-#include "common/socket_types.h"
+#include "core/internal_network/socket_types.h"
 #include "network/verify_user.h"
 
 namespace Network {
