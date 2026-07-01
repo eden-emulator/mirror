@@ -531,8 +531,7 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     return {fd, Network::Errno::SUCCESS};
 }
 
-std::pair<s32, Network::Errno> BSD::PollImpl(std::vector<u8>& write_buffer, std::span<const u8> read_buffer,
-                                    s32 nfds, s32 timeout) {
+std::pair<s32, Network::Errno> BSD::PollImpl(std::vector<u8>& write_buffer, std::span<const u8> read_buffer, s32 nfds, s32 timeout) {
     if (nfds <= 0) {
         // When no entries are provided, -1 is returned with errno zero
         return {-1, Network::Errno::SUCCESS};
@@ -549,8 +548,7 @@ std::pair<s32, Network::Errno> BSD::PollImpl(std::vector<u8>& write_buffer, std:
 
     if (timeout >= 0) {
         const s64 seconds = timeout / 1000;
-        const u64 nanoseconds = 1'000'000 * (static_cast<u64>(timeout) % 1000);
-
+        const u64 nanoseconds = 1'000'000 * (u64(timeout) % 1000);
         if (seconds < 0) {
             return {-1, Network::Errno::INVAL};
         }
@@ -561,36 +559,33 @@ std::pair<s32, Network::Errno> BSD::PollImpl(std::vector<u8>& write_buffer, std:
         return {-1, Network::Errno::INVAL};
     }
 
-    for (Network::PollFD& pollfd : fds) {
+    bool has_invalid = false;
+    for (auto& pollfd : fds) {
         ASSERT(False(pollfd.revents));
-
-        if (pollfd.fd > static_cast<s32>(MAX_FD) || pollfd.fd < 0) {
-            LOG_ERROR(Service, "File descriptor handle={} is invalid", pollfd.fd);
-            pollfd.revents = Network::PollEvents{};
-            return {0, Network::Errno::SUCCESS};
+        if (!IsFileDescriptorValid(pollfd.fd)) {
+            pollfd.revents = {};
+            if (!file_descriptors[pollfd.fd])
+                pollfd.revents = Network::PollEvents::Nval;
+            has_invalid = true;
         }
-
-        const std::optional<FileDescriptor>& descriptor = file_descriptors[pollfd.fd];
-        if (!descriptor) {
-            LOG_TRACE(Service, "File descriptor handle={} is not allocated", pollfd.fd);
-            pollfd.revents = Network::PollEvents::Nval;
-            return {0, Network::Errno::SUCCESS};
-        }
+    }
+    if (has_invalid) {
+        return {0, Network::Errno::SUCCESS};
     }
 
     std::vector<Network::HostPollFD> host_pollfds(fds.size());
-    std::transform(fds.begin(), fds.end(), host_pollfds.begin(), [](Network::PollFD pollfd) {
+    std::transform(fds.begin(), fds.end(), host_pollfds.begin(), [](auto const e) {
         Network::HostPollFD result{};
-        result.socket = file_descriptors[pollfd.fd]->socket.get();
-        result.events = pollfd.events;
-        result.revents = Network::PollEvents{};
+        result.socket = file_descriptors[e.fd]->socket.get();
+        result.events = e.events;
+        result.revents = e.revents;
         return result;
     });
 
     const auto result = Network::Poll(host_pollfds, timeout);
-
-    const size_t num = host_pollfds.size();
-    for (size_t i = 0; i < num; ++i) {
+    for (size_t i = 0; i < host_pollfds.size(); ++i) {
+        fds[i].socket = host_pollfds[i].socket->fd;
+        fds[i].events = host_pollfds[i].events;
         fds[i].revents = host_pollfds[i].revents;
     }
     std::memcpy(write_buffer.data(), fds.data(), nfds * sizeof(Network::PollFD));
@@ -786,7 +781,7 @@ Network::Errno BSD::SetSockOptImpl(s32 fd, Network::SocketLevel level, Network::
     if (level != Network::SocketLevel::SOCKET) {
         LOG_WARNING(Service, "(stubbed) level fd={}, level={}, optname={}", fd, level, optname);
     }
-    return socket->SetSockOpt(fd, level, optname, optval);
+    return socket->SetSockOpt(level, optname, optval);
 }
 
 Network::Errno BSD::ShutdownImpl(s32 fd, s32 how) {

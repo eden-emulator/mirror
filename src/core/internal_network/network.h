@@ -32,9 +32,9 @@ class SocketBase;
 class Socket;
 
 struct HostPollFD {
-    SocketBase* socket;
-    Network::PollEvents events;
-    Network::PollEvents revents;
+    SocketBase* socket = nullptr;
+    Network::PollEvents events = {};
+    Network::PollEvents revents = {};
 };
 
 class NetworkInstance {
