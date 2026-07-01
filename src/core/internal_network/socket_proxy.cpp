@@ -47,16 +47,29 @@ void ProxySocket::HandleProxyPacket(const ProxyPacket& packet) {
     received_packets.push(decompressed);
 }
 
-template <typename T>
-Errno ProxySocket::SetSockOpt(SOCKET fd_, int option, T value) {
-    LOG_DEBUG(Network, "(STUBBED) called");
+Errno ProxySocket::SetNonBlock(bool enable) {
+    blocking = !enable;
+    return Errno::SUCCESS;
+}
+
+Errno ProxySocket::SetSockOpt(SOCKET fd_, Network::OptName option, std::span<const u8> optval) {
+    LOG_DEBUG(Network, "(stubbed) called");
+    // numeric values?
+    if (optval.size() >= sizeof(u32)) {
+        u32 value;
+        std::memcpy(&value, optval.data(), sizeof(value));
+        if (option == Network::OptName::BROADCAST)
+            broadcast = bool(value);
+        if (option == Network::OptName::SNDTIMEO)
+            send_timeout = value;
+        if (option == Network::OptName::RCVTIMEO)
+            receive_timeout = value;
+    }
     return Errno::SUCCESS;
 }
 
 Errno ProxySocket::Initialize(Domain domain, Type type, Protocol socket_protocol) {
     protocol = socket_protocol;
-    SetSockOpt(fd, SO_TYPE, type);
-
     return Errno::SUCCESS;
 }
 
@@ -243,79 +256,6 @@ Errno ProxySocket::Close() {
     fd = INVALID_SOCKET;
     closed = true;
 
-    return Errno::SUCCESS;
-}
-
-Errno ProxySocket::SetLinger(bool enable, u32 linger) {
-    struct {
-        u16 linger_enable;
-        u16 linger_time;
-    } values;
-    values.linger_enable = enable ? 1 : 0;
-    values.linger_time = u16(linger);
-    return SetSockOpt(fd, SO_LINGER, values);
-}
-
-Errno ProxySocket::SetReuseAddr(bool enable) {
-    return SetSockOpt<u32>(fd, SO_REUSEADDR, enable ? 1 : 0);
-}
-
-Errno ProxySocket::SetBroadcast(bool enable) {
-    broadcast = enable;
-    return SetSockOpt<u32>(fd, SO_BROADCAST, enable ? 1 : 0);
-}
-
-Errno ProxySocket::SetSndBuf(u32 value) {
-    return SetSockOpt(fd, SO_SNDBUF, value);
-}
-
-Errno ProxySocket::SetKeepAlive(bool enable) {
-    return Errno::SUCCESS;
-}
-
-Errno ProxySocket::SetRcvBuf(u32 value) {
-    return SetSockOpt(fd, SO_RCVBUF, value);
-}
-
-Errno ProxySocket::SetSndTimeo(u32 value) {
-    send_timeout = value;
-    return SetSockOpt(fd, SO_SNDTIMEO, static_cast<int>(value));
-}
-
-Errno ProxySocket::SetRcvTimeo(u32 value) {
-    receive_timeout = value;
-    return SetSockOpt(fd, SO_RCVTIMEO, static_cast<int>(value));
-}
-
-Errno ProxySocket::SetReusePort(u32 value) {
-#ifdef SO_REUSEPORT
-    return SetSockOpt(fd, SO_REUSEPORT, value);
-#else
-    LOG_WARNING(Network, "(stubbed)");
-    return Errno::SUCCESS;
-#endif
-}
-
-Errno ProxySocket::SetTimeStamp(u32 value) {
-#ifdef SO_TIMESTAMP
-    return SetSockOpt(fd, SO_TIMESTAMP, value);
-#else
-    LOG_WARNING(Network, "(stubbed)");
-    return Errno::SUCCESS;
-#endif
-}
-
-Errno ProxySocket::SetAcceptFilter(u32 value) {
-#ifdef SO_ACCEPTFILTER
-    return SetSockOpt(fd, SO_ACCEPTFILTER, value);
-#else
-    LOG_WARNING(Network, "(stubbed)");
-    return Errno::SUCCESS;
-#endif
-}
-
-Errno ProxySocket::SetNonBlock(bool enable) {
-    blocking = !enable;
     return Errno::SUCCESS;
 }
 
