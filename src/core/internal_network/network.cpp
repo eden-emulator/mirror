@@ -120,8 +120,15 @@ bool EnableNonBlock(SOCKET fd, bool enable) {
 
 Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     switch (e) {
-    case 0:
-        return Errno::SUCCESS;
+    case 0: return Errno::SUCCESS;
+    case WSAECONNABORTED:
+        if (call_type == CallType::Send) {
+            // Winsock yields WSAECONNABORTED from `send` in situations where Unix
+            // systems, and actual Switches, yield EPIPE.
+            return Errno::PIPE;
+        } else {
+            return Errno::CONNABORTED;
+        }
     case WSAEBADF:
         return Errno::BADF;
     case WSAEINVAL:
@@ -134,14 +141,6 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
         return Errno::AGAIN;
     case WSAECONNREFUSED:
         return Errno::CONNREFUSED;
-    case WSAECONNABORTED:
-        if (call_type == CallType::Send) {
-            // Winsock yields WSAECONNABORTED from `send` in situations where Unix
-            // systems, and actual Switches, yield EPIPE.
-            return Errno::PIPE;
-        } else {
-            return Errno::CONNABORTED;
-        }
     case WSAECONNRESET:
         return Errno::CONNRESET;
     case WSAEHOSTUNREACH:
@@ -160,6 +159,18 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
         return Errno::ISCONN;
     case WSAEADDRINUSE:
         return Errno::ADDRINUSE;
+    case WSAEADDRNOTAVAIL:
+        return Errno::ADDRNOTAVAIL;
+    case WSAEPROTOTYPE:
+        return Errno::PROTOTYPE;
+    case WSAENOPROTOOPT:
+        return Errno::NOPROTOOPT;
+    case WSAEPROTONOSUPPORT:
+        return Errno::PROTONOSUPPORT;
+    case WSAESOCKTNOSUPPORT:
+        return Errno::SOCKTNOSUPPORT;
+    case WSAENOTSUP:
+        return Errno::NOTSUP;
     default:
         UNIMPLEMENTED_MSG("Unimplemented errno={}", e);
         return Errno::OTHER;
@@ -285,7 +296,13 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     NETWORK_ERROR_ELEM(TIMEDOUT) \
     NETWORK_ERROR_ELEM(INPROGRESS) \
     NETWORK_ERROR_ELEM(ISCONN) \
-    NETWORK_ERROR_ELEM(ADDRINUSE)
+    NETWORK_ERROR_ELEM(PROTOTYPE) \
+    NETWORK_ERROR_ELEM(NOPROTOOPT) \
+    NETWORK_ERROR_ELEM(PROTONOSUPPORT) \
+    NETWORK_ERROR_ELEM(SOCKTNOSUPPORT) \
+    NETWORK_ERROR_ELEM(NOTSUP) \
+    NETWORK_ERROR_ELEM(ADDRINUSE) \
+    NETWORK_ERROR_ELEM(ADDRNOTAVAIL)
 #define NETWORK_ERROR_ELEM(name) case E##name: return Errno::name;
     NETWORK_ERROR_LIST
 #undef NETWORK_ERROR_ELEM
@@ -400,9 +417,9 @@ GetAddrInfoError TranslateGetAddrInfoErrorFromNative(int gai_err) {
     NETWORK_DOMAIN_TRANSLATE_ELEM(IPX) \
     NETWORK_DOMAIN_TRANSLATE_ELEM(ISDN) \
     NETWORK_DOMAIN_TRANSLATE_ELEM(INET6) \
-    NETWORK_DOMAIN_TRANSLATE_ELEM(ATM) \
+    /*NETWORK_DOMAIN_TRANSLATE_ELEM(ATM)*/ \
     NETWORK_DOMAIN_TRANSLATE_ELEM(BLUETOOTH) \
-    NETWORK_DOMAIN_TRANSLATE_ELEM(NETLINK)
+    /*NETWORK_DOMAIN_TRANSLATE_ELEM(NETLINK)*/
 #elif defined(_WIN32)
 #define NETWORK_DOMAIN_TRANSLATE_LIST \
     NETWORK_DOMAIN_TRANSLATE_ELEM(UNIX) \
@@ -422,8 +439,7 @@ GetAddrInfoError TranslateGetAddrInfoErrorFromNative(int gai_err) {
     NETWORK_DOMAIN_TRANSLATE_ELEM(APPLETALK) \
     NETWORK_DOMAIN_TRANSLATE_ELEM(NETBIOS) \
     NETWORK_DOMAIN_TRANSLATE_ELEM(ATM) \
-    NETWORK_DOMAIN_TRANSLATE_ELEM(INET6) \
-    NETWORK_DOMAIN_TRANSLATE_ELEM(CLUSTER)
+    NETWORK_DOMAIN_TRANSLATE_ELEM(INET6)
 #else
 #define NETWORK_DOMAIN_TRANSLATE_LIST \
     NETWORK_DOMAIN_TRANSLATE_ELEM(INET) \
@@ -936,15 +952,18 @@ Errno Socket::SetSockOpt(SOCKET fd_so, int option, T value) {
 }
 
 Errno Socket::Initialize(Domain domain, Type type, Protocol protocol) {
-    fd = socket(TranslateDomainToNative(domain), TranslateTypeToNative(type), TranslateProtocolToNative(protocol));
-    if (fd != INVALID_SOCKET) {
-        return Errno::SUCCESS;
+    if (type == Type::STREAM && protocol == Protocol::UDP) {
+        LOG_WARNING(Network, "Using IPPROTO_UDP with SOCK_STREAM");
+        type = Type::DGRAM;
     }
 
+    fd = socket(TranslateDomainToNative(domain), TranslateTypeToNative(type), TranslateProtocolToNative(protocol));
+    if (fd != INVALID_SOCKET)
+        return Errno::SUCCESS;
     return GetAndLogLastError();
 }
 
-std::pair<SocketBase::AcceptResult, Errno> Socket::Accept() {
+std::pair<Socket::AcceptResult, Errno> Socket::Accept() {
     sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
 
@@ -1169,6 +1188,18 @@ Errno Socket::SetSndTimeo(u32 value) {
 
 Errno Socket::SetRcvTimeo(u32 value) {
     return SetSockOpt(fd, SO_RCVTIMEO, value);
+}
+
+Errno Socket::SetReusePort(u32 value) {
+    return SetSockOpt(fd, SO_REUSEPORT, value);
+}
+
+Errno Socket::SetTimeStamp(u32 value) {
+    return SetSockOpt(fd, SO_TIMESTAMP, value);
+}
+
+Errno Socket::SetAcceptFilter(u32 value) {
+    return SetSockOpt(fd, SO_ACCEPTFILTER, value);
 }
 
 Errno Socket::SetNonBlock(bool enable) {

@@ -803,7 +803,6 @@ Network::Errno BSD::SetSockOptImpl(s32 fd, u32 level, Network::OptName optname, 
 
     ASSERT(optval.size() == sizeof(u32));
     auto value = GetValue<u32>(optval);
-
     switch (optname) {
     case Network::OptName::REUSEADDR:
         ASSERT(value == 0 || value == 1);
@@ -825,6 +824,12 @@ Network::Errno BSD::SetSockOptImpl(s32 fd, u32 level, Network::OptName optname, 
     case Network::OptName::NOSIGPIPE:
         LOG_WARNING(Service, "(STUBBED) setting NOSIGPIPE to {}", value);
         return Network::Errno::SUCCESS;
+    case Network::OptName::REUSEPORT:
+        return socket->SetReusePort(value);
+    case Network::OptName::TIMESTAMP:
+        return socket->SetTimeStamp(value);
+    case Network::OptName::ACCEPTFILTER:
+        return socket->SetAcceptFilter(value);
     default:
         UNIMPLEMENTED_MSG("Unimplemented optname={}", optname);
         return Network::Errno::SUCCESS;
