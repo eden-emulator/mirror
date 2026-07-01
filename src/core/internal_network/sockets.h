@@ -68,21 +68,16 @@ public:
                                          const Network::SockAddrIn* addr) = 0;
 
     virtual Errno SetLinger(bool enable, u32 linger) = 0;
-
     virtual Errno SetReuseAddr(bool enable) = 0;
-
     virtual Errno SetKeepAlive(bool enable) = 0;
-
     virtual Errno SetBroadcast(bool enable) = 0;
-
     virtual Errno SetSndBuf(u32 value) = 0;
-
     virtual Errno SetRcvBuf(u32 value) = 0;
-
     virtual Errno SetSndTimeo(u32 value) = 0;
-
     virtual Errno SetRcvTimeo(u32 value) = 0;
-
+    virtual Errno SetReusePort(u32 value) = 0;
+    virtual Errno SetTimeStamp(u32 value) = 0;
+    virtual Errno SetAcceptFilter(u32 value) = 0;
     virtual Errno SetNonBlock(bool enable) = 0;
 
     virtual std::pair<Errno, Errno> GetPendingError() = 0;
@@ -95,7 +90,6 @@ public:
         return fd;
     }
 
-protected:
     SOCKET fd = INVALID_SOCKET;
 };
 
@@ -136,21 +130,16 @@ public:
                                  const Network::SockAddrIn* addr) override;
 
     Errno SetLinger(bool enable, u32 linger) override;
-
     Errno SetReuseAddr(bool enable) override;
-
     Errno SetKeepAlive(bool enable) override;
-
     Errno SetBroadcast(bool enable) override;
-
     Errno SetSndBuf(u32 value) override;
-
     Errno SetRcvBuf(u32 value) override;
-
     Errno SetSndTimeo(u32 value) override;
-
     Errno SetRcvTimeo(u32 value) override;
-
+    Errno SetReusePort(u32 value) override;
+    Errno SetTimeStamp(u32 value) override;
+    Errno SetAcceptFilter(u32 value) override;
     Errno SetNonBlock(bool enable) override;
 
     template <typename T>

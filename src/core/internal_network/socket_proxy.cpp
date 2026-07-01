@@ -247,13 +247,12 @@ Errno ProxySocket::Close() {
 }
 
 Errno ProxySocket::SetLinger(bool enable, u32 linger) {
-    struct Linger {
+    struct {
         u16 linger_enable;
         u16 linger_time;
     } values;
     values.linger_enable = enable ? 1 : 0;
-    values.linger_time = static_cast<u16>(linger);
-
+    values.linger_time = u16(linger);
     return SetSockOpt(fd, SO_LINGER, values);
 }
 
@@ -286,6 +285,18 @@ Errno ProxySocket::SetSndTimeo(u32 value) {
 Errno ProxySocket::SetRcvTimeo(u32 value) {
     receive_timeout = value;
     return SetSockOpt(fd, SO_RCVTIMEO, static_cast<int>(value));
+}
+
+Errno ProxySocket::SetReusePort(u32 value) {
+    return SetSockOpt(fd, SO_REUSEPORT, value);
+}
+
+Errno ProxySocket::SetTimeStamp(u32 value) {
+    return SetSockOpt(fd, SO_TIMESTAMP, value);
+}
+
+Errno ProxySocket::SetAcceptFilter(u32 value) {
+    return SetSockOpt(fd, SO_ACCEPTFILTER, value);
 }
 
 Errno ProxySocket::SetNonBlock(bool enable) {
