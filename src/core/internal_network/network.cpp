@@ -742,15 +742,18 @@ static s16 TranslatePollEvents(Network::PollEvents events) noexcept {
             result |= host;
         }
     };
-    translate(Network::PollEvents::In, POLLIN);
-    translate(Network::PollEvents::Pri, POLLPRI);
-    translate(Network::PollEvents::Out, POLLOUT);
-    translate(Network::PollEvents::Err, POLLERR);
-    translate(Network::PollEvents::Hup, POLLHUP);
-    translate(Network::PollEvents::Nval, POLLNVAL);
-    translate(Network::PollEvents::RdNorm, POLLRDNORM);
-    translate(Network::PollEvents::RdBand, POLLRDBAND);
-    translate(Network::PollEvents::WrBand, POLLWRBAND);
+    translate(Network::PollEvents::IN_, POLLIN);
+    translate(Network::PollEvents::PRI_, POLLPRI);
+    translate(Network::PollEvents::OUT_, POLLOUT);
+    translate(Network::PollEvents::ERR_, POLLERR);
+    translate(Network::PollEvents::HUP_, POLLHUP);
+    translate(Network::PollEvents::NVAL, POLLNVAL);
+    translate(Network::PollEvents::RDNORM, POLLRDNORM);
+    translate(Network::PollEvents::RDBAND, POLLRDBAND);
+    translate(Network::PollEvents::WRBAND, POLLWRBAND);
+#ifdef POLLIGNEOF
+    translate(Network::PollEvents::IGNEOF, POLLIGNEOF);
+#endif
 #ifdef _WIN32
     s16 allowed_events = POLLRDBAND | POLLRDNORM | POLLWRNORM;
     // Unlike poll on other OSes, WSAPoll will complain if any other flags are set on input.
@@ -771,15 +774,18 @@ static Network::PollEvents TranslatePollRevents(s16 revents) {
             result |= guest;
         }
     };
-    translate(POLLIN, Network::PollEvents::In);
-    translate(POLLPRI, Network::PollEvents::Pri);
-    translate(POLLOUT, Network::PollEvents::Out);
-    translate(POLLERR, Network::PollEvents::Err);
-    translate(POLLHUP, Network::PollEvents::Hup);
-    translate(POLLNVAL, Network::PollEvents::Nval);
-    translate(POLLRDNORM, Network::PollEvents::RdNorm);
-    translate(POLLRDBAND, Network::PollEvents::RdBand);
-    translate(POLLWRBAND, Network::PollEvents::WrBand);
+    translate(POLLIN, Network::PollEvents::IN_);
+    translate(POLLPRI, Network::PollEvents::PRI_);
+    translate(POLLOUT, Network::PollEvents::OUT_);
+    translate(POLLERR, Network::PollEvents::ERR_);
+    translate(POLLHUP, Network::PollEvents::HUP_);
+    translate(POLLNVAL, Network::PollEvents::NVAL);
+    translate(POLLRDNORM, Network::PollEvents::RDNORM);
+    translate(POLLRDBAND, Network::PollEvents::RDBAND);
+    translate(POLLWRBAND, Network::PollEvents::WRBAND);
+#ifdef POLLIGNEOF
+    translate(POLLIGNEOF, Network::PollEvents::IGNEOF);
+#endif
     UNIMPLEMENTED_IF_MSG(revents != 0, "Unhandled host revents=0x{:x}", revents);
     return result;
 }
