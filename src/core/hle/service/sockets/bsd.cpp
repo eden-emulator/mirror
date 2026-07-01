@@ -565,7 +565,7 @@ std::pair<s32, Network::Errno> BSD::PollImpl(std::vector<u8>& write_buffer, std:
         if (!IsFileDescriptorValid(pollfd.fd)) {
             pollfd.revents = {};
             if (!file_descriptors[pollfd.fd])
-                pollfd.revents = Network::PollEvents::Nval;
+                pollfd.revents = Network::PollEvents::NVAL;
             has_invalid = true;
         }
     }
@@ -583,11 +583,8 @@ std::pair<s32, Network::Errno> BSD::PollImpl(std::vector<u8>& write_buffer, std:
     });
 
     const auto result = Network::Poll(host_pollfds, timeout);
-    for (size_t i = 0; i < host_pollfds.size(); ++i) {
-        fds[i].socket = host_pollfds[i].socket->fd;
-        fds[i].events = host_pollfds[i].events;
+    for (size_t i = 0; i < host_pollfds.size(); ++i)
         fds[i].revents = host_pollfds[i].revents;
-    }
     std::memcpy(write_buffer.data(), fds.data(), nfds * sizeof(Network::PollFD));
     return result;
 }
