@@ -288,15 +288,30 @@ Errno ProxySocket::SetRcvTimeo(u32 value) {
 }
 
 Errno ProxySocket::SetReusePort(u32 value) {
+#ifdef SO_REUSEPORT
     return SetSockOpt(fd, SO_REUSEPORT, value);
+#else
+    LOG_WARNING(Network, "(stubbed)");
+    return Errno::SUCCESS;
+#endif
 }
 
 Errno ProxySocket::SetTimeStamp(u32 value) {
+#ifdef SO_TIMESTAMP
     return SetSockOpt(fd, SO_TIMESTAMP, value);
+#else
+    LOG_WARNING(Network, "(stubbed)");
+    return Errno::SUCCESS;
+#endif
 }
 
 Errno ProxySocket::SetAcceptFilter(u32 value) {
+#ifdef SO_ACCEPTFILTER
     return SetSockOpt(fd, SO_ACCEPTFILTER, value);
+#else
+    LOG_WARNING(Network, "(stubbed)");
+    return Errno::SUCCESS;
+#endif
 }
 
 Errno ProxySocket::SetNonBlock(bool enable) {
