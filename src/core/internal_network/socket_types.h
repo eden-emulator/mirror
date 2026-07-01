@@ -26,7 +26,13 @@ enum class Errno : u32 {
     MFILE = 24,
     PIPE = 32,
     MSGSIZE = 90,
+    PROTOTYPE = 91,
+    NOPROTOOPT = 92,
+    PROTONOSUPPORT = 93,
+    SOCKTNOSUPPORT = 94,
+    NOTSUP = 95,
     ADDRINUSE = 98,
+    ADDRNOTAVAIL = 99,
     NETDOWN = 100,
     NETUNREACH = 101,
     CONNABORTED = 103,
@@ -233,16 +239,22 @@ enum class SocketLevel : u32 {
 };
 
 enum class OptName : u32 {
-    REUSEADDR = 0x4,
-    KEEPALIVE = 0x8,
-    BROADCAST = 0x20,
-    LINGER = 0x80,
+    REUSEADDR = 0x0004,
+    KEEPALIVE = 0x0008,
+    DONTROUTE = 0x0010,
+    BROADCAST = 0x0020,
+    USELOOPBACK = 0x0040,
+    LINGER = 0x0080,
+    OOBINLINE = 0x0100,
+    REUSEPORT = 0x0200,
+    TIMESTAMP = 0x0400,
+    NOSIGPIPE = 0x0800, // at least according to libnx
+    ACCEPTFILER = 0x1000,
     SNDBUF = 0x1001,
     RCVBUF = 0x1002,
     SNDTIMEO = 0x1005,
     RCVTIMEO = 0x1006,
     ERROR_ = 0x1007,   // avoid name collision with Windows macro
-    NOSIGPIPE = 0x800, // at least according to libnx
     ACCEPTFILTER = 0x1000,
     BINTIME = 0x2000,
     NO_OFFLOAD = 0x4000,
