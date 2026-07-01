@@ -132,7 +132,7 @@ public:
                 auto bsd = system.ServiceManager().GetService<Service::Sockets::BSD>("bsd:u");
                 if (bsd) {
                     auto err = bsd->CloseImpl(fd);
-                    if (err != Service::Sockets::Errno::SUCCESS) {
+                    if (err != Network::Errno::SUCCESS) {
                         LOG_ERROR(Service_SSL, "Failed to close duplicated socket: {}", err);
                     }
                 }

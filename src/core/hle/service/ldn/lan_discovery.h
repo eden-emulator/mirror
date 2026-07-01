@@ -18,7 +18,7 @@
 #include <ankerl/unordered_dense.h>
 
 #include "common/logging.h"
-#include "common/socket_types.h"
+#include "core/internal_network/socket_types.h"
 #include "core/hle/result.h"
 #include "core/hle/service/ldn/ldn_results.h"
 #include "core/hle/service/ldn/ldn_types.h"
