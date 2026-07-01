@@ -252,6 +252,8 @@ enum class MsgOpt : u32 {
 };
 
 enum class OptName : u32 {
+    DEBUG = 0x0001,
+    ACCEPTCONN = 0x0002,
     REUSEADDR = 0x0004,
     KEEPALIVE = 0x0008,
     DONTROUTE = 0x0010,
