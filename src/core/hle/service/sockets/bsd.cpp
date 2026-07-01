@@ -790,49 +790,8 @@ Network::Errno BSD::SetSockOptImpl(s32 fd, u32 level, Network::OptName optname, 
     }
 
     Network::SocketBase* const socket = file_descriptors[fd]->socket.get();
-
-    if (optname == Network::OptName::LINGER) {
-        ASSERT(optval.size() == sizeof(Network::Linger));
-        auto linger = GetValue<Network::Linger>(optval);
-        ASSERT(linger.onoff == 0 || linger.onoff == 1);
-        return (socket->SetLinger(linger.onoff != 0, linger.linger));
-    } else if (optname == Network::OptName::TIMESTAMP) {
-        ASSERT(optval.size() == 4);
-        auto value = GetValue<u32>(optval);
-        return socket->SetTimeStamp(value);
-    }
-
     ASSERT(optval.size() == sizeof(u32));
-    auto value = GetValue<u32>(optval);
-    switch (optname) {
-    case Network::OptName::REUSEADDR:
-        ASSERT(value == 0 || value == 1);
-        return (socket->SetReuseAddr(value != 0));
-    case Network::OptName::KEEPALIVE:
-        ASSERT(value == 0 || value == 1);
-        return (socket->SetKeepAlive(value != 0));
-    case Network::OptName::BROADCAST:
-        ASSERT(value == 0 || value == 1);
-        return (socket->SetBroadcast(value != 0));
-    case Network::OptName::SNDBUF:
-        return socket->SetSndBuf(value);
-    case Network::OptName::RCVBUF:
-        return socket->SetRcvBuf(value);
-    case Network::OptName::SNDTIMEO:
-        return socket->SetSndTimeo(value);
-    case Network::OptName::RCVTIMEO:
-        return socket->SetRcvTimeo(value);
-    case Network::OptName::NOSIGPIPE:
-        LOG_WARNING(Service, "(STUBBED) setting NOSIGPIPE to {}", value);
-        return Network::Errno::SUCCESS;
-    case Network::OptName::REUSEPORT:
-        return socket->SetReusePort(value);
-    case Network::OptName::ACCEPTFILTER:
-        return socket->SetAcceptFilter(value);
-    default:
-        UNIMPLEMENTED_MSG("Unimplemented optname={}", optname);
-        return Network::Errno::SUCCESS;
-    }
+    return socket->SetSockOpt(fd, optname, optval);
 }
 
 Network::Errno BSD::ShutdownImpl(s32 fd, s32 how) {

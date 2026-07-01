@@ -943,17 +943,76 @@ std::pair<T, Errno> Socket::GetSockOpt(SOCKET fd_so, int option) {
     return {value, GetAndLogLastError()};
 }
 
-template <typename T>
-Errno Socket::SetSockOpt(SOCKET fd_so, int option, T value) {
-    const int result =
-        setsockopt(fd_so, SOL_SOCKET, option, reinterpret_cast<const char*>(&value), sizeof(value));
-    if (result != SOCKET_ERROR) {
+static s32 TranslateOptNameToNative(Network::OptName optname) {
+    switch (optname) {
+    case Network::OptName::LINGER:
+        return SO_LINGER;
+    case Network::OptName::REUSEADDR:
+        return SO_REUSEADDR;
+    case Network::OptName::KEEPALIVE:
+        return SO_KEEPALIVE;
+    case Network::OptName::BROADCAST:
+        return SO_BROADCAST;
+    case Network::OptName::SNDBUF:
+        return SO_SNDBUF;
+    case Network::OptName::RCVBUF:
+        return SO_RCVBUF;
+    case Network::OptName::SNDTIMEO:
+        return SO_SNDTIMEO;
+    case Network::OptName::RCVTIMEO:
+        return SO_RCVTIMEO;
+    case Network::OptName::NOSIGPIPE:
+        return SO_NOSIGPIPE;
+#ifdef SO_REUSEPORT
+    case Network::OptName::REUSEPORT:
+        return SO_REUSEPORT;
+#endif
+#ifdef SO_ACCEPTFILTER
+    case Network::OptName::ACCEPTFILTER:
+        return SO_ACCEPTFILTER;
+#endif
+#ifdef SO_TIMESTAMP
+    case Network::OptName::TIMESTAMP:
+        return SO_TIMESTAMP;
+#endif
+    default:
+        UNIMPLEMENTED_MSG("Unimplemented optname={}", optname);
+        return 0;
+    }
+}
+
+
+Errno Socket::SetNonBlock(bool enable) {
+    if (EnableNonBlock(fd, enable)) {
+        is_non_blocking = enable;
         return Errno::SUCCESS;
     }
     return GetAndLogLastError();
 }
 
+Errno Socket::SetSockOpt(SOCKET fd_so, Network::OptName optname, std::span<const u8> optval) {
+    // TODO: is it >= or ==? for sizes
+    if (optname == Network::OptName::LINGER) {
+        if (optval.size() >= sizeof(Network::Linger)) {
+            Network::Linger linger{};
+            std::memcpy(&linger, optval.data(), sizeof(linger));
+            auto const linkger_optval = MakeLinger(bool(linger.onoff), linger.linger);
+            return setsockopt(fd_so, SOL_SOCKET, TranslateOptNameToNative(optname), reinterpret_cast<const char*>(linkger_optval.data()), socklen_t(linkger_optval.size())) != SOCKET_ERROR
+                ? Errno::SUCCESS
+                : GetAndLogLastError();
+        }
+        return Errno::INVAL;
+    }
+    return setsockopt(fd_so, SOL_SOCKET, TranslateOptNameToNative(optname), reinterpret_cast<const char*>(optval.data()), socklen_t(optval.size())) != SOCKET_ERROR
+        ? Errno::SUCCESS
+        : GetAndLogLastError();
+}
+
 Errno Socket::Initialize(Domain domain, Type type, Protocol protocol) {
+    if (type == Type::STREAM && protocol == Protocol::UDP) {
+        LOG_WARNING(Network, "UDP used with STREAM");
+        type = Type::DGRAM;
+    }
     fd = socket(TranslateDomainToNative(domain), TranslateTypeToNative(type), TranslateProtocolToNative(protocol));
     if (fd != INVALID_SOCKET)
         return Errno::SUCCESS;
@@ -1070,31 +1129,31 @@ Errno Socket::Shutdown(ShutdownHow how) {
 static s32 TranslateMsgOptToNative(s32 flags) {
     s32 r = 0;
 #ifdef MSG_OOB
-    if (flags & s32(MsgOpt::OOB)) r |= MSG_OOB;
+    if (0 != (flags & s32(MsgOpt::OOB))) r |= MSG_OOB;
 #endif
 #ifdef MSG_PEEK
-    if (flags & s32(MsgOpt::PEEK)) r |= MSG_PEEK;
+    if (0 != (flags & s32(MsgOpt::PEEK))) r |= MSG_PEEK;
 #endif
 #ifdef MSG_DONTROUTE
-    if (flags & s32(MsgOpt::DONTROUTE)) r |= MSG_DONTROUTE;
+    if (0 != (flags & s32(MsgOpt::DONTROUTE))) r |= MSG_DONTROUTE;
 #endif
 #ifdef MSG_EOR
-    if (flags & s32(MsgOpt::EOR_)) r |= MSG_EOR;
+    if (0 != (flags & s32(MsgOpt::EOR_))) r |= MSG_EOR;
 #endif
 #ifdef MSG_TRUNC
-    if (flags & s32(MsgOpt::TRUNC)) r |= MSG_TRUNC;
+    if (0 != (flags & s32(MsgOpt::TRUNC))) r |= MSG_TRUNC;
 #endif
 #ifdef MSG_CTRUNC
-    if (flags & s32(MsgOpt::CTRUNC)) r |= MSG_CTRUNC;
+    if (0 != (flags & s32(MsgOpt::CTRUNC))) r |= MSG_CTRUNC;
 #endif
 #ifdef MSG_WAITALL
-    if (flags & s32(MsgOpt::WAITALL)) r |= MSG_WAITALL;
+    if (0 != (flags & s32(MsgOpt::WAITALL))) r |= MSG_WAITALL;
 #endif
 #ifdef MSG_DONTWAIT
-    if (flags & s32(MsgOpt::DONTWAIT)) r |= MSG_DONTWAIT;
+    if (0 != (flags & s32(MsgOpt::DONTWAIT))) r |= MSG_DONTWAIT;
 #endif
 #ifdef MSG_EOF
-    if (flags & s32(MsgOpt::EOF_)) r |= MSG_EOF;
+    if (0 != (flags & s32(MsgOpt::EOF_))) r |= MSG_EOF;
 #endif
     return r;
 }
@@ -1183,73 +1242,6 @@ Errno Socket::Close() {
 std::pair<Errno, Errno> Socket::GetPendingError() {
     auto [pending_err, getsockopt_err] = GetSockOpt<int>(fd, SO_ERROR);
     return {TranslateNativeError(pending_err), getsockopt_err};
-}
-
-Errno Socket::SetLinger(bool enable, u32 linger) {
-    return SetSockOpt(fd, SO_LINGER, MakeLinger(enable, linger));
-}
-
-Errno Socket::SetReuseAddr(bool enable) {
-    return SetSockOpt<u32>(fd, SO_REUSEADDR, enable ? 1 : 0);
-}
-
-Errno Socket::SetKeepAlive(bool enable) {
-    return SetSockOpt<u32>(fd, SO_KEEPALIVE, enable ? 1 : 0);
-}
-
-Errno Socket::SetBroadcast(bool enable) {
-    return SetSockOpt<u32>(fd, SO_BROADCAST, enable ? 1 : 0);
-}
-
-Errno Socket::SetSndBuf(u32 value) {
-    return SetSockOpt(fd, SO_SNDBUF, value);
-}
-
-Errno Socket::SetRcvBuf(u32 value) {
-    return SetSockOpt(fd, SO_RCVBUF, value);
-}
-
-Errno Socket::SetSndTimeo(u32 value) {
-    return SetSockOpt(fd, SO_SNDTIMEO, value);
-}
-
-Errno Socket::SetRcvTimeo(u32 value) {
-    return SetSockOpt(fd, SO_RCVTIMEO, value);
-}
-
-Errno Socket::SetReusePort(u32 value) {
-#ifdef SO_REUSEPORT
-    return SetSockOpt(fd, SO_REUSEPORT, value);
-#else
-    LOG_WARNING(Network, "(stubbed)");
-    return Errno::SUCCESS;
-#endif
-}
-
-Errno Socket::SetTimeStamp(u32 value) {
-#ifdef SO_TIMESTAMP
-    return SetSockOpt(fd, SO_TIMESTAMP, value);
-#else
-    LOG_WARNING(Network, "(stubbed)");
-    return Errno::SUCCESS;
-#endif
-}
-
-Errno Socket::SetAcceptFilter(u32 value) {
-#ifdef SO_ACCEPTFILTER
-    return SetSockOpt(fd, SO_ACCEPTFILTER, value);
-#else
-    LOG_WARNING(Network, "(stubbed)");
-    return Errno::SUCCESS;
-#endif
-}
-
-Errno Socket::SetNonBlock(bool enable) {
-    if (EnableNonBlock(fd, enable)) {
-        is_non_blocking = enable;
-        return Errno::SUCCESS;
-    }
-    return GetAndLogLastError();
 }
 
 bool Socket::IsOpened() const {
