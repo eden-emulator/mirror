@@ -238,6 +238,19 @@ enum class SocketLevel : u32 {
     SOCKET = 0xffff, // i.e. SOL_SOCKET
 };
 
+enum class MsgOpt : u32 {
+    OOB = 0x00001,
+    PEEK = 0x00002,
+    DONTROUTE = 0x00004,
+    EOR_ = 0x00008,
+    TRUNC = 0x00010,
+    CTRUNC = 0x00020,
+    WAITALL = 0x00040,
+    DONTWAIT = 0x00080,
+    EOF_ = 0x00100,
+    NOSIGNAL = 0x20000,
+};
+
 enum class OptName : u32 {
     REUSEADDR = 0x0004,
     KEEPALIVE = 0x0008,
