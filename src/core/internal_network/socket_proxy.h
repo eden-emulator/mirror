@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -29,13 +29,13 @@ public:
 
     std::pair<AcceptResult, Errno> Accept() override;
 
-    Errno Connect(SockAddrIn addr_in) override;
+    Errno Connect(Network::SockAddrIn addr_in) override;
 
-    std::pair<SockAddrIn, Errno> GetPeerName() override;
+    std::pair<Network::SockAddrIn, Errno> GetPeerName() override;
 
-    std::pair<SockAddrIn, Errno> GetSockName() override;
+    std::pair<Network::SockAddrIn, Errno> GetSockName() override;
 
-    Errno Bind(SockAddrIn addr) override;
+    Errno Bind(Network::SockAddrIn addr) override;
 
     Errno Listen(s32 backlog) override;
 
@@ -43,9 +43,9 @@ public:
 
     std::pair<s32, Errno> Recv(int flags, std::span<u8> message) override;
 
-    std::pair<s32, Errno> RecvFrom(int flags, std::span<u8> message, SockAddrIn* addr) override;
+    std::pair<s32, Errno> RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) override;
 
-    std::pair<s32, Errno> ReceivePacket(int flags, std::span<u8> message, SockAddrIn* addr,
+    std::pair<s32, Errno> ReceivePacket(int flags, std::span<u8> message, Network::SockAddrIn* addr,
                                         std::size_t max_length);
 
     std::pair<s32, Errno> Send(std::span<const u8> message, int flags) override;
@@ -53,7 +53,7 @@ public:
     void SendPacket(ProxyPacket& packet);
 
     std::pair<s32, Errno> SendTo(u32 flags, std::span<const u8> message,
-                                 const SockAddrIn* addr) override;
+                                 const Network::SockAddrIn* addr) override;
 
     Errno SetLinger(bool enable, u32 linger) override;
 
@@ -86,7 +86,7 @@ private:
     u32 send_timeout = 0;
     u32 receive_timeout = 0;
     bool is_bound = false;
-    SockAddrIn local_endpoint{};
+    Network::SockAddrIn local_endpoint{};
     bool blocking = true;
     std::queue<ProxyPacket> received_packets;
     Protocol protocol;

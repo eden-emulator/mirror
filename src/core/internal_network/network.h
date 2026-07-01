@@ -13,7 +13,7 @@
 
 #include "common/common_funcs.h"
 #include "common/common_types.h"
-#include "common/socket_types.h"
+#include "core/internal_network/socket_types.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -31,68 +31,10 @@ namespace Network {
 class SocketBase;
 class Socket;
 
-/// Error code for network functions
-enum class Errno {
-    SUCCESS,
-    BADF,
-    INVAL,
-    MFILE,
-    PIPE,
-    NOTCONN,
-    AGAIN,
-    CONNREFUSED,
-    CONNRESET,
-    CONNABORTED,
-    HOSTUNREACH,
-    NETDOWN,
-    NETUNREACH,
-    TIMEDOUT,
-    MSGSIZE,
-    INPROGRESS,
-    ISCONN,
-    OTHER,
-};
-
-enum class GetAddrInfoError {
-    SUCCESS,
-    ADDRFAMILY,
-    AGAIN,
-    BADFLAGS,
-    FAIL,
-    FAMILY,
-    MEMORY,
-    NODATA,
-    NONAME,
-    SERVICE,
-    SOCKTYPE,
-    SYSTEM,
-    BADHINTS,
-    PROTOCOL,
-    OVERFLOW_,
-    OTHER,
-};
-
-/// Cross-platform poll fd structure
-
-enum class PollEvents : u16 {
-    // Using Pascal case because IN is a macro on Windows.
-    In = 1 << 0,
-    Pri = 1 << 1,
-    Out = 1 << 2,
-    Err = 1 << 3,
-    Hup = 1 << 4,
-    Nval = 1 << 5,
-    RdNorm = 1 << 6,
-    RdBand = 1 << 7,
-    WrBand = 1 << 8,
-};
-
-DECLARE_ENUM_FLAG_OPERATORS(PollEvents);
-
-struct PollFD {
+struct HostPollFD {
     SocketBase* socket;
-    PollEvents events;
-    PollEvents revents;
+    Network::PollEvents events;
+    Network::PollEvents revents;
 };
 
 class NetworkInstance {

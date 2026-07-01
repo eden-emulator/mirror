@@ -46,7 +46,7 @@ namespace Network {
 
 #ifdef _WIN32
 
-std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
+std::vector<NetworkInterface> GetAvailableNetworkInterfaces() {
 
     ULONG buf_size = 0;
     if (GetAdaptersAddresses(
@@ -66,7 +66,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
         return {};
     }
 
-    std::vector<Network::NetworkInterface> result;
+    std::vector<NetworkInterface> result;
 
     for (auto* a = addrs; a; a = a->Next) {
 
@@ -89,7 +89,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
             gw = reinterpret_cast<sockaddr_in*>(a->FirstGatewayAddress->Address.lpSockaddr)
                      ->sin_addr;
 
-        result.emplace_back(Network::NetworkInterface{
+        result.emplace_back(NetworkInterface{
             .name = Common::UTF16ToUTF8(std::wstring{a->FriendlyName}),
             .ip_address = ip,
             .subnet_mask = mask,
@@ -103,7 +103,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
 
 #else
 
-std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
+std::vector<NetworkInterface> GetAvailableNetworkInterfaces() {
 #if defined(__ANDROID__) || defined(__linux__)
     struct ifaddrs* ifaddr = nullptr;
     if (getifaddrs(&ifaddr) != 0) {
@@ -135,7 +135,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
         LOG_WARNING(Network, "\"/proc/net/route\" not found - using gateway 0");
     }
 #endif
-    std::vector<Network::NetworkInterface> ifaces;
+    std::vector<NetworkInterface> ifaces;
     for (auto ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
         if (ifa->ifa_addr == nullptr || ifa->ifa_netmask == nullptr /* Have a netmask and address */
         || ifa->ifa_addr->sa_family != AF_INET /* Must be of kind AF_INET */
@@ -149,7 +149,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
         });
         in_addr gw; // Solaris defines s_addr as a macro, can't use special C++ shenanigans here
         gw.s_addr = it != routes.end() ? it->gateway : 0;
-        ifaces.emplace_back(Network::NetworkInterface{
+        ifaces.emplace_back(NetworkInterface{
             .name = ifa->ifa_name,
             .ip_address = std::bit_cast<struct sockaddr_in>(*ifa->ifa_addr).sin_addr,
             .subnet_mask = std::bit_cast<struct sockaddr_in>(*ifa->ifa_netmask).sin_addr,
@@ -159,7 +159,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
     freeifaddrs(ifaddr);
     return ifaces;
 #elif defined(__FreeBSD__)
-    std::vector<Network::NetworkInterface> ifaces;
+    std::vector<NetworkInterface> ifaces;
     int fd = ::socket(PF_ROUTE, SOCK_RAW, AF_UNSPEC);
     if (fd < 0) {
         LOG_ERROR(Network, "socket: {}", std::strerror(errno));
@@ -191,7 +191,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
             size_t msglen = rtm->rtm_msglen - sizeof(*ifm);
             char const* p = (char const*)(ifm + 1);
 
-            Network::NetworkInterface iface{};
+            NetworkInterface iface{};
             for (size_t i = 0; i < RTAX_MAX; i++)
                 if ((ifm->ifm_addrs & (1 << i)) != 0) {
                     struct sockaddr const* sa = reinterpret_cast<struct sockaddr const*>(p);
@@ -220,7 +220,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
 
 #endif // _WIN32
 
-std::optional<Network::NetworkInterface> GetSelectedNetworkInterface() {
+std::optional<NetworkInterface> GetSelectedNetworkInterface() {
     auto const& sel_if = Settings::values.network_interface.GetValue();
     if (auto const ifaces = Network::GetAvailableNetworkInterfaces(); ifaces.size() > 0) {
         if (sel_if.empty())
