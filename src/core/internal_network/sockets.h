@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
@@ -30,7 +30,7 @@ public:
 
     struct AcceptResult {
         std::unique_ptr<SocketBase> socket;
-        SockAddrIn sockaddr_in;
+        Network::SockAddrIn sockaddr_in;
     };
 
     SocketBase() = default;
@@ -46,13 +46,13 @@ public:
 
     virtual std::pair<AcceptResult, Errno> Accept() = 0;
 
-    virtual Errno Connect(SockAddrIn addr_in) = 0;
+    virtual Errno Connect(Network::SockAddrIn addr_in) = 0;
 
-    virtual std::pair<SockAddrIn, Errno> GetPeerName() = 0;
+    virtual std::pair<Network::SockAddrIn, Errno> GetPeerName() = 0;
 
-    virtual std::pair<SockAddrIn, Errno> GetSockName() = 0;
+    virtual std::pair<Network::SockAddrIn, Errno> GetSockName() = 0;
 
-    virtual Errno Bind(SockAddrIn addr) = 0;
+    virtual Errno Bind(Network::SockAddrIn addr) = 0;
 
     virtual Errno Listen(s32 backlog) = 0;
 
@@ -60,12 +60,12 @@ public:
 
     virtual std::pair<s32, Errno> Recv(int flags, std::span<u8> message) = 0;
 
-    virtual std::pair<s32, Errno> RecvFrom(int flags, std::span<u8> message, SockAddrIn* addr) = 0;
+    virtual std::pair<s32, Errno> RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) = 0;
 
     virtual std::pair<s32, Errno> Send(std::span<const u8> message, int flags) = 0;
 
     virtual std::pair<s32, Errno> SendTo(u32 flags, std::span<const u8> message,
-                                         const SockAddrIn* addr) = 0;
+                                         const Network::SockAddrIn* addr) = 0;
 
     virtual Errno SetLinger(bool enable, u32 linger) = 0;
 
@@ -114,13 +114,13 @@ public:
 
     std::pair<AcceptResult, Errno> Accept() override;
 
-    Errno Connect(SockAddrIn addr_in) override;
+    Errno Connect(Network::SockAddrIn addr_in) override;
 
-    std::pair<SockAddrIn, Errno> GetPeerName() override;
+    std::pair<Network::SockAddrIn, Errno> GetPeerName() override;
 
-    std::pair<SockAddrIn, Errno> GetSockName() override;
+    std::pair<Network::SockAddrIn, Errno> GetSockName() override;
 
-    Errno Bind(SockAddrIn addr) override;
+    Errno Bind(Network::SockAddrIn addr) override;
 
     Errno Listen(s32 backlog) override;
 
@@ -128,12 +128,12 @@ public:
 
     std::pair<s32, Errno> Recv(int flags, std::span<u8> message) override;
 
-    std::pair<s32, Errno> RecvFrom(int flags, std::span<u8> message, SockAddrIn* addr) override;
+    std::pair<s32, Errno> RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) override;
 
     std::pair<s32, Errno> Send(std::span<const u8> message, int flags) override;
 
     std::pair<s32, Errno> SendTo(u32 flags, std::span<const u8> message,
-                                 const SockAddrIn* addr) override;
+                                 const Network::SockAddrIn* addr) override;
 
     Errno SetLinger(bool enable, u32 linger) override;
 
@@ -169,6 +169,6 @@ private:
     bool is_non_blocking = false;
 };
 
-std::pair<s32, Errno> Poll(std::vector<PollFD>& poll_fds, s32 timeout);
+std::pair<s32, Errno> Poll(std::span<Network::HostPollFD> poll_fds, s32 timeout);
 
 } // namespace Network

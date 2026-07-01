@@ -74,7 +74,7 @@ SOCKET GetInterruptSocket() {
     return interrupt_socket;
 }
 
-sockaddr TranslateFromSockAddrIn(SockAddrIn input) {
+sockaddr TranslateFromSockAddrIn(Network::SockAddrIn input) {
     sockaddr_in result;
 
 #ifdef __unix__
@@ -158,6 +158,8 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
         return Errno::INPROGRESS;
     case WSAEISCONN:
         return Errno::ISCONN;
+    case WSAEADDRINUSE:
+        return Errno::ADDRINUSE;
     default:
         UNIMPLEMENTED_MSG("Unimplemented errno={}", e);
         return Errno::OTHER;
@@ -213,7 +215,7 @@ SOCKET GetInterruptSocket() {
     return interrupt_pipe_fd[0];
 }
 
-sockaddr TranslateFromSockAddrIn(SockAddrIn input) {
+sockaddr TranslateFromSockAddrIn(Network::SockAddrIn input) {
     sockaddr_in result;
 
     switch (static_cast<Domain>(input.family)) {
@@ -265,40 +267,29 @@ bool EnableNonBlock(int fd, bool enable) {
 
 Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     switch (e) {
-    case 0:
-        return Errno::SUCCESS;
-    case EBADF:
-        return Errno::BADF;
-    case EINVAL:
-        return Errno::INVAL;
-    case EMFILE:
-        return Errno::MFILE;
-    case EPIPE:
-        return Errno::PIPE;
-    case ECONNABORTED:
-        return Errno::CONNABORTED;
-    case ENOTCONN:
-        return Errno::NOTCONN;
-    case EAGAIN:
-        return Errno::AGAIN;
-    case ECONNREFUSED:
-        return Errno::CONNREFUSED;
-    case ECONNRESET:
-        return Errno::CONNRESET;
-    case EHOSTUNREACH:
-        return Errno::HOSTUNREACH;
-    case ENETDOWN:
-        return Errno::NETDOWN;
-    case ENETUNREACH:
-        return Errno::NETUNREACH;
-    case EMSGSIZE:
-        return Errno::MSGSIZE;
-    case ETIMEDOUT:
-        return Errno::TIMEDOUT;
-    case EINPROGRESS:
-        return Errno::INPROGRESS;
-    case EISCONN:
-        return Errno::ISCONN;
+    case 0: return Errno::SUCCESS;
+#define NETWORK_ERROR_LIST \
+    NETWORK_ERROR_ELEM(BADF) \
+    NETWORK_ERROR_ELEM(INVAL) \
+    NETWORK_ERROR_ELEM(MFILE) \
+    NETWORK_ERROR_ELEM(PIPE) \
+    NETWORK_ERROR_ELEM(CONNABORTED) \
+    NETWORK_ERROR_ELEM(NOTCONN) \
+    NETWORK_ERROR_ELEM(AGAIN) \
+    NETWORK_ERROR_ELEM(CONNREFUSED) \
+    NETWORK_ERROR_ELEM(CONNRESET) \
+    NETWORK_ERROR_ELEM(HOSTUNREACH) \
+    NETWORK_ERROR_ELEM(NETDOWN) \
+    NETWORK_ERROR_ELEM(NETUNREACH) \
+    NETWORK_ERROR_ELEM(MSGSIZE) \
+    NETWORK_ERROR_ELEM(TIMEDOUT) \
+    NETWORK_ERROR_ELEM(INPROGRESS) \
+    NETWORK_ERROR_ELEM(ISCONN) \
+    NETWORK_ERROR_ELEM(ADDRINUSE)
+#define NETWORK_ERROR_ELEM(name) case E##name: return Errno::name;
+    NETWORK_ERROR_LIST
+#undef NETWORK_ERROR_ELEM
+#undef NETWORK_ERROR_LIST
     default:
         UNIMPLEMENTED_MSG("Unimplemented errno={} ({})", e, strerror(e));
         return Errno::OTHER;
@@ -361,12 +352,90 @@ GetAddrInfoError TranslateGetAddrInfoErrorFromNative(int gai_err) {
     }
 }
 
+#ifdef __FreeBSD__
+#define NETWORK_DOMAIN_TRANSLATE_LIST \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(UNIX) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(INET) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(IMPLINK) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(PUP) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(CHAOS) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(NETBIOS) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ISO) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ECMA) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(DATAKIT) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(CCITT) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(SNA) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(DECnet) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(DLI) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(LAT) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(HYLINK) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(APPLETALK) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ROUTE) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(LINK) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(COIP) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(CNT) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(IPX) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(SIP) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ISDN) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(INET6) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(NATM) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ATM) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(NETGRAPH) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(SLOW) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(SCLUSTER) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ARP) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(BLUETOOTH) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(IEEE80211) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(NETLINK) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(INET_SDP) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(INET6_SDP)
+#elif defined(__linux__)
+#define NETWORK_DOMAIN_TRANSLATE_LIST \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(UNIX) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(INET) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(SNA) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(DECnet) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(APPLETALK) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ROUTE) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(IPX) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ISDN) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(INET6) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ATM) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(BLUETOOTH) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(NETLINK)
+#elif defined(_WIN32)
+#define NETWORK_DOMAIN_TRANSLATE_LIST \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(UNIX) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(INET) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(IMPLINK) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(PUP) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(CHAOS) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ISO) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ECMA) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(DATAKIT) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(CCITT) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(SNA) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(DECnet) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(DLI) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(LAT) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(HYLINK) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(APPLETALK) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(NETBIOS) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(ATM) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(INET6) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(CLUSTER)
+#else
+#define NETWORK_DOMAIN_TRANSLATE_LIST \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(INET) \
+    NETWORK_DOMAIN_TRANSLATE_ELEM(INET6)
+#endif
+
 Domain TranslateDomainFromNative(int domain) {
     switch (domain) {
-    case 0:
-        return Domain::Unspecified;
-    case AF_INET:
-        return Domain::INET;
+    case AF_UNSPEC: return Domain::Unspecified;
+#define NETWORK_DOMAIN_TRANSLATE_ELEM(x) case AF_##x: return Domain::x;
+    NETWORK_DOMAIN_TRANSLATE_LIST
+#undef NETWORK_DOMAIN_TRANSLATE_ELEM
     default:
         UNIMPLEMENTED_MSG("Unhandled domain={}", domain);
         return Domain::INET;
@@ -375,23 +444,26 @@ Domain TranslateDomainFromNative(int domain) {
 
 int TranslateDomainToNative(Domain domain) {
     switch (domain) {
-    case Domain::Unspecified:
-        return 0;
-    case Domain::INET:
-        return AF_INET;
+    case Domain::Unspecified: return AF_UNSPEC;
+#define NETWORK_DOMAIN_TRANSLATE_ELEM(x) case Domain::x: return AF_##x;
+    NETWORK_DOMAIN_TRANSLATE_LIST
+#undef NETWORK_DOMAIN_TRANSLATE_ELEM
     default:
         UNIMPLEMENTED_MSG("Unimplemented domain={}", domain);
         return 0;
     }
 }
+#undef NETWORK_DOMAIN_TRANSLATE_LIST
 
+// Must account for SOCK_CLOEXEC and SOCK_NONBLOCK
+// so mask the lower bits as those aren't usually used for flags
 Type TranslateTypeFromNative(int type) {
-    switch (type) {
-    case 0:
-        return Type::Unspecified;
+    switch (type & 0xff) {
+    case 0: return Type::Unspecified;
     case SOCK_STREAM: return Type::STREAM;
     case SOCK_DGRAM: return Type::DGRAM;
     case SOCK_RAW: return Type::RAW;
+    case SOCK_RDM: return Type::RDM;
     case SOCK_SEQPACKET: return Type::SEQPACKET;
     default:
         UNIMPLEMENTED_MSG("Unimplemented type={}", type);
@@ -400,12 +472,12 @@ Type TranslateTypeFromNative(int type) {
 }
 
 int TranslateTypeToNative(Type type) {
-    switch (type) {
-    case Type::Unspecified:
-        return 0;
+    switch (Type(int(type) & 0xff)) {
+    case Type::Unspecified: return 0;
     case Type::STREAM: return SOCK_STREAM;
     case Type::DGRAM: return SOCK_DGRAM;
     case Type::RAW: return SOCK_RAW;
+    case Type::RDM: return SOCK_RDM;
     case Type::SEQPACKET: return SOCK_SEQPACKET;
     default:
         UNIMPLEMENTED_MSG("Unimplemented type={}", type);
@@ -530,6 +602,40 @@ int TranslateTypeToNative(Type type) {
     NETWORK_PROTOCOL_TRANSLATE_ELEM(PGM) \
     NETWORK_PROTOCOL_TRANSLATE_ELEM(MPLS) \
     NETWORK_PROTOCOL_TRANSLATE_ELEM(PFSYNC)
+#elif defined(__OPENORBIS__)
+#define NETWORK_PROTOCOL_TRANSLATE_LIST \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(IP) \
+    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(HOPOPTS)*/ \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(ICMP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(IGMP) \
+    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(IPIP)*/ \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(TCP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(EGP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(PUP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(UDP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(IDP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(TP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(DCCP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(IPV6) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(ROUTING) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(FRAGMENT) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(RSVP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(GRE) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(ESP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(AH) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(ICMPV6) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(NONE) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(DSTOPTS) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(MTP) \
+    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(BEETPH)*/ \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(ENCAP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(PIM) \
+    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(COMP)*/ \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(SCTP) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(MH) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(UDPLITE) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(MPLS) \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(RAW)
 #elif defined(__linux__)
 // Other platforms get fucked
 #define NETWORK_PROTOCOL_TRANSLATE_LIST \
@@ -619,68 +725,63 @@ int TranslateTypeToNative(Type type) {
 }
 #undef NETWORK_PROTOCOL_TRANSLATE_LIST
 
-SockAddrIn TranslateToSockAddrIn(sockaddr_in input, size_t input_len) {
-    SockAddrIn result{};
-    result.family = TranslateDomainFromNative(input.sin_family);
+Network::SockAddrIn TranslateToSockAddrIn(sockaddr_in input, size_t input_len) {
+    Network::SockAddrIn result{};
+    result.len = 16;
+    result.family = u8(TranslateDomainFromNative(input.sin_family));
     result.portno = ntohs(input.sin_port);
     result.ip = TranslateIPv4(input.sin_addr);
+    result.zeroes = {};
     return result;
 }
 
-short TranslatePollEvents(PollEvents events) {
-    short result = 0;
-
-    const auto translate = [&result, &events](PollEvents guest, short host) {
+static s16 TranslatePollEvents(Network::PollEvents events) noexcept {
+    s16 result = 0;
+    const auto translate = [&result, &events](Network::PollEvents guest, s16 host) {
         if (True(events & guest)) {
             events &= ~guest;
             result |= host;
         }
     };
-
-    translate(PollEvents::In, POLLIN);
-    translate(PollEvents::Pri, POLLPRI);
-    translate(PollEvents::Out, POLLOUT);
-    translate(PollEvents::Err, POLLERR);
-    translate(PollEvents::Hup, POLLHUP);
-    translate(PollEvents::Nval, POLLNVAL);
-    translate(PollEvents::RdNorm, POLLRDNORM);
-    translate(PollEvents::RdBand, POLLRDBAND);
-    translate(PollEvents::WrBand, POLLWRBAND);
-
+    translate(Network::PollEvents::In, POLLIN);
+    translate(Network::PollEvents::Pri, POLLPRI);
+    translate(Network::PollEvents::Out, POLLOUT);
+    translate(Network::PollEvents::Err, POLLERR);
+    translate(Network::PollEvents::Hup, POLLHUP);
+    translate(Network::PollEvents::Nval, POLLNVAL);
+    translate(Network::PollEvents::RdNorm, POLLRDNORM);
+    translate(Network::PollEvents::RdBand, POLLRDBAND);
+    translate(Network::PollEvents::WrBand, POLLWRBAND);
 #ifdef _WIN32
-    short allowed_events = POLLRDBAND | POLLRDNORM | POLLWRNORM;
+    s16 allowed_events = POLLRDBAND | POLLRDNORM | POLLWRNORM;
     // Unlike poll on other OSes, WSAPoll will complain if any other flags are set on input.
     if (result & ~allowed_events) {
-        LOG_DEBUG(Network,
-                  "Removing WSAPoll input events 0x{:x} because Windows doesn't support them",
-                  result & ~allowed_events);
+        LOG_DEBUG(Network, "Removing WSAPoll input events 0x{:x} because Windows doesn't support them", result & ~allowed_events);
     }
     result &= allowed_events;
 #endif
-
     UNIMPLEMENTED_IF_MSG((u16)events != 0, "Unhandled guest events=0x{:x}", (u16)events);
-
     return result;
 }
 
-PollEvents TranslatePollRevents(short revents) {
-    PollEvents result{};
-    const auto translate = [&result, &revents](short host, PollEvents guest) {
+Network::PollEvents TranslatePollRevents(short revents) {
+    Network::PollEvents result{};
+    const auto translate = [&result, &revents](short host, Network::PollEvents guest) {
         if ((revents & host) != 0) {
             revents &= static_cast<short>(~host);
             result |= guest;
         }
     };
 
-    translate(POLLIN, PollEvents::In);
-    translate(POLLPRI, PollEvents::Pri);
-    translate(POLLOUT, PollEvents::Out);
-    translate(POLLERR, PollEvents::Err);
-    translate(POLLHUP, PollEvents::Hup);
-    translate(POLLNVAL, PollEvents::Nval);
-    translate(POLLRDNORM, PollEvents::RdNorm);
-    translate(POLLRDBAND, PollEvents::RdBand);
-    translate(POLLWRBAND, PollEvents::WrBand);
+    translate(POLLIN, Network::PollEvents::In);
+    translate(POLLPRI, Network::PollEvents::Pri);
+    translate(POLLOUT, Network::PollEvents::Out);
+    translate(POLLERR, Network::PollEvents::Err);
+    translate(POLLHUP, Network::PollEvents::Hup);
+    translate(POLLNVAL, Network::PollEvents::Nval);
+    translate(POLLRDNORM, Network::PollEvents::RdNorm);
+    translate(POLLRDBAND, Network::PollEvents::RdBand);
+    translate(POLLWRBAND, Network::PollEvents::WrBand);
 
     UNIMPLEMENTED_IF_MSG(revents != 0, "Unhandled host revents=0x{:x}", revents);
 
@@ -752,8 +853,7 @@ std::variant<std::vector<AddrInfo>, GetAddrInfoError> GetAddressInfo(
         out.family = TranslateDomainFromNative(current->ai_family);
         out.socket_type = TranslateTypeFromNative(current->ai_socktype);
         out.protocol = TranslateProtocolFromNative(current->ai_protocol);
-        out.addr = TranslateToSockAddrIn(*reinterpret_cast<sockaddr_in*>(current->ai_addr),
-                                         current->ai_addrlen);
+        out.addr = TranslateToSockAddrIn(*reinterpret_cast<sockaddr_in*>(current->ai_addr), current->ai_addrlen);
         if (current->ai_canonname != nullptr) {
             out.canon_name = current->ai_canonname;
         }
@@ -762,11 +862,11 @@ std::variant<std::vector<AddrInfo>, GetAddrInfoError> GetAddressInfo(
     return ret;
 }
 
-std::pair<s32, Errno> Poll(std::vector<PollFD>& pollfds, s32 timeout) {
+std::pair<s32, Errno> Poll(std::span<HostPollFD> pollfds, s32 timeout) {
     const size_t num = pollfds.size();
 
     std::vector<WSAPOLLFD> host_pollfds(pollfds.size());
-    std::transform(pollfds.begin(), pollfds.end(), host_pollfds.begin(), [](PollFD fd) {
+    std::transform(pollfds.begin(), pollfds.end(), host_pollfds.begin(), [](HostPollFD fd) {
         WSAPOLLFD result;
         result.fd = fd.socket->GetFD();
         result.events = TranslatePollEvents(fd.events);
@@ -882,7 +982,7 @@ std::pair<SocketBase::AcceptResult, Errno> Socket::Accept() {
     return {std::move(result), Errno::SUCCESS};
 }
 
-Errno Socket::Connect(SockAddrIn addr_in) {
+Errno Socket::Connect(Network::SockAddrIn addr_in) {
     const sockaddr host_addr_in = TranslateFromSockAddrIn(addr_in);
     if (connect(fd, &host_addr_in, sizeof(host_addr_in)) != SOCKET_ERROR) {
         return Errno::SUCCESS;
@@ -891,27 +991,27 @@ Errno Socket::Connect(SockAddrIn addr_in) {
     return GetAndLogLastError();
 }
 
-std::pair<SockAddrIn, Errno> Socket::GetPeerName() {
+std::pair<Network::SockAddrIn, Errno> Socket::GetPeerName() {
     sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
     if (getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen) == SOCKET_ERROR) {
-        return {SockAddrIn{}, GetAndLogLastError()};
+        return {Network::SockAddrIn{}, GetAndLogLastError()};
     }
 
     return {TranslateToSockAddrIn(addr, addrlen), Errno::SUCCESS};
 }
 
-std::pair<SockAddrIn, Errno> Socket::GetSockName() {
+std::pair<Network::SockAddrIn, Errno> Socket::GetSockName() {
     sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
     if (getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen) == SOCKET_ERROR) {
-        return {SockAddrIn{}, GetAndLogLastError()};
+        return {Network::SockAddrIn{}, GetAndLogLastError()};
     }
 
     return {TranslateToSockAddrIn(addr, addrlen), Errno::SUCCESS};
 }
 
-Errno Socket::Bind(SockAddrIn addr) {
+Errno Socket::Bind(Network::SockAddrIn addr) {
     const sockaddr addr_in = TranslateFromSockAddrIn(addr);
     if (bind(fd, &addr_in, sizeof(addr_in)) != SOCKET_ERROR) {
         return Errno::SUCCESS;
@@ -964,7 +1064,7 @@ std::pair<s32, Errno> Socket::Recv(int flags, std::span<u8> message) {
     return {-1, GetAndLogLastError()};
 }
 
-std::pair<s32, Errno> Socket::RecvFrom(int flags, std::span<u8> message, SockAddrIn* addr) {
+std::pair<s32, Errno> Socket::RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) {
     ASSERT(flags == 0);
     ASSERT(message.size() < static_cast<size_t>((std::numeric_limits<int>::max)()));
 
@@ -1003,7 +1103,7 @@ std::pair<s32, Errno> Socket::Send(std::span<const u8> message, int flags) {
 }
 
 std::pair<s32, Errno> Socket::SendTo(u32 flags, std::span<const u8> message,
-                                     const SockAddrIn* addr) {
+                                     const Network::SockAddrIn* addr) {
     ASSERT(flags == 0);
 
     const sockaddr* to = nullptr;
