@@ -851,6 +851,7 @@ u32 IPv4AddressToInteger(IPv4Address ip_addr) {
 
 std::variant<std::vector<AddrInfo>, GetAddrInfoError> GetAddressInfo(
     const std::string& host, const std::optional<std::string>& service) {
+    LOG_DEBUG(Network, "host={},service={}", host, service.value_or("no"));
     addrinfo hints{};
     hints.ai_family = AF_INET; // Switch only supports IPv4.
     addrinfo* addrinfo;
@@ -879,6 +880,7 @@ std::variant<std::vector<AddrInfo>, GetAddrInfoError> GetAddressInfo(
 }
 
 std::pair<s32, Errno> Poll(std::span<HostPollFD> pollfds, s32 timeout) {
+    LOG_DEBUG(Network, "pollfds={},timeout={}", pollfds.size(), timeout);
     const size_t num = pollfds.size();
 
     std::vector<WSAPOLLFD> host_pollfds(pollfds.size());
@@ -1065,86 +1067,87 @@ Errno Socket::Shutdown(ShutdownHow how) {
     return GetAndLogLastError();
 }
 
+static s32 TranslateMsgOptToNative(s32 flags) {
+    s32 r = 0;
+#ifdef MSG_OOB
+    if (flags & s32(MsgOpt::OOB)) r |= MSG_OOB;
+#endif
+#ifdef MSG_PEEK
+    if (flags & s32(MsgOpt::PEEK)) r |= MSG_PEEK;
+#endif
+#ifdef MSG_DONTROUTE
+    if (flags & s32(MsgOpt::DONTROUTE)) r |= MSG_DONTROUTE;
+#endif
+#ifdef MSG_EOR
+    if (flags & s32(MsgOpt::EOR_)) r |= MSG_EOR;
+#endif
+#ifdef MSG_TRUNC
+    if (flags & s32(MsgOpt::TRUNC)) r |= MSG_TRUNC;
+#endif
+#ifdef MSG_CTRUNC
+    if (flags & s32(MsgOpt::CTRUNC)) r |= MSG_CTRUNC;
+#endif
+#ifdef MSG_WAITALL
+    if (flags & s32(MsgOpt::WAITALL)) r |= MSG_WAITALL;
+#endif
+#ifdef MSG_DONTWAIT
+    if (flags & s32(MsgOpt::DONTWAIT)) r |= MSG_DONTWAIT;
+#endif
+#ifdef MSG_EOF
+    if (flags & s32(MsgOpt::EOF_)) r |= MSG_EOF;
+#endif
+    return r;
+}
+
 std::pair<s32, Errno> Socket::Recv(int flags, std::span<u8> message) {
-    ASSERT(flags == 0);
-    ASSERT(message.size() < static_cast<size_t>((std::numeric_limits<int>::max)()));
+    LOG_DEBUG(Network, "flags={},message={}", flags, message.size());
+    ASSERT(message.size() < size_t((std::numeric_limits<int>::max)()));
 
-    const auto result =
-        recv(fd, reinterpret_cast<char*>(message.data()), static_cast<int>(message.size()), 0);
-    if (result != SOCKET_ERROR) {
-        return {static_cast<s32>(result), Errno::SUCCESS};
-    }
-
+    auto const native_flags = TranslateMsgOptToNative(flags);
+    auto const result = recv(fd, reinterpret_cast<char*>(message.data()), int(message.size()), native_flags);
+    if (result != SOCKET_ERROR)
+        return {s32(result), Errno::SUCCESS};
     return {-1, GetAndLogLastError()};
 }
 
 std::pair<s32, Errno> Socket::RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) {
-    ASSERT(flags == 0);
-    ASSERT(message.size() < static_cast<size_t>((std::numeric_limits<int>::max)()));
+    LOG_DEBUG(Network, "flags={},message={},addr={}", flags, message.size(), fmt::ptr(addr));
+    ASSERT(flags == 0 && message.size() < size_t((std::numeric_limits<int>::max)()));
 
     sockaddr_in addr_in{};
     socklen_t addrlen = sizeof(addr_in);
     socklen_t* const p_addrlen = addr ? &addrlen : nullptr;
     sockaddr* const p_addr_in = addr ? reinterpret_cast<sockaddr*>(&addr_in) : nullptr;
 
-    const auto result = recvfrom(fd, reinterpret_cast<char*>(message.data()),
-                                 static_cast<int>(message.size()), 0, p_addr_in, p_addrlen);
+    auto const native_flags = TranslateMsgOptToNative(flags);
+    auto const result = recvfrom(fd, reinterpret_cast<char*>(message.data()), int(message.size()), native_flags, p_addr_in, p_addrlen);
     if (result != SOCKET_ERROR) {
         if (addr) {
             *addr = TranslateToSockAddrIn(addr_in, addrlen);
         }
-        return {static_cast<s32>(result), Errno::SUCCESS};
+        return {s32(result), Errno::SUCCESS};
     }
-
     return {-1, GetAndLogLastError()};
 }
 
 std::pair<s32, Errno> Socket::Send(std::span<const u8> message, int flags) {
+    LOG_DEBUG(Network, "flags={},message={}", flags, message.size());
     ASSERT(message.size() < size_t((std::numeric_limits<int>::max)()));
 
-    int native_flags = 0;
-#ifdef MSG_OOB
-    if (flags & int(MsgOpt::OOB)) native_flags |= MSG_OOB;
-#endif
-#ifdef MSG_PEEK
-    if (flags & int(MsgOpt::PEEK)) native_flags |= MSG_PEEK;
-#endif
-#ifdef MSG_DONTROUTE
-    if (flags & int(MsgOpt::DONTROUTE)) native_flags |= MSG_DONTROUTE;
-#endif
-#ifdef MSG_EOR
-    if (flags & int(MsgOpt::EOR_)) native_flags |= MSG_EOR;
-#endif
-#ifdef MSG_TRUNC
-    if (flags & int(MsgOpt::TRUNC)) native_flags |= MSG_TRUNC;
-#endif
-#ifdef MSG_CTRUNC
-    if (flags & int(MsgOpt::CTRUNC)) native_flags |= MSG_CTRUNC;
-#endif
-#ifdef MSG_WAITALL
-    if (flags & int(MsgOpt::WAITALL)) native_flags |= MSG_WAITALL;
-#endif
-#ifdef MSG_DONTWAIT
-    if (flags & int(MsgOpt::DONTWAIT)) native_flags |= MSG_DONTWAIT;
-#endif
-#ifdef MSG_EOF
-    if (flags & int(MsgOpt::EOF_)) native_flags |= MSG_EOF;
-#endif
-
+    int native_flags = TranslateMsgOptToNative(flags);
 #ifdef __unix__
     // NOSIGNAL is set for all sockets
     native_flags |= MSG_NOSIGNAL; // do not send us SIGPIPE
 #endif
     const auto result = send(fd, reinterpret_cast<const char*>(message.data()), int(message.size()), native_flags);
-    if (result != SOCKET_ERROR) {
+    if (result != SOCKET_ERROR)
         return {s32(result), Errno::SUCCESS};
-    }
     return {-1, GetAndLogLastError(CallType::Send)};
 }
 
-std::pair<s32, Errno> Socket::SendTo(u32 flags, std::span<const u8> message,
-                                     const Network::SockAddrIn* addr) {
-    ASSERT(flags == 0);
+std::pair<s32, Errno> Socket::SendTo(u32 flags, std::span<const u8> message, const Network::SockAddrIn* addr) {
+    LOG_DEBUG(Network, "flags={},message={},addr={}", flags, message.size(), fmt::ptr(addr));
+    ASSERT(message.size() < size_t((std::numeric_limits<int>::max)()));
 
     const sockaddr* to = nullptr;
     const int to_len = addr ? sizeof(sockaddr) : 0;
@@ -1155,12 +1158,15 @@ std::pair<s32, Errno> Socket::SendTo(u32 flags, std::span<const u8> message,
         to = &host_addr_in;
     }
 
-    const auto result = sendto(fd, reinterpret_cast<const char*>(message.data()),
-                               static_cast<int>(message.size()), 0, to, to_len);
-    if (result != SOCKET_ERROR) {
-        return {static_cast<s32>(result), Errno::SUCCESS};
-    }
+    int native_flags = TranslateMsgOptToNative(flags);
+#ifdef __unix__
+    // NOSIGNAL is set for all sockets
+    native_flags |= MSG_NOSIGNAL; // do not send us SIGPIPE
+#endif
 
+    const auto result = sendto(fd, reinterpret_cast<const char*>(message.data()), int(message.size()), native_flags, to, to_len);
+    if (result != SOCKET_ERROR)
+        return {s32(result), Errno::SUCCESS};
     return {-1, GetAndLogLastError(CallType::Send)};
 }
 
