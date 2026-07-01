@@ -305,15 +305,16 @@ static_assert(sizeof(SockAddrIn) == 0x100);
 
 enum class PollEvents : u16 {
     // Using Pascal case because IN is a macro on Windows.
-    In = 1 << 0,
-    Pri = 1 << 1,
-    Out = 1 << 2,
-    Err = 1 << 3,
-    Hup = 1 << 4,
-    Nval = 1 << 5,
-    RdNorm = 1 << 6,
-    RdBand = 1 << 7,
-    WrBand = 1 << 8,
+    IN_ = 0x0001,
+    PRI_ = 0x0002,
+    OUT_ = 0x0004,
+    ERR_ = 0x0008,
+    HUP_ = 0x0010,
+    NVAL = 0x0020,
+    RDNORM = 0x0040,
+    RDBAND = 0x0080,
+    WRBAND = 0x0100,
+    IGNEOF = 0x2000,
 };
 DECLARE_ENUM_FLAG_OPERATORS(PollEvents);
 
@@ -322,11 +323,13 @@ struct PollFD {
     Network::PollEvents events;
     Network::PollEvents revents;
 };
+static_assert(sizeof(PollFD) == 8);
 
 struct Linger {
-    u32 onoff;
-    u32 linger;
+    s32 onoff;
+    s32 linger;
 };
+static_assert(sizeof(Linger) == 8);
 
 constexpr u32 FLAG_MSG_PEEK = 0x2;
 constexpr u32 FLAG_MSG_DONTWAIT = 0x80;
