@@ -68,7 +68,7 @@ public:
 
     virtual Errno SetNonBlock(bool enable) = 0;
 
-    virtual Errno SetSockOpt(SOCKET fd, Network::SocketLevel level, Network::OptName option, std::span<const u8> value) = 0;
+    virtual Errno SetSockOpt(Network::SocketLevel level, Network::OptName option, std::span<const u8> value) = 0;
 
     virtual std::pair<Errno, Errno> GetPendingError() = 0;
 
@@ -120,12 +120,11 @@ public:
 
     Errno SetNonBlock(bool enable) override;
 
-    Errno SetSockOpt(SOCKET fd, Network::SocketLevel level, Network::OptName option, std::span<const u8> value) override;
+    Errno SetSockOpt(Network::SocketLevel level, Network::OptName option, std::span<const u8> value) override;
 
     std::pair<Errno, Errno> GetPendingError() override;
 
-    template <typename T>
-    std::pair<T, Errno> GetSockOpt(SOCKET fd, int option);
+    Errno GetSockOpt(Network::SocketLevel level, Network::OptName optname, std::span<u8> value);
 
     bool IsOpened() const override;
 
