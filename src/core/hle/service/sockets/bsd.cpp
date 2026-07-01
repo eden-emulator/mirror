@@ -704,8 +704,8 @@ Network::Errno BSD::GetPeerNameImpl(s32 fd, std::vector<u8>& write_buffer) {
     if (bsd_errno != Network::Errno::SUCCESS) {
         return bsd_errno;
     }
-    ASSERT(write_buffer.size() >= sizeof(addr_in));
-    write_buffer.resize(sizeof(addr_in));
+    ASSERT(write_buffer.size() >= addr_in.len);
+    write_buffer.resize(addr_in.len);
     PutValue(write_buffer, addr_in);
     return bsd_errno;
 }
@@ -724,8 +724,8 @@ Network::Errno BSD::GetSockNameImpl(s32 fd, std::vector<u8>& write_buffer) {
     if (bsd_errno != Network::Errno::SUCCESS) {
         return bsd_errno;
     }
-    ASSERT(write_buffer.size() >= sizeof(addr_in));
-    write_buffer.resize(sizeof(addr_in));
+    ASSERT(write_buffer.size() >= addr_in.len);
+    write_buffer.resize(addr_in.len);
     PutValue(write_buffer, addr_in);
     return bsd_errno;
 }
