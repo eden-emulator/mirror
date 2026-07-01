@@ -107,7 +107,6 @@ add_library(
     settings_input.h
     settings_setting.h
     slot_vector.h
-    socket_types.h
     sparse_large_vector.cpp
     sparse_large_vector.h
     spin_lock.h

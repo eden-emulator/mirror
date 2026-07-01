@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -16,9 +19,11 @@ TEST_CASE("Network::Errors", "[core]") {
     }
 
     Network::SockAddrIn addr{
+        16,
         Network::Domain::INET,
-        {127, 0, 0, 1},
         1, // hopefully nobody running this test has something listening on port 1
+        {127, 0, 0, 1},
+        {},
     };
     REQUIRE(socks[0].Connect(addr) == Network::Errno::CONNREFUSED);
 

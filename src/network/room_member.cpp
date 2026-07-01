@@ -10,7 +10,7 @@
 #include <thread>
 #include "common/assert.h"
 #include "common/polyfill_thread.h"
-#include "common/socket_types.h"
+#include "core/internal_network/socket_types.h"
 #include "enet/enet.h"
 #include "network/packet.h"
 #include "network/room_member.h"
@@ -358,19 +358,23 @@ void RoomMember::RoomMemberImpl::HandleProxyPackets(const ENetEvent* event) {
     // Parse the ProxyPacket from the packet
     u8 local_family;
     packet.Read(local_family);
-    proxy_packet.local_endpoint.family = static_cast<Domain>(local_family);
+    proxy_packet.local_endpoint.len = 16;
+    proxy_packet.local_endpoint.family = u8(Network::Domain(local_family));
     packet.Read(proxy_packet.local_endpoint.ip);
     packet.Read(proxy_packet.local_endpoint.portno);
+    proxy_packet.local_endpoint.zeroes = {};
 
     u8 remote_family;
     packet.Read(remote_family);
-    proxy_packet.remote_endpoint.family = static_cast<Domain>(remote_family);
+    proxy_packet.remote_endpoint.len = 16;
+    proxy_packet.remote_endpoint.family = u8(Network::Domain(remote_family));
     packet.Read(proxy_packet.remote_endpoint.ip);
     packet.Read(proxy_packet.remote_endpoint.portno);
+    proxy_packet.local_endpoint.zeroes = {};
 
     u8 protocol_type;
     packet.Read(protocol_type);
-    proxy_packet.protocol = static_cast<Protocol>(protocol_type);
+    proxy_packet.protocol = Network::Protocol(protocol_type);
 
     packet.Read(proxy_packet.broadcast);
     packet.Read(proxy_packet.data);

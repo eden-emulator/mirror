@@ -65,22 +65,22 @@ std::pair<ProxySocket::AcceptResult, Errno> ProxySocket::Accept() {
     return {AcceptResult{}, Errno::SUCCESS};
 }
 
-Errno ProxySocket::Connect(SockAddrIn addr_in) {
+Errno ProxySocket::Connect(Network::SockAddrIn addr_in) {
     LOG_WARNING(Network, "(STUBBED) called");
     return Errno::SUCCESS;
 }
 
-std::pair<SockAddrIn, Errno> ProxySocket::GetPeerName() {
+std::pair<Network::SockAddrIn, Errno> ProxySocket::GetPeerName() {
     LOG_WARNING(Network, "(STUBBED) called");
-    return {SockAddrIn{}, Errno::SUCCESS};
+    return {Network::SockAddrIn{}, Errno::SUCCESS};
 }
 
-std::pair<SockAddrIn, Errno> ProxySocket::GetSockName() {
+std::pair<Network::SockAddrIn, Errno> ProxySocket::GetSockName() {
     LOG_WARNING(Network, "(STUBBED) called");
-    return {SockAddrIn{}, Errno::SUCCESS};
+    return {Network::SockAddrIn{}, Errno::SUCCESS};
 }
 
-Errno ProxySocket::Bind(SockAddrIn addr) {
+Errno ProxySocket::Bind(Network::SockAddrIn addr) {
     if (is_bound) {
         LOG_WARNING(Network, "Rebinding Socket is unimplemented!");
         return Errno::SUCCESS;
@@ -109,7 +109,7 @@ std::pair<s32, Errno> ProxySocket::Recv(int flags, std::span<u8> message) {
     return {static_cast<s32>(0), Errno::SUCCESS};
 }
 
-std::pair<s32, Errno> ProxySocket::RecvFrom(int flags, std::span<u8> message, SockAddrIn* addr) {
+std::pair<s32, Errno> ProxySocket::RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) {
     ASSERT(flags == 0);
     ASSERT(message.size() < static_cast<size_t>((std::numeric_limits<int>::max)()));
 
@@ -143,13 +143,15 @@ std::pair<s32, Errno> ProxySocket::RecvFrom(int flags, std::span<u8> message, So
     }
 }
 
-std::pair<s32, Errno> ProxySocket::ReceivePacket(int flags, std::span<u8> message, SockAddrIn* addr,
+std::pair<s32, Errno> ProxySocket::ReceivePacket(int flags, std::span<u8> message, Network::SockAddrIn* addr,
                                                  std::size_t max_length) {
     ProxyPacket& packet = received_packets.front();
     if (addr) {
-        addr->family = Domain::INET;
+        addr->len = 16;
+        addr->family = u8(Network::Domain::INET);
         addr->ip = packet.local_endpoint.ip;         // The senders ip address
         addr->portno = packet.local_endpoint.portno; // The senders port number
+        addr->zeroes = {};
     }
 
     bool peek = (flags & FLAG_MSG_PEEK) != 0;
@@ -199,7 +201,7 @@ void ProxySocket::SendPacket(ProxyPacket& packet) {
 }
 
 std::pair<s32, Errno> ProxySocket::SendTo(u32 flags, std::span<const u8> message,
-                                          const SockAddrIn* addr) {
+                                          const Network::SockAddrIn* addr) {
     ASSERT(flags == 0);
 
     if (!is_bound) {
