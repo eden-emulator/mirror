@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2017 Citra Emulator Project
@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 #include "common/common_types.h"
-#include "common/socket_types.h"
+#include "core/internal_network/socket_types.h"
 #include "web_service/web_result.h"
 
 namespace AnnounceMultiplayerRoom {
