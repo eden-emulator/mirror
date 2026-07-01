@@ -1105,19 +1105,45 @@ std::pair<s32, Errno> Socket::RecvFrom(int flags, std::span<u8> message, Network
 }
 
 std::pair<s32, Errno> Socket::Send(std::span<const u8> message, int flags) {
-    ASSERT(message.size() < static_cast<size_t>((std::numeric_limits<int>::max)()));
-    ASSERT(flags == 0);
+    ASSERT(message.size() < size_t((std::numeric_limits<int>::max)()));
 
     int native_flags = 0;
+#ifdef MSG_OOB
+    if (flags & int(MsgOpt::OOB)) native_flags |= MSG_OOB;
+#endif
+#ifdef MSG_PEEK
+    if (flags & int(MsgOpt::PEEK)) native_flags |= MSG_PEEK;
+#endif
+#ifdef MSG_DONTROUTE
+    if (flags & int(MsgOpt::DONTROUTE)) native_flags |= MSG_DONTROUTE;
+#endif
+#ifdef MSG_EOR
+    if (flags & int(MsgOpt::EOR_)) native_flags |= MSG_EOR;
+#endif
+#ifdef MSG_TRUNC
+    if (flags & int(MsgOpt::TRUNC)) native_flags |= MSG_TRUNC;
+#endif
+#ifdef MSG_CTRUNC
+    if (flags & int(MsgOpt::CTRUNC)) native_flags |= MSG_CTRUNC;
+#endif
+#ifdef MSG_WAITALL
+    if (flags & int(MsgOpt::WAITALL)) native_flags |= MSG_WAITALL;
+#endif
+#ifdef MSG_DONTWAIT
+    if (flags & int(MsgOpt::DONTWAIT)) native_flags |= MSG_DONTWAIT;
+#endif
+#ifdef MSG_EOF
+    if (flags & int(MsgOpt::EOF_)) native_flags |= MSG_EOF;
+#endif
+
 #ifdef __unix__
+    // NOSIGNAL is set for all sockets
     native_flags |= MSG_NOSIGNAL; // do not send us SIGPIPE
 #endif
-    const auto result = send(fd, reinterpret_cast<const char*>(message.data()),
-                             static_cast<int>(message.size()), native_flags);
+    const auto result = send(fd, reinterpret_cast<const char*>(message.data()), int(message.size()), native_flags);
     if (result != SOCKET_ERROR) {
-        return {static_cast<s32>(result), Errno::SUCCESS};
+        return {s32(result), Errno::SUCCESS};
     }
-
     return {-1, GetAndLogLastError(CallType::Send)};
 }
 
