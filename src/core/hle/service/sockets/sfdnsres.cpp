@@ -262,8 +262,8 @@ static std::vector<u8> SerializeAddrInfo(std::span<const Network::AddrInfo> vec,
 
     for (const Network::AddrInfo& addrinfo : vec) {
         // serialized addrinfo:
-        Append<u32_be>(data, 0xBEEFCAFE);                                        // magic
-        Append<u32_be>(data, 0);                                                 // ai_flags
+        Append<u32_be>(data, 0xBEEFCAFE); // magic
+        Append<u32_be>(data, 0); // ai_flags
         Append<u32_be>(data, u32(addrinfo.family));      // ai_family
         Append<u32_be>(data, u32(addrinfo.socket_type)); // ai_socktype
         Append<u32_be>(data, u32(addrinfo.protocol));    // ai_protocol
@@ -328,7 +328,6 @@ static std::pair<u32, Network::GetAddrInfoError> GetAddrInfoRequestImpl(HLEReque
     }
 
     // Serialized hints are also passed in a buffer, but are ignored for now.
-
     auto res_v = Network::GetAddressInfo(host, service);
     if (auto* res = std::get_if<std::vector<Network::AddrInfo>>(&res_v)) {
         const std::vector<u8> data = SerializeAddrInfo(*res, host);
