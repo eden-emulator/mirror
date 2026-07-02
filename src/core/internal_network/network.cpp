@@ -954,7 +954,9 @@ static s32 TranslateOptNameToNative(Network::SocketLevel level, Network::OptName
         case Network::OptName::RCVBUF: return SO_RCVBUF;
         case Network::OptName::SNDTIMEO: return SO_SNDTIMEO;
         case Network::OptName::RCVTIMEO: return SO_RCVTIMEO;
+#ifdef SO_NOSIGPIPE
         case Network::OptName::NOSIGPIPE: return SO_NOSIGPIPE;
+#endif
 #ifdef SO_REUSEPORT
         case Network::OptName::REUSEPORT: return SO_REUSEPORT;
 #endif
@@ -973,10 +975,18 @@ static s32 TranslateOptNameToNative(Network::SocketLevel level, Network::OptName
         switch (Network::TcpOptName(optname)) {
         case Network::TcpOptName::NODELAY: return TCP_NODELAY;
         case Network::TcpOptName::MAXSEG: return TCP_MAXSEG;
+#ifdef TCP_NOPUSH
         case Network::TcpOptName::NOPUSH: return TCP_NOPUSH;
+#endif
+#ifdef TCP_NOOPT
         case Network::TcpOptName::NOOPT: return TCP_NOOPT;
+#endif
+#ifdef TCP_MD5SIG
         case Network::TcpOptName::MS5SIG: return TCP_MD5SIG;
+#endif
+#ifdef TCP_INFO
         case Network::TcpOptName::INFO: return TCP_INFO;
+#endif
         default:
             break;
         }
