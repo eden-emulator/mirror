@@ -59,7 +59,6 @@ static void* EmitWrappedReadCallTrampoline(oaknut::CodeGenerator& code, T* this_
     ABI_PushRegisters(code, save_regs, 0);
     code.LDR(X0, l_this);
     code.MOV(X1, Xscratch0);
-    code.LDR(X2, sizeof(T));
     code.LDR(Xscratch0, l_addr);
     code.BLR(Xscratch0);
     code.MOV(Xscratch0, X0);
@@ -116,7 +115,6 @@ static void* EmitWrappedWriteCallTrampoline(oaknut::CodeGenerator& code, T* this
     code.LDR(X0, l_this);
     code.MOV(X1, Xscratch0);
     code.MOV(X2, Xscratch1);
-    code.MOV(X3, sizeof(T));
     code.LDR(Xscratch0, l_addr);
     code.BLR(Xscratch0);
     ABI_PopRegisters(code, save_regs, 0);
@@ -179,7 +177,7 @@ void A32AddressSpace::EmitPrelude() {
     UnprotectCodeMemory();
 
     prelude_info.read_memory = EmitCallTrampoline<&A32::UserCallbacks::MemoryRead>(code, conf.callbacks);
-    prelude_info.wrapped_read_memory = EmitWrappedReadCallTrampoline<&A32::UserCallbacks::MemoryRead8>(code, conf.callbacks);
+    prelude_info.wrapped_read_memory = EmitWrappedReadCallTrampoline<&A32::UserCallbacks::MemoryRead>(code, conf.callbacks);
     prelude_info.exclusive_read_memory = EmitExclusiveReadCallTrampoline<&A32::UserCallbacks::MemoryRead, u8>(code, conf);
     prelude_info.exclusive_read_memory_16 = EmitExclusiveReadCallTrampoline<&A32::UserCallbacks::MemoryRead, u16>(code, conf);
     prelude_info.exclusive_read_memory_32 = EmitExclusiveReadCallTrampoline<&A32::UserCallbacks::MemoryRead, u32>(code, conf);
