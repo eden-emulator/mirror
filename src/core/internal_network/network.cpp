@@ -20,10 +20,11 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
-#include <netinet/in.h>
 #include <poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #endif
 
 #include "common/assert.h"
@@ -936,38 +937,57 @@ Socket::Socket(Socket&& rhs) noexcept {
     fd = std::exchange(rhs.fd, INVALID_SOCKET);
 }
 
-static s32 TranslateOptNameToNative(Network::OptName optname) {
-    switch (optname) {
-    // managarm doesn't like these
+static s32 TranslateOptNameToNative(Network::SocketLevel level, Network::OptName optname) {
+    switch (level) {
+    case Network::SocketLevel::SOCKET:
+        switch (optname) {
+        // managarm doesn't like these
 #ifdef SO_DEBUG
-    case Network::OptName::DEBUG: return SO_DEBUG;
+        case Network::OptName::DEBUG: return SO_DEBUG;
 #endif
 #ifdef SO_ACCEPTCONN
-    case Network::OptName::ACCEPTCONN: return SO_ACCEPTCONN;
+        case Network::OptName::ACCEPTCONN: return SO_ACCEPTCONN;
 #endif
-    case Network::OptName::LINGER: return SO_LINGER;
-    case Network::OptName::REUSEADDR: return SO_REUSEADDR;
-    case Network::OptName::KEEPALIVE: return SO_KEEPALIVE;
-    case Network::OptName::BROADCAST: return SO_BROADCAST;
-    case Network::OptName::SNDBUF: return SO_SNDBUF;
-    case Network::OptName::RCVBUF: return SO_RCVBUF;
-    case Network::OptName::SNDTIMEO: return SO_SNDTIMEO;
-    case Network::OptName::RCVTIMEO: return SO_RCVTIMEO;
-    case Network::OptName::NOSIGPIPE: return SO_NOSIGPIPE;
+        case Network::OptName::LINGER: return SO_LINGER;
+        case Network::OptName::REUSEADDR: return SO_REUSEADDR;
+        case Network::OptName::KEEPALIVE: return SO_KEEPALIVE;
+        case Network::OptName::BROADCAST: return SO_BROADCAST;
+        case Network::OptName::SNDBUF: return SO_SNDBUF;
+        case Network::OptName::RCVBUF: return SO_RCVBUF;
+        case Network::OptName::SNDTIMEO: return SO_SNDTIMEO;
+        case Network::OptName::RCVTIMEO: return SO_RCVTIMEO;
+        case Network::OptName::NOSIGPIPE: return SO_NOSIGPIPE;
 #ifdef SO_REUSEPORT
-    case Network::OptName::REUSEPORT: return SO_REUSEPORT;
+        case Network::OptName::REUSEPORT: return SO_REUSEPORT;
 #endif
 #ifdef SO_ACCEPTFILTER
-    case Network::OptName::ACCEPTFILTER: return SO_ACCEPTFILTER;
+        case Network::OptName::ACCEPTFILTER: return SO_ACCEPTFILTER;
 #endif
 #ifdef SO_TIMESTAMP
-    case Network::OptName::TIMESTAMP: return SO_TIMESTAMP;
+        case Network::OptName::TIMESTAMP: return SO_TIMESTAMP;
 #endif
-    case Network::OptName::ERROR_: return SO_ERROR;
+        case Network::OptName::ERROR_: return SO_ERROR;
+        default:
+            break;
+        }
+        break;
+    case Network::SocketLevel::TCP:
+        switch (Network::TcpOptName(optname)) {
+        case Network::TcpOptName::NODELAY: return TCP_NODELAY;
+        case Network::TcpOptName::MAXSEG: return TCP_MAXSEG;
+        case Network::TcpOptName::NOPUSH: return TCP_NOPUSH;
+        case Network::TcpOptName::NOOPT: return TCP_NOOPT;
+        case Network::TcpOptName::MD5SIG: return TCP_MD5SIG;
+        case Network::TcpOptName::INFO: return TCP_INFO;
+        default:
+            break;
+        }
+        break;
     default:
-        UNIMPLEMENTED_MSG("Unimplemented optname={}", optname);
-        return 0;
+        break;
     }
+    UNIMPLEMENTED_MSG("Unimplemented level={},optname={}", level, optname);
+    return 0;
 }
 
 static s32 TranslateSocketLevelToNative(Network::SocketLevel level) {
@@ -976,15 +996,23 @@ static s32 TranslateSocketLevelToNative(Network::SocketLevel level) {
     // FreeBSD doesn't define below but Linux does :-(
 #ifdef SOL_IP
     case Network::SocketLevel::IP: return SOL_IP;
+#else
+    case Network::SocketLevel::IP: return IPPROTO_IP;
 #endif
 #ifdef SOL_ICMP
     case Network::SocketLevel::ICMP: return SOL_ICMP;
+#else
+    case Network::SocketLevel::ICMP: return IPPROTO_ICMP;
 #endif
 #ifdef SOL_TCP
     case Network::SocketLevel::TCP: return SOL_TCP;
+#else
+    case Network::SocketLevel::TCP: return IPPROTO_TCP;
 #endif
 #ifdef SOL_UDP
     case Network::SocketLevel::UDP: return SOL_UDP;
+#else
+    case Network::SocketLevel::UDP: return IPPROTO_UDP;
 #endif
 #ifdef SOL_CONFIG
     case Network::SocketLevel::CONFIG: return SOL_CONFIG;
@@ -998,7 +1026,7 @@ static s32 TranslateSocketLevelToNative(Network::SocketLevel level) {
 Errno Socket::GetSockOpt(Network::SocketLevel level, Network::OptName optname, std::span<u8> value) {
     socklen_t len = socklen_t(value.size());
     auto const native_level = TranslateSocketLevelToNative(level);
-    auto const native_optname = TranslateOptNameToNative(optname);
+    auto const native_optname = TranslateOptNameToNative(level, optname);
     const int result = getsockopt(fd, native_level, native_optname, reinterpret_cast<char*>(value.data()), &len);
     if (result != SOCKET_ERROR) {
         ASSERT(len == socklen_t(value.size()));
@@ -1018,7 +1046,7 @@ Errno Socket::SetNonBlock(bool enable) {
 Errno Socket::SetSockOpt(Network::SocketLevel level, Network::OptName optname, std::span<const u8> optval) {
     LOG_DEBUG(Network, "level={},optname={},optval={}", level, optname, optval.size());
     auto const native_level = TranslateSocketLevelToNative(level);
-    auto const native_optname = TranslateOptNameToNative(optname);
+    auto const native_optname = TranslateOptNameToNative(level, optname);
     // TODO: is it >= or ==? for sizes
     if (optname == Network::OptName::LINGER) {
         if (optval.size() >= sizeof(Network::Linger)) {
