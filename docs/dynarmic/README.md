@@ -94,26 +94,26 @@ public:
         }
     }
 
-    void MemoryWrite8(u32 vaddr, u8 value) override {
-        if (vaddr >= memory.size()) {
-            return;
+    void MemoryWrite(Dynarmic::A32::VAddr vaddr, u64 value, size_t size) override {
+        switch (size) {
+        case sizeof(u64):
+            MemoryWrite(vaddr, u32(value), sizeof(u32));
+            MemoryWrite(vaddr + 4, u32(value >> 32), sizeof(u32));
+            break;
+        case sizeof(u32):
+            MemoryWrite(vaddr, u16(value), sizeof(u16));
+            MemoryWrite(vaddr + 2, u16(value >> 16), sizeof(u16));
+            break;
+        case sizeof(u16):
+            MemoryWrite(vaddr, u8(value), sizeof(u8));
+            MemoryWrite(vaddr + 1, u8(value >> 8), sizeof(u8));
+            break;
+        case sizeof(u8):
+            memory[vaddr] = value;
+            break;
+        default:
+            std::abort();
         }
-        memory[vaddr] = value;
-    }
-
-    void MemoryWrite16(u32 vaddr, u16 value) override {
-        MemoryWrite8(vaddr, u8(value));
-        MemoryWrite8(vaddr + 1, u8(value >> 8));
-    }
-
-    void MemoryWrite32(u32 vaddr, u32 value) override {
-        MemoryWrite16(vaddr, u16(value));
-        MemoryWrite16(vaddr + 2, u16(value >> 16));
-    }
-
-    void MemoryWrite64(u32 vaddr, u64 value) override {
-        MemoryWrite32(vaddr, u32(value));
-        MemoryWrite32(vaddr + 4, u32(value >> 32));
     }
 
     void CallSVC(u32 swi) override {
@@ -148,8 +148,8 @@ int main(int argc, char** argv) {
     env.ticks_left = 1;
 
     // Write some code to memory.
-    env.MemoryWrite16(0, 0x0088); // lsls r0, r1, #2
-    env.MemoryWrite16(2, 0xE7FE); // b +#0 (infinite loop)
+    env.MemoryWrite(0, 0x0088, 2); // lsls r0, r1, #2
+    env.MemoryWrite(2, 0xE7FE, 2); // b +#0 (infinite loop)
 
     // Setup registers.
     cpu.Regs()[0] = 1;
