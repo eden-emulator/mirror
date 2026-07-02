@@ -33,18 +33,10 @@ u64 MemoryReadWidth(Core::Memory::Memory& memory, u32 width, VAddr addr) {
 
 void MemoryWriteWidth(Core::Memory::Memory& memory, u32 width, VAddr addr, u64 value) {
     switch (width) {
-    case 1:
-        memory.Write8(addr, static_cast<u8>(value));
-        break;
-    case 2:
-        memory.Write16(addr, static_cast<u16>(value));
-        break;
-    case 4:
-        memory.Write32(addr, static_cast<u32>(value));
-        break;
-    case 8:
-        memory.Write64(addr, value);
-        break;
+    case sizeof(u64): return memory.Write64(addr, value);
+    case sizeof(u32): return memory.Write32(addr, u32(value));
+    case sizeof(u16): return memory.Write16(addr, u16(value));
+    case sizeof(u8): return memory.Write8(addr, u8(value));
     default:
         UNREACHABLE();
     }

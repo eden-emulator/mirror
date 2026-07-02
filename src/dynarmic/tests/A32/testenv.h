@@ -16,6 +16,7 @@
 
 #include "common/assert.h"
 #include "common/common_types.h"
+#include "dynarmic/frontend/A32/translate/translate_callbacks.h"
 #include "dynarmic/interface/A32/a32.h"
 
 template<typename InstructionType_, u32 infinite_loop_u32>
@@ -59,42 +60,51 @@ public:
         return infinite_loop_u32;  // B .
     }
 
-    std::uint8_t MemoryRead8(u32 vaddr) override {
-        if (IsInCodeMem(vaddr)) {
-            return reinterpret_cast<u8*>(code_mem.data())[vaddr];
+    u64 MemoryRead(u32 vaddr, size_t size) override {
+        switch (size) {
+        case sizeof(u64):
+            return MemoryRead(vaddr, sizeof(u32))
+                | MemoryRead(vaddr + sizeof(u32), sizeof(u32)) << 32;
+        case sizeof(u32):
+            return MemoryRead(vaddr, sizeof(u16))
+                | MemoryRead(vaddr + sizeof(u16), sizeof(u16)) << 16;
+        case sizeof(u16):
+            return MemoryRead(vaddr, sizeof(u8))
+                | MemoryRead(vaddr + sizeof(u8), sizeof(u8)) << 8;
+        case sizeof(u8): {
+            if (IsInCodeMem(vaddr))
+                return reinterpret_cast<u8*>(code_mem.data())[vaddr];
+            if (auto iter = modified_memory.find(vaddr); iter != modified_memory.end())
+                return iter->second;
+            return u8(vaddr);
         }
-        if (auto iter = modified_memory.find(vaddr); iter != modified_memory.end()) {
-            return iter->second;
+        default:
+            std::abort();
         }
-        return static_cast<u8>(vaddr);
-    }
-    std::uint16_t MemoryRead16(u32 vaddr) override {
-        return u16(MemoryRead8(vaddr)) | u16(MemoryRead8(vaddr + 1)) << 8;
-    }
-    std::uint32_t MemoryRead32(u32 vaddr) override {
-        return u32(MemoryRead16(vaddr)) | u32(MemoryRead16(vaddr + 2)) << 16;
-    }
-    std::uint64_t MemoryRead64(u32 vaddr) override {
-        return u64(MemoryRead32(vaddr)) | u64(MemoryRead32(vaddr + 4)) << 32;
     }
 
-    void MemoryWrite8(u32 vaddr, std::uint8_t value) override {
-        if (vaddr < code_mem.size() * sizeof(u32)) {
-            code_mem_modified_by_guest = true;
+    void MemoryWrite(Dynarmic::A32::VAddr vaddr, u64 value, size_t size) override {
+        switch (size) {
+        case sizeof(u64):
+            MemoryWrite(vaddr, u32(value), sizeof(u32));
+            MemoryWrite(vaddr + 4, u32(value >> 32), sizeof(u32));
+            break;
+        case sizeof(u32):
+            MemoryWrite(vaddr, u16(value), sizeof(u16));
+            MemoryWrite(vaddr + 2, u16(value >> 16), sizeof(u16));
+            break;
+        case sizeof(u16):
+            MemoryWrite(vaddr, u8(value), sizeof(u8));
+            MemoryWrite(vaddr + 1, u8(value >> 8), sizeof(u8));
+            break;
+        case sizeof(u8):
+            if (vaddr < code_mem.size() * sizeof(u32))
+                code_mem_modified_by_guest = true;
+            modified_memory[vaddr] = value;
+            break;
+        default:
+            std::abort();
         }
-        modified_memory[vaddr] = value;
-    }
-    void MemoryWrite16(u32 vaddr, std::uint16_t value) override {
-        MemoryWrite8(vaddr, static_cast<u8>(value));
-        MemoryWrite8(vaddr + 1, static_cast<u8>(value >> 8));
-    }
-    void MemoryWrite32(u32 vaddr, std::uint32_t value) override {
-        MemoryWrite16(vaddr, static_cast<u16>(value));
-        MemoryWrite16(vaddr + 2, static_cast<u16>(value >> 16));
-    }
-    void MemoryWrite64(u32 vaddr, std::uint64_t value) override {
-        MemoryWrite32(vaddr, static_cast<u32>(value));
-        MemoryWrite32(vaddr + 4, static_cast<u32>(value >> 32));
     }
 
     void CallSVC(std::uint32_t swi) override {
@@ -143,46 +153,41 @@ public:
         return read<std::uint32_t>(vaddr);
     }
 
-    std::uint8_t MemoryRead8(std::uint32_t vaddr) override {
-        return read<std::uint8_t>(vaddr);
-    }
-    std::uint16_t MemoryRead16(std::uint32_t vaddr) override {
-        return read<std::uint16_t>(vaddr);
-    }
-    std::uint32_t MemoryRead32(std::uint32_t vaddr) override {
-        return read<std::uint32_t>(vaddr);
-    }
-    std::uint64_t MemoryRead64(std::uint32_t vaddr) override {
-        return read<std::uint64_t>(vaddr);
+    u64 MemoryRead(u32 vaddr, size_t size) override {
+        switch (size) {
+        case sizeof(u64): return read<u64>(vaddr);
+        case sizeof(u32): return read<u32>(vaddr);
+        case sizeof(u16): return read<u16>(vaddr);
+        case sizeof(u8): return read<u8>(vaddr);
+        default:
+            std::abort();
+        }
     }
 
-    void MemoryWrite8(std::uint32_t vaddr, std::uint8_t value) override {
-        write(vaddr, value);
-    }
-    void MemoryWrite16(std::uint32_t vaddr, std::uint16_t value) override {
-        write(vaddr, value);
-    }
-    void MemoryWrite32(std::uint32_t vaddr, std::uint32_t value) override {
-        write(vaddr, value);
-    }
-    void MemoryWrite64(std::uint32_t vaddr, std::uint64_t value) override {
-        write(vaddr, value);
+    void MemoryWrite(Dynarmic::A32::VAddr vaddr, std::uint64_t value, size_t size) override {
+        switch (size) {
+        case sizeof(u64): return write<u64>(vaddr, u64(value));
+        case sizeof(u32): return write<u32>(vaddr, u32(value));
+        case sizeof(u16): return write<u16>(vaddr, u16(value));
+        case sizeof(u8): return write<u8>(vaddr, u8(value));
+        default: std::abort();
+        }
     }
 
-    bool MemoryWriteExclusive8(std::uint32_t vaddr, std::uint8_t value, [[maybe_unused]] std::uint8_t expected) override {
-        MemoryWrite8(vaddr, value);
+    bool MemoryWriteExclusive8(Dynarmic::A32::VAddr vaddr, std::uint8_t value, [[maybe_unused]] std::uint8_t expected) override {
+        MemoryWrite(vaddr, value, sizeof(u8));
         return true;
     }
-    bool MemoryWriteExclusive16(std::uint32_t vaddr, std::uint16_t value, [[maybe_unused]] std::uint16_t expected) override {
-        MemoryWrite16(vaddr, value);
+    bool MemoryWriteExclusive16(Dynarmic::A32::VAddr vaddr, std::uint16_t value, [[maybe_unused]] std::uint16_t expected) override {
+        MemoryWrite(vaddr, value, sizeof(u16));
         return true;
     }
-    bool MemoryWriteExclusive32(std::uint32_t vaddr, std::uint32_t value, [[maybe_unused]] std::uint32_t expected) override {
-        MemoryWrite32(vaddr, value);
+    bool MemoryWriteExclusive32(Dynarmic::A32::VAddr vaddr, std::uint32_t value, [[maybe_unused]] std::uint32_t expected) override {
+        MemoryWrite(vaddr, value, sizeof(u32));
         return true;
     }
-    bool MemoryWriteExclusive64(std::uint32_t vaddr, std::uint64_t value, [[maybe_unused]] std::uint64_t expected) override {
-        MemoryWrite64(vaddr, value);
+    bool MemoryWriteExclusive64(Dynarmic::A32::VAddr vaddr, std::uint64_t value, [[maybe_unused]] std::uint64_t expected) override {
+        MemoryWrite(vaddr, value, sizeof(u64));
         return true;
     }
 

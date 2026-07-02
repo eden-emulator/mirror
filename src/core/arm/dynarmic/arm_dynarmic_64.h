@@ -16,6 +16,7 @@
 #include "common/hash.h"
 #include "core/arm/arm_interface.h"
 #include "core/arm/dynarmic/dynarmic_exclusive_monitor.h"
+#include "dynarmic/interface/A64/config.h"
 
 namespace Core::Memory {
 class Memory;
@@ -36,19 +37,13 @@ class DynarmicCallbacks64 : public Dynarmic::A64::UserCallbacks {
 public:
     explicit DynarmicCallbacks64(ArmDynarmic64& parent, Kernel::KProcess* process);
 
-    u8 MemoryRead8(u64 vaddr) override;
-    u16 MemoryRead16(u64 vaddr) override;
-    u32 MemoryRead32(u64 vaddr) override;
-    u64 MemoryRead64(u64 vaddr) override;
+    u64 MemoryRead(u64 vaddr, size_t size) override;
     Dynarmic::A64::Vector MemoryRead128(u64 vaddr) override;
     std::optional<u32> MemoryReadCode(u64 vaddr) override;
     void InstructionSynchronizationBarrierRaised() override {
         last_code_addr = u64(-1); //reset back, force refetch
     }
-    void MemoryWrite8(u64 vaddr, u8 value) override;
-    void MemoryWrite16(u64 vaddr, u16 value) override;
-    void MemoryWrite32(u64 vaddr, u32 value) override;
-    void MemoryWrite64(u64 vaddr, u64 value) override;
+    void MemoryWrite(Dynarmic::A64::VAddr vaddr, u64 value, std::size_t size) override;
     void MemoryWrite128(u64 vaddr, Dynarmic::A64::Vector value) override;
     bool MemoryWriteExclusive8(u64 vaddr, std::uint8_t value, std::uint8_t expected) override;
     bool MemoryWriteExclusive16(u64 vaddr, std::uint16_t value, std::uint16_t expected) override;

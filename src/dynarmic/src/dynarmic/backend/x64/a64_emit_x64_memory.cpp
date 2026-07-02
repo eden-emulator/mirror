@@ -115,16 +115,16 @@ void A64EmitX64::GenMemory128Accessors() {
 void A64EmitX64::GenFastmemFallbacks() {
     const std::initializer_list<int> idxes{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     const std::array<std::pair<size_t, ArgCallback>, 4> read_callbacks{{
-        {8, Devirtualize<&A64::UserCallbacks::MemoryRead8>(conf.callbacks)},
-        {16, Devirtualize<&A64::UserCallbacks::MemoryRead16>(conf.callbacks)},
-        {32, Devirtualize<&A64::UserCallbacks::MemoryRead32>(conf.callbacks)},
-        {64, Devirtualize<&A64::UserCallbacks::MemoryRead64>(conf.callbacks)},
+        {8, Devirtualize<&A64::UserCallbacks::MemoryRead>(conf.callbacks)},
+        {16, Devirtualize<&A64::UserCallbacks::MemoryRead>(conf.callbacks)},
+        {32, Devirtualize<&A64::UserCallbacks::MemoryRead>(conf.callbacks)},
+        {64, Devirtualize<&A64::UserCallbacks::MemoryRead>(conf.callbacks)},
     }};
     const std::array<std::pair<size_t, ArgCallback>, 4> write_callbacks{{
-        {8, Devirtualize<&A64::UserCallbacks::MemoryWrite8>(conf.callbacks)},
-        {16, Devirtualize<&A64::UserCallbacks::MemoryWrite16>(conf.callbacks)},
-        {32, Devirtualize<&A64::UserCallbacks::MemoryWrite32>(conf.callbacks)},
-        {64, Devirtualize<&A64::UserCallbacks::MemoryWrite64>(conf.callbacks)},
+        {8, Devirtualize<&A64::UserCallbacks::MemoryWrite>(conf.callbacks)},
+        {16, Devirtualize<&A64::UserCallbacks::MemoryWrite>(conf.callbacks)},
+        {32, Devirtualize<&A64::UserCallbacks::MemoryWrite>(conf.callbacks)},
+        {64, Devirtualize<&A64::UserCallbacks::MemoryWrite>(conf.callbacks)},
     }};
     const std::array<std::pair<size_t, ArgCallback>, 4> exclusive_write_callbacks{{
         {8, Devirtualize<&A64::UserCallbacks::MemoryWriteExclusive8>(conf.callbacks)},
@@ -204,12 +204,12 @@ void A64EmitX64::GenFastmemFallbacks() {
                     code.align();
                     read_fallbacks[std::make_tuple(ordered, bitsize, vaddr_idx, value_idx)] = code.getCurr<void (*)()>();
                     ABI_PushCallerSaveRegistersAndAdjustStackExcept(code, HostLocRegIdx(value_idx));
+                    // params = { this, vaddr, size }
                     if (vaddr_idx != code.ABI_PARAM2.getIdx()) {
                         code.mov(code.ABI_PARAM2, Xbyak::Reg64{vaddr_idx});
                     }
-                    if (ordered) {
-                        code.mfence();
-                    }
+                    code.mov(code.ABI_PARAM3, bitsize / CHAR_BIT);
+                    if (ordered) code.mfence();
                     callback.EmitCall(code);
                     if (value_idx != code.ABI_RETURN.getIdx()) {
                         code.mov(Xbyak::Reg64{value_idx}, code.ABI_RETURN);
@@ -224,6 +224,7 @@ void A64EmitX64::GenFastmemFallbacks() {
                     code.align();
                     write_fallbacks[std::make_tuple(ordered, bitsize, vaddr_idx, value_idx)] = code.getCurr<void (*)()>();
                     ABI_PushCallerSaveRegistersAndAdjustStack(code);
+                    // params = { this, vaddr, value, size }
                     if (vaddr_idx == code.ABI_PARAM3.getIdx() && value_idx == code.ABI_PARAM2.getIdx()) {
                         code.xchg(code.ABI_PARAM2, code.ABI_PARAM3);
                     } else if (vaddr_idx == code.ABI_PARAM3.getIdx()) {
@@ -240,10 +241,9 @@ void A64EmitX64::GenFastmemFallbacks() {
                         }
                     }
                     code.ZeroExtendFrom(bitsize, code.ABI_PARAM3);
+                    code.mov(code.ABI_PARAM4, bitsize / CHAR_BIT);
                     callback.EmitCall(code);
-                    if (ordered) {
-                        code.mfence();
-                    }
+                    if (ordered) code.mfence();
                     ABI_PopCallerSaveRegistersAndAdjustStack(code);
                     code.ret();
                     PerfMapRegister(write_fallbacks[std::make_tuple(ordered, bitsize, vaddr_idx, value_idx)], code.getCurr(), fmt::format("a64_write_fallback_{}", bitsize));
@@ -286,19 +286,19 @@ void A64EmitX64::GenFastmemFallbacks() {
 #undef Axx
 
 void A64EmitX64::EmitA64ReadMemory8(A64EmitContext& ctx, IR::Inst* inst) {
-    EmitMemoryRead<8, &A64::UserCallbacks::MemoryRead8>(ctx, inst);
+    EmitMemoryRead<8, &A64::UserCallbacks::MemoryRead>(ctx, inst);
 }
 
 void A64EmitX64::EmitA64ReadMemory16(A64EmitContext& ctx, IR::Inst* inst) {
-    EmitMemoryRead<16, &A64::UserCallbacks::MemoryRead16>(ctx, inst);
+    EmitMemoryRead<16, &A64::UserCallbacks::MemoryRead>(ctx, inst);
 }
 
 void A64EmitX64::EmitA64ReadMemory32(A64EmitContext& ctx, IR::Inst* inst) {
-    EmitMemoryRead<32, &A64::UserCallbacks::MemoryRead32>(ctx, inst);
+    EmitMemoryRead<32, &A64::UserCallbacks::MemoryRead>(ctx, inst);
 }
 
 void A64EmitX64::EmitA64ReadMemory64(A64EmitContext& ctx, IR::Inst* inst) {
-    EmitMemoryRead<64, &A64::UserCallbacks::MemoryRead64>(ctx, inst);
+    EmitMemoryRead<64, &A64::UserCallbacks::MemoryRead>(ctx, inst);
 }
 
 void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
@@ -306,23 +306,23 @@ void A64EmitX64::EmitA64ReadMemory128(A64EmitContext& ctx, IR::Inst* inst) {
 }
 
 void A64EmitX64::EmitA64WriteMemory8(A64EmitContext& ctx, IR::Inst* inst) {
-    EmitMemoryWrite<8, &A64::UserCallbacks::MemoryWrite8>(ctx, inst);
+    EmitMemoryWrite<8, &A64::UserCallbacks::MemoryWrite>(ctx, inst);
 }
 
 void A64EmitX64::EmitA64WriteMemory16(A64EmitContext& ctx, IR::Inst* inst) {
-    EmitMemoryWrite<16, &A64::UserCallbacks::MemoryWrite16>(ctx, inst);
+    EmitMemoryWrite<16, &A64::UserCallbacks::MemoryWrite>(ctx, inst);
 }
 
 void A64EmitX64::EmitA64WriteMemory32(A64EmitContext& ctx, IR::Inst* inst) {
-    EmitMemoryWrite<32, &A64::UserCallbacks::MemoryWrite32>(ctx, inst);
+    EmitMemoryWrite<32, &A64::UserCallbacks::MemoryWrite>(ctx, inst);
 }
 
 void A64EmitX64::EmitA64WriteMemory64(A64EmitContext& ctx, IR::Inst* inst) {
-    EmitMemoryWrite<64, &A64::UserCallbacks::MemoryWrite64>(ctx, inst);
+    EmitMemoryWrite<64, &A64::UserCallbacks::MemoryWrite>(ctx, inst);
 }
 
 void A64EmitX64::EmitA64WriteMemory128(A64EmitContext& ctx, IR::Inst* inst) {
-    EmitMemoryWrite<128, &A64::UserCallbacks::MemoryWrite64>(ctx, inst);
+    EmitMemoryWrite<128, &A64::UserCallbacks::MemoryWrite>(ctx, inst);
 }
 
 void A64EmitX64::EmitA64ClearExclusive(A64EmitContext&, IR::Inst*) {
@@ -331,33 +331,33 @@ void A64EmitX64::EmitA64ClearExclusive(A64EmitContext&, IR::Inst*) {
 
 void A64EmitX64::EmitA64ExclusiveReadMemory8(A64EmitContext& ctx, IR::Inst* inst) {
     if (conf.fastmem_exclusive_access) {
-        EmitExclusiveReadMemoryInline<8, &A64::UserCallbacks::MemoryRead8>(ctx, inst);
+        EmitExclusiveReadMemoryInline<8, &A64::UserCallbacks::MemoryRead>(ctx, inst);
     } else {
-        EmitExclusiveReadMemory<8, &A64::UserCallbacks::MemoryRead8>(ctx, inst);
+        EmitExclusiveReadMemory<8, &A64::UserCallbacks::MemoryRead>(ctx, inst);
     }
 }
 
 void A64EmitX64::EmitA64ExclusiveReadMemory16(A64EmitContext& ctx, IR::Inst* inst) {
     if (conf.fastmem_exclusive_access) {
-        EmitExclusiveReadMemoryInline<16, &A64::UserCallbacks::MemoryRead16>(ctx, inst);
+        EmitExclusiveReadMemoryInline<16, &A64::UserCallbacks::MemoryRead>(ctx, inst);
     } else {
-        EmitExclusiveReadMemory<16, &A64::UserCallbacks::MemoryRead16>(ctx, inst);
+        EmitExclusiveReadMemory<16, &A64::UserCallbacks::MemoryRead>(ctx, inst);
     }
 }
 
 void A64EmitX64::EmitA64ExclusiveReadMemory32(A64EmitContext& ctx, IR::Inst* inst) {
     if (conf.fastmem_exclusive_access) {
-        EmitExclusiveReadMemoryInline<32, &A64::UserCallbacks::MemoryRead32>(ctx, inst);
+        EmitExclusiveReadMemoryInline<32, &A64::UserCallbacks::MemoryRead>(ctx, inst);
     } else {
-        EmitExclusiveReadMemory<32, &A64::UserCallbacks::MemoryRead32>(ctx, inst);
+        EmitExclusiveReadMemory<32, &A64::UserCallbacks::MemoryRead>(ctx, inst);
     }
 }
 
 void A64EmitX64::EmitA64ExclusiveReadMemory64(A64EmitContext& ctx, IR::Inst* inst) {
     if (conf.fastmem_exclusive_access) {
-        EmitExclusiveReadMemoryInline<64, &A64::UserCallbacks::MemoryRead64>(ctx, inst);
+        EmitExclusiveReadMemoryInline<64, &A64::UserCallbacks::MemoryRead>(ctx, inst);
     } else {
-        EmitExclusiveReadMemory<64, &A64::UserCallbacks::MemoryRead64>(ctx, inst);
+        EmitExclusiveReadMemory<64, &A64::UserCallbacks::MemoryRead>(ctx, inst);
     }
 }
 
