@@ -834,8 +834,7 @@ std::string IPv4AddressToString(IPv4Address ip_addr) {
 }
 
 u32 IPv4AddressToInteger(IPv4Address ip_addr) {
-    return static_cast<u32>(ip_addr[0]) << 24 | static_cast<u32>(ip_addr[1]) << 16 |
-           static_cast<u32>(ip_addr[2]) << 8 | static_cast<u32>(ip_addr[3]);
+    return u32(ip_addr[0]) << 24 | u32(ip_addr[1]) << 16 | u32(ip_addr[2]) << 8 | u32(ip_addr[3]);
 }
 
 std::variant<std::vector<AddrInfo>, GetAddrInfoError> GetAddressInfo(const std::string& host, const std::optional<std::string>& service) {
@@ -890,25 +889,24 @@ std::variant<std::vector<AddrInfo>, GetAddrInfoError> GetAddressInfo(const std::
 }
 
 std::pair<s32, Errno> Poll(std::span<HostPollFD> pollfds, s32 timeout) {
-    LOG_DEBUG(Network, "pollfds={},timeout={}", pollfds.size(), timeout);
+    LOG_DEBUG(Network, "#fds={},timeout={}", pollfds.size(), timeout);
 
-    std::vector<WSAPOLLFD> host_pollfds(pollfds.size());
+    std::vector<WSAPOLLFD> host_pollfds(pollfds.size() + 1);
     std::transform(pollfds.begin(), pollfds.end(), host_pollfds.begin(), [](auto const e) {
-        WSAPOLLFD result;
-        result.fd = e.socket->GetFD();
-        result.events = TranslatePollEvents(e.events);
-        result.revents = 0;
-        return result;
+        return WSAPOLLFD{
+            .fd = e.socket->fd,
+            .events = TranslatePollEvents(e.events),
+            .revents = 0,
+        };
     });
-
-    host_pollfds.push_back(WSAPOLLFD{
+    host_pollfds[host_pollfds.size() - 1] = WSAPOLLFD{
         .fd = GetInterruptSocket(),
-        .events = POLLIN,
+        .events = TranslatePollEvents(Network::PollEvents::IN_),
         .revents = 0,
-    });
+    };
 
-    const int result = WSAPoll(host_pollfds.data(), ULONG(host_pollfds.size()), timeout);
-    if (result == 0) {
+    auto const res = WSAPoll(host_pollfds.data(), ULONG(host_pollfds.size()), timeout);
+    if (res == 0) {
         ASSERT(std::all_of(host_pollfds.begin(), host_pollfds.end(), [](auto const fd) {
             return fd.revents == 0;
         }));
@@ -918,11 +916,11 @@ std::pair<s32, Errno> Poll(std::span<HostPollFD> pollfds, s32 timeout) {
     for (size_t i = 0; i < pollfds.size(); ++i)
         pollfds[i].revents = TranslatePollRevents(host_pollfds[i].revents);
 
-    if (result <= 0) {
-        ASSERT(result == SOCKET_ERROR);
+    if (res <= 0) {
+        ASSERT(res == SOCKET_ERROR);
         return {-1, GetAndLogLastError()};
     }
-    return {result, Errno::SUCCESS};
+    return {res, Errno::SUCCESS};
 }
 
 Socket::~Socket() {
@@ -1053,15 +1051,15 @@ Errno Socket::SetSockOpt(Network::SocketLevel level, Network::OptName optname, s
             Network::Linger linger{};
             std::memcpy(&linger, optval.data(), sizeof(linger));
             auto const linger_optval = MakeLinger(bool(linger.onoff), linger.linger);
-            return setsockopt(fd, native_level, native_optname, reinterpret_cast<const char*>(&linger_optval), sizeof(linger_optval)) != SOCKET_ERROR
-                ? Errno::SUCCESS
-                : GetAndLogLastError();
+            if (setsockopt(fd, native_level, native_optname, reinterpret_cast<const char*>(&linger_optval), sizeof(linger_optval)) == SOCKET_ERROR)
+                return GetAndLogLastError();
+            return Errno::SUCCESS;
         }
         return Errno::INVAL;
     }
-    return setsockopt(fd, native_level, native_optname, reinterpret_cast<const char*>(optval.data()), socklen_t(optval.size())) != SOCKET_ERROR
-        ? Errno::SUCCESS
-        : GetAndLogLastError();
+    if (setsockopt(fd, native_level, native_optname, reinterpret_cast<const char*>(optval.data()), socklen_t(optval.size())) == SOCKET_ERROR)
+        return GetAndLogLastError();
+    return Errno::SUCCESS;
 }
 
 Errno Socket::Initialize(Domain domain, Type type, Protocol protocol) {
@@ -1074,29 +1072,22 @@ Errno Socket::Initialize(Domain domain, Type type, Protocol protocol) {
 std::pair<Socket::AcceptResult, Errno> Socket::Accept() {
     sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
-
-    const bool wait_for_accept = !is_non_blocking;
+    auto const wait_for_accept = !is_non_blocking;
     if (wait_for_accept) {
-        std::vector<WSAPOLLFD> host_pollfds{
+        std::array<WSAPOLLFD, 2> host_pollfds{
             WSAPOLLFD{fd, POLLIN, 0},
             WSAPOLLFD{GetInterruptSocket(), POLLIN, 0},
         };
-
-        while (true) {
-            const int pollres =
-                WSAPoll(host_pollfds.data(), static_cast<ULONG>(host_pollfds.size()), -1);
-            if (host_pollfds[1].revents != 0) {
-                // Interrupt signaled before a client could be accepted, break
+        int pollres = 0;
+        while (pollres <= 0) {
+            pollres = WSAPoll(host_pollfds.data(), ULONG(host_pollfds.size()), -1);
+            // Interrupt signaled before a client could be accepted, break
+            if (host_pollfds[1].revents != 0)
                 return {AcceptResult{}, Errno::AGAIN};
-            }
-            if (pollres > 0) {
-                break;
-            }
         }
     }
 
     const SOCKET new_socket = accept(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen);
-
     if (new_socket == INVALID_SOCKET) {
         return {AcceptResult{}, GetAndLogLastError()};
     }
@@ -1114,7 +1105,6 @@ Errno Socket::Connect(Network::SockAddrIn addr_in) {
     if (connect(fd, &host_addr_in, sizeof(host_addr_in)) != SOCKET_ERROR) {
         return Errno::SUCCESS;
     }
-
     return GetAndLogLastError();
 }
 

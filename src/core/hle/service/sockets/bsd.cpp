@@ -495,7 +495,7 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
         UNIMPLEMENTED_MSG("SOCK_RAW errno management");
     }
 
-    [[maybe_unused]] const bool unk_flag = (static_cast<u32>(type) & 0x20000000) != 0;
+    [[maybe_unused]] const bool unk_flag = (u32(type) & 0x20000000) != 0;
     UNIMPLEMENTED_IF_MSG(unk_flag, "Unknown flag in type");
     type = Network::Type(u32(type) & ~0x20000000);
 
@@ -505,11 +505,17 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
         return {-1, Network::Errno::MFILE};
     }
 
+    if (Settings::values.airplane_mode.GetValue() && IsConnectionBased(type)) {
+        LOG_ERROR(Service, "Airplane mode is enabled, cannot create socket");
+        file_descriptors[fd].reset();
+        return {-1, Network::Errno::NOTCONN};
+    }
+
     file_descriptors[fd] = FileDescriptor{};
     FileDescriptor& descriptor = *file_descriptors[fd];
-    // ENONMEM might be thrown here
 
-    LOG_INFO(Service, "New socket fd={}", fd);
+    // ENONMEM might be thrown here
+    LOG_INFO(Service, "New socket fd={},domain={},type={},prot={}", fd, domain, type, protocol);
 
     auto room_member = Network::GetRoomMember().lock();
     if (room_member && room_member->IsConnected()) {
@@ -519,11 +525,6 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     }
     auto const bsd_errno = descriptor.socket->Initialize(domain, type, protocol);
     descriptor.is_connection_based = IsConnectionBased(type);
-    if (Settings::values.airplane_mode.GetValue() && descriptor.is_connection_based) {
-        LOG_ERROR(Service, "Airplane mode is enabled, cannot create socket");
-        file_descriptors[fd].reset();
-        return {-1, Network::Errno::NOTCONN};
-    }
     if (descriptor.socket->fd == Network::Socket::INVALID_SOCKET) {
         file_descriptors[fd].reset();
         return {-1, bsd_errno};
