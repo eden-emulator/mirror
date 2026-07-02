@@ -43,7 +43,9 @@ enum class Errno : u32 {
     TIMEDOUT = 110,
     CONNREFUSED = 111,
     HOSTUNREACH = 113,
+    ALREADY = 114,
     INPROGRESS = 115,
+    STALE = 116,
     /* made up error? */
     OTHER = 196,
 };

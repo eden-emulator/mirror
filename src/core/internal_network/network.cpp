@@ -285,7 +285,9 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     NETWORK_ERROR_ELEM(NOTSUP) \
     NETWORK_ERROR_ELEM(ADDRINUSE) \
     NETWORK_ERROR_ELEM(ADDRNOTAVAIL) \
-    NETWORK_ERROR_ELEM(NOTSOCK)
+    NETWORK_ERROR_ELEM(NOTSOCK) \
+    NETWORK_ERROR_ELEM(ALREADY) \
+    NETWORK_ERROR_ELEM(STALE)
 #define NETWORK_ERROR_ELEM(name) case E##name: return Errno::name;
     NETWORK_ERROR_LIST
 #undef NETWORK_ERROR_ELEM
@@ -888,7 +890,6 @@ std::variant<std::vector<AddrInfo>, GetAddrInfoError> GetAddressInfo(const std::
 
 std::pair<s32, Errno> Poll(std::span<HostPollFD> pollfds, s32 timeout) {
     LOG_DEBUG(Network, "pollfds={},timeout={}", pollfds.size(), timeout);
-    const size_t num = pollfds.size();
 
     std::vector<WSAPOLLFD> host_pollfds(pollfds.size());
     std::transform(pollfds.begin(), pollfds.end(), host_pollfds.begin(), [](auto const e) {
@@ -913,16 +914,14 @@ std::pair<s32, Errno> Poll(std::span<HostPollFD> pollfds, s32 timeout) {
         return {0, Errno::SUCCESS};
     }
 
-    for (size_t i = 0; i < num; ++i)
+    for (size_t i = 0; i < pollfds.size(); ++i)
         pollfds[i].revents = TranslatePollRevents(host_pollfds[i].revents);
 
-    if (result > 0) {
-        return {result, Errno::SUCCESS};
+    if (result <= 0) {
+        ASSERT(result == SOCKET_ERROR);
+        return {-1, GetAndLogLastError()};
     }
-
-    ASSERT(result == SOCKET_ERROR);
-
-    return {-1, GetAndLogLastError()};
+    return {result, Errno::SUCCESS};
 }
 
 Socket::~Socket() {
