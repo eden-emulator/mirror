@@ -291,6 +291,13 @@ enum class FcntlCmd : s32 {
     SETFL = 4,
 };
 
+enum class FcntlFlags : u32 {
+    NONBLOCK = 0x004,
+    NONBLOCK_NX = 0x800,
+    // Provided for convenience
+    NONBLOCK_ANY = u32(NONBLOCK) | u32(NONBLOCK_NX),
+};
+
 /// Array of IPv4 address
 using IPv4Address = std::array<u8, 4>;
 
@@ -330,10 +337,6 @@ struct Linger {
     s32 linger;
 };
 static_assert(sizeof(Linger) == 8);
-
-constexpr u32 FLAG_MSG_PEEK = 0x2;
-constexpr u32 FLAG_MSG_DONTWAIT = 0x80;
-constexpr u32 FLAG_O_NONBLOCK = 0x800;
 
 /// @brief Cross-platform addrinfo structure (not guest)
 struct AddrInfo {
