@@ -197,7 +197,7 @@ bool A64Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u64 sta
         auto page = std::make_unique<Page>();
         page->address = base_address;
         for (size_t i = 0; i < page->data.size(); ++i)
-            page->data[i] = this_->testenv.MemoryRead8(base_address + i);
+            page->data[i] = u8(this_->testenv.MemoryRead(base_address + i, sizeof(u8)));
 
         uc_err err = uc_mem_map_ptr(uc, base_address, page->data.size(), permissions, page->data.data());
         if (err == UC_ERR_MAP)
@@ -227,23 +227,6 @@ bool A64Unicorn::UnmappedMemoryHook(uc_engine* uc, uc_mem_type /*type*/, u64 sta
 
 bool A64Unicorn::MemoryWriteHook(uc_engine* /*uc*/, uc_mem_type /*type*/, u64 start_address, int size, u64 value, void* user_data) {
     auto* this_ = static_cast<A64Unicorn*>(user_data);
-
-    switch (size) {
-    case 1:
-        this_->testenv.MemoryWrite8(start_address, static_cast<u8>(value));
-        break;
-    case 2:
-        this_->testenv.MemoryWrite16(start_address, static_cast<u16>(value));
-        break;
-    case 4:
-        this_->testenv.MemoryWrite32(start_address, static_cast<u32>(value));
-        break;
-    case 8:
-        this_->testenv.MemoryWrite64(start_address, value);
-        break;
-    default:
-        UNREACHABLE();
-    }
-
+    this_->testenv.MemoryWrite(start_address, value, size);
     return true;
 }

@@ -25,48 +25,55 @@ public:
     u64 ticks_left = 0;
     ankerl::unordered_dense::map<u64, u8> memory{};
 
-    u8 MemoryRead8(u64 vaddr) override {
-        return memory[vaddr];
-    }
-
-    u16 MemoryRead16(u64 vaddr) override {
-        return u16(MemoryRead8(vaddr)) | u16(MemoryRead8(vaddr + 1)) << 8;
-    }
-
-    u32 MemoryRead32(u64 vaddr) override {
-        return u32(MemoryRead16(vaddr)) | u32(MemoryRead16(vaddr + 2)) << 16;
-    }
-
-    u64 MemoryRead64(u64 vaddr) override {
-        return u64(MemoryRead32(vaddr)) | u64(MemoryRead32(vaddr + 4)) << 32;
+    u64 MemoryRead(u64 vaddr, size_t size) override {
+        switch (size) {
+        case sizeof(u64):
+            return MemoryRead(vaddr, sizeof(u32))
+                | MemoryRead(vaddr + sizeof(u32), sizeof(u32)) << 32;
+        case sizeof(u32):
+            return MemoryRead(vaddr, sizeof(u16))
+                | MemoryRead(vaddr + sizeof(u16), sizeof(u16)) << 16;
+        case sizeof(u16):
+            return MemoryRead(vaddr, sizeof(u8))
+                | MemoryRead(vaddr + sizeof(u8), sizeof(u8)) << 8;
+        case sizeof(u8):
+            return memory[vaddr];
+        default:
+            std::abort();
+        }
     }
 
     std::array<u64, 2> MemoryRead128(u64 vaddr) override {
-        return {MemoryRead64(vaddr), MemoryRead64(vaddr + 8)};
+        return {
+            MemoryRead(vaddr, sizeof(u64)),
+            MemoryRead(vaddr + sizeof(u64), sizeof(u64))
+        };
     }
 
-    void MemoryWrite8(u64 vaddr, u8 value) override {
-        memory[vaddr] = value;
+    void MemoryWrite(Dynarmic::A64::VAddr vaddr, u64 value, size_t size) override {
+        switch (size) {
+        case sizeof(u64):
+            MemoryWrite(vaddr, u32(value), sizeof(u32));
+            MemoryWrite(vaddr + 4, u32(value >> 32), sizeof(u32));
+            break;
+        case sizeof(u32):
+            MemoryWrite(vaddr, u16(value), sizeof(u16));
+            MemoryWrite(vaddr + 2, u16(value >> 16), sizeof(u16));
+            break;
+        case sizeof(u16):
+            MemoryWrite(vaddr, u8(value), sizeof(u8));
+            MemoryWrite(vaddr + 1, u8(value >> 8), sizeof(u8));
+            break;
+        case sizeof(u8):
+            memory[vaddr] = value;
+            break;
+        default:
+            std::abort();
+        }
     }
-
-    void MemoryWrite16(u64 vaddr, u16 value) override {
-        MemoryWrite8(vaddr, u8(value));
-        MemoryWrite8(vaddr + 1, u8(value >> 8));
-    }
-
-    void MemoryWrite32(u64 vaddr, u32 value) override {
-        MemoryWrite16(vaddr, u16(value));
-        MemoryWrite16(vaddr + 2, u16(value >> 16));
-    }
-
-    void MemoryWrite64(u64 vaddr, u64 value) override {
-        MemoryWrite32(vaddr, u32(value));
-        MemoryWrite32(vaddr + 4, u32(value >> 32));
-    }
-
     void MemoryWrite128(u64 vaddr, std::array<u64, 2> value) override {
-        MemoryWrite64(vaddr, value[0]);
-        MemoryWrite64(vaddr + 8, value[1]);
+        MemoryWrite(vaddr, value[0], sizeof(u64));
+        MemoryWrite(vaddr + 8, value[1], sizeof(u64));
     }
 
     void CallSVC(u32) override {
@@ -135,9 +142,9 @@ TEST_CASE("A64: fibonacci", "[a64]") {
     code.RET();
 
     for (size_t i = 0; i < 1024; i++) {
-        env.MemoryWrite32(i * 4, instructions[i]);
+        env.MemoryWrite(i * 4, instructions[i], sizeof(u32));
     }
-    env.MemoryWrite32(8888, 0xd4200000);
+    env.MemoryWrite(8888, 0xd4200000, sizeof(u32));
     cpu.SetRegister(30, 8888);
 
     cpu.SetRegister(0, 10);

@@ -503,7 +503,7 @@ TEST_CASE("Fuzz Thumb32 instructions set", "[JitX64][Thumb][Thumb32]") {
     }
 }
 
-TEST_CASE("Verify fix for off by one error in MemoryRead32 worked", "[Thumb][Thumb16]") {
+TEST_CASE("Verify fix for off by one error in MemoryRead<32> worked", "[Thumb][Thumb16]") {
     ThumbTestEnv test_env;
 
     // Prepare test subjects

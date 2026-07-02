@@ -22,21 +22,15 @@ DynarmicCallbacks32::DynarmicCallbacks32(ArmDynarmic32& parent, Kernel::KProcess
     , m_check_memory_access{m_debugger_enabled || !Settings::values.cpuopt_ignore_memory_aborts.GetValue()}
 {}
 
-u8 DynarmicCallbacks32::MemoryRead8(u32 vaddr) {
-    CheckMemoryAccess(vaddr, 1, Kernel::DebugWatchpointType::Read);
-    return m_memory.Read8(vaddr);
-}
-u16 DynarmicCallbacks32::MemoryRead16(u32 vaddr) {
-    CheckMemoryAccess(vaddr, 2, Kernel::DebugWatchpointType::Read);
-    return m_memory.Read16(vaddr);
-}
-u32 DynarmicCallbacks32::MemoryRead32(u32 vaddr) {
-    CheckMemoryAccess(vaddr, 4, Kernel::DebugWatchpointType::Read);
-    return m_memory.Read32(vaddr);
-}
-u64 DynarmicCallbacks32::MemoryRead64(u32 vaddr) {
-    CheckMemoryAccess(vaddr, 8, Kernel::DebugWatchpointType::Read);
-    return m_memory.Read64(vaddr);
+u64 DynarmicCallbacks32::MemoryRead(u32 vaddr, size_t size) {
+    CheckMemoryAccess(vaddr, size, Kernel::DebugWatchpointType::Read);
+    switch (size) {
+    case sizeof(u64): return m_memory.Read64(vaddr);
+    case sizeof(u32): return m_memory.Read32(vaddr);
+    case sizeof(u16): return m_memory.Read16(vaddr);
+    case sizeof(u8): return m_memory.Read8(vaddr);
+    default: UNREACHABLE();
+    }
 }
 
 std::optional<u32> DynarmicCallbacks32::MemoryReadCode(u32 vaddr) {
@@ -50,27 +44,17 @@ std::optional<u32> DynarmicCallbacks32::MemoryReadCode(u32 vaddr) {
     return cached_code_page.inst[(vaddr & Core::Memory::YUZU_PAGEMASK) / sizeof(u32)];
 }
 
-void DynarmicCallbacks32::MemoryWrite8(u32 vaddr, u8 value) {
-    if (CheckMemoryAccess(vaddr, 1, Kernel::DebugWatchpointType::Write)) {
-        m_memory.Write8(vaddr, value);
+void DynarmicCallbacks32::MemoryWrite(Dynarmic::A32::VAddr vaddr, u64 value, size_t size) {
+    if (CheckMemoryAccess(vaddr, size, Kernel::DebugWatchpointType::Write)) {
+        switch (size) {
+        case sizeof(u64): return m_memory.Write64(vaddr, value);
+        case sizeof(u32): return m_memory.Write32(vaddr, u32(value));
+        case sizeof(u16): return m_memory.Write16(vaddr, u16(value));
+        case sizeof(u8): return m_memory.Write8(vaddr, u8(value));
+        default: UNREACHABLE();
+        }
     }
 }
-void DynarmicCallbacks32::MemoryWrite16(u32 vaddr, u16 value) {
-    if (CheckMemoryAccess(vaddr, 2, Kernel::DebugWatchpointType::Write)) {
-        m_memory.Write16(vaddr, value);
-    }
-}
-void DynarmicCallbacks32::MemoryWrite32(u32 vaddr, u32 value) {
-    if (CheckMemoryAccess(vaddr, 4, Kernel::DebugWatchpointType::Write)) {
-        m_memory.Write32(vaddr, value);
-    }
-}
-void DynarmicCallbacks32::MemoryWrite64(u32 vaddr, u64 value) {
-    if (CheckMemoryAccess(vaddr, 8, Kernel::DebugWatchpointType::Write)) {
-        m_memory.Write64(vaddr, value);
-    }
-}
-
 bool DynarmicCallbacks32::MemoryWriteExclusive8(u32 vaddr, u8 value, u8 expected) {
     return CheckMemoryAccess(vaddr, 1, Kernel::DebugWatchpointType::Write) &&
             m_memory.WriteExclusive8(vaddr, value, expected);

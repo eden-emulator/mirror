@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /* This file is part of the dynarmic project.
  * Copyright (c) 2022 MerryMage
  * SPDX-License-Identifier: 0BSD
@@ -56,16 +59,13 @@ void AxxEmitX64::EmitMemoryRead(AxxEmitContext& ctx, IR::Inst* inst) {
         // Neither fastmem nor page table: Use callbacks
         if constexpr (bitsize == 128) {
             ctx.reg_alloc.HostCall(code, nullptr, {}, args[1]);
-            if (ordered) {
-                code.mfence();
-            }
+            if (ordered) code.mfence();
             code.CallFunction(memory_read_128);
             ctx.reg_alloc.DefineValue(code, inst, xmm1);
         } else {
             ctx.reg_alloc.HostCall(code, inst, {}, args[1]);
-            if (ordered) {
-                code.mfence();
-            }
+            code.mov(code.ABI_PARAM3.cvt32(), bitsize / CHAR_BIT);
+            if (ordered) code.mfence();
             Devirtualize<callback>(conf.callbacks).EmitCall(code);
             code.ZeroExtendFrom(bitsize, code.ABI_RETURN);
         }
@@ -148,12 +148,12 @@ void AxxEmitX64::EmitMemoryWrite(AxxEmitContext& ctx, IR::Inst* inst) {
             ctx.reg_alloc.HostCall(code, nullptr);
             code.CallFunction(memory_write_128);
         } else {
+            // { this, vaddr, value, size }
             ctx.reg_alloc.HostCall(code, nullptr, {}, args[1], args[2]);
+            code.mov(code.ABI_PARAM4.cvt32(), bitsize / CHAR_BIT);
             Devirtualize<callback>(conf.callbacks).EmitCall(code);
         }
-        if (ordered) {
-            code.mfence();
-        }
+        if (ordered) code.mfence();
         EmitCheckMemoryAbort(ctx, inst);
         return;
     }
@@ -230,12 +230,11 @@ void AxxEmitX64::EmitExclusiveReadMemory(AxxEmitContext& ctx, IR::Inst* inst) {
         if (ordered) {
             code.mfence();
         }
-        code.CallLambda(
-            [](AxxUserConfig& conf, Axx::VAddr vaddr) -> T {
-                return conf.global_monitor->ReadAndMark<T>(conf.processor_id, vaddr, [&]() -> T {
-                    return (conf.callbacks->*callback)(vaddr);
-                });
+        code.CallLambda([](AxxUserConfig& conf, Axx::VAddr vaddr) -> T {
+            return conf.global_monitor->ReadAndMark<T>(conf.processor_id, vaddr, [&]() -> T {
+                return (conf.callbacks->*callback)(vaddr, bitsize / CHAR_BIT);
             });
+        });
         code.ZeroExtendFrom(bitsize, code.ABI_RETURN);
     } else {
         const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm(code);
@@ -250,12 +249,11 @@ void AxxEmitX64::EmitExclusiveReadMemory(AxxEmitContext& ctx, IR::Inst* inst) {
         if (ordered) {
             code.mfence();
         }
-        code.CallLambda(
-            [](AxxUserConfig& conf, Axx::VAddr vaddr, Vector& ret) {
-                ret = conf.global_monitor->ReadAndMark<Vector>(conf.processor_id, vaddr, [&]() -> Vector {
-                    return (conf.callbacks->*callback)(vaddr);
-                });
+        code.CallLambda([](AxxUserConfig& conf, Axx::VAddr vaddr, Vector& ret) {
+            ret = conf.global_monitor->ReadAndMark<Vector>(conf.processor_id, vaddr, [&]() -> Vector {
+                return (conf.callbacks->*callback)(vaddr);
             });
+        });
         code.movups(result, xword[rsp + ABI_SHADOW_SPACE]);
         ctx.reg_alloc.ReleaseStackSpace(code, 16 + ABI_SHADOW_SPACE);
 

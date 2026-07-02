@@ -40,7 +40,7 @@ static void ConstantMemoryReads(IR::Block& block, A32::UserCallbacks* cb) {
             if (inst.AreAllArgsImmediates()) {
                 const u32 vaddr = inst.GetArg(1).GetU32();
                 if (cb->IsReadOnlyMemory(vaddr)) {
-                    const u8 value_from_memory = cb->MemoryRead8(vaddr);
+                    const u8 value_from_memory = u8(cb->MemoryRead(vaddr, sizeof(u8)));
                     inst.ReplaceUsesWith(IR::Value{value_from_memory});
                 }
             }
@@ -51,7 +51,7 @@ static void ConstantMemoryReads(IR::Block& block, A32::UserCallbacks* cb) {
             if (inst.AreAllArgsImmediates()) {
                 const u32 vaddr = inst.GetArg(1).GetU32();
                 if (cb->IsReadOnlyMemory(vaddr)) {
-                    const u16 value_from_memory = cb->MemoryRead16(vaddr);
+                    const u16 value_from_memory = u16(cb->MemoryRead(vaddr, sizeof(u16)));
                     inst.ReplaceUsesWith(IR::Value{value_from_memory});
                 }
             }
@@ -62,7 +62,7 @@ static void ConstantMemoryReads(IR::Block& block, A32::UserCallbacks* cb) {
             if (inst.AreAllArgsImmediates()) {
                 const u32 vaddr = inst.GetArg(1).GetU32();
                 if (cb->IsReadOnlyMemory(vaddr)) {
-                    const u32 value_from_memory = cb->MemoryRead32(vaddr);
+                    const u32 value_from_memory = u32(cb->MemoryRead(vaddr, sizeof(u32)));
                     inst.ReplaceUsesWith(IR::Value{value_from_memory});
                 }
             }
@@ -73,7 +73,7 @@ static void ConstantMemoryReads(IR::Block& block, A32::UserCallbacks* cb) {
             if (inst.AreAllArgsImmediates()) {
                 const u32 vaddr = inst.GetArg(1).GetU32();
                 if (cb->IsReadOnlyMemory(vaddr)) {
-                    const u64 value_from_memory = cb->MemoryRead64(vaddr);
+                    const u64 value_from_memory = u64(cb->MemoryRead(vaddr, sizeof(u64)));
                     inst.ReplaceUsesWith(IR::Value{value_from_memory});
                 }
             }

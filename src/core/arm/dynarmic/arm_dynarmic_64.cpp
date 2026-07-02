@@ -10,6 +10,7 @@
 #include "core/arm/dynarmic/dynarmic_exclusive_monitor.h"
 #include "core/core_timing.h"
 #include "core/hle/kernel/k_process.h"
+#include "dynarmic/interface/A64/config.h"
 
 namespace Core {
 
@@ -21,21 +22,15 @@ DynarmicCallbacks64::DynarmicCallbacks64(ArmDynarmic64& parent, Kernel::KProcess
     , m_check_memory_access{m_debugger_enabled || !Settings::values.cpuopt_ignore_memory_aborts.GetValue()}
 {}
 
-u8 DynarmicCallbacks64::MemoryRead8(u64 vaddr) {
-    CheckMemoryAccess(vaddr, 1, Kernel::DebugWatchpointType::Read);
-    return m_memory.Read8(vaddr);
-}
-u16 DynarmicCallbacks64::MemoryRead16(u64 vaddr) {
-    CheckMemoryAccess(vaddr, 2, Kernel::DebugWatchpointType::Read);
-    return m_memory.Read16(vaddr);
-}
-u32 DynarmicCallbacks64::MemoryRead32(u64 vaddr) {
-    CheckMemoryAccess(vaddr, 4, Kernel::DebugWatchpointType::Read);
-    return m_memory.Read32(vaddr);
-}
-u64 DynarmicCallbacks64::MemoryRead64(u64 vaddr) {
-    CheckMemoryAccess(vaddr, 8, Kernel::DebugWatchpointType::Read);
-    return m_memory.Read64(vaddr);
+u64 DynarmicCallbacks64::MemoryRead(u64 vaddr, size_t size) {
+    CheckMemoryAccess(vaddr, size, Kernel::DebugWatchpointType::Read);
+    switch (size) {
+    case sizeof(u64): return m_memory.Read64(vaddr);
+    case sizeof(u32): return m_memory.Read32(vaddr);
+    case sizeof(u16): return m_memory.Read16(vaddr);
+    case sizeof(u8): return m_memory.Read8(vaddr);
+    default: UNREACHABLE();
+    }
 }
 Dynarmic::A64::Vector DynarmicCallbacks64::MemoryRead128(u64 vaddr) {
     CheckMemoryAccess(vaddr, 16, Kernel::DebugWatchpointType::Read);
@@ -53,24 +48,15 @@ std::optional<u32> DynarmicCallbacks64::MemoryReadCode(u64 vaddr) {
     return cached_code_page.inst[(vaddr & Core::Memory::YUZU_PAGEMASK) / sizeof(u32)];
 }
 
-void DynarmicCallbacks64::MemoryWrite8(u64 vaddr, u8 value) {
-    if (CheckMemoryAccess(vaddr, 1, Kernel::DebugWatchpointType::Write)) {
-        m_memory.Write8(vaddr, value);
-    }
-}
-void DynarmicCallbacks64::MemoryWrite16(u64 vaddr, u16 value) {
-    if (CheckMemoryAccess(vaddr, 2, Kernel::DebugWatchpointType::Write)) {
-        m_memory.Write16(vaddr, value);
-    }
-}
-void DynarmicCallbacks64::MemoryWrite32(u64 vaddr, u32 value) {
-    if (CheckMemoryAccess(vaddr, 4, Kernel::DebugWatchpointType::Write)) {
-        m_memory.Write32(vaddr, value);
-    }
-}
-void DynarmicCallbacks64::MemoryWrite64(u64 vaddr, u64 value) {
-    if (CheckMemoryAccess(vaddr, 8, Kernel::DebugWatchpointType::Write)) {
-        m_memory.Write64(vaddr, value);
+void DynarmicCallbacks64::MemoryWrite(Dynarmic::A64::VAddr vaddr, u64 value, std::size_t size) {
+    if (CheckMemoryAccess(vaddr, size, Kernel::DebugWatchpointType::Write)) {
+        switch (size) {
+        case sizeof(u64): return m_memory.Write64(vaddr, u64(value));
+        case sizeof(u32): return m_memory.Write32(vaddr, u32(value));
+        case sizeof(u16): return m_memory.Write16(vaddr, u16(value));
+        case sizeof(u8): return m_memory.Write8(vaddr, u8(value));
+        default: UNREACHABLE();
+        }
     }
 }
 void DynarmicCallbacks64::MemoryWrite128(u64 vaddr, Dynarmic::A64::Vector value) {
