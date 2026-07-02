@@ -178,7 +178,7 @@ void A32AddressSpace::EmitPrelude() {
 
     prelude_info.read_memory = EmitCallTrampoline<&A32::UserCallbacks::MemoryRead>(code, conf.callbacks);
     prelude_info.wrapped_read_memory = EmitWrappedReadCallTrampoline<&A32::UserCallbacks::MemoryRead>(code, conf.callbacks);
-    prelude_info.exclusive_read_memory = EmitExclusiveReadCallTrampoline<&A32::UserCallbacks::MemoryRead, u8>(code, conf);
+    prelude_info.exclusive_read_memory_8 = EmitExclusiveReadCallTrampoline<&A32::UserCallbacks::MemoryRead, u8>(code, conf);
     prelude_info.exclusive_read_memory_16 = EmitExclusiveReadCallTrampoline<&A32::UserCallbacks::MemoryRead, u16>(code, conf);
     prelude_info.exclusive_read_memory_32 = EmitExclusiveReadCallTrampoline<&A32::UserCallbacks::MemoryRead, u32>(code, conf);
     prelude_info.exclusive_read_memory_64 = EmitExclusiveReadCallTrampoline<&A32::UserCallbacks::MemoryRead, u64>(code, conf);
