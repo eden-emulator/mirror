@@ -845,22 +845,43 @@ std::variant<std::vector<AddrInfo>, GetAddrInfoError> GetAddressInfo(const std::
         return TranslateGetAddrInfoErrorFromNative(gai_err);
     }
     std::vector<AddrInfo> ret{};
-    for (auto* current = addrinfo; current; current = current->ai_next) {
-        LOG_DEBUG(Network, "- entry prot={},socktype={},family={},len={}", current->ai_protocol, current->ai_socktype, current->ai_family, current->ai_addrlen);
-        // We should only get AF_INET results due to the hints value.
-        if (current->ai_family == AF_INET && current->ai_addrlen == sizeof(sockaddr_in)) {
-            auto& out = ret.emplace_back();
-            out.family = TranslateDomainFromNative(current->ai_family);
-            out.socket_type = TranslateTypeFromNative(current->ai_socktype);
-            out.protocol = TranslateProtocolFromNative(current->ai_protocol);
-            out.addr = TranslateToSockAddrIn(*reinterpret_cast<sockaddr_in*>(current->ai_addr), current->ai_addrlen);
-            if (current->ai_canonname != nullptr) {
-                out.canon_name = current->ai_canonname;
+
+    auto const add_entries = [&](auto const&& filter_fn) {
+        for (auto* current = addrinfo; current; current = current->ai_next) {
+            if (filter_fn(current)) {
+                LOG_DEBUG(Network, "- entry prot={},socktype={},family={},len={}", current->ai_protocol, current->ai_socktype, current->ai_family, current->ai_addrlen);
+                // We should only get AF_INET results due to the hints value.
+                if (current->ai_family == AF_INET && current->ai_addrlen == sizeof(sockaddr_in)) {
+                    auto& out = ret.emplace_back();
+                    out.family = TranslateDomainFromNative(current->ai_family);
+                    out.socket_type = TranslateTypeFromNative(current->ai_socktype);
+                    out.protocol = TranslateProtocolFromNative(current->ai_protocol);
+                    out.addr = TranslateToSockAddrIn(*reinterpret_cast<sockaddr_in*>(current->ai_addr), current->ai_addrlen);
+                    if (current->ai_canonname != nullptr) {
+                        out.canon_name = current->ai_canonname;
+                    }
+                } else {
+                    LOG_ERROR(Network, "invalid entry family={},len={}", current->ai_family, current->ai_addrlen);
+                }
             }
-        } else {
-            LOG_ERROR(Network, "invalid entry family={},len={}", current->ai_family, current->ai_addrlen);
         }
-    }
+    };
+
+    // Let me explain slowly, so HB app store depends ENTIRELY on the switch returning
+    // getaddrinfo stuff in a particular order, right?
+    // cURL is used by hb app store, which uses a tiny library called "get"; the
+    // specific version that 99% of users run has a bug with DNS cache queries...
+    // unfortunely we can only do what we do best: emulate the issue away.
+    //
+    // Please see this fuckery here -> https://github.com/curl/curl/issues/9274
+    // Place fucking UDP last
+    add_entries([](auto* current) {
+        return current->ai_protocol != IPPROTO_UDP;
+    });
+    // Off to the shitter you go!
+    add_entries([](auto* current) {
+        return current->ai_protocol == IPPROTO_UDP;
+    });
     freeaddrinfo(addrinfo);
     return ret;
 }

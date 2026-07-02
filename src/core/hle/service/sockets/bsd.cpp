@@ -717,7 +717,7 @@ std::pair<s32, Network::Errno> BSD::FcntlImpl(s32 fd, Network::FcntlCmd cmd, s32
         ASSERT(arg == 0);
         return {descriptor.flags, Network::Errno::SUCCESS};
     case Network::FcntlCmd::SETFL: {
-        const bool enable = (arg & Network::FLAG_O_NONBLOCK) != 0;
+        const bool enable = (arg & u32(Network::FcntlFlags::NONBLOCK_ANY)) != 0;
         const Network::Errno bsd_errno = descriptor.socket->SetNonBlock(enable);
         if (bsd_errno != Network::Errno::SUCCESS) {
             return {-1, bsd_errno};
@@ -800,18 +800,16 @@ std::pair<s32, Network::Errno> BSD::RecvImpl(s32 fd, u32 flags, std::vector<u8>&
     FileDescriptor& descriptor = *file_descriptors[fd];
 
     // Apply flags
-    using Network::FLAG_MSG_DONTWAIT;
-    using Network::FLAG_O_NONBLOCK;
-    if ((flags & FLAG_MSG_DONTWAIT) != 0) {
-        flags &= ~FLAG_MSG_DONTWAIT;
-        if ((descriptor.flags & FLAG_O_NONBLOCK) == 0) {
+    if ((flags & u32(Network::MsgOpt::DONTWAIT)) != 0) {
+        flags &= ~u32(Network::MsgOpt::DONTWAIT);
+        if ((descriptor.flags & u32(Network::FcntlFlags::NONBLOCK_ANY)) == 0) {
             descriptor.socket->SetNonBlock(true);
         }
     }
 
     const auto [ret, bsd_errno] = descriptor.socket->Recv(flags, message);
     // Restore original state
-    if ((descriptor.flags & FLAG_O_NONBLOCK) == 0)
+    if ((descriptor.flags & u32(Network::FcntlFlags::NONBLOCK_ANY)) == 0)
         descriptor.socket->SetNonBlock(false);
     return {ret, bsd_errno};
 }
@@ -834,11 +832,9 @@ std::pair<s32, Network::Errno> BSD::RecvFromImpl(s32 fd, u32 flags, std::vector<
     }
 
     // Apply flags
-    using Network::FLAG_MSG_DONTWAIT;
-    using Network::FLAG_O_NONBLOCK;
-    if ((flags & FLAG_MSG_DONTWAIT) != 0) {
-        flags &= ~FLAG_MSG_DONTWAIT;
-        if ((descriptor.flags & FLAG_O_NONBLOCK) == 0) {
+    if ((flags & u32(Network::MsgOpt::DONTWAIT)) != 0) {
+        flags &= ~u32(Network::MsgOpt::DONTWAIT);
+        if ((descriptor.flags & u32(Network::FcntlFlags::NONBLOCK_ANY)) == 0) {
             descriptor.socket->SetNonBlock(true);
         }
     }
@@ -846,7 +842,7 @@ std::pair<s32, Network::Errno> BSD::RecvFromImpl(s32 fd, u32 flags, std::vector<
     const auto [ret, bsd_errno] = descriptor.socket->RecvFrom(flags, message, p_addr_in);
 
     // Restore original state
-    if ((descriptor.flags & FLAG_O_NONBLOCK) == 0) {
+    if ((descriptor.flags & u32(Network::FcntlFlags::NONBLOCK_ANY)) == 0) {
         descriptor.socket->SetNonBlock(false);
     }
 
