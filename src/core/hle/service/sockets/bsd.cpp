@@ -543,8 +543,9 @@ std::pair<s32, Network::Errno> BSD::PollImpl(std::vector<u8>& write_buffer, std:
         return {-1, Network::Errno::INVAL};
     }
 
-    std::vector<Network::PollFD> fds(nfds);
-    std::memcpy(fds.data(), read_buffer.data(), nfds * sizeof(Network::PollFD));
+    std::span<const Network::PollFD> in_fds(reinterpret_cast<const Network::PollFD*>(read_buffer.data()), nfds);
+    std::span<Network::PollFD> out_fds(reinterpret_cast<Network::PollFD*>(write_buffer.data()), nfds);
+    std::copy(in_fds.begin(), in_fds.end(), out_fds.begin());
 
     if (timeout >= 0) {
         const s64 seconds = timeout / 1000;
@@ -559,34 +560,28 @@ std::pair<s32, Network::Errno> BSD::PollImpl(std::vector<u8>& write_buffer, std:
         return {-1, Network::Errno::INVAL};
     }
 
-    bool has_invalid = false;
-    for (auto& pollfd : fds) {
-        ASSERT(False(pollfd.revents));
-        if (!IsFileDescriptorValid(pollfd.fd)) {
-            pollfd.revents = {};
-            if (!file_descriptors[pollfd.fd])
-                pollfd.revents = Network::PollEvents::NVAL;
-            has_invalid = true;
+    for (size_t i = 0; i < in_fds.size(); ++i) {
+        ASSERT(out_fds[i].fd == in_fds[i].fd && False(in_fds[i].revents));
+        if (!IsFileDescriptorValid(in_fds[i].fd)) {
+            out_fds[i].revents = {};
+            if (!file_descriptors[in_fds[i].fd])
+                out_fds[i].revents = Network::PollEvents::NVAL;
+            return {0, Network::Errno::SUCCESS};
         }
     }
-    if (has_invalid) {
-        return {0, Network::Errno::SUCCESS};
-    }
 
-    std::vector<Network::HostPollFD> host_pollfds(fds.size());
-    std::transform(fds.begin(), fds.end(), host_pollfds.begin(), [](auto const e) {
+    std::vector<Network::HostPollFD> host_pollfds(in_fds.size());
+    std::transform(in_fds.begin(), in_fds.end(), host_pollfds.begin(), [](auto const e) {
         Network::HostPollFD result{};
         result.socket = file_descriptors[e.fd]->socket.get();
         result.events = e.events;
-        result.revents = e.revents;
+        result.revents = {};
         return result;
     });
-
-    const auto result = Network::Poll(host_pollfds, timeout);
-    for (size_t i = 0; i < host_pollfds.size(); ++i)
-        fds[i].revents = host_pollfds[i].revents;
-    std::memcpy(write_buffer.data(), fds.data(), nfds * sizeof(Network::PollFD));
-    return result;
+    auto const res = Network::Poll(host_pollfds, timeout);
+    for (size_t i = 0; i < in_fds.size(); ++i)
+        out_fds[i].revents = host_pollfds[i].revents;
+    return res;
 }
 
 std::pair<s32, Network::Errno> BSD::AcceptImpl(s32 fd, std::vector<u8>& write_buffer) {

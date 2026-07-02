@@ -18,7 +18,6 @@ void LoopProcess(Core::System& system) {
     server_manager->RegisterNamedService("nsd:a", std::make_shared<NSD>(system, "nsd:a"));
     server_manager->RegisterNamedService("nsd:u", std::make_shared<NSD>(system, "nsd:u"));
     server_manager->RegisterNamedService("sfdnsres", std::make_shared<SFDNSRES>(system));
-    server_manager->StartAdditionalHostThreads("bsdsocket", 2);
     ServerManager::RunServer(std::move(server_manager));
 }
 
