@@ -553,9 +553,9 @@ TEST_CASE("arm: Memory access (fastmem)", "[arm][A32]") {
     memset(backing_memory, 0, memory_size);
     memcpy(backing_memory + 0x100, "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", 57);
 
-    env.MemoryWrite32(0, 0xE5904000);  // LDR R4, [R0]
-    env.MemoryWrite32(4, 0xE5814000);  // STR R4, [R1]
-    env.MemoryWrite32(8, 0xEAFFFFFE);  // B .
+    env.MemoryWrite(0, 0xE5904000, sizeof(u32));  // LDR R4, [R0]
+    env.MemoryWrite(4, 0xE5814000, sizeof(u32));  // STR R4, [R1]
+    env.MemoryWrite(8, 0xEAFFFFFE, sizeof(u32));  // B .
     jit.Regs()[0] = 0x100;
     jit.Regs()[1] = 0x1F0;
     jit.Regs()[15] = 0;       // PC = 0
