@@ -89,7 +89,6 @@ Services::Services(std::shared_ptr<SM::ServiceManager>& sm, Core::System& system
     for (auto const& e : std::vector<std::pair<std::string_view, void (*)(Core::System&)>>{
         {"audio",      &Audio::LoopProcess},
         {"FS",         &FileSystem::LoopProcess},
-        {"jit",        &JIT::LoopProcess},
         {"ldn",        &LDN::LoopProcess},
         {"nvnflinger", &Nvnflinger::LoopProcess},
         {"nvservices", &Nvidia::LoopProcess},
@@ -120,6 +119,7 @@ Services::Services(std::shared_ptr<SM::ServiceManager>& sm, Core::System& system
         {"glue",       &Glue::LoopProcess},
         {"grc",        &GRC::LoopProcess},
         {"hid",        &HID::LoopProcess},
+        {"jit",        &JIT::LoopProcess},
         {"lbl",        &LBL::LoopProcess},
         {"Loader",     &LDR::LoopProcess},
         {"LogManager.Prod", &LM::LoopProcess},
