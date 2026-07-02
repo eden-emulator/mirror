@@ -924,10 +924,8 @@ std::pair<s32, Errno> Poll(std::span<HostPollFD> pollfds, s32 timeout) {
 }
 
 Socket::~Socket() {
-    if (fd == INVALID_SOCKET) {
-        return;
-    }
-    (void)closesocket(fd);
+    if (fd != INVALID_SOCKET)
+        (void)closesocket(fd);
     fd = INVALID_SOCKET;
 }
 
