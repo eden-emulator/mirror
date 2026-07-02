@@ -977,7 +977,7 @@ static s32 TranslateOptNameToNative(Network::SocketLevel level, Network::OptName
         case Network::TcpOptName::MAXSEG: return TCP_MAXSEG;
         case Network::TcpOptName::NOPUSH: return TCP_NOPUSH;
         case Network::TcpOptName::NOOPT: return TCP_NOOPT;
-        case Network::TcpOptName::MD5SIG: return TCP_MD5SIG;
+        case Network::TcpOptName::MS5SIG: return TCP_MD5SIG;
         case Network::TcpOptName::INFO: return TCP_INFO;
         default:
             break;
