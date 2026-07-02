@@ -66,7 +66,9 @@ struct UserCallbacks : public TranslateCallbacks {
 
     // All reads through this callback are 4-byte aligned.
     // Memory must be interpreted as little endian.
-    std::optional<std::uint32_t> MemoryReadCode(VAddr vaddr) override { return MemoryRead32(vaddr); }
+    std::optional<std::uint32_t> MemoryReadCode(VAddr vaddr) override {
+        return std::uint32_t(MemoryRead(vaddr, sizeof(std::uint32_t)));
+    }
 
     // This function is called before the instruction at pc is read.
     // IR code can be emitted by the callee prior to instruction handling.
@@ -80,16 +82,10 @@ struct UserCallbacks : public TranslateCallbacks {
 
     // Reads through these callbacks may not be aligned.
     // Memory must be interpreted as if ENDIANSTATE == 0, endianness will be corrected by the JIT.
-    virtual std::uint8_t MemoryRead8(VAddr vaddr) = 0;
-    virtual std::uint16_t MemoryRead16(VAddr vaddr) = 0;
-    virtual std::uint32_t MemoryRead32(VAddr vaddr) = 0;
-    virtual std::uint64_t MemoryRead64(VAddr vaddr) = 0;
+    virtual std::uint64_t MemoryRead(VAddr vaddr, std::size_t size) = 0;
 
     // Writes through these callbacks may not be aligned.
-    virtual void MemoryWrite8(VAddr vaddr, std::uint8_t value) = 0;
-    virtual void MemoryWrite16(VAddr vaddr, std::uint16_t value) = 0;
-    virtual void MemoryWrite32(VAddr vaddr, std::uint32_t value) = 0;
-    virtual void MemoryWrite64(VAddr vaddr, std::uint64_t value) = 0;
+    virtual void MemoryWrite(VAddr vaddr, std::uint64_t value, std::size_t size) = 0;
 
     // Writes through these callbacks may not be aligned.
     virtual bool MemoryWriteExclusive8(VAddr /*vaddr*/, std::uint8_t /*value*/, std::uint8_t /*expected*/) { return false; }

@@ -1006,8 +1006,8 @@ TEST_CASE("A64: 128-bit exclusive read/write", "[a64]") {
     REQUIRE(jit.GetRegister(1) == 0x7f7e7d7c7b7a7978);
     REQUIRE(jit.GetRegister(2) == 0x8786858483828180);
     REQUIRE(jit.GetRegister(4) == 0);
-    REQUIRE(env.MemoryRead64(0x1234567812345678) == 0xaf00d1e5badcafe0);
-    REQUIRE(env.MemoryRead64(0x1234567812345680) == 0xd0d0cacad0d0caca);
+    REQUIRE(env.MemoryRead(0x1234567812345678, sizeof(u64)) == 0xaf00d1e5badcafe0);
+    REQUIRE(env.MemoryRead(0x1234567812345680, sizeof(u64)) == 0xd0d0cacad0d0caca);
 }
 
 TEST_CASE("A64: CNTPCT_EL0", "[a64]") {

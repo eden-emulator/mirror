@@ -76,23 +76,22 @@ public:
     u64 ticks_left = 0;
     std::array<u8, 2048> memory{};
 
-    u8 MemoryRead8(u32 vaddr) override {
-        if (vaddr >= memory.size()) {
-            return 0;
+    u64 MemoryRead(u64 vaddr, size_t size) override {
+        switch (size) {
+        case sizeof(u64):
+            return MemoryRead(vaddr, sizeof(u32))
+                | MemoryRead(vaddr + sizeof(u32), sizeof(u32)) << 32;
+        case sizeof(u32):
+            return MemoryRead(vaddr, sizeof(u16))
+                | MemoryRead(vaddr + sizeof(u16), sizeof(u16)) << 16;
+        case sizeof(u16):
+            return MemoryRead(vaddr, sizeof(u8))
+                | MemoryRead(vaddr + sizeof(u8), sizeof(u8)) << 8;
+        case sizeof(u8):
+            return vaddr >= memory.size() ? 0 : memory[vaddr];
+        default:
+            std::abort();
         }
-        return memory[vaddr];
-    }
-
-    u16 MemoryRead16(u32 vaddr) override {
-        return u16(MemoryRead8(vaddr)) | u16(MemoryRead8(vaddr + 1)) << 8;
-    }
-
-    u32 MemoryRead32(u32 vaddr) override {
-        return u32(MemoryRead16(vaddr)) | u32(MemoryRead16(vaddr + 2)) << 16;
-    }
-
-    u64 MemoryRead64(u32 vaddr) override {
-        return u64(MemoryRead32(vaddr)) | u64(MemoryRead32(vaddr + 4)) << 32;
     }
 
     void MemoryWrite8(u32 vaddr, u8 value) override {

@@ -71,17 +71,14 @@ public:
     void InstructionSynchronizationBarrierRaised() override {
         last_code_addr = u64(-1); //reset back, force refetch
     }
-    u8 MemoryRead8(u64 vaddr) override {
-        return ReadMemory<u8>(vaddr);
-    }
-    u16 MemoryRead16(u64 vaddr) override {
-        return ReadMemory<u16>(vaddr);
-    }
-    u32 MemoryRead32(u64 vaddr) override {
-        return ReadMemory<u32>(vaddr);
-    }
-    u64 MemoryRead64(u64 vaddr) override {
-        return ReadMemory<u64>(vaddr);
+    u64 MemoryRead(u64 vaddr, size_t size) override {
+        switch (size) {
+        case sizeof(u64): return ReadMemory<u64>(vaddr);
+        case sizeof(u32): return ReadMemory<u32>(vaddr);
+        case sizeof(u16): return ReadMemory<u16>(vaddr);
+        case sizeof(u8): return ReadMemory<u8>(vaddr);
+        default: UNREACHABLE();
+        }
     }
     u128 MemoryRead128(u64 vaddr) override {
         return ReadMemory<u128>(vaddr);
@@ -89,22 +86,19 @@ public:
     std::string MemoryReadCString(u64 vaddr) {
         std::string result{};
         u8 next;
-        while ((next = MemoryRead8(vaddr++)) != 0)
+        while ((next = u8(MemoryRead(vaddr++, sizeof(u8)))) != 0)
             result += char(next);
         return result;
     }
 
-    void MemoryWrite8(u64 vaddr, u8 value) override {
-        WriteMemory<u8>(vaddr, value);
-    }
-    void MemoryWrite16(u64 vaddr, u16 value) override {
-        WriteMemory<u16>(vaddr, value);
-    }
-    void MemoryWrite32(u64 vaddr, u32 value) override {
-        WriteMemory<u32>(vaddr, value);
-    }
-    void MemoryWrite64(u64 vaddr, u64 value) override {
-        WriteMemory<u64>(vaddr, value);
+    void MemoryWrite(u64 vaddr, u64 value, size_t size) override {
+        switch (size) {
+        case sizeof(u64): WriteMemory<u64>(vaddr, u64(value)); break;
+        case sizeof(u32): WriteMemory<u32>(vaddr, u32(value)); break;
+        case sizeof(u16): WriteMemory<u16>(vaddr, u16(value)); break;
+        case sizeof(u8): WriteMemory<u8>(vaddr, u8(value)); break;
+        default: UNREACHABLE();
+        }
     }
     void MemoryWrite128(u64 vaddr, u128 value) override {
         WriteMemory<u128>(vaddr, value);
@@ -193,14 +187,14 @@ public:
         // The loaded NRO file has ELF relocations that must be processed before it can run.
         // Normally this would be processed by RTLD, but in HLE context, we don't have
         // the linker available, so we have to do it ourselves.
-        const VAddr mod_offset{callbacks->MemoryRead32(4)};
-        if (callbacks->MemoryRead32(mod_offset) != Common::MakeMagic('M', 'O', 'D', '0'))
+        const VAddr mod_offset{callbacks->MemoryRead(4, sizeof(u32))};
+        if (callbacks->MemoryRead(mod_offset, sizeof(u32)) != Common::MakeMagic('M', 'O', 'D', '0'))
             return false;
 
         // For more info about dynamic entries, see the ELF ABI specification:
         // https://refspecs.linuxbase.org/elf/gabi4+/ch5.dynamic.html
         // https://refspecs.linuxbase.org/elf/gabi4+/ch4.reloc.html
-        VAddr dynamic_offset{mod_offset + callbacks->MemoryRead32(mod_offset + 4)};
+        VAddr dynamic_offset{mod_offset + callbacks->MemoryRead(mod_offset + 4, sizeof(u32))};
         VAddr rela_dyn = 0, relr_dyn = 0;
         size_t num_rela = 0, num_relr = 0;
         while (true) {
@@ -222,8 +216,8 @@ public:
         for (size_t i = 0; i < num_rela; i++) {
             const auto rela{callbacks->ReadMemory<Elf64_Rela>(rela_dyn + i * sizeof(Elf64_Rela))};
             if (Elf64RelType(rela.r_info) == ElfAArch64Relative) {
-                const VAddr contents{callbacks->MemoryRead64(rela.r_offset)};
-                callbacks->MemoryWrite64(rela.r_offset, contents + rela.r_addend);
+                const VAddr contents{callbacks->MemoryRead(rela.r_offset, sizeof(u64))};
+                callbacks->MemoryWrite(rela.r_offset, contents + rela.r_addend, sizeof(u64));
             }
         }
 
@@ -231,7 +225,7 @@ public:
         for (size_t i = 0; i < num_relr; i++) {
             const auto relr = callbacks->ReadMemory<Elf64_Relr>(relr_dyn + i * sizeof(Elf64_Relr));
             const auto incr = [&](VAddr where) {
-                callbacks->MemoryWrite64(where, callbacks->MemoryRead64(where) + relocbase);
+                callbacks->MemoryWrite(where, callbacks->MemoryRead(where, sizeof(u64)) + relocbase, sizeof(u64));
             };
             if ((relr & 1) == 0) {
                 // where pointer
@@ -294,7 +288,7 @@ public:
         if (argument_stack.size() > 8) {
             const VAddr new_sp = Common::AlignDown(top_of_stack - (argument_stack.size() - 8) * sizeof(u64), STACK_ALIGN);
             for (size_t i = 8; i < argument_stack.size(); i++)
-                callbacks->MemoryWrite64(new_sp + (i - 8) * sizeof(u64), argument_stack[i]);
+                callbacks->MemoryWrite(new_sp + (i - 8) * sizeof(u64), argument_stack[i], sizeof(u64));
             jit->SetSP(new_sp);
         }
         // Reset the call state for the next invocation
@@ -385,17 +379,17 @@ void DynarmicCallbacks64::CallSVC(u32 swi) {
 
         if (dest < src) {
             for (size_t i = 0; i < n; i++)
-                MemoryWrite8(dest + i, MemoryRead8(src + i));
+                MemoryWrite(dest + i, u8(MemoryRead(src + i, sizeof(u8))), sizeof(u8));
         } else {
             for (size_t i = n; i > 0; i--)
-                MemoryWrite8(dest + i - 1, MemoryRead8(src + i - 1));
+                MemoryWrite(dest + i - 1, u8(MemoryRead(src + i - 1, sizeof(u8))), sizeof(u8));
         }
     } else if (pc == parent.helpers[size_t(HelperFn::Memset)]) {
         const VAddr dest{parent.jit->GetRegister(0)};
         const u64 c{parent.jit->GetRegister(1)};
         const size_t n{parent.jit->GetRegister(2)};
         for (size_t i = 0; i < n; i++)
-            MemoryWrite8(dest + i, u8(c));
+            MemoryWrite(dest + i, u8(c), sizeof(u8));
     } else if (pc == parent.helpers[size_t(HelperFn::Resolve)]) {
         // X0 contains a char* for a symbol to resolve
         const auto name{MemoryReadCString(parent.jit->GetRegister(0))};
@@ -422,7 +416,7 @@ void DynarmicCallbacks64::CallSVC(u32 swi) {
 }
 
 void DynarmicCallbacks64::ExceptionRaised(u64 pc, Dynarmic::A64::Exception exception) {
-    auto const inst = MemoryRead32(pc);
+    auto const inst = MemoryRead(pc, sizeof(u32));
     LOG_CRITICAL(Service_JIT, "{} PC @ {:08x}, data = {:08x}", exception, pc, inst);
     parent.jit->HaltExecution();
 }

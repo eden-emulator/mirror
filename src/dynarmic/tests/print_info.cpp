@@ -18,6 +18,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <fmt/ranges.h>
+#include "dynarmic/frontend/A32/translate/translate_callbacks.h"
 #include "dynarmic/mcl/bit.hpp"
 #include "common/common_types.h"
 
@@ -118,36 +119,47 @@ public:
     u64 ticks_left = 0;
     std::map<u32, u8> memory;
 
-    std::uint8_t MemoryRead8(u32 vaddr) override {
-        if (auto iter = memory.find(vaddr); iter != memory.end()) {
-            return iter->second;
+    u64 MemoryRead(Dynarmic::A32::VAddr vaddr, size_t size) override {
+        switch (size) {
+        case sizeof(u64):
+            return MemoryRead(vaddr, sizeof(u32))
+                | MemoryRead(vaddr + sizeof(u32), sizeof(u32)) << 32;
+        case sizeof(u32):
+            return MemoryRead(vaddr, sizeof(u16))
+                | MemoryRead(vaddr + sizeof(u16), sizeof(u16)) << 16;
+        case sizeof(u16):
+            return MemoryRead(vaddr, sizeof(u8))
+                | MemoryRead(vaddr + sizeof(u8), sizeof(u8)) << 8;
+        case sizeof(u8): {
+            if (auto const it = memory.find(vaddr); it != memory.end())
+                return it->second;
+            return 0;
         }
-        return 0;
-    }
-    std::uint16_t MemoryRead16(u32 vaddr) override {
-        return u16(MemoryRead8(vaddr)) | u16(MemoryRead8(vaddr + 1)) << 8;
-    }
-    std::uint32_t MemoryRead32(u32 vaddr) override {
-        return u32(MemoryRead16(vaddr)) | u32(MemoryRead16(vaddr + 2)) << 16;
-    }
-    std::uint64_t MemoryRead64(u32 vaddr) override {
-        return u64(MemoryRead32(vaddr)) | u64(MemoryRead32(vaddr + 4)) << 32;
+        default:
+            std::abort();
+        }
     }
 
-    void MemoryWrite8(u32 vaddr, std::uint8_t value) override {
-        memory[vaddr] = value;
-    }
-    void MemoryWrite16(u32 vaddr, std::uint16_t value) override {
-        MemoryWrite8(vaddr, static_cast<u8>(value));
-        MemoryWrite8(vaddr + 1, static_cast<u8>(value >> 8));
-    }
-    void MemoryWrite32(u32 vaddr, std::uint32_t value) override {
-        MemoryWrite16(vaddr, static_cast<u16>(value));
-        MemoryWrite16(vaddr + 2, static_cast<u16>(value >> 16));
-    }
-    void MemoryWrite64(u32 vaddr, std::uint64_t value) override {
-        MemoryWrite32(vaddr, static_cast<u32>(value));
-        MemoryWrite32(vaddr + 4, static_cast<u32>(value >> 32));
+    void MemoryWrite(Dynarmic::A32::VAddr vaddr, u64 value, size_t size) override {
+        switch (size) {
+        case sizeof(u64):
+            MemoryWrite(vaddr, u32(value), sizeof(u32));
+            MemoryWrite(vaddr + 4, u32(value >> 32), sizeof(u32));
+            break;
+        case sizeof(u32):
+            MemoryWrite(vaddr, u16(value), sizeof(u16));
+            MemoryWrite(vaddr + 2, u16(value >> 16), sizeof(u16));
+            break;
+        case sizeof(u16):
+            MemoryWrite(vaddr, u8(value), sizeof(u8));
+            MemoryWrite(vaddr + 1, u8(value >> 8), sizeof(u8));
+            break;
+        case sizeof(u8):
+            memory[vaddr] = value;
+            break;
+        default:
+            std::abort();
+        }
     }
 
     void CallSVC(std::uint32_t swi) override {
@@ -231,7 +243,7 @@ void ExecuteA32Instruction(u32 instruction) {
             if (const auto address = get_value()) {
                 fmt::print("value: ");
                 if (const auto value = get_value()) {
-                    env.MemoryWrite32(*address, *value);
+                    env.MemoryWrite(*address, *value, sizeof(u32));
                     fmt::print("> mem[0x{:08x}] = 0x{:08x}\n", *address, *value);
                 }
             }
@@ -247,8 +259,8 @@ void ExecuteA32Instruction(u32 instruction) {
     cpu.SetFpscr(fpscr);
 
     const u32 initial_pc = regs[15];
-    env.MemoryWrite32(initial_pc + 0, instruction);
-    env.MemoryWrite32(initial_pc + 4, 0xEAFFFFFE);  // B +0
+    env.MemoryWrite(initial_pc + 0, instruction, sizeof(u32));
+    env.MemoryWrite(initial_pc + 4, 0xEAFFFFFE, sizeof(u32));  // B +0
 
     cpu.Run();
     fmt::print("{}", fmt::join(cpu.Disassemble(), "\n"));
