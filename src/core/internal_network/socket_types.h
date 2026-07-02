@@ -281,6 +281,14 @@ enum class OptName : u32 {
     NO_OFFLOAD = 0x4000,
     NO_DDP = 0x8000,
 };
+enum class TcpOptName : u32 {
+    NODELAY = 0x0001,
+    MAXSEG = 0x0002,
+    NOPUSH = 0x0004,
+    NOOPT = 0x0008,
+    MS5SIG = 0x0010,
+    INFO = 0x0020
+};
 
 enum class ShutdownHow : s32 {
     RD = 0,
