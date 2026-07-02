@@ -156,8 +156,7 @@ std::pair<s32, Errno> ProxySocket::RecvFrom(int flags, std::span<u8> message, Ne
     }
 }
 
-std::pair<s32, Errno> ProxySocket::ReceivePacket(int flags, std::span<u8> message, Network::SockAddrIn* addr,
-                                                 std::size_t max_length) {
+std::pair<s32, Errno> ProxySocket::ReceivePacket(int flags, std::span<u8> message, Network::SockAddrIn* addr, std::size_t max_length) {
     ProxyPacket& packet = received_packets.front();
     if (addr) {
         addr->len = 16;
@@ -167,7 +166,7 @@ std::pair<s32, Errno> ProxySocket::ReceivePacket(int flags, std::span<u8> messag
         addr->zeroes = {};
     }
 
-    bool peek = (flags & FLAG_MSG_PEEK) != 0;
+    bool peek = (flags & u32(Network::MsgOpt::PEEK)) != 0;
     std::size_t read_bytes;
     if (packet.data.size() > max_length) {
         read_bytes = max_length;
@@ -180,8 +179,7 @@ std::pair<s32, Errno> ProxySocket::ReceivePacket(int flags, std::span<u8> messag
             return {-1, Errno::MSGSIZE};
         } else if (protocol == Protocol::TCP) {
             std::vector<u8> numArray(packet.data.size() - max_length);
-            std::copy(packet.data.begin() + max_length, packet.data.end(),
-                      std::back_inserter(numArray));
+            std::copy(packet.data.begin() + max_length, packet.data.end(), std::back_inserter(numArray));
             packet.data = numArray;
         }
     } else {
