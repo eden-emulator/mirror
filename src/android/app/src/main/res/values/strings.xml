@@ -1695,51 +1695,6 @@ FAILURE OF THE LIBRARY TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF
 SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
 DAMAGES.
     </string>
-    <string name="license_opus" translatable="false">Opus</string>
-    <string name="license_opus_description" translatable="false">Modern audio compression for the internet</string>
-    <string name="license_opus_link" translatable="false">https://github.com/xiph/opus</string>
-    <string name="license_opus_copyright" translatable="false">Copyright 2001–2011 Xiph.Org, Skype Limited, Octasic, Jean-Marc Valin, Timothy B. Terriberry, CSIRO, Gregory Maxwell, Mark Borgerding, Erik de Castro Lopo</string>
-    <string name="license_opus_text" translatable="false">
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:\n\n
-
-- Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.\n\n
-
-- Redistributions in binary form must reproduce the above copyright
-notice, this list of conditions and the following disclaimer in the
-documentation and/or other materials provided with the distribution.\n\n
-
-- Neither the name of Internet Society, IETF or IETF Trust, nor the
-names of specific contributors, may be used to endorse or promote
-products derived from this software without specific prior written
-permission.\n\n
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-``AS IS\'\' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
-OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n\n
-
-Opus is subject to the royalty-free patent licenses which are
-specified at:\n\n
-
-Xiph.Org Foundation:
-https://datatracker.ietf.org/ipr/1524/ \n\n
-
-Microsoft Corporation:
-https://datatracker.ietf.org/ipr/1914/ \n\n
-
-Broadcom Corporation:
-https://datatracker.ietf.org/ipr/1526/
-    </string>
     <string name="license_sirit" translatable="false">Sirit</string>
     <string name="license_sirit_description" translatable="false">A runtime SPIR-V assembler</string>
     <string name="license_sirit_link" translatable="false">https://github.com/ReinUsesLisp/sirit</string>
