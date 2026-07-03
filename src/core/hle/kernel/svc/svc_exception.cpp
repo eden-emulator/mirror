@@ -43,9 +43,6 @@ void Break(Core::System& system, BreakReason reason, u64 info1, u64 info2) {
             for (std::size_t i = 0; i < debug_buffer.size(); i++) {
                 hexdump += fmt::format("{:02X} ", debug_buffer[i]);
                 if ((i + 1) % 32 == 0) {
-                    char tmp[32];
-                    for (std::size_t j = 0; j < 32; ++j)
-                        tmp[j] = debug_buffer[(i + 1) - 32 + j];
                     hexdump += '\n';
                 }
             }
