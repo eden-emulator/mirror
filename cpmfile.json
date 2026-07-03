@@ -218,21 +218,6 @@
         "repo": "jimmy-park/openssl-cmake",
         "version": "3.6.2"
     },
-    "opus": {
-        "find_args": "MODULE",
-        "hash": "9506147b0de35befda8633ff272981cc2575c860874791bd455b752f797fd7dbd1079f0ba42ccdd7bb1fe6773fa5e84b3d75667c2883dd1fb2d0e4a5fa4f8387",
-        "min_version": "1.3",
-        "options": [
-            "OPUS_PRESUME_NEON ON"
-        ],
-        "package": "Opus",
-        "patches": [
-            "0001-disable-clang-runtime-neon.patch",
-            "0002-no-install.patch"
-        ],
-        "repo": "xiph/opus",
-        "version": "a3f0ec02b3"
-    },
     "quazip": {
         "hash": "609c240c7f029ac26a37d8fbab51bc16284e05e128b78b9b9c0e95d083538c36047a67d682759ac990e4adb0eeb90f04f1ea7fe2253bbda7e7e3bcce32e53dd8",
         "min_version": "1.3",

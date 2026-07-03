@@ -9,6 +9,9 @@
 #include <memory>
 #include <thread>
 
+#include "ankerl/unordered_dense.h"
+#include "audio_core/adsp/apps/opus/opus_decode_object.h"
+#include "audio_core/adsp/apps/opus/opus_multistream_decode_object.h"
 #include "audio_core/adsp/apps/opus/shared_memory.h"
 #include "audio_core/adsp/mailbox.h"
 #include "common/common_types.h"
@@ -68,9 +71,7 @@ public:
     }
 
 private:
-    /**
-     * Initializing thread, launched at audio_core boot to avoid blocking the main emu boot thread.
-     */
+    /// @brief Initializing thread, launched at audio_core boot to avoid blocking the main emu boot thread.
     void Init(std::stop_token stop_token);
     /**
      * Main OpusDecoder thread, responsible for processing the incoming Opus packets.
@@ -90,6 +91,9 @@ private:
     /// Structure shared with the host, input data set by the host before sending a mailbox message,
     /// and the responses are written back by the OpusDecoder.
     SharedMemory* shared_memory{};
+
+    ankerl::unordered_dense::map<u64, OpusDecodeObject> decode_objects;
+    ankerl::unordered_dense::map<u64, OpusMultiStreamDecodeObject> ms_decode_objects;
 };
 
 } // namespace AudioCore::ADSP::OpusDecoder
