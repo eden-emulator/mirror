@@ -226,7 +226,13 @@ else()
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-sign-conversion>)
 endif()
 
-target_include_directories(audio_core PRIVATE ${OPUS_INCLUDE_DIRS})
+if (YUZU_USE_EXTERNAL_FFMPEG)
+    add_dependencies(video_core ffmpeg-build)
+endif()
+target_include_directories(video_core PUBLIC ${FFmpeg_INCLUDE_DIR})
+target_link_libraries(video_core PRIVATE ${FFmpeg_LIBRARIES})
+target_link_options(video_core PRIVATE ${FFmpeg_LDFLAGS})
+
 target_link_libraries(audio_core PUBLIC common core)
 
 if (ENABLE_CUBEB)
