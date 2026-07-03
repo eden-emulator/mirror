@@ -12,7 +12,7 @@ pkgs.mkShellNoCC {
     git cmake clang gnumake patch jq pkg-config
     # libraries
     openssl boost fmt nlohmann_json lz4 zlib zstd
-    enet libopus vulkan-headers vulkan-utility-libraries
+    enet vulkan-headers vulkan-utility-libraries
     spirv-tools spirv-headers vulkan-loader unzip
     glslang python3 httplib cpp-jwt ffmpeg-headless
     libusb1 cubeb
