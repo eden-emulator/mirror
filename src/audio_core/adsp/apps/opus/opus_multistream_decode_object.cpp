@@ -1,8 +1,20 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavcodec/codec.h>
+#include <libavcodec/packet.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/frame.h>
+}
 #include "audio_core/adsp/apps/opus/opus_multistream_decode_object.h"
 #include "common/assert.h"
+#include "core/hle/result.h"
+#include "core/hle/service/audio/errors.h"
 
 namespace AudioCore::ADSP::OpusDecoder {
 
@@ -12,100 +24,59 @@ bool IsValidChannelCount(u32 channel_count) {
 }
 
 bool IsValidStreamCounts(u32 total_stream_count, u32 stereo_stream_count) {
-    return total_stream_count > 0 && static_cast<s32>(stereo_stream_count) >= 0 &&
-           stereo_stream_count <= total_stream_count && IsValidChannelCount(total_stream_count);
+    return total_stream_count > 0 && s32(stereo_stream_count) >= 0
+        && stereo_stream_count <= total_stream_count && IsValidChannelCount(total_stream_count);
 }
 } // namespace
 
-u32 OpusMultiStreamDecodeObject::GetWorkBufferSize(u32 total_stream_count,
-                                                   u32 stereo_stream_count) {
-    if (IsValidStreamCounts(total_stream_count, stereo_stream_count)) {
-        return static_cast<u32>(sizeof(OpusMultiStreamDecodeObject)) +
-               opus_multistream_decoder_get_size(total_stream_count, stereo_stream_count);
-    }
+u32 OpusMultiStreamDecodeObject::GetWorkBufferSize(u32 total_stream_count, u32 stereo_stream_count) {
+    if (IsValidStreamCounts(total_stream_count, stereo_stream_count))
+        return u32(sizeof(OpusMultiStreamDecodeObject)) + 2556 * (total_stream_count * stereo_stream_count);
     return 0;
 }
 
-OpusMultiStreamDecodeObject& OpusMultiStreamDecodeObject::Initialize(u64 buffer, u64 buffer2) {
-    auto* new_decoder = reinterpret_cast<OpusMultiStreamDecodeObject*>(buffer);
-    auto* comparison = reinterpret_cast<OpusMultiStreamDecodeObject*>(buffer2);
-
-    if (new_decoder->magic == DecodeMultiStreamObjectMagic) {
-        if (!new_decoder->initialized ||
-            (new_decoder->initialized && new_decoder->self == comparison)) {
-            new_decoder->state_valid = true;
-        }
-    } else {
-        new_decoder->initialized = false;
-        new_decoder->state_valid = true;
-    }
-    return *new_decoder;
+Result OpusMultiStreamDecodeObject::InitializeDecoder(u32 sample_rate, u32 total_stream_count, u32 channel_count, u32 stereo_stream_count, u8* mappings) {
+    if ((codec = avcodec_find_decoder(AV_CODEC_ID_OPUS)) == nullptr)
+        return Service::Audio::ResultLibOpusInvalidState;
+    if ((avctx = avcodec_alloc_context3(codec)))
+        return Service::Audio::ResultLibOpusInvalidState;
+    avctx->sample_rate = sample_rate;
+    av_channel_layout_default(&avctx->ch_layout, channel_count);
+    return ResultSuccess;
 }
 
-s32 OpusMultiStreamDecodeObject::InitializeDecoder(u32 sample_rate, u32 total_stream_count,
-                                                   u32 channel_count, u32 stereo_stream_count,
-                                                   u8* mappings) {
-    if (!state_valid) {
-        return OPUS_INVALID_STATE;
-    }
-
-    if (initialized) {
-        return OPUS_OK;
-    }
-
-    // See OpusDecodeObject::InitializeDecoder for an explanation of this
-    decoder = (LibOpusMSDecoder*)(this + 1);
-    s32 ret = opus_multistream_decoder_init(decoder, sample_rate, channel_count, total_stream_count,
-                                            stereo_stream_count, mappings);
-    if (ret == OPUS_OK) {
-        magic = DecodeMultiStreamObjectMagic;
-        initialized = true;
-        state_valid = true;
-        self = this;
-        final_range = 0;
-    }
-    return ret;
+Result OpusMultiStreamDecodeObject::Shutdown() {
+    if (avctx)
+        avcodec_free_context(&avctx);
+    return ResultSuccess;
 }
 
-s32 OpusMultiStreamDecodeObject::Shutdown() {
-    if (!state_valid) {
-        return OPUS_INVALID_STATE;
+Result OpusMultiStreamDecodeObject::ResetDecoder() {
+    if (avctx) {
+        avcodec_flush_buffers(avctx);
+        return ResultSuccess;
     }
-
-    if (initialized) {
-        magic = 0x0;
-        initialized = false;
-        state_valid = false;
-        self = nullptr;
-        final_range = 0;
-        decoder = nullptr;
-    }
-    return OPUS_OK;
+    return Service::Audio::ResultLibOpusInvalidState;
 }
 
-s32 OpusMultiStreamDecodeObject::ResetDecoder() {
-    return opus_multistream_decoder_ctl(decoder, OPUS_RESET_STATE);
-}
-
-s32 OpusMultiStreamDecodeObject::Decode(u32& out_sample_count, u64 output_data,
-                                        u64 output_data_size, u64 input_data, u64 input_data_size) {
-    ASSERT(initialized);
+Result OpusMultiStreamDecodeObject::Decode(u32& out_sample_count, u64 output_data, u64 output_data_size, u64 input_data, u64 input_data_size) {
     out_sample_count = 0;
+    if (avctx) {
+        AVPacket* avpkt = av_packet_alloc();
+        av_new_packet(avpkt, int(input_data_size));
+        std::memcpy(avpkt->data, reinterpret_cast<const u8*>(input_data), input_data_size);
+        avcodec_send_packet(avctx, avpkt);
 
-    if (!state_valid) {
-        return OPUS_INVALID_STATE;
+        AVFrame* frame = av_frame_alloc();
+        avcodec_receive_frame(avctx, frame);
+        std::memcpy(reinterpret_cast<u16*>(output_data), frame->data, output_data_size);
+        av_frame_free(&frame);
+        av_packet_free(&avpkt);
+
+        out_sample_count = frame->nb_samples;
+        return ResultSuccess;
     }
-
-    auto ret_code_or_samples = opus_multistream_decode(
-        decoder, reinterpret_cast<const u8*>(input_data), static_cast<opus_int32>(input_data_size),
-        reinterpret_cast<opus_int16*>(output_data), static_cast<opus_int32>(output_data_size), 0);
-
-    if (ret_code_or_samples < OPUS_OK) {
-        return ret_code_or_samples;
-    }
-
-    out_sample_count = ret_code_or_samples;
-    return opus_multistream_decoder_ctl(decoder, OPUS_GET_FINAL_RANGE_REQUEST, &final_range);
+    return Service::Audio::ResultLibOpusInvalidState;
 }
 
 } // namespace AudioCore::ADSP::OpusDecoder
