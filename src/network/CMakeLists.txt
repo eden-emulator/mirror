@@ -28,6 +28,6 @@ if (ENABLE_WEB_SERVICE)
 endif()
 
 # Solaris uses /lib/amd64/libsocket.so and /lib/amd64/libnsl.so
-if (PLATFORM_SUN)
+if (SOLARIS)
     target_link_libraries(network PRIVATE socket nsl)
 endif()
