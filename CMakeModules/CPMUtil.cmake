@@ -338,7 +338,7 @@ function(fetch_package)
     endif()
 
     # TODO: only echo this in script mode
-    message("Extracted to ${abs_path}")
+    echo("Extracted to ${abs_path}")
 
     # Apply patches
     apply_patches("${ARG_PATCHES}" "${abs_path}")
