@@ -95,7 +95,7 @@ macro(echo)
         execute_process(COMMAND ${CMAKE_COMMAND} -E echo
             "${message}")
     else()
-        message(STATUS "${message}")
+        message(DEBUG "${message}")
     endif()
 endmacro()
 
@@ -122,34 +122,10 @@ endmacro()
 
 # Analogous to GNU mktemp, with fallbacks
 function(mktempdir out)
-    # shell out to system mktemp if available
-    find_program(MKTEMP_EXECUTABLE mktemp)
-    if (MKTEMP_EXECUTABLE)
-        execute_process(COMMAND mktemp -d
-            OUTPUT_VARIABLE dir
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            RESULT_VARIABLE ret)
-
-        if (ret EQUAL 0)
-            set(${out} "${dir}" PARENT_SCOPE)
-            return()
-        endif()
-    endif()
-
     string(RANDOM LENGTH 10 rand_str)
     set(tmp_str "tmp.${rand_str}")
 
-    # create something in /tmp if it exists
-    if(EXISTS "/tmp" AND IS_DIRECTORY "/tmp")
-        set(dir "/tmp/${tmp_str}")
-        file(MAKE_DIRECTORY "${dir}" RESULT res)
-        if (res EQUAL 0)
-            set(${out} "${dir}" PARENT_SCOPE)
-            return()
-        endif()
-    endif()
-
-    # tmpdir does not exist, extremely legacy mode
+    # Windows sucks.
     set(dir "${CMAKE_CURRENT_LIST_DIR}/.tmp/${tmp_str}")
     file(MAKE_DIRECTORY "${dir}" RESULT res)
     if (res EQUAL 0)
@@ -218,6 +194,7 @@ endfunction()
 # Download a URL to file, with a sha512 hash
 # And retry 5 times
 function(cpm_download url file)
+    echo("Downloading ${url} to ${file}")
     list(LENGTH ARGN argn_len)
     if(argn_len GREATER 0)
         list(GET ARGN 0 hash)
@@ -229,8 +206,7 @@ function(cpm_download url file)
     foreach(i RANGE 5)
         file(DOWNLOAD ${url} ${file}
             ${args}
-            STATUS ret
-            LOG log)
+            STATUS ret)
 
         list(GET ret 0 code)
         if (code EQUAL 0)
@@ -339,7 +315,15 @@ function(fetch_package)
         return()
     endif()
 
-    # Temporary directory.
+    # paths
+    cmake_path(ABSOLUTE_PATH ARG_PATH
+        NORMALIZE
+        OUTPUT_VARIABLE abs_path)
+
+    cmake_path(GET abs_path PARENT_PATH path_parent)
+    file(MAKE_DIRECTORY ${path_parent})
+
+    # Temporary directory for the downloaded archive
     mktempdir(TMP)
 
     # Get filename from URL
@@ -348,51 +332,42 @@ function(fetch_package)
     # Download
     set(file ${TMP}/${base_filename})
     cpm_download(${ARG_URL} ${file} ${ARG_HASH})
-    message(DEBUG "Downloaded ${base_filename}")
+    echo("Downloaded ${base_filename}")
 
-    # Extract the downloaded archive
-    # TODO: Moar error handling
-    set(dir ${TMP}/${base_filename}-extracted)
-    file(MAKE_DIRECTORY ${dir})
+    # Extract
+    string(RANDOM LENGTH 8 extract_suffix)
+    set(extraction_dir "${path_parent}/.extract_${extract_suffix}")
+    file(REMOVE_RECURSE ${extraction_dir})
+    file(MAKE_DIRECTORY ${extraction_dir})
+
+    echo("Extracting ${file}...")
 
     file(ARCHIVE_EXTRACT
         INPUT ${file}
-        DESTINATION ${dir})
+        DESTINATION ${extraction_dir})
 
     # This is copied near-verbatim from ExternalProject/extractfile.cmake.in
 
     # If there's just one subdirectory and nothing else, move it
-    file(GLOB contents "${dir}/*")
-    list(REMOVE_ITEM contents "${dir}/.DS_Store")
+    file(GLOB contents "${extraction_dir}/*")
+    list(REMOVE_ITEM contents "${extraction_dir}/.DS_Store")
     list(LENGTH contents n)
 
     # If n == 1 and contents points to a directory, this is a GitHub-style pack
     # In this case contents points to the subdir which will get renamed
     # If not, contents will point to the parent dir which will get renamed
     if (NOT n EQUAL 1 OR NOT IS_DIRECTORY "${contents}")
-        set(contents "${dir}")
+        set(contents "${extraction_dir}")
     endif()
 
     file(REAL_PATH "${contents}" contents_abs)
 
-    # paths
-    cmake_path(ABSOLUTE_PATH ARG_PATH
-        NORMALIZE
-        OUTPUT_VARIABLE abs_path)
-
-    cmake_path(GET abs_path PARENT_PATH path_parent)
-    cmake_path(GET abs_path FILENAME path_name)
-
-    # rename tmp dir
-    set(tmp_renamed "${TMP}/${path_name}")
-    file(RENAME "${contents_abs}" "${tmp_renamed}")
-
-    # now copy
-    # TODO: Error handling beyond what cmake does????
-    file(COPY ${tmp_renamed} DESTINATION ${path_parent})
+    # now move to final path
+    file(REMOVE_RECURSE ${abs_path})
+    file(RENAME ${contents_abs} ${abs_path})
 
     # TODO: only echo this in script mode
-    message(DEBUG "Extracted to ${abs_path}")
+    message("Extracted to ${abs_path}")
 
     # Apply patches
     apply_patches("${ARG_PATCHES}" "${abs_path}")
@@ -401,7 +376,7 @@ function(fetch_package)
     file(WRITE "${abs_path}/.cpm_patch_key" ${ARG_PATCH_KEY})
 
     # done! :)
-    file(REMOVE_RECURSE ${TMP})
+    file(REMOVE_RECURSE ${TMP} ${extraction_dir})
 endfunction()
 
 # compute a hash of all patch file contents
