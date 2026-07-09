@@ -43,6 +43,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
     FEATURE(EXT, ShaderDemoteToHelperInvocation, SHADER_DEMOTE_TO_HELPER_INVOCATION,               \
             shader_demote_to_helper_invocation)                                                    \
     FEATURE(EXT, SubgroupSizeControl, SUBGROUP_SIZE_CONTROL, subgroup_size_control)                \
+    FEATURE(KHR, DynamicRendering, DYNAMIC_RENDERING, dynamic_rendering)                           \
     FEATURE(KHR, Maintenance4, MAINTENANCE_4, maintenance4)                                        \
     FEATURE(KHR, Synchronization2, SYNCHRONIZATION_2, synchronization2)
 
@@ -939,6 +940,11 @@ FN_MAX_LIMIT_LIST
     /// Returns true if the device supports VK_KHR_maintenance3.
     bool IsKhrMaintenance3Supported() const {
         return extensions.maintenance3;
+    }
+
+    /// Returns true if the device supports VK_KHR_dynamic_rendering.
+    bool IsKhrDynamicRenderingSupported() const {
+        return extensions.dynamic_rendering;
     }
 
     /// Returns true if the device supports VK_KHR_maintenance4.

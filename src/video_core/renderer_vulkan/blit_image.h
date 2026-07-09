@@ -33,6 +33,8 @@ struct BlitImagePipelineKey {
 
     VkRenderPass renderpass;
     Tegra::Engines::Fermi2D::Operation operation;
+    std::array<VkFormat, VideoCommon::NUM_RT> color_formats;
+    VkFormat depth_format;
 };
 
 struct BlitDepthStencilPipelineKey {
@@ -43,6 +45,8 @@ struct BlitDepthStencilPipelineKey {
     u8 stencil_mask;
     u32 stencil_compare_mask;
     u32 stencil_ref;
+    std::array<VkFormat, VideoCommon::NUM_RT> color_formats;
+    VkFormat depth_format;
 };
 
 struct MSAACopyPipelineKey {
@@ -123,31 +127,35 @@ private:
     void ConvertDepthStencil(VkPipeline pipeline, const Framebuffer* dst_framebuffer,
                              ImageView& src_image_view);
 
-    [[nodiscard]] VkPipeline FindOrEmplaceColorPipeline(const BlitImagePipelineKey& key);
+    [[nodiscard]] VkPipeline FindOrEmplaceColorPipeline(const BlitImagePipelineKey& key,
+                                                        const Framebuffer* framebuffer);
 
-    [[nodiscard]] VkPipeline FindOrEmplaceDepthStencilPipeline(const BlitImagePipelineKey& key);
+    [[nodiscard]] VkPipeline FindOrEmplaceDepthStencilPipeline(const BlitImagePipelineKey& key,
+                                                               const Framebuffer* framebuffer);
 
-    [[nodiscard]] VkPipeline FindOrEmplaceClearColorPipeline(const BlitImagePipelineKey& key);
+    [[nodiscard]] VkPipeline FindOrEmplaceClearColorPipeline(const BlitImagePipelineKey& key,
+                                                             const Framebuffer* framebuffer);
     [[nodiscard]] VkPipeline FindOrEmplaceClearStencilPipeline(
-        const BlitDepthStencilPipelineKey& key);
+        const BlitDepthStencilPipelineKey& key, const Framebuffer* framebuffer);
     [[nodiscard]] VkPipeline FindOrEmplaceMSAACopyPipeline(const MSAACopyPipelineKey& key);
     [[nodiscard]] VkPipeline FindOrEmplaceBlitColorMSAAPipeline(const BlitMSAAPipelineKey& key);
     [[nodiscard]] VkPipeline FindOrEmplaceResolveDepthStencilPipeline(VkRenderPass renderpass,
                                                                       bool resolve_stencil);
 
-    void ConvertPipeline(vk::Pipeline& pipeline, VkRenderPass renderpass, bool is_target_depth);
+    void ConvertPipeline(vk::Pipeline& pipeline, const Framebuffer* framebuffer,
+                         bool is_target_depth);
 
-    void ConvertDepthToColorPipeline(vk::Pipeline& pipeline, VkRenderPass renderpass);
+    void ConvertDepthToColorPipeline(vk::Pipeline& pipeline, const Framebuffer* framebuffer);
 
-    void ConvertColorToDepthPipeline(vk::Pipeline& pipeline, VkRenderPass renderpass);
+    void ConvertColorToDepthPipeline(vk::Pipeline& pipeline, const Framebuffer* framebuffer);
 
-    void ConvertPipelineEx(vk::Pipeline& pipeline, VkRenderPass renderpass,
+    void ConvertPipelineEx(vk::Pipeline& pipeline, const Framebuffer* framebuffer,
                            vk::ShaderModule& module, bool single_texture, bool is_target_depth);
 
-    void ConvertPipelineColorTargetEx(vk::Pipeline& pipeline, VkRenderPass renderpass,
+    void ConvertPipelineColorTargetEx(vk::Pipeline& pipeline, const Framebuffer* framebuffer,
                                       vk::ShaderModule& module);
 
-    void ConvertPipelineDepthTargetEx(vk::Pipeline& pipeline, VkRenderPass renderpass,
+    void ConvertPipelineDepthTargetEx(vk::Pipeline& pipeline, const Framebuffer* framebuffer,
                                       vk::ShaderModule& module);
 
     const Device& device;

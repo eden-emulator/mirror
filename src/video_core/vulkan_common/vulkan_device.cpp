@@ -1373,6 +1373,11 @@ void Device::RemoveUnsuitableExtensions() {
     extensions.maintenance3 = loaded_extensions.contains(VK_KHR_MAINTENANCE_3_EXTENSION_NAME);
     RemoveExtensionIfUnsuitable(extensions.maintenance3, VK_KHR_MAINTENANCE_3_EXTENSION_NAME);
 
+    // VK_KHR_dynamic_rendering
+    extensions.dynamic_rendering = features.dynamic_rendering.dynamicRendering;
+    RemoveExtensionFeatureIfUnsuitable(extensions.dynamic_rendering, features.dynamic_rendering,
+                                       VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+
     // VK_KHR_maintenance4
     extensions.maintenance4 = features.maintenance4.maintenance4;
     RemoveExtensionFeatureIfUnsuitable(extensions.maintenance4, features.maintenance4,

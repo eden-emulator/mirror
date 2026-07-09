@@ -290,7 +290,10 @@ GraphicsPipeline::GraphicsPipeline(
         descriptor_update_template =
             builder.CreateTemplate(set_layout, *pipeline_layout, uses_push_descriptor);
 
-        const VkRenderPass render_pass{render_pass_cache.Get(MakeRenderPassKey(key.state, device))};
+        VkRenderPass render_pass{};
+        if (!device.IsKhrDynamicRenderingSupported()) {
+            render_pass = render_pass_cache.Get(MakeRenderPassKey(key.state, device));
+        }
         Validate();
         try {
             MakePipeline(render_pass);
@@ -996,9 +999,47 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
         flags |= VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR;
     }
 
+    const RenderPassKey renderpass_key{MakeRenderPassKey(key.state, device)};
+    std::array<VkFormat, Maxwell::NumRenderTargets> color_attachment_formats{};
+    for (size_t index = 0; index < renderpass_key.color_formats.size(); ++index) {
+        const PixelFormat pixel_format{renderpass_key.color_formats[index]};
+        if (pixel_format == PixelFormat::Invalid) {
+            color_attachment_formats[index] = VK_FORMAT_UNDEFINED;
+            continue;
+        }
+        color_attachment_formats[index] =
+            MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, true, pixel_format).format;
+    }
+    VkFormat depth_attachment_format{VK_FORMAT_UNDEFINED};
+    VkFormat stencil_attachment_format{VK_FORMAT_UNDEFINED};
+    if (renderpass_key.depth_format != PixelFormat::Invalid) {
+        const VkFormat format{
+            MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, true,
+                                       renderpass_key.depth_format)
+                .format};
+        const auto surface_type{VideoCore::Surface::GetFormatType(renderpass_key.depth_format)};
+        if (surface_type == VideoCore::Surface::SurfaceType::Depth ||
+            surface_type == VideoCore::Surface::SurfaceType::DepthStencil) {
+            depth_attachment_format = format;
+        }
+        if (surface_type == VideoCore::Surface::SurfaceType::Stencil ||
+            surface_type == VideoCore::Surface::SurfaceType::DepthStencil) {
+            stencil_attachment_format = format;
+        }
+    }
+    const VkPipelineRenderingCreateInfo rendering_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        .pNext = nullptr,
+        .viewMask = 0,
+        .colorAttachmentCount = static_cast<u32>(NumAttachments(key.state)),
+        .pColorAttachmentFormats = color_attachment_formats.data(),
+        .depthAttachmentFormat = depth_attachment_format,
+        .stencilAttachmentFormat = stencil_attachment_format,
+    };
+
     pipeline = device.GetLogical().CreateGraphicsPipeline({
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = nullptr,
+        .pNext = device.IsKhrDynamicRenderingSupported() ? &rendering_ci : nullptr,
         .flags = flags,
         .stageCount = static_cast<u32>(shader_stages.size()),
         .pStages = shader_stages.data(),

@@ -71,7 +71,7 @@ public:
 
     /// Returns true when a render pass is currently active in the scheduler state.
     bool IsRenderPassActive() const {
-        return state.renderpass != VK_NULL_HANDLE;
+        return state.rendering;
     }
 
     /// Update the pipeline to the current execution context.
@@ -250,8 +250,10 @@ private:
     struct State {
         VkRenderPass renderpass{};
         VkFramebuffer framebuffer{};
+        std::array<VkImageView, 9> attachment_views{};
         VkExtent2D render_area = {0, 0};
         GraphicsPipeline* graphics_pipeline = nullptr;
+        bool rendering = false;
         bool is_rescaling = false;
         bool rescaling_defined = false;
         bool needs_state_enable_refresh = false;

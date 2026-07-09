@@ -92,6 +92,7 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdBeginConditionalRenderingEXT);
     X(vkCmdBeginQuery);
     X(vkCmdBeginRenderPass);
+    X(vkCmdBeginRendering);
     X(vkCmdBeginTransformFeedbackEXT);
     X(vkCmdBeginDebugUtilsLabelEXT);
     X(vkCmdBindDescriptorSets);
@@ -119,6 +120,7 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdEndConditionalRenderingEXT);
     X(vkCmdEndQuery);
     X(vkCmdEndRenderPass);
+    X(vkCmdEndRendering);
     X(vkCmdEndTransformFeedbackEXT);
     X(vkCmdEndDebugUtilsLabelEXT);
     X(vkCmdFillBuffer);
@@ -255,6 +257,12 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     if (!dld.vkCmdDrawIndirectCount) {
         Proc(dld.vkCmdDrawIndirectCount, dld, "vkCmdDrawIndirectCountKHR", device);
         Proc(dld.vkCmdDrawIndexedIndirectCount, dld, "vkCmdDrawIndexedIndirectCountKHR", device);
+    }
+
+    // Support for dynamic rendering is optional until Vulkan 1.3
+    if (!dld.vkCmdBeginRendering) {
+        Proc(dld.vkCmdBeginRendering, dld, "vkCmdBeginRenderingKHR", device);
+        Proc(dld.vkCmdEndRendering, dld, "vkCmdEndRenderingKHR", device);
     }
 
     // Synchronization2 is core in Vulkan 1.3, otherwise requires VK_KHR_synchronization2
