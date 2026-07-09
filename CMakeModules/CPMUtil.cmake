@@ -120,23 +120,6 @@ macro(sleep time)
     execute_process(COMMAND ${CMAKE_COMMAND} -E sleep ${time})
 endmacro()
 
-# Analogous to GNU mktemp, with fallbacks
-function(mktempdir out)
-    string(RANDOM LENGTH 10 rand_str)
-    set(tmp_str "tmp.${rand_str}")
-
-    # Windows sucks.
-    set(dir "${CMAKE_CURRENT_LIST_DIR}/.tmp/${tmp_str}")
-    file(MAKE_DIRECTORY "${dir}" RESULT res)
-    if (res EQUAL 0)
-        set(${out} "${dir}" PARENT_SCOPE)
-        return()
-    endif()
-
-    fatal("Fatal: Could not create temporary directory. "
-        "Check write permissions to the current directory")
-endfunction()
-
 # Get a package's effective URL.
 function(get_package_url)
     set(oneValueArgs
@@ -323,48 +306,36 @@ function(fetch_package)
     cmake_path(GET abs_path PARENT_PATH path_parent)
     file(MAKE_DIRECTORY ${path_parent})
 
-    # Temporary directory for the downloaded archive
-    mktempdir(TMP)
-
     # Get filename from URL
     get_filename_component(base_filename ${ARG_URL} NAME)
 
     # Download
-    set(file ${TMP}/${base_filename})
+    set(file ${path_parent}/${base_filename})
     cpm_download(${ARG_URL} ${file} ${ARG_HASH})
     echo("Downloaded ${base_filename}")
 
     # Extract
-    string(RANDOM LENGTH 8 extract_suffix)
-    set(extraction_dir "${path_parent}/.extract_${extract_suffix}")
-    file(REMOVE_RECURSE ${extraction_dir})
-    file(MAKE_DIRECTORY ${extraction_dir})
-
     echo("Extracting ${file}...")
-
     file(ARCHIVE_EXTRACT
         INPUT ${file}
-        DESTINATION ${extraction_dir})
+        DESTINATION ${abs_path})
 
     # This is copied near-verbatim from ExternalProject/extractfile.cmake.in
 
     # If there's just one subdirectory and nothing else, move it
-    file(GLOB contents "${extraction_dir}/*")
-    list(REMOVE_ITEM contents "${extraction_dir}/.DS_Store")
+    file(GLOB contents "${abs_path}/*")
+    list(REMOVE_ITEM contents "${abs_path}/.DS_Store")
     list(LENGTH contents n)
 
     # If n == 1 and contents points to a directory, this is a GitHub-style pack
     # In this case contents points to the subdir which will get renamed
     # If not, contents will point to the parent dir which will get renamed
-    if (NOT n EQUAL 1 OR NOT IS_DIRECTORY "${contents}")
-        set(contents "${extraction_dir}")
+    if (n EQUAL 1 AND IS_DIRECTORY "${contents}")
+        set(temp_path "${abs_path}_tmp")
+        file(RENAME "${contents}" "${temp_path}")
+        file(REMOVE_RECURSE "${abs_path}")
+        file(RENAME "${temp_path}" "${abs_path}")
     endif()
-
-    file(REAL_PATH "${contents}" contents_abs)
-
-    # now move to final path
-    file(REMOVE_RECURSE ${abs_path})
-    file(RENAME ${contents_abs} ${abs_path})
 
     # TODO: only echo this in script mode
     message("Extracted to ${abs_path}")
@@ -376,7 +347,7 @@ function(fetch_package)
     file(WRITE "${abs_path}/.cpm_patch_key" ${ARG_PATCH_KEY})
 
     # done! :)
-    file(REMOVE_RECURSE ${TMP} ${extraction_dir})
+    file(REMOVE_RECURSE ${file})
 endfunction()
 
 # compute a hash of all patch file contents
