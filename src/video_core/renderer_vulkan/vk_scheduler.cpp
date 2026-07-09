@@ -116,8 +116,57 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer, VkRenderPass
             GPU::Logging::GPULogger::GetInstance().LogRenderPassBegin(render_pass_info);
         }
 
-        Record([framebuffer](vk::CommandBuffer cmdbuf) {
-            framebuffer->BeginRendering(cmdbuf);
+        const u32 num_color = framebuffer->NumColorAttachments();
+        const bool has_depth = framebuffer->HasAspectDepthBit();
+        const bool has_stencil = framebuffer->HasAspectStencilBit();
+        const VkImageView depth_view = framebuffer->DepthAttachment();
+        const u32 layers = framebuffer->NumLayers();
+        std::array<VkRenderingAttachmentInfo, VideoCommon::NUM_RT> color_infos{};
+        for (u32 index = 0; index < num_color; ++index) {
+            color_infos[index] = VkRenderingAttachmentInfo{
+                .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .pNext = nullptr,
+                .imageView = color_views[index],
+                .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .resolveMode = VK_RESOLVE_MODE_NONE,
+                .resolveImageView = VK_NULL_HANDLE,
+                .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+                .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+                .clearValue = {},
+            };
+        }
+        const VkRenderingAttachmentInfo depth_info{
+            .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext = nullptr,
+            .imageView = depth_view,
+            .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .resolveMode = VK_RESOLVE_MODE_NONE,
+            .resolveImageView = VK_NULL_HANDLE,
+            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue = {},
+        };
+        Record([color_infos, depth_info, num_color, has_depth, has_stencil, layers,
+                render_area](vk::CommandBuffer cmdbuf) {
+            const VkRenderingInfo rendering_info{
+                .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .renderArea =
+                    {
+                        .offset = {.x = 0, .y = 0},
+                        .extent = render_area,
+                    },
+                .layerCount = layers,
+                .viewMask = 0,
+                .colorAttachmentCount = num_color,
+                .pColorAttachments = color_infos.data(),
+                .pDepthAttachment = has_depth ? &depth_info : nullptr,
+                .pStencilAttachment = has_stencil ? &depth_info : nullptr,
+            };
+            cmdbuf.BeginRendering(rendering_info);
         });
         num_renderpass_images = framebuffer->NumImages();
         renderpass_images = framebuffer->Images();
