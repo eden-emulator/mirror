@@ -414,12 +414,9 @@ AddJsonPackage(boost)
 set(BOOST_NO_HEADERS ${Boost_ADDED})
 
 if (Boost_ADDED)
-    if (MSVC OR ANDROID)
-        add_compile_definitions(YUZU_BOOST_v1)
-    endif()
-
+    add_compile_definitions(YUZU_BOOST_v1)
     if (NOT MSVC OR CXX_CLANG)
-        # boost sucks
+        # solaris sucks
         if (SOLARIS)
             add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-pthreads>)
         endif()
@@ -428,8 +425,7 @@ if (Boost_ADDED)
         target_compile_options(boost_icl INTERFACE $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-shadow>)
         target_compile_options(boost_asio INTERFACE
             $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-conversion>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-fallthrough>
-        )
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-fallthrough>)
     endif()
 endif()
 

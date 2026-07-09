@@ -65,7 +65,7 @@ else()
 endif()
 
 # update cached cpmfile content
-string(JSON cpmfile SET "${cpmfile}" "${key}" "${new_object}")
+string(JSON cpmfile SET "${cpmfile}" "${KEY}" "${new_object}")
 
 # write cached cpmfile
 get_cpmfile_path(file)
