@@ -30,7 +30,7 @@ class CodeBlock;
 namespace Dynarmic::Backend::LoongArch64 {
 class CodeBlock;
 }  // namespace Dynarmic::Backend::LoongArch64
-#elif defined(ARCHITECTURE_ppc64)
+#elif defined(ARCHITECTURE_powerpc64)
 namespace Dynarmic::Backend::PPC64 {
 class CodeBlock;
 }
@@ -57,7 +57,7 @@ struct FakeCall {
 struct FakeCall {
     u64 call_pc;
 };
-#elif defined(ARCHITECTURE_ppc64)
+#elif defined(ARCHITECTURE_powerpc64)
 struct FakeCall {
 };
 #else
@@ -77,7 +77,7 @@ public:
     void Register(RV64::CodeBlock& mem, std::size_t mem_size);
 #elif defined(ARCHITECTURE_loongarch64)
     void Register(LoongArch64::CodeBlock& mem, std::size_t mem_size);
-#elif defined(ARCHITECTURE_ppc64)
+#elif defined(ARCHITECTURE_powerpc64)
     void Register(PPC64::CodeBlock& mem, std::size_t mem_size);
 #else
 #    error "Invalid architecture"

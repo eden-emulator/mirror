@@ -148,7 +148,7 @@
 #    else
 #        error "unknown platform"
 #   endif
-#elif defined(ARCHITECTURE_ppc64)
+#elif defined(ARCHITECTURE_powerpc64)
 #   if defined(__FreeBSD__)
 #       define CTX_PC (mctx.mc_srr0)
 #       define CTX_SP (mctx.mc_gpr[1])

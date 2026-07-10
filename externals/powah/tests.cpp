@@ -253,7 +253,7 @@ TEST_CASE("ppc64: functor-1", "[ppc64]") {
     REQUIRE(data[15] == EB32(0x2000804e));
 }
 
-#if defined(ARCHITECTURE_ppc64)
+#if defined(ARCHITECTURE_powerpc64)
 /*
     0: d619637c  	mullw 3, 3, 3
     4: 20006378  	clrldi	3, 3, 32
