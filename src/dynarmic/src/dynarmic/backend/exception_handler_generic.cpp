@@ -24,7 +24,7 @@ void ExceptionHandler::Register(oaknut::CodeBlock&, std::size_t)
 void ExceptionHandler::Register(RV64::CodeBlock&, std::size_t)
 #elif defined(ARCHITECTURE_loongarch64)
 void ExceptionHandler::Register(LoongArch64::CodeBlock&, std::size_t)
-#elif defined(ARCHITECTURE_ppc64)
+#elif defined(ARCHITECTURE_powerpc64)
 void ExceptionHandler::Register(PPC64::CodeBlock&, std::size_t)
 #else
 #    error "Invalid architecture"
