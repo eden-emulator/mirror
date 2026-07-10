@@ -67,7 +67,7 @@ public:
 
     /// Requests the current execution context to be able to execute operations only allowed outside
     /// of a renderpass.
-    void RequestOutsideRenderPassOperationContext();
+    void RequestOutsideRenderPassOperationContext(bool allow_suspend = false);
 
     /// Returns true when a render pass is currently active in the scheduler state.
     bool IsRenderPassActive() const {
@@ -254,6 +254,11 @@ private:
         VkExtent2D render_area = {0, 0};
         GraphicsPipeline* graphics_pipeline = nullptr;
         bool rendering = false;
+        bool suspended = false;
+        u32 num_color = 0;
+        bool has_depth = false;
+        bool has_stencil = false;
+        u32 layer_count = 1;
         bool is_rescaling = false;
         bool rescaling_defined = false;
         bool needs_state_enable_refresh = false;
@@ -283,6 +288,8 @@ private:
     void AllocateNewContext();
 
     void EndPendingOperations();
+
+    void RecordDynamicBegin(bool resuming, bool suspending);
 
     void EndRenderPass();
 
