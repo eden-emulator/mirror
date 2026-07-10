@@ -228,7 +228,7 @@ if(CXX_CLANG)
 endif()
 
 if (BOOST_NO_HEADERS)
-    target_link_libraries(common PUBLIC Boost::algorithm Boost::icl Boost::pool Boost::heap)
+    target_link_libraries(common PUBLIC Boost::algorithm Boost::heap Boost::icl Boost::pool)
 else()
     target_link_libraries(common PUBLIC Boost::headers)
 endif()
