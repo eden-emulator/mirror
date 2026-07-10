@@ -250,7 +250,7 @@ endif()
 add_subdirectory(nx_tzdb)
 
 # PowerPC emitter
-if (ARCHITECTURE_ppc64)
+if (ARCHITECTURE_powerpc64)
     add_subdirectory(powah)
 endif()
 

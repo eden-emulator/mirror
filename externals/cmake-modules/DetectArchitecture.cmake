@@ -166,7 +166,7 @@ detect_architecture_symbols(
         "_M_MRX000")
 
 detect_architecture_symbols(
-    ARCH ppc64
+    ARCH powerpc64
     SYMBOLS
         "__ppc64__"
         "__powerpc64__"
@@ -174,7 +174,7 @@ detect_architecture_symbols(
         "_M_PPC64")
 
 detect_architecture_symbols(
-    ARCH ppc
+    ARCH powerpc
     SYMBOLS
         "__ppc__"
         "__ppc"
