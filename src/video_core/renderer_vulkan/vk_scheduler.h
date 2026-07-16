@@ -67,7 +67,7 @@ public:
 
     /// Requests the current execution context to be able to execute operations only allowed outside
     /// of a renderpass.
-    void RequestOutsideRenderPassOperationContext(bool allow_suspend = false);
+    void RequestOutsideRenderPassOperationContext();
 
     /// Returns true when a render pass is currently active in the scheduler state.
     bool IsRenderPassActive() const {
@@ -254,7 +254,6 @@ private:
         VkExtent2D render_area = {0, 0};
         GraphicsPipeline* graphics_pipeline = nullptr;
         bool rendering = false;
-        bool suspended = false;
         u32 num_color = 0;
         bool has_depth = false;
         bool has_stencil = false;
@@ -276,6 +275,9 @@ private:
     void BeginRenderPassImpl(const Framebuffer* framebuffer, VkRenderPass renderpass,
                              const VkClearValue* clear_values, u32 clear_value_count);
 
+    /// Begins a dynamic rendering pass, optionally realizing a deferred clear via load ops.
+    void BeginDynamicRendering(const Framebuffer* framebuffer, const DeferredClear* clear);
+
     /// If a deferred clear is pending.
     void RealizeDeferredClear();
 
@@ -289,7 +291,7 @@ private:
 
     void EndPendingOperations();
 
-    void RecordDynamicBegin(bool resuming, bool suspending);
+    void RecordDynamicBegin(const DeferredClear* clear);
 
     void EndRenderPass();
 

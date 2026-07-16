@@ -93,40 +93,44 @@ void Scheduler::DispatchWork() {
     }
 }
 
+void Scheduler::BeginDynamicRendering(const Framebuffer* framebuffer, const DeferredClear* clear) {
+    const VkExtent2D render_area = framebuffer->RenderArea();
+    std::array<VkImageView, 9> attachment_views{};
+    const auto& color_views = framebuffer->ColorAttachments();
+    for (size_t index = 0; index < color_views.size(); ++index) {
+        attachment_views[index] = color_views[index];
+    }
+    attachment_views[8] = framebuffer->DepthAttachment();
+    state.renderpass = VkRenderPass{};
+    state.framebuffer = VkFramebuffer{};
+    state.attachment_views = attachment_views;
+    state.render_area = render_area;
+    state.num_color = framebuffer->NumColorAttachments();
+    state.has_depth = framebuffer->HasAspectDepthBit();
+    state.has_stencil = framebuffer->HasAspectStencilBit();
+    state.layer_count = framebuffer->NumLayers();
+    state.rendering = true;
+
+    if (GPU::Logging::IsActive() && Settings::values.gpu_log_vulkan_calls.GetValue()) {
+        const std::string render_pass_info =
+            fmt::format("renderArea={}x{}, numImages={}", render_area.width, render_area.height,
+                        framebuffer->NumImages());
+        GPU::Logging::GPULogger::GetInstance().LogRenderPassBegin(render_pass_info);
+    }
+
+    RecordDynamicBegin(clear);
+    num_renderpass_images = framebuffer->NumImages();
+    renderpass_images = framebuffer->Images();
+    renderpass_image_ranges = framebuffer->ImageRanges();
+}
+
 void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer, VkRenderPass renderpass,
                                     const VkClearValue* clear_values, u32 clear_value_count) {
-    const VkExtent2D render_area = framebuffer->RenderArea();
     if (device.IsKhrDynamicRenderingSupported()) {
-        std::array<VkImageView, 9> attachment_views{};
-        const auto& color_views = framebuffer->ColorAttachments();
-        for (size_t index = 0; index < color_views.size(); ++index) {
-            attachment_views[index] = color_views[index];
-        }
-        attachment_views[8] = framebuffer->DepthAttachment();
-        state.renderpass = VkRenderPass{};
-        state.framebuffer = VkFramebuffer{};
-        state.attachment_views = attachment_views;
-        state.render_area = render_area;
-        state.num_color = framebuffer->NumColorAttachments();
-        state.has_depth = framebuffer->HasAspectDepthBit();
-        state.has_stencil = framebuffer->HasAspectStencilBit();
-        state.layer_count = framebuffer->NumLayers();
-        state.rendering = true;
-        state.suspended = false;
-
-        if (GPU::Logging::IsActive() && Settings::values.gpu_log_vulkan_calls.GetValue()) {
-            const std::string render_pass_info =
-                fmt::format("renderArea={}x{}, numImages={}", render_area.width, render_area.height,
-                            framebuffer->NumImages());
-            GPU::Logging::GPULogger::GetInstance().LogRenderPassBegin(render_pass_info);
-        }
-
-        RecordDynamicBegin(false, true);
-        num_renderpass_images = framebuffer->NumImages();
-        renderpass_images = framebuffer->Images();
-        renderpass_image_ranges = framebuffer->ImageRanges();
+        BeginDynamicRendering(framebuffer, nullptr);
         return;
     }
+    const VkExtent2D render_area = framebuffer->RenderArea();
     const VkFramebuffer framebuffer_handle = framebuffer->Handle();
     state.renderpass = renderpass;
     state.framebuffer = framebuffer_handle;
@@ -172,6 +176,12 @@ void Scheduler::RealizeDeferredClear() {
     }
     const DeferredClear dc = deferred_clear;
     deferred_clear = {};
+
+    if (device.IsKhrDynamicRenderingSupported()) {
+        EndRenderPass();
+        BeginDynamicRendering(dc.framebuffer, &dc);
+        return;
+    }
 
     std::array<VkClearValue, 9> clear_values{};
     u32 count = 0;
@@ -235,20 +245,13 @@ void Scheduler::RequestRenderpass(const Framebuffer* framebuffer) {
             attachment_views[index] = color_views[index];
         }
         attachment_views[8] = framebuffer->DepthAttachment();
-        const bool same_target = state.rendering &&
-                                 attachment_views == state.attachment_views &&
-                                 render_area.width == state.render_area.width &&
-                                 render_area.height == state.render_area.height;
-        if (same_target && !state.suspended) {
-            return;
-        }
-        if (same_target && state.suspended) {
-            RecordDynamicBegin(true, true);
-            state.suspended = false;
+        if (state.rendering && attachment_views == state.attachment_views &&
+            render_area.width == state.render_area.width &&
+            render_area.height == state.render_area.height) {
             return;
         }
         EndRenderPass();
-        BeginRenderPassImpl(framebuffer, VkRenderPass{}, nullptr, 0);
+        BeginDynamicRendering(framebuffer, nullptr);
         return;
     }
     const VkRenderPass renderpass = framebuffer->RenderPass();
@@ -263,16 +266,7 @@ void Scheduler::RequestRenderpass(const Framebuffer* framebuffer) {
     BeginRenderPassImpl(framebuffer, renderpass, nullptr, 0);
 }
 
-void Scheduler::RequestOutsideRenderPassOperationContext(bool allow_suspend) {
-    if (allow_suspend && device.IsKhrDynamicRenderingSupported() && state.rendering &&
-        !state.suspended) {
-        query_cache->CounterClose(VideoCommon::QueryType::StreamingByteCount);
-        query_cache->CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, false);
-        query_cache->NotifySegment(false);
-        Record([](vk::CommandBuffer cmdbuf) { cmdbuf.EndRendering(); });
-        state.suspended = true;
-        return;
-    }
+void Scheduler::RequestOutsideRenderPassOperationContext() {
     EndRenderPass();
 }
 
@@ -436,24 +430,23 @@ void Scheduler::InvalidateState() {
     state_tracker.InvalidateCommandBufferState();
 }
 
-void Scheduler::RecordDynamicBegin(bool resuming, bool suspending) {
+void Scheduler::RecordDynamicBegin(const DeferredClear* clear) {
     const std::array<VkImageView, 9> views = state.attachment_views;
     const u32 num_color = state.num_color;
     const bool has_depth = state.has_depth;
     const bool has_stencil = state.has_stencil;
     const u32 layers = state.layer_count;
     const VkExtent2D render_area = state.render_area;
-    VkRenderingFlags flags = 0;
-    if (resuming) {
-        flags |= VK_RENDERING_RESUMING_BIT;
-    }
-    if (suspending) {
-        flags |= VK_RENDERING_SUSPENDING_BIT;
-    }
-    Record([views, num_color, has_depth, has_stencil, layers, render_area,
-            flags](vk::CommandBuffer cmdbuf) {
+    const u32 color_clear_mask = clear ? clear->color_clear_mask : 0u;
+    const std::array<VkClearValue, 8> color_clear_values =
+        clear ? clear->color_values : std::array<VkClearValue, 8>{};
+    const bool ds_clear = clear != nullptr && clear->depth_stencil;
+    const VkClearValue ds_clear_value = clear ? clear->depth_stencil_value : VkClearValue{};
+    Record([views, num_color, has_depth, has_stencil, layers, render_area, color_clear_mask,
+            color_clear_values, ds_clear, ds_clear_value](vk::CommandBuffer cmdbuf) {
         std::array<VkRenderingAttachmentInfo, VideoCommon::NUM_RT> color_infos{};
         for (u32 index = 0; index < num_color; ++index) {
+            const bool clear_slot = ((color_clear_mask >> index) & 1u) != 0;
             color_infos[index] = VkRenderingAttachmentInfo{
                 .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                 .pNext = nullptr,
@@ -462,9 +455,9 @@ void Scheduler::RecordDynamicBegin(bool resuming, bool suspending) {
                 .resolveMode = VK_RESOLVE_MODE_NONE,
                 .resolveImageView = VK_NULL_HANDLE,
                 .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+                .loadOp = clear_slot ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
                 .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-                .clearValue = {},
+                .clearValue = clear_slot ? color_clear_values[index] : VkClearValue{},
             };
         }
         const VkRenderingAttachmentInfo depth_info{
@@ -475,14 +468,14 @@ void Scheduler::RecordDynamicBegin(bool resuming, bool suspending) {
             .resolveMode = VK_RESOLVE_MODE_NONE,
             .resolveImageView = VK_NULL_HANDLE,
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+            .loadOp = ds_clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue = {},
+            .clearValue = ds_clear ? ds_clear_value : VkClearValue{},
         };
         const VkRenderingInfo rendering_info{
             .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
             .pNext = nullptr,
-            .flags = flags,
+            .flags = 0,
             .renderArea =
                 {
                     .offset = {.x = 0, .y = 0},
@@ -511,29 +504,16 @@ void Scheduler::EndRenderPass()
             return;
         }
 
-        const bool dynamic = device.IsKhrDynamicRenderingSupported();
+        query_cache->CounterClose(VideoCommon::QueryType::StreamingByteCount);
 
-        if (!state.suspended) {
-            query_cache->CounterClose(VideoCommon::QueryType::StreamingByteCount);
-
-            // Log render pass end
-            if (GPU::Logging::IsActive() &&
-                Settings::values.gpu_log_vulkan_calls.GetValue()) {
-                GPU::Logging::GPULogger::GetInstance().LogRenderPassEnd();
-            }
-
-            query_cache->CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, false);
-            query_cache->NotifySegment(false);
-
-            if (dynamic) {
-                Record([](vk::CommandBuffer cmdbuf) { cmdbuf.EndRendering(); });
-                state.suspended = true;
-            }
+        // Log render pass end
+        if (GPU::Logging::IsActive() &&
+            Settings::values.gpu_log_vulkan_calls.GetValue()) {
+            GPU::Logging::GPULogger::GetInstance().LogRenderPassEnd();
         }
 
-        if (dynamic && state.suspended) {
-            RecordDynamicBegin(true, false);
-        }
+        query_cache->CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, false);
+        query_cache->NotifySegment(false);
 
         Record([num_images = num_renderpass_images,
                        images = renderpass_images,
@@ -601,7 +581,6 @@ void Scheduler::EndRenderPass()
         state.framebuffer = VkFramebuffer{};
         state.attachment_views = {};
         state.rendering = false;
-        state.suspended = false;
         num_renderpass_images = 0;
     }
 

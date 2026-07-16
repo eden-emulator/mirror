@@ -709,10 +709,12 @@ void BlitImageHelper::BlitColorMSAA(const Framebuffer* dst_framebuffer,
     const BlitMSAAPipelineKey key{
         .renderpass = dst_framebuffer->RenderPass(),
         .samples = dst_framebuffer->Samples(),
+        .color_formats = dst_framebuffer->ColorAttachmentFormats(),
+        .depth_format = dst_framebuffer->DepthAttachmentFormat(),
     };
     const VkPipelineLayout layout = *one_texture_pipeline_layout;
     const VkSampler sampler = *nearest_sampler;
-    const VkPipeline pipeline = FindOrEmplaceBlitColorMSAAPipeline(key);
+    const VkPipeline pipeline = FindOrEmplaceBlitColorMSAAPipeline(key, dst_framebuffer);
     const VkImageView src_view = src_image_view.Handle(Shader::TextureType::Color2D);
 
     RecordShaderReadBarrier(scheduler, src_image_view);
@@ -736,7 +738,7 @@ void BlitImageHelper::ResolveDepthStencil(const Framebuffer* dst_framebuffer,
     const bool resolve_stencil =
         dst_framebuffer->HasAspectStencilBit() && device.IsExtShaderStencilExportSupported();
     const VkPipeline pipeline =
-        FindOrEmplaceResolveDepthStencilPipeline(dst_framebuffer->RenderPass(), resolve_stencil);
+        FindOrEmplaceResolveDepthStencilPipeline(dst_framebuffer, resolve_stencil);
     const VkPipelineLayout layout =
         resolve_stencil ? *two_textures_pipeline_layout : *one_texture_pipeline_layout;
     const VkSampler sampler = *nearest_sampler;
@@ -1382,12 +1384,14 @@ VkPipeline BlitImageHelper::FindOrEmplaceClearStencilPipeline(
     return *clear_stencil_pipelines.back();
 }
 
-VkPipeline BlitImageHelper::FindOrEmplaceBlitColorMSAAPipeline(const BlitMSAAPipelineKey& key) {
+VkPipeline BlitImageHelper::FindOrEmplaceBlitColorMSAAPipeline(const BlitMSAAPipelineKey& key,
+                                                               const Framebuffer* framebuffer) {
     const auto it = std::ranges::find(blit_msaa_color_keys, key);
     if (it != blit_msaa_color_keys.end()) {
         return *blit_msaa_color_pipelines[std::distance(blit_msaa_color_keys.begin(), it)];
     }
     blit_msaa_color_keys.push_back(key);
+    const VkPipelineRenderingCreateInfo rendering_ci = MakePipelineRenderingCreateInfo(framebuffer);
     const std::array stages = MakeStages(*full_screen_vert, *blit_color_msaa_frag);
     const VkPipelineMultisampleStateCreateInfo multisample_ci{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
@@ -1403,7 +1407,7 @@ VkPipeline BlitImageHelper::FindOrEmplaceBlitColorMSAAPipeline(const BlitMSAAPip
     const VkPipelineInputAssemblyStateCreateInfo input_assembly_ci = GetPipelineInputAssemblyStateCreateInfo(device);
     blit_msaa_color_pipelines.push_back(device.GetLogical().CreateGraphicsPipeline({
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = nullptr,
+        .pNext = key.renderpass ? nullptr : &rendering_ci,
         .flags = 0,
         .stageCount = static_cast<u32>(stages.size()),
         .pStages = stages.data(),
@@ -1425,22 +1429,28 @@ VkPipeline BlitImageHelper::FindOrEmplaceBlitColorMSAAPipeline(const BlitMSAAPip
     return *blit_msaa_color_pipelines.back();
 }
 
-VkPipeline BlitImageHelper::FindOrEmplaceResolveDepthStencilPipeline(VkRenderPass renderpass,
-                                                                     bool resolve_stencil) {
+VkPipeline BlitImageHelper::FindOrEmplaceResolveDepthStencilPipeline(
+    const Framebuffer* framebuffer, bool resolve_stencil) {
+    const VkRenderPass renderpass = framebuffer->RenderPass();
+    const ResolveDepthStencilPipelineKey key{
+        .renderpass = renderpass,
+        .depth_format = framebuffer->DepthAttachmentFormat(),
+    };
     auto& keys = resolve_stencil ? resolve_depth_stencil_keys : resolve_depth_keys;
     auto& pipelines = resolve_stencil ? resolve_depth_stencil_pipelines : resolve_depth_pipelines;
-    const auto it = std::ranges::find(keys, renderpass);
+    const auto it = std::ranges::find(keys, key);
     if (it != keys.end()) {
         return *pipelines[std::distance(keys.begin(), it)];
     }
-    keys.push_back(renderpass);
+    keys.push_back(key);
+    const VkPipelineRenderingCreateInfo rendering_ci = MakePipelineRenderingCreateInfo(framebuffer);
     const std::array stages =
         MakeStages(*full_screen_vert,
                    resolve_stencil ? *blit_depth_stencil_msaa_frag : *blit_depth_msaa_frag);
     const VkPipelineInputAssemblyStateCreateInfo input_assembly_ci = GetPipelineInputAssemblyStateCreateInfo(device);
     pipelines.push_back(device.GetLogical().CreateGraphicsPipeline({
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = nullptr,
+        .pNext = renderpass ? nullptr : &rendering_ci,
         .flags = 0,
         .stageCount = static_cast<u32>(stages.size()),
         .pStages = stages.data(),

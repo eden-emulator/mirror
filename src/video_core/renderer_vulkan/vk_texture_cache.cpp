@@ -2760,7 +2760,8 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
     }
     renderpass_key.samples = samples;
     const bool do_resolve_color =
-        samples != VK_SAMPLE_COUNT_1_BIT && num_colors > 0 && runtime.device.IsTiler();
+        samples != VK_SAMPLE_COUNT_1_BIT && num_colors > 0 && runtime.device.IsTiler() &&
+        !runtime.device.IsKhrDynamicRenderingSupported();
     renderpass_key.resolve_color = do_resolve_color;
 
     discard_msaa_color =

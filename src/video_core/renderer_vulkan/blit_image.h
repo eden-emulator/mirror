@@ -62,6 +62,15 @@ struct BlitMSAAPipelineKey {
 
     VkRenderPass renderpass;
     VkSampleCountFlagBits samples;
+    std::array<VkFormat, VideoCommon::NUM_RT> color_formats;
+    VkFormat depth_format;
+};
+
+struct ResolveDepthStencilPipelineKey {
+    constexpr auto operator<=>(const ResolveDepthStencilPipelineKey&) const noexcept = default;
+
+    VkRenderPass renderpass;
+    VkFormat depth_format;
 };
 
 class BlitImageHelper {
@@ -138,8 +147,9 @@ private:
     [[nodiscard]] VkPipeline FindOrEmplaceClearStencilPipeline(
         const BlitDepthStencilPipelineKey& key, const Framebuffer* framebuffer);
     [[nodiscard]] VkPipeline FindOrEmplaceMSAACopyPipeline(const MSAACopyPipelineKey& key);
-    [[nodiscard]] VkPipeline FindOrEmplaceBlitColorMSAAPipeline(const BlitMSAAPipelineKey& key);
-    [[nodiscard]] VkPipeline FindOrEmplaceResolveDepthStencilPipeline(VkRenderPass renderpass,
+    [[nodiscard]] VkPipeline FindOrEmplaceBlitColorMSAAPipeline(const BlitMSAAPipelineKey& key,
+                                                                const Framebuffer* framebuffer);
+    [[nodiscard]] VkPipeline FindOrEmplaceResolveDepthStencilPipeline(const Framebuffer* framebuffer,
                                                                       bool resolve_stencil);
 
     void ConvertPipeline(vk::Pipeline& pipeline, const Framebuffer* framebuffer,
@@ -203,9 +213,9 @@ private:
     std::vector<vk::Pipeline> msaa_copy_pipelines;
     std::vector<BlitMSAAPipelineKey> blit_msaa_color_keys;
     std::vector<vk::Pipeline> blit_msaa_color_pipelines;
-    std::vector<VkRenderPass> resolve_depth_keys;
+    std::vector<ResolveDepthStencilPipelineKey> resolve_depth_keys;
     std::vector<vk::Pipeline> resolve_depth_pipelines;
-    std::vector<VkRenderPass> resolve_depth_stencil_keys;
+    std::vector<ResolveDepthStencilPipelineKey> resolve_depth_stencil_keys;
     std::vector<vk::Pipeline> resolve_depth_stencil_pipelines;
     struct MSAACopyResources {
         u64 tick;
