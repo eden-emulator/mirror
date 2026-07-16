@@ -1281,25 +1281,30 @@ VkPipeline BlitImageHelper::FindOrEmplaceClearColorPipeline(const BlitImagePipel
     clear_color_keys.push_back(key);
     const VkPipelineRenderingCreateInfo rendering_ci = MakePipelineRenderingCreateInfo(framebuffer);
     const std::array stages = MakeStages(*clear_color_vert, *clear_color_frag);
-    const VkPipelineColorBlendAttachmentState color_blend_attachment_state{
-        .blendEnable = VK_TRUE,
-        .srcColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR,
-        .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
-        .colorBlendOp = VK_BLEND_OP_ADD,
-        .srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA,
-        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
-        .alphaBlendOp = VK_BLEND_OP_ADD,
-        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
-    };
+    const u32 num_color = framebuffer->NumColorAttachments();
+    std::array<VkPipelineColorBlendAttachmentState, VideoCommon::NUM_RT> blend_attachments{};
+    for (u32 index = 0; index < num_color; ++index) {
+        blend_attachments[index] = VkPipelineColorBlendAttachmentState{
+            .blendEnable = index == 0 ? VK_TRUE : VK_FALSE,
+            .srcColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR,
+            .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
+            .colorBlendOp = VK_BLEND_OP_ADD,
+            .srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA,
+            .dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
+            .alphaBlendOp = VK_BLEND_OP_ADD,
+            .colorWriteMask = index == 0 ? (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
+                                         : 0,
+        };
+    }
     const VkPipelineColorBlendStateCreateInfo color_blend_state_generic_create_info{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
         .logicOpEnable = VK_FALSE,
         .logicOp = VK_LOGIC_OP_CLEAR,
-        .attachmentCount = 1,
-        .pAttachments = &color_blend_attachment_state,
+        .attachmentCount = num_color,
+        .pAttachments = blend_attachments.data(),
         .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
     };
     const VkPipelineInputAssemblyStateCreateInfo input_assembly_ci = GetPipelineInputAssemblyStateCreateInfo(device);
@@ -1336,6 +1341,18 @@ VkPipeline BlitImageHelper::FindOrEmplaceClearStencilPipeline(
     clear_stencil_keys.push_back(key);
     const VkPipelineRenderingCreateInfo rendering_ci = MakePipelineRenderingCreateInfo(framebuffer);
     const std::array stages = MakeStages(*clear_color_vert, *clear_stencil_frag);
+    const u32 num_color = framebuffer->NumColorAttachments();
+    std::array<VkPipelineColorBlendAttachmentState, VideoCommon::NUM_RT> blend_attachments{};
+    const VkPipelineColorBlendStateCreateInfo color_blend_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .logicOpEnable = VK_FALSE,
+        .logicOp = VK_LOGIC_OP_CLEAR,
+        .attachmentCount = num_color,
+        .pAttachments = blend_attachments.data(),
+        .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
+    };
     const auto stencil = VkStencilOpState{
         .failOp = VK_STENCIL_OP_KEEP,
         .passOp = VK_STENCIL_OP_REPLACE,
@@ -1373,7 +1390,7 @@ VkPipeline BlitImageHelper::FindOrEmplaceClearStencilPipeline(
         .pRasterizationState = &PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         .pMultisampleState = &PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pDepthStencilState = &depth_stencil_ci,
-        .pColorBlendState = &PIPELINE_COLOR_BLEND_STATE_GENERIC_CREATE_INFO,
+        .pColorBlendState = &color_blend_ci,
         .pDynamicState = &PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .layout = *clear_color_pipeline_layout,
         .renderPass = key.renderpass,
