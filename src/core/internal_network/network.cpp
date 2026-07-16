@@ -163,7 +163,7 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
 #else // ^^^ Windows vvv POSIX
 
 using SOCKET = int;
-using WSAPOLLFD = pollfd;
+using WSAPOLLFD = struct pollfd;
 using ULONG = u64;
 
 constexpr SOCKET SOCKET_ERROR = -1;
@@ -232,11 +232,11 @@ sockaddr TranslateFromSockAddrIn(Network::SockAddrIn input) {
 }
 
 int WSAPoll(WSAPOLLFD* fds, ULONG nfds, int timeout) {
-    return poll(fds, nfds_t(nfds), timeout);
+    return ::poll(fds, nfds_t(nfds), timeout);
 }
 
 int closesocket(SOCKET fd) {
-    return close(fd);
+    return ::close(fd);
 }
 
 linger MakeLinger(bool enable, u32 linger_value) {
