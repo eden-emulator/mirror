@@ -20,7 +20,7 @@ TEST_CASE("Network::Errors", "[core]") {
 
     Network::SockAddrIn addr{
         16,
-        Network::Domain::INET,
+        u8(Network::Domain::INET),
         1, // hopefully nobody running this test has something listening on port 1
         {127, 0, 0, 1},
         {},
