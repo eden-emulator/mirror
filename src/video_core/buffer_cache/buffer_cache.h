@@ -276,7 +276,7 @@ bool BufferCache<P>::DMACopy(GPUVAddr src_address, GPUVAddr dest_address, u64 am
     auto& src_buffer = slot_buffers[buffer_a];
     auto& dest_buffer = slot_buffers[buffer_b];
     SynchronizeBuffer(src_buffer, *cpu_src_address, static_cast<u32>(amount));
-    SynchronizeBuffer(dest_buffer, *cpu_dest_address, static_cast<u32>(amount));
+    memory_tracker.UnmarkRegionAsCpuModified(*cpu_dest_address, static_cast<u32>(amount));
     std::array copies{BufferCopy{
         .src_offset = src_buffer.Offset(*cpu_src_address),
         .dst_offset = dest_buffer.Offset(*cpu_dest_address),
