@@ -321,7 +321,7 @@ public:
         } while (channel_state->has_deleted_buffers);
     }
 
-    std::recursive_mutex mutex;
+    std::mutex mutex;
     Runtime& runtime;
     bool any_buffer_uploaded = false;
 
