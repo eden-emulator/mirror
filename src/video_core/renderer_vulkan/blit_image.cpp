@@ -1282,6 +1282,9 @@ VkPipeline BlitImageHelper::FindOrEmplaceClearColorPipeline(const BlitImagePipel
     const VkPipelineRenderingCreateInfo rendering_ci = MakePipelineRenderingCreateInfo(framebuffer);
     const std::array stages = MakeStages(*clear_color_vert, *clear_color_frag);
     const u32 num_color = framebuffer->NumColorAttachments();
+    constexpr VkColorComponentFlags full_write_mask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+        VK_COLOR_COMPONENT_A_BIT;
     std::array<VkPipelineColorBlendAttachmentState, VideoCommon::NUM_RT> blend_attachments{};
     for (u32 index = 0; index < num_color; ++index) {
         blend_attachments[index] = VkPipelineColorBlendAttachmentState{
@@ -1292,9 +1295,7 @@ VkPipeline BlitImageHelper::FindOrEmplaceClearColorPipeline(const BlitImagePipel
             .srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA,
             .dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
             .alphaBlendOp = VK_BLEND_OP_ADD,
-            .colorWriteMask = index == 0 ? (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
-                                            VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT)
-                                         : 0,
+            .colorWriteMask = index == 0 ? full_write_mask : VkColorComponentFlags{0},
         };
     }
     const VkPipelineColorBlendStateCreateInfo color_blend_state_generic_create_info{
