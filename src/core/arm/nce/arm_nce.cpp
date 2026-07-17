@@ -157,6 +157,8 @@ bool ArmNce::HandleGuestAlignmentFault(GuestContext* guest_ctx, void* raw_info, 
     return HandleFailedGuestFault(guest_ctx, raw_info, raw_context);
 }
 
+constexpr size_t NCE_WRITE_FAULT_CLUSTER_PAGES = 4;
+
 bool ArmNce::HandleGuestAccessFault(GuestContext* guest_ctx, void* raw_info, void* raw_context) {
     auto* info = static_cast<siginfo_t*>(raw_info);
 
@@ -165,7 +167,7 @@ bool ArmNce::HandleGuestAccessFault(GuestContext* guest_ctx, void* raw_info, voi
     const Common::ProcessAddress addr =
         (reinterpret_cast<u64>(info->si_addr) & ~Memory::YUZU_PAGEMASK);
     auto& memory = guest_ctx->parent->m_running_thread->GetOwnerProcess()->GetMemory();
-    if (memory.InvalidateNCE(addr, Memory::YUZU_PAGESIZE)) {
+    if (memory.InvalidateNCE(addr, Memory::YUZU_PAGESIZE * NCE_WRITE_FAULT_CLUSTER_PAGES)) {
         // We handled the access successfully and are returning to guest code.
         return true;
     }
