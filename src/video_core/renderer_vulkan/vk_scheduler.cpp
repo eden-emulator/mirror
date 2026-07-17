@@ -104,6 +104,9 @@ void Scheduler::BeginDynamicRendering(const Framebuffer* framebuffer, const Defe
     state.renderpass = VkRenderPass{};
     state.framebuffer = VkFramebuffer{};
     state.attachment_views = attachment_views;
+    state.color_resolve_views = framebuffer->ColorResolveAttachments();
+    state.color_resolve_modes = framebuffer->ColorResolveModes();
+    state.discards_msaa_color = framebuffer->DiscardsMsaaColor();
     state.render_area = render_area;
     state.num_color = framebuffer->NumColorAttachments();
     state.has_depth = framebuffer->HasAspectDepthBit();
@@ -432,31 +435,41 @@ void Scheduler::InvalidateState() {
 
 void Scheduler::RecordDynamicBegin(const DeferredClear* clear) {
     const std::array<VkImageView, 9> views = state.attachment_views;
+    const std::array<VkImageView, 8> resolve_views = state.color_resolve_views;
+    const std::array<VkResolveModeFlagBits, 8> resolve_modes = state.color_resolve_modes;
     const u32 num_color = state.num_color;
     const bool has_depth = state.has_depth;
     const bool has_stencil = state.has_stencil;
     const u32 layers = state.layer_count;
     const VkExtent2D render_area = state.render_area;
     const u32 color_clear_mask = clear ? clear->color_clear_mask : 0u;
+    const u32 color_discard_mask =
+        clear != nullptr && state.discards_msaa_color ? clear->color_clear_mask : 0u;
     const std::array<VkClearValue, 8> color_clear_values =
         clear ? clear->color_values : std::array<VkClearValue, 8>{};
     const bool ds_clear = clear != nullptr && clear->depth_stencil;
     const VkClearValue ds_clear_value = clear ? clear->depth_stencil_value : VkClearValue{};
-    Record([views, num_color, has_depth, has_stencil, layers, render_area, color_clear_mask,
-            color_clear_values, ds_clear, ds_clear_value](vk::CommandBuffer cmdbuf) {
+    Record([views, resolve_views, resolve_modes, num_color, has_depth, has_stencil, layers,
+            render_area, color_clear_mask, color_discard_mask, color_clear_values, ds_clear,
+            ds_clear_value](vk::CommandBuffer cmdbuf) {
         std::array<VkRenderingAttachmentInfo, VideoCommon::NUM_RT> color_infos{};
         for (u32 index = 0; index < num_color; ++index) {
             const bool clear_slot = ((color_clear_mask >> index) & 1u) != 0;
+            const VkImageView resolve_view = resolve_views[index];
+            const bool has_resolve = resolve_view != VK_NULL_HANDLE;
+            const bool discard_slot = has_resolve && ((color_discard_mask >> index) & 1u) != 0;
             color_infos[index] = VkRenderingAttachmentInfo{
                 .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                 .pNext = nullptr,
                 .imageView = views[index],
                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
-                .resolveMode = VK_RESOLVE_MODE_NONE,
-                .resolveImageView = VK_NULL_HANDLE,
-                .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .resolveMode = has_resolve ? resolve_modes[index] : VK_RESOLVE_MODE_NONE,
+                .resolveImageView = resolve_view,
+                .resolveImageLayout =
+                    has_resolve ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
                 .loadOp = clear_slot ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
-                .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+                .storeOp = discard_slot ? VK_ATTACHMENT_STORE_OP_DONT_CARE
+                                        : VK_ATTACHMENT_STORE_OP_STORE,
                 .clearValue = clear_slot ? color_clear_values[index] : VkClearValue{},
             };
         }

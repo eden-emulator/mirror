@@ -251,9 +251,12 @@ private:
         VkRenderPass renderpass{};
         VkFramebuffer framebuffer{};
         std::array<VkImageView, 9> attachment_views{};
+        std::array<VkImageView, 8> color_resolve_views{};
+        std::array<VkResolveModeFlagBits, 8> color_resolve_modes{};
         VkExtent2D render_area = {0, 0};
         GraphicsPipeline* graphics_pipeline = nullptr;
         bool rendering = false;
+        bool discards_msaa_color = false;
         u32 num_color = 0;
         bool has_depth = false;
         bool has_stencil = false;

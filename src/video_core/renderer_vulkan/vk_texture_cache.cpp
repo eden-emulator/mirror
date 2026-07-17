@@ -1041,6 +1041,31 @@ VkImageView TextureCacheRuntime::GetOrCreateResolveShadow(VkImage msaa_image, Vk
     shadow.extent = extent;
     shadow.layers = layers;
     shadow.up_to_date = true;
+    if (device.IsKhrDynamicRenderingSupported()) {
+        scheduler.RequestOutsideRenderPassOperationContext();
+        scheduler.Record([image = *shadow.image, layers](vk::CommandBuffer cmdbuf) {
+            const VkImageMemoryBarrier barrier{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                .pNext = nullptr,
+                .srcAccessMask = 0,
+                .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = image,
+                .subresourceRange{
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = layers,
+                },
+            };
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, barrier);
+        });
+    }
     return *shadow.view;
 }
 
@@ -2760,8 +2785,7 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
     }
     renderpass_key.samples = samples;
     const bool do_resolve_color =
-        samples != VK_SAMPLE_COUNT_1_BIT && num_colors > 0 && runtime.device.IsTiler() &&
-        !runtime.device.IsKhrDynamicRenderingSupported();
+        samples != VK_SAMPLE_COUNT_1_BIT && num_colors > 0 && runtime.device.IsTiler();
     renderpass_key.resolve_color = do_resolve_color;
 
     discard_msaa_color =
@@ -2781,10 +2805,15 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
             }
             const VkFormat vk_format =
                 MaxwellToVK::SurfaceFormat(runtime.device, FormatType::Optimal, true, format).format;
+            color_resolve_modes[index] = VideoCore::Surface::IsPixelFormatInteger(format)
+                                             ? VK_RESOLVE_MODE_SAMPLE_ZERO_BIT
+                                             : VK_RESOLVE_MODE_AVERAGE_BIT;
             if (ENABLE_MSAA_RESOLVE_CONSUME) {
                 const VkImage msaa_image = images[rt_map[index]];
-                attachments.push_back(runtime.GetOrCreateResolveShadow(msaa_image, vk_format,
-                                                                       render_area, layers));
+                const VkImageView shadow_view = runtime.GetOrCreateResolveShadow(
+                    msaa_image, vk_format, render_area, layers);
+                color_resolve_attachments[index] = shadow_view;
+                attachments.push_back(shadow_view);
                 continue;
             }
             VkImageCreateInfo resolve_ci{
@@ -2823,6 +2852,33 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
                         .layerCount = layers,
                     },
                 });
+            if (runtime.device.IsKhrDynamicRenderingSupported()) {
+                runtime.scheduler.RequestOutsideRenderPassOperationContext();
+                runtime.scheduler.Record([image = *resolve_image, layers](vk::CommandBuffer cmdbuf) {
+                    const VkImageMemoryBarrier barrier{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                        .pNext = nullptr,
+                        .srcAccessMask = 0,
+                        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                        .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .image = image,
+                        .subresourceRange{
+                            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                            .baseMipLevel = 0,
+                            .levelCount = 1,
+                            .baseArrayLayer = 0,
+                            .layerCount = layers,
+                        },
+                    };
+                    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0,
+                                           barrier);
+                });
+            }
+            color_resolve_attachments[index] = *resolve_view;
             attachments.push_back(*resolve_view);
             resolve_images.push_back(std::move(resolve_image));
             resolve_image_views.push_back(std::move(resolve_view));

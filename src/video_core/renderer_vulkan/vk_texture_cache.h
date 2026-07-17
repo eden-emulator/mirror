@@ -207,6 +207,15 @@ public:
         return color_attachment_formats;
     }
 
+    [[nodiscard]] const std::array<VkImageView, NUM_RT>& ColorResolveAttachments() const noexcept {
+        return color_resolve_attachments;
+    }
+
+    [[nodiscard]] const std::array<VkResolveModeFlagBits, NUM_RT>& ColorResolveModes()
+        const noexcept {
+        return color_resolve_modes;
+    }
+
     [[nodiscard]] VkImageView DepthAttachment() const noexcept {
         return depth_attachment;
     }
@@ -283,6 +292,8 @@ private:
     std::array<size_t, NUM_RT> rt_map{};
     std::array<VkImageView, NUM_RT> color_attachments{};
     std::array<VkFormat, NUM_RT> color_attachment_formats{};
+    std::array<VkImageView, NUM_RT> color_resolve_attachments{};
+    std::array<VkResolveModeFlagBits, NUM_RT> color_resolve_modes{};
     VkImageView depth_attachment{};
     VkFormat depth_attachment_format = VK_FORMAT_UNDEFINED;
     u32 num_color_attachments = 0;
