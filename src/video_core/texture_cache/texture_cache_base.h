@@ -257,7 +257,7 @@ public:
     /// Prepare an image to be used
     void PrepareImage(ImageId image_id, bool is_modification, bool invalidate);
 
-    std::recursive_mutex mutex;
+    std::mutex mutex;
 
 private:
     /// Iterate over all page indices in a range
