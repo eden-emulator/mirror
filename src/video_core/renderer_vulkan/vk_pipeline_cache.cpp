@@ -305,10 +305,8 @@ size_t GetTotalPipelineWorkers() {
         std::max<size_t>(static_cast<size_t>(std::thread::hardware_concurrency()), 2ULL) - 1ULL;
 #ifdef __ANDROID__
     const int configured = AndroidSettings::values.pipeline_worker_count.GetValue();
-    if (configured <= 0) {
-        return max_core_threads;
-    }
-    return std::min<size_t>(max_core_threads, static_cast<size_t>(configured));
+    const size_t desired = static_cast<size_t>(std::max(configured, 1));
+    return std::min<size_t>(max_core_threads, desired);
 #else
     return max_core_threads;
 #endif
