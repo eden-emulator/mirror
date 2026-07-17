@@ -175,9 +175,71 @@ std::optional<VideoCore::RasterizerDownloadArea> BufferCache<P>::GetFlushArea(DA
 
 template <class P>
 void BufferCache<P>::DownloadMemory(DAddr device_addr, u64 size) {
-    ForEachBufferInRange(device_addr, size, [&](BufferId, Buffer& buffer) {
-        DownloadBufferMemory(buffer, device_addr, size);
+    if constexpr (!USE_MEMORY_MAPS) {
+        std::scoped_lock lock{mutex};
+        ForEachBufferInRange(device_addr, size, [&](BufferId, Buffer& buffer) {
+            DownloadBufferMemory(buffer, device_addr, size);
+        });
+        return;
+    }
+
+    boost::container::small_vector<std::pair<BufferCopy, BufferId>, 8> downloads;
+    u64 total_size_bytes = 0;
+    u64 largest_copy = 0;
+
+    std::unique_lock lock{mutex};
+    ForEachBufferInRange(device_addr, size, [&](BufferId buffer_id, Buffer& buffer) {
+        memory_tracker.ForEachDownloadRangeAndClear(
+            device_addr, size, [&](u64 device_addr_out, u64 range_size) {
+                const DAddr buffer_addr = buffer.CpuAddr();
+                const auto add_download = [&](DAddr start, DAddr end) {
+                    const u64 new_offset = start - buffer_addr;
+                    const u64 new_size = end - start;
+                    downloads.push_back({
+                        BufferCopy{
+                            .src_offset = new_offset,
+                            .dst_offset = total_size_bytes,
+                            .size = new_size,
+                        },
+                        buffer_id,
+                    });
+                    constexpr u64 align = 64ULL;
+                    constexpr u64 mask = ~(align - 1ULL);
+                    total_size_bytes += (new_size + align - 1) & mask;
+                    largest_copy = (std::max)(largest_copy, new_size);
+                };
+                gpu_modified_ranges.ForEachInRange(device_addr_out, range_size, add_download);
+                ClearDownload(device_addr_out, range_size);
+                gpu_modified_ranges.Subtract(device_addr_out, range_size);
+            });
     });
+    if (total_size_bytes == 0) {
+        return;
+    }
+
+    auto download_staging = runtime.DownloadStagingBuffer(total_size_bytes);
+    boost::container::small_vector<BufferCopy, 8> writebacks;
+    runtime.PreCopyBarrier();
+    for (auto& [copy, buffer_id] : downloads) {
+        copy.dst_offset += download_staging.offset;
+        Buffer& buffer = slot_buffers[buffer_id];
+        buffer.MarkUsage(copy.src_offset, copy.size);
+        const std::array copies{copy};
+        runtime.CopyBuffer(download_staging.buffer, buffer, copies, false);
+        BufferCopy writeback{copy};
+        writeback.src_offset = static_cast<u64>(buffer.CpuAddr()) + copy.src_offset;
+        writebacks.push_back(writeback);
+    }
+    runtime.PostCopyBarrier();
+    lock.unlock();
+
+    runtime.Finish();
+    const u8* const base = download_staging.mapped_span.data();
+    for (const BufferCopy& writeback : writebacks) {
+        const u64 staging_offset = writeback.dst_offset - download_staging.offset;
+        device_memory.WriteBlockUnsafe(static_cast<DAddr>(writeback.src_offset),
+                                       base + staging_offset, writeback.size);
+    }
 }
 
 template <class P>
