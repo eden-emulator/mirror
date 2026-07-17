@@ -241,11 +241,17 @@ void RasterizerVulkan::PrepareDraw(bool is_indexed, Func&& draw_func) {
     if (!pipeline) {
         return;
     }
-    std::scoped_lock lock{buffer_cache.mutex, texture_cache.mutex};
-    // update engine as channel may be different.
-    pipeline->SetEngine(maxwell3d, gpu_memory);
-    if (!pipeline->Configure(is_indexed))
-        return;
+    {
+        // Only resource binding/upload needs the cache locks held. The query-cache calls and the
+        // deferred draw recording below acquire their own locks, so keeping them outside this scope
+        // avoids re-entrant locking of buffer_cache.mutex and shrinks the serialized region.
+        std::scoped_lock lock{buffer_cache.mutex, texture_cache.mutex};
+        // update engine as channel may be different.
+        pipeline->SetEngine(maxwell3d, gpu_memory);
+        if (!pipeline->Configure(is_indexed)) {
+            return;
+        }
+    }
 
     UpdateDynamicStates();
 
