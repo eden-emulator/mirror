@@ -235,10 +235,10 @@ private:
 
     void PopAsyncFlushes() {
         {
-            std::scoped_lock lock{buffer_cache.mutex, texture_cache.mutex};
+            std::scoped_lock lock{texture_cache.mutex};
             texture_cache.PopAsyncFlushes();
-            buffer_cache.PopAsyncFlushes();
         }
+        buffer_cache.PopAsyncFlushes();
         query_cache.PopAsyncFlushes();
     }
 

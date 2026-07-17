@@ -735,32 +735,44 @@ void BufferCache<P>::PopAsyncFlushes() {
 
 template <class P>
 void BufferCache<P>::PopAsyncBuffers() {
-    if (async_buffers.empty()) {
-        return;
-    }
-    if (!async_buffers.front().has_value()) {
+    struct Writeback {
+        DAddr addr;
+        const u8* src;
+        u64 size;
+    };
+    boost::container::small_vector<Writeback, 8> writebacks;
+    {
+        std::scoped_lock lock{mutex};
+        if (async_buffers.empty()) {
+            return;
+        }
+        if (!async_buffers.front().has_value()) {
+            async_buffers.pop_front();
+            return;
+        }
+        auto& downloads = pending_downloads.front();
+        auto& async_buffer = async_buffers.front();
+        const u8* base = async_buffer->mapped_span.data();
+        const size_t base_offset = async_buffer->offset;
+        for (const auto& copy : downloads) {
+            const DAddr device_addr = static_cast<DAddr>(copy.src_offset);
+            const u64 dst_offset = copy.dst_offset - base_offset;
+            const u8* read_mapped_memory = base + dst_offset;
+            async_downloads.ForEachInRange(device_addr, copy.size, [&](DAddr start, DAddr end, s32) {
+                writebacks.push_back(
+                    {start, &read_mapped_memory[start - device_addr], end - start});
+            });
+            async_downloads.Subtract(device_addr, copy.size, [&](DAddr start, DAddr end) {
+                gpu_modified_ranges.Subtract(start, end - start);
+            });
+        }
+        async_buffers_death_ring.emplace_back(*async_buffer);
         async_buffers.pop_front();
-        return;
+        pending_downloads.pop_front();
     }
-    auto& downloads = pending_downloads.front();
-    auto& async_buffer = async_buffers.front();
-    u8* base = async_buffer->mapped_span.data();
-    const size_t base_offset = async_buffer->offset;
-    for (const auto& copy : downloads) {
-        const DAddr device_addr = static_cast<DAddr>(copy.src_offset);
-        const u64 dst_offset = copy.dst_offset - base_offset;
-        const u8* read_mapped_memory = base + dst_offset;
-        async_downloads.ForEachInRange(device_addr, copy.size, [&](DAddr start, DAddr end, s32) {
-            device_memory.WriteBlockUnsafe(start, &read_mapped_memory[start - device_addr],
-                                           end - start);
-        });
-        async_downloads.Subtract(device_addr, copy.size, [&](DAddr start, DAddr end) {
-            gpu_modified_ranges.Subtract(start, end - start);
-        });
+    for (const auto& wb : writebacks) {
+        device_memory.WriteBlockUnsafe(wb.addr, wb.src, wb.size);
     }
-    async_buffers_death_ring.emplace_back(*async_buffer);
-    async_buffers.pop_front();
-    pending_downloads.pop_front();
 }
 
 template <class P>
