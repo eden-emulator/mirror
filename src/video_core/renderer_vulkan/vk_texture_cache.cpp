@@ -1042,29 +1042,30 @@ VkImageView TextureCacheRuntime::GetOrCreateResolveShadow(VkImage msaa_image, Vk
     shadow.layers = layers;
     shadow.up_to_date = true;
     if (device.IsKhrDynamicRenderingSupported()) {
-        scheduler.RequestOutsideRenderPassOperationContext();
-        scheduler.Record([image = *shadow.image, layers](vk::CommandBuffer cmdbuf) {
-            const VkImageMemoryBarrier barrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .pNext = nullptr,
-                .srcAccessMask = 0,
-                .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .newLayout = VK_IMAGE_LAYOUT_GENERAL,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image = image,
-                .subresourceRange{
-                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .baseMipLevel = 0,
-                    .levelCount = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount = layers,
-                },
-            };
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, barrier);
-        });
+        scheduler.RecordWithUploadBuffer(
+            [image = *shadow.image, layers](vk::CommandBuffer, vk::CommandBuffer upload_cmdbuf) {
+                const VkImageMemoryBarrier barrier{
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    .pNext = nullptr,
+                    .srcAccessMask = 0,
+                    .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                    .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                    .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                    .image = image,
+                    .subresourceRange{
+                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .baseMipLevel = 0,
+                        .levelCount = 1,
+                        .baseArrayLayer = 0,
+                        .layerCount = layers,
+                    },
+                };
+                upload_cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0,
+                                              barrier);
+            });
     }
     return *shadow.view;
 }
@@ -2853,30 +2854,30 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
                     },
                 });
             if (runtime.device.IsKhrDynamicRenderingSupported()) {
-                runtime.scheduler.RequestOutsideRenderPassOperationContext();
-                runtime.scheduler.Record([image = *resolve_image, layers](vk::CommandBuffer cmdbuf) {
-                    const VkImageMemoryBarrier barrier{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                        .pNext = nullptr,
-                        .srcAccessMask = 0,
-                        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                        .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image = image,
-                        .subresourceRange{
-                            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                            .baseMipLevel = 0,
-                            .levelCount = 1,
-                            .baseArrayLayer = 0,
-                            .layerCount = layers,
-                        },
-                    };
-                    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0,
-                                           barrier);
-                });
+                runtime.scheduler.RecordWithUploadBuffer(
+                    [image = *resolve_image, layers](vk::CommandBuffer, vk::CommandBuffer upload_cmdbuf) {
+                        const VkImageMemoryBarrier barrier{
+                            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                            .pNext = nullptr,
+                            .srcAccessMask = 0,
+                            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                            .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                            .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                            .image = image,
+                            .subresourceRange{
+                                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                .baseMipLevel = 0,
+                                .levelCount = 1,
+                                .baseArrayLayer = 0,
+                                .layerCount = layers,
+                            },
+                        };
+                        upload_cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                                      0, barrier);
+                    });
             }
             color_resolve_attachments[index] = *resolve_view;
             attachments.push_back(*resolve_view);
