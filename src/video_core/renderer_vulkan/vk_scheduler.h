@@ -257,6 +257,7 @@ private:
         GraphicsPipeline* graphics_pipeline = nullptr;
         bool rendering = false;
         bool discards_msaa_color = false;
+        bool discards_msaa_depth = false;
         u32 num_color = 0;
         bool has_depth = false;
         bool has_stencil = false;

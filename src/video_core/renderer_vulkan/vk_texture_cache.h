@@ -280,6 +280,10 @@ public:
         return discard_msaa_color;
     }
 
+    [[nodiscard]] bool DiscardsMsaaDepth() const noexcept {
+        return discard_msaa_depth;
+    }
+
 private:
     vk::Framebuffer framebuffer;
     VkRenderPass renderpass{};
@@ -306,6 +310,7 @@ private:
     RenderPassKey render_pass_key{};
     RenderPassCache* render_pass_cache{nullptr};
     bool discard_msaa_color{};
+    bool discard_msaa_depth{};
 };
 
 class Image : public VideoCommon::ImageBase {

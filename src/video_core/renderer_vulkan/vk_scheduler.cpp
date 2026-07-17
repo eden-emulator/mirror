@@ -107,6 +107,7 @@ void Scheduler::BeginDynamicRendering(const Framebuffer* framebuffer, const Defe
     state.color_resolve_views = framebuffer->ColorResolveAttachments();
     state.color_resolve_modes = framebuffer->ColorResolveModes();
     state.discards_msaa_color = framebuffer->DiscardsMsaaColor();
+    state.discards_msaa_depth = framebuffer->DiscardsMsaaDepth();
     state.render_area = render_area;
     state.num_color = framebuffer->NumColorAttachments();
     state.has_depth = framebuffer->HasAspectDepthBit();
@@ -449,9 +450,10 @@ void Scheduler::RecordDynamicBegin(const DeferredClear* clear) {
         clear ? clear->color_values : std::array<VkClearValue, 8>{};
     const bool ds_clear = clear != nullptr && clear->depth_stencil;
     const VkClearValue ds_clear_value = clear ? clear->depth_stencil_value : VkClearValue{};
+    const bool ds_discard = state.discards_msaa_depth;
     Record([views, resolve_views, resolve_modes, num_color, has_depth, has_stencil, layers,
             render_area, color_clear_mask, color_discard_mask, color_clear_values, ds_clear,
-            ds_clear_value](vk::CommandBuffer cmdbuf) {
+            ds_clear_value, ds_discard](vk::CommandBuffer cmdbuf) {
         std::array<VkRenderingAttachmentInfo, VideoCommon::NUM_RT> color_infos{};
         for (u32 index = 0; index < num_color; ++index) {
             const bool clear_slot = ((color_clear_mask >> index) & 1u) != 0;
@@ -482,7 +484,8 @@ void Scheduler::RecordDynamicBegin(const DeferredClear* clear) {
             .resolveImageView = VK_NULL_HANDLE,
             .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .loadOp = ds_clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
-            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .storeOp = ds_discard ? VK_ATTACHMENT_STORE_OP_DONT_CARE
+                                  : VK_ATTACHMENT_STORE_OP_STORE,
             .clearValue = ds_clear ? ds_clear_value : VkClearValue{},
         };
         const VkRenderingInfo rendering_info{

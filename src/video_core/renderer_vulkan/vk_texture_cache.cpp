@@ -54,6 +54,7 @@ using VideoCore::Surface::SurfaceType;
 namespace {
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
+constexpr bool ENABLE_MSAA_DEPTH_DISCARD = true;
 
 constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     if (color == std::array<float, 4>{0, 0, 0, 0}) {
@@ -2791,6 +2792,8 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
 
     discard_msaa_color =
         ENABLE_MSAA_RESOLVE_CONSUME && ENABLE_MSAA_COLOR_DISCARD && do_resolve_color;
+    discard_msaa_depth = ENABLE_MSAA_RESOLVE_CONSUME && ENABLE_MSAA_DEPTH_DISCARD &&
+                         samples != VK_SAMPLE_COUNT_1_BIT && has_depth && runtime.device.IsTiler();
 
     render_pass_key = renderpass_key;
     render_pass_cache = &runtime.render_pass_cache;
