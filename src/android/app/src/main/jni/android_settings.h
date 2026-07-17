@@ -147,7 +147,7 @@ namespace AndroidSettings {
                                                       &show_performance_overlay};
 
 
-        Settings::Setting<s32> pipeline_worker_count{linkage, 4, "pipeline_worker_count",
+        Settings::Setting<s32> pipeline_worker_count{linkage, 0, "pipeline_worker_count",
                                  Settings::Category::Android,
                                  Settings::Specialization::Default,
                                  true,
