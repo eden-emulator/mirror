@@ -1245,7 +1245,7 @@ void Device::RemoveUnsuitableExtensions() {
         extensions.line_rasterization && features.line_rasterization.rectangularLines;
     const bool supports_conservative_raster_mode =
         features.extended_dynamic_state3.extendedDynamicState3ConservativeRasterizationMode &&
-        extensions.conservative_rasterization;
+        ENABLE_CONSERVATIVE_RASTER && extensions.conservative_rasterization;
     const bool supports_line_stipple_enable =
         features.extended_dynamic_state3.extendedDynamicState3LineStippleEnable &&
         extensions.line_rasterization && features.line_rasterization.stippledRectangularLines;

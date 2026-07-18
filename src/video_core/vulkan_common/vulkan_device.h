@@ -776,9 +776,11 @@ FN_MAX_LIMIT_LIST
         return extensions.shader_demote_to_helper_invocation;
     }
 
+    static constexpr bool ENABLE_CONSERVATIVE_RASTER = false;
+
     /// Returns true if the device supports VK_EXT_conservative_rasterization.
     bool IsExtConservativeRasterizationSupported() const {
-        return extensions.conservative_rasterization;
+        return ENABLE_CONSERVATIVE_RASTER && extensions.conservative_rasterization;
     }
 
     /// Returns true if the device supports VK_EXT_provoking_vertex.
