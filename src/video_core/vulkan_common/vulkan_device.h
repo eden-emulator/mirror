@@ -942,9 +942,11 @@ FN_MAX_LIMIT_LIST
         return extensions.maintenance3;
     }
 
+    static constexpr bool ENABLE_DYNAMIC_RENDERING = false;
+
     /// Returns true if the device supports VK_KHR_dynamic_rendering.
     bool IsKhrDynamicRenderingSupported() const {
-        return extensions.dynamic_rendering;
+        return ENABLE_DYNAMIC_RENDERING && extensions.dynamic_rendering;
     }
 
     /// Returns true if the device supports VK_KHR_maintenance4.
