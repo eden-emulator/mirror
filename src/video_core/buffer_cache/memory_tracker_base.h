@@ -58,8 +58,7 @@ public:
         while (remaining_size > 0) {
             const std::size_t copy_amount{
                 std::min<std::size_t>(HIGHER_PAGE_SIZE - page_offset, remaining_size)};
-            const Manager* manager =
-                std::atomic_ref<Manager*>(top_tier[page_index]).load(std::memory_order_acquire);
+            const Manager* manager = top_tier[page_index].load(std::memory_order_acquire);
             if (manager == nullptr || manager->CpuModifiedPageCount() != 0) {
                 return true;
             }
@@ -153,7 +152,7 @@ public:
     void FlushCachedWrites() noexcept {
         std::scoped_lock lk{tracker_mutex};
         for (auto id : cached_pages) {
-            top_tier[id]->FlushCachedWrites();
+            top_tier[id].load(std::memory_order_relaxed)->FlushCachedWrites();
         }
         cached_pages.clear();
     }
@@ -213,7 +212,7 @@ private:
         while (remaining_size > 0) {
             const std::size_t copy_amount{
                 std::min<std::size_t>(HIGHER_PAGE_SIZE - page_offset, remaining_size)};
-            auto* manager{top_tier[page_index]};
+            auto* manager{top_tier[page_index].load(std::memory_order_relaxed)};
             if (manager) {
                 if constexpr (BOOL_BREAK) {
                     if (func(manager, page_offset, copy_amount)) {
@@ -224,7 +223,7 @@ private:
                 }
             } else if constexpr (create_region_on_fail) {
                 CreateRegion(page_index);
-                manager = top_tier[page_index];
+                manager = top_tier[page_index].load(std::memory_order_relaxed);
                 if constexpr (BOOL_BREAK) {
                     if (func(manager, page_offset, copy_amount)) {
                         return true;
@@ -251,7 +250,7 @@ private:
         while (remaining_size > 0) {
             const std::size_t copy_amount{
                 std::min<std::size_t>(HIGHER_PAGE_SIZE - page_offset, remaining_size)};
-            auto* manager{top_tier[page_index]};
+            auto* manager{top_tier[page_index].load(std::memory_order_relaxed)};
             const auto execute = [&] {
                 auto [new_begin, new_end] = func(manager, page_offset, copy_amount);
                 if (new_begin != 0 || new_end != 0) {
@@ -264,7 +263,7 @@ private:
                 execute();
             } else if constexpr (create_region_on_fail) {
                 CreateRegion(page_index);
-                manager = top_tier[page_index];
+                manager = top_tier[page_index].load(std::memory_order_relaxed);
                 execute();
             }
             page_index++;
@@ -280,8 +279,7 @@ private:
 
     void CreateRegion(std::size_t page_index) {
         const VAddr base_cpu_addr = page_index << HIGHER_PAGE_BITS;
-        std::atomic_ref<Manager*>(top_tier[page_index])
-            .store(GetNewManager(base_cpu_addr), std::memory_order_release);
+        top_tier[page_index].store(GetNewManager(base_cpu_addr), std::memory_order_release);
     }
 
     Manager* GetNewManager(VAddr base_cpu_address) {
@@ -299,7 +297,7 @@ private:
         return new_manager;
     }
 
-    std::array<Manager*, NUM_HIGH_PAGES> top_tier{};
+    std::array<std::atomic<Manager*>, NUM_HIGH_PAGES> top_tier{};
     std::deque<std::array<Manager, MANAGER_POOL_SIZE>> manager_pool;
     std::deque<Manager*> free_managers;
     ankerl::unordered_dense::set<u32> cached_pages;
