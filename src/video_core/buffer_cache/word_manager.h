@@ -7,6 +7,7 @@
 #pragma once
 
 #include <algorithm>
+#include <atomic>
 #include <bit>
 #include <limits>
 #include <span>
@@ -48,6 +49,11 @@ struct WordManager {
         u64 const last_word = (~u64{0} << shift) >> shift;
         heap[num_words * size_t(Type::CPU) + num_words - 1] = last_word;
         heap[num_words * size_t(Type::Untracked) + num_words - 1] = last_word;
+        u32 cpu_pages = 0;
+        for (size_t i = 0; i < num_words; ++i) {
+            cpu_pages += static_cast<u32>(std::popcount(heap[num_words * size_t(Type::CPU) + i]));
+        }
+        cpu_modified_pages.store(cpu_pages, std::memory_order_relaxed);
     }
     explicit WordManager() = default;
 
@@ -120,9 +126,14 @@ struct WordManager {
         [[maybe_unused]] std::span<u64> untracked_words = Span(Type::Untracked);
         [[maybe_unused]] std::span<u64> cached_words = Span(Type::CachedCPU);
         std::vector<std::pair<VAddr, u64>> ranges;
+        s64 cpu_delta = 0;
         IterateWords(dirty_addr - cpu_addr, size, [&](size_t index, u64 mask) {
             if (type == Type::CPU || type == Type::CachedCPU) {
                 CollectChangedRanges(!enable, index, untracked_words[index], mask, ranges);
+            }
+            if (type == Type::CPU) {
+                const u64 old = state_words[index];
+                cpu_delta += enable ? std::popcount(~old & mask) : -std::popcount(old & mask);
             }
             if (enable) {
                 state_words[index] |= mask;
@@ -138,6 +149,9 @@ struct WordManager {
                     untracked_words[index] &= ~mask;
             }
         });
+        if (cpu_delta != 0) {
+            cpu_modified_pages.fetch_add(static_cast<u32>(cpu_delta), std::memory_order_release);
+        }
         if (!ranges.empty()) {
             ApplyCollectedRanges(ranges, (!enable) ? 1 : -1);
         }
@@ -165,6 +179,7 @@ struct WordManager {
                  (pending_pointer - pending_offset) * BYTES_PER_PAGE);
         };
         std::vector<std::pair<VAddr, u64>> ranges;
+        s64 cpu_delta = 0;
         IterateWords(offset, size, [&](size_t index, u64 mask) {
             if (type == Type::GPU)
                 mask &= ~untracked_words[index];
@@ -173,6 +188,8 @@ struct WordManager {
                 if (type == Type::CPU || type == Type::CachedCPU) {
                     CollectChangedRanges(true, index, untracked_words[index], mask, ranges);
                 }
+                if (type == Type::CPU)
+                    cpu_delta -= std::popcount(word);
                 state_words[index] &= ~mask;
                 if (type == Type::CPU || type == Type::CachedCPU)
                     untracked_words[index] &= ~mask;
@@ -194,6 +211,9 @@ struct WordManager {
                 }
             });
         });
+        if (cpu_delta != 0) {
+            cpu_modified_pages.fetch_add(static_cast<u32>(cpu_delta), std::memory_order_release);
+        }
         if (pending) {
             release();
         }
@@ -248,12 +268,17 @@ struct WordManager {
         auto const untracked_words = Span(Type::Untracked);
         auto const cpu_words = Span(Type::CPU);
         std::vector<std::pair<VAddr, u64>> ranges;
+        s64 cpu_delta = 0;
         for (u64 word_index = 0; word_index < num_words; ++word_index) {
             const u64 cached_bits = cached_words[word_index];
             CollectChangedRanges(false, word_index, untracked_words[word_index], cached_bits, ranges);
+            cpu_delta += std::popcount(~cpu_words[word_index] & cached_bits);
             untracked_words[word_index] |= cached_bits;
             cpu_words[word_index] |= cached_bits;
             cached_words[word_index] = 0;
+        }
+        if (cpu_delta != 0) {
+            cpu_modified_pages.fetch_add(static_cast<u32>(cpu_delta), std::memory_order_release);
         }
         if (!ranges.empty()) {
             ApplyCollectedRanges(ranges, -1);
@@ -319,9 +344,14 @@ struct WordManager {
         return std::span<const u64>(heap.data() + num_words * size_t(type), num_words);
     }
 
+    [[nodiscard]] u32 CpuModifiedPageCount() const noexcept {
+        return cpu_modified_pages.load(std::memory_order_acquire);
+    }
+
     std::array<u64, size_t(Type::Max) * num_words> heap = {};
     DeviceTracker* tracker = nullptr;
     VAddr cpu_addr = 0;
+    std::atomic<u32> cpu_modified_pages{0};
 };
 
 } // namespace VideoCommon

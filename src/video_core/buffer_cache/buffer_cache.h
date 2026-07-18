@@ -1721,6 +1721,9 @@ void BufferCache<P>::TouchBuffer(Buffer& buffer, BufferId buffer_id) noexcept {
 
 template <class P>
 bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 size) {
+    if (!memory_tracker.HasCpuModifiedCheap(device_addr, size)) {
+        return true;
+    }
     upload_copies.clear();
     u64 total_size_bytes = 0;
     u64 largest_copy = 0;

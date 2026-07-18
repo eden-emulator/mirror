@@ -7,6 +7,7 @@
 #pragma once
 
 #include <algorithm>
+#include <atomic>
 #include <bit>
 #include <deque>
 #include <limits>
@@ -48,6 +49,25 @@ public:
         return IteratePairs<false>(query_cpu_addr, query_size, [](Manager* manager, u64 offset, size_t size) {
             return manager->ModifiedRegion(Type::GPU, offset, size);
         });
+    }
+
+    [[nodiscard]] bool HasCpuModifiedCheap(VAddr query_cpu_addr, u64 query_size) noexcept {
+        std::size_t remaining_size{query_size};
+        std::size_t page_index{query_cpu_addr >> HIGHER_PAGE_BITS};
+        u64 page_offset{query_cpu_addr & HIGHER_PAGE_MASK};
+        while (remaining_size > 0) {
+            const std::size_t copy_amount{
+                std::min<std::size_t>(HIGHER_PAGE_SIZE - page_offset, remaining_size)};
+            const Manager* manager =
+                std::atomic_ref<Manager*>(top_tier[page_index]).load(std::memory_order_acquire);
+            if (manager == nullptr || manager->CpuModifiedPageCount() != 0) {
+                return true;
+            }
+            page_index++;
+            page_offset = 0;
+            remaining_size -= copy_amount;
+        }
+        return false;
     }
 
     /// Returns true if a region has been modified from the CPU
@@ -260,7 +280,8 @@ private:
 
     void CreateRegion(std::size_t page_index) {
         const VAddr base_cpu_addr = page_index << HIGHER_PAGE_BITS;
-        top_tier[page_index] = GetNewManager(base_cpu_addr);
+        std::atomic_ref<Manager*>(top_tier[page_index])
+            .store(GetNewManager(base_cpu_addr), std::memory_order_release);
     }
 
     Manager* GetNewManager(VAddr base_cpu_address) {
