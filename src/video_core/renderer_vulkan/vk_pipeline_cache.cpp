@@ -167,6 +167,7 @@ Shader::RuntimeInfo MakeRuntimeInfo(std::span<const Shader::IR::Program> program
     }
     const Shader::Stage stage{program.stage};
     const bool has_geometry{key.unique_hashes[4] != 0 && !programs[4].is_geometry_passthrough};
+    const bool has_tessellation{key.unique_hashes[3] != 0};
     const bool gl_ndc{key.state.ndc_minus_one_to_one != 0};
     const float point_size{std::bit_cast<float>(key.state.point_size)};
     switch (stage) {
@@ -185,7 +186,9 @@ Shader::RuntimeInfo MakeRuntimeInfo(std::span<const Shader::IR::Program> program
                     LOG_WARNING(Render_Vulkan, "XFB requested in pipeline key but device lacks VK_EXT_transform_feedback; ignoring XFB decorations");
                 }
             }
-            info.convert_depth_mode = gl_ndc;
+            if (!has_tessellation) {
+                info.convert_depth_mode = gl_ndc;
+            }
         }
         if (key.state.dynamic_vertex_input) {
             for (size_t index = 0; index < Maxwell::NumVertexAttributes; ++index) {
@@ -224,6 +227,9 @@ Shader::RuntimeInfo MakeRuntimeInfo(std::span<const Shader::IR::Program> program
             ASSERT(false);
             return Shader::TessSpacing::Equal;
         }();
+        if (!has_geometry) {
+            info.convert_depth_mode = gl_ndc;
+        }
         break;
     case Shader::Stage::Geometry:
         if (program.output_topology == Shader::OutputTopology::PointList) {
