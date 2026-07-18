@@ -75,30 +75,6 @@ SOCKET GetInterruptSocket() {
     return interrupt_socket;
 }
 
-sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
-    sockaddr_in result{};
-#ifdef __unix__
-    result.sin_len = sizeof(result);
-#endif
-    result.sin_family = AF_INET;
-    switch (Domain(input.family)) {
-    case Domain::INET:
-        result.sin_family = AF_INET;
-        break;
-    default:
-        UNIMPLEMENTED_MSG("Unhandled sockaddr family={}", input.family);
-        break;
-    }
-
-    result.sin_port = input.portno; //no need to translate
-
-    auto& ip = result.sin_addr.S_un.S_un_b;
-    ip.s_b1 = input.ip[0];
-    ip.s_b2 = input.ip[1];
-    ip.s_b3 = input.ip[2];
-    ip.s_b4 = input.ip[3];
-    return result;
-}
 
 LINGER MakeLinger(bool enable, u32 linger_value) {
     ASSERT(linger_value <= (std::numeric_limits<u_short>::max)());
@@ -700,6 +676,32 @@ int TranslateTypeToNative(Type type) {
 }
 #undef NETWORK_PROTOCOL_TRANSLATE_LIST
 
+#ifdef _WIN32
+sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
+    sockaddr_in result{};
+#ifdef __unix__
+    result.sin_len = sizeof(result);
+#endif
+    result.sin_family = AF_INET;
+    switch (Domain(input.family)) {
+    case Domain::INET:
+        result.sin_family = AF_INET;
+        break;
+    default:
+        UNIMPLEMENTED_MSG("Unhandled sockaddr family={}", input.family);
+        break;
+    }
+
+    result.sin_port = input.portno; //no need to translate
+
+    auto& ip = result.sin_addr.S_un.S_un_b;
+    ip.s_b1 = input.ip[0];
+    ip.s_b2 = input.ip[1];
+    ip.s_b3 = input.ip[2];
+    ip.s_b4 = input.ip[3];
+    return result;
+}
+#else
 sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
     sockaddr_in result{};
     result.sin_family = sa_family_t(TranslateDomainToNative(Domain(input.family)));
@@ -711,6 +713,7 @@ sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
         | (u32(input.ip[3]) << 0));
     return result;
 }
+#endif
 
 Network::SockAddrIn TranslateToSockAddrIn(sockaddr_in input) {
     Network::SockAddrIn result{};
