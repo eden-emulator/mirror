@@ -703,7 +703,7 @@ int TranslateTypeToNative(Type type) {
 sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
     sockaddr_in result{};
     result.sin_family = sa_family_t(TranslateDomainToNative(Domain(input.family)));
-    result.sin_len = sizeof(result);
+    //result.sin_len = sizeof(result);
     result.sin_port = htons(input.portno); //needs no conversion
     result.sin_addr.s_addr = htonl((u32(input.ip[0]) << 24)
         | (u32(input.ip[1]) << 16)
