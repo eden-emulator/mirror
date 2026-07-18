@@ -177,6 +177,7 @@ DeviceMemoryManager<Traits>::DeviceMemoryManager(const DeviceMemory& device_memo
 {
     impl = std::make_unique<DeviceMemoryManagerAllocator<Traits>>();
     cached_pages = std::make_unique<CachedPages>();
+    texture_cached_pages = std::make_unique<CachedPages>();
 
     const size_t total_virtual = device_as_size >> Memory::YUZU_PAGEBITS;
     for (size_t i = 0; i < total_virtual; i++) {
@@ -623,6 +624,28 @@ template <typename Traits>
 void DeviceMemoryManager<Traits>::UpdatePagesCachedCount(DAddr addr, size_t size, s32 delta) {
     Common::ScopedRangeLock lk(counter_guard, addr, size);
     UpdatePagesCachedCountNoLock(addr, size, delta);
+}
+
+template <typename Traits>
+void DeviceMemoryManager<Traits>::UpdateTexturePagesCount(DAddr addr, size_t size, s32 delta) {
+    Common::ScopedRangeLock lk(counter_guard, addr, size);
+    const size_t page_end = Common::DivCeil(addr + size, Memory::YUZU_PAGESIZE);
+    for (size_t page = addr >> Memory::YUZU_PAGEBITS; page != page_end; ++page) {
+        CounterAtomicType& count = texture_cached_pages->at(page >> subentries_shift).Count(page);
+        count.fetch_add(static_cast<CounterType>(delta), std::memory_order_release);
+    }
+}
+
+template <typename Traits>
+bool DeviceMemoryManager<Traits>::IsRegionTextureCached(DAddr addr, size_t size) const noexcept {
+    const size_t page_end = Common::DivCeil(addr + size, Memory::YUZU_PAGESIZE);
+    for (size_t page = addr >> Memory::YUZU_PAGEBITS; page != page_end; ++page) {
+        if (texture_cached_pages->at(page >> subentries_shift).Count(page).load(
+                std::memory_order_acquire) != 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 template <typename Traits>

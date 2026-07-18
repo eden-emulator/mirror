@@ -126,6 +126,10 @@ public:
     // New batch API to update multiple ranges with a single lock acquisition.
     void UpdatePagesCachedBatch(std::span<const std::pair<DAddr, size_t>> ranges, s32 delta);
 
+    void UpdateTexturePagesCount(DAddr addr, size_t size, s32 delta);
+
+    [[nodiscard]] bool IsRegionTextureCached(DAddr addr, size_t size) const noexcept;
+
 private:
     struct TranslationEntry {
         DAddr guest_page{};
@@ -234,6 +238,7 @@ private:
         (1ULL << (device_virtual_bits - page_bits)) / subentries;
     using CachedPages = std::array<CounterEntry, num_counter_entries>;
     std::unique_ptr<CachedPages> cached_pages;
+    std::unique_ptr<CachedPages> texture_cached_pages;
     Common::RangeMutex counter_guard;
     std::mutex mapping_guard;
 

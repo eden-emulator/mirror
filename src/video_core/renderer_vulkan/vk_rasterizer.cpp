@@ -772,12 +772,15 @@ bool RasterizerVulkan::OnCPUWrite(DAddr addr, u64 size) {
     return false;
 }
 
+static constexpr bool ENABLE_TEXTURE_CACHE_INVALIDATION_SKIP = true;
+
 void RasterizerVulkan::OnCacheInvalidation(DAddr addr, u64 size) {
     if (addr == 0 || size == 0) {
         return;
     }
 
-    {
+    if (!ENABLE_TEXTURE_CACHE_INVALIDATION_SKIP ||
+        device_memory.IsRegionTextureCached(addr, size)) {
         std::scoped_lock lock{texture_cache.mutex};
         texture_cache.WriteMemory(addr, size);
     }
