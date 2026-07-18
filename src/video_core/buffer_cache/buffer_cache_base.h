@@ -300,6 +300,8 @@ public:
     /// Return true when a CPU region is modified from the GPU
     [[nodiscard]] bool IsRegionGpuModified(DAddr addr, size_t size);
 
+    [[nodiscard]] bool IsRegionGpuModifiedCheap(DAddr addr, size_t size);
+
     /// Return true when a region is registered on the cache
     [[nodiscard]] bool IsRegionRegistered(DAddr addr, size_t size);
 
