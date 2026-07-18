@@ -2308,6 +2308,7 @@ void TextureCache<P>::TrackImage(ImageBase& image, ImageId image_id) {
     if (False(image.flags & ImageFlagBits::Sparse)) {
         if (image.cpu_addr < ~(1ULL << 40)) {
             device_memory.UpdatePagesCachedCount(image.cpu_addr, image.guest_size_bytes, 1);
+            device_memory.UpdateTexturePagesCount(image.cpu_addr, image.guest_size_bytes, 1);
         }
         return;
     }
@@ -2320,12 +2321,14 @@ void TextureCache<P>::TrackImage(ImageBase& image, ImageId image_id) {
             const DAddr cpu_addr = map.cpu_addr;
             const std::size_t size = map.size;
             device_memory.UpdatePagesCachedCount(cpu_addr, size, 1);
+            device_memory.UpdateTexturePagesCount(cpu_addr, size, 1);
         }
         return;
     }
     ForEachSparseSegment(image,
                          [this]([[maybe_unused]] GPUVAddr gpu_addr, DAddr cpu_addr, size_t size) {
                              device_memory.UpdatePagesCachedCount(cpu_addr, size, 1);
+                             device_memory.UpdateTexturePagesCount(cpu_addr, size, 1);
                          });
 }
 
@@ -2336,6 +2339,7 @@ void TextureCache<P>::UntrackImage(ImageBase& image, ImageId image_id) {
     if (False(image.flags & ImageFlagBits::Sparse)) {
         if (image.cpu_addr < ~(1ULL << 40)) {
             device_memory.UpdatePagesCachedCount(image.cpu_addr, image.guest_size_bytes, -1);
+            device_memory.UpdateTexturePagesCount(image.cpu_addr, image.guest_size_bytes, -1);
         }
         return;
     }
@@ -2348,6 +2352,7 @@ void TextureCache<P>::UntrackImage(ImageBase& image, ImageId image_id) {
         const DAddr cpu_addr = map.cpu_addr;
         const std::size_t size = map.size;
         device_memory.UpdatePagesCachedCount(cpu_addr, size, -1);
+        device_memory.UpdateTexturePagesCount(cpu_addr, size, -1);
     }
 }
 
