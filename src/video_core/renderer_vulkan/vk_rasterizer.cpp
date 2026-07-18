@@ -773,6 +773,7 @@ bool RasterizerVulkan::OnCPUWrite(DAddr addr, u64 size) {
 }
 
 static constexpr bool ENABLE_TEXTURE_CACHE_INVALIDATION_SKIP = true;
+static constexpr bool ENABLE_FINE_GRAINED_TRACKER_LOCK = true;
 
 void RasterizerVulkan::OnCacheInvalidation(DAddr addr, u64 size) {
     if (addr == 0 || size == 0) {
@@ -784,7 +785,9 @@ void RasterizerVulkan::OnCacheInvalidation(DAddr addr, u64 size) {
         std::scoped_lock lock{texture_cache.mutex};
         texture_cache.WriteMemory(addr, size);
     }
-    {
+    if (ENABLE_FINE_GRAINED_TRACKER_LOCK) {
+        buffer_cache.CpuWriteInvalidate(addr, size);
+    } else {
         std::scoped_lock lock{buffer_cache.mutex};
         buffer_cache.WriteMemory(addr, size);
     }

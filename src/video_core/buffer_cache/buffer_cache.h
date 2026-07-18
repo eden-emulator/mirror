@@ -122,6 +122,15 @@ void BufferCache<P>::WriteMemory(DAddr device_addr, u64 size) {
 }
 
 template <class P>
+void BufferCache<P>::CpuWriteInvalidate(DAddr device_addr, u64 size) {
+    if (!memory_tracker.CpuMarkIfNotGpuModified(device_addr, size)) {
+        return;
+    }
+    std::scoped_lock lock{mutex};
+    WriteMemory(device_addr, size);
+}
+
+template <class P>
 void BufferCache<P>::CachedWriteMemory(DAddr device_addr, u64 size) {
     const bool is_dirty = IsRegionRegistered(device_addr, size);
     if (!is_dirty) {

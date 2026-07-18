@@ -10,6 +10,7 @@
 #include <bit>
 #include <deque>
 #include <limits>
+#include <mutex>
 #include <type_traits>
 #include <ankerl/unordered_dense.h>
 #include <utility>
@@ -130,10 +131,26 @@ public:
     }
 
     void FlushCachedWrites() noexcept {
+        std::scoped_lock lk{tracker_mutex};
         for (auto id : cached_pages) {
             top_tier[id]->FlushCachedWrites();
         }
         cached_pages.clear();
+    }
+
+    [[nodiscard]] bool CpuMarkIfNotGpuModified(VAddr addr, u64 size) {
+        std::scoped_lock lk{tracker_mutex};
+        const bool gpu = IteratePagesNoLock<false>(
+            addr, size, [](Manager* manager, u64 offset, size_t sz) {
+                return manager->IsRegionModified(Type::GPU, offset, sz);
+            });
+        if (gpu) {
+            return true;
+        }
+        IteratePagesNoLock<true>(addr, size, [](Manager* manager, u64 offset, size_t sz) {
+            manager->ChangeRegionState(Type::CPU, true, manager->cpu_addr + offset, sz);
+        });
+        return false;
     }
 
     /// Call 'func' for each CPU modified range and unmark those pages as CPU modified
@@ -162,6 +179,12 @@ public:
 private:
     template <bool create_region_on_fail, typename Func>
     bool IteratePages(VAddr cpu_address, size_t size, Func&& func) {
+        std::scoped_lock lk{tracker_mutex};
+        return IteratePagesNoLock<create_region_on_fail>(cpu_address, size, std::forward<Func>(func));
+    }
+
+    template <bool create_region_on_fail, typename Func>
+    bool IteratePagesNoLock(VAddr cpu_address, size_t size, Func&& func) {
         using FuncReturn = typename std::invoke_result<Func, Manager*, u64, size_t>::type;
         static constexpr bool BOOL_BREAK = std::is_same_v<FuncReturn, bool>;
         std::size_t remaining_size{size};
@@ -199,6 +222,7 @@ private:
 
     template <bool create_region_on_fail, typename Func>
     std::pair<u64, u64> IteratePairs(VAddr cpu_address, size_t size, Func&& func) {
+        std::scoped_lock lk{tracker_mutex};
         std::size_t remaining_size{size};
         std::size_t page_index{cpu_address >> HIGHER_PAGE_BITS};
         u64 page_offset{cpu_address & HIGHER_PAGE_MASK};
@@ -259,6 +283,7 @@ private:
     std::deque<Manager*> free_managers;
     ankerl::unordered_dense::set<u32> cached_pages;
     DeviceTracker* device_tracker = nullptr;
+    std::mutex tracker_mutex;
 };
 
 } // namespace VideoCommon
