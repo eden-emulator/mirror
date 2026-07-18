@@ -522,9 +522,8 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
                                features.workgroup_memory_explicit_layout,
                                VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
         LOG_WARNING(Render_Vulkan, "Qualcomm drivers have broken conservative rasterization.");
-        RemoveExtensionFeature(extensions.conservative_rasterization,
-                               features.conservative_rasterization,
-                               VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
+        RemoveExtension(extensions.conservative_rasterization,
+                        VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
         LOG_WARNING(Render_Vulkan, "Qualcomm drivers have broken depth clip control.");
         RemoveExtensionFeature(extensions.depth_clip_control, features.depth_clip_control,
                                VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
