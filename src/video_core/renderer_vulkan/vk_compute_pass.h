@@ -6,12 +6,15 @@
 
 #pragma once
 
+#include <deque>
 #include <optional>
 #include <span>
 #include <utility>
+#include <vector>
 
 #include "common/common_types.h"
 #include "video_core/engines/maxwell_3d.h"
+#include "video_core/surface.h"
 #include "video_core/renderer_vulkan/vk_descriptor_pool.h"
 #include "video_core/renderer_vulkan/vk_update_descriptor.h"
 #include "video_core/texture_cache/types.h"
@@ -135,6 +138,44 @@ private:
     StagingBufferPool& staging_buffer_pool;
     ComputePassDescriptorQueue& compute_pass_descriptor_queue;
     MemoryAllocator& memory_allocator;
+};
+
+class RenderPassCache;
+
+class ASTCDecoderFragmentPass final {
+public:
+    explicit ASTCDecoderFragmentPass(const Device& device_, Scheduler& scheduler_,
+                                     DescriptorPool& descriptor_pool_,
+                                     ComputePassDescriptorQueue& compute_pass_descriptor_queue_,
+                                     RenderPassCache& render_pass_cache_);
+    ~ASTCDecoderFragmentPass();
+
+    void Assemble(Image& image, const StagingBufferRef& map,
+                  std::span<const VideoCommon::SwizzleParameters> swizzles,
+                  VideoCore::Surface::PixelFormat decoded_format);
+
+private:
+    VkPipeline FindOrEmplacePipeline(VkRenderPass render_pass);
+
+    const Device& device;
+    Scheduler& scheduler;
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue;
+    RenderPassCache& render_pass_cache;
+    vk::DescriptorSetLayout descriptor_set_layout;
+    vk::DescriptorUpdateTemplate descriptor_template;
+    vk::PipelineLayout pipeline_layout;
+    DescriptorAllocator descriptor_allocator;
+    vk::ShaderModule vertex_shader;
+    vk::ShaderModule fragment_shader;
+    std::vector<VkRenderPass> pipeline_keys;
+    std::vector<vk::Pipeline> pipelines;
+
+    struct FrameResources {
+        u64 tick;
+        vk::ImageView view;
+        vk::Framebuffer framebuffer;
+    };
+    std::deque<FrameResources> frame_resources;
 };
 
 class BlockLinearUnswizzle3DPass final : public ComputePass {

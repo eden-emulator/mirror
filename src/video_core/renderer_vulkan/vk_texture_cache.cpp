@@ -129,6 +129,9 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     if (info.storage) {
         usage |= VK_IMAGE_USAGE_STORAGE_BIT;
     }
+    if (IsPixelFormatASTC(format)) {
+        usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
     return usage;
 }
 
@@ -911,6 +914,10 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
     if (Settings::values.accelerate_astc.GetValue() == Settings::AstcDecodeMode::Gpu) {
         astc_decoder_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
                                   compute_pass_descriptor_queue, memory_allocator);
+        if (device.IsTiler()) {
+            astc_decoder_fragment_pass.emplace(device, scheduler, descriptor_pool,
+                                               compute_pass_descriptor_queue, render_pass_cache);
+        }
     }
     if (!device.IsKhrImageFormatListSupported()) {
         return;
@@ -2850,6 +2857,13 @@ void TextureCacheRuntime::AccelerateImageUpload(
     u32 z_start, u32 z_count) {
 
     if (IsPixelFormatASTC(image.info.format)) {
+        if (astc_decoder_fragment_pass) {
+            const VideoCore::Surface::PixelFormat decoded_format =
+                WillUseWidenedAstcFormat(device, image.info)
+                    ? VideoCore::Surface::PixelFormat::R32G32B32A32_FLOAT
+                    : VideoCore::Surface::PixelFormat::A8B8G8R8_UNORM;
+            return astc_decoder_fragment_pass->Assemble(image, map, swizzles, decoded_format);
+        }
         return astc_decoder_pass->Assemble(image, map, swizzles);
     }
 

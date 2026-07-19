@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <array>
 #include <memory>
 #include <numeric>
@@ -17,6 +18,8 @@
 #include "common/div_ceil.h"
 #include "common/vector_math.h"
 #include "video_core/host_shaders/astc_decoder_comp_spv.h"
+#include "video_core/host_shaders/astc_decoder_frag_spv.h"
+#include "video_core/host_shaders/astc_decoder_vert_spv.h"
 #include "video_core/host_shaders/queries_prefix_scan_sum_comp_spv.h"
 #include "video_core/host_shaders/queries_prefix_scan_sum_nosubgroups_comp_spv.h"
 #include "video_core/host_shaders/resolve_conditional_render_comp_spv.h"
@@ -25,7 +28,9 @@
 #include "video_core/host_shaders/block_linear_unswizzle_3d_bcn_comp_spv.h"
 #include "video_core/renderer_vulkan/vk_compute_pass.h"
 #include "video_core/surface.h"
+#include "video_core/renderer_vulkan/maxwell_to_vk.h"
 #include "video_core/renderer_vulkan/vk_descriptor_pool.h"
+#include "video_core/renderer_vulkan/vk_render_pass_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_staging_buffer_pool.h"
 #include "video_core/renderer_vulkan/vk_update_descriptor.h"
@@ -613,6 +618,394 @@ void ASTCDecoderPass::Assemble(Image& image, const StagingBufferRef& map,
         cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                        vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, 0, image_barrier);
     });
+}
+
+namespace {
+struct AstcFragPushConstants {
+    std::array<u32, 2> blocks_dims;
+    u32 layer_stride;
+    u32 block_size;
+    u32 x_shift;
+    u32 block_height;
+    u32 block_height_mask;
+    u32 dest_layer;
+};
+
+constexpr VkDescriptorSetLayoutBinding ASTC_FRAG_BINDING{
+    .binding = 0,
+    .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+    .descriptorCount = 1,
+    .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+    .pImmutableSamplers = nullptr,
+};
+
+constexpr VkDescriptorUpdateTemplateEntry ASTC_FRAG_TEMPLATE{
+    .dstBinding = 0,
+    .dstArrayElement = 0,
+    .descriptorCount = 1,
+    .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+    .offset = 0,
+    .stride = sizeof(DescriptorUpdateEntry),
+};
+
+constexpr DescriptorBankInfo ASTC_FRAG_BANK_INFO{
+    .uniform_buffers = 0,
+    .storage_buffers = 1,
+    .texture_buffers = 0,
+    .image_buffers = 0,
+    .textures = 0,
+    .images = 0,
+    .score = 1,
+};
+
+constexpr VkPushConstantRange ASTC_FRAG_PUSH_CONSTANT_RANGE{
+    .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+    .offset = 0,
+    .size = static_cast<u32>(sizeof(AstcFragPushConstants)),
+};
+
+constexpr VkPipelineVertexInputStateCreateInfo ASTC_FRAG_VERTEX_INPUT{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+    .pNext = nullptr,
+    .flags = 0,
+    .vertexBindingDescriptionCount = 0,
+    .pVertexBindingDescriptions = nullptr,
+    .vertexAttributeDescriptionCount = 0,
+    .pVertexAttributeDescriptions = nullptr,
+};
+
+constexpr VkPipelineInputAssemblyStateCreateInfo ASTC_FRAG_INPUT_ASSEMBLY{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+    .pNext = nullptr,
+    .flags = 0,
+    .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+    .primitiveRestartEnable = VK_FALSE,
+};
+
+constexpr VkPipelineViewportStateCreateInfo ASTC_FRAG_VIEWPORT{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+    .pNext = nullptr,
+    .flags = 0,
+    .viewportCount = 1,
+    .pViewports = nullptr,
+    .scissorCount = 1,
+    .pScissors = nullptr,
+};
+
+constexpr VkPipelineRasterizationStateCreateInfo ASTC_FRAG_RASTERIZATION{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+    .pNext = nullptr,
+    .flags = 0,
+    .depthClampEnable = VK_FALSE,
+    .rasterizerDiscardEnable = VK_FALSE,
+    .polygonMode = VK_POLYGON_MODE_FILL,
+    .cullMode = VK_CULL_MODE_NONE,
+    .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+    .depthBiasEnable = VK_FALSE,
+    .depthBiasConstantFactor = 0.0f,
+    .depthBiasClamp = 0.0f,
+    .depthBiasSlopeFactor = 0.0f,
+    .lineWidth = 1.0f,
+};
+
+constexpr VkPipelineMultisampleStateCreateInfo ASTC_FRAG_MULTISAMPLE{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+    .pNext = nullptr,
+    .flags = 0,
+    .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+    .sampleShadingEnable = VK_FALSE,
+    .minSampleShading = 0.0f,
+    .pSampleMask = nullptr,
+    .alphaToCoverageEnable = VK_FALSE,
+    .alphaToOneEnable = VK_FALSE,
+};
+
+constexpr VkPipelineColorBlendAttachmentState ASTC_FRAG_BLEND_ATTACHMENT{
+    .blendEnable = VK_FALSE,
+    .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+    .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+    .colorBlendOp = VK_BLEND_OP_ADD,
+    .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+    .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+    .alphaBlendOp = VK_BLEND_OP_ADD,
+    .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                      VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+};
+
+constexpr std::array ASTC_FRAG_DYNAMIC_STATES{VK_DYNAMIC_STATE_VIEWPORT,
+                                              VK_DYNAMIC_STATE_SCISSOR};
+} // Anonymous namespace
+
+ASTCDecoderFragmentPass::ASTCDecoderFragmentPass(
+    const Device& device_, Scheduler& scheduler_, DescriptorPool& descriptor_pool_,
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue_,
+    RenderPassCache& render_pass_cache_)
+    : device{device_}, scheduler{scheduler_},
+      compute_pass_descriptor_queue{compute_pass_descriptor_queue_},
+      render_pass_cache{render_pass_cache_},
+      descriptor_set_layout{device.GetLogical().CreateDescriptorSetLayout({
+          .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+          .pNext = nullptr,
+          .flags = 0,
+          .bindingCount = 1,
+          .pBindings = &ASTC_FRAG_BINDING,
+      })},
+      descriptor_template{device.GetLogical().CreateDescriptorUpdateTemplate({
+          .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO,
+          .pNext = nullptr,
+          .flags = 0,
+          .descriptorUpdateEntryCount = 1,
+          .pDescriptorUpdateEntries = &ASTC_FRAG_TEMPLATE,
+          .templateType = VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET,
+          .descriptorSetLayout = *descriptor_set_layout,
+          .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+          .pipelineLayout = VK_NULL_HANDLE,
+          .set = 0,
+      })},
+      pipeline_layout{device.GetLogical().CreatePipelineLayout({
+          .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+          .pNext = nullptr,
+          .flags = 0,
+          .setLayoutCount = 1,
+          .pSetLayouts = descriptor_set_layout.address(),
+          .pushConstantRangeCount = 1,
+          .pPushConstantRanges = &ASTC_FRAG_PUSH_CONSTANT_RANGE,
+      })},
+      descriptor_allocator{descriptor_pool_.Allocator(device_, scheduler_, *descriptor_set_layout,
+                                                       ASTC_FRAG_BANK_INFO)},
+      vertex_shader{BuildShader(device, ASTC_DECODER_VERT_SPV)},
+      fragment_shader{BuildShader(device, ASTC_DECODER_FRAG_SPV)} {}
+
+ASTCDecoderFragmentPass::~ASTCDecoderFragmentPass() = default;
+
+VkPipeline ASTCDecoderFragmentPass::FindOrEmplacePipeline(VkRenderPass render_pass) {
+    const auto it = std::ranges::find(pipeline_keys, render_pass);
+    if (it != pipeline_keys.end()) {
+        return *pipelines[std::distance(pipeline_keys.begin(), it)];
+    }
+    pipeline_keys.push_back(render_pass);
+    const std::array stages{
+        VkPipelineShaderStageCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT,
+            .module = *vertex_shader,
+            .pName = "main",
+            .pSpecializationInfo = nullptr,
+        },
+        VkPipelineShaderStageCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .module = *fragment_shader,
+            .pName = "main",
+            .pSpecializationInfo = nullptr,
+        },
+    };
+    const VkPipelineColorBlendStateCreateInfo color_blend{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .logicOpEnable = VK_FALSE,
+        .logicOp = VK_LOGIC_OP_CLEAR,
+        .attachmentCount = 1,
+        .pAttachments = &ASTC_FRAG_BLEND_ATTACHMENT,
+        .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
+    };
+    const VkPipelineDynamicStateCreateInfo dynamic_state{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .dynamicStateCount = static_cast<u32>(ASTC_FRAG_DYNAMIC_STATES.size()),
+        .pDynamicStates = ASTC_FRAG_DYNAMIC_STATES.data(),
+    };
+    pipelines.push_back(device.GetLogical().CreateGraphicsPipeline({
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .stageCount = static_cast<u32>(stages.size()),
+        .pStages = stages.data(),
+        .pVertexInputState = &ASTC_FRAG_VERTEX_INPUT,
+        .pInputAssemblyState = &ASTC_FRAG_INPUT_ASSEMBLY,
+        .pTessellationState = nullptr,
+        .pViewportState = &ASTC_FRAG_VIEWPORT,
+        .pRasterizationState = &ASTC_FRAG_RASTERIZATION,
+        .pMultisampleState = &ASTC_FRAG_MULTISAMPLE,
+        .pDepthStencilState = nullptr,
+        .pColorBlendState = &color_blend,
+        .pDynamicState = &dynamic_state,
+        .layout = *pipeline_layout,
+        .renderPass = render_pass,
+        .subpass = 0,
+        .basePipelineHandle = VK_NULL_HANDLE,
+        .basePipelineIndex = 0,
+    }));
+    return *pipelines.back();
+}
+
+void ASTCDecoderFragmentPass::Assemble(Image& image, const StagingBufferRef& map,
+                                       std::span<const VideoCommon::SwizzleParameters> swizzles,
+                                       VideoCore::Surface::PixelFormat decoded_format) {
+    using namespace VideoCommon::Accelerated;
+    while (!frame_resources.empty() && scheduler.IsFree(frame_resources.front().tick)) {
+        frame_resources.pop_front();
+    }
+    const std::array<u32, 2> block_dims{
+        VideoCore::Surface::DefaultBlockWidth(image.info.format),
+        VideoCore::Surface::DefaultBlockHeight(image.info.format),
+    };
+    RenderPassKey key{};
+    key.color_formats.fill(VideoCore::Surface::PixelFormat::Invalid);
+    key.color_formats[0] = decoded_format;
+    key.depth_format = VideoCore::Surface::PixelFormat::Invalid;
+    key.samples = VK_SAMPLE_COUNT_1_BIT;
+    const VkRenderPass render_pass = render_pass_cache.Get(key);
+    const VkPipeline pipeline = FindOrEmplacePipeline(render_pass);
+    const VkFormat vk_format =
+        MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, false, decoded_format).format;
+    const VkImage vk_image = image.Handle();
+    const VkImageAspectFlags aspect_mask = image.AspectMask();
+
+    scheduler.RequestOutsideRenderPassOperationContext();
+    const bool is_initialized = image.ExchangeInitialization();
+    scheduler.Record([vk_image, aspect_mask, is_initialized](vk::CommandBuffer cmdbuf) {
+        const VkImageMemoryBarrier barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = static_cast<VkAccessFlags>(
+                is_initialized ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_NONE),
+            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .oldLayout = is_initialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = vk_image,
+            .subresourceRange{
+                .aspectMask = aspect_mask,
+                .baseMipLevel = 0,
+                .levelCount = VK_REMAINING_MIP_LEVELS,
+                .baseArrayLayer = 0,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            },
+        };
+        cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, barrier);
+    });
+
+    for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
+        const size_t input_offset = swizzle.buffer_offset + map.offset;
+        const auto params = MakeBlockLinearSwizzle2DParams(swizzle, image.info);
+        const u32 level = swizzle.level;
+        const u32 width = std::max(1u, image.info.size.width >> level);
+        const u32 height = std::max(1u, image.info.size.height >> level);
+        const u32 layers = image.info.resources.layers;
+        for (u32 layer = 0; layer < layers; ++layer) {
+            vk::ImageView view = device.GetLogical().CreateImageView(VkImageViewCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .image = vk_image,
+                .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                .format = vk_format,
+                .components{},
+                .subresourceRange{
+                    .aspectMask = aspect_mask,
+                    .baseMipLevel = level,
+                    .levelCount = 1,
+                    .baseArrayLayer = layer,
+                    .layerCount = 1,
+                },
+            });
+            vk::Framebuffer framebuffer =
+                device.GetLogical().CreateFramebuffer(VkFramebufferCreateInfo{
+                    .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                    .pNext = nullptr,
+                    .flags = 0,
+                    .renderPass = render_pass,
+                    .attachmentCount = 1,
+                    .pAttachments = view.address(),
+                    .width = width,
+                    .height = height,
+                    .layers = 1,
+                });
+            const AstcFragPushConstants pc{
+                .blocks_dims = block_dims,
+                .layer_stride = params.layer_stride,
+                .block_size = params.block_size,
+                .x_shift = params.x_shift,
+                .block_height = params.block_height,
+                .block_height_mask = params.block_height_mask,
+                .dest_layer = layer,
+            };
+            compute_pass_descriptor_queue.Acquire(scheduler, 1);
+            compute_pass_descriptor_queue.AddBuffer(map.buffer, input_offset,
+                                                    image.guest_size_bytes - swizzle.buffer_offset);
+            const void* const descriptor_data{compute_pass_descriptor_queue.UpdateData()};
+            scheduler.Record([this, pipeline, render_pass, descriptor_data, pc, width, height,
+                              fb = *framebuffer](vk::CommandBuffer cmdbuf) {
+                const VkDescriptorSet set = descriptor_allocator.Commit();
+                device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
+                const VkRenderPassBeginInfo begin{
+                    .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                    .pNext = nullptr,
+                    .renderPass = render_pass,
+                    .framebuffer = fb,
+                    .renderArea{.offset = {0, 0}, .extent = {width, height}},
+                    .clearValueCount = 0,
+                    .pClearValues = nullptr,
+                };
+                const VkViewport viewport{
+                    .x = 0.0f,
+                    .y = 0.0f,
+                    .width = static_cast<float>(width),
+                    .height = static_cast<float>(height),
+                    .minDepth = 0.0f,
+                    .maxDepth = 1.0f,
+                };
+                const VkRect2D scissor{.offset = {0, 0}, .extent = {width, height}};
+                cmdbuf.BeginRenderPass(begin, VK_SUBPASS_CONTENTS_INLINE);
+                cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+                cmdbuf.SetViewport(0, viewport);
+                cmdbuf.SetScissor(0, scissor);
+                cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline_layout, 0, set,
+                                          {});
+                cmdbuf.PushConstants(*pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, pc);
+                cmdbuf.Draw(3, 1, 0, 0);
+                cmdbuf.EndRenderPass();
+            });
+            frame_resources.push_back(FrameResources{
+                .tick = scheduler.CurrentTick(),
+                .view = std::move(view),
+                .framebuffer = std::move(framebuffer),
+            });
+        }
+    }
+
+    scheduler.Record([vk_image, aspect_mask](vk::CommandBuffer cmdbuf) {
+        const VkImageMemoryBarrier barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+            .oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = vk_image,
+            .subresourceRange{
+                .aspectMask = aspect_mask,
+                .baseMipLevel = 0,
+                .levelCount = VK_REMAINING_MIP_LEVELS,
+                .baseArrayLayer = 0,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            },
+        };
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                               vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, 0, barrier);
+    });
+    scheduler.InvalidateState();
 }
 
 constexpr u32 BL3D_BINDING_INPUT_BUFFER  = 0;
