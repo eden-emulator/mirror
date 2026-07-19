@@ -93,7 +93,7 @@ public:
 
     void AccelerateImageUpload(Image&, const StagingBufferRef&,
                                std::span<const VideoCommon::SwizzleParameters>,
-                               u32 z_start, u32 z_count);
+                               u32 z_start = 0, u32 z_count = 0);
 
     void InsertUploadMemoryBarrier() {}
 
