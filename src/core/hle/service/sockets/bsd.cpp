@@ -526,9 +526,9 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     auto const bsd_errno = descriptor.socket->Initialize(domain, type, protocol);
     descriptor.is_connection_based = IsConnectionBased(type);
 #ifdef _WIN32
-    if (descriptor.socket->fd == INVALID_SOCKET) {
+    if (descriptor.is_connection_based && descriptor.socket->fd == INVALID_SOCKET) {
 #else
-    if (descriptor.socket->fd == Network::Socket::INVALID_SOCKET) {
+    if (descriptor.is_connection_based && descriptor.socket->fd == Network::Socket::INVALID_SOCKET) {
 #endif
         file_descriptors[fd].reset();
         return {-1, bsd_errno};
@@ -927,7 +927,7 @@ std::variant<s32, Network::Errno> BSD::DuplicateSocketImpl(s32 fd) {
     }
 
     const s32 new_fd = FindFreeFileDescriptorHandle();
-    if (new_fd < 0) {
+    if (!IsFileDescriptorValid(new_fd)) {
         LOG_ERROR(Service, "No more file descriptors available");
         return Network::Errno::MFILE;
     }
