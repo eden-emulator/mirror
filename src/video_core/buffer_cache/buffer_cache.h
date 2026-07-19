@@ -792,11 +792,6 @@ bool BufferCache<P>::IsRegionGpuModified(DAddr addr, size_t size) {
 }
 
 template <class P>
-bool BufferCache<P>::IsRegionGpuModifiedCheap(DAddr addr, size_t size) {
-    return memory_tracker.IsRegionGpuModifiedCheap(addr, size);
-}
-
-template <class P>
 bool BufferCache<P>::IsRegionRegistered(DAddr addr, size_t size) {
     const DAddr end_addr = addr + size;
     const u64 page_end = Common::DivCeil(end_addr, CACHING_PAGESIZE);
@@ -1030,8 +1025,7 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
     }();
     const bool use_fast_buffer = needs_alignment_stream
         || (has_host_buffer && size <= channel_state->uniform_buffer_skip_cache_size
-            && !(memory_tracker.IsRegionGpuModifiedCheap(device_addr, size)
-                 && memory_tracker.IsRegionGpuModified(device_addr, size)));
+            && !memory_tracker.IsRegionGpuModified(device_addr, size));
     if (use_fast_buffer) {
         if constexpr (IS_OPENGL) {
             if (runtime.HasFastBufferSubData()) {

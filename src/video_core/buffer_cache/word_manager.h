@@ -127,7 +127,6 @@ struct WordManager {
         [[maybe_unused]] std::span<u64> cached_words = Span(Type::CachedCPU);
         std::vector<std::pair<VAddr, u64>> ranges;
         s64 cpu_delta = 0;
-        s64 gpu_delta = 0;
         IterateWords(dirty_addr - cpu_addr, size, [&](size_t index, u64 mask) {
             if (type == Type::CPU || type == Type::CachedCPU) {
                 CollectChangedRanges(!enable, index, untracked_words[index], mask, ranges);
@@ -135,9 +134,6 @@ struct WordManager {
             if (type == Type::CPU) {
                 const u64 old = state_words[index];
                 cpu_delta += enable ? std::popcount(~old & mask) : -std::popcount(old & mask);
-            } else if (type == Type::GPU) {
-                const u64 old = state_words[index];
-                gpu_delta += enable ? std::popcount(~old & mask) : -std::popcount(old & mask);
             }
             if (enable) {
                 state_words[index] |= mask;
@@ -155,9 +151,6 @@ struct WordManager {
         });
         if (cpu_delta != 0) {
             cpu_modified_pages.fetch_add(static_cast<u32>(cpu_delta), std::memory_order_release);
-        }
-        if (gpu_delta != 0) {
-            gpu_modified_pages.fetch_add(static_cast<u32>(gpu_delta), std::memory_order_release);
         }
         if (!ranges.empty()) {
             ApplyCollectedRanges(ranges, (!enable) ? 1 : -1);
@@ -187,7 +180,6 @@ struct WordManager {
         };
         std::vector<std::pair<VAddr, u64>> ranges;
         s64 cpu_delta = 0;
-        s64 gpu_delta = 0;
         IterateWords(offset, size, [&](size_t index, u64 mask) {
             if (type == Type::GPU)
                 mask &= ~untracked_words[index];
@@ -198,8 +190,6 @@ struct WordManager {
                 }
                 if (type == Type::CPU)
                     cpu_delta -= std::popcount(word);
-                else if (type == Type::GPU)
-                    gpu_delta -= std::popcount(word);
                 state_words[index] &= ~mask;
                 if (type == Type::CPU || type == Type::CachedCPU)
                     untracked_words[index] &= ~mask;
@@ -223,9 +213,6 @@ struct WordManager {
         });
         if (cpu_delta != 0) {
             cpu_modified_pages.fetch_add(static_cast<u32>(cpu_delta), std::memory_order_release);
-        }
-        if (gpu_delta != 0) {
-            gpu_modified_pages.fetch_add(static_cast<u32>(gpu_delta), std::memory_order_release);
         }
         if (pending) {
             release();
@@ -361,15 +348,10 @@ struct WordManager {
         return cpu_modified_pages.load(std::memory_order_acquire);
     }
 
-    [[nodiscard]] u32 GpuModifiedPageCount() const noexcept {
-        return gpu_modified_pages.load(std::memory_order_acquire);
-    }
-
     std::array<u64, size_t(Type::Max) * num_words> heap = {};
     DeviceTracker* tracker = nullptr;
     VAddr cpu_addr = 0;
     std::atomic<u32> cpu_modified_pages{0};
-    std::atomic<u32> gpu_modified_pages{0};
 };
 
 } // namespace VideoCommon
