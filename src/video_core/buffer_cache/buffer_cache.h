@@ -1448,25 +1448,33 @@ BufferId BufferCache<P>::FindBuffer(DAddr device_addr, u32 size) {
     const BufferId buffer_id = page_table[page];
     if (buffer_id) {
         Buffer& buffer = slot_buffers[buffer_id];
-        WaitForGpuFenceIfNeeded(buffer);
         if (buffer.IsInBounds(device_addr, size)) {
+            SynchronizeBufferIfNeeded(buffer);
             return buffer_id;
         }
     }
     return CreateBuffer(device_addr, size);
 }
 
-template <class P>
-void BufferCache<P>::WaitForGpuFenceIfNeeded(Buffer& buffer) {
-    if constexpr (!IS_OPENGL) {
-        const bool gpu_fence_accurate = Settings::IsGPUFenceBehaviorAccurate();
-        const bool gpu_fence_strict = Settings::IsGPUFenceBehaviorStrict();
-        if (gpu_fence_accurate || gpu_fence_strict) {
-            const u64 gpu_tick_delay = gpu_fence_strict ? 0 : 3;
-            const u64 buffer_tick = buffer.getWriteTick();
-            const u64 gpu_tick = runtime.KnownGpuTick();
-            if (buffer_tick > gpu_tick + gpu_tick_delay) {
-                runtime.Wait(buffer_tick);
+void BufferCache<P>::SynchronizeBufferIfNeeded(Buffer& buffer) {
+    const bool gpu_fence_accurate = Settings::IsGPUFenceBehaviorAccurate();
+    const bool gpu_fence_strict = Settings::IsGPUFenceBehaviorStrict();
+    const bool should_sync = gpu_fence_accurate || gpu_fence_strict;
+    if (should_sync) {
+        if (gpu_fence_accurate) {
+            if constexpr (!IS_OPENGL) {
+                const bool should_wait = buffer.getWriteTick() > runtime.KnownGpuTick() + 3;
+                if (should_wait) {
+                    runtime.Wait(buffer.getWriteTick());
+                }
+            }
+        } else if (gpu_fence_strict) {
+            bool should_download = true;
+            if constexpr (!IS_OPENGL) {
+                should_download = buffer.getWriteTick() > runtime.KnownGpuTick();
+            }
+            if (should_download) {
+                DownloadBufferMemory(buffer);
             }
         }
     }
@@ -1688,9 +1696,6 @@ void BufferCache<P>::ImmediateUploadMemory([[maybe_unused]] Buffer& buffer,
                 if (immediate_buffer.empty()) {
                     immediate_buffer = ImmediateBuffer(largest_copy);
                 }
-                if (Settings::values.enable_gpu_buffer_readback.GetValue()) {
-                    DownloadBufferMemory(buffer, device_addr, copy.size);
-                }
                 device_memory.ReadBlockUnsafe(device_addr, immediate_buffer.data(), copy.size);
                 upload_span = immediate_buffer.subspan(0, copy.size);
             }
@@ -1709,9 +1714,6 @@ void BufferCache<P>::MappedUploadMemory([[maybe_unused]] Buffer& buffer,
         for (BufferCopy& copy : copies) {
             u8* const src_pointer = staging_pointer.data() + copy.src_offset;
             const DAddr device_addr = buffer.CpuAddr() + copy.dst_offset;
-            if (Settings::values.enable_gpu_buffer_readback.GetValue()) {
-                DownloadBufferMemory(buffer, device_addr, copy.size);
-            }
             device_memory.ReadBlockUnsafe(device_addr, src_pointer, copy.size);
             // Apply the staging offset
             copy.src_offset += upload_staging.offset;

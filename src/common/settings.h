@@ -576,13 +576,6 @@ struct Values {
         false,
 #endif
         "rescale_hack", Category::RendererHacks};
-    SwitchableSetting<bool> enable_gpu_buffer_readback{linkage,
-                                                       false,
-                                                       "enable_gpu_buffer_readback",
-                                                       Category::RendererAdvanced,
-                                                       Specialization::Default,
-                                                       true,
-                                                       true};
 
     SwitchableSetting<bool> use_asynchronous_shaders{linkage, false, "use_asynchronous_shaders",
                                                      Category::RendererHacks};

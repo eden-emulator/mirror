@@ -489,8 +489,6 @@
     <string name="renderer_reactive_flushing_description">通过牺牲性能来提升某些游戏的渲染精度。</string>
     <string name="enable_buffer_history">启用缓冲区历史</string>
     <string name="enable_buffer_history_description">启用对先前缓冲区状态的访问。此选项可在某些游戏中提升渲染质量并保持性能的一致性。</string>
-    <string name="enable_gpu_buffer_readback">启用 GPU 缓冲区回读</string>
-    <string name="enable_gpu_buffer_readback_description">在上传前回读经由 GPU 修改过的缓冲区数据，以将其保留。一些游戏会用到这项设定以正确渲染某些效果。如果硬件无法处理额外的工作负载，则可能会导致问题。</string>
     <string name="use_optimized_vertex_buffers">优化顶点缓冲区</string>
     <string name="use_optimized_vertex_buffers_description">启用经过优化的顶点缓冲区绑定以提升性能。需要 Mesa 26.0 及以上版本的 Turnip 或 QCOM 驱动程序。若使用较旧版本的 Turnip 驱动 (25.3 及以下版本) 则会导致崩溃。</string>
 

@@ -499,8 +499,6 @@
     <string name="renderer_reactive_flushing_description">يحسن دقة العرض في بعض الألعاب على حساب الأداء.</string>
     <string name="enable_buffer_history">تمكين سجل التخزين المؤقت</string>
     <string name="enable_buffer_history_description">يُتيح هذا الخيار الوصول إلى حالات التخزين المؤقت السابقة. وقد يُحسّن جودة العرض وثبات الأداء في بعض الألعاب.</string>
-    <string name="enable_gpu_buffer_readback">تفعيل قراءة مخزن وحدة معالجة الرسومات</string>
-    <string name="enable_gpu_buffer_readback_description">يحافظ هذا النظام على بيانات المخزن المؤقت المُعدّلة بواسطة وحدة معالجة الرسومات عن طريق قراءتها مرة أخرى قبل التحميل. تتطلب بعض الألعاب ذلك لعرض بعض التأثيرات بشكل صحيح. قد يُسبب ذلك مشاكل إذا لم يتمكن الجهاز من التعامل مع عبء العمل الإضافي.</string>
     <string name="use_optimized_vertex_buffers">مخازن الرؤوس المُحسّنة</string>
     <string name="use_optimized_vertex_buffers_description">يُتيح ربطًا مُحسَّنًا لمخازن الرؤوس لتحسين الأداء. يتطلب برامج تشغيل Mesa 26.0+ Turnip/ برامج تشغيل QCOM. قد يتعطل على برامج تشغيل Turnip القديمة (25.3 وما دون).</string>
 
