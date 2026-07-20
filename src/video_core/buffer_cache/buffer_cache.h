@@ -1473,6 +1473,9 @@ void BufferCache<P>::SynchronizeBufferIfNeeded(Buffer& buffer) {
             bool should_download = true;
             if constexpr (!IS_OPENGL) {
                 should_download = buffer.getWriteTick() > runtime.KnownGpuTick();
+                if (should_download) {
+                    runtime.Wait(buffer.getWriteTick());
+                }
             }
             if (should_download) {
                 DownloadBufferMemory(buffer);
