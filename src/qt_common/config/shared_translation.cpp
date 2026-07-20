@@ -226,8 +226,6 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
            tr("Controls the DMA read mode.\nUnsafe is faster, while Safe is more stable and can fix issues in some games.\nDefault follows the GPU Accuracy setting."));
     INSERT(Settings, gpu_fence_behavior, tr("GPU Fence Behavior:"),
            tr("Controls the GPU fence synchronization behavior.\nImmediate is the fastest option, but can introduce some issues.\nBalanced offers better compatibility and may fix issues in some games.\nAccurate further improves compatibility at the cost of some performance.\nStrict is the slowest option, but can fix issues that require stricter synchronization.\nDefault follows the GPU Accuracy setting."));
-    INSERT(Settings, enable_gpu_buffer_readback, tr("Enable GPU buffer readback"),
-           tr("Preserves GPU-modified data by reading it back before uploading.\nSome games require this to render certain effects properly."));
     INSERT(Settings, use_asynchronous_shaders, tr("Enable asynchronous shader compilation"),
            tr("May reduce shader stutter."));
     INSERT(Settings, fast_gpu_time, tr("Fast GPU Time"),

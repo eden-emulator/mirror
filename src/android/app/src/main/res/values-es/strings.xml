@@ -492,8 +492,6 @@
     <string name="renderer_reactive_flushing_description">Mejora la precisión de renderizado en algunos juegos, pero reduce el rendimiento.</string>
     <string name="enable_buffer_history">Activar el historial del búfer</string>
     <string name="enable_buffer_history_description">Permite el acceso al estado del búfer anterior. Esta opción puede mejorar la calidad de renderizado y la consistencia en el rendimiento de algunos juegos.</string>
-    <string name="enable_gpu_buffer_readback">Activar la lectura del buffer de la GPU</string>
-    <string name="enable_gpu_buffer_readback_description">Conserva los datos del búfer modificados por la GPU leyéndolos antes de subirlos.\nAlgunos juegos requieren esto para renderizar correctamente ciertos efectos.\nPuede causar problemas si el hardware no puede soportar la carga de trabajo adicional.</string>
     <string name="use_optimized_vertex_buffers">Búferes de vértices optimizados</string>
     <string name="use_optimized_vertex_buffers_description">Permite la optimización del enlace del búfer de vértices para un mejor rendimiento. Requiere controladores Mesa 26.0+ Turnip/ controladores QCOM. Fallará con controladores Turnip más antiguos (versión 25.3 o inferior).</string>
 
