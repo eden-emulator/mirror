@@ -1456,6 +1456,7 @@ BufferId BufferCache<P>::FindBuffer(DAddr device_addr, u32 size) {
     return CreateBuffer(device_addr, size);
 }
 
+template <class P>
 void BufferCache<P>::SynchronizeBufferIfNeeded(Buffer& buffer) {
     const bool gpu_fence_accurate = Settings::IsGPUFenceBehaviorAccurate();
     const bool gpu_fence_strict = Settings::IsGPUFenceBehaviorStrict();
