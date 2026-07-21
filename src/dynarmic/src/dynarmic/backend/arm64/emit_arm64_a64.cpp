@@ -133,13 +133,15 @@ void EmitA64Terminal(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Term::Ch
 }
 
 void EmitA64LeafTerminal(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Term::LeafTerminal const& terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
-    if (auto const x = std::get_if<IR::Term::LeafTerminal>(&terminal))
+    if (auto const x = std::get_if<IR::Term::ReturnToDispatch>(&terminal))
         return EmitA64Terminal(code, ctx, *x, initial_location, is_single_step);
-    if (auto const x = std::get_if<IR::Term::If>(&terminal))
+    if (auto const x = std::get_if<IR::Term::LinkBlock>(&terminal))
         return EmitA64Terminal(code, ctx, *x, initial_location, is_single_step);
-    if (auto const x = std::get_if<IR::Term::CheckBit>(&terminal))
+    if (auto const x = std::get_if<IR::Term::LinkBlockFast>(&terminal))
         return EmitA64Terminal(code, ctx, *x, initial_location, is_single_step);
-    if (auto const x = std::get_if<IR::Term::CheckHalt>(&terminal))
+    if (auto const x = std::get_if<IR::Term::PopRSBHint>(&terminal))
+        return EmitA64Terminal(code, ctx, *x, initial_location, is_single_step);
+    if (auto const x = std::get_if<IR::Term::FastDispatchHint>(&terminal))
         return EmitA64Terminal(code, ctx, *x, initial_location, is_single_step);
     UNREACHABLE();
 }
