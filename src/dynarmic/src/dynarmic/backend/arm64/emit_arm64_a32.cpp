@@ -126,25 +126,25 @@ void EmitA32Terminal(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Term::Fa
 
 void EmitA32Terminal(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Term::If terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
     oaknut::Label pass = EmitA32Cond(code, ctx, terminal.if_);
-    EmitA32Terminal(code, ctx, terminal.else_, initial_location, is_single_step);
+    EmitA32LeafTerminal(code, ctx, terminal.else_, initial_location, is_single_step);
     code.l(pass);
-    EmitA32Terminal(code, ctx, terminal.then_, initial_location, is_single_step);
+    EmitA32LeafTerminal(code, ctx, terminal.then_, initial_location, is_single_step);
 }
 
 void EmitA32Terminal(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Term::CheckBit terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
     oaknut::Label fail;
     code.LDRB(Wscratch0, SP, offsetof(StackLayout, check_bit));
     code.CBZ(Wscratch0, fail);
-    EmitA32Terminal(code, ctx, terminal.then_, initial_location, is_single_step);
+    EmitA32LeafTerminal(code, ctx, terminal.then_, initial_location, is_single_step);
     code.l(fail);
-    EmitA32Terminal(code, ctx, terminal.else_, initial_location, is_single_step);
+    EmitA32LeafTerminal(code, ctx, terminal.else_, initial_location, is_single_step);
 }
 
 void EmitA32Terminal(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Term::CheckHalt terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
     oaknut::Label fail;
     code.LDAR(Wscratch0, Xhalt);
     code.CBNZ(Wscratch0, fail);
-    EmitA32Terminal(code, ctx, terminal.else_, initial_location, is_single_step);
+    EmitA32LeafTerminal(code, ctx, terminal.else_, initial_location, is_single_step);
     code.l(fail);
     EmitRelocation(code, ctx, LinkTarget::ReturnToDispatcher);
 }
