@@ -90,7 +90,6 @@ Services::Services(std::shared_ptr<SM::ServiceManager>& sm, Core::System& system
         {"audio",      &Audio::LoopProcess},
         {"FS",         &FileSystem::LoopProcess},
         {"ldn",        &LDN::LoopProcess},
-        {"nvnflinger", &Nvnflinger::LoopProcess},
         {"nvservices", &Nvidia::LoopProcess},
         {"bsdsocket",  &Sockets::LoopProcess},
     })
@@ -133,6 +132,7 @@ Services::Services(std::shared_ptr<SM::ServiceManager>& sm, Core::System& system
         {"ngc",        &NGC::LoopProcess},
         {"nifm",       &NIFM::LoopProcess},
         {"nim",        &NIM::LoopProcess},
+        {"nvnflinger", &Nvnflinger::LoopProcess},
         {"npns",       &NPNS::LoopProcess},
         {"ns",         &NS::LoopProcess},
         {"olsc",       &OLSC::LoopProcess},
