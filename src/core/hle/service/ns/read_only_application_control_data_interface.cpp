@@ -372,8 +372,8 @@ void IReadOnlyApplicationControlDataInterface::ListApplicationTitle(HLERequestCo
     auto async_value = std::make_shared<IAsyncValue>(system, data_offset, s32(total_data_size));
     IPC::ResponseBuilder rb{ctx, 2, 1, 1};
     rb.Push(ResultSuccess);
-    rb.PushCopyObjects(async_value->ReadableEvent());
-    rb.PushIpcInterface(std::move(async_value));
+    rb.PushCopyObjects(ctx, async_value->ReadableEvent());
+    rb.PushIpcInterface(ctx, std::move(async_value));
 }
 
 Result IReadOnlyApplicationControlDataInterface::GetApplicationControlData3(OutBuffer<BufferAttr_HipcMapAlias> out_buffer, Out<u32> out_flags_a, Out<u32> out_flags_b, Out<u32> out_actual_size, ApplicationControlSource application_control_source, u8 flag1, u8 flag2, u64 application_id) {
