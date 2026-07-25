@@ -219,9 +219,15 @@ ButtonMapping Android::GetButtonMappingForDevice(const Common::ParamPackage& par
     jboolean isCopy = false;
     jboolean* j_has_keys = env->GetBooleanArrayElements(j_has_keys_object, &isCopy);
 
+    auto j_yuzu_device_name = (jstring)env->CallObjectMethod(j_device, Common::Android::GetYuzuDeviceGetName());
+    const char *yuzu_device_name = env->GetStringUTFChars(j_yuzu_device_name, &isCopy);
+    const char *left_joyCon_string_name = "Nintendo Switch Left Joy-Con";
+    bool is_left_joyCon = strncmp(yuzu_device_name, left_joyCon_string_name, strlen(left_joyCon_string_name)) == 0;
+    env->ReleaseStringUTFChars(j_yuzu_device_name, yuzu_device_name);
+
     std::set<s32> available_keys;
     for (size_t i = 0; i < keycode_ids.size(); ++i) {
-        if (j_has_keys[i]) {
+        if (j_has_keys[i] || (is_left_joyCon && i <= 3)) {
             available_keys.insert(keycode_ids[i]);
         }
     }

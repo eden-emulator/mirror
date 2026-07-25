@@ -169,7 +169,7 @@ class InputDialogFragment : DialogFragment() {
         NativeInput.onGamePadButtonEvent(
             controllerData.getGUID(),
             controllerData.getPort(),
-            event.keyCode,
+            InputHandler.getButtonIdFromEvent(event),
             action
         )
         onInputReceived(event.device)
