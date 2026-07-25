@@ -100,7 +100,9 @@ object InputHandler {
     }
 
     fun getButtonIdFromEvent(event: KeyEvent): Int {
-        if (event.keyCode == 0) {
+        val isLeftJoyCon = event.device.vendorId == 0x057e && event.device.productId == 0x2006
+
+        if (event.keyCode == 0 && isLeftJoyCon) {
             return when (event.scanCode) {
                 LINUX_BUTTON_DPAD_UP -> KeyEvent.KEYCODE_DPAD_UP
                 LINUX_BUTTON_DPAD_DOWN -> KeyEvent.KEYCODE_DPAD_DOWN
