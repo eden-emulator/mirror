@@ -65,9 +65,7 @@ android {
 
     defaultConfig {
         applicationId = "dev.eden.eden_emulator"
-        // level 29 (Android 10) is the minimum
-        // to enable non-emutls TLS fetch
-        minSdk = 29
+        minSdk = 33
         targetSdk = 36
         versionName = getGitVersion()
         versionCode = autoVersion
