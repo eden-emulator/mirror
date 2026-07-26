@@ -65,7 +65,7 @@ android {
 
     defaultConfig {
         applicationId = "dev.eden.eden_emulator"
-        minSdk = 33
+        minSdk = 35
         targetSdk = 36
         versionName = getGitVersion()
         versionCode = autoVersion
