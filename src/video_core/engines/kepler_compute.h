@@ -171,6 +171,22 @@ public:
         };
         std::array<ConstBufferConfig, NumConstBuffers> const_buffer_config;
 
+        static constexpr u32 NvnShaderSlotBias = 2;
+
+        u32 ResolveConstBufferIndex(u32 shader_index) const {
+            const u32 mask = const_buffer_enable_mask.Value();
+            if (((mask >> shader_index) & 1) != 0) {
+                return shader_index;
+            }
+            if (shader_index >= NvnShaderSlotBias) {
+                const u32 biased = shader_index - NvnShaderSlotBias;
+                if (((mask >> biased) & 1) != 0) {
+                    return biased;
+                }
+            }
+            return shader_index;
+        }
+
         union {
             BitField<0, 20, u32> local_pos_alloc;
             BitField<27, 5, u32> barrier_alloc;

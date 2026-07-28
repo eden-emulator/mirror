@@ -78,6 +78,11 @@ public:
 
     [[nodiscard]] virtual TextureType ReadTextureType(u32 raw_handle) = 0;
 
+    [[nodiscard]] virtual u32 ResolveBindlessHandle(u32 cbuf_index, u32 cbuf_offset,
+                                                    u32 raw_handle) {
+        return raw_handle;
+    }
+
     [[nodiscard]] virtual TexturePixelFormat ReadTexturePixelFormat(u32 raw_handle) = 0;
 
     [[nodiscard]] virtual bool IsTexturePixelFormatInteger(u32 raw_handle) = 0;
