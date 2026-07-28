@@ -18,7 +18,6 @@
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_update_descriptor.h"
-#include "video_core/shader_environment.h"
 #include "video_core/shader_notify.h"
 #include "video_core/vulkan_common/vulkan_device.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
@@ -149,7 +148,6 @@ void ComputePipeline::Configure(Tegra::Engines::KeplerCompute& kepler_compute,
     const auto& qmd{kepler_compute.launch_description};
     const auto& cbufs{qmd.const_buffer_config};
     const bool via_header_index{qmd.linked_tsc != 0};
-    const u32 tic_limit{kepler_compute.regs.tic.limit};
     const auto read_handle{[&](const auto& desc, u32 index) {
         ASSERT(((qmd.const_buffer_enable_mask >> desc.cbuf_index) & 1) != 0);
         const u32 index_offset{index << desc.size_shift};
@@ -164,17 +162,10 @@ void ComputePipeline::Configure(Tegra::Engines::KeplerCompute& kepler_compute,
                                              secondary_offset};
                 const u32 lhs_raw{gpu_memory.Read<u32>(addr) << desc.shift_left};
                 const u32 rhs_raw{gpu_memory.Read<u32>(separate_addr) << desc.secondary_shift_left};
-                const u32 combined{VideoCommon::ResolveBindlessHandleTable(
-                    gpu_memory, addr, lhs_raw | rhs_raw,
-                    TexturePair(lhs_raw | rhs_raw, via_header_index).first, tic_limit)};
-                return TexturePair(combined, via_header_index);
+                return TexturePair(lhs_raw | rhs_raw, via_header_index);
             }
         }
-        const u32 single_raw{gpu_memory.Read<u32>(addr)};
-        return TexturePair(VideoCommon::ResolveBindlessHandleTable(
-                               gpu_memory, addr, single_raw,
-                               TexturePair(single_raw, via_header_index).first, tic_limit),
-                           via_header_index);
+        return TexturePair(gpu_memory.Read<u32>(addr), via_header_index);
     }};
     const auto add_image{[&](const auto& desc, bool blacklist) {
         for (u32 index = 0; index < desc.count; ++index) {
