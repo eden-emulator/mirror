@@ -285,7 +285,7 @@ Tegra::Texture::TICEntry GenericEnvironment::ReadTextureInfo(GPUVAddr tic_addr, 
                                                              bool via_header_index, u32 raw) {
     const auto handle{Tegra::Texture::TexturePair(raw, via_header_index)};
     if (handle.first > tic_limit) {
-        LOG_DEBUG(Shader,
+        LOG_CRITICAL(Shader,
                     "TIC index out of range: raw=0x{:08x} tic_index={} tsc_index={} tic_limit={} "
                     "tic_addr=0x{:x} via_header_index={} stage={} program_base=0x{:x} "
                     "start_address=0x{:x}",
