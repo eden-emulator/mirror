@@ -210,6 +210,10 @@ Result KProcess::Initialize(KernelCore& kernel, const Svc::CreateProcessParamete
     m_arg_pointer = 0;
     m_arg_return_address = 0;
     m_main_thread_handle_addr = 0;
+    m_process_handle_addr = 0;
+    m_homebrew_next_load_path_addr = 0;
+    m_homebrew_next_load_argv_addr = 0;
+    m_is_homebrew_in_place_next_load = false;
     m_code_size = params.code_num_pages * PageSize;
     m_is_application = True(params.flags & Svc::CreateProcessFlag::IsApplication);
 
@@ -947,6 +951,7 @@ Result KProcess::Run(KernelCore& kernel, s32 priority, size_t stack_size) {
 
         stack_top = stack_bottom + stack_size;
         m_main_thread_stack_size = stack_size;
+        m_main_thread_stack_top = stack_top;
     }
 
     // Ensure our stack is safe to clean up on exit.
@@ -1004,6 +1009,11 @@ Result KProcess::Run(KernelCore& kernel, s32 priority, size_t stack_size) {
         // svcCloseHandle on exit.
         if (GetInteger(m_main_thread_handle_addr) != 0) {
             this->GetMemory().Write32(m_main_thread_handle_addr, thread_handle);
+        }
+        if (GetInteger(m_process_handle_addr) != 0) {
+            Handle process_handle;
+            R_TRY(m_handle_table.Add(kernel, std::addressof(process_handle), this));
+            this->GetMemory().Write32(m_process_handle_addr, process_handle);
         }
     } else {
         main_thread->GetContext().r[0] = 0;

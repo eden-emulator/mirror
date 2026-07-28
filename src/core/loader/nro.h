@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -19,9 +22,14 @@ class NACP;
 
 namespace Kernel {
 class KProcess;
+class KThread;
 }
 
 namespace Loader {
+
+[[nodiscard]] bool LoadNroInPlace(Core::System& system, Kernel::KProcess& process,
+                                  Kernel::KThread& thread, const FileSys::VirtualFile& nro_file,
+                                  const std::string& nro_path, const std::string& launch_argv);
 
 /// Loads an NRO file
 class AppLoader_NRO final : public AppLoader {

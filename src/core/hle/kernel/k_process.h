@@ -87,6 +87,9 @@ private:
     KProcessAddress m_arg_pointer{};
     KProcessAddress m_arg_return_address{};
     KProcessAddress m_main_thread_handle_addr{};
+    KProcessAddress m_process_handle_addr{};
+    KProcessAddress m_homebrew_next_load_path_addr{};
+    KProcessAddress m_homebrew_next_load_argv_addr{};
     KHandleTable m_handle_table;
     KProcessAddress m_plr_address{};
     ThreadList m_thread_list{};
@@ -112,6 +115,7 @@ private:
 
     size_t m_code_size{};
     size_t m_main_thread_stack_size{};
+    KProcessAddress m_main_thread_stack_top{};
     size_t m_max_process_memory{};
     size_t m_memory_release_hint{};
     s64 m_schedule_count{};
@@ -139,6 +143,7 @@ private:
     bool m_is_suspended : 1 = false;
     bool m_is_immortal : 1 = false;
     bool m_is_handle_table_initialized : 1 = false;
+    bool m_is_homebrew_in_place_next_load : 1 = false;
 
 private:
     Result StartTermination(KernelCore& kernel);
@@ -230,6 +235,31 @@ public:
     }
     void SetMainThreadHandleAddr(KProcessAddress addr) {
         m_main_thread_handle_addr = addr;
+    }
+    void SetProcessHandleAddr(KProcessAddress addr) {
+        m_process_handle_addr = addr;
+    }
+    void SetHomebrewNextLoadBufferAddrs(KProcessAddress path_addr, KProcessAddress argv_addr) {
+        m_homebrew_next_load_path_addr = path_addr;
+        m_homebrew_next_load_argv_addr = argv_addr;
+    }
+    void SetHomebrewInPlaceNextLoad(bool enabled) {
+        m_is_homebrew_in_place_next_load = enabled;
+    }
+    bool IsHomebrewInPlaceNextLoad() const {
+        return m_is_homebrew_in_place_next_load;
+    }
+    KProcessAddress GetHomebrewNextLoadPathAddr() const {
+        return m_homebrew_next_load_path_addr;
+    }
+    KProcessAddress GetHomebrewNextLoadArgvAddr() const {
+        return m_homebrew_next_load_argv_addr;
+    }
+    size_t GetCodeSize() const {
+        return m_code_size;
+    }
+    KProcessAddress GetMainThreadStackTop() const {
+        return m_main_thread_stack_top;
     }
 
     size_t GetMainStackSize() const {

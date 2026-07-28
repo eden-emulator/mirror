@@ -336,22 +336,22 @@ ALLOC_MEMBER(VaType)::Allocate(VaType size) {
         current_linear_alloc_end = alloc_start + size;
     } else { // If linear allocation overflows the AS then find a gap
         if (this->blocks.size() <= 2) {
-            ASSERT_MSG(false, "Unexpected allocator state!");
-        }
-
-        auto search_predecessor{std::next(this->blocks.begin())};
-        auto search_successor{std::next(search_predecessor)};
-
-        while (search_successor != this->blocks.end() &&
-               (search_successor->virt - search_predecessor->virt < size ||
-                search_predecessor->Mapped())) {
-            search_predecessor = search_successor++;
-        }
-
-        if (search_successor != this->blocks.end()) {
-            alloc_start = search_predecessor->virt;
+            alloc_start = virt_start;
         } else {
-            return {}; // AS is full
+            auto search_predecessor{std::next(this->blocks.begin())};
+            auto search_successor{std::next(search_predecessor)};
+
+            while (search_successor != this->blocks.end() &&
+                   (search_successor->virt - search_predecessor->virt < size ||
+                    search_predecessor->Mapped())) {
+                search_predecessor = search_successor++;
+            }
+
+            if (search_successor != this->blocks.end()) {
+                alloc_start = search_predecessor->virt;
+            } else {
+                return {}; // AS is full
+            }
         }
     }
 
@@ -364,6 +364,10 @@ ALLOC_MEMBER(void)::AllocateFixed(VaType virt, VaType size) {
 }
 
 ALLOC_MEMBER(void)::Free(VaType virt, VaType size) {
+    const VaType virt_end = virt + size;
     this->Unmap(virt, size);
+    if (virt_end >= virt && virt_end == current_linear_alloc_end) {
+        current_linear_alloc_end = virt < virt_start ? virt_start : virt;
+    }
 }
 } // namespace Common

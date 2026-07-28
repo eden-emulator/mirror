@@ -670,6 +670,11 @@ public:
     size_t GetHeapRegionSize() const {
         return m_heap_region_end - m_heap_region_start;
     }
+    size_t GetCurrentHeapSize() const {
+        KScopedLightLock lk(m_general_lock);
+
+        return m_current_heap_end - m_heap_region_start;
+    }
     size_t GetAliasRegionSize() const {
         return m_alias_region_end - m_alias_region_start;
     }

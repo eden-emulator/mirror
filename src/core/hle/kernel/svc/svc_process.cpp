@@ -4,17 +4,216 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <filesystem>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#include "common/fs/fs.h"
+#include "common/fs/path_util.h"
+#include "common/input.h"
 #include "core/core.h"
+#include "core/file_sys/vfs/vfs_types.h"
 #include "core/hle/kernel/k_process.h"
+#include "core/hle/kernel/k_thread.h"
+#include "core/hle/kernel/kernel.h"
+#include "core/hle/kernel/physical_core.h"
 #include "core/hle/kernel/svc.h"
+#include "core/hle/service/hid/hid_server.h"
+#include "core/hle/service/nvdrv/nvdrv_interface.h"
+#include "core/hle/service/sm/sm.h"
+#include "core/loader/nro.h"
+#include "hid_core/frontend/emulated_controller.h"
+#include "hid_core/hid_core.h"
+#include "hid_core/resource_manager.h"
 
 namespace Kernel::Svc {
 
+namespace {
+
+constexpr size_t HomebrewNextLoadPathSize = 0x200;
+constexpr size_t HomebrewNextLoadArgvSize = 0x800;
+
+std::string ReadHomebrewString(Core::Memory::Memory& memory, KProcessAddress address,
+                               size_t max_size) {
+    if (GetInteger(address) == 0) {
+        return {};
+    }
+    return memory.ReadCString(Common::ProcessAddress{GetInteger(address)}, max_size);
+}
+
+} // namespace
+
 /// Exits the current process
-void ExitProcess(Core::System& system) {
+void ExitProcess(Core::System& system, std::span<uint64_t, 8> args) {
     auto* current_process = GetCurrentProcessPointer(system.Kernel());
+    auto* current_thread = GetCurrentThreadPointer(system.Kernel());
 
     LOG_INFO(Kernel_SVC, "Process {} exiting", current_process->GetProcessId());
+    const auto next_load_path_addr = current_process->GetHomebrewNextLoadPathAddr();
+    const auto next_load_argv_addr = current_process->GetHomebrewNextLoadArgvAddr();
+    if (GetInteger(next_load_path_addr) != 0) {
+        auto& memory = current_process->GetMemory();
+        const auto next_load_path =
+            ReadHomebrewString(memory, next_load_path_addr, HomebrewNextLoadPathSize);
+        const auto next_load_argv =
+            ReadHomebrewString(memory, next_load_argv_addr, HomebrewNextLoadArgvSize);
+        if (!next_load_path.empty()) {
+            auto guest_path = Common::FS::SanitizePath(next_load_path);
+            constexpr std::string_view SdmcPrefix{"sdmc:"};
+            FileSys::VirtualFile file{};
+
+            const bool is_sdmc_path = guest_path.rfind(SdmcPrefix, 0) == 0;
+            const bool is_absolute_guest_path = !guest_path.empty() && guest_path.front() == '/';
+            if (is_sdmc_path || is_absolute_guest_path) {
+                auto relative_path =
+                    is_sdmc_path ? guest_path.substr(SdmcPrefix.size()) : guest_path;
+                while (!relative_path.empty() && relative_path.front() == '/') {
+                    relative_path.erase(relative_path.begin());
+                }
+
+                const auto host_path = Common::FS::GetEdenPath(Common::FS::EdenPath::SDMCDir) /
+                                       std::filesystem::path{Common::FS::ToU8String(relative_path)};
+                const auto host_path_string = Common::FS::PathToUTF8String(host_path);
+                file = Core::GetGameFileFromPath(system.GetFilesystem(), host_path_string);
+                if (!file) {
+                    LOG_WARNING(Kernel_SVC,
+                                "NextLoad: failed to open guest_path='{}', host_path='{}'",
+                                next_load_path, host_path_string);
+                }
+            } else {
+                file = Core::GetGameFileFromPath(system.GetFilesystem(), guest_path);
+                if (!file) {
+                    LOG_WARNING(Kernel_SVC, "NextLoad: failed to open guest_path='{}'",
+                                next_load_path);
+                }
+            }
+
+            if (file) {
+                const auto nvdrv =
+                    system.ServiceManager().GetService<Service::Nvidia::NVDRV>("nvdrv:s");
+                if (!nvdrv) {
+                    LOG_WARNING(Kernel_SVC, "NextLoad: NVDRV service unavailable for reset");
+                } else {
+                    nvdrv->GetModule()->ResetForProcess(current_process);
+                }
+
+                auto& page_table = current_process->GetPageTable();
+                const u64 heap_start = GetInteger(page_table.GetHeapRegionStart());
+                const u64 heap_size = page_table.GetHeapRegionSize();
+                const u64 heap_end = heap_start + heap_size;
+                if (heap_start != 0 && heap_size != 0 && heap_end > heap_start) {
+                    struct DeviceSharedBlock {
+                        u64 address;
+                        u64 size;
+                        u16 device_use_count;
+                    };
+
+                    std::vector<DeviceSharedBlock> blocks;
+                    for (u64 cursor = heap_start; cursor < heap_end;) {
+                        KMemoryInfo info;
+                        PageInfo page_info;
+                        const auto query_result =
+                            page_table.QueryInfo(std::addressof(info), std::addressof(page_info),
+                                                 cursor);
+                        if (query_result.IsError()) {
+                            LOG_WARNING(Kernel_SVC,
+                                        "NextLoad: DeviceShared heap cleanup query failed "
+                                        "address=0x{:016X}, result={:#X}",
+                                        cursor, query_result.raw);
+                            break;
+                        }
+
+                        const u64 block_end = (std::min<u64>)(info.GetEndAddress(), heap_end);
+                        if (block_end <= cursor) {
+                            LOG_WARNING(Kernel_SVC,
+                                        "NextLoad: DeviceShared heap cleanup walk stalled "
+                                        "cursor=0x{:016X}, block=0x{:016X}/0x{:X}",
+                                        cursor, info.GetAddress(), info.GetSize());
+                            break;
+                        }
+
+                        const bool is_device_shared =
+                            True(info.GetState() & KMemoryState::FlagCanDeviceMap) &&
+                            info.GetAttribute() == KMemoryAttribute::DeviceShared &&
+                            info.m_device_use_count > 0;
+                        if (is_device_shared) {
+                            blocks.push_back(DeviceSharedBlock{
+                                .address = cursor,
+                                .size = block_end - cursor,
+                                .device_use_count = info.m_device_use_count,
+                            });
+                        }
+                        cursor = block_end;
+                    }
+
+                    for (const auto& block : blocks) {
+                        for (u16 unlock = 0; unlock < block.device_use_count; unlock++) {
+                            const auto unlock_result =
+                                page_table.UnlockForDeviceAddressSpace(block.address, block.size);
+                            if (unlock_result.IsError()) {
+                                LOG_WARNING(Kernel_SVC,
+                                            "NextLoad: DeviceShared heap cleanup unlock failed "
+                                            "address=0x{:016X}, size=0x{:X}, remaining={}, "
+                                            "result={:#X}",
+                                            block.address, block.size,
+                                            block.device_use_count - unlock - 1, unlock_result.raw);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (Loader::LoadNroInPlace(system, *current_process, *current_thread, file,
+                                           next_load_path, next_load_argv)) {
+                    const auto aruid = current_process->GetProcessId();
+                    if (const auto hid =
+                            system.ServiceManager().GetService<Service::HID::IHidServer>("hid")) {
+                        const auto resource_manager = hid->GetResourceManager();
+                        resource_manager->UnregisterAppletResourceUserId(aruid);
+                        const auto register_result =
+                            resource_manager->RegisterAppletResourceUserId(aruid, true);
+                        if (register_result.IsError()) {
+                            LOG_WARNING(Kernel_SVC,
+                                        "NextLoad: failed to register HID applet resource "
+                                        "aruid={}, result={:#X}",
+                                        aruid, register_result.raw);
+                        }
+                    } else {
+                        LOG_WARNING(Kernel_SVC, "NextLoad: HID service unavailable for reset");
+                    }
+
+                    auto& hid_core = system.HIDCore();
+                    hid_core.DisableAllControllerConfiguration();
+                    hid_core.SetSupportedStyleTag({Core::HID::NpadStyleSet::All});
+                    hid_core.ReloadInputDevices();
+
+                    const auto activate_controller = [&](Core::HID::NpadIdType npad_id) {
+                        auto* controller = hid_core.GetEmulatedController(npad_id);
+                        if (controller == nullptr) {
+                            return;
+                        }
+
+                        (void)controller->SetPollingMode(Core::HID::EmulatedDeviceIndex::AllDevices,
+                                                         Common::Input::PollingMode::Active);
+                    };
+
+                    activate_controller(Core::HID::NpadIdType::Player1);
+                    activate_controller(Core::HID::NpadIdType::Handheld);
+
+                    system.Kernel().CurrentPhysicalCore().LoadContext(current_thread);
+
+                    const auto& context = current_thread->GetContext();
+                    for (size_t i = 0; i < args.size(); i++) {
+                        args[i] = context.r[i];
+                    }
+
+                    return;
+                }
+            }
+        }
+    }
     ASSERT_MSG(current_process->GetState() == KProcess::State::Running,
                "Process has already exited");
 
@@ -132,8 +331,8 @@ Result TerminateProcess(Core::System& system, Handle process_handle) {
     R_THROW(ResultNotImplemented);
 }
 
-void ExitProcess64(Core::System& system) {
-    ExitProcess(system);
+void ExitProcess64(Core::System& system, std::span<uint64_t, 8> args) {
+    ExitProcess(system, args);
 }
 
 Result GetProcessId64(Core::System& system, uint64_t* out_process_id, Handle process_handle) {
@@ -164,8 +363,8 @@ Result GetProcessInfo64(Core::System& system, int64_t* out_info, Handle process_
     R_RETURN(GetProcessInfo(system, out_info, process_handle, info_type));
 }
 
-void ExitProcess64From32(Core::System& system) {
-    ExitProcess(system);
+void ExitProcess64From32(Core::System& system, std::span<uint64_t, 8> args) {
+    ExitProcess(system, args);
 }
 
 Result GetProcessId64From32(Core::System& system, uint64_t* out_process_id, Handle process_handle) {
