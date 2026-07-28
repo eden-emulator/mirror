@@ -1430,8 +1430,9 @@ void BufferCache<P>::UpdateComputeUniformBuffers() {
         Binding& binding = channel_state->compute_uniform_buffers[index];
         binding = NULL_BINDING;
         const auto& launch_desc = kepler_compute->launch_description;
-        if (((launch_desc.const_buffer_enable_mask >> index) & 1) != 0) {
-            const auto& cbuf = launch_desc.const_buffer_config[index];
+        const u32 resolved_index = launch_desc.ResolveConstBufferIndex(index);
+        if (((launch_desc.const_buffer_enable_mask >> resolved_index) & 1) != 0) {
+            const auto& cbuf = launch_desc.const_buffer_config[resolved_index];
             const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(cbuf.Address());
             if (device_addr) {
                 binding.device_addr = *device_addr;
