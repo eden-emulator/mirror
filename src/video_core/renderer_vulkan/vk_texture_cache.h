@@ -439,7 +439,7 @@ private:
 
     std::array<vk::ImageView, Shader::NUM_TEXTURE_TYPES> image_views;
     std::optional<StorageViews> storage_views;
-    vk::ImageView typeless_storage_view;
+    std::array<vk::ImageView, Shader::NUM_TEXTURE_TYPES> typeless_storage_views;
     vk::ImageView depth_view;
     vk::ImageView stencil_view;
     vk::ImageView color_view;
