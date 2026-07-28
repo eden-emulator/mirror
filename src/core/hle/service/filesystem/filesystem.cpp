@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <string_view>
 #include <utility>
 
 #include "common/assert.h"
@@ -333,14 +334,16 @@ FileSystemController::~FileSystemController() = default;
 
 Result FileSystemController::RegisterProcess(
     ProcessId process_id, ProgramId program_id,
-    std::shared_ptr<FileSys::RomFSFactory>&& romfs_factory) {
+    std::shared_ptr<FileSys::RomFSFactory>&& romfs_factory, std::string homebrew_initial_cwd) {
     std::scoped_lock lk{registration_lock};
 
-    registrations.emplace(process_id, Registration{
-                                          .program_id = program_id,
-                                          .romfs_factory = std::move(romfs_factory),
-                                          .save_data_factory = CreateSaveDataFactory(program_id),
-                                      });
+    registrations.insert_or_assign(process_id,
+                                   Registration{
+                                       .program_id = program_id,
+                                       .romfs_factory = std::move(romfs_factory),
+                                       .save_data_factory = CreateSaveDataFactory(program_id),
+                                       .homebrew_initial_cwd = std::move(homebrew_initial_cwd),
+                                   });
 
     LOG_DEBUG(Service_FS, "Registered for process {}", process_id);
     return ResultSuccess;
@@ -348,7 +351,8 @@ Result FileSystemController::RegisterProcess(
 
 Result FileSystemController::OpenProcess(
     ProgramId* out_program_id, std::shared_ptr<SaveDataController>* out_save_data_controller,
-    std::shared_ptr<RomFsController>* out_romfs_controller, ProcessId process_id) {
+    std::shared_ptr<RomFsController>* out_romfs_controller, ProcessId process_id,
+    std::string* out_homebrew_initial_cwd) {
     std::scoped_lock lk{registration_lock};
 
     const auto it = registrations.find(process_id);
@@ -361,6 +365,9 @@ Result FileSystemController::OpenProcess(
         std::make_shared<SaveDataController>(system, it->second.save_data_factory);
     *out_romfs_controller =
         std::make_shared<RomFsController>(it->second.romfs_factory, it->second.program_id);
+    if (out_homebrew_initial_cwd != nullptr) {
+        *out_homebrew_initial_cwd = it->second.homebrew_initial_cwd;
+    }
     return ResultSuccess;
 }
 

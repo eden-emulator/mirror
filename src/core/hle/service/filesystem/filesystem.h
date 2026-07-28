@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <mutex>
+#include <string>
 #include "common/common_types.h"
 #include "core/file_sys/fs_directory.h"
 #include "core/file_sys/fs_filesystem.h"
@@ -71,11 +72,12 @@ public:
     ~FileSystemController();
 
     Result RegisterProcess(ProcessId process_id, ProgramId program_id,
-                           std::shared_ptr<FileSys::RomFSFactory>&& factory);
+                           std::shared_ptr<FileSys::RomFSFactory>&& factory,
+                           std::string homebrew_initial_cwd = {});
     Result OpenProcess(ProgramId* out_program_id,
-                       std::shared_ptr<SaveDataController>* out_save_data_controller,
-                       std::shared_ptr<RomFsController>* out_romfs_controller,
-                       ProcessId process_id);
+                        std::shared_ptr<SaveDataController>* out_save_data_controller,
+                        std::shared_ptr<RomFsController>* out_romfs_controller,
+                        ProcessId process_id, std::string* out_homebrew_initial_cwd = nullptr);
     void SetPackedUpdate(ProcessId process_id, FileSys::VirtualFile update_raw);
 
     std::shared_ptr<SaveDataController> OpenSaveDataController();
@@ -136,6 +138,7 @@ private:
         ProgramId program_id;
         std::shared_ptr<FileSys::RomFSFactory> romfs_factory;
         std::shared_ptr<FileSys::SaveDataFactory> save_data_factory;
+        std::string homebrew_initial_cwd;
     };
 
     std::mutex registration_lock;

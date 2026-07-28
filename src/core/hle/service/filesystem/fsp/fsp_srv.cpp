@@ -192,8 +192,9 @@ Result FSP_SRV::SetCurrentProcess(ClientProcessId pid) {
 
     LOG_DEBUG(Service_FS, "called. current_process_id={:#016x}", current_process_id);
 
-    R_RETURN(
-        fsc.OpenProcess(&program_id, &save_data_controller, &romfs_controller, current_process_id));
+    homebrew_initial_cwd.clear();
+    R_RETURN(fsc.OpenProcess(&program_id, &save_data_controller, &romfs_controller,
+                             current_process_id, &homebrew_initial_cwd));
 }
 
 Result FSP_SRV::OpenFileSystemWithPatch(OutInterface<IFileSystem> out_interface,
@@ -224,7 +225,8 @@ Result FSP_SRV::OpenSdCardFileSystem(OutInterface<IFileSystem> out_interface) {
     fsc.OpenSDMC(&sdmc_dir);
 
     *out_interface = std::make_shared<IFileSystem>(
-        system, sdmc_dir, SizeGetter::FromStorageId(fsc, FileSys::StorageId::SdCard));
+        system, sdmc_dir, SizeGetter::FromStorageId(fsc, FileSys::StorageId::SdCard),
+        homebrew_initial_cwd);
 
     R_SUCCEED();
 }

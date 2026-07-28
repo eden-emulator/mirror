@@ -1,7 +1,12 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+
+#include <string>
 
 #include "common/common_funcs.h"
 #include "core/file_sys/fs_filesystem.h"
@@ -23,7 +28,8 @@ class IDirectory;
 
 class IFileSystem final : public ServiceFramework<IFileSystem> {
 public:
-    explicit IFileSystem(Core::System& system_, FileSys::VirtualDir dir_, SizeGetter size_getter_);
+    explicit IFileSystem(Core::System& system_, FileSys::VirtualDir dir_, SizeGetter size_getter_,
+                         std::string homebrew_initial_cwd_ = {});
 
     Result CreateFile(const InLargeData<FileSys::Sf::Path, BufferAttr_HipcPointer> path, s32 option,
                       s64 size);
@@ -55,6 +61,7 @@ public:
 private:
     std::unique_ptr<FileSys::Fsa::IFileSystem> backend;
     SizeGetter size_getter;
+    std::string homebrew_initial_cwd;
 };
 
 } // namespace Service::FileSystem
