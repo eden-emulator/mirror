@@ -159,7 +159,9 @@ void GameListModel::RemoveFavorite(u64 program_id) {
 
 void GameListModel::Repopulate() {
     current_worker.reset();
-    QtCommon::system->GetFileSystemController().CreateFactories(*QtCommon::vfs);
+    if (!QtCommon::system->IsPoweredOn()) {
+        QtCommon::system->GetFileSystemController().CreateFactories(*QtCommon::vfs);
+    }
     PopulateAsync(UISettings::values.game_dirs);
 }
 
