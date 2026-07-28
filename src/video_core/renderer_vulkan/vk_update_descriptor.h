@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <memory>
 #include <variant>
+#include <boost/container/small_vector.hpp>
 #include "video_core/vulkan_common/vulkan_wrapper.h"
 
 namespace Vulkan {
@@ -80,7 +80,7 @@ private:
     DescriptorUpdateEntry* payload_cursor = nullptr;
     DescriptorUpdateEntry* payload_start = nullptr;
     const DescriptorUpdateEntry* upload_start = nullptr;
-    std::unique_ptr<DescriptorUpdateEntry[]> payload;
+    boost::container::small_vector<DescriptorUpdateEntry, 0> payload;
 };
 
 // TODO: should these be separate classes instead?
