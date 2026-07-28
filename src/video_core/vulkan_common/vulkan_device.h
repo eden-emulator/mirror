@@ -887,6 +887,10 @@ FN_MAX_LIMIT_LIST
 
     u64 GetDeviceMemoryUsage() const;
 
+    VkSampleCountFlags GetStorageImageSampleCounts() const {
+        return properties.properties.limits.storageImageSampleCounts;
+    }
+
     u32 GetSetsPerPool() const {
         return sets_per_pool;
     }

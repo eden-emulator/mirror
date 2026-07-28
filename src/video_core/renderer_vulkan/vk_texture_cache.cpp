@@ -212,7 +212,11 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
                 return device.IsFormatSupported(view_format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
                                                 FormatType::Optimal);
             });
-        if (has_storage_compatible_view) {
+        const bool storage_allowed_for_samples =
+            image_ci.samples == VK_SAMPLE_COUNT_1_BIT ||
+            (device.GetStorageImageSampleCounts() &
+             static_cast<VkSampleCountFlags>(image_ci.samples)) != 0;
+        if (has_storage_compatible_view && storage_allowed_for_samples) {
             image_ci.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
         }
 
