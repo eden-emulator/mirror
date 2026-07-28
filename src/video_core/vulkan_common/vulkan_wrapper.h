@@ -131,6 +131,10 @@ private:
     VkResult result;
 };
 
+void SetAllocatorOwnerThread();
+
+[[nodiscard]] bool OnAllocatorOwnerThread() noexcept;
+
 /// Throws a Vulkan exception if result is not success.
 inline void Check(VkResult result) {
     if (result != VK_SUCCESS) {

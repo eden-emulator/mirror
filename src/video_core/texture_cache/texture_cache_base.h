@@ -121,6 +121,7 @@ class TextureCache : public VideoCommon::ChannelSetupCaches<TextureCacheChannelI
     static constexpr u64 FALLBACK_MEMORY_BUDGET = 2_GiB;
     static constexpr u32 USAGE_REFRESH_INTERVAL = 16;
     static constexpr u64 RECLAIM_GUARD_FRAMES = 8;
+    static constexpr u64 RECLAIM_TARGET_PERCENT = 88;
 
     using Runtime = typename P::Runtime;
     using Image = typename P::Image;

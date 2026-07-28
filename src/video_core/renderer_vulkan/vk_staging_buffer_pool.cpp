@@ -252,25 +252,62 @@ void StagingBufferPool::ReleaseLevel(StagingBuffersCache& cache, size_t log2) {
     constexpr size_t deletions_per_tick = 16;
     auto& staging = cache[log2];
     auto& entries = staging.entries;
-    const size_t old_size = entries.size();
+    if (entries.empty()) {
+        staging.delete_index = 0;
+        staging.iterate_index = 0;
+        return;
+    }
 
     const auto is_deletable = [this](const StagingBuffer& entry) {
         return scheduler.IsFree(entry.tick);
     };
-    const size_t begin_offset = staging.delete_index;
-    const size_t end_offset = (std::min)(begin_offset + deletions_per_tick, old_size);
+    const size_t begin_offset = (std::min)(staging.delete_index, entries.size());
+    const size_t end_offset = (std::min)(begin_offset + deletions_per_tick, entries.size());
     const auto begin = entries.begin() + begin_offset;
     const auto end = entries.begin() + end_offset;
-    entries.erase(std::remove_if(begin, end, is_deletable), end);
+    const auto surviving_end = std::remove_if(begin, end, is_deletable);
+    const size_t removed = static_cast<size_t>(std::distance(surviving_end, end));
+    entries.erase(surviving_end, end);
 
-    const size_t new_size = entries.size();
-    staging.delete_index += deletions_per_tick;
-    if (staging.delete_index >= new_size) {
+    staging.delete_index = end_offset - removed;
+    if (staging.delete_index >= entries.size()) {
         staging.delete_index = 0;
     }
-    if (staging.iterate_index > new_size) {
+    if (staging.iterate_index > entries.size()) {
         staging.iterate_index = 0;
     }
+}
+
+u64 StagingBufferPool::ReclaimMemory(u64 target_bytes) {
+    u64 freed = 0;
+    const auto is_deletable = [this](const StagingBuffer& entry) {
+        return scheduler.IsFree(entry.tick);
+    };
+    const auto reclaim_cache = [&](StagingBuffersCache& cache) {
+        for (size_t level = NUM_LEVELS; level-- > 0 && freed < target_bytes;) {
+            auto& staging = cache[level];
+            auto& entries = staging.entries;
+            if (entries.empty()) {
+                continue;
+            }
+            const u64 entry_bytes = 1ULL << level;
+            auto it = entries.begin();
+            while (it != entries.end() && freed < target_bytes) {
+                if (is_deletable(*it)) {
+                    it = entries.erase(it);
+                    freed += entry_bytes;
+                } else {
+                    ++it;
+                }
+            }
+            staging.delete_index = 0;
+            staging.iterate_index = 0;
+        }
+    };
+    reclaim_cache(device_local_cache);
+    reclaim_cache(upload_cache);
+    reclaim_cache(download_cache);
+    return freed;
 }
 
 } // namespace Vulkan

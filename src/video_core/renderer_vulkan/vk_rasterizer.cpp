@@ -222,7 +222,10 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
       wfi_event(device.GetLogical().CreateEvent()) {
     scheduler.SetQueryCache(query_cache);
     memory_allocator.SetReclaimCallback([this](u64 bytes) -> u64 {
-        u64 freed = texture_cache.ReclaimMemory(bytes, false);
+        u64 freed = staging_pool.ReclaimMemory(bytes);
+        if (freed < bytes) {
+            freed += texture_cache.ReclaimMemory(bytes - freed, false);
+        }
         if (freed < bytes) {
             freed += buffer_cache.ReclaimMemory(bytes - freed, false);
         }
