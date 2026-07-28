@@ -91,6 +91,10 @@ public:
         return GetDeviceMemoryUsage();
     }
 
+    bool CanReportAllocationUsage() const {
+        return device.CanReportMemoryUsage();
+    }
+
     bool CanReportMemoryUsage() const {
         return device.CanReportMemoryUsage();
     }

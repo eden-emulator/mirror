@@ -110,6 +110,10 @@ public:
 
     u64 GetDeviceAllocationUsage() const;
 
+    bool CanReportAllocationUsage() const noexcept {
+        return true;
+    }
+
     bool CanReportMemoryUsage() const;
 
     u32 GetUniformBufferAlignment() const;
