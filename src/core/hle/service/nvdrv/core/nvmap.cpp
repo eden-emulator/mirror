@@ -6,10 +6,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <functional>
+#include <vector>
 
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/logging.h"
+#include "core/hle/kernel/k_process.h"
 #include "core/hle/service/nvdrv/core/container.h"
 #include "core/hle/service/nvdrv/core/heap_mapper.h"
 #include "core/hle/service/nvdrv/core/nvmap.h"
@@ -326,19 +328,65 @@ std::optional<NvMap::FreeInfo> NvMap::FreeHandle(Handle::Id handle, bool interna
 }
 
 void NvMap::UnmapAllHandles(NvCore::SessionId session_id) {
-    auto handles_copy = [&] {
+    auto* session = core.GetSession(session_id);
+    auto* process = session != nullptr ? session->process : nullptr;
+    auto handle_ids = [&] {
         std::scoped_lock lk{handles_lock};
-        return handles;
+        std::vector<Handle::Id> ids;
+        ids.reserve(handles.size());
+
+        for (const auto& entry : handles) {
+            ids.push_back(entry.first);
+        }
+
+        return ids;
     }();
 
-    for (auto& [id, handle] : handles_copy) {
-        {
-            std::scoped_lock lk{handle->mutex};
-            if (handle->session_id.id != session_id.id || handle->dupes <= 0) {
-                continue;
+    for (const auto id : handle_ids) {
+        bool unlocked_pages = false;
+        while (true) {
+            bool last_user_reference = false;
+            VAddr address = 0;
+            size_t size = 0;
+            {
+                const auto handle = GetHandle(id);
+                if (!handle) {
+                    break;
+                }
+
+                std::scoped_lock lk{handle->mutex};
+                if (handle->session_id.id != session_id.id || handle->dupes <= 0) {
+                    break;
+                }
+
+                last_user_reference = handle->dupes == 1;
+                address = handle->address;
+                size = handle->size;
+            }
+
+            const auto free_info = FreeHandle(id, false);
+            if (!free_info) {
+                break;
+            }
+
+            if (!unlocked_pages && process != nullptr && address != 0 && size != 0 &&
+                (free_info->can_unlock || last_user_reference)) {
+                const auto unlock_result =
+                    process->GetPageTable().UnlockForDeviceAddressSpace(address, size);
+                if (unlock_result.IsError()) {
+                    LOG_WARNING(Service_NVDRV,
+                                "NextLoad: nvmap session cleanup unlock failed, "
+                                "handle={}, session={}, address=0x{:016X}, size=0x{:X}, "
+                                "result={:#X}",
+                                id, session_id.id, address, size, unlock_result.raw);
+                }
+                unlocked_pages = true;
+            }
+
+            if (last_user_reference) {
+                break;
             }
         }
-        FreeHandle(id, false);
     }
 }
 

@@ -12,6 +12,7 @@
 #include <memory>
 #include <span>
 #include <string>
+#include <vector>
 #include <ankerl/unordered_dense.h>
 
 #include "common/common_types.h"
@@ -26,6 +27,7 @@ class System;
 
 namespace Kernel {
 class KEvent;
+class KProcess;
 }
 
 namespace Service::Nvidia {
@@ -89,6 +91,9 @@ public:
     NvResult Close(DeviceFD fd);
 
     NvResult QueryEvent(DeviceFD fd, u32 event_id, Kernel::KEvent*& event);
+    void CloseSession(NvCore::SessionId session_id);
+    void TrackSessionAruid(NvCore::SessionId session_id, u64 aruid);
+    size_t ResetForProcess(Kernel::KProcess* process);
 
     NvCore::Container& GetContainer() {
         return container;
@@ -106,12 +111,17 @@ private:
     using FilesContainerType = ankerl::unordered_dense::map<DeviceFD, std::shared_ptr<Devices::nvdevice>>;
     /// Mapping of file descriptors to the devices they reference.
     FilesContainerType open_files;
+    ankerl::unordered_dense::map<DeviceFD, NvCore::SessionId> open_file_sessions;
+    ankerl::unordered_dense::map<size_t, u64> session_aruids;
 
     KernelHelpers::ServiceContext service_context;
 
     EventInterface events_interface;
 
     ankerl::unordered_dense::map<std::string, std::function<FilesContainerType::iterator(DeviceFD)>> builders;
+
+    size_t CloseFilesForSessions(std::span<const NvCore::SessionId> session_ids);
+    std::vector<NvCore::SessionId> GetSessionIdsForAruid(u64 aruid) const;
 };
 
 void LoopProcess(Core::System& system);

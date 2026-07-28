@@ -1,10 +1,15 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2022 yuzu Emulator Project
 // SPDX-FileCopyrightText: 2022 Skyline Team and Contributors
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <algorithm>
 #include <atomic>
 #include <deque>
 #include <mutex>
+#include <vector>
 
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/service/nvdrv/core/container.h"
@@ -40,6 +45,16 @@ Container::Container(Tegra::Host1x::Host1x& host1x_) {
 
 Container::~Container() = default;
 
+static bool IsSameProcess(Kernel::KProcess* lhs, Kernel::KProcess* rhs) {
+    if (lhs == rhs) {
+        return true;
+    }
+    if (lhs == nullptr || rhs == nullptr) {
+        return false;
+    }
+    return lhs->GetProcessId() == rhs->GetProcessId();
+}
+
 SessionId Container::OpenSession(Kernel::KProcess* process) {
     using namespace Common::Literals;
 
@@ -48,7 +63,7 @@ SessionId Container::OpenSession(Kernel::KProcess* process) {
         if (!session.is_active) {
             continue;
         }
-        if (session.process == process) {
+        if (IsSameProcess(session.process, process)) {
             session.ref_count++;
             return session.id;
         }
@@ -116,7 +131,15 @@ SessionId Container::OpenSession(Kernel::KProcess* process) {
 
 void Container::CloseSession(SessionId session_id) {
     std::scoped_lock lk(impl->session_guard);
+    if (session_id.id >= impl->sessions.size()) {
+        return;
+    }
+
     auto& session = impl->sessions[session_id.id];
+    if (!session.is_active || session.ref_count <= 0) {
+        return;
+    }
+
     if (--session.ref_count > 0) {
         return;
     }
@@ -132,6 +155,73 @@ void Container::CloseSession(SessionId session_id) {
     session.is_active = false;
     smmu.UnregisterProcess(impl->sessions[session_id.id].asid);
     impl->id_pool.emplace_front(session_id.id);
+}
+
+size_t Container::CloseSessions(std::span<const SessionId> session_ids) {
+    std::vector<SessionId> valid_session_ids;
+    valid_session_ids.reserve(session_ids.size());
+
+    {
+        std::scoped_lock lk(impl->session_guard);
+        for (const auto session_id : session_ids) {
+            if (session_id.id >= impl->sessions.size()) {
+                continue;
+            }
+
+            auto& session = impl->sessions[session_id.id];
+            if (!session.is_active) {
+                continue;
+            }
+
+            const auto duplicate = std::ranges::any_of(
+                valid_session_ids, [session_id](const auto candidate) {
+                    return candidate.id == session_id.id;
+                });
+            if (duplicate) {
+                continue;
+            }
+
+            session.ref_count = 1;
+            valid_session_ids.push_back(session_id);
+        }
+    }
+
+    for (const auto session_id : valid_session_ids) {
+        CloseSession(session_id);
+    }
+
+    return valid_session_ids.size();
+}
+
+std::vector<SessionId> Container::GetSessionIdsForProcess(Kernel::KProcess* process) {
+    std::vector<SessionId> session_ids;
+    std::scoped_lock lk(impl->session_guard);
+    for (const auto& session : impl->sessions) {
+        if (!session.is_active || !IsSameProcess(session.process, process)) {
+            continue;
+        }
+
+        session_ids.push_back(session.id);
+    }
+
+    return session_ids;
+}
+
+std::vector<SessionId> Container::GetActiveSessionIds() const {
+    std::vector<SessionId> session_ids;
+    std::scoped_lock lk(impl->session_guard);
+    for (const auto& session : impl->sessions) {
+        if (session.is_active) {
+            session_ids.push_back(session.id);
+        }
+    }
+
+    return session_ids;
+}
+
+bool Container::IsSessionActive(SessionId session_id) const {
+    std::scoped_lock lk(impl->session_guard);
+    return session_id.id < impl->sessions.size() && impl->sessions[session_id.id].is_active;
 }
 
 Session* Container::GetSession(SessionId session_id) {

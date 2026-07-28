@@ -1,12 +1,17 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2021 yuzu Emulator Project
 // SPDX-FileCopyrightText: 2021 Skyline Team and Contributors
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <algorithm>
 #include <utility>
+#include <vector>
 
-#include <fmt/ranges.h>
 #include "core/core.h"
 #include "core/hle/kernel/k_event.h"
+#include "core/hle/kernel/k_process.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/nvdrv/core/container.h"
 #include "core/hle/service/nvdrv/devices/nvdevice.h"
@@ -133,6 +138,9 @@ DeviceFD Module::Open(const std::string& device_name, NvCore::SessionId session_
     auto device = builder(fd)->second;
 
     device->OnOpen(session_id, fd);
+    if (container.IsSessionActive(session_id)) {
+        open_file_sessions.emplace(fd, session_id);
+    }
 
     return fd;
 }
@@ -204,6 +212,7 @@ NvResult Module::Close(DeviceFD fd) {
     itr->second->OnClose(fd);
 
     open_files.erase(itr);
+    open_file_sessions.erase(fd);
 
     return NvResult::Success;
 }
@@ -226,6 +235,100 @@ NvResult Module::QueryEvent(DeviceFD fd, u32 event_id, Kernel::KEvent*& event) {
         return NvResult::BadParameter;
     }
     return NvResult::Success;
+}
+
+static bool ContainsSession(std::span<const NvCore::SessionId> session_ids,
+                            NvCore::SessionId session_id) {
+    return std::ranges::any_of(session_ids, [session_id](const auto candidate) {
+        return candidate.id == session_id.id;
+    });
+}
+
+static void AppendUniqueSession(std::vector<NvCore::SessionId>& session_ids,
+                                NvCore::SessionId session_id) {
+    if (!ContainsSession(session_ids, session_id)) {
+        session_ids.push_back(session_id);
+    }
+}
+
+size_t Module::CloseFilesForSessions(std::span<const NvCore::SessionId> session_ids) {
+    std::vector<DeviceFD> fds;
+    fds.reserve(open_file_sessions.size());
+
+    for (const auto& [fd, session_id] : open_file_sessions) {
+        if (ContainsSession(session_ids, session_id)) {
+            fds.push_back(fd);
+        }
+    }
+
+    for (const auto fd : fds) {
+        Close(fd);
+    }
+
+    return fds.size();
+}
+
+void Module::CloseSession(NvCore::SessionId session_id) {
+    container.CloseSession(session_id);
+}
+
+void Module::TrackSessionAruid(NvCore::SessionId session_id, u64 aruid) {
+    const bool active = container.IsSessionActive(session_id);
+    if (active) {
+        session_aruids[session_id.id] = aruid;
+    }
+}
+
+std::vector<NvCore::SessionId> Module::GetSessionIdsForAruid(u64 aruid) const {
+    std::vector<NvCore::SessionId> session_ids;
+    for (const auto& [session_id, session_aruid] : session_aruids) {
+        if (session_aruid == aruid) {
+            session_ids.push_back(NvCore::SessionId{session_id});
+        }
+    }
+
+    return session_ids;
+}
+
+size_t Module::ResetForProcess(Kernel::KProcess* process) {
+    const auto process_id = process != nullptr ? process->GetProcessId() : 0;
+    auto session_ids = container.GetSessionIdsForProcess(process);
+
+    if (process_id != 0) {
+        for (const auto session_id : GetSessionIdsForAruid(process_id)) {
+            AppendUniqueSession(session_ids, session_id);
+        }
+    }
+
+    const auto active_session_ids = container.GetActiveSessionIds();
+    const auto active_before = active_session_ids.size();
+    const bool has_active_candidate =
+        std::ranges::any_of(session_ids, [this](const auto session_id) {
+            return container.IsSessionActive(session_id);
+        });
+    bool used_active_sessions = false;
+    if (!has_active_candidate && !active_session_ids.empty()) {
+        for (const auto session_id : active_session_ids) {
+            AppendUniqueSession(session_ids, session_id);
+        }
+        used_active_sessions = true;
+    }
+
+    const auto closed_files = CloseFilesForSessions(session_ids);
+    const auto closed_sessions = container.CloseSessions(session_ids);
+    for (const auto session_id : session_ids) {
+        if (!container.IsSessionActive(session_id)) {
+            session_aruids.erase(session_id.id);
+        }
+    }
+
+    if (used_active_sessions) {
+        LOG_WARNING(Service_NVDRV,
+                    "NextLoad: NVDRV reset used active sessions because process-owned "
+                    "sessions were not found, process_id={}, sessions={}, files={}, active_before={}",
+                    process_id, closed_sessions, closed_files, active_before);
+    }
+    return closed_sessions;
 }
 
 } // namespace Service::Nvidia

@@ -9,7 +9,10 @@
 
 #include <deque>
 #include <memory>
+#include <span>
+#include <cstddef>
 #include <ankerl/unordered_dense.h>
+#include <vector>
 
 #include "core/device_memory_manager.h"
 #include "core/hle/service/nvdrv/nvdata.h"
@@ -59,6 +62,10 @@ public:
 
     SessionId OpenSession(Kernel::KProcess* process);
     void CloseSession(SessionId id);
+    size_t CloseSessions(std::span<const SessionId> session_ids);
+    std::vector<SessionId> GetSessionIdsForProcess(Kernel::KProcess* process);
+    std::vector<SessionId> GetActiveSessionIds() const;
+    bool IsSessionActive(SessionId id) const;
 
     Session* GetSession(SessionId id);
 
