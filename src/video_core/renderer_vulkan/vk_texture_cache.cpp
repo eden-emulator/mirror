@@ -1992,10 +1992,10 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
             image_copies.push_back(image_copy);
         }
 
+        runtime->TransitionImageLayout(*this);
         runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, Handle(), info.format,
                                             temp_vk_image, info.format, info.num_samples,
                                             image_copies, false);
-        initialized = true;
         runtime->pending_msaa_images.emplace_back(scheduler->CurrentTick(), std::move(temp_image));
 
         if (is_rescaled) {
@@ -2006,6 +2006,9 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
 
     if (info.num_samples > 1) {
         LOG_WARNING(Render_Vulkan, "MSAA upload not implemented for format {}", info.format);
+        if (runtime != nullptr) {
+            runtime->TransitionImageLayout(*this);
+        }
         if (is_rescaled) {
             ScaleUp();
         }
@@ -2588,14 +2591,15 @@ VkImageView ImageView::StorageView(Shader::TextureType texture_type,
                                    Shader::ImageFormat image_format) {
     if (image_handle) {
         if (image_format == Shader::ImageFormat::Typeless) {
-            if (!typeless_storage_view) {
+            auto& view{typeless_storage_views[static_cast<size_t>(texture_type)]};
+            if (!view) {
                 auto info = MaxwellToVK::SurfaceFormat(*device, FormatType::Optimal, true, format);
                 if (uses_widened_astc_format) {
                     info.format = VK_FORMAT_R32G32B32A32_SFLOAT;
                 }
-                typeless_storage_view = MakeView(info.format, VK_IMAGE_ASPECT_COLOR_BIT, texture_type);
+                view = MakeView(info.format, VK_IMAGE_ASPECT_COLOR_BIT, texture_type);
             }
-            return *typeless_storage_view;
+            return *view;
         }
         const bool is_signed = image_format == Shader::ImageFormat::R8_SINT
             || image_format == Shader::ImageFormat::R16_SINT;

@@ -747,23 +747,7 @@ boost::container::small_vector<ImageCopy, 16> MakeShrinkImageCopies(const ImageI
 
     const bool is_dst_3d = dst.type == ImageType::e3D;
     if (is_dst_3d) {
-        if (src.type != ImageType::e3D || src.resources.levels != 1) {
-            LOG_CRITICAL(HW_GPU,
-                         "Shrink copy 3D mismatch: "
-                         "dst{{type={} format={} size={}x{}x{} levels={} layers={} "
-                         "block_depth={} samples={}}} "
-                         "src{{type={} format={} size={}x{}x{} levels={} layers={} "
-                         "block_depth={} samples={}}} "
-                         "base{{level={} layer={}}}",
-                         static_cast<int>(dst.type), static_cast<int>(dst.format), dst.size.width,
-                         dst.size.height, dst.size.depth, dst.resources.levels,
-                         dst.resources.layers, dst.block.depth, dst.num_samples,
-                         static_cast<int>(src.type), static_cast<int>(src.format), src.size.width,
-                         src.size.height, src.size.depth, src.resources.levels,
-                         src.resources.layers, src.block.depth, src.num_samples, base.level,
-                         base.layer);
-        }
-        ASSERT(src.type == ImageType::e3D);
+        ASSERT(src.type == ImageType::e3D || src.resources.layers == 1);
         ASSERT(src.resources.levels == 1);
     }
     const bool both_2d{src.type == ImageType::e2D && dst.type == ImageType::e2D};
