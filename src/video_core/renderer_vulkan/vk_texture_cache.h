@@ -168,6 +168,7 @@ public:
     std::array<vk::Buffer, indexing_slots> buffers{};
     std::vector<std::pair<u64, vk::Image>> pending_msaa_images;
     ankerl::unordered_dense::map<VkImage, ResolveShadow> resolve_shadows;
+    ankerl::unordered_dense::set<u64> unsupported_msaa_resolves;
 };
 
 class Framebuffer {

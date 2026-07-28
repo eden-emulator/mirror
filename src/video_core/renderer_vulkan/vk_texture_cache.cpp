@@ -1643,7 +1643,14 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
     const u32 num_samples = msaa_to_non_msaa ? src.info.num_samples : dst.info.num_samples;
     if (dst.AspectMask() != VK_IMAGE_ASPECT_COLOR_BIT ||
         VideoCore::Surface::IsPixelFormatInteger(dst.info.format)) {
-        UNIMPLEMENTED_MSG("Copying images with different samples is not supported.");
+        const u64 key{(static_cast<u64>(dst.AspectMask()) << 32) |
+                      static_cast<u64>(dst.info.format)};
+        if (unsupported_msaa_resolves.insert(key).second) {
+            LOG_WARNING(Render_Vulkan,
+                        "MSAA resolve unsupported: format={}, aspect={:#x}, samples {}->{}",
+                        dst.info.format, dst.AspectMask(), src.info.num_samples,
+                        dst.info.num_samples);
+        }
         return;
     }
     if (ENABLE_MSAA_RESOLVE_CONSUME && msaa_to_non_msaa && copies.size() == 1 &&

@@ -745,6 +745,25 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
 
     vk::Check(vmaCreateAllocator(&allocator_info, &allocator));
 
+    {
+        const auto& limits = properties.properties.limits;
+        LOG_INFO(Render_Vulkan, "MSAA sample count support:");
+        LOG_INFO(Render_Vulkan, "  framebufferColorSampleCounts:   {:#x}",
+                 limits.framebufferColorSampleCounts);
+        LOG_INFO(Render_Vulkan, "  framebufferDepthSampleCounts:   {:#x}",
+                 limits.framebufferDepthSampleCounts);
+        LOG_INFO(Render_Vulkan, "  framebufferStencilSampleCounts: {:#x}",
+                 limits.framebufferStencilSampleCounts);
+        LOG_INFO(Render_Vulkan, "  sampledImageColorSampleCounts:  {:#x}",
+                 limits.sampledImageColorSampleCounts);
+        LOG_INFO(Render_Vulkan, "  sampledImageDepthSampleCounts:  {:#x}",
+                 limits.sampledImageDepthSampleCounts);
+        LOG_INFO(Render_Vulkan, "  sampledImageIntegerSampleCounts:{:#x}",
+                 limits.sampledImageIntegerSampleCounts);
+        LOG_INFO(Render_Vulkan, "  storageImageSampleCounts:       {:#x}",
+                 limits.storageImageSampleCounts);
+    }
+
     // Initialize GPU logging if enabled
     InitializeGPULogging();
 }
