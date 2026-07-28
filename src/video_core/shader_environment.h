@@ -29,9 +29,6 @@ class Memorymanager;
 
 namespace VideoCommon {
 
-[[nodiscard]] u32 ResolveBindlessHandleTable(Tegra::MemoryManager& gpu_memory, GPUVAddr record_addr,
-                                             u32 raw_handle, u32 tic_index, u32 tic_limit);
-
 class GenericEnvironment : public Shader::Environment {
 public:
     explicit GenericEnvironment() = default;
@@ -142,8 +139,6 @@ public:
     ~ComputeEnvironment() override = default;
 
     u32 ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) override;
-
-    u32 ResolveBindlessHandle(u32 cbuf_index, u32 cbuf_offset, u32 raw_handle) override;
 
     Shader::TextureType ReadTextureType(u32 handle) override;
 

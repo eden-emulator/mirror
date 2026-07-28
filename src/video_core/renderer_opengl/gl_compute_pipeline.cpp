@@ -10,7 +10,6 @@
 #include "common/cityhash.h"
 #include "common/settings.h"
 #include "video_core/renderer_opengl/gl_compute_pipeline.h"
-#include "video_core/shader_environment.h"
 #include "video_core/renderer_opengl/gl_shader_manager.h"
 #include "video_core/renderer_opengl/gl_shader_util.h"
 
@@ -105,36 +104,25 @@ void ComputePipeline::Configure() {
     const auto& qmd{kepler_compute->launch_description};
     const auto& cbufs{qmd.const_buffer_config};
     const bool via_header_index{qmd.linked_tsc != 0};
-    const u32 tic_limit{kepler_compute->regs.tic.limit};
     const auto read_handle{[&](const auto& desc, u32 index) {
-        const u32 resolved_index{qmd.ResolveConstBufferIndex(desc.cbuf_index)};
-        ASSERT(((qmd.const_buffer_enable_mask >> resolved_index) & 1) != 0);
+        ASSERT(((qmd.const_buffer_enable_mask >> desc.cbuf_index) & 1) != 0);
         const u32 index_offset{index << desc.size_shift};
         const u32 offset{desc.cbuf_offset + index_offset};
-        const GPUVAddr addr{cbufs[resolved_index].Address() + offset};
+        const GPUVAddr addr{cbufs[desc.cbuf_index].Address() + offset};
         if constexpr (std::is_same_v<decltype(desc), const Shader::TextureDescriptor&> ||
                       std::is_same_v<decltype(desc), const Shader::TextureBufferDescriptor&>) {
             if (desc.has_secondary) {
-                const u32 resolved_secondary{
-                    qmd.ResolveConstBufferIndex(desc.secondary_cbuf_index)};
-                ASSERT(((qmd.const_buffer_enable_mask >> resolved_secondary) & 1) != 0);
+                ASSERT(((qmd.const_buffer_enable_mask >> desc.secondary_cbuf_index) & 1) != 0);
                 const u32 secondary_offset{desc.secondary_cbuf_offset + index_offset};
-                const GPUVAddr separate_addr{cbufs[resolved_secondary].Address() +
+                const GPUVAddr separate_addr{cbufs[desc.secondary_cbuf_index].Address() +
                                              secondary_offset};
                 const u32 lhs_raw{gpu_memory->Read<u32>(addr) << desc.shift_left};
                 const u32 rhs_raw{gpu_memory->Read<u32>(separate_addr)
                                   << desc.secondary_shift_left};
-                const u32 combined{VideoCommon::ResolveBindlessHandleTable(
-                    *gpu_memory, addr, lhs_raw | rhs_raw,
-                    TexturePair(lhs_raw | rhs_raw, via_header_index).first, tic_limit)};
-                return TexturePair(combined, via_header_index);
+                return TexturePair(lhs_raw | rhs_raw, via_header_index);
             }
         }
-        const u32 single_raw{gpu_memory->Read<u32>(addr)};
-        return TexturePair(VideoCommon::ResolveBindlessHandleTable(
-                               *gpu_memory, addr, single_raw,
-                               TexturePair(single_raw, via_header_index).first, tic_limit),
-                           via_header_index);
+        return TexturePair(gpu_memory->Read<u32>(addr), via_header_index);
     }};
     const auto add_image{[&](const auto& desc, bool blacklist) {
         for (u32 index = 0; index < desc.count; ++index) {
