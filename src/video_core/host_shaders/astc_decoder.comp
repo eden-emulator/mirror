@@ -1384,11 +1384,7 @@ void DecompressBlock(ivec3 coord) {
                 p = Cf / 65535.0f;
             }
 
-#ifdef VULKAN
-            imageStore(dest_image, coord + ivec3(i, j, 0), p.gbar);
-#else
             imageStore(dest_image, coord + ivec3(i, j, 0), clamp(p, 0.0f, 1.0f).gbar);
-#endif
         }
     }
 }
