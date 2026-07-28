@@ -18,10 +18,10 @@ namespace Vulkan {
 
 UpdateDescriptorQueue::UpdateDescriptorQueue(const Device& device_, size_t frame_payload_size_)
     : device{device_}, frame_payload_size{frame_payload_size_},
-      payload{std::make_unique<DescriptorUpdateEntry[]>(frame_payload_size_ * FRAMES_IN_FLIGHT)}
+      payload(frame_payload_size_ * FRAMES_IN_FLIGHT)
 {
-    payload_start = payload.get();
-    payload_cursor = payload.get();
+    payload_start = payload.data();
+    payload_cursor = payload.data();
 }
 
 UpdateDescriptorQueue::~UpdateDescriptorQueue() = default;
@@ -30,7 +30,7 @@ void UpdateDescriptorQueue::TickFrame() {
     if (++frame_index >= FRAMES_IN_FLIGHT) {
         frame_index = 0;
     }
-    payload_start = payload.get() + frame_index * frame_payload_size;
+    payload_start = payload.data() + frame_index * frame_payload_size;
     payload_cursor = payload_start;
 }
 

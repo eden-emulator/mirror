@@ -513,9 +513,9 @@ private:
     struct PendingEvictionDownload {
         AsyncBuffer staging;
         Tegra::MemoryManager* gpu_memory;
-        GPUVAddr gpu_addr;
-        VideoCommon::ImageInfo info;
         boost::container::small_vector<VideoCommon::BufferImageCopy, 16> copies;
+        VideoCommon::ImageInfo info;
+        GPUVAddr gpu_addr;
         u64 sync_point;
     };
     std::deque<PendingEvictionDownload> pending_eviction_downloads;

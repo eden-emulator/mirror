@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <bit>
+#include <deque>
 #include <functional>
 #include <memory>
 #include <mutex>

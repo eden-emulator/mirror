@@ -4,8 +4,10 @@
 #pragma once
 
 #include <cstddef>
-#include <deque>
 #include <utility>
+
+#include <boost/container/deque.hpp>
+#include <boost/container/options.hpp>
 
 #include "common/common_types.h"
 
@@ -45,7 +47,10 @@ private:
         u64 sync_point;
     };
 
-    std::deque<Entry> entries;
+    using EntryDequeOptions =
+        boost::container::deque_options<boost::container::block_size<8u>>::type;
+
+    boost::container::deque<Entry, void, EntryDequeOptions> entries;
 };
 
 } // namespace VideoCommon

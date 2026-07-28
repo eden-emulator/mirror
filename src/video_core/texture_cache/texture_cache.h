@@ -107,9 +107,9 @@ void TextureCache<P>::QueueEvictionDownload(Image& image) {
     pending_eviction_downloads.push_back(PendingEvictionDownload{
         .staging = staging,
         .gpu_memory = gpu_memory,
-        .gpu_addr = image.gpu_addr,
-        .info = image.info,
         .copies = std::move(copies),
+        .info = image.info,
+        .gpu_addr = image.gpu_addr,
         .sync_point = runtime.CurrentSyncPoint(),
     });
 }
