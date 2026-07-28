@@ -144,11 +144,6 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
           info.size.depth == 1;
 }
 
-[[nodiscard]] bool WillUseWidenedAstcFormat(const Device& device, const ImageInfo& info) {
-    return WillUseAcceleratedAstcDecode(device, info) &&
-           !VideoCore::Surface::IsPixelFormatSRGB(info.format);
-}
-
 [[nodiscard]] VkImageCreateInfo MakeImageCreateInfo(const Device& device, const ImageInfo& info,
                                                     std::optional<VkFormat> format_override = {}) {
     auto format_info =
@@ -1810,12 +1805,7 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
     : VideoCommon::ImageBase(info_, gpu_addr_, cpu_addr_), scheduler{&runtime_.scheduler},
       runtime{&runtime_},
       original_image(MakeImage(runtime_.device, runtime_.memory_allocator, info,
-                               WillUseWidenedAstcFormat(runtime_.device, info)
-                                   ? std::span<const VkFormat>{}
-                                   : runtime->ViewFormats(info.format),
-                               WillUseWidenedAstcFormat(runtime_.device, info)
-                                   ? std::make_optional(VK_FORMAT_R32G32B32A32_SFLOAT)
-                                   : std::nullopt)),
+                               runtime->ViewFormats(info.format))),
       aspect_mask(ImageAspectMask(info.format)) {
     if (IsPixelFormatASTC(info.format) && !runtime->device.IsOptimalAstcSupported()) {
         switch (Settings::values.accelerate_astc.GetValue()) {
@@ -1846,9 +1836,7 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
         Settings::values.astc_recompression.GetValue() ==
             Settings::AstcRecompression::Uncompressed) {
         const auto& device = runtime->device.GetLogical();
-        const VkFormat storage_format = WillUseWidenedAstcFormat(runtime->device, info)
-                                            ? VK_FORMAT_R32G32B32A32_SFLOAT
-                                            : VK_FORMAT_A8B8G8R8_UNORM_PACK32;
+        const VkFormat storage_format = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
         for (s32 level = 0; level < info.resources.levels; ++level) {
             storage_image_views[level] =
                 MakeStorageView(device, level, *original_image, storage_format);
@@ -2239,9 +2227,7 @@ VkImageView Image::StorageImageView(s32 level) noexcept {
         auto format_info =
             MaxwellToVK::SurfaceFormat(runtime->device, FormatType::Optimal, true, info.format);
         if (WillUseAcceleratedAstcDecode(runtime->device, info)) {
-            format_info.format = WillUseWidenedAstcFormat(runtime->device, info)
-                                     ? VK_FORMAT_R32G32B32A32_SFLOAT
-                                     : VK_FORMAT_A8B8G8R8_UNORM_PACK32;
+            format_info.format = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
         }
         view = MakeStorageView(runtime->device.GetLogical(), level, *(this->*current_image),
                                format_info.format);
@@ -2417,11 +2403,7 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
             SanitizeDepthStencilSwizzle(swizzle, device->SupportsDepthStencilSwizzleOne());
         }
     }
-    uses_widened_astc_format = WillUseWidenedAstcFormat(*device, image.info);
     auto format_info = MaxwellToVK::SurfaceFormat(*device, FormatType::Optimal, true, format);
-    if (uses_widened_astc_format) {
-        format_info.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    }
     if (device->ApiVersion() >= VK_API_VERSION_1_3) {
         const VkFormatProperties3 properties3 =
             device->GetPhysical().GetFormatProperties3(format_info.format);
@@ -2567,9 +2549,6 @@ VkImageView ImageView::StorageView(Shader::TextureType texture_type,
             auto& view{typeless_storage_views[static_cast<size_t>(texture_type)]};
             if (!view) {
                 auto info = MaxwellToVK::SurfaceFormat(*device, FormatType::Optimal, true, format);
-                if (uses_widened_astc_format) {
-                    info.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-                }
                 view = MakeView(info.format, VK_IMAGE_ASPECT_COLOR_BIT, texture_type);
             }
             return *view;

@@ -837,7 +837,8 @@ bool Device::ComputeIsOptimalAstcSupported() const {
         VK_FORMAT_ASTC_12x10_UNORM_BLOCK, VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
         VK_FORMAT_ASTC_12x12_UNORM_BLOCK, VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
     };
-    if (!features.features.textureCompressionASTC_LDR) {
+    if (!features.features.textureCompressionASTC_LDR ||
+        !features.texture_compression_astc_hdr.textureCompressionASTC_HDR) {
         return false;
     }
     const auto format_feature_usage{VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |

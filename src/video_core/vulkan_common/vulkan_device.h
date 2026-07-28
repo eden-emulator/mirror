@@ -380,8 +380,7 @@ FN_MAX_LIMIT_LIST
     }
 
     bool IsOptimalAstcSupported() const {
-        return features.features.textureCompressionASTC_LDR &&
-               features.texture_compression_astc_hdr.textureCompressionASTC_HDR;
+        return is_optimal_astc_supported;
     }
 
     /// Returns true if BCn is natively supported.
