@@ -43,7 +43,7 @@ BufferCache<P>::~BufferCache() = default;
 
 template <class P>
 u64 BufferCache<P>::DeviceUsage(bool force_refresh) {
-    if (!runtime.CanReportMemoryUsage()) {
+    if (!runtime.CanReportAllocationUsage()) {
         return total_used_memory;
     }
     if (force_refresh || usage_refresh_countdown == 0) {
@@ -61,6 +61,9 @@ u64 BufferCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
         return 0;
     }
     in_reclaim = true;
+    const size_t sentenced_before = sentenced_buffers.Size();
+    sentenced_buffers.Reclaim(runtime.CompletedSyncPoint());
+    const bool drained = sentenced_buffers.Size() != sentenced_before;
     u64 freed = 0;
     const auto clean_up = [&](BufferId buffer_id) {
         if (freed >= target_bytes) {
@@ -82,9 +85,10 @@ u64 BufferCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
     if (freed < target_bytes) {
         lru_cache.ForEachItemBelow(frame_tick > 0 ? frame_tick - 1 : 0, clean_up);
     }
+    sentenced_buffers.Reclaim(runtime.CompletedSyncPoint());
     in_reclaim = false;
     usage_refresh_countdown = 0;
-    reclaim_stalled = freed == 0;
+    reclaim_stalled = freed == 0 && !drained;
     return freed;
 }
 

@@ -72,6 +72,10 @@ public:
 
     u64 GetDeviceAllocationUsage() const;
 
+    bool CanReportAllocationUsage() const noexcept {
+        return true;
+    }
+
     bool CanReportMemoryUsage() const;
 
     std::optional<size_t> GetSamplerHeapBudget() const;

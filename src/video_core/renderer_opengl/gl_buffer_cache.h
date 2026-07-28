@@ -142,6 +142,10 @@ public:
         return GetDeviceMemoryUsage();
     }
 
+    bool CanReportAllocationUsage() const {
+        return device.CanReportMemoryUsage();
+    }
+
     void BindFastUniformBuffer(size_t stage, u32 binding_index, u32 size) {
         const GLuint handle = fast_uniforms[stage][binding_index].handle;
         const GLsizeiptr gl_size = static_cast<GLsizeiptr>(size);
