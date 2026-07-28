@@ -291,8 +291,17 @@ Tegra::Texture::TICEntry GenericEnvironment::ReadTextureInfo(GPUVAddr tic_addr, 
                     "start_address=0x{:x}",
                     raw, handle.first, handle.second, tic_limit, tic_addr, via_header_index,
                     static_cast<u32>(stage), program_base, start_address);
+        ASSERT(handle.first <= tic_limit);
+        Tegra::Texture::TICEntry fallback{};
+        fallback.format.Assign(Tegra::Texture::TextureFormat::A8B8G8R8);
+        fallback.r_type.Assign(Tegra::Texture::ComponentType::UNORM);
+        fallback.g_type.Assign(Tegra::Texture::ComponentType::UNORM);
+        fallback.b_type.Assign(Tegra::Texture::ComponentType::UNORM);
+        fallback.a_type.Assign(Tegra::Texture::ComponentType::UNORM);
+        fallback.texture_type.Assign(Tegra::Texture::TextureType::Texture2D);
+        fallback.normalized_coords.Assign(1);
+        return fallback;
     }
-    ASSERT(handle.first <= tic_limit);
     const GPUVAddr descriptor_addr{tic_addr + handle.first * sizeof(Tegra::Texture::TICEntry)};
     Tegra::Texture::TICEntry entry;
     gpu_memory->ReadBlock(descriptor_addr, &entry, sizeof(entry));
