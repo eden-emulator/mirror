@@ -281,6 +281,34 @@ std::optional<u64> GenericEnvironment::TryFindSize() {
     return std::nullopt;
 }
 
+u32 ResolveBindlessHandleTable(Tegra::MemoryManager& gpu_memory, GPUVAddr record_addr,
+                               u32 raw_handle, u32 tic_index, u32 tic_limit) {
+    static constexpr u32 HandleRecordSize = 16;
+    static constexpr u32 MaxHandleTableBytes = 64 * 1024;
+
+    if (tic_index <= tic_limit) {
+        return raw_handle;
+    }
+    const u32 addr_low{gpu_memory.Read<u32>(record_addr)};
+    const u32 addr_high{gpu_memory.Read<u32>(record_addr + 4)};
+    const u32 table_size{gpu_memory.Read<u32>(record_addr + 8)};
+    const GPUVAddr table_addr{(static_cast<GPUVAddr>(addr_high) << 32) |
+                              static_cast<GPUVAddr>(addr_low)};
+    if (table_addr == 0 || table_size < HandleRecordSize || table_size > MaxHandleTableBytes) {
+        return raw_handle;
+    }
+    const u32 count{table_size / HandleRecordSize};
+    for (u32 i = 0; i < count; ++i) {
+        const GPUVAddr entry_addr{table_addr + static_cast<GPUVAddr>(i) * HandleRecordSize};
+        const u32 handle{gpu_memory.Read<u32>(entry_addr)};
+        const u32 live{gpu_memory.Read<u32>(entry_addr + 4)};
+        if (live != 0 && handle != 0 && handle <= tic_limit) {
+            return handle;
+        }
+    }
+    return raw_handle;
+}
+
 Tegra::Texture::TICEntry GenericEnvironment::ReadTextureInfo(GPUVAddr tic_addr, u32 tic_limit,
                                                              bool via_header_index, u32 raw) {
     const auto handle{Tegra::Texture::TexturePair(raw, via_header_index)};
@@ -429,6 +457,24 @@ u32 ComputeEnvironment::ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) {
     }
     cbuf_values.emplace(MakeCbufKey(cbuf_index, cbuf_offset), value);
     return value;
+}
+
+u32 ComputeEnvironment::ResolveBindlessHandle(u32 cbuf_index, u32 cbuf_offset, u32 raw_handle) {
+    const auto& regs{kepler_compute->regs};
+    const auto& qmd{kepler_compute->launch_description};
+    const auto pair{Tegra::Texture::TexturePair(raw_handle, qmd.linked_tsc != 0)};
+    if (pair.first <= regs.tic.limit) {
+        return raw_handle;
+    }
+    if (((qmd.const_buffer_enable_mask.Value() >> cbuf_index) & 1) == 0) {
+        return raw_handle;
+    }
+    const auto& cbuf{qmd.const_buffer_config[cbuf_index]};
+    if (cbuf_offset + 12 > cbuf.size) {
+        return raw_handle;
+    }
+    return ResolveBindlessHandleTable(*gpu_memory, cbuf.Address() + cbuf_offset, raw_handle,
+                                      pair.first, regs.tic.limit);
 }
 
 Shader::TextureType ComputeEnvironment::ReadTextureType(u32 handle) {

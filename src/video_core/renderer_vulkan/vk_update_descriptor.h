@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <array>
+#include <memory>
 #include <variant>
 #include "video_core/vulkan_common/vulkan_wrapper.h"
 
@@ -30,11 +30,12 @@ class UpdateDescriptorQueue final {
     // This should be plenty for the vast majority of cases. Most desktop platforms only
     // provide up to 3 swapchain images.
     static constexpr size_t FRAMES_IN_FLIGHT = 8;
-    static constexpr size_t FRAME_PAYLOAD_SIZE = 0x40000;
-    static constexpr size_t PAYLOAD_SIZE = FRAME_PAYLOAD_SIZE * FRAMES_IN_FLIGHT;
 
 public:
-    explicit UpdateDescriptorQueue(const Device& device_);
+    static constexpr size_t GUEST_FRAME_PAYLOAD_SIZE = 0x80000;
+    static constexpr size_t COMPUTE_FRAME_PAYLOAD_SIZE = 0x20000;
+
+    explicit UpdateDescriptorQueue(const Device& device_, size_t frame_payload_size_);
     ~UpdateDescriptorQueue();
 
     void TickFrame();
@@ -74,11 +75,12 @@ public:
 
 private:
     const Device& device;
+    const size_t frame_payload_size;
     size_t frame_index{0};
     DescriptorUpdateEntry* payload_cursor = nullptr;
     DescriptorUpdateEntry* payload_start = nullptr;
     const DescriptorUpdateEntry* upload_start = nullptr;
-    std::array<DescriptorUpdateEntry, PAYLOAD_SIZE> payload;
+    std::unique_ptr<DescriptorUpdateEntry[]> payload;
 };
 
 // TODO: should these be separate classes instead?

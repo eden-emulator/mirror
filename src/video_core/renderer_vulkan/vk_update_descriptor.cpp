@@ -16,11 +16,12 @@
 
 namespace Vulkan {
 
-UpdateDescriptorQueue::UpdateDescriptorQueue(const Device& device_)
-    : device{device_}
+UpdateDescriptorQueue::UpdateDescriptorQueue(const Device& device_, size_t frame_payload_size_)
+    : device{device_}, frame_payload_size{frame_payload_size_},
+      payload{std::make_unique<DescriptorUpdateEntry[]>(frame_payload_size_ * FRAMES_IN_FLIGHT)}
 {
-    payload_start = payload.data();
-    payload_cursor = payload.data();
+    payload_start = payload.get();
+    payload_cursor = payload.get();
 }
 
 UpdateDescriptorQueue::~UpdateDescriptorQueue() = default;
@@ -29,19 +30,19 @@ void UpdateDescriptorQueue::TickFrame() {
     if (++frame_index >= FRAMES_IN_FLIGHT) {
         frame_index = 0;
     }
-    payload_start = payload.data() + frame_index * FRAME_PAYLOAD_SIZE;
+    payload_start = payload.get() + frame_index * frame_payload_size;
     payload_cursor = payload_start;
 }
 
 void UpdateDescriptorQueue::Acquire(Scheduler& scheduler, size_t required_entries) {
     static constexpr size_t DEFAULT_REQUIRED_ENTRIES = 0x400;
     const size_t reserve = required_entries > 0 ? required_entries : DEFAULT_REQUIRED_ENTRIES;
-    ASSERT_MSG(reserve < FRAME_PAYLOAD_SIZE, "Descriptor reservation {} >= frame capacity {}",
-               reserve, FRAME_PAYLOAD_SIZE);
+    ASSERT_MSG(reserve < frame_payload_size, "Descriptor reservation {} >= frame capacity {}",
+               reserve, frame_payload_size);
     const size_t used = static_cast<size_t>(std::distance(payload_start, payload_cursor));
-    if (used + reserve >= FRAME_PAYLOAD_SIZE) {
+    if (used + reserve >= frame_payload_size) {
         LOG_WARNING(Render_Vulkan, "Payload overflow (used={}, reserve={}, capacity={})",
-                    used, reserve, FRAME_PAYLOAD_SIZE);
+                    used, reserve, frame_payload_size);
         scheduler.WaitWorker();
         payload_cursor = payload_start;
     }
