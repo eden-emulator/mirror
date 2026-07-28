@@ -246,7 +246,6 @@ protected:
     StagingBufferPool& staging_pool;
 
     vk::Buffer buffer{};
-    MemoryCommit memory_commit{};
     VkIndexType index_type{};
     u32 num_indices = 0;
 };

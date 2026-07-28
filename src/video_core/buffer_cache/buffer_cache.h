@@ -98,7 +98,8 @@ void BufferCache<P>::EnsureHeadroom(bool allow_download) {
     if (usage <= limit) {
         return;
     }
-    ReclaimMemory(usage - limit, allow_download);
+    const u64 target = (limit / 100) * RECLAIM_TARGET_PERCENT;
+    ReclaimMemory(usage - target, allow_download);
 }
 
 template <class P>

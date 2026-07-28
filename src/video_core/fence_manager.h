@@ -18,7 +18,7 @@
 #include "common/common_types.h"
 #include "common/settings.h"
 #include "common/thread.h"
-#include "video_core/delayed_destruction_ring.h"
+#include "video_core/deferred_destruction_queue.h"
 #include "video_core/gpu.h"
 #include "video_core/host1x/host1x.h"
 #include "video_core/host1x/syncpoint_manager.h"
@@ -50,7 +50,8 @@ public:
     /// Notify the fence manager about a new frame
     void TickFrame() {
         std::unique_lock lock(ring_guard);
-        delayed_destruction_ring.Tick();
+        ++retire_tick;
+        sentenced_fences.Reclaim(retire_tick > RETIRE_DELAY ? retire_tick - RETIRE_DELAY : 0);
     }
 
     // Unlike other fences, this one doesn't
@@ -186,7 +187,7 @@ private:
             }
             {
                 std::unique_lock lock(ring_guard);
-                delayed_destruction_ring.Push(std::move(current_fence));
+                sentenced_fences.Push(std::move(current_fence), retire_tick);
             }
             fences.pop();
         }
@@ -219,7 +220,7 @@ private:
             }
             {
                 std::unique_lock lock(ring_guard);
-                delayed_destruction_ring.Push(std::move(current_fence));
+                sentenced_fences.Push(std::move(current_fence), retire_tick);
             }
         }
     }
@@ -264,7 +265,9 @@ private:
 
     std::jthread fence_thread;
 
-    DelayedDestructionRing<TFence, 8> delayed_destruction_ring;
+    static constexpr u64 RETIRE_DELAY = 8;
+    u64 retire_tick = 1;
+    DeferredDestructionQueue<TFence> sentenced_fences;
 };
 
 } // namespace VideoCommon

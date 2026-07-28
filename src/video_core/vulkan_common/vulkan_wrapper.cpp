@@ -7,9 +7,11 @@
 #include <algorithm>
 #include <memory>
 #include <optional>
+#include <thread>
 #include <utility>
 #include <vector>
 
+#include "common/assert.h"
 #include "common/common_types.h"
 #include "common/logging.h"
 #include "video_core/vulkan_common/vk_enum_string_helper.h"
@@ -19,6 +21,8 @@
 namespace Vulkan::vk {
 
 namespace {
+
+std::thread::id allocator_owner_thread;
 
 template <typename Func>
 void SortPhysicalDevices(std::vector<VkPhysicalDevice>& devices, const InstanceDispatch& dld,
@@ -502,12 +506,22 @@ DebugReportCallback Instance::CreateDebugReportCallback(
     return DebugReportCallback(object, handle, *dld);
 }
 
+void SetAllocatorOwnerThread() {
+    allocator_owner_thread = std::this_thread::get_id();
+}
+
+bool OnAllocatorOwnerThread() noexcept {
+    return allocator_owner_thread == std::thread::id{} ||
+           allocator_owner_thread == std::this_thread::get_id();
+}
+
 void Image::SetObjectNameEXT(const char* name) const {
     SetObjectName(dld, owner, handle, VK_OBJECT_TYPE_IMAGE, name);
 }
 
 void Image::Release() const noexcept {
     if (handle) {
+        DEBUG_ASSERT(OnAllocatorOwnerThread());
         vmaDestroyImage(allocator, handle, allocation);
     }
 }
@@ -530,6 +544,7 @@ void Buffer::SetObjectNameEXT(const char* name) const {
 
 void Buffer::Release() const noexcept {
     if (handle) {
+        DEBUG_ASSERT(OnAllocatorOwnerThread());
         vmaDestroyBuffer(allocator, handle, allocation);
     }
 }
