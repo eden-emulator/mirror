@@ -1753,12 +1753,30 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                                src.info.format, num_samples, copies, msaa_to_non_msaa);
 }
 
+u64 TextureCacheRuntime::CurrentSyncPoint() const noexcept {
+    return scheduler.CurrentTick();
+}
+
+u64 TextureCacheRuntime::CompletedSyncPoint() const {
+    auto& master_semaphore = scheduler.GetMasterSemaphore();
+    master_semaphore.Refresh();
+    return master_semaphore.KnownGpuTick();
+}
+
+void TextureCacheRuntime::WaitSyncPoint(u64 sync_point) {
+    scheduler.Wait(sync_point);
+}
+
 u64 TextureCacheRuntime::GetDeviceLocalMemory() const {
     return device.GetDeviceLocalMemory();
 }
 
 u64 TextureCacheRuntime::GetDeviceMemoryUsage() const {
     return device.GetDeviceMemoryUsage();
+}
+
+u64 TextureCacheRuntime::GetDeviceAllocationUsage() const {
+    return device.GetMemoryBudgetInfo().allocation_bytes;
 }
 
 bool TextureCacheRuntime::CanReportMemoryUsage() const {
@@ -1770,6 +1788,7 @@ std::optional<size_t> TextureCacheRuntime::GetSamplerHeapBudget() const {
 }
 
 void TextureCacheRuntime::TickFrame() {
+    device.TickAllocatorFrame();
     std::erase_if(pending_msaa_images, [this](const auto& pending) {
         return scheduler.IsFree(pending.first);
     });

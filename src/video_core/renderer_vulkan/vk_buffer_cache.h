@@ -100,9 +100,15 @@ public:
 
     void Finish();
 
+    u64 CurrentSyncPoint() const noexcept;
+
+    u64 CompletedSyncPoint() const;
+
     u64 GetDeviceLocalMemory() const;
 
     u64 GetDeviceMemoryUsage() const;
+
+    u64 GetDeviceAllocationUsage() const;
 
     bool CanReportMemoryUsage() const;
 

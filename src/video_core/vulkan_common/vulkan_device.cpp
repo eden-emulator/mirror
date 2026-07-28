@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <array>
 #include <bitset>
 #include <chrono>
 #include <optional>
@@ -732,7 +733,7 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
             .device = *logical,
             .preferredLargeHeapBlockSize = is_integrated
                                            ? (64u * 1024u * 1024u)
-                                           : (256u * 1024u * 1024u),
+                                           : (128u * 1024u * 1024u),
             .pAllocationCallbacks = nullptr,
             .pDeviceMemoryCallbacks = nullptr,
             .pHeapSizeLimit = nullptr,
@@ -1444,6 +1445,23 @@ std::optional<size_t> Device::GetSamplerHeapBudget() const {
     return sampler_heap_budget;
 }
 
+Device::MemoryBudgetInfo Device::GetMemoryBudgetInfo() const {
+    std::array<VmaBudget, VK_MAX_MEMORY_HEAPS> budgets{};
+    vmaGetHeapBudgets(allocator, budgets.data());
+    MemoryBudgetInfo info{};
+    for (const size_t heap : valid_heap_memory) {
+        info.usage += budgets[heap].usage;
+        info.budget += budgets[heap].budget;
+        info.block_bytes += budgets[heap].statistics.blockBytes;
+        info.allocation_bytes += budgets[heap].statistics.allocationBytes;
+    }
+    return info;
+}
+
+void Device::TickAllocatorFrame() const {
+    vmaSetCurrentFrameIndex(allocator, ++allocator_frame_index);
+}
+
 u64 Device::GetDeviceMemoryUsage() const {
     VkPhysicalDeviceMemoryBudgetPropertiesEXT budget;
     budget.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;
@@ -1493,9 +1511,12 @@ void Device::CollectPhysicalMemoryInfo() {
         device_access_memory -= reserve_memory;
         if (Settings::values.vram_usage_mode.GetValue() != Settings::VramUsageMode::Aggressive) {
             // Account for resolution scaling in memory limits
-            const size_t normal_memory = 6_GiB;
-            const size_t scaler_memory = 1_GiB * Settings::values.resolution_info.ScaleUp(1);
-            device_access_memory = std::min<u64>(device_access_memory, normal_memory + scaler_memory);
+            const u64 normal_memory = 6_GiB;
+            const u64 scaler_memory = 1_GiB * Settings::values.resolution_info.ScaleUp(1);
+            const u64 baseline = normal_memory + scaler_memory;
+            const u64 proportional = (device_access_memory / 4) * 3;
+            device_access_memory =
+                std::min<u64>(device_access_memory, std::max<u64>(baseline, proportional));
         }
     }
 }

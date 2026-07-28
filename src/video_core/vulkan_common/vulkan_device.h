@@ -255,6 +255,17 @@ public:
         return allocator;
     }
 
+    struct MemoryBudgetInfo {
+        u64 usage;
+        u64 budget;
+        u64 block_bytes;
+        u64 allocation_bytes;
+    };
+
+    MemoryBudgetInfo GetMemoryBudgetInfo() const;
+
+    void TickAllocatorFrame() const;
+
     /// Returns the logical device.
     const vk::Device& GetLogical() const {
         return logical;
@@ -1060,6 +1071,7 @@ private:
 private:
     VkInstance instance;         ///< Vulkan instance.
     VmaAllocator allocator;      ///< VMA allocator.
+    mutable u32 allocator_frame_index{};
     vk::DeviceDispatch dld;      ///< Device function pointers.
     vk::PhysicalDevice physical; ///< Physical device.
     vk::Device logical;          ///< Logical device.

@@ -221,9 +221,17 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
       fence_manager(*this, gpu, texture_cache, buffer_cache, query_cache, device, scheduler),
       wfi_event(device.GetLogical().CreateEvent()) {
     scheduler.SetQueryCache(query_cache);
+    memory_allocator.SetReclaimCallback([this](u64 bytes) -> u64 {
+        u64 freed = texture_cache.ReclaimMemory(bytes, false);
+        if (freed < bytes) {
+            freed += buffer_cache.ReclaimMemory(bytes - freed, false);
+        }
+        return freed;
+    });
 }
 
 RasterizerVulkan::~RasterizerVulkan() {
+    memory_allocator.SetReclaimCallback(nullptr);
     scheduler.WaitWorker();
     scheduler.Finish();
 }

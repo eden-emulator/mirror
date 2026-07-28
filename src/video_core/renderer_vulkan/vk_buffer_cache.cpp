@@ -376,6 +376,10 @@ u64 BufferCacheRuntime::GetDeviceMemoryUsage() const {
     return device.GetDeviceMemoryUsage();
 }
 
+u64 BufferCacheRuntime::GetDeviceAllocationUsage() const {
+    return device.GetMemoryBudgetInfo().allocation_bytes;
+}
+
 bool BufferCacheRuntime::CanReportMemoryUsage() const {
     return device.CanReportMemoryUsage();
 }
@@ -402,6 +406,16 @@ u64 BufferCacheRuntime::CurrentTick() {
 
 u64 BufferCacheRuntime::KnownGpuTick() {
     return scheduler.GetMasterSemaphore().KnownGpuTick();
+}
+
+u64 BufferCacheRuntime::CurrentSyncPoint() const noexcept {
+    return scheduler.GetMasterSemaphore().CurrentTick();
+}
+
+u64 BufferCacheRuntime::CompletedSyncPoint() const {
+    auto& master_semaphore = scheduler.GetMasterSemaphore();
+    master_semaphore.Refresh();
+    return master_semaphore.KnownGpuTick();
 }
 
 void BufferCacheRuntime::Wait(u64 buffer_tick) {

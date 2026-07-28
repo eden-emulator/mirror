@@ -33,6 +33,7 @@ add_library(video_core STATIC
     control/channel_state_cache.h
     control/scheduler.cpp
     control/scheduler.h
+    deferred_destruction_queue.h
     delayed_destruction_ring.h
     dirty_flags.cpp
     dirty_flags.h

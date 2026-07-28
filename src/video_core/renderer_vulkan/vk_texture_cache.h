@@ -60,9 +60,17 @@ public:
 
     void TickFrame();
 
+    u64 CurrentSyncPoint() const noexcept;
+
+    u64 CompletedSyncPoint() const;
+
+    void WaitSyncPoint(u64 sync_point);
+
     u64 GetDeviceLocalMemory() const;
 
     u64 GetDeviceMemoryUsage() const;
+
+    u64 GetDeviceAllocationUsage() const;
 
     bool CanReportMemoryUsage() const;
 
@@ -487,6 +495,7 @@ struct TextureCacheParams {
     static constexpr bool HAS_EMULATED_COPIES = false;
     static constexpr bool HAS_DEVICE_MEMORY_INFO = true;
     static constexpr bool IMPLEMENTS_ASYNC_DOWNLOADS = true;
+    static constexpr bool HAS_TIMELINE_SYNC_POINTS = true;
 
     using Runtime = Vulkan::TextureCacheRuntime;
     using Image = Vulkan::Image;

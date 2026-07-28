@@ -31,44 +31,74 @@ BufferCache<P>::BufferCache(Tegra::MaxwellDeviceMemoryManager& device_memory_, R
     immediately_free = (Settings::values.vram_usage_mode.GetValue() == Settings::VramUsageMode::Aggressive);
 #endif
     if (!runtime.CanReportMemoryUsage()) {
-        minimum_memory = DEFAULT_EXPECTED_MEMORY;
-        critical_memory = DEFAULT_CRITICAL_MEMORY;
+        memory_budget = FALLBACK_MEMORY_BUDGET;
         return;
     }
 
-    const s64 device_local_memory = static_cast<s64>(runtime.GetDeviceLocalMemory());
-    const s64 min_spacing_expected = device_local_memory - 1_GiB;
-    const s64 min_spacing_critical = device_local_memory - 512_MiB;
-    const s64 mem_threshold = (std::min)(device_local_memory, TARGET_THRESHOLD);
-    const s64 min_vacancy_expected = (6 * mem_threshold) / 10;
-    const s64 min_vacancy_critical = (2 * mem_threshold) / 10;
-    minimum_memory = static_cast<u64>(
-        (std::max)((std::min)(device_local_memory - min_vacancy_expected, min_spacing_expected),
-                 DEFAULT_EXPECTED_MEMORY));
-    critical_memory = static_cast<u64>(
-        (std::max)((std::min)(device_local_memory - min_vacancy_critical, min_spacing_critical),
-                 DEFAULT_CRITICAL_MEMORY));
+    memory_budget = runtime.GetDeviceLocalMemory();
 }
 
 template <class P>
 BufferCache<P>::~BufferCache() = default;
 
 template <class P>
-void BufferCache<P>::RunGarbageCollector() {
-    const bool aggressive_gc = total_used_memory >= critical_memory;
-    const u64 ticks_to_destroy = aggressive_gc ? 60 : 120;
-    int num_iterations = aggressive_gc ? 64 : 32;
-    const auto clean_up = [this, &num_iterations](BufferId buffer_id) {
-        if (num_iterations == 0) {
+u64 BufferCache<P>::DeviceUsage(bool force_refresh) {
+    if (!runtime.CanReportMemoryUsage()) {
+        return total_used_memory;
+    }
+    if (force_refresh || usage_refresh_countdown == 0) {
+        cached_device_usage = runtime.GetDeviceAllocationUsage();
+        usage_refresh_countdown = USAGE_REFRESH_INTERVAL;
+    } else {
+        --usage_refresh_countdown;
+    }
+    return cached_device_usage;
+}
+
+template <class P>
+u64 BufferCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
+    if (target_bytes == 0 || in_reclaim) {
+        return 0;
+    }
+    in_reclaim = true;
+    u64 freed = 0;
+    const auto clean_up = [&](BufferId buffer_id) {
+        if (freed >= target_bytes) {
             return true;
         }
-        --num_iterations;
         auto& buffer = slot_buffers[buffer_id];
+        if (!allow_download && IsRegionGpuModified(buffer.CpuAddr(), buffer.SizeBytes())) {
+            return false;
+        }
+        const u64 buffer_bytes = Common::AlignUp(buffer.SizeBytes(), 1024);
         DownloadBufferMemory(buffer);
         DeleteBuffer(buffer_id);
+        freed += buffer_bytes;
         return false;
     };
-    lru_cache.ForEachItemBelow(frame_tick - ticks_to_destroy, clean_up);
+    const u64 cold_tick =
+        frame_tick > RECLAIM_GUARD_FRAMES ? frame_tick - RECLAIM_GUARD_FRAMES : 0;
+    lru_cache.ForEachItemBelow(cold_tick, clean_up);
+    if (freed < target_bytes) {
+        lru_cache.ForEachItemBelow(frame_tick > 0 ? frame_tick - 1 : 0, clean_up);
+    }
+    in_reclaim = false;
+    usage_refresh_countdown = 0;
+    reclaim_stalled = freed == 0;
+    return freed;
+}
+
+template <class P>
+void BufferCache<P>::EnsureHeadroom(bool allow_download) {
+    if (reclaim_stalled) {
+        return;
+    }
+    const u64 limit = memory_budget > RECLAIM_HEADROOM ? memory_budget - RECLAIM_HEADROOM : 0;
+    const u64 usage = DeviceUsage(false);
+    if (usage <= limit) {
+        return;
+    }
+    ReclaimMemory(usage - limit, allow_download);
 }
 
 template <class P>
@@ -96,15 +126,11 @@ void BufferCache<P>::TickFrame() {
     const bool skip_preferred = hits * 256 < shots * 251;
     channel_state->uniform_buffer_skip_cache_size = skip_preferred ? DEFAULT_SKIP_CACHE_SIZE : 0;
 
-    // If we can obtain the memory info, use it instead of the estimate.
-    if (runtime.CanReportMemoryUsage()) {
-        total_used_memory = runtime.GetDeviceMemoryUsage();
-    }
-    if (total_used_memory >= minimum_memory) {
-        RunGarbageCollector();
-    }
+    usage_refresh_countdown = 0;
+    reclaim_stalled = false;
+    EnsureHeadroom(true);
     ++frame_tick;
-    delayed_destruction_ring.Tick();
+    sentenced_buffers.Reclaim(runtime.CompletedSyncPoint());
 
     for (auto& buffer : async_buffers_death_ring) {
         runtime.FreeDeferredStagingBuffer(buffer);
@@ -1576,6 +1602,7 @@ void BufferCache<P>::JoinOverlap(BufferId new_buffer_id, BufferId overlap_id,
 
 template <class P>
 BufferId BufferCache<P>::CreateBuffer(DAddr device_addr, u32 wanted_size) {
+    EnsureHeadroom(false);
     DAddr device_addr_end = Common::AlignUp(device_addr + wanted_size, CACHING_PAGESIZE);
     device_addr = Common::AlignDown(device_addr, CACHING_PAGESIZE);
     wanted_size = static_cast<u32>(device_addr_end - device_addr);
@@ -1613,7 +1640,7 @@ void BufferCache<P>::ChangeRegister(BufferId buffer_id) {
         total_used_memory += Common::AlignUp(size, 1024);
         buffer.setLRUID(lru_cache.Insert(buffer_id, frame_tick));
     } else {
-        total_used_memory -= Common::AlignUp(size, 1024);
+        total_used_memory -= (std::min)(total_used_memory, Common::AlignUp(size, 1024));
         lru_cache.Free(buffer.getLRUID());
     }
     const DAddr device_addr_begin = buffer.CpuAddr();
@@ -1872,7 +1899,7 @@ void BufferCache<P>::DeleteBuffer(BufferId buffer_id, bool do_not_mark) {
 #ifdef YUZU_LEGACY
     if (!do_not_mark || !immediately_free)
 #endif
-        delayed_destruction_ring.Push(std::move(slot_buffers[buffer_id]));
+        sentenced_buffers.Push(std::move(slot_buffers[buffer_id]), runtime.CurrentSyncPoint());
 
     slot_buffers.erase(buffer_id);
 
