@@ -184,11 +184,15 @@ u64 TextureCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
             image.IsSafeDownload() && False(image.flags & ImageFlagBits::BadOverlap);
         bool queued_download = false;
         if (must_download) {
-            if (!allow_download || !HAS_TIMELINE_SYNC_POINTS) {
+            if constexpr (HAS_TIMELINE_SYNC_POINTS) {
+                if (!allow_download) {
+                    return false;
+                }
+                QueueEvictionDownload(image);
+                queued_download = true;
+            } else {
                 return false;
             }
-            QueueEvictionDownload(image);
-            queued_download = true;
         }
         const u64 image_bytes = ImageSizeBytes(image);
         if (True(image.flags & ImageFlagBits::Tracked)) {
@@ -2408,7 +2412,7 @@ void TextureCache<P>::UntrackImage(ImageBase& image, ImageId image_id) {
 template <class P>
 void TextureCache<P>::DeleteImage(ImageId image_id, bool immediate_delete) {
     ImageBase& image = slot_images[image_id];
-    total_used_memory -= (std::min)(total_used_memory, ImageSizeBytes(image));
+    total_used_memory -= std::min<u64>(total_used_memory, ImageSizeBytes(image));
     const GPUVAddr gpu_addr = image.gpu_addr;
     const auto alloc_it = image_allocs_table.find(gpu_addr);
     if (alloc_it == image_allocs_table.end()) {
