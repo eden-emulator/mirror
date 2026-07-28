@@ -81,6 +81,7 @@ private:
 
     Kernel::KEvent* buffer_wait_event{};
     Service::KernelHelpers::ServiceContext& service_context;
+    std::shared_ptr<IProducerListener> internal_listener;
 
     std::shared_ptr<BufferQueueCore> core;
     BufferQueueDefs::SlotsType& slots;

@@ -1565,10 +1565,10 @@ typename BufferCache<P>::OverlapResult BufferCache<P>::ResolveOverlaps(DAddr dev
             // When this memory region has been joined a bunch of times, we assume it's being used
             // as a stream buffer. Increase the size to skip constantly recreating buffers.
             has_stream_leap = true;
-            if (expands_right) {
+            if (expands_left) {
                 expand_begin(CACHING_PAGESIZE * 128);
             }
-            if (expands_left) {
+            if (expands_right) {
                 expand_end(CACHING_PAGESIZE * 128);
             }
         }

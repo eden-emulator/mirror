@@ -797,7 +797,6 @@ void BlitImageHelper::ConvertR16ToD16(const Framebuffer* dst_framebuffer,
 void BlitImageHelper::ConvertABGR8ToD24S8(const Framebuffer* dst_framebuffer,
                                           const ImageView& src_image_view) {
     if (!device.IsExtShaderStencilExportSupported()) {
-        // Shader requires VK_EXT_shader_stencil_export which is not available
         LOG_WARNING(Render_Vulkan, "ConvertABGR8ToD24S8 requires shader_stencil_export, skipping");
         return;
     }
