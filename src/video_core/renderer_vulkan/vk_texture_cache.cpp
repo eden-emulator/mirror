@@ -1922,9 +1922,11 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
         ScaleDown(true);
     }
 
-    const bool wants_msaa_upload = info.num_samples > 1
-        && (aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) != 0
+    const bool is_color_upload = (aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) != 0
         && !VideoCore::Surface::IsPixelFormatInteger(info.format);
+    const bool is_depth_upload = (aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
+    const bool wants_msaa_upload =
+        info.num_samples > 1 && (is_color_upload || is_depth_upload);
 
     if (wants_msaa_upload) {
         ImageInfo temp_info = info;

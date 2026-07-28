@@ -51,6 +51,7 @@ struct MSAACopyPipelineKey {
     VkRenderPass renderpass;
     VkSampleCountFlagBits samples;
     bool msaa_to_non_msaa;
+    bool is_depth;
 };
 
 struct BlitMSAAPipelineKey {
@@ -180,6 +181,7 @@ private:
     vk::ShaderModule convert_s8d24_to_abgr8_frag;
     vk::ShaderModule convert_msaa_to_non_msaa_frag;
     vk::ShaderModule convert_non_msaa_to_msaa_frag;
+    vk::ShaderModule convert_non_msaa_to_msaa_depth_frag;
     vk::Sampler linear_sampler;
     vk::Sampler nearest_sampler;
 

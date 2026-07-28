@@ -21,6 +21,7 @@
 #include "video_core/host_shaders/convert_depth_to_float_frag_spv.h"
 #include "video_core/host_shaders/convert_float_to_depth_frag_spv.h"
 #include "video_core/host_shaders/convert_msaa_to_non_msaa_frag_spv.h"
+#include "video_core/host_shaders/convert_non_msaa_to_msaa_depth_frag_spv.h"
 #include "video_core/host_shaders/convert_non_msaa_to_msaa_frag_spv.h"
 #include "video_core/host_shaders/convert_s8d24_to_abgr8_frag_spv.h"
 #include "video_core/host_shaders/full_screen_triangle_vert_spv.h"
@@ -519,7 +520,8 @@ void RecordShaderReadBarrier(Scheduler& scheduler, const ImageView& image_view) 
 }
 
 [[nodiscard]] vk::ImageView MakeMSAACopyView(const vk::Device& device, VkImage image,
-                                             VkFormat format, u32 base_level) {
+                                             VkFormat format, u32 base_level,
+                                             VkImageAspectFlags aspect_mask) {
     return device.CreateImageView(VkImageViewCreateInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = nullptr,
@@ -534,7 +536,7 @@ void RecordShaderReadBarrier(Scheduler& scheduler, const ImageView& image_view) 
             .a = VK_COMPONENT_SWIZZLE_IDENTITY,
         },
         .subresourceRange{
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .aspectMask = aspect_mask,
             .baseMipLevel = base_level,
             .levelCount = 1,
             .baseArrayLayer = 0,
@@ -610,6 +612,8 @@ BlitImageHelper::BlitImageHelper(const Device& device_, Scheduler& scheduler_,
       convert_s8d24_to_abgr8_frag(BuildShader(device, CONVERT_S8D24_TO_ABGR8_FRAG_SPV)),
       convert_msaa_to_non_msaa_frag(BuildShader(device, CONVERT_MSAA_TO_NON_MSAA_FRAG_SPV)),
       convert_non_msaa_to_msaa_frag(BuildShader(device, CONVERT_NON_MSAA_TO_MSAA_FRAG_SPV)),
+      convert_non_msaa_to_msaa_depth_frag(
+          BuildShader(device, CONVERT_NON_MSAA_TO_MSAA_DEPTH_FRAG_SPV)),
       linear_sampler(device.GetLogical().CreateSampler(SAMPLER_CREATE_INFO<VK_FILTER_LINEAR>)),
       nearest_sampler(device.GetLogical().CreateSampler(SAMPLER_CREATE_INFO<VK_FILTER_NEAREST>)) {}
 
@@ -895,16 +899,31 @@ void BlitImageHelper::CopyMSAA(RenderPassCache& render_pass_cache, VkImage dst_i
     const s32 scale_y = 1 << samples_y;
     const VkSampleCountFlagBits samples =
         msaa_to_non_msaa ? VK_SAMPLE_COUNT_1_BIT : SampleCountFlag(num_samples);
+    const auto dst_surface_type = VideoCore::Surface::GetFormatType(dst_format);
+    const bool is_depth = dst_surface_type == VideoCore::Surface::SurfaceType::Depth ||
+                          dst_surface_type == VideoCore::Surface::SurfaceType::DepthStencil;
+    const bool has_stencil = dst_surface_type == VideoCore::Surface::SurfaceType::DepthStencil;
+    const VkImageAspectFlags view_aspect =
+        is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+    const VkImageAspectFlags barrier_aspect =
+        is_depth ? (VK_IMAGE_ASPECT_DEPTH_BIT |
+                    (has_stencil ? VK_IMAGE_ASPECT_STENCIL_BIT : 0u))
+                 : VK_IMAGE_ASPECT_COLOR_BIT;
     RenderPassKey renderpass_key{};
     renderpass_key.color_formats.fill(VideoCore::Surface::PixelFormat::Invalid);
-    renderpass_key.color_formats[0] = dst_format;
-    renderpass_key.depth_format = VideoCore::Surface::PixelFormat::Invalid;
+    if (is_depth) {
+        renderpass_key.depth_format = dst_format;
+    } else {
+        renderpass_key.color_formats[0] = dst_format;
+        renderpass_key.depth_format = VideoCore::Surface::PixelFormat::Invalid;
+    }
     renderpass_key.samples = samples;
     const VkRenderPass renderpass = render_pass_cache.Get(renderpass_key);
     const MSAACopyPipelineKey key{
         .renderpass = renderpass,
         .samples = samples,
         .msaa_to_non_msaa = msaa_to_non_msaa,
+        .is_depth = is_depth,
     };
     const VkPipeline pipeline = FindOrEmplaceMSAACopyPipeline(key);
     const VkPipelineLayout layout = *msaa_copy_pipeline_layout;
@@ -920,10 +939,10 @@ void BlitImageHelper::CopyMSAA(RenderPassCache& render_pass_cache, VkImage dst_i
         ASSERT(copy.dst_subresource.num_layers == 1);
         vk::ImageView src_view =
             MakeMSAACopyView(device.GetLogical(), src_image, src_vk_format,
-                             static_cast<u32>(copy.src_subresource.base_level));
+                             static_cast<u32>(copy.src_subresource.base_level), view_aspect);
         vk::ImageView dst_view =
             MakeMSAACopyView(device.GetLogical(), dst_image, dst_vk_format,
-                             static_cast<u32>(copy.dst_subresource.base_level));
+                             static_cast<u32>(copy.dst_subresource.base_level), view_aspect);
         const VkOffset2D dst_offset{copy.dst_offset.x, copy.dst_offset.y};
         const VkExtent2D dst_extent{copy.extent.width, copy.extent.height};
         const VkRect2D render_area{
@@ -949,50 +968,61 @@ void BlitImageHelper::CopyMSAA(RenderPassCache& render_pass_cache, VkImage dst_i
         scheduler.RequestOutsideRenderPassOperationContext();
         scheduler.Record([this, pipeline, layout, sampler, renderpass,
                           framebuffer_handle = *framebuffer, src_view_handle = *src_view,
-                          src = src_image, dst = dst_image, render_area,
+                          src = src_image, dst = dst_image, render_area, is_depth, barrier_aspect,
                           push_constants](vk::CommandBuffer cmdbuf) {
-            constexpr VkImageSubresourceRange color_range{
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            const VkImageSubresourceRange src_range{
+                .aspectMask = barrier_aspect,
                 .baseMipLevel = 0,
                 .levelCount = VK_REMAINING_MIP_LEVELS,
                 .baseArrayLayer = 0,
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             };
+            const VkImageSubresourceRange dst_range = src_range;
+            const VkAccessFlags attachment_read =
+                is_depth ? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+                         : VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+            const VkAccessFlags attachment_write =
+                is_depth ? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+                         : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            const VkPipelineStageFlags attachment_stage =
+                is_depth ? VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                               VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT
+                         : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             const std::array pre_barriers{
                 VkImageMemoryBarrier{
                     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                     .pNext = nullptr,
-                    .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                     VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+                    .srcAccessMask = attachment_write | VK_ACCESS_SHADER_WRITE_BIT |
+                                     VK_ACCESS_TRANSFER_WRITE_BIT,
                     .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
                     .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .image = src,
-                    .subresourceRange = color_range,
+                    .subresourceRange = src_range,
                 },
                 VkImageMemoryBarrier{
                     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                     .pNext = nullptr,
-                    .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                     VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
-                    .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                    .srcAccessMask = attachment_write | VK_ACCESS_SHADER_WRITE_BIT |
+                                     VK_ACCESS_TRANSFER_WRITE_BIT,
+                    .dstAccessMask = attachment_read | attachment_write,
                     .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .image = dst,
-                    .subresourceRange = color_range,
+                    .subresourceRange = dst_range,
                 },
             };
             cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                       VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                       VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
                                        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
                                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
                                        VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                                       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | attachment_stage,
                                    0, nullptr, nullptr, pre_barriers);
             const VkRenderPassBeginInfo renderpass_bi{
                 .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -1025,16 +1055,16 @@ void BlitImageHelper::CopyMSAA(RenderPassCache& render_pass_cache, VkImage dst_i
             const VkImageMemoryBarrier post_barrier{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                .srcAccessMask = attachment_write,
                 .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .image = dst,
-                .subresourceRange = color_range,
+                .subresourceRange = dst_range,
             };
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            cmdbuf.PipelineBarrier(attachment_stage,
                                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
                                        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
                                        VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -1423,9 +1453,36 @@ VkPipeline BlitImageHelper::FindOrEmplaceMSAACopyPipeline(const MSAACopyPipeline
         return *msaa_copy_pipelines[std::distance(msaa_copy_keys.begin(), it)];
     }
     msaa_copy_keys.push_back(key);
-    const std::array stages = MakeStages(*clear_color_vert, key.msaa_to_non_msaa
-                                                                ? *convert_msaa_to_non_msaa_frag
-                                                                : *convert_non_msaa_to_msaa_frag);
+    const VkShaderModule frag_module =
+        key.msaa_to_non_msaa
+            ? *convert_msaa_to_non_msaa_frag
+            : (key.is_depth ? *convert_non_msaa_to_msaa_depth_frag
+                            : *convert_non_msaa_to_msaa_frag);
+    const std::array stages = MakeStages(*clear_color_vert, frag_module);
+    const VkPipelineDepthStencilStateCreateInfo depth_stencil_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .depthTestEnable = VK_TRUE,
+        .depthWriteEnable = VK_TRUE,
+        .depthCompareOp = VK_COMPARE_OP_ALWAYS,
+        .depthBoundsTestEnable = VK_FALSE,
+        .stencilTestEnable = VK_FALSE,
+        .front = {},
+        .back = {},
+        .minDepthBounds = 0.0f,
+        .maxDepthBounds = 0.0f,
+    };
+    static constexpr VkPipelineColorBlendStateCreateInfo no_color_blend_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .logicOpEnable = VK_FALSE,
+        .logicOp = VK_LOGIC_OP_CLEAR,
+        .attachmentCount = 0,
+        .pAttachments = nullptr,
+        .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
+    };
     const VkPipelineMultisampleStateCreateInfo multisample_ci{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pNext = nullptr,
@@ -1450,8 +1507,9 @@ VkPipeline BlitImageHelper::FindOrEmplaceMSAACopyPipeline(const MSAACopyPipeline
         .pViewportState = &PIPELINE_VIEWPORT_STATE_CREATE_INFO,
         .pRasterizationState = &PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         .pMultisampleState = &multisample_ci,
-        .pDepthStencilState = nullptr,
-        .pColorBlendState = &PIPELINE_COLOR_BLEND_STATE_GENERIC_CREATE_INFO,
+        .pDepthStencilState = key.is_depth ? &depth_stencil_ci : nullptr,
+        .pColorBlendState = key.is_depth ? &no_color_blend_ci
+                                         : &PIPELINE_COLOR_BLEND_STATE_GENERIC_CREATE_INFO,
         .pDynamicState = &PIPELINE_DYNAMIC_STATE_CREATE_INFO,
         .layout = *msaa_copy_pipeline_layout,
         .renderPass = key.renderpass,
