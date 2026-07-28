@@ -905,10 +905,13 @@ void BlitImageHelper::CopyMSAA(RenderPassCache& render_pass_cache, VkImage dst_i
     const bool has_stencil = dst_surface_type == VideoCore::Surface::SurfaceType::DepthStencil;
     const VkImageAspectFlags view_aspect =
         is_depth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-    const VkImageAspectFlags barrier_aspect =
-        is_depth ? (VK_IMAGE_ASPECT_DEPTH_BIT |
-                    (has_stencil ? VK_IMAGE_ASPECT_STENCIL_BIT : 0u))
-                 : VK_IMAGE_ASPECT_COLOR_BIT;
+    VkImageAspectFlags barrier_aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+    if (is_depth) {
+        barrier_aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+        if (has_stencil) {
+            barrier_aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+    }
     RenderPassKey renderpass_key{};
     renderpass_key.color_formats.fill(VideoCore::Surface::PixelFormat::Invalid);
     if (is_depth) {
@@ -984,10 +987,13 @@ void BlitImageHelper::CopyMSAA(RenderPassCache& render_pass_cache, VkImage dst_i
             const VkAccessFlags attachment_write =
                 is_depth ? VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
                          : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            const VkPipelineStageFlags depth_stage =
+                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
             const VkPipelineStageFlags attachment_stage =
-                is_depth ? VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-                               VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT
-                         : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                is_depth ? depth_stage
+                         : static_cast<VkPipelineStageFlags>(
+                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
             const std::array pre_barriers{
                 VkImageMemoryBarrier{
                     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
