@@ -224,6 +224,27 @@ namespace Vulkan {
 
     MemoryAllocator::~MemoryAllocator() = default;
 
+    void MemoryAllocator::SetReclaimCallback(ReclaimCallback callback) {
+        reclaim_callback = std::move(callback);
+        owner_thread = std::this_thread::get_id();
+    }
+
+    bool MemoryAllocator::ReclaimAtLeast(u64 hint_bytes) const {
+        if (!reclaim_callback || in_reclaim) {
+            return false;
+        }
+        in_reclaim = true;
+        const u64 freed = reclaim_callback(hint_bytes);
+        in_reclaim = false;
+        return freed > 0;
+    }
+
+    void MemoryAllocator::AssertOwnerThread() const {
+        DEBUG_ASSERT_MSG(owner_thread == std::thread::id{} ||
+                             owner_thread == std::this_thread::get_id(),
+                         "VmaAllocator is externally synchronized but was used off-thread");
+    }
+
     vk::Image MemoryAllocator::CreateImage(const VkImageCreateInfo &ci) const
     {
         const VmaAllocationCreateInfo alloc_ci = {
@@ -240,7 +261,26 @@ namespace Vulkan {
         VkImage handle{};
         VmaAllocation allocation{};
         VmaAllocationInfo alloc_info{};
-        vk::Check(vmaCreateImage(allocator, &ci, &alloc_ci, &handle, &allocation, &alloc_info));
+        AssertOwnerThread();
+
+        VkResult res = vmaCreateImage(allocator, &ci, &alloc_ci, &handle, &allocation, &alloc_info);
+
+        if (res != VK_SUCCESS && ReclaimAtLeast(IMAGE_RECLAIM_HINT)) {
+            res = vmaCreateImage(allocator, &ci, &alloc_ci, &handle, &allocation, &alloc_info);
+        }
+
+        if (res != VK_SUCCESS) {
+            auto relaxed_ci = alloc_ci;
+            relaxed_ci.flags &= ~VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT;
+            res = vmaCreateImage(allocator, &ci, &relaxed_ci, &handle, &allocation, &alloc_info);
+
+            if (res != VK_SUCCESS) {
+                relaxed_ci.preferredFlags &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                res = vmaCreateImage(allocator, &ci, &relaxed_ci, &handle, &allocation, &alloc_info);
+            }
+        }
+
+        vk::Check(res);
 
         // Log GPU memory allocation for images
         if (GPU::Logging::IsActive() &&
@@ -277,7 +317,28 @@ namespace Vulkan {
         VmaAllocation allocation{};
         VkMemoryPropertyFlags property_flags{};
 
-        vk::Check(vmaCreateBuffer(allocator, &ci, &alloc_ci, &handle, &allocation, &alloc_info));
+        AssertOwnerThread();
+
+        VkResult res = vmaCreateBuffer(allocator, &ci, &alloc_ci, &handle, &allocation, &alloc_info);
+
+        if (res != VK_SUCCESS && ReclaimAtLeast(ci.size)) {
+            res = vmaCreateBuffer(allocator, &ci, &alloc_ci, &handle, &allocation, &alloc_info);
+        }
+
+        if (res != VK_SUCCESS) {
+            auto relaxed_ci = alloc_ci;
+            relaxed_ci.flags &= ~VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT;
+            res = vmaCreateBuffer(allocator, &ci, &relaxed_ci, &handle, &allocation, &alloc_info);
+
+            if (res != VK_SUCCESS &&
+                (relaxed_ci.preferredFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
+                relaxed_ci.preferredFlags &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+                res = vmaCreateBuffer(allocator, &ci, &relaxed_ci, &handle, &allocation,
+                                      &alloc_info);
+            }
+        }
+
+        vk::Check(res);
         vmaGetAllocationMemoryProperties(allocator, allocation, &property_flags);
 
         // Log GPU memory allocation for buffers

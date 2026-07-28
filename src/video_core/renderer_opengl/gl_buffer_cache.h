@@ -93,7 +93,17 @@ public:
     void PostCopyBarrier();
     void Finish();
 
-    void TickFrame(Common::SlotVector<Buffer>&) noexcept {}
+    void TickFrame(Common::SlotVector<Buffer>&) noexcept {
+        ++sync_point;
+    }
+
+    u64 CurrentSyncPoint() const noexcept {
+        return sync_point;
+    }
+
+    u64 CompletedSyncPoint() const noexcept {
+        return sync_point > SYNC_POINT_DELAY ? sync_point - SYNC_POINT_DELAY : 0;
+    }
 
     void ClearBuffer(Buffer& dest_buffer, u32 offset, size_t size, u32 value);
 
@@ -127,6 +137,10 @@ public:
     GLuint GetTransformFeedbackObject(GPUVAddr tfb_object_addr);
 
     u64 GetDeviceMemoryUsage() const;
+
+    u64 GetDeviceAllocationUsage() const {
+        return GetDeviceMemoryUsage();
+    }
 
     void BindFastUniformBuffer(size_t stage, u32 binding_index, u32 size) {
         const GLuint handle = fast_uniforms[stage][binding_index].handle;
@@ -213,8 +227,12 @@ private:
         GL_FRAGMENT_PROGRAM_PARAMETER_BUFFER_NV,
     };
 
+    static constexpr u64 SYNC_POINT_DELAY = 8;
+
     const Device& device;
     StagingBufferPool& staging_buffer_pool;
+
+    u64 sync_point = 1;
 
     bool has_fast_buffer_sub_data = false;
     bool use_assembly_shaders = false;

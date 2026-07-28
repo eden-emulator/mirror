@@ -30,7 +30,7 @@
 #include "common/slot_vector.h"
 #include "video_core/buffer_cache/buffer_base.h"
 #include "video_core/control/channel_state_cache.h"
-#include "video_core/delayed_destruction_ring.h"
+#include "video_core/deferred_destruction_queue.h"
 #include "video_core/dirty_flags.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/engines/kepler_compute.h"
@@ -182,13 +182,14 @@ class BufferCache : public VideoCommon::ChannelSetupCaches<BufferCacheChannelInf
     static constexpr bool USE_MEMORY_MAPS_FOR_UPLOADS = P::USE_MEMORY_MAPS_FOR_UPLOADS;
 
 #ifdef YUZU_LEGACY
-    static constexpr s64 TARGET_THRESHOLD = 3_GiB;
+    static constexpr u64 RECLAIM_HEADROOM = 384_MiB;
 #else
-    static constexpr s64 TARGET_THRESHOLD = 4_GiB;
+    static constexpr u64 RECLAIM_HEADROOM = 512_MiB;
 #endif
 
-    static constexpr s64 DEFAULT_EXPECTED_MEMORY = 512_MiB;
-    static constexpr s64 DEFAULT_CRITICAL_MEMORY = 1_GiB;
+    static constexpr u64 FALLBACK_MEMORY_BUDGET = 2_GiB;
+    static constexpr u32 USAGE_REFRESH_INTERVAL = 16;
+    static constexpr u64 RECLAIM_GUARD_FRAMES = 8;
 
     // Debug Flags.
 
@@ -214,6 +215,8 @@ public:
     ~BufferCache();
 
     void TickFrame();
+
+    u64 ReclaimMemory(u64 target_bytes, bool allow_download);
 
     void WriteMemory(DAddr device_addr, u64 size);
 
@@ -358,7 +361,9 @@ private:
                ((device_addr + size) & ~Core::DEVICE_PAGEMASK);
     }
 
-    void RunGarbageCollector();
+    u64 DeviceUsage(bool force_refresh);
+
+    void EnsureHeadroom(bool allow_download);
 
     void BindHostIndexBuffer();
 
@@ -475,12 +480,7 @@ private:
     Tegra::MaxwellDeviceMemoryManager& device_memory;
 
     Common::SlotVector<Buffer> slot_buffers;
-#ifdef YUZU_LEGACY
-    static constexpr size_t TICKS_TO_DESTROY = 6;
-#else
-    static constexpr size_t TICKS_TO_DESTROY = 8;
-#endif
-    DelayedDestructionRing<Buffer, TICKS_TO_DESTROY> delayed_destruction_ring;
+    DeferredDestructionQueue<Buffer> sentenced_buffers;
 
     const Tegra::Engines::Maxwell3D::DrawManager::IndirectParams* current_draw_indirect{};
 
@@ -515,8 +515,11 @@ private:
     Common::LeastRecentlyUsedCache<LRUItemParams> lru_cache;
     u64 frame_tick = 0;
     u64 total_used_memory = 0;
-    u64 minimum_memory = 0;
-    u64 critical_memory = 0;
+    u64 memory_budget = 0;
+    u64 cached_device_usage = 0;
+    u32 usage_refresh_countdown = 0;
+    bool in_reclaim = false;
+    bool reclaim_stalled = false;
     BufferId inline_buffer_id;
 #ifdef YUZU_LEGACY
     bool immediately_free = false;

@@ -87,6 +87,10 @@ public:
 
     u64 GetDeviceMemoryUsage() const;
 
+    u64 GetDeviceAllocationUsage() const {
+        return GetDeviceMemoryUsage();
+    }
+
     bool CanReportMemoryUsage() const {
         return device.CanReportMemoryUsage();
     }
@@ -139,7 +143,19 @@ public:
 
     bool HasNativeASTC() const noexcept;
 
-    void TickFrame() {}
+    void TickFrame() {
+        ++sync_point;
+    }
+
+    u64 CurrentSyncPoint() const noexcept {
+        return sync_point;
+    }
+
+    u64 CompletedSyncPoint() const noexcept {
+        return sync_point > SYNC_POINT_DELAY ? sync_point - SYNC_POINT_DELAY : 0;
+    }
+
+    void WaitSyncPoint(u64) {}
 
     StateTracker& GetStateTracker() {
         return state_tracker;
@@ -174,6 +190,9 @@ private:
     std::array<OGLFramebuffer, 4> rescale_read_fbos;
     const Settings::ResolutionScalingInfo& resolution;
     u64 device_access_memory;
+
+    static constexpr u64 SYNC_POINT_DELAY = 8;
+    u64 sync_point = 1;
 };
 
 class Image : public VideoCommon::ImageBase {
@@ -370,6 +389,7 @@ struct TextureCacheParams {
     static constexpr bool HAS_EMULATED_COPIES = true;
     static constexpr bool HAS_DEVICE_MEMORY_INFO = true;
     static constexpr bool IMPLEMENTS_ASYNC_DOWNLOADS = true;
+    static constexpr bool HAS_TIMELINE_SYNC_POINTS = false;
 
     using Runtime = OpenGL::TextureCacheRuntime;
     using Image = OpenGL::Image;

@@ -30,7 +30,7 @@
 #include "common/thread_worker.h"
 #include "video_core/compatible_formats.h"
 #include "video_core/control/channel_state_cache.h"
-#include "video_core/delayed_destruction_ring.h"
+#include "video_core/deferred_destruction_queue.h"
 #include "video_core/engines/fermi_2d.h"
 #include "video_core/surface.h"
 #include "video_core/texture_cache/descriptor_table.h"
@@ -108,18 +108,19 @@ class TextureCache : public VideoCommon::ChannelSetupCaches<TextureCacheChannelI
     static constexpr bool HAS_DEVICE_MEMORY_INFO = P::HAS_DEVICE_MEMORY_INFO;
     /// True when the API can do asynchronous texture downloads.
     static constexpr bool IMPLEMENTS_ASYNC_DOWNLOADS = P::IMPLEMENTS_ASYNC_DOWNLOADS;
+    static constexpr bool HAS_TIMELINE_SYNC_POINTS = P::HAS_TIMELINE_SYNC_POINTS;
 
     static constexpr size_t UNSET_CHANNEL{(std::numeric_limits<size_t>::max)()};
 
 #ifdef YUZU_LEGACY
-    static constexpr s64 TARGET_THRESHOLD = 3_GiB;
+    static constexpr u64 RECLAIM_HEADROOM = 384_MiB;
 #else
-    static constexpr s64 TARGET_THRESHOLD = 4_GiB;
+    static constexpr u64 RECLAIM_HEADROOM = 512_MiB;
 #endif
 
-    static constexpr s64 DEFAULT_EXPECTED_MEMORY = 1_GiB + 125_MiB;
-    static constexpr s64 DEFAULT_CRITICAL_MEMORY = 1_GiB + 625_MiB;
-    static constexpr size_t GC_EMERGENCY_COUNTS = 2;
+    static constexpr u64 FALLBACK_MEMORY_BUDGET = 2_GiB;
+    static constexpr u32 USAGE_REFRESH_INTERVAL = 16;
+    static constexpr u64 RECLAIM_GUARD_FRAMES = 8;
 
     using Runtime = typename P::Runtime;
     using Image = typename P::Image;
@@ -153,6 +154,8 @@ public:
 
     /// Notify the cache that a new frame has been queued
     void TickFrame();
+
+    u64 ReclaimMemory(u64 target_bytes, bool allow_download);
 
     /// Return a constant reference to the given image view id
     [[nodiscard]] const ImageView& GetImageView(ImageViewId id) const noexcept;
@@ -293,8 +296,17 @@ private:
 
     void OnGPUASRegister(size_t map_id) final override;
 
-    /// Runs the Garbage Collector.
-    void RunGarbageCollector();
+    u64 ImageSizeBytes(const ImageBase& image);
+
+    u64 DeviceUsage(bool force_refresh);
+
+    void EnsureHeadroom(bool allow_download);
+
+    void QueueEvictionDownload(Image& image);
+
+    void TickEvictionDownloads(u64 completed_sync_point);
+
+    void FlushEvictionDownloads();
 
     /// Find or create an image view in the guest descriptor table
     ImageViewId VisitImageView(u32 index, bool compute);
@@ -451,9 +463,11 @@ private:
     bool has_deleted_images = false;
     bool is_rescaling = false;
     u64 total_used_memory = 0;
-    u64 minimum_memory;
-    u64 expected_memory;
-    u64 critical_memory;
+    u64 memory_budget = 0;
+    u64 cached_device_usage = 0;
+    u32 usage_refresh_countdown = 0;
+    bool in_reclaim = false;
+    bool reclaim_stalled = false;
     size_t gpu_unswizzle_maxsize = 0;
     size_t swizzle_chunk_size = 0;
     u32 swizzle_slices_per_batch = 0;
@@ -491,14 +505,19 @@ private:
     };
     Common::LeastRecentlyUsedCache<LRUItemParams> lru_cache;
 
- #ifdef YUZU_LEGACY
-    static constexpr size_t TICKS_TO_DESTROY = 6;
- #else
-    static constexpr size_t TICKS_TO_DESTROY = 8;
-#endif
-    DelayedDestructionRing<Image, TICKS_TO_DESTROY> sentenced_images;
-    DelayedDestructionRing<ImageView, TICKS_TO_DESTROY> sentenced_image_view;
-    DelayedDestructionRing<Framebuffer, TICKS_TO_DESTROY> sentenced_framebuffers;
+    DeferredDestructionQueue<Image> sentenced_images;
+    DeferredDestructionQueue<ImageView> sentenced_image_view;
+    DeferredDestructionQueue<Framebuffer> sentenced_framebuffers;
+
+    struct PendingEvictionDownload {
+        AsyncBuffer staging;
+        Tegra::MemoryManager* gpu_memory;
+        GPUVAddr gpu_addr;
+        VideoCommon::ImageInfo info;
+        boost::container::small_vector<VideoCommon::BufferImageCopy, 16> copies;
+        u64 sync_point;
+    };
+    std::deque<PendingEvictionDownload> pending_eviction_downloads;
 
     ankerl::unordered_dense::map<GPUVAddr, ImageAllocId> image_allocs_table;
 

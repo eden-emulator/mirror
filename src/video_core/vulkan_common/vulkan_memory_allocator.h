@@ -6,8 +6,10 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <span>
+#include <thread>
 #include <vector>
 
 #include "common/common_types.h"
@@ -120,7 +122,17 @@ namespace Vulkan {
         /// Commits memory required by the buffer and binds it (for buffers created outside VMA).
         MemoryCommit Commit(const vk::Buffer &buffer, MemoryUsage usage);
 
+        using ReclaimCallback = std::function<u64(u64)>;
+
+        void SetReclaimCallback(ReclaimCallback callback);
+
     private:
+        bool ReclaimAtLeast(u64 hint_bytes) const;
+
+        void AssertOwnerThread() const;
+
+        static constexpr u64 IMAGE_RECLAIM_HINT = 64ULL * 1024 * 1024;
+
         static bool IsAutoUsage(VmaMemoryUsage u) noexcept {
             switch (u) {
                 case VMA_MEMORY_USAGE_AUTO:
@@ -137,6 +149,9 @@ namespace Vulkan {
         const VkPhysicalDeviceMemoryProperties properties; ///< Physical device memory properties.
         VkDeviceSize buffer_image_granularity;            ///< Adjacent buffer/image granularity
         u32 valid_memory_types{~0u};
+        ReclaimCallback reclaim_callback;
+        mutable bool in_reclaim{false};
+        std::thread::id owner_thread;
     };
 
 } // namespace Vulkan
