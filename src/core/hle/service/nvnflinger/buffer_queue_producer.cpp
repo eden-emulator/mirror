@@ -19,29 +19,10 @@
 #include "core/hle/service/nvnflinger/buffer_queue_producer.h"
 #include "core/hle/service/nvnflinger/consumer_listener.h"
 #include "core/hle/service/nvnflinger/parcel.h"
-#include "core/hle/service/nvnflinger/producer_listener.h"
 #include "core/hle/service/nvnflinger/ui/graphic_buffer.h"
 #include "core/hle/service/nvnflinger/window.h"
 
 namespace Service::android {
-
-namespace {
-
-class BufferWaitEventListener final : public IProducerListener {
-public:
-    explicit BufferWaitEventListener(Kernel::KEvent* event_, Kernel::KernelCore& kernel_)
-        : event{event_}, kernel{kernel_} {}
-
-    void OnBufferReleased() override {
-        event->Signal(kernel);
-    }
-
-private:
-    Kernel::KEvent* event;
-    Kernel::KernelCore& kernel;
-};
-
-}
 
 BufferQueueProducer::BufferQueueProducer(Service::KernelHelpers::ServiceContext& service_context_,
                                          std::shared_ptr<BufferQueueCore> buffer_queue_core_,
@@ -54,13 +35,6 @@ BufferQueueProducer::BufferQueueProducer(Service::KernelHelpers::ServiceContext&
 }
 
 BufferQueueProducer::~BufferQueueProducer() {
-    {
-        std::scoped_lock lock{core->mutex};
-        if (core->connected_producer_listener == internal_listener) {
-            core->connected_producer_listener = nullptr;
-        }
-        internal_listener = nullptr;
-    }
     service_context.CloseEvent(buffer_wait_event);
 }
 
@@ -694,15 +668,7 @@ Status BufferQueueProducer::Connect(const std::shared_ptr<IProducerListener>& li
         core->connected_api = api;
         output->Inflate(core->default_width, core->default_height, core->transform_hint,
                         static_cast<u32>(core->queue.size()));
-        if (listener != nullptr) {
-            core->connected_producer_listener = listener;
-        } else {
-            if (internal_listener == nullptr) {
-                internal_listener = std::make_shared<BufferWaitEventListener>(
-                    buffer_wait_event, service_context.kernel);
-            }
-            core->connected_producer_listener = internal_listener;
-        }
+        core->connected_producer_listener = listener;
         break;
     default:
         LOG_ERROR(Service_Nvnflinger, "unknown api = {}", api);
