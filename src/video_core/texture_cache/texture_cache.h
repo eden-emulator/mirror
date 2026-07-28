@@ -1709,7 +1709,27 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
     for (const ImageId overlap_id : join_ignore_textures) {
         Image& overlap = slot_images[overlap_id];
         if (True(overlap.flags & ImageFlagBits::GpuModified)) {
-            UNIMPLEMENTED();
+            if (new_image.TryFindBase(overlap.gpu_addr) &&
+                (!can_rescale || ImageCanRescale(overlap))) {
+                if (can_rescale) {
+                    ScaleUp(overlap);
+                } else {
+                    ScaleDown(overlap);
+                }
+                join_copies_to_do.emplace_back(JoinCopy{false, overlap_id});
+                continue;
+            }
+            LOG_WARNING(HW_GPU,
+                        "Dropping GPU modified overlap with no copy path: "
+                        "overlap{{gpu_addr=0x{:x} format={} size={}x{}x{} levels={} layers={}}} "
+                        "new{{gpu_addr=0x{:x} format={} size={}x{}x{} levels={} layers={}}}",
+                        overlap.gpu_addr, static_cast<int>(overlap.info.format),
+                        overlap.info.size.width, overlap.info.size.height,
+                        overlap.info.size.depth, overlap.info.resources.levels,
+                        overlap.info.resources.layers, new_image.gpu_addr,
+                        static_cast<int>(new_info.format), new_info.size.width,
+                        new_info.size.height, new_info.size.depth, new_info.resources.levels,
+                        new_info.resources.layers);
         }
         if (True(overlap.flags & ImageFlagBits::Tracked)) {
             UntrackImage(overlap, overlap_id);
