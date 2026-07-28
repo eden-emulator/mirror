@@ -12,7 +12,6 @@
 #include "common/fs/file.h"
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
-#include "common/logging.h"
 #include "core/file_sys/vfs/vfs.h"
 #include "core/file_sys/vfs/vfs_real.h"
 
@@ -124,6 +123,7 @@ VirtualFile RealVfsFilesystem::CreateFile(std::string_view path_, OpenMode perms
     const auto path = FS::SanitizePath(path_, FS::DirectorySeparator::PlatformDefault);
     {
         std::scoped_lock lk{list_lock};
+        CloseCachedFileReferenceLocked(path);
         cache.erase(path);
     }
 
@@ -157,6 +157,8 @@ VirtualFile RealVfsFilesystem::MoveFile(std::string_view old_path_, std::string_
     const auto new_path = FS::SanitizePath(new_path_, FS::DirectorySeparator::PlatformDefault);
     {
         std::scoped_lock lk{list_lock};
+        CloseCachedFileReferenceLocked(old_path);
+        CloseCachedFileReferenceLocked(new_path);
         cache.erase(old_path);
         cache.erase(new_path);
     }
@@ -170,6 +172,7 @@ bool RealVfsFilesystem::DeleteFile(std::string_view path_) {
     const auto path = FS::SanitizePath(path_, FS::DirectorySeparator::PlatformDefault);
     {
         std::scoped_lock lk{list_lock};
+        CloseCachedFileReferenceLocked(path);
         cache.erase(path);
     }
     return FS::RemoveFile(path);
@@ -222,8 +225,8 @@ std::unique_lock<std::mutex> RealVfsFilesystem::RefreshReference(const std::stri
     if (!reference.file) {
         this->EvictSingleReferenceLocked();
 
-        reference.file =
-            FS::FileOpen(path, ModeFlagsToFileAccessMode(perms), FS::FileType::BinaryFile);
+        reference.file = FS::FileOpen(path, ModeFlagsToFileAccessMode(perms),
+                                      FS::FileType::BinaryFile, FS::FileShareFlag::ShareReadWriteDelete);
         if (reference.file) {
             num_open_files++;
         }
@@ -297,13 +300,48 @@ RealVfsFile::~RealVfsFile() {
     base.DropReference(std::move(reference));
 }
 
+void RealVfsFilesystem::CloseCachedFileReferenceLocked(const std::string& path) {
+    const auto it = cache.find(path);
+    if (it == cache.end()) {
+        return;
+    }
+
+    const auto cached_file = it->second.lock();
+    if (!cached_file) {
+        return;
+    }
+
+    auto* real_file = static_cast<RealVfsFile*>(cached_file.get());
+    auto& reference = real_file->reference;
+    if (!reference || !reference->file) {
+        return;
+    }
+
+    RemoveReferenceFromListLocked(*reference);
+    reference->file.reset();
+    num_open_files--;
+    InsertReferenceIntoListLocked(*reference);
+}
+
 std::string RealVfsFile::GetName() const {
 #ifdef __ANDROID__
-    if (path[0] != '/') {
+    if (!path.empty() && path[0] != '/') {
         return FS::Android::GetFilename(path);
     }
 #endif
     return path_components.empty() ? "" : std::string(path_components.back());
+}
+
+std::string RealVfsFile::GetFullPath() const {
+#ifdef __ANDROID__
+    if (!path.empty() && path[0] != '/') {
+        auto out = path;
+        std::replace(out.begin(), out.end(), '\\', '/');
+        return out;
+    }
+#endif
+
+    return VfsFile::GetFullPath();
 }
 
 std::size_t RealVfsFile::GetSize() const {

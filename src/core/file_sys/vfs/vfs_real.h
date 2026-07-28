@@ -63,6 +63,7 @@ private:
     std::unique_lock<std::mutex> RefreshReference(const std::string& path, OpenMode perms,
                                                   FileReference& reference);
     void DropReference(std::unique_ptr<FileReference>&& reference);
+    void CloseCachedFileReferenceLocked(const std::string& path);
 
 private:
     friend class RealVfsDirectory;
@@ -85,6 +86,7 @@ public:
     ~RealVfsFile() override;
 
     std::string GetName() const override;
+    std::string GetFullPath() const override;
     std::size_t GetSize() const override;
     bool Resize(std::size_t new_size) override;
     VirtualDir GetContainingDirectory() const override;

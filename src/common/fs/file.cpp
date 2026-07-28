@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cerrno>
+#include <cstdint>
 #include <vector>
 
 #include "common/assert.h"
@@ -15,8 +17,10 @@
 #include "common/logging.h"
 
 #ifdef _WIN32
+#include <fcntl.h>
 #include <io.h>
 #include <share.h>
+#include <windows.h>
 #else
 #include <unistd.h>
 #endif
@@ -95,8 +99,63 @@ namespace {
     case FileShareFlag::ShareWriteOnly:
         return _SH_DENYRD;
     case FileShareFlag::ShareReadWrite:
+    case FileShareFlag::ShareReadWriteDelete:
         return _SH_DENYNO;
     }
+}
+
+[[nodiscard]] std::FILE* OpenWithWindowsShareDelete(const fs::path& path, FileAccessMode mode,
+                                                    FileType type) {
+    DWORD desired_access{};
+    DWORD creation_disposition{OPEN_EXISTING};
+    int open_flags = type == FileType::BinaryFile ? _O_BINARY : _O_TEXT;
+
+    switch (mode) {
+    case FileAccessMode::Read:
+        desired_access = GENERIC_READ;
+        open_flags |= _O_RDONLY;
+        break;
+    case FileAccessMode::Write:
+        desired_access = GENERIC_WRITE;
+        creation_disposition = CREATE_ALWAYS;
+        open_flags |= _O_WRONLY;
+        break;
+    case FileAccessMode::Append:
+        desired_access = GENERIC_WRITE;
+        creation_disposition = OPEN_ALWAYS;
+        open_flags |= _O_WRONLY | _O_APPEND;
+        break;
+    case FileAccessMode::ReadWrite:
+        desired_access = GENERIC_READ | GENERIC_WRITE;
+        open_flags |= _O_RDWR;
+        break;
+    case FileAccessMode::ReadAppend:
+        desired_access = GENERIC_READ | GENERIC_WRITE;
+        creation_disposition = OPEN_ALWAYS;
+        open_flags |= _O_RDWR | _O_APPEND;
+        break;
+    }
+
+    const auto handle =
+        CreateFileW(path.c_str(), desired_access,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
+                    creation_disposition, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (handle == INVALID_HANDLE_VALUE) {
+        errno = EACCES;
+        return nullptr;
+    }
+
+    const auto fd = _open_osfhandle(reinterpret_cast<intptr_t>(handle), open_flags);
+    if (fd == -1) {
+        CloseHandle(handle);
+        return nullptr;
+    }
+
+    auto* const file = _wfdopen(fd, AccessModeToWStr(mode, type));
+    if (file == nullptr) {
+        _close(fd);
+    }
+    return file;
 }
 
 #else
@@ -254,7 +313,9 @@ void IOFile::Open(const fs::path& path, FileAccessMode mode, FileType type, File
     errno = 0;
 
 #ifdef _WIN32
-    if (flag != FileShareFlag::ShareNone) {
+    if (flag == FileShareFlag::ShareReadWriteDelete) {
+        file = OpenWithWindowsShareDelete(path, mode, type);
+    } else if (flag != FileShareFlag::ShareNone) {
         file = _wfsopen(path.c_str(), AccessModeToWStr(mode, type), ToWindowsFileShareFlag(flag));
     } else {
         _wfopen_s(&file, path.c_str(), AccessModeToWStr(mode, type));

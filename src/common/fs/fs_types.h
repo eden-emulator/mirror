@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -49,10 +49,11 @@ enum class FileType {
 };
 
 enum class FileShareFlag {
-    ShareNone,      // Provides exclusive access to the file.
-    ShareReadOnly,  // Provides read only shared access to the file.
-    ShareWriteOnly, // Provides write only shared access to the file.
-    ShareReadWrite, // Provides read and write shared access to the file.
+    ShareNone,            // Provides exclusive access to the file.
+    ShareReadOnly,        // Provides read only shared access to the file.
+    ShareWriteOnly,       // Provides write only shared access to the file.
+    ShareReadWrite,       // Provides read and write shared access to the file.
+    ShareReadWriteDelete, // Provides read, write, and delete shared access to the file.
 };
 
 enum class DirEntryFilter {
