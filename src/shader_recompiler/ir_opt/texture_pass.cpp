@@ -502,7 +502,7 @@ u32 GetTextureHandle(Environment& env, const ConstBufferAddr& cbuf) {
     const u32 lhs_raw{env.ReadCbufValue(cbuf.index, cbuf.offset) << cbuf.shift_left};
     const u32 rhs_raw{env.ReadCbufValue(secondary_index, secondary_offset)
                       << cbuf.secondary_shift_left};
-    return lhs_raw | rhs_raw;
+    return env.ResolveBindlessHandle(cbuf.index, cbuf.offset, lhs_raw | rhs_raw);
 }
 
 [[maybe_unused]] TextureType ReadTextureType(Environment& env, const ConstBufferAddr& cbuf) {
