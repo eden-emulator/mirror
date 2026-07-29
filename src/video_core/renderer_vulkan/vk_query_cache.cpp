@@ -235,11 +235,23 @@ public:
             return;
         }
         PauseCounter();
-        const auto driver_id = device.GetDriverID();
-        if (driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY ||
-            driver_id == VK_DRIVER_ID_ARM_PROPRIETARY || driver_id == VK_DRIVER_ID_MESA_TURNIP) {
-            pending_sync.clear();
+        if (!CanResolveHostQueries()) {
             sync_values_stash.clear();
+            scheduler.RequestOutsideRenderPassOperationContext();
+            scheduler.Record([buffer = *accumulation_buffer](vk::CommandBuffer cmdbuf) {
+                cmdbuf.FillBuffer(buffer, 0, 8, 0);
+            });
+            std::function<void()> func([this] {
+                amend_value = 0;
+                accumulation_value = 0;
+            });
+            rasterizer->SyncOperation(std::move(func));
+            AbandonCurrentQuery();
+            num_slots_used = 0;
+            first_accumulation_checkpoint = (std::numeric_limits<size_t>::max)();
+            last_accumulation_checkpoint = 0;
+            accumulation_since_last_sync = false;
+            pending_sync.clear();
             return;
         }
         sync_values_stash.clear();
@@ -406,6 +418,12 @@ public:
     }
 
 private:
+    bool CanResolveHostQueries() const {
+        const auto driver_id = device.GetDriverID();
+        return driver_id != VK_DRIVER_ID_ARM_PROPRIETARY &&
+               driver_id != VK_DRIVER_ID_MESA_TURNIP;
+    }
+
     template <typename Func>
     void ApplyBankOp(VideoCommon::HostQueryBase* query, Func&& func) {
         size_t size_slots = query->size_slots;
@@ -1518,10 +1536,10 @@ bool QueryCacheRuntime::HostConditionalRenderingCompareValues(VideoCommon::Looku
         return false;
     }
 
-    auto driver_id = impl->device.GetDriverID();
+    const auto driver_id = impl->device.GetDriverID();
     const bool is_gpu_high = Settings::IsGPULevelHigh();
 
-    if ((!is_gpu_high && driver_id == VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS) || driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY || driver_id == VK_DRIVER_ID_ARM_PROPRIETARY || driver_id == VK_DRIVER_ID_MESA_TURNIP) {
+    if (!is_gpu_high && driver_id == VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS) {
         EndHostConditionalRendering();
         return true;
     }

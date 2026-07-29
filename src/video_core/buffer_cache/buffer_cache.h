@@ -1033,7 +1033,6 @@ void BufferCache<P>::BindHostGraphicsUniformBuffers(size_t stage) {
 
 template <class P>
 void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 binding_index, bool needs_bind) {
-    ++channel_state->uniform_cache_shots[0];
     const Binding& binding = channel_state->uniform_buffers[stage][index];
     const DAddr device_addr = binding.device_addr;
     const u32 size = (std::min)(binding.size, (*channel_state->uniform_buffer_sizes)[stage][index]);
@@ -1052,8 +1051,12 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
             return alignment > 1 && (offset % alignment) != 0;
         }
     }();
+
+    const bool cached_buffer_is_current =
+        has_host_buffer && !memory_tracker.IsRegionCpuModified(device_addr, size);
     const bool use_fast_buffer = needs_alignment_stream
-        || (has_host_buffer && size <= channel_state->uniform_buffer_skip_cache_size
+        || (has_host_buffer && !cached_buffer_is_current
+            && size <= channel_state->uniform_buffer_skip_cache_size
             && !memory_tracker.IsRegionGpuModified(device_addr, size));
     if (use_fast_buffer) {
         if constexpr (IS_OPENGL) {
@@ -1080,7 +1083,7 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
         device_memory.ReadBlockUnsafe(device_addr, span.data(), size);
         return;
     }
-    // Classic cached path
+    ++channel_state->uniform_cache_shots[0];
     if (SynchronizeBuffer(buffer, device_addr, size)) {
         ++channel_state->uniform_cache_hits[0];
     }
