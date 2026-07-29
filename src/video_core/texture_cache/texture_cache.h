@@ -172,15 +172,10 @@ u64 TextureCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
     }
     in_reclaim = true;
     const u64 drain_point = runtime.CompletedSyncPoint();
-    const size_t sentenced_before = sentenced_images.Size() + sentenced_image_view.Size() +
-                                    sentenced_framebuffers.Size();
     TickEvictionDownloads(drain_point);
     sentenced_images.Reclaim(drain_point);
     sentenced_image_view.Reclaim(drain_point);
     sentenced_framebuffers.Reclaim(drain_point);
-    const bool drained = sentenced_images.Size() + sentenced_image_view.Size() +
-                             sentenced_framebuffers.Size() !=
-                         sentenced_before;
     u64 freed = 0;
     const auto evict = [&](ImageId image_id) {
         if (freed >= target_bytes) {
@@ -225,7 +220,7 @@ u64 TextureCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
     sentenced_framebuffers.Reclaim(exit_point);
     in_reclaim = false;
     usage_refresh_countdown = 0;
-    reclaim_stalled = freed == 0 && !drained;
+    reclaim_stalled = freed == 0;
     return freed;
 }
 
@@ -240,7 +235,7 @@ void TextureCache<P>::EnsureHeadroom(bool allow_download) {
         return;
     }
     const u64 target = (limit / 100) * RECLAIM_TARGET_PERCENT;
-    ReclaimMemory(usage - target, allow_download);
+    ReclaimMemory((std::min)(usage - target, total_used_memory), allow_download);
 }
 
 template <class P>
