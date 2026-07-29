@@ -30,6 +30,7 @@ struct DynamicFeatures {
     bool has_extended_dynamic_state_3_blend;
     bool has_extended_dynamic_state_3_enables;
     bool has_dynamic_state3_depth_clamp_enable;
+    bool has_dynamic_state3_conservative_raster_mode;
     bool has_depth_clip_enable;
     bool has_dynamic_state3_logic_op_enable;
     bool has_dynamic_state3_line_stipple_enable;

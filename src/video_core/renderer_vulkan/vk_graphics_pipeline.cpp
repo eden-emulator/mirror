@@ -757,16 +757,13 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
         .lineWidth = 1.0f,
         // TODO(alekpop): Transfer from regs
     };
-    const bool smooth_lines_supported =
-        device.IsExtLineRasterizationSupported() && device.SupportsSmoothLines();
-    const bool stippled_lines_supported =
-        device.IsExtLineRasterizationSupported() && device.SupportsStippledRectangularLines();
+    const VkLineRasterizationModeEXT line_raster_mode =
+        device.GetLineRasterizationMode(key.state.smooth_lines != 0);
+    const bool stippled_lines_supported = device.SupportsStippleForMode(line_raster_mode);
     VkPipelineRasterizationLineStateCreateInfoEXT line_state{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_LINE_STATE_CREATE_INFO_EXT,
         .pNext = nullptr,
-        .lineRasterizationMode = key.state.smooth_lines != 0 && smooth_lines_supported
-                                     ? VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT
-                                     : VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT,
+        .lineRasterizationMode = line_raster_mode,
         .stippledLineEnable =
             (dynamic.line_stipple_enable && stippled_lines_supported) ? VK_TRUE : VK_FALSE,
         .lineStippleFactor = key.state.line_stipple_factor,

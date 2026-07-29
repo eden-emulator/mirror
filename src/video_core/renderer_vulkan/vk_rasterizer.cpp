@@ -1470,7 +1470,10 @@ void RasterizerVulkan::UpdateLineWidth(Tegra::Engines::Maxwell3D::Regs& regs) {
     }
     const float width =
         regs.line_anti_alias_enable ? regs.line_width_smooth : regs.line_width_aliased;
-    scheduler.Record([width](vk::CommandBuffer cmdbuf) { cmdbuf.SetLineWidth(width); });
+    const float clamped_width = device.ClampLineWidth(width);
+    scheduler.Record([clamped_width](vk::CommandBuffer cmdbuf) {
+        cmdbuf.SetLineWidth(clamped_width);
+    });
 }
 
 void RasterizerVulkan::UpdateCullMode(Tegra::Engines::Maxwell3D::Regs& regs) {
@@ -1567,7 +1570,10 @@ void RasterizerVulkan::UpdateLineStippleEnable(Tegra::Engines::Maxwell3D::Regs& 
         return;
     }
 
-    scheduler.Record([enable = regs.line_stipple_enable](vk::CommandBuffer cmdbuf) {
+    const VkLineRasterizationModeEXT mode =
+        device.GetLineRasterizationMode(regs.line_anti_alias_enable != 0);
+    const bool enable = regs.line_stipple_enable != 0 && device.SupportsStippleForMode(mode);
+    scheduler.Record([enable](vk::CommandBuffer cmdbuf) {
         cmdbuf.SetLineStippleEnableEXT(enable);
     });
 }
@@ -1581,28 +1587,24 @@ void RasterizerVulkan::UpdateLineRasterizationMode(Tegra::Engines::Maxwell3D::Re
     }
 
     if (!device.SupportsDynamicState3LineRasterizationMode()) {
-        static std::once_flag warn_missing_rect;
-        std::call_once(warn_missing_rect, [] {
+        static std::once_flag warn_missing_dynamic_state;
+        std::call_once(warn_missing_dynamic_state, [] {
             LOG_WARNING(Render_Vulkan,
-                        "Driver lacks rectangular line rasterization support; skipping dynamic "
-                        "line state updates");
+                        "Driver lacks dynamic line rasterization mode; the pipeline static value "
+                        "is used instead");
         });
         return;
     }
 
     const bool wants_smooth = regs.line_anti_alias_enable != 0;
-    VkLineRasterizationModeEXT mode = VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT;
-    if (wants_smooth) {
-        if (device.SupportsSmoothLines()) {
-            mode = VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT;
-        } else {
-            static std::once_flag warn_missing_smooth;
-            std::call_once(warn_missing_smooth, [] {
-                LOG_WARNING(Render_Vulkan,
-                            "Line anti-aliasing requested but smoothLines feature unavailable; "
-                            "using rectangular rasterization");
-            });
-        }
+    const VkLineRasterizationModeEXT mode = device.GetLineRasterizationMode(wants_smooth);
+    if (wants_smooth && mode != VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT) {
+        static std::once_flag warn_missing_smooth;
+        std::call_once(warn_missing_smooth, [] {
+            LOG_WARNING(Render_Vulkan,
+                        "Line anti-aliasing requested but smoothLines feature unavailable; "
+                        "falling back to the closest supported mode");
+        });
     }
     scheduler.Record([mode](vk::CommandBuffer cmdbuf) {
         cmdbuf.SetLineRasterizationModeEXT(mode);

@@ -164,7 +164,9 @@ void FixedPipelineState::Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFe
     }
 
     provoking_vertex_last.Assign(use_last_provoking_vertex ? 1 : 0);
-    conservative_raster_enable.Assign(regs.conservative_raster_enable != 0 ? 1 : 0);
+    if (!features.has_dynamic_state3_conservative_raster_mode) {
+        conservative_raster_enable.Assign(regs.conservative_raster_enable != 0 ? 1 : 0);
+    }
     smooth_lines.Assign(regs.line_anti_alias_enable != 0 ? 1 : 0);
     alpha_to_coverage_enabled.Assign(regs.anti_alias_alpha_control.alpha_to_coverage != 0 ? 1 : 0);
     alpha_to_one_enabled.Assign(regs.anti_alias_alpha_control.alpha_to_one != 0 ? 1 : 0);
