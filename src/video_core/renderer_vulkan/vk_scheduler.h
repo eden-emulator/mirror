@@ -131,33 +131,16 @@ public:
             }
             master_semaphore->Wait(tick);
         }
-        if (Settings::values.use_speed_limit.GetValue() && target_fps > 0.0) {
-            auto now = std::chrono::steady_clock::now();
-            if (last_target_fps != target_fps) {
-                frame_interval = std::chrono::duration_cast<std::chrono::steady_clock::duration>(std::chrono::duration<double>(1.0 / target_fps));
-                max_frame_count = static_cast<int>(0.1 * target_fps);
-                last_target_fps = target_fps;
-                frame_counter = 0;
-                start_time = now;
-            }
-            frame_counter++;
-            auto target_time = start_time + frame_interval * frame_counter;
-            if (target_time >= now) {
-                auto sleep_time = target_time - now;
-                if (sleep_time > std::chrono::milliseconds(15)) {
-                    std::this_thread::sleep_for(sleep_time - std::chrono::milliseconds(1));
-                }
-                while (std::chrono::steady_clock::now() < target_time) {
-                    std::this_thread::yield();
-                }
-            } else if (frame_counter > max_frame_count) {
-                frame_counter = 0;
-                start_time = now;
-            }
-        }
+        ApplyFramePacing(target_fps);
     }
 
-    /// Returns the master timeline semaphore.
+    void WaitSubmitted(u64 tick, double target_fps = 0.0) {
+        if (tick > 0 && tick < master_semaphore->CurrentTick()) {
+            master_semaphore->Wait(tick);
+        }
+        ApplyFramePacing(target_fps);
+    }
+
     [[nodiscard]] MasterSemaphore& GetMasterSemaphore() const noexcept {
         return *master_semaphore;
     }
@@ -165,6 +148,35 @@ public:
     std::mutex submit_mutex;
 
 private:
+    void ApplyFramePacing(double target_fps) {
+        if (!Settings::values.use_speed_limit.GetValue() || target_fps <= 0.0) {
+            return;
+        }
+        auto now = std::chrono::steady_clock::now();
+        if (last_target_fps != target_fps) {
+            frame_interval = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+                std::chrono::duration<double>(1.0 / target_fps));
+            max_frame_count = static_cast<int>(0.1 * target_fps);
+            last_target_fps = target_fps;
+            frame_counter = 0;
+            start_time = now;
+        }
+        frame_counter++;
+        auto target_time = start_time + frame_interval * frame_counter;
+        if (target_time >= now) {
+            auto sleep_time = target_time - now;
+            if (sleep_time > std::chrono::milliseconds(15)) {
+                std::this_thread::sleep_for(sleep_time - std::chrono::milliseconds(1));
+            }
+            while (std::chrono::steady_clock::now() < target_time) {
+                std::this_thread::yield();
+            }
+        } else if (frame_counter > max_frame_count) {
+            frame_counter = 0;
+            start_time = now;
+        }
+    }
+
     class Command {
     public:
         virtual ~Command() = default;
