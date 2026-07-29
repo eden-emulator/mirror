@@ -1231,6 +1231,12 @@ void Device::RemoveUnsuitableExtensions() {
     RemoveExtensionFeatureIfUnsuitable(extensions.depth_bias_control, features.depth_bias_control,
                                        VK_EXT_DEPTH_BIAS_CONTROL_EXTENSION_NAME);
 
+    // VK_EXT_depth_clamp_zero_one
+    extensions.depth_clamp_zero_one = features.depth_clamp_zero_one.depthClampZeroOne;
+    RemoveExtensionFeatureIfUnsuitable(extensions.depth_clamp_zero_one,
+                                       features.depth_clamp_zero_one,
+                                       VK_EXT_DEPTH_CLAMP_ZERO_ONE_EXTENSION_NAME);
+
     // VK_EXT_depth_clip_control
     extensions.depth_clip_control = features.depth_clip_control.depthClipControl;
     RemoveExtensionFeatureIfUnsuitable(extensions.depth_clip_control, features.depth_clip_control,

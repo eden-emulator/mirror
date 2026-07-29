@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <memory>
 #include <mutex>
 
@@ -102,8 +103,26 @@ VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t in
         .maxDepth = src.translate_z + src.scale_z,
     };
     if (!device.IsExtDepthRangeUnrestrictedSupported()) {
-        viewport.minDepth = std::clamp(viewport.minDepth, 0.0f, 1.0f);
-        viewport.maxDepth = std::clamp(viewport.maxDepth, 0.0f, 1.0f);
+        const float requested_min = viewport.minDepth;
+        const float requested_max = viewport.maxDepth;
+        viewport.minDepth = std::clamp(requested_min, 0.0f, 1.0f);
+        viewport.maxDepth = std::clamp(requested_max, 0.0f, 1.0f);
+        if (viewport.minDepth != requested_min || viewport.maxDepth != requested_max) {
+            static float last_min = std::numeric_limits<float>::quiet_NaN();
+            static float last_max = std::numeric_limits<float>::quiet_NaN();
+            if (requested_min != last_min || requested_max != last_max) {
+                last_min = requested_min;
+                last_max = requested_max;
+                LOG_WARNING(Render_Vulkan,
+                            "Viewport {} depth range squashed: requested [{}, {}] applied [{}, {}] "
+                            "translate_z={} scale_z={} depth_mode={} clamp_zero_one={}",
+                            index, requested_min, requested_max, viewport.minDepth,
+                            viewport.maxDepth, src.translate_z, src.scale_z,
+                            regs.depth_mode == Maxwell::DepthMode::MinusOneToOne ? "MinusOneToOne"
+                                                                                 : "ZeroToOne",
+                            device.IsExtDepthClampZeroOneSupported());
+            }
+        }
     }
     return viewport;
 }
