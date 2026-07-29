@@ -895,6 +895,15 @@ void BlitScale(Scheduler& scheduler, VkImage src_image, VkImage dst_image, const
                        0, nullptr, nullptr, write_barriers);
     });
 }
+
+[[nodiscard]] bool CanBlitNatively(const Device& device, PixelFormat format) {
+    static constexpr auto OPTIMAL_FORMAT = FormatType::Optimal;
+    static constexpr VkFormatFeatureFlags BLIT_USAGE =
+        VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_BLIT_DST_BIT;
+    const VkFormat vk_format =
+        MaxwellToVK::SurfaceFormat(device, OPTIMAL_FORMAT, false, format).format;
+    return device.IsFormatSupported(vk_format, BLIT_USAGE, OPTIMAL_FORMAT);
+}
 } // Anonymous namespace
 
 TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& scheduler_,
@@ -1227,27 +1236,19 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
         blit_image_helper.ResolveDepthStencil(dst_framebuffer, src, dst_region, src_region);
         return;
     }
-    if (aspect_mask == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) {
-        const auto format = src.format;
-        const auto can_blit_depth_stencil = [this, format] {
-            switch (format) {
-            case VideoCore::Surface::PixelFormat::D24_UNORM_S8_UINT:
-            case VideoCore::Surface::PixelFormat::S8_UINT_D24_UNORM:
-                return device.IsBlitDepth24Stencil8Supported();
-            case VideoCore::Surface::PixelFormat::D32_FLOAT_S8_UINT:
-                return device.IsBlitDepth32Stencil8Supported();
-            default:
-                UNREACHABLE();
-            }
-        }();
-        // Use shader-based depth/stencil blits if hardware doesn't support the format
-        // Note: MSAA resolves (MSAA->single) use vkCmdResolveImage which works fine
-        if (!can_blit_depth_stencil) {
-            UNIMPLEMENTED_IF(is_src_msaa || is_dst_msaa);
-            blit_image_helper.BlitDepthStencil(dst_framebuffer, src, dst_region, src_region,
-                                               filter, operation);
+    static constexpr VkImageAspectFlags DEPTH_STENCIL_ASPECTS =
+        VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    if ((aspect_mask & DEPTH_STENCIL_ASPECTS) != 0 && !CanBlitNatively(device, src.format)) {
+        if (aspect_mask != DEPTH_STENCIL_ASPECTS) {
+            UNIMPLEMENTED_MSG("Host cannot blit format {} and no helper path exists for aspect "
+                              "mask 0x{:x}",
+                              src.format, aspect_mask);
             return;
         }
+        UNIMPLEMENTED_IF(is_src_msaa || is_dst_msaa);
+        blit_image_helper.BlitDepthStencil(dst_framebuffer, src, dst_region, src_region, filter,
+                                           operation);
+        return;
     }
     ASSERT(!(is_dst_msaa && !is_src_msaa));
     ASSERT(operation == Fermi2D::Operation::SrcCopy);

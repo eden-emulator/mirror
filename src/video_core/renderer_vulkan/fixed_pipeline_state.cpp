@@ -368,8 +368,11 @@ bool IsDepthClipEnabled(const Maxwell& regs) {
 }
 
 bool IsDepthClampEnabled(const Maxwell& regs, bool has_depth_clip_enable) {
+    if (!IsDepthClipEnabled(regs)) {
+        return true;
+    }
     if (!has_depth_clip_enable) {
-        return !IsDepthClipEnabled(regs);
+        return false;
     }
     return regs.viewport_clip_control.pixel_min_z.Value() != 0 ||
            regs.viewport_clip_control.pixel_max_z.Value() != 0;
