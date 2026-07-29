@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2013 Dolphin Emulator Project
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -109,6 +110,35 @@ cpu_set_t ComputePerformanceCoreMask() {
 
 const cpu_set_t& PerformanceCoreMask() {
     static const cpu_set_t mask = ComputePerformanceCoreMask();
+    return mask;
+}
+
+cpu_set_t ComputeEfficiencyCoreMask() {
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
+
+    const cpu_set_t& performance = PerformanceCoreMask();
+    if (CPU_COUNT(&performance) == 0) {
+        return mask;
+    }
+
+    cpu_set_t allowed;
+    CPU_ZERO(&allowed);
+    if (sched_getaffinity(gettid(), sizeof(allowed), &allowed) != 0) {
+        return mask;
+    }
+
+    const int total = static_cast<int>(std::thread::hardware_concurrency());
+    for (int cpu = 0; cpu < total; ++cpu) {
+        if (CPU_ISSET(cpu, &allowed) && !CPU_ISSET(cpu, &performance)) {
+            CPU_SET(cpu, &mask);
+        }
+    }
+    return mask;
+}
+
+const cpu_set_t& EfficiencyCoreMask() {
+    static const cpu_set_t mask = ComputeEfficiencyCoreMask();
     return mask;
 }
 } // Anonymous namespace
@@ -230,6 +260,18 @@ void SetCurrentThreadToPerformanceCores() {
     }
     if (sched_setaffinity(gettid(), sizeof(mask), &mask) != 0) {
         LOG_DEBUG(Common, "Could not restrict thread to performance cores: {}", GetLastErrorMsg());
+    }
+#endif
+}
+
+void SetCurrentThreadToEfficiencyCores() {
+#if defined(__ANDROID__)
+    const cpu_set_t& mask = EfficiencyCoreMask();
+    if (CPU_COUNT(&mask) == 0) {
+        return;
+    }
+    if (sched_setaffinity(gettid(), sizeof(mask), &mask) != 0) {
+        LOG_DEBUG(Common, "Could not restrict thread to efficiency cores: {}", GetLastErrorMsg());
     }
 #endif
 }
