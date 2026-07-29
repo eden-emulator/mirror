@@ -420,7 +420,8 @@ public:
 private:
     bool CanResolveHostQueries() const {
         const auto driver_id = device.GetDriverID();
-        return driver_id != VK_DRIVER_ID_ARM_PROPRIETARY &&
+        return driver_id != VK_DRIVER_ID_QUALCOMM_PROPRIETARY &&
+               driver_id != VK_DRIVER_ID_ARM_PROPRIETARY &&
                driver_id != VK_DRIVER_ID_MESA_TURNIP;
     }
 
