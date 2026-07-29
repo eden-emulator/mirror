@@ -80,13 +80,16 @@ u64 BufferCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
     const u64 cold_tick =
         frame_tick > RECLAIM_GUARD_FRAMES ? frame_tick - RECLAIM_GUARD_FRAMES : 0;
     lru_cache.ForEachItemBelow(cold_tick, clean_up);
-    if (freed < target_bytes) {
+    if (freed == 0) {
         lru_cache.ForEachItemBelow(frame_tick > 0 ? frame_tick - 1 : 0, clean_up);
     }
     sentenced_buffers.Reclaim(runtime.CompletedSyncPoint());
     in_reclaim = false;
     usage_refresh_countdown = 0;
     reclaim_stalled = freed == 0;
+    if (freed > 0) {
+        reclaim_wait_sync_point = runtime.CurrentSyncPoint();
+    }
     return freed;
 }
 
@@ -95,13 +98,19 @@ void BufferCache<P>::EnsureHeadroom(bool allow_download) {
     if (reclaim_stalled) {
         return;
     }
+    if (runtime.CompletedSyncPoint() < reclaim_wait_sync_point) {
+        return;
+    }
     const u64 limit = memory_budget > RECLAIM_HEADROOM ? memory_budget - RECLAIM_HEADROOM : 0;
     const u64 usage = DeviceUsage(false);
     if (usage <= limit) {
         return;
     }
     const u64 target = (limit / 100) * RECLAIM_TARGET_PERCENT;
-    ReclaimMemory((std::min)(usage - target, total_used_memory), allow_download);
+    const u64 excess = usage - target;
+    const u64 usage_mib = (std::max)(usage >> 20, u64{1});
+    const u64 share = (((excess >> 20) * (total_used_memory >> 20)) / usage_mib) << 20;
+    ReclaimMemory((std::min)(share, total_used_memory), allow_download);
 }
 
 template <class P>

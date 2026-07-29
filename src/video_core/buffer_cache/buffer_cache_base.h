@@ -191,7 +191,7 @@ class BufferCache : public VideoCommon::ChannelSetupCaches<BufferCacheChannelInf
     static constexpr u64 FALLBACK_MEMORY_BUDGET = 2_GiB;
     static constexpr u32 USAGE_REFRESH_INTERVAL = 16;
     static constexpr u64 RECLAIM_GUARD_FRAMES = 8;
-    static constexpr u64 RECLAIM_TARGET_PERCENT = 88;
+    static constexpr u64 RECLAIM_TARGET_PERCENT = 95;
 
     // Debug Flags.
 
@@ -519,6 +519,9 @@ private:
     u64 total_used_memory = 0;
     u64 memory_budget = 0;
     u64 cached_device_usage = 0;
+    /// Sync point the last reclaim's evictions were queued at. Their memory is not back with the
+    /// device until this completes, so reclaiming again before then measures stale usage.
+    u64 reclaim_wait_sync_point = 0;
     u32 usage_refresh_countdown = 0;
     bool in_reclaim = false;
     bool reclaim_stalled = false;
