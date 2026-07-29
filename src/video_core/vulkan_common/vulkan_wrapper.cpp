@@ -5,7 +5,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <atomic>
+#include <limits>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <thread>
 #include <utility>
@@ -23,6 +26,58 @@ namespace Vulkan::vk {
 namespace {
 
 std::thread::id allocator_owner_thread;
+
+template <typename HandleType>
+struct PendingRelease {
+    VmaAllocator allocator;
+    HandleType handle;
+    VmaAllocation allocation;
+    u64 timeline;
+};
+
+std::mutex deletion_mutex;
+std::atomic<u64> deletion_timeline{1};
+std::vector<PendingRelease<VkImage>> pending_images;
+std::vector<PendingRelease<VkBuffer>> pending_buffers;
+
+template <typename HandleType>
+void PushPendingRelease(std::vector<PendingRelease<HandleType>>& pending, VmaAllocator allocator,
+                        HandleType handle, VmaAllocation allocation) noexcept {
+    std::scoped_lock lock{deletion_mutex};
+    pending.push_back(PendingRelease<HandleType>{
+        .allocator = allocator,
+        .handle = handle,
+        .allocation = allocation,
+        .timeline = deletion_timeline.load(std::memory_order_acquire),
+    });
+}
+
+template <typename HandleType>
+void ExtractReleased(std::vector<PendingRelease<HandleType>>& pending,
+                     std::vector<PendingRelease<HandleType>>& released, u64 completed_value) {
+    const auto split = std::partition(pending.begin(), pending.end(),
+                                      [completed_value](const PendingRelease<HandleType>& entry) {
+                                          return entry.timeline > completed_value;
+                                      });
+    released.assign(split, pending.end());
+    pending.erase(split, pending.end());
+}
+
+void DrainDeletionQueue(u64 completed_value) noexcept {
+    std::vector<PendingRelease<VkImage>> images;
+    std::vector<PendingRelease<VkBuffer>> buffers;
+    {
+        std::scoped_lock lock{deletion_mutex};
+        ExtractReleased(pending_images, images, completed_value);
+        ExtractReleased(pending_buffers, buffers, completed_value);
+    }
+    for (const auto& entry : images) {
+        vmaDestroyImage(entry.allocator, entry.handle, entry.allocation);
+    }
+    for (const auto& entry : buffers) {
+        vmaDestroyBuffer(entry.allocator, entry.handle, entry.allocation);
+    }
+}
 
 template <typename Func>
 void SortPhysicalDevices(std::vector<VkPhysicalDevice>& devices, const InstanceDispatch& dld,
@@ -515,14 +570,26 @@ bool OnAllocatorOwnerThread() noexcept {
            allocator_owner_thread == std::this_thread::get_id();
 }
 
+void SetDeletionTimeline(u64 value) noexcept {
+    deletion_timeline.store(value, std::memory_order_release);
+}
+
+void TickDeletionQueue(u64 completed_value) noexcept {
+    DEBUG_ASSERT(OnAllocatorOwnerThread());
+    DrainDeletionQueue(completed_value);
+}
+
+void FlushDeletionQueue() noexcept {
+    DrainDeletionQueue((std::numeric_limits<u64>::max)());
+}
+
 void Image::SetObjectNameEXT(const char* name) const {
     SetObjectName(dld, owner, handle, VK_OBJECT_TYPE_IMAGE, name);
 }
 
 void Image::Release() const noexcept {
     if (handle) {
-        DEBUG_ASSERT(OnAllocatorOwnerThread());
-        vmaDestroyImage(allocator, handle, allocation);
+        PushPendingRelease(pending_images, allocator, handle, allocation);
     }
 }
 
@@ -544,8 +611,7 @@ void Buffer::SetObjectNameEXT(const char* name) const {
 
 void Buffer::Release() const noexcept {
     if (handle) {
-        DEBUG_ASSERT(OnAllocatorOwnerThread());
-        vmaDestroyBuffer(allocator, handle, allocation);
+        PushPendingRelease(pending_buffers, allocator, handle, allocation);
     }
 }
 

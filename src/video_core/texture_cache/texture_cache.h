@@ -969,7 +969,7 @@ void TextureCache<P>::CommitAsyncFlushes() {
 
 template <class P>
 void TextureCache<P>::PopAsyncFlushes() {
-    FlushEvictionDownloads();
+    TickEvictionDownloads(runtime.CompletedSyncPoint());
     if (committed_downloads.empty()) {
         return;
     }

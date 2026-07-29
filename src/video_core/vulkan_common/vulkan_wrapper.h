@@ -135,6 +135,12 @@ void SetAllocatorOwnerThread();
 
 [[nodiscard]] bool OnAllocatorOwnerThread() noexcept;
 
+void SetDeletionTimeline(u64 value) noexcept;
+
+void TickDeletionQueue(u64 completed_value) noexcept;
+
+void FlushDeletionQueue() noexcept;
+
 /// Throws a Vulkan exception if result is not success.
 inline void Check(VkResult result) {
     if (result != VK_SUCCESS) {

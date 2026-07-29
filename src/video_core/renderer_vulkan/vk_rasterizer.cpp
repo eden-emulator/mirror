@@ -230,6 +230,9 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
         if (freed < bytes) {
             freed += buffer_cache.ReclaimMemory(bytes - freed, false);
         }
+        auto& master_semaphore = scheduler.GetMasterSemaphore();
+        master_semaphore.Refresh();
+        vk::TickDeletionQueue(master_semaphore.KnownGpuTick());
         return freed;
     });
 }
@@ -892,6 +895,9 @@ void RasterizerVulkan::FlushCommands() {
 
 void RasterizerVulkan::TickFrame() {
     draw_counter = 0;
+    auto& master_semaphore = scheduler.GetMasterSemaphore();
+    master_semaphore.Refresh();
+    vk::TickDeletionQueue(master_semaphore.KnownGpuTick());
     guest_descriptor_queue.TickFrame();
     compute_pass_descriptor_queue.TickFrame();
     fence_manager.TickFrame();
