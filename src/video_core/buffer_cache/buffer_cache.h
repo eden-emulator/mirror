@@ -61,9 +61,7 @@ u64 BufferCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
         return 0;
     }
     in_reclaim = true;
-    const size_t sentenced_before = sentenced_buffers.Size();
     sentenced_buffers.Reclaim(runtime.CompletedSyncPoint());
-    const bool drained = sentenced_buffers.Size() != sentenced_before;
     u64 freed = 0;
     const auto clean_up = [&](BufferId buffer_id) {
         if (freed >= target_bytes) {
@@ -88,7 +86,7 @@ u64 BufferCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
     sentenced_buffers.Reclaim(runtime.CompletedSyncPoint());
     in_reclaim = false;
     usage_refresh_countdown = 0;
-    reclaim_stalled = freed == 0 && !drained;
+    reclaim_stalled = freed == 0;
     return freed;
 }
 
@@ -103,7 +101,7 @@ void BufferCache<P>::EnsureHeadroom(bool allow_download) {
         return;
     }
     const u64 target = (limit / 100) * RECLAIM_TARGET_PERCENT;
-    ReclaimMemory(usage - target, allow_download);
+    ReclaimMemory((std::min)(usage - target, total_used_memory), allow_download);
 }
 
 template <class P>
