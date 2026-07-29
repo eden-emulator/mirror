@@ -56,6 +56,7 @@ namespace {
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_DISCARD = true;
+constexpr bool ENABLE_MSAA_DEPTH_RESOLVE = false;
 
 constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     if (color == std::array<float, 4>{0, 0, 0, 0}) {
@@ -2882,14 +2883,15 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
         (!has_stencil || (stencil_mode != VK_RESOLVE_MODE_NONE &&
                           (runtime.device.IsIndependentResolveSupported() ||
                            depth_mode == stencil_mode)));
-    const bool do_resolve_depth =
-        samples != VK_SAMPLE_COUNT_1_BIT && has_depth && runtime.device.IsTiler() &&
-        runtime.device.IsKhrDynamicRenderingSupported() && resolve_modes_compatible;
+    const bool msaa_depth =
+        samples != VK_SAMPLE_COUNT_1_BIT && has_depth && runtime.device.IsTiler();
+    const bool do_resolve_depth = ENABLE_MSAA_DEPTH_RESOLVE && msaa_depth &&
+                                  runtime.device.IsKhrDynamicRenderingSupported() &&
+                                  resolve_modes_compatible;
 
     discard_msaa_color =
         ENABLE_MSAA_RESOLVE_CONSUME && ENABLE_MSAA_COLOR_DISCARD && do_resolve_color;
-    discard_msaa_depth =
-        ENABLE_MSAA_RESOLVE_CONSUME && ENABLE_MSAA_DEPTH_DISCARD && do_resolve_depth;
+    discard_msaa_depth = ENABLE_MSAA_RESOLVE_CONSUME && ENABLE_MSAA_DEPTH_DISCARD && msaa_depth;
 
     render_pass_key = renderpass_key;
     render_pass_cache = &runtime.render_pass_cache;

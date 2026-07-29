@@ -438,10 +438,17 @@ void RasterizerVulkan::Clear(u32 layer_count) {
     const bool ds_deferrable =
         !ds_used || ((!framebuffer->HasAspectDepthBit() || use_depth) &&
                      (!framebuffer->HasAspectStencilBit() || use_stencil) && !stencil_partial);
-    const bool can_defer_clear = ENABLE_DEFERRED_CLEAR && !regs.clear_control.use_scissor &&
-                                 regs.clear_surface.layer == 0 &&
-                                 !scheduler.IsRenderPassActive() &&
-                                 (!use_color || color_full_channels) && ds_deferrable;
+    const bool clear_shape_deferrable = ENABLE_DEFERRED_CLEAR &&
+                                        !regs.clear_control.use_scissor &&
+                                        regs.clear_surface.layer == 0 &&
+                                        (!use_color || color_full_channels) && ds_deferrable;
+    // An open pass normally blocks deferral, which drops the clear to ClearAttachments inside the
+    // pass and also loses the MSAA store discard, since that only applies when a clear is folded
+    // into the begin. A pass whose BeginRendering has not been recorded yet can be retracted for
+    // free, so the clear becomes a load op after all. Only retract when it will actually be used.
+    const bool can_defer_clear =
+        clear_shape_deferrable &&
+        (!scheduler.IsRenderPassActive() || scheduler.RetractUnrecordedRenderPass());
     if (!can_defer_clear) {
         scheduler.RequestRenderpass(framebuffer);
     }

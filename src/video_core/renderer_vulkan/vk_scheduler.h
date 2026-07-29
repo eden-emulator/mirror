@@ -112,11 +112,16 @@ public:
     template <typename T>
         requires std::is_invocable_v<T, vk::CommandBuffer>
     void Record(T&& c) {
+        if (pending_begin) {
+            FlushPendingRenderPass();
+        }
         this->RecordWithUploadBuffer(
             [command = std::move(c)](vk::CommandBuffer cmdbuf, vk::CommandBuffer) {
                 command(cmdbuf);
             });
     }
+
+    bool RetractUnrecordedRenderPass();
 
     /// Returns the current command buffer tick.
     [[nodiscard]] u64 CurrentTick() const noexcept {
@@ -318,6 +323,8 @@ private:
 
     void RecordDynamicBegin(const DeferredClear* clear);
 
+    void FlushPendingRenderPass();
+
     void EndRenderPass();
 
     void AcquireNewChunk();
@@ -334,6 +341,10 @@ private:
     vk::CommandBuffer current_upload_cmdbuf;
 
     DeferredClear deferred_clear;
+
+    bool pending_begin = false;
+    bool has_pending_begin_clear = false;
+    DeferredClear pending_begin_clear;
 
     std::unique_ptr<CommandChunk> chunk;
     std::function<void()> on_submit;
