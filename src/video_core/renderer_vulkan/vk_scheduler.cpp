@@ -536,7 +536,7 @@ void Scheduler::EndRenderPass()
         Record([num_images = num_renderpass_images,
                        images = renderpass_images,
                        ranges = renderpass_image_ranges,
-                       has_transform_feedback = device.IsExtTransformFeedbackSupported(),
+                       has_transform_feedback = state.uses_transform_feedback,
                        dynamic_rendering = device.IsKhrDynamicRenderingSupported()](
                           vk::CommandBuffer cmdbuf) {
             std::array<VkImageMemoryBarrier, 9> barriers;
@@ -599,6 +599,7 @@ void Scheduler::EndRenderPass()
         state.framebuffer = VkFramebuffer{};
         state.attachment_views = {};
         state.rendering = false;
+        state.uses_transform_feedback = false;
         num_renderpass_images = 0;
     }
 

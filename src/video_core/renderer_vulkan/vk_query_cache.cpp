@@ -919,7 +919,7 @@ private:
             return;
         }
         has_flushed_end_pending = true;
-        // Refresh buffers state before beginning transform feedback so counters are up-to-date
+        scheduler.MarkTransformFeedbackUsed();
         UpdateBuffers();
         if (!has_started || buffers_count == 0) {
             // No counter buffers available: begin without counters
