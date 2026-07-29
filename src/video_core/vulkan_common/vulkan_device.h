@@ -56,6 +56,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
     FEATURE(EXT, DepthBiasControl, DEPTH_BIAS_CONTROL, depth_bias_control)                         \
     FEATURE(EXT, DepthClampZeroOne, DEPTH_CLAMP_ZERO_ONE, depth_clamp_zero_one)                   \
     FEATURE(EXT, DepthClipControl, DEPTH_CLIP_CONTROL, depth_clip_control)                         \
+    FEATURE(EXT, DepthClipEnable, DEPTH_CLIP_ENABLE, depth_clip_enable)                            \
     FEATURE(EXT, ExtendedDynamicState, EXTENDED_DYNAMIC_STATE, extended_dynamic_state)             \
     FEATURE(EXT, ExtendedDynamicState2, EXTENDED_DYNAMIC_STATE_2, extended_dynamic_state2)         \
     FEATURE(EXT, ExtendedDynamicState3, EXTENDED_DYNAMIC_STATE_3, extended_dynamic_state3)         \
@@ -616,6 +617,11 @@ FN_MAX_LIMIT_LIST
     /// Returns true if the device supports VK_EXT_depth_clamp_zero_one.
     bool IsExtDepthClampZeroOneSupported() const {
         return extensions.depth_clamp_zero_one;
+    }
+
+    /// Returns true if the device supports VK_EXT_depth_clip_enable.
+    bool IsExtDepthClipEnableSupported() const {
+        return extensions.depth_clip_enable;
     }
 
     /// Returns true if the device supports VK_EXT_depth_bias_control.

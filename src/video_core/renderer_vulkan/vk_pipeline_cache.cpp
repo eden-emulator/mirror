@@ -515,6 +515,8 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
     dynamic_features.has_dynamic_state3_depth_clamp_enable =
         dynamic_features.has_extended_dynamic_state_3_enables &&
         device.SupportsDynamicState3DepthClampEnable();
+    dynamic_features.has_depth_clip_enable = 
+        device.IsExtDepthClipEnableSupported();
     dynamic_features.has_dynamic_state3_logic_op_enable =
         dynamic_features.has_extended_dynamic_state_3_enables &&
         device.SupportsDynamicState3LogicOpEnable();
@@ -527,7 +529,8 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
         device.IsExtVertexInputDynamicStateSupported() &&
         Settings::values.vertex_input_dynamic_state.GetValue();
 
-    dynamic_features.has_provoking_vertex = device.IsExtProvokingVertexSupported();
+    dynamic_features.has_provoking_vertex =
+        device.IsExtProvokingVertexSupported();
     dynamic_features.has_provoking_vertex_first_mode =
         device.SupportsProvokingVertexFirstMode();
     dynamic_features.has_provoking_vertex_last_mode =

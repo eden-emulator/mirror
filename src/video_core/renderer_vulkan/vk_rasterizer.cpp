@@ -103,26 +103,8 @@ VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t in
         .maxDepth = src.translate_z + src.scale_z,
     };
     if (!device.IsExtDepthRangeUnrestrictedSupported()) {
-        const float requested_min = viewport.minDepth;
-        const float requested_max = viewport.maxDepth;
-        viewport.minDepth = std::clamp(requested_min, 0.0f, 1.0f);
-        viewport.maxDepth = std::clamp(requested_max, 0.0f, 1.0f);
-        if (viewport.minDepth != requested_min || viewport.maxDepth != requested_max) {
-            static float last_min = std::numeric_limits<float>::quiet_NaN();
-            static float last_max = std::numeric_limits<float>::quiet_NaN();
-            if (requested_min != last_min || requested_max != last_max) {
-                last_min = requested_min;
-                last_max = requested_max;
-                LOG_WARNING(Render_Vulkan,
-                            "Viewport {} depth range squashed: requested [{}, {}] applied [{}, {}] "
-                            "translate_z={} scale_z={} depth_mode={} clamp_zero_one={}",
-                            index, requested_min, requested_max, viewport.minDepth,
-                            viewport.maxDepth, src.translate_z, src.scale_z,
-                            regs.depth_mode == Maxwell::DepthMode::MinusOneToOne ? "MinusOneToOne"
-                                                                                 : "ZeroToOne",
-                            device.IsExtDepthClampZeroOneSupported());
-            }
-        }
+        viewport.minDepth = std::clamp(viewport.minDepth, 0.0f, 1.0f);
+        viewport.maxDepth = std::clamp(viewport.maxDepth, 0.0f, 1.0f);
     }
     return viewport;
 }
@@ -1680,12 +1662,7 @@ void RasterizerVulkan::UpdateDepthClampEnable(Tegra::Engines::Maxwell3D::Regs& r
     if (!device.SupportsDynamicState3DepthClampEnable()) {
         return;
     }
-    bool is_enabled = !(regs.viewport_clip_control.geometry_clip ==
-                            Maxwell::ViewportClipControl::GeometryClip::Passthrough ||
-                        regs.viewport_clip_control.geometry_clip ==
-                            Maxwell::ViewportClipControl::GeometryClip::FrustumXYZ ||
-                        regs.viewport_clip_control.geometry_clip ==
-                            Maxwell::ViewportClipControl::GeometryClip::FrustumZ);
+    const bool is_enabled = IsDepthClampEnabled(regs, device.IsExtDepthClipEnableSupported());
     scheduler.Record(
         [is_enabled](vk::CommandBuffer cmdbuf) { cmdbuf.SetDepthClampEnableEXT(is_enabled); });
 }

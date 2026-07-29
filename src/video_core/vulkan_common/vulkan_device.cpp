@@ -1241,6 +1241,10 @@ void Device::RemoveUnsuitableExtensions() {
     extensions.depth_clip_control = features.depth_clip_control.depthClipControl;
     RemoveExtensionFeatureIfUnsuitable(extensions.depth_clip_control, features.depth_clip_control,
                                        VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
+    // VK_EXT_depth_clip_enable
+    extensions.depth_clip_enable = features.depth_clip_enable.depthClipEnable;
+    RemoveExtensionFeatureIfUnsuitable(extensions.depth_clip_enable, features.depth_clip_enable,
+                                       VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME);
 
     // VK_EXT_extended_dynamic_state
     extensions.extended_dynamic_state = features.extended_dynamic_state.extendedDynamicState;

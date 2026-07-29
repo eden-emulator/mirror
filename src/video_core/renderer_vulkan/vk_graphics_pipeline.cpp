@@ -805,6 +805,16 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
     if (device.IsExtProvokingVertexSupported()) {
         provoking_vertex.pNext = std::exchange(rasterization_ci.pNext, &provoking_vertex);
     }
+    VkPipelineRasterizationDepthClipStateCreateInfoEXT depth_clip_state{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT,
+        .pNext = nullptr,
+        .flags = 0,
+        .depthClipEnable = static_cast<VkBool32>(dynamic.depth_clip_disabled == 0 ? VK_TRUE
+                                                                                  : VK_FALSE),
+    };
+    if (device.IsExtDepthClipEnableSupported()) {
+        depth_clip_state.pNext = std::exchange(rasterization_ci.pNext, &depth_clip_state);
+    }
 
     const bool supports_alpha_output = fragment_has_color0_output;
     const bool alpha_to_one_supported = device.SupportsAlphaToOne();
