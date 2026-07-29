@@ -74,6 +74,11 @@ public:
         return state.renderpass != VK_NULL_HANDLE;
     }
 
+    /// Flags that transform feedback writes have been recorded since the last render pass end.
+    void MarkTransformFeedbackUsed() noexcept {
+        state.uses_transform_feedback = true;
+    }
+
     /// Update the pipeline to the current execution context.
     bool UpdateGraphicsPipeline(GraphicsPipeline* pipeline);
 
@@ -267,6 +272,7 @@ private:
         bool is_rescaling = false;
         bool rescaling_defined = false;
         bool needs_state_enable_refresh = false;
+        bool uses_transform_feedback = false;
     };
 
     struct DeferredClear {

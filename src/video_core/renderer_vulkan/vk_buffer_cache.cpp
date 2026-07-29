@@ -654,6 +654,7 @@ void BufferCacheRuntime::BindTransformFeedbackBuffer(u32 index, VkBuffer buffer,
         offset = 0;
         size = 0;
     }
+    scheduler.MarkTransformFeedbackUsed();
     scheduler.Record([index, buffer, offset, size](vk::CommandBuffer cmdbuf) {
         const VkDeviceSize vk_offset = offset;
         const VkDeviceSize vk_size = size;
@@ -666,19 +667,26 @@ void BufferCacheRuntime::BindTransformFeedbackBuffers(VideoCommon::HostBindings<
         // Already logged in the rasterizer
         return;
     }
-    boost::container::static_vector<VkBuffer, VideoCommon::NUM_VERTEX_BUFFERS> buffer_handles(bindings.buffers.size());
-    for (u32 i = 0; i < bindings.buffers.size(); ++i) {
+    const u32 count = std::min<u32>(static_cast<u32>(bindings.buffers.size()),
+                                    VideoCommon::NUM_TRANSFORM_FEEDBACK_BUFFERS);
+    std::array<VkBuffer, VideoCommon::NUM_TRANSFORM_FEEDBACK_BUFFERS> handles{};
+    std::array<VkDeviceSize, VideoCommon::NUM_TRANSFORM_FEEDBACK_BUFFERS> offsets{};
+    std::array<VkDeviceSize, VideoCommon::NUM_TRANSFORM_FEEDBACK_BUFFERS> sizes{};
+    for (u32 i = 0; i < count; ++i) {
         auto handle = bindings.buffers[i]->Handle();
         if (handle == VK_NULL_HANDLE) {
             ReserveNullBuffer();
             handle = *null_buffer;
-            bindings.offsets[i] = 0;
-            bindings.sizes[i] = 0;
+        } else {
+            offsets[i] = bindings.offsets[i];
+            sizes[i] = bindings.sizes[i];
         }
-        buffer_handles[i] = handle;
+        handles[i] = handle;
     }
-    scheduler.Record([bindings_ = std::move(bindings), buffer_handles_ = std::move(buffer_handles)](vk::CommandBuffer cmdbuf) {
-        cmdbuf.BindTransformFeedbackBuffersEXT(0, u32(buffer_handles_.size()), buffer_handles_.data(), bindings_.offsets.data(), bindings_.sizes.data());
+    scheduler.MarkTransformFeedbackUsed();
+    scheduler.Record([count, handles, offsets, sizes](vk::CommandBuffer cmdbuf) {
+        cmdbuf.BindTransformFeedbackBuffersEXT(0, count, handles.data(), offsets.data(),
+                                               sizes.data());
     });
 }
 
