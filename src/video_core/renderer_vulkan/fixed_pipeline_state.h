@@ -30,6 +30,7 @@ struct DynamicFeatures {
     bool has_extended_dynamic_state_3_blend;
     bool has_extended_dynamic_state_3_enables;
     bool has_dynamic_state3_depth_clamp_enable;
+    bool has_depth_clip_enable;
     bool has_dynamic_state3_logic_op_enable;
     bool has_dynamic_state3_line_stipple_enable;
     bool has_dynamic_vertex_input;
@@ -165,6 +166,7 @@ struct FixedPipelineState {
             BitField<10, 1, u32> logic_op_enable;
             BitField<11, 1, u32> depth_clamp_disabled;
             BitField<12, 1, u32> line_stipple_enable;
+            BitField<13, 1, u32> depth_clip_disabled;
         };
         union {
             u32 raw2;
@@ -297,6 +299,9 @@ struct FixedPipelineState {
 static_assert(std::has_unique_object_representations_v<FixedPipelineState>);
 static_assert(std::is_trivially_copyable_v<FixedPipelineState>);
 static_assert(std::is_trivially_constructible_v<FixedPipelineState>);
+
+bool IsDepthClipEnabled(const Maxwell& regs);
+bool IsDepthClampEnabled(const Maxwell& regs, bool has_depth_clip_enable);
 
 } // namespace Vulkan
 
