@@ -770,6 +770,7 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
 
 Device::~Device() {
     ShutdownGPULogging();
+    vk::FlushDeletionQueue();
     vmaDestroyAllocator(allocator);
 }
 
