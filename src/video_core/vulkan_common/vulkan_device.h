@@ -587,7 +587,6 @@ FN_MAX_LIMIT_LIST
     }
 
     /// Returns true if depth/stencil operations can be performed efficiently.
-    /// Either through shader export or hardware blits.
     bool CanPerformDepthStencilOperations() const {
         return extensions.shader_stencil_export || is_blit_depth24_stencil8_supported ||
                is_blit_depth32_stencil8_supported;
@@ -942,7 +941,7 @@ FN_MAX_LIMIT_LIST
         return extensions.maintenance3;
     }
 
-    static constexpr bool ENABLE_DYNAMIC_RENDERING = false;
+    static constexpr bool ENABLE_DYNAMIC_RENDERING = true;
 
     /// Returns true if the device supports VK_KHR_dynamic_rendering.
     bool IsKhrDynamicRenderingSupported() const {
