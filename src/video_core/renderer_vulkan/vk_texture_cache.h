@@ -133,7 +133,8 @@ public:
     };
 
     [[nodiscard]] VkImageView GetOrCreateResolveShadow(VkImage msaa_image, VkFormat format,
-                                                       VkExtent2D extent, u32 layers);
+                                                       VkExtent2D extent, u32 layers,
+                                                       VkImageAspectFlags aspect);
 
     [[nodiscard]] const ResolveShadow* GetValidResolveShadow(VkImage msaa_image) const;
 
@@ -233,6 +234,18 @@ public:
         return depth_attachment;
     }
 
+    [[nodiscard]] VkImageView DepthResolveAttachment() const noexcept {
+        return depth_resolve_attachment;
+    }
+
+    [[nodiscard]] VkResolveModeFlagBits DepthResolveMode() const noexcept {
+        return depth_resolve_mode;
+    }
+
+    [[nodiscard]] VkResolveModeFlagBits StencilResolveMode() const noexcept {
+        return stencil_resolve_mode;
+    }
+
     [[nodiscard]] VkFormat DepthAttachmentFormat() const noexcept {
         return depth_attachment_format;
     }
@@ -312,6 +325,9 @@ private:
     std::array<VkImageView, NUM_RT> color_resolve_attachments{};
     std::array<VkResolveModeFlagBits, NUM_RT> color_resolve_modes{};
     VkImageView depth_attachment{};
+    VkImageView depth_resolve_attachment{};
+    VkResolveModeFlagBits depth_resolve_mode = VK_RESOLVE_MODE_NONE;
+    VkResolveModeFlagBits stencil_resolve_mode = VK_RESOLVE_MODE_NONE;
     VkFormat depth_attachment_format = VK_FORMAT_UNDEFINED;
     u32 num_color_attachments = 0;
     u32 layer_count = 1;

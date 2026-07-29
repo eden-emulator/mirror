@@ -107,6 +107,9 @@ void Scheduler::BeginDynamicRendering(const Framebuffer* framebuffer, const Defe
     state.attachment_views = attachment_views;
     state.color_resolve_views = framebuffer->ColorResolveAttachments();
     state.color_resolve_modes = framebuffer->ColorResolveModes();
+    state.depth_resolve_view = framebuffer->DepthResolveAttachment();
+    state.depth_resolve_mode = framebuffer->DepthResolveMode();
+    state.stencil_resolve_mode = framebuffer->StencilResolveMode();
     state.discards_msaa_color = framebuffer->DiscardsMsaaColor();
     state.discards_msaa_depth = framebuffer->DiscardsMsaaDepth();
     state.render_area = render_area;
@@ -453,9 +456,13 @@ void Scheduler::RecordDynamicBegin(const DeferredClear* clear) {
     const bool ds_clear = clear != nullptr && clear->depth_stencil;
     const VkClearValue ds_clear_value = clear ? clear->depth_stencil_value : VkClearValue{};
     const bool ds_discard = state.discards_msaa_depth;
+    const VkImageView ds_resolve_view = state.depth_resolve_view;
+    const VkResolveModeFlagBits depth_resolve_mode = state.depth_resolve_mode;
+    const VkResolveModeFlagBits stencil_resolve_mode = state.stencil_resolve_mode;
     Record([views, resolve_views, resolve_modes, num_color, has_depth, has_stencil, layers,
             render_area, color_clear_mask, color_discard_mask, color_clear_values, ds_clear,
-            ds_clear_value, ds_discard](vk::CommandBuffer cmdbuf) {
+            ds_clear_value, ds_discard, ds_resolve_view, depth_resolve_mode,
+            stencil_resolve_mode](vk::CommandBuffer cmdbuf) {
         std::array<VkRenderingAttachmentInfo, VideoCommon::NUM_RT> color_infos{};
         for (u32 index = 0; index < num_color; ++index) {
             const bool clear_slot = ((color_clear_mask >> index) & 1u) != 0;
@@ -477,17 +484,37 @@ void Scheduler::RecordDynamicBegin(const DeferredClear* clear) {
                 .clearValue = clear_slot ? color_clear_values[index] : VkClearValue{},
             };
         }
+        const bool has_ds_resolve = ds_resolve_view != VK_NULL_HANDLE;
+        const VkAttachmentLoadOp ds_load_op = ds_clear ? VK_ATTACHMENT_LOAD_OP_CLEAR
+                                              : ds_discard ? VK_ATTACHMENT_LOAD_OP_DONT_CARE
+                                                           : VK_ATTACHMENT_LOAD_OP_LOAD;
+        const VkAttachmentStoreOp ds_store_op =
+            ds_discard ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE;
         const VkRenderingAttachmentInfo depth_info{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .pNext = nullptr,
             .imageView = views[8],
             .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
-            .resolveMode = VK_RESOLVE_MODE_NONE,
-            .resolveImageView = VK_NULL_HANDLE,
-            .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .loadOp = ds_clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD,
-            .storeOp = ds_discard ? VK_ATTACHMENT_STORE_OP_DONT_CARE
-                                  : VK_ATTACHMENT_STORE_OP_STORE,
+            .resolveMode = has_ds_resolve ? depth_resolve_mode : VK_RESOLVE_MODE_NONE,
+            .resolveImageView = has_ds_resolve ? ds_resolve_view : VK_NULL_HANDLE,
+            .resolveImageLayout =
+                has_ds_resolve ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp = ds_load_op,
+            .storeOp = ds_store_op,
+            .clearValue = ds_clear ? ds_clear_value : VkClearValue{},
+        };
+        // Stencil gets its own struct because its resolve mode may differ from depth's.
+        const VkRenderingAttachmentInfo stencil_info{
+            .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .pNext = nullptr,
+            .imageView = views[8],
+            .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .resolveMode = has_ds_resolve ? stencil_resolve_mode : VK_RESOLVE_MODE_NONE,
+            .resolveImageView = has_ds_resolve ? ds_resolve_view : VK_NULL_HANDLE,
+            .resolveImageLayout =
+                has_ds_resolve ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
+            .loadOp = ds_load_op,
+            .storeOp = ds_store_op,
             .clearValue = ds_clear ? ds_clear_value : VkClearValue{},
         };
         const VkRenderingInfo rendering_info{
@@ -504,7 +531,7 @@ void Scheduler::RecordDynamicBegin(const DeferredClear* clear) {
             .colorAttachmentCount = num_color,
             .pColorAttachments = color_infos.data(),
             .pDepthAttachment = has_depth ? &depth_info : nullptr,
-            .pStencilAttachment = has_stencil ? &depth_info : nullptr,
+            .pStencilAttachment = has_stencil ? &stencil_info : nullptr,
         };
         cmdbuf.BeginRendering(rendering_info);
     });

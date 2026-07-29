@@ -270,6 +270,9 @@ private:
         std::array<VkImageView, 9> attachment_views{};
         std::array<VkImageView, 8> color_resolve_views{};
         std::array<VkResolveModeFlagBits, 8> color_resolve_modes{};
+        VkImageView depth_resolve_view{};
+        VkResolveModeFlagBits depth_resolve_mode = VK_RESOLVE_MODE_NONE;
+        VkResolveModeFlagBits stencil_resolve_mode = VK_RESOLVE_MODE_NONE;
         VkExtent2D render_area = {0, 0};
         GraphicsPipeline* graphics_pipeline = nullptr;
         bool rendering = false;

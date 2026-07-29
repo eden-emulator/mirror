@@ -1006,6 +1006,26 @@ FN_MAX_LIMIT_LIST
         return ENABLE_DYNAMIC_RENDERING && extensions.dynamic_rendering;
     }
 
+    /// Returns the resolve mode to use for multisampled depth.
+    VkResolveModeFlagBits GetDepthResolveMode() const {
+        return PickResolveMode(properties.depth_stencil_resolve.supportedDepthResolveModes);
+    }
+
+    /// Same as GetDepthResolveMode, for the stencil aspect.
+    VkResolveModeFlagBits GetStencilResolveMode() const {
+        return PickResolveMode(properties.depth_stencil_resolve.supportedStencilResolveModes);
+    }
+
+    /// Returns true if depth and stencil may resolve with independent modes.
+    bool IsIndependentResolveSupported() const {
+        return properties.depth_stencil_resolve.independentResolve == VK_TRUE;
+    }
+
+    /// Returns true if one aspect may resolve while the other does not.
+    bool IsIndependentResolveNoneSupported() const {
+        return properties.depth_stencil_resolve.independentResolveNone == VK_TRUE;
+    }
+
     /// Returns true if the device supports VK_KHR_maintenance4.
     bool IsKhrMaintenance4Supported() const {
         return extensions.maintenance4;
@@ -1087,6 +1107,22 @@ FN_MAX_LIMIT_LIST
     void ShutdownGPULogging();
 
 private:
+    /// Picks a usable resolve mode out of a supported-modes mask. SAMPLE_ZERO is preferred because
+    /// it is the only mode the spec guarantees whenever any depth/stencil resolve is supported,
+    /// and averaging depth samples is not meaningful for depth testing anyway.
+    static VkResolveModeFlagBits PickResolveMode(VkResolveModeFlags supported) {
+        if ((supported & VK_RESOLVE_MODE_SAMPLE_ZERO_BIT) != 0) {
+            return VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+        }
+        if ((supported & VK_RESOLVE_MODE_MIN_BIT) != 0) {
+            return VK_RESOLVE_MODE_MIN_BIT;
+        }
+        if ((supported & VK_RESOLVE_MODE_MAX_BIT) != 0) {
+            return VK_RESOLVE_MODE_MAX_BIT;
+        }
+        return VK_RESOLVE_MODE_NONE;
+    }
+
     /// Checks if the physical device is suitable and configures the object state
     /// with all necessary info about its properties.
     bool GetSuitability(bool requires_swapchain);
@@ -1176,6 +1212,7 @@ private:
         VkPhysicalDeviceSubgroupSizeControlProperties subgroup_size_control{};
         VkPhysicalDeviceTransformFeedbackPropertiesEXT transform_feedback{};
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};
+        VkPhysicalDeviceDepthStencilResolveProperties depth_stencil_resolve{};
 
         VkPhysicalDeviceProperties properties{};
     };
