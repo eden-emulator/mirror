@@ -9,10 +9,6 @@
 #include <limits>
 #include <vector>
 
-#ifdef __ANDROID__
-#include <android/api-level.h>
-#endif
-
 #include "common/logging.h"
 #include "common/settings.h"
 #include "common/settings_enums.h"
@@ -176,34 +172,26 @@ bool Swapchain::AcquireNextImage() {
         break;
     }
 
-    const auto wait_with_frame_pacing = [this] {
+#ifdef __ANDROID__
+    scheduler.WaitSubmitted(resource_ticks[image_index]);
+#else
     switch (Settings::values.frame_pacing_mode.GetValue()) {
     case Settings::FramePacingMode::Target_Auto:
-        scheduler.Wait(resource_ticks[image_index]);
+        scheduler.WaitSubmitted(resource_ticks[image_index]);
         break;
     case Settings::FramePacingMode::Target_30:
-        scheduler.Wait(resource_ticks[image_index], 30.0);
+        scheduler.WaitSubmitted(resource_ticks[image_index], 30.0);
         break;
     case Settings::FramePacingMode::Target_60:
-        scheduler.Wait(resource_ticks[image_index], 60.0);
+        scheduler.WaitSubmitted(resource_ticks[image_index], 60.0);
         break;
     case Settings::FramePacingMode::Target_90:
-        scheduler.Wait(resource_ticks[image_index], 90.0);
+        scheduler.WaitSubmitted(resource_ticks[image_index], 90.0);
         break;
     case Settings::FramePacingMode::Target_120:
-        scheduler.Wait(resource_ticks[image_index], 120.0);
+        scheduler.WaitSubmitted(resource_ticks[image_index], 120.0);
         break;
     }
-    };
-
-#ifdef __ANDROID__
-    if (android_get_device_api_level() >= 30) {
-        scheduler.Wait(resource_ticks[image_index]);
-    } else {
-        wait_with_frame_pacing();
-    }
-#else
-    wait_with_frame_pacing();
 #endif
 
     resource_ticks[image_index] = scheduler.CurrentTick();
