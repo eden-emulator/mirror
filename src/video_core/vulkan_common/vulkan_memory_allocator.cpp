@@ -108,7 +108,7 @@ namespace Vulkan {
     vk::Image MemoryAllocator::CreateImage(const VkImageCreateInfo &ci) const
     {
         const VmaAllocationCreateInfo alloc_ci = {
-                .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT,
+                .flags = device.CanReportMemoryUsage() ? VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT : 0u,
                 .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
                 .requiredFlags = 0,
                 .preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -162,7 +162,8 @@ namespace Vulkan {
             && device.GetDriverID() == VK_DRIVER_ID_INTEL_OPEN_SOURCE_MESA)
             ? VK_MEMORY_PROPERTY_HOST_CACHED_BIT : 0;
         const VmaAllocationCreateInfo alloc_ci = {
-            .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT | MemoryUsageVmaFlags(usage),
+            .flags = (device.CanReportMemoryUsage() ? VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT : 0u) |
+                     MemoryUsageVmaFlags(usage),
             .usage = MemoryUsageVma(usage),
             .requiredFlags = 0,
             .preferredFlags = MemoryUsagePreferredVmaFlags(usage) | anv_flags,

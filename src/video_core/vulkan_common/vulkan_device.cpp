@@ -1504,7 +1504,10 @@ void Device::TickAllocatorFrame() const {
 }
 
 u64 Device::GetDeviceMemoryUsage() const {
-    VkPhysicalDeviceMemoryBudgetPropertiesEXT budget;
+    if (!extensions.memory_budget) {
+        return GetMemoryBudgetInfo().allocation_bytes;
+    }
+    VkPhysicalDeviceMemoryBudgetPropertiesEXT budget{};
     budget.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_BUDGET_PROPERTIES_EXT;
     budget.pNext = nullptr;
     physical.GetMemoryProperties(&budget);
