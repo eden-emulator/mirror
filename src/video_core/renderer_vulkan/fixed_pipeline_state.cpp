@@ -11,6 +11,7 @@
 #include <ranges>
 #include "common/cityhash.h"
 #include "common/common_types.h"
+#include "common/logging.h"
 #include "common/settings.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/renderer_vulkan/fixed_pipeline_state.h"
@@ -88,6 +89,27 @@ bool ComputeAttachment0DualSourceBlend(const Maxwell& regs) {
                                          : uses_dual_source(regs.blend);
 }
 
+const char* GeometryClipName(Maxwell::ViewportClipControl::GeometryClip clip) {
+    switch (clip) {
+    case Maxwell::ViewportClipControl::GeometryClip::WZero:
+        return "WZero";
+    case Maxwell::ViewportClipControl::GeometryClip::Passthrough:
+        return "Passthrough";
+    case Maxwell::ViewportClipControl::GeometryClip::FrustumXY:
+        return "FrustumXY";
+    case Maxwell::ViewportClipControl::GeometryClip::FrustumXYZ:
+        return "FrustumXYZ";
+    case Maxwell::ViewportClipControl::GeometryClip::WZeroNoZCull:
+        return "WZeroNoZCull";
+    case Maxwell::ViewportClipControl::GeometryClip::FrustumZ:
+        return "FrustumZ";
+    case Maxwell::ViewportClipControl::GeometryClip::WZeroTriFillOrClip:
+        return "WZeroTriFillOrClip";
+    default:
+        return "Unknown";
+    }
+}
+
 void RefreshXfbState(VideoCommon::TransformFeedbackState& state, const Maxwell& regs) {
     std::ranges::transform(regs.transform_feedback.controls, state.layouts.begin(),
                            [](const auto& layout) {
@@ -104,6 +126,29 @@ void RefreshXfbState(VideoCommon::TransformFeedbackState& state, const Maxwell& 
 void FixedPipelineState::Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFeatures& features) {
     const Maxwell& regs = maxwell3d.regs;
     const auto topology_ = maxwell3d.draw_manager.draw_state.topology;
+
+    {
+        const auto& clip = regs.viewport_clip_control;
+        const u32 clip_key = (static_cast<u32>(clip.geometry_clip.Value()) << 8) |
+                             (static_cast<u32>(clip.geometry_guardband_z.Value()) << 6) |
+                             (static_cast<u32>(clip.geometry_guardband.Value()) << 5) |
+                             (clip.pixel_max_z.Value() << 2) | (clip.pixel_min_z.Value() << 1) |
+                             clip.depth_0_to_1.Value();
+        static u32 last_clip_key = ~0U;
+        if (clip_key != last_clip_key) {
+            last_clip_key = clip_key;
+            LOG_WARNING(Render_Vulkan,
+                        "Viewport clip control: geometry_clip={} guardband_z={} guardband={} "
+                        "depth_0_to_1={} pixel_min_z={} pixel_max_z={} depth_mode={}",
+                        GeometryClipName(clip.geometry_clip.Value()),
+                        static_cast<u32>(clip.geometry_guardband_z.Value()),
+                        static_cast<u32>(clip.geometry_guardband.Value()),
+                        clip.depth_0_to_1.Value(), clip.pixel_min_z.Value(),
+                        clip.pixel_max_z.Value(),
+                        regs.depth_mode == Maxwell::DepthMode::MinusOneToOne ? "MinusOneToOne"
+                                                                            : "ZeroToOne");
+        }
+    }
 
     driver_id = features.driver_id;
     driver_version = features.driver_version;
