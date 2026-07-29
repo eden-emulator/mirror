@@ -529,7 +529,8 @@ private:
     u64 frame_tick = 0;
     u64 last_sampler_gc_frame = (std::numeric_limits<u64>::max)();
 
-    Common::ThreadWorker texture_decode_worker{1, "TextureDecoder"};
+    Common::ThreadWorker texture_decode_worker{1, "TextureDecoder", {},
+                                               Common::ThreadPlacement::Background};
     std::vector<std::unique_ptr<AsyncDecodeContext>> async_decodes;
 
     std::deque<PendingUnswizzle> unswizzle_queue;
