@@ -258,7 +258,7 @@ Result VfsDirectoryServiceWrapper::OpenFile(FileSys::VirtualFile* out_file,
         npath.remove_prefix(1);
     }
 
-    auto file = backing->GetFileRelative(npath);
+    auto file = backing->GetFileRelative(npath, mode);
     if (file == nullptr) {
         return FileSys::ResultPathNotFound;
     }

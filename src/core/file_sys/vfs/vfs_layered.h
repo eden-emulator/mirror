@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -20,7 +23,8 @@ public:
     /// Wrapper function to allow for more efficient handling of dirs.size() == 0, 1 cases.
     static VirtualDir MakeLayeredDirectory(std::vector<VirtualDir> dirs, std::string name = "");
 
-    VirtualFile GetFileRelative(std::string_view path) const override;
+    VirtualFile GetFileRelative(std::string_view path,
+                                OpenMode perms = OpenMode::Default) const override;
     VirtualDir GetDirectoryRelative(std::string_view path) const override;
     VirtualFile GetFile(std::string_view file_name) const override;
     VirtualDir GetSubdirectory(std::string_view subdir_name) const override;

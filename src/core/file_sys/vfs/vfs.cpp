@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
@@ -40,7 +40,7 @@ VfsEntryType VfsFilesystem::GetEntryType(std::string_view path_) const {
 
 VirtualFile VfsFilesystem::OpenFile(std::string_view path_, OpenMode perms) {
     const auto path = Common::FS::SanitizePath(path_);
-    return root->GetFileRelative(path);
+    return root->GetFileRelative(path, perms);
 }
 
 VirtualFile VfsFilesystem::CreateFile(std::string_view path_, OpenMode perms) {
@@ -201,7 +201,7 @@ std::string VfsFile::GetFullPath() const {
     return GetContainingDirectory()->GetFullPath() + '/' + GetName();
 }
 
-VirtualFile VfsDirectory::GetFileRelative(std::string_view path) const {
+VirtualFile VfsDirectory::GetFileRelative(std::string_view path, OpenMode perms) const {
     auto vec = Common::FS::SplitPathComponents(path);
     if (vec.empty()) {
         return nullptr;
@@ -224,7 +224,10 @@ VirtualFile VfsDirectory::GetFileRelative(std::string_view path) const {
         return nullptr;
     }
 
-    return dir->GetFile(vec.back());
+    if (perms == OpenMode::Default) {
+        return dir->GetFile(vec.back());
+    }
+    return dir->GetFileRelative(vec.back(), perms);
 }
 
 VirtualFile VfsDirectory::GetFileAbsolute(std::string_view path) const {

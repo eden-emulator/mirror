@@ -10,6 +10,7 @@
 #include <mutex>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include "common/intrusive_list.h"
 #include "core/file_sys/fs_filesystem.h"
 #include "core/file_sys/vfs/vfs.h"
@@ -49,8 +50,9 @@ public:
     bool DeleteDirectory(std::string_view path) override;
 
 private:
+    using CacheKey = std::pair<std::string, OpenMode>;
     using ReferenceListType = Common::IntrusiveListBaseTraits<FileReference>::ListType;
-    std::map<std::string, std::weak_ptr<VfsFile>, std::less<>> cache;
+    std::map<CacheKey, std::weak_ptr<VfsFile>, std::less<>> cache;
     ReferenceListType open_references;
     ReferenceListType closed_references;
     std::mutex list_lock;
@@ -117,7 +119,8 @@ class RealVfsDirectory : public VfsDirectory {
 public:
     ~RealVfsDirectory() override;
 
-    VirtualFile GetFileRelative(std::string_view relative_path) const override;
+    VirtualFile GetFileRelative(std::string_view relative_path,
+                                OpenMode perms = OpenMode::Default) const override;
     VirtualDir GetDirectoryRelative(std::string_view relative_path) const override;
     VirtualFile GetFile(std::string_view name) const override;
     VirtualDir GetSubdirectory(std::string_view name) const override;

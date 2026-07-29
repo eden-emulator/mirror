@@ -45,17 +45,11 @@ bool IsWithinRoot(std::string_view root, std::string_view full_path) {
 }
 
 constexpr FS::FileAccessMode ModeFlagsToFileAccessMode(OpenMode mode) {
-    switch (mode) {
-    case OpenMode::Read:
-        return FS::FileAccessMode::Read;
-    case OpenMode::Write:
-    case OpenMode::ReadWrite:
-    case OpenMode::AllowAppend:
-    case OpenMode::All:
+    if (True(mode & OpenMode::Write) || True(mode & OpenMode::AllowAppend)) {
         return FS::FileAccessMode::ReadWrite;
-    default:
-        return {};
     }
+
+    return FS::FileAccessMode::Read;
 }
 
 } // Anonymous namespace
@@ -93,9 +87,11 @@ VirtualFile RealVfsFilesystem::OpenFileFromEntry(std::string_view path_, std::op
                                                  std::optional<std::string> parent_path,
                                                  OpenMode perms) {
     const auto path = FS::SanitizePath(path_, FS::DirectorySeparator::PlatformDefault);
+    const auto open_perms = perms == OpenMode::Default ? OpenMode::Read : perms;
     std::scoped_lock lk{list_lock};
 
-    if (auto it = cache.find(path); it != cache.end()) {
+    const CacheKey cache_key{path, open_perms};
+    if (auto it = cache.find(cache_key); it != cache.end()) {
         if (auto file = it->second.lock(); file) {
             return file;
         }
@@ -109,8 +105,9 @@ VirtualFile RealVfsFilesystem::OpenFileFromEntry(std::string_view path_, std::op
     this->InsertReferenceIntoListLocked(*reference);
 
     auto file = std::shared_ptr<RealVfsFile>(
-        new RealVfsFile(*this, std::move(reference), path, perms, size, std::move(parent_path)));
-    cache[path] = file;
+        new RealVfsFile(*this, std::move(reference), path, open_perms, size,
+                        std::move(parent_path)));
+    cache[cache_key] = file;
 
     return file;
 }
@@ -124,7 +121,6 @@ VirtualFile RealVfsFilesystem::CreateFile(std::string_view path_, OpenMode perms
     {
         std::scoped_lock lk{list_lock};
         CloseCachedFileReferenceLocked(path);
-        cache.erase(path);
     }
 
     // Current usages of CreateFile expect to delete the contents of an existing file.
@@ -159,8 +155,6 @@ VirtualFile RealVfsFilesystem::MoveFile(std::string_view old_path_, std::string_
         std::scoped_lock lk{list_lock};
         CloseCachedFileReferenceLocked(old_path);
         CloseCachedFileReferenceLocked(new_path);
-        cache.erase(old_path);
-        cache.erase(new_path);
     }
     if (!FS::RenameFile(old_path, new_path)) {
         return nullptr;
@@ -173,14 +167,14 @@ bool RealVfsFilesystem::DeleteFile(std::string_view path_) {
     {
         std::scoped_lock lk{list_lock};
         CloseCachedFileReferenceLocked(path);
-        cache.erase(path);
     }
     return FS::RemoveFile(path);
 }
 
 VirtualDir RealVfsFilesystem::OpenDirectory(std::string_view path_, OpenMode perms) {
     const auto path = FS::SanitizePath(path_, FS::DirectorySeparator::PlatformDefault);
-    return std::shared_ptr<RealVfsDirectory>(new RealVfsDirectory(*this, path, perms));
+    return std::shared_ptr<RealVfsDirectory>(
+        new RealVfsDirectory(*this, path, perms == OpenMode::Default ? OpenMode::Read : perms));
 }
 
 VirtualDir RealVfsFilesystem::CreateDirectory(std::string_view path_, OpenMode perms) {
@@ -301,26 +295,21 @@ RealVfsFile::~RealVfsFile() {
 }
 
 void RealVfsFilesystem::CloseCachedFileReferenceLocked(const std::string& path) {
-    const auto it = cache.find(path);
-    if (it == cache.end()) {
-        return;
+    for (auto it = cache.lower_bound(CacheKey{path, OpenMode::Default});
+         it != cache.end() && it->first.first == path;) {
+        const auto cached_file = it->second.lock();
+        if (cached_file) {
+            auto* const real_file = static_cast<RealVfsFile*>(cached_file.get());
+            auto& reference = real_file->reference;
+            if (reference && reference->file) {
+                RemoveReferenceFromListLocked(*reference);
+                reference->file.reset();
+                num_open_files--;
+                InsertReferenceIntoListLocked(*reference);
+            }
+        }
+        it = cache.erase(it);
     }
-
-    const auto cached_file = it->second.lock();
-    if (!cached_file) {
-        return;
-    }
-
-    auto* real_file = static_cast<RealVfsFile*>(cached_file.get());
-    auto& reference = real_file->reference;
-    if (!reference || !reference->file) {
-        return;
-    }
-
-    RemoveReferenceFromListLocked(*reference);
-    reference->file.reset();
-    num_open_files--;
-    InsertReferenceIntoListLocked(*reference);
 }
 
 std::string RealVfsFile::GetName() const {
@@ -449,13 +438,14 @@ RealVfsDirectory::RealVfsDirectory(RealVfsFilesystem& base_, const std::string& 
 
 RealVfsDirectory::~RealVfsDirectory() = default;
 
-VirtualFile RealVfsDirectory::GetFileRelative(std::string_view relative_path) const {
+VirtualFile RealVfsDirectory::GetFileRelative(std::string_view relative_path,
+                                              OpenMode open_perms) const {
     const auto full_path = FS::SanitizePath(path + '/' + std::string(relative_path));
     if (!FS::Exists(full_path) || FS::IsDir(full_path)
         || !IsWithinRoot(FS::SanitizePath(path), full_path)) {
         return nullptr;
     }
-    return base.OpenFile(full_path, perms);
+    return base.OpenFile(full_path, open_perms == OpenMode::Default ? perms : open_perms);
 }
 
 VirtualDir RealVfsDirectory::GetDirectoryRelative(std::string_view relative_path) const {

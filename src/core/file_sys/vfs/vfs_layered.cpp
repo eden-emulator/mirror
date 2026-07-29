@@ -27,9 +27,9 @@ VirtualDir LayeredVfsDirectory::MakeLayeredDirectory(std::vector<VirtualDir> dir
     return VirtualDir(new LayeredVfsDirectory(std::move(dirs), std::move(name)));
 }
 
-VirtualFile LayeredVfsDirectory::GetFileRelative(std::string_view path) const {
+VirtualFile LayeredVfsDirectory::GetFileRelative(std::string_view path, OpenMode perms) const {
     for (const auto& layer : dirs) {
-        const auto file = layer->GetFileRelative(path);
+        const auto file = layer->GetFileRelative(path, perms);
         if (file != nullptr)
             return file;
     }

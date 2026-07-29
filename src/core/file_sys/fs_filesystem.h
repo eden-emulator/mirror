@@ -12,6 +12,7 @@
 namespace FileSys {
 
 enum class OpenMode : u32 {
+    Default = 0,
     Read = (1 << 0),
     Write = (1 << 1),
     AllowAppend = (1 << 2),

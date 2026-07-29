@@ -201,7 +201,8 @@ public:
 
     // Retrieves the file located at path as if the current directory was root. Returns nullptr if
     // not found.
-    virtual VirtualFile GetFileRelative(std::string_view path) const;
+    virtual VirtualFile GetFileRelative(std::string_view path,
+                                        OpenMode perms = OpenMode::Default) const;
     // Calls GetFileRelative(path) on the root of the current directory.
     virtual VirtualFile GetFileAbsolute(std::string_view path) const;
 
