@@ -179,7 +179,6 @@ private:
     void UpdateRasterizerDiscardEnable(Tegra::Engines::Maxwell3D::Regs& regs);
     void UpdateConservativeRasterizationMode(Tegra::Engines::Maxwell3D::Regs& regs);
     void UpdateLineStippleEnable(Tegra::Engines::Maxwell3D::Regs& regs);
-    void UpdateLineStipple(Tegra::Engines::Maxwell3D::Regs& regs);
     void UpdateLineRasterizationMode(Tegra::Engines::Maxwell3D::Regs& regs);
     void UpdateDepthBiasEnable(Tegra::Engines::Maxwell3D::Regs& regs);
     void UpdateLogicOpEnable(Tegra::Engines::Maxwell3D::Regs& regs);

@@ -756,6 +756,38 @@ FN_MAX_LIMIT_LIST
         return features.line_rasterization.stippledRectangularLines != VK_FALSE;
     }
 
+    VkLineRasterizationModeEXT GetLineRasterizationMode(bool wants_smooth) const {
+        if (wants_smooth && SupportsSmoothLines()) {
+            return VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT;
+        }
+        if (SupportsRectangularLines()) {
+            return VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT;
+        }
+        return VK_LINE_RASTERIZATION_MODE_DEFAULT_EXT;
+    }
+
+    bool SupportsStippleForMode(VkLineRasterizationModeEXT mode) const {
+        switch (mode) {
+        case VK_LINE_RASTERIZATION_MODE_RECTANGULAR_SMOOTH_EXT:
+            return features.line_rasterization.stippledSmoothLines != VK_FALSE;
+        case VK_LINE_RASTERIZATION_MODE_BRESENHAM_EXT:
+            return features.line_rasterization.stippledBresenhamLines != VK_FALSE;
+        default:
+            return features.line_rasterization.stippledRectangularLines != VK_FALSE;
+        }
+    }
+
+    float ClampLineWidth(float width) const {
+        if (!features.features.wideLines) {
+            return 1.0f;
+        }
+        const auto& range = properties.properties.limits.lineWidthRange;
+        if (!(width >= range[0])) {
+            return range[0];
+        }
+        return width > range[1] ? range[1] : width;
+    }
+
     bool SupportsAlphaToOne() const {
         return features.features.alphaToOne != VK_FALSE;
     }
