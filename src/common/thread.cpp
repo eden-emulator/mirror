@@ -39,6 +39,81 @@
 #include <unistd.h>
 #endif
 
+#ifdef __ANDROID__
+#include <sys/resource.h>
+#include <algorithm>
+#include <fstream>
+#include <utility>
+#include <vector>
+
+namespace {
+[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_URGENT_AUDIO = -19;
+[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_AUDIO = -16;
+[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_URGENT_DISPLAY = -8;
+[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_DISPLAY = -4;
+[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_FOREGROUND = -2;
+[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_MORE_FAVORABLE = -1;
+[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_DEFAULT = 0;
+[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_LESS_FAVORABLE = 1;
+[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_BACKGROUND = 10;
+[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_LOWEST = 19;
+
+constexpr size_t ANDROID_MINIMUM_PERFORMANCE_CORES = 4;
+
+cpu_set_t ComputePerformanceCoreMask() {
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
+
+    cpu_set_t allowed;
+    CPU_ZERO(&allowed);
+    if (sched_getaffinity(gettid(), sizeof(allowed), &allowed) != 0) {
+        return mask;
+    }
+
+    std::vector<std::pair<long, int>> cores;
+    const int total = static_cast<int>(std::thread::hardware_concurrency());
+    for (int cpu = 0; cpu < total; ++cpu) {
+        if (!CPU_ISSET(cpu, &allowed)) {
+            continue;
+        }
+        long max_frequency = 0;
+        std::ifstream file("/sys/devices/system/cpu/cpu" + std::to_string(cpu) +
+                           "/cpufreq/cpuinfo_max_freq");
+        if (!file || !(file >> max_frequency) || max_frequency <= 0) {
+            CPU_ZERO(&mask);
+            return mask;
+        }
+        cores.emplace_back(max_frequency, cpu);
+    }
+    if (cores.empty()) {
+        return mask;
+    }
+
+    std::sort(cores.begin(), cores.end(),
+              [](const auto& lhs, const auto& rhs) { return lhs.first > rhs.first; });
+
+    size_t taken = 0;
+    long cluster_frequency = cores.front().first;
+    for (const auto& [frequency, cpu] : cores) {
+        if (frequency != cluster_frequency) {
+            if (taken >= ANDROID_MINIMUM_PERFORMANCE_CORES) {
+                break;
+            }
+            cluster_frequency = frequency;
+        }
+        CPU_SET(cpu, &mask);
+        ++taken;
+    }
+    return mask;
+}
+
+const cpu_set_t& PerformanceCoreMask() {
+    static const cpu_set_t mask = ComputePerformanceCoreMask();
+    return mask;
+}
+} // Anonymous namespace
+#endif
+
 #include "common/cpu_features.h"
 #ifdef ARCHITECTURE_x86_64
 #ifdef _MSC_VER
@@ -78,6 +153,21 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
         }
     }();
     set_thread_priority(find_thread(NULL), priority);
+#elif defined(__ANDROID__)
+    const int nice_value = [&]() {
+        switch (new_priority) {
+        case ThreadPriority::Low: return ANDROID_THREAD_PRIORITY_BACKGROUND;
+        case ThreadPriority::Normal: return ANDROID_THREAD_PRIORITY_DEFAULT;
+        case ThreadPriority::High: return ANDROID_THREAD_PRIORITY_DISPLAY;
+        case ThreadPriority::VeryHigh: return ANDROID_THREAD_PRIORITY_URGENT_DISPLAY;
+        case ThreadPriority::Critical: return ANDROID_THREAD_PRIORITY_AUDIO;
+        default: return ANDROID_THREAD_PRIORITY_DEFAULT;
+        }
+    }();
+    if (setpriority(PRIO_PROCESS, static_cast<id_t>(gettid()), nice_value) != 0) {
+        LOG_DEBUG(Common, "Could not set thread nice value to {}: {}", nice_value,
+                  GetLastErrorMsg());
+    }
 #else
     pthread_t this_thread = pthread_self();
     const auto scheduling_type = SCHED_OTHER;
@@ -132,29 +222,16 @@ void SetCurrentThreadName(const char* name) {
 #endif
 }
 
-void PinCurrentThreadToPerformanceCore(size_t core_id) {
-    ASSERT(core_id < 4);
-    // If we set a flag for a CPU that doesn't exist, the thread may not be allowed to
-    // run in ANY processor!
-    auto const total_cores = std::thread::hardware_concurrency();
-    if (core_id < total_cores) {
+void SetCurrentThreadToPerformanceCores() {
 #if defined(__ANDROID__)
-        cpu_set_t set;
-        CPU_ZERO(&set);
-        CPU_SET(core_id, &set);
-        sched_setaffinity(pthread_self(), sizeof(set), &set);
-#elif defined(__linux__) || defined(__FreeBSD__)
-        cpu_set_t set;
-        CPU_ZERO(&set);
-        CPU_SET(core_id, &set);
-        pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
-#elif defined(_WIN32)
-        DWORD set = 1UL << core_id;
-        SetThreadAffinityMask(GetCurrentThread(), set);
-#else
-        // No pin functionality implemented
-#endif
+    const cpu_set_t& mask = PerformanceCoreMask();
+    if (CPU_COUNT(&mask) == 0) {
+        return;
     }
+    if (sched_setaffinity(gettid(), sizeof(mask), &mask) != 0) {
+        LOG_DEBUG(Common, "Could not restrict thread to performance cores: {}", GetLastErrorMsg());
+    }
+#endif
 }
 
 #ifdef ARCHITECTURE_x86_64
