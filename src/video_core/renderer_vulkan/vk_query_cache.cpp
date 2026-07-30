@@ -1442,18 +1442,12 @@ void QueryCacheRuntime::HostConditionalRenderingCompareValueImpl(VideoCommon::Lo
             return;
         }
     }
-    bool was_running = impl->is_hcr_running;
-    if (was_running) {
-        PauseHostConditionalRendering();
-    }
+    PauseHostConditionalRendering();
     impl->hcr_setup.buffer = impl->hcr_buffer;
     impl->hcr_setup.offset = impl->hcr_offset;
     impl->hcr_setup.flags = is_equal ? VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT : 0;
     impl->hcr_is_set = true;
     impl->is_hcr_running = false;
-    if (was_running) {
-        ResumeHostConditionalRendering();
-    }
 }
 
 void QueryCacheRuntime::HostConditionalRenderingCompareBCImpl(DAddr address, bool is_equal,
@@ -1470,10 +1464,7 @@ void QueryCacheRuntime::HostConditionalRenderingCompareBCImpl(DAddr address, boo
         to_resolve = buffer->Handle();
         to_resolve_offset = static_cast<u32>(offset);
     }
-    bool was_running = impl->is_hcr_running;
-    if (was_running) {
-        PauseHostConditionalRendering();
-    }
+    PauseHostConditionalRendering();
     impl->conditional_resolve_pass->Resolve(*impl->hcr_resolve_buffer, to_resolve,
                                             to_resolve_offset, compare_to_zero);
     impl->hcr_setup.buffer = *impl->hcr_resolve_buffer;
@@ -1481,9 +1472,6 @@ void QueryCacheRuntime::HostConditionalRenderingCompareBCImpl(DAddr address, boo
     impl->hcr_setup.flags = is_equal ? 0 : VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT;
     impl->hcr_is_set = true;
     impl->is_hcr_running = false;
-    if (was_running) {
-        ResumeHostConditionalRendering();
-    }
 }
 
 bool QueryCacheRuntime::HostConditionalRenderingCompareValue(VideoCommon::LookupData object_1,

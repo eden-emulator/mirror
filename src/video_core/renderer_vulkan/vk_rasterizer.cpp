@@ -377,7 +377,6 @@ void RasterizerVulkan::DrawTexture() {
 
     UpdateDynamicStates();
 
-    query_cache.NotifySegment(true);
     query_cache.CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, maxwell3d->regs.zpass_pixel_count_enable);
     const auto& draw_texture_state = maxwell3d->draw_manager.draw_texture_state;
     const auto& sampler = texture_cache.GetSampler(draw_texture_state.src_sampler, false);
@@ -453,7 +452,6 @@ void RasterizerVulkan::Clear(u32 layer_count) {
         scheduler.RequestRenderpass(framebuffer);
     }
 
-    query_cache.NotifySegment(true);
     query_cache.CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, maxwell3d->regs.zpass_pixel_count_enable);
     u32 up_scale = 1;
     u32 down_shift = 0;

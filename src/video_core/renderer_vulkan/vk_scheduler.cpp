@@ -627,6 +627,7 @@ void Scheduler::EndPendingOperations() {
 void Scheduler::EndRenderPass()
     {
         RealizeDeferredClear();
+        query_cache->NotifySegment(false);
         if (!state.rendering) {
             return;
         }
@@ -640,7 +641,6 @@ void Scheduler::EndRenderPass()
         }
 
         query_cache->CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, false);
-        query_cache->NotifySegment(false);
 
         if (pending_begin) {
             if (!has_pending_begin_clear) {
