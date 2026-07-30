@@ -714,6 +714,17 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
         RemoveExtensionFeature(extensions.vertex_input_dynamic_state, features.vertex_input_dynamic_state, VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
     }
 
+    // VK_EXT_descriptor_buffer requires VK_KHR_buffer_device_address
+    if (extensions.descriptor_buffer && !features.buffer_device_address.bufferDeviceAddress) {
+        LOG_WARNING(Render_Vulkan, "Descriptor buffer needs buffer device address, disabling.");
+        RemoveExtensionFeature(extensions.descriptor_buffer, features.descriptor_buffer,
+                               VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
+    }
+    if (!extensions.descriptor_buffer) {
+        RemoveExtensionFeature(extensions.buffer_device_address, features.buffer_device_address,
+                               VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+    }
+
     logical = vk::Device::Create(physical, queue_cis, ExtensionListForVulkan(loaded_extensions), first_next, dld);
 
     graphics_queue = logical.GetQueue(graphics_family);
@@ -726,6 +737,9 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
     VmaAllocatorCreateFlags flags = VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT;
     if (extensions.memory_budget) {
         flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+    }
+    if (extensions.buffer_device_address) {
+        flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
     }
     const VmaAllocatorCreateInfo allocator_info{
             .flags = flags,
@@ -1104,6 +1118,11 @@ bool Device::GetSuitability(bool requires_swapchain) {
         properties.push_descriptor.sType =
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR;
         SetNext(next, properties.push_descriptor);
+    }
+    if (extensions.descriptor_buffer) {
+        properties.descriptor_buffer.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT;
+        SetNext(next, properties.descriptor_buffer);
     }
     if (extensions.subgroup_size_control || features.subgroup_size_control.subgroupSizeControl) {
         properties.subgroup_size_control.sType =

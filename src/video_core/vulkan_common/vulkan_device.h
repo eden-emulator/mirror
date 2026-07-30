@@ -36,6 +36,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
     FEATURE(EXT, DescriptorIndexing, DESCRIPTOR_INDEXING, descriptor_indexing)                     \
     FEATURE(EXT, HostQueryReset, HOST_QUERY_RESET, host_query_reset)                               \
     FEATURE(KHR, 8BitStorage, 8BIT_STORAGE, bit8_storage)                                          \
+    FEATURE(KHR, BufferDeviceAddress, BUFFER_DEVICE_ADDRESS, buffer_device_address)                \
     FEATURE(KHR, TimelineSemaphore, TIMELINE_SEMAPHORE, timeline_semaphore)
 
 #define FOR_EACH_VK_FEATURE_1_3(FEATURE)                                                           \
@@ -58,6 +59,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
     FEATURE(EXT, DepthClampZeroOne, DEPTH_CLAMP_ZERO_ONE, depth_clamp_zero_one)                   \
     FEATURE(EXT, DepthClipControl, DEPTH_CLIP_CONTROL, depth_clip_control)                         \
     FEATURE(EXT, DepthClipEnable, DEPTH_CLIP_ENABLE, depth_clip_enable)                            \
+    FEATURE(EXT, DescriptorBuffer, DESCRIPTOR_BUFFER, descriptor_buffer)                           \
     FEATURE(EXT, ExtendedDynamicState, EXTENDED_DYNAMIC_STATE, extended_dynamic_state)             \
     FEATURE(EXT, ExtendedDynamicState2, EXTENDED_DYNAMIC_STATE_2, extended_dynamic_state2)         \
     FEATURE(EXT, ExtendedDynamicState3, EXTENDED_DYNAMIC_STATE_3, extended_dynamic_state3)         \
@@ -479,6 +481,21 @@ FN_MAX_LIMIT_LIST
     /// Returns the maximum number of push descriptors.
     u32 MaxPushDescriptors() const {
         return properties.push_descriptor.maxPushDescriptors;
+    }
+
+    /// Returns true if the device supports descriptor buffers.
+    bool IsExtDescriptorBufferSupported() const {
+        return extensions.descriptor_buffer;
+    }
+
+    /// Returns the descriptor buffer properties of the device.
+    const VkPhysicalDeviceDescriptorBufferPropertiesEXT& DescriptorBufferProperties() const {
+        return properties.descriptor_buffer;
+    }
+
+    /// Returns true if the device supports buffer device address.
+    bool IsBufferDeviceAddressSupported() const {
+        return extensions.buffer_device_address;
     }
 
     /// Returns true if formatless image load is supported.
@@ -1209,6 +1226,7 @@ private:
         VkPhysicalDeviceSubgroupProperties subgroup_properties{};
         VkPhysicalDeviceFloatControlsProperties float_controls{};
         VkPhysicalDevicePushDescriptorPropertiesKHR push_descriptor{};
+        VkPhysicalDeviceDescriptorBufferPropertiesEXT descriptor_buffer{};
         VkPhysicalDeviceSubgroupSizeControlProperties subgroup_size_control{};
         VkPhysicalDeviceTransformFeedbackPropertiesEXT transform_feedback{};
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};

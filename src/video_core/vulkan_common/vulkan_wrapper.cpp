@@ -299,6 +299,12 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkUnmapMemory);
     X(vkUpdateDescriptorSetWithTemplate);
     X(vkUpdateDescriptorSets);
+    X(vkGetBufferDeviceAddress);
+    X(vkGetDescriptorSetLayoutSizeEXT);
+    X(vkGetDescriptorSetLayoutBindingOffsetEXT);
+    X(vkGetDescriptorEXT);
+    X(vkCmdBindDescriptorBuffersEXT);
+    X(vkCmdSetDescriptorBufferOffsetsEXT);
     X(vkWaitForFences);
     X(vkWaitSemaphores);
 
