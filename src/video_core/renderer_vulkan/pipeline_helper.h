@@ -246,7 +246,8 @@ inline void PushImageDescriptors(TextureCache& texture_cache,
                 !image_view.SupportsDepthComparison()) {
                 vk_sampler = sampler.HandleWithoutDepthComparison();
             }
-            guest_descriptor_queue.AddSampledImage(vk_image_view, vk_sampler);
+            guest_descriptor_queue.AddSampledImage(vk_image_view, vk_sampler,
+                                                   image_view.SampledLayout());
             const bool element_rescaled{texture_cache.IsRescaling(image_view)};
             is_rescaled |= element_rescaled;
         }

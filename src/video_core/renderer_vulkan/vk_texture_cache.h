@@ -399,6 +399,20 @@ public:
 
     bool EnableStorageUsage();
 
+    [[nodiscard]] VkImageLayout PreferredLayout() const noexcept;
+
+    [[nodiscard]] VkImageLayout CurrentLayout() const noexcept {
+        return current_layout;
+    }
+
+    void SetCurrentLayout(VkImageLayout layout) noexcept {
+        current_layout = layout;
+    }
+
+    void MarkAttachmentUse() noexcept {
+        attachment_used = true;
+    }
+
     bool IsRescaled() const noexcept;
 
     bool ScaleUp(bool ignore = false);
@@ -419,6 +433,8 @@ private:
 
     bool storage_capable = false;
     bool wants_storage = false;
+    bool attachment_used = false;
+    VkImageLayout current_layout = VK_IMAGE_LAYOUT_GENERAL;
 
     vk::Image original_image;
     vk::Image scaled_image;
@@ -470,6 +486,8 @@ public:
                                           Shader::ImageFormat image_format);
 
     [[nodiscard]] bool IsRescaled() const noexcept;
+
+    [[nodiscard]] VkImageLayout SampledLayout() const noexcept;
 
     [[nodiscard]] VkImageView Handle(Shader::TextureType texture_type) const noexcept {
         return *image_views[static_cast<size_t>(texture_type)];

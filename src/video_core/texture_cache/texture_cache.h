@@ -2774,6 +2774,7 @@ void TextureCache<P>::BindRenderTarget(ImageViewId* old_id, ImageViewId new_id) 
             const PendingDownload new_download{true, 0, old_view.image_id};
             uncommitted_downloads.emplace_back(new_download);
         }
+        slot_images[old_view.image_id].MarkAttachmentUse();
     }
     *old_id = new_id;
 }
@@ -2782,6 +2783,7 @@ template <class P>
 std::pair<FramebufferId, ImageViewId> TextureCache<P>::RenderTargetFromImage(
     ImageId image_id, const ImageViewInfo& view_info) {
     const ImageViewId view_id = FindOrEmplaceImageView(image_id, view_info);
+    slot_images[image_id].MarkAttachmentUse();
     const ImageBase& image = slot_images[image_id];
     const bool is_rescaled = True(image.flags & ImageFlagBits::Rescaled);
     const bool is_color = GetFormatType(image.info.format) == SurfaceType::ColorTexture;
