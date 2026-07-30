@@ -12,10 +12,7 @@ ResourcePool::ResourcePool(MasterSemaphore& master_semaphore_, size_t grow_step_
     : master_semaphore{&master_semaphore_}, grow_step{grow_step_} {}
 
 size_t ResourcePool::CommitResource() {
-    // Refresh semaphore to query updated results
-    master_semaphore->Refresh();
-    const u64 gpu_tick = master_semaphore->KnownGpuTick();
-    const auto search = [this, gpu_tick](size_t begin, size_t end) -> std::optional<size_t> {
+    const auto search = [this](size_t begin, size_t end, u64 gpu_tick) -> std::optional<size_t> {
         for (size_t iterator = begin; iterator < end; ++iterator) {
             if (gpu_tick >= ticks[iterator]) {
                 ticks[iterator] = master_semaphore->CurrentTick();
@@ -24,11 +21,17 @@ size_t ResourcePool::CommitResource() {
         }
         return std::nullopt;
     };
-    // Try to find a free resource from the hinted position to the end.
-    std::optional<size_t> found = search(hint_iterator, ticks.size());
+    const auto find_free = [&](u64 gpu_tick) -> std::optional<size_t> {
+        std::optional<size_t> result = search(hint_iterator, ticks.size(), gpu_tick);
+        if (!result) {
+            result = search(0, hint_iterator, gpu_tick);
+        }
+        return result;
+    };
+    std::optional<size_t> found = find_free(master_semaphore->KnownGpuTick());
     if (!found) {
-        // Search from beginning to the hinted position.
-        found = search(0, hint_iterator);
+        master_semaphore->Refresh();
+        found = find_free(master_semaphore->KnownGpuTick());
         if (!found) {
             // Both searches failed, the pool is full; handle it.
             const size_t free_resource = ManageOverflow();

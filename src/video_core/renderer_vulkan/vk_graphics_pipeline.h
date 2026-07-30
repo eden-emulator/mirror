@@ -12,6 +12,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <type_traits>
+#include <vector>
 
 #include "common/thread_worker.h"
 #include "shader_recompiler/shader_info.h"
@@ -20,6 +21,7 @@
 #include "video_core/renderer_vulkan/vk_buffer_cache.h"
 #include "video_core/renderer_vulkan/vk_descriptor_pool.h"
 #include "video_core/renderer_vulkan/vk_texture_cache.h"
+#include "video_core/renderer_vulkan/vk_update_descriptor.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
 
 namespace VideoCore {
@@ -169,6 +171,8 @@ private:
     vk::PipelineLayout pipeline_layout;
     vk::DescriptorUpdateTemplate descriptor_update_template;
     vk::Pipeline pipeline;
+
+    std::vector<DescriptorUpdateEntry> last_descriptor_payload;
 
     std::condition_variable build_condvar;
     std::mutex build_mutex;

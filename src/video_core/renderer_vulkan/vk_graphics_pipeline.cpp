@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <cstring>
 #include <iostream>
 #include <span>
 
@@ -568,8 +569,19 @@ void GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
     }
 
     const void* const descriptor_data{guest_descriptor_queue.UpdateData()};
-    scheduler.Record([this, descriptor_data, bind_pipeline, rescaling_data = rescaling.Data(),
-                      is_rescaling, update_rescaling,
+    bool update_descriptors = true;
+    if (descriptor_set_layout && !uses_push_descriptor) {
+        const auto* const entries = static_cast<const DescriptorUpdateEntry*>(descriptor_data);
+        update_descriptors =
+            bind_pipeline || last_descriptor_payload.size() != num_descriptor_entries ||
+            std::memcmp(last_descriptor_payload.data(), entries,
+                        num_descriptor_entries * sizeof(DescriptorUpdateEntry)) != 0;
+        if (update_descriptors) {
+            last_descriptor_payload.assign(entries, entries + num_descriptor_entries);
+        }
+    }
+    scheduler.Record([this, descriptor_data, bind_pipeline, update_descriptors,
+                      rescaling_data = rescaling.Data(), is_rescaling, update_rescaling,
                       uses_render_area = render_area.uses_render_area,
                       render_area_data = render_area.words](vk::CommandBuffer cmdbuf) {
         if (bind_pipeline) {
@@ -599,7 +611,7 @@ void GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
         if (uses_push_descriptor) {
             cmdbuf.PushDescriptorSetWithTemplateKHR(*descriptor_update_template, *pipeline_layout,
                                                     0, descriptor_data);
-        } else {
+        } else if (update_descriptors) {
             const VkDescriptorSet descriptor_set{descriptor_allocator.Commit()};
             const vk::Device& dev{device.GetLogical()};
             dev.UpdateDescriptorSet(descriptor_set, *descriptor_update_template, descriptor_data);
