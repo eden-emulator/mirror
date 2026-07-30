@@ -252,8 +252,6 @@ public:
         return false;
     }
 
-    void MarkAttachmentUse() noexcept {}
-
     bool IsRescaled() const;
 
     bool ScaleUp(bool ignore = false);

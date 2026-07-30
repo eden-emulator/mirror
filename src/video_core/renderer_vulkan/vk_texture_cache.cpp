@@ -57,7 +57,6 @@ constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_RESOLVE = true;
-constexpr bool ENABLE_OPTIMAL_IMAGE_LAYOUTS = true;
 
 constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     if (color == std::array<float, 4>{0, 0, 0, 0}) {
@@ -2488,7 +2487,6 @@ bool Image::EnableStorageUsage() {
         commit(scaled_image, new_scaled, scaled_info);
     }
     wants_storage = true;
-    current_layout = initialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED;
     storage_image_views.clear();
     storage_image_views.resize(info.resources.levels);
     scale_framebuffer.reset();
@@ -2496,13 +2494,6 @@ bool Image::EnableStorageUsage() {
     scale_view.reset();
     normal_view.reset();
     return true;
-}
-
-VkImageLayout Image::PreferredLayout() const noexcept {
-    if (!ENABLE_OPTIMAL_IMAGE_LAYOUTS || wants_storage || attachment_used) {
-        return VK_IMAGE_LAYOUT_GENERAL;
-    }
-    return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
 bool Image::IsRescaled() const noexcept {
@@ -2839,13 +2830,6 @@ VkImageView ImageView::StorageView(Shader::TextureType texture_type,
 
 bool ImageView::IsRescaled() const noexcept {
     return (*slot_images)[image_id].IsRescaled();
-}
-
-VkImageLayout ImageView::SampledLayout() const noexcept {
-    if (slot_images == nullptr) {
-        return VK_IMAGE_LAYOUT_GENERAL;
-    }
-    return (*slot_images)[image_id].PreferredLayout();
 }
 
 vk::ImageView ImageView::MakeView(VkFormat vk_format, VkImageAspectFlags aspect_mask,
