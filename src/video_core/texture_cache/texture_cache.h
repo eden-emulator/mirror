@@ -598,10 +598,24 @@ void TextureCache<P>::UpdateRenderTargets(bool is_clear) {
         up_scale = Settings::values.resolution_info.up_scale;
         down_shift = Settings::values.resolution_info.down_shift;
     }
-    render_targets.size = Extent2D{
-        (maxwell3d->regs.surface_clip.width * up_scale) >> down_shift,
-        (maxwell3d->regs.surface_clip.height * up_scale) >> down_shift,
+    u32 clip_width = (maxwell3d->regs.surface_clip.width * up_scale) >> down_shift;
+    u32 clip_height = (maxwell3d->regs.surface_clip.height * up_scale) >> down_shift;
+    const auto& resolution = Settings::values.resolution_info;
+    const auto clamp_to_attachment = [&](ImageViewId view_id) {
+        if (!view_id) {
+            return;
+        }
+        const ImageViewBase& view = slot_image_views[view_id];
+        clip_width = (std::min)(clip_width, is_rescaling ? resolution.ScaleUp(view.size.width)
+                                                         : view.size.width);
+        clip_height = (std::min)(clip_height, is_rescaling ? resolution.ScaleUp(view.size.height)
+                                                           : view.size.height);
     };
+    for (size_t index = 0; index < NUM_RT; ++index) {
+        clamp_to_attachment(render_targets.color_buffer_ids[index]);
+    }
+    clamp_to_attachment(depth_buffer_id);
+    render_targets.size = Extent2D{clip_width, clip_height};
     render_targets.is_rescaled = is_rescaling;
 
     if (render_targets != previous_render_targets) {
