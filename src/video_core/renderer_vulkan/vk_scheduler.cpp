@@ -656,7 +656,9 @@ void Scheduler::EndRenderPass()
                        has_transform_feedback = state.uses_transform_feedback,
                        dynamic_rendering = device.IsKhrDynamicRenderingSupported()](
                           vk::CommandBuffer cmdbuf) {
+            const bool use_sync2 = cmdbuf.HasPipelineBarrier2();
             std::array<VkImageMemoryBarrier, 9> barriers;
+            std::array<VkImageMemoryBarrier2, 9> barriers2;
             for (size_t i = 0; i < num_images; ++i) {
                 const VkImageSubresourceRange& range = ranges[i];
                 const bool is_color = (range.aspectMask & VK_IMAGE_ASPECT_COLOR_BIT) != 0;
@@ -674,15 +676,57 @@ void Scheduler::EndRenderPass()
                     src_access |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
                                   | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-                barriers[i] = VkImageMemoryBarrier{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                if (!use_sync2) {
+                    barriers[i] = VkImageMemoryBarrier{
+                            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                            .pNext = nullptr,
+                            .srcAccessMask = src_access,
+                            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT
+                                             | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+                                             | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+                                             | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+                                             | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                            .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                            .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                            .image = images[i],
+                            .subresourceRange = range,
+                    };
+                    continue;
+                }
+
+                VkPipelineStageFlags2 src_stage = 0;
+                VkAccessFlags2 dst_access =
+                    VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT;
+                if (is_color) {
+                    src_stage |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+                    dst_access |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT
+                                  | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+                }
+                if (is_depth_stencil) {
+                    src_stage |= VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT
+                                 | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+                    dst_access |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+                                  | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                }
+                if (!is_color && !is_depth_stencil) {
+                    src_stage = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT
+                                | VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT
+                                | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+                    dst_access |= VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT
+                                  | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT
+                                  | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT
+                                  | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                }
+                barriers2[i] = VkImageMemoryBarrier2{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                         .pNext = nullptr,
-                        .srcAccessMask = src_access,
-                        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT
-                                         | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
-                                         | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-                                         | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
-                                         | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                        .srcStageMask = src_stage,
+                        .srcAccessMask = static_cast<VkAccessFlags2>(src_access),
+                        .dstStageMask = VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT
+                                        | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                        .dstAccessMask = dst_access,
                         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -696,9 +740,14 @@ void Scheduler::EndRenderPass()
             } else {
                 cmdbuf.EndRenderPass();
             }
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
-                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                                   0, nullptr, nullptr, vk::Span(barriers.data(), num_images));
+            if (use_sync2) {
+                cmdbuf.PipelineBarrier2(0, nullptr, nullptr,
+                                        vk::Span(barriers2.data(), num_images));
+            } else {
+                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
+                                       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+                                       0, nullptr, nullptr, vk::Span(barriers.data(), num_images));
+            }
             if (has_transform_feedback) {
                 static constexpr VkMemoryBarrier XFB_OUTPUT_BARRIER{
                     .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,

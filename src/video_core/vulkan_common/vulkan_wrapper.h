@@ -1425,6 +1425,28 @@ public:
         PipelineBarrier(src_stage_mask, dst_stage_mask, dependency_flags, {}, {}, image_barrier);
     }
 
+    [[nodiscard]] bool HasPipelineBarrier2() const noexcept {
+        return dld->vkCmdPipelineBarrier2 != nullptr;
+    }
+
+    void PipelineBarrier2(VkDependencyFlags dependency_flags,
+                          Span<VkMemoryBarrier2> memory_barriers,
+                          Span<VkBufferMemoryBarrier2> buffer_barriers,
+                          Span<VkImageMemoryBarrier2> image_barriers) const noexcept {
+        const VkDependencyInfo dependency_info{
+            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pNext = nullptr,
+            .dependencyFlags = dependency_flags,
+            .memoryBarrierCount = memory_barriers.size(),
+            .pMemoryBarriers = memory_barriers.data(),
+            .bufferMemoryBarrierCount = buffer_barriers.size(),
+            .pBufferMemoryBarriers = buffer_barriers.data(),
+            .imageMemoryBarrierCount = image_barriers.size(),
+            .pImageMemoryBarriers = image_barriers.data(),
+        };
+        dld->vkCmdPipelineBarrier2(handle, &dependency_info);
+    }
+
     void CopyBufferToImage(VkBuffer src_buffer, VkImage dst_image, VkImageLayout dst_image_layout,
                            Span<VkBufferImageCopy> regions) const noexcept {
         dld->vkCmdCopyBufferToImage(handle, src_buffer, dst_image, dst_image_layout, regions.size(),
