@@ -124,14 +124,17 @@ public:
     void AppendNewProcess(KProcess* process);
     void RemoveProcess(KProcess* process);
 
-    /// Makes the given process the new application process.
-    void MakeApplicationProcess(KProcess* process);
+    /// Makes the given process the current application process.
+    void SetApplicationProcess(KProcess* process);
 
     /// Retrieves a pointer to the application process.
     KProcess* ApplicationProcess();
 
     /// Retrieves a const pointer to the application process.
     const KProcess* ApplicationProcess() const;
+
+    /// Retrieves the process with the given process ID, or a null object.
+    KScopedAutoObject<KProcess> GetProcessByProcessId(u64 process_id);
 
     /// Retrieves the list of processes.
     std::list<KScopedAutoObject<KProcess>> GetProcessList();

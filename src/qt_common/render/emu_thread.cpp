@@ -51,7 +51,18 @@ void EmuThread::run() {
             QtCommon::system->Run();
             m_stopped.Reset();
 
-            m_should_run_cv.wait(lk, stop_token, [&] { return !m_should_run; });
+            m_should_run_cv.wait(lk, stop_token, [&] {
+                return !m_should_run || m_pending_shader_cache_title.has_value();
+            });
+
+            if (m_should_run && m_pending_shader_cache_title.has_value()) {
+                const u64 program_id = *m_pending_shader_cache_title;
+                m_pending_shader_cache_title.reset();
+
+                lk.unlock();
+                this->ReloadDiskShaderCache(program_id);
+                lk.lock();
+            }
         } else {
             QtCommon::system->Pause();
             m_stopped.Set();
@@ -65,6 +76,32 @@ void EmuThread::run() {
     // Shutdown the main emulated process
     QtCommon::system->DetachDebugger();
     QtCommon::system->ShutdownMainProcess();
+}
+
+void EmuThread::ReloadDiskShaderCache(u64 program_id) {
+    if (!Settings::values.use_disk_shader_cache.GetValue()) {
+        return;
+    }
+
+    LOG_INFO(Frontend, "Reloading disk shader cache for {:016X}", program_id);
+
+    auto& system = *QtCommon::system;
+    auto& gpu = system.GPU();
+
+    system.Pause();
+    gpu.WaitForIdle();
+    gpu.ObtainContext();
+
+    emit ShaderCacheReloadStarted();
+    emit LoadProgress(VideoCore::LoadCallbackStage::Prepare, 0, 0);
+    system.Renderer().ReadRasterizer()->LoadDiskResources(program_id, m_stop_source.get_token(),
+        [this](VideoCore::LoadCallbackStage stage, std::size_t value, std::size_t total) {
+            emit LoadProgress(stage, value, total);
+        });
+    emit LoadProgress(VideoCore::LoadCallbackStage::Complete, 0, 0);
+    emit ShaderCacheReloadFinished();
+
+    gpu.ReleaseContext();
 }
 
 // Unlock while emitting signals so that the main thread can

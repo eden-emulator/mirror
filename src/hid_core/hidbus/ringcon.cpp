@@ -6,6 +6,7 @@
 
 #include "core/core.h"
 #include "core/hle/kernel/k_event.h"
+#include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/k_readable_event.h"
 #include "core/memory.h"
 #include "hid_core/frontend/emulated_controller.h"
@@ -67,8 +68,10 @@ void RingController::OnUpdate() {
         curr_entry.polling_data.out_size = sizeof(ringcon_value);
         std::memcpy(curr_entry.polling_data.data.data(), &ringcon_value, sizeof(ringcon_value));
 
-        system.ApplicationMemory().WriteBlock(transfer_memory, &enable_sixaxis_data,
-                                              sizeof(enable_sixaxis_data));
+        if (transfer_memory_owner != nullptr) {
+            transfer_memory_owner->GetMemory().WriteBlock(transfer_memory, &enable_sixaxis_data,
+                                                          sizeof(enable_sixaxis_data));
+        }
         break;
     }
     default:

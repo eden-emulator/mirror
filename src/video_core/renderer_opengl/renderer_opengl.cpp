@@ -199,7 +199,10 @@ void RendererOpenGL::RenderScreenshot(std::span<const Tegra::FramebufferConfig> 
         return;
     }
 
-    RenderToBuffer(framebuffers, renderer_settings.screenshot_framebuffer_layout,
+    const auto screenshot_layers = Tegra::FilterLayerStack(
+        framebuffers, renderer_settings.screenshot_layer_stack, screenshot_layer_scratch);
+
+    RenderToBuffer(screenshot_layers, renderer_settings.screenshot_framebuffer_layout,
                    renderer_settings.screenshot_bits);
 
     renderer_settings.screenshot_complete_callback(true);
@@ -208,6 +211,12 @@ void RendererOpenGL::RenderScreenshot(std::span<const Tegra::FramebufferConfig> 
 
 void RendererOpenGL::RenderAppletCaptureLayer(
     std::span<const Tegra::FramebufferConfig> framebuffers) {
+    const auto capture_layers = Tegra::FilterLayerStack(
+        framebuffers, Service::Nvnflinger::LayerStackId::LastFrame, applet_capture_layers);
+
+    if (capture_layers.empty())
+        return;
+
     GLint old_read_fb;
     GLint old_draw_fb;
     glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &old_read_fb);
@@ -217,7 +226,7 @@ void RendererOpenGL::RenderAppletCaptureLayer(
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER,
                               capture_renderbuffer.handle);
 
-    blit_applet->DrawScreen(framebuffers, VideoCore::Capture::Layout, true);
+    blit_applet->DrawScreen(capture_layers, VideoCore::Capture::Layout, true);
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, old_read_fb);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, old_draw_fb);

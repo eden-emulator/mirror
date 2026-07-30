@@ -23,12 +23,17 @@
 #include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/server_manager.h"
+#include "core/hle/service/am/am_results.h"
 #include "core/loader/loader.h"
 
 namespace Service::AOC {
 
 static bool CheckAOCTitleIDMatchesBase(u64 title_id, u64 base) {
     return FileSys::GetBaseTitleID(title_id) == base;
+}
+
+static u64 GetCallerBaseTitleID(Core::System& system, const ClientProcessId& process_id) {
+    return FileSys::GetBaseTitleID(system.ResolveCallerProgramId(*process_id));
 }
 
 static std::vector<u64> AccumulateAOCTitleIDs(Core::System& system) {
@@ -91,7 +96,7 @@ IAddOnContentManager::~IAddOnContentManager() {
 Result IAddOnContentManager::CountAddOnContent(Out<u32> out_count, ClientProcessId process_id) {
     LOG_DEBUG(Service_AOC, "called. process_id={}", process_id.pid);
 
-    const auto current = system.GetApplicationProcessProgramID();
+    const auto current = GetCallerBaseTitleID(system, process_id);
 
     const auto& disabled = Settings::values.disabled_addons[current];
     if (std::find(disabled.begin(), disabled.end(), "DLC") != disabled.end()) {
@@ -112,7 +117,7 @@ Result IAddOnContentManager::ListAddOnContent(Out<u32> out_count,
     LOG_DEBUG(Service_AOC, "called with offset={}, count={}, process_id={}", offset, count,
               process_id.pid);
 
-    const auto current = FileSys::GetBaseTitleID(system.GetApplicationProcessProgramID());
+    const auto current = GetCallerBaseTitleID(system, process_id);
 
     std::vector<u32> out;
     const auto& disabled = Settings::values.disabled_addons[current];
@@ -126,8 +131,7 @@ Result IAddOnContentManager::ListAddOnContent(Out<u32> out_count,
         }
     }
 
-    // TODO(DarkLordZach): Find the correct error code.
-    R_UNLESS(out.size() >= offset, ResultUnknown);
+    R_UNLESS(out.size() >= offset, AM::ResultApplicationRecordNotFound);
 
     *out_count = static_cast<u32>(std::min<size_t>(out.size() - offset, count));
     std::rotate(out.begin(), out.begin() + offset, out.end());
@@ -141,7 +145,7 @@ Result IAddOnContentManager::GetAddOnContentBaseId(Out<u64> out_title_id,
                                                    ClientProcessId process_id) {
     LOG_DEBUG(Service_AOC, "called. process_id={}", process_id.pid);
 
-    const auto title_id = system.GetApplicationProcessProgramID();
+    const auto title_id = system.ResolveCallerProgramId(*process_id);
     const FileSys::PatchManager pm{title_id, system.GetFileSystemController(),
                                    system.GetContentProvider()};
 

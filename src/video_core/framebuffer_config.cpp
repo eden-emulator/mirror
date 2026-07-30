@@ -1,10 +1,34 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
+
+#include <algorithm>
 
 #include "common/assert.h"
 #include "video_core/framebuffer_config.h"
 
 namespace Tegra {
+
+std::span<const FramebufferConfig> FilterLayerStack(
+    std::span<const FramebufferConfig> layers, Service::Nvnflinger::LayerStackId stack,
+    std::vector<FramebufferConfig>& scratch) {
+    const u32 bit = Service::Nvnflinger::LayerStackBit(stack);
+
+    if (std::ranges::all_of(layers,
+                            [bit](const auto& layer) { return (layer.layer_stack_mask & bit) != 0; }))
+        return layers;
+
+    scratch.clear();
+    for (const auto& layer : layers) {
+        if ((layer.layer_stack_mask & bit) != 0) {
+            scratch.push_back(layer);
+        }
+    }
+
+    return scratch;
+}
 
 Common::Rectangle<f32> NormalizeCrop(const FramebufferConfig& framebuffer, u32 texture_width,
                                      u32 texture_height) {

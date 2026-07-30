@@ -325,6 +325,9 @@ Core::SystemResultStatus EmulationSession::InitializeEmulation(const std::string
     m_system.GetCpuManager().OnGpuReady();
     m_system.RegisterExitCallback([&] { HaltEmulation(); });
 
+    m_system.RegisterApplicationChangedCallback(
+        [&](u64 changed_program_id) { RequestDiskShaderCacheReload(changed_program_id); });
+
     // Register an ExecuteProgram callback such that Core can execute a sub-program
     m_system.RegisterExecuteProgramCallback([&](std::size_t program_index_) {
         m_next_program_index = program_index_;
@@ -404,18 +407,56 @@ void EmulationSession::RunEmulation() {
     }
 
     while (true) {
+        std::optional<u64> reload_title;
         {
             [[maybe_unused]] std::unique_lock lock(m_mutex);
-            if (m_cv.wait_for(lock, std::chrono::milliseconds(800),
-                              [&]() { return !m_is_running; })) {
-                // Emulation halted.
-                break;
+            if (m_cv.wait_for(lock, std::chrono::milliseconds(800), [&]() {
+                    return !m_is_running || m_pending_shader_cache_title.has_value();
+                })) {
+                if (!m_is_running) {
+                    break;
+                }
+                reload_title = std::exchange(m_pending_shader_cache_title, std::nullopt);
             }
         }
+
+        if (reload_title.has_value())
+            ReloadDiskShaderCache(*reload_title);
     }
 
     // Reset current applet ID.
     m_applet_id = static_cast<int>(Service::AM::AppletId::Application);
+}
+
+void EmulationSession::RequestDiskShaderCacheReload(u64 program_id) {
+    {
+        std::scoped_lock lock(m_mutex);
+        m_pending_shader_cache_title = program_id;
+    }
+    m_cv.notify_one();
+}
+
+void EmulationSession::ReloadDiskShaderCache(u64 program_id) {
+    if (!Settings::values.use_disk_shader_cache.GetValue())
+        return;
+
+    LOG_INFO(Frontend, "Reloading disk shader cache for {:016X}", program_id);
+
+    const bool was_paused = m_is_paused;
+
+    m_system.Pause();
+    m_system.GPU().WaitForIdle();
+    m_system.GPU().ObtainContext();
+
+    LoadDiskCacheProgress(VideoCore::LoadCallbackStage::Prepare, 0, 0);
+    m_system.Renderer().ReadRasterizer()->LoadDiskResources(program_id, std::stop_token{},
+                                                            LoadDiskCacheProgress);
+    LoadDiskCacheProgress(VideoCore::LoadCallbackStage::Complete, 0, 0);
+
+    m_system.GPU().ReleaseContext();
+
+    if (!was_paused)
+        m_system.Run();
 }
 
 Common::Android::SoftwareKeyboard::AndroidKeyboard* EmulationSession::SoftwareKeyboard() {

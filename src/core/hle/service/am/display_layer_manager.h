@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -23,6 +23,7 @@ class KProcess;
 namespace Service::VI {
 class IApplicationDisplayService;
 class IManagerDisplayService;
+enum class CaptureKind : u32;
 } // namespace Service::VI
 
 namespace Service::AM {
@@ -48,9 +49,13 @@ public:
 
     void SetOverlayZIndex(s32 z_index);
 
-    Result WriteAppletCaptureBuffer(bool* out_was_written, s32* out_fbshare_layer_index);
+    Result WriteAppletCaptureBuffer(bool* out_was_written, s32* out_fbshare_layer_index,
+                                    VI::CaptureKind kind);
+    Result ClearAppletCaptureBuffer(s32 fbshare_layer_index, u32 color);
 
 private:
+    u32 GetLayerStackMask() const;
+
     Kernel::KProcess* m_process{};
     std::shared_ptr<VI::IApplicationDisplayService> m_display_service{};
     std::shared_ptr<VI::IManagerDisplayService> m_manager_display_service{};
@@ -59,6 +64,7 @@ private:
     u64 m_system_shared_buffer_id{};
     u64 m_system_shared_layer_id{};
     AppletId m_applet_id{};
+    LibraryAppletMode m_library_applet_mode{};
     bool m_buffer_sharing_enabled{};
     bool m_blending_enabled{};
     bool m_visible{true};

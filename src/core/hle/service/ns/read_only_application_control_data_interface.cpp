@@ -18,6 +18,7 @@
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/patch_manager.h"
 #include "core/file_sys/vfs/vfs.h"
+#include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/k_transfer_memory.h"
 #include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/ns/language.h"
@@ -336,8 +337,8 @@ void IReadOnlyApplicationControlDataInterface::ListApplicationTitle(HLERequestCo
 
     constexpr s32 data_offset = 0;
 
-    if (t_mem != nullptr && app_count > 0) {
-        auto& memory = system.ApplicationMemory();
+    if (t_mem != nullptr && t_mem->GetOwner() != nullptr && app_count > 0) {
+        auto& memory = t_mem->GetOwner()->GetMemory();
         const auto t_mem_address = t_mem->GetSourceAddress();
 
         for (size_t i = 0; i < app_count; ++i) {

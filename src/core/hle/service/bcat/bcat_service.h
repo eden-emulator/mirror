@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -19,7 +22,7 @@ class IDeliveryCacheProgressService;
 
 class IBcatService final : public ServiceFramework<IBcatService> {
 public:
-    explicit IBcatService(Core::System& system_, BcatBackend& backend_);
+    explicit IBcatService(Core::System& system_, BcatBackend& backend_, u64 program_id_);
     ~IBcatService() override;
 
 private:
@@ -39,6 +42,7 @@ private:
     const ProgressServiceBackend& GetProgressBackend(SyncType type) const;
 
     BcatBackend& backend;
+    u64 program_id;
     std::array<ProgressServiceBackend, static_cast<size_t>(SyncType::Count)> progress;
 };
 

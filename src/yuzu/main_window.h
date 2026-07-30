@@ -438,6 +438,7 @@ private:
     ContentManager::InstallResult InstallNCA(const QString& filename);
     void UpdateWindowTitle(std::string_view title_name = {}, std::string_view title_version = {},
                            std::string_view gpu_vendor = {});
+    void OnApplicationChanged(u64 program_id);
     void UpdateDockedButton();
     void UpdateAPIText();
     void UpdateFilterText();

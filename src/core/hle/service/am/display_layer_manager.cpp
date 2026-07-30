@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -6,6 +6,7 @@
 
 #include "core/core.h"
 #include "core/hle/service/am/display_layer_manager.h"
+#include "core/hle/service/nvnflinger/hwc_layer.h"
 #include "core/hle/service/sm/sm.h"
 #include "core/hle/service/vi/application_display_service.h"
 #include "core/hle/service/vi/container.h"
@@ -33,6 +34,7 @@ void DisplayLayerManager::Initialize(Core::System& system, Kernel::KProcess* pro
     m_system_shared_buffer_id = 0;
     m_system_shared_layer_id = 0;
     m_applet_id = applet_id;
+    m_library_applet_mode = mode;
     m_buffer_sharing_enabled = false;
     m_blending_enabled = mode == LibraryAppletMode::PartialForeground ||
                          mode == LibraryAppletMode::PartialForegroundIndirectDisplay;
@@ -72,14 +74,16 @@ Result DisplayLayerManager::CreateManagedDisplayLayer(u64* out_layer_id) {
         out_layer_id, 0, display_id, Service::AppletResourceUserId{m_process->GetProcessId()}));
 
     m_manager_display_service->SetLayerVisibility(m_visible, *out_layer_id);
+    (void)m_display_service->GetContainer()->SetLayerStackMask(*out_layer_id,
+                                                              this->GetLayerStackMask());
 
     if (m_applet_id != AppletId::Application) {
         (void)m_manager_display_service->SetLayerBlending(m_blending_enabled, *out_layer_id);
         if (m_applet_id == AppletId::OverlayDisplay) {
-            (void)m_manager_display_service->SetLayerZIndex(-1, *out_layer_id);
+            (void)m_manager_display_service->SetLayerZIndex(Overlay, *out_layer_id);
             (void)m_display_service->GetContainer()->SetLayerIsOverlay(*out_layer_id, true);
         } else {
-            (void)m_manager_display_service->SetLayerZIndex(1, *out_layer_id);
+            (void)m_manager_display_service->SetLayerZIndex(Foreground, *out_layer_id);
         }
     }
 
@@ -122,10 +126,12 @@ Result DisplayLayerManager::IsSystemBufferSharingEnabled() {
 
     // Ensure the overlay layer is visible
     m_manager_display_service->SetLayerVisibility(m_visible, m_system_shared_layer_id);
+    (void)m_display_service->GetContainer()->SetLayerStackMask(m_system_shared_layer_id,
+                                                              this->GetLayerStackMask());
     m_manager_display_service->SetLayerBlending(m_blending_enabled, m_system_shared_layer_id);
-    s32 initial_z = 1;
+    s32 initial_z = Foreground;
     if (m_applet_id == AppletId::OverlayDisplay) {
-        initial_z = -1;
+        initial_z = Overlay;
         (void)m_display_service->GetContainer()->SetLayerIsOverlay(m_system_shared_layer_id, true);
     }
     m_manager_display_service->SetLayerZIndex(initial_z, m_system_shared_layer_id);
@@ -140,6 +146,36 @@ Result DisplayLayerManager::GetSystemSharedLayerHandle(u64* out_system_shared_bu
     *out_system_shared_layer_id = m_system_shared_layer_id;
 
     R_SUCCEED();
+}
+
+u32 DisplayLayerManager::GetLayerStackMask() const {
+    using Nvnflinger::LayerStackBit;
+    using Nvnflinger::LayerStackId;
+
+    constexpr u32 Displayed = LayerStackBit(LayerStackId::Default);
+    constexpr u32 Screenshot = LayerStackBit(LayerStackId::Screenshot);
+    constexpr u32 Recording = LayerStackBit(LayerStackId::Recording);
+    constexpr u32 LastFrame = LayerStackBit(LayerStackId::LastFrame);
+    constexpr u32 Debug = LayerStackBit(LayerStackId::ApplicationForDebug);
+
+    switch (m_applet_id) {
+        case AppletId::Application:
+            return Displayed | Screenshot | Recording | LastFrame | Debug;
+        case AppletId::OverlayDisplay:
+            return Displayed;
+        case AppletId::QLaunch:
+            return Displayed;
+        default:
+            break;
+    }
+
+    switch (m_library_applet_mode) {
+    case LibraryAppletMode::AllForeground:
+    case LibraryAppletMode::AllForegroundInitiallyHidden:
+        return Displayed | Screenshot | LastFrame;
+    default:
+        return Displayed | Screenshot;
+    }
 }
 
 void DisplayLayerManager::SetWindowVisibility(bool visible) {
@@ -185,10 +221,17 @@ void DisplayLayerManager::SetOverlayZIndex(s32 z_index) {
 }
 
 Result DisplayLayerManager::WriteAppletCaptureBuffer(bool* out_was_written,
-                                                     s32* out_fbshare_layer_index) {
+                                                     s32* out_fbshare_layer_index,
+                                                     VI::CaptureKind kind) {
     R_UNLESS(m_buffer_sharing_enabled, VI::ResultPermissionDenied);
     R_RETURN(m_display_service->GetContainer()->GetSharedBufferManager()->WriteAppletCaptureBuffer(
-        out_was_written, out_fbshare_layer_index));
+        out_was_written, out_fbshare_layer_index, kind));
+}
+
+Result DisplayLayerManager::ClearAppletCaptureBuffer(s32 fbshare_layer_index, u32 color) {
+    R_UNLESS(m_buffer_sharing_enabled, VI::ResultPermissionDenied);
+    R_RETURN(m_display_service->GetContainer()->GetSharedBufferManager()->ClearAppletCaptureBuffer(
+        fbshare_layer_index, color));
 }
 
 } // namespace Service::AM

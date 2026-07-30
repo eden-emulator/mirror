@@ -15,6 +15,10 @@ namespace Core {
 class System;
 }
 
+namespace Kernel {
+class KProcess;
+}
+
 namespace Core::Timing {
 class CoreTiming;
 struct EventType;
@@ -38,8 +42,12 @@ public:
 private:
     bool IsAddressInRange(VAddr address) const;
 
+    Kernel::KProcess* GetProcess() const;
+
     const CheatProcessMetadata& metadata;
     Core::System& system;
+    mutable Kernel::KProcess* cached_process{};
+    mutable u64 cached_process_id{};
 };
 
 // Intermediary class that parses a text file or other disk format for storing cheats into a

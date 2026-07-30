@@ -322,6 +322,10 @@ public:
 
     [[nodiscard]] u64 GetApplicationProcessProgramID() const;
 
+    [[nodiscard]] u64 GetProgramIdForProcessId(u64 process_id) const;
+
+    [[nodiscard]] u64 ResolveCallerProgramId(u64 process_id) const;
+
     /// Gets the name of the current game
     [[nodiscard]] Loader::ResultStatus GetGameName(std::string& out) const;
 
@@ -434,6 +438,10 @@ public:
 
     /// Instructs the frontend to exit the application.
     void Exit();
+
+    using ApplicationChangedCallback = std::function<void(u64 program_id)>;
+    void RegisterApplicationChangedCallback(ApplicationChangedCallback&& callback);
+    void NotifyApplicationChanged(u64 program_id);
 
     /// Applies any changes to settings to this core instance.
     void ApplySettings();

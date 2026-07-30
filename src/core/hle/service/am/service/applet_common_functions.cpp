@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "core/core.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/hle/service/am/applet.h"
 #include "core/hle/service/am/service/applet_common_functions.h"
 #include "core/hle/service/cmif_serialization.h"
@@ -78,7 +80,7 @@ Result IAppletCommonFunctions::SetCpuBoostRequestPriority(s32 priority) {
 
 Result IAppletCommonFunctions::GetCurrentApplicationId(Out<u64> out_application_id) {
     LOG_WARNING(Service_AM, "(STUBBED) called");
-    *out_application_id = system.GetApplicationProcessProgramID() & ~0xFFFULL;
+    *out_application_id = FileSys::GetBaseTitleID(system.GetApplicationProcessProgramID());
     R_SUCCEED();
 }
 

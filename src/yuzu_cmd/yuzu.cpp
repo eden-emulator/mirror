@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <regex>
 #include <string>
 
@@ -28,6 +29,8 @@
 #include "input_common/main.h"
 #include "network/network.h"
 #include "sdl_config.h"
+#include "video_core/gpu.h"
+#include "video_core/rasterizer_interface.h"
 #include "video_core/renderer_base.h"
 #include "yuzu_cmd/emu_window/emu_window_sdl3.h"
 #ifdef HAS_OPENGL
@@ -462,6 +465,30 @@ int main(int argc, char** argv) {
         // Just exit right away.
         exit(0);
     });
+
+    // QLaunch launched applications (should) now reload shader cache.
+    static std::mutex shader_cache_reload_mutex;
+    system.RegisterApplicationChangedCallback([&system](u64 changed_program_id) {
+        if (!Settings::values.use_disk_shader_cache.GetValue()) {
+            return;
+        }
+
+        std::scoped_lock lk{shader_cache_reload_mutex};
+
+        LOG_INFO(Frontend, "Reloading disk shader cache for {:016X}", changed_program_id);
+
+        system.Pause();
+        system.GPU().WaitForIdle();
+        system.GPU().ObtainContext();
+
+        system.Renderer().ReadRasterizer()->LoadDiskResources(
+            changed_program_id, std::stop_token{},
+            [](VideoCore::LoadCallbackStage, size_t, size_t) {});
+
+        system.GPU().ReleaseContext();
+        system.Run();
+    });
+
     void(system.Run());
     if (system.DebuggerEnabled()) {
         system.InitializeDebugger();

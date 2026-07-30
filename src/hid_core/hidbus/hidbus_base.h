@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -14,6 +17,7 @@ class System;
 
 namespace Kernel {
 class KEvent;
+class KProcess;
 class KReadableEvent;
 } // namespace Kernel
 
@@ -138,7 +142,7 @@ public:
     void DisablePollingMode();
 
     // Called on EnableJoyPollingReceiveMode
-    void SetTransferMemoryAddress(Common::ProcessAddress t_mem);
+    void SetTransferMemoryAddress(Common::ProcessAddress t_mem, Kernel::KProcess* owner);
 
     Kernel::KReadableEvent& GetSendCommandAsycEvent() const;
 
@@ -175,6 +179,7 @@ protected:
     ButtonOnlyPollingDataAccessor button_only_data{};
 
     Common::ProcessAddress transfer_memory{};
+    Kernel::KProcess* transfer_memory_owner{};
 
     Core::System& system;
     Kernel::KEvent* send_command_async_event;

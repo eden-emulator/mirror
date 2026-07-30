@@ -329,7 +329,7 @@ struct System::Impl {
         LaunchTimestampCache::SaveLaunchTimestamp(params.program_id);
 
         // Make the process created be the application
-        kernel.MakeApplicationProcess(process->GetHandle());
+        kernel.SetApplicationProcess(process->GetHandle());
 
         // Set up the rest of the system.
         SystemResultStatus init_result{SetupForApplicationProcess(system, emu_window)};
@@ -465,6 +465,7 @@ struct System::Impl {
     Core::SpeedLimiter speed_limiter;
     ExecuteProgramCallback execute_program_callback;
     ExitCallback exit_callback;
+    ApplicationChangedCallback application_changed_callback;
 
     std::optional<Service::Services> services;
     std::optional<Core::Debugger> debugger;
@@ -725,7 +726,25 @@ const Core::SpeedLimiter& System::SpeedLimiter() const {
 }
 
 u64 System::GetApplicationProcessProgramID() const {
-    return impl->kernel.ApplicationProcess()->GetProgramId();
+    const auto* const process = impl->kernel.ApplicationProcess();
+    return process != nullptr ? process->GetProgramId() : 0;
+}
+
+u64 System::GetProgramIdForProcessId(u64 process_id) const {
+    auto process = impl->kernel.GetProcessByProcessId(process_id);
+    return process.IsNull() ? 0 : process->GetProgramId();
+}
+
+u64 System::ResolveCallerProgramId(u64 process_id) const {
+    if (const auto program_id = this->GetProgramIdForProcessId(process_id); program_id != 0) {
+        return program_id;
+    }
+
+    const auto fallback = this->GetApplicationProcessProgramID();
+    LOG_WARNING(Core,
+                "Could not resolve caller process_id={}, falling back to application {:016X}",
+                process_id, fallback);
+    return fallback;
 }
 
 Loader::ResultStatus System::GetGameName(std::string& out) const {
@@ -956,6 +975,18 @@ void System::Exit() {
         impl->exit_callback();
     } else {
         LOG_CRITICAL(Core, "exit_callback must be initialized by the frontend");
+    }
+}
+
+void System::RegisterApplicationChangedCallback(ApplicationChangedCallback&& callback) {
+    impl->application_changed_callback = std::move(callback);
+}
+
+void System::NotifyApplicationChanged(u64 program_id) {
+    //LOG_DEBUG(Core, "Running application changed to {:016X}", program_id);
+
+    if (impl->application_changed_callback) {
+        impl->application_changed_callback(program_id);
     }
 }
 

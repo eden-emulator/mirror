@@ -95,7 +95,8 @@ void IScreenShotApplicationService::CaptureAndSaveScreenshot(AlbumReportOption r
             manager->FlipVerticallyOnWrite(invert_y);
             manager->SaveScreenShot(entry, attribute, report_option, image_data, {});
         },
-        layout);
+        layout,
+        Nvnflinger::LayerStackId::Screenshot);
 }
 
 } // namespace Service::Capture

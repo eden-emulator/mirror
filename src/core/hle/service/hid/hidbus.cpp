@@ -312,7 +312,7 @@ Result Hidbus::EnableJoyPollingReceiveMode(u32 t_mem_size, JoyPollingMode pollin
 
     auto& device = devices[device_index.value()].device;
     device->SetPollingMode(polling_mode);
-    device->SetTransferMemoryAddress(t_mem->GetSourceAddress());
+    device->SetTransferMemoryAddress(t_mem->GetSourceAddress(), t_mem->GetOwner());
     R_SUCCEED();
 }
 

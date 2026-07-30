@@ -76,6 +76,7 @@ void nvdisp_disp0::Composite(std::span<const Nvnflinger::HwcLayer> sorted_layers
             .transform_flags = layer.transform,
             .crop_rect = layer.crop_rect,
             .blending = ConvertBlending(layer.blending),
+            .layer_stack_mask = layer.layer_stack_mask,
         });
 
         for (size_t i = 0; i < layer.acquire_fence.num_fences; i++) {

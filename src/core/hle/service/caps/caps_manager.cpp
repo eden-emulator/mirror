@@ -248,7 +248,7 @@ Result AlbumManager::SaveScreenShot(ApplicationAlbumEntry& out_entry,
                                     AlbumReportOption report_option,
                                     const ApplicationData& app_data, std::span<const u8> image_data,
                                     u64 aruid) {
-    const u64 title_id = system.GetApplicationProcessProgramID();
+    const u64 title_id = system.ResolveCallerProgramId(aruid);
 
     auto static_service =
         system.ServiceManager().GetService<Service::Glue::Time::StaticService>("time:u", true);

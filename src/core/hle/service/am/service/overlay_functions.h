@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
@@ -20,6 +20,7 @@ namespace Service::AM {
         Result SetAutoSleepTimeAndDimmingTimeEnabled(bool enabled);
         Result IsHealthWarningRequired(Out<bool> is_required);
         Result SetHandlingHomeButtonShortPressedEnabled(bool enabled);
+        Result SetHandlingTouchScreenInputEnabled(bool enabled);
         Result Unknown70();
 
     private:

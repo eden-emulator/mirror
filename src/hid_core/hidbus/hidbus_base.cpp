@@ -62,8 +62,9 @@ void HidbusBase::DisablePollingMode() {
     polling_mode_enabled = false;
 }
 
-void HidbusBase::SetTransferMemoryAddress(Common::ProcessAddress t_mem) {
+void HidbusBase::SetTransferMemoryAddress(Common::ProcessAddress t_mem, Kernel::KProcess* owner) {
     transfer_memory = t_mem;
+    transfer_memory_owner = owner;
 }
 
 Kernel::KReadableEvent& HidbusBase::GetSendCommandAsycEvent() const {

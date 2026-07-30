@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -125,6 +125,7 @@ u32 HardwareComposer::ComposeLocked(f32* out_speed_scale, Display& display,
                 .transform = static_cast<android::BufferTransformFlags>(item.transform),
                 .crop_rect = item.crop,
                 .acquire_fence = item.fence,
+                .layer_stack_mask = layer->layer_stack_mask,
             });
         }
 
