@@ -392,13 +392,6 @@ public:
 
     VkImageView StorageImageView(s32 level) noexcept;
 
-    [[nodiscard]] bool NeedsStorageUsage() const noexcept {
-        return storage_capable && !wants_storage && runtime != nullptr &&
-               current_image != nullptr && static_cast<bool>(this->*current_image);
-    }
-
-    bool EnableStorageUsage();
-
     bool IsRescaled() const noexcept;
 
     bool ScaleUp(bool ignore = false);
@@ -416,9 +409,6 @@ private:
 
     Scheduler* scheduler{};
     TextureCacheRuntime* runtime{};
-
-    bool storage_capable = false;
-    bool wants_storage = false;
 
     vk::Image original_image;
     vk::Image scaled_image;

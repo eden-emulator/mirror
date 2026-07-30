@@ -167,13 +167,12 @@ void ComputePipeline::Configure(Tegra::Engines::KeplerCompute& kepler_compute,
         }
         return TexturePair(gpu_memory.Read<u32>(addr), via_header_index);
     }};
-    const auto add_image{[&](const auto& desc, bool blacklist, bool storage = false) {
+    const auto add_image{[&](const auto& desc, bool blacklist) {
         for (u32 index = 0; index < desc.count; ++index) {
             const auto handle{read_handle(desc, index)};
             views.push_back({
                 .index = handle.first,
                 .blacklist = blacklist,
-                .storage = storage,
                 .id = {},
             });
         }
@@ -194,7 +193,7 @@ void ComputePipeline::Configure(Tegra::Engines::KeplerCompute& kepler_compute,
         }
     }
     for (const auto& desc : info.image_descriptors) {
-        add_image(desc, desc.is_written, true);
+        add_image(desc, desc.is_written);
     }
     texture_cache.FillImageViews(std::span(views.data(), views.size()), true);
 
