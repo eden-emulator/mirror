@@ -491,7 +491,7 @@ static vk::Pipeline CreateWrappedPipelineImpl(
         .subpass = 0,
         .basePipelineHandle = 0,
         .basePipelineIndex = 0,
-    });
+    }, device.StaticPipelineCache());
 }
 
 vk::Pipeline CreateWrappedPipeline(const Device& device, vk::RenderPass& renderpass,

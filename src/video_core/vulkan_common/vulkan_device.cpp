@@ -8,6 +8,8 @@
 #include <array>
 #include <bitset>
 #include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <optional>
 #include <thread>
 #include <ankerl/unordered_dense.h>
@@ -17,6 +19,8 @@
 #include <fmt/format.h>
 
 #include "common/assert.h"
+#include "common/fs/fs.h"
+#include "common/fs/path_util.h"
 #include "common/literals.h"
 #include <ranges>
 #include "common/settings.h"
@@ -392,6 +396,17 @@ std::vector<const char*> ExtensionListForVulkan(
         output.push_back(extension.c_str());
     }
     return output;
+}
+
+constexpr std::array<char, 8> STATIC_CACHE_MAGIC_NUMBER{'e', 'd', 'e', 'n', 's', 't', 'p', 'c'};
+constexpr u32 STATIC_CACHE_VERSION = 1;
+
+std::filesystem::path StaticPipelineCacheFilename() {
+    const auto shader_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::ShaderDir);
+    if (!Common::FS::CreateDir(shader_dir)) {
+        return {};
+    }
+    return shader_dir / "vulkan_static_pipelines.bin";
 }
 
 } // Anonymous namespace
@@ -778,14 +793,103 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
                  limits.storageImageSampleCounts);
     }
 
+    owns_static_pipeline_cache = surface != VkSurfaceKHR{};
+    LoadStaticPipelineCache();
+
     // Initialize GPU logging if enabled
     InitializeGPULogging();
 }
 
 Device::~Device() {
+    SaveStaticPipelineCache();
     ShutdownGPULogging();
     vk::FlushDeletionQueue();
     vmaDestroyAllocator(allocator);
+}
+
+void Device::LoadStaticPipelineCache() {
+    const auto create = [this](size_t size, const void* data) {
+        static_pipeline_cache = logical.CreatePipelineCache({
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .initialDataSize = size,
+            .pInitialData = data,
+        });
+    };
+    if (!owns_static_pipeline_cache) {
+        create(0, nullptr);
+        return;
+    }
+    const auto filename = StaticPipelineCacheFilename();
+    if (filename.empty()) {
+        create(0, nullptr);
+        return;
+    }
+    std::vector<char> data;
+    try {
+        std::ifstream file(filename, std::ios::binary | std::ios::ate);
+        if (!file.is_open()) {
+            create(0, nullptr);
+            return;
+        }
+        file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        const size_t total = static_cast<size_t>(file.tellg());
+        file.seekg(0, std::ios::beg);
+        std::array<char, 8> magic{};
+        u32 version{};
+        if (total < magic.size() + sizeof(version)) {
+            create(0, nullptr);
+            return;
+        }
+        file.read(magic.data(), magic.size())
+            .read(reinterpret_cast<char*>(&version), sizeof(version));
+        if (magic != STATIC_CACHE_MAGIC_NUMBER || version != STATIC_CACHE_VERSION) {
+            LOG_INFO(Render_Vulkan, "Discarding stale static pipeline cache");
+            create(0, nullptr);
+            return;
+        }
+        data.resize(total - magic.size() - sizeof(version));
+        file.read(data.data(), static_cast<std::streamsize>(data.size()));
+    } catch (const std::ios_base::failure& e) {
+        LOG_WARNING(Render_Vulkan, "Failed to read static pipeline cache: {}", e.what());
+        create(0, nullptr);
+        return;
+    }
+    create(data.size(), data.empty() ? nullptr : data.data());
+    LOG_INFO(Render_Vulkan, "Loaded {} bytes of static pipeline cache", data.size());
+}
+
+void Device::SaveStaticPipelineCache() const {
+    if (!owns_static_pipeline_cache || !static_pipeline_cache) {
+        return;
+    }
+    const auto filename = StaticPipelineCacheFilename();
+    if (filename.empty()) {
+        return;
+    }
+    size_t size = 0;
+    std::vector<char> data;
+    static_pipeline_cache.Read(&size, nullptr);
+    if (size == 0) {
+        return;
+    }
+    data.resize(size);
+    static_pipeline_cache.Read(&size, data.data());
+    try {
+        std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+        file.exceptions(std::ofstream::failbit);
+        if (!file.is_open()) {
+            return;
+        }
+        file.write(STATIC_CACHE_MAGIC_NUMBER.data(), STATIC_CACHE_MAGIC_NUMBER.size())
+            .write(reinterpret_cast<const char*>(&STATIC_CACHE_VERSION),
+                   sizeof(STATIC_CACHE_VERSION))
+            .write(data.data(), static_cast<std::streamsize>(size));
+    } catch (const std::ios_base::failure& e) {
+        LOG_WARNING(Render_Vulkan, "Failed to write static pipeline cache: {}", e.what());
+        Common::FS::RemoveFile(filename);
+    }
 }
 
 VkFormat Device::GetSupportedFormat(VkFormat wanted_format, VkFormatFeatureFlags wanted_usage,
