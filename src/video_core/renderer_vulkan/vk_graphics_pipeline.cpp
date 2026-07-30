@@ -378,12 +378,14 @@ bool GraphicsPipeline::ConfigureImpl(bool is_indexed) {
             }
             return TexturePair(gpu_memory->Read<u32>(addr), via_header_index);
         }};
-        const auto add_image{[&](const auto& desc, bool blacklist) LAMBDA_FORCEINLINE {
+        const auto add_image{[&](const auto& desc, bool blacklist,
+                                 bool storage = false) LAMBDA_FORCEINLINE {
             for (u32 index = 0; index < desc.count; ++index) {
                 const auto handle{read_handle(desc, index)};
                 views.push_back({
                     .index = handle.first,
                     .blacklist = blacklist,
+                    .storage = storage,
                     .id = {}
                 });
             }
@@ -409,7 +411,7 @@ bool GraphicsPipeline::ConfigureImpl(bool is_indexed) {
         }
         if constexpr (Spec::has_images) {
             for (const auto& desc : info.image_descriptors) {
-                add_image(desc, desc.is_written);
+                add_image(desc, desc.is_written, true);
             }
         }
 

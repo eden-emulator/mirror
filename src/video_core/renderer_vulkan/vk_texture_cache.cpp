@@ -111,7 +111,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
 }
 
 [[nodiscard]] VkImageUsageFlags ImageUsageFlags(const MaxwellToVK::FormatInfo& info,
-                                                PixelFormat format) {
+                                                PixelFormat format, bool want_storage = true) {
     VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                               VK_IMAGE_USAGE_SAMPLED_BIT;
     if (info.attachable) {
@@ -129,7 +129,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
             break;
         }
     }
-    if (info.storage) {
+    if (info.storage && want_storage) {
         usage |= VK_IMAGE_USAGE_STORAGE_BIT;
     }
     return usage;
@@ -147,8 +147,19 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
           info.size.depth == 1;
 }
 
+[[nodiscard]] bool WillUseComputeUnswizzle(const ImageInfo& info) {
+    return Settings::values.gpu_unswizzle_enabled.GetValue() && IsPixelFormatBCn(info.format) &&
+           info.type == ImageType::e3D && info.resources.levels == 1 &&
+           info.resources.layers == 1;
+}
+
+[[nodiscard]] bool StorageNeededAtCreation(const Device& device, const ImageInfo& info) {
+    return WillUseAcceleratedAstcDecode(device, info) || WillUseComputeUnswizzle(info);
+}
+
 [[nodiscard]] VkImageCreateInfo MakeImageCreateInfo(const Device& device, const ImageInfo& info,
-                                                    std::optional<VkFormat> format_override = {}) {
+                                                    std::optional<VkFormat> format_override = {},
+                                                    bool want_storage = true) {
     auto format_info =
         MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, false, info.format);
     if (format_override) {
@@ -166,7 +177,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     }
     const auto [samples_x, samples_y] = VideoCommon::SamplesLog2(info.num_samples);
     const VkSampleCountFlagBits samples = ConvertSampleCount(info.num_samples);
-    VkImageUsageFlags usage = ImageUsageFlags(format_info, info.format);
+    VkImageUsageFlags usage = ImageUsageFlags(format_info, info.format, want_storage);
     if (samples != VK_SAMPLE_COUNT_1_BIT && !device.IsStorageImageMultisampleSupported()) {
         usage &= ~static_cast<VkImageUsageFlags>(VK_IMAGE_USAGE_STORAGE_BIT);
     }
@@ -195,11 +206,13 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
 
 [[nodiscard]] vk::Image MakeImage(const Device& device, const MemoryAllocator& allocator,
                                   const ImageInfo& info, std::span<const VkFormat> view_formats,
-                                  std::optional<VkFormat> format_override = {}) {
+                                  std::optional<VkFormat> format_override = {},
+                                  bool want_storage = true) {
     if (info.type == ImageType::Buffer) {
         return vk::Image{};
     }
-    VkImageCreateInfo image_ci = MakeImageCreateInfo(device, info, format_override);
+    VkImageCreateInfo image_ci =
+        MakeImageCreateInfo(device, info, format_override, want_storage);
     const VkImageFormatListCreateInfo image_format_list = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,
         .pNext = nullptr,
@@ -221,7 +234,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
             (device.IsStorageImageMultisampleSupported() &&
              (device.GetStorageImageSampleCounts() &
               static_cast<VkSampleCountFlags>(image_ci.samples)) != 0);
-        if (has_storage_compatible_view && storage_allowed_for_samples) {
+        if (want_storage && has_storage_compatible_view && storage_allowed_for_samples) {
             // Requesting a usage the image's own format cannot support is the only thing here
             // that needs extended usage; views narrow their own usage on creation.
             if (!device.IsFormatSupported(image_ci.format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
@@ -931,6 +944,109 @@ void BlitScale(Scheduler& scheduler, VkImage src_image, VkImage dst_image, const
     });
 }
 
+void CopyWholeImage(Scheduler& scheduler, VkImage src_image, VkImage dst_image,
+                    const ImageInfo& info, VkImageAspectFlags aspect_mask) {
+    const auto [samples_x, samples_y] = VideoCommon::SamplesLog2(info.num_samples);
+    const auto resources = info.resources;
+    const bool is_3d = info.type == ImageType::e3D;
+    const VkExtent3D extent{
+        .width = info.size.width >> samples_x,
+        .height = info.size.height >> samples_y,
+        .depth = is_3d ? info.size.depth : 1u,
+    };
+    scheduler.RequestOutsideRenderPassOperationContext();
+    scheduler.Record([src_image, dst_image, extent, resources, aspect_mask,
+                      is_3d](vk::CommandBuffer cmdbuf) {
+        boost::container::small_vector<VkImageCopy, 4> regions;
+        regions.reserve(resources.levels);
+        for (s32 level = 0; level < resources.levels; ++level) {
+            const u32 level_u = static_cast<u32>(level);
+            const VkImageSubresourceLayers layers{
+                .aspectMask = aspect_mask,
+                .mipLevel = level_u,
+                .baseArrayLayer = 0,
+                .layerCount = static_cast<u32>(resources.layers),
+            };
+            regions.push_back({
+                .srcSubresource = layers,
+                .srcOffset{},
+                .dstSubresource = layers,
+                .dstOffset{},
+                .extent{
+                    .width = (std::max)(1u, extent.width >> level_u),
+                    .height = (std::max)(1u, extent.height >> level_u),
+                    .depth = is_3d ? (std::max)(1u, extent.depth >> level_u) : 1u,
+                },
+            });
+        }
+        const VkImageSubresourceRange subresource_range{
+            .aspectMask = aspect_mask,
+            .baseMipLevel = 0,
+            .levelCount = VK_REMAINING_MIP_LEVELS,
+            .baseArrayLayer = 0,
+            .layerCount = VK_REMAINING_ARRAY_LAYERS,
+        };
+        const std::array read_barriers{
+            VkImageMemoryBarrier{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                .pNext = nullptr,
+                .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
+                .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = src_image,
+                .subresourceRange = subresource_range,
+            },
+            VkImageMemoryBarrier{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                .pNext = nullptr,
+                .srcAccessMask = 0,
+                .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = dst_image,
+                .subresourceRange = subresource_range,
+            },
+        };
+        const std::array write_barriers{
+            VkImageMemoryBarrier{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                .pNext = nullptr,
+                .srcAccessMask = 0,
+                .dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = src_image,
+                .subresourceRange = subresource_range,
+            },
+            VkImageMemoryBarrier{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                .pNext = nullptr,
+                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                .dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = dst_image,
+                .subresourceRange = subresource_range,
+            },
+        };
+        cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0, nullptr, nullptr, read_barriers);
+        cmdbuf.CopyImage(src_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst_image,
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions);
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+                               0, nullptr, nullptr, write_barriers);
+    });
+}
+
 [[nodiscard]] bool CanBlitNatively(const Device& device, PixelFormat format) {
     static constexpr auto OPTIMAL_FORMAT = FormatType::Optimal;
     static constexpr VkFormatFeatureFlags BLIT_USAGE =
@@ -971,6 +1087,9 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
                 view_formats[index_a].push_back(view_info.format);
             }
         }
+        auto& formats = view_formats[index_a];
+        std::ranges::sort(formats);
+        formats.erase(std::ranges::unique(formats).begin(), formats.end());
     }
 
     if (Settings::values.gpu_unswizzle_enabled.GetValue()) {
@@ -1889,8 +2008,12 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
              VAddr cpu_addr_)
     : VideoCommon::ImageBase(info_, gpu_addr_, cpu_addr_), scheduler{&runtime_.scheduler},
       runtime{&runtime_},
+      storage_capable(MaxwellToVK::SurfaceFormat(runtime_.device, FormatType::Optimal, false,
+                                                 info_.format)
+                          .storage),
+      wants_storage(StorageNeededAtCreation(runtime_.device, info_)),
       original_image(MakeImage(runtime_.device, runtime_.memory_allocator, info,
-                               runtime->ViewFormats(info.format))),
+                               runtime->ViewFormats(info.format), {}, wants_storage)),
       aspect_mask(ImageAspectMask(info.format)) {
     if (IsPixelFormatASTC(info.format) && !runtime->device.IsOptimalAstcSupported()) {
         switch (Settings::values.accelerate_astc.GetValue()) {
@@ -1917,7 +2040,8 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
     }
     current_image = &Image::original_image;
     storage_image_views.resize(info.resources.levels);
-    if (IsPixelFormatASTC(info.format) && !runtime->device.IsOptimalAstcSupported() &&
+    if (wants_storage && IsPixelFormatASTC(info.format) &&
+        !runtime->device.IsOptimalAstcSupported() &&
         Settings::values.astc_recompression.GetValue() ==
             Settings::AstcRecompression::Uncompressed) {
         const auto& device = runtime->device.GetLogical();
@@ -2307,6 +2431,7 @@ void Image::DownloadMemory(const StagingBufferRef& map, std::span<const BufferIm
 }
 
 VkImageView Image::StorageImageView(s32 level) noexcept {
+    DEBUG_ASSERT(wants_storage);
     auto& view = storage_image_views[level];
     if (!view) {
         auto format_info =
@@ -2318,6 +2443,57 @@ VkImageView Image::StorageImageView(s32 level) noexcept {
                                format_info.format);
     }
     return *view;
+}
+
+bool Image::EnableStorageUsage() {
+    if (!NeedsStorageUsage()) {
+        return false;
+    }
+    if (aspect_mask == 0) {
+        aspect_mask = ImageAspectMask(info.format);
+    }
+    const auto view_formats = runtime->ViewFormats(info.format);
+    auto scaled_info = info;
+    if (scaled_image) {
+        const auto& resolution = runtime->resolution;
+        scaled_info.size.width = resolution.ScaleUp(info.size.width);
+        if (info.type == ImageType::e2D) {
+            scaled_info.size.height = resolution.ScaleUp(info.size.height);
+        }
+    }
+    vk::Image new_original = MakeImage(runtime->device, runtime->memory_allocator, info,
+                                       view_formats, {}, true);
+    if (!new_original) {
+        return false;
+    }
+    vk::Image new_scaled;
+    if (scaled_image) {
+        new_scaled = MakeImage(runtime->device, runtime->memory_allocator, scaled_info,
+                               view_formats, {}, true);
+        if (!new_scaled) {
+            return false;
+        }
+    }
+    const auto commit = [&](vk::Image& target, vk::Image& replacement,
+                            const ImageInfo& target_info) {
+        if (initialized) {
+            CopyWholeImage(*scheduler, *target, *replacement, target_info, aspect_mask);
+        }
+        runtime->pending_msaa_images.emplace_back(scheduler->CurrentTick(), std::move(target));
+        target = std::move(replacement);
+    };
+    commit(original_image, new_original, info);
+    if (scaled_image) {
+        commit(scaled_image, new_scaled, scaled_info);
+    }
+    wants_storage = true;
+    storage_image_views.clear();
+    storage_image_views.resize(info.resources.levels);
+    scale_framebuffer.reset();
+    normal_framebuffer.reset();
+    scale_view.reset();
+    normal_view.reset();
+    return true;
 }
 
 bool Image::IsRescaled() const noexcept {
@@ -2343,7 +2519,7 @@ bool Image::ScaleUp(bool ignore) {
         scaled_info.size.width = scaled_width;
         scaled_info.size.height = scaled_height;
         scaled_image = MakeImage(runtime->device, runtime->memory_allocator, scaled_info,
-                                 runtime->ViewFormats(info.format));
+                                 runtime->ViewFormats(info.format), {}, wants_storage);
         ignore = false;
     }
     current_image = &Image::scaled_image;

@@ -57,6 +57,7 @@ using namespace Common::Literals;
 struct ImageViewInOut {
     u32 index{};
     bool blacklist{};
+    bool storage{};
     ImageViewId id{};
 };
 

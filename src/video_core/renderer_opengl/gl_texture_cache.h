@@ -244,6 +244,14 @@ public:
         return gl_type;
     }
 
+    [[nodiscard]] bool NeedsStorageUsage() const noexcept {
+        return false;
+    }
+
+    bool EnableStorageUsage() {
+        return false;
+    }
+
     bool IsRescaled() const;
 
     bool ScaleUp(bool ignore = false);

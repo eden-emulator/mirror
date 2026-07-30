@@ -28,16 +28,28 @@ constexpr std::array VIEW_CLASS_96_BITS{
 // PixelFormat::RGB32UI,
 // PixelFormat::RGB32I,
 
-constexpr std::array VIEW_CLASS_64_BITS{
+constexpr std::array SIZE_CLASS_64_BITS{
     PixelFormat::R32G32_FLOAT,       PixelFormat::R32G32_UINT,
     PixelFormat::R32G32_SINT,        PixelFormat::R16G16B16A16_FLOAT,
     PixelFormat::R16G16B16A16_UNORM, PixelFormat::R16G16B16A16_SNORM,
     PixelFormat::R16G16B16A16_UINT,  PixelFormat::R16G16B16A16_SINT,
 };
 
+constexpr std::array VIEW_CLASS_RG32{
+    PixelFormat::R32G32_FLOAT,
+    PixelFormat::R32G32_UINT,
+    PixelFormat::R32G32_SINT,
+};
+
+constexpr std::array VIEW_CLASS_RGBA16{
+    PixelFormat::R16G16B16A16_FLOAT, PixelFormat::R16G16B16A16_UNORM,
+    PixelFormat::R16G16B16A16_SNORM, PixelFormat::R16G16B16A16_UINT,
+    PixelFormat::R16G16B16A16_SINT,
+};
+
 // TODO: How should we handle 48 bits?
 
-constexpr std::array VIEW_CLASS_32_BITS{
+constexpr std::array SIZE_CLASS_32_BITS{
     PixelFormat::R16G16_FLOAT,      PixelFormat::B10G11R11_FLOAT, PixelFormat::R32_FLOAT,
     PixelFormat::A2B10G10R10_UNORM, PixelFormat::R16G16_UINT,     PixelFormat::R32_UINT,
     PixelFormat::R16G16_SINT,       PixelFormat::R32_SINT,        PixelFormat::A8B8G8R8_UNORM,
@@ -47,21 +59,51 @@ constexpr std::array VIEW_CLASS_32_BITS{
     PixelFormat::A2B10G10R10_UINT,
 };
 
-constexpr std::array VIEW_CLASS_32_BITS_NO_BGR{
-    PixelFormat::R16G16_FLOAT,      PixelFormat::B10G11R11_FLOAT,  PixelFormat::R32_FLOAT,
-    PixelFormat::A2B10G10R10_UNORM, PixelFormat::R16G16_UINT,      PixelFormat::R32_UINT,
-    PixelFormat::R16G16_SINT,       PixelFormat::R32_SINT,         PixelFormat::A8B8G8R8_UNORM,
-    PixelFormat::R16G16_UNORM,      PixelFormat::A8B8G8R8_SNORM,   PixelFormat::R16G16_SNORM,
-    PixelFormat::A8B8G8R8_SRGB,     PixelFormat::E5B9G9R9_FLOAT,   PixelFormat::A8B8G8R8_UINT,
-    PixelFormat::A8B8G8R8_SINT,     PixelFormat::A2B10G10R10_UINT,
+constexpr std::array VIEW_CLASS_RGBA8{
+    PixelFormat::A8B8G8R8_UNORM, PixelFormat::A8B8G8R8_SNORM, PixelFormat::A8B8G8R8_SRGB,
+    PixelFormat::A8B8G8R8_UINT,  PixelFormat::A8B8G8R8_SINT,
+};
+
+constexpr std::array VIEW_CLASS_RGBA8_NATIVE_BGR{
+    PixelFormat::A8B8G8R8_UNORM, PixelFormat::A8B8G8R8_SNORM, PixelFormat::A8B8G8R8_SRGB,
+    PixelFormat::A8B8G8R8_UINT,  PixelFormat::A8B8G8R8_SINT,  PixelFormat::B8G8R8A8_UNORM,
+    PixelFormat::B8G8R8A8_SRGB,
+};
+
+constexpr std::array VIEW_CLASS_RG16{
+    PixelFormat::R16G16_FLOAT, PixelFormat::R16G16_UNORM, PixelFormat::R16G16_SNORM,
+    PixelFormat::R16G16_UINT,  PixelFormat::R16G16_SINT,
+};
+
+constexpr std::array VIEW_CLASS_R32{
+    PixelFormat::R32_FLOAT,
+    PixelFormat::R32_UINT,
+    PixelFormat::R32_SINT,
+};
+
+constexpr std::array VIEW_CLASS_RGB10A2{
+    PixelFormat::A2B10G10R10_UNORM,
+    PixelFormat::A2B10G10R10_UINT,
 };
 
 // TODO: How should we handle 24 bits?
 
-constexpr std::array VIEW_CLASS_16_BITS{
+constexpr std::array SIZE_CLASS_16_BITS{
     PixelFormat::R16_FLOAT,  PixelFormat::R8G8_UINT,  PixelFormat::R16_UINT,
     PixelFormat::R16_SINT,   PixelFormat::R8G8_UNORM, PixelFormat::R16_UNORM,
     PixelFormat::R8G8_SNORM, PixelFormat::R16_SNORM,  PixelFormat::R8G8_SINT,
+};
+
+constexpr std::array VIEW_CLASS_R16{
+    PixelFormat::R16_FLOAT, PixelFormat::R16_UINT, PixelFormat::R16_SINT,
+    PixelFormat::R16_UNORM, PixelFormat::R16_SNORM,
+};
+
+constexpr std::array VIEW_CLASS_RG8{
+    PixelFormat::R8G8_UINT,
+    PixelFormat::R8G8_UNORM,
+    PixelFormat::R8G8_SNORM,
+    PixelFormat::R8G8_SINT,
 };
 
 constexpr std::array VIEW_CLASS_8_BITS{
@@ -215,8 +257,13 @@ constexpr Table MakeViewTable() {
     }
     EnableRange(view, VIEW_CLASS_128_BITS);
     EnableRange(view, VIEW_CLASS_96_BITS);
-    EnableRange(view, VIEW_CLASS_64_BITS);
-    EnableRange(view, VIEW_CLASS_16_BITS);
+    EnableRange(view, VIEW_CLASS_RG32);
+    EnableRange(view, VIEW_CLASS_RGBA16);
+    EnableRange(view, VIEW_CLASS_RG16);
+    EnableRange(view, VIEW_CLASS_R32);
+    EnableRange(view, VIEW_CLASS_RGB10A2);
+    EnableRange(view, VIEW_CLASS_R16);
+    EnableRange(view, VIEW_CLASS_RG8);
     EnableRange(view, VIEW_CLASS_8_BITS);
     EnableRange(view, VIEW_CLASS_RGTC1_RED);
     EnableRange(view, VIEW_CLASS_RGTC2_RG);
@@ -242,30 +289,32 @@ constexpr Table MakeCopyTable() {
     Table copy = MakeViewTable();
     EnableRange(copy, COPY_CLASS_128_BITS);
     EnableRange(copy, COPY_CLASS_64_BITS);
+    EnableRange(copy, SIZE_CLASS_64_BITS);
+    EnableRange(copy, SIZE_CLASS_16_BITS);
     return copy;
 }
 
 constexpr Table MakeNativeBgrViewTable() {
     Table copy = MakeViewTable();
-    EnableRange(copy, VIEW_CLASS_32_BITS);
+    EnableRange(copy, VIEW_CLASS_RGBA8_NATIVE_BGR);
     return copy;
 }
 
 constexpr Table MakeNonNativeBgrViewTable() {
     Table copy = MakeViewTable();
-    EnableRange(copy, VIEW_CLASS_32_BITS_NO_BGR);
+    EnableRange(copy, VIEW_CLASS_RGBA8);
     return copy;
 }
 
 constexpr Table MakeNativeBgrCopyTable() {
     Table copy = MakeCopyTable();
-    EnableRange(copy, VIEW_CLASS_32_BITS);
+    EnableRange(copy, SIZE_CLASS_32_BITS);
     return copy;
 }
 
 constexpr Table MakeNonNativeBgrCopyTable() {
     Table copy = MakeCopyTable();
-    EnableRange(copy, VIEW_CLASS_32_BITS);
+    EnableRange(copy, SIZE_CLASS_32_BITS);
     return copy;
 }
 } // Anonymous namespace
