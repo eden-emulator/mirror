@@ -393,9 +393,8 @@ public:
     VkImageView StorageImageView(s32 level) noexcept;
 
     [[nodiscard]] bool NeedsStorageUsage() const noexcept {
-        return storage_capable && !wants_storage && !storage_promotion_failed &&
-               runtime != nullptr && current_image != nullptr &&
-               static_cast<bool>(this->*current_image);
+        return storage_capable && !wants_storage && runtime != nullptr &&
+               current_image != nullptr && static_cast<bool>(this->*current_image);
     }
 
     bool EnableStorageUsage();
@@ -434,7 +433,6 @@ private:
 
     bool storage_capable = false;
     bool wants_storage = false;
-    bool storage_promotion_failed = false;
     bool attachment_used = false;
     VkImageLayout current_layout = VK_IMAGE_LAYOUT_GENERAL;
 

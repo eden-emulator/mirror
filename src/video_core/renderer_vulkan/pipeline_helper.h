@@ -260,12 +260,7 @@ inline void PushImageDescriptors(TextureCache& texture_cache,
             if (desc.is_written) {
                 texture_cache.MarkModification(image_view.image_id);
             }
-            VkImageView vk_image_view{image_view.StorageView(desc.type, desc.format)};
-            if (vk_image_view == VK_NULL_HANDLE) {
-                const VkImageView null_image_view{
-                    texture_cache.GetImageView(VideoCommon::NULL_IMAGE_VIEW_ID).Handle(desc.type)};
-                if (null_image_view != VK_NULL_HANDLE) vk_image_view = null_image_view;
-            }
+            const VkImageView vk_image_view{image_view.StorageView(desc.type, desc.format)};
             guest_descriptor_queue.AddImage(vk_image_view);
             const bool element_rescaled{texture_cache.IsRescaling(image_view)};
             is_rescaled |= element_rescaled;

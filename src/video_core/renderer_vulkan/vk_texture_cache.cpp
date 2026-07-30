@@ -57,7 +57,7 @@ constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_RESOLVE = true;
-constexpr bool ENABLE_OPTIMAL_IMAGE_LAYOUTS = false;
+constexpr bool ENABLE_OPTIMAL_IMAGE_LAYOUTS = true;
 
 constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     if (color == std::array<float, 4>{0, 0, 0, 0}) {
@@ -158,74 +158,6 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     return WillUseAcceleratedAstcDecode(device, info) || WillUseComputeUnswizzle(info);
 }
 
-[[nodiscard]] bool StorageAllowedForSamples(const Device& device, VkSampleCountFlagBits samples) {
-    if (samples == VK_SAMPLE_COUNT_1_BIT) {
-        return true;
-    }
-    return device.IsStorageImageMultisampleSupported() &&
-           (device.GetStorageImageSampleCounts() & static_cast<VkSampleCountFlags>(samples)) != 0;
-}
-
-[[nodiscard]] bool HasStorageCompatibleView(const Device& device,
-                                            std::span<const VkFormat> view_formats) {
-    return std::any_of(view_formats.begin(), view_formats.end(), [&device](VkFormat view_format) {
-        return device.IsFormatSupported(view_format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
-                                        FormatType::Optimal);
-    });
-}
-
-[[nodiscard]] boost::container::small_vector<VkFormat, 4> ShaderStorageViewFormats(
-    const Device& device, const ImageInfo& info) {
-    using VideoCore::Surface::BytesPerBlock;
-    using VideoCore::Surface::DefaultBlockHeight;
-    using VideoCore::Surface::DefaultBlockWidth;
-    using VideoCore::Surface::GetFormatType;
-    using VideoCore::Surface::SurfaceType;
-
-    boost::container::small_vector<VkFormat, 4> formats;
-    if (GetFormatType(info.format) != SurfaceType::ColorTexture) {
-        return formats;
-    }
-    if (DefaultBlockWidth(info.format) != 1 || DefaultBlockHeight(info.format) != 1) {
-        return formats;
-    }
-    static constexpr std::array<std::pair<u32, VkFormat>, 7> CANDIDATES{{
-        {1, VK_FORMAT_R8_UINT},
-        {1, VK_FORMAT_R8_SINT},
-        {2, VK_FORMAT_R16_UINT},
-        {2, VK_FORMAT_R16_SINT},
-        {4, VK_FORMAT_R32_UINT},
-        {8, VK_FORMAT_R32G32_UINT},
-        {16, VK_FORMAT_R32G32B32A32_UINT},
-    }};
-    const u32 bytes_per_texel = BytesPerBlock(info.format);
-    for (const auto& [size, view_format] : CANDIDATES) {
-        if (size != bytes_per_texel) {
-            continue;
-        }
-        if (!device.IsFormatSupported(view_format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
-                                      FormatType::Optimal)) {
-            continue;
-        }
-        formats.push_back(view_format);
-    }
-    return formats;
-}
-
-[[nodiscard]] bool CanUseStorage(const Device& device, const ImageInfo& info,
-                                 std::span<const VkFormat> view_formats) {
-    if (info.type == ImageType::Buffer) {
-        return false;
-    }
-    if (!StorageAllowedForSamples(device, ConvertSampleCount(info.num_samples))) {
-        return false;
-    }
-    if (MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, false, info.format).storage) {
-        return true;
-    }
-    return view_formats.size() > 1 && HasStorageCompatibleView(device, view_formats);
-}
-
 [[nodiscard]] VkImageCreateInfo MakeImageCreateInfo(const Device& device, const ImageInfo& info,
                                                     std::optional<VkFormat> format_override = {},
                                                     bool want_storage = true) {
@@ -247,7 +179,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     const auto [samples_x, samples_y] = VideoCommon::SamplesLog2(info.num_samples);
     const VkSampleCountFlagBits samples = ConvertSampleCount(info.num_samples);
     VkImageUsageFlags usage = ImageUsageFlags(format_info, info.format, want_storage);
-    if (!StorageAllowedForSamples(device, samples)) {
+    if (samples != VK_SAMPLE_COUNT_1_BIT && !device.IsStorageImageMultisampleSupported()) {
         usage &= ~static_cast<VkImageUsageFlags>(VK_IMAGE_USAGE_STORAGE_BIT);
     }
     return VkImageCreateInfo{
@@ -282,39 +214,37 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     }
     VkImageCreateInfo image_ci =
         MakeImageCreateInfo(device, info, format_override, want_storage);
-    const bool grants_storage =
-        want_storage && StorageAllowedForSamples(device, image_ci.samples) &&
-        ((image_ci.usage & VK_IMAGE_USAGE_STORAGE_BIT) != 0 ||
-         (view_formats.size() > 1 && HasStorageCompatibleView(device, view_formats)));
-
-    boost::container::small_vector<VkFormat, 16> formats(view_formats.begin(), view_formats.end());
-    if (grants_storage) {
-        const auto storage_formats = ShaderStorageViewFormats(device, info);
-        if (!storage_formats.empty()) {
-            if (std::find(formats.begin(), formats.end(), image_ci.format) == formats.end()) {
-                formats.push_back(image_ci.format);
-            }
-            for (const VkFormat storage_format : storage_formats) {
-                if (std::find(formats.begin(), formats.end(), storage_format) == formats.end()) {
-                    formats.push_back(storage_format);
-                }
-            }
-        }
-        if (!device.IsFormatSupported(image_ci.format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
-                                      FormatType::Optimal)) {
-            image_ci.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
-        }
-        image_ci.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
-    }
-
     const VkImageFormatListCreateInfo image_format_list = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,
         .pNext = nullptr,
-        .viewFormatCount = static_cast<u32>(formats.size()),
-        .pViewFormats = formats.data(),
+        .viewFormatCount = static_cast<u32>(view_formats.size()),
+        .pViewFormats = view_formats.data(),
     };
-    if (formats.size() > 1) {
+    if (view_formats.size() > 1) {
         image_ci.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+
+        const bool has_storage_compatible_view =
+            std::any_of(view_formats.begin(), view_formats.end(), [&device](VkFormat view_format) {
+                return device.IsFormatSupported(view_format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
+                                                FormatType::Optimal);
+            });
+        // storageImageSampleCounts is only meaningful once shaderStorageImageMultisample is on;
+        // that feature is what the spec actually gates multisampled storage usage on.
+        const bool storage_allowed_for_samples =
+            image_ci.samples == VK_SAMPLE_COUNT_1_BIT ||
+            (device.IsStorageImageMultisampleSupported() &&
+             (device.GetStorageImageSampleCounts() &
+              static_cast<VkSampleCountFlags>(image_ci.samples)) != 0);
+        if (want_storage && has_storage_compatible_view && storage_allowed_for_samples) {
+            // Requesting a usage the image's own format cannot support is the only thing here
+            // that needs extended usage; views narrow their own usage on creation.
+            if (!device.IsFormatSupported(image_ci.format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
+                                          FormatType::Optimal)) {
+                image_ci.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+            }
+            image_ci.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+        }
+
         if (device.IsKhrImageFormatListSupported()) {
             image_ci.pNext = &image_format_list;
         }
@@ -2079,8 +2009,9 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
              VAddr cpu_addr_)
     : VideoCommon::ImageBase(info_, gpu_addr_, cpu_addr_), scheduler{&runtime_.scheduler},
       runtime{&runtime_},
-      storage_capable(
-          CanUseStorage(runtime_.device, info_, runtime_.ViewFormats(info_.format))),
+      storage_capable(MaxwellToVK::SurfaceFormat(runtime_.device, FormatType::Optimal, false,
+                                                 info_.format)
+                          .storage),
       wants_storage(StorageNeededAtCreation(runtime_.device, info_)),
       original_image(MakeImage(runtime_.device, runtime_.memory_allocator, info,
                                runtime->ViewFormats(info.format), {}, wants_storage)),
@@ -2533,9 +2464,7 @@ bool Image::EnableStorageUsage() {
     }
     vk::Image new_original = MakeImage(runtime->device, runtime->memory_allocator, info,
                                        view_formats, {}, true);
-    if (!new_original || (new_original.UsageFlags() & VK_IMAGE_USAGE_STORAGE_BIT) == 0) {
-        LOG_WARNING(Render_Vulkan, "Cannot promote image to storage usage, format={}", info.format);
-        storage_promotion_failed = true;
+    if (!new_original) {
         return false;
     }
     vk::Image new_scaled;
@@ -2543,7 +2472,6 @@ bool Image::EnableStorageUsage() {
         new_scaled = MakeImage(runtime->device, runtime->memory_allocator, scaled_info,
                                view_formats, {}, true);
         if (!new_scaled) {
-            storage_promotion_failed = true;
             return false;
         }
     }
@@ -2887,9 +2815,6 @@ VkImageView ImageView::ColorView() {
 
 VkImageView ImageView::StorageView(Shader::TextureType texture_type,
                                    Shader::ImageFormat image_format) {
-    if ((image_usage & VK_IMAGE_USAGE_STORAGE_BIT) == 0) {
-        return VK_NULL_HANDLE;
-    }
     if (image_handle) {
         if (image_format == Shader::ImageFormat::Typeless) {
             auto& view{typeless_storage_views[static_cast<size_t>(texture_type)]};
@@ -2945,12 +2870,7 @@ vk::ImageView ImageView::MakeView(VkFormat vk_format, VkImageAspectFlags aspect_
         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT |
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     const VkImageUsageFlags view_usage = ViewUsageFlags(*device, image_usage, vk_format);
-    if ((view_usage & VIEW_MEANINGFUL_USAGE) == 0) {
-        LOG_WARNING(Render_Vulkan, "Unsupported view format={} over image usage={:#x}",
-                    static_cast<u32>(vk_format), image_usage);
-        return vk::ImageView{};
-    }
-    const bool narrows = view_usage != image_usage;
+    const bool narrows = view_usage != image_usage && (view_usage & VIEW_MEANINGFUL_USAGE) != 0;
     const VkImageViewUsageCreateInfo usage_ci{
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
         .pNext = nullptr,
