@@ -88,6 +88,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION(EXT, CONSERVATIVE_RASTERIZATION, conservative_rasterization)                         \
     EXTENSION(EXT, DEPTH_RANGE_UNRESTRICTED, depth_range_unrestricted)                             \
     EXTENSION(EXT, MEMORY_BUDGET, memory_budget)                                                   \
+    EXTENSION(EXT, PIPELINE_CREATION_FEEDBACK, pipeline_creation_feedback)                         \
     EXTENSION(EXT, ROBUSTNESS_2, robustness_2)                                                     \
     EXTENSION(EXT, SAMPLER_FILTER_MINMAX, sampler_filter_minmax)                                   \
     EXTENSION(EXT, SHADER_STENCIL_EXPORT, shader_stencil_export)                                   \
@@ -484,6 +485,10 @@ FN_MAX_LIMIT_LIST
     }
 
     /// Returns true if the device supports descriptor buffers.
+    bool IsExtPipelineCreationFeedbackSupported() const {
+        return extensions.pipeline_creation_feedback;
+    }
+
     bool IsExtDescriptorBufferSupported() const {
         return extensions.descriptor_buffer;
     }

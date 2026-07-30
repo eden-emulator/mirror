@@ -69,9 +69,17 @@ ComputePipeline::ComputePipeline(const Device& device_, Scheduler& scheduler, vk
         if (device.IsKhrPipelineExecutablePropertiesEnabled() && Settings::values.renderer_debug.GetValue()) {
             flags |= VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR;
         }
+        VkPipelineCreationFeedback creation_feedback{};
+        const VkPipelineCreationFeedbackCreateInfo feedback_ci{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO,
+            .pNext = nullptr,
+            .pPipelineCreationFeedback = &creation_feedback,
+            .pipelineStageCreationFeedbackCount = 0,
+            .pPipelineStageCreationFeedbacks = nullptr,
+        };
         const VkComputePipelineCreateInfo compute_ci{
             .sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-            .pNext = nullptr,
+            .pNext = device.IsExtPipelineCreationFeedbackSupported() ? &feedback_ci : nullptr,
             .flags = flags,
             .stage{
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -99,6 +107,14 @@ ComputePipeline::ComputePipeline(const Device& device_, Scheduler& scheduler, vk
                 shader_notify->MarkShaderComplete();
             }
             return;
+        }
+
+        if ((creation_feedback.flags & VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT) != 0) {
+            const bool cache_hit =
+                (creation_feedback.flags &
+                 VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT) != 0;
+            LOG_DEBUG(Render_Vulkan, "Compute pipeline {:016X} cache_hit={} duration={}us",
+                      shader_hash, cache_hit, creation_feedback.duration / 1000);
         }
 
         // Log compute pipeline creation

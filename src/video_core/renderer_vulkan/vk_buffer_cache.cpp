@@ -69,6 +69,9 @@ vk::Buffer CreateBuffer(const Device& device, const MemoryAllocator& memory_allo
     if (device.IsExtConditionalRendering()) {
         flags |= VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT;
     }
+    if (device.IsBufferDeviceAddressSupported()) {
+        flags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    }
     const VkBufferCreateInfo buffer_ci = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .pNext = nullptr,
@@ -99,6 +102,9 @@ Buffer::Buffer(BufferCacheRuntime& runtime, DAddr cpu_addr_, u64 size_bytes_)
       buffer{CreateBuffer(*device, runtime.memory_allocator, SizeBytes())}, tracker{SizeBytes()} {
     if (runtime.device.HasDebuggingToolAttached()) {
         buffer.SetObjectNameEXT(fmt::format("Buffer 0x{:x}", CpuAddr()).c_str());
+    }
+    if (device->IsBufferDeviceAddressSupported()) {
+        device_address = device->GetLogical().GetBufferDeviceAddress(*buffer);
     }
 }
 

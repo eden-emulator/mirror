@@ -39,6 +39,10 @@ public:
         return *buffer;
     }
 
+    [[nodiscard]] VkDeviceAddress DeviceAddress() const noexcept {
+        return device_address;
+    }
+
     [[nodiscard]] bool IsRegionUsed(u64 offset, u64 size) const noexcept {
         return tracker.IsUsed(offset, size);
     }
@@ -70,6 +74,7 @@ private:
     vk::Buffer buffer;
     std::vector<BufferView> views;
     VideoCommon::UsageTracker tracker;
+    VkDeviceAddress device_address{};
     u64 last_usage_tick{};
     bool is_null{};
 };

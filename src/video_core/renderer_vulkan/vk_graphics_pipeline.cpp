@@ -1056,9 +1056,23 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
         .stencilAttachmentFormat = stencil_attachment_format,
     };
 
+    VkPipelineCreationFeedback creation_feedback{};
+    const VkPipelineCreationFeedbackCreateInfo feedback_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO,
+        .pNext = device.IsKhrDynamicRenderingSupported() ? &rendering_ci : nullptr,
+        .pPipelineCreationFeedback = &creation_feedback,
+        .pipelineStageCreationFeedbackCount = 0,
+        .pPipelineStageCreationFeedbacks = nullptr,
+    };
+    const void* const create_next =
+        device.IsExtPipelineCreationFeedbackSupported()
+            ? static_cast<const void*>(&feedback_ci)
+            : (device.IsKhrDynamicRenderingSupported() ? static_cast<const void*>(&rendering_ci)
+                                                       : nullptr);
+
     pipeline = device.GetLogical().CreateGraphicsPipeline({
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = device.IsKhrDynamicRenderingSupported() ? &rendering_ci : nullptr,
+        .pNext = create_next,
         .flags = flags,
         .stageCount = static_cast<u32>(shader_stages.size()),
         .pStages = shader_stages.data(),
@@ -1077,6 +1091,14 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
         .basePipelineHandle = nullptr,
         .basePipelineIndex = 0,
     }, *pipeline_cache);
+
+    if ((creation_feedback.flags & VK_PIPELINE_CREATION_FEEDBACK_VALID_BIT) != 0) {
+        const bool cache_hit =
+            (creation_feedback.flags &
+             VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT) != 0;
+        LOG_DEBUG(Render_Vulkan, "Graphics pipeline {:016X} cache_hit={} duration={}us",
+                  key.Hash(), cache_hit, creation_feedback.duration / 1000);
+    }
 
     // Log graphics pipeline creation
     if (GPU::Logging::IsActive()) {
