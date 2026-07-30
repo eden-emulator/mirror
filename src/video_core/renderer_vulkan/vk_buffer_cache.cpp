@@ -94,6 +94,9 @@ Buffer::Buffer(BufferCacheRuntime& runtime, VideoCommon::NullBufferParams null_p
     device = &runtime.device;
     buffer = runtime.CreateNullBuffer();
     is_null = true;
+    if (device->IsBufferDeviceAddressSupported()) {
+        device_address = device->GetLogical().GetBufferDeviceAddress(*buffer);
+    }
 }
 
 Buffer::Buffer(BufferCacheRuntime& runtime, DAddr cpu_addr_, u64 size_bytes_)
@@ -367,6 +370,10 @@ StagingBufferRef BufferCacheRuntime::UploadStagingBuffer(size_t size) {
 
 StagingBufferRef BufferCacheRuntime::DownloadStagingBuffer(size_t size, bool deferred) {
     return staging_pool.Request(size, MemoryUsage::Download, deferred);
+}
+
+VkFormat BufferCacheRuntime::TexelBufferFormat(VideoCore::Surface::PixelFormat format) const {
+    return MaxwellToVK::SurfaceFormat(device, FormatType::Buffer, false, format).format;
 }
 
 void BufferCacheRuntime::FreeDeferredStagingBuffer(StagingBufferRef& ref) {
@@ -716,6 +723,9 @@ vk::Buffer BufferCacheRuntime::CreateNullBuffer() {
     };
     if (device.IsExtTransformFeedbackSupported()) {
         create_info.usage |= VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
+    }
+    if (device.IsBufferDeviceAddressSupported()) {
+        create_info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
     }
     vk::Buffer ret = memory_allocator.CreateBuffer(create_info, MemoryUsage::DeviceLocal);
     if (device.HasDebuggingToolAttached()) {

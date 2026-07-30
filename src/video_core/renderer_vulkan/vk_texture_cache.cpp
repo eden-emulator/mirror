@@ -55,7 +55,7 @@ namespace {
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_DISCARD = true;
-constexpr bool ENABLE_MSAA_DEPTH_RESOLVE = true;
+constexpr bool ENABLE_MSAA_DEPTH_RESOLVE = false;
 
 constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     if (color == std::array<float, 4>{0, 0, 0, 0}) {

@@ -21,6 +21,7 @@ class Scheduler;
 
 struct StagingBufferRef {
     VkBuffer buffer;
+    VkDeviceAddress device_address;
     VkDeviceSize offset;
     std::span<u8> mapped_span;
     MemoryUsage usage;
@@ -55,6 +56,7 @@ private:
 
     struct StagingBuffer {
         vk::Buffer buffer;
+        VkDeviceAddress device_address;
         std::span<u8> mapped_span;
         MemoryUsage usage;
         u32 log2_level;
@@ -65,6 +67,7 @@ private:
         StagingBufferRef Ref() const noexcept {
             return {
                 .buffer = *buffer,
+                .device_address = device_address,
                 .offset = 0,
                 .mapped_span = mapped_span,
                 .usage = usage,
@@ -108,6 +111,7 @@ private:
     Scheduler& scheduler;
 
     vk::Buffer stream_buffer;
+    VkDeviceAddress stream_buffer_address{};
     std::span<u8> stream_pointer;
     VkDeviceSize stream_buffer_size;
     VkDeviceSize region_size;

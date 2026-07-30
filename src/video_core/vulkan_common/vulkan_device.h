@@ -489,6 +489,10 @@ FN_MAX_LIMIT_LIST
         return extensions.pipeline_creation_feedback;
     }
 
+    bool IsRobustBufferAccessEnabled() const {
+        return features.features.robustBufferAccess == VK_TRUE;
+    }
+
     bool IsExtDescriptorBufferSupported() const {
         return extensions.descriptor_buffer;
     }
