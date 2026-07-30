@@ -509,7 +509,6 @@ private:
     vk::ImageView color_view;
     vk::Image null_image;
     VkImage image_handle = VK_NULL_HANDLE;
-    VkImageUsageFlags image_usage = 0;
     VkImageView render_target = VK_NULL_HANDLE;
     VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
     u32 buffer_size = 0;

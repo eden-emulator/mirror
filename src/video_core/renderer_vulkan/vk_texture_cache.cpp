@@ -8,7 +8,6 @@
 #include <array>
 #include <optional>
 #include <span>
-#include <utility>
 #include <memory>
 #include <vector>
 #include <boost/container/small_vector.hpp>
@@ -165,11 +164,6 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
     }
     const auto [samples_x, samples_y] = VideoCommon::SamplesLog2(info.num_samples);
-    const VkSampleCountFlagBits samples = ConvertSampleCount(info.num_samples);
-    VkImageUsageFlags usage = ImageUsageFlags(format_info, info.format);
-    if (samples != VK_SAMPLE_COUNT_1_BIT && !device.IsStorageImageMultisampleSupported()) {
-        usage &= ~static_cast<VkImageUsageFlags>(VK_IMAGE_USAGE_STORAGE_BIT);
-    }
     return VkImageCreateInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .pNext = nullptr,
@@ -183,9 +177,9 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         },
         .mipLevels = static_cast<u32>(info.resources.levels),
         .arrayLayers = static_cast<u32>(info.resources.layers),
-        .samples = samples,
+        .samples = ConvertSampleCount(info.num_samples),
         .tiling = VK_IMAGE_TILING_OPTIMAL,
-        .usage = usage,
+        .usage = ImageUsageFlags(format_info, info.format),
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = nullptr,
@@ -207,27 +201,19 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         .pViewFormats = view_formats.data(),
     };
     if (view_formats.size() > 1) {
-        image_ci.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+        image_ci.flags |=
+            VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
 
         const bool has_storage_compatible_view =
             std::any_of(view_formats.begin(), view_formats.end(), [&device](VkFormat view_format) {
                 return device.IsFormatSupported(view_format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
                                                 FormatType::Optimal);
             });
-        // storageImageSampleCounts is only meaningful once shaderStorageImageMultisample is on;
-        // that feature is what the spec actually gates multisampled storage usage on.
         const bool storage_allowed_for_samples =
             image_ci.samples == VK_SAMPLE_COUNT_1_BIT ||
-            (device.IsStorageImageMultisampleSupported() &&
-             (device.GetStorageImageSampleCounts() &
-              static_cast<VkSampleCountFlags>(image_ci.samples)) != 0);
+            (device.GetStorageImageSampleCounts() &
+             static_cast<VkSampleCountFlags>(image_ci.samples)) != 0;
         if (has_storage_compatible_view && storage_allowed_for_samples) {
-            // Requesting a usage the image's own format cannot support is the only thing here
-            // that needs extended usage; views narrow their own usage on creation.
-            if (!device.IsFormatSupported(image_ci.format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
-                                          FormatType::Optimal)) {
-                image_ci.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
-            }
             image_ci.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
         }
 
@@ -236,25 +222,6 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         }
     }
     return allocator.CreateImage(image_ci);
-}
-
-[[nodiscard]] VkImageUsageFlags ViewUsageFlags(const Device& device, VkImageUsageFlags image_usage,
-                                               VkFormat view_format) {
-    static constexpr std::array<std::pair<VkImageUsageFlags, VkFormatFeatureFlags>, 4> CHECKS{{
-        {VK_IMAGE_USAGE_SAMPLED_BIT, VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT},
-        {VK_IMAGE_USAGE_STORAGE_BIT, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT},
-        {VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT},
-        {VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT},
-    }};
-    VkImageUsageFlags usage = image_usage;
-    for (const auto& [usage_bit, feature] : CHECKS) {
-        if ((usage & usage_bit) != 0 &&
-            !device.IsFormatSupported(view_format, feature, FormatType::Optimal)) {
-            usage &= ~usage_bit;
-        }
-    }
-    return usage;
 }
 
 [[nodiscard]] vk::ImageView MakeStorageView(const vk::Device& device, u32 level, VkImage image,
@@ -2467,7 +2434,7 @@ bool Image::NeedsScaleHelper() const {
 ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewInfo& info,
                      ImageId image_id_, Image& image)
     : VideoCommon::ImageViewBase{info, image.info, image_id_, image.gpu_addr},
-      device{&runtime.device}, image_handle{image.Handle()}, image_usage{image.UsageFlags()},
+      device{&runtime.device}, image_handle{image.Handle()},
       samples(ConvertSampleCount(image.info.num_samples)) {
     using Shader::TextureType;
 
@@ -2585,7 +2552,6 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::NullImageV
 
     null_image = MakeImage(*device, runtime.memory_allocator, info, {});
     image_handle = *null_image;
-    image_usage = null_image.UsageFlags();
     for (u32 i = 0; i < Shader::NUM_TEXTURE_TYPES; i++) {
         image_views[i] = MakeView(VK_FORMAT_A8B8G8R8_UNORM_PACK32, VK_IMAGE_ASPECT_COLOR_BIT);
     }
@@ -2672,21 +2638,9 @@ vk::ImageView ImageView::MakeView(VkFormat vk_format, VkImageAspectFlags aspect_
             break;
         }
     }
-    // Only attach the narrowing struct when it actually drops something and still leaves a usage
-    // a view can be built around; otherwise keep inheriting the image's usage as before.
-    static constexpr VkImageUsageFlags VIEW_MEANINGFUL_USAGE =
-        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT |
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    const VkImageUsageFlags view_usage = ViewUsageFlags(*device, image_usage, vk_format);
-    const bool narrows = view_usage != image_usage && (view_usage & VIEW_MEANINGFUL_USAGE) != 0;
-    const VkImageViewUsageCreateInfo usage_ci{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
-        .pNext = nullptr,
-        .usage = view_usage,
-    };
     return device->GetLogical().CreateImageView({
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .pNext = narrows ? &usage_ci : nullptr,
+        .pNext = nullptr,
         .flags = 0,
         .image = image_handle,
         .viewType = view_type,
