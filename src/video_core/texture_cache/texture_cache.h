@@ -153,7 +153,7 @@ u64 TextureCache<P>::ImageSizeBytes(const ImageBase& image) {
 
 template <class P>
 u64 TextureCache<P>::DeviceUsage(bool force_refresh) {
-    if (!runtime.CanReportAllocationUsage()) {
+    if (!runtime.CanReportMemoryUsage()) {
         return total_used_memory;
     }
     if (force_refresh || usage_refresh_countdown == 0) {
@@ -171,11 +171,6 @@ u64 TextureCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
         return 0;
     }
     in_reclaim = true;
-    const u64 drain_point = runtime.CompletedSyncPoint();
-    TickEvictionDownloads(drain_point);
-    sentenced_images.Reclaim(drain_point);
-    sentenced_image_view.Reclaim(drain_point);
-    sentenced_framebuffers.Reclaim(drain_point);
     u64 freed = 0;
     const auto evict = [&](ImageId image_id) {
         if (freed >= target_bytes) {
@@ -214,10 +209,6 @@ u64 TextureCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
     if (freed == 0) {
         lru_cache.ForEachItemBelow(frame_tick > 0 ? frame_tick - 1 : 0, evict);
     }
-    const u64 exit_point = runtime.CompletedSyncPoint();
-    sentenced_images.Reclaim(exit_point);
-    sentenced_image_view.Reclaim(exit_point);
-    sentenced_framebuffers.Reclaim(exit_point);
     in_reclaim = false;
     usage_refresh_countdown = 0;
     reclaim_stalled = freed == 0;
