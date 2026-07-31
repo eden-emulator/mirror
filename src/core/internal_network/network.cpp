@@ -40,6 +40,7 @@ namespace Network {
 namespace {
 
 enum class CallType {
+    Connect,
     Send,
     Other,
 };
@@ -131,7 +132,7 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     case WSAENOTCONN:
         return Errno::NOTCONN;
     case WSAEWOULDBLOCK:
-        return Errno::AGAIN;
+        return call_type == CallType::Connect ? Errno::INPROGRESS : Errno::AGAIN;
     case WSAECONNREFUSED:
         return Errno::CONNREFUSED;
     case WSAECONNABORTED:
@@ -563,6 +564,7 @@ int TranslateTypeToNative(Type type) {
     NETWORK_PROTOCOL_TRANSLATE_ELEM(UDPLITE)
 #elif defined(_WIN32)
 #define NETWORK_PROTOCOL_TRANSLATE_LIST \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(IP) \
     /*NETWORK_PROTOCOL_TRANSLATE_ELEM(HOPOPTS)*/ \
     NETWORK_PROTOCOL_TRANSLATE_ELEM(ICMP) \
     NETWORK_PROTOCOL_TRANSLATE_ELEM(IGMP) \
@@ -888,7 +890,7 @@ Errno Socket::Connect(SockAddrIn addr_in) {
         return Errno::SUCCESS;
     }
 
-    return GetAndLogLastError();
+    return GetAndLogLastError(CallType::Connect);
 }
 
 std::pair<SockAddrIn, Errno> Socket::GetPeerName() {
