@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -39,17 +39,6 @@ IR::U32 scaleIndex(IR::IREmitter& ir, IR::U32 index, Shift shift) {
     }
 }
 
-IR::U32 skewBytes(IR::IREmitter& ir, SZ sizeRead) {
-    const IR::U32 lane = ir.LaneId();
-    switch (sizeRead) {
-        case SZ::U8:  return lane;
-        case SZ::U16: return ir.ShiftLeftLogical(lane, ir.Imm32(1));
-        case SZ::U32:
-        case SZ::F32: return ir.ShiftLeftLogical(lane, ir.Imm32(2));
-        default: UNREACHABLE();
-    }
-}
-
 } // Anonymous namespace
 
 void TranslatorVisitor::ISBERD(u64 insn) {
@@ -68,61 +57,41 @@ void TranslatorVisitor::ISBERD(u64 insn) {
         BitField<47, 2, Shift> shift;
     } const isberd{insn};
 
-    IR::U32 index{};
-    if (isberd.src_reg_num.Value() == 0xFF) {
-        index = ir.Imm32(isberd.imm.Value());
-    } else {
-        const IR::U32 scaledIndex = scaleIndex(ir, X(isberd.src_reg.Value()), isberd.shift.Value());
-        index = ir.IAdd(scaledIndex, ir.Imm32(isberd.imm.Value()));
+    if (isberd.skew != 0) {
+        throw NotImplementedException("ISBERD SKEW");
+    }
+    if (isberd.o != 0) {
+        throw NotImplementedException("ISBERD O");
+    }
+    if (isberd.sz.Value() > SZ::F32) {
+        throw NotImplementedException("ISBERD SZ {}",
+                                      static_cast<u64>(isberd.sz.Value()));
+    }
+    if (isberd.shift.Value() > Shift::B32) {
+        throw NotImplementedException("ISBERD Shift {}",
+                                      static_cast<u64>(isberd.shift.Value()));
     }
 
-    if (isberd.o.Value()) {
-        if (isberd.skew.Value()) {
-            index = ir.IAdd(index, skewBytes(ir, isberd.sz.Value()));
+    switch (isberd.mode.Value()) {
+    case Mode::Default:
+        X(isberd.dest_reg.Value(), X(isberd.src_reg.Value()));
+        return;
+    case Mode::Attr: {
+        IR::U32 offset{};
+        if (isberd.src_reg_num.Value() == 0xFF) {
+            offset = ir.Imm32(isberd.imm.Value());
+        } else {
+            const IR::U32 index{
+                scaleIndex(ir, X(isberd.src_reg.Value()), isberd.shift.Value())};
+            offset = ir.IAdd(index, ir.Imm32(isberd.imm.Value()));
         }
-
-        const IR::U64 index64 = ir.UConvert(64, index);
-        IR::U32 globalLoaded{};
-        switch (isberd.sz.Value()) {
-        case SZ::U8:  globalLoaded = ir.LoadGlobalU8 (index64); break;
-        case SZ::U16: globalLoaded = ir.LoadGlobalU16(index64); break;
-        case SZ::U32:
-        case SZ::F32: globalLoaded = ir.LoadGlobal32(index64);  break;
-        default: UNREACHABLE();
-        }
-        X(isberd.dest_reg.Value(), globalLoaded);
-
+        X(isberd.dest_reg.Value(), ir.BitCast<IR::U32>(ir.GetAttributeIndexed(offset)));
         return;
     }
-
-    if (isberd.mode.Value() != Mode::Default) {
-        if (isberd.skew.Value()) {
-            index = ir.IAdd(index, skewBytes(ir, SZ::U32));
-        }
-
-        IR::F32 float_index{};
-        switch (isberd.mode.Value()) {
-        case Mode::Patch: float_index = ir.GetPatch(index.Patch());
-            break;
-        case Mode::Prim:  float_index = ir.GetAttribute(index.Attribute());
-            break;
-        case Mode::Attr:  float_index = ir.GetAttributeIndexed(index);
-            break;
-        default: UNREACHABLE();
-        }
-        X(isberd.dest_reg.Value(), ir.BitCast<IR::U32>(float_index));
-
-        return;
+    default:
+        throw NotImplementedException("ISBERD Mode {}",
+                                      static_cast<u64>(isberd.mode.Value()));
     }
-
-    if (isberd.skew.Value()) {
-        X(isberd.dest_reg.Value(), ir.IAdd(X(isberd.src_reg.Value()), ir.LaneId()));
-
-        return;
-    }
-
-    // Fallback copy
-    X(isberd.dest_reg.Value(), X(isberd.src_reg.Value()));
 }
 
 } // namespace Shader::Maxwell
