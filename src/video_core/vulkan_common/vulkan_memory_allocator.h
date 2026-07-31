@@ -51,21 +51,34 @@ namespace Vulkan {
         HostMemoryImport &operator=(const HostMemoryImport &) = delete;
 
         [[nodiscard]] bool IsValid() const noexcept {
-            return buffer != VK_NULL_HANDLE;
-        }
-
-        [[nodiscard]] VkBuffer GetBuffer() const noexcept {
-            return buffer;
+            return !windows.empty();
         }
 
         [[nodiscard]] size_t GetSize() const noexcept {
             return imported_size;
         }
 
+        [[nodiscard]] VkDeviceSize GetWindowSize() const noexcept {
+            return window_size;
+        }
+
+        [[nodiscard]] VkBuffer GetWindowBuffer(size_t index) const noexcept {
+            return windows[index].buffer;
+        }
+
+        [[nodiscard]] size_t GetWindowCount() const noexcept {
+            return windows.size();
+        }
+
     private:
+        struct Window {
+            vk::DeviceMemory memory;
+            VkBuffer buffer{};
+        };
+
         const Device &device;
-        vk::DeviceMemory memory;
-        VkBuffer buffer{};
+        std::vector<Window> windows;
+        VkDeviceSize window_size{};
         size_t imported_size{};
     };
 

@@ -1815,53 +1815,73 @@ void BufferCache<P>::ImmediateUploadMemory([[maybe_unused]] Buffer& buffer,
 }
 
 template <class P>
-bool BufferCache<P>::TryUnifiedUploadMemory([[maybe_unused]] Buffer& buffer,
-                                            [[maybe_unused]] std::span<BufferCopy> copies) {
+bool BufferCache<P>::TryUnifiedDownloadMemory([[maybe_unused]] Buffer& buffer,
+                                              [[maybe_unused]] std::span<BufferCopy> copies) {
     if constexpr (USE_UNIFIED_MEMORY) {
-        boost::container::small_vector<BufferCopy, 16> host_copies;
         const u8* const physical_base = device_memory.GetPhysicalBase();
         const u64 unified_size = runtime.UnifiedMemorySize();
+        const u64 window_size = runtime.UnifiedMemoryWindowSize();
+        if (window_size == 0) {
+            return false;
+        }
+        boost::container::small_vector<u64, 4> window_ids;
+        boost::container::small_vector<boost::container::small_vector<BufferCopy, 16>, 4> groups;
+        const auto group_for = [&](u64 window) -> boost::container::small_vector<BufferCopy, 16>& {
+            for (size_t i = 0; i < window_ids.size(); ++i) {
+                if (window_ids[i] == window) {
+                    return groups[i];
+                }
+            }
+            window_ids.push_back(window);
+            groups.emplace_back();
+            return groups.back();
+        };
         for (const BufferCopy& copy : copies) {
-            const DAddr device_addr = buffer.CpuAddr() + copy.dst_offset;
-            u64 uploaded = 0;
-            while (uploaded < copy.size) {
-                const DAddr page_addr = device_addr + uploaded;
+            const DAddr device_addr = buffer.CpuAddr() + copy.src_offset;
+            u64 downloaded = 0;
+            while (downloaded < copy.size) {
+                const DAddr page_addr = device_addr + downloaded;
                 const u8* const ptr = device_memory.GetPointer<u8>(page_addr);
                 if (ptr == nullptr) {
                     return false;
                 }
                 const u64 page_offset = page_addr & Core::DEVICE_PAGEMASK;
-                const u64 chunk = (std::min)(copy.size - uploaded,
-                                             static_cast<u64>(Core::DEVICE_PAGESIZE) - page_offset);
-                const u64 src_offset = static_cast<u64>(ptr - physical_base);
-                if (src_offset + chunk > unified_size) {
+                u64 chunk = (std::min)(copy.size - downloaded,
+                                       static_cast<u64>(Core::DEVICE_PAGESIZE) - page_offset);
+                const u64 phys_offset = static_cast<u64>(ptr - physical_base);
+                if (phys_offset + chunk > unified_size) {
                     return false;
                 }
-                if (!host_copies.empty()) {
-                    BufferCopy& last = host_copies.back();
-                    if (last.src_offset + last.size == src_offset &&
-                        last.dst_offset + last.size == copy.dst_offset + uploaded) {
+                const u64 window = phys_offset / window_size;
+                const u64 local_offset = phys_offset % window_size;
+                chunk = (std::min)(chunk, window_size - local_offset);
+                auto& group = group_for(window);
+                if (!group.empty()) {
+                    BufferCopy& last = group.back();
+                    if (last.src_offset + last.size == copy.src_offset + downloaded &&
+                        last.dst_offset + last.size == local_offset) {
                         last.size += chunk;
-                        uploaded += chunk;
+                        downloaded += chunk;
                         continue;
                     }
                 }
-                host_copies.push_back(BufferCopy{
-                    .src_offset = src_offset,
-                    .dst_offset = copy.dst_offset + uploaded,
+                group.push_back(BufferCopy{
+                    .src_offset = copy.src_offset + downloaded,
+                    .dst_offset = local_offset,
                     .size = chunk,
                 });
-                uploaded += chunk;
+                downloaded += chunk;
             }
         }
         for (const BufferCopy& copy : copies) {
-            if (Settings::values.enable_gpu_buffer_readback.GetValue()) {
-                DownloadBufferMemory(buffer, buffer.CpuAddr() + copy.dst_offset, copy.size);
-            }
+            buffer.MarkUsage(copy.src_offset, copy.size);
         }
-        const std::span<BufferCopy> host_span(host_copies.data(), host_copies.size());
-        const bool can_reorder = runtime.CanReorderUpload(buffer, host_span);
-        runtime.CopyBuffer(buffer, runtime.UnifiedMemoryBuffer(), host_span, true, can_reorder);
+        for (size_t i = 0; i < window_ids.size(); ++i) {
+            const std::span<BufferCopy> group_span(groups[i].data(), groups[i].size());
+            runtime.CopyBuffer(runtime.UnifiedMemoryWindowBuffer(window_ids[i]), buffer,
+                               group_span, true);
+        }
+        runtime.Finish();
         return true;
     } else {
         return false;
@@ -1873,11 +1893,6 @@ void BufferCache<P>::MappedUploadMemory([[maybe_unused]] Buffer& buffer,
                                         [[maybe_unused]] u64 total_size_bytes,
                                         [[maybe_unused]] std::span<BufferCopy> copies) {
     if constexpr (USE_MEMORY_MAPS) {
-        if constexpr (USE_UNIFIED_MEMORY) {
-            if (runtime.HasUnifiedMemory() && TryUnifiedUploadMemory(buffer, copies)) {
-                return;
-            }
-        }
         auto upload_staging = runtime.UploadStagingBuffer(total_size_bytes);
         const std::span<u8> staging_pointer = upload_staging.mapped_span;
         for (BufferCopy& copy : copies) {
@@ -1976,6 +1991,12 @@ void BufferCache<P>::DownloadBufferMemory(Buffer& buffer, DAddr device_addr, u64
     }
 
     if constexpr (USE_MEMORY_MAPS) {
+        if constexpr (USE_UNIFIED_MEMORY) {
+            if (runtime.HasUnifiedMemory() &&
+                TryUnifiedDownloadMemory(buffer, std::span(copies.data(), copies.size()))) {
+                return;
+            }
+        }
         auto download_staging = runtime.DownloadStagingBuffer(total_size_bytes);
         const u8* const mapped_memory = download_staging.mapped_span.data();
         const std::span<BufferCopy> copies_span(copies.data(), copies.data() + copies.size());

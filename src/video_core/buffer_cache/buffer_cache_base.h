@@ -451,7 +451,7 @@ private:
 
     void MappedUploadMemory(Buffer& buffer, u64 total_size_bytes, std::span<BufferCopy> copies);
 
-    bool TryUnifiedUploadMemory(Buffer& buffer, std::span<BufferCopy> copies);
+    bool TryUnifiedDownloadMemory(Buffer& buffer, std::span<BufferCopy> copies);
 
     void DownloadBufferMemory(Buffer& buffer_id);
 

@@ -104,12 +104,16 @@ public:
         return unified_memory != nullptr && unified_memory->IsValid();
     }
 
-    [[nodiscard]] VkBuffer UnifiedMemoryBuffer() const noexcept {
-        return unified_memory ? unified_memory->GetBuffer() : VK_NULL_HANDLE;
-    }
-
     [[nodiscard]] u64 UnifiedMemorySize() const noexcept {
         return unified_memory ? unified_memory->GetSize() : 0;
+    }
+
+    [[nodiscard]] u64 UnifiedMemoryWindowSize() const noexcept {
+        return unified_memory ? unified_memory->GetWindowSize() : 0;
+    }
+
+    [[nodiscard]] VkBuffer UnifiedMemoryWindowBuffer(size_t index) const noexcept {
+        return unified_memory ? unified_memory->GetWindowBuffer(index) : VK_NULL_HANDLE;
     }
 
     u64 CurrentTick();
