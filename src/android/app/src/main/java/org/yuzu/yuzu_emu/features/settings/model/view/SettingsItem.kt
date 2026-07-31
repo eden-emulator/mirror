@@ -163,6 +163,13 @@ abstract class SettingsItem(
                 )
             )
             put(
+                SwitchSetting(
+                    BooleanSetting.RENDERER_WORKGROUP_MEMORY_EXPLICIT_LAYOUT,
+                    titleId = R.string.workgroup_memory_explicit_layout,
+                    descriptionId = R.string.workgroup_memory_explicit_layout_description
+                )
+            )
+            put(
                 SliderSetting(
                     IntSetting.RENDERER_SAMPLE_SHADING,
                     titleId = R.string.sample_shading_fraction,

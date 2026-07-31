@@ -294,6 +294,8 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
            tr("Renders without render pass and framebuffer objects.\n"
               "Results vary by driver: some gain performance, others lose it."));
 
+    INSERT(Settings, workgroup_memory_explicit_layout, QString(), QString());
+
     INSERT(
         Settings, sample_shading, tr("Sample Shading"),
         tr("Allows the fragment shader to execute per sample in a multi-sampled fragment "

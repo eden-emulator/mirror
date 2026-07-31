@@ -638,6 +638,9 @@ struct Values {
     SwitchableSetting<bool> dynamic_rendering{linkage, true, "dynamic_rendering",
                                               Category::RendererExtensions};
 
+    SwitchableSetting<bool> workgroup_memory_explicit_layout{
+        linkage, false, "workgroup_memory_explicit_layout", Category::RendererExtensions};
+
     SwitchableSetting<s32, true> pipeline_worker_count{
         linkage, 2, 2, 8, "pipeline_worker_count", Category::RendererAdvanced,
         Specialization::Scalar};

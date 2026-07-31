@@ -314,6 +314,7 @@ class SettingsFragmentPresenter(
             add(IntSetting.RENDERER_DYNA_STATE.key)
             add(BooleanSetting.RENDERER_VERTEX_INPUT_DYNAMIC_STATE.key)
             add(BooleanSetting.RENDERER_DYNAMIC_RENDERING.key)
+            add(BooleanSetting.RENDERER_WORKGROUP_MEMORY_EXPLICIT_LAYOUT.key)
             add(IntSetting.RENDERER_SAMPLE_SHADING.key)
 
             add(HeaderSetting(R.string.display))

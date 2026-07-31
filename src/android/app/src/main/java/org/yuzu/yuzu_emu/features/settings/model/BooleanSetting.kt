@@ -37,6 +37,7 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     RENDERER_PATCH_OLD_QCOM_DRIVERS("patch_old_qcom_drivers"),
     RENDERER_VERTEX_INPUT_DYNAMIC_STATE("vertex_input_dynamic_state"),
     RENDERER_DYNAMIC_RENDERING("dynamic_rendering"),
+    RENDERER_WORKGROUP_MEMORY_EXPLICIT_LAYOUT("workgroup_memory_explicit_layout"),
     RENDERER_SAMPLE_SHADING("sample_shading"),
     GPU_UNSWIZZLE_ENABLED("gpu_unswizzle_enabled"),
     PICTURE_IN_PICTURE("picture_in_picture"),

@@ -546,6 +546,8 @@
     <string name="vertex_input_dynamic_state_description">Enabling this feature allows for more flexible vertex input handling, potentially reducing pipeline compilation time in vertex/buffer.</string>
     <string name="dynamic_rendering">Dynamic Rendering</string>
     <string name="dynamic_rendering_description">Render without render pass and framebuffer objects. Results vary by driver: some gain performance, others lose it.</string>
+    <string name="workgroup_memory_explicit_layout">Workgroup Memory Explicit Layout</string>
+    <string name="workgroup_memory_explicit_layout_description">Let shaders declare explicit layouts for workgroup memory. Disabled by default: some Qualcomm drivers are unstable with it.</string>
     <string name="sample_shading_fraction">Sample Shading</string>
     <string name="sample_shading_fraction_description">Allows the fragment shader to execute per sample in a multi-sampled fragment instead once per fragment. Improves graphics quality at the cost of some performance.</string>
 

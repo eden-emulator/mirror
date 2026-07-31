@@ -539,10 +539,6 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
         features.shader_atomic_int64.shaderBufferInt64Atomics = false;
         features.shader_atomic_int64.shaderSharedInt64Atomics = false;
         features.features.shaderInt64 = false;
-        LOG_WARNING(Render_Vulkan, "Qualcomm drivers have broken workgroup memory explicit layout.");
-        RemoveExtensionFeature(extensions.workgroup_memory_explicit_layout,
-                               features.workgroup_memory_explicit_layout,
-                               VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
 
 #if defined(__ANDROID__) && defined(ARCHITECTURE_arm64)
         // BCn patching only safe on Android 9+ (API 28+). Older versions crash on driver load.
@@ -1514,6 +1510,12 @@ void Device::RemoveUnsuitableExtensions() {
     }
 
     // VK_KHR_workgroup_memory_explicit_layout
+#ifdef __ANDROID__
+    if (!Settings::values.workgroup_memory_explicit_layout.GetValue()) {
+        LOG_INFO(Render_Vulkan, "Workgroup memory explicit layout disabled by user setting");
+        features.workgroup_memory_explicit_layout.workgroupMemoryExplicitLayout = false;
+    }
+#endif
     extensions.workgroup_memory_explicit_layout =
         features.workgroup_memory_explicit_layout.workgroupMemoryExplicitLayout &&
         features.workgroup_memory_explicit_layout.workgroupMemoryExplicitLayoutScalarBlockLayout;
