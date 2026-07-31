@@ -277,6 +277,7 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkGetBufferMemoryRequirements2);
     X(vkGetDeviceQueue);
     X(vkGetEventStatus);
+    X(vkGetMemoryHostPointerPropertiesEXT);
     X(vkGetFenceStatus);
     X(vkGetImageMemoryRequirements);
     X(vkGetPipelineCacheData);

@@ -230,6 +230,10 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
            tr("Preserves GPU-modified data by reading it back before uploading.\nSome games require this to render certain effects properly."));
     INSERT(Settings, use_asynchronous_shaders, tr("Enable asynchronous shader compilation"),
            tr("May reduce shader stutter."));
+    INSERT(Settings, use_unified_memory, tr("Enable unified memory access (UMA)"),
+           tr("Lets the GPU read guest memory directly for buffer uploads, skipping the CPU "
+              "staging copy.\nRequires driver support for host memory import and may cause "
+              "issues in some games."));
     INSERT(Settings, pipeline_worker_count, tr("Pipeline Worker Threads"),
            tr("Number of threads used to build Vulkan pipelines.\n"
               "Higher values speed up compilation at the cost of heat and power."));

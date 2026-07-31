@@ -87,6 +87,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION(EXT, CONDITIONAL_RENDERING, conditional_rendering)                                   \
     EXTENSION(EXT, CONSERVATIVE_RASTERIZATION, conservative_rasterization)                         \
     EXTENSION(EXT, DEPTH_RANGE_UNRESTRICTED, depth_range_unrestricted)                             \
+    EXTENSION(EXT, EXTERNAL_MEMORY_HOST, external_memory_host)                                     \
     EXTENSION(EXT, MEMORY_BUDGET, memory_budget)                                                   \
     EXTENSION(EXT, PIPELINE_CREATION_FEEDBACK, pipeline_creation_feedback)                         \
     EXTENSION(EXT, ROBUSTNESS_2, robustness_2)                                                     \
@@ -900,6 +901,18 @@ FN_MAX_LIMIT_LIST
         return extensions.conditional_rendering;
     }
 
+    bool IsExtExternalMemoryHostSupported() const {
+        return extensions.external_memory_host;
+    }
+
+    u64 GetMinImportedHostPointerAlignment() const {
+        return properties.external_memory_host.minImportedHostPointerAlignment;
+    }
+
+    u64 GetMaxBufferSize() const {
+        return properties.maintenance4.maxBufferSize;
+    }
+
     bool HasTimelineSemaphore() const;
 
     /// Returns true if the device supports VK_KHR_synchronization2.
@@ -1247,8 +1260,10 @@ private:
         VkPhysicalDeviceDescriptorBufferPropertiesEXT descriptor_buffer{};
         VkPhysicalDeviceSubgroupSizeControlProperties subgroup_size_control{};
         VkPhysicalDeviceTransformFeedbackPropertiesEXT transform_feedback{};
+        VkPhysicalDeviceMaintenance4Properties maintenance4{};
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};
         VkPhysicalDeviceDepthStencilResolveProperties depth_stencil_resolve{};
+        VkPhysicalDeviceExternalMemoryHostPropertiesEXT external_memory_host{};
 
         VkPhysicalDeviceProperties properties{};
     };

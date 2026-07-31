@@ -1815,10 +1815,69 @@ void BufferCache<P>::ImmediateUploadMemory([[maybe_unused]] Buffer& buffer,
 }
 
 template <class P>
+bool BufferCache<P>::TryUnifiedUploadMemory([[maybe_unused]] Buffer& buffer,
+                                            [[maybe_unused]] std::span<BufferCopy> copies) {
+    if constexpr (USE_UNIFIED_MEMORY) {
+        boost::container::small_vector<BufferCopy, 16> host_copies;
+        const u8* const physical_base = device_memory.GetPhysicalBase();
+        const u64 unified_size = runtime.UnifiedMemorySize();
+        for (const BufferCopy& copy : copies) {
+            const DAddr device_addr = buffer.CpuAddr() + copy.dst_offset;
+            u64 uploaded = 0;
+            while (uploaded < copy.size) {
+                const DAddr page_addr = device_addr + uploaded;
+                const u8* const ptr = device_memory.GetPointer<u8>(page_addr);
+                if (ptr == nullptr) {
+                    return false;
+                }
+                const u64 page_offset = page_addr & Core::DEVICE_PAGEMASK;
+                const u64 chunk = (std::min)(copy.size - uploaded,
+                                             static_cast<u64>(Core::DEVICE_PAGESIZE) - page_offset);
+                const u64 src_offset = static_cast<u64>(ptr - physical_base);
+                if (src_offset + chunk > unified_size) {
+                    return false;
+                }
+                if (!host_copies.empty()) {
+                    BufferCopy& last = host_copies.back();
+                    if (last.src_offset + last.size == src_offset &&
+                        last.dst_offset + last.size == copy.dst_offset + uploaded) {
+                        last.size += chunk;
+                        uploaded += chunk;
+                        continue;
+                    }
+                }
+                host_copies.push_back(BufferCopy{
+                    .src_offset = src_offset,
+                    .dst_offset = copy.dst_offset + uploaded,
+                    .size = chunk,
+                });
+                uploaded += chunk;
+            }
+        }
+        for (const BufferCopy& copy : copies) {
+            if (Settings::values.enable_gpu_buffer_readback.GetValue()) {
+                DownloadBufferMemory(buffer, buffer.CpuAddr() + copy.dst_offset, copy.size);
+            }
+        }
+        const std::span<BufferCopy> host_span(host_copies.data(), host_copies.size());
+        const bool can_reorder = runtime.CanReorderUpload(buffer, host_span);
+        runtime.CopyBuffer(buffer, runtime.UnifiedMemoryBuffer(), host_span, true, can_reorder);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <class P>
 void BufferCache<P>::MappedUploadMemory([[maybe_unused]] Buffer& buffer,
                                         [[maybe_unused]] u64 total_size_bytes,
                                         [[maybe_unused]] std::span<BufferCopy> copies) {
     if constexpr (USE_MEMORY_MAPS) {
+        if constexpr (USE_UNIFIED_MEMORY) {
+            if (runtime.HasUnifiedMemory() && TryUnifiedUploadMemory(buffer, copies)) {
+                return;
+            }
+        }
         auto upload_staging = runtime.UploadStagingBuffer(total_size_bytes);
         const std::span<u8> staging_pointer = upload_staging.mapped_span;
         for (BufferCopy& copy : copies) {

@@ -68,6 +68,118 @@ namespace Vulkan {
 
     } // namespace
 
+    HostMemoryImport::HostMemoryImport(const Device &device_, void *base, size_t size)
+            : device{device_} {
+        if (!device.IsExtExternalMemoryHostSupported()) {
+            return;
+        }
+        const u64 alignment = device.GetMinImportedHostPointerAlignment();
+        if (alignment == 0 || !Common::IsAligned(reinterpret_cast<uintptr_t>(base), alignment) ||
+            !Common::IsAligned(size, alignment)) {
+            LOG_INFO(Render_Vulkan,
+                     "Unified memory disabled, host allocation does not satisfy alignment {}",
+                     alignment);
+            return;
+        }
+        const u64 max_buffer_size = device.GetMaxBufferSize();
+        if (max_buffer_size != 0 && max_buffer_size < size) {
+            size = static_cast<size_t>(Common::AlignDown(max_buffer_size, alignment));
+            if (size == 0) {
+                return;
+            }
+        }
+        const auto &logical = device.GetLogical();
+        VkMemoryHostPointerPropertiesEXT host_props{
+                .sType = VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT,
+                .pNext = nullptr,
+                .memoryTypeBits = 0,
+        };
+        if (logical.GetMemoryHostPointerPropertiesEXT(
+                    VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT, base, &host_props) !=
+                    VK_SUCCESS ||
+            host_props.memoryTypeBits == 0) {
+            return;
+        }
+        const VkExternalMemoryBufferCreateInfo external_info{
+                .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+                .pNext = nullptr,
+                .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+        };
+        const VkBufferCreateInfo buffer_ci{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                .pNext = &external_info,
+                .flags = 0,
+                .size = size,
+                .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices = nullptr,
+        };
+        VkBuffer new_buffer{};
+        if (logical.CreateBufferRaw(buffer_ci, &new_buffer) != VK_SUCCESS) {
+            return;
+        }
+        const VkMemoryRequirements requirements = logical.GetBufferMemoryRequirements(new_buffer);
+        const u32 type_mask = requirements.memoryTypeBits & host_props.memoryTypeBits;
+        if (type_mask == 0 || requirements.size > size) {
+            logical.DestroyBufferRaw(new_buffer);
+            return;
+        }
+        const auto memory_props = device.GetPhysical().GetMemoryProperties().memoryProperties;
+        const auto find_type = [&](VkMemoryPropertyFlags wanted) -> std::optional<u32> {
+            for (u32 i = 0; i < memory_props.memoryTypeCount; ++i) {
+                if (((type_mask >> i) & 1u) != 0 &&
+                    (memory_props.memoryTypes[i].propertyFlags & wanted) == wanted) {
+                    return i;
+                }
+            }
+            return std::nullopt;
+        };
+        auto type_index = find_type(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                                    VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+        if (!type_index) {
+            type_index = find_type(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        }
+        if (!type_index) {
+            logical.DestroyBufferRaw(new_buffer);
+            return;
+        }
+        const VkImportMemoryHostPointerInfoEXT import_info{
+                .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
+                .pNext = nullptr,
+                .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+                .pHostPointer = base,
+        };
+        const VkMemoryAllocateInfo alloc_info{
+                .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                .pNext = &import_info,
+                .allocationSize = size,
+                .memoryTypeIndex = *type_index,
+        };
+        memory = logical.TryAllocateMemory(alloc_info);
+        if (!memory) {
+            logical.DestroyBufferRaw(new_buffer);
+            return;
+        }
+        if (logical.BindBufferMemory(new_buffer, *memory, 0) != VK_SUCCESS) {
+            logical.DestroyBufferRaw(new_buffer);
+            memory = vk::DeviceMemory{};
+            return;
+        }
+        buffer = new_buffer;
+        imported_size = size;
+        LOG_INFO(Render_Vulkan, "Imported {} MiB of guest memory for unified memory access",
+                 size >> 20);
+    }
+
+    HostMemoryImport::~HostMemoryImport() {
+        if (buffer != VK_NULL_HANDLE) {
+            device.GetLogical().DestroyBufferRaw(buffer);
+        }
+    }
+
     MemoryAllocator::MemoryAllocator(const Device &device_)
             : device{device_}, allocator{device.GetAllocator()},
               properties{device_.GetPhysical().GetMemoryProperties().memoryProperties} {

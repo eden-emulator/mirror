@@ -1239,6 +1239,16 @@ bool Device::GetSuitability(bool requires_swapchain) {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES_KHR;
         SetNext(next, properties.maintenance5);
     }
+    if (extensions.external_memory_host) {
+        properties.external_memory_host.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT;
+        SetNext(next, properties.external_memory_host);
+    }
+    if (extensions.maintenance4 || features.maintenance4.maintenance4) {
+        properties.maintenance4.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES;
+        SetNext(next, properties.maintenance4);
+    }
     if (instance_version >= VK_API_VERSION_1_2) {
         properties.depth_stencil_resolve.sType =
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;

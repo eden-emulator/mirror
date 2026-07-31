@@ -364,6 +364,13 @@ BufferCacheRuntime::BufferCacheRuntime(const Device& device_, MemoryAllocator& m
                                                                      scheduler_, staging_pool_);
 }
 
+void BufferCacheRuntime::TryEnableUnifiedMemory(void* base, size_t size) {
+    unified_memory = std::make_unique<HostMemoryImport>(device, base, size);
+    if (!unified_memory->IsValid()) {
+        unified_memory.reset();
+    }
+}
+
 StagingBufferRef BufferCacheRuntime::UploadStagingBuffer(size_t size) {
     return staging_pool.Request(size, MemoryUsage::Upload);
 }

@@ -181,6 +181,7 @@ class BufferCache : public VideoCommon::ChannelSetupCaches<BufferCacheChannelInf
     static constexpr bool USE_MEMORY_MAPS = P::USE_MEMORY_MAPS;
     static constexpr bool SEPARATE_IMAGE_BUFFERS_BINDINGS = P::SEPARATE_IMAGE_BUFFER_BINDINGS;
     static constexpr bool USE_MEMORY_MAPS_FOR_UPLOADS = P::USE_MEMORY_MAPS_FOR_UPLOADS;
+    static constexpr bool USE_UNIFIED_MEMORY = P::USE_UNIFIED_MEMORY;
 
 #ifdef YUZU_LEGACY
     static constexpr u64 RECLAIM_HEADROOM = 384_MiB;
@@ -449,6 +450,8 @@ private:
                                std::span<const BufferCopy> copies);
 
     void MappedUploadMemory(Buffer& buffer, u64 total_size_bytes, std::span<BufferCopy> copies);
+
+    bool TryUnifiedUploadMemory(Buffer& buffer, std::span<BufferCopy> copies);
 
     void DownloadBufferMemory(Buffer& buffer_id);
 

@@ -40,6 +40,35 @@ namespace Vulkan {
         }
     }
 
+    class HostMemoryImport {
+    public:
+        explicit HostMemoryImport(const Device &device_, void *base, size_t size);
+
+        ~HostMemoryImport();
+
+        HostMemoryImport(const HostMemoryImport &) = delete;
+
+        HostMemoryImport &operator=(const HostMemoryImport &) = delete;
+
+        [[nodiscard]] bool IsValid() const noexcept {
+            return buffer != VK_NULL_HANDLE;
+        }
+
+        [[nodiscard]] VkBuffer GetBuffer() const noexcept {
+            return buffer;
+        }
+
+        [[nodiscard]] size_t GetSize() const noexcept {
+            return imported_size;
+        }
+
+    private:
+        const Device &device;
+        vk::DeviceMemory memory;
+        VkBuffer buffer{};
+        size_t imported_size{};
+    };
+
 /// Memory allocator container.
 /// Allocates and releases memory allocations on demand.
     class MemoryAllocator {

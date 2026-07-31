@@ -7,6 +7,7 @@
 #pragma once
 
 #include <limits>
+#include <memory>
 
 #include "video_core/buffer_cache/buffer_cache_base.h"
 #include "video_core/buffer_cache/memory_tracker_base.h"
@@ -96,6 +97,20 @@ public:
                                 DescriptorPool& descriptor_pool);
 
     void TickFrame(Common::SlotVector<Buffer>& slot_buffers) noexcept;
+
+    void TryEnableUnifiedMemory(void* base, size_t size);
+
+    [[nodiscard]] bool HasUnifiedMemory() const noexcept {
+        return unified_memory != nullptr && unified_memory->IsValid();
+    }
+
+    [[nodiscard]] VkBuffer UnifiedMemoryBuffer() const noexcept {
+        return unified_memory ? unified_memory->GetBuffer() : VK_NULL_HANDLE;
+    }
+
+    [[nodiscard]] u64 UnifiedMemorySize() const noexcept {
+        return unified_memory ? unified_memory->GetSize() : 0;
+    }
 
     u64 CurrentTick();
 
@@ -210,6 +225,7 @@ private:
     std::shared_ptr<QuadStripIndexBuffer> quad_strip_index_buffer;
 
     vk::Buffer null_buffer;
+    std::unique_ptr<HostMemoryImport> unified_memory;
 
     std::unique_ptr<Uint8Pass> uint8_pass;
     QuadIndexedPass quad_index_pass;
@@ -232,6 +248,7 @@ struct BufferCacheParams {
     static constexpr bool USE_MEMORY_MAPS = true;
     static constexpr bool SEPARATE_IMAGE_BUFFER_BINDINGS = false;
     static constexpr bool USE_MEMORY_MAPS_FOR_UPLOADS = true;
+    static constexpr bool USE_UNIFIED_MEMORY = true;
 };
 
 using BufferCache = VideoCommon::BufferCache<BufferCacheParams>;

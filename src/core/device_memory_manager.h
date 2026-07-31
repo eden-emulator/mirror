@@ -95,6 +95,18 @@ public:
         ApplyOpOnPAddr(address, buffer, operation);
     }
 
+    u8* GetPhysicalBase() noexcept {
+        return reinterpret_cast<u8*>(physical_base);
+    }
+
+    const u8* GetPhysicalBase() const noexcept {
+        return reinterpret_cast<const u8*>(physical_base);
+    }
+
+    size_t GetPhysicalSize() const noexcept {
+        return physical_size;
+    }
+
     PAddr GetPhysicalRawAddressFromDAddr(DAddr address) const {
         PAddr subbits = PAddr(address & page_mask);
         auto paddr = tracked_entries[(address >> page_bits)].compressed_physical_ptr;
@@ -175,6 +187,7 @@ private:
     std::unique_ptr<DeviceMemoryManagerAllocator<Traits>> impl;
 
     const uintptr_t physical_base;
+    const size_t physical_size;
     DeviceInterface* device_inter;
 
     struct TrackedEntry {
