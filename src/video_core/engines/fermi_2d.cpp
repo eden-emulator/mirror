@@ -71,7 +71,8 @@ void Fermi2D::Blit() {
     constexpr s64 null_derivative = 1ULL << 32;
     Surface src = regs.src;
     const auto bytes_per_pixel = BytesPerBlock(PixelFormatFromRenderTargetFormat(src.format));
-    const bool delegate_to_gpu = src.width > 512 && src.height > 512 && bytes_per_pixel <= 8 &&
+    const u64 src_area = static_cast<u64>(src.width) * static_cast<u64>(src.height);
+    const bool delegate_to_gpu = src_area > 512ULL * 512ULL && bytes_per_pixel <= 8 &&
                                  src.format != regs.dst.format;
 
     auto srcX = args.src_x0;
