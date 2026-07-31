@@ -383,6 +383,11 @@ void MemoryManager::ReadBlockImpl(GPUVAddr gpu_src_addr, void* dest_buffer, std:
         run_size = 0;
     };
     auto append_run = [&](const u8* physical, std::size_t copy_amount) {
+        if (physical == nullptr) [[unlikely]] {
+            flush_run();
+            std::memset(dest_buffer, 0, copy_amount);
+            return;
+        }
         if (run_size != 0 && run_src + run_size == physical &&
             run_dst + run_size == static_cast<u8*>(dest_buffer)) {
             run_size += copy_amount;
@@ -457,6 +462,10 @@ void MemoryManager::WriteBlockImpl(GPUVAddr gpu_dest_addr, const void* src_buffe
         run_size = 0;
     };
     auto append_run = [&](u8* physical, std::size_t copy_amount) {
+        if (physical == nullptr) [[unlikely]] {
+            flush_run();
+            return;
+        }
         if (run_size != 0 && run_dst + run_size == physical &&
             run_src + run_size == static_cast<const u8*>(src_buffer)) {
             run_size += copy_amount;
