@@ -627,7 +627,9 @@ void Scheduler::EndPendingOperations() {
 void Scheduler::EndRenderPass()
     {
         RealizeDeferredClear();
-        query_cache->NotifySegment(false);
+        if (query_cache) {
+            query_cache->NotifySegment(false);
+        }
         if (!state.rendering) {
             return;
         }
