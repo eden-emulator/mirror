@@ -207,7 +207,10 @@ u64 TextureCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
         frame_tick > RECLAIM_GUARD_FRAMES ? frame_tick - RECLAIM_GUARD_FRAMES : 0;
     lru_cache.ForEachItemBelow(cold_tick, evict);
     if (freed == 0) {
-        lru_cache.ForEachItemBelow(frame_tick > 0 ? frame_tick - 1 : 0, evict);
+        const u64 urgent_tick = frame_tick > RECLAIM_URGENT_GUARD_FRAMES
+                                    ? frame_tick - RECLAIM_URGENT_GUARD_FRAMES
+                                    : 0;
+        lru_cache.ForEachItemBelow(urgent_tick, evict);
     }
     in_reclaim = false;
     usage_refresh_countdown = 0;

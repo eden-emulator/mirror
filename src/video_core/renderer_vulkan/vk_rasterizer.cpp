@@ -1001,8 +1001,8 @@ void RasterizerVulkan::LoadDiskResources(u64 title_id, std::stop_token stop_load
 
 void RasterizerVulkan::FlushWork() {
 #ifdef __ANDROID__
-    static constexpr u32 DRAWS_TO_DISPATCH = 512;
-    static constexpr u32 CHECK_MASK = 31;
+    static constexpr u32 DRAWS_TO_DISPATCH = 1024;
+    static constexpr u32 CHECK_MASK = 63;
 #else
     static constexpr u32 DRAWS_TO_DISPATCH = 4096;
     static constexpr u32 CHECK_MASK = 31;

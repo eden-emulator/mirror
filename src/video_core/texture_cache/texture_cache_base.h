@@ -113,15 +113,16 @@ class TextureCache : public VideoCommon::ChannelSetupCaches<TextureCacheChannelI
     static constexpr size_t UNSET_CHANNEL{(std::numeric_limits<size_t>::max)()};
 
 #ifdef YUZU_LEGACY
-    static constexpr u64 RECLAIM_HEADROOM = 384_MiB;
+    static constexpr u64 RECLAIM_HEADROOM = 192_MiB;
 #else
-    static constexpr u64 RECLAIM_HEADROOM = 512_MiB;
+    static constexpr u64 RECLAIM_HEADROOM = 256_MiB;
 #endif
 
     static constexpr u64 FALLBACK_MEMORY_BUDGET = 2_GiB;
     static constexpr u32 USAGE_REFRESH_INTERVAL = 16;
-    static constexpr u64 RECLAIM_GUARD_FRAMES = 8;
-    static constexpr u64 RECLAIM_TARGET_PERCENT = 95;
+    static constexpr u64 RECLAIM_GUARD_FRAMES = 16;
+    static constexpr u64 RECLAIM_URGENT_GUARD_FRAMES = 4;
+    static constexpr u64 RECLAIM_TARGET_PERCENT = 90;
 
     using Runtime = typename P::Runtime;
     using Image = typename P::Image;
