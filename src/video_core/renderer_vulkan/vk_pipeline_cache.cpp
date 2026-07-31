@@ -873,8 +873,8 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
     Common::ThreadWorker* const thread_worker{build_in_parallel ? &workers : nullptr};
     return std::make_unique<GraphicsPipeline>(
         scheduler, buffer_cache, texture_cache, vulkan_pipeline_cache, &shader_notify, device,
-        descriptor_pool, guest_descriptor_queue, thread_worker, statistics, render_pass_cache, key,
-        std::move(modules), infos);
+        descriptor_pool, guest_descriptor_queue, descriptor_buffer_ring, thread_worker, statistics,
+        render_pass_cache, key, std::move(modules), infos);
 
 } catch (const Shader::Exception& exception) {
     auto hash = key.Hash();

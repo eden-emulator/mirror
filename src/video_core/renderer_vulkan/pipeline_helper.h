@@ -177,7 +177,6 @@ public:
         return result;
     }
 
-    // TODO(crueter): utilize layout binding flags
     vk::DescriptorSetLayout CreateDescriptorSetLayout(bool use_push_descriptor,
                                                       bool use_descriptor_buffer = false) const {
         if (bindings.empty()) {
@@ -190,9 +189,22 @@ public:
         if (use_descriptor_buffer) {
             flags |= VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
         }
+        boost::container::small_vector<VkDescriptorBindingFlags, 32> binding_flags;
+        VkDescriptorSetLayoutBindingFlagsCreateInfo binding_flags_ci{};
+        const void* pnext = nullptr;
+        if (!use_push_descriptor && device->IsDescriptorBindingPartiallyBoundSupported()) {
+            binding_flags.assign(bindings.size(), VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT);
+            binding_flags_ci = {
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+                .pNext = nullptr,
+                .bindingCount = static_cast<u32>(binding_flags.size()),
+                .pBindingFlags = binding_flags.data(),
+            };
+            pnext = &binding_flags_ci;
+        }
         return device->GetLogical().CreateDescriptorSetLayout({
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .pNext = nullptr,
+            .pNext = pnext,
             .flags = flags,
             .bindingCount = static_cast<u32>(bindings.size()),
             .pBindings = bindings.data(),

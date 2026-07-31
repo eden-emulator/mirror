@@ -905,6 +905,10 @@ FN_MAX_LIMIT_LIST
         return extensions.external_memory_host;
     }
 
+    bool IsDescriptorBindingPartiallyBoundSupported() const {
+        return features.descriptor_indexing.descriptorBindingPartiallyBound;
+    }
+
     u64 GetMinImportedHostPointerAlignment() const {
         return properties.external_memory_host.minImportedHostPointerAlignment;
     }

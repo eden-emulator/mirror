@@ -251,13 +251,15 @@ GraphicsPipeline::GraphicsPipeline(
     Scheduler& scheduler_, BufferCache& buffer_cache_, TextureCache& texture_cache_,
     vk::PipelineCache& pipeline_cache_, VideoCore::ShaderNotify* shader_notify,
     const Device& device_, DescriptorPool& descriptor_pool,
-    GuestDescriptorQueue& guest_descriptor_queue_, Common::ThreadWorker* worker_thread,
+    GuestDescriptorQueue& guest_descriptor_queue_, DescriptorBufferRing& descriptor_buffer_ring_,
+    Common::ThreadWorker* worker_thread,
     PipelineStatistics* pipeline_statistics, RenderPassCache& render_pass_cache,
     const GraphicsPipelineCacheKey& key_, std::array<vk::ShaderModule, NUM_STAGES> stages,
     const std::array<const Shader::Info*, NUM_STAGES>& infos)
     : key{key_}, device{device_}, texture_cache{texture_cache_}, buffer_cache{buffer_cache_},
       pipeline_cache(pipeline_cache_), scheduler{scheduler_},
-      guest_descriptor_queue{guest_descriptor_queue_}, spv_modules{std::move(stages)} {
+      guest_descriptor_queue{guest_descriptor_queue_},
+      descriptor_buffer_ring{descriptor_buffer_ring_}, spv_modules{std::move(stages)} {
     if (shader_notify) {
         shader_notify->MarkShaderBuilding();
     }
@@ -277,20 +279,36 @@ GraphicsPipeline::GraphicsPipeline(
         num_descriptor_entries += NumDescriptorEntries(*info);
     }
     fragment_has_color0_output = stage_infos[NUM_STAGES - 1].stores_frag_color[0];
-    auto func{[this, shader_notify, &render_pass_cache, &descriptor_pool, pipeline_statistics] {
-        DescriptorLayoutBuilder builder{MakeBuilder(device, stage_infos)};
-        uses_push_descriptor = builder.CanUsePushDescriptor();
-        descriptor_set_layout = builder.CreateDescriptorSetLayout(uses_push_descriptor);
 
-        if (!uses_push_descriptor) {
-            descriptor_allocator = descriptor_pool.Allocator(device, scheduler, *descriptor_set_layout, stage_infos);
+    DescriptorLayoutBuilder builder{MakeBuilder(device, stage_infos)};
+    uses_push_descriptor = builder.CanUsePushDescriptor();
+    uses_descriptor_buffer = builder.CanUseDescriptorBuffer() && descriptor_buffer_ring.IsValid();
+    descriptor_set_layout =
+        builder.CreateDescriptorSetLayout(uses_push_descriptor, uses_descriptor_buffer);
+    if (uses_descriptor_buffer) {
+        descriptor_buffer_layout = builder.MakeDescriptorBufferLayout(*descriptor_set_layout);
+        if (descriptor_buffer_layout.size > DescriptorBufferRing::MaxAllocationSize()) {
+            LOG_WARNING(Render_Vulkan,
+                        "Graphics pipeline {:016X} needs {} descriptor bytes, falling back to sets",
+                        key.Hash(), descriptor_buffer_layout.size);
+            uses_descriptor_buffer = false;
+            descriptor_buffer_layout = {};
+            descriptor_set_layout = builder.CreateDescriptorSetLayout(false);
         }
+    }
 
-        const VkDescriptorSetLayout set_layout{*descriptor_set_layout};
-        pipeline_layout = builder.CreatePipelineLayout(set_layout);
+    const VkDescriptorSetLayout set_layout{*descriptor_set_layout};
+    pipeline_layout = builder.CreatePipelineLayout(set_layout);
+    if (!uses_descriptor_buffer) {
         descriptor_update_template =
             builder.CreateTemplate(set_layout, *pipeline_layout, uses_push_descriptor);
+        if (!uses_push_descriptor) {
+            descriptor_allocator =
+                descriptor_pool.Allocator(device, scheduler, set_layout, stage_infos);
+        }
+    }
 
+    auto func{[this, shader_notify, &render_pass_cache, pipeline_statistics] {
         VkRenderPass render_pass{};
         if (!device.IsKhrDynamicRenderingSupported()) {
             render_pass = render_pass_cache.Get(MakeRenderPassKey(key.state, device));
@@ -500,7 +518,7 @@ bool GraphicsPipeline::ConfigureImpl(bool is_indexed) {
     buffer_cache.UpdateGraphicsBuffers(is_indexed);
     buffer_cache.BindHostGeometryBuffers(is_indexed);
 
-    guest_descriptor_queue.Acquire(scheduler, num_descriptor_entries);
+    guest_descriptor_queue.Acquire(scheduler, num_descriptor_entries, uses_descriptor_buffer);
 
     RescalingPushConstant rescaling;
     RenderAreaPushConstant render_area;
@@ -570,7 +588,7 @@ void GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
 
     const void* const descriptor_data{guest_descriptor_queue.UpdateData()};
     bool update_descriptors = true;
-    if (descriptor_set_layout && !uses_push_descriptor) {
+    if (descriptor_set_layout && !uses_push_descriptor && !uses_descriptor_buffer) {
         const auto* const entries = static_cast<const DescriptorUpdateEntry*>(descriptor_data);
         update_descriptors =
             bind_pipeline || last_descriptor_payload.size() != num_descriptor_entries ||
@@ -580,7 +598,21 @@ void GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
             last_descriptor_payload.assign(entries, entries + num_descriptor_entries);
         }
     }
+    VkDeviceSize descriptor_buffer_offset{};
+    bool descriptor_buffer_ready{false};
+    if (descriptor_set_layout && uses_descriptor_buffer) {
+        const DescriptorBufferRing::Allocation alloc{
+            descriptor_buffer_ring.Allocate(scheduler, descriptor_buffer_layout.size)};
+        if (alloc.host) {
+            WriteDescriptorBuffer(device, descriptor_buffer_layout,
+                                  static_cast<const DescriptorUpdateEntry*>(descriptor_data),
+                                  alloc.host);
+            descriptor_buffer_offset = alloc.offset;
+            descriptor_buffer_ready = true;
+        }
+    }
     scheduler.Record([this, descriptor_data, bind_pipeline, update_descriptors,
+                      descriptor_buffer_offset, descriptor_buffer_ready,
                       rescaling_data = rescaling.Data(), is_rescaling, update_rescaling,
                       uses_render_area = render_area.uses_render_area,
                       render_area_data = render_area.words](vk::CommandBuffer cmdbuf) {
@@ -608,7 +640,17 @@ void GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
         if (!descriptor_set_layout) {
             return;
         }
-        if (uses_push_descriptor) {
+        if (uses_descriptor_buffer) {
+            if (!descriptor_buffer_ready) {
+                return;
+            }
+            const VkDescriptorBufferBindingInfoEXT binding_info{
+                descriptor_buffer_ring.BindingInfo()};
+            cmdbuf.BindDescriptorBuffersEXT(binding_info);
+            const u32 buffer_index{};
+            cmdbuf.SetDescriptorBufferOffsetsEXT(VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline_layout,
+                                                 0, buffer_index, descriptor_buffer_offset);
+        } else if (uses_push_descriptor) {
             cmdbuf.PushDescriptorSetWithTemplateKHR(*descriptor_update_template, *pipeline_layout,
                                                     0, descriptor_data);
         } else if (update_descriptors) {
@@ -1016,6 +1058,9 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
     VkPipelineCreateFlags flags{};
     if (device.IsKhrPipelineExecutablePropertiesEnabled() && Settings::values.renderer_debug.GetValue()) {
         flags |= VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR;
+    }
+    if (uses_descriptor_buffer) {
+        flags |= VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
     }
 
     const RenderPassKey renderpass_key{MakeRenderPassKey(key.state, device)};
