@@ -63,8 +63,30 @@
 #include "common/settings.h"
 
 #ifdef __ANDROID__
+#include <dlfcn.h>
 #include <android/hardware_buffer.h>
-#include <cutils/native_handle.h>
+
+namespace {
+
+struct NativeHandle {
+    int version;
+    int numFds;
+    int numInts;
+    int data[1];
+};
+
+using PFN_AHardwareBuffer_getNativeHandle = const NativeHandle* (*)(const AHardwareBuffer*);
+
+PFN_AHardwareBuffer_getNativeHandle ResolveGetNativeHandle() {
+    void* const lib = dlopen("libnativewindow.so", RTLD_NOW);
+    if (lib == nullptr) {
+        return nullptr;
+    }
+    return reinterpret_cast<PFN_AHardwareBuffer_getNativeHandle>(
+        dlsym(lib, "AHardwareBuffer_getNativeHandle"));
+}
+
+} // namespace
 #endif
 
 #if defined(__ANDROID__) && __ANDROID_API__ < 30
@@ -587,6 +609,12 @@ public:
         if (!Settings::values.use_unified_memory.GetValue()) {
             return false;
         }
+        static const PFN_AHardwareBuffer_getNativeHandle get_native_handle =
+            ResolveGetNativeHandle();
+        if (get_native_handle == nullptr) {
+            LOG_WARNING(HW_Memory, "AHardwareBuffer_getNativeHandle is not available");
+            return false;
+        }
         constexpr size_t window_size = 1ULL << 30;
         const size_t num_windows = (backing_size + window_size - 1) / window_size;
         std::vector<AHardwareBuffer*> buffers;
@@ -619,7 +647,7 @@ public:
                 return false;
             }
             buffers.push_back(buffer);
-            const native_handle_t* handle = AHardwareBuffer_getNativeHandle(buffer);
+            const NativeHandle* const handle = get_native_handle(buffer);
             if (handle == nullptr || handle->numFds < 1) {
                 LOG_WARNING(HW_Memory, "Hardware buffer has no mappable file descriptor");
                 cleanup();
