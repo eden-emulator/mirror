@@ -1187,7 +1187,7 @@ namespace {
 constexpr u32 BL3DB_BINDING_INPUT_BUFFER = 0;
 constexpr u32 BL3DB_BINDING_OUTPUT_BUFFER = 1;
 
-struct alignas(16) BlockLinearUnswizzle3DPushConstants {
+struct alignas(16) BlockLinearUnswizzle3DBufferPushConstants {
     std::array<u32, 3> dim;
     u32 bytes_per_block_log2;
     std::array<u32, 3> origin;
@@ -1199,7 +1199,7 @@ struct alignas(16) BlockLinearUnswizzle3DPushConstants {
     u32 block_depth;
     u32 block_depth_mask;
 };
-static_assert(sizeof(BlockLinearUnswizzle3DPushConstants) <= 128);
+static_assert(sizeof(BlockLinearUnswizzle3DBufferPushConstants) <= 128);
 
 constexpr std::array<VkDescriptorSetLayoutBinding, 2> BL3DB_BINDINGS{{
     {
@@ -1256,7 +1256,7 @@ BlockLinearUnswizzle3DBufferPass::BlockLinearUnswizzle3DBufferPass(
     ComputePassDescriptorQueue& compute_pass_descriptor_queue_)
     : ComputePass(device_, scheduler_, descriptor_pool_, BL3DB_BINDINGS, BL3DB_TEMPLATE,
                   BL3DB_BANK_INFO,
-                  COMPUTE_PUSH_CONSTANT_RANGE<sizeof(BlockLinearUnswizzle3DPushConstants)>,
+                  COMPUTE_PUSH_CONSTANT_RANGE<sizeof(BlockLinearUnswizzle3DBufferPushConstants)>,
                   BLOCK_LINEAR_UNSWIZZLE_3D_BUFFER_COMP_SPV),
       scheduler{scheduler_}, staging_buffer_pool{staging_buffer_pool_},
       compute_pass_descriptor_queue{compute_pass_descriptor_queue_} {}
@@ -1308,7 +1308,7 @@ void BlockLinearUnswizzle3DBufferPass::Unswizzle(
     const StagingBufferRef output =
         staging_buffer_pool.Request(static_cast<size_t>(output_size), MemoryUsage::DeviceLocal);
 
-    BlockLinearUnswizzle3DPushConstants pc{};
+    BlockLinearUnswizzle3DBufferPushConstants pc{};
     pc.dim = {blocks_x, blocks_y, blocks_z};
     pc.bytes_per_block_log2 = params.bytes_per_block_log2;
     pc.origin = params.origin;
