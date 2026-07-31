@@ -1071,7 +1071,7 @@ void BlockLinearUnswizzle2DPass::Unswizzle(
             },
         };
         cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                                   (is_initialized ? VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
+                                   (is_initialized ? vk::PIPELINE_STAGE_GRAPHICS_COMPUTE
                                                    : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT),
                                VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {}, buffer_barrier, pre_copy);
 
@@ -1109,7 +1109,7 @@ void BlockLinearUnswizzle2DPass::Unswizzle(
             },
         };
         cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, {}, {}, post_copy);
+                               vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, 0, {}, {}, post_copy);
     });
 
     if constexpr (BL2D_VERIFY_AGAINST_CPU) {
@@ -1387,7 +1387,7 @@ void BlockLinearUnswizzle3DBufferPass::Unswizzle(
             },
         };
         cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                                   (is_initialized ? VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
+                                   (is_initialized ? vk::PIPELINE_STAGE_GRAPHICS_COMPUTE
                                                    : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT),
                                VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {}, buffer_barrier, pre_copy);
 
@@ -1424,8 +1424,8 @@ void BlockLinearUnswizzle3DBufferPass::Unswizzle(
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         };
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                               0, {}, {}, post_copy);
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, 0, {}, {}, post_copy);
     });
 
     if constexpr (BL3DB_VERIFY_AGAINST_CPU) {
