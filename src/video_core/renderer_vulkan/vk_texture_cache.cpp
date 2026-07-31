@@ -946,6 +946,8 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
     }
     bl2d_unswizzle_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
                                 compute_pass_descriptor_queue);
+    bl3db_unswizzle_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
+                                 compute_pass_descriptor_queue);
 }
 
 void TextureCacheRuntime::Finish() {
@@ -1877,7 +1879,10 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
     } else if (runtime->bl2d_unswizzle_pass &&
                BlockLinearUnswizzle2DPass::IsSupported(info)) {
         flags |= VideoCommon::ImageFlagBits::AcceleratedUpload;
-        flags |= VideoCommon::ImageFlagBits::Converted;
+        flags |= VideoCommon::ImageFlagBits::CostlyLoad;
+    } else if (runtime->bl3db_unswizzle_pass &&
+               BlockLinearUnswizzle3DBufferPass::IsSupported(runtime->device, info)) {
+        flags |= VideoCommon::ImageFlagBits::AcceleratedUpload;
         flags |= VideoCommon::ImageFlagBits::CostlyLoad;
     }
     if (IsPixelFormatBCn(info.format) && !runtime->device.IsOptimalBcnSupported()) {
@@ -3051,6 +3056,11 @@ void TextureCacheRuntime::AccelerateImageUpload(
 
     if (bl2d_unswizzle_pass && BlockLinearUnswizzle2DPass::IsSupported(image.info)) {
         return bl2d_unswizzle_pass->Unswizzle(image, map, swizzles);
+    }
+
+    if (bl3db_unswizzle_pass &&
+        BlockLinearUnswizzle3DBufferPass::IsSupported(device, image.info)) {
+        return bl3db_unswizzle_pass->Unswizzle(image, map, swizzles);
     }
 
     if (!Settings::values.gpu_unswizzle_enabled.GetValue() || !bl3d_unswizzle_pass) {

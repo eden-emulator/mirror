@@ -188,4 +188,30 @@ private:
     ComputePassDescriptorQueue& compute_pass_descriptor_queue;
 };
 
+class BlockLinearUnswizzle3DBufferPass final : public ComputePass {
+public:
+    explicit BlockLinearUnswizzle3DBufferPass(
+        const Device& device_, Scheduler& scheduler_, DescriptorPool& descriptor_pool_,
+        StagingBufferPool& staging_buffer_pool_,
+        ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
+    ~BlockLinearUnswizzle3DBufferPass();
+
+    [[nodiscard]] static bool IsSupported(const Device& device,
+                                          const VideoCommon::ImageInfo& info);
+
+    void Unswizzle(Image& image, const StagingBufferRef& swizzled,
+                   std::span<const VideoCommon::SwizzleParameters> swizzles);
+
+private:
+    void VerifyAgainstCpu(const StagingBufferRef& swizzled,
+                          const VideoCommon::SwizzleParameters& sw,
+                          const VideoCommon::ImageInfo& info,
+                          const StagingBufferRef& gpu_output, VkDeviceSize output_size,
+                          u32 blocks_x, u32 blocks_y, u32 blocks_z, u32 bytes_per_block);
+
+    Scheduler& scheduler;
+    StagingBufferPool& staging_buffer_pool;
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue;
+};
+
 } // namespace Vulkan
