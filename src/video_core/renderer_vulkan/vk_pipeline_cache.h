@@ -7,6 +7,8 @@
 #pragma once
 
 #include <array>
+#include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <filesystem>
 #include <memory>
@@ -144,6 +146,8 @@ private:
     vk::PipelineCache LoadVulkanPipelineCache(const std::filesystem::path& filename,
                                               u32 expected_cache_version);
 
+    void QueueVulkanPipelineCacheFlush();
+
     const Device& device;
     Scheduler& scheduler;
     DescriptorPool& descriptor_pool;
@@ -171,6 +175,10 @@ private:
 
     std::filesystem::path vulkan_pipeline_cache_filename;
     vk::PipelineCache vulkan_pipeline_cache;
+    size_t pipelines_since_flush{};
+    std::chrono::steady_clock::time_point last_flush{};
+    std::atomic<size_t> last_cache_size{};
+    std::atomic_bool flush_in_flight{};
 
     Common::ThreadWorker workers;
     Common::ThreadWorker serialization_thread;
