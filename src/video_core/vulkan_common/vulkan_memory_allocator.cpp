@@ -71,6 +71,8 @@ namespace Vulkan {
     HostMemoryImport::HostMemoryImport(const Device &device_, void *base, size_t size)
             : device{device_} {
         if (!device.IsExtExternalMemoryHostSupported()) {
+            LOG_INFO(Render_Vulkan,
+                     "Unified memory disabled, VK_EXT_external_memory_host is not supported");
             return;
         }
         const u64 alignment = device.GetMinImportedHostPointerAlignment();
