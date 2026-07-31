@@ -575,7 +575,7 @@ void ASTCDecoderPass::Assemble(Image& image, const StagingBufferRef& map,
         const void* const descriptor_data{compute_pass_descriptor_queue.UpdateData()};
 
         // To unswizzle the ASTC data
-        const auto params = MakeBlockLinearSwizzle2DParams(swizzle, image.info);
+        const auto params = VideoCommon::Accelerated::MakeBlockLinearSwizzle2DParams(swizzle, image.info);
         ASSERT(params.origin == (std::array<u32, 3>{0, 0, 0}));
         ASSERT(params.destination == (std::array<s32, 3>{0, 0, 0}));
         ASSERT(params.bytes_per_block_log2 == 4);
@@ -718,7 +718,7 @@ void BlockLinearUnswizzle3DPass::Unswizzle(
 
     ASSERT(swizzles.size() == 1);
     const auto& sw = swizzles[0];
-    const auto params = MakeBlockLinearSwizzle3DParams(sw, image.info);
+    const auto params = VideoCommon::Accelerated::MakeBlockLinearSwizzle3DParams(sw, image.info);
 
     const u32 blocks_x = (image.info.size.width  + 3) / 4;
     const u32 blocks_y = (image.info.size.height + 3) / 4;
@@ -986,7 +986,7 @@ void BlockLinearUnswizzle2DPass::Unswizzle(
         return;
     }
     const VideoCommon::SwizzleParameters& sw = swizzles.front();
-    const auto params = MakeBlockLinearSwizzle2DParams(sw, image.info);
+    const auto params = VideoCommon::Accelerated::MakeBlockLinearSwizzle2DParams(sw, image.info);
 
     const u32 width = sw.num_tiles.width;
     const u32 height = sw.num_tiles.height;
@@ -1296,7 +1296,7 @@ void BlockLinearUnswizzle3DBufferPass::Unswizzle(
         return;
     }
     const VideoCommon::SwizzleParameters& sw = swizzles.front();
-    const auto params = MakeBlockLinearSwizzle3DParams(sw, image.info);
+    const auto params = VideoCommon::Accelerated::MakeBlockLinearSwizzle3DParams(sw, image.info);
 
     const u32 blocks_x = sw.num_tiles.width;
     const u32 blocks_y = sw.num_tiles.height;
