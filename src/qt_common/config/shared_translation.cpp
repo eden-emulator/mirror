@@ -230,6 +230,9 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
            tr("Preserves GPU-modified data by reading it back before uploading.\nSome games require this to render certain effects properly."));
     INSERT(Settings, use_asynchronous_shaders, tr("Enable asynchronous shader compilation"),
            tr("May reduce shader stutter."));
+    INSERT(Settings, pipeline_worker_count, tr("Pipeline Worker Threads"),
+           tr("Number of threads used to build Vulkan pipelines.\n"
+              "Higher values speed up compilation at the cost of heat and power."));
     INSERT(Settings, fast_gpu_time, tr("Fast GPU Time"),
            tr("Overclocks the emulated GPU to increase dynamic resolution and render "
               "distance.\nUse 256 for maximal performance and 512 for maximal graphics fidelity."));
@@ -286,6 +289,10 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
 
     INSERT(Settings, vertex_input_dynamic_state, tr("Vertex Input Dynamic State"),
            tr("Enables vertex input dynamic state feature for better quality and performance."));
+
+    INSERT(Settings, dynamic_rendering, tr("Dynamic Rendering"),
+           tr("Renders without render pass and framebuffer objects.\n"
+              "Results vary by driver: some gain performance, others lose it."));
 
     INSERT(
         Settings, sample_shading, tr("Sample Shading"),

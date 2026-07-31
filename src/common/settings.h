@@ -635,6 +635,13 @@ struct Values {
 #endif
                                                        "vertex_input_dynamic_state", Category::RendererExtensions};
 
+    SwitchableSetting<bool> dynamic_rendering{linkage, true, "dynamic_rendering",
+                                              Category::RendererExtensions};
+
+    SwitchableSetting<s32, true> pipeline_worker_count{
+        linkage, 2, 2, 8, "pipeline_worker_count", Category::RendererAdvanced,
+        Specialization::Scalar};
+
     Setting<bool> renderer_debug{linkage, false, "debug", Category::RendererDebug};
     Setting<bool> renderer_shader_feedback{linkage, false, "shader_feedback",
                                            Category::RendererDebug};

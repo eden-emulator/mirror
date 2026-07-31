@@ -17,6 +17,7 @@
 #include "common/cityhash.h"
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
+#include "common/settings.h"
 #include "common/thread_worker.h"
 #include "core/core.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
@@ -44,10 +45,6 @@
 #include "video_core/vulkan_common/vulkan_device.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
 #include "video_core/gpu_logging/gpu_logging.h"
-
-#ifdef __ANDROID__
-#include "../../android/app/src/main/jni/android_settings.h"
-#endif
 
 namespace Vulkan {
 
@@ -306,12 +303,8 @@ size_t GetTotalPipelineWorkers() {
     const size_t max_core_threads =
         std::max<size_t>(static_cast<size_t>(std::thread::hardware_concurrency()), 2ULL) - 1ULL;
 #ifdef __ANDROID__
-    const int configured = AndroidSettings::values.pipeline_worker_count.GetValue();
-    const int clamped = std::clamp(configured, 2, 8);
-    const size_t desired = static_cast<size_t>(clamped);
-    if (desired == 0) {
-        return 1ULL;
-    }
+    const s32 configured = Settings::values.pipeline_worker_count.GetValue();
+    const size_t desired = static_cast<size_t>(std::clamp(configured, 2, 8));
     return std::min(max_core_threads, desired);
 #else
     return max_core_threads;

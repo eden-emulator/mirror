@@ -1534,6 +1534,10 @@ void Device::RemoveUnsuitableExtensions() {
     RemoveExtensionIfUnsuitable(extensions.maintenance3, VK_KHR_MAINTENANCE_3_EXTENSION_NAME);
 
     // VK_KHR_dynamic_rendering
+    if (!Settings::values.dynamic_rendering.GetValue()) {
+        LOG_INFO(Render_Vulkan, "Dynamic rendering disabled by user setting");
+        features.dynamic_rendering.dynamicRendering = false;
+    }
     extensions.dynamic_rendering = features.dynamic_rendering.dynamicRendering;
     RemoveExtensionFeatureIfUnsuitable(extensions.dynamic_rendering, features.dynamic_rendering,
                                        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);

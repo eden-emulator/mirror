@@ -156,6 +156,13 @@ abstract class SettingsItem(
                 )
             )
             put(
+                SwitchSetting(
+                    BooleanSetting.RENDERER_DYNAMIC_RENDERING,
+                    titleId = R.string.dynamic_rendering,
+                    descriptionId = R.string.dynamic_rendering_description
+                )
+            )
+            put(
                 SliderSetting(
                     IntSetting.RENDERER_SAMPLE_SHADING,
                     titleId = R.string.sample_shading_fraction,
