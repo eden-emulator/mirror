@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <limits>
 #include <memory>
 #include <mutex>
@@ -103,8 +104,20 @@ VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t in
         .maxDepth = src.translate_z + src.scale_z,
     };
     if (!device.IsExtDepthRangeUnrestrictedSupported()) {
+        const float unclamped_min = viewport.minDepth;
+        const float unclamped_max = viewport.maxDepth;
         viewport.minDepth = std::clamp(viewport.minDepth, 0.0f, 1.0f);
         viewport.maxDepth = std::clamp(viewport.maxDepth, 0.0f, 1.0f);
+        if (viewport.minDepth != unclamped_min || viewport.maxDepth != unclamped_max) {
+            static std::atomic<u32> reported{0};
+            if (reported.fetch_add(1, std::memory_order_relaxed) < 32) {
+                LOG_WARNING(Render_Vulkan,
+                            "Depth range clamped: viewport={} mode={} translate_z={} scale_z={} "
+                            "range=[{}, {}] -> [{}, {}]",
+                            index, static_cast<u32>(regs.depth_mode), src.translate_z, src.scale_z,
+                            unclamped_min, unclamped_max, viewport.minDepth, viewport.maxDepth);
+            }
+        }
     }
     return viewport;
 }

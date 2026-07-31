@@ -1791,6 +1791,8 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
         ImageBase& aliased = slot_images[aliased_id];
         aliased.overlapping_images.push_back(new_image_id);
         new_image.overlapping_images.push_back(aliased_id);
+        const bool aliased_was_bad = True(aliased.flags & ImageFlagBits::BadOverlap);
+        const bool new_was_bad = True(new_image.flags & ImageFlagBits::BadOverlap);
         if (aliased.info.resources.levels == 1 && aliased.info.block.depth == 0 &&
             aliased.overlapping_images.size() > 1) {
             aliased.flags |= ImageFlagBits::BadOverlap;
@@ -1798,6 +1800,21 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
         if (new_image.info.resources.levels == 1 && new_image.info.block.depth == 0 &&
             new_image.overlapping_images.size() > 1) {
             new_image.flags |= ImageFlagBits::BadOverlap;
+        }
+        const bool aliased_is_bad = True(aliased.flags & ImageFlagBits::BadOverlap);
+        const bool new_is_bad = True(new_image.flags & ImageFlagBits::BadOverlap);
+        if ((!aliased_was_bad && aliased_is_bad) || (!new_was_bad && new_is_bad)) {
+            LOG_WARNING(HW_GPU,
+                        "Bad overlap: existing gpu_addr={:#x} {}x{}x{} fmt={} type={} rt={} | "
+                        "incoming gpu_addr={:#x} {}x{}x{} fmt={} type={} rt={}",
+                        aliased.gpu_addr, aliased.info.size.width, aliased.info.size.height,
+                        aliased.info.size.depth, static_cast<u32>(aliased.info.format),
+                        static_cast<u32>(aliased.info.type),
+                        True(aliased.flags & ImageFlagBits::GpuModified),
+                        new_image.gpu_addr, new_image.info.size.width, new_image.info.size.height,
+                        new_image.info.size.depth, static_cast<u32>(new_image.info.format),
+                        static_cast<u32>(new_image.info.type),
+                        True(new_image.flags & ImageFlagBits::GpuModified));
         }
     }
 
