@@ -178,6 +178,11 @@ public:
                    std::span<const VideoCommon::SwizzleParameters> swizzles);
 
 private:
+    void VerifyAgainstCpu(const StagingBufferRef& swizzled,
+                          const VideoCommon::SwizzleParameters& sw,
+                          const StagingBufferRef& gpu_output, VkDeviceSize output_size, u32 width,
+                          u32 height, u32 depth, u32 bytes_per_block);
+
     Scheduler& scheduler;
     StagingBufferPool& staging_buffer_pool;
     ComputePassDescriptorQueue& compute_pass_descriptor_queue;

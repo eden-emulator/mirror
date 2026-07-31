@@ -5,10 +5,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
+#include <cstring>
 #include <memory>
 #include <numeric>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "video_core/renderer_vulkan/vk_texture_cache.h"
 
@@ -934,6 +936,8 @@ constexpr DescriptorBankInfo BL2D_BANK_INFO{
     .images = 0,
     .score = 2,
 };
+
+constexpr bool BL2D_VERIFY_AGAINST_CPU = false;
 } // Anonymous namespace
 
 BlockLinearUnswizzle2DPass::BlockLinearUnswizzle2DPass(
@@ -974,6 +978,8 @@ bool BlockLinearUnswizzle2DPass::IsSupported(const VideoCommon::ImageInfo& info)
 void BlockLinearUnswizzle2DPass::Unswizzle(
     Image& image, const StagingBufferRef& swizzled,
     std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    using namespace VideoCommon::Accelerated;
+
     if (swizzles.empty()) {
         return;
     }
@@ -1103,6 +1109,76 @@ void BlockLinearUnswizzle2DPass::Unswizzle(
         cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
                                VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, {}, {}, post_copy);
     });
+
+    if constexpr (BL2D_VERIFY_AGAINST_CPU) {
+        VerifyAgainstCpu(swizzled, sw, output, output_size, width, height, depth,
+                         bytes_per_block);
+    }
+}
+
+void BlockLinearUnswizzle2DPass::VerifyAgainstCpu(const StagingBufferRef& swizzled,
+                                                  const VideoCommon::SwizzleParameters& sw,
+                                                  const StagingBufferRef& gpu_output,
+                                                  VkDeviceSize output_size, u32 width, u32 height,
+                                                  u32 depth, u32 bytes_per_block) {
+    const StagingBufferRef readback =
+        staging_buffer_pool.Request(static_cast<size_t>(output_size), MemoryUsage::Download);
+
+    const VkBuffer src = gpu_output.buffer;
+    const VkDeviceSize src_offset = gpu_output.offset;
+    const VkBuffer dst = readback.buffer;
+    const VkDeviceSize dst_offset = readback.offset;
+    scheduler.Record([src, src_offset, dst, dst_offset, output_size](vk::CommandBuffer cmdbuf) {
+        const VkBufferMemoryBarrier barrier{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .buffer = src,
+            .offset = src_offset,
+            .size = output_size,
+        };
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               0, {}, barrier, {});
+        const VkBufferCopy copy{
+            .srcOffset = src_offset,
+            .dstOffset = dst_offset,
+            .size = output_size,
+        };
+        cmdbuf.CopyBuffer(src, dst, copy);
+    });
+    scheduler.Finish();
+
+    const size_t size = static_cast<size_t>(output_size);
+    std::vector<u8> reference(size);
+    const std::span<const u8> input{swizzled.mapped_span.data() + sw.buffer_offset,
+                                    swizzled.mapped_span.size() - sw.buffer_offset};
+    Tegra::Texture::UnswizzleTexture(reference, input, bytes_per_block, width, height, depth,
+                                     sw.block.height, sw.block.depth);
+
+    const u8* gpu_data = readback.mapped_span.data();
+    if (std::memcmp(reference.data(), gpu_data, size) == 0) {
+        LOG_INFO(Render_Vulkan, "BL2D verify OK: {}x{}x{} bpb={} ({} bytes)", width, height, depth,
+                 bytes_per_block, size);
+        return;
+    }
+    size_t first_diff = size;
+    size_t num_diff = 0;
+    for (size_t i = 0; i < size; ++i) {
+        if (reference[i] != gpu_data[i]) {
+            if (first_diff == size) {
+                first_diff = i;
+            }
+            ++num_diff;
+        }
+    }
+    LOG_CRITICAL(Render_Vulkan,
+                 "BL2D verify FAILED: {}x{}x{} bpb={} block_height={} first_diff={} "
+                 "num_diff={}/{} cpu=0x{:02x} gpu=0x{:02x}",
+                 width, height, depth, bytes_per_block, sw.block.height, first_diff,
+                 num_diff, size, reference[first_diff], gpu_data[first_diff]);
 }
 
 } // namespace Vulkan
