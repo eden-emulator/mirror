@@ -944,6 +944,8 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
         bl3d_unswizzle_pass.emplace(device, scheduler, descriptor_pool,
                                    staging_buffer_pool, compute_pass_descriptor_queue);
     }
+    bl2d_unswizzle_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
+                                compute_pass_descriptor_queue);
 }
 
 void TextureCacheRuntime::Finish() {
@@ -1872,6 +1874,9 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
         default:
             break;
         }
+    } else if (runtime->bl2d_unswizzle_pass &&
+               BlockLinearUnswizzle2DPass::IsSupported(info)) {
+        flags |= VideoCommon::ImageFlagBits::AcceleratedUpload;
         flags |= VideoCommon::ImageFlagBits::Converted;
         flags |= VideoCommon::ImageFlagBits::CostlyLoad;
     }
@@ -3042,6 +3047,10 @@ void TextureCacheRuntime::AccelerateImageUpload(
 
     if (IsPixelFormatASTC(image.info.format)) {
         return astc_decoder_pass->Assemble(image, map, swizzles);
+    }
+
+    if (bl2d_unswizzle_pass && BlockLinearUnswizzle2DPass::IsSupported(image.info)) {
+        return bl2d_unswizzle_pass->Unswizzle(image, map, swizzles);
     }
 
     if (!Settings::values.gpu_unswizzle_enabled.GetValue() || !bl3d_unswizzle_pass) {

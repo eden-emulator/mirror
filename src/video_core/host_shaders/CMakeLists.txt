@@ -17,6 +17,7 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/astc_decoder.comp
     ${CMAKE_CURRENT_SOURCE_DIR}/blit_color_float.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/block_linear_unswizzle_2d.comp
+    ${CMAKE_CURRENT_SOURCE_DIR}/block_linear_unswizzle_2d_buffer.comp
     ${CMAKE_CURRENT_SOURCE_DIR}/blit_color_msaa.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/blit_depth_msaa.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/blit_depth_stencil_msaa.frag
