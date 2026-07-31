@@ -352,6 +352,9 @@ struct DeviceDispatch : InstanceDispatch {
 #ifdef _WIN32
     PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR{};
 #endif
+#ifdef __ANDROID__
+    PFN_vkGetAndroidHardwareBufferPropertiesANDROID vkGetAndroidHardwareBufferPropertiesANDROID{};
+#endif
     PFN_vkGetPipelineExecutablePropertiesKHR vkGetPipelineExecutablePropertiesKHR{};
     PFN_vkGetPipelineExecutableStatisticsKHR vkGetPipelineExecutableStatisticsKHR{};
     PFN_vkGetQueryPoolResults vkGetQueryPoolResults{};
@@ -1101,6 +1104,14 @@ public:
         return dld->vkGetMemoryHostPointerPropertiesEXT(handle, handle_type, host_pointer,
                                                         out_properties);
     }
+
+#ifdef __ANDROID__
+    VkResult GetAndroidHardwareBufferPropertiesANDROID(
+        const struct AHardwareBuffer* buffer,
+        VkAndroidHardwareBufferPropertiesANDROID* out_properties) const noexcept {
+        return dld->vkGetAndroidHardwareBufferPropertiesANDROID(handle, buffer, out_properties);
+    }
+#endif
 
     VkResult CreateBufferRaw(const VkBufferCreateInfo& ci, VkBuffer* out_buffer) const noexcept {
         return dld->vkCreateBuffer(handle, &ci, nullptr, out_buffer);

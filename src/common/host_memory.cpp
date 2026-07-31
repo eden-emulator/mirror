@@ -53,12 +53,19 @@
 
 #include <mutex>
 #include <random>
+#include <vector>
 
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/free_region_manager.h"
 #include "common/host_memory.h"
 #include "common/logging.h"
+#include "common/settings.h"
+
+#ifdef __ANDROID__
+#include <android/hardware_buffer.h>
+#include <cutils/native_handle.h>
+#endif
 
 #if defined(__ANDROID__) && __ANDROID_API__ < 30
 #include <sys/syscall.h>
@@ -509,6 +516,11 @@ public:
     bool Init() {
         long page_size = sysconf(_SC_PAGESIZE);
         ASSERT_MSG(page_size == 0x1000, "page size {:#x} is incompatible with 4K paging", page_size);
+#ifdef __ANDROID__
+        if (InitAhbBacking()) {
+            return InitVirtual();
+        }
+#endif
         // Backing memory initialization
 #if defined(__sun__) || defined(__HAIKU__) || defined(__NetBSD__) || defined(__DragonFly__)
         fd = shm_open_anon(O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
@@ -554,7 +566,10 @@ public:
             return false;
         }
 
-        // Virtual memory initialization
+        return InitVirtual();
+    }
+
+    bool InitVirtual() {
         virtual_base = virtual_map_base = static_cast<u8*>(ChooseVirtualBase(virtual_size));
         if (virtual_base == MAP_FAILED) {
             LOG_CRITICAL(HW_Memory, "mmap failed: {}", strerror(errno));
@@ -566,6 +581,103 @@ public:
         free_manager.SetAddressSpace(virtual_base, virtual_size);
         return true;
     }
+
+#ifdef __ANDROID__
+    bool InitAhbBacking() {
+        if (!Settings::values.use_unified_memory.GetValue()) {
+            return false;
+        }
+        constexpr size_t window_size = 1ULL << 30;
+        const size_t num_windows = (backing_size + window_size - 1) / window_size;
+        std::vector<AHardwareBuffer*> buffers;
+        std::vector<int> buffer_fds;
+        const auto cleanup = [&] {
+            for (AHardwareBuffer* buffer : buffers) {
+                AHardwareBuffer_release(buffer);
+            }
+            buffers.clear();
+            buffer_fds.clear();
+        };
+        for (size_t i = 0; i < num_windows; ++i) {
+            const size_t len = (std::min)(window_size, backing_size - i * window_size);
+            const AHardwareBuffer_Desc desc{
+                .width = static_cast<u32>(len),
+                .height = 1,
+                .layers = 1,
+                .format = AHARDWAREBUFFER_FORMAT_BLOB,
+                .usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
+                         AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN |
+                         AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER,
+                .stride = 0,
+                .rfu0 = 0,
+                .rfu1 = 0,
+            };
+            AHardwareBuffer* buffer{};
+            if (AHardwareBuffer_allocate(&desc, &buffer) != 0 || buffer == nullptr) {
+                LOG_WARNING(HW_Memory, "Hardware buffer allocation failed for window {}", i);
+                cleanup();
+                return false;
+            }
+            buffers.push_back(buffer);
+            const native_handle_t* handle = AHardwareBuffer_getNativeHandle(buffer);
+            if (handle == nullptr || handle->numFds < 1) {
+                LOG_WARNING(HW_Memory, "Hardware buffer has no mappable file descriptor");
+                cleanup();
+                return false;
+            }
+            const int buffer_fd = handle->data[0];
+            const off_t buffer_len = lseek(buffer_fd, 0, SEEK_END);
+            if (buffer_len < static_cast<off_t>(len)) {
+                LOG_WARNING(HW_Memory, "Hardware buffer descriptor smaller than requested");
+                cleanup();
+                return false;
+            }
+            buffer_fds.push_back(buffer_fd);
+        }
+        u8* const base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_NONE,
+                                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
+        if (base == MAP_FAILED) {
+            cleanup();
+            return false;
+        }
+        for (size_t i = 0; i < num_windows; ++i) {
+            const size_t len = (std::min)(window_size, backing_size - i * window_size);
+            if (mmap(base + i * window_size, len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED,
+                     buffer_fds[i], 0) == MAP_FAILED) {
+                LOG_WARNING(HW_Memory, "Hardware buffer mmap failed: {}", strerror(errno));
+                munmap(base, backing_size);
+                cleanup();
+                return false;
+            }
+        }
+        void* const exec_probe =
+            mmap(nullptr, PageAlignment, PROT_READ | PROT_EXEC, MAP_SHARED, buffer_fds[0], 0);
+        if (exec_probe == MAP_FAILED) {
+            LOG_WARNING(HW_Memory, "Hardware buffer backing rejects executable mappings: {}",
+                        strerror(errno));
+            munmap(base, backing_size);
+            cleanup();
+            return false;
+        }
+        munmap(exec_probe, PageAlignment);
+        backing_base = base;
+        ahb_windows = std::move(buffers);
+        ahb_fds = std::move(buffer_fds);
+        ahb_window_size = window_size;
+        ahb_backing = true;
+        LOG_INFO(HW_Memory, "Guest memory backed by {} hardware buffer windows",
+                 ahb_windows.size());
+        return true;
+    }
+
+    std::span<AHardwareBuffer* const> AhbWindows() const noexcept {
+        return ahb_windows;
+    }
+
+    size_t AhbWindowSize() const noexcept {
+        return ahb_backing ? ahb_window_size : 0;
+    }
+#endif
 
     ~Impl() {
         Release();
@@ -587,6 +699,26 @@ public:
 #ifdef ARCHITECTURE_arm64
         if (True(perms & MemoryPermission::Execute))
             prot_flags |= PROT_EXEC;
+#endif
+#ifdef __ANDROID__
+        if (ahb_backing) {
+            size_t voff = virtual_offset;
+            size_t hoff = host_offset;
+            size_t remaining = length;
+            while (remaining > 0) {
+                const size_t window = hoff / ahb_window_size;
+                const size_t local = hoff % ahb_window_size;
+                const size_t chunk = (std::min)(remaining, ahb_window_size - local);
+                void* const ret =
+                    mmap(virtual_base + voff, chunk, prot_flags, MAP_SHARED | MAP_FIXED,
+                         ahb_fds[window], static_cast<off_t>(local));
+                ASSERT_MSG(ret != MAP_FAILED, "mmap: {}", strerror(errno));
+                voff += chunk;
+                hoff += chunk;
+                remaining -= chunk;
+            }
+            return;
+        }
 #endif
         int flags = (fd >= 0 ? MAP_SHARED : MAP_PRIVATE) | MAP_FIXED;
         void* ret = mmap(virtual_base + virtual_offset, length, prot_flags, flags, fd, host_offset);
@@ -656,6 +788,14 @@ private:
             int ret = close(fd);
             ASSERT_MSG(ret == 0, "close failed: {}", strerror(errno));
         }
+
+#ifdef __ANDROID__
+        for (AHardwareBuffer* buffer : ahb_windows) {
+            AHardwareBuffer_release(buffer);
+        }
+        ahb_windows.clear();
+        ahb_fds.clear();
+#endif
     }
 
     void AdjustMap(size_t* virtual_offset, size_t* length) {
@@ -681,6 +821,13 @@ private:
 
     int fd{-1}; // memfd file descriptor, -1 is the error value of memfd_create
     FreeRegionManager free_manager{};
+
+#ifdef __ANDROID__
+    bool ahb_backing{};
+    std::vector<AHardwareBuffer*> ahb_windows;
+    std::vector<int> ahb_fds;
+    size_t ahb_window_size{};
+#endif
 };
 
 #endif // ^^^ POSIX ^^^
@@ -765,6 +912,22 @@ void HostMemory::Protect(size_t virtual_offset, size_t length, MemoryPermission 
 
 void HostMemory::ClearBackingRegion(size_t physical_offset, size_t length, u32 fill_value) {
     std::memset(backing_base + physical_offset, fill_value, length);
+}
+
+std::span<AHardwareBuffer* const> HostMemory::BackingHardwareBuffers() const noexcept {
+#ifdef __ANDROID__
+    return impl ? impl->AhbWindows() : std::span<AHardwareBuffer* const>{};
+#else
+    return {};
+#endif
+}
+
+size_t HostMemory::BackingHardwareBufferWindowSize() const noexcept {
+#ifdef __ANDROID__
+    return impl ? impl->AhbWindowSize() : 0;
+#else
+    return 0;
+#endif
 }
 
 void HostMemory::EnableDirectMappedAddress() {

@@ -20,6 +20,8 @@
 #include "common/scratch_buffer.h"
 #include "common/virtual_buffer.h"
 
+struct AHardwareBuffer;
+
 namespace Core {
 
 constexpr size_t DEVICE_PAGEBITS = 12ULL;
@@ -107,6 +109,14 @@ public:
         return physical_size;
     }
 
+    std::span<AHardwareBuffer* const> GetBackingHardwareBuffers() const noexcept {
+        return ahb_windows;
+    }
+
+    size_t GetBackingHardwareBufferWindowSize() const noexcept {
+        return ahb_window_size;
+    }
+
     PAddr GetPhysicalRawAddressFromDAddr(DAddr address) const {
         PAddr subbits = PAddr(address & page_mask);
         auto paddr = tracked_entries[(address >> page_bits)].compressed_physical_ptr;
@@ -188,6 +198,8 @@ private:
 
     const uintptr_t physical_base;
     const size_t physical_size;
+    const std::span<AHardwareBuffer* const> ahb_windows;
+    const size_t ahb_window_size;
     DeviceInterface* device_inter;
 
     struct TrackedEntry {

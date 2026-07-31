@@ -364,8 +364,11 @@ BufferCacheRuntime::BufferCacheRuntime(const Device& device_, MemoryAllocator& m
                                                                      scheduler_, staging_pool_);
 }
 
-void BufferCacheRuntime::TryEnableUnifiedMemory(void* base, size_t size) {
-    unified_memory = std::make_unique<HostMemoryImport>(device, base, size);
+void BufferCacheRuntime::TryEnableUnifiedMemory(void* base, size_t size,
+                                                std::span<AHardwareBuffer* const> hardware_buffers,
+                                                size_t hardware_buffer_window) {
+    unified_memory = std::make_unique<HostMemoryImport>(device, base, size, hardware_buffers,
+                                                        hardware_buffer_window);
     if (!unified_memory->IsValid()) {
         unified_memory.reset();
     }

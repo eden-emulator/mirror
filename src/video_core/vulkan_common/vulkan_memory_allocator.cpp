@@ -25,8 +25,33 @@
 #include "video_core/gpu_logging/gpu_logging.h"
 #include "common/settings.h"
 
+#ifdef __ANDROID__
+#include <android/hardware_buffer.h>
+#endif
+
 namespace Vulkan {
     namespace {
+
+        [[nodiscard]] std::optional<u32> FindImportMemoryType(
+                const VkPhysicalDeviceMemoryProperties &props, u32 type_mask) {
+            const auto find = [&](VkMemoryPropertyFlags wanted) -> std::optional<u32> {
+                for (u32 i = 0; i < props.memoryTypeCount; ++i) {
+                    if (((type_mask >> i) & 1u) != 0 &&
+                        (props.memoryTypes[i].propertyFlags & wanted) == wanted) {
+                        return i;
+                    }
+                }
+                return std::nullopt;
+            };
+            auto type_index = find(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                                   VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+            if (!type_index) {
+                type_index = find(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            }
+            return type_index;
+        }
 
 // Helpers translating MemoryUsage to flags/usage
 
@@ -68,12 +93,24 @@ namespace Vulkan {
 
     } // namespace
 
-    HostMemoryImport::HostMemoryImport(const Device &device_, void *base, size_t size)
+    HostMemoryImport::HostMemoryImport(const Device &device_, void *base, size_t size,
+                                       std::span<AHardwareBuffer *const> hardware_buffers,
+                                       size_t hardware_buffer_window)
             : device{device_} {
+        if (ImportHostPointer(base, size)) {
+            return;
+        }
+        ImportHardwareBuffers(hardware_buffers, hardware_buffer_window, size);
+        if (windows.empty()) {
+            LOG_INFO(Render_Vulkan, "Unified memory disabled, no host memory import path");
+        }
+    }
+
+    bool HostMemoryImport::ImportHostPointer(void *base, size_t size) {
         if (!device.IsExtExternalMemoryHostSupported()) {
             LOG_INFO(Render_Vulkan,
                      "Unified memory disabled, VK_EXT_external_memory_host is not supported");
-            return;
+            return false;
         }
         const u64 alignment = device.GetMinImportedHostPointerAlignment();
         if (alignment == 0 || !Common::IsAligned(reinterpret_cast<uintptr_t>(base), alignment) ||
@@ -81,7 +118,7 @@ namespace Vulkan {
             LOG_INFO(Render_Vulkan,
                      "Unified memory disabled, host allocation does not satisfy alignment {}",
                      alignment);
-            return;
+            return false;
         }
         using namespace Common::Literals;
         VkDeviceSize candidate_window = 1_GiB;
@@ -90,22 +127,12 @@ namespace Vulkan {
             candidate_window = Common::AlignDown(max_buffer_size, alignment);
         }
         if (candidate_window == 0) {
-            return;
+            return false;
         }
         window_size = candidate_window;
 
         const auto &logical = device.GetLogical();
         const auto memory_props = device.GetPhysical().GetMemoryProperties().memoryProperties;
-        const auto find_type = [&](u32 type_mask, VkMemoryPropertyFlags wanted)
-                -> std::optional<u32> {
-            for (u32 i = 0; i < memory_props.memoryTypeCount; ++i) {
-                if (((type_mask >> i) & 1u) != 0 &&
-                    (memory_props.memoryTypes[i].propertyFlags & wanted) == wanted) {
-                    return i;
-                }
-            }
-            return std::nullopt;
-        };
 
         for (size_t offset = 0; offset < size; offset += window_size) {
             u8 *const window_base = static_cast<u8 *>(base) + offset;
@@ -148,13 +175,7 @@ namespace Vulkan {
                 logical.DestroyBufferRaw(new_buffer);
                 break;
             }
-            auto type_index = find_type(type_mask, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                           VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-                                                           VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
-            if (!type_index) {
-                type_index = find_type(type_mask, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            }
+            const auto type_index = FindImportMemoryType(memory_props, type_mask);
             if (!type_index) {
                 logical.DestroyBufferRaw(new_buffer);
                 break;
@@ -187,12 +208,115 @@ namespace Vulkan {
             imported_size += static_cast<size_t>(window_len);
         }
         if (windows.empty()) {
-            LOG_INFO(Render_Vulkan, "Unified memory disabled, host memory import failed");
-            return;
+            LOG_INFO(Render_Vulkan, "Host pointer import failed");
+            return false;
         }
         LOG_INFO(Render_Vulkan,
                  "Imported {} MiB of guest memory for unified memory access in {} windows",
                  imported_size >> 20, windows.size());
+        return true;
+    }
+
+    void HostMemoryImport::ImportHardwareBuffers(
+            [[maybe_unused]] std::span<AHardwareBuffer *const> hardware_buffers,
+            [[maybe_unused]] size_t hardware_buffer_window, [[maybe_unused]] size_t size) {
+#ifdef __ANDROID__
+        if (hardware_buffers.empty() || hardware_buffer_window == 0 ||
+            !device.IsExtExternalMemoryAhbSupported()) {
+            return;
+        }
+        const auto &logical = device.GetLogical();
+        const auto memory_props = device.GetPhysical().GetMemoryProperties().memoryProperties;
+        window_size = hardware_buffer_window;
+        for (size_t i = 0; i < hardware_buffers.size(); ++i) {
+            const size_t offset = i * hardware_buffer_window;
+            if (offset >= size) {
+                break;
+            }
+            const VkDeviceSize window_len = (std::min)(
+                    static_cast<VkDeviceSize>(size - offset),
+                    static_cast<VkDeviceSize>(hardware_buffer_window));
+            VkAndroidHardwareBufferPropertiesANDROID ahb_props{
+                    .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
+                    .pNext = nullptr,
+                    .allocationSize = 0,
+                    .memoryTypeBits = 0,
+            };
+            if (logical.GetAndroidHardwareBufferPropertiesANDROID(hardware_buffers[i],
+                                                                  &ahb_props) != VK_SUCCESS ||
+                ahb_props.memoryTypeBits == 0 || ahb_props.allocationSize < window_len) {
+                break;
+            }
+            const VkExternalMemoryBufferCreateInfo external_info{
+                    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+                    .pNext = nullptr,
+                    .handleTypes =
+                            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+            };
+            const VkBufferCreateInfo buffer_ci{
+                    .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                    .pNext = &external_info,
+                    .flags = 0,
+                    .size = window_len,
+                    .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                    .queueFamilyIndexCount = 0,
+                    .pQueueFamilyIndices = nullptr,
+            };
+            VkBuffer new_buffer{};
+            if (logical.CreateBufferRaw(buffer_ci, &new_buffer) != VK_SUCCESS) {
+                break;
+            }
+            const VkMemoryRequirements requirements =
+                    logical.GetBufferMemoryRequirements(new_buffer);
+            const u32 type_mask = requirements.memoryTypeBits & ahb_props.memoryTypeBits;
+            if (type_mask == 0 || requirements.size > ahb_props.allocationSize) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            const auto type_index = FindImportMemoryType(memory_props, type_mask);
+            if (!type_index) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            const VkImportAndroidHardwareBufferInfoANDROID import_info{
+                    .sType = VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+                    .pNext = nullptr,
+                    .buffer = hardware_buffers[i],
+            };
+            const VkMemoryDedicatedAllocateInfo dedicated_info{
+                    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+                    .pNext = &import_info,
+                    .image = VK_NULL_HANDLE,
+                    .buffer = new_buffer,
+            };
+            const VkMemoryAllocateInfo alloc_info{
+                    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                    .pNext = &dedicated_info,
+                    .allocationSize = ahb_props.allocationSize,
+                    .memoryTypeIndex = *type_index,
+            };
+            vk::DeviceMemory memory = logical.TryAllocateMemory(alloc_info);
+            if (!memory) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            if (logical.BindBufferMemory(new_buffer, *memory, 0) != VK_SUCCESS) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            windows.push_back(Window{
+                    .memory = std::move(memory),
+                    .buffer = new_buffer,
+            });
+            imported_size += static_cast<size_t>(window_len);
+        }
+        if (!windows.empty()) {
+            LOG_INFO(Render_Vulkan,
+                     "Imported {} MiB of guest memory via hardware buffers in {} windows",
+                     imported_size >> 20, windows.size());
+        }
+#endif
     }
 
     HostMemoryImport::~HostMemoryImport() {

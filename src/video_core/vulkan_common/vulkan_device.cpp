@@ -1075,6 +1075,7 @@ bool Device::GetSuitability(bool requires_swapchain) {
 
     FOR_EACH_VK_FEATURE_EXT(FEATURE_EXTENSION);
     FOR_EACH_VK_EXTENSION(EXTENSION);
+    FOR_EACH_VK_PLATFORM_EXTENSION(EXTENSION);
 
     if (supported_extensions.contains(VK_KHR_ROBUSTNESS_2_EXTENSION_NAME)) {
         loaded_extensions.erase(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);

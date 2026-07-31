@@ -16,6 +16,8 @@
 #include "video_core/vulkan_common/vulkan_wrapper.h"
 #include "video_core/vulkan_common/vma.h"
 
+struct AHardwareBuffer;
+
 namespace Vulkan {
 
     class Device;
@@ -42,7 +44,9 @@ namespace Vulkan {
 
     class HostMemoryImport {
     public:
-        explicit HostMemoryImport(const Device &device_, void *base, size_t size);
+        explicit HostMemoryImport(const Device &device_, void *base, size_t size,
+                                  std::span<AHardwareBuffer *const> hardware_buffers,
+                                  size_t hardware_buffer_window);
 
         ~HostMemoryImport();
 
@@ -75,6 +79,11 @@ namespace Vulkan {
             vk::DeviceMemory memory;
             VkBuffer buffer{};
         };
+
+        bool ImportHostPointer(void *base, size_t size);
+
+        void ImportHardwareBuffers(std::span<AHardwareBuffer *const> hardware_buffers,
+                                   size_t hardware_buffer_window, size_t size);
 
         const Device &device;
         std::vector<Window> windows;

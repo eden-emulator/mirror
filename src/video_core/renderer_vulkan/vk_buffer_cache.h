@@ -8,6 +8,7 @@
 
 #include <limits>
 #include <memory>
+#include <span>
 
 #include "video_core/buffer_cache/buffer_cache_base.h"
 #include "video_core/buffer_cache/memory_tracker_base.h"
@@ -98,7 +99,9 @@ public:
 
     void TickFrame(Common::SlotVector<Buffer>& slot_buffers) noexcept;
 
-    void TryEnableUnifiedMemory(void* base, size_t size);
+    void TryEnableUnifiedMemory(void* base, size_t size,
+                                std::span<AHardwareBuffer* const> hardware_buffers,
+                                size_t hardware_buffer_window);
 
     [[nodiscard]] bool HasUnifiedMemory() const noexcept {
         return unified_memory != nullptr && unified_memory->IsValid();

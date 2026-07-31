@@ -285,6 +285,9 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
 #ifdef _WIN32
     X(vkGetMemoryWin32HandleKHR);
 #endif
+#ifdef __ANDROID__
+    X(vkGetAndroidHardwareBufferPropertiesANDROID);
+#endif
     X(vkGetQueryPoolResults);
     X(vkGetPipelineExecutablePropertiesKHR);
     X(vkGetPipelineExecutableStatisticsKHR);

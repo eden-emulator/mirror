@@ -118,6 +118,13 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION(IMG, FILTER_CUBIC, filter_cubic_img)                                                 \
     EXTENSION(QCOM, FILTER_CUBIC_WEIGHTS, filter_cubic_weights)
 
+#ifdef __ANDROID__
+#define FOR_EACH_VK_PLATFORM_EXTENSION(EXTENSION)                                                  \
+    EXTENSION(ANDROID, EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER, external_memory_ahb)
+#else
+#define FOR_EACH_VK_PLATFORM_EXTENSION(EXTENSION)
+#endif
+
 // Define extensions which must be supported.
 #define FOR_EACH_VK_MANDATORY_EXTENSION(EXTENSION_NAME)                                            \
     EXTENSION_NAME(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME)                                 \
@@ -905,6 +912,14 @@ FN_MAX_LIMIT_LIST
         return extensions.external_memory_host;
     }
 
+    bool IsExtExternalMemoryAhbSupported() const {
+#ifdef __ANDROID__
+        return extensions.external_memory_ahb;
+#else
+        return false;
+#endif
+    }
+
     bool IsDescriptorBindingPartiallyBoundSupported() const {
         return features.descriptor_indexing.descriptorBindingPartiallyBound;
     }
@@ -1233,6 +1248,7 @@ private:
         FOR_EACH_VK_FEATURE_1_4(FEATURE);
         FOR_EACH_VK_FEATURE_EXT(FEATURE);
         FOR_EACH_VK_EXTENSION(EXTENSION);
+        FOR_EACH_VK_PLATFORM_EXTENSION(EXTENSION);
 
 #undef EXTENSION
 #undef FEATURE

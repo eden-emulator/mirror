@@ -240,8 +240,10 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
       wfi_event(device.GetLogical().CreateEvent()) {
     scheduler.SetQueryCache(query_cache);
     if (Settings::values.use_unified_memory.GetValue()) {
-        buffer_cache_runtime.TryEnableUnifiedMemory(device_memory.GetPhysicalBase(),
-                                                    device_memory.GetPhysicalSize());
+        buffer_cache_runtime.TryEnableUnifiedMemory(
+            device_memory.GetPhysicalBase(), device_memory.GetPhysicalSize(),
+            device_memory.GetBackingHardwareBuffers(),
+            device_memory.GetBackingHardwareBufferWindowSize());
     }
     memory_allocator.SetReclaimCallback([this](u64 bytes) -> u64 {
         u64 freed = staging_pool.ReclaimMemory(bytes);

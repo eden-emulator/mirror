@@ -8,9 +8,12 @@
 
 #include <memory>
 #include <optional>
+#include <span>
 #include "common/common_funcs.h"
 #include "common/common_types.h"
 #include "common/virtual_buffer.h"
+
+struct AHardwareBuffer;
 
 namespace Common {
 
@@ -65,6 +68,10 @@ public:
     [[nodiscard]] size_t BackingSize() const noexcept {
         return backing_size;
     }
+
+    [[nodiscard]] std::span<AHardwareBuffer* const> BackingHardwareBuffers() const noexcept;
+
+    [[nodiscard]] size_t BackingHardwareBufferWindowSize() const noexcept;
 
     [[nodiscard]] u8* VirtualBasePointer() noexcept {
         return virtual_base;
