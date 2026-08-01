@@ -78,14 +78,29 @@ struct NativeHandle {
 };
 
 using PFN_AHardwareBuffer_getNativeHandle = const NativeHandle* (*)(const AHardwareBuffer*);
+using PFN_AHardwareBuffer_isSupported = int (*)(const AHardwareBuffer_Desc*);
+
+void* NativeWindowLibrary() {
+    static void* const lib = dlopen("libnativewindow.so", RTLD_NOW);
+    return lib;
+}
 
 PFN_AHardwareBuffer_getNativeHandle ResolveGetNativeHandle() {
-    void* const lib = dlopen("libnativewindow.so", RTLD_NOW);
+    void* const lib = NativeWindowLibrary();
     if (lib == nullptr) {
         return nullptr;
     }
     return reinterpret_cast<PFN_AHardwareBuffer_getNativeHandle>(
         dlsym(lib, "AHardwareBuffer_getNativeHandle"));
+}
+
+PFN_AHardwareBuffer_isSupported ResolveIsSupported() {
+    void* const lib = NativeWindowLibrary();
+    if (lib == nullptr) {
+        return nullptr;
+    }
+    return reinterpret_cast<PFN_AHardwareBuffer_isSupported>(
+        dlsym(lib, "AHardwareBuffer_isSupported"));
 }
 
 } // namespace
@@ -613,9 +628,9 @@ public:
     }
 
 #ifdef __ANDROID__
-    static bool ProbeAhbBacking(PFN_AHardwareBuffer_getNativeHandle get_native_handle) {
-        const AHardwareBuffer_Desc desc{
-            .width = static_cast<u32>(PageAlignment * 2),
+    static AHardwareBuffer_Desc MakeBlobDesc(size_t len) {
+        return AHardwareBuffer_Desc{
+            .width = static_cast<u32>(len),
             .height = 1,
             .layers = 1,
             .format = AHARDWAREBUFFER_FORMAT_BLOB,
@@ -626,6 +641,10 @@ public:
             .rfu0 = 0,
             .rfu1 = 0,
         };
+    }
+
+    static bool ProbeAhbBacking(PFN_AHardwareBuffer_getNativeHandle get_native_handle) {
+        const AHardwareBuffer_Desc desc = MakeBlobDesc(PageAlignment * 2);
         AHardwareBuffer* buffer{};
         if (AHardwareBuffer_allocate(&desc, &buffer) != 0 || buffer == nullptr) {
             LOG_WARNING(HW_Memory, "Hardware buffer probe allocation failed");
@@ -671,6 +690,11 @@ public:
             LOG_WARNING(HW_Memory, "AHardwareBuffer_getNativeHandle is not available");
             return false;
         }
+        static const PFN_AHardwareBuffer_isSupported is_supported = ResolveIsSupported();
+        if (is_supported == nullptr) {
+            LOG_WARNING(HW_Memory, "AHardwareBuffer_isSupported is not available");
+            return false;
+        }
         const u64 total_physical = Common::GetMemInfo().TotalPhysicalMemory;
         if (total_physical != 0 && backing_size > total_physical / 2) {
             LOG_WARNING(HW_Memory,
@@ -679,10 +703,16 @@ public:
                         backing_size >> 20, total_physical >> 20);
             return false;
         }
+        constexpr size_t window_size = 256ULL << 20;
+        const AHardwareBuffer_Desc window_desc = MakeBlobDesc(window_size);
+        if (is_supported(&window_desc) == 0) {
+            LOG_WARNING(HW_Memory, "Allocator rejects {} MiB hardware buffer windows",
+                        window_size >> 20);
+            return false;
+        }
         if (!ProbeAhbBacking(get_native_handle)) {
             return false;
         }
-        constexpr size_t window_size = 1ULL << 30;
         const size_t num_windows = (backing_size + window_size - 1) / window_size;
         std::vector<AHardwareBuffer*> buffers;
         std::vector<int> buffer_fds;
@@ -695,18 +725,7 @@ public:
         };
         for (size_t i = 0; i < num_windows; ++i) {
             const size_t len = (std::min)(window_size, backing_size - i * window_size);
-            const AHardwareBuffer_Desc desc{
-                .width = static_cast<u32>(len),
-                .height = 1,
-                .layers = 1,
-                .format = AHARDWAREBUFFER_FORMAT_BLOB,
-                .usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
-                         AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN |
-                         AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER,
-                .stride = 0,
-                .rfu0 = 0,
-                .rfu1 = 0,
-            };
+            const AHardwareBuffer_Desc desc = MakeBlobDesc(len);
             AHardwareBuffer* buffer{};
             if (AHardwareBuffer_allocate(&desc, &buffer) != 0 || buffer == nullptr) {
                 LOG_WARNING(HW_Memory, "Hardware buffer allocation failed for window {}", i);
