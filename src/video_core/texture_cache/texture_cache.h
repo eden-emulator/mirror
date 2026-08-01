@@ -180,8 +180,13 @@ u64 TextureCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
         if (True(image.flags & ImageFlagBits::IsDecoding)) {
             return false;
         }
-        const bool must_download =
-            image.IsSafeDownload() && False(image.flags & ImageFlagBits::BadOverlap);
+        const bool must_download = image.IsSafeDownload();
+        if (must_download && True(image.flags & ImageFlagBits::BadOverlap)) {
+            LOG_WARNING(HW_GPU,
+                        "Recovering bad overlap on eviction: gpu_addr=0x{:x} fmt={} {}x{}x{}",
+                        image.gpu_addr, static_cast<u32>(image.info.format), image.info.size.width,
+                        image.info.size.height, image.info.size.depth);
+        }
         bool queued_download = false;
         if (must_download) {
             if constexpr (HAS_TIMELINE_SYNC_POINTS) {
@@ -1733,8 +1738,15 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
                 join_copies_to_do.emplace_back(JoinCopy{false, overlap_id});
                 continue;
             }
-            if (overlap.IsSafeDownload() && False(overlap.flags & ImageFlagBits::BadOverlap) &&
+            if (overlap.IsSafeDownload() &&
                 gpu_memory->GpuToCpuAddress(overlap.gpu_addr).has_value()) {
+                if (True(overlap.flags & ImageFlagBits::BadOverlap)) {
+                    LOG_WARNING(HW_GPU,
+                                "Recovering bad overlap on join: gpu_addr=0x{:x} fmt={} {}x{}x{}",
+                                overlap.gpu_addr, static_cast<u32>(overlap.info.format),
+                                overlap.info.size.width, overlap.info.size.height,
+                                overlap.info.size.depth);
+                }
                 QueueEvictionDownload(overlap);
             } else {
                 LOG_WARNING(HW_GPU,
