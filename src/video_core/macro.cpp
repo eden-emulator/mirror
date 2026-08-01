@@ -1391,29 +1391,26 @@ void MacroEngine::Execute(Core::System& system, Engines::Maxwell3D& maxwell3d, u
     std::span<const u32> code;
     auto macro_code = uploaded_macro_code.find(method);
     if (macro_code == uploaded_macro_code.end()) {
-        std::optional<u32> mid_method;
-        for (const auto& [method_base, uploaded_code] : uploaded_macro_code) {
+        for (auto it = uploaded_macro_code.begin(); it != uploaded_macro_code.end(); ++it) {
+            const auto& [method_base, uploaded_code] = *it;
             if (method >= method_base && (method - method_base) < uploaded_code.size()) {
-                mid_method = method_base;
+                macro_code = it;
                 break;
             }
         }
-        if (!mid_method) {
+        if (macro_code == uploaded_macro_code.end()) {
             ASSERT_MSG(false, "Macro 0x{0:x} was not uploaded", method);
             return;
         }
 
-        const auto source = uploaded_macro_code.find(*mid_method);
-        ASSERT(source != uploaded_macro_code.end());
-        const auto rebased_method = method - *mid_method;
-        std::vector<u32> rebased_code(source->second.begin() + rebased_method,
-                                      source->second.end());
+        const auto rebased_method = method - macro_code->first;
+        std::vector<u32> rebased_code(macro_code->second.begin() + rebased_method,
+                                      macro_code->second.end());
         const auto [it, inserted] = uploaded_macro_code.emplace(method, std::move(rebased_code));
         ASSERT(inserted);
-        code = it->second;
-    } else {
-        code = macro_code->second;
+        macro_code = it;
     }
+    code = macro_code->second;
 
     auto& ci = macro_cache[method];
     ci.hash = Common::HashRange(code.begin(), code.end());
