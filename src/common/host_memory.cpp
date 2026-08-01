@@ -703,76 +703,93 @@ public:
                         backing_size >> 20, total_physical >> 20);
             return false;
         }
-        constexpr size_t window_size = 256ULL << 20;
-        const AHardwareBuffer_Desc window_desc = MakeBlobDesc(window_size);
-        if (is_supported(&window_desc) == 0) {
-            LOG_WARNING(HW_Memory, "Allocator rejects {} MiB hardware buffer windows",
-                        window_size >> 20);
-            return false;
-        }
         if (!ProbeAhbBacking(get_native_handle)) {
             return false;
         }
-        const size_t num_windows = (backing_size + window_size - 1) / window_size;
-        std::vector<AHardwareBuffer*> buffers;
-        std::vector<int> buffer_fds;
-        const auto cleanup = [&] {
-            for (AHardwareBuffer* buffer : buffers) {
-                AHardwareBuffer_release(buffer);
+        const auto try_window_size = [&](size_t window_size) -> bool {
+            const size_t num_windows = (backing_size + window_size - 1) / window_size;
+            std::vector<AHardwareBuffer*> buffers;
+            std::vector<int> buffer_fds;
+            const auto cleanup = [&] {
+                for (AHardwareBuffer* buffer : buffers) {
+                    AHardwareBuffer_release(buffer);
+                }
+                buffers.clear();
+                buffer_fds.clear();
+            };
+            for (size_t i = 0; i < num_windows; ++i) {
+                const size_t len = (std::min)(window_size, backing_size - i * window_size);
+                const AHardwareBuffer_Desc desc = MakeBlobDesc(len);
+                AHardwareBuffer* buffer{};
+                if (AHardwareBuffer_allocate(&desc, &buffer) != 0 || buffer == nullptr) {
+                    LOG_WARNING(HW_Memory, "Hardware buffer allocation failed for window {}", i);
+                    cleanup();
+                    return false;
+                }
+                buffers.push_back(buffer);
+                const NativeHandle* const handle = get_native_handle(buffer);
+                if (handle == nullptr || handle->numFds < 1) {
+                    LOG_WARNING(HW_Memory, "Hardware buffer has no mappable file descriptor");
+                    cleanup();
+                    return false;
+                }
+                const int buffer_fd = handle->data[0];
+                const off_t buffer_len = lseek(buffer_fd, 0, SEEK_END);
+                if (buffer_len < static_cast<off_t>(len)) {
+                    LOG_WARNING(HW_Memory, "Hardware buffer descriptor smaller than requested");
+                    cleanup();
+                    return false;
+                }
+                buffer_fds.push_back(buffer_fd);
             }
-            buffers.clear();
-            buffer_fds.clear();
+            u8* const base =
+                static_cast<u8*>(mmap(nullptr, backing_size, PROT_NONE,
+                                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
+            if (base == MAP_FAILED) {
+                cleanup();
+                return false;
+            }
+            for (size_t i = 0; i < num_windows; ++i) {
+                const size_t len = (std::min)(window_size, backing_size - i * window_size);
+                if (mmap(base + i * window_size, len, PROT_READ | PROT_WRITE,
+                         MAP_SHARED | MAP_FIXED, buffer_fds[i], 0) == MAP_FAILED) {
+                    LOG_WARNING(HW_Memory, "Hardware buffer mmap failed: {}", strerror(errno));
+                    munmap(base, backing_size);
+                    cleanup();
+                    return false;
+                }
+            }
+            backing_base = base;
+            ahb_windows = std::move(buffers);
+            ahb_fds = std::move(buffer_fds);
+            ahb_window_size = window_size;
+            ahb_backing = true;
+            committed_backing_size.store(backing_size, std::memory_order_relaxed);
+            LOG_INFO(HW_Memory,
+                     "Guest memory backed by {} hardware buffer windows of {} MiB, {} MiB committed",
+                     ahb_windows.size(), window_size >> 20, backing_size >> 20);
+            return true;
         };
-        for (size_t i = 0; i < num_windows; ++i) {
-            const size_t len = (std::min)(window_size, backing_size - i * window_size);
-            const AHardwareBuffer_Desc desc = MakeBlobDesc(len);
-            AHardwareBuffer* buffer{};
-            if (AHardwareBuffer_allocate(&desc, &buffer) != 0 || buffer == nullptr) {
-                LOG_WARNING(HW_Memory, "Hardware buffer allocation failed for window {}", i);
-                cleanup();
-                return false;
+        static constexpr size_t candidate_window_sizes[] = {
+            1024ULL << 20,
+            512ULL << 20,
+            256ULL << 20,
+            128ULL << 20,
+        };
+        for (const size_t candidate : candidate_window_sizes) {
+            const AHardwareBuffer_Desc window_desc = MakeBlobDesc(candidate);
+            if (is_supported(&window_desc) == 0) {
+                LOG_DEBUG(HW_Memory, "Allocator rejects {} MiB hardware buffer windows",
+                          candidate >> 20);
+                continue;
             }
-            buffers.push_back(buffer);
-            const NativeHandle* const handle = get_native_handle(buffer);
-            if (handle == nullptr || handle->numFds < 1) {
-                LOG_WARNING(HW_Memory, "Hardware buffer has no mappable file descriptor");
-                cleanup();
-                return false;
+            if (try_window_size(candidate)) {
+                return true;
             }
-            const int buffer_fd = handle->data[0];
-            const off_t buffer_len = lseek(buffer_fd, 0, SEEK_END);
-            if (buffer_len < static_cast<off_t>(len)) {
-                LOG_WARNING(HW_Memory, "Hardware buffer descriptor smaller than requested");
-                cleanup();
-                return false;
-            }
-            buffer_fds.push_back(buffer_fd);
+            LOG_WARNING(HW_Memory, "Could not back guest memory with {} MiB windows",
+                        candidate >> 20);
         }
-        u8* const base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_NONE,
-                                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
-        if (base == MAP_FAILED) {
-            cleanup();
-            return false;
-        }
-        for (size_t i = 0; i < num_windows; ++i) {
-            const size_t len = (std::min)(window_size, backing_size - i * window_size);
-            if (mmap(base + i * window_size, len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED,
-                     buffer_fds[i], 0) == MAP_FAILED) {
-                LOG_WARNING(HW_Memory, "Hardware buffer mmap failed: {}", strerror(errno));
-                munmap(base, backing_size);
-                cleanup();
-                return false;
-            }
-        }
-        backing_base = base;
-        ahb_windows = std::move(buffers);
-        ahb_fds = std::move(buffer_fds);
-        ahb_window_size = window_size;
-        ahb_backing = true;
-        committed_backing_size.store(backing_size, std::memory_order_relaxed);
-        LOG_INFO(HW_Memory, "Guest memory backed by {} hardware buffer windows, {} MiB committed",
-                 ahb_windows.size(), backing_size >> 20);
-        return true;
+        return false;
     }
 
     std::span<AHardwareBuffer* const> AhbWindows() const noexcept {
