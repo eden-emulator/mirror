@@ -1532,6 +1532,11 @@ void Device::RemoveUnsuitableExtensions() {
                                VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME);
     }
 
+    // VK_KHR_shader_quad_control
+    extensions.shader_quad_control = features.shader_quad_control.shaderQuadControl;
+    RemoveExtensionFeatureIfUnsuitable(extensions.shader_quad_control, features.shader_quad_control,
+                                       VK_KHR_SHADER_QUAD_CONTROL_EXTENSION_NAME);
+
     // VK_KHR_workgroup_memory_explicit_layout
 #ifdef __ANDROID__
     if (!Settings::values.workgroup_memory_explicit_layout.GetValue()) {

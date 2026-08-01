@@ -37,6 +37,8 @@ struct Profile {
     bool support_explicit_workgroup_layout{};
     bool support_workgroup_layout_8bit_access{};
     bool support_workgroup_layout_16bit_access{};
+    bool support_shader_quad_control{};
+    bool support_quad_shuffles{};
     bool support_vote{};
     u32 supported_subgroup_stages{0x7F};
     bool support_viewport_index_layer_non_geometry{};

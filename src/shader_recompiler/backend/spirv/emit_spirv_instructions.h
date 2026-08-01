@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -622,6 +622,8 @@ Id EmitShuffleDown(EmitContext& ctx, IR::Inst* inst, Id value, Id index, Id clam
                    Id segmentation_mask);
 Id EmitShuffleButterfly(EmitContext& ctx, IR::Inst* inst, Id value, Id index, Id clamp,
                         Id segmentation_mask);
+Id EmitQuadBroadcast(EmitContext& ctx, Id value, Id lane);
+Id EmitQuadSwap(EmitContext& ctx, Id value, Id direction);
 Id EmitFSwizzleAdd(EmitContext& ctx, Id op_a, Id op_b, Id swizzle);
 Id EmitDPdxFine(EmitContext& ctx, Id op_a);
 Id EmitDPdyFine(EmitContext& ctx, Id op_a);

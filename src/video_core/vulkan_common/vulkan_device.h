@@ -76,6 +76,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
     FEATURE(KHR, Maintenance6, MAINTENANCE_6, maintenance6)                                        \
     FEATURE(KHR, PipelineExecutableProperties, PIPELINE_EXECUTABLE_PROPERTIES,                     \
             pipeline_executable_properties)                                                        \
+    FEATURE(KHR, ShaderQuadControl, SHADER_QUAD_CONTROL, shader_quad_control)                      \
     FEATURE(KHR, WorkgroupMemoryExplicitLayout, WORKGROUP_MEMORY_EXPLICIT_LAYOUT,                  \
             workgroup_memory_explicit_layout)                                                      \
     FEATURE(EXT, TextureCompressionASTCHDR, TEXTURE_COMPRESSION_ASTC_HDR,                          \
@@ -605,6 +606,11 @@ FN_MAX_LIMIT_LIST
         return extensions.workgroup_memory_explicit_layout &&
                features.workgroup_memory_explicit_layout.workgroupMemoryExplicitLayout16BitAccess &&
                features.features.shaderInt16;
+    }
+ 
+    /// Returns true if the device supports VK_KHR_shader_quad_control.
+    bool IsKhrShaderQuadControlSupported() const {
+        return extensions.shader_quad_control && features.shader_quad_control.shaderQuadControl;
     }
 
     /// Returns true if the device supports VK_KHR_image_format_list.

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -95,6 +98,24 @@ void EmitShuffleDown(EmitContext& ctx, IR::Inst& inst, ScalarU32 value, ScalarU3
 void EmitShuffleButterfly(EmitContext& ctx, IR::Inst& inst, ScalarU32 value, ScalarU32 index,
                           const IR::Value& clamp, const IR::Value& segmentation_mask) {
     Shuffle(ctx, inst, value, index, clamp, segmentation_mask, "XOR");
+}
+
+void EmitQuadBroadcast(EmitContext& ctx, IR::Inst& inst, ScalarU32 value, ScalarU32 lane) {
+    const Register ret{ctx.reg_alloc.Define(inst)};
+    ctx.Add("AND.U RC.x,{}.threadid,~3;"
+            "AND.U RC.y,{},3;"
+            "OR.U RC.x,RC.x,RC.y;"
+            "SHFIDX.U {},{},RC.x,0x1C03;"
+            "MOV.U {}.x,{}.y;",
+            ctx.stage_name, lane, ret, value, ret, ret);
+}
+
+void EmitQuadSwap(EmitContext& ctx, IR::Inst& inst, ScalarU32 value, ScalarU32 direction) {
+    const Register ret{ctx.reg_alloc.Define(inst)};
+    ctx.Add("ADD.U RC.x,{},1;"
+            "SHFXOR.U {},{},RC.x,0x1C03;"
+            "MOV.U {}.x,{}.y;",
+            direction, ret, value, ret, ret);
 }
 
 void EmitFSwizzleAdd(EmitContext& ctx, IR::Inst& inst, ScalarF32 op_a, ScalarF32 op_b,

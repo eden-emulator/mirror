@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -198,6 +201,18 @@ void EmitShuffleButterfly(EmitContext& ctx, IR::Inst& inst, std::string_view val
     SetInBoundsFlag(ctx, inst);
     ctx.Add("shfl_result=readInvocationARB({},{});", value, src_thread_id);
     ctx.AddU32("{}=shfl_in_bounds?shfl_result:{};", inst, value);
+}
+
+void EmitQuadBroadcast(EmitContext& ctx, IR::Inst& inst, std::string_view value,
+                       std::string_view lane) {
+    const auto src_thread_id{fmt::format("(({}&~3)|({}& 3))", THREAD_ID, lane)};
+    ctx.AddU32("{}=readInvocationARB({},{});", inst, value, src_thread_id);
+}
+
+void EmitQuadSwap(EmitContext& ctx, IR::Inst& inst, std::string_view value,
+                  std::string_view direction) {
+    const auto src_thread_id{fmt::format("({}^({}+1))", THREAD_ID, direction)};
+    ctx.AddU32("{}=readInvocationARB({},{});", inst, value, src_thread_id);
 }
 
 void EmitFSwizzleAdd(EmitContext& ctx, IR::Inst& inst, std::string_view op_a, std::string_view op_b,

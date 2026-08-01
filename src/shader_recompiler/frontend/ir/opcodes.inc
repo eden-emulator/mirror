@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -579,6 +582,8 @@ OPCODE(ShuffleIndex,                                        U32,            U32,
 OPCODE(ShuffleUp,                                           U32,            U32,            U32,            U32,            U32,                            )
 OPCODE(ShuffleDown,                                         U32,            U32,            U32,            U32,            U32,                            )
 OPCODE(ShuffleButterfly,                                    U32,            U32,            U32,            U32,            U32,                            )
+OPCODE(QuadBroadcast,                                       U32,            U32,            U32,                                                                    )
+OPCODE(QuadSwap,                                            U32,            U32,            U32,                                                                    )
 OPCODE(FSwizzleAdd,                                         F32,            F32,            F32,            U32,                                            )
 OPCODE(DPdxFine,                                            F32,            F32,                                                                            )
 OPCODE(DPdyFine,                                            F32,            F32,                                                                            )
