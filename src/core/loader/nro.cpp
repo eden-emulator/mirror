@@ -343,7 +343,8 @@ static std::optional<HomebrewNroImage> BuildHomebrewNroImage(const std::vector<u
                                                              std::string nro_path,
                                                              std::string file_name,
                                                              std::string launch_argv,
-                                                             std::string_view inherited_marker) {
+                                                             std::string_view inherited_marker,
+                                                             bool append_loopback_nxlink_marker) {
     if (data.size() < sizeof(NroHeader)) {
         return std::nullopt;
     }
@@ -388,7 +389,8 @@ static std::optional<HomebrewNroImage> BuildHomebrewNroImage(const std::vector<u
     } else {
         image.argv_string = QuoteHomebrewArgvComponent(argv0);
     }
-    image.nxlink_argv_marker = HomebrewNxlink::PrepareArgv(image.argv_string, inherited_marker);
+    image.nxlink_argv_marker = HomebrewNxlink::PrepareArgv(
+        image.argv_string, inherited_marker, append_loopback_nxlink_marker);
     if (image.argv_string.empty() || image.argv_string.back() != '\0') {
         image.argv_string.push_back('\0');
     }
@@ -451,8 +453,12 @@ bool LoadNroInPlace(Core::System& system, Kernel::KProcess& process, Kernel::KTh
         return false;
     }
 
-    auto image = BuildHomebrewNroImage(nro_file->ReadAllBytes(), nro_path, nro_file->GetName(),
-                                       launch_argv, process.GetHomebrewNxlinkArgvMarker());
+    const auto nxlink_server_mode = Settings::values.homebrew_nxlink_server_mode.GetValue();
+    const bool append_loopback_nxlink_marker =
+        nxlink_server_mode != Settings::HomebrewNxlinkServerMode::Disabled;
+    auto image = BuildHomebrewNroImage(
+        nro_file->ReadAllBytes(), nro_path, nro_file->GetName(), launch_argv,
+        process.GetHomebrewNxlinkArgvMarker(), append_loopback_nxlink_marker);
     if (!image) {
         LOG_WARNING(Loader, "NextLoad: in-place handoff failed because '{}' is invalid",
                     nro_path);
@@ -547,6 +553,7 @@ bool LoadNroInPlace(Core::System& system, Kernel::KProcess& process, Kernel::KTh
     } else {
         process.ClearHomebrewNxlinkArgvMarker();
     }
+    HomebrewNxlink::ApplyServerMode(nxlink_server_mode, image->nxlink_argv_marker);
     system.GetFileSystemController().RegisterProcess(
         process.GetProcessId(), program_id,
         std::make_unique<FileSys::RomFSFactory>(loader, system.GetContentProvider(),
@@ -628,7 +635,11 @@ static bool LoadNroImpl(Core::System& system, Kernel::KProcess& process,
         argv_string.push_back(' ');
         argv_string += program_args;
     }
-    const auto nxlink_argv_marker = HomebrewNxlink::PrepareArgv(argv_string, {});
+    const auto nxlink_server_mode = Settings::values.homebrew_nxlink_server_mode.GetValue();
+    const bool append_loopback_nxlink_marker =
+        nxlink_server_mode != Settings::HomebrewNxlinkServerMode::Disabled;
+    const auto nxlink_argv_marker =
+        HomebrewNxlink::PrepareArgv(argv_string, {}, append_loopback_nxlink_marker);
     if (argv_string.empty() || argv_string.back() != '\0') {
         argv_string.push_back('\0');
     }
@@ -727,6 +738,7 @@ static bool LoadNroImpl(Core::System& system, Kernel::KProcess& process,
     } else {
         process.ClearHomebrewNxlinkArgvMarker();
     }
+    HomebrewNxlink::ApplyServerMode(nxlink_server_mode, nxlink_argv_marker);
     {
         const u64 base = GetInteger(process.GetEntryPoint());
         const u64 config_addr = base + args_offset_in_image;

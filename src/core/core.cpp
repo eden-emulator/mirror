@@ -52,6 +52,7 @@
 #include "core/hle/service/set/system_settings_server.h"
 #include "core/hle/service/sm/sm.h"
 #include "core/internal_network/network.h"
+#include "core/loader/homebrew_nxlink.h"
 #include "core/loader/loader.h"
 #include "core/memory.h"
 #include "core/memory/cheat_engine.h"
@@ -397,6 +398,7 @@ struct System::Impl {
 
         stop_event.request_stop();
         core_timing.SyncPause(false);
+        Loader::HomebrewNxlink::StopServer();
         Network::CancelPendingSocketOperations();
         kernel.SuspendEmulation(true);
         kernel.CloseServices();

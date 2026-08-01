@@ -840,6 +840,9 @@ struct Values {
     Setting<bool> gpu_log_driver_debug{linkage, true, "gpu_log_driver_debug", Category::Debugging};
     Setting<s32> gpu_log_ring_buffer_size{linkage, 512, "gpu_log_ring_buffer_size",
                                            Category::Debugging};
+    Setting<HomebrewNxlinkServerMode> homebrew_nxlink_server_mode{
+        linkage, HomebrewNxlinkServerMode::Disabled, "homebrew_nxlink_server_mode",
+        Category::Debugging};
 
     SwitchableSetting<u16, true> debug_knobs{linkage,
                                            0,

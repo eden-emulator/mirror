@@ -159,6 +159,7 @@ ENUM(GpuUnswizzleChunk, VeryLow, Low, Normal, Medium, High)
 ENUM(TemperatureUnits, Celsius, Fahrenheit)
 ENUM(ExtendedDynamicState, Disabled, EDS1, EDS2, EDS3);
 ENUM(GpuLogLevel, Off, Errors, Standard, Verbose, All)
+ENUM(HomebrewNxlinkServerMode, Disabled, EdenLog, HostStdout, File)
 ENUM(GameListMode, TreeView, GridView, CarouselView);
 ENUM(SpeedMode, Standard, Turbo, Slow);
 
