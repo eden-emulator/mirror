@@ -6,7 +6,9 @@
 
 #pragma once
 
+#include <array>
 #include <map>
+#include <string_view>
 
 #include "core/arm/arm_interface.h"
 #include "core/file_sys/program_metadata.h"
@@ -90,6 +92,7 @@ private:
     KProcessAddress m_process_handle_addr{};
     KProcessAddress m_homebrew_next_load_path_addr{};
     KProcessAddress m_homebrew_next_load_argv_addr{};
+    std::array<char, 16> m_homebrew_nxlink_argv_marker{};
     KHandleTable m_handle_table;
     KProcessAddress m_plr_address{};
     ThreadList m_thread_list{};
@@ -144,6 +147,7 @@ private:
     bool m_is_immortal : 1 = false;
     bool m_is_handle_table_initialized : 1 = false;
     bool m_is_homebrew_in_place_next_load : 1 = false;
+    bool m_has_homebrew_nxlink_argv_marker : 1 = false;
 
 private:
     Result StartTermination(KernelCore& kernel);
@@ -245,6 +249,24 @@ public:
     }
     void SetHomebrewInPlaceNextLoad(bool enabled) {
         m_is_homebrew_in_place_next_load = enabled;
+    }
+    void SetHomebrewNxlinkArgvMarker(std::string_view marker) {
+        if (marker.size() != m_homebrew_nxlink_argv_marker.size()) {
+            m_has_homebrew_nxlink_argv_marker = false;
+            return;
+        }
+
+        marker.copy(m_homebrew_nxlink_argv_marker.data(), m_homebrew_nxlink_argv_marker.size());
+        m_has_homebrew_nxlink_argv_marker = true;
+    }
+    void ClearHomebrewNxlinkArgvMarker() {
+        m_has_homebrew_nxlink_argv_marker = false;
+    }
+    std::string_view GetHomebrewNxlinkArgvMarker() const {
+        if (!m_has_homebrew_nxlink_argv_marker) {
+            return {};
+        }
+        return {m_homebrew_nxlink_argv_marker.data(), m_homebrew_nxlink_argv_marker.size()};
     }
     bool IsHomebrewInPlaceNextLoad() const {
         return m_is_homebrew_in_place_next_load;

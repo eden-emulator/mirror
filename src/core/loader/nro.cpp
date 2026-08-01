@@ -33,6 +33,7 @@
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/k_thread.h"
 #include "core/hle/service/filesystem/filesystem.h"
+#include "core/loader/homebrew_nxlink.h"
 #include "core/loader/nro.h"
 #include "core/memory.h"
 
@@ -319,6 +320,7 @@ struct HomebrewNroImage {
     size_t image_size{};
     size_t args_offset{};
     std::optional<size_t> exit_process_offset;
+    std::optional<std::string> nxlink_argv_marker;
     std::string argv_string;
 };
 
@@ -340,7 +342,8 @@ static void SetHomebrewConfigPointers(Kernel::KProcess& process, u64 config_addr
 static std::optional<HomebrewNroImage> BuildHomebrewNroImage(const std::vector<u8>& data,
                                                              std::string nro_path,
                                                              std::string file_name,
-                                                             std::string launch_argv) {
+                                                             std::string launch_argv,
+                                                             std::string_view inherited_marker) {
     if (data.size() < sizeof(NroHeader)) {
         return std::nullopt;
     }
@@ -385,6 +388,7 @@ static std::optional<HomebrewNroImage> BuildHomebrewNroImage(const std::vector<u
     } else {
         image.argv_string = QuoteHomebrewArgvComponent(argv0);
     }
+    image.nxlink_argv_marker = HomebrewNxlink::PrepareArgv(image.argv_string, inherited_marker);
     if (image.argv_string.empty() || image.argv_string.back() != '\0') {
         image.argv_string.push_back('\0');
     }
@@ -447,8 +451,8 @@ bool LoadNroInPlace(Core::System& system, Kernel::KProcess& process, Kernel::KTh
         return false;
     }
 
-    auto image =
-        BuildHomebrewNroImage(nro_file->ReadAllBytes(), nro_path, nro_file->GetName(), launch_argv);
+    auto image = BuildHomebrewNroImage(nro_file->ReadAllBytes(), nro_path, nro_file->GetName(),
+                                       launch_argv, process.GetHomebrewNxlinkArgvMarker());
     if (!image) {
         LOG_WARNING(Loader, "NextLoad: in-place handoff failed because '{}' is invalid",
                     nro_path);
@@ -538,6 +542,11 @@ bool LoadNroInPlace(Core::System& system, Kernel::KProcess& process, Kernel::KTh
     process.SetArgReturnAddress(Kernel::KProcessAddress{
         image->exit_process_offset ? base + *image->exit_process_offset : 0});
     SetHomebrewConfigPointers(process, config_addr, next_load_path_addr, next_load_argv_addr);
+    if (image->nxlink_argv_marker) {
+        process.SetHomebrewNxlinkArgvMarker(*image->nxlink_argv_marker);
+    } else {
+        process.ClearHomebrewNxlinkArgvMarker();
+    }
     system.GetFileSystemController().RegisterProcess(
         process.GetProcessId(), program_id,
         std::make_unique<FileSys::RomFSFactory>(loader, system.GetContentProvider(),
@@ -619,6 +628,7 @@ static bool LoadNroImpl(Core::System& system, Kernel::KProcess& process,
         argv_string.push_back(' ');
         argv_string += program_args;
     }
+    const auto nxlink_argv_marker = HomebrewNxlink::PrepareArgv(argv_string, {});
     if (argv_string.empty() || argv_string.back() != '\0') {
         argv_string.push_back('\0');
     }
@@ -712,6 +722,11 @@ static bool LoadNroImpl(Core::System& system, Kernel::KProcess& process,
     codeset.memory = std::move(program_image);
     process.LoadModule(system.Kernel(), std::move(codeset), process.GetEntryPoint());
     process.SetHomebrewInPlaceNextLoad(false);
+    if (nxlink_argv_marker) {
+        process.SetHomebrewNxlinkArgvMarker(*nxlink_argv_marker);
+    } else {
+        process.ClearHomebrewNxlinkArgvMarker();
+    }
     {
         const u64 base = GetInteger(process.GetEntryPoint());
         const u64 config_addr = base + args_offset_in_image;

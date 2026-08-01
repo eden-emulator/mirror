@@ -214,6 +214,7 @@ Result KProcess::Initialize(KernelCore& kernel, const Svc::CreateProcessParamete
     m_homebrew_next_load_path_addr = 0;
     m_homebrew_next_load_argv_addr = 0;
     m_is_homebrew_in_place_next_load = false;
+    m_has_homebrew_nxlink_argv_marker = false;
     m_code_size = params.code_num_pages * PageSize;
     m_is_application = True(params.flags & Svc::CreateProcessFlag::IsApplication);
 

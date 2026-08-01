@@ -1139,6 +1139,8 @@ add_library(core STATIC
     launch_timestamp_cache.h
     loader/deconstructed_rom_directory.cpp
     loader/deconstructed_rom_directory.h
+    loader/homebrew_nxlink.cpp
+    loader/homebrew_nxlink.h
     loader/kip.cpp
     loader/kip.h
     loader/loader.cpp
