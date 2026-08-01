@@ -120,6 +120,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
 
 #ifdef __ANDROID__
 #define FOR_EACH_VK_PLATFORM_EXTENSION(EXTENSION)                                                  \
+    EXTENSION(EXT, QUEUE_FAMILY_FOREIGN, queue_family_foreign)                                     \
     EXTENSION(ANDROID, EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER, external_memory_ahb)
 #else
 #define FOR_EACH_VK_PLATFORM_EXTENSION(EXTENSION)
@@ -914,7 +915,7 @@ FN_MAX_LIMIT_LIST
 
     bool IsExtExternalMemoryAhbSupported() const {
 #ifdef __ANDROID__
-        return extensions.external_memory_ahb;
+        return extensions.external_memory_ahb && extensions.queue_family_foreign;
 #else
         return false;
 #endif

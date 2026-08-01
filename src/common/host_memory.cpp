@@ -51,6 +51,7 @@
 
 #endif // ^^^ POSIX ^^^
 
+#include <atomic>
 #include <mutex>
 #include <random>
 #include <vector>
@@ -60,6 +61,7 @@
 #include "common/free_region_manager.h"
 #include "common/host_memory.h"
 #include "common/logging.h"
+#include "common/memory_detect.h"
 #include "common/settings.h"
 
 #ifdef __ANDROID__
@@ -103,6 +105,12 @@ namespace Common {
 
 [[maybe_unused]] constexpr size_t PageAlignment = 0x1000;
 [[maybe_unused]] constexpr size_t HugePageSize = 0x200000;
+
+static std::atomic<u64> committed_backing_size{};
+
+u64 GetCommittedBackingSize() noexcept {
+    return committed_backing_size.load(std::memory_order_relaxed);
+}
 
 #ifdef _WIN32
 
@@ -605,6 +613,54 @@ public:
     }
 
 #ifdef __ANDROID__
+    static bool ProbeAhbBacking(PFN_AHardwareBuffer_getNativeHandle get_native_handle) {
+        const AHardwareBuffer_Desc desc{
+            .width = static_cast<u32>(PageAlignment * 2),
+            .height = 1,
+            .layers = 1,
+            .format = AHARDWAREBUFFER_FORMAT_BLOB,
+            .usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
+                     AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN |
+                     AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER,
+            .stride = 0,
+            .rfu0 = 0,
+            .rfu1 = 0,
+        };
+        AHardwareBuffer* buffer{};
+        if (AHardwareBuffer_allocate(&desc, &buffer) != 0 || buffer == nullptr) {
+            LOG_WARNING(HW_Memory, "Hardware buffer probe allocation failed");
+            return false;
+        }
+        const NativeHandle* const handle = get_native_handle(buffer);
+        if (handle == nullptr || handle->numFds < 1) {
+            LOG_WARNING(HW_Memory, "Hardware buffer has no mappable file descriptor");
+            AHardwareBuffer_release(buffer);
+            return false;
+        }
+        const int probe_fd = handle->data[0];
+        bool ok = true;
+        const auto try_map = [&](int prot, off_t offset, const char* what) {
+            if (!ok) {
+                return;
+            }
+            void* const ptr = mmap(nullptr, PageAlignment, prot, MAP_SHARED, probe_fd, offset);
+            if (ptr == MAP_FAILED) {
+                LOG_WARNING(HW_Memory, "Hardware buffer backing rejects {}: {}", what,
+                            strerror(errno));
+                ok = false;
+                return;
+            }
+            munmap(ptr, PageAlignment);
+        };
+        try_map(PROT_READ | PROT_WRITE, 0, "shared mappings");
+        try_map(PROT_READ | PROT_WRITE, static_cast<off_t>(PageAlignment), "mappings at an offset");
+#ifdef ARCHITECTURE_arm64
+        try_map(PROT_READ | PROT_EXEC, 0, "executable mappings");
+#endif
+        AHardwareBuffer_release(buffer);
+        return ok;
+    }
+
     bool InitAhbBacking() {
         if (!Settings::values.use_unified_memory.GetValue()) {
             return false;
@@ -613,6 +669,17 @@ public:
             ResolveGetNativeHandle();
         if (get_native_handle == nullptr) {
             LOG_WARNING(HW_Memory, "AHardwareBuffer_getNativeHandle is not available");
+            return false;
+        }
+        const u64 total_physical = Common::GetMemInfo().TotalPhysicalMemory;
+        if (total_physical != 0 && backing_size > total_physical / 2) {
+            LOG_WARNING(HW_Memory,
+                        "Hardware buffer backing would commit {} MiB on a {} MiB system, keeping "
+                        "lazily committed memory",
+                        backing_size >> 20, total_physical >> 20);
+            return false;
+        }
+        if (!ProbeAhbBacking(get_native_handle)) {
             return false;
         }
         constexpr size_t window_size = 1ULL << 30;
@@ -678,23 +745,14 @@ public:
                 return false;
             }
         }
-        void* const exec_probe =
-            mmap(nullptr, PageAlignment, PROT_READ | PROT_EXEC, MAP_SHARED, buffer_fds[0], 0);
-        if (exec_probe == MAP_FAILED) {
-            LOG_WARNING(HW_Memory, "Hardware buffer backing rejects executable mappings: {}",
-                        strerror(errno));
-            munmap(base, backing_size);
-            cleanup();
-            return false;
-        }
-        munmap(exec_probe, PageAlignment);
         backing_base = base;
         ahb_windows = std::move(buffers);
         ahb_fds = std::move(buffer_fds);
         ahb_window_size = window_size;
         ahb_backing = true;
-        LOG_INFO(HW_Memory, "Guest memory backed by {} hardware buffer windows",
-                 ahb_windows.size());
+        committed_backing_size.store(backing_size, std::memory_order_relaxed);
+        LOG_INFO(HW_Memory, "Guest memory backed by {} hardware buffer windows, {} MiB committed",
+                 ahb_windows.size(), backing_size >> 20);
         return true;
     }
 
@@ -823,6 +881,10 @@ private:
         }
         ahb_windows.clear();
         ahb_fds.clear();
+        if (ahb_backing) {
+            committed_backing_size.store(0, std::memory_order_relaxed);
+            ahb_backing = false;
+        }
 #endif
     }
 

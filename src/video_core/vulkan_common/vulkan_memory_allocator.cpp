@@ -180,6 +180,15 @@ namespace Vulkan {
                 logical.DestroyBufferRaw(new_buffer);
                 break;
             }
+            const u32 heap_index = memory_props.memoryTypes[*type_index].heapIndex;
+            const VkDeviceSize heap_size = memory_props.memoryHeaps[heap_index].size;
+            if (imported_size + window_len > heap_size / 2) {
+                LOG_INFO(Render_Vulkan,
+                         "Stopping guest memory import at {} MiB to leave room on heap {} of {} MiB",
+                         imported_size >> 20, heap_index, heap_size >> 20);
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
             const VkImportMemoryHostPointerInfoEXT import_info{
                     .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
                     .pNext = nullptr,

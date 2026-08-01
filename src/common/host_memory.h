@@ -17,6 +17,8 @@ struct AHardwareBuffer;
 
 namespace Common {
 
+[[nodiscard]] u64 GetCommittedBackingSize() noexcept;
+
 enum class MemoryPermission : u32 {
     Read = 1 << 0,
     Write = 1 << 1,

@@ -293,7 +293,7 @@ GraphicsPipeline::GraphicsPipeline(
                         key.Hash(), descriptor_buffer_layout.size);
             uses_descriptor_buffer = false;
             descriptor_buffer_layout = {};
-            descriptor_set_layout = builder.CreateDescriptorSetLayout(false);
+            descriptor_set_layout = builder.CreateDescriptorSetLayout(uses_push_descriptor);
         }
     }
 

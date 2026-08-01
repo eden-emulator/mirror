@@ -21,6 +21,7 @@
 #include "common/assert.h"
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
+#include "common/host_memory.h"
 #include "common/literals.h"
 #include <ranges>
 #include "common/settings.h"
@@ -1088,6 +1089,17 @@ bool Device::GetSuitability(bool requires_swapchain) {
         extensions.robustness_2 = false;
     }
 
+#ifdef __ANDROID__
+    if (extensions.external_memory_ahb && !extensions.queue_family_foreign) {
+        LOG_INFO(Render_Vulkan,
+                 "Not loading {} because its dependency {} is unavailable",
+                 VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME,
+                 VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME);
+        loaded_extensions.erase(VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME);
+        extensions.external_memory_ahb = false;
+    }
+#endif
+
 #undef FEATURE_EXTENSION
 #undef EXTENSION
 
@@ -1669,10 +1681,25 @@ void Device::CollectPhysicalMemoryInfo() {
     device_access_memory = 0;
     u64 device_initial_usage = 0;
     u64 local_memory = 0;
+    const auto heap_has_usable_type = [&mem_properties](size_t heap) {
+        for (u32 index = 0; index < mem_properties.memoryTypeCount; ++index) {
+            if (mem_properties.memoryTypes[index].heapIndex != heap) {
+                continue;
+            }
+            if ((mem_properties.memoryTypes[index].propertyFlags &
+                 VK_MEMORY_PROPERTY_PROTECTED_BIT) == 0) {
+                return true;
+            }
+        }
+        return false;
+    };
     for (size_t element = 0; element < num_properties; ++element) {
         const bool is_heap_local =
             (mem_properties.memoryHeaps[element].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
         if (!is_integrated && !is_heap_local) {
+            continue;
+        }
+        if (!heap_has_usable_type(element)) {
             continue;
         }
         valid_heap_memory.push_back(element);
@@ -1685,6 +1712,13 @@ void Device::CollectPhysicalMemoryInfo() {
             continue;
         }
         device_access_memory += mem_properties.memoryHeaps[element].size;
+    }
+    const u64 committed_backing = Common::GetCommittedBackingSize();
+    if (committed_backing != 0) {
+        LOG_INFO(Render_Vulkan, "Discounting {} MiB of guest memory committed by the host",
+                 committed_backing >> 20);
+        local_memory -= std::min(local_memory, committed_backing);
+        device_access_memory -= std::min(device_access_memory, committed_backing);
     }
     if (is_integrated) {
         const bool aggressive =
