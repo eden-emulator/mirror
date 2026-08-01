@@ -1880,8 +1880,6 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
         default:
             break;
         }
-    } else if (runtime->bl2d_unswizzle_pass &&
-               BlockLinearUnswizzle2DPass::IsSupported(info)) {
         flags |= VideoCommon::ImageFlagBits::AcceleratedUpload;
         flags |= VideoCommon::ImageFlagBits::CostlyLoad;
     } else if (runtime->bl3db_unswizzle_pass &&
