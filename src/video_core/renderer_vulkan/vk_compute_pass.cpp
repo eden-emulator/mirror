@@ -959,7 +959,7 @@ bool BlockLinearUnswizzle2DPass::IsSupported(const VideoCommon::ImageInfo& info)
     if (info.type != VideoCommon::ImageType::e2D) {
         return false;
     }
-    if (info.resources.levels != 1) {
+    if (info.resources.levels != 1 || info.resources.layers != 1) {
         return false;
     }
     if (info.num_samples > 1) {
