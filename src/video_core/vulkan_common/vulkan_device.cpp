@@ -953,8 +953,7 @@ bool Device::ComputeIsOptimalAstcSupported() const {
         VK_FORMAT_ASTC_12x10_UNORM_BLOCK, VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
         VK_FORMAT_ASTC_12x12_UNORM_BLOCK, VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
     };
-    if (!features.features.textureCompressionASTC_LDR ||
-        !features.texture_compression_astc_hdr.textureCompressionASTC_HDR) {
+    if (!features.features.textureCompressionASTC_LDR) {
         return false;
     }
     const auto format_feature_usage{VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
@@ -1504,6 +1503,12 @@ void Device::RemoveUnsuitableExtensions() {
     RemoveExtensionFeatureIfUnsuitable(extensions.subgroup_size_control,
                                        features.subgroup_size_control,
                                        VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME);
+
+    // VK_EXT_texture_compression_astc_hdr
+    extensions.texture_compression_astc_hdr = false;
+    RemoveExtensionFeatureIfUnsuitable(extensions.texture_compression_astc_hdr,
+                                       features.texture_compression_astc_hdr,
+                                       VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR_EXTENSION_NAME);
 
     // VK_EXT_transform_feedback
     extensions.transform_feedback =

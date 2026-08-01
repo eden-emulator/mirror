@@ -85,6 +85,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
 
 // Define miscellaneous extensions which may be used by the implementation here.
 #define FOR_EACH_VK_EXTENSION(EXTENSION)                                                           \
+    EXTENSION(EXT, ASTC_DECODE_MODE, astc_decode_mode)                                             \
     EXTENSION(EXT, CONDITIONAL_RENDERING, conditional_rendering)                                   \
     EXTENSION(EXT, CONSERVATIVE_RASTERIZATION, conservative_rasterization)                         \
     EXTENSION(EXT, DEPTH_RANGE_UNRESTRICTED, depth_range_unrestricted)                             \
@@ -911,10 +912,17 @@ FN_MAX_LIMIT_LIST
                features.shader_atomic_int64.shaderSharedInt64Atomics;
     }
 
+    /// Returns true if the device supports VK_EXT_conditional_rendering.
     bool IsExtConditionalRendering() const {
         return extensions.conditional_rendering;
     }
 
+    /// Returns true if the device supports VK_EXT_astc_decode_mode.
+    bool IsExtAstcDecodeModeSupported() const {
+        return extensions.astc_decode_mode;
+    }
+
+    /// Returns true if the device supports VK_EXT_external_memory_host.
     bool IsExtExternalMemoryHostSupported() const {
         return extensions.external_memory_host;
     }

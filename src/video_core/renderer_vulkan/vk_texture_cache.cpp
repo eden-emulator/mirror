@@ -270,6 +270,10 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     }
 }
 
+[[nodiscard]] bool IsLdrAstcFormat(VkFormat format) {
+    return format >= VK_FORMAT_ASTC_4x4_UNORM_BLOCK && format <= VK_FORMAT_ASTC_12x12_SRGB_BLOCK;
+}
+
 [[nodiscard]] VkImageAspectFlags ImageViewAspectMask(const VideoCommon::ImageViewInfo& info) {
     if (info.IsRenderTarget()) {
         return ImageAspectMask(info.format);
@@ -2483,9 +2487,18 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
         .pNext = nullptr,
         .usage = clamped_view_usage,
     };
+    const VkImageViewASTCDecodeModeEXT astc_decode_mode{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT,
+        .pNext = &image_view_usage,
+        .decodeMode = VK_FORMAT_R8G8B8A8_UNORM,
+    };
+    const void* view_next = &image_view_usage;
+    if (device->IsExtAstcDecodeModeSupported() && IsLdrAstcFormat(format_info.format)) {
+        view_next = &astc_decode_mode;
+    }
     const VkImageViewCreateInfo create_info{
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .pNext = &image_view_usage,
+        .pNext = view_next,
         .flags = 0,
         .image = image.Handle(),
         .viewType = VkImageViewType{},
