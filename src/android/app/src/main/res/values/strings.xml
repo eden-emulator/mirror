@@ -436,6 +436,8 @@
 
     <string name="program_args">Homebrew Args</string>
     <string name="program_args_description">Command-line arguments passed to homebrew at launch (e.g. -noglsl).</string>
+    <string name="nxlink_server_mode">nxlink Server</string>
+    <string name="nxlink_server_mode_description">Starts a local nxlink server for homebrew stdout/stderr streams.</string>
 
     <!-- System settings strings -->
     <string name="device_name">Device name</string>

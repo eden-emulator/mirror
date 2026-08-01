@@ -67,6 +67,11 @@ void ConfigureDebug::SetConfiguration() {
     ui->homebrew_args_edit->setEnabled(runtime_lock);
     ui->homebrew_args_edit->setText(
         QString::fromStdString(Settings::values.program_args.GetValue()));
+    ui->nxlink_server_mode->setEnabled(runtime_lock);
+    const int nxlink_server_mode =
+        static_cast<int>(Settings::values.homebrew_nxlink_server_mode.GetValue());
+    ui->nxlink_server_mode->setCurrentIndex(
+        nxlink_server_mode < ui->nxlink_server_mode->count() ? nxlink_server_mode : 0);
     ui->toggle_console->setEnabled(runtime_lock);
     ui->toggle_console->setChecked(UISettings::values.show_console.GetValue());
     ui->fs_access_log->setEnabled(runtime_lock);
@@ -116,6 +121,8 @@ void ConfigureDebug::ApplyConfiguration() {
     Settings::values.log_flush_line = ui->flush_line->isChecked();
     Settings::values.censor_username = ui->censor_username->isChecked();
     Settings::values.program_args = ui->homebrew_args_edit->text().toStdString();
+    Settings::values.homebrew_nxlink_server_mode =
+        static_cast<Settings::HomebrewNxlinkServerMode>(ui->nxlink_server_mode->currentIndex());
     Settings::values.enable_fs_access_log = ui->fs_access_log->isChecked();
     Settings::values.reporting_services = ui->reporting_services->isChecked();
     Settings::values.dump_audio_commands = ui->dump_audio_commands->isChecked();

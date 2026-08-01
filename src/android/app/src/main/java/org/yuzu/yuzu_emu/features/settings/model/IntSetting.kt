@@ -50,6 +50,7 @@ enum class IntSetting(override val key: String) : AbstractIntSetting {
     GPU_UNSWIZZLE_TEXTURE_SIZE("gpu_unswizzle_texture_size"),
     GPU_UNSWIZZLE_STREAM_SIZE("gpu_unswizzle_stream_size"),
     GPU_UNSWIZZLE_CHUNK_SIZE("gpu_unswizzle_chunk_size"),
+    HOMEBREW_NXLINK_SERVER_MODE("homebrew_nxlink_server_mode"),
     BAT_TEMPERATURE_UNIT("bat_temperature_unit"),
     CABINET_APPLET("cabinet_applet_mode"),
     CONTROLLER_APPLET("controller_applet_mode"),

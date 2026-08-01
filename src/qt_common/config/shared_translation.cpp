@@ -302,6 +302,8 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
     INSERT(Settings, device_name, tr("Device Name"), tr("The name of the console."));
     INSERT(Settings, program_args, tr("Homebrew Args"),
            tr("Command-line arguments passed to homebrew at launch (e.g. -noglsl)."));
+    INSERT(Settings, homebrew_nxlink_server_mode, tr("nxlink Server"),
+           tr("Starts a local nxlink server for homebrew stdout/stderr streams."));
     INSERT(Settings, custom_rtc, tr("Custom RTC Date:"),
            tr("This option allows to change the clock of the console.\n"
               "Can be used to manipulate time in games."));

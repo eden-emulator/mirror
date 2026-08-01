@@ -630,6 +630,16 @@
         <item>3</item>
     </integer-array>
 
+    <string-array name="nxlinkServerModeEntries">
+        <item>Disabled</item>
+        <item>Eden Log</item>
+    </string-array>
+
+    <integer-array name="nxlinkServerModeValues">
+        <item>0</item>
+        <item>1</item>
+    </integer-array>
+
     <string-array name="installKeysResults">
         <item>""</item>
         <item>""</item>

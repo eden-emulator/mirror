@@ -309,20 +309,40 @@
       <property name="title">
        <string>Homebrew</string>
       </property>
-      <layout class="QVBoxLayout" name="verticalLayout_5">
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>Arguments String</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="homebrew_args_edit"/>
+       </item>
+       <item>
+        <widget class="QLabel" name="nxlink_server_mode_label">
+         <property name="text">
+          <string>nxlink Server</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="nxlink_server_mode">
+         <property name="toolTip">
+          <string>Starts a local nxlink server for homebrew stdout/stderr streams.</string>
+         </property>
          <item>
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Arguments String</string>
-           </property>
-          </widget>
+          <property name="text">
+           <string>Disabled</string>
+          </property>
          </item>
          <item>
-          <widget class="QLineEdit" name="homebrew_args_edit"/>
+          <property name="text">
+           <string>Eden Log</string>
+          </property>
          </item>
-        </layout>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -800,6 +820,7 @@
   <tabstop>extended_logging</tabstop>
   <tabstop>open_log_button</tabstop>
   <tabstop>homebrew_args_edit</tabstop>
+  <tabstop>nxlink_server_mode</tabstop>
   <tabstop>enable_graphics_debugging</tabstop>
   <tabstop>enable_shader_feedback</tabstop>
   <tabstop>enable_nsight_aftermath</tabstop>

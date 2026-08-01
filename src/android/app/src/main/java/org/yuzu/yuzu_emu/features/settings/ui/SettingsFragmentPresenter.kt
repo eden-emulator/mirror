@@ -1288,6 +1288,7 @@ class SettingsFragmentPresenter(
 
             add(ShortSetting.DEBUG_KNOBS.key)
             add(StringSetting.PROGRAM_ARGS.key)
+            add(IntSetting.HOMEBREW_NXLINK_SERVER_MODE.key)
 
             if (!NativeConfig.isPerGameConfigLoaded()) {
                 add(HeaderSetting(R.string.gpu_logging_header))

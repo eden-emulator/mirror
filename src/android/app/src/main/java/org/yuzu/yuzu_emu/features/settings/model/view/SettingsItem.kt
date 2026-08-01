@@ -133,6 +133,15 @@ abstract class SettingsItem(
                 )
             )
             put(
+                SingleChoiceSetting(
+                    IntSetting.HOMEBREW_NXLINK_SERVER_MODE,
+                    titleId = R.string.nxlink_server_mode,
+                    descriptionId = R.string.nxlink_server_mode_description,
+                    choicesId = R.array.nxlinkServerModeEntries,
+                    valuesId = R.array.nxlinkServerModeValues
+                )
+            )
+            put(
                 SwitchSetting(
                     BooleanSetting.RENDERER_USE_SPEED_LIMIT,
                     titleId = R.string.frame_limit_enable,
