@@ -107,4 +107,21 @@ u64 GetAvailablePhysicalMemory() {
 #endif
 }
 
+u64 GetMaxMapCount() {
+#ifdef __linux__
+    if (std::FILE* const file = std::fopen("/proc/sys/vm/max_map_count", "re")) {
+        char line[32];
+        u64 count = 0;
+        if (std::fgets(line, sizeof(line), file) != nullptr) {
+            count = std::strtoull(line, nullptr, 10);
+        }
+        std::fclose(file);
+        return count;
+    }
+    return 0;
+#else
+    return 0;
+#endif
+}
+
 } // namespace Common

@@ -683,7 +683,15 @@ public:
                      total_physical >> 20, MinimumTotalPhysical >> 20);
             return 0;
         }
+        const u64 max_map_count = Common::GetMaxMapCount();
+        constexpr u64 ReservedMaps = 24576;
+        if (max_map_count == 0 || max_map_count <= ReservedMaps) {
+            LOG_WARNING(HW_Memory,
+                        "Skipping hardware buffer backing, vm.max_map_count is unknown or too low");
+            return 0;
+        }
         u64 budget = total_physical / 6;
+        budget = (std::min)(budget, (max_map_count - ReservedMaps) * PageAlignment);
         const u64 available = Common::GetAvailablePhysicalMemory();
         if (available != 0) {
             constexpr u64 Headroom = 2ULL << 30;
@@ -695,8 +703,8 @@ public:
         if (budget < MinimumBudget) {
             LOG_INFO(HW_Memory,
                      "Skipping hardware buffer backing, only {} MiB could be committed on a {} MiB "
-                     "system with {} MiB available",
-                     budget >> 20, total_physical >> 20, available >> 20);
+                     "system with {} MiB available and vm.max_map_count {}",
+                     budget >> 20, total_physical >> 20, available >> 20, max_map_count);
             return 0;
         }
         return static_cast<size_t>(budget);
