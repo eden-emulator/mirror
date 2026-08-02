@@ -221,6 +221,8 @@ public:
 
     u64 ReclaimMemory(u64 target_bytes, bool allow_download);
 
+    void ReclaimDeferredResources(u64 completed_sync_point);
+
     void WriteMemory(DAddr device_addr, u64 size);
 
     void CachedWriteMemory(DAddr device_addr, u64 size);

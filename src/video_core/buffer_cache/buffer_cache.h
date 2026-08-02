@@ -93,6 +93,11 @@ u64 BufferCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
 }
 
 template <class P>
+void BufferCache<P>::ReclaimDeferredResources(u64 completed_sync_point) {
+    sentenced_buffers.Reclaim(completed_sync_point);
+}
+
+template <class P>
 void BufferCache<P>::EnsureHeadroom(bool allow_download) {
     if (reclaim_stalled) {
         return;
@@ -139,9 +144,9 @@ void BufferCache<P>::TickFrame() {
 
     usage_refresh_countdown = 0;
     reclaim_stalled = false;
+    ReclaimDeferredResources(runtime.CompletedSyncPoint());
     EnsureHeadroom(true);
     ++frame_tick;
-    sentenced_buffers.Reclaim(runtime.CompletedSyncPoint());
 
     for (auto& buffer : async_buffers_death_ring) {
         runtime.FreeDeferredStagingBuffer(buffer);

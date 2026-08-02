@@ -247,17 +247,32 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
             device_memory.GetBackingHardwareBufferBase());
     }
     memory_allocator.SetReclaimCallback([this](u64 bytes) -> u64 {
-        u64 freed = staging_pool.ReclaimMemory(bytes);
-        if (freed < bytes) {
-            freed += texture_cache.ReclaimMemory(bytes - freed, false);
-        }
-        if (freed < bytes) {
-            freed += buffer_cache.ReclaimMemory(bytes - freed, false);
-        }
         auto& master_semaphore = scheduler.GetMasterSemaphore();
+        const u64 usage_before = device.GetMemoryBudgetInfo().allocation_bytes;
         master_semaphore.Refresh();
-        vk::TickDeletionQueue(master_semaphore.KnownGpuTick());
-        return freed;
+        const u64 completed = master_semaphore.KnownGpuTick();
+        texture_cache.ReclaimDeferredResources(completed);
+        buffer_cache.ReclaimDeferredResources(completed);
+        vk::TickDeletionQueue(completed);
+        const u64 usage_after = device.GetMemoryBudgetInfo().allocation_bytes;
+        const u64 drained = usage_before > usage_after ? usage_before - usage_after : 0;
+        if (drained >= bytes) {
+            return drained;
+        }
+        const u64 remaining = bytes - drained;
+        u64 evicted = staging_pool.ReclaimMemory(remaining);
+        if (evicted < remaining) {
+            evicted += texture_cache.ReclaimMemory(remaining - evicted, false);
+        }
+        if (evicted < remaining) {
+            evicted += buffer_cache.ReclaimMemory(remaining - evicted, false);
+        }
+        master_semaphore.Refresh();
+        const u64 completed_after = master_semaphore.KnownGpuTick();
+        texture_cache.ReclaimDeferredResources(completed_after);
+        buffer_cache.ReclaimDeferredResources(completed_after);
+        vk::TickDeletionQueue(completed_after);
+        return drained + evicted;
     });
 }
 

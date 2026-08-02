@@ -182,10 +182,9 @@ u64 TextureCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
         }
         const bool must_download = image.IsSafeDownload();
         if (must_download && True(image.flags & ImageFlagBits::BadOverlap)) {
-            LOG_WARNING(HW_GPU,
-                        "Recovering bad overlap on eviction: gpu_addr=0x{:x} fmt={} {}x{}x{}",
-                        image.gpu_addr, static_cast<u32>(image.info.format), image.info.size.width,
-                        image.info.size.height, image.info.size.depth);
+            LOG_DEBUG(HW_GPU, "Recovering bad overlap on eviction: gpu_addr=0x{:x} fmt={} {}x{}x{}",
+                      image.gpu_addr, static_cast<u32>(image.info.format), image.info.size.width,
+                      image.info.size.height, image.info.size.depth);
         }
         bool queued_download = false;
         if (must_download) {
@@ -227,6 +226,13 @@ u64 TextureCache<P>::ReclaimMemory(u64 target_bytes, bool allow_download) {
 }
 
 template <class P>
+void TextureCache<P>::ReclaimDeferredResources(u64 completed_sync_point) {
+    sentenced_images.Reclaim(completed_sync_point);
+    sentenced_framebuffers.Reclaim(completed_sync_point);
+    sentenced_image_view.Reclaim(completed_sync_point);
+}
+
+template <class P>
 void TextureCache<P>::EnsureHeadroom(bool allow_download) {
     if (reclaim_stalled) {
         return;
@@ -250,12 +256,10 @@ template <class P>
 void TextureCache<P>::TickFrame() {
     usage_refresh_countdown = 0;
     reclaim_stalled = false;
-    EnsureHeadroom(true);
     const u64 completed_sync_point = runtime.CompletedSyncPoint();
     TickEvictionDownloads(completed_sync_point);
-    sentenced_images.Reclaim(completed_sync_point);
-    sentenced_framebuffers.Reclaim(completed_sync_point);
-    sentenced_image_view.Reclaim(completed_sync_point);
+    ReclaimDeferredResources(completed_sync_point);
+    EnsureHeadroom(true);
     TickAsyncDecode();
     TickAsyncUnswizzle();
 

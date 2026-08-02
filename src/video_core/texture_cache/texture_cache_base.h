@@ -159,6 +159,8 @@ public:
 
     u64 ReclaimMemory(u64 target_bytes, bool allow_download);
 
+    void ReclaimDeferredResources(u64 completed_sync_point);
+
     /// Return a constant reference to the given image view id
     [[nodiscard]] const ImageView& GetImageView(ImageViewId id) const noexcept;
 
