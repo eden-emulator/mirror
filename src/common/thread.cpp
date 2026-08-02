@@ -43,103 +43,251 @@
 #ifdef __ANDROID__
 #include <sys/resource.h>
 #include <algorithm>
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
+#include <mutex>
 #include <utility>
 #include <vector>
 
 namespace {
-[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_URGENT_AUDIO = -19;
-[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_AUDIO = -16;
-[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_URGENT_DISPLAY = -8;
-[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_DISPLAY = -4;
-[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_FOREGROUND = -2;
-[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_MORE_FAVORABLE = -1;
-[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_DEFAULT = 0;
-[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_LESS_FAVORABLE = 1;
-[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_BACKGROUND = 10;
-[[maybe_unused]] constexpr int ANDROID_THREAD_PRIORITY_LOWEST = 19;
+constexpr int ANDROID_THREAD_PRIORITY_AUDIO = -16;
+constexpr int ANDROID_THREAD_PRIORITY_URGENT_DISPLAY = -8;
+constexpr int ANDROID_THREAD_PRIORITY_DISPLAY = -4;
+constexpr int ANDROID_THREAD_PRIORITY_DEFAULT = 0;
+constexpr int ANDROID_THREAD_PRIORITY_BACKGROUND = 10;
 
 constexpr size_t ANDROID_MINIMUM_PERFORMANCE_CORES = 4;
 
-cpu_set_t ComputePerformanceCoreMask() {
-    cpu_set_t mask;
-    CPU_ZERO(&mask);
+enum class CoreGroup {
+    Unrestricted,
+    Performance,
+    Efficiency,
+};
 
+struct CoreTopology {
     cpu_set_t allowed;
-    CPU_ZERO(&allowed);
-    if (sched_getaffinity(gettid(), sizeof(allowed), &allowed) != 0) {
-        return mask;
-    }
+    cpu_set_t performance;
+    cpu_set_t efficiency;
+    bool separated;
+    bool initialized;
+};
 
+struct ThreadPolicy {
+    pid_t tid;
+    CoreGroup group;
+    int nice_value;
+    bool has_nice;
+};
+
+std::mutex g_topology_mutex;
+CoreTopology g_topology{};
+
+std::mutex g_policy_mutex;
+
+std::vector<ThreadPolicy>& Policies() {
+    static auto* const policies = new std::vector<ThreadPolicy>();
+    return *policies;
+}
+
+struct PolicyRegistration {
+    ~PolicyRegistration() {
+        const pid_t tid = gettid();
+        std::scoped_lock lock{g_policy_mutex};
+        std::erase_if(Policies(), [tid](const ThreadPolicy& policy) { return policy.tid == tid; });
+    }
+};
+
+thread_local PolicyRegistration t_policy_registration;
+
+int PossibleCpuCount() {
+    std::ifstream file("/sys/devices/system/cpu/possible");
+    std::string list;
+    if (file && std::getline(file, list) && !list.empty()) {
+        int highest = -1;
+        const char* cursor = list.c_str();
+        while (*cursor != '\0') {
+            char* end = nullptr;
+            const long value = std::strtol(cursor, &end, 10);
+            if (end == cursor) {
+                break;
+            }
+            highest = (std::max)(highest, static_cast<int>(value));
+            cursor = end;
+            while (*cursor == '-' || *cursor == ',') {
+                ++cursor;
+            }
+        }
+        if (highest >= 0) {
+            return (std::min)(highest + 1, CPU_SETSIZE);
+        }
+    }
+    const long configured = sysconf(_SC_NPROCESSORS_CONF);
+    if (configured > 0) {
+        return static_cast<int>((std::min<long>)(configured, CPU_SETSIZE));
+    }
+    return static_cast<int>((std::min<unsigned>)(std::thread::hardware_concurrency(), CPU_SETSIZE));
+}
+
+long ReadCpuScalar(int cpu, const char* node) {
+    long value = 0;
+    std::ifstream file("/sys/devices/system/cpu/cpu" + std::to_string(cpu) + "/" + node);
+    if (!file || !(file >> value) || value <= 0) {
+        return 0;
+    }
+    return value;
+}
+
+std::vector<std::pair<long, int>> CollectCoreWeights(const cpu_set_t& allowed, int total,
+                                                     const char* node, bool require_all) {
     std::vector<std::pair<long, int>> cores;
-    const int total = static_cast<int>(std::thread::hardware_concurrency());
     for (int cpu = 0; cpu < total; ++cpu) {
         if (!CPU_ISSET(cpu, &allowed)) {
             continue;
         }
-        long max_frequency = 0;
-        std::ifstream file("/sys/devices/system/cpu/cpu" + std::to_string(cpu) +
-                           "/cpufreq/cpuinfo_max_freq");
-        if (!file || !(file >> max_frequency) || max_frequency <= 0) {
-            CPU_ZERO(&mask);
-            return mask;
+        const long weight = ReadCpuScalar(cpu, node);
+        if (weight <= 0) {
+            if (require_all) {
+                return {};
+            }
+            LOG_WARNING(Common, "Could not read {} for CPU {}, treating it as an efficiency core",
+                        node, cpu);
+            continue;
         }
-        cores.emplace_back(max_frequency, cpu);
+        cores.emplace_back(weight, cpu);
+    }
+    return cores;
+}
+
+void ComputeTopologyLocked() {
+    g_topology.initialized = true;
+    g_topology.separated = false;
+    CPU_ZERO(&g_topology.allowed);
+    CPU_ZERO(&g_topology.performance);
+    CPU_ZERO(&g_topology.efficiency);
+
+    if (sched_getaffinity(getpid(), sizeof(g_topology.allowed), &g_topology.allowed) != 0) {
+        LOG_WARNING(Common, "Could not query process CPU affinity: {}",
+                    ::Common::GetLastErrorMsg());
+        return;
+    }
+
+    const int total = PossibleCpuCount();
+    auto cores = CollectCoreWeights(g_topology.allowed, total, "cpu_capacity", true);
+    if (cores.empty()) {
+        cores = CollectCoreWeights(g_topology.allowed, total, "cpufreq/cpuinfo_max_freq", false);
     }
     if (cores.empty()) {
-        return mask;
+        LOG_WARNING(Common, "Could not determine CPU topology, thread placement is disabled");
+        return;
     }
 
     std::sort(cores.begin(), cores.end(),
               [](const auto& lhs, const auto& rhs) { return lhs.first > rhs.first; });
 
+    const size_t allowed_count = static_cast<size_t>(CPU_COUNT(&g_topology.allowed));
+    const size_t maximum =
+        allowed_count > 2 * ANDROID_MINIMUM_PERFORMANCE_CORES
+            ? allowed_count - ANDROID_MINIMUM_PERFORMANCE_CORES
+            : ANDROID_MINIMUM_PERFORMANCE_CORES;
+
     size_t taken = 0;
-    long cluster_frequency = cores.front().first;
-    for (const auto& [frequency, cpu] : cores) {
-        if (frequency != cluster_frequency) {
+    long cluster_weight = cores.front().first;
+    for (const auto& [weight, cpu] : cores) {
+        if (weight != cluster_weight) {
             if (taken >= ANDROID_MINIMUM_PERFORMANCE_CORES) {
                 break;
             }
-            cluster_frequency = frequency;
+            cluster_weight = weight;
         }
-        CPU_SET(cpu, &mask);
+        if (taken >= maximum) {
+            break;
+        }
+        CPU_SET(cpu, &g_topology.performance);
         ++taken;
     }
-    return mask;
-}
-
-const cpu_set_t& PerformanceCoreMask() {
-    static const cpu_set_t mask = ComputePerformanceCoreMask();
-    return mask;
-}
-
-cpu_set_t ComputeEfficiencyCoreMask() {
-    cpu_set_t mask;
-    CPU_ZERO(&mask);
-
-    const cpu_set_t& performance = PerformanceCoreMask();
-    if (CPU_COUNT(&performance) == 0) {
-        return mask;
+    if (taken == 0) {
+        return;
     }
 
-    cpu_set_t allowed;
-    CPU_ZERO(&allowed);
-    if (sched_getaffinity(gettid(), sizeof(allowed), &allowed) != 0) {
-        return mask;
-    }
-
-    const int total = static_cast<int>(std::thread::hardware_concurrency());
     for (int cpu = 0; cpu < total; ++cpu) {
-        if (CPU_ISSET(cpu, &allowed) && !CPU_ISSET(cpu, &performance)) {
-            CPU_SET(cpu, &mask);
+        if (CPU_ISSET(cpu, &g_topology.allowed) && !CPU_ISSET(cpu, &g_topology.performance)) {
+            CPU_SET(cpu, &g_topology.efficiency);
         }
     }
-    return mask;
+
+    g_topology.separated = CPU_COUNT(&g_topology.efficiency) > 0;
+    LOG_INFO(Common, "CPU topology: {} performance cores, {} efficiency cores, separation {}",
+             CPU_COUNT(&g_topology.performance), CPU_COUNT(&g_topology.efficiency),
+             g_topology.separated ? "enabled" : "unavailable");
 }
 
-const cpu_set_t& EfficiencyCoreMask() {
-    static const cpu_set_t mask = ComputeEfficiencyCoreMask();
-    return mask;
+void EnsureTopologyLocked() {
+    if (!g_topology.initialized) {
+        ComputeTopologyLocked();
+    }
+}
+
+void RefreshTopologyLocked() {
+    if (!g_topology.initialized) {
+        ComputeTopologyLocked();
+        return;
+    }
+    cpu_set_t current;
+    CPU_ZERO(&current);
+    if (sched_getaffinity(getpid(), sizeof(current), &current) != 0) {
+        return;
+    }
+    if (std::memcmp(&current, &g_topology.allowed, sizeof(current)) != 0) {
+        ComputeTopologyLocked();
+    }
+}
+
+bool ApplyCoreGroupLocked(pid_t tid, CoreGroup group) {
+    if (!g_topology.separated || group == CoreGroup::Unrestricted) {
+        return false;
+    }
+    const cpu_set_t& mask =
+        group == CoreGroup::Performance ? g_topology.performance : g_topology.efficiency;
+    if (CPU_COUNT(&mask) == 0) {
+        return false;
+    }
+    if (sched_setaffinity(tid, sizeof(mask), &mask) != 0) {
+        LOG_WARNING(Common, "Could not restrict thread {} to its core group: {}", tid,
+                    ::Common::GetLastErrorMsg());
+        return false;
+    }
+    return true;
+}
+
+ThreadPolicy& AcquirePolicyLocked(pid_t tid) {
+    auto& policies = Policies();
+    for (auto& policy : policies) {
+        if (policy.tid == tid) {
+            return policy;
+        }
+    }
+    return policies.emplace_back(ThreadPolicy{tid, CoreGroup::Unrestricted, 0, false});
+}
+
+void SetCurrentThreadCoreGroup(CoreGroup group) {
+    const pid_t tid = gettid();
+    {
+        std::scoped_lock lock{g_topology_mutex};
+        EnsureTopologyLocked();
+        ApplyCoreGroupLocked(tid, group);
+    }
+    (void)&t_policy_registration;
+    std::scoped_lock lock{g_policy_mutex};
+    AcquirePolicyLocked(tid).group = group;
+}
+
+void RememberCurrentThreadNice(pid_t tid, int nice_value) {
+    (void)&t_policy_registration;
+    std::scoped_lock lock{g_policy_mutex};
+    ThreadPolicy& policy = AcquirePolicyLocked(tid);
+    policy.nice_value = nice_value;
+    policy.has_nice = true;
 }
 } // Anonymous namespace
 #endif
@@ -153,7 +301,6 @@ const cpu_set_t& EfficiencyCoreMask() {
 #endif
 #include "common/x64/rdtsc.h"
 #endif
-#include "core/core_timing.h"
 
 namespace Common {
 
@@ -194,10 +341,13 @@ void SetCurrentThreadPriority(ThreadPriority new_priority) {
         default: return ANDROID_THREAD_PRIORITY_DEFAULT;
         }
     }();
-    if (setpriority(PRIO_PROCESS, static_cast<id_t>(gettid()), nice_value) != 0) {
-        LOG_DEBUG(Common, "Could not set thread nice value to {}: {}", nice_value,
-                  GetLastErrorMsg());
+    const pid_t tid = gettid();
+    if (setpriority(PRIO_PROCESS, static_cast<id_t>(tid), nice_value) != 0) {
+        LOG_WARNING(Common, "Could not set thread nice value to {}: {}", nice_value,
+                    GetLastErrorMsg());
+        return;
     }
+    RememberCurrentThreadNice(tid, nice_value);
 #else
     pthread_t this_thread = pthread_self();
     const auto scheduling_type = SCHED_OTHER;
@@ -254,24 +404,27 @@ void SetCurrentThreadName(const char* name) {
 
 void SetCurrentThreadToPerformanceCores() {
 #if defined(__ANDROID__)
-    const cpu_set_t& mask = PerformanceCoreMask();
-    if (CPU_COUNT(&mask) == 0) {
-        return;
-    }
-    if (sched_setaffinity(gettid(), sizeof(mask), &mask) != 0) {
-        LOG_DEBUG(Common, "Could not restrict thread to performance cores: {}", GetLastErrorMsg());
-    }
+    SetCurrentThreadCoreGroup(CoreGroup::Performance);
 #endif
 }
 
 void SetCurrentThreadToEfficiencyCores() {
 #if defined(__ANDROID__)
-    const cpu_set_t& mask = EfficiencyCoreMask();
-    if (CPU_COUNT(&mask) == 0) {
-        return;
-    }
-    if (sched_setaffinity(gettid(), sizeof(mask), &mask) != 0) {
-        LOG_DEBUG(Common, "Could not restrict thread to efficiency cores: {}", GetLastErrorMsg());
+    SetCurrentThreadCoreGroup(CoreGroup::Efficiency);
+#endif
+}
+
+void RefreshThreadPolicies() {
+#if defined(__ANDROID__)
+    std::scoped_lock topology_lock{g_topology_mutex};
+    RefreshTopologyLocked();
+
+    std::scoped_lock policy_lock{g_policy_mutex};
+    for (const auto& policy : Policies()) {
+        if (policy.has_nice) {
+            setpriority(PRIO_PROCESS, static_cast<id_t>(policy.tid), policy.nice_value);
+        }
+        ApplyCoreGroupLocked(policy.tid, policy.group);
     }
 #endif
 }

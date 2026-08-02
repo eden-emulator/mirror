@@ -58,7 +58,8 @@ void CoreTiming::Initialize(std::function<void()>&& on_thread_init_) {
     if (is_multicore) {
         timer_thread = std::jthread([this](std::stop_token stop_token) {
             Common::SetCurrentThreadName("HostTiming");
-            Common::SetCurrentThreadPriority(Common::ThreadPriority::High);
+            Common::SetCurrentThreadPriority(Common::ThreadPriority::VeryHigh);
+            Common::SetCurrentThreadToPerformanceCores();
             on_thread_init();
             has_started = true;
 

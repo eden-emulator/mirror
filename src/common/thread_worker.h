@@ -42,8 +42,10 @@ public:
         : workers_queued{num_workers}, thread_name{std::move(name)} {
         const auto lambda = [this, func, placement](std::stop_token stop_token) {
             Common::SetCurrentThreadName(thread_name.c_str());
-            if (placement == ThreadPlacement::Background) {
+            if (placement != ThreadPlacement::Default) {
                 Common::SetCurrentThreadPriority(ThreadPriority::Low);
+            }
+            if (placement == ThreadPlacement::Efficiency) {
                 Common::SetCurrentThreadToEfficiencyCores();
             }
             {

@@ -102,11 +102,13 @@ enum class ThreadPriority : u32 {
 enum class ThreadPlacement : u32 {
     Default = 0,
     Background = 1,
+    Efficiency = 2,
 };
 
 void SetCurrentThreadPriority(ThreadPriority new_priority);
 void SetCurrentThreadName(const char* name);
 void SetCurrentThreadToPerformanceCores();
 void SetCurrentThreadToEfficiencyCores();
+void RefreshThreadPolicies();
 
 } // namespace Common

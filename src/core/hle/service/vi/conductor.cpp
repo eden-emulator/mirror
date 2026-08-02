@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/settings.h"
+#include "common/thread.h"
 #include "core/core.h"
 #include "core/core_timing.h"
 #include "core/hle/service/vi/conductor.h"
@@ -76,6 +77,7 @@ void Conductor::ProcessVsync() {
 
 void Conductor::VsyncThread(std::stop_token token) {
     Common::SetCurrentThreadName("VSyncThread");
+    Common::SetCurrentThreadPriority(Common::ThreadPriority::High);
 
     while (!token.stop_requested()) {
         m_signal.Wait();
