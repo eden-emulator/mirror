@@ -507,6 +507,8 @@ Status BufferQueueProducer::QueueBuffer(s32 slot, const QueueBufferInput& input,
 
         sticky_transform = sticky_transform_;
 
+        const bool track_history = Settings::values.enable_buffer_history.GetValue();
+
         if (core->queue.empty()) {
             core->queue.push_back(item);
             listener_available = core->consumer_listener;
@@ -514,7 +516,7 @@ Status BufferQueueProducer::QueueBuffer(s32 slot, const QueueBufferInput& input,
             auto front = core->queue.begin();
             if (front->is_droppable && core->StillTracking(*front)) {
                 slots[front->slot].buffer_state = BufferState::Free;
-                if (Settings::values.enable_buffer_history.GetValue()) {
+                if (track_history) {
                     core->UpdateHistory(front->frame_number, BufferState::Free);
                 }
                 slots[front->slot].frame_number = 0;
@@ -529,7 +531,7 @@ Status BufferQueueProducer::QueueBuffer(s32 slot, const QueueBufferInput& input,
             }
         }
 
-        if (Settings::values.enable_buffer_history.GetValue()) {
+        if (track_history) {
             core->PushHistory(core->frame_counter, slots[slot].queue_time, slots[slot].presentation_time, BufferState::Queued);
         }
 
@@ -902,26 +904,31 @@ void BufferQueueProducer::Transact(u32 code, std::span<const u8> parcel_data,
 
         const s32 request = parcel_in.Read<s32>();
         if (request <= 0) {
-            parcel_out.Write(Status::BadValue);
+            status = Status::BadValue;
             parcel_out.Write<s32>(0);
             break;
         }
 
-        std::vector<BufferHistoryInfo> snapshot;
+        constexpr u32 history_size = BufferQueueCore::BUFFER_HISTORY_SIZE;
+        std::array<BufferHistoryInfo, history_size> snapshot{};
+        s32 count{};
 
         {
             std::scoped_lock lk(core->buffer_history_mutex);
-            for (auto& [frame, info] : core->buffer_history_map) {
-                snapshot.push_back(info);
+
+            const u32 newest = core->buffer_history_pos;
+            for (u32 i = 0; i < history_size; ++i) {
+                const auto& entry = core->buffer_history[(newest + history_size - i) % history_size];
+                if (entry.frame_number == 0) {
+                    break;
+                }
+
+                snapshot[count] = entry;
+                ++count;
             }
         }
 
-        std::sort(snapshot.begin(), snapshot.end(), [](auto& a, auto& b){
-            return a.frame_number > b.frame_number;
-        });
-
-        const s32 limit = std::min(request, (s32)snapshot.size());
-        parcel_out.Write(Status::NoError);
+        const s32 limit = (std::min)(request, count);
         parcel_out.Write<s32>(limit);
         for (s32 i = 0; i < limit; ++i) {
             parcel_out.Write(snapshot[i]);

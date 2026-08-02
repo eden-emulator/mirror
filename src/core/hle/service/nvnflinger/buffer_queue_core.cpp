@@ -20,33 +20,23 @@ BufferQueueCore::~BufferQueueCore() = default;
 void BufferQueueCore::PushHistory(u64 frame_number, s64 queue_time, s64 presentation_time, BufferState state) {
     std::lock_guard lk(buffer_history_mutex);
 
-    auto it = buffer_history_map.find(frame_number);
-    if (it != buffer_history_map.end()) {
-        it->second.state = state;
-        return;
-    }
-
-    buffer_history_map.emplace(frame_number, BufferHistoryInfo{
+    buffer_history_pos = (buffer_history_pos + 1) % BUFFER_HISTORY_SIZE;
+    buffer_history[buffer_history_pos] = BufferHistoryInfo{
         frame_number,
         queue_time,
         presentation_time,
         state
-    });
-    buffer_history_order.push_back(frame_number);
-
-    if (buffer_history_order.size() > BUFFER_HISTORY_SIZE) {
-        u64 oldest_frame = buffer_history_order.front();
-        buffer_history_order.pop_front();
-        buffer_history_map.erase(oldest_frame);
-    }
+    };
 }
 
 void BufferQueueCore::UpdateHistory(u64 frame_number, BufferState state) {
     std::lock_guard lk(buffer_history_mutex);
 
-    auto it = buffer_history_map.find(frame_number);
-    if (it != buffer_history_map.end()) {
-        it->second.state = state;
+    for (auto& entry : buffer_history) {
+        if (entry.frame_number == frame_number) {
+            entry.state = state;
+            return;
+        }
     }
 }
 

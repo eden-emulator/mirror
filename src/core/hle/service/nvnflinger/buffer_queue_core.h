@@ -9,14 +9,13 @@
 
 #pragma once
 
+#include <array>
 #include <condition_variable>
-#include <deque>
 #include <list>
 #include <memory>
 #include <mutex>
 #include <set>
 #include <vector>
-#include <unordered_map>
 #include <algorithm>
 
 #include "core/hle/service/nvnflinger/buffer_item.h"
@@ -28,12 +27,15 @@
 
 namespace Service::android {
 
+#pragma pack(push, 1)
 struct BufferHistoryInfo {
-    u64 frame_number{};
-    s64 queue_time{};
-    s64 presentation_time{};
-    BufferState state{};
+    u64 frame_number;
+    s64 queue_time;
+    s64 presentation_time;
+    BufferState state;
 };
+#pragma pack(pop)
+static_assert(sizeof(BufferHistoryInfo) == 0x1C, "BufferHistoryInfo must be 28 bytes");
 
 class IConsumerListener;
 class IProducerListener;
@@ -88,9 +90,9 @@ private:
     bool buffer_has_been_queued{};
     u64 frame_counter{};
 
-    std::unordered_map<u64, BufferHistoryInfo> buffer_history_map{};
+    std::array<BufferHistoryInfo, BUFFER_HISTORY_SIZE> buffer_history{};
+    u32 buffer_history_pos{BUFFER_HISTORY_SIZE - 1};
     mutable std::mutex buffer_history_mutex{};
-    std::deque<u64> buffer_history_order;
 
     u32 transform_hint{};
     bool is_allocating{};
