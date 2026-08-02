@@ -174,7 +174,9 @@ NvResult nvhost_gpu::SetChannelPriority(IoctlChannelSetPriority& params) {
     case ChannelPriority::Low: channel_timeslice = 1300; break;
     case ChannelPriority::Medium: channel_timeslice = 2600; break;
     case ChannelPriority::High: channel_timeslice = 5200; break;
-    default : return NvResult::BadParameter;
+    default:
+        LOG_WARNING(Service_NVDRV, "unknown channel priority {:#X}", channel_priority);
+        break;
     }
 
     return NvResult::Success;
@@ -278,18 +280,20 @@ NvResult nvhost_gpu::AllocateObjectContext(IoctlAllocObjCtx& params) {
         params.flags = allowed_mask;
     }
 
-    s32_le ctx_class_number_index = 
+    params.obj_id = 0;
+
+    s32_le ctx_class_number_index =
         GetObjectContextClassNumberIndex(static_cast<CtxClasses>(params.class_num));
     if (ctx_class_number_index < 0) {
-        LOG_ERROR(Service_NVDRV, "Invalid class number for object context: {:#X}",
-                  params.class_num);
-        return NvResult::BadParameter;
+        LOG_WARNING(Service_NVDRV, "Untracked class number for object context: {:#X}",
+                    params.class_num);
+        return NvResult::Success;
     }
 
     if (ctxObjs[ctx_class_number_index].has_value()) {
-        LOG_WARNING(Service_NVDRV, "Object context for class {:#X} already allocated on this channel",
-                    params.class_num);
-        return NvResult::AlreadyAllocated;
+        LOG_DEBUG(Service_NVDRV, "Object context for class {:#X} already allocated on this channel",
+                  params.class_num);
+        return NvResult::Success;
     }
 
     // Defer actual hardware context binding until channel is initialized.
@@ -434,10 +438,6 @@ NvResult nvhost_gpu::ChannelSetTimeout(IoctlChannelSetTimeout& params) {
 
 NvResult nvhost_gpu::ChannelSetTimeslice(IoctlSetTimeslice& params) {
     LOG_INFO(Service_NVDRV, "called, timeslice={:#X}", params.timeslice);
-
-    if (params.timeslice < 1000 || params.timeslice > 5000) {
-        return NvResult::BadParameter;
-    }
 
     channel_timeslice = params.timeslice;
 

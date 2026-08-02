@@ -375,39 +375,42 @@ NvResult nvhost_as_gpu::MapBufferEx(IoctlMapBufferEx& params) {
         mapping_map.insert_or_assign(params.offset, Mapping(params.handle, device_address, params.offset, size, false, big_page, false));
     }
 
-    map_buffer_offsets.insert(params.offset);
-
     return NvResult::Success;
 }
 
 NvResult nvhost_as_gpu::UnmapBuffer(IoctlUnmapBuffer& params) {
+    LOG_DEBUG(Service_NVDRV, "called, offset={:#X}", params.offset);
+
     std::scoped_lock lock(mutex);
-    if (auto const offset_it = map_buffer_offsets.find(params.offset); offset_it != map_buffer_offsets.end()) {
-        LOG_DEBUG(Service_NVDRV, "called, offset={:#X}", params.offset);
-        if (!vm.initialised) {
-            return NvResult::BadValue;
-        }
 
-        auto const it = mapping_map.find(params.offset);
-        auto const mapping = it->second;
-        if (!mapping.fixed) {
-            auto& allocator{mapping.big_page ? *vm.big_page_allocator : *vm.small_page_allocator};
-            u32 page_size_bits{mapping.big_page ? vm.big_page_size_bits : VM::PAGE_SIZE_BITS};
-            allocator.Free(u32(mapping.offset >> page_size_bits), u32(mapping.size >> page_size_bits));
-        }
-
-        // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
-        // Only FreeSpace can unmap them fully
-        if (mapping.sparse_alloc) {
-            gmmu->MapSparse(params.offset, mapping.size, mapping.big_page);
-        } else {
-            gmmu->Unmap(params.offset, mapping.size);
-        }
-
-        nvmap.UnpinHandle(mapping.handle);
-        mapping_map.erase(params.offset);
-        map_buffer_offsets.erase(params.offset);
+    if (!vm.initialised) {
+        return NvResult::BadValue;
     }
+
+    auto const it = mapping_map.find(params.offset);
+    if (it == mapping_map.end()) {
+        LOG_WARNING(Service_NVDRV, "Couldn't find region to unmap at {:#X}", params.offset);
+        return NvResult::Success;
+    }
+
+    auto const mapping = it->second;
+    if (!mapping.fixed) {
+        auto& allocator{mapping.big_page ? *vm.big_page_allocator : *vm.small_page_allocator};
+        u32 page_size_bits{mapping.big_page ? vm.big_page_size_bits : VM::PAGE_SIZE_BITS};
+        allocator.Free(u32(mapping.offset >> page_size_bits), u32(mapping.size >> page_size_bits));
+    }
+
+    // Sparse mappings shouldn't be fully unmapped, just returned to their sparse state
+    // Only FreeSpace can unmap them fully
+    if (mapping.sparse_alloc) {
+        gmmu->MapSparse(params.offset, mapping.size, mapping.big_page);
+    } else {
+        gmmu->Unmap(params.offset, mapping.size);
+    }
+
+    nvmap.UnpinHandle(mapping.handle);
+    mapping_map.erase(it);
+
     return NvResult::Success;
 }
 
