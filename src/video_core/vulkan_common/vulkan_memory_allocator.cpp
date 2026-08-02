@@ -95,15 +95,22 @@ namespace Vulkan {
 
     HostMemoryImport::HostMemoryImport(const Device &device_, void *base, size_t size,
                                        std::span<AHardwareBuffer *const> hardware_buffers,
-                                       size_t hardware_buffer_window)
+                                       size_t hardware_buffer_window, size_t hardware_buffer_base)
             : device{device_} {
+        if (ImportHardwareBuffers(hardware_buffers, hardware_buffer_window, hardware_buffer_base,
+                                  size)) {
+            return;
+        }
+        if (!hardware_buffers.empty()) {
+            LOG_INFO(Render_Vulkan,
+                     "Unified memory disabled, guest memory is backed by hardware buffers that "
+                     "could not be imported");
+            return;
+        }
         if (ImportHostPointer(base, size)) {
             return;
         }
-        ImportHardwareBuffers(hardware_buffers, hardware_buffer_window, size);
-        if (windows.empty()) {
-            LOG_INFO(Render_Vulkan, "Unified memory disabled, no host memory import path");
-        }
+        LOG_INFO(Render_Vulkan, "Unified memory disabled, no host memory import path");
     }
 
     bool HostMemoryImport::ImportHostPointer(void *base, size_t size) {
@@ -124,8 +131,13 @@ namespace Vulkan {
         VkDeviceSize candidate_window = 1_GiB;
         const u64 max_buffer_size = device.GetMaxBufferSize();
         if (max_buffer_size != 0 && max_buffer_size < candidate_window) {
-            candidate_window = Common::AlignDown(max_buffer_size, alignment);
+            candidate_window = max_buffer_size;
         }
+        const u64 max_allocation_size = device.GetMaxMemoryAllocationSize();
+        if (max_allocation_size != 0 && max_allocation_size < candidate_window) {
+            candidate_window = max_allocation_size;
+        }
+        candidate_window = Common::AlignDown(candidate_window, alignment);
         if (candidate_window == 0) {
             return false;
         }
@@ -226,19 +238,31 @@ namespace Vulkan {
         return true;
     }
 
-    void HostMemoryImport::ImportHardwareBuffers(
+    bool HostMemoryImport::ImportHardwareBuffers(
             [[maybe_unused]] std::span<AHardwareBuffer *const> hardware_buffers,
-            [[maybe_unused]] size_t hardware_buffer_window, [[maybe_unused]] size_t size) {
+            [[maybe_unused]] size_t hardware_buffer_window,
+            [[maybe_unused]] size_t hardware_buffer_base, [[maybe_unused]] size_t size) {
 #ifdef __ANDROID__
         if (hardware_buffers.empty() || hardware_buffer_window == 0 ||
             !device.IsExtExternalMemoryAhbSupported()) {
-            return;
+            return false;
+        }
+        const u64 max_allocation_size = device.GetMaxMemoryAllocationSize();
+        if (max_allocation_size != 0 && hardware_buffer_window > max_allocation_size) {
+            LOG_WARNING(Render_Vulkan,
+                        "Hardware buffer windows of {} MiB exceed the {} MiB allocation limit",
+                        hardware_buffer_window >> 20, max_allocation_size >> 20);
+            return false;
+        }
+        if (hardware_buffer_base >= size) {
+            return false;
         }
         const auto &logical = device.GetLogical();
         const auto memory_props = device.GetPhysical().GetMemoryProperties().memoryProperties;
         window_size = hardware_buffer_window;
+        base_offset = hardware_buffer_base;
         for (size_t i = 0; i < hardware_buffers.size(); ++i) {
-            const size_t offset = i * hardware_buffer_window;
+            const size_t offset = hardware_buffer_base + i * hardware_buffer_window;
             if (offset >= size) {
                 break;
             }
@@ -320,11 +344,19 @@ namespace Vulkan {
             });
             imported_size += static_cast<size_t>(window_len);
         }
-        if (!windows.empty()) {
-            LOG_INFO(Render_Vulkan,
-                     "Imported {} MiB of guest memory via hardware buffers in {} windows",
-                     imported_size >> 20, windows.size());
+        if (windows.empty()) {
+            LOG_INFO(Render_Vulkan, "Hardware buffer import failed");
+            window_size = 0;
+            base_offset = 0;
+            return false;
         }
+        foreign_ownership = true;
+        LOG_INFO(Render_Vulkan,
+                 "Imported {} MiB of guest memory at {:#x} via hardware buffers in {} windows",
+                 imported_size >> 20, base_offset, windows.size());
+        return true;
+#else
+        return false;
 #endif
     }
 

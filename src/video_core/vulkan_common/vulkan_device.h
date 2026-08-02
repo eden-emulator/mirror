@@ -947,6 +947,10 @@ FN_MAX_LIMIT_LIST
         return properties.maintenance4.maxBufferSize;
     }
 
+    u64 GetMaxMemoryAllocationSize() const {
+        return properties.maintenance3.maxMemoryAllocationSize;
+    }
+
     bool HasTimelineSemaphore() const;
 
     /// Returns true if the device supports VK_KHR_synchronization2.
@@ -1295,6 +1299,7 @@ private:
         VkPhysicalDeviceDescriptorBufferPropertiesEXT descriptor_buffer{};
         VkPhysicalDeviceSubgroupSizeControlProperties subgroup_size_control{};
         VkPhysicalDeviceTransformFeedbackPropertiesEXT transform_feedback{};
+        VkPhysicalDeviceMaintenance3Properties maintenance3{};
         VkPhysicalDeviceMaintenance4Properties maintenance4{};
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};
         VkPhysicalDeviceDepthStencilResolveProperties depth_stencil_resolve{};

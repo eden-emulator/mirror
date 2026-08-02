@@ -46,7 +46,7 @@ namespace Vulkan {
     public:
         explicit HostMemoryImport(const Device &device_, void *base, size_t size,
                                   std::span<AHardwareBuffer *const> hardware_buffers,
-                                  size_t hardware_buffer_window);
+                                  size_t hardware_buffer_window, size_t hardware_buffer_base);
 
         ~HostMemoryImport();
 
@@ -60,6 +60,14 @@ namespace Vulkan {
 
         [[nodiscard]] size_t GetSize() const noexcept {
             return imported_size;
+        }
+
+        [[nodiscard]] size_t GetBaseOffset() const noexcept {
+            return base_offset;
+        }
+
+        [[nodiscard]] bool NeedsForeignOwnershipTransfer() const noexcept {
+            return foreign_ownership;
         }
 
         [[nodiscard]] VkDeviceSize GetWindowSize() const noexcept {
@@ -82,13 +90,16 @@ namespace Vulkan {
 
         bool ImportHostPointer(void *base, size_t size);
 
-        void ImportHardwareBuffers(std::span<AHardwareBuffer *const> hardware_buffers,
-                                   size_t hardware_buffer_window, size_t size);
+        bool ImportHardwareBuffers(std::span<AHardwareBuffer *const> hardware_buffers,
+                                   size_t hardware_buffer_window, size_t hardware_buffer_base,
+                                   size_t size);
 
         const Device &device;
         std::vector<Window> windows;
         VkDeviceSize window_size{};
         size_t imported_size{};
+        size_t base_offset{};
+        bool foreign_ownership{};
     };
 
 /// Memory allocator container.

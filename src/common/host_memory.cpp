@@ -78,29 +78,14 @@ struct NativeHandle {
 };
 
 using PFN_AHardwareBuffer_getNativeHandle = const NativeHandle* (*)(const AHardwareBuffer*);
-using PFN_AHardwareBuffer_isSupported = int (*)(const AHardwareBuffer_Desc*);
-
-void* NativeWindowLibrary() {
-    static void* const lib = dlopen("libnativewindow.so", RTLD_NOW);
-    return lib;
-}
 
 PFN_AHardwareBuffer_getNativeHandle ResolveGetNativeHandle() {
-    void* const lib = NativeWindowLibrary();
+    void* const lib = dlopen("libnativewindow.so", RTLD_NOW);
     if (lib == nullptr) {
         return nullptr;
     }
     return reinterpret_cast<PFN_AHardwareBuffer_getNativeHandle>(
         dlsym(lib, "AHardwareBuffer_getNativeHandle"));
-}
-
-PFN_AHardwareBuffer_isSupported ResolveIsSupported() {
-    void* const lib = NativeWindowLibrary();
-    if (lib == nullptr) {
-        return nullptr;
-    }
-    return reinterpret_cast<PFN_AHardwareBuffer_isSupported>(
-        dlsym(lib, "AHardwareBuffer_isSupported"));
 }
 
 } // namespace
@@ -175,7 +160,7 @@ static void GetFuncAddress(Common::DynamicLibrary& dll, const char* name, T& pfn
 
 class HostMemory::Impl {
 public:
-    explicit Impl(size_t backing_size_, size_t virtual_size_)
+    explicit Impl(size_t backing_size_, size_t virtual_size_, size_t)
         : backing_size{backing_size_}
         , virtual_size{virtual_size_}
         , process{GetCurrentProcess()}
@@ -279,6 +264,10 @@ public:
     void EnableDirectMappedAddress() {
         // TODO
         UNREACHABLE();
+    }
+
+    bool IsBackingShared() const noexcept {
+        return true;
     }
 
     const size_t backing_size; ///< Size of the backing memory in bytes
@@ -553,19 +542,15 @@ static int shm_open_anon(int flags, mode_t mode) {
 
 class HostMemory::Impl {
 public:
-    explicit Impl(size_t backing_size_, size_t virtual_size_)
+    explicit Impl(size_t backing_size_, size_t virtual_size_, size_t preferred_offset_)
         : backing_size{backing_size_}
         , virtual_size{virtual_size_}
+        , preferred_offset{preferred_offset_}
     {}
 
     bool Init() {
         long page_size = sysconf(_SC_PAGESIZE);
         ASSERT_MSG(page_size == 0x1000, "page size {:#x} is incompatible with 4K paging", page_size);
-#ifdef __ANDROID__
-        if (InitAhbBacking()) {
-            return InitVirtual();
-        }
-#endif
         // Backing memory initialization
 #if defined(__sun__) || defined(__HAIKU__) || defined(__NetBSD__) || defined(__DragonFly__)
         fd = shm_open_anon(O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
@@ -600,10 +585,15 @@ public:
             LOG_WARNING(Common_Memory, "Using private mappings instead of shared ones");
             backing_base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
             if (fd > 0) {
-                fd = -1;
                 close(fd);
             }
+            fd = -1;
         } else {
+#ifdef __ANDROID__
+            if (InitAhbBacking()) {
+                return InitVirtual();
+            }
+#endif
             backing_base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
         }
         if (backing_base == MAP_FAILED) {
@@ -680,6 +670,38 @@ public:
         return ok;
     }
 
+    size_t ComputeAhbBudget(size_t window_size) const {
+        const u64 total_physical = Common::GetMemInfo().TotalPhysicalMemory;
+        if (total_physical == 0) {
+            LOG_WARNING(HW_Memory, "Host memory size is unknown, not committing hardware buffers");
+            return 0;
+        }
+        constexpr u64 MinimumTotalPhysical = 7ULL << 30;
+        if (total_physical < MinimumTotalPhysical) {
+            LOG_INFO(HW_Memory,
+                     "Skipping hardware buffer backing, {} MiB of RAM is below the {} MiB minimum",
+                     total_physical >> 20, MinimumTotalPhysical >> 20);
+            return 0;
+        }
+        u64 budget = total_physical / 6;
+        const u64 available = Common::GetAvailablePhysicalMemory();
+        if (available != 0) {
+            constexpr u64 Headroom = 2ULL << 30;
+            budget = (std::min)(budget, available > Headroom ? available - Headroom : 0);
+        }
+        budget = (std::min)(budget, static_cast<u64>(backing_size));
+        budget = Common::AlignDown(budget, window_size);
+        constexpr u64 MinimumBudget = 256ULL << 20;
+        if (budget < MinimumBudget) {
+            LOG_INFO(HW_Memory,
+                     "Skipping hardware buffer backing, only {} MiB could be committed on a {} MiB "
+                     "system with {} MiB available",
+                     budget >> 20, total_physical >> 20, available >> 20);
+            return 0;
+        }
+        return static_cast<size_t>(budget);
+    }
+
     bool InitAhbBacking() {
         if (!Settings::values.use_unified_memory.GetValue()) {
             return false;
@@ -690,30 +712,26 @@ public:
             LOG_WARNING(HW_Memory, "AHardwareBuffer_getNativeHandle is not available");
             return false;
         }
-        static const PFN_AHardwareBuffer_isSupported is_supported = ResolveIsSupported();
-        if (is_supported == nullptr) {
-            LOG_WARNING(HW_Memory, "AHardwareBuffer_isSupported is not available");
-            return false;
-        }
-        const u64 total_physical = Common::GetMemInfo().TotalPhysicalMemory;
-        if (total_physical != 0 && backing_size > total_physical / 2) {
-            LOG_WARNING(HW_Memory,
-                        "Hardware buffer backing would commit {} MiB on a {} MiB system, keeping "
-                        "lazily committed memory",
-                        backing_size >> 20, total_physical >> 20);
-            return false;
-        }
-        constexpr size_t window_size = 256ULL << 20;
+        constexpr size_t window_size = 64ULL << 20;
         const AHardwareBuffer_Desc window_desc = MakeBlobDesc(window_size);
-        if (is_supported(&window_desc) == 0) {
+        if (AHardwareBuffer_isSupported(&window_desc) == 0) {
             LOG_WARNING(HW_Memory, "Allocator rejects {} MiB hardware buffer windows",
                         window_size >> 20);
+            return false;
+        }
+        const size_t budget = ComputeAhbBudget(window_size);
+        if (budget == 0) {
             return false;
         }
         if (!ProbeAhbBacking(get_native_handle)) {
             return false;
         }
-        const size_t num_windows = (backing_size + window_size - 1) / window_size;
+        const size_t aligned_backing = Common::AlignDown(backing_size, window_size);
+        const size_t region_size = (std::min)(budget, aligned_backing);
+        const size_t region_base = Common::AlignDown(
+            (std::min)(preferred_offset, aligned_backing - region_size), window_size);
+        const size_t num_windows = region_size / window_size;
+
         std::vector<AHardwareBuffer*> buffers;
         std::vector<int> buffer_fds;
         const auto cleanup = [&] {
@@ -724,11 +742,11 @@ public:
             buffer_fds.clear();
         };
         for (size_t i = 0; i < num_windows; ++i) {
-            const size_t len = (std::min)(window_size, backing_size - i * window_size);
-            const AHardwareBuffer_Desc desc = MakeBlobDesc(len);
+            const AHardwareBuffer_Desc desc = MakeBlobDesc(window_size);
             AHardwareBuffer* buffer{};
             if (AHardwareBuffer_allocate(&desc, &buffer) != 0 || buffer == nullptr) {
-                LOG_WARNING(HW_Memory, "Hardware buffer allocation failed for window {}", i);
+                LOG_WARNING(HW_Memory, "Hardware buffer allocation failed for window {} of {}", i,
+                            num_windows);
                 cleanup();
                 return false;
             }
@@ -741,7 +759,7 @@ public:
             }
             const int buffer_fd = handle->data[0];
             const off_t buffer_len = lseek(buffer_fd, 0, SEEK_END);
-            if (buffer_len < static_cast<off_t>(len)) {
+            if (buffer_len < static_cast<off_t>(window_size)) {
                 LOG_WARNING(HW_Memory, "Hardware buffer descriptor smaller than requested");
                 cleanup();
                 return false;
@@ -751,28 +769,73 @@ public:
         u8* const base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_NONE,
                                                MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
         if (base == MAP_FAILED) {
+            LOG_WARNING(HW_Memory, "Failed to reserve backing address space: {}", strerror(errno));
             cleanup();
             return false;
         }
-        for (size_t i = 0; i < num_windows; ++i) {
-            const size_t len = (std::min)(window_size, backing_size - i * window_size);
-            if (mmap(base + i * window_size, len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED,
-                     buffer_fds[i], 0) == MAP_FAILED) {
-                LOG_WARNING(HW_Memory, "Hardware buffer mmap failed: {}", strerror(errno));
+        const auto map_over_reservation = [&](size_t offset, size_t len, int map_fd,
+                                              off_t map_offset) {
+            if (len == 0) {
+                return true;
+            }
+            if (mmap(base + offset, len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, map_fd,
+                     map_offset) == MAP_FAILED) {
+                LOG_WARNING(HW_Memory, "Backing mmap failed: {}", strerror(errno));
                 munmap(base, backing_size);
                 cleanup();
                 return false;
             }
+            return true;
+        };
+        if (!map_over_reservation(0, region_base, fd, 0)) {
+            return false;
+        }
+        for (size_t i = 0; i < num_windows; ++i) {
+            if (!map_over_reservation(region_base + i * window_size, window_size, buffer_fds[i],
+                                      0)) {
+                return false;
+            }
+        }
+        const size_t tail_offset = region_base + region_size;
+        if (!map_over_reservation(tail_offset, backing_size - tail_offset, fd,
+                                  static_cast<off_t>(tail_offset))) {
+            return false;
         }
         backing_base = base;
         ahb_windows = std::move(buffers);
         ahb_fds = std::move(buffer_fds);
         ahb_window_size = window_size;
-        ahb_backing = true;
-        committed_backing_size.store(backing_size, std::memory_order_relaxed);
-        LOG_INFO(HW_Memory, "Guest memory backed by {} hardware buffer windows, {} MiB committed",
-                 ahb_windows.size(), backing_size >> 20);
+        ahb_base = region_base;
+        ahb_bytes = region_size;
+        committed_backing_size.store(region_size, std::memory_order_relaxed);
+        LOG_INFO(HW_Memory,
+                 "Guest memory {:#x}-{:#x} backed by {} hardware buffer windows, {} MiB committed",
+                 region_base, region_base + region_size, ahb_windows.size(), region_size >> 20);
         return true;
+    }
+
+    void MapBackingRange(size_t virtual_offset, size_t host_offset, size_t length, int prot_flags) {
+        while (length > 0) {
+            int map_fd = fd;
+            off_t map_offset = static_cast<off_t>(host_offset);
+            size_t chunk = length;
+            if (host_offset < ahb_base) {
+                chunk = (std::min)(chunk, ahb_base - host_offset);
+            } else if (host_offset < ahb_base + ahb_bytes) {
+                const size_t relative = host_offset - ahb_base;
+                const size_t window = relative / ahb_window_size;
+                const size_t local = relative % ahb_window_size;
+                map_fd = ahb_fds[window];
+                map_offset = static_cast<off_t>(local);
+                chunk = (std::min)(chunk, ahb_window_size - local);
+            }
+            void* const ret = mmap(virtual_base + virtual_offset, chunk, prot_flags,
+                                   MAP_SHARED | MAP_FIXED, map_fd, map_offset);
+            ASSERT_MSG(ret != MAP_FAILED, "mmap: {}", strerror(errno));
+            virtual_offset += chunk;
+            host_offset += chunk;
+            length -= chunk;
+        }
     }
 
     std::span<AHardwareBuffer* const> AhbWindows() const noexcept {
@@ -780,7 +843,11 @@ public:
     }
 
     size_t AhbWindowSize() const noexcept {
-        return ahb_backing ? ahb_window_size : 0;
+        return ahb_bytes != 0 ? ahb_window_size : 0;
+    }
+
+    size_t AhbBase() const noexcept {
+        return ahb_base;
     }
 #endif
 
@@ -806,22 +873,8 @@ public:
             prot_flags |= PROT_EXEC;
 #endif
 #ifdef __ANDROID__
-        if (ahb_backing) {
-            size_t voff = virtual_offset;
-            size_t hoff = host_offset;
-            size_t remaining = length;
-            while (remaining > 0) {
-                const size_t window = hoff / ahb_window_size;
-                const size_t local = hoff % ahb_window_size;
-                const size_t chunk = (std::min)(remaining, ahb_window_size - local);
-                void* const ret =
-                    mmap(virtual_base + voff, chunk, prot_flags, MAP_SHARED | MAP_FIXED,
-                         ahb_fds[window], static_cast<off_t>(local));
-                ASSERT_MSG(ret != MAP_FAILED, "mmap: {}", strerror(errno));
-                voff += chunk;
-                hoff += chunk;
-                remaining -= chunk;
-            }
+        if (ahb_bytes != 0) {
+            MapBackingRange(virtual_offset, host_offset, length, prot_flags);
             return;
         }
 #endif
@@ -869,8 +922,18 @@ public:
         virtual_base = nullptr;
     }
 
+    bool IsBackingShared() const noexcept {
+#ifdef __ANDROID__
+        if (ahb_bytes != 0) {
+            return true;
+        }
+#endif
+        return fd >= 0;
+    }
+
     const size_t backing_size; ///< Size of the backing memory in bytes
     const size_t virtual_size; ///< Size of the virtual address placeholder in bytes
+    const size_t preferred_offset;
 
     u8* backing_base{reinterpret_cast<u8*>(MAP_FAILED)};
     u8* virtual_base{reinterpret_cast<u8*>(MAP_FAILED)};
@@ -900,9 +963,9 @@ private:
         }
         ahb_windows.clear();
         ahb_fds.clear();
-        if (ahb_backing) {
+        if (ahb_bytes != 0) {
             committed_backing_size.store(0, std::memory_order_relaxed);
-            ahb_backing = false;
+            ahb_bytes = 0;
         }
 #endif
     }
@@ -932,16 +995,17 @@ private:
     FreeRegionManager free_manager{};
 
 #ifdef __ANDROID__
-    bool ahb_backing{};
     std::vector<AHardwareBuffer*> ahb_windows;
     std::vector<int> ahb_fds;
     size_t ahb_window_size{};
+    size_t ahb_base{};
+    size_t ahb_bytes{};
 #endif
 };
 
 #endif // ^^^ POSIX ^^^
 
-HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_)
+HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_, size_t preferred_offset_)
     : backing_size(backing_size_)
     , virtual_size(virtual_size_)
 {
@@ -953,7 +1017,7 @@ HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_)
 #else
     // Try to allocate a fastmem arena.
     // The implementation will fail with std::bad_alloc on errors.
-    impl = std::make_unique<HostMemory::Impl>(AlignUp(backing_size, PageAlignment), AlignUp(virtual_size, PageAlignment) + HugePageSize);
+    impl = std::make_unique<HostMemory::Impl>(AlignUp(backing_size, PageAlignment), AlignUp(virtual_size, PageAlignment) + HugePageSize, preferred_offset_);
     if (impl->Init()) {
         backing_base = impl->backing_base;
         virtual_base = impl->virtual_base;
@@ -1034,6 +1098,22 @@ std::span<AHardwareBuffer* const> HostMemory::BackingHardwareBuffers() const noe
 size_t HostMemory::BackingHardwareBufferWindowSize() const noexcept {
 #ifdef __ANDROID__
     return impl ? impl->AhbWindowSize() : 0;
+#else
+    return 0;
+#endif
+}
+
+bool HostMemory::IsBackingShared() const noexcept {
+#if defined(__OPENORBIS__) || defined(__managarm__)
+    return false;
+#else
+    return impl && impl->IsBackingShared();
+#endif
+}
+
+size_t HostMemory::BackingHardwareBufferBase() const noexcept {
+#ifdef __ANDROID__
+    return impl ? impl->AhbBase() : 0;
 #else
     return 0;
 #endif

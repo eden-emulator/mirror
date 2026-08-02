@@ -12,9 +12,18 @@ constexpr size_t VirtualReserveSize = 1ULL << 38;
 constexpr size_t VirtualReserveSize = 1ULL << 39;
 #endif
 
+namespace {
+size_t ApplicationPoolOffset() {
+    using Init = Kernel::Board::Nintendo::Nx::KSystemControl::Init;
+    const size_t dram_size = Init::GetIntendedMemorySize();
+    const size_t application_pool_size = Init::GetApplicationPoolSize();
+    return dram_size > application_pool_size ? dram_size - application_pool_size : 0;
+}
+}
+
 DeviceMemory::DeviceMemory()
     : buffer{Kernel::Board::Nintendo::Nx::KSystemControl::Init::GetIntendedMemorySize(),
-             VirtualReserveSize} {}
+             VirtualReserveSize, ApplicationPoolOffset()} {}
 
 DeviceMemory::~DeviceMemory() = default;
 

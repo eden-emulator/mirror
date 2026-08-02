@@ -18,4 +18,6 @@ struct MemoryInfo {
  */
 [[nodiscard]] const MemoryInfo& GetMemInfo();
 
+[[nodiscard]] u64 GetAvailablePhysicalMemory();
+
 } // namespace Common

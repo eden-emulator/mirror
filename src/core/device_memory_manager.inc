@@ -174,6 +174,8 @@ DeviceMemoryManager<Traits>::DeviceMemoryManager(const DeviceMemory& device_memo
     , physical_size{device_memory_.buffer.BackingSize()}
     , ahb_windows{device_memory_.buffer.BackingHardwareBuffers()}
     , ahb_window_size{device_memory_.buffer.BackingHardwareBufferWindowSize()}
+    , ahb_base{device_memory_.buffer.BackingHardwareBufferBase()}
+    , backing_is_shared{device_memory_.buffer.IsBackingShared()}
     , device_inter{nullptr}
     , compressed_device_addr(1ULL << ((Settings::values.memory_layout_mode.GetValue() == Settings::MemoryLayout::Memory_4Gb ? physical_min_bits : physical_max_bits) - Memory::YUZU_PAGEBITS))
     , tracked_entries(device_as_size >> Memory::YUZU_PAGEBITS)

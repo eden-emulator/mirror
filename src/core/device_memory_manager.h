@@ -117,6 +117,14 @@ public:
         return ahb_window_size;
     }
 
+    size_t GetBackingHardwareBufferBase() const noexcept {
+        return ahb_base;
+    }
+
+    bool IsBackingShared() const noexcept {
+        return backing_is_shared;
+    }
+
     PAddr GetPhysicalRawAddressFromDAddr(DAddr address) const {
         PAddr subbits = PAddr(address & page_mask);
         auto paddr = tracked_entries[(address >> page_bits)].compressed_physical_ptr;
@@ -200,6 +208,8 @@ private:
     const size_t physical_size;
     const std::span<AHardwareBuffer* const> ahb_windows;
     const size_t ahb_window_size;
+    const size_t ahb_base;
+    const bool backing_is_shared;
     DeviceInterface* device_inter;
 
     struct TrackedEntry {

@@ -239,11 +239,12 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
       fence_manager(*this, gpu, texture_cache, buffer_cache, query_cache, device, scheduler),
       wfi_event(device.GetLogical().CreateEvent()) {
     scheduler.SetQueryCache(query_cache);
-    if (Settings::values.use_unified_memory.GetValue()) {
+    if (Settings::values.use_unified_memory.GetValue() && device_memory.IsBackingShared()) {
         buffer_cache_runtime.TryEnableUnifiedMemory(
             device_memory.GetPhysicalBase(), device_memory.GetPhysicalSize(),
             device_memory.GetBackingHardwareBuffers(),
-            device_memory.GetBackingHardwareBufferWindowSize());
+            device_memory.GetBackingHardwareBufferWindowSize(),
+            device_memory.GetBackingHardwareBufferBase());
     }
     memory_allocator.SetReclaimCallback([this](u64 bytes) -> u64 {
         u64 freed = staging_pool.ReclaimMemory(bytes);

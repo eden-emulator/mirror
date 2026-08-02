@@ -33,7 +33,7 @@ DECLARE_ENUM_FLAG_OPERATORS(MemoryPermission)
  */
 class HostMemory {
 public:
-    explicit HostMemory(size_t backing_size_, size_t virtual_size_);
+    explicit HostMemory(size_t backing_size_, size_t virtual_size_, size_t preferred_offset_ = 0);
     ~HostMemory();
 
     /**
@@ -74,6 +74,10 @@ public:
     [[nodiscard]] std::span<AHardwareBuffer* const> BackingHardwareBuffers() const noexcept;
 
     [[nodiscard]] size_t BackingHardwareBufferWindowSize() const noexcept;
+
+    [[nodiscard]] size_t BackingHardwareBufferBase() const noexcept;
+
+    [[nodiscard]] bool IsBackingShared() const noexcept;
 
     [[nodiscard]] u8* VirtualBasePointer() noexcept {
         return virtual_base;

@@ -1819,6 +1819,7 @@ bool BufferCache<P>::TryUnifiedDownloadMemory([[maybe_unused]] Buffer& buffer,
                                               [[maybe_unused]] std::span<BufferCopy> copies) {
     if constexpr (USE_UNIFIED_MEMORY) {
         const u8* const physical_base = device_memory.GetPhysicalBase();
+        const u64 unified_base = runtime.UnifiedMemoryBase();
         const u64 unified_size = runtime.UnifiedMemorySize();
         const u64 window_size = runtime.UnifiedMemoryWindowSize();
         if (window_size == 0) {
@@ -1849,11 +1850,13 @@ bool BufferCache<P>::TryUnifiedDownloadMemory([[maybe_unused]] Buffer& buffer,
                 u64 chunk = (std::min)(copy.size - downloaded,
                                        static_cast<u64>(Core::DEVICE_PAGESIZE) - page_offset);
                 const u64 phys_offset = static_cast<u64>(ptr - physical_base);
-                if (phys_offset + chunk > unified_size) {
+                if (phys_offset < unified_base ||
+                    phys_offset - unified_base + chunk > unified_size) {
                     return false;
                 }
-                const u64 window = phys_offset / window_size;
-                const u64 local_offset = phys_offset % window_size;
+                const u64 relative = phys_offset - unified_base;
+                const u64 window = relative / window_size;
+                const u64 local_offset = relative % window_size;
                 chunk = (std::min)(chunk, window_size - local_offset);
                 auto& group = group_for(window);
                 if (!group.empty()) {
@@ -1877,9 +1880,8 @@ bool BufferCache<P>::TryUnifiedDownloadMemory([[maybe_unused]] Buffer& buffer,
             buffer.MarkUsage(copy.src_offset, copy.size);
         }
         for (size_t i = 0; i < window_ids.size(); ++i) {
-            const std::span<BufferCopy> group_span(groups[i].data(), groups[i].size());
-            runtime.CopyBuffer(runtime.UnifiedMemoryWindowBuffer(window_ids[i]), buffer,
-                               group_span, true);
+            const std::span<const BufferCopy> group_span(groups[i].data(), groups[i].size());
+            runtime.CopyToUnifiedMemory(window_ids[i], buffer, group_span);
         }
         runtime.Finish();
         return true;

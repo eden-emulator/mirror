@@ -1256,6 +1256,11 @@ bool Device::GetSuitability(bool requires_swapchain) {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT;
         SetNext(next, properties.external_memory_host);
     }
+    if (extensions.maintenance3 || instance_version >= VK_API_VERSION_1_1) {
+        properties.maintenance3.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
+        SetNext(next, properties.maintenance3);
+    }
     if (extensions.maintenance4 || features.maintenance4.maintenance4) {
         properties.maintenance4.sType =
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES;

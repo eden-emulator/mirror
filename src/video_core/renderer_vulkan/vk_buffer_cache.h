@@ -101,7 +101,7 @@ public:
 
     void TryEnableUnifiedMemory(void* base, size_t size,
                                 std::span<AHardwareBuffer* const> hardware_buffers,
-                                size_t hardware_buffer_window);
+                                size_t hardware_buffer_window, size_t hardware_buffer_base);
 
     [[nodiscard]] bool HasUnifiedMemory() const noexcept {
         return unified_memory != nullptr && unified_memory->IsValid();
@@ -111,13 +111,16 @@ public:
         return unified_memory ? unified_memory->GetSize() : 0;
     }
 
+    [[nodiscard]] u64 UnifiedMemoryBase() const noexcept {
+        return unified_memory ? unified_memory->GetBaseOffset() : 0;
+    }
+
     [[nodiscard]] u64 UnifiedMemoryWindowSize() const noexcept {
         return unified_memory ? unified_memory->GetWindowSize() : 0;
     }
 
-    [[nodiscard]] VkBuffer UnifiedMemoryWindowBuffer(size_t index) const noexcept {
-        return unified_memory ? unified_memory->GetWindowBuffer(index) : VK_NULL_HANDLE;
-    }
+    void CopyToUnifiedMemory(size_t window_index, VkBuffer src_buffer,
+                             std::span<const VideoCommon::BufferCopy> copies);
 
     u64 CurrentTick();
 
