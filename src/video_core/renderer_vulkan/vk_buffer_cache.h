@@ -122,6 +122,8 @@ public:
     void CopyToUnifiedMemory(size_t window_index, VkBuffer src_buffer,
                              std::span<const VideoCommon::BufferCopy> copies);
 
+    void UnifiedMemoryHostBarrier();
+
     u64 CurrentTick();
 
     u64 KnownGpuTick();

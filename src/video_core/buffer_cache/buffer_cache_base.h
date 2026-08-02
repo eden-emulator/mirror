@@ -453,6 +453,13 @@ private:
 
     bool TryUnifiedDownloadMemory(Buffer& buffer, std::span<BufferCopy> copies);
 
+    using UnifiedWindowGroups =
+        boost::container::small_vector<boost::container::small_vector<BufferCopy, 16>, 4>;
+
+    bool ResolveUnifiedWindows(DAddr device_addr, u64 buffer_offset, u64 size,
+                               boost::container::small_vector<u64, 4>& window_ids,
+                               UnifiedWindowGroups& groups);
+
     void DownloadBufferMemory(Buffer& buffer_id);
 
     void DownloadBufferMemory(Buffer& buffer_id, DAddr device_addr, u64 size);
@@ -503,9 +510,14 @@ private:
     std::deque<Common::RangeSet<DAddr>> committed_gpu_modified_ranges;
 
     // Async Buffers
+    struct AsyncDownloadBatch {
+        boost::container::small_vector<BufferCopy, 4> staging_copies;
+        boost::container::small_vector<BufferCopy, 4> unified_copies;
+    };
+
     Common::OverlapRangeSet<DAddr> async_downloads;
     std::deque<std::optional<Async_Buffer>> async_buffers;
-    std::deque<boost::container::small_vector<BufferCopy, 4>> pending_downloads;
+    std::deque<AsyncDownloadBatch> pending_downloads;
     std::optional<Async_Buffer> current_buffer;
 
     std::deque<Async_Buffer> async_buffers_death_ring;
