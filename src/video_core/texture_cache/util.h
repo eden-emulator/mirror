@@ -104,6 +104,9 @@ void SwizzleImage(Tegra::MemoryManager& gpu_memory, GPUVAddr gpu_addr, const Ima
 
 [[nodiscard]] bool IsLayerStrideCompatible(const ImageInfo& lhs, const ImageInfo& rhs);
 
+[[nodiscard]] bool IsStaleReallocation(const ImageInfo& new_info, const ImageBase& overlap,
+                                       GPUVAddr gpu_addr) noexcept;
+
 [[nodiscard]] std::optional<SubresourceBase> FindSubresource(const ImageInfo& candidate,
                                                              const ImageBase& image,
                                                              GPUVAddr candidate_addr,

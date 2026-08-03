@@ -342,7 +342,8 @@ private:
 
     /// Create a new image and join perfectly matching existing images
     /// Remove joined images from the cache
-    [[nodiscard]] ImageId JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DAddr cpu_addr);
+    [[nodiscard]] ImageId JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DAddr cpu_addr,
+                                     RelaxedOptions options);
 
     [[nodiscard]] ImageId FindDMAImage(const ImageInfo& info, GPUVAddr gpu_addr);
 
@@ -547,6 +548,7 @@ private:
     boost::container::small_vector<ImageId, 4> join_right_aliased_ids;
     ankerl::unordered_dense::set<ImageId> join_ignore_textures;
     boost::container::small_vector<ImageId, 4> join_bad_overlap_ids;
+    boost::container::small_vector<ImageId, 4> join_stale_ids;
     struct JoinCopy {
         bool is_alias;
         ImageId id;

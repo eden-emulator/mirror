@@ -1610,7 +1610,7 @@ ImageId TextureCache<P>::InsertImage(const ImageInfo& info, GPUVAddr gpu_addr,
         }
     }
     ASSERT_MSG(cpu_addr, "Tried to insert an image to an invalid gpu_addr=0x{:x}", gpu_addr);
-    const ImageId image_id = JoinImages(info, gpu_addr, *cpu_addr);
+    const ImageId image_id = JoinImages(info, gpu_addr, *cpu_addr, options);
     const Image& image = slot_images[image_id];
     // Using "image.gpu_addr" instead of "gpu_addr" is important because it might be different
     const auto [it, is_new] = image_allocs_table.try_emplace(image.gpu_addr);
@@ -1622,7 +1622,8 @@ ImageId TextureCache<P>::InsertImage(const ImageInfo& info, GPUVAddr gpu_addr,
 }
 
 template <class P>
-ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DAddr cpu_addr) {
+ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DAddr cpu_addr,
+                                    RelaxedOptions options) {
     EnsureHeadroom(false);
     ImageInfo new_info = info;
     const size_t size_bytes = CalculateGuestSizeInBytes(new_info);
@@ -1634,9 +1635,11 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
     join_right_aliased_ids.clear();
     join_ignore_textures.clear();
     join_bad_overlap_ids.clear();
+    join_stale_ids.clear();
     join_copies_to_do.clear();
     join_alias_indices.clear();
     const bool this_is_linear = info.type == ImageType::Linear;
+    const bool is_render_target = True(options & RelaxedOptions::RenderTarget);
     const auto region_check = [&](ImageId overlap_id, ImageBase& overlap) {
         if (True(overlap.flags & ImageFlagBits::Remapped)) {
             join_ignore_textures.insert(overlap_id);
@@ -1676,6 +1679,9 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
             join_right_aliased_ids.push_back(overlap_id);
             overlap.flags |= ImageFlagBits::Alias;
             join_copies_to_do.emplace_back(JoinCopy{true, overlap_id});
+        } else if (is_render_target && IsStaleReallocation(new_info, overlap, gpu_addr) &&
+                   slot_images[overlap_id].allocation_tick != frame_tick) {
+            join_stale_ids.push_back(overlap_id);
         } else {
             join_bad_overlap_ids.push_back(overlap_id);
         }
@@ -1769,6 +1775,19 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
         DeleteImage(overlap_id);
     }
 
+    for (const ImageId stale_id : join_stale_ids) {
+        Image& stale = slot_images[stale_id];
+        LOG_DEBUG(HW_GPU,
+                  "Retiring resized image: gpu_addr=0x{:x} fmt={} {}x{} -> {}x{}", stale.gpu_addr,
+                  static_cast<u32>(stale.info.format), stale.info.size.width,
+                  stale.info.size.height, new_image.info.size.width, new_image.info.size.height);
+        if (True(stale.flags & ImageFlagBits::Tracked)) {
+            UntrackImage(stale, stale_id);
+        }
+        UnregisterImage(stale_id);
+        DeleteImage(stale_id);
+    }
+
     // TODO: Only upload what we need
     RefreshContents(new_image, new_image_id);
 
@@ -1820,17 +1839,17 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
         const bool aliased_is_bad = True(aliased.flags & ImageFlagBits::BadOverlap);
         const bool new_is_bad = True(new_image.flags & ImageFlagBits::BadOverlap);
         if ((!aliased_was_bad && aliased_is_bad) || (!new_was_bad && new_is_bad)) {
-            LOG_WARNING(HW_GPU,
-                        "Bad overlap: existing gpu_addr={:#x} {}x{}x{} fmt={} type={} rt={} | "
-                        "incoming gpu_addr={:#x} {}x{}x{} fmt={} type={} rt={}",
-                        aliased.gpu_addr, aliased.info.size.width, aliased.info.size.height,
-                        aliased.info.size.depth, static_cast<u32>(aliased.info.format),
-                        static_cast<u32>(aliased.info.type),
-                        True(aliased.flags & ImageFlagBits::GpuModified),
-                        new_image.gpu_addr, new_image.info.size.width, new_image.info.size.height,
-                        new_image.info.size.depth, static_cast<u32>(new_image.info.format),
-                        static_cast<u32>(new_image.info.type),
-                        True(new_image.flags & ImageFlagBits::GpuModified));
+            LOG_DEBUG(HW_GPU,
+                      "Bad overlap: existing gpu_addr={:#x} {}x{}x{} fmt={} type={} rt={} | "
+                      "incoming gpu_addr={:#x} {}x{}x{} fmt={} type={} rt={}",
+                      aliased.gpu_addr, aliased.info.size.width, aliased.info.size.height,
+                      aliased.info.size.depth, static_cast<u32>(aliased.info.format),
+                      static_cast<u32>(aliased.info.type),
+                      True(aliased.flags & ImageFlagBits::GpuModified),
+                      new_image.gpu_addr, new_image.info.size.width, new_image.info.size.height,
+                      new_image.info.size.depth, static_cast<u32>(new_image.info.format),
+                      static_cast<u32>(new_image.info.type),
+                      True(new_image.flags & ImageFlagBits::GpuModified));
         }
     }
 
@@ -2122,7 +2141,7 @@ ImageViewId TextureCache<P>::FindRenderTargetView(const ImageInfo& info, GPUVAdd
     bool delete_state = has_deleted_images;
     do {
         has_deleted_images = false;
-        image_id = FindOrInsertImage(info, gpu_addr);
+        image_id = FindOrInsertImage(info, gpu_addr, RelaxedOptions::RenderTarget);
         delete_state |= has_deleted_images;
     } while (has_deleted_images);
     has_deleted_images = delete_state;

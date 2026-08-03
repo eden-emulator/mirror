@@ -1194,6 +1194,35 @@ bool IsLayerStrideCompatible(const ImageInfo& lhs, const ImageInfo& rhs) {
     return false;
 }
 
+bool IsStaleReallocation(const ImageInfo& new_info, const ImageBase& overlap,
+                         GPUVAddr gpu_addr) noexcept {
+    if (overlap.gpu_addr != gpu_addr) {
+        return false;
+    }
+    const ImageInfo& info = overlap.info;
+    if (new_info.type != ImageType::e2D || info.type != ImageType::e2D) {
+        return false;
+    }
+    if (new_info.resources.levels != 1 || info.resources.levels != 1) {
+        return false;
+    }
+    if (new_info.resources.layers != info.resources.layers) {
+        return false;
+    }
+    if (new_info.block != info.block || new_info.num_samples != info.num_samples) {
+        return false;
+    }
+    if (new_info.tile_width_spacing != info.tile_width_spacing) {
+        return false;
+    }
+    if (BytesPerBlock(new_info.format) != BytesPerBlock(info.format) ||
+        DefaultBlockWidth(new_info.format) != DefaultBlockWidth(info.format) ||
+        DefaultBlockHeight(new_info.format) != DefaultBlockHeight(info.format)) {
+        return false;
+    }
+    return new_info.size.width != info.size.width || new_info.size.height != info.size.height;
+}
+
 std::optional<SubresourceBase> FindSubresource(const ImageInfo& candidate, const ImageBase& image,
                                                GPUVAddr candidate_addr, RelaxedOptions options,
                                                bool broken_views, bool native_bgr) {
