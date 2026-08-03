@@ -416,7 +416,8 @@ FN_MAX_LIMIT_LIST
 
     /// Returns true if descriptor aliasing is natively supported.
     bool IsDescriptorAliasingSupported() const {
-        return GetDriverID() != VK_DRIVER_ID_QUALCOMM_PROPRIETARY;
+        return features.descriptor_indexing.descriptorBindingPartiallyBound &&
+               features.descriptor_indexing.descriptorBindingVariableDescriptorCount;
     }
 
     bool IsSampledImageArrayNonUniformIndexingSupported() const {
