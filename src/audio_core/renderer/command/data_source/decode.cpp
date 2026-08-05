@@ -26,7 +26,7 @@ constexpr u32 TempBufferSize = 0x3F00;
 /// @param req        - Information for how to decode.
 /// @return Number of samples decoded.
 template <typename T>
-u32 DecodePcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, const DecodeArg& req) {
+static u32 DecodePcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, const DecodeArg& req) {
     constexpr s32 min{(std::numeric_limits<s16>::min)()};
     constexpr s32 max{(std::numeric_limits<s16>::max)()};
 
@@ -94,7 +94,7 @@ u32 DecodePcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, const Dec
 /// @param out_buffer - Output mix buffer to receive the samples.
 /// @param req        - Information for how to decode.
 /// @return Number of samples decoded.
-u32 DecodeAdpcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, const DecodeArg& req) {
+static u32 DecodeAdpcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, const DecodeArg& req) {
     constexpr u32 SamplesPerFrame{14};
     constexpr u32 NibblesPerFrame{16};
 
@@ -135,8 +135,8 @@ u32 DecodeAdpcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, const D
 
     auto context = req.adpcm_context;
     auto header = context->header;
-    u8 coeff_index = u8((header >> 4U) & 0x7u);
     u8 scale = u8(header & 0xfU);
+    u8 coeff_index = u8((header >> 4U) & 0x7u);
     s32 coeff0 = req.coefficients[coeff_index * 2 + 0];
     s32 coeff1 = req.coefficients[coeff_index * 2 + 1];
 
@@ -156,16 +156,15 @@ u32 DecodeAdpcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, const D
         const auto sample = ((xn << 11) + 0x400 + prediction) >> 11;
         const auto saturated = std::clamp<s32>(sample, -0x8000, 0x7FFF);
         yn1 = yn0;
-        yn0 = s16(saturated);
-        return yn0;
+        return yn0 = s16(saturated);
     };
 
     u32 read_index = 0;
-    for (u32 write_index = 0; samples_to_read > 0 && write_index < out_buffer.size(); ++write_index) {
+    for (u32 write_index = 0; samples_to_read > 0 && write_index < out_buffer.size(); ) {
         // Are we at a new frame?
         if ((position_in_frame % NibblesPerFrame) == 0) {
             header = wavebuffer[read_index++];
-            scale = header & 0xF;
+            scale = header & 0xFu;
             coeff_index = (header >> 4) & 0x7u;
             coeff0 = req.coefficients[coeff_index * 2 + 0];
             coeff1 = req.coefficients[coeff_index * 2 + 1];
@@ -174,14 +173,13 @@ u32 DecodeAdpcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, const D
             // Can we consume all of this frame's samples?
             if (samples_to_read >= SamplesPerFrame) {
                 // Can grab all samples until the next header
-                auto const total_frames = (std::min)(SamplesPerFrame / 2, u32(wavebuffer.size()));
-                for (u32 i = 0; i < total_frames; i++) {
+                for (u32 i = 0; i < SamplesPerFrame / 2; i++) {
                     auto code0 = get_step((wavebuffer[read_index + i] >> 4) & 0xF);
                     auto code1 = get_step(wavebuffer[read_index + i] & 0xF);
                     out_buffer[write_index++] = decode_sample(code0);
                     out_buffer[write_index++] = decode_sample(code1);
                 }
-                read_index += total_frames;
+                read_index += SamplesPerFrame / 2;
                 position_in_frame += SamplesPerFrame;
                 samples_to_read -= SamplesPerFrame;
                 continue;
@@ -214,15 +212,12 @@ u32 DecodeAdpcm(Core::Memory::Memory& memory, std::span<s16> out_buffer, const D
 /// @param memory - Core memory to read data from.
 /// @param args   - The wavebuffer data, and information for how to decode it.
 void DecodeFromWaveBuffers(Core::Memory::Memory& memory, const DecodeFromWaveBuffersArgs& args) {
-    static constexpr auto EndWaveBuffer = [](auto& voice_state, auto& wavebuffer, auto& index,
-                                             auto& played_samples, auto& consumed) -> void {
+    constexpr auto EndWaveBuffer = [](auto& voice_state, auto& wavebuffer, auto& index, auto& played_samples, auto& consumed) -> void {
         voice_state.wave_buffer_valid[index] = false;
         voice_state.loop_count = 0;
-
         if (wavebuffer.stream_ended) {
             played_samples = 0;
         }
-
         index = (index + 1) % MaxWaveBuffers;
         consumed++;
     };
@@ -275,11 +270,6 @@ void DecodeFromWaveBuffers(Core::Memory::Memory& memory, const DecodeFromWaveBuf
 
         u32 samples_read{0};
         while (samples_read < samples_to_read) {
-            if (temp_buffer_pos >= temp_buffer.size()) {
-                LOG_ERROR(Service_Audio, "Invalid temp_buffer_pos! {}", temp_buffer_pos);
-                break;
-            }
-
             if (wavebuffer_index >= MaxWaveBuffers) {
                 LOG_ERROR(Service_Audio, "Invalid wavebuffer index! {}", wavebuffer_index);
                 wavebuffer_index = 0;
