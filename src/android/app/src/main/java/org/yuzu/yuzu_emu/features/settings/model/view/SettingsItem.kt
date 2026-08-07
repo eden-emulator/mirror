@@ -775,6 +775,13 @@ abstract class SettingsItem(
             )
             put(
                 SwitchSetting(
+                    BooleanSetting.FORCE_UNRESTRICTED_DEPTH,
+                    titleId = R.string.force_unrestricted_depth,
+                    descriptionId = R.string.force_unrestricted_depth_description
+                )
+            )
+            put(
+                SwitchSetting(
                     BooleanSetting.RESCALE_HACK,
                     titleId = R.string.rescale_hack,
                     descriptionId = R.string.rescale_hack_description
