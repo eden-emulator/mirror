@@ -15,6 +15,8 @@
 #include "video_core/vulkan_common/vulkan_wrapper.h"
 #include "video_core/vulkan_common/vma.h"
 
+struct AHardwareBuffer;
+
 namespace Vulkan {
 
     class Device;
@@ -82,6 +84,66 @@ namespace Vulkan {
         VkDeviceSize offset{};      ///< Offset of this allocation inside VkDeviceMemory
         VkDeviceSize size{};        ///< Size of the allocation
         void *mapped_ptr{};  ///< Optional persistent mapped pointer
+    };
+
+    class HostMemoryImport {
+    public:
+        explicit HostMemoryImport(const Device &device_, void *base, size_t size,
+                                  std::span<AHardwareBuffer *const> hardware_buffers,
+                                  size_t hardware_buffer_window, size_t hardware_buffer_base);
+
+        ~HostMemoryImport();
+
+        HostMemoryImport(const HostMemoryImport &) = delete;
+
+        HostMemoryImport &operator=(const HostMemoryImport &) = delete;
+
+        [[nodiscard]] bool IsValid() const noexcept {
+            return !windows.empty();
+        }
+
+        [[nodiscard]] size_t GetSize() const noexcept {
+            return imported_size;
+        }
+
+        [[nodiscard]] size_t GetBaseOffset() const noexcept {
+            return base_offset;
+        }
+
+        [[nodiscard]] bool NeedsForeignOwnershipTransfer() const noexcept {
+            return foreign_ownership;
+        }
+
+        [[nodiscard]] VkDeviceSize GetWindowSize() const noexcept {
+            return window_size;
+        }
+
+        [[nodiscard]] VkBuffer GetWindowBuffer(size_t index) const noexcept {
+            return windows[index].buffer;
+        }
+
+        [[nodiscard]] size_t GetWindowCount() const noexcept {
+            return windows.size();
+        }
+
+    private:
+        struct Window {
+            vk::DeviceMemory memory;
+            VkBuffer buffer{};
+        };
+
+        bool ImportHostPointer(void *base, size_t size);
+
+        bool ImportHardwareBuffers(std::span<AHardwareBuffer *const> hardware_buffers,
+                                   size_t hardware_buffer_window, size_t hardware_buffer_base,
+                                   size_t size);
+
+        const Device &device;
+        std::vector<Window> windows;
+        VkDeviceSize window_size{};
+        size_t imported_size{};
+        size_t base_offset{};
+        bool foreign_ownership{};
     };
 
 /// Memory allocator container.
