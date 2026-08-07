@@ -670,37 +670,44 @@ public:
         return ok;
     }
 
-    size_t ComputeAhbWindowCount(size_t window_size) const {
+    size_t ComputeAhbBudget(size_t window_size) const {
         const u64 total_physical = Common::GetMemInfo().TotalPhysicalMemory;
         if (total_physical == 0) {
             LOG_WARNING(HW_Memory, "Host memory size is unknown, not committing hardware buffers");
             return 0;
         }
-        constexpr u64 MinimumTotalPhysical = 5632ULL << 20;
+        constexpr u64 MinimumTotalPhysical = 7ULL << 30;
         if (total_physical < MinimumTotalPhysical) {
             LOG_INFO(HW_Memory,
                      "Skipping hardware buffer backing, {} MiB of RAM is below the {} MiB minimum",
                      total_physical >> 20, MinimumTotalPhysical >> 20);
             return 0;
         }
-        constexpr u64 MaxWindows = 2;
-        u64 windows = MaxWindows;
-        windows = (std::min)(windows, (total_physical / 6) / window_size);
+        const u64 max_map_count = Common::GetMaxMapCount();
+        constexpr u64 ReservedMaps = 24576;
+        if (max_map_count == 0 || max_map_count <= ReservedMaps) {
+            LOG_WARNING(HW_Memory,
+                        "Skipping hardware buffer backing, vm.max_map_count is unknown or too low");
+            return 0;
+        }
+        u64 budget = total_physical / 6;
+        budget = (std::min)(budget, (max_map_count - ReservedMaps) * PageAlignment);
         const u64 available = Common::GetAvailablePhysicalMemory();
         if (available != 0) {
             constexpr u64 Headroom = 2ULL << 30;
-            const u64 spare = available > Headroom ? available - Headroom : 0;
-            windows = (std::min)(windows, spare / window_size);
+            budget = (std::min)(budget, available > Headroom ? available - Headroom : 0);
         }
-        windows = (std::min)(windows, static_cast<u64>(backing_size) / window_size);
-        if (windows == 0) {
+        budget = (std::min)(budget, static_cast<u64>(backing_size));
+        budget = Common::AlignDown(budget, window_size);
+        constexpr u64 MinimumBudget = 256ULL << 20;
+        if (budget < MinimumBudget) {
             LOG_INFO(HW_Memory,
-                     "Skipping hardware buffer backing, no {} MiB window fits on a {} MiB system "
-                     "with {} MiB available",
-                     window_size >> 20, total_physical >> 20, available >> 20);
+                     "Skipping hardware buffer backing, only {} MiB could be committed on a {} MiB "
+                     "system with {} MiB available and vm.max_map_count {}",
+                     budget >> 20, total_physical >> 20, available >> 20, max_map_count);
             return 0;
         }
-        return static_cast<size_t>(windows);
+        return static_cast<size_t>(budget);
     }
 
     bool InitAhbBacking() {
@@ -713,38 +720,25 @@ public:
             LOG_WARNING(HW_Memory, "AHardwareBuffer_getNativeHandle is not available");
             return false;
         }
-        constexpr size_t WindowCandidates[] = {
-            512ULL << 20,
-            256ULL << 20,
-            128ULL << 20,
-            64ULL << 20,
-        };
-        static_assert(WindowCandidates[0] <= 0xFFFFFFFFull,
-                      "AHARDWAREBUFFER_FORMAT_BLOB encodes its size in a u32 width");
-        size_t window_size = 0;
-        for (const size_t candidate : WindowCandidates) {
-            const AHardwareBuffer_Desc candidate_desc = MakeBlobDesc(candidate);
-            if (AHardwareBuffer_isSupported(&candidate_desc) != 0) {
-                window_size = candidate;
-                break;
-            }
-            LOG_INFO(HW_Memory, "Allocator rejects {} MiB hardware buffer windows", candidate >> 20);
-        }
-        if (window_size == 0) {
-            LOG_WARNING(HW_Memory, "No hardware buffer window size is supported");
+        constexpr size_t window_size = 64ULL << 20;
+        const AHardwareBuffer_Desc window_desc = MakeBlobDesc(window_size);
+        if (AHardwareBuffer_isSupported(&window_desc) == 0) {
+            LOG_WARNING(HW_Memory, "Allocator rejects {} MiB hardware buffer windows",
+                        window_size >> 20);
             return false;
         }
-        const size_t num_windows = ComputeAhbWindowCount(window_size);
-        if (num_windows == 0) {
+        const size_t budget = ComputeAhbBudget(window_size);
+        if (budget == 0) {
             return false;
         }
         if (!ProbeAhbBacking(get_native_handle)) {
             return false;
         }
         const size_t aligned_backing = Common::AlignDown(backing_size, window_size);
-        const size_t region_size = num_windows * window_size;
+        const size_t region_size = (std::min)(budget, aligned_backing);
         const size_t region_base = Common::AlignDown(
             (std::min)(preferred_offset, aligned_backing - region_size), window_size);
+        const size_t num_windows = region_size / window_size;
 
         std::vector<AHardwareBuffer*> buffers;
         std::vector<int> buffer_fds;
@@ -850,29 +844,6 @@ public:
             host_offset += chunk;
             length -= chunk;
         }
-    }
-
-    size_t BackingMapCount(size_t host_offset, size_t length) const noexcept {
-        if (length == 0) {
-            return 0;
-        }
-        if (ahb_bytes == 0) {
-            return 1;
-        }
-        size_t count = 0;
-        while (length > 0) {
-            size_t chunk = length;
-            if (host_offset < ahb_base) {
-                chunk = (std::min)(chunk, ahb_base - host_offset);
-            } else if (host_offset < ahb_base + ahb_bytes) {
-                const size_t local = (host_offset - ahb_base) % ahb_window_size;
-                chunk = (std::min)(chunk, ahb_window_size - local);
-            }
-            host_offset += chunk;
-            length -= chunk;
-            ++count;
-        }
-        return count;
     }
 
     std::span<AHardwareBuffer* const> AhbWindows() const noexcept {
@@ -1129,14 +1100,6 @@ std::span<AHardwareBuffer* const> HostMemory::BackingHardwareBuffers() const noe
     return impl ? impl->AhbWindows() : std::span<AHardwareBuffer* const>{};
 #else
     return {};
-#endif
-}
-
-size_t HostMemory::BackingMapCount(size_t host_offset, size_t length) const noexcept {
-#ifdef __ANDROID__
-    return impl ? impl->BackingMapCount(host_offset, length) : (length != 0 ? 1 : 0);
-#else
-    return length != 0 ? 1 : 0;
 #endif
 }
 
