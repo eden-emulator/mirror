@@ -119,6 +119,7 @@ struct System::Impl {
 
         is_multicore = Settings::values.use_multi_core.GetValue();
         extended_memory_layout = Settings::values.memory_layout_mode.GetValue() != Settings::MemoryLayout::Memory_4Gb;
+        unified_memory = Settings::values.use_unified_memory.GetValue();
 
         core_timing.SetMulticore(is_multicore);
         core_timing.Initialize([&system]() { system.RegisterHostThread(); });
@@ -146,7 +147,8 @@ struct System::Impl {
             !device_memory.has_value() ||
             is_multicore != Settings::values.use_multi_core.GetValue() ||
             extended_memory_layout != (Settings::values.memory_layout_mode.GetValue() !=
-                                       Settings::MemoryLayout::Memory_4Gb);
+                                       Settings::MemoryLayout::Memory_4Gb) ||
+            unified_memory != Settings::values.use_unified_memory.GetValue();
 
         if (!must_reinitialize) {
             return;
@@ -157,6 +159,7 @@ struct System::Impl {
         is_multicore = Settings::values.use_multi_core.GetValue();
         extended_memory_layout =
             Settings::values.memory_layout_mode.GetValue() != Settings::MemoryLayout::Memory_4Gb;
+        unified_memory = Settings::values.use_unified_memory.GetValue();
 
         Initialize(system);
     }
@@ -503,6 +506,7 @@ struct System::Impl {
     std::atomic_bool is_powered_on{};
     bool is_multicore : 1 = false;
     bool extended_memory_layout : 1 = false;
+    bool unified_memory : 1 = false;
     bool exit_locked : 1 = false;
     bool exit_requested : 1 = false;
     bool nvdec_active : 1 = false;

@@ -344,6 +344,7 @@ class SettingsFragmentPresenter(
             add(BooleanSetting.FIX_BLOOM_EFFECTS.key)
             add(BooleanSetting.EMULATE_BGR565.key)
             add(BooleanSetting.RENDERER_ASYNCHRONOUS_SHADERS.key)
+            add(BooleanSetting.RENDERER_UNIFIED_MEMORY.key)
             add(IntSetting.ANDROID_PIPELINE_WORKERS.key)
             add(BooleanSetting.RENDERER_ASYNCHRONOUS_GPU_EMULATION.key)
             add(BooleanSetting.RENDERER_ASYNC_PRESENTATION.key)

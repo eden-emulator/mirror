@@ -25,8 +25,33 @@
 #include "video_core/gpu_logging/gpu_logging.h"
 #include "common/settings.h"
 
+#ifdef __ANDROID__
+#include <android/hardware_buffer.h>
+#endif
+
 namespace Vulkan {
     namespace {
+
+        [[nodiscard]] std::optional<u32> FindImportMemoryType(
+                const VkPhysicalDeviceMemoryProperties &props, u32 type_mask) {
+            const auto find = [&](VkMemoryPropertyFlags wanted) -> std::optional<u32> {
+                for (u32 i = 0; i < props.memoryTypeCount; ++i) {
+                    if (((type_mask >> i) & 1u) != 0 &&
+                        (props.memoryTypes[i].propertyFlags & wanted) == wanted) {
+                        return i;
+                    }
+                }
+                return std::nullopt;
+            };
+            auto type_index = find(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+                                   VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+            if (!type_index) {
+                type_index = find(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            }
+            return type_index;
+        }
 
 // Helpers translating MemoryUsage to flags/usage
 
@@ -198,6 +223,291 @@ namespace Vulkan {
         memory = VK_NULL_HANDLE;
         offset = 0;
         size = 0;
+    }
+
+    HostMemoryImport::HostMemoryImport(const Device &device_, void *base, size_t size,
+                                       std::span<AHardwareBuffer *const> hardware_buffers,
+                                       size_t hardware_buffer_window, size_t hardware_buffer_base)
+            : device{device_} {
+        if (ImportHardwareBuffers(hardware_buffers, hardware_buffer_window, hardware_buffer_base,
+                                  size)) {
+            return;
+        }
+        if (device.IsTiler()) {
+            LOG_INFO(Render_Vulkan,
+                     "Unified memory disabled, hardware buffer import is the only path supported "
+                     "by tiler drivers");
+            return;
+        }
+        if (ImportHostPointer(base, size)) {
+            return;
+        }
+        LOG_INFO(Render_Vulkan, "Unified memory disabled, no host memory import path");
+    }
+
+    bool HostMemoryImport::ImportHostPointer(void *base, size_t size) {
+        if (!device.IsExtExternalMemoryHostSupported()) {
+            LOG_INFO(Render_Vulkan,
+                     "Unified memory disabled, VK_EXT_external_memory_host is not supported");
+            return false;
+        }
+        const u64 alignment = device.GetMinImportedHostPointerAlignment();
+        if (alignment == 0 || !Common::IsAligned(reinterpret_cast<uintptr_t>(base), alignment) ||
+            !Common::IsAligned(size, alignment)) {
+            LOG_INFO(Render_Vulkan,
+                     "Unified memory disabled, host allocation does not satisfy alignment {}",
+                     alignment);
+            return false;
+        }
+        using namespace Common::Literals;
+        constexpr VkDeviceSize DesktopWindowSize = 4_GiB;
+        VkDeviceSize candidate_window = DesktopWindowSize;
+        const u64 max_buffer_size = device.GetMaxBufferSize();
+        if (max_buffer_size != 0 && max_buffer_size < candidate_window) {
+            candidate_window = max_buffer_size;
+        }
+        const u64 max_allocation_size = device.GetMaxMemoryAllocationSize();
+        if (max_allocation_size != 0 && max_allocation_size < candidate_window) {
+            candidate_window = max_allocation_size;
+        }
+        candidate_window = Common::AlignDown(candidate_window, alignment);
+        if (candidate_window == 0) {
+            return false;
+        }
+        window_size = candidate_window;
+
+        const auto &logical = device.GetLogical();
+        const auto memory_props = device.GetPhysical().GetMemoryProperties().memoryProperties;
+
+        for (size_t offset = 0; offset < size; offset += window_size) {
+            u8 *const window_base = static_cast<u8 *>(base) + offset;
+            const VkDeviceSize window_len =
+                    (std::min)(static_cast<VkDeviceSize>(size - offset), window_size);
+            VkMemoryHostPointerPropertiesEXT host_props{
+                    .sType = VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT,
+                    .pNext = nullptr,
+                    .memoryTypeBits = 0,
+            };
+            if (logical.GetMemoryHostPointerPropertiesEXT(
+                        VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT, window_base,
+                        &host_props) != VK_SUCCESS ||
+                host_props.memoryTypeBits == 0) {
+                break;
+            }
+            const VkExternalMemoryBufferCreateInfo external_info{
+                    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+                    .pNext = nullptr,
+                    .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+            };
+            const VkBufferCreateInfo buffer_ci{
+                    .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                    .pNext = &external_info,
+                    .flags = 0,
+                    .size = window_len,
+                    .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                    .queueFamilyIndexCount = 0,
+                    .pQueueFamilyIndices = nullptr,
+            };
+            VkBuffer new_buffer{};
+            if (logical.CreateBufferRaw(buffer_ci, &new_buffer) != VK_SUCCESS) {
+                break;
+            }
+            const VkMemoryRequirements requirements =
+                    logical.GetBufferMemoryRequirements(new_buffer);
+            const u32 type_mask = requirements.memoryTypeBits & host_props.memoryTypeBits;
+            if (type_mask == 0 || requirements.size > window_len) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            const auto type_index = FindImportMemoryType(memory_props, type_mask);
+            if (!type_index) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            constexpr VkDeviceSize MaxHeapFractionDenominator = 2;
+            const u32 heap_index = memory_props.memoryTypes[*type_index].heapIndex;
+            const VkDeviceSize heap_size = memory_props.memoryHeaps[heap_index].size;
+            const VkDeviceSize heap_import_limit = heap_size / MaxHeapFractionDenominator;
+            if (imported_size + window_len > heap_import_limit) {
+                LOG_INFO(Render_Vulkan,
+                         "Stopping guest memory import at {} MiB to leave room on heap {} of {} MiB",
+                         imported_size >> 20, heap_index, heap_size >> 20);
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            const VkImportMemoryHostPointerInfoEXT import_info{
+                    .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
+                    .pNext = nullptr,
+                    .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+                    .pHostPointer = window_base,
+            };
+            const VkMemoryAllocateInfo alloc_info{
+                    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                    .pNext = &import_info,
+                    .allocationSize = window_len,
+                    .memoryTypeIndex = *type_index,
+            };
+            vk::DeviceMemory memory = logical.TryAllocateMemory(alloc_info);
+            if (!memory) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            if (logical.BindBufferMemory(new_buffer, *memory, 0) != VK_SUCCESS) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            windows.push_back(Window{
+                    .memory = std::move(memory),
+                    .buffer = new_buffer,
+            });
+            imported_size += static_cast<size_t>(window_len);
+        }
+        if (windows.empty()) {
+            LOG_INFO(Render_Vulkan, "Host pointer import failed");
+            return false;
+        }
+        LOG_INFO(Render_Vulkan,
+                 "Imported {} MiB of guest memory for unified memory access in {} windows",
+                 imported_size >> 20, windows.size());
+        return true;
+    }
+
+    bool HostMemoryImport::ImportHardwareBuffers(
+            [[maybe_unused]] std::span<AHardwareBuffer *const> hardware_buffers,
+            [[maybe_unused]] size_t hardware_buffer_window,
+            [[maybe_unused]] size_t hardware_buffer_base, [[maybe_unused]] size_t size) {
+#ifdef __ANDROID__
+        if (hardware_buffers.empty() || hardware_buffer_window == 0 ||
+            !device.IsExtExternalMemoryAhbSupported()) {
+            return false;
+        }
+        using namespace Common::Literals;
+        u64 max_allocation_size = device.GetMaxMemoryAllocationSize();
+        if (device.IsTiler()) {
+            constexpr u64 TilerAllocationLimit = 1_GiB;
+            max_allocation_size = max_allocation_size != 0
+                                          ? (std::min)(max_allocation_size, TilerAllocationLimit)
+                                          : TilerAllocationLimit;
+        }
+        if (max_allocation_size != 0 && hardware_buffer_window > max_allocation_size) {
+            LOG_WARNING(Render_Vulkan,
+                        "Hardware buffer windows of {} MiB exceed the {} MiB allocation limit",
+                        hardware_buffer_window >> 20, max_allocation_size >> 20);
+            return false;
+        }
+        if (hardware_buffer_base >= size) {
+            return false;
+        }
+        const auto &logical = device.GetLogical();
+        const auto memory_props = device.GetPhysical().GetMemoryProperties().memoryProperties;
+        window_size = hardware_buffer_window;
+        base_offset = hardware_buffer_base;
+        for (size_t i = 0; i < hardware_buffers.size(); ++i) {
+            const size_t offset = hardware_buffer_base + i * hardware_buffer_window;
+            if (offset >= size) {
+                break;
+            }
+            const VkDeviceSize window_len = (std::min)(
+                    static_cast<VkDeviceSize>(size - offset),
+                    static_cast<VkDeviceSize>(hardware_buffer_window));
+            VkAndroidHardwareBufferPropertiesANDROID ahb_props{
+                    .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
+                    .pNext = nullptr,
+                    .allocationSize = 0,
+                    .memoryTypeBits = 0,
+            };
+            if (logical.GetAndroidHardwareBufferPropertiesANDROID(hardware_buffers[i],
+                                                                  &ahb_props) != VK_SUCCESS ||
+                ahb_props.memoryTypeBits == 0 || ahb_props.allocationSize < window_len) {
+                break;
+            }
+            const VkExternalMemoryBufferCreateInfo external_info{
+                    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+                    .pNext = nullptr,
+                    .handleTypes =
+                            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+            };
+            const VkBufferCreateInfo buffer_ci{
+                    .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                    .pNext = &external_info,
+                    .flags = 0,
+                    .size = window_len,
+                    .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                    .queueFamilyIndexCount = 0,
+                    .pQueueFamilyIndices = nullptr,
+            };
+            VkBuffer new_buffer{};
+            if (logical.CreateBufferRaw(buffer_ci, &new_buffer) != VK_SUCCESS) {
+                break;
+            }
+            const VkMemoryRequirements requirements =
+                    logical.GetBufferMemoryRequirements(new_buffer);
+            const u32 type_mask = requirements.memoryTypeBits & ahb_props.memoryTypeBits;
+            if (type_mask == 0 || requirements.size > ahb_props.allocationSize) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            const auto type_index = FindImportMemoryType(memory_props, type_mask);
+            if (!type_index) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            const VkImportAndroidHardwareBufferInfoANDROID import_info{
+                    .sType = VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+                    .pNext = nullptr,
+                    .buffer = hardware_buffers[i],
+            };
+            const VkMemoryDedicatedAllocateInfo dedicated_info{
+                    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+                    .pNext = &import_info,
+                    .image = VK_NULL_HANDLE,
+                    .buffer = new_buffer,
+            };
+            const VkMemoryAllocateInfo alloc_info{
+                    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                    .pNext = &dedicated_info,
+                    .allocationSize = ahb_props.allocationSize,
+                    .memoryTypeIndex = *type_index,
+            };
+            vk::DeviceMemory memory = logical.TryAllocateMemory(alloc_info);
+            if (!memory) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            if (logical.BindBufferMemory(new_buffer, *memory, 0) != VK_SUCCESS) {
+                logical.DestroyBufferRaw(new_buffer);
+                break;
+            }
+            windows.push_back(Window{
+                    .memory = std::move(memory),
+                    .buffer = new_buffer,
+            });
+            imported_size += static_cast<size_t>(window_len);
+        }
+        if (windows.empty()) {
+            LOG_INFO(Render_Vulkan, "Hardware buffer import failed");
+            window_size = 0;
+            base_offset = 0;
+            return false;
+        }
+        foreign_ownership = true;
+        LOG_INFO(Render_Vulkan,
+                 "Imported {} MiB of guest memory at {:#x} via hardware buffers in {} windows",
+                 imported_size >> 20, base_offset, windows.size());
+        return true;
+#else
+        return false;
+#endif
+    }
+
+    HostMemoryImport::~HostMemoryImport() {
+        for (Window &window : windows) {
+            if (window.buffer != VK_NULL_HANDLE) {
+                device.GetLogical().DestroyBufferRaw(window.buffer);
+            }
+        }
     }
 
     MemoryAllocator::MemoryAllocator(const Device &device_)
