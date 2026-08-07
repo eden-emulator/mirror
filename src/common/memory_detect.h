@@ -18,4 +18,8 @@ struct MemoryInfo {
  */
 [[nodiscard]] const MemoryInfo& GetMemInfo();
 
+[[nodiscard]] u64 GetAvailablePhysicalMemory();
+
+[[nodiscard]] u64 GetMaxMapCount();
+
 } // namespace Common

@@ -261,6 +261,7 @@ struct BufferCacheParams {
 
     // TODO: Investigate why OpenGL seems to perform worse with persistently mapped buffer uploads
     static constexpr bool USE_MEMORY_MAPS_FOR_UPLOADS = false;
+    static constexpr bool USE_UNIFIED_MEMORY = false;
 };
 
 using BufferCache = VideoCommon::BufferCache<BufferCacheParams>;

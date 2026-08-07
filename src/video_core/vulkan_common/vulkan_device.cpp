@@ -16,6 +16,7 @@
 #include <fmt/format.h>
 
 #include "common/assert.h"
+#include "common/host_memory.h"
 #include "common/literals.h"
 #include <ranges>
 #include "common/settings.h"
@@ -974,6 +975,7 @@ bool Device::GetSuitability(bool requires_swapchain) {
 
     FOR_EACH_VK_FEATURE_EXT(FEATURE_EXTENSION);
     FOR_EACH_VK_EXTENSION(EXTENSION);
+    FOR_EACH_VK_PLATFORM_EXTENSION(EXTENSION);
 
     if (supported_extensions.contains(VK_KHR_ROBUSTNESS_2_EXTENSION_NAME)) {
         loaded_extensions.erase(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
@@ -985,6 +987,17 @@ bool Device::GetSuitability(bool requires_swapchain) {
     } else {
         extensions.robustness_2 = false;
     }
+
+#ifdef __ANDROID__
+    if (extensions.external_memory_ahb && !extensions.queue_family_foreign) {
+        LOG_INFO(Render_Vulkan,
+                 "Not loading {} because its dependency {} is unavailable",
+                 VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME,
+                 VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME);
+        loaded_extensions.erase(VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME);
+        extensions.external_memory_ahb = false;
+    }
+#endif
 
 #undef FEATURE_EXTENSION
 #undef EXTENSION
@@ -1141,6 +1154,21 @@ bool Device::GetSuitability(bool requires_swapchain) {
         properties.maintenance5.sType =
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES_KHR;
         SetNext(next, properties.maintenance5);
+    }
+    if (extensions.external_memory_host) {
+        properties.external_memory_host.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT;
+        SetNext(next, properties.external_memory_host);
+    }
+    if (extensions.maintenance3 || instance_version >= VK_API_VERSION_1_1) {
+        properties.maintenance3.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES;
+        SetNext(next, properties.maintenance3);
+    }
+    if (extensions.maintenance4 || features.maintenance4.maintenance4) {
+        properties.maintenance4.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES;
+        SetNext(next, properties.maintenance4);
     }
 
     // Perform the property fetch.
@@ -1516,10 +1544,25 @@ void Device::CollectPhysicalMemoryInfo() {
     device_access_memory = 0;
     u64 device_initial_usage = 0;
     u64 local_memory = 0;
+    const auto heap_has_usable_type = [&mem_properties](size_t heap) {
+        for (u32 index = 0; index < mem_properties.memoryTypeCount; ++index) {
+            if (mem_properties.memoryTypes[index].heapIndex != heap) {
+                continue;
+            }
+            if ((mem_properties.memoryTypes[index].propertyFlags &
+                 VK_MEMORY_PROPERTY_PROTECTED_BIT) == 0) {
+                return true;
+            }
+        }
+        return false;
+    };
     for (size_t element = 0; element < num_properties; ++element) {
         const bool is_heap_local =
             (mem_properties.memoryHeaps[element].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) != 0;
         if (!is_integrated && !is_heap_local) {
+            continue;
+        }
+        if (!heap_has_usable_type(element)) {
             continue;
         }
         valid_heap_memory.push_back(element);
@@ -1532,6 +1575,13 @@ void Device::CollectPhysicalMemoryInfo() {
             continue;
         }
         device_access_memory += mem_properties.memoryHeaps[element].size;
+    }
+    const u64 committed_backing = Common::GetCommittedBackingSize();
+    if (committed_backing != 0) {
+        LOG_INFO(Render_Vulkan, "Discounting {} MiB of guest memory committed by the host",
+                 committed_backing >> 20);
+        local_memory -= std::min(local_memory, committed_backing);
+        device_access_memory -= std::min(device_access_memory, committed_backing);
     }
     if (is_integrated) {
         const s64 available_memory = static_cast<s64>(device_access_memory - device_initial_usage);

@@ -524,6 +524,8 @@
     <string name="rescale_hack_description">Enables a legacy handling for the rescale configuration pass for games by using a quick rescale path</string>
     <string name="renderer_asynchronous_shaders">Use asynchronous shaders</string>
     <string name="renderer_asynchronous_shaders_description">Compiles shaders asynchronously. This may reduce stutters but may also introduce glitches.</string>
+    <string name="renderer_unified_memory">Unified memory access</string>
+    <string name="renderer_unified_memory_description">Allows GPU write buffer readbacks directly into guest memory, skipping the CPU staging copy.</string>
     <string name="gpu_unswizzle_settings">GPU Unswizzle Settings</string>
     <string name="gpu_unswizzle_settings_description">Configure GPU-based texture unswizzling parameters or disable it entirely. Adjust these settings to balance performance and texture loading quality.</string>
     <string name="gpu_unswizzle_enable">Enable GPU Unswizzle</string>

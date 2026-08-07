@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -82,10 +85,13 @@ private:
 
     AddrTree::iterator GetNearestHeapMapLocked(VAddr offset);
 
+    s64 HostMapCount(PAddr paddr, size_t size) const;
+
     void RebuildSeparateHeapAddressSpace();
 
 private:
     Common::HostMemory& m_buffer;
+    const bool m_has_hardware_buffer_backing;
     const s64 m_max_resident_map_count;
 
     std::shared_mutex m_rebuild_lock{};

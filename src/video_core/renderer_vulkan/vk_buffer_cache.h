@@ -7,6 +7,8 @@
 #pragma once
 
 #include <limits>
+#include <memory>
+#include <span>
 
 #include "video_core/buffer_cache/buffer_cache_base.h"
 #include "video_core/buffer_cache/memory_tracker_base.h"
@@ -96,6 +98,31 @@ public:
                                 DescriptorPool& descriptor_pool);
 
     void TickFrame(Common::SlotVector<Buffer>& slot_buffers) noexcept;
+
+    void TryEnableUnifiedMemory(void* base, size_t size,
+                                std::span<AHardwareBuffer* const> hardware_buffers,
+                                size_t hardware_buffer_window, size_t hardware_buffer_base);
+
+    [[nodiscard]] bool HasUnifiedMemory() const noexcept {
+        return unified_memory != nullptr && unified_memory->IsValid();
+    }
+
+    [[nodiscard]] u64 UnifiedMemorySize() const noexcept {
+        return unified_memory ? unified_memory->GetSize() : 0;
+    }
+
+    [[nodiscard]] u64 UnifiedMemoryBase() const noexcept {
+        return unified_memory ? unified_memory->GetBaseOffset() : 0;
+    }
+
+    [[nodiscard]] u64 UnifiedMemoryWindowSize() const noexcept {
+        return unified_memory ? unified_memory->GetWindowSize() : 0;
+    }
+
+    void CopyToUnifiedMemory(size_t window_index, VkBuffer src_buffer,
+                             std::span<const VideoCommon::BufferCopy> copies);
+
+    void UnifiedMemoryHostBarrier();
 
     u64 CurrentTick();
 
@@ -204,6 +231,7 @@ private:
     std::shared_ptr<QuadStripIndexBuffer> quad_strip_index_buffer;
 
     vk::Buffer null_buffer;
+    std::unique_ptr<HostMemoryImport> unified_memory;
 
     std::unique_ptr<Uint8Pass> uint8_pass;
     QuadIndexedPass quad_index_pass;
@@ -226,6 +254,7 @@ struct BufferCacheParams {
     static constexpr bool USE_MEMORY_MAPS = true;
     static constexpr bool SEPARATE_IMAGE_BUFFER_BINDINGS = false;
     static constexpr bool USE_MEMORY_MAPS_FOR_UPLOADS = true;
+    static constexpr bool USE_UNIFIED_MEMORY = true;
 };
 
 using BufferCache = VideoCommon::BufferCache<BufferCacheParams>;

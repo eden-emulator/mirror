@@ -83,6 +83,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION(EXT, CONDITIONAL_RENDERING, conditional_rendering)                                   \
     EXTENSION(EXT, CONSERVATIVE_RASTERIZATION, conservative_rasterization)                         \
     EXTENSION(EXT, DEPTH_RANGE_UNRESTRICTED, depth_range_unrestricted)                             \
+    EXTENSION(EXT, EXTERNAL_MEMORY_HOST, external_memory_host)                                     \
     EXTENSION(EXT, MEMORY_BUDGET, memory_budget)                                                   \
     EXTENSION(EXT, ROBUSTNESS_2, robustness_2)                                                     \
     EXTENSION(EXT, SAMPLER_FILTER_MINMAX, sampler_filter_minmax)                                   \
@@ -111,6 +112,14 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION(EXT, FILTER_CUBIC, filter_cubic)                                                     \
     EXTENSION(IMG, FILTER_CUBIC, filter_cubic_img)                                                 \
     EXTENSION(QCOM, FILTER_CUBIC_WEIGHTS, filter_cubic_weights)
+
+#ifdef __ANDROID__
+#define FOR_EACH_VK_PLATFORM_EXTENSION(EXTENSION)                                                  \
+    EXTENSION(EXT, QUEUE_FAMILY_FOREIGN, queue_family_foreign)                                     \
+    EXTENSION(ANDROID, EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER, external_memory_ahb)
+#else
+#define FOR_EACH_VK_PLATFORM_EXTENSION(EXTENSION)
+#endif
 
 // Define extensions which must be supported.
 #define FOR_EACH_VK_MANDATORY_EXTENSION(EXTENSION_NAME)                                            \
@@ -838,6 +847,30 @@ FN_MAX_LIMIT_LIST
         return extensions.conditional_rendering;
     }
 
+    bool IsExtExternalMemoryHostSupported() const {
+        return extensions.external_memory_host;
+    }
+
+    bool IsExtExternalMemoryAhbSupported() const {
+#ifdef __ANDROID__
+        return extensions.external_memory_ahb && extensions.queue_family_foreign;
+#else
+        return false;
+#endif
+    }
+
+    u64 GetMinImportedHostPointerAlignment() const {
+        return properties.external_memory_host.minImportedHostPointerAlignment;
+    }
+
+    u64 GetMaxBufferSize() const {
+        return properties.maintenance4.maxBufferSize;
+    }
+
+    u64 GetMaxMemoryAllocationSize() const {
+        return properties.maintenance3.maxMemoryAllocationSize;
+    }
+
     bool IsExtAstcDecodeModeSupported() const {
         return extensions.astc_decode_mode;
     }
@@ -1110,6 +1143,7 @@ private:
         FOR_EACH_VK_FEATURE_1_4(FEATURE);
         FOR_EACH_VK_FEATURE_EXT(FEATURE);
         FOR_EACH_VK_EXTENSION(EXTENSION);
+        FOR_EACH_VK_PLATFORM_EXTENSION(EXTENSION);
 
 #undef EXTENSION
 #undef FEATURE
@@ -1141,7 +1175,10 @@ private:
         VkPhysicalDeviceDescriptorBufferPropertiesEXT descriptor_buffer{};
         VkPhysicalDeviceSubgroupSizeControlProperties subgroup_size_control{};
         VkPhysicalDeviceTransformFeedbackPropertiesEXT transform_feedback{};
+        VkPhysicalDeviceMaintenance3Properties maintenance3{};
+        VkPhysicalDeviceMaintenance4Properties maintenance4{};
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};
+        VkPhysicalDeviceExternalMemoryHostPropertiesEXT external_memory_host{};
 
         VkPhysicalDeviceProperties properties{};
     };

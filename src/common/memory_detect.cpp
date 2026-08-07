@@ -17,6 +17,10 @@
 #endif
 #endif
 
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
 #include "common/memory_detect.h"
 
 namespace Common {
@@ -67,6 +71,57 @@ static MemoryInfo Detect() {
 const MemoryInfo& GetMemInfo() {
     static MemoryInfo mem_info = Detect();
     return mem_info;
+}
+
+u64 GetAvailablePhysicalMemory() {
+#ifdef _WIN32
+    MEMORYSTATUSEX memorystatus;
+    memorystatus.dwLength = sizeof(memorystatus);
+    if (GlobalMemoryStatusEx(&memorystatus)) {
+        return memorystatus.ullAvailPhys;
+    }
+    return 0;
+#elif defined(__linux__)
+    if (std::FILE* const file = std::fopen("/proc/meminfo", "re")) {
+        char line[256];
+        u64 available = 0;
+        while (std::fgets(line, sizeof(line), file) != nullptr) {
+            if (std::strncmp(line, "MemAvailable:", 13) == 0) {
+                available = std::strtoull(line + 13, nullptr, 10) * 1024ULL;
+                break;
+            }
+        }
+        std::fclose(file);
+        if (available != 0) {
+            return available;
+        }
+    }
+    struct sysinfo info;
+    if (sysinfo(&info) == 0) {
+        const u64 unit = info.mem_unit != 0 ? info.mem_unit : 1ULL;
+        return (static_cast<u64>(info.freeram) + static_cast<u64>(info.bufferram)) * unit;
+    }
+    return 0;
+#else
+    return 0;
+#endif
+}
+
+u64 GetMaxMapCount() {
+#ifdef __linux__
+    if (std::FILE* const file = std::fopen("/proc/sys/vm/max_map_count", "re")) {
+        char line[32];
+        u64 count = 0;
+        if (std::fgets(line, sizeof(line), file) != nullptr) {
+            count = std::strtoull(line, nullptr, 10);
+        }
+        std::fclose(file);
+        return count;
+    }
+    return 0;
+#else
+    return 0;
+#endif
 }
 
 } // namespace Common

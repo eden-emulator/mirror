@@ -332,12 +332,16 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkGetBufferMemoryRequirements2 vkGetBufferMemoryRequirements2{};
     PFN_vkGetDeviceQueue vkGetDeviceQueue{};
     PFN_vkGetEventStatus vkGetEventStatus{};
+    PFN_vkGetMemoryHostPointerPropertiesEXT vkGetMemoryHostPointerPropertiesEXT{};
     PFN_vkGetFenceStatus vkGetFenceStatus{};
     PFN_vkGetImageMemoryRequirements vkGetImageMemoryRequirements{};
     PFN_vkGetPipelineCacheData vkGetPipelineCacheData{};
     PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR{};
 #ifdef _WIN32
     PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR{};
+#endif
+#ifdef __ANDROID__
+    PFN_vkGetAndroidHardwareBufferPropertiesANDROID vkGetAndroidHardwareBufferPropertiesANDROID{};
 #endif
     PFN_vkGetPipelineExecutablePropertiesKHR vkGetPipelineExecutablePropertiesKHR{};
     PFN_vkGetPipelineExecutableStatisticsKHR vkGetPipelineExecutableStatisticsKHR{};
@@ -1081,6 +1085,34 @@ public:
 
     VkMemoryRequirements GetBufferMemoryRequirements(VkBuffer buffer,
                                                      void* pnext = nullptr) const noexcept;
+
+    VkResult GetMemoryHostPointerPropertiesEXT(
+        VkExternalMemoryHandleTypeFlagBits handle_type, const void* host_pointer,
+        VkMemoryHostPointerPropertiesEXT* out_properties) const noexcept {
+        return dld->vkGetMemoryHostPointerPropertiesEXT(handle, handle_type, host_pointer,
+                                                        out_properties);
+    }
+
+#ifdef __ANDROID__
+    VkResult GetAndroidHardwareBufferPropertiesANDROID(
+        const struct AHardwareBuffer* buffer,
+        VkAndroidHardwareBufferPropertiesANDROID* out_properties) const noexcept {
+        return dld->vkGetAndroidHardwareBufferPropertiesANDROID(handle, buffer, out_properties);
+    }
+#endif
+
+    VkResult CreateBufferRaw(const VkBufferCreateInfo& ci, VkBuffer* out_buffer) const noexcept {
+        return dld->vkCreateBuffer(handle, &ci, nullptr, out_buffer);
+    }
+
+    void DestroyBufferRaw(VkBuffer buffer) const noexcept {
+        dld->vkDestroyBuffer(handle, buffer, nullptr);
+    }
+
+    VkResult BindBufferMemory(VkBuffer buffer, VkDeviceMemory memory,
+                              VkDeviceSize offset) const noexcept {
+        return dld->vkBindBufferMemory(handle, buffer, memory, offset);
+    }
 
     VkMemoryRequirements GetImageMemoryRequirements(VkImage image) const noexcept;
 

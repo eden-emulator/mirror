@@ -686,6 +686,13 @@ abstract class SettingsItem(
                 )
             )
             put(
+                SwitchSetting(
+                    BooleanSetting.RENDERER_UNIFIED_MEMORY,
+                    titleId = R.string.renderer_unified_memory,
+                    descriptionId = R.string.renderer_unified_memory_description
+                )
+            )
+            put(
                 SingleChoiceSetting(
                     IntSetting.FAST_GPU_TIME,
                     titleId = R.string.fast_gpu_time,

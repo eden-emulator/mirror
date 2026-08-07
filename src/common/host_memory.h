@@ -8,11 +8,16 @@
 
 #include <memory>
 #include <optional>
+#include <span>
 #include "common/common_funcs.h"
 #include "common/common_types.h"
 #include "common/virtual_buffer.h"
 
+struct AHardwareBuffer;
+
 namespace Common {
+
+[[nodiscard]] u64 GetCommittedBackingSize() noexcept;
 
 enum class MemoryPermission : u32 {
     Read = 1 << 0,
@@ -28,7 +33,7 @@ DECLARE_ENUM_FLAG_OPERATORS(MemoryPermission)
  */
 class HostMemory {
 public:
-    explicit HostMemory(size_t backing_size_, size_t virtual_size_);
+    explicit HostMemory(size_t backing_size_, size_t virtual_size_, size_t preferred_offset_ = 0);
     ~HostMemory();
 
     /**
@@ -61,6 +66,20 @@ public:
     [[nodiscard]] const u8* BackingBasePointer() const noexcept {
         return backing_base;
     }
+
+    [[nodiscard]] size_t BackingSize() const noexcept {
+        return backing_size;
+    }
+
+    [[nodiscard]] size_t BackingMapCount(size_t host_offset, size_t length) const noexcept;
+
+    [[nodiscard]] std::span<AHardwareBuffer* const> BackingHardwareBuffers() const noexcept;
+
+    [[nodiscard]] size_t BackingHardwareBufferWindowSize() const noexcept;
+
+    [[nodiscard]] size_t BackingHardwareBufferBase() const noexcept;
+
+    [[nodiscard]] bool IsBackingShared() const noexcept;
 
     [[nodiscard]] u8* VirtualBasePointer() noexcept {
         return virtual_base;

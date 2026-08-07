@@ -227,6 +227,8 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
            tr("Preserves GPU-modified data by reading it back before uploading.\nSome games require this to render certain effects properly."));
     INSERT(Settings, use_asynchronous_shaders, tr("Enable asynchronous shader compilation"),
            tr("May reduce shader stutter."));
+    INSERT(Settings, use_unified_memory, tr("Enable unified memory access"),
+           tr("Lets the GPU write buffer readbacks directly into guest memory."));
     INSERT(Settings, gpu_clock, tr("GPU Clocks"),
            tr("Makes the game believe GPU work finishes faster than it does, so it stops lowering "
               "resolution and render distance to fit the Switch's clocks."));

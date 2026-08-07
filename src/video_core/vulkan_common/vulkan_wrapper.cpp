@@ -216,12 +216,16 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkGetBufferMemoryRequirements2);
     X(vkGetDeviceQueue);
     X(vkGetEventStatus);
+    X(vkGetMemoryHostPointerPropertiesEXT);
     X(vkGetFenceStatus);
     X(vkGetImageMemoryRequirements);
     X(vkGetPipelineCacheData);
     X(vkGetMemoryFdKHR);
 #ifdef _WIN32
     X(vkGetMemoryWin32HandleKHR);
+#endif
+#ifdef __ANDROID__
+    X(vkGetAndroidHardwareBufferPropertiesANDROID);
 #endif
     X(vkGetQueryPoolResults);
     X(vkGetPipelineExecutablePropertiesKHR);

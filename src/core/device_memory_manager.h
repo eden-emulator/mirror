@@ -20,6 +20,8 @@
 #include "common/scratch_buffer.h"
 #include "common/virtual_buffer.h"
 
+struct AHardwareBuffer;
+
 namespace Core {
 
 constexpr size_t DEVICE_PAGEBITS = 12ULL;
@@ -93,6 +95,34 @@ public:
     void ApplyOpOnPointer(const u8* p, Common::ScratchBuffer<u32>& buffer, Func&& operation) {
         PAddr address = GetRawPhysicalAddr<u8>(p);
         ApplyOpOnPAddr(address, buffer, operation);
+    }
+
+    u8* GetPhysicalBase() noexcept {
+        return reinterpret_cast<u8*>(physical_base);
+    }
+
+    const u8* GetPhysicalBase() const noexcept {
+        return reinterpret_cast<const u8*>(physical_base);
+    }
+
+    size_t GetPhysicalSize() const noexcept {
+        return physical_size;
+    }
+
+    std::span<AHardwareBuffer* const> GetBackingHardwareBuffers() const noexcept {
+        return ahb_windows;
+    }
+
+    size_t GetBackingHardwareBufferWindowSize() const noexcept {
+        return ahb_window_size;
+    }
+
+    size_t GetBackingHardwareBufferBase() const noexcept {
+        return ahb_base;
+    }
+
+    bool IsBackingShared() const noexcept {
+        return backing_is_shared;
     }
 
     PAddr GetPhysicalRawAddressFromDAddr(DAddr address) const {
@@ -171,6 +201,11 @@ private:
     std::unique_ptr<DeviceMemoryManagerAllocator<Traits>> impl;
 
     const uintptr_t physical_base;
+    const size_t physical_size;
+    const std::span<AHardwareBuffer* const> ahb_windows;
+    const size_t ahb_window_size;
+    const size_t ahb_base;
+    const bool backing_is_shared;
     DeviceInterface* device_inter;
 
     struct TrackedEntry {
