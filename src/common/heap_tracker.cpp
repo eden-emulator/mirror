@@ -4,43 +4,34 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
+#include <fstream>
 #include "common/heap_tracker.h"
 #include "common/logging.h"
 #include "common/assert.h"
-#include "common/memory_detect.h"
 
 namespace Common {
 
 namespace {
 
-s64 GetMaxPermissibleResidentMapCount(const Common::HostMemory& buffer) {
+s64 GetMaxPermissibleResidentMapCount() {
     // Default value.
-    constexpr s64 DefaultMaxMapCount = 65530;
+    s64 value = 65530;
 
     // Try to read how many mappings we can make.
-    const u64 reported = Common::GetMaxMapCount();
-    const s64 value = reported != 0 ? static_cast<s64>(reported) : DefaultMaxMapCount;
+    std::ifstream s("/proc/sys/vm/max_map_count");
+    s >> value;
 
     // Print, for debug.
     LOG_INFO(HW_Memory, "Current maximum map count: {}", value);
 
     // Allow 20000 maps for other code and to account for split inaccuracy.
-    constexpr s64 ForeignMapReservation = 20000;
-
-    const size_t hardware_buffer_windows = buffer.BackingHardwareBuffers().size();
-    const s64 unmergeable_window_boundaries =
-        hardware_buffer_windows != 0 ? static_cast<s64>(hardware_buffer_windows) + 1 : 0;
-
-    return std::max<s64>(value - ForeignMapReservation - unmergeable_window_boundaries, 0);
+    return std::max<s64>(value - 20000, 0);
 }
 
 } // namespace
 
 HeapTracker::HeapTracker(Common::HostMemory& buffer)
-    : m_buffer(buffer),
-      m_has_hardware_buffer_backing(!buffer.BackingHardwareBuffers().empty()),
-      m_max_resident_map_count(GetMaxPermissibleResidentMapCount(buffer)) {}
+    : m_buffer(buffer), m_max_resident_map_count(GetMaxPermissibleResidentMapCount()) {}
 HeapTracker::~HeapTracker() = default;
 
 void HeapTracker::Map(size_t virtual_offset, size_t host_offset, size_t length,
@@ -94,8 +85,7 @@ void HeapTracker::Unmap(size_t virtual_offset, size_t size, bool is_separate_hea
 
             // If resident, erase from resident map.
             if (item->is_resident) {
-                m_resident_map_count -= this->HostMapCount(item->paddr, item->size);
-                ASSERT(m_resident_map_count >= 0);
+                ASSERT(--m_resident_map_count >= 0);
                 m_resident_mappings.erase(m_resident_mappings.iterator_to(*item));
             }
 
@@ -201,7 +191,7 @@ bool HeapTracker::DeferredMapSeparateHeap(size_t virtual_offset) {
 
         // This map is now resident.
         it->is_resident = true;
-        m_resident_map_count += this->HostMapCount(it->paddr, it->size);
+        m_resident_map_count++;
         m_resident_mappings.insert(*it);
     }
 
@@ -223,17 +213,17 @@ void HeapTracker::RebuildSeparateHeapAddressSpace() {
     // Despite being worse in theory, this has proven to be better in practice than more
     // regularly dumping a smaller amount, because it significantly reduces average case
     // lock contention.
-    s64 const desired_count = (std::min)(m_resident_map_count, m_max_resident_map_count) / 2;
+    std::size_t const desired_count = (std::min)(m_resident_map_count, m_max_resident_map_count) / 2;
+    std::size_t const evict_count = m_resident_map_count - desired_count;
     auto it = m_resident_mappings.begin();
 
-    while (m_resident_map_count > desired_count && it != m_resident_mappings.end()) {
+    for (size_t i = 0; i < evict_count && it != m_resident_mappings.end(); i++) {
         // Unmark and unmap.
         it->is_resident = false;
         m_buffer.Unmap(it->vaddr, it->size, false);
 
         // Advance.
-        m_resident_map_count -= this->HostMapCount(it->paddr, it->size);
-        ASSERT(m_resident_map_count >= 0);
+        ASSERT(--m_resident_map_count >= 0);
         it = m_resident_mappings.erase(it);
     }
 }
@@ -255,7 +245,6 @@ void HeapTracker::SplitHeapMapLocked(VAddr offset) {
     // Cache the original values.
     auto* const left = std::addressof(*it);
     const size_t orig_size = left->size;
-    const s64 orig_host_map_count = this->HostMapCount(left->paddr, orig_size);
 
     // Adjust the left map.
     const size_t left_size = offset - left->vaddr;
@@ -277,18 +266,9 @@ void HeapTracker::SplitHeapMapLocked(VAddr offset) {
 
     // If resident, also insert into resident map.
     if (right->is_resident) {
-        m_resident_map_count += this->HostMapCount(left->paddr, left->size) +
-                                this->HostMapCount(right->paddr, right->size) -
-                                orig_host_map_count;
+        m_resident_map_count++;
         m_resident_mappings.insert(*right);
     }
-}
-
-s64 HeapTracker::HostMapCount(PAddr paddr, size_t size) const {
-    if (!m_has_hardware_buffer_backing) {
-        return size != 0 ? 1 : 0;
-    }
-    return static_cast<s64>(m_buffer.BackingMapCount(paddr, size));
 }
 
 HeapTracker::AddrTree::iterator HeapTracker::GetNearestHeapMapLocked(VAddr offset) {

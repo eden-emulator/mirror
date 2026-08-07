@@ -233,10 +233,10 @@ namespace Vulkan {
                                   size)) {
             return;
         }
-        if (device.IsTiler()) {
+        if (!hardware_buffers.empty()) {
             LOG_INFO(Render_Vulkan,
-                     "Unified memory disabled, hardware buffer import is the only path supported "
-                     "by tiler drivers");
+                     "Unified memory disabled, guest memory is backed by hardware buffers that "
+                     "could not be imported");
             return;
         }
         if (ImportHostPointer(base, size)) {
@@ -260,8 +260,7 @@ namespace Vulkan {
             return false;
         }
         using namespace Common::Literals;
-        constexpr VkDeviceSize DesktopWindowSize = 4_GiB;
-        VkDeviceSize candidate_window = DesktopWindowSize;
+        VkDeviceSize candidate_window = 1_GiB;
         const u64 max_buffer_size = device.GetMaxBufferSize();
         if (max_buffer_size != 0 && max_buffer_size < candidate_window) {
             candidate_window = max_buffer_size;
@@ -325,11 +324,9 @@ namespace Vulkan {
                 logical.DestroyBufferRaw(new_buffer);
                 break;
             }
-            constexpr VkDeviceSize MaxHeapFractionDenominator = 2;
             const u32 heap_index = memory_props.memoryTypes[*type_index].heapIndex;
             const VkDeviceSize heap_size = memory_props.memoryHeaps[heap_index].size;
-            const VkDeviceSize heap_import_limit = heap_size / MaxHeapFractionDenominator;
-            if (imported_size + window_len > heap_import_limit) {
+            if (imported_size + window_len > heap_size / 2) {
                 LOG_INFO(Render_Vulkan,
                          "Stopping guest memory import at {} MiB to leave room on heap {} of {} MiB",
                          imported_size >> 20, heap_index, heap_size >> 20);
@@ -382,14 +379,7 @@ namespace Vulkan {
             !device.IsExtExternalMemoryAhbSupported()) {
             return false;
         }
-        using namespace Common::Literals;
-        u64 max_allocation_size = device.GetMaxMemoryAllocationSize();
-        if (device.IsTiler()) {
-            constexpr u64 TilerAllocationLimit = 1_GiB;
-            max_allocation_size = max_allocation_size != 0
-                                          ? (std::min)(max_allocation_size, TilerAllocationLimit)
-                                          : TilerAllocationLimit;
-        }
+        const u64 max_allocation_size = device.GetMaxMemoryAllocationSize();
         if (max_allocation_size != 0 && hardware_buffer_window > max_allocation_size) {
             LOG_WARNING(Render_Vulkan,
                         "Hardware buffer windows of {} MiB exceed the {} MiB allocation limit",
