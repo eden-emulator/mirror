@@ -668,11 +668,8 @@ public:
 
     size_t ComputeAhbBudget(size_t window_size) const {
         const u64 total_physical = Common::GetMemInfo().TotalPhysicalMemory;
-        if (total_physical == 0) {
-            return 0;
-        }
-        constexpr u64 MinimumTotalPhysical = 7ULL << 30;
-        if (total_physical < MinimumTotalPhysical) {
+        constexpr u64 BaselineFootprint = 6ULL << 30;
+        if (total_physical <= BaselineFootprint) {
             return 0;
         }
         const u64 max_map_count = Common::GetMaxMapCount();
@@ -680,12 +677,13 @@ public:
         if (max_map_count == 0 || max_map_count <= ReservedMaps) {
             return 0;
         }
-        u64 budget = total_physical / 6;
-        budget = (std::min)(budget, (max_map_count - ReservedMaps) * PageAlignment);
+        u64 budget = (total_physical - BaselineFootprint) / 2;
+        constexpr u64 MapSlotsPerWindow = 4096;
+        const u64 affordable_windows = (max_map_count - ReservedMaps) / MapSlotsPerWindow;
+        budget = (std::min)(budget, affordable_windows * window_size);
         const u64 available = Common::GetAvailablePhysicalMemory();
         if (available != 0) {
-            constexpr u64 Headroom = 2ULL << 30;
-            budget = (std::min)(budget, available > Headroom ? available - Headroom : 0);
+            budget = (std::min)(budget, available / 2);
         }
         budget = (std::min)(budget, static_cast<u64>(backing_size));
         budget = Common::AlignDown(budget, window_size);
@@ -706,12 +704,12 @@ public:
             return false;
         }
         constexpr size_t window_size = 256ULL << 20;
-        const AHardwareBuffer_Desc window_desc = MakeBlobDesc(window_size);
-        if (AHardwareBuffer_isSupported(&window_desc) == 0) {
-            return false;
-        }
         const size_t budget = ComputeAhbBudget(window_size);
         if (budget == 0) {
+            return false;
+        }
+        const AHardwareBuffer_Desc window_desc = MakeBlobDesc(window_size);
+        if (AHardwareBuffer_isSupported(&window_desc) == 0) {
             return false;
         }
         if (!ProbeAhbBacking(get_native_handle)) {
