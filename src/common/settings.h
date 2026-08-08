@@ -566,6 +566,9 @@ struct Values {
     SwitchableSetting<bool> fix_bloom_effects{linkage, false, "fix_bloom_effects",
                                                      Category::RendererHacks};
 
+    SwitchableSetting<bool> force_unrestricted_depth{linkage, false, "force_unrestricted_depth",
+                                                     Category::RendererHacks};
+
     SwitchableSetting<bool> emulate_bgr565{linkage, false, "emulate_bgr565",
                                             Category::RendererHacks};
 
