@@ -990,10 +990,6 @@ bool Device::GetSuitability(bool requires_swapchain) {
 
 #ifdef __ANDROID__
     if (extensions.external_memory_ahb && !extensions.queue_family_foreign) {
-        LOG_INFO(Render_Vulkan,
-                 "Not loading {} because its dependency {} is unavailable",
-                 VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME,
-                 VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME);
         loaded_extensions.erase(VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME);
         extensions.external_memory_ahb = false;
     }
