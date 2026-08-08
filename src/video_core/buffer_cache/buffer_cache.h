@@ -1741,6 +1741,9 @@ bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 si
 template <class P>
 void BufferCache<P>::UploadMemory(Buffer& buffer, u64 total_size_bytes, u64 largest_copy,
                                   std::span<BufferCopy> copies) {
+    if (TryUnifiedUploadMemory(buffer, copies)) {
+        return;
+    }
     if constexpr (USE_MEMORY_MAPS_FOR_UPLOADS) {
         MappedUploadMemory(buffer, total_size_bytes, copies);
     } else {
@@ -1863,6 +1866,34 @@ bool BufferCache<P>::TryUnifiedDownloadMemory([[maybe_unused]] Buffer& buffer,
         }
         runtime.UnifiedMemoryHostBarrier();
         runtime.Finish();
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <class P>
+bool BufferCache<P>::TryUnifiedUploadMemory([[maybe_unused]] Buffer& buffer,
+                                            [[maybe_unused]] std::span<BufferCopy> copies) {
+    if constexpr (USE_UNIFIED_UPLOADS) {
+        if (Settings::values.enable_gpu_buffer_readback.GetValue()) {
+            return false;
+        }
+        boost::container::small_vector<u64, 4> window_ids;
+        UnifiedWindowGroups groups;
+        for (const BufferCopy& copy : copies) {
+            if (!ResolveUnifiedWindows(buffer.CpuAddr() + copy.dst_offset, copy.dst_offset,
+                                       copy.size, window_ids, groups)) {
+                return false;
+            }
+        }
+        runtime.UnifiedMemoryUploadBarrier();
+        runtime.PreCopyBarrier();
+        for (size_t i = 0; i < window_ids.size(); ++i) {
+            const std::span<const BufferCopy> group_span(groups[i].data(), groups[i].size());
+            runtime.CopyFromUnifiedMemory(window_ids[i], buffer, group_span);
+        }
+        runtime.PostCopyBarrier();
         return true;
     } else {
         return false;

@@ -181,6 +181,7 @@ class BufferCache : public VideoCommon::ChannelSetupCaches<BufferCacheChannelInf
     static constexpr bool SEPARATE_IMAGE_BUFFERS_BINDINGS = P::SEPARATE_IMAGE_BUFFER_BINDINGS;
     static constexpr bool USE_MEMORY_MAPS_FOR_UPLOADS = P::USE_MEMORY_MAPS_FOR_UPLOADS;
     static constexpr bool USE_UNIFIED_MEMORY = P::USE_UNIFIED_MEMORY;
+    static constexpr bool USE_UNIFIED_UPLOADS = P::USE_UNIFIED_UPLOADS;
 
 #ifdef YUZU_LEGACY
     static constexpr s64 TARGET_THRESHOLD = 3_GiB;
@@ -445,6 +446,8 @@ private:
     void MappedUploadMemory(Buffer& buffer, u64 total_size_bytes, std::span<BufferCopy> copies);
 
     bool TryUnifiedDownloadMemory(Buffer& buffer, std::span<BufferCopy> copies);
+
+    bool TryUnifiedUploadMemory(Buffer& buffer, std::span<BufferCopy> copies);
 
     using UnifiedWindowGroups =
         boost::container::small_vector<boost::container::small_vector<BufferCopy, 16>, 4>;

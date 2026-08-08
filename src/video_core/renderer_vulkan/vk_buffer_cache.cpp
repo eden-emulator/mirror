@@ -32,6 +32,14 @@ VkBufferCopy MakeBufferCopy(const VideoCommon::BufferCopy& copy) {
     };
 }
 
+VkBufferCopy MakeUnifiedUploadCopy(const VideoCommon::BufferCopy& copy) {
+    return VkBufferCopy{
+        .srcOffset = copy.dst_offset,
+        .dstOffset = copy.src_offset,
+        .size = copy.size,
+    };
+}
+
 VkIndexType IndexTypeFromNumElements(const Device& device, u32 num_elements) {
     if (num_elements <= 0xff && device.IsExtIndexTypeUint8Supported()) {
         return VK_INDEX_TYPE_UINT8_EXT;
@@ -435,6 +443,82 @@ void BufferCacheRuntime::CopyToUnifiedMemory(
             cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
                                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, release);
         }
+    });
+}
+
+void BufferCacheRuntime::CopyFromUnifiedMemory(
+    size_t window_index, VkBuffer dst_buffer,
+    std::span<const VideoCommon::BufferCopy> copies) {
+    if (!unified_memory || dst_buffer == VK_NULL_HANDLE || copies.empty() ||
+        window_index >= unified_memory->GetWindowCount()) {
+        return;
+    }
+    const VkBuffer src_buffer = unified_memory->GetWindowBuffer(window_index);
+    if (src_buffer == VK_NULL_HANDLE) {
+        return;
+    }
+    VkDeviceSize covered_begin = std::numeric_limits<VkDeviceSize>::max();
+    VkDeviceSize covered_end = 0;
+    for (const VideoCommon::BufferCopy& copy : copies) {
+        covered_begin = (std::min)(covered_begin, static_cast<VkDeviceSize>(copy.dst_offset));
+        covered_end = (std::max)(covered_end,
+                                 static_cast<VkDeviceSize>(copy.dst_offset + copy.size));
+    }
+
+    boost::container::small_vector<VkBufferCopy, 8> vk_copies(copies.size());
+    std::ranges::transform(copies, vk_copies.begin(), MakeUnifiedUploadCopy);
+
+    const bool foreign = unified_memory->NeedsForeignOwnershipTransfer();
+    const u32 queue_family = device.GetGraphicsFamily();
+
+    scheduler.RequestOutsideRenderPassOperationContext();
+    scheduler.Record([src_buffer, dst_buffer, vk_copies, foreign, queue_family, covered_begin,
+                      covered_end](vk::CommandBuffer cmdbuf) {
+        if (foreign) {
+            const VkBufferMemoryBarrier acquire{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                .pNext = nullptr,
+                .srcAccessMask = 0,
+                .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+                .dstQueueFamilyIndex = queue_family,
+                .buffer = src_buffer,
+                .offset = covered_begin,
+                .size = covered_end - covered_begin,
+            };
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                   VK_PIPELINE_STAGE_TRANSFER_BIT, 0, acquire);
+        }
+        cmdbuf.CopyBuffer(src_buffer, dst_buffer, VideoCommon::FixSmallVectorADL(vk_copies));
+        if (foreign) {
+            const VkBufferMemoryBarrier release{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                .pNext = nullptr,
+                .srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                .dstAccessMask = 0,
+                .srcQueueFamilyIndex = queue_family,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+                .buffer = src_buffer,
+                .offset = covered_begin,
+                .size = covered_end - covered_begin,
+            };
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                   VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, release);
+        }
+    });
+}
+
+void BufferCacheRuntime::UnifiedMemoryUploadBarrier() {
+    static constexpr VkMemoryBarrier HOST_WRITE_BARRIER{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        .pNext = nullptr,
+        .srcAccessMask = VK_ACCESS_HOST_WRITE_BIT,
+        .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+    };
+    scheduler.RequestOutsideRenderPassOperationContext();
+    scheduler.Record([](vk::CommandBuffer cmdbuf) {
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                               HOST_WRITE_BARRIER);
     });
 }
 

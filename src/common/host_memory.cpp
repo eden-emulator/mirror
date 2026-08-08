@@ -705,7 +705,7 @@ public:
         if (get_native_handle == nullptr) {
             return false;
         }
-        constexpr size_t window_size = 512ULL << 20;
+        constexpr size_t window_size = 256ULL << 20;
         const AHardwareBuffer_Desc window_desc = MakeBlobDesc(window_size);
         if (AHardwareBuffer_isSupported(&window_desc) == 0) {
             return false;

@@ -122,7 +122,12 @@ public:
     void CopyToUnifiedMemory(size_t window_index, VkBuffer src_buffer,
                              std::span<const VideoCommon::BufferCopy> copies);
 
+    void CopyFromUnifiedMemory(size_t window_index, VkBuffer dst_buffer,
+                               std::span<const VideoCommon::BufferCopy> copies);
+
     void UnifiedMemoryHostBarrier();
+
+    void UnifiedMemoryUploadBarrier();
 
     u64 CurrentTick();
 
@@ -255,6 +260,7 @@ struct BufferCacheParams {
     static constexpr bool SEPARATE_IMAGE_BUFFER_BINDINGS = false;
     static constexpr bool USE_MEMORY_MAPS_FOR_UPLOADS = true;
     static constexpr bool USE_UNIFIED_MEMORY = true;
+    static constexpr bool USE_UNIFIED_UPLOADS = true;
 };
 
 using BufferCache = VideoCommon::BufferCache<BufferCacheParams>;
