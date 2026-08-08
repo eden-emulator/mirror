@@ -214,10 +214,10 @@ HostMemoryImport::HostMemoryImport(const Device &device_, void *base, size_t siz
                               size)) {
         return;
     }
+        if (device.IsTiler()) {
+            return;
+        }
         if (!hardware_buffers.empty()) {
-        LOG_INFO(Render_Vulkan,
-                     "Unified memory disabled, guest memory is backed by hardware buffers that "
-                     "could not be imported");
         return;
     }
     if (ImportHostPointer(base, size)) {
@@ -228,20 +228,16 @@ HostMemoryImport::HostMemoryImport(const Device &device_, void *base, size_t siz
 
 bool HostMemoryImport::ImportHostPointer(void *base, size_t size) {
     if (!device.IsExtExternalMemoryHostSupported()) {
-        LOG_INFO(Render_Vulkan,
-                 "Unified memory disabled, VK_EXT_external_memory_host is not supported");
         return false;
     }
     const u64 alignment = device.GetMinImportedHostPointerAlignment();
     if (alignment == 0 || !Common::IsAligned(reinterpret_cast<uintptr_t>(base), alignment) ||
         !Common::IsAligned(size, alignment)) {
-        LOG_INFO(Render_Vulkan,
-                 "Unified memory disabled, host allocation does not satisfy alignment {}",
-                 alignment);
         return false;
     }
     using namespace Common::Literals;
-        VkDeviceSize candidate_window = 1_GiB;
+        constexpr VkDeviceSize DesktopWindowSize = 4_GiB;
+        VkDeviceSize candidate_window = DesktopWindowSize;
     const u64 max_buffer_size = device.GetMaxBufferSize();
     if (max_buffer_size != 0 && max_buffer_size < candidate_window) {
         candidate_window = max_buffer_size;
@@ -308,9 +304,6 @@ bool HostMemoryImport::ImportHostPointer(void *base, size_t size) {
         const u32 heap_index = memory_props.memoryTypes[*type_index].heapIndex;
         const VkDeviceSize heap_size = memory_props.memoryHeaps[heap_index].size;
             if (imported_size + window_len > heap_size / 2) {
-            LOG_INFO(Render_Vulkan,
-                     "Stopping guest memory import at {} MiB to leave room on heap {} of {} MiB",
-                     imported_size >> 20, heap_index, heap_size >> 20);
             logical.DestroyBufferRaw(new_buffer);
             break;
         }
@@ -342,12 +335,8 @@ bool HostMemoryImport::ImportHostPointer(void *base, size_t size) {
         imported_size += static_cast<size_t>(window_len);
     }
     if (windows.empty()) {
-        LOG_INFO(Render_Vulkan, "Host pointer import failed");
         return false;
     }
-    LOG_INFO(Render_Vulkan,
-             "Imported {} MiB of guest memory for unified memory access in {} windows",
-             imported_size >> 20, windows.size());
     return true;
 }
 
@@ -362,9 +351,6 @@ bool HostMemoryImport::ImportHardwareBuffers(
     }
         const u64 max_allocation_size = device.GetMaxMemoryAllocationSize();
     if (max_allocation_size != 0 && hardware_buffer_window > max_allocation_size) {
-        LOG_WARNING(Render_Vulkan,
-                    "Hardware buffer windows of {} MiB exceed the {} MiB allocation limit",
-                    hardware_buffer_window >> 20, max_allocation_size >> 20);
         return false;
     }
     if (hardware_buffer_base >= size) {
@@ -458,15 +444,11 @@ bool HostMemoryImport::ImportHardwareBuffers(
         imported_size += static_cast<size_t>(window_len);
     }
     if (windows.empty()) {
-        LOG_INFO(Render_Vulkan, "Hardware buffer import failed");
         window_size = 0;
         base_offset = 0;
         return false;
     }
     foreign_ownership = true;
-    LOG_INFO(Render_Vulkan,
-             "Imported {} MiB of guest memory at {:#x} via hardware buffers in {} windows",
-             imported_size >> 20, base_offset, windows.size());
     return true;
 #else
     return false;
