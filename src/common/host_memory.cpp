@@ -708,18 +708,11 @@ public:
         if (budget == 0) {
             return false;
         }
-        const AHardwareBuffer_Desc window_desc = MakeBlobDesc(window_size);
-        if (AHardwareBuffer_isSupported(&window_desc) == 0) {
-            return false;
-        }
         if (!ProbeAhbBacking(get_native_handle)) {
             return false;
         }
         const size_t aligned_backing = Common::AlignDown(backing_size, window_size);
-        const size_t region_size = (std::min)(budget, aligned_backing);
-        const size_t region_base = Common::AlignDown(
-            (std::min)(preferred_offset, aligned_backing - region_size), window_size);
-        const size_t num_windows = region_size / window_size;
+        const size_t max_windows = (std::min)(budget, aligned_backing) / window_size;
 
         std::vector<AHardwareBuffer*> buffers;
         std::vector<int> buffer_fds;
@@ -730,27 +723,33 @@ public:
             buffers.clear();
             buffer_fds.clear();
         };
-        for (size_t i = 0; i < num_windows; ++i) {
+        for (size_t i = 0; i < max_windows; ++i) {
             const AHardwareBuffer_Desc desc = MakeBlobDesc(window_size);
             AHardwareBuffer* buffer{};
             if (AHardwareBuffer_allocate(&desc, &buffer) != 0 || buffer == nullptr) {
-                cleanup();
-                return false;
+                break;
             }
-            buffers.push_back(buffer);
             const NativeHandle* const handle = get_native_handle(buffer);
             if (handle == nullptr || handle->numFds < 1) {
-                cleanup();
-                return false;
+                AHardwareBuffer_release(buffer);
+                break;
             }
             const int buffer_fd = handle->data[0];
             const off_t buffer_len = lseek(buffer_fd, 0, SEEK_END);
             if (buffer_len < static_cast<off_t>(window_size)) {
-                cleanup();
-                return false;
+                AHardwareBuffer_release(buffer);
+                break;
             }
+            buffers.push_back(buffer);
             buffer_fds.push_back(buffer_fd);
         }
+        const size_t num_windows = buffers.size();
+        if (num_windows == 0) {
+            return false;
+        }
+        const size_t region_size = num_windows * window_size;
+        const size_t region_base = Common::AlignDown(
+            (std::min)(preferred_offset, aligned_backing - region_size), window_size);
         u8* const base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_NONE,
                                                MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
         if (base == MAP_FAILED) {
@@ -816,6 +815,29 @@ public:
             host_offset += chunk;
             length -= chunk;
         }
+    }
+
+    size_t BackingMapCount(size_t host_offset, size_t length) const noexcept {
+        if (length == 0) {
+            return 0;
+        }
+        if (ahb_bytes == 0) {
+            return 1;
+        }
+        size_t count = 0;
+        while (length > 0) {
+            size_t chunk = length;
+            if (host_offset < ahb_base) {
+                chunk = (std::min)(chunk, ahb_base - host_offset);
+            } else if (host_offset < ahb_base + ahb_bytes) {
+                const size_t local = (host_offset - ahb_base) % ahb_window_size;
+                chunk = (std::min)(chunk, ahb_window_size - local);
+            }
+            host_offset += chunk;
+            length -= chunk;
+            ++count;
+        }
+        return count;
     }
 
     std::span<AHardwareBuffer* const> AhbWindows() const noexcept {
@@ -1072,6 +1094,14 @@ std::span<AHardwareBuffer* const> HostMemory::BackingHardwareBuffers() const noe
     return impl ? impl->AhbWindows() : std::span<AHardwareBuffer* const>{};
 #else
     return {};
+#endif
+}
+
+size_t HostMemory::BackingMapCount(size_t host_offset, size_t length) const noexcept {
+#ifdef __ANDROID__
+    return impl ? impl->BackingMapCount(host_offset, length) : (length != 0 ? 1 : 0);
+#else
+    return length != 0 ? 1 : 0;
 #endif
 }
 
