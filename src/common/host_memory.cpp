@@ -703,7 +703,7 @@ public:
         if (get_native_handle == nullptr) {
             return false;
         }
-        constexpr size_t window_size = 256ULL << 20;
+        constexpr size_t window_size = 512ULL << 20;
         const size_t budget = ComputeAhbBudget(window_size);
         if (budget == 0) {
             return false;
