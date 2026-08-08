@@ -637,12 +637,10 @@ public:
         const AHardwareBuffer_Desc desc = MakeBlobDesc(PageAlignment * 2);
         AHardwareBuffer* buffer{};
         if (AHardwareBuffer_allocate(&desc, &buffer) != 0 || buffer == nullptr) {
-            LOG_WARNING(HW_Memory, "Hardware buffer probe allocation failed");
             return false;
         }
         const NativeHandle* const handle = get_native_handle(buffer);
         if (handle == nullptr || handle->numFds < 1) {
-            LOG_WARNING(HW_Memory, "Hardware buffer has no mappable file descriptor");
             AHardwareBuffer_release(buffer);
             return false;
         }
@@ -654,8 +652,6 @@ public:
             }
             void* const ptr = mmap(nullptr, PageAlignment, prot, MAP_SHARED, probe_fd, offset);
             if (ptr == MAP_FAILED) {
-                LOG_WARNING(HW_Memory, "Hardware buffer backing rejects {}: {}", what,
-                            strerror(errno));
                 ok = false;
                 return;
             }
@@ -673,21 +669,15 @@ public:
     size_t ComputeAhbBudget(size_t window_size) const {
         const u64 total_physical = Common::GetMemInfo().TotalPhysicalMemory;
         if (total_physical == 0) {
-            LOG_WARNING(HW_Memory, "Host memory size is unknown, not committing hardware buffers");
             return 0;
         }
         constexpr u64 MinimumTotalPhysical = 7ULL << 30;
         if (total_physical < MinimumTotalPhysical) {
-            LOG_INFO(HW_Memory,
-                     "Skipping hardware buffer backing, {} MiB of RAM is below the {} MiB minimum",
-                     total_physical >> 20, MinimumTotalPhysical >> 20);
             return 0;
         }
         const u64 max_map_count = Common::GetMaxMapCount();
         constexpr u64 ReservedMaps = 24576;
         if (max_map_count == 0 || max_map_count <= ReservedMaps) {
-            LOG_WARNING(HW_Memory,
-                        "Skipping hardware buffer backing, vm.max_map_count is unknown or too low");
             return 0;
         }
         u64 budget = total_physical / 6;
@@ -701,10 +691,6 @@ public:
         budget = Common::AlignDown(budget, window_size);
         constexpr u64 MinimumBudget = 256ULL << 20;
         if (budget < MinimumBudget) {
-            LOG_INFO(HW_Memory,
-                     "Skipping hardware buffer backing, only {} MiB could be committed on a {} MiB "
-                     "system with {} MiB available and vm.max_map_count {}",
-                     budget >> 20, total_physical >> 20, available >> 20, max_map_count);
             return 0;
         }
         return static_cast<size_t>(budget);
@@ -717,14 +703,11 @@ public:
         static const PFN_AHardwareBuffer_getNativeHandle get_native_handle =
             ResolveGetNativeHandle();
         if (get_native_handle == nullptr) {
-            LOG_WARNING(HW_Memory, "AHardwareBuffer_getNativeHandle is not available");
             return false;
         }
-        constexpr size_t window_size = 64ULL << 20;
+        constexpr size_t window_size = 128ULL << 20;
         const AHardwareBuffer_Desc window_desc = MakeBlobDesc(window_size);
         if (AHardwareBuffer_isSupported(&window_desc) == 0) {
-            LOG_WARNING(HW_Memory, "Allocator rejects {} MiB hardware buffer windows",
-                        window_size >> 20);
             return false;
         }
         const size_t budget = ComputeAhbBudget(window_size);
@@ -753,22 +736,18 @@ public:
             const AHardwareBuffer_Desc desc = MakeBlobDesc(window_size);
             AHardwareBuffer* buffer{};
             if (AHardwareBuffer_allocate(&desc, &buffer) != 0 || buffer == nullptr) {
-                LOG_WARNING(HW_Memory, "Hardware buffer allocation failed for window {} of {}", i,
-                            num_windows);
                 cleanup();
                 return false;
             }
             buffers.push_back(buffer);
             const NativeHandle* const handle = get_native_handle(buffer);
             if (handle == nullptr || handle->numFds < 1) {
-                LOG_WARNING(HW_Memory, "Hardware buffer has no mappable file descriptor");
                 cleanup();
                 return false;
             }
             const int buffer_fd = handle->data[0];
             const off_t buffer_len = lseek(buffer_fd, 0, SEEK_END);
             if (buffer_len < static_cast<off_t>(window_size)) {
-                LOG_WARNING(HW_Memory, "Hardware buffer descriptor smaller than requested");
                 cleanup();
                 return false;
             }
@@ -777,7 +756,6 @@ public:
         u8* const base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_NONE,
                                                MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0));
         if (base == MAP_FAILED) {
-            LOG_WARNING(HW_Memory, "Failed to reserve backing address space: {}", strerror(errno));
             cleanup();
             return false;
         }
@@ -788,7 +766,6 @@ public:
             }
             if (mmap(base + offset, len, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_FIXED, map_fd,
                      map_offset) == MAP_FAILED) {
-                LOG_WARNING(HW_Memory, "Backing mmap failed: {}", strerror(errno));
                 munmap(base, backing_size);
                 cleanup();
                 return false;
@@ -816,9 +793,6 @@ public:
         ahb_base = region_base;
         ahb_bytes = region_size;
         committed_backing_size.store(region_size, std::memory_order_relaxed);
-        LOG_INFO(HW_Memory,
-                 "Guest memory {:#x}-{:#x} backed by {} hardware buffer windows, {} MiB committed",
-                 region_base, region_base + region_size, ahb_windows.size(), region_size >> 20);
         return true;
     }
 
