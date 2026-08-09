@@ -326,11 +326,7 @@ if (ENABLE_OPENGL)
     )
 endif()
 
-# Since this is also used by header-only whom is public:
-# a) you must also make it public
-# b) should precede the headers themselves
-# c) since targets also export targets publicly, this should precede them as well
-# must match src/video_core/vulkan_common/vulkan.h logic
+# Must match src/video_core/vulkan_common/vulkan.h X11 logic
 if (WIN32 OR APPLE OR ANDROID OR PLATFORM_HAIKU OR PLATFORM_PS4)
     # ...
 else()

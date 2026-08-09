@@ -23,18 +23,12 @@ include(CMakeDependentOption)
 include(CTest)
 include(CPMUtil)
 
-if (NOT DEFINED ARCHITECTURE)
-    message(FATAL_ERROR "Architecture didn't make it out of scope, did you delete DetectArchitecture.cmake?")
+if (CXX_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "14.0")
+    message(FATAL_ERROR "You must use gcc14 (or newer) feel free to fix clang yourself otherwise.")
 endif()
 
-if (PLATFORM_OPENBSD)
-    # OpenBSD 7.8 broke libcxx when upgrading, so we must define the PSTL backend manually
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_LIBCPP_PSTL_BACKEND_SERIAL=1")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_LIBCPP_PSTL_BACKEND_SERIAL=1")
-elseif (PLATFORM_NETBSD)
-    if (NOT CXX_GCC OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS "14.0")
-        message(FATAL_ERROR "You must use gcc14 (or newer) from pkgin; feel free to fix clang yourself otherwise.")
-    endif()
+if (NOT DEFINED ARCHITECTURE)
+    message(FATAL_ERROR "Architecture didn't make it out of scope, did you delete DetectArchitecture.cmake?")
 endif()
 
 # NetBSD: Fun for the whole family!

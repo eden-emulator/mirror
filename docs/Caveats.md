@@ -71,7 +71,7 @@ export LIBGL_ALWAYS_SOFTWARE=1
 
 Install `developer/gcc14` on OmniOS using pkgsrc.
 
-Since so many dependencies are missing on `OmniOS`, you may wish to use `-DCPMUTIL_FORCE_BUNDLED=ON`
+Since so many dependencies are missing on `OmniOS`, you may wish to use `-DCPMUTIL_FORCE_BUNDLED=ON` and `-DYUZU_USE_BUNDLED_OPENSSL=OFF`.
 
 For OmniOS you are required to build glslang yourself:
 ```sh
@@ -91,6 +91,8 @@ Using `--parallel` on CMake incorrectly passes `dmake ... -jn` instead of `dmake
 You may also need to install `gmake` in order to properly build FFmpeg, this is provided by the `build-essential` package.
 
 If it wasn't obvious already, you require a X11 server to properly run the emulator within OmniOS, [this guide](https://web.archive.org/web/20260424200928/https://geekblood.wordpress.com/2017/10/26/installing-x11-and-a-desktop-environment-on-omnios/) is a great starting point for that, the links to pkgsrc are outdated so follow [this exemplar](https://pkgsrc.smartos.org/install-on-illumos/) as well:
+
+For Solaris based OSes, `${CMAKE_SYSTEM_NAME}` isn't properly set on CMake (it's set to i686 on AMD64), you may find issues when building OpenSSL from `openssl-cmake`.
 
 ## HaikuOS
 
