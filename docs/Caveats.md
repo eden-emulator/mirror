@@ -90,6 +90,8 @@ If it wasn't obvious already, you require a X11 server to properly run the emula
 
 For Solaris based OSes, `${CMAKE_SYSTEM_NAME}` isn't properly set on CMake (it's set to i686 on AMD64), you may find issues when building OpenSSL from `openssl-cmake`.
 
+For Solaris based OSes, `${CMAKE_SYSTEM_NAME}` isn't properly set on CMake (it's set to i686 on AMD64), you may find issues when building OpenSSL from `openssl-cmake`.
+
 ## HaikuOS
 
 It's recommended to do a `pkgman full-sync` before installing. See [HaikuOS: Installing applications](https://www.haiku-os.org/guides/daily-tasks/install-applications/). Sometimes the process may be interrupted by an error like "Interrupted syscall". Simply firing the command again fixes the issue. By default `g++` is included on the default installation.
