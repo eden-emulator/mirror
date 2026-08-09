@@ -23,8 +23,8 @@ include(CMakeDependentOption)
 include(CTest)
 include(CPMUtil)
 
-if (NOT DEFINED ARCHITECTURE)
-    message(FATAL_ERROR "Architecture didn't make it out of scope, did you delete DetectArchitecture.cmake?")
+if (CXX_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "14.0")
+    message(FATAL_ERROR "You must use gcc14 (or newer) feel free to fix clang yourself otherwise.")
 endif()
 
 if (OPENBSD)
