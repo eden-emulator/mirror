@@ -433,9 +433,6 @@
     <string name="use_custom_rtc_description">允許您設定與您的目前系統時間相互獨立的自訂時間</string>
     <string name="set_custom_rtc">設定自訂 RTC</string>
 
-    <!-- CPU -->
-    <string name="fast_cpu_time">CPU 超頻</string>
-    <string name="fast_cpu_time_description">強制模擬 CPU 以更高的時脈運作，減少某些 FPS 限制。使用 加速 (1700MHz) 以 Switch 的最高原生時脈執行，或 高速 (2000MHz) 以雙倍時脈執行</string>
     <string name="custom_cpu_ticks">自訂CPU時脈</string>
     <string name="custom_cpu_ticks_description">自訂CPU時脈。更高的值可能提高效能，但也可能導致遊戲卡死。建議範圍為77-21000。</string>
     <string name="cpu_ticks">時脈</string>
@@ -481,6 +478,8 @@
     <string name="use_disk_shader_cache_description">將產生的著色器快取儲存至硬碟以減少中斷</string>
     <string name="renderer_force_max_clock">強制使用最大時脈 (僅限Adreno)</string>
     <string name="renderer_force_max_clock_description">強制 GPU 以可能的最大時脈執行 (熱溫限制仍會被套用)</string>
+    <string name="renderer_asynchronous_gpu_emulation">GPU 非同步模擬</string>
+    <string name="renderer_asynchronous_gpu_emulation_description">此修改可透過使用 GPU 非同步模擬來提升性能，不過可能會導致圖形問題且會提高在進行時序相關操作時崩潰的機率</string>
     <string name="renderer_reactive_flushing">使用重新啟用排清</string>
     <string name="renderer_reactive_flushing_description">犧牲效能，以改善部分遊戲的轉譯準確度。</string>
     <string name="skip_cpu_inner_invalidation">跳過CPU內部失效處理</string>
@@ -849,10 +848,6 @@
     <string name="memory_4gb">4GB (推薦)</string>
     <string name="memory_6gb">6GB (不穩定)</string>
     <string name="memory_8gb">8GB (不穩定)</string>
-
-    <!--CPU clock speeds-->
-    <string name="clock_boost">加速 (1700MHz)</string>
-    <string name="clock_fast">快速 (2000MHz)</string>
 
     <!-- Temperature Units -->
     <string name="temperature_celsius">攝氏度</string>
