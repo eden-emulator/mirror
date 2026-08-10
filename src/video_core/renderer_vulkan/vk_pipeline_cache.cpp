@@ -63,6 +63,8 @@ using VideoCommon::GenericEnvironment;
 using VideoCommon::GraphicsEnvironment;
 
 constexpr u32 CACHE_VERSION = 18;
+constexpr size_t VULKAN_CACHE_FLUSH_PIPELINES = 128;
+constexpr size_t VULKAN_CACHE_FLUSH_MIN_SECONDS = 30;
 constexpr std::array<char, 8> VULKAN_CACHE_MAGIC_NUMBER{'y', 'u', 'z', 'u', 'v', 'k', 'c', 'h'};
 
 template <typename Container>
@@ -699,11 +701,44 @@ void PipelineCache::LoadDiskResources(u64 title_id, std::stop_token stop_loading
     if (use_vulkan_pipeline_cache) {
         SerializeVulkanPipelineCache(vulkan_pipeline_cache_filename, vulkan_pipeline_cache,
                                      CACHE_VERSION);
+        size_t size = 0;
+        vulkan_pipeline_cache.Read(&size, nullptr);
+        last_cache_size.store(size, std::memory_order_relaxed);
+        last_flush = std::chrono::steady_clock::now();
     }
 
     if (state.statistics) {
         state.statistics->Report();
     }
+}
+
+void PipelineCache::QueueVulkanPipelineCacheFlush() {
+    if (!use_vulkan_pipeline_cache || vulkan_pipeline_cache_filename.empty()) {
+        return;
+    }
+    if (++pipelines_since_flush < VULKAN_CACHE_FLUSH_PIPELINES) {
+        return;
+    }
+    const auto now = std::chrono::steady_clock::now();
+    const auto megabytes = last_cache_size.load(std::memory_order_relaxed) / (1024 * 1024);
+    const std::chrono::seconds interval{
+        std::max<size_t>(VULKAN_CACHE_FLUSH_MIN_SECONDS, megabytes)};
+    if (last_flush.time_since_epoch().count() != 0 && now - last_flush < interval) {
+        return;
+    }
+    if (flush_in_flight.exchange(true, std::memory_order_acq_rel)) {
+        return;
+    }
+    pipelines_since_flush = 0;
+    last_flush = now;
+    serialization_thread.QueueWork([this] {
+        SerializeVulkanPipelineCache(vulkan_pipeline_cache_filename, vulkan_pipeline_cache,
+                                     CACHE_VERSION);
+        size_t size = 0;
+        vulkan_pipeline_cache.Read(&size, nullptr);
+        last_cache_size.store(size, std::memory_order_relaxed);
+        flush_in_flight.store(false, std::memory_order_release);
+    });
 }
 
 GraphicsPipeline* PipelineCache::CurrentGraphicsPipelineSlowPath() {
@@ -744,7 +779,7 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
     std::span<Shader::Environment* const> envs, PipelineStatistics* statistics,
     bool build_in_parallel) try {
     auto hash = key.Hash();
-    LOG_INFO(Render_Vulkan, "{:#016x}", hash);
+    LOG_DEBUG(Render_Vulkan, "{:#016x}", hash);
     size_t env_index{0};
     std::array<Shader::IR::Program, Maxwell::MaxShaderProgram> programs;
     const bool uses_vertex_a{key.unique_hashes[0] != 0};
@@ -880,6 +915,7 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline() {
         }
         SerializePipeline(key, env_ptrs, pipeline_cache_filename, CACHE_VERSION);
     });
+    QueueVulkanPipelineCacheFlush();
     return pipeline;
 }
 
@@ -899,6 +935,7 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline(
         SerializePipeline(key, std::array<const GenericEnvironment*, 1>{&env_},
                           pipeline_cache_filename, CACHE_VERSION);
     });
+    QueueVulkanPipelineCacheFlush();
     return pipeline;
 }
 
@@ -911,7 +948,7 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline(
         return nullptr;
     }
 
-    LOG_INFO(Render_Vulkan, "{:#016x}", hash);
+    LOG_DEBUG(Render_Vulkan, "{:#016x}", hash);
 
     Shader::Maxwell::Flow::CFG cfg{env, pools.flow_block, env.StartAddress()};
 

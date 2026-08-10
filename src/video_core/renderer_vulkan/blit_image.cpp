@@ -1191,7 +1191,7 @@ VkPipeline BlitImageHelper::FindOrEmplaceColorPipeline(const BlitImagePipelineKe
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = 0,
-    }));
+    }, device.StaticPipelineCache()));
     return *blit_color_pipelines.back();
 }
 
@@ -1223,7 +1223,7 @@ VkPipeline BlitImageHelper::FindOrEmplaceDepthStencilPipeline(const BlitImagePip
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = 0,
-    }));
+    }, device.StaticPipelineCache()));
     return *blit_depth_stencil_pipelines.back();
 }
 
@@ -1276,7 +1276,7 @@ VkPipeline BlitImageHelper::FindOrEmplaceClearColorPipeline(const BlitImagePipel
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = 0,
-    }));
+    }, device.StaticPipelineCache()));
     return *clear_color_pipelines.back();
 }
 
@@ -1332,7 +1332,7 @@ VkPipeline BlitImageHelper::FindOrEmplaceClearStencilPipeline(
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = 0,
-    }));
+    }, device.StaticPipelineCache()));
     return *clear_stencil_pipelines.back();
 }
 
@@ -1375,7 +1375,7 @@ VkPipeline BlitImageHelper::FindOrEmplaceBlitColorMSAAPipeline(const BlitMSAAPip
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = 0,
-    }));
+    }, device.StaticPipelineCache()));
     return *blit_msaa_color_pipelines.back();
 }
 
@@ -1413,7 +1413,7 @@ VkPipeline BlitImageHelper::FindOrEmplaceResolveDepthStencilPipeline(VkRenderPas
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = 0,
-    }));
+    }, device.StaticPipelineCache()));
     return *pipelines.back();
 }
 
@@ -1458,7 +1458,7 @@ VkPipeline BlitImageHelper::FindOrEmplaceMSAACopyPipeline(const MSAACopyPipeline
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = 0,
-    }));
+    }, device.StaticPipelineCache()));
     return *msaa_copy_pipelines.back();
 }
 
@@ -1499,7 +1499,7 @@ void BlitImageHelper::ConvertPipelineEx(vk::Pipeline& pipeline, VkRenderPass ren
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = 0,
-    });
+    }, device.StaticPipelineCache());
 }
 
 void BlitImageHelper::ConvertPipelineColorTargetEx(vk::Pipeline& pipeline, VkRenderPass renderpass,
@@ -1542,7 +1542,7 @@ void BlitImageHelper::ConvertPipeline(vk::Pipeline& pipeline, VkRenderPass rende
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = 0,
-    });
+    }, device.StaticPipelineCache());
 }
 
 } // namespace Vulkan
