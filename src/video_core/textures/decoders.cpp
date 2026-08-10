@@ -1,9 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstring>
@@ -30,10 +31,61 @@ constexpr u32 pdep(u32 value) {
     return result;
 }
 
+constexpr u32 SWIZZLE_RUN_BYTES = 16;
+constexpr u32 SWIZZLE_RUN_SHIFT = 4;
+constexpr u32 SWIZZLE_RUN_MASK = SWIZZLE_RUN_BYTES - 1;
+constexpr u32 SWIZZLE_RUN_INDEX_MASK = GOB_SIZE_X / SWIZZLE_RUN_BYTES - 1;
+
+static_assert((SWIZZLE_X_BITS & SWIZZLE_RUN_MASK) == SWIZZLE_RUN_MASK,
+              "A swizzled run is only contiguous while the low bits of X map to themselves");
+
+constexpr std::array<u32, GOB_SIZE_X / SWIZZLE_RUN_BYTES> SWIZZLE_X_RUN_TABLE = [] {
+    std::array<u32, GOB_SIZE_X / SWIZZLE_RUN_BYTES> table{};
+    for (u32 index = 0; index < static_cast<u32>(table.size()); ++index) {
+        table[index] = pdep<SWIZZLE_X_BITS>(index << SWIZZLE_RUN_SHIFT);
+    }
+    return table;
+}();
+
 template <u32 mask, u32 incr_amount>
 void incrpdep(u32& value) {
     static constexpr u32 swizzled_incr = pdep<mask>(incr_amount);
     value = ((value | ~mask) + swizzled_incr) & mask;
+}
+
+template <bool TO_LINEAR>
+void SwizzleRow(std::span<u8> output, std::span<const u8> input, u32 offset_zy, u32 swizzled_y,
+                u32 x_shift, u32 x, u32 num_bytes, u32 linear) {
+    const auto copy = [&](u32 swizzled_x, u32 count) {
+        const u32 swizzled =
+            offset_zy + ((x >> GOB_SIZE_X_SHIFT) << x_shift) + (swizzled_x | swizzled_y);
+        u8* const dst = &output[TO_LINEAR ? swizzled : linear];
+        const u8* const src = &input[TO_LINEAR ? linear : swizzled];
+        std::memcpy(dst, src, count);
+        x += count;
+        linear += count;
+    };
+
+    u32 swizzled_run = SWIZZLE_X_RUN_TABLE[(x >> SWIZZLE_RUN_SHIFT) & SWIZZLE_RUN_INDEX_MASK];
+    u32 remaining = num_bytes;
+
+    const u32 head =
+        (std::min)(SWIZZLE_RUN_BYTES - (x & SWIZZLE_RUN_MASK), remaining) & SWIZZLE_RUN_MASK;
+    if (head != 0) {
+        copy(swizzled_run | (x & SWIZZLE_RUN_MASK), head);
+        remaining -= head;
+        incrpdep<SWIZZLE_X_BITS, SWIZZLE_RUN_BYTES>(swizzled_run);
+    }
+
+    while (remaining >= SWIZZLE_RUN_BYTES) {
+        copy(swizzled_run, SWIZZLE_RUN_BYTES);
+        remaining -= SWIZZLE_RUN_BYTES;
+        incrpdep<SWIZZLE_X_BITS, SWIZZLE_RUN_BYTES>(swizzled_run);
+    }
+
+    if (remaining != 0) {
+        copy(swizzled_run, remaining);
+    }
 }
 
 template <bool TO_LINEAR, u32 BYTES_PER_PIXEL>
@@ -70,23 +122,9 @@ void SwizzleImpl(std::span<u8> output, std::span<const u8> input, u32 width, u32
             const u32 offset_y = (block_y >> block_height) * block_size +
                                  ((block_y & block_height_mask) << GOB_SIZE_SHIFT);
 
-            u32 swizzled_x = pdep<SWIZZLE_X_BITS>(origin_x * BYTES_PER_PIXEL);
-            for (u32 column = 0; column < width;
-                 ++column, incrpdep<SWIZZLE_X_BITS, BYTES_PER_PIXEL>(swizzled_x)) {
-                const u32 x = (column + origin_x) * BYTES_PER_PIXEL;
-                const u32 offset_x = (x >> GOB_SIZE_X_SHIFT) << x_shift;
-
-                const u32 base_swizzled_offset = offset_z + offset_y + offset_x;
-                const u32 swizzled_offset = base_swizzled_offset + (swizzled_x | swizzled_y);
-
-                const u32 unswizzled_offset =
-                    slice * pitch * height + line * pitch + column * BYTES_PER_PIXEL;
-
-                u8* const dst = &output[TO_LINEAR ? swizzled_offset : unswizzled_offset];
-                const u8* const src = &input[TO_LINEAR ? unswizzled_offset : swizzled_offset];
-
-                std::memcpy(dst, src, BYTES_PER_PIXEL);
-            }
+            SwizzleRow<TO_LINEAR>(output, input, offset_z + offset_y, swizzled_y, x_shift,
+                                  origin_x * BYTES_PER_PIXEL, width * BYTES_PER_PIXEL,
+                                  slice * pitch * height + line * pitch);
         }
     }
 }
@@ -129,23 +167,9 @@ void SwizzleSubrectImpl(std::span<u8> output, std::span<const u8> input, u32 wid
             const u32 offset_y = (block_y >> block_height) * block_size +
                                  ((block_y & block_height_mask) << GOB_SIZE_SHIFT);
 
-            u32 swizzled_x = pdep<SWIZZLE_X_BITS>(origin_x * BYTES_PER_PIXEL);
-            for (u32 column = 0; column < extent_x;
-                 ++column, incrpdep<SWIZZLE_X_BITS, BYTES_PER_PIXEL>(swizzled_x)) {
-                const u32 x = (column + origin_x) * BYTES_PER_PIXEL;
-                const u32 offset_x = (x >> GOB_SIZE_X_SHIFT) << x_shift;
-
-                const u32 base_swizzled_offset = offset_z + offset_y + offset_x;
-                const u32 swizzled_offset = base_swizzled_offset + (swizzled_x | swizzled_y);
-
-                const u32 unswizzled_offset =
-                    slice * pitch * height + line * pitch + column * BYTES_PER_PIXEL;
-
-                u8* const dst = &output[TO_LINEAR ? swizzled_offset : unswizzled_offset];
-                const u8* const src = &input[TO_LINEAR ? unswizzled_offset : swizzled_offset];
-
-                std::memcpy(dst, src, BYTES_PER_PIXEL);
-            }
+            SwizzleRow<TO_LINEAR>(output, input, offset_z + offset_y, swizzled_y, x_shift,
+                                  origin_x * BYTES_PER_PIXEL, extent_x * BYTES_PER_PIXEL,
+                                  slice * pitch * height + line * pitch);
         }
         unprocessed_lines -= lines_in_y;
         if (unprocessed_lines == 0) {
