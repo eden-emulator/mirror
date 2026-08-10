@@ -624,6 +624,7 @@ abstract class SettingsItem(
                     IntSetting.FSR_SHARPENING_SLIDER,
                     titleId = R.string.fsr_sharpness,
                     descriptionId = R.string.fsr_sharpness_description,
+                    max = 200,
                     units = "%"
                 )
             )

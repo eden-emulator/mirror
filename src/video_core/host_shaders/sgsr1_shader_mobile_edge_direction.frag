@@ -13,6 +13,7 @@
 layout( push_constant ) uniform constants {
     vec4 ViewportInfo[1];
     vec2 ResizeFactor;
+    vec2 CropOffset;
     float EdgeSharpness;
 };
 layout(set = 0, binding = 0) uniform sampler2D ps0;

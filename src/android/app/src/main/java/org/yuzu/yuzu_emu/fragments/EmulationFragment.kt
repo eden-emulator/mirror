@@ -1182,7 +1182,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     container,
                     IntSetting.FSR_SHARPENING_SLIDER,
                     minValue = 0,
-                    maxValue = 100,
+                    maxValue = 200,
                     units = "%"
                 )
             }
