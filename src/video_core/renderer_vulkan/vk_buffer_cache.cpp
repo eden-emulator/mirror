@@ -8,6 +8,7 @@
 #include <array>
 #include <cstring>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include "video_core/buffer_cache/buffer_cache_base.h"
@@ -30,6 +31,32 @@ VkBufferCopy MakeBufferCopy(const VideoCommon::BufferCopy& copy) {
         .dstOffset = copy.dst_offset,
         .size = copy.size,
     };
+}
+
+constexpr size_t MAX_WINDOW_BARRIER_RANGES = 8;
+
+using WindowRange = std::pair<VkDeviceSize, VkDeviceSize>;
+using WindowRanges = boost::container::small_vector<WindowRange, MAX_WINDOW_BARRIER_RANGES>;
+
+void CoalesceWindowRanges(WindowRanges& ranges) {
+    if (ranges.size() < 2) {
+        return;
+    }
+    std::sort(ranges.begin(), ranges.end());
+    size_t merged = 0;
+    for (size_t index = 1; index < ranges.size(); ++index) {
+        if (ranges[index].first <= ranges[merged].second) {
+            ranges[merged].second = (std::max)(ranges[merged].second, ranges[index].second);
+        } else {
+            ranges[++merged] = ranges[index];
+        }
+    }
+    ranges.resize(merged + 1);
+    if (ranges.size() > MAX_WINDOW_BARRIER_RANGES) {
+        const WindowRange bounding{ranges.front().first, ranges.back().second};
+        ranges.clear();
+        ranges.push_back(bounding);
+    }
 }
 
 VkIndexType IndexTypeFromNumElements(const Device& device, u32 num_elements) {
@@ -376,66 +403,164 @@ void BufferCacheRuntime::TryEnableUnifiedMemory(void* base, size_t size,
     }
 }
 
+void BufferCacheRuntime::QueueUnifiedCopy(size_t window_index, VkBuffer buffer,
+                                          std::span<const VideoCommon::BufferCopy> copies,
+                                          bool reads_window) {
+    if (!unified_memory || buffer == VK_NULL_HANDLE || copies.empty() ||
+        window_index >= unified_memory->GetWindowCount() ||
+        unified_memory->GetWindowBuffer(window_index) == VK_NULL_HANDLE) {
+        return;
+    }
+    PendingUnifiedCopy& pending = pending_unified_copies.emplace_back();
+    pending.window = window_index;
+    pending.buffer = buffer;
+    pending.reads_window = reads_window;
+    pending.copies.resize(copies.size());
+    std::ranges::transform(copies, pending.copies.begin(), MakeBufferCopy);
+}
+
 void BufferCacheRuntime::CopyToUnifiedMemory(
     size_t window_index, VkBuffer src_buffer,
     std::span<const VideoCommon::BufferCopy> copies) {
-    if (!unified_memory || src_buffer == VK_NULL_HANDLE || copies.empty() ||
-        window_index >= unified_memory->GetWindowCount()) {
-        return;
-    }
-    const VkBuffer dst_buffer = unified_memory->GetWindowBuffer(window_index);
-    if (dst_buffer == VK_NULL_HANDLE) {
-        return;
-    }
-    VkDeviceSize covered_begin = std::numeric_limits<VkDeviceSize>::max();
-    VkDeviceSize covered_end = 0;
-    for (const VideoCommon::BufferCopy& copy : copies) {
-        covered_begin = (std::min)(covered_begin, static_cast<VkDeviceSize>(copy.dst_offset));
-        covered_end = (std::max)(covered_end,
-                                 static_cast<VkDeviceSize>(copy.dst_offset + copy.size));
-    }
+    QueueUnifiedCopy(window_index, src_buffer, copies, false);
+}
 
-    boost::container::small_vector<VkBufferCopy, 8> vk_copies(copies.size());
-    std::ranges::transform(copies, vk_copies.begin(), MakeBufferCopy);
+void BufferCacheRuntime::CopyFromUnifiedMemory(
+    size_t window_index, VkBuffer dst_buffer,
+    std::span<const VideoCommon::BufferCopy> copies) {
+    QueueUnifiedCopy(window_index, dst_buffer, copies, true);
+}
+
+void BufferCacheRuntime::FlushUnifiedMemoryCopies() {
+    if (pending_unified_copies.empty()) {
+        return;
+    }
+    struct UnifiedCopyCommand {
+        VkBuffer buffer;
+        bool reads_window;
+        boost::container::small_vector<VkBufferCopy, 8> copies;
+    };
+    static constexpr VkMemoryBarrier WINDOW_TRANSFER_BARRIER{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        .pNext = nullptr,
+        .srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+        .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+    };
+
+    std::stable_sort(pending_unified_copies.begin(), pending_unified_copies.end(),
+                     [](const PendingUnifiedCopy& lhs, const PendingUnifiedCopy& rhs) {
+                         if (lhs.window != rhs.window) {
+                             return lhs.window < rhs.window;
+                         }
+                         return lhs.reads_window && !rhs.reads_window;
+                     });
 
     const bool foreign = unified_memory->NeedsForeignOwnershipTransfer();
     const u32 queue_family = device.GetGraphicsFamily();
 
-    scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([src_buffer, dst_buffer, vk_copies, foreign, queue_family, covered_begin,
-                      covered_end](vk::CommandBuffer cmdbuf) {
-        if (foreign) {
-            const VkBufferMemoryBarrier acquire{
-                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                .pNext = nullptr,
-                .srcAccessMask = 0,
-                .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
-                .dstQueueFamilyIndex = queue_family,
-                .buffer = dst_buffer,
-                .offset = covered_begin,
-                .size = covered_end - covered_begin,
-            };
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                   VK_PIPELINE_STAGE_TRANSFER_BIT, 0, acquire);
+    size_t group_begin = 0;
+    while (group_begin < pending_unified_copies.size()) {
+        const size_t window = pending_unified_copies[group_begin].window;
+        size_t group_end = group_begin;
+        while (group_end < pending_unified_copies.size() &&
+               pending_unified_copies[group_end].window == window) {
+            ++group_end;
         }
-        cmdbuf.CopyBuffer(src_buffer, dst_buffer, VideoCommon::FixSmallVectorADL(vk_copies));
-        if (foreign) {
-            const VkBufferMemoryBarrier release{
-                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = 0,
-                .srcQueueFamilyIndex = queue_family,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
-                .buffer = dst_buffer,
-                .offset = covered_begin,
-                .size = covered_end - covered_begin,
-            };
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, release);
+        const VkBuffer window_buffer = unified_memory->GetWindowBuffer(window);
+
+        WindowRanges ranges;
+        VkAccessFlags window_access = 0;
+        size_t reads_in_group = 0;
+        for (size_t index = group_begin; index < group_end; ++index) {
+            const PendingUnifiedCopy& pending = pending_unified_copies[index];
+            if (pending.reads_window) {
+                window_access |= VK_ACCESS_TRANSFER_READ_BIT;
+                ++reads_in_group;
+            } else {
+                window_access |= VK_ACCESS_TRANSFER_WRITE_BIT;
+            }
+            for (const VkBufferCopy& copy : pending.copies) {
+                const VkDeviceSize offset =
+                    pending.reads_window ? copy.srcOffset : copy.dstOffset;
+                ranges.emplace_back(offset, offset + copy.size);
+            }
         }
-    });
+        CoalesceWindowRanges(ranges);
+
+        boost::container::small_vector<VkBufferMemoryBarrier, MAX_WINDOW_BARRIER_RANGES> acquire;
+        boost::container::small_vector<VkBufferMemoryBarrier, MAX_WINDOW_BARRIER_RANGES> release;
+        if (foreign) {
+            for (const WindowRange& range : ranges) {
+                acquire.push_back(VkBufferMemoryBarrier{
+                    .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                    .pNext = nullptr,
+                    .srcAccessMask = 0,
+                    .dstAccessMask = window_access,
+                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+                    .dstQueueFamilyIndex = queue_family,
+                    .buffer = window_buffer,
+                    .offset = range.first,
+                    .size = range.second - range.first,
+                });
+                release.push_back(VkBufferMemoryBarrier{
+                    .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                    .pNext = nullptr,
+                    .srcAccessMask = window_access,
+                    .dstAccessMask = 0,
+                    .srcQueueFamilyIndex = queue_family,
+                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+                    .buffer = window_buffer,
+                    .offset = range.first,
+                    .size = range.second - range.first,
+                });
+            }
+        }
+
+        boost::container::small_vector<UnifiedCopyCommand, 4> commands;
+        commands.reserve(group_end - group_begin);
+        for (size_t index = group_begin; index < group_end; ++index) {
+            PendingUnifiedCopy& pending = pending_unified_copies[index];
+            commands.push_back(UnifiedCopyCommand{pending.buffer, pending.reads_window,
+                                                  std::move(pending.copies)});
+        }
+        const size_t barrier_before_writes = (reads_in_group > 0 && reads_in_group < commands.size())
+                                                 ? reads_in_group
+                                                 : commands.size();
+
+        scheduler.RequestOutsideRenderPassOperationContext();
+        scheduler.Record([window_buffer, barrier_before_writes, acquire = std::move(acquire),
+                          release = std::move(release),
+                          commands = std::move(commands)](vk::CommandBuffer cmdbuf) {
+            if (!acquire.empty()) {
+                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {},
+                                       VideoCommon::FixSmallVectorADL(acquire), {});
+            }
+            for (size_t index = 0; index < commands.size(); ++index) {
+                if (index == barrier_before_writes) {
+                    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                                           WINDOW_TRANSFER_BARRIER);
+                }
+                const UnifiedCopyCommand& command = commands[index];
+                if (command.reads_window) {
+                    cmdbuf.CopyBuffer(window_buffer, command.buffer,
+                                      VideoCommon::FixSmallVectorADL(command.copies));
+                } else {
+                    cmdbuf.CopyBuffer(command.buffer, window_buffer,
+                                      VideoCommon::FixSmallVectorADL(command.copies));
+                }
+            }
+            if (!release.empty()) {
+                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                       VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, {},
+                                       VideoCommon::FixSmallVectorADL(release), {});
+            }
+        });
+
+        group_begin = group_end;
+    }
+    pending_unified_copies.clear();
 }
 
 void BufferCacheRuntime::UnifiedMemoryHostBarrier() {
@@ -489,6 +614,7 @@ u32 BufferCacheRuntime::GetStorageBufferAlignment() const {
 }
 
 void BufferCacheRuntime::TickFrame(Common::SlotVector<Buffer>& slot_buffers) noexcept {
+    FlushUnifiedMemoryCopies();
     for (auto it = slot_buffers.begin(); it != slot_buffers.end(); it++) {
         if (scheduler.IsFree(it->LastUsageTick())) {
             it->ResetUsageTracking();

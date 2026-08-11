@@ -10,6 +10,8 @@
 #include <memory>
 #include <span>
 
+#include <boost/container/small_vector.hpp>
+
 #include "video_core/buffer_cache/buffer_cache_base.h"
 #include "video_core/buffer_cache/memory_tracker_base.h"
 #include "video_core/buffer_cache/usage_tracker.h"
@@ -122,6 +124,11 @@ public:
     void CopyToUnifiedMemory(size_t window_index, VkBuffer src_buffer,
                              std::span<const VideoCommon::BufferCopy> copies);
 
+    void CopyFromUnifiedMemory(size_t window_index, VkBuffer dst_buffer,
+                               std::span<const VideoCommon::BufferCopy> copies);
+
+    void FlushUnifiedMemoryCopies();
+
     void UnifiedMemoryHostBarrier();
 
     u64 CurrentTick();
@@ -207,6 +214,16 @@ public:
     }
 
 private:
+    struct PendingUnifiedCopy {
+        size_t window;
+        VkBuffer buffer;
+        bool reads_window;
+        boost::container::small_vector<VkBufferCopy, 8> copies;
+    };
+
+    void QueueUnifiedCopy(size_t window_index, VkBuffer buffer,
+                          std::span<const VideoCommon::BufferCopy> copies, bool reads_window);
+
     void BindBuffer(const Buffer& buffer, u32 offset, u32 size) {
         const VkBuffer handle = buffer.Handle();
         if (handle == VK_NULL_HANDLE) {
@@ -232,6 +249,7 @@ private:
 
     vk::Buffer null_buffer;
     std::unique_ptr<HostMemoryImport> unified_memory;
+    boost::container::small_vector<PendingUnifiedCopy, 8> pending_unified_copies;
 
     std::unique_ptr<Uint8Pass> uint8_pass;
     QuadIndexedPass quad_index_pass;
