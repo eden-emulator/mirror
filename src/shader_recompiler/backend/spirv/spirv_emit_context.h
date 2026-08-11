@@ -312,6 +312,8 @@ public:
     Id local_memory{};
 
     bool uses_explicit_workgroup_layout{};
+    u32 shared_memory_declared_bytes{};
+    [[nodiscard]] Id BoundSharedOffset(Id offset, u32 access_bytes);
     Id shared_memory_u8{};
     Id shared_memory_u16{};
     Id shared_memory_u32{};
