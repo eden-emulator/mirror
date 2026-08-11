@@ -71,6 +71,8 @@ public:
         return backing_size;
     }
 
+    [[nodiscard]] size_t BackingMapCount(size_t host_offset, size_t length) const noexcept;
+
     [[nodiscard]] std::span<AHardwareBuffer* const> BackingHardwareBuffers() const noexcept;
 
     [[nodiscard]] size_t BackingHardwareBufferWindowSize() const noexcept;
