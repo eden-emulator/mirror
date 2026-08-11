@@ -403,32 +403,19 @@ void BufferCacheRuntime::TryEnableUnifiedMemory(void* base, size_t size,
     }
 }
 
-void BufferCacheRuntime::QueueUnifiedCopy(size_t window_index, VkBuffer buffer,
-                                          std::span<const VideoCommon::BufferCopy> copies,
-                                          bool reads_window) {
-    if (!unified_memory || buffer == VK_NULL_HANDLE || copies.empty() ||
+void BufferCacheRuntime::CopyToUnifiedMemory(
+    size_t window_index, VkBuffer src_buffer,
+    std::span<const VideoCommon::BufferCopy> copies) {
+    if (!unified_memory || src_buffer == VK_NULL_HANDLE || copies.empty() ||
         window_index >= unified_memory->GetWindowCount() ||
         unified_memory->GetWindowBuffer(window_index) == VK_NULL_HANDLE) {
         return;
     }
     PendingUnifiedCopy& pending = pending_unified_copies.emplace_back();
     pending.window = window_index;
-    pending.buffer = buffer;
-    pending.reads_window = reads_window;
+    pending.buffer = src_buffer;
     pending.copies.resize(copies.size());
     std::ranges::transform(copies, pending.copies.begin(), MakeBufferCopy);
-}
-
-void BufferCacheRuntime::CopyToUnifiedMemory(
-    size_t window_index, VkBuffer src_buffer,
-    std::span<const VideoCommon::BufferCopy> copies) {
-    QueueUnifiedCopy(window_index, src_buffer, copies, false);
-}
-
-void BufferCacheRuntime::CopyFromUnifiedMemory(
-    size_t window_index, VkBuffer dst_buffer,
-    std::span<const VideoCommon::BufferCopy> copies) {
-    QueueUnifiedCopy(window_index, dst_buffer, copies, true);
 }
 
 void BufferCacheRuntime::FlushUnifiedMemoryCopies() {
@@ -437,22 +424,12 @@ void BufferCacheRuntime::FlushUnifiedMemoryCopies() {
     }
     struct UnifiedCopyCommand {
         VkBuffer buffer;
-        bool reads_window;
         boost::container::small_vector<VkBufferCopy, 8> copies;
-    };
-    static constexpr VkMemoryBarrier WINDOW_TRANSFER_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-        .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
     };
 
     std::stable_sort(pending_unified_copies.begin(), pending_unified_copies.end(),
                      [](const PendingUnifiedCopy& lhs, const PendingUnifiedCopy& rhs) {
-                         if (lhs.window != rhs.window) {
-                             return lhs.window < rhs.window;
-                         }
-                         return lhs.reads_window && !rhs.reads_window;
+                         return lhs.window < rhs.window;
                      });
 
     const bool foreign = unified_memory->NeedsForeignOwnershipTransfer();
@@ -469,20 +446,9 @@ void BufferCacheRuntime::FlushUnifiedMemoryCopies() {
         const VkBuffer window_buffer = unified_memory->GetWindowBuffer(window);
 
         WindowRanges ranges;
-        VkAccessFlags window_access = 0;
-        size_t reads_in_group = 0;
         for (size_t index = group_begin; index < group_end; ++index) {
-            const PendingUnifiedCopy& pending = pending_unified_copies[index];
-            if (pending.reads_window) {
-                window_access |= VK_ACCESS_TRANSFER_READ_BIT;
-                ++reads_in_group;
-            } else {
-                window_access |= VK_ACCESS_TRANSFER_WRITE_BIT;
-            }
-            for (const VkBufferCopy& copy : pending.copies) {
-                const VkDeviceSize offset =
-                    pending.reads_window ? copy.srcOffset : copy.dstOffset;
-                ranges.emplace_back(offset, offset + copy.size);
+            for (const VkBufferCopy& copy : pending_unified_copies[index].copies) {
+                ranges.emplace_back(copy.dstOffset, copy.dstOffset + copy.size);
             }
         }
         CoalesceWindowRanges(ranges);
@@ -495,7 +461,7 @@ void BufferCacheRuntime::FlushUnifiedMemoryCopies() {
                     .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
                     .pNext = nullptr,
                     .srcAccessMask = 0,
-                    .dstAccessMask = window_access,
+                    .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
                     .dstQueueFamilyIndex = queue_family,
                     .buffer = window_buffer,
@@ -505,7 +471,7 @@ void BufferCacheRuntime::FlushUnifiedMemoryCopies() {
                 release.push_back(VkBufferMemoryBarrier{
                     .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
                     .pNext = nullptr,
-                    .srcAccessMask = window_access,
+                    .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
                     .dstAccessMask = 0,
                     .srcQueueFamilyIndex = queue_family,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
@@ -520,36 +486,20 @@ void BufferCacheRuntime::FlushUnifiedMemoryCopies() {
         commands.reserve(group_end - group_begin);
         for (size_t index = group_begin; index < group_end; ++index) {
             PendingUnifiedCopy& pending = pending_unified_copies[index];
-            commands.push_back(UnifiedCopyCommand{pending.buffer, pending.reads_window,
-                                                  std::move(pending.copies)});
+            commands.push_back(UnifiedCopyCommand{pending.buffer, std::move(pending.copies)});
         }
-        const size_t barrier_before_writes = (reads_in_group > 0 && reads_in_group < commands.size())
-                                                 ? reads_in_group
-                                                 : commands.size();
 
         scheduler.RequestOutsideRenderPassOperationContext();
-        scheduler.Record([window_buffer, barrier_before_writes, acquire = std::move(acquire),
-                          release = std::move(release),
+        scheduler.Record([window_buffer, acquire = std::move(acquire), release = std::move(release),
                           commands = std::move(commands)](vk::CommandBuffer cmdbuf) {
             if (!acquire.empty()) {
                 cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {},
                                        VideoCommon::FixSmallVectorADL(acquire), {});
             }
-            for (size_t index = 0; index < commands.size(); ++index) {
-                if (index == barrier_before_writes) {
-                    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-                                           WINDOW_TRANSFER_BARRIER);
-                }
-                const UnifiedCopyCommand& command = commands[index];
-                if (command.reads_window) {
-                    cmdbuf.CopyBuffer(window_buffer, command.buffer,
-                                      VideoCommon::FixSmallVectorADL(command.copies));
-                } else {
-                    cmdbuf.CopyBuffer(command.buffer, window_buffer,
-                                      VideoCommon::FixSmallVectorADL(command.copies));
-                }
+            for (const UnifiedCopyCommand& command : commands) {
+                cmdbuf.CopyBuffer(command.buffer, window_buffer,
+                                  VideoCommon::FixSmallVectorADL(command.copies));
             }
             if (!release.empty()) {
                 cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,

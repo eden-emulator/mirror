@@ -600,6 +600,16 @@ void EmitContext::DefineLocalMemory(const IR::Program& program) {
     }
 }
 
+Id EmitContext::BoundSharedOffset(Id offset, u32 access_bytes) {
+    if (shared_memory_declared_bytes == 0) {
+        return offset;
+    }
+    const u32 last_valid{shared_memory_declared_bytes > access_bytes
+                             ? shared_memory_declared_bytes - access_bytes
+                             : 0U};
+    return OpUMin(U32[1], offset, Const(last_valid));
+}
+
 void EmitContext::DefineSharedMemory(const IR::Program& program) {
     uses_explicit_workgroup_layout =
         profile.support_explicit_workgroup_layout &&
@@ -608,8 +618,15 @@ void EmitContext::DefineSharedMemory(const IR::Program& program) {
     if (program.shared_memory_size == 0) {
         return;
     }
+    const u32 device_limit{profile.max_shared_memory_size};
+    const u32 shared_memory_size{device_limit != 0 && program.shared_memory_size > device_limit
+                                     ? device_limit
+                                     : program.shared_memory_size};
+    if (shared_memory_size != program.shared_memory_size) {
+        shared_memory_declared_bytes = shared_memory_size;
+    }
     const auto make{[&](Id element_type, u32 element_size) {
-        const u32 num_elements{Common::DivCeil(program.shared_memory_size, element_size)};
+        const u32 num_elements{Common::DivCeil(shared_memory_size, element_size)};
         const Id array_type{TypeArray(element_type, Const(num_elements))};
         Decorate(array_type, spv::Decoration::ArrayStride, element_size);
 
@@ -644,7 +661,7 @@ void EmitContext::DefineSharedMemory(const IR::Program& program) {
         std::tie(shared_memory_u32x4, shared_u32x4, std::ignore) = make(U32[4], 16);
         return;
     }
-    const u32 num_elements{Common::DivCeil(program.shared_memory_size, 4U)};
+    const u32 num_elements{Common::DivCeil(shared_memory_size, 4U)};
     const Id type{TypeArray(U32[1], Const(num_elements))};
     shared_memory_u32_type = TypePointer(spv::StorageClass::Workgroup, type);
 
