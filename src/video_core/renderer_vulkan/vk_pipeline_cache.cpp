@@ -446,6 +446,7 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
         .has_broken_fp16_float_controls = driver_id == VK_DRIVER_ID_NVIDIA_PROPRIETARY,
         .ignore_nan_fp_comparisons = false,
         .has_broken_spirv_subgroup_mask_vector_extract_dynamic = false,
+        .max_shared_memory_size = device.GetMaxComputeSharedMemorySize(),
         .has_broken_robust =
             device.IsNvidia() && device.GetNvidiaArch() <= NvidiaArchitecture::Arch_Pascal,
         .min_ssbo_alignment = device.GetStorageBufferAlignment(),
@@ -921,19 +922,6 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline(
     }
 
     auto program{TranslateProgram(pools.inst, pools.block, env, cfg, host_info)};
-    const VkDriverIdKHR driver_id = device.GetDriverID();
-    const bool needs_shared_mem_clamp =
-        driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY ||
-        driver_id == VK_DRIVER_ID_ARM_PROPRIETARY;
-    const u32 max_shared_memory = device.GetMaxComputeSharedMemorySize();
-    if (needs_shared_mem_clamp && program.shared_memory_size > max_shared_memory) {
-        LOG_WARNING(Render_Vulkan,
-                    "Compute shader {:#016x} requests {}KB shared memory but device max is {}KB - clamping",
-                    key.unique_hash,
-                    program.shared_memory_size / 1024,
-                    max_shared_memory / 1024);
-        program.shared_memory_size = max_shared_memory;
-    }
     const std::vector<u32> code{EmitSPIRV(profile, program)};
     device.SaveShader(code);
     vk::ShaderModule spv_module{BuildShader(device, code)};

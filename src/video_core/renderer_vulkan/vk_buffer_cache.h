@@ -124,9 +124,6 @@ public:
     void CopyToUnifiedMemory(size_t window_index, VkBuffer src_buffer,
                              std::span<const VideoCommon::BufferCopy> copies);
 
-    void CopyFromUnifiedMemory(size_t window_index, VkBuffer dst_buffer,
-                               std::span<const VideoCommon::BufferCopy> copies);
-
     void FlushUnifiedMemoryCopies();
 
     void UnifiedMemoryHostBarrier();
@@ -217,12 +214,8 @@ private:
     struct PendingUnifiedCopy {
         size_t window;
         VkBuffer buffer;
-        bool reads_window;
         boost::container::small_vector<VkBufferCopy, 8> copies;
     };
-
-    void QueueUnifiedCopy(size_t window_index, VkBuffer buffer,
-                          std::span<const VideoCommon::BufferCopy> copies, bool reads_window);
 
     void BindBuffer(const Buffer& buffer, u32 offset, u32 size) {
         const VkBuffer handle = buffer.Handle();

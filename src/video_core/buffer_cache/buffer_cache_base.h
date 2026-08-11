@@ -446,8 +446,6 @@ private:
 
     bool TryUnifiedDownloadMemory(Buffer& buffer, std::span<BufferCopy> copies);
 
-    bool TryUnifiedUploadMemory(Buffer& buffer, std::span<const BufferCopy> copies);
-
     using UnifiedWindowGroups =
         boost::container::small_vector<boost::container::small_vector<BufferCopy, 16>, 4>;
 

@@ -101,6 +101,9 @@ struct Profile {
 
     u32 gl_max_compute_smem_size{};
 
+    /// Largest workgroup shared memory allocation the device accepts, 0 when unconstrained
+    u32 max_shared_memory_size{};
+
     /// Maxwell and earlier nVidia architectures have broken robust support
     bool has_broken_robust{};
 
