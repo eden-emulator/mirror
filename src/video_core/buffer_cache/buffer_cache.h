@@ -714,6 +714,7 @@ void BufferCache<P>::CommitAsyncFlushesHigh() {
             runtime.CopyToUnifiedMemory(queued.window, slot_buffers[queued.buffer_id], group_span);
         }
         if (!unified_copy_queue.empty()) {
+            runtime.FlushUnifiedMemoryCopies();
             runtime.UnifiedMemoryHostBarrier();
         }
     }
@@ -1861,8 +1862,48 @@ bool BufferCache<P>::TryUnifiedDownloadMemory([[maybe_unused]] Buffer& buffer,
             const std::span<const BufferCopy> group_span(groups[i].data(), groups[i].size());
             runtime.CopyToUnifiedMemory(window_ids[i], buffer, group_span);
         }
+        runtime.FlushUnifiedMemoryCopies();
         runtime.UnifiedMemoryHostBarrier();
         runtime.Finish();
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <class P>
+bool BufferCache<P>::TryUnifiedUploadMemory([[maybe_unused]] Buffer& buffer,
+                                            [[maybe_unused]] std::span<const BufferCopy> copies) {
+    if constexpr (USE_UNIFIED_MEMORY) {
+        boost::container::small_vector<u64, 4> window_ids;
+        UnifiedWindowGroups groups;
+        for (const BufferCopy& copy : copies) {
+            if (!ResolveUnifiedWindows(buffer.CpuAddr() + copy.dst_offset, copy.dst_offset,
+                                       copy.size, window_ids, groups)) {
+                return false;
+            }
+        }
+        for (const BufferCopy& copy : copies) {
+            buffer.MarkUsage(copy.dst_offset, copy.size);
+        }
+        runtime.PreCopyBarrier();
+        boost::container::small_vector<BufferCopy, 16> window_source_copies;
+        for (size_t i = 0; i < window_ids.size(); ++i) {
+            window_source_copies.clear();
+            window_source_copies.reserve(groups[i].size());
+            for (const BufferCopy& copy : groups[i]) {
+                window_source_copies.push_back(BufferCopy{
+                    .src_offset = copy.dst_offset,
+                    .dst_offset = copy.src_offset,
+                    .size = copy.size,
+                });
+            }
+            const std::span<const BufferCopy> group_span(window_source_copies.data(),
+                                                         window_source_copies.size());
+            runtime.CopyFromUnifiedMemory(window_ids[i], buffer, group_span);
+        }
+        runtime.FlushUnifiedMemoryCopies();
+        runtime.PostCopyBarrier();
         return true;
     } else {
         return false;
@@ -1874,6 +1915,13 @@ void BufferCache<P>::MappedUploadMemory([[maybe_unused]] Buffer& buffer,
                                         [[maybe_unused]] u64 total_size_bytes,
                                         [[maybe_unused]] std::span<BufferCopy> copies) {
     if constexpr (USE_MEMORY_MAPS) {
+        if constexpr (USE_UNIFIED_MEMORY) {
+            if (runtime.HasUnifiedMemory() &&
+                !Settings::values.enable_gpu_buffer_readback.GetValue() &&
+                TryUnifiedUploadMemory(buffer, copies)) {
+                return;
+            }
+        }
         auto upload_staging = runtime.UploadStagingBuffer(total_size_bytes);
         const std::span<u8> staging_pointer = upload_staging.mapped_span;
         for (BufferCopy& copy : copies) {
