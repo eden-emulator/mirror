@@ -49,7 +49,6 @@ constexpr powah::GPR RHALTREASON = powah::R5;
 constexpr powah::GPR RTOCPTR = powah::R6;
 // temporals
 constexpr powah::GPR RNZCV = powah::R7;
-constexpr powah::GPR RCHECKBIT = powah::R8;
 
 constexpr powah::GPR ABI_PARAM1 = powah::R3;
 constexpr powah::GPR ABI_PARAM2 = powah::R4;

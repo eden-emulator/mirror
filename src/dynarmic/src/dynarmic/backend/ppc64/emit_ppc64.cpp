@@ -146,22 +146,24 @@ void EmitIR<IR::Opcode::NZCVFromPackedFlags>(powah::Context&, EmitContext&, IR::
 namespace {
 
 void EmitLeafTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LeafTerminal const& terminal, IR::LocationDescriptor initial_location, bool is_single_step);
-void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal const terminal, IR::LocationDescriptor initial_location, bool is_single_step);
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal const& terminal, IR::LocationDescriptor initial_location, bool is_single_step);
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::ReturnToDispatch, IR::LocationDescriptor, bool) {
     ASSERT(false && "unimp");
 }
 
+// r3 -> process
+// r4 -> thread_ctx
+// r5 -> halt_reason
+// r6 -> test_thunk
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock terminal, IR::LocationDescriptor initial_location, bool) {
     if (ctx.emit_conf.a64_variant) {
         auto const tmp = ctx.reg_alloc.ScratchGpr();
         code.LI(tmp, terminal.next.Value());
         code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
-        code.LD(tmp, PPC64::RTOCPTR, 0);
-        code.MTCTR(tmp);
-        code.LD(powah::R2, PPC64::RTOCPTR, 8);
-        code.LD(powah::R11, PPC64::RTOCPTR, 16);
-        code.BCTR();
+//        code.MTCTR(powah::R6);
+//        code.BCTR();
+        code.B(ctx.l_return);
     } else {
         auto const tmp = ctx.reg_alloc.ScratchGpr();
         code.LI(tmp, terminal.next.Value());
@@ -170,22 +172,8 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock te
     }
 }
 
-void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location, bool) {
-    if (ctx.emit_conf.a64_variant) {
-        auto const tmp = ctx.reg_alloc.ScratchGpr();
-        code.LI(tmp, terminal.next.Value());
-        code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
-        code.LD(tmp, PPC64::RTOCPTR, 0);
-        code.MTCTR(tmp);
-        code.LD(powah::R2, PPC64::RTOCPTR, 8);
-        code.LD(powah::R11, PPC64::RTOCPTR, 16);
-        code.BCTR();
-    } else {
-        auto const tmp = ctx.reg_alloc.ScratchGpr();
-        code.LI(tmp, terminal.next.Value());
-        code.STW(tmp, PPC64::RJIT, offsetof(A32JitState, regs) + sizeof(u32) * 15);
-        ASSERT(false && "unimp");
-    }
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
+    EmitTerminal(code, ctx, terminal, IR::Term::LinkBlock{terminal.next}, is_single_step);
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::PopRSBHint, IR::LocationDescriptor, bool) {
@@ -204,7 +192,7 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckBit ter
     powah::Label const l_else = code.DefineLabel();
     powah::Label const l_end = code.DefineLabel();
     auto const tmp = ctx.reg_alloc.ScratchGpr();
-    code.MR(tmp, PPC64::RCHECKBIT);
+    code.LWZ(tmp, PPC64::RJIT, offsetof(A64JitState, check_bit));
     code.CMPLDI(tmp, 0);
     code.BEQ(powah::CR0, l_else);
     // CheckBit == 1
@@ -220,7 +208,7 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckHalt te
     ASSERT(false && "unimp");
 }
 
-void EmitLeafTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LeafTerminal const terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
+void EmitLeafTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LeafTerminal const& terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
     if (auto const x = std::get_if<IR::Term::ReturnToDispatch>(&terminal))
         return EmitTerminal(code, ctx, *x, initial_location, is_single_step);
     if (auto const x = std::get_if<IR::Term::LinkBlock>(&terminal))
@@ -234,7 +222,7 @@ void EmitLeafTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LeafTerm
     UNREACHABLE();
 }
 
-void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal const terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal const& terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
     if (auto const x = std::get_if<IR::Term::LeafTerminal>(&terminal))
         return EmitLeafTerminal(code, ctx, *x, initial_location, is_single_step);
     if (auto const x = std::get_if<IR::Term::If>(&terminal))
@@ -290,15 +278,17 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
         }
 
         // auto const cycles_to_add = block.CycleCount();
+        EmitTerminal(code, ctx, ctx.block.GetTerminal(), ctx.block.Location(), false);
+        code.LABEL(ctx.l_return);
         code.ADDI(powah::R1, powah::R1, stack_size);
         for (size_t i = 0; i < gp_regs.size(); ++i)
             code.LD(gp_regs[i], powah::R1, -int32_t(gp_regs.size() - i) * 8);
         code.LD(powah::R0, powah::R1, 16);
         code.MTLR(powah::R0);
-        EmitTerminal(code, ctx, ctx.block.GetTerminal(), ctx.block.Location(), false);
     } else {
         EmitTerminal(code, ctx, ctx.block.GetTerminal(), ctx.block.Location(), false);
     }
+    code.BLR();
     code.ApplyRelocs();
 
     /*
