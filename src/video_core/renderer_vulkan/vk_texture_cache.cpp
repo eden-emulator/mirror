@@ -55,7 +55,7 @@ namespace {
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
 
-[[nodiscard]] constexpr bool RequiresBorderColorFormat(VkFormat format) {
+[[nodiscard]] constexpr bool NeedsExplicitBorderColorFormat(VkFormat format) {
     switch (format) {
     case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
     case VK_FORMAT_B5G6R5_UNORM_PACK16:
@@ -2404,7 +2404,7 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
             (device->GetPhysical().GetFormatProperties(format_info.format).optimalTilingFeatures &
              VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT) != 0;
     }
-    requires_border_color_format = RequiresBorderColorFormat(format_info.format);
+    requires_border_color_format = NeedsExplicitBorderColorFormat(format_info.format);
     const VkImageUsageFlags requested_view_usage = ImageUsageFlags(format_info, format);
     const VkImageUsageFlags image_usage = image.UsageFlags();
     const VkImageUsageFlags clamped_view_usage = requested_view_usage & image_usage;
