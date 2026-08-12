@@ -90,15 +90,26 @@ using VideoCore::Surface::SurfaceType;
             constexpr VkResolveModeFlagBits mode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
 
             const ResolveAspects aspects = GetResolveAspects(format);
+            const bool depth_mode_supported = (device.GetDepthResolveModes() & mode) != 0;
+            const bool stencil_mode_supported = (device.GetStencilResolveModes() & mode) != 0;
+
             ResolveModes modes{
                 .depth = VK_RESOLVE_MODE_NONE,
                 .stencil = VK_RESOLVE_MODE_NONE,
             };
-            if (aspects.depth && (device.GetDepthResolveModes() & mode) != 0) {
+            if (aspects.depth && depth_mode_supported) {
                 modes.depth = mode;
             }
-            if (aspects.stencil && (device.GetStencilResolveModes() & mode) != 0) {
+            if (aspects.stencil && stencil_mode_supported) {
                 modes.stencil = mode;
+            }
+            if (modes.depth == modes.stencil || device.SupportsIndependentResolveNone()) {
+                return modes;
+            }
+            if (modes.depth != VK_RESOLVE_MODE_NONE && stencil_mode_supported) {
+                modes.stencil = mode;
+            } else if (modes.stencil != VK_RESOLVE_MODE_NONE && depth_mode_supported) {
+                modes.depth = mode;
             }
             return modes;
         }

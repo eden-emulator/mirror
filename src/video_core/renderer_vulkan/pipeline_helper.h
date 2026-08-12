@@ -383,6 +383,12 @@ inline void PushImageDescriptors(TextureCache& texture_cache,
                 !image_view.SupportsDepthComparison()) {
                 vk_sampler = sampler.HandleWithoutDepthComparison();
             }
+            if (sampler.HasMinmaxReduction() && !image_view.SupportsMinmaxFilter()) {
+                vk_sampler = sampler.HandleWithDefaultReduction();
+            }
+            if (sampler.HasCustomBorderColor() && image_view.RequiresBorderColorFormat()) {
+                vk_sampler = sampler.HandleWithDefaultBorderColor();
+            }
             guest_descriptor_queue.AddSampledImage(vk_image_view, vk_sampler);
             const bool element_rescaled{texture_cache.IsRescaling(image_view)};
             is_rescaled |= element_rescaled;

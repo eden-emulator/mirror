@@ -414,6 +414,14 @@ public:
         return supports_depth_comparison;
     }
 
+    [[nodiscard]] bool RequiresBorderColorFormat() const noexcept {
+        return requires_border_color_format;
+    }
+
+    [[nodiscard]] bool SupportsMinmaxFilter() const noexcept {
+        return supports_minmax_filter;
+    }
+
     [[nodiscard]] GPUVAddr GpuAddr() const noexcept {
         return gpu_addr;
     }
@@ -447,6 +455,8 @@ private:
     u32 buffer_size = 0;
 
     bool supports_depth_comparison = false;
+    bool requires_border_color_format = false;
+    bool supports_minmax_filter = false;
 };
 
 class ImageAlloc : public VideoCommon::ImageAllocBase {};
@@ -483,11 +493,29 @@ public:
         return static_cast<bool>(sampler_noncompare);
     }
 
+    [[nodiscard]] VkSampler HandleWithDefaultBorderColor() const noexcept {
+        return *sampler_default_border;
+    }
+
+    [[nodiscard]] bool HasCustomBorderColor() const noexcept {
+        return static_cast<bool>(sampler_default_border);
+    }
+
+    [[nodiscard]] VkSampler HandleWithDefaultReduction() const noexcept {
+        return *sampler_default_reduction;
+    }
+
+    [[nodiscard]] bool HasMinmaxReduction() const noexcept {
+        return static_cast<bool>(sampler_default_reduction);
+    }
+
 private:
     vk::Sampler sampler;
     vk::Sampler sampler_default_anisotropy;
     vk::Sampler sampler_nearest;
     vk::Sampler sampler_noncompare;
+    vk::Sampler sampler_default_border;
+    vk::Sampler sampler_default_reduction;
 };
 
 struct TextureCacheParams {

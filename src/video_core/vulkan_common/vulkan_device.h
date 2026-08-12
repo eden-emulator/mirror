@@ -651,7 +651,6 @@ FN_MAX_LIMIT_LIST
     }
 
     /// Returns true if depth/stencil operations can be performed efficiently.
-    /// Either through shader export or hardware blits.
     bool CanPerformDepthStencilOperations() const {
         return extensions.shader_stencil_export || is_blit_depth24_stencil8_supported ||
                is_blit_depth32_stencil8_supported;
@@ -708,19 +707,12 @@ FN_MAX_LIMIT_LIST
         return features.transform_feedback.geometryStreams;
     }
 
-    /// Returns true if the device supports VK_EXT_custom_border_color.
-    bool IsExtCustomBorderColorSupported() const {
-        return extensions.custom_border_color;
-    }
-
-    /// Returns true if customBorderColors feature is available.
-    bool IsCustomBorderColorsSupported() const {
-        return features.custom_border_color.customBorderColors;
-    }
-
-    /// Returns true if customBorderColorWithoutFormat feature is available.
-    bool IsCustomBorderColorWithoutFormatSupported() const {
-        return features.custom_border_color.customBorderColorWithoutFormat;
+    /// Returns true if custom border colors stay defined under non-identity view swizzles.
+    bool IsCustomBorderColorUsable() const {
+        return extensions.custom_border_color &&
+               features.custom_border_color.customBorderColors &&
+               features.custom_border_color.customBorderColorWithoutFormat &&
+               extensions.border_color_swizzle;
     }
 
     /// Returns true if the device supports VK_EXT_color_write_enable.
