@@ -1080,7 +1080,6 @@
     <string name="theme_mode_light">Claro</string>
     <string name="theme_mode_dark">Oscuro</string>
 
-    <string name="multiplier_none">Nada</string>
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">Fondos oscuros</string>

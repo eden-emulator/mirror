@@ -513,9 +513,6 @@
         <item>@string/multiplier_x4</item>
         <item>@string/multiplier_x8</item>
         <item>@string/multiplier_x16</item>
-        <item>@string/multiplier_x32</item>
-        <item>@string/multiplier_x64</item>
-        <item>@string/multiplier_none</item>
     </string-array>
     <integer-array name="anisoValues">
         <item>0</item>
@@ -524,9 +521,6 @@
         <item>3</item>
         <item>4</item>
         <item>5</item>
-        <item>6</item>
-        <item>7</item>
-        <item>8</item>
     </integer-array>
 
     <string-array name="verticalAlignmentEntries">
