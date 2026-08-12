@@ -12,7 +12,8 @@
         "min_version": "1.57",
         "package": "Boost",
         "patches": [
-            "0001-clang-cl.patch"
+            "0001-clang-cl.patch",
+            "0004-openorbis.patch"
         ],
         "repo": "boostorg/boost",
         "version": "boost-1.90.0"
@@ -78,7 +79,10 @@
     "ffmpeg": {
         "hash": "ed177621176b3961bdcaa339187d3a7688c1c8b060b79c4bb0257cbc67ad7021ae5d5adca5303b45625abbbe3d9aafdd87ce777b8690ac295290d744c875489a",
         "repo": "FFmpeg/FFmpeg",
-        "version": "c7b5f1537d"
+        "version": "c7b5f1537d",
+        "patches": [
+            "0001-sysctl-openorbis.patch"
+        ]
     },
     "ffmpeg-ci": {
         "ci": true,
@@ -193,7 +197,8 @@
         "min_version": "3.0.0",
         "package": "OpenSSL",
         "patches": [
-            "0001-add-bundled-cert.patch"
+            "0001-add-bundled-cert.patch",
+            "0002-fix-gnu-openorbis.patch"
         ],
         "repo": "openssl/openssl",
         "version": "openssl-3.6.2"
@@ -216,7 +221,9 @@
             "0001-cpmutil-compat.patch",
             "0002-use-ccache.patch",
             "0003-use-cmake-compiler-flags.patch",
-            "0004-use-shell-wrapper.patch"
+            "0004-use-shell-wrapper.patch",
+            "0005-wasm-support.patch",
+            "0006-openorbis-prefix.patch"
         ],
         "repo": "jimmy-park/openssl-cmake",
         "version": "3.6.2"
