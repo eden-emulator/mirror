@@ -2,7 +2,7 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 index b0eeca8..076cbe4 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -3655,15 +3655,21 @@ if (PLATFORM_PS4)
+@@ -3655,15 +3655,21 @@ if (OPENORBIS)
      "${SDL3_SOURCE_DIR}/src/thread/pthread/SDL_sysrwlock.c"   # Can be faked, if necessary
      "${SDL3_SOURCE_DIR}/src/thread/pthread/SDL_systls.c"
      "${SDL3_SOURCE_DIR}/src/thread/generic/SDL_syssem.c"

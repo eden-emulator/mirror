@@ -15,7 +15,7 @@ index 8872895..b0eeca8 100644
  endif()
  
 +# Always on?
-+if (PLATFORM_PS4)
++if (OPENORBIS)
 +  sdl_sources(
 +    "${SDL3_SOURCE_DIR}/src/thread/pthread/SDL_systhread.c"
 +    "${SDL3_SOURCE_DIR}/src/thread/pthread/SDL_sysmutex.c"   # Can be faked, if necessary
@@ -38,7 +38,7 @@ index 8872895..b0eeca8 100644
  if(NOT HAVE_SDL_THREADS)
    # The Emscripten and N-Gage platform has been carefully vetted to work without threads
 -  if(EMSCRIPTEN OR NGAGE)
-+  if(EMSCRIPTEN OR NGAGE OR PLATFORM_PS4)
++  if(EMSCRIPTEN OR NGAGE OR OPENORBIS)
      set(SDL_THREADS_DISABLED 1)
      sdl_glob_sources(
        "${SDL3_SOURCE_DIR}/src/thread/generic/*.c"
