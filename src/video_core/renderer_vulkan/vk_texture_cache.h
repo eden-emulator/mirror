@@ -117,11 +117,13 @@ public:
         VkFormat format = VK_FORMAT_UNDEFINED;
         VkExtent2D extent{};
         u32 layers = 0;
+        VkImageAspectFlags aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT;
         bool up_to_date = false;
     };
 
     [[nodiscard]] VkImageView GetOrCreateResolveShadow(VkImage msaa_image, VkFormat format,
-                                                       VkExtent2D extent, u32 layers);
+                                                       VkExtent2D extent, u32 layers,
+                                                       VkImageAspectFlags aspect_mask);
 
     [[nodiscard]] const ResolveShadow* GetValidResolveShadow(VkImage msaa_image) const;
 
@@ -158,6 +160,7 @@ public:
     std::array<vk::Buffer, indexing_slots> buffers{};
     std::vector<std::pair<u64, vk::Image>> pending_msaa_images;
     ankerl::unordered_dense::map<VkImage, ResolveShadow> resolve_shadows;
+    std::vector<std::pair<u64, ResolveShadow>> pending_resolve_shadows;
 };
 
 class Framebuffer {

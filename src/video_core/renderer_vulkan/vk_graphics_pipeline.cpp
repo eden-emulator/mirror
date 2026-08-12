@@ -140,6 +140,8 @@ RenderPassKey MakeRenderPassKey(const FixedPipelineState& state, const Device& d
     });
     key.resolve_color =
         key.samples != VK_SAMPLE_COUNT_1_BIT && has_color && device.IsTiler();
+    key.resolve_depth_stencil = key.samples != VK_SAMPLE_COUNT_1_BIT && device.IsTiler() &&
+                                SupportsDepthStencilResolve(device, key.depth_format);
     return key;
 }
 

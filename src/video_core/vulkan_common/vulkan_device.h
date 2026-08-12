@@ -91,6 +91,8 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION(EXT, SHADER_VIEWPORT_INDEX_LAYER, shader_viewport_index_layer)                       \
     EXTENSION(EXT, TOOLING_INFO, tooling_info)                                                     \
     EXTENSION(EXT, VERTEX_ATTRIBUTE_DIVISOR, vertex_attribute_divisor)                             \
+    EXTENSION(KHR, CREATE_RENDERPASS_2, create_renderpass2)                                        \
+    EXTENSION(KHR, DEPTH_STENCIL_RESOLVE, depth_stencil_resolve)                                   \
     EXTENSION(KHR, DRAW_INDIRECT_COUNT, draw_indirect_count)                                       \
     EXTENSION(KHR, DRIVER_PROPERTIES, driver_properties)                                           \
     EXTENSION(KHR, PUSH_DESCRIPTOR, push_descriptor)                                               \
@@ -615,6 +617,37 @@ FN_MAX_LIMIT_LIST
     /// Returns true if the device supports VK_EXT_shader_stencil_export.
     bool IsExtShaderStencilExportSupported() const {
         return extensions.shader_stencil_export;
+    }
+
+    /// Returns true if the device supports VK_KHR_create_renderpass2.
+    bool IsKhrCreateRenderPass2Supported() const {
+        return extensions.create_renderpass2 || instance_version >= VK_API_VERSION_1_2;
+    }
+
+    /// Returns true if the device supports VK_KHR_depth_stencil_resolve.
+    bool IsKhrDepthStencilResolveSupported() const {
+        return (extensions.depth_stencil_resolve || instance_version >= VK_API_VERSION_1_2) &&
+               IsKhrCreateRenderPass2Supported();
+    }
+
+    /// Returns the supported resolve modes for the depth aspect.
+    VkResolveModeFlags GetDepthResolveModes() const {
+        return properties.depth_stencil_resolve.supportedDepthResolveModes;
+    }
+
+    /// Returns the supported resolve modes for the stencil aspect.
+    VkResolveModeFlags GetStencilResolveModes() const {
+        return properties.depth_stencil_resolve.supportedStencilResolveModes;
+    }
+
+    /// Returns true if the depth and stencil aspects may resolve with different modes.
+    bool SupportsIndependentResolve() const {
+        return properties.depth_stencil_resolve.independentResolve == VK_TRUE;
+    }
+
+    /// Returns true if only one of the depth and stencil aspects may be resolved.
+    bool SupportsIndependentResolveNone() const {
+        return properties.depth_stencil_resolve.independentResolveNone == VK_TRUE;
     }
 
     /// Returns true if depth/stencil operations can be performed efficiently.
@@ -1172,6 +1205,7 @@ private:
         VkPhysicalDeviceSubgroupSizeControlProperties subgroup_size_control{};
         VkPhysicalDeviceTransformFeedbackPropertiesEXT transform_feedback{};
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};
+        VkPhysicalDeviceDepthStencilResolveProperties depth_stencil_resolve{};
 
         VkPhysicalDeviceProperties properties{};
     };

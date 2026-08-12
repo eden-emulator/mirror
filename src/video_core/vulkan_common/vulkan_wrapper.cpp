@@ -184,6 +184,7 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCreatePipelineLayout);
     X(vkCreateQueryPool);
     X(vkCreateRenderPass);
+    X(vkCreateRenderPass2);
     X(vkCreateSampler);
     X(vkCreateSemaphore);
     X(vkCreateShaderModule);
@@ -269,6 +270,11 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     }
     if (!dld.vkQueueSubmit2) {
         Proc(dld.vkQueueSubmit2, dld, "vkQueueSubmit2KHR", device);
+    }
+
+    // Render pass creation v2 is core in Vulkan 1.2, otherwise requires VK_KHR_create_renderpass2
+    if (!dld.vkCreateRenderPass2) {
+        Proc(dld.vkCreateRenderPass2, dld, "vkCreateRenderPass2KHR", device);
     }
 #undef X
 }
@@ -722,6 +728,12 @@ DescriptorPool Device::CreateDescriptorPool(const VkDescriptorPoolCreateInfo& ci
 RenderPass Device::CreateRenderPass(const VkRenderPassCreateInfo& ci) const {
     VkRenderPass object;
     Check(dld->vkCreateRenderPass(handle, &ci, nullptr, &object));
+    return RenderPass(object, handle, *dld);
+}
+
+RenderPass Device::CreateRenderPass2(const VkRenderPassCreateInfo2& ci) const {
+    VkRenderPass object;
+    Check(dld->vkCreateRenderPass2(handle, &ci, nullptr, &object));
     return RenderPass(object, handle, *dld);
 }
 
