@@ -3,7 +3,7 @@
 
 #include "dynarmic/interface/exclusive_monitor.h"
 #include <algorithm>
-#include "dynarmic/common/assert.h"
+#include "common/assert.h"
 
 namespace Dynarmic {
 

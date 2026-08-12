@@ -4,7 +4,7 @@
 #include <powah_emit.hpp>
 #include <fmt/ostream.h>
 
-#include "dynarmic/common/assert.h"
+#include "common/assert.h"
 #include "dynarmic/backend/ppc64/a32_core.h"
 #include "dynarmic/backend/ppc64/abi.h"
 #include "dynarmic/backend/ppc64/emit_context.h"

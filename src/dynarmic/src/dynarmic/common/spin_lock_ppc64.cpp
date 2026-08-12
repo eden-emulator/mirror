@@ -7,7 +7,7 @@
 #include "dynarmic/backend/ppc64/abi.h"
 #include "dynarmic/backend/ppc64/hostloc.h"
 #include "dynarmic/common/spin_lock.h"
-#include "dynarmic/common/assert.h"
+#include "common/assert.h"
 
 namespace Dynarmic {
 

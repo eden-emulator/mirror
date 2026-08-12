@@ -293,7 +293,7 @@ if ("riscv64" IN_LIST ARCHITECTURE)
     )
     message(WARNING "TODO: Incomplete frontend for this host architecture")
 endif()
-if ("ppc64" IN_LIST ARCHITECTURE)
+if ("powerpc64" IN_LIST ARCHITECTURE)
     target_link_libraries(dynarmic PRIVATE powah)
     target_sources(dynarmic PRIVATE
         backend/ppc64/abi.h

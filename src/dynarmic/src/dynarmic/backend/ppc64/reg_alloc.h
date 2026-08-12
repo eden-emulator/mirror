@@ -12,8 +12,8 @@
 #include <powah_emit.hpp>
 #include <ankerl/unordered_dense.h>
 
-#include "dynarmic/common/assert.h"
-#include "dynarmic/common/common_types.h"
+#include "common/assert.h"
+#include "common/common_types.h"
 #include "dynarmic/backend/ppc64/stack_layout.h"
 #include "dynarmic/backend/ppc64/hostloc.h"
 #include "dynarmic/ir/cond.h"

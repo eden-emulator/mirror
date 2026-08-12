@@ -8,8 +8,8 @@
 #include <new>
 #include <sys/mman.h>
 
-#include "dynarmic/common/common_types.h"
-#include "dynarmic/common/assert.h"
+#include "common/common_types.h"
+#include "common/assert.h"
 
 namespace Dynarmic::Backend::PPC64 {
 
