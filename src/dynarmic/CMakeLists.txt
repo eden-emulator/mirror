@@ -113,7 +113,8 @@ else()
         list(APPEND DYNARMIC_CXX_FLAGS -Wno-unused-command-line-argument)
     endif()
     # TODO: oaknut exceptions
-    if ("x86_64" IN_LIST ARCHITECTURE)
+    # TODO: fix chromeOS
+    if ("x86_64" IN_LIST ARCHITECTURE AND NOT ANDROID)
         list(APPEND DYNARMIC_CXX_FLAGS -fno-exceptions)
     endif()
 endif()
