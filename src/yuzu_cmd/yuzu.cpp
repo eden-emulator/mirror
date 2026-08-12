@@ -234,7 +234,12 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     std::optional<int> selected_user{};
     std::optional<u16> override_gdb_port{};
     bool use_multiplayer = false;
+    // Platforms that start with fullscreen
+#if defined(__OPENORBIS__) || defined(__ANDROID__)
+    bool fullscreen = true;
+#else
     bool fullscreen = false;
+#endif
     bool force_null_render = false;
     bool force_single_core = false;
     std::string nickname{};
@@ -243,13 +248,6 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     std::string input_profile{};
     std::optional<std::string> log_filter{};
     u16 port = Network::DefaultRoomPort;
-
-    // Platforms that start with fullscreen
-#if defined(__OPENORBIS__) || defined(__ANDROID__)
-    bool fullscreen = true;
-#else
-    bool fullscreen = false;
-#endif
 
     static struct option long_options[] = {
         // clang-format off
@@ -410,7 +408,7 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
     // Apply the command line arguments
     state->system.ApplySettings();
-    Settings::values.renderer_backend.SetValue(Settings::RendererBackend::Null);
+    Settings::values.renderer_backend.SetValue(Settings::RendererBackend::OpenGL_GLSL);
     Common::Log::SetGlobalFilter(Common::Log::Filter(Common::Log::Level::Info));
 
     switch (Settings::values.renderer_backend.GetValue()) {
