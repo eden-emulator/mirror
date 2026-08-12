@@ -329,7 +329,7 @@ void EmitIR<IR::Opcode::ArithmeticShiftRight64>(powah::Context& code, EmitContex
 
 // __builtin_rotateright32
 template<>
-void EmitIR<IR::Opcode::RotateRight32>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+void EmitIR<IR::Opcode::BitRotateRight32>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(0));
@@ -340,7 +340,7 @@ void EmitIR<IR::Opcode::RotateRight32>(powah::Context& code, EmitContext& ctx, I
 }
 
 template<>
-void EmitIR<IR::Opcode::RotateRight64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
+void EmitIR<IR::Opcode::BitRotateRight64>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const result = ctx.reg_alloc.ScratchGpr();
     auto const src_a = ctx.reg_alloc.UseGpr(inst->GetArg(0));
     auto const src_b = ctx.reg_alloc.UseGpr(inst->GetArg(0));

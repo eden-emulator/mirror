@@ -144,7 +144,9 @@ void EmitIR<IR::Opcode::NZCVFromPackedFlags>(powah::Context&, EmitContext&, IR::
 }
 
 namespace {
-void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal terminal, IR::LocationDescriptor initial_location, bool is_single_step);
+
+void EmitLeafTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LeafTerminal const& terminal, IR::LocationDescriptor initial_location, bool is_single_step);
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal const terminal, IR::LocationDescriptor initial_location, bool is_single_step);
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::ReturnToDispatch, IR::LocationDescriptor, bool) {
     ASSERT(false && "unimp");
@@ -206,11 +208,11 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckBit ter
     code.CMPLDI(tmp, 0);
     code.BEQ(powah::CR0, l_else);
     // CheckBit == 1
-    EmitTerminal(code, ctx, terminal.then_, initial_location, is_single_step);
+    EmitLeafTerminal(code, ctx, terminal.then_, initial_location, is_single_step);
     code.B(l_end);
     // CheckBit == 0
     code.LABEL(l_else);
-    EmitTerminal(code, ctx, terminal.else_, initial_location, is_single_step);
+    EmitLeafTerminal(code, ctx, terminal.else_, initial_location, is_single_step);
     code.LABEL(l_end);
 }
 
@@ -218,10 +220,30 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::CheckHalt te
     ASSERT(false && "unimp");
 }
 
-void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
-    boost::apply_visitor([&](const auto& t) {
-        EmitTerminal(code, ctx, t, initial_location, is_single_step);
-    }, terminal);
+void EmitLeafTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LeafTerminal const terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
+    if (auto const x = std::get_if<IR::Term::ReturnToDispatch>(&terminal))
+        return EmitTerminal(code, ctx, *x, initial_location, is_single_step);
+    if (auto const x = std::get_if<IR::Term::LinkBlock>(&terminal))
+        return EmitTerminal(code, ctx, *x, initial_location, is_single_step);
+    if (auto const x = std::get_if<IR::Term::LinkBlockFast>(&terminal))
+        return EmitTerminal(code, ctx, *x, initial_location, is_single_step);
+    if (auto const x = std::get_if<IR::Term::PopRSBHint>(&terminal))
+        return EmitTerminal(code, ctx, *x, initial_location, is_single_step);
+    if (auto const x = std::get_if<IR::Term::FastDispatchHint>(&terminal))
+        return EmitTerminal(code, ctx, *x, initial_location, is_single_step);
+    UNREACHABLE();
+}
+
+void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal const terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
+    if (auto const x = std::get_if<IR::Term::LeafTerminal>(&terminal))
+        return EmitLeafTerminal(code, ctx, *x, initial_location, is_single_step);
+    if (auto const x = std::get_if<IR::Term::If>(&terminal))
+        return EmitTerminal(code, ctx, *x, initial_location, is_single_step);
+    if (auto const x = std::get_if<IR::Term::CheckBit>(&terminal))
+        return EmitTerminal(code, ctx, *x, initial_location, is_single_step);
+    if (auto const x = std::get_if<IR::Term::CheckHalt>(&terminal))
+        return EmitTerminal(code, ctx, *x, initial_location, is_single_step);
+    UNREACHABLE();
 }
 }
 
