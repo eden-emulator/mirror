@@ -248,6 +248,8 @@ public:
     }
 
 private:
+    static constexpr size_t NUM_MEMOIZED_RENDER_PASS_VARIANTS = 8;
+
     vk::Framebuffer framebuffer;
     VkRenderPass renderpass{};
     VkExtent2D render_area{};
@@ -265,6 +267,9 @@ private:
     RenderPassKey render_pass_key{};
     RenderPassCache* render_pass_cache{nullptr};
     bool discard_msaa_color{};
+    mutable std::array<u32, NUM_MEMOIZED_RENDER_PASS_VARIANTS> variant_keys{};
+    mutable std::array<VkRenderPass, NUM_MEMOIZED_RENDER_PASS_VARIANTS> variant_render_passes{};
+    mutable u32 num_memoized_variants{};
 };
 
 class Image : public VideoCommon::ImageBase {

@@ -2832,11 +2832,25 @@ VkRenderPass Framebuffer::RenderPassVariant(u32 color_clear_mask, bool depth_ste
     if (color_clear_mask == 0 && !depth_stencil_clear && color_discard_mask == 0) {
         return renderpass;
     }
+    static_assert(NUM_RT <= 8);
+    const u32 variant_key = color_clear_mask | (color_discard_mask << 8) |
+                            (static_cast<u32>(depth_stencil_clear) << 16);
+    for (u32 index = 0; index < num_memoized_variants; ++index) {
+        if (variant_keys[index] == variant_key) {
+            return variant_render_passes[index];
+        }
+    }
     RenderPassKey key = render_pass_key;
     key.color_clear_mask = color_clear_mask;
     key.depth_stencil_clear = depth_stencil_clear;
     key.color_discard_mask = color_discard_mask;
-    return render_pass_cache->Get(key);
+    const VkRenderPass variant = render_pass_cache->Get(key);
+    if (num_memoized_variants < variant_keys.size()) {
+        variant_keys[num_memoized_variants] = variant_key;
+        variant_render_passes[num_memoized_variants] = variant;
+        ++num_memoized_variants;
+    }
+    return variant;
 }
 
 void TextureCacheRuntime::AccelerateImageUpload(

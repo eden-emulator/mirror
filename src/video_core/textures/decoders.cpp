@@ -36,8 +36,7 @@ constexpr u32 SWIZZLE_RUN_SHIFT = 4;
 constexpr u32 SWIZZLE_RUN_MASK = SWIZZLE_RUN_BYTES - 1;
 constexpr u32 SWIZZLE_RUN_INDEX_MASK = GOB_SIZE_X / SWIZZLE_RUN_BYTES - 1;
 
-static_assert((SWIZZLE_X_BITS & SWIZZLE_RUN_MASK) == SWIZZLE_RUN_MASK,
-              "A swizzled run is only contiguous while the low bits of X map to themselves");
+static_assert((SWIZZLE_X_BITS & SWIZZLE_RUN_MASK) == SWIZZLE_RUN_MASK);
 
 constexpr std::array<u32, GOB_SIZE_X / SWIZZLE_RUN_BYTES> SWIZZLE_X_RUN_TABLE = [] {
     std::array<u32, GOB_SIZE_X / SWIZZLE_RUN_BYTES> table{};
