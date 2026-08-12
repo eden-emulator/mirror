@@ -75,18 +75,12 @@ struct A64AddressSpace final {
     ankerl::unordered_dense::map<u64, EmittedBlockInfo> block_infos;
 };
 
-__attribute__((noinline)) HaltReason test_thunk(A64AddressSpace* a, A64JitState* b, volatile u32* c, void* d) {
-    printf("%p,%p,%p,%p\n", a, b, c, d);
-    return HaltReason::UserDefined2;
-}
-
 struct A64Core final {
+    using CodeFn = HaltReason (*)(A64AddressSpace*, A64JitState*, volatile u32*, void *fn);
     static HaltReason Run(A64AddressSpace& process, A64JitState& thread_ctx, volatile u32* halt_reason) {
         const auto loc = thread_ctx.GetLocationDescriptor();
         const auto entry = process.GetOrEmit(loc);
-        using AbstractCodeFn = HaltReason (*)(A64AddressSpace*, A64JitState*, volatile u32*, void (*fn)());
-        using CodeFn = HaltReason (*)(A64AddressSpace*, A64JitState*, volatile u32*, AbstractCodeFn fn);
-        return (CodeFn(entry))(&process, &thread_ctx, halt_reason, AbstractCodeFn(test_thunk));
+        return (CodeFn(entry))(&process, &thread_ctx, halt_reason, (void*)&A64Core::Run);
     }
 };
 

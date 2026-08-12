@@ -19,7 +19,7 @@ namespace Dynarmic::Backend::PPC64 {
 template<>
 void EmitIR<IR::Opcode::A64SetCheckBit>(powah::Context& code, EmitContext& ctx, IR::Inst* inst) {
     auto const value = ctx.reg_alloc.UseGpr(inst->GetArg(0));
-    code.MR(PPC64::RCHECKBIT, value);
+    code.STW(value, PPC64::RJIT, offsetof(A64JitState, check_bit));
 }
 
 template<>
@@ -48,14 +48,8 @@ void EmitIR<IR::Opcode::A64GetW>(powah::Context& code, EmitContext& ctx, IR::Ins
     if (inst->GetArg(0).GetType() == IR::Type::A64Reg) {
         auto const result = ctx.reg_alloc.ScratchGpr();
         // Need to account for endianess here...
-#ifdef __ORDER_BIG_ENDIAN__
-        constexpr u32 pe_offset64 = 4;
-#else
-        constexpr u32 pe_offset64 = 0;
-#endif
         auto const offs = offsetof(A64JitState, regs)
-            + A64::RegNumber(inst->GetArg(0).GetA64RegRef()) * sizeof(u64)
-            + pe_offset64;
+            + A64::RegNumber(inst->GetArg(0).GetA64RegRef()) * sizeof(u64);
         code.LWZ(result, PPC64::RJIT, offs);
         ctx.reg_alloc.DefineValue(inst, result);
     } else {

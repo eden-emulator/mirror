@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <powah_emit.hpp>
 #include "dynarmic/backend/ppc64/emit_ppc64.h"
 #include "dynarmic/backend/ppc64/reg_alloc.h"
 
@@ -19,6 +20,8 @@ struct EmitContext {
     RegAlloc& reg_alloc;
     const EmitConfig& emit_conf;
     EmittedBlockInfo& ebi;
+    // label used when returning :)
+    powah::Label l_return;
 };
 
 }  // namespace Dynarmic::Backend::RV64
