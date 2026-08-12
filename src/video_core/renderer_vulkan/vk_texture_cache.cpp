@@ -1838,11 +1838,21 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
         ScaleDown(true);
     }
 
+    const bool msaa_upload_is_depth = (aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
     const bool wants_msaa_upload = info.num_samples > 1
-        && (aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) != 0
+        && ((aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) != 0 || msaa_upload_is_depth)
         && !VideoCore::Surface::IsPixelFormatInteger(info.format);
 
     if (wants_msaa_upload) {
+        const bool msaa_upload_copies_stencil =
+            msaa_upload_is_depth && (aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0 &&
+            runtime->device.IsExtShaderStencilExportSupported();
+        const VkImageAspectFlags upload_aspect_mask =
+            msaa_upload_is_depth
+                ? (msaa_upload_copies_stencil
+                       ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT
+                       : VK_IMAGE_ASPECT_DEPTH_BIT)
+                : aspect_mask;
         ImageInfo temp_info = info;
         temp_info.num_samples = 1;
 
@@ -1854,10 +1864,10 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
         vk::Image temp_image = runtime->memory_allocator.CreateImage(image_ci);
 
         scheduler->RequestOutsideRenderPassOperationContext();
-        auto vk_copies = TransformBufferImageCopies(copies, offset, aspect_mask);
+        auto vk_copies = TransformBufferImageCopies(copies, offset, upload_aspect_mask);
         const VkBuffer src_buffer = buffer;
         const VkImage temp_vk_image = *temp_image;
-        const VkImageAspectFlags vk_aspect_mask = aspect_mask;
+        const VkImageAspectFlags vk_aspect_mask = upload_aspect_mask;
 
         scheduler->Record([src_buffer, temp_vk_image, vk_aspect_mask,
                            vk_copies](vk::CommandBuffer cmdbuf) {
@@ -1879,9 +1889,16 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
             image_copies.push_back(image_copy);
         }
 
-        runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, Handle(), info.format,
-                                            temp_vk_image, info.format, info.num_samples,
-                                            image_copies, false);
+        if (msaa_upload_is_depth) {
+            runtime->blit_image_helper.CopyMSAADepth(runtime->render_pass_cache, Handle(),
+                                                     info.format, temp_vk_image, info.format,
+                                                     info.num_samples, image_copies,
+                                                     msaa_upload_copies_stencil);
+        } else {
+            runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, Handle(), info.format,
+                                                temp_vk_image, info.format, info.num_samples,
+                                                image_copies, false);
+        }
         initialized = true;
         runtime->pending_msaa_images.emplace_back(scheduler->CurrentTick(), std::move(temp_image));
 

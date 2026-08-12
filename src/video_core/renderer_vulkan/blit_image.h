@@ -116,6 +116,11 @@ public:
                   VideoCore::Surface::PixelFormat src_format, u32 num_samples,
                   std::span<const VideoCommon::ImageCopy> copies, bool msaa_to_non_msaa);
 
+    void CopyMSAADepth(RenderPassCache& render_pass_cache, VkImage dst_image,
+                       VideoCore::Surface::PixelFormat dst_format, VkImage src_image,
+                       VideoCore::Surface::PixelFormat src_format, u32 num_samples,
+                       std::span<const VideoCommon::ImageCopy> copies, bool copy_stencil);
+
 private:
     void Convert(VkPipeline pipeline, const Framebuffer* dst_framebuffer,
                  const ImageView& src_image_view);
@@ -131,6 +136,9 @@ private:
     [[nodiscard]] VkPipeline FindOrEmplaceClearStencilPipeline(
         const BlitDepthStencilPipelineKey& key);
     [[nodiscard]] VkPipeline FindOrEmplaceMSAACopyPipeline(const MSAACopyPipelineKey& key);
+
+    [[nodiscard]] VkPipeline FindOrEmplaceMSAACopyDepthPipeline(const MSAACopyPipelineKey& key,
+                                                                bool copy_stencil);
     [[nodiscard]] VkPipeline FindOrEmplaceBlitColorMSAAPipeline(const BlitMSAAPipelineKey& key);
     [[nodiscard]] VkPipeline FindOrEmplaceResolveDepthStencilPipeline(VkRenderPass renderpass,
                                                                       bool resolve_stencil);
@@ -162,6 +170,7 @@ private:
     vk::PipelineLayout two_textures_pipeline_layout;
     vk::PipelineLayout clear_color_pipeline_layout;
     vk::PipelineLayout msaa_copy_pipeline_layout;
+    vk::PipelineLayout msaa_copy_depth_stencil_pipeline_layout;
     vk::ShaderModule full_screen_vert;
     vk::ShaderModule blit_color_to_color_frag;
     vk::ShaderModule blit_color_msaa_frag;
@@ -180,6 +189,8 @@ private:
     vk::ShaderModule convert_s8d24_to_abgr8_frag;
     vk::ShaderModule convert_msaa_to_non_msaa_frag;
     vk::ShaderModule convert_non_msaa_to_msaa_frag;
+    vk::ShaderModule convert_non_msaa_to_msaa_depth_frag;
+    vk::ShaderModule convert_non_msaa_to_msaa_depth_stencil_frag;
     vk::Sampler linear_sampler;
     vk::Sampler nearest_sampler;
 
@@ -193,6 +204,10 @@ private:
     std::vector<vk::Pipeline> clear_stencil_pipelines;
     std::vector<MSAACopyPipelineKey> msaa_copy_keys;
     std::vector<vk::Pipeline> msaa_copy_pipelines;
+    std::vector<MSAACopyPipelineKey> msaa_copy_depth_keys;
+    std::vector<vk::Pipeline> msaa_copy_depth_pipelines;
+    std::vector<MSAACopyPipelineKey> msaa_copy_depth_stencil_keys;
+    std::vector<vk::Pipeline> msaa_copy_depth_stencil_pipelines;
     std::vector<BlitMSAAPipelineKey> blit_msaa_color_keys;
     std::vector<vk::Pipeline> blit_msaa_color_pipelines;
     std::vector<VkRenderPass> resolve_depth_keys;
