@@ -50,12 +50,6 @@ constexpr std::array RGBA_LUT{
     R | G | B | A, //
 };
 
-void CheckAlignment(IR::Reg reg, size_t alignment) {
-    if (!IR::IsAligned(reg, alignment)) {
-        throw NotImplementedException("Unaligned source register {}", reg);
-    }
-}
-
 template <typename... Args>
 IR::Value Composite(TranslatorVisitor& v, Args... regs) {
     return v.ir.CompositeConstruct(v.F(regs)...);
@@ -86,67 +80,53 @@ IR::Value Sample(TranslatorVisitor& v, u64 insn) {
         info.type.Assign(TextureType::Color2D);
         return v.ir.ImageSampleExplicitLod(handle, Composite(v, reg_a, reg_b), zero, {}, info);
     case 3: // 2D.LL
-        CheckAlignment(reg_a, 2);
         info.type.Assign(TextureType::Color2D);
         return v.ir.ImageSampleExplicitLod(handle, Composite(v, reg_a, reg_a + 1), v.F(reg_b), {},
                                            info);
     case 4: // 2D.DC
-        CheckAlignment(reg_a, 2);
         info.type.Assign(TextureType::Color2D);
         info.is_depth.Assign(1);
         return v.ir.ImageSampleDrefImplicitLod(handle, Composite(v, reg_a, reg_a + 1), v.F(reg_b),
                                                {}, {}, {}, info);
     case 5: // 2D.LL.DC
-        CheckAlignment(reg_a, 2);
-        CheckAlignment(reg_b, 2);
         info.type.Assign(TextureType::Color2D);
         info.is_depth.Assign(1);
         return v.ir.ImageSampleDrefExplicitLod(handle, Composite(v, reg_a, reg_a + 1),
                                                v.F(reg_b + 1), v.F(reg_b), {}, info);
     case 6: // 2D.LZ.DC
-        CheckAlignment(reg_a, 2);
         info.type.Assign(TextureType::Color2D);
         info.is_depth.Assign(1);
         return v.ir.ImageSampleDrefExplicitLod(handle, Composite(v, reg_a, reg_a + 1), v.F(reg_b),
                                                zero, {}, info);
     case 7: // ARRAY_2D
-        CheckAlignment(reg_a, 2);
         info.type.Assign(TextureType::ColorArray2D);
         return v.ir.ImageSampleImplicitLod(
             handle, v.ir.CompositeConstruct(v.F(reg_a + 1), v.F(reg_b), ReadArray(v, v.X(reg_a))),
             {}, {}, {}, info);
     case 8: // ARRAY_2D.LZ
-        CheckAlignment(reg_a, 2);
         info.type.Assign(TextureType::ColorArray2D);
         return v.ir.ImageSampleExplicitLod(
             handle, v.ir.CompositeConstruct(v.F(reg_a + 1), v.F(reg_b), ReadArray(v, v.X(reg_a))),
             zero, {}, info);
     case 9: // ARRAY_2D.LZ.DC
-        CheckAlignment(reg_a, 2);
-        CheckAlignment(reg_b, 2);
         info.type.Assign(TextureType::ColorArray2D);
         info.is_depth.Assign(1);
         return v.ir.ImageSampleDrefExplicitLod(
             handle, v.ir.CompositeConstruct(v.F(reg_a + 1), v.F(reg_b), ReadArray(v, v.X(reg_a))),
             v.F(reg_b + 1), zero, {}, info);
     case 10: // 3D
-        CheckAlignment(reg_a, 2);
         info.type.Assign(TextureType::Color3D);
         return v.ir.ImageSampleImplicitLod(handle, Composite(v, reg_a, reg_a + 1, reg_b), {}, {},
                                            {}, info);
     case 11: // 3D.LZ
-        CheckAlignment(reg_a, 2);
         info.type.Assign(TextureType::Color3D);
         return v.ir.ImageSampleExplicitLod(handle, Composite(v, reg_a, reg_a + 1, reg_b), zero, {},
                                            info);
     case 12: // CUBE
-        CheckAlignment(reg_a, 2);
         info.type.Assign(TextureType::ColorCube);
         return v.ir.ImageSampleImplicitLod(handle, Composite(v, reg_a, reg_a + 1, reg_b), {}, {},
                                            {}, info);
     case 13: // CUBE.LL
-        CheckAlignment(reg_a, 2);
-        CheckAlignment(reg_b, 2);
         info.type.Assign(TextureType::ColorCube);
         return v.ir.ImageSampleExplicitLod(handle, Composite(v, reg_a, reg_a + 1, reg_b),
                                            v.F(reg_b + 1), {}, info);
@@ -187,12 +167,10 @@ IR::Reg RegStoreComponent32(u64 insn, unsigned index) {
     case 0:
         return texs.dest_reg_a;
     case 1:
-        CheckAlignment(texs.dest_reg_a, 2);
         return texs.dest_reg_a + 1;
     case 2:
         return texs.dest_reg_b;
     case 3:
-        CheckAlignment(texs.dest_reg_b, 2);
         return texs.dest_reg_b + 1;
     }
     throw LogicError("Invalid store index {}", index);
