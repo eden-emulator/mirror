@@ -18,7 +18,8 @@ namespace Shader::Maxwell {
 
 [[nodiscard]] IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool,
                                            ObjectPool<IR::Block>& block_pool, Environment& env,
-                                           Flow::CFG& cfg, const HostTranslateInfo& host_info);
+                                           Flow::CFG& cfg, const HostTranslateInfo& host_info,
+                                           InputTopology input_topology);
 
 [[nodiscard]] IR::Program MergeDualVertexPrograms(IR::Program& vertex_a, IR::Program& vertex_b,
                                                   Environment& env_vertex_b);
@@ -32,6 +33,7 @@ void ConvertLegacyToGeneric(IR::Program& program, const RuntimeInfo& runtime_inf
                                                       ObjectPool<IR::Block>& block_pool,
                                                       const HostTranslateInfo& host_info,
                                                       IR::Program& source_program,
-                                                      Shader::OutputTopology output_topology);
+                                                      Shader::OutputTopology output_topology,
+                                                      InputTopology input_topology);
 
 } // namespace Shader::Maxwell
