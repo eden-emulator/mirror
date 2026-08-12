@@ -254,7 +254,7 @@ else()
     target_compile_definitions(audio_core PRIVATE HAVE_SDL3)
 endif()
 
-if(PLATFORM_PS4)
+if(OPENORBIS)
     target_sources(audio_core PRIVATE
         sink/ps4_sink.cpp
         sink/ps4_sink.h)

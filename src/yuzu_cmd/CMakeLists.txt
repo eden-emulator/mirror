@@ -76,8 +76,10 @@ if (NOT MSVC)
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>)
 endif()
 
-if (PLATFORM_PS4)
-    target_link_libraries(yuzu-cmd PRIVATE SceVideoOut SceAudioOut ScePad SceSystemService)
-    target_link_libraries(yuzu-cmd PRIVATE ps4sup)
+if (OPENORBIS)
+    target_link_libraries(yuzu-cmd
+        PRIVATE OSMesa
+        PRIVATE SceVideoOut SceAudioOut ScePad SceSystemService
+        PRIVATE ps4sup)
     create_ps4_eboot(yuzu-cmd eden-cli IV0000-BREW00090_00-EDENEMULAT000000)
 endif()
