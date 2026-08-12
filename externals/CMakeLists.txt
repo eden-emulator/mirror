@@ -260,7 +260,7 @@ target_include_directories(tz PUBLIC ./tz)
 add_library(bc_decoder bc_decoder/bc_decoder.cpp)
 target_include_directories(bc_decoder PUBLIC ./bc_decoder)
 
-if (PLATFORM_PS4)
+if (OPENORBIS)
     add_library(ps4sup ps4sup/emutls.c ps4sup/stub.cpp)
     target_include_directories(ps4sup PUBLIC ./ps4sup)
 endif()
