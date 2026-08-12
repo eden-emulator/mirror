@@ -1286,33 +1286,42 @@ void RasterizerVulkan::UpdateDepthBias(Tegra::Engines::Maxwell3D::Regs& regs) {
                         regs.zeta.format == Tegra::DepthFormat::X8Z24_UNORM ||
                         regs.zeta.format == Tegra::DepthFormat::S8Z24_UNORM ||
                         regs.zeta.format == Tegra::DepthFormat::V8Z24_UNORM;
+    const bool forces_unorm_representation = device.IsExtDepthBiasControlSupported();
 
     if (is_d24 && !device.SupportsD24DepthBuffer()) {
-        static constexpr const size_t length = sizeof(NEEDS_D24) / sizeof(NEEDS_D24[0]);
+        static constexpr double GUEST_TO_HOST_UNORM_BITS =
+            static_cast<double>(1ULL << (32 - 24));
 
-        static constexpr const u64* start = NEEDS_D24;
-        static constexpr const u64* end = NEEDS_D24 + length;
+        if (forces_unorm_representation) {
+            units = static_cast<float>(static_cast<double>(units) * GUEST_TO_HOST_UNORM_BITS);
+        } else {
+            static constexpr const size_t length = sizeof(NEEDS_D24) / sizeof(NEEDS_D24[0]);
 
-        const u64* it = std::find(start, end, program_id);
+            static constexpr const u64* start = NEEDS_D24;
+            static constexpr const u64* end = NEEDS_D24 + length;
 
-        if (it != end) {
-            // the base formulas can be obtained from here:
-            //   https://docs.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-output-merger-stage-depth-bias
-            const double rescale_factor =
-                static_cast<double>(1ULL << (32 - 24)) / (static_cast<double>(0x1.ep+127));
-            units = static_cast<float>(static_cast<double>(units) * rescale_factor);
+            const u64* it = std::find(start, end, program_id);
+
+            if (it != end) {
+                // the base formulas can be obtained from here:
+                //   https://docs.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-output-merger-stage-depth-bias
+                const double rescale_factor =
+                    GUEST_TO_HOST_UNORM_BITS / (static_cast<double>(0x1.ep+127));
+                units = static_cast<float>(static_cast<double>(units) * rescale_factor);
+            }
         }
     }
 
     scheduler.Record([constant = units, clamp = regs.depth_bias_clamp,
-                      factor = regs.slope_scale_depth_bias, this](vk::CommandBuffer cmdbuf) {
-        if (device.IsExtDepthBiasControlSupported()) {
-            static VkDepthBiasRepresentationInfoEXT bias_info{
+                      factor = regs.slope_scale_depth_bias,
+                      forces_unorm_representation, this](vk::CommandBuffer cmdbuf) {
+        if (forces_unorm_representation) {
+            const VkDepthBiasRepresentationInfoEXT bias_info{
                 .sType = VK_STRUCTURE_TYPE_DEPTH_BIAS_REPRESENTATION_INFO_EXT,
                 .pNext = nullptr,
                 .depthBiasRepresentation =
                     VK_DEPTH_BIAS_REPRESENTATION_LEAST_REPRESENTABLE_VALUE_FORCE_UNORM_EXT,
-                .depthBiasExact = VK_FALSE,
+                .depthBiasExact = static_cast<VkBool32>(device.HasExactDepthBiasControl()),
             };
 
             cmdbuf.SetDepthBias(constant, clamp, factor, &bias_info);
@@ -1336,8 +1345,14 @@ void RasterizerVulkan::UpdateDepthBounds(Tegra::Engines::Maxwell3D::Regs& regs) 
     if (!state_tracker.TouchDepthBounds()) {
         return;
     }
-    scheduler.Record([min = regs.depth_bounds[0], max = regs.depth_bounds[1]](
-                         vk::CommandBuffer cmdbuf) { cmdbuf.SetDepthBounds(min, max); });
+    float min = regs.depth_bounds[0];
+    float max = regs.depth_bounds[1];
+    if (!device.IsExtDepthRangeUnrestrictedSupported()) {
+        min = std::clamp(min, 0.0f, 1.0f);
+        max = std::clamp(max, 0.0f, 1.0f);
+    }
+    scheduler.Record(
+        [min, max](vk::CommandBuffer cmdbuf) { cmdbuf.SetDepthBounds(min, max); });
 }
 
 void RasterizerVulkan::UpdateStencilFaces(Tegra::Engines::Maxwell3D::Regs& regs) {

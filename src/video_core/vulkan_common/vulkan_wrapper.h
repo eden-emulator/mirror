@@ -1529,7 +1529,7 @@ public:
     }
 
     void SetDepthBias(float constant_factor, float clamp, float slope_factor,
-                      VkDepthBiasRepresentationInfoEXT* extra) const noexcept {
+                      const VkDepthBiasRepresentationInfoEXT* extra) const noexcept {
         VkDepthBiasInfoEXT info{
             .sType = VK_STRUCTURE_TYPE_DEPTH_BIAS_INFO_EXT,
             .pNext = extra,
