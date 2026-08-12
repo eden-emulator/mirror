@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <powah_emit.hpp>
-#include "dynarmic/common/common_types.h"
+#include "common/common_types.h"
 
 namespace biscuit {
 class Assembler;

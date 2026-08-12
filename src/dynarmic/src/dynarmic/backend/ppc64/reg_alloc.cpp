@@ -9,8 +9,8 @@
 
 #include "dynarmic/backend/ppc64/reg_alloc.h"
 #include "dynarmic/backend/ppc64/abi.h"
-#include "dynarmic/common/assert.h"
-#include "dynarmic/common/common_types.h"
+#include "common/assert.h"
+#include "common/common_types.h"
 #include "dynarmic/common/always_false.h"
 
 namespace Dynarmic::Backend::PPC64 {
