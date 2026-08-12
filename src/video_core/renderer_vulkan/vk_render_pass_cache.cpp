@@ -145,6 +145,16 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         .preserveAttachmentCount = 0,
         .pPreserveAttachments = nullptr,
     };
+    const VkSubpassDependency counter_resume_dependency{
+        .srcSubpass = 0,
+        .dstSubpass = 0,
+        .srcStageMask = VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
+        .dstStageMask = VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
+        .srcAccessMask = VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT,
+        .dstAccessMask = VK_ACCESS_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT,
+        .dependencyFlags = 0,
+    };
+    const bool can_resume_transform_feedback = device->IsExtTransformFeedbackSupported();
     pair->second = device->GetLogical().CreateRenderPass({
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .pNext = nullptr,
@@ -153,8 +163,8 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         .pAttachments = descriptions.empty() ? nullptr : descriptions.data(),
         .subpassCount = 1,
         .pSubpasses = &subpass,
-        .dependencyCount = 0,
-        .pDependencies = nullptr,
+        .dependencyCount = can_resume_transform_feedback ? 1u : 0u,
+        .pDependencies = can_resume_transform_feedback ? &counter_resume_dependency : nullptr,
     });
     return *pair->second;
 }

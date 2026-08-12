@@ -725,6 +725,9 @@ public:
         if (!device.IsExtTransformFeedbackSupported()) {
             return;
         }
+        if (!scheduler.IsRenderPassActive()) {
+            return;
+        }
         FlushBeginTFB();
         has_started = true;
     }
@@ -741,6 +744,9 @@ public:
         if (has_flushed_end_pending) {
             if (scheduler.IsRenderPassActive()) {
                 FlushEndTFB();
+            } else {
+                has_flushed_end_pending = false;
+                has_started = false;
             }
         }
         runtime.View3DRegs([this](Maxwell3D& maxwell3d) {
