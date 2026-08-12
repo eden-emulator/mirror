@@ -1004,7 +1004,6 @@
     <string name="theme_mode_light">Lumineux</string>
     <string name="theme_mode_dark">Sombre</string>
 
-    <string name="multiplier_none">Aucun</string>
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">Arrière-plan noir</string>
