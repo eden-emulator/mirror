@@ -88,25 +88,10 @@ Result IApplicationDisplayService::GetIndirectDisplayTransactionService(
 }
 
 Result IApplicationDisplayService::OpenDisplay(Out<u64> out_display_id, DisplayName display_name) {
-    LOG_DEBUG(Service_VI, "called with display_name={}", display_name.data());
-
     // Ensure the display name is null-terminated
     display_name[display_name.size() - 1] = '\0';
 
-    // According to switchbrew, only "Default", "External", "Edid", "Internal" and "Null" are valid
-    const std::array<std::string_view, 5> valid_names = {
-        "Default", "External", "Edid", "Internal", "Null"
-    };
-
-    bool valid_name = false;
-    for (const auto& name : valid_names) {
-        if (name == display_name.data()) {
-            valid_name = true;
-            break;
-        }
-    }
-
-    R_UNLESS(valid_name, ResultOperationFailed);
+    LOG_DEBUG(Service_VI, "called with display_name={}", display_name.data());
 
     R_RETURN(m_container->OpenDisplay(out_display_id, display_name));
 }
