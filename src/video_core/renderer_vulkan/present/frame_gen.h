@@ -21,7 +21,9 @@ public:
     explicit FrameGen(MemoryAllocator& memory_allocator, Scheduler& scheduler);
     ~FrameGen();
 
-    void Process(const Device& device, Frame* frame, VkFormat format);
+    void Process(const Device& device, Frame* frame, VkFormat format, bool generate);
+
+    [[nodiscard]] size_t WantedGenerations() const;
 
     [[nodiscard]] size_t GeneratedFrameCount() const;
 
@@ -39,9 +41,9 @@ private:
     VkExtent2D built_extent{};
     VkFormat built_format{VK_FORMAT_UNDEFINED};
     f32 built_flow_scale{};
-    bool built_hdr{};
     size_t built_generations{};
     u64 frame_count{};
+    bool generated{};
     bool unavailable{};
     bool dumped{};
 };

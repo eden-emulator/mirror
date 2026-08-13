@@ -60,8 +60,8 @@ public:
     /// Waits for the present thread to finish presenting all queued frames.
     void WaitPresent();
 
-    /// Whether an additional frame can be queued without stalling the render thread
-    bool CanQueueExtraFrame();
+    /// How many additional frames can be queued without stalling the render thread
+    size_t AvailableExtraFrames();
 
 private:
     void PresentThread(std::stop_token token);

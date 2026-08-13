@@ -19,9 +19,9 @@ constexpr size_t FIRST_DELTA_LEVEL = 4;
 
 LsfgChain::LsfgChain(const Device& device, MemoryAllocator& memory_allocator,
                      const LsfgShaders& shaders, VkExtent2D extent, VkFormat format,
-                     f32 flow_scale, bool is_hdr, size_t generation_count_)
+                     f32 flow_scale, size_t generation_count_)
     : generation_count{generation_count_},
-      resources{device, memory_allocator, flow_scale, is_hdr},
+      resources{device, memory_allocator, flow_scale},
       descriptor_pool{CreateLsfgDescriptorPool(
           device, FIXED_DESCRIPTOR_SETS +
                       DESCRIPTOR_SETS_PER_GENERATION * static_cast<u32>(generation_count))} {

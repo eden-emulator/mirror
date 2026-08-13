@@ -181,9 +181,9 @@ void PresentManager::Present(Frame* frame) {
     }
 }
 
-bool PresentManager::CanQueueExtraFrame() {
+size_t PresentManager::AvailableExtraFrames() {
     std::scoped_lock lock{free_mutex};
-    return !free_queue.empty();
+    return free_queue.size();
 }
 
 void PresentManager::RecreateFrame(Frame* frame, u32 width, u32 height, VkFormat image_view_format,

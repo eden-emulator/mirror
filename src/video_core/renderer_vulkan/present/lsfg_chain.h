@@ -24,8 +24,7 @@ constexpr size_t LSFG_DELTA_INSTANCES = 3;
 class LsfgChain {
 public:
     LsfgChain(const Device& device, MemoryAllocator& memory_allocator, const LsfgShaders& shaders,
-              VkExtent2D extent, VkFormat format, f32 flow_scale, bool is_hdr,
-              size_t generation_count_);
+              VkExtent2D extent, VkFormat format, f32 flow_scale, size_t generation_count_);
 
     LsfgChain(const LsfgChain&) = delete;
     LsfgChain& operator=(const LsfgChain&) = delete;

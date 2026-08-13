@@ -635,13 +635,6 @@ abstract class SettingsItem(
             )
             put(
                 SwitchSetting(
-                    BooleanSetting.RENDERER_FRAME_GEN_HDR,
-                    titleId = R.string.frame_gen_hdr,
-                    descriptionId = R.string.frame_gen_hdr_description
-                )
-            )
-            put(
-                SwitchSetting(
                     BooleanSetting.RENDERER_FRAME_GEN_FP16,
                     titleId = R.string.frame_gen_fp16,
                     descriptionId = R.string.frame_gen_fp16_description

@@ -414,9 +414,6 @@ struct Values {
                                                       true,
                                                       &frame_gen};
 
-    SwitchableSetting<bool> frame_gen_hdr{linkage,      false, "frame_gen_hdr", Category::Renderer,
-                                          Specialization::Default, true, true, &frame_gen};
-
     SwitchableSetting<bool> frame_gen_fp16{linkage,      true,  "frame_gen_fp16", Category::Renderer,
                                            Specialization::Default, true, true, &frame_gen};
 

@@ -182,7 +182,9 @@ FrameGen::FrameGen(MemoryAllocator& memory_allocator_, Scheduler& scheduler_)
 
 FrameGen::~FrameGen() = default;
 
-void FrameGen::Process(const Device& device, Frame* frame, VkFormat format) {
+void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, bool generate) {
+    generated = false;
+
     if (unavailable || !Settings::values.frame_gen.GetValue()) {
         return;
     }
@@ -198,20 +200,23 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format) {
     const VkExtent2D extent{.width = frame->width, .height = frame->height};
     if (!chain || built_extent.width != extent.width || built_extent.height != extent.height ||
         built_format != format || built_flow_scale != ConfiguredFlowScale() ||
-        built_hdr != Settings::values.frame_gen_hdr.GetValue() ||
         built_generations != ConfiguredGenerations()) {
         Rebuild(device, extent, format);
     }
 
     const u64 count = frame_count++;
+    generated = generate && count + 1 >= LSFG_REQUIRED_FRAMES;
 
     scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([this, source = *frame->image, extent, count](vk::CommandBuffer cmdbuf) {
+    scheduler.Record([this, source = *frame->image, extent, count,
+                      dispatch = generated](vk::CommandBuffer cmdbuf) {
         CopyPresentedFrame(cmdbuf, source, chain->Input(count), extent);
-        chain->Dispatch(cmdbuf, count);
+        if (dispatch) {
+            chain->Dispatch(cmdbuf, count);
+        }
     });
 
-    const bool dump_requested = Settings::values.frame_gen_dump_flow.GetValue();
+    const bool dump_requested = generated && Settings::values.frame_gen_dump_flow.GetValue();
     if (!dump_requested) {
         dumped = false;
     } else if (!dumped) {
@@ -220,12 +225,15 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format) {
     }
 }
 
-size_t FrameGen::GeneratedFrameCount() const {
-    if (!chain || frame_count < LSFG_REQUIRED_FRAMES ||
-        !Settings::values.frame_gen.GetValue()) {
+size_t FrameGen::WantedGenerations() const {
+    if (unavailable || !Settings::values.frame_gen.GetValue()) {
         return 0;
     }
-    return chain->GenerationCount();
+    return ConfiguredGenerations();
+}
+
+size_t FrameGen::GeneratedFrameCount() const {
+    return generated && chain ? chain->GenerationCount() : 0;
 }
 
 void FrameGen::CopyToFrame(Frame* destination, size_t generation) {
@@ -273,14 +281,14 @@ void FrameGen::Rebuild(const Device& device, VkExtent2D extent, VkFormat format)
     chain.reset();
 
     built_flow_scale = ConfiguredFlowScale();
-    built_hdr = Settings::values.frame_gen_hdr.GetValue();
     built_generations = ConfiguredGenerations();
 
-    chain.emplace(device, memory_allocator, *shaders, extent, format, built_flow_scale, built_hdr,
+    chain.emplace(device, memory_allocator, *shaders, extent, format, built_flow_scale,
                   built_generations);
     built_extent = extent;
     built_format = format;
     frame_count = 0;
+    generated = false;
 }
 
 void FrameGen::DumpDebugImages(u64 count) {

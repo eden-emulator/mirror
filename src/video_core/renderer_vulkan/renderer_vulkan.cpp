@@ -193,14 +193,13 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
                                render_window.GetFramebufferLayout(), swapchain.GetImageCount(),
                                swapchain.GetImageViewFormat());
 
-    frame_gen.Process(device, frame, swapchain.GetImageFormat());
+    const size_t wanted = frame_gen.WantedGenerations();
+    const bool can_present_all = wanted > 0 && present_manager.AvailableExtraFrames() >= wanted;
+
+    frame_gen.Process(device, frame, swapchain.GetImageFormat(), can_present_all);
 
     const size_t generated_frames = frame_gen.GeneratedFrameCount();
     for (size_t generation = 0; generation < generated_frames; ++generation) {
-        if (!present_manager.CanQueueExtraFrame()) {
-            break;
-        }
-
         Frame* generated = present_manager.GetRenderFrame();
         blit_swapchain.PrepareFrame(device, generated, render_window.GetFramebufferLayout());
         frame_gen.CopyToFrame(generated, generation);
