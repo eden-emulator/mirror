@@ -3,8 +3,10 @@
 
 #pragma once
 
+#include <array>
 #include <deque>
 #include <initializer_list>
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -18,6 +20,12 @@ class Device;
 class LsfgShaders;
 
 constexpr VkFormat LSFG_DEFAULT_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
+constexpr VkFormat LSFG_FLOW_FORMAT = VK_FORMAT_R8_UNORM;
+constexpr VkFormat LSFG_MOTION_FORMAT = VK_FORMAT_R16G16B16A16_SFLOAT;
+
+constexpr size_t LSFG_HISTORY_SLOTS = 3;
+constexpr size_t LSFG_GENERATION_COUNT = 1;
+constexpr f32 LSFG_TIMESTAMP = 1.0f / static_cast<f32>(LSFG_GENERATION_COUNT + 1);
 
 class LsfgImage {
 public:
@@ -52,12 +60,41 @@ private:
     VkImageLayout layout{VK_IMAGE_LAYOUT_UNDEFINED};
 };
 
+using LsfgImagePair = std::array<LsfgImage, 2>;
+using LsfgImageHistory = std::array<LsfgImagePair, LSFG_HISTORY_SLOTS>;
+
+class LsfgResources {
+public:
+    LsfgResources() = default;
+    LsfgResources(const Device& device_, MemoryAllocator& memory_allocator_, f32 flow_scale_)
+        : device{&device_}, memory_allocator{&memory_allocator_}, flow_scale{flow_scale_} {}
+
+    [[nodiscard]] VkSampler GetSampler(
+        VkSamplerAddressMode address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+        VkCompareOp compare_op = VK_COMPARE_OP_NEVER, bool white_border = false);
+
+    [[nodiscard]] VkBuffer GetBuffer(f32 timestamp = 0.0f, bool first_iter = false,
+                                     bool first_iter_s = false);
+
+    [[nodiscard]] static VkDeviceSize BufferSize();
+
+private:
+    const Device* device{};
+    MemoryAllocator* memory_allocator{};
+    f32 flow_scale{1.0f};
+
+    std::map<u64, vk::Sampler> samplers;
+    std::map<u64, vk::Buffer> buffers;
+};
+
 class LsfgBarriers {
 public:
     explicit LsfgBarriers(vk::CommandBuffer cmdbuf_) : cmdbuf{cmdbuf_} {}
 
     LsfgBarriers& WriteToRead(LsfgImage& image);
     LsfgBarriers& ReadToWrite(LsfgImage& image);
+    LsfgBarriers& WriteToRead(LsfgImage* image);
+    LsfgBarriers& ReadToWrite(LsfgImage* image);
 
     template <typename Range>
     LsfgBarriers& WriteToReadAll(Range& images) {
@@ -90,6 +127,7 @@ public:
 
     LsfgDescriptorWriter& AddSampler(VkSampler sampler);
     LsfgDescriptorWriter& AddSampledImage(const LsfgImage& image);
+    LsfgDescriptorWriter& AddSampledImage(const LsfgImage* image);
     LsfgDescriptorWriter& AddStorageImage(const LsfgImage& image);
     LsfgDescriptorWriter& AddUniformBuffer(VkBuffer buffer, VkDeviceSize size);
 

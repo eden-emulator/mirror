@@ -29,8 +29,8 @@ constexpr u32 DISPATCH_TILE_SHIFT = 3;
 } // Anonymous namespace
 
 LsfgAlpha::LsfgAlpha(const Device& device, MemoryAllocator& memory_allocator,
-                     const LsfgShaders& shaders, vk::DescriptorPool& descriptor_pool,
-                     vk::Sampler& sampler, const LsfgImage& input_)
+                     const LsfgShaders& shaders, LsfgResources& resources,
+                     vk::DescriptorPool& descriptor_pool, LsfgImage& input_)
     : input{&input_} {
     using namespace VideoCore::FrameGen::PerformanceShader;
 
@@ -56,9 +56,9 @@ LsfgAlpha::LsfgAlpha(const Device& device, MemoryAllocator& memory_allocator,
 
     temp1 = LsfgImage(device, memory_allocator, half_extent);
     temp2 = LsfgImage(device, memory_allocator, half_extent);
-    for (size_t i = 0; i < LSFG_ALPHA_OUTPUTS; ++i) {
+    for (size_t i = 0; i < temp3.size(); ++i) {
         temp3[i] = LsfgImage(device, memory_allocator, quarter_extent);
-        for (size_t j = 0; j < LSFG_ALPHA_HISTORY; ++j) {
+        for (size_t j = 0; j < LSFG_HISTORY_SLOTS; ++j) {
             out_images[j][i] = LsfgImage(device, memory_allocator, quarter_extent);
         }
     }
@@ -67,7 +67,7 @@ LsfgAlpha::LsfgAlpha(const Device& device, MemoryAllocator& memory_allocator,
     for (size_t i = 0; i < LSFG_ALPHA_STAGES - 1; ++i) {
         layouts.push_back(passes[i].SetLayout());
     }
-    for (size_t i = 0; i < LSFG_ALPHA_HISTORY; ++i) {
+    for (size_t i = 0; i < LSFG_HISTORY_SLOTS; ++i) {
         layouts.push_back(passes[3].SetLayout());
     }
     owned_sets = CreateWrappedDescriptorSets(descriptor_pool, layouts);
@@ -75,28 +75,30 @@ LsfgAlpha::LsfgAlpha(const Device& device, MemoryAllocator& memory_allocator,
     for (size_t i = 0; i < LSFG_ALPHA_STAGES - 1; ++i) {
         descriptor_sets[i] = owned_sets[i];
     }
-    for (size_t i = 0; i < LSFG_ALPHA_HISTORY; ++i) {
+    for (size_t i = 0; i < LSFG_HISTORY_SLOTS; ++i) {
         last_descriptor_sets[i] = owned_sets[LSFG_ALPHA_STAGES - 1 + i];
     }
 
+    const VkSampler sampler = resources.GetSampler();
+
     LsfgDescriptorWriter(descriptor_sets[0])
-        .AddSampler(*sampler)
+        .AddSampler(sampler)
         .AddSampledImage(*input)
         .AddStorageImage(temp1)
         .Build(device);
     LsfgDescriptorWriter(descriptor_sets[1])
-        .AddSampler(*sampler)
+        .AddSampler(sampler)
         .AddSampledImage(temp1)
         .AddStorageImage(temp2)
         .Build(device);
     LsfgDescriptorWriter(descriptor_sets[2])
-        .AddSampler(*sampler)
+        .AddSampler(sampler)
         .AddSampledImage(temp2)
         .AddStorageImages(temp3)
         .Build(device);
-    for (size_t i = 0; i < LSFG_ALPHA_HISTORY; ++i) {
+    for (size_t i = 0; i < LSFG_HISTORY_SLOTS; ++i) {
         LsfgDescriptorWriter(last_descriptor_sets[i])
-            .AddSampler(*sampler)
+            .AddSampler(sampler)
             .AddSampledImages(temp3)
             .AddStorageImages(out_images[i])
             .Build(device);
@@ -108,7 +110,7 @@ void LsfgAlpha::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count) {
     u32 groups_x = GroupCount(half_extent.width);
     u32 groups_y = GroupCount(half_extent.height);
 
-    LsfgBarriers(cmdbuf).ReadToWrite(temp1).Build();
+    LsfgBarriers(cmdbuf).WriteToRead(*input).ReadToWrite(temp1).Build();
     passes[0].Bind(cmdbuf, descriptor_sets[0]);
     cmdbuf.Dispatch(groups_x, groups_y, 1);
 
@@ -124,7 +126,7 @@ void LsfgAlpha::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count) {
     passes[2].Bind(cmdbuf, descriptor_sets[2]);
     cmdbuf.Dispatch(groups_x, groups_y, 1);
 
-    const size_t slot = frame_count % LSFG_ALPHA_HISTORY;
+    const size_t slot = frame_count % LSFG_HISTORY_SLOTS;
     LsfgBarriers(cmdbuf).WriteToReadAll(temp3).ReadToWriteAll(out_images[slot]).Build();
     passes[3].Bind(cmdbuf, last_descriptor_sets[slot]);
     cmdbuf.Dispatch(groups_x, groups_y, 1);

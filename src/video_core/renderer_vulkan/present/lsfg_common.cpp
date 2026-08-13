@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <algorithm>
+#include <cstring>
 
 #include "video_core/renderer_vulkan/present/lsfg_common.h"
 #include "video_core/renderer_vulkan/present/lsfg_shaders.h"
@@ -13,6 +14,33 @@ namespace Vulkan {
 namespace {
 
 constexpr u32 DESCRIPTORS_PER_TYPE = 4096;
+
+struct LsfgConstants {
+    std::array<u32, 2> input_offset;
+    u32 first_iter;
+    u32 first_iter_s;
+    u32 advanced_color_kind;
+    u32 hdr_support;
+    f32 resolution_inv_scale;
+    f32 timestamp;
+    f32 ui_threshold;
+    std::array<u32, 3> padding;
+};
+static_assert(sizeof(LsfgConstants) == 48);
+
+vk::Buffer CreateUniformBuffer(MemoryAllocator& memory_allocator, VkDeviceSize size) {
+    const VkBufferCreateInfo buffer_ci{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .size = size,
+        .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .queueFamilyIndexCount = 0,
+        .pQueueFamilyIndices = nullptr,
+    };
+    return memory_allocator.CreateBuffer(buffer_ci, MemoryUsage::Upload);
+}
 
 VkImageMemoryBarrier MakeBarrier(const LsfgImage& image, VkAccessFlags src_access,
                                  VkAccessFlags dst_access) {
@@ -60,6 +88,66 @@ LsfgBarriers& LsfgBarriers::ReadToWrite(LsfgImage& image) {
     return Push(image, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT);
 }
 
+LsfgBarriers& LsfgBarriers::WriteToRead(LsfgImage* image) {
+    return image == nullptr ? *this : WriteToRead(*image);
+}
+
+LsfgBarriers& LsfgBarriers::ReadToWrite(LsfgImage* image) {
+    return image == nullptr ? *this : ReadToWrite(*image);
+}
+
+VkDeviceSize LsfgResources::BufferSize() {
+    return sizeof(LsfgConstants);
+}
+
+VkSampler LsfgResources::GetSampler(VkSamplerAddressMode address_mode, VkCompareOp compare_op,
+                                    bool white_border) {
+    const u64 key = static_cast<u64>(address_mode) | (static_cast<u64>(compare_op) << 8) |
+                    (static_cast<u64>(white_border) << 16);
+
+    const auto it = samplers.find(key);
+    if (it != samplers.end()) {
+        return *it->second;
+    }
+
+    const auto [entry, inserted] =
+        samplers.emplace(key, CreateLsfgSampler(*device, address_mode, compare_op, white_border));
+    return *entry->second;
+}
+
+VkBuffer LsfgResources::GetBuffer(f32 timestamp, bool first_iter, bool first_iter_s) {
+    u32 timestamp_bits{};
+    std::memcpy(&timestamp_bits, &timestamp, sizeof(timestamp_bits));
+    const u64 key = static_cast<u64>(timestamp_bits) | (static_cast<u64>(first_iter) << 32) |
+                    (static_cast<u64>(first_iter_s) << 33);
+
+    const auto it = buffers.find(key);
+    if (it != buffers.end()) {
+        return *it->second;
+    }
+
+    vk::Buffer buffer = CreateUniformBuffer(*memory_allocator, sizeof(LsfgConstants));
+
+    const LsfgConstants constants{
+        .input_offset = {0, 0},
+        .first_iter = first_iter ? 1u : 0u,
+        .first_iter_s = first_iter_s ? 1u : 0u,
+        .advanced_color_kind = 0,
+        .hdr_support = 0,
+        .resolution_inv_scale = 1.0f / flow_scale,
+        .timestamp = timestamp,
+        .ui_threshold = 0.5f,
+        .padding = {0, 0, 0},
+    };
+
+    const std::span<u8> mapped = buffer.Mapped();
+    std::memcpy(mapped.data(), &constants, sizeof(constants));
+    buffer.Flush();
+
+    const auto [entry, inserted] = buffers.emplace(key, std::move(buffer));
+    return *entry->second;
+}
+
 void LsfgBarriers::Build() {
     if (barriers.empty()) {
         return;
@@ -98,6 +186,11 @@ LsfgDescriptorWriter& LsfgDescriptorWriter::AddSampler(VkSampler sampler) {
 
 LsfgDescriptorWriter& LsfgDescriptorWriter::AddSampledImage(const LsfgImage& image) {
     return PushImage(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_NULL_HANDLE, image.View());
+}
+
+LsfgDescriptorWriter& LsfgDescriptorWriter::AddSampledImage(const LsfgImage* image) {
+    return PushImage(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_NULL_HANDLE,
+                     image == nullptr ? VK_NULL_HANDLE : image->View());
 }
 
 LsfgDescriptorWriter& LsfgDescriptorWriter::AddStorageImage(const LsfgImage& image) {
