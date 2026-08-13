@@ -23,6 +23,10 @@ public:
 
     void Process(const Device& device, Frame* frame, VkFormat format);
 
+    [[nodiscard]] bool HasGeneratedFrame() const;
+
+    void CopyToFrame(Frame* destination);
+
 private:
     void Rebuild(const Device& device, VkExtent2D extent, VkFormat format);
     void DumpDebugImages(u64 count);

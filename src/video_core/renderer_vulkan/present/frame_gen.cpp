@@ -20,6 +20,7 @@ namespace {
 
 constexpr f32 LSFG_FLOW_SCALE = 1.0f;
 constexpr size_t COLOR_CHANNELS = 4;
+constexpr u64 LSFG_REQUIRED_FRAMES = 2;
 
 bool IsBlueFirst(VkFormat format) {
     return format == VK_FORMAT_B8G8R8A8_UNORM || format == VK_FORMAT_B8G8R8A8_SRGB;
@@ -90,41 +91,31 @@ void WriteColorPpm(const std::filesystem::path& path, VkExtent2D extent,
     WritePortablePixmap(path, "P6", extent, rgb);
 }
 
-void CopyPresentedFrame(vk::CommandBuffer cmdbuf, VkImage source, LsfgImage& destination,
-                        VkExtent2D extent) {
-    const auto make_barrier = [](VkImage image, VkAccessFlags src_access, VkAccessFlags dst_access,
-                                 VkImageLayout old_layout, VkImageLayout new_layout) {
-        return VkImageMemoryBarrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-            .pNext = nullptr,
-            .srcAccessMask = src_access,
-            .dstAccessMask = dst_access,
-            .oldLayout = old_layout,
-            .newLayout = new_layout,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = image,
-            .subresourceRange{
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-        };
+VkImageMemoryBarrier MakeTransitionBarrier(VkImage image, VkAccessFlags src_access,
+                                           VkAccessFlags dst_access, VkImageLayout old_layout,
+                                           VkImageLayout new_layout) {
+    return VkImageMemoryBarrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .pNext = nullptr,
+        .srcAccessMask = src_access,
+        .dstAccessMask = dst_access,
+        .oldLayout = old_layout,
+        .newLayout = new_layout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image,
+        .subresourceRange{
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
     };
+}
 
-    const std::array before{
-        make_barrier(source, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
-        make_barrier(destination.Handle(), VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
-                     destination.Layout(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL),
-    };
-    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {}, {}, before);
-
-    const VkImageCopy region{
+VkImageCopy MakeCopyRegion(VkExtent2D extent) {
+    return VkImageCopy{
         .srcSubresource{
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .mipLevel = 0,
@@ -141,8 +132,24 @@ void CopyPresentedFrame(vk::CommandBuffer cmdbuf, VkImage source, LsfgImage& des
         .dstOffset = {},
         .extent = {.width = extent.width, .height = extent.height, .depth = 1},
     };
+}
+
+void CopyPresentedFrame(vk::CommandBuffer cmdbuf, VkImage source, LsfgImage& destination,
+                        VkExtent2D extent) {
+    const auto make_barrier = MakeTransitionBarrier;
+
+    const std::array before{
+        make_barrier(source, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                     VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
+        make_barrier(destination.Handle(), VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+                     destination.Layout(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL),
+    };
+    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {}, {}, before);
+
     cmdbuf.CopyImage(source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, destination.Handle(),
-                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
+                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, MakeCopyRegion(extent));
 
     const std::array after{
         make_barrier(source, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -199,6 +206,50 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format) {
         DumpDebugImages(count);
         dumped = true;
     }
+}
+
+bool FrameGen::HasGeneratedFrame() const {
+    return chain.has_value() && frame_count >= LSFG_REQUIRED_FRAMES &&
+           Settings::values.frame_gen.GetValue();
+}
+
+void FrameGen::CopyToFrame(Frame* destination) {
+    scheduler.RequestOutsideRenderPassOperationContext();
+    scheduler.Record([this, target = *destination->image](vk::CommandBuffer cmdbuf) {
+        LsfgImage& source = chain->Output();
+        const VkExtent2D extent = source.Extent();
+
+        const std::array before{
+            MakeTransitionBarrier(source.Handle(), VK_ACCESS_SHADER_WRITE_BIT,
+                                  VK_ACCESS_TRANSFER_READ_BIT, source.Layout(),
+                                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
+            MakeTransitionBarrier(target, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
+                                  VK_IMAGE_LAYOUT_UNDEFINED,
+                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL),
+        };
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {}, {}, before);
+
+        cmdbuf.CopyImage(source.Handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, target,
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, MakeCopyRegion(extent));
+
+        const std::array after{
+            MakeTransitionBarrier(source.Handle(), VK_ACCESS_TRANSFER_READ_BIT,
+                                  VK_ACCESS_SHADER_WRITE_BIT,
+                                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                  VK_IMAGE_LAYOUT_GENERAL),
+            MakeTransitionBarrier(target, VK_ACCESS_TRANSFER_WRITE_BIT,
+                                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                  VK_IMAGE_LAYOUT_GENERAL),
+        };
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                               0, {}, {}, after);
+
+        source.SetLayout(VK_IMAGE_LAYOUT_GENERAL);
+    });
 }
 
 void FrameGen::Rebuild(const Device& device, VkExtent2D extent, VkFormat format) {

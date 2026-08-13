@@ -195,6 +195,14 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
 
     frame_gen.Process(device, frame, swapchain.GetImageFormat());
 
+    if (frame_gen.HasGeneratedFrame() && present_manager.CanQueueExtraFrame()) {
+        Frame* generated = present_manager.GetRenderFrame();
+        blit_swapchain.PrepareFrame(device, generated, render_window.GetFramebufferLayout());
+        frame_gen.CopyToFrame(generated);
+        scheduler.Flush(*generated->render_ready);
+        present_manager.Present(generated);
+    }
+
     scheduler.Flush(*frame->render_ready);
 
     present_manager.Present(frame);
