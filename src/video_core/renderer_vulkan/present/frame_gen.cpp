@@ -66,7 +66,10 @@ void FrameGen::Process(const Device& device, Frame* frame) {
     mipmaps->Dispatch(device, scheduler, *frame->image_view, frame_count);
     ++frame_count;
 
-    if (!dumped && Settings::values.frame_gen_dump_flow.GetValue()) {
+    const bool dump_requested = Settings::values.frame_gen_dump_flow.GetValue();
+    if (!dump_requested) {
+        dumped = false;
+    } else if (!dumped) {
         DumpFlowPyramid(device);
         dumped = true;
     }
