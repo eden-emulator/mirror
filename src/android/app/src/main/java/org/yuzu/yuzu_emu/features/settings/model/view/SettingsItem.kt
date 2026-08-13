@@ -642,6 +642,13 @@ abstract class SettingsItem(
             )
             put(
                 SwitchSetting(
+                    BooleanSetting.RENDERER_FRAME_GEN_FP16,
+                    titleId = R.string.frame_gen_fp16,
+                    descriptionId = R.string.frame_gen_fp16_description
+                )
+            )
+            put(
+                SwitchSetting(
                     BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW,
                     titleId = R.string.frame_gen_dump_flow,
                     descriptionId = R.string.frame_gen_dump_flow_description
