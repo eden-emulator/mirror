@@ -4,6 +4,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 
 #include "common/common_types.h"
 #include "video_core/renderer_vulkan/present/lsfg_common.h"
@@ -21,22 +22,27 @@ public:
     LsfgGamma() = default;
     LsfgGamma(const Device& device, MemoryAllocator& memory_allocator, const LsfgShaders& shaders,
               LsfgResources& resources, vk::DescriptorPool& descriptor_pool,
-              LsfgImageHistory& inputs, LsfgImage& flow_input, LsfgImage* previous);
+              LsfgImageHistory& inputs, LsfgImage& flow_input, LsfgImage* previous,
+              size_t generation_count);
 
-    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count);
+    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation);
 
     [[nodiscard]] LsfgImage& Output() {
         return out_image;
     }
 
 private:
+    struct Generation {
+        std::array<VkDescriptorSet, LSFG_HISTORY_SLOTS> first_descriptor_sets{};
+        std::array<VkDescriptorSet, LSFG_GAMMA_STAGES - 1> descriptor_sets{};
+    };
+
     LsfgImageHistory* inputs{};
     LsfgImage* flow_input{};
     LsfgImage* previous{};
 
     std::array<LsfgPass, LSFG_GAMMA_STAGES> passes;
-    std::array<VkDescriptorSet, LSFG_HISTORY_SLOTS> first_descriptor_sets{};
-    std::array<VkDescriptorSet, LSFG_GAMMA_STAGES - 1> descriptor_sets{};
+    std::vector<Generation> generations;
     vk::DescriptorSets owned_sets;
 
     std::array<LsfgImage, LSFG_GAMMA_TEMPS> temp1;

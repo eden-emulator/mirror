@@ -116,6 +116,9 @@ class SettingsFragmentPresenter(
             }
 
             add(BooleanSetting.RENDERER_FRAME_GEN.key)
+            add(IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.key)
+            add(IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.key)
+            add(BooleanSetting.RENDERER_FRAME_GEN_HDR.key)
             add(BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW.key)
         }
     }

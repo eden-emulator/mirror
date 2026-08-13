@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -18,9 +19,18 @@ namespace Vulkan {
 
 namespace {
 
-constexpr f32 LSFG_FLOW_SCALE = 1.0f;
 constexpr size_t COLOR_CHANNELS = 4;
 constexpr u64 LSFG_REQUIRED_FRAMES = 2;
+
+[[nodiscard]] f32 ConfiguredFlowScale() {
+    return static_cast<f32>(Settings::values.frame_gen_flow_scale.GetValue()) / 100.0f;
+}
+
+[[nodiscard]] size_t ConfiguredGenerations() {
+    const u32 multiplier = std::clamp<u32>(Settings::values.frame_gen_multiplier.GetValue(),
+                                           LSFG_MIN_MULTIPLIER, LSFG_MAX_MULTIPLIER);
+    return multiplier - 1;
+}
 
 bool IsBlueFirst(VkFormat format) {
     return format == VK_FORMAT_B8G8R8A8_UNORM || format == VK_FORMAT_B8G8R8A8_SRGB;
@@ -187,7 +197,9 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format) {
 
     const VkExtent2D extent{.width = frame->width, .height = frame->height};
     if (!chain || built_extent.width != extent.width || built_extent.height != extent.height ||
-        built_format != format) {
+        built_format != format || built_flow_scale != ConfiguredFlowScale() ||
+        built_hdr != Settings::values.frame_gen_hdr.GetValue() ||
+        built_generations != ConfiguredGenerations()) {
         Rebuild(device, extent, format);
     }
 
@@ -208,15 +220,19 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format) {
     }
 }
 
-bool FrameGen::HasGeneratedFrame() const {
-    return chain.has_value() && frame_count >= LSFG_REQUIRED_FRAMES &&
-           Settings::values.frame_gen.GetValue();
+size_t FrameGen::GeneratedFrameCount() const {
+    if (!chain || frame_count < LSFG_REQUIRED_FRAMES ||
+        !Settings::values.frame_gen.GetValue()) {
+        return 0;
+    }
+    return chain->GenerationCount();
 }
 
-void FrameGen::CopyToFrame(Frame* destination) {
+void FrameGen::CopyToFrame(Frame* destination, size_t generation) {
     scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([this, target = *destination->image](vk::CommandBuffer cmdbuf) {
-        LsfgImage& source = chain->Output();
+    scheduler.Record([this, target = *destination->image,
+                      generation](vk::CommandBuffer cmdbuf) {
+        LsfgImage& source = chain->Output(generation);
         const VkExtent2D extent = source.Extent();
 
         const std::array before{
@@ -255,7 +271,13 @@ void FrameGen::CopyToFrame(Frame* destination) {
 void FrameGen::Rebuild(const Device& device, VkExtent2D extent, VkFormat format) {
     scheduler.Finish();
     chain.reset();
-    chain.emplace(device, memory_allocator, *shaders, extent, format, LSFG_FLOW_SCALE);
+
+    built_flow_scale = ConfiguredFlowScale();
+    built_hdr = Settings::values.frame_gen_hdr.GetValue();
+    built_generations = ConfiguredGenerations();
+
+    chain.emplace(device, memory_allocator, *shaders, extent, format, built_flow_scale, built_hdr,
+                  built_generations);
     built_extent = extent;
     built_format = format;
     frame_count = 0;
@@ -319,7 +341,9 @@ void FrameGen::DumpDebugImages(u64 count) {
     dump("gamma6", chain->GammaOutput(LSFG_MIP_LEVELS - 1));
     dump("delta2_out1", chain->DeltaOutput1(LSFG_DELTA_INSTANCES - 1));
     dump("delta2_out2", chain->DeltaOutput2(LSFG_DELTA_INSTANCES - 1));
-    dump("generated", chain->Output());
+    for (size_t generation = 0; generation < chain->GenerationCount(); ++generation) {
+        dump("generated" + std::to_string(generation), chain->Output(generation));
+    }
 }
 
 } // namespace Vulkan

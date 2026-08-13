@@ -390,6 +390,33 @@ struct Values {
 
     SwitchableSetting<bool> frame_gen{linkage, false, "frame_gen", Category::Renderer,
                                       Specialization::Default, true, true};
+
+    SwitchableSetting<u32, true> frame_gen_multiplier{linkage,
+                                                      2,
+                                                      2,
+                                                      4,
+                                                      "frame_gen_multiplier",
+                                                      Category::Renderer,
+                                                      Specialization::Countable,
+                                                      true,
+                                                      true,
+                                                      &frame_gen};
+
+    SwitchableSetting<u32, true> frame_gen_flow_scale{linkage,
+                                                      100,
+                                                      25,
+                                                      100,
+                                                      "frame_gen_flow_scale",
+                                                      Category::Renderer,
+                                                      Specialization::Countable |
+                                                          Specialization::Percentage,
+                                                      true,
+                                                      true,
+                                                      &frame_gen};
+
+    SwitchableSetting<bool> frame_gen_hdr{linkage,      false, "frame_gen_hdr", Category::Renderer,
+                                          Specialization::Default, true, true, &frame_gen};
+
     SwitchableSetting<bool> frame_gen_dump_flow{linkage, false, "frame_gen_dump_flow",
                                                 Category::Renderer};
 

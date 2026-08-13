@@ -19,6 +19,8 @@ namespace Vulkan {
 
 namespace {
 
+constexpr size_t FRAME_GEN_EXTRA_FRAMES = 2;
+
 bool CanBlitToSwapchain(const vk::PhysicalDevice& physical_device, VkFormat format) {
     const VkFormatProperties props{physical_device.GetFormatProperties(format)};
     return (props.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT);
@@ -180,12 +182,8 @@ void PresentManager::Present(Frame* frame) {
 }
 
 bool PresentManager::CanQueueExtraFrame() {
-    if (!use_present_thread) {
-        return false;
-    }
-
-    std::scoped_lock lock{queue_mutex, free_mutex};
-    return present_queue.empty() && !free_queue.empty();
+    std::scoped_lock lock{free_mutex};
+    return !free_queue.empty();
 }
 
 void PresentManager::RecreateFrame(Frame* frame, u32 width, u32 height, VkFormat image_view_format,
@@ -311,7 +309,11 @@ void PresentManager::SetImageCount() {
     // We cannot have more than 7 images in flight at any given time.
     // FRAMES_IN_FLIGHT is 8, and the cache TICKS_TO_DESTROY is 8.
     // Mali drivers will give us 6.
-    image_count = std::min<size_t>(swapchain.GetImageCount(), 7);
+    const size_t generated =
+        Settings::values.frame_gen.GetValue()
+            ? Settings::values.frame_gen_multiplier.GetValue() * FRAME_GEN_EXTRA_FRAMES
+            : 0;
+    image_count = std::min<size_t>(swapchain.GetImageCount() + generated, 7);
 }
 
 void PresentManager::CopyToSwapchain(Frame* frame) {

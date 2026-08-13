@@ -24,8 +24,13 @@ constexpr VkFormat LSFG_FLOW_FORMAT = VK_FORMAT_R8_UNORM;
 constexpr VkFormat LSFG_MOTION_FORMAT = VK_FORMAT_R16G16B16A16_SFLOAT;
 
 constexpr size_t LSFG_HISTORY_SLOTS = 3;
-constexpr size_t LSFG_GENERATION_COUNT = 1;
-constexpr f32 LSFG_TIMESTAMP = 1.0f / static_cast<f32>(LSFG_GENERATION_COUNT + 1);
+constexpr size_t LSFG_MIN_MULTIPLIER = 2;
+constexpr size_t LSFG_MAX_MULTIPLIER = 4;
+constexpr size_t LSFG_MAX_GENERATIONS = LSFG_MAX_MULTIPLIER - 1;
+
+[[nodiscard]] constexpr f32 LsfgTimestamp(size_t generation, size_t generation_count) {
+    return static_cast<f32>(generation + 1) / static_cast<f32>(generation_count + 1);
+}
 
 class LsfgImage {
 public:
@@ -71,8 +76,10 @@ using LsfgImageHistory = std::array<LsfgImagePair, LSFG_HISTORY_SLOTS>;
 class LsfgResources {
 public:
     LsfgResources() = default;
-    LsfgResources(const Device& device_, MemoryAllocator& memory_allocator_, f32 flow_scale_)
-        : device{&device_}, memory_allocator{&memory_allocator_}, flow_scale{flow_scale_} {}
+    LsfgResources(const Device& device_, MemoryAllocator& memory_allocator_, f32 flow_scale_,
+                  bool is_hdr_)
+        : device{&device_}, memory_allocator{&memory_allocator_}, flow_scale{flow_scale_},
+          is_hdr{is_hdr_} {}
 
     [[nodiscard]] VkSampler GetSampler(
         VkSamplerAddressMode address_mode = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
@@ -87,6 +94,7 @@ private:
     const Device* device{};
     MemoryAllocator* memory_allocator{};
     f32 flow_scale{1.0f};
+    bool is_hdr{};
 
     std::map<u64, vk::Sampler> samplers;
     std::map<u64, vk::Buffer> buffers;

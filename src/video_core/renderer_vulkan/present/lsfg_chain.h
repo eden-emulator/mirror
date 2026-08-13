@@ -24,7 +24,8 @@ constexpr size_t LSFG_DELTA_INSTANCES = 3;
 class LsfgChain {
 public:
     LsfgChain(const Device& device, MemoryAllocator& memory_allocator, const LsfgShaders& shaders,
-              VkExtent2D extent, VkFormat format, f32 flow_scale);
+              VkExtent2D extent, VkFormat format, f32 flow_scale, bool is_hdr,
+              size_t generation_count_);
 
     LsfgChain(const LsfgChain&) = delete;
     LsfgChain& operator=(const LsfgChain&) = delete;
@@ -35,8 +36,12 @@ public:
         return frames[frame_count % frames.size()];
     }
 
-    [[nodiscard]] LsfgImage& Output() {
-        return generate.Output();
+    [[nodiscard]] LsfgImage& Output(size_t generation) {
+        return generate.Output(generation);
+    }
+
+    [[nodiscard]] size_t GenerationCount() const {
+        return generation_count;
     }
 
     [[nodiscard]] LsfgImage& FlowLevel(size_t level) {
@@ -64,6 +69,7 @@ public:
     }
 
 private:
+    size_t generation_count{};
     LsfgResources resources;
     vk::DescriptorPool descriptor_pool;
 

@@ -19,6 +19,8 @@ enum class IntSetting(override val key: String) : AbstractIntSetting {
     RENDERER_ASTC_DECODE_METHOD("accelerate_astc"),
     RENDERER_ACCURACY("gpu_accuracy"),
     RENDERER_RESOLUTION("resolution_setup"),
+    RENDERER_FRAME_GEN_MULTIPLIER("frame_gen_multiplier"),
+    RENDERER_FRAME_GEN_FLOW_SCALE("frame_gen_flow_scale"),
     RENDERER_VSYNC("use_vsync"),
     RENDERER_SCALING_FILTER("scaling_filter"),
     RENDERER_ANTI_ALIASING("anti_aliasing"),

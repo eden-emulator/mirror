@@ -615,6 +615,32 @@ abstract class SettingsItem(
                 )
             )
             put(
+                SingleChoiceSetting(
+                    IntSetting.RENDERER_FRAME_GEN_MULTIPLIER,
+                    titleId = R.string.frame_gen_multiplier,
+                    descriptionId = R.string.frame_gen_multiplier_description,
+                    choicesId = R.array.frameGenMultiplierNames,
+                    valuesId = R.array.frameGenMultiplierValues
+                )
+            )
+            put(
+                SliderSetting(
+                    IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE,
+                    titleId = R.string.frame_gen_flow_scale,
+                    descriptionId = R.string.frame_gen_flow_scale_description,
+                    min = 25,
+                    max = 100,
+                    units = "%"
+                )
+            )
+            put(
+                SwitchSetting(
+                    BooleanSetting.RENDERER_FRAME_GEN_HDR,
+                    titleId = R.string.frame_gen_hdr,
+                    descriptionId = R.string.frame_gen_hdr_description
+                )
+            )
+            put(
                 SwitchSetting(
                     BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW,
                     titleId = R.string.frame_gen_dump_flow,

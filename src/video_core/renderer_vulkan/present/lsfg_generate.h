@@ -4,6 +4,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 
 #include "common/common_types.h"
 #include "video_core/renderer_vulkan/present/lsfg_common.h"
@@ -19,25 +20,29 @@ public:
     LsfgGenerate(const Device& device, MemoryAllocator& memory_allocator,
                  const LsfgShaders& shaders, LsfgResources& resources,
                  vk::DescriptorPool& descriptor_pool, LsfgImagePair& frames, LsfgImage& motion,
-                 LsfgImage& detail1, LsfgImage& detail2, VkFormat format);
+                 LsfgImage& detail1, LsfgImage& detail2, VkFormat format,
+                 size_t generation_count);
 
-    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count);
+    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation);
 
-    [[nodiscard]] LsfgImage& Output() {
-        return out_image;
+    [[nodiscard]] LsfgImage& Output(size_t generation) {
+        return generations[generation].out_image;
     }
 
 private:
+    struct Generation {
+        std::array<VkDescriptorSet, 2> descriptor_sets{};
+        LsfgImage out_image;
+    };
+
     LsfgImagePair* frames{};
     LsfgImage* motion{};
     LsfgImage* detail1{};
     LsfgImage* detail2{};
 
     LsfgPass pass;
-    std::array<VkDescriptorSet, 2> descriptor_sets{};
+    std::vector<Generation> generations;
     vk::DescriptorSets owned_sets;
-
-    LsfgImage out_image;
 };
 
 } // namespace Vulkan

@@ -195,10 +195,15 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
 
     frame_gen.Process(device, frame, swapchain.GetImageFormat());
 
-    if (frame_gen.HasGeneratedFrame() && present_manager.CanQueueExtraFrame()) {
+    const size_t generated_frames = frame_gen.GeneratedFrameCount();
+    for (size_t generation = 0; generation < generated_frames; ++generation) {
+        if (!present_manager.CanQueueExtraFrame()) {
+            break;
+        }
+
         Frame* generated = present_manager.GetRenderFrame();
         blit_swapchain.PrepareFrame(device, generated, render_window.GetFramebufferLayout());
-        frame_gen.CopyToFrame(generated);
+        frame_gen.CopyToFrame(generated, generation);
         scheduler.Flush(*generated->render_ready);
         present_manager.Present(generated);
     }

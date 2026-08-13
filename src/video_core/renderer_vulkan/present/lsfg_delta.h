@@ -4,6 +4,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 
 #include "common/common_types.h"
 #include "video_core/renderer_vulkan/present/lsfg_common.h"
@@ -22,9 +23,9 @@ public:
     LsfgDelta(const Device& device, MemoryAllocator& memory_allocator, const LsfgShaders& shaders,
               LsfgResources& resources, vk::DescriptorPool& descriptor_pool,
               LsfgImageHistory& inputs, LsfgImage& flow_input, LsfgImage* previous_gamma,
-              LsfgImage* previous1, LsfgImage* previous2);
+              LsfgImage* previous1, LsfgImage* previous2, size_t generation_count);
 
-    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count);
+    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation);
 
     [[nodiscard]] LsfgImage& Output1() {
         return out_image1;
@@ -35,6 +36,12 @@ public:
     }
 
 private:
+    struct Generation {
+        std::array<VkDescriptorSet, LSFG_HISTORY_SLOTS> first_descriptor_sets{};
+        std::array<VkDescriptorSet, LSFG_HISTORY_SLOTS> sixth_descriptor_sets{};
+        std::array<VkDescriptorSet, LSFG_DELTA_STAGES - 2> descriptor_sets{};
+    };
+
     LsfgImageHistory* inputs{};
     LsfgImage* flow_input{};
     LsfgImage* previous_gamma{};
@@ -42,9 +49,7 @@ private:
     LsfgImage* previous2{};
 
     std::array<LsfgPass, LSFG_DELTA_STAGES> passes;
-    std::array<VkDescriptorSet, LSFG_HISTORY_SLOTS> first_descriptor_sets{};
-    std::array<VkDescriptorSet, LSFG_HISTORY_SLOTS> sixth_descriptor_sets{};
-    std::array<VkDescriptorSet, LSFG_DELTA_STAGES - 2> descriptor_sets{};
+    std::vector<Generation> generations;
     vk::DescriptorSets owned_sets;
 
     std::array<LsfgImage, LSFG_DELTA_TEMPS> temp1;

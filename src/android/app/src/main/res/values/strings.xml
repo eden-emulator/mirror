@@ -300,6 +300,15 @@
     <string name="install_gpu_driver_description">Install alternative drivers for potentially better performance or accuracy</string>
     <string name="frame_gen">Frame generation</string>
     <string name="frame_gen_description">Run the Lossless Scaling interpolation shaders on every frame. Incomplete: the interpolated frame is computed but not yet displayed, so this only costs performance for now.</string>
+    <string name="frame_gen_multiplier">Frame multiplier</string>
+    <string name="frame_gen_multiplier_description">How many frames to display for each rendered frame. Higher values cost proportionally more GPU time.</string>
+    <string name="frame_gen_multiplier_2x">2x (one generated frame)</string>
+    <string name="frame_gen_multiplier_3x">3x (two generated frames)</string>
+    <string name="frame_gen_multiplier_4x">4x (three generated frames)</string>
+    <string name="frame_gen_flow_scale">Motion estimation resolution</string>
+    <string name="frame_gen_flow_scale_description">Resolution of the optical flow pass, as a fraction of the output. Lowering it is the cheapest way to reclaim performance.</string>
+    <string name="frame_gen_hdr">HDR interpolation</string>
+    <string name="frame_gen_hdr_description">Treat frames as HDR when interpolating. Only useful on an HDR output.</string>
     <string name="frame_gen_dump_flow">Dump generated frame</string>
     <string name="frame_gen_dump_flow_description">Write the optical flow mip levels and the interpolated frame to the lossless/debug folder once, for troubleshooting</string>
     <string name="frame_gen_unsupported">Frame generation unavailable</string>

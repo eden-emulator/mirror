@@ -102,7 +102,7 @@ LsfgBeta::LsfgBeta(const Device& device, MemoryAllocator& memory_allocator,
         .AddStorageImages(temp2)
         .Build(device);
     LsfgDescriptorWriter(descriptor_sets[3])
-        .AddUniformBuffer(resources.GetBuffer(LSFG_TIMESTAMP), LsfgResources::BufferSize())
+        .AddUniformBuffer(resources.GetBuffer(0.5f), LsfgResources::BufferSize())
         .AddSampler(sampler)
         .AddSampledImages(temp2)
         .AddStorageImages(out_images)

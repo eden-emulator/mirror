@@ -11,16 +11,20 @@ namespace Vulkan {
 
 namespace {
 
-constexpr u32 DESCRIPTOR_SET_COUNT = 256;
+constexpr u32 FIXED_DESCRIPTOR_SETS = 64;
+constexpr u32 DESCRIPTOR_SETS_PER_GENERATION = 96;
 constexpr size_t FIRST_DELTA_LEVEL = 4;
 
 } // Anonymous namespace
 
 LsfgChain::LsfgChain(const Device& device, MemoryAllocator& memory_allocator,
                      const LsfgShaders& shaders, VkExtent2D extent, VkFormat format,
-                     f32 flow_scale)
-    : resources{device, memory_allocator, flow_scale},
-      descriptor_pool{CreateLsfgDescriptorPool(device, DESCRIPTOR_SET_COUNT)} {
+                     f32 flow_scale, bool is_hdr, size_t generation_count_)
+    : generation_count{generation_count_},
+      resources{device, memory_allocator, flow_scale, is_hdr},
+      descriptor_pool{CreateLsfgDescriptorPool(
+          device, FIXED_DESCRIPTOR_SETS +
+                      DESCRIPTOR_SETS_PER_GENERATION * static_cast<u32>(generation_count))} {
     for (auto& image : frames) {
         image = LsfgImage(device, memory_allocator, extent, format);
     }
@@ -41,7 +45,7 @@ LsfgChain::LsfgChain(const Device& device, MemoryAllocator& memory_allocator,
         gamma[i] = LsfgGamma(device, memory_allocator, shaders, resources, descriptor_pool,
                              alpha[level].Outputs(),
                              beta.Output(std::min(level, LSFG_BETA_OUTPUTS - 1)),
-                             i == 0 ? nullptr : &gamma[i - 1].Output());
+                             i == 0 ? nullptr : &gamma[i - 1].Output(), generation_count);
 
         if (i < FIRST_DELTA_LEVEL) {
             continue;
@@ -52,13 +56,13 @@ LsfgChain::LsfgChain(const Device& device, MemoryAllocator& memory_allocator,
             device, memory_allocator, shaders, resources, descriptor_pool, alpha[level].Outputs(),
             beta.Output(level), i == FIRST_DELTA_LEVEL ? nullptr : &gamma[i - 1].Output(),
             i == FIRST_DELTA_LEVEL ? nullptr : &delta[index - 1].Output1(),
-            i == FIRST_DELTA_LEVEL ? nullptr : &delta[index - 1].Output2());
+            i == FIRST_DELTA_LEVEL ? nullptr : &delta[index - 1].Output2(), generation_count);
     }
 
     generate = LsfgGenerate(device, memory_allocator, shaders, resources, descriptor_pool, frames,
                             gamma[LSFG_MIP_LEVELS - 1].Output(),
                             delta[LSFG_DELTA_INSTANCES - 1].Output1(),
-                            delta[LSFG_DELTA_INSTANCES - 1].Output2(), format);
+                            delta[LSFG_DELTA_INSTANCES - 1].Output2(), format, generation_count);
 }
 
 void LsfgChain::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count) {
@@ -70,14 +74,15 @@ void LsfgChain::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count) {
 
     beta.Dispatch(cmdbuf, frame_count);
 
-    for (size_t i = 0; i < LSFG_MIP_LEVELS; ++i) {
-        gamma[i].Dispatch(cmdbuf, frame_count);
-        if (i >= FIRST_DELTA_LEVEL) {
-            delta[i - FIRST_DELTA_LEVEL].Dispatch(cmdbuf, frame_count);
+    for (size_t generation = 0; generation < generation_count; ++generation) {
+        for (size_t i = 0; i < LSFG_MIP_LEVELS; ++i) {
+            gamma[i].Dispatch(cmdbuf, frame_count, generation);
+            if (i >= FIRST_DELTA_LEVEL) {
+                delta[i - FIRST_DELTA_LEVEL].Dispatch(cmdbuf, frame_count, generation);
+            }
         }
+        generate.Dispatch(cmdbuf, frame_count, generation);
     }
-
-    generate.Dispatch(cmdbuf, frame_count);
 }
 
 } // namespace Vulkan
