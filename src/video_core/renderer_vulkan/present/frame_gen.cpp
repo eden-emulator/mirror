@@ -63,7 +63,7 @@ void FrameGen::Process(const Device& device, Frame* frame) {
         Rebuild(device, extent);
     }
 
-    mipmaps->Dispatch(device, scheduler, *frame->image_view, frame_count);
+    mipmaps->Dispatch(device, scheduler, *frame->image, *frame->image_view, frame_count);
     ++frame_count;
 
     const bool dump_requested = Settings::values.frame_gen_dump_flow.GetValue();

@@ -128,8 +128,8 @@ void LsfgMipmaps::CreateUniformBuffer(f32 flow_scale) {
     uniform_buffer.Flush();
 }
 
-void LsfgMipmaps::Dispatch(const Device& device, Scheduler& scheduler, VkImageView current_view,
-                           u64 frame_count) {
+void LsfgMipmaps::Dispatch(const Device& device, Scheduler& scheduler, VkImage current_image,
+                           VkImageView current_view, u64 frame_count) {
     const size_t set_index = frame_count % DESCRIPTOR_SET_COUNT;
     const VkDescriptorSet set = descriptor_sets[set_index];
 
@@ -196,8 +196,30 @@ void LsfgMipmaps::Dispatch(const Device& device, Scheduler& scheduler, VkImageVi
     }
 
     scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([raw_images, set, groups_x, groups_y, layout = *pipeline_layout,
+    scheduler.Record([raw_images, current_image, set, groups_x, groups_y,
+                      layout = *pipeline_layout,
                       compute_pipeline = *pipeline](vk::CommandBuffer cmdbuf) {
+        const VkImageMemoryBarrier input_barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+            .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = current_image,
+            .subresourceRange{
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+        };
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, {}, {}, input_barrier);
+
         for (const VkImage image : raw_images) {
             TransitionImageLayout(cmdbuf, image, VK_IMAGE_LAYOUT_GENERAL,
                                   VK_IMAGE_LAYOUT_UNDEFINED);

@@ -22,8 +22,8 @@ public:
     explicit LsfgMipmaps(const Device& device, MemoryAllocator& memory_allocator,
                          const LsfgShaders& shaders, VkExtent2D input_extent, f32 flow_scale);
 
-    void Dispatch(const Device& device, Scheduler& scheduler, VkImageView current_view,
-                  u64 frame_count);
+    void Dispatch(const Device& device, Scheduler& scheduler, VkImage current_image,
+                  VkImageView current_view, u64 frame_count);
 
     [[nodiscard]] VkImageView GetLevelView(size_t level) const {
         return *image_views[level];
