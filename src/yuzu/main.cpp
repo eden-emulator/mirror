@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <QApplication>
+#include "common/program_args.h"
 #include "startup_checks.h"
 
 #ifdef __unix__
@@ -182,7 +183,10 @@ int main(int argc, char* argv[]) {
     // generating shaders
     setlocale(LC_ALL, "C");
 
-    MainWindow main_window{has_broken_vulkan};
+    Common::ProgramArguments args{};
+    Common::ParseArguments(args, argc, argv);
+
+    MainWindow main_window{std::move(args), has_broken_vulkan};
     // After settings have been loaded by GMainWindow, apply the filter
     main_window.show();
 

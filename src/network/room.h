@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2017 Citra Emulator Project
@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "common/program_args.h"
 #include "common/announce_multiplayer_room.h"
 #include "common/common_types.h"
 #include "common/socket_types.h"
@@ -147,5 +148,7 @@ private:
     class RoomImpl;
     std::unique_ptr<RoomImpl> room_impl;
 };
+
+int LaunchRoomLoopWithArguments(Common::ProgramArguments& args);
 
 } // namespace Network

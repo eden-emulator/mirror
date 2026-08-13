@@ -6,18 +6,31 @@
 #include <algorithm>
 #include <atomic>
 #include <iomanip>
+#include <iostream>
 #include <mutex>
 #include <random>
 #include <regex>
 #include <shared_mutex>
 #include <sstream>
 #include <thread>
+#include <fstream>
+
+#include <openssl/evp.h>
+
+#include "common/fs/file.h"
 #include "common/polyfill_thread.h"
 #include "common/logging.h"
+#include "common/settings.h"
+#include "common/string_util.h"
 #include "enet/enet.h"
+#include "network/announce_multiplayer_session.h"
 #include "network/packet.h"
 #include "network/room.h"
+#include "network/network.h"
 #include "network/verify_user.h"
+#ifdef ENABLE_WEB_SERVICE
+#include "web_service/verify_user_jwt.h"
+#endif
 
 namespace Network {
 
@@ -1141,5 +1154,202 @@ void Room::Destroy() {
     room_impl->room_information.member_slots = 0;
     room_impl->room_information.name.clear();
 }
+
+#ifdef YUZU_ROOM
+/// The magic text at the beginning of a yuzu-room ban list file.
+static constexpr char BAN_LIST_MAGIC[] = "YuzuRoom-BanList-1";
+static constexpr char TOKEN_DELIMITER{':'};
+
+static void PadToken(std::string& token) {
+    std::array<unsigned char, 512> output{};
+    std::array<unsigned char, 2048> roundtrip{};
+    for (size_t i = 0; i < 3; i++) {
+        EVP_DecodeBlock(output.data(), reinterpret_cast<const unsigned char*>(token.c_str()), token.size());
+        EVP_EncodeBlock(output.data(), roundtrip.data(), roundtrip.size());
+        if (memcmp(roundtrip.data(), token.data(), token.size()) == 0) {
+            break;
+        }
+        token.push_back('=');
+    }
+}
+
+static std::string UsernameFromDisplayToken(const std::string& display_token) {
+    std::size_t outlen = 4 * ((display_token.length() + 2) / 3);
+    std::array<unsigned char, 512> output{};
+    EVP_DecodeBlock(output.data(), reinterpret_cast<const unsigned char*>(display_token.c_str()), display_token.length());
+    std::string decoded_display_token(reinterpret_cast<char*>(&output), outlen);
+    return decoded_display_token.substr(0, decoded_display_token.find(TOKEN_DELIMITER));
+}
+
+static std::string TokenFromDisplayToken(const std::string& display_token) {
+    std::size_t outlen = 4 * ((display_token.length() + 2) / 3);
+    std::array<unsigned char, 512> output{};
+    EVP_DecodeBlock(output.data(), reinterpret_cast<const unsigned char*>(display_token.c_str()), display_token.length());
+    std::string decoded_display_token(reinterpret_cast<char*>(&output), outlen);
+    return decoded_display_token.substr(decoded_display_token.find(TOKEN_DELIMITER) + 1);
+}
+
+static Network::Room::BanList LoadBanList(const std::string& path) {
+    std::ifstream file;
+    Common::FS::OpenFileStream(file, path, std::ios_base::in);
+    if (!file || file.eof()) {
+        LOG_ERROR(Network, "Could not open ban list!");
+        return {};
+    }
+    std::string magic;
+    std::getline(file, magic);
+    if (magic != BAN_LIST_MAGIC) {
+        LOG_ERROR(Network, "Ban list is not valid!");
+        return {};
+    }
+
+    // false = username ban list, true = ip ban list
+    bool ban_list_type = false;
+    Network::Room::UsernameBanList username_ban_list;
+    Network::Room::IPBanList ip_ban_list;
+    while (!file.eof()) {
+        std::string line;
+        std::getline(file, line);
+        line.erase(std::remove(line.begin(), line.end(), '\0'), line.end());
+        line = Common::StripSpaces(line);
+        if (line.empty()) {
+            // An empty line marks start of the IP ban list
+            ban_list_type = true;
+            continue;
+        }
+        if (ban_list_type) {
+            ip_ban_list.emplace_back(line);
+        } else {
+            username_ban_list.emplace_back(line);
+        }
+    }
+    return {username_ban_list, ip_ban_list};
+}
+
+static void SaveBanList(const Network::Room::BanList& ban_list, const std::string& path) {
+    std::ofstream file;
+    Common::FS::OpenFileStream(file, path, std::ios_base::out);
+    if (!file) {
+        LOG_ERROR(Network, "Could not save ban list!");
+        return;
+    }
+    file << BAN_LIST_MAGIC << "\n";
+    // Username ban list
+    for (const auto& username : ban_list.first)
+        file << username << "\n";
+    file << "\n";
+    // IP ban list
+    for (const auto& ip : ban_list.second)
+        file << ip << "\n";
+}
+
+int LaunchRoomLoopWithArguments(Common::ProgramArguments& args) {
+    if (args.room_name.empty()) {
+        LOG_ERROR(Network, "Room name is empty!");
+        return -1;
+    }
+    if (args.preferred_game.empty()) {
+        LOG_ERROR(Network, "Preferred game is empty!");
+        return -1;
+    }
+    if (args.preferred_game_id == 0) {
+        LOG_WARNING(Network,
+            "preferred-game-id not set!\n"
+            "This should get set to allow users to find your room.\n"
+            "Set with --preferred-game-id id");
+    }
+    if (args.bind_address.empty()) {
+        LOG_INFO(Network, "Bind address is empty: defaulting to 0.0.0.0");
+    }
+    if (args.ban_list_file.empty()) {
+        LOG_WARNING(Network,
+            "Ban list file not set!\n"
+            "This should get set to load and save room ban list.\n"
+            "Set with --ban-list-file <file>");
+    }
+    bool announce = true;
+    if (args.token.empty() && announce) {
+        announce = false;
+        LOG_INFO(Network, "Token is empty: Hosting a private room");
+    }
+    if (args.web_api_url.empty() && announce) {
+        announce = false;
+        LOG_INFO(Network, "Endpoint url is empty: Hosting a private room");
+    }
+    if (announce) {
+        if (args.username.empty()) {
+            LOG_INFO(Network, "Hosting a public room");
+            Settings::values.web_api_url = args.web_api_url;
+            PadToken(args.token);
+            Settings::values.eden_username = UsernameFromDisplayToken(args.token);
+            args.username = Settings::values.eden_username.GetValue();
+            Settings::values.eden_token = TokenFromDisplayToken(args.token);
+        } else {
+            LOG_INFO(Network, "Hosting a public room");
+            Settings::values.web_api_url = args.web_api_url;
+            Settings::values.eden_username = args.username;
+            Settings::values.eden_token = args.token;
+        }
+    }
+
+    // Load the ban list
+    Network::Room::BanList ban_list;
+    if (!args.ban_list_file.empty()) {
+        ban_list = LoadBanList(args.ban_list_file);
+    }
+
+    std::unique_ptr<Network::VerifyUser::Backend> verify_backend;
+    if (announce) {
+#ifdef ENABLE_WEB_SERVICE
+        verify_backend =
+            std::make_unique<WebService::VerifyUserJWT>(Settings::values.web_api_url.GetValue());
+#else
+        LOG_INFO(Network,
+                 "Eden Web Services is not available with this build: validation is disabled.");
+        verify_backend = std::make_unique<Network::VerifyUser::NullBackend>();
+#endif
+    } else {
+        verify_backend = std::make_unique<Network::VerifyUser::NullBackend>();
+    }
+
+    Network::Init();
+    if (auto room = Network::GetRoom().lock()) {
+        AnnounceMultiplayerRoom::GameInfo preferred_game_info{
+            .name = args.preferred_game,
+            .id = args.preferred_game_id
+        };
+        if (!room->Create(args.room_name, args.room_description, args.bind_address, u16(args.port),
+                          args.password, args.max_members, args.username, preferred_game_info,
+                          std::move(verify_backend), ban_list)) {
+            LOG_INFO(Network, "Failed to create room: ");
+            return -1;
+        }
+        LOG_INFO(Network, "Room is open. Close with Q+Enter...");
+        auto announce_session = std::make_unique<Core::AnnounceMultiplayerSession>();
+        if (announce) {
+            announce_session->Start();
+        }
+        while (room->GetState() == Network::Room::State::Open) {
+            std::string in;
+            std::cin >> in;
+            if (in.size() > 0) {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        if (announce) {
+            announce_session->Stop();
+        }
+        announce_session.reset();
+        // Save the ban list
+        if (!args.ban_list_file.empty()) {
+            SaveBanList(room->GetBanList(), args.ban_list_file);
+        }
+        room->Destroy();
+    }
+    Network::Shutdown();
+    return 0;
+}
+#endif
 
 } // namespace Network

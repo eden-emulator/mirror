@@ -17,6 +17,7 @@
 #include <QTranslator>
 #include <qaction.h>
 
+#include "common/program_args.h"
 #include "common/common_types.h"
 #include "common/settings_enums.h"
 #include "frontend_common/content_manager.h"
@@ -165,7 +166,7 @@ class MainWindow : public QMainWindow {
 public:
     void filterBarSetChecked(bool state);
     void UpdateUITheme();
-    explicit MainWindow(bool has_broken_vulkan);
+    explicit MainWindow(Common::ProgramArguments&& args, bool has_broken_vulkan);
     ~MainWindow() override;
 
     bool DropAction(QDropEvent* event);

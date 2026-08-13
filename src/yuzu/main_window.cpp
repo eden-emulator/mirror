@@ -350,7 +350,7 @@ inline static bool isDarkMode() {
 }
 #endif // _WIN32
 
-MainWindow::MainWindow(bool has_broken_vulkan)
+MainWindow::MainWindow(Common::ProgramArguments&& opts, bool has_broken_vulkan)
     : ui{std::make_unique<Ui::MainWindow>()},
       input_subsystem{std::make_shared<InputCommon::InputSubsystem>()}, user_data_migrator{this} {
     QtCommon::Init(this);
@@ -512,73 +512,33 @@ MainWindow::MainWindow(bool has_broken_vulkan)
         return;
     }
 
-    QString game_path;
-    bool should_launch_qlaunch = false;
-    bool should_launch_hlaunch = false;
-    bool should_launch_setup = false;
-    bool has_gamepath = false;
-    bool is_fullscreen = false;
-
-    // Preserves drag/drop functionality
-    for (int i = 1; i < args.size(); ++i) {
-        if (args[i] == QStringLiteral("-f")) {
-            // Launch game in fullscreen mode
-            is_fullscreen = true;
-        } else if (args[i] == QStringLiteral("-u") && i < args.size() - 1) {
-            // Launch game with a specific user
-            int user_arg_idx = ++i;
-            bool argument_ok;
-            std::size_t selected_user = args[user_arg_idx].toUInt(&argument_ok);
-            if (!argument_ok) {
-                // try to look it up by username, only finds the first username that matches.
-                std::string const user_arg_str = args[user_arg_idx].toStdString();
-                auto const user_idx =
-                    QtCommon::system->GetProfileManager().GetUserIndex(user_arg_str);
-                if (user_idx != std::nullopt) {
-                    selected_user = user_idx.value();
-                } else {
-                    LOG_ERROR(Frontend, "Invalid user argument '{}'", user_arg_str);
-                    continue;
-                }
-            }
-            if (QtCommon::system->GetProfileManager().UserExistsIndex(selected_user)) {
-                Settings::values.current_user = s32(selected_user);
-                user_flag_cmd_line = true;
-            } else {
-                LOG_ERROR(Frontend, "Selected user {} doesn't exist", selected_user);
-            }
-        } else if (args[i] == QStringLiteral("-g") && i < args.size() - 1) {
-            // Launch game at path
-            game_path = args[++i];
-            has_gamepath = true;
-        } else if (args[i] == QStringLiteral("-input-profile") && i < args.size() - 1) {
-            auto& players = Settings::values.players.GetValue();
-            players[0].profile_name = args[++i].toStdString();
-        } else if (args[i] == QStringLiteral("-qlaunch")) {
-            should_launch_qlaunch = true;
-        } else if (args[i] == QStringLiteral("-hlaunch")) {
-            should_launch_hlaunch = true;
-        } else if (args[i] == QStringLiteral("-setup")) {
-            should_launch_setup = true;
+    if (opts.selected_user) {
+        auto user_index = *opts.selected_user;
+        if (QtCommon::system->GetProfileManager().UserExistsIndex(user_index)) {
+            Settings::values.current_user = s32(user_index);
+            user_flag_cmd_line = true;
         } else {
-            game_path = args[i];
-            has_gamepath = true;
+            LOG_ERROR(Frontend, "Selected user {} doesn't exist", user_index);
         }
     }
 
-    // Override fullscreen setting if gamepath or argument is provided
-    if (has_gamepath || is_fullscreen) {
-        ui->action_Fullscreen->setChecked(is_fullscreen);
+    if (!opts.input_profile.empty()) {
+        Settings::values.players.GetValue()[0].profile_name = opts.input_profile;
     }
 
-    if (should_launch_setup) {
+    // Override fullscreen setting if gamepath or argument is provided
+    if (!opts.filepath.empty() && opts.fullscreen) {
+        ui->action_Fullscreen->setChecked(opts.fullscreen);
+    }
+
+    if (opts.should_launch_setup) {
         LaunchFirmwareApplet(u64(Service::AM::AppletProgramId::Starter), std::nullopt);
     } else {
-        if (!game_path.isEmpty()) {
-            BootGame(game_path, ApplicationAppletParameters());
-        } else if (should_launch_qlaunch) {
+        if (!opts.filepath.empty()) {
+            BootGame(QString::fromStdString(opts.filepath), ApplicationAppletParameters());
+        } else if (opts.should_launch_qlaunch) {
             LaunchFirmwareApplet(u64(Service::AM::AppletProgramId::QLaunch), std::nullopt);
-        } else if (should_launch_hlaunch) {
+        } else if (opts.should_launch_hlaunch) {
             std::filesystem::path const sd_dir =
                 Common::FS::GetEdenPathString(Common::FS::EdenPath::SDMCDir);
             auto const hbl_path = (sd_dir / "atmosphere" / "hbl.nsp").string();
