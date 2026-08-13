@@ -299,7 +299,7 @@
     <string name="gpu_driver_manager">GPU driver manager</string>
     <string name="install_gpu_driver_description">Install alternative drivers for potentially better performance or accuracy</string>
     <string name="frame_gen">Frame generation</string>
-    <string name="frame_gen_description">Run the Lossless Scaling interpolation shaders on every frame. Incomplete: the interpolated frame is computed but not yet displayed, so this only costs performance for now.</string>
+    <string name="frame_gen_description">Insert interpolated frames between rendered ones using Lossless Scaling. Forces FIFO presentation while enabled, since other modes discard the generated frames. Adds about one frame of latency.</string>
     <string name="frame_gen_multiplier">Frame multiplier</string>
     <string name="frame_gen_multiplier_description">How many frames to display for each rendered frame. Higher values cost proportionally more GPU time.</string>
     <string name="frame_gen_multiplier_2x">2x (one generated frame)</string>
