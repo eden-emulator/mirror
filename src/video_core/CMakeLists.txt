@@ -129,6 +129,8 @@ add_library(video_core STATIC
     renderer_vulkan/present/frame_gen.h
     renderer_vulkan/present/lsfg_alpha.cpp
     renderer_vulkan/present/lsfg_alpha.h
+    renderer_vulkan/present/lsfg_beta.cpp
+    renderer_vulkan/present/lsfg_beta.h
     renderer_vulkan/present/lsfg_common.cpp
     renderer_vulkan/present/lsfg_common.h
     renderer_vulkan/present/lsfg_mipmaps.cpp
