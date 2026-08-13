@@ -304,6 +304,7 @@
     <string name="frame_gen_dump_flow_description">Write the optical flow mip levels to the lossless/debug folder once, for troubleshooting</string>
     <string name="frame_gen_unsupported">Frame generation unavailable</string>
     <string name="frame_gen_unsupported_description">This GPU driver does not support the Vulkan memory model, which the Lossless Scaling shaders require.</string>
+    <string name="lossless_scaling_setup_description">Optional. Provide your own Lossless.dll to enable frame generation later</string>
     <string name="lossless_scaling_install">Install Lossless.dll</string>
     <string name="lossless_scaling_install_description">Frame generation needs your own copy of Lossless.dll from Lossless Scaling</string>
     <string name="lossless_scaling_replace_description">Select a different copy of Lossless.dll</string>

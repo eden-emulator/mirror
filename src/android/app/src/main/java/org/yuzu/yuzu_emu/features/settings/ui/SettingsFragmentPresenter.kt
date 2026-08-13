@@ -81,6 +81,25 @@ class SettingsFragmentPresenter(
         sl.apply {
             add(HeaderSetting(R.string.frame_gen))
 
+            val installed = LosslessScalingHelper.isInstalled()
+
+            add(
+                RunnableSetting(
+                    titleId = if (installed) {
+                        R.string.lossless_scaling_replace
+                    } else {
+                        R.string.lossless_scaling_install
+                    },
+                    descriptionId = if (installed) {
+                        R.string.lossless_scaling_replace_description
+                    } else {
+                        R.string.lossless_scaling_install_description
+                    },
+                    isRunnable = !NativeLibrary.isRunning(),
+                    iconId = R.drawable.ic_install
+                ) { settingsViewModel.setShouldShowLosslessInstaller(true) }
+            )
+
             if (!LosslessScalingHelper.isSupportedByGpu()) {
                 add(
                     RunnableSetting(
@@ -92,28 +111,12 @@ class SettingsFragmentPresenter(
                 return@apply
             }
 
-            if (!LosslessScalingHelper.isInstalled()) {
-                add(
-                    RunnableSetting(
-                        titleId = R.string.lossless_scaling_install,
-                        descriptionId = R.string.lossless_scaling_install_description,
-                        isRunnable = !NativeLibrary.isRunning(),
-                        iconId = R.drawable.ic_install
-                    ) { settingsViewModel.setShouldShowLosslessInstaller(true) }
-                )
+            if (!installed) {
                 return@apply
             }
 
             add(BooleanSetting.RENDERER_FRAME_GEN.key)
             add(BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW.key)
-            add(
-                RunnableSetting(
-                    titleId = R.string.lossless_scaling_replace,
-                    descriptionId = R.string.lossless_scaling_replace_description,
-                    isRunnable = !NativeLibrary.isRunning(),
-                    iconId = R.drawable.ic_install
-                ) { settingsViewModel.setShouldShowLosslessInstaller(true) }
-            )
         }
     }
 
