@@ -40,11 +40,11 @@ add_executable(yuzu-cmd
 
 target_link_libraries(yuzu-cmd PRIVATE common network core input_common frontend_common video_core)
 if (ENABLE_WEB_SERVICE)
-    target_compile_definitions(yuzu-room PRIVATE ENABLE_WEB_SERVICE)
-    target_link_libraries(yuzu-room PRIVATE web_service)
+    target_compile_definitions(yuzu-cmd PRIVATE ENABLE_WEB_SERVICE)
+    target_link_libraries(yuzu-cmd PRIVATE web_service)
 endif()
 
-target_link_libraries(yuzu-room PRIVATE
+target_link_libraries(yuzu-cmd PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto)
 
