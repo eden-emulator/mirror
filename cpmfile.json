@@ -65,6 +65,12 @@
         "repo": "eden-emulator/discord-rpc",
         "version": "0d8b2d6a37"
     },
+    "dxbc": {
+        "bundled": true,
+        "hash": "196d26c07747d7aa2ced6fb1a5ae6f665e9b917de223a540038690b037c70a1eeca51c21d42aa5bec9fff7df0a6656a75ee8b4e2cb4008469f18a6812280f831",
+        "repo": "PancakeTAS/dxbc",
+        "version": "78ab59a8aaeb43cd1b0a5e91ba86722433a10b78"
+    },
     "enet": {
         "find_args": "MODULE",
         "hash": "a0d2fa8c957704dd49e00a726284ac5ca034b50b00d2b20a94fa1bbfbb80841467834bfdc84aa0ed0d6aab894608fd6c86c3b94eee46343f0e6d9c22e391dbf9",

@@ -388,6 +388,11 @@ struct Values {
                                                   true,
                                                   true};
 
+    SwitchableSetting<bool> frame_gen{linkage, false, "frame_gen", Category::Renderer,
+                                      Specialization::Default, true, true};
+    SwitchableSetting<bool> frame_gen_dump_flow{linkage, false, "frame_gen_dump_flow",
+                                                Category::Renderer};
+
     SwitchableSetting<bool> use_asynchronous_gpu_emulation{linkage,
 #ifdef __ANDROID__
         false,

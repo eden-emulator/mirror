@@ -36,6 +36,9 @@ class SettingsViewModel : ViewModel() {
     val shouldReloadSettingsList: StateFlow<Boolean> get() = _shouldReloadSettingsList
     private val _shouldReloadSettingsList = MutableStateFlow(false)
 
+    val shouldShowLosslessInstaller: StateFlow<Boolean> get() = _shouldShowLosslessInstaller
+    private val _shouldShowLosslessInstaller = MutableStateFlow(false)
+
     val sliderProgress: StateFlow<Int> get() = _sliderProgress
     private val _sliderProgress = MutableStateFlow(-1)
 
@@ -83,6 +86,10 @@ class SettingsViewModel : ViewModel() {
 
     fun setShouldReloadSettingsList(value: Boolean) {
         _shouldReloadSettingsList.value = value
+    }
+
+    fun setShouldShowLosslessInstaller(value: Boolean) {
+        _shouldShowLosslessInstaller.value = value
     }
 
     fun setSliderTextValue(value: Float, units: String) {

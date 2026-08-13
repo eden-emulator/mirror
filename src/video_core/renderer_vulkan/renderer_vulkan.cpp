@@ -155,7 +155,8 @@ try
                   present_manager,
                   scheduler,
                   PresentFiltersForAppletCapture)
-    , rasterizer(render_window, gpu, device_memory, device, memory_allocator, state_tracker, scheduler) {
+    , rasterizer(render_window, gpu, device_memory, device, memory_allocator, state_tracker, scheduler)
+    , frame_gen(memory_allocator, scheduler) {
 
     if (Settings::values.renderer_force_max_clock.GetValue() && device.ShouldBoostClocks()) {
         turbo_mode.emplace(instance, dld);
@@ -191,6 +192,9 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
     blit_swapchain.DrawToFrame(device, rasterizer, frame, framebuffers,
                                render_window.GetFramebufferLayout(), swapchain.GetImageCount(),
                                swapchain.GetImageViewFormat());
+
+    frame_gen.Process(device, frame);
+
     scheduler.Flush(*frame->render_ready);
 
     present_manager.Present(frame);

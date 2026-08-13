@@ -608,6 +608,20 @@ abstract class SettingsItem(
                 )
             )
             put(
+                SwitchSetting(
+                    BooleanSetting.RENDERER_FRAME_GEN,
+                    titleId = R.string.frame_gen,
+                    descriptionId = R.string.frame_gen_description
+                )
+            )
+            put(
+                SwitchSetting(
+                    BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW,
+                    titleId = R.string.frame_gen_dump_flow,
+                    descriptionId = R.string.frame_gen_dump_flow_description
+                )
+            )
+            put(
                 SingleChoiceSetting(
                     IntSetting.RENDERER_SCREEN_LAYOUT,
                     titleId = R.string.renderer_screen_layout,

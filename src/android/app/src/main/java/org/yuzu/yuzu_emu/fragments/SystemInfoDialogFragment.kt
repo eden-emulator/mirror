@@ -72,6 +72,18 @@ class SystemInfoDialogFragment : DialogFragment() {
 
                 val vulkanDriver = NativeLibrary.getVulkanDriverVersion()
                 appendLine("${getString(R.string.vulkan_driver_version)}: $vulkanDriver")
+
+                val frameGen = NativeLibrary.supportsFrameGeneration()
+                appendLine(
+                    "${getString(R.string.frame_generation_support)}: " +
+                        getString(
+                            if (frameGen) {
+                                R.string.frame_generation_supported
+                            } else {
+                                R.string.frame_generation_unsupported
+                            }
+                        )
+                )
             } catch (e: Exception) {
                 appendLine("${getString(R.string.error_getting_emulator_info)}: ${e.message}")
             }

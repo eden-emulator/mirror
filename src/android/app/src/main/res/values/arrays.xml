@@ -638,6 +638,16 @@
         <item>@string/error_keys_failed_init</item>
     </string-array>
 
+    <string-array name="losslessDllResults">
+        <item>""</item>
+        <item>@string/error_lossless_copy_failed</item>
+        <item>@string/error_lossless_unreadable</item>
+        <item>@string/error_lossless_not_pe</item>
+        <item>@string/error_lossless_missing_shaders</item>
+        <item>@string/error_lossless_translation_failed</item>
+        <item>@string/error_lossless_cache_failed</item>
+    </string-array>
+
     <!-- GPU Logging Arrays -->
     <string-array name="gpuLogLevelEntries">
         <item>Off</item>

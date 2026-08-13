@@ -27,6 +27,7 @@ import org.yuzu.yuzu_emu.features.settings.model.ShortSetting
 import org.yuzu.yuzu_emu.features.settings.model.StringSetting
 import org.yuzu.yuzu_emu.features.settings.model.view.*
 import org.yuzu.yuzu_emu.utils.InputHandler
+import org.yuzu.yuzu_emu.utils.LosslessScalingHelper
 import org.yuzu.yuzu_emu.utils.NativeConfig
 import org.yuzu.yuzu_emu.utils.DirectoryInitialization
 import org.yuzu.yuzu_emu.utils.FullscreenHelper
@@ -73,6 +74,46 @@ class SettingsFragmentPresenter(
             !NativeConfig.usingGlobal(key)
         } else {
             NativeConfig.usingGlobal(key)
+        }
+    }
+
+    private fun addFrameGenSettings(sl: ArrayList<SettingsItem>) {
+        sl.apply {
+            add(HeaderSetting(R.string.frame_gen))
+
+            if (!LosslessScalingHelper.isSupportedByGpu()) {
+                add(
+                    RunnableSetting(
+                        titleId = R.string.frame_gen_unsupported,
+                        descriptionId = R.string.frame_gen_unsupported_description,
+                        isRunnable = false
+                    ) {}
+                )
+                return@apply
+            }
+
+            if (!LosslessScalingHelper.isInstalled()) {
+                add(
+                    RunnableSetting(
+                        titleId = R.string.lossless_scaling_install,
+                        descriptionId = R.string.lossless_scaling_install_description,
+                        isRunnable = !NativeLibrary.isRunning(),
+                        iconId = R.drawable.ic_install
+                    ) { settingsViewModel.setShouldShowLosslessInstaller(true) }
+                )
+                return@apply
+            }
+
+            add(BooleanSetting.RENDERER_FRAME_GEN.key)
+            add(BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW.key)
+            add(
+                RunnableSetting(
+                    titleId = R.string.lossless_scaling_replace,
+                    descriptionId = R.string.lossless_scaling_replace_description,
+                    isRunnable = !NativeLibrary.isRunning(),
+                    iconId = R.drawable.ic_install
+                ) { settingsViewModel.setShouldShowLosslessInstaller(true) }
+            )
         }
     }
 
@@ -279,6 +320,8 @@ class SettingsFragmentPresenter(
                 add(IntSetting.FSR_SHARPENING_SLIDER.key)
             }
             add(IntSetting.RENDERER_ANTI_ALIASING.key)
+
+            addFrameGenSettings(this)
 
             add(HeaderSetting(R.string.advanced))
 

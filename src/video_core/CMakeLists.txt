@@ -59,6 +59,10 @@ add_library(video_core STATIC
     engines/maxwell_dma.h
     engines/puller.cpp
     engines/puller.h
+    frame_gen/lossless_dll.cpp
+    frame_gen/lossless_dll.h
+    frame_gen/lsfg_translate.cpp
+    frame_gen/lsfg_translate.h
     framebuffer_config.cpp
     framebuffer_config.h
     fsr.cpp
@@ -121,6 +125,12 @@ add_library(video_core STATIC
     renderer_vulkan/present/anti_alias_pass.h
     renderer_vulkan/present/filters.cpp
     renderer_vulkan/present/filters.h
+    renderer_vulkan/present/frame_gen.cpp
+    renderer_vulkan/present/frame_gen.h
+    renderer_vulkan/present/lsfg_mipmaps.cpp
+    renderer_vulkan/present/lsfg_mipmaps.h
+    renderer_vulkan/present/lsfg_shaders.cpp
+    renderer_vulkan/present/lsfg_shaders.h
     renderer_vulkan/present/fsr.cpp
     renderer_vulkan/present/fsr.h
     renderer_vulkan/present/fxaa.cpp
@@ -345,6 +355,7 @@ add_dependencies(video_core host_shaders)
 target_include_directories(video_core PRIVATE ${HOST_SHADERS_INCLUDE})
 
 target_link_libraries(video_core PRIVATE sirit::sirit)
+target_link_libraries(video_core PRIVATE dxbc)
 
 # Header-only stuff needed by all dependent targets
 target_link_libraries(video_core PUBLIC Vulkan::Headers Vulkan::UtilityHeaders GPUOpen::VulkanMemoryAllocator)
