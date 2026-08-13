@@ -32,14 +32,17 @@ public:
     LsfgChain(const LsfgChain&) = delete;
     LsfgChain& operator=(const LsfgChain&) = delete;
 
-    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count);
+    void DispatchShared(vk::CommandBuffer cmdbuf, u64 frame_count);
+
+    void DispatchGeneration(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation,
+                            u32 target, VkImage image, VkExtent2D extent);
+
+    void SetTarget(const Device& device, size_t generation, u32 target, VkImageView view) {
+        generate.SetTarget(device, generation, target, view);
+    }
 
     [[nodiscard]] LsfgImage& Input(u64 frame_count) {
         return frames[frame_count % frames.size()];
-    }
-
-    [[nodiscard]] LsfgImage& Output(size_t generation) {
-        return generate.Output(generation);
     }
 
     [[nodiscard]] size_t GenerationCount() const {
@@ -77,6 +80,7 @@ private:
 
     LsfgImagePair frames;
     LsfgMipmaps mipmaps;
+    LsfgAlphaPasses alpha_passes;
     std::array<LsfgAlpha, LSFG_MIP_LEVELS> alpha;
     LsfgBeta beta;
     std::array<LsfgGamma, LSFG_MIP_LEVELS> gamma;

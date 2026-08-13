@@ -121,6 +121,28 @@ LsfgBarriers& LsfgBarriers::ReadToWrite(LsfgImage* image) {
     return image == nullptr ? *this : ReadToWrite(*image);
 }
 
+LsfgBarriers& LsfgBarriers::DiscardToWrite(VkImage image) {
+    barriers.push_back(VkImageMemoryBarrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .pNext = nullptr,
+        .srcAccessMask = 0,
+        .dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+        .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = image,
+        .subresourceRange{
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+    });
+    return *this;
+}
+
 VkDeviceSize LsfgResources::BufferSize() {
     return sizeof(LsfgConstants);
 }
@@ -222,6 +244,10 @@ LsfgDescriptorWriter& LsfgDescriptorWriter::AddStorageImage(const LsfgImage& ima
     return PushImage(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_NULL_HANDLE, image.View());
 }
 
+LsfgDescriptorWriter& LsfgDescriptorWriter::AddStorageView(VkImageView view) {
+    return PushImage(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_NULL_HANDLE, view);
+}
+
 LsfgDescriptorWriter& LsfgDescriptorWriter::AddUniformBuffer(VkBuffer buffer, VkDeviceSize size) {
     buffer_infos.push_back(VkDescriptorBufferInfo{
         .buffer = buffer,
@@ -266,7 +292,15 @@ LsfgPass::LsfgPass(const Device& device, const LsfgShaders& shaders, u32 shader_
 }
 
 void LsfgPass::Bind(vk::CommandBuffer cmdbuf, VkDescriptorSet set) const {
+    BindPipeline(cmdbuf);
+    BindSet(cmdbuf, set);
+}
+
+void LsfgPass::BindPipeline(vk::CommandBuffer cmdbuf) const {
     cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+}
+
+void LsfgPass::BindSet(vk::CommandBuffer cmdbuf, VkDescriptorSet set) const {
     cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline_layout, 0, set, {});
 }
 

@@ -18,22 +18,37 @@ class LsfgShaders;
 
 constexpr size_t LSFG_ALPHA_STAGES = 4;
 
+class LsfgAlphaPasses {
+public:
+    LsfgAlphaPasses() = default;
+    LsfgAlphaPasses(const Device& device, const LsfgShaders& shaders);
+
+    [[nodiscard]] const LsfgPass& Get(size_t stage) const {
+        return passes[stage];
+    }
+
+private:
+    std::array<LsfgPass, LSFG_ALPHA_STAGES> passes;
+};
+
 class LsfgAlpha {
 public:
     LsfgAlpha() = default;
-    LsfgAlpha(const Device& device, MemoryAllocator& memory_allocator, const LsfgShaders& shaders,
-              LsfgResources& resources, vk::DescriptorPool& descriptor_pool, LsfgImage& input);
+    LsfgAlpha(const Device& device, MemoryAllocator& memory_allocator,
+              const LsfgAlphaPasses& passes_, LsfgResources& resources,
+              vk::DescriptorPool& descriptor_pool, LsfgImage& input);
 
-    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count);
+    void PushBarriers(LsfgBarriers& barriers, u64 frame_count, size_t stage);
+    void DispatchStage(vk::CommandBuffer cmdbuf, u64 frame_count, size_t stage);
 
     [[nodiscard]] LsfgImageHistory& Outputs() {
         return out_images;
     }
 
 private:
+    const LsfgAlphaPasses* passes{};
     LsfgImage* input{};
 
-    std::array<LsfgPass, LSFG_ALPHA_STAGES> passes;
     std::array<VkDescriptorSet, LSFG_ALPHA_STAGES - 1> descriptor_sets{};
     std::array<VkDescriptorSet, LSFG_HISTORY_SLOTS> last_descriptor_sets{};
     vk::DescriptorSets owned_sets;

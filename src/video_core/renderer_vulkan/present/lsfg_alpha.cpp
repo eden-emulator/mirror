@@ -31,10 +31,7 @@ constexpr u32 DISPATCH_TILE_SHIFT = 3;
 
 } // Anonymous namespace
 
-LsfgAlpha::LsfgAlpha(const Device& device, MemoryAllocator& memory_allocator,
-                     const LsfgShaders& shaders, LsfgResources& resources,
-                     vk::DescriptorPool& descriptor_pool, LsfgImage& input_)
-    : input{&input_} {
+LsfgAlphaPasses::LsfgAlphaPasses(const Device& device, const LsfgShaders& shaders) {
     using namespace VideoCore::FrameGen::PerformanceShader;
 
     passes[0] = LsfgPass(device, shaders, ALPHA[0],
@@ -53,7 +50,12 @@ LsfgAlpha::LsfgAlpha(const Device& device, MemoryAllocator& memory_allocator,
                          {{1, VK_DESCRIPTOR_TYPE_SAMPLER},
                           {2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE},
                           {2, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE}});
+}
 
+LsfgAlpha::LsfgAlpha(const Device& device, MemoryAllocator& memory_allocator,
+                     const LsfgAlphaPasses& passes_, LsfgResources& resources,
+                     vk::DescriptorPool& descriptor_pool, LsfgImage& input_)
+    : passes{&passes_}, input{&input_} {
     const VkExtent2D half_extent = HalveExtent(input->Extent());
     const VkExtent2D quarter_extent = HalveExtent(half_extent);
 
@@ -68,10 +70,10 @@ LsfgAlpha::LsfgAlpha(const Device& device, MemoryAllocator& memory_allocator,
 
     std::vector<VkDescriptorSetLayout> layouts;
     for (size_t i = 0; i < LSFG_ALPHA_STAGES - 1; ++i) {
-        layouts.push_back(passes[i].SetLayout());
+        layouts.push_back(passes->Get(i).SetLayout());
     }
     for (size_t i = 0; i < LSFG_HISTORY_SLOTS; ++i) {
-        layouts.push_back(passes[3].SetLayout());
+        layouts.push_back(passes->Get(3).SetLayout());
     }
     owned_sets = CreateWrappedDescriptorSets(descriptor_pool, layouts);
 
@@ -108,31 +110,31 @@ LsfgAlpha::LsfgAlpha(const Device& device, MemoryAllocator& memory_allocator,
     }
 }
 
-void LsfgAlpha::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count) {
-    const VkExtent2D half_extent = temp1.Extent();
-    u32 groups_x = GroupCount(half_extent.width);
-    u32 groups_y = GroupCount(half_extent.height);
+void LsfgAlpha::PushBarriers(LsfgBarriers& barriers, u64 frame_count, size_t stage) {
+    switch (stage) {
+    case 0:
+        barriers.WriteToRead(*input).ReadToWrite(temp1);
+        break;
+    case 1:
+        barriers.WriteToRead(temp1).ReadToWrite(temp2);
+        break;
+    case 2:
+        barriers.WriteToRead(temp2).ReadToWriteAll(temp3);
+        break;
+    default:
+        barriers.WriteToReadAll(temp3).ReadToWriteAll(out_images[frame_count % LSFG_HISTORY_SLOTS]);
+        break;
+    }
+}
 
-    LsfgBarriers(cmdbuf).WriteToRead(*input).ReadToWrite(temp1).Build();
-    passes[0].Bind(cmdbuf, descriptor_sets[0]);
-    cmdbuf.Dispatch(groups_x, groups_y, 1);
+void LsfgAlpha::DispatchStage(vk::CommandBuffer cmdbuf, u64 frame_count, size_t stage) {
+    const VkExtent2D extent = stage < 2 ? temp1.Extent() : temp3[0].Extent();
+    const VkDescriptorSet set = stage < LSFG_ALPHA_STAGES - 1
+                                    ? descriptor_sets[stage]
+                                    : last_descriptor_sets[frame_count % LSFG_HISTORY_SLOTS];
 
-    LsfgBarriers(cmdbuf).WriteToRead(temp1).ReadToWrite(temp2).Build();
-    passes[1].Bind(cmdbuf, descriptor_sets[1]);
-    cmdbuf.Dispatch(groups_x, groups_y, 1);
-
-    const VkExtent2D quarter_extent = temp3[0].Extent();
-    groups_x = GroupCount(quarter_extent.width);
-    groups_y = GroupCount(quarter_extent.height);
-
-    LsfgBarriers(cmdbuf).WriteToRead(temp2).ReadToWriteAll(temp3).Build();
-    passes[2].Bind(cmdbuf, descriptor_sets[2]);
-    cmdbuf.Dispatch(groups_x, groups_y, 1);
-
-    const size_t slot = frame_count % LSFG_HISTORY_SLOTS;
-    LsfgBarriers(cmdbuf).WriteToReadAll(temp3).ReadToWriteAll(out_images[slot]).Build();
-    passes[3].Bind(cmdbuf, last_descriptor_sets[slot]);
-    cmdbuf.Dispatch(groups_x, groups_y, 1);
+    passes->Get(stage).BindSet(cmdbuf, set);
+    cmdbuf.Dispatch(GroupCount(extent.width), GroupCount(extent.height), 1);
 }
 
 } // namespace Vulkan

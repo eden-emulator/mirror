@@ -30,6 +30,7 @@ constexpr size_t LSFG_HISTORY_SLOTS = 3;
 constexpr size_t LSFG_MIN_MULTIPLIER = 2;
 constexpr size_t LSFG_MAX_MULTIPLIER = 4;
 constexpr size_t LSFG_MAX_GENERATIONS = LSFG_MAX_MULTIPLIER - 1;
+constexpr size_t LSFG_MAX_TARGETS = 7;
 
 [[nodiscard]] constexpr f32 LsfgTimestamp(size_t generation, size_t generation_count) {
     return static_cast<f32>(generation + 1) / static_cast<f32>(generation_count + 1);
@@ -108,6 +109,7 @@ public:
     LsfgBarriers& ReadToWrite(LsfgImage& image);
     LsfgBarriers& WriteToRead(LsfgImage* image);
     LsfgBarriers& ReadToWrite(LsfgImage* image);
+    LsfgBarriers& DiscardToWrite(VkImage image);
 
     template <typename Range>
     LsfgBarriers& WriteToReadAll(Range& images) {
@@ -142,6 +144,7 @@ public:
     LsfgDescriptorWriter& AddSampledImage(const LsfgImage& image);
     LsfgDescriptorWriter& AddSampledImage(const LsfgImage* image);
     LsfgDescriptorWriter& AddStorageImage(const LsfgImage& image);
+    LsfgDescriptorWriter& AddStorageView(VkImageView view);
     LsfgDescriptorWriter& AddUniformBuffer(VkBuffer buffer, VkDeviceSize size);
 
     template <typename Range>
@@ -189,6 +192,8 @@ public:
     }
 
     void Bind(vk::CommandBuffer cmdbuf, VkDescriptorSet set) const;
+    void BindPipeline(vk::CommandBuffer cmdbuf) const;
+    void BindSet(vk::CommandBuffer cmdbuf, VkDescriptorSet set) const;
 
 private:
     vk::DescriptorSetLayout descriptor_set_layout;

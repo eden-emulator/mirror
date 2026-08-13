@@ -27,7 +27,7 @@ public:
 
     [[nodiscard]] size_t GeneratedFrameCount() const;
 
-    void CopyToFrame(Frame* destination, size_t generation);
+    void GenerateInto(const Device& device, Frame* destination, size_t generation);
 
 private:
     void Rebuild(const Device& device, VkExtent2D extent, VkFormat format);
@@ -43,6 +43,7 @@ private:
     f32 built_flow_scale{};
     size_t built_generations{};
     u64 frame_count{};
+    u64 last_count{};
     bool generated{};
     bool unavailable{};
     bool dumped{};

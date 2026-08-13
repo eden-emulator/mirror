@@ -20,28 +20,32 @@ class LsfgShaders;
 class LsfgGenerate {
 public:
     LsfgGenerate() = default;
-    LsfgGenerate(const Device& device, MemoryAllocator& memory_allocator,
-                 const LsfgShaders& shaders, LsfgResources& resources,
+    LsfgGenerate(const Device& device, const LsfgShaders& shaders, LsfgResources& resources,
                  vk::DescriptorPool& descriptor_pool, LsfgImagePair& frames, LsfgImage& motion,
-                 LsfgImage& detail1, LsfgImage& detail2, VkFormat format,
-                 size_t generation_count);
+                 LsfgImage& detail1, LsfgImage& detail2, size_t generation_count);
 
-    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation);
+    void SetTarget(const Device& device, size_t generation, u32 target, VkImageView view);
 
-    [[nodiscard]] LsfgImage& Output(size_t generation) {
-        return generations[generation].out_image;
-    }
+    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation, u32 target,
+                  VkImage image, VkExtent2D extent);
 
 private:
-    struct Generation {
+    struct Target {
         std::array<VkDescriptorSet, 2> descriptor_sets{};
-        LsfgImage out_image;
+        VkImageView view{};
+    };
+
+    struct Generation {
+        std::array<Target, LSFG_MAX_TARGETS> targets{};
+        VkBuffer buffer{};
     };
 
     LsfgImagePair* frames{};
     LsfgImage* motion{};
     LsfgImage* detail1{};
     LsfgImage* detail2{};
+    VkSampler sampler{};
+    VkSampler edge_sampler{};
 
     LsfgPass pass;
     std::vector<Generation> generations;

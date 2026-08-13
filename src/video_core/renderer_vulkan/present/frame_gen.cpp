@@ -189,6 +189,11 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, bool
         return;
     }
 
+    if (!frame->storage_view) {
+        unavailable = true;
+        return;
+    }
+
     if (!shaders) {
         shaders.emplace(device);
         if (!shaders->IsValid()) {
@@ -205,6 +210,7 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, bool
     }
 
     const u64 count = frame_count++;
+    last_count = count;
     generated = generate && count + 1 >= LSFG_REQUIRED_FRAMES;
 
     scheduler.RequestOutsideRenderPassOperationContext();
@@ -212,7 +218,7 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, bool
                       dispatch = generated](vk::CommandBuffer cmdbuf) {
         CopyPresentedFrame(cmdbuf, source, chain->Input(count), extent);
         if (dispatch) {
-            chain->Dispatch(cmdbuf, count);
+            chain->DispatchShared(cmdbuf, count);
         }
     });
 
@@ -236,43 +242,15 @@ size_t FrameGen::GeneratedFrameCount() const {
     return generated && chain ? chain->GenerationCount() : 0;
 }
 
-void FrameGen::CopyToFrame(Frame* destination, size_t generation) {
+void FrameGen::GenerateInto(const Device& device, Frame* destination, size_t generation) {
+    chain->SetTarget(device, generation, destination->index, *destination->storage_view);
+
+    const VkExtent2D extent{.width = destination->width, .height = destination->height};
+
     scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([this, target = *destination->image,
-                      generation](vk::CommandBuffer cmdbuf) {
-        LsfgImage& source = chain->Output(generation);
-        const VkExtent2D extent = source.Extent();
-
-        const std::array before{
-            MakeTransitionBarrier(source.Handle(), VK_ACCESS_SHADER_WRITE_BIT,
-                                  VK_ACCESS_TRANSFER_READ_BIT, source.Layout(),
-                                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
-            MakeTransitionBarrier(target, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
-                                  VK_IMAGE_LAYOUT_UNDEFINED,
-                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL),
-        };
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {}, {}, before);
-
-        cmdbuf.CopyImage(source.Handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, target,
-                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, MakeCopyRegion(extent));
-
-        const std::array after{
-            MakeTransitionBarrier(source.Handle(), VK_ACCESS_TRANSFER_READ_BIT,
-                                  VK_ACCESS_SHADER_WRITE_BIT,
-                                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                  VK_IMAGE_LAYOUT_GENERAL),
-            MakeTransitionBarrier(target, VK_ACCESS_TRANSFER_WRITE_BIT,
-                                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                  VK_IMAGE_LAYOUT_GENERAL),
-        };
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                               0, {}, {}, after);
-
-        source.SetLayout(VK_IMAGE_LAYOUT_GENERAL);
+    scheduler.Record([this, count = last_count, generation, target = destination->index,
+                      image = *destination->image, extent](vk::CommandBuffer cmdbuf) {
+        chain->DispatchGeneration(cmdbuf, count, generation, target, image, extent);
     });
 }
 
@@ -349,9 +327,6 @@ void FrameGen::DumpDebugImages(u64 count) {
     dump("gamma6", chain->GammaOutput(LSFG_MIP_LEVELS - 1));
     dump("delta2_out1", chain->DeltaOutput1(LSFG_DELTA_INSTANCES - 1));
     dump("delta2_out2", chain->DeltaOutput2(LSFG_DELTA_INSTANCES - 1));
-    for (size_t generation = 0; generation < chain->GenerationCount(); ++generation) {
-        dump("generated" + std::to_string(generation), chain->Output(generation));
-    }
 }
 
 } // namespace Vulkan

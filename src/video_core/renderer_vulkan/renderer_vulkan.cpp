@@ -202,7 +202,7 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
     for (size_t generation = 0; generation < generated_frames; ++generation) {
         Frame* generated = present_manager.GetRenderFrame();
         blit_swapchain.PrepareFrame(device, generated, render_window.GetFramebufferLayout());
-        frame_gen.CopyToFrame(generated, generation);
+        frame_gen.GenerateInto(device, generated, generation);
         scheduler.Flush(*generated->render_ready);
         present_manager.Present(generated);
     }
