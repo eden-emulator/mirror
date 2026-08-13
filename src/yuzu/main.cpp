@@ -3,6 +3,7 @@
 
 #include <QApplication>
 #include "common/program_args.h"
+#include "network/room.h"
 #include "startup_checks.h"
 
 #ifdef __unix__
@@ -185,6 +186,11 @@ int main(int argc, char* argv[]) {
 
     Common::ProgramArguments args{};
     Common::ParseArguments(args, argc, argv);
+    if (!args.room_name.empty() || !args.room_description.empty()) {
+        LOG_INFO(Frontend, "Assuming (headless) room mode");
+        Network::LaunchRoomLoopWithArguments(args);
+        return -1;
+    }
 
     MainWindow main_window{std::move(args), has_broken_vulkan};
     // After settings have been loaded by GMainWindow, apply the filter
