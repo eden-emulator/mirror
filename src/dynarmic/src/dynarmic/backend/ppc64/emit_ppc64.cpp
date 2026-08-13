@@ -161,8 +161,6 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock te
         auto const tmp = ctx.reg_alloc.ScratchGpr();
         code.LI(tmp, terminal.next.Value());
         code.STD(tmp, PPC64::RJIT, offsetof(A64JitState, pc));
-//        code.MTCTR(powah::R6);
-//        code.BCTR();
         code.B(ctx.l_return);
     } else {
         auto const tmp = ctx.reg_alloc.ScratchGpr();
@@ -173,7 +171,7 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlock te
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::LinkBlockFast terminal, IR::LocationDescriptor initial_location, bool is_single_step) {
-    EmitTerminal(code, ctx, terminal, IR::Term::LinkBlock{terminal.next}, is_single_step);
+    EmitTerminal(code, ctx, IR::Term::LinkBlock{terminal.next}, initial_location, is_single_step);
 }
 
 void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::PopRSBHint, IR::LocationDescriptor, bool) {
@@ -238,8 +236,7 @@ void EmitTerminal(powah::Context& code, EmitContext& ctx, IR::Term::Terminal con
 EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConfig& emit_conf) {
     EmittedBlockInfo ebi;
     RegAlloc reg_alloc{code};
-    EmitContext ctx{block, reg_alloc, emit_conf, ebi};
-
+    EmitContext ctx{block, reg_alloc, emit_conf, ebi, code.DefineLabel()};
     size_t const stack_size = 112 + ABI_CALLEE_SAVED.size() * 8;
     auto const start_offset = code.offset;
     ebi.entry_point = &code.base[start_offset];
@@ -285,8 +282,11 @@ EmittedBlockInfo EmitPPC64(powah::Context& code, IR::Block block, const EmitConf
             code.LD(gp_regs[i], powah::R1, -int32_t(gp_regs.size() - i) * 8);
         code.LD(powah::R0, powah::R1, 16);
         code.MTLR(powah::R0);
+        code.LI(powah::R3, 0);
     } else {
         EmitTerminal(code, ctx, ctx.block.GetTerminal(), ctx.block.Location(), false);
+        code.LABEL(ctx.l_return);
+        code.LI(powah::R3, 67); //non-zero ret
     }
     code.BLR();
     code.ApplyRelocs();

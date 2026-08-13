@@ -78,9 +78,13 @@ struct A64AddressSpace final {
 struct A64Core final {
     using CodeFn = HaltReason (*)(A64AddressSpace*, A64JitState*, volatile u32*, void *fn);
     static HaltReason Run(A64AddressSpace& process, A64JitState& thread_ctx, volatile u32* halt_reason) {
-        const auto loc = thread_ctx.GetLocationDescriptor();
-        const auto entry = process.GetOrEmit(loc);
-        return (CodeFn(entry))(&process, &thread_ctx, halt_reason, (void*)&A64Core::Run);
+        HaltReason hr{};
+        do {
+            const auto loc = thread_ctx.GetLocationDescriptor();
+            const auto entry = process.GetOrEmit(loc);
+            hr = (CodeFn(entry))(&process, &thread_ctx, halt_reason, (void*)&A64Core::Run);
+        } while (hr == HaltReason(0));
+        return hr;
     }
 };
 
