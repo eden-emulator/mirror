@@ -28,6 +28,28 @@ struct LsfgConstants {
 };
 static_assert(sizeof(LsfgConstants) == 48);
 
+vk::Image CreateChainImage(MemoryAllocator& memory_allocator, VkExtent2D extent, VkFormat format) {
+    const VkImageCreateInfo image_ci{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .imageType = VK_IMAGE_TYPE_2D,
+        .format = format,
+        .extent = {.width = extent.width, .height = extent.height, .depth = 1},
+        .mipLevels = 1,
+        .arrayLayers = 1,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .tiling = VK_IMAGE_TILING_OPTIMAL,
+        .usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                 VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .queueFamilyIndexCount = 0,
+        .pQueueFamilyIndices = nullptr,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+    return memory_allocator.CreateImage(image_ci);
+}
+
 vk::Buffer CreateUniformBuffer(MemoryAllocator& memory_allocator, VkDeviceSize size) {
     const VkBufferCreateInfo buffer_ci{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -69,7 +91,7 @@ VkImageMemoryBarrier MakeBarrier(const LsfgImage& image, VkAccessFlags src_acces
 LsfgImage::LsfgImage(const Device& device, MemoryAllocator& memory_allocator, VkExtent2D extent_,
                      VkFormat format)
     : extent{std::max(1u, extent_.width), std::max(1u, extent_.height)} {
-    image = CreateWrappedImage(memory_allocator, extent, format);
+    image = CreateChainImage(memory_allocator, extent, format);
     view = CreateWrappedImageView(device, image, format);
 }
 

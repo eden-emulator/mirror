@@ -193,7 +193,7 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
                                render_window.GetFramebufferLayout(), swapchain.GetImageCount(),
                                swapchain.GetImageViewFormat());
 
-    frame_gen.Process(device, frame);
+    frame_gen.Process(device, frame, swapchain.GetImageFormat());
 
     scheduler.Flush(*frame->render_ready);
 

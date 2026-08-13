@@ -6,7 +6,7 @@
 #include <optional>
 
 #include "common/common_types.h"
-#include "video_core/renderer_vulkan/present/lsfg_mipmaps.h"
+#include "video_core/renderer_vulkan/present/lsfg_chain.h"
 #include "video_core/renderer_vulkan/present/lsfg_shaders.h"
 #include "video_core/vulkan_common/vulkan_memory_allocator.h"
 
@@ -21,18 +21,19 @@ public:
     explicit FrameGen(MemoryAllocator& memory_allocator, Scheduler& scheduler);
     ~FrameGen();
 
-    void Process(const Device& device, Frame* frame);
+    void Process(const Device& device, Frame* frame, VkFormat format);
 
 private:
-    void Rebuild(const Device& device, VkExtent2D extent);
-    void DumpFlowPyramid(const Device& device);
+    void Rebuild(const Device& device, VkExtent2D extent, VkFormat format);
+    void DumpDebugImages();
 
     MemoryAllocator& memory_allocator;
     Scheduler& scheduler;
 
     std::optional<LsfgShaders> shaders;
-    std::optional<LsfgMipmaps> mipmaps;
+    std::optional<LsfgChain> chain;
     VkExtent2D built_extent{};
+    VkFormat built_format{VK_FORMAT_UNDEFINED};
     u64 frame_count{};
     bool unavailable{};
     bool dumped{};

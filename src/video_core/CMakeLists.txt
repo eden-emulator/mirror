@@ -131,6 +131,8 @@ add_library(video_core STATIC
     renderer_vulkan/present/lsfg_alpha.h
     renderer_vulkan/present/lsfg_beta.cpp
     renderer_vulkan/present/lsfg_beta.h
+    renderer_vulkan/present/lsfg_chain.cpp
+    renderer_vulkan/present/lsfg_chain.h
     renderer_vulkan/present/lsfg_common.cpp
     renderer_vulkan/present/lsfg_common.h
     renderer_vulkan/present/lsfg_delta.cpp

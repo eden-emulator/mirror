@@ -6,52 +6,37 @@
 #include <array>
 
 #include "common/common_types.h"
-#include "video_core/vulkan_common/vulkan_memory_allocator.h"
-#include "video_core/vulkan_common/vulkan_wrapper.h"
+#include "video_core/renderer_vulkan/present/lsfg_common.h"
 
 namespace Vulkan {
 
 class Device;
 class LsfgShaders;
-class Scheduler;
 
 constexpr size_t LSFG_MIP_LEVELS = 7;
 
 class LsfgMipmaps {
 public:
-    explicit LsfgMipmaps(const Device& device, MemoryAllocator& memory_allocator,
-                         const LsfgShaders& shaders, VkExtent2D input_extent, f32 flow_scale);
+    LsfgMipmaps() = default;
+    LsfgMipmaps(const Device& device, MemoryAllocator& memory_allocator, const LsfgShaders& shaders,
+                LsfgResources& resources, vk::DescriptorPool& descriptor_pool,
+                LsfgImagePair& frames, f32 flow_scale);
 
-    void Dispatch(const Device& device, Scheduler& scheduler, VkImage current_image,
-                  VkImageView current_view, u64 frame_count);
+    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count);
 
-    [[nodiscard]] VkImageView GetLevelView(size_t level) const {
-        return *image_views[level];
+    [[nodiscard]] LsfgImage& Output(size_t level) {
+        return out_images[level];
     }
-
-    [[nodiscard]] VkImage GetLevelImage(size_t level) const {
-        return *images[level];
-    }
-
-    [[nodiscard]] VkExtent2D GetLevelExtent(size_t level) const;
 
 private:
-    void CreateImages(const Device& device);
-    void CreateUniformBuffer(f32 flow_scale);
+    LsfgImagePair* frames{};
 
-    MemoryAllocator& memory_allocator;
+    LsfgPass pass;
+    std::array<VkDescriptorSet, 2> descriptor_sets{};
+    vk::DescriptorSets owned_sets;
+
     VkExtent2D flow_extent{};
-
-    vk::Buffer uniform_buffer;
-    vk::Sampler sampler;
-    vk::DescriptorPool descriptor_pool;
-    vk::DescriptorSetLayout descriptor_set_layout;
-    vk::DescriptorSets descriptor_sets;
-    vk::PipelineLayout pipeline_layout;
-    vk::Pipeline pipeline;
-
-    std::array<vk::Image, LSFG_MIP_LEVELS> images;
-    std::array<vk::ImageView, LSFG_MIP_LEVELS> image_views;
+    std::array<LsfgImage, LSFG_MIP_LEVELS> out_images;
 };
 
 } // namespace Vulkan
