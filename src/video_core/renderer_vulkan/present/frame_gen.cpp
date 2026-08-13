@@ -25,6 +25,17 @@ bool IsBlueFirst(VkFormat format) {
     return format == VK_FORMAT_B8G8R8A8_UNORM || format == VK_FORMAT_B8G8R8A8_SRGB;
 }
 
+VkDeviceSize BytesPerTexel(VkFormat format) {
+    switch (format) {
+    case VK_FORMAT_R8_UNORM:
+        return 1;
+    case VK_FORMAT_R16G16B16A16_SFLOAT:
+        return 8;
+    default:
+        return COLOR_CHANNELS;
+    }
+}
+
 void WritePortablePixmap(const std::filesystem::path& path, const std::string& magic,
                          VkExtent2D extent, std::span<const u8> pixels) {
     Common::FS::IOFile file{path, Common::FS::FileAccessMode::Write,
@@ -47,6 +58,16 @@ void WriteGrayscalePgm(const std::filesystem::path& path, VkExtent2D extent,
                        std::span<const u8> pixels) {
     const size_t expected = static_cast<size_t>(extent.width) * extent.height;
     WritePortablePixmap(path, "P5", extent, pixels.subspan(0, std::min(expected, pixels.size())));
+}
+
+void WriteRaw(const std::filesystem::path& path, std::span<const u8> pixels) {
+    Common::FS::IOFile file{path, Common::FS::FileAccessMode::Write,
+                            Common::FS::FileType::BinaryFile};
+    if (!file.IsOpen()) {
+        return;
+    }
+    void(file.Write(pixels));
+    void(file.Flush());
 }
 
 void WriteColorPpm(const std::filesystem::path& path, VkExtent2D extent,
@@ -175,7 +196,7 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format) {
     if (!dump_requested) {
         dumped = false;
     } else if (!dumped) {
-        DumpDebugImages();
+        DumpDebugImages(count);
         dumped = true;
     }
 }
@@ -189,46 +210,65 @@ void FrameGen::Rebuild(const Device& device, VkExtent2D extent, VkFormat format)
     frame_count = 0;
 }
 
-void FrameGen::DumpDebugImages() {
+void FrameGen::DumpDebugImages(u64 count) {
     const std::filesystem::path directory =
         Common::FS::GetEdenPath(Common::FS::EdenPath::LosslessDir) / "debug";
     if (!Common::FS::CreateDirs(directory)) {
         return;
     }
 
-    const auto readback = [&](LsfgImage& image, VkDeviceSize size) {
-        vk::Buffer buffer = CreateWrappedBuffer(memory_allocator, size, MemoryUsage::Download);
+    const auto dump = [&](const std::string& name, LsfgImage& image) {
         const VkExtent2D extent = image.Extent();
+        const VkFormat format = image.Format();
+        const VkDeviceSize texel_size = BytesPerTexel(format);
+        const VkDeviceSize size =
+            static_cast<VkDeviceSize>(extent.width) * extent.height * texel_size;
+
+        vk::Buffer buffer = CreateWrappedBuffer(memory_allocator, size, MemoryUsage::Download);
 
         scheduler.RequestOutsideRenderPassOperationContext();
-        scheduler.Record([handle = image.Handle(), dst = *buffer,
-                          extent](vk::CommandBuffer cmdbuf) {
-            DownloadColorImage(cmdbuf, handle, dst,
-                               VkExtent3D{.width = extent.width,
-                                          .height = extent.height,
-                                          .depth = 1});
-        });
+        scheduler.Record(
+            [handle = image.Handle(), dst = *buffer, extent](vk::CommandBuffer cmdbuf) {
+                DownloadColorImage(
+                    cmdbuf, handle, dst,
+                    VkExtent3D{.width = extent.width, .height = extent.height, .depth = 1});
+            });
         scheduler.Finish();
 
         buffer.Invalidate();
-        return buffer;
+        const std::span<u8> mapped = buffer.Mapped();
+
+        if (format == LSFG_FLOW_FORMAT) {
+            WriteGrayscalePgm(directory / (name + ".pgm"), extent, mapped);
+        } else if (texel_size == COLOR_CHANNELS) {
+            WriteColorPpm(directory / (name + ".ppm"), extent, mapped, IsBlueFirst(format));
+        } else {
+            WriteRaw(directory / (name + "_" + std::to_string(extent.width) + "x" +
+                                  std::to_string(extent.height) + ".f16"),
+                     mapped.subspan(0, std::min<size_t>(size, mapped.size())));
+        }
     };
 
+    dump("in0", chain->Input(0));
+    dump("in1", chain->Input(1));
+
     for (size_t level = 0; level < LSFG_MIP_LEVELS; ++level) {
-        LsfgImage& image = chain->FlowLevel(level);
-        const VkExtent2D extent = image.Extent();
-        const VkDeviceSize size = static_cast<VkDeviceSize>(extent.width) * extent.height;
-        vk::Buffer buffer = readback(image, size);
-        WriteGrayscalePgm(directory / ("flow_mip" + std::to_string(level) + ".pgm"), extent,
-                          buffer.Mapped());
+        dump("flow_mip" + std::to_string(level), chain->FlowLevel(level));
+    }
+    for (size_t index = 0; index < 2; ++index) {
+        dump("alpha0_" + std::to_string(index), chain->AlphaOutput(0, count, index));
+        dump("alpha6_" + std::to_string(index), chain->AlphaOutput(LSFG_MIP_LEVELS - 1, count,
+                                                                  index));
+    }
+    for (size_t level = 0; level < LSFG_BETA_OUTPUTS; ++level) {
+        dump("beta_" + std::to_string(level), chain->BetaOutput(level));
     }
 
-    LsfgImage& output = chain->Output();
-    const VkExtent2D extent = output.Extent();
-    const VkDeviceSize size =
-        static_cast<VkDeviceSize>(extent.width) * extent.height * COLOR_CHANNELS;
-    vk::Buffer buffer = readback(output, size);
-    WriteColorPpm(directory / "generated.ppm", extent, buffer.Mapped(), IsBlueFirst(built_format));
+    dump("gamma0", chain->GammaOutput(0));
+    dump("gamma6", chain->GammaOutput(LSFG_MIP_LEVELS - 1));
+    dump("delta2_out1", chain->DeltaOutput1(LSFG_DELTA_INSTANCES - 1));
+    dump("delta2_out2", chain->DeltaOutput2(LSFG_DELTA_INSTANCES - 1));
+    dump("generated", chain->Output());
 }
 
 } // namespace Vulkan

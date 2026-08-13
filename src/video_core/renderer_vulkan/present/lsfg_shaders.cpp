@@ -9,7 +9,7 @@
 namespace Vulkan {
 
 LsfgShaders::LsfgShaders(const Device& device) {
-    if (!device.IsVulkanMemoryModelSupported()) {
+    if (!device.IsVulkanMemoryModelSupported() || !device.HasNullDescriptor()) {
         return;
     }
 

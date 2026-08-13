@@ -45,6 +45,10 @@ public:
         return extent;
     }
 
+    [[nodiscard]] VkFormat Format() const {
+        return format;
+    }
+
     [[nodiscard]] VkImageLayout Layout() const {
         return layout;
     }
@@ -57,6 +61,7 @@ private:
     vk::Image image;
     vk::ImageView view;
     VkExtent2D extent{};
+    VkFormat format{VK_FORMAT_UNDEFINED};
     VkImageLayout layout{VK_IMAGE_LAYOUT_UNDEFINED};
 };
 

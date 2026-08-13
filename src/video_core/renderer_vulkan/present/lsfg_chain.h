@@ -43,6 +43,26 @@ public:
         return mipmaps.Output(level);
     }
 
+    [[nodiscard]] LsfgImage& AlphaOutput(size_t level, u64 frame_count, size_t index) {
+        return alpha[level].Outputs()[frame_count % LSFG_HISTORY_SLOTS][index];
+    }
+
+    [[nodiscard]] LsfgImage& BetaOutput(size_t level) {
+        return beta.Output(level);
+    }
+
+    [[nodiscard]] LsfgImage& GammaOutput(size_t index) {
+        return gamma[index].Output();
+    }
+
+    [[nodiscard]] LsfgImage& DeltaOutput1(size_t index) {
+        return delta[index].Output1();
+    }
+
+    [[nodiscard]] LsfgImage& DeltaOutput2(size_t index) {
+        return delta[index].Output2();
+    }
+
 private:
     LsfgResources resources;
     vk::DescriptorPool descriptor_pool;

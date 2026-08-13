@@ -25,7 +25,7 @@ public:
 
 private:
     void Rebuild(const Device& device, VkExtent2D extent, VkFormat format);
-    void DumpDebugImages();
+    void DumpDebugImages(u64 count);
 
     MemoryAllocator& memory_allocator;
     Scheduler& scheduler;
