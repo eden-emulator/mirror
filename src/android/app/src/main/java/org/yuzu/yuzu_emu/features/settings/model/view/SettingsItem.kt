@@ -21,6 +21,7 @@ import org.yuzu.yuzu_emu.features.settings.model.LongSetting
 import org.yuzu.yuzu_emu.features.settings.model.ShortSetting
 import org.yuzu.yuzu_emu.features.settings.model.StringSetting
 import org.yuzu.yuzu_emu.network.NetDataValidators
+import org.yuzu.yuzu_emu.utils.LosslessScalingHelper
 import org.yuzu.yuzu_emu.utils.NativeConfig
 
 /**
@@ -65,6 +66,12 @@ abstract class SettingsItem(
                 return NativeLibrary.isFirmwareAvailable()
             }
 
+            if (setting.key in frameGenKeys &&
+                !(LosslessScalingHelper.isInstalled() && LosslessScalingHelper.isSupportedByGpu())
+            ) {
+                return false
+            }
+
             // Can't edit settings that aren't saveable in per-game config even if they are switchable
             if (NativeConfig.isPerGameConfigLoaded() && !setting.isSaveable) {
                 return false
@@ -89,6 +96,14 @@ abstract class SettingsItem(
         get() = !setting.global && NativeConfig.isPerGameConfigLoaded()
 
     companion object {
+        private val frameGenKeys = setOf(
+            BooleanSetting.RENDERER_FRAME_GEN.key,
+            IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.key,
+            IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.key,
+            BooleanSetting.RENDERER_FRAME_GEN_FP16.key,
+            BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW.key
+        )
+
         const val TYPE_HEADER = 0
         const val TYPE_SWITCH = 1
         const val TYPE_SINGLE_CHOICE = 2

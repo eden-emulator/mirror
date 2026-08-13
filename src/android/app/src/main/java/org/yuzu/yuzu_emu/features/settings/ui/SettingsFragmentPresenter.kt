@@ -79,9 +79,20 @@ class SettingsFragmentPresenter(
 
     private fun addFrameGenSettings(sl: ArrayList<SettingsItem>) {
         sl.apply {
-            add(HeaderSetting(R.string.frame_gen))
-
             val installed = LosslessScalingHelper.isInstalled()
+            val supported = LosslessScalingHelper.isSupportedByGpu()
+
+            add(HeaderSetting(R.string.lossless_scaling))
+
+            if (!supported) {
+                add(
+                    RunnableSetting(
+                        titleId = R.string.frame_gen_unsupported,
+                        descriptionId = R.string.frame_gen_unsupported_description,
+                        isRunnable = false
+                    ) {}
+                )
+            }
 
             add(
                 RunnableSetting(
@@ -100,26 +111,23 @@ class SettingsFragmentPresenter(
                 ) { settingsViewModel.setShouldShowLosslessInstaller(true) }
             )
 
-            if (!LosslessScalingHelper.isSupportedByGpu()) {
+            if (installed) {
                 add(
                     RunnableSetting(
-                        titleId = R.string.frame_gen_unsupported,
-                        descriptionId = R.string.frame_gen_unsupported_description,
-                        isRunnable = false
-                    ) {}
+                        titleId = R.string.lossless_scaling_remove,
+                        descriptionId = R.string.lossless_scaling_remove_description,
+                        isRunnable = !NativeLibrary.isRunning(),
+                        iconId = R.drawable.ic_delete
+                    ) { settingsViewModel.setShouldShowLosslessRemoveDialog(true) }
                 )
-                return@apply
             }
 
-            if (!installed) {
-                return@apply
-            }
+            add(HeaderSetting(R.string.frame_gen))
 
             add(BooleanSetting.RENDERER_FRAME_GEN.key)
             add(IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.key)
             add(IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.key)
             add(BooleanSetting.RENDERER_FRAME_GEN_FP16.key)
-            add(BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW.key)
         }
     }
 
@@ -167,6 +175,7 @@ class SettingsFragmentPresenter(
             MenuTag.SECTION_ROOT -> addConfigSettings(sl)
             MenuTag.SECTION_SYSTEM -> addSystemSettings(sl)
             MenuTag.SECTION_RENDERER -> addGraphicsSettings(sl)
+            MenuTag.SECTION_FRAME_GEN -> addFrameGenSettings(sl)
             MenuTag.SECTION_PERFORMANCE_STATS -> addPerformanceOverlaySettings(sl)
             MenuTag.SECTION_SOC_OVERLAY -> addSocOverlaySettings(sl)
             MenuTag.SECTION_INPUT_OVERLAY -> addInputOverlaySettings(sl)
@@ -327,7 +336,14 @@ class SettingsFragmentPresenter(
             }
             add(IntSetting.RENDERER_ANTI_ALIASING.key)
 
-            addFrameGenSettings(this)
+            add(
+                SubmenuSetting(
+                    titleId = R.string.frame_gen,
+                    descriptionId = R.string.frame_gen_submenu_description,
+                    iconId = R.drawable.ic_frames,
+                    menuKey = MenuTag.SECTION_FRAME_GEN
+                )
+            )
 
             add(HeaderSetting(R.string.advanced))
 
@@ -351,7 +367,6 @@ class SettingsFragmentPresenter(
             add(BooleanSetting.SKIP_CPU_INNER_INVALIDATION.key)
             add(BooleanSetting.FIX_BLOOM_EFFECTS.key)
             add(BooleanSetting.EMULATE_BGR565.key)
-            add(BooleanSetting.RESCALE_HACK.key)
             add(BooleanSetting.RENDERER_ASYNCHRONOUS_SHADERS.key)
             add(IntSetting.ANDROID_PIPELINE_WORKERS.key)
             add(BooleanSetting.RENDERER_ASYNCHRONOUS_GPU_EMULATION.key)
@@ -1345,6 +1360,7 @@ class SettingsFragmentPresenter(
                 add(BooleanSetting.DUMP_GUEST_SHADERS.key)
                 add(BooleanSetting.GPU_LOG_SHADER_DUMPS.key)
                 add(BooleanSetting.DUMP_MACROS.key)
+                add(BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW.key)
                 add(BooleanSetting.GPU_LOG_MEMORY_TRACKING.key)
                 add(BooleanSetting.GPU_LOG_DRIVER_DEBUG.key)
                 add(IntSetting.GPU_LOG_RING_BUFFER_SIZE.key)

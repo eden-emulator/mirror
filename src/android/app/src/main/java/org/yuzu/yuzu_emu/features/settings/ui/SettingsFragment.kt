@@ -119,6 +119,25 @@ class SettingsFragment : Fragment() {
             viewLifecycleOwner,
             resetState = { settingsViewModel.setShouldShowLosslessInstaller(false) }
         ) { if (it) losslessDllPickerLauncher.launch(arrayOf("*/*")) }
+        settingsViewModel.shouldShowLosslessRemoveDialog.collect(
+            viewLifecycleOwner,
+            resetState = { settingsViewModel.setShouldShowLosslessRemoveDialog(false) }
+        ) {
+            if (it) {
+                MessageDialogFragment.newInstance(
+                    activity = requireActivity(),
+                    titleId = R.string.lossless_scaling_remove,
+                    descriptionId = R.string.lossless_scaling_remove_confirmation,
+                    positiveButtonTitleId = R.string.lossless_scaling_remove,
+                    positiveAction = {
+                        LosslessScalingHelper.remove()
+                        settingsViewModel.setShouldReloadSettingsList(true)
+                    },
+                    showNegativeButton = true,
+                    negativeAction = {}
+                ).show(parentFragmentManager, MessageDialogFragment.TAG)
+            }
+        }
         settingsViewModel.adapterItemChanged.collect(
             viewLifecycleOwner,
             resetState = { settingsViewModel.setAdapterItemChanged(-1) }

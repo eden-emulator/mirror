@@ -352,7 +352,7 @@ struct Values {
                                                   true};
 
     SwitchableSetting<ScalingFilter> scaling_filter{linkage,
-                                                    ScalingFilter::Bilinear,
+                                                    ScalingFilter::NearestNeighbor,
                                                     "scaling_filter",
                                                     Category::Renderer,
                                                     Specialization::Default,
@@ -389,7 +389,7 @@ struct Values {
                                                   true};
 
     SwitchableSetting<bool> frame_gen{linkage, false, "frame_gen", Category::Renderer,
-                                      Specialization::Default, true, true};
+                                      Specialization::Default, true, false};
 
     SwitchableSetting<u32, true> frame_gen_multiplier{linkage,
                                                       2,
@@ -399,11 +399,11 @@ struct Values {
                                                       Category::Renderer,
                                                       Specialization::Countable,
                                                       true,
-                                                      true,
+                                                      false,
                                                       &frame_gen};
 
     SwitchableSetting<u32, true> frame_gen_flow_scale{linkage,
-                                                      100,
+                                                      75,
                                                       25,
                                                       100,
                                                       "frame_gen_flow_scale",
@@ -415,7 +415,7 @@ struct Values {
                                                       &frame_gen};
 
     SwitchableSetting<bool> frame_gen_fp16{linkage,      true,  "frame_gen_fp16", Category::Renderer,
-                                           Specialization::Default, true, true, &frame_gen};
+                                           Specialization::Default, true, false, &frame_gen};
 
     SwitchableSetting<bool> frame_gen_dump_flow{linkage, false, "frame_gen_dump_flow",
                                                 Category::Renderer};
@@ -601,13 +601,8 @@ struct Values {
     SwitchableSetting<bool> emulate_bgr565{linkage, false, "emulate_bgr565",
                                             Category::RendererHacks};
 
-    SwitchableSetting<bool> rescale_hack{linkage,
-#ifdef __ANDROID__
-        true,
-#else
-        false,
-#endif
-        "rescale_hack", Category::RendererHacks};
+    SwitchableSetting<bool> rescale_hack{linkage, false, "rescale_hack",
+                                         Category::RendererHacks};
     SwitchableSetting<bool> enable_gpu_buffer_readback{linkage,
                                                        false,
                                                        "enable_gpu_buffer_readback",

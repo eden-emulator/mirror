@@ -772,10 +772,24 @@ Builder::Builder(QWidget* parent_, bool runtime_lock_)
 
 Builder::~Builder() = default;
 
+static bool IsAndroidOnly(const Settings::BasicSetting& setting) {
+    const auto id = setting.Id();
+    return id == Settings::values.frame_gen.Id() ||
+           id == Settings::values.frame_gen_multiplier.Id() ||
+           id == Settings::values.frame_gen_flow_scale.Id() ||
+           id == Settings::values.frame_gen_fp16.Id() ||
+           id == Settings::values.frame_gen_dump_flow.Id() ||
+           id == Settings::values.emulate_bgr565.Id();
+}
+
 Widget* Builder::BuildWidget(Settings::BasicSetting* setting,
                              std::vector<std::function<void(bool)>>& apply_funcs,
                              RequestType request, bool managed, float multiplier,
                              Settings::BasicSetting* other_setting, const QString& suffix) const {
+    if (IsAndroidOnly(*setting)) {
+        return nullptr;
+    }
+
     if (!Settings::IsConfiguringGlobal() && !setting->Switchable()) {
         return nullptr;
     }

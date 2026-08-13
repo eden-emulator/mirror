@@ -39,6 +39,9 @@ class SettingsViewModel : ViewModel() {
     val shouldShowLosslessInstaller: StateFlow<Boolean> get() = _shouldShowLosslessInstaller
     private val _shouldShowLosslessInstaller = MutableStateFlow(false)
 
+    val shouldShowLosslessRemoveDialog: StateFlow<Boolean> get() = _shouldShowLosslessRemoveDialog
+    private val _shouldShowLosslessRemoveDialog = MutableStateFlow(false)
+
     val sliderProgress: StateFlow<Int> get() = _sliderProgress
     private val _sliderProgress = MutableStateFlow(-1)
 
@@ -90,6 +93,10 @@ class SettingsViewModel : ViewModel() {
 
     fun setShouldShowLosslessInstaller(value: Boolean) {
         _shouldShowLosslessInstaller.value = value
+    }
+
+    fun setShouldShowLosslessRemoveDialog(value: Boolean) {
+        _shouldShowLosslessRemoveDialog.value = value
     }
 
     fun setSliderTextValue(value: Float, units: String) {
