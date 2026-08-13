@@ -163,15 +163,29 @@
     </string-array>
 
     <string-array name="frameGenMultiplierNames">
+        <item>@string/frame_gen_multiplier_auto</item>
         <item>@string/frame_gen_multiplier_2x</item>
         <item>@string/frame_gen_multiplier_3x</item>
         <item>@string/frame_gen_multiplier_4x</item>
     </string-array>
 
     <integer-array name="frameGenMultiplierValues">
+        <item>0</item>
         <item>2</item>
         <item>3</item>
         <item>4</item>
+    </integer-array>
+
+    <string-array name="frameGenQueueTargetNames">
+        <item>@string/frame_gen_queue_target_0</item>
+        <item>@string/frame_gen_queue_target_1</item>
+        <item>@string/frame_gen_queue_target_2</item>
+    </string-array>
+
+    <integer-array name="frameGenQueueTargetValues">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
     </integer-array>
 
     <string-array name="rendererVSyncNames">

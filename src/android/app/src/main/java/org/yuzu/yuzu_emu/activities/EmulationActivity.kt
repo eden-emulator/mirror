@@ -245,12 +245,18 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
 
     override fun onResume() {
         super.onResume()
+        publishDisplayRefreshRate()
         nfcReader.startScanning()
         startMotionSensorListener()
         InputHandler.updateControllerData()
         notifyPhysicalControllerState()
 
         buildPictureInPictureParams()
+    }
+
+    private fun publishDisplayRefreshRate() {
+        val rate = display?.mode?.refreshRate ?: display?.refreshRate ?: 0f
+        NativeLibrary.setDisplayRefreshRate(rate)
     }
 
     override fun onPause() {

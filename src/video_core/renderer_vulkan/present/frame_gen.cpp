@@ -27,9 +27,7 @@ constexpr u64 LSFG_REQUIRED_FRAMES = 2;
 }
 
 [[nodiscard]] size_t ConfiguredGenerations() {
-    const u32 multiplier = std::clamp<u32>(Settings::values.frame_gen_multiplier.GetValue(),
-                                           LSFG_MIN_MULTIPLIER, LSFG_MAX_MULTIPLIER);
-    return multiplier - 1;
+    return Settings::FrameGenGenerations();
 }
 
 bool IsBlueFirst(VkFormat format) {
@@ -232,7 +230,7 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, bool
 }
 
 size_t FrameGen::WantedGenerations() const {
-    if (unavailable || !Settings::values.frame_gen.GetValue()) {
+    if (unavailable) {
         return 0;
     }
     return ConfiguredGenerations();

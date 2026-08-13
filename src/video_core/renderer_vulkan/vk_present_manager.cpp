@@ -351,14 +351,13 @@ void PresentManager::SetImageCount() {
     // We cannot have more than 7 images in flight at any given time.
     // FRAMES_IN_FLIGHT is 8, and the cache TICKS_TO_DESTROY is 8.
     // Mali drivers will give us 6.
-    const size_t generations =
-        Settings::values.frame_gen.GetValue()
-            ? static_cast<size_t>(Settings::values.frame_gen_multiplier.GetValue()) - 1
-            : 0;
-    const size_t frames_per_composite = generations + 1;
-    image_count = std::min<size_t>(
-        std::max<size_t>(swapchain.GetImageCount() + generations, frames_per_composite * 2),
-        MAX_FRAMES_IN_FLIGHT);
+    const size_t generations = Settings::values.frame_gen.GetValue()
+                                   ? Settings::FrameGenMultiplierCeiling() - 1
+                                   : 0;
+    const size_t queued_composites = Settings::values.frame_gen_queue_target.GetValue() + 1;
+    image_count =
+        std::clamp<size_t>((generations + 1) * queued_composites, swapchain.GetImageCount(),
+                           MAX_FRAMES_IN_FLIGHT);
 }
 
 void PresentManager::CopyToSwapchain(Frame* frame) {

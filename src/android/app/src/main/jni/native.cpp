@@ -1229,6 +1229,11 @@ jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_getDebugKnobAt(JNIEnv* env, jobje
     return static_cast<jboolean>(Settings::getDebugKnobAt(static_cast<u8>(index)));
 }
 
+void Java_org_yuzu_yuzu_1emu_NativeLibrary_setDisplayRefreshRate(JNIEnv* env, jobject jobj,
+                                                                 jfloat rate) {
+    Settings::values.display_refresh_rate = static_cast<float>(rate);
+}
+
 void Java_org_yuzu_yuzu_1emu_NativeLibrary_setTurboSpeedLimit(JNIEnv *env, jobject jobj, jboolean enabled) {
     if (enabled) {
         Settings::values.use_speed_limit.SetValue(true);

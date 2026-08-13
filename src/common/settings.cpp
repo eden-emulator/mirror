@@ -380,6 +380,43 @@ void UpdateRescalingInfo() {
     TranslateResolutionInfo(setup, info);
 }
 
+u32 FrameGenMultiplierCeiling() {
+    const u32 configured = values.frame_gen_multiplier.GetValue();
+    if (configured == AUTO_FRAME_GEN_MULTIPLIER) {
+        return MAX_FRAME_GEN_MULTIPLIER;
+    }
+    return std::clamp(configured, MIN_FRAME_GEN_MULTIPLIER, MAX_FRAME_GEN_MULTIPLIER);
+}
+
+u32 FrameGenMultiplier() {
+    const u32 ceiling = FrameGenMultiplierCeiling();
+
+    const float refresh = values.display_refresh_rate;
+    if (refresh <= 1.0f) {
+        return ceiling;
+    }
+
+    constexpr float UNMEASURED_GUEST_FRAME_RATE = 60.0f;
+    float base = values.guest_frame_rate > 1.0f ? values.guest_frame_rate
+                                                : UNMEASURED_GUEST_FRAME_RATE;
+    if (values.use_speed_limit.GetValue()) {
+        const u16 limit = std::min<u16>(SpeedLimit(), 100);
+        if (limit > 0) {
+            base *= static_cast<float>(limit) / 100.0f;
+        }
+    }
+
+    const u32 presentable = static_cast<u32>(refresh / std::max(base, 1.0f));
+    return std::min(ceiling, std::max(presentable, 1u));
+}
+
+size_t FrameGenGenerations() {
+    if (!values.frame_gen.GetValue()) {
+        return 0;
+    }
+    return FrameGenMultiplier() - 1;
+}
+
 void RestoreGlobalState(bool is_powered_on) {
     // If a game is running, DO NOT restore the global settings state
     if (is_powered_on) {

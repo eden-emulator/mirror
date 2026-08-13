@@ -99,6 +99,7 @@ abstract class SettingsItem(
         private val frameGenKeys = setOf(
             BooleanSetting.RENDERER_FRAME_GEN.key,
             IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.key,
+            IntSetting.RENDERER_FRAME_GEN_QUEUE_TARGET.key,
             IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.key,
             BooleanSetting.RENDERER_FRAME_GEN_FP16.key,
             BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW.key
@@ -636,6 +637,15 @@ abstract class SettingsItem(
                     descriptionId = R.string.frame_gen_multiplier_description,
                     choicesId = R.array.frameGenMultiplierNames,
                     valuesId = R.array.frameGenMultiplierValues
+                )
+            )
+            put(
+                SingleChoiceSetting(
+                    IntSetting.RENDERER_FRAME_GEN_QUEUE_TARGET,
+                    titleId = R.string.frame_gen_queue_target,
+                    descriptionId = R.string.frame_gen_queue_target_description,
+                    choicesId = R.array.frameGenQueueTargetNames,
+                    valuesId = R.array.frameGenQueueTargetValues
                 )
             )
             put(

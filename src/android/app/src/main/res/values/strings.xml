@@ -302,10 +302,16 @@
     <string name="frame_gen_submenu_description">Manage and configure frame generation</string>
     <string name="frame_gen_description">Insert interpolated frames between rendered ones using Lossless Scaling. Forces FIFO presentation while enabled.</string>
     <string name="frame_gen_multiplier">Frame multiplier</string>
-    <string name="frame_gen_multiplier_description">How many frames to display for each rendered frame. Higher values cost proportionally more GPU time.</string>
+    <string name="frame_gen_multiplier_description">How many frames to display for each rendered frame. Higher values cost proportionally more GPU time. Capped to what your display can present at the game\'s frame rate.</string>
+    <string name="frame_gen_multiplier_auto">Auto</string>
     <string name="frame_gen_multiplier_2x">2x</string>
     <string name="frame_gen_multiplier_3x">3x</string>
     <string name="frame_gen_multiplier_4x">4x</string>
+    <string name="frame_gen_queue_target">Frame queue target</string>
+    <string name="frame_gen_queue_target_description">How many finished frames may wait ahead of the display. Larger queues absorb GPU spikes at the cost of input latency.</string>
+    <string name="frame_gen_queue_target_0">Unbuffered (lowest latency)</string>
+    <string name="frame_gen_queue_target_1">One frame (balanced)</string>
+    <string name="frame_gen_queue_target_2">Two frames (smoothest)</string>
     <string name="frame_gen_flow_scale">Motion estimation resolution</string>
     <string name="frame_gen_flow_scale_description">Resolution of the optical flow pass, as a fraction of the output. Lowering it is the cheapest way to reclaim performance.</string>
     <string name="frame_gen_fp16">Half precision shaders</string>

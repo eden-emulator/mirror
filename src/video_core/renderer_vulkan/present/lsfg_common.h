@@ -27,9 +27,6 @@ constexpr VkFormat LSFG_FLOW_FORMAT = VK_FORMAT_R8_UNORM;
 constexpr VkFormat LSFG_MOTION_FORMAT = VK_FORMAT_R16G16B16A16_SFLOAT;
 
 constexpr size_t LSFG_HISTORY_SLOTS = 3;
-constexpr size_t LSFG_MIN_MULTIPLIER = 2;
-constexpr size_t LSFG_MAX_MULTIPLIER = 4;
-constexpr size_t LSFG_MAX_GENERATIONS = LSFG_MAX_MULTIPLIER - 1;
 constexpr size_t LSFG_MAX_TARGETS = 7;
 
 [[nodiscard]] constexpr f32 LsfgTimestamp(size_t generation, size_t generation_count) {
