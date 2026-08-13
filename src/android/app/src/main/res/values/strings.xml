@@ -299,9 +299,9 @@
     <string name="gpu_driver_manager">GPU driver manager</string>
     <string name="install_gpu_driver_description">Install alternative drivers for potentially better performance or accuracy</string>
     <string name="frame_gen">Frame generation</string>
-    <string name="frame_gen_description">Insert an interpolated frame between every pair of real frames using Lossless Scaling. Adds about one frame of input latency.</string>
-    <string name="frame_gen_dump_flow">Dump flow pyramid</string>
-    <string name="frame_gen_dump_flow_description">Write the optical flow mip levels to the lossless/debug folder once, for troubleshooting</string>
+    <string name="frame_gen_description">Run the Lossless Scaling interpolation shaders on every frame. Incomplete: the interpolated frame is computed but not yet displayed, so this only costs performance for now.</string>
+    <string name="frame_gen_dump_flow">Dump generated frame</string>
+    <string name="frame_gen_dump_flow_description">Write the optical flow mip levels and the interpolated frame to the lossless/debug folder once, for troubleshooting</string>
     <string name="frame_gen_unsupported">Frame generation unavailable</string>
     <string name="frame_gen_unsupported_description">This GPU driver does not support the Vulkan memory model, which the Lossless Scaling shaders require.</string>
     <string name="lossless_scaling_setup_description">Optional. Provide your own Lossless.dll to enable frame generation later</string>
