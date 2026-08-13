@@ -221,6 +221,14 @@ class SettingsFragmentPresenter(
                     menuKey = MenuTag.SECTION_RENDERER
                 )
             )
+            add(
+                SubmenuSetting(
+                    titleId = R.string.frame_gen,
+                    descriptionId = R.string.frame_gen_submenu_description,
+                    iconId = R.drawable.ic_duck,
+                    menuKey = MenuTag.SECTION_FRAME_GEN
+                )
+            )
             if (!NativeConfig.isPerGameConfigLoaded()) {
                 add(
                     SubmenuSetting(
@@ -335,15 +343,6 @@ class SettingsFragmentPresenter(
                 add(IntSetting.FSR_SHARPENING_SLIDER.key)
             }
             add(IntSetting.RENDERER_ANTI_ALIASING.key)
-
-            add(
-                SubmenuSetting(
-                    titleId = R.string.frame_gen,
-                    descriptionId = R.string.frame_gen_submenu_description,
-                    iconId = R.drawable.ic_frames,
-                    menuKey = MenuTag.SECTION_FRAME_GEN
-                )
-            )
 
             add(HeaderSetting(R.string.advanced))
 
