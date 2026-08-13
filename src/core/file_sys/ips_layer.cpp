@@ -121,7 +121,7 @@ std::array<u8, 32> IPSwitchCompiler::GetBuildID() const {
 static IPSwitchRecord EscapeStringSequences(std::string_view sv) {
     IPSwitchRecord r{};
     for (auto it = sv.cbegin(); it != sv.cend(); ) {
-        if (*it == '\\') {
+        if (*it == '\\' && it + 1 < sv.cend()) {
             switch (it[1]) {
             case 'n': r.data[r.count] = '\n'; break;
             case 't': r.data[r.count] = '\t'; break;
@@ -156,6 +156,7 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
     //bool print_values = false;
 
     auto const parse_line = [&](std::string_view const line) {
+        // Keep in mind lines have trimmed spaces (at the end & start)!
         LOG_INFO(Loader, "<{}>", line);
         if (line.starts_with("@stop")) {
             return false; // Force stop
@@ -191,22 +192,18 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
                 } else {
                     LOG_WARNING(Loader, "invalid string");
                 }
-            } else if (auto const first_space = line.find_first_of(" /\t\r\n"); first_space != std::string::npos) {
-                IPSwitchRecord r; // hex replacement
-                auto const start = line.cbegin() + first_space;
-                if (auto const last_space = line.find_last_of(" /\t\r\n"); last_space != std::string::npos) {
-                    auto const end = line.cbegin() + last_space;
-                    if (start <= line.cend() && end <= line.cend()) {
-                        auto const hs = Common::HexStringToVector({start, end}, is_little_endian);
-                        std::memcpy(r.data.data(), hs.data(), hs.size());
-                        r.count = hs.size();
-                        LOG_INFO(Loader, "[H] value @ {:#08X} ", offset);
-                        patches.back().records.insert_or_assign(u32(offset), std::move(r));
-                    } else {
-                        LOG_WARNING(Loader, "invalid line");
-                    }
+            } else if (auto const first_space = line.find_last_of(" /\t\r\n"); first_space != std::string::npos) {
+                IPSwitchRecord r{}; // hex replacement
+                auto const start = line.cbegin() + first_space + 1;
+                auto const end = line.cend();
+                if (start <= line.cend() && end <= line.cend()) {
+                    auto const hs = Common::HexStringToVector({start, end}, is_little_endian);
+                    std::memcpy(r.data.data(), hs.data(), hs.size());
+                    r.count = hs.size();
+                    LOG_INFO(Loader, "[H] value @ {:#08X}", offset);
+                    patches.back().records.insert_or_assign(u32(offset), std::move(r));
                 } else {
-                    LOG_WARNING(Loader, "no last space");
+                    LOG_WARNING(Loader, "invalid line");
                 }
             } else {
                 LOG_WARNING(Loader, "unhandled line!");
