@@ -17,16 +17,36 @@ There are two main applications, an SDL-based app (`eden-cli`) and a Qt based ap
 
 ## eden-cli
 
-- `--debug/-d`: Enter debug mode, allow gdb stub at port `1234`
-- `--config/-c`: Specify alternate configuration file.
-- `--fullscreen/-f`: Set fullscreen.
-- `--help/-h`: Display help.
-- `--game/-g`: Specify the game to run.
-- `--multiplayer/-m`: Specify multiplayer options.
-- `--program/-p`: Specify the program arguments to pass (optional).
-- `--user/-u`: Specify the user index.
-- `--version/-v`: Display version and quit.
-- `--input-profile/-i`: Specifies input profile name to use (for player #0 only).
-- `--null-render/-n`: Forces the usage of the "Null" render backend irrespective of settings.
-- `--filter/-x`: Sets the debug log filter irrespective of settings.
-- `--singlecore/-s`: Forces single-core regardless of settings.
+- `-d/--debug`: Enter debug mode, allow gdb stub at port `1234`
+- `-c/--config`: Specify alternate configuration file.
+- `-f/--fullscreen`: Set fullscreen.
+- `-h/--help`: Display help.
+- `-g/--game`: Specify the game to run.
+- `-m/--multiplayer`: Specify multiplayer options.
+- `-p/--program`: Specify the program arguments to pass (optional).
+- `-u/--user`: Specify the user index.
+- `-v/--version`: Display version and quit.
+- `-i/--input-profile`: Specifies input profile name to use (for player #0 only).
+- `-n/--null-render`: Forces the usage of the "Null" render backend irrespective of settings.
+- `-x/--filter`: Sets the debug log filter irrespective of settings.
+- `-s/--singlecore`: Forces single-core regardless of settings.
+- `-l/--log-file`: The file for storing the room log.
+- `-H/--headless`: Force headless mode (no GUI). Currently only used for rooms.
+
+Room settings:
+- `-N/--name`: The name of the room.
+- `-D/--description`: The room description.
+- `-S/--bind-address`: The bind address for the room.
+- `-P/--port`: The port used for the room.
+- `-M/--max-members`: The maximum number of players for this room.
+- `-W/--password`: The password for the room.
+- `-G/--preferred-game`: The preferred game for this room.
+- `-I/--preferred-game-id`: The preferred game-id for this room.
+- `-U/--username`: The username used for announce.
+- `-T/--token`: The token used for announce.
+- `-A/--web-api-url`: yuzu Web API url.
+- `-B/--ban-list-file`: The file for storing the room ban list.
+- `-h/--help`: Display this help and exit.
+- `-v/--version`: Output version information and exit.,
+
+If the name and description of the room is specified, then it will default to headless mode if not already specified.

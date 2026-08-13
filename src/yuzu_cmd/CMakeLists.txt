@@ -38,7 +38,16 @@ add_executable(yuzu-cmd
     ${OPENGL_SOURCES}
 )
 
-target_link_libraries(yuzu-cmd PRIVATE common core input_common frontend_common video_core)
+target_link_libraries(yuzu-cmd PRIVATE common network core input_common frontend_common video_core)
+if (ENABLE_WEB_SERVICE)
+    target_compile_definitions(yuzu-room PRIVATE ENABLE_WEB_SERVICE)
+    target_link_libraries(yuzu-room PRIVATE web_service)
+endif()
+
+target_link_libraries(yuzu-room PRIVATE
+    OpenSSL::SSL
+    OpenSSL::Crypto)
+
 if (ENABLE_OPENGL)
     target_link_libraries(yuzu-cmd PRIVATE glad)
 endif()

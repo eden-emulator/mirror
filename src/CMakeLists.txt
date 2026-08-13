@@ -251,15 +251,6 @@ endif()
 add_subdirectory(common)
 add_subdirectory(network)
 
-if (YUZU_ROOM)
-    add_subdirectory(dedicated_room)
-endif()
-
-if (YUZU_ROOM_STANDALONE)
-    add_subdirectory(yuzu_room_standalone)
-    set_target_properties(yuzu-room PROPERTIES OUTPUT_NAME "eden-room")
-endif()
-
 if (YUZU_STATIC_ROOM)
     return()
 endif()

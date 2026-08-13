@@ -4,10 +4,6 @@
 #include <QApplication>
 #include "startup_checks.h"
 
-#if YUZU_ROOM
-#include <cstring>
-#include "dedicated_room/yuzu_room.h"
-#endif
 #ifdef __unix__
 #include "qt_common/gui_settings.h"
 #endif
@@ -78,20 +74,6 @@ static Qt::HighDpiScaleFactorRoundingPolicy GetHighDpiRoundingPolicy() {
 }
 
 int main(int argc, char* argv[]) {
-#if YUZU_ROOM
-    bool launch_room = false;
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--room") == 0) {
-            launch_room = true;
-        }
-    }
-
-    if (launch_room) {
-        LaunchRoom(argc, argv, true);
-        return 0;
-    }
-#endif
-
     bool has_broken_vulkan = false;
     bool is_child = false;
     if (CheckEnvVars(&is_child)) {

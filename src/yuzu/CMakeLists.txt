@@ -434,10 +434,6 @@ if (ARCHITECTURE_x86_64 OR ARCHITECTURE_arm64)
     target_link_libraries(yuzu PRIVATE dynarmic::dynarmic)
 endif()
 
-if (YUZU_ROOM)
-    target_link_libraries(yuzu PRIVATE yuzu-room)
-endif()
-
 if (NOT MSVC AND (APPLE OR NOT YUZU_STATIC_BUILD))
     # needed for vma
     target_compile_options(yuzu PRIVATE

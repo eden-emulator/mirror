@@ -65,8 +65,6 @@ These options control executables and build flavors.
 **Desktop only**:
 
 - `YUZU_CMD` (ON) Compile the SDL-based frontend (eden-cli)
-- `YUZU_ROOM` (OFF) Compile dedicated room functionality into the main executable
-- `YUZU_ROOM_STANDALONE` (OFF) Compile a separate executable for room functionality
 - `YUZU_STATIC_ROOM` (OFF) Compile the room executable *only* as a static, portable executable
   - This is only usable on Alpine Linux.
 
@@ -101,5 +99,7 @@ The following options were a part of Eden at one point, but have since been reti
 - `YUZU_USE_CPM` - This option once had a purpose, but that purpose has long since passed us by. *All* builds use CPMUtil to manage dependencies now.
   - If you want to *force* the usage of system dependencies, use `-DCPMUTIL_FORCE_SYSTEM=ON`.
 - `YUZU_USE_EXTERNAL_SDL` - This is now handled automatically. It was included even after CPM for purposes that have not applied for a very long time.
+- `YUZU_ROOM` - Room functionality is now built-in into eden-cli unconditionally.
+- `YUZU_ROOM_STANDALONE` - Likewise.
 
 See `src/dynarmic/CMakeLists.txt` for additional options--usually, these don't need changed

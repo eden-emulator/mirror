@@ -46,9 +46,6 @@ endif()
 
 cmake_dependent_option(YUZU_STATIC_ROOM "Build a static room executable only (CI only)" OFF "LINUX" OFF)
 if (YUZU_STATIC_ROOM)
-    set(YUZU_ROOM ON)
-    set(YUZU_ROOM_STANDALONE ON)
-
     # disable e v e r y t h i n g
     set(ENABLE_QT OFF)
     set(YUZU_CMD OFF)
@@ -257,9 +254,6 @@ option(YUZU_LEGACY "Apply patches that improve compatibility with older GPUs (e.
 
 option(NIGHTLY_BUILD "Use Nightly qualifiers in the update checker and build metadata" OFF)
 
-cmake_dependent_option(YUZU_ROOM "Enable dedicated room functionality" ON "NOT ANDROID" OFF)
-cmake_dependent_option(YUZU_ROOM_STANDALONE "Enable standalone room executable" ON "YUZU_ROOM" OFF)
-
 cmake_dependent_option(YUZU_CMD "Compile the eden-cli executable" ON "NOT ANDROID" OFF)
 
 cmake_dependent_option(YUZU_CRASH_DUMPS "Compile crash dump (Minidump) support" OFF "WIN32 OR LINUX" OFF)
@@ -298,10 +292,6 @@ endif()
 if (ARCHITECTURE_arm64 AND (ANDROID OR LINUX))
     set(HAS_NCE 1)
     add_compile_definitions(HAS_NCE=1)
-endif()
-
-if (YUZU_ROOM)
-    add_compile_definitions(YUZU_ROOM)
 endif()
 
 if (UNIX AND NOT (LINUX OR WIN32))
