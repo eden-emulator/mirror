@@ -7,8 +7,8 @@
 #pragma once
 
 #include <array>
-#include <memory>
 #include <vector>
+#include <span>
 
 #include "common/common_types.h"
 #include "core/file_sys/vfs/vfs.h"
@@ -29,7 +29,7 @@ private:
     struct IPSwitchPatch;
 
     void ParseFlag(const std::string& flag);
-    void Parse();
+    void Parse(std::span<u8 const> bytes);
 
     VirtualFile patch_text;
     std::vector<IPSwitchPatch> patches;

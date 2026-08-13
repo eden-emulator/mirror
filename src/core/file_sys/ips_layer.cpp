@@ -109,7 +109,7 @@ struct IPSwitchCompiler::IPSwitchPatch {
 };
 
 IPSwitchCompiler::IPSwitchCompiler(VirtualFile patch_text_) : patch_text(std::move(patch_text_)) {
-    Parse();
+    Parse(patch_text->ReadAllBytes());
 }
 
 IPSwitchCompiler::~IPSwitchCompiler() = default;
@@ -149,58 +149,16 @@ static IPSwitchRecord EscapeStringSequences(std::string_view sv) {
     return r;
 }
 
-void IPSwitchCompiler::Parse() {
-    auto const bytes = patch_text->ReadAllBytes();
-    std::vector<std::string> lines{};
-    for (auto it = bytes.cbegin(); it < bytes.cend(); ) {
-        auto const start = it;
-        auto end = start;
-        for (; end < bytes.cend() && *end != '\n' && *end != '\r'; ++end)
-            ;
-        it = end + 1; //prepare for next line
-        std::string_view const sline{
-            reinterpret_cast<const char*>(bytes.data() + std::distance(bytes.cbegin(), start)),
-            size_t(std::distance(start, end))
-        };
-        if (sline.size() > 0) {
-            auto p = sline.cbegin();
-            // skip space off line
-            for (; p < sline.cend() && std::isspace(*p); ++p)
-                ;
-            // now make a nominal preprocessed line: remove comments
-            char quote = '\0';
-            auto const sline_start = p;
-            for (; p < sline.cend(); ) {
-                if ((!quote && p + 1 < sline.cend() && p[0] == '/' && p[1] == '/')
-                || (!quote && p[0] == '#')) {
-                    break;
-                } else if (p[0] == '\"' || p[0] == '\'') {
-                    quote = (p[0] == quote) ? '\0' : p[0];
-                    ++p;
-                } else if (p + 1 < sline.cend() && p[0] == '\\') {
-                    p += 2;
-                } else {
-                    ++p;
-                }
-            }
-            std::string pp_str(sline_start, p);
-            while (pp_str.size() > 0 && std::isspace(pp_str.back()))
-                pp_str.pop_back();
-            if (pp_str.size() > 0)
-                lines.push_back(pp_str);
-        }
-    }
-
+void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
     LOG_INFO(Loader, "IPSwitchCompiler: '{}'", patch_text->GetName());
     bool is_little_endian = false;
     s64 offset_shift = 0;
     //bool print_values = false;
-    for (std::size_t i = 0; i < lines.size(); ++i) {
-        std::string_view line = lines[i];
+
+    auto const parse_line = [&](std::string_view const line) {
         LOG_INFO(Loader, "<{}>", line);
         if (line.starts_with("@stop")) {
-            // Force stop
-            break;
+            return false; // Force stop
         } else if (line.starts_with("@nsobid-")) { // NSO Build ID Specifier
             nso_build_id = ReadNSOBuildId(line.substr(8));
         } else if (line.starts_with("@enabled")) {
@@ -252,6 +210,46 @@ void IPSwitchCompiler::Parse() {
                 }
             } else {
                 LOG_WARNING(Loader, "unhandled line!");
+            }
+        }
+        return true; //continue
+    };
+
+    for (auto it = bytes.begin(); it < bytes.end(); ) {
+        auto const start = it;
+        auto end = start;
+        for (; end < bytes.end() && *end != '\n' && *end != '\r'; ++end)
+            ;
+        it = end + 1; //prepare for next line
+        std::string_view const sline{
+            reinterpret_cast<const char*>(bytes.data() + std::distance(bytes.begin(), start)),
+            size_t(std::distance(start, end))
+        };
+        if (sline.size() > 0) {
+            auto p = sline.cbegin();
+            // skip space off line
+            for (; p < sline.cend() && std::isspace(*p); ++p)
+                ;
+            // now make a nominal preprocessed line: remove comments
+            char quote = '\0';
+            auto const sline_start = p;
+            for (; p < sline.cend(); ) {
+                if ((!quote && p + 1 < sline.cend() && p[0] == '/' && p[1] == '/')
+                || (!quote && p[0] == '#')) {
+                    break;
+                } else if (p[0] == '\"' || p[0] == '\'') {
+                    quote = (p[0] == quote) ? '\0' : p[0];
+                    ++p;
+                } else if (p + 1 < sline.cend() && p[0] == '\\') {
+                    p += 2;
+                } else {
+                    ++p;
+                }
+            }
+            // now we have the preprocessed string ;)
+            std::string_view pp_str(sline_start, p);
+            if (pp_str.size() > 0 && !parse_line(pp_str)) {
+                break;
             }
         }
     }
