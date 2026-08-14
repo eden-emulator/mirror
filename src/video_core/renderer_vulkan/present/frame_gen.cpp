@@ -21,6 +21,7 @@ namespace {
 
 constexpr size_t COLOR_CHANNELS = 4;
 constexpr u64 LSFG_REQUIRED_FRAMES = 2;
+constexpr u32 LSFG_RECURRENCE_FRAMES = 2;
 
 [[nodiscard]] f32 ManualFlowScale() {
     return static_cast<f32>(Settings::values.frame_gen_flow_scale.GetValue()) / 100.0f;
@@ -41,10 +42,6 @@ constexpr u64 LSFG_REQUIRED_FRAMES = 2;
     constexpr f32 FLOW_SCALE_STEPS = 20.0f;
     const f32 stepped = std::ceil(ratio * FLOW_SCALE_STEPS) / FLOW_SCALE_STEPS;
     return std::clamp(stepped, 0.25f, 1.0f);
-}
-
-[[nodiscard]] size_t ConfiguredGenerations() {
-    return Settings::FrameGenGenerations();
 }
 
 bool IsBlueFirst(VkFormat format) {
@@ -197,15 +194,16 @@ FrameGen::FrameGen(MemoryAllocator& memory_allocator_, Scheduler& scheduler_)
 
 FrameGen::~FrameGen() = default;
 
-void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, VkExtent2D guest_extent,
-                       bool generate) {
+void FrameGen::Process(const Device& device, Frame* frame, VkFormat format,
+                       VkExtent2D guest_extent) {
     generated = false;
 
-    if (unavailable || ConfiguredGenerations() == 0) {
+    if (unavailable || !Settings::values.frame_gen.GetValue()) {
         if (chain) {
             scheduler.Finish();
             chain.reset();
         }
+        warm_streak = 0;
         return;
     }
 
@@ -234,12 +232,15 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, VkEx
 
     const u64 count = frame_count++;
     last_count = count;
-    last_generations = ConfiguredGenerations();
-    generated = generate && count + 1 >= LSFG_REQUIRED_FRAMES;
+    last_generations = plan.generations;
+
+    const bool warm = plan.warm && count + 1 >= LSFG_REQUIRED_FRAMES;
+    warm_streak = warm ? warm_streak + 1 : 0;
+    generated = warm && warm_streak >= LSFG_RECURRENCE_FRAMES && plan.generations > 0;
 
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([this, source = *frame->image, extent, count,
-                      dispatch = generated](vk::CommandBuffer cmdbuf) {
+                      dispatch = warm](vk::CommandBuffer cmdbuf) {
         CopyPresentedFrame(cmdbuf, source, chain->Input(count), extent);
         if (dispatch) {
             chain->DispatchShared(cmdbuf, count);
@@ -255,11 +256,13 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, VkEx
     }
 }
 
-size_t FrameGen::WantedGenerations() const {
+size_t FrameGen::WantedGenerations(size_t capacity) {
     if (unavailable) {
+        plan = {};
         return 0;
     }
-    return ConfiguredGenerations();
+    plan = pacer.Plan(capacity);
+    return plan.generations;
 }
 
 size_t FrameGen::GeneratedFrameCount() const {
@@ -291,6 +294,7 @@ void FrameGen::Rebuild(const Device& device, VkExtent2D extent, VkFormat format,
     built_extent = extent;
     built_format = format;
     frame_count = 0;
+    warm_streak = 0;
     generated = false;
 }
 

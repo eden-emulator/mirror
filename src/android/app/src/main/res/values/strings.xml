@@ -306,6 +306,14 @@
     <string name="frame_gen_multiplier_2x">2x</string>
     <string name="frame_gen_multiplier_3x">3x</string>
     <string name="frame_gen_multiplier_4x">4x</string>
+    <string name="frame_gen_target_rate">Target frame rate</string>
+    <string name="frame_gen_target_rate_description">Pick the rate your display can actually show. The multiplier then rises or falls on its own to hold it, and rolls back any step that makes the game itself run slower.</string>
+    <string name="frame_gen_target_rate_off">Off (use a fixed multiplier)</string>
+    <string name="frame_gen_target_rate_60">60 FPS</string>
+    <string name="frame_gen_target_rate_90">90 FPS</string>
+    <string name="frame_gen_target_rate_120">120 FPS</string>
+    <string name="frame_gen_target_rate_144">144 FPS</string>
+    <string name="frame_gen_target_rate_165">165 FPS</string>
     <string name="frame_gen_queue_target">Frame queue target</string>
     <string name="frame_gen_queue_target_description">How many finished frames may wait ahead of the display. Larger queues absorb GPU spikes at the cost of input latency.</string>
     <string name="frame_gen_queue_target_0">Unbuffered (lowest latency)</string>

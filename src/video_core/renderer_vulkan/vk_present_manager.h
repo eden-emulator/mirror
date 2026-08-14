@@ -63,7 +63,7 @@ public:
     void WaitPresent();
 
     /// How many additional frames can be queued without stalling the render thread
-    size_t AvailableExtraFrames();
+    [[nodiscard]] size_t MaxExtraFrames() const;
 
 private:
     void PresentThread(std::stop_token token);

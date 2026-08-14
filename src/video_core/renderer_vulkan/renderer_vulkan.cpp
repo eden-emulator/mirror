@@ -208,11 +208,9 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
                                render_window.GetFramebufferLayout(), swapchain.GetImageCount(),
                                swapchain.GetImageViewFormat());
 
-    const size_t wanted = frame_gen.WantedGenerations();
-    const bool can_present_all = wanted > 0 && present_manager.AvailableExtraFrames() >= wanted;
+    void(frame_gen.WantedGenerations(present_manager.MaxExtraFrames()));
 
-    frame_gen.Process(device, frame, swapchain.GetImageFormat(), GuestExtent(framebuffers),
-                      can_present_all);
+    frame_gen.Process(device, frame, swapchain.GetImageFormat(), GuestExtent(framebuffers));
 
     const size_t generated_frames = frame_gen.GeneratedFrameCount();
     for (size_t generation = 0; generation < generated_frames; ++generation) {
