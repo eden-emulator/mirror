@@ -308,7 +308,7 @@
     <string name="frame_gen_multiplier_4x">4x</string>
     <string name="frame_gen_target_rate">Target frame rate</string>
     <string name="frame_gen_target_rate_description">Pick the rate your display can actually show. The multiplier then rises or falls on its own to hold it, and rolls back any step that makes the game itself run slower.</string>
-    <string name="frame_gen_target_rate_off">Off (use a fixed multiplier)</string>
+    <string name="frame_gen_target_rate_off">Use a fixed multiplier</string>
     <string name="frame_gen_target_rate_60">60 FPS</string>
     <string name="frame_gen_target_rate_90">90 FPS</string>
     <string name="frame_gen_target_rate_120">120 FPS</string>
@@ -316,15 +316,15 @@
     <string name="frame_gen_target_rate_165">165 FPS</string>
     <string name="frame_gen_queue_target">Frame queue target</string>
     <string name="frame_gen_queue_target_description">How many finished frames may wait ahead of the display. Larger queues absorb GPU spikes at the cost of input latency.</string>
-    <string name="frame_gen_queue_target_0">Unbuffered (lowest latency)</string>
-    <string name="frame_gen_queue_target_1">One frame (balanced)</string>
-    <string name="frame_gen_queue_target_2">Two frames (smoothest)</string>
+    <string name="frame_gen_queue_target_0">Lowest latency (Unbuffered)</string>
+    <string name="frame_gen_queue_target_1">Balanced (1 frame)</string>
+    <string name="frame_gen_queue_target_2">Smoothest (2 frames)</string>
     <string name="frame_gen_flow_scale_auto">Match motion estimation to the game</string>
     <string name="frame_gen_flow_scale_auto_description">Estimate motion at the resolution the game actually renders instead of the upscaled output. Costs nothing in accuracy, since upscaling adds no motion detail.</string>
     <string name="frame_gen_flow_scale">Motion estimation resolution</string>
     <string name="frame_gen_flow_scale_description">Resolution of the optical flow pass, as a fraction of the output. Lowering it is the cheapest way to reclaim performance.</string>
     <string name="frame_gen_fp16">Half precision shaders</string>
-    <string name="frame_gen_fp16_description">Use the 16-bit shader variant shipped in Lossless.dll. Falls back automatically if the driver or the file lacks it.</string>
+    <string name="frame_gen_fp16_description">Use the 16-bit shader variant. Falls back automatically if the driver or the file lacks it.</string>
     <string name="frame_gen_dump_flow">Dump generated frame</string>
     <string name="frame_gen_dump_flow_description">Write the optical flow mip levels and the interpolated frame to the lossless/debug folder once, for troubleshooting</string>
     <string name="frame_gen_unsupported">Frame generation unavailable</string>
@@ -340,7 +340,6 @@
     <string name="lossless_scaling_description">Provide your own copy of Lossless.dll to enable frame generation</string>
     <string name="lossless_scaling_installed">Installed</string>
     <string name="lossless_scaling_not_installed">Not installed</string>
-    <string name="lossless_scaling_installed_description">Lossless.dll is installed and contains every shader frame generation needs.</string>
     <string name="lossless_scaling_replace">Replace</string>
     <string name="lossless_scaling_remove">Remove</string>
     <string name="lossless_scaling_remove_description">Delete the installed Lossless.dll and its prepared shaders</string>

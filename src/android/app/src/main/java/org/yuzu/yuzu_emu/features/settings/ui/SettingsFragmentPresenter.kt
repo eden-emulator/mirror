@@ -99,12 +99,7 @@ class SettingsFragmentPresenter(
 
             add(BooleanSetting.RENDERER_FRAME_GEN.key)
             add(IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.key)
-            if (IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.getInt(
-                    getNeedsGlobalForKey(IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.key)
-                ) == 0
-            ) {
-                add(IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.key)
-            }
+            add(IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.key)
             add(IntSetting.RENDERER_FRAME_GEN_QUEUE_TARGET.key)
             add(BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.key)
             if (!BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.getBoolean(

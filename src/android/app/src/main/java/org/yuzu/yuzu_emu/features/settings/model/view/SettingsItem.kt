@@ -72,6 +72,13 @@ abstract class SettingsItem(
                 return false
             }
 
+            // A frame rate target moves the multiplier on its own
+            if (setting.key == IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.key &&
+                frameGenTargetRate != 0
+            ) {
+                return false
+            }
+
             // Can't edit settings that aren't saveable in per-game config even if they are switchable
             if (NativeConfig.isPerGameConfigLoaded() && !setting.isSaveable) {
                 return false
@@ -94,6 +101,19 @@ abstract class SettingsItem(
 
     val clearable: Boolean
         get() = !setting.global && NativeConfig.isPerGameConfigLoaded()
+
+    private val frameGenTargetRate: Int
+        get() {
+            val key = IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.key
+            val needsGlobal = if (NativeLibrary.isRunning() &&
+                !NativeConfig.isPerGameConfigLoaded()
+            ) {
+                !NativeConfig.usingGlobal(key)
+            } else {
+                NativeConfig.usingGlobal(key)
+            }
+            return IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.getInt(needsGlobal)
+        }
 
     companion object {
         private val frameGenKeys = setOf(
