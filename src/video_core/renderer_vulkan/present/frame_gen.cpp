@@ -22,8 +22,25 @@ namespace {
 constexpr size_t COLOR_CHANNELS = 4;
 constexpr u64 LSFG_REQUIRED_FRAMES = 2;
 
-[[nodiscard]] f32 ConfiguredFlowScale() {
+[[nodiscard]] f32 ManualFlowScale() {
     return static_cast<f32>(Settings::values.frame_gen_flow_scale.GetValue()) / 100.0f;
+}
+
+[[nodiscard]] f32 ConfiguredFlowScale(VkExtent2D guest_extent, VkExtent2D presented_extent) {
+    if (!Settings::values.frame_gen_flow_scale_auto.GetValue()) {
+        return ManualFlowScale();
+    }
+    if (guest_extent.width == 0 || presented_extent.width == 0) {
+        return 1.0f;
+    }
+
+    const f32 rendered_width = static_cast<f32>(guest_extent.width) *
+                               Settings::values.resolution_info.up_factor;
+    const f32 ratio = rendered_width / static_cast<f32>(presented_extent.width);
+
+    constexpr f32 FLOW_SCALE_STEPS = 20.0f;
+    const f32 stepped = std::ceil(ratio * FLOW_SCALE_STEPS) / FLOW_SCALE_STEPS;
+    return std::clamp(stepped, 0.25f, 1.0f);
 }
 
 [[nodiscard]] size_t ConfiguredGenerations() {
@@ -180,7 +197,8 @@ FrameGen::FrameGen(MemoryAllocator& memory_allocator_, Scheduler& scheduler_)
 
 FrameGen::~FrameGen() = default;
 
-void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, bool generate) {
+void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, VkExtent2D guest_extent,
+                       bool generate) {
     generated = false;
 
     if (unavailable || ConfiguredGenerations() == 0) {
@@ -204,11 +222,15 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, bool
         }
     }
 
+    peak_guest_extent.width = std::max(peak_guest_extent.width, guest_extent.width);
+    peak_guest_extent.height = std::max(peak_guest_extent.height, guest_extent.height);
+
     const VkExtent2D extent{.width = frame->width, .height = frame->height};
+    const f32 flow_scale = ConfiguredFlowScale(peak_guest_extent, extent);
     if (!chain || built_extent.width != extent.width || built_extent.height != extent.height ||
-        built_format != format || built_flow_scale != ConfiguredFlowScale() ||
+        built_format != format || built_flow_scale != flow_scale ||
         built_generations != ConfiguredGenerations()) {
-        Rebuild(device, extent, format);
+        Rebuild(device, extent, format, flow_scale);
     }
 
     const u64 count = frame_count++;
@@ -256,11 +278,11 @@ void FrameGen::GenerateInto(const Device& device, Frame* destination, size_t gen
     });
 }
 
-void FrameGen::Rebuild(const Device& device, VkExtent2D extent, VkFormat format) {
+void FrameGen::Rebuild(const Device& device, VkExtent2D extent, VkFormat format, f32 flow_scale) {
     scheduler.Finish();
     chain.reset();
 
-    built_flow_scale = ConfiguredFlowScale();
+    built_flow_scale = flow_scale;
     built_generations = ConfiguredGenerations();
 
     chain.emplace(device, memory_allocator, *shaders, extent, format, built_flow_scale,

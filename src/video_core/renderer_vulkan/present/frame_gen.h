@@ -21,7 +21,8 @@ public:
     explicit FrameGen(MemoryAllocator& memory_allocator, Scheduler& scheduler);
     ~FrameGen();
 
-    void Process(const Device& device, Frame* frame, VkFormat format, bool generate);
+    void Process(const Device& device, Frame* frame, VkFormat format, VkExtent2D guest_extent,
+                 bool generate);
 
     [[nodiscard]] size_t WantedGenerations() const;
 
@@ -30,7 +31,7 @@ public:
     void GenerateInto(const Device& device, Frame* destination, size_t generation);
 
 private:
-    void Rebuild(const Device& device, VkExtent2D extent, VkFormat format);
+    void Rebuild(const Device& device, VkExtent2D extent, VkFormat format, f32 flow_scale);
     void DumpDebugImages(u64 count);
 
     MemoryAllocator& memory_allocator;
@@ -38,6 +39,7 @@ private:
 
     std::optional<LsfgShaders> shaders;
     std::optional<LsfgChain> chain;
+    VkExtent2D peak_guest_extent{};
     VkExtent2D built_extent{};
     VkFormat built_format{VK_FORMAT_UNDEFINED};
     f32 built_flow_scale{};

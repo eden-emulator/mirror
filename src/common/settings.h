@@ -402,6 +402,15 @@ struct Values {
                                                       false,
                                                       &frame_gen};
 
+    SwitchableSetting<bool> frame_gen_flow_scale_auto{linkage,
+                                                      true,
+                                                      "frame_gen_flow_scale_auto",
+                                                      Category::Renderer,
+                                                      Specialization::Default,
+                                                      true,
+                                                      false,
+                                                      &frame_gen};
+
     SwitchableSetting<u32, true> frame_gen_flow_scale{linkage,
                                                       75,
                                                       25,

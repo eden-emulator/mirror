@@ -49,6 +49,21 @@ constexpr VkExtent2D CaptureImageSize{
     .height = VideoCore::Capture::LinearHeight,
 };
 
+[[nodiscard]] VkExtent2D GuestExtent(std::span<const Tegra::FramebufferConfig> framebuffers) {
+    if (framebuffers.empty()) {
+        return VkExtent2D{};
+    }
+
+    const auto& framebuffer = framebuffers.front();
+    if (framebuffer.crop_rect.IsEmpty()) {
+        return VkExtent2D{.width = framebuffer.width, .height = framebuffer.height};
+    }
+    return VkExtent2D{
+        .width = static_cast<u32>(framebuffer.crop_rect.GetWidth()),
+        .height = static_cast<u32>(framebuffer.crop_rect.GetHeight()),
+    };
+}
+
 constexpr VkExtent3D CaptureImageExtent{
     .width = VideoCore::Capture::LinearWidth,
     .height = VideoCore::Capture::LinearHeight,
@@ -196,7 +211,8 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
     const size_t wanted = frame_gen.WantedGenerations();
     const bool can_present_all = wanted > 0 && present_manager.AvailableExtraFrames() >= wanted;
 
-    frame_gen.Process(device, frame, swapchain.GetImageFormat(), can_present_all);
+    frame_gen.Process(device, frame, swapchain.GetImageFormat(), GuestExtent(framebuffers),
+                      can_present_all);
 
     const size_t generated_frames = frame_gen.GeneratedFrameCount();
     for (size_t generation = 0; generation < generated_frames; ++generation) {

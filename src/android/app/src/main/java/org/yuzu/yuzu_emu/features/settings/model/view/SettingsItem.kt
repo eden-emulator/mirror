@@ -100,6 +100,7 @@ abstract class SettingsItem(
             BooleanSetting.RENDERER_FRAME_GEN.key,
             IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.key,
             IntSetting.RENDERER_FRAME_GEN_QUEUE_TARGET.key,
+            BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.key,
             IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.key,
             BooleanSetting.RENDERER_FRAME_GEN_FP16.key,
             BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW.key
@@ -646,6 +647,13 @@ abstract class SettingsItem(
                     descriptionId = R.string.frame_gen_queue_target_description,
                     choicesId = R.array.frameGenQueueTargetNames,
                     valuesId = R.array.frameGenQueueTargetValues
+                )
+            )
+            put(
+                SwitchSetting(
+                    BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO,
+                    titleId = R.string.frame_gen_flow_scale_auto,
+                    descriptionId = R.string.frame_gen_flow_scale_auto_description
                 )
             )
             put(

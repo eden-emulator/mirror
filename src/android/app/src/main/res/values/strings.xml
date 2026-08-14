@@ -311,6 +311,8 @@
     <string name="frame_gen_queue_target_0">Unbuffered (lowest latency)</string>
     <string name="frame_gen_queue_target_1">One frame (balanced)</string>
     <string name="frame_gen_queue_target_2">Two frames (smoothest)</string>
+    <string name="frame_gen_flow_scale_auto">Match motion estimation to the game</string>
+    <string name="frame_gen_flow_scale_auto_description">Estimate motion at the resolution the game actually renders instead of the upscaled output. Costs nothing in accuracy, since upscaling adds no motion detail.</string>
     <string name="frame_gen_flow_scale">Motion estimation resolution</string>
     <string name="frame_gen_flow_scale_description">Resolution of the optical flow pass, as a fraction of the output. Lowering it is the cheapest way to reclaim performance.</string>
     <string name="frame_gen_fp16">Half precision shaders</string>
