@@ -223,12 +223,6 @@ object NativeLibrary {
     external fun getDebugKnobAt(index: Int): Boolean
 
     /**
-     * Publishes the refresh rate of the display the emulation surface lives on, in hertz.
-     * Frame generation uses it to cap the multiplier to what the display can actually present.
-     */
-    external fun setDisplayRefreshRate(rate: Float)
-
-    /**
      * Set the current speed limit to the configured turbo speed.
      */
     external fun setTurboSpeedLimit(enabled: Boolean)

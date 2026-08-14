@@ -183,7 +183,11 @@ FrameGen::~FrameGen() = default;
 void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, bool generate) {
     generated = false;
 
-    if (unavailable || !Settings::values.frame_gen.GetValue()) {
+    if (unavailable || ConfiguredGenerations() == 0) {
+        if (chain) {
+            scheduler.Finish();
+            chain.reset();
+        }
         return;
     }
 

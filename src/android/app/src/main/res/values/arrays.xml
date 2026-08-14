@@ -163,14 +163,12 @@
     </string-array>
 
     <string-array name="frameGenMultiplierNames">
-        <item>@string/frame_gen_multiplier_auto</item>
         <item>@string/frame_gen_multiplier_2x</item>
         <item>@string/frame_gen_multiplier_3x</item>
         <item>@string/frame_gen_multiplier_4x</item>
     </string-array>
 
     <integer-array name="frameGenMultiplierValues">
-        <item>0</item>
         <item>2</item>
         <item>3</item>
         <item>4</item>

@@ -10,7 +10,6 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <dlfcn.h>
 
 #include "common/android/id_cache.h"
@@ -34,12 +33,8 @@ void EmuWindow_Android::OnSurfaceChanged(ANativeWindow* surface) {
         m_pending_frame_rate_hint = -1.0f;
         m_pending_frame_rate_hint_votes = 0;
         m_smoothed_present_rate = 0.0f;
-        m_peak_guest_frame_rate = 0.0f;
-        m_published_guest_frame_rate = 0.0f;
-        Settings::values.guest_frame_rate = 0.0f;
         m_last_frame_display_time = {};
         m_pending_frame_rate_since = {};
-        m_guest_frame_rate_since = {};
         return;
     }
 
@@ -69,28 +64,8 @@ void EmuWindow_Android::OnTouchReleased(int id) {
     EmulationSession::GetInstance().GetInputSubsystem().GetTouchScreen()->TouchReleased(id);
 }
 
-namespace {
-
-constexpr std::array GUEST_FRAME_RATE_LADDER{20.0f, 30.0f, 60.0f};
-
-[[nodiscard]] float SnapToGuestFrameRateLadder(float rate) {
-    float snapped = GUEST_FRAME_RATE_LADDER.front();
-    float best_distance = std::numeric_limits<float>::max();
-    for (const float step : GUEST_FRAME_RATE_LADDER) {
-        const float distance = std::fabs(step - rate);
-        if (distance <= best_distance) {
-            best_distance = distance;
-            snapped = step;
-        }
-    }
-    return snapped;
-}
-
-} // Anonymous namespace
-
 void EmuWindow_Android::OnFrameDisplayed() {
     UpdateObservedFrameRate();
-    UpdateGuestFrameRate();
     UpdateFrameRateHint();
 
     if (!m_first_frame) {
@@ -120,40 +95,6 @@ void EmuWindow_Android::UpdateObservedFrameRate() {
         }
     }
     m_last_frame_display_time = now;
-}
-
-void EmuWindow_Android::UpdateGuestFrameRate() {
-    const float measured = GetFrameTimeVerifiedHint();
-    if (measured <= 0.0f) {
-        return;
-    }
-
-    constexpr float PeakDecayFactor = 0.0015f;
-    m_peak_guest_frame_rate =
-        measured > m_peak_guest_frame_rate
-            ? measured
-            : m_peak_guest_frame_rate + (measured - m_peak_guest_frame_rate) * PeakDecayFactor;
-
-    const float candidate = SnapToGuestFrameRateLadder(m_peak_guest_frame_rate);
-    if (candidate == m_published_guest_frame_rate) {
-        m_guest_frame_rate_since = {};
-        return;
-    }
-
-    const auto now = Clock::now();
-    if (m_guest_frame_rate_since.time_since_epoch().count() == 0) {
-        m_guest_frame_rate_since = now;
-        return;
-    }
-
-    constexpr auto SettleDuration = std::chrono::seconds(3);
-    if (now - m_guest_frame_rate_since < SettleDuration) {
-        return;
-    }
-
-    m_published_guest_frame_rate = candidate;
-    Settings::values.guest_frame_rate = candidate;
-    m_guest_frame_rate_since = {};
 }
 
 float EmuWindow_Android::QuantizeFrameRateHint(float frame_rate) {
@@ -187,7 +128,7 @@ float EmuWindow_Android::GetPresentedFrameMultiplier() {
     if (!Settings::values.frame_gen.GetValue()) {
         return 1.0f;
     }
-    return static_cast<float>(Settings::FrameGenMultiplier());
+    return static_cast<float>(std::clamp<u32>(Settings::values.frame_gen_multiplier.GetValue(), 2, 4));
 }
 
 float EmuWindow_Android::GetFrameRateHint() const {

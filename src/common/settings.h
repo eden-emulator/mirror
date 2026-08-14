@@ -392,8 +392,8 @@ struct Values {
                                       Specialization::Default, true, false};
 
     SwitchableSetting<u32, true> frame_gen_multiplier{linkage,
-                                                      0,
-                                                      0,
+                                                      2,
+                                                      2,
                                                       4,
                                                       "frame_gen_multiplier",
                                                       Category::Renderer,
@@ -914,18 +914,12 @@ struct Values {
     // Per-game overrides
     bool use_squashed_iterated_blend;
 
-    // Rates published by the frontend, in hertz. Zero means not measured yet.
-    float display_refresh_rate;
-    float guest_frame_rate;
 };
 
 extern Values values;
 
-constexpr u32 AUTO_FRAME_GEN_MULTIPLIER = 0;
 constexpr u32 MIN_FRAME_GEN_MULTIPLIER = 2;
 constexpr u32 MAX_FRAME_GEN_MULTIPLIER = 4;
-
-[[nodiscard]] u32 FrameGenMultiplierCeiling();
 
 [[nodiscard]] u32 FrameGenMultiplier();
 
