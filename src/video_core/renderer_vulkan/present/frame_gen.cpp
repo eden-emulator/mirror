@@ -43,8 +43,9 @@ constexpr u64 LSFG_REQUIRED_FRAMES = 2;
     return std::clamp(stepped, 0.25f, 1.0f);
 }
 
-constexpr f32 BASE_RATE_SMOOTHING = 0.1f;
-constexpr u32 GENERATION_CHANGE_VOTES = 30;
+[[nodiscard]] size_t ConfiguredGenerations() {
+    return Settings::FrameGenGenerations();
+}
 
 bool IsBlueFirst(VkFormat format) {
     return format == VK_FORMAT_B8G8R8A8_UNORM || format == VK_FORMAT_B8G8R8A8_SRGB;
@@ -196,68 +197,11 @@ FrameGen::FrameGen(MemoryAllocator& memory_allocator_, Scheduler& scheduler_)
 
 FrameGen::~FrameGen() = default;
 
-void FrameGen::UpdateBaseRate() {
-    const auto now = Clock::now();
-    if (last_process_time.time_since_epoch().count() != 0) {
-        const f32 seconds = std::chrono::duration<f32>(now - last_process_time).count();
-        const f32 rate = seconds > 0.0f ? 1.0f / seconds : 0.0f;
-        if (rate >= 1.0f && rate <= 1000.0f) {
-            smoothed_base_rate = smoothed_base_rate <= 0.0f
-                                     ? rate
-                                     : smoothed_base_rate +
-                                           (rate - smoothed_base_rate) * BASE_RATE_SMOOTHING;
-        }
-    }
-    last_process_time = now;
-}
-
-size_t FrameGen::DesiredGenerations() const {
-    if (!Settings::values.frame_gen.GetValue()) {
-        return 0;
-    }
-
-    const u32 target = Settings::values.frame_gen_target_rate.GetValue();
-    if (target == 0) {
-        return Settings::FrameGenGenerations();
-    }
-    if (smoothed_base_rate <= 1.0f) {
-        return 0;
-    }
-
-    const size_t multiplier = static_cast<size_t>(static_cast<f32>(target) / smoothed_base_rate);
-    return std::clamp<size_t>(multiplier, 1, LSFG_MAX_GENERATIONS + 1) - 1;
-}
-
-void FrameGen::UpdateGenerationCount() {
-    const size_t desired = DesiredGenerations();
-    if (desired == stable_generations) {
-        pending_generation_votes = 0;
-        return;
-    }
-
-    if (desired != pending_generations) {
-        pending_generations = desired;
-        pending_generation_votes = 1;
-        return;
-    }
-
-    if (++pending_generation_votes >= GENERATION_CHANGE_VOTES) {
-        stable_generations = desired;
-        pending_generation_votes = 0;
-    }
-}
-
-size_t FrameGen::WantedGenerations() {
-    UpdateBaseRate();
-    UpdateGenerationCount();
-    return unavailable ? 0 : stable_generations;
-}
-
 void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, VkExtent2D guest_extent,
                        bool generate) {
     generated = false;
 
-    if (unavailable || !Settings::values.frame_gen.GetValue()) {
+    if (unavailable || ConfiguredGenerations() == 0) {
         if (chain) {
             scheduler.Finish();
             chain.reset();
@@ -290,8 +234,8 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, VkEx
 
     const u64 count = frame_count++;
     last_count = count;
-    last_generations = stable_generations;
-    generated = generate && last_generations > 0 && count + 1 >= LSFG_REQUIRED_FRAMES;
+    last_generations = ConfiguredGenerations();
+    generated = generate && count + 1 >= LSFG_REQUIRED_FRAMES;
 
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([this, source = *frame->image, extent, count,
@@ -309,6 +253,13 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, VkEx
         DumpDebugImages(count);
         dumped = true;
     }
+}
+
+size_t FrameGen::WantedGenerations() const {
+    if (unavailable) {
+        return 0;
+    }
+    return ConfiguredGenerations();
 }
 
 size_t FrameGen::GeneratedFrameCount() const {

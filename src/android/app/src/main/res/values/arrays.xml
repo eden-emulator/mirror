@@ -174,24 +174,6 @@
         <item>4</item>
     </integer-array>
 
-    <string-array name="frameGenTargetRateNames">
-        <item>@string/frame_gen_target_rate_off</item>
-        <item>@string/frame_gen_target_rate_60</item>
-        <item>@string/frame_gen_target_rate_90</item>
-        <item>@string/frame_gen_target_rate_120</item>
-        <item>@string/frame_gen_target_rate_144</item>
-        <item>@string/frame_gen_target_rate_165</item>
-    </string-array>
-
-    <integer-array name="frameGenTargetRateValues">
-        <item>0</item>
-        <item>60</item>
-        <item>90</item>
-        <item>120</item>
-        <item>144</item>
-        <item>165</item>
-    </integer-array>
-
     <string-array name="frameGenQueueTargetNames">
         <item>@string/frame_gen_queue_target_0</item>
         <item>@string/frame_gen_queue_target_1</item>

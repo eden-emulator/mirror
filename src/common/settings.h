@@ -423,17 +423,6 @@ struct Values {
                                                       true,
                                                       &frame_gen};
 
-    SwitchableSetting<u32, true> frame_gen_target_rate{linkage,
-                                                       0,
-                                                       0,
-                                                       240,
-                                                       "frame_gen_target_rate",
-                                                       Category::Renderer,
-                                                       Specialization::Countable,
-                                                       true,
-                                                       false,
-                                                       &frame_gen};
-
     SwitchableSetting<u32, true> frame_gen_queue_target{linkage,
                                                         1,
                                                         0,
@@ -944,8 +933,6 @@ constexpr u32 MAX_FRAME_GEN_MULTIPLIER = 4;
 [[nodiscard]] u32 FrameGenMultiplier();
 
 [[nodiscard]] size_t FrameGenGenerations();
-
-[[nodiscard]] size_t FrameGenMaxGenerations();
 
 bool getDebugKnobAt(u8 i);
 

@@ -301,14 +301,6 @@
     <string name="frame_gen">Frame generation</string>
     <string name="frame_gen_submenu_description">Manage and configure frame generation</string>
     <string name="frame_gen_description">Insert interpolated frames between rendered ones using Lossless Scaling. Forces FIFO presentation while enabled.</string>
-    <string name="frame_gen_target_rate">Target frame rate</string>
-    <string name="frame_gen_target_rate_description">Aim for a fixed output rate by adjusting the multiplier as the game\'s own frame rate moves. Pick a rate your display can actually present.</string>
-    <string name="frame_gen_target_rate_off">Off (use fixed multiplier)</string>
-    <string name="frame_gen_target_rate_60">60 fps</string>
-    <string name="frame_gen_target_rate_90">90 fps</string>
-    <string name="frame_gen_target_rate_120">120 fps</string>
-    <string name="frame_gen_target_rate_144">144 fps</string>
-    <string name="frame_gen_target_rate_165">165 fps</string>
     <string name="frame_gen_multiplier">Frame multiplier</string>
     <string name="frame_gen_multiplier_description">How many frames to display for each rendered frame. Higher values cost proportionally more GPU time. Asking for more than your display can present will slow emulation down.</string>
     <string name="frame_gen_multiplier_2x">2x</string>
