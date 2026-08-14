@@ -28,7 +28,7 @@ LsfgDelta::LsfgDelta(const Device& device, MemoryAllocator& memory_allocator,
                      const LsfgShaders& shaders, LsfgResources& resources,
                      vk::DescriptorPool& descriptor_pool, LsfgImageHistory& inputs_,
                      LsfgImage& flow_input_, LsfgImage* previous_gamma_, LsfgImage* previous1_,
-                     LsfgImage* previous2_, size_t generation_count)
+                     LsfgImage* previous2_)
     : inputs{&inputs_}, flow_input{&flow_input_}, previous_gamma{previous_gamma_},
       previous1{previous1_}, previous2{previous2_} {
     using namespace VideoCore::FrameGen::PerformanceShader;
@@ -83,7 +83,7 @@ LsfgDelta::LsfgDelta(const Device& device, MemoryAllocator& memory_allocator,
     out_image2 = LsfgImage(device, memory_allocator, extent, LSFG_MOTION_FORMAT);
 
     std::vector<VkDescriptorSetLayout> layouts;
-    for (size_t generation = 0; generation < generation_count; ++generation) {
+    for (size_t slot = 0; slot < LSFG_GENERATION_SLOTS; ++slot) {
         for (size_t i = 0; i < LSFG_HISTORY_SLOTS; ++i) {
             layouts.push_back(passes[0].SetLayout());
         }
@@ -104,12 +104,11 @@ LsfgDelta::LsfgDelta(const Device& device, MemoryAllocator& memory_allocator,
         VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, VK_COMPARE_OP_NEVER, true);
     const VkSampler edge_sampler =
         resources.GetSampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_COMPARE_OP_ALWAYS, false);
-    generations.resize(generation_count);
     size_t next = 0;
-    for (size_t generation = 0; generation < generation_count; ++generation) {
-        Generation& pass = generations[generation];
-        const VkBuffer buffer = resources.GetBuffer(
-            LsfgTimestamp(generation, generation_count), false, previous_gamma == nullptr);
+    for (size_t slot = 0; slot < LSFG_GENERATION_SLOTS; ++slot) {
+        Generation& pass = generations[slot];
+        const VkBuffer buffer =
+            resources.GetBuffer(LsfgSlotTimestamp(slot), false, previous_gamma == nullptr);
 
         for (size_t i = 0; i < LSFG_HISTORY_SLOTS; ++i) {
             pass.first_descriptor_sets[i] = owned_sets[next++];
@@ -197,23 +196,23 @@ LsfgDelta::LsfgDelta(const Device& device, MemoryAllocator& memory_allocator,
     }
 }
 
-void LsfgDelta::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation) {
-    const Generation& pass = generations[generation];
+void LsfgDelta::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t slot) {
+    const Generation& pass = generations[slot];
 
     const VkExtent2D extent = temp1[0].Extent();
     const u32 groups_x = GroupCount(extent.width);
     const u32 groups_y = GroupCount(extent.height);
 
-    const size_t slot = frame_count % LSFG_HISTORY_SLOTS;
-    const size_t previous_slot = (frame_count + 2) % LSFG_HISTORY_SLOTS;
+    const size_t history = frame_count % LSFG_HISTORY_SLOTS;
+    const size_t previous_history = (frame_count + 2) % LSFG_HISTORY_SLOTS;
 
     LsfgBarriers(cmdbuf)
-        .WriteToReadAll((*inputs)[previous_slot])
-        .WriteToReadAll((*inputs)[slot])
+        .WriteToReadAll((*inputs)[previous_history])
+        .WriteToReadAll((*inputs)[history])
         .WriteToRead(previous_gamma)
         .ReadToWriteAll(temp1)
         .Build();
-    passes[0].Bind(cmdbuf, pass.first_descriptor_sets[slot]);
+    passes[0].Bind(cmdbuf, pass.first_descriptor_sets[history]);
     cmdbuf.Dispatch(groups_x, groups_y, 1);
 
     LsfgBarriers(cmdbuf).WriteToReadAll(temp1).ReadToWriteAll(temp2).Build();
@@ -238,13 +237,13 @@ void LsfgDelta::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t gener
     cmdbuf.Dispatch(groups_x, groups_y, 1);
 
     LsfgBarriers(cmdbuf)
-        .WriteToReadAll((*inputs)[previous_slot])
-        .WriteToReadAll((*inputs)[slot])
+        .WriteToReadAll((*inputs)[previous_history])
+        .WriteToReadAll((*inputs)[history])
         .WriteToRead(previous_gamma)
         .WriteToRead(previous1)
         .ReadToWriteAll(temp2)
         .Build();
-    passes[5].Bind(cmdbuf, pass.sixth_descriptor_sets[slot]);
+    passes[5].Bind(cmdbuf, pass.sixth_descriptor_sets[history]);
     cmdbuf.Dispatch(groups_x, groups_y, 1);
 
     LsfgBarriers(cmdbuf)

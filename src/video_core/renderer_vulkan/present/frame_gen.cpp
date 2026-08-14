@@ -228,13 +228,13 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format, VkEx
     const VkExtent2D extent{.width = frame->width, .height = frame->height};
     const f32 flow_scale = ConfiguredFlowScale(peak_guest_extent, extent);
     if (!chain || built_extent.width != extent.width || built_extent.height != extent.height ||
-        built_format != format || built_flow_scale != flow_scale ||
-        built_generations != ConfiguredGenerations()) {
+        built_format != format || built_flow_scale != flow_scale) {
         Rebuild(device, extent, format, flow_scale);
     }
 
     const u64 count = frame_count++;
     last_count = count;
+    last_generations = ConfiguredGenerations();
     generated = generate && count + 1 >= LSFG_REQUIRED_FRAMES;
 
     scheduler.RequestOutsideRenderPassOperationContext();
@@ -263,18 +263,21 @@ size_t FrameGen::WantedGenerations() const {
 }
 
 size_t FrameGen::GeneratedFrameCount() const {
-    return generated && chain ? chain->GenerationCount() : 0;
+    return generated ? last_generations : 0;
 }
 
 void FrameGen::GenerateInto(const Device& device, Frame* destination, size_t generation) {
-    chain->SetTarget(device, generation, destination->index, *destination->storage_view);
+    chain->SetTarget(device, last_generations, generation, destination->index,
+                     *destination->storage_view);
 
     const VkExtent2D extent{.width = destination->width, .height = destination->height};
 
     scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([this, count = last_count, generation, target = destination->index,
-                      image = *destination->image, extent](vk::CommandBuffer cmdbuf) {
-        chain->DispatchGeneration(cmdbuf, count, generation, target, image, extent);
+    scheduler.Record([this, count = last_count, generation_count = last_generations, generation,
+                      target = destination->index, image = *destination->image,
+                      extent](vk::CommandBuffer cmdbuf) {
+        chain->DispatchGeneration(cmdbuf, count, generation_count, generation, target, image,
+                                  extent);
     });
 }
 
@@ -283,10 +286,8 @@ void FrameGen::Rebuild(const Device& device, VkExtent2D extent, VkFormat format,
     chain.reset();
 
     built_flow_scale = flow_scale;
-    built_generations = ConfiguredGenerations();
 
-    chain.emplace(device, memory_allocator, *shaders, extent, format, built_flow_scale,
-                  built_generations);
+    chain.emplace(device, memory_allocator, *shaders, extent, format, built_flow_scale);
     built_extent = extent;
     built_format = format;
     frame_count = 0;

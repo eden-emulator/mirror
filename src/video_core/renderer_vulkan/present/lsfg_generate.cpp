@@ -49,7 +49,7 @@ VkImageMemoryBarrier MakeTargetBarrier(VkImage image, VkAccessFlags src_access,
 LsfgGenerate::LsfgGenerate(const Device& device, const LsfgShaders& shaders,
                            LsfgResources& resources, vk::DescriptorPool& descriptor_pool,
                            LsfgImagePair& frames_, LsfgImage& motion_, LsfgImage& detail1_,
-                           LsfgImage& detail2_, size_t generation_count)
+                           LsfgImage& detail2_)
     : frames{&frames_}, motion{&motion_}, detail1{&detail1_}, detail2{&detail2_} {
     using namespace VideoCore::FrameGen::PerformanceShader;
 
@@ -63,35 +63,33 @@ LsfgGenerate::LsfgGenerate(const Device& device, const LsfgShaders& shaders,
     edge_sampler =
         resources.GetSampler(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_COMPARE_OP_ALWAYS, false);
 
-    generations.resize(generation_count);
-
     const std::vector<VkDescriptorSetLayout> layouts(
-        generation_count * LSFG_MAX_TARGETS * 2, pass.SetLayout());
+        LSFG_GENERATION_SLOTS * LSFG_MAX_TARGETS * 2, pass.SetLayout());
     owned_sets = CreateWrappedDescriptorSets(descriptor_pool, layouts);
 
     size_t next = 0;
-    for (size_t generation = 0; generation < generation_count; ++generation) {
-        Generation& target = generations[generation];
-        target.buffer = resources.GetBuffer(LsfgTimestamp(generation, generation_count));
+    for (size_t slot = 0; slot < LSFG_GENERATION_SLOTS; ++slot) {
+        Generation& target = generations[slot];
+        target.buffer = resources.GetBuffer(LsfgSlotTimestamp(slot));
 
-        for (auto& slot : target.targets) {
-            for (auto& set : slot.descriptor_sets) {
+        for (auto& entry : target.targets) {
+            for (auto& set : entry.descriptor_sets) {
                 set = owned_sets[next++];
             }
         }
     }
 }
 
-void LsfgGenerate::SetTarget(const Device& device, size_t generation, u32 target, VkImageView view) {
-    Target& slot = generations[generation].targets[target];
-    if (slot.view == view) {
+void LsfgGenerate::SetTarget(const Device& device, size_t slot, u32 target, VkImageView view) {
+    Target& entry = generations[slot].targets[target];
+    if (entry.view == view) {
         return;
     }
-    slot.view = view;
+    entry.view = view;
 
-    for (size_t i = 0; i < slot.descriptor_sets.size(); ++i) {
-        LsfgDescriptorWriter(slot.descriptor_sets[i])
-            .AddUniformBuffer(generations[generation].buffer, LsfgResources::BufferSize())
+    for (size_t i = 0; i < entry.descriptor_sets.size(); ++i) {
+        LsfgDescriptorWriter(entry.descriptor_sets[i])
+            .AddUniformBuffer(generations[slot].buffer, LsfgResources::BufferSize())
             .AddSampler(sampler)
             .AddSampler(edge_sampler)
             .AddSampledImage((*frames)[1 - i])
@@ -104,9 +102,9 @@ void LsfgGenerate::SetTarget(const Device& device, size_t generation, u32 target
     }
 }
 
-void LsfgGenerate::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation,
-                            u32 target, VkImage image, VkExtent2D extent) {
-    const Target& slot = generations[generation].targets[target];
+void LsfgGenerate::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t slot, u32 target,
+                            VkImage image, VkExtent2D extent) {
+    const Target& entry = generations[slot].targets[target];
 
     LsfgBarriers(cmdbuf)
         .WriteToReadAll(*frames)
@@ -116,7 +114,7 @@ void LsfgGenerate::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t ge
         .DiscardToWrite(image)
         .Build();
 
-    pass.Bind(cmdbuf, slot.descriptor_sets[frame_count % slot.descriptor_sets.size()]);
+    pass.Bind(cmdbuf, entry.descriptor_sets[frame_count % entry.descriptor_sets.size()]);
     cmdbuf.Dispatch(GroupCount(extent.width), GroupCount(extent.height), 1);
 
     const std::array after{MakeTargetBarrier(

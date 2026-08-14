@@ -7,7 +7,6 @@
 #pragma once
 
 #include <array>
-#include <vector>
 
 #include "common/common_types.h"
 #include "video_core/renderer_vulkan/present/lsfg_common.h"
@@ -25,10 +24,9 @@ public:
     LsfgGamma() = default;
     LsfgGamma(const Device& device, MemoryAllocator& memory_allocator, const LsfgShaders& shaders,
               LsfgResources& resources, vk::DescriptorPool& descriptor_pool,
-              LsfgImageHistory& inputs, LsfgImage& flow_input, LsfgImage* previous,
-              size_t generation_count);
+              LsfgImageHistory& inputs, LsfgImage& flow_input, LsfgImage* previous);
 
-    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation);
+    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t slot);
 
     [[nodiscard]] LsfgImage& Output() {
         return out_image;
@@ -45,7 +43,7 @@ private:
     LsfgImage* previous{};
 
     std::array<LsfgPass, LSFG_GAMMA_STAGES> passes;
-    std::vector<Generation> generations;
+    std::array<Generation, LSFG_GENERATION_SLOTS> generations{};
     vk::DescriptorSets owned_sets;
 
     std::array<LsfgImage, LSFG_GAMMA_TEMPS> temp1;

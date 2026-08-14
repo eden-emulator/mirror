@@ -28,9 +28,29 @@ constexpr VkFormat LSFG_MOTION_FORMAT = VK_FORMAT_R16G16B16A16_SFLOAT;
 
 constexpr size_t LSFG_HISTORY_SLOTS = 3;
 constexpr size_t LSFG_MAX_TARGETS = 7;
+constexpr size_t LSFG_MAX_GENERATIONS = 3;
+
+constexpr size_t LSFG_GENERATION_SLOTS = LSFG_MAX_GENERATIONS * (LSFG_MAX_GENERATIONS + 1) / 2;
+
+[[nodiscard]] constexpr size_t LsfgGenerationSlot(size_t generation_count, size_t generation) {
+    return (generation_count - 1) * generation_count / 2 + generation;
+}
 
 [[nodiscard]] constexpr f32 LsfgTimestamp(size_t generation, size_t generation_count) {
     return static_cast<f32>(generation + 1) / static_cast<f32>(generation_count + 1);
+}
+
+[[nodiscard]] constexpr size_t LsfgSlotCount(size_t slot) {
+    size_t count = 1;
+    while (LsfgGenerationSlot(count + 1, 0) <= slot) {
+        ++count;
+    }
+    return count;
+}
+
+[[nodiscard]] constexpr f32 LsfgSlotTimestamp(size_t slot) {
+    const size_t count = LsfgSlotCount(slot);
+    return LsfgTimestamp(slot - LsfgGenerationSlot(count, 0), count);
 }
 
 class LsfgImage {

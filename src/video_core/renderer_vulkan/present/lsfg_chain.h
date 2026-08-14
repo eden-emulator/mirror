@@ -27,26 +27,23 @@ constexpr size_t LSFG_DELTA_INSTANCES = 3;
 class LsfgChain {
 public:
     LsfgChain(const Device& device, MemoryAllocator& memory_allocator, const LsfgShaders& shaders,
-              VkExtent2D extent, VkFormat format, f32 flow_scale, size_t generation_count_);
+              VkExtent2D extent, VkFormat format, f32 flow_scale);
 
     LsfgChain(const LsfgChain&) = delete;
     LsfgChain& operator=(const LsfgChain&) = delete;
 
     void DispatchShared(vk::CommandBuffer cmdbuf, u64 frame_count);
 
-    void DispatchGeneration(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation,
-                            u32 target, VkImage image, VkExtent2D extent);
+    void DispatchGeneration(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation_count,
+                            size_t generation, u32 target, VkImage image, VkExtent2D extent);
 
-    void SetTarget(const Device& device, size_t generation, u32 target, VkImageView view) {
-        generate.SetTarget(device, generation, target, view);
+    void SetTarget(const Device& device, size_t generation_count, size_t generation, u32 target,
+                   VkImageView view) {
+        generate.SetTarget(device, LsfgGenerationSlot(generation_count, generation), target, view);
     }
 
     [[nodiscard]] LsfgImage& Input(u64 frame_count) {
         return frames[frame_count % frames.size()];
-    }
-
-    [[nodiscard]] size_t GenerationCount() const {
-        return generation_count;
     }
 
     [[nodiscard]] LsfgImage& FlowLevel(size_t level) {
@@ -74,7 +71,6 @@ public:
     }
 
 private:
-    size_t generation_count{};
     LsfgResources resources;
     vk::DescriptorPool descriptor_pool;
 

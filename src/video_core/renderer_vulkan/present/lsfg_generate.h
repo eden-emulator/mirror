@@ -7,7 +7,6 @@
 #pragma once
 
 #include <array>
-#include <vector>
 
 #include "common/common_types.h"
 #include "video_core/renderer_vulkan/present/lsfg_common.h"
@@ -22,11 +21,11 @@ public:
     LsfgGenerate() = default;
     LsfgGenerate(const Device& device, const LsfgShaders& shaders, LsfgResources& resources,
                  vk::DescriptorPool& descriptor_pool, LsfgImagePair& frames, LsfgImage& motion,
-                 LsfgImage& detail1, LsfgImage& detail2, size_t generation_count);
+                 LsfgImage& detail1, LsfgImage& detail2);
 
-    void SetTarget(const Device& device, size_t generation, u32 target, VkImageView view);
+    void SetTarget(const Device& device, size_t slot, u32 target, VkImageView view);
 
-    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation, u32 target,
+    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t slot, u32 target,
                   VkImage image, VkExtent2D extent);
 
 private:
@@ -48,7 +47,7 @@ private:
     VkSampler edge_sampler{};
 
     LsfgPass pass;
-    std::vector<Generation> generations;
+    std::array<Generation, LSFG_GENERATION_SLOTS> generations{};
     vk::DescriptorSets owned_sets;
 };
 

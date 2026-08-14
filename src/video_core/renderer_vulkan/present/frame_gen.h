@@ -43,9 +43,9 @@ private:
     VkExtent2D built_extent{};
     VkFormat built_format{VK_FORMAT_UNDEFINED};
     f32 built_flow_scale{};
-    size_t built_generations{};
     u64 frame_count{};
     u64 last_count{};
+    size_t last_generations{};
     bool generated{};
     bool unavailable{};
     bool dumped{};
