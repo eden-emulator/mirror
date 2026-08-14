@@ -1155,7 +1155,6 @@ void Room::Destroy() {
     room_impl->room_information.name.clear();
 }
 
-#ifdef YUZU_ROOM
 /// The magic text at the beginning of a yuzu-room ban list file.
 static constexpr char BAN_LIST_MAGIC[] = "YuzuRoom-BanList-1";
 static constexpr char TOKEN_DELIMITER{':'};
@@ -1350,6 +1349,5 @@ int LaunchRoomLoopWithArguments(Common::ProgramArguments& args) {
     Network::Shutdown();
     return 0;
 }
-#endif
 
 } // namespace Network

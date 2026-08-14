@@ -41,7 +41,6 @@ static void PrintHelp(const char* argv0) {
         "Shared options:\n"
         "-l, --log-file          The file for storing the room log\n"
         "-H, --headless          Force headless mode (no GUI). Currently only used for rooms\n"
-#ifdef YUZU_ROOM
         "Room options:\n"
         "-N, --name              The name of the room\n"
         "-D, --description       The room description\n"
@@ -55,7 +54,6 @@ static void PrintHelp(const char* argv0) {
         "-T, --token             The token used for announce\n"
         "-A, --web-api-url       yuzu Web API url\n"
         "-B, --ban-list-file     The file for storing the room ban list\n"
-#endif
         "Misc. options:\n"
         "-h, --help              Display this help and exit\n"
         "-v, --version           Output version information and exit\n",
@@ -95,7 +93,6 @@ int ParseArguments(ProgramArguments& args, int argc, char *argv[]) {
 
         {"log-file", required_argument, 0, 'l'},
         {"headless", required_argument, 0, 'H'},
-#ifdef YUZU_ROOM
         {"room-name", required_argument, 0, 'N'},
         {"room-description", required_argument, 0, 'D'},
         {"bind-address", required_argument, 0, 'S'},
@@ -110,7 +107,6 @@ int ParseArguments(ProgramArguments& args, int argc, char *argv[]) {
         {"ban-list-file", required_argument, 0, 'B'},
         // Entry option
         {"room", no_argument, 0, 0},
-#endif
         {"hlaunch", no_argument, 0, 500},
         {"qlaunch", no_argument, 0, 'q'},
         {"setup", no_argument, 0, 502},
@@ -216,7 +212,6 @@ int ParseArguments(ProgramArguments& args, int argc, char *argv[]) {
                 args.headless.emplace(true);
                 break;
             // room
-#ifdef YUZU_ROOM
             case 'N':
                 args.room_name.assign(optarg);
                 break;
@@ -265,7 +260,6 @@ int ParseArguments(ProgramArguments& args, int argc, char *argv[]) {
             case 'B':
                 args.ban_list_file.assign(optarg);
                 break;
-#endif
             }
         } else {
 #ifdef _WIN32
