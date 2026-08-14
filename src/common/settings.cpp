@@ -392,6 +392,16 @@ size_t FrameGenGenerations() {
     return FrameGenMultiplier() - 1;
 }
 
+size_t FrameGenMaxGenerations() {
+    if (!values.frame_gen.GetValue()) {
+        return 0;
+    }
+    if (values.frame_gen_target_rate.GetValue() != 0) {
+        return MAX_FRAME_GEN_MULTIPLIER - 1;
+    }
+    return FrameGenMultiplier() - 1;
+}
+
 void RestoreGlobalState(bool is_powered_on) {
     // If a game is running, DO NOT restore the global settings state
     if (is_powered_on) {

@@ -351,7 +351,7 @@ void PresentManager::SetImageCount() {
     // We cannot have more than 7 images in flight at any given time.
     // FRAMES_IN_FLIGHT is 8, and the cache TICKS_TO_DESTROY is 8.
     // Mali drivers will give us 6.
-    const size_t generations = Settings::FrameGenGenerations();
+    const size_t generations = Settings::FrameGenMaxGenerations();
     const size_t queued_composites = Settings::values.frame_gen_queue_target.GetValue() + 1;
     image_count =
         std::clamp<size_t>((generations + 1) * queued_composites, swapchain.GetImageCount(),

@@ -100,6 +100,7 @@ abstract class SettingsItem(
             BooleanSetting.RENDERER_FRAME_GEN.key,
             IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.key,
             IntSetting.RENDERER_FRAME_GEN_QUEUE_TARGET.key,
+            IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.key,
             BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.key,
             IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.key,
             BooleanSetting.RENDERER_FRAME_GEN_FP16.key,
@@ -638,6 +639,15 @@ abstract class SettingsItem(
                     descriptionId = R.string.frame_gen_multiplier_description,
                     choicesId = R.array.frameGenMultiplierNames,
                     valuesId = R.array.frameGenMultiplierValues
+                )
+            )
+            put(
+                SingleChoiceSetting(
+                    IntSetting.RENDERER_FRAME_GEN_TARGET_RATE,
+                    titleId = R.string.frame_gen_target_rate,
+                    descriptionId = R.string.frame_gen_target_rate_description,
+                    choicesId = R.array.frameGenTargetRateNames,
+                    valuesId = R.array.frameGenTargetRateValues
                 )
             )
             put(
