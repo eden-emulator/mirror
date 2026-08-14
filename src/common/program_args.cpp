@@ -6,6 +6,7 @@
 #include "common/program_args.h"
 #include "common/logging.h"
 #include "common/scm_rev.h"
+#include "common/string_util.h"
 #include "network/room.h"
 
 #ifdef _WIN32
@@ -71,7 +72,7 @@ int ParseArguments(ProgramArguments& args, int argc, char *argv[]) {
     auto argv_w = CommandLineToArgvW(GetCommandLineW(), &argc_w);
     if (argv_w == nullptr) {
         LOG_CRITICAL(Frontend, "Failed to get command line arguments");
-        return SDL_APP_FAILURE;
+        return -1;
     }
 #endif
 
