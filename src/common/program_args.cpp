@@ -8,6 +8,13 @@
 #include "common/scm_rev.h"
 #include "network/room.h"
 
+#ifdef _WIN32
+// windows.h needs to be included before shellapi.h
+#include <windows.h>
+#include <shellapi.h>
+#include "common/windows/timer_resolution.h"
+#endif
+
 #undef _UNICODE
 #include <getopt.h>
 #ifndef _MSC_VER
@@ -126,7 +133,7 @@ int ParseArguments(ProgramArguments& args, int argc, char *argv[]) {
     }
 
     // Preserves drag and drop functionality (i.e ./eden <game path>)
-    char *endarg = nullptr;
+    [[maybe_unused]] char *endarg = nullptr;
     while (optind < argc) {
         int arg = getopt_long(argc, argv, "g:fhvcip::c:u:d:", long_options, &option_index);
         if (arg != -1) {
