@@ -79,12 +79,7 @@ class SettingsFragmentPresenter(
 
     private fun addFrameGenSettings(sl: ArrayList<SettingsItem>) {
         sl.apply {
-            val installed = LosslessScalingHelper.isInstalled()
-            val supported = LosslessScalingHelper.isSupportedByGpu()
-
-            add(HeaderSetting(R.string.lossless_scaling))
-
-            if (!supported) {
+            if (!LosslessScalingHelper.isSupportedByGpu()) {
                 add(
                     RunnableSetting(
                         titleId = R.string.frame_gen_unsupported,
@@ -92,37 +87,15 @@ class SettingsFragmentPresenter(
                         isRunnable = false
                     ) {}
                 )
-            }
-
-            add(
-                RunnableSetting(
-                    titleId = if (installed) {
-                        R.string.lossless_scaling_replace
-                    } else {
-                        R.string.lossless_scaling_install
-                    },
-                    descriptionId = if (installed) {
-                        R.string.lossless_scaling_replace_description
-                    } else {
-                        R.string.lossless_scaling_install_description
-                    },
-                    isRunnable = !NativeLibrary.isRunning(),
-                    iconId = R.drawable.ic_install
-                ) { settingsViewModel.setShouldShowLosslessInstaller(true) }
-            )
-
-            if (installed) {
+            } else if (!LosslessScalingHelper.isInstalled()) {
                 add(
                     RunnableSetting(
-                        titleId = R.string.lossless_scaling_remove,
-                        descriptionId = R.string.lossless_scaling_remove_description,
-                        isRunnable = !NativeLibrary.isRunning(),
-                        iconId = R.drawable.ic_delete
-                    ) { settingsViewModel.setShouldShowLosslessRemoveDialog(true) }
+                        titleId = R.string.lossless_scaling_missing,
+                        descriptionId = R.string.lossless_scaling_missing_description,
+                        isRunnable = false
+                    ) {}
                 )
             }
-
-            add(HeaderSetting(R.string.frame_gen))
 
             add(BooleanSetting.RENDERER_FRAME_GEN.key)
             add(IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.key)
@@ -232,14 +205,6 @@ class SettingsFragmentPresenter(
                     descriptionId = R.string.preferences_graphics_description,
                     iconId = R.drawable.ic_graphics,
                     menuKey = MenuTag.SECTION_RENDERER
-                )
-            )
-            add(
-                SubmenuSetting(
-                    titleId = R.string.frame_gen,
-                    descriptionId = R.string.frame_gen_submenu_description,
-                    iconId = R.drawable.ic_duck,
-                    menuKey = MenuTag.SECTION_FRAME_GEN
                 )
             )
             if (!NativeConfig.isPerGameConfigLoaded()) {

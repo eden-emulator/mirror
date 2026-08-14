@@ -205,7 +205,7 @@ class SetupFragment : Fragment() {
                         )
                         add(
                             PageButton(
-                                R.drawable.ic_frames,
+                                R.drawable.ic_duck,
                                 R.string.lossless_scaling,
                                 R.string.lossless_scaling_setup_description,
                                 {

@@ -33,7 +33,6 @@ import org.yuzu.yuzu_emu.features.input.NativeInput
 import org.yuzu.yuzu_emu.features.settings.model.Settings
 import org.yuzu.yuzu_emu.features.settings.model.view.PathSetting
 import org.yuzu.yuzu_emu.fragments.MessageDialogFragment
-import org.yuzu.yuzu_emu.fragments.ProgressDialogFragment
 import org.yuzu.yuzu_emu.utils.PathUtil
 import org.yuzu.yuzu_emu.utils.ViewUtils.updateMargins
 import org.yuzu.yuzu_emu.utils.*
@@ -115,29 +114,6 @@ class SettingsFragment : Fragment() {
             viewLifecycleOwner,
             resetState = { settingsViewModel.setShouldReloadSettingsList(false) }
         ) { if (it) presenter.loadSettingsList() }
-        settingsViewModel.shouldShowLosslessInstaller.collect(
-            viewLifecycleOwner,
-            resetState = { settingsViewModel.setShouldShowLosslessInstaller(false) }
-        ) { if (it) losslessDllPickerLauncher.launch(arrayOf("*/*")) }
-        settingsViewModel.shouldShowLosslessRemoveDialog.collect(
-            viewLifecycleOwner,
-            resetState = { settingsViewModel.setShouldShowLosslessRemoveDialog(false) }
-        ) {
-            if (it) {
-                MessageDialogFragment.newInstance(
-                    activity = requireActivity(),
-                    titleId = R.string.lossless_scaling_remove,
-                    descriptionId = R.string.lossless_scaling_remove_confirmation,
-                    positiveButtonTitleId = R.string.lossless_scaling_remove,
-                    positiveAction = {
-                        LosslessScalingHelper.remove()
-                        settingsViewModel.setShouldReloadSettingsList(true)
-                    },
-                    showNegativeButton = true,
-                    negativeAction = {}
-                ).show(parentFragmentManager, MessageDialogFragment.TAG)
-            }
-        }
         settingsViewModel.adapterItemChanged.collect(
             viewLifecycleOwner,
             resetState = { settingsViewModel.setAdapterItemChanged(-1) }
@@ -289,33 +265,6 @@ private fun getPlayerIndex(): Int =
 
     private fun showPathPickerDialog() {
         directoryPickerLauncher.launch(null)
-    }
-
-    private val losslessDllPickerLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri == null) {
-            return@registerForActivityResult
-        }
-
-        val resultStrings = resources.getStringArray(R.array.losslessDllResults)
-        ProgressDialogFragment.newInstance(
-            requireActivity(),
-            R.string.lossless_scaling_installing,
-            false
-        ) { _, _ ->
-            val result = LosslessScalingHelper.install(uri)
-            if (result == LosslessScalingHelper.RESULT_OK) {
-                getString(R.string.lossless_scaling_install_success)
-            } else {
-                MessageDialogFragment.newInstance(
-                    titleId = R.string.lossless_scaling_install_failed,
-                    descriptionString = resultStrings[result]
-                )
-            }
-        }.apply {
-            onDialogComplete = { settingsViewModel.setShouldReloadSettingsList(true) }
-        }.show(parentFragmentManager, ProgressDialogFragment.TAG)
     }
 
     private val directoryPickerLauncher = registerForActivityResult(

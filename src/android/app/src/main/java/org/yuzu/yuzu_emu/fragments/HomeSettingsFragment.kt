@@ -13,7 +13,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -176,8 +175,14 @@ class HomeSettingsFragment : Fragment() {
                 HomeSetting(
                     R.string.lossless_scaling,
                     R.string.lossless_scaling_description,
-                    R.drawable.ic_frames,
-                    { onLosslessScalingClicked() },
+                    R.drawable.ic_duck,
+                    {
+                        val action = HomeNavigationDirections.actionGlobalSettingsSubscreenActivity(
+                            SettingsSubscreen.LOSSLESS_MANAGER,
+                            null
+                        )
+                        binding.root.findNavController().navigate(action)
+                    },
                     { true },
                     0,
                     0,
@@ -353,48 +358,6 @@ class HomeSettingsFragment : Fragment() {
         driverViewModel.updateDriverNameForGame(null)
         LosslessScalingHelper.refreshStatus()
     }
-
-    private fun onLosslessScalingClicked() {
-        if (!LosslessScalingHelper.isInstalled()) {
-            getLosslessDllLauncher.launch(arrayOf("*/*"))
-            return
-        }
-
-        MessageDialogFragment.newInstance(
-            requireActivity(),
-            titleId = R.string.lossless_scaling,
-            descriptionId = R.string.lossless_scaling_installed_description,
-            positiveButtonTitleId = R.string.lossless_scaling_replace,
-            positiveAction = { getLosslessDllLauncher.launch(arrayOf("*/*")) },
-            showNegativeButton = true,
-            negativeButtonTitleId = R.string.lossless_scaling_remove,
-            negativeAction = { LosslessScalingHelper.remove() }
-        ).show(parentFragmentManager, MessageDialogFragment.TAG)
-    }
-
-    private val getLosslessDllLauncher =
-        registerForActivityResult(ActivityResultContracts.OpenDocument()) { result ->
-            if (result == null) {
-                return@registerForActivityResult
-            }
-
-            val resultStrings = resources.getStringArray(R.array.losslessDllResults)
-            ProgressDialogFragment.newInstance(
-                requireActivity(),
-                R.string.lossless_scaling_installing,
-                false
-            ) { _, _ ->
-                val installResult = LosslessScalingHelper.install(result)
-                if (installResult == LosslessScalingHelper.RESULT_OK) {
-                    getString(R.string.lossless_scaling_install_success)
-                } else {
-                    MessageDialogFragment.newInstance(
-                        titleId = R.string.lossless_scaling_install_failed,
-                        descriptionString = resultStrings[installResult]
-                    )
-                }
-            }.show(parentFragmentManager, ProgressDialogFragment.TAG)
-        }
 
     override fun onDestroyView() {
         super.onDestroyView()

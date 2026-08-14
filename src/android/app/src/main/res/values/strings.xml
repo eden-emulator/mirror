@@ -299,7 +299,7 @@
     <string name="gpu_driver_manager">GPU driver manager</string>
     <string name="install_gpu_driver_description">Install alternative drivers for potentially better performance or accuracy</string>
     <string name="frame_gen">Frame generation</string>
-    <string name="frame_gen_submenu_description">Manage and configure frame generation</string>
+    <string name="frame_gen_per_game_description">Configure frame generation for this game</string>
     <string name="frame_gen_description">Insert interpolated frames between rendered ones using Lossless Scaling. Forces FIFO presentation while enabled.</string>
     <string name="frame_gen_multiplier">Frame multiplier</string>
     <string name="frame_gen_multiplier_description">How many frames to display for each rendered frame. Higher values cost proportionally more GPU time. Asking for more than your display can present will slow emulation down.</string>
@@ -345,6 +345,12 @@
     <string name="lossless_scaling_remove">Remove</string>
     <string name="lossless_scaling_remove_description">Delete the installed Lossless.dll and its prepared shaders</string>
     <string name="lossless_scaling_remove_confirmation">Frame generation will stop working until you install Lossless.dll again. Your original file is not affected.</string>
+    <string name="lossless_scaling_missing">Lossless.dll not installed</string>
+    <string name="lossless_scaling_missing_description">Install it from Settings › Lossless Scaling to use frame generation.</string>
+    <string name="lossless_scaling_locked">Close the game first</string>
+    <string name="lossless_scaling_locked_description">Lossless.dll cannot be changed while a game is running.</string>
+    <string name="lossless_scaling_remove_unavailable">Nothing to remove</string>
+    <string name="lossless_scaling_remove_unavailable_description">Lossless.dll is not installed yet.</string>
     <string name="lossless_scaling_installing">Preparing frame generation shaders…</string>
     <string name="lossless_scaling_install_success">Lossless.dll installed successfully</string>
     <string name="lossless_scaling_install_failed">Could not install Lossless.dll</string>
