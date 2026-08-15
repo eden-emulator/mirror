@@ -237,16 +237,18 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     NETWORK_ERROR_ELEM(AFNOSUPPORT) \
     NETWORK_ERROR_ELEM(PROTONOSUPPORT) \
     NETWORK_ERROR_ELEM(SOCKTNOSUPPORT) \
-    NETWORK_ERROR_ELEM(NOTSUP) \
     NETWORK_ERROR_ELEM(ADDRINUSE) \
     NETWORK_ERROR_ELEM(ADDRNOTAVAIL) \
     NETWORK_ERROR_ELEM(NOTSOCK) \
     NETWORK_ERROR_ELEM(ALREADY) \
     NETWORK_ERROR_ELEM(STALE)
-#define NETWORK_ERROR_ELEM(name) case E##name: return Errno::E_#name;
+#define NETWORK_ERROR_ELEM(name) case E##name: return Errno::E_##name;
     NETWORK_ERROR_LIST
 #undef NETWORK_ERROR_ELEM
 #undef NETWORK_ERROR_LIST
+#ifdef ENOTSUPP
+    case ENOTSUPP: return Errno::E_OPNOTSUPP;
+#endif
     default:
         UNIMPLEMENTED_MSG("Unimplemented errno={} ({})", e, strerror(e));
         return Errno::E_OPNOTSUPP;
