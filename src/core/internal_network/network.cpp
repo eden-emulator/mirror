@@ -212,6 +212,7 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     switch (e) {
     case 0: return Errno::E_SUCCESS;
 #define NETWORK_ERROR_LIST \
+    NETWORK_ERROR_ELEM(PERM) \
     NETWORK_ERROR_ELEM(NOENT) \
     NETWORK_ERROR_ELEM(INTR) \
     NETWORK_ERROR_ELEM(IO) \
