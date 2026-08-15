@@ -1129,6 +1129,8 @@ add_library(core STATIC
     internal_network/network_interface.h
     internal_network/socket_proxy.cpp
     internal_network/socket_proxy.h
+    internal_network/socket_icmp.cpp
+    internal_network/socket_icmp.h
     internal_network/socket_types.h
     internal_network/sockets.h
     internal_network/wifi_scanner.h
