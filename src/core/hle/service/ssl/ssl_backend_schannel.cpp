@@ -146,11 +146,11 @@ public:
         const auto read_span = std::span(ciphertext_read_buf).subspan(offset, fill_size);
         const auto [actual, err] = socket->Recv(0, read_span);
         switch (err) {
-        case Network::Errno::SUCCESS:
+        case Network::Errno::E_SUCCESS:
             ASSERT(static_cast<size_t>(actual) <= fill_size);
             ciphertext_read_buf.resize(offset + actual);
             return ResultSuccess;
-        case Network::Errno::AGAIN:
+        case Network::Errno::E_AGAIN:
             ciphertext_read_buf.resize(offset);
             return ResultWouldBlock;
         default:
@@ -165,12 +165,12 @@ public:
         while (!ciphertext_write_buf.empty()) {
             const auto [actual, err] = socket->Send(ciphertext_write_buf, 0);
             switch (err) {
-            case Network::Errno::SUCCESS:
+            case Network::Errno::E_SUCCESS:
                 ASSERT(static_cast<size_t>(actual) <= ciphertext_write_buf.size());
                 ciphertext_write_buf.erase(ciphertext_write_buf.begin(),
                                            ciphertext_write_buf.begin() + actual);
                 break;
-            case Network::Errno::AGAIN:
+            case Network::Errno::E_AGAIN:
                 return ResultWouldBlock;
             default:
                 LOG_ERROR(Service_SSL, "Socket send returned Network::Errno {}", err);

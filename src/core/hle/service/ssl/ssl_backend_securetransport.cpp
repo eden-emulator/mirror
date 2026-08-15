@@ -195,7 +195,7 @@ public:
             LOG_CRITICAL(Service_SSL, "op={}, offset={} actual={}/{} err={}", is_read, offset,
                          actual, cur.size(), static_cast<s32>(err));
             switch (err) {
-            case Network::Errno::SUCCESS:
+            case Network::Errno::E_SUCCESS:
                 offset += actual;
                 if (actual == 0) {
                     ASSERT(is_read);
@@ -203,7 +203,7 @@ public:
                     return errSecEndOfData;
                 }
                 break;
-            case Network::Errno::AGAIN:
+            case Network::Errno::E_AGAIN:
                 *dataLength = offset;
                 return errSSLWouldBlock;
             default:
