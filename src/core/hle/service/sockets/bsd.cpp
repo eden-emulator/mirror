@@ -553,7 +553,9 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     auto room_member = Network::GetRoomMember().lock();
     if (room_member && room_member->IsConnected()) {
         descriptor.socket = std::make_shared<Network::ProxySocket>();
-    } else if (protocol == Network::Protocol::ICMP || protocol == Network::Protocol::ICMPV6) {
+    } else if ((type == Network::Type::RAW || type == Network::Type::DGRAM)
+    && (domain == Network::Domain::INET && protocol == Network::Protocol::ICMP)
+    && (domain == Network::Domain::INET6 && protocol == Network::Protocol::ICMPV6)) {
         descriptor.socket = std::make_shared<Network::IcmpSocket>();
     } else {
         descriptor.socket = std::make_shared<Network::Socket>();
