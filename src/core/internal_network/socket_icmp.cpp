@@ -42,6 +42,11 @@ IcmpSocket::~IcmpSocket() {
 
 Errno IcmpSocket::SetSockOpt(Network::SocketLevel level, Network::OptName optname, std::span<const u8> optval) {
     LOG_WARNING(Network, "(stubbed) level={},optname={},optval={}", level, optname, optval.size());
+    if (optname == Network::OptName::RCVTIMEO) {
+        if (optval.size() < sizeof(Network::Timeval))
+            return Errno::INVAL;
+        std::memcpy(&rcv_timeo, optval.data(), sizeof(rcv_timeo));
+    }
     return Errno::SUCCESS;
 }
 
@@ -99,10 +104,11 @@ std::pair<s32, Errno> IcmpSocket::RecvFrom(int flags, std::span<u8> message, Net
             return {0, Errno::SUCCESS};
         // PLEASE DON'T KILL ME, I SWEAR THIS IS LEGITIMATELY THE BEST WAY TO DO IT
         // IF YOU OPEN socket() GOOGLE WILL STRAIGHT UP IP BAN YOU AFTER 2 HOURS
+        auto const rcv_timeout = std::max<u64>(rcv_timeo.tv_sec, 0);
 #ifdef __FreeBSD__
-        auto const cmd = fmt::format("ping -t 3 -o {}.{}.{}.{}", addr->ip[0], addr->ip[1], addr->ip[2], addr->ip[3]);
+        auto const cmd = fmt::format("ping -t {} -o {}.{}.{}.{}", rcv_timeout, addr->ip[0], addr->ip[1], addr->ip[2], addr->ip[3]);
 #elif defined(__linux__)
-        auto const cmd = fmt::format("ping -c 1 -W 3 {}.{}.{}.{}", addr->ip[0], addr->ip[1], addr->ip[2], addr->ip[3]);
+        auto const cmd = fmt::format("ping -c 1 -W {} {}.{}.{}.{}", rcv_timeout, addr->ip[0], addr->ip[1], addr->ip[2], addr->ip[3]);
 #endif
         if (::system(cmd.c_str()) == 0) {
             std::vector<u8> data{
