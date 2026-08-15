@@ -93,13 +93,17 @@ std::pair<s32, Errno> IcmpSocket::RecvFrom(int flags, std::span<u8> message, Net
     LOG_DEBUG(Network, "(stubbed) called");
     ASSERT(flags == 0);
     ASSERT(message.size() < std::size_t((std::numeric_limits<int>::max)()));
-#ifdef __unix__
+#if !defined(__OPENORBIS__) && (defined(__FreeBSD__) || defined(__linux__))
     if (addr) {
         if (seq_ident.empty())
             return {0, Errno::SUCCESS};
         // PLEASE DON'T KILL ME, I SWEAR THIS IS LEGITIMATELY THE BEST WAY TO DO IT
         // IF YOU OPEN socket() GOOGLE WILL STRAIGHT UP IP BAN YOU AFTER 2 HOURS
+#ifdef __FreeBSD__
         auto const cmd = fmt::format("ping -t 3 -o {}.{}.{}.{}", addr->ip[0], addr->ip[1], addr->ip[2], addr->ip[3]);
+#elif defined(__linux__)
+        auto const cmd = fmt::format("ping -c 1 -W 3 {}.{}.{}.{}", addr->ip[0], addr->ip[1], addr->ip[2], addr->ip[3]);
+#endif
         if (::system(cmd.c_str()) == 0) {
             std::vector<u8> data{
                 8,
