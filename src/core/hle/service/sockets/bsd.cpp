@@ -20,6 +20,7 @@
 #include "core/hle/service/sockets/sockets_translate.h"
 #include "core/internal_network/network.h"
 #include "core/internal_network/socket_proxy.h"
+#include "core/internal_network/socket_icmp.h"
 #include "core/internal_network/sockets.h"
 #include "network/network.h"
 #include <common/settings.h>
@@ -552,6 +553,8 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     auto room_member = Network::GetRoomMember().lock();
     if (room_member && room_member->IsConnected()) {
         descriptor.socket = std::make_shared<Network::ProxySocket>();
+    } else if (protocol == Network::Protocol::ICMP || protocol == Network::Protocol::ICMPV6) {
+        descriptor.socket = std::make_shared<Network::IcmpSocket>();
     } else {
         descriptor.socket = std::make_shared<Network::Socket>();
     }
