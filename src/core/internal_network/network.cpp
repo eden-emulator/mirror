@@ -250,7 +250,7 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
 
 #endif
 
-Errno GetAndLogLastError(CallType call_type = CallType::Other) {
+Errno GetAndLogLastError(CallType call_type) {
 #ifdef _WIN32
     int e = WSAGetLastError();
 #else
@@ -259,6 +259,12 @@ Errno GetAndLogLastError(CallType call_type = CallType::Other) {
     const Errno err = TranslateNativeError(e, call_type);
     if (err == Errno::AGAIN || err == Errno::TIMEDOUT || err == Errno::INPROGRESS) {
         // These happen during normal operation, so only log them at debug level.
+        LOG_DEBUG(Network, "Socket operation error: {}", Common::NativeErrorToString(e));
+        return err;
+    }
+    if (call_type == CallType::Send) {
+        // ISCONN + PIPE occur when send()/recv() is spammed on a socket which
+        // hasnt been properly initialized.
         LOG_DEBUG(Network, "Socket operation error: {}", Common::NativeErrorToString(e));
         return err;
     }
@@ -907,7 +913,7 @@ std::pair<s32, Errno> Poll(std::span<HostPollFD> pollfds, s32 timeout) {
 
     if (res <= 0) {
         ASSERT(res == SOCKET_ERROR);
-        return {-1, GetAndLogLastError()};
+        return {-1, GetAndLogLastError(CallType::Other)};
     }
     return {res, Errno::SUCCESS};
 }
@@ -1027,7 +1033,7 @@ Errno Socket::GetSockOpt(Network::SocketLevel level, Network::OptName optname, s
         ASSERT(len == socklen_t(value.size()));
         return Errno::SUCCESS;
     }
-    return GetAndLogLastError();
+    return GetAndLogLastError(CallType::Other);
 }
 
 Errno Socket::SetNonBlock(bool enable) {
@@ -1035,7 +1041,7 @@ Errno Socket::SetNonBlock(bool enable) {
         is_non_blocking = enable;
         return Errno::SUCCESS;
     }
-    return GetAndLogLastError();
+    return GetAndLogLastError(CallType::Other);
 }
 
 Errno Socket::SetSockOpt(Network::SocketLevel level, Network::OptName optname, std::span<const u8> optval) {
@@ -1050,20 +1056,20 @@ Errno Socket::SetSockOpt(Network::SocketLevel level, Network::OptName optname, s
             auto const linger_optval = MakeLinger(bool(linger.onoff), linger.linger);
             if (setsockopt(fd, native_level, native_optname, reinterpret_cast<const char*>(&linger_optval), sizeof(linger_optval)) != SOCKET_ERROR)
                 return Errno::SUCCESS;
-            return GetAndLogLastError();
+            return GetAndLogLastError(CallType::Other);
         }
         return Errno::INVAL;
     }
     if (setsockopt(fd, native_level, native_optname, reinterpret_cast<const char*>(optval.data()), socklen_t(optval.size())) != SOCKET_ERROR)
         return Errno::SUCCESS;
-    return GetAndLogLastError();
+    return GetAndLogLastError(CallType::Other);
 }
 
 Errno Socket::Initialize(Domain domain, Type type, Protocol protocol) {
     fd = socket(TranslateDomainToNative(domain), TranslateTypeToNative(type), TranslateProtocolToNative(protocol));
     if (fd != INVALID_SOCKET)
         return Errno::SUCCESS;
-    return GetAndLogLastError();
+    return GetAndLogLastError(CallType::Other);
 }
 
 std::pair<Socket::AcceptResult, Errno> Socket::Accept() {
@@ -1086,7 +1092,7 @@ std::pair<Socket::AcceptResult, Errno> Socket::Accept() {
 
     const SOCKET new_socket = accept(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen);
     if (new_socket == INVALID_SOCKET) {
-        return {AcceptResult{}, GetAndLogLastError()};
+        return {AcceptResult{}, GetAndLogLastError(CallType::Other)};
     }
 
     AcceptResult result{
@@ -1106,14 +1112,14 @@ Errno Socket::Connect(Network::SockAddrIn addr_in) {
             }
         }
     }
-    return GetAndLogLastError();
+    return GetAndLogLastError(CallType::Other);
 }
 
 std::pair<Network::SockAddrIn, Errno> Socket::GetPeerName() {
     sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
     if (getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen) == SOCKET_ERROR)
-        return {Network::SockAddrIn{}, GetAndLogLastError()};
+        return {Network::SockAddrIn{}, GetAndLogLastError(CallType::Other)};
     return {TranslateToSockAddrIn(addr), Errno::SUCCESS};
 }
 
@@ -1121,7 +1127,7 @@ std::pair<Network::SockAddrIn, Errno> Socket::GetSockName() {
     sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
     if (getsockname(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen) == SOCKET_ERROR) {
-        return {Network::SockAddrIn{}, GetAndLogLastError()};
+        return {Network::SockAddrIn{}, GetAndLogLastError(CallType::Other)};
     }
 
     return {TranslateToSockAddrIn(addr), Errno::SUCCESS};
@@ -1131,13 +1137,13 @@ Errno Socket::Bind(Network::SockAddrIn addr) {
     auto const addr_in = TranslateFromSockAddrIn(addr);
     if (bind(fd, reinterpret_cast<sockaddr const*>(&addr_in), sizeof(addr_in)) != SOCKET_ERROR)
         return Errno::SUCCESS;
-    return GetAndLogLastError();
+    return GetAndLogLastError(CallType::Other);
 }
 
 Errno Socket::Listen(s32 backlog) {
     if (listen(fd, backlog) != SOCKET_ERROR)
         return Errno::SUCCESS;
-    return GetAndLogLastError();
+    return GetAndLogLastError(CallType::Other);
 }
 
 Errno Socket::Shutdown(ShutdownHow how) {
@@ -1160,7 +1166,7 @@ Errno Socket::Shutdown(ShutdownHow how) {
         return Errno::SUCCESS;
     }
 
-    return GetAndLogLastError();
+    return GetAndLogLastError(CallType::Other);
 }
 
 s32 TranslateMsgOptToNative(s32 flags) {
@@ -1203,7 +1209,7 @@ std::pair<s32, Errno> Socket::Recv(int flags, std::span<u8> message) {
     auto const result = recv(fd, reinterpret_cast<char*>(message.data()), int(message.size()), native_flags);
     if (result != SOCKET_ERROR)
         return {s32(result), Errno::SUCCESS};
-    return {-1, GetAndLogLastError()};
+    return {-1, GetAndLogLastError(CallType::Other)};
 }
 
 std::pair<s32, Errno> Socket::RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) {
@@ -1223,7 +1229,7 @@ std::pair<s32, Errno> Socket::RecvFrom(int flags, std::span<u8> message, Network
         }
         return {s32(result), Errno::SUCCESS};
     }
-    return {-1, GetAndLogLastError()};
+    return {-1, GetAndLogLastError(CallType::Other)};
 }
 
 std::pair<s32, Errno> Socket::Send(std::span<const u8> message, int flags) {

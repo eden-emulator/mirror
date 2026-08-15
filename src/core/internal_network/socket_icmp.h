@@ -30,6 +30,8 @@ public:
     bool IsOpened() const override;
     void HandleProxyPacket(const ProxyPacket& packet) override;
     Errno SetNonBlock(bool enable) override;
+
+    std::vector<u32> seq_ident;
 };
 
 } // namespace Network
