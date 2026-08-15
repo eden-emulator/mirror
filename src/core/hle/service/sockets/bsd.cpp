@@ -554,8 +554,12 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     // TODO: rework this so proxy sockets can be done transparently? -- like what if i need
     // to browse the internet while playing LDN or something stupid like that?
     auto room_member = Network::GetRoomMember().lock();
-    if (protocol == Network::Protocol::ICMP || protocol == Network::Protocol::ICMPV6) {
+    if (0) {
+    // ...only unix has this issue it seems, ICMP works otherwise fine on win
+#ifdef __unix__
+    } else if (protocol == Network::Protocol::ICMP || protocol == Network::Protocol::ICMPV6) {
         descriptor.socket = std::make_shared<Network::IcmpSocket>();
+#endif
     } else if (room_member && room_member->IsConnected()) {
         descriptor.socket = std::make_shared<Network::ProxySocket>();
     } else {
