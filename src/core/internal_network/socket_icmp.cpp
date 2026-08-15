@@ -104,7 +104,7 @@ std::pair<s32, Errno> IcmpSocket::RecvFrom(int flags, std::span<u8> message, Net
             return {0, Errno::SUCCESS};
         // PLEASE DON'T KILL ME, I SWEAR THIS IS LEGITIMATELY THE BEST WAY TO DO IT
         // IF YOU OPEN socket() GOOGLE WILL STRAIGHT UP IP BAN YOU AFTER 2 HOURS
-        auto const rcv_timeout = std::max<u64>(rcv_timeo.tv_sec, 0);
+        auto const rcv_timeout = std::max<u64>(rcv_timeo.tv_sec, 1);
 #ifdef __FreeBSD__
         auto const cmd = fmt::format("ping -t {} -o {}.{}.{}.{}", rcv_timeout, addr->ip[0], addr->ip[1], addr->ip[2], addr->ip[3]);
 #elif defined(__linux__)
