@@ -20,6 +20,10 @@ namespace Network {
 
 enum class Errno : u32 {
     SUCCESS = 0,
+    NOENT = 2,
+    INTR = 4,
+    IO = 5,
+    NOEXEC = 8,
     BADF = 9,
     AGAIN = 11,
     INVAL = 22,
