@@ -556,18 +556,23 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     // TODO: rework this so proxy sockets can be done transparently? -- like what if i need
     // to browse the internet while playing LDN or something stupid like that?
     auto room_member = Network::GetRoomMember().lock();
-    if (0) {
-    // ...only unix has this issue it seems, ICMP works otherwise fine on win
-#if defined(__unix__) && !defined(__APPLE__)
-    } else if (protocol == Network::Protocol::ICMP || protocol == Network::Protocol::ICMPV6) {
-        descriptor.socket = std::make_shared<Network::IcmpSocket>();
-#endif
-    } else if (room_member && room_member->IsConnected()) {
+    if ((protocol != Network::Protocol::ICMP && protocol != Network::Protocol::ICMPV6)
+    && (room_member && room_member->IsConnected())) {
         descriptor.socket = std::make_shared<Network::ProxySocket>();
     } else {
         descriptor.socket = std::make_shared<Network::Socket>();
     }
     auto const bsd_errno = descriptor.socket->Initialize(domain, type, protocol);
+
+#if defined(__unix__) && !defined(__APPLE__)
+    // ...only unix has this issue it seems, ICMP works otherwise fine on win
+    if (bsd_errno != Network::Errno::SUCCESS
+    && (protocol == Network::Protocol::ICMP || protocol == Network::Protocol::ICMPV6)) {
+        LOG_WARNING(Network, "Using ICMP emulated socket");
+        descriptor.socket = std::make_shared<Network::IcmpSocket>();
+    }
+#endif
+
     descriptor.is_connection_based = IsConnectionBased(type);
 #ifdef _WIN32
     if (descriptor.is_connection_based && descriptor.socket->fd == INVALID_SOCKET) {
