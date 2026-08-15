@@ -99,7 +99,7 @@ std::pair<s32, Errno> IcmpSocket::RecvFrom(int flags, std::span<u8> message, Net
             return {0, Errno::SUCCESS};
         // PLEASE DON'T KILL ME, I SWEAR THIS IS LEGITIMATELY THE BEST WAY TO DO IT
         // IF YOU OPEN socket() GOOGLE WILL STRAIGHT UP IP BAN YOU AFTER 2 HOURS
-        auto const cmd = fmt::format("ping -o {}.{}.{}.{}", addr->ip[0], addr->ip[1], addr->ip[2], addr->ip[3]);
+        auto const cmd = fmt::format("ping -t 3 -o {}.{}.{}.{}", addr->ip[0], addr->ip[1], addr->ip[2], addr->ip[3]);
         if (::system(cmd.c_str()) == 0) {
             std::vector<u8> data{
                 8,
