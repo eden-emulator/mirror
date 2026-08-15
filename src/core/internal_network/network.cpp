@@ -677,55 +677,6 @@ int TranslateTypeToNative(Type type) {
 }
 #undef NETWORK_PROTOCOL_TRANSLATE_LIST
 
-#ifdef _WIN32
-sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
-    sockaddr_in result{};
-#ifdef __unix__
-    result.sin_len = sizeof(result);
-#endif
-    result.sin_family = AF_INET;
-    switch (Domain(input.family)) {
-    case Domain::INET:
-        result.sin_family = AF_INET;
-        break;
-    default:
-        UNIMPLEMENTED_MSG("Unhandled sockaddr family={}", input.family);
-        break;
-    }
-
-    result.sin_port = input.portno; //no need to translate
-
-    auto& ip = result.sin_addr.S_un.S_un_b;
-    ip.s_b1 = input.ip[0];
-    ip.s_b2 = input.ip[1];
-    ip.s_b3 = input.ip[2];
-    ip.s_b4 = input.ip[3];
-    return result;
-}
-#else
-sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
-    sockaddr_in result{};
-    result.sin_family = sa_family_t(TranslateDomainToNative(Domain(input.family)));
-    //result.sin_len = sizeof(result);
-    result.sin_port = htons(input.portno); //needs no conversion
-    result.sin_addr.s_addr = htonl((u32(input.ip[0]) << 24)
-        | (u32(input.ip[1]) << 16)
-        | (u32(input.ip[2]) << 8)
-        | (u32(input.ip[3]) << 0));
-    return result;
-}
-#endif
-
-Network::SockAddrIn TranslateToSockAddrIn(sockaddr_in input) {
-    Network::SockAddrIn result{};
-    result.len = 16;
-    result.family = u8(TranslateDomainFromNative(input.sin_family));
-    result.portno = input.sin_port; //needs no conversion
-    result.ip = TranslateIPv4(input.sin_addr);
-    result.zeroes = {};
-    return result;
-}
-
 static s16 TranslatePollEvents(Network::PollEvents events) noexcept {
     s16 result = 0;
     const auto translate = [&result, &events](Network::PollEvents guest, s16 host) {
@@ -783,6 +734,55 @@ static Network::PollEvents TranslatePollRevents(s16 revents) {
 }
 
 } // Anonymous namespace
+
+#ifdef _WIN32
+sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
+    sockaddr_in result{};
+#ifdef __unix__
+    result.sin_len = sizeof(result);
+#endif
+    result.sin_family = AF_INET;
+    switch (Domain(input.family)) {
+    case Domain::INET:
+        result.sin_family = AF_INET;
+        break;
+    default:
+        UNIMPLEMENTED_MSG("Unhandled sockaddr family={}", input.family);
+        break;
+    }
+
+    result.sin_port = input.portno; //no need to translate
+
+    auto& ip = result.sin_addr.S_un.S_un_b;
+    ip.s_b1 = input.ip[0];
+    ip.s_b2 = input.ip[1];
+    ip.s_b3 = input.ip[2];
+    ip.s_b4 = input.ip[3];
+    return result;
+}
+#else
+sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
+    sockaddr_in result{};
+    result.sin_family = sa_family_t(TranslateDomainToNative(Domain(input.family)));
+    //result.sin_len = sizeof(result);
+    result.sin_port = htons(input.portno); //needs no conversion
+    result.sin_addr.s_addr = htonl((u32(input.ip[0]) << 24)
+        | (u32(input.ip[1]) << 16)
+        | (u32(input.ip[2]) << 8)
+        | (u32(input.ip[3]) << 0));
+    return result;
+}
+#endif
+
+Network::SockAddrIn TranslateToSockAddrIn(sockaddr_in input) {
+    Network::SockAddrIn result{};
+    result.len = 16;
+    result.family = u8(TranslateDomainFromNative(input.sin_family));
+    result.portno = input.sin_port; //needs no conversion
+    result.ip = TranslateIPv4(input.sin_addr);
+    result.zeroes = {};
+    return result;
+}
 
 NetworkInstance::NetworkInstance() {
     Initialize();
@@ -1163,7 +1163,7 @@ Errno Socket::Shutdown(ShutdownHow how) {
     return GetAndLogLastError();
 }
 
-static s32 TranslateMsgOptToNative(s32 flags) {
+s32 TranslateMsgOptToNative(s32 flags) {
     s32 r = 0;
 #ifdef MSG_OOB
     if (0 != (flags & s32(MsgOpt::OOB))) r |= MSG_OOB;
