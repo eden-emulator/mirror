@@ -41,6 +41,8 @@ namespace {
     case Network::Type::RDM:
     case Network::Type::Unspecified:
         return false;
+    default:
+        UNREACHABLE();
     }
 }
 
