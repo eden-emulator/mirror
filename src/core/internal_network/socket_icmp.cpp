@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <cstdio>
 #include "common/assert.h"
 #include "common/logging.h"
 #include "core/internal_network/socket_icmp.h"
 
 #ifdef __unix__
+#include <unistd.h>
 #include <sys/socket.h>
 #endif
 
@@ -91,25 +93,46 @@ std::pair<s32, Errno> IcmpSocket::RecvFrom(int flags, std::span<u8> message, Net
     LOG_DEBUG(Network, "(stubbed) called");
     ASSERT(flags == 0);
     ASSERT(message.size() < std::size_t((std::numeric_limits<int>::max)()));
-    std::vector<u8> data;
-    data.push_back(8);
-    data.push_back(0);
-    data.push_back(0); //checksum (placeholder 0)
-    data.push_back(0);
-    data.push_back(message[4]); //ident
-    data.push_back(message[5]);
-    data.push_back(message[6]); //seq
-    data.push_back(message[7]);
-    auto const csum = ComputeChecksum(std::span<const u8>{data.begin(), data.end()});
-    data[2] = u8(csum >> 8); //hi
-    data[3] = u8(csum); //lo
-    auto const n = (std::max)(data.size(), message.size());
-    std::copy(data.begin(), data.begin() + n, message.begin());
-    return {n, Errno::SUCCESS};
+#ifdef __unix__
+    if (addr) {
+        if (seq_ident.empty())
+            return {0, Errno::SUCCESS};
+        // PLEASE DON'T KILL ME, I SWEAR THIS IS LEGITIMATELY THE BEST WAY TO DO IT
+        // IF YOU OPEN socket() GOOGLE WILL STRAIGHT UP IP BAN YOU AFTER 2 HOURS
+        auto const cmd = fmt::format("ping -o {}.{}.{}.{}", addr->ip[0], addr->ip[1], addr->ip[2], addr->ip[3]);
+        if (::system(cmd.c_str()) == 0) {
+            std::vector<u8> data{
+                8,
+                0,
+                0, //checksum
+                0,
+                u8(seq_ident.front() >> 24), //ident
+                u8(seq_ident.front() >> 16),
+                u8(seq_ident.front() >> 8), // seq
+                u8(seq_ident.front() >> 0),
+            };
+            seq_ident.pop_back();
+            auto const csum = ComputeChecksum(std::span<const u8>{data.begin(), data.end()});
+            data[2] = u8(csum >> 8); //hi
+            data[3] = u8(csum); //lo
+            auto const n = (std::max)(data.size(), message.size());
+            std::copy(data.begin(), data.begin() + n, message.begin());
+            return {n, Errno::SUCCESS};
+        }
+        return {-1, Errno::TIMEDOUT};
+    }
+#endif
+    return {-1, Errno::INVAL};
 }
 
 std::pair<s32, Errno> IcmpSocket::Send(std::span<const u8> message, int flags) {
     LOG_DEBUG(Network, "(stubbed) called");
+    seq_ident.push_back(
+        (u32(message[4]) << 24)
+        | (u32(message[5]) << 16)
+        | (u32(message[6]) << 8)
+        | (u32(message[7]) << 0)
+    );
     return {s32(0), Errno::NOTCONN};
 }
 
@@ -123,7 +146,7 @@ std::pair<s32, Errno> IcmpSocket::SendTo(u32 flags, std::span<const u8> message,
     // 6..8 -> seq
     if (!message.empty())
         return {s32(message.size()), Errno::SUCCESS};
-    return {s32(0), Errno::NETDOWN};
+    return {-1, Errno::INVAL};
 }
 
 Errno IcmpSocket::Close() {
@@ -145,7 +168,6 @@ void IcmpSocket::HandleProxyPacket(const ProxyPacket& packet) {
     LOG_WARNING(Network, "(stubbed) called");
 }
 Errno IcmpSocket::SetNonBlock(bool enable) {
-    LOG_WARNING(Network, "(stubbed) called");
     return Errno::SUCCESS;
 }
 

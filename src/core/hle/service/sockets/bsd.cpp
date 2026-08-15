@@ -550,13 +550,14 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     // ENONMEM might be thrown here
     LOG_INFO(Service, "New socket fd={},domain={},type={},prot={}", fd, domain, type, protocol);
 
+    // While room is important -- we need to remember ICMP takes priority over **everything else**
+    // TODO: rework this so proxy sockets can be done transparently? -- like what if i need
+    // to browse the internet while playing LDN or something stupid like that?
     auto room_member = Network::GetRoomMember().lock();
-    if (room_member && room_member->IsConnected()) {
-        descriptor.socket = std::make_shared<Network::ProxySocket>();
-    } else if ((type == Network::Type::RAW || type == Network::Type::DGRAM)
-    && (domain == Network::Domain::INET && protocol == Network::Protocol::ICMP)
-    && (domain == Network::Domain::INET6 && protocol == Network::Protocol::ICMPV6)) {
+    if (protocol == Network::Protocol::ICMP || protocol == Network::Protocol::ICMPV6) {
         descriptor.socket = std::make_shared<Network::IcmpSocket>();
+    } else if (room_member && room_member->IsConnected()) {
+        descriptor.socket = std::make_shared<Network::ProxySocket>();
     } else {
         descriptor.socket = std::make_shared<Network::Socket>();
     }
