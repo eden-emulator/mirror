@@ -348,6 +348,12 @@ struct Linger {
 };
 static_assert(sizeof(Linger) == 8);
 
+struct Timeval {
+    u64 tv_sec;
+    u64 tv_usec;
+};
+static_assert(sizeof(Timeval) == 16);
+
 /// @brief Cross-platform addrinfo structure (not guest)
 struct AddrInfo {
     Domain family;

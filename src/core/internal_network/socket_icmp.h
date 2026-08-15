@@ -4,6 +4,7 @@
 #pragma once
 
 #include <span>
+#include "core/internal_network/socket_types.h"
 #include "core/internal_network/sockets.h"
 
 namespace Network {
@@ -32,6 +33,7 @@ public:
     Errno SetNonBlock(bool enable) override;
 
     std::vector<u32> seq_ident;
+    Network::Timeval rcv_timeo;
 };
 
 } // namespace Network
