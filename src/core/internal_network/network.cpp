@@ -1059,6 +1059,18 @@ Errno Socket::SetSockOpt(Network::SocketLevel level, Network::OptName optname, s
             return GetAndLogLastError(CallType::Other);
         }
         return Errno::INVAL;
+    } else if (optname == Network::OptName::RCVTIMEO || optname == Network::OptName::SNDTIMEO) {
+        if (optval.size() >= sizeof(Network::Timeval)) {
+            Network::Timeval guest_tv{};
+            std::memcpy(&guest_tv, optval.data(), sizeof(guest_tv));
+            struct timeval tv{};
+            tv.tv_sec = guest_tv.tv_sec;
+            tv.tv_usec = guest_tv.tv_usec;
+            if (setsockopt(fd, native_level, native_optname, reinterpret_cast<const char*>(&tv), sizeof(tv)) != SOCKET_ERROR)
+                return Errno::SUCCESS;
+            return GetAndLogLastError(CallType::Other);
+        }
+        return Errno::INVAL;
     }
     if (setsockopt(fd, native_level, native_optname, reinterpret_cast<const char*>(optval.data()), socklen_t(optval.size())) != SOCKET_ERROR)
         return Errno::SUCCESS;
