@@ -129,6 +129,13 @@ ServerManager::~ServerManager() {
     }
 }
 
+void ServerManager::StartAdditionalHostThreads(const char* name, size_t num_threads) {
+    for (size_t i = 0; i < num_threads; i++) {
+        auto thread_name = fmt::format("{}:{}", name, i + 1);
+        m_threads.emplace_back(m_system.Kernel().RunOnHostCoreThread(std::move(thread_name), [&] { this->LoopProcessImpl(); }));
+    }
+}
+
 void ServerManager::RunServer(std::unique_ptr<ServerManager>&& server_manager) {
     server_manager->m_system.RunServer(std::move(server_manager));
 }
