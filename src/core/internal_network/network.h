@@ -43,6 +43,10 @@ public:
     ~NetworkInstance();
 };
 
+sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input);
+Network::SockAddrIn TranslateToSockAddrIn(sockaddr_in input);
+s32 TranslateMsgOptToNative(s32 flags);
+
 void CancelPendingSocketOperations();
 void RestartSocketOperations();
 

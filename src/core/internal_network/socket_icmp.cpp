@@ -91,12 +91,21 @@ std::pair<s32, Errno> IcmpSocket::RecvFrom(int flags, std::span<u8> message, Net
     LOG_DEBUG(Network, "(stubbed) called");
     ASSERT(flags == 0);
     ASSERT(message.size() < std::size_t((std::numeric_limits<int>::max)()));
-    if (!data.empty()) {
-        auto const n = (std::max)(data.size(), message.size());
-        std::copy(data.begin(), data.begin() + n, message.begin());
-        return {n, Errno::SUCCESS};
-    }
-    return {-1, Errno::TIMEDOUT};
+    std::vector<u8> data;
+    data.push_back(8);
+    data.push_back(0);
+    data.push_back(0); //checksum (placeholder 0)
+    data.push_back(0);
+    data.push_back(message[4]); //ident
+    data.push_back(message[5]);
+    data.push_back(message[6]); //seq
+    data.push_back(message[7]);
+    auto const csum = ComputeChecksum(std::span<const u8>{data.begin(), data.end()});
+    data[2] = u8(csum >> 8); //hi
+    data[3] = u8(csum); //lo
+    auto const n = (std::max)(data.size(), message.size());
+    std::copy(data.begin(), data.begin() + n, message.begin());
+    return {n, Errno::SUCCESS};
 }
 
 std::pair<s32, Errno> IcmpSocket::Send(std::span<const u8> message, int flags) {
@@ -106,27 +115,15 @@ std::pair<s32, Errno> IcmpSocket::Send(std::span<const u8> message, int flags) {
 
 std::pair<s32, Errno> IcmpSocket::SendTo(u32 flags, std::span<const u8> message, const Network::SockAddrIn* addr) {
     LOG_DEBUG(Network, "(stubbed) called");
+    ASSERT(message.size() < size_t((std::numeric_limits<int>::max)()));
     // 0 -> 8 (IPv4), 128 (IPv6)
     // 1 -> 0
     // 2..4 -> checksum
     // 4..6 -> ident
     // 6..8 -> seq
-    if (message.size() >= 8) {
-        ASSERT(message[0] == 0);
-        auto const csum_pos = data.size();
-        data.push_back(8);
-        data.push_back(0);
-        data.push_back(0); //checksum (placeholder 0)
-        data.push_back(0);
-        data.push_back(message[4]); //ident
-        data.push_back(message[5]);
-        data.push_back(message[6]); //seq
-        data.push_back(message[7]);
-        auto const csum = ComputeChecksum(std::span<const u8>{data.begin() + csum_pos, data.end()});
-        data[csum_pos + 2] = u8(csum >> 8); //hi
-        data[csum_pos + 3] = u8(csum); //lo
-    }
-    return {s32(message.size()), Errno::SUCCESS};
+    if (!message.empty())
+        return {s32(message.size()), Errno::SUCCESS};
+    return {s32(0), Errno::NETDOWN};
 }
 
 Errno IcmpSocket::Close() {
