@@ -132,7 +132,7 @@ public:
                 auto bsd = system.ServiceManager().GetService<Service::Sockets::BSD>("bsd:u");
                 if (bsd) {
                     auto err = bsd->CloseImpl(fd);
-                    if (err != Network::Errno::SUCCESS) {
+                    if (err != Network::Errno::E_SUCCESS) {
                         LOG_ERROR(Service_SSL, "Failed to close duplicated socket: {}", err);
                     }
                 }
@@ -203,7 +203,7 @@ private:
 
         const bool non_block = mode == IoMode::NonBlocking;
         const Network::Errno error = socket->SetNonBlock(non_block);
-        if (error != Network::Errno::SUCCESS) {
+        if (error != Network::Errno::E_SUCCESS) {
             LOG_ERROR(Service_SSL, "Failed to set native socket non-block flag to {}", non_block);
         }
         return ResultSuccess;

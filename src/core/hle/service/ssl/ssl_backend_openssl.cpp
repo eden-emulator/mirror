@@ -290,10 +290,10 @@ public:
         BIO_clear_retry_flags(bio);
         auto [actual, err] = self->socket->Send({reinterpret_cast<const u8*>(buf), len}, 0);
         switch (err) {
-        case Network::Errno::SUCCESS:
+        case Network::Errno::E_SUCCESS:
             *actual_p = actual;
             return 1;
-        case Network::Errno::AGAIN:
+        case Network::Errno::E_AGAIN:
             BIO_set_flags(bio, BIO_FLAGS_WRITE | BIO_FLAGS_SHOULD_RETRY);
             return 0;
         default:
@@ -309,13 +309,13 @@ public:
         BIO_clear_retry_flags(bio);
         auto [actual, err] = self->socket->Recv(0, {reinterpret_cast<u8*>(buf), len});
         switch (err) {
-        case Network::Errno::SUCCESS:
+        case Network::Errno::E_SUCCESS:
             *actual_p = actual;
             if (actual == 0) {
                 self->got_read_eof = true;
             }
             return actual ? 1 : 0;
-        case Network::Errno::AGAIN:
+        case Network::Errno::E_AGAIN:
             BIO_set_flags(bio, BIO_FLAGS_READ | BIO_FLAGS_SHOULD_RETRY);
             return 0;
         default:
