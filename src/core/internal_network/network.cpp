@@ -243,13 +243,13 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     NETWORK_ERROR_ELEM(NOTSOCK) \
     NETWORK_ERROR_ELEM(ALREADY) \
     NETWORK_ERROR_ELEM(STALE)
-#define NETWORK_ERROR_ELEM(name) case E##name: return Errno::E_##name;
+#define NETWORK_ERROR_ELEM(name) case E##name: return Errno::E_#name;
     NETWORK_ERROR_LIST
 #undef NETWORK_ERROR_ELEM
 #undef NETWORK_ERROR_LIST
     default:
         UNIMPLEMENTED_MSG("Unimplemented errno={} ({})", e, strerror(e));
-        return Errno::E_OTHER;
+        return Errno::E_OPNOTSUPP;
     }
 }
 
