@@ -20,7 +20,9 @@
 #include "core/hle/service/sockets/sockets_translate.h"
 #include "core/internal_network/network.h"
 #include "core/internal_network/socket_proxy.h"
+#if defined(__unix__) && !defined(__APPLE__)
 #include "core/internal_network/socket_icmp.h"
+#endif
 #include "core/internal_network/sockets.h"
 #include "network/network.h"
 #include <common/settings.h>
@@ -556,7 +558,7 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     auto room_member = Network::GetRoomMember().lock();
     if (0) {
     // ...only unix has this issue it seems, ICMP works otherwise fine on win
-#ifdef __unix__
+#if defined(__unix__) && !defined(__APPLE__)
     } else if (protocol == Network::Protocol::ICMP || protocol == Network::Protocol::ICMPV6) {
         descriptor.socket = std::make_shared<Network::IcmpSocket>();
 #endif
