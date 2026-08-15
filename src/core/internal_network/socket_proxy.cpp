@@ -49,7 +49,7 @@ void ProxySocket::HandleProxyPacket(const ProxyPacket& packet) {
 
 Errno ProxySocket::SetNonBlock(bool enable) {
     blocking = !enable;
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 Errno ProxySocket::SetSockOpt(Network::SocketLevel level, Network::OptName optname, std::span<const u8> optval) {
@@ -65,59 +65,59 @@ Errno ProxySocket::SetSockOpt(Network::SocketLevel level, Network::OptName optna
         if (optname == Network::OptName::RCVTIMEO)
             receive_timeout = value;
     }
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 Errno ProxySocket::Initialize(Domain domain, Type type, Protocol socket_protocol) {
     protocol = socket_protocol;
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 std::pair<ProxySocket::AcceptResult, Errno> ProxySocket::Accept() {
     LOG_WARNING(Network, "(stubbed) called");
-    return {AcceptResult{}, Errno::SUCCESS};
+    return {AcceptResult{}, Errno::E_SUCCESS};
 }
 
 Errno ProxySocket::Connect(Network::SockAddrIn addr_in) {
     LOG_WARNING(Network, "(stubbed) called");
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 std::pair<Network::SockAddrIn, Errno> ProxySocket::GetPeerName() {
     LOG_WARNING(Network, "(stubbed) called");
-    return {Network::SockAddrIn{}, Errno::SUCCESS};
+    return {Network::SockAddrIn{}, Errno::E_SUCCESS};
 }
 
 std::pair<Network::SockAddrIn, Errno> ProxySocket::GetSockName() {
     LOG_WARNING(Network, "(stubbed) called");
-    return {Network::SockAddrIn{}, Errno::SUCCESS};
+    return {Network::SockAddrIn{}, Errno::E_SUCCESS};
 }
 
 Errno ProxySocket::Bind(Network::SockAddrIn addr) {
     if (is_bound) {
         LOG_WARNING(Network, "Rebinding Socket is unimplemented!");
-        return Errno::SUCCESS;
+        return Errno::E_SUCCESS;
     }
     local_endpoint = addr;
     is_bound = true;
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 Errno ProxySocket::Listen(s32 backlog) {
     LOG_WARNING(Network, "(stubbed) called");
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 Errno ProxySocket::Shutdown(ShutdownHow how) {
     LOG_WARNING(Network, "(stubbed) called");
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 std::pair<s32, Errno> ProxySocket::Recv(int flags, std::span<u8> message) {
     LOG_WARNING(Network, "(stubbed) called");
     ASSERT(flags == 0);
     ASSERT(message.size() < std::size_t((std::numeric_limits<int>::max)()));
-    return {s32(0), Errno::SUCCESS};
+    return {s32(0), Errno::E_SUCCESS};
 }
 
 std::pair<s32, Errno> ProxySocket::RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) {
@@ -139,7 +139,7 @@ std::pair<s32, Errno> ProxySocket::RecvFrom(int flags, std::span<u8> message, Ne
         }
 
         if (!blocking) {
-            return {-1, Errno::AGAIN};
+            return {-1, Errno::E_AGAIN};
         }
 
         std::this_thread::yield();
@@ -147,7 +147,7 @@ std::pair<s32, Errno> ProxySocket::RecvFrom(int flags, std::span<u8> message, Ne
         const auto time_diff = std::chrono::steady_clock::now() - timestamp;
         const auto time_diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(time_diff).count();
         if (time_diff_ms > timeout) {
-            return {-1, Errno::TIMEDOUT};
+            return {-1, Errno::E_TIMEDOUT};
         }
     }
 }
@@ -173,7 +173,7 @@ std::pair<s32, Errno> ProxySocket::ReceivePacket(int flags, std::span<u8> messag
             if (!peek) {
                 received_packets.pop();
             }
-            return {-1, Errno::MSGSIZE};
+            return {-1, Errno::E_MSGSIZE};
         } else if (protocol == Protocol::TCP) {
             std::vector<u8> numArray(packet.data.size() - max_length);
             std::copy(packet.data.begin() + max_length, packet.data.end(), std::back_inserter(numArray));
@@ -187,14 +187,14 @@ std::pair<s32, Errno> ProxySocket::ReceivePacket(int flags, std::span<u8> messag
         }
     }
 
-    return {u32(read_bytes), Errno::SUCCESS};
+    return {u32(read_bytes), Errno::E_SUCCESS};
 }
 
 std::pair<s32, Errno> ProxySocket::Send(std::span<const u8> message, int flags) {
     LOG_WARNING(Network, "(stubbed) called");
     ASSERT(message.size() < size_t((std::numeric_limits<int>::max)()));
     ASSERT(flags == 0);
-    return {s32(0), Errno::SUCCESS};
+    return {s32(0), Errno::E_SUCCESS};
 }
 
 void ProxySocket::SendPacket(ProxyPacket& packet) {
@@ -212,12 +212,12 @@ std::pair<s32, Errno> ProxySocket::SendTo(u32 flags, std::span<const u8> message
 
     if (!is_bound) {
         LOG_ERROR(Network, "ProxySocket is not bound!");
-        return {s32(message.size()), Errno::SUCCESS};
+        return {s32(message.size()), Errno::E_SUCCESS};
     }
 
     if (auto room_member = Network::GetRoomMember().lock()) {
         if (!room_member->IsConnected()) {
-            return {s32(message.size()), Errno::SUCCESS};
+            return {s32(message.size()), Errno::E_SUCCESS};
         }
     }
 
@@ -242,7 +242,7 @@ std::pair<s32, Errno> ProxySocket::SendTo(u32 flags, std::span<const u8> message
 
     SendPacket(packet);
 
-    return {s32(message.size()), Errno::SUCCESS};
+    return {s32(message.size()), Errno::E_SUCCESS};
 }
 
 Errno ProxySocket::Close() {
@@ -250,12 +250,12 @@ Errno ProxySocket::Close() {
     fd = INVALID_SOCKET;
     closed = true;
 
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 std::pair<Errno, Errno> ProxySocket::GetPendingError() {
     LOG_DEBUG(Network, "called");
-    return {Errno::SUCCESS, Errno::SUCCESS};
+    return {Errno::E_SUCCESS, Errno::E_SUCCESS};
 }
 
 bool ProxySocket::IsOpened() const {
