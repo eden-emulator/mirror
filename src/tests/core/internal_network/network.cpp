@@ -15,7 +15,7 @@ TEST_CASE("Network::Errors", "[core]") {
     Network::Socket socks[2];
     for (Network::Socket& sock : socks) {
         REQUIRE(sock.Initialize(Network::Domain::INET, Network::Type::STREAM,
-                                Network::Protocol::TCP) == Network::Errno::SUCCESS);
+                                Network::Protocol::TCP) == Network::Errno::E_SUCCESS);
     }
 
     Network::SockAddrIn addr{
@@ -25,8 +25,8 @@ TEST_CASE("Network::Errors", "[core]") {
         {127, 0, 0, 1},
         {},
     };
-    REQUIRE(socks[0].Connect(addr) == Network::Errno::CONNREFUSED);
+    REQUIRE(socks[0].Connect(addr) == Network::Errno::E_CONNREFUSED);
 
     std::vector<u8> message{1, 2, 3, 4};
-    REQUIRE(socks[1].Recv(0, message).second == Network::Errno::NOTCONN);
+    REQUIRE(socks[1].Recv(0, message).second == Network::Errno::E_NOTCONN);
 }

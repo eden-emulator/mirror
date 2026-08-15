@@ -44,54 +44,54 @@ Errno IcmpSocket::SetSockOpt(Network::SocketLevel level, Network::OptName optnam
     LOG_WARNING(Network, "(stubbed) level={},optname={},optval={}", level, optname, optval.size());
     if (optname == Network::OptName::RCVTIMEO) {
         if (optval.size() < sizeof(Network::Timeval))
-            return Errno::INVAL;
+            return Errno::E_INVAL;
         std::memcpy(&rcv_timeo, optval.data(), sizeof(rcv_timeo));
     }
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 Errno IcmpSocket::Initialize(Domain domain, Type type, Protocol socket_protocol) {
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 std::pair<IcmpSocket::AcceptResult, Errno> IcmpSocket::Accept() {
     LOG_WARNING(Network, "(stubbed) called");
-    return {AcceptResult{}, Errno::SUCCESS};
+    return {AcceptResult{}, Errno::E_SUCCESS};
 }
 
 Errno IcmpSocket::Connect(Network::SockAddrIn addr_in) {
     LOG_WARNING(Network, "(stubbed) called");
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 std::pair<Network::SockAddrIn, Errno> IcmpSocket::GetPeerName() {
     LOG_WARNING(Network, "(stubbed) called");
-    return {Network::SockAddrIn{}, Errno::SUCCESS};
+    return {Network::SockAddrIn{}, Errno::E_SUCCESS};
 }
 
 std::pair<Network::SockAddrIn, Errno> IcmpSocket::GetSockName() {
     LOG_WARNING(Network, "(stubbed) called");
-    return {Network::SockAddrIn{}, Errno::SUCCESS};
+    return {Network::SockAddrIn{}, Errno::E_SUCCESS};
 }
 
 Errno IcmpSocket::Bind(Network::SockAddrIn addr) {
     LOG_WARNING(Network, "(stubbed) called");
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 Errno IcmpSocket::Listen(s32 backlog) {
     LOG_WARNING(Network, "(stubbed) called");
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 Errno IcmpSocket::Shutdown(ShutdownHow how) {
     LOG_WARNING(Network, "(stubbed) called");
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 std::pair<s32, Errno> IcmpSocket::Recv(int flags, std::span<u8> message) {
     LOG_DEBUG(Network, "(stubbed) called");
-    return {s32(0), Errno::NOTCONN};
+    return {s32(0), Errno::E_NOTCONN};
 }
 
 std::pair<s32, Errno> IcmpSocket::RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) {
@@ -101,7 +101,7 @@ std::pair<s32, Errno> IcmpSocket::RecvFrom(int flags, std::span<u8> message, Net
 #if !defined(__OPENORBIS__) && (defined(__FreeBSD__) || defined(__linux__))
     if (addr) {
         if (seq_ident.empty())
-            return {0, Errno::SUCCESS};
+            return {0, Errno::E_SUCCESS};
         // PLEASE DON'T KILL ME, I SWEAR THIS IS LEGITIMATELY THE BEST WAY TO DO IT
         // IF YOU OPEN socket() GOOGLE WILL STRAIGHT UP IP BAN YOU AFTER 2 HOURS
         auto const rcv_timeout = std::max<u64>(rcv_timeo.tv_sec, 1);
@@ -127,12 +127,12 @@ std::pair<s32, Errno> IcmpSocket::RecvFrom(int flags, std::span<u8> message, Net
             data[3] = u8(csum); //lo
             auto const n = (std::max)(data.size(), message.size());
             std::copy(data.begin(), data.begin() + n, message.begin());
-            return {n, Errno::SUCCESS};
+            return {n, Errno::E_SUCCESS};
         }
-        return {-1, Errno::TIMEDOUT};
+        return {-1, Errno::E_TIMEDOUT};
     }
 #endif
-    return {-1, Errno::INVAL};
+    return {-1, Errno::E_INVAL};
 }
 
 std::pair<s32, Errno> IcmpSocket::Send(std::span<const u8> message, int flags) {
@@ -143,7 +143,7 @@ std::pair<s32, Errno> IcmpSocket::Send(std::span<const u8> message, int flags) {
         | (u32(message[6]) << 8)
         | (u32(message[7]) << 0)
     );
-    return {s32(0), Errno::NOTCONN};
+    return {s32(0), Errno::E_NOTCONN};
 }
 
 std::pair<s32, Errno> IcmpSocket::SendTo(u32 flags, std::span<const u8> message, const Network::SockAddrIn* addr) {
@@ -155,19 +155,19 @@ std::pair<s32, Errno> IcmpSocket::SendTo(u32 flags, std::span<const u8> message,
     // 4..6 -> ident
     // 6..8 -> seq
     if (!message.empty())
-        return {s32(message.size()), Errno::SUCCESS};
-    return {-1, Errno::INVAL};
+        return {s32(message.size()), Errno::E_SUCCESS};
+    return {-1, Errno::E_INVAL};
 }
 
 Errno IcmpSocket::Close() {
     LOG_DEBUG(Network, "called");
     fd = INVALID_SOCKET;
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 std::pair<Errno, Errno> IcmpSocket::GetPendingError() {
     LOG_DEBUG(Network, "called");
-    return {Errno::SUCCESS, Errno::SUCCESS};
+    return {Errno::E_SUCCESS, Errno::E_SUCCESS};
 }
 
 bool IcmpSocket::IsOpened() const {
@@ -178,7 +178,7 @@ void IcmpSocket::HandleProxyPacket(const ProxyPacket& packet) {
     LOG_WARNING(Network, "(stubbed) called");
 }
 Errno IcmpSocket::SetNonBlock(bool enable) {
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 } // namespace Network

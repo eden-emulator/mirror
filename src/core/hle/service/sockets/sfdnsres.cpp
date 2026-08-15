@@ -126,15 +126,15 @@ static Network::Errno GetAddrInfoErrorToErrno(Network::GetAddrInfoError result) 
     case Network::GetAddrInfoError::SUCCESS:
         // Note: Sometimes a successful lookup sets errno to EADDRNOTAVAIL for
         // some reason, but that doesn't seem useful to implement.
-        return Network::Errno::SUCCESS;
+        return Network::Errno::E_SUCCESS;
     case Network::GetAddrInfoError::AGAIN:
-        return Network::Errno::SUCCESS;
+        return Network::Errno::E_SUCCESS;
     case Network::GetAddrInfoError::NODATA:
-        return Network::Errno::SUCCESS;
+        return Network::Errno::E_SUCCESS;
     case Network::GetAddrInfoError::SERVICE:
-        return Network::Errno::INVAL;
+        return Network::Errno::E_INVAL;
     default:
-        return Network::Errno::SUCCESS;
+        return Network::Errno::E_SUCCESS;
     }
 }
 
