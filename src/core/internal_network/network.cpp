@@ -92,42 +92,42 @@ LINGER MakeLinger(bool enable, u32 linger_value) {
 
 Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     switch (e) {
-    case 0: return Errno::SUCCESS;
+    case 0: return Errno::E_SUCCESS;
     case WSAECONNABORTED:
         if (call_type == CallType::Send) {
             // Winsock yields WSAECONNABORTED from `send` in situations where Unix
             // systems, and actual Switches, yield EPIPE.
-            return Errno::PIPE;
+            return Errno::E_PIPE;
         } else {
-            return Errno::CONNABORTED;
+            return Errno::E_CONNABORTED;
         }
-    case WSAEBADF: return Errno::BADF;
-    case WSAEINVAL: return Errno::INVAL;
-    case WSAEMFILE: return Errno::MFILE;
-    case WSAENOTCONN: return Errno::NOTCONN;
-    case WSAEWOULDBLOCK: return Errno::AGAIN;
-    case WSAECONNREFUSED: return Errno::CONNREFUSED;
-    case WSAECONNRESET: return Errno::CONNRESET;
-    case WSAEHOSTUNREACH: return Errno::HOSTUNREACH;
-    case WSAENETDOWN: return Errno::NETDOWN;
-    case WSAENETUNREACH: return Errno::NETUNREACH;
-    case WSAEMSGSIZE: return Errno::MSGSIZE;
-    case WSAETIMEDOUT: return Errno::TIMEDOUT;
-    case WSAEINPROGRESS: return Errno::INPROGRESS;
-    case WSAEISCONN: return Errno::ISCONN;
-    case WSAEADDRINUSE: return Errno::ADDRINUSE;
-    case WSAEADDRNOTAVAIL: return Errno::ADDRNOTAVAIL;
-    case WSAEPROTOTYPE: return Errno::PROTOTYPE;
-    case WSAENOPROTOOPT: return Errno::NOPROTOOPT;
-    case WSAEPROTONOSUPPORT: return Errno::PROTONOSUPPORT;
-    case WSAESOCKTNOSUPPORT: return Errno::SOCKTNOSUPPORT;
+    case WSAEBADF: return Errno::E_BADF;
+    case WSAEINVAL: return Errno::E_INVAL;
+    case WSAEMFILE: return Errno::E_MFILE;
+    case WSAENOTCONN: return Errno::E_NOTCONN;
+    case WSAEWOULDBLOCK: return Errno::E_AGAIN;
+    case WSAECONNREFUSED: return Errno::E_CONNREFUSED;
+    case WSAECONNRESET: return Errno::E_CONNRESET;
+    case WSAEHOSTUNREACH: return Errno::E_HOSTUNREACH;
+    case WSAENETDOWN: return Errno::E_NETDOWN;
+    case WSAENETUNREACH: return Errno::E_NETUNREACH;
+    case WSAEMSGSIZE: return Errno::E_MSGSIZE;
+    case WSAETIMEDOUT: return Errno::E_TIMEDOUT;
+    case WSAEINPROGRESS: return Errno::E_INPROGRESS;
+    case WSAEISCONN: return Errno::E_ISCONN;
+    case WSAEADDRINUSE: return Errno::E_ADDRINUSE;
+    case WSAEADDRNOTAVAIL: return Errno::E_ADDRNOTAVAIL;
+    case WSAEPROTOTYPE: return Errno::E_PROTOTYPE;
+    case WSAENOPROTOOPT: return Errno::E_NOPROTOOPT;
+    case WSAEPROTONOSUPPORT: return Errno::E_PROTONOSUPPORT;
+    case WSAESOCKTNOSUPPORT: return Errno::E_SOCKTNOSUPPORT;
 #ifdef WSAENOTSUP
     // Not defined by fucking MSVC because MSVC is stupid as shitfuckery
-    case WSAENOTSUP: return Errno::NOTSUP;
+    case WSAENOTSUP: return Errno::E_NOTSUP;
 #endif
     default:
         UNIMPLEMENTED_MSG("Unimplemented errno={}", e);
-        return Errno::OTHER;
+        return Errno::E_OTHER;
     }
 }
 
@@ -210,7 +210,7 @@ linger MakeLinger(bool enable, u32 linger_value) {
 
 Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     switch (e) {
-    case 0: return Errno::SUCCESS;
+    case 0: return Errno::E_SUCCESS;
 #define NETWORK_ERROR_LIST \
     NETWORK_ERROR_ELEM(NOENT) \
     NETWORK_ERROR_ELEM(INTR) \
@@ -234,6 +234,7 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     NETWORK_ERROR_ELEM(ISCONN) \
     NETWORK_ERROR_ELEM(PROTOTYPE) \
     NETWORK_ERROR_ELEM(NOPROTOOPT) \
+    NETWORK_ERROR_ELEM(AFNOSUPPORT) \
     NETWORK_ERROR_ELEM(PROTONOSUPPORT) \
     NETWORK_ERROR_ELEM(SOCKTNOSUPPORT) \
     NETWORK_ERROR_ELEM(NOTSUP) \
@@ -242,13 +243,13 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     NETWORK_ERROR_ELEM(NOTSOCK) \
     NETWORK_ERROR_ELEM(ALREADY) \
     NETWORK_ERROR_ELEM(STALE)
-#define NETWORK_ERROR_ELEM(name) case E##name: return Errno::name;
+#define NETWORK_ERROR_ELEM(name) case E##name: return Errno::E_##name;
     NETWORK_ERROR_LIST
 #undef NETWORK_ERROR_ELEM
 #undef NETWORK_ERROR_LIST
     default:
         UNIMPLEMENTED_MSG("Unimplemented errno={} ({})", e, strerror(e));
-        return Errno::OTHER;
+        return Errno::E_OTHER;
     }
 }
 
@@ -261,7 +262,7 @@ Errno GetAndLogLastError(CallType call_type) {
     int e = errno;
 #endif
     const Errno err = TranslateNativeError(e, call_type);
-    if (err == Errno::AGAIN || err == Errno::TIMEDOUT || err == Errno::INPROGRESS) {
+    if (err == Errno::E_AGAIN || err == Errno::E_TIMEDOUT || err == Errno::E_INPROGRESS) {
         // These happen during normal operation, so only log them at debug level.
         LOG_DEBUG(Network, "Socket operation error: {}", Common::NativeErrorToString(e));
         return err;
@@ -909,7 +910,7 @@ std::pair<s32, Errno> Poll(std::span<HostPollFD> pollfds, s32 timeout) {
         ASSERT(std::all_of(host_pollfds.begin(), host_pollfds.end(), [](auto const fd) {
             return fd.revents == 0;
         }));
-        return {0, Errno::SUCCESS};
+        return {0, Errno::E_SUCCESS};
     }
 
     for (size_t i = 0; i < pollfds.size(); ++i)
@@ -919,7 +920,7 @@ std::pair<s32, Errno> Poll(std::span<HostPollFD> pollfds, s32 timeout) {
         ASSERT(res == SOCKET_ERROR);
         return {-1, GetAndLogLastError(CallType::Other)};
     }
-    return {res, Errno::SUCCESS};
+    return {res, Errno::E_SUCCESS};
 }
 
 Socket::~Socket() {
@@ -1035,7 +1036,7 @@ Errno Socket::GetSockOpt(Network::SocketLevel level, Network::OptName optname, s
     const int result = getsockopt(fd, native_level, native_optname, reinterpret_cast<char*>(value.data()), &len);
     if (result != SOCKET_ERROR) {
         ASSERT(len == socklen_t(value.size()));
-        return Errno::SUCCESS;
+        return Errno::E_SUCCESS;
     }
     return GetAndLogLastError(CallType::Other);
 }
@@ -1043,7 +1044,7 @@ Errno Socket::GetSockOpt(Network::SocketLevel level, Network::OptName optname, s
 Errno Socket::SetNonBlock(bool enable) {
     if (EnableNonBlock(fd, enable)) {
         is_non_blocking = enable;
-        return Errno::SUCCESS;
+        return Errno::E_SUCCESS;
     }
     return GetAndLogLastError(CallType::Other);
 }
@@ -1059,10 +1060,10 @@ Errno Socket::SetSockOpt(Network::SocketLevel level, Network::OptName optname, s
             std::memcpy(&linger, optval.data(), sizeof(linger));
             auto const linger_optval = MakeLinger(bool(linger.onoff), linger.linger);
             if (setsockopt(fd, native_level, native_optname, reinterpret_cast<const char*>(&linger_optval), sizeof(linger_optval)) != SOCKET_ERROR)
-                return Errno::SUCCESS;
+                return Errno::E_SUCCESS;
             return GetAndLogLastError(CallType::Other);
         }
-        return Errno::INVAL;
+        return Errno::E_INVAL;
     } else if (optname == Network::OptName::RCVTIMEO || optname == Network::OptName::SNDTIMEO) {
         if (optval.size() >= sizeof(Network::Timeval)) {
             Network::Timeval guest_tv{};
@@ -1071,20 +1072,20 @@ Errno Socket::SetSockOpt(Network::SocketLevel level, Network::OptName optname, s
             tv.tv_sec = guest_tv.tv_sec;
             tv.tv_usec = guest_tv.tv_usec;
             if (setsockopt(fd, native_level, native_optname, reinterpret_cast<const char*>(&tv), sizeof(tv)) != SOCKET_ERROR)
-                return Errno::SUCCESS;
+                return Errno::E_SUCCESS;
             return GetAndLogLastError(CallType::Other);
         }
-        return Errno::INVAL;
+        return Errno::E_INVAL;
     }
     if (setsockopt(fd, native_level, native_optname, reinterpret_cast<const char*>(optval.data()), socklen_t(optval.size())) != SOCKET_ERROR)
-        return Errno::SUCCESS;
+        return Errno::E_SUCCESS;
     return GetAndLogLastError(CallType::Other);
 }
 
 Errno Socket::Initialize(Domain domain, Type type, Protocol protocol) {
     fd = socket(TranslateDomainToNative(domain), TranslateTypeToNative(type), TranslateProtocolToNative(protocol));
     if (fd != INVALID_SOCKET)
-        return Errno::SUCCESS;
+        return Errno::E_SUCCESS;
     return GetAndLogLastError(CallType::Other);
 }
 
@@ -1102,7 +1103,7 @@ std::pair<Socket::AcceptResult, Errno> Socket::Accept() {
             pollres = WSAPoll(host_pollfds.data(), ULONG(host_pollfds.size()), -1);
             // Interrupt signaled before a client could be accepted, break
             if (host_pollfds[1].revents != 0)
-                return {AcceptResult{}, Errno::AGAIN};
+                return {AcceptResult{}, Errno::E_AGAIN};
         }
     }
 
@@ -1116,7 +1117,7 @@ std::pair<Socket::AcceptResult, Errno> Socket::Accept() {
         .sockaddr_in = TranslateToSockAddrIn(addr),
     };
 
-    return {std::move(result), Errno::SUCCESS};
+    return {std::move(result), Errno::E_SUCCESS};
 }
 
 Errno Socket::Connect(Network::SockAddrIn addr_in) {
@@ -1124,7 +1125,7 @@ Errno Socket::Connect(Network::SockAddrIn addr_in) {
     if (EnableNonBlock(fd, false)) {
         if (connect(fd, reinterpret_cast<sockaddr const*>(&host_addr_in), sizeof(host_addr_in)) != SOCKET_ERROR) {
             if (EnableNonBlock(fd, true)) {
-                return Errno::SUCCESS;
+                return Errno::E_SUCCESS;
             }
         }
     }
@@ -1136,7 +1137,7 @@ std::pair<Network::SockAddrIn, Errno> Socket::GetPeerName() {
     socklen_t addrlen = sizeof(addr);
     if (getpeername(fd, reinterpret_cast<sockaddr*>(&addr), &addrlen) == SOCKET_ERROR)
         return {Network::SockAddrIn{}, GetAndLogLastError(CallType::Other)};
-    return {TranslateToSockAddrIn(addr), Errno::SUCCESS};
+    return {TranslateToSockAddrIn(addr), Errno::E_SUCCESS};
 }
 
 std::pair<Network::SockAddrIn, Errno> Socket::GetSockName() {
@@ -1146,19 +1147,19 @@ std::pair<Network::SockAddrIn, Errno> Socket::GetSockName() {
         return {Network::SockAddrIn{}, GetAndLogLastError(CallType::Other)};
     }
 
-    return {TranslateToSockAddrIn(addr), Errno::SUCCESS};
+    return {TranslateToSockAddrIn(addr), Errno::E_SUCCESS};
 }
 
 Errno Socket::Bind(Network::SockAddrIn addr) {
     auto const addr_in = TranslateFromSockAddrIn(addr);
     if (bind(fd, reinterpret_cast<sockaddr const*>(&addr_in), sizeof(addr_in)) != SOCKET_ERROR)
-        return Errno::SUCCESS;
+        return Errno::E_SUCCESS;
     return GetAndLogLastError(CallType::Other);
 }
 
 Errno Socket::Listen(s32 backlog) {
     if (listen(fd, backlog) != SOCKET_ERROR)
-        return Errno::SUCCESS;
+        return Errno::E_SUCCESS;
     return GetAndLogLastError(CallType::Other);
 }
 
@@ -1176,10 +1177,10 @@ Errno Socket::Shutdown(ShutdownHow how) {
         break;
     default:
         UNIMPLEMENTED_MSG("Unimplemented flag how={}", how);
-        return Errno::SUCCESS;
+        return Errno::E_SUCCESS;
     }
     if (shutdown(fd, host_how) != SOCKET_ERROR) {
-        return Errno::SUCCESS;
+        return Errno::E_SUCCESS;
     }
 
     return GetAndLogLastError(CallType::Other);
@@ -1224,7 +1225,7 @@ std::pair<s32, Errno> Socket::Recv(int flags, std::span<u8> message) {
     auto const native_flags = TranslateMsgOptToNative(flags);
     auto const result = recv(fd, reinterpret_cast<char*>(message.data()), int(message.size()), native_flags);
     if (result != SOCKET_ERROR)
-        return {s32(result), Errno::SUCCESS};
+        return {s32(result), Errno::E_SUCCESS};
     return {-1, GetAndLogLastError(CallType::Other)};
 }
 
@@ -1243,7 +1244,7 @@ std::pair<s32, Errno> Socket::RecvFrom(int flags, std::span<u8> message, Network
         if (addr) {
             *addr = TranslateToSockAddrIn(addr_in);
         }
-        return {s32(result), Errno::SUCCESS};
+        return {s32(result), Errno::E_SUCCESS};
     }
     return {-1, GetAndLogLastError(CallType::Other)};
 }
@@ -1259,7 +1260,7 @@ std::pair<s32, Errno> Socket::Send(std::span<const u8> message, int flags) {
 #endif
     const auto result = send(fd, reinterpret_cast<const char*>(message.data()), int(message.size()), native_flags);
     if (result != SOCKET_ERROR)
-        return {s32(result), Errno::SUCCESS};
+        return {s32(result), Errno::E_SUCCESS};
     return {-1, GetAndLogLastError(CallType::Send)};
 }
 
@@ -1283,7 +1284,7 @@ std::pair<s32, Errno> Socket::SendTo(u32 flags, std::span<const u8> message, con
 
     const auto result = sendto(fd, reinterpret_cast<const char*>(message.data()), int(message.size()), native_flags, reinterpret_cast<sockaddr const*>(to), to_len);
     if (result != SOCKET_ERROR)
-        return {s32(result), Errno::SUCCESS};
+        return {s32(result), Errno::E_SUCCESS};
     return {-1, GetAndLogLastError(CallType::Send)};
 }
 
@@ -1294,7 +1295,7 @@ Errno Socket::Close() {
     }
     fd = INVALID_SOCKET;
 
-    return Errno::SUCCESS;
+    return Errno::E_SUCCESS;
 }
 
 std::pair<Errno, Errno> Socket::GetPendingError() {
