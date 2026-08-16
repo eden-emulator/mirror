@@ -23,7 +23,7 @@ set_property(TARGET yuzu-android PROPERTY IMPORTED_LOCATION ${FFmpeg_LIBRARY_DIR
 
 target_link_libraries(yuzu-android PRIVATE audio_core common core input_common frontend_common video_core)
 target_link_libraries(yuzu-android PRIVATE android EGL glad jnigraphics log)
-if (ANDROID_PLATFORM_LEVEL GREATER_THAN 24)
+if (CMAKE_SYSTEM_VERSION GREATER 23)
     target_link_libraries(yuzu-android PRIVATE camera2ndk)
 endif()
 
