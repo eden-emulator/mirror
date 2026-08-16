@@ -2607,6 +2607,7 @@ Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& t
     const auto& device = runtime.device;
     const bool has_custom_border_colors = runtime.device.IsCustomBorderColorUsable();
     const auto color = tsc.BorderColor();
+    const auto srgb_color = tsc.SrgbBorderColor();
 
     const VkSamplerCustomBorderColorCreateInfoEXT border_ci{
         .sType = VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT,
@@ -2614,9 +2615,17 @@ Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& t
         .customBorderColor = std::bit_cast<VkClearColorValue>(color),
         .format = VK_FORMAT_UNDEFINED,
     };
+    const VkSamplerCustomBorderColorCreateInfoEXT srgb_border_ci{
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT,
+        .pNext = nullptr,
+        .customBorderColor = std::bit_cast<VkClearColorValue>(srgb_color),
+        .format = VK_FORMAT_UNDEFINED,
+    };
     const void* pnext = nullptr;
+    const void* srgb_pnext = nullptr;
     if (has_custom_border_colors) {
         pnext = &border_ci;
+        srgb_pnext = &srgb_border_ci;
         if (GPU::Logging::IsActive()) {
             GPU::Logging::GPULogger::GetInstance().LogExtensionUsage(
                 "VK_EXT_custom_border_color", "Sampler::Sampler");
@@ -2631,6 +2640,11 @@ Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& t
         .pNext = pnext,
         .reductionMode = MaxwellToVK::SamplerReduction(tsc.reduction_filter),
     };
+    const VkSamplerReductionModeCreateInfoEXT reduction_ci_srgb{
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT,
+        .pNext = srgb_pnext,
+        .reductionMode = MaxwellToVK::SamplerReduction(tsc.reduction_filter),
+    };
     const VkSamplerReductionModeCreateInfoEXT reduction_ci_without_border{
         .sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT,
         .pNext = nullptr,
@@ -2642,6 +2656,7 @@ Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& t
         reduction_ci.reductionMode != VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT;
     if (runtime.device.IsExtSamplerFilterMinmaxSupported()) {
         pnext = &reduction_ci;
+        srgb_pnext = &reduction_ci_srgb;
         pnext_without_border = &reduction_ci_without_border;
     } else if (reduction_ci.reductionMode != VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT) {
         LOG_WARNING(Render_Vulkan, "VK_EXT_sampler_filter_minmax is required");
@@ -2659,16 +2674,29 @@ Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& t
     const auto create_sampler = [&](const f32 anisotropy, bool force_nearest,
                                     bool disable_compare = false,
                                     bool disable_custom_border = false,
-                                    bool disable_minmax = false) {
+                                    bool disable_minmax = false, bool use_srgb_border = false) {
         const bool custom_border = has_custom_border_colors && !disable_custom_border;
         const bool minmax = has_minmax_reduction && !disable_minmax;
         const void* chain = nullptr;
         if (custom_border && minmax) {
             chain = pnext;
+            if (use_srgb_border) {
+                chain = srgb_pnext;
+            }
         } else if (minmax) {
             chain = pnext_without_border;
         } else if (custom_border) {
             chain = &border_ci;
+            if (use_srgb_border) {
+                chain = &srgb_border_ci;
+            }
+        }
+        VkBorderColor fixed_border = VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
+        if (!custom_border) {
+            fixed_border = ConvertBorderColor(color);
+            if (use_srgb_border) {
+                fixed_border = ConvertBorderColor(srgb_color);
+            }
         }
         return device.GetLogical().CreateSampler(VkSamplerCreateInfo{
             .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -2689,8 +2717,7 @@ Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& t
             .compareOp = MaxwellToVK::Sampler::DepthCompareFunction(tsc.depth_compare_func),
             .minLod = tsc.mipmap_filter == TextureMipmapFilter::None ? 0.0f : tsc.MinLod(),
             .maxLod = tsc.mipmap_filter == TextureMipmapFilter::None ? 0.25f : tsc.MaxLod(),
-            .borderColor = custom_border ? VK_BORDER_COLOR_FLOAT_CUSTOM_EXT
-                                         : ConvertBorderColor(color),
+            .borderColor = fixed_border,
             .unnormalizedCoordinates = VK_FALSE,
         });
     };
@@ -2712,6 +2739,10 @@ Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& t
     }
     if (has_minmax_reduction) {
         sampler_default_reduction = create_sampler(max_anisotropy, false, false, false, true);
+    }
+    if (tsc.srgb_conversion && srgb_color != color) {
+        sampler_srgb_border =
+            create_sampler(max_anisotropy, false, false, false, false, true);
     }
 }
 

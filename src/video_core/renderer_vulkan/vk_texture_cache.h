@@ -509,6 +509,14 @@ public:
         return static_cast<bool>(sampler_default_reduction);
     }
 
+    [[nodiscard]] VkSampler HandleWithSrgbBorderColor() const noexcept {
+        return *sampler_srgb_border;
+    }
+
+    [[nodiscard]] bool HasSrgbBorderColor() const noexcept {
+        return static_cast<bool>(sampler_srgb_border);
+    }
+
 private:
     vk::Sampler sampler;
     vk::Sampler sampler_default_anisotropy;
@@ -516,6 +524,7 @@ private:
     vk::Sampler sampler_noncompare;
     vk::Sampler sampler_default_border;
     vk::Sampler sampler_default_reduction;
+    vk::Sampler sampler_srgb_border;
 };
 
 struct TextureCacheParams {

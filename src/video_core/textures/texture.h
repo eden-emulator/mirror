@@ -378,6 +378,8 @@ struct TSCEntry {
 
     std::array<float, 4> BorderColor() const noexcept;
 
+    std::array<float, 4> SrgbBorderColor() const noexcept;
+
     float MaxAnisotropy() const noexcept;
 
     float MinLod() const {

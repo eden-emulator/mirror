@@ -29,9 +29,10 @@ float SrgbToLinear(u32 value) {
 } // Anonymous namespace
 
 std::array<float, 4> TSCEntry::BorderColor() const noexcept {
-    if (!srgb_conversion) {
-        return border_color;
-    }
+    return border_color;
+}
+
+std::array<float, 4> TSCEntry::SrgbBorderColor() const noexcept {
     return {SrgbToLinear(srgb_border_color_r), SrgbToLinear(srgb_border_color_g),
             SrgbToLinear(srgb_border_color_b), border_color[3]};
 }

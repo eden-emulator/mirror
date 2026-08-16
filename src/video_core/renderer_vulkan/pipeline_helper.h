@@ -383,6 +383,10 @@ inline void PushImageDescriptors(TextureCache& texture_cache,
                 !image_view.SupportsDepthComparison()) {
                 vk_sampler = sampler.HandleWithoutDepthComparison();
             }
+            if (sampler.HasSrgbBorderColor() &&
+                VideoCore::Surface::IsPixelFormatSRGB(image_view.format)) {
+                vk_sampler = sampler.HandleWithSrgbBorderColor();
+            }
             if (sampler.HasMinmaxReduction() && !image_view.SupportsMinmaxFilter()) {
                 vk_sampler = sampler.HandleWithDefaultReduction();
             }
