@@ -252,6 +252,20 @@
                     app:strokeColor="?attr/colorOutline"
                     app:strokeWidth="1dp" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/button_github"
+                    style="@style/EdenButton.Secondary"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    app:icon="@drawable/ic_github"
+                    app:iconSize="24dp"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    app:strokeColor="?attr/colorOutline"
+                    app:strokeWidth="1dp" />
+
             </LinearLayout>
 
         </LinearLayout>

@@ -245,6 +245,16 @@
                         app:iconSize="24dp"
                         app:iconPadding="0dp" />
 
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/button_github"
+                        style="@style/EdenButton.Secondary"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        app:icon="@drawable/ic_github"
+                        app:iconGravity="textStart"
+                        app:iconSize="24dp"
+                        app:iconPadding="0dp" />
+
                 </LinearLayout>
 
             </LinearLayout>
