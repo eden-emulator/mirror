@@ -103,6 +103,14 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
 
 #else
 
+// Very legacy Android versions
+#if defined(__ANDROID__) && __ANDROID_API__ < 24
+extern "C" int getifaddrs(struct ifaddrs **ifap) {
+    return -1;
+}
+extern "C" void freeifaddrs(struct ifaddrs *ifp) {}
+#endif
+
 std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
 #if defined(__ANDROID__) || defined(__linux__)
     struct ifaddrs* ifaddr = nullptr;
