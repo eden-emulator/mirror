@@ -707,12 +707,11 @@ FN_MAX_LIMIT_LIST
         return features.transform_feedback.geometryStreams;
     }
 
-    /// Returns true if custom border colors stay defined under non-identity view swizzles.
+    /// Returns true if custom border colors can be created without a format.
     bool IsCustomBorderColorUsable() const {
         return extensions.custom_border_color &&
                features.custom_border_color.customBorderColors &&
-               features.custom_border_color.customBorderColorWithoutFormat &&
-               extensions.border_color_swizzle;
+               features.custom_border_color.customBorderColorWithoutFormat;
     }
 
     /// Returns true if the device supports VK_EXT_color_write_enable.
