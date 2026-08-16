@@ -33,8 +33,9 @@ std::string NativeErrorToString(int e) {
     return ret;
 #else
     char err_str[255];
-#if defined(__ANDROID__) ||                                                                            \
-    (defined(__GLIBC__) && (_GNU_SOURCE || (_POSIX_C_SOURCE < 200112L && _XOPEN_SOURCE < 600)))
+    // Android >=24 API uses GNU specific, while lower API uses XSI compliant
+#if (defined(__ANDROID__) && __ANDROID_API__ >= 24) \
+    || (defined(__GLIBC__) && (_GNU_SOURCE || (_POSIX_C_SOURCE < 200112L && _XOPEN_SOURCE < 600)))
     // Thread safe (GNU-specific)
     const char* str = strerror_r(e, err_str, sizeof(err_str));
     return std::string(str);
