@@ -370,7 +370,7 @@ inline void PushImageDescriptors(TextureCache& texture_cache,
                 const VkImageView null_image_view{texture_cache.GetImageView(VideoCommon::NULL_IMAGE_VIEW_ID).Handle(desc.type)};
                 if (null_image_view != VK_NULL_HANDLE) vk_image_view = null_image_view;
             }
-            const Sampler& sampler{texture_cache.GetSampler(sampler_id)};
+            Sampler& sampler{texture_cache.GetSampler(sampler_id)};
             const bool use_fallback_sampler{sampler.HasAddedAnisotropy() &&
                                             !image_view.SupportsAnisotropy()};
             VkSampler vk_sampler{use_fallback_sampler ? sampler.HandleWithDefaultAnisotropy()
@@ -383,8 +383,11 @@ inline void PushImageDescriptors(TextureCache& texture_cache,
                 !image_view.SupportsDepthComparison()) {
                 vk_sampler = sampler.HandleWithoutDepthComparison();
             }
-            if (sampler.HasSrgbBorderColor() &&
-                VideoCore::Surface::IsPixelFormatSRGB(image_view.format)) {
+            const bool srgb_border{sampler.HasSrgbBorderColor() &&
+                                   VideoCore::Surface::IsPixelFormatSRGB(image_view.format)};
+            if (sampler.NeedsSwizzleMapping() && !image_view.HasIdentitySwizzle()) {
+                vk_sampler = sampler.HandleWithSwizzle(image_view.Swizzle(), srgb_border);
+            } else if (srgb_border) {
                 vk_sampler = sampler.HandleWithSrgbBorderColor();
             }
             if (sampler.HasMinmaxReduction() && !image_view.SupportsMinmaxFilter()) {

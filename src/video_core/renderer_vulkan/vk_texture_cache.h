@@ -422,6 +422,14 @@ public:
         return supports_minmax_filter;
     }
 
+    [[nodiscard]] const VkComponentMapping& Swizzle() const noexcept {
+        return swizzle_mapping;
+    }
+
+    [[nodiscard]] bool HasIdentitySwizzle() const noexcept {
+        return has_identity_swizzle;
+    }
+
     [[nodiscard]] GPUVAddr GpuAddr() const noexcept {
         return gpu_addr;
     }
@@ -454,9 +462,12 @@ private:
     VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
     u32 buffer_size = 0;
 
+    VkComponentMapping swizzle_mapping{};
+
     bool supports_depth_comparison = false;
     bool requires_border_color_format = false;
     bool supports_minmax_filter = false;
+    bool has_identity_swizzle = true;
 };
 
 class ImageAlloc : public VideoCommon::ImageAllocBase {};
@@ -517,7 +528,19 @@ public:
         return static_cast<bool>(sampler_srgb_border);
     }
 
+    [[nodiscard]] bool NeedsSwizzleMapping() const noexcept {
+        return needs_swizzle_mapping;
+    }
+
+    [[nodiscard]] VkSampler HandleWithSwizzle(const VkComponentMapping& mapping, bool srgb);
+
 private:
+    struct SwizzleVariant {
+        VkComponentMapping mapping;
+        bool srgb;
+        vk::Sampler sampler;
+    };
+
     vk::Sampler sampler;
     vk::Sampler sampler_default_anisotropy;
     vk::Sampler sampler_nearest;
@@ -525,6 +548,15 @@ private:
     vk::Sampler sampler_default_border;
     vk::Sampler sampler_default_reduction;
     vk::Sampler sampler_srgb_border;
+
+    std::vector<SwizzleVariant> swizzle_variants;
+    const Device* device_ptr = nullptr;
+    VkSamplerCreateInfo swizzle_base_ci{};
+    VkSamplerReductionModeEXT swizzle_reduction_mode = VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT;
+    std::array<float, 4> border_color_value{};
+    std::array<float, 4> srgb_border_color_value{};
+    bool swizzle_uses_reduction = false;
+    bool needs_swizzle_mapping = false;
 };
 
 struct TextureCacheParams {

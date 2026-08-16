@@ -2405,6 +2405,14 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
              VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT) != 0;
     }
     requires_border_color_format = NeedsExplicitBorderColorFormat(format_info.format);
+    swizzle_mapping = VkComponentMapping{
+        .r = ComponentSwizzle(swizzle[0]),
+        .g = ComponentSwizzle(swizzle[1]),
+        .b = ComponentSwizzle(swizzle[2]),
+        .a = ComponentSwizzle(swizzle[3]),
+    };
+    has_identity_swizzle = swizzle[0] == SwizzleSource::R && swizzle[1] == SwizzleSource::G &&
+                           swizzle[2] == SwizzleSource::B && swizzle[3] == SwizzleSource::A;
     const VkImageUsageFlags requested_view_usage = ImageUsageFlags(format_info, format);
     const VkImageUsageFlags image_usage = image.UsageFlags();
     const VkImageUsageFlags clamped_view_usage = requested_view_usage & image_usage;
@@ -2429,12 +2437,7 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
         .image = image.Handle(),
         .viewType = VkImageViewType{},
         .format = format_info.format,
-        .components{
-            .r = ComponentSwizzle(swizzle[0]),
-            .g = ComponentSwizzle(swizzle[1]),
-            .b = ComponentSwizzle(swizzle[2]),
-            .a = ComponentSwizzle(swizzle[3]),
-        },
+        .components = swizzle_mapping,
         .subresourceRange = MakeSubresourceRange(aspect_mask, info.range),
     };
     const auto create = [&](TextureType tex_type, std::optional<u32> num_layers) {
@@ -2671,6 +2674,33 @@ Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& t
                                     min_filter == VK_FILTER_LINEAR ||
                                     mipmap_mode == VK_SAMPLER_MIPMAP_MODE_LINEAR};
 
+    const auto make_create_info = [&](const f32 anisotropy, bool force_nearest,
+                                      bool disable_compare, const void* chain,
+                                      VkBorderColor fixed_border) {
+        return VkSamplerCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            .pNext = chain,
+            .flags = 0,
+            .magFilter = force_nearest ? VK_FILTER_NEAREST : mag_filter,
+            .minFilter = force_nearest ? VK_FILTER_NEAREST : min_filter,
+            .mipmapMode = force_nearest ? VK_SAMPLER_MIPMAP_MODE_NEAREST : mipmap_mode,
+            .addressModeU = MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_u, tsc.mag_filter),
+            .addressModeV = MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_v, tsc.mag_filter),
+            .addressModeW = MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_p, tsc.mag_filter),
+            .mipLodBias = tsc.LodBias(),
+            .anisotropyEnable =
+                static_cast<VkBool32>(!force_nearest && anisotropy > 1.0f ? VK_TRUE : VK_FALSE),
+            .maxAnisotropy = force_nearest ? 1.0f : anisotropy,
+            .compareEnable = disable_compare ? VK_FALSE
+                                             : static_cast<VkBool32>(tsc.depth_compare_enabled),
+            .compareOp = MaxwellToVK::Sampler::DepthCompareFunction(tsc.depth_compare_func),
+            .minLod = tsc.mipmap_filter == TextureMipmapFilter::None ? 0.0f : tsc.MinLod(),
+            .maxLod = tsc.mipmap_filter == TextureMipmapFilter::None ? 0.25f : tsc.MaxLod(),
+            .borderColor = fixed_border,
+            .unnormalizedCoordinates = VK_FALSE,
+        };
+    };
+
     const auto create_sampler = [&](const f32 anisotropy, bool force_nearest,
                                     bool disable_compare = false,
                                     bool disable_custom_border = false,
@@ -2698,28 +2728,8 @@ Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& t
                 fixed_border = ConvertBorderColor(srgb_color);
             }
         }
-        return device.GetLogical().CreateSampler(VkSamplerCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-            .pNext = chain,
-            .flags = 0,
-            .magFilter = force_nearest ? VK_FILTER_NEAREST : mag_filter,
-            .minFilter = force_nearest ? VK_FILTER_NEAREST : min_filter,
-            .mipmapMode = force_nearest ? VK_SAMPLER_MIPMAP_MODE_NEAREST : mipmap_mode,
-            .addressModeU = MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_u, tsc.mag_filter),
-            .addressModeV = MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_v, tsc.mag_filter),
-            .addressModeW = MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_p, tsc.mag_filter),
-            .mipLodBias = tsc.LodBias(),
-            .anisotropyEnable =
-                static_cast<VkBool32>(!force_nearest && anisotropy > 1.0f ? VK_TRUE : VK_FALSE),
-            .maxAnisotropy = force_nearest ? 1.0f : anisotropy,
-            .compareEnable = disable_compare ? VK_FALSE
-                                             : static_cast<VkBool32>(tsc.depth_compare_enabled),
-            .compareOp = MaxwellToVK::Sampler::DepthCompareFunction(tsc.depth_compare_func),
-            .minLod = tsc.mipmap_filter == TextureMipmapFilter::None ? 0.0f : tsc.MinLod(),
-            .maxLod = tsc.mipmap_filter == TextureMipmapFilter::None ? 0.25f : tsc.MaxLod(),
-            .borderColor = fixed_border,
-            .unnormalizedCoordinates = VK_FALSE,
-        });
+        return device.GetLogical().CreateSampler(
+            make_create_info(anisotropy, force_nearest, disable_compare, chain, fixed_border));
     };
 
     sampler = create_sampler(max_anisotropy, false);
@@ -2744,6 +2754,60 @@ Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& t
         sampler_srgb_border =
             create_sampler(max_anisotropy, false, false, false, false, true);
     }
+    needs_swizzle_mapping = has_custom_border_colors && device.NeedsBorderColorSwizzleMapping();
+    if (needs_swizzle_mapping) {
+        device_ptr = &device;
+        border_color_value = color;
+        srgb_border_color_value = srgb_color;
+        swizzle_reduction_mode = reduction_ci.reductionMode;
+        swizzle_uses_reduction = has_minmax_reduction;
+        swizzle_base_ci = make_create_info(max_anisotropy, false, false, nullptr,
+                                           VK_BORDER_COLOR_FLOAT_CUSTOM_EXT);
+    }
+}
+
+VkSampler Sampler::HandleWithSwizzle(const VkComponentMapping& mapping, bool srgb) {
+    const auto matches = [&](const SwizzleVariant& variant) {
+        return variant.srgb == srgb && variant.mapping.r == mapping.r &&
+               variant.mapping.g == mapping.g && variant.mapping.b == mapping.b &&
+               variant.mapping.a == mapping.a;
+    };
+    const auto it = std::ranges::find_if(swizzle_variants, matches);
+    if (it != swizzle_variants.end()) {
+        return *it->sampler;
+    }
+    std::array<float, 4> value = border_color_value;
+    if (srgb) {
+        value = srgb_border_color_value;
+    }
+    const VkSamplerCustomBorderColorCreateInfoEXT border_ci{
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT,
+        .pNext = nullptr,
+        .customBorderColor = std::bit_cast<VkClearColorValue>(value),
+        .format = VK_FORMAT_UNDEFINED,
+    };
+    const VkSamplerBorderColorComponentMappingCreateInfoEXT mapping_ci{
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT,
+        .pNext = &border_ci,
+        .components = mapping,
+        .srgb = VK_FALSE,
+    };
+    const VkSamplerReductionModeCreateInfoEXT reduction_ci{
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT,
+        .pNext = &mapping_ci,
+        .reductionMode = swizzle_reduction_mode,
+    };
+    VkSamplerCreateInfo create_info = swizzle_base_ci;
+    create_info.pNext = &mapping_ci;
+    if (swizzle_uses_reduction) {
+        create_info.pNext = &reduction_ci;
+    }
+    swizzle_variants.push_back(SwizzleVariant{
+        .mapping = mapping,
+        .srgb = srgb,
+        .sampler = device_ptr->GetLogical().CreateSampler(create_info),
+    });
+    return *swizzle_variants.back().sampler;
 }
 
 Framebuffer::Framebuffer(TextureCacheRuntime& runtime, std::span<ImageView*, NUM_RT> color_buffers,

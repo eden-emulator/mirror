@@ -724,6 +724,12 @@ FN_MAX_LIMIT_LIST
         return extensions.border_color_swizzle;
     }
 
+    /// Returns true if samplers must be carried with border color swizzle mapping.
+    bool NeedsBorderColorSwizzleMapping() const {
+        return extensions.border_color_swizzle &&
+               !features.border_color_swizzle.borderColorSwizzleFromImage;
+    }
+
     /// Returns true if borderColorSwizzleFromImage is available.
     bool IsBorderColorSwizzleFromImageSupported() const {
         return features.border_color_swizzle.borderColorSwizzleFromImage;
