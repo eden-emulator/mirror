@@ -218,7 +218,7 @@ android {
 
         create("legacy") {
             dimension = "version"
-            minSdk = 29
+            minSdk = 23
             manifestPlaceholders += mapOf("appNameBase" to "Eden Legacy")
             resValue("string", "app_name_suffixed", "Eden Legacy")
             applicationId = "dev.legacy.eden_emulator"
