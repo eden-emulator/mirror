@@ -218,7 +218,7 @@ android {
 
         create("legacy") {
             dimension = "version"
-            minSdk = 23
+            minSdk = 21
             manifestPlaceholders += mapOf("appNameBase" to "Eden Legacy")
             resValue("string", "app_name_suffixed", "Eden Legacy")
             applicationId = "dev.legacy.eden_emulator"
@@ -226,6 +226,7 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments.add("-DYUZU_LEGACY=ON")
+                    arguments.add("-DANDROID_ALLOW_UNDEFINED_SYMBOLS=ON")
                 }
             }
 
