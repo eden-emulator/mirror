@@ -127,7 +127,7 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
 #endif
     default:
         UNIMPLEMENTED_MSG("Unimplemented errno={}", e);
-        return Errno::E_OTHER;
+        return Errno::E_OPNOTSUPP;
     }
 }
 
