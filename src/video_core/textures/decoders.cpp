@@ -88,6 +88,34 @@ void SwizzleRow(std::span<u8> output, std::span<const u8> input, u32 offset_zy, 
 }
 
 template <bool TO_LINEAR, u32 BYTES_PER_PIXEL>
+void SwizzleRowPerPixel(std::span<u8> output, std::span<const u8> input, u32 offset_zy,
+                        u32 swizzled_y, u32 x_shift, u32 x, u32 num_bytes, u32 linear) {
+    u32 swizzled_x = pdep<SWIZZLE_X_BITS>(x);
+    for (u32 byte = 0; byte < num_bytes;
+         byte += BYTES_PER_PIXEL, incrpdep<SWIZZLE_X_BITS, BYTES_PER_PIXEL>(swizzled_x)) {
+        const u32 offset_x = ((x + byte) >> GOB_SIZE_X_SHIFT) << x_shift;
+        const u32 swizzled = offset_zy + offset_x + (swizzled_x | swizzled_y);
+        const u32 unswizzled = linear + byte;
+
+        u8* const dst = &output[TO_LINEAR ? swizzled : unswizzled];
+        const u8* const src = &input[TO_LINEAR ? unswizzled : swizzled];
+
+        std::memcpy(dst, src, BYTES_PER_PIXEL);
+    }
+}
+
+template <bool TO_LINEAR, u32 BYTES_PER_PIXEL>
+void SwizzleRowDispatch(std::span<u8> output, std::span<const u8> input, u32 offset_zy,
+                        u32 swizzled_y, u32 x_shift, u32 x, u32 num_bytes, u32 linear) {
+    if constexpr (SWIZZLE_RUN_BYTES % BYTES_PER_PIXEL == 0) {
+        SwizzleRow<TO_LINEAR>(output, input, offset_zy, swizzled_y, x_shift, x, num_bytes, linear);
+    } else {
+        SwizzleRowPerPixel<TO_LINEAR, BYTES_PER_PIXEL>(output, input, offset_zy, swizzled_y, x_shift,
+                                                       x, num_bytes, linear);
+    }
+}
+
+template <bool TO_LINEAR, u32 BYTES_PER_PIXEL>
 void SwizzleImpl(std::span<u8> output, std::span<const u8> input, u32 width, u32 height, u32 depth,
                  u32 block_height, u32 block_depth, u32 stride) {
     // The origin of the transformation can be configured here, leave it as zero as the current API
@@ -121,9 +149,10 @@ void SwizzleImpl(std::span<u8> output, std::span<const u8> input, u32 width, u32
             const u32 offset_y = (block_y >> block_height) * block_size +
                                  ((block_y & block_height_mask) << GOB_SIZE_SHIFT);
 
-            SwizzleRow<TO_LINEAR>(output, input, offset_z + offset_y, swizzled_y, x_shift,
-                                  origin_x * BYTES_PER_PIXEL, width * BYTES_PER_PIXEL,
-                                  slice * pitch * height + line * pitch);
+            SwizzleRowDispatch<TO_LINEAR, BYTES_PER_PIXEL>(
+                output, input, offset_z + offset_y, swizzled_y, x_shift,
+                origin_x * BYTES_PER_PIXEL, width * BYTES_PER_PIXEL,
+                slice * pitch * height + line * pitch);
         }
     }
 }
@@ -166,9 +195,10 @@ void SwizzleSubrectImpl(std::span<u8> output, std::span<const u8> input, u32 wid
             const u32 offset_y = (block_y >> block_height) * block_size +
                                  ((block_y & block_height_mask) << GOB_SIZE_SHIFT);
 
-            SwizzleRow<TO_LINEAR>(output, input, offset_z + offset_y, swizzled_y, x_shift,
-                                  origin_x * BYTES_PER_PIXEL, extent_x * BYTES_PER_PIXEL,
-                                  slice * pitch * height + line * pitch);
+            SwizzleRowDispatch<TO_LINEAR, BYTES_PER_PIXEL>(
+                output, input, offset_z + offset_y, swizzled_y, x_shift,
+                origin_x * BYTES_PER_PIXEL, extent_x * BYTES_PER_PIXEL,
+                slice * pitch * height + line * pitch);
         }
         unprocessed_lines -= lines_in_y;
         if (unprocessed_lines == 0) {
