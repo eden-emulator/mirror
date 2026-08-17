@@ -1903,12 +1903,13 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
         const bool msaa_upload_copies_stencil =
             msaa_upload_is_depth && (aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0 &&
             runtime->device.IsExtShaderStencilExportSupported();
-        const VkImageAspectFlags upload_aspect_mask =
-            msaa_upload_is_depth
-                ? (msaa_upload_copies_stencil
-                       ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT
-                       : VK_IMAGE_ASPECT_DEPTH_BIT)
-                : aspect_mask;
+        VkImageAspectFlags upload_aspect_mask = aspect_mask;
+        if (msaa_upload_is_depth) {
+            upload_aspect_mask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            if (msaa_upload_copies_stencil) {
+                upload_aspect_mask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+            }
+        }
         ImageInfo temp_info = info;
         temp_info.num_samples = 1;
 

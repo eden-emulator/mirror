@@ -1062,10 +1062,14 @@ void BlockLinearUnswizzle2DPass::Unswizzle(
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         };
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                                   (is_initialized ? vk::PIPELINE_STAGE_GRAPHICS_COMPUTE
-                                                   : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT),
-                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {}, buffer_barrier, pre_copy);
+        VkPipelineStageFlags pre_copy_src_stages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        if (is_initialized) {
+            pre_copy_src_stages |= vk::PIPELINE_STAGE_GRAPHICS_COMPUTE;
+        } else {
+            pre_copy_src_stages |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        }
+        cmdbuf.PipelineBarrier(pre_copy_src_stages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {},
+                               buffer_barrier, pre_copy);
 
         const VkBufferImageCopy copy{
             .bufferOffset = out_offset,
@@ -1306,10 +1310,14 @@ void BlockLinearUnswizzle3DBufferPass::Unswizzle(
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         };
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                                   (is_initialized ? vk::PIPELINE_STAGE_GRAPHICS_COMPUTE
-                                                   : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT),
-                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {}, buffer_barrier, pre_copy);
+        VkPipelineStageFlags pre_copy_src_stages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        if (is_initialized) {
+            pre_copy_src_stages |= vk::PIPELINE_STAGE_GRAPHICS_COMPUTE;
+        } else {
+            pre_copy_src_stages |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        }
+        cmdbuf.PipelineBarrier(pre_copy_src_stages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {},
+                               buffer_barrier, pre_copy);
 
         const VkBufferImageCopy copy{
             .bufferOffset = out_offset,

@@ -1607,11 +1607,11 @@ void BlitImageHelper::CopyMSAADepth(RenderPassCache& render_pass_cache, VkImage 
         MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, true, src_format).format;
     const VkFormat dst_vk_format =
         MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, true, dst_format).format;
-    const VkImageAspectFlags attachment_aspect =
-        VideoCore::Surface::GetFormatType(dst_format) ==
-                VideoCore::Surface::SurfaceType::DepthStencil
-            ? VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT
-            : VK_IMAGE_ASPECT_DEPTH_BIT;
+    VkImageAspectFlags attachment_aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+    if (VideoCore::Surface::GetFormatType(dst_format) ==
+        VideoCore::Surface::SurfaceType::DepthStencil) {
+        attachment_aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
     for (const VideoCommon::ImageCopy& copy : copies) {
         ASSERT(copy.src_subresource.base_layer == 0);
         ASSERT(copy.src_subresource.num_layers == 1);
