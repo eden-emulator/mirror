@@ -955,10 +955,6 @@ FN_MAX_LIMIT_LIST
         return supports_d24_depth;
     }
 
-    bool CantBlitMSAA() const {
-        return cant_blit_msaa;
-    }
-
     bool MustEmulateScaledFormats() const {
         return must_emulate_scaled_formats;
     }
@@ -1230,7 +1226,6 @@ private:
     bool has_nsight_graphics{};                ///< Has Nsight Graphics attached
     bool has_radeon_gpu_profiler{};            ///< Has Radeon GPU Profiler attached.
     bool supports_d24_depth{};                 ///< Supports D24 depth buffers.
-    bool cant_blit_msaa{};                     ///< Does not support MSAA<->MSAA blitting.
     bool must_emulate_scaled_formats{};        ///< Requires scaled vertex format emulation
     bool dynamic_state3_blending{};            ///< Has blending features of dynamic_state3.
     bool dynamic_state3_enables{};             ///< Has at least one enable feature of dynamic_state3.

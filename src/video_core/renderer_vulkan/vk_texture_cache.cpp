@@ -682,6 +682,11 @@ void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage im
     };
 }
 
+[[nodiscard]] bool HaveSameExtent(const Region2D& dst_region, const Region2D& src_region) {
+    return dst_region.end.x - dst_region.start.x == src_region.end.x - src_region.start.x &&
+           dst_region.end.y - dst_region.start.y == src_region.end.y - src_region.start.y;
+}
+
 [[nodiscard]] VkImageResolve MakeImageResolve(const Region2D& dst_region,
                                               const Region2D& src_region,
                                               const VkImageSubresourceLayers& dst_layers,
@@ -779,15 +784,15 @@ void BlitScale(Scheduler& scheduler, VkImage src_image, VkImage dst_image, const
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([dst_image, src_image, extent, resources, aspect_mask, resolution, is_2d,
                       vk_filter, up_scaling](vk::CommandBuffer cmdbuf) {
+        const u32 scaled_width = resolution.ScaleUp(extent.width);
+        const u32 scaled_height = is_2d ? resolution.ScaleUp(extent.height) : extent.height;
         const VkOffset2D src_size{
-            .x = static_cast<s32>(up_scaling ? extent.width : resolution.ScaleUp(extent.width)),
-            .y = static_cast<s32>(is_2d && up_scaling ? extent.height
-                                                      : resolution.ScaleUp(extent.height)),
+            .x = static_cast<s32>(up_scaling ? extent.width : scaled_width),
+            .y = static_cast<s32>(up_scaling ? extent.height : scaled_height),
         };
         const VkOffset2D dst_size{
-            .x = static_cast<s32>(up_scaling ? resolution.ScaleUp(extent.width) : extent.width),
-            .y = static_cast<s32>(is_2d && up_scaling ? resolution.ScaleUp(extent.height)
-                                                      : extent.height),
+            .x = static_cast<s32>(up_scaling ? scaled_width : extent.width),
+            .y = static_cast<s32>(up_scaling ? scaled_height : extent.height),
         };
         boost::container::small_vector<VkImageBlit, 4> regions;
         regions.reserve(resources.levels);
@@ -1286,8 +1291,14 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
         blit_image_helper.BlitColorMSAA(dst_framebuffer, src, dst_region, src_region);
         return;
     }
-    if (is_msaa_to_msaa && device.CantBlitMSAA()) {
-        UNIMPLEMENTED_MSG("MSAA to MSAA depth-stencil blit is not supported on this driver");
+    if (is_msaa_to_msaa) {
+        blit_image_helper.BlitDepthStencilMSAA(dst_framebuffer, src, dst_region, src_region);
+        return;
+    }
+
+    const bool is_resolve = is_src_msaa && !is_dst_msaa;
+    if (is_resolve && !HaveSameExtent(dst_region, src_region)) {
+        blit_image_helper.BlitColorMSAA(dst_framebuffer, src, dst_region, src_region);
         return;
     }
 
@@ -1295,7 +1306,6 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
     const VkImage src_image = src.ImageHandle();
     const VkImageSubresourceLayers dst_layers = MakeSubresourceLayers(&dst);
     const VkImageSubresourceLayers src_layers = MakeSubresourceLayers(&src);
-    const bool is_resolve = is_src_msaa && !is_dst_msaa;
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([filter, dst_region, src_region, dst_image, src_image, dst_layers, src_layers,
                       aspect_mask, is_resolve](vk::CommandBuffer cmdbuf) {
@@ -2335,12 +2345,21 @@ bool Image::BlitScaleHelper(bool scale_up) {
             runtime->blit_image_helper.BlitColor(&*blit_framebuffer, *blit_view,
                 dst_region, src_region, operation, BLIT_OPERATION);
         }
-    } else if (aspect_mask == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) &&
-               info.num_samples == 1) {
+    } else if (aspect_mask == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) {
         if (!blit_framebuffer)
             blit_framebuffer.emplace(*runtime, nullptr, view_ptr, extent, scale_up);
-        runtime->blit_image_helper.BlitDepthStencil(&*blit_framebuffer, *blit_view,
-            dst_region, src_region, operation, BLIT_OPERATION);
+        if (info.num_samples > 1) {
+            runtime->blit_image_helper.BlitDepthStencilMSAA(&*blit_framebuffer, *blit_view,
+                dst_region, src_region);
+        } else {
+            runtime->blit_image_helper.BlitDepthStencil(&*blit_framebuffer, *blit_view,
+                dst_region, src_region, operation, BLIT_OPERATION);
+        }
+    } else if (aspect_mask == VK_IMAGE_ASPECT_DEPTH_BIT && info.num_samples > 1) {
+        if (!blit_framebuffer)
+            blit_framebuffer.emplace(*runtime, nullptr, view_ptr, extent, scale_up);
+        runtime->blit_image_helper.BlitDepthStencilMSAA(&*blit_framebuffer, *blit_view, dst_region,
+                                                        src_region);
     } else {
         // TODO: Use helper blits where applicable
         flags &= ~ImageFlagBits::Rescaled;
@@ -2352,9 +2371,7 @@ bool Image::BlitScaleHelper(bool scale_up) {
 
 bool Image::NeedsScaleHelper() const {
     const auto& device = runtime->device;
-    const bool needs_msaa_helper = info.num_samples > 1 &&
-        (device.CantBlitMSAA() || aspect_mask == VK_IMAGE_ASPECT_COLOR_BIT);
-    if (needs_msaa_helper) {
+    if (info.num_samples > 1) {
         return true;
     }
     static constexpr auto OPTIMAL_FORMAT = FormatType::Optimal;

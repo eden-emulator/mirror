@@ -659,13 +659,6 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
         features.shader_float16_int8.shaderFloat16 = false;
     }
 
-    if (is_intel_windows) {
-        LOG_WARNING(Render_Vulkan,
-                    "Intel proprietary drivers do not support MSAA->MSAA image blits. "
-                    "MSAA scaling will use 3D helpers. MSAA resolves work normally.");
-        cant_blit_msaa = true;
-    }
-
     has_broken_compute =
         CheckBrokenCompute(properties.driver.driverID, properties.properties.driverVersion) &&
         !Settings::values.enable_compute_pipelines.GetValue();

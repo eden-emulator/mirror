@@ -710,6 +710,46 @@ void BlitImageHelper::BlitColorMSAA(const Framebuffer* dst_framebuffer,
     scheduler.InvalidateState();
 }
 
+void BlitImageHelper::BlitDepthStencilMSAA(const Framebuffer* dst_framebuffer,
+                                           ImageView& src_image_view, const Region2D& dst_region,
+                                           const Region2D& src_region) {
+    const bool blit_stencil =
+        dst_framebuffer->HasAspectStencilBit() && device.IsExtShaderStencilExportSupported();
+    const BlitMSAAPipelineKey key{
+        .renderpass = dst_framebuffer->RenderPass(),
+        .samples = dst_framebuffer->Samples(),
+    };
+    const VkPipeline pipeline = FindOrEmplaceBlitDepthStencilMSAAPipeline(key, blit_stencil);
+    const VkPipelineLayout layout =
+        blit_stencil ? *two_textures_pipeline_layout : *one_texture_pipeline_layout;
+    const VkSampler sampler = *nearest_sampler;
+    const VkImageView src_depth_view = src_image_view.DepthView();
+    const VkImageView src_stencil_view =
+        blit_stencil ? src_image_view.StencilView() : VK_NULL_HANDLE;
+
+    RecordShaderReadBarrier(scheduler, src_image_view);
+    scheduler.RequestRenderpass(dst_framebuffer);
+    scheduler.Record([this, dst_region, src_region, pipeline, layout, sampler, src_depth_view,
+                      src_stencil_view, blit_stencil](vk::CommandBuffer cmdbuf) {
+        if (blit_stencil) {
+            const VkDescriptorSet descriptor_set = two_textures_descriptor_allocator.Commit();
+            UpdateTwoTexturesDescriptorSet(device, descriptor_set, sampler, src_depth_view,
+                                           src_stencil_view);
+            cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
+                                      nullptr);
+        } else {
+            const VkDescriptorSet descriptor_set = one_texture_descriptor_allocator.Commit();
+            UpdateOneTextureDescriptorSet(device, descriptor_set, sampler, src_depth_view);
+            cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
+                                      nullptr);
+        }
+        cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        BindBlitState(cmdbuf, layout, dst_region, src_region);
+        cmdbuf.Draw(3, 1, 0, 0);
+    });
+    scheduler.InvalidateState();
+}
+
 void BlitImageHelper::ResolveDepthStencil(const Framebuffer* dst_framebuffer,
                                           ImageView& src_image_view, const Region2D& dst_region,
                                           const Region2D& src_region) {
@@ -1392,6 +1432,55 @@ VkPipeline BlitImageHelper::FindOrEmplaceBlitColorMSAAPipeline(const BlitMSAAPip
         .basePipelineIndex = 0,
     }, device.StaticPipelineCache()));
     return *blit_msaa_color_pipelines.back();
+}
+
+VkPipeline BlitImageHelper::FindOrEmplaceBlitDepthStencilMSAAPipeline(
+    const BlitMSAAPipelineKey& key, bool blit_stencil) {
+    auto& keys = blit_stencil ? blit_msaa_depth_stencil_keys : blit_msaa_depth_keys;
+    auto& pipelines = blit_stencil ? blit_msaa_depth_stencil_pipelines : blit_msaa_depth_pipelines;
+    const auto it = std::ranges::find(keys, key);
+    if (it != keys.end()) {
+        return *pipelines[std::distance(keys.begin(), it)];
+    }
+    keys.push_back(key);
+    const std::array stages =
+        MakeStages(*full_screen_vert,
+                   blit_stencil ? *blit_depth_stencil_msaa_frag : *blit_depth_msaa_frag);
+    const VkPipelineMultisampleStateCreateInfo multisample_ci{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .rasterizationSamples = key.samples,
+        .sampleShadingEnable = VK_TRUE,
+        .minSampleShading = 1.0f,
+        .pSampleMask = nullptr,
+        .alphaToCoverageEnable = VK_FALSE,
+        .alphaToOneEnable = VK_FALSE,
+    };
+    const VkPipelineInputAssemblyStateCreateInfo input_assembly_ci = GetPipelineInputAssemblyStateCreateInfo(device);
+    pipelines.push_back(device.GetLogical().CreateGraphicsPipeline({
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .stageCount = static_cast<u32>(stages.size()),
+        .pStages = stages.data(),
+        .pVertexInputState = &PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .pInputAssemblyState = &input_assembly_ci,
+        .pTessellationState = nullptr,
+        .pViewportState = &PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .pRasterizationState = &PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .pMultisampleState = &multisample_ci,
+        .pDepthStencilState = blit_stencil ? &PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO
+                                           : &PIPELINE_DEPTH_ONLY_STATE_CREATE_INFO,
+        .pColorBlendState = &PIPELINE_COLOR_BLEND_STATE_EMPTY_CREATE_INFO,
+        .pDynamicState = &PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .layout = blit_stencil ? *two_textures_pipeline_layout : *one_texture_pipeline_layout,
+        .renderPass = key.renderpass,
+        .subpass = 0,
+        .basePipelineHandle = VK_NULL_HANDLE,
+        .basePipelineIndex = 0,
+    }, device.StaticPipelineCache()));
+    return *pipelines.back();
 }
 
 VkPipeline BlitImageHelper::FindOrEmplaceResolveDepthStencilPipeline(VkRenderPass renderpass,
