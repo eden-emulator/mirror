@@ -2265,7 +2265,10 @@ bool Image::ScaleUp(bool ignore) {
         aspect_mask = ImageAspectMask(info.format);
     }
     if (NeedsScaleHelper()) {
-        return BlitScaleHelper(true);
+        if (!BlitScaleHelper(true)) {
+            current_image = &Image::original_image;
+            return false;
+        }
     } else {
         BlitScale(*scheduler, *original_image, *scaled_image, info, aspect_mask, resolution);
     }
@@ -2290,7 +2293,11 @@ bool Image::ScaleDown(bool ignore) {
         aspect_mask = ImageAspectMask(info.format);
     }
     if (NeedsScaleHelper()) {
-        return BlitScaleHelper(false);
+        if (!BlitScaleHelper(false)) {
+            current_image = &Image::scaled_image;
+            flags |= ImageFlagBits::Rescaled;
+            return false;
+        }
     } else {
         BlitScale(*scheduler, *scaled_image, *original_image, info, aspect_mask, resolution, false);
     }
@@ -2345,21 +2352,22 @@ bool Image::BlitScaleHelper(bool scale_up) {
             runtime->blit_image_helper.BlitColor(&*blit_framebuffer, *blit_view,
                 dst_region, src_region, operation, BLIT_OPERATION);
         }
-    } else if (aspect_mask == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) {
+    } else if ((aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0) {
         if (!blit_framebuffer)
             blit_framebuffer.emplace(*runtime, nullptr, view_ptr, extent, scale_up);
+        const bool has_stencil = (aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0;
+        const bool can_blit_stencil =
+            has_stencil && runtime->device.IsExtShaderStencilExportSupported();
         if (info.num_samples > 1) {
             runtime->blit_image_helper.BlitDepthStencilMSAA(&*blit_framebuffer, *blit_view,
                 dst_region, src_region);
-        } else {
+        } else if (can_blit_stencil) {
             runtime->blit_image_helper.BlitDepthStencil(&*blit_framebuffer, *blit_view,
                 dst_region, src_region, operation, BLIT_OPERATION);
+        } else {
+            runtime->blit_image_helper.BlitDepth(&*blit_framebuffer, *blit_view, dst_region,
+                                                 src_region);
         }
-    } else if (aspect_mask == VK_IMAGE_ASPECT_DEPTH_BIT && info.num_samples > 1) {
-        if (!blit_framebuffer)
-            blit_framebuffer.emplace(*runtime, nullptr, view_ptr, extent, scale_up);
-        runtime->blit_image_helper.BlitDepthStencilMSAA(&*blit_framebuffer, *blit_view, dst_region,
-                                                        src_region);
     } else {
         // TODO: Use helper blits where applicable
         flags &= ~ImageFlagBits::Rescaled;

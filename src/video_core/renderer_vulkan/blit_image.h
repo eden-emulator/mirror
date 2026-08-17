@@ -81,6 +81,9 @@ public:
     void BlitDepthStencilMSAA(const Framebuffer* dst_framebuffer, ImageView& src_image_view,
                               const Region2D& dst_region, const Region2D& src_region);
 
+    void BlitDepth(const Framebuffer* dst_framebuffer, ImageView& src_image_view,
+                   const Region2D& dst_region, const Region2D& src_region);
+
     void ResolveDepthStencil(const Framebuffer* dst_framebuffer, ImageView& src_image_view,
                              const Region2D& dst_region, const Region2D& src_region);
 
@@ -145,6 +148,7 @@ private:
     [[nodiscard]] VkPipeline FindOrEmplaceBlitColorMSAAPipeline(const BlitMSAAPipelineKey& key);
     [[nodiscard]] VkPipeline FindOrEmplaceBlitDepthStencilMSAAPipeline(
         const BlitMSAAPipelineKey& key, bool blit_stencil);
+    [[nodiscard]] VkPipeline FindOrEmplaceBlitDepthPipeline(VkRenderPass renderpass);
     [[nodiscard]] VkPipeline FindOrEmplaceResolveDepthStencilPipeline(VkRenderPass renderpass,
                                                                       bool resolve_stencil);
 
@@ -180,6 +184,7 @@ private:
     vk::ShaderModule blit_color_to_color_frag;
     vk::ShaderModule blit_color_msaa_frag;
     vk::ShaderModule blit_depth_stencil_frag;
+    vk::ShaderModule blit_depth_frag;
     vk::ShaderModule blit_depth_msaa_frag;
     vk::ShaderModule blit_depth_stencil_msaa_frag;
     vk::ShaderModule clear_color_vert;
@@ -215,6 +220,8 @@ private:
     std::vector<vk::Pipeline> msaa_copy_depth_stencil_pipelines;
     std::vector<BlitMSAAPipelineKey> blit_msaa_color_keys;
     std::vector<vk::Pipeline> blit_msaa_color_pipelines;
+    std::vector<VkRenderPass> blit_depth_keys;
+    std::vector<vk::Pipeline> blit_depth_pipelines;
     std::vector<BlitMSAAPipelineKey> blit_msaa_depth_keys;
     std::vector<vk::Pipeline> blit_msaa_depth_pipelines;
     std::vector<BlitMSAAPipelineKey> blit_msaa_depth_stencil_keys;

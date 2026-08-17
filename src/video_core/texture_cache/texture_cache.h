@@ -1476,11 +1476,11 @@ template <class P>
 bool TextureCache<P>::ScaleUp(Image& image) {
     const bool has_copy = image.HasScaled();
     const bool rescaled = image.ScaleUp();
+    if (!has_copy && image.HasScaled()) {
+        total_used_memory += GetScaledImageSizeBytes(image);
+    }
     if (!rescaled) {
         return false;
-    }
-    if (!has_copy) {
-        total_used_memory += GetScaledImageSizeBytes(image);
     }
     InvalidateScale(image);
     return true;
