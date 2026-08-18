@@ -416,11 +416,10 @@ private:
     bool ScaleDown(Image& image);
     u64 GetScaledImageSizeBytes(const ImageBase& image);
 
+    [[nodiscard]] ImageInfo ClampedSampleCount(ImageInfo info) const;
+
     void QueueAsyncDecode(Image& image, ImageId image_id);
     void TickAsyncDecode();
-    void EnforceSamplerBudget();
-    void TrimInactiveSamplers(size_t budget);
-    std::optional<size_t> QuerySamplerBudget() const;
 
     void QueueAsyncUnswizzle(Image& image, ImageId image_id);
     void TickAsyncUnswizzle();
@@ -507,7 +506,6 @@ private:
 
     u64 modification_tick = 0;
     u64 frame_tick = 0;
-    u64 last_sampler_gc_frame = (std::numeric_limits<u64>::max)();
 
     Common::ThreadWorker texture_decode_worker{1, "TextureDecoder", {},
                                                Common::ThreadPlacement::Efficiency};

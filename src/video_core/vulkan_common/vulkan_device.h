@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <optional>
 #include <set>
 #include <span>
@@ -458,6 +459,10 @@ FN_MAX_LIMIT_LIST
         return features.features.shaderStorageImageMultisample;
     }
 
+    /// Returns the sample counts an image with the given usage and aspect can be created with.
+    VkSampleCountFlags GetSupportedSampleCounts(VkImageUsageFlags usage, VkImageAspectFlags aspect,
+                                                bool is_integer) const;
+
     /// Returns true if the device warp size can potentially be bigger than guest's warp size.
     bool IsWarpSizePotentiallyBiggerThanGuest() const {
         return is_warp_potentially_bigger;
@@ -714,6 +719,17 @@ FN_MAX_LIMIT_LIST
                features.custom_border_color.customBorderColorWithoutFormat;
     }
 
+    /// Returns how many live samplers may carry a custom border color, 0 when unknown.
+    u32 GetMaxCustomBorderColorSamplers() const {
+        return properties.custom_border_color.maxCustomBorderColorSamplers;
+    }
+
+    /// Takes budget for samplers carrying a custom border color, false when exhausted.
+    bool TryReserveCustomBorderColorSamplers(size_t count) const;
+
+    /// Gives back budget taken by TryReserveCustomBorderColorSamplers.
+    void ReleaseCustomBorderColorSamplers(size_t count) const;
+
     /// Returns true if the device supports VK_EXT_color_write_enable.
     bool IsExtColorWriteEnableSupported() const {
         return extensions.color_write_enable;
@@ -925,8 +941,6 @@ FN_MAX_LIMIT_LIST
         return has_broken_parallel_compiling;
     }
 
-    std::optional<size_t> GetSamplerHeapBudget() const;
-
     /// Returns the vendor name reported from Vulkan.
     std::string_view GetVendorName() const {
         return properties.driver.driverName;
@@ -975,6 +989,22 @@ FN_MAX_LIMIT_LIST
 
     u32 GetMaxVertexInputBindings() const {
         return properties.properties.limits.maxVertexInputBindings;
+    }
+
+    u32 GetMaxVertexInputAttributeOffset() const {
+        return properties.properties.limits.maxVertexInputAttributeOffset;
+    }
+
+    u32 GetMaxVertexInputBindingStride() const {
+        return properties.properties.limits.maxVertexInputBindingStride;
+    }
+
+    u32 GetMaxVertexAttribDivisor() const {
+        const u32 limit = properties.vertex_attribute_divisor.maxVertexAttribDivisor;
+        if (!extensions.vertex_attribute_divisor || limit == 0) {
+            return 1U;
+        }
+        return limit;
     }
 
     u32 GetMaxViewports() const {
@@ -1199,6 +1229,8 @@ private:
         VkPhysicalDeviceTransformFeedbackPropertiesEXT transform_feedback{};
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};
         VkPhysicalDeviceDepthStencilResolveProperties depth_stencil_resolve{};
+        VkPhysicalDeviceCustomBorderColorPropertiesEXT custom_border_color{};
+        VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT vertex_attribute_divisor{};
 
         VkPhysicalDeviceProperties properties{};
     };
@@ -1237,7 +1269,7 @@ private:
     bool dynamic_state3_alpha_to_coverage{};
     bool dynamic_state3_alpha_to_one{};
     bool supports_conditional_barriers{};      ///< Allows barriers in conditional control flow.
-    size_t sampler_heap_budget{};              ///< Sampler budget for buggy drivers (0 = unlimited).
+    mutable std::atomic<size_t> custom_border_color_samplers_used{};
     u64 device_access_memory{};                ///< Total size of device local memory in bytes.
     u32 sets_per_pool{};                       ///< Sets per Description Pool
     NvidiaArchitecture nvidia_arch{NvidiaArchitecture::Arch_AmpereOrNewer};

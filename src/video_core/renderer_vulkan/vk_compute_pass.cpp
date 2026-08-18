@@ -964,6 +964,9 @@ bool BlockLinearUnswizzle2DPass::IsSupported(const VideoCommon::ImageInfo& info)
         VideoCore::Surface::IsPixelFormatBCn(info.format)) {
         return false;
     }
+    if (info.format >= VideoCore::Surface::PixelFormat::MaxColorFormat) {
+        return false;
+    }
     const u32 bytes_per_block = VideoCore::Surface::BytesPerBlock(info.format);
     if (bytes_per_block != 4 && bytes_per_block != 8 && bytes_per_block != 16) {
         return false;
@@ -1205,6 +1208,9 @@ bool BlockLinearUnswizzle3DBufferPass::IsSupported(const Device& device,
         return false;
     }
     if (VideoCore::Surface::IsPixelFormatBCn(info.format) && !device.IsOptimalBcnSupported()) {
+        return false;
+    }
+    if (info.format >= VideoCore::Surface::PixelFormat::MaxColorFormat) {
         return false;
     }
     const u32 bytes_per_block = VideoCore::Surface::BytesPerBlock(info.format);

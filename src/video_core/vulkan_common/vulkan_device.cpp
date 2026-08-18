@@ -628,21 +628,6 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
         }
     }
 
-    if (is_qualcomm) {
-        const size_t sampler_limit = properties.properties.limits.maxSamplerAllocationCount;
-        if (sampler_limit > 0) {
-            constexpr size_t MIN_SAMPLER_BUDGET = 1024U;
-            const size_t reserved = sampler_limit / 4U;
-            const size_t derived_budget =
-                (std::max)(MIN_SAMPLER_BUDGET, sampler_limit - reserved);
-            sampler_heap_budget = derived_budget;
-            LOG_WARNING(Render_Vulkan,
-                        "Qualcomm driver reports max {} samplers; reserving {} (25%) and "
-                        "allowing Eden to use {} (75%) to avoid heap exhaustion",
-                        sampler_limit, reserved, sampler_heap_budget);
-        }
-    }
-
     if (extensions.sampler_filter_minmax && is_amd) {
         // Disable ext_sampler_filter_minmax on AMD GCN4 and lower as it is broken.
         if (!features.shader_float16_int8.shaderFloat16) {
@@ -1240,6 +1225,16 @@ bool Device::GetSuitability(bool requires_swapchain) {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES_KHR;
         SetNext(next, properties.maintenance5);
     }
+    if (extensions.custom_border_color) {
+        properties.custom_border_color.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT;
+        SetNext(next, properties.custom_border_color);
+    }
+    if (extensions.vertex_attribute_divisor) {
+        properties.vertex_attribute_divisor.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT;
+        SetNext(next, properties.vertex_attribute_divisor);
+    }
 
     // Perform the property fetch.
     physical.GetProperties2(properties2);
@@ -1582,11 +1577,67 @@ void Device::SetupFamilies(VkSurfaceKHR surface) {
     }
 }
 
-std::optional<size_t> Device::GetSamplerHeapBudget() const {
-    if (sampler_heap_budget == 0) {
-        return std::nullopt;
+VkSampleCountFlags Device::GetSupportedSampleCounts(VkImageUsageFlags usage,
+                                                    VkImageAspectFlags aspect,
+                                                    bool is_integer) const {
+    const VkPhysicalDeviceLimits& limits = properties.properties.limits;
+    const bool has_color = (aspect & VK_IMAGE_ASPECT_COLOR_BIT) != 0;
+    const bool has_depth = (aspect & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
+    const bool has_stencil = (aspect & VK_IMAGE_ASPECT_STENCIL_BIT) != 0;
+
+    VkSampleCountFlags counts = ~VkSampleCountFlags{0};
+    if ((usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0) {
+        if (has_color) {
+            if (is_integer) {
+                counts &= limits.sampledImageIntegerSampleCounts;
+            } else {
+                counts &= limits.sampledImageColorSampleCounts;
+            }
+        }
+        if (has_depth) {
+            counts &= limits.sampledImageDepthSampleCounts;
+        }
+        if (has_stencil) {
+            counts &= limits.sampledImageStencilSampleCounts;
+        }
     }
-    return sampler_heap_budget;
+    if ((usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0) {
+        counts &= limits.framebufferColorSampleCounts;
+    }
+    if ((usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) {
+        if (has_depth) {
+            counts &= limits.framebufferDepthSampleCounts;
+        }
+        if (has_stencil) {
+            counts &= limits.framebufferStencilSampleCounts;
+        }
+    }
+    if ((usage & VK_IMAGE_USAGE_STORAGE_BIT) != 0) {
+        counts &= limits.storageImageSampleCounts;
+    }
+    return counts;
+}
+
+bool Device::TryReserveCustomBorderColorSamplers(size_t count) const {
+    const size_t limit = properties.custom_border_color.maxCustomBorderColorSamplers;
+    if (limit == 0) {
+        return true;
+    }
+    size_t used = custom_border_color_samplers_used.load(std::memory_order_relaxed);
+    while (used + count <= limit) {
+        if (custom_border_color_samplers_used.compare_exchange_weak(
+                used, used + count, std::memory_order_relaxed, std::memory_order_relaxed)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Device::ReleaseCustomBorderColorSamplers(size_t count) const {
+    if (count == 0) {
+        return;
+    }
+    custom_border_color_samplers_used.fetch_sub(count, std::memory_order_relaxed);
 }
 
 u64 Device::GetDeviceMemoryUsage() const {

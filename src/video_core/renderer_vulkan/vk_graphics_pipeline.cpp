@@ -695,23 +695,30 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
     if (!key.state.dynamic_vertex_input) {
         const size_t num_vertex_arrays = (std::min)(
             Maxwell::NumVertexArrays, static_cast<size_t>(device.GetMaxVertexInputBindings()));
+        const u32 max_stride = device.GetMaxVertexInputBindingStride();
+        const u32 max_divisor = device.GetMaxVertexAttribDivisor();
         for (size_t index = 0; index < num_vertex_arrays; ++index) {
             const bool instanced = key.state.binding_divisors[index] != 0;
             const auto rate =
                 instanced ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
             vertex_bindings.push_back({
                 .binding = static_cast<u32>(index),
-                .stride = key.state.vertex_strides[index],
+                .stride = (std::min)(u32{key.state.vertex_strides[index]}, max_stride),
                 .inputRate = rate,
             });
             if (instanced) {
                 vertex_binding_divisors.push_back({
                     .binding = static_cast<u32>(index),
-                    .divisor = key.state.binding_divisors[index],
+                    .divisor = (std::min)(key.state.binding_divisors[index], max_divisor),
                 });
             }
         }
+        const size_t max_attributes = static_cast<size_t>(device.GetMaxVertexInputAttributes());
+        const u32 max_offset = device.GetMaxVertexInputAttributeOffset();
         for (size_t index = 0; index < key.state.attributes.size(); ++index) {
+            if (vertex_attributes.size() >= max_attributes) {
+                break;
+            }
             const auto& attribute = key.state.attributes[index];
             if (!attribute.enabled || !stage_infos[0].loads.Generic(index)) {
                 continue;
@@ -720,11 +727,10 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
                 .location = static_cast<u32>(index),
                 .binding = attribute.buffer,
                 .format = MaxwellToVK::VertexFormat(device, attribute.Type(), attribute.Size()),
-                .offset = attribute.offset,
+                .offset = (std::min)(attribute.offset.Value(), max_offset),
             });
         }
     }
-    ASSERT(vertex_attributes.size() <= device.GetMaxVertexInputAttributes());
 
     VkPipelineVertexInputStateCreateInfo vertex_input_ci{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,

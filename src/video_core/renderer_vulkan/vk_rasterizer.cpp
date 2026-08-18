@@ -1907,7 +1907,9 @@ void RasterizerVulkan::UpdateVertexInput(Tegra::Engines::Maxwell3D::Regs& regs) 
     const u32 max_bindings =
         static_cast<u32>(std::min<size_t>(Maxwell::NumVertexArrays,
                                           device.GetMaxVertexInputBindings()));
-
+    const u32 max_offset = device.GetMaxVertexInputAttributeOffset();
+    const u32 max_stride = device.GetMaxVertexInputBindingStride();
+    const u32 max_divisor = device.GetMaxVertexAttribDivisor();
 
     for (u32 index = 0; index < max_attributes; ++index) {
         const Maxwell::VertexAttribute attribute{regs.vertex_attrib_format[index]};
@@ -1921,20 +1923,24 @@ void RasterizerVulkan::UpdateVertexInput(Tegra::Engines::Maxwell3D::Regs& regs) 
             .location = index,
             .binding = binding,
             .format = MaxwellToVK::VertexFormat(device, attribute.type, attribute.size),
-            .offset = attribute.offset,
+            .offset = (std::min)(attribute.offset.Value(), max_offset),
         });
     }
 
     for (u32 binding = 0; binding < max_bindings; ++binding) {
         const auto& input_binding{regs.vertex_streams[binding]};
         const bool is_instanced{regs.vertex_stream_instances.IsInstancingEnabled(binding)};
+        u32 divisor = 1;
+        if (is_instanced) {
+            divisor = (std::min)(input_binding.frequency, max_divisor);
+        }
         bindings.push_back({
             .sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
             .pNext = nullptr,
             .binding = binding,
-            .stride = input_binding.stride,
+            .stride = (std::min)(input_binding.stride.Value(), max_stride),
             .inputRate = is_instanced ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX,
-            .divisor = is_instanced ? input_binding.frequency : 1,
+            .divisor = divisor,
         });
     }
 

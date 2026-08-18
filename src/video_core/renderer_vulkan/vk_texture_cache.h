@@ -66,7 +66,7 @@ public:
 
     bool CanReportMemoryUsage() const;
 
-    std::optional<size_t> GetSamplerHeapBudget() const;
+    bool IsSampleCountSupported(const VideoCommon::ImageInfo& info) const;
 
     void BlitImage(Framebuffer* dst_framebuffer, ImageView& dst, ImageView& src,
                    const Region2D& dst_region, const Region2D& src_region,
@@ -472,6 +472,26 @@ private:
 
 class ImageAlloc : public VideoCommon::ImageAllocBase {};
 
+class CustomBorderColorBudget {
+public:
+    CustomBorderColorBudget() = default;
+    ~CustomBorderColorBudget();
+
+    CustomBorderColorBudget(const CustomBorderColorBudget&) = delete;
+    CustomBorderColorBudget& operator=(const CustomBorderColorBudget&) = delete;
+
+    CustomBorderColorBudget(CustomBorderColorBudget&& rhs) noexcept;
+    CustomBorderColorBudget& operator=(CustomBorderColorBudget&& rhs) noexcept;
+
+    bool TryAcquire(const Device& device, size_t count);
+
+private:
+    void Release() noexcept;
+
+    const Device* device_ptr = nullptr;
+    size_t held = 0;
+};
+
 class Sampler {
 public:
     explicit Sampler(TextureCacheRuntime&, const Tegra::Texture::TSCEntry&);
@@ -540,6 +560,8 @@ private:
         bool srgb;
         vk::Sampler sampler;
     };
+
+    CustomBorderColorBudget custom_border_color_budget;
 
     vk::Sampler sampler;
     vk::Sampler sampler_default_anisotropy;
