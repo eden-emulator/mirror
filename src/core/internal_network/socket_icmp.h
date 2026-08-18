@@ -3,15 +3,29 @@
 
 #pragma once
 
+#include <array>
 #include <span>
+#include <utility>
+#include <sys/types.h>
+#include <mutex>
+#include <boost/container/static_vector.hpp>
 #include "core/internal_network/socket_types.h"
 #include "core/internal_network/sockets.h"
 
 namespace Network {
 
+struct PingProcessData {
+    IPv4Address ip;
+    u16 portno;
+    pid_t ping_pid;
+    pid_t ping_status;
+    std::array<u8, 4> seq_ident;
+    u8 family;
+};
+
 class IcmpSocket : public Network::SocketBase {
 public:
-    explicit IcmpSocket() noexcept;
+    explicit IcmpSocket() noexcept = default;
     ~IcmpSocket() override;
     Errno Initialize(Domain domain, Type type, Protocol socket_protocol) override;
     Errno Close() override;
@@ -32,8 +46,11 @@ public:
     void HandleProxyPacket(const ProxyPacket& packet) override;
     Errno SetNonBlock(bool enable) override;
 
-    std::vector<u32> seq_ident;
+    boost::container::static_vector<PingProcessData, 128> pings;
+    std::optional<SockAddrIn> connected_addr;
+    std::mutex pings_mutex;
     Network::Timeval rcv_timeo;
+    bool blocking = true;
 };
 
 } // namespace Network
