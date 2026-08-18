@@ -35,8 +35,8 @@ namespace {
     switch (type) {
     case Network::Type::STREAM:
     case Network::Type::SEQPACKET:
-    case Network::Type::RAW:
         return true;
+    case Network::Type::RAW:
     case Network::Type::DGRAM:
     case Network::Type::RDM:
     case Network::Type::Unspecified:
@@ -562,6 +562,7 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     if ((protocol != Network::Protocol::ICMP && protocol != Network::Protocol::ICMPV6)
     && (room_member && room_member->IsConnected())) {
         descriptor.socket = std::make_shared<Network::ProxySocket>();
+        descriptor.socket->fd = fd;
     } else {
         descriptor.socket = std::make_shared<Network::Socket>();
     }
@@ -573,9 +574,9 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     && (protocol == Network::Protocol::ICMP || protocol == Network::Protocol::ICMPV6)) {
         LOG_WARNING(Network, "Using ICMP emulated socket");
         descriptor.socket = std::make_shared<Network::IcmpSocket>();
+        descriptor.socket->fd = fd;
     }
 #endif
-
     descriptor.is_connection_based = IsConnectionBased(type);
 #ifdef _WIN32
     if (descriptor.is_connection_based && descriptor.socket->fd == INVALID_SOCKET) {
