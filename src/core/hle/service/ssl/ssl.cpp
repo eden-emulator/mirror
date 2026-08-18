@@ -314,14 +314,14 @@ public:
     std::shared_ptr<Network::SocketBase> socket;
 };
 
+namespace {
+
 Result CreateSSLConnectionBackend(std::unique_ptr<SSLConnectionBackend>* out_backend) {
     auto conn = std::make_unique<SSLConnectionBackend>();
     R_TRY(conn->Init());
     *out_backend = std::move(conn);
     return ResultSuccess;
 }
-
-namespace {
 
 Result CheckOpenSSLErrors() {
     unsigned long rc;
