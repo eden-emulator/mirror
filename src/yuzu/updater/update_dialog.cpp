@@ -161,7 +161,7 @@ void UpdateDialog::Download() {
                                               QString::number(response.status)));
         return;
     }
-    if (!response.headers.contains("content-type")) {
+    if (response.headers.find("content-type") == response.headers.end()) {
         LOG_ERROR(Frontend, "GET to {}{} returned no content", m_asset.url, m_asset.path);
         return;
     }

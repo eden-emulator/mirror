@@ -241,7 +241,7 @@ std::optional<std::string> MakeRequest(const std::string& url, const std::string
                       response.status);
             return {};
         }
-        if (!response.headers.contains("content-type")) {
+        if (response.headers.find("content-type") == response.headers.end()) {
             LOG_ERROR(Common, "GET to {}{} returned no content", url, path);
             return {};
         }
