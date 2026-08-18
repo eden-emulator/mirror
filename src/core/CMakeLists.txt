@@ -1267,23 +1267,6 @@ if (ARCHITECTURE_x86_64 OR ARCHITECTURE_arm64 OR ARCHITECTURE_riscv64 OR ARCHITE
     target_link_libraries(core PRIVATE dynarmic::dynarmic)
 endif()
 
-target_sources(core PRIVATE hle/service/ssl/ssl_backend_openssl.cpp)
-
 target_link_libraries(core PRIVATE OpenSSL::SSL OpenSSL::Crypto)
-
-# TODO
-
-# elseif (APPLE)
-#     target_sources(core PRIVATE
-#         hle/service/ssl/ssl_backend_securetransport.cpp)
-#     target_link_libraries(core PRIVATE "-framework Security")
-# elseif (WIN32)
-#     target_sources(core PRIVATE
-#         hle/service/ssl/ssl_backend_schannel.cpp)
-#     target_link_libraries(core PRIVATE crypt32 secur32)
-# else()
-#     target_sources(core PRIVATE
-#         hle/service/ssl/ssl_backend_none.cpp)
-# endif()
 
 create_target_directory_groups(core)

@@ -4,6 +4,18 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <mutex>
+
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+#include <openssl/x509.h>
+#ifdef YUZU_BUNDLED_OPENSSL
+#include <openssl/cert.h>
+#endif
+
+#include "common/fs/file.h"
+#include "common/hex_util.h"
 #include "common/string_util.h"
 
 #include "core/core.h"
@@ -21,6 +33,377 @@
 #include "core/internal_network/sockets.h"
 
 namespace Service::SSL {
+
+namespace {
+
+std::once_flag one_time_init_flag;
+bool one_time_init_success = false;
+SSL_CTX* ssl_ctx = nullptr;
+BIO_METHOD* bio_meth = nullptr;
+Common::FS::IOFile key_log_file; // only open if SSLKEYLOGFILE set in environment
+
+Result CheckOpenSSLErrors();
+void OneTimeInit();
+void OneTimeInitLogFile();
+bool OneTimeInitBIO();
+
+#ifdef YUZU_BUNDLED_OPENSSL
+// This is ported from httplib
+struct scope_exit {
+  explicit scope_exit(std::function<void(void)> &&f)
+      : exit_function(std::move(f)), execute_on_destruction{true} {}
+
+  scope_exit(scope_exit &&rhs) noexcept
+      : exit_function(std::move(rhs.exit_function)),
+        execute_on_destruction{rhs.execute_on_destruction} {
+    rhs.release();
+  }
+
+  ~scope_exit() {
+    if (execute_on_destruction) { this->exit_function(); }
+  }
+
+  void release() { this->execute_on_destruction = false; }
+
+private:
+  scope_exit(const scope_exit &) = delete;
+  void operator=(const scope_exit &) = delete;
+  scope_exit &operator=(scope_exit &&) = delete;
+
+  std::function<void(void)> exit_function;
+  bool execute_on_destruction;
+};
+
+inline X509_STORE *CreateCaCertStore(const char *ca_cert,
+                                                    std::size_t size) {
+    auto mem = BIO_new_mem_buf(ca_cert, static_cast<int>(size));
+    auto se = scope_exit([&] { BIO_free_all(mem); });
+    if (!mem) { return nullptr; }
+
+    auto inf = PEM_X509_INFO_read_bio(mem, nullptr, nullptr, nullptr);
+    if (!inf) { return nullptr; }
+
+    auto cts = X509_STORE_new();
+    if (cts) {
+        for (auto i = 0; i < static_cast<int>(sk_X509_INFO_num(inf)); i++) {
+            auto itmp = sk_X509_INFO_value(inf, i);
+            if (!itmp) { continue; }
+
+            if (itmp->x509) { X509_STORE_add_cert(cts, itmp->x509); }
+            if (itmp->crl) { X509_STORE_add_crl(cts, itmp->crl); }
+        }
+    }
+
+    sk_X509_INFO_pop_free(inf, X509_INFO_free);
+    return cts;
+}
+
+inline void SetCaCertStore(SSL_CTX *ctx, X509_STORE *ca_cert_store) {
+    if (ca_cert_store) {
+        if (ctx) {
+            if (SSL_CTX_get_cert_store(ctx) != ca_cert_store) {
+                // Free memory allocated for old cert and use new store `ca_cert_store`
+                SSL_CTX_set_cert_store(ctx, ca_cert_store);
+            }
+        } else {
+            X509_STORE_free(ca_cert_store);
+        }
+    }
+}
+
+inline void LoadCaCertStore(SSL_CTX* ctx, const char* ca_cert, std::size_t size)
+{
+    SetCaCertStore(ctx, CreateCaCertStore(ca_cert, size));
+}
+#endif
+
+} // namespace
+
+class SSLConnectionBackend final {
+public:
+    Result Init() {
+        // on bundled OpenSSL, load ca cert store
+#ifdef YUZU_BUNDLED_OPENSSL
+        LoadCaCertStore(ssl_ctx, kCert, sizeof(kCert));
+#endif
+        std::call_once(one_time_init_flag, OneTimeInit);
+
+        if (!one_time_init_success) {
+            LOG_ERROR(Service_SSL, "Can't create SSL connection because OpenSSL one-time initialization failed");
+            return ResultInternalError;
+        }
+
+        ssl = SSL_new(ssl_ctx);
+        if (!ssl) {
+            LOG_ERROR(Service_SSL, "SSL_new failed");
+            return CheckOpenSSLErrors();
+        }
+        SSL_set_connect_state(ssl);
+        bio = BIO_new(bio_meth);
+        if (!bio) {
+            LOG_ERROR(Service_SSL, "BIO_new failed");
+            return CheckOpenSSLErrors();
+        }
+        BIO_set_data(bio, this);
+        BIO_set_init(bio, 1);
+        SSL_set_bio(ssl, bio, bio);
+        return ResultSuccess;
+    }
+
+    Result SetHostName(const std::string& hostname) {
+        if (!skip_cert_verification) {
+            if (!SSL_set1_host(ssl, hostname.c_str())) {
+                LOG_ERROR(Service_SSL, "SSL_set1_host({}) failed", hostname);
+                return CheckOpenSSLErrors();
+            }
+        }
+        if (!SSL_set_tlsext_host_name(ssl, hostname.c_str())) { // hostname for SNI
+            LOG_ERROR(Service_SSL, "SSL_set_tlsext_host_name({}) failed", hostname);
+            return CheckOpenSSLErrors();
+        }
+        return ResultSuccess;
+    }
+
+    void SetVerifyOption(u32 option) {
+        skip_cert_verification = (option == 0);
+        LOG_WARNING(Service_SSL, "option={} skip_verification={}", option,
+                    skip_cert_verification);
+        if (skip_cert_verification) {
+            SSL_set_verify(ssl, SSL_VERIFY_NONE, nullptr);
+            SSL_set1_host(ssl, nullptr);
+            SSL_set_hostflags(ssl, 0);
+        } else {
+            SSL_set_verify(ssl, SSL_VERIFY_PEER, nullptr);
+        }
+    }
+
+    Result DoHandshake() {
+        SSL_set_verify_result(ssl, X509_V_OK);
+        const int ret = SSL_do_handshake(ssl);
+
+        if (!skip_cert_verification) {
+            const long verify_result = SSL_get_verify_result(ssl);
+            if (verify_result != X509_V_OK) {
+                LOG_ERROR(Service_SSL, "SSL cert verification failed because: {}",
+                          X509_verify_cert_error_string(verify_result));
+                return CheckOpenSSLErrors();
+            }
+        }
+
+        if (ret <= 0) {
+            const int ssl_err = SSL_get_error(ssl, ret);
+            if (ssl_err == SSL_ERROR_ZERO_RETURN ||
+                (ssl_err == SSL_ERROR_SYSCALL && got_read_eof)) {
+                LOG_ERROR(Service_SSL, "SSL handshake failed because server hung up");
+                return ResultInternalError;
+            }
+        }
+        return HandleReturn("SSL_do_handshake", 0, ret);
+    }
+
+    Result HandleReturn(const char* what, size_t* actual, int ret) {
+        const int ssl_err = SSL_get_error(ssl, ret);
+        CheckOpenSSLErrors();
+        switch (ssl_err) {
+        case SSL_ERROR_NONE:
+            return ResultSuccess;
+        case SSL_ERROR_ZERO_RETURN:
+            LOG_DEBUG(Service_SSL, "{} => SSL_ERROR_ZERO_RETURN", what);
+            // DoHandshake special-cases this, but for Read and Write:
+            *actual = 0;
+            return ResultSuccess;
+        case SSL_ERROR_WANT_READ:
+            LOG_DEBUG(Service_SSL, "{} => SSL_ERROR_WANT_READ", what);
+            return ResultWouldBlock;
+        case SSL_ERROR_WANT_WRITE:
+            LOG_DEBUG(Service_SSL, "{} => SSL_ERROR_WANT_WRITE", what);
+            return ResultWouldBlock;
+        default:
+            if (ssl_err == SSL_ERROR_SYSCALL && got_read_eof) {
+                LOG_DEBUG(Service_SSL, "{} => SSL_ERROR_SYSCALL because server hung up", what);
+                *actual = 0;
+                return ResultSuccess;
+            }
+            LOG_ERROR(Service_SSL, "{} => other SSL_get_error return value {}", what, ssl_err);
+            return ResultInternalError;
+        }
+    }
+
+    ~SSLConnectionBackend() {
+        // this is null-tolerant:
+        SSL_free(ssl);
+    }
+
+    static void KeyLogCallback(const ::SSL* ssl, const char* line) {
+        std::string str(line);
+        str.push_back('\n');
+        // Do this in a single WriteString for atomicity if multiple instances
+        // are running on different threads (though that can't currently
+        // happen).
+        if (key_log_file.WriteString(str) != str.size() || !key_log_file.Flush()) {
+            LOG_CRITICAL(Service_SSL, "Failed to write to SSLKEYLOGFILE");
+        }
+        LOG_DEBUG(Service_SSL, "Wrote to SSLKEYLOGFILE: {}", line);
+    }
+
+    static int WriteCallback(BIO* bio, const char* buf, size_t len, size_t* actual_p) {
+        auto self = static_cast<SSLConnectionBackend*>(BIO_get_data(bio));
+        ASSERT_OR_EXECUTE_MSG(
+            self->socket, { return 0; }, "OpenSSL asked to send but we have no socket");
+        BIO_clear_retry_flags(bio);
+        auto [actual, err] = self->socket->Send({reinterpret_cast<const u8*>(buf), len}, 0);
+        switch (err) {
+        case Network::Errno::SUCCESS:
+            *actual_p = actual;
+            return 1;
+        case Network::Errno::AGAIN:
+            BIO_set_flags(bio, BIO_FLAGS_WRITE | BIO_FLAGS_SHOULD_RETRY);
+            return 0;
+        default:
+            LOG_ERROR(Service_SSL, "Socket send returned Network::Errno {}", err);
+            return -1;
+        }
+    }
+
+    static int ReadCallback(BIO* bio, char* buf, size_t len, size_t* actual_p) {
+        auto self = static_cast<SSLConnectionBackend*>(BIO_get_data(bio));
+        ASSERT_OR_EXECUTE_MSG(
+            self->socket, { return 0; }, "OpenSSL asked to recv but we have no socket");
+        BIO_clear_retry_flags(bio);
+        auto [actual, err] = self->socket->Recv(0, {reinterpret_cast<u8*>(buf), len});
+        switch (err) {
+        case Network::Errno::SUCCESS:
+            *actual_p = actual;
+            if (actual == 0) {
+                self->got_read_eof = true;
+            }
+            return actual ? 1 : 0;
+        case Network::Errno::AGAIN:
+            BIO_set_flags(bio, BIO_FLAGS_READ | BIO_FLAGS_SHOULD_RETRY);
+            return 0;
+        default:
+            LOG_ERROR(Service_SSL, "Socket recv returned Network::Errno {}", err);
+            return -1;
+        }
+    }
+
+    static long CtrlCallback(BIO* bio, int cmd, long l_arg, void* p_arg) {
+        switch (cmd) {
+        case BIO_CTRL_FLUSH:
+            // Nothing to flush.
+            return 1;
+        case BIO_CTRL_PUSH:
+        case BIO_CTRL_POP:
+#ifdef BIO_CTRL_GET_KTLS_SEND
+        case BIO_CTRL_GET_KTLS_SEND:
+        case BIO_CTRL_GET_KTLS_RECV:
+#endif
+            // We don't support these operations, but don't bother logging them
+            // as they're nothing unusual.
+            return 0;
+        default:
+            LOG_DEBUG(Service_SSL, "OpenSSL BIO got ctrl({}, {}, {})", cmd, l_arg, p_arg);
+            return 0;
+        }
+    }
+
+    ::SSL* ssl = nullptr;
+    BIO* bio = nullptr;
+    bool got_read_eof = false;
+    bool skip_cert_verification = false;
+    std::shared_ptr<Network::SocketBase> socket;
+};
+
+Result CreateSSLConnectionBackend(std::unique_ptr<SSLConnectionBackend>* out_backend) {
+    auto conn = std::make_unique<SSLConnectionBackend>();
+    R_TRY(conn->Init());
+    *out_backend = std::move(conn);
+    return ResultSuccess;
+}
+
+namespace {
+
+Result CheckOpenSSLErrors() {
+    unsigned long rc;
+    const char* file;
+    int line;
+    const char* func;
+    const char* data;
+    int flags;
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+    while ((rc = ERR_get_error_all(&file, &line, &func, &data, &flags)))
+#else
+    // Can't get function names from OpenSSL on this version, so use mine:
+    func = __func__;
+    while ((rc = ERR_get_error_line_data(&file, &line, &data, &flags)))
+#endif
+    {
+        std::string msg;
+        msg.resize(1024, '\0');
+        ERR_error_string_n(rc, msg.data(), msg.size());
+        msg.resize(strlen(msg.data()), '\0');
+        if (flags & ERR_TXT_STRING) {
+            msg.append(" | ");
+            msg.append(data);
+        }
+        Common::Log::FmtLogMessage(Common::Log::Class::Service_SSL, Common::Log::Level::Error,
+                                   file, line, func, "OpenSSL: {}",
+                                   msg);
+    }
+    return ResultInternalError;
+}
+
+void OneTimeInit() {
+    ssl_ctx = SSL_CTX_new(TLS_client_method());
+    if (!ssl_ctx) {
+        LOG_ERROR(Service_SSL, "SSL_CTX_new failed");
+        CheckOpenSSLErrors();
+        return;
+    }
+
+    SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, nullptr);
+
+    if (!SSL_CTX_set_default_verify_paths(ssl_ctx)) {
+        LOG_ERROR(Service_SSL, "SSL_CTX_set_default_verify_paths failed");
+        CheckOpenSSLErrors();
+        return;
+    }
+
+    OneTimeInitLogFile();
+
+    if (!OneTimeInitBIO()) {
+        return;
+    }
+
+    one_time_init_success = true;
+}
+
+void OneTimeInitLogFile() {
+    const char* logfile = getenv("SSLKEYLOGFILE");
+    if (logfile) {
+        key_log_file.Open(logfile, Common::FS::FileAccessMode::Append, Common::FS::FileType::TextFile, Common::FS::FileShareFlag::ShareWriteOnly);
+        if (key_log_file.IsOpen()) {
+            SSL_CTX_set_keylog_callback(ssl_ctx, &SSLConnectionBackend::KeyLogCallback);
+        } else {
+            LOG_CRITICAL(Service_SSL, "SSLKEYLOGFILE was set but file could not be opened; not logging keys!");
+        }
+    }
+}
+
+bool OneTimeInitBIO() {
+    bio_meth =
+        BIO_meth_new(BIO_get_new_index() | BIO_TYPE_SOURCE_SINK, "SSLConnectionBackend");
+    if (!bio_meth ||
+        !BIO_meth_set_write_ex(bio_meth, &SSLConnectionBackend::WriteCallback) ||
+        !BIO_meth_set_read_ex(bio_meth, &SSLConnectionBackend::ReadCallback) ||
+        !BIO_meth_set_ctrl(bio_meth, &SSLConnectionBackend::CtrlCallback)) {
+        LOG_ERROR(Service_SSL, "Failed to create BIO_METHOD");
+        return false;
+    }
+    return true;
+}
+
+} // namespace
 
 // This is nn::ssl::sf::CertificateFormat
 enum class CertificateFormat : u32 {
@@ -162,20 +545,17 @@ private:
 
         auto const res_v = bsd->DuplicateSocketImpl(fd);
         if (auto *res = std::get_if<s32>(&res_v)) {
-            const s32 duplicated_fd = *res;
-            if (do_not_close_socket) {
-                *out_fd = duplicated_fd;
-            } else {
-                *out_fd = -1;
-                fd_to_close = duplicated_fd;
-            }
-            std::optional<std::shared_ptr<Network::SocketBase>> sock = bsd->GetSocket(duplicated_fd);
+            const s32 dup_fd = *res;
+            *out_fd = do_not_close_socket ? dup_fd : -1;
+            if (!do_not_close_socket)
+                fd_to_close = dup_fd;
+            auto const sock = bsd->GetSocket(dup_fd);
             if (!sock.has_value()) {
-                LOG_ERROR(Service_SSL, "invalid socket fd {} after duplication", duplicated_fd);
+                LOG_ERROR(Service_SSL, "invalid socket fd {} after duplication", dup_fd);
                 return ResultInvalidSocket;
             }
             socket = std::move(*sock);
-            backend->SetSocket(socket);
+            backend->socket = std::move(socket);
             return ResultSuccess;
         }
         LOG_ERROR(Service_SSL, "Failed to duplicate socket with fd {}", fd);
@@ -189,11 +569,11 @@ private:
     }
 
     Result SetVerifyOptionImpl(u32 option) {
-        ASSERT(!did_handshake);
         LOG_DEBUG(Service_SSL, "called. option={} (forcing 0)", option);
+        ASSERT(!did_handshake);
         verify_option = 0;
         backend->SetVerifyOption(0);
-        return ResultSuccess;
+        R_SUCCEED();
     }
 
     Result SetIoModeImpl(u32 input_mode) {
@@ -206,13 +586,13 @@ private:
         if (error != Network::Errno::SUCCESS) {
             LOG_ERROR(Service_SSL, "Failed to set native socket non-block flag to {}", non_block);
         }
-        return ResultSuccess;
+        R_SUCCEED();
     }
 
     Result SetSessionCacheModeImpl(u32 mode) {
         ASSERT(!did_handshake);
         LOG_WARNING(Service_SSL, "(STUBBED) called. value={}", mode);
-        return ResultSuccess;
+        R_SUCCEED();
     }
 
     Result DoHandshakeImpl() {
@@ -234,19 +614,17 @@ private:
         };
         if (!get_server_cert_chain) {
             // Just return the first one, unencoded.
-            ASSERT_OR_EXECUTE_MSG(
-                !certs.empty(), { return {}; }, "Should be at least one server cert");
+            ASSERT_OR_EXECUTE_MSG(!certs.empty(), { return {}; }, "Should be at least one server cert");
             return certs[0];
         }
         std::vector<u8> ret;
-        Header header{0x4E4D684374726543, static_cast<u32>(certs.size()), 0};
+        Header header{0x4E4D684374726543, u32(certs.size()), 0};
         ret.insert(ret.end(), reinterpret_cast<u8*>(&header), reinterpret_cast<u8*>(&header + 1));
         size_t data_offset = sizeof(Header) + certs.size() * sizeof(EntryHeader);
         for (auto& cert : certs) {
-            EntryHeader entry_header{static_cast<u32>(cert.size()), static_cast<u32>(data_offset)};
+            EntryHeader entry_header{u32(cert.size()), u32(data_offset)};
             data_offset += cert.size();
-            ret.insert(ret.end(), reinterpret_cast<u8*>(&entry_header),
-                       reinterpret_cast<u8*>(&entry_header + 1));
+            ret.insert(ret.end(), reinterpret_cast<u8*>(&entry_header), reinterpret_cast<u8*>(&entry_header + 1));
         }
         for (auto& cert : certs) {
             ret.insert(ret.end(), cert.begin(), cert.end());
@@ -257,7 +635,8 @@ private:
     Result ReadImpl(std::vector<u8>* out_data) {
         ASSERT_OR_EXECUTE(did_handshake, { return ResultInternalError; });
         size_t actual_size{};
-        Result res = backend->Read(&actual_size, *out_data);
+        const int ret = SSL_read_ex(backend->ssl, out_data->data(), out_data->size(), &actual_size);
+        Result res = backend->HandleReturn("SSL_read_ex", &actual_size, ret);
         if (res != ResultSuccess) {
             return res;
         }
@@ -267,12 +646,13 @@ private:
 
     Result WriteImpl(size_t* out_size, std::span<const u8> data) {
         ASSERT_OR_EXECUTE(did_handshake, { return ResultInternalError; });
-        return backend->Write(out_size, data);
+        const int ret = SSL_write_ex(backend->ssl, data.data(), data.size(), out_size);
+        return backend->HandleReturn("SSL_write_ex", out_size, ret);
     }
 
     Result PendingImpl(s32* out_pending) {
         LOG_WARNING(Service_SSL, "(STUBBED) called.");
-        *out_pending = 0;
+        *out_pending = SSL_pending(backend->ssl);
         return ResultSuccess;
     }
 
@@ -326,24 +706,39 @@ private:
         OutputParameters out{};
         if (res == ResultSuccess) {
             std::vector<std::vector<u8>> certs;
-            res = backend->GetServerCerts(&certs);
-            if (res == ResultSuccess) {
+            STACK_OF(X509)* chain = SSL_get_peer_cert_chain(backend->ssl);
+            if (chain) {
+                int count = sk_X509_num(chain);
+                ASSERT(count >= 0);
+                for (int i = 0; i < count; i++) {
+                    X509* x509 = sk_X509_value(chain, i);
+                    ASSERT_OR_EXECUTE(x509 != nullptr, { continue; });
+                    unsigned char* buf = nullptr;
+                    int len = i2d_X509(x509, &buf);
+                    ASSERT_OR_EXECUTE(len >= 0 && buf, { continue; });
+                    certs.emplace_back(buf, buf + len);
+                    OPENSSL_free(buf);
+                }
+
+                // succeed!
                 const std::vector<u8> certs_buf = SerializeServerCerts(certs);
                 if (ctx.CanWriteBuffer()) {
                     const size_t buffer_size = ctx.GetWriteBufferSize();
                     if (certs_buf.size() <= buffer_size) {
                         ctx.WriteBuffer(certs_buf);
                     } else {
-                        LOG_WARNING(Service_SSL, "Certificate buffer too small: {} bytes needed, {} bytes available",
-                                    certs_buf.size(), buffer_size);
+                        LOG_WARNING(Service_SSL, "Certificate buffer too small: {} bytes needed, {} bytes available", certs_buf.size(), buffer_size);
                         ctx.WriteBuffer(std::span<const u8>(certs_buf.data(), buffer_size));
                     }
                 } else {
                     LOG_DEBUG(Service_SSL, "No output buffer provided for certificates ({} bytes)", certs_buf.size());
                 }
 
-                out.certs_count = static_cast<u32>(certs.size());
-                out.certs_size = static_cast<u32>(certs_buf.size());
+                out.certs_count = u32(certs.size());
+                out.certs_size = u32(certs_buf.size());
+            } else {
+                LOG_ERROR(Service_SSL, "SSL_get_peer_cert_chain returned nullptr");
+                res = ResultInternalError;
             }
         }
         IPC::ResponseBuilder rb{ctx, 4};
