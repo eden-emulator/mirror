@@ -195,7 +195,7 @@ void BSD::SocketExempt(HLERequestContext& ctx) {
     LOG_DEBUG(Service, "called. domain={} type={} protocol={}", domain, type, protocol);
 
     auto [fd, bsd_errno] = SocketImpl(Network::Domain(domain), Network::Type(type), Network::Protocol(protocol));
-    if (bsd_errno == Network::Errno::SUCCESS) {
+    if (bsd_errno == Network::Errno::E_SUCCESS) {
         bsd_errno = ShutdownImpl(fd, 0);
     }
 
@@ -486,7 +486,7 @@ void BSD::DuplicateSocket(HLERequestContext& ctx) {
     if (is_user) {
         rb.PushRaw(OutputParameters{
             .ret = 0,
-            .bsd_errno = Network::Errno::INVAL,
+            .bsd_errno = Network::Errno::E_INVAL,
         });
         return;
     }
