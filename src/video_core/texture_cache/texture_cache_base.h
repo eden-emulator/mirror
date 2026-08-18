@@ -416,8 +416,6 @@ private:
     bool ScaleDown(Image& image);
     u64 GetScaledImageSizeBytes(const ImageBase& image);
 
-    [[nodiscard]] ImageInfo ClampedSampleCount(ImageInfo info) const;
-
     void QueueAsyncDecode(Image& image, ImageId image_id);
     void TickAsyncDecode();
 

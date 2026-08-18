@@ -1769,21 +1769,6 @@ bool TextureCacheRuntime::CanReportMemoryUsage() const {
     return device.CanReportMemoryUsage();
 }
 
-bool TextureCacheRuntime::IsSampleCountSupported(const VideoCommon::ImageInfo& info) const {
-    if (info.num_samples <= 1) {
-        return true;
-    }
-    const auto format_info =
-        MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, false, info.format);
-    const bool allow_storage = device.IsStorageImageMultisampleSupported();
-    const VkImageUsageFlags usage = ImageUsageFlags(format_info, info.format, allow_storage);
-    const VkImageAspectFlags aspect = ImageAspectMask(info.format);
-    const bool is_integer = VideoCore::Surface::IsPixelFormatInteger(info.format);
-    const VkSampleCountFlags supported =
-        device.GetSupportedSampleCounts(usage, aspect, is_integer);
-    return (supported & ConvertSampleCount(info.num_samples)) != 0;
-}
-
 void TextureCacheRuntime::TickFrame() {
     std::erase_if(pending_msaa_images, [this](const auto& pending) {
         return scheduler.IsFree(pending.first);

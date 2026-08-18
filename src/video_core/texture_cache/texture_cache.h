@@ -1162,20 +1162,8 @@ void TextureCache<P>::UploadImageContents(Image& image, StagingBuffer& staging) 
 }
 
 template <class P>
-ImageInfo TextureCache<P>::ClampedSampleCount(ImageInfo info) const {
-    if (info.num_samples > 1) {
-        if constexpr (requires { runtime.IsSampleCountSupported(info); }) {
-            if (!runtime.IsSampleCountSupported(info)) {
-                info.num_samples = 1;
-            }
-        }
-    }
-    return info;
-}
-
-template <class P>
 ImageViewId TextureCache<P>::CreateImageView(const TICEntry& config) {
-    const ImageInfo info = ClampedSampleCount(ImageInfo(config));
+    const ImageInfo info(config);
     if (info.type == ImageType::Buffer) {
         const ImageViewInfo view_info(config, 0);
         return slot_image_views.insert(runtime, info, view_info, config.Address());
@@ -1907,8 +1895,7 @@ ImageViewId TextureCache<P>::FindColorBuffer(size_t index) {
     if (rt.format == Tegra::RenderTargetFormat::NONE) {
         return ImageViewId{};
     }
-    const ImageInfo info =
-        ClampedSampleCount(ImageInfo(regs.rt[index], regs.anti_alias_samples_mode));
+    const ImageInfo info(regs.rt[index], regs.anti_alias_samples_mode);
     return FindRenderTargetView(info, gpu_addr);
 }
 
@@ -1922,8 +1909,7 @@ ImageViewId TextureCache<P>::FindDepthBuffer() {
     if (gpu_addr == 0) {
         return ImageViewId{};
     }
-    const ImageInfo info =
-        ClampedSampleCount(ImageInfo(regs.zeta, regs.zeta_size, regs.anti_alias_samples_mode));
+    const ImageInfo info(regs.zeta, regs.zeta_size, regs.anti_alias_samples_mode);
     return FindRenderTargetView(info, gpu_addr);
 }
 
