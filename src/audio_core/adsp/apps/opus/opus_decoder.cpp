@@ -78,10 +78,10 @@ void OpusDecoder::Init(std::stop_token stop_token) {
         return;
     }
     // Main OpusDecoder thread, responsible for processing the incoming Opus packets.
-    main_thread = std::jthread([this](std::stop_token stop_token) {
+    main_thread = std::jthread([this](std::stop_token thread_stop_token) {
         Common::SetCurrentThreadName("DSP_OpusDecoder_Main");
-        while (!stop_token.stop_requested()) {
-            auto msg = Receive(Direction::DSP, stop_token);
+        while (!thread_stop_token.stop_requested()) {
+            auto msg = Receive(Direction::DSP, thread_stop_token);
             switch (msg) {
             case Shutdown:
                 Send(Direction::Host, Message::ShutdownOK);
