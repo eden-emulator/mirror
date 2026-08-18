@@ -482,7 +482,7 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     }
 
     {
-        auto emulated_controller = system.HIDCore().GetEmulatedController(Core::HID::NpadIdType::Player1);
+        auto emulated_controller = state->system.HIDCore().GetEmulatedController(Core::HID::NpadIdType::Player1);
         auto const input_devices = input_subsystem.GetInputDevices();
         for (const auto& e : input_devices) {
             LOG_INFO(Input, "FOUND=Device -> {} {}", e.Get("display", "Unknown"), e.Serialize());
