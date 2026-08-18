@@ -72,25 +72,6 @@ Shader::OutputTopology MaxwellToOutputTopology(Maxwell::PrimitiveTopology topolo
     }
 }
 
-Shader::InputTopology MaxwellToInputTopology(Maxwell::PrimitiveTopology topology) {
-    switch (topology) {
-    case Maxwell::PrimitiveTopology::Points:
-        return Shader::InputTopology::Points;
-    case Maxwell::PrimitiveTopology::Lines:
-    case Maxwell::PrimitiveTopology::LineLoop:
-    case Maxwell::PrimitiveTopology::LineStrip:
-        return Shader::InputTopology::Lines;
-    case Maxwell::PrimitiveTopology::LinesAdjacency:
-    case Maxwell::PrimitiveTopology::LineStripAdjacency:
-        return Shader::InputTopology::LinesAdjacency;
-    case Maxwell::PrimitiveTopology::TrianglesAdjacency:
-    case Maxwell::PrimitiveTopology::TriangleStripAdjacency:
-        return Shader::InputTopology::TrianglesAdjacency;
-    default:
-        return Shader::InputTopology::Triangles;
-    }
-}
-
 Shader::RuntimeInfo MakeRuntimeInfo(const GraphicsPipelineKey& key,
                                     const Shader::IR::Program& program,
                                     const Shader::IR::Program* previous_program,
@@ -146,7 +127,33 @@ Shader::RuntimeInfo MakeRuntimeInfo(const GraphicsPipelineKey& key,
     default:
         break;
     }
-    info.input_topology = MaxwellToInputTopology(key.gs_input_topology);
+    switch (key.gs_input_topology) {
+    case Maxwell::PrimitiveTopology::Points:
+        info.input_topology = Shader::InputTopology::Points;
+        break;
+    case Maxwell::PrimitiveTopology::Lines:
+    case Maxwell::PrimitiveTopology::LineLoop:
+    case Maxwell::PrimitiveTopology::LineStrip:
+        info.input_topology = Shader::InputTopology::Lines;
+        break;
+    case Maxwell::PrimitiveTopology::Triangles:
+    case Maxwell::PrimitiveTopology::TriangleStrip:
+    case Maxwell::PrimitiveTopology::TriangleFan:
+    case Maxwell::PrimitiveTopology::Quads:
+    case Maxwell::PrimitiveTopology::QuadStrip:
+    case Maxwell::PrimitiveTopology::Polygon:
+    case Maxwell::PrimitiveTopology::Patches:
+        info.input_topology = Shader::InputTopology::Triangles;
+        break;
+    case Maxwell::PrimitiveTopology::LinesAdjacency:
+    case Maxwell::PrimitiveTopology::LineStripAdjacency:
+        info.input_topology = Shader::InputTopology::LinesAdjacency;
+        break;
+    case Maxwell::PrimitiveTopology::TrianglesAdjacency:
+    case Maxwell::PrimitiveTopology::TriangleStripAdjacency:
+        info.input_topology = Shader::InputTopology::TrianglesAdjacency;
+        break;
+    }
     info.glasm_use_storage_buffers = glasm_use_storage_buffers;
     return info;
 }
@@ -476,10 +483,8 @@ std::unique_ptr<GraphicsPipeline> ShaderCache::CreateGraphicsPipeline(
             && index == u32(Maxwell::ShaderType::Geometry);
         if (key.unique_hashes[index] == 0 && is_emulated_stage) {
             auto topology = MaxwellToOutputTopology(key.gs_input_topology);
-            programs[index] =
-                GenerateGeometryPassthrough(pools.inst, pools.block, host_info,
-                                            *layer_source_program, topology,
-                                            MaxwellToInputTopology(key.gs_input_topology));
+            programs[index] = GenerateGeometryPassthrough(pools.inst, pools.block, host_info,
+                                                          *layer_source_program, topology);
             continue;
         }
         if (key.unique_hashes[index] == 0) {
@@ -497,15 +502,13 @@ std::unique_ptr<GraphicsPipeline> ShaderCache::CreateGraphicsPipeline(
 
         if (!uses_vertex_a || index != 1) {
             // Normal path
-            programs[index] = TranslateProgram(pools.inst, pools.block, env, cfg, host_info,
-                                              MaxwellToInputTopology(key.gs_input_topology));
+            programs[index] = TranslateProgram(pools.inst, pools.block, env, cfg, host_info);
 
             total_storage_buffers += Shader::NumDescriptors(programs[index].info.storage_buffers_descriptors);
         } else {
             // VertexB path when VertexA is present.
             auto& program_va{programs[0]};
-            auto program_vb{TranslateProgram(pools.inst, pools.block, env, cfg, host_info,
-                                             MaxwellToInputTopology(key.gs_input_topology))};
+            auto program_vb{TranslateProgram(pools.inst, pools.block, env, cfg, host_info)};
             total_storage_buffers += Shader::NumDescriptors(program_vb.info.storage_buffers_descriptors);
             programs[index] = MergeDualVertexPrograms(program_va, program_vb, env);
         }
@@ -594,8 +597,7 @@ std::unique_ptr<ComputePipeline> ShaderCache::CreateComputePipeline(
         env.Dump(hash, key.unique_hash);
     }
 
-    auto program{TranslateProgram(pools.inst, pools.block, env, cfg, host_info,
-                                  Shader::InputTopology::Points)};
+    auto program{TranslateProgram(pools.inst, pools.block, env, cfg, host_info)};
     const u32 num_storage_buffers{Shader::NumDescriptors(program.info.storage_buffers_descriptors)};
     Shader::RuntimeInfo info;
     info.glasm_use_storage_buffers = num_storage_buffers <= device.GetMaxGLASMStorageBufferBlocks();
