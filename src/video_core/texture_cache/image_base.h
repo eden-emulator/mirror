@@ -64,6 +64,8 @@ struct ImageBase {
 
     void InsertView(const ImageViewInfo& view_info, ImageViewId image_view_id);
 
+    [[nodiscard]] bool IsSafeGpuCopy() const noexcept;
+
     [[nodiscard]] bool IsSafeDownload() const noexcept;
 
     [[nodiscard]] bool Overlaps(VAddr overlap_cpu_addr, size_t overlap_size) const noexcept {

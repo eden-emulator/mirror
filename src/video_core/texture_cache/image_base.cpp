@@ -121,7 +121,7 @@ void ImageBase::InsertView(const ImageViewInfo& view_info, ImageViewId image_vie
     image_view_ids.push_back(image_view_id);
 }
 
-bool ImageBase::IsSafeDownload() const noexcept {
+bool ImageBase::IsSafeGpuCopy() const noexcept {
     // Skip images that were not modified from the GPU
     if (False(flags & ImageFlagBits::GpuModified)) {
         return false;
@@ -129,6 +129,13 @@ bool ImageBase::IsSafeDownload() const noexcept {
     // Skip images that .are. modified from the CPU
     // We don't want to write sensitive data from the guest
     if (True(flags & ImageFlagBits::CpuModified)) {
+        return false;
+    }
+    return true;
+}
+
+bool ImageBase::IsSafeDownload() const noexcept {
+    if (!IsSafeGpuCopy()) {
         return false;
     }
     if (info.num_samples > 1) {

@@ -1691,7 +1691,7 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
     for (const auto& copy_object : join_copies_to_do) {
         Image& overlap = slot_images[copy_object.id];
         if (copy_object.is_alias) {
-            if (!overlap.IsSafeDownload()) {
+            if (!overlap.IsSafeGpuCopy()) {
                 continue;
             }
             const auto alias_pointer = join_alias_indices.find(copy_object.id);
