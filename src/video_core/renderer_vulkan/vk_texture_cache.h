@@ -196,7 +196,8 @@ public:
     }
 
     [[nodiscard]] VkRenderPass RenderPassVariant(u32 color_clear_mask, bool depth_stencil_clear,
-                                                 u32 color_discard_mask) const;
+                                                 u32 color_discard_mask,
+                                                 bool depth_stencil_discard) const;
 
     [[nodiscard]] VkExtent2D RenderArea() const noexcept {
         return render_area;
@@ -250,6 +251,10 @@ public:
         return discard_msaa_color;
     }
 
+    [[nodiscard]] bool DiscardsMsaaDepthStencil() const noexcept {
+        return discard_msaa_depth_stencil;
+    }
+
 private:
     static constexpr size_t NUM_MEMOIZED_RENDER_PASS_VARIANTS = 8;
 
@@ -270,6 +275,7 @@ private:
     RenderPassKey render_pass_key{};
     RenderPassCache* render_pass_cache{nullptr};
     bool discard_msaa_color{};
+    bool discard_msaa_depth_stencil{};
     mutable std::array<u32, NUM_MEMOIZED_RENDER_PASS_VARIANTS> variant_keys{};
     mutable std::array<VkRenderPass, NUM_MEMOIZED_RENDER_PASS_VARIANTS> variant_render_passes{};
     mutable u32 num_memoized_variants{};

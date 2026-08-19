@@ -55,6 +55,7 @@ using VideoCore::Surface::SurfaceType;
 namespace {
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
+constexpr bool ENABLE_MSAA_DEPTH_STENCIL_DISCARD = true;
 
 [[nodiscard]] constexpr bool NeedsExplicitBorderColorFormat(VkFormat format) {
     switch (format) {
@@ -3000,6 +3001,8 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
 
     discard_msaa_color =
         ENABLE_MSAA_RESOLVE_CONSUME && ENABLE_MSAA_COLOR_DISCARD && do_resolve_color;
+    discard_msaa_depth_stencil = ENABLE_MSAA_RESOLVE_CONSUME &&
+                                 ENABLE_MSAA_DEPTH_STENCIL_DISCARD && do_resolve_depth_stencil;
 
     renderpass = runtime.render_pass_cache.Get(renderpass_key);
     render_pass_key = renderpass_key;
@@ -3089,13 +3092,16 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
 }
 
 VkRenderPass Framebuffer::RenderPassVariant(u32 color_clear_mask, bool depth_stencil_clear,
-                                            u32 color_discard_mask) const {
-    if (color_clear_mask == 0 && !depth_stencil_clear && color_discard_mask == 0) {
+                                            u32 color_discard_mask,
+                                            bool depth_stencil_discard) const {
+    if (color_clear_mask == 0 && !depth_stencil_clear && color_discard_mask == 0 &&
+        !depth_stencil_discard) {
         return renderpass;
     }
     static_assert(NUM_RT <= 8);
     const u32 variant_key = color_clear_mask | (color_discard_mask << 8) |
-                            (static_cast<u32>(depth_stencil_clear) << 16);
+                            (static_cast<u32>(depth_stencil_clear) << 16) |
+                            (static_cast<u32>(depth_stencil_discard) << 17);
     for (u32 index = 0; index < num_memoized_variants; ++index) {
         if (variant_keys[index] == variant_key) {
             return variant_render_passes[index];
@@ -3105,6 +3111,7 @@ VkRenderPass Framebuffer::RenderPassVariant(u32 color_clear_mask, bool depth_ste
     key.color_clear_mask = color_clear_mask;
     key.depth_stencil_clear = depth_stencil_clear;
     key.color_discard_mask = color_discard_mask;
+    key.depth_stencil_discard = depth_stencil_discard;
     const VkRenderPass variant = render_pass_cache->Get(key);
     if (num_memoized_variants < variant_keys.size()) {
         variant_keys[num_memoized_variants] = variant_key;

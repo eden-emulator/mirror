@@ -175,8 +175,11 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         const VkAttachmentLoadOp depth_load_op = key.depth_stencil_clear
                                                      ? VK_ATTACHMENT_LOAD_OP_CLEAR
                                                      : VK_ATTACHMENT_LOAD_OP_LOAD;
+        const VkAttachmentStoreOp depth_store_op = key.depth_stencil_discard
+                                                       ? VK_ATTACHMENT_STORE_OP_DONT_CARE
+                                                       : VK_ATTACHMENT_STORE_OP_STORE;
         descriptions.push_back(AttachmentDescription(*device, key.depth_format, key.samples,
-                                                     depth_load_op, VK_ATTACHMENT_STORE_OP_STORE));
+                                                     depth_load_op, depth_store_op));
     }
     std::array<VkAttachmentReference, 8> resolve_references{};
     const bool do_resolve_color =
