@@ -1127,6 +1127,7 @@ std::pair<Socket::AcceptResult, Errno> Socket::Accept() {
 
 Errno Socket::Connect(Network::SockAddrIn addr_in) {
     auto const host_addr_in = TranslateFromSockAddrIn(addr_in);
+    LOG_INFO(Network, "len={}, family={} - {}.{}.{}.{}:{}", addr_in.len, addr_in.family, addr_in.ip[0], addr_in.ip[1], addr_in.ip[2], addr_in.ip[3], addr_in.portno);
     if (EnableNonBlock(fd, false)) {
         if (connect(fd, reinterpret_cast<sockaddr const*>(&host_addr_in), sizeof(host_addr_in)) != SOCKET_ERROR) {
             if (EnableNonBlock(fd, true)) {
