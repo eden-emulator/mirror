@@ -33,6 +33,7 @@ void AndroidConfig::SaveAllValues() {
 }
 
 void AndroidConfig::ReadAndroidValues() {
+    Settings::values.rescale_hack.SetValue(false);
     ReadAndroidUIValues();
     if (global) {
         ReadUIValues();
