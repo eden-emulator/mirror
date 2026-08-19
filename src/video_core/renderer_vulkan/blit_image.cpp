@@ -22,6 +22,8 @@
 #include "video_core/host_shaders/convert_depth_to_float_frag_spv.h"
 #include "video_core/host_shaders/convert_float_to_depth_frag_spv.h"
 #include "video_core/host_shaders/convert_msaa_to_non_msaa_frag_spv.h"
+#include "video_core/host_shaders/convert_msaa_to_non_msaa_depth_frag_spv.h"
+#include "video_core/host_shaders/convert_msaa_to_non_msaa_depth_stencil_frag_spv.h"
 #include "video_core/host_shaders/convert_msaa_to_non_msaa_sint_frag_spv.h"
 #include "video_core/host_shaders/convert_msaa_to_non_msaa_uint_frag_spv.h"
 #include "video_core/host_shaders/convert_non_msaa_to_msaa_frag_spv.h"
@@ -636,6 +638,10 @@ BlitImageHelper::BlitImageHelper(const Device& device_, Scheduler& scheduler_,
           BuildShader(device, CONVERT_MSAA_TO_NON_MSAA_SINT_FRAG_SPV)),
       convert_msaa_to_non_msaa_uint_frag(
           BuildShader(device, CONVERT_MSAA_TO_NON_MSAA_UINT_FRAG_SPV)),
+      convert_msaa_to_non_msaa_depth_frag(
+          BuildShader(device, CONVERT_MSAA_TO_NON_MSAA_DEPTH_FRAG_SPV)),
+      convert_msaa_to_non_msaa_depth_stencil_frag(
+          BuildShader(device, CONVERT_MSAA_TO_NON_MSAA_DEPTH_STENCIL_FRAG_SPV)),
       convert_non_msaa_to_msaa_frag(BuildShader(device, CONVERT_NON_MSAA_TO_MSAA_FRAG_SPV)),
       convert_non_msaa_to_msaa_sint_frag(
           BuildShader(device, CONVERT_NON_MSAA_TO_MSAA_SINT_FRAG_SPV)),
@@ -1606,14 +1612,15 @@ void BlitImageHelper::CopyMSAADepth(RenderPassCache& render_pass_cache, VkImage 
                                     VideoCore::Surface::PixelFormat dst_format, VkImage src_image,
                                     VideoCore::Surface::PixelFormat src_format, u32 num_samples,
                                     std::span<const VideoCommon::ImageCopy> copies,
-                                    bool copy_stencil) {
+                                    bool copy_stencil, bool msaa_to_non_msaa) {
     while (!msaa_copy_resources.empty() && scheduler.IsFree(msaa_copy_resources.front().tick)) {
         msaa_copy_resources.pop_front();
     }
     const auto [samples_x, samples_y] = VideoCommon::SamplesLog2(static_cast<int>(num_samples));
     const s32 scale_x = 1 << samples_x;
     const s32 scale_y = 1 << samples_y;
-    const VkSampleCountFlagBits samples = SampleCountFlag(num_samples);
+    const VkSampleCountFlagBits samples =
+        msaa_to_non_msaa ? VK_SAMPLE_COUNT_1_BIT : SampleCountFlag(num_samples);
     RenderPassKey renderpass_key{};
     renderpass_key.color_formats.fill(VideoCore::Surface::PixelFormat::Invalid);
     renderpass_key.depth_format = dst_format;
@@ -1622,7 +1629,7 @@ void BlitImageHelper::CopyMSAADepth(RenderPassCache& render_pass_cache, VkImage 
     const MSAACopyPipelineKey key{
         .renderpass = renderpass,
         .samples = samples,
-        .msaa_to_non_msaa = false,
+        .msaa_to_non_msaa = msaa_to_non_msaa,
         .format_class = MSAACopyFormatClass::Float,
     };
     const VkPipeline pipeline = FindOrEmplaceMSAACopyDepthPipeline(key, copy_stencil);
@@ -1859,16 +1866,22 @@ VkPipeline BlitImageHelper::FindOrEmplaceMSAACopyDepthPipeline(const MSAACopyPip
         return *pipelines[std::distance(keys.begin(), it)];
     }
     keys.push_back(key);
-    const std::array stages =
-        MakeStages(*clear_color_vert, copy_stencil ? *convert_non_msaa_to_msaa_depth_stencil_frag
-                                                   : *convert_non_msaa_to_msaa_depth_frag);
+    VkShaderModule frag_module;
+    if (key.msaa_to_non_msaa) {
+        frag_module = copy_stencil ? *convert_msaa_to_non_msaa_depth_stencil_frag
+                                   : *convert_msaa_to_non_msaa_depth_frag;
+    } else {
+        frag_module = copy_stencil ? *convert_non_msaa_to_msaa_depth_stencil_frag
+                                   : *convert_non_msaa_to_msaa_depth_frag;
+    }
+    const std::array stages = MakeStages(*clear_color_vert, frag_module);
     const VkPipelineMultisampleStateCreateInfo multisample_ci{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
         .rasterizationSamples = key.samples,
-        .sampleShadingEnable = VK_TRUE,
-        .minSampleShading = 1.0f,
+        .sampleShadingEnable = key.msaa_to_non_msaa ? VK_FALSE : VK_TRUE,
+        .minSampleShading = key.msaa_to_non_msaa ? 0.0f : 1.0f,
         .pSampleMask = nullptr,
         .alphaToCoverageEnable = VK_FALSE,
         .alphaToOneEnable = VK_FALSE,

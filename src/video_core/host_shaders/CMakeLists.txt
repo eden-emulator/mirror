@@ -33,6 +33,8 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_float_to_depth.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_msaa_to_non_msaa.comp
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_msaa_to_non_msaa.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/convert_msaa_to_non_msaa_depth.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/convert_msaa_to_non_msaa_depth_stencil.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_msaa_to_non_msaa_sint.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_msaa_to_non_msaa_uint.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_non_msaa_to_msaa.comp

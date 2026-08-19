@@ -1023,25 +1023,19 @@ FN_MAX_LIMIT_LIST
         return features2.features.multiViewport;
     }
 
-    bool SupportsTessellationShader() const {
-        return features2.features.tessellationShader;
-    }
-
     bool SupportsGeometryShader() const {
         return features2.features.geometryShader;
     }
 
     VkPipelineStageFlags AttachmentConsumerStages() const {
         VkPipelineStageFlags stages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                                      VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT |
+                                      VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT |
                                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
                                       VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                       VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
                                       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-        if (features2.features.tessellationShader) {
-            stages |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT |
-                      VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
-        }
         if (features2.features.geometryShader) {
             stages |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
         }

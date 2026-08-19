@@ -1749,8 +1749,20 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
             return;
         }
     }
-    if (dst.AspectMask() != VK_IMAGE_ASPECT_COLOR_BIT ||
-        VideoCore::Surface::IsPixelFormatInteger(dst.info.format)) {
+    const VkImageAspectFlags dst_aspect_mask = dst.AspectMask();
+    if ((dst_aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0) {
+        const bool copies_stencil = (dst_aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0 &&
+                                    device.IsExtShaderStencilExportSupported();
+        if ((dst_aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0 && !copies_stencil) {
+            UNIMPLEMENTED_MSG("Copying images with different samples is not supported.");
+            return;
+        }
+        blit_image_helper.CopyMSAADepth(render_pass_cache, dst.Handle(), dst.info.format,
+                                        src.Handle(), src.info.format, num_samples, copies,
+                                        copies_stencil, msaa_to_non_msaa);
+        return;
+    }
+    if ((dst_aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) == 0) {
         UNIMPLEMENTED_MSG("Copying images with different samples is not supported.");
         return;
     }
@@ -1767,7 +1779,17 @@ u64 TextureCacheRuntime::GetDeviceMemoryUsage() const {
 }
 
 bool TextureCacheRuntime::CanDownloadMsaa(const VideoCommon::ImageInfo& info) const {
-    return ImageAspectMask(info.format) == VK_IMAGE_ASPECT_COLOR_BIT;
+    const VkImageAspectFlags aspect_mask = ImageAspectMask(info.format);
+    if ((aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) != 0) {
+        return true;
+    }
+    if ((aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) == 0) {
+        return false;
+    }
+    if ((aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0) {
+        return device.IsExtShaderStencilExportSupported();
+    }
+    return true;
 }
 
 bool TextureCacheRuntime::CanReportMemoryUsage() const {
@@ -1953,7 +1975,7 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
             runtime->blit_image_helper.CopyMSAADepth(runtime->render_pass_cache, Handle(),
                                                      info.format, temp_vk_image, info.format,
                                                      info.num_samples, image_copies,
-                                                     msaa_upload_copies_stencil);
+                                                     msaa_upload_copies_stencil, false);
         } else {
             runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, Handle(), info.format,
                                                 temp_vk_image, info.format, info.num_samples,
@@ -2024,33 +2046,53 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
             image_ci.format =
                 MaxwellToVK::SurfaceFormat(runtime->device, FormatType::Optimal, true, info.format)
                     .format;
-            image_ci.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            const bool msaa_download_is_depth =
+                (aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
+            const bool msaa_download_copies_stencil =
+                msaa_download_is_depth && (aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0 &&
+                runtime->device.IsExtShaderStencilExportSupported();
+            image_ci.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+            if (msaa_download_is_depth) {
+                image_ci.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            } else {
+                image_ci.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            }
             vk::Image temp_image = runtime->memory_allocator.CreateImage(image_ci);
             const VkImage temp_vk_image = *temp_image;
 
+            const VkImageAspectFlags temp_aspect_mask = aspect_mask;
+            const VkAccessFlags attachment_access =
+                msaa_download_is_depth ? (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                          VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+                                       : (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                                          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+            const VkPipelineStageFlags attachment_stage =
+                msaa_download_is_depth ? (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                          VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT)
+                                       : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
             scheduler->RequestOutsideRenderPassOperationContext();
-            scheduler->Record([temp_vk_image](vk::CommandBuffer cmdbuf) {
+            scheduler->Record([temp_vk_image, temp_aspect_mask, attachment_access,
+                               attachment_stage](vk::CommandBuffer cmdbuf) {
                 const VkImageMemoryBarrier init_barrier{
                     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                     .pNext = nullptr,
                     .srcAccessMask = 0,
-                    .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                    .dstAccessMask = attachment_access,
                     .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                     .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .image = temp_vk_image,
                     .subresourceRange{
-                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .aspectMask = temp_aspect_mask,
                         .baseMipLevel = 0,
                         .levelCount = VK_REMAINING_MIP_LEVELS,
                         .baseArrayLayer = 0,
                         .layerCount = VK_REMAINING_ARRAY_LAYERS,
                     },
                 };
-                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0,
+                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, attachment_stage, 0,
                                        init_barrier);
             });
 
@@ -2065,9 +2107,15 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
                 image_copies.push_back(image_copy);
             }
 
-            runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, temp_vk_image,
-                                                info.format, Handle(), info.format,
-                                                info.num_samples, image_copies, true);
+            if (msaa_download_is_depth) {
+                runtime->blit_image_helper.CopyMSAADepth(
+                    runtime->render_pass_cache, temp_vk_image, info.format, Handle(), info.format,
+                    info.num_samples, image_copies, msaa_download_copies_stencil, true);
+            } else {
+                runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, temp_vk_image,
+                                                    info.format, Handle(), info.format,
+                                                    info.num_samples, image_copies, true);
+            }
 
             boost::container::small_vector<VkBuffer, 8> buffers_vector{};
             boost::container::small_vector<boost::container::small_vector<VkBufferImageCopy, 16>, 8>

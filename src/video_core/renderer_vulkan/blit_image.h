@@ -132,7 +132,8 @@ public:
     void CopyMSAADepth(RenderPassCache& render_pass_cache, VkImage dst_image,
                        VideoCore::Surface::PixelFormat dst_format, VkImage src_image,
                        VideoCore::Surface::PixelFormat src_format, u32 num_samples,
-                       std::span<const VideoCommon::ImageCopy> copies, bool copy_stencil);
+                       std::span<const VideoCommon::ImageCopy> copies, bool copy_stencil,
+                       bool msaa_to_non_msaa);
 
 private:
     void Convert(VkPipeline pipeline, const Framebuffer* dst_framebuffer,
@@ -207,6 +208,8 @@ private:
     vk::ShaderModule convert_msaa_to_non_msaa_frag;
     vk::ShaderModule convert_msaa_to_non_msaa_sint_frag;
     vk::ShaderModule convert_msaa_to_non_msaa_uint_frag;
+    vk::ShaderModule convert_msaa_to_non_msaa_depth_frag;
+    vk::ShaderModule convert_msaa_to_non_msaa_depth_stencil_frag;
     vk::ShaderModule convert_non_msaa_to_msaa_frag;
     vk::ShaderModule convert_non_msaa_to_msaa_sint_frag;
     vk::ShaderModule convert_non_msaa_to_msaa_uint_frag;
