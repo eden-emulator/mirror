@@ -144,12 +144,15 @@ std::map<IR::Attribute, IR::Attribute> GenerateLegacyToGenericMappings(
             for (size_t i = 0; i < count; ++i) {
                 mapping.insert({attr + i, previous_stage_mapping.at(attr + i)});
             }
-        } else {
-            for (size_t i = 0; i < count; ++i) {
-                mapping.insert({attr + i, unused_generics.front() + i});
-            }
-            unused_generics.pop();
+            return;
         }
+        if (unused_generics.empty()) {
+            return;
+        }
+        for (size_t i = 0; i < count; ++i) {
+            mapping.insert({attr + i, unused_generics.front() + i});
+        }
+        unused_generics.pop();
     };
     for (size_t index = 0; index < 4; ++index) {
         auto attr = IR::Attribute::ColorFrontDiffuseR + index * 4;
@@ -199,26 +202,46 @@ void EmitGeometryPassthrough(IR::IREmitter& ir, const IR::Program& program,
     const PassthroughVertices vertices{GetPassthroughVertices(input_topology)};
     for (u32 vertex = 0; vertex < vertices.count; vertex++) {
         const u32 i = vertices.first + vertex * vertices.stride;
-        // Assign generics from input
-        for (u32 j = 0; j < 32; j++) {
-            if (!passthrough_mask.Generic(j)) {
-                continue;
-            }
-
-            const IR::Attribute attr = IR::Attribute::Generic0X + (j * 4);
+        const auto copy_vec4{[&ir, i](IR::Attribute attr) {
             ir.SetAttribute(attr + 0, ir.GetAttribute(attr + 0, ir.Imm32(i)), ir.Imm32(0));
             ir.SetAttribute(attr + 1, ir.GetAttribute(attr + 1, ir.Imm32(i)), ir.Imm32(0));
             ir.SetAttribute(attr + 2, ir.GetAttribute(attr + 2, ir.Imm32(i)), ir.Imm32(0));
             ir.SetAttribute(attr + 3, ir.GetAttribute(attr + 3, ir.Imm32(i)), ir.Imm32(0));
+        }};
+
+        // Assign generics from input
+        for (u32 j = 0; j < IR::NUM_GENERICS; j++) {
+            if (!passthrough_mask.Generic(j)) {
+                continue;
+            }
+            copy_vec4(IR::Attribute::Generic0X + (j * 4));
+        }
+
+        for (u32 j = 0; j < 4; j++) {
+            const IR::Attribute attr = IR::Attribute::ColorFrontDiffuseR + (j * 4);
+            if (!passthrough_mask.AnyComponent(attr)) {
+                continue;
+            }
+            copy_vec4(attr);
+        }
+
+        if (passthrough_mask[IR::Attribute::FogCoordinate]) {
+            ir.SetAttribute(IR::Attribute::FogCoordinate,
+                            ir.GetAttribute(IR::Attribute::FogCoordinate, ir.Imm32(i)),
+                            ir.Imm32(0));
+        }
+
+        for (u32 j = 0; j < IR::NUM_FIXEDFNCTEXTURE; j++) {
+            const IR::Attribute attr = IR::Attribute::FixedFncTexture0S + (j * 4);
+            if (!passthrough_mask.AnyComponent(attr)) {
+                continue;
+            }
+            copy_vec4(attr);
         }
 
         if (passthrough_position) {
             // Assign position from input
-            const IR::Attribute attr = IR::Attribute::PositionX;
-            ir.SetAttribute(attr + 0, ir.GetAttribute(attr + 0, ir.Imm32(i)), ir.Imm32(0));
-            ir.SetAttribute(attr + 1, ir.GetAttribute(attr + 1, ir.Imm32(i)), ir.Imm32(0));
-            ir.SetAttribute(attr + 2, ir.GetAttribute(attr + 2, ir.Imm32(i)), ir.Imm32(0));
-            ir.SetAttribute(attr + 3, ir.GetAttribute(attr + 3, ir.Imm32(i)), ir.Imm32(0));
+            copy_vec4(IR::Attribute::PositionX);
         }
 
         if (passthrough_layer_attr) {
@@ -380,19 +403,24 @@ void ConvertLegacyToGeneric(IR::Program& program, const Shader::RuntimeInfo& run
         program.info.legacy_stores_mapping =
             GenerateLegacyToGenericMappings(stores, unused_output_generics, {});
         for (IR::Block* const block : program.post_order_blocks) {
-            for (IR::Inst& inst : block->Instructions()) {
-                switch (inst.GetOpcode()) {
-                case IR::Opcode::SetAttribute: {
-                    const auto attr = inst.Arg(0).Attribute();
-                    if (IsLegacyAttribute(attr)) {
-                        stores.Set(program.info.legacy_stores_mapping[attr], true);
-                        inst.SetArg(0, Shader::IR::Value(program.info.legacy_stores_mapping[attr]));
-                    }
-                    break;
+            auto it{block->begin()};
+            while (it != block->end()) {
+                IR::Inst& inst{*it};
+                if (inst.GetOpcode() != IR::Opcode::SetAttribute ||
+                    !IsLegacyAttribute(inst.Arg(0).Attribute())) {
+                    ++it;
+                    continue;
                 }
-                default:
-                    break;
+                const auto& mapping{program.info.legacy_stores_mapping};
+                const auto mapped{mapping.find(inst.Arg(0).Attribute())};
+                if (mapped == mapping.end()) {
+                    inst.Invalidate();
+                    it = block->Instructions().erase(it);
+                    continue;
                 }
+                stores.Set(mapped->second, true);
+                inst.SetArg(0, Shader::IR::Value(mapped->second));
+                ++it;
             }
         }
     }
@@ -414,10 +442,16 @@ void ConvertLegacyToGeneric(IR::Program& program, const Shader::RuntimeInfo& run
                 switch (inst.GetOpcode()) {
                 case IR::Opcode::GetAttribute: {
                     const auto attr = inst.Arg(0).Attribute();
-                    if (IsLegacyAttribute(attr)) {
-                        loads.Set(mappings[attr], true);
-                        inst.SetArg(0, Shader::IR::Value(mappings[attr]));
+                    if (!IsLegacyAttribute(attr)) {
+                        break;
                     }
+                    const auto mapped{mappings.find(attr)};
+                    if (mapped == mappings.end()) {
+                        inst.ReplaceUsesWith(IR::Value{0.0f});
+                        break;
+                    }
+                    loads.Set(mapped->second, true);
+                    inst.SetArg(0, Shader::IR::Value(mapped->second));
                     break;
                 }
                 default:
