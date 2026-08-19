@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <vector>
+#include <array>
 
 #include "common/common_funcs.h"
 #include "common/common_types.h"
@@ -212,10 +212,14 @@ private:
     Kernel::KEvent* unknown_event;
 
     // ZBC Tables
+    static constexpr u32 zbc_table_size = 15u;
+    static constexpr u32 supported_types = 2u;
+
     std::mutex zbc_mutex{};
-    std::vector<ZbcColorEntry> zbc_colors{};
-    std::vector<ZbcDepthEntry> zbc_depths{};
-    const u32 supported_types = 2u;
+    std::array<ZbcColorEntry, zbc_table_size> zbc_colors{};
+    std::array<ZbcDepthEntry, zbc_table_size> zbc_depths{};
+    u32 zbc_used_color_entries{};
+    u32 zbc_used_depth_entries{};
 };
 
 } // namespace Service::Nvidia::Devices

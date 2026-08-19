@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <cstring>
 #include "common/assert.h"
 #include "common/logging.h"
@@ -264,7 +265,7 @@ NvResult nvhost_ctrl_gpu::ZCullGetInfo(IoctlNvgpuGpuZcullGetInfoArgs& params) {
 }
 
 NvResult nvhost_ctrl_gpu::ZBCSetTable(IoctlZbcSetTable& params) {
-    if (params.type > supported_types) {
+    if (params.type == 0 || params.type > supported_types) {
         LOG_ERROR(Service_NVDRV, "ZBCSetTable: invalid type {:#x}", params.type);
         return NvResult::BadParameter;
     }
@@ -279,42 +280,61 @@ NvResult nvhost_ctrl_gpu::ZBCSetTable(IoctlZbcSetTable& params) {
             color_entry.format = params.format;
             color_entry.ref_cnt = 1u;
 
-            auto color_it = std::ranges::find_if(zbc_colors,
-                                                 [&](const ZbcColorEntry& color_in_question) {
-                                                     return color_entry.format == color_in_question.format &&
-                                                            color_entry.color_ds == color_in_question.color_ds &&
-                                                            color_entry.color_l2 == color_in_question.color_l2;
-                                                 });
+            const auto color_end = zbc_colors.begin() + zbc_used_color_entries;
+            auto color_it = std::find_if(zbc_colors.begin(), color_end,
+                                         [&](const ZbcColorEntry& color_in_question) {
+                                             return color_entry.format == color_in_question.format &&
+                                                    color_entry.color_ds == color_in_question.color_ds &&
+                                                    color_entry.color_l2 == color_in_question.color_l2;
+                                         });
 
-            if (color_it != zbc_colors.end()) {
+            if (color_it != color_end) {
                 ++color_it->ref_cnt;
                 LOG_DEBUG(Service_NVDRV, "ZBCSetTable: reused color entry fmt={:#x}, ref_cnt={:#x}",
                           params.format, color_it->ref_cnt);
-            } else {
-                zbc_colors.push_back(color_entry);
-                LOG_DEBUG(Service_NVDRV, "ZBCSetTable: added color entry fmt={:#x}, index={:#x}",
-                          params.format, zbc_colors.size() - 1);
+                break;
             }
+
+            if (zbc_used_color_entries >= zbc_table_size) {
+                LOG_WARNING(Service_NVDRV, "ZBCSetTable: color table is full, fmt={:#x}",
+                            params.format);
+                return NvResult::InsufficientMemory;
+            }
+
+            zbc_colors[zbc_used_color_entries] = color_entry;
+            LOG_DEBUG(Service_NVDRV, "ZBCSetTable: added color entry fmt={:#x}, index={:#x}",
+                      params.format, zbc_used_color_entries);
+            ++zbc_used_color_entries;
             break;
         }
         case ZBCTypes::depth: {
             ZbcDepthEntry depth_entry{params.depth, params.format, 1u};
 
-            auto depth_it = std::ranges::find_if(zbc_depths,
-                                                 [&](const ZbcDepthEntry& depth_entry_in_question) {
-                                                     return depth_entry.format == depth_entry_in_question.format &&
-                                                            depth_entry.depth == depth_entry_in_question.depth;
-                                                 });
+            const auto depth_end = zbc_depths.begin() + zbc_used_depth_entries;
+            auto depth_it = std::find_if(zbc_depths.begin(), depth_end,
+                                         [&](const ZbcDepthEntry& depth_entry_in_question) {
+                                             return depth_entry.format == depth_entry_in_question.format &&
+                                                    depth_entry.depth == depth_entry_in_question.depth;
+                                         });
 
-            if (depth_it != zbc_depths.end()) {
+            if (depth_it != depth_end) {
                 ++depth_it->ref_cnt;
                 LOG_DEBUG(Service_NVDRV, "ZBCSetTable: reused depth entry fmt={:#x}, ref_cnt={:#x}",
                           depth_entry.format, depth_it->ref_cnt);
-            } else {
-                zbc_depths.push_back(depth_entry);
-                LOG_DEBUG(Service_NVDRV, "ZBCSetTable: added depth entry fmt={:#x}, index={:#x}",
-                          depth_entry.format, zbc_depths.size() - 1);
+                break;
             }
+
+            if (zbc_used_depth_entries >= zbc_table_size) {
+                LOG_WARNING(Service_NVDRV, "ZBCSetTable: depth table is full, fmt={:#x}",
+                            depth_entry.format);
+                return NvResult::InsufficientMemory;
+            }
+
+            zbc_depths[zbc_used_depth_entries] = depth_entry;
+            LOG_DEBUG(Service_NVDRV, "ZBCSetTable: added depth entry fmt={:#x}, index={:#x}",
+                      depth_entry.format, zbc_used_depth_entries);
+            ++zbc_used_depth_entries;
+            break;
         }
     }
 
@@ -329,35 +349,34 @@ NvResult nvhost_ctrl_gpu::ZBCQueryTable(IoctlZbcQueryTable& params) {
 
     std::scoped_lock lk(zbc_mutex);
 
+    if (params.type == 0) {
+        params.index_size = zbc_table_size;
+        return NvResult::Success;
+    }
+
+    if (params.index_size >= zbc_table_size) {
+        LOG_ERROR(Service_NVDRV, "ZBCQueryTable: invalid index {:#x}", params.index_size);
+        return NvResult::BadParameter;
+    }
+
     switch (static_cast<ZBCTypes>(params.type)) {
         case ZBCTypes::color: {
-            if (params.index_size >= zbc_colors.size()) {
-                LOG_ERROR(Service_NVDRV, "ZBCQueryTable: invalid color index {:#x}", params.index_size);
-                return NvResult::BadParameter;
-            }
-
             const auto& colors = zbc_colors[params.index_size];
             std::copy_n(colors.color_ds.begin(), colors.color_ds.size(), std::begin(params.color_ds));
             std::copy_n(colors.color_l2.begin(), colors.color_l2.size(), std::begin(params.color_l2));
             params.depth = 0;
             params.ref_cnt = colors.ref_cnt;
             params.format = colors.format;
-            params.index_size = static_cast<u32>(zbc_colors.size());
             break;
         }
         case ZBCTypes::depth: {
-            if (params.index_size >= zbc_depths.size()) {
-                LOG_ERROR(Service_NVDRV, "ZBCQueryTable: invalid depth index {:#x}", params.index_size);
-                return NvResult::BadParameter;
-            }
-
             const auto& depth_entry = zbc_depths[params.index_size];
             std::fill(std::begin(params.color_ds), std::end(params.color_ds), 0);
             std::fill(std::begin(params.color_l2), std::end(params.color_l2), 0);
             params.depth = depth_entry.depth;
             params.ref_cnt = depth_entry.ref_cnt;
             params.format = depth_entry.format;
-            params.index_size = static_cast<u32>(zbc_depths.size());
+            break;
         }
     }
 
