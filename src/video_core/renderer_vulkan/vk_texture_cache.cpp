@@ -1766,13 +1766,7 @@ u64 TextureCacheRuntime::GetDeviceMemoryUsage() const {
 }
 
 bool TextureCacheRuntime::CanDownloadMsaa(const VideoCommon::ImageInfo& info) const {
-    if (ImageAspectMask(info.format) != VK_IMAGE_ASPECT_COLOR_BIT) {
-        return false;
-    }
-    if (VideoCore::Surface::IsPixelFormatInteger(info.format)) {
-        return false;
-    }
-    return info.resources.layers == 1;
+    return ImageAspectMask(info.format) == VK_IMAGE_ASPECT_COLOR_BIT;
 }
 
 bool TextureCacheRuntime::CanReportMemoryUsage() const {
@@ -1905,8 +1899,7 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
 
     const bool msaa_upload_is_depth = (aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
     const bool wants_msaa_upload = info.num_samples > 1
-        && ((aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) != 0 || msaa_upload_is_depth)
-        && !VideoCore::Surface::IsPixelFormatInteger(info.format);
+        && ((aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) != 0 || msaa_upload_is_depth);
 
     if (wants_msaa_upload) {
         const bool msaa_upload_copies_stencil =

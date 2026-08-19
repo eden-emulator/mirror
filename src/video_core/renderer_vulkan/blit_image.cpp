@@ -22,7 +22,11 @@
 #include "video_core/host_shaders/convert_depth_to_float_frag_spv.h"
 #include "video_core/host_shaders/convert_float_to_depth_frag_spv.h"
 #include "video_core/host_shaders/convert_msaa_to_non_msaa_frag_spv.h"
+#include "video_core/host_shaders/convert_msaa_to_non_msaa_sint_frag_spv.h"
+#include "video_core/host_shaders/convert_msaa_to_non_msaa_uint_frag_spv.h"
 #include "video_core/host_shaders/convert_non_msaa_to_msaa_frag_spv.h"
+#include "video_core/host_shaders/convert_non_msaa_to_msaa_sint_frag_spv.h"
+#include "video_core/host_shaders/convert_non_msaa_to_msaa_uint_frag_spv.h"
 #include "video_core/host_shaders/convert_non_msaa_to_msaa_depth_frag_spv.h"
 #include "video_core/host_shaders/convert_non_msaa_to_msaa_depth_stencil_frag_spv.h"
 #include "video_core/host_shaders/convert_s8d24_to_abgr8_frag_spv.h"
@@ -521,8 +525,18 @@ void RecordShaderReadBarrier(Scheduler& scheduler, const ImageView& image_view) 
     }
 }
 
+[[nodiscard]] MSAACopyFormatClass FormatClass(VideoCore::Surface::PixelFormat format) {
+    if (!VideoCore::Surface::IsPixelFormatInteger(format)) {
+        return MSAACopyFormatClass::Float;
+    }
+    if (VideoCore::Surface::IsPixelFormatSignedInteger(format)) {
+        return MSAACopyFormatClass::SignedInteger;
+    }
+    return MSAACopyFormatClass::UnsignedInteger;
+}
+
 [[nodiscard]] vk::ImageView MakeMSAACopyView(const vk::Device& device, VkImage image,
-                                             VkFormat format, u32 base_level,
+                                             VkFormat format, u32 base_level, u32 base_layer,
                                              VkImageAspectFlags aspect_mask) {
     return device.CreateImageView(VkImageViewCreateInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -541,7 +555,7 @@ void RecordShaderReadBarrier(Scheduler& scheduler, const ImageView& image_view) 
             .aspectMask = aspect_mask,
             .baseMipLevel = base_level,
             .levelCount = 1,
-            .baseArrayLayer = 0,
+            .baseArrayLayer = base_layer,
             .layerCount = 1,
         },
     });
@@ -618,7 +632,15 @@ BlitImageHelper::BlitImageHelper(const Device& device_, Scheduler& scheduler_,
       convert_d24s8_to_abgr8_frag(BuildShader(device, CONVERT_D24S8_TO_ABGR8_FRAG_SPV)),
       convert_s8d24_to_abgr8_frag(BuildShader(device, CONVERT_S8D24_TO_ABGR8_FRAG_SPV)),
       convert_msaa_to_non_msaa_frag(BuildShader(device, CONVERT_MSAA_TO_NON_MSAA_FRAG_SPV)),
+      convert_msaa_to_non_msaa_sint_frag(
+          BuildShader(device, CONVERT_MSAA_TO_NON_MSAA_SINT_FRAG_SPV)),
+      convert_msaa_to_non_msaa_uint_frag(
+          BuildShader(device, CONVERT_MSAA_TO_NON_MSAA_UINT_FRAG_SPV)),
       convert_non_msaa_to_msaa_frag(BuildShader(device, CONVERT_NON_MSAA_TO_MSAA_FRAG_SPV)),
+      convert_non_msaa_to_msaa_sint_frag(
+          BuildShader(device, CONVERT_NON_MSAA_TO_MSAA_SINT_FRAG_SPV)),
+      convert_non_msaa_to_msaa_uint_frag(
+          BuildShader(device, CONVERT_NON_MSAA_TO_MSAA_UINT_FRAG_SPV)),
       convert_non_msaa_to_msaa_depth_frag(
           BuildShader(device, CONVERT_NON_MSAA_TO_MSAA_DEPTH_FRAG_SPV)),
       convert_non_msaa_to_msaa_depth_stencil_frag(
@@ -982,6 +1004,7 @@ void BlitImageHelper::CopyMSAA(RenderPassCache& render_pass_cache, VkImage dst_i
         .renderpass = renderpass,
         .samples = samples,
         .msaa_to_non_msaa = msaa_to_non_msaa,
+        .format_class = FormatClass(dst_format),
     };
     const VkPipeline pipeline = FindOrEmplaceMSAACopyPipeline(key);
     const VkPipelineLayout layout = *msaa_copy_pipeline_layout;
@@ -991,140 +1014,142 @@ void BlitImageHelper::CopyMSAA(RenderPassCache& render_pass_cache, VkImage dst_i
     const VkFormat dst_vk_format =
         MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, true, dst_format).format;
     for (const VideoCommon::ImageCopy& copy : copies) {
-        ASSERT(copy.src_subresource.base_layer == 0);
-        ASSERT(copy.src_subresource.num_layers == 1);
-        ASSERT(copy.dst_subresource.base_layer == 0);
-        ASSERT(copy.dst_subresource.num_layers == 1);
-        vk::ImageView src_view =
-            MakeMSAACopyView(device.GetLogical(), src_image, src_vk_format,
-                             static_cast<u32>(copy.src_subresource.base_level),
-                             VK_IMAGE_ASPECT_COLOR_BIT);
-        vk::ImageView dst_view =
-            MakeMSAACopyView(device.GetLogical(), dst_image, dst_vk_format,
-                             static_cast<u32>(copy.dst_subresource.base_level),
-                             VK_IMAGE_ASPECT_COLOR_BIT);
-        const VkOffset2D dst_offset{copy.dst_offset.x, copy.dst_offset.y};
-        const VkExtent2D dst_extent{copy.extent.width, copy.extent.height};
-        const VkRect2D render_area{
-            .offset = dst_offset,
-            .extent = dst_extent,
-        };
-        vk::Framebuffer framebuffer = device.GetLogical().CreateFramebuffer(VkFramebufferCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .renderPass = renderpass,
-            .attachmentCount = 1,
-            .pAttachments = dst_view.address(),
-            .width = static_cast<u32>(dst_offset.x) + dst_extent.width,
-            .height = static_cast<u32>(dst_offset.y) + dst_extent.height,
-            .layers = 1,
-        });
-        const MSAACopyPushConstants push_constants{
-            .dst_offset = {dst_offset.x, dst_offset.y},
-            .src_offset = {copy.src_offset.x, copy.src_offset.y},
-            .scale = {scale_x, scale_y},
-        };
-        scheduler.RequestOutsideRenderPassOperationContext();
-        scheduler.Record([this, pipeline, layout, sampler, renderpass,
-                          framebuffer_handle = *framebuffer, src_view_handle = *src_view,
-                          src = src_image, dst = dst_image, render_area,
-                          push_constants](vk::CommandBuffer cmdbuf) {
-            constexpr VkImageSubresourceRange color_range{
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel = 0,
-                .levelCount = VK_REMAINING_MIP_LEVELS,
-                .baseArrayLayer = 0,
-                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+        const s32 num_layers = (std::min)(copy.src_subresource.num_layers,
+                                          copy.dst_subresource.num_layers);
+        for (s32 layer = 0; layer < num_layers; ++layer) {
+            vk::ImageView src_view =
+                MakeMSAACopyView(device.GetLogical(), src_image, src_vk_format,
+                                 static_cast<u32>(copy.src_subresource.base_level),
+                                 static_cast<u32>(copy.src_subresource.base_layer + layer),
+                                 VK_IMAGE_ASPECT_COLOR_BIT);
+            vk::ImageView dst_view =
+                MakeMSAACopyView(device.GetLogical(), dst_image, dst_vk_format,
+                                 static_cast<u32>(copy.dst_subresource.base_level),
+                                 static_cast<u32>(copy.dst_subresource.base_layer + layer),
+                                 VK_IMAGE_ASPECT_COLOR_BIT);
+            const VkOffset2D dst_offset{copy.dst_offset.x, copy.dst_offset.y};
+            const VkExtent2D dst_extent{copy.extent.width, copy.extent.height};
+            const VkRect2D render_area{
+                .offset = dst_offset,
+                .extent = dst_extent,
             };
-            const std::array pre_barriers{
-                VkImageMemoryBarrier{
+            vk::Framebuffer framebuffer = device.GetLogical().CreateFramebuffer(VkFramebufferCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .renderPass = renderpass,
+                .attachmentCount = 1,
+                .pAttachments = dst_view.address(),
+                .width = static_cast<u32>(dst_offset.x) + dst_extent.width,
+                .height = static_cast<u32>(dst_offset.y) + dst_extent.height,
+                .layers = 1,
+            });
+            const MSAACopyPushConstants push_constants{
+                .dst_offset = {dst_offset.x, dst_offset.y},
+                .src_offset = {copy.src_offset.x, copy.src_offset.y},
+                .scale = {scale_x, scale_y},
+            };
+            scheduler.RequestOutsideRenderPassOperationContext();
+            scheduler.Record([this, pipeline, layout, sampler, renderpass,
+                              framebuffer_handle = *framebuffer, src_view_handle = *src_view,
+                              src = src_image, dst = dst_image, render_area,
+                              push_constants](vk::CommandBuffer cmdbuf) {
+                constexpr VkImageSubresourceRange color_range{
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel = 0,
+                    .levelCount = VK_REMAINING_MIP_LEVELS,
+                    .baseArrayLayer = 0,
+                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                };
+                const std::array pre_barriers{
+                    VkImageMemoryBarrier{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                        .pNext = nullptr,
+                        .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                         VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+                        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+                        .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .image = src,
+                        .subresourceRange = color_range,
+                    },
+                    VkImageMemoryBarrier{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                        .pNext = nullptr,
+                        .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                         VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+                        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                        .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .image = dst,
+                        .subresourceRange = color_range,
+                    },
+                };
+                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+                                           VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                       0, nullptr, nullptr, pre_barriers);
+                const VkRenderPassBeginInfo renderpass_bi{
+                    .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                    .pNext = nullptr,
+                    .renderPass = renderpass,
+                    .framebuffer = framebuffer_handle,
+                    .renderArea = render_area,
+                    .clearValueCount = 0,
+                    .pClearValues = nullptr,
+                };
+                cmdbuf.BeginRenderPass(renderpass_bi, VK_SUBPASS_CONTENTS_INLINE);
+                const VkDescriptorSet descriptor_set = one_texture_descriptor_allocator.Commit();
+                UpdateOneTextureDescriptorSet(device, descriptor_set, sampler, src_view_handle);
+                cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+                cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
+                                          nullptr);
+                const VkViewport viewport{
+                    .x = static_cast<float>(render_area.offset.x),
+                    .y = static_cast<float>(render_area.offset.y),
+                    .width = static_cast<float>(render_area.extent.width),
+                    .height = static_cast<float>(render_area.extent.height),
+                    .minDepth = 0.0f,
+                    .maxDepth = 1.0f,
+                };
+                cmdbuf.SetViewport(0, viewport);
+                cmdbuf.SetScissor(0, render_area);
+                cmdbuf.PushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, push_constants);
+                cmdbuf.Draw(3, 1, 0, 0);
+                cmdbuf.EndRenderPass();
+                const VkImageMemoryBarrier post_barrier{
                     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                     .pNext = nullptr,
-                    .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                     VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
-                    .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-                    .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
-                    .newLayout = VK_IMAGE_LAYOUT_GENERAL,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .image = src,
-                    .subresourceRange = color_range,
-                },
-                VkImageMemoryBarrier{
-                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                    .pNext = nullptr,
-                    .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                     VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
-                    .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                    .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                    .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT,
                     .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .image = dst,
                     .subresourceRange = color_range,
-                },
-            };
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+                };
+                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                                       VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                                       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   0, nullptr, nullptr, pre_barriers);
-            const VkRenderPassBeginInfo renderpass_bi{
-                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-                .pNext = nullptr,
-                .renderPass = renderpass,
-                .framebuffer = framebuffer_handle,
-                .renderArea = render_area,
-                .clearValueCount = 0,
-                .pClearValues = nullptr,
-            };
-            cmdbuf.BeginRenderPass(renderpass_bi, VK_SUBPASS_CONTENTS_INLINE);
-            const VkDescriptorSet descriptor_set = one_texture_descriptor_allocator.Commit();
-            UpdateOneTextureDescriptorSet(device, descriptor_set, sampler, src_view_handle);
-            cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-            cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
-                                      nullptr);
-            const VkViewport viewport{
-                .x = static_cast<float>(render_area.offset.x),
-                .y = static_cast<float>(render_area.offset.y),
-                .width = static_cast<float>(render_area.extent.width),
-                .height = static_cast<float>(render_area.extent.height),
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f,
-            };
-            cmdbuf.SetViewport(0, viewport);
-            cmdbuf.SetScissor(0, render_area);
-            cmdbuf.PushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, push_constants);
-            cmdbuf.Draw(3, 1, 0, 0);
-            cmdbuf.EndRenderPass();
-            const VkImageMemoryBarrier post_barrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT,
-                .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
-                .newLayout = VK_IMAGE_LAYOUT_GENERAL,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image = dst,
-                .subresourceRange = color_range,
-            };
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                                       VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   0, post_barrier);
-        });
-        msaa_copy_resources.push_back(MSAACopyResources{
-            .tick = scheduler.CurrentTick(),
-            .src_view = std::move(src_view),
-            .dst_view = std::move(dst_view),
-            .framebuffer = std::move(framebuffer),
-        });
+                                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                       0, post_barrier);
+            });
+            msaa_copy_resources.push_back(MSAACopyResources{
+                .tick = scheduler.CurrentTick(),
+                .src_view = std::move(src_view),
+                .dst_view = std::move(dst_view),
+                .framebuffer = std::move(framebuffer),
+            });
+        }
     }
     scheduler.InvalidateState();
 }
@@ -1598,6 +1623,7 @@ void BlitImageHelper::CopyMSAADepth(RenderPassCache& render_pass_cache, VkImage 
         .renderpass = renderpass,
         .samples = samples,
         .msaa_to_non_msaa = false,
+        .format_class = MSAACopyFormatClass::Float,
     };
     const VkPipeline pipeline = FindOrEmplaceMSAACopyDepthPipeline(key, copy_stencil);
     const VkPipelineLayout layout = copy_stencil ? *msaa_copy_depth_stencil_pipeline_layout
@@ -1613,158 +1639,161 @@ void BlitImageHelper::CopyMSAADepth(RenderPassCache& render_pass_cache, VkImage 
         attachment_aspect |= VK_IMAGE_ASPECT_STENCIL_BIT;
     }
     for (const VideoCommon::ImageCopy& copy : copies) {
-        ASSERT(copy.src_subresource.base_layer == 0);
-        ASSERT(copy.src_subresource.num_layers == 1);
-        ASSERT(copy.dst_subresource.base_layer == 0);
-        ASSERT(copy.dst_subresource.num_layers == 1);
-        vk::ImageView src_view =
-            MakeMSAACopyView(device.GetLogical(), src_image, src_vk_format,
-                             static_cast<u32>(copy.src_subresource.base_level),
-                             VK_IMAGE_ASPECT_DEPTH_BIT);
-        vk::ImageView src_stencil_view =
-            copy_stencil ? MakeMSAACopyView(device.GetLogical(), src_image, src_vk_format,
-                                            static_cast<u32>(copy.src_subresource.base_level),
-                                            VK_IMAGE_ASPECT_STENCIL_BIT)
-                         : vk::ImageView{};
-        vk::ImageView dst_view =
-            MakeMSAACopyView(device.GetLogical(), dst_image, dst_vk_format,
-                             static_cast<u32>(copy.dst_subresource.base_level),
-                             attachment_aspect);
-        const VkOffset2D dst_offset{copy.dst_offset.x, copy.dst_offset.y};
-        const VkExtent2D dst_extent{copy.extent.width, copy.extent.height};
-        const VkRect2D render_area{
-            .offset = dst_offset,
-            .extent = dst_extent,
-        };
-        vk::Framebuffer framebuffer = device.GetLogical().CreateFramebuffer(VkFramebufferCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .renderPass = renderpass,
-            .attachmentCount = 1,
-            .pAttachments = dst_view.address(),
-            .width = static_cast<u32>(dst_offset.x) + dst_extent.width,
-            .height = static_cast<u32>(dst_offset.y) + dst_extent.height,
-            .layers = 1,
-        });
-        const MSAACopyPushConstants push_constants{
-            .dst_offset = {dst_offset.x, dst_offset.y},
-            .src_offset = {copy.src_offset.x, copy.src_offset.y},
-            .scale = {scale_x, scale_y},
-        };
-        scheduler.RequestOutsideRenderPassOperationContext();
-        const VkImageView src_stencil_handle = copy_stencil ? *src_stencil_view : VK_NULL_HANDLE;
-        scheduler.Record([this, pipeline, layout, sampler, renderpass,
-                          framebuffer_handle = *framebuffer, src_view_handle = *src_view,
-                          src_stencil_handle, src = src_image, dst = dst_image, render_area,
-                          attachment_aspect, push_constants](vk::CommandBuffer cmdbuf) {
-            const VkImageSubresourceRange src_range{
-                .aspectMask = attachment_aspect,
-                .baseMipLevel = 0,
-                .levelCount = VK_REMAINING_MIP_LEVELS,
-                .baseArrayLayer = 0,
-                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+        const s32 num_layers = (std::min)(copy.src_subresource.num_layers,
+                                          copy.dst_subresource.num_layers);
+        for (s32 layer = 0; layer < num_layers; ++layer) {
+            vk::ImageView src_view =
+                MakeMSAACopyView(device.GetLogical(), src_image, src_vk_format,
+                                 static_cast<u32>(copy.src_subresource.base_level),
+                                 static_cast<u32>(copy.src_subresource.base_layer + layer),
+                                 VK_IMAGE_ASPECT_DEPTH_BIT);
+            vk::ImageView src_stencil_view =
+                copy_stencil ? MakeMSAACopyView(device.GetLogical(), src_image, src_vk_format,
+                                                static_cast<u32>(copy.src_subresource.base_level),
+                                                static_cast<u32>(copy.src_subresource.base_layer + layer),
+                                                VK_IMAGE_ASPECT_STENCIL_BIT)
+                             : vk::ImageView{};
+            vk::ImageView dst_view =
+                MakeMSAACopyView(device.GetLogical(), dst_image, dst_vk_format,
+                                 static_cast<u32>(copy.dst_subresource.base_level),
+                                 static_cast<u32>(copy.dst_subresource.base_layer + layer),
+                                 attachment_aspect);
+            const VkOffset2D dst_offset{copy.dst_offset.x, copy.dst_offset.y};
+            const VkExtent2D dst_extent{copy.extent.width, copy.extent.height};
+            const VkRect2D render_area{
+                .offset = dst_offset,
+                .extent = dst_extent,
             };
-            const std::array pre_barriers{
-                VkImageMemoryBarrier{
+            vk::Framebuffer framebuffer = device.GetLogical().CreateFramebuffer(VkFramebufferCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .renderPass = renderpass,
+                .attachmentCount = 1,
+                .pAttachments = dst_view.address(),
+                .width = static_cast<u32>(dst_offset.x) + dst_extent.width,
+                .height = static_cast<u32>(dst_offset.y) + dst_extent.height,
+                .layers = 1,
+            });
+            const MSAACopyPushConstants push_constants{
+                .dst_offset = {dst_offset.x, dst_offset.y},
+                .src_offset = {copy.src_offset.x, copy.src_offset.y},
+                .scale = {scale_x, scale_y},
+            };
+            scheduler.RequestOutsideRenderPassOperationContext();
+            const VkImageView src_stencil_handle = copy_stencil ? *src_stencil_view : VK_NULL_HANDLE;
+            scheduler.Record([this, pipeline, layout, sampler, renderpass,
+                              framebuffer_handle = *framebuffer, src_view_handle = *src_view,
+                              src_stencil_handle, src = src_image, dst = dst_image, render_area,
+                              attachment_aspect, push_constants](vk::CommandBuffer cmdbuf) {
+                const VkImageSubresourceRange src_range{
+                    .aspectMask = attachment_aspect,
+                    .baseMipLevel = 0,
+                    .levelCount = VK_REMAINING_MIP_LEVELS,
+                    .baseArrayLayer = 0,
+                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                };
+                const std::array pre_barriers{
+                    VkImageMemoryBarrier{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                        .pNext = nullptr,
+                        .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                         VK_ACCESS_TRANSFER_WRITE_BIT,
+                        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+                        .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .image = src,
+                        .subresourceRange = src_range,
+                    },
+                    VkImageMemoryBarrier{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                        .pNext = nullptr,
+                        .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                         VK_ACCESS_TRANSFER_WRITE_BIT,
+                        .dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                        .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                        .image = dst,
+                        .subresourceRange = src_range,
+                    },
+                };
+                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                           VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
+                                           VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                                           VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                                       0, nullptr, nullptr, pre_barriers);
+                const VkRenderPassBeginInfo renderpass_bi{
+                    .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                    .pNext = nullptr,
+                    .renderPass = renderpass,
+                    .framebuffer = framebuffer_handle,
+                    .renderArea = render_area,
+                    .clearValueCount = 0,
+                    .pClearValues = nullptr,
+                };
+                cmdbuf.BeginRenderPass(renderpass_bi, VK_SUBPASS_CONTENTS_INLINE);
+                const VkDescriptorSet descriptor_set =
+                    src_stencil_handle != VK_NULL_HANDLE
+                        ? two_textures_descriptor_allocator.Commit()
+                        : one_texture_descriptor_allocator.Commit();
+                if (src_stencil_handle != VK_NULL_HANDLE) {
+                    UpdateTwoTexturesDescriptorSet(device, descriptor_set, sampler, src_view_handle,
+                                                   src_stencil_handle);
+                } else {
+                    UpdateOneTextureDescriptorSet(device, descriptor_set, sampler, src_view_handle);
+                }
+                cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+                cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
+                                          nullptr);
+                const VkViewport viewport{
+                    .x = static_cast<float>(render_area.offset.x),
+                    .y = static_cast<float>(render_area.offset.y),
+                    .width = static_cast<float>(render_area.extent.width),
+                    .height = static_cast<float>(render_area.extent.height),
+                    .minDepth = 0.0f,
+                    .maxDepth = 1.0f,
+                };
+                cmdbuf.SetViewport(0, viewport);
+                cmdbuf.SetScissor(0, render_area);
+                cmdbuf.PushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, push_constants);
+                cmdbuf.Draw(3, 1, 0, 0);
+                cmdbuf.EndRenderPass();
+                const VkImageMemoryBarrier post_barrier{
                     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                     .pNext = nullptr,
-                    .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                                     VK_ACCESS_TRANSFER_WRITE_BIT,
-                    .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-                    .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
-                    .newLayout = VK_IMAGE_LAYOUT_GENERAL,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .image = src,
-                    .subresourceRange = src_range,
-                },
-                VkImageMemoryBarrier{
-                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                    .pNext = nullptr,
-                    .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                                     VK_ACCESS_TRANSFER_WRITE_BIT,
-                    .dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                                     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                    .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                    .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT |
+                                     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
                     .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .image = dst,
                     .subresourceRange = src_range,
-                },
-            };
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-                                       VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
-                                       VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                                       VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                                   0, nullptr, nullptr, pre_barriers);
-            const VkRenderPassBeginInfo renderpass_bi{
-                .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-                .pNext = nullptr,
-                .renderPass = renderpass,
-                .framebuffer = framebuffer_handle,
-                .renderArea = render_area,
-                .clearValueCount = 0,
-                .pClearValues = nullptr,
-            };
-            cmdbuf.BeginRenderPass(renderpass_bi, VK_SUBPASS_CONTENTS_INLINE);
-            const VkDescriptorSet descriptor_set =
-                src_stencil_handle != VK_NULL_HANDLE
-                    ? two_textures_descriptor_allocator.Commit()
-                    : one_texture_descriptor_allocator.Commit();
-            if (src_stencil_handle != VK_NULL_HANDLE) {
-                UpdateTwoTexturesDescriptorSet(device, descriptor_set, sampler, src_view_handle,
-                                               src_stencil_handle);
-            } else {
-                UpdateOneTextureDescriptorSet(device, descriptor_set, sampler, src_view_handle);
-            }
-            cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-            cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
-                                      nullptr);
-            const VkViewport viewport{
-                .x = static_cast<float>(render_area.offset.x),
-                .y = static_cast<float>(render_area.offset.y),
-                .width = static_cast<float>(render_area.extent.width),
-                .height = static_cast<float>(render_area.extent.height),
-                .minDepth = 0.0f,
-                .maxDepth = 1.0f,
-            };
-            cmdbuf.SetViewport(0, viewport);
-            cmdbuf.SetScissor(0, render_area);
-            cmdbuf.PushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, push_constants);
-            cmdbuf.Draw(3, 1, 0, 0);
-            cmdbuf.EndRenderPass();
-            const VkImageMemoryBarrier post_barrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
-                .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
-                .newLayout = VK_IMAGE_LAYOUT_GENERAL,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .image = dst,
-                .subresourceRange = src_range,
-            };
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                                   vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, 0, post_barrier);
-        });
-        msaa_copy_resources.push_back(MSAACopyResources{
-            .tick = scheduler.CurrentTick(),
-            .src_view = std::move(src_view),
-            .dst_view = std::move(dst_view),
-            .framebuffer = std::move(framebuffer),
-        });
-        if (copy_stencil) {
+                };
+                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                                       vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, 0, post_barrier);
+            });
             msaa_copy_resources.push_back(MSAACopyResources{
                 .tick = scheduler.CurrentTick(),
-                .src_view = std::move(src_stencil_view),
-                .dst_view = vk::ImageView{},
-                .framebuffer = vk::Framebuffer{},
+                .src_view = std::move(src_view),
+                .dst_view = std::move(dst_view),
+                .framebuffer = std::move(framebuffer),
             });
+            if (copy_stencil) {
+                msaa_copy_resources.push_back(MSAACopyResources{
+                    .tick = scheduler.CurrentTick(),
+                    .src_view = std::move(src_stencil_view),
+                    .dst_view = vk::ImageView{},
+                    .framebuffer = vk::Framebuffer{},
+                });
+            }
         }
     }
 }
@@ -1775,9 +1804,16 @@ VkPipeline BlitImageHelper::FindOrEmplaceMSAACopyPipeline(const MSAACopyPipeline
         return *msaa_copy_pipelines[std::distance(msaa_copy_keys.begin(), it)];
     }
     msaa_copy_keys.push_back(key);
-    const std::array stages = MakeStages(*clear_color_vert, key.msaa_to_non_msaa
-                                                                ? *convert_msaa_to_non_msaa_frag
-                                                                : *convert_non_msaa_to_msaa_frag);
+    VkShaderModule frag_module = key.msaa_to_non_msaa ? *convert_msaa_to_non_msaa_frag
+                                                     : *convert_non_msaa_to_msaa_frag;
+    if (key.format_class == MSAACopyFormatClass::SignedInteger) {
+        frag_module = key.msaa_to_non_msaa ? *convert_msaa_to_non_msaa_sint_frag
+                                           : *convert_non_msaa_to_msaa_sint_frag;
+    } else if (key.format_class == MSAACopyFormatClass::UnsignedInteger) {
+        frag_module = key.msaa_to_non_msaa ? *convert_msaa_to_non_msaa_uint_frag
+                                           : *convert_non_msaa_to_msaa_uint_frag;
+    }
+    const std::array stages = MakeStages(*clear_color_vert, frag_module);
     const VkPipelineMultisampleStateCreateInfo multisample_ci{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pNext = nullptr,

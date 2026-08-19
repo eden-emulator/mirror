@@ -45,12 +45,19 @@ struct BlitDepthStencilPipelineKey {
     u32 stencil_ref;
 };
 
+enum class MSAACopyFormatClass : u32 {
+    Float,
+    SignedInteger,
+    UnsignedInteger,
+};
+
 struct MSAACopyPipelineKey {
     constexpr auto operator<=>(const MSAACopyPipelineKey&) const noexcept = default;
 
     VkRenderPass renderpass;
     VkSampleCountFlagBits samples;
     bool msaa_to_non_msaa;
+    MSAACopyFormatClass format_class;
 };
 
 struct BlitMSAAPipelineKey {
@@ -198,7 +205,11 @@ private:
     vk::ShaderModule convert_d24s8_to_abgr8_frag;
     vk::ShaderModule convert_s8d24_to_abgr8_frag;
     vk::ShaderModule convert_msaa_to_non_msaa_frag;
+    vk::ShaderModule convert_msaa_to_non_msaa_sint_frag;
+    vk::ShaderModule convert_msaa_to_non_msaa_uint_frag;
     vk::ShaderModule convert_non_msaa_to_msaa_frag;
+    vk::ShaderModule convert_non_msaa_to_msaa_sint_frag;
+    vk::ShaderModule convert_non_msaa_to_msaa_uint_frag;
     vk::ShaderModule convert_non_msaa_to_msaa_depth_frag;
     vk::ShaderModule convert_non_msaa_to_msaa_depth_stencil_frag;
     vk::Sampler linear_sampler;
