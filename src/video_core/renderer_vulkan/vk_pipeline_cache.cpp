@@ -62,7 +62,7 @@ using VideoCommon::FileEnvironment;
 using VideoCommon::GenericEnvironment;
 using VideoCommon::GraphicsEnvironment;
 
-constexpr u32 CACHE_VERSION = 18;
+constexpr u32 CACHE_VERSION = 19;
 constexpr size_t VULKAN_CACHE_FLUSH_PIPELINES = 128;
 constexpr size_t VULKAN_CACHE_FLUSH_MIN_SECONDS = 30;
 constexpr std::array<char, 8> VULKAN_CACHE_MAGIC_NUMBER{'y', 'u', 'z', 'u', 'v', 'k', 'c', 'h'};
@@ -150,6 +150,25 @@ Shader::AttributeType AttributeType(const FixedPipelineState& state, size_t inde
         return Shader::AttributeType::UnsignedInt;
     }
     return Shader::AttributeType::Disabled;
+}
+
+Shader::InputTopology MaxwellToInputTopology(Maxwell::PrimitiveTopology topology) {
+    switch (topology) {
+    case Maxwell::PrimitiveTopology::Points:
+        return Shader::InputTopology::Points;
+    case Maxwell::PrimitiveTopology::Lines:
+    case Maxwell::PrimitiveTopology::LineLoop:
+    case Maxwell::PrimitiveTopology::LineStrip:
+        return Shader::InputTopology::Lines;
+    case Maxwell::PrimitiveTopology::LinesAdjacency:
+    case Maxwell::PrimitiveTopology::LineStripAdjacency:
+        return Shader::InputTopology::LinesAdjacency;
+    case Maxwell::PrimitiveTopology::TrianglesAdjacency:
+    case Maxwell::PrimitiveTopology::TriangleStripAdjacency:
+        return Shader::InputTopology::TrianglesAdjacency;
+    default:
+        return Shader::InputTopology::Triangles;
+    }
 }
 
 Shader::RuntimeInfo MakeRuntimeInfo(std::span<const Shader::IR::Program> programs,
@@ -270,33 +289,7 @@ Shader::RuntimeInfo MakeRuntimeInfo(std::span<const Shader::IR::Program> program
     default:
         break;
     }
-    switch (key.state.topology) {
-    case Maxwell::PrimitiveTopology::Points:
-        info.input_topology = Shader::InputTopology::Points;
-        break;
-    case Maxwell::PrimitiveTopology::Lines:
-    case Maxwell::PrimitiveTopology::LineLoop:
-    case Maxwell::PrimitiveTopology::LineStrip:
-        info.input_topology = Shader::InputTopology::Lines;
-        break;
-    case Maxwell::PrimitiveTopology::Triangles:
-    case Maxwell::PrimitiveTopology::TriangleStrip:
-    case Maxwell::PrimitiveTopology::TriangleFan:
-    case Maxwell::PrimitiveTopology::Quads:
-    case Maxwell::PrimitiveTopology::QuadStrip:
-    case Maxwell::PrimitiveTopology::Polygon:
-    case Maxwell::PrimitiveTopology::Patches:
-        info.input_topology = Shader::InputTopology::Triangles;
-        break;
-    case Maxwell::PrimitiveTopology::LinesAdjacency:
-    case Maxwell::PrimitiveTopology::LineStripAdjacency:
-        info.input_topology = Shader::InputTopology::LinesAdjacency;
-        break;
-    case Maxwell::PrimitiveTopology::TrianglesAdjacency:
-    case Maxwell::PrimitiveTopology::TriangleStripAdjacency:
-        info.input_topology = Shader::InputTopology::TrianglesAdjacency;
-        break;
-    }
+    info.input_topology = MaxwellToInputTopology(key.state.topology);
     info.force_early_z = key.state.early_z != 0;
     info.y_negate = key.state.y_negate != 0;
     return info;
@@ -793,8 +786,10 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
                                        index == static_cast<u32>(Maxwell::ShaderType::Geometry);
         if (key.unique_hashes[index] == 0 && is_emulated_stage) {
             auto topology = MaxwellToOutputTopology(key.state.topology);
-            programs[index] = GenerateGeometryPassthrough(pools.inst, pools.block, host_info,
-                                                          *layer_source_program, topology);
+            programs[index] =
+                GenerateGeometryPassthrough(pools.inst, pools.block, host_info,
+                                            *layer_source_program, topology,
+                                            MaxwellToInputTopology(key.state.topology));
             continue;
         }
         if (key.unique_hashes[index] == 0) {
@@ -807,11 +802,13 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
         Shader::Maxwell::Flow::CFG cfg(env, pools.flow_block, cfg_offset, index == 0);
         if (!uses_vertex_a || index != 1) {
             // Normal path
-            programs[index] = TranslateProgram(pools.inst, pools.block, env, cfg, host_info);
+            programs[index] = TranslateProgram(pools.inst, pools.block, env, cfg, host_info,
+                                              MaxwellToInputTopology(key.state.topology));
         } else {
             // VertexB path when VertexA is present.
             auto& program_va{programs[0]};
-            auto program_vb{TranslateProgram(pools.inst, pools.block, env, cfg, host_info)};
+            auto program_vb{TranslateProgram(pools.inst, pools.block, env, cfg, host_info,
+                                             MaxwellToInputTopology(key.state.topology))};
             programs[index] = MergeDualVertexPrograms(program_va, program_vb, env);
         }
 
@@ -957,7 +954,8 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline(
         env.Dump(hash, key.unique_hash);
     }
 
-    auto program{TranslateProgram(pools.inst, pools.block, env, cfg, host_info)};
+    auto program{TranslateProgram(pools.inst, pools.block, env, cfg, host_info,
+                                  Shader::InputTopology::Points)};
     const VkDriverIdKHR driver_id = device.GetDriverID();
     const bool needs_shared_mem_clamp =
         driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY ||
