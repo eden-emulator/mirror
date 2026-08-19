@@ -121,6 +121,7 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     case WSAENOPROTOOPT: return Errno::E_NOPROTOOPT;
     case WSAEPROTONOSUPPORT: return Errno::E_PROTONOSUPPORT;
     case WSAESOCKTNOSUPPORT: return Errno::E_SOCKTNOSUPPORT;
+    case WSAEDESTADDRREQ: return Errno::E_DESTADDRREQ;
 #ifdef WSAENOTSUP
     // Not defined by fucking MSVC because MSVC is stupid as shitfuckery
     case WSAENOTSUP: return Errno::E_NOTSUP;
