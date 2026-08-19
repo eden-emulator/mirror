@@ -1765,6 +1765,16 @@ u64 TextureCacheRuntime::GetDeviceMemoryUsage() const {
     return device.GetDeviceMemoryUsage();
 }
 
+bool TextureCacheRuntime::CanDownloadMsaa(const VideoCommon::ImageInfo& info) const {
+    if (ImageAspectMask(info.format) != VK_IMAGE_ASPECT_COLOR_BIT) {
+        return false;
+    }
+    if (VideoCore::Surface::IsPixelFormatInteger(info.format)) {
+        return false;
+    }
+    return info.resources.layers == 1;
+}
+
 bool TextureCacheRuntime::CanReportMemoryUsage() const {
     return device.CanReportMemoryUsage();
 }
@@ -2012,8 +2022,7 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
     }
 
     if (info.num_samples > 1) {
-        if (aspect_mask == VK_IMAGE_ASPECT_COLOR_BIT &&
-            !VideoCore::Surface::IsPixelFormatInteger(info.format)) {
+        if (runtime->CanDownloadMsaa(info)) {
             ImageInfo temp_info = info;
             temp_info.num_samples = 1;
 
@@ -2133,8 +2142,11 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
             });
             runtime->pending_msaa_images.emplace_back(scheduler->CurrentTick(),
                                                       std::move(temp_image));
-            return;
         }
+        if (is_rescaled) {
+            ScaleUp(true);
+        }
+        return;
     } else {
         boost::container::small_vector<VkBuffer, 8> buffers_vector{};
         boost::container::small_vector<boost::container::small_vector<VkBufferImageCopy, 16>, 8>

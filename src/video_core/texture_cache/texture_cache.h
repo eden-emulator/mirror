@@ -134,7 +134,7 @@ void TextureCache<P>::RunGarbageCollector() {
         if (True(image.flags & ImageFlagBits::IsDecoding)) {
             return false;
         }
-        const bool must_download = image.IsSafeDownload() && False(image.flags & ImageFlagBits::BadOverlap);
+        const bool must_download = IsDownloadable(image) && False(image.flags & ImageFlagBits::BadOverlap);
         if ((!aggressive_mode && True(image.flags & ImageFlagBits::CostlyLoad)) || (!high_priority_mode && must_download)) {
             return false;
         }
@@ -595,10 +595,25 @@ void TextureCache<P>::WriteMemory(DAddr cpu_addr, size_t size) {
 }
 
 template <class P>
+bool TextureCache<P>::IsDownloadable(const ImageBase& image) const noexcept {
+    if (!image.IsSafeGpuCopy()) {
+        return false;
+    }
+    if (image.info.num_samples == 1) {
+        return true;
+    }
+    if constexpr (P::HAS_MSAA_DOWNLOADS) {
+        return runtime.CanDownloadMsaa(image.info);
+    } else {
+        return false;
+    }
+}
+
+template <class P>
 void TextureCache<P>::DownloadMemory(DAddr cpu_addr, size_t size) {
     boost::container::small_vector<ImageId, 16> images;
-    ForEachImageInRegion(cpu_addr, size, [&images](ImageId image_id, ImageBase& image) {
-        if (!image.IsSafeDownload()) {
+    ForEachImageInRegion(cpu_addr, size, [this, &images](ImageId image_id, ImageBase& image) {
+        if (!IsDownloadable(image)) {
             return;
         }
         image.flags &= ~ImageFlagBits::GpuModified;

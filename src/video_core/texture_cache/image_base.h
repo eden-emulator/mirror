@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -65,8 +68,6 @@ struct ImageBase {
     void InsertView(const ImageViewInfo& view_info, ImageViewId image_view_id);
 
     [[nodiscard]] bool IsSafeGpuCopy() const noexcept;
-
-    [[nodiscard]] bool IsSafeDownload() const noexcept;
 
     [[nodiscard]] bool Overlaps(VAddr overlap_cpu_addr, size_t overlap_size) const noexcept {
         const VAddr overlap_end = overlap_cpu_addr + overlap_size;

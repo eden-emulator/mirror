@@ -66,6 +66,8 @@ public:
 
     bool CanReportMemoryUsage() const;
 
+    bool CanDownloadMsaa(const VideoCommon::ImageInfo& info) const;
+
     void BlitImage(Framebuffer* dst_framebuffer, ImageView& dst, ImageView& src,
                    const Region2D& dst_region, const Region2D& src_region,
                    Tegra::Engines::Fermi2D::Filter filter,
@@ -585,6 +587,7 @@ struct TextureCacheParams {
     static constexpr bool HAS_EMULATED_COPIES = false;
     static constexpr bool HAS_DEVICE_MEMORY_INFO = true;
     static constexpr bool IMPLEMENTS_ASYNC_DOWNLOADS = true;
+    static constexpr bool HAS_MSAA_DOWNLOADS = true;
 
     using Runtime = Vulkan::TextureCacheRuntime;
     using Image = Vulkan::Image;
