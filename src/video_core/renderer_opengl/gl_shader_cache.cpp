@@ -45,6 +45,7 @@ using Shader::Backend::SPIRV::EmitSPIRV;
 using Shader::Maxwell::ConvertLegacyToGeneric;
 using Shader::Maxwell::GenerateGeometryPassthrough;
 using Shader::Maxwell::MergeDualVertexPrograms;
+using Shader::Maxwell::PrunePassthroughStores;
 using Shader::Maxwell::TranslateProgram;
 using VideoCommon::ComputeEnvironment;
 using VideoCommon::FileEnvironment;
@@ -54,7 +55,7 @@ using VideoCommon::LoadPipelines;
 using VideoCommon::SerializePipeline;
 using Context = ShaderContext::Context;
 
-constexpr u32 CACHE_VERSION = 17;
+constexpr u32 CACHE_VERSION = 18;
 
 template <typename Container>
 auto MakeSpan(Container& container) {
@@ -537,6 +538,9 @@ std::unique_ptr<GraphicsPipeline> ShaderCache::CreateGraphicsPipeline(
         const size_t stage_index{index - 1};
         infos[stage_index] = &program.info;
 
+        if (previous_program) {
+            PrunePassthroughStores(program, previous_program->info.stores);
+        }
         const auto runtime_info = MakeRuntimeInfo(key, program, previous_program, glasm_use_storage_buffers, use_glasm);
         switch (::Settings::values.renderer_backend.GetValue()) {
         case Settings::RendererBackend::OpenGL_GLSL:

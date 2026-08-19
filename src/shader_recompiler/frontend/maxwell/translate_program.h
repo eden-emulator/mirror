@@ -29,6 +29,8 @@ namespace Shader::Maxwell {
 
 void ConvertLegacyToGeneric(IR::Program& program, const RuntimeInfo& runtime_info);
 
+void PrunePassthroughStores(IR::Program& program, const VaryingState& previous_stage_stores);
+
 // Maxwell v1 and older Nvidia cards don't support setting gl_Layer from non-geometry stages.
 // This creates a workaround by setting the layer as a generic output and creating a
 // passthrough geometry shader that reads the generic and sets the layer.

@@ -391,6 +391,52 @@ IR::Program MergeDualVertexPrograms(IR::Program& vertex_a, IR::Program& vertex_b
     return result;
 }
 
+void PrunePassthroughStores(IR::Program& program, const VaryingState& previous_stage_stores) {
+    if (program.stage != Stage::Geometry || program.is_geometry_passthrough) {
+        return;
+    }
+    VaryingState pruned;
+    for (size_t index = 0; index < program.info.passthrough.mask.size(); ++index) {
+        if (!program.info.passthrough.mask[index] || previous_stage_stores.mask[index]) {
+            continue;
+        }
+        const IR::Attribute attr{static_cast<IR::Attribute>(index)};
+        if (attr >= IR::Attribute::PositionX && attr <= IR::Attribute::PositionW) {
+            continue;
+        }
+        pruned.mask[index] = true;
+    }
+    if (pruned.mask.none()) {
+        return;
+    }
+    const auto erase_matching{[&pruned](IR::Block* block, IR::Opcode opcode, bool skip_used) {
+        auto it{block->begin()};
+        while (it != block->end()) {
+            IR::Inst& inst{*it};
+            if (inst.GetOpcode() != opcode ||
+                !pruned.mask[static_cast<size_t>(inst.Arg(0).Attribute())]) {
+                ++it;
+                continue;
+            }
+            if (skip_used && inst.HasUses()) {
+                ++it;
+                continue;
+            }
+            inst.Invalidate();
+            it = block->Instructions().erase(it);
+        }
+    }};
+    for (IR::Block* const block : program.post_order_blocks) {
+        erase_matching(block, IR::Opcode::SetAttribute, false);
+    }
+    for (IR::Block* const block : program.post_order_blocks) {
+        erase_matching(block, IR::Opcode::GetAttribute, true);
+    }
+    program.info.stores.mask &= ~pruned.mask;
+    program.info.loads.mask &= ~pruned.mask;
+    program.info.passthrough.mask &= ~pruned.mask;
+}
+
 void ConvertLegacyToGeneric(IR::Program& program, const Shader::RuntimeInfo& runtime_info) {
     auto& stores = program.info.stores;
     if (stores.Legacy()) {
