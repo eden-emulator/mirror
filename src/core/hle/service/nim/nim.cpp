@@ -56,30 +56,16 @@ private:
     Kernel::KEvent* completion_event;
 
     std::jthread worker;
-    std::atomic<bool> cancel_requested{false};
     std::atomic<u32> error_code{0};
 
     std::mutex data_mutex;
     std::vector<u8> download_data;
 
     void CancelImpl() {
-        cancel_requested.store(true);
+        worker.request_stop();
         if (worker.joinable()) {
             worker.join();
         }
-    }
-
-    void WorkerThread() {
-        if (cancel_requested.load()) {
-            error_code.store(1);
-        } else {
-            std::scoped_lock lock{data_mutex};
-            // Dummy JSON response, else it fails...
-            const std::string dummy_response = "{}";
-            download_data.assign(dummy_response.begin(), dummy_response.end());
-            error_code.store(0);
-        }
-        completion_event->Signal(system.Kernel());
     }
 
     Result Cancel() {
@@ -118,9 +104,7 @@ private:
         LOG_DEBUG(Service_NIM, "(STUBBED) called");
         CancelImpl();
 
-        cancel_requested.store(false);
         error_code.store(0);
-
         completion_event->Clear(system.Kernel());
 
         {
@@ -128,7 +112,19 @@ private:
             download_data.clear();
         }
 
-        worker = std::jthread(&IShopServiceAsync::WorkerThread, this);
+        worker = std::jthread([this](const std::stop_token& stop_token) {
+            if (stop_token.stop_requested()) {
+                error_code.store(1);
+            } else {
+                std::scoped_lock lock{data_mutex};
+                // Dummy JSON response, else it fails...
+                const std::string dummy_response = "{}";
+                download_data.assign(dummy_response.begin(), dummy_response.end());
+                error_code.store(0);
+            }
+            completion_event->Signal(system.Kernel());
+        });
+
         R_SUCCEED();
     }
 
