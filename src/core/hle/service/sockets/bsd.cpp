@@ -524,7 +524,7 @@ void BSD::ExecuteWork(HLERequestContext& ctx, Work work) {
 
 std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::Type type, Network::Protocol protocol) {
     // user bsd:u has restrictions on SOCK_SEQPACKET and SOCK_RAW
-    LOG_DEBUG(Network, "domain={},type,protocol={}", u32(domain), u32(type), u32(protocol));
+    LOG_DEBUG(Network, "domain={},type={},protocol={}", u32(domain), u32(type), u32(protocol));
     if (is_user && (type == Network::Type::SEQPACKET || type == Network::Type::RAW)) {
         if (type == Network::Type::RAW && domain == Network::Domain::INET && protocol == Network::Protocol::ICMP) {
             // fine, can use on bsd:s and bsd:u
@@ -570,8 +570,8 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
 
 #if defined(__unix__) && !defined(__APPLE__)
     // ...only unix has this issue it seems, ICMP works otherwise fine on win
-    if (bsd_errno != Network::Errno::E_SUCCESS
-    && (protocol == Network::Protocol::ICMP || protocol == Network::Protocol::ICMPV6)) {
+    if ((protocol == Network::Protocol::ICMP || protocol == Network::Protocol::ICMPV6)
+    && bsd_errno != Network::Errno::E_SUCCESS) {
         LOG_WARNING(Network, "Using ICMP emulated socket");
         descriptor.socket = std::make_shared<Network::IcmpSocket>();
         descriptor.socket->fd = fd;
