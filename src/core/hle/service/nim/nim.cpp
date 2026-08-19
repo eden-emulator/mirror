@@ -7,7 +7,6 @@
 #include <chrono>
 #include <mutex>
 #include <string>
-#include <thread>
 #include <vector>
 
 #include "core/core.h"
@@ -56,7 +55,7 @@ private:
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* completion_event;
 
-    std::thread worker;
+    std::jthread worker;
     std::atomic<bool> cancel_requested{false};
     std::atomic<u32> error_code{0};
 
@@ -129,7 +128,7 @@ private:
             download_data.clear();
         }
 
-        worker = std::thread(&IShopServiceAsync::WorkerThread, this);
+        worker = std::jthread(&IShopServiceAsync::WorkerThread, this);
         R_SUCCEED();
     }
 
