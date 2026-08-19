@@ -285,6 +285,7 @@ public:
     Id point_coord{};
     Id tess_coord{};
     Id clip_distances{};
+    Id input_clip_distances{};
     Id layer{};
     Id viewport_index{};
     Id viewport_mask{};

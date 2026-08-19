@@ -367,6 +367,23 @@ Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, Id vertex) {
         return ctx.OpSelect(ctx.F32[1], ctx.OpLoad(ctx.U1, ctx.front_face),
                             ctx.OpBitcast(ctx.F32[1], ctx.Const((std::numeric_limits<u32>::max)())),
                             ctx.f32_zero_value);
+    case IR::Attribute::ClipDistance0:
+    case IR::Attribute::ClipDistance1:
+    case IR::Attribute::ClipDistance2:
+    case IR::Attribute::ClipDistance3:
+    case IR::Attribute::ClipDistance4:
+    case IR::Attribute::ClipDistance5:
+    case IR::Attribute::ClipDistance6:
+    case IR::Attribute::ClipDistance7: {
+        const u32 base{static_cast<u32>(IR::Attribute::ClipDistance0)};
+        const u32 index{static_cast<u32>(attr) - base};
+        if (!ValidId(ctx.input_clip_distances) || index >= ctx.profile.max_user_clip_distances) {
+            return ctx.Const(1.0f);
+        }
+        const Id pointer{
+            AttrPointer(ctx, ctx.input_f32, vertex, ctx.input_clip_distances, ctx.Const(index))};
+        return ctx.OpLoad(ctx.F32[1], pointer);
+    }
     case IR::Attribute::PointSpriteS:
         return ctx.OpLoad(ctx.F32[1],
                           ctx.OpAccessChain(ctx.input_f32, ctx.point_coord, ctx.u32_zero_value));

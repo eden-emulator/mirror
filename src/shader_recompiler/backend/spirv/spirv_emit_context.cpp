@@ -1522,6 +1522,12 @@ void EmitContext::DefineInputs(const IR::Program& program) {
             }
         }
     }
+    if (stage == Stage::Geometry && info.loads.ClipDistances() &&
+        profile.max_user_clip_distances > 0) {
+        const u32 used{(std::min)(profile.max_user_clip_distances, 8u)};
+        const Id type{TypeArray(F32[1], Const(used))};
+        input_clip_distances = DefineInput(*this, type, true, spv::BuiltIn::ClipDistance);
+    }
     if (loads[IR::Attribute::InstanceId]) {
         if (profile.support_vertex_instance_id) {
             instance_id = DefineInput(*this, U32[1], true, spv::BuiltIn::InstanceId);

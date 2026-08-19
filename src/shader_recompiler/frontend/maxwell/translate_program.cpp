@@ -178,6 +178,20 @@ struct PassthroughVertices {
     u32 stride;
 };
 
+OutputTopology GetPassthroughTopology(InputTopology input_topology) {
+    switch (input_topology) {
+    case InputTopology::Points:
+        return OutputTopology::PointList;
+    case InputTopology::Lines:
+    case InputTopology::LinesAdjacency:
+        return OutputTopology::LineStrip;
+    case InputTopology::Triangles:
+    case InputTopology::TrianglesAdjacency:
+        return OutputTopology::TriangleStrip;
+    }
+    return OutputTopology::TriangleStrip;
+}
+
 PassthroughVertices GetPassthroughVertices(InputTopology input_topology) {
     switch (input_topology) {
     case InputTopology::Points:
@@ -237,6 +251,14 @@ void EmitGeometryPassthrough(IR::IREmitter& ir, const IR::Program& program,
                 continue;
             }
             copy_vec4(attr);
+        }
+
+        for (u32 j = 0; j < 8; j++) {
+            const IR::Attribute attr = IR::Attribute::ClipDistance0 + j;
+            if (!passthrough_mask[attr]) {
+                continue;
+            }
+            ir.SetAttribute(attr, ir.GetAttribute(attr, ir.Imm32(i)), ir.Imm32(0));
         }
 
         if (passthrough_position) {
@@ -304,6 +326,7 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
             }
 
             if (!normalized_host_info.support_geometry_shader_passthrough) {
+                program.output_topology = GetPassthroughTopology(input_topology);
                 program.output_vertices = GetPassthroughVertices(input_topology).count;
                 LowerGeometryPassthrough(program, normalized_host_info, input_topology);
                 program.is_geometry_passthrough = false;

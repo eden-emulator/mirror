@@ -306,9 +306,12 @@ EmitContext::EmitContext(IR::Program& program, Bindings& bindings, const Profile
         } else if (program.is_geometry_passthrough && !profile.support_geometry_shader_passthrough) {
             LOG_WARNING(Shader_GLSL, "Passthrough geometry program used but not supported");
         }
-        header += fmt::format(
-            "layout({},max_vertices={})out;in gl_PerVertex{{vec4 gl_Position;}}gl_in[];",
-            OutputPrimitive(program.output_topology), program.output_vertices);
+        header += fmt::format("layout({},max_vertices={})out;in gl_PerVertex{{vec4 gl_Position;",
+                              OutputPrimitive(program.output_topology), program.output_vertices);
+        if (program.info.loads.ClipDistances()) {
+            header += "float gl_ClipDistance[];";
+        }
+        header += "}gl_in[];";
         break;
     case Stage::Fragment:
         stage_name = "fs";
