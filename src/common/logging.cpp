@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <regex>
 #include <thread>
+#include <fmt/base.h>
 
 #if defined(__ANDROID__)
 #include <android/log.h>
@@ -38,6 +39,19 @@
 #include "common/bounded_threadsafe_queue.h"
 
 namespace Common::Log {
+
+/// @brief A log entry. Log entries are store in a structured format to permit more varied output
+/// formatting on different frontends, as well as facilitating filtering and aggregation.
+struct Entry {
+    char const* message = nullptr;
+    size_t message_len = 0;
+    std::chrono::microseconds timestamp;
+    Class log_class{};
+    Level log_level{};
+    const char* filename = nullptr;
+    const char* function = nullptr;
+    uint32_t line_num = 0;
+};
 
 namespace {
 
@@ -70,8 +84,6 @@ const char* GetLevelName(Level log_level) {
     }
 }
 
-}
-
 // Some IDEs prefer <file>:<line> instead, so let's just do that :)
 std::string FormatLogMessage(const Entry& entry) noexcept {
     if (!entry.filename) return "";
@@ -79,10 +91,9 @@ std::string FormatLogMessage(const Entry& entry) noexcept {
     auto const time_fractional = uint32_t(entry.timestamp.count() % 1000000);
     auto const class_name = GetLogClassName(entry.log_class);
     auto const level_name = GetLevelName(entry.log_level);
-    return fmt::format("[{:4d}.{:06d}] {} <{}> {}:{}:{}: {}", time_seconds, time_fractional, class_name, level_name, entry.filename, entry.line_num, entry.function, entry.message);
+    return fmt::format("[{:4d}.{:06d}] {} <{}> {}:{}:{}: {}\n", time_seconds, time_fractional, class_name, level_name, entry.filename, entry.line_num, entry.function, entry.message);
 }
 
-namespace {
 template <typename It>
 Level GetLevelByName(const It begin, const It end) {
     for (u32 i = 0; i < u32(Level::Count); ++i) {
@@ -127,25 +138,6 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
     instance.SetClassLevel(log_class, level);
     return true;
 }
-} // Anonymous namespace
-
-void Filter::ParseFilterString(std::string_view filter_view) {
-    auto clause_begin = filter_view.cbegin();
-    while (clause_begin != filter_view.cend()) {
-        auto clause_end = std::find(clause_begin, filter_view.cend(), ' ');
-        // If clause isn't empty
-        if (clause_end != clause_begin) {
-            ParseFilterRule(*this, clause_begin, clause_end);
-        }
-        if (clause_end != filter_view.cend()) {
-            // Skip over the whitespace
-            ++clause_end;
-        }
-        clause_begin = clause_end;
-    }
-}
-
-namespace {
 
 /// @brief Trims up to and including the last of ../, ..\, src/, src\ in a string
 /// do not be fooled this isn't generating new strings on .rodata :)
@@ -220,22 +212,24 @@ struct ColorConsoleBackend final : public Backend {
     ~ColorConsoleBackend() noexcept override {}
     void Write(const Entry& entry) noexcept override {
         if (enabled) {
-#define ESC "\x1b"
             auto const color_str = [&entry]() -> const char* {
                 switch (entry.log_level) {
-#define CCB_MAKE_COLOR_FMT(X) ESC X CCB_PRINTF_FMT ESC "[0m\n"
-                case Level::Debug: return CCB_MAKE_COLOR_FMT("[0;36m"); // Cyan
-                case Level::Info: return CCB_MAKE_COLOR_FMT("[0;37m"); // Bright gray
-                case Level::Warning: return CCB_MAKE_COLOR_FMT("[1;33m"); // Bright yellow
-                case Level::Error: return CCB_MAKE_COLOR_FMT("[1;31m"); // Bright red
-                case Level::Critical: return CCB_MAKE_COLOR_FMT("[1;35m"); // Bright magenta
-                default: return CCB_MAKE_COLOR_FMT("[1;30m"); // Grey
-#undef CCB_MAKE_COLOR_FMT
+                case Level::Debug: return "[0;36m"; // Cyan
+                case Level::Info: return "[0;37m"; // Bright gray
+                case Level::Warning: return "[1;33m"; // Bright yellow
+                case Level::Error: return "[1;31m"; // Bright red
+                case Level::Critical: return "[1;35m"; // Bright magenta
+                default: return "[1;30m"; // Grey
                 }
             }();
             auto const df = GetDirectFormatArgs(entry);
-            std::fprintf(stdout, color_str, df.time_seconds, df.time_fractional, df.class_name, df.level_name, entry.filename, entry.line_num, entry.function, entry.message.c_str());
-#undef ESC
+            // more restrictive, because take for example this simple prelude:
+            // [  50.872256] Config <Info> common/settings.cpp:142:LogSettings:
+            char buffer[100];
+            auto result = fmt::format_to_n(buffer, sizeof(buffer) - 1, "\x1b{}[{:4d}.{:06d}] {} <{}> {}:{}:{}: ", color_str, df.time_seconds, df.time_fractional, df.class_name, df.level_name, entry.filename, entry.line_num, entry.function, entry.message);
+            std::fwrite(buffer, 1, result.size, stdout);
+            std::fwrite(entry.message, 1, entry.message_len, stdout);
+            std::fwrite("\x1b[0m\n", 1, sizeof("\x1b[0m\n"), stdout);
         }
     }
     void Flush() noexcept override {}
@@ -246,7 +240,7 @@ struct ColorConsoleBackend final : public Backend {
 #ifndef __OPENORBIS__
 /// @brief Backend that writes to a file passed into the constructor
 struct FileBackend final : public Backend {
-    explicit FileBackend(const std::filesystem::path& filename) noexcept {
+    explicit FileBackend(const std::filesystem::path filename) noexcept {
         auto old_filename = filename;
         old_filename += ".old.txt";
         // Existence checks are done within the functions themselves.
@@ -261,7 +255,7 @@ struct FileBackend final : public Backend {
         if (!enabled)
             return;
 
-        auto message = FormatLogMessage(entry).append(1, '\n');
+        auto message = FormatLogMessage(entry);
 #ifndef __ANDROID__
         if (Settings::values.censor_username.GetValue()) {
             // This must be a static otherwise it would get checked on EVERY
@@ -269,8 +263,7 @@ struct FileBackend final : public Backend {
             static std::string username = []() -> std::string {
                 // in order of precedence
                 // LOGNAME usually works on UNIX, USERNAME on Windows
-                // Some UNIX systems suck and don't use LOGNAME so we also
-                // need USER :(
+                // Some UNIX systems suck and don't use LOGNAME so we also need USER :(
                 for (auto const var : { "LOGNAME", "USERNAME", "USER", })
                     if (auto const s = ::getenv(var); s != nullptr)
                         return std::string{s};
@@ -280,7 +273,7 @@ struct FileBackend final : public Backend {
                 boost::replace_all(message, username, "user");
         }
 #endif
-        bytes_written += file->WriteString(message);
+        bytes_written += file->WriteSpan(std::span<const char>{message.begin(), message.end()});
 
         // Option to log each line rather than 4k buffers
         if (Settings::values.log_flush_line.GetValue())
@@ -308,14 +301,13 @@ private:
     bool enabled = true;
 };
 #endif
-
 #ifdef _WIN32
 /// @brief Backend that writes to Visual Studio's output window
 struct DebuggerBackend final : public Backend {
     explicit DebuggerBackend() noexcept = default;
     ~DebuggerBackend() noexcept override = default;
     void Write(const Entry& entry) noexcept override {
-        ::OutputDebugStringW(UTF8ToUTF16W(FormatLogMessage(entry).append(1, '\n')).c_str());
+        ::OutputDebugStringW(UTF8ToUTF16W(FormatLogMessage(entry)).c_str());
     }
     void Flush() noexcept override {}
 };
@@ -377,7 +369,23 @@ struct Impl {
 #endif
     std::chrono::steady_clock::time_point time_origin{std::chrono::steady_clock::now()};
 };
-} // namespace
+} // Anonymous namespace
+
+void Filter::ParseFilterString(std::string_view filter_view) {
+    auto clause_begin = filter_view.cbegin();
+    while (clause_begin < filter_view.cend()) {
+        auto clause_end = std::find(clause_begin, filter_view.cend(), ' ');
+        // If clause isn't empty
+        if (clause_end != clause_begin) {
+            ParseFilterRule(*this, clause_begin, clause_end);
+        }
+        if (clause_end != filter_view.cend()) {
+            // Skip over the whitespace
+            ++clause_end;
+        }
+        clause_begin = clause_end;
+    }
+}
 
 // Constructor shall NOT depend upon Settings() or whatever
 // it's ran at global static ctor() time... so BE CAREFUL MFER!
@@ -418,10 +426,14 @@ void SetColorConsoleBackendEnabled(bool enabled) {
 
 void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename, unsigned int line_num, const char* function, fmt::string_view format, const fmt::format_args& args) {
     if (logging_instance && logging_instance->filter.CheckMessage(log_class, log_level)) {
+        char buffer[BUFSIZ];
+        auto result = fmt::vformat_to_n(buffer, sizeof(buffer) - 1, format, args);
+        buffer[result.size] = '\0';
         auto const flush = ::Settings::values.log_flush_line.GetValue();
         logging_instance->ForEachBackend([=](Backend& backend) {
             backend.Write(Entry{
-                .message = fmt::vformat(format, args),
+                .message = buffer,
+                .message_len = result.size,
                 .timestamp = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - logging_instance->time_origin),
                 .log_class = log_class,
                 .log_level = log_level,
