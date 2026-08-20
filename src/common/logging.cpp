@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <regex>
 #include <thread>
-#include <fmt/base.h>
 
 #if defined(__ANDROID__)
 #include <android/log.h>
