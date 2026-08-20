@@ -458,6 +458,7 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
                                          driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY,
         .has_broken_fp32_signed_zero_nan_preserve =
             driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY,
+        .has_broken_fp32_denorm_flush = driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY,
         .ignore_nan_fp_comparisons = false,
         .has_broken_spirv_subgroup_mask_vector_extract_dynamic = false,
         .has_broken_robust =
