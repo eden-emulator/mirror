@@ -844,28 +844,40 @@ void BlitImageHelper::BlitDepthStencil(const Framebuffer* dst_framebuffer,
                                        const Region2D& dst_region, const Region2D& src_region,
                                        Tegra::Engines::Fermi2D::Filter filter,
                                        Tegra::Engines::Fermi2D::Operation operation) {
-    if (!device.IsExtShaderStencilExportSupported()) {
-        return;
-    }
     ASSERT(filter == Tegra::Engines::Fermi2D::Filter::Point);
     ASSERT(operation == Tegra::Engines::Fermi2D::Operation::SrcCopy);
+    const bool blit_stencil = device.IsExtShaderStencilExportSupported();
     const BlitImagePipelineKey key{
         .renderpass = dst_framebuffer->RenderPass(),
         .operation = operation,
     };
-    const VkPipelineLayout layout = *two_textures_pipeline_layout;
+    VkPipelineLayout layout{};
+    VkPipeline pipeline{};
+    VkImageView src_stencil_view = VK_NULL_HANDLE;
+    if (blit_stencil) {
+        layout = *two_textures_pipeline_layout;
+        pipeline = FindOrEmplaceDepthStencilPipeline(key);
+        src_stencil_view = src_image_view.StencilView();
+    } else {
+        layout = *one_texture_pipeline_layout;
+        pipeline = FindOrEmplaceBlitDepthPipeline(key.renderpass);
+    }
     const VkSampler sampler = *nearest_sampler;
-    const VkPipeline pipeline = FindOrEmplaceDepthStencilPipeline(key);
     const VkImageView src_depth_view = src_image_view.DepthView();
-    const VkImageView src_stencil_view = src_image_view.StencilView();
 
     RecordShaderReadBarrier(scheduler, src_image_view);
     scheduler.RequestRenderpass(dst_framebuffer);
     scheduler.Record([dst_region, src_region, pipeline, layout, sampler, src_depth_view,
-                      src_stencil_view, this](vk::CommandBuffer cmdbuf) {
-        const VkDescriptorSet descriptor_set = two_textures_descriptor_allocator.Commit();
-        UpdateTwoTexturesDescriptorSet(device, descriptor_set, sampler, src_depth_view,
-                                       src_stencil_view);
+                      src_stencil_view, blit_stencil, this](vk::CommandBuffer cmdbuf) {
+        VkDescriptorSet descriptor_set{};
+        if (blit_stencil) {
+            descriptor_set = two_textures_descriptor_allocator.Commit();
+            UpdateTwoTexturesDescriptorSet(device, descriptor_set, sampler, src_depth_view,
+                                           src_stencil_view);
+        } else {
+            descriptor_set = one_texture_descriptor_allocator.Commit();
+            UpdateOneTextureDescriptorSet(device, descriptor_set, sampler, src_depth_view);
+        }
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
                                   nullptr);

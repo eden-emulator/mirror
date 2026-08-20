@@ -1019,7 +1019,6 @@ VkImageView TextureCacheRuntime::GetOrCreateResolveShadow(VkImage msaa_image, Vk
     if (shadow.image && shadow.format == format && shadow.extent.width == extent.width &&
         shadow.extent.height == extent.height && shadow.layers == layers &&
         shadow.aspect_mask == aspect_mask) {
-        shadow.up_to_date = true;
         return *shadow.view;
     }
     VkImageUsageFlags shadow_usage =
@@ -1069,7 +1068,7 @@ VkImageView TextureCacheRuntime::GetOrCreateResolveShadow(VkImage msaa_image, Vk
     shadow.extent = extent;
     shadow.layers = layers;
     shadow.aspect_mask = aspect_mask;
-    shadow.up_to_date = true;
+    shadow.up_to_date = false;
     return *shadow.view;
 }
 
@@ -1080,6 +1079,13 @@ const TextureCacheRuntime::ResolveShadow* TextureCacheRuntime::GetValidResolveSh
         return nullptr;
     }
     return &it->second;
+}
+
+void TextureCacheRuntime::MarkResolveShadowUpToDate(VkImage msaa_image) {
+    const auto it = resolve_shadows.find(msaa_image);
+    if (it != resolve_shadows.end()) {
+        it->second.up_to_date = true;
+    }
 }
 
 void TextureCacheRuntime::InvalidateResolveShadow(VkImage msaa_image) {
@@ -1753,10 +1759,6 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
     if ((dst_aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0) {
         const bool copies_stencil = (dst_aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0 &&
                                     device.IsExtShaderStencilExportSupported();
-        if ((dst_aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0 && !copies_stencil) {
-            UNIMPLEMENTED_MSG("Copying images with different samples is not supported.");
-            return;
-        }
         blit_image_helper.CopyMSAADepth(render_pass_cache, dst.Handle(), dst.info.format,
                                         src.Handle(), src.info.format, num_samples, copies,
                                         copies_stencil, msaa_to_non_msaa);
@@ -3059,6 +3061,7 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
     renderpass = runtime.render_pass_cache.Get(renderpass_key);
     render_pass_key = renderpass_key;
     render_pass_cache = &runtime.render_pass_cache;
+    runtime_ptr = &runtime;
     render_area.width = (std::min)(render_area.width, width);
     render_area.height = (std::min)(render_area.height, height);
 
@@ -3075,6 +3078,7 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
                 const VkImage msaa_image = images[rt_map[index]];
                 attachments.push_back(runtime.GetOrCreateResolveShadow(
                     msaa_image, vk_format, render_area, layers, VK_IMAGE_ASPECT_COLOR_BIT));
+                resolve_shadow_images[num_resolve_shadows++] = msaa_image;
                 continue;
             }
             VkImageCreateInfo resolve_ci{
@@ -3127,6 +3131,7 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
                 .format;
         attachments.push_back(runtime.GetOrCreateResolveShadow(depth_image, vk_format, render_area,
                                                                layers, depth_aspect_mask));
+        resolve_shadow_images[num_resolve_shadows++] = depth_image;
     }
 
     num_color_buffers = static_cast<u32>(num_colors);
@@ -3141,6 +3146,15 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
         .height = render_area.height,
         .layers = static_cast<u32>((std::max)(num_layers, 1)),
     });
+}
+
+void Framebuffer::MarkResolveShadowsUpToDate() const {
+    if (runtime_ptr == nullptr) {
+        return;
+    }
+    for (u32 index = 0; index < num_resolve_shadows; ++index) {
+        runtime_ptr->MarkResolveShadowUpToDate(resolve_shadow_images[index]);
+    }
 }
 
 VkRenderPass Framebuffer::RenderPassVariant(u32 color_clear_mask, bool depth_stencil_clear,

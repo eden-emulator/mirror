@@ -132,6 +132,7 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer, VkRenderPass
     num_renderpass_images = framebuffer->NumImages();
     renderpass_images = framebuffer->Images();
     renderpass_image_ranges = framebuffer->ImageRanges();
+    framebuffer->MarkResolveShadowsUpToDate();
 }
 
 void Scheduler::RealizeDeferredClear() {

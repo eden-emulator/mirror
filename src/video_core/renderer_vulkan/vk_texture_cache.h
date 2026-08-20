@@ -131,6 +131,8 @@ public:
 
     void InvalidateResolveShadow(VkImage msaa_image);
 
+    void MarkResolveShadowUpToDate(VkImage msaa_image);
+
     void EraseResolveShadow(VkImage msaa_image);
 
     std::span<const VkFormat> ViewFormats(PixelFormat format) {
@@ -257,6 +259,10 @@ public:
         return discard_msaa_depth_stencil;
     }
 
+    /// Records that a render pass has begun, so its resolve attachments will hold valid contents
+    /// once it ends.
+    void MarkResolveShadowsUpToDate() const;
+
 private:
     static constexpr size_t NUM_MEMOIZED_RENDER_PASS_VARIANTS = 8;
 
@@ -274,6 +280,9 @@ private:
     bool is_rescaled{};
     std::vector<vk::Image> resolve_images;
     std::vector<vk::ImageView> resolve_image_views;
+    std::array<VkImage, 9> resolve_shadow_images{};
+    u32 num_resolve_shadows = 0;
+    TextureCacheRuntime* runtime_ptr{nullptr};
     RenderPassKey render_pass_key{};
     RenderPassCache* render_pass_cache{nullptr};
     bool discard_msaa_color{};
