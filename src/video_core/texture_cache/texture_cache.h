@@ -577,6 +577,7 @@ FramebufferId TextureCache<P>::GetFramebufferId(const RenderTargets& key) {
         return id ? &slot_image_views[id] : nullptr;
     });
     ImageView* const depth_buffer = key.depth_buffer_id ? &slot_image_views[key.depth_buffer_id] : nullptr;
+    runtime.FlushDeferredClear();
     framebuffer_id = slot_framebuffers.insert(runtime, color_buffers, depth_buffer, key);
     return framebuffer_id;
 }
@@ -2419,6 +2420,7 @@ void TextureCache<P>::RemoveImageViewReferences(std::span<const ImageViewId> rem
 
 template <class P>
 void TextureCache<P>::RemoveFramebuffers(std::span<const ImageViewId> removed_views) {
+    runtime.FlushDeferredClear();
     auto it = framebuffers.begin();
     while (it != framebuffers.end()) {
         if (it->first.Contains(removed_views)) {

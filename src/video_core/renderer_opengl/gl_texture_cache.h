@@ -75,6 +75,8 @@ public:
 
     void Finish();
 
+    void FlushDeferredClear() {}
+
     StagingBufferMap UploadStagingBuffer(size_t size, bool deferred = false);
 
     StagingBufferMap DownloadStagingBuffer(size_t size, bool deferred = false);

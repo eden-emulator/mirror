@@ -1796,6 +1796,10 @@ bool TextureCacheRuntime::CanReportMemoryUsage() const {
     return device.CanReportMemoryUsage();
 }
 
+void TextureCacheRuntime::FlushDeferredClear() {
+    scheduler.FlushDeferredClear();
+}
+
 void TextureCacheRuntime::TickFrame() {
     std::erase_if(pending_msaa_images, [this](const auto& pending) {
         return scheduler.IsFree(pending.first);

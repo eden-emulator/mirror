@@ -60,6 +60,8 @@ public:
 
     void TickFrame();
 
+    void FlushDeferredClear();
+
     u64 GetDeviceLocalMemory() const;
 
     u64 GetDeviceMemoryUsage() const;
