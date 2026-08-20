@@ -225,10 +225,9 @@ struct ColorConsoleBackend final : public Backend {
             auto const df = GetDirectFormatArgs(entry);
             // more restrictive, because take for example this simple prelude:
             // [  50.872256] Config <Info> common/settings.cpp:142:LogSettings:
-            char buffer[200];
+            char buffer[128];
             auto result = fmt::format_to_n(buffer, sizeof(buffer) - 1, "\x1b{}[{:4d}.{:06d}] {} <{}> {}:{}:{}: ", color_str, df.time_seconds, df.time_fractional, df.class_name, df.level_name, entry.filename, entry.line_num, entry.function, entry.message);
-            buffer[result.size] = '\0';
-            std::fwrite(buffer, 1, result.size, stdout);
+            std::fwrite(buffer, 1, (std::min)(sizeof(buffer) - 1, result.size), stdout);
             std::fwrite(entry.message, 1, entry.message_len, stdout);
             std::fwrite("\x1b[0m\n", 1, sizeof("\x1b[0m\n"), stdout);
         }
@@ -434,7 +433,7 @@ void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename, u
         logging_instance->ForEachBackend([=](Backend& backend) {
             backend.Write(Entry{
                 .message = buffer,
-                .message_len = result.size,
+                .message_len = (std::min)(sizeof(buffer) - 1, result.size),
                 .timestamp = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - logging_instance->time_origin),
                 .log_class = log_class,
                 .log_level = log_level,
