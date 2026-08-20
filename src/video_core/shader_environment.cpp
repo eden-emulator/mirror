@@ -338,11 +338,13 @@ GraphicsEnvironment::GraphicsEnvironment(Tegra::Engines::Maxwell3D& maxwell3d_,
 }
 
 u32 GraphicsEnvironment::ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) {
-    const auto& cbuf{maxwell3d->state.shader_stages[stage_index].const_buffers[cbuf_index]};
-    ASSERT(cbuf.enabled);
     u32 value{};
-    if (cbuf_offset < cbuf.size) {
-        value = gpu_memory->Read<u32>(cbuf.address + cbuf_offset);
+    const auto& stage_cbufs{maxwell3d->state.shader_stages[stage_index].const_buffers};
+    if (cbuf_index < stage_cbufs.size()) {
+        const auto& cbuf{stage_cbufs[cbuf_index]};
+        if (cbuf.enabled && cbuf_offset < cbuf.size) {
+            value = gpu_memory->Read<u32>(cbuf.address + cbuf_offset);
+        }
     }
     cbuf_values.emplace(MakeCbufKey(cbuf_index, cbuf_offset), value);
     return value;
@@ -420,12 +422,14 @@ ComputeEnvironment::ComputeEnvironment(Tegra::Engines::KeplerCompute& kepler_com
 }
 
 u32 ComputeEnvironment::ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) {
-    const auto& qmd{kepler_compute->launch_description};
-    ASSERT(((qmd.const_buffer_enable_mask.Value() >> cbuf_index) & 1) != 0);
-    const auto& cbuf{qmd.const_buffer_config[cbuf_index]};
     u32 value{};
-    if (cbuf_offset < cbuf.size) {
-        value = gpu_memory->Read<u32>(cbuf.Address() + cbuf_offset);
+    const auto& qmd{kepler_compute->launch_description};
+    if (cbuf_index < qmd.const_buffer_config.size()) {
+        const bool enabled{((qmd.const_buffer_enable_mask.Value() >> cbuf_index) & 1) != 0};
+        const auto& cbuf{qmd.const_buffer_config[cbuf_index]};
+        if (enabled && cbuf_offset < cbuf.size) {
+            value = gpu_memory->Read<u32>(cbuf.Address() + cbuf_offset);
+        }
     }
     cbuf_values.emplace(MakeCbufKey(cbuf_index, cbuf_offset), value);
     return value;
