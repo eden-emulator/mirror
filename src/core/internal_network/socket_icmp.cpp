@@ -184,7 +184,7 @@ std::pair<s32, Errno> IcmpSocket::SendTo(u32 flags, std::span<const u8> message,
 
     // PLEASE DON'T KILL ME, I SWEAR THIS IS LEGITIMATELY THE BEST WAY TO DO IT
     // IF YOU OPEN socket() GOOGLE WILL STRAIGHT UP IP BAN YOU AFTER 2 HOURS
-#if !defined(__OPENORBIS__) && (defined(__FreeBSD__) || defined(__linux__))
+#if !(defined(__OPENORBIS__) || defined(__ANDROID__)) && (defined(__FreeBSD__) || defined(__linux__))
     const auto rcv_timeout_ms = (s64(rcv_timeo.tv_sec) * 1000) + (s64(rcv_timeo.tv_usec) / 1000);
     if (!addr)
         return {-1, Errno::E_DESTADDRREQ};
