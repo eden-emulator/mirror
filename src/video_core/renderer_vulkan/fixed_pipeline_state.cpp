@@ -141,6 +141,7 @@ void FixedPipelineState::Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFe
     depth_enabled.Assign(regs.zeta_enable != 0 ? 1 : 0);
     depth_format.Assign(static_cast<u32>(regs.zeta.format));
     y_negate.Assign(regs.window_origin.mode != Maxwell::WindowOrigin::Mode::UpperLeft ? 1 : 0);
+    viewport_scale_offset_enabled.Assign(regs.viewport_scale_offset_enabled != 0);
 
     bool use_last_provoking_vertex = false;
     const bool provoking_vertex_available = features.has_provoking_vertex;

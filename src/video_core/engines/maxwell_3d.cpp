@@ -22,8 +22,6 @@
 
 namespace Tegra::Engines {
 
-constexpr bool BYPASS_UNRESOLVED_RENDER_ENABLE = true;
-
 /// First register id that is actually a Macro call.
 constexpr u32 MacroRegistersStart = 0xE00;
 
@@ -516,10 +514,6 @@ void Maxwell3D::ProcessQueryGet() {
 
 void Maxwell3D::ProcessQueryCondition() {
     if (rasterizer->AccelerateConditionalRendering()) {
-        execute_on = true;
-        return;
-    }
-    if (BYPASS_UNRESOLVED_RENDER_ENABLE) {
         execute_on = true;
         return;
     }
