@@ -381,7 +381,8 @@ void SetupSignedNanCapabilities(const Profile& profile, const IR::Program& progr
         ctx.AddCapability(spv::Capability::SignedZeroInfNanPreserve);
         ctx.AddExecutionMode(main_func, spv::ExecutionMode::SignedZeroInfNanPreserve, 16U);
     }
-    if (profile.support_fp32_signed_zero_nan_preserve) {
+    if (profile.support_fp32_signed_zero_nan_preserve &&
+        !profile.has_broken_fp32_signed_zero_nan_preserve) {
         ctx.AddCapability(spv::Capability::SignedZeroInfNanPreserve);
         ctx.AddExecutionMode(main_func, spv::ExecutionMode::SignedZeroInfNanPreserve, 32U);
     }
