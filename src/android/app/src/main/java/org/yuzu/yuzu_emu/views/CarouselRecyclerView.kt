@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 package org.yuzu.yuzu_emu.ui
@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.adapters.GameAdapter
 import androidx.core.view.doOnNextLayout
@@ -34,6 +36,7 @@ class CarouselRecyclerView @JvmOverloads constructor(
     private var overlapDecoration: OverlappingDecoration? = null
     private var pagerSnapHelper: PagerSnapHelper? = null
     private var scalingScrollListener: OnScrollListener? = null
+    private var savedItemAnimator: RecyclerView.ItemAnimator? = null
 
     companion object {
         private const val CAROUSEL_CARD_SIZE_FACTOR = "CarouselCardSizeMultiplier"
@@ -42,8 +45,13 @@ class CarouselRecyclerView @JvmOverloads constructor(
         private const val CAROUSEL_OVERLAP_FACTOR = "CarouselOverlapFactor"
         private const val CAROUSEL_MAX_FLING_COUNT = "CarouselMaxFlingCount"
         private const val CAROUSEL_FLING_MULTIPLIER = "CarouselFlingMultiplier"
-        private const val CAROUSEL_CARDS_SCALING_SHAPE = "CarouselCardsScalingShape"
-        private const val CAROUSEL_CARDS_ALPHA_SHAPE = "CarouselCardsAlphaShape"
+        private const val CAROUSEL_ARC_ANGLE_STEP_DEGREES = 15.0
+        private const val CAROUSEL_ARC_MAX_ANGLE_DEGREES = 165.0
+        private const val CAROUSEL_ARC_DEPTH_MAX_ANGLE_DEGREES = 85.0
+        private const val CAROUSEL_ARC_DEPTH_STRETCH = 5.0f
+        private const val CAROUSEL_ARC_X_DEPTH_FACTOR = 0.55f
+        private const val CAROUSEL_ARC_FADE_OUT_START_DEGREES = 60.0
+        private const val CAROUSEL_ARC_FADE_OUT_END_DEGREES = 95.0
         const val CAROUSEL_LAST_SCROLL_POSITION = "CarouselLastScrollPosition"
         const val CAROUSEL_VIEW_TYPE_PORTRAIT = "GamesViewTypePortrait"
         const val CAROUSEL_VIEW_TYPE_LANDSCAPE = "GamesViewTypeLandscape"
@@ -160,46 +168,52 @@ class CarouselRecyclerView @JvmOverloads constructor(
         }
     }
 
-    fun shapingFunction(x: Float, option: Int = 0): Float {
-        return when (option) {
-            0 -> 1f // Off
-            1 -> 1f - x // linear descending
-            2 -> (1f - x) * (1f - x) // Ease out
-            3 -> if (x < 0.05f) 1f else (1f - x) * 0.8f
-            4 -> kotlin.math.cos(x * Math.PI).toFloat() // Cosine
-            5 -> kotlin.math.cos((1.5f * x).coerceIn(0f, 1f) * Math.PI).toFloat() // Cosine 1.5x trimmed
-            else -> 1f // Default to Off
-        }
-    }
-
     fun updateChildScaleAndAlphaForPosition(child: View) {
         val cardSize = (adapter as? GameAdapter ?: return).cardSize
         val position = getChildViewHolder(child).bindingAdapterPosition
         if (position == RecyclerView.NO_POSITION || cardSize <= 0) {
             return // No valid position or card size
         }
-        child.layoutParams.width = cardSize
-        child.layoutParams.height = cardSize
+        val layoutParams = child.layoutParams
+        if (layoutParams.width != cardSize || layoutParams.height != cardSize) {
+            child.layoutParams = layoutParams.apply {
+                width = cardSize
+                height = cardSize
+            }
+        }
 
-        val center = getRecyclerViewCenter()
-        val distance = abs(getChildDistanceToCenter(child))
+        val signedDistance = getChildDistanceToCenter(child)
+        val itemStep = (cardSize - overlapPx).toFloat().coerceAtLeast(1f)
+        val angleStep = Math.toRadians(CAROUSEL_ARC_ANGLE_STEP_DEGREES).toFloat()
+        val maxAngle = Math.toRadians(CAROUSEL_ARC_MAX_ANGLE_DEGREES).toFloat()
+        val depthMaxAngle = Math.toRadians(CAROUSEL_ARC_DEPTH_MAX_ANGLE_DEGREES).toFloat()
+        val fadeOutStartAngle = Math.toRadians(CAROUSEL_ARC_FADE_OUT_START_DEGREES).toFloat()
+        val fadeOutEndAngle = Math.toRadians(CAROUSEL_ARC_FADE_OUT_END_DEGREES).toFloat()
+        val angle = (signedDistance / itemStep * angleStep).coerceIn(-maxAngle, maxAngle)
+        val arcRadius = itemStep / angleStep
+        val arcX = sin(angle) * arcRadius
+        val absoluteAngle = abs(angle)
+        val rawDepthInput = ((1f - cos(absoluteAngle)) / (1f - cos(depthMaxAngle)))
+            .coerceIn(0f, 1f)
+        val easedDepthTail = Math.pow(
+            (1f - rawDepthInput).toDouble(),
+            CAROUSEL_ARC_DEPTH_STRETCH.toDouble()
+        ).toFloat()
+        val depthInput = (1f - easedDepthTail).coerceIn(0f, 1f)
+        val projectedArcX = arcX * (1f - rawDepthInput * CAROUSEL_ARC_X_DEPTH_FACTOR)
+
+        child.animate().cancel()
+        child.translationX = projectedArcX - signedDistance
+
         val internalBorderScale = resources.getFraction(R.fraction.carousel_bordercards_scale, 1, 1)
         val borderScale = preferences.getFloat(CAROUSEL_BORDERCARDS_SCALE, internalBorderScale).coerceIn(
             0f,
             1f
         )
 
-        val shapeInput = (distance / center).coerceIn(0f, 1f)
-        val internalShapeSetting = resources.getInteger(R.integer.carousel_cards_scaling_shape)
-        val scalingShapeSetting = preferences.getInt(
-            CAROUSEL_CARDS_SCALING_SHAPE,
-            internalShapeSetting
-        )
-        val shapedScaling = shapingFunction(shapeInput, scalingShapeSetting)
+        val shapedScaling = 1f - depthInput
         val scale = (borderScale + (1f - borderScale) * shapedScaling).coerceIn(0f, 1f)
 
-        val maxDistance = width / 2f
-        val alphaInput = (distance / maxDistance).coerceIn(0f, 1f)
         val internalBordersAlpha = resources.getFraction(
             R.fraction.carousel_bordercards_alpha,
             1,
@@ -209,15 +223,12 @@ class CarouselRecyclerView @JvmOverloads constructor(
             0f,
             1f
         )
-        val internalAlphaShapeSetting = resources.getInteger(R.integer.carousel_cards_alpha_shape)
-        val alphaShapeSetting = preferences.getInt(
-            CAROUSEL_CARDS_ALPHA_SHAPE,
-            internalAlphaShapeSetting
-        )
-        val shapedAlpha = shapingFunction(alphaInput, alphaShapeSetting)
-        val alpha = (borderAlpha + (1f - borderAlpha) * shapedAlpha).coerceIn(0f, 1f)
+        val shapedAlpha = cos(depthInput * Math.PI).toFloat()
+        val baseAlpha = (borderAlpha + (1f - borderAlpha) * shapedAlpha).coerceIn(0f, 1f)
+        val rearPresence = (1f - (absoluteAngle - fadeOutStartAngle) /
+            (fadeOutEndAngle - fadeOutStartAngle)).coerceIn(0f, 1f)
+        val alpha = (baseAlpha * rearPresence).coerceIn(0f, 1f)
 
-        child.animate().cancel()
         child.alpha = alpha
         child.scaleX = scale
         child.scaleY = scale
@@ -273,7 +284,9 @@ class CarouselRecyclerView @JvmOverloads constructor(
             0f,
             1f
         )
-        return (userFactor * (height - bottomInset)).toInt()
+        val scaledHeight = height * userFactor
+        val availableHeight = height - bottomInset
+        return minOf(scaledHeight.toInt(), availableHeight.toInt())
     }
 
     fun setupCarousel(enabled: Boolean) {
@@ -281,6 +294,13 @@ class CarouselRecyclerView @JvmOverloads constructor(
             val gameAdapter = adapter as? GameAdapter ?: return
             if (gameAdapter.cardSize == 0) return
             if (bottomInset < 0) return
+
+            itemAnimator?.let {
+                if (savedItemAnimator == null) {
+                    savedItemAnimator = it
+                }
+                itemAnimator = null
+            }
 
             useCustomDrawingOrder = true
             val cardSize = gameAdapter.cardSize
@@ -336,6 +356,12 @@ class CarouselRecyclerView @JvmOverloads constructor(
             // Detach PagerSnapHelper
             pagerSnapHelper?.attachToRecyclerView(null)
             pagerSnapHelper = null
+            savedItemAnimator?.let {
+                if (itemAnimator == null) {
+                    itemAnimator = it
+                }
+                savedItemAnimator = null
+            }
             useCustomDrawingOrder = false
             // Reset padding and fling
             setPadding(0, 0, 0, 0)
@@ -344,6 +370,7 @@ class CarouselRecyclerView @JvmOverloads constructor(
             // Reset scaling
             for (i in 0 until childCount) {
                 val child = getChildAt(i)
+                child?.translationX = 0f
                 child?.scaleX = 1f
                 child?.scaleY = 1f
                 child?.alpha = 1f
