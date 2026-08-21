@@ -74,8 +74,8 @@ static constexpr char DEFAULT_DISCORD_IMAGE[] =
     "https://git.eden-emu.dev/eden-emu/eden/raw/branch/master/dist/qt_themes/default/icons/256x256/"
     "eden.png";
 
-void DiscordImpl::UpdateGameStatus(bool use_default) {
-    const std::string url = use_default ? std::string{DEFAULT_DISCORD_IMAGE} : game_url;
+void DiscordImpl::UpdateGameStatus(std::string_view game_url, bool has_boxart) {
+    const std::string url = std::string{has_boxart ? game_url : DEFAULT_DISCORD_IMAGE};
     s64 start_time = std::chrono::duration_cast<std::chrono::seconds>(
                          std::chrono::system_clock::now().time_since_epoch())
                          .count();
@@ -98,7 +98,7 @@ void DiscordImpl::Update() {
 
         // Used to format Icon URL for yuzu website game compatibility page
         std::string icon_name = GetGameString(game_title);
-        game_url = fmt::format(
+        auto const game_url = fmt::format(
             "https://raw.githubusercontent.com/eden-emulator/boxart/refs/heads/master/img/{}.png",
             icon_name);
 
@@ -117,7 +117,7 @@ void DiscordImpl::Update() {
         };
 
         auto res = client.send(request);
-        UpdateGameStatus(res && res->status == 200);
+        UpdateGameStatus(game_url, res && res->status == 200);
 
         return;
     }
