@@ -74,6 +74,7 @@ UpdateDialog::~UpdateDialog() {
     delete ui;
 }
 
+// TODO: migrate to a net.cpp wrapper
 void UpdateDialog::Download() {
     const auto filename = QtCommon::Frontend::GetSaveFileName(
         tr("New Version Location"),
@@ -161,7 +162,7 @@ void UpdateDialog::Download() {
                                               QString::number(response.status)));
         return;
     }
-    if (!response.headers.contains("content-type")) {
+    if (!response.has_header("content-type")) {
         LOG_ERROR(Frontend, "GET to {}{} returned no content", m_asset.url, m_asset.path);
         return;
     }
