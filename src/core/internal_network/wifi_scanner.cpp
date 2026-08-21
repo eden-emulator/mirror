@@ -114,13 +114,13 @@ std::vector<Network::ScanData> ScanWifiNetworks(std::chrono::milliseconds deadli
     char ifname[IFNAMSIZ] = {0};
     char *args[1] = {ifname};
 
-    iw_enum_devices(sock, [](int skfd, char* ifname, char* args[], int count) -> int {
+    iw_enum_devices(sock, [](int f_skfd, char* f_ifname, char* f_args[], int) -> int {
         iwrange range;
-        int res = iw_get_range_info(skfd, ifname, &range);
-        LOG_INFO(Network, "ifname {} returned {} on iw_get_range_info", ifname, res);
+        int res = iw_get_range_info(f_skfd, f_ifname, &range);
+        LOG_INFO(Network, "ifname {} returned {} on iw_get_range_info", f_ifname, res);
         if (res >= 0) {
-            strncpy(args[0], ifname, IFNAMSIZ - 1);
-            args[0][IFNAMSIZ - 1] = 0;
+            strncpy(f_args[0], f_ifname, IFNAMSIZ - 1);
+            f_args[0][IFNAMSIZ - 1] = 0;
             return 1;
         }
         return 0;
