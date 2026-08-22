@@ -212,12 +212,12 @@ private:
     Kernel::KEvent* unknown_event;
 
     // ZBC Tables
-    static constexpr u32 zbc_table_size = 15u;
+    static constexpr u32 ZBC_TABLE_SIZE = 15u;
     static constexpr u32 supported_types = 2u;
 
     std::mutex zbc_mutex{};
-    std::array<ZbcColorEntry, zbc_table_size> zbc_colors{};
-    std::array<ZbcDepthEntry, zbc_table_size> zbc_depths{};
+    std::array<ZbcColorEntry, ZBC_TABLE_SIZE> zbc_colors{};
+    std::array<ZbcDepthEntry, ZBC_TABLE_SIZE> zbc_depths{};
     u32 zbc_used_color_entries{};
     u32 zbc_used_depth_entries{};
 };

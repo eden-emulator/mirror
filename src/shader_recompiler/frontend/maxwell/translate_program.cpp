@@ -472,8 +472,7 @@ void ConvertLegacyToGeneric(IR::Program& program, const Shader::RuntimeInfo& run
         program.info.legacy_stores_mapping =
             GenerateLegacyToGenericMappings(stores, unused_output_generics, {});
         for (IR::Block* const block : program.post_order_blocks) {
-            auto it{block->begin()};
-            while (it != block->end()) {
+            for (auto it = block->begin(); it != block->end();) {
                 IR::Inst& inst{*it};
                 if (inst.GetOpcode() != IR::Opcode::SetAttribute ||
                     !IsLegacyAttribute(inst.Arg(0).Attribute())) {
