@@ -1877,13 +1877,19 @@ void RasterizerVulkan::UpdateColorWriteEnable(Tegra::Engines::Maxwell3D::Regs& r
     if (!state_tracker.TouchColorMask()) {
         return;
     }
+    size_t num_attachments{};
+    for (size_t index = 0; index < Maxwell::NumRenderTargets; index++) {
+        if (regs.rt[index].format != Tegra::RenderTargetFormat::NONE) {
+            num_attachments = index + 1;
+        }
+    }
     std::array<VkBool32, Maxwell::NumRenderTargets> setup_enables{};
     for (size_t index = 0; index < Maxwell::NumRenderTargets; index++) {
         const auto& mask = regs.color_mask[regs.color_mask_common ? 0 : index];
         setup_enables[index] = (mask.R || mask.G || mask.B || mask.A) ? VK_TRUE : VK_FALSE;
     }
-    scheduler.Record([setup_enables](vk::CommandBuffer cmdbuf) {
-        cmdbuf.SetColorWriteEnableEXT(setup_enables);
+    scheduler.Record([setup_enables, num_attachments](vk::CommandBuffer cmdbuf) {
+        cmdbuf.SetColorWriteEnableEXT(vk::Span<VkBool32>(setup_enables.data(), num_attachments));
     });
 }
 

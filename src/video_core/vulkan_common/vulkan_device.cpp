@@ -523,9 +523,6 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
         LOG_WARNING(Render_Vulkan, "Qualcomm drivers require scaled vertex format emulation.");
         has_broken_descriptor_aliasing = true;
         LOG_WARNING(Render_Vulkan, "Qualcomm drivers have broken descriptor aliasing.");
-        LOG_WARNING(Render_Vulkan, "Qualcomm drivers have broken color write enable.");
-        RemoveExtensionFeature(extensions.color_write_enable, features.color_write_enable,
-                               VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
         LOG_WARNING(Render_Vulkan, "Qualcomm drivers have broken shader atomic int64.");
         RemoveExtensionFeature(extensions.shader_atomic_int64, features.shader_atomic_int64,
                                VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME);
