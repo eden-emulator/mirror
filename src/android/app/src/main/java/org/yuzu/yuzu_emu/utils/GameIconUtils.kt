@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -24,6 +27,15 @@ import coil.request.Options
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.YuzuApplication
 import org.yuzu.yuzu_emu.model.Game
+import java.util.Collections
+import java.util.WeakHashMap
+
+private val gameIconHashes = Collections.synchronizedMap(mutableMapOf<String, Int>())
+private val gameIconTargets = Collections.synchronizedMap(WeakHashMap<ImageView, GameIconTarget>())
+
+private fun Game.iconCacheKey(): String = "$path|$version"
+
+private data class GameIconTarget(val game: Game, var iconHash: Int? = null)
 
 class GameIconFetcher(
     private val game: Game,
@@ -31,14 +43,15 @@ class GameIconFetcher(
 ) : Fetcher {
     override suspend fun fetch(): FetchResult {
         return DrawableResult(
-            drawable = decodeGameIcon(game.path)!!.toDrawable(options.context.resources),
+            drawable = decodeGameIcon(game)!!.toDrawable(options.context.resources),
             isSampled = false,
             dataSource = DataSource.DISK
         )
     }
 
-    private fun decodeGameIcon(uri: String): Bitmap? {
-        val data = GameMetadata.getIcon(uri)
+    private fun decodeGameIcon(game: Game): Bitmap? {
+        val data = GameMetadata.getIcon(game.path)
+        gameIconHashes[game.iconCacheKey()] = data.contentHashCode()
         return BitmapFactory.decodeByteArray(
             data,
             0,
@@ -54,7 +67,7 @@ class GameIconFetcher(
 }
 
 class GameIconKeyer : Keyer<Game> {
-    override fun key(data: Game, options: Options): String = data.path
+    override fun key(data: Game, options: Options): String = data.iconCacheKey()
 }
 
 object GameIconUtils {
@@ -71,12 +84,56 @@ object GameIconUtils {
         .build()
 
     fun loadGameIcon(game: Game, imageView: ImageView) {
+        gameIconTargets[imageView] = GameIconTarget(game)
         val request = ImageRequest.Builder(YuzuApplication.appContext)
             .data(game)
             .target(imageView)
             .error(R.drawable.default_icon)
+            .listener(
+                onSuccess = { _, _ ->
+                    val target = gameIconTargets[imageView]
+                    if (target?.game?.iconCacheKey() == game.iconCacheKey()) {
+                        gameIconHashes[game.iconCacheKey()]?.let {
+                            target.iconHash = it
+                        }
+                    }
+                },
+                onError = { _, _ ->
+                    gameIconTargets[imageView]?.iconHash = null
+                }
+            )
             .build()
         imageLoader.enqueue(request)
+    }
+
+    fun refreshGameIcon(game: Game) {
+        val targets = synchronized(gameIconTargets) {
+            gameIconTargets
+                .filterValues { it.game.path == game.path && it.game.programId == game.programId }
+                .keys
+                .toList()
+        }
+        if (targets.isEmpty()) {
+            return
+        }
+
+        val iconHash = GameMetadata.getIcon(game.path).contentHashCode()
+        val targetsToRefresh = targets.filter { gameIconTargets[it]?.iconHash != iconHash }
+        if (targetsToRefresh.isEmpty()) {
+            return
+        }
+
+        imageLoader.memoryCache?.remove(MemoryCache.Key(game.iconCacheKey()))
+        targetsToRefresh.forEach { imageView ->
+            imageView.post {
+                val target = gameIconTargets[imageView] ?: return@post
+                if (target.game.path == game.path && target.game.programId == game.programId) {
+                    if (target.iconHash != iconHash) {
+                        loadGameIcon(game, imageView)
+                    }
+                }
+            }
+        }
     }
 
     suspend fun getGameIcon(lifecycleOwner: LifecycleOwner, game: Game): Bitmap {

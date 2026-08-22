@@ -31,6 +31,7 @@ object GameHelper {
 
     fun getGames(): List<Game> {
         val games = mutableListOf<Game>()
+        val gamesByProgramId = mutableMapOf<String, Game>()
         val context = YuzuApplication.appContext
         preferences = PreferenceManager.getDefaultSharedPreferences(context)
 
@@ -63,6 +64,7 @@ object GameHelper {
 
                 addGamesRecursive(
                     games,
+                    gamesByProgramId,
                     FileUtil.listFiles(gameDirUri),
                     scanDepth,
                     mountedContainerUris
@@ -136,6 +138,7 @@ object GameHelper {
 
     private fun addGamesRecursive(
         games: MutableList<Game>,
+        gamesByProgramId: MutableMap<String, Game>,
         files: Array<MinimalDocumentFile>,
         depth: Int,
         mountedContainerUris: MutableSet<String>
@@ -148,6 +151,7 @@ object GameHelper {
             if (it.isDirectory) {
                 addGamesRecursive(
                     games,
+                    gamesByProgramId,
                     FileUtil.listFiles(it.uri),
                     depth - 1,
                     mountedContainerUris
@@ -156,8 +160,9 @@ object GameHelper {
                 val extension = FileUtil.getExtension(it.uri).lowercase()
                 val filePath = it.uri.toString()
 
-                if (externalContentExtensions.contains(extension) &&
-                    mountedContainerUris.add(filePath)) {
+                val mountedContainer = externalContentExtensions.contains(extension) &&
+                    mountedContainerUris.add(filePath)
+                if (mountedContainer) {
                     NativeLibrary.addGameFolderFileToFilesystemProvider(filePath)
                 }
 
@@ -165,6 +170,20 @@ object GameHelper {
                     val game = getGame(it.uri, true, false)
                     if (game != null) {
                         games.add(game)
+                        if (game.programId != "0") {
+                            gamesByProgramId[game.programId] = game
+                        }
+                    } else if (mountedContainer) {
+                        GameMetadata.getProgramId(filePath).toLongOrNull()?.let { programId ->
+                            gamesByProgramId[(programId and 0x800L.inv()).toString()]
+                        }?.let { existingGame ->
+                            NativeLibrary.getPatchesForFile(existingGame.path, existingGame.programId)
+                            existingGame.version = GameMetadata.getVersion(
+                                existingGame.path,
+                                true
+                            )
+                            GameIconUtils.refreshGameIcon(existingGame)
+                        }
                     }
                 }
             }
