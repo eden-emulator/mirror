@@ -720,13 +720,15 @@ void BlockLinearUnswizzle3DPass::Unswizzle(
     const u32 blocks_x = (image.info.size.width  + 3) / 4;
     const u32 blocks_y = (image.info.size.height + 3) / 4;
 
+    const bool is_initialized = image.ExchangeInitialization();
+
     scheduler.RequestOutsideRenderPassOperationContext();
     for (u32 z_offset = 0; z_offset < z_count; z_offset += MAX_BATCH_SLICES) {
         const u32 current_chunk_slices = (std::min)(MAX_BATCH_SLICES, z_count - z_offset);
         const u32 current_z_start = z_start + z_offset;
 
         UnswizzleChunk(image, swizzled, sw, params, blocks_x, blocks_y,
-                       current_z_start, current_chunk_slices);
+                       current_z_start, current_chunk_slices, is_initialized);
     }
 }
 
@@ -736,7 +738,7 @@ void BlockLinearUnswizzle3DPass::UnswizzleChunk(
     const VideoCommon::SwizzleParameters& sw,
     const BlockLinearSwizzle3DParams& params,
     u32 blocks_x, u32 blocks_y,
-    u32 z_start, u32 z_count)
+    u32 z_start, u32 z_count, bool is_initialized)
 {
     BlockLinearUnswizzle3DPushConstants pc{};
     pc.origin[0] = params.origin[0];
@@ -780,6 +782,7 @@ void BlockLinearUnswizzle3DPass::UnswizzleChunk(
     const VkDeviceSize barrier_size = output_slice_size * z_count;
 
     const bool is_first_chunk = (z_start == 0);
+    const bool use_undefined_layout = !is_initialized && is_first_chunk;
 
     const VkBuffer out_buffer = *image.compute_unswizzle_buffer;
     const VkImage dst_image = image.Handle();
@@ -788,7 +791,7 @@ void BlockLinearUnswizzle3DPass::UnswizzleChunk(
     const u32 image_height = image.info.size.height;
 
     scheduler.Record([this, set, descriptor_data, pc, gx, gy, gz, z_start, z_count,
-                      barrier_size, is_first_chunk, out_buffer, dst_image, aspect,
+                      barrier_size, use_undefined_layout, out_buffer, dst_image, aspect,
                       image_width, image_height
                       ](vk::CommandBuffer cmdbuf) {
 
@@ -815,15 +818,14 @@ void BlockLinearUnswizzle3DPass::UnswizzleChunk(
             .size = barrier_size,
         };
 
-        // Image layout transition
         const VkImageMemoryBarrier pre_barrier{
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
             .pNext = nullptr,
-            .srcAccessMask = is_first_chunk ? VkAccessFlags{} :
-                            static_cast<VkAccessFlags>(VK_ACCESS_TRANSFER_WRITE_BIT),
+            .srcAccessMask = use_undefined_layout ? VkAccessFlags{} :
+                            static_cast<VkAccessFlags>(VK_ACCESS_SHADER_READ_BIT),
             .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-            .oldLayout = is_first_chunk ? VK_IMAGE_LAYOUT_UNDEFINED :
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .oldLayout = use_undefined_layout ? VK_IMAGE_LAYOUT_UNDEFINED :
+                        VK_IMAGE_LAYOUT_GENERAL,
             .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -831,9 +833,13 @@ void BlockLinearUnswizzle3DPass::UnswizzleChunk(
             .subresourceRange = {aspect, 0, 1, 0, 1},
         };
 
+        VkPipelineStageFlags pre_barrier_src_stages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        pre_barrier_src_stages |= use_undefined_layout ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
+                                                        : vk::PIPELINE_STAGE_GRAPHICS_COMPUTE;
+
         // Single barrier handles both buffer and image
         cmdbuf.PipelineBarrier(
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            pre_barrier_src_stages,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
             0,
             nullptr, buffer_barrier, pre_barrier

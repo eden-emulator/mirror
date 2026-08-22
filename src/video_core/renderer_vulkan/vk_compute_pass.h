@@ -156,7 +156,7 @@ public:
         const VideoCommon::SwizzleParameters& sw,
         const BlockLinearSwizzle3DParams& params,
         u32 blocks_x, u32 blocks_y,
-        u32 z_start, u32 z_count);
+        u32 z_start, u32 z_count, bool is_initialized);
 
 private:
     Scheduler& scheduler;
