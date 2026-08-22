@@ -136,6 +136,27 @@ public:
                        bool msaa_to_non_msaa);
 
 private:
+    struct MSAACopyAspectInfo {
+        VkImageAspectFlags src_view_aspect;
+        VkImageAspectFlags attachment_aspect;
+        VkImageAspectFlags barrier_aspect;
+        VkAccessFlags pre_src_access;
+        VkAccessFlags pre_src_dst_access;
+        VkAccessFlags pre_dst_dst_access;
+        VkPipelineStageFlags pre_src_stages;
+        VkPipelineStageFlags pre_dst_stages;
+        VkAccessFlags post_src_access;
+        VkAccessFlags post_dst_access;
+        VkPipelineStageFlags post_src_stages;
+        VkPipelineStageFlags post_dst_stages;
+    };
+
+    void CopyMSAAImpl(VkRenderPass renderpass, VkPipeline pipeline, VkPipelineLayout layout,
+                      VkImage dst_image, VkFormat dst_vk_format, VkImage src_image,
+                      VkFormat src_vk_format, s32 scale_x, s32 scale_y,
+                      std::span<const VideoCommon::ImageCopy> copies,
+                      const MSAACopyAspectInfo& aspect_info, bool copy_stencil);
+
     void Convert(VkPipeline pipeline, const Framebuffer* dst_framebuffer,
                  const ImageView& src_image_view);
 
