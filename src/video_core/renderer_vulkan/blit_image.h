@@ -152,6 +152,10 @@ private:
         VkPipelineStageFlags2 post_dst_stages;
     };
 
+    void BlitMSAAImpl(const Framebuffer* dst_framebuffer, const ImageView& src_image_view,
+                      const Region2D& dst_region, const Region2D& src_region, VkPipeline pipeline,
+                      VkImageView src_view, VkImageView src_stencil_view, bool blit_stencil);
+
     void CopyMSAAImpl(VkRenderPass renderpass, VkPipeline pipeline, VkPipelineLayout layout,
                       VkImage dst_image, VkFormat dst_vk_format, VkImage src_image,
                       VkFormat src_vk_format, s32 scale_x, s32 scale_y,
