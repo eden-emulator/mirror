@@ -229,6 +229,18 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         .preserveAttachmentCount = 0,
         .pPreserveAttachments = nullptr,
     };
+    const VkSubpassDependency feedback_loop_dependency{
+        .srcSubpass = 0,
+        .dstSubpass = 0,
+        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+        .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+    };
     const VkSubpassDependency counter_resume_dependency{
         .srcSubpass = 0,
         .dstSubpass = 0,
@@ -324,6 +336,23 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
             counter_resume_dependency2.srcAccessMask = 0;
             counter_resume_dependency2.dstAccessMask = 0;
         }
+        const VkSubpassDependency2 feedback_loop_dependency2{
+            .sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2,
+            .pNext = nullptr,
+            .srcSubpass = feedback_loop_dependency.srcSubpass,
+            .dstSubpass = feedback_loop_dependency.dstSubpass,
+            .srcStageMask = feedback_loop_dependency.srcStageMask,
+            .dstStageMask = feedback_loop_dependency.dstStageMask,
+            .srcAccessMask = feedback_loop_dependency.srcAccessMask,
+            .dstAccessMask = feedback_loop_dependency.dstAccessMask,
+            .dependencyFlags = feedback_loop_dependency.dependencyFlags,
+            .viewOffset = 0,
+        };
+        boost::container::static_vector<VkSubpassDependency2, 2> dependencies2{
+            feedback_loop_dependency2};
+        if (can_resume_transform_feedback) {
+            dependencies2.push_back(counter_resume_dependency2);
+        }
         pair->second = device->GetLogical().CreateRenderPass2({
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
             .pNext = nullptr,
@@ -332,14 +361,18 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
             .pAttachments = descriptions2.empty() ? nullptr : descriptions2.data(),
             .subpassCount = 1,
             .pSubpasses = &subpass2,
-            .dependencyCount = can_resume_transform_feedback ? 1u : 0u,
-            .pDependencies = can_resume_transform_feedback ? &counter_resume_dependency2 : nullptr,
+            .dependencyCount = static_cast<u32>(dependencies2.size()),
+            .pDependencies = dependencies2.data(),
             .correlatedViewMaskCount = 0,
             .pCorrelatedViewMasks = nullptr,
         });
         return *pair->second;
     }
 
+    boost::container::static_vector<VkSubpassDependency, 2> dependencies{feedback_loop_dependency};
+    if (can_resume_transform_feedback) {
+        dependencies.push_back(counter_resume_dependency);
+    }
     pair->second = device->GetLogical().CreateRenderPass({
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .pNext = nullptr,
@@ -348,8 +381,8 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         .pAttachments = descriptions.empty() ? nullptr : descriptions.data(),
         .subpassCount = 1,
         .pSubpasses = &subpass,
-        .dependencyCount = can_resume_transform_feedback ? 1u : 0u,
-        .pDependencies = can_resume_transform_feedback ? &counter_resume_dependency : nullptr,
+        .dependencyCount = static_cast<u32>(dependencies.size()),
+        .pDependencies = dependencies.data(),
     });
     return *pair->second;
 }

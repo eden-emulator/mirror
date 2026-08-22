@@ -1815,6 +1815,7 @@ void BlitImageHelper::CopyMSAADepth(RenderPassCache& render_pass_cache, VkImage 
             }
         }
     }
+    scheduler.InvalidateState();
 }
 
 VkPipeline BlitImageHelper::FindOrEmplaceMSAACopyPipeline(const MSAACopyPipelineKey& key) {

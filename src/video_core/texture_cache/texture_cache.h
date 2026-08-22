@@ -279,11 +279,12 @@ void TextureCache<P>::CheckFeedbackLoop(std::span<const ImageViewInOut> views) {
 
             const ImageId view_image_id = slot_image_views[view.id].image_id;
             {
-                bool is_continue = false;
+                bool aliases_color_rt = false;
                 for (size_t i = 0; i < 8; ++i)
-                    is_continue |= (rt_active_mask & (1u << i)) && view_image_id == rt_image_id[i];
-                if (is_continue)
-                    continue;
+                    aliases_color_rt |=
+                        (rt_active_mask & (1u << i)) && view_image_id == rt_image_id[i];
+                if (aliases_color_rt)
+                    return true;
             }
             if (depth_active && view_image_id == rt_depth_image_id) {
                 return true;
@@ -1708,6 +1709,9 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
         Image& overlap = slot_images[copy_object.id];
         if (copy_object.is_alias) {
             if (!overlap.IsSafeGpuCopy()) {
+                continue;
+            }
+            if (overlap.info.num_samples != new_image.info.num_samples) {
                 continue;
             }
             const auto alias_pointer = join_alias_indices.find(copy_object.id);

@@ -3,7 +3,14 @@
 
 #version 450 core
 
-layout(binding = 0) uniform sampler2D img_in;
+#ifndef SAMPLER_TYPE
+#define SAMPLER_TYPE sampler2D
+#endif
+#ifndef TEXEL_TYPE
+#define TEXEL_TYPE vec4
+#endif
+
+layout(binding = 0) uniform SAMPLER_TYPE img_in;
 
 layout(push_constant) uniform PushConstants {
     ivec2 dst_offset;
@@ -11,7 +18,7 @@ layout(push_constant) uniform PushConstants {
     ivec2 scale;
 };
 
-layout(location = 0) out vec4 frag_color;
+layout(location = 0) out TEXEL_TYPE frag_color;
 
 void main() {
     const ivec2 msaa_coord = ivec2(gl_FragCoord.xy) - dst_offset;

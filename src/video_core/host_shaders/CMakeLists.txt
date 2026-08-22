@@ -35,12 +35,8 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_msaa_to_non_msaa.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_msaa_to_non_msaa_depth.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_msaa_to_non_msaa_depth_stencil.frag
-    ${CMAKE_CURRENT_SOURCE_DIR}/convert_msaa_to_non_msaa_sint.frag
-    ${CMAKE_CURRENT_SOURCE_DIR}/convert_msaa_to_non_msaa_uint.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_non_msaa_to_msaa.comp
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_non_msaa_to_msaa.frag
-    ${CMAKE_CURRENT_SOURCE_DIR}/convert_non_msaa_to_msaa_sint.frag
-    ${CMAKE_CURRENT_SOURCE_DIR}/convert_non_msaa_to_msaa_uint.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_non_msaa_to_msaa_depth.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_non_msaa_to_msaa_depth_stencil.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_s8d24_to_abgr8.frag
@@ -172,6 +168,44 @@ foreach(SOURCE_FILE IN ITEMS ${SHADER_FILES})
         )
         set(SHADER_HEADERS ${SHADER_HEADERS} ${SPIRV_HEADER_FILE})
     endif()
+endforeach()
+
+# Integer variants of the MSAA conversion shaders. They only differ from the float
+# source in the sampler and output types, so they are generated from it via defines.
+set(SHADER_TYPE_VARIANTS
+    "convert_msaa_to_non_msaa.frag|sint|isampler2DMS|ivec4"
+    "convert_msaa_to_non_msaa.frag|uint|usampler2DMS|uvec4"
+    "convert_non_msaa_to_msaa.frag|sint|isampler2D|ivec4"
+    "convert_non_msaa_to_msaa.frag|uint|usampler2D|uvec4"
+)
+
+foreach(VARIANT IN ITEMS ${SHADER_TYPE_VARIANTS})
+    string(REPLACE "|" ";" VARIANT_PARTS ${VARIANT})
+    list(GET VARIANT_PARTS 0 VARIANT_FILENAME)
+    list(GET VARIANT_PARTS 1 VARIANT_SUFFIX)
+    list(GET VARIANT_PARTS 2 VARIANT_SAMPLER)
+    list(GET VARIANT_PARTS 3 VARIANT_TEXEL)
+
+    set(VARIANT_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/${VARIANT_FILENAME})
+    get_filename_component(VARIANT_STEM ${VARIANT_FILENAME} NAME_WE)
+    get_filename_component(VARIANT_EXT ${VARIANT_FILENAME} EXT)
+    string(REPLACE "." "" VARIANT_EXT ${VARIANT_EXT})
+    set(VARIANT_NAME ${VARIANT_STEM}_${VARIANT_SUFFIX}_${VARIANT_EXT})
+
+    string(TOUPPER ${VARIANT_NAME}_SPV VARIANT_VARIABLE_NAME)
+    set(VARIANT_HEADER_FILE ${SHADER_DIR}/${VARIANT_NAME}_spv.h)
+    add_custom_command(
+        OUTPUT
+            ${VARIANT_HEADER_FILE}
+        COMMAND
+            ${GLSLANGVALIDATOR} -V ${QUIET_FLAG} -I"${FIDELITYFX_INCLUDE_DIR}" ${GLSL_FLAGS}
+            -DSAMPLER_TYPE=${VARIANT_SAMPLER} -DTEXEL_TYPE=${VARIANT_TEXEL}
+            --variable-name ${VARIANT_VARIABLE_NAME} -o ${VARIANT_HEADER_FILE} ${VARIANT_SOURCE}
+            --target-env ${SPIR_V_VERSION}
+        MAIN_DEPENDENCY
+            ${VARIANT_SOURCE}
+    )
+    set(SHADER_HEADERS ${SHADER_HEADERS} ${VARIANT_HEADER_FILE})
 endforeach()
 
 foreach(FILEPATH IN ITEMS ${FIDELITYFX_FILES})
