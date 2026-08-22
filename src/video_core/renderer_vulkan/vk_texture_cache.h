@@ -243,14 +243,6 @@ public:
         return is_rescaled;
     }
 
-    [[nodiscard]] bool HasResolveColor() const noexcept {
-        return !resolve_images.empty();
-    }
-
-    [[nodiscard]] VkImage ResolveColorImage(size_t index) const noexcept {
-        return index < resolve_images.size() ? *resolve_images[index] : VK_NULL_HANDLE;
-    }
-
     [[nodiscard]] bool DiscardsMsaaColor() const noexcept {
         return discard_msaa_color;
     }
@@ -278,8 +270,6 @@ private:
     bool has_depth{};
     bool has_stencil{};
     bool is_rescaled{};
-    std::vector<vk::Image> resolve_images;
-    std::vector<vk::ImageView> resolve_image_views;
     std::array<VkImage, 9> resolve_shadow_images{};
     u32 num_resolve_shadows = 0;
     TextureCacheRuntime* runtime_ptr{nullptr};

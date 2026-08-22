@@ -1572,47 +1572,6 @@ void Device::SetupFamilies(VkSurfaceKHR surface) {
     }
 }
 
-VkSampleCountFlags Device::GetSupportedSampleCounts(VkImageUsageFlags usage,
-                                                    VkImageAspectFlags aspect,
-                                                    bool is_integer) const {
-    const VkPhysicalDeviceLimits& limits = properties.properties.limits;
-    const bool has_color = (aspect & VK_IMAGE_ASPECT_COLOR_BIT) != 0;
-    const bool has_depth = (aspect & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
-    const bool has_stencil = (aspect & VK_IMAGE_ASPECT_STENCIL_BIT) != 0;
-
-    VkSampleCountFlags counts = ~VkSampleCountFlags{0};
-    if ((usage & VK_IMAGE_USAGE_SAMPLED_BIT) != 0) {
-        if (has_color) {
-            if (is_integer) {
-                counts &= limits.sampledImageIntegerSampleCounts;
-            } else {
-                counts &= limits.sampledImageColorSampleCounts;
-            }
-        }
-        if (has_depth) {
-            counts &= limits.sampledImageDepthSampleCounts;
-        }
-        if (has_stencil) {
-            counts &= limits.sampledImageStencilSampleCounts;
-        }
-    }
-    if ((usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) != 0) {
-        counts &= limits.framebufferColorSampleCounts;
-    }
-    if ((usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0) {
-        if (has_depth) {
-            counts &= limits.framebufferDepthSampleCounts;
-        }
-        if (has_stencil) {
-            counts &= limits.framebufferStencilSampleCounts;
-        }
-    }
-    if ((usage & VK_IMAGE_USAGE_STORAGE_BIT) != 0) {
-        counts &= limits.storageImageSampleCounts;
-    }
-    return counts;
-}
-
 bool Device::TryReserveCustomBorderColorSamplers(size_t count) const {
     const size_t limit = properties.custom_border_color.maxCustomBorderColorSamplers;
     if (limit == 0) {

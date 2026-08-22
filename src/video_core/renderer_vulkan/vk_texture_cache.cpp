@@ -53,6 +53,9 @@ using VideoCore::Surface::IsPixelFormatInteger;
 using VideoCore::Surface::SurfaceType;
 
 namespace {
+// Master switch for the tiler MSAA resolve path: resolve attachments, resolve shadows and the
+// MSAA store discard that pays for them. Turning it off restores plain MSAA store behaviour.
+constexpr bool ENABLE_MSAA_TILER_RESOLVE = false;
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_STENCIL_DISCARD = true;
@@ -3043,11 +3046,11 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
         renderpass_key.depth_format = PixelFormat::Invalid;
     }
     renderpass_key.samples = samples;
-    const bool do_resolve_color =
+    const bool do_resolve_color = ENABLE_MSAA_TILER_RESOLVE &&
         samples != VK_SAMPLE_COUNT_1_BIT && num_colors > 0 && runtime.device.IsTiler();
     renderpass_key.resolve_color = do_resolve_color;
 
-    const bool do_resolve_depth_stencil =
+    const bool do_resolve_depth_stencil = ENABLE_MSAA_TILER_RESOLVE &&
         samples != VK_SAMPLE_COUNT_1_BIT && depth_image != VK_NULL_HANDLE &&
         runtime.device.IsTiler() &&
         SupportsDepthStencilResolve(runtime.device, renderpass_key.depth_format);
@@ -3074,52 +3077,10 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
             }
             const VkFormat vk_format =
                 MaxwellToVK::SurfaceFormat(runtime.device, FormatType::Optimal, true, format).format;
-            if (ENABLE_MSAA_RESOLVE_CONSUME) {
-                const VkImage msaa_image = images[rt_map[index]];
-                attachments.push_back(runtime.GetOrCreateResolveShadow(
-                    msaa_image, vk_format, render_area, layers, VK_IMAGE_ASPECT_COLOR_BIT));
-                resolve_shadow_images[num_resolve_shadows++] = msaa_image;
-                continue;
-            }
-            VkImageCreateInfo resolve_ci{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-                .imageType = VK_IMAGE_TYPE_2D,
-                .format = vk_format,
-                .extent = {render_area.width, render_area.height, 1},
-                .mipLevels = 1,
-                .arrayLayers = layers,
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-                .tiling = VK_IMAGE_TILING_OPTIMAL,
-                .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
-                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                .queueFamilyIndexCount = 0,
-                .pQueueFamilyIndices = nullptr,
-                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            };
-            vk::Image resolve_image = runtime.memory_allocator.CreateImage(resolve_ci);
-            vk::ImageView resolve_view =
-                runtime.device.GetLogical().CreateImageView(VkImageViewCreateInfo{
-                    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
-                    .image = *resolve_image,
-                    .viewType = layers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D,
-                    .format = vk_format,
-                    .components{},
-                    .subresourceRange{
-                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                        .baseMipLevel = 0,
-                        .levelCount = 1,
-                        .baseArrayLayer = 0,
-                        .layerCount = layers,
-                    },
-                });
-            attachments.push_back(*resolve_view);
-            resolve_images.push_back(std::move(resolve_image));
-            resolve_image_views.push_back(std::move(resolve_view));
+            const VkImage msaa_image = images[rt_map[index]];
+            attachments.push_back(runtime.GetOrCreateResolveShadow(
+                msaa_image, vk_format, render_area, layers, VK_IMAGE_ASPECT_COLOR_BIT));
+            resolve_shadow_images[num_resolve_shadows++] = msaa_image;
         }
     }
 

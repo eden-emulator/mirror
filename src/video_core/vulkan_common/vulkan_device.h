@@ -459,10 +459,6 @@ FN_MAX_LIMIT_LIST
         return features.features.shaderStorageImageMultisample;
     }
 
-    /// Returns the sample counts an image with the given usage and aspect can be created with.
-    VkSampleCountFlags GetSupportedSampleCounts(VkImageUsageFlags usage, VkImageAspectFlags aspect,
-                                                bool is_integer) const;
-
     /// Returns true if the device warp size can potentially be bigger than guest's warp size.
     bool IsWarpSizePotentiallyBiggerThanGuest() const {
         return is_warp_potentially_bigger;
@@ -645,11 +641,6 @@ FN_MAX_LIMIT_LIST
         return properties.depth_stencil_resolve.supportedStencilResolveModes;
     }
 
-    /// Returns true if the depth and stencil aspects may resolve with different modes.
-    bool SupportsIndependentResolve() const {
-        return properties.depth_stencil_resolve.independentResolve == VK_TRUE;
-    }
-
     /// Returns true if only one of the depth and stencil aspects may be resolved.
     bool SupportsIndependentResolveNone() const {
         return properties.depth_stencil_resolve.independentResolveNone == VK_TRUE;
@@ -717,11 +708,6 @@ FN_MAX_LIMIT_LIST
         return extensions.custom_border_color &&
                features.custom_border_color.customBorderColors &&
                features.custom_border_color.customBorderColorWithoutFormat;
-    }
-
-    /// Returns how many live samplers may carry a custom border color, 0 when unknown.
-    u32 GetMaxCustomBorderColorSamplers() const {
-        return properties.custom_border_color.maxCustomBorderColorSamplers;
     }
 
     /// Takes budget for samplers carrying a custom border color, false when exhausted.
@@ -1037,12 +1023,6 @@ FN_MAX_LIMIT_LIST
             stages |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
         }
         return stages;
-    }
-
-    VkPipelineStageFlags AttachmentConsumerStages() const {
-        return ShaderConsumerStages() | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-               VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
-               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     }
 
     /// Returns true if the device supports VK_KHR_maintenance1.
