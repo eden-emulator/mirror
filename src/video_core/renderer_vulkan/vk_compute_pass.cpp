@@ -25,6 +25,7 @@
 #include "video_core/host_shaders/block_linear_unswizzle_2d_buffer_comp_spv.h"
 #include "video_core/host_shaders/block_linear_unswizzle_3d_bcn_comp_spv.h"
 #include "video_core/host_shaders/block_linear_unswizzle_3d_buffer_comp_spv.h"
+#include "video_core/host_shaders/pitch_unswizzle_comp_spv.h"
 #include "video_core/renderer_vulkan/vk_compute_pass.h"
 #include "video_core/surface.h"
 #include "video_core/renderer_vulkan/vk_descriptor_pool.h"
@@ -196,6 +197,13 @@ struct QueriesPrefixScanPushConstants {
 
 struct ConditionalRenderingResolvePushConstants {
     u32 compare_to_zero;
+};
+
+struct PitchUnswizzlePushConstants {
+    std::array<u32, 2> origin;
+    std::array<s32, 2> destination;
+    u32 bytes_per_block;
+    u32 pitch;
 };
 } // Anonymous namespace
 
@@ -1373,6 +1381,127 @@ void BlockLinearUnswizzle3DBufferPass::Unswizzle(
         };
         cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
                                0, {}, {}, post_copy);
+    });
+    scheduler.Finish();
+}
+
+PitchUnswizzlePass::PitchUnswizzlePass(const Device& device_, Scheduler& scheduler_,
+                                       DescriptorPool& descriptor_pool_,
+                                       StagingBufferPool& staging_buffer_pool_,
+                                       ComputePassDescriptorQueue& compute_pass_descriptor_queue_)
+    : ComputePass(device_, scheduler_, descriptor_pool_, ASTC_DESCRIPTOR_SET_BINDINGS,
+                  ASTC_PASS_DESCRIPTOR_UPDATE_TEMPLATE_ENTRY, ASTC_BANK_INFO,
+                  COMPUTE_PUSH_CONSTANT_RANGE<sizeof(PitchUnswizzlePushConstants)>,
+                  PITCH_UNSWIZZLE_COMP_SPV),
+      scheduler{scheduler_}, staging_buffer_pool{staging_buffer_pool_},
+      compute_pass_descriptor_queue{compute_pass_descriptor_queue_} {}
+
+PitchUnswizzlePass::~PitchUnswizzlePass() = default;
+
+bool PitchUnswizzlePass::IsSupported(const VideoCommon::ImageInfo& info) {
+    if (info.type != VideoCommon::ImageType::Linear) {
+        return false;
+    }
+    if (VideoCore::Surface::IsPixelFormatASTC(info.format) ||
+        VideoCore::Surface::IsPixelFormatBCn(info.format)) {
+        return false;
+    }
+    if (info.format >= VideoCore::Surface::PixelFormat::MaxColorFormat) {
+        return false;
+    }
+    const u32 bytes_per_block = VideoCore::Surface::BytesPerBlock(info.format);
+    return bytes_per_block == 1 || bytes_per_block == 2 || bytes_per_block == 4 ||
+           bytes_per_block == 8 || bytes_per_block == 16;
+}
+
+void PitchUnswizzlePass::Unswizzle(Image& image, const StagingBufferRef& swizzled,
+                                   std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    scheduler.RequestOutsideRenderPassOperationContext();
+    const VkPipeline vk_pipeline = *pipeline;
+    const VkImageAspectFlags aspect_mask = image.AspectMask();
+    const VkImage vk_image = image.Handle();
+    const bool is_initialized = image.ExchangeInitialization();
+    scheduler.Record([vk_pipeline, vk_image, aspect_mask,
+                      is_initialized](vk::CommandBuffer cmdbuf) {
+        VkAccessFlags src_access = VK_ACCESS_NONE;
+        VkImageLayout old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+        VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        if (is_initialized) {
+            src_access = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+            old_layout = VK_IMAGE_LAYOUT_GENERAL;
+            src_stage = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER;
+        }
+        const VkImageMemoryBarrier image_barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = src_access,
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+            .oldLayout = old_layout,
+            .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = vk_image,
+            .subresourceRange{
+                .aspectMask = aspect_mask,
+                .baseMipLevel = 0,
+                .levelCount = VK_REMAINING_MIP_LEVELS,
+                .baseArrayLayer = 0,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            },
+        };
+        cmdbuf.PipelineBarrier(src_stage, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, image_barrier);
+        cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, vk_pipeline);
+    });
+    const u32 bytes_per_block = VideoCore::Surface::BytesPerBlock(image.info.format);
+    const u32 pitch = image.info.pitch;
+    for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
+        const size_t input_offset = swizzle.buffer_offset + swizzled.offset;
+        const u32 num_dispatches_x = Common::DivCeil(swizzle.num_tiles.width, 32U);
+        const u32 num_dispatches_y = Common::DivCeil(swizzle.num_tiles.height, 32U);
+
+        compute_pass_descriptor_queue.Acquire(scheduler, 2);
+        compute_pass_descriptor_queue.AddBuffer(swizzled.buffer, input_offset,
+                                                image.guest_size_bytes - swizzle.buffer_offset);
+        compute_pass_descriptor_queue.AddImage(image.StorageImageView(swizzle.level));
+        const void* const descriptor_data{compute_pass_descriptor_queue.UpdateData()};
+
+        const PitchUnswizzlePushConstants params{
+            .origin = {0, 0},
+            .destination = {0, 0},
+            .bytes_per_block = bytes_per_block,
+            .pitch = pitch,
+        };
+        scheduler.Record([this, num_dispatches_x, num_dispatches_y, params,
+                          descriptor_data](vk::CommandBuffer cmdbuf) {
+            const VkDescriptorSet set = descriptor_allocator.Commit();
+            device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
+            cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
+            cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, params);
+            cmdbuf.Dispatch(num_dispatches_x, num_dispatches_y, 1);
+        });
+    }
+    scheduler.Record([vk_image, aspect_mask](vk::CommandBuffer cmdbuf) {
+        const VkImageMemoryBarrier image_barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
+                             VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+            .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = vk_image,
+            .subresourceRange{
+                .aspectMask = aspect_mask,
+                .baseMipLevel = 0,
+                .levelCount = VK_REMAINING_MIP_LEVELS,
+                .baseArrayLayer = 0,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            },
+        };
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                       vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, 0, image_barrier);
     });
     scheduler.Finish();
 }

@@ -202,4 +202,23 @@ private:
     ComputePassDescriptorQueue& compute_pass_descriptor_queue;
 };
 
+class PitchUnswizzlePass final : public ComputePass {
+public:
+    explicit PitchUnswizzlePass(const Device& device_, Scheduler& scheduler_,
+                                DescriptorPool& descriptor_pool_,
+                                StagingBufferPool& staging_buffer_pool_,
+                                ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
+    ~PitchUnswizzlePass();
+
+    [[nodiscard]] static bool IsSupported(const VideoCommon::ImageInfo& info);
+
+    void Unswizzle(Image& image, const StagingBufferRef& swizzled,
+                   std::span<const VideoCommon::SwizzleParameters> swizzles);
+
+private:
+    Scheduler& scheduler;
+    StagingBufferPool& staging_buffer_pool;
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue;
+};
+
 } // namespace Vulkan
