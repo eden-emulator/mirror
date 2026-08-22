@@ -111,7 +111,7 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">NVDEC Emulation</string>
-    <string name="nvdec_emulation_description">Select how video decoding (NVDEC) is handled during cutscenes and intros.</string>
+    <string name="nvdec_emulation_description">Change to CPU if a crash occurs on cinematics.</string>
     <string name="nvdec_emulation_cpu" translatable="false">CPU</string>
     <string name="nvdec_emulation_gpu" translatable="false">GPU</string>
     <string name="nvdec_emulation_none">None</string>
