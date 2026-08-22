@@ -331,10 +331,6 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         };
         if (device->HasSynchronization2()) {
             counter_resume_dependency2.pNext = &counter_resume_barrier;
-            counter_resume_dependency2.srcStageMask = 0;
-            counter_resume_dependency2.dstStageMask = 0;
-            counter_resume_dependency2.srcAccessMask = 0;
-            counter_resume_dependency2.dstAccessMask = 0;
         }
         const VkSubpassDependency2 feedback_loop_dependency2{
             .sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2,

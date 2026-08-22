@@ -363,8 +363,6 @@ void RasterizerVulkan::DrawTexture() {
 
     UpdateDynamicStates();
 
-    query_cache.NotifySegment(true);
-    query_cache.CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, maxwell3d->regs.zpass_pixel_count_enable);
     const auto& draw_texture_state = maxwell3d->draw_manager.draw_texture_state;
     const auto& sampler = texture_cache.GetSampler(draw_texture_state.src_sampler, false);
     const auto& texture = texture_cache.GetImageView(draw_texture_state.src_texture);
@@ -495,10 +493,10 @@ void RasterizerVulkan::Clear(u32 layer_count) {
                                  (!use_color || color_full_channels) && ds_deferrable;
     if (!can_defer_clear) {
         scheduler.RequestRenderpass(framebuffer);
+        query_cache.NotifySegment(true);
+        query_cache.CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, maxwell3d->regs.zpass_pixel_count_enable);
     }
 
-    query_cache.NotifySegment(true);
-    query_cache.CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, maxwell3d->regs.zpass_pixel_count_enable);
     UpdateViewportsState(regs);
 
     const u32 color_attachment = regs.clear_surface.RT;
@@ -1877,19 +1875,13 @@ void RasterizerVulkan::UpdateColorWriteEnable(Tegra::Engines::Maxwell3D::Regs& r
     if (!state_tracker.TouchColorMask()) {
         return;
     }
-    size_t num_attachments{};
-    for (size_t index = 0; index < Maxwell::NumRenderTargets; index++) {
-        if (regs.rt[index].format != Tegra::RenderTargetFormat::NONE) {
-            num_attachments = index + 1;
-        }
-    }
     std::array<VkBool32, Maxwell::NumRenderTargets> setup_enables{};
     for (size_t index = 0; index < Maxwell::NumRenderTargets; index++) {
         const auto& mask = regs.color_mask[regs.color_mask_common ? 0 : index];
         setup_enables[index] = (mask.R || mask.G || mask.B || mask.A) ? VK_TRUE : VK_FALSE;
     }
-    scheduler.Record([setup_enables, num_attachments](vk::CommandBuffer cmdbuf) {
-        cmdbuf.SetColorWriteEnableEXT(vk::Span<VkBool32>(setup_enables.data(), num_attachments));
+    scheduler.Record([setup_enables](vk::CommandBuffer cmdbuf) {
+        cmdbuf.SetColorWriteEnableEXT(setup_enables);
     });
 }
 

@@ -1068,10 +1068,12 @@ void BlitImageHelper::CopyMSAAImpl(VkRenderPass renderpass, VkPipeline pipeline,
                     .layerCount = VK_REMAINING_ARRAY_LAYERS,
                 };
                 const std::array pre_barriers{
-                    VkImageMemoryBarrier{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    VkImageMemoryBarrier2{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                         .pNext = nullptr,
+                        .srcStageMask = aspect_info.pre_src_stages,
                         .srcAccessMask = aspect_info.pre_src_access,
+                        .dstStageMask = aspect_info.pre_src_dst_stages,
                         .dstAccessMask = aspect_info.pre_src_dst_access,
                         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -1080,10 +1082,12 @@ void BlitImageHelper::CopyMSAAImpl(VkRenderPass renderpass, VkPipeline pipeline,
                         .image = src,
                         .subresourceRange = barrier_range,
                     },
-                    VkImageMemoryBarrier{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    VkImageMemoryBarrier2{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                         .pNext = nullptr,
+                        .srcStageMask = aspect_info.pre_src_stages,
                         .srcAccessMask = aspect_info.pre_src_access,
+                        .dstStageMask = aspect_info.pre_dst_dst_stages,
                         .dstAccessMask = aspect_info.pre_dst_dst_access,
                         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -1093,8 +1097,7 @@ void BlitImageHelper::CopyMSAAImpl(VkRenderPass renderpass, VkPipeline pipeline,
                         .subresourceRange = barrier_range,
                     },
                 };
-                cmdbuf.PipelineBarrier(aspect_info.pre_src_stages, aspect_info.pre_dst_stages, 0,
-                                       nullptr, nullptr, pre_barriers);
+                cmdbuf.PipelineBarrier2Images(0, pre_barriers);
                 const VkRenderPassBeginInfo renderpass_bi{
                     .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
                     .pNext = nullptr,
@@ -1130,10 +1133,12 @@ void BlitImageHelper::CopyMSAAImpl(VkRenderPass renderpass, VkPipeline pipeline,
                 cmdbuf.PushConstants(layout, VK_SHADER_STAGE_FRAGMENT_BIT, push_constants);
                 cmdbuf.Draw(3, 1, 0, 0);
                 cmdbuf.EndRenderPass();
-                const VkImageMemoryBarrier post_barrier{
-                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                const VkImageMemoryBarrier2 post_barrier{
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                     .pNext = nullptr,
+                    .srcStageMask = aspect_info.post_src_stages,
                     .srcAccessMask = aspect_info.post_src_access,
+                    .dstStageMask = aspect_info.post_dst_stages,
                     .dstAccessMask = aspect_info.post_dst_access,
                     .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -1142,8 +1147,7 @@ void BlitImageHelper::CopyMSAAImpl(VkRenderPass renderpass, VkPipeline pipeline,
                     .image = dst,
                     .subresourceRange = barrier_range,
                 };
-                cmdbuf.PipelineBarrier(aspect_info.post_src_stages, aspect_info.post_dst_stages, 0,
-                                       post_barrier);
+                cmdbuf.PipelineBarrier2Images(0, post_barrier);
             });
             msaa_copy_resources.push_back(MSAACopyResources{
                 .tick = scheduler.CurrentTick(),
@@ -1192,21 +1196,23 @@ void BlitImageHelper::CopyMSAA(RenderPassCache& render_pass_cache, VkImage dst_i
         .src_view_aspect = VK_IMAGE_ASPECT_COLOR_BIT,
         .attachment_aspect = VK_IMAGE_ASPECT_COLOR_BIT,
         .barrier_aspect = VK_IMAGE_ASPECT_COLOR_BIT,
-        .pre_src_access = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                          VK_ACCESS_TRANSFER_WRITE_BIT,
-        .pre_src_dst_access = VK_ACCESS_SHADER_READ_BIT,
+        .pre_src_access = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_2_SHADER_WRITE_BIT |
+                          VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        .pre_src_dst_access = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
         .pre_dst_dst_access =
-            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        .pre_src_stages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-        .pre_dst_stages =
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .post_src_access = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        .post_dst_access = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT,
-        .post_src_stages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .post_dst_stages = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+        .pre_src_stages = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+                          VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT |
+                          VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                          VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .pre_src_dst_stages = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+        .pre_dst_dst_stages = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .post_src_access = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+        .post_dst_access = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT | VK_ACCESS_2_TRANSFER_READ_BIT,
+        .post_src_stages = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .post_dst_stages = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                           VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT |
+                           VK_PIPELINE_STAGE_2_TRANSFER_BIT,
     };
     const VkFormat src_vk_format =
         MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, true, src_format).format;
@@ -1702,19 +1708,19 @@ void BlitImageHelper::CopyMSAADepth(RenderPassCache& render_pass_cache, VkImage 
         .attachment_aspect = attachment_aspect,
         .barrier_aspect = attachment_aspect,
         .pre_src_access =
-            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
-        .pre_src_dst_access = VK_ACCESS_SHADER_READ_BIT,
-        .pre_dst_dst_access = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        .pre_src_stages = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-                          VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
-                          VK_PIPELINE_STAGE_TRANSFER_BIT,
-        .pre_dst_stages =
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-        .post_src_access = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        .post_dst_access = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT |
-                           VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
-        .post_src_stages = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        .pre_src_dst_access = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT,
+        .pre_dst_dst_access = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                              VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        .pre_src_stages = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
+                          VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT |
+                          VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .pre_src_dst_stages = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+        .pre_dst_dst_stages = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+        .post_src_access = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        .post_dst_access = VK_ACCESS_2_SHADER_SAMPLED_READ_BIT | VK_ACCESS_2_TRANSFER_READ_BIT |
+                           VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+        .post_src_stages = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
         .post_dst_stages = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
     };
     const VkFormat src_vk_format =
