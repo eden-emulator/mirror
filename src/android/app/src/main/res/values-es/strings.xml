@@ -506,8 +506,6 @@
     <string name="fix_bloom_effects_description">Reduce el efecto de resplandor en LA/EOW (Adreno A6XX - A7XX/ Turnip), elimina el resplandor en Burnout. Advertencia: puede causar artefactos gráficos en otros juegos.</string>
     <string name="emulate_bgr565">Emular BGR565</string>
     <string name="emulate_bgr565_description">Soluciona problemas con colores invertidos en juegos, artefactos o sombras extrañas.</string>
-    <string name="rescale_hack">Activar la pasada de reescalado heredada</string>
-    <string name="rescale_hack_description">Permite el manejo de versiones anteriores para el paso de configuración de reescalado para juegos mediante el uso de una ruta de reescalado rápida.</string>
     <string name="renderer_asynchronous_shaders">Usar sombreadores asíncronos</string>
     <string name="renderer_asynchronous_shaders_description">Compila los sombreadores de forma asíncrona. Esto puede reducir los tirones, pero también puede introducir errores gráficos.</string>
     <string name="gpu_unswizzle_settings">Ajustes de desentrelazado de la GPU</string>

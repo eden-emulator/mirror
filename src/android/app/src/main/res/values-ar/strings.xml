@@ -514,8 +514,6 @@
     <string name="fix_bloom_effects_description">يقلل من ضبابية التوهج في LA/EOW  (Adreno A6XX - A7XX/ Turnip)، ويزيل التوهج في Burnout. تحذير: قد يسبب تشوهات رسومية في ألعاب أخرى.</string>
     <string name="emulate_bgr565">محاكاة BGR565</string>
     <string name="emulate_bgr565_description">يُصلح مشاكل انعكاس الألوان في الألعاب أو ظهور تشوهات غريبة أو ظلال غريبة.</string>
-    <string name="rescale_hack">تفعيل ميزة إعادة التحجيم القديمة</string>
-    <string name="rescale_hack_description">يُمكّن هذا الخيار من التعامل مع عملية إعادة تحجيم الألعاب بطريقة تقليدية باستخدام مسار إعادة التحجيم السريع</string>
     <string name="renderer_asynchronous_shaders">استخدم تظليل غير متزامن</string>
     <string name="renderer_asynchronous_shaders_description">يقوم بتجميع التظليل بشكل غير متزامن. قد يقلل ذلك من التقطعات ولكنه قد يؤدي أيضًا إلى حدوث أخطاء.</string>
     <string name="gpu_unswizzle_settings">إعدادات إلغاء ترتيب بيانات وحدة معالجة الرسومات</string>

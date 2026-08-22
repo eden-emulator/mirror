@@ -505,8 +505,6 @@
     <string name="fix_bloom_effects_description">Зменшує розмиття світіння в LA/EOW (Adreno A6XX–A7XX / Turnip), прибирає світіння в Burnout. Увага: може спричинити графічні артефакти в інших іграх.</string>
     <string name="emulate_bgr565">Емулювати BGR565</string>
     <string name="emulate_bgr565_description">Виправляє проблеми з інвертованими кольорами в іграх або дивними артефактами чи тінями.</string>
-    <string name="rescale_hack">Увімкнути застаріле масштабування</string>
-    <string name="rescale_hack_description">Вмикає застарілу обробку масштабування для ігор, використовуючи швидкий шлях масштабування</string>
     <string name="renderer_asynchronous_shaders">Асинхронні шейдери</string>
     <string name="renderer_asynchronous_shaders_description">Компілює шейдери асинхронно. Це може зменшити затримки, але також може спричинити графічні баги.</string>
     <string name="gpu_unswizzle_settings">Налаштування розпакування за допомогою ГП</string>

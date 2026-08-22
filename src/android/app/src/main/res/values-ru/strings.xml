@@ -510,8 +510,6 @@
     <string name="fix_bloom_effects_description">Частично убирает размытие в LA/EOW (Adreno A6XX - A7XX/ Turnip), полностью отключает его в Burnout. Внимание: может вызывать графические артефакты в других играх.</string>
     <string name="emulate_bgr565">Эмулировать BGR565</string>
     <string name="emulate_bgr565_description">Исправляет проблемы с инвертированными цветами в играх, а также со странными артефактами или некорректными тенями.</string>
-    <string name="rescale_hack">Включить старый метод изменения разрешения</string>
-    <string name="rescale_hack_description">Включает старый метод обработки этапа перенастройки масштабирования для игр за счёт использования быстрого алгоритма перемасштабирования.</string>
     <string name="renderer_asynchronous_shaders">Использовать асинхронные шейдеры</string>
     <string name="renderer_asynchronous_shaders_description">Компилирует шейдеры асинхронно. Это может уменьшить подтормаживания, но также может вызвать графические артефакты.</string>
     <string name="gpu_unswizzle_settings">Настройки распаковки текстур (Unswizzle)</string>
