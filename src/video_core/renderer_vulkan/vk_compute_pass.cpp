@@ -818,24 +818,29 @@ void BlockLinearUnswizzle3DPass::UnswizzleChunk(
             .size = barrier_size,
         };
 
+        VkAccessFlags pre_barrier_src_access = VK_ACCESS_SHADER_READ_BIT;
+        VkImageLayout pre_barrier_old_layout = VK_IMAGE_LAYOUT_GENERAL;
+        VkPipelineStageFlags pre_barrier_src_stages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        if (use_undefined_layout) {
+            pre_barrier_src_access = VkAccessFlags{};
+            pre_barrier_old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+            pre_barrier_src_stages |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        } else {
+            pre_barrier_src_stages |= vk::PIPELINE_STAGE_GRAPHICS_COMPUTE;
+        }
+
         const VkImageMemoryBarrier pre_barrier{
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
             .pNext = nullptr,
-            .srcAccessMask = use_undefined_layout ? VkAccessFlags{} :
-                            static_cast<VkAccessFlags>(VK_ACCESS_SHADER_READ_BIT),
+            .srcAccessMask = pre_barrier_src_access,
             .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-            .oldLayout = use_undefined_layout ? VK_IMAGE_LAYOUT_UNDEFINED :
-                        VK_IMAGE_LAYOUT_GENERAL,
+            .oldLayout = pre_barrier_old_layout,
             .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .image = dst_image,
             .subresourceRange = {aspect, 0, 1, 0, 1},
         };
-
-        VkPipelineStageFlags pre_barrier_src_stages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-        pre_barrier_src_stages |= use_undefined_layout ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT
-                                                        : vk::PIPELINE_STAGE_GRAPHICS_COMPUTE;
 
         // Single barrier handles both buffer and image
         cmdbuf.PipelineBarrier(
