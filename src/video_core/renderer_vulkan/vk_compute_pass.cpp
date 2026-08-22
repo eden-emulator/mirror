@@ -730,6 +730,7 @@ void BlockLinearUnswizzle3DPass::Unswizzle(
         UnswizzleChunk(image, swizzled, sw, params, blocks_x, blocks_y,
                        current_z_start, current_chunk_slices, is_initialized);
     }
+    scheduler.Finish();
 }
 
 void BlockLinearUnswizzle3DPass::UnswizzleChunk(
@@ -1121,6 +1122,7 @@ void BlockLinearUnswizzle2DPass::Unswizzle(
         cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
                                0, {}, {}, post_copy);
     });
+    scheduler.Finish();
 }
 
 namespace {
@@ -1372,6 +1374,7 @@ void BlockLinearUnswizzle3DBufferPass::Unswizzle(
         cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
                                0, {}, {}, post_copy);
     });
+    scheduler.Finish();
 }
 
 } // namespace Vulkan
