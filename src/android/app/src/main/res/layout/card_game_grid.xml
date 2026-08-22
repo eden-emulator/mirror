@@ -22,6 +22,7 @@
         android:focusable="true"
         android:transitionName="card_game"
         app:cardCornerRadius="16dp"
+        app:rippleColor="@color/game_card_ripple"
         android:foreground="@color/eden_border_gradient_start">
 
         <androidx.constraintlayout.widget.ConstraintLayout

@@ -12,6 +12,7 @@
     app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
     app:cardBackgroundColor="@android:color/transparent"
+    app:rippleColor="@color/game_card_ripple"
     app:strokeWidth="0dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout

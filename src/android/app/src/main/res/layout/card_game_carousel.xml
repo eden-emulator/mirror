@@ -11,6 +11,7 @@
     app:cardCornerRadius="16dp"
     app:cardPreventCornerOverlap="true"
     android:clipChildren="true"
+    app:rippleColor="@color/game_card_ripple"
     android:layout_margin="4dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
