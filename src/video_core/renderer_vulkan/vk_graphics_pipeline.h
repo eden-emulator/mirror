@@ -11,6 +11,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <shared_mutex>
 #include <type_traits>
 #include <vector>
 
@@ -78,7 +79,8 @@ class GraphicsPipeline {
 public:
     explicit GraphicsPipeline(
         Scheduler& scheduler, BufferCache& buffer_cache, TextureCache& texture_cache,
-        vk::PipelineCache& pipeline_cache, VideoCore::ShaderNotify* shader_notify,
+        vk::PipelineCache& pipeline_cache, std::shared_mutex& pipeline_cache_mutex,
+        VideoCore::ShaderNotify* shader_notify,
         const Device& device, DescriptorPool& descriptor_pool,
         GuestDescriptorQueue& guest_descriptor_queue,
         DescriptorBufferRing& descriptor_buffer_ring, Common::ThreadWorker* worker_thread,
@@ -151,6 +153,7 @@ private:
     TextureCache& texture_cache;
     BufferCache& buffer_cache;
     vk::PipelineCache& pipeline_cache;
+    std::shared_mutex& pipeline_cache_mutex;
     Scheduler& scheduler;
     GuestDescriptorQueue& guest_descriptor_queue;
     DescriptorBufferRing& descriptor_buffer_ring;

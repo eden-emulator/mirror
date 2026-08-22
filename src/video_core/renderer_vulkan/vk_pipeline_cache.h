@@ -12,6 +12,8 @@
 #include <cstddef>
 #include <filesystem>
 #include <memory>
+#include <mutex>
+#include <shared_mutex>
 #include <type_traits>
 #include <ankerl/unordered_dense.h>
 #include <vector>
@@ -175,6 +177,7 @@ private:
 
     std::filesystem::path vulkan_pipeline_cache_filename;
     vk::PipelineCache vulkan_pipeline_cache;
+    std::shared_mutex vulkan_pipeline_cache_mutex;
     size_t pipelines_since_flush{};
     std::chrono::steady_clock::time_point last_flush{};
     std::atomic<size_t> last_cache_size{};

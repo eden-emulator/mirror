@@ -9,6 +9,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <shared_mutex>
 
 #include "common/common_types.h"
 #include "common/thread_worker.h"
@@ -34,6 +35,7 @@ class Scheduler;
 class ComputePipeline {
 public:
     explicit ComputePipeline(const Device& device, Scheduler& scheduler, vk::PipelineCache& pipeline_cache,
+                             std::shared_mutex& pipeline_cache_mutex,
                              DescriptorPool& descriptor_pool,
                              GuestDescriptorQueue& guest_descriptor_queue,
                              DescriptorBufferRing& descriptor_buffer_ring,
@@ -59,6 +61,7 @@ public:
 private:
     const Device& device;
     vk::PipelineCache& pipeline_cache;
+    std::shared_mutex& pipeline_cache_mutex;
     GuestDescriptorQueue& guest_descriptor_queue;
     DescriptorBufferRing& descriptor_buffer_ring;
     Shader::Info info;

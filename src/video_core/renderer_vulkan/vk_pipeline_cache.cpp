@@ -553,6 +553,7 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
 
 PipelineCache::~PipelineCache() {
     if (use_vulkan_pipeline_cache && !vulkan_pipeline_cache_filename.empty()) {
+        std::unique_lock lock{vulkan_pipeline_cache_mutex};
         SerializeVulkanPipelineCache(vulkan_pipeline_cache_filename, vulkan_pipeline_cache,
                                      CACHE_VERSION);
     }
@@ -612,6 +613,7 @@ void PipelineCache::LoadDiskResources(u64 title_id, std::stop_token stop_loading
 
     if (use_vulkan_pipeline_cache) {
         vulkan_pipeline_cache_filename = base_dir / "vulkan_pipelines.bin";
+        std::unique_lock lock{vulkan_pipeline_cache_mutex};
         vulkan_pipeline_cache =
             LoadVulkanPipelineCache(vulkan_pipeline_cache_filename, CACHE_VERSION);
     }
@@ -710,6 +712,7 @@ void PipelineCache::LoadDiskResources(u64 title_id, std::stop_token stop_loading
     workers.WaitForRequests(stop_loading);
 
     if (use_vulkan_pipeline_cache) {
+        std::unique_lock lock{vulkan_pipeline_cache_mutex};
         SerializeVulkanPipelineCache(vulkan_pipeline_cache_filename, vulkan_pipeline_cache,
                                      CACHE_VERSION);
         size_t size = 0;
@@ -743,11 +746,14 @@ void PipelineCache::QueueVulkanPipelineCacheFlush() {
     pipelines_since_flush = 0;
     last_flush = now;
     serialization_thread.QueueWork([this] {
-        SerializeVulkanPipelineCache(vulkan_pipeline_cache_filename, vulkan_pipeline_cache,
-                                     CACHE_VERSION);
-        size_t size = 0;
-        vulkan_pipeline_cache.Read(&size, nullptr);
-        last_cache_size.store(size, std::memory_order_relaxed);
+        {
+            std::unique_lock lock{vulkan_pipeline_cache_mutex};
+            SerializeVulkanPipelineCache(vulkan_pipeline_cache_filename, vulkan_pipeline_cache,
+                                         CACHE_VERSION);
+            size_t size = 0;
+            vulkan_pipeline_cache.Read(&size, nullptr);
+            last_cache_size.store(size, std::memory_order_relaxed);
+        }
         flush_in_flight.store(false, std::memory_order_release);
     });
 }
@@ -890,7 +896,8 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
     }
     Common::ThreadWorker* const thread_worker{build_in_parallel ? &workers : nullptr};
     return std::make_unique<GraphicsPipeline>(
-        scheduler, buffer_cache, texture_cache, vulkan_pipeline_cache, &shader_notify, device,
+        scheduler, buffer_cache, texture_cache, vulkan_pipeline_cache,
+        vulkan_pipeline_cache_mutex, &shader_notify, device,
         descriptor_pool, guest_descriptor_queue, descriptor_buffer_ring, thread_worker, statistics,
         render_pass_cache, key, std::move(modules), infos);
 
@@ -1014,7 +1021,8 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline(
         spv_module.SetObjectNameEXT(name.c_str());
     }
     Common::ThreadWorker* const thread_worker{build_in_parallel ? &workers : nullptr};
-    return std::make_unique<ComputePipeline>(device, scheduler, vulkan_pipeline_cache, descriptor_pool,
+    return std::make_unique<ComputePipeline>(device, scheduler, vulkan_pipeline_cache,
+                                             vulkan_pipeline_cache_mutex, descriptor_pool,
                                              guest_descriptor_queue, descriptor_buffer_ring,
                                              thread_worker, statistics,
                                              &shader_notify, program.info, std::move(spv_module),

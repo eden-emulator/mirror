@@ -811,7 +811,7 @@ void BufferCache<P>::BindHostVertexBuffers() {
     if (use_optimized_vertex_buffers) {
         auto& flags = maxwell3d->dirty.flags;
         const u32 enabled_mask = enabled_vertex_buffers_mask;
-        bool any_dirty = false;
+        u32 dirty_mask = 0;
         u32 pending_mask = enabled_mask;
         while (pending_mask != 0) {
             const u32 index = std::countr_zero(pending_mask);
@@ -820,13 +820,15 @@ void BufferCache<P>::BindHostVertexBuffers() {
             Buffer& buffer = slot_buffers[binding.buffer_id];
             TouchBuffer(buffer, binding.buffer_id);
             SynchronizeBuffer(buffer, binding.device_addr, binding.size);
-            any_dirty |= flags[Dirty::VertexBuffer0 + index];
+            if (flags[Dirty::VertexBuffer0 + index]) {
+                dirty_mask |= 1u << index;
+            }
         }
-        if (enabled_mask == 0 || !any_dirty) {
+        if (dirty_mask == 0) {
             return;
         }
-        const u32 min_index = static_cast<u32>(std::countr_zero(enabled_mask));
-        const u32 max_index = 32u - static_cast<u32>(std::countl_zero(enabled_mask));
+        const u32 min_index = static_cast<u32>(std::countr_zero(dirty_mask));
+        const u32 max_index = 32u - static_cast<u32>(std::countl_zero(dirty_mask));
         HostBindings<Buffer> bindings{};
         bindings.min_index = min_index;
         bindings.max_index = max_index;
