@@ -1006,7 +1006,6 @@
     <string name="theme_mode_light">淺色</string>
     <string name="theme_mode_dark">深色</string>
 
-    <string name="multiplier_none">無</string>
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">黑色背景</string>

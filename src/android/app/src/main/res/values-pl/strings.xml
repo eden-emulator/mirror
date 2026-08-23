@@ -935,7 +935,6 @@
     <string name="theme_mode_light">Jasny</string>
     <string name="theme_mode_dark">Ciemny</string>
 
-    <string name="multiplier_none">Brak</string>
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">Czarne tła</string>

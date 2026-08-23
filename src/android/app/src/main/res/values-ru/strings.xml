@@ -1071,7 +1071,6 @@
     <string name="theme_mode_light">Светлая</string>
     <string name="theme_mode_dark">Темная</string>
 
-    <string name="multiplier_none">Отключено</string>
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">Чёрный фон</string>

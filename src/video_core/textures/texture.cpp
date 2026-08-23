@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
@@ -80,16 +80,16 @@ float TSCEntry::MaxAnisotropy() const noexcept {
     case Settings::AnisotropyMode::X4:
     case Settings::AnisotropyMode::X8:
     case Settings::AnisotropyMode::X16:
-    case Settings::AnisotropyMode::X32:
-    case Settings::AnisotropyMode::X64:
-        added_anisotropic = u32(anisotropic_settings) - 1U;
+        added_anisotropic = s32(anisotropic_settings) - 1;
         break;
-    case Settings::AnisotropyMode::Automatic:
-        added_anisotropic = Settings::values.resolution_info.up_scale >> Settings::values.resolution_info.down_shift;
-        added_anisotropic = (std::max)(added_anisotropic - 1U, 0U);
+    case Settings::AnisotropyMode::Automatic: {
+        const u32 resolution_scale = Settings::values.resolution_info.up_scale >>
+                                     Settings::values.resolution_info.down_shift;
+        if (resolution_scale > 1U) {
+            added_anisotropic = static_cast<s32>(resolution_scale - 1U);
+        }
         break;
-    case Settings::AnisotropyMode::None:
-        return 1.0f; //No use of anisotropy
+    }
     }
     return float(1U << (max_anisotropy + added_anisotropic));
 }
