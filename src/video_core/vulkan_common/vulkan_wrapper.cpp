@@ -10,8 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include <boost/container/small_vector.hpp>
-
 #include "common/common_types.h"
 #include "common/logging.h"
 #include "video_core/vulkan_common/vk_enum_string_helper.h"
@@ -297,76 +295,6 @@ void SetObjectName(const DeviceDispatch* dld, VkDevice device, T handle, VkObjec
 }
 
 } // Anonymous namespace
-
-void PipelineBarrierDowngrade(const DeviceDispatch& dld, VkCommandBuffer handle,
-                              VkDependencyFlags dependency_flags,
-                              Span<VkMemoryBarrier2> memory_barriers,
-                              Span<VkBufferMemoryBarrier2> buffer_barriers,
-                              Span<VkImageMemoryBarrier2> image_barriers) {
-    VkPipelineStageFlags2 src_stages = 0;
-    VkPipelineStageFlags2 dst_stages = 0;
-    for (const VkMemoryBarrier2& barrier : memory_barriers) {
-        src_stages |= barrier.srcStageMask;
-        dst_stages |= barrier.dstStageMask;
-    }
-    for (const VkBufferMemoryBarrier2& barrier : buffer_barriers) {
-        src_stages |= barrier.srcStageMask;
-        dst_stages |= barrier.dstStageMask;
-    }
-    for (const VkImageMemoryBarrier2& barrier : image_barriers) {
-        src_stages |= barrier.srcStageMask;
-        dst_stages |= barrier.dstStageMask;
-    }
-
-    boost::container::small_vector<VkMemoryBarrier, 4> memory;
-    memory.reserve(memory_barriers.size());
-    for (const VkMemoryBarrier2& barrier : memory_barriers) {
-        memory.push_back(VkMemoryBarrier{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-            .pNext = nullptr,
-            .srcAccessMask = DowngradeAccessMask(barrier.srcAccessMask),
-            .dstAccessMask = DowngradeAccessMask(barrier.dstAccessMask),
-        });
-    }
-    boost::container::small_vector<VkBufferMemoryBarrier, 4> buffers;
-    buffers.reserve(buffer_barriers.size());
-    for (const VkBufferMemoryBarrier2& barrier : buffer_barriers) {
-        buffers.push_back(VkBufferMemoryBarrier{
-            .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            .pNext = nullptr,
-            .srcAccessMask = DowngradeAccessMask(barrier.srcAccessMask),
-            .dstAccessMask = DowngradeAccessMask(barrier.dstAccessMask),
-            .srcQueueFamilyIndex = barrier.srcQueueFamilyIndex,
-            .dstQueueFamilyIndex = barrier.dstQueueFamilyIndex,
-            .buffer = barrier.buffer,
-            .offset = barrier.offset,
-            .size = barrier.size,
-        });
-    }
-    boost::container::small_vector<VkImageMemoryBarrier, 9> images;
-    images.reserve(image_barriers.size());
-    for (const VkImageMemoryBarrier2& barrier : image_barriers) {
-        images.push_back(VkImageMemoryBarrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-            .pNext = nullptr,
-            .srcAccessMask = DowngradeAccessMask(barrier.srcAccessMask),
-            .dstAccessMask = DowngradeAccessMask(barrier.dstAccessMask),
-            .oldLayout = barrier.oldLayout,
-            .newLayout = barrier.newLayout,
-            .srcQueueFamilyIndex = barrier.srcQueueFamilyIndex,
-            .dstQueueFamilyIndex = barrier.dstQueueFamilyIndex,
-            .image = barrier.image,
-            .subresourceRange = barrier.subresourceRange,
-        });
-    }
-
-    dld.vkCmdPipelineBarrier(handle,
-                             DowngradeStageMask(src_stages, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT),
-                             DowngradeStageMask(dst_stages, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT),
-                             dependency_flags, static_cast<u32>(memory.size()), memory.data(),
-                             static_cast<u32>(buffers.size()), buffers.data(),
-                             static_cast<u32>(images.size()), images.data());
-}
 
 bool Load(InstanceDispatch& dld) noexcept {
 #define X(name) Proc(dld.name, dld, #name)

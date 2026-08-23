@@ -158,41 +158,6 @@ inline constexpr VkPipelineStageFlags PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER_H
 
 inline constexpr VkPipelineStageFlags PIPELINE_STAGE_HOST = VK_PIPELINE_STAGE_HOST_BIT;
 
-constexpr VkPipelineStageFlags DowngradeStageMask(VkPipelineStageFlags2 mask,
-                                                  VkPipelineStageFlags empty) noexcept {
-    VkPipelineStageFlags result = static_cast<VkPipelineStageFlags>(mask & 0xFFFFFFFFULL);
-    if ((mask & (VK_PIPELINE_STAGE_2_COPY_BIT | VK_PIPELINE_STAGE_2_RESOLVE_BIT |
-                 VK_PIPELINE_STAGE_2_BLIT_BIT | VK_PIPELINE_STAGE_2_CLEAR_BIT)) != 0) {
-        result |= VK_PIPELINE_STAGE_TRANSFER_BIT;
-    }
-    if ((mask & VK_PIPELINE_STAGE_2_PRE_RASTERIZATION_SHADERS_BIT) != 0) {
-        result |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT |
-                  VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT |
-                  VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
-    }
-    if ((mask & VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT) != 0) {
-        result |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
-    }
-    if ((mask & VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT) != 0) {
-        result |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
-    }
-    if (result == 0) {
-        return empty;
-    }
-    return result;
-}
-
-constexpr VkAccessFlags DowngradeAccessMask(VkAccessFlags2 mask) noexcept {
-    VkAccessFlags result = static_cast<VkAccessFlags>(mask & 0xFFFFFFFFULL);
-    if ((mask & (VK_ACCESS_2_SHADER_SAMPLED_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_READ_BIT)) != 0) {
-        result |= VK_ACCESS_SHADER_READ_BIT;
-    }
-    if ((mask & VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT) != 0) {
-        result |= VK_ACCESS_SHADER_WRITE_BIT;
-    }
-    return result;
-}
-
 
 /// Table holding Vulkan instance function pointers.
 struct InstanceDispatch {
@@ -1232,12 +1197,6 @@ private:
     const InstanceDispatch* dld = nullptr;
 };
 
-void PipelineBarrierDowngrade(const DeviceDispatch& dld, VkCommandBuffer handle,
-                              VkDependencyFlags dependency_flags,
-                              Span<VkMemoryBarrier2> memory_barriers,
-                              Span<VkBufferMemoryBarrier2> buffer_barriers,
-                              Span<VkImageMemoryBarrier2> image_barriers);
-
 class CommandBuffer {
 public:
     CommandBuffer() noexcept = default;
@@ -1388,43 +1347,76 @@ public:
                          VkDependencyFlags dependency_flags, Span<VkMemoryBarrier> memory_barriers,
                          Span<VkBufferMemoryBarrier> buffer_barriers,
                          Span<VkImageMemoryBarrier> image_barriers) const noexcept {
+        static constexpr u32 MaxBarriers = 16;
+        if (dld->vkCmdPipelineBarrier2 && memory_barriers.size() <= MaxBarriers &&
+            buffer_barriers.size() <= MaxBarriers && image_barriers.size() <= MaxBarriers) {
+            const auto src_stage_mask2 = static_cast<VkPipelineStageFlags2>(src_stage_mask);
+            const auto dst_stage_mask2 = static_cast<VkPipelineStageFlags2>(dst_stage_mask);
+
+            std::array<VkMemoryBarrier2, MaxBarriers> memory_barriers2;
+            for (u32 i = 0; i < memory_barriers.size(); ++i) {
+                memory_barriers2[i] = VkMemoryBarrier2{
+                    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+                    .pNext = nullptr,
+                    .srcStageMask = src_stage_mask2,
+                    .srcAccessMask = static_cast<VkAccessFlags2>(memory_barriers[i].srcAccessMask),
+                    .dstStageMask = dst_stage_mask2,
+                    .dstAccessMask = static_cast<VkAccessFlags2>(memory_barriers[i].dstAccessMask),
+                };
+            }
+            std::array<VkBufferMemoryBarrier2, MaxBarriers> buffer_barriers2;
+            for (u32 i = 0; i < buffer_barriers.size(); ++i) {
+                const auto& barrier = buffer_barriers[i];
+                buffer_barriers2[i] = VkBufferMemoryBarrier2{
+                    .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+                    .pNext = nullptr,
+                    .srcStageMask = src_stage_mask2,
+                    .srcAccessMask = static_cast<VkAccessFlags2>(barrier.srcAccessMask),
+                    .dstStageMask = dst_stage_mask2,
+                    .dstAccessMask = static_cast<VkAccessFlags2>(barrier.dstAccessMask),
+                    .srcQueueFamilyIndex = barrier.srcQueueFamilyIndex,
+                    .dstQueueFamilyIndex = barrier.dstQueueFamilyIndex,
+                    .buffer = barrier.buffer,
+                    .offset = barrier.offset,
+                    .size = barrier.size,
+                };
+            }
+            std::array<VkImageMemoryBarrier2, MaxBarriers> image_barriers2;
+            for (u32 i = 0; i < image_barriers.size(); ++i) {
+                const auto& barrier = image_barriers[i];
+                image_barriers2[i] = VkImageMemoryBarrier2{
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                    .pNext = nullptr,
+                    .srcStageMask = src_stage_mask2,
+                    .srcAccessMask = static_cast<VkAccessFlags2>(barrier.srcAccessMask),
+                    .dstStageMask = dst_stage_mask2,
+                    .dstAccessMask = static_cast<VkAccessFlags2>(barrier.dstAccessMask),
+                    .oldLayout = barrier.oldLayout,
+                    .newLayout = barrier.newLayout,
+                    .srcQueueFamilyIndex = barrier.srcQueueFamilyIndex,
+                    .dstQueueFamilyIndex = barrier.dstQueueFamilyIndex,
+                    .image = barrier.image,
+                    .subresourceRange = barrier.subresourceRange,
+                };
+            }
+            const VkDependencyInfo dependency_info{
+                .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                .pNext = nullptr,
+                .dependencyFlags = dependency_flags,
+                .memoryBarrierCount = memory_barriers.size(),
+                .pMemoryBarriers = memory_barriers2.data(),
+                .bufferMemoryBarrierCount = buffer_barriers.size(),
+                .pBufferMemoryBarriers = buffer_barriers2.data(),
+                .imageMemoryBarrierCount = image_barriers.size(),
+                .pImageMemoryBarriers = image_barriers2.data(),
+            };
+            dld->vkCmdPipelineBarrier2(handle, &dependency_info);
+            return;
+        }
         dld->vkCmdPipelineBarrier(handle, src_stage_mask, dst_stage_mask, dependency_flags,
                                   memory_barriers.size(), memory_barriers.data(),
                                   buffer_barriers.size(), buffer_barriers.data(),
                                   image_barriers.size(), image_barriers.data());
-    }
-
-    void PipelineBarrier2(VkDependencyFlags dependency_flags,
-                          Span<VkMemoryBarrier2> memory_barriers,
-                          Span<VkBufferMemoryBarrier2> buffer_barriers,
-                          Span<VkImageMemoryBarrier2> image_barriers) const noexcept {
-        if (!dld->vkCmdPipelineBarrier2) {
-            PipelineBarrierDowngrade(*dld, handle, dependency_flags, memory_barriers,
-                                     buffer_barriers, image_barriers);
-            return;
-        }
-        const VkDependencyInfo dependency_info{
-            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-            .pNext = nullptr,
-            .dependencyFlags = dependency_flags,
-            .memoryBarrierCount = memory_barriers.size(),
-            .pMemoryBarriers = memory_barriers.data(),
-            .bufferMemoryBarrierCount = buffer_barriers.size(),
-            .pBufferMemoryBarriers = buffer_barriers.data(),
-            .imageMemoryBarrierCount = image_barriers.size(),
-            .pImageMemoryBarriers = image_barriers.data(),
-        };
-        dld->vkCmdPipelineBarrier2(handle, &dependency_info);
-    }
-
-    void PipelineBarrier2Images(VkDependencyFlags dependency_flags,
-                                Span<VkImageMemoryBarrier2> image_barriers) const noexcept {
-        PipelineBarrier2(dependency_flags, {}, {}, image_barriers);
-    }
-
-    void PipelineBarrier2Memory(VkDependencyFlags dependency_flags,
-                                Span<VkMemoryBarrier2> memory_barriers) const noexcept {
-        PipelineBarrier2(dependency_flags, memory_barriers, {}, {});
     }
 
     void PipelineBarrier(VkPipelineStageFlags src_stage_mask, VkPipelineStageFlags dst_stage_mask,

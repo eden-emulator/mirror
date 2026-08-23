@@ -140,16 +140,15 @@ private:
         VkImageAspectFlags src_view_aspect;
         VkImageAspectFlags attachment_aspect;
         VkImageAspectFlags barrier_aspect;
-        VkAccessFlags2 pre_src_access;
-        VkAccessFlags2 pre_src_dst_access;
-        VkAccessFlags2 pre_dst_dst_access;
-        VkPipelineStageFlags2 pre_src_stages;
-        VkPipelineStageFlags2 pre_src_dst_stages;
-        VkPipelineStageFlags2 pre_dst_dst_stages;
-        VkAccessFlags2 post_src_access;
-        VkAccessFlags2 post_dst_access;
-        VkPipelineStageFlags2 post_src_stages;
-        VkPipelineStageFlags2 post_dst_stages;
+        VkAccessFlags pre_src_access;
+        VkAccessFlags pre_src_dst_access;
+        VkAccessFlags pre_dst_dst_access;
+        VkPipelineStageFlags pre_src_stages;
+        VkPipelineStageFlags pre_dst_stages;
+        VkAccessFlags post_src_access;
+        VkAccessFlags post_dst_access;
+        VkPipelineStageFlags post_src_stages;
+        VkPipelineStageFlags post_dst_stages;
     };
 
     void BlitMSAAImpl(const Framebuffer* dst_framebuffer, const ImageView& src_image_view,

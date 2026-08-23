@@ -319,6 +319,10 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         };
         if (device->HasSynchronization2()) {
             counter_resume_dependency2.pNext = &counter_resume_barrier;
+            counter_resume_dependency2.srcStageMask = 0;
+            counter_resume_dependency2.dstStageMask = 0;
+            counter_resume_dependency2.srcAccessMask = 0;
+            counter_resume_dependency2.dstAccessMask = 0;
         }
         boost::container::static_vector<VkSubpassDependency2, 1> dependencies2;
         if (can_resume_transform_feedback) {

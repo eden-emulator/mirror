@@ -421,21 +421,18 @@ void Scheduler::EndRenderPass()
         Record([num_images = num_renderpass_images,
                        images = renderpass_images,
                        ranges = renderpass_image_ranges,
-                       shader_stages = device.ShaderConsumerStages(),
+                       consumer_stages = device.AttachmentConsumerStages(),
                        has_transform_feedback = device.IsExtTransformFeedbackSupported()](
                           vk::CommandBuffer cmdbuf) {
-            static constexpr VkAccessFlags2 SHADER_ACCESS =
-                VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT;
-            static constexpr VkAccessFlags2 COLOR_ACCESS =
-                VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-            static constexpr VkAccessFlags2 DEPTH_STENCIL_ACCESS =
-                VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            static constexpr VkPipelineStageFlags2 DEPTH_STENCIL_STAGES =
-                VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
-                VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+            static constexpr VkAccessFlags SHADER_ACCESS =
+                VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+            static constexpr VkAccessFlags COLOR_ACCESS =
+                VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            static constexpr VkAccessFlags DEPTH_STENCIL_ACCESS =
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-            std::array<VkImageMemoryBarrier2, 9> barriers;
+            std::array<VkImageMemoryBarrier, 9> barriers;
             for (size_t i = 0; i < num_images; ++i) {
                 const VkImageSubresourceRange& range = ranges[i];
                 const bool is_color = (range.aspectMask & VK_IMAGE_ASPECT_COLOR_BIT) != 0;
@@ -443,37 +440,25 @@ void Scheduler::EndRenderPass()
                                               & (VK_IMAGE_ASPECT_DEPTH_BIT
                                                  | VK_IMAGE_ASPECT_STENCIL_BIT)) !=0;
 
-                VkPipelineStageFlags2 src_stages = 0;
-                VkAccessFlags2 src_access = 0;
-                VkPipelineStageFlags2 dst_stages = shader_stages;
-                VkAccessFlags2 dst_access = SHADER_ACCESS;
+                VkAccessFlags src_access = 0;
+                VkAccessFlags dst_access = SHADER_ACCESS;
 
                 if (is_color) {
-                    src_stages |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-                    src_access |= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-                    dst_stages |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+                    src_access |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
                     dst_access |= COLOR_ACCESS;
                 } else if (is_depth_stencil) {
-                    src_stages |= DEPTH_STENCIL_STAGES;
-                    src_access |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                    dst_stages |= DEPTH_STENCIL_STAGES;
+                    src_access |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                     dst_access |= DEPTH_STENCIL_ACCESS;
                 } else {
-                    src_stages |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT
-                                  | DEPTH_STENCIL_STAGES;
-                    src_access |= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT
-                                  | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                    dst_stages |= VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT
-                                  | DEPTH_STENCIL_STAGES;
+                    src_access |= VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
+                                  | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
                     dst_access |= COLOR_ACCESS | DEPTH_STENCIL_ACCESS;
                 }
 
-                barriers[i] = VkImageMemoryBarrier2{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                barriers[i] = VkImageMemoryBarrier{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                         .pNext = nullptr,
-                        .srcStageMask = src_stages,
                         .srcAccessMask = src_access,
-                        .dstStageMask = dst_stages,
                         .dstAccessMask = dst_access,
                         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -484,19 +469,19 @@ void Scheduler::EndRenderPass()
                 };
             }
             cmdbuf.EndRenderPass();
-            cmdbuf.PipelineBarrier2Images(0, vk::Span(barriers.data(), num_images));
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
+                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, consumer_stages,
+                                   0, nullptr, nullptr, vk::Span(barriers.data(), num_images));
             if (has_transform_feedback) {
-                static constexpr VkMemoryBarrier2 XFB_OUTPUT_BARRIER{
-                    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+                static constexpr VkMemoryBarrier XFB_OUTPUT_BARRIER{
+                    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
                     .pNext = nullptr,
-                    .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT,
-                    .srcAccessMask = VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,
-                    .dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT |
-                                    VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    .dstAccessMask = VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT |
-                                     VK_ACCESS_2_TRANSFER_READ_BIT,
+                    .srcAccessMask = VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,
+                    .dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT,
                 };
-                cmdbuf.PipelineBarrier2Memory(0, XFB_OUTPUT_BARRIER);
+                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT,
+                                       VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                       0, XFB_OUTPUT_BARRIER);
             }
         });
 
