@@ -667,24 +667,13 @@ void BlitImageHelper::BlitColor(const Framebuffer* dst_framebuffer, const ImageV
         .renderpass = dst_framebuffer->RenderPass(),
         .operation = operation,
     };
-    const VkPipelineLayout layout = *one_texture_pipeline_layout;
-    const VkSampler sampler = is_linear ? *linear_sampler : *nearest_sampler;
-    const VkPipeline pipeline = FindOrEmplaceColorPipeline(key);
-    const VkImageView src_view = src_image_view.Handle(Shader::TextureType::Color2D);
-
-    RecordShaderReadBarrier(scheduler, src_image_view);
-    scheduler.RequestRenderpass(dst_framebuffer);
-    scheduler.Record([this, dst_region, src_region, pipeline, layout, sampler,
-                      src_view](vk::CommandBuffer cmdbuf) {
-        const VkDescriptorSet descriptor_set = one_texture_descriptor_allocator.Commit();
-        UpdateOneTextureDescriptorSet(device, descriptor_set, sampler, src_view);
-        cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-        cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
-                                  nullptr);
-        BindBlitState(cmdbuf, layout, dst_region, src_region);
-        cmdbuf.Draw(3, 1, 0, 0);
-    });
-    scheduler.InvalidateState();
+    VkSampler sampler = *nearest_sampler;
+    if (is_linear) {
+        sampler = *linear_sampler;
+    }
+    BlitImpl(dst_framebuffer, src_image_view, dst_region, src_region,
+             FindOrEmplaceColorPipeline(key), sampler,
+             src_image_view.Handle(Shader::TextureType::Color2D), VK_NULL_HANDLE, false);
 }
 
 void BlitImageHelper::BlitColor(const Framebuffer* dst_framebuffer, VkImageView src_image_view,
@@ -713,16 +702,15 @@ void BlitImageHelper::BlitColor(const Framebuffer* dst_framebuffer, VkImageView 
     });
 }
 
-void BlitImageHelper::BlitMSAAImpl(const Framebuffer* dst_framebuffer,
-                                   const ImageView& src_image_view, const Region2D& dst_region,
-                                   const Region2D& src_region, VkPipeline pipeline,
-                                   VkImageView src_view, VkImageView src_stencil_view,
-                                   bool blit_stencil) {
+void BlitImageHelper::BlitImpl(const Framebuffer* dst_framebuffer,
+                               const ImageView& src_image_view, const Region2D& dst_region,
+                               const Region2D& src_region, VkPipeline pipeline, VkSampler sampler,
+                               VkImageView src_view, VkImageView src_stencil_view,
+                               bool blit_stencil) {
     VkPipelineLayout layout = *one_texture_pipeline_layout;
     if (blit_stencil) {
         layout = *two_textures_pipeline_layout;
     }
-    const VkSampler sampler = *nearest_sampler;
 
     RecordShaderReadBarrier(scheduler, src_image_view);
     scheduler.RequestRenderpass(dst_framebuffer);
@@ -753,9 +741,9 @@ void BlitImageHelper::BlitColorMSAA(const Framebuffer* dst_framebuffer,
         .renderpass = dst_framebuffer->RenderPass(),
         .samples = dst_framebuffer->Samples(),
     };
-    BlitMSAAImpl(dst_framebuffer, src_image_view, dst_region, src_region,
-                 FindOrEmplaceBlitColorMSAAPipeline(key),
-                 src_image_view.Handle(Shader::TextureType::Color2D), VK_NULL_HANDLE, false);
+    BlitImpl(dst_framebuffer, src_image_view, dst_region, src_region,
+             FindOrEmplaceBlitColorMSAAPipeline(key), *nearest_sampler,
+             src_image_view.Handle(Shader::TextureType::Color2D), VK_NULL_HANDLE, false);
 }
 
 void BlitImageHelper::BlitDepthStencilMSAA(const Framebuffer* dst_framebuffer,
@@ -771,31 +759,16 @@ void BlitImageHelper::BlitDepthStencilMSAA(const Framebuffer* dst_framebuffer,
     if (blit_stencil) {
         src_stencil_view = src_image_view.StencilView();
     }
-    BlitMSAAImpl(dst_framebuffer, src_image_view, dst_region, src_region,
-                 FindOrEmplaceBlitDepthStencilMSAAPipeline(key, blit_stencil),
-                 src_image_view.DepthView(), src_stencil_view, blit_stencil);
+    BlitImpl(dst_framebuffer, src_image_view, dst_region, src_region,
+             FindOrEmplaceBlitDepthStencilMSAAPipeline(key, blit_stencil), *nearest_sampler,
+             src_image_view.DepthView(), src_stencil_view, blit_stencil);
 }
 
 void BlitImageHelper::BlitDepth(const Framebuffer* dst_framebuffer, ImageView& src_image_view,
                                 const Region2D& dst_region, const Region2D& src_region) {
-    const VkPipeline pipeline = FindOrEmplaceBlitDepthPipeline(dst_framebuffer->RenderPass());
-    const VkPipelineLayout layout = *one_texture_pipeline_layout;
-    const VkSampler sampler = *nearest_sampler;
-    const VkImageView src_depth_view = src_image_view.DepthView();
-
-    RecordShaderReadBarrier(scheduler, src_image_view);
-    scheduler.RequestRenderpass(dst_framebuffer);
-    scheduler.Record([this, dst_region, src_region, pipeline, layout, sampler,
-                      src_depth_view](vk::CommandBuffer cmdbuf) {
-        const VkDescriptorSet descriptor_set = one_texture_descriptor_allocator.Commit();
-        UpdateOneTextureDescriptorSet(device, descriptor_set, sampler, src_depth_view);
-        cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-        cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
-                                  nullptr);
-        BindBlitState(cmdbuf, layout, dst_region, src_region);
-        cmdbuf.Draw(3, 1, 0, 0);
-    });
-    scheduler.InvalidateState();
+    BlitImpl(dst_framebuffer, src_image_view, dst_region, src_region,
+             FindOrEmplaceBlitDepthPipeline(dst_framebuffer->RenderPass()), *nearest_sampler,
+             src_image_view.DepthView(), VK_NULL_HANDLE, false);
 }
 
 void BlitImageHelper::ResolveDepthStencil(const Framebuffer* dst_framebuffer,
@@ -803,36 +776,14 @@ void BlitImageHelper::ResolveDepthStencil(const Framebuffer* dst_framebuffer,
                                           const Region2D& src_region) {
     const bool resolve_stencil =
         dst_framebuffer->HasAspectStencilBit() && device.IsExtShaderStencilExportSupported();
-    const VkPipeline pipeline =
-        FindOrEmplaceResolveDepthStencilPipeline(dst_framebuffer->RenderPass(), resolve_stencil);
-    const VkPipelineLayout layout =
-        resolve_stencil ? *two_textures_pipeline_layout : *one_texture_pipeline_layout;
-    const VkSampler sampler = *nearest_sampler;
-    const VkImageView src_depth_view = src_image_view.DepthView();
-    const VkImageView src_stencil_view =
-        resolve_stencil ? src_image_view.StencilView() : VK_NULL_HANDLE;
-
-    RecordShaderReadBarrier(scheduler, src_image_view);
-    scheduler.RequestRenderpass(dst_framebuffer);
-    scheduler.Record([this, dst_region, src_region, pipeline, layout, sampler, src_depth_view,
-                      src_stencil_view, resolve_stencil](vk::CommandBuffer cmdbuf) {
-        if (resolve_stencil) {
-            const VkDescriptorSet descriptor_set = two_textures_descriptor_allocator.Commit();
-            UpdateTwoTexturesDescriptorSet(device, descriptor_set, sampler, src_depth_view,
-                                           src_stencil_view);
-            cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
-                                      nullptr);
-        } else {
-            const VkDescriptorSet descriptor_set = one_texture_descriptor_allocator.Commit();
-            UpdateOneTextureDescriptorSet(device, descriptor_set, sampler, src_depth_view);
-            cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
-                                      nullptr);
-        }
-        cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-        BindBlitState(cmdbuf, layout, dst_region, src_region);
-        cmdbuf.Draw(3, 1, 0, 0);
-    });
-    scheduler.InvalidateState();
+    VkImageView src_stencil_view = VK_NULL_HANDLE;
+    if (resolve_stencil) {
+        src_stencil_view = src_image_view.StencilView();
+    }
+    BlitImpl(dst_framebuffer, src_image_view, dst_region, src_region,
+             FindOrEmplaceResolveDepthStencilPipeline(dst_framebuffer->RenderPass(),
+                                                      resolve_stencil),
+             *nearest_sampler, src_image_view.DepthView(), src_stencil_view, resolve_stencil);
 }
 
 void BlitImageHelper::BlitDepthStencil(const Framebuffer* dst_framebuffer,
@@ -847,40 +798,16 @@ void BlitImageHelper::BlitDepthStencil(const Framebuffer* dst_framebuffer,
         .renderpass = dst_framebuffer->RenderPass(),
         .operation = operation,
     };
-    VkPipelineLayout layout{};
     VkPipeline pipeline{};
     VkImageView src_stencil_view = VK_NULL_HANDLE;
     if (blit_stencil) {
-        layout = *two_textures_pipeline_layout;
         pipeline = FindOrEmplaceDepthStencilPipeline(key);
         src_stencil_view = src_image_view.StencilView();
     } else {
-        layout = *one_texture_pipeline_layout;
         pipeline = FindOrEmplaceBlitDepthPipeline(key.renderpass);
     }
-    const VkSampler sampler = *nearest_sampler;
-    const VkImageView src_depth_view = src_image_view.DepthView();
-
-    RecordShaderReadBarrier(scheduler, src_image_view);
-    scheduler.RequestRenderpass(dst_framebuffer);
-    scheduler.Record([dst_region, src_region, pipeline, layout, sampler, src_depth_view,
-                      src_stencil_view, blit_stencil, this](vk::CommandBuffer cmdbuf) {
-        VkDescriptorSet descriptor_set{};
-        if (blit_stencil) {
-            descriptor_set = two_textures_descriptor_allocator.Commit();
-            UpdateTwoTexturesDescriptorSet(device, descriptor_set, sampler, src_depth_view,
-                                           src_stencil_view);
-        } else {
-            descriptor_set = one_texture_descriptor_allocator.Commit();
-            UpdateOneTextureDescriptorSet(device, descriptor_set, sampler, src_depth_view);
-        }
-        cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-        cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, descriptor_set,
-                                  nullptr);
-        BindBlitState(cmdbuf, layout, dst_region, src_region);
-        cmdbuf.Draw(3, 1, 0, 0);
-    });
-    scheduler.InvalidateState();
+    BlitImpl(dst_framebuffer, src_image_view, dst_region, src_region, pipeline, *nearest_sampler,
+             src_image_view.DepthView(), src_stencil_view, blit_stencil);
 }
 
 void BlitImageHelper::ConvertD32ToR32(const Framebuffer* dst_framebuffer,
