@@ -111,43 +111,38 @@
         <item>1</item>
     </integer-array>
 
-    <!-- VRAM USAGE MODE CHOICES -->
     <string-array name="vramUsageMethodNames">
         <item>@string/vram_usage_conservative</item>
         <item>@string/vram_usage_aggressive</item>
     </string-array>
 
-    <!-- VRAM USAGE MODE VALUES -->
     <integer-array name="vramUsageMethodValues">
-        <item>0</item> <!-- Conservative -->
-        <item>1</item> <!-- Aggressive -->
+        <item>0</item>
+        <item>1</item>
     </integer-array>
 
-    <!-- ASTC Decoding Method Choices -->
     <string-array name="astcDecodingMethodNames">
         <item>@string/accelerate_astc_cpu</item>
         <item>@string/accelerate_astc_gpu</item>
         <item>@string/accelerate_astc_async</item>
     </string-array>
 
-    <!-- ASTC Decoding Method Values -->
     <integer-array name="astcDecodingMethodValues">
-        <item>0</item> <!-- CPU -->
-        <item>1</item> <!-- GPU -->
-        <item>2</item> <!-- CPU Asynchronously -->
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
     </integer-array>
-    <!-- NVDEC Emulation Choices -->
+
     <string-array name="rendererNvdecNames">
-        <item>@string/nvdec_emulation_none</item> <!-- Off -->
-        <item>@string/nvdec_emulation_cpu</item>  <!-- Cpu -->
-        <item>@string/nvdec_emulation_gpu</item>  <!-- Gpu -->
+        <item>@string/nvdec_emulation_none</item>
+        <item>@string/nvdec_emulation_cpu</item>
+        <item>@string/nvdec_emulation_gpu</item>
     </string-array>
 
-    <!-- NVDEC Emulation Values -->
     <integer-array name="rendererNvdecValues">
-        <item>3</item> <!-- Off value -->
-        <item>1</item> <!-- CPU value -->
-        <item>2</item> <!-- GPU value -->
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
     </integer-array>
 
     <string-array name="rendererResolutionNames">
