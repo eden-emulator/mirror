@@ -2015,7 +2015,7 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
         });
 
         const auto [samples_x, samples_y] = VideoCommon::SamplesLog2(info.num_samples);
-        std::vector<VideoCommon::ImageCopy> image_copies;
+        boost::container::small_vector<VideoCommon::ImageCopy, 16> image_copies;
         image_copies.reserve(copies.size());
         for (const auto& copy : copies) {
             VideoCommon::ImageCopy image_copy{};
@@ -2032,12 +2032,13 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
         if (msaa_upload_is_depth) {
             runtime->blit_image_helper.CopyMSAADepth(runtime->render_pass_cache, Handle(),
                                                      info.format, temp_vk_image, info.format,
-                                                     info.num_samples, image_copies,
+                                                     info.num_samples,
+                                                     {image_copies.data(), image_copies.size()},
                                                      msaa_upload_copies_stencil, false);
         } else {
             runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, Handle(), info.format,
                                                 temp_vk_image, info.format, info.num_samples,
-                                                image_copies, false);
+                                                {image_copies.data(), image_copies.size()}, false);
         }
         initialized = true;
         runtime->ReleaseMsaaScratchImage(temp_vk_image);
@@ -2148,7 +2149,8 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
                                        init_barrier);
             });
 
-            std::vector<VideoCommon::ImageCopy> image_copies;
+            boost::container::small_vector<VideoCommon::ImageCopy, 16> image_copies;
+            image_copies.reserve(copies.size());
             for (const auto& copy : copies) {
                 VideoCommon::ImageCopy image_copy;
                 image_copy.src_offset = copy.image_offset;
@@ -2162,11 +2164,14 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
             if (msaa_download_is_depth) {
                 runtime->blit_image_helper.CopyMSAADepth(
                     runtime->render_pass_cache, temp_vk_image, info.format, Handle(), info.format,
-                    info.num_samples, image_copies, msaa_download_copies_stencil, true);
+                    info.num_samples, {image_copies.data(), image_copies.size()},
+                    msaa_download_copies_stencil, true);
             } else {
                 runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, temp_vk_image,
                                                     info.format, Handle(), info.format,
-                                                    info.num_samples, image_copies, true);
+                                                    info.num_samples,
+                                                    {image_copies.data(), image_copies.size()},
+                                                    true);
             }
 
             boost::container::small_vector<VkBuffer, 8> buffers_vector{};
