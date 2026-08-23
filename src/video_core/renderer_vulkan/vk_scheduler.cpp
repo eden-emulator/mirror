@@ -132,6 +132,7 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer, VkRenderPass
     num_renderpass_images = framebuffer->NumImages();
     renderpass_images = framebuffer->Images();
     renderpass_image_ranges = framebuffer->ImageRanges();
+    framebuffer->MarkResolveShadowsUpToDate();
 }
 
 void Scheduler::RealizeDeferredClear() {
@@ -155,8 +156,10 @@ void Scheduler::RealizeDeferredClear() {
     }
     const u32 color_discard_mask =
         dc.framebuffer->DiscardsMsaaColor() ? dc.color_clear_mask : 0u;
+    const bool depth_stencil_discard =
+        dc.depth_stencil && dc.framebuffer->DiscardsMsaaDepthStencil();
     const VkRenderPass renderpass = dc.framebuffer->RenderPassVariant(
-        dc.color_clear_mask, dc.depth_stencil, color_discard_mask);
+        dc.color_clear_mask, dc.depth_stencil, color_discard_mask, depth_stencil_discard);
     EndRenderPass();
     BeginRenderPassImpl(dc.framebuffer, renderpass, clear_values.data(), count);
 }
@@ -188,6 +191,14 @@ bool Scheduler::DeferDepthStencilClear(const Framebuffer* framebuffer, const VkC
     deferred_clear.depth_stencil = true;
     deferred_clear.depth_stencil_value = value;
     return true;
+}
+
+void Scheduler::FlushDeferredClear() {
+    if (deferred_clear.framebuffer == nullptr) {
+        return;
+    }
+    RealizeDeferredClear();
+    EndRenderPass();
 }
 
 void Scheduler::RequestRenderpass(const Framebuffer* framebuffer) {

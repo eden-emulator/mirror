@@ -3,14 +3,7 @@
 
 #version 450 core
 
-#ifndef SAMPLER_TYPE
-#define SAMPLER_TYPE sampler2DMS
-#endif
-#ifndef TEXEL_TYPE
-#define TEXEL_TYPE vec4
-#endif
-
-layout(binding = 0) uniform SAMPLER_TYPE msaa_in;
+layout(binding = 0) uniform sampler2DMS msaa_in;
 
 layout(push_constant) uniform PushConstants {
     ivec2 dst_offset;
@@ -18,12 +11,10 @@ layout(push_constant) uniform PushConstants {
     ivec2 scale;
 };
 
-layout(location = 0) out TEXEL_TYPE frag_color;
-
 void main() {
     const ivec2 coord = ivec2(gl_FragCoord.xy) - dst_offset + src_offset;
     const ivec2 msaa_coord = coord / scale;
     const ivec2 sample_offset = coord % scale;
     const int sample_id = sample_offset.x + scale.x * sample_offset.y;
-    frag_color = texelFetch(msaa_in, msaa_coord, sample_id);
+    gl_FragDepth = texelFetch(msaa_in, msaa_coord, sample_id).r;
 }

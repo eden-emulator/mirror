@@ -303,6 +303,8 @@ private:
     FramebufferId GetFramebufferId(const RenderTargets& key);
 
     /// Refresh the contents (pixel data) of an image
+    [[nodiscard]] bool IsDownloadable(const ImageBase& image) const noexcept;
+
     void RefreshContents(Image& image, ImageId image_id);
 
     /// Upload data from guest to an image

@@ -650,13 +650,6 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
         features.shader_float16_int8.shaderFloat16 = false;
     }
 
-    if (is_intel_windows) {
-        LOG_WARNING(Render_Vulkan,
-                    "Intel proprietary drivers do not support MSAA->MSAA image blits. "
-                    "MSAA scaling will use 3D helpers. MSAA resolves work normally.");
-        cant_blit_msaa = true;
-    }
-
     has_broken_compute =
         CheckBrokenCompute(properties.driver.driverID, properties.properties.driverVersion) &&
         !Settings::values.enable_compute_pipelines.GetValue();
@@ -975,6 +968,12 @@ bool Device::GetSuitability(bool requires_swapchain) {
     FOR_EACH_VK_FEATURE_EXT(FEATURE_EXTENSION);
     FOR_EACH_VK_EXTENSION(EXTENSION);
 
+    extensions.depth_stencil_resolve =
+        extensions.depth_stencil_resolve &&
+        (instance_version >= VK_API_VERSION_1_2 || extensions.create_renderpass2);
+    RemoveExtensionIfUnsuitable(extensions.depth_stencil_resolve,
+                                VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
+
     if (supported_extensions.contains(VK_KHR_ROBUSTNESS_2_EXTENSION_NAME)) {
         loaded_extensions.erase(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
         loaded_extensions.insert(VK_KHR_ROBUSTNESS_2_EXTENSION_NAME);
@@ -1121,6 +1120,11 @@ bool Device::GetSuitability(bool requires_swapchain) {
         properties.push_descriptor.sType =
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR;
         SetNext(next, properties.push_descriptor);
+    }
+    if (extensions.depth_stencil_resolve || instance_version >= VK_API_VERSION_1_2) {
+        properties.depth_stencil_resolve.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
+        SetNext(next, properties.depth_stencil_resolve);
     }
     if (extensions.descriptor_buffer) {
         properties.descriptor_buffer.sType =

@@ -91,6 +91,8 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION(EXT, SHADER_VIEWPORT_INDEX_LAYER, shader_viewport_index_layer)                       \
     EXTENSION(EXT, TOOLING_INFO, tooling_info)                                                     \
     EXTENSION(EXT, VERTEX_ATTRIBUTE_DIVISOR, vertex_attribute_divisor)                             \
+    EXTENSION(KHR, CREATE_RENDERPASS_2, create_renderpass2)                                        \
+    EXTENSION(KHR, DEPTH_STENCIL_RESOLVE, depth_stencil_resolve)                                   \
     EXTENSION(KHR, DRAW_INDIRECT_COUNT, draw_indirect_count)                                       \
     EXTENSION(KHR, DRIVER_PROPERTIES, driver_properties)                                           \
     EXTENSION(KHR, PUSH_DESCRIPTOR, push_descriptor)                                               \
@@ -613,6 +615,32 @@ FN_MAX_LIMIT_LIST
         return extensions.shader_stencil_export;
     }
 
+    /// Returns true if the device supports VK_KHR_create_renderpass2.
+    bool IsKhrCreateRenderPass2Supported() const {
+        return extensions.create_renderpass2 || instance_version >= VK_API_VERSION_1_2;
+    }
+
+    /// Returns true if the device supports VK_KHR_depth_stencil_resolve.
+    bool IsKhrDepthStencilResolveSupported() const {
+        return (extensions.depth_stencil_resolve || instance_version >= VK_API_VERSION_1_2) &&
+               IsKhrCreateRenderPass2Supported();
+    }
+
+    /// Returns the supported resolve modes for the depth aspect.
+    VkResolveModeFlags GetDepthResolveModes() const {
+        return properties.depth_stencil_resolve.supportedDepthResolveModes;
+    }
+
+    /// Returns the supported resolve modes for the stencil aspect.
+    VkResolveModeFlags GetStencilResolveModes() const {
+        return properties.depth_stencil_resolve.supportedStencilResolveModes;
+    }
+
+    /// Returns true if only one of the depth and stencil aspects may be resolved.
+    bool SupportsIndependentResolveNone() const {
+        return properties.depth_stencil_resolve.independentResolveNone == VK_TRUE;
+    }
+
     /// Returns true if depth/stencil operations can be performed efficiently.
     /// Either through shader export or hardware blits.
     bool CanPerformDepthStencilOperations() const {
@@ -921,10 +949,6 @@ FN_MAX_LIMIT_LIST
         return supports_d24_depth;
     }
 
-    bool CantBlitMSAA() const {
-        return cant_blit_msaa;
-    }
-
     bool MustEmulateScaledFormats() const {
         return must_emulate_scaled_formats;
     }
@@ -1148,6 +1172,7 @@ private:
         VkPhysicalDeviceSubgroupSizeControlProperties subgroup_size_control{};
         VkPhysicalDeviceTransformFeedbackPropertiesEXT transform_feedback{};
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};
+        VkPhysicalDeviceDepthStencilResolveProperties depth_stencil_resolve{};
 
         VkPhysicalDeviceProperties properties{};
     };
@@ -1175,7 +1200,6 @@ private:
     bool has_nsight_graphics{};                ///< Has Nsight Graphics attached
     bool has_radeon_gpu_profiler{};            ///< Has Radeon GPU Profiler attached.
     bool supports_d24_depth{};                 ///< Supports D24 depth buffers.
-    bool cant_blit_msaa{};                     ///< Does not support MSAA<->MSAA blitting.
     bool must_emulate_scaled_formats{};        ///< Requires scaled vertex format emulation
     bool dynamic_state3_blending{};            ///< Has blending features of dynamic_state3.
     bool dynamic_state3_enables{};             ///< Has at least one enable feature of dynamic_state3.

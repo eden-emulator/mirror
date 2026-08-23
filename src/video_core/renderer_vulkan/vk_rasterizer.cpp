@@ -424,24 +424,12 @@ void RasterizerVulkan::Clear(u32 layer_count) {
     const bool ds_deferrable =
         !ds_used || ((!framebuffer->HasAspectDepthBit() || use_depth) &&
                      (!framebuffer->HasAspectStencilBit() || use_stencil) && !stencil_partial);
-    const bool can_defer_clear = ENABLE_DEFERRED_CLEAR && !regs.clear_control.use_scissor &&
-                                 regs.clear_surface.layer == 0 &&
-                                 !scheduler.IsRenderPassActive() &&
-                                 (!use_color || color_full_channels) && ds_deferrable;
-    if (!can_defer_clear) {
-        scheduler.RequestRenderpass(framebuffer);
-    }
-
-    query_cache.NotifySegment(true);
-    query_cache.CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, maxwell3d->regs.zpass_pixel_count_enable);
     u32 up_scale = 1;
     u32 down_shift = 0;
     if (texture_cache.IsRescaling()) {
         up_scale = Settings::values.resolution_info.up_scale;
         down_shift = Settings::values.resolution_info.down_shift;
     }
-    UpdateViewportsState(regs);
-
     VkRect2D default_scissor{};
     default_scissor.offset.x = 0;
     default_scissor.offset.y = 0;
@@ -496,6 +484,22 @@ void RasterizerVulkan::Clear(u32 layer_count) {
     if (!clamp_rect_to_render_area(clear_rect.rect)) {
         return;
     }
+
+    const bool clear_covers_render_area =
+        clear_rect.rect.offset.x == 0 && clear_rect.rect.offset.y == 0 &&
+        clear_rect.rect.extent.width >= render_area.width &&
+        clear_rect.rect.extent.height >= render_area.height;
+    const bool can_defer_clear = ENABLE_DEFERRED_CLEAR && (!regs.clear_control.use_scissor || clear_covers_render_area) &&
+                                 regs.clear_surface.layer == 0 &&
+                                 !scheduler.IsRenderPassActive() &&
+                                 (!use_color || color_full_channels) && ds_deferrable;
+    if (!can_defer_clear) {
+        scheduler.RequestRenderpass(framebuffer);
+    }
+
+    query_cache.NotifySegment(true);
+    query_cache.CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, maxwell3d->regs.zpass_pixel_count_enable);
+    UpdateViewportsState(regs);
 
     const u32 color_attachment = regs.clear_surface.RT;
     if (use_color && framebuffer->HasAspectColorBit(color_attachment)) {

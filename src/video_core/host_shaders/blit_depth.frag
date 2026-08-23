@@ -3,10 +3,10 @@
 
 #version 450 core
 
-layout(binding = 0) uniform sampler2DMS depth_tex;
+layout(binding = 0) uniform sampler2D depth_tex;
 
 layout(location = 0) in vec2 texcoord;
 
 void main() {
-    gl_FragDepth = texelFetch(depth_tex, ivec2(texcoord), gl_SampleID).r;
+    gl_FragDepth = textureLod(depth_tex, texcoord, 0).r;
 }

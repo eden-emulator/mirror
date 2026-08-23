@@ -60,6 +60,8 @@ public:
 
     void TickFrame();
 
+    void FlushDeferredClear();
+
     u64 GetDeviceLocalMemory() const;
 
     u64 GetDeviceMemoryUsage() const;
@@ -67,6 +69,12 @@ public:
     bool CanReportMemoryUsage() const;
 
     std::optional<size_t> GetSamplerHeapBudget() const;
+
+    bool CanDownloadMsaa(const VideoCommon::ImageInfo& info) const;
+
+    [[nodiscard]] VkImage AcquireMsaaScratchImage(const VkImageCreateInfo& image_ci);
+
+    void ReleaseMsaaScratchImage(VkImage image);
 
     void BlitImage(Framebuffer* dst_framebuffer, ImageView& dst, ImageView& src,
                    const Region2D& dst_region, const Region2D& src_region,
@@ -117,15 +125,19 @@ public:
         VkFormat format = VK_FORMAT_UNDEFINED;
         VkExtent2D extent{};
         u32 layers = 0;
+        VkImageAspectFlags aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT;
         bool up_to_date = false;
     };
 
     [[nodiscard]] VkImageView GetOrCreateResolveShadow(VkImage msaa_image, VkFormat format,
-                                                       VkExtent2D extent, u32 layers);
+                                                       VkExtent2D extent, u32 layers,
+                                                       VkImageAspectFlags aspect_mask);
 
     [[nodiscard]] const ResolveShadow* GetValidResolveShadow(VkImage msaa_image) const;
 
     void InvalidateResolveShadow(VkImage msaa_image);
+
+    void MarkResolveShadowUpToDate(VkImage msaa_image);
 
     void EraseResolveShadow(VkImage msaa_image);
 
@@ -154,8 +166,30 @@ public:
 
     static constexpr size_t indexing_slots = 8 * sizeof(size_t);
     std::array<vk::Buffer, indexing_slots> buffers{};
-    std::vector<std::pair<u64, vk::Image>> pending_msaa_images;
+    struct MsaaScratchKey {
+        VkFormat format;
+        VkImageType type;
+        u32 width;
+        u32 height;
+        u32 depth;
+        u32 levels;
+        u32 layers;
+        VkImageUsageFlags usage;
+        VkImageCreateFlags flags;
+
+        bool operator==(const MsaaScratchKey&) const noexcept = default;
+    };
+
+    struct MsaaScratchImage {
+        MsaaScratchKey key;
+        vk::Image image;
+        u64 tick;
+        u32 unused_frames;
+    };
+
+    std::vector<MsaaScratchImage> msaa_scratch_images;
     ankerl::unordered_dense::map<VkImage, ResolveShadow> resolve_shadows;
+    std::vector<std::pair<u64, ResolveShadow>> pending_resolve_shadows;
 };
 
 class Framebuffer {
@@ -191,7 +225,8 @@ public:
     }
 
     [[nodiscard]] VkRenderPass RenderPassVariant(u32 color_clear_mask, bool depth_stencil_clear,
-                                                 u32 color_discard_mask) const;
+                                                 u32 color_discard_mask,
+                                                 bool depth_stencil_discard) const;
 
     [[nodiscard]] VkExtent2D RenderArea() const noexcept {
         return render_area;
@@ -233,19 +268,21 @@ public:
         return is_rescaled;
     }
 
-    [[nodiscard]] bool HasResolveColor() const noexcept {
-        return !resolve_images.empty();
-    }
-
-    [[nodiscard]] VkImage ResolveColorImage(size_t index) const noexcept {
-        return index < resolve_images.size() ? *resolve_images[index] : VK_NULL_HANDLE;
-    }
-
     [[nodiscard]] bool DiscardsMsaaColor() const noexcept {
         return discard_msaa_color;
     }
 
+    [[nodiscard]] bool DiscardsMsaaDepthStencil() const noexcept {
+        return discard_msaa_depth_stencil;
+    }
+
+    /// Records that a render pass has begun, so its resolve attachments will hold valid contents
+    /// once it ends.
+    void MarkResolveShadowsUpToDate() const;
+
 private:
+    static constexpr size_t NUM_MEMOIZED_RENDER_PASS_VARIANTS = 8;
+
     vk::Framebuffer framebuffer;
     VkRenderPass renderpass{};
     VkExtent2D render_area{};
@@ -258,11 +295,16 @@ private:
     bool has_depth{};
     bool has_stencil{};
     bool is_rescaled{};
-    std::vector<vk::Image> resolve_images;
-    std::vector<vk::ImageView> resolve_image_views;
+    std::array<VkImage, 9> resolve_shadow_images{};
+    u32 num_resolve_shadows = 0;
+    TextureCacheRuntime* runtime_ptr{nullptr};
     RenderPassKey render_pass_key{};
     RenderPassCache* render_pass_cache{nullptr};
     bool discard_msaa_color{};
+    bool discard_msaa_depth_stencil{};
+    mutable std::array<u32, NUM_MEMOIZED_RENDER_PASS_VARIANTS> variant_keys{};
+    mutable std::array<VkRenderPass, NUM_MEMOIZED_RENDER_PASS_VARIANTS> variant_render_passes{};
+    mutable u32 num_memoized_variants{};
 };
 
 class Image : public VideoCommon::ImageBase {
@@ -486,6 +528,7 @@ struct TextureCacheParams {
     static constexpr bool HAS_EMULATED_COPIES = false;
     static constexpr bool HAS_DEVICE_MEMORY_INFO = true;
     static constexpr bool IMPLEMENTS_ASYNC_DOWNLOADS = true;
+    static constexpr bool HAS_MSAA_DOWNLOADS = true;
 
     using Runtime = Vulkan::TextureCacheRuntime;
     using Image = Vulkan::Image;

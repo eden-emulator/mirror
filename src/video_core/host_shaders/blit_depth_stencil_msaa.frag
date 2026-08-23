@@ -10,6 +10,6 @@ layout(binding = 1) uniform usampler2DMS stencil_tex;
 layout(location = 0) in vec2 texcoord;
 
 void main() {
-    gl_FragDepth = texelFetch(depth_tex, ivec2(texcoord), 0).r;
-    gl_FragStencilRefARB = int(texelFetch(stencil_tex, ivec2(texcoord), 0).r);
+    gl_FragDepth = texelFetch(depth_tex, ivec2(texcoord), gl_SampleID).r;
+    gl_FragStencilRefARB = int(texelFetch(stencil_tex, ivec2(texcoord), gl_SampleID).r);
 }

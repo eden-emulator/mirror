@@ -5,10 +5,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <algorithm>
+#include <limits>
 #include <array>
 #include <optional>
 #include <span>
 #include <memory>
+#include <utility>
 #include <vector>
 #include <boost/container/small_vector.hpp>
 #include <bit>
@@ -52,8 +54,10 @@ using VideoCore::Surface::IsPixelFormatInteger;
 using VideoCore::Surface::SurfaceType;
 
 namespace {
+constexpr bool ENABLE_MSAA_TILER_RESOLVE = true;
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
+constexpr bool ENABLE_MSAA_DEPTH_STENCIL_DISCARD = true;
 
 constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     if (color == std::array<float, 4>{0, 0, 0, 0}) {
@@ -108,7 +112,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
 }
 
 [[nodiscard]] VkImageUsageFlags ImageUsageFlags(const MaxwellToVK::FormatInfo& info,
-                                                PixelFormat format) {
+                                                PixelFormat format, bool allow_storage = true) {
     VkImageUsageFlags usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                               VK_IMAGE_USAGE_SAMPLED_BIT;
     if (info.attachable) {
@@ -126,7 +130,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
             break;
         }
     }
-    if (info.storage) {
+    if (info.storage && allow_storage) {
         usage |= VK_IMAGE_USAGE_STORAGE_BIT;
     }
     return usage;
@@ -162,6 +166,8 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         flags |= VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
     }
     const auto [samples_x, samples_y] = VideoCommon::SamplesLog2(info.num_samples);
+    const bool allow_storage =
+        info.num_samples == 1 || device.IsStorageImageMultisampleSupported();
     return VkImageCreateInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .pNext = nullptr,
@@ -177,12 +183,24 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         .arrayLayers = static_cast<u32>(info.resources.layers),
         .samples = ConvertSampleCount(info.num_samples),
         .tiling = VK_IMAGE_TILING_OPTIMAL,
-        .usage = ImageUsageFlags(format_info, info.format),
+        .usage = ImageUsageFlags(format_info, info.format, allow_storage),
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = nullptr,
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
+}
+
+[[nodiscard]] VkImageCreateInfo MakeMsaaScratchImageCreateInfo(const Device& device,
+                                                               const ImageInfo& info,
+                                                               VkImageUsageFlags usage) {
+    ImageInfo temp_info = info;
+    temp_info.num_samples = 1;
+    VkImageCreateInfo image_ci = MakeImageCreateInfo(device, temp_info);
+    image_ci.format =
+        MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, true, info.format).format;
+    image_ci.usage = usage;
+    return image_ci;
 }
 
 [[nodiscard]] vk::Image MakeImage(const Device& device, const MemoryAllocator& allocator,
@@ -677,6 +695,11 @@ void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage im
     };
 }
 
+[[nodiscard]] bool HaveSameExtent(const Region2D& dst_region, const Region2D& src_region) {
+    return dst_region.end.x - dst_region.start.x == src_region.end.x - src_region.start.x &&
+           dst_region.end.y - dst_region.start.y == src_region.end.y - src_region.start.y;
+}
+
 [[nodiscard]] VkImageResolve MakeImageResolve(const Region2D& dst_region,
                                               const Region2D& src_region,
                                               const VkImageSubresourceLayers& dst_layers,
@@ -774,15 +797,15 @@ void BlitScale(Scheduler& scheduler, VkImage src_image, VkImage dst_image, const
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([dst_image, src_image, extent, resources, aspect_mask, resolution, is_2d,
                       vk_filter, up_scaling](vk::CommandBuffer cmdbuf) {
+        const u32 scaled_width = resolution.ScaleUp(extent.width);
+        const u32 scaled_height = is_2d ? resolution.ScaleUp(extent.height) : extent.height;
         const VkOffset2D src_size{
-            .x = static_cast<s32>(up_scaling ? extent.width : resolution.ScaleUp(extent.width)),
-            .y = static_cast<s32>(is_2d && up_scaling ? extent.height
-                                                      : resolution.ScaleUp(extent.height)),
+            .x = static_cast<s32>(up_scaling ? extent.width : scaled_width),
+            .y = static_cast<s32>(up_scaling ? extent.height : scaled_height),
         };
         const VkOffset2D dst_size{
-            .x = static_cast<s32>(up_scaling ? resolution.ScaleUp(extent.width) : extent.width),
-            .y = static_cast<s32>(is_2d && up_scaling ? resolution.ScaleUp(extent.height)
-                                                      : extent.height),
+            .x = static_cast<s32>(up_scaling ? scaled_width : extent.width),
+            .y = static_cast<s32>(up_scaling ? scaled_height : extent.height),
         };
         boost::container::small_vector<VkImageBlit, 4> regions;
         regions.reserve(resources.levels);
@@ -995,12 +1018,23 @@ VkBuffer TextureCacheRuntime::GetTemporaryBuffer(size_t needed_size) {
 }
 
 VkImageView TextureCacheRuntime::GetOrCreateResolveShadow(VkImage msaa_image, VkFormat format,
-                                                          VkExtent2D extent, u32 layers) {
+                                                          VkExtent2D extent, u32 layers,
+                                                          VkImageAspectFlags aspect_mask) {
     ResolveShadow& shadow = resolve_shadows[msaa_image];
     if (shadow.image && shadow.format == format && shadow.extent.width == extent.width &&
-        shadow.extent.height == extent.height && shadow.layers == layers) {
-        shadow.up_to_date = true;
+        shadow.extent.height == extent.height && shadow.layers == layers &&
+        shadow.aspect_mask == aspect_mask) {
         return *shadow.view;
+    }
+    VkImageUsageFlags shadow_usage =
+        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if ((aspect_mask & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0) {
+        shadow_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    } else {
+        shadow_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
+    if (shadow.image) {
+        pending_resolve_shadows.emplace_back(scheduler.CurrentTick(), std::move(shadow));
     }
     shadow.image = memory_allocator.CreateImage(VkImageCreateInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -1013,8 +1047,7 @@ VkImageView TextureCacheRuntime::GetOrCreateResolveShadow(VkImage msaa_image, Vk
         .arrayLayers = layers,
         .samples = VK_SAMPLE_COUNT_1_BIT,
         .tiling = VK_IMAGE_TILING_OPTIMAL,
-        .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
-                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        .usage = shadow_usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = nullptr,
@@ -1029,7 +1062,7 @@ VkImageView TextureCacheRuntime::GetOrCreateResolveShadow(VkImage msaa_image, Vk
         .format = format,
         .components{},
         .subresourceRange{
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .aspectMask = aspect_mask,
             .baseMipLevel = 0,
             .levelCount = 1,
             .baseArrayLayer = 0,
@@ -1039,7 +1072,8 @@ VkImageView TextureCacheRuntime::GetOrCreateResolveShadow(VkImage msaa_image, Vk
     shadow.format = format;
     shadow.extent = extent;
     shadow.layers = layers;
-    shadow.up_to_date = true;
+    shadow.aspect_mask = aspect_mask;
+    shadow.up_to_date = false;
     return *shadow.view;
 }
 
@@ -1052,6 +1086,13 @@ const TextureCacheRuntime::ResolveShadow* TextureCacheRuntime::GetValidResolveSh
     return &it->second;
 }
 
+void TextureCacheRuntime::MarkResolveShadowUpToDate(VkImage msaa_image) {
+    const auto it = resolve_shadows.find(msaa_image);
+    if (it != resolve_shadows.end()) {
+        it->second.up_to_date = true;
+    }
+}
+
 void TextureCacheRuntime::InvalidateResolveShadow(VkImage msaa_image) {
     const auto it = resolve_shadows.find(msaa_image);
     if (it != resolve_shadows.end()) {
@@ -1060,7 +1101,14 @@ void TextureCacheRuntime::InvalidateResolveShadow(VkImage msaa_image) {
 }
 
 void TextureCacheRuntime::EraseResolveShadow(VkImage msaa_image) {
-    resolve_shadows.erase(msaa_image);
+    const auto it = resolve_shadows.find(msaa_image);
+    if (it == resolve_shadows.end()) {
+        return;
+    }
+    if (it->second.image) {
+        pending_resolve_shadows.emplace_back(scheduler.CurrentTick(), std::move(it->second));
+    }
+    resolve_shadows.erase(it);
 }
 
 void TextureCacheRuntime::BarrierFeedbackLoop() {
@@ -1257,8 +1305,14 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
         blit_image_helper.BlitColorMSAA(dst_framebuffer, src, dst_region, src_region);
         return;
     }
-    if (is_msaa_to_msaa && device.CantBlitMSAA()) {
-        UNIMPLEMENTED_MSG("MSAA to MSAA depth-stencil blit is not supported on this driver");
+    if (is_msaa_to_msaa) {
+        blit_image_helper.BlitDepthStencilMSAA(dst_framebuffer, src, dst_region, src_region);
+        return;
+    }
+
+    const bool is_resolve = is_src_msaa && !is_dst_msaa;
+    if (is_resolve && !HaveSameExtent(dst_region, src_region)) {
+        blit_image_helper.BlitColorMSAA(dst_framebuffer, src, dst_region, src_region);
         return;
     }
 
@@ -1266,7 +1320,6 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
     const VkImage src_image = src.ImageHandle();
     const VkImageSubresourceLayers dst_layers = MakeSubresourceLayers(&dst);
     const VkImageSubresourceLayers src_layers = MakeSubresourceLayers(&src);
-    const bool is_resolve = is_src_msaa && !is_dst_msaa;
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([filter, dst_region, src_region, dst_image, src_image, dst_layers, src_layers,
                       aspect_mask, is_resolve](vk::CommandBuffer cmdbuf) {
@@ -1357,133 +1410,83 @@ void TextureCacheRuntime::ConvertImage(Framebuffer* dst, ImageView& dst_view, Im
     }
 
     switch (dst_view.format) {
-    case PixelFormat::D24_UNORM_S8_UINT:
-        if (src_view.format == PixelFormat::A8B8G8R8_UNORM
-        || src_view.format == PixelFormat::B8G8R8A8_UNORM
-        || src_view.format == PixelFormat::A8B8G8R8_SRGB
-        || src_view.format == PixelFormat::B8G8R8A8_SRGB) {
-            return blit_image_helper.ConvertABGR8ToD24S8(dst, src_view);
+    case PixelFormat::R16_UNORM:
+        if (src_view.format == PixelFormat::D16_UNORM) {
+            return blit_image_helper.ConvertD16ToR16(dst, src_view);
+        }
+        break;
+    case PixelFormat::A8B8G8R8_SRGB:
+    case PixelFormat::B8G8R8A8_SRGB:
+    case PixelFormat::B8G8R8A8_UNORM:
+        if (src_view.format == PixelFormat::D32_FLOAT) {
+            return blit_image_helper.ConvertD32FToABGR8(dst, src_view);
         }
         break;
     case PixelFormat::A8B8G8R8_UNORM:
-    case PixelFormat::A8B8G8R8_SNORM:
-    case PixelFormat::A8B8G8R8_SINT:
-    case PixelFormat::A8B8G8R8_UINT:
-    case PixelFormat::R5G6B5_UNORM:
-    case PixelFormat::B5G6R5_UNORM:
-    case PixelFormat::A1R5G5B5_UNORM:
-    case PixelFormat::A2B10G10R10_UNORM:
-    case PixelFormat::A2B10G10R10_UINT:
-    case PixelFormat::A2R10G10B10_UNORM:
-    case PixelFormat::A1B5G5R5_UNORM:
-    case PixelFormat::A5B5G5R1_UNORM:
-    case PixelFormat::R8_UNORM:
-    case PixelFormat::R8_SNORM:
-    case PixelFormat::R8_SINT:
-    case PixelFormat::R8_UINT:
-    case PixelFormat::R16G16B16A16_FLOAT:
-    case PixelFormat::R16G16B16A16_UNORM:
-    case PixelFormat::R16G16B16A16_SNORM:
-    case PixelFormat::R16G16B16A16_SINT:
-    case PixelFormat::R16G16B16A16_UINT:
-    case PixelFormat::B10G11R11_FLOAT:
-    case PixelFormat::R32G32B32A32_UINT:
-    case PixelFormat::BC1_RGBA_UNORM:
-    case PixelFormat::BC2_UNORM:
-    case PixelFormat::BC3_UNORM:
-    case PixelFormat::BC4_UNORM:
-    case PixelFormat::BC4_SNORM:
-    case PixelFormat::BC5_UNORM:
-    case PixelFormat::BC5_SNORM:
-    case PixelFormat::BC7_UNORM:
-    case PixelFormat::BC6H_UFLOAT:
-    case PixelFormat::BC6H_SFLOAT:
-    case PixelFormat::ASTC_2D_4X4_UNORM:
-    case PixelFormat::B8G8R8A8_UNORM:
-    case PixelFormat::R32G32B32A32_FLOAT:
-    case PixelFormat::R32G32B32A32_SINT:
-    case PixelFormat::R32G32_FLOAT:
-    case PixelFormat::R32G32_SINT:
-    case PixelFormat::R32_FLOAT:
-        if (src_view.format == PixelFormat::D32_FLOAT &&
-            (dst_view.format == PixelFormat::B5G6R5_UNORM ||
-             Settings::values.fix_bloom_effects.GetValue())) {
-            const Region2D region{
-                .start = {0, 0},
-                .end = {static_cast<s32>(dst->RenderArea().width),
-                        static_cast<s32>(dst->RenderArea().height)},
-            };
-            return blit_image_helper.BlitColor(dst, src_view, region, region,
-                                            Tegra::Engines::Fermi2D::Filter::Point,
-                                            Tegra::Engines::Fermi2D::Operation::SrcCopy);
+        if (src_view.format == PixelFormat::S8_UINT_D24_UNORM) {
+            return blit_image_helper.ConvertD24S8ToABGR8(dst, src_view);
+        }
+        if (src_view.format == PixelFormat::D24_UNORM_S8_UINT) {
+            return blit_image_helper.ConvertS8D24ToABGR8(dst, src_view);
+        }
+        if (src_view.format == PixelFormat::D32_FLOAT) {
+            return blit_image_helper.ConvertD32FToABGR8(dst, src_view);
         }
         break;
-    case PixelFormat::R16_FLOAT:
-    case PixelFormat::R16_UNORM:
-    case PixelFormat::R16_SNORM:
-    case PixelFormat::R16_UINT:
-    case PixelFormat::R16_SINT:
-    case PixelFormat::R16G16_UNORM:
-    case PixelFormat::R16G16_FLOAT:
-    case PixelFormat::R16G16_UINT:
-    case PixelFormat::R16G16_SINT:
-    case PixelFormat::R16G16_SNORM:
-    case PixelFormat::R32G32B32_FLOAT:
-    case PixelFormat::A8B8G8R8_SRGB:
-    case PixelFormat::R8G8_UNORM:
-    case PixelFormat::R8G8_SNORM:
-    case PixelFormat::R8G8_SINT:
-    case PixelFormat::R8G8_UINT:
-    case PixelFormat::R32G32_UINT:
-    case PixelFormat::R16G16B16X16_FLOAT:
-    case PixelFormat::R32_UINT:
-    case PixelFormat::R32_SINT:
-    case PixelFormat::ASTC_2D_8X8_UNORM:
-    case PixelFormat::ASTC_2D_8X5_UNORM:
-    case PixelFormat::ASTC_2D_5X4_UNORM:
-    case PixelFormat::B8G8R8A8_SRGB:
-    case PixelFormat::BC1_RGBA_SRGB:
-    case PixelFormat::BC2_SRGB:
-    case PixelFormat::BC3_SRGB:
-    case PixelFormat::BC7_SRGB:
-    case PixelFormat::A4B4G4R4_UNORM:
-    case PixelFormat::G4R4_UNORM:
-    case PixelFormat::ASTC_2D_4X4_SRGB:
-    case PixelFormat::ASTC_2D_8X8_SRGB:
-    case PixelFormat::ASTC_2D_8X5_SRGB:
-    case PixelFormat::ASTC_2D_5X4_SRGB:
-    case PixelFormat::ASTC_2D_5X5_UNORM:
-    case PixelFormat::ASTC_2D_5X5_SRGB:
-    case PixelFormat::ASTC_2D_10X8_UNORM:
-    case PixelFormat::ASTC_2D_10X8_SRGB:
-    case PixelFormat::ASTC_2D_6X6_UNORM:
-    case PixelFormat::ASTC_2D_6X6_SRGB:
-    case PixelFormat::ASTC_2D_10X6_UNORM:
-    case PixelFormat::ASTC_2D_10X6_SRGB:
-    case PixelFormat::ASTC_2D_10X5_UNORM:
-    case PixelFormat::ASTC_2D_10X5_SRGB:
-    case PixelFormat::ASTC_2D_10X10_UNORM:
-    case PixelFormat::ASTC_2D_10X10_SRGB:
-    case PixelFormat::ASTC_2D_12X10_UNORM:
-    case PixelFormat::ASTC_2D_12X10_SRGB:
-    case PixelFormat::ASTC_2D_12X12_UNORM:
-    case PixelFormat::ASTC_2D_12X12_SRGB:
-    case PixelFormat::ASTC_2D_8X6_UNORM:
-    case PixelFormat::ASTC_2D_8X6_SRGB:
-    case PixelFormat::ASTC_2D_6X5_UNORM:
-    case PixelFormat::ASTC_2D_6X5_SRGB:
-    case PixelFormat::E5B9G9R9_FLOAT:
-    case PixelFormat::D32_FLOAT:
+    case PixelFormat::R32_FLOAT:
+        if (src_view.format == PixelFormat::D32_FLOAT) {
+            return blit_image_helper.ConvertD32ToR32(dst, src_view);
+        }
+        break;
     case PixelFormat::D16_UNORM:
-    case PixelFormat::X8_D24_UNORM:
-    case PixelFormat::S8_UINT:
+        if (src_view.format == PixelFormat::R16_UNORM) {
+            return blit_image_helper.ConvertR16ToD16(dst, src_view);
+        }
+        break;
     case PixelFormat::S8_UINT_D24_UNORM:
-    case PixelFormat::D32_FLOAT_S8_UINT:
-    case PixelFormat::Invalid:
+        if (src_view.format == PixelFormat::A8B8G8R8_UNORM ||
+            src_view.format == PixelFormat::B8G8R8A8_UNORM) {
+            return blit_image_helper.ConvertABGR8ToD24S8(dst, src_view);
+        }
+        break;
+    case PixelFormat::D32_FLOAT:
+        if (src_view.format == PixelFormat::A8B8G8R8_UNORM ||
+            src_view.format == PixelFormat::B8G8R8A8_UNORM ||
+            src_view.format == PixelFormat::A8B8G8R8_SRGB ||
+            src_view.format == PixelFormat::B8G8R8A8_SRGB) {
+            return blit_image_helper.ConvertABGR8ToD32F(dst, src_view);
+        }
+        if (src_view.format == PixelFormat::R32_FLOAT) {
+            return blit_image_helper.ConvertR32ToD32(dst, src_view);
+        }
+        break;
+    case PixelFormat::D24_UNORM_S8_UINT:
+        if (src_view.format == PixelFormat::A8B8G8R8_UNORM ||
+            src_view.format == PixelFormat::B8G8R8A8_UNORM ||
+            src_view.format == PixelFormat::A8B8G8R8_SRGB ||
+            src_view.format == PixelFormat::B8G8R8A8_SRGB) {
+            return blit_image_helper.ConvertABGR8ToD24S8(dst, src_view);
+        }
+        break;
     default:
-        LOG_DEBUG(Render_Vulkan, "Unimplemented texture conversion from {} to {} format type", src_view.format, dst_view.format);
         break;
     }
+
+    if (src_view.format == PixelFormat::D32_FLOAT &&
+        VideoCore::Surface::GetFormatType(dst_view.format) == SurfaceType::ColorTexture &&
+        (dst_view.format == PixelFormat::B5G6R5_UNORM ||
+         Settings::values.fix_bloom_effects.GetValue())) {
+        const Region2D region{
+            .start = {0, 0},
+            .end = {static_cast<s32>(dst->RenderArea().width),
+                    static_cast<s32>(dst->RenderArea().height)},
+        };
+        return blit_image_helper.BlitColor(dst, src_view, region, region,
+                                        Tegra::Engines::Fermi2D::Filter::Point,
+                                        Tegra::Engines::Fermi2D::Operation::SrcCopy);
+    }
+
+    LOG_DEBUG(Render_Vulkan, "Unimplemented texture conversion from {} to {} format type", src_view.format, dst_view.format);
 }
 
 VkFormat TextureCacheRuntime::GetSupportedFormat(VkFormat requested_format,
@@ -1640,31 +1643,41 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                                         std::span<const VideoCommon::ImageCopy> copies) {
     const bool msaa_to_non_msaa = src.info.num_samples > 1 && dst.info.num_samples == 1;
     const u32 num_samples = msaa_to_non_msaa ? src.info.num_samples : dst.info.num_samples;
-    if (dst.AspectMask() != VK_IMAGE_ASPECT_COLOR_BIT ||
-        VideoCore::Surface::IsPixelFormatInteger(dst.info.format)) {
-        UNIMPLEMENTED_MSG("Copying images with different samples is not supported.");
-        return;
-    }
     if (ENABLE_MSAA_RESOLVE_CONSUME && msaa_to_non_msaa && copies.size() == 1 &&
         src.info.format == dst.info.format) {
         const VideoCommon::ImageCopy& copy = copies.front();
         const ResolveShadow* const shadow = GetValidResolveShadow(src.Handle());
-        if (shadow != nullptr && copy.src_offset.x == 0 && copy.src_offset.y == 0 &&
+        if (shadow != nullptr && shadow->aspect_mask == dst.AspectMask() &&
+            copy.src_offset.x == 0 && copy.src_offset.y == 0 &&
             copy.src_subresource.base_level == 0 &&
             static_cast<u32>(copy.extent.width) <= shadow->extent.width &&
-            static_cast<u32>(copy.extent.height) <= shadow->extent.height) {
+            static_cast<u32>(copy.extent.height) <= shadow->extent.height &&
+            static_cast<u32>(copy.src_subresource.base_layer + copy.src_subresource.num_layers) <=
+                shadow->layers) {
+            const VkImageAspectFlags aspect_mask = shadow->aspect_mask;
+            VkPipelineStageFlags attachment_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            VkAccessFlags attachment_write = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            VkAccessFlags attachment_read_write =
+                VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            if ((aspect_mask & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0) {
+                attachment_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                   VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                attachment_write = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                attachment_read_write = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            }
             const VkImage shadow_image = *shadow->image;
             const VkImage dst_image = dst.Handle();
             const VkImageCopy region{
                 .srcSubresource{
-                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .aspectMask = aspect_mask,
                     .mipLevel = 0,
                     .baseArrayLayer = static_cast<u32>(copy.src_subresource.base_layer),
                     .layerCount = static_cast<u32>(copy.src_subresource.num_layers),
                 },
                 .srcOffset = {0, 0, 0},
                 .dstSubresource{
-                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .aspectMask = aspect_mask,
                     .mipLevel = static_cast<u32>(copy.dst_subresource.base_level),
                     .baseArrayLayer = static_cast<u32>(copy.dst_subresource.base_layer),
                     .layerCount = static_cast<u32>(copy.dst_subresource.num_layers),
@@ -1673,26 +1686,27 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                 .extent = {copy.extent.width, copy.extent.height, 1},
             };
             scheduler.RequestOutsideRenderPassOperationContext();
-            scheduler.Record([shadow_image, dst_image, region](vk::CommandBuffer cmdbuf) {
+            scheduler.Record([shadow_image, dst_image, region, aspect_mask, attachment_stage,
+                              attachment_write,
+                              attachment_read_write](vk::CommandBuffer cmdbuf) {
                 const std::array pre_barriers{
                     VkImageMemoryBarrier{
                         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                         .pNext = nullptr,
-                        .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                        .srcAccessMask = attachment_write,
                         .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
                         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                         .image = shadow_image,
-                        .subresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0,
+                        .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
                                           VK_REMAINING_ARRAY_LAYERS},
                     },
                     VkImageMemoryBarrier{
                         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                         .pNext = nullptr,
-                        .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT |
-                                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                        .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | attachment_write |
                                          VK_ACCESS_TRANSFER_WRITE_BIT,
                         .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
                         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -1700,7 +1714,7 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                         .image = dst_image,
-                        .subresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0,
+                        .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
                                           VK_REMAINING_ARRAY_LAYERS},
                     },
                 };
@@ -1715,28 +1729,25 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                         .image = shadow_image,
-                        .subresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0,
+                        .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
                                           VK_REMAINING_ARRAY_LAYERS},
                     },
                     VkImageMemoryBarrier{
                         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                         .pNext = nullptr,
                         .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT |
-                                         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | attachment_read_write |
                                          VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
                         .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                         .image = dst_image,
-                        .subresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, VK_REMAINING_MIP_LEVELS, 0,
+                        .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
                                           VK_REMAINING_ARRAY_LAYERS},
                     },
                 };
-                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                                           VK_PIPELINE_STAGE_TRANSFER_BIT,
+                cmdbuf.PipelineBarrier(attachment_stage | VK_PIPELINE_STAGE_TRANSFER_BIT,
                                        VK_PIPELINE_STAGE_TRANSFER_BIT, 0, nullptr, nullptr,
                                        pre_barriers);
                 cmdbuf.CopyImage(shadow_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst_image,
@@ -1747,6 +1758,19 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
             });
             return;
         }
+    }
+    const VkImageAspectFlags dst_aspect_mask = dst.AspectMask();
+    if ((dst_aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0) {
+        const bool copies_stencil = (dst_aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0 &&
+                                    device.IsExtShaderStencilExportSupported();
+        blit_image_helper.CopyMSAADepth(render_pass_cache, dst.Handle(), dst.info.format,
+                                        src.Handle(), src.info.format, num_samples, copies,
+                                        copies_stencil, msaa_to_non_msaa);
+        return;
+    }
+    if ((dst_aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) == 0) {
+        UNIMPLEMENTED_MSG("Copying images with different samples is not supported.");
+        return;
     }
     blit_image_helper.CopyMSAA(render_pass_cache, dst.Handle(), dst.info.format, src.Handle(),
                                src.info.format, num_samples, copies, msaa_to_non_msaa);
@@ -1760,6 +1784,20 @@ u64 TextureCacheRuntime::GetDeviceMemoryUsage() const {
     return device.GetDeviceMemoryUsage();
 }
 
+bool TextureCacheRuntime::CanDownloadMsaa(const VideoCommon::ImageInfo& info) const {
+    const VkImageAspectFlags aspect_mask = ImageAspectMask(info.format);
+    if ((aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) != 0) {
+        return true;
+    }
+    if ((aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) == 0) {
+        return false;
+    }
+    if ((aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0) {
+        return device.IsExtShaderStencilExportSupported();
+    }
+    return true;
+}
+
 bool TextureCacheRuntime::CanReportMemoryUsage() const {
     return device.CanReportMemoryUsage();
 }
@@ -1768,8 +1806,60 @@ std::optional<size_t> TextureCacheRuntime::GetSamplerHeapBudget() const {
     return device.GetSamplerHeapBudget();
 }
 
+void TextureCacheRuntime::FlushDeferredClear() {
+    scheduler.FlushDeferredClear();
+}
+
+VkImage TextureCacheRuntime::AcquireMsaaScratchImage(const VkImageCreateInfo& image_ci) {
+    const MsaaScratchKey key{
+        .format = image_ci.format,
+        .type = image_ci.imageType,
+        .width = image_ci.extent.width,
+        .height = image_ci.extent.height,
+        .depth = image_ci.extent.depth,
+        .levels = image_ci.mipLevels,
+        .layers = image_ci.arrayLayers,
+        .usage = image_ci.usage,
+        .flags = image_ci.flags,
+    };
+    for (MsaaScratchImage& scratch : msaa_scratch_images) {
+        if (scratch.key != key || !scheduler.IsFree(scratch.tick)) {
+            continue;
+        }
+        scratch.tick = (std::numeric_limits<u64>::max)();
+        scratch.unused_frames = 0;
+        return *scratch.image;
+    }
+    MsaaScratchImage scratch{
+        .key = key,
+        .image = memory_allocator.CreateImage(image_ci),
+        .tick = (std::numeric_limits<u64>::max)(),
+        .unused_frames = 0,
+    };
+    const VkImage handle = *scratch.image;
+    msaa_scratch_images.push_back(std::move(scratch));
+    return handle;
+}
+
+void TextureCacheRuntime::ReleaseMsaaScratchImage(VkImage image) {
+    for (MsaaScratchImage& scratch : msaa_scratch_images) {
+        if (*scratch.image == image) {
+            scratch.tick = scheduler.CurrentTick();
+            return;
+        }
+    }
+}
+
 void TextureCacheRuntime::TickFrame() {
-    std::erase_if(pending_msaa_images, [this](const auto& pending) {
+    static constexpr u32 MAX_UNUSED_SCRATCH_FRAMES = 60;
+    std::erase_if(msaa_scratch_images, [this](MsaaScratchImage& scratch) {
+        if (!scheduler.IsFree(scratch.tick)) {
+            scratch.unused_frames = 0;
+            return false;
+        }
+        return ++scratch.unused_frames > MAX_UNUSED_SCRATCH_FRAMES;
+    });
+    std::erase_if(pending_resolve_shadows, [this](const auto& pending) {
         return scheduler.IsFree(pending.first);
     });
 }
@@ -1882,26 +1972,29 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
         ScaleDown(true);
     }
 
+    const bool msaa_upload_is_depth = (aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
     const bool wants_msaa_upload = info.num_samples > 1
-        && (aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) != 0
-        && !VideoCore::Surface::IsPixelFormatInteger(info.format);
+        && ((aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) != 0 || msaa_upload_is_depth);
 
     if (wants_msaa_upload) {
-        ImageInfo temp_info = info;
-        temp_info.num_samples = 1;
-
-        VkImageCreateInfo image_ci = MakeImageCreateInfo(runtime->device, temp_info);
-        image_ci.format =
-            MaxwellToVK::SurfaceFormat(runtime->device, FormatType::Optimal, true, info.format)
-                .format;
-        image_ci.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        vk::Image temp_image = runtime->memory_allocator.CreateImage(image_ci);
+        const bool msaa_upload_copies_stencil =
+            msaa_upload_is_depth && (aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0 &&
+            runtime->device.IsExtShaderStencilExportSupported();
+        VkImageAspectFlags upload_aspect_mask = aspect_mask;
+        if (msaa_upload_is_depth) {
+            upload_aspect_mask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            if (msaa_upload_copies_stencil) {
+                upload_aspect_mask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+            }
+        }
+        const VkImageCreateInfo image_ci = MakeMsaaScratchImageCreateInfo(
+            runtime->device, info, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+        const VkImage temp_vk_image = runtime->AcquireMsaaScratchImage(image_ci);
 
         scheduler->RequestOutsideRenderPassOperationContext();
-        auto vk_copies = TransformBufferImageCopies(copies, offset, aspect_mask);
+        auto vk_copies = TransformBufferImageCopies(copies, offset, upload_aspect_mask);
         const VkBuffer src_buffer = buffer;
-        const VkImage temp_vk_image = *temp_image;
-        const VkImageAspectFlags vk_aspect_mask = aspect_mask;
+        const VkImageAspectFlags vk_aspect_mask = upload_aspect_mask;
 
         scheduler->Record([src_buffer, temp_vk_image, vk_aspect_mask,
                            vk_copies](vk::CommandBuffer cmdbuf) {
@@ -1909,7 +2002,7 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
         });
 
         const auto [samples_x, samples_y] = VideoCommon::SamplesLog2(info.num_samples);
-        std::vector<VideoCommon::ImageCopy> image_copies;
+        boost::container::small_vector<VideoCommon::ImageCopy, 16> image_copies;
         image_copies.reserve(copies.size());
         for (const auto& copy : copies) {
             VideoCommon::ImageCopy image_copy{};
@@ -1923,11 +2016,19 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
             image_copies.push_back(image_copy);
         }
 
-        runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, Handle(), info.format,
-                                            temp_vk_image, info.format, info.num_samples,
-                                            image_copies, false);
+        if (msaa_upload_is_depth) {
+            runtime->blit_image_helper.CopyMSAADepth(runtime->render_pass_cache, Handle(),
+                                                     info.format, temp_vk_image, info.format,
+                                                     info.num_samples,
+                                                     {image_copies.data(), image_copies.size()},
+                                                     msaa_upload_copies_stencil, false);
+        } else {
+            runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, Handle(), info.format,
+                                                temp_vk_image, info.format, info.num_samples,
+                                                {image_copies.data(), image_copies.size()}, false);
+        }
         initialized = true;
-        runtime->pending_msaa_images.emplace_back(scheduler->CurrentTick(), std::move(temp_image));
+        runtime->ReleaseMsaaScratchImage(temp_vk_image);
 
         if (is_rescaled) {
             ScaleUp();
@@ -1936,7 +2037,6 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
     }
 
     if (info.num_samples > 1) {
-        LOG_WARNING(Render_Vulkan, "MSAA upload not implemented for format {}", info.format);
         if (is_rescaled) {
             ScaleUp();
         }
@@ -1983,46 +2083,60 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
     }
 
     if (info.num_samples > 1) {
-        if (aspect_mask == VK_IMAGE_ASPECT_COLOR_BIT &&
-            !VideoCore::Surface::IsPixelFormatInteger(info.format)) {
-            ImageInfo temp_info = info;
-            temp_info.num_samples = 1;
+        if (runtime->CanDownloadMsaa(info)) {
+            const bool msaa_download_is_depth =
+                (aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
+            const bool msaa_download_copies_stencil =
+                msaa_download_is_depth && (aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0 &&
+                runtime->device.IsExtShaderStencilExportSupported();
+            VkImageUsageFlags scratch_usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+            if (msaa_download_is_depth) {
+                scratch_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            } else {
+                scratch_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            }
+            const VkImageCreateInfo image_ci =
+                MakeMsaaScratchImageCreateInfo(runtime->device, info, scratch_usage);
+            const VkImage temp_vk_image = runtime->AcquireMsaaScratchImage(image_ci);
 
-            VkImageCreateInfo image_ci = MakeImageCreateInfo(runtime->device, temp_info);
-            image_ci.format =
-                MaxwellToVK::SurfaceFormat(runtime->device, FormatType::Optimal, true, info.format)
-                    .format;
-            image_ci.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-            vk::Image temp_image = runtime->memory_allocator.CreateImage(image_ci);
-            const VkImage temp_vk_image = *temp_image;
+            const VkImageAspectFlags temp_aspect_mask = aspect_mask;
+            const VkAccessFlags attachment_access =
+                msaa_download_is_depth ? (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                          VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+                                       : (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                                          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+            const VkPipelineStageFlags attachment_stage =
+                msaa_download_is_depth ? (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                          VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT)
+                                       : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
             scheduler->RequestOutsideRenderPassOperationContext();
-            scheduler->Record([temp_vk_image](vk::CommandBuffer cmdbuf) {
+            scheduler->Record([temp_vk_image, temp_aspect_mask, attachment_access,
+                               attachment_stage](vk::CommandBuffer cmdbuf) {
                 const VkImageMemoryBarrier init_barrier{
                     .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                     .pNext = nullptr,
                     .srcAccessMask = 0,
-                    .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                    .dstAccessMask = attachment_access,
                     .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                     .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .image = temp_vk_image,
                     .subresourceRange{
-                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .aspectMask = temp_aspect_mask,
                         .baseMipLevel = 0,
                         .levelCount = VK_REMAINING_MIP_LEVELS,
                         .baseArrayLayer = 0,
                         .layerCount = VK_REMAINING_ARRAY_LAYERS,
                     },
                 };
-                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0,
+                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, attachment_stage, 0,
                                        init_barrier);
             });
 
-            std::vector<VideoCommon::ImageCopy> image_copies;
+            boost::container::small_vector<VideoCommon::ImageCopy, 16> image_copies;
+            image_copies.reserve(copies.size());
             for (const auto& copy : copies) {
                 VideoCommon::ImageCopy image_copy;
                 image_copy.src_offset = copy.image_offset;
@@ -2033,9 +2147,18 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
                 image_copies.push_back(image_copy);
             }
 
-            runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, temp_vk_image,
-                                                info.format, Handle(), info.format,
-                                                info.num_samples, image_copies, true);
+            if (msaa_download_is_depth) {
+                runtime->blit_image_helper.CopyMSAADepth(
+                    runtime->render_pass_cache, temp_vk_image, info.format, Handle(), info.format,
+                    info.num_samples, {image_copies.data(), image_copies.size()},
+                    msaa_download_copies_stencil, true);
+            } else {
+                runtime->blit_image_helper.CopyMSAA(runtime->render_pass_cache, temp_vk_image,
+                                                    info.format, Handle(), info.format,
+                                                    info.num_samples,
+                                                    {image_copies.data(), image_copies.size()},
+                                                    true);
+            }
 
             boost::container::small_vector<VkBuffer, 8> buffers_vector{};
             boost::container::small_vector<boost::container::small_vector<VkBufferImageCopy, 16>, 8>
@@ -2102,10 +2225,12 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
                 cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
                                        0, memory_write_barrier, nullptr, image_write_barrier);
             });
-            runtime->pending_msaa_images.emplace_back(scheduler->CurrentTick(),
-                                                      std::move(temp_image));
-            return;
+            runtime->ReleaseMsaaScratchImage(temp_vk_image);
         }
+        if (is_rescaled) {
+            ScaleUp(true);
+        }
+        return;
     } else {
         boost::container::small_vector<VkBuffer, 8> buffers_vector{};
         boost::container::small_vector<boost::container::small_vector<VkBufferImageCopy, 16>, 8>
@@ -2236,7 +2361,10 @@ bool Image::ScaleUp(bool ignore) {
         aspect_mask = ImageAspectMask(info.format);
     }
     if (NeedsScaleHelper()) {
-        return BlitScaleHelper(true);
+        if (!BlitScaleHelper(true)) {
+            current_image = &Image::original_image;
+            return false;
+        }
     } else {
         BlitScale(*scheduler, *original_image, *scaled_image, info, aspect_mask, resolution);
     }
@@ -2261,7 +2389,11 @@ bool Image::ScaleDown(bool ignore) {
         aspect_mask = ImageAspectMask(info.format);
     }
     if (NeedsScaleHelper()) {
-        return BlitScaleHelper(false);
+        if (!BlitScaleHelper(false)) {
+            current_image = &Image::scaled_image;
+            flags |= ImageFlagBits::Rescaled;
+            return false;
+        }
     } else {
         BlitScale(*scheduler, *scaled_image, *original_image, info, aspect_mask, resolution, false);
     }
@@ -2316,12 +2448,22 @@ bool Image::BlitScaleHelper(bool scale_up) {
             runtime->blit_image_helper.BlitColor(&*blit_framebuffer, *blit_view,
                 dst_region, src_region, operation, BLIT_OPERATION);
         }
-    } else if (aspect_mask == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT) &&
-               info.num_samples == 1) {
+    } else if ((aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0) {
         if (!blit_framebuffer)
             blit_framebuffer.emplace(*runtime, nullptr, view_ptr, extent, scale_up);
-        runtime->blit_image_helper.BlitDepthStencil(&*blit_framebuffer, *blit_view,
-            dst_region, src_region, operation, BLIT_OPERATION);
+        const bool has_stencil = (aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0;
+        const bool can_blit_stencil =
+            has_stencil && runtime->device.IsExtShaderStencilExportSupported();
+        if (info.num_samples > 1) {
+            runtime->blit_image_helper.BlitDepthStencilMSAA(&*blit_framebuffer, *blit_view,
+                dst_region, src_region);
+        } else if (can_blit_stencil) {
+            runtime->blit_image_helper.BlitDepthStencil(&*blit_framebuffer, *blit_view,
+                dst_region, src_region, operation, BLIT_OPERATION);
+        } else {
+            runtime->blit_image_helper.BlitDepth(&*blit_framebuffer, *blit_view, dst_region,
+                                                 src_region);
+        }
     } else {
         // TODO: Use helper blits where applicable
         flags &= ~ImageFlagBits::Rescaled;
@@ -2333,9 +2475,7 @@ bool Image::BlitScaleHelper(bool scale_up) {
 
 bool Image::NeedsScaleHelper() const {
     const auto& device = runtime->device;
-    const bool needs_msaa_helper = info.num_samples > 1 &&
-        (device.CantBlitMSAA() || aspect_mask == VK_IMAGE_ASPECT_COLOR_BIT);
-    if (needs_msaa_helper) {
+    if (info.num_samples > 1) {
         return true;
     }
     static constexpr auto OPTIMAL_FORMAT = FormatType::Optimal;
@@ -2690,7 +2830,7 @@ Framebuffer::~Framebuffer() = default;
 void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
                                     std::span<ImageView*, NUM_RT> color_buffers,
                                     ImageView* depth_buffer, bool is_rescaled_) {
-    boost::container::small_vector<VkImageView, NUM_RT + 1> attachments;
+    boost::container::small_vector<VkImageView, NUM_RT * 2 + 2> attachments;
     RenderPassKey renderpass_key{};
     s32 num_layers = 1;
 
@@ -2719,6 +2859,8 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
         ++num_images;
     }
     const size_t num_colors = attachments.size();
+    VkImage depth_image = VK_NULL_HANDLE;
+    VkImageAspectFlags depth_aspect_mask = 0;
     if (depth_buffer) {
         width = (std::min)(width, is_rescaled ? resolution.ScaleUp(depth_buffer->size.width)
                                             : depth_buffer->size.width);
@@ -2734,20 +2876,31 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
         ++num_images;
         has_depth = (subresource_range.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
         has_stencil = (subresource_range.aspectMask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0;
+        depth_image = depth_buffer->ImageHandle();
+        depth_aspect_mask = subresource_range.aspectMask;
     } else {
         renderpass_key.depth_format = PixelFormat::Invalid;
     }
     renderpass_key.samples = samples;
-    const bool do_resolve_color =
+    const bool do_resolve_color = ENABLE_MSAA_TILER_RESOLVE &&
         samples != VK_SAMPLE_COUNT_1_BIT && num_colors > 0 && runtime.device.IsTiler();
     renderpass_key.resolve_color = do_resolve_color;
 
+    const bool do_resolve_depth_stencil = ENABLE_MSAA_TILER_RESOLVE &&
+        samples != VK_SAMPLE_COUNT_1_BIT && depth_image != VK_NULL_HANDLE &&
+        runtime.device.IsTiler() &&
+        SupportsDepthStencilResolve(runtime.device, renderpass_key.depth_format);
+    renderpass_key.resolve_depth_stencil = do_resolve_depth_stencil;
+
     discard_msaa_color =
         ENABLE_MSAA_RESOLVE_CONSUME && ENABLE_MSAA_COLOR_DISCARD && do_resolve_color;
+    discard_msaa_depth_stencil = ENABLE_MSAA_RESOLVE_CONSUME &&
+                                 ENABLE_MSAA_DEPTH_STENCIL_DISCARD && do_resolve_depth_stencil;
 
     renderpass = runtime.render_pass_cache.Get(renderpass_key);
     render_pass_key = renderpass_key;
     render_pass_cache = &runtime.render_pass_cache;
+    runtime_ptr = &runtime;
     render_area.width = (std::min)(render_area.width, width);
     render_area.height = (std::min)(render_area.height, height);
 
@@ -2760,52 +2913,22 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
             }
             const VkFormat vk_format =
                 MaxwellToVK::SurfaceFormat(runtime.device, FormatType::Optimal, true, format).format;
-            if (ENABLE_MSAA_RESOLVE_CONSUME) {
-                const VkImage msaa_image = images[rt_map[index]];
-                attachments.push_back(runtime.GetOrCreateResolveShadow(msaa_image, vk_format,
-                                                                       render_area, layers));
-                continue;
-            }
-            VkImageCreateInfo resolve_ci{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-                .imageType = VK_IMAGE_TYPE_2D,
-                .format = vk_format,
-                .extent = {render_area.width, render_area.height, 1},
-                .mipLevels = 1,
-                .arrayLayers = layers,
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-                .tiling = VK_IMAGE_TILING_OPTIMAL,
-                .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
-                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                .queueFamilyIndexCount = 0,
-                .pQueueFamilyIndices = nullptr,
-                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            };
-            vk::Image resolve_image = runtime.memory_allocator.CreateImage(resolve_ci);
-            vk::ImageView resolve_view =
-                runtime.device.GetLogical().CreateImageView(VkImageViewCreateInfo{
-                    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                    .pNext = nullptr,
-                    .flags = 0,
-                    .image = *resolve_image,
-                    .viewType = layers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D,
-                    .format = vk_format,
-                    .components{},
-                    .subresourceRange{
-                        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                        .baseMipLevel = 0,
-                        .levelCount = 1,
-                        .baseArrayLayer = 0,
-                        .layerCount = layers,
-                    },
-                });
-            attachments.push_back(*resolve_view);
-            resolve_images.push_back(std::move(resolve_image));
-            resolve_image_views.push_back(std::move(resolve_view));
+            const VkImage msaa_image = images[rt_map[index]];
+            attachments.push_back(runtime.GetOrCreateResolveShadow(
+                msaa_image, vk_format, render_area, layers, VK_IMAGE_ASPECT_COLOR_BIT));
+            resolve_shadow_images[num_resolve_shadows++] = msaa_image;
         }
+    }
+
+    if (do_resolve_depth_stencil) {
+        const u32 layers = static_cast<u32>((std::max)(num_layers, 1));
+        const VkFormat vk_format =
+            MaxwellToVK::SurfaceFormat(runtime.device, FormatType::Optimal, true,
+                                       renderpass_key.depth_format)
+                .format;
+        attachments.push_back(runtime.GetOrCreateResolveShadow(depth_image, vk_format, render_area,
+                                                               layers, depth_aspect_mask));
+        resolve_shadow_images[num_resolve_shadows++] = depth_image;
     }
 
     num_color_buffers = static_cast<u32>(num_colors);
@@ -2822,16 +2945,43 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
     });
 }
 
+void Framebuffer::MarkResolveShadowsUpToDate() const {
+    if (runtime_ptr == nullptr) {
+        return;
+    }
+    for (u32 index = 0; index < num_resolve_shadows; ++index) {
+        runtime_ptr->MarkResolveShadowUpToDate(resolve_shadow_images[index]);
+    }
+}
+
 VkRenderPass Framebuffer::RenderPassVariant(u32 color_clear_mask, bool depth_stencil_clear,
-                                            u32 color_discard_mask) const {
-    if (color_clear_mask == 0 && !depth_stencil_clear && color_discard_mask == 0) {
+                                            u32 color_discard_mask,
+                                            bool depth_stencil_discard) const {
+    if (color_clear_mask == 0 && !depth_stencil_clear && color_discard_mask == 0 &&
+        !depth_stencil_discard) {
         return renderpass;
+    }
+    static_assert(NUM_RT <= 8);
+    const u32 variant_key = color_clear_mask | (color_discard_mask << 8) |
+                            (static_cast<u32>(depth_stencil_clear) << 16) |
+                            (static_cast<u32>(depth_stencil_discard) << 17);
+    for (u32 index = 0; index < num_memoized_variants; ++index) {
+        if (variant_keys[index] == variant_key) {
+            return variant_render_passes[index];
+        }
     }
     RenderPassKey key = render_pass_key;
     key.color_clear_mask = color_clear_mask;
     key.depth_stencil_clear = depth_stencil_clear;
     key.color_discard_mask = color_discard_mask;
-    return render_pass_cache->Get(key);
+    key.depth_stencil_discard = depth_stencil_discard;
+    const VkRenderPass variant = render_pass_cache->Get(key);
+    if (num_memoized_variants < variant_keys.size()) {
+        variant_keys[num_memoized_variants] = variant_key;
+        variant_render_passes[num_memoized_variants] = variant;
+        ++num_memoized_variants;
+    }
+    return variant;
 }
 
 void TextureCacheRuntime::AccelerateImageUpload(
