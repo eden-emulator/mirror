@@ -14,6 +14,7 @@ layout(push_constant) uniform constants {
     vec2 scale;
     vec2 size;
     vec2 resize_factor;
+    vec2 crop_offset;
     float edge_sharpness;
 };
 layout(set = 0, binding = 0) uniform sampler2D sampler0;
