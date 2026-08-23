@@ -712,7 +712,7 @@ void PipelineCache::LoadDiskResources(u64 title_id, std::stop_token stop_loading
     workers.WaitForRequests(stop_loading);
 
     if (use_vulkan_pipeline_cache) {
-        std::unique_lock cache_lock{vulkan_pipeline_cache_mutex};
+        std::shared_lock cache_lock{vulkan_pipeline_cache_mutex};
         SerializeVulkanPipelineCache(vulkan_pipeline_cache_filename, vulkan_pipeline_cache,
                                      CACHE_VERSION);
         size_t size = 0;
@@ -747,7 +747,7 @@ void PipelineCache::QueueVulkanPipelineCacheFlush() {
     last_flush = now;
     serialization_thread.QueueWork([this] {
         {
-            std::unique_lock lock{vulkan_pipeline_cache_mutex};
+            std::shared_lock lock{vulkan_pipeline_cache_mutex};
             SerializeVulkanPipelineCache(vulkan_pipeline_cache_filename, vulkan_pipeline_cache,
                                          CACHE_VERSION);
             size_t size = 0;

@@ -729,6 +729,10 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
     }
 
     logical = vk::Device::Create(physical, queue_cis, ExtensionListForVulkan(loaded_extensions), first_next, dld);
+    if (!extensions.synchronization2) {
+        dld.vkCmdPipelineBarrier2 = nullptr;
+        dld.vkQueueSubmit2 = nullptr;
+    }
 
     graphics_queue = logical.GetQueue(graphics_family);
     present_queue = logical.GetQueue(present_family);
