@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <algorithm>
+#include <limits>
 #include <array>
 #include <optional>
 #include <span>
@@ -53,9 +54,7 @@ using VideoCore::Surface::IsPixelFormatInteger;
 using VideoCore::Surface::SurfaceType;
 
 namespace {
-// Master switch for the tiler MSAA resolve path: resolve attachments, resolve shadows and the
-// MSAA store discard that pays for them. Turning it off restores plain MSAA store behaviour.
-constexpr bool ENABLE_MSAA_TILER_RESOLVE = false;
+constexpr bool ENABLE_MSAA_TILER_RESOLVE = true;
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_STENCIL_DISCARD = true;
@@ -201,6 +200,18 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         .pQueueFamilyIndices = nullptr,
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
+}
+
+[[nodiscard]] VkImageCreateInfo MakeMsaaScratchImageCreateInfo(const Device& device,
+                                                               const ImageInfo& info,
+                                                               VkImageUsageFlags usage) {
+    ImageInfo temp_info = info;
+    temp_info.num_samples = 1;
+    VkImageCreateInfo image_ci = MakeImageCreateInfo(device, temp_info);
+    image_ci.format =
+        MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, true, info.format).format;
+    image_ci.usage = usage;
+    return image_ci;
 }
 
 [[nodiscard]] vk::Image MakeImage(const Device& device, const MemoryAllocator& allocator,
@@ -1805,9 +1816,54 @@ void TextureCacheRuntime::FlushDeferredClear() {
     scheduler.FlushDeferredClear();
 }
 
+VkImage TextureCacheRuntime::AcquireMsaaScratchImage(const VkImageCreateInfo& image_ci) {
+    const MsaaScratchKey key{
+        .format = image_ci.format,
+        .type = image_ci.imageType,
+        .width = image_ci.extent.width,
+        .height = image_ci.extent.height,
+        .depth = image_ci.extent.depth,
+        .levels = image_ci.mipLevels,
+        .layers = image_ci.arrayLayers,
+        .usage = image_ci.usage,
+        .flags = image_ci.flags,
+    };
+    for (MsaaScratchImage& scratch : msaa_scratch_images) {
+        if (scratch.key != key || !scheduler.IsFree(scratch.tick)) {
+            continue;
+        }
+        scratch.tick = (std::numeric_limits<u64>::max)();
+        scratch.unused_frames = 0;
+        return *scratch.image;
+    }
+    MsaaScratchImage scratch{
+        .key = key,
+        .image = memory_allocator.CreateImage(image_ci),
+        .tick = (std::numeric_limits<u64>::max)(),
+        .unused_frames = 0,
+    };
+    const VkImage handle = *scratch.image;
+    msaa_scratch_images.push_back(std::move(scratch));
+    return handle;
+}
+
+void TextureCacheRuntime::ReleaseMsaaScratchImage(VkImage image) {
+    for (MsaaScratchImage& scratch : msaa_scratch_images) {
+        if (*scratch.image == image) {
+            scratch.tick = scheduler.CurrentTick();
+            return;
+        }
+    }
+}
+
 void TextureCacheRuntime::TickFrame() {
-    std::erase_if(pending_msaa_images, [this](const auto& pending) {
-        return scheduler.IsFree(pending.first);
+    static constexpr u32 MAX_UNUSED_SCRATCH_FRAMES = 60;
+    std::erase_if(msaa_scratch_images, [this](MsaaScratchImage& scratch) {
+        if (!scheduler.IsFree(scratch.tick)) {
+            scratch.unused_frames = 0;
+            return false;
+        }
+        return ++scratch.unused_frames > MAX_UNUSED_SCRATCH_FRAMES;
     });
     std::erase_if(pending_resolve_shadows, [this](const auto& pending) {
         return scheduler.IsFree(pending.first);
@@ -1944,20 +2000,13 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
                 upload_aspect_mask |= VK_IMAGE_ASPECT_STENCIL_BIT;
             }
         }
-        ImageInfo temp_info = info;
-        temp_info.num_samples = 1;
-
-        VkImageCreateInfo image_ci = MakeImageCreateInfo(runtime->device, temp_info);
-        image_ci.format =
-            MaxwellToVK::SurfaceFormat(runtime->device, FormatType::Optimal, true, info.format)
-                .format;
-        image_ci.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        vk::Image temp_image = runtime->memory_allocator.CreateImage(image_ci);
+        const VkImageCreateInfo image_ci = MakeMsaaScratchImageCreateInfo(
+            runtime->device, info, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+        const VkImage temp_vk_image = runtime->AcquireMsaaScratchImage(image_ci);
 
         scheduler->RequestOutsideRenderPassOperationContext();
         auto vk_copies = TransformBufferImageCopies(copies, offset, upload_aspect_mask);
         const VkBuffer src_buffer = buffer;
-        const VkImage temp_vk_image = *temp_image;
         const VkImageAspectFlags vk_aspect_mask = upload_aspect_mask;
 
         scheduler->Record([src_buffer, temp_vk_image, vk_aspect_mask,
@@ -1991,7 +2040,7 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
                                                 image_copies, false);
         }
         initialized = true;
-        runtime->pending_msaa_images.emplace_back(scheduler->CurrentTick(), std::move(temp_image));
+        runtime->ReleaseMsaaScratchImage(temp_vk_image);
 
         if (is_rescaled) {
             ScaleUp();
@@ -2048,26 +2097,20 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
 
     if (info.num_samples > 1) {
         if (runtime->CanDownloadMsaa(info)) {
-            ImageInfo temp_info = info;
-            temp_info.num_samples = 1;
-
-            VkImageCreateInfo image_ci = MakeImageCreateInfo(runtime->device, temp_info);
-            image_ci.format =
-                MaxwellToVK::SurfaceFormat(runtime->device, FormatType::Optimal, true, info.format)
-                    .format;
             const bool msaa_download_is_depth =
                 (aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) != 0;
             const bool msaa_download_copies_stencil =
                 msaa_download_is_depth && (aspect_mask & VK_IMAGE_ASPECT_STENCIL_BIT) != 0 &&
                 runtime->device.IsExtShaderStencilExportSupported();
-            image_ci.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+            VkImageUsageFlags scratch_usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
             if (msaa_download_is_depth) {
-                image_ci.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+                scratch_usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             } else {
-                image_ci.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+                scratch_usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             }
-            vk::Image temp_image = runtime->memory_allocator.CreateImage(image_ci);
-            const VkImage temp_vk_image = *temp_image;
+            const VkImageCreateInfo image_ci =
+                MakeMsaaScratchImageCreateInfo(runtime->device, info, scratch_usage);
+            const VkImage temp_vk_image = runtime->AcquireMsaaScratchImage(image_ci);
 
             const VkImageAspectFlags temp_aspect_mask = aspect_mask;
             const VkAccessFlags attachment_access =
@@ -2191,8 +2234,7 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
                 cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
                                        0, memory_write_barrier, nullptr, image_write_barrier);
             });
-            runtime->pending_msaa_images.emplace_back(scheduler->CurrentTick(),
-                                                      std::move(temp_image));
+            runtime->ReleaseMsaaScratchImage(temp_vk_image);
         }
         if (is_rescaled) {
             ScaleUp(true);

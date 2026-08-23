@@ -70,6 +70,10 @@ public:
 
     bool CanDownloadMsaa(const VideoCommon::ImageInfo& info) const;
 
+    [[nodiscard]] VkImage AcquireMsaaScratchImage(const VkImageCreateInfo& image_ci);
+
+    void ReleaseMsaaScratchImage(VkImage image);
+
     void BlitImage(Framebuffer* dst_framebuffer, ImageView& dst, ImageView& src,
                    const Region2D& dst_region, const Region2D& src_region,
                    Tegra::Engines::Fermi2D::Filter filter,
@@ -162,7 +166,28 @@ public:
 
     static constexpr size_t indexing_slots = 8 * sizeof(size_t);
     std::array<vk::Buffer, indexing_slots> buffers{};
-    std::vector<std::pair<u64, vk::Image>> pending_msaa_images;
+    struct MsaaScratchKey {
+        VkFormat format;
+        VkImageType type;
+        u32 width;
+        u32 height;
+        u32 depth;
+        u32 levels;
+        u32 layers;
+        VkImageUsageFlags usage;
+        VkImageCreateFlags flags;
+
+        bool operator==(const MsaaScratchKey&) const noexcept = default;
+    };
+
+    struct MsaaScratchImage {
+        MsaaScratchKey key;
+        vk::Image image;
+        u64 tick;
+        u32 unused_frames;
+    };
+
+    std::vector<MsaaScratchImage> msaa_scratch_images;
     ankerl::unordered_dense::map<VkImage, ResolveShadow> resolve_shadows;
     std::vector<std::pair<u64, ResolveShadow>> pending_resolve_shadows;
 };
