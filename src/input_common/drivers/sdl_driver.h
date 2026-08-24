@@ -113,16 +113,11 @@ private:
     /// Returns true if the button is on the left joycon
     bool IsButtonOnLeftSide(Settings::NativeButton::Values button) const;
 
-    /// Queue of vibration request to controllers
-    Common::SPSCQueue<VibrationRequest> vibration_queue;
-
     /// Map of GUID of a list of corresponding virtual Joysticks
     ::Common::unordered_map<Common::UUID, std::vector<std::shared_ptr<SDLJoystick>>> joystick_map;
     std::mutex joystick_map_mutex;
 
-    bool start_thread = false;
     std::atomic<bool> initialized = false;
-
-    std::thread vibration_thread;
+    bool start_thread;
 };
 } // namespace InputCommon
