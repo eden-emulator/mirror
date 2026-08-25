@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <optional>
 #include <set>
 #include <span>
@@ -699,20 +700,18 @@ FN_MAX_LIMIT_LIST
         return features.transform_feedback.geometryStreams;
     }
 
-    /// Returns true if the device supports VK_EXT_custom_border_color.
-    bool IsExtCustomBorderColorSupported() const {
-        return extensions.custom_border_color;
+    /// Returns true if custom border colors can be created without a format.
+    bool IsCustomBorderColorUsable() const {
+        return extensions.custom_border_color &&
+               features.custom_border_color.customBorderColors &&
+               features.custom_border_color.customBorderColorWithoutFormat;
     }
 
-    /// Returns true if customBorderColors feature is available.
-    bool IsCustomBorderColorsSupported() const {
-        return features.custom_border_color.customBorderColors;
-    }
+    /// Takes budget for samplers carrying a custom border color, false when exhausted.
+    bool TryReserveCustomBorderColorSamplers(size_t count) const;
 
-    /// Returns true if customBorderColorWithoutFormat feature is available.
-    bool IsCustomBorderColorWithoutFormatSupported() const {
-        return features.custom_border_color.customBorderColorWithoutFormat;
-    }
+    /// Gives back budget taken by TryReserveCustomBorderColorSamplers.
+    void ReleaseCustomBorderColorSamplers(size_t count) const;
 
     /// Returns true if the device supports VK_EXT_color_write_enable.
     bool IsExtColorWriteEnableSupported() const {
@@ -722,6 +721,12 @@ FN_MAX_LIMIT_LIST
     /// Returns true if the device supports VK_EXT_border_color_swizzle.
     bool IsExtBorderColorSwizzleSupported() const {
         return extensions.border_color_swizzle;
+    }
+
+    /// Returns true if samplers must be carried with border color swizzle mapping.
+    bool NeedsBorderColorSwizzleMapping() const {
+        return extensions.border_color_swizzle &&
+               !features.border_color_swizzle.borderColorSwizzleFromImage;
     }
 
     /// Returns true if borderColorSwizzleFromImage is available.
@@ -918,8 +923,6 @@ FN_MAX_LIMIT_LIST
     bool HasBrokenParallelShaderCompiling() const {
         return has_broken_parallel_compiling;
     }
-
-    std::optional<size_t> GetSamplerHeapBudget() const;
 
     /// Returns the vendor name reported from Vulkan.
     std::string_view GetVendorName() const {
@@ -1173,6 +1176,7 @@ private:
         VkPhysicalDeviceTransformFeedbackPropertiesEXT transform_feedback{};
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};
         VkPhysicalDeviceDepthStencilResolveProperties depth_stencil_resolve{};
+        VkPhysicalDeviceCustomBorderColorPropertiesEXT custom_border_color{};
 
         VkPhysicalDeviceProperties properties{};
     };
@@ -1211,7 +1215,7 @@ private:
     bool dynamic_state3_alpha_to_coverage{};
     bool dynamic_state3_alpha_to_one{};
     bool supports_conditional_barriers{};      ///< Allows barriers in conditional control flow.
-    size_t sampler_heap_budget{};              ///< Sampler budget for buggy drivers (0 = unlimited).
+    mutable std::atomic<size_t> custom_border_color_samplers_used{};
     u64 device_access_memory{};                ///< Total size of device local memory in bytes.
     u32 sets_per_pool{};                       ///< Sets per Description Pool
     NvidiaArchitecture nvidia_arch{NvidiaArchitecture::Arch_AmpereOrNewer};

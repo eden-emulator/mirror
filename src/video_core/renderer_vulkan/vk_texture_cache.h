@@ -68,8 +68,6 @@ public:
 
     bool CanReportMemoryUsage() const;
 
-    std::optional<size_t> GetSamplerHeapBudget() const;
-
     bool CanDownloadMsaa(const VideoCommon::ImageInfo& info) const;
 
     [[nodiscard]] VkImage AcquireMsaaScratchImage(const VkImageCreateInfo& image_ci);
@@ -446,6 +444,22 @@ public:
         return supports_depth_comparison;
     }
 
+    [[nodiscard]] bool RequiresBorderColorFormat() const noexcept {
+        return requires_border_color_format;
+    }
+
+    [[nodiscard]] bool SupportsMinmaxFilter() const noexcept {
+        return supports_minmax_filter;
+    }
+
+    [[nodiscard]] const VkComponentMapping& Swizzle() const noexcept {
+        return swizzle_mapping;
+    }
+
+    [[nodiscard]] bool HasIdentitySwizzle() const noexcept {
+        return has_identity_swizzle;
+    }
+
     [[nodiscard]] GPUVAddr GpuAddr() const noexcept {
         return gpu_addr;
     }
@@ -478,48 +492,91 @@ private:
     VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
     u32 buffer_size = 0;
 
+    VkComponentMapping swizzle_mapping{};
+
     bool supports_depth_comparison = false;
+    bool requires_border_color_format = false;
+    bool supports_minmax_filter = false;
+    bool has_identity_swizzle = true;
 };
 
 class ImageAlloc : public VideoCommon::ImageAllocBase {};
+
+class CustomBorderColorBudget {
+public:
+    CustomBorderColorBudget() = default;
+    ~CustomBorderColorBudget();
+
+    CustomBorderColorBudget(const CustomBorderColorBudget&) = delete;
+    CustomBorderColorBudget& operator=(const CustomBorderColorBudget&) = delete;
+
+    CustomBorderColorBudget(CustomBorderColorBudget&& rhs) noexcept;
+    CustomBorderColorBudget& operator=(CustomBorderColorBudget&& rhs) noexcept;
+
+    bool TryAcquire(const Device& device, size_t count);
+
+private:
+    void Release() noexcept;
+
+    const Device* device_ptr = nullptr;
+    size_t held = 0;
+};
 
 class Sampler {
 public:
     explicit Sampler(TextureCacheRuntime&, const Tegra::Texture::TSCEntry&);
 
     [[nodiscard]] VkSampler Handle() const noexcept {
-        return *sampler;
+        return *variants.front().sampler;
     }
 
-    [[nodiscard]] VkSampler HandleWithDefaultAnisotropy() const noexcept {
-        return *sampler_default_anisotropy;
-    }
-
-    [[nodiscard]] bool HasAddedAnisotropy() const noexcept {
-        return static_cast<bool>(sampler_default_anisotropy);
-    }
-
-    [[nodiscard]] VkSampler HandleWithNearestFilter() const noexcept {
-        return *sampler_nearest;
-    }
-
-    [[nodiscard]] bool HasLinearFiltering() const noexcept {
-        return static_cast<bool>(sampler_nearest);
-    }
-
-    [[nodiscard]] VkSampler HandleWithoutDepthComparison() const noexcept {
-        return *sampler_noncompare;
-    }
-
-    [[nodiscard]] bool HasDepthComparison() const noexcept {
-        return static_cast<bool>(sampler_noncompare);
-    }
+    [[nodiscard]] VkSampler HandleFor(const ImageView& image_view, bool is_depth);
 
 private:
-    vk::Sampler sampler;
-    vk::Sampler sampler_default_anisotropy;
-    vk::Sampler sampler_nearest;
-    vk::Sampler sampler_noncompare;
+    struct VariantKey {
+        bool reduce_anisotropy;
+        bool force_nearest;
+        bool drop_depth_comparison;
+        bool drop_reduction;
+        bool drop_custom_border;
+        bool srgb_border;
+        std::array<VkComponentSwizzle, 4> swizzle;
+
+        bool operator==(const VariantKey&) const noexcept = default;
+
+        [[nodiscard]] bool HasSwizzle() const noexcept {
+            return swizzle != std::array<VkComponentSwizzle, 4>{};
+        }
+    };
+
+    struct Variant {
+        VariantKey key;
+        vk::Sampler sampler;
+    };
+
+    static constexpr size_t MAX_VARIANTS = 32;
+
+    [[nodiscard]] VariantKey MakeKey(const ImageView& image_view, bool is_depth) const noexcept;
+    [[nodiscard]] VkSampler Find(const VariantKey& key) const noexcept;
+    VkSampler Emplace(VariantKey key);
+
+    CustomBorderColorBudget custom_border_color_budget;
+    std::vector<Variant> variants;
+
+    const Device* device_ptr{nullptr};
+    VkSamplerCreateInfo base_ci{};
+    VkSamplerReductionModeEXT reduction_mode{VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT};
+    std::array<float, 4> border_color{};
+    std::array<float, 4> srgb_border_color{};
+    f32 default_anisotropy{1.0f};
+
+    bool has_added_anisotropy{};
+    bool has_linear_filtering{};
+    bool has_depth_comparison{};
+    bool has_minmax_reduction{};
+    bool has_custom_border_colors{};
+    bool has_srgb_border_color{};
+    bool needs_swizzle_mapping{};
 };
 
 struct TextureCacheParams {

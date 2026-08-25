@@ -370,20 +370,9 @@ inline void PushImageDescriptors(TextureCache& texture_cache,
                 const VkImageView null_image_view{texture_cache.GetImageView(VideoCommon::NULL_IMAGE_VIEW_ID).Handle(desc.type)};
                 if (null_image_view != VK_NULL_HANDLE) vk_image_view = null_image_view;
             }
-            const Sampler& sampler{texture_cache.GetSampler(sampler_id)};
-            const bool use_fallback_sampler{sampler.HasAddedAnisotropy() &&
-                                            !image_view.SupportsAnisotropy()};
-            VkSampler vk_sampler{use_fallback_sampler ? sampler.HandleWithDefaultAnisotropy()
-                                                      : sampler.Handle()};
-            if (sampler.HasLinearFiltering() &&
-                VideoCore::Surface::IsPixelFormatInteger(image_view.format)) {
-                vk_sampler = sampler.HandleWithNearestFilter();
-            }
-            if (desc.is_depth && sampler.HasDepthComparison() &&
-                !image_view.SupportsDepthComparison()) {
-                vk_sampler = sampler.HandleWithoutDepthComparison();
-            }
-            guest_descriptor_queue.AddSampledImage(vk_image_view, vk_sampler);
+            Sampler& sampler{texture_cache.GetSampler(sampler_id)};
+            guest_descriptor_queue.AddSampledImage(vk_image_view,
+                                                   sampler.HandleFor(image_view, desc.is_depth));
             const bool element_rescaled{texture_cache.IsRescaling(image_view)};
             is_rescaled |= element_rescaled;
         }

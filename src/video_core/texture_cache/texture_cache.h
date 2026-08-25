@@ -1896,65 +1896,8 @@ SamplerId TextureCache<P>::FindSampler(const TSCEntry& config, bool compute) {
     const auto [pair, is_new] = channel_state->samplers.try_emplace(config);
     if (is_new) {
         pair->second = slot_samplers.insert(runtime, config);
-        EnforceSamplerBudget();
     }
     return pair->second;
-}
-
-template <class P>
-std::optional<size_t> TextureCache<P>::QuerySamplerBudget() const {
-    if constexpr (requires { runtime.GetSamplerHeapBudget(); }) {
-        return runtime.GetSamplerHeapBudget();
-    } else {
-        return std::nullopt;
-    }
-}
-
-template <class P>
-void TextureCache<P>::EnforceSamplerBudget() {
-    if (auto const budget = QuerySamplerBudget(); budget) {
-        if (slot_samplers.size() < *budget) {
-            return;
-        }
-        if (!channel_state) {
-            return;
-        }
-        if (last_sampler_gc_frame == frame_tick) {
-            return;
-        }
-        last_sampler_gc_frame = frame_tick;
-        TrimInactiveSamplers(*budget);
-    }
-}
-
-template <class P>
-void TextureCache<P>::TrimInactiveSamplers(size_t budget) {
-    if (channel_state->samplers.size() > 0) {
-        constexpr size_t SAMPLER_GC_SLACK = 1024;
-        ankerl::unordered_dense::set<SamplerId> active_sampler_ids;
-        for (auto const& e : channel_state->sampler_ids)
-            active_sampler_ids.insert(e.second);
-        // Elements in the map must be necesarily valid
-        size_t removed = 0;
-        for (auto it = channel_state->samplers.begin(); it != channel_state->samplers.end();) {
-            const SamplerId sampler_id = it->second;
-            if (!sampler_id || sampler_id == CORRUPT_ID) {
-                it = channel_state->samplers.erase(it);
-            } else if (std::ranges::find(active_sampler_ids, sampler_id) != active_sampler_ids.end()) {
-                ++it;
-            } else {
-                slot_samplers.erase(sampler_id);
-                it = channel_state->samplers.erase(it);
-                ++removed;
-                if (slot_samplers.size() + SAMPLER_GC_SLACK <= budget) {
-                    break;
-                }
-            }
-        }
-        if (removed != 0) {
-            LOG_WARNING(HW_GPU, "Sampler cache exceeded {} entries on this driver; reclaimed {} inactive samplers", budget, removed);
-        }
-    }
 }
 
 template <class P>

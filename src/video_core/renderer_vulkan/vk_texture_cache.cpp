@@ -51,6 +51,7 @@ using VideoCore::Surface::BytesPerBlock;
 using VideoCore::Surface::HasAlpha;
 using VideoCore::Surface::IsPixelFormatASTC;
 using VideoCore::Surface::IsPixelFormatInteger;
+using VideoCore::Surface::IsPixelFormatSRGB;
 using VideoCore::Surface::SurfaceType;
 
 namespace {
@@ -58,6 +59,17 @@ constexpr bool ENABLE_MSAA_TILER_RESOLVE = true;
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_STENCIL_DISCARD = true;
+
+[[nodiscard]] constexpr bool NeedsExplicitBorderColorFormat(VkFormat format) {
+    switch (format) {
+    case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+    case VK_FORMAT_B5G6R5_UNORM_PACK16:
+    case VK_FORMAT_B5G5R5A1_UNORM_PACK16:
+        return true;
+    default:
+        return false;
+    }
+}
 
 constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     if (color == std::array<float, 4>{0, 0, 0, 0}) {
@@ -1802,10 +1814,6 @@ bool TextureCacheRuntime::CanReportMemoryUsage() const {
     return device.CanReportMemoryUsage();
 }
 
-std::optional<size_t> TextureCacheRuntime::GetSamplerHeapBudget() const {
-    return device.GetSamplerHeapBudget();
-}
-
 void TextureCacheRuntime::FlushDeferredClear() {
     scheduler.FlushDeferredClear();
 }
@@ -2517,9 +2525,23 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
         supports_depth_comparison =
             (properties3.optimalTilingFeatures &
              VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT) != 0;
+        supports_minmax_filter = (properties3.optimalTilingFeatures &
+                                  VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_MINMAX_BIT) != 0;
     } else {
         supports_depth_comparison = true;
+        supports_minmax_filter =
+            (device->GetPhysical().GetFormatProperties(format_info.format).optimalTilingFeatures &
+             VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT) != 0;
     }
+    requires_border_color_format = NeedsExplicitBorderColorFormat(format_info.format);
+    swizzle_mapping = VkComponentMapping{
+        .r = ComponentSwizzle(swizzle[0]),
+        .g = ComponentSwizzle(swizzle[1]),
+        .b = ComponentSwizzle(swizzle[2]),
+        .a = ComponentSwizzle(swizzle[3]),
+    };
+    has_identity_swizzle = swizzle[0] == SwizzleSource::R && swizzle[1] == SwizzleSource::G &&
+                           swizzle[2] == SwizzleSource::B && swizzle[3] == SwizzleSource::A;
     const VkImageUsageFlags requested_view_usage = ImageUsageFlags(format_info, format);
     const VkImageUsageFlags image_usage = image.UsageFlags();
     const VkImageUsageFlags clamped_view_usage = requested_view_usage & image_usage;
@@ -2544,12 +2566,7 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
         .image = image.Handle(),
         .viewType = VkImageViewType{},
         .format = format_info.format,
-        .components{
-            .r = ComponentSwizzle(swizzle[0]),
-            .g = ComponentSwizzle(swizzle[1]),
-            .b = ComponentSwizzle(swizzle[2]),
-            .a = ComponentSwizzle(swizzle[3]),
-        },
+        .components = swizzle_mapping,
         .subresourceRange = MakeSubresourceRange(aspect_mask, info.range),
     };
     const auto create = [&](TextureType tex_type, std::optional<u32> num_layers) {
@@ -2718,92 +2735,223 @@ vk::ImageView ImageView::MakeView(VkFormat vk_format, VkImageAspectFlags aspect_
     });
 }
 
+CustomBorderColorBudget::~CustomBorderColorBudget() {
+    Release();
+}
+
+CustomBorderColorBudget::CustomBorderColorBudget(CustomBorderColorBudget&& rhs) noexcept
+    : device_ptr{std::exchange(rhs.device_ptr, nullptr)}, held{std::exchange(rhs.held, 0)} {}
+
+CustomBorderColorBudget& CustomBorderColorBudget::operator=(
+    CustomBorderColorBudget&& rhs) noexcept {
+    if (this != &rhs) {
+        Release();
+        device_ptr = std::exchange(rhs.device_ptr, nullptr);
+        held = std::exchange(rhs.held, 0);
+    }
+    return *this;
+}
+
+bool CustomBorderColorBudget::TryAcquire(const Device& device, size_t count) {
+    if (!device.TryReserveCustomBorderColorSamplers(count)) {
+        return false;
+    }
+    device_ptr = &device;
+    held += count;
+    return true;
+}
+
+void CustomBorderColorBudget::Release() noexcept {
+    if (device_ptr != nullptr) {
+        device_ptr->ReleaseCustomBorderColorSamplers(held);
+    }
+    device_ptr = nullptr;
+    held = 0;
+}
+
 Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& tsc) {
     const auto& device = runtime.device;
-    const bool has_custom_border_extension = runtime.device.IsExtCustomBorderColorSupported();
-    const bool has_format_undefined =
-        has_custom_border_extension && runtime.device.IsCustomBorderColorWithoutFormatSupported();
-    const bool has_custom_border_colors =
-        has_format_undefined && runtime.device.IsCustomBorderColorsSupported();
-    const auto color = tsc.BorderColor();
+    device_ptr = &device;
+    border_color = tsc.BorderColor();
+    srgb_border_color = tsc.SrgbBorderColor();
 
+    const f32 max_anisotropy = std::clamp(tsc.MaxAnisotropy(), 1.0f, 16.0f);
+    default_anisotropy = static_cast<f32>(1U << tsc.max_anisotropy);
+
+    const VkFilter mag_filter{MaxwellToVK::Sampler::Filter(tsc.mag_filter)};
+    const VkFilter min_filter{MaxwellToVK::Sampler::Filter(tsc.min_filter)};
+    const VkSamplerMipmapMode mipmap_mode{MaxwellToVK::Sampler::MipmapMode(tsc.mipmap_filter)};
+
+    const VkSamplerAddressMode wrap_u{
+        MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_u, tsc.mag_filter)};
+    const VkSamplerAddressMode wrap_v{
+        MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_v, tsc.mag_filter)};
+    const VkSamplerAddressMode wrap_p{
+        MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_p, tsc.mag_filter)};
+    const bool samples_border = wrap_u == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER ||
+                                wrap_v == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER ||
+                                wrap_p == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+
+    reduction_mode = MaxwellToVK::SamplerReduction(tsc.reduction_filter);
+
+    has_added_anisotropy = max_anisotropy > default_anisotropy;
+    has_linear_filtering = mag_filter == VK_FILTER_LINEAR || min_filter == VK_FILTER_LINEAR ||
+                           mipmap_mode == VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    has_depth_comparison = tsc.depth_compare_enabled != 0;
+    has_minmax_reduction = reduction_mode != VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT;
+    has_srgb_border_color = tsc.srgb_conversion != 0 && srgb_border_color != border_color;
+    if (has_minmax_reduction && !device.IsExtSamplerFilterMinmaxSupported()) {
+        LOG_WARNING(Render_Vulkan, "VK_EXT_sampler_filter_minmax is required");
+        has_minmax_reduction = false;
+    }
+    has_custom_border_colors = samples_border && device.IsCustomBorderColorUsable();
+    needs_swizzle_mapping = has_custom_border_colors && device.NeedsBorderColorSwizzleMapping();
+
+    if (has_custom_border_colors && GPU::Logging::IsActive()) {
+        GPU::Logging::GPULogger::GetInstance().LogExtensionUsage(
+            "VK_EXT_custom_border_color", "Sampler::Sampler");
+    }
+    if (device.IsExtBorderColorSwizzleSupported() && GPU::Logging::IsActive()) {
+        GPU::Logging::GPULogger::GetInstance().LogExtensionUsage(
+            "VK_EXT_border_color_swizzle", "Sampler::Sampler");
+    }
+
+    f32 min_lod = 0.0f;
+    f32 max_lod = 0.25f;
+    if (tsc.mipmap_filter != TextureMipmapFilter::None) {
+        min_lod = tsc.MinLod();
+        max_lod = tsc.MaxLod();
+    }
+    base_ci = VkSamplerCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .magFilter = mag_filter,
+        .minFilter = min_filter,
+        .mipmapMode = mipmap_mode,
+        .addressModeU = wrap_u,
+        .addressModeV = wrap_v,
+        .addressModeW = wrap_p,
+        .mipLodBias = tsc.LodBias(),
+        .anisotropyEnable = static_cast<VkBool32>(max_anisotropy > 1.0f),
+        .maxAnisotropy = max_anisotropy,
+        .compareEnable = static_cast<VkBool32>(tsc.depth_compare_enabled),
+        .compareOp = MaxwellToVK::Sampler::DepthCompareFunction(tsc.depth_compare_func),
+        .minLod = min_lod,
+        .maxLod = max_lod,
+        .borderColor = VK_BORDER_COLOR_FLOAT_CUSTOM_EXT,
+        .unnormalizedCoordinates = VK_FALSE,
+    };
+    variants.reserve(1);
+    Emplace(VariantKey{});
+}
+
+Sampler::VariantKey Sampler::MakeKey(const ImageView& image_view, bool is_depth) const noexcept {
+    VariantKey key{};
+    key.reduce_anisotropy = has_added_anisotropy && !image_view.SupportsAnisotropy();
+    key.force_nearest = has_linear_filtering && IsPixelFormatInteger(image_view.format);
+    key.drop_depth_comparison =
+        is_depth && has_depth_comparison && !image_view.SupportsDepthComparison();
+    key.drop_reduction = has_minmax_reduction && !image_view.SupportsMinmaxFilter();
+    key.drop_custom_border = has_custom_border_colors && image_view.RequiresBorderColorFormat();
+    key.srgb_border = has_srgb_border_color && IsPixelFormatSRGB(image_view.format);
+    if (needs_swizzle_mapping && !key.drop_custom_border && !image_view.HasIdentitySwizzle()) {
+        const VkComponentMapping& mapping = image_view.Swizzle();
+        key.swizzle = {mapping.r, mapping.g, mapping.b, mapping.a};
+    }
+    return key;
+}
+
+VkSampler Sampler::Find(const VariantKey& key) const noexcept {
+    const auto it = std::ranges::find(variants, key, &Variant::key);
+    if (it == variants.end()) {
+        return VK_NULL_HANDLE;
+    }
+    return *it->sampler;
+}
+
+VkSampler Sampler::Emplace(VariantKey key) {
+    bool custom_border = has_custom_border_colors && !key.drop_custom_border;
+    if (custom_border && !custom_border_color_budget.TryAcquire(*device_ptr, 1)) {
+        static bool warned_budget = false;
+        if (!warned_budget) {
+            warned_budget = true;
+        }
+        custom_border = false;
+        key.drop_custom_border = true;
+        key.swizzle = {};
+        if (const VkSampler existing = Find(key); existing != VK_NULL_HANDLE) {
+            return existing;
+        }
+    }
+
+    std::array<float, 4> color = border_color;
+    if (key.srgb_border) {
+        color = srgb_border_color;
+    }
     const VkSamplerCustomBorderColorCreateInfoEXT border_ci{
         .sType = VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT,
         .pNext = nullptr,
         .customBorderColor = std::bit_cast<VkClearColorValue>(color),
         .format = VK_FORMAT_UNDEFINED,
     };
-    const void* pnext = nullptr;
-    if (has_custom_border_colors) {
-        pnext = &border_ci;
-        if (GPU::Logging::IsActive()) {
-            GPU::Logging::GPULogger::GetInstance().LogExtensionUsage(
-                "VK_EXT_custom_border_color", "Sampler::Sampler");
+    const VkSamplerBorderColorComponentMappingCreateInfoEXT mapping_ci{
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_BORDER_COLOR_COMPONENT_MAPPING_CREATE_INFO_EXT,
+        .pNext = &border_ci,
+        .components{key.swizzle[0], key.swizzle[1], key.swizzle[2], key.swizzle[3]},
+        .srgb = VK_FALSE,
+    };
+    const void* chain = nullptr;
+    if (custom_border) {
+        chain = &border_ci;
+        if (key.HasSwizzle()) {
+            chain = &mapping_ci;
         }
-    }
-    if (device.IsExtBorderColorSwizzleSupported() && GPU::Logging::IsActive()) {
-        GPU::Logging::GPULogger::GetInstance().LogExtensionUsage(
-            "VK_EXT_border_color_swizzle", "Sampler::Sampler");
     }
     const VkSamplerReductionModeCreateInfoEXT reduction_ci{
         .sType = VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO_EXT,
-        .pNext = pnext,
-        .reductionMode = MaxwellToVK::SamplerReduction(tsc.reduction_filter),
+        .pNext = chain,
+        .reductionMode = reduction_mode,
     };
-    if (runtime.device.IsExtSamplerFilterMinmaxSupported()) {
-        pnext = &reduction_ci;
-    } else if (reduction_ci.reductionMode != VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT) {
-        LOG_WARNING(Render_Vulkan, "VK_EXT_sampler_filter_minmax is required");
+    if (has_minmax_reduction && !key.drop_reduction) {
+        chain = &reduction_ci;
     }
-    // Some games have samplers with garbage. Sanitize them here.
-    const f32 max_anisotropy = std::clamp(tsc.MaxAnisotropy(), 1.0f, 16.0f);
 
-    const VkFilter mag_filter{MaxwellToVK::Sampler::Filter(tsc.mag_filter)};
-    const VkFilter min_filter{MaxwellToVK::Sampler::Filter(tsc.min_filter)};
-    const VkSamplerMipmapMode mipmap_mode{MaxwellToVK::Sampler::MipmapMode(tsc.mipmap_filter)};
-    const bool has_linear_filtering{mag_filter == VK_FILTER_LINEAR ||
-                                    min_filter == VK_FILTER_LINEAR ||
-                                    mipmap_mode == VK_SAMPLER_MIPMAP_MODE_LINEAR};
-
-    const auto create_sampler = [&](const f32 anisotropy, bool force_nearest,
-                                    bool disable_compare = false) {
-        return device.GetLogical().CreateSampler(VkSamplerCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-            .pNext = pnext,
-            .flags = 0,
-            .magFilter = force_nearest ? VK_FILTER_NEAREST : mag_filter,
-            .minFilter = force_nearest ? VK_FILTER_NEAREST : min_filter,
-            .mipmapMode = force_nearest ? VK_SAMPLER_MIPMAP_MODE_NEAREST : mipmap_mode,
-            .addressModeU = MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_u, tsc.mag_filter),
-            .addressModeV = MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_v, tsc.mag_filter),
-            .addressModeW = MaxwellToVK::Sampler::WrapMode(device, tsc.wrap_p, tsc.mag_filter),
-            .mipLodBias = tsc.LodBias(),
-            .anisotropyEnable =
-                static_cast<VkBool32>(!force_nearest && anisotropy > 1.0f ? VK_TRUE : VK_FALSE),
-            .maxAnisotropy = force_nearest ? 1.0f : anisotropy,
-            .compareEnable = disable_compare ? VK_FALSE
-                                             : static_cast<VkBool32>(tsc.depth_compare_enabled),
-            .compareOp = MaxwellToVK::Sampler::DepthCompareFunction(tsc.depth_compare_func),
-            .minLod = tsc.mipmap_filter == TextureMipmapFilter::None ? 0.0f : tsc.MinLod(),
-            .maxLod = tsc.mipmap_filter == TextureMipmapFilter::None ? 0.25f : tsc.MaxLod(),
-            .borderColor = has_custom_border_colors ? VK_BORDER_COLOR_FLOAT_CUSTOM_EXT
-                                                    : ConvertBorderColor(color),
-            .unnormalizedCoordinates = VK_FALSE,
-        });
-    };
-
-    sampler = create_sampler(max_anisotropy, false);
-
-    const f32 max_anisotropy_default = static_cast<f32>(1U << tsc.max_anisotropy);
-    if (max_anisotropy > max_anisotropy_default) {
-        sampler_default_anisotropy = create_sampler(max_anisotropy_default, false);
+    VkSamplerCreateInfo create_info = base_ci;
+    create_info.pNext = chain;
+    if (key.force_nearest) {
+        create_info.magFilter = VK_FILTER_NEAREST;
+        create_info.minFilter = VK_FILTER_NEAREST;
+        create_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        create_info.anisotropyEnable = VK_FALSE;
+        create_info.maxAnisotropy = 1.0f;
+    } else if (key.reduce_anisotropy) {
+        create_info.anisotropyEnable = static_cast<VkBool32>(default_anisotropy > 1.0f);
+        create_info.maxAnisotropy = default_anisotropy;
     }
-    if (has_linear_filtering) {
-        sampler_nearest = create_sampler(1.0f, true);
+    if (key.drop_depth_comparison) {
+        create_info.compareEnable = VK_FALSE;
     }
-    if (tsc.depth_compare_enabled) {
-        sampler_noncompare = create_sampler(max_anisotropy, false, true);
+    if (!custom_border) {
+        create_info.borderColor = ConvertBorderColor(color);
     }
+    variants.push_back(Variant{
+        .key = key,
+        .sampler = device_ptr->GetLogical().CreateSampler(create_info),
+    });
+    return *variants.back().sampler;
+}
+
+VkSampler Sampler::HandleFor(const ImageView& image_view, bool is_depth) {
+    VariantKey key = MakeKey(image_view, is_depth);
+    if (variants.size() >= MAX_VARIANTS) {
+        key.srgb_border = false;
+        key.swizzle = {};
+    }
+    if (const VkSampler existing = Find(key); existing != VK_NULL_HANDLE) {
+        return existing;
+    }
+    return Emplace(key);
 }
 
 Framebuffer::Framebuffer(TextureCacheRuntime& runtime, std::span<ImageView*, NUM_RT> color_buffers,

@@ -508,12 +508,6 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
         LOG_WARNING(Render_Vulkan, "Qualcomm drivers require scaled vertex format emulation.");
         has_broken_descriptor_aliasing = true;
         LOG_WARNING(Render_Vulkan, "Qualcomm drivers have broken descriptor aliasing.");
-        LOG_WARNING(Render_Vulkan, "Qualcomm drivers have broken custom border color.");
-        RemoveExtensionFeature(extensions.custom_border_color, features.custom_border_color,
-                               VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
-        LOG_WARNING(Render_Vulkan, "Qualcomm drivers have broken border color swizzle.");
-        RemoveExtensionFeature(extensions.border_color_swizzle, features.border_color_swizzle,
-                               VK_EXT_BORDER_COLOR_SWIZZLE_EXTENSION_NAME);
         LOG_WARNING(Render_Vulkan, "Qualcomm drivers have broken color write enable.");
         RemoveExtensionFeature(extensions.color_write_enable, features.color_write_enable,
                                VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
@@ -614,21 +608,6 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
             LOG_WARNING(Render_Vulkan,
                         "AMD drivers (2026+) have broken float16 math");
             features.shader_float16_int8.shaderFloat16 = false;
-        }
-    }
-
-    if (is_qualcomm) {
-        const size_t sampler_limit = properties.properties.limits.maxSamplerAllocationCount;
-        if (sampler_limit > 0) {
-            constexpr size_t MIN_SAMPLER_BUDGET = 1024U;
-            const size_t reserved = sampler_limit / 4U;
-            const size_t derived_budget =
-                (std::max)(MIN_SAMPLER_BUDGET, sampler_limit - reserved);
-            sampler_heap_budget = derived_budget;
-            LOG_WARNING(Render_Vulkan,
-                        "Qualcomm driver reports max {} samplers; reserving {} (25%) and "
-                        "allowing Eden to use {} (75%) to avoid heap exhaustion",
-                        sampler_limit, reserved, sampler_heap_budget);
         }
     }
 
@@ -1144,6 +1123,11 @@ bool Device::GetSuitability(bool requires_swapchain) {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES_KHR;
         SetNext(next, properties.maintenance5);
     }
+    if (extensions.custom_border_color) {
+        properties.custom_border_color.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT;
+        SetNext(next, properties.custom_border_color);
+    }
 
     // Perform the property fetch.
     physical.GetProperties2(properties2);
@@ -1240,9 +1224,7 @@ void Device::RemoveUnsuitableExtensions() {
     // VK_EXT_border_color_swizzle
     if (extensions.border_color_swizzle) {
         extensions.border_color_swizzle =
-            extensions.custom_border_color &&
-            features.border_color_swizzle.borderColorSwizzle &&
-            features.border_color_swizzle.borderColorSwizzleFromImage;
+            extensions.custom_border_color && features.border_color_swizzle.borderColorSwizzle;
     }
     RemoveExtensionFeatureIfUnsuitable(extensions.border_color_swizzle,
                                        features.border_color_swizzle,
@@ -1488,11 +1470,26 @@ void Device::SetupFamilies(VkSurfaceKHR surface) {
     }
 }
 
-std::optional<size_t> Device::GetSamplerHeapBudget() const {
-    if (sampler_heap_budget == 0) {
-        return std::nullopt;
+bool Device::TryReserveCustomBorderColorSamplers(size_t count) const {
+    const size_t limit = properties.custom_border_color.maxCustomBorderColorSamplers;
+    if (limit == 0) {
+        return true;
     }
-    return sampler_heap_budget;
+    size_t used = custom_border_color_samplers_used.load(std::memory_order_relaxed);
+    while (used + count <= limit) {
+        if (custom_border_color_samplers_used.compare_exchange_weak(
+                used, used + count, std::memory_order_relaxed, std::memory_order_relaxed)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Device::ReleaseCustomBorderColorSamplers(size_t count) const {
+    if (count == 0) {
+        return;
+    }
+    custom_border_color_samplers_used.fetch_sub(count, std::memory_order_relaxed);
 }
 
 u64 Device::GetDeviceMemoryUsage() const {
