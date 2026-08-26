@@ -195,6 +195,29 @@ public:
         BindBuffer(buffer, offset, size);
     }
 
+    void BindStorageBuffer(VkBuffer buffer, VkDeviceAddress address, u32 offset, u32 size,
+                           [[maybe_unused]] bool is_written) {
+        guest_descriptor_queue.AddBuffer(buffer, address, offset, size);
+    }
+
+    [[nodiscard]] bool IsUnifiedMemoryBindable() const noexcept {
+        return unified_memory != nullptr && unified_memory->IsValid() &&
+               unified_memory->IsBindable();
+    }
+
+    [[nodiscard]] VkBuffer UnifiedWindowBuffer(size_t index) const noexcept {
+        return unified_memory->GetWindowBuffer(index);
+    }
+
+    [[nodiscard]] VkDeviceAddress UnifiedWindowAddress(size_t index) const noexcept {
+        return unified_memory->GetWindowAddress(index);
+    }
+
+    [[nodiscard]] bool IsUnifiedStorageRange(u32 size, u64 offset) const {
+        return size <= device.GetMaxStorageBufferRange() &&
+               (offset % device.GetStorageBufferAlignment()) == 0;
+    }
+
     void BindTextureBuffer(Buffer& buffer, u32 offset, u32 size,
                            VideoCore::Surface::PixelFormat format) {
         guest_descriptor_queue.AddTexelBuffer(buffer.View(offset, size, format),

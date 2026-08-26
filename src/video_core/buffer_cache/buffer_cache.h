@@ -1085,11 +1085,25 @@ void BufferCache<P>::BindHostGraphicsStorageBuffers(size_t stage) {
         Buffer& buffer = slot_buffers[binding.buffer_id];
         TouchBuffer(buffer, binding.buffer_id);
         const u32 size = binding.size;
+        const bool is_written = ((channel_state->written_storage_buffers[stage] >> index) & 1) != 0;
+
+        if constexpr (USE_UNIFIED_MEMORY) {
+            const auto window = TryResolveUnifiedRange(binding.device_addr, size);
+            if (window && runtime.IsUnifiedStorageRange(size, window->offset)) {
+                if (is_written) {
+                    memory_tracker.MarkRegionAsCpuModified(binding.device_addr, size);
+                }
+                runtime.BindStorageBuffer(runtime.UnifiedWindowBuffer(window->window),
+                                          runtime.UnifiedWindowAddress(window->window),
+                                          static_cast<u32>(window->offset), size, is_written);
+                return;
+            }
+        }
+
         SynchronizeBuffer(buffer, binding.device_addr, size);
 
         const u32 offset = buffer.Offset(binding.device_addr);
         buffer.MarkUsage(offset, size);
-        const bool is_written = ((channel_state->written_storage_buffers[stage] >> index) & 1) != 0;
 
         if (is_written) {
             MarkWrittenBuffer(binding.buffer_id, binding.device_addr, size);
@@ -1839,6 +1853,57 @@ bool BufferCache<P>::ResolveUnifiedWindows(
         return true;
     } else {
         return false;
+    }
+}
+
+template <class P>
+std::optional<typename BufferCache<P>::UnifiedWindowRange>
+BufferCache<P>::TryResolveUnifiedRange([[maybe_unused]] DAddr device_addr,
+                                       [[maybe_unused]] u64 size) {
+    if constexpr (USE_UNIFIED_MEMORY) {
+        if (size == 0 || !runtime.IsUnifiedMemoryBindable()) {
+            return std::nullopt;
+        }
+        const u64 window_size = runtime.UnifiedMemoryWindowSize();
+        if (window_size == 0) {
+            return std::nullopt;
+        }
+        const u8* const first = device_memory.GetPointer<u8>(device_addr);
+        if (first == nullptr) {
+            return std::nullopt;
+        }
+        const u64 phys_offset = static_cast<u64>(first - device_memory.GetPhysicalBase());
+        const u64 unified_base = runtime.UnifiedMemoryBase();
+        if (phys_offset < unified_base) {
+            return std::nullopt;
+        }
+        const u64 relative = phys_offset - unified_base;
+        const u64 unified_size = runtime.UnifiedMemorySize();
+        if (relative >= unified_size || unified_size - relative < size) {
+            return std::nullopt;
+        }
+        const u64 local_offset = relative % window_size;
+        if (window_size - local_offset < size) {
+            return std::nullopt;
+        }
+        if (memory_tracker.IsRegionGpuModified(device_addr, size) ||
+            IsRegionGpuModified(device_addr, size)) {
+            return std::nullopt;
+        }
+        u64 walked = Core::DEVICE_PAGESIZE - (device_addr & Core::DEVICE_PAGEMASK);
+        while (walked < size) {
+            const u8* const next = device_memory.GetPointer<u8>(device_addr + walked);
+            if (next != first + walked) {
+                return std::nullopt;
+            }
+            walked += Core::DEVICE_PAGESIZE;
+        }
+        return UnifiedWindowRange{
+            .window = static_cast<size_t>(relative / window_size),
+            .offset = local_offset,
+        };
+    } else {
+        return std::nullopt;
     }
 }
 

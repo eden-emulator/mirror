@@ -379,88 +379,125 @@ namespace Vulkan {
         const auto memory_props = device.GetPhysical().GetMemoryProperties().memoryProperties;
         window_size = hardware_buffer_window;
         base_offset = hardware_buffer_base;
-        for (size_t i = 0; i < hardware_buffers.size(); ++i) {
-            const size_t offset = hardware_buffer_base + i * hardware_buffer_window;
-            if (offset >= size) {
-                break;
+
+        const auto import_all = [&](VkBufferUsageFlags usage, bool want_address) {
+            for (size_t i = 0; i < hardware_buffers.size(); ++i) {
+                const size_t offset = hardware_buffer_base + i * hardware_buffer_window;
+                if (offset >= size) {
+                    break;
+                }
+                const VkDeviceSize window_len = (std::min)(
+                        static_cast<VkDeviceSize>(size - offset),
+                        static_cast<VkDeviceSize>(hardware_buffer_window));
+                VkAndroidHardwareBufferPropertiesANDROID ahb_props{
+                        .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
+                        .pNext = nullptr,
+                        .allocationSize = 0,
+                        .memoryTypeBits = 0,
+                };
+                if (logical.GetAndroidHardwareBufferPropertiesANDROID(hardware_buffers[i],
+                                                                      &ahb_props) != VK_SUCCESS ||
+                    ahb_props.memoryTypeBits == 0 || ahb_props.allocationSize < window_len) {
+                    break;
+                }
+                const VkExternalMemoryBufferCreateInfo external_info{
+                        .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+                        .pNext = nullptr,
+                        .handleTypes =
+                                VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+                };
+                const VkBufferCreateInfo buffer_ci{
+                        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                        .pNext = &external_info,
+                        .flags = 0,
+                        .size = window_len,
+                        .usage = usage,
+                        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                        .queueFamilyIndexCount = 0,
+                        .pQueueFamilyIndices = nullptr,
+                };
+                VkBuffer new_buffer{};
+                if (logical.CreateBufferRaw(buffer_ci, &new_buffer) != VK_SUCCESS) {
+                    break;
+                }
+                const VkMemoryRequirements requirements =
+                        logical.GetBufferMemoryRequirements(new_buffer);
+                const u32 type_mask = requirements.memoryTypeBits & ahb_props.memoryTypeBits;
+                if (type_mask == 0 || requirements.size > ahb_props.allocationSize) {
+                    logical.DestroyBufferRaw(new_buffer);
+                    break;
+                }
+                const auto type_index = FindImportMemoryType(memory_props, type_mask);
+                if (!type_index) {
+                    logical.DestroyBufferRaw(new_buffer);
+                    break;
+                }
+                const VkImportAndroidHardwareBufferInfoANDROID import_info{
+                        .sType = VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
+                        .pNext = nullptr,
+                        .buffer = hardware_buffers[i],
+                };
+                const VkMemoryDedicatedAllocateInfo dedicated_info{
+                        .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+                        .pNext = &import_info,
+                        .image = VK_NULL_HANDLE,
+                        .buffer = new_buffer,
+                };
+                const VkMemoryAllocateFlagsInfo flags_info{
+                        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+                        .pNext = &dedicated_info,
+                        .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+                        .deviceMask = 0,
+                };
+                const void *alloc_next = &dedicated_info;
+                if (want_address) {
+                    alloc_next = &flags_info;
+                }
+                const VkMemoryAllocateInfo alloc_info{
+                        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                        .pNext = alloc_next,
+                        .allocationSize = ahb_props.allocationSize,
+                        .memoryTypeIndex = *type_index,
+                };
+                vk::DeviceMemory memory = logical.TryAllocateMemory(alloc_info);
+                if (!memory) {
+                    logical.DestroyBufferRaw(new_buffer);
+                    break;
+                }
+                if (logical.BindBufferMemory(new_buffer, *memory, 0) != VK_SUCCESS) {
+                    logical.DestroyBufferRaw(new_buffer);
+                    break;
+                }
+                VkDeviceAddress address = 0;
+                if (want_address) {
+                    address = logical.GetBufferDeviceAddress(new_buffer);
+                }
+                windows.push_back(Window{
+                        .memory = std::move(memory),
+                        .buffer = new_buffer,
+                        .address = address,
+                });
+                imported_size += static_cast<size_t>(window_len);
             }
-            const VkDeviceSize window_len = (std::min)(
-                    static_cast<VkDeviceSize>(size - offset),
-                    static_cast<VkDeviceSize>(hardware_buffer_window));
-            VkAndroidHardwareBufferPropertiesANDROID ahb_props{
-                    .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
-                    .pNext = nullptr,
-                    .allocationSize = 0,
-                    .memoryTypeBits = 0,
-            };
-            if (logical.GetAndroidHardwareBufferPropertiesANDROID(hardware_buffers[i],
-                                                                  &ahb_props) != VK_SUCCESS ||
-                ahb_props.memoryTypeBits == 0 || ahb_props.allocationSize < window_len) {
-                break;
-            }
-            const VkExternalMemoryBufferCreateInfo external_info{
-                    .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
-                    .pNext = nullptr,
-                    .handleTypes =
-                            VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
-            };
-            const VkBufferCreateInfo buffer_ci{
-                    .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                    .pNext = &external_info,
-                    .flags = 0,
-                    .size = window_len,
-                    .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                    .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                    .queueFamilyIndexCount = 0,
-                    .pQueueFamilyIndices = nullptr,
-            };
-            VkBuffer new_buffer{};
-            if (logical.CreateBufferRaw(buffer_ci, &new_buffer) != VK_SUCCESS) {
-                break;
-            }
-            const VkMemoryRequirements requirements =
-                    logical.GetBufferMemoryRequirements(new_buffer);
-            const u32 type_mask = requirements.memoryTypeBits & ahb_props.memoryTypeBits;
-            if (type_mask == 0 || requirements.size > ahb_props.allocationSize) {
-                logical.DestroyBufferRaw(new_buffer);
-                break;
-            }
-            const auto type_index = FindImportMemoryType(memory_props, type_mask);
-            if (!type_index) {
-                logical.DestroyBufferRaw(new_buffer);
-                break;
-            }
-            const VkImportAndroidHardwareBufferInfoANDROID import_info{
-                    .sType = VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
-                    .pNext = nullptr,
-                    .buffer = hardware_buffers[i],
-            };
-            const VkMemoryDedicatedAllocateInfo dedicated_info{
-                    .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
-                    .pNext = &import_info,
-                    .image = VK_NULL_HANDLE,
-                    .buffer = new_buffer,
-            };
-            const VkMemoryAllocateInfo alloc_info{
-                    .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                    .pNext = &dedicated_info,
-                    .allocationSize = ahb_props.allocationSize,
-                    .memoryTypeIndex = *type_index,
-            };
-            vk::DeviceMemory memory = logical.TryAllocateMemory(alloc_info);
-            if (!memory) {
-                logical.DestroyBufferRaw(new_buffer);
-                break;
-            }
-            if (logical.BindBufferMemory(new_buffer, *memory, 0) != VK_SUCCESS) {
-                logical.DestroyBufferRaw(new_buffer);
-                break;
-            }
-            windows.push_back(Window{
-                    .memory = std::move(memory),
-                    .buffer = new_buffer,
-            });
-            imported_size += static_cast<size_t>(window_len);
+            return !windows.empty();
+        };
+
+        constexpr VkBufferUsageFlags TransferUsage =
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        VkBufferUsageFlags shader_usage = TransferUsage |
+                VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT |
+                VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+        const bool want_address = device.IsBufferDeviceAddressSupported();
+        if (want_address) {
+            shader_usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+        }
+
+        bindable = import_all(shader_usage, want_address);
+        if (!bindable) {
+            imported_size = 0;
+            import_all(TransferUsage, false);
         }
         if (windows.empty()) {
             window_size = 0;

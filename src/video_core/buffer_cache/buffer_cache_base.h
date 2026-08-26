@@ -12,6 +12,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <numeric>
 #include <span>
 #include <vector>
@@ -445,6 +446,13 @@ private:
     void MappedUploadMemory(Buffer& buffer, u64 total_size_bytes, std::span<BufferCopy> copies);
 
     bool TryUnifiedDownloadMemory(Buffer& buffer, std::span<BufferCopy> copies);
+
+    struct UnifiedWindowRange {
+        size_t window;
+        u64 offset;
+    };
+
+    std::optional<UnifiedWindowRange> TryResolveUnifiedRange(DAddr device_addr, u64 size);
 
     using UnifiedWindowGroups =
         boost::container::small_vector<boost::container::small_vector<BufferCopy, 16>, 4>;
