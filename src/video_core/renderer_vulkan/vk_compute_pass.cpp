@@ -1022,7 +1022,7 @@ void BlockLinearUnswizzle2DPass::Unswizzle(
     const VkImageAspectFlags aspect = image.AspectMask();
 
     scheduler.Record([this, set, descriptor_data, pc, gx, gy, depth, output_size, out_buffer,
-                      out_offset, dst_image, aspect, width, height,
+                      out_offset, dst_image, aspect, texel_width, texel_height,
                       is_initialized](vk::CommandBuffer cmdbuf) {
         if (dst_image == VK_NULL_HANDLE || out_buffer == VK_NULL_HANDLE) {
             return;
