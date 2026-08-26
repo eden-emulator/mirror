@@ -190,6 +190,10 @@ public:
         BindBuffer(buffer, offset, size);
     }
 
+    void BindUniformBuffer(VkBuffer buffer, VkDeviceAddress address, u32 offset, u32 size) {
+        guest_descriptor_queue.AddBuffer(buffer, address, offset, size);
+    }
+
     void BindStorageBuffer(const Buffer& buffer, u32 offset, u32 size,
                            [[maybe_unused]] bool is_written) {
         BindBuffer(buffer, offset, size);
@@ -217,6 +221,14 @@ public:
         return size <= device.GetMaxStorageBufferRange() &&
                (offset % device.GetStorageBufferAlignment()) == 0;
     }
+
+    [[nodiscard]] bool IsUnifiedUniformRange(u32 size, u64 offset) const {
+        return size <= device.GetMaxUniformBufferRange() &&
+               (offset % device.GetUniformBufferAlignment()) == 0;
+    }
+
+    [[nodiscard]] bool IsUnifiedIndexRange(PrimitiveTopology topology, IndexFormat index_format,
+                                           u64 offset) const;
 
     void BindTextureBuffer(Buffer& buffer, u32 offset, u32 size,
                            VideoCore::Surface::PixelFormat format) {

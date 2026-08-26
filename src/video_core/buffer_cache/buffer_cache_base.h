@@ -10,6 +10,7 @@
 #include <array>
 #include <bit>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -96,12 +97,15 @@ static constexpr Binding NULL_BINDING{
     .buffer_id = NULL_BUFFER_ID,
 };
 
+static constexpr u32 NO_UNIFIED_WINDOW = (std::numeric_limits<u32>::max)();
+
 template <typename Buffer>
 struct HostBindings {
     boost::container::static_vector<Buffer*, NUM_VERTEX_BUFFERS> buffers;
     boost::container::static_vector<u64, NUM_VERTEX_BUFFERS> offsets;
     boost::container::static_vector<u64, NUM_VERTEX_BUFFERS> sizes;
     boost::container::static_vector<u64, NUM_VERTEX_BUFFERS> strides;
+    boost::container::static_vector<u32, NUM_VERTEX_BUFFERS> unified_windows;
     u32 min_index{NUM_VERTEX_BUFFERS};
     u32 max_index{0};
 };
@@ -505,6 +509,7 @@ private:
     u32 last_index_count = 0;
 
     u32 enabled_vertex_buffers_mask = 0;
+    u32 unified_vertex_buffers_mask = 0;
     u64 vertex_buffers_serial = 0;
     std::array<Binding, 32> v_buffer{};
 

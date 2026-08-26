@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <limits>
 #include <span>
 #include <utility>
 #include <vector>
@@ -67,6 +68,16 @@ VkIndexType IndexTypeFromNumElements(const Device& device, u32 num_elements) {
         return VK_INDEX_TYPE_UINT16;
     }
     return VK_INDEX_TYPE_UINT32;
+}
+
+u32 GrowIndexCount(u32 current, u32 requested) {
+    constexpr u32 MinimumIndices = 4096;
+    constexpr u32 GrowthLimit = (std::numeric_limits<u32>::max)() / 2;
+    u32 grown = (std::max)(requested, MinimumIndices);
+    if (current <= GrowthLimit) {
+        grown = (std::max)(grown, current * 2);
+    }
+    return grown;
 }
 
 size_t BytesPerIndex(VkIndexType index_type) {
@@ -185,13 +196,12 @@ public:
     virtual ~QuadIndexBuffer() = default;
 
     void UpdateBuffer(u32 num_indices_) {
+        ReleaseRetiredBuffers();
         if (num_indices_ <= num_indices) {
             return;
         }
 
-        scheduler.Finish();
-
-        num_indices = num_indices_;
+        num_indices = GrowIndexCount(num_indices, num_indices_);
         index_type = IndexTypeFromNumElements(device, num_indices);
 
         const u32 num_quads = GetQuadsNum(num_indices);
@@ -209,6 +219,12 @@ public:
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices = nullptr,
         };
+        if (buffer) {
+            retired_buffers.push_back(RetiredBuffer{
+                .buffer = std::move(buffer),
+                .tick = scheduler.CurrentTick(),
+            });
+        }
         buffer = memory_allocator.CreateBuffer(buffer_ci, MemoryUsage::DeviceLocal);
         if (device.HasDebuggingToolAttached()) {
             buffer.SetObjectNameEXT("Quad LUT");
@@ -276,6 +292,17 @@ protected:
 
     virtual void MakeAndUpdateIndices(u8* staging_data, size_t quad_size, u32 quad, u32 first) = 0;
 
+    struct RetiredBuffer {
+        vk::Buffer buffer;
+        u64 tick;
+    };
+
+    void ReleaseRetiredBuffers() {
+        std::erase_if(retired_buffers, [this](const RetiredBuffer& entry) {
+            return scheduler.IsFree(entry.tick);
+        });
+    }
+
     const Device& device;
     MemoryAllocator& memory_allocator;
     Scheduler& scheduler;
@@ -283,6 +310,7 @@ protected:
 
     vk::Buffer buffer{};
     MemoryCommit memory_commit{};
+    std::vector<RetiredBuffer> retired_buffers;
     VkIndexType index_type{};
     u32 num_indices = 0;
 };
@@ -699,6 +727,25 @@ void BufferCacheRuntime::ClearBuffer(VkBuffer dest_buffer, u32 offset, size_t si
     });
 }
 
+bool BufferCacheRuntime::IsUnifiedIndexRange(PrimitiveTopology topology, IndexFormat index_format,
+                                             u64 offset) const {
+    const VkIndexType vk_index_type = MaxwellToVK::IndexFormat(index_format);
+    const bool needs_uint8_pass =
+        vk_index_type == VK_INDEX_TYPE_UINT8_EXT && !device.IsExtIndexTypeUint8Supported();
+    if (topology == PrimitiveTopology::Quads || topology == PrimitiveTopology::QuadStrip ||
+        needs_uint8_pass) {
+        return (offset % device.GetStorageBufferAlignment()) == 0;
+    }
+    switch (vk_index_type) {
+    case VK_INDEX_TYPE_UINT32:
+        return (offset % 4) == 0;
+    case VK_INDEX_TYPE_UINT16:
+        return (offset % 2) == 0;
+    default:
+        return true;
+    }
+}
+
 void BufferCacheRuntime::BindIndexBuffer(PrimitiveTopology topology, IndexFormat index_format,
                                          u32 base_vertex, u32 num_indices, VkBuffer buffer,
                                          u32 offset, [[maybe_unused]] u32 size) {
@@ -774,6 +821,11 @@ void BufferCacheRuntime::BindVertexBuffer(u32 index, VkBuffer buffer, u32 offset
 void BufferCacheRuntime::BindVertexBuffers(VideoCommon::HostBindings<Buffer>& bindings) {
     boost::container::static_vector<VkBuffer, VideoCommon::NUM_VERTEX_BUFFERS> buffer_handles(bindings.buffers.size());
     for (u32 i = 0; i < bindings.buffers.size(); ++i) {
+        if (i < bindings.unified_windows.size() &&
+            bindings.unified_windows[i] != VideoCommon::NO_UNIFIED_WINDOW) {
+            buffer_handles[i] = unified_memory->GetWindowBuffer(bindings.unified_windows[i]);
+            continue;
+        }
         auto handle = bindings.buffers[i]->Handle();
         if (handle == VK_NULL_HANDLE) {
             bindings.offsets[i] = 0;
