@@ -1575,8 +1575,8 @@ void Device::CollectPhysicalMemoryInfo() {
     if (committed_backing != 0) {
         LOG_INFO(Render_Vulkan, "Discounting {} MiB of guest memory committed by the host",
                  committed_backing >> 20);
-        local_memory -= std::min(local_memory, committed_backing);
-        device_access_memory -= std::min(device_access_memory, committed_backing);
+        local_memory -= (std::min)(local_memory, committed_backing);
+        device_access_memory -= (std::min)(device_access_memory, committed_backing);
     }
     if (is_integrated) {
         const s64 available_memory = static_cast<s64>(device_access_memory - device_initial_usage);
