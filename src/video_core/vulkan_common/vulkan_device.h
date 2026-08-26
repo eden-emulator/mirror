@@ -350,7 +350,11 @@ public:
         return properties.properties.limits.minUniformBufferOffsetAlignment;
     }
 
-    /// Returns storage alignment requirement.
+    /// Returns max storage buffer range requirement.
+    u32 GetMaxStorageBufferRange() const {
+        return properties.properties.limits.maxStorageBufferRange;
+    }
+
     VkDeviceSize GetStorageBufferAlignment() const {
         return properties.properties.limits.minStorageBufferOffsetAlignment;
     }

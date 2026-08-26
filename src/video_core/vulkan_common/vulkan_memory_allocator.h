@@ -122,14 +122,23 @@ namespace Vulkan {
             return windows[index].buffer;
         }
 
+        [[nodiscard]] VkDeviceAddress GetWindowAddress(size_t index) const noexcept {
+            return windows[index].address;
+        }
+
         [[nodiscard]] size_t GetWindowCount() const noexcept {
             return windows.size();
+        }
+
+        [[nodiscard]] bool IsBindable() const noexcept {
+            return bindable;
         }
 
     private:
         struct Window {
             vk::DeviceMemory memory;
             VkBuffer buffer{};
+            VkDeviceAddress address{};
         };
 
         bool ImportHostPointer(void *base, size_t size);
@@ -144,6 +153,7 @@ namespace Vulkan {
         size_t imported_size{};
         size_t base_offset{};
         bool foreign_ownership{};
+        bool bindable{};
     };
 
 /// Memory allocator container.

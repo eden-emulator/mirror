@@ -360,6 +360,8 @@ bool HostMemoryImport::ImportHardwareBuffers(
     const auto memory_props = device.GetPhysical().GetMemoryProperties().memoryProperties;
     window_size = hardware_buffer_window;
     base_offset = hardware_buffer_base;
+
+        const auto import_all = [&](VkBufferUsageFlags usage, bool want_address) {
     for (size_t i = 0; i < hardware_buffers.size(); ++i) {
         const size_t offset = hardware_buffer_base + i * hardware_buffer_window;
         if (offset >= size) {
@@ -390,7 +392,7 @@ bool HostMemoryImport::ImportHardwareBuffers(
                 .pNext = &external_info,
                 .flags = 0,
                 .size = window_len,
-                .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                        .usage = usage,
                 .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
                 .queueFamilyIndexCount = 0,
                 .pQueueFamilyIndices = nullptr,
@@ -422,9 +424,19 @@ bool HostMemoryImport::ImportHardwareBuffers(
                 .image = VK_NULL_HANDLE,
                 .buffer = new_buffer,
         };
+                const VkMemoryAllocateFlagsInfo flags_info{
+                        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+                        .pNext = &dedicated_info,
+                        .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
+                        .deviceMask = 0,
+                };
+                const void *alloc_next = &dedicated_info;
+                if (want_address) {
+                    alloc_next = &flags_info;
+                }
         const VkMemoryAllocateInfo alloc_info{
                 .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                .pNext = &dedicated_info,
+                        .pNext = alloc_next,
                 .allocationSize = ahb_props.allocationSize,
                 .memoryTypeIndex = *type_index,
         };
@@ -437,12 +449,37 @@ bool HostMemoryImport::ImportHardwareBuffers(
             logical.DestroyBufferRaw(new_buffer);
             break;
         }
+                VkDeviceAddress address = 0;
+                if (want_address) {
+                    address = logical.GetBufferDeviceAddress(new_buffer);
+                }
         windows.push_back(Window{
                 .memory = std::move(memory),
                 .buffer = new_buffer,
+                        .address = address,
         });
         imported_size += static_cast<size_t>(window_len);
     }
+            return !windows.empty();
+        };
+
+        constexpr VkBufferUsageFlags TransferUsage =
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        VkBufferUsageFlags shader_usage = TransferUsage |
+                VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT |
+                VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+        const bool want_address = device.IsBufferDeviceAddressSupported();
+        if (want_address) {
+            shader_usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+        }
+
+        bindable = import_all(shader_usage, want_address);
+        if (!bindable) {
+            imported_size = 0;
+            import_all(TransferUsage, false);
+        }
     if (windows.empty()) {
         window_size = 0;
         base_offset = 0;
