@@ -159,6 +159,8 @@ public:
     std::optional<ASTCDecoderPass> astc_decoder_pass;
 
     std::optional<BlockLinearUnswizzle3DPass> bl3d_unswizzle_pass;
+    std::optional<BlockLinearUnswizzle2DPass> bl2d_unswizzle_pass;
+    std::optional<BlockLinearUnswizzle3DBufferPass> bl3db_unswizzle_pass;
     const Settings::ResolutionScalingInfo& resolution;
     std::array<std::vector<VkFormat>, VideoCore::Surface::MaxPixelFormat> view_formats;
 
