@@ -1901,11 +1901,9 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
     } else if (runtime->bl2d_unswizzle_pass &&
                BlockLinearUnswizzle2DPass::IsSupported(runtime->device, info)) {
         flags |= VideoCommon::ImageFlagBits::AcceleratedUpload;
-        flags |= VideoCommon::ImageFlagBits::CostlyLoad;
     } else if (runtime->bl3db_unswizzle_pass &&
                BlockLinearUnswizzle3DBufferPass::IsSupported(runtime->device, info)) {
         flags |= VideoCommon::ImageFlagBits::AcceleratedUpload;
-        flags |= VideoCommon::ImageFlagBits::CostlyLoad;
     }
     if (IsPixelFormatBCn(info.format) && !runtime->device.IsOptimalBcnSupported()) {
         flags |= VideoCommon::ImageFlagBits::Converted;
