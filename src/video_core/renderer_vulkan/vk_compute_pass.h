@@ -178,6 +178,9 @@ public:
     void Unswizzle(Image& image, const StagingBufferRef& swizzled,
                    std::span<const VideoCommon::SwizzleParameters> swizzles);
 
+    void UnswizzleFrom(Image& image, VkBuffer source_buffer, VkDeviceSize source_offset,
+                       std::span<const VideoCommon::SwizzleParameters> swizzles);
+
 private:
     Scheduler& scheduler;
     StagingBufferPool& staging_buffer_pool;

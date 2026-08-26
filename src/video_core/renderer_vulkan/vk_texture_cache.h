@@ -101,6 +101,21 @@ public:
                                std::span<const VideoCommon::SwizzleParameters>,
                                u32 z_start, u32 z_count);
 
+    [[nodiscard]] bool IsUnifiedMemoryBindable() const noexcept;
+
+    [[nodiscard]] u64 UnifiedMemoryBase() const noexcept;
+
+    [[nodiscard]] u64 UnifiedMemorySize() const noexcept;
+
+    [[nodiscard]] u64 UnifiedMemoryWindowSize() const noexcept;
+
+    [[nodiscard]] bool CanUploadImageDirectly(const VideoCommon::ImageInfo& info) const;
+
+    bool UploadImageDirectly(Image& image, size_t window_index, u64 window_offset,
+                             std::span<const VideoCommon::SwizzleParameters> swizzles);
+
+    [[nodiscard]] u64 CurrentTick() const noexcept;
+
     void InsertUploadMemoryBarrier() {}
 
     void TransitionImageLayout(Image& image);
@@ -588,6 +603,7 @@ struct TextureCacheParams {
     static constexpr bool HAS_DEVICE_MEMORY_INFO = true;
     static constexpr bool IMPLEMENTS_ASYNC_DOWNLOADS = true;
     static constexpr bool HAS_MSAA_DOWNLOADS = true;
+    static constexpr bool USE_UNIFIED_MEMORY = true;
 
     using Runtime = Vulkan::TextureCacheRuntime;
     using Image = Vulkan::Image;

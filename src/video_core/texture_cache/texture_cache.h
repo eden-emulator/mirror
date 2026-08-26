@@ -585,6 +585,10 @@ FramebufferId TextureCache<P>::GetFramebufferId(const RenderTargets& key) {
 template <class P>
 void TextureCache<P>::WriteMemory(DAddr cpu_addr, size_t size) {
     ForEachImageInRegion(cpu_addr, size, [this](ImageId image_id, Image& image) {
+        if (image.direct_upload_used) {
+            image.direct_upload_used = false;
+            image.direct_upload_blocked = true;
+        }
         if (True(image.flags & ImageFlagBits::CpuModified)) {
             return;
         }
@@ -1145,9 +1149,57 @@ void TextureCache<P>::RefreshContents(Image& image, ImageId image_id) {
         QueueAsyncUnswizzle(image, image_id);
         return;
     }
+    if (True(image.flags & ImageFlagBits::AcceleratedUpload) &&
+        TryUploadFromUnifiedMemory(image)) {
+        runtime.InsertUploadMemoryBarrier();
+        return;
+    }
     auto staging = runtime.UploadStagingBuffer(MapSizeBytes(image));
     UploadImageContents(image, staging);
     runtime.InsertUploadMemoryBarrier();
+}
+
+template <class P>
+bool TextureCache<P>::TryUploadFromUnifiedMemory([[maybe_unused]] Image& image) {
+    if constexpr (USE_UNIFIED_MEMORY) {
+        if (image.direct_upload_blocked || image.guest_size_bytes == 0) {
+            return false;
+        }
+        if (!runtime.IsUnifiedMemoryBindable() || !runtime.CanUploadImageDirectly(image.info)) {
+            return false;
+        }
+        const u64 window_size = runtime.UnifiedMemoryWindowSize();
+        if (window_size == 0) {
+            return false;
+        }
+        const u8* const first = gpu_memory->GetSpan(image.gpu_addr, image.guest_size_bytes);
+        if (first == nullptr) {
+            return false;
+        }
+        const u64 phys_offset = static_cast<u64>(first - device_memory.GetPhysicalBase());
+        const u64 unified_base = runtime.UnifiedMemoryBase();
+        if (phys_offset < unified_base) {
+            return false;
+        }
+        const u64 relative = phys_offset - unified_base;
+        const u64 unified_size = runtime.UnifiedMemorySize();
+        if (relative >= unified_size || unified_size - relative < image.guest_size_bytes) {
+            return false;
+        }
+        const u64 local_offset = relative % window_size;
+        if (window_size - local_offset < image.guest_size_bytes) {
+            return false;
+        }
+        const auto swizzles = FullUploadSwizzles(image.info);
+        if (!runtime.UploadImageDirectly(image, static_cast<size_t>(relative / window_size),
+                                         local_offset, FixSmallVectorADL(swizzles))) {
+            return false;
+        }
+        image.direct_upload_used = true;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 template <class P>
