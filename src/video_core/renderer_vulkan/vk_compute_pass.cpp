@@ -962,6 +962,10 @@ bool BlockLinearUnswizzle2DPass::IsSupported(const Device& device,
     if (device.GetStorageBufferAlignment() > Tegra::Texture::GOB_SIZE) {
         return false;
     }
+    if (VideoCore::Surface::GetFormatType(info.format) !=
+        VideoCore::Surface::SurfaceType::ColorTexture) {
+        return false;
+    }
     if (VideoCore::Surface::IsPixelFormatASTC(info.format) && !device.IsOptimalAstcSupported()) {
         return false;
     }
@@ -1220,6 +1224,10 @@ bool BlockLinearUnswizzle3DBufferPass::IsSupported(const Device& device,
         return false;
     }
     if (info.size.depth <= 1) {
+        return false;
+    }
+    if (VideoCore::Surface::GetFormatType(info.format) !=
+        VideoCore::Surface::SurfaceType::ColorTexture) {
         return false;
     }
     if (VideoCore::Surface::IsPixelFormatASTC(info.format)) {
