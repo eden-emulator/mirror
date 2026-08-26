@@ -651,6 +651,17 @@ namespace Vulkan {
         return MemoryCommit(allocator, a, info);
     }
 
+    HostMemoryImport *MemoryAllocator::CreateHostMemoryImport(
+        void *base, size_t size, std::span<AHardwareBuffer *const> hardware_buffers,
+        size_t hardware_buffer_window, size_t hardware_buffer_base) {
+        unified_memory = std::make_unique<HostMemoryImport>(
+            device, base, size, hardware_buffers, hardware_buffer_window, hardware_buffer_base);
+        if (!unified_memory->IsValid()) {
+            unified_memory.reset();
+        }
+        return unified_memory.get();
+    }
+
     MemoryCommit MemoryAllocator::Commit(const vk::Buffer &buffer, MemoryUsage usage) {
         // Allocate memory appropriate for this buffer automatically
         const auto vma_usage = MemoryUsageVma(usage);

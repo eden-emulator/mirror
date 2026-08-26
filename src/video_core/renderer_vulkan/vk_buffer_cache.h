@@ -264,7 +264,7 @@ private:
     std::shared_ptr<QuadStripIndexBuffer> quad_strip_index_buffer;
 
     vk::Buffer null_buffer;
-    std::unique_ptr<HostMemoryImport> unified_memory;
+    HostMemoryImport* unified_memory{};
     boost::container::small_vector<PendingUnifiedCopy, 8> pending_unified_copies;
 
     std::unique_ptr<Uint8Pass> uint8_pass;

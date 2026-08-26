@@ -3157,7 +3157,7 @@ void TextureCacheRuntime::AccelerateImageUpload(
         return bl2d_unswizzle_pass->Unswizzle(image, map, swizzles);
     }
 
-    if (bl3db_unswizzle_pass &&
+    if (bl3db_unswizzle_pass && z_count == 0 &&
         BlockLinearUnswizzle3DBufferPass::IsSupported(device, image.info)) {
         return bl3db_unswizzle_pass->Unswizzle(image, map, swizzles);
     }
@@ -3175,6 +3175,66 @@ void TextureCacheRuntime::AccelerateImageUpload(
     }
 
     ASSERT(false);
+}
+
+bool TextureCacheRuntime::IsUnifiedMemoryBindable() const noexcept {
+    const HostMemoryImport* const import = memory_allocator.GetHostMemoryImport();
+    return import != nullptr && import->IsValid() && import->IsBindable();
+}
+
+u64 TextureCacheRuntime::UnifiedMemoryBase() const noexcept {
+    const HostMemoryImport* const import = memory_allocator.GetHostMemoryImport();
+    if (import == nullptr) {
+        return 0;
+    }
+    return import->GetBaseOffset();
+}
+
+u64 TextureCacheRuntime::UnifiedMemorySize() const noexcept {
+    const HostMemoryImport* const import = memory_allocator.GetHostMemoryImport();
+    if (import == nullptr) {
+        return 0;
+    }
+    return import->GetSize();
+}
+
+u64 TextureCacheRuntime::UnifiedMemoryWindowSize() const noexcept {
+    const HostMemoryImport* const import = memory_allocator.GetHostMemoryImport();
+    if (import == nullptr) {
+        return 0;
+    }
+    return import->GetWindowSize();
+}
+
+bool TextureCacheRuntime::CanUploadImageDirectly(const VideoCommon::ImageInfo& info) const {
+    return bl2d_unswizzle_pass.has_value() &&
+           BlockLinearUnswizzle2DPass::IsSupported(device, info);
+}
+
+bool TextureCacheRuntime::UploadImageDirectly(
+    Image& image, size_t window_index, u64 window_offset,
+    std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    if ((window_offset % device.GetStorageBufferAlignment()) != 0) {
+        return false;
+    }
+    if (image.guest_size_bytes > device.GetMaxStorageBufferRange()) {
+        return false;
+    }
+    const HostMemoryImport* const import = memory_allocator.GetHostMemoryImport();
+    if (import == nullptr || window_index >= import->GetWindowCount()) {
+        return false;
+    }
+    const VkBuffer window_buffer = import->GetWindowBuffer(window_index);
+    if (window_buffer == VK_NULL_HANDLE) {
+        return false;
+    }
+    bl2d_unswizzle_pass->UnswizzleFrom(image, window_buffer,
+                                       static_cast<VkDeviceSize>(window_offset), swizzles);
+    return true;
+}
+
+u64 TextureCacheRuntime::CurrentTick() const noexcept {
+    return scheduler.CurrentTick();
 }
 
 void TextureCacheRuntime::TransitionImageLayout(Image& image) {

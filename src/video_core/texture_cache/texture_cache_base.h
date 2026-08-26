@@ -108,6 +108,7 @@ class TextureCache : public VideoCommon::ChannelSetupCaches<TextureCacheChannelI
     static constexpr bool HAS_DEVICE_MEMORY_INFO = P::HAS_DEVICE_MEMORY_INFO;
     /// True when the API can do asynchronous texture downloads.
     static constexpr bool IMPLEMENTS_ASYNC_DOWNLOADS = P::IMPLEMENTS_ASYNC_DOWNLOADS;
+    static constexpr bool USE_UNIFIED_MEMORY = P::USE_UNIFIED_MEMORY;
 
     static constexpr size_t UNSET_CHANNEL{(std::numeric_limits<size_t>::max)()};
 
@@ -306,6 +307,8 @@ private:
     [[nodiscard]] bool IsDownloadable(const ImageBase& image) const noexcept;
 
     void RefreshContents(Image& image, ImageId image_id);
+
+    bool TryUploadFromUnifiedMemory(Image& image);
 
     /// Upload data from guest to an image
     template <typename StagingBuffer>

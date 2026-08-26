@@ -424,11 +424,8 @@ void BufferCacheRuntime::TryEnableUnifiedMemory(void* base, size_t size,
                                                 std::span<AHardwareBuffer* const> hardware_buffers,
                                                 size_t hardware_buffer_window,
                                                 size_t hardware_buffer_base) {
-    unified_memory = std::make_unique<HostMemoryImport>(
-        device, base, size, hardware_buffers, hardware_buffer_window, hardware_buffer_base);
-    if (!unified_memory->IsValid()) {
-        unified_memory.reset();
-    }
+    unified_memory = memory_allocator.CreateHostMemoryImport(
+        base, size, hardware_buffers, hardware_buffer_window, hardware_buffer_base);
 }
 
 void BufferCacheRuntime::CopyToUnifiedMemory(

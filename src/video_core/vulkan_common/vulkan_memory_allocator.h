@@ -192,6 +192,15 @@ namespace Vulkan {
         /// Commits memory required by the buffer and binds it (for buffers created outside VMA).
         MemoryCommit Commit(const vk::Buffer &buffer, MemoryUsage usage);
 
+        HostMemoryImport *CreateHostMemoryImport(void *base, size_t size,
+                                                 std::span<AHardwareBuffer *const> hardware_buffers,
+                                                 size_t hardware_buffer_window,
+                                                 size_t hardware_buffer_base);
+
+        [[nodiscard]] HostMemoryImport *GetHostMemoryImport() const noexcept {
+            return unified_memory.get();
+        }
+
     private:
         static bool IsAutoUsage(VmaMemoryUsage u) noexcept {
             switch (u) {
@@ -209,6 +218,7 @@ namespace Vulkan {
         const VkPhysicalDeviceMemoryProperties properties; ///< Physical device memory properties.
         VkDeviceSize buffer_image_granularity;            ///< Adjacent buffer/image granularity
         u32 valid_memory_types{~0u};
+        std::unique_ptr<HostMemoryImport> unified_memory;
     };
 
 } // namespace Vulkan
