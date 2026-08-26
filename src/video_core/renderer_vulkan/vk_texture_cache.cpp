@@ -3147,7 +3147,7 @@ void TextureCacheRuntime::AccelerateImageUpload(
     std::span<const VideoCommon::SwizzleParameters> swizzles,
     u32 z_start, u32 z_count) {
 
-    if (IsPixelFormatASTC(image.info.format)) {
+    if (astc_decoder_pass && WillUseAcceleratedAstcDecode(device, image.info)) {
         return astc_decoder_pass->Assemble(image, map, swizzles);
     }
 
