@@ -65,7 +65,9 @@
 #include "common/settings.h"
 
 #ifdef __ANDROID__
+#include <cerrno>
 #include <dlfcn.h>
+#include <sys/ioctl.h>
 #include <android/hardware_buffer.h>
 
 namespace {
@@ -86,6 +88,24 @@ PFN_AHardwareBuffer_getNativeHandle ResolveGetNativeHandle() {
     }
     return reinterpret_cast<PFN_AHardwareBuffer_getNativeHandle>(
         dlsym(lib, "AHardwareBuffer_getNativeHandle"));
+}
+
+struct DmaBufSync {
+    u64 flags;
+};
+
+constexpr u64 DmaBufSyncRead = 1ULL << 0;
+constexpr u64 DmaBufSyncWrite = 1ULL << 1;
+constexpr u64 DmaBufSyncStart = 0ULL << 2;
+constexpr u64 DmaBufSyncEnd = 1ULL << 2;
+
+void SyncDmaBufCpuAccess(int fd, u64 phase) {
+    DmaBufSync sync{.flags = phase | DmaBufSyncRead | DmaBufSyncWrite};
+    while (ioctl(fd, _IOW('b', 0, DmaBufSync), &sync) != 0) {
+        if (errno != EINTR) {
+            return;
+        }
+    }
 }
 
 } // namespace
@@ -646,7 +666,7 @@ public:
         }
         const int probe_fd = handle->data[0];
         bool ok = true;
-        const auto try_map = [&](int prot, off_t offset, const char* what) {
+        const auto try_map = [&](int prot, off_t offset) {
             if (!ok) {
                 return;
             }
@@ -657,10 +677,10 @@ public:
             }
             munmap(ptr, PageAlignment);
         };
-        try_map(PROT_READ | PROT_WRITE, 0, "shared mappings");
-        try_map(PROT_READ | PROT_WRITE, static_cast<off_t>(PageAlignment), "mappings at an offset");
+        try_map(PROT_READ | PROT_WRITE, 0);
+        try_map(PROT_READ | PROT_WRITE, static_cast<off_t>(PageAlignment));
 #ifdef ARCHITECTURE_arm64
-        try_map(PROT_READ | PROT_EXEC, 0, "executable mappings");
+        try_map(PROT_READ | PROT_EXEC, 0);
 #endif
         AHardwareBuffer_release(buffer);
         return ok;
@@ -672,19 +692,14 @@ public:
         if (total_physical <= BaselineFootprint) {
             return 0;
         }
-        const u64 max_map_count = Common::GetMaxMapCount();
-        constexpr u64 ReservedMaps = 24576;
-        if (max_map_count == 0 || max_map_count <= ReservedMaps) {
+        const u64 permissible_maps = Common::GetPermissibleMapCount();
+        if (permissible_maps == 0) {
             return 0;
         }
         u64 budget = (total_physical - BaselineFootprint) / 2;
-        constexpr u64 MapSlotsPerWindow = 4096;
-        const u64 affordable_windows = (max_map_count - ReservedMaps) / MapSlotsPerWindow;
+        constexpr u64 MapSlotsPerWindow = 64;
+        const u64 affordable_windows = permissible_maps / MapSlotsPerWindow;
         budget = (std::min)(budget, affordable_windows * window_size);
-        const u64 available = Common::GetAvailablePhysicalMemory();
-        if (available != 0) {
-            budget = (std::min)(budget, available / 2);
-        }
         budget = (std::min)(budget, static_cast<u64>(backing_size));
         budget = Common::AlignDown(budget, window_size);
         constexpr u64 MinimumBudget = 256ULL << 20;
@@ -790,6 +805,9 @@ public:
         ahb_base = region_base;
         ahb_bytes = region_size;
         committed_backing_size.store(region_size, std::memory_order_relaxed);
+        for (const int window_fd : ahb_fds) {
+            SyncDmaBufCpuAccess(window_fd, DmaBufSyncStart);
+        }
         return true;
     }
 
@@ -960,6 +978,9 @@ private:
         }
 
 #ifdef __ANDROID__
+        for (const int window_fd : ahb_fds) {
+            SyncDmaBufCpuAccess(window_fd, DmaBufSyncEnd);
+        }
         for (AHardwareBuffer* buffer : ahb_windows) {
             AHardwareBuffer_release(buffer);
         }
