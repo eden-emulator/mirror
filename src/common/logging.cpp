@@ -224,7 +224,7 @@ struct ColorConsoleBackend final : public Backend {
             auto const df = GetDirectFormatArgs(entry);
             // more restrictive, because take for example this simple prelude:
             // [  50.872256] Config <Info> common/settings.cpp:142:LogSettings:
-            char buffer[128];
+            char buffer[256];
             auto result = fmt::format_to_n(buffer, sizeof(buffer) - 1, "\x1b{}[{:4d}.{:06d}] {} <{}> {}:{}:{}: ", color_str, df.time_seconds, df.time_fractional, df.class_name, df.level_name, entry.filename, entry.line_num, entry.function, entry.message);
             std::fwrite(buffer, 1, (std::min)(sizeof(buffer) - 1, result.size), stdout);
             std::fwrite(entry.message, 1, entry.message_len, stdout);
@@ -425,14 +425,14 @@ void SetColorConsoleBackendEnabled(bool enabled) {
 
 void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename, unsigned int line_num, const char* function, fmt::string_view format, const fmt::format_args& args) {
     if (logging_instance && logging_instance->filter.CheckMessage(log_class, log_level)) {
+        auto const flush = ::Settings::values.log_flush_line.GetValue();
         char buffer[BUFSIZ];
         auto result = fmt::vformat_to_n(buffer, sizeof(buffer) - 1, format, args);
-        buffer[result.size] = '\0';
-        auto const flush = ::Settings::values.log_flush_line.GetValue();
+        buffer[(std::min)(result.size, sizeof(buffer) - 1)] = '\0';
         logging_instance->ForEachBackend([=](Backend& backend) {
             backend.Write(Entry{
                 .message = buffer,
-                .message_len = (std::min)(sizeof(buffer) - 1, result.size),
+                .message_len = (std::min)(result.size, sizeof(buffer) - 1),
                 .timestamp = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - logging_instance->time_origin),
                 .log_class = log_class,
                 .log_level = log_level,
