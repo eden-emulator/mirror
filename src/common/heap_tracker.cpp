@@ -4,36 +4,17 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fstream>
 #include "common/heap_tracker.h"
 #include "common/logging.h"
+#include "common/memory_detect.h"
 #include "common/assert.h"
 
 namespace Common {
 
-namespace {
-
-s64 GetMaxPermissibleResidentMapCount() {
-    // Default value.
-    s64 value = 65530;
-
-    // Try to read how many mappings we can make.
-    std::ifstream s("/proc/sys/vm/max_map_count");
-    s >> value;
-
-    // Print, for debug.
-    LOG_INFO(HW_Memory, "Current maximum map count: {}", value);
-
-    // Allow 20000 maps for other code and to account for split inaccuracy.
-    return std::max<s64>(value - 20000, 0);
-}
-
-} // namespace
-
 HeapTracker::HeapTracker(Common::HostMemory& buffer)
     : m_buffer(buffer),
       m_has_hardware_buffer_backing(!buffer.BackingHardwareBuffers().empty()),
-      m_max_resident_map_count(GetMaxPermissibleResidentMapCount()) {}
+      m_max_resident_map_count(static_cast<s64>(GetPermissibleMapCount())) {}
 HeapTracker::~HeapTracker() = default;
 
 void HeapTracker::Map(size_t virtual_offset, size_t host_offset, size_t length,
