@@ -351,10 +351,6 @@ public:
         return properties.properties.limits.maxStorageBufferRange;
     }
 
-    VkDeviceSize GetMaxUniformBufferRange() const {
-        return properties.properties.limits.maxUniformBufferRange;
-    }
-
     std::array<u32, 3> GetMaxComputeWorkGroupCount() const {
         const auto& count = properties.properties.limits.maxComputeWorkGroupCount;
         return {count[0], count[1], count[2]};
