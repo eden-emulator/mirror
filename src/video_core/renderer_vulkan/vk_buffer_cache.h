@@ -218,9 +218,6 @@ public:
                (offset % device.GetStorageBufferAlignment()) == 0;
     }
 
-    [[nodiscard]] bool IsUnifiedIndexRange(PrimitiveTopology topology, IndexFormat index_format,
-                                           u64 offset) const;
-
     void BindTextureBuffer(Buffer& buffer, u32 offset, u32 size,
                            VideoCore::Surface::PixelFormat format) {
         guest_descriptor_queue.AddTexelBuffer(buffer.View(offset, size, format),

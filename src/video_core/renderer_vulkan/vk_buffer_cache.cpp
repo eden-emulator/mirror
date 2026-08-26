@@ -727,25 +727,6 @@ void BufferCacheRuntime::ClearBuffer(VkBuffer dest_buffer, u32 offset, size_t si
     });
 }
 
-bool BufferCacheRuntime::IsUnifiedIndexRange(PrimitiveTopology topology, IndexFormat index_format,
-                                             u64 offset) const {
-    const VkIndexType vk_index_type = MaxwellToVK::IndexFormat(index_format);
-    const bool needs_uint8_pass =
-        vk_index_type == VK_INDEX_TYPE_UINT8_EXT && !device.IsExtIndexTypeUint8Supported();
-    if (topology == PrimitiveTopology::Quads || topology == PrimitiveTopology::QuadStrip ||
-        needs_uint8_pass) {
-        return (offset % device.GetStorageBufferAlignment()) == 0;
-    }
-    switch (vk_index_type) {
-    case VK_INDEX_TYPE_UINT32:
-        return (offset % 4) == 0;
-    case VK_INDEX_TYPE_UINT16:
-        return (offset % 2) == 0;
-    default:
-        return true;
-    }
-}
-
 void BufferCacheRuntime::BindIndexBuffer(PrimitiveTopology topology, IndexFormat index_format,
                                          u32 base_vertex, u32 num_indices, VkBuffer buffer,
                                          u32 offset, [[maybe_unused]] u32 size) {
@@ -821,11 +802,6 @@ void BufferCacheRuntime::BindVertexBuffer(u32 index, VkBuffer buffer, u32 offset
 void BufferCacheRuntime::BindVertexBuffers(VideoCommon::HostBindings<Buffer>& bindings) {
     boost::container::static_vector<VkBuffer, VideoCommon::NUM_VERTEX_BUFFERS> buffer_handles(bindings.buffers.size());
     for (u32 i = 0; i < bindings.buffers.size(); ++i) {
-        if (i < bindings.unified_windows.size() &&
-            bindings.unified_windows[i] != VideoCommon::NO_UNIFIED_WINDOW) {
-            buffer_handles[i] = unified_memory->GetWindowBuffer(bindings.unified_windows[i]);
-            continue;
-        }
         auto handle = bindings.buffers[i]->Handle();
         if (handle == VK_NULL_HANDLE) {
             bindings.offsets[i] = 0;

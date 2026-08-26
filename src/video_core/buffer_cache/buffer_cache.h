@@ -821,20 +821,6 @@ void BufferCache<P>::BindHostIndexBuffer() {
     const u32 size = channel_state->index_buffer.size;
     const auto& draw_state = maxwell3d->draw_manager.draw_state;
     if (draw_state.inline_index_draw_indexes.empty()) {
-        if constexpr (USE_UNIFIED_MEMORY && !HAS_FULL_INDEX_AND_PRIMITIVE_SUPPORT) {
-            const auto window =
-                TryResolveUnifiedRange(channel_state->index_buffer.device_addr, size);
-            if (window && runtime.IsUnifiedIndexRange(draw_state.topology,
-                                                     draw_state.index_buffer.format,
-                                                     window->offset)) {
-                runtime.BindIndexBuffer(draw_state.topology, draw_state.index_buffer.format,
-                                        draw_state.index_buffer.first,
-                                        draw_state.index_buffer.count,
-                                        runtime.UnifiedWindowBuffer(window->window),
-                                        static_cast<u32>(window->offset), size);
-                return;
-            }
-        }
         SynchronizeBuffer(buffer, channel_state->index_buffer.device_addr, size);
     } else {
         if constexpr (USE_MEMORY_MAPS_FOR_UPLOADS) {
@@ -888,7 +874,6 @@ void BufferCache<P>::UpdateVertexBufferSlot(u32 index, const Binding& binding) {
         enabled_vertex_buffers_mask |= (1u << index);
     } else {
         enabled_vertex_buffers_mask &= ~(1u << index);
-        unified_vertex_buffers_mask &= ~(1u << index);
     }
 }
 
@@ -921,39 +906,15 @@ void BufferCache<P>::BindHostVertexBuffers() {
             const Binding& binding = VertexBufferSlot(index);
             Buffer& buffer = slot_buffers[binding.buffer_id];
             TouchBuffer(buffer, binding.buffer_id);
-            bool needs_bind = flags[Dirty::VertexBuffer0 + index];
-            u32 unified_window = NO_UNIFIED_WINDOW;
-            u64 unified_offset = 0;
-            if constexpr (USE_UNIFIED_MEMORY) {
-                const bool was_unified = ((unified_vertex_buffers_mask >> index) & 1) != 0;
-                if (needs_bind || was_unified) {
-                    const auto window = TryResolveUnifiedRange(binding.device_addr, binding.size);
-                    if (window) {
-                        unified_window = static_cast<u32>(window->window);
-                        unified_offset = window->offset;
-                    }
-                }
-                if (was_unified && unified_window == NO_UNIFIED_WINDOW) {
-                    needs_bind = true;
-                }
-            }
-            if (unified_window == NO_UNIFIED_WINDOW) {
-                SynchronizeBuffer(buffer, binding.device_addr, binding.size);
-            }
-            if (!needs_bind) {
+            SynchronizeBuffer(buffer, binding.device_addr, binding.size);
+            if (!flags[Dirty::VertexBuffer0 + index]) {
                 flush_bindings();
                 continue;
             }
             flags[Dirty::VertexBuffer0 + index] = false;
             const u32 stride = maxwell3d->regs.vertex_streams[index].stride;
-            u32 offset = static_cast<u32>(unified_offset);
-            if (unified_window == NO_UNIFIED_WINDOW) {
-                offset = buffer.Offset(binding.device_addr);
-                buffer.MarkUsage(offset, binding.size);
-                unified_vertex_buffers_mask &= ~(1u << index);
-            } else {
-                unified_vertex_buffers_mask |= 1u << index;
-            }
+            const u32 offset = buffer.Offset(binding.device_addr);
+            buffer.MarkUsage(offset, binding.size);
             if (!bindings.buffers.empty() && index != last_index + 1) {
                 flush_bindings();
             }
@@ -964,7 +925,6 @@ void BufferCache<P>::BindHostVertexBuffers() {
             bindings.offsets.push_back(offset);
             bindings.sizes.push_back(binding.size);
             bindings.strides.push_back(stride);
-            bindings.unified_windows.push_back(unified_window);
             last_index = index;
         }
         flush_bindings();
@@ -972,31 +932,12 @@ void BufferCache<P>::BindHostVertexBuffers() {
         HostBindings<typename P::Buffer> host_bindings;
         bool any_valid{false};
         auto& flags = maxwell3d->dirty.flags;
-        std::array<u32, NUM_VERTEX_BUFFERS> unified_windows;
-        std::array<u64, NUM_VERTEX_BUFFERS> unified_offsets{};
-        unified_windows.fill(NO_UNIFIED_WINDOW);
         for (u32 index = 0; index < NUM_VERTEX_BUFFERS; ++index) {
             const Binding& binding = channel_state->vertex_buffers[index];
             Buffer& buffer = slot_buffers[binding.buffer_id];
             TouchBuffer(buffer, binding.buffer_id);
-            bool needs_bind = flags[Dirty::VertexBuffer0 + index];
-            if constexpr (USE_UNIFIED_MEMORY) {
-                const bool was_unified = ((unified_vertex_buffers_mask >> index) & 1) != 0;
-                if (needs_bind || was_unified) {
-                    const auto window = TryResolveUnifiedRange(binding.device_addr, binding.size);
-                    if (window) {
-                        unified_windows[index] = static_cast<u32>(window->window);
-                        unified_offsets[index] = window->offset;
-                    }
-                }
-                if (was_unified && unified_windows[index] == NO_UNIFIED_WINDOW) {
-                    needs_bind = true;
-                }
-            }
-            if (unified_windows[index] == NO_UNIFIED_WINDOW) {
-                SynchronizeBuffer(buffer, binding.device_addr, binding.size);
-            }
-            if (!needs_bind) {
+            SynchronizeBuffer(buffer, binding.device_addr, binding.size);
+            if (!flags[Dirty::VertexBuffer0 + index]) {
                 continue;
             }
             flags[Dirty::VertexBuffer0 + index] = false;
@@ -1015,20 +956,13 @@ void BufferCache<P>::BindHostVertexBuffers() {
                 Buffer& buffer = slot_buffers[binding.buffer_id];
 
                 const u32 stride = maxwell3d->regs.vertex_streams[index].stride;
-                u32 offset = static_cast<u32>(unified_offsets[index]);
-                if (unified_windows[index] == NO_UNIFIED_WINDOW) {
-                    offset = buffer.Offset(binding.device_addr);
-                    buffer.MarkUsage(offset, binding.size);
-                    unified_vertex_buffers_mask &= ~(1u << index);
-                } else {
-                    unified_vertex_buffers_mask |= 1u << index;
-                }
+                const u32 offset = buffer.Offset(binding.device_addr);
+                buffer.MarkUsage(offset, binding.size);
 
                 host_bindings.buffers.push_back(&buffer);
                 host_bindings.offsets.push_back(offset);
                 host_bindings.sizes.push_back(binding.size);
                 host_bindings.strides.push_back(stride);
-                host_bindings.unified_windows.push_back(unified_windows[index]);
             }
             runtime.BindVertexBuffers(host_bindings);
         }
