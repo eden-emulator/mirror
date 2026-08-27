@@ -404,6 +404,8 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
             device.IsWorkgroupMemoryExplicitLayout8BitAccessSupported(),
         .support_workgroup_layout_16bit_access =
             device.IsWorkgroupMemoryExplicitLayout16BitAccessSupported(),
+        .support_shader_quad_control = device.IsKhrShaderQuadControlSupported(),
+        .support_quad_shuffles = device.IsSubgroupFeatureSupported(VK_SUBGROUP_FEATURE_QUAD_BIT),
         .support_vote = device.IsSubgroupFeatureSupported(VK_SUBGROUP_FEATURE_VOTE_BIT),
         .supported_subgroup_stages = supported_subgroup_stages,
         .support_viewport_index_layer_non_geometry =

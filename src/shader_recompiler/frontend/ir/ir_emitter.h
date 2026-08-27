@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -394,6 +394,8 @@ public:
                                   const IR::U32& seg_mask);
     [[nodiscard]] U32 ShuffleButterfly(const IR::U32& value, const IR::U32& index,
                                        const IR::U32& clamp, const IR::U32& seg_mask);
+    [[nodiscard]] U32 QuadBroadcast(const IR::U32& value, const IR::U32& lane);
+    [[nodiscard]] U32 QuadSwap(const IR::U32& value, const IR::U32& direction);
     [[nodiscard]] F32 FSwizzleAdd(const F32& a, const F32& b, const U32& swizzle,
                                   FpControl control = {});
 

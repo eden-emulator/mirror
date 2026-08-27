@@ -260,6 +260,21 @@ Id EmitShuffleButterfly(EmitContext& ctx, IR::Inst* inst, Id value, Id index, Id
     return SelectValue(ctx, in_range, value, src_thread_id);
 }
 
+Id EmitQuadBroadcast(EmitContext& ctx, Id value, Id lane) {
+    if (ctx.profile.support_quad_shuffles) {
+        return ctx.OpGroupNonUniformQuadBroadcast(ctx.U32[1], SubgroupScope(ctx), value, lane);
+    }
+    const Id base{ctx.OpBitwiseAnd(ctx.U32[1], GetThreadId(ctx), ctx.Const(~3u))};
+    const Id local_lane{ctx.OpBitwiseAnd(ctx.U32[1], lane, ctx.Const(3u))};
+    const Id src_thread_id{ctx.OpBitwiseOr(ctx.U32[1], base, local_lane)};
+    return ctx.OpGroupNonUniformShuffle(ctx.U32[1], SubgroupScope(ctx), value, src_thread_id);
+}
+
+Id EmitQuadSwap(EmitContext& ctx, Id value, Id direction) {
+    const Id xor_mask{ctx.OpIAdd(ctx.U32[1], direction, ctx.Const(1u))};
+    return ctx.OpGroupNonUniformShuffleXor(ctx.U32[1], SubgroupScope(ctx), value, xor_mask);
+}
+
 Id EmitFSwizzleAdd(EmitContext& ctx, Id op_a, Id op_b, Id swizzle) {
     const Id three{ctx.Const(3U)};
     Id mask{GetThreadId(ctx)};

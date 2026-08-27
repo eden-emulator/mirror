@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -2098,6 +2098,14 @@ U32 IREmitter::ShuffleDown(const IR::U32& value, const IR::U32& index, const IR:
 U32 IREmitter::ShuffleButterfly(const IR::U32& value, const IR::U32& index, const IR::U32& clamp,
                                 const IR::U32& seg_mask) {
     return Inst<U32>(Opcode::ShuffleButterfly, value, index, clamp, seg_mask);
+}
+
+U32 IREmitter::QuadBroadcast(const IR::U32& value, const IR::U32& lane) {
+    return Inst<U32>(Opcode::QuadBroadcast, value, lane);
+}
+
+U32 IREmitter::QuadSwap(const IR::U32& value, const IR::U32& direction) {
+    return Inst<U32>(Opcode::QuadSwap, value, direction);
 }
 
 F32 IREmitter::FSwizzleAdd(const F32& a, const F32& b, const U32& swizzle, FpControl control) {

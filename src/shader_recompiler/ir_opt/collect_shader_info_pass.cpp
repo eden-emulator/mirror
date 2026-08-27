@@ -498,6 +498,10 @@ void VisitUsages(Info& info, IR::Inst& inst) {
     case IR::Opcode::ShuffleButterfly:
         info.uses_subgroup_shuffles = true;
         break;
+    case IR::Opcode::QuadBroadcast:
+    case IR::Opcode::QuadSwap:
+        info.uses_quad_shuffles = true;
+        break;
     case IR::Opcode::GetCbufU8:
     case IR::Opcode::GetCbufS8:
     case IR::Opcode::GetCbufU16:

@@ -322,6 +322,11 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         if (ctx.runtime_info.force_early_z) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::EarlyFragmentTests);
         }
+        if (ctx.profile.support_shader_quad_control && program.info.uses_quad_shuffles) {
+            ctx.AddExtension("SPV_KHR_quad_control");
+            ctx.AddCapability(spv::Capability::QuadControlKHR);
+            ctx.AddExecutionMode(main, spv::ExecutionMode::RequireFullQuadsKHR);
+        }
         break;
     default:
         throw NotImplementedException("Stage {}", program.stage);
@@ -442,6 +447,12 @@ void SetupCapabilities(const Profile& profile, const Info& info, EmitContext& ct
             // vote ops are only used when not taking the long path
             ctx.AddCapability(spv::Capability::GroupNonUniformVote);
         }
+    }
+    if (info.uses_quad_shuffles) {
+        if (profile.support_quad_shuffles) {
+            ctx.AddCapability(spv::Capability::GroupNonUniformQuad);
+        }
+        ctx.AddCapability(spv::Capability::GroupNonUniformShuffle);
     }
     if (info.uses_int64_bit_atomics && profile.support_int64_atomics) {
         ctx.AddCapability(spv::Capability::Int64Atomics);

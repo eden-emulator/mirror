@@ -57,12 +57,12 @@ static constexpr Type F64x2{Type::F64x2};
 static constexpr Type F64x3{Type::F64x3};
 static constexpr Type F64x4{Type::F64x4};
 
-extern OpcodeMeta META_TABLE[532];
+extern OpcodeMeta META_TABLE[534];
 constexpr size_t CalculateNumArgsOf(Opcode op) noexcept {
     const auto& arg_types = META_TABLE[size_t(op)].arg_types;
     return size_t(std::distance(arg_types.begin(), std::ranges::find(arg_types, Type::Void)));
 }
-extern u8 NUM_ARGS[532];
+extern u8 NUM_ARGS[534];
 } // namespace Detail
 
 /// Get return type of an opcode
