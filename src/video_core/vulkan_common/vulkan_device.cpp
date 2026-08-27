@@ -1525,11 +1525,7 @@ u64 Device::GetDeviceMemoryUsage() const {
     for (const size_t heap : valid_heap_memory) {
         result += budget.heapUsage[heap];
     }
-    const u64 committed_backing = Common::GetCommittedBackingSize();
-    if (result <= committed_backing) {
-        return result;
-    }
-    return result - committed_backing;
+    return result;
 }
 
 void Device::CollectPhysicalMemoryInfo() {
@@ -1580,7 +1576,6 @@ void Device::CollectPhysicalMemoryInfo() {
         LOG_INFO(Render_Vulkan, "Discounting {} MiB of guest memory committed by the host",
                  committed_backing >> 20);
         local_memory -= (std::min)(local_memory, committed_backing);
-        device_access_memory -= (std::min)(device_access_memory, committed_backing);
     }
     if (is_integrated) {
         const s64 available_memory = static_cast<s64>(device_access_memory - device_initial_usage);
@@ -1596,6 +1591,7 @@ void Device::CollectPhysicalMemoryInfo() {
             device_access_memory = std::min<u64>(device_access_memory, normal_memory + scaler_memory);
         }
     }
+    device_access_memory -= (std::min)(device_access_memory, committed_backing);
 }
 
 void Device::CollectToolingInfo() {
