@@ -700,7 +700,11 @@ public:
         constexpr u64 MapSlotsPerWindow = 64;
         const u64 affordable_windows = permissible_maps / MapSlotsPerWindow;
         budget = (std::min)(budget, affordable_windows * window_size);
-        budget = (std::min)(budget, static_cast<u64>(backing_size) / 2);
+        const u64 available = Common::GetAvailablePhysicalMemory();
+        if (available != 0) {
+            budget = (std::min)(budget, available / 2);
+        }
+        budget = (std::min)(budget, static_cast<u64>(backing_size));
         budget = Common::AlignDown(budget, window_size);
         constexpr u64 MinimumBudget = 256ULL << 20;
         if (budget < MinimumBudget) {

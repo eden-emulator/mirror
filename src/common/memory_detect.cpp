@@ -22,6 +22,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include "common/memory_detect.h"
 
@@ -95,6 +96,41 @@ u64 GetPermissibleMapCount() {
         return 0;
     }
     return count - ReservedMaps;
+}
+
+u64 GetAvailablePhysicalMemory() {
+#ifdef _WIN32
+    MEMORYSTATUSEX memorystatus;
+    memorystatus.dwLength = sizeof(memorystatus);
+    if (GlobalMemoryStatusEx(&memorystatus) == 0) {
+        return 0;
+    }
+    return memorystatus.ullAvailPhys;
+#elif defined(__linux__)
+    static constexpr char AvailableKey[] = "MemAvailable:";
+    if (std::FILE* const file = std::fopen("/proc/meminfo", "re")) {
+        char line[256];
+        u64 available = 0;
+        while (std::fgets(line, sizeof(line), file) != nullptr) {
+            if (std::strncmp(line, AvailableKey, sizeof(AvailableKey) - 1) != 0) {
+                continue;
+            }
+            available = std::strtoull(line + sizeof(AvailableKey) - 1, nullptr, 10) * 1024;
+            break;
+        }
+        std::fclose(file);
+        if (available != 0) {
+            return available;
+        }
+    }
+    struct sysinfo meminfo;
+    if (sysinfo(&meminfo) != 0) {
+        return 0;
+    }
+    return static_cast<u64>(meminfo.freeram) * static_cast<u64>(meminfo.mem_unit);
+#else
+    return 0;
+#endif
 }
 
 } // namespace Common

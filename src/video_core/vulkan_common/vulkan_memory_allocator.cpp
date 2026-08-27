@@ -490,13 +490,29 @@ namespace Vulkan {
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
         const bool want_address = device.IsBufferDeviceAddressSupported();
+        VkBufferUsageFlags minimal_usage = TransferUsage | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
         if (want_address) {
             shader_usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+            minimal_usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
         }
+
+        const auto reset_windows = [&] {
+            for (Window &window : windows) {
+                if (window.buffer != VK_NULL_HANDLE) {
+                    logical.DestroyBufferRaw(window.buffer);
+                }
+            }
+            windows.clear();
+            imported_size = 0;
+        };
 
         bindable = import_all(shader_usage, want_address);
         if (!bindable) {
-            imported_size = 0;
+            reset_windows();
+            bindable = import_all(minimal_usage, want_address);
+        }
+        if (!bindable) {
+            reset_windows();
             import_all(TransferUsage, false);
         }
         if (windows.empty()) {

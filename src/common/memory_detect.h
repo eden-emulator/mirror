@@ -23,4 +23,6 @@ struct MemoryInfo {
 
 [[nodiscard]] u64 GetPermissibleMapCount();
 
+[[nodiscard]] u64 GetAvailablePhysicalMemory();
+
 } // namespace Common
