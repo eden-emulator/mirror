@@ -119,13 +119,16 @@ void TextureCache<P>::RunGarbageCollector() {
     bool aggressive_mode = false;
     u64 ticks_to_destroy = 0;
     size_t num_iterations = 0;
+    size_t num_downloads = 0;
     const auto Configure = [&](bool allow_aggressive) {
         high_priority_mode = total_used_memory >= expected_memory;
         aggressive_mode = allow_aggressive && total_used_memory >= critical_memory;
         ticks_to_destroy = aggressive_mode ? 10ULL : high_priority_mode ? 25ULL : 50ULL;
         num_iterations = aggressive_mode ? 40 : (high_priority_mode ? 20 : 10);
+        num_downloads = MAX_GC_DOWNLOADS_PER_PASS;
     };
-    const auto Cleanup = [this, &num_iterations, &high_priority_mode, &aggressive_mode](ImageId image_id) {
+    const auto Cleanup = [this, &num_iterations, &num_downloads, &high_priority_mode,
+                          &aggressive_mode](ImageId image_id) {
         if (num_iterations == 0) {
             return true;
         }
@@ -139,6 +142,10 @@ void TextureCache<P>::RunGarbageCollector() {
             return false;
         }
         if (must_download) {
+            if (num_downloads == 0) {
+                return false;
+            }
+            --num_downloads;
             auto map = runtime.DownloadStagingBuffer(image.unswizzled_size_bytes);
             const auto copies = FixSmallVectorADL(FullDownloadCopies(image.info));
             image.DownloadMemory(map, copies);
@@ -585,9 +592,14 @@ FramebufferId TextureCache<P>::GetFramebufferId(const RenderTargets& key) {
 template <class P>
 void TextureCache<P>::WriteMemory(DAddr cpu_addr, size_t size) {
     ForEachImageInRegion(cpu_addr, size, [this](ImageId image_id, Image& image) {
-        if (image.direct_upload_used) {
-            image.direct_upload_used = false;
-            image.direct_upload_blocked = true;
+        if constexpr (USE_UNIFIED_MEMORY) {
+            if (image.direct_upload_tick != 0) {
+                const u64 upload_tick = image.direct_upload_tick;
+                image.direct_upload_tick = 0;
+                if (!runtime.IsDirectUploadRetired(upload_tick)) {
+                    image.direct_upload_blocked = true;
+                }
+            }
         }
         if (True(image.flags & ImageFlagBits::CpuModified)) {
             return;
@@ -1195,7 +1207,7 @@ bool TextureCache<P>::TryUploadFromUnifiedMemory([[maybe_unused]] Image& image) 
                                          local_offset, FixSmallVectorADL(swizzles))) {
             return false;
         }
-        image.direct_upload_used = true;
+        image.direct_upload_tick = runtime.CurrentTick();
         return true;
     } else {
         return false;

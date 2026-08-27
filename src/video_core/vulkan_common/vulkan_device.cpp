@@ -1525,7 +1525,11 @@ u64 Device::GetDeviceMemoryUsage() const {
     for (const size_t heap : valid_heap_memory) {
         result += budget.heapUsage[heap];
     }
-    return result;
+    const u64 committed_backing = Common::GetCommittedBackingSize();
+    if (result <= committed_backing) {
+        return result;
+    }
+    return result - committed_backing;
 }
 
 void Device::CollectPhysicalMemoryInfo() {

@@ -129,6 +129,10 @@ public:
         return master_semaphore->IsFree(tick);
     }
 
+    void RefreshTick() {
+        master_semaphore->Refresh();
+    }
+
     /// Waits for the given GPU tick, optionally pacing frames.
     void Wait(u64 tick, double target_fps = 0.0) {
         if (tick > 0) {

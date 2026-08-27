@@ -121,6 +121,7 @@ class TextureCache : public VideoCommon::ChannelSetupCaches<TextureCacheChannelI
     static constexpr s64 DEFAULT_EXPECTED_MEMORY = 1_GiB + 125_MiB;
     static constexpr s64 DEFAULT_CRITICAL_MEMORY = 1_GiB + 625_MiB;
     static constexpr size_t GC_EMERGENCY_COUNTS = 2;
+    static constexpr size_t MAX_GC_DOWNLOADS_PER_PASS = 4;
 
     using Runtime = typename P::Runtime;
     using Image = typename P::Image;
