@@ -95,7 +95,7 @@ struct ImageBase {
     u32 scale_rating = 0;
     u64 scale_tick = 0;
     bool has_scaled = false;
-    bool direct_upload_used = false;
+    u64 direct_upload_tick = 0;
     bool direct_upload_blocked = false;
 
     size_t channel = 0;

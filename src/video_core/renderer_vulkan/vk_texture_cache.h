@@ -116,6 +116,8 @@ public:
 
     [[nodiscard]] u64 CurrentTick() const noexcept;
 
+    [[nodiscard]] bool IsDirectUploadRetired(u64 tick);
+
     void InsertUploadMemoryBarrier() {}
 
     void TransitionImageLayout(Image& image);

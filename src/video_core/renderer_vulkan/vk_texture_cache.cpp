@@ -3235,6 +3235,14 @@ u64 TextureCacheRuntime::CurrentTick() const noexcept {
     return scheduler.CurrentTick();
 }
 
+bool TextureCacheRuntime::IsDirectUploadRetired(u64 tick) {
+    if (scheduler.IsFree(tick)) {
+        return true;
+    }
+    scheduler.RefreshTick();
+    return scheduler.IsFree(tick);
+}
+
 void TextureCacheRuntime::TransitionImageLayout(Image& image) {
     if (!image.ExchangeInitialization()) {
         VkImageMemoryBarrier barrier{
