@@ -13,6 +13,7 @@
 
 #include "video_core/renderer_vulkan/vk_texture_cache.h"
 
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "common/div_ceil.h"
@@ -992,6 +993,31 @@ void BlockLinearUnswizzle2DPass::UnswizzleFrom(
     const u32 layers = image.info.resources.layers;
     const VkImageAspectFlags aspect = image.AspectMask();
 
+    const VkDeviceSize output_alignment =
+        (std::max)(device.GetStorageBufferAlignment(), VkDeviceSize{16});
+    VkDeviceSize total_output = 0;
+    for (const VideoCommon::SwizzleParameters& sw : swizzles) {
+        const auto params =
+            VideoCommon::Accelerated::MakeBlockLinearSwizzle2DParams(sw, image.info);
+        const VkDeviceSize level_size = static_cast<VkDeviceSize>(sw.num_tiles.width) *
+                                        sw.num_tiles.height * layers *
+                                        (1ULL << params.bytes_per_block_log2);
+        if (level_size == 0) {
+            continue;
+        }
+        total_output = Common::AlignUp(total_output, output_alignment) + level_size;
+    }
+    if (total_output == 0) {
+        return;
+    }
+    const StagingBufferRef output =
+        staging_buffer_pool.Request(static_cast<size_t>(total_output), MemoryUsage::DeviceLocal);
+    const VkBuffer out_buffer = output.buffer;
+    if (out_buffer == VK_NULL_HANDLE) {
+        return;
+    }
+    VkDeviceSize level_offset = 0;
+
     scheduler.RequestOutsideRenderPassOperationContext();
 
     VkAccessFlags pre_access = VK_ACCESS_NONE;
@@ -1040,8 +1066,9 @@ void BlockLinearUnswizzle2DPass::UnswizzleFrom(
         const u32 texel_width = (std::max)(1u, image.info.size.width >> level);
         const u32 texel_height = (std::max)(1u, image.info.size.height >> level);
 
-        const StagingBufferRef output =
-            staging_buffer_pool.Request(static_cast<size_t>(output_size), MemoryUsage::DeviceLocal);
+        level_offset = Common::AlignUp(level_offset, output_alignment);
+        const VkDeviceSize out_offset = output.offset + level_offset;
+        level_offset += output_size;
 
         BlockLinearUnswizzle2DPushConstants pc{};
         pc.dim = {width, height, layers};
@@ -1056,22 +1083,17 @@ void BlockLinearUnswizzle2DPass::UnswizzleFrom(
         compute_pass_descriptor_queue.Acquire(scheduler, 2);
         compute_pass_descriptor_queue.AddBuffer(source_buffer, sw.buffer_offset + source_offset,
                                                 image.guest_size_bytes - sw.buffer_offset);
-        compute_pass_descriptor_queue.AddBuffer(output.buffer, output.offset, output_size);
+        compute_pass_descriptor_queue.AddBuffer(out_buffer, out_offset, output_size);
 
         const void* descriptor_data = compute_pass_descriptor_queue.UpdateData();
         const VkDescriptorSet set = descriptor_allocator.Commit();
 
         const u32 gx = Common::DivCeil(width, 16u);
         const u32 gy = Common::DivCeil(height, 8u);
-        const VkBuffer out_buffer = output.buffer;
-        const VkDeviceSize out_offset = output.offset;
 
         scheduler.Record([this, set, descriptor_data, pc, gx, gy, layers, output_size, out_buffer,
                           out_offset, dst_image, aspect, texel_width, texel_height,
                           level](vk::CommandBuffer cmdbuf) {
-            if (out_buffer == VK_NULL_HANDLE) {
-                return;
-            }
             device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
             cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
             cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
