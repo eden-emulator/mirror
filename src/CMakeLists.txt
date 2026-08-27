@@ -147,6 +147,10 @@ if (MSVC AND NOT CXX_CLANG)
     set(CMAKE_EXE_LINKER_FLAGS_DEBUG   "/DEBUG /MANIFEST:NO" CACHE STRING "" FORCE)
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/DEBUG /MANIFEST:NO /INCREMENTAL:NO /OPT:REF,ICF" CACHE STRING "" FORCE)
 else()
+    # according to sam, should fix any issues we have with LTO builds
+    # having bugs that non-LTO builds don't have
+    add_compile_options(
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fno-strict-aliasing>)
     if (NOT MSVC)
         add_compile_options(
             $<$<COMPILE_LANGUAGE:C,CXX>:-fwrapv>
