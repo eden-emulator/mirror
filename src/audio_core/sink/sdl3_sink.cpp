@@ -19,6 +19,23 @@
 namespace AudioCore::Sink {
 
 namespace {
+
+[[nodiscard]] bool InitializeAudio() {
+    if (!SDL_WasInit(SDL_INIT_AUDIO)) {
+        // See https://github.com/PCSX2/pcsx2/pull/12312
+        // "SDL and cubeb backends previously resulted in different names for the output which
+        // caused them be identified as different applications by the OS."
+        //
+        // Keep in sync with cubeb_sink.cpp name.
+        SDL_SetHint("SDL_AUDIO_DEVICE_APP_NAME", "yuzu Latency Getter");
+        if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
+            LOG_CRITICAL(Audio_Sink, "SDL_InitSubSystem audio failed: {}", SDL_GetError());
+            return false;
+        }
+    }
+    return true;
+}
+
 SDL_AudioDeviceID FindAudioDeviceByName(const std::string& device_name, bool capture) {
     int device_count = 0;
     SDL_AudioDeviceID* devices = capture ? SDL_GetAudioRecordingDevices(&device_count)
@@ -204,20 +221,14 @@ private:
 };
 
 SDLSink::SDLSink(std::string_view target_device_name) {
-    if (!SDL_WasInit(SDL_INIT_AUDIO)) {
-        if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
-            LOG_CRITICAL(Audio_Sink, "SDL_InitSubSystem audio failed: {}", SDL_GetError());
-            return;
+    if (InitializeAudio()) {
+        if (target_device_name != auto_device_name && !target_device_name.empty()) {
+            output_device = target_device_name;
+        } else {
+            output_device.clear();
         }
+        device_channels = 2;
     }
-
-    if (target_device_name != auto_device_name && !target_device_name.empty()) {
-        output_device = target_device_name;
-    } else {
-        output_device.clear();
-    }
-
-    device_channels = 2;
 }
 
 SDLSink::~SDLSink() = default;
@@ -265,15 +276,10 @@ void SDLSink::SetSystemVolume(f32 volume) {
 }
 
 std::vector<std::string> ListSDLSinkDevices(bool capture) {
+    if (!InitializeAudio())
+        return {}; //no devices
+
     std::vector<std::string> device_list;
-
-    if (!SDL_WasInit(SDL_INIT_AUDIO)) {
-        if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
-            LOG_CRITICAL(Audio_Sink, "SDL_InitSubSystem audio failed: {}", SDL_GetError());
-            return {};
-        }
-    }
-
     int device_count = 0;
     SDL_AudioDeviceID* devices =
         capture ? SDL_GetAudioRecordingDevices(&device_count)
@@ -304,13 +310,8 @@ bool IsSDLSuitable() {
     return false;
 #else
     // Check SDL can init
-    if (!SDL_WasInit(SDL_INIT_AUDIO)) {
-        if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
-            LOG_ERROR(Audio_Sink, "SDL failed to init, it is not suitable. Error: {}",
-                      SDL_GetError());
-            return false;
-        }
-    }
+    if (!InitializeAudio()!
+        return false;
 
     // We can set any latency frequency we want with SDL, so no need to check that.
 
