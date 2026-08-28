@@ -26,10 +26,12 @@
 EmuWindow_SDL3::EmuWindow_SDL3(InputCommon::InputSubsystem* input_subsystem_, Core::System& system_)
     : input_subsystem{input_subsystem_}, system{system_} {
     input_subsystem->Initialize();
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD)) {
-        LOG_CRITICAL(Frontend, "Failed to initialize SDL3: {}, Exiting...", SDL_GetError());
-        exit(1);
-    }
+    if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
+        LOG_CRITICAL(Frontend, "SDL_INIT_VIDEO: {}", SDL_GetError());
+    if (!SDL_InitSubSystem(SDL_INIT_JOYSTICK))
+        LOG_CRITICAL(Frontend, "SDL_INIT_JOYSTICK: {}", SDL_GetError());
+    if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD))
+        LOG_CRITICAL(Frontend, "SDL_INIT_GAMEPAD: {}", SDL_GetError());
     titlebar_timer = SDL_AddTimer(2000, [](void *userdata, SDL_TimerID, Uint32) -> Uint32 {
         auto* this_ = (EmuWindow_SDL3*)userdata;
         auto const results = this_->system.GetAndResetPerfStats();

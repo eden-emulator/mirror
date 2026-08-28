@@ -115,9 +115,19 @@ void RemoveUnavailableLayers(const vk::InstanceDispatch& dld, std::vector<const 
 }
 } // Anonymous namespace
 
+#ifdef __OPENORBIS__
+extern "C" {
+    extern PFN_vkVoidFunction VKAPI_CALL vk_icdGetInstanceProcAddr(VkInstance instance, const char *pName);
+}
+#endif
+
 vk::Instance CreateInstance(const Common::DynamicLibrary& library, vk::InstanceDispatch& dld,
                             u32 required_version, Core::Frontend::WindowSystemType window_type,
                             bool enable_validation) {
+    // ps4 doesn't have dlopen() or equivalent, Vulkan is directly shipped with the emu
+#ifdef __OPENORBIS__
+    dld.vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)vk_icdGetInstanceProcAddr;
+#else
     if (!library.IsOpen()) {
         LOG_ERROR(Render_Vulkan, "Vulkan library not available");
         throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
@@ -126,6 +136,7 @@ vk::Instance CreateInstance(const Common::DynamicLibrary& library, vk::InstanceD
         LOG_ERROR(Render_Vulkan, "vkGetInstanceProcAddr not present in Vulkan");
         throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
     }
+#endif
     if (!vk::Load(dld)) {
         LOG_ERROR(Render_Vulkan, "Failed to load Vulkan function pointers");
         throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
