@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -48,6 +48,7 @@ public:
     void SetLayerVisibility(s32 consumer_binder_id, bool visible);
     void SetLayerBlending(s32 consumer_binder_id, LayerBlending blending);
     void SetLayerIsOverlay(s32 consumer_binder_id, bool is_overlay);
+    void SetLayerStackMask(s32 consumer_binder_id, u32 layer_stack_mask);
 
     std::shared_ptr<Layer> FindLayer(s32 consumer_binder_id);
 

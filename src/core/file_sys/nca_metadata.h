@@ -48,11 +48,11 @@ struct ContentRecord {
     std::array<u8, 0x10> nca_id;
     std::array<u8, 0x6> size;
     ContentRecordType type;
-    INSERT_PADDING_BYTES(1);
+    u8 id_offset;
 };
 static_assert(sizeof(ContentRecord) == 0x38, "ContentRecord has incorrect size.");
 
-constexpr ContentRecord EMPTY_META_CONTENT_RECORD{{}, {}, {}, ContentRecordType::Meta, {}};
+constexpr ContentRecord EMPTY_META_CONTENT_RECORD{{}, {}, {}, ContentRecordType::Meta, 0};
 
 struct MetaRecord {
     u64_le title_id;

@@ -168,6 +168,8 @@ public:
 
     void WaitForSyncOperation(u64 fence);
 
+    void WaitForIdle();
+
     /// Tick pending requests within the GPU.
     void TickWork();
 

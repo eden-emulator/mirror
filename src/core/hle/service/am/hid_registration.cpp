@@ -36,12 +36,17 @@ HidRegistration::~HidRegistration() {
     }
 }
 
-void HidRegistration::EnableAppletToGetInput(bool enable) {
-    if (m_process.IsInitialized()) {
-        m_hid_server->GetResourceManager()->SetAruidValidForVibration(m_process.GetProcessId(),
-                                                                      enable);
-        m_hid_server->GetResourceManager()->EnableInput(m_process.GetProcessId(), enable);
-    }
+void HidRegistration::EnableAppletToGetInput(bool enable_pad, bool enable_touch) {
+    if (!m_process.IsInitialized())
+        return;
+
+    const auto resource_manager = m_hid_server->GetResourceManager();
+    const u64 aruid = m_process.GetProcessId();
+
+    resource_manager->EnablePadInput(aruid, enable_pad);
+    resource_manager->EnableTouchScreen(aruid, enable_touch);
+
+    resource_manager->SetAruidValidForVibration(aruid, enable_pad);
 }
 
 } // namespace Service::AM

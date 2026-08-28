@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <regex>
 #include <string>
 #include "common/settings_enums.h"
@@ -34,6 +35,8 @@
 #include "input_common/main.h"
 #include "network/network.h"
 #include "sdl_config.h"
+#include "video_core/gpu.h"
+#include "video_core/rasterizer_interface.h"
 #include "video_core/renderer_base.h"
 #include "yuzu_cmd/emu_window/emu_window_sdl3.h"
 #ifdef HAS_OPENGL
@@ -463,6 +466,30 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
     // don't do anything, SDL3 already exists for us :D
     state->system.RegisterExitCallback([] {});
+
+    // QLaunch launched applications (should) now reload shader cache.
+    static std::mutex shader_cache_reload_mutex;
+    state->system.RegisterApplicationChangedCallback([&state](u64 changed_program_id) {
+        if (!Settings::values.use_disk_shader_cache.GetValue()) {
+            return;
+        }
+
+        std::scoped_lock lk{shader_cache_reload_mutex};
+
+        LOG_INFO(Frontend, "Reloading disk shader cache for {:016X}", changed_program_id);
+
+        state->system.Pause();
+        state->system.GPU().WaitForIdle();
+        state->system.GPU().ObtainContext();
+
+        state->system.Renderer().ReadRasterizer()->LoadDiskResources(
+            changed_program_id, std::stop_token{},
+            [](VideoCore::LoadCallbackStage, size_t, size_t) {});
+
+        state->system.GPU().ReleaseContext();
+        state->system.Run();
+    });
+
     void(state->system.Run());
     if (state->system.DebuggerEnabled())
         state->system.InitializeDebugger();

@@ -322,6 +322,10 @@ public:
 
     [[nodiscard]] u64 GetApplicationProcessProgramID() const;
 
+    [[nodiscard]] u64 GetProgramIdForProcessId(u64 process_id) const;
+
+    [[nodiscard]] u64 ResolveCallerProgramId(u64 process_id) const;
+
     /// Gets the name of the current game
     [[nodiscard]] Loader::ResultStatus GetGameName(std::string& out) const;
 
@@ -422,6 +426,7 @@ public:
     void PushGeneralChannelData(std::vector<u8>&& data);
     bool TryPopGeneralChannel(std::vector<u8>& out_data);
     [[nodiscard]] Service::Event& GetGeneralChannelEvent();
+    [[nodiscard]] const std::string& GetCurrentApplicationFilePath() const;
 
     /// Type used for the frontend to designate a callback for System to exit the application.
     using ExitCallback = std::function<void()>;
@@ -434,6 +439,10 @@ public:
 
     /// Instructs the frontend to exit the application.
     void Exit();
+
+    using ApplicationChangedCallback = std::function<void(u64 program_id)>;
+    void RegisterApplicationChangedCallback(ApplicationChangedCallback&& callback);
+    void NotifyApplicationChanged(u64 program_id);
 
     /// Applies any changes to settings to this core instance.
     void ApplySettings();

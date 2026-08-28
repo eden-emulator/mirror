@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -8,6 +11,10 @@
 #include "common/typed_address.h"
 #include "hid_core/resources/controller_base.h"
 #include "hid_core/resources/ring_lifo.h"
+
+namespace Kernel {
+class KProcess;
+}
 
 namespace Core {
 class System;
@@ -33,7 +40,7 @@ public:
     void OnUpdate(const Core::Timing::CoreTiming& core_timing) override;
 
     // Called on InitializeSevenSixAxisSensor
-    void SetTransferMemoryAddress(Common::ProcessAddress t_mem);
+    void SetTransferMemoryAddress(Common::ProcessAddress t_mem, Kernel::KProcess* owner);
 
     // Called on ResetSevenSixAxisSensorTimestamp
     void ResetTimestamp();
@@ -58,6 +65,7 @@ private:
 
     SevenSixAxisState next_seven_sixaxis_state{};
     Common::ProcessAddress transfer_memory{};
+    Kernel::KProcess* transfer_memory_owner{};
     Core::HID::EmulatedConsole* console = nullptr;
 
     Core::System& system;

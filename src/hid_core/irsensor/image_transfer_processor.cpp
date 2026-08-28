@@ -1,10 +1,11 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "core/core.h"
+#include "core/hle/kernel/k_process.h"
 #include "core/memory.h"
 #include "hid_core/frontend/emulated_controller.h"
 #include "hid_core/hid_core.h"
@@ -48,9 +49,11 @@ void ImageTransferProcessor::OnControllerUpdate(Core::HID::ControllerTriggerType
     if (type != Core::HID::ControllerTriggerType::IrSensor) {
         return;
     }
-    if (transfer_memory == 0) {
+    if (transfer_memory == 0 || transfer_memory_owner == nullptr) {
         return;
     }
+
+    auto& memory = transfer_memory_owner->GetMemory();
 
     const auto& camera_data = npad_device->GetCamera();
 
@@ -61,16 +64,14 @@ void ImageTransferProcessor::OnControllerUpdate(Core::HID::ControllerTriggerType
     if (camera_data.format != current_config.origin_format) {
         LOG_WARNING(Service_IRS, "Wrong Input format {} expected {}", camera_data.format,
                     current_config.origin_format);
-        system.ApplicationMemory().ZeroBlock(transfer_memory,
-                                             GetDataSize(current_config.trimming_format));
+        memory.ZeroBlock(transfer_memory, GetDataSize(current_config.trimming_format));
         return;
     }
 
     if (current_config.origin_format > current_config.trimming_format) {
         LOG_WARNING(Service_IRS, "Origin format {} is smaller than trimming format {}",
                     current_config.origin_format, current_config.trimming_format);
-        system.ApplicationMemory().ZeroBlock(transfer_memory,
-                                             GetDataSize(current_config.trimming_format));
+        memory.ZeroBlock(transfer_memory, GetDataSize(current_config.trimming_format));
         return;
     }
 
@@ -87,8 +88,7 @@ void ImageTransferProcessor::OnControllerUpdate(Core::HID::ControllerTriggerType
                     "Trimming area ({}, {}, {}, {}) is outside of origin area ({}, {})",
                     current_config.trimming_start_x, current_config.trimming_start_y,
                     trimming_width, trimming_height, origin_width, origin_height);
-        system.ApplicationMemory().ZeroBlock(transfer_memory,
-                                             GetDataSize(current_config.trimming_format));
+        memory.ZeroBlock(transfer_memory, GetDataSize(current_config.trimming_format));
         return;
     }
 
@@ -102,8 +102,8 @@ void ImageTransferProcessor::OnControllerUpdate(Core::HID::ControllerTriggerType
         }
     }
 
-    system.ApplicationMemory().WriteBlock(transfer_memory, window_data.data(),
-                                          GetDataSize(current_config.trimming_format));
+    memory.WriteBlock(transfer_memory, window_data.data(),
+                      GetDataSize(current_config.trimming_format));
 
     if (!IsProcessorActive()) {
         StartProcessor();
@@ -143,14 +143,19 @@ void ImageTransferProcessor::SetConfig(
     npad_device->SetCameraFormat(current_config.origin_format);
 }
 
-void ImageTransferProcessor::SetTransferMemoryAddress(Common::ProcessAddress t_mem) {
+void ImageTransferProcessor::SetTransferMemoryAddress(Common::ProcessAddress t_mem,
+                                                      Kernel::KProcess* owner) {
     transfer_memory = t_mem;
+    transfer_memory_owner = owner;
 }
 
 Core::IrSensor::ImageTransferProcessorState ImageTransferProcessor::GetState(
     std::span<u8> data) const {
+    if (transfer_memory_owner == nullptr)
+        return processor_state;
+
     const auto size = (std::min)(GetDataSize(current_config.trimming_format), data.size());
-    system.ApplicationMemory().ReadBlock(transfer_memory, data.data(), size);
+    transfer_memory_owner->GetMemory().ReadBlock(transfer_memory, data.data(), size);
     return processor_state;
 }
 

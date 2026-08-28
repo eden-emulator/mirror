@@ -4,7 +4,11 @@
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <utility>
+
+#include "common/settings.h"
 #include "core/core.h"
+#include "core/hle/kernel/kernel.h"
 #include "core/hle/service/am/am_results.h"
 #include "core/hle/service/am/applet.h"
 #include "core/hle/service/am/applet_manager.h"
@@ -32,46 +36,82 @@ void WindowSystem::RequestUpdate() {
 }
 
 void WindowSystem::Update() {
-    std::scoped_lock lk{m_lock};
+    {
+        std::scoped_lock lk{m_lock};
 
-    LOG_DEBUG(Service_AM, "called, home_menu={} application={} overlay={}",
-              m_home_menu != nullptr, m_application != nullptr, m_overlay_display != nullptr);
+        LOG_DEBUG(Service_AM, "called, home_menu={} application={} overlay={}",
+                  m_home_menu != nullptr, m_application != nullptr, m_overlay_display != nullptr);
 
-    // Loop through all applets and remove terminated applets.
-    this->PruneTerminatedAppletsLocked();
+        // Loop through all applets and remove terminated applets.
+        this->PruneTerminatedAppletsLocked();
 
-    // If the home menu is being locked into the foreground, handle that.
-    if (this->LockHomeMenuIntoForegroundLocked()) {
-        return;
+        // If the home menu is being locked into the foreground, handle that.
+        if (!this->LockHomeMenuIntoForegroundLocked()) {
+            const bool overlay_takes_input = this->DoesOverlayTakeInputLocked();
+
+            this->UpdateAppletStateLocked(m_overlay_display, true, overlay_takes_input);
+            this->UpdateAppletStateLocked(m_home_menu, m_foreground_requested_applet == m_home_menu, overlay_takes_input);
+            this->UpdateAppletStateLocked(m_application, m_foreground_requested_applet == m_application, overlay_takes_input);
+        }
     }
 
-    bool overlay_blocks_input = false;
-    if (m_overlay_display) {
-        std::scoped_lock lk_overlay{m_overlay_display->lock};
-        overlay_blocks_input = m_overlay_display->overlay_in_foreground;
-    }
-
-    // Recursively update each applet root.
-    this->UpdateAppletStateLocked(m_home_menu, m_foreground_requested_applet == m_home_menu, overlay_blocks_input);
-    this->UpdateAppletStateLocked(m_application, m_foreground_requested_applet == m_application, overlay_blocks_input);
-    this->UpdateAppletStateLocked(m_overlay_display, true, false); // overlay is always updated, never blocked
+    this->NotifyApplicationChangedIfNeeded();
 }
 
 void WindowSystem::TrackApplet(std::shared_ptr<Applet> applet, bool is_application) {
-    std::scoped_lock lk{m_lock};
+    {
+        std::scoped_lock lk{m_lock};
 
-    if (applet->applet_id == AppletId::QLaunch) {
-        ASSERT(m_home_menu == nullptr);
-        m_home_menu = applet.get();
-    } else if (applet->applet_id == AppletId::OverlayDisplay) {
-        m_overlay_display = applet.get();
-    } else if (is_application) {
-        ASSERT(m_application == nullptr);
-        m_application = applet.get();
+        if (applet->applet_id == AppletId::QLaunch) {
+            ASSERT(m_home_menu == nullptr);
+            m_home_menu = applet.get();
+        } else if (applet->applet_id == AppletId::OverlayDisplay) {
+            m_overlay_display = applet.get();
+        } else if (is_application) {
+            ASSERT(m_application == nullptr);
+            m_application = applet.get();
+        }
+
+        this->UpdateCurrentApplicationLocked();
+
+        m_event_observer->TrackAppletProcess(*applet);
+        m_applets.emplace(applet->aruid.pid, std::move(applet));
     }
 
-    m_event_observer->TrackAppletProcess(*applet);
-    m_applets.emplace(applet->aruid.pid, std::move(applet));
+    this->NotifyApplicationChangedIfNeeded();
+}
+
+void WindowSystem::UpdateCurrentApplicationLocked() {
+    const Applet* const candidate = m_application != nullptr ? m_application : m_home_menu;
+    if (candidate == nullptr) {
+        return;
+    }
+
+    auto* const process = candidate->process->GetHandle();
+    if (process == nullptr || process == m_system.Kernel().ApplicationProcess()) {
+        return;
+    }
+
+    LOG_INFO(Service_AM, "Current application is now {:016X}", candidate->program_id);
+
+    m_system.Kernel().SetApplicationProcess(process);
+    Settings::SetCurrentProgramID(candidate->program_id);
+
+    m_pending_application_notification = candidate->program_id;
+}
+
+void WindowSystem::NotifyApplicationChangedIfNeeded() {
+    std::optional<u64> program_id;
+    {
+        std::scoped_lock lk{m_lock};
+        program_id = std::exchange(m_pending_application_notification, std::nullopt);
+    }
+
+    if (!program_id.has_value()) {
+        return;
+    }
+
+    m_system.NotifyApplicationChanged(*program_id);
 }
 
 std::shared_ptr<Applet> WindowSystem::GetByAppletResourceUserId(u64 aruid) {
@@ -169,18 +209,40 @@ void WindowSystem::OnExitRequested() {
 }
 
 void WindowSystem::SendButtonAppletMessageLocked(AppletMessage message) {
-    if (m_home_menu) {
-        std::scoped_lock lk_home{m_home_menu->lock};
-        m_home_menu->lifecycle_manager.PushUnorderedMessage(m_system.Kernel(), message);
-    }
-    if (m_overlay_display) {
-        std::scoped_lock lk_overlay{m_overlay_display->lock};
-        m_overlay_display->lifecycle_manager.PushUnorderedMessage(m_system.Kernel(), message);
-    }
-    if (m_application) {
-        std::scoped_lock lk_application{m_application->lock};
-        m_application->lifecycle_manager.PushUnorderedMessage(m_system.Kernel(), message);
-    }
+    const auto is_blocked = [message](const Applet& applet) {
+        if (message == AppletMessage::DetectShortPressingHomeButton &&
+            applet.applet_id == AppletId::OverlayDisplay &&
+            !applet.overlay_watching_short_home_button) {
+            return true;
+        }
+
+        switch (message) {
+        case AppletMessage::DetectShortPressingHomeButton:
+            return applet.home_button_short_pressed_blocked;
+        case AppletMessage::DetectLongPressingHomeButton:
+            return applet.home_button_long_pressed_blocked;
+        default:
+            return false;
+        }
+    };
+
+    const auto send_to = [&](Applet* applet) {
+        if (!applet) {
+            return;
+        }
+        std::scoped_lock lk{applet->lock};
+        if (is_blocked(*applet)) {
+            LOG_DEBUG(Service_AM, "Applet {} is blocking message {}",
+                      static_cast<u32>(applet->applet_id), static_cast<u32>(message));
+            return;
+        }
+        applet->lifecycle_manager.PushUnorderedMessage(m_system.Kernel(), message);
+    };
+
+    send_to(m_home_menu);
+    send_to(m_overlay_display);
+    send_to(m_application);
+
     if (m_event_observer) {
         m_event_observer->RequestUpdate();
     }
@@ -192,19 +254,9 @@ void WindowSystem::OnSystemButtonPress(SystemButtonType type) {
     case SystemButtonType::HomeButtonShortPressing:
         SendButtonAppletMessageLocked(AppletMessage::DetectShortPressingHomeButton);
         break;
-    case SystemButtonType::HomeButtonLongPressing: {
-        // Toggle overlay foreground visibility on long home press
-        if (m_overlay_display) {
-            std::scoped_lock lk_overlay{m_overlay_display->lock};
-            m_overlay_display->overlay_in_foreground = !m_overlay_display->overlay_in_foreground;
-            LOG_INFO(Service_AM, "Overlay long-press toggle: overlay_in_foreground={} window_visible={}", m_overlay_display->overlay_in_foreground, m_overlay_display->window_visible);
-        }
+    case SystemButtonType::HomeButtonLongPressing:
         SendButtonAppletMessageLocked(AppletMessage::DetectLongPressingHomeButton);
-        // Force a state update after toggling overlay
-        if (m_event_observer) {
-            m_event_observer->RequestUpdate();
-        }
-        break; }
+        break;
     case SystemButtonType::CaptureButtonShortPressing:
         SendButtonAppletMessageLocked(AppletMessage::DetectShortPressingCaptureButton);
         break;
@@ -317,6 +369,8 @@ void WindowSystem::PruneTerminatedAppletsLocked() {
             m_overlay_display = nullptr;
         }
 
+        this->UpdateCurrentApplicationLocked();
+
         // Finalize applet.
         applet->OnProcessTerminatedLocked();
 
@@ -389,7 +443,20 @@ void WindowSystem::TerminateChildAppletsLocked(Applet* applet) {
     applet->lock.lock();
 }
 
-void WindowSystem::UpdateAppletStateLocked(Applet* applet, bool is_foreground, bool overlay_blocking) {
+bool WindowSystem::IsOverlayOpenLocked(const Applet& overlay) const {
+    return overlay.window_visible && overlay.overlay_watching_short_home_button;
+}
+
+bool WindowSystem::DoesOverlayTakeInputLocked() const {
+    if (m_overlay_display == nullptr) {
+        return false;
+    }
+
+    std::scoped_lock lk{m_overlay_display->lock};
+    return this->IsOverlayOpenLocked(*m_overlay_display);
+}
+
+void WindowSystem::UpdateAppletStateLocked(Applet* applet, bool is_foreground, bool overlay_takes_input) {
     // With no applet, we don't have anything to do.
     if (!applet) {
         return;
@@ -420,24 +487,18 @@ void WindowSystem::UpdateAppletStateLocked(Applet* applet, bool is_foreground, b
         return false;
     }();
 
+    const bool is_overlay = applet->applet_id == AppletId::OverlayDisplay;
+
     // Update visibility state.
-    // Overlay applets should always be visible when window_visible is true, regardless of foreground state
-    const bool should_be_visible = (applet->applet_id == AppletId::OverlayDisplay)
-                                     ? applet->window_visible
-                                     : (is_foreground && applet->window_visible);
+    const bool should_be_visible =
+        is_overlay ? applet->window_visible : (is_foreground && applet->window_visible);
     applet->display_layer_manager.SetWindowVisibility(should_be_visible);
 
+    const bool needs_hid_input =
+        is_overlay ? this->IsOverlayOpenLocked(*applet)
+                   : (is_foreground && applet->window_visible && !overlay_takes_input);
 
-    const bool should_be_interactible = (applet->applet_id == AppletId::OverlayDisplay)
-                                          ? applet->overlay_in_foreground
-                                          : (is_foreground && applet->window_visible && !overlay_blocking);
-
-    if (applet->applet_id == AppletId::OverlayDisplay || applet->applet_id == AppletId::Application) {
-        LOG_DEBUG(Service_AM, "UpdateAppletStateLocked: applet={} overlay_in_foreground={} is_foreground={} window_visible={} overlay_blocking={} should_be_interactible={}",
-                 static_cast<u32>(applet->applet_id), applet->overlay_in_foreground, is_foreground, applet->window_visible, overlay_blocking, should_be_interactible);
-    }
-
-    applet->SetInteractibleLocked(should_be_interactible);
+    applet->SetInteractibleLocked(needs_hid_input, needs_hid_input);
 
     // Update focus state and suspension.
     const bool is_obscured = has_obscuring_child_applets || !applet->window_visible;
@@ -453,23 +514,18 @@ void WindowSystem::UpdateAppletStateLocked(Applet* applet, bool is_foreground, b
         applet->UpdateSuspensionStateLocked(true);
     }
 
-    // Z-index logic like in reference C# implementation (tuned for overlay extremes)
-    s32 z_index = 0;
-    const bool now_foreground = inherited_foreground;
-    if (applet->applet_id == AppletId::OverlayDisplay) {
-        z_index = applet->overlay_in_foreground ? 100000 : -1;
-    } else if (now_foreground && !is_obscured) {
-        z_index = 2;
-    } else if (now_foreground) {
-        z_index = 1;
-    } else {
-        z_index = 0;
+    // Layer ordering. Composition sorts back-to-front. Now with enums for calrity.
+    s32 z_index = Background;
+    if (is_overlay) {
+        z_index = Overlay;
+    } else if (inherited_foreground) {
+        z_index = is_obscured ? Foreground : ForegroundVisible;
     }
     applet->display_layer_manager.SetOverlayZIndex(z_index);
 
     // Recurse into child applets.
     for (const auto& child_applet : applet->child_applets) {
-        this->UpdateAppletStateLocked(child_applet.get(), is_foreground, overlay_blocking);
+        this->UpdateAppletStateLocked(child_applet.get(), is_foreground, overlay_takes_input);
     }
 }
 

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -105,7 +108,7 @@ Result HardwareOpus::InitializeMultiStreamDecodeObject(u32 sample_rate, u32 chan
     shared_memory.host_send_data[4] = total_stream_count;
     shared_memory.host_send_data[5] = stereo_stream_count;
 
-    ASSERT(channel_count <= MaxChannels);
+    ASSERT(channel_count <= shared_memory.channel_mapping.size());
     std::memcpy(shared_memory.channel_mapping.data(), mappings, channel_count * sizeof(u8));
 
     opus_decoder.Send(ADSP::Direction::DSP,

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
@@ -60,6 +60,9 @@ private:
                         const Layout::FramebufferLayout& layout, void* dst);
     void RenderScreenshot(std::span<const Tegra::FramebufferConfig> framebuffers);
     void RenderAppletCaptureLayer(std::span<const Tegra::FramebufferConfig> framebuffers);
+
+    std::vector<Tegra::FramebufferConfig> applet_capture_layers;
+    std::vector<Tegra::FramebufferConfig> screenshot_layer_scratch;
 
     Core::Frontend::EmuWindow& emu_window;
     Tegra::MaxwellDeviceMemoryManager& device_memory;

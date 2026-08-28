@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
@@ -48,6 +48,12 @@ static_assert(sizeof(SharedMemoryPoolLayout) == 0x188, "SharedMemoryPoolLayout h
 
 struct SharedBufferSession;
 
+enum class CaptureKind : u32 {
+    LastApplication,
+    LastForeground,
+    CallerApplet,
+};
+
 class SharedBufferManager final {
 public:
     explicit SharedBufferManager(Core::System& system, Container& container,
@@ -68,9 +74,15 @@ public:
     Result CancelSharedFrameBuffer(u64 layer_id, s64 slot);
     Result GetSharedFrameBufferAcquirableEvent(Kernel::KReadableEvent** out_event, u64 layer_id);
 
-    Result WriteAppletCaptureBuffer(bool* out_was_written, s32* out_layer_index);
+    Result WriteAppletCaptureBuffer(bool* out_was_written, s32* out_layer_index, CaptureKind kind);
+    Result ClearAppletCaptureBuffer(s32 layer_index, u32 color);
 
 private:
+    const SharedBufferSession* FindSessionByLayerIdLocked(u64 layer_id) const;
+
+    /// Converts a pool slot index, which is what the guest works in, back to the buffer queues slot index
+    Result GetProducerSlotLocked(s32* out_producer_slot, u64 layer_id, s64 pool_slot) const;
+
     u64 m_next_buffer_id = 1;
     u64 m_display_id = 0;
     u64 m_buffer_id = 0;
@@ -89,6 +101,7 @@ struct SharedBufferSession {
     Nvidia::NvCore::SessionId session_id = {};
     u64 layer_id = {};
     u32 buffer_nvmap_handle = 0;
+    u32 presentation_slot_base = 0;
 };
 
 } // namespace Service::VI

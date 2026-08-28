@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "core/core.h"
 #include "core/hle/service/bcat/bcat_service.h"
 #include "core/hle/service/bcat/delivery_cache_storage_service.h"
 #include "core/hle/service/bcat/service_creator.h"
@@ -37,7 +41,8 @@ IServiceCreator::~IServiceCreator() = default;
 Result IServiceCreator::CreateBcatService(ClientProcessId process_id,
                                           OutInterface<IBcatService> out_interface) {
     LOG_INFO(Service_BCAT, "called, process_id={}", process_id.pid);
-    *out_interface = std::make_shared<IBcatService>(system, *backend);
+    *out_interface =
+        std::make_shared<IBcatService>(system, *backend, system.ResolveCallerProgramId(*process_id));
     R_SUCCEED();
 }
 
@@ -45,7 +50,7 @@ Result IServiceCreator::CreateDeliveryCacheStorageService(
     ClientProcessId process_id, OutInterface<IDeliveryCacheStorageService> out_interface) {
     LOG_INFO(Service_BCAT, "called, process_id={}", process_id.pid);
 
-    const auto title_id = system.GetApplicationProcessProgramID();
+    const auto title_id = system.ResolveCallerProgramId(*process_id);
     *out_interface =
         std::make_shared<IDeliveryCacheStorageService>(system, fsc.GetBCATDirectory(title_id));
     R_SUCCEED();

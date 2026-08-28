@@ -1164,7 +1164,7 @@ Result IHidServer::InitializeSevenSixAxisSensor(ClientAppletResourceUserId aruid
     GetResourceManager()->GetConsoleSixAxis()->Activate();
     GetResourceManager()->GetSevenSixAxis()->Activate();
 
-    GetResourceManager()->GetSevenSixAxis()->SetTransferMemoryAddress(t_mem_1->GetSourceAddress());
+    GetResourceManager()->GetSevenSixAxis()->SetTransferMemoryAddress(t_mem_1->GetSourceAddress(), t_mem_1->GetOwner());
 
     R_SUCCEED();
 }

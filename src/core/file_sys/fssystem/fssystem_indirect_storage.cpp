@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "common/logging.h"
 #include "core/file_sys/errors.h"
 #include "core/file_sys/fssystem/fssystem_indirect_storage.h"
 
@@ -97,6 +98,18 @@ Result IndirectStorage::GetEntryList(Entry* out_entries, s32* out_entry_count, s
     // Write the output count.
     *out_entry_count = count;
     R_SUCCEED();
+}
+
+void IndirectStorage::ReportMissingOriginal(s64 offset, s64 size) {
+    if (m_reported_missing_original) {
+        return;
+    }
+    m_reported_missing_original = true;
+
+    LOG_ERROR(Common_Filesystem,
+              "Patch storage requests {:#x} bytes at {:#x} from a base storage that is not "
+              "present; this data will read as garbage",
+              size, offset);
 }
 
 size_t IndirectStorage::Read(u8* buffer, size_t size, size_t offset) const {

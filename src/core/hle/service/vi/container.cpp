@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -164,6 +164,16 @@ Result Container::GetLayerZIndex(u64 layer_id, s32* out_z_index) {
     }
 
     R_RETURN(VI::ResultNotFound);
+}
+
+Result Container::SetLayerStackMask(u64 layer_id, u32 layer_stack_mask) {
+    std::scoped_lock lk{m_lock};
+
+    auto* const layer = m_layers.GetLayerById(layer_id);
+    R_UNLESS(layer != nullptr, VI::ResultNotFound);
+
+    m_surface_flinger->SetLayerStackMask(layer->GetConsumerBinderId(), layer_stack_mask);
+    R_SUCCEED();
 }
 
 Result Container::SetLayerIsOverlay(u64 layer_id, bool is_overlay) {

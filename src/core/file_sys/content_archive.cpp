@@ -29,7 +29,7 @@ static u8 MasterKeyIdForKeyGeneration(u8 key_generation) {
     return std::max<u8>(key_generation, 1) - 1;
 }
 
-NCA::NCA(VirtualFile file_, const NCA* base_nca)
+NCA::NCA(VirtualFile file_, const NCA* base_nca, bool allow_missing_base)
     : file(std::move(file_)), keys{Core::Crypto::KeyManager::Instance()} {
     if (file == nullptr) {
         status = Loader::ResultStatus::ErrorNullFile;
@@ -110,7 +110,7 @@ NCA::NCA(VirtualFile file_, const NCA* base_nca)
         }
     }
 
-    if (is_update && base_nca == nullptr) {
+    if (is_update && base_nca == nullptr && !allow_missing_base) {
         status = Loader::ResultStatus::ErrorMissingBKTRBaseRomFS;
     } else {
         status = Loader::ResultStatus::Success;

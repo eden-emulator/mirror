@@ -12,6 +12,7 @@
 #include "common/hex_util.h"
 #include "common/logging.h"
 #include "core/crypto/key_manager.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/content_archive.h"
 #include "core/file_sys/nca_metadata.h"
 #include "core/file_sys/partition_filesystem.h"
@@ -65,10 +66,12 @@ u64 NSP::GetProgramTitleID() const {
     }
 
     auto program_id = expected_program_id;
-    if (program_id == 0) {
-        if (!program_status.empty()) {
-            program_id = program_status.begin()->first;
-        }
+    if (program_id == 0 && !program_status.empty()) {
+        program_id = std::min_element(program_status.cbegin(), program_status.cend(),
+                                      [](const auto& lhs, const auto& rhs) {
+                                          return lhs.first < rhs.first;
+                                      })
+                         ->first;
     }
 
     program_id = program_id + program_index;
@@ -273,8 +276,7 @@ void NSP::ReadNCAs(const std::vector<VirtualFile>& files) {
                     // If the last 3 hexadecimal digits of the NCA's TitleID is between 0x1 and
                     // 0x7FF, this is a multi-program update NCA. Otherwise, this is a regular
                     // update NCA.
-                    if ((next_nca->GetTitleId() & 0x7FF) != 0 &&
-                        (next_nca->GetTitleId() & 0x800) == 0) {
+                    if ((next_nca->GetTitleId() & AOC_TITLE_ID_MASK) != 0) {
                         ncas[next_nca->GetTitleId()][{cnmt.GetType(), rec.type}] =
                             std::move(next_nca);
                     } else {

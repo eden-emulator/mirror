@@ -8,6 +8,7 @@
 
 #include "common/common_types.h"
 #include "core/core.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/content_archive.h"
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/nca_metadata.h"
@@ -37,13 +38,13 @@ AppLoader_NSP::AppLoader_NSP(FileSys::VirtualFile file_,
         secondary_loader = std::make_unique<AppLoader_DeconstructedRomDirectory>(nsp->GetExeFS(), false);
     } else {
         const auto control_nca =
-            nsp->GetNCA(nsp->GetProgramTitleID(), FileSys::ContentRecordType::Control);
+            nsp->GetNCA(FileSys::GetBaseTitleID(nsp->GetProgramTitleID()), FileSys::ContentRecordType::Control);
         if (control_nca == nullptr || control_nca->GetStatus() != ResultStatus::Success) {
             return;
         }
 
         std::tie(nacp_file, icon_file) = [this, &content_provider, &control_nca, &fsc] {
-            const FileSys::PatchManager pm{nsp->GetProgramTitleID(), fsc, content_provider};
+            const FileSys::PatchManager pm{FileSys::GetBaseTitleID(nsp->GetProgramTitleID()), fsc, content_provider};
             return pm.ParseControlNCA(*control_nca);
         }();
 

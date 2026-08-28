@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "core/hle/service/am/applet.h"
@@ -22,7 +22,7 @@ namespace Service::AM {
         {10, nullptr, "StartShutdownSequenceForOverlay"},
         {11, nullptr, "StartRebootSequenceForOverlay"},
         {20, D<&IOverlayFunctions::SetHandlingHomeButtonShortPressedEnabled>, "SetHandlingHomeButtonShortPressedEnabled"},
-        {21, nullptr, "SetHandlingTouchScreenInputEnabled"},
+        {21, D<&IOverlayFunctions::SetHandlingTouchScreenInputEnabled>, "SetHandlingTouchScreenInputEnabled"},
         {30, nullptr, "SetHealthWarningShowingState"},
         {31, D<&IOverlayFunctions::IsHealthWarningRequired>, "IsHealthWarningRequired"},
         {40, nullptr, "GetApplicationNintendoLogo"},
@@ -43,10 +43,12 @@ namespace Service::AM {
     Result IOverlayFunctions::BeginToWatchShortHomeButtonMessage() {
         LOG_DEBUG(Service_AM, "called");
 
-        m_applet->overlay_in_foreground = true;
-        m_applet->home_button_short_pressed_blocked = false;
+        {
+            std::scoped_lock lk{m_applet->lock};
+            m_applet->overlay_watching_short_home_button = true;
+        }
 
-        if (auto *window_system = system.GetAppletManager().GetWindowSystem()) {
+        if (auto* window_system = system.GetAppletManager().GetWindowSystem()) {
             window_system->RequestUpdate();
         }
 
@@ -56,13 +58,23 @@ namespace Service::AM {
     Result IOverlayFunctions::EndToWatchShortHomeButtonMessage() {
         LOG_DEBUG(Service_AM, "called");
 
-        m_applet->overlay_in_foreground = false;
-        m_applet->home_button_short_pressed_blocked = false;
+        {
+            std::scoped_lock lk{m_applet->lock};
+            m_applet->overlay_watching_short_home_button = false;
+        }
 
-        if (auto *window_system = system.GetAppletManager().GetWindowSystem()) {
+        if (auto* window_system = system.GetAppletManager().GetWindowSystem()) {
             window_system->RequestUpdate();
         }
 
+        R_SUCCEED();
+    }
+
+    Result IOverlayFunctions::SetHandlingTouchScreenInputEnabled(bool enabled) {
+        LOG_DEBUG(Service_AM, "called, enabled={}", enabled);
+
+        std::scoped_lock lk{m_applet->lock};
+        m_applet->overlay_handling_touch_input = enabled;
         R_SUCCEED();
     }
 

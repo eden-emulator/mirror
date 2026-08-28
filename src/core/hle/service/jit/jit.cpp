@@ -35,7 +35,7 @@ public:
         , process{kernel, process_}
         , user_rx{std::move(user_rx_)}
         , user_ro{std::move(user_ro_)}
-        , context{system_.ApplicationMemory()}
+        , context{process_->GetMemory()}
     {
 
         // clang-format off

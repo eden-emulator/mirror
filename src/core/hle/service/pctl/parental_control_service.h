@@ -16,7 +16,8 @@ namespace Service::PCTL {
 
 class IParentalControlService final : public ServiceFramework<IParentalControlService> {
 public:
-    explicit IParentalControlService(Core::System& system_, Capability capability_);
+    explicit IParentalControlService(Core::System& system_, Capability capability_,
+                                     u64 program_id_);
     ~IParentalControlService() override;
 
 private:
@@ -84,6 +85,7 @@ private:
     RestrictionSettings restriction_settings{};
     std::array<char, 8> pin_code{};
     Capability capability{};
+    u64 program_id{};
     // TODO: this is raw
     PlayTimerSettings raw_play_timer_settings{};
 

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -101,6 +101,14 @@ void SurfaceFlinger::SetLayerBlending(s32 consumer_binder_id, LayerBlending blen
     if (const auto layer = this->FindLayer(consumer_binder_id); layer != nullptr) {
         layer->blending = blending;
         return;
+    }
+}
+
+void SurfaceFlinger::SetLayerStackMask(s32 consumer_binder_id, u32 layer_stack_mask) {
+    if (const auto layer = this->FindLayer(consumer_binder_id); layer != nullptr) {
+        layer->layer_stack_mask = layer_stack_mask;
+        LOG_DEBUG(Service_VI, "Layer {} stack mask set to {:#x}", consumer_binder_id,
+                  layer_stack_mask);
     }
 }
 

@@ -6,8 +6,10 @@
 
 #include <openssl/evp.h>
 
+#include "common/hex_util.h"
 #include "common/settings.h"
 #include "common/uuid.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/patch_manager.h"
 #include "core/file_sys/registered_cache.h"
@@ -27,6 +29,27 @@
 #include "core/hle/service/sm/sm.h"
 
 namespace Service::AM {
+
+namespace {
+
+FileSys::PatchManager::Metadata GetApplicationMetadata(Core::System& system, u64 program_id) {
+    auto metadata = FileSys::PatchManager::GetMetadataFromBaseOrUpdate(system, program_id);
+    if (metadata.first != nullptr) {
+        return metadata;
+    }
+
+    const auto application_id = FileSys::GetBaseTitleID(program_id);
+    if (application_id == program_id) {
+        return metadata;
+    }
+
+    LOG_DEBUG(Service_AM,
+              "no metadata for program_id={:016X}, falling back to application_id={:016X}",
+              program_id, application_id);
+    return FileSys::PatchManager::GetMetadataFromBaseOrUpdate(system, application_id);
+}
+
+} // Anonymous namespace
 
 IApplicationFunctions::IApplicationFunctions(Core::System& system_, std::shared_ptr<Applet> applet)
     : ServiceFramework{system_, "IApplicationFunctions"}, m_applet{std::move(applet)} {
@@ -156,7 +179,7 @@ Result IApplicationFunctions::GetDesiredLanguage(Out<u64> out_language_code) {
     // Default to 0 (all languages supported)
     u32 supported_languages = 0;
 
-    const auto res = FileSys::PatchManager::GetMetadataFromBaseOrUpdate(system, m_applet->program_id);
+    const auto res = GetApplicationMetadata(system, m_applet->program_id);
     if (res.first != nullptr) {
         supported_languages = res.first->GetSupportedLanguages();
     }
@@ -194,7 +217,7 @@ Result IApplicationFunctions::SetTerminateResult(Result terminate_result) {
 Result IApplicationFunctions::GetDisplayVersion(Out<DisplayVersion> out_display_version) {
     LOG_DEBUG(Service_AM, "called");
 
-    const auto res = FileSys::PatchManager::GetMetadataFromBaseOrUpdate(system, m_applet->program_id);
+    const auto res = GetApplicationMetadata(system, m_applet->program_id);
     if (res.first != nullptr) {
         const auto& version = res.first->GetVersionString();
         std::memcpy(out_display_version->string.data(), version.data(),
@@ -431,15 +454,21 @@ Result IApplicationFunctions::ExecuteProgram(ProgramSpecifyKind kind, u64 value)
 
 // https://switchbrew.org/wiki/Applet_Manager_services#CreateApplicationAndRequestToStart
 Result IApplicationFunctions::CreateApplicationAndRequestToStart(u64 application_id) {
-    LOG_INFO(Service_AM, "called, application_id={:016X}", application_id);
+    LOG_INFO(Service_AM, "called, application_id={:016X} current_program_id={:016X}", application_id, m_applet->program_id);
 
-    // If application_id is 0, relaunch the current application
-    const u64 target_application_id =
-        (application_id == 0) ? m_applet->program_id : application_id;
+    if (application_id == 0 ||
+        FileSys::GetBaseTitleID(application_id) == FileSys::GetBaseTitleID(m_applet->program_id)) {
+        const auto program_index = application_id == 0
+                                       ? 0
+                                       : application_id - FileSys::GetBaseTitleID(application_id);
 
-    system.GetUserChannel() = m_applet->user_channel_launch_parameter;
-    system.ExecuteProgram(target_application_id);
-    R_SUCCEED();
+        system.GetUserChannel() = m_applet->user_channel_launch_parameter;
+        system.ExecuteProgram(program_index);
+        R_SUCCEED();
+    }
+
+    LOG_ERROR(Service_AM, "Launching a different application ({:016X}) is not implemented!", application_id);
+    R_THROW(ResultUnknown);
 }
 
 Result IApplicationFunctions::ClearUserChannel() {

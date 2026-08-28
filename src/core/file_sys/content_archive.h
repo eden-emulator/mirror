@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -63,7 +66,7 @@ inline bool IsDirectoryLogoPartition(const VirtualDir& pfs) {
 // After construction, use GetStatus to determine if the file is valid and ready to be used.
 class NCA : public ReadOnlyVfsDirectory {
 public:
-    explicit NCA(VirtualFile file, const NCA* base_nca = nullptr);
+    explicit NCA(VirtualFile file, const NCA* base_nca = nullptr, bool allow_missing_base = false);
     ~NCA() override;
 
     Loader::ResultStatus GetStatus() const;

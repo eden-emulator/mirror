@@ -24,8 +24,8 @@ static u64 GetCurrentBuildID(const Core::System::CurrentBuildProcessID& id) {
     return out;
 }
 
-IBcatService::IBcatService(Core::System& system_, BcatBackend& backend_)
-    : ServiceFramework{system_, "IBcatService"}, backend{backend_},
+IBcatService::IBcatService(Core::System& system_, BcatBackend& backend_, u64 program_id_)
+    : ServiceFramework{system_, "IBcatService"}, backend{backend_}, program_id{program_id_},
       progress{{
           ProgressServiceBackend{system_, "Normal"},
           ProgressServiceBackend{system_, "Directory"},
@@ -70,8 +70,7 @@ Result IBcatService::RequestSyncDeliveryCache(
     LOG_DEBUG(Service_BCAT, "called");
 
     auto& progress_backend{GetProgressBackend(SyncType::Normal)};
-    backend.Synchronize(system.Kernel(), {system.GetApplicationProcessProgramID(),
-                         GetCurrentBuildID(system.GetApplicationProcessBuildID())},
+    backend.Synchronize(system.Kernel(), {program_id, GetCurrentBuildID(system.GetApplicationProcessBuildID())},
                         GetProgressBackend(SyncType::Normal));
 
     *out_interface = std::make_shared<IDeliveryCacheProgressService>(
@@ -86,9 +85,8 @@ Result IBcatService::RequestSyncDeliveryCacheWithDirectoryName(
     LOG_DEBUG(Service_BCAT, "called, name={}", name);
 
     auto& progress_backend{GetProgressBackend(SyncType::Directory)};
-    backend.SynchronizeDirectory(system.Kernel(), {system.GetApplicationProcessProgramID(),
-                                  GetCurrentBuildID(system.GetApplicationProcessBuildID())},
-                                 name, progress_backend);
+    backend.SynchronizeDirectory(system.Kernel(), {program_id, GetCurrentBuildID(system.GetApplicationProcessBuildID())},
+        name, progress_backend);
 
     *out_interface = std::make_shared<IDeliveryCacheProgressService>(
         system, progress_backend.GetEvent(), progress_backend.GetImpl());

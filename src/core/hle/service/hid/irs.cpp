@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -147,7 +150,7 @@ Result IRS::RunImageTransferProcessor(
     MakeProcessorWithCoreContext<ImageTransferProcessor>(camera_handle, device);
     auto& image_transfer_processor = GetProcessor<ImageTransferProcessor>(camera_handle);
     image_transfer_processor.SetConfig(processor_config);
-    image_transfer_processor.SetTransferMemoryAddress(t_mem->GetSourceAddress());
+    image_transfer_processor.SetTransferMemoryAddress(t_mem->GetSourceAddress(), t_mem->GetOwner());
     npad_device->SetPollingMode(Core::HID::EmulatedDeviceIndex::RightIndex,
                                 Common::Input::PollingMode::IR);
 
@@ -295,7 +298,8 @@ Result IRS::RunImageTransferExProcessor(
     MakeProcessorWithCoreContext<ImageTransferProcessor>(camera_handle, device);
     auto& image_transfer_processor = GetProcessor<ImageTransferProcessor>(camera_handle);
     image_transfer_processor.SetConfig(processor_config);
-    image_transfer_processor.SetTransferMemoryAddress(t_mem->GetSourceAddress());
+    image_transfer_processor.SetTransferMemoryAddress(t_mem->GetSourceAddress(),
+                                                      t_mem->GetOwner());
     npad_device->SetPollingMode(Core::HID::EmulatedDeviceIndex::RightIndex,
                                 Common::Input::PollingMode::IR);
 

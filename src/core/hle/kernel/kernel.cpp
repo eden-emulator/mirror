@@ -349,9 +349,18 @@ struct KernelCore::Impl {
         object_name_global_data.emplace(kernel);
     }
 
-    void MakeApplicationProcess(KernelCore& kernel, KProcess* process) {
+    void SetApplicationProcess(KernelCore& kernel, KProcess* process) {
+        if (application_process == process)
+            return;
+
+        KProcess* const previous = application_process;
         application_process = process;
-        application_process->Open(kernel);
+
+        if (application_process != nullptr)
+            application_process->Open(kernel);
+
+        if (previous != nullptr)
+            previous->Close(kernel);
     }
 
     /// Sets the host thread ID for the caller.
@@ -879,8 +888,8 @@ void KernelCore::RemoveProcess(KProcess* process) {
     }
 }
 
-void KernelCore::MakeApplicationProcess(KProcess* process) {
-    impl->MakeApplicationProcess(*this, process);
+void KernelCore::SetApplicationProcess(KProcess* process) {
+    impl->SetApplicationProcess(*this, process);
 }
 
 KProcess* KernelCore::ApplicationProcess() {
@@ -889,6 +898,14 @@ KProcess* KernelCore::ApplicationProcess() {
 
 const KProcess* KernelCore::ApplicationProcess() const {
     return impl->application_process;
+}
+
+KScopedAutoObject<KProcess> KernelCore::GetProcessByProcessId(u64 process_id) {
+    std::scoped_lock lk{impl->process_list_lock};
+    for (auto* const process : impl->process_list)
+        if (process != nullptr && process->GetProcessId() == process_id)
+            return {*this, process};
+    return {*this, nullptr};
 }
 
 std::list<KScopedAutoObject<KProcess>> KernelCore::GetProcessList() {

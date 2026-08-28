@@ -139,6 +139,7 @@ static FileSys::VirtualFile VfsDirectoryCreateFileWrapper(const FileSys::Virtual
 #include "core/hle/service/am/frontend/applet_web_browser_types.h"
 
 #include "core/file_sys/card_image.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/romfs.h"
 #include "core/file_sys/savedata_factory.h"
 
@@ -1967,11 +1968,36 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
         render_window->Exit();
     });
 
+    QtCommon::system->RegisterApplicationChangedCallback([this](u64 changed_program_id) {
+        if (QtCommon::emu_thread)
+            QtCommon::emu_thread->RequestDiskShaderCacheReload(changed_program_id);
+
+        QMetaObject::invokeMethod(
+            this, [this, changed_program_id] { this->OnApplicationChanged(changed_program_id); },
+            Qt::QueuedConnection);
+    });
+
     connect(render_window, &GRenderWindow::Closed, this, &MainWindow::OnStopGame);
     connect(render_window, &GRenderWindow::MouseActivity, this, &MainWindow::OnMouseActivity);
 
     connect(QtCommon::emu_thread.get(), &EmuThread::LoadProgress, loading_screen,
             &LoadingScreen::OnLoadProgress, Qt::QueuedConnection);
+
+    connect(
+        QtCommon::emu_thread.get(), &EmuThread::ShaderCacheReloadStarted, this,
+        [this] {
+            loading_screen->Prepare(QtCommon::system->GetAppLoader());
+            loading_screen->show();
+            render_window->hide();
+        },
+        Qt::QueuedConnection);
+
+    connect(
+        QtCommon::emu_thread.get(), &EmuThread::ShaderCacheReloadFinished, this,
+        [this] {
+            loading_screen->OnLoadComplete();
+        },
+        Qt::QueuedConnection);
 
     // Update the GUI
     UpdateStatusButtons();
@@ -3061,12 +3087,31 @@ void MainWindow::OnLoadComplete() {
 }
 
 void MainWindow::OnExecuteProgram(std::size_t program_index) {
+    const u64 previous_program_id = QtCommon::system->GetApplicationProcessProgramID();
+
+    const auto current_path =
+        QString::fromStdString(QtCommon::system->GetCurrentApplicationFilePath());
+
+    LOG_INFO(Frontend, "ExecuteProgram requested, program_index={} previous_program_id={:016X}",
+             program_index, previous_program_id);
+
     ShutdownGame();
 
     auto params = ApplicationAppletParameters();
     params.program_index = static_cast<s32>(program_index);
     params.launch_type = Service::AM::LaunchType::ApplicationInitiated;
-    BootGame(last_filename_booted, params);
+
+    if (previous_program_id > static_cast<u64>(Service::AM::AppletProgramId::MaxProgramId)) {
+        params.previous_program_index =
+            static_cast<s32>(previous_program_id - FileSys::GetBaseTitleID(previous_program_id));
+        params.program_id = previous_program_id;
+    }
+
+    const auto filename = current_path.isEmpty() ? last_filename_booted : current_path;
+
+    LOG_DEBUG(Frontend, "ExecuteProgram booting from path: {}", filename.toStdString());
+
+    BootGame(filename, params);
 }
 
 void MainWindow::OnExit() {
@@ -3994,6 +4039,41 @@ void MainWindow::OnEmulatorUpdateAvailable() {
     dialog.exec();
 }
 #endif
+
+void MainWindow::OnApplicationChanged(u64 program_id) {
+    if (!emulation_running || program_id == 0)
+        return;
+
+    std::string title_name;
+    std::string title_version;
+
+    const FileSys::PatchManager pm(program_id, QtCommon::system->GetFileSystemController(),
+                                   QtCommon::system->GetContentProvider());
+    if (const auto metadata = pm.GetControlMetadata(); metadata.first != nullptr) {
+        title_version = metadata.first->GetVersionString();
+        title_name = metadata.first->GetApplicationName();
+    }
+    if (title_name.empty()) {
+        title_name = fmt::format("{:016X}", program_id);
+    }
+
+    if (const auto* process = QtCommon::system->Kernel().ApplicationProcess(); process != nullptr) {
+        const auto instruction_set_suffix = process->Is64Bit() ? tr("(64-bit)") : tr("(32-bit)");
+        title_name =
+            tr("%1 %2", "%1 is the title name. %2 indicates if the title is 64-bit or 32-bit")
+                .arg(QString::fromStdString(title_name), instruction_set_suffix)
+                .toStdString();
+    }
+
+    LOG_INFO(Frontend, "Now running: {:016X} | {} | {}", program_id, title_name, title_version);
+
+    UpdateWindowTitle(title_name, title_version,
+                      QtCommon::system->GPU().Renderer().GetDeviceVendor());
+
+    // Switch to record playtime for the running program
+    if (play_time_manager)
+        play_time_manager->SetProgramId(program_id);
+}
 
 void MainWindow::UpdateWindowTitle(std::string_view title_name, std::string_view title_version,
                                    std::string_view gpu_vendor) {

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -8,6 +11,10 @@
 #include "common/typed_address.h"
 #include "hid_core/irsensor/irs_types.h"
 #include "hid_core/irsensor/processor_base.h"
+
+namespace Kernel {
+class KProcess;
+}
 
 namespace Core {
 class System;
@@ -39,7 +46,7 @@ public:
     void SetConfig(Core::IrSensor::PackedImageTransferProcessorExConfig config);
 
     // Transfer memory where the image data will be stored
-    void SetTransferMemoryAddress(Common::ProcessAddress t_mem);
+    void SetTransferMemoryAddress(Common::ProcessAddress t_mem, Kernel::KProcess* owner);
 
     Core::IrSensor::ImageTransferProcessorState GetState(std::span<u8> data) const;
 
@@ -75,5 +82,6 @@ private:
 
     Core::System& system;
     Common::ProcessAddress transfer_memory{};
+    Kernel::KProcess* transfer_memory_owner{};
 };
 } // namespace Service::IRS

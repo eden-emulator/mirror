@@ -132,8 +132,7 @@ private:
 
         LOG_WARNING(Service_PM, "(Partial Implementation) called, pid={:016X}", pid);
 
-        auto list = kernel.GetProcessList();
-        auto process = SearchProcessList(system.Kernel(), list, [pid](auto& p) { return p->GetProcessId() == pid; });
+        auto process = kernel.GetProcessByProcessId(pid);
 
         if (process.IsNull()) {
             IPC::ResponseBuilder rb{ctx, 2};
@@ -186,9 +185,7 @@ private:
 
         LOG_DEBUG(Service_PM, "called, process_id={:016X}", process_id);
 
-        auto list = kernel.GetProcessList();
-        auto process = SearchProcessList(system.Kernel(),
-            list, [process_id](auto& p) { return p->GetProcessId() == process_id; });
+        auto process = kernel.GetProcessByProcessId(process_id);
 
         if (process.IsNull()) {
             IPC::ResponseBuilder rb{ctx, 2};

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -13,8 +13,10 @@
 
 namespace Service::PCTL {
 
-IParentalControlService::IParentalControlService(Core::System& system_, Capability capability_)
+IParentalControlService::IParentalControlService(Core::System& system_, Capability capability_,
+                                                 u64 program_id_)
     : ServiceFramework{system_, "IParentalControlService"}, capability{capability_},
+      program_id{program_id_},
       service_context{system_, "IParentalControlService"}, synchronization_event{service_context},
       unlinked_event{service_context}, request_suspension_event{service_context} {
     // clang-format off
@@ -202,7 +204,6 @@ Result IParentalControlService::Initialize() {
 
     // TODO(ogniK): Recovery flag initialization for pctl:r
 
-    const auto program_id = system.GetApplicationProcessProgramID();
     if (program_id != 0) {
         const FileSys::PatchManager pm{program_id, system.GetFileSystemController(),
                                        system.GetContentProvider()};

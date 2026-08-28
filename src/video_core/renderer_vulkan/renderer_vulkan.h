@@ -75,6 +75,9 @@ private:
     void RenderScreenshot(std::span<const Tegra::FramebufferConfig> framebuffers);
     void RenderAppletCaptureLayer(std::span<const Tegra::FramebufferConfig> framebuffers);
 
+    std::vector<Tegra::FramebufferConfig> applet_capture_layers;
+    std::vector<Tegra::FramebufferConfig> screenshot_layer_scratch;
+
     Tegra::MaxwellDeviceMemoryManager& device_memory;
     Tegra::GPU& gpu;
 

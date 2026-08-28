@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -62,8 +65,9 @@ void HidbusBase::DisablePollingMode() {
     polling_mode_enabled = false;
 }
 
-void HidbusBase::SetTransferMemoryAddress(Common::ProcessAddress t_mem) {
+void HidbusBase::SetTransferMemoryAddress(Common::ProcessAddress t_mem, Kernel::KProcess* owner) {
     transfer_memory = t_mem;
+    transfer_memory_owner = owner;
 }
 
 Kernel::KReadableEvent& HidbusBase::GetSendCommandAsycEvent() const {

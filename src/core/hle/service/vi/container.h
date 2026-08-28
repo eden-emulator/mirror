@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -68,6 +68,7 @@ public:
     Result SetLayerZIndex(u64 layer_id, s32 z_index);
     Result GetLayerZIndex(u64 layer_id, s32* out_z_index);
     Result SetLayerIsOverlay(u64 layer_id, bool is_overlay);
+    Result SetLayerStackMask(u64 layer_id, u32 layer_stack_mask);
 
     void LinkVsyncEvent(u64 display_id, Event* event);
     void UnlinkVsyncEvent(u64 display_id, Event* event);

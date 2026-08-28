@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -23,6 +26,25 @@ enum class LayerBlending : u32 {
     Coverage = 0x405,
 };
 
+enum class LayerStackId : u32 {
+    Default = 0,
+    Lcd = 1,
+    Screenshot = 2,
+    Recording = 3,
+    LastFrame = 4,
+    Arbitrary = 5,
+    ApplicationForDebug = 6,
+    Null = 10,
+};
+
+constexpr u32 LayerStackBit(LayerStackId id) {
+    return 1U << static_cast<u32>(id);
+}
+
+constexpr u32 DefaultLayerStackMask =
+    LayerStackBit(LayerStackId::Default) | LayerStackBit(LayerStackId::Screenshot) |
+    LayerStackBit(LayerStackId::Recording) | LayerStackBit(LayerStackId::LastFrame);
+
 struct HwcLayer {
     u32 buffer_handle;
     u32 offset;
@@ -35,6 +57,7 @@ struct HwcLayer {
     android::BufferTransformFlags transform;
     Common::Rectangle<int> crop_rect;
     android::Fence acquire_fence;
+    u32 layer_stack_mask;
 };
 
 } // namespace Service::Nvnflinger

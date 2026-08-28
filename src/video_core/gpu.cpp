@@ -144,6 +144,12 @@ struct GPU::Impl {
         sync_request_cv.wait(lck, [this, fence] { return CurrentSyncRequestFence() >= fence; });
     }
 
+    void WaitForIdle() {
+        const u64 fence = RequestSyncOperation([] {});
+        gpu_thread.TickGPU(is_async);
+        WaitForSyncOperation(fence);
+    }
+
     /// Tick pending requests within the GPU.
     void TickWork() {
         std::unique_lock lck{sync_request_mutex};
@@ -482,6 +488,10 @@ void GPU::Start() {
 
 void GPU::NotifyShutdown() {
     impl->NotifyShutdown();
+}
+
+void GPU::WaitForIdle() {
+    impl->WaitForIdle();
 }
 
 void GPU::ObtainContext() {

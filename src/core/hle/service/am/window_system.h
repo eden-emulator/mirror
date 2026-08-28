@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 
 #include "common/common_types.h"
 #include "core/hle/service/am/am_types.h"
@@ -60,11 +61,16 @@ public:
     void OnPowerButtonPressed(ButtonPressDuration type) {}
 
 private:
+    void UpdateCurrentApplicationLocked();
+    void NotifyApplicationChangedIfNeeded();
     void PruneTerminatedAppletsLocked();
     bool RestartAppletProcessLocked(Applet* applet);
     bool LockHomeMenuIntoForegroundLocked();
     void TerminateChildAppletsLocked(Applet* applet);
-    void UpdateAppletStateLocked(Applet* applet, bool is_foreground, bool overlay_blocking = false);
+    bool IsOverlayOpenLocked(const Applet& overlay) const;
+    bool DoesOverlayTakeInputLocked() const;
+
+    void UpdateAppletStateLocked(Applet* applet, bool is_foreground, bool overlay_takes_input);
     void SendButtonAppletMessageLocked(AppletMessage message);
 
 private:
@@ -88,6 +94,7 @@ private:
 
     // Applet map by aruid.
     std::map<u64, std::shared_ptr<Applet>> m_applets{};
+    std::optional<u64> m_pending_application_notification{};
 };
 
 } // namespace Service::AM

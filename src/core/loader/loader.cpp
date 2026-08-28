@@ -17,6 +17,8 @@
 #include "core/core.h"
 #include "core/file_sys/card_image.h"
 #include "core/file_sys/common_funcs.h"
+#include "core/file_sys/content_archive.h"
+#include "core/file_sys/registered_cache.h"
 #include "core/file_sys/submission_package.h"
 #include "core/hle/kernel/k_process.h"
 #include "core/loader/deconstructed_rom_directory.h"
@@ -38,6 +40,38 @@ std::optional<FileType> IdentifyFileLoader(FileSys::VirtualFile file) {
     if (file_type != FileType::Error) {
         return file_type;
     }
+    return std::nullopt;
+}
+
+struct IndexedProgram {
+    FileSys::VirtualFile file;
+    u64 program_id;
+    bool update_only;
+};
+
+std::optional<IndexedProgram> ResolveIndexedProgram(Core::System& system, u64 program_id,
+                                                    std::size_t program_index) {
+    if (program_index == 0 || program_id == 0) {
+        return std::nullopt;
+    }
+
+    const auto target_id = FileSys::GetBaseTitleIDWithProgramIndex(program_id, program_index);
+    const auto& provider = system.GetContentProvider();
+
+    if (auto base = provider.GetEntryRaw(target_id, FileSys::ContentRecordType::Program)) {
+        LOG_INFO(Loader, "Program index {} resolved to {:016X}", program_index, target_id);
+        return IndexedProgram{std::move(base), target_id, false};
+    }
+
+    const auto update_id = FileSys::GetUpdateTitleID(target_id);
+    if (auto update = provider.GetEntryRaw(update_id, FileSys::ContentRecordType::Program)) {
+        LOG_INFO(Loader, "Program index {} has no base program, loading it from update {:016X}",
+                 program_index, update_id);
+        return IndexedProgram{std::move(update), target_id, true};
+    }
+
+    LOG_WARNING(Loader, "No program NCA for {:016X} (index {}), falling back to the container",
+                target_id, program_index);
     return std::nullopt;
 }
 
@@ -319,6 +353,11 @@ std::unique_ptr<AppLoader> GetLoader(Core::System& system, FileSys::VirtualFile 
                                      u64 program_id, std::size_t program_index) {
     if (!file) {
         return nullptr;
+    }
+
+    if (const auto indexed = ResolveIndexedProgram(system, program_id, program_index)) {
+        return std::make_unique<AppLoader_NCA>(
+            indexed->file, indexed->update_only ? indexed->program_id : 0);
     }
 
     FileType type = IdentifyFile(file);

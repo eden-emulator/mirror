@@ -36,7 +36,8 @@ bool RendererBase::IsScreenshotPending() const {
 }
 
 void RendererBase::RequestScreenshot(void* data, std::function<void(bool)> callback,
-                                     const Layout::FramebufferLayout& layout) {
+                                     const Layout::FramebufferLayout& layout,
+                                     Service::Nvnflinger::LayerStackId layer_stack) {
     if (renderer_settings.screenshot_requested) {
         LOG_ERROR(Render, "A screenshot is already requested or in progress, ignoring the request");
         return;
@@ -48,6 +49,7 @@ void RendererBase::RequestScreenshot(void* data, std::function<void(bool)> callb
     renderer_settings.screenshot_bits = data;
     renderer_settings.screenshot_complete_callback = async_callback;
     renderer_settings.screenshot_framebuffer_layout = layout;
+    renderer_settings.screenshot_layer_stack = layer_stack;
     renderer_settings.screenshot_requested = true;
 }
 

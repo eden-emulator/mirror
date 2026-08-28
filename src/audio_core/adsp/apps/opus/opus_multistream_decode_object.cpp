@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,13 +10,12 @@
 namespace AudioCore::ADSP::OpusDecoder {
 
 namespace {
-bool IsValidChannelCount(u32 channel_count) {
-    return channel_count == 1 || channel_count == 2;
-}
+constexpr u32 OpusStreamCountMax = 255;
 
 bool IsValidStreamCounts(u32 total_stream_count, u32 stereo_stream_count) {
-    return total_stream_count > 0 && static_cast<s32>(stereo_stream_count) >= 0 &&
-           stereo_stream_count <= total_stream_count && IsValidChannelCount(total_stream_count);
+    return total_stream_count > 0 && total_stream_count <= OpusStreamCountMax &&
+           static_cast<s32>(stereo_stream_count) >= 0 &&
+           stereo_stream_count <= total_stream_count;
 }
 } // namespace
 

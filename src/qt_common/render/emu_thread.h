@@ -3,7 +3,10 @@
 
 #pragma once
 
+#include <optional>
+
 #include <QThread>
+#include "common/common_types.h"
 #include "common/logging.h"
 #include "common/thread.h"
 
@@ -63,9 +66,19 @@ public:
         m_stop_source.request_stop();
     }
 
+    /**
+     * Requests that the disk shader cache be reloaded for a different title.
+     */
+    void RequestDiskShaderCacheReload(u64 program_id) {
+        std::unique_lock run_lk{m_should_run_mutex};
+        m_pending_shader_cache_title = program_id;
+        m_should_run_cv.notify_one();
+    }
+
 private:
     void EmulationPaused(std::unique_lock<std::mutex>& lk);
     void EmulationResumed(std::unique_lock<std::mutex>& lk);
+    void ReloadDiskShaderCache(u64 program_id);
 
 private:
     std::stop_source m_stop_source;
@@ -73,6 +86,7 @@ private:
     std::condition_variable_any m_should_run_cv;
     Common::Event m_stopped;
     bool m_should_run{true};
+    std::optional<u64> m_pending_shader_cache_title;
 
 signals:
     /**
@@ -94,4 +108,7 @@ signals:
     void DebugModeLeft();
 
     void LoadProgress(VideoCore::LoadCallbackStage stage, std::size_t value, std::size_t total);
+
+    void ShaderCacheReloadStarted();
+    void ShaderCacheReloadFinished();
 };

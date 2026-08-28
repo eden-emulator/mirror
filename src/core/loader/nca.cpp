@@ -12,7 +12,9 @@
 #include "common/scope_exit.h"
 #include "core/core.h"
 #include "core/file_sys/content_archive.h"
+#include "core/file_sys/control_metadata.h"
 #include "core/file_sys/nca_metadata.h"
+#include "core/file_sys/patch_manager.h"
 #include "core/file_sys/registered_cache.h"
 #include "core/file_sys/romfs_factory.h"
 #include "core/hle/kernel/k_process.h"
@@ -33,8 +35,14 @@ static u32 CalculatePointerBufferSize(size_t heap_size) {
     }
 }
 
-AppLoader_NCA::AppLoader_NCA(FileSys::VirtualFile file_)
-    : AppLoader(std::move(file_)), nca(std::make_unique<FileSys::NCA>(file)) {}
+AppLoader_NCA::AppLoader_NCA(FileSys::VirtualFile file_, u64 update_only_program_id_)
+    : AppLoader(std::move(file_)),
+      nca(std::make_unique<FileSys::NCA>(file, nullptr, update_only_program_id_ != 0)),
+      update_only_program_id(update_only_program_id_) {}
+
+u64 AppLoader_NCA::GetProgramId() const {
+    return update_only_program_id != 0 ? update_only_program_id : nca->GetTitleId();
+}
 
 AppLoader_NCA::~AppLoader_NCA() = default;
 
@@ -110,11 +118,21 @@ AppLoader_NCA::LoadResult AppLoader_NCA::Load(Kernel::KProcess& process, Core::S
     }
 
     LOG_INFO(Loader, "Set pointer buffer size to {:#x} bytes for ProgramID {:#018x} (Heap size: {:#x})",
-             process.GetPointerBufferSize(), nca->GetTitleId(), heap_size);
+             process.GetPointerBufferSize(), GetProgramId(), heap_size);
+
+    auto metadata =
+        FileSys::PatchManager::GetMetadataFromBaseOrUpdate(system, this->GetProgramId());
+    if (metadata.first != nullptr) {
+        nacp = std::move(metadata.first);
+        LOG_INFO(Loader, "Control data for {:016X}: name=\"{}\" supported_languages={:08X}",
+                 this->GetProgramId(), nacp->GetApplicationName(), nacp->GetSupportedLanguages());
+    } else {
+        LOG_WARNING(Loader, "No control data found for program {:016X}", this->GetProgramId());
+    }
 
     // Register the process in the file system controller
     system.GetFileSystemController().RegisterProcess(
-        process.GetProcessId(), nca->GetTitleId(),
+        process.GetProcessId(), GetProgramId(),
         std::make_shared<FileSys::RomFSFactory>(*this, system.GetContentProvider(),
                                                 system.GetFileSystemController()));
 
@@ -222,7 +240,25 @@ ResultStatus AppLoader_NCA::ReadProgramId(u64& out_program_id) {
         return ResultStatus::ErrorNotInitialized;
     }
 
-    out_program_id = nca->GetTitleId();
+    out_program_id = GetProgramId();
+    return ResultStatus::Success;
+}
+
+ResultStatus AppLoader_NCA::ReadControlData(FileSys::NACP& out_control) {
+    if (nacp == nullptr) {
+        return ResultStatus::ErrorNoControl;
+    }
+
+    out_control = *nacp;
+    return ResultStatus::Success;
+}
+
+ResultStatus AppLoader_NCA::ReadTitle(std::string& out_title) {
+    if (nacp == nullptr) {
+        return ResultStatus::ErrorNoControl;
+    }
+
+    out_title = nacp->GetApplicationName();
     return ResultStatus::Success;
 }
 
