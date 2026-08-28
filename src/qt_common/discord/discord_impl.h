@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: 2018 Citra Emulator Project
@@ -26,11 +26,9 @@ public:
 
 private:
     std::string GetGameString(const std::string& title);
-    void UpdateGameStatus(bool use_default);
+    void UpdateGameStatus(std::string_view game_url, bool use_default);
 
-    std::string game_url{};
     std::string game_title{};
-
     Core::System& system;
 };
 
