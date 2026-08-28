@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <variant>
 #include "dynarmic/backend/loongarch64/emit_loongarch64.h"
 
 #include "dynarmic/backend/loongarch64/a32_jitstate.h"
@@ -95,7 +96,8 @@ EmittedBlockInfo EmitLoongArch64(lagoon_assembler_t& as, IR::Block block, const 
 
     // TODO: Emit Terminal
     const auto term = block.GetTerminal();
-    const IR::Term::LinkBlock* link_block_term = boost::get<IR::Term::LinkBlock>(&term);
+    const IR::Term::LeafTerminal* leaft_term = std::get_if<IR::Term::LeafTerminal>(&term);
+    const IR::Term::LinkBlock* link_block_term = std::get_if<IR::Term::LinkBlock>(leaft_term);
     ASSERT(link_block_term);
     la_load_immediate64(&as, Xscratch0, link_block_term->next.Value());
     la_st_w(&as, Xscratch0, Xstate, static_cast<int32_t>(offsetof(A32JitState, regs) + sizeof(u32) * 15));
