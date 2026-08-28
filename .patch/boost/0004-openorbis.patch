@@ -7,7 +7,7 @@ index 0129511c..10fc9b04 100644
  #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
  
 +// hacky fix for ps4
-+#if defined(_LIBCPP_HAS_MUSL_LIBC)
++#if defined(__OPENORBIS__)
 +#  define FIONBIO 0
 +#  define FIONREAD 1
 +#endif
