@@ -1020,20 +1020,6 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
                 view_formats[index_a].push_back(view_info.format);
             }
         }
-        if (IsPixelFormatASTC(image_format) || IsPixelFormatBCn(image_format)) {
-            continue;
-        }
-        const PixelFormat unswizzle_format =
-            UnswizzleViewFormat(VideoCore::Surface::BytesPerBlock(image_format));
-        if (unswizzle_format == PixelFormat::Invalid) {
-            continue;
-        }
-        const auto unswizzle_info =
-            MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, false, unswizzle_format);
-        auto& formats = view_formats[index_a];
-        if (std::ranges::find(formats, unswizzle_info.format) == formats.end()) {
-            formats.push_back(unswizzle_info.format);
-        }
     }
 
     if (Settings::values.gpu_unswizzle_enabled.GetValue()) {
