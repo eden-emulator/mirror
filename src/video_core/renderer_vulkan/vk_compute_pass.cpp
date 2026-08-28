@@ -876,6 +876,8 @@ void BlockLinearUnswizzle3DPass::UnswizzleChunk(
     });
 }
 
+namespace {
+
 constexpr u32 UNSWIZZLE_BINDING_INPUT_BUFFER = 0;
 constexpr u32 UNSWIZZLE_BINDING_OUTPUT_IMAGE = 1;
 constexpr size_t UNSWIZZLE_NUM_BINDINGS = 2;
@@ -1009,6 +1011,8 @@ void RecordUnswizzleExitBarrier(Scheduler& scheduler, VkImage vk_image,
                                vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, 0, image_barrier);
     });
 }
+
+} // Anonymous namespace
 
 BlockLinearUnswizzle2DPass::BlockLinearUnswizzle2DPass(
     const Device& device_, Scheduler& scheduler_, DescriptorPool& descriptor_pool_,

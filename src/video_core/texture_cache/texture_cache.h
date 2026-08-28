@@ -279,11 +279,11 @@ void TextureCache<P>::CheckFeedbackLoop(std::span<const ImageViewInOut> views) {
 
             const ImageId view_image_id = slot_image_views[view.id].image_id;
             {
-                bool is_continue = false;
+                bool is_feedback = false;
                 for (size_t i = 0; i < 8; ++i)
-                    is_continue |= (rt_active_mask & (1u << i)) && view_image_id == rt_image_id[i];
-                if (is_continue)
-                    continue;
+                    is_feedback |= (rt_active_mask & (1u << i)) && view_image_id == rt_image_id[i];
+                if (is_feedback)
+                    return true;
             }
             if (depth_active && view_image_id == rt_depth_image_id) {
                 return true;
