@@ -2440,7 +2440,7 @@ bool Image::ScaleUp(bool ignore) {
                                  runtime->ViewFormats(info.format));
         ignore = false;
     }
-    ignore = true;
+    current_image = &Image::scaled_image;
     if (ignore) {
         return true;
     }
@@ -2468,7 +2468,6 @@ bool Image::ScaleDown(bool ignore) {
     }
     ASSERT(info.type != ImageType::Linear);
     flags &= ~ImageFlagBits::Rescaled;
-    ignore = true;
     current_image = &Image::original_image;
     if (ignore) {
         return true;
