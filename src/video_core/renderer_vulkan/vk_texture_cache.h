@@ -160,6 +160,7 @@ public:
 
     std::optional<BlockLinearUnswizzle3DPass> bl3d_unswizzle_pass;
     std::optional<BlockLinearUnswizzle2DPass> bl_unswizzle_2d_pass;
+    std::optional<BlockLinearUnswizzleImage3DPass> bl_unswizzle_image_3d_pass;
     std::optional<PitchUnswizzlePass> pitch_unswizzle_pass;
     const Settings::ResolutionScalingInfo& resolution;
     std::array<std::vector<VkFormat>, VideoCore::Surface::MaxPixelFormat> view_formats;

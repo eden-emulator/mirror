@@ -209,6 +209,7 @@ endforeach()
 set(SHADER_DEFINE_VARIANTS
     "block_linear_unswizzle_2d.comp|nonarrow|HAS_EXTENDED_TYPES=0"
     "pitch_unswizzle.comp|nonarrow|HAS_EXTENDED_TYPES=0"
+    "block_linear_unswizzle_3d.comp|nonarrow|HAS_EXTENDED_TYPES=0"
 )
 
 foreach(VARIANT IN ITEMS ${SHADER_DEFINE_VARIANTS})

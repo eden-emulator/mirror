@@ -179,6 +179,21 @@ private:
     ComputePassDescriptorQueue& compute_pass_descriptor_queue;
 };
 
+class BlockLinearUnswizzleImage3DPass final : public ComputePass {
+public:
+    explicit BlockLinearUnswizzleImage3DPass(
+        const Device& device_, Scheduler& scheduler_, DescriptorPool& descriptor_pool_,
+        ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
+    ~BlockLinearUnswizzleImage3DPass();
+
+    void Unswizzle(Image& image, const StagingBufferRef& map,
+                   std::span<const VideoCommon::SwizzleParameters> swizzles);
+
+private:
+    Scheduler& scheduler;
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue;
+};
+
 class PitchUnswizzlePass final : public ComputePass {
 public:
     explicit PitchUnswizzlePass(const Device& device_, Scheduler& scheduler_,

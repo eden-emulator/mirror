@@ -191,7 +191,8 @@ constexpr u32 UNSWIZZLE_WORKGROUP_INVOCATIONS = 32 * 32;
     if (info.num_samples > 1) {
         return false;
     }
-    if (info.type != ImageType::e2D && info.type != ImageType::Linear) {
+    if (info.type != ImageType::e2D && info.type != ImageType::e3D &&
+        info.type != ImageType::Linear) {
         return false;
     }
     const PixelFormat view_format =
@@ -1029,6 +1030,8 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
     if (SupportsAcceleratedUnswizzleDevice(device)) {
         bl_unswizzle_2d_pass.emplace(device, scheduler, descriptor_pool,
                                      compute_pass_descriptor_queue);
+        bl_unswizzle_image_3d_pass.emplace(device, scheduler, descriptor_pool,
+                                           compute_pass_descriptor_queue);
         pitch_unswizzle_pass.emplace(device, scheduler, descriptor_pool,
                                      compute_pass_descriptor_queue);
     }
@@ -3226,6 +3229,11 @@ void TextureCacheRuntime::AccelerateImageUpload(
 
     if (bl_unswizzle_2d_pass && image.info.type == ImageType::e2D) {
         return bl_unswizzle_2d_pass->Unswizzle(image, map, swizzles);
+    }
+
+    if (bl_unswizzle_image_3d_pass && image.info.type == ImageType::e3D &&
+        !IsPixelFormatBCn(image.info.format)) {
+        return bl_unswizzle_image_3d_pass->Unswizzle(image, map, swizzles);
     }
 
     if (pitch_unswizzle_pass && image.info.type == ImageType::Linear) {
