@@ -9,11 +9,7 @@
 #include <optional>
 #include <string>
 
-#define STBI_ONLY_JPEG 1
-#include <stb_image.h>
-#include <stb_image_resize.h>
-#include <stb_image_write.h>
-
+#include "common/stb.h"
 #include "common/settings.h"
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/patch_manager.h"

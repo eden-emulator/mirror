@@ -7,6 +7,7 @@
 #pragma once
 
 #define STBI_ONLY_JPEG 1
+#define STBI_WRITE_NO_STDIO 1
 #include <stb_image.h>
 #include <stb_image_resize.h>
 #include <stb_image_write.h>
