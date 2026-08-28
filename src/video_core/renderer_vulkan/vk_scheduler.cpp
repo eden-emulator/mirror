@@ -449,7 +449,9 @@ void Scheduler::EndRenderPass()
                                          | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
                                          | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
                                          | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT
-                                         | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                                         | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT
+                                         | VK_ACCESS_TRANSFER_READ_BIT
+                                         | VK_ACCESS_TRANSFER_WRITE_BIT,
                         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -460,7 +462,7 @@ void Scheduler::EndRenderPass()
             }
             cmdbuf.EndRenderPass();
             cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
-                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
                                    0, nullptr, nullptr, vk::Span(barriers.data(), num_images));
             if (has_transform_feedback) {
                 static constexpr VkMemoryBarrier XFB_OUTPUT_BARRIER{

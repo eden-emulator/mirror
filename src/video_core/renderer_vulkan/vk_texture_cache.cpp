@@ -160,6 +160,54 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
           info.size.depth == 1;
 }
 
+[[nodiscard]] PixelFormat UnswizzleViewFormat(u32 bytes_per_block) {
+    switch (bytes_per_block) {
+    case 1:
+        return PixelFormat::R8_UINT;
+    case 2:
+        return PixelFormat::R16_UINT;
+    case 4:
+        return PixelFormat::R32_UINT;
+    case 8:
+        return PixelFormat::R32G32_UINT;
+    case 16:
+        return PixelFormat::R32G32B32A32_UINT;
+    default:
+        return PixelFormat::Invalid;
+    }
+}
+
+constexpr u32 UNSWIZZLE_WORKGROUP_INVOCATIONS = 32 * 32;
+
+[[nodiscard]] bool SupportsAcceleratedUnswizzleDevice(const Device& device) {
+    return device.IsKhrImageFormatListSupported() &&
+           device.GetMaxComputeWorkGroupInvocations() >= UNSWIZZLE_WORKGROUP_INVOCATIONS;
+}
+
+[[nodiscard]] bool SupportsAcceleratedUnswizzle(const Device& device, const ImageInfo& info) {
+    if (!SupportsAcceleratedUnswizzleDevice(device)) {
+        return false;
+    }
+    if (info.num_samples > 1) {
+        return false;
+    }
+    if (info.type != ImageType::e2D && info.type != ImageType::Linear) {
+        return false;
+    }
+    const PixelFormat view_format =
+        UnswizzleViewFormat(VideoCore::Surface::BytesPerBlock(info.format));
+    if (view_format == PixelFormat::Invalid) {
+        return false;
+    }
+    if (!VideoCore::Surface::IsViewCompatible(info.format, view_format, false, true)) {
+        return false;
+    }
+    const auto host_format =
+        MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, false, view_format);
+    return device.IsFormatSupported(host_format.format, VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT,
+                                    FormatType::Optimal);
+}
+
 [[nodiscard]] VkImageCreateInfo MakeImageCreateInfo(const Device& device, const ImageInfo& info,
                                                     std::optional<VkFormat> format_override = {}) {
     auto format_info =
@@ -248,8 +296,18 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     return allocator.CreateImage(image_ci);
 }
 
+[[nodiscard]] VkImageViewType StorageViewType(ImageType type) {
+    if (type == ImageType::e3D) {
+        return VK_IMAGE_VIEW_TYPE_3D;
+    }
+    if (type == ImageType::Linear) {
+        return VK_IMAGE_VIEW_TYPE_2D;
+    }
+    return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+}
+
 [[nodiscard]] vk::ImageView MakeStorageView(const vk::Device& device, u32 level, VkImage image,
-                                            VkFormat format) {
+                                            VkFormat format, VkImageViewType view_type) {
     static constexpr VkImageViewUsageCreateInfo storage_image_view_usage_create_info{
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
         .pNext = nullptr,
@@ -260,7 +318,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         .pNext = &storage_image_view_usage_create_info,
         .flags = 0,
         .image = image,
-        .viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+        .viewType = view_type,
         .format = format,
         .components{
             .r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -967,6 +1025,12 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
     if (Settings::values.gpu_unswizzle_enabled.GetValue()) {
         bl3d_unswizzle_pass.emplace(device, scheduler, descriptor_pool,
                                    staging_buffer_pool, compute_pass_descriptor_queue);
+    }
+    if (SupportsAcceleratedUnswizzleDevice(device)) {
+        bl_unswizzle_2d_pass.emplace(device, scheduler, descriptor_pool,
+                                     compute_pass_descriptor_queue);
+        pitch_unswizzle_pass.emplace(device, scheduler, descriptor_pool,
+                                     compute_pass_descriptor_queue);
     }
 }
 
@@ -1902,16 +1966,12 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
     if (runtime->device.HasDebuggingToolAttached()) {
         original_image.SetObjectNameEXT(VideoCommon::Name(*this).c_str());
     }
+    if (False(flags & VideoCommon::ImageFlagBits::Converted) &&
+        SupportsAcceleratedUnswizzle(runtime->device, info)) {
+        flags |= VideoCommon::ImageFlagBits::AcceleratedUpload;
+    }
     current_image = &Image::original_image;
     storage_image_views.resize(info.resources.levels);
-    if (WillUseAcceleratedAstcDecode(runtime->device, info)) {
-        const auto& device = runtime->device.GetLogical();
-        const VkFormat storage_format = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
-        for (s32 level = 0; level < info.resources.levels; ++level) {
-            storage_image_views[level] =
-                MakeStorageView(device, level, *original_image, storage_format);
-        }
-    }
 }
 
 Image::Image(const VideoCommon::NullImageParams& params) : VideoCommon::ImageBase{params} {}
@@ -2321,16 +2381,39 @@ void Image::DownloadMemory(const StagingBufferRef& map, std::span<const BufferIm
     DownloadMemory(buffers, offsets, copies);
 }
 
+std::vector<vk::ImageView>& Image::StorageViewsFor(vk::Image Image::*image) {
+    if (image == &Image::scaled_image) {
+        if (scaled_storage_image_views.empty()) {
+            scaled_storage_image_views.resize(info.resources.levels);
+        }
+        return scaled_storage_image_views;
+    }
+    return storage_image_views;
+}
+
 VkImageView Image::StorageImageView(s32 level) noexcept {
-    auto& view = storage_image_views[level];
+    const bool astc_decode = WillUseAcceleratedAstcDecode(runtime->device, info);
+    const bool unswizzle_upload =
+        !astc_decode && True(flags & ImageFlagBits::AcceleratedUpload);
+    vk::Image Image::*target = current_image;
+    if (astc_decode || unswizzle_upload) {
+        target = &Image::original_image;
+    }
+    auto& view = StorageViewsFor(target)[level];
     if (!view) {
         auto format_info =
             MaxwellToVK::SurfaceFormat(runtime->device, FormatType::Optimal, true, info.format);
-        if (WillUseAcceleratedAstcDecode(runtime->device, info)) {
+        if (astc_decode) {
             format_info.format = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
         }
-        view = MakeStorageView(runtime->device.GetLogical(), level, *(this->*current_image),
-                               format_info.format);
+        if (unswizzle_upload) {
+            const PixelFormat view_format =
+                UnswizzleViewFormat(VideoCore::Surface::BytesPerBlock(info.format));
+            format_info = MaxwellToVK::SurfaceFormat(runtime->device, FormatType::Optimal, false,
+                                                     view_format);
+        }
+        view = MakeStorageView(runtime->device.GetLogical(), level, *(this->*target),
+                               format_info.format, StorageViewType(info.type));
     }
     return *view;
 }
@@ -3139,6 +3222,14 @@ void TextureCacheRuntime::AccelerateImageUpload(
 
     if (IsPixelFormatASTC(image.info.format)) {
         return astc_decoder_pass->Assemble(image, map, swizzles);
+    }
+
+    if (bl_unswizzle_2d_pass && image.info.type == ImageType::e2D) {
+        return bl_unswizzle_2d_pass->Unswizzle(image, map, swizzles);
+    }
+
+    if (pitch_unswizzle_pass && image.info.type == ImageType::Linear) {
+        return pitch_unswizzle_pass->Unswizzle(image, map, swizzles);
     }
 
     if (!Settings::values.gpu_unswizzle_enabled.GetValue() || !bl3d_unswizzle_pass) {

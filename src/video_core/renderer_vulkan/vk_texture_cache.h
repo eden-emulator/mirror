@@ -159,6 +159,8 @@ public:
     std::optional<ASTCDecoderPass> astc_decoder_pass;
 
     std::optional<BlockLinearUnswizzle3DPass> bl3d_unswizzle_pass;
+    std::optional<BlockLinearUnswizzle2DPass> bl_unswizzle_2d_pass;
+    std::optional<PitchUnswizzlePass> pitch_unswizzle_pass;
     const Settings::ResolutionScalingInfo& resolution;
     std::array<std::vector<VkFormat>, VideoCore::Surface::MaxPixelFormat> view_formats;
 
@@ -370,6 +372,8 @@ private:
 
     bool NeedsScaleHelper() const;
 
+    std::vector<vk::ImageView>& StorageViewsFor(vk::Image Image::*image);
+
     Scheduler* scheduler{};
     TextureCacheRuntime* runtime{};
 
@@ -387,6 +391,7 @@ private:
     vk::Image Image::*current_image{};
 
     std::vector<vk::ImageView> storage_image_views;
+    std::vector<vk::ImageView> scaled_storage_image_views;
     VkImageAspectFlags aspect_mask = 0;
     bool initialized = false;
 

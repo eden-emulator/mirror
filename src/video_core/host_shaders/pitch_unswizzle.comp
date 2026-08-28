@@ -5,9 +5,13 @@
 
 #ifdef VULKAN
 
+#ifndef HAS_EXTENDED_TYPES
+#define HAS_EXTENDED_TYPES 1
+#endif
+#if HAS_EXTENDED_TYPES
 #extension GL_EXT_shader_16bit_storage : require
 #extension GL_EXT_shader_8bit_storage : require
-#define HAS_EXTENDED_TYPES 1
+#endif
 #define BEGIN_PUSH_CONSTANTS layout(push_constant) uniform PushConstants {
 #define END_PUSH_CONSTANTS };
 #define UNIFORM(n)
