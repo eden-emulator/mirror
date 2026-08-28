@@ -324,6 +324,7 @@ Result IApplicationFunctions::NotifyRunning(Out<bool> out_became_running) {
 
 Result IApplicationFunctions::GetPseudoDeviceId(Out<Common::UUID> out_pseudo_device_id) {
     LOG_WARNING(Service_AM, "(stubbed)");
+    R_UNLESS(out_pseudo_device_id, ResultUnknown);
 
     // This should be hashed with the device specific hash
     // for now this will do
