@@ -1122,7 +1122,8 @@ void TextureCache<P>::RefreshContents(Image& image, ImageId image_id) {
 
     TrackImage(image, image_id);
 
-    if (image.info.rescaleable) {
+    if (image.info.rescaleable &&
+        IsRegionGpuModified(image.cpu_addr, image.guest_size_bytes)) {
         runtime.TransitionImageLayout(image);
         return;
     }
