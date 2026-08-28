@@ -136,14 +136,14 @@
 #    endif
 #elif defined(ARCHITECTURE_riscv64)
 #   if defined(__FreeBSD__)
-#       define CTX_SEPC (mctx.mc_gpregs.gp_sepc)
+#       define CTX_PC (mctx.mc_gpregs.gp_sepc)
 #       define CTX_SP (mctx.mc_gpregs.gp_sp)
 #   elif defined(__linux__)
-#       define CTX_SEPC (mctx.__gregs[REG_PC])
+#       define CTX_PC (mctx.__gregs[REG_PC])
 #       define CTX_SP (mctx.__gregs[REG_SP])
 #   elif defined(__OpenBSD__)
 // https://github.com/openbsd/src/blob/master/sys/arch/riscv64/include/signal.h
-#        define CTX_SEPC (ucontext->sc_sepc)
+#        define CTX_PC (ucontext->sc_sepc)
 #        define CTX_SP (ucontext->sc_sp)
 #    else
 #        error "unknown platform"
