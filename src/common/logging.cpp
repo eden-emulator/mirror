@@ -298,7 +298,7 @@ private:
     std::size_t bytes_written = 0;
     bool enabled = true;
 };
-#endif
+
 #ifdef _WIN32
 /// @brief Backend that writes to Visual Studio's output window
 struct DebuggerBackend final : public Backend {

@@ -81,8 +81,12 @@ EmuWindow_SDL3_VK::EmuWindow_SDL3_VK(InputCommon::InputSubsystem* input_subsyste
         window_info.type = Core::Frontend::WindowSystemType::Android;
         window_info.render_surface = android_window;
     } else {
+#ifdef __OPENORBIS__
+        window_info.type = Core::Frontend::WindowSystemType::Headless;
+#else
         LOG_CRITICAL(Frontend, "Unable to determine native window backend from SDL properties");
         std::exit(EXIT_FAILURE);
+#endif
     }
 
     OnResize();

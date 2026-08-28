@@ -13,9 +13,11 @@
 
 namespace Vulkan {
 
-std::shared_ptr<Common::DynamicLibrary> OpenLibrary(
-    [[maybe_unused]] Core::Frontend::GraphicsContext* context) {
+std::shared_ptr<Common::DynamicLibrary> OpenLibrary([[maybe_unused]] Core::Frontend::GraphicsContext* context) {
     LOG_DEBUG(Render_Vulkan, "Looking for a Vulkan library");
+#if defined(__OPENORBIS__)
+    return std::make_shared<Common::DynamicLibrary>();
+#else
 #if defined(__ANDROID__) && defined(ARCHITECTURE_arm64)
     // Android manages its Vulkan driver from the frontend.
     return context->GetDriverLibrary();
@@ -45,6 +47,7 @@ std::shared_ptr<Common::DynamicLibrary> OpenLibrary(
     }
 #endif
     return library;
+#endif
 #endif
 }
 
