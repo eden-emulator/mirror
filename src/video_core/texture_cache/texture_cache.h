@@ -1122,11 +1122,6 @@ void TextureCache<P>::RefreshContents(Image& image, ImageId image_id) {
 
     TrackImage(image, image_id);
 
-    if (True(image.flags & ImageFlagBits::GpuModified) && image.info.rescaleable) {
-        runtime.TransitionImageLayout(image);
-        return;
-    }
-
     if (image.info.num_samples > 1 && !runtime.CanUploadMSAA()) {
         LOG_WARNING(HW_GPU, "MSAA image uploads are not implemented");
         runtime.TransitionImageLayout(image);
@@ -1270,6 +1265,9 @@ ImageId TextureCache<P>::FindImage(const ImageInfo& info, GPUVAddr gpu_addr,
 
 template <class P>
 bool TextureCache<P>::ImageCanRescale(ImageBase& image) {
+    if (!Settings::values.resolution_info.active) {
+        return false;
+    }
     if (!image.info.rescaleable) {
         return false;
     }
