@@ -307,6 +307,10 @@ public:
         current_draw_indirect = current_draw_indirect_;
     }
 
+    void SetDrawInstanceCount(u32 draw_instance_count_) {
+        draw_instance_count = draw_instance_count_;
+    }
+
     [[nodiscard]] std::pair<Buffer*, u32> GetDrawIndirectCount();
 
     [[nodiscard]] std::pair<Buffer*, u32> GetDrawIndirectBuffer();
@@ -479,6 +483,10 @@ private:
     DelayedDestructionRing<Buffer, TICKS_TO_DESTROY> delayed_destruction_ring;
 
     const Tegra::Engines::Maxwell3D::DrawManager::IndirectParams* current_draw_indirect{};
+
+    u32 draw_instance_count = 0;
+    u32 last_draw_instance_count = 0;
+    u32 last_draw_base_instance = 0;
 
     u32 last_index_count = 0;
 

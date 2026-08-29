@@ -1244,6 +1244,20 @@ void BufferCache<P>::UpdateIndexBuffer() {
 template <class P>
 void BufferCache<P>::UpdateVertexBuffers() {
     auto& flags = maxwell3d->dirty.flags;
+    const u32 base_instance = maxwell3d->draw_manager.draw_state.base_instance;
+    if (draw_instance_count != last_draw_instance_count ||
+        base_instance != last_draw_base_instance) {
+        last_draw_instance_count = draw_instance_count;
+        last_draw_base_instance = base_instance;
+        const auto& instances = maxwell3d->regs.vertex_stream_instances;
+        for (u32 index = 0; index < NUM_VERTEX_BUFFERS; ++index) {
+            if (!instances.IsInstancingEnabled(index)) {
+                continue;
+            }
+            flags[Dirty::VertexBuffer0 + index] = true;
+            flags[Dirty::VertexBuffers] = true;
+        }
+    }
     if (!maxwell3d->dirty.flags[Dirty::VertexBuffers]) {
         return;
     }
@@ -1270,9 +1284,24 @@ void BufferCache<P>::UpdateVertexBuffer(u32 index) {
         return;
     }
     // TODO: Analyze stride and number of vertices
-    u64 address_size = (std::min)(gpu_addr_end - gpu_addr_begin,
-                                  u64{(std::numeric_limits<u32>::max)()});
-    if (!gpu_memory->IsWithinGPUAddressRange(gpu_addr_end) || address_size >= 64_MiB) {
+    constexpr u64 implausible_size = 64_MiB;
+    u64 address_size = gpu_addr_end - gpu_addr_begin;
+    if (address_size > u64{(std::numeric_limits<u32>::max)()}) {
+        address_size = implausible_size;
+    }
+    const bool is_instanced = maxwell3d->regs.vertex_stream_instances.IsInstancingEnabled(index);
+    const u64 stride = static_cast<u64>(array.stride);
+    if (is_instanced && stride != 0 && draw_instance_count != 0) {
+        const u64 base_instance = static_cast<u64>(maxwell3d->draw_manager.draw_state.base_instance);
+        u64 elements = base_instance + 1;
+        if (array.frequency != 0) {
+            elements = (base_instance + static_cast<u64>(draw_instance_count) - 1) /
+                           static_cast<u64>(array.frequency) +
+                       1;
+        }
+        address_size = (std::min)(address_size, (elements + 1) * stride);
+    }
+    if (!gpu_memory->IsWithinGPUAddressRange(gpu_addr_end) || address_size >= implausible_size) {
         address_size = gpu_memory->MaxContinuousRange(gpu_addr_begin, address_size);
     }
     const u32 size = static_cast<u32>(address_size);

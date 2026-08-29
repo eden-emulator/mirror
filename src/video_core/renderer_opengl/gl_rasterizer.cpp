@@ -259,6 +259,7 @@ void RasterizerOpenGL::PrepareDraw(bool is_indexed, Func&& draw_func) {
 }
 
 void RasterizerOpenGL::Draw(bool is_indexed, u32 instance_count) {
+    buffer_cache.SetDrawInstanceCount(instance_count);
     PrepareDraw(is_indexed, [this, is_indexed, instance_count](GLenum primitive_mode) {
         const auto& draw_state = maxwell3d->draw_manager.draw_state;
         const GLuint base_instance = GLuint(draw_state.base_instance);
@@ -304,6 +305,7 @@ void RasterizerOpenGL::Draw(bool is_indexed, u32 instance_count) {
 void RasterizerOpenGL::DrawIndirect() {
     const auto& params = maxwell3d->draw_manager.indirect_state;
     buffer_cache.SetDrawIndirect(&params);
+    buffer_cache.SetDrawInstanceCount(0);
     PrepareDraw(params.is_indexed, [this, &params](GLenum primitive_mode) {
         if (params.is_byte_count) {
             const GPUVAddr tfb_object_base_addr = params.indirect_start_address - 4U;
