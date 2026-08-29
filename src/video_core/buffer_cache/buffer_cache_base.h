@@ -390,9 +390,11 @@ private:
 
     void UpdateIndexBuffer();
 
-    void UpdateVertexBuffers();
+    void UpdateVertexBuffers(bool is_indexed);
 
-    void UpdateVertexBuffer(u32 index);
+    void UpdateVertexBuffer(u32 index, bool is_indexed);
+
+    [[nodiscard]] u64 DrawVertexBound(u32 index, bool is_indexed) const;
 
     void UpdateDrawIndirect();
 
@@ -485,8 +487,7 @@ private:
     const Tegra::Engines::Maxwell3D::DrawManager::IndirectParams* current_draw_indirect{};
 
     u32 draw_instance_count = 0;
-    u32 last_draw_instance_count = 0;
-    u32 last_draw_base_instance = 0;
+    std::array<u64, NUM_VERTEX_BUFFERS> last_draw_bounds{};
 
     u32 last_index_count = 0;
 

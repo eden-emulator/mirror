@@ -1168,7 +1168,7 @@ void BufferCache<P>::DoUpdateGraphicsBuffers(bool is_indexed) {
         if (is_indexed) {
             UpdateIndexBuffer();
         }
-        UpdateVertexBuffers();
+        UpdateVertexBuffers(is_indexed);
         UpdateTransformFeedbackBuffers();
         for (size_t stage = 0; stage < NUM_STAGES; ++stage) {
             UpdateUniformBuffers(stage);
@@ -1242,21 +1242,56 @@ void BufferCache<P>::UpdateIndexBuffer() {
 }
 
 template <class P>
-void BufferCache<P>::UpdateVertexBuffers() {
-    auto& flags = maxwell3d->dirty.flags;
-    const u32 base_instance = maxwell3d->draw_manager.draw_state.base_instance;
-    if (draw_instance_count != last_draw_instance_count ||
-        base_instance != last_draw_base_instance) {
-        last_draw_instance_count = draw_instance_count;
-        last_draw_base_instance = base_instance;
-        const auto& instances = maxwell3d->regs.vertex_stream_instances;
-        for (u32 index = 0; index < NUM_VERTEX_BUFFERS; ++index) {
-            if (!instances.IsInstancingEnabled(index)) {
-                continue;
-            }
-            flags[Dirty::VertexBuffer0 + index] = true;
-            flags[Dirty::VertexBuffers] = true;
+u64 BufferCache<P>::DrawVertexBound(u32 index, bool is_indexed) const {
+    const auto& array = maxwell3d->regs.vertex_streams[index];
+    const u64 stride = static_cast<u64>(array.stride);
+    if (array.enable == 0 || stride == 0) {
+        return 0;
+    }
+    const auto& draw_state = maxwell3d->draw_manager.draw_state;
+    if (maxwell3d->regs.vertex_stream_instances.IsInstancingEnabled(index)) {
+        if (draw_instance_count == 0) {
+            return 0;
         }
+        const u64 base_instance = static_cast<u64>(draw_state.base_instance);
+        u64 elements = base_instance + 1;
+        if (array.frequency != 0) {
+            elements = (base_instance + static_cast<u64>(draw_instance_count) - 1) /
+                           static_cast<u64>(array.frequency) +
+                       1;
+        }
+        return (elements + 1) * stride;
+    }
+    if (!is_indexed) {
+        const u64 elements = static_cast<u64>(draw_state.vertex_buffer.first) +
+                             static_cast<u64>(draw_state.vertex_buffer.count);
+        return (elements + 1) * stride;
+    }
+    u64 max_index = 0;
+    switch (draw_state.index_buffer.format) {
+    case Maxwell::IndexFormat::UnsignedByte:
+        max_index = 0xFF;
+        break;
+    case Maxwell::IndexFormat::UnsignedShort:
+        max_index = 0xFFFF;
+        break;
+    default:
+        return 0;
+    }
+    const u64 elements = static_cast<u64>(draw_state.base_index) + max_index + 1;
+    return (elements + 1) * stride;
+}
+
+template <class P>
+void BufferCache<P>::UpdateVertexBuffers(bool is_indexed) {
+    auto& flags = maxwell3d->dirty.flags;
+    for (u32 index = 0; index < NUM_VERTEX_BUFFERS; ++index) {
+        const u64 bound = DrawVertexBound(index, is_indexed);
+        if (bound <= last_draw_bounds[index]) {
+            continue;
+        }
+        flags[Dirty::VertexBuffer0 + index] = true;
+        flags[Dirty::VertexBuffers] = true;
     }
     if (!maxwell3d->dirty.flags[Dirty::VertexBuffers]) {
         return;
@@ -1264,12 +1299,12 @@ void BufferCache<P>::UpdateVertexBuffers() {
     flags[Dirty::VertexBuffers] = false;
 
     for (u32 index = 0; index < NUM_VERTEX_BUFFERS; ++index) {
-        UpdateVertexBuffer(index);
+        UpdateVertexBuffer(index, is_indexed);
     }
 }
 
 template <class P>
-void BufferCache<P>::UpdateVertexBuffer(u32 index) {
+void BufferCache<P>::UpdateVertexBuffer(u32 index, bool is_indexed) {
     if (!maxwell3d->dirty.flags[Dirty::VertexBuffer0 + index]) {
         return;
     }
@@ -1289,17 +1324,11 @@ void BufferCache<P>::UpdateVertexBuffer(u32 index) {
     if (address_size > u64{(std::numeric_limits<u32>::max)()}) {
         address_size = implausible_size;
     }
-    const bool is_instanced = maxwell3d->regs.vertex_stream_instances.IsInstancingEnabled(index);
-    const u64 stride = static_cast<u64>(array.stride);
-    if (is_instanced && stride != 0 && draw_instance_count != 0) {
-        const u64 base_instance = static_cast<u64>(maxwell3d->draw_manager.draw_state.base_instance);
-        u64 elements = base_instance + 1;
-        if (array.frequency != 0) {
-            elements = (base_instance + static_cast<u64>(draw_instance_count) - 1) /
-                           static_cast<u64>(array.frequency) +
-                       1;
-        }
-        address_size = (std::min)(address_size, (elements + 1) * stride);
+    const u64 draw_bound = DrawVertexBound(index, is_indexed);
+    last_draw_bounds[index] = (std::numeric_limits<u64>::max)();
+    if (draw_bound != 0) {
+        last_draw_bounds[index] = draw_bound;
+        address_size = (std::min)(address_size, draw_bound);
     }
     if (!gpu_memory->IsWithinGPUAddressRange(gpu_addr_end) || address_size >= implausible_size) {
         address_size = gpu_memory->MaxContinuousRange(gpu_addr_begin, address_size);
