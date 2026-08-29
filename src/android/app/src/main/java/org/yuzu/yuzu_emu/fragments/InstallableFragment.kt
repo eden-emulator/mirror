@@ -232,7 +232,7 @@ class InstallableFragment : Fragment() {
                 fragmentManager = parentFragmentManager,
                 addonViewModel = addonViewModel,
                 documents = documents,
-                programId = addonViewModel.game?.programId
+                programId = addonViewModel.game?.applicationId
             )
         }
 

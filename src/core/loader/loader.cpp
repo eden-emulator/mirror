@@ -70,6 +70,15 @@ std::optional<IndexedProgram> ResolveIndexedProgram(Core::System& system, u64 pr
         return IndexedProgram{std::move(update), target_id, true};
     }
 
+    const auto application_update_id =
+        FileSys::GetUpdateTitleID(FileSys::GetBaseTitleID(target_id));
+    if (application_update_id != update_id) {
+        if (auto update = provider.GetEntryRaw(application_update_id, FileSys::ContentRecordType::Program)) {
+            LOG_INFO(Loader, "Program index {} has no base program, loading it from application update {:016X}", program_index, application_update_id);
+            return IndexedProgram{std::move(update), target_id, true};
+        }
+    }
+
     LOG_WARNING(Loader, "No program NCA for {:016X} (index {}), falling back to the container",
                 target_id, program_index);
     return std::nullopt;

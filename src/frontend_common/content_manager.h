@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: 2024 yuzu Emulator Project
@@ -56,13 +56,14 @@ inline bool RemoveDLC(const Service::FileSystem::FileSystemController& fs_contro
  */
 inline size_t RemoveAllDLC(Core::System& system, const u64 program_id) {
     size_t count{};
+    const auto application_id = FileSys::GetBaseTitleID(program_id);
     const auto& fs_controller = system.GetFileSystemController();
     const auto dlc_entries = system.GetContentProvider().ListEntriesFilter(
         FileSys::TitleType::AOC, FileSys::ContentRecordType::Data);
     std::vector<u64> program_dlc_entries;
 
     for (const auto& entry : dlc_entries) {
-        if (FileSys::GetBaseTitleID(entry.title_id) == program_id) {
+        if (FileSys::GetBaseTitleID(entry.title_id) == application_id) {
             program_dlc_entries.push_back(entry.title_id);
         }
     }
@@ -83,9 +84,17 @@ inline size_t RemoveAllDLC(Core::System& system, const u64 program_id) {
  */
 inline bool RemoveUpdate(const Service::FileSystem::FileSystemController& fs_controller,
                          const u64 program_id) {
-    const auto update_id = program_id | 0x800;
-    return fs_controller.GetUserNANDContents()->RemoveExistingEntry(update_id) ||
-           fs_controller.GetSDMCContents()->RemoveExistingEntry(update_id);
+    const auto remove_update = [&fs_controller](u64 update_id) {
+        return fs_controller.GetUserNANDContents()->RemoveExistingEntry(update_id) ||
+               fs_controller.GetSDMCContents()->RemoveExistingEntry(update_id);
+    };
+    const auto update_id = FileSys::GetUpdateTitleID(program_id);
+    const auto application_update_id =
+        FileSys::GetUpdateTitleID(FileSys::GetBaseTitleID(program_id));
+    if (update_id != application_update_id && remove_update(update_id)) {
+        return true;
+    }
+    return remove_update(application_update_id);
 }
 
 /**
@@ -111,15 +120,26 @@ inline bool RemoveBaseContent(const Service::FileSystem::FileSystemController& f
 inline bool RemoveMod(const Service::FileSystem::FileSystemController& fs_controller,
                       const u64 program_id, const std::string& mod_name) {
     // Check general Mods (LayeredFS and IPS)
-    const auto mod_dir = fs_controller.GetModificationLoadRoot(program_id);
-    if (mod_dir != nullptr) {
-        return mod_dir->DeleteSubdirectoryRecursive(mod_name);
+    const auto remove_from_root = [&mod_name](const auto& root) {
+        return root != nullptr && root->DeleteSubdirectoryRecursive(mod_name);
+    };
+    if (remove_from_root(fs_controller.GetModificationLoadRoot(program_id))) {
+        return true;
+    }
+    if (FileSys::GetBaseTitleID(program_id) != program_id &&
+        remove_from_root(
+            fs_controller.GetModificationLoadRoot(FileSys::GetBaseTitleID(program_id)))) {
+        return true;
     }
 
     // Check SDMC mod directory (RomFS LayeredFS)
-    const auto sdmc_mod_dir = fs_controller.GetSDMCModificationLoadRoot(program_id);
-    if (sdmc_mod_dir != nullptr) {
-        return sdmc_mod_dir->DeleteSubdirectoryRecursive(mod_name);
+    if (remove_from_root(fs_controller.GetSDMCModificationLoadRoot(program_id))) {
+        return true;
+    }
+    if (FileSys::GetBaseTitleID(program_id) != program_id &&
+        remove_from_root(
+            fs_controller.GetSDMCModificationLoadRoot(FileSys::GetBaseTitleID(program_id)))) {
+        return true;
     }
 
     return false;

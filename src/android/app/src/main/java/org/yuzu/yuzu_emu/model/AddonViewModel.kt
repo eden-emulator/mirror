@@ -142,10 +142,11 @@ class AddonViewModel : ViewModel() {
     }
 
     fun onDeleteAddon(patch: Patch) {
+        val currentGame = game ?: return
         when (PatchType.from(patch.type)) {
-            PatchType.Update -> NativeLibrary.removeUpdate(patch.programId)
-            PatchType.DLC -> NativeLibrary.removeDLC(patch.programId)
-            PatchType.Mod -> NativeLibrary.removeMod(patch.programId, patch.name)
+            PatchType.Update -> NativeLibrary.removeUpdate(currentGame.programId)
+            PatchType.DLC -> NativeLibrary.removeDLC(currentGame.applicationId)
+            PatchType.Mod -> NativeLibrary.removeMod(currentGame.programId, patch.name)
         }
         refreshAddons(force = true)
     }
@@ -165,7 +166,7 @@ class AddonViewModel : ViewModel() {
         }
 
         NativeConfig.setDisabledAddons(
-            currentGame.programId,
+            currentGame.applicationId,
             currentList.mapNotNull {
                 if (it.enabled) {
                     null
@@ -199,6 +200,6 @@ class AddonViewModel : ViewModel() {
     }
 
     private fun gameKey(game: Game): String {
-        return "${game.programId}|${game.path}"
+        return "${game.applicationId}|${game.path}"
     }
 }

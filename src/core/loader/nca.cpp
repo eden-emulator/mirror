@@ -11,6 +11,7 @@
 #include "common/hex_util.h"
 #include "common/scope_exit.h"
 #include "core/core.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/content_archive.h"
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/nca_metadata.h"
@@ -76,8 +77,13 @@ AppLoader_NCA::LoadResult AppLoader_NCA::Load(Kernel::KProcess& process, Core::S
         LOG_INFO(Loader, "No ExeFS found in NCA, looking for ExeFS from update");
 
         const auto& installed = system.GetContentProvider();
-        const auto update_nca = installed.GetEntry(FileSys::GetUpdateTitleID(nca->GetTitleId()),
-                                                   FileSys::ContentRecordType::Program);
+        const auto program_update_id = FileSys::GetUpdateTitleID(nca->GetTitleId());
+        auto update_nca = installed.GetEntry(program_update_id, FileSys::ContentRecordType::Program);
+        if (update_nca == nullptr) {
+            update_nca = installed.GetEntry(
+                FileSys::GetUpdateTitleID(FileSys::GetBaseTitleID(nca->GetTitleId())),
+                FileSys::ContentRecordType::Program);
+        }
 
         if (update_nca) {
             exefs = update_nca->GetExeFS();
