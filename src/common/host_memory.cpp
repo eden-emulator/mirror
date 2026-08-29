@@ -588,8 +588,9 @@ public:
         if (True(perms & MemoryPermission::Execute))
             prot_flags |= PROT_EXEC;
 #endif
-        int ret = mprotect(virtual_base + virtual_offset, length, prot_flags);
-        ASSERT_MSG(ret == 0, "mprotect: {} {}", strerror(errno), fd);
+        int flags = (fd >= 0 ? MAP_SHARED : MAP_PRIVATE) | MAP_FIXED;
+        void* ret = mmap(virtual_base + virtual_offset, length, prot_flags, flags, fd, host_offset);
+        ASSERT_MSG(ret != MAP_FAILED, "mmap: {} {}", strerror(errno), fd);
     }
 
     void Unmap(size_t virtual_offset, size_t length) {
@@ -603,8 +604,8 @@ public:
         auto [merged_pointer, merged_size] =
             free_manager.FreeBlock(virtual_base + virtual_offset, length);
 
-        int ret = mprotect(merged_pointer, merged_size, PROT_NONE);
-        ASSERT_MSG(ret == 0, "mmap: {}", strerror(errno));
+        void* ret = mmap(merged_pointer, merged_size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
+        ASSERT_MSG(ret != MAP_FAILED, "mmap: {}", strerror(errno));
     }
 
     void Protect(size_t virtual_offset, size_t length, bool read, bool write, bool execute) {
