@@ -139,6 +139,8 @@ class TextureCache : public VideoCommon::ChannelSetupCaches<TextureCacheChannelI
         AsyncBuffer staging_buffer;
         size_t last_submitted_offset = 0;
         size_t bytes_per_slice;
+        u32 slices_submitted = 0;
+        bool chunked = false;
         bool initialized = false;
     };
 

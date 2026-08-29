@@ -2639,6 +2639,10 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
     if (device->IsExtAstcDecodeModeSupported() && IsLdrAstcFormat(format_info.format)) {
         view_next = &astc_decode_mode;
     }
+    auto subresource_range = MakeSubresourceRange(aspect_mask, info.range);
+    if (True(flags & VideoCommon::ImageViewFlagBits::Slice)) {
+        subresource_range.levelCount = 1;
+    }
     const VkImageViewCreateInfo create_info{
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = view_next,
@@ -2647,7 +2651,7 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
         .viewType = VkImageViewType{},
         .format = format_info.format,
         .components = swizzle_mapping,
-        .subresourceRange = MakeSubresourceRange(aspect_mask, info.range),
+        .subresourceRange = subresource_range,
     };
     const auto create = [&](TextureType tex_type, std::optional<u32> num_layers) {
         VkImageViewCreateInfo ci{create_info};

@@ -20,6 +20,7 @@
 #include "video_core/engines/kepler_compute.h"
 #include "video_core/guest_memory.h"
 #include "video_core/host1x/gpu_device_memory_manager.h"
+#include "video_core/texture_cache/accelerated_swizzle.h"
 #include "video_core/texture_cache/image_view_base.h"
 #include "video_core/texture_cache/samples_helper.h"
 #include "video_core/texture_cache/texture_cache_base.h"
@@ -1163,8 +1164,7 @@ void TextureCache<P>::UploadImageContents(Image& image, StagingBuffer& staging) 
     const GPUVAddr gpu_addr = image.gpu_addr;
 
     if (True(image.flags & ImageFlagBits::AcceleratedUpload)) {
-        gpu_memory->ReadBlock(gpu_addr, mapped_span.data(), mapped_span.size_bytes(),
-                              VideoCommon::CacheType::NoTextureCache);
+        gpu_memory->ReadBlockUnsafe(gpu_addr, mapped_span.data(), image.guest_size_bytes);
         const auto uploads = FullUploadSwizzles(image.info);
         runtime.AccelerateImageUpload(image, staging, FixSmallVectorADL(uploads), 0, 0);
         return;
@@ -1435,18 +1435,16 @@ void TextureCache<P>::TickAsyncUnswizzle() {
     Image& image = slot_images[task.image_id];
 
     if (!task.initialized) {
-        task.total_size = MapSizeBytes(image);
+        task.total_size = image.guest_size_bytes;
         task.staging_buffer = runtime.UploadStagingBuffer(task.total_size, true);
 
-        const auto& info = image.info;
-        const u32 bytes_per_block = BytesPerBlock(info.format);
-        const u32 width_blocks = Common::DivCeil(info.size.width, 4u);
-        const u32 height_blocks = Common::DivCeil(info.size.height, 4u);
-
-        const u32 stride = width_blocks * bytes_per_block;
-        const u32 aligned_height = height_blocks;
-        task.bytes_per_slice = static_cast<size_t>(stride) * aligned_height;
+        const auto layout = FullUploadSwizzles(task.info);
+        const auto params =
+            VideoCommon::Accelerated::MakeBlockLinearSwizzle3DParams(layout.front(), task.info);
+        task.bytes_per_slice = params.slice_size;
+        task.chunked = task.info.block.depth == 0;
         task.last_submitted_offset = 0;
+        task.slices_submitted = 0;
         task.initialized = true;
     }
 
@@ -1461,31 +1459,39 @@ void TextureCache<P>::TickAsyncUnswizzle() {
             if (copy_amount == 0) copy_amount = task.bytes_per_slice;
         }
 
-        gpu_memory->ReadBlock(image.gpu_addr + task.current_offset,
-                              task.staging_buffer.mapped_span.data() + task.current_offset,
-                              copy_amount);
+        gpu_memory->ReadBlockUnsafe(image.gpu_addr + task.current_offset,
+                                    task.staging_buffer.mapped_span.data() + task.current_offset,
+                                    copy_amount);
         task.current_offset += copy_amount;
     }
 
     const bool is_final_batch = task.current_offset >= task.total_size;
-    const size_t bytes_ready = task.current_offset - task.last_submitted_offset;
-    const u32 complete_slices = static_cast<u32>(bytes_ready / task.bytes_per_slice);
 
-    if (complete_slices >= swizzle_slices_per_batch || (is_final_batch && complete_slices > 0)) {
-        const u32 z_start = static_cast<u32>(task.last_submitted_offset / task.bytes_per_slice);
-        const u32 slices_to_process = (std::min)(complete_slices, swizzle_slices_per_batch);
-        const u32 z_count = (std::min)(slices_to_process, image.info.size.depth - z_start);
+    if (task.chunked) {
+        const size_t bytes_ready = task.current_offset - task.last_submitted_offset;
+        const u32 complete_slices = static_cast<u32>(bytes_ready / task.bytes_per_slice);
 
-        if (z_count > 0) {
-            const auto uploads = FullUploadSwizzles(task.info);
-            runtime.AccelerateImageUpload(image, task.staging_buffer, FixSmallVectorADL(uploads), z_start, z_count);
-            task.last_submitted_offset += (static_cast<size_t>(z_count) * task.bytes_per_slice);
+        if (complete_slices >= swizzle_slices_per_batch || (is_final_batch && complete_slices > 0)) {
+            const u32 z_start = task.slices_submitted;
+            const u32 slices_to_process = (std::min)(complete_slices, swizzle_slices_per_batch);
+            const u32 z_count = (std::min)(slices_to_process, image.info.size.depth - z_start);
+
+            if (z_count > 0) {
+                const auto uploads = FullUploadSwizzles(task.info);
+                runtime.AccelerateImageUpload(image, task.staging_buffer,
+                                              FixSmallVectorADL(uploads), z_start, z_count);
+                task.last_submitted_offset += static_cast<size_t>(z_count) * task.bytes_per_slice;
+                task.slices_submitted += z_count;
+            }
         }
+    } else if (is_final_batch && task.slices_submitted == 0) {
+        const auto uploads = FullUploadSwizzles(task.info);
+        runtime.AccelerateImageUpload(image, task.staging_buffer, FixSmallVectorADL(uploads), 0,
+                                      image.info.size.depth);
+        task.slices_submitted = image.info.size.depth;
     }
 
-    // Check if complete
-    const u32 slices_submitted = static_cast<u32>(task.last_submitted_offset / task.bytes_per_slice);
-    const bool all_slices_submitted = slices_submitted >= image.info.size.depth;
+    const bool all_slices_submitted = task.slices_submitted >= image.info.size.depth;
 
     if (is_final_batch && all_slices_submitted) {
         runtime.FreeDeferredStagingBuffer(task.staging_buffer);
