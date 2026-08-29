@@ -399,6 +399,8 @@ private:
 
     [[nodiscard]] u64 DrawMaxIndex();
 
+    [[nodiscard]] u64 StreamAttributeExtent(u32 index);
+
     void UpdateDrawIndirect();
 
     void UpdateUniformBuffers(size_t stage);
@@ -494,6 +496,8 @@ private:
     Common::ScratchBuffer<u32> index_scan_buffer;
     u64 cached_max_index = 0;
     bool max_index_scanned = false;
+    std::array<u64, NUM_VERTEX_BUFFERS> stream_extents{};
+    bool stream_extents_valid = false;
 
     u32 last_index_count = 0;
 

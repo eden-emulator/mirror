@@ -1273,57 +1273,91 @@ u64 BufferCache<P>::DrawMaxIndex() {
 }
 
 template <class P>
+u64 BufferCache<P>::StreamAttributeExtent(u32 index) {
+    using VertexAttribute = typename Maxwell::VertexAttribute;
+    if (stream_extents_valid) {
+        return stream_extents[index];
+    }
+    stream_extents_valid = true;
+    stream_extents.fill(0);
+    for (size_t i = 0; i < Maxwell::NumVertexAttributes; ++i) {
+        const auto& attribute = maxwell3d->regs.vertex_attrib_format[i];
+        if (attribute.constant != 0 || attribute.size == VertexAttribute::Size::Invalid) {
+            continue;
+        }
+        const u32 buffer = attribute.buffer.Value();
+        if (buffer >= NUM_VERTEX_BUFFERS) {
+            continue;
+        }
+        const u64 end = static_cast<u64>(attribute.offset.Value()) +
+                        static_cast<u64>(attribute.SizeInBytes());
+        stream_extents[buffer] = (std::max)(stream_extents[buffer], end);
+    }
+    return stream_extents[index];
+}
+
+template <class P>
 u64 BufferCache<P>::DrawVertexBound(u32 index, bool is_indexed) {
     const auto& array = maxwell3d->regs.vertex_streams[index];
-    const u64 stride = static_cast<u64>(array.stride);
-    if (array.enable == 0 || stride == 0) {
+    if (array.enable == 0) {
         return 0;
     }
+    const u64 extent = StreamAttributeExtent(index);
+    if (extent == 0) {
+        return 0;
+    }
+    const u64 stride = static_cast<u64>(array.stride);
+    if (stride == 0) {
+        return extent;
+    }
     const auto& draw_state = maxwell3d->draw_manager.draw_state;
+    u64 elements = 0;
     if (maxwell3d->regs.vertex_stream_instances.IsInstancingEnabled(index)) {
         if (draw_instance_count == 0) {
             return 0;
         }
         const u64 base_instance = static_cast<u64>(draw_state.base_instance);
-        u64 elements = base_instance + 1;
+        elements = base_instance + 1;
         if (array.frequency != 0) {
             elements = (base_instance + static_cast<u64>(draw_instance_count) - 1) /
                            static_cast<u64>(array.frequency) +
                        1;
         }
-        return (elements + 1) * stride;
-    }
-    if (!is_indexed) {
-        const u64 elements = static_cast<u64>(draw_state.vertex_buffer.first) +
-                             static_cast<u64>(draw_state.vertex_buffer.count);
-        return (elements + 1) * stride;
-    }
-    const auto format = draw_state.index_buffer.format;
-    u64 max_index = 0xFF;
-    if (format == Maxwell::IndexFormat::UnsignedShort) {
-        max_index = 0xFFFF;
-    } else if (format != Maxwell::IndexFormat::UnsignedByte) {
-        const auto& limit = maxwell3d->regs.vertex_stream_limits[index];
-        const GPUVAddr gpu_addr_begin = array.Address();
-        const GPUVAddr gpu_addr_end = limit.Address() + 1;
-        if (gpu_addr_end <= gpu_addr_begin) {
-            return 0;
+    } else if (!is_indexed) {
+        elements = static_cast<u64>(draw_state.vertex_buffer.first) +
+                   static_cast<u64>(draw_state.vertex_buffer.count);
+    } else {
+        const auto format = draw_state.index_buffer.format;
+        u64 max_index = 0xFF;
+        if (format == Maxwell::IndexFormat::UnsignedShort) {
+            max_index = 0xFFFF;
+        } else if (format != Maxwell::IndexFormat::UnsignedByte) {
+            const auto& limit = maxwell3d->regs.vertex_stream_limits[index];
+            const GPUVAddr gpu_addr_begin = array.Address();
+            const GPUVAddr gpu_addr_end = limit.Address() + 1;
+            if (gpu_addr_end <= gpu_addr_begin) {
+                return 0;
+            }
+            const bool walks = gpu_addr_end - gpu_addr_begin >= IMPLAUSIBLE_VERTEX_SIZE ||
+                               !gpu_memory->IsWithinGPUAddressRange(gpu_addr_end);
+            if (!walks) {
+                return 0;
+            }
+            max_index = DrawMaxIndex();
         }
-        const bool walks = gpu_addr_end - gpu_addr_begin >= IMPLAUSIBLE_VERTEX_SIZE ||
-                           !gpu_memory->IsWithinGPUAddressRange(gpu_addr_end);
-        if (!walks) {
-            return 0;
-        }
-        max_index = DrawMaxIndex();
+        elements = static_cast<u64>(draw_state.base_index) + max_index + 1;
     }
-    const u64 elements = static_cast<u64>(draw_state.base_index) + max_index + 1;
-    return (elements + 1) * stride;
+    if (elements == 0) {
+        return extent;
+    }
+    return (elements - 1) * stride + extent;
 }
 
 template <class P>
 void BufferCache<P>::UpdateVertexBuffers(bool is_indexed) {
     auto& flags = maxwell3d->dirty.flags;
     max_index_scanned = false;
+    stream_extents_valid = false;
     for (u32 index = 0; index < NUM_VERTEX_BUFFERS; ++index) {
         const u64 bound = DrawVertexBound(index, is_indexed);
         if (bound <= last_draw_bounds[index]) {
