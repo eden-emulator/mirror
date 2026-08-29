@@ -14,6 +14,7 @@
 #include "core/core.h"
 #include "core/file_sys/bis_factory.h"
 #include "core/file_sys/card_image.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/errors.h"
 #include "core/file_sys/patch_manager.h"
@@ -339,7 +340,7 @@ Result FileSystemController::RegisterProcess(
     registrations.emplace(process_id, Registration{
                                           .program_id = program_id,
                                           .romfs_factory = std::move(romfs_factory),
-                                          .save_data_factory = CreateSaveDataFactory(program_id),
+                                          .save_data_factory = CreateSaveDataFactory(FileSys::GetBaseTitleID(program_id)),
                                       });
 
     LOG_DEBUG(Service_FS, "Registered for process {}", process_id);

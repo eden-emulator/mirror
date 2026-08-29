@@ -18,6 +18,7 @@
 #include "common/settings.h"
 #include "common/string_util.h"
 #include "core/core.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/content_archive.h"
 #include "core/file_sys/errors.h"
 #include "core/file_sys/fs_directory.h"
@@ -313,7 +314,7 @@ Result FSP_SRV::OpenSaveDataFileSystemBySystemSaveDataId(OutInterface<IFileSyste
              FileSys::ResultInvalidArgument);
 
     if (attribute.program_id == 0) {
-        attribute.program_id = program_id;
+        attribute.program_id = FileSys::GetBaseTitleID(program_id);
     }
 
     FileSys::VirtualDir dir{};

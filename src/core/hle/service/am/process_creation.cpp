@@ -6,6 +6,7 @@
 
 #include <optional>
 #include "core/core.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/content_archive.h"
 #include "core/file_sys/nca_metadata.h"
 #include "core/file_sys/patch_manager.h"
@@ -104,8 +105,16 @@ std::unique_ptr<Process> CreateApplicationProcess(std::vector<u8>& out_control, 
 
         // TODO(DarkLordZach): When FSController/Game Card Support is added, if
         // current_process_game_card use correct StorageId
-        launch.base_game_storage_id = GetStorageIdForFrontendSlot(storage.GetSlotForEntry(launch.title_id, FileSys::ContentRecordType::Program));
-        launch.update_storage_id = GetStorageIdForFrontendSlot(storage.GetSlotForEntry(FileSys::GetUpdateTitleID(launch.title_id), FileSys::ContentRecordType::Program));
+        auto base_slot = storage.GetSlotForEntry(launch.title_id, FileSys::ContentRecordType::Program);
+        if (!base_slot) {
+            base_slot = storage.GetSlotForEntry(FileSys::GetBaseTitleID(launch.title_id), FileSys::ContentRecordType::Program);
+        }
+        launch.base_game_storage_id = GetStorageIdForFrontendSlot(base_slot);
+        auto update_slot = storage.GetSlotForEntry(FileSys::GetUpdateTitleID(launch.title_id), FileSys::ContentRecordType::Program);
+        if (!update_slot) {
+            update_slot = storage.GetSlotForEntry(FileSys::GetUpdateTitleID(FileSys::GetBaseTitleID(launch.title_id)), FileSys::ContentRecordType::Program);
+        }
+        launch.update_storage_id = GetStorageIdForFrontendSlot(update_slot);
 
         system.GetARPManager().Register(launch.title_id, launch, out_control);
         return process;

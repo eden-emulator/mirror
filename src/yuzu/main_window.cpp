@@ -1922,7 +1922,7 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
             std::filesystem::path{Common::U16StringFromBuffer(filename.utf16(), filename.size())};
         const auto config_file_name = title_id == 0
                                           ? Common::FS::PathToUTF8String(file_path.filename())
-                                          : fmt::format("{:016X}", title_id);
+                                          : fmt::format("{:016X}", FileSys::GetBaseTitleID(title_id));
         QtConfig per_game_config(config_file_name, Config::ConfigType::PerGameConfig);
         QtCommon::system->HIDCore().ReloadInputDevices();
         QtCommon::system->ApplySettings();
@@ -2544,9 +2544,11 @@ void MainWindow::OnGameListDumpRomFS(u64 program_id, const std::string& game_pat
     }
 
     const FileSys::NCA update_nca{packed_update_raw, nullptr};
+    const auto selected_update_id = FileSys::GetUpdateTitleID(title_id);
+    const auto application_update_id = FileSys::GetUpdateTitleID(FileSys::GetBaseTitleID(title_id));
     if (type != FileSys::ContentRecordType::Program ||
         update_nca.GetStatus() != Loader::ResultStatus::ErrorMissingBKTRBaseRomFS ||
-        update_nca.GetTitleId() != FileSys::GetUpdateTitleID(title_id)) {
+        (update_nca.GetTitleId() != selected_update_id && update_nca.GetTitleId() != application_update_id)) {
         packed_update_raw = {};
     }
 
@@ -4421,6 +4423,7 @@ void MainWindow::SetFPSSuffix() {
 
 bool MainWindow::SelectRomFSDumpTarget(const FileSys::ContentProvider& installed, u64 program_id,
                                        u64* selected_title_id, u8* selected_content_record_type) {
+    program_id = FileSys::GetBaseTitleID(program_id);
     using ContentInfo = std::tuple<u64, FileSys::TitleType, FileSys::ContentRecordType>;
     boost::container::flat_set<ContentInfo> available_title_ids;
 

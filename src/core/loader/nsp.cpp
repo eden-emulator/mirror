@@ -186,8 +186,13 @@ ResultStatus AppLoader_NSP::ReadUpdateRaw(FileSys::VirtualFile& out_file) {
         return ResultStatus::ErrorNoPackedUpdate;
     }
 
-    const auto read = nsp->GetNCAFile(FileSys::GetUpdateTitleID(nsp->GetProgramTitleID()),
-                                      FileSys::ContentRecordType::Program);
+    const auto program_update_id = FileSys::GetUpdateTitleID(nsp->GetProgramTitleID());
+    auto read = nsp->GetNCAFile(program_update_id, FileSys::ContentRecordType::Program);
+    if (read == nullptr) {
+        read = nsp->GetNCAFile(
+            FileSys::GetUpdateTitleID(FileSys::GetBaseTitleID(nsp->GetProgramTitleID())),
+            FileSys::ContentRecordType::Program);
+    }
 
     if (read == nullptr) {
         return ResultStatus::ErrorNoPackedUpdate;

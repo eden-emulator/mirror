@@ -189,7 +189,7 @@ class AddonsFragment : Fragment() {
                 fragmentManager = parentFragmentManager,
                 addonViewModel = addonViewModel,
                 documents = documents,
-                programId = args.game.programId
+                programId = args.game.applicationId
             )
         }
 

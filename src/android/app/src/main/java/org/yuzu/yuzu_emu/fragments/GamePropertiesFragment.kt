@@ -455,7 +455,7 @@ class GamePropertiesFragment : Fragment() {
 
                 val shaderCacheDir = File(
                     DirectoryInitialization.userDirectory +
-                        "/cache/shader/" + args.game.settingsName.lowercase()
+                        "/cache/shader/" + args.game.shaderCacheName.lowercase()
                 )
                 if (shaderCacheDir.exists()) {
                     add(
@@ -600,7 +600,7 @@ class GamePropertiesFragment : Fragment() {
                     val files = cacheSaveDir.listFiles()
                     var savesFolderFile: File? = null
                     if (files != null) {
-                        val savesFolderName = args.game.programIdHex
+                        val savesFolderName = args.game.applicationIdHex
                         for (file in files) {
                             if (file.isDirectory && file.name == savesFolderName) {
                                 savesFolderFile = file

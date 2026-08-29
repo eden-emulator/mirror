@@ -347,7 +347,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         }
         try {
             if (GpuDriverHelper.isAdrenoGpu()) {
-                val programIdHex = game!!.programIdHex
+                val programIdHex = game!!.applicationIdHex
                 if (NativeFreedrenoConfig.loadPerGameConfigWithGlobalFallback(programIdHex)) {
                     Log.info("[EmulationFragment] Loaded per-game Freedreno config for $programIdHex")
                 } else {

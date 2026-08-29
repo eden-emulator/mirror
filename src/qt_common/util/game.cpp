@@ -5,6 +5,7 @@
 
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/savedata_factory.h"
 #include "core/hle/service/am/am_types.h"
 #include "frontend_common/content_manager.h"
@@ -305,6 +306,7 @@ void RemoveAllTransferableShaderCaches(u64 program_id) {
 }
 
 void RemoveCustomConfiguration(u64 program_id, const std::string& game_path) {
+    program_id = FileSys::GetBaseTitleID(program_id);
     const auto file_path = std::filesystem::path(Common::FS::ToU8String(game_path));
     const auto config_file_name =
         program_id == 0 ? Common::FS::PathToUTF8String(file_path.filename()).append(".ini")

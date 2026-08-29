@@ -9,6 +9,7 @@
 #include "common/common_types.h"
 #include "core/core.h"
 #include "core/file_sys/card_image.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/content_archive.h"
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/patch_manager.h"
@@ -137,8 +138,13 @@ ResultStatus AppLoader_XCI::ReadUpdateRaw(FileSys::VirtualFile& out_file) {
         return ResultStatus::ErrorXCIMissingProgramNCA;
     }
 
-    const auto read = xci->GetSecurePartitionNSP()->GetNCAFile(
-        FileSys::GetUpdateTitleID(program_id), FileSys::ContentRecordType::Program);
+    const auto program_update_id = FileSys::GetUpdateTitleID(program_id);
+    auto read = xci->GetSecurePartitionNSP()->GetNCAFile(program_update_id, FileSys::ContentRecordType::Program);
+    if (read == nullptr) {
+        read = xci->GetSecurePartitionNSP()->GetNCAFile(
+            FileSys::GetUpdateTitleID(FileSys::GetBaseTitleID(program_id)),
+            FileSys::ContentRecordType::Program);
+    }
     if (read == nullptr) {
         return ResultStatus::ErrorNoPackedUpdate;
     }

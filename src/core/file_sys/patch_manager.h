@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 #include "common/common_types.h"
 #include "core/file_sys/nca_metadata.h"
 #include "core/file_sys/vfs/vfs_types.h"
@@ -109,10 +110,14 @@ public:
     [[nodiscard]] static PatchManager::Metadata GetMetadataFromBaseOrUpdate(Core::System& system, u64 application_id) noexcept;
 
 private:
+    [[nodiscard]] u64 GetUpdateTitleIDForContent() const;
+    [[nodiscard]] std::vector<VirtualDir> GetModificationLoadRoots() const;
+    [[nodiscard]] std::vector<VirtualDir> GetSDMCModificationLoadRoots() const;
     [[nodiscard]] std::vector<VirtualFile> CollectPatches(const std::vector<VirtualDir>& patch_dirs,
                                                           const std::string& build_id) const;
 
     u64 title_id;
+    u64 application_id;
     const Service::FileSystem::FileSystemController& fs_controller;
     const ContentProvider& content_provider;
 };

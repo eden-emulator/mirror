@@ -17,6 +17,7 @@
 #include "common/string_util.h"
 #include "core/arm/exclusive_monitor.h"
 #include "core/core.h"
+#include "core/file_sys/common_funcs.h"
 
 #include "launch_timestamp_cache.h"
 #include "core/core_timing.h"
@@ -396,7 +397,7 @@ struct System::Impl {
             LOG_ERROR(Core, "Failed to find program id for ROM");
         }
 
-        GameSettings::LoadOverrides(program_id, gpu_core->Renderer());
+        GameSettings::LoadOverrides(FileSys::GetBaseTitleID(program_id), gpu_core->Renderer());
         if (auto room_member = Network::GetRoomMember().lock()) {
             Network::GameInfo game_info;
             game_info.name = name;

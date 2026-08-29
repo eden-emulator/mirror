@@ -170,12 +170,12 @@ object GameHelper {
                     val game = getGame(it.uri, true, false)
                     if (game != null) {
                         games.add(game)
-                        if (game.programId != "0") {
-                            gamesByProgramId[game.programId] = game
+                        if (game.applicationId != "0") {
+                            gamesByProgramId[game.applicationId] = game
                         }
                     } else if (mountedContainer) {
                         GameMetadata.getProgramId(filePath).toLongOrNull()?.let { programId ->
-                            gamesByProgramId[(programId and 0x800L.inv()).toString()]
+                            gamesByProgramId[(programId and -8192L).toString()]
                         }?.let { existingGame ->
                             NativeLibrary.getPatchesForFile(existingGame.path, existingGame.programId)
                             existingGame.version = GameMetadata.getVersion(

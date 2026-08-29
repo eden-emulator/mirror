@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: 2023 yuzu Emulator Project
@@ -35,23 +35,46 @@ class Game(
     val keyAddedToLibraryTime get() = "${path}_AddedToLibraryTime"
     val keyLastPlayedTime get() = "${path}_LastPlayed"
 
+    private val programIdLong: Long
+        get() = programId.toLongOrNull() ?: 0L
+
+    private val applicationIdLong: Long
+        get() = programIdLong and -8192L
+
+    val applicationId: String
+        get() = applicationIdLong.toString()
+
     val settingsName: String
         get() {
-            val programIdLong = programId.toLong()
-            return if (programIdLong == 0L) {
+            return if (applicationIdLong == 0L) {
                 FileUtil.getFilename(Uri.parse(path))
             } else {
-                "0" + programIdLong.toString(16).uppercase()
+                "0" + applicationIdLong.toString(16).uppercase()
             }
         }
 
     val programIdHex: String
         get() {
-            val programIdLong = programId.toLong()
             return if (programIdLong == 0L) {
                 "0"
             } else {
                 "0" + programIdLong.toString(16).uppercase()
+            }
+        }
+
+    val shaderCacheName: String
+        get() = if (programIdLong == 0L) {
+            FileUtil.getFilename(Uri.parse(path))
+        } else {
+            "0" + programIdLong.toString(16).uppercase()
+        }
+
+    val applicationIdHex: String
+        get() {
+            return if (applicationIdLong == 0L) {
+                "0"
+            } else {
+                "0" + applicationIdLong.toString(16).uppercase()
             }
         }
 
@@ -61,10 +84,10 @@ class Game(
         }.zip"
 
     val saveDir: String
-        get() = NativeConfig.getSaveDir() + NativeLibrary.getSavePath(programId)
+        get() = NativeConfig.getSaveDir() + NativeLibrary.getSavePath(applicationId)
 
     val addonDir: String
-        get() = DirectoryInitialization.userDirectory + "/load/" + programIdHex + "/"
+        get() = DirectoryInitialization.userDirectory + "/load/" + applicationIdHex + "/"
 
     val launchIntent: Intent
         get() = Intent(YuzuApplication.appContext, EmulationActivity::class.java).apply {

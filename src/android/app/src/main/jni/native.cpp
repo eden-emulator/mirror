@@ -788,7 +788,7 @@ int Java_org_yuzu_yuzu_1emu_NativeLibrary_installFileToNand(JNIEnv* env, jobject
 jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_doesUpdateMatchProgram(JNIEnv* env, jobject jobj,
                                                                       jstring jprogramId,
                                                                       jstring jupdatePath) {
-    u64 program_id = EmulationSession::GetProgramId(env, jprogramId);
+    const u64 program_id = FileSys::GetBaseTitleID(EmulationSession::GetProgramId(env, jprogramId));
     std::string updatePath = Common::Android::GetJString(env, jupdatePath);
     std::shared_ptr<FileSys::NSP> nsp = std::make_shared<FileSys::NSP>(
         EmulationSession::GetInstance().System().GetFilesystem()->OpenFile(
@@ -796,7 +796,7 @@ jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_doesUpdateMatchProgram(JNIEnv* en
     for (const auto& item : nsp->GetNCAs()) {
         for (const auto& nca_details : item.second) {
             if (nca_details.second->GetName().ends_with(".cnmt.nca")) {
-                auto update_id = nca_details.second->GetTitleId() & ~0xFFFULL;
+                const auto update_id = FileSys::GetBaseTitleID(nca_details.second->GetTitleId());
                 if (update_id == program_id) {
                     return true;
                 }
@@ -1491,7 +1491,7 @@ jstring Java_org_yuzu_yuzu_1emu_NativeLibrary_firmwareVersion(JNIEnv* env, jclas
 }
 
 jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_gameRequiresFirmware(JNIEnv* env, jclass clazz, jstring jprogramId) {
-    auto program_id = EmulationSession::GetProgramId(env, jprogramId);
+    const auto program_id = FileSys::GetBaseTitleID(EmulationSession::GetProgramId(env, jprogramId));
 
     return FirmwareManager::GameRequiresFirmware(program_id);
 }
@@ -1575,20 +1575,21 @@ jobjectArray Java_org_yuzu_yuzu_1emu_NativeLibrary_getPatchesForFile(JNIEnv* env
 
 void Java_org_yuzu_yuzu_1emu_NativeLibrary_removeUpdate(JNIEnv* env, jobject jobj,
                                                         jstring jprogramId) {
-    auto program_id = EmulationSession::GetProgramId(env, jprogramId);
+    const auto program_id = EmulationSession::GetProgramId(env, jprogramId);
     ContentManager::RemoveUpdate(EmulationSession::GetInstance().System().GetFileSystemController(),
                                  program_id);
 }
 
 void Java_org_yuzu_yuzu_1emu_NativeLibrary_removeDLC(JNIEnv* env, jobject jobj,
                                                      jstring jprogramId) {
-    auto program_id = EmulationSession::GetProgramId(env, jprogramId);
+    const auto program_id = FileSys::GetBaseTitleID(
+        EmulationSession::GetProgramId(env, jprogramId));
     ContentManager::RemoveAllDLC(EmulationSession::GetInstance().System(), program_id);
 }
 
 void Java_org_yuzu_yuzu_1emu_NativeLibrary_removeMod(JNIEnv* env, jobject jobj, jstring jprogramId,
                                                      jstring jname) {
-    auto program_id = EmulationSession::GetProgramId(env, jprogramId);
+    const auto program_id = EmulationSession::GetProgramId(env, jprogramId);
     ContentManager::RemoveMod(EmulationSession::GetInstance().System().GetFileSystemController(),
                               program_id, Common::Android::GetJString(env, jname));
 }
@@ -1635,7 +1636,7 @@ jint Java_org_yuzu_yuzu_1emu_NativeLibrary_verifyGameContents(JNIEnv* env, jobje
 
 jstring Java_org_yuzu_yuzu_1emu_NativeLibrary_getSavePath(JNIEnv* env, jobject jobj,
                                                           jstring jprogramId) {
-    auto program_id = EmulationSession::GetProgramId(env, jprogramId);
+    const auto program_id = FileSys::GetBaseTitleID(EmulationSession::GetProgramId(env, jprogramId));
     if (program_id == 0) {
         return Common::Android::ToJString(env, "");
     }

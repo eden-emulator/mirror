@@ -59,7 +59,7 @@ class FreedrenoSettingsFragment : Fragment() {
         NativeFreedrenoConfig.initializeFreedrenoConfig()
 
         if (isPerGameConfig) {
-            NativeFreedrenoConfig.loadPerGameConfig(game!!.programIdHex)
+            NativeFreedrenoConfig.loadPerGameConfig(game!!.applicationIdHex)
         } else {
             NativeFreedrenoConfig.reloadFreedrenoConfig()
         }
@@ -157,7 +157,7 @@ class FreedrenoSettingsFragment : Fragment() {
 
         binding.buttonSave.setOnClickListener {
             if (isPerGameConfig) {
-                NativeFreedrenoConfig.savePerGameConfig(game!!.programIdHex)
+                NativeFreedrenoConfig.savePerGameConfig(game!!.applicationIdHex)
                 showSnackbar(getString(R.string.freedreno_per_game_saved))
             } else {
                 NativeFreedrenoConfig.saveFreedrenoConfig()

@@ -24,6 +24,7 @@
 #include "common/fs/path_util.h"
 #include "configuration/addon/mod_select_dialog.h"
 #include "core/core.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/patch_manager.h"
 #include "core/loader/loader.h"
 #include "frontend_common/mod_manager.h"
@@ -137,7 +138,7 @@ void ConfigurePerGameAddons::LoadFromFile(FileSys::VirtualFile file_) {
 }
 
 void ConfigurePerGameAddons::SetTitleId(u64 id) {
-    this->title_id = id;
+    this->title_id = FileSys::GetBaseTitleID(id);
 }
 
 void ConfigurePerGameAddons::InstallMods(const QStringList& mods) {

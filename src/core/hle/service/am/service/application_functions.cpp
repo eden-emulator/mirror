@@ -158,7 +158,7 @@ Result IApplicationFunctions::EnsureSaveData(Out<u64> out_size, Common::UUID use
     LOG_INFO(Service_AM, "called, uid={}", user_id.FormattedString());
 
     FileSys::SaveDataAttribute attribute{};
-    attribute.program_id = m_applet->program_id;
+    attribute.program_id = FileSys::GetBaseTitleID(m_applet->program_id);
     attribute.user_id = user_id.AsU128();
     attribute.type = FileSys::SaveDataType::Account;
 
@@ -238,7 +238,7 @@ Result IApplicationFunctions::ExtendSaveData(Out<u64> out_required_size, FileSys
               static_cast<u8>(type), user_id.FormattedString(), normal_size, journal_size);
 
     system.GetFileSystemController().OpenSaveDataController()->WriteSaveDataSize(
-        type, m_applet->program_id, user_id.AsU128(), {normal_size, journal_size});
+        type, FileSys::GetBaseTitleID(m_applet->program_id), user_id.AsU128(), {normal_size, journal_size});
 
     // The following value is used to indicate the amount of space remaining on failure
     // due to running out of space. Since we always succeed, this should be 0.
@@ -252,7 +252,7 @@ Result IApplicationFunctions::GetSaveDataSize(Out<u64> out_normal_size, Out<u64>
     LOG_DEBUG(Service_AM, "called with type={} user_id={}", type, user_id.FormattedString());
 
     const auto size = system.GetFileSystemController().OpenSaveDataController()->ReadSaveDataSize(
-        type, m_applet->program_id, user_id.AsU128());
+        type, FileSys::GetBaseTitleID(m_applet->program_id), user_id.AsU128());
 
     *out_normal_size = size.normal;
     *out_journal_size = size.journal;

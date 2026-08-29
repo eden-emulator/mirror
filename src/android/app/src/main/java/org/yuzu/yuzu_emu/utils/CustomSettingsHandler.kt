@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: 2023 yuzu Emulator Project
@@ -65,7 +65,7 @@ object CustomSettingsHandler {
         // Initialize per-game config
         try {
             val fileName = FileUtil.getFilename(Uri.parse(game.path))
-            NativeConfig.initializePerGameConfig(game.programId, fileName)
+            NativeConfig.initializePerGameConfig(game.applicationId, fileName)
             Log.info("[CustomSettingsHandler] Successfully applied custom settings")
             return game
         } catch (e: Exception) {
@@ -333,20 +333,20 @@ object CustomSettingsHandler {
      */
     fun findGameByTitleId(titleId: String, context: Context): Game? {
         Log.info("[CustomSettingsHandler] Searching for game with title ID: $titleId")
-        // Convert hex title ID to decimal for comparison with programId
-        val programIdDecimal = try {
-            titleId.toLong(16).toString()
+        // Convert the program ID to the application ID used by per-game settings.
+        val applicationIdLong = try {
+            titleId.toLong(16) and -8192L
         } catch (e: NumberFormatException) {
             Log.error("[CustomSettingsHandler] Invalid title ID format: $titleId")
             return null
         }
+        val applicationIdDecimal = applicationIdLong.toString()
 
         // Expected hex format with "0" prefix
-        val expectedHex = "0${titleId.uppercase()}"
+        val expectedHex = "0${applicationIdLong.toString(16).uppercase()}"
         // First check cached games for fast lookup
         GameHelper.cachedGameList.find { game ->
-            game.programId == programIdDecimal ||
-                game.programIdHex.equals(expectedHex, ignoreCase = true)
+            game.applicationId == applicationIdDecimal || game.applicationIdHex.equals(expectedHex, ignoreCase = true)
         }?.let { foundGame ->
             Log.info("[CustomSettingsHandler] Found game in cache: ${foundGame.title}")
             return foundGame
@@ -355,8 +355,7 @@ object CustomSettingsHandler {
         Log.info("[CustomSettingsHandler] Game not in cache, scanning full library...")
         val allGames = GameHelper.getGames()
         val foundGame = allGames.find { game ->
-            game.programId == programIdDecimal ||
-                game.programIdHex.equals(expectedHex, ignoreCase = true)
+            game.applicationId == applicationIdDecimal || game.applicationIdHex.equals(expectedHex, ignoreCase = true)
         }
         if (foundGame != null) {
             Log.info("[CustomSettingsHandler] Found game: ${foundGame.title} at ${foundGame.path}")

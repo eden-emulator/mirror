@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -24,6 +27,6 @@ object SettingsFile {
 
     fun loadCustomConfig(game: Game) {
         val fileName = FileUtil.getFilename(Uri.parse(game.path))
-        NativeConfig.initializePerGameConfig(game.programId, fileName)
+        NativeConfig.initializePerGameConfig(game.applicationId, fileName)
     }
 }
