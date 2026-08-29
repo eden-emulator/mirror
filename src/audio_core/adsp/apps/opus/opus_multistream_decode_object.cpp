@@ -22,9 +22,8 @@ namespace {
 constexpr u32 OpusStreamCountMax = 255;
 
 bool IsValidStreamCounts(u32 total_stream_count, u32 stereo_stream_count) {
-    return total_stream_count > 0 && total_stream_count <= OpusStreamCountMax &&
-           s32(stereo_stream_count) >= 0 &&
-           stereo_stream_count <= total_stream_count;
+    return total_stream_count > 0 && total_stream_count <= OpusStreamCountMax
+        && s32(stereo_stream_count) >= 0 && stereo_stream_count <= total_stream_count;
 }
 } // namespace
 
