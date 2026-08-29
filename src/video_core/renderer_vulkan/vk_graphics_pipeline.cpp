@@ -694,9 +694,11 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
         const size_t num_vertex_arrays = (std::min)(
             Maxwell::NumVertexArrays, static_cast<size_t>(device.GetMaxVertexInputBindings()));
         for (size_t index = 0; index < num_vertex_arrays; ++index) {
-            const bool instanced = key.state.binding_divisors[index] != 0;
-            const auto rate =
-                instanced ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
+            const bool instanced = ((key.state.enabled_divisors >> index) & 1) != 0;
+            auto rate = VK_VERTEX_INPUT_RATE_VERTEX;
+            if (instanced) {
+                rate = VK_VERTEX_INPUT_RATE_INSTANCE;
+            }
             vertex_bindings.push_back({
                 .binding = static_cast<u32>(index),
                 .stride = key.state.vertex_strides[index],
@@ -705,7 +707,7 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
             if (instanced) {
                 vertex_binding_divisors.push_back({
                     .binding = static_cast<u32>(index),
-                    .divisor = key.state.binding_divisors[index],
+                    .divisor = device.GetVertexAttribDivisor(key.state.binding_divisors[index]),
                 });
             }
         }

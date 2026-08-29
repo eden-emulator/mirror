@@ -20,8 +20,6 @@ namespace VideoCommon {
 
 enum class BufferFlagBits {
     Picked = 1 << 0,
-    CachedWrites = 1 << 1,
-    PreemtiveDownload = 1 << 2,
 };
 DECLARE_ENUM_FLAG_OPERATORS(BufferFlagBits)
 
@@ -58,15 +56,6 @@ public:
         flags |= BufferFlagBits::Picked;
     }
 
-    void MarkPreemtiveDownload() noexcept {
-        flags |= BufferFlagBits::PreemtiveDownload;
-    }
-
-    /// Unmark buffer as picked
-    void Unpick() noexcept {
-        flags &= ~BufferFlagBits::Picked;
-    }
-
     /// Increases the likeliness of this being a stream buffer
     void IncreaseStreamScore(int score) noexcept {
         stream_score += score;
@@ -85,15 +74,6 @@ public:
     /// Returns true if the buffer has been marked as picked
     [[nodiscard]] bool IsPicked() const noexcept {
         return True(flags & BufferFlagBits::Picked);
-    }
-
-    /// Returns true when the buffer has pending cached writes
-    [[nodiscard]] bool HasCachedWrites() const noexcept {
-        return True(flags & BufferFlagBits::CachedWrites);
-    }
-
-    bool IsPreemtiveDownload() const noexcept {
-        return True(flags & BufferFlagBits::PreemtiveDownload);
     }
 
     /// Returns the base CPU address of the buffer

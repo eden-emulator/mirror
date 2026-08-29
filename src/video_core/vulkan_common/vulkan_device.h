@@ -70,6 +70,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
     FEATURE(EXT, ProvokingVertex, PROVOKING_VERTEX, provoking_vertex)                              \
     FEATURE(EXT, Robustness2, ROBUSTNESS_2, robustness2)                                           \
     FEATURE(EXT, TransformFeedback, TRANSFORM_FEEDBACK, transform_feedback)                        \
+    FEATURE(EXT, VertexAttributeDivisor, VERTEX_ATTRIBUTE_DIVISOR, vertex_attribute_divisor)       \
     FEATURE(EXT, VertexInputDynamicState, VERTEX_INPUT_DYNAMIC_STATE, vertex_input_dynamic_state)  \
     FEATURE(KHR, Maintenance5, MAINTENANCE_5, maintenance5)                                        \
     FEATURE(KHR, Maintenance6, MAINTENANCE_6, maintenance6)                                        \
@@ -92,7 +93,6 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION(EXT, SHADER_STENCIL_EXPORT, shader_stencil_export)                                   \
     EXTENSION(EXT, SHADER_VIEWPORT_INDEX_LAYER, shader_viewport_index_layer)                       \
     EXTENSION(EXT, TOOLING_INFO, tooling_info)                                                     \
-    EXTENSION(EXT, VERTEX_ATTRIBUTE_DIVISOR, vertex_attribute_divisor)                             \
     EXTENSION(KHR, CREATE_RENDERPASS_2, create_renderpass2)                                        \
     EXTENSION(KHR, DEPTH_STENCIL_RESOLVE, depth_stencil_resolve)                                   \
     EXTENSION(KHR, DRAW_INDIRECT_COUNT, draw_indirect_count)                                       \
@@ -690,6 +690,32 @@ FN_MAX_LIMIT_LIST
         return features.host_query_reset.hostQueryReset != VK_FALSE;
     }
 
+    u32 GetMaxVertexAttribDivisor() const {
+        const u32 reported = properties.vertex_attribute_divisor.maxVertexAttribDivisor;
+        if (reported == 0) {
+            return 1;
+        }
+        return reported;
+    }
+
+    bool IsVertexAttributeInstanceRateZeroDivisorSupported() const {
+        return features.vertex_attribute_divisor.vertexAttributeInstanceRateZeroDivisor == VK_TRUE;
+    }
+
+    u32 GetVertexAttribDivisor(u32 frequency) const {
+        const u32 max_divisor = GetMaxVertexAttribDivisor();
+        if (frequency == 0) {
+            if (IsVertexAttributeInstanceRateZeroDivisorSupported()) {
+                return 0;
+            }
+            return max_divisor;
+        }
+        if (frequency > max_divisor) {
+            return max_divisor;
+        }
+        return frequency;
+    }
+
     /// Returns true if the device supports VK_EXT_transform_feedback.
     bool IsExtTransformFeedbackSupported() const {
         return extensions.transform_feedback;
@@ -1190,6 +1216,7 @@ private:
         VkPhysicalDeviceDescriptorBufferPropertiesEXT descriptor_buffer{};
         VkPhysicalDeviceSubgroupSizeControlProperties subgroup_size_control{};
         VkPhysicalDeviceTransformFeedbackPropertiesEXT transform_feedback{};
+        VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT vertex_attribute_divisor{};
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};
         VkPhysicalDeviceDepthStencilResolveProperties depth_stencil_resolve{};
         VkPhysicalDeviceCustomBorderColorPropertiesEXT custom_border_color{};

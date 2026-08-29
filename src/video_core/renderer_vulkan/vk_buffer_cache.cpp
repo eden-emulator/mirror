@@ -585,29 +585,6 @@ void BufferCacheRuntime::BindQuadIndexBuffer(PrimitiveTopology topology, u32 fir
     }
 }
 
-void BufferCacheRuntime::BindVertexBuffer(u32 index, VkBuffer buffer, u32 offset, u32 size, u32 stride) {
-    if (index >= device.GetMaxVertexInputBindings()) {
-        return;
-    }
-    if (device.IsExtExtendedDynamicStateSupported()) {
-        scheduler.Record([index, buffer, offset, size, stride](vk::CommandBuffer cmdbuf) {
-            const VkDeviceSize vk_offset = buffer != VK_NULL_HANDLE ? offset : 0;
-            const VkDeviceSize vk_size = buffer != VK_NULL_HANDLE ? size : VK_WHOLE_SIZE;
-            const VkDeviceSize vk_stride = stride;
-            cmdbuf.BindVertexBuffers2EXT(index, 1, &buffer, &vk_offset, &vk_size, &vk_stride);
-        });
-    } else {
-        if (!device.HasNullDescriptor() && buffer == VK_NULL_HANDLE) {
-            ReserveNullBuffer();
-            buffer = *null_buffer;
-            offset = 0;
-        }
-        scheduler.Record([index, buffer, offset](vk::CommandBuffer cmdbuf) {
-            cmdbuf.BindVertexBuffer(index, buffer, offset);
-        });
-    }
-}
-
 void BufferCacheRuntime::BindVertexBuffers(VideoCommon::HostBindings<Buffer>& bindings) {
     boost::container::static_vector<VkBuffer, VideoCommon::NUM_VERTEX_BUFFERS> buffer_handles(bindings.buffers.size());
     for (u32 i = 0; i < bindings.buffers.size(); ++i) {

@@ -217,8 +217,6 @@ public:
 
     void WriteMemory(DAddr device_addr, u64 size);
 
-    void CachedWriteMemory(DAddr device_addr, u64 size);
-
     bool OnCPUWrite(DAddr device_addr, u64 size);
 
     void DownloadMemory(DAddr device_addr, u64 size);
@@ -248,7 +246,7 @@ public:
 
     void UnbindGraphicsStorageBuffers(size_t stage);
 
-    bool BindGraphicsStorageBuffer(size_t stage, size_t ssbo_index, u32 cbuf_index, u32 cbuf_offset,
+    void BindGraphicsStorageBuffer(size_t stage, size_t ssbo_index, u32 cbuf_index, u32 cbuf_offset,
                                    bool is_written);
 
     void UnbindGraphicsTextureBuffers(size_t stage);
@@ -375,8 +373,6 @@ private:
     void BindHostGraphicsTextureBuffers(size_t stage);
 
     void BindHostTransformFeedbackBuffers();
-
-    void BindHostVertexBuffer(u32 index, Buffer& buffer, u32 offset, u32 size, u32 stride);
 
     void BindHostComputeUniformBuffers();
 

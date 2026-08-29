@@ -138,8 +138,6 @@ public:
 
     void BindQuadIndexBuffer(PrimitiveTopology topology, u32 first, u32 count);
 
-    void BindVertexBuffer(u32 index, VkBuffer buffer, u32 offset, u32 size, u32 stride);
-
     void BindVertexBuffers(VideoCommon::HostBindings<Buffer>& bindings);
 
     void BindTransformFeedbackBuffer(u32 index, VkBuffer buffer, u32 offset, u32 size);

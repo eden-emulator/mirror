@@ -7,6 +7,7 @@
 #pragma once
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <numeric>
 
@@ -119,25 +120,6 @@ void BufferCache<P>::WriteMemory(DAddr device_addr, u64 size) {
         gpu_modified_ranges.Subtract(device_addr, size);
     }
     memory_tracker.MarkRegionAsCpuModified(device_addr, size);
-}
-
-template <class P>
-void BufferCache<P>::CachedWriteMemory(DAddr device_addr, u64 size) {
-    const bool is_dirty = IsRegionRegistered(device_addr, size);
-    if (!is_dirty) {
-        return;
-    }
-    DAddr aligned_start = Common::AlignDown(device_addr, DEVICE_PAGESIZE);
-    DAddr aligned_end = Common::AlignUp(device_addr + size, DEVICE_PAGESIZE);
-    if (!IsRegionGpuModified(aligned_start, aligned_end - aligned_start)) {
-        WriteMemory(device_addr, size);
-        return;
-    }
-
-    tmp_buffer.resize_destructive(size);
-    device_memory.ReadBlockUnsafe(device_addr, tmp_buffer.data(), size);
-
-    InlineMemoryImplementation(device_addr, size, tmp_buffer);
 }
 
 template <class P>
@@ -422,7 +404,7 @@ void BufferCache<P>::UnbindGraphicsStorageBuffers(size_t stage) {
 }
 
 template <class P>
-bool BufferCache<P>::BindGraphicsStorageBuffer(size_t stage, size_t ssbo_index, u32 cbuf_index,
+void BufferCache<P>::BindGraphicsStorageBuffer(size_t stage, size_t ssbo_index, u32 cbuf_index,
                                                u32 cbuf_offset, bool is_written) {
     const bool already_enabled =
         ((channel_state->enabled_storage_buffers[stage] >> ssbo_index) & 1U) != 0;
@@ -433,7 +415,7 @@ bool BufferCache<P>::BindGraphicsStorageBuffer(size_t stage, size_t ssbo_index, 
                 LOG_WARNING(HW_GPU,
                             "Skipping graphics storage buffer {} due to driver limit {}",
                             ssbo_index, max_bindings);
-                return false;
+                return;
             }
         }
     }
@@ -449,7 +431,6 @@ bool BufferCache<P>::BindGraphicsStorageBuffer(size_t stage, size_t ssbo_index, 
     const GPUVAddr ssbo_addr = cbufs.const_buffers[cbuf_index].address + cbuf_offset;
     channel_state->storage_buffers[stage][ssbo_index] =
         StorageBufferBinding(ssbo_addr, cbuf_index, is_written);
-    return (channel_state->storage_buffers[stage][ssbo_index].buffer_id != NULL_BUFFER_ID);
 }
 
 template <class P>
@@ -759,16 +740,6 @@ void BufferCache<P>::BindHostIndexBuffer() {
     } else {
         buffer.MarkUsage(offset, size);
         runtime.BindIndexBuffer(draw_state.topology, draw_state.index_buffer.format, draw_state.index_buffer.first, draw_state.index_buffer.count, buffer, offset, size);
-    }
-}
-
-template <class P>
-void BufferCache<P>::BindHostVertexBuffer(u32 index, Buffer& buffer, u32 offset, u32 size,
-                                          u32 stride) {
-    if constexpr (IS_OPENGL) {
-        runtime.BindVertexBuffer(index, buffer, offset, size, stride);
-    } else {
-        runtime.BindVertexBuffer(index, buffer.Handle(), offset, size, stride);
     }
 }
 
@@ -1251,9 +1222,14 @@ void BufferCache<P>::UpdateIndexBuffer() {
     const GPUVAddr gpu_addr_begin = index_buffer_ref.StartAddress();
     const GPUVAddr gpu_addr_end = index_buffer_ref.EndAddress();
     const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(gpu_addr_begin);
-    const u32 address_size = static_cast<u32>(gpu_addr_end - gpu_addr_begin);
-    const u32 draw_size = (index_buffer_ref.count + index_buffer_ref.first) * u32(index_buffer_ref.FormatSizeInBytes());
-    const u32 size = (std::min)(address_size, draw_size);
+    u64 address_size = 0;
+    if (gpu_addr_end > gpu_addr_begin) {
+        address_size = (std::min)(gpu_addr_end - gpu_addr_begin,
+                                  u64{(std::numeric_limits<u32>::max)()});
+    }
+    const u64 draw_size = (u64{index_buffer_ref.count} + u64{index_buffer_ref.first}) *
+                          u64{index_buffer_ref.FormatSizeInBytes()};
+    const u32 size = static_cast<u32>((std::min)(address_size, draw_size));
     if (size == 0 || !device_addr) {
         channel_state->index_buffer = NULL_BINDING;
         return;
@@ -1288,15 +1264,22 @@ void BufferCache<P>::UpdateVertexBuffer(u32 index) {
     const GPUVAddr gpu_addr_begin = array.Address();
     const GPUVAddr gpu_addr_end = limit.Address() + 1;
     const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(gpu_addr_begin);
-    const u32 address_size = static_cast<u32>(gpu_addr_end - gpu_addr_begin);
-    u32 size = address_size; // TODO: Analyze stride and number of vertices
-    if (array.enable == 0 || size == 0 || !device_addr) {
+    if (array.enable == 0 || !device_addr || gpu_addr_end <= gpu_addr_begin) {
         channel_state->vertex_buffers[index] = NULL_BINDING;
         UpdateVertexBufferSlot(index, NULL_BINDING);
         return;
     }
-    if (!gpu_memory->IsWithinGPUAddressRange(gpu_addr_end) || size >= 64_MiB) {
-        size = static_cast<u32>(gpu_memory->MaxContinuousRange(gpu_addr_begin, size));
+    // TODO: Analyze stride and number of vertices
+    u64 address_size = (std::min)(gpu_addr_end - gpu_addr_begin,
+                                  u64{(std::numeric_limits<u32>::max)()});
+    if (!gpu_memory->IsWithinGPUAddressRange(gpu_addr_end) || address_size >= 64_MiB) {
+        address_size = gpu_memory->MaxContinuousRange(gpu_addr_begin, address_size);
+    }
+    const u32 size = static_cast<u32>(address_size);
+    if (size == 0) {
+        channel_state->vertex_buffers[index] = NULL_BINDING;
+        UpdateVertexBufferSlot(index, NULL_BINDING);
+        return;
     }
     const BufferId buffer_id = FindBuffer(*device_addr, size);
     const Binding binding{
@@ -1578,9 +1561,10 @@ template <class P>
 BufferId BufferCache<P>::CreateBuffer(DAddr device_addr, u32 wanted_size) {
     DAddr device_addr_end = Common::AlignUp(device_addr + wanted_size, CACHING_PAGESIZE);
     device_addr = Common::AlignDown(device_addr, CACHING_PAGESIZE);
-    wanted_size = static_cast<u32>(device_addr_end - device_addr);
+    constexpr u64 max_buffer_size = u64{(std::numeric_limits<u32>::max)()};
+    wanted_size = static_cast<u32>((std::min)(device_addr_end - device_addr, max_buffer_size));
     const OverlapResult overlap = ResolveOverlaps(device_addr, wanted_size);
-    const u32 size = static_cast<u32>(overlap.end - overlap.begin);
+    const u32 size = static_cast<u32>((std::min)(overlap.end - overlap.begin, max_buffer_size));
     const BufferId new_buffer_id = slot_buffers.insert(runtime, overlap.begin, size);
     auto& new_buffer = slot_buffers[new_buffer_id];
     const size_t size_bytes = new_buffer.SizeBytes();

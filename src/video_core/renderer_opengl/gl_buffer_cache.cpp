@@ -226,22 +226,6 @@ void BufferCacheRuntime::BindIndexBuffer(Buffer& buffer, u32 offset, u32 size) {
     }
 }
 
-void BufferCacheRuntime::BindVertexBuffer(u32 index, Buffer& buffer, u32 offset, u32 size,
-                                          u32 stride) {
-    if (index >= max_attributes) {
-        return;
-    }
-    if (has_unified_vertex_buffers) {
-        buffer.MakeResident(GL_READ_ONLY);
-        glBindVertexBuffer(index, 0, 0, static_cast<GLsizei>(stride));
-        glBufferAddressRangeNV(GL_VERTEX_ATTRIB_ARRAY_ADDRESS_NV, index,
-                               buffer.HostGpuAddr() + offset, static_cast<GLsizeiptr>(size));
-    } else {
-        glBindVertexBuffer(index, buffer.Handle(), static_cast<GLintptr>(offset),
-                           static_cast<GLsizei>(stride));
-    }
-}
-
 void BufferCacheRuntime::BindVertexBuffers(VideoCommon::HostBindings<Buffer>& bindings) {
     // TODO: Should HostBindings provide the correct runtime types to avoid these transforms?
     std::array<GLuint, 32> buffer_handles;
