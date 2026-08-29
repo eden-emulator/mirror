@@ -1292,6 +1292,12 @@ void RasterizerVulkan::UpdateDepthBias(Tegra::Engines::Maxwell3D::Regs& regs) {
                         regs.zeta.format == Tegra::DepthFormat::X8Z24_UNORM ||
                         regs.zeta.format == Tegra::DepthFormat::S8Z24_UNORM ||
                         regs.zeta.format == Tegra::DepthFormat::V8Z24_UNORM;
+    const bool is_float_zeta = regs.zeta.format == Tegra::DepthFormat::Z32_FLOAT ||
+                               regs.zeta.format == Tegra::DepthFormat::Z32_FLOAT_X24S8_UINT;
+
+    if (is_float_zeta && !device.IsExtDepthBiasControlSupported()) {
+        units *= 256.0f;
+    }
 
     if (is_d24 && !device.SupportsD24DepthBuffer()) {
         static constexpr const size_t length = sizeof(NEEDS_D24) / sizeof(NEEDS_D24[0]);
