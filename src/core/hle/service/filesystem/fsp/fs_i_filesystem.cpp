@@ -24,7 +24,7 @@ IFileSystem::IFileSystem(Core::System& system_, FileSys::VirtualDir dir_, SizeGe
         {3, D<&IFileSystem::DeleteDirectory>, "DeleteDirectory"},
         {4, D<&IFileSystem::DeleteDirectoryRecursively>, "DeleteDirectoryRecursively"},
         {5, D<&IFileSystem::RenameFile>, "RenameFile"},
-        {6, nullptr, "RenameDirectory"},
+        {6, D<&IFileSystem::RenameDirectory>, "RenameDirectory"},
         {7, D<&IFileSystem::GetEntryType>, "GetEntryType"},
         {8, D<&IFileSystem::OpenFile>, "OpenFile"},
         {9, D<&IFileSystem::OpenDirectory>, "OpenDirectory"},
@@ -86,6 +86,14 @@ Result IFileSystem::RenameFile(
     LOG_DEBUG(Service_FS, "called. file '{}' to file '{}'", old_path->str, new_path->str);
 
     R_RETURN(backend->RenameFile(FileSys::Path(old_path->str), FileSys::Path(new_path->str)));
+}
+
+Result IFileSystem::RenameDirectory(
+    const InLargeData<FileSys::Sf::Path, BufferAttr_HipcPointer> old_path,
+    const InLargeData<FileSys::Sf::Path, BufferAttr_HipcPointer> new_path) {
+    LOG_DEBUG(Service_FS, "called. directory '{}' to directory '{}'", old_path->str, new_path->str);
+
+    R_RETURN(backend->RenameDirectory(FileSys::Path(old_path->str), FileSys::Path(new_path->str)));
 }
 
 Result IFileSystem::OpenFile(OutInterface<IFile> out_interface,
