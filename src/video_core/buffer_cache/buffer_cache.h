@@ -1242,7 +1242,38 @@ void BufferCache<P>::UpdateIndexBuffer() {
 }
 
 template <class P>
-u64 BufferCache<P>::DrawVertexBound(u32 index, bool is_indexed) const {
+u64 BufferCache<P>::DrawMaxIndex() {
+    if (max_index_scanned) {
+        return cached_max_index;
+    }
+    max_index_scanned = true;
+    cached_max_index = 0;
+    const auto& index_buffer_ref = maxwell3d->draw_manager.draw_state.index_buffer;
+    const u32 count = index_buffer_ref.count;
+    if (count == 0) {
+        return 0;
+    }
+    index_scan_buffer.resize_destructive(count);
+    gpu_memory->ReadBlockUnsafe(index_buffer_ref.IndexStart(), index_scan_buffer.data(),
+                                size_t{count} * sizeof(u32));
+    u32 restart_index = (std::numeric_limits<u32>::max)();
+    if (maxwell3d->regs.primitive_restart.enabled != 0) {
+        restart_index = maxwell3d->regs.primitive_restart.index;
+    }
+    u32 max_index = 0;
+    for (u32 i = 0; i < count; ++i) {
+        const u32 value = index_scan_buffer[i];
+        if (value == restart_index) {
+            continue;
+        }
+        max_index = (std::max)(max_index, value);
+    }
+    cached_max_index = max_index;
+    return cached_max_index;
+}
+
+template <class P>
+u64 BufferCache<P>::DrawVertexBound(u32 index, bool is_indexed) {
     const auto& array = maxwell3d->regs.vertex_streams[index];
     const u64 stride = static_cast<u64>(array.stride);
     if (array.enable == 0 || stride == 0) {
@@ -1267,16 +1298,23 @@ u64 BufferCache<P>::DrawVertexBound(u32 index, bool is_indexed) const {
                              static_cast<u64>(draw_state.vertex_buffer.count);
         return (elements + 1) * stride;
     }
-    u64 max_index = 0;
-    switch (draw_state.index_buffer.format) {
-    case Maxwell::IndexFormat::UnsignedByte:
-        max_index = 0xFF;
-        break;
-    case Maxwell::IndexFormat::UnsignedShort:
+    const auto format = draw_state.index_buffer.format;
+    u64 max_index = 0xFF;
+    if (format == Maxwell::IndexFormat::UnsignedShort) {
         max_index = 0xFFFF;
-        break;
-    default:
-        return 0;
+    } else if (format != Maxwell::IndexFormat::UnsignedByte) {
+        const auto& limit = maxwell3d->regs.vertex_stream_limits[index];
+        const GPUVAddr gpu_addr_begin = array.Address();
+        const GPUVAddr gpu_addr_end = limit.Address() + 1;
+        if (gpu_addr_end <= gpu_addr_begin) {
+            return 0;
+        }
+        const bool walks = gpu_addr_end - gpu_addr_begin >= IMPLAUSIBLE_VERTEX_SIZE ||
+                           !gpu_memory->IsWithinGPUAddressRange(gpu_addr_end);
+        if (!walks) {
+            return 0;
+        }
+        max_index = DrawMaxIndex();
     }
     const u64 elements = static_cast<u64>(draw_state.base_index) + max_index + 1;
     return (elements + 1) * stride;
@@ -1285,6 +1323,7 @@ u64 BufferCache<P>::DrawVertexBound(u32 index, bool is_indexed) const {
 template <class P>
 void BufferCache<P>::UpdateVertexBuffers(bool is_indexed) {
     auto& flags = maxwell3d->dirty.flags;
+    max_index_scanned = false;
     for (u32 index = 0; index < NUM_VERTEX_BUFFERS; ++index) {
         const u64 bound = DrawVertexBound(index, is_indexed);
         if (bound <= last_draw_bounds[index]) {
@@ -1319,7 +1358,7 @@ void BufferCache<P>::UpdateVertexBuffer(u32 index, bool is_indexed) {
         return;
     }
     // TODO: Analyze stride and number of vertices
-    constexpr u64 implausible_size = 64_MiB;
+    constexpr u64 implausible_size = IMPLAUSIBLE_VERTEX_SIZE;
     u64 address_size = gpu_addr_end - gpu_addr_begin;
     if (address_size > u64{(std::numeric_limits<u32>::max)()}) {
         address_size = implausible_size;

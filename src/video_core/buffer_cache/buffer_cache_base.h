@@ -51,6 +51,7 @@ constexpr u32 NUM_VERTEX_BUFFERS = 16;
 #else
 constexpr u32 NUM_VERTEX_BUFFERS = 32;
 #endif
+constexpr u64 IMPLAUSIBLE_VERTEX_SIZE = 64_MiB;
 constexpr u32 NUM_TRANSFORM_FEEDBACK_BUFFERS = 4;
 constexpr u32 NUM_GRAPHICS_UNIFORM_BUFFERS = 18;
 constexpr u32 NUM_COMPUTE_UNIFORM_BUFFERS = 8;
@@ -394,7 +395,9 @@ private:
 
     void UpdateVertexBuffer(u32 index, bool is_indexed);
 
-    [[nodiscard]] u64 DrawVertexBound(u32 index, bool is_indexed) const;
+    [[nodiscard]] u64 DrawVertexBound(u32 index, bool is_indexed);
+
+    [[nodiscard]] u64 DrawMaxIndex();
 
     void UpdateDrawIndirect();
 
@@ -488,6 +491,9 @@ private:
 
     u32 draw_instance_count = 0;
     std::array<u64, NUM_VERTEX_BUFFERS> last_draw_bounds{};
+    Common::ScratchBuffer<u32> index_scan_buffer;
+    u64 cached_max_index = 0;
+    bool max_index_scanned = false;
 
     u32 last_index_count = 0;
 
