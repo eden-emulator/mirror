@@ -107,6 +107,8 @@ protected:
     Core::System& system;
     /// Identifier string used to connect to the service.
     const char* service_name;
+    /// Whether this is the IStorage service.
+    const bool is_i_storage;
     /// Function used to safely up-cast pointers to the derived class before invoking a handler.
     InvokerFn* handler_invoker;
     /// Maximum number of concurrent sessions that this service can handle.
