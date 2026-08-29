@@ -2091,7 +2091,7 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
                                                 temp_vk_image, info.format, info.num_samples,
                                                 {image_copies.data(), image_copies.size()}, false);
         }
-        initialized = true;
+        InitializationFor(current_image) = true;
         runtime->ReleaseMsaaScratchImage(temp_vk_image);
 
         if (is_rescaled) {
@@ -2112,7 +2112,7 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
     const VkBuffer src_buffer = buffer;
     const VkImage vk_image = *original_image;
     const VkImageAspectFlags vk_aspect_mask = aspect_mask;
-    const bool was_initialized = std::exchange(initialized, true);
+    const bool was_initialized = std::exchange(InitializationFor(&Image::original_image), true);
 
     scheduler->Record([src_buffer, vk_image, vk_aspect_mask, was_initialized,
                        vk_copies](vk::CommandBuffer cmdbuf) {
@@ -2385,6 +2385,13 @@ std::vector<vk::ImageView>& Image::StorageViewsFor(vk::Image Image::*image) {
         return scaled_storage_image_views;
     }
     return storage_image_views;
+}
+
+bool& Image::InitializationFor(vk::Image Image::*image) noexcept {
+    if (image == &Image::scaled_image) {
+        return scaled_initialized;
+    }
+    return original_initialized;
 }
 
 VkImageView Image::StorageImageView(s32 level) noexcept {

@@ -353,7 +353,7 @@ public:
 
     /// Returns true when the image is already initialized and mark it as initialized
     [[nodiscard]] bool ExchangeInitialization() noexcept {
-        return std::exchange(initialized, true);
+        return std::exchange(InitializationFor(current_image), true);
     }
 
     VkImageView StorageImageView(s32 level) noexcept;
@@ -375,6 +375,8 @@ private:
 
     std::vector<vk::ImageView>& StorageViewsFor(vk::Image Image::*image);
 
+    bool& InitializationFor(vk::Image Image::*image) noexcept;
+
     Scheduler* scheduler{};
     TextureCacheRuntime* runtime{};
 
@@ -394,7 +396,8 @@ private:
     std::vector<vk::ImageView> storage_image_views;
     std::vector<vk::ImageView> scaled_storage_image_views;
     VkImageAspectFlags aspect_mask = 0;
-    bool initialized = false;
+    bool original_initialized = false;
+    bool scaled_initialized = false;
 
     std::optional<Framebuffer> scale_framebuffer;
     std::optional<Framebuffer> normal_framebuffer;
