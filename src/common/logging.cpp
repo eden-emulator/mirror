@@ -38,27 +38,14 @@
 #include "common/bounded_threadsafe_queue.h"
 
 namespace Common::Log {
-
-/// @brief A log entry. Log entries are store in a structured format to permit more varied output
-/// formatting on different frontends, as well as facilitating filtering and aggregation.
-struct Entry {
-    char const* message = nullptr;
-    size_t message_len = 0;
-    std::chrono::microseconds timestamp;
-    Class log_class{};
-    Level log_level{};
-    const char* filename = nullptr;
-    const char* function = nullptr;
-    uint32_t line_num = 0;
-};
-
 namespace {
 
 /// @brief A log entry. Log entries are store in a structured format to permit more varied output
 /// formatting on different frontends, as well as facilitating filtering and aggregation.
 struct Entry {
     std::string_view thread_name;
-    std::string message;
+    char const* message = nullptr;
+    size_t message_len = 0;
     std::chrono::microseconds timestamp;
     Class log_class{};
     Level log_level{};
