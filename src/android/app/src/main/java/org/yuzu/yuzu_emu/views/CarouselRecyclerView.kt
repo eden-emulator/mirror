@@ -12,13 +12,16 @@ import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.pow
 import kotlin.math.sin
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.adapters.GameAdapter
 import androidx.core.view.doOnNextLayout
+import androidx.core.view.ViewCompat
 import org.yuzu.yuzu_emu.YuzuApplication
 import androidx.preference.PreferenceManager
 import androidx.core.view.WindowInsetsCompat
+import org.yuzu.yuzu_emu.utils.FullscreenHelper
 /**
  * CarouselRecyclerView encapsulates all carousel content for the games UI.
  * It manages overlapping cards, center snapping, custom drawing order,
@@ -32,7 +35,9 @@ class CarouselRecyclerView @JvmOverloads constructor(
 
     private var overlapFactor: Float = 0f
     private var overlapPx: Int = 0
-    private var bottomInset: Int = -1
+    private var bottomInset: Int = 0
+    private var latestWindowInsets: WindowInsetsCompat? = null
+    private var cardGeometryInitialized: Boolean = false
     private var overlapDecoration: OverlappingDecoration? = null
     private var pagerSnapHelper: PagerSnapHelper? = null
     private var scalingScrollListener: OnScrollListener? = null
@@ -91,6 +96,38 @@ class CarouselRecyclerView @JvmOverloads constructor(
 
     init {
         setChildrenDrawingOrderEnabled(true)
+        ViewCompat.setOnApplyWindowInsetsListener(this) { _, insets ->
+            latestWindowInsets = insets
+            updateCardGeometry()
+            applyCarouselPadding()
+            insets
+        }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        ViewCompat.requestApplyInsets(this)
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (w != oldw || h != oldh) {
+            updateCardGeometry()
+            applyCarouselPadding()
+        }
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        if (isCarouselMode) updateChildScalesAndAlpha()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            ViewCompat.requestApplyInsets(this)
+            post { updateCardGeometry() }
+        }
     }
 
     override fun setAdapter(adapter: Adapter<*>?) {
@@ -103,6 +140,8 @@ class CarouselRecyclerView @JvmOverloads constructor(
         super.setAdapter(adapter)
 
         (adapter as? GameAdapter)?.registerAdapterDataObserver(carouselAdapterObserver)
+        updateCardGeometry()
+        applyCarouselPadding()
     }
 
     private fun calculateCenter(width: Int, paddingStart: Int, paddingEnd: Int): Int {
@@ -253,40 +292,71 @@ class CarouselRecyclerView @JvmOverloads constructor(
         }
     }
 
-    fun notifyInsetsReady(newBottomInset: Int) {
-        if (bottomInset != newBottomInset) {
-            bottomInset = newBottomInset
-        }
-
-        if (isCarouselMode) {
-            setupCarousel(true)
+    private fun resolveBottomInset(windowInsets: WindowInsetsCompat): Int {
+        val navigationBottom = if (FullscreenHelper.isFullscreenEnabled(context)) {
+            0
         } else {
-            setupCarousel(false)
+            windowInsets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.navigationBars()).bottom
         }
+        val gestureInsets = windowInsets.getInsetsIgnoringVisibility(
+            WindowInsetsCompat.Type.systemGestures()
+        )
+        val cutoutInsets = windowInsets.getInsetsIgnoringVisibility(
+            WindowInsetsCompat.Type.displayCutout()
+        )
+        return maxOf(navigationBottom, gestureInsets.bottom, cutoutInsets.bottom)
     }
 
-    fun notifyLaidOut(fallBackBottomInset: Int) {
-        if (bottomInset < 0) bottomInset = fallBackBottomInset
-        var gameAdapter = adapter as? GameAdapter ?: return
-        var newCardSize = cardSize(bottomInset)
-        if (gameAdapter.cardSize != newCardSize) {
-            gameAdapter.setCardSize(newCardSize)
-        }
+    private fun updateCardGeometry() {
+        if (!isCarouselMode || height <= 0) return
 
-        if (isCarouselMode) {
-            setupCarousel(true)
-        }
-    }
+        val gameAdapter = adapter as? GameAdapter ?: return
+        val windowInsets = latestWindowInsets ?: ViewCompat.getRootWindowInsets(this) ?: return
 
-    fun cardSize(bottomInset: Int): Int {
+        if (cardGeometryInitialized && !hasWindowFocus()) return
+
+        val newBottomInset = resolveBottomInset(windowInsets).coerceIn(0, height)
         val internalFactor = resources.getFraction(R.fraction.carousel_card_size_factor, 1, 1)
         val userFactor = preferences.getFloat(CAROUSEL_CARD_SIZE_FACTOR, internalFactor).coerceIn(
             0f,
             1f
         )
-        val scaledHeight = height * userFactor
-        val availableHeight = height - bottomInset
-        return minOf(scaledHeight.toInt(), availableHeight.toInt())
+        val screenWidth = resources.displayMetrics.widthPixels.toFloat()
+        val screenHeight = resources.displayMetrics.heightPixels.toFloat()
+        val aspectFactor = ((screenWidth / screenHeight) / (20f / 9f))
+            .pow(0.75f)
+            .coerceIn(0.5f, 1f)
+        val newCardSize = minOf(
+            (height * userFactor).toInt(),
+            height - newBottomInset,
+            (height * aspectFactor).toInt()
+        )
+        if (newCardSize <= 0) return
+        val insetChanged = bottomInset != newBottomInset
+        val cardSizeChanged = gameAdapter.cardSize != newCardSize
+
+        bottomInset = newBottomInset
+        cardGeometryInitialized = true
+
+        if (cardSizeChanged) gameAdapter.setCardSize(newCardSize)
+        if (insetChanged || cardSizeChanged) setupCarousel(true)
+    }
+
+    private fun applyCarouselPadding() {
+        if (!isCarouselMode) return
+
+        val gameAdapter = adapter as? GameAdapter ?: return
+        val cardSize = gameAdapter.cardSize
+        if (cardSize <= 0 || bottomInset < 0) return
+
+        val topPadding = ((height - bottomInset - cardSize) / 2).coerceAtLeast(0)
+        val sidePadding = (width - cardSize) / 2
+        if (paddingLeft != sidePadding || paddingTop != topPadding ||
+            paddingRight != sidePadding || paddingBottom != 0
+        ) {
+            setPadding(sidePadding, topPadding, sidePadding, 0)
+        }
+        clipToPadding = false
     }
 
     fun setupCarousel(enabled: Boolean) {
@@ -315,9 +385,6 @@ class CarouselRecyclerView @JvmOverloads constructor(
                 internalFlingMultiplier
             ).coerceIn(1f, 5f)
 
-            // Detach SnapHelper during setup
-            pagerSnapHelper?.attachToRecyclerView(null)
-
             // Add overlap decoration if not present
             if (overlapDecoration == null) {
                 overlapDecoration = OverlappingDecoration(overlapPx)
@@ -335,12 +402,7 @@ class CarouselRecyclerView @JvmOverloads constructor(
                 addOnScrollListener(scalingScrollListener!!)
             }
 
-            if (cardSize > 0) {
-                val topPadding = ((height - bottomInset - cardSize) / 2).coerceAtLeast(0) // Center vertically
-                val sidePadding = (width - cardSize) / 2 // Center first/last card
-                setPadding(sidePadding, topPadding, sidePadding, 0)
-                clipToPadding = false
-            }
+            applyCarouselPadding()
 
             if (pagerSnapHelper == null) {
                 pagerSnapHelper = CenterPagerSnapHelper()
@@ -362,6 +424,7 @@ class CarouselRecyclerView @JvmOverloads constructor(
                 }
                 savedItemAnimator = null
             }
+            cardGeometryInitialized = false
             useCustomDrawingOrder = false
             // Reset padding and fling
             setPadding(0, 0, 0, 0)
