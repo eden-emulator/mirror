@@ -54,6 +54,7 @@ class SigHandler {
             return e.first <= offset && e.first + e.second.size > offset;
         });
     }
+
     ankerl::unordered_dense::map<u64, CodeBlockInfo> code_block_infos;
     std::shared_mutex code_block_infos_mutex;
     struct sigaction old_sa_segv;
