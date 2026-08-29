@@ -2449,6 +2449,7 @@ bool Image::ScaleUp(bool ignore) {
     }
     if (NeedsScaleHelper()) {
         if (!BlitScaleHelper(true)) {
+            flags &= ~ImageFlagBits::Rescaled;
             current_image = &Image::original_image;
             return false;
         }
