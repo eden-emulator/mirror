@@ -220,7 +220,7 @@ object NativeLibrary {
 
     external fun refreshThreadPolicies()
 
-    external fun getDebugKnobAt(index: Int): Boolean
+    external fun GetDebugKnobAt(index: Int): Boolean
 
     /**
      * Set the current speed limit to the configured turbo speed.

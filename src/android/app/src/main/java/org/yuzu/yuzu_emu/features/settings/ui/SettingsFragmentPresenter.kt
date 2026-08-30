@@ -25,6 +25,7 @@ import org.yuzu.yuzu_emu.features.settings.model.Settings
 import org.yuzu.yuzu_emu.features.settings.model.Settings.MenuTag
 import org.yuzu.yuzu_emu.features.settings.model.ShortSetting
 import org.yuzu.yuzu_emu.features.settings.model.StringSetting
+import org.yuzu.yuzu_emu.features.settings.model.UShortSetting
 import org.yuzu.yuzu_emu.features.settings.model.view.*
 import org.yuzu.yuzu_emu.utils.InputHandler
 import org.yuzu.yuzu_emu.utils.LosslessScalingHelper
@@ -1326,7 +1327,7 @@ class SettingsFragmentPresenter(
 
             add(HeaderSetting(R.string.general))
 
-            add(ShortSetting.DEBUG_KNOBS.key)
+            add(UShortSetting.DEBUG_KNOBS.key)
             add(StringSetting.PROGRAM_ARGS.key)
 
             if (!NativeConfig.isPerGameConfigLoaded()) {

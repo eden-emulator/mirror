@@ -146,7 +146,7 @@ void LogSettings() {
 #undef LOG_PATH
 }
 
-bool getDebugKnobAt(u8 i) {
+bool GetDebugKnobAt(u8 i) {
     return (values.debug_knobs.GetValue() & (1 << (i & 0xF))) != 0;
 }
 

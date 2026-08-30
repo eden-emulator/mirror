@@ -43,6 +43,7 @@ This guide will walk you through adding a new boolean toggle setting to Eden's c
 Firstly add your desired toggle:
 
 Example: `src/common/setting.h`
+
 ```cpp
 SwitchableSetting<bool> your_setting_name{linkage, false, "your_setting_name", Category::RendererExtensions};
 ```
@@ -67,6 +68,7 @@ Common Categories:
 Add the toggle to the Qt UI, where you wish for it to appear and place it there.
 
 Example: `src/qt_common/config/shared_translation.cpp`
+
 ```cpp
 INSERT(Settings,
        your_setting_name,
@@ -91,6 +93,7 @@ INSERT(Settings,
 Add where it should be in the settings.
 
 Example: `src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/model/BooleanSetting.kt`
+
 ```kts
 RENDERER_YOUR_SETTING_NAME("your_setting_name"),
 ```
@@ -106,6 +109,7 @@ RENDERER_YOUR_SETTING_NAME("your_setting_name"),
 Add the toggle to the Kotlin (Android) UI
 
 Example: `src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/model/view/SettingsItem.kt`
+
 ```kts
 put(
     SwitchSetting(
@@ -123,6 +127,7 @@ put(
 Add your setting within the right category.
 
 Example: `src/android/app/src/main/java/org/yuzu/yuzu_emu/features/settings/ui/SettingsFragmentPresenter.kt`
+
 ```kts
 add(BooleanSetting.RENDERER_YOUR_SETTING_NAME.key)
 ```
@@ -137,6 +142,7 @@ add(BooleanSetting.RENDERER_YOUR_SETTING_NAME.key)
 Add your setting and description in the appropriate place.
 
 Example: `src/android/app/src/main/res/values/strings.xml`
+
 ```xml
 <string name="your_setting_name">Your Setting Display Name</string>
 <string name="your_setting_name_description">Detailed description of what this setting does. Explain any caveats, requirements, or warnings here.</string>
@@ -150,6 +156,7 @@ Now the UI part is done find a place in the code for the toggle,
 And use it to your heart's desire!
 
 Example:
+
 ```cpp
 const bool your_value = Settings::values.your_setting_name.GetValue();
 
@@ -196,25 +203,31 @@ Common advantages recap:
 
 #### Accessing Debug Knobs (dev side)
 
-Use the `Settings::getDebugKnobAt(u8 i)` function to check if a specific bit is set:
+Use the `Settings::GetDebugKnobAt(u8 i)` function to check if a specific bit is set:
 
 ```cpp
 //cpp side
 #include "common/settings.h"
 
+//To use it as a general purpose uint var:
+unsigned int debug_knobs = Settings::values.debug_knobs.GetValue();
+
 // Check if bit 0 is set
-bool feature_enabled = Settings::getDebugKnobAt(0);
+bool feature_enabled = Settings::GetDebugKnobAt(0);
 
 // Check if bit 15 is set
-bool another_feature = Settings::getDebugKnobAt(15);
+bool another_feature = Settings::GetDebugKnobAt(15);
 ```
 
 ```kts
 //kotlin side
 import org.yuzu.yuzu_emu.features.settings.model.Settings
 
+//To use it as a general purpose uint var
+val debug_knobs: Int = UShortSetting.DEBUG_KNOBS.getInt()
+
 // Check if bit x is set
-bool feature_enabled = Settings.getDebugKnobAt(x); //x as integer from 0 to 15
+bool feature_enabled = Settings.GetDebugKnobAt(x); //x as integer from 0 to 15
 ```
 
 The function returns `true` if the specified bit (0-15) is set in the `debug_knobs` value, `false` otherwise.
@@ -247,6 +260,7 @@ There are two main confusions when talking about knobs:
 Sometimes when an user reports: knobs 1 and 2 gets better performance, dev may get confuse whether he means the knobs 1 and 2 literally, or the 1st and 2nd knobs (knobs 0 and 1).
 
 Debug knobs are **zero-based**, which means:
+
 * The first knob is the knob(0) (or knob0 henceforth), and the last one is the 15 (knob15, likewise)
 * You can talk: "knob0 is enabled/disabled", "In this video i was using only knobs 0 and 2", etc.
 
@@ -259,6 +273,7 @@ Whenever you're instructing tests or reporting results, be precise about whether
 
 ALWAYS use the word in PLURAL (knobs), without mentioning which one, to refer to the setting, aka multiple knobs at once:
 Examples:
+
 - **knobs=0**: no knobs enabled
 - **knobs=1**: knob0 enabled, others disabled
 - **knobs=2**: knob1 enabled, others disabled
@@ -270,6 +285,7 @@ Examples:
 
 Use the word in SINGULAR (knob), or in plural but referring which ones, when meaning multiple knobs at once:
 Examples:
+
 - **knob0**: knob 0 enabled, others disabled
 - **knob1**: knob 1 enabled, others disabled
 - **knobs 0 and 1**: knobs 0 and 1 enabled, others disabled
@@ -282,12 +298,12 @@ Examples:
 
 ```cpp
 void SomeFunction() {
-    if (Settings::getDebugKnobAt(0)) {
+    if (Settings::GetDebugKnobAt(0)) {
         LOG_DEBUG(Common, "Debug feature 0 is enabled");
         // Additional debug code here
     }
-    
-    if (Settings::getDebugKnobAt(1)) {
+  
+    if (Settings::GetDebugKnobAt(1)) {
         LOG_DEBUG(Common, "Debug feature 1 is enabled");
         // Different debug behavior
     }
@@ -299,7 +315,7 @@ void SomeFunction() {
 ```cpp
 bool UseOptimizedPath() {
     // Skip optimization if debug bit 2 is set for testing
-    return !Settings::getDebugKnobAt(2);
+    return !Settings::GetDebugKnobAt(2);
 }
 ```
 
@@ -308,13 +324,13 @@ bool UseOptimizedPath() {
 ```cpp
 void ExperimentalFeature() {
     static constexpr u8 EXPERIMENTAL_FEATURE_BIT = 3;
-    
-    if (!Settings::getDebugKnobAt(EXPERIMENTAL_FEATURE_BIT)) {
+  
+    if (!Settings::GetDebugKnobAt(EXPERIMENTAL_FEATURE_BIT)) {
         // Fallback to stable implementation
         StableImplementation();
         return;
     }
-    
+  
     // Experimental implementation
     ExperimentalImplementation();
 }

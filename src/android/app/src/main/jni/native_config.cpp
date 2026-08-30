@@ -130,6 +130,25 @@ void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_setShort(JNIEnv* env, jobject ob
     setting->SetValue(value);
 }
 
+jint Java_org_yuzu_yuzu_1emu_utils_NativeConfig_getUnsignedShort(JNIEnv* env, jobject obj,
+                                                                 jstring jkey,
+                                                                 jboolean needGlobal) {
+    auto setting = getSetting<u16>(env, jkey);
+    if (setting == nullptr) {
+        return -1;
+    }
+    return static_cast<jint>(setting->GetValue(static_cast<bool>(needGlobal)));
+}
+
+void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_setUnsignedShort(JNIEnv* env, jobject obj,
+                                                                  jstring jkey, jint value) {
+    auto setting = getSetting<u16>(env, jkey);
+    if (setting == nullptr) {
+        return;
+    }
+    setting->SetValue(static_cast<u16>(value));
+}
+
 jint Java_org_yuzu_yuzu_1emu_utils_NativeConfig_getInt(JNIEnv* env, jobject obj, jstring jkey,
                                                        jboolean needGlobal) {
     auto setting = getSetting<int>(env, jkey);
