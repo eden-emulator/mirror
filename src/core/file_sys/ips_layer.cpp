@@ -123,11 +123,13 @@ static IPSwitchRecord EscapeStringSequences(std::string_view sv) {
     for (auto it = sv.cbegin(); it != sv.cend(); ) {
         if (*it == '\\' && it + 1 < sv.cend()) {
             switch (it[1]) {
-            case 'n': r.data[r.count] = '\n'; break;
-            case 't': r.data[r.count] = '\t'; break;
+            case 'a': r.data[r.count] = '\a'; break;
             case 'b': r.data[r.count] = '\b'; break;
-            case 'r': r.data[r.count] = '\r'; break;
             case 'e': r.data[r.count] = '\e'; break;
+            case 'f': r.data[r.count] = '\f'; break;
+            case 'n': r.data[r.count] = '\n'; break;
+            case 'r': r.data[r.count] = '\r'; break;
+            case 't': r.data[r.count] = '\t'; break;
             case 'v': r.data[r.count] = '\v'; break;
             case '?': r.data[r.count] = '\?'; break;
             default: r.data[r.count] = it[1]; break;
@@ -142,40 +144,60 @@ static IPSwitchRecord EscapeStringSequences(std::string_view sv) {
     return r;
 }
 
-[[nodiscard]] static inline std::array<u8, 32> ReadNSOBuildId(std::string_view const s) {
-    std::array<u8, 32> r{};
-    for (std::size_t i = 0; i < s.size(); ++i)
-        r[i / 2] |= u8(u8(Common::ToHexNibble(s[i])) << u8((i % 2) * 4));
-    return r;
-}
-
 void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
     LOG_INFO(Loader, "IPSwitchCompiler: '{}'", patch_text->GetName());
-    bool is_little_endian = false;
+    bool is_little_endian = true;
     s64 offset_shift = 0;
     //bool print_values = false;
-
     auto const parse_line = [&](std::string_view const line) {
         // Keep in mind lines have trimmed spaces (at the end & start)!
         LOG_INFO(Loader, "<{}>", line);
-        if (line.starts_with("@stop")) {
-            return false; // Force stop
-        } else if (line.starts_with("@nsobid-")) { // NSO Build ID Specifier
-            nso_build_id = ReadNSOBuildId(line.substr(8));
-        } else if (line.starts_with("@enabled")) {
-            patches.push_back({{}, true}); //enabled patch
-        } else if (line.starts_with("@disabled")) {
-            patches.push_back({{}, false}); //disabled patch
-        } else if (line.starts_with("@flag offset_shift ")) {
-            offset_shift = std::strtoll(line.data() + 19, nullptr, 0);  // Offset Shift Flag
-        } else if (line.starts_with("@little-endian")) {
-            is_little_endian = true;  // Set values to read as little endian
-        } else if (line.starts_with("@big-endian")) {
-            is_little_endian = false;  // Set values to read as big endian
-        } else if (line.starts_with("@flag print_values")) {
-            //print_values = true; // Force printing of applied values
-        } else if (line.starts_with("@")) {
-            LOG_WARNING(Loader, "Unknown flag {}", line);
+        // IPSwitch is case insensitive
+        // Yes this is how the logic goes for the main reference parsers!
+        if (line.size() > 2 && line[0] == '@') {
+            switch (line[1]) {
+            // yes, @nsobid too -- NSO Build ID Specifier
+            case 'n':
+            case 'N':
+                nso_build_id = Common::HexStringToArray<0x20>(fmt::format("{:0<64}", line.substr(8)));
+                break;
+            // @stop
+            case 's':
+            case 'S':
+                return false;
+            // @enabled
+            case 'e':
+            case 'E':
+                patches.push_back({{}, true});
+                break;
+            // @disabled
+            case 'd':
+            case 'D':
+                patches.push_back({{}, false});
+                break;
+            // @flag
+            case 'f':
+            case 'F': {
+                if (line.starts_with("@flag offset_shift")) {
+                    offset_shift = std::strtoll(line.data() + 19, nullptr, 0);  // Offset Shift Flag
+                } else if (line.starts_with("@flag print_values")) {
+                    //print_values = true; // Force printing of applied values
+                }
+                break;
+            }
+            case 'l':
+            case 'L':
+                is_little_endian = true;
+                break;
+            // IPS parsers dont support big endian no more, we do due to backcompat
+            case 'b':
+            case 'B':
+                is_little_endian = false;
+                break;
+            default:
+                LOG_WARNING(Loader, "Unknown flag {}", line);
+                break;
+            }
         } else {
             size_t offset = size_t(std::strtoul(line.data(), nullptr, 16));
             offset += size_t(offset_shift);
@@ -197,6 +219,7 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
                 auto const start = line.cbegin() + first_space + 1;
                 auto const end = line.cend();
                 if (start <= line.cend() && end <= line.cend()) {
+                    // Actually IPS wants ordering from {lsb, ..., msb} -- so LE and BE are inverted, fun!
                     auto const hs = Common::HexStringToVector({start, end}, is_little_endian);
                     std::memcpy(r.data.data(), hs.data(), hs.size());
                     r.count = hs.size();
@@ -231,7 +254,8 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
             char quote = '\0';
             auto const sline_start = p;
             for (; p < sline.cend(); ) {
-                if ((!quote && p + 1 < sline.cend() && p[0] == '/' && p[1] == '/')
+                // we dont check for "//", IPS checks for '/' only...
+                if ((!quote && p[0] == '/')
                 || (!quote && p[0] == '#')) {
                     break;
                 } else if (p[0] == '\"' || p[0] == '\'') {
@@ -266,6 +290,8 @@ VirtualFile IPSwitchCompiler::Apply(const VirtualFile& in) const {
                     if (record.first + replace_size > in_data.size())
                         replace_size = in_data.size() - record.first;
                     std::memcpy(in_data.data() + record.first, record.second.data.data(), replace_size);
+                } else {
+                    LOG_WARNING(Loader, "record offs={:x},size={:x}", record.first, record.second.data.size());
                 }
             }
         }
