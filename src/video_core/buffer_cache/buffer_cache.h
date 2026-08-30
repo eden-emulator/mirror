@@ -7,7 +7,10 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
+#include <cstring>
 #include <memory>
+#include <mutex>
 #include <numeric>
 
 #include "common/range_sets.inc"
@@ -215,6 +218,99 @@ bool BufferCache<P>::DMACopy(GPUVAddr src_address, GPUVAddr dest_address, u64 am
     auto& dest_buffer = slot_buffers[buffer_b];
     SynchronizeBuffer(src_buffer, *cpu_src_address, static_cast<u32>(amount));
     SynchronizeBuffer(dest_buffer, *cpu_dest_address, static_cast<u32>(amount));
+
+    // MHR Sunbreak PoC: replace the poisoned A/B record with its healthy peer.
+    constexpr DAddr mhr_slot_a = 0xb7e01000ULL;
+    constexpr DAddr mhr_slot_b = 0xb7a01000ULL;
+    constexpr u64 mhr_slot_size = 0x129000ULL;
+    constexpr size_t mhr_record_size = 0x70;
+    using MhrRecord = std::array<u8, mhr_record_size>;
+    struct MhrCacheEntry {
+        DAddr destination{};
+        MhrRecord a{};
+        MhrRecord b{};
+        bool has_a{};
+        bool has_b{};
+    };
+    static std::mutex mhr_mutex;
+    static std::array<MhrCacheEntry, 512> mhr_cache{};
+    static size_t mhr_cache_next{};
+
+    const auto in_mhr_slot = [&](DAddr address, DAddr slot) {
+        return amount == mhr_record_size && address >= slot &&
+               address <= slot + mhr_slot_size - mhr_record_size;
+    };
+    const bool mhr_source_a = in_mhr_slot(*cpu_src_address, mhr_slot_a);
+    const bool mhr_source_b = in_mhr_slot(*cpu_src_address, mhr_slot_b);
+    bool mhr_override{};
+    MhrRecord mhr_healthy_record{};
+    if (mhr_source_a || mhr_source_b) {
+        const auto score_record = [](const MhrRecord& record) {
+            u32 score{};
+            for (size_t offset = 0; offset < record.size(); offset += sizeof(u32)) {
+                u32 word{};
+                std::memcpy(&word, record.data() + offset, sizeof(word));
+                if (word == 0x7f7f7f7fU) {
+                    score += 64;
+                } else if (word == 0x7fffffffU || word == 0xffffffffU || word == 0x80808080U ||
+                           word == 0x81818181U) {
+                    score += 4;
+                }
+            }
+            for (size_t offset = 0; offset + sizeof(u64) <= record.size(); offset += sizeof(u64)) {
+                u32 lo{};
+                u32 hi{};
+                std::memcpy(&lo, record.data() + offset, sizeof(lo));
+                std::memcpy(&hi, record.data() + offset + sizeof(u32), sizeof(hi));
+                if (lo == 0 && hi == 0x7f7f7f7fU) {
+                    score += 128;
+                }
+            }
+            u32 first{};
+            u32 second{};
+            std::memcpy(&first, record.data() + 0x60, sizeof(first));
+            std::memcpy(&second, record.data() + 0x64, sizeof(second));
+            if ((first & 0x40000U) != 0 && (second & 0x40000U) == 0 &&
+                ((first ^ second) & 0xffffU) == 0) {
+                score += 16;
+            } else if ((first & 0x40000U) == 0 && (second & 0x40000U) != 0 &&
+                       ((first ^ second) & 0xffffU) == 0 && score >= 4) {
+                score -= 4;
+            }
+            return score;
+        };
+
+        MhrRecord source_record{};
+        device_memory.ReadBlockUnsafe(*cpu_src_address, source_record.data(), source_record.size());
+        std::scoped_lock lock{mhr_mutex};
+        auto entry = std::ranges::find_if(mhr_cache, [&](const MhrCacheEntry& current) {
+            return (current.has_a || current.has_b) && current.destination == *cpu_dest_address;
+        });
+        if (entry == mhr_cache.end()) {
+            entry = mhr_cache.begin() + mhr_cache_next++ % mhr_cache.size();
+            *entry = {};
+            entry->destination = *cpu_dest_address;
+        }
+        if (mhr_source_a) {
+            entry->a = source_record;
+            entry->has_a = true;
+        } else {
+            entry->b = source_record;
+            entry->has_b = true;
+        }
+        if (entry->has_a && entry->has_b) {
+            const u32 score_a{score_record(entry->a)};
+            const u32 score_b{score_record(entry->b)};
+            if (score_a != score_b) {
+                const bool healthy_is_a{score_a < score_b};
+                if (mhr_source_a != healthy_is_a) {
+                    mhr_healthy_record = healthy_is_a ? entry->a : entry->b;
+                    mhr_override = true;
+                }
+            }
+        }
+    }
+
     std::array copies{BufferCopy{
         .src_offset = src_buffer.Offset(*cpu_src_address),
         .dst_offset = dest_buffer.Offset(*cpu_dest_address),
@@ -242,6 +338,14 @@ bool BufferCache<P>::DMACopy(GPUVAddr src_address, GPUVAddr dest_address, u64 am
     runtime.CopyBuffer(dest_buffer, src_buffer, copies, true);
     if (has_new_downloads) {
         memory_tracker.MarkRegionAsGpuModified(*cpu_dest_address, amount);
+    }
+
+    if (mhr_override) {
+        device_memory.WriteBlockUnsafe(*cpu_dest_address, mhr_healthy_record.data(),
+                                       mhr_healthy_record.size());
+        InlineMemoryImplementation(*cpu_dest_address, mhr_healthy_record.size(),
+                                   std::span<const u8>{mhr_healthy_record});
+        return true;
     }
 
     Tegra::Memory::DeviceGuestMemoryScoped<u8, Tegra::Memory::GuestMemoryFlags::UnsafeReadWrite>

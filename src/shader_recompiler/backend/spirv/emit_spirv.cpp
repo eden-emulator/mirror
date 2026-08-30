@@ -168,7 +168,7 @@ void Traverse(EmitContext& ctx, IR::Program& program) {
             if (!Settings::values.disable_shader_loop_safety_checks) {
                 const Id pointer_type{ctx.TypePointer(spv::StorageClass::Private, ctx.U32[1])};
                 const Id safety_counter{ctx.AddGlobalVariable(
-                    pointer_type, spv::StorageClass::Private, ctx.Const(0x2000u))};
+                    pointer_type, spv::StorageClass::Private, ctx.Const(0x100u))};
                 if (ctx.profile.supported_spirv >= 0x00010400) {
                     ctx.interfaces.push_back(safety_counter);
                 }
