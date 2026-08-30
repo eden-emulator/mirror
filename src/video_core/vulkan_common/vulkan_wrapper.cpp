@@ -466,12 +466,12 @@ Instance Instance::Create(u32 version, Span<const char*> layers, Span<const char
     const VkApplicationInfo application_info{
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pNext = nullptr,
-        // i dont know whats the applkication name for GI but this should match
-        .pApplicationName = "GenshinImpact", // Just lie to the driver, straight up
-        .applicationVersion = VK_MAKE_VERSION(1, 3, 0),
-        // in case they want unity
-        .pEngineName = "Unity",
-        .engineVersion = 0,
+        // i dont know whats the application name for, but this should match
+        .pApplicationName = "PUBGMobile", // Just lie to the driver, straight up
+        .applicationVersion = VK_MAKE_VERSION(1, 7, 0),
+        // in case they want UnrealEngine
+        .pEngineName = "UnrealEngine",
+        .engineVersion = VK_MAKE_VERSION(4, 18, 0),
         .apiVersion = VK_API_VERSION_1_3,
     };
 #else
