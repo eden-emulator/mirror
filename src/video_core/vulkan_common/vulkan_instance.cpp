@@ -43,26 +43,32 @@ namespace {
     switch (window_type) {
     case Core::Frontend::WindowSystemType::Headless:
         break;
-#ifdef _WIN32
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
     case Core::Frontend::WindowSystemType::Windows:
         extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
         break;
-#elif defined(__APPLE__)
+#endif
+#if defined(VK_USE_PLATFORM_METAL_EXT)
     case Core::Frontend::WindowSystemType::Cocoa:
         extensions.push_back(VK_EXT_METAL_SURFACE_EXTENSION_NAME);
         break;
-#elif defined(__ANDROID__)
+#endif
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
     case Core::Frontend::WindowSystemType::Android:
         extensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
         break;
-#elif defined(__HAIKU__)
+#endif
+#if defined(VK_USE_PLATFORM_XCB_KHR)
     case Core::Frontend::WindowSystemType::Xcb:
         extensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
         break;
-#else
+#endif
+#if defined(VK_USE_PLATFORM_XLIB_KHR)
     case Core::Frontend::WindowSystemType::X11:
         extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
         break;
+#endif
+#if defined(VK_USE_PLATFORM_WAYLAND_KHR)
     case Core::Frontend::WindowSystemType::Wayland:
         extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
         break;
