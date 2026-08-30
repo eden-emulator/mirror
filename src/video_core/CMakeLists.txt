@@ -358,11 +358,6 @@ if (ENABLE_OPENGL)
     )
 endif()
 
-if (X11_FOUND)
-    target_include_directories(video_core PUBLIC ${X11_INCLUDE_DIR})
-    target_link_libraries(video_core PUBLIC ${X11_LIBRARIES})
-endif()
-
 target_link_libraries(video_core PUBLIC common core)
 target_link_libraries(video_core PUBLIC shader_recompiler stb bc_decoder gpu_logging)
 if (ENABLE_OPENGL)

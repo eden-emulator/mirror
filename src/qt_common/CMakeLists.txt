@@ -62,12 +62,6 @@ if (USE_DISCORD_PRESENCE)
     target_compile_definitions(qt_common PUBLIC USE_DISCORD_PRESENCE)
 endif()
 
-# Qt itself may use Vulkan stuffs so we'd need to account for that as well
-if (X11_FOUND)
-    target_include_directories(qt_common PUBLIC ${X11_INCLUDE_DIR})
-    target_link_libraries(qt_common PUBLIC ${X11_LIBRARIES})
-endif()
-
 # TODO(crueter)
 target_link_libraries(qt_common PRIVATE Qt6::Widgets)
 

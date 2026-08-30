@@ -411,16 +411,3 @@ if (APPLE)
         set(MOLTENVK_LIBRARY "${moltenvk_SOURCE_DIR}/MoltenVK/dylib/macOS/libMoltenVK.dylib" CACHE STRING "" FORCE)
     endif()
 endif()
-
-# We are NOT adding this to cpmfile.json
-# In BSD world, it is often the case that X11
-# will be under /usr/X11R{5,6,7}/include/...
-# ...
-# FreeBSD was able to see with hindsight this was a bad idea.
-# OpenBSD, OmniOS and NetBSD by default, aren't illuminated yet by this notion.
-#
-# Reliance on X11 Headers being available without explicitly
-# linking or mentioning X11 is something to note.
-if (NOT (WIN32 OR APPLE OR ANDROID OR HAIKU OR PS4))
-    find_package(X11 REQUIRED)
-endif()
