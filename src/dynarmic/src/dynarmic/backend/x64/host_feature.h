@@ -12,7 +12,7 @@
 
 namespace Dynarmic::Backend::X64 {
 
-enum class HostFeature : u64 {
+enum class HostFeature : u32 {
     SSSE3 = 1ULL << 0,
     SSE41 = 1ULL << 1,
     SSE42 = 1ULL << 2,

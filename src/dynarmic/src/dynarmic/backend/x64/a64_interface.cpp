@@ -33,9 +33,9 @@ using namespace Backend::X64;
 
 static RunCodeCallbacks GenRunCodeCallbacks(A64::UserCallbacks* cb, CodePtr (*LookupBlock)(void* lookup_block_arg), void* arg, const A64::UserConfig& conf) {
     return RunCodeCallbacks{
-        std::make_unique<ArgCallback>(LookupBlock, reinterpret_cast<u64>(arg)),
-        std::make_unique<ArgCallback>(Devirtualize<&A64::UserCallbacks::AddTicks>(cb)),
-        std::make_unique<ArgCallback>(Devirtualize<&A64::UserCallbacks::GetTicksRemaining>(cb)),
+        ArgCallback(LookupBlock, reinterpret_cast<u64>(arg)),
+        ArgCallback(Devirtualize<&A64::UserCallbacks::AddTicks>(cb)),
+        ArgCallback(Devirtualize<&A64::UserCallbacks::GetTicksRemaining>(cb)),
         conf.enable_cycle_counting,
     };
 }
@@ -78,7 +78,7 @@ public:
         // TODO: Check code alignment
         const CodePtr current_code_ptr = [this] {
             // RSB optimization
-            const u32 new_rsb_ptr = (jit_state.rsb_ptr - 1) & A64JitState::RSBPtrMask;
+            const u32 new_rsb_ptr = (jit_state.rsb_ptr - 1) & A64JitState::RSB_PTR_MASK;
             if (jit_state.GetUniqueHash() == jit_state.rsb_location_descriptors[new_rsb_ptr]) {
                 jit_state.rsb_ptr = new_rsb_ptr;
                 return CodePtr(jit_state.rsb_codeptrs[new_rsb_ptr]);

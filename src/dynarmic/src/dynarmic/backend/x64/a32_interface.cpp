@@ -37,9 +37,9 @@ using namespace Backend::X64;
 
 static RunCodeCallbacks GenRunCodeCallbacks(A32::UserCallbacks* cb, CodePtr (*LookupBlock)(void* lookup_block_arg), void* arg, const A32::UserConfig& conf) {
     return RunCodeCallbacks{
-        std::make_unique<ArgCallback>(LookupBlock, reinterpret_cast<u64>(arg)),
-        std::make_unique<ArgCallback>(Devirtualize<&A32::UserCallbacks::AddTicks>(cb)),
-        std::make_unique<ArgCallback>(Devirtualize<&A32::UserCallbacks::GetTicksRemaining>(cb)),
+        ArgCallback(LookupBlock, reinterpret_cast<u64>(arg)),
+        ArgCallback(Devirtualize<&A32::UserCallbacks::AddTicks>(cb)),
+        ArgCallback(Devirtualize<&A32::UserCallbacks::GetTicksRemaining>(cb)),
         conf.enable_cycle_counting,
     };
 }
@@ -79,7 +79,7 @@ struct Jit::Impl {
         jit_interface->is_executing = true;
         const CodePtr current_codeptr = [this] {
             // RSB optimization
-            const u32 new_rsb_ptr = (jit_state.rsb_ptr - 1) & A32JitState::RSBPtrMask;
+            const u32 new_rsb_ptr = (jit_state.rsb_ptr - 1) & A32JitState::RSB_PTR_MASK;
             if (jit_state.GetUniqueHash() == jit_state.rsb_location_descriptors[new_rsb_ptr]) {
                 jit_state.rsb_ptr = new_rsb_ptr;
                 return reinterpret_cast<CodePtr>(jit_state.rsb_codeptrs[new_rsb_ptr]);

@@ -29,7 +29,7 @@ class ConstantPool final {
 public:
     ConstantPool(BlockOfCode& code, size_t size);
 
-    Xbyak::Address GetConstant(const Xbyak::AddressFrame& frame, u64 lower, u64 upper = 0);
+    Xbyak::Address GetConstant(BlockOfCode& code, const Xbyak::AddressFrame& frame, u64 lower, u64 upper = 0);
 
 private:
     static constexpr size_t align_size = 16;  // bytes
@@ -45,7 +45,6 @@ private:
 
     ankerl::unordered_dense::map<ConstantT, void*, ConstantHash> constant_info;
     std::span<ConstantT> pool;
-    BlockOfCode& code;
     std::size_t insertion_point;
 };
 

@@ -16,8 +16,7 @@
 namespace Dynarmic::Backend::X64 {
 
 ConstantPool::ConstantPool(BlockOfCode& code, size_t size)
-    : code(code)
-    , insertion_point(0)
+    : insertion_point(0)
 {
     code.EnsureMemoryCommitted(align_size + size);
     code.int3();
@@ -25,17 +24,17 @@ ConstantPool::ConstantPool(BlockOfCode& code, size_t size)
     pool = std::span<ConstantT>(reinterpret_cast<ConstantT*>(code.AllocateFromCodeSpace(size)), size / align_size);
 }
 
-Xbyak::Address ConstantPool::GetConstant(const Xbyak::AddressFrame& frame, u64 lower, u64 upper) {
+Xbyak::Address ConstantPool::GetConstant(BlockOfCode& code, const Xbyak::AddressFrame& frame, u64 lower, u64 upper) {
     const auto constant = ConstantT(lower, upper);
-    auto iter = constant_info.find(constant);
-    if (iter == constant_info.end()) {
+    auto it = constant_info.find(constant);
+    if (it == constant_info.end()) {
         ASSERT(insertion_point < pool.size());
         ConstantT& target_constant = pool[insertion_point];
         target_constant = constant;
-        iter = constant_info.insert({constant, &target_constant}).first;
+        it = constant_info.insert({constant, &target_constant}).first;
         ++insertion_point;
     }
-    return frame[code.rip + iter->second];
+    return frame[code.rip + it->second];
 }
 
 }  // namespace Dynarmic::Backend::X64
