@@ -8,6 +8,7 @@
 #include "core/frontend/emu_window.h"
 #include "video_core/vulkan_common/vulkan_surface.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
+#include "video_core/vulkan_common/vulkan.h"
 
 namespace Vulkan {
 
@@ -17,7 +18,7 @@ vk::SurfaceKHR CreateSurface(
     [[maybe_unused]] const vk::InstanceDispatch& dld = instance.Dispatch();
     VkSurfaceKHR unsafe_surface = VkSurfaceKHR{};
 
-#ifdef _WIN32
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
     if (window_info.type == Core::Frontend::WindowSystemType::Windows) {
         const HWND hWnd = static_cast<HWND>(window_info.render_surface);
         const VkWin32SurfaceCreateInfoKHR win32_ci{VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
@@ -30,7 +31,8 @@ vk::SurfaceKHR CreateSurface(
             throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
         }
     }
-#elif defined(__APPLE__)
+#endif
+#if defined(VK_USE_PLATFORM_METAL_EXT)
     if (window_info.type == Core::Frontend::WindowSystemType::Cocoa) {
         const VkMetalSurfaceCreateInfoEXT metal_ci = {
             .sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT,
@@ -45,7 +47,8 @@ vk::SurfaceKHR CreateSurface(
             throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
         }
     }
-#elif defined(__ANDROID__)
+#endif
+#if defined(VK_USE_PLATFORM_ANDROID_KHR)
     if (window_info.type == Core::Frontend::WindowSystemType::Android) {
         const VkAndroidSurfaceCreateInfoKHR android_ci{
             VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR, nullptr, 0,
@@ -59,7 +62,8 @@ vk::SurfaceKHR CreateSurface(
             throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
         }
     }
-#elif defined(__HAIKU__)
+#endif
+#if defined(VK_USE_PLATFORM_XCB_KHR)
     if (window_info.type == Core::Frontend::WindowSystemType::Xcb) {
         const VkXcbSurfaceCreateInfoKHR xcb_ci{
             .sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
@@ -76,7 +80,8 @@ vk::SurfaceKHR CreateSurface(
             throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
         }
     }
-#else
+#endif
+#if defined(VK_USE_PLATFORM_XLIB_KHR)
     if (window_info.type == Core::Frontend::WindowSystemType::X11) {
         const VkXlibSurfaceCreateInfoKHR xlib_ci{
             VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR, nullptr, 0,
@@ -90,6 +95,8 @@ vk::SurfaceKHR CreateSurface(
             throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
         }
     }
+#endif
+#if defined(VK_USE_PLATFORM_WAYLAND_KHR)
     if (window_info.type == Core::Frontend::WindowSystemType::Wayland) {
         const VkWaylandSurfaceCreateInfoKHR wayland_ci{
             VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR, nullptr, 0,
@@ -105,7 +112,6 @@ vk::SurfaceKHR CreateSurface(
         }
     }
 #endif
-
     if (!unsafe_surface) {
         LOG_ERROR(Render_Vulkan, "Presentation not supported on this platform");
         throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);

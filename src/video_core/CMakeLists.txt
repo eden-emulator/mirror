@@ -358,11 +358,7 @@ if (ENABLE_OPENGL)
     )
 endif()
 
-# Must match src/video_core/vulkan_common/vulkan.h X11 logic
-if (WIN32 OR APPLE OR ANDROID OR PLATFORM_HAIKU OR PLATFORM_PS4)
-    # ...
-else()
-    find_package(X11 REQUIRED)
+if (X11_FOUND)
     target_include_directories(video_core PUBLIC ${X11_INCLUDE_DIR})
     target_link_libraries(video_core PUBLIC ${X11_LIBRARIES})
 endif()
