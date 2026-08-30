@@ -1216,7 +1216,7 @@ Result KServerSession::ReceiveRequest(KernelCore& kernel, uintptr_t server_messa
 }
 
 Result KServerSession::SendReply(KernelCore& kernel, uintptr_t server_message, uintptr_t server_buffer_size,
-                                 KPhysicalAddress server_message_paddr, bool is_hle) {
+                                 KPhysicalAddress server_message_paddr, bool is_hle, bool session_closed) {
     // Lock the session.
     KScopedLightLock lk{m_lock};
 
@@ -1248,7 +1248,7 @@ Result KServerSession::SendReply(KernelCore& kernel, uintptr_t server_message, u
     KEvent* event = request->GetEvent();
 
     // Check whether we're closed.
-    const bool closed = (client_thread == nullptr || m_parent->IsClientClosed());
+    const bool closed = (client_thread == nullptr || m_parent->IsClientClosed() || session_closed);
 
     Result result = ResultSuccess;
     if (!closed) {
