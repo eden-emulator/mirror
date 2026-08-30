@@ -27,12 +27,6 @@ if (CXX_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "14.0")
     message(FATAL_ERROR "GCC versions older than 14.0 are not supported. Update your system, or use clang/clang++ instead.")
 endif()
 
-if (OPENBSD)
-    # OpenBSD 7.8 broke libcxx when upgrading, so we must define the PSTL backend manually
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_LIBCPP_PSTL_BACKEND_SERIAL=1")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_LIBCPP_PSTL_BACKEND_SERIAL=1")
-endif()
-
 # NetBSD: Fun for the whole family!
 if (NETBSD)
     set(ENV{PKG_CONFIG_PATH} "${PKG_CONFIG_PATH}:${CMAKE_SYSROOT}/usr/pkg/lib/ffmpeg7/pkgconfig")
