@@ -509,6 +509,8 @@ QWidget#contentRichDialog QLabel#label_title_rich {
 }
 
 QWidget#contentDialog QLabel#label_dialog {
+    background: #2E2E2E;
+
     padding: 20px 65px;
 }
 
