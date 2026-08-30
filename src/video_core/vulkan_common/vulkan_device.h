@@ -273,6 +273,10 @@ public:
         return physical;
     }
 
+    VkPipelineCache StaticPipelineCache() const noexcept {
+        return *static_pipeline_cache;
+    }
+
     /// Returns the main graphics queue.
     vk::Queue GetGraphicsQueue() const {
         return graphics_queue;
@@ -1127,6 +1131,9 @@ private:
     /// Returns true if the device natively supports blitting depth stencil images.
     bool TestDepthStencilBlits(VkFormat format) const;
 
+    void LoadStaticPipelineCache();
+    void SaveStaticPipelineCache() const;
+
 private:
     VkInstance instance;         ///< Vulkan instance.
     VmaAllocator allocator;      ///< VMA allocator.
@@ -1135,6 +1142,8 @@ private:
     vk::Device logical;          ///< Logical device.
     vk::Queue graphics_queue;    ///< Main graphics queue.
     vk::Queue present_queue;     ///< Main present queue.
+    vk::PipelineCache static_pipeline_cache;
+    bool owns_static_pipeline_cache{};
     u32 instance_version{};      ///< Vulkan instance version.
     u32 graphics_family{};       ///< Main graphics queue family index.
     u32 present_family{};        ///< Main present queue family index.
