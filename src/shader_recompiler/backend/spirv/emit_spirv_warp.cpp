@@ -198,10 +198,6 @@ Id EmitSubgroupGeMask(EmitContext& ctx) {
 
 Id EmitShuffleIndex(EmitContext& ctx, IR::Inst* inst, Id value, Id index, Id clamp,
                     Id segmentation_mask) {
-    if (!StageSupportsSubgroups(ctx)) {
-        SetInBoundsFlag(inst, ctx.false_value);
-        return value;
-    }
     const Id not_seg_mask{ctx.OpNot(ctx.U32[1], segmentation_mask)};
     const Id thread_id{EmitLaneId(ctx)};
     const Id min_thread_id{ComputeMinThreadId(ctx, thread_id, segmentation_mask)};
