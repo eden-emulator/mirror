@@ -226,7 +226,6 @@ android {
             externalNativeBuild {
                 cmake {
                     arguments.add("-DYUZU_LEGACY=ON")
-                    arguments.add("-DANDROID_ALLOW_UNDEFINED_SYMBOLS=ON")
                 }
             }
 
