@@ -10,9 +10,6 @@
 #include <vector>
 
 #include "audio_core/sink/sink_details.h"
-#ifdef HAVE_OBOE
-#include "audio_core/sink/oboe_sink.h"
-#endif
 #ifdef HAVE_CUBEB
 #include "audio_core/sink/cubeb_sink.h"
 #endif
@@ -51,16 +48,6 @@ struct SinkDetails {
 
 // sink_details is ordered in terms of desirability, with the best choice at the top.
 constexpr SinkDetails sink_details[] = {
-#ifdef HAVE_OBOE
-    SinkDetails{
-        Settings::AudioEngine::Oboe,
-        [](std::string_view device_id) -> std::unique_ptr<Sink> {
-            return std::make_unique<OboeSink>();
-        },
-        [](bool capture) { return std::vector<std::string>{"Default"}; },
-        []() { return 0u; },
-    },
-#endif
 #ifdef HAVE_CUBEB
     SinkDetails{
         Settings::AudioEngine::Cubeb,
