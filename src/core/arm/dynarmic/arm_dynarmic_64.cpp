@@ -105,7 +105,7 @@ void DynarmicCallbacks64::InstructionCacheOperationRaised(Dynarmic::A64::Instruc
     last_code_addr = u64(-1); //invalidate cached page
     switch (op) {
     case Dynarmic::A64::InstructionCacheOperation::InvalidateByVAToPoU: {
-        static constexpr u64 ICACHE_LINE_SIZE = 64;
+        constexpr u64 ICACHE_LINE_SIZE = 64;
         const u64 cache_line_start = value & ~(ICACHE_LINE_SIZE - 1);
         m_parent.InvalidateCacheRange(cache_line_start, ICACHE_LINE_SIZE);
         break;
