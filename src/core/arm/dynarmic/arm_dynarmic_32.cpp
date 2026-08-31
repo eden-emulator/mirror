@@ -42,7 +42,7 @@ u64 DynarmicCallbacks32::MemoryRead64(u32 vaddr) {
 std::optional<u32> DynarmicCallbacks32::MemoryReadCode(u32 vaddr) {
     if (!m_memory.IsValidVirtualAddressRange(vaddr, sizeof(u32)))
         return std::nullopt;
-    auto const aligned_vaddr = vaddr & ~Core::Memory::YUZU_PAGEMASK;
+    auto const aligned_vaddr = vaddr & u32(~Core::Memory::YUZU_PAGEMASK);
     if (last_code_addr != aligned_vaddr) {
         m_memory.ReadBlock(aligned_vaddr, &cached_code_page, sizeof(cached_code_page));
         last_code_addr = aligned_vaddr;
@@ -420,12 +420,12 @@ void ArmDynarmic32::SignalInterrupt(Kernel::KThread* thread) {
 }
 
 void ArmDynarmic32::ClearInstructionCache() {
-    m_cb->last_code_addr = u64(-1);
+    m_cb->last_code_addr = u32(-1);
     m_jit->ClearCache();
 }
 
 void ArmDynarmic32::InvalidateCacheRange(u64 addr, std::size_t size) {
-    m_cb->last_code_addr = u64(-1);
+    m_cb->last_code_addr = u32(-1);
     m_jit->InvalidateCacheRange(u32(addr), size);
 }
 
