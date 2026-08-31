@@ -106,7 +106,7 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">محاكاة NVDEC</string>
-    <string name="nvdec_emulation_description">حدد كيفية التعامل مع فك تشفير الفيديو (NVDEC) خلال المشاهد التمهيدية والمقدمة.</string>
+    <string name="nvdec_emulation_description">قم بتغيير المعالج المركزي في حالة حدوث عطل أثناء المشاهد السينمائية.</string>
     <string name="nvdec_emulation_none">لا شيء</string>
 
     <!-- Optimize SPIRV output -->
@@ -292,7 +292,7 @@
     <string name="gpu_driver_manager">إدارة برامج تشغيل وحدة معالجة الرسومات</string>
     <string name="install_gpu_driver_description">تثبيت برامج تشغيل بديلة لأداء أو دقة أفضل</string>
     <string name="frame_gen">توليد الإطار</string>
-    <string name="frame_gen_per_game_description">تكوين إعدادات إنشاء الإطارات لهذه اللعبة</string>
+    <string name="frame_gen_per_game_description">ضبط إعدادات إنشاء الإطارات لهذه اللعبة</string>
     <string name="frame_gen_description">قم بإدراج الإطارات المُستكملة بين الإطارات المُعالجة باستخدام تقنية التحجيم بدون فقدان الجودة. يُفرض هذا الخيار عرض الإطارات وفقًا لترتيب FIFO عند تفعيله.</string>
     <string name="frame_gen_multiplier">مضاعف الإطارات</string>
     <string name="frame_gen_multiplier_description">عدد الإطارات المطلوب عرضها لكل إطار مُعالَج. تتطلب القيم الأعلى وقت معالجة رسوميات أكبر. طلب عدد إطارات يفوق قدرة الشاشة على عرضه سيؤدي إلى إبطاء المحاكاة.</string>
@@ -300,6 +300,7 @@
     <string name="frame_gen_multiplier_3x">3x</string>
     <string name="frame_gen_multiplier_4x">4x</string>
     <string name="frame_gen_target_rate">معدل الإطارات المستهدف</string>
+    <string name="frame_gen_target_rate_description">اختر المعدل الذي يمكن لشاشتك عرضه فعليًّا. عندئذٍ يرتفع المضاعف أو ينخفض تلقائيًّا للحفاظ على هذا المعدل، ويقوم بالتراجع عن أي خطوة تؤدي إلى إبطاء سير اللعبة نفسها.</string>
     <string name="frame_gen_target_rate_off">استخدم مضاعفًا ثابتًا</string>
     <string name="frame_gen_target_rate_60">60 إطارًا في الثانية</string>
     <string name="frame_gen_target_rate_90">90 إطارًا في الثانية</string>
@@ -307,6 +308,50 @@
     <string name="frame_gen_target_rate_144">144 إطارًا في الثانية</string>
     <string name="frame_gen_target_rate_165">165 إطارًا في الثانية</string>
     <string name="frame_gen_queue_target">هدف قائمة انتظار الإطارات</string>
+    <string name="frame_gen_queue_target_description">كم عدد الإطارات المكتملة التي قد تنتظر قبل عرضها؟ تعمل قوائم الانتظار الأكبر حجمًا على امتصاص الارتفاعات المفاجئة في حمل وحدة معالجة الرسومات على حساب زمن انتقال الإدخال.</string>
+    <string name="frame_gen_queue_target_0">أقل زمن انتقال (بدون تخزين مؤقت)</string>
+    <string name="frame_gen_queue_target_1">متوازن (1 إطار)</string>
+    <string name="frame_gen_queue_target_2">الأكثر سلاسة (2 إطارات)</string>
+    <string name="frame_gen_flow_scale_auto">تكييف تقدير الحركة مع اللعبة</string>
+    <string name="frame_gen_flow_scale_auto_description">قم بتقدير الحركة بناءً على الدقة التي تعرضها اللعبة فعليًّا، بدلاً من الإخراج الذي تم رفع دقته. ولا يؤثر ذلك على الدقة بأي شكل، لأن رفع الدقة لا يضيف أي تفاصيل تتعلق بالحركة.</string>
+    <string name="frame_gen_flow_scale">دقة تقدير الحركة</string>
+    <string name="frame_gen_flow_scale_description">دقة مسار التدفق البصري، كجزء من الناتج. ويُعد خفض هذه القيمة أرخص طريقة لاستعادة الأداء.</string>
+    <string name="frame_gen_fp16">مُظلِّلات نصف الدقة</string>
+    <string name="frame_gen_fp16_description">استخدم نسخة التظليل 16 بت. يتم التراجع تلقائيًا إلى الخيار البديل في حالة عدم توفرها في برنامج التشغيل أو الملف.</string>
+    <string name="frame_gen_dump_flow">إفراغ الإطار الذي تم إنشاؤه</string>
+    <string name="frame_gen_dump_flow_description">قم بكتابة مستويات MIP للتدفق البصري والإطار المُستكمل إلى مجلد lossless/debug مرة واحدة، لغرض استكشاف الأخطاء وإصلاحها</string>
+    <string name="frame_gen_unsupported">توليد الإطار غير متاح</string>
+    <string name="frame_gen_unsupported_description">لا يدعم برنامج تشغيل وحدة معالجة الرسومات هذا نموذج ذاكرة Vulkan، الذي تتطلبه برامج التظليل الخاصة بـ«Lossless Scaling».</string>
+    <string name="lossless_scaling_setup_description">اختياري. قم بتوفير ملف Lossless.dll الخاص بك لتمكين إنشاء الإطارات لاحقًا</string>
+    <string name="lossless_scaling_install">تثبيت ملف Lossless.dll</string>
+    <string name="lossless_scaling_install_description">يتطلب إنشاء الإطارات أن تكون لديك نسخة قانونية خاصة بك من ملف Lossless.dll المأخوذ من برنامج Lossless Scaling</string>
+    <string name="lossless_scaling_replace_description">اختر نسخة أخرى من ملف Lossless.dll</string>
+    <string name="frame_generation_support">توليد الإطارات</string>
+    <string name="frame_generation_supported">مدعوم</string>
+    <string name="frame_generation_unsupported">غير مدعوم (لا يتوفر نموذج ذاكرة Vulkan)</string>
+    <string name="lossless_scaling">Lossless Scaling</string>
+    <string name="lossless_scaling_description">قم بتوفير نسختك الخاصة من ملف Lossless.dll لتمكين توليد الإطارات</string>
+    <string name="lossless_scaling_installed">مثبت</string>
+    <string name="lossless_scaling_not_installed">غير مثبت</string>
+    <string name="lossless_scaling_replace">استبدل</string>
+    <string name="lossless_scaling_remove">إزالة</string>
+    <string name="lossless_scaling_remove_description">احذف ملف Lossless.dll المثبت ووحدات التظليل المعدة له</string>
+    <string name="lossless_scaling_remove_confirmation">سيتوقف توليد الإطارات عن العمل إلى أن تقوم بتثبيت ملف Lossless.dll مرة أخرى. ولن يتأثر ملفك الأصلي بذلك.</string>
+    <string name="lossless_scaling_missing">ملف Lossless.dll غير مثبت</string>
+    <string name="lossless_scaling_missing_description">قم بتثبيته من الإعدادات › Lossless Scaling لاستخدام ميزة توليد الإطارات.</string>
+    <string name="lossless_scaling_locked">أغلق اللعبة أولاً</string>
+    <string name="lossless_scaling_locked_description">لا يمكن تعديل ملف Lossless.dll أثناء تشغيل اللعبة.</string>
+    <string name="lossless_scaling_remove_unavailable">لا يوجد شيء يجب إزالته</string>
+    <string name="lossless_scaling_remove_unavailable_description">لم يتم تثبيت ملف Lossless.dll بعد.</string>
+    <string name="lossless_scaling_installing">جاري التحضير لإنشاء مظلّلات الإطارات…</string>
+    <string name="lossless_scaling_install_success">تم تثبيت ملف Lossless.dll بنجاح</string>
+    <string name="lossless_scaling_install_failed">تعذر تثبيت ملف Lossless.dll</string>
+    <string name="error_lossless_copy_failed">تعذر نسخ الملف المحدد.</string>
+    <string name="error_lossless_unreadable">تعذر قراءة الملف المحدد.</string>
+    <string name="error_lossless_not_pe">الملف المحدد ليس مكتبة Windows. حدد ملف Lossless.dll من تثبيت برنامج Lossless Scaling.</string>
+    <string name="error_lossless_missing_shaders">لا تحتوي هذه النسخة من ملف Lossless.dll على برامج التظليل الخاصة بتوليد الإطارات. قم بتحديث ميزة «Lossless Scaling» وحاول مرة أخرى.</string>
+    <string name="error_lossless_translation_failed">تعذر ترجمة برامج التظليل الخاصة بتوليد الإطارات. هذا الإصدار من «Lossless Scaling» غير مدعوم حتى الآن.</string>
+    <string name="error_lossless_cache_failed">تعذر كتابة برامج التظليل المترجمة إلى وحدة التخزين. تأكد من توفر مساحة خالية.</string>
     <string name="advanced_settings">الإعدادات المتقدمة</string>
     <string name="settings_description">ضبط إعدادات المحاكي</string>
     <string name="search_recently_played">تم تشغيلها مؤخرًا</string>
@@ -585,7 +630,6 @@
     <string name="log">السجلات</string>
     <string name="flush_by_line">تفريغ سجلات التصحيح حسب السطر</string>
     <string name="flush_by_line_description">يفرغ سجلات التصحيح عند كتابة كل سطر، مما يجعل التصحيح أسهل في حالات التوقف أو التجميد.</string>
-
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">تسجيل وحدة معالجة الرسومات</string>
     <string name="gpu_log_level">مستوى السجل</string>
@@ -661,10 +705,10 @@
     <string name="gamecube_controller">ذراع تحكم GameCube</string>
     <string name="invert_axis">عكس المحور</string>
     <string name="invert_button">عكس الزر</string>
-    <string name="toggle_button">زر تشغيل/إيقاف</string>
+    <string name="toggle_button">زر تفعيل/تعطيل</string>
     <string name="turbo_button">زر التوربو</string>
     <string name="set_threshold">تعيين الحد الفاصل</string>
-    <string name="toggle_axis">تشغيل/إيقاف المحور</string>
+    <string name="toggle_axis">تفعيل/تعطيل المحور</string>
     <string name="connected">متصل</string>
     <string name="use_system_vibrator">استخدم هزاز النظام</string>
     <string name="input_overlay">طبقة الإدخال</string>
@@ -803,7 +847,7 @@
     <string name="version">الإصدار</string>
     <string name="copy_details">نسخ التفاصيل</string>
     <string name="add_ons">الإضافات</string>
-    <string name="add_ons_description">التعديلات، التحديثات، المحتوى القابل للتنزيل</string>
+    <string name="add_ons_description">تفعيل/تعطيل التعديلات، التحديثات، المحتوى القابل للتنزيل</string>
     <string name="playtime">زمن اللعب:</string>
     <string name="reset_playtime">مسح زمن اللعب</string>
     <string name="reset_playtime_description">إعادة تعيين زمن اللعب للعبة الحالية إلى 0 ثانية</string>
@@ -908,13 +952,13 @@
     <!-- Emulation Menu -->
     <string name="emulation_exit">خروج من المحاكاة</string>
     <string name="emulation_done">إنهاء</string>
-    <string name="emulation_toggle_controls">تشغيل/إيقاف أزرار التحكم</string>
+    <string name="emulation_toggle_controls">تفعيل/تعطيل أزرار التحكم</string>
     <string name="emulation_rel_stick_center">مركز العصا النسبي</string>
     <string name="emulation_dpad_slide">انزلاق الأسهم</string>
     <string name="emulation_haptics">الاهتزازات الديناميكية</string>
     <string name="emulation_show_overlay">عرض ذراع التحكم</string>
     <string name="emulation_hide_overlay">إخفاء ذراع التحكم</string>
-    <string name="emulation_toggle_all">تشغيل/إيقاف الكل</string>
+    <string name="emulation_toggle_all">تفعيل/تعطيل الكل</string>
     <string name="emulation_control_adjust">ضبط الطبقة</string>
     <string name="emulation_control_scale">الحجم</string>
     <string name="emulation_control_opacity">الشفافية</string>
@@ -1079,7 +1123,7 @@
     <string name="freedreno_info_title">حول إعدادات Freedreno</string>
     <string name="freedreno_info_description">قم بإعداد خيارات برنامج تشغيل Freedreno/Turnip لوحدة معالجة الرسومات لأغراض التصحيح، والتحليل، وتحسين الأداء. يتم حفظ التغييرات تلقائيًا. راجع https://docs.mesa3d.org/drivers/freedreno.html للحصول على الوثائق التفصيلية.</string>
     <string name="freedreno_per_game_title">إعدادات Freedreno</string>
-    <string name="freedreno_per_game_description">قم بضبط إعدادات برنامج تشغيل وحدة معالجة الرسومات لهذه اللعبة</string>
+    <string name="freedreno_per_game_description">ضبط إعدادات برنامج تشغيل وحدة معالجة الرسومات لهذه اللعبة</string>
     <string name="freedreno_per_game_saved">تم حفظ إعدادات Freedreno</string>
 
     <!-- Gamepad Buttons -->
@@ -1106,7 +1150,6 @@
     <string name="theme_mode_follow_system">اتبع النظام</string>
     <string name="theme_mode_light">فاتح</string>
     <string name="theme_mode_dark">داكن</string>
-
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">خلفيات سوداء</string>

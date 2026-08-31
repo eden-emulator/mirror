@@ -106,7 +106,6 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">Emulación NVDEC</string>
-    <string name="nvdec_emulation_description">Seleccione cómo se maneja la decodificación de vídeo (NVDEC) durante las escenas y las introducciones.</string>
     <string name="nvdec_emulation_none">Ninguno</string>
 
     <!-- Optimize SPIRV output -->
@@ -292,22 +291,41 @@
     <string name="gpu_driver_manager">Gestor de controladores de la GPU</string>
     <string name="install_gpu_driver_description">Instale los controladores alternativos para obtener un posible mejor rendimiento o precisión</string>
     <string name="frame_gen">Generación de fotograma</string>
+    <string name="frame_gen_per_game_description">Configurar la generación de fotogramas para este juego</string>
     <string name="frame_gen_multiplier">Multiplicador de fotograma</string>
     <string name="frame_gen_multiplier_2x">2x</string>
     <string name="frame_gen_multiplier_3x">3x</string>
     <string name="frame_gen_multiplier_4x">4x</string>
+    <string name="frame_gen_target_rate">Objetivo de tasa de fotogramas</string>
+    <string name="frame_gen_target_rate_off">Usar un multiplicador fijo</string>
     <string name="frame_gen_target_rate_60">60 FPS</string>
     <string name="frame_gen_target_rate_90">90 FPS</string>
     <string name="frame_gen_target_rate_120">120 FPS</string>
     <string name="frame_gen_target_rate_144">144 FPS</string>
     <string name="frame_gen_target_rate_165">165 FPS</string>
+    <string name="frame_gen_queue_target_0">Latencia más baja (Sin búfer)</string>
     <string name="frame_gen_queue_target_1">Equilibrado (1 fotograma)</string>
+    <string name="frame_gen_queue_target_2">Más suave (2 fotogramas)</string>
+    <string name="frame_gen_fp16">Sombreadores de media precisión</string>
+    <string name="frame_gen_unsupported">Generación de fotogramas no disponbile</string>
+    <string name="lossless_scaling_install">Instalar Lossless.dll</string>
+    <string name="lossless_scaling_replace_description">Seleccionar una copia diferente de Lossless.dll</string>
     <string name="frame_generation_support">Generación de fotograma</string>
     <string name="frame_generation_supported">Soportado</string>
+    <string name="frame_generation_unsupported">No soportado (sin modelo de memoria de Vulkan)</string>
     <string name="lossless_scaling">Escalado sin pérdidas</string>
     <string name="lossless_scaling_installed">Instalado</string>
     <string name="lossless_scaling_not_installed">No instalado</string>
+    <string name="lossless_scaling_replace">Reemplazar</string>
+    <string name="lossless_scaling_remove">Borrar</string>
+    <string name="lossless_scaling_remove_description">Borrar Lossless.dll instalado y sus sombreadores preparados</string>
     <string name="lossless_scaling_missing">Lossless.dll no instalado</string>
+    <string name="lossless_scaling_locked">Primero cierra el juego</string>
+    <string name="lossless_scaling_remove_unavailable">Nada que borrar</string>
+    <string name="lossless_scaling_install_success">Lossless.dll instalado correctamente</string>
+    <string name="lossless_scaling_install_failed">No se pudo instalar Lossless.dll</string>
+    <string name="error_lossless_copy_failed">No se pudo copiar el archivo seleccionado.</string>
+    <string name="error_lossless_unreadable">No se pudo leer el archivo seleccionado.</string>
     <string name="advanced_settings">Ajustes avanzados</string>
     <string name="settings_description">Configurar los ajustes del emulador</string>
     <string name="search_recently_played">Jugado recientemente</string>
@@ -454,6 +472,8 @@
     <string name="use_custom_rtc_description">Le permite tener un reloj personalizado en tiempo real diferente de la hora de su sistema.</string>
     <string name="set_custom_rtc">Configurar RTC personalizado</string>
 
+    <!-- CPU -->
+    <string name="fast_cpu_time">Relojes de la CPU</string>
     <string name="custom_cpu_ticks">Ticks de CPU personalizados</string>
     <string name="custom_cpu_ticks_description">Establezca un valor personalizado de los ciclos de la CPU. Los valores más altos pueden aumentar el rendimiento, pero también pueden hacer que el juego se congele. Se recomienda un rango de 77–21000.</string>
     <string name="cpu_ticks">Ciclos</string>
@@ -512,6 +532,7 @@
 
     <string name="hacks">Hacks</string>
 
+    <string name="fast_gpu_time">Relojes de la GPU</string>
     <string name="skip_cpu_inner_invalidation">Omitir invalidación interna de la CPU</string>
     <string name="skip_cpu_inner_invalidation_description">Omite ciertas invalidaciones de caché de la CPU durante las actualizaciones de memoria, lo que reduce el uso de la CPU y mejora su rendimiento. Esto puede causar fallos o bloqueos en algunos juegos.</string>
     <string name="fix_bloom_effects">Arreglar los efectos de resplandor</string>
@@ -558,6 +579,7 @@
 
     <!-- Debug settings strings -->
     <string name="cpu">CPU</string>
+    <string name="clocks">Relojes</string>
     <string name="use_auto_stub">Usar Auto Stub</string>
     <string name="use_auto_stub_description">Rellena automáticamente servicios y funciones ausentes. Puede mejorar la compatibilidad pero puede causar cierres inesperados.</string>
 
@@ -572,7 +594,6 @@
     <string name="log">Registro</string>
     <string name="flush_by_line">Vaciar los registros de depuración por línea</string>
     <string name="flush_by_line_description">Vacía los registros de depuración en cada línea escrita, facilitando la depuración en casos de bloqueos o congelamientos.</string>
-
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">Registros de la GPU</string>
     <string name="gpu_log_level">Nivel de registros</string>
@@ -959,10 +980,12 @@
 
     <!-- CPU clock levels -->
     <string name="clock_normal">Normal</string>
+    <string name="clock_boost">Impulso</string>
     <string name="clock_fast">Overclock</string>
 
     <!-- GPU clock levels -->
     <string name="fast_gpu_normal">Normal</string>
+    <string name="fast_gpu_medium">Impulso</string>
     <string name="fast_gpu_high">Overclock</string>
 
     <!-- GPU swizzle texture size -->
@@ -1091,7 +1114,6 @@
     <string name="theme_mode_follow_system">Igual al del sistema</string>
     <string name="theme_mode_light">Claro</string>
     <string name="theme_mode_dark">Oscuro</string>
-
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">Fondos oscuros</string>

@@ -81,7 +81,6 @@
     <string name="cpuopt_unsafe_host_mmu_description">Optimasi ini mempercepat akses memori oleh program tamu. Mengaktifkannya menyebabkan pembacaan/penulisan memori tamu dilakukan langsung ke memori dan memanfaatkan MMU Host. Menonaktifkan ini memaksa semua akses memori menggunakan Emulasi MMU Perangkat Lunak.</string>
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">Emulasi NVDEC</string>
-    <string name="nvdec_emulation_description">Pilih cara decoding video (NVDEC) ditangani selama cutscene dan intro.</string>
     <string name="nvdec_emulation_none">Tidak Ada</string>
 
     <!-- Optimize SPIRV output -->
@@ -430,7 +429,6 @@
     <string name="log">Pencatatan</string>
     <string name="flush_by_line">Buang log debug per baris</string>
     <string name="flush_by_line_description">Membuang log debug pada setiap baris yang ditulis, memudahkan debugging dalam kasus crash atau freeze.</string>
-
     <!-- Audio settings strings -->
     <string name="audio_output_engine">Output audio</string>
     <string name="audio_volume">Volume</string>

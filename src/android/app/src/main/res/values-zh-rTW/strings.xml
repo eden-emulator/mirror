@@ -106,7 +106,6 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">NVDEC模擬</string>
-    <string name="nvdec_emulation_description">選擇影片解碼（NVDEC）的方式</string>
     <string name="nvdec_emulation_none">無</string>
 
     <!-- Optimize SPIRV output -->
@@ -559,7 +558,6 @@
     <string name="log">日誌</string>
     <string name="flush_by_line">按行寫入偵錯日誌</string>
     <string name="flush_by_line_description">在每行寫入時重新整理偵錯日誌，讓程式在當機或閃退時更容易偵錯。</string>
-
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">GPU 日誌</string>
     <string name="gpu_log_level">記錄層級</string>
@@ -695,7 +693,7 @@
     <string name="import_complete">導入完成</string>
     <string name="use_global_setting">使用全域設定</string>
     <string name="operation_completed_successfully">操作已成功完成</string>
-    <string name="confirm">下載</string>
+    <string name="confirm">確認</string>
     <string name="load">載入</string>
     <string name="save">儲存</string>
 
@@ -868,7 +866,7 @@
     <string name="driver_missing_title">需要GPU驅動程式</string>
     <string name="driver_missing_message">這個遊戲的設定需要 \"%s\"驅動程式，而它並沒有安裝在您的裝置上\n\n要下載並安裝此驅動程式嗎？</string>
     <string name="driver_download_cancelled">驅動程式下載已取消。沒有所需的驅動程式無法啟動遊戲。</string>
-    <string name="download">遷移</string>
+    <string name="download">下載</string>
 
     <!-- Emulation Menu -->
     <string name="emulation_exit">結束模擬</string>
@@ -1005,7 +1003,6 @@
     <string name="theme_mode_follow_system">跟隨系統</string>
     <string name="theme_mode_light">淺色</string>
     <string name="theme_mode_dark">深色</string>
-
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">黑色背景</string>

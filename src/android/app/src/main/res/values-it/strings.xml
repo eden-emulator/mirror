@@ -79,7 +79,6 @@
     <string name="cpuopt_unsafe_host_mmu_description">Questa ottimizzazione accelera gli accessi alla memoria da parte del programma guest. Abilitandola, le letture/scritture della memoria guest vengono eseguite direttamente in memoria e sfruttano la MMU host. Disabilitandola, tutti gli accessi alla memoria sono costretti a utilizzare l\'emulazione software della MMU.</string>
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">Emulazione NVDEC</string>
-    <string name="nvdec_emulation_description">Scegli come gestire la decodifica video</string>
     <string name="nvdec_emulation_none">Nessuna</string>
 
     <!-- Optimize SPIRV output -->
@@ -437,7 +436,6 @@
     <string name="log">Registrazione</string>
     <string name="flush_by_line">Svuota i log di debug per riga</string>
     <string name="flush_by_line_description">Svuota i log di debug su ogni riga scritta, facilitando il debug in caso di crash o blocco.</string>
-
     <!-- Audio settings strings -->
     <string name="audio_output_engine">Motore di Output</string>
     <string name="audio_volume">Volume</string>

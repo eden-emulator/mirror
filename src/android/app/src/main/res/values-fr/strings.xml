@@ -104,7 +104,6 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">Émulation NVDEC</string>
-    <string name="nvdec_emulation_description">Sélectionnez la manière dont le décodage vidéo (NVDEC) est géré pendant les cinématiques et les intros.</string>
     <string name="nvdec_emulation_none">Aucun</string>
 
     <!-- Optimize SPIRV output -->
@@ -518,7 +517,6 @@
     <string name="log">Journalisation</string>
     <string name="flush_by_line">Vider les journaux de débogage ligne par ligne</string>
     <string name="flush_by_line_description">Vide les journaux de débogage à chaque ligne écrite, facilitant le débogage en cas de plantage ou de gel.</string>
-
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">Journalisation GPU</string>
     <string name="gpu_log_level">Niveau de journalisation</string>
@@ -1003,7 +1001,6 @@
     <string name="theme_mode_follow_system">Automatique</string>
     <string name="theme_mode_light">Lumineux</string>
     <string name="theme_mode_dark">Sombre</string>
-
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">Arrière-plan noir</string>
