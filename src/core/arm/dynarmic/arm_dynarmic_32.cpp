@@ -420,11 +420,13 @@ void ArmDynarmic32::SignalInterrupt(Kernel::KThread* thread) {
 }
 
 void ArmDynarmic32::ClearInstructionCache() {
+    m_cb->last_code_addr = u64(-1);
     m_jit->ClearCache();
 }
 
 void ArmDynarmic32::InvalidateCacheRange(u64 addr, std::size_t size) {
-    m_jit->InvalidateCacheRange(static_cast<u32>(addr), size);
+    m_cb->last_code_addr = u64(-1);
+    m_jit->InvalidateCacheRange(u32(addr), size);
 }
 
 } // namespace Core
