@@ -458,6 +458,7 @@ void ArmDynarmic64::ClearInstructionCache() {
 }
 
 void ArmDynarmic64::InvalidateCacheRange(u64 addr, std::size_t size) {
+    m_cb->last_code_addr = u64(-1);
     m_jit->InvalidateCacheRange(addr, size);
 }
 
