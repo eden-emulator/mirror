@@ -466,10 +466,10 @@ Instance Instance::Create(u32 version, Span<const char*> layers, Span<const char
     const VkApplicationInfo application_info{
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pNext = nullptr,
-        .pApplicationName = "Eden",
-        .applicationVersion = VK_MAKE_VERSION(1, 1, 0),
+        .pApplicationName = "PUBGMobile",
+        .applicationVersion = VK_MAKE_VERSION(1, 7, 0),
         .pEngineName = "UnrealEngine",
-        .engineVersion = VK_MAKE_VERSION(5, 1, 0),
+        .engineVersion = VK_MAKE_VERSION(4, 23, 0),
         .apiVersion = VK_API_VERSION_1_3,
     };
 #else
