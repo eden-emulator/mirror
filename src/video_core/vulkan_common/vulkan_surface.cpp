@@ -108,10 +108,12 @@ vk::SurfaceKHR CreateSurface(
     }
 #endif
 
+#ifndef __OPENORBIS__
     if (!unsafe_surface) {
         LOG_ERROR(Render_Vulkan, "Presentation not supported on this platform");
         throw vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
     }
+#endif
     return vk::SurfaceKHR(unsafe_surface, *instance, dld);
 }
 
