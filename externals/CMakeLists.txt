@@ -388,13 +388,6 @@ if (YUZU_CRASH_DUMPS AND NOT TARGET libbreakpad_client)
     endif()
 endif()
 
-# oboe
-if (ANDROID)
-    AddJsonPackage(oboe)
-
-    add_library(oboe::oboe ALIAS oboe)
-endif()
-
 if (APPLE)
     # moltenvk
     if (NOT YUZU_USE_BUNDLED_MOLTENVK)

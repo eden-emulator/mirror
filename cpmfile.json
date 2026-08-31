@@ -179,12 +179,6 @@
         "repo": "eden-emulator/oaknut",
         "version": "v2.0.3"
     },
-    "oboe": {
-        "bundled": true,
-        "hash": "ce4011afe7345370d4ead3b891cd69a5ef224b129535783586c0ca75051d303ed446e6c7f10bde8da31fff58d6e307f1732a3ffd03b249f9ef1fd48fd4132715",
-        "repo": "google/oboe",
-        "version": "1.10.0"
-    },
     "openssl": {
         "hash": "29002ce50cb95a4f4f1d0e9d3f684401fbd4eac34203dc2eef3b6334af5d44aa46bf788b63a6f5c139c383eafb7269ae87a58a9a3ad5912903b9773e545ccc0a",
         "min_version": "3.0.0",

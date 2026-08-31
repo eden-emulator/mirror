@@ -238,20 +238,10 @@ if (ENABLE_CUBEB)
     target_compile_definitions(audio_core PRIVATE HAVE_CUBEB=1)
 endif()
 
-if(ANDROID)
-    target_sources(audio_core PRIVATE
-        sink/oboe_sink.cpp
-        sink/oboe_sink.h)
-
-    target_link_libraries(audio_core PRIVATE oboe)
-    target_compile_definitions(audio_core PUBLIC HAVE_OBOE)
-else()
-    target_sources(audio_core PRIVATE
-        sink/sdl3_sink.cpp
-        sink/sdl3_sink.h)
-
-    target_link_libraries(audio_core PRIVATE SDL3::SDL3)
-    target_compile_definitions(audio_core PRIVATE HAVE_SDL3)
-endif()
+target_sources(audio_core PRIVATE
+    sink/sdl3_sink.cpp
+    sink/sdl3_sink.h)
+target_link_libraries(audio_core PRIVATE SDL3::SDL3)
+target_compile_definitions(audio_core PRIVATE HAVE_SDL3)
 
 create_target_directory_groups(audio_core)
