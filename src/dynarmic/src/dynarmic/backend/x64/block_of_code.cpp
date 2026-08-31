@@ -76,57 +76,34 @@ void ProtectMemory(const void* base, size_t size, bool is_executable) {
 }
 #endif
 
-HostFeature GetHostFeatures() {
-    HostFeature features = {};
+static const HostFeature features = []() {
+    HostFeature f{};
 #ifdef DYNARMIC_ENABLE_CPU_FEATURE_DETECTION
     using Cpu = Xbyak::util::Cpu;
     Xbyak::util::Cpu cpu_info{};
-    if (cpu_info.has(Cpu::tSSSE3))
-        features |= HostFeature::SSSE3;
-    if (cpu_info.has(Cpu::tSSE41))
-        features |= HostFeature::SSE41;
-    if (cpu_info.has(Cpu::tSSE42))
-        features |= HostFeature::SSE42;
-    if (cpu_info.has(Cpu::tAVX))
-        features |= HostFeature::AVX;
-    if (cpu_info.has(Cpu::tAVX2))
-        features |= HostFeature::AVX2;
-    if (cpu_info.has(Cpu::tAVX512F))
-        features |= HostFeature::AVX512F;
-    if (cpu_info.has(Cpu::tAVX512CD))
-        features |= HostFeature::AVX512CD;
-    if (cpu_info.has(Cpu::tAVX512VL))
-        features |= HostFeature::AVX512VL;
-    if (cpu_info.has(Cpu::tAVX512BW))
-        features |= HostFeature::AVX512BW;
-    if (cpu_info.has(Cpu::tAVX512DQ))
-        features |= HostFeature::AVX512DQ;
-    if (cpu_info.has(Cpu::tAVX512_BITALG))
-        features |= HostFeature::AVX512BITALG;
-    if (cpu_info.has(Cpu::tAVX512VBMI))
-        features |= HostFeature::AVX512VBMI;
-    if (cpu_info.has(Cpu::tPCLMULQDQ))
-        features |= HostFeature::PCLMULQDQ;
-    if (cpu_info.has(Cpu::tF16C))
-        features |= HostFeature::F16C;
-    if (cpu_info.has(Cpu::tFMA))
-        features |= HostFeature::FMA;
-    if (cpu_info.has(Cpu::tAESNI))
-        features |= HostFeature::AES;
-    if (cpu_info.has(Cpu::tSHA))
-        features |= HostFeature::SHA;
-    if (cpu_info.has(Cpu::tPOPCNT))
-        features |= HostFeature::POPCNT;
-    if (cpu_info.has(Cpu::tBMI1))
-        features |= HostFeature::BMI1;
-    if (cpu_info.has(Cpu::tBMI2))
-        features |= HostFeature::BMI2;
-    if (cpu_info.has(Cpu::tLZCNT))
-        features |= HostFeature::LZCNT;
-    if (cpu_info.has(Cpu::tGFNI))
-        features |= HostFeature::GFNI;
-    if (cpu_info.has(Cpu::tWAITPKG))
-        features |= HostFeature::WAITPKG;
+    if (cpu_info.has(Cpu::tSSSE3)) f |= HostFeature::SSSE3;
+    if (cpu_info.has(Cpu::tSSE41)) f |= HostFeature::SSE41;
+    if (cpu_info.has(Cpu::tSSE42)) f |= HostFeature::SSE42;
+    if (cpu_info.has(Cpu::tAVX)) f |= HostFeature::AVX;
+    if (cpu_info.has(Cpu::tAVX2)) f |= HostFeature::AVX2;
+    if (cpu_info.has(Cpu::tAVX512F)) f |= HostFeature::AVX512F;
+    if (cpu_info.has(Cpu::tAVX512CD)) f |= HostFeature::AVX512CD;
+    if (cpu_info.has(Cpu::tAVX512VL)) f |= HostFeature::AVX512VL;
+    if (cpu_info.has(Cpu::tAVX512BW)) f |= HostFeature::AVX512BW;
+    if (cpu_info.has(Cpu::tAVX512DQ)) f |= HostFeature::AVX512DQ;
+    if (cpu_info.has(Cpu::tAVX512_BITALG)) f |= HostFeature::AVX512BITALG;
+    if (cpu_info.has(Cpu::tAVX512VBMI)) f |= HostFeature::AVX512VBMI;
+    if (cpu_info.has(Cpu::tPCLMULQDQ)) f |= HostFeature::PCLMULQDQ;
+    if (cpu_info.has(Cpu::tF16C)) f |= HostFeature::F16C;
+    if (cpu_info.has(Cpu::tFMA)) f |= HostFeature::FMA;
+    if (cpu_info.has(Cpu::tAESNI)) f |= HostFeature::AES;
+    if (cpu_info.has(Cpu::tSHA)) f |= HostFeature::SHA;
+    if (cpu_info.has(Cpu::tPOPCNT)) f |= HostFeature::POPCNT;
+    if (cpu_info.has(Cpu::tBMI1)) f |= HostFeature::BMI1;
+    if (cpu_info.has(Cpu::tBMI2)) f |= HostFeature::BMI2;
+    if (cpu_info.has(Cpu::tLZCNT)) f |= HostFeature::LZCNT;
+    if (cpu_info.has(Cpu::tGFNI)) f |= HostFeature::GFNI;
+    if (cpu_info.has(Cpu::tWAITPKG)) f |= HostFeature::WAITPKG;
     if (cpu_info.has(Cpu::tBMI2)) {
         // BMI2 instructions such as pdep and pext have been very slow up until Zen 3.
         // Check for Zen 3 or newer by its family (0x19).
@@ -138,12 +115,15 @@ HostFeature GetHostFeatures() {
             const u32 family_extended = mcl::bit::get_bits<20, 27>(data[0]);
             const u32 family = family_base + family_extended;
             if (family >= 0x19)
-                features |= HostFeature::FastBMI2;
+                f |= HostFeature::FastBMI2;
         } else {
-            features |= HostFeature::FastBMI2;
+            f |= HostFeature::FastBMI2;
         }
     }
+    return f;
 #endif
+}();
+HostFeature GetHostFeatures() {
     return features;
 }
 
