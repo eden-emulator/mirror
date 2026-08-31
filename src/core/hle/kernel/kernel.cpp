@@ -10,7 +10,8 @@
 #include <functional>
 #include <memory>
 #include <thread>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
+#include "common/container/unordered_set.h"
 #include <utility>
 
 #include "common/assert.h"
@@ -792,8 +793,8 @@ struct KernelCore::Impl {
 
     std::optional<KObjectNameGlobalData> object_name_global_data;
 
-    ankerl::unordered_dense::set<KAutoObject*> registered_objects;
-    ankerl::unordered_dense::set<KAutoObject*> registered_in_use_objects;
+    ::Common::unordered_set<KAutoObject*> registered_objects;
+    ::Common::unordered_set<KAutoObject*> registered_in_use_objects;
 
     std::mutex server_lock;
     std::vector<std::unique_ptr<Service::ServerManager>> server_managers;

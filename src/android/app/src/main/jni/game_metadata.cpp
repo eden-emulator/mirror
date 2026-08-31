@@ -20,7 +20,7 @@ struct RomMetadata {
     std::vector<u8> icon;
     bool isHomebrew;
 };
-static ankerl::unordered_dense::map<std::string, RomMetadata> m_rom_metadata_cache;
+static ::Common::unordered_map<std::string, RomMetadata> m_rom_metadata_cache;
 
 static RomMetadata CacheRomMetadata(const std::string& path) {
     auto& instance = EmulationSession::GetInstance();

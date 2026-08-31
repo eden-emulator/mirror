@@ -9,7 +9,7 @@
 
 #include <deque>
 #include <memory>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 
 #include "core/device_memory_manager.h"
 #include "core/hle/service/nvdrv/nvdata.h"

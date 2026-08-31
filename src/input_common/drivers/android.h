@@ -90,7 +90,7 @@ public:
     Common::Input::ButtonNames GetUIName(const Common::ParamPackage& params) const override;
 
 private:
-    ankerl::unordered_dense::map<PadIdentifier, jobject> input_devices;
+    ::Common::unordered_map<PadIdentifier, jobject> input_devices;
 
     /// Returns the correct identifier corresponding to the player index
     PadIdentifier GetIdentifier(const std::string& guid, size_t port) const;

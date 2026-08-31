@@ -7,7 +7,7 @@
 #pragma once
 
 #include <mutex>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 
 #include "common/container_hash.h"
 #include "video_core/surface.h"
@@ -75,7 +75,7 @@ public:
 
 private:
     const Device* device{};
-    ankerl::unordered_dense::map<RenderPassKey, vk::RenderPass> cache;
+    ::Common::unordered_map<RenderPassKey, vk::RenderPass> cache;
     std::mutex mutex;
 };
 

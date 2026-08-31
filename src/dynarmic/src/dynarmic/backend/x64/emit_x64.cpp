@@ -14,7 +14,8 @@
 #include <boost/variant/detail/apply_visitor_binary.hpp>
 #include "dynarmic/mcl/bit.hpp"
 #include "common/common_types.h"
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
+#include "common/container/unordered_set.h"
 
 #include "dynarmic/backend/x64/block_of_code.h"
 #include "dynarmic/backend/x64/nzcv_util.h"
@@ -396,7 +397,7 @@ void EmitX64::ClearCache() {
     PerfMapClear();
 }
 
-void EmitX64::InvalidateBasicBlocks(const ankerl::unordered_dense::set<IR::LocationDescriptor>& locations) {
+void EmitX64::InvalidateBasicBlocks(const ::Common::unordered_set<IR::LocationDescriptor>& locations) {
     code.EnableWriting();
     for (const auto& descriptor : locations) {
         if (auto const it = block_descriptors.find(descriptor); it != block_descriptors.end()) {

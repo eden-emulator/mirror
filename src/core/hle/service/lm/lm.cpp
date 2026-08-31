@@ -7,7 +7,7 @@
 #include <string>
 
 #include <optional>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <boost/container_hash/hash.hpp>
 #include "common/logging.h"
 #include "core/core.h"
@@ -331,7 +331,7 @@ private:
     };
     static_assert(sizeof(LogPacketHeader) == 0x18, "LogPacketHeader is an invalid size");
 
-    ankerl::unordered_dense::map<LogPacketHeaderEntry, std::vector<u8>> entries{};
+    ::Common::unordered_map<LogPacketHeaderEntry, std::vector<u8>> entries{};
     LogDestination destination{LogDestination::All};
 };
 

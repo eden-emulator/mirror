@@ -10,7 +10,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <vector>
 
 #include "common/common_types.h"
@@ -205,7 +205,7 @@ private:
 
     mutable std::mutex mutex;
     mutable std::mutex callback_mutex;
-    ankerl::unordered_dense::map<int, InterfaceUpdateCallback> callback_list;
+    ::Common::unordered_map<int, InterfaceUpdateCallback> callback_list;
     int last_callback_key = 0;
 
     // Stores the current status of all external device input

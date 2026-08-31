@@ -7,7 +7,7 @@
 #ifdef _WIN32
 
 #include <iterator>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <boost/icl/separate_interval_set.hpp>
 #include <windows.h>
 #include "common/dynamic_library.h"
@@ -391,7 +391,7 @@ private:
 
     std::mutex placeholder_mutex;                                 ///< Mutex for placeholders
     boost::icl::separate_interval_set<size_t> placeholders;       ///< Mapped placeholders
-    ankerl::unordered_dense::map<size_t, size_t> placeholder_host_pointers; ///< Placeholder backing offset
+    ::Common::unordered_map<size_t, size_t> placeholder_host_pointers; ///< Placeholder backing offset
 };
 
 #elif defined(__OPENORBIS__) || defined(__managarm__)

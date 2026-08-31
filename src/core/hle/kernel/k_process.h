@@ -78,7 +78,7 @@ private:
     std::array<DebugWatchpoint, Core::Hardware::NUM_WATCHPOINTS> m_watchpoints{};
     std::map<KProcessAddress, u64> m_debug_page_refcounts{};
 #ifdef HAS_NCE
-    ankerl::unordered_dense::map<u64, u64> m_post_handlers{};
+    ::Common::unordered_map<u64, u64> m_post_handlers{};
 #endif
     std::unique_ptr<Core::ExclusiveMonitor> m_exclusive_monitor;
     Core::Memory::Memory m_memory;
@@ -494,7 +494,7 @@ public:
     static void Switch(KernelCore& kernel, KProcess* cur_process, KProcess* next_process);
 
 #ifdef HAS_NCE
-    ankerl::unordered_dense::map<u64, u64>& GetPostHandlers() noexcept {
+    ::Common::unordered_map<u64, u64>& GetPostHandlers() noexcept {
         return m_post_handlers;
     }
 #endif

@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "dynarmic/backend/loongarch64/lagoon_cpp.h"
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 
 #include "common/assert.h"
 #include "common/common_types.h"

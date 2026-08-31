@@ -7,7 +7,7 @@
 #pragma once
 
 #include <string>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 
 #include "qt_common/config/qt_config.h"
 
@@ -35,5 +35,5 @@ public:
 private:
     bool ProfileExistsInMap(const std::string& profile_name) const;
 
-    ankerl::unordered_dense::map<std::string, std::unique_ptr<QtConfig>> map_profiles;
+    ::Common::unordered_map<std::string, std::unique_ptr<QtConfig>> map_profiles;
 };

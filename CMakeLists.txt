@@ -540,7 +540,6 @@ add_subdirectory(externals)
 # pass targets from externals
 # TODO(crueter): CPMUtil Propagate func?
 find_package(enet)
-find_package(unordered_dense REQUIRED)
 
 if (ARCHITECTURE_x86 OR ARCHITECTURE_x86_64)
     find_package(xbyak)

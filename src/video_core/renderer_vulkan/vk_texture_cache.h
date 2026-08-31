@@ -186,7 +186,7 @@ public:
     };
 
     std::vector<MsaaScratchImage> msaa_scratch_images;
-    ankerl::unordered_dense::map<VkImage, ResolveShadow> resolve_shadows;
+    ::Common::unordered_map<VkImage, ResolveShadow> resolve_shadows;
     std::vector<std::pair<u64, ResolveShadow>> pending_resolve_shadows;
 };
 

@@ -7,7 +7,7 @@
 #include <array>
 #include <cmath>
 #include <span>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <bit>
 #include <numeric>
 #include "common/assert.h"
@@ -924,7 +924,7 @@ public:
 };
 
 struct ConverterFactory::ConverterFactoryImpl {
-    ankerl::unordered_dense::map<RenderTargetFormat, std::unique_ptr<Converter>> converters_cache;
+    ::Common::unordered_map<RenderTargetFormat, std::unique_ptr<Converter>> converters_cache;
 };
 
 ConverterFactory::ConverterFactory() {

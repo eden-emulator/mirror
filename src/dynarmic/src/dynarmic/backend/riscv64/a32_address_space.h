@@ -9,7 +9,7 @@
 #pragma once
 
 #include <biscuit/assembler.hpp>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 
 #include "dynarmic/backend/riscv64/code_block.h"
 #include "dynarmic/backend/riscv64/emit_riscv64.h"
@@ -74,8 +74,8 @@ private:
     CodeBlock cb;
     biscuit::Assembler as;
 
-    ankerl::unordered_dense::map<u64, CodePtr> block_entries;
-    ankerl::unordered_dense::map<u64, EmittedBlockInfo> block_infos;
+    ::Common::unordered_map<u64, CodePtr> block_entries;
+    ::Common::unordered_map<u64, EmittedBlockInfo> block_infos;
 
     struct PreludeInfo {
         CodePtr end_of_prelude;

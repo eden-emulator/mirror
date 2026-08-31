@@ -14,7 +14,7 @@
 #include <vector>
 #include <atomic>
 
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 
 #include "common/common_types.h"
 #include "common/input.h"
@@ -636,7 +636,7 @@ private:
     ControllerMotionDevices virtual_motion_devices;
 
     mutable std::mutex callback_mutex;
-    ankerl::unordered_dense::map<int, ControllerUpdateCallback> callback_list;
+    ::Common::unordered_map<int, ControllerUpdateCallback> callback_list;
     int last_callback_key = 0;
 
     // Stores the current status of all controller input

@@ -147,7 +147,8 @@ add_library(
     cpu_features.cpp
     cpu_features.h
     httplib.h
-    net/net.h net/net.cpp)
+    net/net.h net/net.cpp
+    container/unordered_map.h container/unordered_set.h)
 
 if(WIN32)
     target_sources(common PRIVATE windows/timer_resolution.cpp
@@ -241,7 +242,7 @@ if (lz4_ADDED)
     target_include_directories(common PRIVATE ${lz4_SOURCE_DIR}/lib)
 endif()
 
-target_link_libraries(common PUBLIC fmt::fmt stb::headers Threads::Threads unordered_dense::unordered_dense)
+target_link_libraries(common PUBLIC fmt::fmt stb::headers Threads::Threads)
 target_link_libraries(common PRIVATE lz4::lz4 zstd::zstd)
 
 # Please refer to src/common/demangle.cpp

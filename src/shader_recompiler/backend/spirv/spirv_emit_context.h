@@ -9,7 +9,7 @@
 #include <array>
 
 #include <sirit/sirit.h>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_set.h"
 
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/frontend/ir/program.h"
@@ -370,7 +370,7 @@ public:
     Id load_const_func_u32x4{};
 
     // Sirit::Id doesn't play nice with *::set<>
-    ankerl::unordered_dense::set<u32> non_uniform_ids;
+    ::Common::unordered_set<u32> non_uniform_ids;
 
     bool uses_nonuniform_sampled_image{};
     bool uses_nonuniform_storage_image{};

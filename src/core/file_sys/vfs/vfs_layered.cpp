@@ -6,7 +6,7 @@
 
 #include <algorithm>
 #include <set>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_set.h"
 #include <utility>
 #include "core/file_sys/vfs/vfs_layered.h"
 
@@ -63,7 +63,7 @@ std::string LayeredVfsDirectory::GetFullPath() const {
 
 std::vector<VirtualFile> LayeredVfsDirectory::GetFiles() const {
     std::vector<VirtualFile> out;
-    ankerl::unordered_dense::set<std::string> out_names;
+    ::Common::unordered_set<std::string> out_names;
 
     for (const auto& layer : dirs) {
         for (auto& file : layer->GetFiles()) {
@@ -79,7 +79,7 @@ std::vector<VirtualFile> LayeredVfsDirectory::GetFiles() const {
 
 std::vector<VirtualDir> LayeredVfsDirectory::GetSubdirectories() const {
     std::vector<VirtualDir> out;
-    ankerl::unordered_dense::set<std::string> out_names;
+    ::Common::unordered_set<std::string> out_names;
 
     for (const auto& layer : dirs) {
         for (const auto& sd : layer->GetSubdirectories()) {

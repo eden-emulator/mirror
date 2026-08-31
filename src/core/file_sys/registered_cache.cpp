@@ -566,7 +566,7 @@ VirtualFile RegisteredCache::GetFileAtID(NcaID id) const {
     return file;
 }
 
-static std::optional<NcaID> CheckMapForContentRecord(const ankerl::unordered_dense::map<u64, CNMT>& map, u64 title_id, ContentRecordType type) {
+static std::optional<NcaID> CheckMapForContentRecord(const ::Common::unordered_map<u64, CNMT>& map, u64 title_id, ContentRecordType type) {
     auto cmnt_iter = map.find(title_id);
     u8 id_offset = 0;
 

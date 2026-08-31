@@ -8,7 +8,7 @@
 
 #include <functional>
 #include <mutex>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 
 #include "common/common_types.h"
 #include "common/input.h"
@@ -270,10 +270,10 @@ protected:
 
 private:
     struct ControllerData {
-        ankerl::unordered_dense::map<int, bool> buttons;
-        ankerl::unordered_dense::map<int, u8> hat_buttons;
-        ankerl::unordered_dense::map<int, float> axes;
-        ankerl::unordered_dense::map<int, BasicMotion> motions;
+        ::Common::unordered_map<int, bool> buttons;
+        ::Common::unordered_map<int, u8> hat_buttons;
+        ::Common::unordered_map<int, float> axes;
+        ::Common::unordered_map<int, BasicMotion> motions;
         Common::Input::BatteryLevel battery{};
         Common::Input::BodyColorStatus color{};
         Common::Input::CameraStatus camera{};
@@ -301,8 +301,8 @@ private:
     bool configuring{false};
     const std::string input_engine;
     int last_callback_key = 0;
-    ankerl::unordered_dense::map<PadIdentifier, ControllerData> controller_list;
-    ankerl::unordered_dense::map<int, InputIdentifier> callback_list;
+    ::Common::unordered_map<PadIdentifier, ControllerData> controller_list;
+    ::Common::unordered_map<int, InputIdentifier> callback_list;
     MappingCallback mapping_callback;
 };
 

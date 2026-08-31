@@ -7,7 +7,7 @@
 #pragma once
 
 #include <deque>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <vector>
 
 #include "common/common_types.h"
@@ -138,7 +138,7 @@ protected:
     NvCore::NvMap& nvmap;
     NvCore::ChannelType channel_type;
     std::array<u32, MaxSyncPoints> device_syncpoints{};
-    ankerl::unordered_dense::map<DeviceFD, NvCore::SessionId> sessions;
+    ::Common::unordered_map<DeviceFD, NvCore::SessionId> sessions;
 };
 }; // namespace Devices
 } // namespace Service::Nvidia

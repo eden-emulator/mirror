@@ -301,17 +301,6 @@
         "repo": "eden-emu/tzdb_to_nx",
         "version": "230326"
     },
-    "unordered-dense": {
-        "bundled": true,
-        "find_args": "CONFIG",
-        "hash": "d2106f6640f6bfb81755e4b8bfb64982e46ec4a507cacdb38f940123212ccf35a20b43c70c6f01d7bfb8c246d1a16f7845d8052971949cea9def1475e3fa02c8",
-        "package": "unordered_dense",
-        "patches": [
-            "0001-avoid-memset-when-clearing-an-empty-table.patch"
-        ],
-        "repo": "martinus/unordered_dense",
-        "version": "7b55cab841"
-    },
     "vulkan-headers": {
         "hash": "d2846ea228415772645eea4b52a9efd33e6a563043dd3de059e798be6391a8f0ca089f455ae420ff22574939ed0f48ed7c6ff3d5a9987d5231dbf3b3f89b484b",
         "min_version": "1.4.317",

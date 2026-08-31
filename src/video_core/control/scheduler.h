@@ -8,7 +8,7 @@
 
 #include <memory>
 #include <mutex>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 
 #include "video_core/dma_pusher.h"
 
@@ -27,7 +27,7 @@ public:
     void DeclareChannel(std::shared_ptr<ChannelState> new_channel);
 
 private:
-    ankerl::unordered_dense::map<s32, std::shared_ptr<ChannelState>> channels;
+    ::Common::unordered_map<s32, std::shared_ptr<ChannelState>> channels;
     std::mutex scheduling_guard;
 };
 

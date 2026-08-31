@@ -58,9 +58,6 @@ if (WIN32 AND NOT TARGET LLVM::Demangle)
     add_library(LLVM::Demangle ALIAS demangle)
 endif()
 
-# unordered_dense
-AddJsonPackage(unordered-dense)
-
 # httplib
 if (IOS)
     set(HTTPLIB_USE_BROTLI_IF_AVAILABLE OFF)
