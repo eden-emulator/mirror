@@ -636,6 +636,8 @@
     <string name="log">Logging</string>
     <string name="flush_by_line">Flush debug logs by line</string>
     <string name="flush_by_line_description">Flushes debugging logs on each line written, making debugging easier in cases of crashing or freezing.</string>
+    <string name="log_filter">Log filter</string>
+    <string name="log_filter_description">Controls Eden\'s log categories. Example: *:Info Service.LM:Debug</string>
 
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">GPU Logging</string>
