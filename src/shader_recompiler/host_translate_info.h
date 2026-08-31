@@ -38,6 +38,7 @@ struct HostTranslateInfo {
                                                 ///< passthrough shaders
     bool support_conditional_barrier{}; ///< True when the device supports barriers in conditional
                                         ///< control flow
+    bool support_subgroup_in_geometry_stage{};
 
     void ApplyDescriptorLimitPolicy() noexcept {
         if (min_ssbo_alignment == 0) {
