@@ -78,8 +78,8 @@ endif()
 
 if (OPENORBIS)
     target_link_libraries(yuzu-cmd
-        PRIVATE OSMesa
-        PRIVATE SceVideoOut SceAudioOut ScePad SceSystemService
+        PRIVATE vulkan_radeon
+        PRIVATE SceVideoOut SceAudioOut ScePad SceSystemService SceGnmDriver
         PRIVATE ps4sup)
     create_ps4_eboot(yuzu-cmd eden-cli IV0000-BREW00090_00-EDENEMULAT000000)
 endif()
