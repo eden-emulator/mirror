@@ -7,7 +7,7 @@
 #pragma once
 
 #include "common/common_types.h"
-#include "common/quaternion.h"
+#include "common/vector_math.h"
 #include "common/typed_address.h"
 #include "hid_core/resources/controller_base.h"
 #include "hid_core/resources/ring_lifo.h"

@@ -135,32 +135,25 @@ void Mouse::UpdateMotionInput() {
 
 void Mouse::Move(int x, int y, int center_x, int center_y) {
     if (IsMousePanningEnabled()) {
-        const auto mouse_change =
-            (Common::MakeVec(x, y) - Common::MakeVec(center_x, center_y)).Cast<float>();
-        const float x_sensitivity =
-            Settings::values.mouse_panning_x_sensitivity.GetValue() * default_panning_sensitivity;
-        const float y_sensitivity =
-            Settings::values.mouse_panning_y_sensitivity.GetValue() * default_panning_sensitivity;
-        const float deadzone_counterweight =
-            Settings::values.mouse_panning_deadzone_counterweight.GetValue() *
-            default_deadzone_counterweight;
-
+        auto const mouse_change_int = Common::Vec2<int>(x, y) - Common::Vec2<int>(center_x, center_y);
+        auto const mouse_change = Common::Vec2<float>(float(mouse_change_int.x), float(mouse_change_int.y));
+        auto const x_sensitivity = Settings::values.mouse_panning_x_sensitivity.GetValue() * default_panning_sensitivity;
+        auto const y_sensitivity = Settings::values.mouse_panning_y_sensitivity.GetValue() * default_panning_sensitivity;
+        auto const deadzone_cw = Settings::values.mouse_panning_deadzone_counterweight.GetValue() * default_deadzone_counterweight;
         last_motion_change += {-mouse_change.y * x_sensitivity, -mouse_change.x * y_sensitivity, 0};
         last_mouse_change.x += mouse_change.x * x_sensitivity;
         last_mouse_change.y += mouse_change.y * y_sensitivity;
-
-        // Bind the mouse change to [0 <= deadzone_counterweight <= 1.0]
+        // Bind the mouse change to [0 <= deadzone_cw <= 1.0]
         const float length = last_mouse_change.Length();
-        if (length < deadzone_counterweight && length != 0.0f) {
+        if (length < deadzone_cw && length != 0.0f) {
             last_mouse_change /= length;
-            last_mouse_change *= deadzone_counterweight;
+            last_mouse_change *= deadzone_cw;
         }
-
         return;
     }
 
     if (button_pressed) {
-        const auto mouse_move = Common::MakeVec<int>(x, y) - mouse_origin;
+        const auto mouse_move = Common::Vec2<int>(x, y) - mouse_origin;
         const float x_sensitivity =
             Settings::values.mouse_panning_x_sensitivity.GetValue() * default_stick_sensitivity;
         const float y_sensitivity =

@@ -2950,7 +2950,15 @@ void PlayerControlPreview::Draw3dCube(QPainter& p, QPointF center, const Common:
     };
 
     for (Common::Vec3f& point : cube) {
-        point.RotateFromOrigin(euler.x, euler.y, euler.z);
+        float temp = point.y;
+        point.y = std::cos(euler.x) * point.y - std::sin(euler.x) * point.z;
+        point.z = std::sin(euler.x) * temp + std::cos(euler.x) * point.z;
+        temp = point.x;
+        point.x = std::cos(euler.y) * point.x + std::sin(euler.y) * point.z;
+        point.z = -std::sin(euler.y) * temp + std::cos(euler.y) * point.z;
+        temp = point.x;
+        point.x = std::cos(euler.z) * point.x - std::sin(euler.z) * point.y;
+        point.y = std::sin(euler.z) * temp + std::cos(euler.z) * point.y;
         point *= size;
     }
 

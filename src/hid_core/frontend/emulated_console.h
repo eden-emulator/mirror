@@ -18,7 +18,6 @@
 #include "common/input.h"
 #include "common/param_package.h"
 #include "common/point.h"
-#include "common/quaternion.h"
 #include "common/vector_math.h"
 #include "hid_core/frontend/motion_input.h"
 #include "hid_core/hid_types.h"
