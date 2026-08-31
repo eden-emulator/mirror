@@ -522,7 +522,7 @@ void BSD_USA::ExecuteWork(HLERequestContext& ctx, Work work) {
     work.Response(ctx);
 }
 
-std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::Type type, Network::Protocol protocol) {
+std::pair<s32, Network::Errno> BSD_USA::SocketImpl(Network::Domain domain, Network::Type type, Network::Protocol protocol) {
     // user bsd:u has restrictions on SOCK_SEQPACKET and SOCK_RAW
     LOG_DEBUG(Network, "domain={},type={},protocol={}", u32(domain), u32(type), u32(protocol));
     if (is_user && (type == Network::Type::SEQPACKET || type == Network::Type::RAW)) {
@@ -589,7 +589,7 @@ std::pair<s32, Network::Errno> BSD::SocketImpl(Network::Domain domain, Network::
     return {fd, Network::Errno::E_SUCCESS};
 }
 
-std::pair<s32, Network::Errno> BSD::PollImpl(std::vector<u8>& write_buffer, std::span<const u8> read_buffer, s32 nfds, s32 timeout) {
+std::pair<s32, Network::Errno> BSD_USA::PollImpl(std::vector<u8>& write_buffer, std::span<const u8> read_buffer, s32 nfds, s32 timeout) {
     LOG_DEBUG(Network, "nfds={},timeout={}", nfds, timeout);
     if (nfds <= 0) {
         // When no entries are provided, -1 is returned with errno zero
@@ -643,7 +643,7 @@ std::pair<s32, Network::Errno> BSD::PollImpl(std::vector<u8>& write_buffer, std:
     return res;
 }
 
-std::pair<s32, Network::Errno> BSD::AcceptImpl(s32 fd, std::vector<u8>& write_buffer) {
+std::pair<s32, Network::Errno> BSD_USA::AcceptImpl(s32 fd, std::vector<u8>& write_buffer) {
     LOG_DEBUG(Network, "fd={}", fd);
     if (!IsFileDescriptorValid(fd)) {
         return {-1, Network::Errno::E_BADF};
@@ -670,7 +670,7 @@ std::pair<s32, Network::Errno> BSD::AcceptImpl(s32 fd, std::vector<u8>& write_bu
     return {new_fd, Network::Errno::E_SUCCESS};
 }
 
-Network::Errno BSD::BindImpl(s32 fd, std::span<const u8> addr) {
+Network::Errno BSD_USA::BindImpl(s32 fd, std::span<const u8> addr) {
     LOG_DEBUG(Network, "fd={}", fd);
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::E_BADF;
@@ -685,7 +685,7 @@ Network::Errno BSD::BindImpl(s32 fd, std::span<const u8> addr) {
     return file_descriptors[fd]->socket->Bind(addr_in);
 }
 
-Network::Errno BSD::ConnectImpl(s32 fd, std::span<const u8> addr) {
+Network::Errno BSD_USA::ConnectImpl(s32 fd, std::span<const u8> addr) {
     LOG_DEBUG(Network, "fd={}", fd);
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::E_BADF;
@@ -707,7 +707,7 @@ Network::Errno BSD::ConnectImpl(s32 fd, std::span<const u8> addr) {
     return result;
 }
 
-Network::Errno BSD::GetPeerNameImpl(s32 fd, std::vector<u8>& write_buffer) {
+Network::Errno BSD_USA::GetPeerNameImpl(s32 fd, std::vector<u8>& write_buffer) {
     LOG_DEBUG(Network, "fd={}", fd);
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::E_BADF;
@@ -728,7 +728,7 @@ Network::Errno BSD::GetPeerNameImpl(s32 fd, std::vector<u8>& write_buffer) {
     return bsd_errno;
 }
 
-Network::Errno BSD::GetSockNameImpl(s32 fd, std::vector<u8>& write_buffer) {
+Network::Errno BSD_USA::GetSockNameImpl(s32 fd, std::vector<u8>& write_buffer) {
     LOG_DEBUG(Network, "fd={}", fd);
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::E_BADF;
@@ -749,7 +749,7 @@ Network::Errno BSD::GetSockNameImpl(s32 fd, std::vector<u8>& write_buffer) {
     return bsd_errno;
 }
 
-Network::Errno BSD::ListenImpl(s32 fd, s32 backlog) {
+Network::Errno BSD_USA::ListenImpl(s32 fd, s32 backlog) {
     LOG_DEBUG(Network, "fd={},backlog={}", fd, backlog);
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::E_BADF;
@@ -761,7 +761,7 @@ Network::Errno BSD::ListenImpl(s32 fd, s32 backlog) {
     return file_descriptors[fd]->socket->Listen(backlog);
 }
 
-std::pair<s32, Network::Errno> BSD::FcntlImpl(s32 fd, Network::FcntlCmd cmd, s32 arg) {
+std::pair<s32, Network::Errno> BSD_USA::FcntlImpl(s32 fd, Network::FcntlCmd cmd, s32 arg) {
     LOG_DEBUG(Network, "fd={},cmd={},arg={}", fd, u32(cmd), arg);
     if (!IsFileDescriptorValid(fd)) {
         return {-1, Network::Errno::E_BADF};
@@ -791,7 +791,7 @@ std::pair<s32, Network::Errno> BSD::FcntlImpl(s32 fd, Network::FcntlCmd cmd, s32
     }
 }
 
-Network::Errno BSD::GetSockOptImpl(s32 fd, Network::SocketLevel level, Network::OptName optname, std::vector<u8>& optval) {
+Network::Errno BSD_USA::GetSockOptImpl(s32 fd, Network::SocketLevel level, Network::OptName optname, std::vector<u8>& optval) {
     LOG_DEBUG(Network, "fd={},level={},optname={}", fd, u32(level), u32(optname));
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::E_BADF;
@@ -825,7 +825,7 @@ Network::Errno BSD::GetSockOptImpl(s32 fd, Network::SocketLevel level, Network::
     }
 }
 
-Network::Errno BSD::SetSockOptImpl(s32 fd, Network::SocketLevel level, Network::OptName optname, std::span<const u8> optval) {
+Network::Errno BSD_USA::SetSockOptImpl(s32 fd, Network::SocketLevel level, Network::OptName optname, std::span<const u8> optval) {
     LOG_DEBUG(Service, "fd={},level={},optname={}", fd, level, optname);
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::E_BADF;
@@ -839,7 +839,7 @@ Network::Errno BSD::SetSockOptImpl(s32 fd, Network::SocketLevel level, Network::
     return socket->SetSockOpt(level, optname, optval);
 }
 
-Network::Errno BSD::ShutdownImpl(s32 fd, s32 how) {
+Network::Errno BSD_USA::ShutdownImpl(s32 fd, s32 how) {
     LOG_DEBUG(Network, "fd={},how={}", fd, how);
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::E_BADF;
@@ -851,7 +851,7 @@ Network::Errno BSD::ShutdownImpl(s32 fd, s32 how) {
     return file_descriptors[fd]->socket->Shutdown(Network::ShutdownHow(how));
 }
 
-std::pair<s32, Network::Errno> BSD::RecvImpl(s32 fd, u32 flags, std::vector<u8>& message) {
+std::pair<s32, Network::Errno> BSD_USA::RecvImpl(s32 fd, u32 flags, std::vector<u8>& message) {
     LOG_DEBUG(Network, "fd={},flags={}", fd, flags);
     if (!IsFileDescriptorValid(fd)) {
         return {-1, Network::Errno::E_BADF};
@@ -874,7 +874,7 @@ std::pair<s32, Network::Errno> BSD::RecvImpl(s32 fd, u32 flags, std::vector<u8>&
     return {ret, bsd_errno};
 }
 
-std::pair<s32, Network::Errno> BSD::RecvFromImpl(s32 fd, u32 flags, std::vector<u8>& message, std::vector<u8>& addr) {
+std::pair<s32, Network::Errno> BSD_USA::RecvFromImpl(s32 fd, u32 flags, std::vector<u8>& message, std::vector<u8>& addr) {
     LOG_DEBUG(Network, "fd={},flags={}", fd, flags);
     if (!IsFileDescriptorValid(fd)) {
         return {-1, Network::Errno::E_BADF};
@@ -918,7 +918,7 @@ std::pair<s32, Network::Errno> BSD::RecvFromImpl(s32 fd, u32 flags, std::vector<
     return {ret, bsd_errno};
 }
 
-std::pair<s32, Network::Errno> BSD::SendImpl(s32 fd, u32 flags, std::span<const u8> message) {
+std::pair<s32, Network::Errno> BSD_USA::SendImpl(s32 fd, u32 flags, std::span<const u8> message) {
     LOG_DEBUG(Network, "fd={},flags={}", fd, flags);
     if (!IsFileDescriptorValid(fd)) {
         return {-1, Network::Errno::E_BADF};
@@ -930,7 +930,7 @@ std::pair<s32, Network::Errno> BSD::SendImpl(s32 fd, u32 flags, std::span<const 
     return file_descriptors[fd]->socket->Send(message, flags);
 }
 
-std::pair<s32, Network::Errno> BSD::SendToImpl(s32 fd, u32 flags, std::span<const u8> message, std::span<const u8> addr) {
+std::pair<s32, Network::Errno> BSD_USA::SendToImpl(s32 fd, u32 flags, std::span<const u8> message, std::span<const u8> addr) {
     LOG_DEBUG(Network, "fd={},flags={}", fd, flags);
     if (!IsFileDescriptorValid(fd)) {
         return {-1, Network::Errno::E_BADF};
@@ -952,7 +952,7 @@ std::pair<s32, Network::Errno> BSD::SendToImpl(s32 fd, u32 flags, std::span<cons
     return file_descriptors[fd]->socket->SendTo(flags, message, p_addr_in);
 }
 
-Network::Errno BSD::CloseImpl(s32 fd) {
+Network::Errno BSD_USA::CloseImpl(s32 fd) {
     LOG_DEBUG(Network, "fd={}", fd);
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::E_BADF;
@@ -973,7 +973,7 @@ Network::Errno BSD::CloseImpl(s32 fd) {
     return bsd_errno;
 }
 
-std::variant<s32, Network::Errno> BSD::DuplicateSocketImpl(s32 fd) {
+std::variant<s32, Network::Errno> BSD_USA::DuplicateSocketImpl(s32 fd) {
     LOG_DEBUG(Network, "fd={}", fd);
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::E_BADF;
@@ -993,7 +993,7 @@ std::variant<s32, Network::Errno> BSD::DuplicateSocketImpl(s32 fd) {
     return new_fd;
 }
 
-std::optional<std::shared_ptr<Network::SocketBase>> BSD::GetSocket(s32 fd) {
+std::optional<std::shared_ptr<Network::SocketBase>> BSD_USA::GetSocket(s32 fd) {
     LOG_DEBUG(Network, "fd={}", fd);
     if (!IsFileDescriptorValid(fd)) {
         return std::nullopt;
@@ -1005,7 +1005,7 @@ std::optional<std::shared_ptr<Network::SocketBase>> BSD::GetSocket(s32 fd) {
     return file_descriptors[fd]->socket;
 }
 
-s32 BSD::FindFreeFileDescriptorHandle() noexcept {
+s32 BSD_USA::FindFreeFileDescriptorHandle() noexcept {
     // first three file descriptors are reserved for:
     // STDOUT_FILENO, STDIN_FILENO and STDERR_FILENO
     for (s32 fd = 0; fd < s32(file_descriptors.size()); ++fd)
@@ -1014,7 +1014,7 @@ s32 BSD::FindFreeFileDescriptorHandle() noexcept {
     return -1;
 }
 
-bool BSD::IsFileDescriptorValid(s32 fd) const noexcept {
+bool BSD_USA::IsFileDescriptorValid(s32 fd) const noexcept {
     if (fd < 0 || fd >= s32(file_descriptors.size())) {
         LOG_ERROR(Service, "Invalid handle={}", fd);
         return false;
@@ -1026,7 +1026,7 @@ bool BSD::IsFileDescriptorValid(s32 fd) const noexcept {
     return true;
 }
 
-void BSD::BuildErrnoResponse(HLERequestContext& ctx, Network::Errno bsd_errno) const noexcept {
+void BSD_USA::BuildErrnoResponse(HLERequestContext& ctx, Network::Errno bsd_errno) const noexcept {
     IPC::ResponseBuilder rb{ctx, 4};
 
     rb.Push(ResultSuccess);
