@@ -751,50 +751,30 @@ static Network::PollEvents TranslatePollRevents(s16 revents) {
 
 } // Anonymous namespace
 
-#ifdef _WIN32
 sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
     sockaddr_in result{};
 #ifdef __unix__
     result.sin_len = sizeof(result);
 #endif
-    result.sin_family = AF_INET;
-    switch (Domain(input.family)) {
-    case Domain::INET:
-        result.sin_family = AF_INET;
-        break;
-    default:
-        UNIMPLEMENTED_MSG("Unhandled sockaddr family={}", input.family);
-        break;
-    }
-
+    result.sin_family = sa_family_t(TranslateDomainToNative(Domain(input.family)));
     result.sin_port = input.portno; //no need to translate
-
+#ifdef _WIN32
     auto& ip = result.sin_addr.S_un.S_un_b;
     ip.s_b1 = input.ip[0];
     ip.s_b2 = input.ip[1];
     ip.s_b3 = input.ip[2];
     ip.s_b4 = input.ip[3];
-    return result;
-}
 #else
-sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
-    sockaddr_in result{};
-    result.sin_family = sa_family_t(TranslateDomainToNative(Domain(input.family)));
-    //result.sin_len = sizeof(result);
-    result.sin_port = input.portno; //needs no conversion
-    result.sin_addr.s_addr = htonl((u32(input.ip[0]) << 24)
-        | (u32(input.ip[1]) << 16)
-        | (u32(input.ip[2]) << 8)
-        | (u32(input.ip[3]) << 0));
+    result.sin_addr.s_addr = std::bit_cast<in_addr_t>(input.ip);
+#endif
     return result;
 }
-#endif
 
 Network::SockAddrIn TranslateToSockAddrIn(sockaddr_in input) {
     Network::SockAddrIn result{};
     result.len = 16;
     result.family = u8(TranslateDomainFromNative(input.sin_family));
-    result.portno = input.sin_port; //needs no conversion
+    result.portno = ntohs(input.sin_port); //needs no conversion
     result.ip = TranslateIPv4(input.sin_addr);
     result.zeroes = {};
     return result;
@@ -1127,14 +1107,9 @@ std::pair<Socket::AcceptResult, Errno> Socket::Accept() {
 
 Errno Socket::Connect(Network::SockAddrIn addr_in) {
     auto const host_addr_in = TranslateFromSockAddrIn(addr_in);
-    LOG_INFO(Network, "len={}, family={} - {}.{}.{}.{}:{}", addr_in.len, addr_in.family, addr_in.ip[0], addr_in.ip[1], addr_in.ip[2], addr_in.ip[3], addr_in.portno);
-    if (EnableNonBlock(fd, false)) {
-        if (connect(fd, reinterpret_cast<sockaddr const*>(&host_addr_in), sizeof(host_addr_in)) != SOCKET_ERROR) {
-            if (EnableNonBlock(fd, true)) {
-                return Errno::E_SUCCESS;
-            }
-        }
-    }
+    LOG_INFO(Network, "len={}, family={} - {}.{}.{}.{}:{}", addr_in.len, addr_in.family, addr_in.ip[0], addr_in.ip[1], addr_in.ip[2], addr_in.ip[3], ntohs(addr_in.portno));
+    if (connect(fd, reinterpret_cast<sockaddr const*>(&host_addr_in), sizeof(host_addr_in)) != SOCKET_ERROR)
+        return Errno::E_SUCCESS;
     return GetAndLogLastError(CallType::Other);
 }
 
@@ -1156,9 +1131,10 @@ std::pair<Network::SockAddrIn, Errno> Socket::GetSockName() {
     return {TranslateToSockAddrIn(addr), Errno::E_SUCCESS};
 }
 
-Errno Socket::Bind(Network::SockAddrIn addr) {
-    auto const addr_in = TranslateFromSockAddrIn(addr);
-    if (bind(fd, reinterpret_cast<sockaddr const*>(&addr_in), sizeof(addr_in)) != SOCKET_ERROR)
+Errno Socket::Bind(Network::SockAddrIn addr_in) {
+    auto const host_addr_in = TranslateFromSockAddrIn(addr_in);
+    LOG_INFO(Network, "len={}, family={} - {}.{}.{}.{}:{}", addr_in.len, addr_in.family, addr_in.ip[0], addr_in.ip[1], addr_in.ip[2], addr_in.ip[3], ntohs(addr_in.portno));
+    if (bind(fd, reinterpret_cast<sockaddr const*>(&host_addr_in), sizeof(host_addr_in)) != SOCKET_ERROR)
         return Errno::E_SUCCESS;
     return GetAndLogLastError(CallType::Other);
 }
