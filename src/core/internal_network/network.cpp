@@ -753,10 +753,12 @@ static Network::PollEvents TranslatePollRevents(s16 revents) {
 
 sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
     sockaddr_in result{};
-// #ifdef __unix__
-//     result.sin_len = sizeof(result);
-// #endif
+#ifdef __unix__
     result.sin_family = sa_family_t(TranslateDomainToNative(Domain(input.family)));
+    result.sin_len = sizeof(result);
+#else
+    result.sin_family = TranslateDomainToNative(Domain(input.family));
+#endif
     result.sin_port = input.portno; //no need to translate
 #ifdef _WIN32
     auto& ip = result.sin_addr.S_un.S_un_b;
