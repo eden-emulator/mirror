@@ -141,10 +141,10 @@ void InitSwap() noexcept {}
 
 void* AllocateMemoryPages(std::size_t size) noexcept {
 #ifdef _WIN32
-    void* base = VirtualAlloc(nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    if (base == nullptr) {
+    void* addr = VirtualAlloc(nullptr, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if (addr == nullptr) {
         // Probably failing to reserve is less likely than failing to commit
-        base = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
+        addr = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
     }
 #elif defined(__OPENORBIS__)
     bool use_void_mem = true;
