@@ -154,6 +154,7 @@ enum class AppletMessage : u32 {
     DetectLongPressingCaptureButton = 91,
     AlbumScreenShotTaken = 92,
     AlbumRecordingSaved = 93,
+    StartupLogoDisappeared = 95,
 };
 
 enum class LibraryAppletMode : u32 {

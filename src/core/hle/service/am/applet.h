@@ -91,6 +91,7 @@ struct Applet {
     // Common state
     bool sleep_lock_enabled{};
     bool vr_mode_enabled{};
+    bool vr_mode_enabled_3d{};
     bool lcd_backlight_off_enabled{};
     APM::CpuBoostMode boost_mode{};
     bool request_exit_to_library_applet_at_execute_next_program_enabled{};

@@ -39,7 +39,7 @@ ICommonStateGetter::ICommonStateGetter(Core::System& system_, std::shared_ptr<Ap
         {14, nullptr, "GetWakeupCount"}, //11.0.0+
         {15, nullptr, "Unknown15"}, //19.0.0+
         {20, D<&ICommonStateGetter::PushToGeneralChannel>, "PushToGeneralChannel"},
-        {30, nullptr, "GetHomeButtonReaderLockAccessor"},
+        {30, D<&ICommonStateGetter::GetHomeButtonReaderLockAccessor>, "GetHomeButtonReaderLockAccessor"},
         {31, D<&ICommonStateGetter::GetReaderLockAccessorEx>, "GetReaderLockAccessorEx"}, //2.0.0+
         {32, D<&ICommonStateGetter::GetWriterLockAccessorEx>, "GetWriterLockAccessorEx"}, //7.0.0+
         {40, nullptr, "GetCradleFwVersion"}, //2.0.0+
@@ -65,7 +65,7 @@ ICommonStateGetter::ICommonStateGetter(Core::System& system_, std::shared_ptr<Ap
         {100, D<&ICommonStateGetter::SetHandlingHomeButtonShortPressedEnabled>, "SetHandlingHomeButtonShortPressedEnabled"},
         {110, nullptr, "OpenMyGpuErrorHandler"},
         {120, D<&ICommonStateGetter::GetAppletLaunchedHistory>, "GetAppletLaunchedHistory"}, //13.0.0+
-        {130, nullptr, "Unknown130"}, //21.0.0+
+        {130, D<&ICommonStateGetter::EnableStartupLogoDisappearedMessage>, "EnableStartupLogoDisappearedMessage"}, //21.0.0+
         {200, D<&ICommonStateGetter::GetOperationModeSystemInfo>, "GetOperationModeSystemInfo"},
         {300, D<&ICommonStateGetter::GetSettingsPlatformRegion>, "GetSettingsPlatformRegion"},
         {400, nullptr, "ActivateMigrationService"},
@@ -74,14 +74,17 @@ ICommonStateGetter::ICommonStateGetter(Core::System& system_, std::shared_ptr<Ap
         {501, nullptr, "SuppressDisablingSleepTemporarily"},
         {502, nullptr, "IsSleepEnabled"},
         {503, nullptr, "IsDisablingSleepSuppressed"},
-        {600, nullptr, "Unknown600"}, //20.0.0+
+        {600, nullptr, "SetHidInputMagnificationForApplication"}, //20.0.0+
         {610, D<&ICommonStateGetter::Unknown610>, "Unknown610"}, //21.0.0+
         {611, D<&ICommonStateGetter::Unknown611>, "Unknown611"}, //22.0.0+
         {900, D<&ICommonStateGetter::SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled>, "SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled"}, //11.0.0+
         {910, nullptr, "GetLaunchRequiredTick"}, //17.0.0+
-        {1000, nullptr, "BeginVrMode3d"}, //19.0.0+
-        {1001, nullptr, "EndVrMode3d"}, //19.0.0+
-        {1002, nullptr, "IsVrModeEnabled3d"}, //19.0.0+
+        {1000, D<&ICommonStateGetter::BeginVrMode3d>, "BeginVrMode3d"}, //19.0.0+
+        {1001, D<&ICommonStateGetter::EndVrMode3d>, "EndVrMode3d"}, //19.0.0+
+        {1002, D<&ICommonStateGetter::IsVrModeEnabled3d>, "IsVrModeEnabled3d"}, //19.0.0+
+        {1003, D<&ICommonStateGetter::GetVrLaboGoggleViewport>, "GetVrLaboGoggleViewport"}, //21.0.0+
+        {1004, D<&ICommonStateGetter::GetPanelPhysicalSizeForSpecificTitle>, "GetPanelPhysicalSizeForSpecificTitle"}, //21.0.0+
+        {1005, D<&ICommonStateGetter::GetPanelResolutionForSpecificTitle>, "GetPanelResolutionForSpecificTitle"}, //21.0.0+
     };
     // clang-format on
 
@@ -311,6 +314,12 @@ Result ICommonStateGetter::PerformSystemButtonPressingIfInFocus(SystemButtonType
     R_SUCCEED();
 }
 
+Result ICommonStateGetter::EnableStartupLogoDisappearedMessage() {
+    LOG_WARNING(Service_AM, "(STUBBED) called");
+    m_applet->lifecycle_manager.PushUnorderedMessage(system.Kernel(), AppletMessage::StartupLogoDisappeared);
+    R_SUCCEED();
+}
+
 Result ICommonStateGetter::GetOperationModeSystemInfo(Out<u32> out_operation_mode_system_info) {
     LOG_WARNING(Service_AM, "(STUBBED) called");
     *out_operation_mode_system_info = 0;
@@ -355,6 +364,12 @@ Result ICommonStateGetter::PushToGeneralChannel(SharedPointer<IStorage> storage)
     R_SUCCEED();
 }
 
+Result ICommonStateGetter::GetHomeButtonReaderLockAccessor(Out<SharedPointer<ILockAccessor>> out_lock_accessor) {
+    LOG_DEBUG(Service_AM, "called");
+    *out_lock_accessor = std::make_shared<ILockAccessor>(system);
+    R_SUCCEED();
+}
+
 Result ICommonStateGetter::SetHandlingHomeButtonShortPressedEnabled(bool enabled) {
     LOG_DEBUG(Service_AM, "called, enabled={} applet_id={}", enabled, m_applet->applet_id);
 
@@ -363,13 +378,57 @@ Result ICommonStateGetter::SetHandlingHomeButtonShortPressedEnabled(bool enabled
     R_SUCCEED();
 }
 
-Result ICommonStateGetter::Unknown610() {
+Result ICommonStateGetter::Unknown610(u64 unk) {
     LOG_WARNING(Service_AM, "(STUBBED) called");
     R_SUCCEED();
 }
 
-Result ICommonStateGetter::Unknown611() {
+Result ICommonStateGetter::Unknown611(u8 unk) {
     LOG_WARNING(Service_AM, "(STUBBED) called");
+    R_SUCCEED();
+}
+
+Result ICommonStateGetter::BeginVrMode3d() {
+    std::scoped_lock lk{m_applet->lock};
+    m_applet->vr_mode_enabled = true;
+    LOG_WARNING(Service_AM, "VR Mode is {}", m_applet->vr_mode_enabled_3d ? "on" : "off");
+    R_SUCCEED();
+}
+
+Result ICommonStateGetter::EndVrMode3d() {
+    std::scoped_lock lk{m_applet->lock};
+    m_applet->vr_mode_enabled_3d = false;
+    LOG_WARNING(Service_AM, "VR Mode is {}", m_applet->vr_mode_enabled_3d ? "on" : "off");
+    R_SUCCEED();
+}
+
+Result ICommonStateGetter::IsVrModeEnabled3d(Out<bool> out_is_vr_mode_enabled_3d) {
+    LOG_WARNING(Service_AM, "(STUBBED) called");
+    std::scoped_lock lk{m_applet->lock};
+    *out_is_vr_mode_enabled_3d = m_applet->vr_mode_enabled_3d;
+    R_SUCCEED();
+}
+
+Result ICommonStateGetter::GetVrLaboGoggleViewport(Out<s32> out_x, Out<s32> out_y, Out<s32> out_width, Out<s32> out_height) {
+    LOG_WARNING(Service_AM, "(STUBBED) called");
+    *out_x = 0;
+    *out_y = 0;
+    *out_width = 1280;
+    *out_height = 720;
+    R_SUCCEED();
+}
+
+Result ICommonStateGetter::GetPanelPhysicalSizeForSpecificTitle(Out<f32> out_width, Out<f32> out_height) {
+    LOG_WARNING(Service_AM, "(STUBBED) called");
+    *out_width = 137250.0f / 1000.0f;
+    *out_height = 77200.0f / 1000.0f;
+    R_SUCCEED();
+}
+
+Result ICommonStateGetter::GetPanelResolutionForSpecificTitle(Out<s32> out_width, Out<s32> out_height) {
+    LOG_WARNING(Service_AM, "(STUBBED) called");
+    *out_width = 1280;
+    *out_height = 720;
     R_SUCCEED();
 }
 

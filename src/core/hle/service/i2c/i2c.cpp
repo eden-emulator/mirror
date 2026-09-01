@@ -32,7 +32,6 @@ public:
         RegisterHandlers(functions);
     }
     ~I2CSession() override = default;
-
     Result Send(InBuffer<BufferAttr_HipcMapAlias> in_data, u32 transaction_option) {
         LOG_WARNING(Service, "(stubbed) topt={}", transaction_option);
         R_THROW(ResultUnknown);
@@ -50,18 +49,37 @@ public:
         : ServiceFramework{system_, "i2c"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "OpenSessionForDev"},
+            {0, C<&I2C::OpenSessionForDev>, "OpenSessionForDev"},
             {1, C<&I2C::OpenSession>, "OpenSession"},
-            {2, nullptr, "HasDevice"},
-            {3, nullptr, "HasDeviceForDev"},
-            {4, nullptr, "OpenSession2"},
+            {2, C<&I2C::HasDevice>, "HasDevice"},
+            {3, C<&I2C::HasDeviceForDev>, "HasDeviceForDev"},
+            {4, C<&I2C::OpenSession2>, "OpenSession2"},
         };
         RegisterHandlers(functions);
     }
     ~I2C() override = default;
-
-    Result OpenSession(I2CDevice device, OutInterface<I2CSession> out_session) {
+    Result OpenSessionForDev(OutInterface<I2CSession> out_session, s32 bus_idx, u16 slave_address, u32 addressing_mode, u32 speed_mode) {
         LOG_DEBUG(Service, "(stubbed)");
+        *out_session = std::make_shared<I2CSession>(system);
+        R_SUCCEED();
+    }
+    Result OpenSession(OutInterface<I2CSession> out_session, I2CDevice device) {
+        LOG_DEBUG(Service, "(stubbed)");
+        *out_session = std::make_shared<I2CSession>(system);
+        R_SUCCEED();
+    }
+    Result HasDevice(Out<bool> out_has_device, I2CDevice device) {
+        LOG_DEBUG(Service, "(stubbed)");
+        *out_has_device = false;
+        R_SUCCEED();
+    }
+    Result HasDeviceForDev(Out<bool> out_has_device, I2CDevice device) {
+        LOG_DEBUG(Service, "(stubbed)");
+        *out_has_device = false;
+        R_SUCCEED();
+    }
+    Result OpenSession2(OutInterface<I2CSession> out_session, u32 device_code) {
+        LOG_DEBUG(Service, "(stubbed) device_code={}", device_code);
         *out_session = std::make_shared<I2CSession>(system);
         R_SUCCEED();
     }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
@@ -36,15 +36,13 @@ private:
                                   InCopyHandle<Kernel::KProcess> process_handle,
                                   InLargeData<AppletAttribute, BufferAttr_HipcMapAlias> attribute);
     Result OpenOverlayAppletProxy(Out<SharedPointer<IOverlayAppletProxy>> out_overlay_applet_proxy,
-                           ClientProcessId pid, InCopyHandle<Kernel::KProcess> process_handle,
-                           InLargeData<AppletAttribute, BufferAttr_HipcMapAlias> attribute);
+                           ClientProcessId pid, InCopyHandle<Kernel::KProcess> process_handle);
     Result OpenLibraryAppletProxyOld(
         Out<SharedPointer<ILibraryAppletProxy>> out_library_applet_proxy, ClientProcessId pid,
         InCopyHandle<Kernel::KProcess> process_handle);
     Result OpenSystemApplicationProxy(
         Out<SharedPointer<IApplicationProxy>> out_system_application_proxy, ClientProcessId pid,
-        InCopyHandle<Kernel::KProcess> process_handle,
-        InLargeData<AppletAttribute, BufferAttr_HipcMapAlias> attribute);
+        InCopyHandle<Kernel::KProcess> process_handle);
     Result GetSystemProcessCommonFunctions();
     Result GetAppletAlternativeFunctions();
 
