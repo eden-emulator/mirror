@@ -107,11 +107,11 @@ struct RingSensorForce {
 using NfcState = Common::Input::NfcStatus;
 
 struct ControllerMotion {
-    Common::Vec3f accel{};
-    Common::Vec3f gyro{};
-    Common::Vec3f rotation{};
-    Common::Vec3f euler{};
-    std::array<Common::Vec3f, 3> orientation{};
+    Common::Vec<f32, 3> accel{};
+    Common::Vec<f32, 3> gyro{};
+    Common::Vec<f32, 3> rotation{};
+    Common::Vec<f32, 3> euler{};
+    std::array<Common::Vec<f32, 3>, 3> orientation{};
     bool is_at_rest{};
 };
 

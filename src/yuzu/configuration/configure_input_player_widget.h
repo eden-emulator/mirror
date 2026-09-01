@@ -198,7 +198,7 @@ private:
     void DrawArrow(QPainter& p, QPointF center, Direction direction, float size);
 
     // Draw motion functions
-    void Draw3dCube(QPainter& p, QPointF center, const Common::Vec3f& euler, float size);
+    void Draw3dCube(QPainter& p, QPointF center, const Common::Vec<f32, 3>& euler, float size);
 
     // Draw primitive types
     template <size_t N>

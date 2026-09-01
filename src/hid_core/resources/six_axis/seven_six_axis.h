@@ -51,9 +51,9 @@ private:
         u64 timestamp{};
         u64 sampling_number{};
         u64 unknown{};
-        Common::Vec3f accel{};
-        Common::Vec3f gyro{};
-        Common::Quaternion<f32> quaternion{};
+        Common::Vec<f32, 3> accel{};
+        Common::Vec<f32, 3> gyro{};
+        Common::Vec<f32, 4> quaternion{};
     };
     static_assert(sizeof(SevenSixAxisState) == 0x48, "SevenSixAxisState is an invalid size");
 

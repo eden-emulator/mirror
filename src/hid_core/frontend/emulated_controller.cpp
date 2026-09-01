@@ -1051,12 +1051,12 @@ void EmulatedController::SetMotion(const Common::Input::CallbackStatus& callback
     auto& emulated = controller.motion_values[index].emulated;
 
     raw_status = TransformToMotion(callback);
-    emulated.SetAcceleration(Common::Vec3f{
+    emulated.SetAcceleration(Common::Vec<f32, 3>{
         raw_status.accel.x.value,
         raw_status.accel.y.value,
         raw_status.accel.z.value,
     });
-    emulated.SetGyroscope(Common::Vec3f{
+    emulated.SetGyroscope(Common::Vec<f32, 3>{
         raw_status.gyro.x.value,
         raw_status.gyro.y.value,
         raw_status.gyro.z.value,

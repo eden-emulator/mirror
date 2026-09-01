@@ -26,20 +26,19 @@ void MotionInput::SetPID(f32 new_kp, f32 new_ki, f32 new_kd) {
     kd = new_kd;
 }
 
-void MotionInput::SetAcceleration(const Common::Vec3f& acceleration) {
+void MotionInput::SetAcceleration(const Common::Vec<f32, 3>& acceleration) {
     accel = acceleration;
-
-    accel.x = std::clamp(accel.x, -AccelMaxValue, AccelMaxValue);
-    accel.y = std::clamp(accel.y, -AccelMaxValue, AccelMaxValue);
-    accel.z = std::clamp(accel.z, -AccelMaxValue, AccelMaxValue);
+    accel[0] = std::clamp(accel[0], -AccelMaxValue, AccelMaxValue);
+    accel[1] = std::clamp(accel[1], -AccelMaxValue, AccelMaxValue);
+    accel[2] = std::clamp(accel[2], -AccelMaxValue, AccelMaxValue);
 }
 
-void MotionInput::SetGyroscope(const Common::Vec3f& gyroscope) {
+void MotionInput::SetGyroscope(const Common::Vec<f32, 3>& gyroscope) {
     gyro = gyroscope - gyro_bias;
 
-    gyro.x = std::clamp(gyro.x, -GyroMaxValue, GyroMaxValue);
-    gyro.y = std::clamp(gyro.y, -GyroMaxValue, GyroMaxValue);
-    gyro.z = std::clamp(gyro.z, -GyroMaxValue, GyroMaxValue);
+    gyro[0] = std::clamp(gyro[0], -GyroMaxValue, GyroMaxValue);
+    gyro[1] = std::clamp(gyro[1], -GyroMaxValue, GyroMaxValue);
+    gyro[2] = std::clamp(gyro[2], -GyroMaxValue, GyroMaxValue);
 
     // Auto adjust gyro_bias to minimize drift
     if (!IsMoving(IsAtRestRelaxed)) {
@@ -59,25 +58,25 @@ void MotionInput::SetGyroscope(const Common::Vec3f& gyroscope) {
     }
 }
 
-void MotionInput::SetQuaternion(const Common::Quaternion<f32>& quaternion) {
+void MotionInput::SetQuaternion(const Common::Vec<f32, 4>& quaternion) {
     quat = quaternion;
 }
 
-void MotionInput::SetEulerAngles(const Common::Vec3f& euler_angles) {
-    const float cr = std::cos(euler_angles.x * 0.5f);
-    const float sr = std::sin(euler_angles.x * 0.5f);
-    const float cp = std::cos(euler_angles.y * 0.5f);
-    const float sp = std::sin(euler_angles.y * 0.5f);
-    const float cy = std::cos(euler_angles.z * 0.5f);
-    const float sy = std::sin(euler_angles.z * 0.5f);
+void MotionInput::SetEulerAngles(const Common::Vec<f32, 3>& euler_angles) {
+    const float cr = std::cos(euler_angles[0] * 0.5f);
+    const float sr = std::sin(euler_angles[0] * 0.5f);
+    const float cp = std::cos(euler_angles[1] * 0.5f);
+    const float sp = std::sin(euler_angles[1] * 0.5f);
+    const float cy = std::cos(euler_angles[2] * 0.5f);
+    const float sy = std::sin(euler_angles[2] * 0.5f);
 
-    quat.w = cr * cp * cy + sr * sp * sy;
-    quat.xyz.x = sr * cp * cy - cr * sp * sy;
-    quat.xyz.y = cr * sp * cy + sr * cp * sy;
-    quat.xyz.z = cr * cp * sy - sr * sp * cy;
+    quat[3] = cr * cp * cy + sr * sp * sy;
+    quat[0] = sr * cp * cy - cr * sp * sy;
+    quat[1] = cr * sp * cy + sr * cp * sy;
+    quat[2] = cr * cp * sy - sr * sp * cy;
 }
 
-void MotionInput::SetGyroBias(const Common::Vec3f& bias) {
+void MotionInput::SetGyroBias(const Common::Vec<f32, 3>& bias) {
     gyro_bias = bias;
 }
 
@@ -98,7 +97,7 @@ void MotionInput::ResetRotations() {
 }
 
 void MotionInput::ResetQuaternion() {
-    quat = {{0.0f, 0.0f, -1.0f}, 0.0f};
+    quat = Common::Vec<f32, 4>{0.0f, 0.0f, -1.0f, 0.0f};
 }
 
 bool MotionInput::IsMoving(f32 sensitivity) const {
@@ -137,10 +136,10 @@ void MotionInput::UpdateOrientation(u64 elapsed_time) {
         ResetOrientation();
     }
     // Short name local variable for readability
-    f32 q1 = quat.w;
-    f32 q2 = quat.xyz[0];
-    f32 q3 = quat.xyz[1];
-    f32 q4 = quat.xyz[2];
+    f32 q1 = quat[3];
+    f32 q2 = quat[0];
+    f32 q3 = quat[1];
+    f32 q4 = quat[2];
     const auto sample_period = static_cast<f32>(elapsed_time) / 1000000.0f;
 
     // Ignore invalid elapsed time
@@ -150,23 +149,23 @@ void MotionInput::UpdateOrientation(u64 elapsed_time) {
 
     const auto normal_accel = accel.Normalized();
     auto rad_gyro = gyro * std::numbers::pi_v<float> * 2.f;
-    const f32 swap = rad_gyro.x;
-    rad_gyro.x = rad_gyro.y;
-    rad_gyro.y = -swap;
-    rad_gyro.z = -rad_gyro.z;
+    const f32 swap = rad_gyro[0];
+    rad_gyro[0] = rad_gyro[1];
+    rad_gyro[1] = -swap;
+    rad_gyro[2] = -rad_gyro[2];
 
     // Clear gyro values if there is no gyro present
     if (only_accelerometer) {
-        rad_gyro.x = 0;
-        rad_gyro.y = 0;
-        rad_gyro.z = 0;
+        rad_gyro[0] = 0;
+        rad_gyro[1] = 0;
+        rad_gyro[2] = 0;
     }
 
     // Ignore drift correction if acceleration is not reliable
     if (accel.Length() >= 0.75f && accel.Length() <= 1.25f) {
-        const f32 ax = -normal_accel.x;
-        const f32 ay = normal_accel.y;
-        const f32 az = -normal_accel.z;
+        const f32 ax = -normal_accel[0];
+        const f32 ay = normal_accel[1];
+        const f32 az = -normal_accel[2];
 
         // Estimated direction of gravity
         const f32 vx = 2.0f * (q2 * q4 - q1 * q3);
@@ -174,7 +173,7 @@ void MotionInput::UpdateOrientation(u64 elapsed_time) {
         const f32 vz = q1 * q1 - q2 * q2 - q3 * q3 + q4 * q4;
 
         // Error is cross product between estimated direction and measured direction of gravity
-        const Common::Vec3f new_real_error = {
+        const Common::Vec<f32, 3> new_real_error{
             az * vx - ax * vz,
             ay * vz - az * vy,
             ax * vy - ay * vx,
@@ -202,16 +201,16 @@ void MotionInput::UpdateOrientation(u64 elapsed_time) {
             rad_gyro += 10.0f * kd * derivative_error;
 
             // Emulate gyro values for games that need them
-            gyro.x = -rad_gyro.y;
-            gyro.y = rad_gyro.x;
-            gyro.z = -rad_gyro.z;
+            gyro[0] = -rad_gyro[1];
+            gyro[1] = rad_gyro[0];
+            gyro[2] = -rad_gyro[2];
             UpdateRotation(elapsed_time);
         }
     }
 
-    const f32 gx = rad_gyro.y;
-    const f32 gy = rad_gyro.x;
-    const f32 gz = rad_gyro.z;
+    const f32 gx = rad_gyro[1];
+    const f32 gy = rad_gyro[0];
+    const f32 gz = rad_gyro[2];
 
     // Integrate rate of change of quaternion
     const f32 pa = q2;
@@ -222,57 +221,58 @@ void MotionInput::UpdateOrientation(u64 elapsed_time) {
     q3 = pb + (q1 * gy - pa * gz + pc * gx) * (0.5f * sample_period);
     q4 = pc + (q1 * gz + pa * gy - pb * gx) * (0.5f * sample_period);
 
-    quat.w = q1;
-    quat.xyz[0] = q2;
-    quat.xyz[1] = q3;
-    quat.xyz[2] = q4;
+    quat[3] = q1;
+    quat[0] = q2;
+    quat[1] = q3;
+    quat[2] = q4;
     quat = quat.Normalized();
 }
 
-std::array<Common::Vec3f, 3> MotionInput::GetOrientation() const {
-    const Common::Quaternion<float> quad{
-        .xyz = {-quat.xyz[1], -quat.xyz[0], -quat.w},
-        .w = -quat.xyz[2],
+std::array<Common::Vec<f32, 3>, 3> MotionInput::GetOrientation() const {
+    const Common::Vec<f32, 4> quad{
+        -quat[1],
+        -quat[0],
+        -quat[3],
+        -quat[2],
     };
-    const std::array<float, 16> matrix4x4 = quad.ToMatrix();
-
-    return {Common::Vec3f(matrix4x4[0], matrix4x4[1], -matrix4x4[2]),
-            Common::Vec3f(matrix4x4[4], matrix4x4[5], -matrix4x4[6]),
-            Common::Vec3f(-matrix4x4[8], -matrix4x4[9], matrix4x4[10])};
+    const std::array<f32, 16> matrix4x4 = quad.ToMatrix();
+    return {Common::Vec<f32, 3>(matrix4x4[0], matrix4x4[1], -matrix4x4[2]),
+            Common::Vec<f32, 3>(matrix4x4[4], matrix4x4[5], -matrix4x4[6]),
+            Common::Vec<f32, 3>(-matrix4x4[8], -matrix4x4[9], matrix4x4[10])};
 }
 
-Common::Vec3f MotionInput::GetAcceleration() const {
+Common::Vec<f32, 3> MotionInput::GetAcceleration() const {
     return accel;
 }
 
-Common::Vec3f MotionInput::GetGyroscope() const {
+Common::Vec<f32, 3> MotionInput::GetGyroscope() const {
     return gyro;
 }
 
-Common::Vec3f MotionInput::GetGyroBias() const {
+Common::Vec<f32, 3> MotionInput::GetGyroBias() const {
     return gyro_bias;
 }
 
-Common::Quaternion<f32> MotionInput::GetQuaternion() const {
+Common::Vec<f32, 4> MotionInput::GetQuaternion() const {
     return quat;
 }
 
-Common::Vec3f MotionInput::GetRotations() const {
+Common::Vec<f32, 3> MotionInput::GetRotations() const {
     return rotations;
 }
 
-Common::Vec3f MotionInput::GetEulerAngles() const {
+Common::Vec<f32, 3> MotionInput::GetEulerAngles() const {
     // roll (x-axis rotation)
-    const float sinr_cosp = 2 * (quat.w * quat.xyz.x + quat.xyz.y * quat.xyz.z);
-    const float cosr_cosp = 1 - 2 * (quat.xyz.x * quat.xyz.x + quat.xyz.y * quat.xyz.y);
+    const float sinr_cosp = 2 * (quat[3] * quat[0] + quat[1] * quat[2]);
+    const float cosr_cosp = 1 - 2 * (quat[0] * quat[0] + quat[1] * quat[1]);
 
     // pitch (y-axis rotation)
-    const float sinp = std::sqrt(1 + 2 * (quat.w * quat.xyz.y - quat.xyz.x * quat.xyz.z));
-    const float cosp = std::sqrt(1 - 2 * (quat.w * quat.xyz.y - quat.xyz.x * quat.xyz.z));
+    const float sinp = std::sqrt(1 + 2 * (quat[3] * quat[1] - quat[0] * quat[2]));
+    const float cosp = std::sqrt(1 - 2 * (quat[3] * quat[1] - quat[0] * quat[2]));
 
     // yaw (z-axis rotation)
-    const float siny_cosp = 2 * (quat.w * quat.xyz.z + quat.xyz.x * quat.xyz.y);
-    const float cosy_cosp = 1 - 2 * (quat.xyz.y * quat.xyz.y + quat.xyz.z * quat.xyz.z);
+    const float siny_cosp = 2 * (quat[3] * quat[2] + quat[0] * quat[1]);
+    const float cosy_cosp = 1 - 2 * (quat[1] * quat[1] + quat[2] * quat[2]);
 
     return {
         std::atan2(sinr_cosp, cosr_cosp),
@@ -285,13 +285,13 @@ void MotionInput::ResetOrientation() {
     if (!reset_enabled || only_accelerometer) {
         return;
     }
-    if (!IsMoving(IsAtRestRelaxed) && accel.z <= -0.9f) {
+    if (!IsMoving(IsAtRestRelaxed) && accel[2] <= -0.9f) {
         ++reset_counter;
         if (reset_counter > 900) {
-            quat.w = 0;
-            quat.xyz[0] = 0;
-            quat.xyz[1] = 0;
-            quat.xyz[2] = -1;
+            quat[3] = 0;
+            quat[0] = 0;
+            quat[1] = 0;
+            quat[2] = -1;
             SetOrientationFromAccelerometer();
             integral_error = {};
             reset_counter = 0;
@@ -309,15 +309,15 @@ void MotionInput::SetOrientationFromAccelerometer() {
 
     while (!IsCalibrated(0.01f) && ++iterations < 100) {
         // Short name local variable for readability
-        f32 q1 = quat.w;
-        f32 q2 = quat.xyz[0];
-        f32 q3 = quat.xyz[1];
-        f32 q4 = quat.xyz[2];
+        f32 q1 = quat[3];
+        f32 q2 = quat[0];
+        f32 q3 = quat[1];
+        f32 q4 = quat[2];
 
-        Common::Vec3f rad_gyro;
-        const f32 ax = -normal_accel.x;
-        const f32 ay = normal_accel.y;
-        const f32 az = -normal_accel.z;
+        Common::Vec<f32, 3> rad_gyro;
+        const f32 ax = -normal_accel[0];
+        const f32 ay = normal_accel[1];
+        const f32 az = -normal_accel[2];
 
         // Estimated direction of gravity
         const f32 vx = 2.0f * (q2 * q4 - q1 * q3);
@@ -325,7 +325,7 @@ void MotionInput::SetOrientationFromAccelerometer() {
         const f32 vz = q1 * q1 - q2 * q2 - q3 * q3 + q4 * q4;
 
         // Error is cross product between estimated direction and measured direction of gravity
-        const Common::Vec3f new_real_error = {
+        const Common::Vec<f32, 3> new_real_error = {
             az * vx - ax * vz,
             ay * vz - az * vy,
             ax * vy - ay * vx,
@@ -338,9 +338,9 @@ void MotionInput::SetOrientationFromAccelerometer() {
         rad_gyro += 5.0f * ki * integral_error;
         rad_gyro += 10.0f * kd * derivative_error;
 
-        const f32 gx = rad_gyro.y;
-        const f32 gy = rad_gyro.x;
-        const f32 gz = rad_gyro.z;
+        const f32 gx = rad_gyro[1];
+        const f32 gy = rad_gyro[0];
+        const f32 gz = rad_gyro[2];
 
         // Integrate rate of change of quaternion
         const f32 pa = q2;
@@ -351,10 +351,10 @@ void MotionInput::SetOrientationFromAccelerometer() {
         q3 = pb + (q1 * gy - pa * gz + pc * gx) * (0.5f * sample_period);
         q4 = pc + (q1 * gz + pa * gy - pb * gx) * (0.5f * sample_period);
 
-        quat.w = q1;
-        quat.xyz[0] = q2;
-        quat.xyz[1] = q3;
-        quat.xyz[2] = q4;
+        quat[3] = q1;
+        quat[0] = q2;
+        quat[1] = q3;
+        quat[2] = q4;
         quat = quat.Normalized();
     }
 }

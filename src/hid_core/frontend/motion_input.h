@@ -36,11 +36,11 @@ public:
     MotionInput& operator=(MotionInput&&) = default;
 
     void SetPID(f32 new_kp, f32 new_ki, f32 new_kd);
-    void SetAcceleration(const Common::Vec3f& acceleration);
-    void SetGyroscope(const Common::Vec3f& gyroscope);
-    void SetQuaternion(const Common::Quaternion<f32>& quaternion);
-    void SetEulerAngles(const Common::Vec3f& euler_angles);
-    void SetGyroBias(const Common::Vec3f& bias);
+    void SetAcceleration(const Common::Vec<f32, 3>& acceleration);
+    void SetGyroscope(const Common::Vec<f32, 3>& gyroscope);
+    void SetQuaternion(const Common::Vec<f32, 4>& quaternion);
+    void SetEulerAngles(const Common::Vec<f32, 3>& euler_angles);
+    void SetGyroBias(const Common::Vec<f32, 3>& bias);
     void SetGyroThreshold(f32 threshold);
 
     /// Applies a modifier on top of the normal gyro threshold
@@ -55,13 +55,13 @@ public:
 
     void Calibrate();
 
-    [[nodiscard]] std::array<Common::Vec3f, 3> GetOrientation() const;
-    [[nodiscard]] Common::Vec3f GetAcceleration() const;
-    [[nodiscard]] Common::Vec3f GetGyroscope() const;
-    [[nodiscard]] Common::Vec3f GetGyroBias() const;
-    [[nodiscard]] Common::Vec3f GetRotations() const;
-    [[nodiscard]] Common::Quaternion<f32> GetQuaternion() const;
-    [[nodiscard]] Common::Vec3f GetEulerAngles() const;
+    [[nodiscard]] std::array<Common::Vec<f32, 3>, 3> GetOrientation() const;
+    [[nodiscard]] Common::Vec<f32, 3> GetAcceleration() const;
+    [[nodiscard]] Common::Vec<f32, 3> GetGyroscope() const;
+    [[nodiscard]] Common::Vec<f32, 3> GetGyroBias() const;
+    [[nodiscard]] Common::Vec<f32, 3> GetRotations() const;
+    [[nodiscard]] Common::Vec<f32, 4> GetQuaternion() const;
+    [[nodiscard]] Common::Vec<f32, 3> GetEulerAngles() const;
 
     [[nodiscard]] bool IsMoving(f32 sensitivity) const;
     [[nodiscard]] bool IsCalibrated(f32 sensitivity) const;
@@ -77,24 +77,24 @@ private:
     f32 kd;
 
     // PID errors
-    Common::Vec3f real_error;
-    Common::Vec3f integral_error;
-    Common::Vec3f derivative_error;
+    Common::Vec<f32, 3> real_error;
+    Common::Vec<f32, 3> integral_error;
+    Common::Vec<f32, 3> derivative_error;
 
     // Quaternion containing the device orientation
-    Common::Quaternion<f32> quat;
+    Common::Vec<f32, 4> quat;
 
     // Number of full rotations in each axis
-    Common::Vec3f rotations;
+    Common::Vec<f32, 3> rotations;
 
     // Acceleration vector measurement in G force
-    Common::Vec3f accel;
+    Common::Vec<f32, 3> accel;
 
     // Gyroscope vector measurement in radians/s.
-    Common::Vec3f gyro;
+    Common::Vec<f32, 3> gyro;
 
     // Vector to be subtracted from gyro measurements
-    Common::Vec3f gyro_bias;
+    Common::Vec<f32, 3> gyro_bias;
 
     // Minimum gyro amplitude to detect if the device is moving
     f32 gyro_threshold = 0.0f;

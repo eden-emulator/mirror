@@ -2936,10 +2936,10 @@ void PlayerControlPreview::DrawArrow(QPainter& p, const QPointF center, const Di
 }
 
 // Draw motion functions
-void PlayerControlPreview::Draw3dCube(QPainter& p, QPointF center, const Common::Vec3f& euler,
+void PlayerControlPreview::Draw3dCube(QPainter& p, QPointF center, const Common::Vec<f32, 3>& euler,
                                       float size) {
-    std::array<Common::Vec3f, 8> cube{
-        Common::Vec3f{-0.7f, -1, -0.5f},
+    std::array<Common::Vec<f32, 3>, 8> cube{
+        Common::Vec<f32, 3>{-0.7f, -1, -0.5f},
         {-0.7f, 1, -0.5f},
         {0.7f, 1, -0.5f},
         {0.7f, -1, -0.5f},
@@ -2949,7 +2949,7 @@ void PlayerControlPreview::Draw3dCube(QPainter& p, QPointF center, const Common:
         {0.7f, -1, 0.5f},
     };
 
-    for (Common::Vec3f& point : cube) {
+    for (Common::Vec<f32, 3>& point : cube) {
         float temp = point.y;
         point.y = std::cos(euler.x) * point.y - std::sin(euler.x) * point.z;
         point.z = std::sin(euler.x) * temp + std::cos(euler.x) * point.z;
