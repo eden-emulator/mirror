@@ -272,7 +272,7 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
             for (; p > sline.cbegin() && std::isspace(*p); --p)
                 ;
             // now we have the preprocessed string ;)
-            std::string_view pp_str(sline_start, size_t(std::distance(p, sline.cbegin())));
+            std::string_view pp_str(sline_start, size_t(std::distance(sline.cbegin(), p)));
             if (pp_str.size() > 0 && !parse_line(pp_str)) {
                 break;
             }
