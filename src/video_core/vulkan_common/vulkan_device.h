@@ -479,6 +479,11 @@ FN_MAX_LIMIT_LIST
         return properties.subgroup_properties.supportedStages;
     }
 
+    /// Returns true if every requested subgroup operation is supported by the device.
+    bool AreSubgroupFeaturesSupported(VkSubgroupFeatureFlags features) const {
+        return (properties.subgroup_properties.supportedOperations & features) == features;
+    }
+
     /// Returns the maximum number of push descriptors.
     u32 MaxPushDescriptors() const {
         return properties.push_descriptor.maxPushDescriptors;

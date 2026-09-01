@@ -36,15 +36,14 @@ void RewriteAtomic(IR::Block& block, IR::Inst& inst) {
 
     const IR::U32 amount{inst.Arg(2)};
     const IR::U32 primitive_id{ir.GetAttributeU32(IR::Attribute::PrimitiveId)};
-    const IR::U32 new_index{ir.IMul(primitive_id, amount)};
-    const IR::U32 new_atomic_value{ir.IAdd(new_index, amount)};
+    const IR::U1 reserves_slot{ir.INotEqual(amount, ir.Imm32(0u))};
+    const IR::U32 slot_end{ir.IAdd(primitive_id, ir.Imm32(1u))};
+    const IR::U32 high_water{IR::U32{ir.Select(reserves_slot, slot_end, ir.Imm32(0u))}};
 
-    const IR::Value umax_result{&*block.PrependNewInst(
-        insert_point, IR::Opcode::StorageAtomicUMax32,
-        {inst.Arg(0), inst.Arg(1), new_atomic_value})};
-    static_cast<void>(umax_result);
+    block.PrependNewInst(insert_point, IR::Opcode::StorageAtomicUMax32,
+                         {inst.Arg(0), inst.Arg(1), high_water});
 
-    inst.ReplaceUsesWith(new_index);
+    inst.ReplaceUsesWith(primitive_id);
 }
 
 } // Anonymous namespace
@@ -56,6 +55,9 @@ void CompactionFallbackPass(IR::Program& program, const HostTranslateInfo& host_
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (inst.GetOpcode() != IR::Opcode::StorageAtomicIAdd32) {
+                continue;
+            }
+            if (!inst.HasUses()) {
                 continue;
             }
             if (!DependsOnSubgroupBallot(inst.Arg(2), 0)) {

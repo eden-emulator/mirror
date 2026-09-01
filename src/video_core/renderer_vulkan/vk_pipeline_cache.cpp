@@ -360,19 +360,26 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
     const VkDriverId driver_id{device.GetDriverID()};
     const VkShaderStageFlags subgroup_stages{device.GetSubgroupSupportedStages()};
     const auto subgroup_stage_bit{[subgroup_stages](VkShaderStageFlags flag, Shader::Stage stage) {
-        return (subgroup_stages & flag) != 0 ? (1u << static_cast<u32>(stage)) : 0u;
+        if ((subgroup_stages & flag) == 0) {
+            return 0u;
+        }
+        return 1u << static_cast<u32>(stage);
     }};
-    const u32 supported_subgroup_stages{
+    u32 supported_subgroup_stages{
         subgroup_stage_bit(VK_SHADER_STAGE_VERTEX_BIT, Shader::Stage::VertexA) |
         subgroup_stage_bit(VK_SHADER_STAGE_VERTEX_BIT, Shader::Stage::VertexB) |
         subgroup_stage_bit(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
                            Shader::Stage::TessellationControl) |
         subgroup_stage_bit(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
                            Shader::Stage::TessellationEval) |
-        subgroup_stage_bit(driver_id == VK_DRIVER_ID_MESA_TURNIP ? 0 : VK_SHADER_STAGE_GEOMETRY_BIT,
-                           Shader::Stage::Geometry) |
+        subgroup_stage_bit(VK_SHADER_STAGE_GEOMETRY_BIT, Shader::Stage::Geometry) |
         subgroup_stage_bit(VK_SHADER_STAGE_FRAGMENT_BIT, Shader::Stage::Fragment) |
         subgroup_stage_bit(VK_SHADER_STAGE_COMPUTE_BIT, Shader::Stage::Compute)};
+    if (!device.AreSubgroupFeaturesSupported(VK_SUBGROUP_FEATURE_VOTE_BIT |
+                                             VK_SUBGROUP_FEATURE_BALLOT_BIT |
+                                             VK_SUBGROUP_FEATURE_SHUFFLE_BIT)) {
+        supported_subgroup_stages = 0u;
+    }
     profile = Shader::Profile{
         .supported_spirv = device.SupportedSpirvVersion(),
         .unified_descriptor_binding = true,
