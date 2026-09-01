@@ -382,7 +382,7 @@ find_package(Threads REQUIRED)
 # but it also fixes several issues related to MT operations.
 # ...and CMake doesn't include it by default even when we specify
 # that we prefer the pthread flag; why is that? I don't know.
-if (PLATFORM_EMSCRIPTEN)
+if (EMSCRIPTEN)
     add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-pthread>)
     add_link_options($<$<COMPILE_LANGUAGE:C,CXX>:-pthread>)
 endif()
@@ -414,7 +414,7 @@ set(BUILD_TESTING OFF)
 set(ENABLE_TESTING OFF)
 
 # boost
-if (PLATFORM_EMSCRIPTEN)
+if (EMSCRIPTEN)
     set(BOOST_INCLUDE_LIBRARIES algorithm icl pool container heap headers filesystem crc variant)
     set(BOOST_CONTAINER_HEADER_ONLY ON)
 else()

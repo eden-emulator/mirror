@@ -237,7 +237,7 @@ else()
 endif()
 target_link_libraries(common PRIVATE OpenSSL::SSL)
 target_link_libraries(common PUBLIC Boost::filesystem httplib::httplib nlohmann_json::nlohmann_json)
-if (NOT PLATFORM_EMSCRIPTEN)
+if (NOT EMSCRIPTEN)
     # Emscripten is: "bring your own implementation", boost doesn't add upstream support sadly
     target_link_libraries(common PRIVATE Boost::context)
 endif()

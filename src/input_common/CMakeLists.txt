@@ -33,7 +33,7 @@ add_library(input_common STATIC
     input_poller.h
     main.cpp
     main.h)
-if (NOT PLATFORM_EMSCRIPTEN)
+if (NOT EMSCRIPTEN)
     target_sources(input_common PRIVATE
         drivers/udp_client.cpp
         drivers/udp_client.h)

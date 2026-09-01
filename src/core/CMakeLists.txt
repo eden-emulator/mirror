@@ -1162,7 +1162,7 @@ add_library(core STATIC
     tools/freezer.h
     tools/renderdoc.cpp
     tools/renderdoc.h)
-if (NOT PLATFORM_EMSCRIPTEN)
+if (NOT EMSCRIPTEN)
     # incompatible with wasm's async model
     target_sources(core PRIVATE
         debugger/gdbstub.cpp
@@ -1214,7 +1214,7 @@ target_link_libraries(core PUBLIC common PRIVATE audio_core hid_core network vid
 
 if (BOOST_NO_HEADERS)
     target_link_libraries(core PUBLIC Boost::container Boost::heap Boost::crc)
-    if (NOT PLATFORM_EMSCRIPTEN)
+    if (NOT EMSCRIPTEN)
         target_link_libraries(core PUBLIC Boost::asio Boost::process)
     endif()
 else()

@@ -76,7 +76,7 @@ if (NOT MSVC)
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-field-initializers>)
 endif()
 
-if (PLATFORM_EMSCRIPTEN)
+if (EMSCRIPTEN)
     # 10GB is required at max... yikes!
     target_link_options(yuzu-cmd PRIVATE
         -sALLOW_MEMORY_GROWTH=1

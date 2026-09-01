@@ -41,9 +41,8 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
         # If YOUR OS/platform has actual native support:
         # 1. fucking congrats
         # 2. feel free to add it on the condition below
-        if (NOT (PLATFORM_NETBSD OR PLATFORM_SUN OR PLATFORM_FREEBSD
-        OR PLATFORM_OPENBSD OR PLATFORM_DRAGONFLYBSD OR PLATFORM_HAIKU
-        OR PLATFORM_LINUX OR PLATFORM_MSYS OR WIN32 OR ANDROID OR APPLE))
+        if (NOT (NETBSD OR SOLARIS OR FREEBSD OR OPENBSD OR DRAGONFLYBSD OR HAIKU
+        OR LINUX OR MSYS OR WIN32 OR ANDROID OR APPLE))
             set(FFmpeg_SYSTEM_NAME "none")
         endif()
         # TODO: Can we really do better? Auto-detection? Something clever?
@@ -51,9 +50,8 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
             --enable-cross-compile
             --arch="${CMAKE_SYSTEM_PROCESSOR}"
             --target-os="${FFmpeg_SYSTEM_NAME}")
-        if (PLATFORM_EMSCRIPTEN)
-            # funniest trolling from emscripten, such a classic!
-            # maybe I should PR so they use CMAKE_SYSROOT... y'know?
+        # Emscripten doesn't use CMAKE_SYSROOT I'm afraid, but it does well use EMSCRIPTEN_SYSROOT
+        if (EMSCRIPTEN)
             list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --sysroot="${EMSCRIPTEN_SYSROOT}")
         else()
             list(APPEND FFmpeg_CROSS_COMPILE_FLAGS --sysroot="${CMAKE_SYSROOT}")
@@ -277,7 +275,7 @@ else()
 
     # Some SDKs (especially wasm) require us, actually, WANT us to use their "emconfigure"
     # otherwise they will cry a billion tears
-    if (PLATFORM_EMSCRIPTEN)
+    if (EMSCRIPTEN)
         find_program(FFmpeg_CONFIGURE_WRAPPER emconfigure REQUIRED)
     else()
         find_program(FFmpeg_CONFIGURE_WRAPPER bash REQUIRED)
