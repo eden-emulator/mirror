@@ -90,7 +90,7 @@
         "name": "ffmpeg",
         "package": "FFmpeg",
         "repo": "crueter-ci/FFmpeg",
-        "version": "9.0.1-1788120736-bf1b838f2a"
+        "version": "9.0.1-1788303113-bf1b838f2a"
     },
     "fmt": {
         "hash": "f0da82c545b01692e9fd30fdfb613dbb8dd9716983dcd0ff19ac2a8d36f74beb5540ef38072fdecc1e34191b3682a8542ecbf3a61ef287dbba0a2679d4e023f2",
