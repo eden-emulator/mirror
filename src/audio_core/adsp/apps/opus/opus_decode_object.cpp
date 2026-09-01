@@ -11,9 +11,8 @@ extern "C" {
 #include <libavutil/channel_layout.h>
 #include <libavutil/frame.h>
 }
+
 #include "audio_core/adsp/apps/opus/opus_decode_object.h"
-#include "audio_core/adsp/apps/opus/opus_types.h"
-#include "common/assert.h"
 #include "core/hle/service/audio/errors.h"
 
 namespace AudioCore::ADSP::OpusDecoder {

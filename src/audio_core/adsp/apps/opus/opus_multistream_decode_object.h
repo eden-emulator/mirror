@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "audio_core/adsp/apps/opus/opus_types.h"
 #include "common/common_types.h"
 #include "core/hle/result.h"
 

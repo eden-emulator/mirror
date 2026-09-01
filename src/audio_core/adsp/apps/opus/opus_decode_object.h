@@ -7,7 +7,6 @@
 #pragma once
 
 #include "common/common_types.h"
-#include "audio_core/adsp/apps/opus/opus_types.h"
 #include "core/hle/result.h"
 
 struct AVCodec;

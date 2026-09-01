@@ -11,8 +11,8 @@ extern "C" {
 #include <libavutil/channel_layout.h>
 #include <libavutil/frame.h>
 }
+
 #include "audio_core/adsp/apps/opus/opus_multistream_decode_object.h"
-#include "common/assert.h"
 #include "core/hle/result.h"
 #include "core/hle/service/audio/errors.h"
 
