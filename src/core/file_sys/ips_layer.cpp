@@ -257,6 +257,7 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
                 // we dont check for "//", IPS checks for '/' only...
                 if ((!quote && p[0] == '/')
                 || (!quote && p[0] == '#')) {
+                    --p; //eat up the comment char
                     break;
                 } else if (p[0] == '\"' || p[0] == '\'') {
                     quote = (p[0] == quote) ? '\0' : p[0];
