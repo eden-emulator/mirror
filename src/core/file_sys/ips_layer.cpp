@@ -268,11 +268,16 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
                     ++p;
                 }
             }
-            // remove trailing
-            for (; p > sline.cbegin() && std::isspace(*p); --p)
+            // remove trailing; look at the char before, i.e
+            // <aa   >
+            // <aa -.>
+            // <aa-.>
+            // <a-.>
+            // <aa>
+            for (; p + 1 > sline.cbegin() && std::isspace(p[-1]); --p)
                 ;
             // now we have the preprocessed string ;)
-            std::string_view pp_str(sline_start, size_t(std::distance(sline.cbegin(), p)));
+            std::string_view pp_str(sline_start, p);
             if (pp_str.size() > 0 && !parse_line(pp_str)) {
                 break;
             }
