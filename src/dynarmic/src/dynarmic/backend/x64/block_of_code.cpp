@@ -7,7 +7,6 @@
  */
 
 #include "dynarmic/backend/x64/block_of_code.h"
-#include "xbyak/xbyak.h"
 
 #ifdef _WIN32
 #    define WIN32_LEAN_AND_MEAN
@@ -447,12 +446,8 @@ size_t BlockOfCode::GetTotalCodeSize() const {
 
 void* BlockOfCode::AllocateFromCodeSpace(size_t alloc_size) {
     if (size_ + alloc_size >= maxSize_) {
-#ifndef XBYAK_NO_EXCEPTION
         using Xbyak::Error;
         XBYAK_THROW(Xbyak::ERR_CODE_IS_TOO_BIG);
-#else
-        std::abort();
-#endif
     }
 
     EnsureMemoryCommitted(alloc_size);
