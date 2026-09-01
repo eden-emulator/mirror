@@ -379,7 +379,7 @@ RedoxOS currently does not support SDL3. You will have to compile it yourself an
 <summary>managarm</summary>
 
 ```sh
-xbps-install -Syu git cmake patch lz4 opus openssl mesa zstd zlib mlibc vulkan-loader qtbase6 qtdeclarative6 qtmultimedia6 boost
+xbps-install -Syu git cmake patch lz4 opus openssl mesa zstd zlib mlibc vulkan-loader qtbase6 qtdeclarative6 qtmultimedia6 qtcharts6 boost
 ```
 
 [Caveats](./Caveats.md#managarm)
