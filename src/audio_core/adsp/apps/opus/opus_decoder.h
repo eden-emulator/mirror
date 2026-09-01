@@ -6,10 +6,9 @@
 
 #pragma once
 
-#include <memory>
 #include <thread>
 
-#include "ankerl/unordered_dense.h"
+#include "common/container/unordered_map.h"
 #include "audio_core/adsp/apps/opus/opus_decode_object.h"
 #include "audio_core/adsp/apps/opus/opus_multistream_decode_object.h"
 #include "audio_core/adsp/apps/opus/shared_memory.h"
@@ -92,8 +91,8 @@ private:
     /// and the responses are written back by the OpusDecoder.
     SharedMemory* shared_memory{};
 
-    ankerl::unordered_dense::map<u64, OpusDecodeObject> decode_objects;
-    ankerl::unordered_dense::map<u64, OpusMultiStreamDecodeObject> ms_decode_objects;
+    ::Common::unordered_map<u64, OpusDecodeObject> decode_objects;
+    ::Common::unordered_map<u64, OpusMultiStreamDecodeObject> ms_decode_objects;
 };
 
 } // namespace AudioCore::ADSP::OpusDecoder

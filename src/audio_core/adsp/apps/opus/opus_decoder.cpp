@@ -5,13 +5,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
-#include <chrono>
 
 #include "audio_core/adsp/apps/opus/opus_decode_object.h"
 #include "audio_core/adsp/apps/opus/opus_multistream_decode_object.h"
 #include "audio_core/adsp/apps/opus/shared_memory.h"
 #include "audio_core/audio_core.h"
-#include "audio_core/common/common.h"
 #include "common/logging.h"
 #include "common/thread.h"
 #include "core/core.h"
