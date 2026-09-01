@@ -10,9 +10,6 @@
 #include <vector>
 
 #include "audio_core/sink/sink_details.h"
-#ifdef HAVE_OBOE
-#include "audio_core/sink/oboe_sink.h"
-#endif
 #ifdef HAVE_CUBEB
 #include "audio_core/sink/cubeb_sink.h"
 #endif
@@ -43,24 +40,8 @@ struct SinkDetails {
     /// SuitableFn is_suitable; // REVERTED FOR LatencyFn latency ABOVE - DIABLO 3 FIX
 };
 
-// NOTE TO PROBABLY FIX LATER FOR ANDROID - the return value "0u" for the first HAVE_OBOE
-// section below was just copied from the null section so there's a somewhat valid value
-// being returned, since the previous "true" value probably isn't compatible with the
-// previous EA-3833 code. (HAVE_OBOE was introduced in a later release.) Eventually need
-// to change "0u" for something else directly from the oboe_sink.cpp functions.
-
 // sink_details is ordered in terms of desirability, with the best choice at the top.
 constexpr SinkDetails sink_details[] = {
-#ifdef HAVE_OBOE
-    SinkDetails{
-        Settings::AudioEngine::Oboe,
-        [](std::string_view device_id) -> std::unique_ptr<Sink> {
-            return std::make_unique<OboeSink>();
-        },
-        [](bool capture) { return std::vector<std::string>{"Default"}; },
-        []() { return 0u; },
-    },
-#endif
 #ifdef HAVE_CUBEB
     SinkDetails{
         Settings::AudioEngine::Cubeb,

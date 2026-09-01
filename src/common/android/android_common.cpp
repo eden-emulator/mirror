@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// SPDX-FileCopyrightText: 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "android_common.h"
@@ -51,7 +51,7 @@ jstring ToJString(JNIEnv* env, std::u16string_view str) {
 }
 
 double GetJDouble(JNIEnv* env, jobject jdouble) {
-    return env->GetDoubleField(jdouble, GetDoubleValueField());
+    return env->CallDoubleMethod(jdouble, GetDoubleValueMethod());
 }
 
 jobject ToJDouble(JNIEnv* env, double value) {
@@ -59,7 +59,7 @@ jobject ToJDouble(JNIEnv* env, double value) {
 }
 
 s32 GetJInteger(JNIEnv* env, jobject jinteger) {
-    return env->GetIntField(jinteger, GetIntegerValueField());
+    return env->CallIntMethod(jinteger, GetIntegerValueMethod());
 }
 
 jobject ToJInteger(JNIEnv* env, s32 value) {
@@ -67,7 +67,7 @@ jobject ToJInteger(JNIEnv* env, s32 value) {
 }
 
 bool GetJBoolean(JNIEnv* env, jobject jboolean) {
-    return env->GetBooleanField(jboolean, GetBooleanValueField());
+    return env->CallBooleanMethod(jboolean, GetBooleanValueMethod());
 }
 
 jobject ToJBoolean(JNIEnv* env, bool value) {

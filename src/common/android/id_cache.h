@@ -11,6 +11,7 @@
 
 namespace Common::Android {
 
+void Initialize(JavaVM* vm, JNIEnv *env);
 JNIEnv* GetEnvForThread();
 
 /**
@@ -80,15 +81,15 @@ jfieldID GetPatchTitleIdField();
 
 jclass GetDoubleClass();
 jmethodID GetDoubleConstructor();
-jfieldID GetDoubleValueField();
+jmethodID GetDoubleValueMethod();
 
 jclass GetIntegerClass();
 jmethodID GetIntegerConstructor();
-jfieldID GetIntegerValueField();
+jmethodID GetIntegerValueMethod();
 
 jclass GetBooleanClass();
 jmethodID GetBooleanConstructor();
-jfieldID GetBooleanValueField();
+jmethodID GetBooleanValueMethod();
 
 jclass GetPlayerInputClass();
 jmethodID GetPlayerInputConstructor();

@@ -16,6 +16,7 @@ import android.widget.TextView
 import androidx.annotation.Keep
 import androidx.core.net.toUri
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import org.libsdl.app.SDL
 import java.lang.ref.WeakReference
 import org.yuzu.yuzu_emu.activities.EmulationActivity
 import org.yuzu.yuzu_emu.fragments.CoreErrorDialogFragment
@@ -52,6 +53,8 @@ object NativeLibrary {
     init {
         try {
             System.loadLibrary("yuzu-android")
+            SDL.setupJNI()
+            initJvm()
         } catch (ex: UnsatisfiedLinkError) {
             error("[NativeLibrary] $ex")
         }
@@ -367,6 +370,7 @@ object NativeLibrary {
         NetPlayManager.clearChat()
     }
 
+    external fun initJvm()
     external fun initMultiplayer()
 
     @Keep

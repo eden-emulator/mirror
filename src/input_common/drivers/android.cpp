@@ -114,7 +114,7 @@ std::set<s32> Android::GetDeviceAxes(JNIEnv* env, jobject& j_device) const {
     std::set<s32> axes;
     for (int i = 0; i < env->GetArrayLength(j_axes); ++i) {
         jobject axis = env->GetObjectArrayElement(j_axes, i);
-        axes.insert(env->GetIntField(axis, Common::Android::GetIntegerValueField()));
+        axes.insert(env->CallIntMethod(axis, Common::Android::GetIntegerValueMethod()));
     }
     return axes;
 }

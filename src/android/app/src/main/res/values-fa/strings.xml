@@ -800,7 +800,6 @@
     <string name="theme_mode_dark">تاریک</string>
 
     <!-- Audio output engines -->
-    <string name="oboe">oboe</string>
     <string name="cubeb">cubeb</string>
 
     <!-- Anisotropic filtering options -->

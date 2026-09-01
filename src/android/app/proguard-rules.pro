@@ -9,6 +9,9 @@
 -keep class org.ini4j.spi.IniBuilder
 -keep class org.ini4j.spi.IniFormatter
 
+-keep class org.libsdl.app.** { *; }
+-keepclassmembers class org.libsdl.app.** { *; }
+
 # Suppress warnings for R8
 -dontwarn org.bouncycastle.jsse.BCSSLParameters
 -dontwarn org.bouncycastle.jsse.BCSSLSocket

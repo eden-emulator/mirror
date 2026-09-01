@@ -1730,6 +1730,15 @@ jint Java_org_yuzu_yuzu_1emu_NativeLibrary_loadAmiibo(JNIEnv* env, jobject jobj,
     return static_cast<jint>(info);
 }
 
+extern "C" JNIEXPORT void JNICALL
+Java_org_yuzu_yuzu_1emu_NativeLibrary_initJvm(JNIEnv *env, jclass clazz) {
+    JavaVM *vm;
+    if (env->GetJavaVM(&vm) != JNI_OK)
+        return;
+
+    Common::Android::Initialize(vm, env);
+}
+
 JNIEXPORT void JNICALL
 Java_org_yuzu_yuzu_1emu_NativeLibrary_initMultiplayer(
         JNIEnv* env, [[maybe_unused]] jobject obj) {

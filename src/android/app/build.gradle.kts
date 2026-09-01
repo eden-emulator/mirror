@@ -272,6 +272,13 @@ android {
         resValue("string", "app_name_suffixed", "$currentName$suffix")
         resValue("string", "app_name", "Eden$suffix")
     }
+
+    sourceSets {
+        named("main") {
+            java.srcDir("${edenDir}/externals/generated/sdl/java")
+            kotlin.srcDir("${edenDir}/externals/generated/sdl/java")
+        }
+    }
 }
 
 idea {

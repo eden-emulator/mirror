@@ -1240,7 +1240,7 @@
     <string name="theme_mode_dark">Dark</string>
 
     <!-- Audio output engines -->
-    <string name="oboe" translatable="false">oboe</string>
+    <string name="sdl3" translatable="false">SDL3</string>
     <string name="cubeb" translatable="false">cubeb</string>
 
     <!-- Anisotropic filtering options -->
