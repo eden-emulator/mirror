@@ -35,12 +35,7 @@ if (NOT YUZU_USE_BUNDLED_FFMPEG)
     elseif (NOT (CMAKE_HOST_SYSTEM_PROCESSOR MATCHES CMAKE_SYSTEM_PROCESSOR
     AND CMAKE_HOST_SYSTEM_NAME MATCHES CMAKE_SYSTEM_NAME))
         string(TOLOWER "${CMAKE_SYSTEM_NAME}" FFmpeg_SYSTEM_NAME)
-        # All of these platforms are supported by ffmpeg as native build OSes
-        # anything else (like Redox or Managarm or PS4) is NOT natively supported
-        # hence, assume the "unix like" is just "none" for the sake of OUR sanity.
-        # If YOUR OS/platform has actual native support:
-        # 1. congrats
-        # 2. feel free to add it on the condition below
+        # systems FFmpeg natively supports
         if (NOT (NETBSD OR SOLARIS OR FREEBSD
         OR OPENBSD OR DRAGONFLYBSD OR HAIKU
         OR LINUX OR MSYS OR WIN32 OR ANDROID OR APPLE))
@@ -73,8 +68,6 @@ if (OPENORBIS OR MANAGARM OR EMSCRIPTEN)
         --disable-libdrm)
 elseif (UNIX)
     find_package(PkgConfig REQUIRED)
-
-    # X11 is "optional", some distros may opt for a super-fully wayland install...
     find_package(X11)
     if(X11_FOUND)
         # Include X11 if possible, some APIs such as VDPAU heavily depend
@@ -351,11 +344,8 @@ else()
     else()
         set(FFmpeg_MAKE_ARGS "")
     endif()
-    find_program(MAKE gmake)
-    if (NOT MAKE_FOUND)
-        # Arch famously names 'gmake' as 'make'
-        find_program(MAKE make REQUIRED)
-    endif()
+    # Most distros use 'gmake', Arch uses 'make'
+    find_program(MAKE gmake NAMES gmake make REQUIRED)
 
     add_custom_command(
         OUTPUT
