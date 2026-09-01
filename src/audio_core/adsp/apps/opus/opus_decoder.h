@@ -77,22 +77,23 @@ private:
      */
     void Main(std::stop_token stop_token);
 
-    /// Core system
-    Core::System& system;
     /// Mailbox to communicate messages with the host, drives the main thread
     Mailbox mailbox;
+    /// Core system
+    Core::System& system;
+    /// Structure shared with the host, input data set by the host before sending a mailbox message,
+    /// and the responses are written back by the OpusDecoder.
+    SharedMemory* shared_memory{};
     /// Init thread
     std::jthread init_thread{};
     /// Main thread
     std::jthread main_thread{};
-    /// The current state
-    bool running{};
-    /// Structure shared with the host, input data set by the host before sending a mailbox message,
-    /// and the responses are written back by the OpusDecoder.
-    SharedMemory* shared_memory{};
 
     ::Common::unordered_map<u64, OpusDecodeObject> decode_objects;
     ::Common::unordered_map<u64, OpusMultiStreamDecodeObject> ms_decode_objects;
+
+    /// The current state
+    bool running{};
 };
 
 } // namespace AudioCore::ADSP::OpusDecoder
