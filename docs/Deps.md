@@ -259,7 +259,10 @@ brew install molten-vk
 <details>
 <summary>FreeBSD</summary>
 
-As root run: `pkg install devel/cmake sdl3 devel/boost-libs devel/catch2 devel/libfmt devel/nlohmann-json devel/ninja devel/nasm devel/autoconf devel/pkgconf devel/qt6-base devel/qt6-charts devel/simpleini net/enet multimedia/ffnvcodec-headers multimedia/ffmpeg audio/opus archivers/liblz4 lang/gcc12 graphics/glslang graphics/vulkan-utility-libraries graphics/spirv-tools www/cpp-httplib vulkan-headers quazip-qt6`
+As root run:
+```sh
+pkg install devel/cmake devel/sdl3 devel/boost-libs devel/catch2 devel/libfmt devel/nlohmann-json devel/ninja devel/nasm devel/autoconf devel/pkgconf devel/qt6-base x11-toolkits/qt6-charts devel/simpleini net/enet multimedia/ffnvcodec-headers multimedia/ffmpeg audio/opus archivers/liblz4 lang/gcc12 graphics/glslang graphics/vulkan-utility-libraries graphics/spirv-tools www/cpp-httplib graphics/vulkan-utility-libraries graphics/vulkan-headers graphics/spirv-headers quazip-qt6
+```
 
 If using FreeBSD 12 or prior, use `devel/pkg-config` instead.
 
@@ -272,7 +275,7 @@ If using FreeBSD 12 or prior, use `devel/pkg-config` instead.
 For NetBSD +10.1:
 
 ```sh
-pkgin install git cmake boost fmtlib SDL3 catch2 libjwt spirv-headers spirv-tools ffmpeg7 libva nlohmann-json jq libopus qt6 cpp-httplib lz4 vulkan-headers nasm autoconf enet pkg-config libusb1 libcxx frozen
+pkgin install git cmake boost fmtlib SDL3 catch2 libjwt spirv-headers spirv-tools ffmpeg7 libva nlohmann-json jq libopus qt6-qtbase qt6-qtcharts qt6-qtmultimedia qt6-qttools cpp-httplib lz4 vulkan-headers nasm autoconf enet pkg-config libusb1 libcxx frozen
 ```
 
 [Caveats](./Caveats.md#netbsd).

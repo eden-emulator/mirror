@@ -2,9 +2,9 @@
 
 Are you just a casual user? Take a look at our [User Handbook](./user) then!
 
-If you want to register/signup as a contributor, take a gander at the [signup guide](./SIGNUP.md).
+If you want to register/signup as a contributor, take a gander at [CONTRIBUTING.md](../CONTRIBUTING.md).
 
-This contains documentation created by developers. This contains build instructions, guidelines, instructions/layouts for [cool stuff we made](./CPMUtil), and more.
+This contains documentation created by developers, build instructions, guidelines, instructions/layouts for [cool stuff we made](./CPMUtil.md), and more.
 
 - **[General Build Instructions](./Build.md)**
 - **[CMake Options](./Options.md)**
@@ -12,11 +12,10 @@ This contains documentation created by developers. This contains build instructi
 - **[Development Guidelines](./Development.md)**
 - **[Dependencies](./Deps.md)**
 - **[Debug Guidelines](./Debug.md)**
-- **[RenderDoc usage](./RenderDoc.md)**
-- **[CPM - CMake Package Manager](./CPMUtil)**
+  - **[RenderDoc](./Debug.md#renderdoc)**
+- **[CPM - CMake Package Manager](./CPMUtil.md)**
 - **[Platform-Specific Caveats](./Caveats.md)**
 - **[The NVIDIA SM86 (Maxwell) GPU](./NvidiaGpu.md)**
-- **[Cross compilation](./CrossCompile.md)**
 - **[Driver Bugs](./DriverBugs.md)**
 - **[Building Older Commits](./build/OlderCommits.md)**
 - Subsystems:

@@ -2,7 +2,7 @@
 
 Use this guide when you want to manually import save files for use in the Eden emulator.
 
-**Click [Here](https://evilperson1337.notion.site/Importing-Saves-Into-Eden-2b057c2edaf681fe968df8d63821ccae) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/Importing-Saves-Into-Eden-2b057c2edaf681fe968df8d63821ccae) for an illustrated guide.**
 
 ### Pre-Requisites
 - Eden emulator already set up and configured.

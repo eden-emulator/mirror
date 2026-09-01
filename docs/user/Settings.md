@@ -6,11 +6,11 @@ Most of the development adds new settings that enhance performance/compatibility
 
 As such, this guide will NOT mention those kind of settings, we'd rather mention settings which have a long shelf time (i.e won't get removed in future releases) and are likely to be unchanged.
 
-Some of the options are self explainatory, and they do exactly what they say they do (i.e "Pause when not in focus"); such options will be also skipped due to triviality.
+Some of the options are self explanatory, and they do exactly what they say they do (i.e "Pause when not in focus"); such options will be also skipped due to triviality.
 
 ## Foreword
 
-Before touching the settings, please see the game boots with stock options. We try our best to ensure users can boot any game using the default settings. If they don't work, then you may try fiddling with options - but please, first use stock options.
+Before touching the settings, see the game boots with stock options. We try our best to ensure users can boot any game using the default settings. If they don't work, then you may try fiddling with options - but please, first use stock options.
 
 ## General
 
@@ -25,15 +25,15 @@ Before touching the settings, please see the game boots with stock options. We t
 
 ## System
 
-- `System/RNG Seed`: Set to 0 (and uncheck) to disable ASLR systemwide (this makes mods like CTGP to stop working); by default it enables ASLR to replicate console behaviour.
+- `System/RNG Seed`: Set to 0 (and uncheck) to disable ASLR system-wide (this makes mods like CTGP to stop working); by default it enables ASLR to replicate console behavior.
 - `Network/Enable Airplane Mode`: Enable this if a game is crashing before loading AND the logs mention anything related to "web" or "internet" services.
 
 ## CPU
 
 - `Fastmem`, aka. `CPU/Enable Host MMU`: Enables "fastmem"; a detailed description of fastmem can be found [here](../dynarmic/Design.md#fast-memory-fastmem).
-- `CPU/Unsafe FMA`: Enables deliberate innacurate FMA behaviour which may affect how FMA returns any given operation - this may introduce tiny floating point errors which can cascade in sensitive code (i.e FFmpeg).
+- `CPU/Unsafe FMA`: Enables deliberate inaccurate FMA behavior which may affect how FMA returns any given operation - this may introduce tiny floating point errors which can cascade in sensitive code (i.e FFmpeg).
 - `CPU/Faster FRSQRTE and FRECPE`: Introduces accuracy errors on square root and reciprocals in exchange for less checks - this introduces inaccuracies with some cases but it's mostly safe.
-- `CPU/Faster ASIMD Instructions`: Skips rounding mode checks for ARM ASIMD instructions - this means some code dpeending on these rounding modes may misbehave.
+- `CPU/Faster ASIMD Instructions`: Skips rounding mode checks for ARM ASIMD instructions - this means some code depending on these rounding modes may misbehave.
 - `CPU/Disable address space checks`: Before each memory access, the emulator checks the address is in range, if not it faults; this option makes it so the emulator skips the check entirely (which may be expensive for a myriad of reasons). However at the same time this allows the guest program to "break out" of the emulation context by writing to arbitrary addresses.
 - `CPU/Ignore global monitor`: This relies on a quirk present on x86 to avoid the ARM global monitor emulation, this may increase performance in mutex-heavy contexts (i.e games waiting for next frames or such); but also can cause deadlocks and fun to debug issues.
 

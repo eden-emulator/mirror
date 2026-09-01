@@ -15,7 +15,7 @@
   <br>
 </h1>
 
-<h4 align="center"><b>Eden</b> is a free and opensource (FOSS) Switch 1 emulator started by developer Camille LaVey.
+<h4 align="center"><b>Eden</b> is a free and open-source (FOSS) Switch 1 emulator started by developer Camille LaVey.
 <br>
 Written in C++, with builds for Windows, Linux, macOS, Android, FreeBSD and more.
 </h4>

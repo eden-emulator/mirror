@@ -100,7 +100,7 @@ HaikuOS bundles a Mesa library that doesn't support full core OpenGL 4.6 (requir
 ### Fixes for Windows 10 and above having "Device loss"
 
 Run the following batch script *inside* the Eden folder:
-```cmd
+```bat
 @echo off
 pushd "%~dp0"
 if exist "%temp%\FixFullScreen.reg" (

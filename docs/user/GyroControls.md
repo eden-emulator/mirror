@@ -1,7 +1,7 @@
 # Getting Gyro/Motion Controls Working on Steam Deck
 Use this guide when you want to use the Steam Deck's native gyro functionality for motion controls in Eden.
 
-**Click [Here](https://evilperson1337.notion.site/Getting-Gyro-Motion-Controls-Working-on-Steam-Deck-2b057c2edaf681a1aaade35db6e0fd1b) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/Getting-Gyro-Motion-Controls-Working-on-Steam-Deck-2b057c2edaf681a1aaade35db6e0fd1b) for an illustrated guide.**
 
 ## Steamdeck
 

@@ -4,7 +4,7 @@
 
 Use this when you want to import the Eden AppImage into your Steam Library along with artwork using *Steam ROM Manager.*
 
-**Click [Here](https://evilperson1337.notion.site/Importing-Eden-into-Steam-with-Steam-Rom-Manager-2b757c2edaf68054851bc287b6382cb5) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/Importing-Eden-into-Steam-with-Steam-Rom-Manager-2b757c2edaf68054851bc287b6382cb5) for an illustrated guide.**
 
 ---
 
@@ -114,7 +114,7 @@ We will need to create a new parser for the Emulators.  Unlike with the EmuDeck 
         2. **Parser Title**: *Emulators - Emulators*
         3. **Steam Directory**: *${steamdirglobal}*
         4. **User Accounts**: *Global*
-        5. **ROMs Directory**: <path to directory containing eden AppImage>
+        5. **ROMs Directory**: <path to directory containing Eden AppImage>
         6. **Steam Collections**: *Emulation* (OPTIONAL)
     2. Parser Specific Configuration
         1. **Search Glob**: *${title}@(.AppImage|.APPIMAGE|.appimage)*
@@ -167,7 +167,7 @@ Now that we have the parser or shell script created, we can actually add it to S
 
 Use this when you want to import your games inside Eden into Steam to launch with artwork from Steam Game Mode without needing to launch Eden first.
 
-**Click [Here](https://evilperson1337.notion.site/Importing-Games-into-Steam-with-Steam-Rom-Manager-2b757c2edaf680d7a491c92b138f1fcc) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/Importing-Games-into-Steam-with-Steam-Rom-Manager-2b757c2edaf680d7a491c92b138f1fcc) for an illustrated guide.**
 
 ---
 

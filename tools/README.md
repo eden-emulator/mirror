@@ -9,7 +9,7 @@ Tools for Eden and other subprojects. When adding new scripts please use `#!/bin
 ## Binaries
 
 - `maxwell-spirv`: Converts Maxwell shaders (dumped from `.ash` files) into SPIR-V code (emitted into STDOUT).
-- `maxwell-disas`: Dumb raw Maxwell dissasembler.
+- `maxwell-disas`: Dumb raw Maxwell disassembler.
 - `maxwell-ir`: Dump generated IR of Maxwell shaders.
 
 ## Scripts
@@ -32,7 +32,8 @@ Tools for Eden and other subprojects. When adding new scripts please use `#!/bin
 - `fuzzsettings.cpp`: Fuzz settings files.
 
 ## Android
-It's recommended to run these scritps after almost any Android change, as they are relatively fast and important both for APK bloat and CI.
+
+It's recommended to run these scripts after almost any Android change, as they are relatively fast and important both for APK bloat and CI.
 
 - `unused-strings.sh`: Finds unused strings in `strings.xml` files.
 - `stale-translations.sh`: Finds translated strings that aren't present in the source `strings.xml` file.

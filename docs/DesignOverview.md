@@ -1,6 +1,6 @@
 # Design Overview
 
-Modern game consoles require heavy power to be emulated appropriatedly. This is why the emulator uses an approach known as HLE (High-Level-Emulation), in a nuthsell: Instead of accurately emulating every subsystem that forms part of a component, emulate the resulting visible I/O interface instead.
+Modern game consoles require heavy power to be emulated appropriately. This is why the emulator uses an approach known as HLE (High-Level-Emulation), in a nutshell: Instead of accurately emulating every subsystem that forms part of a component, emulate the resulting visible I/O interface instead.
 
 For example, take a disk write, instead of emulating a proper SD card we instead use the C++ standard library for I/O. Additionally we use the abstractions provided by the `fs` service to "lie" to programs about certain SD card properties. Notably this includes making up sizes for the fake SD card, giving "realistic" values or expected outputs for a given card, and so on. And instead of writing to an actual SD card, the emulator simply writes to a file.
 
@@ -20,7 +20,7 @@ Handles everything related to audio, this is where most of the filtering and pro
 
 ## src/common/
 
-The [common](../src/common) folder contains just your basic pollyfills for whatever missing functionality. We heavily encourage new PRs to make use of one of the dependencies, or the standard C++ library. Minimizing the amount of things we reinvent the wheel for is always a good thing.
+The [common](../src/common) folder contains just your basic polyfills for whatever missing functionality. We heavily encourage new PRs to make use of one of the dependencies, or the standard C++ library. Minimizing the amount of things we reinvent the wheel for is always a good thing.
 
 ## src/core/
 
@@ -40,7 +40,7 @@ Dedicated shader recompiler to translate Maxwell assembly code to either SPIR-V,
 
 ## src/video_core/
 
-Most of the things here have their own dedicated section. In short this is basically the entire Tegra NVIDIA Maxwell GPU emulation. Additionally it includes some [extra effects](../src/video_core/host_ahders) to emulate MSAA, D24 copies or as polyfill.
+Most of the things here have their own dedicated section. In short this is basically the entire Tegra NVIDIA Maxwell GPU emulation. Additionally it includes some [extra effects](../src/video_core/host_shaders/opengl_smaa.glsl) to emulate MSAA, D24 copies or as polyfill.
 
 Available backends are: Null, Vulkan, and OpenGL.
 

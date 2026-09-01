@@ -1,11 +1,11 @@
 # Settings
 
 > [!WARNING]
-> This guide is intended for developers ONLY. If you're looking for configuring the emulator itself, please read **[the user handbook](./user/README.md)**.
+> This guide is intended for developers ONLY. If you're looking for configuring the emulator itself, read **[the user handbook](./user/README.md)**.
 
 Settings on the emulator are very important, toggles and such can be used to guard and/or add branches to paths where some games may crash while others won't, and viceversa.
 
-However, this process can be tedious for those unfamiliar; this document serves as a outline/documentation for the settings subsystem.
+However, this process can be tedious for those unfamiliar; this document serves as an outline/documentation for the settings subsystem.
 
 ## Index
 
@@ -80,7 +80,7 @@ INSERT(Settings,
 
 #### Make sure to:
 
-* Keep display naming consistant
+* Keep display naming consistent
 * Put detailed info in the description
 * Use `\n` for line breaks in descriptions
 
@@ -191,7 +191,7 @@ The setting ranges from 0 to 65535 (0x0000 to 0xFFFF), where each bit represents
 
 ### Advantages
 
-The main advantage is to avoid deploying new disposable toggles (those made only for testing stage, and are disposed once new feature gets good to merge). This empowers devs to be free of all frontend burocracy and hassle of new toggles.
+The main advantage is to avoid deploying new disposable toggles (those made only for testing stage, and are disposed once new feature gets good to merge). This empowers devs to be free of all frontend bureaucracy and hassle of new toggles.
 
 Common advantages recap:
 

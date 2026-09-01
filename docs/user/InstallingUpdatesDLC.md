@@ -8,7 +8,7 @@ Use this guide when you want to install Updates or DLC for your games in Eden.
 
 </aside>
 
-**Click [Here](https://evilperson1337.notion.site/Working-with-Updates-DLC-in-Eden-2b057c2edaf681dfb65dfc4dd96980c0) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/Working-with-Updates-DLC-in-Eden-2b057c2edaf681dfb65dfc4dd96980c0) for an illustrated guide.**
 
 ---
 

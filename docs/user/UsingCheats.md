@@ -2,7 +2,7 @@
 
 Use this guide when you want to add cheats into a game to alter gameplay for use with the Eden emulator.
 
-**Click [Here](https://evilperson1337.notion.site/Using-Cheats-with-Eden-2b057c2edaf6818fab66c276e2304bb4) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/Using-Cheats-with-Eden-2b057c2edaf6818fab66c276e2304bb4) for an illustrated guide.**
 
 ## Android
 

@@ -2,7 +2,7 @@
 
 Use this guide whenever you want to modify the Date or Time that Eden reports to games. This can be useful for modifying RNG elements, skipping wait times in games, etc.
 
-**Click [Here](https://evilperson1337.notion.site/Setting-a-Custom-Date-Time-in-Eden-2b357c2edaf680acb8d4e63ccc126564) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/Setting-a-Custom-Date-Time-in-Eden-2b357c2edaf680acb8d4e63ccc126564) for an illustrated guide.**
 
 ---
 
