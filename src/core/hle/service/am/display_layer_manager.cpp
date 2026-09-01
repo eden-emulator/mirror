@@ -129,9 +129,9 @@ Result DisplayLayerManager::IsSystemBufferSharingEnabled() {
     (void)m_display_service->GetContainer()->SetLayerStackMask(m_system_shared_layer_id,
                                                               this->GetLayerStackMask());
     m_manager_display_service->SetLayerBlending(m_blending_enabled, m_system_shared_layer_id);
-    s32 initial_z = Foreground;
+    s32 initial_z = 1;
     if (m_applet_id == AppletId::OverlayDisplay) {
-        initial_z = Overlay;
+        initial_z = -1;
         (void)m_display_service->GetContainer()->SetLayerIsOverlay(m_system_shared_layer_id, true);
     }
     m_manager_display_service->SetLayerZIndex(initial_z, m_system_shared_layer_id);
