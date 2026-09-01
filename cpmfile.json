@@ -1,4 +1,12 @@
 {
+    "": {
+        "ci": true,
+        "hash": "9f50d993c39529e022ad456163de91ac5934e16faf8fc348f305355fc0a643c534f87ded707e11bd03bcbc0a1760bd20852b6533a67ac0558a078385181cb184",
+        "name": "SDL3",
+        "package": "SDL3",
+        "repo": "crueter-ci/SDL3",
+        "version": "3.4.14-1788231389-147a8ee32d"
+    },
     "biscuit": {
         "hash": "1229f345b014f7ca544dedb4edb3311e41ba736f9aa9a67f88b5f26f3c983288c6bb6cdedcfb0b8a02c63088a37e6a0d7ba97d9c2a4d721b213916327cffe28a",
         "min_version": "0.9.1",
@@ -79,11 +87,10 @@
     },
     "ffmpeg-ci": {
         "ci": true,
-        "min_version": "4.1",
         "name": "ffmpeg",
         "package": "FFmpeg",
         "repo": "crueter-ci/FFmpeg",
-        "version": "8.0.1-c7b5f1537d"
+        "version": "9.0.1-1788120736-bf1b838f2a"
     },
     "fmt": {
         "hash": "f0da82c545b01692e9fd30fdfb613dbb8dd9716983dcd0ff19ac2a8d36f74beb5540ef38072fdecc1e34191b3682a8542ecbf3a61ef287dbba0a2679d4e023f2",
@@ -197,11 +204,10 @@
     },
     "openssl-ci": {
         "ci": true,
-        "min_version": "3.0.0",
         "name": "openssl",
         "package": "OpenSSL",
         "repo": "crueter-ci/OpenSSL",
-        "version": "4.0.0-11b7b6ea3b"
+        "version": "4.0.1-1788234794-b64f68a94e"
     },
     "openssl-cmake": {
         "bundled": true,
@@ -255,11 +261,10 @@
     },
     "sdl3-ci": {
         "ci": true,
-        "min_version": "3.2.10",
         "name": "SDL3",
         "package": "SDL3",
         "repo": "crueter-ci/SDL3",
-        "version": "3.4.8-d57c3b685c"
+        "version": "3.4.14-1788231389-147a8ee32d"
     },
     "simpleini": {
         "find_args": "MODULE",
@@ -282,7 +287,7 @@
         "name": "sirit",
         "package": "sirit",
         "repo": "eden-emulator/sirit",
-        "version": "1.0.5"
+        "version": "v1.0.7"
     },
     "spirv-headers": {
         "hash": "d624371dd455c66a300344c89812598ffe11b5eedba555779f789e85c29dc67317741858c60e0744a1e6755cc0d2759b8659f0674f4cc31479c4cb6fc25ed23b",
