@@ -208,7 +208,7 @@ void A64EmitX64::GenTerminalHandlers() {
     calculate_location_descriptor();
     code.mov(eax, dword[code.ABI_JIT_PTR + offsetof(A64JitState, rsb_ptr)]);
     code.sub(eax, 1);
-    code.and_(eax, u32(A64JitState::RSBPtrMask));
+    code.and_(eax, u32(A64JitState::RSB_PTR_MASK));
     code.mov(dword[code.ABI_JIT_PTR + offsetof(A64JitState, rsb_ptr)], eax);
     code.cmp(rbx, qword[code.ABI_JIT_PTR + offsetof(A64JitState, rsb_location_descriptors) + rax * sizeof(u64)]);
     if (conf.HasOptimization(OptimizationFlag::FastDispatch)) {

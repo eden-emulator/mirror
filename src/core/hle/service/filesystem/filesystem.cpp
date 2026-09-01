@@ -227,12 +227,13 @@ Result VfsDirectoryServiceWrapper::RenameDirectory(const std::string& src_path_,
     std::string src_path(Common::FS::SanitizePath(src_path_));
     std::string dest_path(Common::FS::SanitizePath(dest_path_));
     auto src = GetDirectoryRelativeWrapped(backing, src_path);
+    if (src == nullptr)
+        return FileSys::ResultPathNotFound;
+
     if (Common::FS::GetParentPath(src_path) == Common::FS::GetParentPath(dest_path)) {
-        // Use more-optimized vfs implementation rename.
-        if (src == nullptr)
-            return FileSys::ResultPathNotFound;
-        if (!src->Rename(Common::FS::GetFilename(dest_path))) {
-            // TODO(DarkLordZach): Find a better error code for this
+        std::string full_src_path = backing->GetFullPath() + "/" + src_path;
+        std::string full_dest_path = backing->GetFullPath() + "/" + dest_path;
+        if (!Common::FS::RenameDir(full_src_path, full_dest_path)) {
             return ResultUnknown;
         }
         return ResultSuccess;

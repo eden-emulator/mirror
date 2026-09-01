@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <stdexcept>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <tuple>
 #include <vector>
 #include <optional>
@@ -65,7 +65,7 @@ public:
     }
 
 private:
-    ankerl::unordered_dense::map<u64, int> page_table;
+    ::Common::unordered_map<u64, int> page_table;
     std::vector<std::tuple<DAddr, u64, int>> calls;
     size_t update_calls = 0;
 };

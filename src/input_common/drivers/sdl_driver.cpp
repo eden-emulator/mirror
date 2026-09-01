@@ -732,7 +732,7 @@ SDLDriver::~SDLDriver() {
 
 std::vector<Common::ParamPackage> SDLDriver::GetInputDevices() const {
     std::vector<Common::ParamPackage> devices;
-    ankerl::unordered_dense::map<int, std::shared_ptr<SDLJoystick>> joycon_pairs;
+    ::Common::unordered_map<int, std::shared_ptr<SDLJoystick>> joycon_pairs;
     for (const auto& [key, value] : joystick_map) {
         for (const auto& joystick : value) {
             if (!joystick->GetSDLJoystick()) {

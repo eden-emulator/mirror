@@ -15,7 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <vector>
 
 #include "common/assert.h"
@@ -350,7 +350,7 @@ private:
 
     mutable std::recursive_mutex mutex;
 
-    ankerl::unordered_dense::map<u64, std::vector<CachedQuery>> cached_queries;
+    ::Common::unordered_map<u64, std::vector<CachedQuery>> cached_queries;
 
     std::array<CounterStream, VideoCore::NumQueryTypes> streams;
 

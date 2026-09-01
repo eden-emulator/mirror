@@ -24,7 +24,7 @@ All code, AI or not, is held under a **strict standard of excellence**. AI/LLM-g
 
 ## Licensing concerns
 
-This is an area of ongoing litigation, and as such is still very iffy. For the time being, know that allowing AI to ingest the codebase may end up with its copyleft code regurgitated into incompatibly-licensed proprietary or permissive software. For you, this means to **not** feed code into LLMs.
+This is an area of ongoing litigation, and as such, is still very iffy. For the time being, know that allowing AI to ingest the codebase may end up with its copyleft code regurgitated into incompatibly-licensed proprietary or permissive software. For you, this means to **not** feed code into LLMs.
 
 AI models may have also ingested AGPLv3 code, which is license-incompatible with our codebase.
 

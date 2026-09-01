@@ -3111,7 +3111,7 @@ public:
 
     void SetHLEReplacementAttributeType(u32 bank, u32 offset, HLEReplacementAttributeType name);
 
-    ankerl::unordered_dense::map<u64, HLEReplacementAttributeType> replace_table;
+    ::Common::unordered_map<u64, HLEReplacementAttributeType> replace_table;
 
     static_assert(sizeof(Regs) == Regs::NUM_REGS * sizeof(u32), "Maxwell3D Regs has wrong size");
     static_assert(std::is_trivially_copyable_v<Regs>, "Maxwell3D Regs must be trivially copyable");

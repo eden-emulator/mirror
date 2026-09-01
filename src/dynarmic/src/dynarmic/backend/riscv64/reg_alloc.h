@@ -19,7 +19,7 @@
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "dynarmic/mcl/is_instance_of_template.hpp"
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 
 #include "dynarmic/backend/riscv64/stack_layout.h"
 #include "dynarmic/ir/cond.h"

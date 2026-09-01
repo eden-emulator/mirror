@@ -2,7 +2,7 @@
 
 Use this guide for when you want to configure automated backup/syncing of your Eden save files using [*Syncthing*](https://syncthing.net/).
 
-**Click [Here](https://evilperson1337.notion.site/Backing-Up-Syncing-Eden-Game-Saves-2b357c2edaf68000b40cfab2c2c3dc0a) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/Backing-Up-Syncing-Eden-Game-Saves-2b357c2edaf68000b40cfab2c2c3dc0a) for an illustrated guide.**
 
 ### Pre-Requisites
 

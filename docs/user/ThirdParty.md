@@ -1,8 +1,8 @@
 # User Handbook - Third party tools and extras
 
-The Eden emulator by itself lacks some functionality - or otherwise requires external files (such as packaging) to operate correctly in a given OS. Addendum to that some repositories provide nightly or specialised builds of the emulator.
+The Eden emulator by itself lacks some functionality - or otherwise requires external files (such as packaging) to operate correctly in a given OS. Addendum to that some repositories provide nightly or specialized builds of the emulator.
 
-While most of the links mentioned in this guide are relatively "safe"; we urge users to use their due diligence and appropriatedly verify the integrity of all files downloaded and ensure they're not compromised.
+While most of the links mentioned in this guide are relatively "safe"; we urge users to use their due diligence and appropriately verify the integrity of all files downloaded and ensure they're not compromised.
 
 - [NixOS Eden Flake](https://github.com/Grantimatter/eden-flake)
 - [ES-DE Frontend Support](https://github.com/GlazedBelmont/es-de-android-custom-systems)
@@ -18,13 +18,13 @@ The main origin repository is always at <https://git.eden-emu.dev/eden-emu/eden>
 
 Other mirrors obviously exist on the internet, but we can't guarantee their reliability and/or availability.
 
-If you're someone wanting to make a mirror, simply setup forgejo and automatically mirror from the origin repository. Or you could mirror a mirror to save us bandwidth... your choice!
+If you're someone wanting to make a mirror, simply setup Forgejo and automatically mirror from the origin repository. Or you could mirror a mirror to save us bandwidth... your choice!
 
 ## Configuring Obtainium
 
 Very nice handy app, here's a quick rundown how to configure:
 
-1. Copy the URL: <https://git.eden-emu.dev/eden-emu/eden/> (or one of your favourite mirrors)
+1. Copy the URL: <https://git.eden-emu.dev/eden-emu/eden/> (or one of your favorite mirrors)
 2. Open Obtainium and tap `Add App`.
 3. Paste the URL into the `App Source URL` field.
 4. Override Source: Look for the `Override Source` dropdown menu and select `Forgejo (Codeberg)`.

@@ -904,7 +904,7 @@ struct Values {
                                            0,
                                            65535,
                                            "debug_knobs",
-                                           Category::Debugging,
+                                           Category::System,
                                            Specialization::Countable,
                                            true,
                                            true};
@@ -947,7 +947,7 @@ constexpr u32 MAX_FRAME_GEN_MULTIPLIER = 4;
 
 [[nodiscard]] size_t FrameGenMaxGenerations();
 
-bool getDebugKnobAt(u8 i);
+bool GetDebugKnobAt(u8 i);
 
 void UpdateGPUAccuracy();
 bool IsGPULevelHigh();

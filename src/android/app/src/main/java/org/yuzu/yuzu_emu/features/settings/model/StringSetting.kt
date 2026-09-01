@@ -11,6 +11,7 @@ import org.yuzu.yuzu_emu.utils.NativeConfig
 enum class StringSetting(override val key: String) : AbstractStringSetting {
     DRIVER_PATH("driver_path"),
     DEVICE_NAME("device_name"),
+    LOG_FILTER("log_filter"),
     PROGRAM_ARGS("program_args"),
 
     WEB_TOKEN("eden_token"),

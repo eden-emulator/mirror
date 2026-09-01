@@ -11,14 +11,14 @@
 
 namespace Common::Net {
 
-typedef struct {
+struct Asset {
     std::string name;
     std::string url;
     std::string path;
     std::string filename;
-} Asset;
+};
 
-typedef struct Release {
+struct Release {
     std::string title;
     std::string body;
     std::string tag;
@@ -39,7 +39,7 @@ typedef struct Release {
     static std::optional<Release> FromJson(const std::string_view& json, const std::string &host, const std::string& repo);
     static std::vector<Release> ListFromJson(const nlohmann::json &json, const std::string &host, const std::string &repo);
     static std::vector<Release> ListFromJson(const std::string_view &json, const std::string &host, const std::string &repo);
-} Release;
+};
 
 // Make a request via httplib, and return the response body if applicable.
 std::optional<std::string> MakeRequest(const std::string &url, const std::string &path);

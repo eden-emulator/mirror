@@ -268,7 +268,7 @@ ComputePass::ComputePass(const Device& device_, Scheduler& scheduler, Descriptor
         .layout = *layout,
         .basePipelineHandle = {},
         .basePipelineIndex = 0,
-    });
+    }, device.StaticPipelineCache());
 }
 
 ComputePass::~ComputePass() = default;

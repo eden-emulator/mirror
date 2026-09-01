@@ -10,7 +10,7 @@
 #include <mutex>
 #include <optional>
 #include <span>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <utility>
 
 #include "common/assert.h"
@@ -155,12 +155,12 @@ protected:
                 const auto in_range2 = [&](const std::pair<u32, QueryLocation>& pair) {
                     return in_range(pair.first);
                 };
-                std::erase_if(contents, in_range2);
+                erase_if(contents, in_range2);
             }
         }
     }
 
-    using ContentCache = ankerl::unordered_dense::map<u64, ankerl::unordered_dense::map<u32, QueryLocation>>;
+    using ContentCache = ::Common::unordered_map<u64, ::Common::unordered_map<u32, QueryLocation>>;
 
     void InvalidateQuery(QueryLocation location);
     bool IsQueryDirty(QueryLocation location);
@@ -168,7 +168,7 @@ protected:
     void RequestGuestHostSync();
     void UnregisterPending();
 
-    ankerl::unordered_dense::map<u64, ankerl::unordered_dense::map<u32, QueryLocation>> cached_queries;
+    ::Common::unordered_map<u64, ::Common::unordered_map<u32, QueryLocation>> cached_queries;
     std::mutex cache_mutex;
 
     struct QueryCacheBaseImpl;

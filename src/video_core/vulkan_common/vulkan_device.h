@@ -11,7 +11,7 @@
 #include <set>
 #include <span>
 #include <string>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <vector>
 
 #include "common/common_types.h"
@@ -271,6 +271,10 @@ public:
     /// Returns the physical device.
     vk::PhysicalDevice GetPhysical() const {
         return physical;
+    }
+
+    VkPipelineCache StaticPipelineCache() const noexcept {
+        return *static_pipeline_cache;
     }
 
     /// Returns the main graphics queue.
@@ -1127,6 +1131,9 @@ private:
     /// Returns true if the device natively supports blitting depth stencil images.
     bool TestDepthStencilBlits(VkFormat format) const;
 
+    void LoadStaticPipelineCache();
+    void SaveStaticPipelineCache() const;
+
 private:
     VkInstance instance;         ///< Vulkan instance.
     VmaAllocator allocator;      ///< VMA allocator.
@@ -1135,6 +1142,8 @@ private:
     vk::Device logical;          ///< Logical device.
     vk::Queue graphics_queue;    ///< Main graphics queue.
     vk::Queue present_queue;     ///< Main present queue.
+    vk::PipelineCache static_pipeline_cache;
+    bool owns_static_pipeline_cache{};
     u32 instance_version{};      ///< Vulkan instance version.
     u32 graphics_family{};       ///< Main graphics queue family index.
     u32 present_family{};        ///< Main present queue family index.
@@ -1232,7 +1241,7 @@ private:
     std::vector<size_t> valid_heap_memory;                   ///< Heaps used.
 
     /// Format properties dictionary.
-    ankerl::unordered_dense::map<VkFormat, VkFormatProperties> format_properties;
+    ::Common::unordered_map<VkFormat, VkFormatProperties> format_properties;
 
     /// Nsight Aftermath GPU crash tracker
     std::unique_ptr<NsightAftermathTracker> nsight_aftermath_tracker;

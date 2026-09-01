@@ -126,9 +126,9 @@ void LogSettings() {
                     setting->UsingGlobal() ? '-' : 'C', TranslateCategory(category),
                     setting->GetLabel());
                 if (is_default)
-                    settings_list.push_back(fmt::format("{}: {}\n", name, setting->Canonicalize()));
+                    settings_list.push_back(fmt::format("{}: {}", name, setting->Canonicalize()));
                 else
-                    settings_list.push_front(fmt::format("{}: {}\n", name, setting->Canonicalize()));
+                    settings_list.push_front(fmt::format("{}: {}", name, setting->Canonicalize()));
             }
         }
     }
@@ -146,7 +146,7 @@ void LogSettings() {
 #undef LOG_PATH
 }
 
-bool getDebugKnobAt(u8 i) {
+bool GetDebugKnobAt(u8 i) {
     return (values.debug_knobs.GetValue() & (1 << (i & 0xF))) != 0;
 }
 

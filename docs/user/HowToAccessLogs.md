@@ -2,7 +2,7 @@
 
 Use this when you need to review the logs to determine an issue or provide them to a member of the Eden team.
 
-**Click [Here](https://evilperson1337.notion.site/How-to-Access-Logs-2b057c2edaf68105a281fe1688a332d4) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/How-to-Access-Logs-2b057c2edaf68105a281fe1688a332d4) for an illustrated guide.**
 
 ---
 

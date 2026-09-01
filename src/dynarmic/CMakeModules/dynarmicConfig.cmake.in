@@ -8,7 +8,6 @@ if (NOT @BUILD_SHARED_LIBS@)
     find_dependency(Boost 1.57)
     find_dependency(fmt 9)
     find_dependency(mcl 0.1.12 EXACT)
-    find_dependency(unordered_dense)
 
     if ("arm64" IN_LIST ARCHITECTURE)
         find_dependency(oaknut 2.0.1)

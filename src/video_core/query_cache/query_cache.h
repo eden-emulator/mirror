@@ -10,7 +10,7 @@
 #include <deque>
 #include <memory>
 #include <mutex>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <utility>
 
 #include "common/assert.h"

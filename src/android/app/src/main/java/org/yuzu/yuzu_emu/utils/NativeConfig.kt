@@ -81,6 +81,12 @@ object NativeConfig {
     external fun setShort(key: String, value: Short)
 
     @Synchronized
+    external fun getUnsignedShort(key: String, needsGlobal: Boolean): Int
+
+    @Synchronized
+    external fun setUnsignedShort(key: String, value: Int)
+
+    @Synchronized
     external fun getInt(key: String, needsGlobal: Boolean): Int
 
     @Synchronized

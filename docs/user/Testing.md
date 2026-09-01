@@ -41,7 +41,7 @@ For regressions/bugs from PRs or commits:
         - [ ] Bisected PR? (if it has commits)
         - [ ] Found bisected commit?
 
-If an issue sporadically appears, try to do multiple runs, try if possible, to count the number of times it has failed and the number of times it has "worked just fine"; say it worked 3 times but failed 1. then there is a 1/4th chance every run that the issue is replicated - so every bisect step would require 4 runs to ensure there is atleast a chance of triggering the bug.
+If an issue sporadically appears, try to do multiple runs, try if possible, to count the number of times it has failed and the number of times it has "worked just fine"; say it worked 3 times but failed 1. then there is a 1/4th chance every run that the issue is replicated - so every bisect step would require 4 runs to ensure there is at least a chance of triggering the bug.
 
 ## What to do when something seems off
 
@@ -96,4 +96,4 @@ The faulty commit then, is 6th of Jan. This is called bisection https://git-scm.
 - PR's marked with **WIP** do NOT need to be tested unless explicitly asked (check the git in case)
 - Sometimes license checks may fail, hover over the build icon to see if builds did succeed, as the CI will push builds even if license checks fail.
 - All open PRs can be viewed [here](https://git.eden-emu.dev/eden-emu/eden/pulls/).
-- If site is down use one of the [mirrors](./user/ThirdParty.md#mirrors).
+- If site is down use one of the [mirrors](./ThirdParty.md#mirrors).

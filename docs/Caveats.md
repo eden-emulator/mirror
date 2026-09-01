@@ -12,10 +12,6 @@
 - [NetBSD](#netbsd)
 - [MSYS2](#msys2)
 - [RedoxOS](#redoxos)
-- [Windows](#windows)
-  - [Windows 7, Windows 8 and Windows 8.1](#windows-7-windows-8-and-windows-81)
-  - [Windows Vista and below](#windows-vista-and-below)
-  - [Windows on ARM](#windows-on-arm)
 <!-- /TOC -->
 
 ## Arch Linux
@@ -71,7 +67,7 @@ export LIBGL_ALWAYS_SOFTWARE=1
 
 Install `developer/gcc14` on OmniOS using pkgsrc.
 
-Since so many dependencies are missing on `OmniOS`, you may wish to use `-DCPMUTIL_FORCE_BUNDLED=ON`
+Since so many dependencies are missing on `OmniOS`, you may wish to use `-DCPMUTIL_FORCE_BUNDLED=ON` and `-DYUZU_USE_BUNDLED_OPENSSL=OFF`.
 
 For OmniOS you are required to build glslang yourself:
 ```sh
@@ -86,11 +82,13 @@ cmake --install build
 
 It may be tempting to specify `-t glslang`, but this will cause installation to fail. So don't.
 
-Using `--parallel` on CMake incorrectly passes `dmake ... -jn` instead of `dmake ... -j n`, this is a bug with OmniOS's CMake, and as such it's recommended to not use this option until it's fixed.
+Using `--parallel` on CMake incorrectly passes `dmake ... -jn` instead of `dmake ... -j n`, this is a bug with OmniOS's CMake, it's recommended to not use this option until it's fixed.
 
 You may also need to install `gmake` in order to properly build FFmpeg, this is provided by the `build-essential` package.
 
-If it wasn't obvious already, you require a X11 server to properly run the emulator within OmniOS, [this guide](https://web.archive.org/web/20260424200928/https://geekblood.wordpress.com/2017/10/26/installing-x11-and-a-desktop-environment-on-omnios/) is a great starting point for that, the links to pkgsrc are outdated so follow [this exemplar](https://pkgsrc.smartos.org/install-on-illumos/) as well:
+If it wasn't obvious already, you require a X11 server to properly run the emulator within OmniOS, [this guide](https://web.archive.org/web/20260424200928/https://geekblood.wordpress.com/2017/10/26/installing-x11-and-a-desktop-environment-on-omnios/) is a great starting point for that, the links to pkgsrc are outdated so follow [this exemplar](https://pkgsrc.smartos.org/install-on-illumos/) as well.
+
+For Solaris based OSes, `${CMAKE_SYSTEM_NAME}` isn't properly set on CMake (it's set to i686 on AMD64), you may find issues when building OpenSSL from `openssl-cmake`.
 
 ## HaikuOS
 
@@ -244,19 +242,3 @@ find ./*/ -name "*.dll" | while read -r dll; do deps "$dll"; done
 The package install may randomly hang at times, in which case it has to be restarted. ALWAYS do a `sudo pkg update` or the chances of it hanging will be close to 90%. If "multiple" installs fail at once, try installing 1 by 1 the packages.
 
 When CMake invokes certain file syscalls - it may sometimes cause crashes or corruptions on the (kernel?) address space - so reboot the system if there is a "hang" in CMake.
-
-## Windows
-
-### Windows 7, Windows 8 and Windows 8.1
-
-DirectX 12 is not available - simply copy and paste a random DLL and name it `d3d12.dll`.
-
-Install [Qt6 compatibility libraries](github.com/ANightly/qt6windows7) specifically Qt 6.9.5.
-
-### Windows Vista and below
-
-No support for Windows Vista (or below) is present at the moment. Check back later.
-
-### Windows on ARM
-
-If you're using Snapdragon X or 8CX, use the [the Vulkan translation layer](https://apps.microsoft.com/detail/9nqpsl29bfff?hl=en-us&gl=USE) only if the stock drivers do not work. And of course always keep your system up-to-date.

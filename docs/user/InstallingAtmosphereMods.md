@@ -2,7 +2,7 @@
 
 Use this guide for when you want to install an Atmosphere-based mod for use in Eden.
 
-**Click [Here](https://evilperson1337.notion.site/Installing-Atmosphere-Mods-2b057c2edaf681fe8d39cbfc2d0cc799) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/Installing-Atmosphere-Mods-2b057c2edaf681fe8d39cbfc2d0cc799) for an illustrated guide.**
 
 ---
 

@@ -11,7 +11,7 @@
 #include <list>
 #include <memory>
 #include <string>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <vector>
 
 #include "common/polyfill_thread.h"

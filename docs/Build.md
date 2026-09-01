@@ -5,6 +5,15 @@
 
 This is a full-fledged guide to build Eden on all supported platforms.
 
+If you already have a development environment set up:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
+cmake --build build
+```
+
+On Linux, macOS, and MinGW/MSYS2, make sure to read the [dependencies guide](Deps.md). On Android, read its [dedicated page](build/Android.md).
+
 ## Dependencies
 
 First, you must [install some dependencies](Deps.md).
@@ -125,13 +134,13 @@ cmake -S . -B build -G "<GENERATOR>" -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COM
 
 <img src="https://user-images.githubusercontent.com/42481638/216899164-6cee8482-3d59-428f-b1bc-e6dc793c9b20.png" width="500">
 
-- Click OK; now Clion will build a directory and index your code to allow for IntelliSense. Please be patient.
-- Once this process has been completed (No loading bar bottom right), you can now build eden
-- In the top right, click on the drop-down menu, select all configurations, then select eden
+- Click OK; now CLion will build a directory and index your code to allow for IntelliSense. Please be patient.
+- Once this process has been completed (No loading bar bottom right), you can now build Eden
+- In the top right, click on the drop-down menu, select all configurations, then select Eden
 
 <img src="https://user-images.githubusercontent.com/42481638/216899226-975048e9-bc6d-4ec1-bc2d-bd8a1e15ed04.png" height="500" >
 
-- Now run by clicking the play button or pressing Shift+F10, and eden will auto-launch once built.
+- Now run by clicking the play button or pressing Shift+F10, and Eden will auto-launch once built.
 
 <img src="https://user-images.githubusercontent.com/42481638/216899275-d514ec6a-e563-470e-81e2-3e04f0429b68.png" width="500">
 </details>
@@ -153,7 +162,7 @@ If your initial configure failed:
 - *Carefully* re-read the [dependencies guide](Deps.md)
 - Clear the CPM cache (`.cache/cpm`) and CMake cache (`<build directory>/CMakeCache.txt`)
 - Evaluate the error and find any related settings
-- See the [CPM docs](CPM.md) to see if you may need to forcefully bundle any packages
+- See the [CPM docs](CPMUtil.md) to see if you may need to forcefully bundle any packages
 
 Otherwise, feel free to ask for help in Stoat or Discord.
 

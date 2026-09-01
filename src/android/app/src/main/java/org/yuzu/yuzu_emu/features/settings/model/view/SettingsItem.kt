@@ -20,6 +20,7 @@ import org.yuzu.yuzu_emu.features.settings.model.IntSetting
 import org.yuzu.yuzu_emu.features.settings.model.LongSetting
 import org.yuzu.yuzu_emu.features.settings.model.ShortSetting
 import org.yuzu.yuzu_emu.features.settings.model.StringSetting
+import org.yuzu.yuzu_emu.features.settings.model.UShortSetting
 import org.yuzu.yuzu_emu.network.NetDataValidators
 import org.yuzu.yuzu_emu.utils.LosslessScalingHelper
 import org.yuzu.yuzu_emu.utils.NativeConfig
@@ -1033,8 +1034,15 @@ abstract class SettingsItem(
                 )
             )
             put(
+                StringInputSetting(
+                    StringSetting.LOG_FILTER,
+                    titleId = R.string.log_filter,
+                    descriptionId = R.string.log_filter_description
+                )
+            )
+            put(
                 SpinBoxSetting(
-                    ShortSetting.DEBUG_KNOBS,
+                    UShortSetting.DEBUG_KNOBS,
                     titleId = R.string.debug_knobs,
                     descriptionId = R.string.debug_knobs_description,
                     valueHint = R.string.debug_knobs_hint,

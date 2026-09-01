@@ -1,4 +1,12 @@
 {
+    "": {
+        "ci": true,
+        "hash": "9f50d993c39529e022ad456163de91ac5934e16faf8fc348f305355fc0a643c534f87ded707e11bd03bcbc0a1760bd20852b6533a67ac0558a078385181cb184",
+        "name": "SDL3",
+        "package": "SDL3",
+        "repo": "crueter-ci/SDL3",
+        "version": "3.4.14-1788231389-147a8ee32d"
+    },
     "biscuit": {
         "hash": "1229f345b014f7ca544dedb4edb3311e41ba736f9aa9a67f88b5f26f3c983288c6bb6cdedcfb0b8a02c63088a37e6a0d7ba97d9c2a4d721b213916327cffe28a",
         "min_version": "0.9.1",
@@ -79,11 +87,10 @@
     },
     "ffmpeg-ci": {
         "ci": true,
-        "min_version": "4.1",
         "name": "ffmpeg",
         "package": "FFmpeg",
         "repo": "crueter-ci/FFmpeg",
-        "version": "8.0.1-c7b5f1537d"
+        "version": "9.0.1-1788120736-bf1b838f2a"
     },
     "fmt": {
         "hash": "f0da82c545b01692e9fd30fdfb613dbb8dd9716983dcd0ff19ac2a8d36f74beb5540ef38072fdecc1e34191b3682a8542ecbf3a61ef287dbba0a2679d4e023f2",
@@ -197,11 +204,10 @@
     },
     "openssl-ci": {
         "ci": true,
-        "min_version": "3.0.0",
         "name": "openssl",
         "package": "OpenSSL",
         "repo": "crueter-ci/OpenSSL",
-        "version": "4.0.0-11b7b6ea3b"
+        "version": "4.0.1-1788234794-b64f68a94e"
     },
     "openssl-cmake": {
         "bundled": true,
@@ -255,11 +261,10 @@
     },
     "sdl3-ci": {
         "ci": true,
-        "min_version": "3.2.10",
         "name": "SDL3",
         "package": "SDL3",
         "repo": "crueter-ci/SDL3",
-        "version": "3.4.8-d57c3b685c"
+        "version": "3.4.14-1788231389-147a8ee32d"
     },
     "simpleini": {
         "find_args": "MODULE",
@@ -282,7 +287,7 @@
         "name": "sirit",
         "package": "sirit",
         "repo": "eden-emulator/sirit",
-        "version": "1.0.5"
+        "version": "v1.0.7"
     },
     "spirv-headers": {
         "hash": "d624371dd455c66a300344c89812598ffe11b5eedba555779f789e85c29dc67317741858c60e0744a1e6755cc0d2759b8659f0674f4cc31479c4cb6fc25ed23b",
@@ -300,17 +305,6 @@
         "package": "nx_tzdb",
         "repo": "eden-emu/tzdb_to_nx",
         "version": "230326"
-    },
-    "unordered-dense": {
-        "bundled": true,
-        "find_args": "CONFIG",
-        "hash": "d2106f6640f6bfb81755e4b8bfb64982e46ec4a507cacdb38f940123212ccf35a20b43c70c6f01d7bfb8c246d1a16f7845d8052971949cea9def1475e3fa02c8",
-        "package": "unordered_dense",
-        "patches": [
-            "0001-avoid-memset-when-clearing-an-empty-table.patch"
-        ],
-        "repo": "martinus/unordered_dense",
-        "version": "7b55cab841"
     },
     "vulkan-headers": {
         "hash": "d2846ea228415772645eea4b52a9efd33e6a563043dd3de059e798be6391a8f0ca089f455ae420ff22574939ed0f48ed7c6ff3d5a9987d5231dbf3b3f89b484b",
@@ -340,10 +334,10 @@
         "version": "vulkan-sdk-%NUMERIC_VERSION%"
     },
     "xbyak": {
-        "hash": "b6475276b2faaeb315734ea8f4f8bd87ededcee768961b39679bee547e7f3e98884d8b7851e176d861dab30a80a76e6ea302f8c111483607dde969b4797ea95a",
+        "hash": "e0aa0a603dd3ac1a39d82213df1e73c042831aec2d6b2fe382c899651eaae4ed7e8aeb6be9c41ea0097087c9d091961ab18f313cd6a9e10d621715ffd49bfe36",
         "package": "xbyak",
         "repo": "herumi/xbyak",
-        "version": "v7.35.2"
+        "version": "v7.40.1"
     },
     "zlib": {
         "hash": "16fea4df307a68cf0035858abe2fd550250618a97590e202037acd18a666f57afc10f8836cbbd472d54a0e76539d0e558cb26f059d53de52ff90634bbf4f47d4",

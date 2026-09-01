@@ -12,7 +12,8 @@
 #include <map>
 #include <optional>
 #include <tuple>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
+#include "common/container/unordered_set.h"
 #include <boost/container/static_vector.hpp>
 
 #include "dynarmic/backend/block_range_information.h"
@@ -122,11 +123,11 @@ public:
     RegAlloc reg_alloc; //reusable reg alloc
     BlockRangeInformation<u64> block_ranges;
     std::array<FastDispatchEntry, fast_dispatch_table_size> fast_dispatch_table;
-    ankerl::unordered_dense::map<u64, FastmemPatchInfo> fastmem_patch_info;
-    ankerl::unordered_dense::map<std::tuple<bool, size_t, int, int>, void (*)()> read_fallbacks;
-    ankerl::unordered_dense::map<std::tuple<bool, size_t, int, int>, void (*)()> write_fallbacks;
-    ankerl::unordered_dense::map<std::tuple<bool, size_t, int, int>, void (*)()> exclusive_write_fallbacks;
-    ankerl::unordered_dense::set<DoNotFastmemMarker> do_not_fastmem;
+    ::Common::unordered_map<u64, FastmemPatchInfo> fastmem_patch_info;
+    ::Common::unordered_map<std::tuple<bool, size_t, int, int>, void (*)()> read_fallbacks;
+    ::Common::unordered_map<std::tuple<bool, size_t, int, int>, void (*)()> write_fallbacks;
+    ::Common::unordered_map<std::tuple<bool, size_t, int, int>, void (*)()> exclusive_write_fallbacks;
+    ::Common::unordered_set<DoNotFastmemMarker> do_not_fastmem;
     boost::container::stable_vector<Xbyak::Label> shared_labels;
     const void* terminal_handler_pop_rsb_hint = nullptr;
     const void* terminal_handler_fast_dispatch_hint = nullptr;

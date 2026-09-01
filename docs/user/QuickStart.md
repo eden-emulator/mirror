@@ -2,7 +2,7 @@
 
 Use this guide to get starting using the Eden emulator.
 
-**Click [Here](https://evilperson1337.notion.site/Eden-Quick-Start-2b057c2edaf6817b9859d8bcdb474017) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/Eden-Quick-Start-2b057c2edaf6817b9859d8bcdb474017) for an illustrated guide.**
 
 ## Windows
 
@@ -80,7 +80,7 @@ Use this guide to get starting using the Eden emulator.
 
 ## macOS
 
-Current macOS support is still experimental and very reliant on MoltenVK developments, plans have shifted to properly provide support for KosmicKrisp and similar new GPU endeavours, but macOS users still are bound to MoltenVK itself.
+Current macOS support is still experimental and very reliant on MoltenVK developments, plans have shifted to properly provide support for KosmicKrisp and similar new GPU endeavors, but macOS users still are bound to MoltenVK itself.
 
 Users of macOS may wish to use [Asahi Linux](https://wiki.gentoo.org/wiki/Project:Asahi/Guide) for the rising KosmicKrisp support.
 
@@ -90,7 +90,7 @@ As of writing, neither macOS nor Asahi has support for NCE; additionally Asahi h
 
 Use this guide when you need to allow Eden to run on a Mac system, but are being blocked by Apple Security policy.
 
-**Click [Here](https://evilperson1337.notion.site/Allowing-Eden-to-Run-on-MacOS-2b057c2edaf681fea63dc81027efeffd) for a version of this guide with images & visual elements.**
+**[See here](https://evilperson1337.notion.site/Allowing-Eden-to-Run-on-MacOS-2b057c2edaf681fea63dc81027efeffd) for an illustrated guide.**
 
 ---
 

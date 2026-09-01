@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /* This file is part of the dynarmic project.
  * Copyright (c) 2016 MerryMage
  * SPDX-License-Identifier: 0BSD
@@ -15,7 +18,7 @@ struct JitStateInfo {
             : offsetof_guest_MXCSR(offsetof(JitStateType, guest_MXCSR))
             , offsetof_asimd_MXCSR(offsetof(JitStateType, asimd_MXCSR))
             , offsetof_rsb_ptr(offsetof(JitStateType, rsb_ptr))
-            , rsb_ptr_mask(JitStateType::RSBPtrMask)
+            , rsb_ptr_mask(JitStateType::RSB_PTR_MASK)
             , offsetof_rsb_location_descriptors(offsetof(JitStateType, rsb_location_descriptors))
             , offsetof_rsb_codeptrs(offsetof(JitStateType, rsb_codeptrs))
             , offsetof_cpsr_nzcv(offsetof(JitStateType, cpsr_nzcv))

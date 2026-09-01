@@ -61,73 +61,6 @@ namespace {
 constexpr size_t CONSTANT_POOL_SIZE = 2 * 1024 * 1024;
 constexpr size_t PRELUDE_COMMIT_SIZE = 16 * 1024 * 1024;
 
-class CustomXbyakAllocator : public Xbyak::Allocator {
-public:
-#ifdef _WIN32
-    uint8_t* alloc(size_t size) override {
-        void* p = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_READWRITE);
-        if (p == nullptr) {
-            using Xbyak::Error;
-            XBYAK_THROW(Xbyak::ERR_CANT_ALLOC);
-        }
-        return static_cast<uint8_t*>(p);
-    }
-
-    void free(uint8_t* p) override {
-        VirtualFree(static_cast<void*>(p), 0, MEM_RELEASE);
-    }
-
-    bool useProtect() const override { return false; }
-#else
-    static constexpr size_t DYNARMIC_PAGE_SIZE = 4096;
-
-    // Can't subclass Xbyak::MmapAllocator because it is not a pure interface
-    // and doesn't expose its construtor
-    uint8_t* alloc(size_t size) override {
-        // Waste a page to store the size
-        size += DYNARMIC_PAGE_SIZE;
-
-        int mode = MAP_PRIVATE;
-#if defined(MAP_ANONYMOUS)
-        mode |= MAP_ANONYMOUS;
-#elif defined(MAP_ANON)
-        mode |= MAP_ANON;
-#else
-#   error "not supported"
-#endif
-#ifdef MAP_JIT
-        mode |= MAP_JIT;
-#endif
-        int prot = PROT_READ | PROT_WRITE;
-#ifdef PROT_MPROTECT
-        // https://man.netbsd.org/mprotect.2 specifies that an mprotect() that is LESS
-        // restrictive than the original mapping MUST fail
-        prot |= PROT_MPROTECT(PROT_READ) | PROT_MPROTECT(PROT_WRITE) | PROT_MPROTECT(PROT_EXEC);
-#endif
-        void* p = mmap(nullptr, size, prot, mode, -1, 0);
-        if (p == MAP_FAILED) {
-            using Xbyak::Error;
-            XBYAK_THROW(Xbyak::ERR_CANT_ALLOC);
-        }
-        std::memcpy(p, &size, sizeof(size_t));
-        return static_cast<uint8_t*>(p) + DYNARMIC_PAGE_SIZE;
-    }
-
-    void free(uint8_t* p) override {
-        size_t size;
-        std::memcpy(&size, p - DYNARMIC_PAGE_SIZE, sizeof(size_t));
-        munmap(p - DYNARMIC_PAGE_SIZE, size);
-    }
-
-#    ifdef DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT
-    bool useProtect() const override { return false; }
-#    endif
-#endif
-};
-
-// This is threadsafe as Xbyak::Allocator does not contain any state; it is a pure interface.
-CustomXbyakAllocator s_allocator;
-
 #ifdef DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT
 void ProtectMemory(const void* base, size_t size, bool is_executable) {
 #    ifdef _WIN32
@@ -143,60 +76,34 @@ void ProtectMemory(const void* base, size_t size, bool is_executable) {
 }
 #endif
 
-HostFeature GetHostFeatures() {
-    HostFeature features = {};
-
+static const HostFeature features = []() {
+    HostFeature f{};
 #ifdef DYNARMIC_ENABLE_CPU_FEATURE_DETECTION
     using Cpu = Xbyak::util::Cpu;
-    Xbyak::util::Cpu cpu_info;
-
-    if (cpu_info.has(Cpu::tSSSE3))
-        features |= HostFeature::SSSE3;
-    if (cpu_info.has(Cpu::tSSE41))
-        features |= HostFeature::SSE41;
-    if (cpu_info.has(Cpu::tSSE42))
-        features |= HostFeature::SSE42;
-    if (cpu_info.has(Cpu::tAVX))
-        features |= HostFeature::AVX;
-    if (cpu_info.has(Cpu::tAVX2))
-        features |= HostFeature::AVX2;
-    if (cpu_info.has(Cpu::tAVX512F))
-        features |= HostFeature::AVX512F;
-    if (cpu_info.has(Cpu::tAVX512CD))
-        features |= HostFeature::AVX512CD;
-    if (cpu_info.has(Cpu::tAVX512VL))
-        features |= HostFeature::AVX512VL;
-    if (cpu_info.has(Cpu::tAVX512BW))
-        features |= HostFeature::AVX512BW;
-    if (cpu_info.has(Cpu::tAVX512DQ))
-        features |= HostFeature::AVX512DQ;
-    if (cpu_info.has(Cpu::tAVX512_BITALG))
-        features |= HostFeature::AVX512BITALG;
-    if (cpu_info.has(Cpu::tAVX512VBMI))
-        features |= HostFeature::AVX512VBMI;
-    if (cpu_info.has(Cpu::tPCLMULQDQ))
-        features |= HostFeature::PCLMULQDQ;
-    if (cpu_info.has(Cpu::tF16C))
-        features |= HostFeature::F16C;
-    if (cpu_info.has(Cpu::tFMA))
-        features |= HostFeature::FMA;
-    if (cpu_info.has(Cpu::tAESNI))
-        features |= HostFeature::AES;
-    if (cpu_info.has(Cpu::tSHA))
-        features |= HostFeature::SHA;
-    if (cpu_info.has(Cpu::tPOPCNT))
-        features |= HostFeature::POPCNT;
-    if (cpu_info.has(Cpu::tBMI1))
-        features |= HostFeature::BMI1;
-    if (cpu_info.has(Cpu::tBMI2))
-        features |= HostFeature::BMI2;
-    if (cpu_info.has(Cpu::tLZCNT))
-        features |= HostFeature::LZCNT;
-    if (cpu_info.has(Cpu::tGFNI))
-        features |= HostFeature::GFNI;
-    if (cpu_info.has(Cpu::tWAITPKG))
-        features |= HostFeature::WAITPKG;
-
+    Xbyak::util::Cpu cpu_info{};
+    if (cpu_info.has(Cpu::tSSSE3)) f |= HostFeature::SSSE3;
+    if (cpu_info.has(Cpu::tSSE41)) f |= HostFeature::SSE41;
+    if (cpu_info.has(Cpu::tSSE42)) f |= HostFeature::SSE42;
+    if (cpu_info.has(Cpu::tAVX)) f |= HostFeature::AVX;
+    if (cpu_info.has(Cpu::tAVX2)) f |= HostFeature::AVX2;
+    if (cpu_info.has(Cpu::tAVX512F)) f |= HostFeature::AVX512F;
+    if (cpu_info.has(Cpu::tAVX512CD)) f |= HostFeature::AVX512CD;
+    if (cpu_info.has(Cpu::tAVX512VL)) f |= HostFeature::AVX512VL;
+    if (cpu_info.has(Cpu::tAVX512BW)) f |= HostFeature::AVX512BW;
+    if (cpu_info.has(Cpu::tAVX512DQ)) f |= HostFeature::AVX512DQ;
+    if (cpu_info.has(Cpu::tAVX512_BITALG)) f |= HostFeature::AVX512BITALG;
+    if (cpu_info.has(Cpu::tAVX512VBMI)) f |= HostFeature::AVX512VBMI;
+    if (cpu_info.has(Cpu::tPCLMULQDQ)) f |= HostFeature::PCLMULQDQ;
+    if (cpu_info.has(Cpu::tF16C)) f |= HostFeature::F16C;
+    if (cpu_info.has(Cpu::tFMA)) f |= HostFeature::FMA;
+    if (cpu_info.has(Cpu::tAESNI)) f |= HostFeature::AES;
+    if (cpu_info.has(Cpu::tSHA)) f |= HostFeature::SHA;
+    if (cpu_info.has(Cpu::tPOPCNT)) f |= HostFeature::POPCNT;
+    if (cpu_info.has(Cpu::tBMI1)) f |= HostFeature::BMI1;
+    if (cpu_info.has(Cpu::tBMI2)) f |= HostFeature::BMI2;
+    if (cpu_info.has(Cpu::tLZCNT)) f |= HostFeature::LZCNT;
+    if (cpu_info.has(Cpu::tGFNI)) f |= HostFeature::GFNI;
+    if (cpu_info.has(Cpu::tWAITPKG)) f |= HostFeature::WAITPKG;
     if (cpu_info.has(Cpu::tBMI2)) {
         // BMI2 instructions such as pdep and pext have been very slow up until Zen 3.
         // Check for Zen 3 or newer by its family (0x19).
@@ -208,13 +115,15 @@ HostFeature GetHostFeatures() {
             const u32 family_extended = mcl::bit::get_bits<20, 27>(data[0]);
             const u32 family = family_base + family_extended;
             if (family >= 0x19)
-                features |= HostFeature::FastBMI2;
+                f |= HostFeature::FastBMI2;
         } else {
-            features |= HostFeature::FastBMI2;
+            f |= HostFeature::FastBMI2;
         }
     }
+    return f;
 #endif
-
+}();
+HostFeature GetHostFeatures() {
     return features;
 }
 
@@ -233,21 +142,25 @@ bool IsUnderRosetta() {
 
 }  // anonymous namespace
 
-#ifdef DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT
-static const auto default_cg_mode = Xbyak::DontSetProtectRWE;
-#else
-static const auto default_cg_mode = nullptr; //Allow RWE
-#endif
-
 BlockOfCode::BlockOfCode(RunCodeCallbacks cb, JitStateInfo jsi, size_t total_code_size, std::function<void(BlockOfCode&)> rcp)
-        : Xbyak::CodeGenerator(total_code_size, default_cg_mode, &s_allocator)
-        , cb(std::move(cb))
-        , jsi(jsi)
-        , constant_pool(*this, CONSTANT_POOL_SIZE)
-        , host_features(GetHostFeatures()) {
+    : Xbyak::CodeGenerator(total_code_size
+#ifdef DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT
+        , Xbyak::DontSetProtectRWE
+#else
+        , nullptr //Allow RWE
+#endif
+        , nullptr)
+    , constant_pool(*this, CONSTANT_POOL_SIZE)
+    , jsi(jsi)
+    , cb(std::move(cb))
+{
     EnableWriting();
     EnsureMemoryCommitted(PRELUDE_COMMIT_SIZE);
     GenRunCode(rcp);
+}
+
+bool BlockOfCode::HasHostFeature(HostFeature feature) const noexcept {
+    return (GetHostFeatures() & feature) == feature;
 }
 
 void BlockOfCode::PreludeComplete() {
@@ -341,7 +254,7 @@ void BlockOfCode::GenRunCode(std::function<void(BlockOfCode&)> rcp) {
     mov(rbx, ABI_PARAM2); // save temporarily in non-volatile register
 
     if (cb.enable_cycle_counting) {
-        cb.GetTicksRemaining->EmitCall(*this);
+        cb.GetTicksRemaining.EmitCall(*this);
         mov(qword[rsp + ABI_SHADOW_SPACE + offsetof(StackLayout, cycles_to_run)], ABI_RETURN);
         mov(qword[rsp + ABI_SHADOW_SPACE + offsetof(StackLayout, cycles_remaining)], ABI_RETURN);
     }
@@ -388,7 +301,7 @@ void BlockOfCode::GenRunCode(std::function<void(BlockOfCode&)> rcp) {
         cmp(qword[rsp + ABI_SHADOW_SPACE + offsetof(StackLayout, cycles_remaining)], 0);
         jng(return_to_caller);
     }
-    cb.LookupBlock->EmitCall(*this);
+    cb.LookupBlock.EmitCall(*this);
     jmp(ABI_RETURN);
 
     align();
@@ -401,7 +314,7 @@ void BlockOfCode::GenRunCode(std::function<void(BlockOfCode&)> rcp) {
         jng(return_to_caller_mxcsr_already_exited);
     }
     SwitchMxcsrOnEntry();
-    cb.LookupBlock->EmitCall(*this);
+    cb.LookupBlock.EmitCall(*this);
     jmp(ABI_RETURN);
 
     align();
@@ -415,7 +328,7 @@ void BlockOfCode::GenRunCode(std::function<void(BlockOfCode&)> rcp) {
     L(return_to_caller_mxcsr_already_exited);
 
     if (cb.enable_cycle_counting) {
-        cb.AddTicks->EmitCall(*this, [this](RegList param) {
+        cb.AddTicks.EmitCall(*this, [this](RegList param) {
             mov(param[0], qword[rsp + ABI_SHADOW_SPACE + offsetof(StackLayout, cycles_to_run)]);
             sub(param[0], qword[rsp + ABI_SHADOW_SPACE + offsetof(StackLayout, cycles_remaining)]);
         });
@@ -455,18 +368,18 @@ void BlockOfCode::UpdateTicks() {
         return;
     }
 
-    cb.AddTicks->EmitCall(*this, [this](RegList param) {
+    cb.AddTicks.EmitCall(*this, [this](RegList param) {
         mov(param[0], qword[rsp + ABI_SHADOW_SPACE + offsetof(StackLayout, cycles_to_run)]);
         sub(param[0], qword[rsp + ABI_SHADOW_SPACE + offsetof(StackLayout, cycles_remaining)]);
     });
 
-    cb.GetTicksRemaining->EmitCall(*this);
+    cb.GetTicksRemaining.EmitCall(*this);
     mov(qword[rsp + ABI_SHADOW_SPACE + offsetof(StackLayout, cycles_to_run)], ABI_RETURN);
     mov(qword[rsp + ABI_SHADOW_SPACE + offsetof(StackLayout, cycles_remaining)], ABI_RETURN);
 }
 
 void BlockOfCode::LookupBlock() {
-    cb.LookupBlock->EmitCall(*this);
+    cb.LookupBlock.EmitCall(*this);
 }
 
 void BlockOfCode::LoadRequiredFlagsForCondFromRax(IR::Cond cond) {
@@ -520,7 +433,7 @@ void BlockOfCode::LoadRequiredFlagsForCondFromRax(IR::Cond cond) {
 }
 
 Xbyak::Address BlockOfCode::Const(const Xbyak::AddressFrame& frame, u64 lower, u64 upper) {
-    return constant_pool.GetConstant(frame, lower, upper);
+    return constant_pool.GetConstant(*this, frame, lower, upper);
 }
 
 CodePtr BlockOfCode::GetCodeBegin() const {

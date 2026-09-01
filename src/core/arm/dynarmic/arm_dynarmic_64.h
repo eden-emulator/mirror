@@ -8,7 +8,7 @@
 
 #include <atomic>
 #include <memory>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 
 #include <dynarmic/interface/A64/a64.h>
 #include <dynarmic/interface/code_page.h>

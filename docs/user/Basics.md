@@ -2,13 +2,13 @@
 
 ## Introduction
 
-Eden is a very complicated piece of software, and as such there are many knobs and toggles that can be configured. Most of these are invisible to normal users, however power users may be able to leverage them to their advantage.
+Eden is a very complicated piece of software, there are many knobs and toggles that can be configured. Most of these are invisible to normal users, however, power users may be able to leverage them to their advantage.
 
 This handbook primarily describes such knobs and toggles. Normal configuration options are described within the emulator itself and will not be covered in detail.
 
 ## Requirements
 
-The emulator is very demanding on hardware, and as such requires a decent mid-range computer/cellphone.
+The emulator is very demanding on hardware and requires a decent mid-range computer/cellphone.
 
 See [the requirements page](https://archive.is/sv83h) for recommended and minimum specs.
 
@@ -22,8 +22,8 @@ If your GPU doesn't support or is just behind by a minor version, see Mesa envir
     - RC releases: Release candidate, generally "less stable but still stable" versions.
     - Full release: "The stablest possible you could get".
 - Nightly: Builds done around 2PM UTC (if there are any changes), generally stable, but not recommended for the average user. These contain daily updates and may contain critical fixes for some games.
-- Master: Unstable builds, can lead from a game working exceptionally fine to absolute crashing in some systems because someone forgot to check if NixOS or Solaris worked. These contain straight from the oven fixes, please don't use them unless you plan to contribute something! They're very experimental! Still 95% of the time it will work just fine.
-- PR builds: Highly experimental builds, testers may grab from these. The average user should treat them the same as master builds, except sometimes they straight up don't build/work.
+- Master: Unstable builds, can range from games working exceptionally well to instantly crashing. These contain straight from the oven fixes, don't use them unless you plan to contribute something! They're very experimental! Still 95% of the time they will work just fine.
+- PR builds: Highly experimental builds, testers may grab from these. The average user should treat them the same as master builds.
 
 ## User configuration
 
@@ -36,7 +36,7 @@ Eden will store configuration files in the following directories:
 - **Linux, macOS, FreeBSD, Solaris, OpenBSD**: `$XDG_DATA_HOME`, `$XDG_CACHE_HOME`, `$XDG_CONFIG_HOME`.
 - **HaikuOS**: `/boot/home/config/settings/eden`
 
-If a `user` directory is present in the current working directory, that will override all global configuration directories and the emulator will use that instead.
+If a `user` directory is present in the current working directory, that will override all global configuration directories and the emulator will use the `user` directory instead.
 
 ### Environment variables
 
@@ -64,4 +64,4 @@ Then just running `chmod +x script.sh && source script.sh`.
 
 ## Compatibility list
 
-Eden doesn't mantain a compatibility list. However, [EmuReady](https://www.emuready.com/) has a more fine-grained compatibility information for multiple emulators/forks as well.
+Eden doesn't maintain a compatibility list. However, [EmuReady](https://www.emuready.com/) has a more fine-grained compatibility information for multiple emulators/forks as well.

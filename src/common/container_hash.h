@@ -10,8 +10,11 @@
 #include <array>
 #include <climits>
 #include <cstdint>
+#include <functional>
 #include <limits>
+#include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace Common {
@@ -69,8 +72,15 @@ struct HashCombineImpl<64> {
 } // namespace detail
 
 template <typename T>
+    requires std::is_unsigned_v<T>
 inline void HashCombine(std::size_t& seed, const T& v) {
     seed = detail::HashCombineImpl<sizeof(std::size_t) * CHAR_BIT>::fn(seed, detail::HashValue(v));
+}
+
+template <typename T>
+    requires (!std::is_unsigned_v<T>)
+inline void HashCombine(std::size_t& seed, const T& v) {
+    seed = detail::HashCombineImpl<sizeof(std::size_t) * CHAR_BIT>::fn(seed, std::hash<T>{}(v));
 }
 
 template <typename It>
@@ -95,3 +105,26 @@ std::size_t HashValue(const std::vector<T, Allocator>& v) {
 }
 
 } // namespace Common
+
+namespace std {
+
+template <typename... Args>
+struct hash<std::tuple<Args...>> {
+    std::size_t operator()(const std::tuple<Args...>& t) const noexcept {
+        std::size_t seed = 0;
+        std::apply([&seed](const Args&... args) { (Common::HashCombine(seed, args), ...); }, t);
+        return seed;
+    }
+};
+
+template <class A, class B>
+struct hash<std::pair<A, B>> {
+    std::size_t operator()(const std::pair<A, B>& p) const noexcept {
+        std::size_t seed = 0;
+        Common::HashCombine(seed, p.first);
+        Common::HashCombine(seed, p.second);
+        return seed;
+    }
+};
+
+} // namespace std

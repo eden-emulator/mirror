@@ -393,7 +393,7 @@ Result ServerManager::CompleteSyncRequest(Session* session) {
     }
 
     // Send the reply.
-    res = server_session->SendReplyHLE(m_system.Kernel());
+    res = server_session->SendReplyHLE(m_system.Kernel(), service_res == IPC::ResultSessionClosed);
 
     // If the session has been closed, we're done.
     if (res == Kernel::ResultSessionClosed || service_res == IPC::ResultSessionClosed) {

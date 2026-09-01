@@ -80,7 +80,6 @@ Certain other dependencies will be fetched by CPM regardless. System packages *c
 * [httplib](https://github.com/yhirose/cpp-httplib) - if `ENABLE_UPDATE_CHECKER` or `ENABLE_WEB_SERVICE` are on
   * This package is known to be broken on the AUR.
 * [cpp-jwt](https://github.com/arun11299/cpp-jwt) 1.4+ - if `ENABLE_WEB_SERVICE` is on
-* [unordered-dense](https://github.com/martinus/unordered_dense)
 
 On amd64:
 
@@ -119,7 +118,7 @@ Now, install all deps:
 sudo emerge -a \
     app-arch/lz4 app-arch/zstd app-arch/unzip \
     dev-libs/libfmt dev-libs/libusb dev-libs/mcl dev-libs/sirit \
-    dev-libs/unordered_dense dev-libs/boost dev-libs/openssl dev-libs/discord-rpc \
+    dev-libs/boost dev-libs/openssl dev-libs/discord-rpc \
     dev-util/spirv-tools dev-util/spirv-headers dev-util/vulkan-headers \
     dev-util/vulkan-utility-libraries dev-util/glslang \
     media-gfx/renderdoc media-libs/libva media-libs/opus media-video/ffmpeg \
@@ -260,7 +259,10 @@ brew install molten-vk
 <details>
 <summary>FreeBSD</summary>
 
-As root run: `pkg install devel/cmake sdl3 devel/boost-libs devel/catch2 devel/libfmt devel/nlohmann-json devel/ninja devel/nasm devel/autoconf devel/pkgconf devel/qt6-base devel/qt6-charts devel/simpleini net/enet multimedia/ffnvcodec-headers multimedia/ffmpeg audio/opus archivers/liblz4 lang/gcc12 graphics/glslang graphics/vulkan-utility-libraries graphics/spirv-tools www/cpp-httplib devel/unordered-dense vulkan-headers quazip-qt6`
+As root run:
+```sh
+pkg install devel/cmake devel/sdl3 devel/boost-libs devel/catch2 devel/libfmt devel/nlohmann-json devel/ninja devel/nasm devel/autoconf devel/pkgconf devel/qt6-base x11-toolkits/qt6-charts devel/simpleini net/enet multimedia/ffnvcodec-headers multimedia/ffmpeg audio/opus archivers/liblz4 lang/gcc12 graphics/glslang graphics/vulkan-utility-libraries graphics/spirv-tools www/cpp-httplib graphics/vulkan-utility-libraries graphics/vulkan-headers graphics/spirv-headers quazip-qt6
+```
 
 If using FreeBSD 12 or prior, use `devel/pkg-config` instead.
 
@@ -273,7 +275,7 @@ If using FreeBSD 12 or prior, use `devel/pkg-config` instead.
 For NetBSD +10.1:
 
 ```sh
-pkgin install git cmake boost fmtlib SDL3 catch2 libjwt spirv-headers spirv-tools ffmpeg7 libva nlohmann-json jq libopus qt6 cpp-httplib lz4 vulkan-headers nasm autoconf enet pkg-config libusb1 libcxx frozen
+pkgin install git cmake boost fmtlib SDL3 catch2 libjwt spirv-headers spirv-tools ffmpeg7 libva nlohmann-json jq libopus qt6-qtbase qt6-qtcharts qt6-qtmultimedia qt6-qttools cpp-httplib lz4 vulkan-headers nasm autoconf enet pkg-config libusb1 libcxx frozen
 ```
 
 [Caveats](./Caveats.md#netbsd).
@@ -294,7 +296,7 @@ pkg_add cmake nasm git boost unzip--iconv autoconf-2.72p0 bash ffmpeg glslang gm
 <summary>DragonFlyBSD</summary>
 
 ```sh
-pkg install gcc14 git cmake unzip nasm autoconf bash pkgconf ffmpeg glslang gmake jq nlohmann-json enet spirv-tools sdl3 vulkan-utility-libraries vulkan-headers catch2 libfmt openssl liblz4 boost-libs cpp-httplib qt6-base qt6-charts quazip-qt6 unordered-dense libva-vdpau-driver libva-utils libva-intel-driver
+pkg install gcc14 git cmake unzip nasm autoconf bash pkgconf ffmpeg glslang gmake jq nlohmann-json enet spirv-tools sdl3 vulkan-utility-libraries vulkan-headers catch2 libfmt openssl liblz4 boost-libs cpp-httplib qt6-base qt6-charts quazip-qt6 libva-vdpau-driver libva-utils libva-intel-driver
 ```
 
 [Caveats](./Caveats.md#dragonflybsd).
@@ -328,7 +330,7 @@ sudo pkgin install git cmake autoconf build-essential libusb-1 nasm gcc13
 
 ```sh
 BASE="git make autoconf libtool automake-wrapper jq patch"
-MINGW="qt6-base qt6-charts qt6-tools qt6-translations qt6-svg cmake toolchain clang python-pip openssl vulkan-memory-allocator vulkan-devel glslang boost fmt lz4 nlohmann-json zlib zstd enet opus libusb unordered_dense openssl SDL3"
+MINGW="qt6-base qt6-charts qt6-tools qt6-translations qt6-svg cmake toolchain clang python-pip openssl vulkan-memory-allocator vulkan-devel glslang boost fmt lz4 nlohmann-json zlib zstd enet opus libusb openssl SDL3"
 # Either x86_64 or clang-aarch64 (Windows on ARM)
 packages="$BASE"
 for pkg in $MINGW; do

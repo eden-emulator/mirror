@@ -11,7 +11,7 @@ This guide explains how to set up a public/private self hosted Eden server/lobby
 - Next, under Server OS Images, select Ubuntu 24.04 LTS. Configure CPU/RAM/specs as desired for your server. Complete the creation process.
 
 - Enable the Kamatera firewall and set default policy: IN: DROP, OUT: ACCEPT.
- - After setting the default policy, add the three following rules: #1: SSH Access - Direction: IN, Interface: net0, Macro: SSH - Secure Shell Traffic, Source: ANY, Port: Blank/Auto (Handeld by SSH), Destination: Blank/Auto (Handeld by SSH), Policy: ACCEPT, leave a comment: SSH access.
+ - After setting the default policy, add the three following rules: #1: SSH Access - Direction: IN, Interface: net0, Macro: SSH - Secure Shell Traffic, Source: ANY, Port: Blank/Auto (Handled by SSH), Destination: Blank/Auto (Handled by SSH), Policy: ACCEPT, leave a comment: SSH access.
  - Then, after creating the first rule, add TCP & UDP Ports for Eden - Direction: IN, Interface: net0, Protocol: TCP or UDP (for respective rule), Source: ANY, Destination Port: 24872, Policy: ACCEPT, leave a comment: Eden server port.
  - Note: Only UDP is required for Eden; opening TCP is optional.
 

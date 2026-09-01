@@ -49,6 +49,4 @@ A copy of this handbook is [available online](https://git.eden-emu.dev/eden-emu/
 - **[Gyro Controls](./GyroControls.md)**
 - **[Platforms and Architectures](./Architectures.md)**
 - **[Native Application Development](./Native.md)**
-- **[Adding Boolean Settings Toggles](./AddingBooleanToggles.md)**
-- **[Adding Debug Knobs](./AddingDebugKnobs.md)**
 - **[Testing](./Testing.md)**

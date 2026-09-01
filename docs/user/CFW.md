@@ -12,7 +12,7 @@ If they don't run - then that's a bug!
 
 ## Atmosphere
 
-Fusee Galee, the bootloader and other low-level mechanisms are not emulated at the moment.
+Fusée Gelée, the bootloader and other low-level mechanisms are not emulated at the moment.
 
 Having OFW is recommended, but may not be required (untested).
 

@@ -12,7 +12,7 @@
 #include <optional>
 #include <span>
 #include <string>
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 #include <vector>
 
 #include "common/common_types.h"
@@ -93,7 +93,7 @@ private:
     static s64 Now();
 
     mutable std::mutex mtx;
-    ankerl::unordered_dense::map<std::string, StoredNews> items;
+    ::Common::unordered_map<std::string, StoredNews> items;
     size_t open_counter{};
 };
 

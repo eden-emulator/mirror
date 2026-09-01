@@ -552,7 +552,6 @@ macro(parse_object object)
     get_json_element("${object}" repo repo)
     get_json_element("${object}" ci ci OFF)
     get_json_element("${object}" version version)
-    get_json_element("${object}" min_version min_version)
     get_json_element("${object}" git_host git_host "github.com")
 
     if (NOT version)
@@ -571,8 +570,8 @@ macro(parse_object object)
             set(disabled_platforms "")
         endif()
     else()
-        # TODO: correct hash if missing
         get_json_element("${object}" hash hash)
+        get_json_element("${object}" min_version min_version)
         get_json_element("${object}" url url)
         get_json_element("${object}" artifact artifact)
         get_json_element("${object}" source_subdir source_subdir)
@@ -945,8 +944,8 @@ function(AddCIPackage)
         REPO
         PACKAGE
         EXTENSION
-        MIN_VERSION
-        GIT_HOST)
+        GIT_HOST
+        PKGNAME)
 
     set(multiValueArgs DISABLED_PLATFORMS)
 
@@ -996,9 +995,104 @@ function(AddCIPackage)
     set(ARTIFACT_REPO ${PKG_ARGS_REPO})
     set(ARTIFACT_PACKAGE ${PKG_ARGS_PACKAGE})
 
-    # TODO: Use amd64/aarch64 naming for everything.
-    # Also drop macos universal
+    # plat/archname
+    if (DEFINED PKG_ARGS_PKGNAME)
+        set(pkgname ${PKG_ARGS_PKGNAME})
+    else()
+        if (MSVC)
+            set(platname windows)
+        elseif(MINGW)
+            set(platname mingw)
+        elseif(ANDROID)
+            set(platname android)
+        elseif(LINUX)
+            set(platname linux)
+        elseif(IOS)
+            set(platname ios)
+        elseif(APPLE)
+            set(platname macos)
+        else()
+            cpm_utils_message(WARNING
+                "Unsupported platform ${CMAKE_SYSTEM_NAME} for CI packages")
+        endif()
 
+        if (CPMUTIL_AMD64)
+            set(archname amd64)
+        elseif(CPMUTIL_ARM64)
+            set(archname aarch64)
+        elseif(CPMUTIL_RISCV64)
+            set(archname riscv64)
+        endif()
+
+        if (APPLE AND NOT CPMUTIL_ARM64)
+            cpm_utils_message(WARNING
+                "Unsupported platform/arch combo for CI packages")
+        endif()
+
+        if (DEFINED platname AND DEFINED archname)
+            set(pkgname ${platname}-${archname})
+        endif()
+    endif()
+
+    if (DEFINED pkgname
+        AND NOT "${pkgname}" IN_LIST DISABLED_PLATFORMS)
+        set(ARTIFACT
+            "${ARTIFACT_NAME}-${pkgname}-${ARTIFACT_VERSION}.${ARTIFACT_EXT}")
+
+        if (PKG_ARGS_MODULE_PATH)
+            set(EXTRA_ARGS MODULE_PATH)
+        endif()
+
+        # download sha512sum file
+        # TODO: CI pkgs
+        set(sha512sum_url
+            "https://${ARTIFACT_GIT_HOST}/${ARTIFACT_REPO}/releases/download/${ARTIFACT_VERSION}/${ARTIFACT}.sha512sum")
+        set(sha512sum_file
+            "${CMAKE_CURRENT_BINARY_DIR}/.cpmutil_${ARTIFACT}_sha512sum")
+
+        file(DOWNLOAD "${sha512sum_url}" "${sha512sum_file}"
+            STATUS sha512sum_status)
+        list(GET sha512sum_status 0 sha512sum_error)
+
+        if(sha512sum_error)
+            message(FATAL_ERROR "[CPMUtil] Failed to download sha512sum "
+                "for ${ARTIFACT_NAME} from ${sha512sum_url}")
+        endif()
+
+        file(READ "${sha512sum_file}" sha512sum_hash)
+        string(STRIP "${sha512sum_hash}" sha512sum_hash)
+        file(REMOVE "${sha512sum_file}")
+
+        AddPackage(
+            NAME ${ARTIFACT_PACKAGE}
+            REPO ${ARTIFACT_REPO}
+            VERSION ${ARTIFACT_VERSION}
+            ARTIFACT ${ARTIFACT}
+            CUSTOM_KEY "${ARTIFACT_VERSION}-${pkgname}"
+            HASH ${sha512sum_hash}
+            FORCE_BUNDLED_PACKAGE ON
+            ${EXTRA_ARGS})
+
+        set(${ARTIFACT_PACKAGE}_ADDED TRUE PARENT_SCOPE)
+        Propagate(${ARTIFACT_PACKAGE}_SOURCE_DIR)
+        Propagate(CMAKE_PREFIX_PATH)
+    else()
+        cpm_utils_message(FATAL_ERROR "${ARTIFACT_NAME}:"
+            "Unsupported platform ${pkgname} for CI package")
+    endif()
+endfunction()
+
+# Utility function for Qt
+function(AddQt repo version)
+    if (NOT DEFINED repo)
+        message(FATAL_ERROR "[CPMUtil] AddQt: repo is required")
+    endif()
+
+    if (NOT DEFINED version)
+        message(FATAL_ERROR "[CPMUtil] AddQt: version is required")
+    endif()
+
+    # TODO: update Qt
     if (MSVC)
         set(platname windows)
     elseif(MINGW)
@@ -1035,64 +1129,6 @@ function(AddCIPackage)
         set(pkgname ${platname}-${archname})
     endif()
 
-    if (DEFINED pkgname
-        AND NOT "${pkgname}" IN_LIST DISABLED_PLATFORMS)
-        set(ARTIFACT
-            "${ARTIFACT_NAME}-${pkgname}-${ARTIFACT_VERSION}.${ARTIFACT_EXT}")
-
-        if (PKG_ARGS_MODULE_PATH)
-            set(EXTRA_ARGS MODULE_PATH)
-        endif()
-
-        # download sha512sum file
-        # TODO: CI pkgs
-        set(sha512sum_url
-            "https://${ARTIFACT_GIT_HOST}/${ARTIFACT_REPO}/releases/download/v${ARTIFACT_VERSION}/${ARTIFACT}.sha512sum")
-        set(sha512sum_file
-            "${CMAKE_CURRENT_BINARY_DIR}/.cpmutil_${ARTIFACT}_sha512sum")
-
-        file(DOWNLOAD "${sha512sum_url}" "${sha512sum_file}"
-            STATUS sha512sum_status)
-        list(GET sha512sum_status 0 sha512sum_error)
-
-        if(sha512sum_error)
-            message(FATAL_ERROR "[CPMUtil] Failed to download sha512sum "
-                "for ${ARTIFACT_NAME} from ${sha512sum_url}")
-        endif()
-
-        file(READ "${sha512sum_file}" sha512sum_hash)
-        string(STRIP "${sha512sum_hash}" sha512sum_hash)
-        file(REMOVE "${sha512sum_file}")
-
-        AddPackage(
-            NAME ${ARTIFACT_PACKAGE}
-            REPO ${ARTIFACT_REPO}
-            VERSION "v${ARTIFACT_VERSION}"
-            ARTIFACT ${ARTIFACT}
-            CUSTOM_KEY "${ARTIFACT_VERSION}-${pkgname}"
-            HASH ${sha512sum_hash}
-            FORCE_BUNDLED_PACKAGE ON
-            ${EXTRA_ARGS})
-
-        set(${ARTIFACT_PACKAGE}_ADDED TRUE PARENT_SCOPE)
-        Propagate(${ARTIFACT_PACKAGE}_SOURCE_DIR)
-        Propagate(CMAKE_PREFIX_PATH)
-    else()
-        cpm_utils_message(FATAL_ERROR "${ARTIFACT_NAME}:"
-            "Unsupported platform ${pkgname} for CI package")
-    endif()
-endfunction()
-
-# Utility function for Qt
-function(AddQt repo version)
-    if (NOT DEFINED repo)
-        message(FATAL_ERROR "[CPMUtil] AddQt: repo is required")
-    endif()
-
-    if (NOT DEFINED version)
-        message(FATAL_ERROR "[CPMUtil] AddQt: version is required")
-    endif()
-
     AddCIPackage(
         NAME qt
         PACKAGE Qt6
@@ -1100,7 +1136,8 @@ function(AddQt repo version)
         REPO ${repo}
         DISABLED_PLATFORMS
             android-x86_64 android-aarch64
-        MODULE_PATH)
+        MODULE_PATH
+        PKGNAME ${pkgname})
 
     find_package(Qt6 REQUIRED PATHS ${Qt6_SOURCE_DIR} NO_DEFAULT_PATH)
 

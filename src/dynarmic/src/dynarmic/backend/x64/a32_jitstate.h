@@ -27,6 +27,9 @@ struct A32JitState {
 
     A32JitState() { ResetRSB(); }
 
+    static constexpr std::size_t RSB_SIZE = 8;  // MUST be a power of 2.
+    static constexpr std::size_t RSB_PTR_MASK = RSB_SIZE - 1;
+
     std::array<u32, 16> Reg{};  // Current register file.
     // TODO: Mode-specific register sets unimplemented.
 
@@ -36,8 +39,9 @@ struct A32JitState {
     u32 cpsr_q = 0;
     u32 cpsr_nzcv = 0;
     u32 cpsr_jaifm = 0;
-    u32 Cpsr() const;
-    void SetCpsr(u32 cpsr);
+    u32 fpsr_exc = 0;
+    u32 fpsr_qc = 0;
+    u32 fpsr_nzcv = 0;
 
     alignas(16) std::array<u32, 64> ExtReg{};  // Extension registers.
 
@@ -49,21 +53,19 @@ struct A32JitState {
     // Exclusive state
     u32 exclusive_state = 0;
 
-    static constexpr std::size_t RSBSize = 8;  // MUST be a power of 2.
-    static constexpr std::size_t RSBPtrMask = RSBSize - 1;
     u32 rsb_ptr = 0;
-    std::array<u64, RSBSize> rsb_location_descriptors;
-    std::array<u64, RSBSize> rsb_codeptrs;
-    void ResetRSB();
+    std::array<u64, RSB_SIZE> rsb_location_descriptors;
+    std::array<u64, RSB_SIZE> rsb_codeptrs;
 
-    u32 fpsr_exc = 0;
-    u32 fpsr_qc = 0;
-    u32 fpsr_nzcv = 0;
+    u32 Cpsr() const;
+    void SetCpsr(u32 cpsr);
+
+    void ResetRSB();
     u32 Fpscr() const;
     void SetFpscr(u32 FPSCR);
 
     u64 GetUniqueHash() const noexcept {
-        return (static_cast<u64>(upper_location_descriptor) << 32) | (static_cast<u64>(Reg[15]));
+        return (u64(upper_location_descriptor) << 32) | (u64(Reg[15]));
     }
 
     void TransferJitState(const A32JitState& src, bool reset_rsb) {

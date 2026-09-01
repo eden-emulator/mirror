@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <ankerl/unordered_dense.h>
+#include "common/container/unordered_map.h"
 
 #include <boost/container/static_vector.hpp>
 

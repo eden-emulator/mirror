@@ -24,8 +24,8 @@ Everyone has their own way of viewing good/bad C++ practices, my general outline
 - Exploit the fact `std::atomic<uint32_t>/std::atomic<int32_t>` is basically free on most arches that matter.
   - In x86_64, an atomic `uint32_t` is basically `mov [m32], r32`, which is essentially free/cheap.
 - Avoid template parameters unless you really need them.
-  - For small inlineable functions this is fine, for more complex ones, please consider the generated assembly.
-- Dont make your own memcpy/memset/strcpy/strncpy/etc.
+  - For small inline-able functions this is fine, for more complex ones, consider the generated assembly.
+- Don't make your own memcpy/memset/strcpy/strncpy/etc.
   - Seriously DON'T DO THIS. You will NOT beat the compiler.
   - Nor 30 years of writing optimized `mem*`.
   - If your code is slow, don't blame `mem*`, blame your code.
@@ -37,7 +37,7 @@ Everyone has their own way of viewing good/bad C++ practices, my general outline
 - Function parameters are cheap. Don't be afraid to use as many as needed (API usability permitting).
 - Don't save a reference in structures of a parent object, i.e:
 
-    ```c++
+    ```cpp
     struct Child {
         Parent& parent;
         void Mehod() {
@@ -48,7 +48,7 @@ Everyone has their own way of viewing good/bad C++ practices, my general outline
 
   - Instead you can do the following:
 
-    ```c++
+    ```cpp
     struct Child {
         void Mehod(Parent& parent) {
             parent.Something();
@@ -66,6 +66,6 @@ Programming, alongside the physical act of writing code, also consists of archit
   - Dependencies that are legitimately useful to have are few and far between.
   - At the same time, NIHing your own implementations of widely adopted algorithms or standards can be quite subpar.
   - For dependencies that are very large but contain something you need, consider cherry-picking the individual files it needs (or writing a smaller version of it)
-- Try to rely less on indirection for architecturing systems
+- Try to rely less on indirection for architecting systems
   - If the underlying HLE kernel emulation requires it, try making a solution that keeps things local
     - For example, there isn't a need for file descriptors to each be a pointer, when they could be a fixed table size with elements that may be emplaced at will.

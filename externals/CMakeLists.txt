@@ -58,9 +58,6 @@ if (WIN32 AND NOT TARGET LLVM::Demangle)
     add_library(LLVM::Demangle ALIAS demangle)
 endif()
 
-# unordered_dense
-AddJsonPackage(unordered-dense)
-
 # httplib
 if (IOS)
     set(HTTPLIB_USE_BROTLI_IF_AVAILABLE OFF)
@@ -164,9 +161,6 @@ if (NOT ANDROID)
         AddJsonPackage(sdl3)
     else()
         message(STATUS "Using bundled SDL3")
-        if (FREEBSD)
-            set(BUILD_SHARED_LIBS ON)
-        endif()
         AddJsonPackage(sdl3-ci)
     endif()
 

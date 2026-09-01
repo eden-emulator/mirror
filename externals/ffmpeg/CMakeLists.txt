@@ -4,8 +4,6 @@
 # SPDX-FileCopyrightText: 2021 yuzu Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-# TODO(crueter, MaranBr): Externals FFmpeg 8.0
-
 set(FFmpeg_HWACCEL_LIBRARIES)
 set(FFmpeg_HWACCEL_FLAGS)
 set(FFmpeg_HWACCEL_INCLUDE_DIRS)
