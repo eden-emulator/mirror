@@ -175,10 +175,9 @@ bool ArmNce::HandleGuestAccessFault(GuestContext* guest_ctx, void* raw_info, voi
     } else {
         // Corresponds to the 2nd page, this means the access is split between two pages
         auto const addr_c2 = (addr_c1 & ~Memory::YUZU_PAGEMASK) + Memory::YUZU_PAGESIZE;
-        // we need both pages to successfully be invalidated -- otherwise we immediately
-        // fall down to the sad path
-        if (memory.InvalidateNCE(addr_c1, Memory::YUZU_PAGESIZE)
-        && memory.InvalidateNCE(addr_c2, Memory::YUZU_PAGESIZE))
+        // Always invalidate 2nd page, but only account if 1st page was invalidated properly
+        memory.InvalidateNCE(addr_c2, Memory::YUZU_PAGESIZE);
+        if (memory.InvalidateNCE(addr_c1, Memory::YUZU_PAGESIZE))
             return true;
     }
     // We couldn't handle the access.
