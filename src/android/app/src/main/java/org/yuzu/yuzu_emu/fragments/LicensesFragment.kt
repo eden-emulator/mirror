@@ -59,13 +59,6 @@ class LicensesFragment : Fragment() {
                 R.string.license_fidelityfx_fsr_text
             ),
             License(
-                R.string.license_cubeb,
-                R.string.license_cubeb_description,
-                R.string.license_cubeb_link,
-                R.string.license_cubeb_copyright,
-                R.string.license_cubeb_text
-            ),
-            License(
                 R.string.license_dynarmic,
                 R.string.license_dynarmic_description,
                 R.string.license_dynarmic_link,

@@ -73,7 +73,6 @@ Certain other dependencies will be fetched by CPM regardless. System packages *c
 
 * [SimpleIni](https://github.com/brofield/simpleini)
 * [DiscordRPC](https://github.com/eden-emulator/discord-rpc)
-* [cubeb](https://github.com/mozilla/cubeb)
 * [libusb](https://github.com/libusb/libusb)
 * [VulkanMemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
 * [sirit](https://github.com/eden-emulator/sirit)
@@ -122,7 +121,7 @@ sudo emerge -a \
     dev-util/spirv-tools dev-util/spirv-headers dev-util/vulkan-headers \
     dev-util/vulkan-utility-libraries dev-util/glslang \
     media-gfx/renderdoc media-libs/libva media-libs/opus media-video/ffmpeg \
-    media-libs/VulkanMemoryAllocator media-libs/libsdl3 media-libs/cubeb \
+    media-libs/VulkanMemoryAllocator media-libs/libsdl3 \
     net-libs/enet \
     sys-libs/zlib \
     dev-cpp/nlohmann_json dev-cpp/simpleini dev-cpp/cpp-httplib dev-cpp/cpp-jwt \
@@ -356,7 +355,7 @@ pacman -Syuu --needed --noconfirm $packages
 <summary>HaikuOS</summary>
 
 ```sh
-pkgman install git cmake patch libfmt_devel nlohmann_json lz4_devel opus_devel boost1.90_devel vulkan_devel qt6_base_devel qt6_declarative_devel libsdl3_devel ffmpeg7_devel libx11_devel enet_devel catch2_devel quazip1_qt5_devel qt6_5compat_devel glslang qt6_devel qt6_charts_devel cubeb_devel simpleini quazip_qt6_devel
+pkgman install git cmake patch libfmt_devel nlohmann_json lz4_devel opus_devel boost1.90_devel vulkan_devel qt6_base_devel qt6_declarative_devel libsdl3_devel ffmpeg7_devel libx11_devel enet_devel catch2_devel quazip1_qt5_devel qt6_5compat_devel glslang qt6_devel qt6_charts_devel simpleini quazip_qt6_devel
 ```
 
 [Caveats](./Caveats.md#haikuos).

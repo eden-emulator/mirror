@@ -106,36 +106,6 @@ endif()
 # SimpleIni
 AddJsonPackage(simpleini)
 
-# Most linux distros don't package cubeb, so enable regardless of cpm settings
-if(ENABLE_CUBEB)
-    AddJsonPackage(cubeb)
-
-    if (cubeb_ADDED)
-        if (NOT MSVC)
-            if (TARGET speex)
-                target_compile_options(speex PRIVATE $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-sign-compare>)
-            endif()
-            set_target_properties(cubeb PROPERTIES COMPILE_OPTIONS "")
-            target_compile_options(cubeb INTERFACE
-                $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-const-int-float-conversion>
-                $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-shadow>
-                $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-missing-declarations>
-                $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-return-type>
-                $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-uninitialized>
-            )
-        else()
-            target_compile_options(cubeb PRIVATE
-                /wd4456
-                /wd4458
-            )
-        endif()
-    endif()
-
-    if (NOT TARGET cubeb::cubeb)
-        add_library(cubeb::cubeb ALIAS cubeb)
-    endif()
-endif()
-
 if (NOT YUZU_USE_BUNDLED_SDL3)
     if (NOT WIN32)
         # Yuzu itself needs: Atomic Audio Events Joystick Haptic Sensor Threads Timers

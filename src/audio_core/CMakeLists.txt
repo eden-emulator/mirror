@@ -229,15 +229,6 @@ endif()
 target_include_directories(audio_core PRIVATE ${OPUS_INCLUDE_DIRS})
 target_link_libraries(audio_core PUBLIC common core Opus::opus)
 
-if (ENABLE_CUBEB)
-    target_sources(audio_core PRIVATE
-        sink/cubeb_sink.cpp
-        sink/cubeb_sink.h)
-
-    target_link_libraries(audio_core PRIVATE cubeb::cubeb)
-    target_compile_definitions(audio_core PRIVATE HAVE_CUBEB=1)
-endif()
-
 target_sources(audio_core PRIVATE
     sink/sdl3_sink.cpp
     sink/sdl3_sink.h)

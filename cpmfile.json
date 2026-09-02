@@ -54,18 +54,6 @@
         "repo": "arun11299/cpp-jwt",
         "version": "7f24eb4c32"
     },
-    "cubeb": {
-        "find_args": "CONFIG",
-        "hash": "8a4bcb2f83ba590f52c66626e895304a73eb61928dbc57777e1822e55378e3568366f17f9da4b80036cc2ef4ea9723c32abf6e7d9bbe00fb03654f0991596ab0",
-        "options": [
-            "USE_SANITIZERS OFF",
-            "BUILD_TESTS OFF",
-            "BUILD_TOOLS OFF",
-            "BUNDLE_SPEEX ON"
-        ],
-        "repo": "mozilla/cubeb",
-        "version": "fa02160712"
-    },
     "discord-rpc": {
         "find_args": "MODULE",
         "hash": "8213c43dcb0f7d479f5861091d111ed12fbdec1e62e6d729d65a4bc181d82f48a35d5fd3cd5c291f2393ac7c9681eabc6b76609755f55376284c8a8d67e148f3",
