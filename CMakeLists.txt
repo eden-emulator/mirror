@@ -53,7 +53,6 @@ if (YUZU_STATIC_ROOM)
     # disable e v e r y t h i n g
     set(ENABLE_QT OFF)
     set(YUZU_CMD OFF)
-    set(ENABLE_CUBEB OFF)
     set(ENABLE_UPDATE_CHECKER OFF)
     set(USE_DISCORD_PRESENCE OFF)
     set(BUILD_TESTING OFF)
@@ -217,8 +216,6 @@ if(MSVC)
 endif()
 
 # TODO(crueter): Cleanup, each dep that has a bundled option should allow to choose between bundled, external, system
-option(ENABLE_CUBEB "Enables the cubeb audio backend" ON)
-
 set(EXT_DEFAULT OFF)
 if (MSVC OR ANDROID)
     set(EXT_DEFAULT ON)
@@ -575,10 +572,6 @@ if (NOT YUZU_STATIC_ROOM)
 
     if (USE_DISCORD_PRESENCE)
         find_package(DiscordRPC)
-    endif()
-
-    if (ENABLE_CUBEB)
-        find_package(cubeb)
     endif()
 
     if (YUZU_TESTS OR DYNARMIC_TESTS)

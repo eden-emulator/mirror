@@ -15,7 +15,7 @@ pkgs.mkShellNoCC {
     enet libopus vulkan-headers vulkan-utility-libraries
     spirv-tools spirv-headers vulkan-loader unzip
     glslang python3 httplib cpp-jwt ffmpeg-headless
-    libusb1 cubeb
+    libusb1
     # eden
     qt6.qtbase qt6.qtmultimedia qt6.qtwayland qt6.qttools
     qt6.qtwebengine qt6.qt5compat

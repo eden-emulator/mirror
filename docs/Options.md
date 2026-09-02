@@ -35,8 +35,6 @@ These options control dependencies.
 
 - `ENABLE_WEB_SERVICE` (ON) Enable multiplayer service
 - `ENABLE_WIFI_SCAN` (OFF) Enable WiFi scanning (requires iw on Linux) - experimental
-- `ENABLE_CUBEB` (ON) Enables the cubeb audio backend
-  - This option is subject for removal.
 - `YUZU_TESTS` (ON) Compile tests - requires Catch2
 - `ENABLE_LTO` (OFF) Enable link-time optimization
   - Not recommended on Windows

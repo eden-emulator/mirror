@@ -100,8 +100,6 @@ For reasons unberknownst to any human being, `glslangValidator` will crash upon 
 
 For this reason this patch is NOT applied to default on all platforms (for obvious reasons) - instead this is a HaikuOS specific patch, apply with `git apply <absolute path to patch>` after cloning SPIRV-Tools then `make -C build` and add the resulting binary (in `build/StandAlone/glslang`) into PATH.
 
-`cubeb_devel` will also not work, either disable cubeb or uninstall it.
-
 Still will not run flawlessly until `mesa-24` is available. Modify CMakeCache.txt with the `.so` of libGL and libGLESv2 by doing the incredibly difficult task of copy pasting them (`cp /boot/system/lib/libGL.so .`)
 
 If you have `quazip1_qt6_devel`, uninstall it. It may call `Core5Compat` on CMake which is wrongly packaged.
