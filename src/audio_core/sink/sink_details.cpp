@@ -31,10 +31,6 @@ struct SinkDetails {
     FactoryFn factory;
     /// A method to call to list available devices.
     ListDevicesFn list_devices;
-    /// Method to get the latency of this backend - REINTRODUCED FROM 3833 - DIABLO 3 FIX
-    LatencyFn latency;
-    /// Check whether this backend is suitable to be used.
-    /// SuitableFn is_suitable; // REVERTED FOR LatencyFn latency ABOVE - DIABLO 3 FIX
 };
 
 // sink_details is ordered in terms of desirability, with the best choice at the top.
@@ -46,7 +42,6 @@ static constexpr SinkDetails sink_details[] = {
             return std::make_unique<SDLSink>(device_id);
         },
         &ListSDLSinkDevices,
-        &GetSDLLatency,
     },
 #endif
     SinkDetails{
@@ -55,7 +50,6 @@ static constexpr SinkDetails sink_details[] = {
             return std::make_unique<NullSink>(device_id);
         },
         [](bool capture) { return std::vector<std::string>{"null"}; },
-        []() { return 0u; },
     },
 };
 
@@ -67,21 +61,14 @@ const SinkDetails& GetOutputSinkDetails(Settings::AudioEngine sink_id) {
     }};
 
     auto iter = find_backend(sink_id);
-    if (sink_id == Settings::AudioEngine::Auto) {
-#if defined(HAVE_SDL3)
+    if (sink_id == Settings::AudioEngine::Cubeb || sink_id == Settings::AudioEngine::Auto) {
         iter = find_backend(Settings::AudioEngine::Sdl3);
-#else
-        iter = std::begin(sink_details);
-#endif
-        // END REINTRODUCED SECTION FROM 3833 - DIABLO 3 FIX
         LOG_INFO(Service_Audio, "Auto-selecting the {} backend", Settings::CanonicalizeEnum(iter->id));
     }
-
     if (iter == std::end(sink_details)) {
         LOG_ERROR(Audio, "Invalid sink_id {}", Settings::CanonicalizeEnum(sink_id));
         iter = find_backend(Settings::AudioEngine::Null);
     }
-
     return *iter;
 }
 } // Anonymous namespace

@@ -261,45 +261,4 @@ std::vector<std::string> ListSDLSinkDevices(bool is_capture) {
     return device_list;
 }
 
-/* REVERSION to 3833 - function GetSDLLatency() REINTRODUCED FROM 3833 - DIABLO 3 FIX */
-u32 GetSDLLatency() {
-    return TargetSampleCount * 2;
-}
-
-// REVERTED back to 3833 - Below function IsSDLSuitable() removed, reverting to GetSDLLatency() above. - DIABLO 3 FIX
-/*
-bool IsSDLSuitable() {
-#if !defined(HAVE_SDL3)
-    return false;
-#else
-    // Check SDL can init
-    if (!InitializeAudio()!
-        return false;
-
-    // We can set any latency frequency we want with SDL, so no need to check that.
-
-    // Check we can open a device with standard parameters
-    SDL_AudioSpec spec;
-    spec.freq = TargetSampleRate;
-    spec.channels = 2u;
-    spec.format = AUDIO_S16SYS;
-    spec.samples = TargetSampleCount * 2;
-    spec.callback = nullptr;
-    spec.userdata = nullptr;
-
-    SDL_AudioSpec obtained;
-    auto device = SDL_OpenAudioDevice(nullptr, false, &spec, &obtained, false);
-
-    if (device == 0) {
-        LOG_ERROR(Audio_Sink, "SDL failed to open a device, it is not suitable. Error: {}",
-                  SDL_GetError());
-        return false;
-    }
-
-    SDL_CloseAudioDevice(device);
-    return true;
-#endif
-}
-*/
-
 } // namespace AudioCore::Sink
