@@ -390,7 +390,7 @@ Result ICommonStateGetter::Unknown611(u8 unk) {
 
 Result ICommonStateGetter::BeginVrMode3d() {
     std::scoped_lock lk{m_applet->lock};
-    m_applet->vr_mode_enabled = true;
+    m_applet->vr_mode_enabled_3d = true;
     LOG_WARNING(Service_AM, "VR Mode is {}", m_applet->vr_mode_enabled_3d ? "on" : "off");
     R_SUCCEED();
 }
