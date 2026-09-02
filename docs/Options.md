@@ -76,7 +76,7 @@ The following options are desktop only.
 
 - `ENABLE_LIBUSB` (ON) Enable the use of the libusb input backend (HIGHLY RECOMMENDED)
 - `ENABLE_OPENGL` (ON) Enable the OpenGL graphics backend
-  - Unavailable on Windows/ARM64
+  - Unavailable on Windows/ARM64 and on Android
   - You probably shouldn't turn this off.
 
 ### Qt
