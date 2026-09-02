@@ -58,7 +58,7 @@ public:
         RegisterHandlers(functions);
     }
     ~I2C() override = default;
-    Result OpenSessionForDev(OutInterface<I2CSession> out_session, s32 bus_idx) {
+    Result OpenSessionForDev(OutInterface<I2CSession> out_session, s32 bus_idx, u32 slave_address, u32 addressing_mode, u32 speed_mode) {
         LOG_DEBUG(Service, "(stubbed)");
         *out_session = std::make_shared<I2CSession>(system);
         R_SUCCEED();
