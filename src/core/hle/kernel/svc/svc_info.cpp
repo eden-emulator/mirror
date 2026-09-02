@@ -151,10 +151,6 @@ Result GetInfo(Core::System& system, u64* result, InfoType info_id_type, Handle 
         *result = GetCurrentProcess(system.Kernel()).GetRandomEntropy(info_sub_id);
         R_SUCCEED();
     case InfoType::InitialProcessIdRange: {
-        enum InitialProcessIdRangeInfo : u64 {
-            Minimum = 0,
-            Maximum = 1,
-        };
         LOG_WARNING(Kernel_SVC, "(STUBBED) Attempted to query privileged process id bounds, returned 0/64");
         R_UNLESS(handle == InvalidHandle, ResultInvalidHandle);
         switch (InitialProcessIdRangeInfo(info_sub_id)) {
