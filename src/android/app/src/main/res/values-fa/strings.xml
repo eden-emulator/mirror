@@ -799,9 +799,6 @@
     <string name="theme_mode_light">روشن</string>
     <string name="theme_mode_dark">تاریک</string>
 
-    <!-- Audio output engines -->
-    <string name="cubeb">cubeb</string>
-
     <!-- Anisotropic filtering options -->
     <string name="multiplier_x2">x2</string>
     <string name="multiplier_x4">x4</string>
