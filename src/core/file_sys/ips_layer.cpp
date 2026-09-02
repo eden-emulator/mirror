@@ -253,7 +253,7 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
             // now make a nominal preprocessed line: remove comments
             char quote = '\0';
             auto const sline_start = p;
-            const char *last_space = p;
+            auto last_char = p;
             for (; p < sline.cend(); ) {
                 // we dont check for "//", IPS checks for '/' only...
                 if (std::isspace(*p)) {
@@ -264,20 +264,19 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
                 } else if (p[0] == '\"' || p[0] == '\'') {
                     quote = (p[0] == quote) ? '\0' : p[0];
                     ++p;
-                    last_space = p;
+                    last_char = p;
                 } else if (p + 1 < sline.cend() && p[0] == '\\') {
                     p += 2;
-                    last_space = p;
+                    last_char = p;
                 } else {
                     ++p;
-                    last_space = p;
+                    last_char = p;
                 }
             }
             // now we have the preprocessed string ;)
-            std::string_view pp_str(sline_start, last_space);
-            if (pp_str.size() > 0 && !parse_line(pp_str)) {
+            std::string_view const pp_str(sline_start, last_char);
+            if (pp_str.size() > 0 && !parse_line(pp_str))
                 break;
-            }
         }
     }
 }
