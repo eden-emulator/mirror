@@ -358,7 +358,7 @@ private:
 
         ConnectionState(boost::asio::ip::tcp::socket&& client_socket_, async_pipe signal_pipe_, Kernel::KernelCore& kernel)
             : client_socket{std::move(client_socket_)}
-            , signal_pipe{signal_pipe_}
+            , signal_pipe{std::move(signal_pipe_)}
             , active_thread{kernel, nullptr}
         {}
 

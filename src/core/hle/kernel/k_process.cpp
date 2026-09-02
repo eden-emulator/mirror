@@ -1021,6 +1021,9 @@ Result KProcess::Run(KernelCore& kernel, s32 priority, size_t stack_size) {
 
     // Suspend for debug, if we should.
     if (kernel.System().DebuggerEnabled()) {
+        LOG_INFO(Debug_GDBStub,
+                 "GDB stub enabled; suspending guest process until a debugger continues execution on port {}",
+                 Settings::values.gdbstub_port.GetValue());
         main_thread->RequestSuspend(kernel, SuspendType::Debug);
     }
 
