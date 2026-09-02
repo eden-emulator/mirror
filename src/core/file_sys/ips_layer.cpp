@@ -260,7 +260,6 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
                     ++p;
                 } else if ((!quote && p[0] == '/')
                 || (!quote && p[0] == '#')) {
-                    last_space = p;
                     break;
                 } else if (p[0] == '\"' || p[0] == '\'') {
                     quote = (p[0] == quote) ? '\0' : p[0];
