@@ -102,9 +102,6 @@ VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t in
         .maxDepth = src.translate_z + src.scale_z,
     };
     if (!device.IsExtDepthRangeUnrestrictedSupported()) {
-        if (viewport.minDepth < 0.0f || viewport.maxDepth > 1.0f) {
-            viewport.maxDepth = 0.5f;
-        }
         viewport.minDepth = std::clamp(viewport.minDepth, 0.0f, 1.0f);
         viewport.maxDepth = std::clamp(viewport.maxDepth, 0.0f, 1.0f);
     }
@@ -140,10 +137,12 @@ VkRect2D GetScissorState(const Maxwell& regs, size_t index, u32 up_scale = 1, u3
     max_y = (std::max)(max_y, 0);
 
     if (src.enable) {
-        scissor.offset.x = scale_up(src.min_x);
+        const s32 min_x = static_cast<s32>(src.min_x.Value());
+        const s32 max_x = static_cast<s32>(src.max_x.Value());
+        scissor.offset.x = scale_up(min_x);
         scissor.offset.y = scale_up(min_y);
-        scissor.extent.width = scale_up(src.max_x - src.min_x);
-        scissor.extent.height = scale_up(max_y - min_y);
+        scissor.extent.width = scale_up((std::max)(max_x - min_x, 0));
+        scissor.extent.height = scale_up((std::max)(max_y - min_y, 0));
     } else {
         scissor.offset.x = 0;
         scissor.offset.y = 0;
