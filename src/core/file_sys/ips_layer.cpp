@@ -274,7 +274,7 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
             // <aa-.>
             // <a-.>
             // <aa>
-            for (; p + 1 > sline.cbegin() && std::isspace(p[-1]); --p)
+            for (; p - 1 >= sline.cbegin() && std::isspace(p[-1]); --p)
                 ;
             // now we have the preprocessed string ;)
             std::string_view pp_str(sline_start, p);
