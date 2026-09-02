@@ -191,7 +191,6 @@ static FileSys::VirtualFile VfsDirectoryCreateFileWrapper(const FileSys::Virtual
 #include <windows.h>
 #ifdef _MSC_VER
 #pragma comment(lib, "Dwmapi.lib")
-#pragma comment(lib, "winmm.lib")
 #endif
 
 static inline void ApplyWindowsTitleBarDarkMode(HWND hwnd, bool enabled) {
