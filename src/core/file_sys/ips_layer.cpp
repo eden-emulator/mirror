@@ -120,7 +120,7 @@ std::array<u8, 32> IPSwitchCompiler::GetBuildID() const {
 
 static IPSwitchRecord EscapeStringSequences(std::string_view sv) {
     IPSwitchRecord r{};
-    for (auto it = sv.cbegin(); it != sv.cend(); ) {
+    for (auto it = sv.cbegin(); it < sv.cend(); ) {
         if (*it == '\\' && it + 1 < sv.cend()) {
             switch (it[1]) {
             case 'a': r.data[r.count] = '\a'; break;
@@ -198,6 +198,8 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
                 LOG_WARNING(Loader, "Unknown flag {}", line);
                 break;
             }
+        } else if (patches.empty()) {
+            LOG_WARNING(Loader, "Invalid line not in a patch {}", line);
         } else {
             size_t offset = size_t(std::strtoul(line.data(), nullptr, 16));
             offset += size_t(offset_shift);
