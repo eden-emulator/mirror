@@ -36,7 +36,7 @@ u32 OpusMultiStreamDecodeObject::GetWorkBufferSize(u32 total_stream_count, u32 s
 Result OpusMultiStreamDecodeObject::InitializeDecoder(u32 sample_rate, u32 total_stream_count, u32 channel_count, u32 stereo_stream_count, u8* mappings) {
     if ((codec = avcodec_find_decoder(AV_CODEC_ID_OPUS)) == nullptr)
         return Service::Audio::ResultLibOpusInvalidState;
-    if ((avctx = avcodec_alloc_context3(codec)))
+    if ((avctx = avcodec_alloc_context3(codec)) == nullptr)
         return Service::Audio::ResultLibOpusInvalidState;
     avctx->sample_rate = sample_rate;
     av_channel_layout_default(&avctx->ch_layout, channel_count);
