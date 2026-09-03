@@ -239,6 +239,6 @@ find ./*/ -name "*.dll" | while read -r dll; do deps "$dll"; done
 
 ## RedoxOS
 
-The package install may randomly hang at times, in which case it has to be restarted. ALWAYS do a `sudo pkg update` or the chances of it hanging will be close to 90%. If "multiple" installs fail at once, try installing 1 by 1 the packages.
+Package installs randomly hang at times, you may need to restart it about 3-5 times to complete. Always do `sudo pkg update` or it will hang. Try installing each package individually.
 
-When CMake invokes certain file syscalls - it may sometimes cause crashes or corruptions on the (kernel?) address space - so reboot the system if there is a "hang" in CMake.
+When CMake invokes certain file syscalls - most of the time it causes crashes, and corruptions on the address space. Reboot if there's a freeze over 5 minutes.

@@ -12,7 +12,7 @@ AMD64, aka x86_64, is the most tested and supported architecture for desktop tar
 
 ### Caveats
 
-AMD64 systems are almost always limited by the CPU. For example, a Zen 5/RX 6600 system will often hit max CPU usage before the GPU ever reaches 70% usage, with minimal exceptions (that tend to pop up only at >200fps). JIT is slow!
+AMD64 systems are almost always limited by the CPU. For example, a Zen 5/RX 6600 system will often hit max CPU usage before the GPU ever reaches 70% usage, with minimal exceptions (that tend to pop up only at >200fps). JIT is slow.
 
 Computers on Linux will almost always run Eden strictly better than an equivalent machine on Windows. This is largely due to the way the Linux kernel handles memory management (and the lack of Microsoft spyware).
 
@@ -24,7 +24,7 @@ ARM64, aka aarch64, is the only supported architecture for Android, with limited
 
 ### Caveats
 
-NCE (Native Code Execution) is currently only available on Android and (experimentally) Linux. Support for macOS is in the works, but Windows is extremely unlikely to ever happen (if you want it--submit patches!). Generally, if NCE is available, you should pretty much always use it due to the massive performance hit JIT has.
+NCE (Native Code Execution) is currently only available on Android and (experimentally) Linux. Support for macOS is in the works, but Windows is extremely unlikely to ever happen (if you want it -- submit patches). Generally, if NCE is available, you should pretty much always use it due to the massive performance hit JIT has.
 
 When NCE is enabled, do note that the GPU will almost always be the limiting factor. This is especially the case for Android, as well as desktops that lack dedicated GPUs; Adreno, Mali, PowerVR, etc. GPUs are generally significantly weaker relative to their respective CPUs.
 
@@ -44,7 +44,7 @@ Only Fedora/riscv64 has been tested, but in theory, every riscv64 distribution t
 
 ## Other
 
-Other architectures, such as SPARC, MIPS, PowerPC, Loong, and all 32-bit architectures are completely unsupported, as there is no JIT backend or emitter thereof. If you want support for it -- submit patches!
+Other architectures, such as SPARC, MIPS, PowerPC, Loong, and all 32-bit architectures are completely unsupported, as there is no JIT backend or emitter thereof. If you want support for it -- submit patches.
 
 IA-64 (Itanium) support is completely unknown. Existing amd64 packages will not run on IA-64 (assuming you can even find a supported Windows/Linux distribution)
 
@@ -106,14 +106,14 @@ Qualcomm Snapdragon SoCs are generally the most well supported.
   * A good base to compare to is the Snapdragon 865--e.g. [Tensor vs SD865](https://archive.is/M1P58)
   * Some benchmarks may be misleading due to thermal throttling OR RAM requirements.
     - For example, a Pixel 6a (Tensor G1) performs about 1/3 as well as an 865 due to its lack of RAM and poor thermals.
-  * Remember--always use a cooler if you can, and you MUST have *at least* 8GB of RAM!
+  * Remember--always use a cooler if you can, and you MUST have *at least* 8GB of RAM.
 - If you're not sure what SoC you have, check [GSMArena](https://www.gsmarena.com) - e.g. [Pixel 9 Pro](https://archive.ph/91VhA)
 
 Custom ROMs are recommended, *as long as* you know what you're doing.
 - For most devices, [LineageOS](https://lineageos.org/) is preferred.
 - [CalyxOS](https://calyxos.org/) is available as well.
 - For Google Pixel devices ONLY... and [soon another OEM](https://archive.ph/cPpMd)... [GrapheneOS](https://grapheneos.org/) is highly recommended.
-  * As of October 5, 2025, the Pixel 10 line is unsupported, however, [it will be](https://archive.is/viAUl) in the very near future!
+  * As of October 5, 2025, the Pixel 10 line is unsupported, however, [it will be](https://archive.is/viAUl) in the very near future.
   * Keep checking the [FAQ page](https://grapheneos.org/faq#supported-devices) for news.
 - Custom ROMs will likely be exclusively recommended in the future due to Google's upcoming [draconian](https://archive.is/hGIjZ), [anti-privacy, anti-user](https://archive.is/mc1CJ) verification requirements.
 

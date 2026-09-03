@@ -38,7 +38,7 @@ Pull requests are only to be merged by core developers when properly tested and 
 
 - The level of namespacing is generally left to the committer's choice.
 - However, we never recommend going more than two levels *except* in `hle`, in which case you may go as many as four levels depending on the specificity of your changes.
-- Ocassionally, up to two additional namespaces may be provided for more clarity.
+- Occasionally, up to two additional namespaces may be provided for more clarity.
   - Changes that affect the entire project (sans CMake changes) should be namespaced as `meta`.
 - Maintainers are permitted to change namespaces at will.
 - Commits within PRs are not required to be namespaced, but it is highly recommended.
@@ -51,8 +51,8 @@ When adding new settings, use `tr("Setting:")` if the setting is meant to be a f
 - Debug settings must never be turned on by default.
 - Provide reasonable bounds (for example, a setting controlling the amount of VRAM should never be 0).
 - The description of the setting must be short and concise, if the setting "does a lot of things" consider splitting the setting into multiple if possible.
-- Try to avoid excessive/redundant explainations "recommended for most users and games" can just be "(recommended)".
-- Try to not write "slow/fast" options unless it clearly degrades/increases performance for a given case, as most options may modify behaviour that result in different metrics accross different systems. If for example the option is an "accuracy" option, writing "High" is sufficient to imply "Slow". No need to write "High (Slow)".
+- Try to avoid excessive/redundant explanations "recommended for most users and games" can just be "(recommended)".
+- Try to not write "slow/fast" options unless it clearly degrades/increases performance for a given case, as most options may modify behavior that result in different metrics across different systems. If for example the option is an "accuracy" option, writing "High" is sufficient to imply "Slow". No need to write "High (Slow)".
 
 Some examples:
 
@@ -91,7 +91,7 @@ You may additionally need the `Qt Extension Pack` extension if building Qt.
 
 # Build speedup
 
-If you have an HDD, use ramdisk (build in RAM), approximately you need 4GB for a full build with debug symbols:
+If you have an HDD, use ramdisk (build in RAM); you need about 4GB for a `RelWithDebInfo` build:
 
 ```sh
 mkdir /tmp/ramdisk
