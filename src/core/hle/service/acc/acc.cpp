@@ -1388,7 +1388,7 @@ public:
             {6, nullptr, "GetProfileDigest"},
             {50, &ACC_U1::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
             {51, &ACC_U1::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
-            {51, &ACC_U1::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"},
+            {52, &ACC_U1::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"},
             {60, &ACC_U1::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"},
             {99, nullptr, "DebugActivateOpenContextRetention"},
             {100, nullptr, "GetUserRegistrationNotifier"},
