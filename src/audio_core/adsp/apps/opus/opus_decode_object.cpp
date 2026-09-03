@@ -34,8 +34,10 @@ Result OpusDecodeObject::InitializeDecoder(u32 sample_rate, u32 channel_count) {
 }
 
 Result OpusDecodeObject::Shutdown() {
-    if (avctx)
+    if (avctx) {
         avcodec_free_context(&avctx);
+        avctx = nullptr;
+    }
     return ResultSuccess;
 }
 

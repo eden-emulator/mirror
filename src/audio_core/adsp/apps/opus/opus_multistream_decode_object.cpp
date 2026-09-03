@@ -44,8 +44,10 @@ Result OpusMultiStreamDecodeObject::InitializeDecoder(u32 sample_rate, u32 total
 }
 
 Result OpusMultiStreamDecodeObject::Shutdown() {
-    if (avctx)
+    if (avctx) {
         avcodec_free_context(&avctx);
+        avctx = nullptr;
+    }
     return ResultSuccess;
 }
 
