@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <type_traits>
+#include <array>
+#include <cstddef>
 #include "common/common_funcs.h"
 #include "common/common_types.h"
 #include "common/literals.h"

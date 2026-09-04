@@ -7,6 +7,7 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 
 #include "common/common_funcs.h"
 #include "common/page_table.h"

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include "common/alignment.h"
 #include "core/file_sys/fssystem/fs_i_storage.h"
 #include "core/file_sys/fssystem/fs_types.h"

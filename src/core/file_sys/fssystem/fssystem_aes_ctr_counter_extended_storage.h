@@ -7,6 +7,7 @@
 #pragma once
 
 #include <optional>
+#include <type_traits>
 
 #include "common/literals.h"
 #include "core/file_sys/fssystem/fs_i_storage.h"

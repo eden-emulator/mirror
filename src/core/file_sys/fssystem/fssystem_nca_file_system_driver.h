@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <type_traits>
+#include <cstddef>
 #include "core/file_sys/fssystem/fssystem_compression_common.h"
 #include "core/file_sys/fssystem/fssystem_nca_header.h"
 #include "core/file_sys/vfs/vfs.h"

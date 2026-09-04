@@ -4,6 +4,9 @@
 #pragma once
 
 #include <optional>
+#include <array>
+#include <cstddef>
+#include <type_traits>
 
 #include "core/file_sys/fssystem/fs_i_storage.h"
 #include "core/file_sys/fssystem/fs_types.h"

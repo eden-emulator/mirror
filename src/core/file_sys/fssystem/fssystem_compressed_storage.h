@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <type_traits>
+#include <cstddef>
 #include "common/literals.h"
 
 #include "core/file_sys/errors.h"

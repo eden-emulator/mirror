@@ -4,6 +4,7 @@
 #pragma once
 
 #include <array>
+#include <type_traits>
 #include <functional>
 
 #include "common/common_funcs.h"

@@ -4,7 +4,7 @@
 #pragma once
 
 #include <array>
-
+#include <type_traits>
 #include "common/common_types.h"
 #include "core/hle/service/psc/time/common.h"
 

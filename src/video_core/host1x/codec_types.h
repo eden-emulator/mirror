@@ -8,6 +8,7 @@
 
 #include <array>
 #include <vector>
+#include <type_traits>
 
 #include "common/bit_field.h"
 #include "common/common_funcs.h"

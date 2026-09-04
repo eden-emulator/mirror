@@ -3,6 +3,10 @@
 
 #pragma once
 
+#include <array>
+#include <cstddef>
+#include <type_traits>
+
 #include "common/bit_field.h"
 #include "common/common_funcs.h"
 #include "common/common_types.h"

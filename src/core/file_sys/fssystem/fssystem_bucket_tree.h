@@ -4,6 +4,7 @@
 #pragma once
 
 #include <mutex>
+#include <type_traits>
 
 #include "common/alignment.h"
 #include "common/common_funcs.h"

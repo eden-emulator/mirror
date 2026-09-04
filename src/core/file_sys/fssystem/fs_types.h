@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include "common/common_funcs.h"
 
 namespace FileSys {

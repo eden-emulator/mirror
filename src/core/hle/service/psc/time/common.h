@@ -8,6 +8,7 @@
 
 #include <array>
 #include <chrono>
+#include <type_traits>
 #include <fmt/ranges.h>
 
 #include "common/common_types.h"

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include "common/common_funcs.h"
 #include "common/common_types.h"
 
