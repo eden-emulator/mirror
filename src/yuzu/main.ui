@@ -148,6 +148,7 @@
     <addaction name="action_Show_Filter_Bar"/>
     <addaction name="action_Show_Status_Bar"/>
     <addaction name="action_Show_Performance_Overlay"/>
+    <addaction name="action_Post_Processing_Shaders"/>
     <addaction name="separator"/>
     <addaction name="menu_Reset_Window_Size"/>
     <addaction name="menu_View_Debugging"/>
@@ -608,6 +609,11 @@
    </property>
    <property name="text">
     <string>Show &amp;Performance Overlay</string>
+   </property>
+  </action>
+  <action name="action_Post_Processing_Shaders">
+   <property name="text">
+    <string>Post-Processing &amp;Shaders...</string>
    </property>
   </action>
   <action name="action_Carousel_View">

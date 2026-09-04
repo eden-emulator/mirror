@@ -13,6 +13,7 @@
 #include "common/settings_enums.h"
 #include "frontend_common/settings_generator.h"
 #include "render/performance_overlay.h"
+#include "configuration/configure_post_processing.h"
 #include "updater/update_dialog.h"
 
 #include "common/fs/ryujinx_compat.h"
@@ -1518,6 +1519,7 @@ void MainWindow::ConnectMenuEvents() {
     connect_menu(ui->action_Show_Filter_Bar, &MainWindow::OnToggleFilterBar);
     connect_menu(ui->action_Show_Status_Bar, &MainWindow::OnToggleStatusBar);
     connect_menu(ui->action_Show_Performance_Overlay, &MainWindow::OnTogglePerfOverlay);
+    connect_menu(ui->action_Post_Processing_Shaders, &MainWindow::OnPostProcessingShaders);
 
     connect_menu(ui->action_Reset_Window_Size_720, &MainWindow::ResetWindowSize720);
     connect_menu(ui->action_Reset_Window_Size_900, &MainWindow::ResetWindowSize900);
@@ -3898,6 +3900,20 @@ void MainWindow::OnToggleStatusBar() {
 void MainWindow::OnTogglePerfOverlay() {
     if (perf_overlay)
         perf_overlay->setVisible(ui->action_Show_Performance_Overlay->isChecked());
+}
+
+void MainWindow::OnPostProcessingShaders() {
+    if (post_processing_dialog == nullptr) {
+        post_processing_dialog = new ConfigurePostProcessing(this);
+        connect(post_processing_dialog, &QDialog::finished, post_processing_dialog, [this]() {
+            post_processing_dialog->deleteLater();
+            post_processing_dialog = nullptr;
+        });
+    }
+
+    post_processing_dialog->show();
+    post_processing_dialog->raise();
+    post_processing_dialog->activateWindow();
 }
 
 void MainWindow::OnGameListRefresh() {

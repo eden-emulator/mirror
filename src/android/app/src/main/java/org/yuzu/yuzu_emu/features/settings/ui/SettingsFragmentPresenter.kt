@@ -18,6 +18,9 @@ import org.yuzu.yuzu_emu.features.input.model.NpadStyleIndex
 import org.yuzu.yuzu_emu.features.settings.model.AbstractBooleanSetting
 import org.yuzu.yuzu_emu.features.settings.model.AbstractIntSetting
 import org.yuzu.yuzu_emu.features.settings.model.BooleanSetting
+import org.yuzu.yuzu_emu.features.settings.model.FxUniformBooleanSetting
+import org.yuzu.yuzu_emu.features.settings.model.FxUniformChoiceSetting
+import org.yuzu.yuzu_emu.features.settings.model.FxUniformSliderSetting
 import org.yuzu.yuzu_emu.features.settings.model.ByteSetting
 import org.yuzu.yuzu_emu.features.settings.model.IntSetting
 import org.yuzu.yuzu_emu.features.settings.model.LongSetting
@@ -30,6 +33,7 @@ import org.yuzu.yuzu_emu.features.settings.model.view.*
 import org.yuzu.yuzu_emu.utils.InputHandler
 import org.yuzu.yuzu_emu.utils.LosslessScalingHelper
 import org.yuzu.yuzu_emu.utils.NativeConfig
+import org.yuzu.yuzu_emu.utils.NativePostProcessing
 import org.yuzu.yuzu_emu.utils.DirectoryInitialization
 import org.yuzu.yuzu_emu.utils.FullscreenHelper
 import androidx.core.content.edit
@@ -163,6 +167,7 @@ class SettingsFragmentPresenter(
             MenuTag.SECTION_SYSTEM -> addSystemSettings(sl)
             MenuTag.SECTION_RENDERER -> addGraphicsSettings(sl)
             MenuTag.SECTION_FRAME_GEN -> addFrameGenSettings(sl)
+            MenuTag.SECTION_POST_PROCESSING -> addPostProcessingSettings(sl)
             MenuTag.SECTION_PERFORMANCE_STATS -> addPerformanceOverlaySettings(sl)
             MenuTag.SECTION_SOC_OVERLAY -> addSocOverlaySettings(sl)
             MenuTag.SECTION_INPUT_OVERLAY -> addInputOverlaySettings(sl)
@@ -189,6 +194,219 @@ class SettingsFragmentPresenter(
             }
         }
     }
+
+    private fun addPostProcessingSettings(sl: ArrayList<SettingsItem>) {
+        val usable = NativePostProcessing.catalog().filter { it.valid }
+
+        sl.apply {
+            add(
+                RunnableSetting(
+                    titleId = R.string.post_processing_reload,
+                    descriptionId = R.string.post_processing_reload_description,
+                    isRunnable = true
+                ) {
+                    NativePostProcessing.reload()
+                    settingsViewModel.setReloadListAndNotifyDataset(true)
+                }
+            )
+
+            if (usable.isEmpty()) {
+                add(
+                    RunnableSetting(
+                        titleId = R.string.post_processing_empty,
+                        descriptionString = NativePostProcessing.getShaderDirectory(),
+                        isRunnable = false
+                    ) {}
+                )
+                return@apply
+            }
+
+            val labels = mutableListOf<String>()
+            val files = mutableListOf<String>()
+            val techniques = mutableListOf<String>()
+            for (effect in usable) {
+                for (technique in effect.techniques) {
+                    if (effect.techniques.size == 1) {
+                        labels.add(effect.name)
+                    } else {
+                        labels.add(effect.name + " \u00b7 " + technique)
+                    }
+                    files.add(effect.file)
+                    techniques.add(technique)
+                }
+            }
+
+            val chain = NativePostProcessing.chain()
+            for (index in chain.indices) {
+                val entry = chain[index]
+                val effect = usable.firstOrNull { it.file == entry.file }
+
+                var header = entry.file
+                if (effect != null) {
+                    header = effect.name
+                }
+                add(HeaderSetting(titleString = header))
+
+                add(
+                    IntSingleChoiceSetting(
+                        buildSlotSelector(index, entry, files, techniques),
+                        titleId = R.string.post_processing_effect,
+                        choices = labels.toTypedArray(),
+                        values = labels.indices.toList().toTypedArray()
+                    )
+                )
+
+                if (effect != null) {
+                    for (uniform in effect.uniforms) {
+                        addUniform(this, index, uniform)
+                    }
+                }
+
+                if (index > 0) {
+                    add(
+                        RunnableSetting(
+                            titleId = R.string.post_processing_move_up,
+                            isRunnable = true
+                        ) {
+                            NativePostProcessing.move(index, -1)
+                            NativePostProcessing.store()
+                            settingsViewModel.setReloadListAndNotifyDataset(true)
+                        }
+                    )
+                }
+                if (index < chain.size - 1) {
+                    add(
+                        RunnableSetting(
+                            titleId = R.string.post_processing_move_down,
+                            isRunnable = true
+                        ) {
+                            NativePostProcessing.move(index, 1)
+                            NativePostProcessing.store()
+                            settingsViewModel.setReloadListAndNotifyDataset(true)
+                        }
+                    )
+                }
+                add(
+                    RunnableSetting(
+                        titleId = R.string.post_processing_reset,
+                        isRunnable = true
+                    ) {
+                        NativePostProcessing.resetValues(index)
+                        NativePostProcessing.store()
+                        settingsViewModel.setReloadListAndNotifyDataset(true)
+                    }
+                )
+                add(
+                    RunnableSetting(
+                        titleId = R.string.post_processing_remove,
+                        isRunnable = true
+                    ) {
+                        NativePostProcessing.remove(index)
+                        NativePostProcessing.store()
+                        settingsViewModel.setReloadListAndNotifyDataset(true)
+                    }
+                )
+            }
+
+            add(
+                RunnableSetting(
+                    titleId = R.string.post_processing_add,
+                    isRunnable = true
+                ) {
+                    NativePostProcessing.append(files[0], techniques[0])
+                    NativePostProcessing.store()
+                    settingsViewModel.setReloadListAndNotifyDataset(true)
+                }
+            )
+        }
+    }
+
+    private fun buildSlotSelector(
+        index: Int,
+        entry: NativePostProcessing.ChainEntry,
+        files: List<String>,
+        techniques: List<String>
+    ): AbstractIntSetting = object : AbstractIntSetting {
+        override val key = "fx_slot_$index"
+
+        override fun getInt(needsGlobal: Boolean): Int {
+            for (i in files.indices) {
+                if (files[i] == entry.file && techniques[i] == entry.technique) {
+                    return i
+                }
+            }
+            return -1
+        }
+
+        override fun setInt(value: Int) {
+            NativePostProcessing.replace(index, files[value], techniques[value])
+            NativePostProcessing.store()
+            settingsViewModel.setReloadListAndNotifyDataset(true)
+        }
+
+        override val defaultValue = 0
+        override fun getValueAsString(needsGlobal: Boolean): String = getInt().toString()
+        override fun reset() {}
+        override val isRuntimeModifiable = true
+        override val pairedSettingKey = ""
+        override val isSwitchable = false
+        override val isSaveable = true
+        override var global: Boolean
+            get() = true
+            set(_) {}
+    }
+
+    private fun addUniform(
+        sl: ArrayList<SettingsItem>,
+        index: Int,
+        uniform: NativePostProcessing.Uniform
+    ) {
+        if (uniform.uiType == NativePostProcessing.UI_CHECKBOX ||
+            uniform.kind == NativePostProcessing.KIND_BOOL
+        ) {
+            sl.add(
+                SwitchSetting(
+                    FxUniformBooleanSetting(index, uniform, 0),
+                    titleString = uniform.label,
+                    descriptionString = uniform.tooltip
+                )
+            )
+            return
+        }
+
+        if (uniform.items.isNotEmpty() &&
+            (uniform.uiType == NativePostProcessing.UI_COMBO ||
+                uniform.uiType == NativePostProcessing.UI_RADIO)
+        ) {
+            sl.add(
+                IntSingleChoiceSetting(
+                    FxUniformChoiceSetting(index, uniform, 0),
+                    titleString = uniform.label,
+                    descriptionString = uniform.tooltip,
+                    choices = uniform.items.toTypedArray(),
+                    values = uniform.items.indices.toList().toTypedArray()
+                )
+            )
+            return
+        }
+
+        for (component in 0 until uniform.components) {
+            var title = uniform.label
+            if (uniform.components > 1) {
+                title = uniform.label + " [" + component + "]"
+            }
+            sl.add(
+                SliderSetting(
+                    FxUniformSliderSetting(index, uniform, component),
+                    titleString = title,
+                    descriptionString = uniform.tooltip,
+                    min = 0,
+                    max = uniform.steps
+                )
+            )
+        }
+    }
+
 
     private fun addConfigSettings(sl: ArrayList<SettingsItem>) {
         sl.apply {

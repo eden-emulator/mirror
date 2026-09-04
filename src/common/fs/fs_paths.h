@@ -23,6 +23,7 @@
 #define LOSSLESS_DIR "lossless"
 #define NAND_DIR "nand"
 #define PLAY_TIME_DIR "play_time"
+#define POST_SHADER_DIR "post_shaders"
 #define SCREENSHOTS_DIR "screenshots"
 #define SDMC_DIR "sdmc"
 #define SHADER_DIR "shader"

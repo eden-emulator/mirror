@@ -56,6 +56,7 @@ class QSlider;
 class QHBoxLayout;
 class WaitTreeWidget;
 class PerformanceOverlay;
+class ConfigurePostProcessing;
 enum class GameListOpenTarget;
 enum class DumpRomFSTarget;
 class GameListPlaceholder;
@@ -392,6 +393,7 @@ private slots:
     void OnToggleFilterBar();
     void OnToggleStatusBar();
     void OnTogglePerfOverlay();
+    void OnPostProcessingShaders();
     void OnGameListRefresh();
     void InitializeHotkeys();
     void ToggleFullscreen();
@@ -496,6 +498,7 @@ private:
     QTimer shutdown_timer;
     OverlayDialog* shutdown_dialog{};
     PerformanceOverlay* perf_overlay = nullptr;
+    ConfigurePostProcessing* post_processing_dialog = nullptr;
 
     GameListPlaceholder* game_list_placeholder = nullptr;
 

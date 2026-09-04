@@ -1,0 +1,160 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#include <string>
+
+#include <jni.h>
+#include <nlohmann/json.hpp>
+
+#include "common/android/android_common.h"
+#include "video_core/post_processing/fx_chain.h"
+#include "video_core/post_processing/fx_effect.h"
+
+namespace {
+
+nlohmann::json SerializeUniform(const VideoCore::FxUniformDesc& uniform) {
+    nlohmann::json out;
+    out["name"] = uniform.name;
+    out["label"] = uniform.label;
+    out["tooltip"] = uniform.tooltip;
+    out["category"] = uniform.category;
+    out["kind"] = static_cast<int>(uniform.kind);
+    out["uiType"] = static_cast<int>(uniform.ui_type);
+    out["components"] = uniform.components;
+    out["min"] = uniform.ui_min;
+    out["max"] = uniform.ui_max;
+    out["step"] = uniform.ui_step;
+    out["items"] = uniform.items;
+
+    nlohmann::json defaults = nlohmann::json::array();
+    for (u32 i = 0; i < uniform.components; ++i) {
+        defaults.push_back(uniform.default_value[i]);
+    }
+    out["defaults"] = defaults;
+
+    return out;
+}
+
+} // Anonymous namespace
+
+extern "C" {
+
+jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getCatalogJson(JNIEnv* env,
+                                                                         jobject obj) {
+    nlohmann::json out = nlohmann::json::array();
+
+    for (const auto& effect : VideoCore::GetFxCatalog()) {
+        nlohmann::json entry;
+        entry["file"] = effect.file;
+        entry["name"] = effect.name;
+        entry["error"] = effect.error;
+        entry["techniques"] = effect.techniques;
+
+        nlohmann::json uniforms = nlohmann::json::array();
+        for (const auto& uniform : effect.uniforms) {
+            uniforms.push_back(SerializeUniform(uniform));
+        }
+        entry["uniforms"] = uniforms;
+
+        out.push_back(entry);
+    }
+
+    return Common::Android::ToJString(env, out.dump());
+}
+
+jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getChainJson(JNIEnv* env, jobject obj) {
+    nlohmann::json out = nlohmann::json::array();
+
+    for (const auto& entry : VideoCore::FxChain::Instance().Entries()) {
+        nlohmann::json item;
+        item["file"] = entry.file;
+        item["technique"] = entry.technique;
+
+        nlohmann::json values = nlohmann::json::object();
+        for (const auto& [name, value] : entry.values) {
+            values[name] = {value[0], value[1], value[2], value[3]};
+        }
+        item["values"] = values;
+
+        out.push_back(item);
+    }
+
+    return Common::Android::ToJString(env, out.dump());
+}
+
+void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_append(JNIEnv* env, jobject obj,
+                                                               jstring jfile, jstring jtechnique) {
+    VideoCore::FxChain::Instance().Append(Common::Android::GetJString(env, jfile),
+                                          Common::Android::GetJString(env, jtechnique));
+}
+
+void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_replace(JNIEnv* env, jobject obj,
+                                                                jint index, jstring jfile,
+                                                                jstring jtechnique) {
+    VideoCore::FxChain::Instance().Replace(static_cast<size_t>(index),
+                                           Common::Android::GetJString(env, jfile),
+                                           Common::Android::GetJString(env, jtechnique));
+}
+
+void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_remove(JNIEnv* env, jobject obj,
+                                                               jint index) {
+    VideoCore::FxChain::Instance().Remove(static_cast<size_t>(index));
+}
+
+void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_move(JNIEnv* env, jobject obj, jint index,
+                                                             jint delta) {
+    VideoCore::FxChain::Instance().Move(static_cast<size_t>(index), delta);
+}
+
+void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_resetValues(JNIEnv* env, jobject obj,
+                                                                    jint index) {
+    VideoCore::FxChain::Instance().ResetValues(static_cast<size_t>(index));
+}
+
+jfloat Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getValue(JNIEnv* env, jobject obj,
+                                                                   jint index, jstring juniform,
+                                                                   jint component) {
+    if (component < 0 || component >= 4) {
+        return 0.0f;
+    }
+    const auto value = VideoCore::FxChain::Instance().GetValue(
+        static_cast<size_t>(index), Common::Android::GetJString(env, juniform));
+    return value[static_cast<size_t>(component)];
+}
+
+jboolean Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_hasValue(JNIEnv* env, jobject obj,
+                                                                     jint index,
+                                                                     jstring juniform) {
+    return static_cast<jboolean>(VideoCore::FxChain::Instance().HasValue(
+        static_cast<size_t>(index), Common::Android::GetJString(env, juniform)));
+}
+
+void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_setValue(JNIEnv* env, jobject obj,
+                                                                  jint index, jstring juniform,
+                                                                  jint component, jfloat value) {
+    if (component < 0 || component >= 4) {
+        return;
+    }
+    const std::string uniform = Common::Android::GetJString(env, juniform);
+    auto& chain = VideoCore::FxChain::Instance();
+
+    auto current = chain.GetValue(static_cast<size_t>(index), uniform);
+    current[static_cast<size_t>(component)] = value;
+    chain.SetValue(static_cast<size_t>(index), uniform, current);
+}
+
+void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_store(JNIEnv* env, jobject obj) {
+    VideoCore::FxChain::Instance().StoreToSettings();
+}
+
+void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_reload(JNIEnv* env, jobject obj) {
+    VideoCore::ReloadFxCatalog();
+    VideoCore::FxChain::Instance().DropUnknownEntries();
+}
+
+jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getShaderDirectory(JNIEnv* env,
+                                                                              jobject obj) {
+    return Common::Android::ToJString(env, VideoCore::GetFxRootDirectory().string());
+}
+
+} // extern "C"

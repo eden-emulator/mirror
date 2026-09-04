@@ -173,6 +173,20 @@ class HomeSettingsFragment : Fragment() {
             }
             add(
                 HomeSetting(
+                    R.string.post_processing,
+                    R.string.post_processing_description,
+                    R.drawable.ic_post_processing,
+                    {
+                        val action = HomeNavigationDirections.actionGlobalSettingsActivity(
+                            null,
+                            Settings.MenuTag.SECTION_POST_PROCESSING
+                        )
+                        binding.root.findNavController().navigate(action)
+                    }
+                )
+            )
+            add(
+                HomeSetting(
                     R.string.lossless_scaling,
                     R.string.lossless_scaling_description,
                     R.drawable.ic_duck,

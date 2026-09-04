@@ -15,6 +15,7 @@
 #include "video_core/renderer_vulkan/present/fsr.h"
 #include "video_core/renderer_vulkan/present/sgsr.h"
 #include "video_core/renderer_vulkan/present/fxaa.h"
+#include "video_core/renderer_vulkan/present/post_process.h"
 #include "video_core/renderer_vulkan/present/smaa.h"
 
 namespace Layout {
@@ -66,6 +67,7 @@ private:
 
     void RefreshResources(const Device& device, const Tegra::FramebufferConfig& framebuffer);
     void SetAntiAliasPass(const Device& device);
+    void SetPostProcessPass(const Device& device);
     void ReleaseRawImages();
 
     u64 CalculateBufferSize(const Tegra::FramebufferConfig& framebuffer) const;
@@ -95,6 +97,9 @@ private:
     Settings::AntiAliasing anti_alias_setting{};
     std::variant<std::monostate, FXAA, SMAA> anti_alias{};
     std::variant<std::monostate, SGSR, FSR> sr_filter{};
+    std::optional<PostProcessChain> post_process{};
+    u64 post_process_generation{};
+    VkExtent2D post_process_extent{};
     std::vector<u64> resource_ticks{};
 };
 

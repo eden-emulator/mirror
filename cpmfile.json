@@ -246,6 +246,11 @@
         "repo": "stachenov/quazip",
         "version": "2e95c9001b"
     },
+    "reshade": {
+        "hash": "a1bd3fcf135fb6d018c1831ae45a8942d9777d0418b55e1189921e2ab775d1b53b0a9808924e09ef1c3e68ea11d69b3bcbebc7f4b59de14f6deec2dc24531d5e",
+        "repo": "crosire/reshade",
+        "version": "v6.7.3"
+    },
     "sdl3": {
         "hash": "df5a323af7ac366661a3c0e887969c72584d232f3cc211419d59b0487b620b6b2859d4549c9e8df002ee489290062e466fcfddf7edc0872a37b1f2845e81c0f3",
         "min_version": "3.2.10",

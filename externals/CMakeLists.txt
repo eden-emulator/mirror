@@ -195,6 +195,37 @@ else()
     endif()
 endif()
 
+# reshadefx
+AddJsonPackage(reshade DOWNLOAD_ONLY)
+
+set(RESHADEFX_SHIM_DIR ${CMAKE_CURRENT_BINARY_DIR}/reshadefx_shim)
+file(WRITE ${RESHADEFX_SHIM_DIR}/spirv.hpp "#include <spirv/unified1/spirv.hpp>\n")
+file(WRITE ${RESHADEFX_SHIM_DIR}/GLSL.std.450.h "#include <spirv/unified1/GLSL.std.450.h>\n")
+
+add_library(reshadefx STATIC
+    ${reshade_SOURCE_DIR}/source/effect_codegen_spirv.cpp
+    ${reshade_SOURCE_DIR}/source/effect_expression.cpp
+    ${reshade_SOURCE_DIR}/source/effect_lexer.cpp
+    ${reshade_SOURCE_DIR}/source/effect_parser_exp.cpp
+    ${reshade_SOURCE_DIR}/source/effect_parser_stmt.cpp
+    ${reshade_SOURCE_DIR}/source/effect_preprocessor.cpp
+    ${reshade_SOURCE_DIR}/source/effect_symbol_table.cpp
+)
+
+target_include_directories(reshadefx PUBLIC ${reshade_SOURCE_DIR}/source)
+target_include_directories(reshadefx PRIVATE ${RESHADEFX_SHIM_DIR})
+target_link_libraries(reshadefx PUBLIC SPIRV-Headers::SPIRV-Headers)
+
+if (NOT MSVC)
+    target_compile_options(reshadefx PRIVATE -w)
+else()
+    target_compile_options(reshadefx PRIVATE /w)
+endif()
+
+if (NOT TARGET reshadefx::reshadefx)
+    add_library(reshadefx::reshadefx ALIAS reshadefx)
+endif()
+
 # Catch2
 if (YUZU_TESTS OR DYNARMIC_TESTS)
     AddJsonPackage(catch2)

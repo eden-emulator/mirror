@@ -18,6 +18,8 @@
 #include "video_core/renderer_vulkan/present/sgsr.h"
 #include "video_core/renderer_vulkan/present/fxaa.h"
 #include "video_core/renderer_vulkan/present/layer.h"
+#include "video_core/post_processing/fx_chain.h"
+#include "video_core/renderer_vulkan/present/post_process.h"
 #include "video_core/renderer_vulkan/present/present_push_constants.h"
 #include "video_core/renderer_vulkan/present/smaa.h"
 #include "video_core/renderer_vulkan/present/util.h"
@@ -93,6 +95,7 @@ void Layer::ConfigureDraw(const Device& device, PresentPushConstants* out_push_c
 
     RefreshResources(device, framebuffer);
     SetAntiAliasPass(device);
+    SetPostProcessPass(device);
 
     // Finish any pending renderpass
     scheduler.RequestOutsideRenderPassOperationContext();
@@ -113,6 +116,10 @@ void Layer::ConfigureDraw(const Device& device, PresentPushConstants* out_push_c
         fxaa->Draw(device, scheduler, image_index, &source_image, &source_image_view);
     } else if (auto* smaa = std::get_if<SMAA>(&anti_alias)) {
         smaa->Draw(device, scheduler, image_index, &source_image, &source_image_view);
+    }
+
+    if (post_process.has_value()) {
+        post_process->Draw(device, scheduler, image_index, &source_image, &source_image_view);
     }
 
     auto crop_rect = Tegra::NormalizeCrop(framebuffer, texture_width, texture_height);
@@ -211,6 +218,38 @@ void Layer::SetAntiAliasPass(const Device& device) {
     default:
         anti_alias.emplace<std::monostate>();
         break;
+    }
+}
+
+void Layer::SetPostProcessPass(const Device& device) {
+    const VkExtent2D render_area{
+        .width = Settings::values.resolution_info.ScaleUp(raw_width),
+        .height = Settings::values.resolution_info.ScaleUp(raw_height),
+    };
+
+    const u64 generation = VideoCore::FxChain::Instance().Snapshot().generation;
+
+    if (post_process_generation == generation && post_process_extent.width == render_area.width &&
+        post_process_extent.height == render_area.height) {
+        return;
+    }
+
+    for (const u64 tick : resource_ticks) {
+        scheduler.Wait(tick);
+    }
+
+    post_process_generation = generation;
+    post_process_extent = render_area;
+    post_process.reset();
+
+    if (VideoCore::FxChain::Instance().Size() == 0) {
+        return;
+    }
+
+    post_process.emplace(device, memory_allocator, scheduler, image_count, render_area);
+
+    if (post_process->Empty()) {
+        post_process.reset();
     }
 }
 
