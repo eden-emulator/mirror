@@ -4,8 +4,6 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <bit>
-
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
@@ -23,29 +21,13 @@ Id SharedPointer(EmitContext& ctx, Id offset, u32 index_offset = 0) {
                : ctx.OpAccessChain(ctx.shared_u32, ctx.shared_memory_u32, index);
 }
 
-Id StorageIndex(EmitContext& ctx, const IR::Value& offset, size_t element_size) {
-    if (offset.IsImmediate()) {
-        const u32 imm_offset{static_cast<u32>(offset.U32() / element_size)};
-        return ctx.Const(imm_offset);
-    }
-    const u32 shift{static_cast<u32>(std::countr_zero(element_size))};
-    const Id index{ctx.Def(offset)};
-    if (shift == 0) {
-        return index;
-    }
-    const Id shift_id{ctx.Const(shift)};
-    return ctx.OpShiftRightLogical(ctx.U32[1], index, shift_id);
-}
-
 Id StoragePointer(EmitContext& ctx, const StorageTypeDefinition& type_def,
                   Id StorageDefinitions::*member_ptr, const IR::Value& binding,
                   const IR::Value& offset, size_t element_size) {
     if (!binding.IsImmediate()) {
         throw NotImplementedException("Dynamic storage buffer indexing");
     }
-    const Id ssbo{ctx.ssbos[binding.U32()].*member_ptr};
-    const Id index{StorageIndex(ctx, offset, element_size)};
-    return ctx.OpAccessChain(type_def.element, ssbo, ctx.u32_zero_value, index);
+    return ctx.StoragePointer(binding.U32(), ctx.Def(offset), type_def, static_cast<u32>(element_size), member_ptr);
 }
 
 std::pair<Id, Id> AtomicArgs(EmitContext& ctx) {
@@ -216,16 +198,14 @@ Id EmitStorageAtomicUMax32(EmitContext& ctx, const IR::Value& binding, const IR:
 
 Id EmitStorageAtomicInc32(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                           Id value) {
-    const Id ssbo{ctx.ssbos[binding.U32()].U32};
-    const Id base_index{StorageIndex(ctx, offset, sizeof(u32))};
-    return ctx.OpFunctionCall(ctx.U32[1], ctx.increment_cas_ssbo, base_index, value, ssbo);
+    const Id pointer{StoragePointer(ctx, ctx.storage_types.U32, &StorageDefinitions::U32, binding, offset, sizeof(u32))};
+    return ctx.OpFunctionCall(ctx.U32[1], ctx.increment_cas_ssbo, pointer, value);
 }
 
 Id EmitStorageAtomicDec32(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                           Id value) {
-    const Id ssbo{ctx.ssbos[binding.U32()].U32};
-    const Id base_index{StorageIndex(ctx, offset, sizeof(u32))};
-    return ctx.OpFunctionCall(ctx.U32[1], ctx.decrement_cas_ssbo, base_index, value, ssbo);
+    const Id pointer{StoragePointer(ctx, ctx.storage_types.U32, &StorageDefinitions::U32, binding, offset, sizeof(u32))};
+    return ctx.OpFunctionCall(ctx.U32[1], ctx.decrement_cas_ssbo, pointer, value);
 }
 
 Id EmitStorageAtomicAnd32(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
@@ -364,56 +344,49 @@ Id EmitStorageAtomicExchange32x2(EmitContext& ctx, const IR::Value& binding,
 
 Id EmitStorageAtomicAddF32(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                            Id value) {
-    const Id ssbo{ctx.ssbos[binding.U32()].U32};
-    const Id base_index{StorageIndex(ctx, offset, sizeof(u32))};
-    return ctx.OpFunctionCall(ctx.F32[1], ctx.f32_add_cas, base_index, value, ssbo);
+    const Id pointer{StoragePointer(ctx, ctx.storage_types.U32, &StorageDefinitions::U32, binding, offset, sizeof(u32))};
+    return ctx.OpFunctionCall(ctx.F32[1], ctx.f32_add_cas, pointer, value);
 }
 
 Id EmitStorageAtomicAddF16x2(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                              Id value) {
-    const Id ssbo{ctx.ssbos[binding.U32()].U32};
-    const Id base_index{StorageIndex(ctx, offset, sizeof(u32))};
-    const Id result{ctx.OpFunctionCall(ctx.F16[2], ctx.f16x2_add_cas, base_index, value, ssbo)};
+    const Id pointer{StoragePointer(ctx, ctx.storage_types.U32, &StorageDefinitions::U32, binding, offset, sizeof(u32))};
+    const Id result{ctx.OpFunctionCall(ctx.F16[2], ctx.f16x2_add_cas, pointer, value)};
     return ctx.OpBitcast(ctx.U32[1], result);
 }
 
 Id EmitStorageAtomicAddF32x2(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                              Id value) {
-    const Id ssbo{ctx.ssbos[binding.U32()].U32};
-    const Id base_index{StorageIndex(ctx, offset, sizeof(u32))};
-    const Id result{ctx.OpFunctionCall(ctx.F32[2], ctx.f32x2_add_cas, base_index, value, ssbo)};
+    const Id pointer{StoragePointer(ctx, ctx.storage_types.U32, &StorageDefinitions::U32, binding, offset, sizeof(u32))};
+    const Id result{ctx.OpFunctionCall(ctx.F32[2], ctx.f32x2_add_cas, pointer, value)};
     return ctx.OpPackHalf2x16(ctx.U32[1], result);
 }
 
 Id EmitStorageAtomicMinF16x2(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                              Id value) {
-    const Id ssbo{ctx.ssbos[binding.U32()].U32};
-    const Id base_index{StorageIndex(ctx, offset, sizeof(u32))};
-    const Id result{ctx.OpFunctionCall(ctx.F16[2], ctx.f16x2_min_cas, base_index, value, ssbo)};
+    const Id pointer{StoragePointer(ctx, ctx.storage_types.U32, &StorageDefinitions::U32, binding, offset, sizeof(u32))};
+    const Id result{ctx.OpFunctionCall(ctx.F16[2], ctx.f16x2_min_cas, pointer, value)};
     return ctx.OpBitcast(ctx.U32[1], result);
 }
 
 Id EmitStorageAtomicMinF32x2(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                              Id value) {
-    const Id ssbo{ctx.ssbos[binding.U32()].U32};
-    const Id base_index{StorageIndex(ctx, offset, sizeof(u32))};
-    const Id result{ctx.OpFunctionCall(ctx.F32[2], ctx.f32x2_min_cas, base_index, value, ssbo)};
+    const Id pointer{StoragePointer(ctx, ctx.storage_types.U32, &StorageDefinitions::U32, binding, offset, sizeof(u32))};
+    const Id result{ctx.OpFunctionCall(ctx.F32[2], ctx.f32x2_min_cas, pointer, value)};
     return ctx.OpPackHalf2x16(ctx.U32[1], result);
 }
 
 Id EmitStorageAtomicMaxF16x2(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                              Id value) {
-    const Id ssbo{ctx.ssbos[binding.U32()].U32};
-    const Id base_index{StorageIndex(ctx, offset, sizeof(u32))};
-    const Id result{ctx.OpFunctionCall(ctx.F16[2], ctx.f16x2_max_cas, base_index, value, ssbo)};
+    const Id pointer{StoragePointer(ctx, ctx.storage_types.U32, &StorageDefinitions::U32, binding, offset, sizeof(u32))};
+    const Id result{ctx.OpFunctionCall(ctx.F16[2], ctx.f16x2_max_cas, pointer, value)};
     return ctx.OpBitcast(ctx.U32[1], result);
 }
 
 Id EmitStorageAtomicMaxF32x2(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                              Id value) {
-    const Id ssbo{ctx.ssbos[binding.U32()].U32};
-    const Id base_index{StorageIndex(ctx, offset, sizeof(u32))};
-    const Id result{ctx.OpFunctionCall(ctx.F32[2], ctx.f32x2_max_cas, base_index, value, ssbo)};
+    const Id pointer{StoragePointer(ctx, ctx.storage_types.U32, &StorageDefinitions::U32, binding, offset, sizeof(u32))};
+    const Id result{ctx.OpFunctionCall(ctx.F32[2], ctx.f32x2_max_cas, pointer, value)};
     return ctx.OpPackHalf2x16(ctx.U32[1], result);
 }
 

@@ -157,9 +157,7 @@ bool ComputePipeline::Configure(Tegra::Engines::KeplerCompute& kepler_compute,
     buffer_cache.UnbindComputeStorageBuffers();
     size_t ssbo_index{};
     for (const auto& desc : info.storage_buffers_descriptors) {
-        ASSERT(desc.count == 1);
-        buffer_cache.BindComputeStorageBuffer(ssbo_index, desc.cbuf_index, desc.cbuf_offset,
-                                              desc.is_written);
+        buffer_cache.BindComputeStorageBuffer(ssbo_index, desc.cbuf_index, desc.cbuf_offset, desc.is_written, desc.count);
         ++ssbo_index;
     }
 

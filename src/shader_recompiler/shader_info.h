@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <bitset>
 #include <map>
@@ -339,6 +340,10 @@ struct Info {
     TextureDescriptors texture_descriptors;
     ImageDescriptors image_descriptors;
 };
+
+[[nodiscard]] inline bool UsesStorageBufferMappings(const Info& info) noexcept {
+    return std::ranges::any_of(info.storage_buffers_descriptors, [](const auto& desc) { return desc.count > 1; });
+}
 
 template <typename Descriptors>
 u32 NumDescriptors(const Descriptors& descriptors) {

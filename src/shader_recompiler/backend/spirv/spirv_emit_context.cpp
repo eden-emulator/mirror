@@ -299,7 +299,7 @@ void DefineConstBuffers(EmitContext& ctx, const Info& info, Id UniformDefinition
 }
 
 void DefineSsbos(EmitContext& ctx, StorageTypeDefinition& type_def,
-                 Id StorageDefinitions::*member_type, const Info& info, u32 binding, Id type,
+                 Id StorageDefinitions::* member_type, const Info& info, u32 binding, Id type,
                  u32 stride) {
     const Id array_type{ctx.TypeRuntimeArray(type)};
     ctx.Decorate(array_type, spv::Decoration::ArrayStride, stride);
@@ -309,23 +309,27 @@ void DefineSsbos(EmitContext& ctx, StorageTypeDefinition& type_def,
     ctx.MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
 
     const Id struct_pointer{ctx.TypePointer(spv::StorageClass::StorageBuffer, struct_type)};
-    type_def.array = struct_pointer;
     type_def.element = ctx.TypePointer(spv::StorageClass::StorageBuffer, type);
 
     u32 index{};
     for (const StorageBufferDescriptor& desc : info.storage_buffers_descriptors) {
-        const Id id{ctx.AddGlobalVariable(struct_pointer, spv::StorageClass::StorageBuffer)};
+        const Id variable_type{[&] {
+            if (desc.count == 1) {
+                return struct_pointer;
+            }
+            const Id descriptor_array{ctx.TypeArray(struct_type, ctx.Const(desc.count))};
+            return ctx.TypePointer(spv::StorageClass::StorageBuffer, descriptor_array);
+        }()};
+        const Id id{ctx.AddGlobalVariable(variable_type, spv::StorageClass::StorageBuffer)};
         ctx.Decorate(id, spv::Decoration::Binding, binding);
         ctx.Decorate(id, spv::Decoration::DescriptorSet, 0U);
         ctx.Name(id, fmt::format("ssbo{}", index));
         if (ctx.profile.supported_spirv >= 0x00010400) {
             ctx.interfaces.push_back(id);
         }
-        for (size_t i = 0; i < desc.count; ++i) {
-            ctx.ssbos[index + i].*member_type = id;
-        }
-        index += desc.count;
-        binding += desc.count;
+        ctx.ssbos[index].*member_type = id;
+        ++index;
+        ++binding;
     }
 }
 
@@ -368,8 +372,7 @@ Id CasFunction(EmitContext& ctx, Operation operation, Id value_type) {
     return func;
 }
 
-Id CasLoop(EmitContext& ctx, Operation operation, Id array_pointer, Id element_pointer,
-           Id value_type, Id memory_type, spv::Scope scope) {
+Id CasLoop(EmitContext& ctx, Operation operation, Id element_pointer, Id value_type, Id memory_type, spv::Scope scope) {
     const bool is_shared{scope == spv::Scope::Workgroup};
     const bool is_struct{!is_shared || ctx.uses_explicit_workgroup_layout};
     const Id cas_func{CasFunction(ctx, operation, value_type)};
@@ -379,14 +382,12 @@ Id CasLoop(EmitContext& ctx, Operation operation, Id array_pointer, Id element_p
     const Id loop_header{ctx.OpLabel()};
     const Id continue_block{ctx.OpLabel()};
     const Id merge_block{ctx.OpLabel()};
-    const Id func_type{is_shared
-                           ? ctx.TypeFunction(value_type, ctx.U32[1], value_type)
-                           : ctx.TypeFunction(value_type, ctx.U32[1], value_type, array_pointer)};
+    const Id func_type{is_shared ? ctx.TypeFunction(value_type, ctx.U32[1], value_type)
+                                 : ctx.TypeFunction(value_type, element_pointer, value_type)};
 
     const Id func{ctx.OpFunction(value_type, spv::FunctionControlMask::MaskNone, func_type)};
-    const Id index{ctx.OpFunctionParameter(ctx.U32[1])};
+    const Id address{ctx.OpFunctionParameter(is_shared ? ctx.U32[1] : element_pointer)};
     const Id op_b{ctx.OpFunctionParameter(value_type)};
-    const Id base{is_shared ? ctx.shared_memory_u32 : ctx.OpFunctionParameter(array_pointer)};
     ctx.AddLabel();
     ctx.OpBranch(loop_header);
     ctx.AddLabel(loop_header);
@@ -395,8 +396,13 @@ Id CasLoop(EmitContext& ctx, Operation operation, Id array_pointer, Id element_p
     ctx.OpBranch(continue_block);
 
     ctx.AddLabel(continue_block);
-    const Id word_pointer{is_struct ? ctx.OpAccessChain(element_pointer, base, zero, index)
-                                    : ctx.OpAccessChain(element_pointer, base, index)};
+    const Id word_pointer{[&] {
+        if (!is_shared) {
+            return address;
+        }
+        return is_struct ? ctx.OpAccessChain(element_pointer, ctx.shared_memory_u32, zero, address)
+                         : ctx.OpAccessChain(element_pointer, ctx.shared_memory_u32, address);
+    }()};
     if (value_type.value == ctx.F32[2].value) {
         const Id u32_value{ctx.OpLoad(ctx.U32[1], word_pointer)};
         const Id value{ctx.OpUnpackHalf2x16(ctx.F32[2], u32_value)};
@@ -480,6 +486,7 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
     DefineSharedMemoryFunctions(program);
     DefineConstantBuffers(program.info, uniform_binding);
     DefineConstantBufferIndirectFunctions(program.info);
+    DefineStorageBufferMappings(program.info, storage_binding);
     DefineStorageBuffers(program.info, storage_binding);
     DefineTextureBuffers(program.info, texture_binding);
     DefineImageBuffers(program.info, image_binding);
@@ -530,6 +537,36 @@ Id EmitContext::BitOffset16(const IR::Value& offset) {
         return Const(((offset.U32() / 2) % 2) * 16);
     }
     return OpBitwiseAnd(U32[1], OpShiftLeftLogical(U32[1], Def(offset), Const(3u)), Const(16u));
+}
+
+Id EmitContext::StoragePointer(u32 binding, Id byte_offset, const StorageTypeDefinition& type_def,
+                               u32 element_size, Id StorageDefinitions::* member_ptr) {
+    const Id ssbo{ssbos[binding].*member_ptr};
+    const u32 segment_count{storage_buffer_mapping_counts[binding]};
+    if (segment_count <= 1) {
+        const Id index{
+            element_size == 1
+                ? byte_offset
+                : OpShiftRightLogical(U32[1], byte_offset, Const(static_cast<u32>(std::countr_zero(element_size))))};
+        return OpAccessChain(type_def.element, ssbo, u32_zero_value, index);
+    }
+
+    const Id mapped{OpFunctionCall(U32[2], storage_buffer_map_func,
+                                   Const(storage_buffer_mapping_bases[binding]),
+                                   Const(segment_count), byte_offset)};
+    const Id segment{OpCompositeExtract(U32[1], mapped, 0U)};
+    const Id local_offset{OpCompositeExtract(U32[1], mapped, 1U)};
+    const Id index{
+        element_size == 1
+            ? local_offset
+            : OpShiftRightLogical(U32[1], local_offset, Const(static_cast<u32>(std::countr_zero(element_size))))};
+    Decorate(segment, spv::Decoration::NonUniform);
+    non_uniform_ids.insert(segment.value);
+    const Id pointer{OpAccessChain(type_def.element, ssbo, segment, u32_zero_value, index)};
+    Decorate(pointer, spv::Decoration::NonUniform);
+    non_uniform_ids.insert(pointer.value);
+    uses_nonuniform_storage_buffer = true;
+    return pointer;
 }
 
 void EmitContext::DefineCommonTypes(const Info& info) {
@@ -696,12 +733,10 @@ void EmitContext::DefineSharedMemory(const IR::Program& program) {
 
 void EmitContext::DefineSharedMemoryFunctions(const IR::Program& program) {
     if (program.info.uses_shared_increment) {
-        increment_cas_shared = CasLoop(*this, Operation::Increment, shared_memory_u32_type,
-                                       shared_u32, U32[1], U32[1], spv::Scope::Workgroup);
+        increment_cas_shared = CasLoop(*this, Operation::Increment, shared_u32, U32[1], U32[1], spv::Scope::Workgroup);
     }
     if (program.info.uses_shared_decrement) {
-        decrement_cas_shared = CasLoop(*this, Operation::Decrement, shared_memory_u32_type,
-                                       shared_u32, U32[1], U32[1], spv::Scope::Workgroup);
+        decrement_cas_shared = CasLoop(*this, Operation::Decrement, shared_u32, U32[1], U32[1], spv::Scope::Workgroup);
     }
 }
 
@@ -945,8 +980,7 @@ void EmitContext::DefineGlobalMemoryFunctions(const Info& info) {
     }
     using DefPtr = Id StorageDefinitions::*;
     const Id zero{u32_zero_value};
-    const auto define_body{[&](DefPtr ssbo_member, Id addr, Id element_pointer, u32 shift,
-                               auto&& callback) {
+    const auto define_body{[&](DefPtr ssbo_member, Id addr, const StorageTypeDefinition& type_def, u32 shift, auto&& callback) {
         AddLabel();
         const size_t num_buffers{info.storage_buffers_descriptors.size()};
         for (size_t index = 0; index < num_buffers; ++index) {
@@ -973,30 +1007,28 @@ void EmitContext::DefineGlobalMemoryFunctions(const Info& info) {
             OpSelectionMerge(else_label, spv::SelectionControlMask::MaskNone);
             OpBranchConditional(cond, then_label, else_label);
             AddLabel(then_label);
-            const Id ssbo_id{ssbos[index].*ssbo_member};
             const Id ssbo_offset{OpUConvert(U32[1], OpISub(U64, addr, ssbo_addr))};
-            const Id ssbo_index{OpShiftRightLogical(U32[1], ssbo_offset, Const(shift))};
-            const Id ssbo_pointer{OpAccessChain(element_pointer, ssbo_id, zero, ssbo_index)};
+            const Id ssbo_pointer{StoragePointer(static_cast<u32>(index), ssbo_offset, type_def, 1U << shift, ssbo_member)};
             callback(ssbo_pointer);
             AddLabel(else_label);
         }
     }};
-    const auto define_load{[&](DefPtr ssbo_member, Id element_pointer, Id type, u32 shift) {
-        const Id function_type{TypeFunction(type, U64)};
-        const Id func_id{OpFunction(type, spv::FunctionControlMask::MaskNone, function_type)};
-        const Id addr{OpFunctionParameter(U64)};
-        define_body(ssbo_member, addr, element_pointer, shift,
-                    [&](Id ssbo_pointer) { OpReturnValue(OpLoad(type, ssbo_pointer)); });
-        OpReturnValue(ConstantNull(type));
-        OpFunctionEnd();
-        return func_id;
-    }};
-    const auto define_write{[&](DefPtr ssbo_member, Id element_pointer, Id type, u32 shift) {
+    const auto define_load{
+        [&](DefPtr ssbo_member, const StorageTypeDefinition& type_def, Id type, u32 shift) {
+            const Id function_type{TypeFunction(type, U64)};
+            const Id func_id{OpFunction(type, spv::FunctionControlMask::MaskNone, function_type)};
+            const Id addr{OpFunctionParameter(U64)};
+            define_body(ssbo_member, addr, type_def, shift, [&](Id ssbo_pointer) { OpReturnValue(OpLoad(type, ssbo_pointer)); });
+            OpReturnValue(ConstantNull(type));
+            OpFunctionEnd();
+            return func_id;
+        }};
+    const auto define_write{[&](DefPtr ssbo_member, const StorageTypeDefinition& type_def, Id type, u32 shift) {
         const Id function_type{TypeFunction(void_id, U64, type)};
         const Id func_id{OpFunction(void_id, spv::FunctionControlMask::MaskNone, function_type)};
         const Id addr{OpFunctionParameter(U64)};
         const Id data{OpFunctionParameter(type)};
-        define_body(ssbo_member, addr, element_pointer, shift, [&](Id ssbo_pointer) {
+        define_body(ssbo_member, addr, type_def, shift, [&](Id ssbo_pointer) {
             OpStore(ssbo_pointer, data);
             OpReturn();
         });
@@ -1006,10 +1038,9 @@ void EmitContext::DefineGlobalMemoryFunctions(const Info& info) {
     }};
     const auto define{
         [&](DefPtr ssbo_member, const StorageTypeDefinition& type_def, Id type, size_t size) {
-            const Id element_type{type_def.element};
             const u32 shift{static_cast<u32>(std::countr_zero(size))};
-            const Id load_func{define_load(ssbo_member, element_type, type, shift)};
-            const Id write_func{define_write(ssbo_member, element_type, type, shift)};
+            const Id load_func{define_load(ssbo_member, type_def, type, shift)};
+            const Id write_func{define_write(ssbo_member, type_def, type, shift)};
             return std::make_pair(load_func, write_func);
         }};
     std::tie(load_global_func_u32, write_global_func_u32) =
@@ -1228,6 +1259,79 @@ void EmitContext::DefineConstantBufferIndirectFunctions(const Info& info) {
     }
 }
 
+void EmitContext::DefineStorageBufferMappings(const Info& info, u32& binding) {
+    if (!UsesStorageBufferMappings(info)) {
+        return;
+    }
+    ASSERT(profile.support_storage_buffer_array_nonuniform_indexing);
+    AddExtension("SPV_KHR_storage_buffer_storage_class");
+
+    const u32 num_entries{NumDescriptors(info.storage_buffers_descriptors)};
+    const Id array_type{TypeArray(U32[1], Const(num_entries))};
+    Decorate(array_type, spv::Decoration::ArrayStride, sizeof(u32));
+    const Id struct_type{TypeStruct(array_type)};
+    Decorate(struct_type, spv::Decoration::Block);
+    MemberName(struct_type, 0, "segment_sizes");
+    MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
+    const Id pointer_type{TypePointer(spv::StorageClass::StorageBuffer, struct_type)};
+    storage_buffer_mapping_u32 = TypePointer(spv::StorageClass::StorageBuffer, U32[1]);
+    storage_buffer_mapping = AddGlobalVariable(pointer_type, spv::StorageClass::StorageBuffer);
+    Decorate(storage_buffer_mapping, spv::Decoration::Binding, binding++);
+    Decorate(storage_buffer_mapping, spv::Decoration::DescriptorSet, 0U);
+    Name(storage_buffer_mapping, "storage_buffer_mapping");
+    //Starting with version 1.4... (https://registry.khronos.org/SPIR-V/specs/unified1/SPIRV.html)
+    if (profile.supported_spirv >= 0x00010400) {
+        interfaces.push_back(storage_buffer_mapping);
+    }
+
+    u32 mapping_base{};
+    for (u32 index = 0; index < info.storage_buffers_descriptors.size(); ++index) {
+        const StorageBufferDescriptor& desc = info.storage_buffers_descriptors[index];
+        storage_buffer_mapping_bases[index] = mapping_base;
+        storage_buffer_mapping_counts[index] = desc.count;
+        mapping_base += desc.count;
+    }
+
+    const Id function_type{TypeFunction(U32[2], U32[1], U32[1], U32[1])};
+    storage_buffer_map_func = OpFunction(U32[2], spv::FunctionControlMask::MaskNone, function_type);
+    const Id base{OpFunctionParameter(U32[1])};
+    const Id count{OpFunctionParameter(U32[1])};
+    const Id byte_offset{OpFunctionParameter(U32[1])};
+    const Id index_pointer_type{TypePointer(spv::StorageClass::Function, U32[1])};
+    const Id loop_header{OpLabel()};
+    const Id continue_block{OpLabel()};
+    const Id merge_block{OpLabel()};
+    AddLabel();
+    const Id segment_var{AddLocalVariable(index_pointer_type, spv::StorageClass::Function)};
+    const Id offset_var{AddLocalVariable(index_pointer_type, spv::StorageClass::Function)};
+    OpStore(segment_var, u32_zero_value);
+    OpStore(offset_var, byte_offset);
+    OpBranch(loop_header);
+
+    AddLabel(loop_header);
+    const Id segment{OpLoad(U32[1], segment_var)};
+    const Id local_offset{OpLoad(U32[1], offset_var)};
+    const Id mapping_index{OpIAdd(U32[1], base, segment)};
+    const Id size_pointer{OpAccessChain(storage_buffer_mapping_u32, storage_buffer_mapping, u32_zero_value, mapping_index)};
+    const Id segment_size{OpLoad(U32[1], size_pointer)};
+    const Id fits{OpULessThan(U1, local_offset, segment_size)};
+    const Id last_segment{OpISub(U32[1], count, Const(1U))};
+    const Id is_last{OpIEqual(U1, segment, last_segment)};
+    const Id found{OpLogicalOr(U1, fits, is_last)};
+    OpLoopMerge(merge_block, continue_block, spv::LoopControlMask::MaskNone);
+    OpBranchConditional(found, merge_block, continue_block);
+
+    AddLabel(continue_block);
+    OpStore(offset_var, OpISub(U32[1], local_offset, segment_size));
+    OpStore(segment_var, OpIAdd(U32[1], segment, Const(1U)));
+    OpBranch(loop_header);
+
+    AddLabel(merge_block);
+    OpReturnValue(OpCompositeConstruct(U32[2], segment, local_offset));
+    OpFunctionEnd();
+    Name(storage_buffer_map_func, "map_storage_buffer");
+}
+
 void EmitContext::DefineStorageBuffers(const Info& info, u32& binding) {
     if (info.storage_buffers_descriptors.empty()) {
         return;
@@ -1271,9 +1375,7 @@ void EmitContext::DefineStorageBuffers(const Info& info, u32& binding) {
         DefineSsbos(*this, storage_types.U32x4, &StorageDefinitions::U32x4, info, binding, U32[4],
                     sizeof(u32[4]));
     }
-    for (const StorageBufferDescriptor& desc : info.storage_buffers_descriptors) {
-        binding += desc.count;
-    }
+    binding += static_cast<u32>(info.storage_buffers_descriptors.size());
     const bool needs_function{
         info.uses_global_increment || info.uses_global_decrement || info.uses_atomic_f32_add ||
         info.uses_atomic_f16x2_add || info.uses_atomic_f16x2_min || info.uses_atomic_f16x2_max ||
@@ -1282,40 +1384,31 @@ void EmitContext::DefineStorageBuffers(const Info& info, u32& binding) {
         AddCapability(spv::Capability::VariablePointersStorageBuffer);
     }
     if (info.uses_global_increment) {
-        increment_cas_ssbo = CasLoop(*this, Operation::Increment, storage_types.U32.array,
-                                     storage_types.U32.element, U32[1], U32[1], spv::Scope::Device);
+        increment_cas_ssbo = CasLoop(*this, Operation::Increment, storage_types.U32.element, U32[1], U32[1], spv::Scope::Device);
     }
     if (info.uses_global_decrement) {
-        decrement_cas_ssbo = CasLoop(*this, Operation::Decrement, storage_types.U32.array,
-                                     storage_types.U32.element, U32[1], U32[1], spv::Scope::Device);
+        decrement_cas_ssbo = CasLoop(*this, Operation::Decrement, storage_types.U32.element, U32[1], U32[1], spv::Scope::Device);
     }
     if (info.uses_atomic_f32_add) {
-        f32_add_cas = CasLoop(*this, Operation::FPAdd, storage_types.U32.array,
-                              storage_types.U32.element, F32[1], U32[1], spv::Scope::Device);
+        f32_add_cas = CasLoop(*this, Operation::FPAdd, storage_types.U32.element, F32[1], U32[1], spv::Scope::Device);
     }
     if (info.uses_atomic_f16x2_add) {
-        f16x2_add_cas = CasLoop(*this, Operation::FPAdd, storage_types.U32.array,
-                                storage_types.U32.element, F16[2], F16[2], spv::Scope::Device);
+        f16x2_add_cas = CasLoop(*this, Operation::FPAdd, storage_types.U32.element, F16[2], F16[2], spv::Scope::Device);
     }
     if (info.uses_atomic_f16x2_min) {
-        f16x2_min_cas = CasLoop(*this, Operation::FPMin, storage_types.U32.array,
-                                storage_types.U32.element, F16[2], F16[2], spv::Scope::Device);
+        f16x2_min_cas = CasLoop(*this, Operation::FPMin, storage_types.U32.element, F16[2], F16[2], spv::Scope::Device);
     }
     if (info.uses_atomic_f16x2_max) {
-        f16x2_max_cas = CasLoop(*this, Operation::FPMax, storage_types.U32.array,
-                                storage_types.U32.element, F16[2], F16[2], spv::Scope::Device);
+        f16x2_max_cas = CasLoop(*this, Operation::FPMax, storage_types.U32.element, F16[2], F16[2], spv::Scope::Device);
     }
     if (info.uses_atomic_f32x2_add) {
-        f32x2_add_cas = CasLoop(*this, Operation::FPAdd, storage_types.U32.array,
-                                storage_types.U32.element, F32[2], F32[2], spv::Scope::Device);
+        f32x2_add_cas = CasLoop(*this, Operation::FPAdd, storage_types.U32.element, F32[2], F32[2], spv::Scope::Device);
     }
     if (info.uses_atomic_f32x2_min) {
-        f32x2_min_cas = CasLoop(*this, Operation::FPMin, storage_types.U32.array,
-                                storage_types.U32.element, F32[2], F32[2], spv::Scope::Device);
+        f32x2_min_cas = CasLoop(*this, Operation::FPMin, storage_types.U32.element, F32[2], F32[2], spv::Scope::Device);
     }
     if (info.uses_atomic_f32x2_max) {
-        f32x2_max_cas = CasLoop(*this, Operation::FPMax, storage_types.U32.array,
-                                storage_types.U32.element, F32[2], F32[2], spv::Scope::Device);
+        f32x2_max_cas = CasLoop(*this, Operation::FPMax, storage_types.U32.element, F32[2], F32[2], spv::Scope::Device);
     }
 }
 

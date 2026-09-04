@@ -708,7 +708,6 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
         descriptor_indexing.shaderUniformTexelBufferArrayDynamicIndexing = false;
         descriptor_indexing.shaderStorageTexelBufferArrayDynamicIndexing = false;
         descriptor_indexing.shaderUniformBufferArrayNonUniformIndexing = false;
-        descriptor_indexing.shaderStorageBufferArrayNonUniformIndexing = false;
         descriptor_indexing.shaderInputAttachmentArrayNonUniformIndexing = false;
         descriptor_indexing.descriptorBindingUniformBufferUpdateAfterBind = false;
         descriptor_indexing.descriptorBindingSampledImageUpdateAfterBind = false;

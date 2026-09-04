@@ -4,46 +4,33 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <bit>
-
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 
 namespace Shader::Backend::SPIRV {
 namespace {
-Id StorageIndex(EmitContext& ctx, const IR::Value& offset, size_t element_size,
-                u32 index_offset = 0) {
-    if (offset.IsImmediate()) {
-        const u32 imm_offset{static_cast<u32>(offset.U32() / element_size) + index_offset};
-        return ctx.Const(imm_offset);
-    }
-    const u32 shift{static_cast<u32>(std::countr_zero(element_size))};
-    Id index{ctx.Def(offset)};
-    if (shift != 0) {
-        const Id shift_id{ctx.Const(shift)};
-        index = ctx.OpShiftRightLogical(ctx.U32[1], index, shift_id);
-    }
+Id StorageByteOffset(EmitContext& ctx, const IR::Value& offset, size_t element_size, u32 index_offset) {
+    Id byte_offset{ctx.Def(offset)};
     if (index_offset != 0) {
-        index = ctx.OpIAdd(ctx.U32[1], index, ctx.Const(index_offset));
+        byte_offset = ctx.OpIAdd(ctx.U32[1], byte_offset, ctx.Const(static_cast<u32>(index_offset * element_size)));
     }
-    return index;
+    return byte_offset;
 }
 
 Id StoragePointer(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                   const StorageTypeDefinition& type_def, size_t element_size,
-                  Id StorageDefinitions::*member_ptr, u32 index_offset = 0) {
+                  Id StorageDefinitions::* member_ptr, u32 index_offset = 0) {
     if (!binding.IsImmediate()) {
         throw NotImplementedException("Dynamic storage buffer indexing");
     }
-    const Id ssbo{ctx.ssbos[binding.U32()].*member_ptr};
-    const Id index{StorageIndex(ctx, offset, element_size, index_offset)};
-    return ctx.OpAccessChain(type_def.element, ssbo, ctx.u32_zero_value, index);
+    const Id byte_offset{StorageByteOffset(ctx, offset, element_size, index_offset)};
+    return ctx.StoragePointer(binding.U32(), byte_offset, type_def, static_cast<u32>(element_size), member_ptr);
 }
 
 Id LoadStorage(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset, Id result_type,
                const StorageTypeDefinition& type_def, size_t element_size,
-               Id StorageDefinitions::*member_ptr, u32 index_offset = 0) {
+               Id StorageDefinitions::* member_ptr, u32 index_offset = 0) {
     const Id pointer{
         StoragePointer(ctx, binding, offset, type_def, element_size, member_ptr, index_offset)};
     return ctx.OpLoad(result_type, pointer);
@@ -57,7 +44,7 @@ Id LoadStorage32(EmitContext& ctx, const IR::Value& binding, const IR::Value& of
 
 void WriteStorage(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset, Id value,
                   const StorageTypeDefinition& type_def, size_t element_size,
-                  Id StorageDefinitions::*member_ptr, u32 index_offset = 0) {
+                  Id StorageDefinitions::* member_ptr, u32 index_offset = 0) {
     const Id pointer{
         StoragePointer(ctx, binding, offset, type_def, element_size, member_ptr, index_offset)};
     ctx.OpStore(pointer, value);

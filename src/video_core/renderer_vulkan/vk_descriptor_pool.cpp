@@ -47,7 +47,7 @@ static DescriptorBankInfo MakeBankInfo(std::span<const Shader::Info> infos) {
     DescriptorBankInfo bank;
     for (const Shader::Info& info : infos) {
         bank.uniform_buffers += Accumulate(info.constant_buffer_descriptors);
-        bank.storage_buffers += Accumulate(info.storage_buffers_descriptors);
+        bank.storage_buffers += Accumulate(info.storage_buffers_descriptors) + static_cast<u32>(Shader::UsesStorageBufferMappings(info));
         bank.texture_buffers += Accumulate(info.texture_buffer_descriptors);
         bank.image_buffers += Accumulate(info.image_buffer_descriptors);
         bank.textures += Accumulate(info.texture_descriptors);

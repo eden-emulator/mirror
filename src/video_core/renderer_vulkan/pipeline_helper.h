@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <optional>
 
@@ -136,6 +137,7 @@ inline void WriteDescriptorBuffer(const Device& device, const DescriptorBufferLa
 
 [[nodiscard]] inline u32 NumDescriptorEntries(const Shader::Info& info) {
     return Shader::NumDescriptors(info.constant_buffer_descriptors) +
+           static_cast<u32>(Shader::UsesStorageBufferMappings(info)) +
            Shader::NumDescriptors(info.storage_buffers_descriptors) +
            Shader::NumDescriptors(info.texture_buffer_descriptors) +
            Shader::NumDescriptors(info.image_buffer_descriptors) +
@@ -268,6 +270,12 @@ public:
         is_compute |= (stage & VK_SHADER_STAGE_COMPUTE_BIT) != 0;
 
         Add(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stage, info.constant_buffer_descriptors);
+        // for extra implicit storage-buffer binding required by mapped-storage-buffer support
+        if (Shader::UsesStorageBufferMappings(info)) {
+            struct Descriptor { u32 count; };
+            const std::array descriptors{Descriptor{1}};
+            Add(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stage, descriptors);
+        }
         Add(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stage, info.storage_buffers_descriptors);
         Add(VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, stage, info.texture_buffer_descriptors);
         Add(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, stage, info.image_buffer_descriptors);

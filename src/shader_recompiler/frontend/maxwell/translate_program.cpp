@@ -132,6 +132,14 @@ void AddNVNStorageBuffers(IR::Program& program) {
     }
 }
 
+void ConfigureStorageBufferMappings(IR::Program& program, const HostTranslateInfo& host_info) {
+    // https://docs.vulkan.org/guide/latest/descriptor_arrays.html
+    // will be needed: descriptor array elements represent physical spans of one guest virtual buffer.
+    for (StorageBufferDescriptor& desc : program.info.storage_buffers_descriptors) {
+        desc.count = host_info.storage_buffer_segment_count;
+    }
+}
+
 using IR::IsLegacyAttribute; //rescoped to attribute.h to make it visible in load_store_attribute.cpp IPA
 
 std::map<IR::Attribute, IR::Attribute> GenerateLegacyToGenericMappings(
@@ -299,6 +307,7 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
     Optimization::PositionPass(env, program);
 
     Optimization::GlobalMemoryToStorageBufferPass(program, normalized_host_info);
+    ConfigureStorageBufferMappings(program, normalized_host_info);
     Optimization::TexturePass(env, program, normalized_host_info);
 
     if (Settings::values.resolution_info.active || Settings::values.rescale_hack.GetValue()) {
@@ -314,6 +323,7 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
 
     CollectInterpolationInfo(env, program);
     AddNVNStorageBuffers(program);
+    ConfigureStorageBufferMappings(program, normalized_host_info);
     return program;
 }
 

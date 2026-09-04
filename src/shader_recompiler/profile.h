@@ -64,6 +64,7 @@ struct Profile {
     bool support_storage_image_array_nonuniform_indexing{};
     bool support_uniform_texel_buffer_array_nonuniform_indexing{};
     bool support_storage_texel_buffer_array_nonuniform_indexing{};
+    bool support_storage_buffer_array_nonuniform_indexing{};
 
     bool warp_size_potentially_larger_than_guest{};
 

@@ -360,6 +360,7 @@ public:
 #define FN_MAX_LIMIT_LIST \
     FN_MAX_LIMIT_ELEM(ComputeSharedMemorySize) \
     FN_MAX_LIMIT_ELEM(PerStageDescriptorSampledImages) \
+    FN_MAX_LIMIT_ELEM(PerStageDescriptorStorageBuffers) \
     FN_MAX_LIMIT_ELEM(PerStageResources) \
     FN_MAX_LIMIT_ELEM(DescriptorSetSamplers) \
     FN_MAX_LIMIT_ELEM(DescriptorSetUniformBuffers) \
@@ -413,6 +414,10 @@ FN_MAX_LIMIT_LIST
 
     bool IsStorageTexelBufferArrayNonUniformIndexingSupported() const {
         return features.descriptor_indexing.shaderStorageTexelBufferArrayNonUniformIndexing;
+    }
+
+    bool IsStorageBufferArrayNonUniformIndexingSupported() const {
+        return features.descriptor_indexing.shaderStorageBufferArrayNonUniformIndexing;
     }
 
     /// Returns true if the device supports float64 natively.

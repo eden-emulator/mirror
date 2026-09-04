@@ -7,6 +7,8 @@
 #pragma once
 
 #include <algorithm>
+#include <cstring>
+#include <limits>
 #include <memory>
 #include <numeric>
 
@@ -423,7 +425,7 @@ void BufferCache<P>::UnbindGraphicsStorageBuffers(size_t stage) {
 
 template <class P>
 bool BufferCache<P>::BindGraphicsStorageBuffer(size_t stage, size_t ssbo_index, u32 cbuf_index,
-                                               u32 cbuf_offset, bool is_written) {
+                                               u32 cbuf_offset, bool is_written, u32 descriptor_count) {
     const bool already_enabled =
         ((channel_state->enabled_storage_buffers[stage] >> ssbo_index) & 1U) != 0;
     if constexpr (requires { runtime.ShouldLimitDynamicStorageBuffers(); }) {
@@ -448,8 +450,8 @@ bool BufferCache<P>::BindGraphicsStorageBuffer(size_t stage, size_t ssbo_index, 
     const auto& cbufs = maxwell3d->state.shader_stages[stage];
     const GPUVAddr ssbo_addr = cbufs.const_buffers[cbuf_index].address + cbuf_offset;
     channel_state->storage_buffers[stage][ssbo_index] =
-        StorageBufferBinding(ssbo_addr, cbuf_index, is_written);
-    return (channel_state->storage_buffers[stage][ssbo_index].buffer_id != NULL_BUFFER_ID);
+        StorageBufferBinding(ssbo_addr, cbuf_index, is_written, descriptor_count);
+    return channel_state->storage_buffers[stage][ssbo_index].gpu_addr != 0;
 }
 
 template <class P>
@@ -487,7 +489,7 @@ void BufferCache<P>::UnbindComputeStorageBuffers() {
 
 template <class P>
 void BufferCache<P>::BindComputeStorageBuffer(size_t ssbo_index, u32 cbuf_index, u32 cbuf_offset,
-                                              bool is_written) {
+                                              bool is_written, u32 descriptor_count) {
     if (ssbo_index >= channel_state->compute_storage_buffers.size()) [[unlikely]] {
         LOG_ERROR(HW_GPU, "Storage buffer index {} exceeds maximum storage buffer count",
                   ssbo_index);
@@ -524,7 +526,7 @@ void BufferCache<P>::BindComputeStorageBuffer(size_t ssbo_index, u32 cbuf_index,
     const auto& cbufs = launch_desc.const_buffer_config;
     const GPUVAddr ssbo_addr = cbufs[cbuf_index].Address() + cbuf_offset;
     channel_state->compute_storage_buffers[ssbo_index] =
-        StorageBufferBinding(ssbo_addr, cbuf_index, is_written);
+        StorageBufferBinding(ssbo_addr, cbuf_index, is_written, descriptor_count);
 }
 
 template <class P>
@@ -1000,27 +1002,52 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
 
 template <class P>
 void BufferCache<P>::BindHostGraphicsStorageBuffers(size_t stage) {
+    boost::container::small_vector<u32, NUM_STORAGE_BUFFERS> segment_sizes;
+    bool uses_mapping{};
+    ForEachEnabledBit(channel_state->enabled_storage_buffers[stage], [&](u32 index) {
+        const StorageBufferBindingInfo& binding = channel_state->storage_buffers[stage][index];
+        uses_mapping |= binding.descriptor_count > 1;
+        for (u32 segment = 0; segment < binding.descriptor_count; ++segment) {
+            segment_sizes.push_back(segment < binding.segments.size() ? binding.segments[segment].size : 0);
+        }
+    });
+    if (uses_mapping) {
+        const u32 mapping_size = static_cast<u32>(segment_sizes.size() * sizeof(u32));
+        if constexpr (!IS_OPENGL) {
+            const std::span<u8> mapped = runtime.BindMappedStorageBuffer(mapping_size);
+            std::memcpy(mapped.data(), segment_sizes.data(), mapping_size);
+        }
+    }
+
     u32 binding_index = 0;
     ForEachEnabledBit(channel_state->enabled_storage_buffers[stage], [&](u32 index) {
-        const Binding& binding = channel_state->storage_buffers[stage][index];
-        Buffer& buffer = slot_buffers[binding.buffer_id];
-        TouchBuffer(buffer, binding.buffer_id);
-        const u32 size = binding.size;
-        SynchronizeBuffer(buffer, binding.device_addr, size);
-
-        const u32 offset = buffer.Offset(binding.device_addr);
-        buffer.MarkUsage(offset, size);
+        const StorageBufferBindingInfo& storage = channel_state->storage_buffers[stage][index];
         const bool is_written = ((channel_state->written_storage_buffers[stage] >> index) & 1) != 0;
-
-        if (is_written) {
-            MarkWrittenBuffer(binding.buffer_id, binding.device_addr, size);
-        }
-
-        if constexpr (NEEDS_BIND_STORAGE_INDEX) {
-            runtime.BindStorageBuffer(stage, binding_index, buffer, offset, size, is_written);
-            ++binding_index;
-        } else {
-            runtime.BindStorageBuffer(buffer, offset, size, is_written);
+        for (u32 segment = 0; segment < storage.descriptor_count; ++segment) {
+            Buffer* buffer = &slot_buffers[NULL_BUFFER_ID];
+            u32 offset{};
+            u32 size{IS_OPENGL ? 0U : static_cast<u32>(sizeof(u32))};
+            const bool is_actual_segment = segment < storage.segments.size();
+            // shall be safe enough if the segment is not actual, use the last available segment or nullptr if none exist.
+            const Binding* binding = is_actual_segment ? &storage.segments[segment] : storage.segments.empty() ? nullptr : &storage.segments.back();
+            if (binding) {
+                buffer = &slot_buffers[binding->buffer_id];
+                size = binding->size;
+                offset = buffer->Offset(binding->device_addr);
+                if (is_actual_segment) {
+                    TouchBuffer(*buffer, binding->buffer_id);
+                    SynchronizeBuffer(*buffer, binding->device_addr, size);
+                    buffer->MarkUsage(offset, size);
+                    if (is_written) {
+                        MarkWrittenBuffer(binding->buffer_id, binding->device_addr, size);
+                    }
+                }
+            }
+            if constexpr (NEEDS_BIND_STORAGE_INDEX) {
+                runtime.BindStorageBuffer(stage, binding_index++, *buffer, offset, size, is_written);
+            } else {
+                runtime.BindStorageBuffer(*buffer, offset, size, is_written);
+            }
         }
     });
 }
@@ -1136,28 +1163,53 @@ void BufferCache<P>::BindHostComputeUniformBuffers() {
 
 template <class P>
 void BufferCache<P>::BindHostComputeStorageBuffers() {
+    boost::container::small_vector<u32, NUM_STORAGE_BUFFERS> segment_sizes;
+    bool uses_mapping{};
+    ForEachEnabledBit(channel_state->enabled_compute_storage_buffers, [&](u32 index) {
+        const StorageBufferBindingInfo& binding = channel_state->compute_storage_buffers[index];
+        uses_mapping |= binding.descriptor_count > 1;
+        for (u32 segment = 0; segment < binding.descriptor_count; ++segment) {
+            segment_sizes.push_back(segment < binding.segments.size() ? binding.segments[segment].size : 0);
+        }
+    });
+    if (uses_mapping) {
+        const u32 mapping_size = static_cast<u32>(segment_sizes.size() * sizeof(u32));
+        if constexpr (!IS_OPENGL) {
+            const std::span<u8> mapped = runtime.BindMappedStorageBuffer(mapping_size);
+            std::memcpy(mapped.data(), segment_sizes.data(), mapping_size);
+        }
+    }
+
     u32 binding_index = 0;
     ForEachEnabledBit(channel_state->enabled_compute_storage_buffers, [&](u32 index) {
-        const Binding& binding = channel_state->compute_storage_buffers[index];
-        Buffer& buffer = slot_buffers[binding.buffer_id];
-        TouchBuffer(buffer, binding.buffer_id);
-        const u32 size = binding.size;
-        SynchronizeBuffer(buffer, binding.device_addr, size);
-
-        const u32 offset = buffer.Offset(binding.device_addr);
-        buffer.MarkUsage(offset, size);
+        const StorageBufferBindingInfo& storage = channel_state->compute_storage_buffers[index];
         const bool is_written =
             ((channel_state->written_compute_storage_buffers >> index) & 1) != 0;
-
-        if (is_written) {
-            MarkWrittenBuffer(binding.buffer_id, binding.device_addr, size);
-        }
-
-        if constexpr (NEEDS_BIND_STORAGE_INDEX) {
-            runtime.BindComputeStorageBuffer(binding_index, buffer, offset, size, is_written);
-            ++binding_index;
-        } else {
-            runtime.BindStorageBuffer(buffer, offset, size, is_written);
+        for (u32 segment = 0; segment < storage.descriptor_count; ++segment) {
+            Buffer* buffer = &slot_buffers[NULL_BUFFER_ID];
+            u32 offset{};
+            u32 size{IS_OPENGL ? 0U : static_cast<u32>(sizeof(u32))};
+            const bool is_actual_segment = segment < storage.segments.size();
+            //same fallback logic
+            const Binding* binding = is_actual_segment ? &storage.segments[segment] : storage.segments.empty() ? nullptr : &storage.segments.back();
+            if (binding) {
+                buffer = &slot_buffers[binding->buffer_id];
+                size = binding->size;
+                offset = buffer->Offset(binding->device_addr);
+                if (is_actual_segment) {
+                    TouchBuffer(*buffer, binding->buffer_id);
+                    SynchronizeBuffer(*buffer, binding->device_addr, size);
+                    buffer->MarkUsage(offset, size);
+                    if (is_written) {
+                        MarkWrittenBuffer(binding->buffer_id, binding->device_addr, size);
+                    }
+                }
+            }
+            if constexpr (NEEDS_BIND_STORAGE_INDEX) {
+                runtime.BindComputeStorageBuffer(binding_index++, *buffer, offset, size, is_written);
+            } else {
+                runtime.BindStorageBuffer(*buffer, offset, size, is_written);
+            }
         }
     });
 }
@@ -1350,10 +1402,7 @@ void BufferCache<P>::UpdateUniformBuffers(size_t stage) {
 template <class P>
 void BufferCache<P>::UpdateStorageBuffers(size_t stage) {
     ForEachEnabledBit(channel_state->enabled_storage_buffers[stage], [&](u32 index) {
-        // Resolve buffer
-        Binding& binding = channel_state->storage_buffers[stage][index];
-        const BufferId buffer_id = FindBuffer(binding.device_addr, binding.size);
-        binding.buffer_id = buffer_id;
+        UpdateStorageBuffer(channel_state->storage_buffers[stage][index]);
     });
 }
 
@@ -1414,10 +1463,52 @@ void BufferCache<P>::UpdateComputeUniformBuffers() {
 template <class P>
 void BufferCache<P>::UpdateComputeStorageBuffers() {
     ForEachEnabledBit(channel_state->enabled_compute_storage_buffers, [&](u32 index) {
-        // Resolve buffer
-        Binding& binding = channel_state->compute_storage_buffers[index];
-        binding.buffer_id = FindBuffer(binding.device_addr, binding.size);
+        UpdateStorageBuffer(channel_state->compute_storage_buffers[index]);
     });
+}
+
+template <class P>
+void BufferCache<P>::UpdateStorageBuffer(StorageBufferBindingInfo& binding) {
+    binding.segments.clear();
+    if (binding.gpu_addr == 0 || binding.size == 0) { return;}
+    if (binding.descriptor_count == 1) {
+        // for safety gotta preserve the legacy path on possible hosts without storage-buffer descriptor indexing.
+        const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(binding.gpu_addr);
+        if (device_addr) {
+            binding.segments.push_back(Binding{
+                .device_addr = *device_addr,
+                .size = binding.size,
+                .buffer_id = FindBuffer(*device_addr, binding.size),
+            });
+        }
+        return;
+    }
+
+    const auto ranges = gpu_memory->GetSubmappedRange(binding.gpu_addr, binding.size);
+    const size_t mapped_size =
+        std::accumulate(ranges.begin(), ranges.end(), size_t{}, [](size_t total, const auto& range) { return total + range.second; });
+    if (mapped_size != binding.size) {
+        LOG_ERROR(HW_GPU, "Storage buffer range {:#x}+{:#x} is not fully mapped", binding.gpu_addr, binding.size);
+        return;
+    }
+    if (ranges.size() > binding.descriptor_count) {
+        LOG_ERROR(HW_GPU, "Storage buffer range {:#x}+{:#x} has {} physical segments, exceeding host capacity {}",
+                  binding.gpu_addr, binding.size, ranges.size(), binding.descriptor_count);
+        return;
+    }
+    for (const auto& [gpu_addr, size] : ranges) {
+        const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(gpu_addr);
+        if (!device_addr || size > (std::numeric_limits<u32>::max)()) {
+            binding.segments.clear();
+            return;
+        }
+        const u32 segment_size = static_cast<u32>(size);
+        binding.segments.push_back(Binding{
+            .device_addr = *device_addr,
+            .size = segment_size,
+            .buffer_id = FindBuffer(*device_addr, segment_size),
+        });
+    }
 }
 
 template <class P>
@@ -1841,6 +1932,11 @@ void BufferCache<P>::DeleteBuffer(BufferId buffer_id, bool do_not_mark) {
     const auto replace = [scalar_replace](std::span<Binding> bindings) {
         std::ranges::for_each(bindings, scalar_replace);
     };
+    const auto storage_replace = [scalar_replace](std::span<StorageBufferBindingInfo> bindings) {
+        for (StorageBufferBindingInfo& binding : bindings) {
+            std::ranges::for_each(binding.segments, scalar_replace);
+        }
+    };
 
     if (channel_state->index_buffer.buffer_id == buffer_id) {
         channel_state->index_buffer.buffer_id = BufferId{};
@@ -1856,10 +1952,10 @@ void BufferCache<P>::DeleteBuffer(BufferId buffer_id, bool do_not_mark) {
         }
     }
     std::ranges::for_each(channel_state->uniform_buffers, replace);
-    std::ranges::for_each(channel_state->storage_buffers, replace);
+    std::ranges::for_each(channel_state->storage_buffers, storage_replace);
     replace(channel_state->transform_feedback_buffers);
     replace(channel_state->compute_uniform_buffers);
-    replace(channel_state->compute_storage_buffers);
+    storage_replace(channel_state->compute_storage_buffers);
 
     // Mark the whole buffer as CPU written to stop tracking CPU writes
     if (!do_not_mark) {
@@ -1896,12 +1992,14 @@ void BufferCache<P>::DeleteBuffer(BufferId buffer_id, bool do_not_mark) {
 }
 
 template <class P>
-Binding BufferCache<P>::StorageBufferBinding(GPUVAddr ssbo_addr, u32 cbuf_index,
-                                             bool is_written) const {
+StorageBufferBindingInfo BufferCache<P>::StorageBufferBinding(GPUVAddr ssbo_addr, u32 cbuf_index,
+                                                              bool is_written, u32 descriptor_count) const {
+    // time to get rid of these null bindings
+    ASSERT(descriptor_count > 0); // shant happen
     const GPUVAddr gpu_addr = gpu_memory->Read<u64>(ssbo_addr);
 
     if (gpu_addr == 0) {
-        return NULL_BINDING;
+        return {.descriptor_count = descriptor_count};
     }
 
     const auto size = [&]() {
@@ -1923,21 +2021,17 @@ Binding BufferCache<P>::StorageBufferBinding(GPUVAddr ssbo_addr, u32 cbuf_index,
     const GPUVAddr aligned_gpu_addr = Common::AlignDown(gpu_addr, alignment);
     const u32 aligned_size = static_cast<u32>(gpu_addr - aligned_gpu_addr) + size;
 
-    const std::optional<DAddr> aligned_device_addr = gpu_memory->GpuToCpuAddress(aligned_gpu_addr);
-    if (!aligned_device_addr || size == 0) {
+    if (!gpu_memory->GpuToCpuAddress(aligned_gpu_addr) || size == 0) {
         LOG_DEBUG(HW_GPU, "Failed to find storage buffer for cbuf index {}", cbuf_index);
-        return NULL_BINDING;
+        return {.descriptor_count = descriptor_count};
     }
-    const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(gpu_addr);
-    ASSERT_MSG(device_addr, "Unaligned storage buffer address not found for cbuf index {}",
-               cbuf_index);
     // The end address used for size calculation does not need to be aligned
-    const DAddr cpu_end = Common::AlignUp(*device_addr + size, Core::DEVICE_PAGESIZE);
+    const GPUVAddr gpu_end = Common::AlignUp(gpu_addr + size, Core::DEVICE_PAGESIZE);
 
-    const Binding binding{
-        .device_addr = *aligned_device_addr,
-        .size = is_written ? aligned_size : static_cast<u32>(cpu_end - *aligned_device_addr),
-        .buffer_id = BufferId{},
+    const StorageBufferBindingInfo binding{
+        .gpu_addr = aligned_gpu_addr,
+        .size = is_written ? aligned_size : static_cast<u32>(gpu_end - aligned_gpu_addr),
+        .descriptor_count = descriptor_count,
     };
     return binding;
 }

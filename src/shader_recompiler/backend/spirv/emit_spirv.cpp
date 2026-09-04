@@ -492,6 +492,9 @@ void SetupCapabilities(const Profile& profile, const Info& info, EmitContext& ct
         if (ctx.uses_nonuniform_storage_texel_buffer) {
             ctx.AddCapability(spv::Capability::StorageTexelBufferArrayNonUniformIndexing);
         }
+        if (ctx.uses_nonuniform_storage_buffer) {
+            ctx.AddCapability(spv::Capability::StorageBufferArrayNonUniformIndexing);
+        }
     }
 }
 

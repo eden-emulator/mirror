@@ -89,6 +89,15 @@ struct TextureBufferBinding : Binding {
     PixelFormat format;
 };
 
+struct StorageBufferBindingInfo {
+    // another good one: guest SSBO is a virtual interval and may span discontiguous device-memory ranges.
+    // exact case of missing character frames (high sample lane)
+    GPUVAddr gpu_addr{};
+    u32 size{};
+    u32 descriptor_count{1};
+    boost::container::small_vector<Binding, 1> segments;
+};
+
 static constexpr Binding NULL_BINDING{
     .device_addr = 0,
     .size = 0,
@@ -115,14 +124,15 @@ public:
     Binding index_buffer;
     std::array<Binding, NUM_VERTEX_BUFFERS> vertex_buffers;
     std::array<std::array<Binding, NUM_GRAPHICS_UNIFORM_BUFFERS>, NUM_STAGES> uniform_buffers;
-    std::array<std::array<Binding, NUM_STORAGE_BUFFERS>, NUM_STAGES> storage_buffers;
+    std::array<std::array<StorageBufferBindingInfo, NUM_STORAGE_BUFFERS>, NUM_STAGES>
+        storage_buffers;
     std::array<std::array<TextureBufferBinding, NUM_TEXTURE_BUFFERS>, NUM_STAGES> texture_buffers;
     std::array<Binding, NUM_TRANSFORM_FEEDBACK_BUFFERS> transform_feedback_buffers;
     Binding count_buffer_binding;
     Binding indirect_buffer_binding;
 
     std::array<Binding, NUM_COMPUTE_UNIFORM_BUFFERS> compute_uniform_buffers;
-    std::array<Binding, NUM_STORAGE_BUFFERS> compute_storage_buffers;
+    std::array<StorageBufferBindingInfo, NUM_STORAGE_BUFFERS> compute_storage_buffers;
     std::array<TextureBufferBinding, NUM_TEXTURE_BUFFERS> compute_texture_buffers;
 
     std::array<u32, NUM_STAGES> enabled_uniform_buffer_masks{};
@@ -249,7 +259,7 @@ public:
     void UnbindGraphicsStorageBuffers(size_t stage);
 
     bool BindGraphicsStorageBuffer(size_t stage, size_t ssbo_index, u32 cbuf_index, u32 cbuf_offset,
-                                   bool is_written);
+                                   bool is_written, u32 descriptor_count = 1);
 
     void UnbindGraphicsTextureBuffers(size_t stage);
 
@@ -259,7 +269,7 @@ public:
     void UnbindComputeStorageBuffers();
 
     void BindComputeStorageBuffer(size_t ssbo_index, u32 cbuf_index, u32 cbuf_offset,
-                                  bool is_written);
+                                  bool is_written, u32 descriptor_count = 1);
 
     void UnbindComputeTextureBuffers();
 
@@ -400,6 +410,8 @@ private:
 
     void UpdateStorageBuffers(size_t stage);
 
+    void UpdateStorageBuffer(StorageBufferBindingInfo& binding);
+
     void UpdateTextureBuffers(size_t stage);
 
     void UpdateTransformFeedbackBuffers();
@@ -449,8 +461,9 @@ private:
 
     void DeleteBuffer(BufferId buffer_id, bool do_not_mark = false);
 
-    [[nodiscard]] Binding StorageBufferBinding(GPUVAddr ssbo_addr, u32 cbuf_index,
-                                               bool is_written) const;
+    [[nodiscard]] StorageBufferBindingInfo StorageBufferBinding(GPUVAddr ssbo_addr, u32 cbuf_index,
+                                                                bool is_written,
+                                                                u32 descriptor_count) const;
 
     [[nodiscard]] TextureBufferBinding GetTextureBufferBinding(GPUVAddr gpu_addr, u32 size,
                                                                PixelFormat format);

@@ -114,7 +114,6 @@ struct UniformDefinitions {
 };
 
 struct StorageTypeDefinition {
-    Id array{};
     Id element{};
 };
 
@@ -172,6 +171,8 @@ public:
 
     [[nodiscard]] Id BitOffset8(const IR::Value& offset);
     [[nodiscard]] Id BitOffset16(const IR::Value& offset);
+
+    [[nodiscard]] Id StoragePointer(u32 binding, Id byte_offset, const StorageTypeDefinition& type_def, u32 element_size, Id StorageDefinitions::*member_ptr);
 
     Id Const(u32 value) {
         return Constant(U32[1], value);
@@ -257,6 +258,11 @@ public:
 
     std::array<UniformDefinitions, Info::MAX_CBUFS> cbufs{};
     std::array<StorageDefinitions, Info::MAX_SSBOS> ssbos{};
+    std::array<u32, Info::MAX_SSBOS> storage_buffer_mapping_bases{};
+    std::array<u32, Info::MAX_SSBOS> storage_buffer_mapping_counts{};
+    Id storage_buffer_mapping{};
+    Id storage_buffer_mapping_u32{};
+    Id storage_buffer_map_func{};
     std::vector<TextureBufferDefinition> texture_buffers;
     std::vector<ImageBufferDefinition> image_buffers;
     std::vector<TextureDefinition> textures;
@@ -376,6 +382,7 @@ public:
     bool uses_nonuniform_storage_image{};
     bool uses_nonuniform_uniform_texel_buffer{};
     bool uses_nonuniform_storage_texel_buffer{};
+    bool uses_nonuniform_storage_buffer{};
 
 private:
     void DefineCommonTypes(const Info& info);
@@ -386,6 +393,7 @@ private:
     void DefineSharedMemoryFunctions(const IR::Program& program);
     void DefineConstantBuffers(const Info& info, u32& binding);
     void DefineConstantBufferIndirectFunctions(const Info& info);
+    void DefineStorageBufferMappings(const Info& info, u32& binding);
     void DefineStorageBuffers(const Info& info, u32& binding);
     void DefineTextureBuffers(const Info& info, u32& binding);
     void DefineImageBuffers(const Info& info, u32& binding);

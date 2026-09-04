@@ -62,7 +62,13 @@ using VideoCommon::FileEnvironment;
 using VideoCommon::GenericEnvironment;
 using VideoCommon::GraphicsEnvironment;
 
-constexpr u32 CACHE_VERSION = 18;
+// SPIR-V descriptor arrays require a fixed pipeline-layout count.
+// Exploration ceiling; buffer-cache telemetry records the actual physical-range demand.
+// Keep this modest because every mapped SSBO binds the full fixed array on each update.
+const u32 MAX_MAPPED_STORAGE_BUFFER_DESCRIPTORS =
+    (std::max)(6u, static_cast<u32>(Settings::values.debug_knobs.GetValue()));
+
+constexpr u32 CACHE_VERSION = 19;
 constexpr size_t VULKAN_CACHE_FLUSH_PIPELINES = 128;
 constexpr size_t VULKAN_CACHE_FLUSH_MIN_SECONDS = 30;
 constexpr std::array<char, 8> VULKAN_CACHE_MAGIC_NUMBER{'y', 'u', 'z', 'u', 'v', 'k', 'c', 'h'};
@@ -432,6 +438,8 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
             device.IsUniformTexelBufferArrayNonUniformIndexingSupported(),
         .support_storage_texel_buffer_array_nonuniform_indexing =
             device.IsStorageTexelBufferArrayNonUniformIndexingSupported(),
+        .support_storage_buffer_array_nonuniform_indexing =
+            device.IsStorageBufferArrayNonUniformIndexingSupported(),
 
         .warp_size_potentially_larger_than_guest = device.IsWarpSizePotentiallyBiggerThanGuest(),
 
@@ -460,6 +468,7 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
     host_info = Shader::HostTranslateInfo{
         .min_ssbo_alignment = device.GetStorageBufferAlignment(),
         .max_per_stage_descriptor_sampled_images = device.GetMaxPerStageDescriptorSampledImages(),
+        .max_per_stage_descriptor_storage_buffers = device.GetMaxPerStageDescriptorStorageBuffers(),
         .max_per_stage_resources = device.GetMaxPerStageResources(),
         .max_descriptor_set_samplers = device.GetMaxDescriptorSetSamplers(),
         .max_descriptor_set_uniform_buffers = device.GetMaxDescriptorSetUniformBuffers(),
@@ -479,6 +488,20 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
         .support_viewport_index_layer = device.IsExtShaderViewportIndexLayerSupported(),
         .support_geometry_shader_passthrough = device.IsNvGeometryShaderPassthroughSupported(),
         .support_conditional_barrier = device.SupportsConditionalBarriers(),
+        .storage_buffer_segment_count = [&] {
+            if (!device.IsStorageBufferArrayNonUniformIndexingSupported()) {
+                return 1U;
+            }
+            constexpr u32 MaxGraphicsStages = static_cast<u32>(Maxwell::MaxShaderStage);
+            const auto reserve = [](u32 limit, u32 count) {
+                return limit > count ? limit - count : 0U;
+            };
+            const u32 per_stage = reserve(device.GetMaxPerStageDescriptorStorageBuffers(), 1) / static_cast<u32>(Shader::Info::MAX_SSBOS);
+            const u32 per_set = reserve(device.GetMaxDescriptorSetStorageBuffers(), MaxGraphicsStages) / (static_cast<u32>(Shader::Info::MAX_SSBOS) * MaxGraphicsStages);
+            const u32 resources = reserve(device.GetMaxPerStageResources(), 1) / (static_cast<u32>(Shader::Info::MAX_SSBOS) * 2);
+            // ensure at least one storage buffer segment is available per stage. max is still arbitrary
+            return (std::max)(1U, (std::min)({MAX_MAPPED_STORAGE_BUFFER_DESCRIPTORS, per_stage, per_set, resources}));
+        }(),
     };
     host_info.ApplyDescriptorLimitPolicy();
 

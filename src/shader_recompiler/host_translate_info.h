@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include "common/common_types.h"
 
 namespace Shader {
@@ -19,6 +20,7 @@ struct HostTranslateInfo {
 
     u64 min_ssbo_alignment{};            ///< Minimum alignment supported by the device for SSBOs
     u32 max_per_stage_descriptor_sampled_images{}; ///< maximum sampled descriptors per stage
+    u32 max_per_stage_descriptor_storage_buffers{}; ///< maximum storage descriptors per stage
     u32 max_per_stage_resources{};                 ///< maximum resources per stage
     u32 max_descriptor_set_samplers{};
     u32 max_descriptor_set_uniform_buffers{};
@@ -38,12 +40,14 @@ struct HostTranslateInfo {
                                                 ///< passthrough shaders
     bool support_conditional_barrier{}; ///< True when the device supports barriers in conditional
                                         ///< control flow
+    u32 storage_buffer_segment_count{1}; ///< Physical ranges available to each guest SSBO
 
     void ApplyDescriptorLimitPolicy() noexcept {
         if (min_ssbo_alignment == 0) {
             min_ssbo_alignment = 1;
         }
         ApplyDescriptorLimitFallback(max_per_stage_descriptor_sampled_images);
+        ApplyDescriptorLimitFallback(max_per_stage_descriptor_storage_buffers);
         ApplyDescriptorLimitFallback(max_per_stage_resources);
         ApplyDescriptorLimitFallback(max_descriptor_set_samplers);
         ApplyDescriptorLimitFallback(max_descriptor_set_uniform_buffers);
@@ -53,6 +57,7 @@ struct HostTranslateInfo {
         ApplyDescriptorLimitFallback(max_descriptor_set_sampled_images);
         ApplyDescriptorLimitFallback(max_descriptor_set_storage_images);
         ApplyDescriptorLimitFallback(max_descriptor_set_input_attachements);
+        storage_buffer_segment_count = (std::max)(storage_buffer_segment_count, 1U);
     }
 
 private:

@@ -155,6 +155,13 @@ public:
         return ref.mapped_span;
     }
 
+    // compute/graphics new binding
+    std::span<u8> BindMappedStorageBuffer(u32 size) {
+        const StagingBufferRef ref = staging_pool.Request(size, MemoryUsage::Upload);
+        guest_descriptor_queue.AddBuffer(ref.buffer, ref.device_address, static_cast<u32>(ref.offset), size);
+        return ref.mapped_span;
+    }
+
     void BindUniformBuffer(const Buffer& buffer, u32 offset, u32 size) {
         BindBuffer(buffer, offset, size);
     }
