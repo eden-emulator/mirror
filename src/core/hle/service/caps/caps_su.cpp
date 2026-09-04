@@ -73,7 +73,7 @@ void IScreenShotApplicationService::CaptureAndSaveScreenshot(AlbumReportOption r
     Layout::FramebufferLayout layout =
         Layout::DefaultFrameLayout(screenshot_width, screenshot_height);
 
-    const Capture::ScreenShotAttribute attribute{};
+    Capture::ScreenShotAttribute attribute{};
     attribute.orientation = Capture::AlbumImageOrientation::None;
 
     renderer.RequestScreenshot(
