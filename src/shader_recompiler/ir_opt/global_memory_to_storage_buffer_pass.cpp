@@ -553,17 +553,6 @@ void GlobalMemoryToStorageBufferPass(IR::Program& program, const HostTranslateIn
     }
 }
 
-template <typename Descriptors, typename Descriptor, typename Func>
-static u32 Add(Descriptors& descriptors, const Descriptor& desc, Func&& pred) {
-    // TODO: Handle arrays
-    const auto it{std::ranges::find_if(descriptors, pred)};
-    if (it != descriptors.end()) {
-        return static_cast<u32>(std::distance(descriptors.begin(), it));
-    }
-    descriptors.push_back(desc);
-    return static_cast<u32>(descriptors.size()) - 1;
-}
-
 void JoinStorageInfo(Info& base, Info& source) {
     auto& descriptors = base.storage_buffers_descriptors;
     for (auto& desc : source.storage_buffers_descriptors) {
