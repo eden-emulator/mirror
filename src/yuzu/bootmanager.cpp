@@ -552,15 +552,13 @@ void GRenderWindow::ConstrainMouse() {
         const auto pos = mapFromGlobal(QCursor::pos());
         const int new_pos_x = std::clamp(pos.x(), 0, width());
         const int new_pos_y = std::clamp(pos.y(), 0, height());
-
         QCursor::setPos(mapToGlobal(QPoint{new_pos_x, new_pos_y}));
-        return;
+    } else {
+        const int center_x = width() / 2;
+        const int center_y = height() / 2;
+        QCursor::setPos(mapToGlobal(QPoint{center_x, center_y}));
     }
-
-    const int center_x = width() / 2;
-    const int center_y = height() / 2;
-
-    QCursor::setPos(mapToGlobal(QPoint{center_x, center_y}));
+    input_subsystem->GetMouse()->NotifyChanged(); // required to reset mouse once it's no longer moved
 }
 
 void GRenderWindow::wheelEvent(QWheelEvent* event) {
