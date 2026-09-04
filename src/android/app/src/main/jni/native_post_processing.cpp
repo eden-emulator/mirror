@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <array>
 #include <string>
 
 #include <jni.h>
@@ -36,6 +37,22 @@ nlohmann::json SerializeUniform(const VideoCore::FxUniformDesc& uniform) {
     out["defaults"] = defaults;
 
     return out;
+}
+
+std::array<f32, 4> DefaultValueOf(size_t index, const std::string& uniform) {
+    const auto entries = VideoCore::FxChain::Instance().Entries();
+    if (index >= entries.size()) {
+        return {};
+    }
+    const VideoCore::FxEffectDesc* effect = VideoCore::FindFxEffect(entries[index].file);
+    if (effect == nullptr) {
+        return {};
+    }
+    const VideoCore::FxUniformDesc* desc = VideoCore::FindFxUniform(*effect, uniform);
+    if (desc == nullptr) {
+        return {};
+    }
+    return desc->default_value;
 }
 #endif
 
@@ -164,10 +181,15 @@ void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_setValue(JNIEnv* env, jo
     }
     const std::string uniform = Common::Android::GetJString(env, juniform);
     auto& chain = VideoCore::FxChain::Instance();
+    const auto slot = static_cast<size_t>(index);
 
-    auto current = chain.GetValue(static_cast<size_t>(index), uniform);
+    auto current = chain.GetValue(slot, uniform);
+    if (!chain.HasValue(slot, uniform)) {
+        current = DefaultValueOf(slot, uniform);
+    }
+
     current[static_cast<size_t>(component)] = value;
-    chain.SetValue(static_cast<size_t>(index), uniform, current);
+    chain.SetValue(slot, uniform, current);
 #endif
 }
 

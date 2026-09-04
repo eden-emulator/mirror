@@ -55,6 +55,8 @@ public:
 
     std::array<f32, 4> GetValue(size_t index, std::string_view uniform) const;
 
+    std::map<std::string, std::array<f32, 4>> EntryValues(size_t index) const;
+
     bool HasValue(size_t index, std::string_view uniform) const;
 
     void ResetValues(size_t index);

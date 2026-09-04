@@ -227,6 +227,14 @@ std::array<f32, 4> FxChain::GetValue(size_t index, std::string_view uniform) con
     return it->second;
 }
 
+std::map<std::string, std::array<f32, 4>> FxChain::EntryValues(size_t index) const {
+    std::scoped_lock lock{mutex};
+    if (index >= entries.size()) {
+        return {};
+    }
+    return entries[index].values;
+}
+
 bool FxChain::HasValue(size_t index, std::string_view uniform) const {
     std::scoped_lock lock{mutex};
     if (index >= entries.size()) {

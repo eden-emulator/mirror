@@ -506,11 +506,6 @@ bool PostProcessChain::BuildEffects(const Device& device, MemoryAllocator& alloc
                 }
             }
 
-            const auto override = entry.values.find(uniform.name);
-            if (override != entry.values.end()) {
-                write.fallback = override->second;
-            }
-
             write.args = {0.0f, 1.0f, 1.0f, 0.0f};
             for (const auto& annotation : uniform.annotations) {
                 if (annotation.name == "min" && annotation.type.is_floating_point()) {
@@ -697,9 +692,15 @@ void PostProcessChain::UpdateUniforms(Effect& effect, size_t image_index, f32 de
     std::vector<u8> staging(effect.uniform_size, 0);
     const f32 elapsed =
         std::chrono::duration<f32>(std::chrono::steady_clock::now() - m_start).count();
+    const auto overrides = VideoCore::FxChain::Instance().EntryValues(effect.entry_index);
 
     for (auto& uniform : effect.uniforms) {
         std::array<f32, 4> value = uniform.fallback;
+
+        const auto override = overrides.find(uniform.name);
+        if (override != overrides.end()) {
+            value = override->second;
+        }
 
         switch (uniform.source) {
         case UniformSource::FrameTime:

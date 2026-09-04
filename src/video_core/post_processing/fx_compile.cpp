@@ -52,7 +52,7 @@ FxCompileResult CompileFxEffect(const std::filesystem::path& path, u32 width, u3
     }
 
     std::unique_ptr<reshadefx::codegen> backend(
-        reshadefx::create_codegen_spirv(true, false, false, false, false));
+        reshadefx::create_codegen_spirv(true, false, false, false, true));
 
     reshadefx::parser parser;
     if (!parser.parse(preprocessor.output(), backend.get())) {
