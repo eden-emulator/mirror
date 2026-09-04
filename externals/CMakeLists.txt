@@ -213,7 +213,7 @@ if (ENABLE_RESHADE)
         ${reshade_SOURCE_DIR}/source/effect_symbol_table.cpp
     )
 
-    target_include_directories(reshadefx PUBLIC ${reshade_SOURCE_DIR}/source)
+    target_include_directories(reshadefx SYSTEM PUBLIC ${reshade_SOURCE_DIR}/source)
     target_include_directories(reshadefx PRIVATE ${RESHADEFX_SHIM_DIR})
     target_link_libraries(reshadefx PUBLIC SPIRV-Headers::SPIRV-Headers)
 

@@ -46,7 +46,7 @@ int SliderSteps(const VideoCore::FxUniformDesc& uniform) {
 }
 
 QString FormatValue(const VideoCore::FxUniformDesc& uniform, float value) {
-    if (uniform.kind == VideoCore::FxUniformKind::Float) {
+    if (uniform.kind == VideoCore::FxUniformKind::Floating) {
         return QString::number(value, 'f', 3);
     }
     return QString::number(static_cast<int>(std::lround(value)));
@@ -262,7 +262,7 @@ QWidget* ConfigurePostProcessing::BuildSlot(int index, const VideoCore::FxChainE
     PopulateEffectCombo(combo, entry);
     connect(combo, &QComboBox::currentIndexChanged, this, [this, index, combo](int) {
         const QString key = combo->currentData().toString();
-        const int separator = key.indexOf(QLatin1Char('|'));
+        const qsizetype separator = key.indexOf(QLatin1Char('|'));
         if (separator < 0) {
             return;
         }

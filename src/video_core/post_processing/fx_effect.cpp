@@ -104,11 +104,11 @@ FxUniformDesc DescribeUniform(const reshadefx::uniform& info) {
     desc.components = std::min<u32>(info.type.components(), 4);
 
     if (info.type.is_boolean()) {
-        desc.kind = FxUniformKind::Bool;
+        desc.kind = FxUniformKind::Boolean;
     } else if (info.type.is_integral()) {
-        desc.kind = FxUniformKind::Int;
+        desc.kind = FxUniformKind::Integer;
     } else {
-        desc.kind = FxUniformKind::Float;
+        desc.kind = FxUniformKind::Floating;
     }
 
     desc.label = AnnotationString(info.annotations, "ui_label");
@@ -120,11 +120,11 @@ FxUniformDesc DescribeUniform(const reshadefx::uniform& info) {
     desc.ui_type = ParseUiType(AnnotationString(info.annotations, "ui_type"));
     desc.items = SplitItems(AnnotationString(info.annotations, "ui_items"));
 
-    if (desc.kind == FxUniformKind::Bool) {
+    if (desc.kind == FxUniformKind::Boolean) {
         desc.ui_min = 0.0f;
         desc.ui_max = 1.0f;
         desc.ui_step = 1.0f;
-    } else if (desc.kind == FxUniformKind::Int) {
+    } else if (desc.kind == FxUniformKind::Integer) {
         desc.ui_min = 0.0f;
         desc.ui_max = 100.0f;
         desc.ui_step = 1.0f;
@@ -136,7 +136,7 @@ FxUniformDesc DescribeUniform(const reshadefx::uniform& info) {
 
     if (desc.ui_step <= 0.0f) {
         desc.ui_step = 0.01f;
-        if (desc.kind != FxUniformKind::Float) {
+        if (desc.kind != FxUniformKind::Floating) {
             desc.ui_step = 1.0f;
         }
     }
@@ -146,7 +146,7 @@ FxUniformDesc DescribeUniform(const reshadefx::uniform& info) {
 
     if (info.has_initializer_value) {
         for (u32 i = 0; i < desc.components; ++i) {
-            if (desc.kind == FxUniformKind::Float) {
+            if (desc.kind == FxUniformKind::Floating) {
                 desc.default_value[i] = info.initializer_value.as_float[i];
             } else {
                 desc.default_value[i] = static_cast<f32>(info.initializer_value.as_int[i]);

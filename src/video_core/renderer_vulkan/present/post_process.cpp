@@ -8,7 +8,6 @@
 #include "common/fs/fs.h"
 #include "common/fs/fs_util.h"
 #include "common/logging.h"
-#include "common/stb.h"
 #include "video_core/post_processing/fx_chain.h"
 #include "video_core/post_processing/fx_compile.h"
 #include "video_core/post_processing/fx_effect.h"

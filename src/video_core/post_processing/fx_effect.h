@@ -14,9 +14,9 @@
 namespace VideoCore {
 
 enum class FxUniformKind {
-    Bool,
-    Int,
-    Float,
+    Boolean,
+    Integer,
+    Floating,
 };
 
 enum class FxUiType {
@@ -35,7 +35,7 @@ struct FxUniformDesc {
     std::string label;
     std::string tooltip;
     std::string category;
-    FxUniformKind kind{FxUniformKind::Float};
+    FxUniformKind kind{FxUniformKind::Floating};
     u32 components{1};
     FxUiType ui_type{FxUiType::Hidden};
     f32 ui_min{0.0f};
