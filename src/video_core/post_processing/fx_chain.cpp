@@ -252,11 +252,22 @@ void FxChain::ResetValues(size_t index) {
 }
 
 void FxChain::LoadFromSettings() {
-    auto loaded = ParseFxChain(Settings::values.post_shader_chain.GetValue());
+    auto parsed = ParseFxChain(Settings::values.post_shader_chain.GetValue());
 
     std::scoped_lock lock{mutex};
-    entries = std::move(loaded);
+    entries = std::move(parsed);
+    loaded = true;
     generation.fetch_add(1, std::memory_order_relaxed);
+}
+
+void FxChain::EnsureLoadedFromSettings() {
+    {
+        std::scoped_lock lock{mutex};
+        if (loaded) {
+            return;
+        }
+    }
+    LoadFromSettings();
 }
 
 void FxChain::StoreToSettings() const {

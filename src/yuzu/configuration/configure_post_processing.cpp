@@ -123,6 +123,8 @@ ConfigurePostProcessing::ConfigurePostProcessing(QWidget* parent) : QDialog(pare
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::close);
     root->addWidget(buttons);
 
+    VideoCore::ReloadFxCatalog();
+    VideoCore::FxChain::Instance().DropUnknownEntries();
     RebuildRows();
 }
 
@@ -240,10 +242,9 @@ void ConfigurePostProcessing::BuildUniformWidget(QWidget* parent, QVBoxLayout* l
                     auto next = CurrentValue(index, desc);
                     next[component] = desc.ui_min + static_cast<float>(steps) * desc.ui_step;
                     VideoCore::FxChain::Instance().SetValue(static_cast<size_t>(index), name, next);
+                    VideoCore::FxChain::Instance().StoreToSettings();
                     value_label->setText(FormatValue(desc, next[component]));
                 });
-        connect(slider, &QSlider::sliderReleased, this,
-                []() { VideoCore::FxChain::Instance().StoreToSettings(); });
 
         grid->addWidget(name_label, static_cast<int>(component), 0);
         grid->addWidget(slider, static_cast<int>(component), 1);

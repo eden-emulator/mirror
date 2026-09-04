@@ -26,7 +26,6 @@
 #include "video_core/renderer_vulkan/present/util.h"
 #ifdef HAS_RESHADE
 #include "video_core/post_processing/fx_chain.h"
-#include "video_core/post_processing/fx_effect.h"
 #endif
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_blit_screen.h"
@@ -188,9 +187,7 @@ try
     }
 
 #ifdef HAS_RESHADE
-    VideoCore::ReloadFxCatalog();
-    VideoCore::FxChain::Instance().LoadFromSettings();
-    VideoCore::FxChain::Instance().DropUnknownEntries();
+    VideoCore::FxChain::Instance().EnsureLoadedFromSettings();
 #endif
 
     Report();

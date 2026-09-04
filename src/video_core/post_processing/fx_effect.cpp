@@ -19,6 +19,7 @@ constexpr u32 CATALOG_PROBE_HEIGHT = 720;
 constexpr u32 CATALOG_PROBE_DEPTH = 8;
 
 std::vector<FxEffectDesc> catalog;
+bool catalog_scanned = false;
 
 const reshadefx::annotation* FindAnnotation(const std::vector<reshadefx::annotation>& annotations,
                                             std::string_view name) {
@@ -224,6 +225,7 @@ std::filesystem::path ResolveFxTexturePath(const std::filesystem::path& effect_p
 
 void ReloadFxCatalog() {
     catalog.clear();
+    catalog_scanned = true;
 
     const auto root = GetFxRootDirectory();
     if (!Common::FS::Exists(root)) {
@@ -259,13 +261,17 @@ void ReloadFxCatalog() {
 }
 
 const std::vector<FxEffectDesc>& GetFxCatalog() {
+    if (!catalog_scanned) {
+        ReloadFxCatalog();
+    }
     return catalog;
 }
 
 const FxEffectDesc* FindFxEffect(std::string_view file) {
-    const auto it = std::find_if(catalog.begin(), catalog.end(),
+    const auto& effects = GetFxCatalog();
+    const auto it = std::find_if(effects.begin(), effects.end(),
                                  [&](const FxEffectDesc& d) { return d.file == file; });
-    if (it == catalog.end()) {
+    if (it == effects.end()) {
         return nullptr;
     }
     return &*it;

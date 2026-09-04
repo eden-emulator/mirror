@@ -63,6 +63,8 @@ public:
 
     void LoadFromSettings();
 
+    void EnsureLoadedFromSettings();
+
     void StoreToSettings() const;
 
     void DropUnknownEntries();
@@ -72,6 +74,7 @@ private:
 
     mutable std::mutex mutex;
     std::vector<FxChainEntry> entries;
+    bool loaded{};
     std::atomic<u64> generation{1};
 };
 
