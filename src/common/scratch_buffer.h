@@ -7,6 +7,7 @@
 #pragma once
 
 #include <iterator>
+#include <cstring>
 
 #include "common/make_unique_for_overwrite.h"
 
