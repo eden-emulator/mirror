@@ -269,6 +269,10 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
               "quality and performance consistency in some games."));
     INSERT(Settings, fix_bloom_effects, tr("Fix bloom effects"), tr("Removes bloom in Burnout."));
 
+    INSERT(Settings, force_unrestricted_depth, tr("Force Unrestricted Depth Range"),
+           tr("Stops clamping the viewport depth range on drivers that lack "
+              "VK_EXT_depth_range_unrestricted. May fix blurriness in some games."));
+
     INSERT(Settings, rescale_hack, tr("Enable Legacy Rescale Pass"),
            tr("May fix rescale issues in some games by relying on behavior from the previous "
               "implementation.\n"
