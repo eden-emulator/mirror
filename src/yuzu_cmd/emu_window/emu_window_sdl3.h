@@ -84,6 +84,9 @@ protected:
     /// Periodic changer of titlebar (independent of event loop)
     SDL_TimerID titlebar_timer;
 
+    // Mouse resetter once it
+    SDL_TimerID mouse_timer;
+
     /// Is the window still open?
     bool is_open = true;
 
