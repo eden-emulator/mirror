@@ -18,8 +18,10 @@
 #include "video_core/renderer_vulkan/present/sgsr.h"
 #include "video_core/renderer_vulkan/present/fxaa.h"
 #include "video_core/renderer_vulkan/present/layer.h"
+#ifdef HAS_RESHADE
 #include "video_core/post_processing/fx_chain.h"
 #include "video_core/renderer_vulkan/present/post_process.h"
+#endif
 #include "video_core/renderer_vulkan/present/present_push_constants.h"
 #include "video_core/renderer_vulkan/present/smaa.h"
 #include "video_core/renderer_vulkan/present/util.h"
@@ -95,7 +97,9 @@ void Layer::ConfigureDraw(const Device& device, PresentPushConstants* out_push_c
 
     RefreshResources(device, framebuffer);
     SetAntiAliasPass(device);
+#ifdef HAS_RESHADE
     SetPostProcessPass(device);
+#endif
 
     // Finish any pending renderpass
     scheduler.RequestOutsideRenderPassOperationContext();
@@ -118,9 +122,11 @@ void Layer::ConfigureDraw(const Device& device, PresentPushConstants* out_push_c
         smaa->Draw(device, scheduler, image_index, &source_image, &source_image_view);
     }
 
+#ifdef HAS_RESHADE
     if (post_process.has_value()) {
         post_process->Draw(device, scheduler, image_index, &source_image, &source_image_view);
     }
+#endif
 
     auto crop_rect = Tegra::NormalizeCrop(framebuffer, texture_width, texture_height);
     const VkExtent2D render_extent{
@@ -221,6 +227,7 @@ void Layer::SetAntiAliasPass(const Device& device) {
     }
 }
 
+#ifdef HAS_RESHADE
 void Layer::SetPostProcessPass(const Device& device) {
     const VkExtent2D render_area{
         .width = Settings::values.resolution_info.ScaleUp(raw_width),
@@ -252,6 +259,7 @@ void Layer::SetPostProcessPass(const Device& device) {
         post_process.reset();
     }
 }
+#endif
 
 void Layer::ReleaseRawImages() {
     for (const u64 tick : resource_ticks) {

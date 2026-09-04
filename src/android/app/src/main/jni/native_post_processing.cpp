@@ -7,11 +7,14 @@
 #include <nlohmann/json.hpp>
 
 #include "common/android/android_common.h"
+#ifdef HAS_RESHADE
 #include "video_core/post_processing/fx_chain.h"
 #include "video_core/post_processing/fx_effect.h"
+#endif
 
 namespace {
 
+#ifdef HAS_RESHADE
 nlohmann::json SerializeUniform(const VideoCore::FxUniformDesc& uniform) {
     nlohmann::json out;
     out["name"] = uniform.name;
@@ -34,6 +37,7 @@ nlohmann::json SerializeUniform(const VideoCore::FxUniformDesc& uniform) {
 
     return out;
 }
+#endif
 
 } // Anonymous namespace
 
@@ -43,6 +47,7 @@ jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getCatalogJson(JNIEnv
                                                                          jobject obj) {
     nlohmann::json out = nlohmann::json::array();
 
+#ifdef HAS_RESHADE
     for (const auto& effect : VideoCore::GetFxCatalog()) {
         nlohmann::json entry;
         entry["file"] = effect.file;
@@ -58,6 +63,7 @@ jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getCatalogJson(JNIEnv
 
         out.push_back(entry);
     }
+#endif
 
     return Common::Android::ToJString(env, out.dump());
 }
@@ -65,6 +71,7 @@ jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getCatalogJson(JNIEnv
 jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getChainJson(JNIEnv* env, jobject obj) {
     nlohmann::json out = nlohmann::json::array();
 
+#ifdef HAS_RESHADE
     for (const auto& entry : VideoCore::FxChain::Instance().Entries()) {
         nlohmann::json item;
         item["file"] = entry.file;
@@ -78,60 +85,80 @@ jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getChainJson(JNIEnv* 
 
         out.push_back(item);
     }
+#endif
 
     return Common::Android::ToJString(env, out.dump());
 }
 
 void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_append(JNIEnv* env, jobject obj,
                                                                jstring jfile, jstring jtechnique) {
+#ifdef HAS_RESHADE
     VideoCore::FxChain::Instance().Append(Common::Android::GetJString(env, jfile),
                                           Common::Android::GetJString(env, jtechnique));
+#endif
 }
 
 void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_replace(JNIEnv* env, jobject obj,
                                                                 jint index, jstring jfile,
                                                                 jstring jtechnique) {
+#ifdef HAS_RESHADE
     VideoCore::FxChain::Instance().Replace(static_cast<size_t>(index),
                                            Common::Android::GetJString(env, jfile),
                                            Common::Android::GetJString(env, jtechnique));
+#endif
 }
 
 void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_remove(JNIEnv* env, jobject obj,
                                                                jint index) {
+#ifdef HAS_RESHADE
     VideoCore::FxChain::Instance().Remove(static_cast<size_t>(index));
+#endif
 }
 
 void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_move(JNIEnv* env, jobject obj, jint index,
                                                              jint delta) {
+#ifdef HAS_RESHADE
     VideoCore::FxChain::Instance().Move(static_cast<size_t>(index), delta);
+#endif
 }
 
 void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_resetValues(JNIEnv* env, jobject obj,
                                                                     jint index) {
+#ifdef HAS_RESHADE
     VideoCore::FxChain::Instance().ResetValues(static_cast<size_t>(index));
+#endif
 }
 
 jfloat Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getValue(JNIEnv* env, jobject obj,
                                                                    jint index, jstring juniform,
                                                                    jint component) {
+#ifdef HAS_RESHADE
     if (component < 0 || component >= 4) {
         return 0.0f;
     }
     const auto value = VideoCore::FxChain::Instance().GetValue(
         static_cast<size_t>(index), Common::Android::GetJString(env, juniform));
     return value[static_cast<size_t>(component)];
+#else
+    return 0.0f;
+#endif
 }
 
 jboolean Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_hasValue(JNIEnv* env, jobject obj,
                                                                      jint index,
                                                                      jstring juniform) {
+#ifdef HAS_RESHADE
     return static_cast<jboolean>(VideoCore::FxChain::Instance().HasValue(
         static_cast<size_t>(index), Common::Android::GetJString(env, juniform)));
+#else
+    return static_cast<jboolean>(false);
+#endif
 }
 
 void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_setValue(JNIEnv* env, jobject obj,
                                                                   jint index, jstring juniform,
                                                                   jint component, jfloat value) {
+#ifdef HAS_RESHADE
     if (component < 0 || component >= 4) {
         return;
     }
@@ -141,20 +168,29 @@ void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_setValue(JNIEnv* env, jo
     auto current = chain.GetValue(static_cast<size_t>(index), uniform);
     current[static_cast<size_t>(component)] = value;
     chain.SetValue(static_cast<size_t>(index), uniform, current);
+#endif
 }
 
 void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_store(JNIEnv* env, jobject obj) {
+#ifdef HAS_RESHADE
     VideoCore::FxChain::Instance().StoreToSettings();
+#endif
 }
 
 void Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_reload(JNIEnv* env, jobject obj) {
+#ifdef HAS_RESHADE
     VideoCore::ReloadFxCatalog();
     VideoCore::FxChain::Instance().DropUnknownEntries();
+#endif
 }
 
 jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getShaderDirectory(JNIEnv* env,
                                                                               jobject obj) {
+#ifdef HAS_RESHADE
     return Common::Android::ToJString(env, VideoCore::GetFxRootDirectory().string());
+#else
+    return Common::Android::ToJString(env, "");
+#endif
 }
 
 } // extern "C"

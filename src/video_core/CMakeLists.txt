@@ -117,14 +117,6 @@ add_library(video_core STATIC
     renderer_null/renderer_null.cpp
     renderer_null/renderer_null.h
 
-    # Post-processing
-    post_processing/fx_chain.cpp
-    post_processing/fx_chain.h
-    post_processing/fx_compile.cpp
-    post_processing/fx_compile.h
-    post_processing/fx_effect.cpp
-    post_processing/fx_effect.h
-
     # Vulkan
     renderer_vulkan/present/anti_alias_pass.h
     renderer_vulkan/present/filters.cpp
@@ -135,8 +127,6 @@ add_library(video_core STATIC
     renderer_vulkan/present/fxaa.h
     renderer_vulkan/present/layer.cpp
     renderer_vulkan/present/layer.h
-    renderer_vulkan/present/post_process.cpp
-    renderer_vulkan/present/post_process.h
     renderer_vulkan/present/present_push_constants.h
     renderer_vulkan/present/smaa.cpp
     renderer_vulkan/present/smaa.h
@@ -309,6 +299,21 @@ if (ENABLE_LSFG)
     target_compile_definitions(video_core PUBLIC HAS_LSFG)
 endif()
 
+if (ENABLE_RESHADE)
+    target_sources(video_core PRIVATE
+        post_processing/fx_chain.cpp
+        post_processing/fx_chain.h
+        post_processing/fx_compile.cpp
+        post_processing/fx_compile.h
+        post_processing/fx_effect.cpp
+        post_processing/fx_effect.h
+        renderer_vulkan/present/post_process.cpp
+        renderer_vulkan/present/post_process.h
+    )
+    target_link_libraries(video_core PRIVATE reshadefx::reshadefx)
+    target_compile_definitions(video_core PUBLIC HAS_RESHADE)
+endif()
+
 if (ENABLE_OPENGL)
     target_sources(video_core PRIVATE
         renderer_opengl/present/filters.cpp
@@ -387,7 +392,6 @@ add_dependencies(video_core host_shaders)
 target_include_directories(video_core PRIVATE ${HOST_SHADERS_INCLUDE})
 
 target_link_libraries(video_core PRIVATE sirit::sirit)
-target_link_libraries(video_core PRIVATE reshadefx::reshadefx stb::headers)
 
 # Header-only stuff needed by all dependent targets
 target_link_libraries(video_core PUBLIC Vulkan::Headers Vulkan::UtilityHeaders GPUOpen::VulkanMemoryAllocator)

@@ -24,8 +24,10 @@
 #include "video_core/gpu.h"
 #include "video_core/present.h"
 #include "video_core/renderer_vulkan/present/util.h"
+#ifdef HAS_RESHADE
 #include "video_core/post_processing/fx_chain.h"
 #include "video_core/post_processing/fx_effect.h"
+#endif
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 #include "video_core/renderer_vulkan/vk_blit_screen.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
@@ -185,9 +187,11 @@ try
         scheduler.RegisterOnSubmit([this] { turbo_mode->QueueSubmitted(); });
     }
 
+#ifdef HAS_RESHADE
     VideoCore::ReloadFxCatalog();
     VideoCore::FxChain::Instance().LoadFromSettings();
     VideoCore::FxChain::Instance().DropUnknownEntries();
+#endif
 
     Report();
 } catch (const vk::Exception& exception) {

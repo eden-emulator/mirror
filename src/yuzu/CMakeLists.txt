@@ -74,8 +74,6 @@ add_executable(yuzu
     configuration/configure_general.ui
     configuration/configure_graphics.cpp
     configuration/configure_graphics.h
-    configuration/configure_post_processing.cpp
-    configuration/configure_post_processing.h
     configuration/configure_graphics.ui
     configuration/configure_graphics_advanced.cpp
     configuration/configure_graphics_advanced.h
@@ -250,6 +248,12 @@ if (YUZU_CRASH_DUMPS)
 
     target_link_libraries(yuzu PRIVATE libbreakpad_client)
     target_compile_definitions(yuzu PRIVATE YUZU_CRASH_DUMPS)
+endif()
+
+if (ENABLE_RESHADE)
+    target_sources(yuzu PRIVATE
+        configuration/configure_post_processing.cpp
+        configuration/configure_post_processing.h)
 endif()
 
 if (CXX_CLANG)
