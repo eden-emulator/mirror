@@ -42,6 +42,11 @@ object NativePostProcessing {
 
     external fun store()
 
+    fun persist() {
+        store()
+        NativeConfig.saveGlobalConfig()
+    }
+
     external fun reload()
 
     external fun getShaderDirectory(): String

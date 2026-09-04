@@ -39,7 +39,7 @@ abstract class FxUniformSetting(
 
     protected fun commit(value: Float) {
         NativePostProcessing.setValue(index, uniform.name, component, value)
-        NativePostProcessing.store()
+        NativePostProcessing.persist()
     }
 
     override fun reset() = commit(uniform.defaultAt(component))

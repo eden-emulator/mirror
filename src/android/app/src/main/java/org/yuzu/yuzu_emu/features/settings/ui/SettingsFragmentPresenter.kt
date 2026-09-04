@@ -269,7 +269,7 @@ class SettingsFragmentPresenter(
                             isRunnable = true
                         ) {
                             NativePostProcessing.move(index, -1)
-                            NativePostProcessing.store()
+                            NativePostProcessing.persist()
                             settingsViewModel.setReloadListAndNotifyDataset(true)
                         }
                     )
@@ -281,7 +281,7 @@ class SettingsFragmentPresenter(
                             isRunnable = true
                         ) {
                             NativePostProcessing.move(index, 1)
-                            NativePostProcessing.store()
+                            NativePostProcessing.persist()
                             settingsViewModel.setReloadListAndNotifyDataset(true)
                         }
                     )
@@ -292,7 +292,7 @@ class SettingsFragmentPresenter(
                         isRunnable = true
                     ) {
                         NativePostProcessing.resetValues(index)
-                        NativePostProcessing.store()
+                        NativePostProcessing.persist()
                         settingsViewModel.setReloadListAndNotifyDataset(true)
                     }
                 )
@@ -302,7 +302,7 @@ class SettingsFragmentPresenter(
                         isRunnable = true
                     ) {
                         NativePostProcessing.remove(index)
-                        NativePostProcessing.store()
+                        NativePostProcessing.persist()
                         settingsViewModel.setReloadListAndNotifyDataset(true)
                     }
                 )
@@ -314,7 +314,7 @@ class SettingsFragmentPresenter(
                     isRunnable = true
                 ) {
                     NativePostProcessing.append(files[0], techniques[0])
-                    NativePostProcessing.store()
+                    NativePostProcessing.persist()
                     settingsViewModel.setReloadListAndNotifyDataset(true)
                 }
             )
@@ -340,7 +340,7 @@ class SettingsFragmentPresenter(
 
         override fun setInt(value: Int) {
             NativePostProcessing.replace(index, files[value], techniques[value])
-            NativePostProcessing.store()
+            NativePostProcessing.persist()
             settingsViewModel.setReloadListAndNotifyDataset(true)
         }
 
