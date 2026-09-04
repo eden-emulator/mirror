@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <string>
+#include <cstdlib>
 #include <string_view>
 #ifdef _WIN32
 #include <llvm/Demangle/Demangle.h>

@@ -11,6 +11,7 @@
 #include <limits>
 #include <span>
 #include <array>
+#include <algorithm>
 #include <time.h>
 
 namespace Tz {
