@@ -311,6 +311,9 @@
         "find_args": "CONFIG",
         "hash": "deb5902ef8db0e329fbd5f3f4385eb0e26bdd9f14f3a2334823fb3fe18f36bc5d235d620d6e5f6fe3551ec3ea7038638899db8778c09f6d5c278f5ff95c3344b",
         "package": "VulkanMemoryAllocator",
+        "patches": [
+            "0001-macos-clang.patch"
+        ],
         "repo": "GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator",
         "version": "v3.3.0"
     },

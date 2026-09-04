@@ -1,0 +1,112 @@
+diff --git a/include/vk_mem_alloc.h b/include/vk_mem_alloc.h
+index 8df0364..4856064 100644
+--- a/include/vk_mem_alloc.h
++++ b/include/vk_mem_alloc.h
+@@ -3017,7 +3017,7 @@ remove them if not needed.
+ 
+ #if defined(__ANDROID_API__) && (__ANDROID_API__ < 16)
+ #include <cstdlib>
+-static void* vma_aligned_alloc(size_t alignment, size_t size)
++static inline void* vma_aligned_alloc(size_t alignment, size_t size)
+ {
+     // alignment must be >= sizeof(void*)
+     if(alignment < sizeof(void*))
+@@ -3860,7 +3860,7 @@ Returned value is the found element, if present in the collection or place where
+ new element with value (key) should be inserted.
+ */
+ template <typename CmpLess, typename IterT, typename KeyT>
+-static IterT VmaBinaryFindFirstNotLess(IterT beg, IterT end, const KeyT& key, const CmpLess& cmp)
++static inline IterT VmaBinaryFindFirstNotLess(IterT beg, IterT end, const KeyT& key, const CmpLess& cmp)
+ {
+     size_t down = 0;
+     size_t up = size_t(end - beg);
+@@ -3898,7 +3898,7 @@ Warning! O(n^2) complexity. Use only inside VMA_HEAVY_ASSERT.
+ T must be pointer type, e.g. VmaAllocation, VmaPool.
+ */
+ template<typename T>
+-static bool VmaValidatePointerArray(uint32_t count, const T* arr)
++static inline bool VmaValidatePointerArray(uint32_t count, const T* arr)
+ {
+     for (uint32_t i = 0; i < count; ++i)
+     {
+@@ -4188,13 +4188,13 @@ static void VmaFree(const VkAllocationCallbacks* pAllocationCallbacks, void* ptr
+ }
+ 
+ template<typename T>
+-static T* VmaAllocate(const VkAllocationCallbacks* pAllocationCallbacks)
++static inline T* VmaAllocate(const VkAllocationCallbacks* pAllocationCallbacks)
+ {
+     return (T*)VmaMalloc(pAllocationCallbacks, sizeof(T), VMA_ALIGN_OF(T));
+ }
+ 
+ template<typename T>
+-static T* VmaAllocateArray(const VkAllocationCallbacks* pAllocationCallbacks, size_t count)
++static inline T* VmaAllocateArray(const VkAllocationCallbacks* pAllocationCallbacks, size_t count)
+ {
+     return (T*)VmaMalloc(pAllocationCallbacks, sizeof(T) * count, VMA_ALIGN_OF(T));
+ }
+@@ -4204,14 +4204,14 @@ static T* VmaAllocateArray(const VkAllocationCallbacks* pAllocationCallbacks, si
+ #define vma_new_array(allocator, type, count)   new(VmaAllocateArray<type>((allocator), (count)))(type)
+ 
+ template<typename T>
+-static void vma_delete(const VkAllocationCallbacks* pAllocationCallbacks, T* ptr)
++static inline void vma_delete(const VkAllocationCallbacks* pAllocationCallbacks, T* ptr)
+ {
+     ptr->~T();
+     VmaFree(pAllocationCallbacks, ptr);
+ }
+ 
+ template<typename T>
+-static void vma_delete_array(const VkAllocationCallbacks* pAllocationCallbacks, T* ptr, size_t count)
++static inline void vma_delete_array(const VkAllocationCallbacks* pAllocationCallbacks, T* ptr, size_t count)
+ {
+     if (ptr != VMA_NULL)
+     {
+@@ -4658,13 +4658,13 @@ void VmaVector<T, AllocatorT>::remove(size_t index)
+ #endif // _VMA_VECTOR_FUNCTIONS
+ 
+ template<typename T, typename allocatorT>
+-static void VmaVectorInsert(VmaVector<T, allocatorT>& vec, size_t index, const T& item)
++static inline void VmaVectorInsert(VmaVector<T, allocatorT>& vec, size_t index, const T& item)
+ {
+     vec.insert(index, item);
+ }
+ 
+ template<typename T, typename allocatorT>
+-static void VmaVectorRemove(VmaVector<T, allocatorT>& vec, size_t index)
++static inline void VmaVectorRemove(VmaVector<T, allocatorT>& vec, size_t index)
+ {
+     vec.remove(index);
+ }
+@@ -10620,19 +10620,19 @@ static void VmaFree(VmaAllocator hAllocator, void* ptr)
+ }
+ 
+ template<typename T>
+-static T* VmaAllocate(VmaAllocator hAllocator)
++static inline T* VmaAllocate(VmaAllocator hAllocator)
+ {
+     return (T*)VmaMalloc(hAllocator, sizeof(T), VMA_ALIGN_OF(T));
+ }
+ 
+ template<typename T>
+-static T* VmaAllocateArray(VmaAllocator hAllocator, size_t count)
++static inline T* VmaAllocateArray(VmaAllocator hAllocator, size_t count)
+ {
+     return (T*)VmaMalloc(hAllocator, sizeof(T) * count, VMA_ALIGN_OF(T));
+ }
+ 
+ template<typename T>
+-static void vma_delete(VmaAllocator hAllocator, T* ptr)
++static inline void vma_delete(VmaAllocator hAllocator, T* ptr)
+ {
+     if(ptr != VMA_NULL)
+     {
+@@ -10642,7 +10642,7 @@ static void vma_delete(VmaAllocator hAllocator, T* ptr)
+ }
+ 
+ template<typename T>
+-static void vma_delete_array(VmaAllocator hAllocator, T* ptr, size_t count)
++static inline void vma_delete_array(VmaAllocator hAllocator, T* ptr, size_t count)
+ {
+     if(ptr != VMA_NULL)
+     {
