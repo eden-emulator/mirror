@@ -852,7 +852,7 @@ public:
 
     void PushUnsyncedQueries() override {
         CloseCounter();
-        auto staging_ref = staging_pool.Request(
+        auto staging_ref = staging_pool.Request(device,
             pending_flush_queries.size() * TFBQueryBank::QUERY_SIZE, MemoryUsage::Download, true);
         size_t offset_base = staging_ref.offset;
         for (auto q : pending_flush_queries) {
@@ -1657,7 +1657,7 @@ void QueryCacheRuntime::SyncValues(std::span<SyncValuesType> values, VkBuffer ba
     impl->copies_setup.clear();
     impl->copies_setup.resize(impl->little_cache.size());
     if constexpr (SyncValuesType::GeneratesBaseBuffer) {
-        ref = impl->staging_pool.Request(total_size, MemoryUsage::Upload);
+        ref = impl->staging_pool.Request(impl->device, total_size, MemoryUsage::Upload);
         size_t current_offset = ref.offset;
         size_t accumulated_size = 0;
         for (size_t i = 0; i < values.size(); i++) {

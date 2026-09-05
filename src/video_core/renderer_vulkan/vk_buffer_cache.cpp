@@ -192,7 +192,7 @@ public:
             if (host_visible) {
                 return StagingBufferRef{};
             }
-            return staging_pool.Request(size_bytes, MemoryUsage::Upload);
+            return staging_pool.Request(device, size_bytes, MemoryUsage::Upload);
         }();
 
         u8* staging_data = host_visible ? buffer.Mapped().data() : staging.mapped_span.data();
@@ -366,11 +366,11 @@ BufferCacheRuntime::BufferCacheRuntime(const Device& device_, MemoryAllocator& m
 }
 
 StagingBufferRef BufferCacheRuntime::UploadStagingBuffer(size_t size) {
-    return staging_pool.Request(size, MemoryUsage::Upload);
+    return staging_pool.Request(device, size, MemoryUsage::Upload);
 }
 
 StagingBufferRef BufferCacheRuntime::DownloadStagingBuffer(size_t size, bool deferred) {
-    return staging_pool.Request(size, MemoryUsage::Download, deferred);
+    return staging_pool.Request(device, size, MemoryUsage::Download, deferred);
 }
 
 VkFormat BufferCacheRuntime::TexelBufferFormat(VideoCore::Surface::PixelFormat format) const {
