@@ -287,7 +287,7 @@ Uint8Pass::~Uint8Pass() = default;
 std::pair<VkBuffer, VkDeviceSize> Uint8Pass::Assemble(u32 num_vertices, VkBuffer src_buffer,
                                                       u32 src_offset) {
     const u32 staging_size = static_cast<u32>(num_vertices * sizeof(u16));
-    const auto staging = staging_buffer_pool.Request(staging_size, MemoryUsage::DeviceLocal);
+    const auto staging = staging_buffer_pool.Request(device, staging_size, MemoryUsage::DeviceLocal);
 
     compute_pass_descriptor_queue.Acquire(scheduler, 2);
     compute_pass_descriptor_queue.AddBuffer(src_buffer, src_offset, num_vertices);
@@ -345,7 +345,7 @@ std::pair<VkBuffer, VkDeviceSize> QuadIndexedPass::Assemble(
     const u32 num_tri_vertices = (is_strip ? (num_vertices - 2) / 2 : num_vertices / 4) * 6;
 
     const std::size_t staging_size = num_tri_vertices * sizeof(u32);
-    const auto staging = staging_buffer_pool.Request(staging_size, MemoryUsage::DeviceLocal);
+    const auto staging = staging_buffer_pool.Request(device, staging_size, MemoryUsage::DeviceLocal);
 
     compute_pass_descriptor_queue.Acquire(scheduler, 2);
     compute_pass_descriptor_queue.AddBuffer(src_buffer, src_offset, input_size);

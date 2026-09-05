@@ -33,11 +33,10 @@ class StagingBufferPool {
 public:
     static constexpr size_t NUM_SYNCS = 16;
 
-    explicit StagingBufferPool(const Device& device, MemoryAllocator& memory_allocator,
-                               Scheduler& scheduler);
+    explicit StagingBufferPool(const Device& device, MemoryAllocator& memory_allocator, Scheduler& scheduler);
     ~StagingBufferPool();
 
-    StagingBufferRef Request(size_t size, MemoryUsage usage, bool deferred = false);
+    StagingBufferRef Request(const Device& device, size_t size, MemoryUsage usage, bool deferred = false);
     void FreeDeferred(StagingBufferRef& ref);
 
     [[nodiscard]] VkBuffer StreamBuf() const noexcept {
@@ -84,27 +83,18 @@ private:
     static constexpr size_t NUM_LEVELS = sizeof(size_t) * CHAR_BIT;
     using StagingBuffersCache = std::array<StagingBuffers, NUM_LEVELS>;
 
-    StagingBufferRef GetStreamBuffer(size_t size);
-
+    StagingBufferRef GetStreamBuffer(const Device& device, size_t size);
     bool AreRegionsActive(size_t region_begin, size_t region_end) const;
-
-    StagingBufferRef GetStagingBuffer(size_t size, MemoryUsage usage, bool deferred = false);
-
-    std::optional<StagingBufferRef> TryGetReservedBuffer(size_t size, MemoryUsage usage,
-                                                         bool deferred);
-
-    StagingBufferRef CreateStagingBuffer(size_t size, MemoryUsage usage, bool deferred);
-
+    StagingBufferRef GetStagingBuffer(const Device& device, size_t size, MemoryUsage usage, bool deferred = false);
+    std::optional<StagingBufferRef> TryGetReservedBuffer(size_t size, MemoryUsage usage, bool deferred);
+    StagingBufferRef CreateStagingBuffer(const Device& device, size_t size, MemoryUsage usage, bool deferred);
     StagingBuffersCache& GetCache(MemoryUsage usage);
-
     void ReleaseCache(MemoryUsage usage);
-
     void ReleaseLevel(StagingBuffersCache& cache, size_t log2);
     size_t Region(size_t iter) const noexcept {
         return iter / region_size;
     }
 
-    const Device& device;
     MemoryAllocator& memory_allocator;
     Scheduler& scheduler;
 
