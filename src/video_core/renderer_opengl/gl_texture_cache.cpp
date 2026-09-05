@@ -557,11 +557,11 @@ void TextureCacheRuntime::Finish() {
 }
 
 StagingBufferMap TextureCacheRuntime::UploadStagingBuffer(size_t size, bool deferred) {
-    return staging_buffer_pool.RequestUploadBuffer(size);
+    return staging_buffer_pool.RequestUploadBuffer(device, size);
 }
 
 StagingBufferMap TextureCacheRuntime::DownloadStagingBuffer(size_t size, bool deferred) {
-    return staging_buffer_pool.RequestDownloadBuffer(size, deferred);
+    return staging_buffer_pool.RequestDownloadBuffer(device, size, deferred);
 }
 
 void TextureCacheRuntime::FreeDeferredStagingBuffer(StagingBufferMap& buffer) {

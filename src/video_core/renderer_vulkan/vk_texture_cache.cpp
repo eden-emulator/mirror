@@ -975,11 +975,11 @@ void TextureCacheRuntime::Finish() {
 }
 
 StagingBufferRef TextureCacheRuntime::UploadStagingBuffer(size_t size, bool deferred) {
-    return staging_buffer_pool.Request(size, MemoryUsage::Upload, deferred);
+    return staging_buffer_pool.Request(device, size, MemoryUsage::Upload, deferred);
 }
 
 StagingBufferRef TextureCacheRuntime::DownloadStagingBuffer(size_t size, bool deferred) {
-    return staging_buffer_pool.Request(size, MemoryUsage::Download, deferred);
+    return staging_buffer_pool.Request(device, size, MemoryUsage::Download, deferred);
 }
 
 void TextureCacheRuntime::FreeDeferredStagingBuffer(StagingBufferRef& ref) {
