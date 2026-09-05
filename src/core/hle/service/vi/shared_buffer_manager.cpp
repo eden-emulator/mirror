@@ -4,9 +4,15 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <array>
 #include <random>
 
+#include "common/assert.h"
+#include "common/logging.h"
+#include "common/scratch_buffer.h"
 #include "core/core.h"
+#include "core/hle/kernel/k_page_group.h"
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/k_system_resource.h"
 #include "core/hle/service/nvdrv/devices/nvmap.h"
@@ -47,7 +53,7 @@ Result AllocateSharedBufferMemory(std::unique_ptr<Kernel::KPageGroup>* out_page_
         u32* end = system.DeviceMemory().GetPointer<u32>(block.GetAddress() + block.GetSize());
 
         for (; start < end; start++) {
-            *start = 0xFF0000FF;
+            *start = 0x00000000;
         }
     }
 
@@ -202,6 +208,10 @@ constexpr SharedMemoryPoolLayout SharedBufferPoolLayout = [] {
 constexpr u32 GetCaptureSlot(CaptureKind kind) {
     return static_cast<u32>(kind);
 }
+static_assert(static_cast<u32>(CaptureKind::CallerApplet) + 1 == SharedBufferNumCaptureSlots,
+              "Capture slot count does not match CaptureKind");
+
+constexpr u32 ColorOpaqueBlackRgba32 = 0xFF000000;
 
 template <typename F>
 void ForEachPoolChunk(Core::System& system, Kernel::KPageGroup& page_group, u64 offset, u64 size,
@@ -273,9 +283,17 @@ Result SharedBufferManager::CreateSession(Kernel::KProcess* owner_process, u64* 
         // Record buffer id.
         m_buffer_id = m_next_buffer_id++;
 
-        // Record display id.
-        m_display_id = display_id;
-    }
+            // Record display id.
+            m_display_id = display_id;
+
+            for (u32 slot = 0; slot < SharedBufferNumCaptureSlots; slot++) {
+                ForEachPoolChunk(m_system, *m_buffer_page_group, u64{slot} * SharedBufferSlotSize,
+                                 SharedBufferSlotSize, [](u8* dst, u64, u64 length) {
+                                     std::fill_n(reinterpret_cast<u32*>(dst), length / sizeof(u32),
+                                                 ColorOpaqueBlackRgba32);
+                                 });
+            }
+        }
 
     // Map into process.
     Common::ProcessAddress map_address{};
