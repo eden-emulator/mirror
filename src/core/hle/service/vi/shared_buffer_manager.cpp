@@ -300,14 +300,14 @@ Result SharedBufferManager::CreateSession(Kernel::KProcess* owner_process, u64* 
             }
         }
 
-    // Map into process.
-    Common::ProcessAddress map_address{};
-    R_TRY(MapSharedBufferIntoProcessAddressSpace(std::addressof(map_address), m_buffer_page_group,
-                                                 owner_process, m_system));
+        // Map into process.
+        Common::ProcessAddress map_address{};
+        R_TRY(MapSharedBufferIntoProcessAddressSpace(std::addressof(map_address), m_buffer_page_group,
+                                                     owner_process, m_system));
 
-    // Create new session.
-    auto [it, was_emplaced] = m_sessions.emplace(aruid, SharedBufferSession{});
-    auto& session = it->second;
+        // Create new session.
+        auto [it, was_emplaced] = m_sessions.emplace(aruid, SharedBufferSession{});
+        auto& session = it->second;
 
         auto& container = m_nvdrv->GetContainer();
         session.session_id = container.OpenSession(owner_process);
