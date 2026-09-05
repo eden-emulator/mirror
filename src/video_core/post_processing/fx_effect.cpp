@@ -3,6 +3,8 @@
 
 #include <algorithm>
 
+#include "bundled_fx_effects.h"
+#include "common/fs/file.h"
 #include "common/fs/fs.h"
 #include "common/fs/fs_util.h"
 #include "common/fs/path_util.h"
@@ -228,9 +230,16 @@ void ReloadFxCatalog() {
     catalog_scanned = true;
 
     const auto root = GetFxRootDirectory();
-    if (!Common::FS::Exists(root)) {
-        void(Common::FS::CreateDirs(root));
+    if (!Common::FS::Exists(root) && !Common::FS::CreateDirs(root)) {
         return;
+    }
+
+    for (const auto& bundled : BUNDLED_FX_EFFECTS) {
+        const auto path = root / bundled.name;
+        if (Common::FS::Exists(path)) {
+            continue;
+        }
+        void(Common::FS::WriteStringToFile(path, Common::FS::FileType::TextFile, bundled.source));
     }
 
     std::vector<std::filesystem::path> effect_files;
