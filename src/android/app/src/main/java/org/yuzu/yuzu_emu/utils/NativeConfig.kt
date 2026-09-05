@@ -28,13 +28,13 @@ object NativeConfig {
      * Reads values in the global config file and saves them.
      */
     @Synchronized
-    external fun reloadGlobalConfig()
+    external fun reloadGlobalConfig(): Boolean
 
     /**
      * Saves global settings values in memory to disk.
      */
     @Synchronized
-    external fun saveGlobalConfig()
+    external fun saveGlobalConfig(): Boolean
 
     /**
      * Creates per-game config for the specified parameters. Must be unloaded once per-game config
@@ -54,7 +54,7 @@ object NativeConfig {
      * Saves per-game settings values in memory to disk.
      */
     @Synchronized
-    external fun savePerGameConfig()
+    external fun savePerGameConfig(): Boolean
 
     /**
      * Destroys the stored per-game config object. This does not save the config.
