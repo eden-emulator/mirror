@@ -51,6 +51,8 @@ public:
     Result WriteAppletCaptureBuffer(bool* out_was_written, s32* out_fbshare_layer_index);
 
 private:
+    u32 GetLayerStackMask() const;
+
     Kernel::KProcess* m_process{};
     std::shared_ptr<VI::IApplicationDisplayService> m_display_service{};
     std::shared_ptr<VI::IManagerDisplayService> m_manager_display_service{};
@@ -59,6 +61,7 @@ private:
     u64 m_system_shared_buffer_id{};
     u64 m_system_shared_layer_id{};
     AppletId m_applet_id{};
+    LibraryAppletMode m_library_applet_mode{};
     bool m_buffer_sharing_enabled{};
     bool m_blending_enabled{};
     bool m_visible{true};
