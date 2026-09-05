@@ -25,29 +25,14 @@ namespace {
 
 using namespace Common::Literals;
 
-// Maximum potential alignment of a Vulkan buffer
-constexpr VkDeviceSize MAX_ALIGNMENT = 256;
-
-// Stream buffer size in bytes
-// *NIX drivers are more sensitive to increased buffers for streaming.
-// Windows ones however, can intake bigger buffers and generally do not OOM.
-// - GTX 960 on Windows will not OOM with 256mib
-// - GT 1030 on ^NIX will OOM with 256mib
-#if defined(__FreeBSD__)
-constexpr VkDeviceSize MAX_STREAM_BUFFER_SIZE = 128_MiB;
-#else
-constexpr VkDeviceSize MAX_STREAM_BUFFER_SIZE = 256_MiB;
-#endif
-
-size_t GetStreamBufferSize(const Device& device) {
+size_t GetStreamBufferSize(const Device& device, size_t max_stream_buffer_size, size_t max_alignment) {
     if (!device.HasDebuggingToolAttached()) {
-        return MAX_STREAM_BUFFER_SIZE;
+        return max_stream_buffer_size;
     }
 
     VkDeviceSize size{0};
     bool has_device_local_host_visible_heap{};
-    ForEachDeviceLocalHostVisibleHeap(device, [&size, &has_device_local_host_visible_heap](
-                                                  size_t index, VkMemoryHeap& heap) {
+    ForEachDeviceLocalHostVisibleHeap(device, [&size, &has_device_local_host_visible_heap](size_t index, VkMemoryHeap& heap) {
         has_device_local_host_visible_heap = true;
         size = (std::max)(size, heap.size);
     });
@@ -55,28 +40,27 @@ size_t GetStreamBufferSize(const Device& device) {
         // If rebar is not supported, cut the max heap size to 40%. This will allow 2 captures to be
         // loaded at the same time in RenderDoc. If rebar is supported, this shouldn't be an issue
         // as the heap will be much larger.
-        if (size <= MAX_STREAM_BUFFER_SIZE) {
+        if (size <= max_stream_buffer_size) {
             size = size * 40 / 100;
         }
     } else {
-        size = MAX_STREAM_BUFFER_SIZE;
+        size = max_stream_buffer_size;
     }
-    return (std::min)(Common::AlignUp(size, MAX_ALIGNMENT), MAX_STREAM_BUFFER_SIZE);
+    return (std::min)(Common::AlignUp(size, max_alignment), max_stream_buffer_size);
 }
 } // Anonymous namespace
 
-StagingBufferPool::StagingBufferPool(const Device& device_, MemoryAllocator& memory_allocator_,
-                                     Scheduler& scheduler_)
-    : device{device_}, memory_allocator{memory_allocator_}, scheduler{scheduler_},
-      stream_buffer_size{GetStreamBufferSize(device)}, region_size{stream_buffer_size /
-                                                                   StagingBufferPool::NUM_SYNCS} {
+StagingBufferPool::StagingBufferPool(const Device& device, MemoryAllocator& memory_allocator_, Scheduler& scheduler_)
+    : memory_allocator{memory_allocator_}, scheduler{scheduler_}
+    , stream_buffer_size{GetStreamBufferSize(device, 256_MiB, 256)}
+{
     VkBufferCreateInfo stream_ci = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
         .size = stream_buffer_size,
-        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
-                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+            | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = nullptr,
@@ -87,7 +71,20 @@ StagingBufferPool::StagingBufferPool(const Device& device_, MemoryAllocator& mem
     if (device.IsBufferDeviceAddressSupported()) {
         stream_ci.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
     }
-    stream_buffer = memory_allocator.CreateBuffer(stream_ci, MemoryUsage::Stream);
+    // *BSD drivers are more sensitive to increased buffers for streaming.
+    // Windows ones however, can intake bigger buffers and generally do not OOM.
+    // - GTX 960 on Windows will not OOM with 256mib
+    // - GT 1030 on ^BSD will OOM with 256mib
+    // This doesn't seem to be, however, universally true
+    try {
+        stream_buffer = memory_allocator.CreateBuffer(stream_ci, MemoryUsage::Stream);
+    } catch (vk::Exception& e) {
+        LOG_ERROR(Render_Vulkan, "Can't fit {} bytes buffer, halving", stream_ci.size);
+        stream_buffer_size = GetStreamBufferSize(device, 128_MiB, 256);
+        stream_ci.size = stream_buffer_size;
+        stream_buffer = memory_allocator.CreateBuffer(stream_ci, MemoryUsage::Stream);
+    }
+    region_size = stream_buffer_size / StagingBufferPool::NUM_SYNCS;
     if (device.HasDebuggingToolAttached()) {
         stream_buffer.SetObjectNameEXT("Stream Buffer");
     }
@@ -100,11 +97,10 @@ StagingBufferPool::StagingBufferPool(const Device& device_, MemoryAllocator& mem
 
 StagingBufferPool::~StagingBufferPool() = default;
 
-StagingBufferRef StagingBufferPool::Request(size_t size, MemoryUsage usage, bool deferred) {
-    if (!deferred && usage == MemoryUsage::Upload && size <= region_size) {
-        return GetStreamBuffer(size);
-    }
-    return GetStagingBuffer(size, usage, deferred);
+StagingBufferRef StagingBufferPool::Request(const Device& device, size_t size, MemoryUsage usage, bool deferred) {
+    return (!deferred && usage == MemoryUsage::Upload && size <= region_size)
+        ? GetStreamBuffer(device, size)
+        : GetStagingBuffer(device, size, usage, deferred);
 }
 
 void StagingBufferPool::FreeDeferred(StagingBufferRef& ref) {
@@ -127,11 +123,10 @@ void StagingBufferPool::TickFrame() {
     ReleaseCache(MemoryUsage::Download);
 }
 
-StagingBufferRef StagingBufferPool::GetStreamBuffer(size_t size) {
-    if (AreRegionsActive(Region(free_iterator) + 1,
-                         (std::min)(Region(iterator + size) + 1, NUM_SYNCS))) {
+StagingBufferRef StagingBufferPool::GetStreamBuffer(const Device& device, size_t size) {
+    if (AreRegionsActive(Region(free_iterator) + 1, (std::min)(Region(iterator + size) + 1, NUM_SYNCS))) {
         // Avoid waiting for the previous usages to be free
-        return GetStagingBuffer(size, MemoryUsage::Upload);
+        return GetStagingBuffer(device, size, MemoryUsage::Upload);
     }
     const u64 current_tick = scheduler.CurrentTick();
     std::fill(sync_ticks.begin() + Region(used_iterator), sync_ticks.begin() + Region(iterator),
@@ -140,15 +135,14 @@ StagingBufferRef StagingBufferPool::GetStreamBuffer(size_t size) {
     free_iterator = (std::max)(free_iterator, iterator + size);
 
     if (iterator + size >= stream_buffer_size) {
-        std::fill(sync_ticks.begin() + Region(used_iterator), sync_ticks.begin() + NUM_SYNCS,
-                  current_tick);
+        std::fill(sync_ticks.begin() + Region(used_iterator), sync_ticks.begin() + NUM_SYNCS, current_tick);
         used_iterator = 0;
         iterator = 0;
         free_iterator = size;
 
         if (AreRegionsActive(0, Region(size) + 1)) {
             // Avoid waiting for the previous usages to be free
-            return GetStagingBuffer(size, MemoryUsage::Upload);
+            return GetStagingBuffer(device, size, MemoryUsage::Upload);
         }
     }
     const size_t offset = iterator;
@@ -156,7 +150,7 @@ StagingBufferRef StagingBufferPool::GetStreamBuffer(size_t size) {
     return StagingBufferRef{
         .buffer = *stream_buffer,
         .device_address = stream_buffer_address,
-        .offset = static_cast<VkDeviceSize>(offset),
+        .offset = VkDeviceSize(offset),
         .mapped_span = stream_pointer.subspan(offset, size),
         .usage{},
         .log2_level{},
@@ -166,21 +160,18 @@ StagingBufferRef StagingBufferPool::GetStreamBuffer(size_t size) {
 
 bool StagingBufferPool::AreRegionsActive(size_t region_begin, size_t region_end) const {
     const u64 gpu_tick = scheduler.GetMasterSemaphore().KnownGpuTick();
-    return std::any_of(sync_ticks.begin() + region_begin, sync_ticks.begin() + region_end,
-                       [gpu_tick](u64 sync_tick) { return gpu_tick < sync_tick; });
+    return std::any_of(sync_ticks.begin() + region_begin, sync_ticks.begin() + region_end, [gpu_tick](u64 sync_tick) {
+        return gpu_tick < sync_tick;
+    });
 };
 
-StagingBufferRef StagingBufferPool::GetStagingBuffer(size_t size, MemoryUsage usage,
-                                                     bool deferred) {
-    if (const std::optional<StagingBufferRef> ref = TryGetReservedBuffer(size, usage, deferred)) {
+StagingBufferRef StagingBufferPool::GetStagingBuffer(const Device& device, size_t size, MemoryUsage usage, bool deferred) {
+    if (const std::optional<StagingBufferRef> ref = TryGetReservedBuffer(size, usage, deferred))
         return *ref;
-    }
-    return CreateStagingBuffer(size, usage, deferred);
+    return CreateStagingBuffer(device, size, usage, deferred);
 }
 
-std::optional<StagingBufferRef> StagingBufferPool::TryGetReservedBuffer(size_t size,
-                                                                        MemoryUsage usage,
-                                                                        bool deferred) {
+std::optional<StagingBufferRef> StagingBufferPool::TryGetReservedBuffer(size_t size, MemoryUsage usage, bool deferred) {
     StagingBuffers& cache_level = GetCache(usage)[Common::Log2Ceil(size)];
 
     const auto is_free = [this](const StagingBuffer& entry) {
@@ -202,7 +193,7 @@ std::optional<StagingBufferRef> StagingBufferPool::TryGetReservedBuffer(size_t s
     return it->Ref();
 }
 
-StagingBufferRef StagingBufferPool::CreateStagingBuffer(size_t size, MemoryUsage usage, bool deferred) {
+StagingBufferRef StagingBufferPool::CreateStagingBuffer(const Device& device, size_t size, MemoryUsage usage, bool deferred) {
     auto const log2_size = Common::Log2Ceil<u32>(u32(size));
     VkBufferCreateInfo buffer_ci = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
