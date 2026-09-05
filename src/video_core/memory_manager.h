@@ -145,6 +145,10 @@ public:
         return gpu_addr < address_space_size;
     }
 
+    u64 MappingGeneration() const noexcept {
+        return mapping_generation.load(std::memory_order_acquire);
+    }
+
     PTEKind GetPageKind(GPUVAddr gpu_addr) const;
 
     size_t GetMemoryLayoutSize(GPUVAddr gpu_addr,
@@ -196,6 +200,8 @@ private:
     u64 big_page_table_mask;
 
     VideoCore::RasterizerInterface* rasterizer = nullptr;
+
+    std::atomic<u64> mapping_generation{1};
 
     enum class EntryType : u64 {
         Free = 0,

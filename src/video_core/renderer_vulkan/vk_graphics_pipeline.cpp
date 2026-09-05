@@ -315,7 +315,7 @@ GraphicsPipeline::GraphicsPipeline(
         try {
             MakePipeline(render_pass);
         } catch (const vk::Exception& exception) {
-            LOG_CRITICAL(Render_Vulkan, "Graphics pipeline build failed: {}", exception.what());
+            LOG_DEBUG(Render_Vulkan, "Graphics pipeline build failed: {}", exception.what());
             std::scoped_lock lock{build_mutex};
             is_built = true;
             build_condvar.notify_one();
@@ -581,7 +581,6 @@ bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
             const DescriptorBufferRing::Allocation alloc{
                 descriptor_buffer_ring.Allocate(scheduler, descriptor_buffer_layout.size)};
             if (!alloc.host) {
-                LOG_DEBUG(Render_Vulkan, "Failed to reserve descriptor memory, skipping draw");
                 return false;
             }
             WriteDescriptorBuffer(device, descriptor_buffer_layout, entries, alloc.host);

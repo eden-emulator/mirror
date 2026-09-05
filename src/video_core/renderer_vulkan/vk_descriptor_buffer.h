@@ -18,7 +18,7 @@ class Scheduler;
 
 class DescriptorBufferRing final {
     static constexpr size_t FRAMES_IN_FLIGHT = 8;
-    static constexpr VkDeviceSize TILER_FRAME_SIZE = 2 * 1024 * 1024;
+    static constexpr VkDeviceSize TILER_FRAME_SIZE = 8 * 1024 * 1024;
     static constexpr VkDeviceSize DESKTOP_FRAME_SIZE = 4 * 1024 * 1024;
 
 public:

@@ -449,9 +449,18 @@ bool BufferCache<P>::BindGraphicsStorageBuffer(size_t stage, size_t ssbo_index, 
 
     const auto& cbufs = maxwell3d->state.shader_stages[stage];
     const GPUVAddr ssbo_addr = cbufs.const_buffers[cbuf_index].address + cbuf_offset;
-    channel_state->storage_buffers[stage][ssbo_index] =
+    StorageBufferBindingInfo& slot = channel_state->storage_buffers[stage][ssbo_index];
+    const StorageBufferBindingInfo binding =
         StorageBufferBinding(ssbo_addr, cbuf_index, is_written, descriptor_count);
-    return channel_state->storage_buffers[stage][ssbo_index].gpu_addr != 0;
+    if (slot.gpu_addr != binding.gpu_addr || slot.size != binding.size ||
+        slot.descriptor_count != binding.descriptor_count) {
+        slot.gpu_addr = binding.gpu_addr;
+        slot.size = binding.size;
+        slot.descriptor_count = binding.descriptor_count;
+        slot.mapping_generation = 0;
+        slot.segments.clear();
+    }
+    return slot.gpu_addr != 0;
 }
 
 template <class P>
@@ -525,8 +534,17 @@ void BufferCache<P>::BindComputeStorageBuffer(size_t ssbo_index, u32 cbuf_index,
 
     const auto& cbufs = launch_desc.const_buffer_config;
     const GPUVAddr ssbo_addr = cbufs[cbuf_index].Address() + cbuf_offset;
-    channel_state->compute_storage_buffers[ssbo_index] =
+    StorageBufferBindingInfo& slot = channel_state->compute_storage_buffers[ssbo_index];
+    const StorageBufferBindingInfo binding =
         StorageBufferBinding(ssbo_addr, cbuf_index, is_written, descriptor_count);
+    if (slot.gpu_addr != binding.gpu_addr || slot.size != binding.size ||
+        slot.descriptor_count != binding.descriptor_count) {
+        slot.gpu_addr = binding.gpu_addr;
+        slot.size = binding.size;
+        slot.descriptor_count = binding.descriptor_count;
+        slot.mapping_generation = 0;
+        slot.segments.clear();
+    }
 }
 
 template <class P>
@@ -1002,7 +1020,7 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
 
 template <class P>
 void BufferCache<P>::BindHostGraphicsStorageBuffers(size_t stage) {
-    boost::container::small_vector<u32, NUM_STORAGE_BUFFERS> segment_sizes;
+    boost::container::small_vector<u32, NUM_STORAGE_BUFFERS * NUM_STORAGE_BUFFER_SEGMENTS> segment_sizes;
     bool uses_mapping{};
     ForEachEnabledBit(channel_state->enabled_storage_buffers[stage], [&](u32 index) {
         const StorageBufferBindingInfo& binding = channel_state->storage_buffers[stage][index];
@@ -1163,7 +1181,7 @@ void BufferCache<P>::BindHostComputeUniformBuffers() {
 
 template <class P>
 void BufferCache<P>::BindHostComputeStorageBuffers() {
-    boost::container::small_vector<u32, NUM_STORAGE_BUFFERS> segment_sizes;
+    boost::container::small_vector<u32, NUM_STORAGE_BUFFERS * NUM_STORAGE_BUFFER_SEGMENTS> segment_sizes;
     bool uses_mapping{};
     ForEachEnabledBit(channel_state->enabled_compute_storage_buffers, [&](u32 index) {
         const StorageBufferBindingInfo& binding = channel_state->compute_storage_buffers[index];
@@ -1469,10 +1487,12 @@ void BufferCache<P>::UpdateComputeStorageBuffers() {
 
 template <class P>
 void BufferCache<P>::UpdateStorageBuffer(StorageBufferBindingInfo& binding) {
-    binding.segments.clear();
-    if (binding.gpu_addr == 0 || binding.size == 0) { return;}
+    if (binding.gpu_addr == 0 || binding.size == 0) {
+        binding.segments.clear();
+        return;
+    }
     if (binding.descriptor_count == 1) {
-        // for safety gotta preserve the legacy path on possible hosts without storage-buffer descriptor indexing.
+        binding.segments.clear();
         const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(binding.gpu_addr);
         if (device_addr) {
             binding.segments.push_back(Binding{
@@ -1484,30 +1504,32 @@ void BufferCache<P>::UpdateStorageBuffer(StorageBufferBindingInfo& binding) {
         return;
     }
 
-    const auto ranges = gpu_memory->GetSubmappedRange(binding.gpu_addr, binding.size);
-    const size_t mapped_size =
-        std::accumulate(ranges.begin(), ranges.end(), size_t{}, [](size_t total, const auto& range) { return total + range.second; });
-    if (mapped_size != binding.size) {
-        LOG_ERROR(HW_GPU, "Storage buffer range {:#x}+{:#x} is not fully mapped", binding.gpu_addr, binding.size);
-        return;
-    }
-    if (ranges.size() > binding.descriptor_count) {
-        LOG_ERROR(HW_GPU, "Storage buffer range {:#x}+{:#x} has {} physical segments, exceeding host capacity {}",
-                  binding.gpu_addr, binding.size, ranges.size(), binding.descriptor_count);
-        return;
-    }
-    for (const auto& [gpu_addr, size] : ranges) {
-        const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(gpu_addr);
-        if (!device_addr || size > (std::numeric_limits<u32>::max)()) {
-            binding.segments.clear();
-            return;
+    const u64 generation = gpu_memory->MappingGeneration();
+    if (binding.mapping_generation != generation || binding.segments.empty()) {
+        binding.mapping_generation = generation;
+        binding.segments.clear();
+        const auto ranges = gpu_memory->GetSubmappedRange(binding.gpu_addr, binding.size);
+        for (const auto& [gpu_addr, size] : ranges) {
+            if (binding.segments.size() >= binding.descriptor_count) {
+                break;
+            }
+            const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(gpu_addr);
+            if (!device_addr) {
+                break;
+            }
+            u32 segment_size = (std::numeric_limits<u32>::max)();
+            if (size < static_cast<size_t>(segment_size)) {
+                segment_size = static_cast<u32>(size);
+            }
+            binding.segments.push_back(Binding{
+                .device_addr = *device_addr,
+                .size = segment_size,
+                .buffer_id = BufferId{},
+            });
         }
-        const u32 segment_size = static_cast<u32>(size);
-        binding.segments.push_back(Binding{
-            .device_addr = *device_addr,
-            .size = segment_size,
-            .buffer_id = FindBuffer(*device_addr, segment_size),
-        });
+    }
+    for (Binding& segment : binding.segments) {
+        segment.buffer_id = FindBuffer(segment.device_addr, segment.size);
     }
 }
 

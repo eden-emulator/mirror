@@ -62,11 +62,7 @@ using VideoCommon::FileEnvironment;
 using VideoCommon::GenericEnvironment;
 using VideoCommon::GraphicsEnvironment;
 
-// SPIR-V descriptor arrays require a fixed pipeline-layout count.
-// Exploration ceiling; buffer-cache telemetry records the actual physical-range demand.
-// Keep this modest because every mapped SSBO binds the full fixed array on each update.
-const u32 MAX_MAPPED_STORAGE_BUFFER_DESCRIPTORS =
-    (std::max)(6u, static_cast<u32>(Settings::values.debug_knobs.GetValue()));
+constexpr u32 MAX_MAPPED_STORAGE_BUFFER_DESCRIPTORS = 8;
 
 constexpr u32 CACHE_VERSION = 19;
 constexpr size_t VULKAN_CACHE_FLUSH_PIPELINES = 128;
