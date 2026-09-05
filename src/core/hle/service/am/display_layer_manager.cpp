@@ -137,7 +137,7 @@ Result DisplayLayerManager::IsSystemBufferSharingEnabled() {
     m_display_service->GetContainer()->SetLayerZIndex(m_system_shared_layer_id, true);
     m_managed_display_layers.emplace(m_system_shared_layer_id);
     R_SUCCEED();
-    }
+}
 
 Result DisplayLayerManager::GetSystemSharedLayerHandle(u64* out_system_shared_buffer_id,
                                                        u64* out_system_shared_layer_id) {
