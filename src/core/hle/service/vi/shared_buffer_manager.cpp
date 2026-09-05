@@ -211,6 +211,10 @@ constexpr u32 GetCaptureSlot(CaptureKind kind) {
 static_assert(static_cast<u32>(CaptureKind::CallerApplet) + 1 == SharedBufferNumCaptureSlots,
               "Capture slot count does not match CaptureKind");
 
+constexpr u32 GetPresentationSlot(u32 slot_base, u32 index) {
+    return SharedBufferNumCaptureSlots + slot_base + index;
+}
+
 constexpr u32 ColorOpaqueBlackRgba32 = 0xFF000000;
 
 template <typename F>
@@ -246,7 +250,7 @@ void ForEachPoolChunk(Core::System& system, Kernel::KPageGroup& page_group, u64 
     }
 }
 
-void MakeGraphicBuffer(android::BufferQueueProducer& producer, u32 slot, u32 handle) {
+void MakeGraphicBuffer(android::BufferQueueProducer& producer, u32 producer_slot, u32 pool_slot, u32 handle) {
     auto buffer = std::make_shared<android::NvGraphicBuffer>();
     buffer->width = SharedBufferWidth;
     buffer->height = SharedBufferHeight;
@@ -254,8 +258,8 @@ void MakeGraphicBuffer(android::BufferQueueProducer& producer, u32 slot, u32 han
     buffer->format = SharedBufferBlockLinearFormat;
     buffer->external_format = SharedBufferBlockLinearFormat;
     buffer->buffer_id = handle;
-    buffer->offset = slot * SharedBufferSlotSize;
-    ASSERT(producer.SetPreallocatedBuffer(slot, buffer) == android::Status::NoError);
+    buffer->offset = pool_slot * SharedBufferSlotSize;
+    ASSERT(producer.SetPreallocatedBuffer(producer_slot, buffer) == android::Status::NoError);
 }
 
 } // namespace
@@ -269,19 +273,20 @@ SharedBufferManager::~SharedBufferManager() = default;
 Result SharedBufferManager::CreateSession(Kernel::KProcess* owner_process, u64* out_buffer_id,
                                           u64* out_layer_handle, u64 display_id,
                                           bool enable_blending) {
-    std::scoped_lock lk{m_guard};
+    {
+        std::scoped_lock lk{m_guard};
 
-    // Ensure we haven't already created.
-    const u64 aruid = owner_process->GetProcessId();
-    R_UNLESS(!m_sessions.contains(aruid), VI::ResultPermissionDenied);
+        // Ensure we haven't already created.
+        const u64 aruid = owner_process->GetProcessId();
+        R_UNLESS(!m_sessions.contains(aruid), VI::ResultPermissionDenied);
 
-    // Allocate memory for the shared buffer if needed.
-    if (!m_buffer_page_group) {
-        R_TRY(AllocateSharedBufferMemory(std::addressof(m_buffer_page_group), m_system,
-                                         SharedBufferSize));
+        // Allocate memory for the shared buffer if needed.
+        if (!m_buffer_page_group) {
+            R_TRY(AllocateSharedBufferMemory(std::addressof(m_buffer_page_group), m_system,
+                                             SharedBufferSize));
 
-        // Record buffer id.
-        m_buffer_id = m_next_buffer_id++;
+            // Record buffer id.
+            m_buffer_id = m_next_buffer_id++;
 
             // Record display id.
             m_display_id = display_id;
@@ -304,32 +309,32 @@ Result SharedBufferManager::CreateSession(Kernel::KProcess* owner_process, u64* 
     auto [it, was_emplaced] = m_sessions.emplace(aruid, SharedBufferSession{});
     auto& session = it->second;
 
-    auto& container = m_nvdrv->GetContainer();
-    session.session_id = container.OpenSession(owner_process);
-    session.nvmap_fd = m_nvdrv->Open("/dev/nvmap", session.session_id);
+        auto& container = m_nvdrv->GetContainer();
+        session.session_id = container.OpenSession(owner_process);
+        session.nvmap_fd = m_nvdrv->Open("/dev/nvmap", session.session_id);
 
-    // Create an nvmap handle for the buffer and assign the memory to it.
-    R_TRY(AllocateHandleForBuffer(std::addressof(session.buffer_nvmap_handle), *m_nvdrv,
-                                  session.nvmap_fd, map_address, SharedBufferSize));
+        // Create an nvmap handle for the buffer and assign the memory to it.
+        R_TRY(AllocateHandleForBuffer(std::addressof(session.buffer_nvmap_handle), *m_nvdrv,
+                                      session.nvmap_fd, map_address, SharedBufferSize));
 
-    // Create and open a layer for the display.
-    s32 producer_binder_id;
-    R_TRY(m_container.CreateStrayLayer(std::addressof(producer_binder_id),
-                                       std::addressof(session.layer_id), display_id));
+        // Create and open a layer for the display.
+        s32 producer_binder_id;
+        R_TRY(m_container.CreateStrayLayer(std::addressof(producer_binder_id),
+                                           std::addressof(session.layer_id), display_id));
 
-    // Configure blending and z-index
-    R_ASSERT(m_container.SetLayerBlending(session.layer_id, enable_blending));
+        // Configure blending and z-index
+        R_ASSERT(m_container.SetLayerBlending(session.layer_id, enable_blending));
 
-    // Get the producer and set preallocated buffers.
-    std::shared_ptr<android::BufferQueueProducer> producer;
-    R_TRY(m_container.GetLayerProducerHandle(std::addressof(producer), session.layer_id));
-    MakeGraphicBuffer(*producer, 0, session.buffer_nvmap_handle);
-    MakeGraphicBuffer(*producer, 1, session.buffer_nvmap_handle);
+        // Get the producer and set preallocated buffers.
+        std::shared_ptr<android::BufferQueueProducer> producer;
+        R_TRY(m_container.GetLayerProducerHandle(std::addressof(producer), session.layer_id));
+        for (u32 i = 0; i < SharedBufferSlotsPerSession; i++)
+            MakeGraphicBuffer(*producer, i, GetPresentationSlot(session.presentation_slot_base, i), session.buffer_nvmap_handle);
 
-    // Assign outputs.
-    *out_buffer_id = m_buffer_id;
-    *out_layer_handle = session.layer_id;
-
+        // Assign outputs.
+        *out_buffer_id = m_buffer_id;
+        *out_layer_handle = session.layer_id;
+    }
     // We succeeded.
     R_SUCCEED();
 }
@@ -398,12 +403,49 @@ Result SharedBufferManager::AcquireSharedFrameBuffer(android::Fence* out_fence,
                                      SharedBufferBlockLinearFormat, 0) == android::Status::NoError,
              VI::ResultOperationFailed);
 
-    // Assign remaining outputs.
-    *out_target_slot = slot;
-    out_slot_indexes = {0, 1, -1, -1};
+    out_slot_indexes.fill(-1);
+
+    {
+        std::scoped_lock lk{m_guard};
+        const auto* const session = this->FindSessionByLayerIdLocked(layer_id);
+        if (session == nullptr) {
+            producer->CancelBuffer(slot, *out_fence);
+            // LOG_DEBUG(Service_VI, "No Session found");
+            R_THROW(VI::ResultNotFound);
+        }
+
+        for (u32 i = 0; i < SharedBufferSlotsPerSession; i++)
+            out_slot_indexes[i] =
+                static_cast<s32>(GetPresentationSlot(session->presentation_slot_base, i));
+
+        *out_target_slot = static_cast<s64>(
+            GetPresentationSlot(session->presentation_slot_base, static_cast<u32>(slot)));
+    }
 
     // We succeeded.
     R_SUCCEED();
+}
+
+Result SharedBufferManager::GetProducerSlotLocked(s32* out_producer_slot, u64 layer_id,
+                                                   s64 pool_slot) const {
+    const auto* const session = this->FindSessionByLayerIdLocked(layer_id);
+    R_UNLESS(session != nullptr, VI::ResultNotFound);
+
+    const s64 base = GetPresentationSlot(session->presentation_slot_base, 0);
+    const s64 producer_slot = pool_slot - base;
+    R_UNLESS(producer_slot >= 0 && producer_slot < SharedBufferSlotsPerSession,
+             VI::ResultOperationFailed);
+
+    *out_producer_slot = static_cast<s32>(producer_slot);
+    R_SUCCEED();
+}
+
+const SharedBufferSession* SharedBufferManager::FindSessionByLayerIdLocked(u64 layer_id) const {
+    for (const auto& [aruid, session] : m_sessions)
+        if (session.layer_id == layer_id)
+            return std::addressof(session);
+
+    return nullptr;
 }
 
 Result SharedBufferManager::PresentSharedFrameBuffer(android::Fence fence,
@@ -414,14 +456,20 @@ Result SharedBufferManager::PresentSharedFrameBuffer(android::Fence fence,
     std::shared_ptr<android::BufferQueueProducer> producer;
     R_TRY(m_container.GetLayerProducerHandle(std::addressof(producer), layer_id));
 
+    s32 producer_slot;
+    {
+        std::scoped_lock lk{m_guard};
+        R_TRY(this->GetProducerSlotLocked(std::addressof(producer_slot), layer_id, slot));
+    }
+
     // Request to queue the buffer.
     std::shared_ptr<android::GraphicBuffer> buffer;
-    R_UNLESS(producer->RequestBuffer(static_cast<s32>(slot), std::addressof(buffer)) ==
+    R_UNLESS(producer->RequestBuffer(producer_slot, std::addressof(buffer)) ==
                  android::Status::NoError,
              VI::ResultOperationFailed);
 
     ON_RESULT_FAILURE {
-        producer->CancelBuffer(static_cast<s32>(slot), fence);
+        producer->CancelBuffer(producer_slot, fence);
     };
 
     // Queue the buffer to the producer.
@@ -431,11 +479,9 @@ Result SharedBufferManager::PresentSharedFrameBuffer(android::Fence fence,
     input.fence = fence;
     input.transform = static_cast<android::NativeWindowTransform>(transform);
     input.swap_interval = swap_interval;
-    R_UNLESS(producer->QueueBuffer(static_cast<s32>(slot), input, std::addressof(output)) ==
+    R_UNLESS(producer->QueueBuffer(producer_slot, input, std::addressof(output)) ==
                  android::Status::NoError,
              VI::ResultOperationFailed);
-
-    (void)m_container.SetLayerZIndex(layer_id, 100000);
 
     // We succeeded.
     R_SUCCEED();
@@ -446,8 +492,14 @@ Result SharedBufferManager::CancelSharedFrameBuffer(u64 layer_id, s64 slot) {
     std::shared_ptr<android::BufferQueueProducer> producer;
     R_TRY(m_container.GetLayerProducerHandle(std::addressof(producer), layer_id));
 
+    s32 producer_slot;
+    {
+        std::scoped_lock lk{m_guard};
+        R_TRY(this->GetProducerSlotLocked(std::addressof(producer_slot), layer_id, slot));
+    }
+
     // Cancel.
-    producer->CancelBuffer(static_cast<s32>(slot), android::Fence::NoFence());
+    producer->CancelBuffer(producer_slot, android::Fence::NoFence());
 
     // We succeeded.
     R_SUCCEED();

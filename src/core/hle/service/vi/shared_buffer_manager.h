@@ -78,6 +78,11 @@ public:
     Result ClearAppletCaptureBuffer(s32 layer_index, u32 color);
 
 private:
+    const SharedBufferSession* FindSessionByLayerIdLocked(u64 layer_id) const;
+
+    /// Converts a pool slot index, which is what the guest works in, back to the buffer queues slot index
+    Result GetProducerSlotLocked(s32* out_producer_slot, u64 layer_id, s64 pool_slot) const;
+
     u64 m_next_buffer_id = 1;
     u64 m_display_id = 0;
     u64 m_buffer_id = 0;
