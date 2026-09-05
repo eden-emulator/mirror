@@ -7,6 +7,7 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
 
 #include "common/common_types.h"
 #include "common/scratch_buffer.h"

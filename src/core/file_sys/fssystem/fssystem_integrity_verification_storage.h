@@ -1,9 +1,15 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include <optional>
+#include <array>
+#include <cstddef>
+#include <type_traits>
 
 #include "core/file_sys/fssystem/fs_i_storage.h"
 #include "core/file_sys/fssystem/fs_types.h"

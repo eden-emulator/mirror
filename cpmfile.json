@@ -1,12 +1,4 @@
 {
-    "": {
-        "ci": true,
-        "hash": "9f50d993c39529e022ad456163de91ac5934e16faf8fc348f305355fc0a643c534f87ded707e11bd03bcbc0a1760bd20852b6533a67ac0558a078385181cb184",
-        "name": "SDL3",
-        "package": "SDL3",
-        "repo": "crueter-ci/SDL3",
-        "version": "3.4.14-1788231389-147a8ee32d"
-    },
     "biscuit": {
         "hash": "1229f345b014f7ca544dedb4edb3311e41ba736f9aa9a67f88b5f26f3c983288c6bb6cdedcfb0b8a02c63088a37e6a0d7ba97d9c2a4d721b213916327cffe28a",
         "min_version": "0.9.1",
@@ -68,10 +60,10 @@
     },
     "discord-rpc": {
         "find_args": "MODULE",
-        "hash": "8213c43dcb0f7d479f5861091d111ed12fbdec1e62e6d729d65a4bc181d82f48a35d5fd3cd5c291f2393ac7c9681eabc6b76609755f55376284c8a8d67e148f3",
+        "hash": "8d680b3a16d6f6bf292ad823cf8635595ff986f2a49f758e3009f505b540a9d75194a8cf44cddea75736a8c3e3b5160166e716a0939ce3f18cc463cf648753fe",
         "package": "DiscordRPC",
         "repo": "eden-emulator/discord-rpc",
-        "version": "0d8b2d6a37"
+        "version": "76616d8675"
     },
     "enet": {
         "find_args": "MODULE",
@@ -311,6 +303,9 @@
         "find_args": "CONFIG",
         "hash": "deb5902ef8db0e329fbd5f3f4385eb0e26bdd9f14f3a2334823fb3fe18f36bc5d235d620d6e5f6fe3551ec3ea7038638899db8778c09f6d5c278f5ff95c3344b",
         "package": "VulkanMemoryAllocator",
+        "patches": [
+            "0001-macos-clang.patch"
+        ],
         "repo": "GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator",
         "version": "v3.3.0"
     },

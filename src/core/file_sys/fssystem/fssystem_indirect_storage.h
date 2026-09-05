@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <type_traits>
+#include <array>
+#include <cstddef>
 #include "core/file_sys/errors.h"
 #include "core/file_sys/fssystem/fs_i_storage.h"
 #include "core/file_sys/fssystem/fssystem_bucket_tree.h"

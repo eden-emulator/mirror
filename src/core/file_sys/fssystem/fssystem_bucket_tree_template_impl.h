@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include "core/file_sys/errors.h"
 #include "core/file_sys/fssystem/fssystem_bucket_tree.h"
 #include "core/file_sys/fssystem/fssystem_bucket_tree_utils.h"

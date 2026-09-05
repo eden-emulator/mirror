@@ -4796,6 +4796,6 @@ void VolumeButton::ResetMultiplier() {
 #endif
 
 #if !defined(QT_STATICPLUGIN) || defined(__APPLE__)
-#define VMA_IMPLEMENTATION
+#define VMA_IMPLEMENTATION 1
 #include "video_core/vulkan_common/vma.h"
 #endif

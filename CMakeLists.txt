@@ -3,6 +3,7 @@
 
 cmake_minimum_required(VERSION 3.31)
 
+set(CMAKE_OSX_DEPLOYMENT_TARGET "15.0" CACHE STRING "macOS deployment target")
 project(yuzu)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
@@ -512,7 +513,7 @@ endfunction()
 # =============================================
 
 if (APPLE)
-    foreach(fw Carbon Metal Cocoa IOKit CoreVideo CoreMedia Security UniformTypeIdentifiers)
+    foreach(fw Carbon Metal Cocoa IOKit CoreVideo CoreMedia Security UniformTypeIdentifiers Foundation)
         find_library(${fw}_LIBRARY ${fw} REQUIRED)
         list(APPEND PLATFORM_LIBRARIES ${${fw}_LIBRARY})
     endforeach()

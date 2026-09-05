@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <type_traits>
+#include <cstddef>
 #include "core/file_sys/fssystem/fssystem_compression_common.h"
 #include "core/file_sys/fssystem/fssystem_nca_header.h"
 #include "core/file_sys/vfs/vfs.h"

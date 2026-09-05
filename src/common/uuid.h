@@ -10,6 +10,7 @@
 #include <functional>
 #include <span>
 #include <string>
+#include <type_traits>
 
 #include "common/common_types.h"
 

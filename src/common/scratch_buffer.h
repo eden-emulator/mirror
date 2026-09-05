@@ -1,9 +1,13 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include <iterator>
+#include <cstring>
 
 #include "common/make_unique_for_overwrite.h"
 
@@ -61,7 +65,7 @@ public:
     void resize(size_type size) {
         if (size > buffer_capacity) {
             auto new_buffer = Common::make_unique_for_overwrite<T[]>(size);
-            std::move(buffer.get(), buffer.get() + buffer_capacity, new_buffer.get());
+            std::memcpy(new_buffer.get(), buffer.get(), buffer_capacity * sizeof(T));
             buffer = std::move(new_buffer);
             buffer_capacity = size;
         }

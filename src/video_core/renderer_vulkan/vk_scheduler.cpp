@@ -300,7 +300,7 @@ void Scheduler::WorkerThread(std::stop_token stop_token) {
             // Exchange lock ownership so that we take the execution lock before
             // the queue lock goes out of scope. This allows us to force execution
             // to complete in the next step.
-            std::exchange(lk, std::unique_lock{execution_mutex});
+            void(std::exchange(lk, std::unique_lock{execution_mutex}));
 
             // Perform the work, tracking whether the chunk was a submission
             // before executing.
