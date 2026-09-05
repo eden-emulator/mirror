@@ -538,6 +538,7 @@ void GRenderWindow::mouseReleaseEvent(QMouseEvent* event) {
 }
 
 void GRenderWindow::ConstrainMouse() {
+    input_subsystem->GetMouse()->NotifyChanged(); // required to reset mouse once it's no longer moved
     if (QtCommon::emu_thread == nullptr || !Settings::values.mouse_panning) {
         mouse_constrain_timer.stop();
         return;
@@ -558,7 +559,6 @@ void GRenderWindow::ConstrainMouse() {
         const int center_y = height() / 2;
         QCursor::setPos(mapToGlobal(QPoint{center_x, center_y}));
     }
-    input_subsystem->GetMouse()->NotifyChanged(); // required to reset mouse once it's no longer moved
 }
 
 void GRenderWindow::wheelEvent(QWheelEvent* event) {
