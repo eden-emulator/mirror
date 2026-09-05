@@ -4,17 +4,16 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <thread>
+#include <chrono>
 #include <fmt/ranges.h>
 #include <math.h>
 
 #include "common/param_package.h"
 #include "common/settings.h"
-#include "common/thread.h"
+#include "common/steady_clock.h"
 #include "input_common/drivers/mouse.h"
 
 namespace InputCommon {
-constexpr int update_time = 10;
 constexpr float default_panning_sensitivity = 0.0010f;
 constexpr float default_stick_sensitivity = 0.0006f;
 constexpr float default_deadzone_counterweight = 0.01f;
@@ -74,7 +73,7 @@ Mouse::Mouse(std::string input_engine_) : InputEngine(std::move(input_engine_)) 
     last_motion_change = {};
 }
 
-void Mouse::UpdateStickInput() {
+void Mouse::UpdateStickInput(Common::SteadyClock::time_point timestamp) {
     if (!IsMousePanningEnabled()) {
         return;
     }
@@ -100,7 +99,7 @@ void Mouse::UpdateStickInput() {
     last_mouse_change *= clamped_decay;
 }
 
-void Mouse::UpdateMotionInput() {
+void Mouse::UpdateMotionInput(Common::SteadyClock::time_point timestamp) {
     const float sensitivity =
         IsMousePanningEnabled() ? default_motion_panning_sensitivity : default_motion_sensitivity;
 
@@ -121,7 +120,7 @@ void Mouse::UpdateMotionInput() {
         .accel_x = 0,
         .accel_y = 0,
         .accel_z = 0,
-        .delta_timestamp = update_time * 1000,
+        .delta_timestamp = u64(std::chrono::duration_cast<std::chrono::microseconds>(timestamp - last_notify_timestamp).count()),
     };
 
     if (IsMousePanningEnabled()) {
@@ -170,8 +169,10 @@ void Mouse::Move(int x, int y, int center_x, int center_y) {
 }
 
 void Mouse::NotifyChanged() {
-    UpdateStickInput();
-    UpdateMotionInput();
+    auto const timestamp = Common::SteadyClock::Now();
+    UpdateStickInput(timestamp);
+    UpdateMotionInput(timestamp);
+    last_notify_timestamp = Common::SteadyClock::Now();
 }
 
 void Mouse::MouseMove(f32 touch_x, f32 touch_y) {
