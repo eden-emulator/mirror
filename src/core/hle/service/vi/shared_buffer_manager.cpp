@@ -168,7 +168,14 @@ constexpr u32 SharedBufferBlockLinearWidth = 1280;
 constexpr u32 SharedBufferBlockLinearHeight = 768;
 constexpr u32 SharedBufferBlockLinearStride =
     SharedBufferBlockLinearWidth * SharedBufferBlockLinearBpp;
-constexpr u32 SharedBufferNumSlots = 7;
+
+constexpr u32 SharedBufferNumCaptureSlots = 3;
+constexpr u32 SharedBufferSlotsPerSession = 2;
+constexpr u32 SharedBufferMaxSessions = 2;
+
+constexpr u32 SharedBufferNumSlots =
+    SharedBufferNumCaptureSlots + SharedBufferSlotsPerSession * SharedBufferMaxSessions;
+static_assert(SharedBufferNumSlots <= 16, "Shared buffer pool exceeds the maximum texture count");
 
 constexpr u32 SharedBufferWidth = 1280;
 constexpr u32 SharedBufferHeight = 720;
@@ -191,6 +198,43 @@ constexpr SharedMemoryPoolLayout SharedBufferPoolLayout = [] {
 
     return layout;
 }();
+
+constexpr u32 GetCaptureSlot(CaptureKind kind) {
+    return static_cast<u32>(kind);
+}
+
+template <typename F>
+void ForEachPoolChunk(Core::System& system, Kernel::KPageGroup& page_group, u64 offset, u64 size,
+                      F&& writer) {
+    Common::ScratchBuffer<u32> scratch;
+    const u64 range_end = offset + size;
+    u64 pool_pos = 0;
+
+    for (auto& block : page_group) {
+        const u64 block_begin = pool_pos;
+        const u64 block_end = block_begin + block.GetSize();
+        pool_pos = block_end;
+
+        if (block_end <= offset) {
+            continue;
+        }
+        if (block_begin >= range_end) {
+            break;
+        }
+
+        const u64 chunk_begin = (std::max)(block_begin, offset);
+        const u64 chunk_end = (std::min)(block_end, range_end);
+        const u64 chunk_size = chunk_end - chunk_begin;
+
+        u8* const dst =
+            system.DeviceMemory().GetPointer<u8>(block.GetAddress()) + (chunk_begin - block_begin);
+
+        writer(dst, chunk_begin - offset, chunk_size);
+
+        system.GPU().Host1x().MemoryManager().ApplyOpOnPointer(
+            dst, scratch, [&](DAddr addr) { system.GPU().InvalidateRegion(addr, chunk_size); });
+    }
+}
 
 void MakeGraphicBuffer(android::BufferQueueProducer& producer, u32 slot, u32 handle) {
     auto buffer = std::make_shared<android::NvGraphicBuffer>();
@@ -404,31 +448,47 @@ Result SharedBufferManager::GetSharedFrameBufferAcquirableEvent(Kernel::KReadabl
     R_SUCCEED();
 }
 
-Result SharedBufferManager::WriteAppletCaptureBuffer(bool* out_was_written, s32* out_layer_index) {
-    std::vector<u8> capture_buffer(m_system.GPU().GetAppletCaptureBuffer());
-    Common::ScratchBuffer<u32> scratch;
+Result SharedBufferManager::WriteAppletCaptureBuffer(bool* out_was_written, s32* out_layer_index, CaptureKind kind) {
+    std::scoped_lock lk{m_guard};
+    R_UNLESS(m_buffer_page_group != nullptr, VI::ResultNotFound);
 
-    // TODO: this could be optimized
-    s64 e = -1280 * 768 * 4;
-    for (auto& block : *m_buffer_page_group) {
-        u8* start = m_system.DeviceMemory().GetPointer<u8>(block.GetAddress());
-        u8* end = m_system.DeviceMemory().GetPointer<u8>(block.GetAddress() + block.GetSize());
+    const std::vector<u8> capture = m_system.GPU().GetAppletCaptureBuffer();
+    const u32 slot = GetCaptureSlot(kind);
 
-        for (; start < end; start++) {
-            *start = 0;
-            if (e >= 0 && e < static_cast<s64>(capture_buffer.size())) {
-                *start = capture_buffer[e];
-            }
-            e++;
-        }
-
-        m_system.GPU().Host1x().MemoryManager().ApplyOpOnPointer(start, scratch, [&](DAddr addr) {
-            m_system.GPU().InvalidateRegion(addr, end - start);
-        });
+    if (capture.size() < SharedBufferSlotSize) {
+        //LOG_WARNING(Service_VI, "Capture buffer is {} bytes, expected at least {}; not writing",
+        //            capture.size(), SharedBufferSlotSize);
+        *out_was_written = false;
+        *out_layer_index = static_cast<s32>(slot);
+        R_SUCCEED();
     }
 
+    ForEachPoolChunk(m_system, *m_buffer_page_group, u64{slot} * SharedBufferSlotSize,
+                     SharedBufferSlotSize,
+                     [&](u8* dst, u64 src_offset, u64 length) {
+                         std::memcpy(dst, capture.data() + src_offset, length);
+                     });
+
     *out_was_written = true;
-    *out_layer_index = 1;
+    *out_layer_index = static_cast<s32>(slot);
+    R_SUCCEED();
+}
+
+Result SharedBufferManager::ClearAppletCaptureBuffer(s32 layer_index, u32 color) {
+    std::scoped_lock lk{m_guard};
+    R_UNLESS(m_buffer_page_group != nullptr, VI::ResultNotFound);
+
+    if (layer_index < 0 || layer_index >= static_cast<s32>(SharedBufferNumCaptureSlots)) {
+        LOG_WARNING(Service_VI, "Couldnt clear non-capture slot {}", layer_index);
+        R_SUCCEED();
+    }
+
+    ForEachPoolChunk(m_system, *m_buffer_page_group, u64{static_cast<u32>(layer_index)} * SharedBufferSlotSize,
+                     SharedBufferSlotSize, [&](u8* dst, u64 src_offset, u64 length) {
+                         ASSERT(src_offset % sizeof(u32) == 0 && length % sizeof(u32) == 0);
+                         std::fill_n(reinterpret_cast<u32*>(dst), length / sizeof(u32), color);
+                     });
+
     R_SUCCEED();
 }
 

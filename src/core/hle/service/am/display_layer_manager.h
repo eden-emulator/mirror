@@ -23,6 +23,7 @@ class KProcess;
 namespace Service::VI {
 class IApplicationDisplayService;
 class IManagerDisplayService;
+enum class CaptureKind : u32;
 } // namespace Service::VI
 
 namespace Service::AM {
@@ -48,7 +49,9 @@ public:
 
     void SetOverlayZIndex(s32 z_index);
 
-    Result WriteAppletCaptureBuffer(bool* out_was_written, s32* out_fbshare_layer_index);
+    Result WriteAppletCaptureBuffer(bool* out_was_written, s32* out_fbshare_layer_index,
+                                    VI::CaptureKind kind);
+    Result ClearAppletCaptureBuffer(s32 fbshare_layer_index, u32 color);
 
 private:
     u32 GetLayerStackMask() const;
