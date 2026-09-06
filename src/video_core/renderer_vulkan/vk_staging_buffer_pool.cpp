@@ -25,6 +25,9 @@ namespace {
 
 using namespace Common::Literals;
 
+// Maximum potential alignment of a Vulkan buffer
+constexpr VkDeviceSize MAX_ALIGNMENT = 256;
+
 size_t GetStreamBufferSize(const Device& device, size_t max_stream_buffer_size, size_t max_alignment) {
     if (!device.HasDebuggingToolAttached()) {
         return max_stream_buffer_size;
@@ -52,7 +55,7 @@ size_t GetStreamBufferSize(const Device& device, size_t max_stream_buffer_size, 
 
 StagingBufferPool::StagingBufferPool(const Device& device, MemoryAllocator& memory_allocator_, Scheduler& scheduler_)
     : memory_allocator{memory_allocator_}, scheduler{scheduler_}
-    , stream_buffer_size{GetStreamBufferSize(device, 256_MiB, 256)}
+    , stream_buffer_size{GetStreamBufferSize(device, 256_MiB, MAX_ALIGNMENT)}
 {
     VkBufferCreateInfo stream_ci = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -80,7 +83,7 @@ StagingBufferPool::StagingBufferPool(const Device& device, MemoryAllocator& memo
         stream_buffer = memory_allocator.CreateBuffer(stream_ci, MemoryUsage::Stream);
     } catch (vk::Exception& e) {
         LOG_ERROR(Render_Vulkan, "Can't fit {} bytes buffer, halving", stream_ci.size);
-        stream_buffer_size = GetStreamBufferSize(device, 128_MiB, 256);
+        stream_buffer_size = GetStreamBufferSize(device, 128_MiB, MAX_ALIGNMENT);
         stream_ci.size = stream_buffer_size;
         stream_buffer = memory_allocator.CreateBuffer(stream_ci, MemoryUsage::Stream);
     }
