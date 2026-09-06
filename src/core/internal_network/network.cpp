@@ -755,7 +755,7 @@ sockaddr_in TranslateFromSockAddrIn(Network::SockAddrIn input) {
     sockaddr_in result{};
 #ifdef __unix__
     result.sin_family = sa_family_t(TranslateDomainToNative(Domain(input.family)));
-    result.sin_len = sizeof(result);
+    //result.sin_len = sizeof(result);
 #else
     result.sin_family = TranslateDomainToNative(Domain(input.family));
 #endif
