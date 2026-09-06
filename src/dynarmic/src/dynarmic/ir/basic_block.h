@@ -142,11 +142,9 @@ public:
     }
 
     /// "Hot cache" for small blocks so we don't call global allocator
-    boost::container::static_vector<Inst, 30> inlined_inst;
+    boost::container::static_vector<Inst, 4096> inlined_inst = {};
     /// List of instructions in this block.
     instruction_list_type instructions;
-    /// "Long/far" memory pool
-    boost::container::stable_vector<boost::container::static_vector<Inst, 32>> pooled_inst;
     /// Block to execute next if `cond` did not pass.
     std::optional<LocationDescriptor> cond_failed = {};
     /// Description of the starting location of this block
@@ -162,7 +160,7 @@ public:
     /// Number of cycles this block takes to execute.
     size_t cycle_count = 0;
 };
-static_assert(sizeof(Block) == 4096);
+//static_assert(sizeof(Block) == 4096);
 
 /// Returns a string representation of the contents of block. Intended for debugging.
 std::string DumpBlock(const IR::Block& block) noexcept;

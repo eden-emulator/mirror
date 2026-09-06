@@ -39,16 +39,8 @@ Block::iterator Block::PrependNewInst(iterator insertion_point, Opcode opcode, s
     // just pool it!!! - reason why there is an inline buffer is because many small blocks are created
     // with few instructions due to subpar optimisations on other passes... plus branch-heavy code will
     // hugely benefit from the coherency of faster allocations...
-    IR::Inst* inst;
-    if (inlined_inst.size() < inlined_inst.max_size()) {
-        inlined_inst.emplace_back(opcode);
-        inst = &inlined_inst[inlined_inst.size() - 1];
-    } else {
-        if (pooled_inst.empty() || pooled_inst.back().size() == pooled_inst.back().max_size())
-            pooled_inst.emplace_back();
-        pooled_inst.back().emplace_back(opcode);
-        inst = &pooled_inst.back()[pooled_inst.back().size() - 1];
-    }
+    inlined_inst.emplace_back(opcode);
+    auto* inst = &inlined_inst[inlined_inst.size() - 1];
     DEBUG_ASSERT(args.size() == inst->NumArgs());
     std::for_each(args.begin(), args.end(), [&inst, index = size_t(0)](const auto& arg) mutable {
         inst->SetArg(index, arg);
@@ -61,7 +53,6 @@ void Block::Reset(LocationDescriptor location_) noexcept {
     mcl::intrusive_list<IR::Inst> tmp = {};
     instructions.swap(tmp);
     inlined_inst.clear();
-    pooled_inst.clear();
     cond_failed.reset();
     location = location_;
     end_location = location_;
