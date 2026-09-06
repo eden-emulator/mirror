@@ -63,8 +63,9 @@ struct ModHeader {
     u32_le dynamic_offset;
     u32_le bss_start_offset;
     u32_le bss_end_offset;
-    u32_le unwind_start_offset;
-    u32_le unwind_end_offset;
+    // https://github.com/Atmosphere-NX/Atmosphere/pull/2835/changes
+    s32_le unwind_start_offset;
+    s32_le unwind_end_offset;
     u32_le module_offset; // Offset to runtime-generated module object. typically equal to .bss base
 };
 static_assert(sizeof(ModHeader) == 0x1c, "ModHeader has incorrect size.");

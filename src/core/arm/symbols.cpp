@@ -17,25 +17,26 @@ namespace Core {
 namespace Symbols {
 
 struct ModuleHeaderLocation {
-    u32 version;
-    u32 header_offset;
-    u32 version_offset;
+    u32_le version;
+    u32_le header_offset;
+    u32_le version_offset;
 };
 static_assert(sizeof(ModuleHeaderLocation) == 0x0C);
 struct ModuleHeader {
-    u32 signature;
-    u32 dynamic_offset;
-    u32 bss_start_offset;
-    u32 bss_end_offset;
-    u32 exception_info_start_offset;
-    u32 exception_info_end_offset;
-    u32 module_offset;
-    u32 relro_start_offset;
-    u32 full_relro_end_offset;
-    u32 nx_debug_link_start_offset;
-    u32 nx_debug_link_end_offset;
-    u32 note_gnu_build_id_start_offset;
-    u32 note_gnu_build_id_end_offset;
+    u32_le signature;
+    u32_le dynamic_offset;
+    u32_le bss_start_offset;
+    u32_le bss_end_offset;
+    // https://github.com/Atmosphere-NX/Atmosphere/pull/2835/changes
+    s32_le exception_info_start_offset;
+    s32_le exception_info_end_offset;
+    u32_le module_offset;
+    u32_le relro_start_offset;
+    u32_le full_relro_end_offset;
+    u32_le nx_debug_link_start_offset;
+    u32_le nx_debug_link_end_offset;
+    u32_le note_gnu_build_id_start_offset;
+    u32_le note_gnu_build_id_end_offset;
 };
 static_assert(sizeof(ModuleHeader) == 0x34);
 
