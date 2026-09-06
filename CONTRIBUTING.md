@@ -83,3 +83,16 @@ Once your request is processed, you will receive a confirmation email with your 
 Alongside the other contribution methods listed up top, you can also choose to contribute through documentation, organization, or community guides. These can be done either through the code contribution methods described above, or created externally and shared via our Discord community.
 
 If you have an external tool/page that you believe would be handy to integrate/link into Eden, please additionally email our developers at [`developers@eden-emu.dev`](mailto:developers@eden-emu.dev). **Do not submit vibe-coded or AI generated tools or applications**.
+
+### Non-English Contributions
+
+If you can't speak English or find more comfortable speaking in your native tongue, you may submit PR, commits, comments, and reviews in other languages. There is no restriction what languages are allowed, but maintainers will use translators if they're unable to understand.
+
+Triage can speak:
+
+- Chinese
+- Portuguese
+- Russian
+- Spanish
+
+Documentation must be in American English, we don't have the capacity to support multilingual manuals. Code comments must remain in English for future referral.
