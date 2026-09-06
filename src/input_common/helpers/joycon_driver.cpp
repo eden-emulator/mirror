@@ -4,6 +4,9 @@
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <string_view>
+
 #include "common/input.h"
 #include "common/logging.h"
 #include "common/scope_exit.h"
@@ -41,9 +44,8 @@ Common::Input::DriverResult JoyconDriver::RequestDeviceAccess(SDL_hid_device_inf
         return Common::Input::DriverResult::UnsupportedControllerType;
     }
 
-    hidapi_handle->handle =
-        SDL_hid_open(device_info->vendor_id, device_info->product_id, device_info->serial_number);
-    std::memcpy(&handle_serial_number, device_info->serial_number, 15);
+    hidapi_handle->handle = SDL_hid_open_path(device_info->path);
+    GetSerialNumber(device_info, handle_serial_number);
     if (!hidapi_handle->handle) {
         LOG_ERROR(Input, "Yuzu can't gain access to this device: ID {:04X}:{:04X}.",
                   device_info->vendor_id, device_info->product_id);
@@ -721,7 +723,9 @@ Common::Input::DriverResult JoyconDriver::GetSerialNumber(SDL_hid_device_info* d
     if (device_info->serial_number == nullptr) {
         return Common::Input::DriverResult::Unknown;
     }
-    std::memcpy(&serial_number, device_info->serial_number, 15);
+    const std::wstring_view serial{device_info->serial_number};
+    std::copy_n(serial.begin(), std::min(serial.size(), serial_number.size()),
+                serial_number.begin());
     return Common::Input::DriverResult::Success;
 }
 
