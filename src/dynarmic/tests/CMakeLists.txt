@@ -1,7 +1,5 @@
 # SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 # SPDX-License-Identifier: GPL-3.0-or-later
-include(TargetArchitectureSpecificSources)
-
 add_executable(dynarmic_tests
     fp/FPToFixed.cpp
     fp/FPValue.cpp
