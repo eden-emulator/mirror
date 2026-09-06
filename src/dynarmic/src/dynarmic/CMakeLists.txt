@@ -135,7 +135,7 @@ add_library(dynarmic STATIC
     interface/A64/config.h
 )
 
-if ("x86_64" IN_LIST ARCHITECTURE)
+if (ARCHITECTURE_x86_64)
     # Newer versions of xbyak (>= 7.25.0) have stricter checks that currently
     # fail in dynarmic
     target_compile_definitions(dynarmic PRIVATE XBYAK_STRICT_CHECK_MEM_REG_SIZE=0)
@@ -143,7 +143,7 @@ if ("x86_64" IN_LIST ARCHITECTURE)
     target_compile_definitions(dynarmic PRIVATE XBYAK_OLD_DISP_CHECK=1)
     target_link_libraries(dynarmic PRIVATE xbyak::xbyak)
 
-    target_architecture_specific_sources(dynarmic "x86_64"
+    target_sources(dynarmic PRIVATE
         backend/x64/abi.cpp
         backend/x64/abi.h
         backend/x64/block_of_code.cpp
@@ -201,10 +201,10 @@ if ("x86_64" IN_LIST ARCHITECTURE)
     )
 endif()
 
-if ("arm64" IN_LIST ARCHITECTURE)
+if (ARCHITECTURE_arm64)
     target_link_libraries(dynarmic PRIVATE merry::oaknut)
 
-    target_architecture_specific_sources(dynarmic "arm64"
+    target_sources(dynarmic PRIVATE
         backend/arm64/a32_jitstate.cpp
         backend/arm64/a32_jitstate.h
         backend/arm64/a64_jitstate.h
@@ -255,7 +255,7 @@ if ("arm64" IN_LIST ARCHITECTURE)
     )
 endif()
 
-if ("riscv64" IN_LIST ARCHITECTURE)
+if (ARCHITECTURE_riscv64)
     target_link_libraries(dynarmic PRIVATE biscuit::biscuit)
 
     target_sources(dynarmic PRIVATE
@@ -295,7 +295,7 @@ if ("riscv64" IN_LIST ARCHITECTURE)
     message(WARNING "TODO: Incomplete frontend for this host architecture")
 endif()
 
-if ("loongarch64" IN_LIST ARCHITECTURE)
+if (ARCHITECTURE_loongarch64)
     target_link_libraries(dynarmic PRIVATE lagoon::lagoon)
 
     target_sources(dynarmic PRIVATE
@@ -400,14 +400,8 @@ if (DYNARMIC_USE_LLVM)
     target_compile_definitions(dynarmic PRIVATE DYNARMIC_USE_LLVM=1 ${LLVM_DEFINITIONS})
     llvm_config(dynarmic USE_SHARED armdesc armdisassembler aarch64desc aarch64disassembler x86desc x86disassembler)
 endif()
-if (DYNARMIC_ENABLE_CPU_FEATURE_DETECTION)
-    target_compile_definitions(dynarmic PRIVATE DYNARMIC_ENABLE_CPU_FEATURE_DETECTION=1)
-endif()
 if (DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT)
     target_compile_definitions(dynarmic PRIVATE DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT=1)
-endif()
-if (DYNARMIC_IGNORE_ASSERTS)
-    target_compile_definitions(dynarmic PRIVATE MCL_IGNORE_ASSERTS=1)
 endif()
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     target_compile_definitions(dynarmic PRIVATE FMT_USE_WINDOWS_H=0)

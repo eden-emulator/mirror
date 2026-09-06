@@ -6226,9 +6226,7 @@ void EmitX64::EmitVectorZeroExtend64(EmitContext& ctx, IR::Inst* inst) {
 void EmitX64::EmitVectorZeroUpper(EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto const a = ctx.reg_alloc.UseScratchXmm(code, args[0]);
-
     code.movq(a, a);  // TODO: !IsLastUse
-
     ctx.reg_alloc.DefineValue(code, inst, a);
 }
 

@@ -91,7 +91,7 @@ struct detail {
                 shifts[arg_index] = bit_position;
             }
         }
-#if !defined(DYNARMIC_IGNORE_ASSERTS) && !defined(__ANDROID__)
+#if !defined(__ANDROID__)
         // Avoids a MSVC ICE, and avoids Android NDK issue.
         DEBUG_ASSERT(std::all_of(masks.begin(), masks.end(), [](auto m) { return m != 0; }));
 #endif

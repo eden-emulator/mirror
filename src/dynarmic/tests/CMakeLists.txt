@@ -44,13 +44,13 @@ if (DYNARMIC_TESTS_USE_UNICORN)
     )
 endif()
 
-if ("riscv" IN_LIST ARCHITECTURE)
+if (ARCHITECTURE_riscv64)
     target_link_libraries(dynarmic_tests PRIVATE biscuit::biscuit)
 endif()
 
-if ("x86_64" IN_LIST ARCHITECTURE)
+if (ARCHITECTURE_x86_64)
     target_link_libraries(dynarmic_tests PRIVATE xbyak::xbyak)
-    target_architecture_specific_sources(dynarmic_tests "x86_64"
+    target_sources(dynarmic_tests PRIVATE
         x64_cpu_info.cpp
         native/preserve_xmm.cpp
     )
