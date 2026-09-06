@@ -978,19 +978,18 @@ std::variant<s32, Network::Errno> BSD_USA::DuplicateSocketImpl(s32 fd) {
     if (!IsFileDescriptorValid(fd)) {
         return Network::Errno::E_BADF;
     }
-
-    const s32 new_fd = FindFreeFileDescriptorHandle();
-    if (!IsFileDescriptorValid(new_fd)) {
+    // Don't use IsFileDescriptorValid as new_fd isn't a proper handle yet
+    if (s32 const new_fd = FindFreeFileDescriptorHandle(); new_fd >= 0) {
+        file_descriptors[new_fd] = FileDescriptor{
+            .socket = file_descriptors[fd]->socket,
+            .flags = file_descriptors[fd]->flags,
+            .is_connection_based = file_descriptors[fd]->is_connection_based,
+        };
+        return new_fd;
+    } else {
         LOG_ERROR(Service, "No more file descriptors available");
         return Network::Errno::E_MFILE;
     }
-
-    file_descriptors[new_fd] = FileDescriptor{
-        .socket = file_descriptors[fd]->socket,
-        .flags = file_descriptors[fd]->flags,
-        .is_connection_based = file_descriptors[fd]->is_connection_based,
-    };
-    return new_fd;
 }
 
 std::optional<std::shared_ptr<Network::SocketBase>> BSD_USA::GetSocket(s32 fd) {
