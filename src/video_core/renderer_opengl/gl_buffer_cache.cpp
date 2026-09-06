@@ -148,11 +148,11 @@ BufferCacheRuntime::BufferCacheRuntime(const Device& device_,
 }
 
 StagingBufferMap BufferCacheRuntime::UploadStagingBuffer(size_t size) {
-    return staging_buffer_pool.RequestUploadBuffer(device, size);
+    return staging_buffer_pool.RequestUploadBuffer(size);
 }
 
 StagingBufferMap BufferCacheRuntime::DownloadStagingBuffer(size_t size, bool deferred) {
-    return staging_buffer_pool.RequestDownloadBuffer(device, size, deferred);
+    return staging_buffer_pool.RequestDownloadBuffer(size, deferred);
 }
 
 void BufferCacheRuntime::FreeDeferredStagingBuffer(StagingBufferMap& buffer) {
