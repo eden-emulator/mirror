@@ -37,7 +37,7 @@ size_t GetStreamBufferSize(const Device& device, size_t max_stream_buffer_size, 
     bool has_device_local_host_visible_heap{};
     ForEachDeviceLocalHostVisibleHeap(device, [&size, &has_device_local_host_visible_heap](size_t index, VkMemoryHeap& heap) {
         has_device_local_host_visible_heap = true;
-        size = (std::max)(size, heap.size);
+        size = std::max<size_t>(size, heap.size);
     });
     if (has_device_local_host_visible_heap) {
         // If rebar is not supported, cut the max heap size to 40%. This will allow 2 captures to be
@@ -49,7 +49,7 @@ size_t GetStreamBufferSize(const Device& device, size_t max_stream_buffer_size, 
     } else {
         size = max_stream_buffer_size;
     }
-    return (std::min)(Common::AlignUp(size, max_alignment), max_stream_buffer_size);
+    return std::min<size_t>(Common::AlignUp(size, max_alignment), max_stream_buffer_size);
 }
 } // Anonymous namespace
 
