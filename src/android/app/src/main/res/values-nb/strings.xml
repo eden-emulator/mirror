@@ -62,7 +62,6 @@
     <string name="cpuopt_unsafe_host_mmu_description">Denne optimaliseringen fremskynder minnetilgang av gjesteprogrammet. Hvis aktivert, utføres gjestens minnelesing/skriving direkte i minnet og bruker vertens MMU. Deaktivering tvinger alle minnetilganger til å bruke programvarebasert MMU-emulering.</string>
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">NVDEC-emulering</string>
-    <string name="nvdec_emulation_description">Velg hvordan videodekoding håndteres</string>
     <string name="nvdec_emulation_none">Ingen</string>
 
     <!-- Optimize SPIRV output -->
@@ -379,7 +378,6 @@
     <string name="log">Logging</string>
     <string name="flush_by_line">Tøm feilsøkingslogger per linje</string>
     <string name="flush_by_line_description">Tømmer feilsøkingslogger for hver linje som skrives, noe som gjør feilsøking enklere ved krasj eller frysing.</string>
-
     <!-- Audio settings strings -->
     <string name="audio_output_engine">Lydmotor</string>
     <string name="audio_volume">Volum</string>

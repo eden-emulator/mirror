@@ -67,7 +67,6 @@
     <string name="debug_knobs_description">לשימוש בפיתוח בלבד.</string>
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">אמולציית NVDEC</string>
-    <string name="nvdec_emulation_description">בחר כיצד לטפל בפענוח וידאו</string>
     <string name="nvdec_emulation_none">ללא</string>
 
     <!-- Optimize SPIRV output -->
@@ -408,7 +407,6 @@
     <string name="log">רישום</string>
     <string name="flush_by_line">רוקן יומני ניפוי שגיאות לפי שורה</string>
     <string name="flush_by_line_description">מרוקן יומני ניפוי שגיאות בכל שורה שנכתבת, מה שמקל על ניפוי שגיאות במקרים של קריסה או קיפאון.</string>
-
     <!-- Audio settings strings -->
     <string name="audio_output_engine">מנוע פלט</string>
     <string name="audio_volume">עוצמת שמע</string>

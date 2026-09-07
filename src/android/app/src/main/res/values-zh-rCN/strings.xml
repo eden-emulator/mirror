@@ -106,7 +106,7 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">NVDEC模拟</string>
-    <string name="nvdec_emulation_description">播放过场与开场动画期间的视频解码处理方式（NVDEC）。</string>
+    <string name="nvdec_emulation_description">如果在过场动画中出现崩溃就切换为 CPU。</string>
     <string name="nvdec_emulation_none">禁用</string>
 
     <!-- Optimize SPIRV output -->
@@ -291,6 +291,67 @@
     <string name="gpu_driver_fetcher">GPU驱动获取器</string>
     <string name="gpu_driver_manager">GPU 驱动管理器</string>
     <string name="install_gpu_driver_description">安装替代的驱动程序以获得更好的性能和精度</string>
+    <string name="frame_gen">帧生成</string>
+    <string name="frame_gen_per_game_description">配置针对此游戏的帧生成设定</string>
+    <string name="frame_gen_description">设定要在使用无损缩放渲染的帧之间应用的插帧。启用后强制采用FIFO呈现模式 。</string>
+    <string name="frame_gen_multiplier">多帧生成</string>
+    <string name="frame_gen_multiplier_description">对于每个渲染帧，设定应显示的帧。数值越高，所消耗的 GPU 时间就越会成倍增多。如果设定超过显示器能力的帧数，将会降低模拟速度。</string>
+    <string name="frame_gen_multiplier_2x">2x</string>
+    <string name="frame_gen_multiplier_3x">3x</string>
+    <string name="frame_gen_multiplier_4x">4x</string>
+    <string name="frame_gen_target_rate">目标帧率</string>
+    <string name="frame_gen_target_rate_description">选取一个符合显示器实际能能力的帧率。增幅会自动调整以保持设定的帧率不变，并回调任何会导致游戏运行变慢的设定。</string>
+    <string name="frame_gen_target_rate_off">使用固定增幅</string>
+    <string name="frame_gen_target_rate_60">60 FPS</string>
+    <string name="frame_gen_target_rate_90">90 FPS</string>
+    <string name="frame_gen_target_rate_120">120 FPS</string>
+    <string name="frame_gen_target_rate_144">144 FPS</string>
+    <string name="frame_gen_target_rate_165">165 FPS</string>
+    <string name="frame_gen_queue_target">帧队列目标</string>
+    <string name="frame_gen_queue_target_description">在显示之前有多少已完成渲染的帧正在等待。较大的队列可以缓解 GPU 突发的压力，但会增加输入延迟。</string>
+    <string name="frame_gen_queue_target_0">最低延迟 (无缓冲)</string>
+    <string name="frame_gen_queue_target_1">平衡 (1 帧)</string>
+    <string name="frame_gen_queue_target_2">最平滑 (2 帧)</string>
+    <string name="frame_gen_flow_scale_auto">将运动预估与游戏匹配</string>
+    <string name="frame_gen_flow_scale_auto_description">在游戏实际渲染的分辨率下估算运动，而不是在放大后的输出上。不会影响精确性，因为放大并不会增加运动细节。</string>
+    <string name="frame_gen_flow_scale">运动预估分辨率</string>
+    <string name="frame_gen_flow_scale_description">光流通道的分辨率,以输出的比例表示。降低它是提升性能最经济的做法。</string>
+    <string name="frame_gen_fp16">半精度着色器</string>
+    <string name="frame_gen_fp16_description">使用 16 位着色器变体。如果驱动或文件不支持会自动回退。</string>
+    <string name="frame_gen_dump_flow">转储已生成的帧</string>
+    <string name="frame_gen_dump_flow_description">为了排查问题，把光流 mip 级别和插值帧写入 lossless/debug 文件夹一次</string>
+    <string name="frame_gen_unsupported">帧生成不可用</string>
+    <string name="frame_gen_unsupported_description">这个 GPU 驱动不支持无损缩放着色器所需的 Vulkan 内存模型。</string>
+    <string name="lossless_scaling_setup_description">作为可选项。请提供您自己的 Lossless.dll 以便在之后可以启用帧生成。</string>
+    <string name="lossless_scaling_install">安装 Lossless.dll</string>
+    <string name="lossless_scaling_install_description">帧生成需要您自己从 Lossless Scaling 获得合法的 Lossless.dll 副本</string>
+    <string name="lossless_scaling_replace_description">选择其它 Lossless.dll 副本</string>
+    <string name="frame_generation_support">帧生成</string>
+    <string name="frame_generation_supported">支持</string>
+    <string name="frame_generation_unsupported">不支持 (无 Vulkan 内存模型)</string>
+    <string name="lossless_scaling">无损缩放</string>
+    <string name="lossless_scaling_description">提供您自己的 Lossless.dll 文件以启用帧生成</string>
+    <string name="lossless_scaling_installed">已安装</string>
+    <string name="lossless_scaling_not_installed">未安装</string>
+    <string name="lossless_scaling_replace">替换</string>
+    <string name="lossless_scaling_remove">移除</string>
+    <string name="lossless_scaling_remove_description">删除已安装的 Lossless.dll 及其准备好的着色器</string>
+    <string name="lossless_scaling_remove_confirmation">帧生成将停止工作,直到您重新安装 Lossless.dll。您的原始文件不会受到影响。</string>
+    <string name="lossless_scaling_missing">未安装 Lossless.dll</string>
+    <string name="lossless_scaling_missing_description">请从设置 › 无损缩放安装它以使用帧生成。</string>
+    <string name="lossless_scaling_locked">请先关闭游戏</string>
+    <string name="lossless_scaling_locked_description">无法在游戏运行时更改 Lossless.dll。</string>
+    <string name="lossless_scaling_remove_unavailable">没有可以移除的项目</string>
+    <string name="lossless_scaling_remove_unavailable_description">尚未安装 Lossless.dll。</string>
+    <string name="lossless_scaling_installing">正在准备帧生成着色器...</string>
+    <string name="lossless_scaling_install_success">已成功安装 Lossless.dll</string>
+    <string name="lossless_scaling_install_failed">无法安装 Lossless.dll </string>
+    <string name="error_lossless_copy_failed">无法复制选定的文件。</string>
+    <string name="error_lossless_unreadable">无法读取选定的文件。</string>
+    <string name="error_lossless_not_pe">选定的文件不是一个 Windows 动态链接库。请从您的 Lossless Scaling 安装目录中选择 Lossless.dll。</string>
+    <string name="error_lossless_missing_shaders">此副本的 Lossless.dll 中尚未包含帧生成着色器。请更新 Lossless Scaling 然后重试。</string>
+    <string name="error_lossless_translation_failed">无法翻译帧生成着色器。尚未支持此版本的 Lossless Scaling。</string>
+    <string name="error_lossless_cache_failed">已翻译的着色器无法写入到存储中。请确认其是否拥有足够的可用空间。</string>
     <string name="advanced_settings">高级设置</string>
     <string name="settings_description">更改模拟器设置</string>
     <string name="search_recently_played">最近游玩</string>
@@ -559,7 +620,6 @@
     <string name="log">日志记录</string>
     <string name="flush_by_line">按行刷新调试日志</string>
     <string name="flush_by_line_description">在每行写入时刷新调试日志，使在崩溃或冻结时调试更容易。</string>
-
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">GPU 日志</string>
     <string name="gpu_log_level">日志等级</string>
@@ -1080,7 +1140,6 @@
     <string name="theme_mode_follow_system">跟随系统</string>
     <string name="theme_mode_light">浅色</string>
     <string name="theme_mode_dark">深色</string>
-
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">使用黑色背景</string>

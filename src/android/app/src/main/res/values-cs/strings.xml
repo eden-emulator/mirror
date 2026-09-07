@@ -97,7 +97,6 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">Emulace NVDEC</string>
-    <string name="nvdec_emulation_description">Určuje, jakým způsobem se zpracovává dekódování videa (NVDEC).</string>
     <string name="nvdec_emulation_none">Žádné</string>
 
     <!-- Optimize SPIRV output -->
@@ -496,7 +495,6 @@
     <string name="log">Protokolování</string>
     <string name="flush_by_line">Vypisovat ladicí záznamy po řádcích</string>
     <string name="flush_by_line_description">Vypisuje ladicí záznamy po každém napsaném řádku, což usnadňuje ladění v případě pádu nebo zamrznutí.</string>
-
     <!-- Audio settings strings -->
     <string name="audio_output_engine">Výstupní engine</string>
     <string name="audio_volume">Hlasitost</string>

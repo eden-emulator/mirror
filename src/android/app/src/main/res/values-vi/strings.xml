@@ -62,7 +62,6 @@
     <string name="cpuopt_unsafe_host_mmu_description">Tối ưu hóa này tăng tốc độ truy cập bộ nhớ của chương trình khách. Bật nó lên khiến các thao tác đọc/ghi bộ nhớ khách được thực hiện trực tiếp vào bộ nhớ và sử dụng MMU của Máy chủ. Tắt tính năng này buộc tất cả quyền truy cập bộ nhớ phải sử dụng Giả lập MMU Phần mềm.</string>
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">Giả lập NVDEC</string>
-    <string name="nvdec_emulation_description">Chọn cách xử lý giải mã video</string>
     <string name="nvdec_emulation_none">Tắt</string>
 
     <!-- Optimize SPIRV output -->
@@ -373,7 +372,6 @@
     <string name="log">Ghi nhật ký</string>
     <string name="flush_by_line">Xả nhật ký gỡ lỗi theo dòng</string>
     <string name="flush_by_line_description">Xả nhật ký gỡ lỗi trên mỗi dòng được viết, giúp gỡ lỗi dễ dàng hơn trong trường hợp bị treo hoặc sập.</string>
-
     <!-- Audio settings strings -->
     <string name="audio_output_engine">Công cụ xuất âm thanh</string>
     <string name="audio_volume">Âm lượng</string>

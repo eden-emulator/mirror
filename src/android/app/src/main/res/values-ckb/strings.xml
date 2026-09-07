@@ -62,7 +62,6 @@
     <string name="cpuopt_unsafe_host_mmu_description">ئەم باشکردنە خێرایی دەستکەوتنی بیرگە لەلایەن پرۆگرامی میوانەکە زیاد دەکات. چالاککردنی وای لێدەکات کە خوێندنەوە/نووسینەکانی بیرگەی میوانەکە ڕاستەوخۆ لە بیرگە ئەنجام بدرێت و میمیکردنی MMU میواندە بەکاربهێنێت. ناچالاککردنی ئەمە هەموو دەستکەوتنەکانی بیرگە ڕەت دەکاتەوە لە بەکارهێنانی میمیکردنی MMU نەرمەکاڵا.</string>
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">ئیمولەیشنی NVDEC</string>
-    <string name="nvdec_emulation_description">هەڵبژاردنی ڕێگای دیکۆدکردنی ڤیدیۆ</string>
     <string name="nvdec_emulation_none">هیچ</string>
 
     <!-- Optimize SPIRV output -->
@@ -379,7 +378,6 @@
     <string name="log">تۆمارکردن</string>
     <string name="flush_by_line">خاوکردنەوەی تۆمارەکانی دیباگ بە هێڵ</string>
     <string name="flush_by_line_description">تۆمارەکانی دیباگ لە هەر هێڵێکدا دەنوسرێت خاو دەکاتەوە، ئەمە وا دەکات دیباگکردن ئاسانتر بێت لە کاتی کرشکردن یان پێکەنین.</string>
-
     <!-- Audio settings strings -->
     <string name="audio_output_engine">بزوێنری دەرچوونی دەنگ</string>
     <string name="audio_volume">دەنگ</string>

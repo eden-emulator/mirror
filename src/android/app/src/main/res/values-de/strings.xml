@@ -64,8 +64,8 @@
     <string name="bat_temperature_unit">Batterietemperatur-Einheiten</string>
     <string name="show_power_info">Batterieinfo anzeigen</string>
     <string name="show_power_info_description">Aktuellen Stromverbrauch und verbleibende Kapazität der Batterie anzeigen</string>
-    <string name="show_shaders_building">Schattierer-Erstellung anzeigen</string>
-    <string name="show_shaders_building_description">Aktuelle Anzahl der erstellten Schattierer anzeigen</string>
+    <string name="show_shaders_building">Shader-Erstellung anzeigen</string>
+    <string name="show_shaders_building_description">Aktuelle Anzahl der erstellten Shader anzeigen</string>
     <string name="pipeline_worker_cores_description">Lege die Anzahl der Kerne fest, die für die Erstellung von Vulkan-Rohrleitungen verwendet werden sollen. Ein höherer Wert verbessert die Kompilierungsleistung der Rohrleitung, führt jedoch auch zu einem Anstieg der Temperaturen.</string>
     <string name="overlay_position">Überlagerungs-Position</string>
     <string name="overlay_position_description">Wähle aus, wo die Überlagerung auf dem Bildschirm angezeigt wird</string>
@@ -105,7 +105,7 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">NVDEC-Emulation</string>
-    <string name="nvdec_emulation_description">Wähle aus, wie die Videodekodierung (NVDEC) während Zwischensequenzen und Intros gehandhabt wird.</string>
+    <string name="nvdec_emulation_description">Wechsle auf CPU, falls ein Absturz bei einem Cinematic auftritt.</string>
     <string name="nvdec_emulation_none">Keine</string>
 
     <!-- Optimize SPIRV output -->
@@ -290,6 +290,38 @@
     <string name="gpu_driver_fetcher">GPU-Treiber-Hersteller</string>
     <string name="gpu_driver_manager">GPU-Treiber Verwaltung</string>
     <string name="install_gpu_driver_description">Alternative Treiber für eventuell bessere Leistung oder Genauigkeit installieren</string>
+    <string name="frame_gen">Frame-Generation</string>
+    <string name="frame_gen_per_game_description">Konfiguriere Frame-Generation für dieses Spiel</string>
+    <string name="frame_gen_description">Füge zwischen den gerenderten Bildern interpolierte Bilder mithilfe von Lossless Scaling ein. </string>
+    <string name="frame_gen_multiplier">Frame-Multiplikator</string>
+    <string name="frame_gen_multiplier_description">Wie viele Bilder für jedes gerenderte angezeigt werden soll. Höhere Werte kosten proportional mehr GPU-Zeit. Nach mehr zu fragen, als dein Bildschirm darstellen kann, wird die Emulation verlangsamen.</string>
+    <string name="frame_gen_multiplier_2x">2x</string>
+    <string name="frame_gen_multiplier_3x">3x</string>
+    <string name="frame_gen_multiplier_4x">4x</string>
+    <string name="frame_gen_target_rate">Ziel-Bildrate</string>
+    <string name="frame_gen_target_rate_description">Wähle die Rate aus die dein Bildschirm tatsächlich darstellen kann. Der Multiplikator steigt oder fällt dann alleine um sie zu halten, und rollt jeden Schritt zurück, der das Spiel selber langsamer macht.</string>
+    <string name="frame_gen_target_rate_off">Nutze einen fixierten Multiplikator</string>
+    <string name="frame_gen_target_rate_60">60 FPS</string>
+    <string name="frame_gen_target_rate_90">90 FPS</string>
+    <string name="frame_gen_target_rate_120">120 FPS</string>
+    <string name="frame_gen_target_rate_144">144 FPS</string>
+    <string name="frame_gen_target_rate_165">165 FPS</string>
+    <string name="frame_gen_queue_target_1">Ausbalanciert (1 Bild)</string>
+    <string name="frame_gen_queue_target_2">Flüssigste (2 Bilder)</string>
+    <string name="frame_gen_unsupported">Frame-Generation nicht verfügbar</string>
+    <string name="frame_gen_unsupported_description">Dieser GPU-Treiber unterstützt das Vulkan-Memory-Model nicht, welches Lossless Scaling-Shader benötigen.</string>
+    <string name="lossless_scaling_setup_description">Optional. Stelle deine eigene Lossless.dll zur Verfügung, um Frame-Generation später zu aktivieren.</string>
+    <string name="lossless_scaling_install">Installiere Lossless.dll</string>
+    <string name="lossless_scaling_replace_description">Wähle eine andere Kopie von Lossless.dll</string>
+    <string name="frame_generation_supported">Unterstützt</string>
+    <string name="frame_generation_unsupported">Nicht unterstützt (kein Vulkan-Memory-Model)</string>
+    <string name="lossless_scaling">Lossless Scaling</string>
+    <string name="lossless_scaling_installed">Installiert</string>
+    <string name="lossless_scaling_not_installed">Nicht installiert</string>
+    <string name="lossless_scaling_replace">Ersetzen</string>
+    <string name="lossless_scaling_remove">Entfernen</string>
+    <string name="lossless_scaling_locked">Schließe zuerst das Spiel</string>
+    <string name="lossless_scaling_remove_unavailable">Nichts zum Entfernen</string>
     <string name="advanced_settings">Erweiterte Einstellungen</string>
     <string name="settings_description">Emulatoreinstellungen konfigurieren</string>
     <string name="search_recently_played">Kürzlich gespielt</string>
@@ -394,6 +426,7 @@ Wirklich fortfahren?</string>
     <string name="copied_to_clipboard">In die Zwischenablage kopiert</string>
     <string name="about_app_description">Ein quelloffener Switch-Emulator</string>
     <string name="contributors">Beitragende</string>
+    <string name="contributors_description">Personen, die Eden für Android möglich gemacht haben</string>
     <string name="licenses_description">Projekte, die Eden für Android möglich machen </string>
     <string name="build">Build</string>
     <string name="user_data">Nutzerdaten</string>
@@ -429,6 +462,8 @@ Wird der Handheld-Modus verwendet, verringert es die Auflösung und erhöht die 
     <string name="use_custom_rtc_description">Ermöglicht Ihnen, eine benutzerdefinierte Echtzeituhr unabhängig von Ihrer aktuellen Systemzeit einzustellen.</string>
     <string name="set_custom_rtc">Legen Sie eine benutzerdefinierte Echtzeituhr fest</string>
 
+    <!-- CPU -->
+    <string name="fast_cpu_time">CPU-Takte</string>
     <string name="custom_cpu_ticks">Benutzerdefinierte CPU-Ticks</string>
     <string name="custom_cpu_ticks_description">Legen Sie einen benutzerdefinierten Wert für CPU-Ticks fest. Höhere Werte können die Leistung steigern, aber auch zum Einfrieren des Spiels führen. Ein Bereich von 77–21000 wird empfohlen.</string>
     <string name="cpu_ticks">Ticks</string>
@@ -473,10 +508,14 @@ Wird der Handheld-Modus verwendet, verringert es die Auflösung und erhöht die 
     <string name="renderer_reactive_flushing_description">Verbessert die Genauigkeit in einigen Spielen.</string>
     <string name="hacks">Hacks</string>
 
+    <string name="fast_gpu_time">GPU-Takte</string>
     <string name="skip_cpu_inner_invalidation">CPU-interne Invalidierung überspringen</string>
     <string name="skip_cpu_inner_invalidation_description">Überspringt bestimmte Cache-Invalidierungen auf CPU-Seite während Speicherupdates, reduziert die CPU-Auslastung und verbessert die Leistung. Kann in einigen Spielen zu Fehlern oder Abstürzen führen.</string>
     <string name="renderer_asynchronous_shaders">Asynchrone Shader</string>
     <string name="renderer_asynchronous_shaders_description">Kompiliert Shader asynchron. Dies kann Ruckler reduzieren, aber auch Grafikfehler verursachen.</string>
+    <string name="gpu_unswizzle_default_button">Standard</string>
+
+
     <string name="extensions">Erweiterungen</string>
 
     <string name="dyna_state">Erweiterter dynamischer Status</string>
@@ -498,6 +537,7 @@ Wird der Handheld-Modus verwendet, verringert es die Auflösung und erhöht die 
 
     <!-- Debug settings strings -->
     <string name="cpu">CPU</string>
+    <string name="clocks">Takte</string>
     <string name="use_auto_stub">Auto-Stub verwenden</string>
     <string name="use_auto_stub_description">Ergänzt automatisch fehlende Dienste und Funktionen. Kann die Kompatibilität verbessern, aber auch zu Abstürzen und Stabilitätsproblemen führen.</string>
 
@@ -512,7 +552,6 @@ Wird der Handheld-Modus verwendet, verringert es die Auflösung und erhöht die 
     <string name="log">Protokollierung</string>
     <string name="flush_by_line">Debug-Protokolle zeilenweise leeren</string>
     <string name="flush_by_line_description">Leert Debug-Protokolle bei jeder geschriebenen Zeile, was das Debuggen bei Abstürzen oder Einfrieren erleichtert.</string>
-
     <string name="general">Allgemein</string>
 
     <!-- Audio settings strings -->
@@ -753,6 +792,7 @@ Wirklich fortfahren?</string>
     <string name="confirm_uninstall">Bestätigen Sie die Deinstallation</string>
     <string name="confirm_uninstall_description">Möchten Sie dieses Add-on wirklich deinstallieren\?</string>
     <string name="verify_integrity">Integrität prüfen</string>
+    <string name="verifying">Verifiziere...</string>
     <string name="verify_success">Integritätsüberprüfung erfolgreich!</string>
     <string name="verify_failure">Integritätsüberprüfung fehlgeschlagen!</string>
     <string name="verify_failure_description">Der Dateiinhalt ist möglicherweise beschädigt</string>
@@ -874,6 +914,16 @@ Wirklich fortfahren?</string>
     <string name="memory_6gb">6 GB (Unsicher)</string>
     <string name="memory_8gb">8 GB (Unsicher)</string>
 
+    <!-- CPU clock levels -->
+    <string name="clock_normal">Normal</string>
+    <string name="clock_boost">Beschleunigung</string>
+    <string name="clock_fast">Übertaktung</string>
+
+    <!-- GPU clock levels -->
+    <string name="fast_gpu_normal">Normal</string>
+    <string name="fast_gpu_medium">Beschleunigung</string>
+    <string name="fast_gpu_high">Übertaktung</string>
+
     <!-- GPU swizzle texture size -->
     <string name="gpu_texturesizeswizzle_verysmall">Sehr klein (16 MB)</string>
     <string name="gpu_texturesizeswizzle_small">Klein (32 MB)</string>
@@ -918,6 +968,13 @@ Wirklich fortfahren?</string>
     <string name="dma_accuracy_default">Standard</string>
     <string name="dma_accuracy_unsafe">Unsicher</string>
     <string name="dma_accuracy_safe">Sicher</string>
+
+    <!-- GPU Fence Behavior -->
+    <string name="gpu_fence_behavior_default">Standard</string>
+    <string name="gpu_fence_behavior_immediate">Direkt</string>
+    <string name="gpu_fence_behavior_balanced">Ausgewogen</string>
+    <string name="gpu_fence_behavior_accurate">Genau</string>
+    <string name="gpu_fence_behavior_strict">Strikt</string>
 
     <string name="vram_usage_conservative">Konservativ</string>
     <string name="vram_usage_aggressive">Aggressiv</string>
@@ -985,27 +1042,32 @@ Wirklich fortfahren?</string>
     <string name="theme_material_you">Material You</string>
     <string name="app_settings">App-Einstellungen</string>
     <string name="theme_and_color">Theme und Farben</string>
+    <string name="fullscreen_mode">Vollbild-Modus</string>
     <!-- Theme Modes -->
     <string name="change_theme_mode">Design</string>
     <string name="theme_mode_follow_system">System folgen</string>
     <string name="theme_mode_light">Hell</string>
     <string name="theme_mode_dark">Dunkel</string>
 
-
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">Schwarze Hintergründe</string>
     <string name="use_black_backgrounds_description">Bei Verwendung des dunklen Designs, schwarze Hintergründe verwenden.</string>
 
+    <!-- Buttons -->
+    <string name="enable_folder_button">Ordner</string>
+    <string name="enable_qlaunch_button">QLaunch</string>
     <!-- App Language -->
     <string name="app_language">App-Sprache</string>
     <string name="app_language_description">Sprache der App-Oberfläche ändern</string>
     <string name="app_language_system">System folgen</string>
     <!-- Static Themes -->
     <string name="static_theme_color">Designfarbe</string>
+    <string name="eden_theme">Eden</string>
     <string name="violet">Violett </string>
     <string name="blue">Blau</string>
     <string name="cyan">Cyan</string>
     <string name="red">Rot</string>
+    <string name="green">Grün</string>
     <string name="yellow">Gelb</string>
     <string name="orange">Orange</string>
     <string name="pink">Rosa</string>
@@ -1036,6 +1098,10 @@ Wirklich fortfahren?</string>
 
     <string name="enable_overlay">Applet-Overlay aktivieren</string>
     <string name="enable_overlay_description">Aktiviert Horizons eingebautes Overlay-Applet. Halte die Home-Taste eine Sekunde lang gedrückt, um es anzuzeigen.</string>
+
+    <!-- Profile Management -->
+    <string name="profile_manager">Nutzerverwaltung</string>
+    <string name="error">Fehler</string>
 
     <!-- Licenses screen strings -->
     <string name="licenses">Lizenzen</string>

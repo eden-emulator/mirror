@@ -106,7 +106,7 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">NVDEC模擬</string>
-    <string name="nvdec_emulation_description">選擇影片解碼（NVDEC）的方式</string>
+    <string name="nvdec_emulation_description">若在過場動畫中當機請切換成 CPU</string>
     <string name="nvdec_emulation_none">無</string>
 
     <!-- Optimize SPIRV output -->
@@ -182,7 +182,7 @@
     <string name="multiplayer_hide_empty_rooms">隱藏空房間</string>
     <string name="multiplayer_tap_refresh_to_check_again">點擊重新整理以重試</string>
     <string name="multiplayer_search_public_lobbies">搜尋房間…</string>
-    <string name="multiplayer_preferred_game_name">首選遊戲</string>
+    <string name="multiplayer_preferred_game_name">遊戲</string>
     <string name="multiplayer_lobby_type">大廳類型</string>
     <string name="multiplayer_room_name_error">長度需為3-20個字元</string>
     <string name="multiplayer_required">必填</string>
@@ -237,11 +237,11 @@
     <string name="update_install_failed">更新安裝失敗：%1$s</string>
     <string name="home_search">搜尋</string>
     <string name="home_settings">設定</string>
-    <string name="empty_gamelist">找不到檔案，或者尚未選取遊戲目錄。</string>
+    <string name="empty_gamelist">找不到檔案，或者尚未選取遊戲目錄</string>
     <string name="manage_game_folders">管理遊戲資料夾</string>
     <string name="select_games_folder_description">允許 Eden 尋找您的遊戲檔案</string>
     <string name="add_games_warning">跳過選擇遊戲資料夾？</string>
-    <string name="add_games_warning_description">如果未選擇遊戲資料夾，遊戲將不會顯示在遊戲清單。</string>
+    <string name="add_games_warning_description">如果未選擇遊戲資料夾，遊戲將不會顯示在遊戲清單</string>
     <string name="add_games_warning_help">https://yuzu-mirror.github.io/help/quickstart/#dumping-games</string>
     <string name="home_search_games">搜尋遊戲</string>
     <string name="search_settings">搜尋設定</string>
@@ -291,6 +291,38 @@
     <string name="gpu_driver_fetcher">GPU驅動程式下載器</string>
     <string name="gpu_driver_manager">GPU 驅動程式管理員</string>
     <string name="install_gpu_driver_description">安裝替代驅動程式以取得潛在的更佳效能或準確度</string>
+    <string name="frame_gen">影格生成</string>
+    <string name="frame_gen_per_game_description">調整此遊戲的影格生成設定</string>
+    <string name="frame_gen_description">使用 Lossless Scaling 在已渲染的影格之間插入補間影格。啟用此功能時，會強制採用 FIFO 垂直同步</string>
+    <string name="frame_gen_multiplier">影格倍率</string>
+    <string name="frame_gen_multiplier_description">設定在每個已渲染的影格中要顯示的影格數。數值越高所需的 GPU 運算時間也會按比例增加。若要求的影格數超過裝置顯示器能呈現的數量將會降低模擬速度</string>
+    <string name="frame_gen_multiplier_2x">2x</string>
+    <string name="frame_gen_multiplier_3x">3x</string>
+    <string name="frame_gen_multiplier_4x">4x</string>
+    <string name="frame_gen_target_rate">目標影格率</string>
+    <string name="frame_gen_target_rate_description">選擇裝置顯示器能實際呈現的影格率。之後倍率器會自動升高或降低以維持影格率。如果某個調整導致遊戲本身運作變慢，則會自動復原該設定</string>
+    <string name="frame_gen_target_rate_off">使用固定倍率</string>
+    <string name="frame_gen_target_rate_60">60 FPS</string>
+    <string name="frame_gen_target_rate_90">90 FPS</string>
+    <string name="frame_gen_target_rate_120">120 FPS</string>
+    <string name="frame_gen_target_rate_144">144 FPS</string>
+    <string name="frame_gen_target_rate_165">165 FPS</string>
+    <string name="frame_gen_queue_target">影格佇列目標</string>
+    <string name="frame_gen_queue_target_description">最多允許多少個已完成的影格在顯示器前等待，較大的佇列可以吸收 GPU 突發負載，但會增加輸入延遲</string>
+    <string name="frame_gen_queue_target_0">最低延遲（無緩衝）</string>
+    <string name="frame_gen_queue_target_1">平衡（1影格）</string>
+    <string name="frame_gen_queue_target_2">最流暢（2影格）</string>
+    <string name="frame_gen_flow_scale_auto">配合遊戲調整運動預測</string>
+    <string name="frame_gen_flow_scale_auto_description">以遊戲實際渲染的解析度而非升頻後的輸出進行運動預測。由於升頻後不會增加任何動態細節，因此不會影響準確度</string>
+    <string name="frame_gen_flow_scale">運動預測解析度</string>
+    <string name="frame_gen_flow_scale_description">光流處理的解析度，以輸出解析度的比例表示。降低此設定值是減少效能負載最有效的方法</string>
+    <string name="frame_gen_fp16">半準確著色器</string>
+    <string name="frame_gen_fp16_description">使用16位元著色器。如果驅動程式或著色器檔案不支援則會自動切換成其它版本</string>
+    <string name="frame_gen_dump_flow">傾印生成的著色器</string>
+    <string name="frame_gen_dump_flow_description">將光流的 MIP 層級與補間影格寫入 Eden 資料夾中的 lossless\debug 資料夾以便進行疑難排解</string>
+    <string name="frame_gen_unsupported">無法使用影格生成</string>
+    <string name="frame_gen_unsupported_description">Lossless Scaling 的著色器需要 Vulkan 記憶體模型，所選的驅動程式不支援該功能</string>
+    <string name="lossless_scaling_setup_description">可選擇安裝自己擁有的 Lossless.dll 以在之後啟用影格生成功能</string>
     <string name="advanced_settings">進階設定</string>
     <string name="settings_description">進行模擬器設定</string>
     <string name="search_recently_played">最近遊玩</string>
@@ -559,7 +591,6 @@
     <string name="log">日誌</string>
     <string name="flush_by_line">按行寫入偵錯日誌</string>
     <string name="flush_by_line_description">在每行寫入時重新整理偵錯日誌，讓程式在當機或閃退時更容易偵錯。</string>
-
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">GPU 日誌</string>
     <string name="gpu_log_level">記錄層級</string>
@@ -695,7 +726,7 @@
     <string name="import_complete">導入完成</string>
     <string name="use_global_setting">使用全域設定</string>
     <string name="operation_completed_successfully">操作已成功完成</string>
-    <string name="confirm">下載</string>
+    <string name="confirm">確認</string>
     <string name="load">載入</string>
     <string name="save">儲存</string>
 
@@ -868,7 +899,7 @@
     <string name="driver_missing_title">需要GPU驅動程式</string>
     <string name="driver_missing_message">這個遊戲的設定需要 \"%s\"驅動程式，而它並沒有安裝在您的裝置上\n\n要下載並安裝此驅動程式嗎？</string>
     <string name="driver_download_cancelled">驅動程式下載已取消。沒有所需的驅動程式無法啟動遊戲。</string>
-    <string name="download">遷移</string>
+    <string name="download">下載</string>
 
     <!-- Emulation Menu -->
     <string name="emulation_exit">結束模擬</string>
@@ -1005,7 +1036,6 @@
     <string name="theme_mode_follow_system">跟隨系統</string>
     <string name="theme_mode_light">淺色</string>
     <string name="theme_mode_dark">深色</string>
-
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">黑色背景</string>

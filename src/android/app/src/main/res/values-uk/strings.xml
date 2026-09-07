@@ -106,7 +106,6 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">Емуляція NVDEC</string>
-    <string name="nvdec_emulation_description">Обробка відео під час катсцен</string>
     <string name="nvdec_emulation_none">Вимкнено</string>
 
     <!-- Optimize SPIRV output -->
@@ -554,7 +553,6 @@
     <string name="log">Журналювання</string>
     <string name="flush_by_line">Скидати логи налагодження по рядках</string>
     <string name="flush_by_line_description">Скидає логи налагодження після кожного написаного рядка, полегшуючи налагодження у випадках збоїв або зависань.</string>
-
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">Журналювання ГП</string>
     <string name="gpu_log_level">Рівень журналювання</string>
@@ -1052,7 +1050,6 @@
     <string name="theme_mode_follow_system">Системна</string>
     <string name="theme_mode_light">Світла</string>
     <string name="theme_mode_dark">Темна</string>
-
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">Чорний фон</string>

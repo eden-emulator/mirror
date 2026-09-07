@@ -91,7 +91,6 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">Decodificação de Vídeo (NVDEC)</string>
-    <string name="nvdec_emulation_description">Selecione como a decodificação de vídeo é realizada durante cutscenes e intros.</string>
     <string name="nvdec_emulation_none">Nenhum</string>
 
     <!-- Optimize SPIRV output -->
@@ -483,7 +482,6 @@
     <string name="log">Registro</string>
     <string name="flush_by_line">Liberar logs de depuração por linha</string>
     <string name="flush_by_line_description">Libera logs de depuração em cada linha escrita, facilitando a depuração em casos de travamento ou congelamento.</string>
-
     <string name="general">Geral</string>
 
     <!-- Audio settings strings -->
@@ -890,7 +888,6 @@
     <string name="theme_mode_follow_system">Igual ao Sistema</string>
     <string name="theme_mode_light">Claro</string>
     <string name="theme_mode_dark">Escuro</string>
-
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">Planos de fundo pretos</string>

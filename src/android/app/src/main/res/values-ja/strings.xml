@@ -62,7 +62,6 @@
     <string name="cpuopt_unsafe_host_mmu_description">この最適化により、ゲストプログラムによるメモリアクセスが高速化されます。有効にすると、ゲストのメモリ読み書きが直接メモリ内で実行され、ホストのMMUを利用します。無効にすると、すべてのメモリアクセスでソフトウェアMMUエミュレーションが使用されます。</string>
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">NVDECエミュレーション</string>
-    <string name="nvdec_emulation_description">ビデオデコード方法</string>
     <string name="nvdec_emulation_none">無効</string>
 
     <!-- Optimize SPIRV output -->
@@ -398,7 +397,6 @@
     <string name="log">ロギング</string>
     <string name="flush_by_line">デバッグログを行ごとにフラッシュ</string>
     <string name="flush_by_line_description">デバッグログを行ごとにフラッシュし、クラッシュやフリーズ時のデバッグを容易にします。</string>
-
     <!-- Audio settings strings -->
     <string name="audio_output_engine">出力エンジン</string>
     <string name="audio_volume">音量</string>

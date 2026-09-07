@@ -60,7 +60,6 @@
     <string name="cpuopt_unsafe_host_mmu_description">Ова оптимизација убрзава приступ меморији од стране гостујућег програма. Укључивање изазива да се читања/уписа меморије госта обављају директно у меморији и користе MMU домаћина. Искључивање присиљава све приступе меморији да користе софтверску емулацију MMU.</string>
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">НВДЕЦ Емулација</string>
-    <string name="nvdec_emulation_description">Изаберите како се видео декодирање (НВДЕЦ) обрађује током секс и увозних интросија.</string>
     <string name="nvdec_emulation_none">Ниједан</string>
 
     <!-- Optimize SPIRV output -->
@@ -401,7 +400,6 @@
     <string name="log">Сечеља</string>
     <string name="flush_by_line">Записници за уклањање погрешака по линији</string>
     <string name="flush_by_line_description">Испушта ознаке за уклањање погрешака на сваком писменом линијском линији, олакшавање уклањања погрешака у случајевима пада или замрзавања.</string>
-
     <!-- Audio settings strings -->
     <string name="audio_output_engine">Излазни мотор</string>
     <string name="audio_volume">Запремина</string>

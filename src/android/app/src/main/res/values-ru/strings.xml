@@ -106,7 +106,7 @@
 
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">Эмуляция NVDEC</string>
-    <string name="nvdec_emulation_description">Обработка видео (ролики, интро)</string>
+    <string name="nvdec_emulation_description">Переключите на CPU, если происходит вылет на кат-сценах.</string>
     <string name="nvdec_emulation_none">Отключено</string>
 
     <!-- Optimize SPIRV output -->
@@ -291,6 +291,58 @@
     <string name="gpu_driver_fetcher">Получение драйверов ГПУ</string>
     <string name="gpu_driver_manager">Менеджер драйверов ГПУ</string>
     <string name="install_gpu_driver_description">Установите альтернативные драйверы для потенциально лучшей производительности и/или точности</string>
+    <string name="frame_gen">Генерация кадров</string>
+    <string name="frame_gen_per_game_description">Настройка генерации кадров для данной игры</string>
+    <string name="frame_gen_description">Вставляет промежуточные кадры между отрендеренными с помощью Lossless Scaling. При включении принудительно устанавливает режим вывода FIFO.</string>
+    <string name="frame_gen_multiplier">Множитель кадров</string>
+    <string name="frame_gen_multiplier_description">Количество кадров, отображаемых на каждый отрисованный кадр. Повышение значения пропорционально увеличивает затраты ресурсов ГПУ. Если запрашивать больше, чем может отобразить ваш экран, эмуляция будет замедляться.</string>
+    <string name="frame_gen_target_rate">Целевая частота кадров</string>
+    <string name="frame_gen_target_rate_description">Выберите значение под ваш дисплей. Множитель подстроится сам, чтобы его держать, и откатит изменения, если игра начнёт тормозить.</string>
+    <string name="frame_gen_target_rate_off">Использовать фиксированный множитель</string>
+    <string name="frame_gen_queue_target">Целевой размер очереди кадров</string>
+    <string name="frame_gen_queue_target_description">Сколько готовых кадров может ожидать перед выводом на экран. Более длинные очереди сглаживают скачки ГПУ ценой задержки ввода.</string>
+    <string name="frame_gen_queue_target_0">Минимальная задержка (Без буферизации)</string>
+    <string name="frame_gen_queue_target_1">Сбалансированный (1 кадр)</string>
+    <string name="frame_gen_queue_target_2">Наиболее плавный (2 кадра)</string>
+    <string name="frame_gen_flow_scale_auto">Подстроить оценку движения под игру</string>
+    <string name="frame_gen_flow_scale_auto_description">Оценивать движение в разрешении, которое игра действительно рендерит, вместо масштабированного вывода. Ничего не стоит в точности, так как масштабирование не добавляет деталей движения.</string>
+    <string name="frame_gen_flow_scale">Разрешение оценки движения</string>
+    <string name="frame_gen_flow_scale_description">Разрешение прохода оптического потока в долях от выходного разрешения. Его понижение — самый дешёвый способ вернуть производительность.</string>
+    <string name="frame_gen_fp16">Шейдеры половинной точности</string>
+    <string name="frame_gen_fp16_description">Использовать 16-битную версию шейдеров. Автоматически переключается на обычную, если драйвер или файл не поддерживают её.</string>
+    <string name="frame_gen_dump_flow">Сохранить сгенерированный кадр</string>
+    <string name="frame_gen_dump_flow_description">Однократно записать уровни мип-карт оптического потока и интерполированный кадр в папку lossless/debug для диагностики.</string>
+    <string name="frame_gen_unsupported">Генерация кадров недоступна</string>
+    <string name="frame_gen_unsupported_description">Драйвер ГПУ не поддерживает модель памяти Vulkan, требуемую шейдерами Lossless Scaling.</string>
+    <string name="lossless_scaling_setup_description">Опционально. Укажите свой Lossless.dll для включения генерации кадров позже.</string>
+    <string name="lossless_scaling_install">Установить Lossless.dll</string>
+    <string name="lossless_scaling_install_description">Для генерации кадров требуется ваша собственная легальная копия Lossless.dll из Lossless Scaling</string>
+    <string name="lossless_scaling_replace_description">Выбрать другой файл Lossless.dll</string>
+    <string name="frame_generation_support">Генерация кадров</string>
+    <string name="frame_generation_supported">Поддерживается</string>
+    <string name="frame_generation_unsupported">Не поддерживается (нет модели памяти Vulkan)</string>
+    <string name="lossless_scaling_description">Предоставьте свою копию Lossless.dll для включения генерации кадров</string>
+    <string name="lossless_scaling_installed">Установлена</string>
+    <string name="lossless_scaling_not_installed">Не установлена</string>
+    <string name="lossless_scaling_replace">Заменить</string>
+    <string name="lossless_scaling_remove">Удалить</string>
+    <string name="lossless_scaling_remove_description">Удалить установленный Lossless.dll и его подготовленные шейдеры</string>
+    <string name="lossless_scaling_remove_confirmation">Генерация кадров перестанет работать, пока вы снова не установите Lossless.dll. Ваш исходный файл не пострадает.</string>
+    <string name="lossless_scaling_missing">Lossless.dll не установлен</string>
+    <string name="lossless_scaling_missing_description">Установите его через Настройки › Lossless Scaling для использования генерации кадров.</string>
+    <string name="lossless_scaling_locked">Сначала закройте игру</string>
+    <string name="lossless_scaling_locked_description">Lossless.dll нельзя изменить, пока запущена игра.</string>
+    <string name="lossless_scaling_remove_unavailable">Нечего удалять.</string>
+    <string name="lossless_scaling_remove_unavailable_description">Lossless.dll ещё не установлен.</string>
+    <string name="lossless_scaling_installing">Подготовка шейдеров генерации кадров…</string>
+    <string name="lossless_scaling_install_success">Lossless.dll успешно установлен</string>
+    <string name="lossless_scaling_install_failed">Не удалось установить Lossless.dll</string>
+    <string name="error_lossless_copy_failed">Не удалось скопировать выбранный файл.</string>
+    <string name="error_lossless_unreadable">Не удалось прочитать выбранный файл.</string>
+    <string name="error_lossless_not_pe">Выбранный файл не является библиотекой Windows. Выберите Lossless.dll из установки Lossless Scaling.</string>
+    <string name="error_lossless_missing_shaders">Эта копия Lossless.dll не содержит шейдеров генерации кадров. Обновите Lossless Scaling и попробуйте снова.</string>
+    <string name="error_lossless_translation_failed">Не удалось транслировать шейдеры генерации кадров. Эта версия Lossless Scaling пока не поддерживается.</string>
+    <string name="error_lossless_cache_failed">Не удалось записать транслированные шейдеры в хранилище. Проверьте, есть ли свободное место.</string>
     <string name="advanced_settings">Расширенные настройки</string>
     <string name="settings_description">Настройка параметров эмулятора</string>
     <string name="search_recently_played">Недавно сыгранные</string>
@@ -439,6 +491,9 @@
     <string name="use_custom_rtc_description">Позволяет установить пользовательские часы реального времени отдельно от текущего системного времени.</string>
     <string name="set_custom_rtc">Установить пользовательский RTC</string>
 
+    <!-- CPU -->
+    <string name="fast_cpu_time">Тактовая частота ЦП</string>
+    <string name="fast_cpu_time_description">Повышает тактовую частоту, которую сообщает эмулируемый процессор, что убирает некоторые ограничители FPS. На более слабых процессорах производительность может снизиться, а в некоторых играх возможно некорректное поведение.</string>
     <string name="custom_cpu_ticks">Пользовательские такты ЦП</string>
     <string name="custom_cpu_ticks_description">Установите пользовательское значение тактов ЦП. Более высокие значения могут увеличить производительность, но также могут вызвать зависание игры. Рекомендуется диапазон 77–21000.</string>
     <string name="cpu_ticks">Такты</string>
@@ -499,6 +554,8 @@
 
     <string name="hacks">Хаки</string>
 
+    <string name="fast_gpu_time">Тактовая частота ГПУ</string>
+    <string name="fast_gpu_time_description">Заставляет игру думать, что работа ГПУ завершается быстрее, чем на самом деле, поэтому она перестаёт снижать разрешение и дистанцию прорисовки, чтобы подстраиваться под тактовые частоты Switch.</string>
     <string name="skip_cpu_inner_invalidation">Пропустить внутреннюю инвалидацию ЦП</string>
     <string name="skip_cpu_inner_invalidation_description">Пропускает некоторые инвалидации кэша на стороне ЦП при обновлениях памяти, уменьшая нагрузку на процессор и повышая производительность. Может вызывать сбои в некоторых играх.</string>
     <string name="fix_bloom_effects">Исправить эффекты размытия</string>
@@ -545,6 +602,7 @@
 
     <!-- Debug settings strings -->
     <string name="cpu">ЦП</string>
+    <string name="clocks">Тактовая частота</string>
     <string name="use_auto_stub">Использовать Auto Stub</string>
     <string name="use_auto_stub_description">Автоматически заглушает отсутствующие сервисы и функции. Может улучшить совместимость, но вызывать сбои и проблемы стабильности.</string>
 
@@ -559,7 +617,6 @@
     <string name="log">Логирование</string>
     <string name="flush_by_line">Сбрасывать логи отладки построчно</string>
     <string name="flush_by_line_description">Сбрасывает логи отладки после каждой написанной строки, упрощая отладку в случае сбоев или зависаний.</string>
-
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">Ведение журнала ГПУ</string>
     <string name="gpu_log_level">Уровень журналирования</string>
@@ -944,6 +1001,16 @@
     <string name="memory_6gb">6 ГБ (Небезопасно)</string>
     <string name="memory_8gb">8 ГБ (Небезопасно)</string>
 
+    <!-- CPU clock levels -->
+    <string name="clock_normal">Обычная</string>
+    <string name="clock_boost">Турбо</string>
+    <string name="clock_fast">Разгон</string>
+
+    <!-- GPU clock levels -->
+    <string name="fast_gpu_normal">Обычная</string>
+    <string name="fast_gpu_medium">Турбо</string>
+    <string name="fast_gpu_high">Разгон</string>
+
     <!-- GPU swizzle texture size -->
     <string name="gpu_texturesizeswizzle_verysmall">Очень малый (16 МБ)</string>
     <string name="gpu_texturesizeswizzle_small">Малый (32 МБ)</string>
@@ -1070,7 +1137,6 @@
     <string name="theme_mode_follow_system">Системная</string>
     <string name="theme_mode_light">Светлая</string>
     <string name="theme_mode_dark">Темная</string>
-
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">Чёрный фон</string>

@@ -62,7 +62,6 @@
     <string name="cpuopt_unsafe_host_mmu_description">이 최적화는 게스트 프로그램의 메모리 접근 속도를 높입니다. 활성화하면 게스트의 메모리 읽기/쓰기가 메모리에서 직접 수행되고 호스트의 MMU를 활용합니다. 비활성화하면 모든 메모리 접근에 소프트웨어 MMU 에뮬레이션을 사용하게 됩니다.</string>
     <!-- NVDEC Emulation -->
     <string name="nvdec_emulation">NVDEC 에뮬레이션</string>
-    <string name="nvdec_emulation_description">비디오 디코딩 처리 방식 선택</string>
     <string name="nvdec_emulation_none">없음</string>
 
     <!-- Optimize SPIRV output -->
@@ -398,7 +397,6 @@
     <string name="log">로깅</string>
     <string name="flush_by_line">디버그 로그를 줄별로 플러시</string>
     <string name="flush_by_line_description">디버그 로그를 각 줄마다 플러시하여 충돌 또는 정지 시 디버깅을 용이하게 합니다.</string>
-
     <!-- Audio settings strings -->
     <string name="audio_output_engine">출력 엔진</string>
     <string name="audio_volume">볼륨</string>
