@@ -1161,7 +1161,6 @@ private:
         FOR_EACH_VK_EXTENSION(EXTENSION);
 #undef EXTENSION
 #undef FEATURE
-        bool device_fault;
     };
 
     struct Features {
