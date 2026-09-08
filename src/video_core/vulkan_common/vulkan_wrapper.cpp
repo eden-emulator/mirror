@@ -229,6 +229,7 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkGetPipelineExecutableStatisticsKHR);
     X(vkGetSemaphoreCounterValue);
     X(vkMapMemory);
+    X(vkQueueBindSparse);
     X(vkQueueSubmit);
     X(vkQueueSubmit2);
     X(vkResetFences);

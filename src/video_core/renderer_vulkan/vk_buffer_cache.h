@@ -8,11 +8,14 @@
 
 #include <limits>
 
+#include <boost/container/small_vector.hpp>
+
 #include "video_core/buffer_cache/buffer_cache_base.h"
 #include "video_core/buffer_cache/memory_tracker_base.h"
 #include "video_core/buffer_cache/usage_tracker.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/renderer_vulkan/vk_compute_pass.h"
+#include "video_core/renderer_vulkan/vk_multi_range_buffer.h"
 #include "video_core/renderer_vulkan/vk_staging_buffer_pool.h"
 #include "video_core/renderer_vulkan/vk_update_descriptor.h"
 #include "video_core/surface.h"
@@ -31,7 +34,8 @@ class BufferCacheRuntime;
 class Buffer : public VideoCommon::BufferBase {
 public:
     explicit Buffer(BufferCacheRuntime&, VideoCommon::NullBufferParams null_params);
-    explicit Buffer(BufferCacheRuntime& runtime, VAddr cpu_addr_, u64 size_bytes_);
+    explicit Buffer(BufferCacheRuntime& runtime, VAddr cpu_addr_, u64 size_bytes_,
+                    bool sparse_compatible_);
 
     [[nodiscard]] VkBufferView View(u32 offset, u32 size, VideoCore::Surface::PixelFormat format);
 
@@ -41,6 +45,14 @@ public:
 
     [[nodiscard]] VkDeviceAddress DeviceAddress() const noexcept {
         return device_address;
+    }
+
+    [[nodiscard]] bool IsSparseCompatible() const noexcept {
+        return sparse_compatible;
+    }
+
+    [[nodiscard]] vk::MemoryLocation Location() const noexcept {
+        return buffer.Location();
     }
 
     [[nodiscard]] bool IsRegionUsed(u64 offset, u64 size) const noexcept {
@@ -77,6 +89,7 @@ private:
     VkDeviceAddress device_address{};
     u64 last_usage_tick{};
     bool is_null{};
+    bool sparse_compatible{};
 };
 
 class QuadArrayIndexBuffer;
@@ -125,7 +138,7 @@ public:
 
     void PreCopyBarrier();
 
-    void CopyBuffer(VkBuffer src_buffer, VkBuffer dst_buffer,
+    void CopyBuffer(VkBuffer dst_buffer, VkBuffer src_buffer,
                     std::span<const VideoCommon::BufferCopy> copies, bool barrier,
                     bool can_reorder_upload = false);
 
@@ -153,6 +166,46 @@ public:
         guest_descriptor_queue.AddBuffer(ref.buffer, ref.device_address,
                                          static_cast<u32>(ref.offset), size);
         return ref.mapped_span;
+    }
+
+    [[nodiscard]] VkDeviceSize SparseAlignmentFor(bool sparse_compatible) const noexcept {
+        if (!sparse_compatible || !multi_range_buffers.use_sparse) {
+            return 0;
+        }
+        return multi_range_buffers.block_size;
+    }
+
+    [[nodiscard]] bool PrefersSparseSources() const noexcept {
+        return multi_range_buffers.use_sparse;
+    }
+
+    void ResetMultiRange() noexcept {
+        multi_range_sources.clear();
+        multi_range_total = 0;
+    }
+
+    void PushMultiRangeSource(const Buffer& buffer, u32 offset, u32 size) {
+        const vk::MemoryLocation location = buffer.Location();
+        multi_range_sources.push_back(MultiRangeSource{
+            .handle = buffer.Handle(),
+            .memory = location.memory,
+            .memory_offset = location.offset,
+            .offset = offset,
+            .size = size,
+            .write_tick = buffer.getWriteTick(),
+            .memory_type = location.memory_type,
+        });
+        multi_range_total += size;
+    }
+
+    bool BindMultiRangeStorageBuffer(u64 key, bool is_written);
+
+    void InvalidateMultiRange(u64 key) {
+        multi_range_buffers.Invalidate(key);
+    }
+
+    void OnBufferDeleted(const Buffer& buffer) {
+        multi_range_buffers.DropOwner(scheduler, buffer.Handle());
     }
 
     void BindUniformBuffer(const Buffer& buffer, u32 offset, u32 size) {
@@ -207,6 +260,10 @@ private:
 
     std::unique_ptr<Uint8Pass> uint8_pass;
     QuadIndexedPass quad_index_pass;
+
+    MultiRangeBufferCache multi_range_buffers;
+    boost::container::small_vector<MultiRangeSource, 16> multi_range_sources;
+    VkDeviceSize multi_range_total{};
 
     bool limit_dynamic_storage_buffers = false;
     u32 max_dynamic_storage_buffers = (std::numeric_limits<u32>::max)();

@@ -23,7 +23,8 @@ class BufferCacheRuntime;
 
 class Buffer : public VideoCommon::BufferBase {
 public:
-    explicit Buffer(BufferCacheRuntime&, DAddr cpu_addr, u64 size_bytes);
+    explicit Buffer(BufferCacheRuntime&, DAddr cpu_addr, u64 size_bytes,
+                    bool sparse_compatible);
     explicit Buffer(BufferCacheRuntime&, VideoCommon::NullBufferParams);
 
     void ImmediateUpload(size_t offset, std::span<const u8> data) noexcept;

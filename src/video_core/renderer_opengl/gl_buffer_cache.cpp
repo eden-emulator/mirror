@@ -52,7 +52,7 @@ constexpr std::array PROGRAM_LUT{
 Buffer::Buffer(BufferCacheRuntime&, VideoCommon::NullBufferParams null_params)
     : VideoCommon::BufferBase(null_params) {}
 
-Buffer::Buffer(BufferCacheRuntime& runtime, DAddr cpu_addr_, u64 size_bytes_)
+Buffer::Buffer(BufferCacheRuntime& runtime, DAddr cpu_addr_, u64 size_bytes_, bool)
     : VideoCommon::BufferBase(cpu_addr_, size_bytes_) {
     buffer.Create();
     if (runtime.device.HasDebuggingToolAttached()) {

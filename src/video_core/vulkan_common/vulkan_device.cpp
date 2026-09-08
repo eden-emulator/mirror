@@ -1570,6 +1570,8 @@ void Device::SetupFamilies(VkSurfaceKHR surface) {
     }
     if (graphics) {
         graphics_family = *graphics;
+        graphics_family_sparse_binding =
+            (queue_family_properties[*graphics].queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) != 0;
     }
     if (present) {
         present_family = *present;

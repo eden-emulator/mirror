@@ -345,6 +345,7 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkGetQueryPoolResults vkGetQueryPoolResults{};
     PFN_vkGetSemaphoreCounterValue vkGetSemaphoreCounterValue{};
     PFN_vkMapMemory vkMapMemory{};
+    PFN_vkQueueBindSparse vkQueueBindSparse{};
     PFN_vkQueueSubmit vkQueueSubmit{};
     PFN_vkQueueSubmit2 vkQueueSubmit2{};
     PFN_vkResetFences vkResetFences{};
@@ -740,13 +741,20 @@ private:
     const DeviceDispatch* dld = nullptr;
 };
 
+struct MemoryLocation {
+    VkDeviceMemory memory{};
+    VkDeviceSize offset{};
+    u32 memory_type{};
+};
+
 class Buffer {
 public:
     explicit Buffer(VkBuffer handle_, VkDevice owner_, VmaAllocator allocator_,
                     VmaAllocation allocation_, std::span<u8> mapped_, bool is_coherent_,
-                    const DeviceDispatch& dld_) noexcept
+                    MemoryLocation location_, const DeviceDispatch& dld_) noexcept
         : handle{handle_}, owner{owner_}, allocator{allocator_},
-          allocation{allocation_}, mapped{mapped_}, is_coherent{is_coherent_}, dld{&dld_} {}
+          allocation{allocation_}, mapped{mapped_}, location{location_},
+          is_coherent{is_coherent_}, dld{&dld_} {}
     Buffer() = default;
 
     Buffer(const Buffer&) = delete;
@@ -754,7 +762,7 @@ public:
 
     Buffer(Buffer&& rhs) noexcept
         : handle{std::exchange(rhs.handle, VkBuffer{})}, owner{rhs.owner}, allocator{rhs.allocator},
-          allocation{rhs.allocation}, mapped{rhs.mapped},
+          allocation{rhs.allocation}, mapped{rhs.mapped}, location{rhs.location},
           is_coherent{rhs.is_coherent}, dld{rhs.dld} {}
 
     Buffer& operator=(Buffer&& rhs) noexcept {
@@ -764,6 +772,7 @@ public:
         allocator = rhs.allocator;
         allocation = rhs.allocation;
         mapped = rhs.mapped;
+        location = rhs.location;
         is_coherent = rhs.is_coherent;
         dld = rhs.dld;
         return *this;
@@ -811,6 +820,10 @@ public:
 
     void SetObjectNameEXT(const char* name) const;
 
+    MemoryLocation Location() const noexcept {
+        return location;
+    }
+
 private:
     void Release() const noexcept;
 
@@ -819,6 +832,7 @@ private:
     VmaAllocator allocator = nullptr;
     VmaAllocation allocation = nullptr;
     std::span<u8> mapped = {};
+    MemoryLocation location{};
     bool is_coherent = false;
     const DeviceDispatch* dld = nullptr;
 };
@@ -841,6 +855,11 @@ public:
     VkResult Submit2(Span<VkSubmitInfo2> submit_infos,
                      VkFence fence = VK_NULL_HANDLE) const noexcept {
         return dld->vkQueueSubmit2(queue, submit_infos.size(), submit_infos.data(), fence);
+    }
+
+    VkResult BindSparse(Span<VkBindSparseInfo> bind_infos,
+                        VkFence fence = VK_NULL_HANDLE) const noexcept {
+        return dld->vkQueueBindSparse(queue, bind_infos.size(), bind_infos.data(), fence);
     }
 
     VkResult Present(const VkPresentInfoKHR& present_info) const noexcept {
