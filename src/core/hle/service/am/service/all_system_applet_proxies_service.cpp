@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
@@ -73,8 +73,7 @@ Result IAllSystemAppletProxiesService::OpenLibraryAppletProxy(
 
 Result IAllSystemAppletProxiesService::OpenOverlayAppletProxy(
     Out<SharedPointer<IOverlayAppletProxy>> out_overlay_applet_proxy, ClientProcessId pid,
-    InCopyHandle<Kernel::KProcess> process_handle,
-    InLargeData<AppletAttribute, BufferAttr_HipcMapAlias> attribute) {
+    InCopyHandle<Kernel::KProcess> process_handle) {
     LOG_WARNING(Service_AM, "called");
 
     if (const auto applet = this->GetAppletFromProcessId(pid); applet) {
@@ -89,8 +88,7 @@ Result IAllSystemAppletProxiesService::OpenOverlayAppletProxy(
 
 Result IAllSystemAppletProxiesService::OpenSystemApplicationProxy(
     Out<SharedPointer<IApplicationProxy>> out_system_application_proxy, ClientProcessId pid,
-    InCopyHandle<Kernel::KProcess> process_handle,
-    InLargeData<AppletAttribute, BufferAttr_HipcMapAlias> attribute) {
+    InCopyHandle<Kernel::KProcess> process_handle) {
     LOG_DEBUG(Service_AM, "called");
 
     if (const auto applet = this->GetAppletFromProcessId(pid); applet) {

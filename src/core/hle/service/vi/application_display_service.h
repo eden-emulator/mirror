@@ -64,6 +64,7 @@ public:
     Result GetDisplayVsyncEvent(OutCopyHandle<Kernel::KReadableEvent> out_vsync_event,
                                 u64 display_id);
     Result ConvertScalingMode(Out<ConvertedScaleMode> out_scaling_mode, NintendoScaleMode mode);
+    Result Cmd2103(Out<std::array<u8, 0x18>> out_unk18);
     Result GetIndirectLayerImageMap(
         Out<u64> out_size, Out<u64> out_stride,
         OutBuffer<BufferAttr_HipcMapTransferAllowsNonSecure | BufferAttr_HipcMapAlias> out_buffer,

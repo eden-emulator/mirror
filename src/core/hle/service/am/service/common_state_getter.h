@@ -56,15 +56,23 @@ private:
     Result GetDefaultDisplayResolution(Out<s32> out_width, Out<s32> out_height);
     Result GetBuiltInDisplayType(Out<s32> out_display_type);
     Result PerformSystemButtonPressingIfInFocus(SystemButtonType type);
+    Result EnableStartupLogoDisappearedMessage();
     Result GetOperationModeSystemInfo(Out<u32> out_operation_mode_system_info);
     Result GetAppletLaunchedHistory(Out<s32> out_count,
                                     OutArray<AppletId, BufferAttr_HipcMapAlias> out_applet_ids);
     Result GetSettingsPlatformRegion(Out<Set::PlatformRegion> out_settings_platform_region);
     Result SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled();
     Result PushToGeneralChannel(SharedPointer<IStorage> storage); // cmd 20
+    Result GetHomeButtonReaderLockAccessor(Out<SharedPointer<ILockAccessor>> out_lock_accessor);
     Result SetHandlingHomeButtonShortPressedEnabled(bool enabled);
-    Result Unknown610();
-    Result Unknown611();
+    Result Unknown610(u64 unk);
+    Result Unknown611(u8 unk);
+    Result BeginVrMode3d();
+    Result EndVrMode3d();
+    Result IsVrModeEnabled3d(Out<bool> out_is_vr_mode_enabled_3d);
+    Result GetVrLaboGoggleViewport(Out<s32> out_x, Out<s32> out_y, Out<s32> out_width, Out<s32> out_height);
+    Result GetPanelPhysicalSizeForSpecificTitle(Out<f32> out_width, Out<f32> out_height);
+    Result GetPanelResolutionForSpecificTitle(Out<s32> out_width, Out<s32> out_height);
 
     void SetCpuBoostMode(HLERequestContext& ctx);
 
