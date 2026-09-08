@@ -107,11 +107,11 @@ private:
 
     Common::Input::ButtonNames GetUIButtonName(const Common::ParamPackage& params) const;
 
-    Common::Vec2<int> mouse_origin;
-    Common::Vec2<int> last_mouse_position;
-    Common::Vec2<float> last_mouse_change;
-    Common::Vec3<float> last_motion_change;
-    Common::Vec2<int> wheel_position;
+    Common::Vec<int, 2> mouse_origin;
+    Common::Vec<int, 2> last_mouse_position;
+    Common::Vec<float, 2> last_mouse_change;
+    Common::Vec<float, 3> last_motion_change;
+    Common::Vec<int, 2> wheel_position;
     bool button_pressed = false;
 };
 

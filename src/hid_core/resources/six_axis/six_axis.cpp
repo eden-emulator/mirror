@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -93,9 +96,9 @@ void SixAxis::OnUpdate(const Core::Timing::CoreTiming& core_timing) {
                     .accel = {0, 0, -1.0f},
                     .orientation =
                         {
-                            Common::Vec3f{1.0f, 0, 0},
-                            Common::Vec3f{0, 1.0f, 0},
-                            Common::Vec3f{0, 0, 1.0f},
+                            Common::Vec<f32, 3>{1.0f, 0, 0},
+                            Common::Vec<f32, 3>{0, 1.0f, 0},
+                            Common::Vec<f32, 3>{0, 0, 1.0f},
                         },
                     .attribute = {1},
                 };

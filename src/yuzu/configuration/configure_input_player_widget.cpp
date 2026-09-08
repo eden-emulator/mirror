@@ -2936,10 +2936,10 @@ void PlayerControlPreview::DrawArrow(QPainter& p, const QPointF center, const Di
 }
 
 // Draw motion functions
-void PlayerControlPreview::Draw3dCube(QPainter& p, QPointF center, const Common::Vec3f& euler,
+void PlayerControlPreview::Draw3dCube(QPainter& p, QPointF center, const Common::Vec<f32, 3>& euler,
                                       float size) {
-    std::array<Common::Vec3f, 8> cube{
-        Common::Vec3f{-0.7f, -1, -0.5f},
+    std::array<Common::Vec<f32, 3>, 8> cube{
+        Common::Vec<f32, 3>{-0.7f, -1, -0.5f},
         {-0.7f, 1, -0.5f},
         {0.7f, 1, -0.5f},
         {0.7f, -1, -0.5f},
@@ -2949,30 +2949,38 @@ void PlayerControlPreview::Draw3dCube(QPainter& p, QPointF center, const Common:
         {0.7f, -1, 0.5f},
     };
 
-    for (Common::Vec3f& point : cube) {
-        point.RotateFromOrigin(euler.x, euler.y, euler.z);
+    for (Common::Vec<f32, 3>& point : cube) {
+        float temp = point[1];
+        point[1] = std::cos(euler[0]) * point[1] - std::sin(euler[0]) * point[2];
+        point[2] = std::sin(euler[0]) * temp + std::cos(euler[0]) * point[2];
+        temp = point[0];
+        point[0] = std::cos(euler[1]) * point[0] + std::sin(euler[1]) * point[2];
+        point[2] = -std::sin(euler[1]) * temp + std::cos(euler[1]) * point[2];
+        temp = point[0];
+        point[0] = std::cos(euler[2]) * point[0] - std::sin(euler[2]) * point[1];
+        point[1] = std::sin(euler[2]) * temp + std::cos(euler[2]) * point[1];
         point *= size;
     }
 
     const std::array<QPointF, 4> front_face{
-        center + QPointF{cube[0].x, cube[0].y},
-        center + QPointF{cube[1].x, cube[1].y},
-        center + QPointF{cube[2].x, cube[2].y},
-        center + QPointF{cube[3].x, cube[3].y},
+        center + QPointF{cube[0][0], cube[0][1]},
+        center + QPointF{cube[1][0], cube[1][1]},
+        center + QPointF{cube[2][0], cube[2][1]},
+        center + QPointF{cube[3][0], cube[3][1]},
     };
     const std::array<QPointF, 4> back_face{
-        center + QPointF{cube[4].x, cube[4].y},
-        center + QPointF{cube[5].x, cube[5].y},
-        center + QPointF{cube[6].x, cube[6].y},
-        center + QPointF{cube[7].x, cube[7].y},
+        center + QPointF{cube[4][0], cube[4][1]},
+        center + QPointF{cube[5][0], cube[5][1]},
+        center + QPointF{cube[6][0], cube[6][1]},
+        center + QPointF{cube[7][0], cube[7][1]},
     };
 
     DrawPolygon(p, front_face);
     DrawPolygon(p, back_face);
-    p.drawLine(center + QPointF{cube[0].x, cube[0].y}, center + QPointF{cube[4].x, cube[4].y});
-    p.drawLine(center + QPointF{cube[1].x, cube[1].y}, center + QPointF{cube[5].x, cube[5].y});
-    p.drawLine(center + QPointF{cube[2].x, cube[2].y}, center + QPointF{cube[6].x, cube[6].y});
-    p.drawLine(center + QPointF{cube[3].x, cube[3].y}, center + QPointF{cube[7].x, cube[7].y});
+    p.drawLine(center + QPointF{cube[0][0], cube[0][1]}, center + QPointF{cube[4][0], cube[4][1]});
+    p.drawLine(center + QPointF{cube[1][0], cube[1][1]}, center + QPointF{cube[5][0], cube[5][1]});
+    p.drawLine(center + QPointF{cube[2][0], cube[2][1]}, center + QPointF{cube[6][0], cube[6][1]});
+    p.drawLine(center + QPointF{cube[3][0], cube[3][1]}, center + QPointF{cube[7][0], cube[7][1]});
 }
 
 template <size_t N>

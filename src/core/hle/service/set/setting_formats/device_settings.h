@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -30,15 +33,15 @@ struct DeviceSettings {
     INSERT_PADDING_BYTES(0x20); // Reserved
 
     // nn::settings::system::ConsoleSixAxisSensorAccelerationBias
-    Common::Vec3<f32> console_six_axis_sensor_acceleration_bias;
+    Common::Vec<f32, 3> console_six_axis_sensor_acceleration_bias;
     // nn::settings::system::ConsoleSixAxisSensorAngularVelocityBias
-    Common::Vec3<f32> console_six_axis_sensor_angular_velocity_bias;
+    Common::Vec<f32, 3> console_six_axis_sensor_angular_velocity_bias;
     // nn::settings::system::ConsoleSixAxisSensorAccelerationGain
     std::array<u8, 0x24> console_six_axis_sensor_acceleration_gain;
     // nn::settings::system::ConsoleSixAxisSensorAngularVelocityGain
     std::array<u8, 0x24> console_six_axis_sensor_angular_velocity_gain;
     // nn::settings::system::ConsoleSixAxisSensorAngularVelocityTimeBias
-    Common::Vec3<f32> console_six_axis_sensor_angular_velocity_time_bias;
+    Common::Vec<f32, 3> console_six_axis_sensor_angular_velocity_time_bias;
     // nn::settings::system::ConsoleSixAxisSensorAngularAcceleration
     std::array<u8, 0x24> console_six_axis_sensor_angular_acceleration;
 };

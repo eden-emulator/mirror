@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
@@ -196,7 +196,7 @@ struct ConsoleSixAxisSensorSharedMemoryFormat {
     bool is_seven_six_axis_sensor_at_rest{};
     INSERT_PADDING_BYTES(3); // padding
     f32 verticalization_error{};
-    Common::Vec3f gyro_bias{};
+    Common::Vec<f32, 3> gyro_bias{};
     INSERT_PADDING_BYTES(4); // padding
 };
 static_assert(sizeof(ConsoleSixAxisSensorSharedMemoryFormat) == 0x20,

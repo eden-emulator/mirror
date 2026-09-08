@@ -46,14 +46,11 @@ void SevenSixAxis::OnUpdate(const Core::Timing::CoreTiming& core_timing) {
     next_seven_sixaxis_state.accel = motion_status.accel;
     next_seven_sixaxis_state.gyro = motion_status.gyro;
     next_seven_sixaxis_state.quaternion = {
-        {
-            motion_status.quaternion.xyz.y,
-            motion_status.quaternion.xyz.x,
-            -motion_status.quaternion.w,
-        },
-        -motion_status.quaternion.xyz.z,
+        motion_status.quaternion[1],
+        motion_status.quaternion[0],
+        -motion_status.quaternion[3],
+        -motion_status.quaternion[2],
     };
-
     seven_sixaxis_lifo.WriteNextEntry(next_seven_sixaxis_state);
     transfer_memory_owner->GetMemory().WriteBlock(transfer_memory, &seven_sixaxis_lifo,
                                                   sizeof(seven_sixaxis_lifo));
