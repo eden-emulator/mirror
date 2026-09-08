@@ -142,7 +142,7 @@ public:
     }
 
     /// "Hot cache" for small blocks so we don't call global allocator
-    boost::container::static_vector<Inst, 32768> inlined_inst = {};
+    boost::container::static_vector<Inst, 65536> inlined_inst = {};
     /// List of instructions in this block.
     instruction_list_type instructions;
     /// Block to execute next if `cond` did not pass.
