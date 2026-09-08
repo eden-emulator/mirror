@@ -300,28 +300,6 @@ Result SharedBufferManager::CreateSession(Kernel::KProcess* owner_process, u64* 
             }
         }
 
-        // Claim a presentation slot range.
-        u32 slot_base = 0;
-
-        std::array<bool, SharedBufferMaxSessions> in_use{};
-        for (const auto& [existing_aruid, existing] : m_sessions) {
-            const u32 index = existing.presentation_slot_base / SharedBufferSlotsPerSession;
-
-            if (index < in_use.size())
-                in_use[index] = true;
-        }
-
-        u32 index = 0;
-        while (index < in_use.size() && in_use[index])
-            index++;
-
-        if (index >= in_use.size()) {
-            LOG_ERROR(Service_VI, "Out of shared buffer presentation slots ({} sessions)", SharedBufferMaxSessions);
-            R_THROW(VI::ResultOperationFailed);
-        }
-
-        slot_base = index * SharedBufferSlotsPerSession;
-
         // Map into process.
         Common::ProcessAddress map_address{};
         R_TRY(MapSharedBufferIntoProcessAddressSpace(std::addressof(map_address), m_buffer_page_group,
@@ -330,7 +308,6 @@ Result SharedBufferManager::CreateSession(Kernel::KProcess* owner_process, u64* 
         // Create new session.
         auto [it, was_emplaced] = m_sessions.emplace(aruid, SharedBufferSession{});
         auto& session = it->second;
-        session.presentation_slot_base = slot_base;
 
         auto& container = m_nvdrv->GetContainer();
         session.session_id = container.OpenSession(owner_process);
