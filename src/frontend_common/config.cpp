@@ -299,12 +299,17 @@ void Config::ReadDataStorageValues() {
 void Config::ReadDebuggingValues() {
     BeginGroup(Settings::TranslateCategory(Settings::Category::Debugging));
 
-    // Intentionally not using the QT default setting as this is intended to be changed in the ini
-    Settings::values.record_frame_times =
-        ReadBooleanSetting(std::string("record_frame_times"), std::make_optional(false));
+    if (global) {
+        // Intentionally not using the QT default setting as this is intended to be changed in the ini
+        Settings::values.record_frame_times =
+            ReadBooleanSetting(std::string("record_frame_times"), std::make_optional(false));
 
-    ReadCategory(Settings::Category::Debugging);
-    ReadCategory(Settings::Category::DebuggingGraphics);
+        ReadCategory(Settings::Category::Debugging);
+        ReadCategory(Settings::Category::DebuggingGraphics);
+    } else {
+        ReadSettingGeneric(&Settings::values.program_args);
+        ReadSettingGeneric(&Settings::values.debug_knobs);
+    }
 
     EndGroup();
 }
@@ -415,12 +420,12 @@ void Config::ReadLibraryAppletValues() {
 void Config::ReadValues() {
     if (global) {
         ReadDataStorageValues();
-        ReadDebuggingValues();
         ReadDisabledAddOnValues();
         ReadServiceValues();
         ReadWebServiceValues();
         ReadMiscellaneousValues();
     }
+    ReadDebuggingValues();
     ReadLibraryAppletValues();
     ReadNetworkValues();
     ReadControlValues();
@@ -511,13 +516,13 @@ void Config::SaveValues() {
     if (global) {
         LOG_DEBUG(Config, "Saving global generic configuration values");
         SaveDataStorageValues();
-        SaveDebuggingValues();
         SaveDisabledAddOnValues();
         SaveWebServiceValues();
         SaveMiscellaneousValues();
     } else {
         LOG_DEBUG(Config, "Saving only generic configuration values");
     }
+    SaveDebuggingValues();
     SaveLibraryAppletValues();
     SaveNetworkValues();
     SaveControlValues();
@@ -600,11 +605,16 @@ void Config::SaveDataStorageValues() {
 void Config::SaveDebuggingValues() {
     BeginGroup(Settings::TranslateCategory(Settings::Category::Debugging));
 
-    // Intentionally not using the QT default setting as this is intended to be changed in the ini
-    WriteBooleanSetting(std::string("record_frame_times"), Settings::values.record_frame_times);
+    if (global) {
+        // Intentionally not using the QT default setting as this is intended to be changed in the ini
+        WriteBooleanSetting(std::string("record_frame_times"), Settings::values.record_frame_times);
 
-    WriteCategory(Settings::Category::Debugging);
-    WriteCategory(Settings::Category::DebuggingGraphics);
+        WriteCategory(Settings::Category::Debugging);
+        WriteCategory(Settings::Category::DebuggingGraphics);
+    } else {
+        WriteSettingGeneric(&Settings::values.program_args);
+        WriteSettingGeneric(&Settings::values.debug_knobs);
+    }
 
     EndGroup();
 }

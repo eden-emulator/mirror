@@ -858,7 +858,7 @@ struct Values {
     SwitchableSetting<std::string> program_args{linkage,
                                                 std::string(),
                                                 "program_args",
-                                                Category::System,
+                                                Category::Debugging,
                                                 Specialization::Default,
                                                 true,    // save_ - persist in config file
                                                 false};  // runtime_modifiable_ - startup-only
@@ -904,7 +904,7 @@ struct Values {
                                            0,
                                            65535,
                                            "debug_knobs",
-                                           Category::System,
+                                           Category::Debugging,
                                            Specialization::Countable,
                                            true,
                                            true};
