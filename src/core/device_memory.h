@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -26,8 +29,11 @@ public:
 
     template <typename T>
     Common::PhysicalAddress GetPhysicalAddr(const T* ptr) const {
-        return (reinterpret_cast<uintptr_t>(ptr) -
-                reinterpret_cast<uintptr_t>(buffer.BackingBasePointer())) +
+        return GetPhysicalAddr(reinterpret_cast<uintptr_t>(ptr));
+    }
+
+    Common::PhysicalAddress GetPhysicalAddr(uintptr_t ptr) const {
+        return (ptr - reinterpret_cast<uintptr_t>(buffer.BackingBasePointer())) +
                DramMemoryMap::Base;
     }
 

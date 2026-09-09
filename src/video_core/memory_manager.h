@@ -17,7 +17,7 @@
 #include "common/multi_level_page_table.h"
 #include "common/range_map.h"
 #include "common/scratch_buffer.h"
-#include "common/virtual_buffer.h"
+#include "common/sparse_large_vector.h"
 #include "video_core/invalidation_accumulator.h"
 #include "video_core/cache_types.h"
 #include "video_core/host1x/gpu_device_memory_manager.h"
@@ -214,7 +214,7 @@ private:
 
     Common::MultiLevelPageTable<u32> page_table;
     Common::RangeMap<GPUVAddr, PTEKind> kind_map;
-    Common::VirtualBuffer<u32> big_page_table_dev;
+    Common::SparseLargeVector<u32> big_page_table_dev;
 
     std::vector<u64> big_page_continuous;
     boost::container::small_vector<std::pair<DAddr, std::size_t>, 32> page_stash{};

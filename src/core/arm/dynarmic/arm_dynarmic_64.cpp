@@ -211,13 +211,12 @@ void ArmDynarmic64::MakeJit(Common::PageTable* page_table, std::size_t address_s
 
     // Memory
     if (page_table) {
-        constexpr size_t PageLog2Stride = 5;
-        static_assert(1 << PageLog2Stride == sizeof(Common::PageTable::PageEntryData));
-
-        config.page_table = reinterpret_cast<void**>(page_table->entries.data());
+        // Dynarmic will not write to the page table, const_cast is safe here
+        config.page_table = reinterpret_cast<void**>(
+            const_cast<Common::PageTable::PageEntryData*>(page_table->entries.data()));
         config.page_table_address_space_bits = std::uint32_t(address_space_bits);
-        config.page_table_pointer_mask_bits = Common::PageTable::ATTRIBUTE_BITS;
-        config.page_table_log2_stride = PageLog2Stride;
+        config.page_table_pointer_mask = Common::PageTable::ATTRIBUTE_MASK;
+        config.page_table_marked_bit = 0;
         config.silently_mirror_page_table = false;
         config.absolute_offset_page_table = true;
         config.detect_misaligned_access_via_page_table = 16 | 32 | 64 | 128;
@@ -231,6 +230,13 @@ void ArmDynarmic64::MakeJit(Common::PageTable* page_table, std::size_t address_s
 
         config.fastmem_exclusive_access = config.fastmem_pointer != std::nullopt;
         config.recompile_on_exclusive_fastmem_failure = true;
+
+        if (reinterpret_cast<u64>(m_system.DeviceMemory().buffer.BackingBasePointer() +
+            Kernel::Board::Nintendo::Nx::KSystemControl::Init::GetIntendedMemorySize()) < (1ULL << 39)) {
+            // Systems like FreeBSD allocate memory really low by default, and since we pack our page table entries,
+            // we have to manually sign extend when our actual pointer is negative.
+            config.page_table_sign_extension = Common::PageTable::SIGN_BIT;
+        }
     }
 
     // Multi-process state
@@ -447,6 +453,7 @@ void ArmDynarmic64::SignalInterrupt(Kernel::KThread* thread) {
 }
 
 void ArmDynarmic64::ClearInstructionCache() {
+    m_cb->last_code_addr = u64(-1);
     m_jit->ClearCache();
 }
 

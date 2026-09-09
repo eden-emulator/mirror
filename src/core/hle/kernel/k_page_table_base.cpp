@@ -635,6 +635,36 @@ Result KPageTableBase::CheckMemoryState(const KMemoryInfo& info, KMemoryState st
     R_SUCCEED();
 }
 
+bool KPageTableBase::BeginTraversal(const Common::PageTable &impl, TraversalEntry *out_entry, TraversalContext *out_context,
+    Common::ProcessAddress address) const {
+    out_context->next_offset = GetInteger(address);
+    out_context->next_page = GetInteger(address) >> PageBits;
+
+    return ContinueTraversal(impl, out_entry, out_context);
+}
+
+bool KPageTableBase::ContinueTraversal(const Common::PageTable &impl, TraversalEntry *out_entry,
+    TraversalContext *context) const {
+    // Setup invalid defaults.
+    out_entry->phys_addr = 0;
+    out_entry->block_size = PageSize;
+    // Validate that we can read the actual entry.
+    if (auto const page = context->next_page; page < impl.entries.size()) {
+        // Validate that the entry is mapped.
+        if (auto const paddr = impl.entries[page].Pointer(true); paddr != 0) {
+            // Populate the results and return true
+            out_entry->phys_addr = GetInteger(m_system.DeviceMemory().GetPhysicalAddr(paddr + context->next_offset));
+            context->next_page += 1;
+            context->next_offset += PageSize;
+            return true;
+        }
+    }
+    context->next_page += 1;
+    context->next_offset += PageSize;
+    // Otherwise return false
+    return false;
+}
+
 Result KPageTableBase::CheckMemoryStateContiguous(size_t* out_blocks_needed, KProcessAddress addr,
                                                   size_t size, KMemoryState state_mask,
                                                   KMemoryState state, KMemoryPermission perm_mask,
@@ -940,7 +970,7 @@ Result KPageTableBase::QueryMappingImpl(KProcessAddress* out, KPhysicalAddress a
     size_t tot_size = 0;
 
     next_valid =
-        impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), region_start);
+        BeginTraversal(impl, std::addressof(next_entry), std::addressof(context), region_start);
     next_entry.block_size =
         (next_entry.block_size - (GetInteger(region_start) & (next_entry.block_size - 1)));
 
@@ -976,7 +1006,7 @@ Result KPageTableBase::QueryMappingImpl(KProcessAddress* out, KPhysicalAddress a
             break;
         }
 
-        next_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+        next_valid = ContinueTraversal(impl, std::addressof(next_entry), std::addressof(context));
     }
 
     // Check the last entry.
@@ -1754,7 +1784,7 @@ Result KPageTableBase::MakePageGroup(KPageGroup& pg, KProcessAddress addr, size_
     // Begin traversal.
     TraversalContext context;
     TraversalEntry next_entry;
-    R_UNLESS(impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), addr),
+    R_UNLESS(BeginTraversal(impl, std::addressof(next_entry), std::addressof(context), addr),
              ResultInvalidCurrentMemory);
 
     // Prepare tracking variables.
@@ -1764,7 +1794,7 @@ Result KPageTableBase::MakePageGroup(KPageGroup& pg, KProcessAddress addr, size_
 
     // Iterate, adding to group as we go.
     while (tot_size < size) {
-        R_UNLESS(impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context)),
+        R_UNLESS(ContinueTraversal(impl, std::addressof(next_entry), std::addressof(context)),
                  ResultInvalidCurrentMemory);
 
         if (next_entry.phys_addr != (cur_addr + cur_size)) {
@@ -1828,7 +1858,7 @@ bool KPageTableBase::IsValidPageGroup(const KPageGroup& pg, KProcessAddress addr
     // Begin traversal.
     TraversalContext context;
     TraversalEntry next_entry;
-    if (!impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), addr)) {
+    if (!BeginTraversal(impl, std::addressof(next_entry), std::addressof(context), addr)) {
         return false;
     }
 
@@ -1839,7 +1869,7 @@ bool KPageTableBase::IsValidPageGroup(const KPageGroup& pg, KProcessAddress addr
 
     // Iterate, comparing expected to actual.
     while (tot_size < size) {
-        if (!impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context))) {
+        if (!ContinueTraversal(impl, std::addressof(next_entry), std::addressof(context))) {
             return false;
         }
 
@@ -1896,7 +1926,7 @@ Result KPageTableBase::GetContiguousMemoryRangeWithState(
     // Begin a traversal.
     TraversalContext context;
     TraversalEntry cur_entry = {.phys_addr = 0, .block_size = 0};
-    R_UNLESS(impl.BeginTraversal(std::addressof(cur_entry), std::addressof(context), address),
+    R_UNLESS(BeginTraversal(impl, std::addressof(cur_entry), std::addressof(context), address),
              ResultInvalidCurrentMemory);
 
     // Traverse until we have enough size or we aren't contiguous any more.
@@ -1905,7 +1935,7 @@ Result KPageTableBase::GetContiguousMemoryRangeWithState(
     for (contig_size =
              cur_entry.block_size - (GetInteger(phys_address) & (cur_entry.block_size - 1));
          contig_size < size; contig_size += cur_entry.block_size) {
-        if (!impl.ContinueTraversal(std::addressof(cur_entry), std::addressof(context))) {
+        if (!ContinueTraversal(impl, std::addressof(cur_entry), std::addressof(context))) {
             break;
         }
         if (cur_entry.phys_addr != phys_address + contig_size) {
@@ -2334,7 +2364,7 @@ Result KPageTableBase::QueryPhysicalAddress(Svc::lp64::PhysicalMemoryInfo* out,
         TraversalContext context;
         TraversalEntry next_entry;
         bool traverse_valid =
-            m_impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), virt_addr);
+            BeginTraversal(m_impl, std::addressof(next_entry), std::addressof(context), virt_addr);
         R_UNLESS(traverse_valid, ResultInvalidCurrentMemory);
 
         // Set tracking variables.
@@ -2345,7 +2375,7 @@ Result KPageTableBase::QueryPhysicalAddress(Svc::lp64::PhysicalMemoryInfo* out,
         while (true) {
             // Continue the traversal.
             traverse_valid =
-                m_impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                ContinueTraversal(m_impl, std::addressof(next_entry), std::addressof(context));
             if (!traverse_valid) {
                 break;
             }
@@ -2567,7 +2597,7 @@ Result KPageTableBase::UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddre
         TraversalContext context;
         TraversalEntry next_entry;
         ASSERT(
-            impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), dst_address));
+            BeginTraversal(impl, std::addressof(next_entry), std::addressof(context), dst_address));
 
         // Check that the physical region matches.
         R_UNLESS(next_entry.phys_addr == phys_addr, ResultInvalidMemoryRegion);
@@ -2577,7 +2607,7 @@ Result KPageTableBase::UnmapIoRegion(KProcessAddress dst_address, KPhysicalAddre
                  next_entry.block_size - (GetInteger(phys_addr) & (next_entry.block_size - 1));
              checked_size < size; checked_size += next_entry.block_size) {
             // Continue the traversal.
-            ASSERT(impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context)));
+            ASSERT(ContinueTraversal(impl, std::addressof(next_entry), std::addressof(context)));
 
             // Check that the physical region matches.
             R_UNLESS(next_entry.phys_addr == phys_addr + checked_size, ResultInvalidMemoryRegion);
@@ -3029,7 +3059,7 @@ Result KPageTableBase::InvalidateProcessDataCache(KProcessAddress address, size_
     TraversalContext context;
     TraversalEntry next_entry;
     bool traverse_valid =
-        impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), address);
+        BeginTraversal(impl, std::addressof(next_entry), std::addressof(context), address);
     R_UNLESS(traverse_valid, ResultInvalidCurrentMemory);
 
     // Prepare tracking variables.
@@ -3041,7 +3071,7 @@ Result KPageTableBase::InvalidateProcessDataCache(KProcessAddress address, size_
     while (tot_size < size) {
         // Continue the traversal.
         traverse_valid =
-            impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+            ContinueTraversal(impl, std::addressof(next_entry), std::addressof(context));
         R_UNLESS(traverse_valid, ResultInvalidCurrentMemory);
 
         if (next_entry.phys_addr != (cur_addr + cur_size)) {
@@ -3129,7 +3159,7 @@ Result KPageTableBase::ReadDebugMemory(KProcessAddress dst_address, KProcessAddr
     TraversalContext context;
     TraversalEntry next_entry;
     bool traverse_valid =
-        impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), src_address);
+        BeginTraversal(impl, std::addressof(next_entry), std::addressof(context), src_address);
     R_UNLESS(traverse_valid, ResultInvalidCurrentMemory);
 
     // Prepare tracking variables.
@@ -3167,7 +3197,7 @@ Result KPageTableBase::ReadDebugMemory(KProcessAddress dst_address, KProcessAddr
     while (tot_size < size) {
         // Continue the traversal.
         traverse_valid =
-            impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+            ContinueTraversal(impl, std::addressof(next_entry), std::addressof(context));
         ASSERT(traverse_valid);
 
         if (next_entry.phys_addr != (cur_addr + cur_size)) {
@@ -3225,7 +3255,7 @@ Result KPageTableBase::WriteDebugMemory(KProcessAddress dst_address, KProcessAdd
     TraversalContext context;
     TraversalEntry next_entry;
     bool traverse_valid =
-        impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), dst_address);
+        BeginTraversal(impl, std::addressof(next_entry), std::addressof(context), dst_address);
     R_UNLESS(traverse_valid, ResultInvalidCurrentMemory);
 
     // Prepare tracking variables.
@@ -3267,7 +3297,7 @@ Result KPageTableBase::WriteDebugMemory(KProcessAddress dst_address, KProcessAdd
     while (tot_size < size) {
         // Continue the traversal.
         traverse_valid =
-            impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+            ContinueTraversal(impl, std::addressof(next_entry), std::addressof(context));
         ASSERT(traverse_valid);
 
         if (next_entry.phys_addr != (cur_addr + cur_size)) {
@@ -3728,7 +3758,7 @@ Result KPageTableBase::CopyMemoryFromLinearToUser(
         TraversalContext context;
         TraversalEntry next_entry;
         bool traverse_valid =
-            impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), src_addr);
+            BeginTraversal(impl, std::addressof(next_entry), std::addressof(context), src_addr);
         ASSERT(traverse_valid);
 
         // Prepare tracking variables.
@@ -3768,7 +3798,7 @@ Result KPageTableBase::CopyMemoryFromLinearToUser(
         while (tot_size < size) {
             // Continue the traversal.
             traverse_valid =
-                impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                ContinueTraversal(impl, std::addressof(next_entry), std::addressof(context));
             ASSERT(traverse_valid);
 
             if (next_entry.phys_addr != (cur_addr + cur_size)) {
@@ -3822,7 +3852,7 @@ Result KPageTableBase::CopyMemoryFromLinearToKernel(
         TraversalContext context;
         TraversalEntry next_entry;
         bool traverse_valid =
-            impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), src_addr);
+            BeginTraversal(impl, std::addressof(next_entry), std::addressof(context), src_addr);
         ASSERT(traverse_valid);
 
         // Prepare tracking variables.
@@ -3845,7 +3875,7 @@ Result KPageTableBase::CopyMemoryFromLinearToKernel(
         while (tot_size < size) {
             // Continue the traversal.
             traverse_valid =
-                impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                ContinueTraversal(impl, std::addressof(next_entry), std::addressof(context));
             ASSERT(traverse_valid);
 
             if (next_entry.phys_addr != (cur_addr + cur_size)) {
@@ -3902,7 +3932,7 @@ Result KPageTableBase::CopyMemoryFromUserToLinear(
         TraversalContext context;
         TraversalEntry next_entry;
         bool traverse_valid =
-            impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), dst_addr);
+            BeginTraversal(impl, std::addressof(next_entry), std::addressof(context), dst_addr);
         ASSERT(traverse_valid);
 
         // Prepare tracking variables.
@@ -3941,7 +3971,7 @@ Result KPageTableBase::CopyMemoryFromUserToLinear(
         while (tot_size < size) {
             // Continue the traversal.
             traverse_valid =
-                impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                ContinueTraversal(impl, std::addressof(next_entry), std::addressof(context));
             ASSERT(traverse_valid);
 
             if (next_entry.phys_addr != (cur_addr + cur_size)) {
@@ -3997,7 +4027,7 @@ Result KPageTableBase::CopyMemoryFromKernelToLinear(KProcessAddress dst_addr, si
         TraversalContext context;
         TraversalEntry next_entry;
         bool traverse_valid =
-            impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), dst_addr);
+            BeginTraversal(impl, std::addressof(next_entry), std::addressof(context), dst_addr);
         ASSERT(traverse_valid);
 
         // Prepare tracking variables.
@@ -4020,7 +4050,7 @@ Result KPageTableBase::CopyMemoryFromKernelToLinear(KProcessAddress dst_addr, si
         while (tot_size < size) {
             // Continue the traversal.
             traverse_valid =
-                impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                ContinueTraversal(impl, std::addressof(next_entry), std::addressof(context));
             ASSERT(traverse_valid);
 
             if (next_entry.phys_addr != (cur_addr + cur_size)) {
@@ -4089,10 +4119,10 @@ Result KPageTableBase::CopyMemoryFromHeapToHeap(
         bool traverse_valid;
 
         // Begin traversal.
-        traverse_valid = src_impl.BeginTraversal(std::addressof(src_next_entry),
+        traverse_valid = BeginTraversal(src_impl, std::addressof(src_next_entry),
                                                  std::addressof(src_context), src_addr);
         ASSERT(traverse_valid);
-        traverse_valid = dst_impl.BeginTraversal(std::addressof(dst_next_entry),
+        traverse_valid = BeginTraversal(dst_impl, std::addressof(dst_next_entry),
                                                  std::addressof(dst_context), dst_addr);
         ASSERT(traverse_valid);
 
@@ -4127,7 +4157,7 @@ Result KPageTableBase::CopyMemoryFromHeapToHeap(
             if (ofs + cur_copy_size != size) {
                 if (cur_src_addr + cur_min_size == cur_src_block_addr + cur_src_size) {
                     // Continue the src traversal.
-                    traverse_valid = src_impl.ContinueTraversal(std::addressof(src_next_entry),
+                    traverse_valid = ContinueTraversal(src_impl, std::addressof(src_next_entry),
                                                                 std::addressof(src_context));
                     ASSERT(traverse_valid);
 
@@ -4138,7 +4168,7 @@ Result KPageTableBase::CopyMemoryFromHeapToHeap(
                 if (cur_dst_addr + cur_min_size ==
                     dst_next_entry.phys_addr + dst_next_entry.block_size) {
                     // Continue the dst traversal.
-                    traverse_valid = dst_impl.ContinueTraversal(std::addressof(dst_next_entry),
+                    traverse_valid = ContinueTraversal(dst_impl, std::addressof(dst_next_entry),
                                                                 std::addressof(dst_context));
                     ASSERT(traverse_valid);
 
@@ -4223,10 +4253,10 @@ Result KPageTableBase::CopyMemoryFromHeapToHeapWithoutCheckDestination(
         bool traverse_valid;
 
         // Begin traversal.
-        traverse_valid = src_impl.BeginTraversal(std::addressof(src_next_entry),
+        traverse_valid = BeginTraversal(src_impl, std::addressof(src_next_entry),
                                                  std::addressof(src_context), src_addr);
         ASSERT(traverse_valid);
-        traverse_valid = dst_impl.BeginTraversal(std::addressof(dst_next_entry),
+        traverse_valid = BeginTraversal(dst_impl, std::addressof(dst_next_entry),
                                                  std::addressof(dst_context), dst_addr);
         ASSERT(traverse_valid);
 
@@ -4261,7 +4291,7 @@ Result KPageTableBase::CopyMemoryFromHeapToHeapWithoutCheckDestination(
             if (ofs + cur_copy_size != size) {
                 if (cur_src_addr + cur_min_size == cur_src_block_addr + cur_src_size) {
                     // Continue the src traversal.
-                    traverse_valid = src_impl.ContinueTraversal(std::addressof(src_next_entry),
+                    traverse_valid = ContinueTraversal(src_impl, std::addressof(src_next_entry),
                                                                 std::addressof(src_context));
                     ASSERT(traverse_valid);
 
@@ -4272,7 +4302,7 @@ Result KPageTableBase::CopyMemoryFromHeapToHeapWithoutCheckDestination(
                 if (cur_dst_addr + cur_min_size ==
                     dst_next_entry.phys_addr + dst_next_entry.block_size) {
                     // Continue the dst traversal.
-                    traverse_valid = dst_impl.ContinueTraversal(std::addressof(dst_next_entry),
+                    traverse_valid = ContinueTraversal(dst_impl, std::addressof(dst_next_entry),
                                                                 std::addressof(dst_context));
                     ASSERT(traverse_valid);
 
@@ -4547,7 +4577,7 @@ Result KPageTableBase::SetupForIpcServer(KProcessAddress* out_addr, size_t size,
     // Begin traversal.
     TraversalContext context;
     TraversalEntry next_entry;
-    bool traverse_valid = src_impl.BeginTraversal(std::addressof(next_entry),
+    bool traverse_valid = BeginTraversal(src_impl, std::addressof(next_entry),
                                                   std::addressof(context), aligned_src_start);
     ASSERT(traverse_valid);
 
@@ -4597,7 +4627,7 @@ Result KPageTableBase::SetupForIpcServer(KProcessAddress* out_addr, size_t size,
         // If the block's size was one page, we may need to continue traversal.
         if (cur_block_size == 0 && aligned_src_size > PageSize) {
             traverse_valid =
-                src_impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                ContinueTraversal(src_impl, std::addressof(next_entry), std::addressof(context));
             ASSERT(traverse_valid);
 
             cur_block_addr = next_entry.phys_addr;
@@ -4610,7 +4640,7 @@ Result KPageTableBase::SetupForIpcServer(KProcessAddress* out_addr, size_t size,
     while (aligned_src_start + tot_block_size < mapping_src_end) {
         // Continue the traversal.
         traverse_valid =
-            src_impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+            ContinueTraversal(src_impl, std::addressof(next_entry), std::addressof(context));
         ASSERT(traverse_valid);
 
         // Process the block.
@@ -4653,7 +4683,7 @@ Result KPageTableBase::SetupForIpcServer(KProcessAddress* out_addr, size_t size,
         if (mapped_block_end + cur_block_size < aligned_src_end &&
             cur_block_size == last_block_size) {
             traverse_valid =
-                src_impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                ContinueTraversal(src_impl, std::addressof(next_entry), std::addressof(context));
             ASSERT(traverse_valid);
 
             cur_block_addr = next_entry.phys_addr;
@@ -5601,7 +5631,7 @@ Result KPageTableBase::UnmapProcessMemory(KProcessAddress dst_address, size_t si
             ContiguousRangeInfo(KPageTableBase& pt, KProcessAddress address, size_t size)
                 : m_pt(pt), m_remaining_size(size) {
                 // Begin a traversal.
-                ASSERT(m_pt.GetImpl().BeginTraversal(std::addressof(m_entry),
+                ASSERT(m_pt.BeginTraversal(m_pt.GetImpl(), std::addressof(m_entry),
                                                      std::addressof(m_context), address));
 
                 // Setup tracking fields.
@@ -5632,7 +5662,7 @@ Result KPageTableBase::UnmapProcessMemory(KProcessAddress dst_address, size_t si
             void DetermineContiguousBlockExtents() {
                 // Continue traversing until we're not contiguous, or we have enough.
                 while (m_cur_size < m_remaining_size) {
-                    ASSERT(m_pt.GetImpl().ContinueTraversal(std::addressof(m_entry),
+                    ASSERT(m_pt.ContinueTraversal(m_pt.GetImpl(), std::addressof(m_entry),
                                                             std::addressof(m_context)));
 
                     // If we're not contiguous, we're done.

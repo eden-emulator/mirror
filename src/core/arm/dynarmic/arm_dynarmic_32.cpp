@@ -172,12 +172,12 @@ void ArmDynarmic32::MakeJit(Common::PageTable* page_table) {
     if (page_table) {
         constexpr size_t PageBits = 12;
         constexpr size_t NumPageTableEntries = 1 << (32 - PageBits);
-        constexpr size_t PageLog2Stride = 5;
-        static_assert(1 << PageLog2Stride == sizeof(Common::PageTable::PageEntryData));
 
-        config.page_table = reinterpret_cast<std::array<std::uint8_t*, NumPageTableEntries>*>(page_table->entries.data());
-        config.page_table_pointer_mask_bits = Common::PageTable::ATTRIBUTE_BITS;
-        config.page_table_log2_stride = PageLog2Stride;
+        // Dynarmic will not write to the page table, const_cast is safe here
+        config.page_table = reinterpret_cast<std::array<std::uint8_t*, NumPageTableEntries>*>(
+            const_cast<Common::PageTable::PageEntryData*>(page_table->entries.data()));
+        config.page_table_pointer_mask = Common::PageTable::ATTRIBUTE_MASK;
+        config.page_table_marked_bit = 0;
         config.absolute_offset_page_table = true;
         config.detect_misaligned_access_via_page_table = 16 | 32 | 64 | 128;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
@@ -188,6 +188,13 @@ void ArmDynarmic32::MakeJit(Common::PageTable* page_table) {
 
         config.fastmem_exclusive_access = config.fastmem_pointer  != std::nullopt;
         config.recompile_on_exclusive_fastmem_failure = true;
+
+        if (reinterpret_cast<u64>(m_system.DeviceMemory().buffer.BackingBasePointer() +
+            Kernel::Board::Nintendo::Nx::KSystemControl::Init::GetIntendedMemorySize()) < (1ULL << 39)) {
+            // Systems like FreeBSD allocate memory really low by default, and since we pack our page table entries,
+            // we have to manually sign extend when our actual pointer is negative.
+            config.page_table_sign_extension = Common::PageTable::SIGN_BIT;
+        }
     }
 
     // Multi-process state
@@ -420,6 +427,7 @@ void ArmDynarmic32::SignalInterrupt(Kernel::KThread* thread) {
 }
 
 void ArmDynarmic32::ClearInstructionCache() {
+    m_cb->last_code_addr = u64(-1);
     m_jit->ClearCache();
 }
 

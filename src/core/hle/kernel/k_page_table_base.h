@@ -370,6 +370,10 @@ private:
                                  size_t num_pages, size_t alignment, size_t offset,
                                  size_t guard_pages) const;
 
+    bool BeginTraversal(const Common::PageTable& impl, TraversalEntry* out_entry, TraversalContext* out_context,
+                        Common::ProcessAddress address) const;
+    bool ContinueTraversal(const Common::PageTable& impl, TraversalEntry* out_entry, TraversalContext* context) const;
+
     Result CheckMemoryStateContiguous(size_t* out_blocks_needed, KProcessAddress addr, size_t size,
                                       KMemoryState state_mask, KMemoryState state,
                                       KMemoryPermission perm_mask, KMemoryPermission perm,
@@ -474,7 +478,14 @@ private:
         // Validate pre-conditions.
         ASSERT(this->IsLockedByCurrentThread());
 
-        return this->GetImpl().GetPhysicalAddress(out, virt_addr);
+        if (virt_addr > (1ULL << m_address_space_width)) {
+            return false;
+        }
+
+        *out = m_system.DeviceMemory().GetPhysicalAddr(
+            this->GetImpl().entries[GetInteger(virt_addr) >> PageBits].Pointer(true) + GetInteger(virt_addr));
+
+        return true;
     }
 
 public:

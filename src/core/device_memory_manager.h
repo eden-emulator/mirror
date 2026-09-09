@@ -18,7 +18,7 @@
 #include "common/common_types.h"
 #include "common/range_mutex.h"
 #include "common/scratch_buffer.h"
-#include "common/virtual_buffer.h"
+#include "common/sparse_large_vector.h"
 
 namespace Core {
 
@@ -178,8 +178,8 @@ private:
         u32 continuity_tracker;
         u32 compressed_physical_ptr;
     };
-    Common::VirtualBuffer<u32> compressed_device_addr;
-    Common::VirtualBuffer<TrackedEntry> tracked_entries;
+    Common::SparseLargeVector<u32> compressed_device_addr;
+    Common::SparseLargeVector<TrackedEntry> tracked_entries;
 
     // Process memory interfaces
 
@@ -200,8 +200,8 @@ private:
         return std::make_pair(asid, address);
     }
 
-    void InsertCPUBacking(size_t page_index, VAddr address, Asid asid) {
-        tracked_entries[page_index].cpu_backing_address = address | (asid.id << asid_start_bit);
+    constexpr void InsertCPUBacking(size_t page_index, VAddr address, Asid asid) {
+        tracked_entries.GetUnchecked(page_index).cpu_backing_address = address | (asid.id << asid_start_bit);
     }
 
     std::array<TranslationEntry, 4> t_slot{};

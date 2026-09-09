@@ -108,6 +108,8 @@ add_library(
     settings_setting.h
     slot_vector.h
     socket_types.h
+    sparse_large_vector.cpp
+    sparse_large_vector.h
     spin_lock.h
     stb.cpp
     stb.h
@@ -137,8 +139,6 @@ add_library(
     uuid.cpp
     uuid.h
     vector_math.h
-    virtual_buffer.cpp
-    virtual_buffer.h
     zstd_compression.cpp
     zstd_compression.h
     fs/ryujinx_compat.h fs/ryujinx_compat.cpp
