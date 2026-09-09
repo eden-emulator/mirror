@@ -711,8 +711,6 @@ add_library(core STATIC
     hle/service/kernel_helpers.h
     hle/service/lbl/lbl.cpp
     hle/service/lbl/lbl.h
-    hle/service/ldn/client_process_monitor.cpp
-    hle/service/ldn/client_process_monitor.h
     hle/service/ldn/lan_discovery.cpp
     hle/service/ldn/lan_discovery.h
     hle/service/ldn/ldn.cpp
@@ -832,8 +830,6 @@ add_library(core STATIC
     hle/service/ns/system_update_control.h
     hle/service/ns/system_update_interface.cpp
     hle/service/ns/system_update_interface.h
-    hle/service/ns/vulnerability_manager_interface.cpp
-    hle/service/ns/vulnerability_manager_interface.h
     hle/service/nvdrv/core/container.cpp
     hle/service/nvdrv/core/container.h
     hle/service/nvdrv/core/heap_mapper.cpp
@@ -1067,8 +1063,6 @@ add_library(core STATIC
     hle/service/sockets/sockets.h
     hle/service/sockets/sockets_translate.cpp
     hle/service/sockets/sockets_translate.h
-    hle/service/spl/csrng.cpp
-    hle/service/spl/csrng.h
     hle/service/spl/spl.cpp
     hle/service/spl/spl.h
     hle/service/spl/spl_module.cpp

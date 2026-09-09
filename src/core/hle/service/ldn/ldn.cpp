@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
@@ -7,7 +7,6 @@
 #include "core/core.h"
 #include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/ldn/ldn.h"
-#include "core/hle/service/ldn/client_process_monitor.h"
 #include "core/hle/service/ldn/monitor_service.h"
 #include "core/hle/service/ldn/sf_monitor_service.h"
 #include "core/hle/service/ldn/sf_service.h"
@@ -17,6 +16,26 @@
 
 namespace Service::LDN {
 
+class IClientProcessMonitor final
+    : public ServiceFramework<IClientProcessMonitor> {
+public:
+    explicit IClientProcessMonitor(Core::System& system_)
+        : ServiceFramework{system_, "IClientProcessMonitor"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, D<&IClientProcessMonitor::RegisterClient>, "RegisterClient"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
+    }
+    ~IClientProcessMonitor() override = default;
+private:
+    Result RegisterClient(ClientProcessId pid) {
+        LOG_WARNING(Service_LDN, "(STUBBED) called");
+        R_SUCCEED();
+    }
+};
+
 class IMonitorServiceCreator final : public ServiceFramework<IMonitorServiceCreator> {
 public:
     explicit IMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:m"} {
@@ -25,7 +44,6 @@ public:
             {0, C<&IMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
         };
         // clang-format on
-
         RegisterHandlers(functions);
     }
 

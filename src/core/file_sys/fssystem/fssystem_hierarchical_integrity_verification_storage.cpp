@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -121,6 +124,7 @@ size_t HierarchicalIntegrityVerificationStorage::Read(u8* buffer, size_t size,
 }
 
 size_t HierarchicalIntegrityVerificationStorage::GetSize() const {
+    ASSERT(m_data_size >= 0);
     return m_data_size;
 }
 

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -26,17 +29,14 @@ IStorage::~IStorage() = default;
 
 Result IStorage::Open(Out<SharedPointer<IStorageAccessor>> out_storage_accessor) {
     LOG_DEBUG(Service_AM, "called");
-
     R_UNLESS(m_impl->GetHandle() == nullptr, AM::ResultInvalidStorageType);
-
     *out_storage_accessor = std::make_shared<IStorageAccessor>(system, m_impl);
     R_SUCCEED();
 }
 
-Result IStorage::OpenTransferStorage(
-    Out<SharedPointer<ITransferStorageAccessor>> out_transfer_storage_accessor) {
+Result IStorage::OpenTransferStorage(Out<SharedPointer<ITransferStorageAccessor>> out_transfer_storage_accessor) {
+    LOG_DEBUG(Service_AM, "called");
     R_UNLESS(m_impl->GetHandle() != nullptr, AM::ResultInvalidStorageType);
-
     *out_transfer_storage_accessor = std::make_shared<ITransferStorageAccessor>(system, m_impl);
     R_SUCCEED();
 }

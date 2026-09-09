@@ -13,7 +13,6 @@
 #include "core/hle/api_version.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/server_manager.h"
-#include "core/hle/service/spl/csrng.h"
 #include "core/hle/service/spl/spl.h"
 #include "core/hle/service/spl/spl_module.h"
 
@@ -202,6 +201,18 @@ Result Module::Interface::GetConfigImpl(u64* out_config, ConfigItem config_item)
         return ResultSecureMonitorInvalidArgument;
     }
 }
+
+class CSRNG final : public Module::Interface {
+public:
+    explicit CSRNG(Core::System& system_, std::shared_ptr<Module> module_)
+        : Interface(system_, std::move(module_), "csrng") {
+        static const FunctionInfo functions[] = {
+            {0, &CSRNG::GenerateRandomBytes, "GenerateRandomBytes"},
+        };
+        RegisterHandlers(functions);
+    }
+    ~CSRNG() override = default;
+};
 
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
