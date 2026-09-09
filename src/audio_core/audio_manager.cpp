@@ -25,7 +25,7 @@ AudioManager::AudioManager(Core::System& system) {
                 const auto event_type = Event::Type(i);
                 if (events.CheckAudioEventSet(event_type) || timed_out) {
                     if (buffer_events[i]) {
-                        buffer_events[i](this, system);
+                        buffer_events[i](buffer_data[i], system);
                     }
                 }
                 events.SetAudioEvent(event_type, false);
@@ -42,12 +42,13 @@ void AudioManager::Shutdown() {
     }
 }
 
-Result AudioManager::SetOutManager(BufferEventFunc buffer_func) {
+Result AudioManager::SetOutManager(void *data, BufferEventFunc buffer_func) {
     if (thread.joinable()) {
         std::scoped_lock l{lock};
         const auto index{events.GetManagerIndex(Event::Type::AudioOutManager)};
         if (buffer_events[index] == nullptr) {
             buffer_events[index] = std::move(buffer_func);
+            buffer_data[index] = data;
             needs_update = true;
             events.SetAudioEvent(Event::Type::AudioOutManager, true);
         }
@@ -56,12 +57,13 @@ Result AudioManager::SetOutManager(BufferEventFunc buffer_func) {
     return Service::Audio::ResultOperationFailed;
 }
 
-Result AudioManager::SetInManager(BufferEventFunc buffer_func) {
+Result AudioManager::SetInManager(void *data, BufferEventFunc buffer_func) {
     if (thread.joinable()) {
         std::scoped_lock l{lock};
         const auto index{events.GetManagerIndex(Event::Type::AudioInManager)};
         if (buffer_events[index] == nullptr) {
             buffer_events[index] = std::move(buffer_func);
+            buffer_data[index] = data;
             needs_update = true;
             events.SetAudioEvent(Event::Type::AudioInManager, true);
         }
