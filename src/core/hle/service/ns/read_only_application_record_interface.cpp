@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -16,10 +16,8 @@ IReadOnlyApplicationRecordInterface::IReadOnlyApplicationRecordInterface(Core::S
     static const FunctionInfo functions[] = {
         {0, D<&IReadOnlyApplicationRecordInterface::HasApplicationRecord>, "HasApplicationRecord"},
         {1, nullptr, "NotifyApplicationFailure"},
-        {2, D<&IReadOnlyApplicationRecordInterface::IsDataCorruptedResult>,
-         "IsDataCorruptedResult"},
-        {3, D<&IReadOnlyApplicationRecordInterface::ListApplicationRecord>,
-         "ListApplicationRecord"},
+        {2, D<&IReadOnlyApplicationRecordInterface::IsDataCorruptedResult>, "IsDataCorruptedResult"},
+        {3, D<&IReadOnlyApplicationRecordInterface::ListApplicationRecord>, "ListApplicationRecord"},
     };
     // clang-format on
 
