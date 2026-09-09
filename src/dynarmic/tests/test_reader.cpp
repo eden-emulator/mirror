@@ -99,7 +99,6 @@ void RunTestInstance(Dynarmic::A32::Jit& jit,
         std::copy(instructions.begin(), instructions.end(), jit_env.code_mem.begin() + num_words);
         jit_env.PadCodeMem();
         jit_env.modified_memory.clear();
-        jit_env.interrupts.clear();
 
         jit.Regs() = regs;
         jit.ExtRegs() = vecs;
@@ -192,7 +191,6 @@ void RunTestInstance(A64::Jit& jit,
         jit_env.code_mem.emplace_back(0x14000000);  // B .
         jit_env.code_mem_start_address = start_address;
         jit_env.modified_memory.clear();
-        jit_env.interrupts.clear();
 
         jit.SetRegisters(regs);
         jit.SetVectors(vecs);

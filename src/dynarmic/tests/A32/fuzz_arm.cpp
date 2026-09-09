@@ -321,8 +321,6 @@ static void RunTestInstance(Dynarmic::A32::Jit& jit,
     uni_env.PadCodeMem();
     jit_env.modified_memory.clear();
     uni_env.modified_memory.clear();
-    jit_env.interrupts.clear();
-    uni_env.interrupts.clear();
 
     jit.Regs() = regs;
     jit.ExtRegs() = vecs;

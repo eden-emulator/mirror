@@ -282,20 +282,17 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    const char* const hex_instruction = [argv] {
-        if (strlen(argv[2]) > 2 && argv[2][0] == '0' && argv[2][1] == 'x') {
-            return argv[2] + 2;
-        }
-        return argv[2];
+    const char* const hex_instruction = [s = argv[2]] {
+        if (strlen(s) > 2 && s[0] == '0' && s[1] == 'x')
+            return s + 2;
+        return s;
     }();
-
     if (strlen(hex_instruction) > 8) {
         fmt::print("hex string too long\n");
         return 1;
     }
 
     const u32 instruction = strtol(hex_instruction, nullptr, 16);
-
     if (strcmp(argv[1], "a32") == 0) {
         PrintA32Instruction(instruction);
     } else if (strcmp(argv[1], "a64") == 0) {
@@ -306,13 +303,11 @@ int main(int argc, char** argv) {
         fmt::print("Invalid mode: {}\nValid values: a32, a64, thumb\n", argv[1]);
         return 1;
     }
-
     if (argc == 4) {
         if (strcmp(argv[3], "-exec") != 0) {
             fmt::print("Invalid option {}\n", argv[3]);
             return 1;
         }
-
         if (strcmp(argv[1], "a32") == 0) {
             ExecuteA32Instruction(instruction);
         } else {
@@ -320,6 +315,5 @@ int main(int argc, char** argv) {
             return 1;
         }
     }
-
     return 0;
 }

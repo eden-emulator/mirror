@@ -176,8 +176,6 @@ static void RunTestInstance(Dynarmic::A64::Jit& jit, A64Unicorn& uni, A64TestEnv
     uni_env.code_mem_start_address = instructions_start;
     jit_env.modified_memory.clear();
     uni_env.modified_memory.clear();
-    jit_env.interrupts.clear();
-    uni_env.interrupts.clear();
 
     const u64 initial_sp = RandInt<u64>(0x30'0000'0000, 0x40'0000'0000) * 4;
 

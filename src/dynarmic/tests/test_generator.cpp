@@ -354,6 +354,8 @@ u32 GenRandomA64Inst(u64 pc, bool is_last_inst) {
             "MSR_reg",
             "MSR_imm",
             "MRS",
+            // generates F16
+            "FCADD_vec",
         };
 
         for (const auto& [fn, bitstring] : list) {
@@ -440,7 +442,6 @@ void RunTestInstance(Dynarmic::A32::Jit& jit,
         std::copy(instructions.begin(), instructions.end(), jit_env.code_mem.begin() + num_words);
         jit_env.PadCodeMem();
         jit_env.modified_memory.clear();
-        jit_env.interrupts.clear();
 
         jit.Regs() = regs;
         jit.ExtRegs() = vecs;
@@ -510,7 +511,6 @@ void RunTestInstance(Dynarmic::A64::Jit& jit,
         jit_env.code_mem.emplace_back(0x14000000);  // B .
         jit_env.code_mem_start_address = start_address;
         jit_env.modified_memory.clear();
-        jit_env.interrupts.clear();
 
         jit.SetRegisters(regs);
         jit.SetVectors(vecs);
@@ -536,36 +536,52 @@ void RunTestInstance(Dynarmic::A64::Jit& jit,
         fmt::print("initial_regs:");
         for (u64 i : regs)
             fmt::print(" {:016x}", i);
-        fmt::print("\n");
-        fmt::print("initial_vecs:");
+        fmt::print(
+            "\n"
+            "initial_vecs:"
+        );
         for (auto i : vecs)
             fmt::print(" {:016x}:{:016x}", i[0], i[1]);
-        fmt::print("\n");
-        fmt::print("initial_sp: {:016x}\n", initial_sp);
-        fmt::print("initial_pstate: {:08x}\n", pstate);
-        fmt::print("initial_fpcr: {:08x}\n", fpcr);
-        fmt::print("final_regs:");
+        fmt::print(
+            "\n"
+            "initial_sp: {:016x}\n"
+            "initial_pstate: {:08x}\n"
+            "initial_fpcr: {:08x}\n"
+            "final_regs:"
+            , initial_sp
+            , pstate
+            , fpcr
+        );
         for (u64 i : jit.GetRegisters())
             fmt::print(" {:016x}", i);
-        fmt::print("\n");
-        fmt::print("final_vecs:");
+        fmt::print(
+            "\n"
+            "final_vecs:"
+        );
         for (auto i : jit.GetVectors())
             fmt::print(" {:016x}:{:016x}", i[0], i[1]);
-        fmt::print("\n");
-        fmt::print("final_sp: {:016x}\n", jit.GetSP());
-        fmt::print("final_pc: {:016x}\n", jit.GetPC());
-        fmt::print("final_pstate: {:08x}\n", jit.GetPstate());
-        fmt::print("final_fpcr: {:08x}\n", jit.GetFpcr());
-        fmt::print("final_qc : {}\n", FP::FPSR{jit.GetFpsr()}.QC());
-        fmt::print("mod_mem:");
+        fmt::print(
+            "\n"
+            "final_sp: {:016x}\n"
+            "final_pc: {:016x}\n"
+            "final_pstate: {:08x}\n"
+            "final_fpcr: {:08x}\n"
+            "final_qc : {}\n"
+            "mod_mem:"
+            , jit.GetSP()
+            , jit.GetPC()
+            , jit.GetPstate()
+            , jit.GetFpcr()
+            , FP::FPSR{jit.GetFpsr()}.QC()
+        );
         for (auto [addr, value] : jit_env.modified_memory)
             fmt::print(" {:08x}:{:02x}", addr, value);
-        fmt::print("\n");
-        fmt::print("interrupts:\n");
-        for (const auto& i : jit_env.interrupts)
-            std::puts(i.c_str());
-        fmt::print("===\n");
-        fmt::print("{}", jit.Disassemble());
+        fmt::print(
+            "\n"
+            "===\n"
+            "{}"
+            , jit.Disassemble()
+        );
     }
 }
 
