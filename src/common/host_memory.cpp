@@ -117,7 +117,6 @@ template <typename T>
 static void GetFuncAddress(Common::DynamicLibrary& dll, const char* name, T& pfn) {
     if (!dll.GetSymbol(name, &pfn)) {
         LOG_CRITICAL(HW_Memory, "Failed to load {}", name);
-        throw std::bad_alloc{};
     }
 }
 
