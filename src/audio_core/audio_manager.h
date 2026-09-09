@@ -47,21 +47,15 @@ public:
      */
     void Shutdown();
 
-    /**
-     * Register the out manager, keeping a function to be called when the out event is signalled.
-     *
-     * @param buffer_func - Function to be called on signal.
-     * @return Result code.
-     */
-    Result SetOutManager(BufferEventFunc buffer_func);
+    /// Register the out manager, keeping a function to be called when the out event is signalled.
+    /// @param buffer_func - Function to be called on signal.
+    /// @return Result code.
+    Result SetOutManager(void *data, BufferEventFunc buffer_func);
 
-    /**
-     * Register the in manager, keeping a function to be called when the in event is signalled.
-     *
-     * @param buffer_func - Function to be called on signal.
-     * @return Result code.
-     */
-    Result SetInManager(BufferEventFunc buffer_func);
+    /// Register the in manager, keeping a function to be called when the in event is signalled.
+    /// @param buffer_func - Function to be called on signal.
+    /// @return Result code.
+    Result SetInManager(void *data, BufferEventFunc buffer_func);
 
     /**
      * Set an event to signalled, and signal the thread.
@@ -76,8 +70,9 @@ private:
     bool needs_update{};
     /// Events to be set and signalled
     Event events{};
-    /// Callbacks for each manager
+    /// Callbacks (and user data) for each manager
     std::array<BufferEventFunc, 3> buffer_events{};
+    std::array<void*, 3> buffer_data{};
     /// General lock
     std::mutex lock{};
     /// Main thread for waiting and callbacks

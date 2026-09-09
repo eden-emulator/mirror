@@ -43,7 +43,7 @@ void Manager::ReleaseSessionId(Core::System& system, const size_t session_id) {
 Result Manager::LinkToManager(Core::System& system) {
     std::scoped_lock l{mutex};
     if (!linked_to_manager) {
-        system.AudioCore().GetAudioManager().SetOutManager(&Manager::BufferReleaseAndRegister);
+        system.AudioCore().GetAudioManager().SetOutManager(this, &Manager::BufferReleaseAndRegister);
         linked_to_manager = true;
     }
 
@@ -51,18 +51,15 @@ Result Manager::LinkToManager(Core::System& system) {
 }
 
 void Manager::Start(Core::System& system) {
-    if (sessions_started) {
-        return;
-    }
-
-    std::scoped_lock l{mutex};
-    for (auto& session : sessions) {
-        if (session) {
-            session->StartSession();
+    if (!sessions_started) {
+        std::scoped_lock l{mutex};
+        for (auto& session : sessions) {
+            if (session) {
+                session->StartSession();
+            }
         }
+        sessions_started = true;
     }
-
-    sessions_started = true;
 }
 
 void Manager::BufferReleaseAndRegister(void *data, Core::System& system) noexcept {
