@@ -55,16 +55,6 @@ constexpr SinkDetails sink_details[] = {
         &GetPS4Latency,
     },
 #endif
-#ifdef HAVE_OBOE
-    SinkDetails{
-        Settings::AudioEngine::Oboe,
-        [](std::string_view device_id) -> std::unique_ptr<Sink> {
-            return std::make_unique<OboeSink>();
-        },
-        [](bool capture) { return std::vector<std::string>{"Default"}; },
-        []() { return 0u; },
-    },
-#endif
 #ifdef HAVE_CUBEB
     SinkDetails{
         Settings::AudioEngine::Cubeb,

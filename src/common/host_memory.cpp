@@ -38,15 +38,15 @@
 
 // FreeBSD
 #ifndef MAP_NORESERVE
-#   define MAP_NORESERVE 0
+#define MAP_NORESERVE 0
 #endif
 // Solaris 11 and illumos
 #ifndef MAP_ALIGNED_SUPER
-#   define MAP_ALIGNED_SUPER 0
+#define MAP_ALIGNED_SUPER 0
 #endif
 // macOS
 #ifndef MAP_ANONYMOUS
-#   define MAP_ANONYMOUS MAP_ANON
+#define MAP_ANONYMOUS MAP_ANON
 #endif
 
 #endif // ^^^ POSIX ^^^
@@ -452,15 +452,13 @@ static void* ChooseVirtualBase(size_t virtual_size) {
 
 #else
 
-static void* ChooseVirtualBase(size_t size) {
+static void* ChooseVirtualBase(size_t virtual_size) {
 #if defined(__FreeBSD__) || defined(__DragonFly__) || defined(__OpenBSD__) || defined(__sun__) || defined(__HAIKU__) || defined(__managarm__) || defined(__AIX__)
-    void* virtual_base = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_ALIGNED_SUPER, -1, 0);
+    void* virtual_base = mmap(nullptr, virtual_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_ALIGNED_SUPER | MAP_NOCORE, -1, 0);
     if (virtual_base != MAP_FAILED)
         return virtual_base;
-    return mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
-#else
-    return mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
 #endif
+    return mmap(nullptr, virtual_size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_NOCORE, -1, 0);
 }
 
 #endif
@@ -554,13 +552,13 @@ public:
         }
         if (use_anon) {
             LOG_WARNING(Common_Memory, "Using private mappings instead of shared ones");
-            backing_base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+            backing_base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_NOCORE, -1, 0));
             if (fd > 0) {
                 fd = -1;
                 close(fd);
             }
         } else {
-            backing_base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
+            backing_base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_NOCORE, fd, 0));
         }
         if (backing_base == MAP_FAILED) {
             LOG_CRITICAL(HW_Memory, "mmap failed: {}", strerror(errno));
@@ -758,8 +756,9 @@ void HostMemory::Map(size_t virtual_offset, size_t host_offset, size_t length, M
     ASSERT(length % PageAlignment == 0);
     ASSERT(virtual_offset + length <= virtual_size);
     ASSERT(host_offset + length <= backing_size);
-    if (length == 0 || !virtual_base || !impl)
+    if (length == 0 || !virtual_base || !impl) {
         return;
+    }
     impl->Map(virtual_offset + virtual_base_offset, host_offset, length, perms);
 #endif
 }
@@ -769,8 +768,9 @@ void HostMemory::Unmap(size_t virtual_offset, size_t length, bool separate_heap)
     ASSERT(virtual_offset % PageAlignment == 0);
     ASSERT(length % PageAlignment == 0);
     ASSERT(virtual_offset + length <= virtual_size);
-    if (length == 0 || !virtual_base || !impl)
+    if (length == 0 || !virtual_base || !impl) {
         return;
+    }
     impl->Unmap(virtual_offset + virtual_base_offset, length);
 #endif
 }
