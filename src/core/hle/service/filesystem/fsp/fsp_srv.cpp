@@ -54,7 +54,7 @@ FSP_SRV::FSP_SRV(Core::System& system_)
     static const FunctionInfo functions[] = {
         {0, nullptr, "OpenFileSystem"},
         {1, D<&FSP_SRV::SetCurrentProcess>, "SetCurrentProcess"},
-        {2, nullptr, "OpenDataFileSystemByCurrentProcess"},
+        {2, D<&FSP_SRV::OpenDataFileSystemByCurrentProcess>, "OpenDataFileSystemByCurrentProcess"},
         {7, D<&FSP_SRV::OpenFileSystemWithPatch>, "OpenFileSystemWithPatch"},
         {8, nullptr, "OpenFileSystemWithId"},
         {9, nullptr, "OpenDataFileSystemByApplicationId"},
@@ -118,6 +118,7 @@ FSP_SRV::FSP_SRV(Core::System& system_)
         {204, nullptr, "OpenDataFileSystemByProgramIndex"},
         {205, D<&FSP_SRV::OpenDataStorageWithProgramIndex>, "OpenDataStorageWithProgramIndex"},
         {206, nullptr, "OpenDataStorageByPath"},
+        {210, D<&FSP_SRV::SetCurrentProcess>, "SetCurrentProcess"},
         {400, nullptr, "OpenDeviceOperator"},
         {500, nullptr, "OpenSdCardDetectionEventNotifier"},
         {501, nullptr, "OpenGameCardDetectionEventNotifier"},
@@ -457,6 +458,31 @@ Result FSP_SRV::OpenSaveDataTransferProhibiter(
     OutInterface<ISaveDataTransferProhibiter> out_prohibiter, u64 id) {
     LOG_WARNING(Service_FS, "(STUBBED) called, id={:016X}", id);
     *out_prohibiter = std::make_shared<ISaveDataTransferProhibiter>(system);
+    R_SUCCEED();
+}
+
+Result FSP_SRV::OpenDataFileSystemByCurrentProcess(OutInterface<IFileSystem> out_interface) {
+    LOG_DEBUG(Service_FS, "called");
+
+    if (!romfs) {
+        auto current_romfs = romfs_controller->OpenRomFSCurrentProcess();
+        if (!current_romfs) {
+            LOG_CRITICAL(Service_FS, "No file system interface available!");
+            R_RETURN(ResultUnknown);
+        }
+
+        romfs = current_romfs;
+    }
+
+    auto extracted_romfs = FileSys::ExtractRomFS(romfs);
+    if (!extracted_romfs) {
+        LOG_CRITICAL(Service_FS, "Failed to extract RomFS for the current process!");
+        R_RETURN(ResultUnknown);
+    }
+
+    *out_interface = std::make_shared<IFileSystem>(
+        system, extracted_romfs, SizeGetter::FromStorageId(fsc, FileSys::StorageId::NandUser));
+
     R_SUCCEED();
 }
 

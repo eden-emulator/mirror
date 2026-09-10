@@ -16,6 +16,7 @@
 #include "core/hle/service/cmif_serialization.h"
 #include "core/loader/loader.h"
 #include "core/launch_timestamp_cache.h"
+#include "core/hle/api_version.h"
 
 namespace Service::AM {
 
@@ -87,7 +88,7 @@ Result IApplicationCreator::CreateSystemApplication(
 
     std::vector<u8> control;
     std::unique_ptr<Loader::AppLoader> loader;
-    auto process = CreateProcess(system, application_id, 1, 22);
+    auto process = CreateProcess(system, application_id, 1, HLE::ApiVersion::HOS_VERSION_MAJOR);
     R_UNLESS(process != nullptr, ResultUnknown);
 
     const auto applet = std::make_shared<Applet>(system, std::move(process), true);

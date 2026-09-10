@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <chrono>
+
 #include "core/core.h"
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/patch_manager.h"
@@ -94,6 +96,7 @@ IParentalControlService::IParentalControlService(Core::System& system_, Capabili
         {1457, D<&IParentalControlService::GetPlayTimerEventToRequestSuspension>, "GetPlayTimerEventToRequestSuspension"},
         {1458, D<&IParentalControlService::IsPlayTimerAlarmDisabled>, "IsPlayTimerAlarmDisabled"},
         {1459, D<&IParentalControlService::GetPlayTimerRemainingTimeDisplayInfo>, "GetPlayTimerRemainingTimeDisplayInfo"},
+        {1460, D<&IParentalControlService::Unknown1460>, "Unknown1460"},
         {1471, nullptr, "NotifyWrongPinCodeInputManyTimes"},
         {1472, nullptr, "CancelNetworkRequest"},
         {1473, D<&IParentalControlService::GetUnlinkedEvent>, "GetUnlinkedEvent"},
@@ -440,8 +443,15 @@ Result IParentalControlService::IsPlayTimerAlarmDisabled(Out<bool> out_play_time
     R_SUCCEED();
 }
 
-Result IParentalControlService::GetPlayTimerRemainingTimeDisplayInfo(/* Out 0x18 */) {
-    LOG_INFO(Service_PCTL, "called");
+Result IParentalControlService::GetPlayTimerRemainingTimeDisplayInfo(Out<PlayTimerRemainingTimeDisplayInfo> out_display_info) {
+    LOG_DEBUG(Service_PCTL, "called");
+    *out_display_info = {.state = PlayTimerDisplayState::NotConfigured};
+    R_SUCCEED();
+}
+
+Result IParentalControlService::Unknown1460(u8 in_unk, Out<PlayTimerRemainingTimeDisplayInfo> out_display_info) {
+    LOG_DEBUG(Service_PCTL, "called, in_unk={}", in_unk);
+    *out_display_info = {.state = PlayTimerDisplayState::NotConfigured};
     R_SUCCEED();
 }
 

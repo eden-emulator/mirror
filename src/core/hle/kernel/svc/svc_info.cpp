@@ -210,6 +210,13 @@ Result GetInfo(Core::System& system, u64* result, InfoType info_id_type, Handle 
         *result = system.Kernel().CurrentScheduler()->GetIdleThread()->GetCpuTime();
         R_SUCCEED();
     }
+    case InfoType::Unknown37:
+    case InfoType::Unknown38: {
+        LOG_WARNING(Kernel_SVC, "(STUBBED) called, info_id={:#x}, info_sub_id={:#x}, handle={:#08x}",
+                    info_id, info_sub_id, handle);
+        *result = 0;
+        R_SUCCEED();
+    }
     case InfoType::MesosphereMeta: {
         enum MesosphereMetaInfo : u64 {
             KernelVersion = 0,

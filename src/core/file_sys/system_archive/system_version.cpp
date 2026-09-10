@@ -40,10 +40,14 @@ VirtualDir SystemVersion() {
     VirtualFile file = std::make_shared<VectorVfsFile>(file_data, "file");
 
     // the "/digest"
-    std::vector<u8> digest_data(sizeof(HLE::ApiVersion::VERSION_DIGEST));
-    std::memcpy(digest_data.data(), HLE::ApiVersion::VERSION_DIGEST, sizeof(HLE::ApiVersion::VERSION_DIGEST));
-    VirtualFile digest_file = std::make_shared<VectorVfsFile>(digest_data, "digest");
-    return std::make_shared<VectorVfsDirectory>(std::vector<VirtualFile>{file, digest_file}, std::vector<VirtualDir>{}, "data");
+    if (HLE::ApiVersion::VERSION_DIGEST[0] == '\0') {
+        return std::make_shared<VectorVfsDirectory>(std::vector<VirtualFile>{file}, std::vector<VirtualDir>{}, "data");
+    } else {
+        std::vector<u8> digest_data(sizeof(HLE::ApiVersion::VERSION_DIGEST));
+        std::memcpy(digest_data.data(), HLE::ApiVersion::VERSION_DIGEST, sizeof(HLE::ApiVersion::VERSION_DIGEST));
+        VirtualFile digest_file = std::make_shared<VectorVfsFile>(digest_data, "digest");
+        return std::make_shared<VectorVfsDirectory>(std::vector<VirtualFile>{file, digest_file}, std::vector<VirtualDir>{}, "data");
+    }
 }
 
 } // namespace FileSys::SystemArchive

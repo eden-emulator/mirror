@@ -13,6 +13,8 @@
 #include "core/hle/service/am/process_creation.h"
 #include "core/hle/service/am/service/library_applet_accessor.h"
 #include "core/hle/service/am/service/library_applet_creator.h"
+
+#include "core/hle/api_version.h"
 #include "core/hle/service/am/service/storage.h"
 #include "core/hle/service/am/window_system.h"
 #include "core/hle/service/cmif_serialization.h"
@@ -108,20 +110,7 @@ std::shared_ptr<ILibraryAppletAccessor> CreateGuestApplet(Core::System& system,
         return {};
     }
 
-    // TODO: enable other versions of applets
-    enum : u8 {
-        Firmware1400 = 14,
-        Firmware1500 = 15,
-        Firmware1600 = 16,
-        Firmware1700 = 17,
-        Firmware1800 = 18,
-        Firmware1900 = 19,
-        Firmware2000 = 20,
-        Firmware2100 = 21,
-        Firmware2200 = 22,
-    };
-
-    auto process = CreateProcess(system, program_id, Firmware1400, Firmware2200);
+    auto process = CreateProcess(system, program_id, 1, HLE::ApiVersion::HOS_VERSION_MAJOR);
     if (process) {
         const auto applet = std::make_shared<Applet>(system, std::move(process), false);
         applet->program_id = program_id;
