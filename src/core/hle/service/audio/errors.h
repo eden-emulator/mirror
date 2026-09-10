@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
@@ -33,6 +33,7 @@ constexpr Result ResultLibOpusInternalError{ErrorModule::HwOpus, 4};
 constexpr Result ResultBufferTooSmall{ErrorModule::HwOpus, 3};
 constexpr Result ResultLibOpusBadArg{ErrorModule::HwOpus, 2};
 constexpr Result ResultInvalidOpusDSPReturnCode{ErrorModule::HwOpus, 259};
+constexpr Result ResultOutOfOpusDecoders{ErrorModule::HwOpus, 385};
 constexpr Result ResultInvalidOpusSampleRate{ErrorModule::HwOpus, 1001};
 constexpr Result ResultInvalidOpusChannelCount{ErrorModule::HwOpus, 1002};
 

@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <array>
 
 #include "audio_core/audio_core.h"
@@ -43,6 +44,25 @@ static constexpr Result ResultCodeFromLibOpusErrorCode(u64 error_code) {
 HardwareOpus::HardwareOpus(Core::System& system_)
     : system{system_}, opus_decoder{system.AudioCore().ADSP().OpusDecoder()} {
     opus_decoder.SetSharedMemory(shared_memory);
+}
+
+Result HardwareOpus::RegisterDecoder(OpusDecoder* decoder) {
+    std::scoped_lock l{mutex};
+    const auto slot = std::ranges::find(decoders, nullptr);
+    if (slot == decoders.end()) {
+        R_THROW(ResultOutOfOpusDecoders);
+    }
+    *slot = decoder;
+    R_SUCCEED();
+}
+
+void HardwareOpus::UnregisterDecoder(OpusDecoder* decoder) {
+    std::scoped_lock l{mutex};
+    const auto slot = std::ranges::find(decoders, decoder);
+    if (slot == decoders.end()) {
+        return;
+    }
+    *slot = nullptr;
 }
 
 u32 HardwareOpus::GetWorkBufferSize(u32 channel) {

@@ -8,6 +8,7 @@
 #include "audio_core/opus/hardware_opus.h"
 #include "audio_core/opus/parameters.h"
 #include "common/alignment.h"
+#include "common/scope_exit.h"
 #include "common/swap.h"
 #include "core/core.h"
 
@@ -28,10 +29,18 @@ OpusDecoder::OpusDecoder(Core::System& system_, HardwareOpus& hardware_opus_)
 OpusDecoder::~OpusDecoder() {
     if (decode_object_initialized) {
         hardware_opus.ShutdownDecodeObject(shared_buffer.data(), shared_buffer.size());
+        hardware_opus.UnregisterDecoder(this);
     }
 }
 
 Result OpusDecoder::Initialize(const OpusParametersEx& params, Kernel::KTransferMemory* transfer_memory, u64 transfer_memory_size) {
+    R_TRY(hardware_opus.RegisterDecoder(this));
+    SCOPE_EXIT {
+        if (!decode_object_initialized) {
+            hardware_opus.UnregisterDecoder(this);
+        }
+    };
+
     auto frame_size{params.use_large_frame_size ? 5760 : 1920};
     shared_buffer.resize(transfer_memory_size);
     shared_memory_mapped = true;
@@ -61,6 +70,13 @@ Result OpusDecoder::Initialize(const OpusParametersEx& params, Kernel::KTransfer
 }
 
 Result OpusDecoder::Initialize(const OpusMultiStreamParametersEx& params, Kernel::KTransferMemory* transfer_memory, u64 transfer_memory_size) {
+    R_TRY(hardware_opus.RegisterDecoder(this));
+    SCOPE_EXIT {
+        if (!decode_object_initialized) {
+            hardware_opus.UnregisterDecoder(this);
+        }
+    };
+
     auto frame_size{params.use_large_frame_size ? 5760 : 1920};
     shared_buffer.resize(transfer_memory_size, 0);
     shared_memory_mapped = true;
