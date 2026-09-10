@@ -57,11 +57,7 @@ std::string GetFutureSaveDataPath(SaveDataSpaceId space_id, SaveDataType type, u
 
 SaveDataFactory::SaveDataFactory(Core::System& system_, ProgramId program_id_,
                                  VirtualDir save_directory_)
-    : system{system_}, program_id{program_id_}, dir{std::move(save_directory_)} {
-    // Delete all temporary storages
-    // On hardware, it is expected that temporary storage be empty at first use.
-    dir->DeleteSubdirectoryRecursive("temp");
-}
+    : system{system_}, program_id{program_id_}, dir{std::move(save_directory_)} {}
 
 SaveDataFactory::~SaveDataFactory() = default;
 

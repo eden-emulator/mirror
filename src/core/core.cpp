@@ -312,6 +312,10 @@ struct System::Impl {
     }
 
     SystemResultStatus Load(System& system, Frontend::EmuWindow& emu_window, const std::string& filepath, Service::AM::FrontendAppletParameters& params) {
+        if (params.launch_type == Service::AM::LaunchType::FrontendInitiated) {
+            fs_controller.InitTempStorage();
+        }
+
         InitializeKernel(system);
 
         if (params.applet_type == Service::AM::AppletType::Application) {

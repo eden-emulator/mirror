@@ -127,6 +127,8 @@ public:
     // above is called.
     void CreateFactories(FileSys::VfsFilesystem& vfs, bool overwrite = true);
 
+    void InitTempStorage();
+
     void Reset();
 
 private:

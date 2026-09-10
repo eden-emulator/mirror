@@ -787,6 +787,13 @@ void FileSystemController::CreateFactories(FileSys::VfsFilesystem& vfs, bool ove
     }
 }
 
+void FileSystemController::InitTempStorage() {
+    const auto save_directory = system.GetFilesystem()->OpenDirectory(Common::FS::GetEdenPathString(Common::FS::EdenPath::SaveDir), FileSys::OpenMode::ReadWrite);
+    if (save_directory != nullptr) {
+        save_directory->DeleteSubdirectoryRecursive("temp");
+    }
+}
+
 void FileSystemController::Reset() {
     std::scoped_lock lk{registration_lock};
     registrations.clear();
