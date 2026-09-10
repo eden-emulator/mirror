@@ -35,6 +35,7 @@ const u64 HostPageMask = ~(HostPageSize - 1);
 
 void* AllocateMemoryPages(std::size_t size) noexcept;
 void FreeMemoryPages(void* base, std::size_t size) noexcept;
+void InitSwap() noexcept;
 
 /// A large page-aligned buffer that has optimized memory usage for zero-writes.
 template <typename T>
