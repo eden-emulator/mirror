@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <array>
 #include <mutex>
 #include <opus.h>
 
@@ -12,9 +13,12 @@
 #include "core/hle/service/audio/errors.h"
 
 namespace AudioCore::OpusDecoder {
+class OpusDecoder;
 class HardwareOpus {
 public:
     HardwareOpus(Core::System& system);
+    Result RegisterDecoder(OpusDecoder* decoder);
+    void UnregisterDecoder(OpusDecoder* decoder);
 
     u32 GetWorkBufferSize(u32 channel);
     u32 GetWorkBufferSizeForMultiStream(u32 total_stream_count, u32 stereo_stream_count);
@@ -39,6 +43,7 @@ public:
 private:
     Core::System& system;
     std::mutex mutex;
+    std::array<OpusDecoder*, 24> decoders{};
     ADSP::OpusDecoder::OpusDecoder& opus_decoder;
     ADSP::OpusDecoder::SharedMemory shared_memory;
 };
