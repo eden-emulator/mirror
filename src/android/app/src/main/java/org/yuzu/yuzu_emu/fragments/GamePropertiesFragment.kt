@@ -383,6 +383,20 @@ class GamePropertiesFragment : Fragment() {
                     }
                 )
             )
+            add(
+                SubmenuProperty(
+                    R.string.post_processing,
+                    R.string.post_processing_per_game_description,
+                    R.drawable.ic_post_processing,
+                    action = {
+                        val action = HomeNavigationDirections.actionGlobalSettingsActivity(
+                            args.game,
+                            Settings.MenuTag.SECTION_POST_PROCESSING
+                        )
+                        binding.root.findNavController().navigate(action)
+                    }
+                )
+            )
 
             if (GpuDriverHelper.isAdrenoGpu()) {
                 add(

@@ -1,0 +1,3 @@
+name=Anime
+description=Cel shaded look: the picture is cleaned first, then the lighting is collapsed into flat bands with inked edges, finished with a small glow.
+chain=Denoise.fx|Denoise|Strength=0.18,Radius=1.2;CelShading.fx|CelShading|Bands=5,BandContrast=0.35,BandEdge=0.2,Detail=0.7,OutlineStrength=0.7,OutlineThreshold=0.2,Saturation=1.3;Bloom.fx|Bloom|Radius=1.2,Amount=0.25

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
+    android:baselineAligned="false"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/fx_add"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:minHeight="48dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:text="@string/post_processing_add"
+        app:icon="@drawable/ic_add"
+        app:iconPadding="6dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/fx_presets"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="8dp"
+        android:layout_weight="1.4"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:minHeight="48dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:text="@string/post_processing_presets"
+        app:icon="@drawable/ic_dropdown_arrow"
+        app:iconGravity="textEnd"
+        app:iconPadding="6dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/fx_create_preset"
+        style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="8dp"
+        android:contentDescription="@string/post_processing_preset_new"
+        app:icon="@drawable/ic_add" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/fx_remove_all"
+        style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="8dp"
+        android:contentDescription="@string/post_processing_remove_all"
+        app:icon="@drawable/ic_delete" />
+
+</LinearLayout>

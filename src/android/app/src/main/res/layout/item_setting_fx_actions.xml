@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/fx_reset"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="@string/post_processing_reset" />
+
+</LinearLayout>

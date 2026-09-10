@@ -1,0 +1,11 @@
+--- a/source/effect_lexer.cpp
++++ b/source/effect_lexer.cpp
+@@ -1181,7 +1181,7 @@
+ 	}
+ 	else
+ 	{
+-#if 0
++#if !defined(__cpp_lib_to_chars)
+ 		exponent += decimal_location - mantissa_size;
+ 
+ 		const bool exponent_negative = exponent < 0;

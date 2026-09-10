@@ -1,0 +1,3 @@
+name=Retro
+description=Old television look: colour fringing at the edges of the screen, curved scanlines with a phosphor mask, and darkened corners. The scanline roll is switched off so it does not crawl.
+chain=ChromaticAberration.fx|ChromaticAberration|Strength=1.0;CRT.fx|CRT|RollSpeed=0,Bleed=1.2;Vignette.fx|Vignette|Strength=0.7

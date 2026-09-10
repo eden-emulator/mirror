@@ -1,0 +1,3 @@
+name=Dreamy
+description=Soft focus: the centre of the screen stays sharp while everything around it blurs, with a wide glow over the highlights. Good for slower games and cutscenes.
+chain=Blur.fx|Blur|Radius=6,Strength=0.85,FocusSize=0.28,FocusSoftness=0.5;Bloom.fx|Bloom|Radius=2.0,Amount=0.55

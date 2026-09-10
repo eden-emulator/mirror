@@ -250,6 +250,12 @@ if (YUZU_CRASH_DUMPS)
     target_compile_definitions(yuzu PRIVATE YUZU_CRASH_DUMPS)
 endif()
 
+if (ENABLE_RESHADE)
+    target_sources(yuzu PRIVATE
+        configuration/configure_post_processing.cpp
+        configuration/configure_post_processing.h)
+endif()
+
 if (CXX_CLANG)
     target_compile_definitions(yuzu PRIVATE
         $<$<VERSION_LESS:$<CXX_COMPILER_VERSION>,15>:CANNOT_EXPLICITLY_INSTANTIATE>)

@@ -56,6 +56,9 @@ class QSlider;
 class QHBoxLayout;
 class WaitTreeWidget;
 class PerformanceOverlay;
+#ifdef HAS_RESHADE
+class ConfigurePostProcessing;
+#endif
 enum class GameListOpenTarget;
 enum class DumpRomFSTarget;
 class GameListPlaceholder;
@@ -391,6 +394,9 @@ private slots:
     void OnToggleFilterBar();
     void OnToggleStatusBar();
     void OnTogglePerfOverlay();
+#ifdef HAS_RESHADE
+    void OnPostProcessingShaders();
+#endif
     void OnGameListRefresh();
     void InitializeHotkeys();
     void ToggleFullscreen();
@@ -495,6 +501,9 @@ private:
     QTimer shutdown_timer;
     OverlayDialog* shutdown_dialog{};
     PerformanceOverlay* perf_overlay = nullptr;
+#ifdef HAS_RESHADE
+    ConfigurePostProcessing* post_processing_dialog = nullptr;
+#endif
 
     GameListPlaceholder* game_list_placeholder = nullptr;
 

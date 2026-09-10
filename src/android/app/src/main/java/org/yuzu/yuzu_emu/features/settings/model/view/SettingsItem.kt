@@ -144,6 +144,10 @@ abstract class SettingsItem(
         const val TYPE_LAUNCHABLE = 13
         const val TYPE_PATH = 14
         const val TYPE_GPU_UNSWIZZLE = 15
+        const val TYPE_FX_TOOLBAR = 16
+        const val TYPE_FX_PRESET = 17
+        const val TYPE_FX_SHADER = 18
+        const val TYPE_FX_BUTTON = 19
 
         const val FASTMEM_COMBINED = "fastmem_combined"
         const val GPU_UNSWIZZLE_COMBINED = "gpu_unswizzle_combined"

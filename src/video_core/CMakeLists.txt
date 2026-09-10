@@ -302,6 +302,50 @@ if (ENABLE_LSFG)
     target_compile_definitions(video_core PUBLIC HAS_LSFG)
 endif()
 
+if (ENABLE_RESHADE)
+    set(BUNDLED_FX_DIR ${CMAKE_SOURCE_DIR}/dist/post_shaders)
+    set(BUNDLED_FX_HEADER ${CMAKE_CURRENT_BINARY_DIR}/bundled_fx_effects.h)
+    file(GLOB BUNDLED_FX_FILES ${BUNDLED_FX_DIR}/*.fx)
+
+    add_custom_command(
+        OUTPUT ${BUNDLED_FX_HEADER}
+        COMMAND ${CMAKE_COMMAND} -P
+            ${CMAKE_CURRENT_SOURCE_DIR}/post_processing/GenerateBundledEffects.cmake
+            ${BUNDLED_FX_DIR} ${BUNDLED_FX_HEADER}
+        DEPENDS ${BUNDLED_FX_FILES}
+    )
+
+    set(BUNDLED_PRESET_DIR ${CMAKE_SOURCE_DIR}/dist/post_presets)
+    set(BUNDLED_PRESET_HEADER ${CMAKE_CURRENT_BINARY_DIR}/bundled_fx_presets.h)
+    file(GLOB BUNDLED_PRESET_FILES ${BUNDLED_PRESET_DIR}/*.fxp)
+
+    add_custom_command(
+        OUTPUT ${BUNDLED_PRESET_HEADER}
+        COMMAND ${CMAKE_COMMAND} -P
+            ${CMAKE_CURRENT_SOURCE_DIR}/post_processing/GenerateBundledPresets.cmake
+            ${BUNDLED_PRESET_DIR} ${BUNDLED_PRESET_HEADER}
+        DEPENDS ${BUNDLED_PRESET_FILES}
+    )
+
+    target_sources(video_core PRIVATE
+        post_processing/fx_chain.cpp
+        post_processing/fx_chain.h
+        post_processing/fx_compile.cpp
+        post_processing/fx_compile.h
+        post_processing/fx_effect.cpp
+        post_processing/fx_effect.h
+        post_processing/fx_preset.cpp
+        post_processing/fx_preset.h
+        renderer_vulkan/present/post_process.cpp
+        renderer_vulkan/present/post_process.h
+        ${BUNDLED_FX_HEADER}
+        ${BUNDLED_PRESET_HEADER}
+    )
+    target_include_directories(video_core PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+    target_link_libraries(video_core PRIVATE reshadefx::reshadefx)
+    target_compile_definitions(video_core PUBLIC HAS_RESHADE)
+endif()
+
 if (ENABLE_OPENGL)
     target_sources(video_core PRIVATE
         renderer_opengl/present/filters.cpp

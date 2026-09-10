@@ -23,6 +23,10 @@ import com.google.android.material.timepicker.TimeFormat
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.SettingsNavigationDirections
 import org.yuzu.yuzu_emu.databinding.ListItemSettingBinding
+import org.yuzu.yuzu_emu.databinding.ListItemSettingFxButtonBinding
+import org.yuzu.yuzu_emu.databinding.ListItemSettingFxPresetBinding
+import org.yuzu.yuzu_emu.databinding.ListItemSettingFxShaderBinding
+import org.yuzu.yuzu_emu.databinding.ListItemSettingFxToolbarBinding
 import org.yuzu.yuzu_emu.databinding.ListItemSettingInputBinding
 import org.yuzu.yuzu_emu.databinding.ListItemSettingSwitchBinding
 import org.yuzu.yuzu_emu.databinding.ListItemSettingsHeaderBinding
@@ -104,6 +108,34 @@ class SettingsAdapter(
 
             SettingsItem.TYPE_GPU_UNSWIZZLE -> {
                 GpuUnswizzleViewHolder(ListItemSettingBinding.inflate(inflater), this)
+            }
+
+            SettingsItem.TYPE_FX_TOOLBAR -> {
+                FxToolbarViewHolder(
+                    ListItemSettingFxToolbarBinding.inflate(inflater, parent, false),
+                    this
+                )
+            }
+
+            SettingsItem.TYPE_FX_PRESET -> {
+                FxPresetViewHolder(
+                    ListItemSettingFxPresetBinding.inflate(inflater, parent, false),
+                    this
+                )
+            }
+
+            SettingsItem.TYPE_FX_SHADER -> {
+                FxShaderCardViewHolder(
+                    ListItemSettingFxShaderBinding.inflate(inflater, parent, false),
+                    this
+                )
+            }
+
+            SettingsItem.TYPE_FX_BUTTON -> {
+                FxButtonViewHolder(
+                    ListItemSettingFxButtonBinding.inflate(inflater, parent, false),
+                    this
+                )
             }
 
             else -> {

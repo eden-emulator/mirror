@@ -388,6 +388,30 @@ struct Values {
                                                   true,
                                                   true};
 
+    SwitchableSetting<std::string> post_shader_chain{linkage,
+                                                     std::string(),
+                                                     "post_shader_chain",
+                                                     Category::Renderer,
+                                                     Specialization::Default,
+                                                     true,
+                                                     true};
+
+    SwitchableSetting<std::string> post_shader_preset{linkage,
+                                                      std::string(),
+                                                      "post_shader_preset",
+                                                      Category::Renderer,
+                                                      Specialization::Default,
+                                                      true,
+                                                      true};
+
+    SwitchableSetting<bool> post_shader_enabled{linkage,
+                                                true,
+                                                "post_shader_enabled",
+                                                Category::Renderer,
+                                                Specialization::Default,
+                                                true,
+                                                true};
+
     SwitchableSetting<bool> frame_gen{linkage, false, "frame_gen", Category::Renderer,
                                       Specialization::Default, true, false};
 

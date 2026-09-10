@@ -1,0 +1,64 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// SPDX-FileCopyrightText: Copyright 2012 PPSSPP Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+// Based on colorcorrection.fsh in PPSSPP.
+
+texture BackBufferTex : COLOR;
+sampler BackBuffer { Texture = BackBufferTex; };
+
+uniform float Saturation <
+    ui_type = "slider";
+    ui_label = "Saturation";
+    ui_min = 0.0; ui_max = 2.0; ui_step = 0.01;
+> = 1.0;
+
+uniform float Brightness <
+    ui_type = "slider";
+    ui_label = "Brightness";
+    ui_min = 0.0; ui_max = 2.0; ui_step = 0.01;
+> = 1.0;
+
+uniform float Contrast <
+    ui_type = "slider";
+    ui_label = "Contrast";
+    ui_min = 0.0; ui_max = 2.0; ui_step = 0.01;
+> = 1.0;
+
+uniform float Gamma <
+    ui_type = "slider";
+    ui_label = "Gamma";
+    ui_min = 0.5; ui_max = 2.0; ui_step = 0.01;
+> = 1.0;
+
+void VS_PostProcess(in uint id : SV_VertexID, out float4 pos : SV_Position, out float2 uv : TEXCOORD)
+{
+    uv = float2(float(id & 2), float((id & 1) << 1));
+    pos = float4(uv * float2(2.0, -2.0) + float2(-1.0, 1.0), 0.0, 1.0);
+}
+
+float4 PS_ColorGrade(float4 pos : SV_Position, float2 uv : TEXCOORD) : SV_Target
+{
+    float3 rgb = tex2D(BackBuffer, uv).rgb;
+
+    float luma = dot(rgb, float3(0.2126, 0.7152, 0.0722));
+    rgb = lerp(float3(luma, luma, luma), rgb, Saturation);
+    rgb *= Brightness;
+    rgb = (rgb - 0.5) * Contrast + 0.5;
+    rgb = pow(max(rgb, 0.0), 1.0 / max(Gamma, 0.0001));
+
+    return float4(saturate(rgb), 1.0);
+}
+
+technique ColorGrade <
+    ui_label = "Colour Grade";
+    ui_tooltip = "The four basic colour controls in one pass: saturation, brightness, contrast and gamma. Reach for this before anything more specialised.";
+>
+{
+    pass
+    {
+        VertexShader = VS_PostProcess;
+        PixelShader = PS_ColorGrade;
+    }
+}

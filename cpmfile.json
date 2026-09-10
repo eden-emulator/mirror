@@ -238,6 +238,14 @@
         "repo": "stachenov/quazip",
         "version": "2e95c9001b"
     },
+    "reshade": {
+        "hash": "6fc9b39821ca6e2d91160f05846b3a42159fec759f5d6fba91d1a57801a1bdaf6047740578c136f0b1a60a9c29ad160d87dbfe0dbfbcdf6ea879a8a078377b8c",
+        "patches": [
+            "0001-from-chars-fallback.patch"
+        ],
+        "repo": "crosire/reshade",
+        "version": "v6.8.0"
+    },
     "sdl3": {
         "hash": "df5a323af7ac366661a3c0e887969c72584d232f3cc211419d59b0487b620b6b2859d4549c9e8df002ee489290062e466fcfddf7edc0872a37b1f2845e81c0f3",
         "min_version": "3.2.10",

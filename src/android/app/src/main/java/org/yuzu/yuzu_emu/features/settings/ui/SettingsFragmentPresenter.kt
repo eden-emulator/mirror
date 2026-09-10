@@ -18,6 +18,7 @@ import org.yuzu.yuzu_emu.features.input.model.NpadStyleIndex
 import org.yuzu.yuzu_emu.features.settings.model.AbstractBooleanSetting
 import org.yuzu.yuzu_emu.features.settings.model.AbstractIntSetting
 import org.yuzu.yuzu_emu.features.settings.model.BooleanSetting
+import org.yuzu.yuzu_emu.features.settings.model.FxPresetNameSetting
 import org.yuzu.yuzu_emu.features.settings.model.ByteSetting
 import org.yuzu.yuzu_emu.features.settings.model.IntSetting
 import org.yuzu.yuzu_emu.features.settings.model.LongSetting
@@ -30,6 +31,7 @@ import org.yuzu.yuzu_emu.features.settings.model.view.*
 import org.yuzu.yuzu_emu.utils.InputHandler
 import org.yuzu.yuzu_emu.utils.LosslessScalingHelper
 import org.yuzu.yuzu_emu.utils.NativeConfig
+import org.yuzu.yuzu_emu.utils.NativePostProcessing
 import org.yuzu.yuzu_emu.utils.DirectoryInitialization
 import org.yuzu.yuzu_emu.utils.FullscreenHelper
 import androidx.core.content.edit
@@ -43,6 +45,14 @@ class SettingsFragmentPresenter(
     private var activity: FragmentActivity?
 ) {
     private var settingsList = ArrayList<SettingsItem>()
+
+    private val expandedShaderSlots = mutableSetOf<Int>()
+
+    private var shaderPickerOpen = false
+
+    private var presetPickerOpen = false
+
+    private var postProcessingSynced = false
 
     private val context get() = YuzuApplication.appContext
 
@@ -163,6 +173,7 @@ class SettingsFragmentPresenter(
             MenuTag.SECTION_SYSTEM -> addSystemSettings(sl)
             MenuTag.SECTION_RENDERER -> addGraphicsSettings(sl)
             MenuTag.SECTION_FRAME_GEN -> addFrameGenSettings(sl)
+            MenuTag.SECTION_POST_PROCESSING -> addPostProcessingSettings(sl)
             MenuTag.SECTION_PERFORMANCE_STATS -> addPerformanceOverlaySettings(sl)
             MenuTag.SECTION_SOC_OVERLAY -> addSocOverlaySettings(sl)
             MenuTag.SECTION_INPUT_OVERLAY -> addInputOverlaySettings(sl)
@@ -186,6 +197,209 @@ class SettingsFragmentPresenter(
         adapter.submitList(settingsList) {
             if (notifyDataSetChanged) {
                 adapter.notifyDataSetChanged()
+            }
+        }
+    }
+
+    private fun addPostProcessingSettings(sl: ArrayList<SettingsItem>) {
+        if (!postProcessingSynced) {
+            postProcessingSynced = true
+            NativePostProcessing.reload()
+        }
+
+        val usable = NativePostProcessing.catalog().filter { it.valid }
+
+        sl.apply {
+            if (usable.isEmpty()) {
+                add(
+                    RunnableSetting(
+                        titleId = R.string.post_processing_empty,
+                        descriptionString = NativePostProcessing.getShaderDirectory(),
+                        isRunnable = false
+                    ) {}
+                )
+                return@apply
+            }
+
+            val labels = mutableListOf<String>()
+            val summaries = mutableListOf<String>()
+            val files = mutableListOf<String>()
+            val techniques = mutableListOf<String>()
+            for (effect in usable) {
+                for (technique in effect.techniques) {
+                    if (effect.techniques.size == 1) {
+                        labels.add(effect.label)
+                    } else {
+                        labels.add(effect.label + " \u00b7 " + technique)
+                    }
+                    summaries.add(effect.description)
+                    files.add(effect.file)
+                    techniques.add(technique)
+                }
+            }
+
+            val chain = NativePostProcessing.chain()
+            val active = NativePostProcessing.getActivePreset()
+
+            var addLabel = R.string.post_processing_add
+            if (chain.isNotEmpty()) {
+                addLabel = R.string.post_processing_open_list
+            }
+            if (shaderPickerOpen) {
+                addLabel = R.string.post_processing_close_list
+            }
+
+            var presetLabel = context.getString(R.string.post_processing_presets)
+            if (active.isNotEmpty()) {
+                presetLabel = active
+            }
+
+            val createPreset = StringInputSetting(
+                setting = FxPresetNameSetting { name ->
+                    NativePostProcessing.savePreset(name, "")
+                    settingsViewModel.setReloadListAndNotifyDataset(true)
+                },
+                titleId = R.string.post_processing_preset_new,
+                descriptionId = R.string.post_processing_preset_new_description,
+                validator = { it != null && it.isNotBlank() && !it.contains('=') },
+                errorId = R.string.post_processing_preset_name_invalid
+            )
+
+            add(
+                FxToolbarSetting(
+                    addLabelId = addLabel,
+                    listOpen = shaderPickerOpen,
+                    presetLabel = presetLabel,
+                    hasEffects = chain.isNotEmpty(),
+                    createPreset = createPreset,
+                    onAdd = {
+                        shaderPickerOpen = !shaderPickerOpen
+                        presetPickerOpen = false
+                        settingsViewModel.setReloadListAndNotifyDataset(true)
+                    },
+                    onPresets = {
+                        presetPickerOpen = !presetPickerOpen
+                        shaderPickerOpen = false
+                        settingsViewModel.setReloadListAndNotifyDataset(true)
+                    },
+                    onRemoveAll = {
+                        NativePostProcessing.clearChain()
+                        NativePostProcessing.clearPreset()
+                        NativePostProcessing.store()
+                        expandedShaderSlots.clear()
+                        shaderPickerOpen = false
+                        settingsViewModel.setReloadListAndNotifyDataset(true)
+                    }
+                )
+            )
+
+            if (shaderPickerOpen) {
+                for (choice in labels.indices) {
+                    add(
+                        RunnableSetting(
+                            titleString = labels[choice],
+                            descriptionString = summaries[choice],
+                            isRunnable = true
+                        ) {
+                            NativePostProcessing.append(files[choice], techniques[choice])
+                            NativePostProcessing.store()
+                            shaderPickerOpen = false
+                            settingsViewModel.setReloadListAndNotifyDataset(true)
+                        }
+                    )
+                }
+            }
+
+            if (presetPickerOpen) {
+                add(
+                    FxPresetSetting(
+                        titleString = context.getString(R.string.post_processing_preset_none),
+                        onApply = {
+                            NativePostProcessing.clearPreset()
+                            presetPickerOpen = false
+                            settingsViewModel.setReloadListAndNotifyDataset(true)
+                        }
+                    )
+                )
+                for (preset in NativePostProcessing.presets()) {
+                    add(
+                        FxPresetSetting(
+                            titleString = preset.name,
+                            descriptionString = preset.description,
+                            deletable = !preset.bundled,
+                            onApply = {
+                                NativePostProcessing.applyPreset(preset.name)
+                                NativePostProcessing.store()
+                                presetPickerOpen = false
+                                expandedShaderSlots.clear()
+                                settingsViewModel.setReloadListAndNotifyDataset(true)
+                            },
+                            onDelete = {
+                                NativePostProcessing.deletePreset(preset.name)
+                                settingsViewModel.setReloadListAndNotifyDataset(true)
+                            }
+                        )
+                    )
+                }
+            }
+
+            if (active.isNotEmpty()) {
+                add(
+                    FxButtonSetting(titleId = R.string.post_processing_preset_reset) {
+                        NativePostProcessing.applyPreset(active)
+                        NativePostProcessing.store()
+                        expandedShaderSlots.clear()
+                        settingsViewModel.setReloadListAndNotifyDataset(true)
+                    }
+                )
+            }
+
+            for (index in chain.indices) {
+                val entry = chain[index]
+                val effect = usable.firstOrNull { it.file == entry.file }
+
+                var header = entry.file
+                var summary = ""
+                var uniforms = emptyList<NativePostProcessing.Uniform>()
+                if (effect != null) {
+                    header = effect.label
+                    if (effect.techniques.size > 1) {
+                        header = effect.label + " \u00b7 " + entry.technique
+                    }
+                    summary = effect.description
+                    uniforms = effect.uniforms
+                }
+
+                val isOpen = expandedShaderSlots.contains(index)
+
+                add(
+                    FxShaderCardSetting(
+                        titleString = header,
+                        descriptionString = summary,
+                        index = index,
+                        expanded = isOpen,
+                        uniforms = uniforms,
+                        onToggle = {
+                            if (isOpen) {
+                                expandedShaderSlots.remove(index)
+                            } else {
+                                expandedShaderSlots.add(index)
+                            }
+                            settingsViewModel.setReloadListAndNotifyDataset(true)
+                        },
+                        onRemove = {
+                            NativePostProcessing.remove(index)
+                            NativePostProcessing.store()
+                            expandedShaderSlots.clear()
+                            settingsViewModel.setReloadListAndNotifyDataset(true)
+                        },
+                        onReset = {
+                            NativePostProcessing.resetValues(index)
+                            NativePostProcessing.store()
+                            settingsViewModel.setReloadListAndNotifyDataset(true)
+                        }
+                    )
+                )
             }
         }
     }
