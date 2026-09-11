@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.drawerlayout.widget.DrawerLayout
@@ -671,6 +672,137 @@ class QuickSettings(val emulationFragment: EmulationFragment) {
                 )
             }
         }
+    }
+
+    private fun addFrameGenCell(inflater: LayoutInflater, row: ViewGroup): TextView {
+        val cell = inflater.inflate(R.layout.item_quick_settings_frame_gen_cell, row, false)
+            as TextView
+        row.addView(cell)
+        return cell
+    }
+
+    fun addFrameGen(container: ViewGroup) {
+        val inflater = LayoutInflater.from(emulationFragment.requireContext())
+        val itemView = inflater.inflate(R.layout.item_quick_settings_frame_gen, container, false)
+
+        val multiplierRow = itemView.findViewById<LinearLayout>(R.id.frame_gen_multipliers)
+        val targetRow = itemView.findViewById<LinearLayout>(R.id.frame_gen_targets)
+        val motionView = itemView.findViewById<ViewGroup>(R.id.frame_gen_motion)
+        val motionSwitch = itemView.findViewById<MaterialSwitch>(R.id.frame_gen_motion_switch)
+
+        val multiplierNames =
+            emulationFragment.resources.getStringArray(R.array.frameGenMultiplierNames)
+        val multiplierValues =
+            emulationFragment.resources.getIntArray(R.array.frameGenMultiplierValues)
+        val targetValues =
+            emulationFragment.resources.getIntArray(R.array.frameGenTargetRateValues)
+
+        val columns = maxOf(multiplierValues.size + 1, targetValues.size).toFloat()
+        multiplierRow.weightSum = columns
+        targetRow.weightSum = columns
+
+        val powerCell = addFrameGenCell(inflater, multiplierRow)
+
+        val multiplierCells = mutableListOf<TextView>()
+        for (name in multiplierNames) {
+            val cell = addFrameGenCell(inflater, multiplierRow)
+            cell.text = name
+            multiplierCells.add(cell)
+        }
+
+        val targetCells = mutableListOf<TextView>()
+        for (value in targetValues) {
+            val cell = addFrameGenCell(inflater, targetRow)
+            if (value == 0) {
+                cell.setText(R.string.frame_gen_fixed)
+            } else {
+                cell.text = value.toString()
+            }
+            targetCells.add(cell)
+        }
+
+        val inactiveAlpha = 0.38f
+
+        fun refresh() {
+            val enabled = BooleanSetting.RENDERER_FRAME_GEN.getBoolean(needsGlobal = false)
+            val multiplier = IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.getInt(needsGlobal = false)
+            val target = IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.getInt(needsGlobal = false)
+            val fixed = target == 0
+
+            var powerLabel = R.string.frame_gen_off
+            var rowAlpha = inactiveAlpha
+            if (enabled) {
+                powerLabel = R.string.frame_gen_on
+                rowAlpha = 1.0f
+            }
+
+            var multiplierAlpha = inactiveAlpha
+            if (enabled && fixed) {
+                multiplierAlpha = 1.0f
+            }
+
+            powerCell.setText(powerLabel)
+            powerCell.isSelected = enabled
+
+            multiplierCells.forEachIndexed { index, cell ->
+                cell.isEnabled = enabled
+                cell.isSelected = enabled && fixed && multiplierValues[index] == multiplier
+                cell.alpha = multiplierAlpha
+            }
+
+            targetCells.forEachIndexed { index, cell ->
+                cell.isEnabled = enabled
+                cell.isSelected = enabled && targetValues[index] == target
+                cell.alpha = rowAlpha
+            }
+
+            motionView.isEnabled = enabled
+            motionSwitch.isEnabled = enabled
+            motionView.alpha = rowAlpha
+        }
+
+        powerCell.setOnClickListener {
+            if (BooleanSetting.RENDERER_FRAME_GEN.getBoolean(needsGlobal = false)) {
+                BooleanSetting.RENDERER_FRAME_GEN.setBoolean(false)
+            } else {
+                IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.setInt(multiplierValues.first())
+                IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.setInt(0)
+                BooleanSetting.RENDERER_FRAME_GEN.setBoolean(true)
+            }
+            saveSettings()
+            refresh()
+        }
+
+        multiplierCells.forEachIndexed { index, cell ->
+            cell.setOnClickListener {
+                IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.setInt(multiplierValues[index])
+                IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.setInt(0)
+                saveSettings()
+                refresh()
+            }
+        }
+
+        targetCells.forEachIndexed { index, cell ->
+            cell.setOnClickListener {
+                IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.setInt(targetValues[index])
+                saveSettings()
+                refresh()
+            }
+        }
+
+        motionSwitch.isChecked =
+            BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.getBoolean(needsGlobal = false)
+        motionSwitch.setOnCheckedChangeListener { _, checked ->
+            BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.setBoolean(checked)
+            saveSettings()
+        }
+
+        motionView.setOnClickListener {
+            motionSwitch.toggle()
+        }
+
+        refresh()
+        container.addView(itemView)
     }
 
     fun addDivider(container: ViewGroup) {

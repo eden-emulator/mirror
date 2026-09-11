@@ -310,8 +310,6 @@
     <string name="frame_gen_flow_scale_description">Разрешение прохода оптического потока в долях от выходного разрешения. Его понижение — самый дешёвый способ вернуть производительность.</string>
     <string name="frame_gen_fp16">Шейдеры половинной точности</string>
     <string name="frame_gen_fp16_description">Использовать 16-битную версию шейдеров. Автоматически переключается на обычную, если драйвер или файл не поддерживают её.</string>
-    <string name="frame_gen_dump_flow">Сохранить сгенерированный кадр</string>
-    <string name="frame_gen_dump_flow_description">Однократно записать уровни мип-карт оптического потока и интерполированный кадр в папку lossless/debug для диагностики.</string>
     <string name="frame_gen_unsupported">Генерация кадров недоступна</string>
     <string name="frame_gen_unsupported_description">Драйвер ГПУ не поддерживает модель памяти Vulkan, требуемую шейдерами Lossless Scaling.</string>
     <string name="lossless_scaling_setup_description">Опционально. Укажите свой Lossless.dll для включения генерации кадров позже.</string>

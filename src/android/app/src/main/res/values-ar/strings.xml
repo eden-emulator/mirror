@@ -305,8 +305,6 @@
     <string name="frame_gen_target_rate_60">60 إطارًا في الثانية</string>
     <string name="frame_gen_target_rate_90">90 إطارًا في الثانية</string>
     <string name="frame_gen_target_rate_120">120 إطارًا في الثانية</string>
-    <string name="frame_gen_target_rate_144">144 إطارًا في الثانية</string>
-    <string name="frame_gen_target_rate_165">165 إطارًا في الثانية</string>
     <string name="frame_gen_queue_target">هدف قائمة انتظار الإطارات</string>
     <string name="frame_gen_queue_target_description">كم عدد الإطارات المكتملة التي قد تنتظر قبل عرضها؟ تعمل قوائم الانتظار الأكبر حجمًا على امتصاص الارتفاعات المفاجئة في حمل وحدة معالجة الرسومات على حساب زمن انتقال الإدخال.</string>
     <string name="frame_gen_queue_target_0">أقل زمن انتقال (بدون تخزين مؤقت)</string>
@@ -318,8 +316,6 @@
     <string name="frame_gen_flow_scale_description">دقة مسار التدفق البصري، كجزء من الناتج. ويُعد خفض هذه القيمة أرخص طريقة لاستعادة الأداء.</string>
     <string name="frame_gen_fp16">مُظلِّلات نصف الدقة</string>
     <string name="frame_gen_fp16_description">استخدم نسخة التظليل 16 بت. يتم التراجع تلقائيًا إلى الخيار البديل في حالة عدم توفرها في برنامج التشغيل أو الملف.</string>
-    <string name="frame_gen_dump_flow">إفراغ الإطار الذي تم إنشاؤه</string>
-    <string name="frame_gen_dump_flow_description">قم بكتابة مستويات MIP للتدفق البصري والإطار المُستكمل إلى مجلد lossless/debug مرة واحدة، لغرض استكشاف الأخطاء وإصلاحها</string>
     <string name="frame_gen_unsupported">توليد الإطار غير متاح</string>
     <string name="frame_gen_unsupported_description">لا يدعم برنامج تشغيل وحدة معالجة الرسومات هذا نموذج ذاكرة Vulkan، الذي تتطلبه برامج التظليل الخاصة بـ«Lossless Scaling».</string>
     <string name="lossless_scaling_setup_description">اختياري. قم بتوفير ملف Lossless.dll الخاص بك لتمكين إنشاء الإطارات لاحقًا</string>

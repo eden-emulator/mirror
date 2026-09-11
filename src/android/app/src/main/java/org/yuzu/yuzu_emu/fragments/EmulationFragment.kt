@@ -92,6 +92,7 @@ import org.yuzu.yuzu_emu.utils.GameIconUtils
 import org.yuzu.yuzu_emu.utils.GpuDriverHelper
 import org.yuzu.yuzu_emu.utils.InputHandler
 import org.yuzu.yuzu_emu.utils.Log
+import org.yuzu.yuzu_emu.utils.LosslessScalingHelper
 import org.yuzu.yuzu_emu.utils.NativeConfig
 import org.yuzu.yuzu_emu.utils.NativeFreedrenoConfig
 import org.yuzu.yuzu_emu.utils.NativePostProcessing
@@ -1188,6 +1189,13 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
 
             quickSettings.addDivider(container)
 
+            if (::emulationState.isInitialized && emulationState.frameGenAtLaunch &&
+                LosslessScalingHelper.isInstalled() && LosslessScalingHelper.isSupportedByGpu()
+            ) {
+                quickSettings.addFrameGen(container)
+                quickSettings.addDivider(container)
+            }
+
             quickSettings.addIntSetting(
                 R.string.renderer_accuracy,
                 container,
@@ -2273,6 +2281,10 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         private var surface: Surface? = null
         lateinit var emulationThread: Thread
 
+        @get:Synchronized
+        var frameGenAtLaunch = false
+            private set
+
         init {
             state = State.STOPPED
         }
@@ -2357,6 +2369,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         @Synchronized
         fun changeProgram(programIndex: Int) {
             emulationThread.join()
+            frameGenAtLaunch = BooleanSetting.RENDERER_FRAME_GEN.getBoolean(false)
             emulationThread = Thread({
                 Log.debug("[EmulationFragment] Starting emulation thread.")
                 NativeLibrary.run(gamePath, programIndex, false)
@@ -2424,6 +2437,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             when (state) {
                 State.STOPPED -> {
                     NativeLibrary.surfaceChanged(currentSurface)
+                    frameGenAtLaunch = BooleanSetting.RENDERER_FRAME_GEN.getBoolean(false)
                     emulationThread = Thread({
                         Log.debug("[EmulationFragment] Starting emulation thread.")
                         NativeLibrary.run(gamePath, programIndex, true)

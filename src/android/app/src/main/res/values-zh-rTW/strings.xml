@@ -305,8 +305,6 @@
     <string name="frame_gen_target_rate_60">60 FPS</string>
     <string name="frame_gen_target_rate_90">90 FPS</string>
     <string name="frame_gen_target_rate_120">120 FPS</string>
-    <string name="frame_gen_target_rate_144">144 FPS</string>
-    <string name="frame_gen_target_rate_165">165 FPS</string>
     <string name="frame_gen_queue_target">影格佇列目標</string>
     <string name="frame_gen_queue_target_description">最多允許多少個已完成的影格在顯示器前等待，較大的佇列可以吸收 GPU 突發負載，但會增加輸入延遲</string>
     <string name="frame_gen_queue_target_0">最低延遲（無緩衝）</string>
@@ -318,8 +316,6 @@
     <string name="frame_gen_flow_scale_description">光流處理的解析度，以輸出解析度的比例表示。降低此設定值是減少效能負載最有效的方法</string>
     <string name="frame_gen_fp16">半準確著色器</string>
     <string name="frame_gen_fp16_description">使用16位元著色器。如果驅動程式或著色器檔案不支援則會自動切換成其它版本</string>
-    <string name="frame_gen_dump_flow">傾印生成的著色器</string>
-    <string name="frame_gen_dump_flow_description">將光流的 MIP 層級與補間影格寫入 Eden 資料夾中的 lossless\debug 資料夾以便進行疑難排解</string>
     <string name="frame_gen_unsupported">無法使用影格生成</string>
     <string name="frame_gen_unsupported_description">Lossless Scaling 的著色器需要 Vulkan 記憶體模型，所選的驅動程式不支援該功能</string>
     <string name="lossless_scaling_setup_description">可選擇安裝自己擁有的 Lossless.dll 以在之後啟用影格生成功能</string>

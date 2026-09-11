@@ -124,8 +124,7 @@ abstract class SettingsItem(
             IntSetting.RENDERER_FRAME_GEN_QUEUE_TARGET.key,
             BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.key,
             IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.key,
-            BooleanSetting.RENDERER_FRAME_GEN_FP16.key,
-            BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW.key
+            BooleanSetting.RENDERER_FRAME_GEN_FP16.key
         )
 
         const val TYPE_HEADER = 0
@@ -714,13 +713,6 @@ abstract class SettingsItem(
                     BooleanSetting.RENDERER_FRAME_GEN_FP16,
                     titleId = R.string.frame_gen_fp16,
                     descriptionId = R.string.frame_gen_fp16_description
-                )
-            )
-            put(
-                SwitchSetting(
-                    BooleanSetting.RENDERER_FRAME_GEN_DUMP_FLOW,
-                    titleId = R.string.frame_gen_dump_flow,
-                    descriptionId = R.string.frame_gen_dump_flow_description
                 )
             )
             put(

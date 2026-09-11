@@ -331,8 +331,9 @@
     <string name="frame_gen_target_rate_60">60 FPS</string>
     <string name="frame_gen_target_rate_90">90 FPS</string>
     <string name="frame_gen_target_rate_120">120 FPS</string>
-    <string name="frame_gen_target_rate_144">144 FPS</string>
-    <string name="frame_gen_target_rate_165">165 FPS</string>
+    <string name="frame_gen_on">On</string>
+    <string name="frame_gen_off">Off</string>
+    <string name="frame_gen_fixed">Fixed</string>
     <string name="frame_gen_queue_target">Frame queue target</string>
     <string name="frame_gen_queue_target_description">How many finished frames may wait ahead of the display. Larger queues absorb GPU spikes at the cost of input latency.</string>
     <string name="frame_gen_queue_target_0">Lowest latency (Unbuffered)</string>
@@ -344,8 +345,6 @@
     <string name="frame_gen_flow_scale_description">Resolution of the optical flow pass, as a fraction of the output. Lowering it is the cheapest way to reclaim performance.</string>
     <string name="frame_gen_fp16">Half precision shaders</string>
     <string name="frame_gen_fp16_description">Use the 16-bit shader variant. Falls back automatically if the driver or the file lacks it.</string>
-    <string name="frame_gen_dump_flow">Dump generated frame</string>
-    <string name="frame_gen_dump_flow_description">Write the optical flow mip levels and the interpolated frame to the lossless/debug folder once, for troubleshooting</string>
     <string name="frame_gen_unsupported">Frame generation unavailable</string>
     <string name="frame_gen_unsupported_description">This GPU driver does not support the Vulkan memory model, which the Lossless Scaling shaders require.</string>
     <string name="lossless_scaling_setup_description">Optional. Provide your own Lossless.dll to enable frame generation later</string>
