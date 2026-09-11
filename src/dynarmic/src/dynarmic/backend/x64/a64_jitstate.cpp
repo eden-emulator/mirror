@@ -59,16 +59,16 @@ u32 A64JitState::GetFpcr() const {
 
 void A64JitState::SetFpcr(u32 value) {
     fpcr = value & FPCR_MASK;
-
     asimd_MXCSR &= 0x0000003D;
     guest_MXCSR &= 0x0000003D;
     asimd_MXCSR |= 0x00001f80;
     guest_MXCSR |= 0x00001f80;  // Mask all exceptions
-
     // RMode
-    const std::array<u32, 4> MXCSR_RMode{0x0, 0x4000, 0x2000, 0x6000};
-    guest_MXCSR |= MXCSR_RMode[(value >> 22) & 0x3];
-
+    // 0 -> 0x0000
+    // 1 -> 0x4000
+    // 2 -> 0x2000
+    // 3 -> 0x6000
+    guest_MXCSR |= ((0x6000200040000000 >> (((value >> 18) & (0x3 << 4)))) & 0xf000);
     if (mcl::bit::get_bit<24>(value)) {
         guest_MXCSR |= (1 << 15);  // SSE Flush to Zero
         guest_MXCSR |= (1 << 6);   // SSE Denormals are Zero
