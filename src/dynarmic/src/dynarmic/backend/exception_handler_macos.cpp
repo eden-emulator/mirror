@@ -88,9 +88,10 @@ private:
 
 MachHandler::MachHandler() {
 #define KCHECK(x) do { \
-        auto r = (x); \
+        [[maybe_unused]] auto r = (x); \
         DEBUG_ASSERT(r == KERN_SUCCESS && "init failure at " #x); \
-    } while (0); \
+    } while (0);
+
     KCHECK(mach_port_allocate(mach_task_self(), MACH_PORT_RIGHT_RECEIVE, &server_port));
     KCHECK(mach_port_insert_right(mach_task_self(), server_port, server_port, MACH_MSG_TYPE_MAKE_SEND));
     KCHECK(task_set_exception_ports(mach_task_self(), EXC_MASK_BAD_ACCESS, server_port, EXCEPTION_STATE | MACH_EXCEPTION_CODES, THREAD_STATE));
