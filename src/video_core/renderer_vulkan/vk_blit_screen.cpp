@@ -8,6 +8,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <vulkan/vulkan_core.h>
+#include "common/settings.h"
 #include "video_core/framebuffer_config.h"
 #include "video_core/present.h"
 #include "video_core/renderer_vulkan/present/filters.h"
@@ -87,13 +88,18 @@ void BlitScreen::SetWindowAdaptPass(const Device& device) {
 
 void BlitScreen::PrepareFrame(const Device& device, Frame* frame,
                               const Layout::FramebufferLayout& layout) {
-    if (!window_adapt || (frame->width == layout.width && frame->height == layout.height)) {
+    if (!window_adapt) {
         return;
     }
 
-    WaitIdle(device);
+    if (frame->width != layout.width || frame->height != layout.height) {
+        WaitIdle(device);
+    } else if (!present_manager.NeedsStorage(frame, true)) {
+        return;
+    }
+
     present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format,
-                                  window_adapt->GetRenderPass());
+                                  window_adapt->GetRenderPass(), true);
 }
 
 void BlitScreen::DrawToFrame(const Device& device, RasterizerVulkan& rasterizer, Frame* frame,
@@ -120,16 +126,20 @@ void BlitScreen::DrawToFrame(const Device& device, RasterizerVulkan& rasterizer,
         swapchain_view_format = current_swapchain_view_format;
     }
 
+    const bool storage_required = Settings::values.frame_gen.GetValue();
     if (resource_update_required) {
         WaitIdle(device);
         SetWindowAdaptPass(device);
 
         if (presentation_recreate_required) {
             present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format,
-                                          window_adapt->GetRenderPass());
+                                          window_adapt->GetRenderPass(), storage_required);
         }
 
         image_index = 0;
+    } else if (present_manager.NeedsStorage(frame, storage_required)) {
+        present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format,
+                                      window_adapt->GetRenderPass(), true);
     }
 
     const VkExtent2D window_size{

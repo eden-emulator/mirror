@@ -198,6 +198,10 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format,
                        VkExtent2D guest_extent) {
     generated = false;
 
+    if (!shaders) {
+        shaders.emplace(device);
+    }
+
     if (unavailable || !Settings::values.frame_gen.GetValue()) {
         if (chain) {
             scheduler.Finish();
@@ -207,17 +211,14 @@ void FrameGen::Process(const Device& device, Frame* frame, VkFormat format,
         return;
     }
 
-    if (!frame->storage_view) {
+    if (!shaders->IsValid()) {
         unavailable = true;
         return;
     }
 
-    if (!shaders) {
-        shaders.emplace(device);
-        if (!shaders->IsValid()) {
-            unavailable = true;
-            return;
-        }
+    if (!frame->storage_view) {
+        warm_streak = 0;
+        return;
     }
 
     peak_guest_extent.width = std::max(peak_guest_extent.width, guest_extent.width);
