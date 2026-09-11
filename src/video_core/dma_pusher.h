@@ -109,11 +109,11 @@ inline CommandHeader BuildCommandHeader(BufferMethods method, u32 arg_count, Sub
 struct CommandList final {
     CommandList() = default;
     explicit CommandList(std::size_t size) : command_lists(size) {}
-    explicit CommandList(boost::container::small_vector<CommandHeader, 512>&& prefetch_command_list_)
-        : prefetch_command_list{std::move(prefetch_command_list_)} {}
-
-    boost::container::small_vector<CommandListHeader, 512> command_lists;
-    boost::container::small_vector<CommandHeader, 512> prefetch_command_list;
+    explicit CommandList(std::vector<CommandHeader>&& prefetch_command_list_)
+        : prefetch_command_list{std::move(prefetch_command_list_)}
+    {}
+    std::vector<CommandListHeader> command_lists;
+    std::vector<CommandHeader> prefetch_command_list;
 };
 
 /// @brief The DmaPusher class implements DMA submission to FIFOs, providing an area of memory that the
