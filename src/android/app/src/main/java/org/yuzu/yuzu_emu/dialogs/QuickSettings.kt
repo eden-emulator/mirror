@@ -687,8 +687,9 @@ class QuickSettings(val emulationFragment: EmulationFragment) {
 
         val multiplierRow = itemView.findViewById<LinearLayout>(R.id.frame_gen_multipliers)
         val targetRow = itemView.findViewById<LinearLayout>(R.id.frame_gen_targets)
-        val motionView = itemView.findViewById<ViewGroup>(R.id.frame_gen_motion)
-        val motionSwitch = itemView.findViewById<MaterialSwitch>(R.id.frame_gen_motion_switch)
+        val targetSection = itemView.findViewById<ViewGroup>(R.id.frame_gen_target_section)
+        val flowRow = itemView.findViewById<LinearLayout>(R.id.frame_gen_flow)
+        val flowSection = itemView.findViewById<ViewGroup>(R.id.frame_gen_flow_section)
 
         val multiplierNames =
             emulationFragment.resources.getStringArray(R.array.frameGenMultiplierNames)
@@ -696,10 +697,17 @@ class QuickSettings(val emulationFragment: EmulationFragment) {
             emulationFragment.resources.getIntArray(R.array.frameGenMultiplierValues)
         val targetValues =
             emulationFragment.resources.getIntArray(R.array.frameGenTargetRateValues)
+        val flowValues =
+            emulationFragment.resources.getIntArray(R.array.frameGenFlowScaleValues)
 
-        val columns = maxOf(multiplierValues.size + 1, targetValues.size).toFloat()
+        val columns = maxOf(
+            multiplierValues.size + 1,
+            targetValues.size,
+            flowValues.size + 1
+        ).toFloat()
         multiplierRow.weightSum = columns
         targetRow.weightSum = columns
+        flowRow.weightSum = columns
 
         val powerCell = addFrameGenCell(inflater, multiplierRow)
 
@@ -721,6 +729,16 @@ class QuickSettings(val emulationFragment: EmulationFragment) {
             targetCells.add(cell)
         }
 
+        val autoCell = addFrameGenCell(inflater, flowRow)
+        autoCell.setText(R.string.frame_gen_flow_auto)
+
+        val flowCells = mutableListOf<TextView>()
+        for (value in flowValues) {
+            val cell = addFrameGenCell(inflater, flowRow)
+            cell.text = "$value%"
+            flowCells.add(cell)
+        }
+
         val inactiveAlpha = 0.38f
 
         fun refresh() {
@@ -728,6 +746,9 @@ class QuickSettings(val emulationFragment: EmulationFragment) {
             val multiplier = IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.getInt(needsGlobal = false)
             val target = IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.getInt(needsGlobal = false)
             val fixed = target == 0
+            val flowAuto =
+                BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.getBoolean(needsGlobal = false)
+            val flowScale = IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.getInt(needsGlobal = false)
 
             var powerLabel = R.string.frame_gen_off
             var rowAlpha = inactiveAlpha
@@ -750,15 +771,20 @@ class QuickSettings(val emulationFragment: EmulationFragment) {
                 cell.alpha = multiplierAlpha
             }
 
+            targetSection.alpha = rowAlpha
             targetCells.forEachIndexed { index, cell ->
                 cell.isEnabled = enabled
                 cell.isSelected = enabled && targetValues[index] == target
-                cell.alpha = rowAlpha
             }
 
-            motionView.isEnabled = enabled
-            motionSwitch.isEnabled = enabled
-            motionView.alpha = rowAlpha
+            flowSection.alpha = rowAlpha
+            autoCell.isEnabled = enabled
+            autoCell.isSelected = enabled && flowAuto
+
+            flowCells.forEachIndexed { index, cell ->
+                cell.isEnabled = enabled
+                cell.isSelected = enabled && !flowAuto && flowValues[index] == flowScale
+            }
         }
 
         powerCell.setOnClickListener {
@@ -790,15 +816,19 @@ class QuickSettings(val emulationFragment: EmulationFragment) {
             }
         }
 
-        motionSwitch.isChecked =
-            BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.getBoolean(needsGlobal = false)
-        motionSwitch.setOnCheckedChangeListener { _, checked ->
-            BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.setBoolean(checked)
+        autoCell.setOnClickListener {
+            BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.setBoolean(true)
             saveSettings()
+            refresh()
         }
 
-        motionView.setOnClickListener {
-            motionSwitch.toggle()
+        flowCells.forEachIndexed { index, cell ->
+            cell.setOnClickListener {
+                IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.setInt(flowValues[index])
+                BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.setBoolean(false)
+                saveSettings()
+                refresh()
+            }
         }
 
         refresh()

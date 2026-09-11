@@ -183,6 +183,12 @@
         <item>120</item>
     </integer-array>
 
+    <integer-array name="frameGenFlowScaleValues">
+        <item>50</item>
+        <item>75</item>
+        <item>100</item>
+    </integer-array>
+
     <string-array name="frameGenQueueTargetNames">
         <item>@string/frame_gen_queue_target_0</item>
         <item>@string/frame_gen_queue_target_1</item>
