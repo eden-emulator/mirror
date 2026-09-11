@@ -69,8 +69,8 @@ u32 A32JitState::Cpsr() const {
     cpsr |= mcl::bit::get_bit<1>(upper_location_descriptor) ? 1 << 9 : 0;
     cpsr |= mcl::bit::get_bit<0>(upper_location_descriptor) ? 1 << 5 : 0;
     // IT state
-    cpsr |= static_cast<u32>(upper_location_descriptor & 0b11111100'00000000);
-    cpsr |= static_cast<u32>(upper_location_descriptor & 0b00000011'00000000) << 17;
+    cpsr |= u32(upper_location_descriptor & 0b11111100'00000000);
+    cpsr |= u32(upper_location_descriptor & 0b00000011'00000000) << 17;
     // Other flags
     cpsr |= cpsr_jaifm;
 
@@ -169,39 +169,36 @@ constexpr u32 FPSCR_NZCV_MASK = 0xF0000000;
 u32 A32JitState::Fpscr() const {
     DEBUG_ASSERT((fpsr_nzcv & ~FPSCR_NZCV_MASK) == 0);
 
-    const u32 fpcr_mode = static_cast<u32>(upper_location_descriptor) & FPSCR_MODE_MASK;
+    const u32 fpcr_mode = u32(upper_location_descriptor) & FPSCR_MODE_MASK;
     const u32 mxcsr = guest_MXCSR | asimd_MXCSR;
-
-    u32 FPSCR = fpcr_mode | fpsr_nzcv;
-    FPSCR |= (mxcsr & 0b0000000000001);       // IOC = IE
-    FPSCR |= (mxcsr & 0b0000000111100) >> 1;  // IXC, UFC, OFC, DZC = PE, UE, OE, ZE
-    FPSCR |= fpsr_exc;
-    FPSCR |= fpsr_qc != 0 ? 1 << 27 : 0;
-
-    return FPSCR;
+    u32 fpscr = fpcr_mode | fpsr_nzcv;
+    fpscr |= (mxcsr & 0b0000000000001);       // IOC = IE
+    fpscr |= (mxcsr & 0b0000000111100) >> 1;  // IXC, UFC, OFC, DZC = PE, UE, OE, ZE
+    fpscr |= fpsr_exc;
+    fpscr |= fpsr_qc != 0 ? 1 << 27 : 0;
+    return fpscr;
 }
 
-void A32JitState::SetFpscr(u32 FPSCR) {
+void A32JitState::SetFpscr(u32 value) {
     // Ensure that only upper half of upper_location_descriptor is used for FPSCR bits.
     static_assert((FPSCR_MODE_MASK & 0xFFFF0000) == FPSCR_MODE_MASK);
 
     upper_location_descriptor &= 0x0000FFFF;
-    upper_location_descriptor |= FPSCR & FPSCR_MODE_MASK;
+    upper_location_descriptor |= value & FPSCR_MODE_MASK;
 
-    fpsr_nzcv = FPSCR & FPSCR_NZCV_MASK;
-    fpsr_qc = (FPSCR >> 27) & 1;
+    fpsr_nzcv = value & FPSCR_NZCV_MASK;
+    fpsr_qc = (value >> 27) & 1;
 
     guest_MXCSR = 0x00001f80;
     asimd_MXCSR = 0x00009fc0;
 
     // RMode
-    const std::array<u32, 4> MXCSR_RMode{0x0, 0x4000, 0x2000, 0x6000};
-    guest_MXCSR |= MXCSR_RMode[(FPSCR >> 22) & 0x3];
+    guest_MXCSR |= ((0x6000200040000000 >> (((value >> 18) & (0x3 << 4)))) & 0xf000);
 
     // Cumulative flags IDC, IOC, IXC, UFC, OFC, DZC
-    fpsr_exc = FPSCR & 0x9F;
+    fpsr_exc = value & 0x9F;
 
-    if (mcl::bit::get_bit<24>(FPSCR)) {
+    if (mcl::bit::get_bit<24>(value)) {
         // VFP Flush to Zero
         guest_MXCSR |= (1 << 15);  // SSE Flush to Zero
         guest_MXCSR |= (1 << 6);   // SSE Denormals are Zero
