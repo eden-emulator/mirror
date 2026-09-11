@@ -114,4 +114,11 @@ u64 ThreadManager::PushCommand(CommandData&& command_data, bool block, bool is_a
     return fence;
 }
 
+void ThreadManager::NotifyShutdown() {
+    if (thread.joinable()) {
+        thread.request_stop();
+        thread.join();
+    }
+}
+
 } // namespace VideoCommon::GPUThread
