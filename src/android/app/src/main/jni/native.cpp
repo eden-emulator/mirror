@@ -1168,7 +1168,7 @@ VkPhysicalDeviceProperties GetVulkanDeviceProperties() {
     return physical_device.GetProperties();
 }
 
-bool GetVulkanMemoryModelSupport() {
+bool GetFrameGenerationSupport() {
     Common::DynamicLibrary library;
     if (!library.Open("libvulkan.so")) {
         return false;
@@ -1183,9 +1183,13 @@ bool GetVulkanMemoryModelSupport() {
 
     const Vulkan::vk::PhysicalDevice physical_device(physical_devices[0], dld);
 
+    VkPhysicalDeviceShaderFloat16Int8Features float16_int8{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES,
+        .pNext = nullptr,
+    };
     VkPhysicalDeviceVulkanMemoryModelFeatures memory_model{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES,
-        .pNext = nullptr,
+        .pNext = &float16_int8,
     };
     VkPhysicalDeviceFeatures2 features{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
@@ -1193,7 +1197,7 @@ bool GetVulkanMemoryModelSupport() {
     };
     physical_device.GetFeatures2(features);
 
-    return memory_model.vulkanMemoryModel == VK_TRUE;
+    return memory_model.vulkanMemoryModel == VK_TRUE && float16_int8.shaderFloat16 == VK_TRUE;
 }
 } // namespace
 
@@ -1272,7 +1276,7 @@ jstring Java_org_yuzu_yuzu_1emu_NativeLibrary_getVulkanApiVersion(JNIEnv* env, j
 
 jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_supportsFrameGeneration(JNIEnv* env, jobject jobj) {
     try {
-        return static_cast<jboolean>(GetVulkanMemoryModelSupport());
+        return static_cast<jboolean>(GetFrameGenerationSupport());
     } catch (...) {
         return static_cast<jboolean>(false);
     }

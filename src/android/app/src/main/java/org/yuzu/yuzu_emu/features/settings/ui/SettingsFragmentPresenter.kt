@@ -124,7 +124,6 @@ class SettingsFragmentPresenter(
             ) {
                 add(IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.key)
             }
-            add(BooleanSetting.RENDERER_FRAME_GEN_FP16.key)
         }
     }
 

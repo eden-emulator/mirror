@@ -314,8 +314,6 @@
     <string name="frame_gen_flow_scale_auto_description">以遊戲實際渲染的解析度而非升頻後的輸出進行運動預測。由於升頻後不會增加任何動態細節，因此不會影響準確度</string>
     <string name="frame_gen_flow_scale">運動預測解析度</string>
     <string name="frame_gen_flow_scale_description">光流處理的解析度，以輸出解析度的比例表示。降低此設定值是減少效能負載最有效的方法</string>
-    <string name="frame_gen_fp16">半準確著色器</string>
-    <string name="frame_gen_fp16_description">使用16位元著色器。如果驅動程式或著色器檔案不支援則會自動切換成其它版本</string>
     <string name="frame_gen_unsupported">無法使用影格生成</string>
     <string name="frame_gen_unsupported_description">Lossless Scaling 的著色器需要 Vulkan 記憶體模型，所選的驅動程式不支援該功能</string>
     <string name="lossless_scaling_setup_description">可選擇安裝自己擁有的 Lossless.dll 以在之後啟用影格生成功能</string>

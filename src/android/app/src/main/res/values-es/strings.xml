@@ -304,7 +304,6 @@
     <string name="frame_gen_queue_target_0">Latencia más baja (Sin búfer)</string>
     <string name="frame_gen_queue_target_1">Equilibrado (1 fotograma)</string>
     <string name="frame_gen_queue_target_2">Más suave (2 fotogramas)</string>
-    <string name="frame_gen_fp16">Sombreadores de media precisión</string>
     <string name="frame_gen_unsupported">Generación de fotogramas no disponbile</string>
     <string name="lossless_scaling_install">Instalar Lossless.dll</string>
     <string name="lossless_scaling_replace_description">Seleccionar una copia diferente de Lossless.dll</string>

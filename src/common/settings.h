@@ -459,7 +459,7 @@ struct Values {
                                                       &frame_gen};
 
     SwitchableSetting<u32, true> frame_gen_queue_target{linkage,
-                                                        1,
+                                                        0,
                                                         0,
                                                         2,
                                                         "frame_gen_queue_target",
@@ -468,9 +468,6 @@ struct Values {
                                                         true,
                                                         false,
                                                         &frame_gen};
-
-    SwitchableSetting<bool> frame_gen_fp16{linkage,      true,  "frame_gen_fp16", Category::Renderer,
-                                           Specialization::Default, true, false, &frame_gen};
 
     SwitchableSetting<bool> frame_gen_dump_flow{linkage, false, "frame_gen_dump_flow",
                                                 Category::Renderer};

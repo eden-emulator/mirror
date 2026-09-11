@@ -314,8 +314,6 @@
     <string name="frame_gen_flow_scale_auto_description">قم بتقدير الحركة بناءً على الدقة التي تعرضها اللعبة فعليًّا، بدلاً من الإخراج الذي تم رفع دقته. ولا يؤثر ذلك على الدقة بأي شكل، لأن رفع الدقة لا يضيف أي تفاصيل تتعلق بالحركة.</string>
     <string name="frame_gen_flow_scale">دقة تقدير الحركة</string>
     <string name="frame_gen_flow_scale_description">دقة مسار التدفق البصري، كجزء من الناتج. ويُعد خفض هذه القيمة أرخص طريقة لاستعادة الأداء.</string>
-    <string name="frame_gen_fp16">مُظلِّلات نصف الدقة</string>
-    <string name="frame_gen_fp16_description">استخدم نسخة التظليل 16 بت. يتم التراجع تلقائيًا إلى الخيار البديل في حالة عدم توفرها في برنامج التشغيل أو الملف.</string>
     <string name="frame_gen_unsupported">توليد الإطار غير متاح</string>
     <string name="frame_gen_unsupported_description">لا يدعم برنامج تشغيل وحدة معالجة الرسومات هذا نموذج ذاكرة Vulkan، الذي تتطلبه برامج التظليل الخاصة بـ«Lossless Scaling».</string>
     <string name="lossless_scaling_setup_description">اختياري. قم بتوفير ملف Lossless.dll الخاص بك لتمكين إنشاء الإطارات لاحقًا</string>

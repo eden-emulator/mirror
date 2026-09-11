@@ -314,8 +314,6 @@
     <string name="frame_gen_flow_scale_auto_description">在游戏实际渲染的分辨率下估算运动，而不是在放大后的输出上。不会影响精确性，因为放大并不会增加运动细节。</string>
     <string name="frame_gen_flow_scale">运动预估分辨率</string>
     <string name="frame_gen_flow_scale_description">光流通道的分辨率,以输出的比例表示。降低它是提升性能最经济的做法。</string>
-    <string name="frame_gen_fp16">半精度着色器</string>
-    <string name="frame_gen_fp16_description">使用 16 位着色器变体。如果驱动或文件不支持会自动回退。</string>
     <string name="frame_gen_unsupported">帧生成不可用</string>
     <string name="frame_gen_unsupported_description">这个 GPU 驱动不支持无损缩放着色器所需的 Vulkan 内存模型。</string>
     <string name="lossless_scaling_setup_description">作为可选项。请提供您自己的 Lossless.dll 以便在之后可以启用帧生成。</string>

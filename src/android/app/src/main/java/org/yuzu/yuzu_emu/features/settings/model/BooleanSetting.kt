@@ -38,7 +38,6 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     RENDERER_VERTEX_INPUT_DYNAMIC_STATE("vertex_input_dynamic_state"),
     RENDERER_SAMPLE_SHADING("sample_shading"),
     RENDERER_FRAME_GEN("frame_gen"),
-    RENDERER_FRAME_GEN_FP16("frame_gen_fp16"),
     RENDERER_FRAME_GEN_FLOW_SCALE_AUTO("frame_gen_flow_scale_auto"),
     GPU_UNSWIZZLE_ENABLED("gpu_unswizzle_enabled"),
     PICTURE_IN_PICTURE("picture_in_picture"),
