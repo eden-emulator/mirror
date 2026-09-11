@@ -298,7 +298,7 @@ NvResult nvhost_gpu::AllocateObjectContext(IoctlAllocObjCtx& params) {
     return NvResult::Success;
 }
 
-static boost::container::small_vector<Tegra::CommandHeader, 512> BuildWaitCommandList(
+static std::vector<Tegra::CommandHeader> BuildWaitCommandList(
     NvFence fence) {
     return {
         Tegra::BuildCommandHeader(Tegra::BufferMethods::SyncpointPayload, 1,
@@ -310,9 +310,9 @@ static boost::container::small_vector<Tegra::CommandHeader, 512> BuildWaitComman
     };
 }
 
-static boost::container::small_vector<Tegra::CommandHeader, 512> BuildIncrementCommandList(
+static std::vector<Tegra::CommandHeader> BuildIncrementCommandList(
     NvFence fence) {
-    boost::container::small_vector<Tegra::CommandHeader, 512> result{
+    std::vector<Tegra::CommandHeader> result{
         Tegra::BuildCommandHeader(Tegra::BufferMethods::SyncpointPayload, 1,
                                   Tegra::SubmissionMode::Increasing),
         {}};
@@ -327,9 +327,9 @@ static boost::container::small_vector<Tegra::CommandHeader, 512> BuildIncrementC
     return result;
 }
 
-static boost::container::small_vector<Tegra::CommandHeader, 512> BuildIncrementWithWfiCommandList(
+static std::vector<Tegra::CommandHeader> BuildIncrementWithWfiCommandList(
     NvFence fence) {
-    boost::container::small_vector<Tegra::CommandHeader, 512> result{
+    std::vector<Tegra::CommandHeader> result{
         Tegra::BuildCommandHeader(Tegra::BufferMethods::WaitForIdle, 1,
                                   Tegra::SubmissionMode::Increasing),
         {}};
