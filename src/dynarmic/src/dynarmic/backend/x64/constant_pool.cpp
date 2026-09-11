@@ -28,7 +28,7 @@ Xbyak::Address ConstantPool::GetConstant(BlockOfCode& code, const Xbyak::Address
     const auto constant = ConstantT(lower, upper);
     auto it = constant_info.find(constant);
     if (it == constant_info.end()) {
-        ASSERT(insertion_point < pool.size());
+        DEBUG_ASSERT(insertion_point < pool.size());
         ConstantT& target_constant = pool[insertion_point];
         target_constant = constant;
         it = constant_info.insert({constant, &target_constant}).first;

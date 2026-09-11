@@ -119,12 +119,12 @@ public:
     }
     /// Sets the terminal instruction for this basic block.
     inline void SetTerminal(Term::Terminal term) noexcept {
-        ASSERT(!HasTerminal() && "Terminal has already been set.");
+        DEBUG_ASSERT(!HasTerminal() && "Terminal has already been set.");
         terminal = std::move(term);
     }
     /// Replaces the terminal instruction for this basic block.
     inline void ReplaceTerminal(Term::Terminal term) noexcept {
-        ASSERT(HasTerminal() && "Terminal has not been set.");
+        DEBUG_ASSERT(HasTerminal() && "Terminal has not been set.");
         terminal = std::move(term);
     }
     /// Determines whether or not this basic block has a terminal instruction.

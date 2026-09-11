@@ -118,7 +118,7 @@ void EmitX64::EmitSignedSaturation(EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const size_t N = args[1].GetImmediateU8();
-    ASSERT(N >= 1 && N <= 32);
+    DEBUG_ASSERT(N >= 1 && N <= 32);
 
     if (N == 32) {
         if (overflow_inst) {
@@ -167,7 +167,7 @@ void EmitX64::EmitUnsignedSaturation(EmitContext& ctx, IR::Inst* inst) {
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const size_t N = args[1].GetImmediateU8();
-    ASSERT(N <= 31);
+    DEBUG_ASSERT(N <= 31);
 
     const u32 saturated_value = (1u << N) - 1;
 

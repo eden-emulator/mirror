@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /* This file is part of the dynarmic project.
  * Copyright (c) 2022 MerryMage
  * SPDX-License-Identifier: 0BSD
@@ -244,7 +247,7 @@ static void EmitPackedAddSub(oaknut::CodeGenerator& code, EmitContext& ctx, IR::
     }
 
     if (ge_inst) {
-        ASSERT(!is_halving);
+        DEBUG_ASSERT(!is_halving);
 
         auto Vge = ctx.reg_alloc.WriteD(ge_inst);
         RegAlloc::Realize(Vge);

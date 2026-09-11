@@ -22,8 +22,8 @@ void EmitIR<IR::Opcode::LogicalShiftLeft32>(lagoon_assembler_t& as, EmitContext&
     auto& shift_arg = args[1];
     auto& carry_arg = args[2];
 
-    ASSERT(carry_inst != nullptr);
-    ASSERT(shift_arg.IsImmediate());
+    DEBUG_ASSERT(carry_inst != nullptr);
+    DEBUG_ASSERT(shift_arg.IsImmediate());
 
     auto Xresult = ctx.reg_alloc.WriteX(inst);
     auto Xcarry_out = ctx.reg_alloc.WriteX(carry_inst);

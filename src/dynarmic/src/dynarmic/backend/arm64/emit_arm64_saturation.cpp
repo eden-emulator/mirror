@@ -24,7 +24,7 @@ using namespace oaknut::util;
 template<>
 void EmitIR<IR::Opcode::SignedSaturatedAddWithFlag32>(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst) {
     const auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
-    ASSERT(overflow_inst);
+    DEBUG_ASSERT(overflow_inst);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto Wresult = ctx.reg_alloc.WriteW(inst);
@@ -44,7 +44,7 @@ void EmitIR<IR::Opcode::SignedSaturatedAddWithFlag32>(oaknut::CodeGenerator& cod
 template<>
 void EmitIR<IR::Opcode::SignedSaturatedSubWithFlag32>(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst) {
     const auto overflow_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp);
-    ASSERT(overflow_inst);
+    DEBUG_ASSERT(overflow_inst);
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     auto Wresult = ctx.reg_alloc.WriteW(inst);
@@ -67,7 +67,7 @@ void EmitIR<IR::Opcode::SignedSaturation>(oaknut::CodeGenerator& code, EmitConte
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const std::size_t N = args[1].GetImmediateU8();
-    ASSERT(N >= 1 && N <= 32);
+    DEBUG_ASSERT(N >= 1 && N <= 32);
 
     if (N == 32) {
         ctx.reg_alloc.DefineAsExisting(inst, args[0]);
@@ -113,7 +113,7 @@ void EmitIR<IR::Opcode::UnsignedSaturation>(oaknut::CodeGenerator& code, EmitCon
     ctx.reg_alloc.SpillFlags();
 
     const std::size_t N = args[1].GetImmediateU8();
-    ASSERT(N <= 31);
+    DEBUG_ASSERT(N <= 31);
     const u32 saturated_value = (1u << N) - 1;
 
     code.MOV(Wscratch0, saturated_value);

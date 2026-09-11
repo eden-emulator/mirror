@@ -323,7 +323,7 @@ static void RegisterPass(IR::Block& block) {
         switch (opcode) {
         case IR::Opcode::A32GetRegister: {
             const A32::Reg reg = inst->GetArg(0).GetA32RegRef();
-            ASSERT(reg != A32::Reg::PC);
+            DEBUG_ASSERT(reg != A32::Reg::PC);
             const size_t reg_index = size_t(reg);
             do_get(reg_info[reg_index], inst);
             break;
@@ -1430,7 +1430,7 @@ static void VerificationPass(const IR::Block& block) {
         for (size_t i = 0; i < inst.NumArgs(); i++) {
             const IR::Type t1 = inst.GetArg(i).GetType();
             const IR::Type t2 = IR::GetArgTypeOf(inst.GetOpcode(), i);
-            ASSERT(IR::AreTypesCompatible(t1, t2));
+            DEBUG_ASSERT(IR::AreTypesCompatible(t1, t2));
         }
     }
     ::Common::unordered_map<IR::Inst*, size_t> actual_uses;
@@ -1440,7 +1440,7 @@ static void VerificationPass(const IR::Block& block) {
                 actual_uses[arg.GetInst()]++;
     }
     for (auto const& pair : actual_uses)
-        ASSERT(pair.first->UseCount() == pair.second);
+        DEBUG_ASSERT(pair.first->UseCount() == pair.second);
 }
 
 void Optimize(IR::Block& block, const A32::UserConfig& conf, const Optimization::PolyfillOptions& polyfill_options) {

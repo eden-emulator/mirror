@@ -191,12 +191,12 @@ void BlockOfCode::DisableWriting() {
 }
 
 void BlockOfCode::ClearCache() {
-    ASSERT(prelude_complete);
+    DEBUG_ASSERT(prelude_complete);
     SetCodePtr(code_begin);
 }
 
 size_t BlockOfCode::SpaceRemaining() const {
-    ASSERT(prelude_complete);
+    DEBUG_ASSERT(prelude_complete);
     const u8* current_ptr = getCurr<const u8*>();
     if (current_ptr >= &top_[maxSize_])
         return 0;
@@ -466,7 +466,7 @@ void BlockOfCode::SetCodePtr(CodePtr code_ptr) {
 
 void BlockOfCode::EnsurePatchLocationSize(CodePtr begin, size_t size) {
     size_t current_size = getCurr<const u8*>() - reinterpret_cast<const u8*>(begin);
-    ASSERT(current_size <= size);
+    DEBUG_ASSERT(current_size <= size);
     nop(size - current_size);
 }
 

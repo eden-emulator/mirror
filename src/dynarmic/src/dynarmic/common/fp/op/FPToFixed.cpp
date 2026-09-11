@@ -25,9 +25,9 @@ namespace Dynarmic::FP {
 
 template<typename FPT>
 u64 FPToFixed(size_t ibits, FPT op, size_t fbits, bool unsigned_, FPCR fpcr, RoundingMode rounding, FPSR& fpsr) {
-    ASSERT(rounding != RoundingMode::ToOdd);
-    ASSERT(ibits <= 64);
-    ASSERT(fbits <= ibits);
+    DEBUG_ASSERT(rounding != RoundingMode::ToOdd);
+    DEBUG_ASSERT(ibits <= 64);
+    DEBUG_ASSERT(fbits <= ibits);
 
     auto [type, sign, value] = FPUnpack<FPT>(op, fpcr, fpsr);
 

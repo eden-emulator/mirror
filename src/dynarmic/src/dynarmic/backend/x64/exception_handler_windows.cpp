@@ -104,7 +104,7 @@ static PrologueInformation GetPrologueInformation() {
         entry.code.OpInfo = reg;
     };
     const auto alloc_large = [&](u8 offset, size_t size) {
-        ASSERT(size % 8 == 0);
+        DEBUG_ASSERT(size % 8 == 0);
         size /= 8;
 
         auto& entry = next_entry();
@@ -123,7 +123,7 @@ static PrologueInformation GetPrologueInformation() {
         }
     };
     const auto save_xmm128 = [&](u8 offset, u8 reg, size_t frame_offset) {
-        ASSERT(frame_offset % 16 == 0);
+        DEBUG_ASSERT(frame_offset % 16 == 0);
 
         auto& entry = next_entry();
         entry.code.CodeOffset = offset;
@@ -165,7 +165,7 @@ static PrologueInformation GetPrologueInformation() {
         auto& last_entry = next_entry();
         last_entry.FrameOffset = 0;
     }
-    ASSERT(ret.unwind_code.size() % 2 == 0);
+    DEBUG_ASSERT(ret.unwind_code.size() % 2 == 0);
 
     return ret;
 }

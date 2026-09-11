@@ -172,7 +172,7 @@ void TranslateThumb(IR::Block& block, LocationDescriptor descriptor, TranslateCa
             }
         }
     }
-    ASSERT(block.HasTerminal() && "Terminal has not been set");
+    DEBUG_ASSERT(block.HasTerminal() && "Terminal has not been set");
     block.SetEndLocation(visitor.ir.current_location);
 }
 

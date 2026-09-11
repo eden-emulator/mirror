@@ -21,7 +21,7 @@
 namespace Dynarmic::A32 {
 
 bool CondCanContinue(const ConditionalState cond_state, const A32::IREmitter& ir) {
-    ASSERT(cond_state != ConditionalState::Break && "Should never happen.");
+    DEBUG_ASSERT(cond_state != ConditionalState::Break && "Should never happen.");
     if (cond_state == ConditionalState::None)
         return true;
 
@@ -32,7 +32,7 @@ bool CondCanContinue(const ConditionalState cond_state, const A32::IREmitter& ir
 }
 
 bool IsConditionPassed(TranslatorVisitor& v, IR::Cond cond) {
-    ASSERT(v.cond_state != ConditionalState::Break && "This should never happen. We requested a break but that wasn't honored.");
+    DEBUG_ASSERT(v.cond_state != ConditionalState::Break && "This should never happen. We requested a break but that wasn't honored.");
 
     if (cond == IR::Cond::NV) {
         // NV conditional is obsolete

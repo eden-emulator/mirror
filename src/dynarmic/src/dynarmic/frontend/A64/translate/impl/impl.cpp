@@ -170,8 +170,8 @@ void TranslatorVisitor::V_scalar(size_t bitsize, Vec vec, IR::UAnyU128 value) {
 }
 
 IR::U128 TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part) {
-    ASSERT(part == 0 || part == 1);
-    ASSERT(bitsize == 64);
+    DEBUG_ASSERT(part == 0 || part == 1);
+    DEBUG_ASSERT(bitsize == 64);
     if (part == 0) {
         return V(64, vec);
     }
@@ -179,33 +179,33 @@ IR::U128 TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part) {
 }
 
 void TranslatorVisitor::Vpart(size_t bitsize, Vec vec, size_t part, IR::U128 value) {
-    ASSERT(part == 0 || part == 1);
+    DEBUG_ASSERT(part == 0 || part == 1);
     if (part == 0) {
-        ASSERT(bitsize == 64);
+        DEBUG_ASSERT(bitsize == 64);
         V(128, vec, ir.VectorZeroExtend(bitsize, value));
     } else {
-        ASSERT(bitsize == 64);
+        DEBUG_ASSERT(bitsize == 64);
         V(128, vec, ir.VectorInterleaveLower(64, V(128, vec), value));
     }
 }
 
 IR::UAny TranslatorVisitor::Vpart_scalar(size_t bitsize, Vec vec, size_t part) {
-    ASSERT(part == 0 || part == 1);
+    DEBUG_ASSERT(part == 0 || part == 1);
     if (part == 0) {
-        ASSERT(bitsize == 8 || bitsize == 16 || bitsize == 32 || bitsize == 64);
+        DEBUG_ASSERT(bitsize == 8 || bitsize == 16 || bitsize == 32 || bitsize == 64);
     } else {
-        ASSERT(bitsize == 64);
+        DEBUG_ASSERT(bitsize == 64);
     }
     return ir.VectorGetElement(bitsize, V(128, vec), part);
 }
 
 void TranslatorVisitor::Vpart_scalar(size_t bitsize, Vec vec, size_t part, IR::UAny value) {
-    ASSERT(part == 0 || part == 1);
+    DEBUG_ASSERT(part == 0 || part == 1);
     if (part == 0) {
-        ASSERT(bitsize == 8 || bitsize == 16 || bitsize == 32 || bitsize == 64);
+        DEBUG_ASSERT(bitsize == 8 || bitsize == 16 || bitsize == 32 || bitsize == 64);
         V(128, vec, ir.ZeroExtendToQuad(value));
     } else {
-        ASSERT(bitsize == 64);
+        DEBUG_ASSERT(bitsize == 64);
         V(128, vec, ir.VectorSetElement(64, V(128, vec), 1, value));
     }
 }
@@ -315,8 +315,8 @@ IR::U32U64 TranslatorVisitor::ShiftReg(size_t bitsize, Reg reg, Imm<2> shift, IR
 }
 
 IR::U32U64 TranslatorVisitor::ExtendReg(size_t bitsize, Reg reg, Imm<3> option, u8 shift) {
-    ASSERT(shift <= 4);
-    ASSERT(bitsize == 32 || bitsize == 64);
+    DEBUG_ASSERT(shift <= 4);
+    DEBUG_ASSERT(bitsize == 32 || bitsize == 64);
     IR::UAny val = X(bitsize, reg);
     size_t len;
     IR::U32U64 extended;

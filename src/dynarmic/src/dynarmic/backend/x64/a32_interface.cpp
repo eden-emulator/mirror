@@ -74,7 +74,7 @@ struct Jit::Impl {
     ~Impl() = default;
 
     HaltReason Run() {
-        ASSERT(!jit_interface->is_executing);
+        DEBUG_ASSERT(!jit_interface->is_executing);
         PerformRequestedCacheInvalidation(static_cast<HaltReason>(Atomic::Load(&jit_state.halt_reason)));
         jit_interface->is_executing = true;
         const CodePtr current_codeptr = [this] {
@@ -94,7 +94,7 @@ struct Jit::Impl {
     }
 
     HaltReason Step() {
-        ASSERT(!jit_interface->is_executing);
+        DEBUG_ASSERT(!jit_interface->is_executing);
         PerformRequestedCacheInvalidation(static_cast<HaltReason>(Atomic::Load(&jit_state.halt_reason)));
         jit_interface->is_executing = true;
         const HaltReason hr = block_of_code.StepCode(&jit_state, GetCurrentSingleStep());
@@ -116,7 +116,7 @@ struct Jit::Impl {
     }
 
     void Reset() {
-        ASSERT(!jit_interface->is_executing);
+        DEBUG_ASSERT(!jit_interface->is_executing);
         jit_state = {};
     }
 

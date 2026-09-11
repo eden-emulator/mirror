@@ -66,7 +66,7 @@ bool TranslatorVisitor::FCMLA_vec(bool Q, Imm<2> size, Vec Vm, Imm<2> rot, Vec V
     const size_t esize = 8U << size.ZeroExtend();
 
     // TODO: Currently we don't support half-precision floating point
-    ASSERT(esize != 16);
+    DEBUG_ASSERT(esize != 16);
 
     const size_t datasize = Q ? 128 : 64;
     const size_t num_elements = datasize / esize;
@@ -135,7 +135,7 @@ bool TranslatorVisitor::FCADD_vec(bool Q, Imm<2> size, Vec Vm, Imm<1> rot, Vec V
     const size_t esize = 8U << size.ZeroExtend();
 
     // TODO: Currently we don't support half-precision floating point
-    ASSERT(esize != 16);
+    DEBUG_ASSERT(esize != 16);
 
     const size_t datasize = Q ? 128 : 64;
     const size_t num_elements = datasize / esize;

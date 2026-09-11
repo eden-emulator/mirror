@@ -20,7 +20,7 @@ public:
     explicit CodeBlock(std::size_t size) noexcept
             : memsize(size) {
         mem = static_cast<u8*>(mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0));
-        ASSERT(mem != MAP_FAILED);
+        DEBUG_ASSERT(mem != MAP_FAILED);
         la_init_assembler(&as, mem, size);
     }
 

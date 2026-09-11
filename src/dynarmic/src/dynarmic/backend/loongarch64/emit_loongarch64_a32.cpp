@@ -41,7 +41,7 @@ template<>
 void EmitIR<IR::Opcode::A32SetCpsrNZC>(lagoon_assembler_t& as, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
 
-    ASSERT(!args[0].IsImmediate() && !args[1].IsImmediate());
+    DEBUG_ASSERT(!args[0].IsImmediate() && !args[1].IsImmediate());
 
     auto Xnz = ctx.reg_alloc.ReadX(args[0]);
     auto Xc = ctx.reg_alloc.ReadX(args[1]);

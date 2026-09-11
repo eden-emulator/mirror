@@ -57,7 +57,7 @@ constexpr RegisterList ToRegList(oaknut::Reg reg) {
     if (reg.is_vector()) {
         return RegisterList{1} << (reg.index() + 32);
     }
-    ASSERT(reg.index() != 31 && "ZR not allowed in reg list");
+    DEBUG_ASSERT(reg.index() != 31 && "ZR not allowed in reg list");
     if (reg.index() == -1) {
         return RegisterList{1} << 31;
     }

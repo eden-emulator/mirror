@@ -676,7 +676,7 @@ void EmitX64::EmitFPVectorFromSignedFixed32(EmitContext& ctx, IR::Inst* inst) {
     const int fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
     const bool fpcr_controlled = args[3].GetImmediateU1();
-    ASSERT(rounding_mode == ctx.FPCR(fpcr_controlled).RMode());
+    DEBUG_ASSERT(rounding_mode == ctx.FPCR(fpcr_controlled).RMode());
 
     MaybeStandardFPSCRValue(code, ctx, fpcr_controlled, [&] {
         code.cvtdq2ps(xmm, xmm);
@@ -694,7 +694,7 @@ void EmitX64::EmitFPVectorFromSignedFixed64(EmitContext& ctx, IR::Inst* inst) {
     const int fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
     const bool fpcr_controlled = args[3].GetImmediateU1();
-    ASSERT(rounding_mode == ctx.FPCR(fpcr_controlled).RMode());
+    DEBUG_ASSERT(rounding_mode == ctx.FPCR(fpcr_controlled).RMode());
 
     MaybeStandardFPSCRValue(code, ctx, fpcr_controlled, [&] {
         if (code.HasHostFeature(HostFeature::AVX512_OrthoFloat)) {
@@ -745,7 +745,7 @@ void EmitX64::EmitFPVectorFromUnsignedFixed32(EmitContext& ctx, IR::Inst* inst) 
     const int fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
     const bool fpcr_controlled = args[3].GetImmediateU1();
-    ASSERT(rounding_mode == ctx.FPCR(fpcr_controlled).RMode());
+    DEBUG_ASSERT(rounding_mode == ctx.FPCR(fpcr_controlled).RMode());
 
     MaybeStandardFPSCRValue(code, ctx, fpcr_controlled, [&] {
         if (code.HasHostFeature(HostFeature::AVX512_Ortho)) {
@@ -795,7 +795,7 @@ void EmitX64::EmitFPVectorFromUnsignedFixed64(EmitContext& ctx, IR::Inst* inst) 
     const int fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
     const bool fpcr_controlled = args[3].GetImmediateU1();
-    ASSERT(rounding_mode == ctx.FPCR(fpcr_controlled).RMode());
+    DEBUG_ASSERT(rounding_mode == ctx.FPCR(fpcr_controlled).RMode());
 
     MaybeStandardFPSCRValue(code, ctx, fpcr_controlled, [&] {
         if (code.HasHostFeature(HostFeature::AVX512_OrthoFloat)) {

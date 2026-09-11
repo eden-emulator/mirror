@@ -29,7 +29,7 @@ bool TranslatorVisitor::ThumbConditionPassed() {
 
 bool TranslatorVisitor::VFPConditionPassed(Cond cond) {
     if (ir.current_location.TFlag()) {
-        ASSERT(cond == Cond::AL);
+        DEBUG_ASSERT(cond == Cond::AL);
         return true;
     }
     return ArmConditionPassed(cond);

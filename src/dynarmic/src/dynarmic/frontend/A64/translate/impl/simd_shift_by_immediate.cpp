@@ -127,7 +127,7 @@ bool ShiftRightNarrowingSSBI(TranslatorVisitor& v, bool Q, Imm<4> immh, Imm<3> i
             }
             return v.ir.VectorUnsignedSaturatedNarrow(source_esize, wide_result);
         case NarrowingSSBI::SaturateToSigned:
-            ASSERT(SignednessSSBI == SignednessSSBI::Signed);
+            DEBUG_ASSERT(SignednessSSBI == SignednessSSBI::Signed);
             return v.ir.VectorSignedSaturatedNarrowToSigned(source_esize, wide_result);
         }
         UNREACHABLE();

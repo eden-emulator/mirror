@@ -209,11 +209,11 @@ void A32EmitX64::InvalidateCacheRanges(const boost::icl::interval_set<u32>& rang
 
 void A32EmitX64::EmitCondPrelude(const A32EmitContext& ctx) {
     if (ctx.block.GetCondition() == IR::Cond::AL) {
-        ASSERT(!ctx.block.HasConditionFailedLocation());
+        DEBUG_ASSERT(!ctx.block.HasConditionFailedLocation());
         return;
     }
 
-    ASSERT(ctx.block.HasConditionFailedLocation());
+    DEBUG_ASSERT(ctx.block.HasConditionFailedLocation());
 
     Xbyak::Label pass = EmitCond(ctx.block.GetCondition());
     if (conf.enable_cycle_counting) {
@@ -311,7 +311,7 @@ void A32EmitX64::EmitA32GetRegister(A32EmitContext& ctx, IR::Inst* inst) {
 
 void A32EmitX64::EmitA32GetExtendedRegister32(A32EmitContext& ctx, IR::Inst* inst) {
     const A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
-    ASSERT(A32::IsSingleExtReg(reg));
+    DEBUG_ASSERT(A32::IsSingleExtReg(reg));
 
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm(code);
     code.movss(result, MJitStateExtReg(reg));
@@ -320,7 +320,7 @@ void A32EmitX64::EmitA32GetExtendedRegister32(A32EmitContext& ctx, IR::Inst* ins
 
 void A32EmitX64::EmitA32GetExtendedRegister64(A32EmitContext& ctx, IR::Inst* inst) {
     const A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
-    ASSERT(A32::IsDoubleExtReg(reg));
+    DEBUG_ASSERT(A32::IsDoubleExtReg(reg));
 
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm(code);
     code.movsd(result, MJitStateExtReg(reg));
@@ -329,7 +329,7 @@ void A32EmitX64::EmitA32GetExtendedRegister64(A32EmitContext& ctx, IR::Inst* ins
 
 void A32EmitX64::EmitA32GetVector(A32EmitContext& ctx, IR::Inst* inst) {
     const A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
-    ASSERT(A32::IsDoubleExtReg(reg) || A32::IsQuadExtReg(reg));
+    DEBUG_ASSERT(A32::IsDoubleExtReg(reg) || A32::IsQuadExtReg(reg));
 
     const Xbyak::Xmm result = ctx.reg_alloc.ScratchXmm(code);
     if (A32::IsDoubleExtReg(reg)) {
@@ -358,7 +358,7 @@ void A32EmitX64::EmitA32SetRegister(A32EmitContext& ctx, IR::Inst* inst) {
 void A32EmitX64::EmitA32SetExtendedRegister32(A32EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
-    ASSERT(A32::IsSingleExtReg(reg));
+    DEBUG_ASSERT(A32::IsSingleExtReg(reg));
 
     if (args[1].IsInXmm(ctx.reg_alloc)) {
         Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(code, args[1]);
@@ -372,7 +372,7 @@ void A32EmitX64::EmitA32SetExtendedRegister32(A32EmitContext& ctx, IR::Inst* ins
 void A32EmitX64::EmitA32SetExtendedRegister64(A32EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
-    ASSERT(A32::IsDoubleExtReg(reg));
+    DEBUG_ASSERT(A32::IsDoubleExtReg(reg));
 
     if (args[1].IsInXmm(ctx.reg_alloc)) {
         const Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(code, args[1]);
@@ -386,7 +386,7 @@ void A32EmitX64::EmitA32SetExtendedRegister64(A32EmitContext& ctx, IR::Inst* ins
 void A32EmitX64::EmitA32SetVector(A32EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const A32::ExtReg reg = inst->GetArg(0).GetA32ExtRegRef();
-    ASSERT(A32::IsDoubleExtReg(reg) || A32::IsQuadExtReg(reg));
+    DEBUG_ASSERT(A32::IsDoubleExtReg(reg) || A32::IsQuadExtReg(reg));
 
     const Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(code, args[1]);
     if (A32::IsDoubleExtReg(reg)) {
@@ -647,7 +647,7 @@ void A32EmitX64::EmitA32GetGEFlags(A32EmitContext& ctx, IR::Inst* inst) {
 
 void A32EmitX64::EmitA32SetGEFlags(A32EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    ASSERT(!args[0].IsImmediate());
+    DEBUG_ASSERT(!args[0].IsImmediate());
 
     if (args[0].IsInXmm(ctx.reg_alloc)) {
         const Xbyak::Xmm to_store = ctx.reg_alloc.UseXmm(code, args[0]);
@@ -788,7 +788,7 @@ void A32EmitX64::EmitA32ExceptionRaised(A32EmitContext& ctx, IR::Inst* inst) {
     ctx.reg_alloc.EndOfAllocScope();
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    ASSERT(args[0].IsImmediate() && args[1].IsImmediate());
+    DEBUG_ASSERT(args[0].IsImmediate() && args[1].IsImmediate());
     const u32 pc = args[0].GetImmediateU32();
     const u64 exception = args[1].GetImmediateU64();
     Devirtualize<&A32::UserCallbacks::ExceptionRaised>(conf.callbacks).EmitCall(code, [&](RegList param) {

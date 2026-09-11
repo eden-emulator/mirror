@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /* This file is part of the dynarmic project.
  * Copyright (c) 2022 MerryMage
  * SPDX-License-Identifier: 0BSD
@@ -113,7 +116,7 @@ void AxxEmitX64::EmitMemoryRead(AxxEmitContext& ctx, IR::Inst* inst) {
         });
     } else {
         // Use page table
-        ASSERT(conf.page_table);
+        DEBUG_ASSERT(conf.page_table);
         const auto src_ptr = EmitVAddrLookup(code, ctx, bitsize, *abort, vaddr);
         EmitReadMemoryMov<bitsize>(code, value_idx, src_ptr, ordered);
 
@@ -200,7 +203,7 @@ void AxxEmitX64::EmitMemoryWrite(AxxEmitContext& ctx, IR::Inst* inst) {
         });
     } else {
         // Use page table
-        ASSERT(conf.page_table);
+        DEBUG_ASSERT(conf.page_table);
         const auto dest_ptr = EmitVAddrLookup(code, ctx, bitsize, *abort, vaddr);
         EmitWriteMemoryMov<bitsize>(code, dest_ptr, value_idx, ordered);
 
@@ -216,7 +219,7 @@ void AxxEmitX64::EmitMemoryWrite(AxxEmitContext& ctx, IR::Inst* inst) {
 
 template<std::size_t bitsize, auto callback>
 void AxxEmitX64::EmitExclusiveReadMemory(AxxEmitContext& ctx, IR::Inst* inst) {
-    ASSERT(conf.global_monitor != nullptr);
+    DEBUG_ASSERT(conf.global_monitor != nullptr);
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const bool ordered = IsOrdered(args[2].GetImmediateAccType());
 
@@ -267,7 +270,7 @@ void AxxEmitX64::EmitExclusiveReadMemory(AxxEmitContext& ctx, IR::Inst* inst) {
 
 template<std::size_t bitsize, auto callback>
 void AxxEmitX64::EmitExclusiveWriteMemory(AxxEmitContext& ctx, IR::Inst* inst) {
-    ASSERT(conf.global_monitor != nullptr);
+    DEBUG_ASSERT(conf.global_monitor != nullptr);
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const bool ordered = IsOrdered(args[3].GetImmediateAccType());
 
@@ -320,7 +323,7 @@ void AxxEmitX64::EmitExclusiveWriteMemory(AxxEmitContext& ctx, IR::Inst* inst) {
 
 template<std::size_t bitsize, auto callback>
 void AxxEmitX64::EmitExclusiveReadMemoryInline(AxxEmitContext& ctx, IR::Inst* inst) {
-    ASSERT(conf.global_monitor && conf.fastmem_pointer);
+    DEBUG_ASSERT(conf.global_monitor && conf.fastmem_pointer);
     if (!exception_handler.SupportsFastmem()) {
         EmitExclusiveReadMemory<bitsize, callback>(ctx, inst);
         return;
@@ -397,7 +400,7 @@ void AxxEmitX64::EmitExclusiveReadMemoryInline(AxxEmitContext& ctx, IR::Inst* in
 
 template<std::size_t bitsize, auto callback>
 void AxxEmitX64::EmitExclusiveWriteMemoryInline(AxxEmitContext& ctx, IR::Inst* inst) {
-    ASSERT(conf.global_monitor && conf.fastmem_pointer);
+    DEBUG_ASSERT(conf.global_monitor && conf.fastmem_pointer);
     if (!exception_handler.SupportsFastmem()) {
         EmitExclusiveWriteMemory<bitsize, callback>(ctx, inst);
         return;

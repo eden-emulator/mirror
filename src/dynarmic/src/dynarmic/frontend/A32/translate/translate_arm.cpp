@@ -73,7 +73,7 @@ void TranslateArm(IR::Block& block, LocationDescriptor descriptor, TranslateCall
             }
         }
     }
-    ASSERT(block.HasTerminal() && "Terminal has not been set");
+    DEBUG_ASSERT(block.HasTerminal() && "Terminal has not been set");
     block.SetEndLocation(visitor.ir.current_location);
 }
 

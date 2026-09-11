@@ -26,7 +26,7 @@ namespace Dynarmic::FP {
 
 template<typename FPT>
 u64 FPRoundInt(FPT op, FPCR fpcr, RoundingMode rounding, bool exact, FPSR& fpsr) {
-    ASSERT(rounding != RoundingMode::ToOdd);
+    DEBUG_ASSERT(rounding != RoundingMode::ToOdd);
 
     auto [type, sign, value] = FPUnpack<FPT>(op, fpcr, fpsr);
 

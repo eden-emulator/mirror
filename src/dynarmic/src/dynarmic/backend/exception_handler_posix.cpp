@@ -138,7 +138,7 @@ void SigHandler::SigAction(int sig, siginfo_t* info, void* raw_context) {
 #elif defined(ARCHITECTURE_loongarch64)
             CTX_PC = fc.call_pc;
 #else
-            ASSERT(false);
+            DEBUG_ASSERT(false);
 #endif
             return;
         }

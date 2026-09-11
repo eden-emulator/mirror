@@ -118,7 +118,7 @@ public:
             }
             return LeastSignificantWord(value);
         case 64:
-            ASSERT(value.GetType() == Type::U64);
+            DEBUG_ASSERT(value.GetType() == Type::U64);
             return value;
         }
         UNREACHABLE();
@@ -189,7 +189,7 @@ public:
     }
 
     U32U64 ConditionalSelect(Cond cond, const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         if (a.GetType() == Type::U32) {
             return Inst<U32>(Opcode::ConditionalSelect32, Value{cond}, a, b);
         } else {
@@ -272,7 +272,7 @@ public:
     }
 
     U32U64 LogicalShiftLeftMasked(const U32U64& value_in, const U32U64& shift_amount) {
-        ASSERT(value_in.GetType() == shift_amount.GetType());
+        DEBUG_ASSERT(value_in.GetType() == shift_amount.GetType());
         if (value_in.GetType() == Type::U32) {
             return Inst<U32>(Opcode::LogicalShiftLeftMasked32, value_in, shift_amount);
         } else {
@@ -281,7 +281,7 @@ public:
     }
 
     U32U64 LogicalShiftRightMasked(const U32U64& value_in, const U32U64& shift_amount) {
-        ASSERT(value_in.GetType() == shift_amount.GetType());
+        DEBUG_ASSERT(value_in.GetType() == shift_amount.GetType());
         if (value_in.GetType() == Type::U32) {
             return Inst<U32>(Opcode::LogicalShiftRightMasked32, value_in, shift_amount);
         } else {
@@ -290,7 +290,7 @@ public:
     }
 
     U32U64 ArithmeticShiftRightMasked(const U32U64& value_in, const U32U64& shift_amount) {
-        ASSERT(value_in.GetType() == shift_amount.GetType());
+        DEBUG_ASSERT(value_in.GetType() == shift_amount.GetType());
         if (value_in.GetType() == Type::U32) {
             return Inst<U32>(Opcode::ArithmeticShiftRightMasked32, value_in, shift_amount);
         } else {
@@ -299,7 +299,7 @@ public:
     }
 
     U32U64 RotateRightMasked(const U32U64& value_in, const U32U64& shift_amount) {
-        ASSERT(value_in.GetType() == shift_amount.GetType());
+        DEBUG_ASSERT(value_in.GetType() == shift_amount.GetType());
         if (value_in.GetType() == Type::U32) {
             return Inst<U32>(Opcode::RotateRightMasked32, value_in, shift_amount);
         } else {
@@ -308,7 +308,7 @@ public:
     }
 
     U32U64 AddWithCarry(const U32U64& a, const U32U64& b, const U1& carry_in) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         if (a.GetType() == Type::U32) {
             return Inst<U32>(Opcode::Add32, a, b, carry_in);
         } else {
@@ -317,7 +317,7 @@ public:
     }
 
     U32U64 Add(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         if (a.GetType() == Type::U32) {
             return Inst<U32>(Opcode::Add32, a, b, Imm1(0));
         } else {
@@ -326,7 +326,7 @@ public:
     }
 
     U32U64 SubWithCarry(const U32U64& a, const U32U64& b, const U1& carry_in) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         if (a.GetType() == Type::U32) {
             return Inst<U32>(Opcode::Sub32, a, b, carry_in);
         } else {
@@ -335,7 +335,7 @@ public:
     }
 
     U32U64 Sub(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         if (a.GetType() == Type::U32) {
             return Inst<U32>(Opcode::Sub32, a, b, Imm1(1));
         } else {
@@ -376,7 +376,7 @@ public:
     }
 
     U32U64 And(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         if (a.GetType() == Type::U32) {
             return Inst<U32>(Opcode::And32, a, b);
         } else {
@@ -385,7 +385,7 @@ public:
     }
 
     U32U64 AndNot(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         if (a.GetType() == Type::U32) {
             return Inst<U32>(Opcode::AndNot32, a, b);
         } else {
@@ -394,7 +394,7 @@ public:
     }
 
     U32U64 Eor(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         if (a.GetType() == Type::U32) {
             return Inst<U32>(Opcode::Eor32, a, b);
         } else {
@@ -403,7 +403,7 @@ public:
     }
 
     U32U64 Or(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         if (a.GetType() == Type::U32) {
             return Inst<U32>(Opcode::Or32, a, b);
         } else {
@@ -547,11 +547,11 @@ public:
 
     U32U64 ReplicateBit(const U32U64& a, u8 bit) {
         if (a.GetType() == IR::Type::U32) {
-            ASSERT(bit < 32);
+            DEBUG_ASSERT(bit < 32);
             return Inst<U32>(Opcode::ReplicateBit32, a, Imm8(bit));
         }
 
-        ASSERT(bit < 64);
+        DEBUG_ASSERT(bit < 64);
         return Inst<U64>(Opcode::ReplicateBit64, a, Imm8(bit));
     }
 
@@ -600,21 +600,21 @@ public:
     }
 
     ResultAndOverflow<U32> SignedSaturation(const U32& a, size_t bit_size_to_saturate_to) {
-        ASSERT(bit_size_to_saturate_to >= 1 && bit_size_to_saturate_to <= 32);
+        DEBUG_ASSERT(bit_size_to_saturate_to >= 1 && bit_size_to_saturate_to <= 32);
         const auto result = Inst<U32>(Opcode::SignedSaturation, a, Imm8(static_cast<u8>(bit_size_to_saturate_to)));
         const auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
         return {result, overflow};
     }
 
     ResultAndOverflow<U32> UnsignedSaturation(const U32& a, size_t bit_size_to_saturate_to) {
-        ASSERT(bit_size_to_saturate_to <= 31);
+        DEBUG_ASSERT(bit_size_to_saturate_to <= 31);
         const auto result = Inst<U32>(Opcode::UnsignedSaturation, a, Imm8(static_cast<u8>(bit_size_to_saturate_to)));
         const auto overflow = Inst<U1>(Opcode::GetOverflowFromOp, result);
         return {result, overflow};
     }
 
     UAny SignedSaturatedAdd(const UAny& a, const UAny& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         const auto result = [&]() -> IR::UAny {
             switch (a.GetType()) {
             case IR::Type::U8:
@@ -633,7 +633,7 @@ public:
     }
 
     UAny SignedSaturatedDoublingMultiplyReturnHigh(const UAny& a, const UAny& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         const auto result = [&]() -> IR::UAny {
             switch (a.GetType()) {
             case IR::Type::U16:
@@ -648,7 +648,7 @@ public:
     }
 
     UAny SignedSaturatedSub(const UAny& a, const UAny& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         const auto result = [&]() -> IR::UAny {
             switch (a.GetType()) {
             case IR::Type::U8:
@@ -667,7 +667,7 @@ public:
     }
 
     UAny UnsignedSaturatedAdd(const UAny& a, const UAny& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         const auto result = [&]() -> IR::UAny {
             switch (a.GetType()) {
             case IR::Type::U8:
@@ -686,7 +686,7 @@ public:
     }
 
     UAny UnsignedSaturatedSub(const UAny& a, const UAny& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
         const auto result = [&]() -> IR::UAny {
             switch (a.GetType()) {
             case IR::Type::U8:
@@ -989,7 +989,7 @@ public:
     }
 
     UAny VectorGetElement(size_t esize, const U128& a, size_t index) {
-        ASSERT(esize * index < 128 && "Invalid index");
+        DEBUG_ASSERT(esize * index < 128 && "Invalid index");
         switch (esize) {
         case 8:
             return Inst<U8>(Opcode::VectorGetElement8, a, Imm8(static_cast<u8>(index)));
@@ -1005,7 +1005,7 @@ public:
     }
 
     U128 VectorSetElement(size_t esize, const U128& a, size_t index, const IR::UAny& elem) {
-        ASSERT(esize * index < 128 && "Invalid index");
+        DEBUG_ASSERT(esize * index < 128 && "Invalid index");
         switch (esize) {
         case 8:
             return Inst<U128>(Opcode::VectorSetElement8, a, Imm8(static_cast<u8>(index)), elem);
@@ -1111,7 +1111,7 @@ public:
     }
 
     U128 VectorBroadcastElementLower(size_t esize, const U128& a, size_t index) {
-        ASSERT(esize * index < 128 && "Invalid index");
+        DEBUG_ASSERT(esize * index < 128 && "Invalid index");
         switch (esize) {
         case 8:
             return Inst<U128>(Opcode::VectorBroadcastElementLower8, a, u8(index));
@@ -1124,7 +1124,7 @@ public:
     }
 
     U128 VectorBroadcastElement(size_t esize, const U128& a, size_t index) {
-        ASSERT(esize * index < 128 && "Invalid index");
+        DEBUG_ASSERT(esize * index < 128 && "Invalid index");
         switch (esize) {
         case 8:
             return Inst<U128>(Opcode::VectorBroadcastElement8, a, u8(index));
@@ -1223,12 +1223,12 @@ public:
     }
 
     U128 VectorExtract(const U128& a, const U128& b, size_t position) {
-        ASSERT(position <= 128);
+        DEBUG_ASSERT(position <= 128);
         return Inst<U128>(Opcode::VectorExtract, a, b, Imm8(static_cast<u8>(position)));
     }
 
     U128 VectorExtractLower(const U128& a, const U128& b, size_t position) {
-        ASSERT(position <= 64);
+        DEBUG_ASSERT(position <= 64);
         return Inst<U128>(Opcode::VectorExtractLower, a, b, Imm8(static_cast<u8>(position)));
     }
 
@@ -1732,7 +1732,7 @@ public:
     }
 
     U128 VectorRotateLeft(size_t esize, const U128& a, u8 amount) {
-        ASSERT(amount < esize);
+        DEBUG_ASSERT(amount < esize);
 
         if (amount == 0) {
             return a;
@@ -1743,7 +1743,7 @@ public:
     }
 
     U128 VectorRotateRight(size_t esize, const U128& a, u8 amount) {
-        ASSERT(amount < esize);
+        DEBUG_ASSERT(amount < esize);
 
         if (amount == 0) {
             return a;
@@ -1754,7 +1754,7 @@ public:
     }
 
     U128 VectorRotateWholeVectorRight(const U128& a, u8 amount) {
-        ASSERT(amount % 32 == 0);
+        DEBUG_ASSERT(amount % 32 == 0);
         return Inst<U128>(Opcode::VectorRotateWholeVectorRight, a, Imm8(amount));
     }
 
@@ -1970,7 +1970,7 @@ public:
     }
 
     U128 VectorSignedSaturatedShiftLeftUnsigned(size_t esize, const U128& a, u8 shift_amount) {
-        ASSERT(shift_amount < esize);
+        DEBUG_ASSERT(shift_amount < esize);
         switch (esize) {
         case 8:
             return Inst<U128>(Opcode::VectorSignedSaturatedShiftLeftUnsigned8, a, Imm8(shift_amount));
@@ -1999,24 +1999,24 @@ public:
     }
 
     Table VectorTable(std::vector<U64> values) {
-        ASSERT(values.size() >= 1 && values.size() <= 4);
+        DEBUG_ASSERT(values.size() >= 1 && values.size() <= 4);
         values.resize(4);
         return Inst<Table>(Opcode::VectorTable, values[0], values[1], values[2], values[3]);
     }
 
     Table VectorTable(std::vector<U128> values) {
-        ASSERT(values.size() >= 1 && values.size() <= 4);
+        DEBUG_ASSERT(values.size() >= 1 && values.size() <= 4);
         values.resize(4);
         return Inst<Table>(Opcode::VectorTable, values[0], values[1], values[2], values[3]);
     }
 
     U64 VectorTableLookup(const U64& defaults, const Table& table, const U64& indices) {
-        ASSERT(table.GetInst()->GetArg(0).GetType() == Type::U64);
+        DEBUG_ASSERT(table.GetInst()->GetArg(0).GetType() == Type::U64);
         return Inst<U64>(Opcode::VectorTableLookup64, defaults, table, indices);
     }
 
     U128 VectorTableLookup(const U128& defaults, const Table& table, const U128& indices) {
-        ASSERT(table.GetInst()->GetArg(0).GetType() == Type::U128);
+        DEBUG_ASSERT(table.GetInst()->GetArg(0).GetType() == Type::U128);
         return Inst<U128>(Opcode::VectorTableLookup128, defaults, table, indices);
     }
 
@@ -2130,7 +2130,7 @@ public:
     }
 
     U32U64 FPAdd(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U32:
@@ -2143,7 +2143,7 @@ public:
     }
 
     NZCV FPCompare(const U32U64& a, const U32U64& b, bool exc_on_qnan) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         const IR::U1 exc_on_qnan_imm = Imm1(exc_on_qnan);
 
@@ -2158,7 +2158,7 @@ public:
     }
 
     U32U64 FPDiv(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U32:
@@ -2171,7 +2171,7 @@ public:
     }
 
     U32U64 FPMax(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U32:
@@ -2184,7 +2184,7 @@ public:
     }
 
     U32U64 FPMaxNumeric(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U32:
@@ -2197,7 +2197,7 @@ public:
     }
 
     U32U64 FPMin(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U32:
@@ -2210,7 +2210,7 @@ public:
     }
 
     U32U64 FPMinNumeric(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U32:
@@ -2223,7 +2223,7 @@ public:
     }
 
     U32U64 FPMul(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U32:
@@ -2236,7 +2236,7 @@ public:
     }
 
     U16U32U64 FPMulAdd(const U16U32U64& a, const U16U32U64& b, const U16U32U64& c) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U16:
@@ -2251,7 +2251,7 @@ public:
     }
 
     U16U32U64 FPMulSub(const U16U32U64& a, const U16U32U64& b, const U16U32U64& c) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U16:
@@ -2266,7 +2266,7 @@ public:
     }
 
     U32U64 FPMulX(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U32:
@@ -2318,7 +2318,7 @@ public:
     }
 
     U16U32U64 FPRecipStepFused(const U16U32U64& a, const U16U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U16:
@@ -2362,7 +2362,7 @@ public:
     }
 
     U16U32U64 FPRSqrtStepFused(const U16U32U64& a, const U16U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U16:
@@ -2388,7 +2388,7 @@ public:
     }
 
     U32U64 FPSub(const U32U64& a, const U32U64& b) {
-        ASSERT(a.GetType() == b.GetType());
+        DEBUG_ASSERT(a.GetType() == b.GetType());
 
         switch (a.GetType()) {
         case Type::U32:
@@ -2425,7 +2425,7 @@ public:
     }
 
     U16 FPToFixedS16(const U16U32U64& a, size_t fbits, FP::RoundingMode rounding) {
-        ASSERT(fbits <= 16);
+        DEBUG_ASSERT(fbits <= 16);
 
         const U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const U8 rounding_imm = Imm8(static_cast<u8>(rounding));
@@ -2443,7 +2443,7 @@ public:
     }
 
     U32 FPToFixedS32(const U16U32U64& a, size_t fbits, FP::RoundingMode rounding) {
-        ASSERT(fbits <= 32);
+        DEBUG_ASSERT(fbits <= 32);
 
         const U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const U8 rounding_imm = Imm8(static_cast<u8>(rounding));
@@ -2461,7 +2461,7 @@ public:
     }
 
     U64 FPToFixedS64(const U16U32U64& a, size_t fbits, FP::RoundingMode rounding) {
-        ASSERT(fbits <= 64);
+        DEBUG_ASSERT(fbits <= 64);
 
         const U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const U8 rounding_imm = Imm8(static_cast<u8>(rounding));
@@ -2479,7 +2479,7 @@ public:
     }
 
     U16 FPToFixedU16(const U16U32U64& a, size_t fbits, FP::RoundingMode rounding) {
-        ASSERT(fbits <= 16);
+        DEBUG_ASSERT(fbits <= 16);
 
         const U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const U8 rounding_imm = Imm8(static_cast<u8>(rounding));
@@ -2497,7 +2497,7 @@ public:
     }
 
     U32 FPToFixedU32(const U16U32U64& a, size_t fbits, FP::RoundingMode rounding) {
-        ASSERT(fbits <= 32);
+        DEBUG_ASSERT(fbits <= 32);
 
         const U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const U8 rounding_imm = Imm8(static_cast<u8>(rounding));
@@ -2515,7 +2515,7 @@ public:
     }
 
     U64 FPToFixedU64(const U16U32U64& a, size_t fbits, FP::RoundingMode rounding) {
-        ASSERT(fbits <= 64);
+        DEBUG_ASSERT(fbits <= 64);
 
         const U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const U8 rounding_imm = Imm8(static_cast<u8>(rounding));
@@ -2533,7 +2533,7 @@ public:
     }
 
     U32 FPSignedFixedToSingle(const U16U32U64& a, size_t fbits, FP::RoundingMode rounding) {
-        ASSERT(fbits <= (a.GetType() == Type::U16 ? 16 : (a.GetType() == Type::U32 ? 32 : 64)));
+        DEBUG_ASSERT(fbits <= (a.GetType() == Type::U16 ? 16 : (a.GetType() == Type::U32 ? 32 : 64)));
 
         const IR::U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const IR::U8 rounding_imm = Imm8(static_cast<u8>(rounding));
@@ -2551,7 +2551,7 @@ public:
     }
 
     U32 FPUnsignedFixedToSingle(const U16U32U64& a, size_t fbits, FP::RoundingMode rounding) {
-        ASSERT(fbits <= (a.GetType() == Type::U16 ? 16 : (a.GetType() == Type::U32 ? 32 : 64)));
+        DEBUG_ASSERT(fbits <= (a.GetType() == Type::U16 ? 16 : (a.GetType() == Type::U32 ? 32 : 64)));
 
         const IR::U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const IR::U8 rounding_imm = Imm8(static_cast<u8>(rounding));
@@ -2569,7 +2569,7 @@ public:
     }
 
     U64 FPSignedFixedToDouble(const U16U32U64& a, size_t fbits, FP::RoundingMode rounding) {
-        ASSERT(fbits <= (a.GetType() == Type::U16 ? 16 : (a.GetType() == Type::U32 ? 32 : 64)));
+        DEBUG_ASSERT(fbits <= (a.GetType() == Type::U16 ? 16 : (a.GetType() == Type::U32 ? 32 : 64)));
 
         const IR::U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const IR::U8 rounding_imm = Imm8(static_cast<u8>(rounding));
@@ -2587,7 +2587,7 @@ public:
     }
 
     U64 FPUnsignedFixedToDouble(const U16U32U64& a, size_t fbits, FP::RoundingMode rounding) {
-        ASSERT(fbits <= (a.GetType() == Type::U16 ? 16 : (a.GetType() == Type::U32 ? 32 : 64)));
+        DEBUG_ASSERT(fbits <= (a.GetType() == Type::U16 ? 16 : (a.GetType() == Type::U32 ? 32 : 64)));
 
         const IR::U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const IR::U8 rounding_imm = Imm8(static_cast<u8>(rounding));
@@ -2649,12 +2649,12 @@ public:
     }
 
     U128 FPVectorFromHalf(size_t esize, const U128& a, FP::RoundingMode rounding, bool fpcr_controlled = true) {
-        ASSERT(esize == 32);
+        DEBUG_ASSERT(esize == 32);
         return Inst<U128>(Opcode::FPVectorFromHalf32, a, Imm8(static_cast<u8>(rounding)), Imm1(fpcr_controlled));
     }
 
     U128 FPVectorFromSignedFixed(size_t esize, const U128& a, size_t fbits, FP::RoundingMode rounding, bool fpcr_controlled = true) {
-        ASSERT(fbits <= esize);
+        DEBUG_ASSERT(fbits <= esize);
         switch (esize) {
         case 32:
             return Inst<U128>(Opcode::FPVectorFromSignedFixed32, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)), Imm1(fpcr_controlled));
@@ -2665,7 +2665,7 @@ public:
     }
 
     U128 FPVectorFromUnsignedFixed(size_t esize, const U128& a, size_t fbits, FP::RoundingMode rounding, bool fpcr_controlled = true) {
-        ASSERT(fbits <= esize);
+        DEBUG_ASSERT(fbits <= esize);
         switch (esize) {
         case 32:
             return Inst<U128>(Opcode::FPVectorFromUnsignedFixed32, a, Imm8(static_cast<u8>(fbits)), Imm8(static_cast<u8>(rounding)), Imm1(fpcr_controlled));
@@ -2883,12 +2883,12 @@ public:
     }
 
     U128 FPVectorToHalf(size_t esize, const U128& a, FP::RoundingMode rounding, bool fpcr_controlled = true) {
-        ASSERT(esize == 32);
+        DEBUG_ASSERT(esize == 32);
         return Inst<U128>(Opcode::FPVectorToHalf32, a, Imm8(static_cast<u8>(rounding)), Imm1(fpcr_controlled));
     }
 
     U128 FPVectorToSignedFixed(size_t esize, const U128& a, size_t fbits, FP::RoundingMode rounding, bool fpcr_controlled = true) {
-        ASSERT(fbits <= esize);
+        DEBUG_ASSERT(fbits <= esize);
 
         const U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const U8 rounding_imm = Imm8(static_cast<u8>(rounding));
@@ -2906,7 +2906,7 @@ public:
     }
 
     U128 FPVectorToUnsignedFixed(size_t esize, const U128& a, size_t fbits, FP::RoundingMode rounding, bool fpcr_controlled = true) {
-        ASSERT(fbits <= esize);
+        DEBUG_ASSERT(fbits <= esize);
 
         const U8 fbits_imm = Imm8(static_cast<u8>(fbits));
         const U8 rounding_imm = Imm8(static_cast<u8>(rounding));

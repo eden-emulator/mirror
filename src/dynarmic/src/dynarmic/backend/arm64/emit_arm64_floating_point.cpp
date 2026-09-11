@@ -68,7 +68,7 @@ static void EmitConvert(oaknut::CodeGenerator&, EmitContext& ctx, IR::Inst* inst
     RegAlloc::Realize(Vto, Vfrom);
     ctx.fpsr.Load();
 
-    ASSERT(rounding_mode == ctx.FPCR().RMode());
+    DEBUG_ASSERT(rounding_mode == ctx.FPCR().RMode());
 
     emit(Vto, Vfrom);
 }
@@ -106,8 +106,8 @@ static void EmitToFixed(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst*
             }
         }
     } else {
-        ASSERT(fbits == 0);
-        ASSERT(bitsize_to != 16);
+        DEBUG_ASSERT(fbits == 0);
+        DEBUG_ASSERT(bitsize_to != 16);
         if constexpr (is_signed) {
             switch (rounding_mode) {
             case FP::RoundingMode::ToNearest_TieEven:
@@ -449,7 +449,7 @@ void EmitIR<IR::Opcode::FPRoundInt32>(oaknut::CodeGenerator& code, EmitContext& 
     ctx.fpsr.Load();
 
     if (exact) {
-        ASSERT(ctx.FPCR().RMode() == rounding_mode);
+        DEBUG_ASSERT(ctx.FPCR().RMode() == rounding_mode);
         code.FRINTX(Sresult, Soperand);
     } else {
         switch (rounding_mode) {
@@ -486,7 +486,7 @@ void EmitIR<IR::Opcode::FPRoundInt64>(oaknut::CodeGenerator& code, EmitContext& 
     ctx.fpsr.Load();
 
     if (exact) {
-        ASSERT(ctx.FPCR().RMode() == rounding_mode);
+        DEBUG_ASSERT(ctx.FPCR().RMode() == rounding_mode);
         code.FRINTX(Dresult, Doperand);
     } else {
         switch (rounding_mode) {

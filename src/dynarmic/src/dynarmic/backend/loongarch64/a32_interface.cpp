@@ -25,7 +25,7 @@ struct Jit::Impl final {
             , current_address_space(conf) {}
 
     HaltReason Run() {
-        ASSERT(!jit_interface->is_executing);
+        DEBUG_ASSERT(!jit_interface->is_executing);
         jit_interface->is_executing = true;
 
         const auto location_descriptor = current_state.GetLocationDescriptor();
@@ -38,7 +38,7 @@ struct Jit::Impl final {
     }
 
     HaltReason Step() {
-        ASSERT(!jit_interface->is_executing);
+        DEBUG_ASSERT(!jit_interface->is_executing);
         jit_interface->is_executing = true;
 
         const auto location_descriptor = A32::LocationDescriptor{current_state.GetLocationDescriptor()}.SetSingleStepping(true);

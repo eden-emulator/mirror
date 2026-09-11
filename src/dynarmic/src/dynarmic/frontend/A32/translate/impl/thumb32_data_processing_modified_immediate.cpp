@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 /* This file is part of the dynarmic project.
@@ -23,7 +23,7 @@ bool TranslatorVisitor::thumb32_TST_imm(Imm<1> i, Reg n, Imm<3> imm3, Imm<8> imm
 }
 
 bool TranslatorVisitor::thumb32_AND_imm(Imm<1> i, bool S, Reg n, Imm<3> imm3, Reg d, Imm<8> imm8) {
-    ASSERT(!(d == Reg::PC && S) && "Decode error");
+    DEBUG_ASSERT(!(d == Reg::PC && S) && "Decode error");
     if ((d == Reg::PC && !S) || n == Reg::PC) {
         return UnpredictableInstruction();
     }
@@ -69,7 +69,7 @@ bool TranslatorVisitor::thumb32_MOV_imm(Imm<1> i, bool S, Imm<3> imm3, Reg d, Im
 }
 
 bool TranslatorVisitor::thumb32_ORR_imm(Imm<1> i, bool S, Reg n, Imm<3> imm3, Reg d, Imm<8> imm8) {
-    ASSERT(n != Reg::PC && "Decode error");
+    DEBUG_ASSERT(n != Reg::PC && "Decode error");
     if (d == Reg::PC) {
         return UnpredictableInstruction();
     }
@@ -100,7 +100,7 @@ bool TranslatorVisitor::thumb32_MVN_imm(Imm<1> i, bool S, Imm<3> imm3, Reg d, Im
 }
 
 bool TranslatorVisitor::thumb32_ORN_imm(Imm<1> i, bool S, Reg n, Imm<3> imm3, Reg d, Imm<8> imm8) {
-    ASSERT(n != Reg::PC && "Decode error");
+    DEBUG_ASSERT(n != Reg::PC && "Decode error");
     if (d == Reg::PC) {
         return UnpredictableInstruction();
     }
@@ -128,7 +128,7 @@ bool TranslatorVisitor::thumb32_TEQ_imm(Imm<1> i, Reg n, Imm<3> imm3, Imm<8> imm
 }
 
 bool TranslatorVisitor::thumb32_EOR_imm(Imm<1> i, bool S, Reg n, Imm<3> imm3, Reg d, Imm<8> imm8) {
-    ASSERT(!(d == Reg::PC && S) && "Decode error");
+    DEBUG_ASSERT(!(d == Reg::PC && S) && "Decode error");
     if ((d == Reg::PC && !S) || n == Reg::PC) {
         return UnpredictableInstruction();
     }
@@ -156,7 +156,7 @@ bool TranslatorVisitor::thumb32_CMN_imm(Imm<1> i, Reg n, Imm<3> imm3, Imm<8> imm
 }
 
 bool TranslatorVisitor::thumb32_ADD_imm_1(Imm<1> i, bool S, Reg n, Imm<3> imm3, Reg d, Imm<8> imm8) {
-    ASSERT(!(d == Reg::PC && S) && "Decode error");
+    DEBUG_ASSERT(!(d == Reg::PC && S) && "Decode error");
     if ((d == Reg::PC && !S) || n == Reg::PC) {
         return UnpredictableInstruction();
     }
@@ -214,7 +214,7 @@ bool TranslatorVisitor::thumb32_CMP_imm(Imm<1> i, Reg n, Imm<3> imm3, Imm<8> imm
 }
 
 bool TranslatorVisitor::thumb32_SUB_imm_1(Imm<1> i, bool S, Reg n, Imm<3> imm3, Reg d, Imm<8> imm8) {
-    ASSERT(!(d == Reg::PC && S) && "Decode error");
+    DEBUG_ASSERT(!(d == Reg::PC && S) && "Decode error");
     if ((d == Reg::PC && !S) || n == Reg::PC) {
         return UnpredictableInstruction();
     }

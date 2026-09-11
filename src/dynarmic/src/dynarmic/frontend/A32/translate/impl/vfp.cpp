@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 /* This file is part of the dynarmic project.
@@ -1304,11 +1304,11 @@ bool TranslatorVisitor::vfp_VSTR(Cond cond, bool U, bool D, Reg n, size_t Vd, bo
 // VSTM{mode}<c> <Rn>{!}, <list of double registers>
 bool TranslatorVisitor::vfp_VSTM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
     if (!p && !u && !w) {
-        ASSERT(false && "Decode error");
+        DEBUG_ASSERT(false && "Decode error");
     }
 
     if (p && !w) {
-        ASSERT(false && "Decode error");
+        DEBUG_ASSERT(false && "Decode error");
     }
 
     if (p == u && w) {
@@ -1356,11 +1356,11 @@ bool TranslatorVisitor::vfp_VSTM_a1(Cond cond, bool p, bool u, bool D, bool w, R
 // VSTM{mode}<c> <Rn>{!}, <list of single registers>
 bool TranslatorVisitor::vfp_VSTM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
     if (!p && !u && !w) {
-        ASSERT(false && "Decode error");
+        DEBUG_ASSERT(false && "Decode error");
     }
 
     if (p && !w) {
-        ASSERT(false && "Decode error");
+        DEBUG_ASSERT(false && "Decode error");
     }
 
     if (p == u && w) {
@@ -1399,11 +1399,11 @@ bool TranslatorVisitor::vfp_VSTM_a2(Cond cond, bool p, bool u, bool D, bool w, R
 // VLDM{mode}<c> <Rn>{!}, <list of double registers>
 bool TranslatorVisitor::vfp_VLDM_a1(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
     if (!p && !u && !w) {
-        ASSERT(false && "Decode error");
+        DEBUG_ASSERT(false && "Decode error");
     }
 
     if (p && !w) {
-        ASSERT(false && "Decode error");
+        DEBUG_ASSERT(false && "Decode error");
     }
 
     if (p == u && w) {
@@ -1449,11 +1449,11 @@ bool TranslatorVisitor::vfp_VLDM_a1(Cond cond, bool p, bool u, bool D, bool w, R
 // VLDM{mode}<c> <Rn>{!}, <list of single registers>
 bool TranslatorVisitor::vfp_VLDM_a2(Cond cond, bool p, bool u, bool D, bool w, Reg n, size_t Vd, Imm<8> imm8) {
     if (!p && !u && !w) {
-        ASSERT(false && "Decode error");
+        DEBUG_ASSERT(false && "Decode error");
     }
 
     if (p && !w) {
-        ASSERT(false && "Decode error");
+        DEBUG_ASSERT(false && "Decode error");
     }
 
     if (p == u && w) {

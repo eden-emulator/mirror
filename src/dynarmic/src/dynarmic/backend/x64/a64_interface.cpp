@@ -66,13 +66,13 @@ public:
         , emitter(block_of_code, conf, jit)
         , polyfill_options(GenPolyfillOptions(block_of_code))
     {
-        ASSERT(conf.page_table_address_space_bits >= 12 && conf.page_table_address_space_bits <= 64);
+        DEBUG_ASSERT(conf.page_table_address_space_bits >= 12 && conf.page_table_address_space_bits <= 64);
     }
 
     ~Impl() = default;
 
     HaltReason Run() {
-        ASSERT(!is_executing);
+        DEBUG_ASSERT(!is_executing);
         PerformRequestedCacheInvalidation(static_cast<HaltReason>(Atomic::Load(&jit_state.halt_reason)));
         is_executing = true;
         // TODO: Check code alignment
@@ -92,7 +92,7 @@ public:
     }
 
     HaltReason Step() {
-        ASSERT(!is_executing);
+        DEBUG_ASSERT(!is_executing);
         PerformRequestedCacheInvalidation(static_cast<HaltReason>(Atomic::Load(&jit_state.halt_reason)));
         is_executing = true;
         const HaltReason hr = block_of_code.StepCode(&jit_state, GetCurrentSingleStep());
@@ -116,7 +116,7 @@ public:
     }
 
     void Reset() {
-        ASSERT(!is_executing);
+        DEBUG_ASSERT(!is_executing);
         jit_state = {};
     }
 

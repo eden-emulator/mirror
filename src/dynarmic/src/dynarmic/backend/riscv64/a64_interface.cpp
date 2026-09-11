@@ -28,12 +28,12 @@ struct Jit::Impl final {
         , jit_interface(jit_interface) {}
 
     HaltReason Run() {
-        ASSERT(false);
+        DEBUG_ASSERT(false);
         return HaltReason{};
     }
 
     HaltReason Step() {
-        ASSERT(false);
+        DEBUG_ASSERT(false);
         return HaltReason{};
     }
 
@@ -51,7 +51,7 @@ struct Jit::Impl final {
     }
 
     void Reset() {
-        ASSERT(!is_executing);
+        DEBUG_ASSERT(!is_executing);
         //jit_state = {};
     }
 

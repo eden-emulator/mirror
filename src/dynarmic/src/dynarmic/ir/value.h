@@ -147,12 +147,12 @@ public:
     template<Type other_type, typename = std::enable_if_t<(other_type & type_) != Type::Void>>
     /* implicit */ TypedValue(const TypedValue<other_type>& value)
             : Value(value) {
-        ASSERT((value.GetType() & type_) != Type::Void);
+        DEBUG_ASSERT((value.GetType() & type_) != Type::Void);
     }
 
     explicit TypedValue(const Value& value)
             : Value(value) {
-        ASSERT((value.GetType() & type_) != Type::Void);
+        DEBUG_ASSERT((value.GetType() & type_) != Type::Void);
     }
 
     explicit TypedValue(Inst* inst)

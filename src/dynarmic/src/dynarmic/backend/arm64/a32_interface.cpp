@@ -31,7 +31,7 @@ struct Jit::Impl final {
             , core(conf) {}
 
     HaltReason Run() {
-        ASSERT(!jit_interface->is_executing);
+        DEBUG_ASSERT(!jit_interface->is_executing);
         PerformRequestedCacheInvalidation(static_cast<HaltReason>(Atomic::Load(&halt_reason)));
 
         jit_interface->is_executing = true;
@@ -42,7 +42,7 @@ struct Jit::Impl final {
     }
 
     HaltReason Step() {
-        ASSERT(!jit_interface->is_executing);
+        DEBUG_ASSERT(!jit_interface->is_executing);
         PerformRequestedCacheInvalidation(static_cast<HaltReason>(Atomic::Load(&halt_reason)));
 
         jit_interface->is_executing = true;

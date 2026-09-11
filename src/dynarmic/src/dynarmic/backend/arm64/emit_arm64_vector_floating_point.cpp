@@ -139,7 +139,7 @@ static void EmitFromFixed(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Ins
     const u8 fbits = args[1].GetImmediateU8();
     const FP::RoundingMode rounding_mode = static_cast<FP::RoundingMode>(args[2].GetImmediateU8());
     const bool fpcr_controlled = args[3].GetImmediateU1();
-    ASSERT(rounding_mode == ctx.FPCR(fpcr_controlled).RMode());
+    DEBUG_ASSERT(rounding_mode == ctx.FPCR(fpcr_controlled).RMode());
     RegAlloc::Realize(Qto, Qfrom);
 
     MaybeStandardFPSCRValue(code, ctx, fpcr_controlled, [&] {
@@ -199,7 +199,7 @@ void EmitToFixed(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst) 
                 }
             }
         } else {
-            ASSERT(fbits == 0);
+            DEBUG_ASSERT(fbits == 0);
             if constexpr (is_signed) {
                 switch (rounding_mode) {
                 case FP::RoundingMode::ToNearest_TieEven:
@@ -346,7 +346,7 @@ template<>
 void EmitIR<IR::Opcode::FPVectorFromHalf32>(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
-    ASSERT(rounding_mode == FP::RoundingMode::ToNearest_TieEven);
+    DEBUG_ASSERT(rounding_mode == FP::RoundingMode::ToNearest_TieEven);
     const bool fpcr_controlled = args[2].GetImmediateU1();
 
     auto Qresult = ctx.reg_alloc.WriteQ(inst);
@@ -617,7 +617,7 @@ void EmitIR<IR::Opcode::FPVectorRoundInt32>(oaknut::CodeGenerator& code, EmitCon
 
     MaybeStandardFPSCRValue(code, ctx, fpcr_controlled, [&] {
         if (exact) {
-            ASSERT(ctx.FPCR(fpcr_controlled).RMode() == rounding_mode);
+            DEBUG_ASSERT(ctx.FPCR(fpcr_controlled).RMode() == rounding_mode);
             code.FRINTX(Qresult->S4(), Qoperand->S4());
         } else {
             switch (rounding_mode) {
@@ -657,7 +657,7 @@ void EmitIR<IR::Opcode::FPVectorRoundInt64>(oaknut::CodeGenerator& code, EmitCon
 
     MaybeStandardFPSCRValue(code, ctx, fpcr_controlled, [&] {
         if (exact) {
-            ASSERT(ctx.FPCR(fpcr_controlled).RMode() == rounding_mode);
+            DEBUG_ASSERT(ctx.FPCR(fpcr_controlled).RMode() == rounding_mode);
             code.FRINTX(Qresult->D2(), Qoperand->D2());
         } else {
             switch (rounding_mode) {
@@ -743,7 +743,7 @@ template<>
 void EmitIR<IR::Opcode::FPVectorToHalf32>(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
     const auto rounding_mode = static_cast<FP::RoundingMode>(args[1].GetImmediateU8());
-    ASSERT(rounding_mode == FP::RoundingMode::ToNearest_TieEven);
+    DEBUG_ASSERT(rounding_mode == FP::RoundingMode::ToNearest_TieEven);
     const bool fpcr_controlled = args[2].GetImmediateU1();
 
     auto Dresult = ctx.reg_alloc.WriteD(inst);

@@ -130,7 +130,7 @@ bool ShiftRightNarrowing(TranslatorVisitor& v, bool D, size_t imm6, size_t Vd, b
             }
             return v.ir.VectorUnsignedSaturatedNarrow(source_esize, wide_result);
         case Narrowing::SaturateToSigned:
-            ASSERT(signedness == Signedness::Signed);
+            DEBUG_ASSERT(signedness == Signedness::Signed);
             return v.ir.VectorSignedSaturatedNarrowToSigned(source_esize, wide_result);
         }
         UNREACHABLE();

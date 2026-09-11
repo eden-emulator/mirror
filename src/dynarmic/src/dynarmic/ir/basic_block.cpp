@@ -69,7 +69,7 @@ void Block::Reset(LocationDescriptor location_) noexcept {
     terminal = std::monostate{};
     cond_failed_cycle_count = 0;
     cycle_count = 0;
-    ASSERT(instructions.size() == 0);
+    DEBUG_ASSERT(instructions.size() == 0);
 }
 
 static std::string TerminalToString(const Term::Terminal& terminal_variant) noexcept {

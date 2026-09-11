@@ -22,7 +22,7 @@ class CodeBlock {
 public:
     explicit CodeBlock(std::size_t size) noexcept : memsize(size) {
         mem = (u8*)mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
-        ASSERT(mem != nullptr);
+        DEBUG_ASSERT(mem != nullptr);
     }
 
     ~CodeBlock() noexcept {

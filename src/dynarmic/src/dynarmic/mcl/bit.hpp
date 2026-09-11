@@ -74,7 +74,7 @@ constexpr T ones() {
 /// Create a mask with `count` number of one bits.
 template<std::integral T>
 constexpr T ones(size_t count) {
-    ASSERT(count <= bitsizeof<T> && "count larger than bitsize of T");
+    DEBUG_ASSERT(count <= bitsizeof<T> && "count larger than bitsize of T");
     if (count == 0)
         return 0;
     return T(~T(0)) >> (bitsizeof<T> - count);
@@ -92,9 +92,9 @@ constexpr T mask() {
 /// Create a mask of type T for bits [begin_bit, end_bit] inclusive.
 template<std::integral T>
 constexpr T mask(size_t begin_bit, size_t end_bit) {
-    ASSERT(begin_bit <= end_bit && "invalid bit range (position of beginning bit cannot be greater than that of end bit)");
-    ASSERT(begin_bit < bitsizeof<T> && "begin_bit must be smaller than size of T");
-    ASSERT(end_bit < bitsizeof<T> && "end_bit must be smaller than size of T");
+    DEBUG_ASSERT(begin_bit <= end_bit && "invalid bit range (position of beginning bit cannot be greater than that of end bit)");
+    DEBUG_ASSERT(begin_bit < bitsizeof<T> && "begin_bit must be smaller than size of T");
+    DEBUG_ASSERT(end_bit < bitsizeof<T> && "end_bit must be smaller than size of T");
     return ones<T>(end_bit - begin_bit + 1) << begin_bit;
 }
 
@@ -194,7 +194,7 @@ constexpr T sign_extend(T value) {
 /// Sign-extends a value that has bit_count bits to the full bitwidth of type T.
 template<std::integral T>
 constexpr T sign_extend(size_t bit_count, T value) {
-    ASSERT(bit_count != 0 && "cannot sign-extend zero-sized value");
+    DEBUG_ASSERT(bit_count != 0 && "cannot sign-extend zero-sized value");
     using S = std::make_signed_t<T>;
     const size_t shift_amount = bitsizeof<T> - bit_count;
     return T(S(value << shift_amount) >> shift_amount);
@@ -222,8 +222,8 @@ constexpr T replicate_element(T value) {
 /// Replicate an element across a value of type T.
 template<std::integral T>
 constexpr T replicate_element(size_t element_size, T value) {
-    ASSERT(element_size <= bitsizeof<T> && "element_size is too large");
-    ASSERT(bitsizeof<T> % element_size == 0 && "bitsize of T not divisible by element_size");
+    DEBUG_ASSERT(element_size <= bitsizeof<T> && "element_size is too large");
+    DEBUG_ASSERT(bitsizeof<T> % element_size == 0 && "bitsize of T not divisible by element_size");
     if (element_size == bitsizeof<T>)
         return value;
     return replicate_element<T>(element_size * 2, T(value | (value << element_size)));

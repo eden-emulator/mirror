@@ -31,7 +31,7 @@ struct Jit::Impl final {
             , core(conf) {}
 
     HaltReason Run() {
-        ASSERT(!jit_interface->is_executing);
+        DEBUG_ASSERT(!jit_interface->is_executing);
         jit_interface->is_executing = true;
         HaltReason hr = core.Run(current_address_space, current_state, &halt_reason);
         RequestCacheInvalidation();
@@ -40,9 +40,9 @@ struct Jit::Impl final {
     }
 
     HaltReason Step() {
-        ASSERT(!jit_interface->is_executing);
+        DEBUG_ASSERT(!jit_interface->is_executing);
         jit_interface->is_executing = true;
-        ASSERT(false && "Unimplemented instruction");
+        DEBUG_ASSERT(false && "Unimplemented instruction");
         RequestCacheInvalidation();
         jit_interface->is_executing = false;
         return HaltReason{};

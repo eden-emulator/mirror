@@ -94,7 +94,7 @@ void A32AddressSpace::EmitPrelude() {
 
 void A32AddressSpace::SetCursorPtr(CodePtr ptr) {
     ptrdiff_t offset = ptr - GetMemPtr<CodePtr>();
-    ASSERT(offset >= 0);
+    DEBUG_ASSERT(offset >= 0);
     as.RewindBuffer(offset);
 }
 

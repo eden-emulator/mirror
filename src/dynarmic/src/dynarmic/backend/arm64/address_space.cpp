@@ -31,7 +31,7 @@ AddressSpace::AddressSpace(std::size_t code_cache_size)
     , code(mem.ptr(), mem.ptr())
     , fastmem_manager(exception_handler)
 {
-    ASSERT(code_cache_size <= 128 * 1024 * 1024 && "code_cache_size > 128 MiB not currently supported");
+    DEBUG_ASSERT(code_cache_size <= 128 * 1024 * 1024 && "code_cache_size > 128 MiB not currently supported");
 
     exception_handler.Register(mem, code_cache_size);
     exception_handler.SetFastmemCallback([this](u64 host_pc) {
@@ -115,9 +115,9 @@ EmittedBlockInfo AddressSpace::Emit(IR::Block block) {
 
     EmittedBlockInfo block_info = EmitArm64(code, std::move(block), GetEmitConfig(), fastmem_manager);
 
-    ASSERT(block_entries.insert({block.Location(), block_info.entry_point}).second);
-    ASSERT(reverse_block_entries.insert({block_info.entry_point, block.Location()}).second);
-    ASSERT(block_infos.insert({block_info.entry_point, block_info}).second);
+    DEBUG_ASSERT(block_entries.insert({block.Location(), block_info.entry_point}).second);
+    DEBUG_ASSERT(reverse_block_entries.insert({block_info.entry_point, block.Location()}).second);
+    DEBUG_ASSERT(block_infos.insert({block_info.entry_point, block_info}).second);
 
     Link(block_info);
     RelinkForDescriptor(block.Location(), block_info.entry_point);

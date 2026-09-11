@@ -23,7 +23,7 @@ namespace Dynarmic::FP {
 
 template<typename FPT>
 FPT FPProcessNaN(FPType type, FPT op, FPCR fpcr, FPSR& fpsr) {
-    ASSERT(type == FPType::QNaN || type == FPType::SNaN);
+    DEBUG_ASSERT(type == FPType::QNaN || type == FPType::SNaN);
 
     constexpr size_t topfrac = FPInfo<FPT>::explicit_mantissa_width - 1;
 

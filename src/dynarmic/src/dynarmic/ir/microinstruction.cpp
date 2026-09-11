@@ -27,7 +27,7 @@ Inst* Inst::GetAssociatedPseudoOperation(Opcode opcode) {
     Inst* pseudoop = next_pseudoop;
     while (pseudoop) {
         if (pseudoop->GetOpcode() == opcode) {
-            ASSERT(pseudoop->GetArg(0).GetInst() == this);
+            DEBUG_ASSERT(pseudoop->GetArg(0).GetInst() == this);
             return pseudoop;
         }
         pseudoop = pseudoop->next_pseudoop;
@@ -81,7 +81,7 @@ void Inst::Use(const Value& value) {
 
     if (IsAPseudoOperation(op)) {
         if (op == Opcode::GetNZCVFromOp) {
-            ASSERT(MayGetNZCVFromOp(value.GetInst()->GetOpcode()) && "This value doesn't support the GetNZCVFromOp pseduo-op");
+            DEBUG_ASSERT(MayGetNZCVFromOp(value.GetInst()->GetOpcode()) && "This value doesn't support the GetNZCVFromOp pseduo-op");
         }
 
         Inst* insert_point = value.GetInst();

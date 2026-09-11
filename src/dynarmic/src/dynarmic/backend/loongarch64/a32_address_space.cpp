@@ -115,7 +115,7 @@ void A32AddressSpace::Link(EmittedBlockInfo& block_info) {
             break;
         }
         default:
-            ASSERT(false && "Invalid relocation target");
+            DEBUG_ASSERT(false && "Invalid relocation target");
         }
     }
 }

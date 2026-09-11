@@ -194,8 +194,8 @@ void EmitIR<IR::Opcode::TestBit>(oaknut::CodeGenerator& code, EmitContext& ctx, 
     auto Xresult = ctx.reg_alloc.WriteX(inst);
     auto Xoperand = ctx.reg_alloc.ReadX(args[0]);
     RegAlloc::Realize(Xresult, Xoperand);
-    ASSERT(args[1].IsImmediate());
-    ASSERT(args[1].GetImmediateU8() < 64);
+    DEBUG_ASSERT(args[1].IsImmediate());
+    DEBUG_ASSERT(args[1].GetImmediateU8() < 64);
 
     code.UBFX(Xresult, Xoperand, args[1].GetImmediateU8(), 1);
 }
@@ -893,9 +893,9 @@ static void EmitAddSub(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* 
 
     if (overflow_inst) {
         // There is a limited set of circumstances where this is required, so assert for this.
-        ASSERT(!sub);
-        ASSERT(!nzcv_inst);
-        ASSERT(args[2].IsImmediate() && args[2].GetImmediateU1() == false);
+        DEBUG_ASSERT(!sub);
+        DEBUG_ASSERT(!nzcv_inst);
+        DEBUG_ASSERT(args[2].IsImmediate() && args[2].GetImmediateU1() == false);
 
         auto Rb = ctx.reg_alloc.ReadReg<bitsize>(args[1]);
         auto Woverflow = ctx.reg_alloc.WriteW(overflow_inst);
@@ -1134,7 +1134,7 @@ static void EmitBitOp(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* i
     if constexpr (!std::is_same_v<EmitFn2, std::nullptr_t>) {
         const auto nz_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetNZFromOp);
         const auto nzcv_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetNZCVFromOp);
-        ASSERT(!(nz_inst && nzcv_inst));
+        DEBUG_ASSERT(!(nz_inst && nzcv_inst));
         const auto flag_inst = nz_inst ? nz_inst : nzcv_inst;
 
         if (flag_inst) {
@@ -1171,7 +1171,7 @@ template<std::size_t bitsize>
 static void EmitAndNot(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst) {
     const auto nz_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetNZFromOp);
     const auto nzcv_inst = inst->GetAssociatedPseudoOperation(IR::Opcode::GetNZCVFromOp);
-    ASSERT(!(nz_inst && nzcv_inst));
+    DEBUG_ASSERT(!(nz_inst && nzcv_inst));
     const auto flag_inst = nz_inst ? nz_inst : nzcv_inst;
 
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
@@ -1402,7 +1402,7 @@ void EmitIR<IR::Opcode::CountLeadingZeros64>(oaknut::CodeGenerator& code, EmitCo
 template<>
 void EmitIR<IR::Opcode::ExtractRegister32>(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    ASSERT(args[2].IsImmediate());
+    DEBUG_ASSERT(args[2].IsImmediate());
 
     auto Wresult = ctx.reg_alloc.WriteW(inst);
     auto Wop1 = ctx.reg_alloc.ReadW(args[0]);
@@ -1416,7 +1416,7 @@ void EmitIR<IR::Opcode::ExtractRegister32>(oaknut::CodeGenerator& code, EmitCont
 template<>
 void EmitIR<IR::Opcode::ExtractRegister64>(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    ASSERT(args[2].IsImmediate());
+    DEBUG_ASSERT(args[2].IsImmediate());
 
     auto Xresult = ctx.reg_alloc.WriteX(inst);
     auto Xop1 = ctx.reg_alloc.ReadX(args[0]);
@@ -1430,7 +1430,7 @@ void EmitIR<IR::Opcode::ExtractRegister64>(oaknut::CodeGenerator& code, EmitCont
 template<>
 void EmitIR<IR::Opcode::ReplicateBit32>(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    ASSERT(args[1].IsImmediate());
+    DEBUG_ASSERT(args[1].IsImmediate());
 
     auto Wresult = ctx.reg_alloc.WriteW(inst);
     auto Wvalue = ctx.reg_alloc.ReadW(args[0]);
@@ -1444,7 +1444,7 @@ void EmitIR<IR::Opcode::ReplicateBit32>(oaknut::CodeGenerator& code, EmitContext
 template<>
 void EmitIR<IR::Opcode::ReplicateBit64>(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst) {
     auto args = ctx.reg_alloc.GetArgumentInfo(inst);
-    ASSERT(args[1].IsImmediate());
+    DEBUG_ASSERT(args[1].IsImmediate());
 
     auto Xresult = ctx.reg_alloc.WriteX(inst);
     auto Xvalue = ctx.reg_alloc.ReadX(args[0]);

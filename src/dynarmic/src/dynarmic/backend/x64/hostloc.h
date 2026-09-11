@@ -78,12 +78,12 @@ constexpr bool HostLocIsFlag(HostLoc reg) {
 }
 
 constexpr HostLoc HostLocRegIdx(int idx) {
-    ASSERT(idx >= 0 && idx <= 15);
+    DEBUG_ASSERT(idx >= 0 && idx <= 15);
     return HostLoc(idx);
 }
 
 constexpr HostLoc HostLocXmmIdx(int idx) {
-    ASSERT(idx >= 0 && idx <= 15);
+    DEBUG_ASSERT(idx >= 0 && idx <= 15);
     return HostLoc(size_t(HostLoc::XMM0) + idx);
 }
 
@@ -159,12 +159,12 @@ const std::bitset<32> any_xmm = BuildRegSet({
 });
 
 inline Xbyak::Reg64 HostLocToReg64(HostLoc loc) noexcept {
-    ASSERT(HostLocIsGPR(loc));
+    DEBUG_ASSERT(HostLocIsGPR(loc));
     return Xbyak::Reg64(int(loc));
 }
 
 inline Xbyak::Xmm HostLocToXmm(HostLoc loc) noexcept {
-    ASSERT(HostLocIsXMM(loc));
+    DEBUG_ASSERT(HostLocIsXMM(loc));
     return Xbyak::Xmm(int(loc) - int(HostLoc::XMM0));
 }
 

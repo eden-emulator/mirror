@@ -22,107 +22,107 @@ namespace Dynarmic::Backend::RV64 {
 
 template<>
 void EmitIR<IR::Opcode::A64ClearExclusive>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ReadMemory8>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ReadMemory16>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ReadMemory32>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ReadMemory64>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ReadMemory128>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ExclusiveReadMemory8>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ExclusiveReadMemory16>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ExclusiveReadMemory32>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ExclusiveReadMemory64>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ExclusiveReadMemory128>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64WriteMemory8>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64WriteMemory16>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64WriteMemory32>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64WriteMemory64>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64WriteMemory128>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ExclusiveWriteMemory8>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ExclusiveWriteMemory16>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ExclusiveWriteMemory32>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ExclusiveWriteMemory64>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 template<>
 void EmitIR<IR::Opcode::A64ExclusiveWriteMemory128>(biscuit::Assembler&, EmitContext&, IR::Inst*) {
-    ASSERT(false && "Unimplemented instruction");
+    DEBUG_ASSERT(false && "Unimplemented instruction");
 }
 
 }  // namespace Dynarmic::Backend::RV64
