@@ -169,9 +169,9 @@ public:
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
 
-    server_manager->RegisterNamedService("ngct:u", std::make_shared<IService>(system));
-    server_manager->RegisterNamedService("ngct:s", std::make_shared<IServiceWithManagementApi>(system));
-    server_manager->RegisterNamedService("ngc:u", std::make_shared<NgcServiceImpl>(system));
+    server_manager->RegisterNamedService("ngct:u", std::make_shared<IService>(system), 4);
+    server_manager->RegisterNamedService("ngct:s", std::make_shared<IServiceWithManagementApi>(system), 4);
+    server_manager->RegisterNamedService("ngc:u", std::make_shared<NgcServiceImpl>(system), 4);
     ServerManager::RunServer(std::move(server_manager));
 }
 

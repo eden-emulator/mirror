@@ -101,14 +101,28 @@ public:
     }
 };
 
+class BPC_AMS final : public ServiceFramework<BPC_AMS> {
+public:
+    explicit BPC_AMS(Core::System& system_) : ServiceFramework{system_, "bpc:ams"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {65000, nullptr, "RebootToFatalError"},
+            {65001, nullptr, "SetRebootPayload"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
+    }
+};
+
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
 
-    server_manager->RegisterNamedService("bpc", std::make_shared<BPC>(system));
-    server_manager->RegisterNamedService("bpc:r", std::make_shared<BPC_R>(system));
-    server_manager->RegisterNamedService("bpc:c", std::make_shared<BPC_C>(system));
-    server_manager->RegisterNamedService("bpc:b", std::make_shared<BPC_B>(system));
-    server_manager->RegisterNamedService("bpc:w", std::make_shared<BPC_W>(system));
+    server_manager->RegisterNamedService("bpc", std::make_shared<BPC>(system), 13);
+    server_manager->RegisterNamedService("bpc:r", std::make_shared<BPC_R>(system), 13);
+    server_manager->RegisterNamedService("bpc:c", std::make_shared<BPC_C>(system), 13);
+    server_manager->RegisterNamedService("bpc:b", std::make_shared<BPC_B>(system), 13);
+    server_manager->RegisterNamedService("bpc:w", std::make_shared<BPC_W>(system), 13);
+    server_manager->RegisterNamedService("bpc:ams", std::make_shared<BPC_AMS>(system), 4);
     ServerManager::RunServer(std::move(server_manager));
 }
 

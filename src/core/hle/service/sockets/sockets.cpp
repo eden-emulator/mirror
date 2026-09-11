@@ -64,17 +64,17 @@ public:
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
 
-    server_manager->RegisterNamedService("ethc:c", std::make_shared<ETHC_C>(system));
-    server_manager->RegisterNamedService("ethc:i", std::make_shared<ETHC_I>(system));
-    server_manager->RegisterNamedService("bsd:s", std::make_shared<BSD_USA>(system, "bsd:s", false));
-    server_manager->RegisterNamedService("bsd:u", std::make_shared<BSD_USA>(system, "bsd:u", true));
-    server_manager->RegisterNamedService("bsd:a", std::make_shared<BSD_USA>(system, "bsd:a", true));
-    server_manager->RegisterNamedService("bsd:nu", std::make_shared<BSD_NU>(system));
+    server_manager->RegisterNamedService("ethc:c", std::make_shared<ETHC_C>(system), 5);
+    server_manager->RegisterNamedService("ethc:i", std::make_shared<ETHC_I>(system), 5);
+    server_manager->RegisterNamedService("bsd:s", std::make_shared<BSD_USA>(system, "bsd:s", false), 0x7E);
+    server_manager->RegisterNamedService("bsd:u", std::make_shared<BSD_USA>(system, "bsd:u", true), 0x0f);
+    server_manager->RegisterNamedService("bsd:a", std::make_shared<BSD_USA>(system, "bsd:a", true), 0x17);
+    server_manager->RegisterNamedService("bsd:nu", std::make_shared<BSD_NU>(system), 4);
     server_manager->RegisterNamedService("bsdcfg", std::make_shared<BSDCFG>(system, "bsdcfg"));
     server_manager->RegisterNamedService("ifcfg", std::make_shared<BSDCFG>(system, "ifcfg"));
     server_manager->RegisterNamedService("nsd:a", std::make_shared<NSD>(system, "nsd:a"));
     server_manager->RegisterNamedService("nsd:u", std::make_shared<NSD>(system, "nsd:u"));
-    server_manager->RegisterNamedService("sfdnsres", std::make_shared<SFDNSRES>(system));
+    server_manager->RegisterNamedService("sfdnsres", std::make_shared<SFDNSRES>(system), 30);
     server_manager->RegisterNamedService("dns:priv", std::make_shared<DNS_PRIV>(system));
     server_manager->RegisterNamedService("eth:nd", std::make_shared<ISfDriverServiceCreator>(system));
 

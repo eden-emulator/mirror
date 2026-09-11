@@ -804,9 +804,9 @@ void LoopProcess(Core::System& system) {
 
     const auto FileSystemProxyFactory = [&] { return std::make_shared<FSP_SRV>(system); };
 
-    server_manager->RegisterNamedService("fsp-ldr", std::make_shared<FSP_LDR>(system));
-    server_manager->RegisterNamedService("fsp-pr", std::make_shared<FSP_PR>(system));
-    server_manager->RegisterNamedService("fsp-srv", std::move(FileSystemProxyFactory));
+    server_manager->RegisterNamedService("fsp-ldr", std::make_shared<FSP_LDR>(system), 61);
+    server_manager->RegisterNamedService("fsp-pr", std::make_shared<FSP_PR>(system), 61);
+    server_manager->RegisterNamedService("fsp-srv", std::move(FileSystemProxyFactory), 61);
     ServerManager::RunServer(std::move(server_manager));
 }
 

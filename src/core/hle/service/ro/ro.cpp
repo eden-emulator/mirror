@@ -593,9 +593,9 @@ void LoopProcess(Core::System& system) {
         return std::make_shared<RoInterface>(system, "ldr:ro", ro, NrrKind::User);
     };
 
-    server_manager->RegisterNamedService("ldr:ro", std::move(RoInterfaceFactoryForUser));
-    server_manager->RegisterNamedService("ro:1", std::make_shared<RoInterface>(system, "ro:1", ro, NrrKind::JitPlugin));
-    server_manager->RegisterNamedService("ro:dmnt", std::make_shared<IDebugMonitorInterface>(system));
+    server_manager->RegisterNamedService("ldr:ro", std::move(RoInterfaceFactoryForUser), 2);
+    server_manager->RegisterNamedService("ro:1", std::make_shared<RoInterface>(system, "ro:1", ro, NrrKind::JitPlugin), 2);
+    server_manager->RegisterNamedService("ro:dmnt", std::make_shared<IDebugMonitorInterface>(system), 2);
     ServerManager::RunServer(std::move(server_manager));
 }
 

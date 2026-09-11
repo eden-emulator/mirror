@@ -246,14 +246,14 @@ public:
 
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
-    server_manager->RegisterNamedService("wlan:lcl", std::make_shared<ILocalManager>(system));
-    server_manager->RegisterNamedService("wlan:lg", std::make_shared<ILocalGetFrame>(system));
-    server_manager->RegisterNamedService("wlan:lga", std::make_shared<ILocalGetActionFrame>(system));
-    server_manager->RegisterNamedService("wlan:sg", std::make_shared<ISocketGetFrame>(system));
-    server_manager->RegisterNamedService("wlan:soc", std::make_shared<ISocketManager>(system));
-    server_manager->RegisterNamedService("wlan:dtc", std::make_shared<IDetectManager>(system));
-    server_manager->RegisterNamedService("wlan:p", std::make_shared<IPrivateServiceCreator>(system));
-    server_manager->RegisterNamedService("wlan:nd", std::make_shared<ISfDriverServiceCreator>(system));
+    server_manager->RegisterNamedService("wlan:lcl", std::make_shared<ILocalManager>(system), 10);
+    server_manager->RegisterNamedService("wlan:lg", std::make_shared<ILocalGetFrame>(system), 10);
+    server_manager->RegisterNamedService("wlan:lga", std::make_shared<ILocalGetActionFrame>(system), 10);
+    server_manager->RegisterNamedService("wlan:sg", std::make_shared<ISocketGetFrame>(system), 10);
+    server_manager->RegisterNamedService("wlan:soc", std::make_shared<ISocketManager>(system), 10);
+    server_manager->RegisterNamedService("wlan:dtc", std::make_shared<IDetectManager>(system), 4);
+    server_manager->RegisterNamedService("wlan:p", std::make_shared<IPrivateServiceCreator>(system), 30);
+    server_manager->RegisterNamedService("wlan:nd", std::make_shared<ISfDriverServiceCreator>(system), 5);
     ServerManager::RunServer(std::move(server_manager));
 }
 

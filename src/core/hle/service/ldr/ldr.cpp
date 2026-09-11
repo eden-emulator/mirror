@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -56,9 +59,9 @@ public:
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
 
-    server_manager->RegisterNamedService("ldr:dmnt", std::make_shared<DebugMonitor>(system));
-    server_manager->RegisterNamedService("ldr:pm", std::make_shared<ProcessManager>(system));
-    server_manager->RegisterNamedService("ldr:shel", std::make_shared<Shell>(system));
+    server_manager->RegisterNamedService("ldr:dmnt", std::make_shared<DebugMonitor>(system), 3);
+    server_manager->RegisterNamedService("ldr:pm", std::make_shared<ProcessManager>(system), 1);
+    server_manager->RegisterNamedService("ldr:shel", std::make_shared<Shell>(system), 3);
 
     ServerManager::RunServer(std::move(server_manager));
 }

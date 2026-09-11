@@ -36,18 +36,18 @@ std::optional<u64> GetTitleIDForProcessID(Core::System& system, u64 process_id) 
 ARP_R::ARP_R(Core::System& system_, const ARPManager& manager_)
     : ServiceFramework{system_, "arp:r"}, manager{manager_} {
     // clang-format off
-        static const FunctionInfo functions[] = {
-            {0, &ARP_R::GetApplicationLaunchProperty, "GetApplicationLaunchProperty"},
-            {1, &ARP_R::GetApplicationLaunchPropertyWithApplicationId, "GetApplicationLaunchPropertyWithApplicationId"},
-            {2, &ARP_R::GetApplicationControlProperty, "GetApplicationControlProperty"},
-            {3, &ARP_R::GetApplicationControlPropertyWithApplicationId, "GetApplicationControlPropertyWithApplicationId"},
-            {4, nullptr, "GetApplicationInstanceUnregistrationNotifier"},
-            {5, nullptr, "ListApplicationInstanceId"},
-            {6, nullptr, "GetMicroApplicationInstanceId"},
-            {7, nullptr, "GetApplicationCertificate"},
-            {9998, nullptr, "GetPreomiaApplicationLaunchProperty"},
-            {9999, nullptr, "GetPreomiaApplicationControlProperty"},
-        };
+    static const FunctionInfo functions[] = {
+        {0, &ARP_R::GetApplicationLaunchProperty, "GetApplicationLaunchProperty"},
+        {1, &ARP_R::GetApplicationLaunchPropertyWithApplicationId, "GetApplicationLaunchPropertyWithApplicationId"},
+        {2, &ARP_R::GetApplicationControlProperty, "GetApplicationControlProperty"},
+        {3, &ARP_R::GetApplicationControlPropertyWithApplicationId, "GetApplicationControlPropertyWithApplicationId"},
+        {4, nullptr, "GetApplicationInstanceUnregistrationNotifier"},
+        {5, nullptr, "ListApplicationInstanceId"},
+        {6, nullptr, "GetMicroApplicationInstanceId"},
+        {7, nullptr, "GetApplicationCertificate"},
+        {9998, nullptr, "GetPreomiaApplicationLaunchProperty"},
+        {9999, nullptr, "GetPreomiaApplicationControlProperty"},
+    };
     // clang-format on
 
     RegisterHandlers(functions);
@@ -191,8 +191,7 @@ private:
         }
 
         if (issued) {
-            LOG_ERROR(Service_ARP,
-                      "Attempted to issue registrar, but registrar is already issued!");
+            LOG_ERROR(Service_ARP, "Attempted to issue registrar, but registrar is already issued!");
             IPC::ResponseBuilder rb{ctx, 2};
             rb.Push(Glue::ResultAlreadyBound);
             return;
@@ -209,9 +208,7 @@ private:
         LOG_DEBUG(Service_ARP, "called");
 
         if (issued) {
-            LOG_ERROR(
-                Service_ARP,
-                "Attempted to set application launch property, but registrar is already issued!");
+            LOG_ERROR(Service_ARP, "Attempted to set application launch property, but registrar is already issued!");
             IPC::ResponseBuilder rb{ctx, 2};
             rb.Push(Glue::ResultAlreadyBound);
             return;
@@ -228,9 +225,7 @@ private:
         LOG_DEBUG(Service_ARP, "called");
 
         if (issued) {
-            LOG_ERROR(
-                Service_ARP,
-                "Attempted to set application control property, but registrar is already issued!");
+            LOG_ERROR(Service_ARP, "Attempted to set application control property, but registrar is already issued!");
             IPC::ResponseBuilder rb{ctx, 2};
             rb.Push(Glue::ResultAlreadyBound);
             return;

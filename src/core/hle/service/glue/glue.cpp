@@ -22,8 +22,8 @@ void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
 
     // ARP
-    server_manager->RegisterNamedService("arp:r", std::make_shared<ARP_R>(system, system.GetARPManager()));
-    server_manager->RegisterNamedService("arp:w", std::make_shared<ARP_W>(system, system.GetARPManager()));
+    server_manager->RegisterNamedService("arp:r", std::make_shared<ARP_R>(system, system.GetARPManager()), 16);
+    server_manager->RegisterNamedService("arp:w", std::make_shared<ARP_W>(system, system.GetARPManager()), 8);
 
     // BackGround Task Controller
     server_manager->RegisterNamedService("bgtc:t", std::make_shared<BGTC_T>(system));

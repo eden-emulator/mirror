@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -9,7 +12,9 @@
 namespace AudioCore::Renderer {
 
 Manager::Manager(Core::System& system_)
-    : system{system_}, system_manager{std::make_unique<SystemManager>(system)} {
+    : system{system_}
+    , system_manager{std::make_unique<SystemManager>(system)}
+{
     std::iota(session_ids.begin(), session_ids.end(), 0);
 }
 
@@ -38,14 +43,12 @@ Result Manager::GetWorkBufferSize(const AudioRendererParameterInternal& params,
 
 s32 Manager::GetSessionId() {
     std::scoped_lock l{session_lock};
-    auto session_id{session_ids[session_count]};
-
-    if (session_id == -1) {
-        return -1;
+    ASSERT(session_count <= session_ids.size());
+    auto const session_id = session_ids[session_count];
+    if (session_id >= 0) {
+        session_ids[session_count] = -1;
+        session_count++;
     }
-
-    session_ids[session_count] = -1;
-    session_count++;
     return session_id;
 }
 

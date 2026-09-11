@@ -252,10 +252,10 @@ private:
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
 
-    server_manager->RegisterNamedService("pm:bm", std::make_shared<BootMode>(system));
-    server_manager->RegisterNamedService("pm:dmnt", std::make_shared<DebugMonitor>(system));
-    server_manager->RegisterNamedService("pm:info", std::make_shared<Info>(system));
-    server_manager->RegisterNamedService("pm:shell", std::make_shared<Shell>(system));
+    server_manager->RegisterNamedService("pm:bm", std::make_shared<BootMode>(system), 4); // Nx = 4, Ams = 8
+    server_manager->RegisterNamedService("pm:dmnt", std::make_shared<DebugMonitor>(system), 16);
+    server_manager->RegisterNamedService("pm:shell", std::make_shared<Shell>(system), 3); //Nx = 3, AMS = 8
+    server_manager->RegisterNamedService("pm:info", std::make_shared<Info>(system), 25); //48-(4+16+3)
     ServerManager::RunServer(std::move(server_manager));
 }
 

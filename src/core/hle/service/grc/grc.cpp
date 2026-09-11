@@ -46,8 +46,8 @@ public:
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
 
-    server_manager->RegisterNamedService("grc:c", std::make_shared<GRC>(system));
-    server_manager->RegisterNamedService("grc:d", std::make_shared<GRC_D>(system));
+    server_manager->RegisterNamedService("grc:c", std::make_shared<GRC>(system), 4);
+    server_manager->RegisterNamedService("grc:d", std::make_shared<GRC_D>(system), 4);
     ServerManager::RunServer(std::move(server_manager));
 }
 

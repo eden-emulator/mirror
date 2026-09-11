@@ -1144,12 +1144,9 @@ private:
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
 
-    server_manager->RegisterNamedService("nifm:a",
-                                         std::make_shared<NetworkInterface>("nifm:a", system));
-    server_manager->RegisterNamedService("nifm:s",
-                                         std::make_shared<NetworkInterface>("nifm:s", system));
-    server_manager->RegisterNamedService("nifm:u",
-                                         std::make_shared<NetworkInterface>("nifm:u", system));
+    server_manager->RegisterNamedService("nifm:a", std::make_shared<NetworkInterface>("nifm:a", system), 2);
+    server_manager->RegisterNamedService("nifm:s", std::make_shared<NetworkInterface>("nifm:s", system), 16);
+    server_manager->RegisterNamedService("nifm:u", std::make_shared<NetworkInterface>("nifm:u", system), 5);
     ServerManager::RunServer(std::move(server_manager));
 }
 

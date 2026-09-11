@@ -53,8 +53,7 @@ static Result ValidateServiceName(const std::string& name) {
     return ResultSuccess;
 }
 
-Result ServiceManager::RegisterService(Kernel::KServerPort** out_server_port, std::string name,
-                                       u32 max_sessions, SessionRequestHandlerFactory handler) {
+Result ServiceManager::RegisterService(Kernel::KServerPort** out_server_port, std::string name, u32 max_sessions, SessionRequestHandlerFactory handler) {
     R_TRY(ValidateServiceName(name));
 
     std::scoped_lock lk{lock};
@@ -64,7 +63,7 @@ Result ServiceManager::RegisterService(Kernel::KServerPort** out_server_port, st
     }
 
     auto* port = Kernel::KPort::Create(kernel);
-    port->Initialize(kernel, ServerSessionCountMax, false, 0);
+    port->Initialize(kernel, max_sessions, false, 0);
 
     // Register the port.
     Kernel::KPort::Register(kernel, port);
@@ -264,7 +263,7 @@ void SM::AtmosphereHasService(HLERequestContext& ctx) {
 }
 
 SM::SM(ServiceManager& service_manager_, Core::System& system_)
-    : ServiceFramework{system_, "sm:", 4}
+    : ServiceFramework{system_, "sm:", 64}
     , service_manager{service_manager_}
     , kernel{system_.Kernel()}
 {
