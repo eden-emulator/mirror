@@ -243,7 +243,7 @@ constexpr RequestLayout GetReplyOutLayout(bool is_domain) {
     return is_domain ? GetDomainReplyOutLayout<MethodArguments>() : GetNonDomainReplyOutLayout<MethodArguments>();
 }
 
-using OutTemporaryBuffers = std::array<Common::ScratchBuffer<u8>, 3>;
+using OutTemporaryBuffers = std::array<boost::container::small_vector<u8, 128>, 3>;
 
 template <typename MethodArguments, typename CallArguments, size_t PrevAlign = 1, size_t DataOffset = 0, size_t HandleIndex = 0, size_t InBufferIndex = 0, size_t OutBufferIndex = 0, bool RawDataFinished = false, size_t ArgIndex = 0>
 void ReadInArgument(bool is_domain, CallArguments& args, const u8* raw_data, HLERequestContext& ctx, OutTemporaryBuffers& temp) {
@@ -345,9 +345,9 @@ void ReadInArgument(bool is_domain, CallArguments& args, const u8* raw_data, HLE
             // Set up scratch buffer.
             auto& buffer = temp[OutBufferIndex];
             if (ctx.CanWriteBuffer(OutBufferIndex)) {
-                buffer.resize_destructive(ctx.GetWriteBufferSize(OutBufferIndex));
+                buffer.resize(ctx.GetWriteBufferSize(OutBufferIndex));
             } else {
-                buffer.resize_destructive(0);
+                buffer.resize(0);
             }
 
             ElementType* ptr = (ElementType*) buffer.data();
