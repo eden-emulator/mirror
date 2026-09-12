@@ -80,13 +80,6 @@ class LicensesFragment : Fragment() {
                 R.string.license_ffmpeg_text
             ),
             License(
-                R.string.license_opus,
-                R.string.license_opus_description,
-                R.string.license_opus_link,
-                R.string.license_opus_copyright,
-                R.string.license_opus_text
-            ),
-            License(
                 R.string.license_sirit,
                 R.string.license_sirit_description,
                 R.string.license_sirit_link,

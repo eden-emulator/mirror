@@ -6,12 +6,13 @@
 
 #pragma once
 
-#include <memory>
 #include <thread>
 
+#include "common/container/unordered_map.h"
 #include "audio_core/adsp/apps/opus/shared_memory.h"
 #include "audio_core/adsp/mailbox.h"
 #include "common/common_types.h"
+#include "core/hle/result.h"
 
 namespace Core {
 class System;
@@ -48,16 +49,14 @@ enum Message : u32 {
     DecodeInterleavedForMultiStreamOK = 50,
 };
 
-/**
- * The AudioRenderer application running on the ADSP.
- */
+/// @brief The AudioRenderer application running on the ADSP.
 class OpusDecoder {
 public:
     explicit OpusDecoder(Core::System& system);
     ~OpusDecoder();
 
     bool IsRunning() const noexcept {
-        return running;
+        return dsp_thread.joinable();
     }
 
     void Send(Direction dir, u32 message);
@@ -68,28 +67,12 @@ public:
     }
 
 private:
-    /**
-     * Initializing thread, launched at audio_core boot to avoid blocking the main emu boot thread.
-     */
-    void Init(std::stop_token stop_token);
-    /**
-     * Main OpusDecoder thread, responsible for processing the incoming Opus packets.
-     */
-    void Main(std::stop_token stop_token);
-
-    /// Core system
-    Core::System& system;
     /// Mailbox to communicate messages with the host, drives the main thread
     Mailbox mailbox;
-    /// Init thread
-    std::jthread init_thread{};
-    /// Main thread
-    std::jthread main_thread{};
-    /// The current state
-    bool running{};
     /// Structure shared with the host, input data set by the host before sending a mailbox message,
     /// and the responses are written back by the OpusDecoder.
     SharedMemory* shared_memory{};
+    std::jthread dsp_thread{};
 };
 
 } // namespace AudioCore::ADSP::OpusDecoder

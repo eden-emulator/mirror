@@ -464,21 +464,6 @@ if (NOT YUZU_STATIC_ROOM)
     if (ZLIB_ADDED)
         add_library(ZLIB::ZLIB ALIAS zlibstatic)
     endif()
-
-    # Opus
-    AddJsonPackage(opus)
-
-    if (Opus_ADDED)
-        if (MSVC AND CXX_CLANG)
-            target_compile_options(opus PRIVATE
-                $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-function-declaration>
-            )
-        endif()
-    endif()
-
-    if (NOT TARGET Opus::opus)
-        add_library(Opus::opus ALIAS opus)
-    endif()
 endif()
 
 if(NOT TARGET Boost::headers)
