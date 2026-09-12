@@ -28,8 +28,10 @@ JoyconDriver::~JoyconDriver() {
 }
 
 void JoyconDriver::Stop() {
-    is_connected = false;
-    input_thread = {};
+    if (input_thread.joinable()) {
+        input_thread.request_stop();
+        input_thread.join();
+    }
 }
 
 Common::Input::DriverResult JoyconDriver::RequestDeviceAccess(SDL_hid_device_info* device_info) {
@@ -58,7 +60,6 @@ Common::Input::DriverResult JoyconDriver::InitializeDevice() {
         return Common::Input::DriverResult::InvalidHandle;
     }
     std::scoped_lock lock{mutex};
-    disable_input_thread = true;
 
     // Reset Counters
     error_counter = 0;
@@ -126,62 +127,44 @@ Common::Input::DriverResult JoyconDriver::InitializeDevice() {
                                                    right_stick_calibration, motion_calibration);
 
     // Start polling for data
-    is_connected = true;
-    if (!input_thread_running) {
-        input_thread =
-            std::jthread([this](std::stop_token stop_token) { InputThread(stop_token); });
+    if (!input_thread.joinable()) {
+        input_thread = std::jthread([this](std::stop_token stop_token) {
+            InputThread(stop_token);
+        });
     }
-
-    disable_input_thread = false;
     return Common::Input::DriverResult::Success;
 }
 
 void JoyconDriver::InputThread(std::stop_token stop_token) {
     LOG_INFO(Input, "Joycon Adapter input thread started");
     Common::SetCurrentThreadName("JoyconInput");
-    input_thread_running = true;
 
     // Max update rate is 5ms, ensure we are always able to read a bit faster
-    constexpr int ThreadDelay = 3;
-    std::vector<u8> buffer(MaxBufferSize);
-
     while (!stop_token.stop_requested()) {
+        constexpr int THREAD_SLEEP_DELAY = 3;
+        constexpr size_t MAX_VIBRATIONS = 4;
+        std::array<u8, MaxBufferSize> buffer; // Filled by SDL, don't zero-init
         int status = 0;
-
-        if (!IsInputThreadValid()) {
-            input_thread.request_stop();
-            continue;
-        }
-
-        // By disabling the input thread we can ensure custom commands will succeed as no package is
-        // skipped
-        if (!disable_input_thread) {
-            status = SDL_hid_read_timeout(hidapi_handle->handle, buffer.data(), buffer.size(),
-                                          ThreadDelay);
+        if (IsInputThreadValid()) {
+            // By disabling the input thread we can ensure custom commands will succeed as no package is
+            // skipped
+            status = SDL_hid_read_timeout(hidapi_handle->handle, buffer.data(), buffer.size(), THREAD_SLEEP_DELAY);
+            if (IsPayloadCorrect(status, buffer)) {
+                OnNewData(buffer);
+            }
+            if (!vibration_queue.Empty()) {
+                VibrationValue vibration_value;
+                vibration_queue.Pop(vibration_value);
+                last_vibration_result = rumble_protocol->SendVibration(vibration_value);
+            }
+            // We can't keep up with vibrations. Start skipping.
+            while (vibration_queue.Size() >= MAX_VIBRATIONS) {
+                vibration_queue.Pop();
+            }
         } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(ThreadDelay));
+            input_thread.request_stop();
         }
-
-        if (IsPayloadCorrect(status, buffer)) {
-            OnNewData(buffer);
-        }
-
-        if (!vibration_queue.Empty()) {
-            VibrationValue vibration_value;
-            vibration_queue.Pop(vibration_value);
-            last_vibration_result = rumble_protocol->SendVibration(vibration_value);
-        }
-
-        // We can't keep up with vibrations. Start skipping.
-        while (vibration_queue.Size() > 6) {
-            vibration_queue.Pop();
-        }
-
-        std::this_thread::yield();
     }
-
-    is_connected = false;
-    input_thread_running = false;
     LOG_INFO(Input, "Joycon Adapter input thread stopped");
 }
 
@@ -271,11 +254,6 @@ void JoyconDriver::OnNewData(std::span<u8> buffer) {
 }
 
 Common::Input::DriverResult JoyconDriver::SetPollingMode() {
-    SCOPE_EXIT {
-        disable_input_thread = false;
-    };
-    disable_input_thread = true;
-
     rumble_protocol->EnableRumble(vibration_enabled && supported_features.vibration);
 
     if (motion_enabled && supported_features.motion) {
@@ -382,17 +360,12 @@ JoyconDriver::SupportedFeatures JoyconDriver::GetSupportedFeatures() {
 }
 
 bool JoyconDriver::IsInputThreadValid() const {
-    if (!is_connected.load()) {
+    if (hidapi_handle == nullptr || hidapi_handle->handle == nullptr)
         return false;
-    }
-    if (hidapi_handle->handle == nullptr) {
-        return false;
-    }
     // Controller is not responding. Terminate connection
-    if (error_counter > MaxErrorCount) {
+    if (error_counter > MaxErrorCount)
         return false;
-    }
-    return true;
+    return input_thread.joinable();
 }
 
 bool JoyconDriver::IsPayloadCorrect(int status, std::span<const u8> buffer) {
@@ -415,30 +388,18 @@ bool JoyconDriver::IsPayloadCorrect(int status, std::span<const u8> buffer) {
 
 Common::Input::DriverResult JoyconDriver::SetVibration(const VibrationValue& vibration) {
     std::scoped_lock lock{mutex};
-    if (disable_input_thread) {
-        return Common::Input::DriverResult::HandleInUse;
-    }
     vibration_queue.Push(vibration);
     return last_vibration_result;
 }
 
 Common::Input::DriverResult JoyconDriver::SetLedConfig(u8 led_pattern) {
     std::scoped_lock lock{mutex};
-    if (disable_input_thread) {
-        return Common::Input::DriverResult::HandleInUse;
-    }
     return generic_protocol->SetLedPattern(led_pattern);
 }
 
 Common::Input::DriverResult JoyconDriver::SetIrsConfig(IrsMode mode_, IrsResolution format_) {
     std::scoped_lock lock{mutex};
-    if (disable_input_thread) {
-        return Common::Input::DriverResult::HandleInUse;
-    }
-    disable_input_thread = true;
-    const auto result = irs_protocol->SetIrsConfig(mode_, format_);
-    disable_input_thread = false;
-    return result;
+    return irs_protocol->SetIrsConfig(mode_, format_);
 }
 
 Common::Input::DriverResult JoyconDriver::SetPassiveMode() {
@@ -532,12 +493,7 @@ Common::Input::DriverResult JoyconDriver::StartNfcPolling() {
     if (!nfc_protocol->IsEnabled()) {
         return Common::Input::DriverResult::Disabled;
     }
-
-    disable_input_thread = true;
-    const auto result = nfc_protocol->StartNFCPollingMode();
-    disable_input_thread = false;
-
-    return result;
+    return nfc_protocol->StartNFCPollingMode();
 }
 
 Common::Input::DriverResult JoyconDriver::StopNfcPolling() {
@@ -550,10 +506,7 @@ Common::Input::DriverResult JoyconDriver::StopNfcPolling() {
         return Common::Input::DriverResult::Disabled;
     }
 
-    disable_input_thread = true;
     const auto result = nfc_protocol->StopNFCPollingMode();
-    disable_input_thread = false;
-
     if (amiibo_detected) {
         amiibo_detected = false;
         joycon_poller->UpdateAmiibo({});
@@ -576,11 +529,7 @@ Common::Input::DriverResult JoyconDriver::ReadAmiiboData(std::vector<u8>& out_da
     }
 
     out_data.resize(0x21C);
-    disable_input_thread = true;
-    const auto result = nfc_protocol->ReadAmiibo(out_data);
-    disable_input_thread = false;
-
-    return result;
+    return nfc_protocol->ReadAmiibo(out_data);
 }
 
 Common::Input::DriverResult JoyconDriver::WriteNfcData(std::span<const u8> data) {
@@ -595,12 +544,7 @@ Common::Input::DriverResult JoyconDriver::WriteNfcData(std::span<const u8> data)
     if (!amiibo_detected) {
         return Common::Input::DriverResult::ErrorWritingData;
     }
-
-    disable_input_thread = true;
-    const auto result = nfc_protocol->WriteAmiibo(data);
-    disable_input_thread = false;
-
-    return result;
+    return nfc_protocol->WriteAmiibo(data);
 }
 
 Common::Input::DriverResult JoyconDriver::ReadMifareData(std::span<const MifareReadChunk> data,
@@ -616,12 +560,7 @@ Common::Input::DriverResult JoyconDriver::ReadMifareData(std::span<const MifareR
     if (!amiibo_detected) {
         return Common::Input::DriverResult::ErrorWritingData;
     }
-
-    disable_input_thread = true;
-    const auto result = nfc_protocol->ReadMifare(data, out_data);
-    disable_input_thread = false;
-
-    return result;
+    return nfc_protocol->ReadMifare(data, out_data);
 }
 
 Common::Input::DriverResult JoyconDriver::WriteMifareData(std::span<const MifareWriteChunk> data) {
@@ -636,17 +575,11 @@ Common::Input::DriverResult JoyconDriver::WriteMifareData(std::span<const Mifare
     if (!amiibo_detected) {
         return Common::Input::DriverResult::ErrorWritingData;
     }
-
-    disable_input_thread = true;
-    const auto result = nfc_protocol->WriteMifare(data);
-    disable_input_thread = false;
-
-    return result;
+    return nfc_protocol->WriteMifare(data);
 }
 
 bool JoyconDriver::IsConnected() const {
-    std::scoped_lock lock{mutex};
-    return is_connected.load();
+    return input_thread.joinable();
 }
 
 bool JoyconDriver::IsVibrationEnabled() const {

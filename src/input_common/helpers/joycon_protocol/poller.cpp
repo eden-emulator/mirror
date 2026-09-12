@@ -22,7 +22,7 @@ void JoyconPoller::SetCallbacks(const JoyconCallbacks& callbacks_) {
 void JoyconPoller::ReadActiveMode(std::span<u8> buffer, const MotionStatus& motion_status,
                                   const RingStatus& ring_status) {
     InputReportActive data{};
-    memcpy(&data, buffer.data(), sizeof(InputReportActive));
+    std::memcpy(&data, buffer.data(), sizeof(InputReportActive));
 
     switch (device_type) {
     case ControllerType::Left:
@@ -47,7 +47,7 @@ void JoyconPoller::ReadActiveMode(std::span<u8> buffer, const MotionStatus& moti
 
 void JoyconPoller::ReadPassiveMode(std::span<u8> buffer) {
     InputReportPassive data{};
-    memcpy(&data, buffer.data(), sizeof(InputReportPassive));
+    std::memcpy(&data, buffer.data(), sizeof(InputReportPassive));
 
     switch (device_type) {
     case ControllerType::Left:

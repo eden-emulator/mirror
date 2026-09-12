@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -160,8 +163,6 @@ private:
     // Thread related
     mutable std::mutex mutex;
     std::jthread input_thread;
-    bool input_thread_running{};
-    bool disable_input_thread{};
 };
 
 } // namespace InputCommon::Joycon
