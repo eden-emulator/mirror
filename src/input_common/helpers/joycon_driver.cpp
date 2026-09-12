@@ -139,16 +139,16 @@ void JoyconDriver::InputThread(std::stop_token stop_token) {
     LOG_INFO(Input, "Joycon Adapter input thread started");
     Common::SetCurrentThreadName("JoyconInput");
 
-    // Max update rate is 5ms, ensure we are always able to read a bit faster
     while (!stop_token.stop_requested()) {
-        constexpr int THREAD_SLEEP_DELAY = 3;
+        // Max update rate is 5ms, so just (timeout) at 300ms
+        constexpr int READ_TIMEOUT_MS = 300;
         constexpr size_t MAX_VIBRATIONS = 4;
         std::array<u8, MaxBufferSize> buffer; // Filled by SDL, don't zero-init
         int status = 0;
         if (IsInputThreadValid()) {
             // By disabling the input thread we can ensure custom commands will succeed as no package is
             // skipped
-            status = SDL_hid_read_timeout(hidapi_handle->handle, buffer.data(), buffer.size(), THREAD_SLEEP_DELAY);
+            status = SDL_hid_read_timeout(hidapi_handle->handle, buffer.data(), buffer.size(), READ_TIMEOUT_MS);
             if (IsPayloadCorrect(status, buffer)) {
                 OnNewData(buffer);
             }
