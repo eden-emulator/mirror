@@ -541,9 +541,7 @@ public:
                     }
                 }
                 LOG_WARNING(Common_Memory, "using largepage of size {} #{}", max_size, max_index);
-                // Do not use SHM_LARGEPAGE_ALLOC_HARD, yknow what will happen when you do?
-                // the entire Eden process will hang for eternity! that's what will happen
-                // Want to fuck around and find out? Go ahead, I tempt you change the "default" to "hard"
+                // Do not use SHM_LARGEPAGE_ALLOC_HARD, will infinitely hang on vm_reclaim on most systems
                 fd = shm_create_largepage(SHM_ANON, O_RDWR, max_index, SHM_LARGEPAGE_ALLOC_DEFAULT, 0600);
             }
         }
