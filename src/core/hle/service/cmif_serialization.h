@@ -456,7 +456,7 @@ void CmifReplyWrapImpl(HLERequestContext& ctx, T& t, Result (T::*f)(A...)) {
     static_assert(ConstIfReference<A...>(), "Arguments taken by reference must be const");
     using MethodArguments = std::tuple<std::remove_cvref_t<A>...>;
 
-    OutTemporaryBuffers buffers{};
+    OutTemporaryBuffers buffers; //don't zero init
     auto call_arguments = std::tuple<typename UnwrapArg<A>::Type...>();
 
     // Read inputs.
