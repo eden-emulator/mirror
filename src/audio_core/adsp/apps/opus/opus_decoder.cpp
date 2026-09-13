@@ -109,6 +109,7 @@ public:
         avcodec_free_context(&avc);
         av_frame_free(&frame);
         av_packet_free(&avpkt);
+        swr_free(&swr);
         return ResultSuccess;
     }
 
@@ -161,58 +162,57 @@ public:
                     break;
                 }
 
-                const int bsize = av_samples_get_buffer_size(nullptr, frame->ch_layout.nb_channels,
-                                                             frame->nb_samples, AV_SAMPLE_FMT_S16, 1);
-                if (bsize <= 0) {
-                    break;
-                }
-                const int to_copy = std::min(bsize, dst_size - written);
+                const int channels = frame->ch_layout.nb_channels;
                 const size_t dst_offset = static_cast<size_t>(written);
                 int copied = 0;
 
                 if (frame->format == AV_SAMPLE_FMT_S16) {
-                    std::memcpy(dst + dst_offset, frame->data[0], static_cast<size_t>(to_copy));
-                    copied = to_copy;
+                    // libopus path: the frame is already interleaved s16.
+                    const int bsize = av_samples_get_buffer_size(nullptr, channels, frame->nb_samples,
+                                                                 AV_SAMPLE_FMT_S16, 1);
+                    if (bsize <= 0) {
+                        break;
+                    }
+                    copied = std::min(bsize, dst_size - written);
+                    std::memcpy(dst + dst_offset, frame->data[0], static_cast<size_t>(copied));
                 } else {
-                    // Native FFmpeg Opus decoder outputs float; convert to interleaved s16.
-                    SwrContext* swr = nullptr;
-                    if (swr_alloc_set_opts2(&swr, &avc->ch_layout, AV_SAMPLE_FMT_S16, 48000, &frame->ch_layout,
-                                            static_cast<enum AVSampleFormat>(frame->format), frame->sample_rate, 0,
-                                            nullptr) < 0) {
-                        LOG_ERROR(Audio_DSP, "swr_alloc_set_opts2 failed");
-                        break;
-                    }
-                    if (swr_init(swr) < 0) {
-                        LOG_ERROR(Audio_DSP, "swr_init failed");
+                    // Native FFmpeg Opus decoder outputs float; resample straight
+                    // into the output buffer as interleaved s16. The context is
+                    // cached per decoder since opus keeps a constant format.
+                    if (swr == nullptr || swr_in_format != static_cast<AVSampleFormat>(frame->format)) {
                         swr_free(&swr);
+                        if (swr_alloc_set_opts2(&swr, &avc->ch_layout, AV_SAMPLE_FMT_S16, 48000,
+                                                &frame->ch_layout, static_cast<enum AVSampleFormat>(frame->format),
+                                                frame->sample_rate, 0, nullptr) < 0 ||
+                            swr_init(swr) < 0) {
+                            LOG_ERROR(Audio_DSP, "failed to set up the s16 resampler");
+                            swr_free(&swr);
+                            break;
+                        }
+                        swr_in_format = static_cast<AVSampleFormat>(frame->format);
+                    }
+
+                    // Convert directly into the guest-visible buffer, bounded by
+                    // the space that is left, so it cannot be overrun.
+                    uint8_t* out_ptr = dst + dst_offset;
+                    const int out_capacity = (dst_size - written) / (2 * channels);
+                    if (out_capacity <= 0) {
                         break;
                     }
-                    AVFrame* s16_frame = av_frame_alloc();
-                    s16_frame->format = AV_SAMPLE_FMT_S16;
-                    s16_frame->sample_rate = frame->sample_rate;
-                    av_channel_layout_copy(&s16_frame->ch_layout, &frame->ch_layout);
-                    s16_frame->nb_samples = frame->nb_samples;
-                    if (av_frame_get_buffer(s16_frame, 0) >= 0) {
-                        const int converted = swr_convert(swr, s16_frame->data, s16_frame->nb_samples,
-                                                          (const uint8_t**)frame->data, frame->nb_samples);
-                        if (converted >= 0) {
-                            const int out_bytes =
-                                converted * frame->ch_layout.nb_channels * static_cast<int>(sizeof(s16));
-                            copied = std::min(out_bytes, to_copy);
-                            std::memcpy(dst + dst_offset, s16_frame->data[0], static_cast<size_t>(copied));
-                        } else {
-                            LOG_ERROR(Audio_DSP, "swr_convert returned {}", converted);
-                        }
+                    const int converted = swr_convert(swr, &out_ptr, out_capacity,
+                                                      (const uint8_t**)frame->data, frame->nb_samples);
+                    if (converted < 0) {
+                        LOG_ERROR(Audio_DSP, "swr_convert returned {}", converted);
+                        break;
                     }
-                    av_frame_free(&s16_frame);
-                    swr_free(&swr);
+                    copied = converted * channels * static_cast<int>(sizeof(s16));
                 }
 
-                out_sample_count += static_cast<u32>(copied / (2 * frame->ch_layout.nb_channels));
-                written += copied;
-                if (copied < bsize) {
-                    break; // output buffer full; stop before overrunning it
+                if (copied <= 0) {
+                    break;
                 }
+                out_sample_count += static_cast<u32>(copied / (2 * channels));
+                written += copied;
             }
             return ResultSuccess;
         }
@@ -222,6 +222,8 @@ public:
     AVCodecContext* avc = nullptr;
     AVPacket* avpkt = nullptr;
     AVFrame* frame = nullptr;
+    SwrContext* swr = nullptr;
+    AVSampleFormat swr_in_format = AV_SAMPLE_FMT_NONE;
 };
 } // namespace
 
