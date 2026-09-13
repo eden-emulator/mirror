@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -47,6 +50,7 @@ public:
     void SetAutoCreate(bool state);
 
 private:
+    std::string GetSaveDataPath(SaveDataSpaceId space, SaveDataType type, u64 title_id, u128 user_id, u64 save_id) const;
     Core::System& system;
     ProgramId program_id;
     VirtualDir dir;

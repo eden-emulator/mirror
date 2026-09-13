@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <limits>
 #include <random>
 #include <regex>
 #include <openssl/evp.h>
@@ -346,6 +347,22 @@ std::unique_ptr<NCA> ContentProvider::GetEntry(ContentProviderEntry entry) const
 
 std::vector<ContentProviderEntry> ContentProvider::ListEntries() const {
     return ListEntriesFilter(std::nullopt, std::nullopt, std::nullopt);
+}
+
+std::optional<u64> ContentProvider::GetParentApplicationId(u64 program_id) const {
+    const auto application_id = GetBaseTitleID(program_id);
+    const auto program_index = program_id - application_id;
+    if (program_index == 0 || program_index > std::numeric_limits<u8>::max()) {
+        return std::nullopt;
+    }
+    if (!ListEntriesFilter(TitleType::Application, ContentRecordType::Meta, program_id).empty()) {
+        return std::nullopt;
+    }
+    if ((!ListEntriesFilter(TitleType::Application, ContentRecordType::Meta, application_id).empty() && HasEntry(program_id, ContentRecordType::Program))
+     || (!ListEntriesFilter(TitleType::Update, ContentRecordType::Meta, GetUpdateTitleID(application_id)).empty() && HasEntry(GetUpdateTitleID(program_id), ContentRecordType::Program))) {
+        return application_id;
+    }
+    return std::nullopt;
 }
 
 PlaceholderCache::PlaceholderCache(VirtualDir dir_) : dir(std::move(dir_)) {}
