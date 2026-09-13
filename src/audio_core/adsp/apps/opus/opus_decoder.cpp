@@ -34,7 +34,7 @@ constexpr u32 OPUS_HEAD_SIZE = 19;
 constexpr u32 OPUS_MAX_CHANNELS = 2;
 
 bool IsValidChannelCount(u32 channel_count) {
-    return channel_count >= 1 || channel_count <= OPUS_MAX_CHANNELS;
+    return channel_count >= 1 && channel_count <= OPUS_MAX_CHANNELS;
 }
 
 bool IsValidStreamCounts(u32 total_stream_count, u32 stereo_stream_count) {
@@ -123,55 +123,97 @@ public:
     Result Decode(u32& out_sample_count, u64 output_data, u64 output_data_size, u64 input_data, u64 input_data_size) {
         out_sample_count = 0;
         if (avc) {
-            int rem_output_bytes = int(output_data_size);
-            while (rem_output_bytes > 0) {
-                int r = avcodec_receive_frame(avc, frame);
-                if (r == AVERROR(EAGAIN)) {
-                    av_packet_unref(avpkt);
-                    av_new_packet(avpkt, int(input_data_size));
-                    std::memcpy(avpkt->data, reinterpret_cast<const u8*>(input_data), input_data_size);
-                    r = avcodec_send_packet(avc, avpkt);
-                    ASSERT(r >= 0);
-                } else if (r == AVERROR_EOF) {
-                    break;
-                } else if (r >= 0) {
-                    auto const bsize = av_samples_get_buffer_size(nullptr, frame->ch_layout.nb_channels, frame->nb_samples, AV_SAMPLE_FMT_S16, 1);
-                    if (frame->format == AV_SAMPLE_FMT_S16) {
-                        std::memcpy(reinterpret_cast<s16*>(output_data) + (int(output_data_size) - rem_output_bytes), frame->data[0], size_t(bsize));
-                    } else {
-                        SwrContext *swr = nullptr;
-                        if (swr_alloc_set_opts2(
-                            &swr,
-                            &avc->ch_layout,
-                            AV_SAMPLE_FMT_S16,
-                            48000,
-                            &avc->ch_layout,
-                            (enum AVSampleFormat)frame->format,
-                            48000,
-                            0,
-                            nullptr
-                        ) >= 0) {
-                            if (swr_init(swr) >= 0) {
-                                AVFrame *s16_frame = av_frame_alloc();
-                                s16_frame->format = AV_SAMPLE_FMT_S16;
-                                s16_frame->sample_rate = frame->sample_rate;
-                                av_channel_layout_copy(&s16_frame->ch_layout, &frame->ch_layout);
-                                s16_frame->nb_samples = frame->nb_samples;
-                                av_frame_get_buffer(s16_frame, 0);
-                                swr_convert(swr, s16_frame->data, s16_frame->nb_samples, (const uint8_t **)frame->data, frame->nb_samples);
-                                std::memcpy(reinterpret_cast<s16*>(output_data) + (int(output_data_size) - rem_output_bytes), s16_frame->data[0], size_t(bsize));
-                                swr_free(&swr);
-                            }
-                        }
-                    }
-                    out_sample_count += frame->nb_samples;
-                    rem_output_bytes -= bsize;
-                } else {
-                    LOG_ERROR(Audio_DSP, "{}", r);
+            if (output_data == 0 || output_data_size == 0 || input_data == 0 || input_data_size == 0) {
+                return ResultSuccess;
+            }
+
+            // Hardware Opus semantics: exactly one packet is decoded per call into the
+            // output buffer. Send the packet once, then drain whatever the decoder
+            // yields, strictly clamped to the output buffer so guest memory is never
+            // overrun. The previous implementation had two fatal bugs:
+            //  1. Byte offsets were applied to an s16*, doubling the write offset for
+            //     every frame after the first (heap corruption, 0xc0000374).
+            //  2. On EAGAIN it re-sent the same packet, and asserted that the decoder
+            //     filled the output buffer exactly, which is not guaranteed.
+            av_packet_unref(avpkt);
+            if (av_new_packet(avpkt, static_cast<int>(std::min<u64>(input_data_size, 0x7FFFFFFF))) < 0) {
+                return Service::Audio::ResultLibOpusInvalidState;
+            }
+            std::memcpy(avpkt->data, reinterpret_cast<const u8*>(input_data), input_data_size);
+            const int send_result = avcodec_send_packet(avc, avpkt);
+            av_packet_unref(avpkt);
+            if (send_result < 0) {
+                LOG_ERROR(Audio_DSP, "avcodec_send_packet returned {}", send_result);
+                return Service::Audio::ResultLibOpusInvalidState;
+            }
+
+            u8* const dst = reinterpret_cast<u8*>(output_data);
+            const int dst_size = static_cast<int>(output_data_size);
+            int written = 0;
+
+            while (written < dst_size) {
+                const int r = avcodec_receive_frame(avc, frame);
+                if (r == AVERROR(EAGAIN) || r == AVERROR_EOF) {
+                    break; // one packet in; decoder has nothing more to give right now
+                }
+                if (r < 0) {
+                    LOG_ERROR(Audio_DSP, "avcodec_receive_frame returned {}", r);
                     break;
                 }
+
+                const int bsize = av_samples_get_buffer_size(nullptr, frame->ch_layout.nb_channels,
+                                                             frame->nb_samples, AV_SAMPLE_FMT_S16, 1);
+                if (bsize <= 0) {
+                    break;
+                }
+                const int to_copy = std::min(bsize, dst_size - written);
+                const size_t dst_offset = static_cast<size_t>(written);
+                int copied = 0;
+
+                if (frame->format == AV_SAMPLE_FMT_S16) {
+                    std::memcpy(dst + dst_offset, frame->data[0], static_cast<size_t>(to_copy));
+                    copied = to_copy;
+                } else {
+                    // Native FFmpeg Opus decoder outputs float; convert to interleaved s16.
+                    SwrContext* swr = nullptr;
+                    if (swr_alloc_set_opts2(&swr, &avc->ch_layout, AV_SAMPLE_FMT_S16, 48000, &frame->ch_layout,
+                                            static_cast<enum AVSampleFormat>(frame->format), frame->sample_rate, 0,
+                                            nullptr) < 0) {
+                        LOG_ERROR(Audio_DSP, "swr_alloc_set_opts2 failed");
+                        break;
+                    }
+                    if (swr_init(swr) < 0) {
+                        LOG_ERROR(Audio_DSP, "swr_init failed");
+                        swr_free(&swr);
+                        break;
+                    }
+                    AVFrame* s16_frame = av_frame_alloc();
+                    s16_frame->format = AV_SAMPLE_FMT_S16;
+                    s16_frame->sample_rate = frame->sample_rate;
+                    av_channel_layout_copy(&s16_frame->ch_layout, &frame->ch_layout);
+                    s16_frame->nb_samples = frame->nb_samples;
+                    if (av_frame_get_buffer(s16_frame, 0) >= 0) {
+                        const int converted = swr_convert(swr, s16_frame->data, s16_frame->nb_samples,
+                                                          (const uint8_t**)frame->data, frame->nb_samples);
+                        if (converted >= 0) {
+                            const int out_bytes =
+                                converted * frame->ch_layout.nb_channels * static_cast<int>(sizeof(s16));
+                            copied = std::min(out_bytes, to_copy);
+                            std::memcpy(dst + dst_offset, s16_frame->data[0], static_cast<size_t>(copied));
+                        } else {
+                            LOG_ERROR(Audio_DSP, "swr_convert returned {}", converted);
+                        }
+                    }
+                    av_frame_free(&s16_frame);
+                    swr_free(&swr);
+                }
+
+                out_sample_count += static_cast<u32>(copied / (2 * frame->ch_layout.nb_channels));
+                written += copied;
+                if (copied < bsize) {
+                    break; // output buffer full; stop before overrunning it
+                }
             }
-            ASSERT(rem_output_bytes == 0 && "remaining bytes!");
             return ResultSuccess;
         }
         return Service::Audio::ResultLibOpusInvalidState;
