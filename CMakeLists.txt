@@ -534,7 +534,10 @@ if (ARCHITECTURE_x86 OR ARCHITECTURE_x86_64)
 endif()
 
 if (NOT YUZU_STATIC_ROOM)
-    find_package(libusb)
+    # Only look for libusb when the bundled/system libusb path is actually used.
+    if (ENABLE_LIBUSB)
+        find_package(libusb)
+    endif()
     find_package(VulkanMemoryAllocator)
     find_package(VulkanUtilityLibraries)
     find_package(SimpleIni)
