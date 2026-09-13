@@ -104,7 +104,7 @@ struct UUID {
     /// @returns A random UUID that is RFC 4122 Version 4 compliant.
     [[nodiscard]] static UUID MakeRandomRFC4122V4();
 
-    [[nodiscard]] static UUID MakeRFC4122V5(std::span<u8, 20> sha1);
+    [[nodiscard]] static UUID MakeRFC4122V5(std::span<u8, 16> sha1);
 
     friend constexpr bool operator==(const UUID& lhs, const UUID& rhs) = default;
 };
