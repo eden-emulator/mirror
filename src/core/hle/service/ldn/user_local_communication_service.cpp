@@ -285,20 +285,11 @@ Result IUserLocalCommunicationService::Disconnect() {
 Result IUserLocalCommunicationService::Initialize(ClientProcessId aruid) {
     LOG_INFO(Service_LDN, "called, process_id={}", aruid.pid);
 
-    const auto network_interface = Network::GetSelectedNetworkInterface();
-    R_UNLESS(network_interface, ResultAirplaneModeEnabled);
-
-    if (auto room_member = Network::GetRoomMember().lock()) {
-        ldn_packet_received = room_member->BindOnLdnPacketReceived(
-            [this](const Network::LDNPacket& packet) { OnLDNPacketReceived(packet); });
-    } else {
-        LOG_ERROR(Service_LDN, "Couldn't bind callback!");
-        R_RETURN(ResultAirplaneModeEnabled);
-    }
-
-    lan_discovery.Initialize([&]() { OnEventFired(); });
-    is_initialized = true;
-    R_SUCCEED();
+    // LDN is disabled: reporting a fake active session makes some games
+    // (Pokémon Sword/Shield) enter their local-communication code path and
+    // abort with an fs error mid-capture. Returning the hardware "disabled"
+    // result makes games back off cleanly instead.
+    R_RETURN(ResultDisabled);
 }
 
 Result IUserLocalCommunicationService::Finalize() {
@@ -314,7 +305,7 @@ Result IUserLocalCommunicationService::Finalize() {
 
 Result IUserLocalCommunicationService::Initialize2(u32 version, ClientProcessId process_id) {
     LOG_INFO(Service_LDN, "called, version={}, process_id={}", version, process_id.pid);
-    R_RETURN(Initialize(process_id));
+    R_RETURN(ResultDisabled);
 }
 
 void IUserLocalCommunicationService::OnLDNPacketReceived(const Network::LDNPacket& packet) {
