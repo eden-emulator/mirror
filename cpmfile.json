@@ -70,9 +70,9 @@
         "version": "v1.3.18"
     },
     "ffmpeg": {
-        "hash": "ed177621176b3961bdcaa339187d3a7688c1c8b060b79c4bb0257cbc67ad7021ae5d5adca5303b45625abbbe3d9aafdd87ce777b8690ac295290d744c875489a",
+        "hash": "68f46abf0d5dc47ab95083d59e273131a8df7948b82e62db00f00fa416e1d0bd24b799671b5a60752209bb2ac0f75295055ed0085c89a98113323cde23b69710",
         "repo": "FFmpeg/FFmpeg",
-        "version": "c7b5f1537d"
+        "version": "6efe500d2e"
     },
     "ffmpeg-ci": {
         "ci": true,
