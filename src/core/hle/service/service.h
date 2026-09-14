@@ -143,7 +143,7 @@ protected:
         /// @param expected_header_ request header in the command buffer which will trigger dispatch to this handler
         /// @param handler_callback_ member function in this service which will be called to handle the request
         /// @param name_ human-friendly name for the request. Used mostly for logging purposes.
-        constexpr FunctionInfoTyped(u32 expected_header_, HandlerFnP<T> handler_callback_, const char* name_)
+        FunctionInfoTyped(u32 expected_header_, HandlerFnP<T> handler_callback_, const char* name_)
             : FunctionInfoBase{expected_header_, HandlerFnP<ServiceFrameworkBase>(handler_callback_), name_} {}
     };
     using FunctionInfo = FunctionInfoTyped<Self>;
