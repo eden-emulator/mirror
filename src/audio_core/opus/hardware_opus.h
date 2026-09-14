@@ -8,6 +8,8 @@
 
 #include <array>
 #include <mutex>
+#include <opus.h>
+
 #include "audio_core/adsp/apps/opus/opus_decoder.h"
 #include "audio_core/adsp/apps/opus/shared_memory.h"
 #include "audio_core/adsp/mailbox.h"

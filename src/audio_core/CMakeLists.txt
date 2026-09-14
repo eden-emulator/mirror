@@ -15,6 +15,10 @@ add_library(audio_core STATIC
     adsp/apps/audio_renderer/command_list_processor.h
     adsp/apps/opus/opus_decoder.cpp
     adsp/apps/opus/opus_decoder.h
+    adsp/apps/opus/opus_decode_object.cpp
+    adsp/apps/opus/opus_decode_object.h
+    adsp/apps/opus/opus_multistream_decode_object.cpp
+    adsp/apps/opus/opus_multistream_decode_object.h
     adsp/apps/opus/shared_memory.h
     audio_core.cpp
     audio_core.h
@@ -222,14 +226,8 @@ else()
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-sign-conversion>)
 endif()
 
-if (YUZU_USE_EXTERNAL_FFMPEG)
-    add_dependencies(audio_core ffmpeg-build)
-endif()
-target_include_directories(audio_core PUBLIC ${FFmpeg_INCLUDE_DIR})
-target_link_libraries(audio_core PRIVATE ${FFmpeg_LIBRARIES})
-target_link_options(audio_core PRIVATE ${FFmpeg_LDFLAGS})
-
-target_link_libraries(audio_core PUBLIC common core)
+target_include_directories(audio_core PRIVATE ${OPUS_INCLUDE_DIRS})
+target_link_libraries(audio_core PUBLIC common core Opus::opus)
 
 if (ENABLE_CUBEB)
     target_sources(audio_core PRIVATE
