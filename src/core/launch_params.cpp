@@ -109,7 +109,7 @@ LaunchParams ParseLaunchParams(Core::System& system, int argc, char *argv[], wch
                 if (system.GetProfileManager().UserExistsIndex(*p.selected_user)) {
                     Settings::values.current_user = s32(*p.selected_user);
                 } else {
-                    LOG_ERROR(Frontend, "Selected user {} doesn't exist", p.selected_user);
+                    LOG_ERROR(Frontend, "Selected user {} doesn't exist", *p.selected_user);
                 }
                 break;
             }
