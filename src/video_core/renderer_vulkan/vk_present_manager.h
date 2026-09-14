@@ -36,6 +36,7 @@ struct Frame {
     vk::CommandBuffer cmdbuf;
     vk::Semaphore render_ready;
     vk::Fence present_done;
+    bool storage_capable{};
 };
 
 class PresentManager {
@@ -57,7 +58,9 @@ public:
 
     /// Recreates the present frame to match the provided parameters
     void RecreateFrame(Frame* frame, u32 width, u32 height, VkFormat image_view_format,
-                       VkRenderPass rd);
+                       VkRenderPass rd, bool storage);
+
+    [[nodiscard]] bool NeedsStorage(const Frame* frame, bool required) const;
 
     /// Waits for the present thread to finish presenting all queued frames.
     void WaitPresent();

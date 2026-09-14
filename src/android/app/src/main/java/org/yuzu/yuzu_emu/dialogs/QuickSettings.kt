@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.drawerlayout.widget.DrawerLayout
@@ -671,6 +672,167 @@ class QuickSettings(val emulationFragment: EmulationFragment) {
                 )
             }
         }
+    }
+
+    private fun addFrameGenCell(inflater: LayoutInflater, row: ViewGroup): TextView {
+        val cell = inflater.inflate(R.layout.item_quick_settings_frame_gen_cell, row, false)
+            as TextView
+        row.addView(cell)
+        return cell
+    }
+
+    fun addFrameGen(container: ViewGroup) {
+        val inflater = LayoutInflater.from(emulationFragment.requireContext())
+        val itemView = inflater.inflate(R.layout.item_quick_settings_frame_gen, container, false)
+
+        val multiplierRow = itemView.findViewById<LinearLayout>(R.id.frame_gen_multipliers)
+        val targetRow = itemView.findViewById<LinearLayout>(R.id.frame_gen_targets)
+        val targetSection = itemView.findViewById<ViewGroup>(R.id.frame_gen_target_section)
+        val flowRow = itemView.findViewById<LinearLayout>(R.id.frame_gen_flow)
+        val flowSection = itemView.findViewById<ViewGroup>(R.id.frame_gen_flow_section)
+
+        val multiplierNames =
+            emulationFragment.resources.getStringArray(R.array.frameGenMultiplierNames)
+        val multiplierValues =
+            emulationFragment.resources.getIntArray(R.array.frameGenMultiplierValues)
+        val targetValues =
+            emulationFragment.resources.getIntArray(R.array.frameGenTargetRateValues)
+        val flowValues =
+            emulationFragment.resources.getIntArray(R.array.frameGenFlowScaleValues)
+
+        val columns = maxOf(
+            multiplierValues.size + 1,
+            targetValues.size,
+            flowValues.size + 1
+        ).toFloat()
+        multiplierRow.weightSum = columns
+        targetRow.weightSum = columns
+        flowRow.weightSum = columns
+
+        val powerCell = addFrameGenCell(inflater, multiplierRow)
+
+        val multiplierCells = mutableListOf<TextView>()
+        for (name in multiplierNames) {
+            val cell = addFrameGenCell(inflater, multiplierRow)
+            cell.text = name
+            multiplierCells.add(cell)
+        }
+
+        val targetCells = mutableListOf<TextView>()
+        for (value in targetValues) {
+            val cell = addFrameGenCell(inflater, targetRow)
+            if (value == 0) {
+                cell.setText(R.string.frame_gen_fixed)
+            } else {
+                cell.text = value.toString()
+            }
+            targetCells.add(cell)
+        }
+
+        val autoCell = addFrameGenCell(inflater, flowRow)
+        autoCell.setText(R.string.frame_gen_flow_auto)
+
+        val flowCells = mutableListOf<TextView>()
+        for (value in flowValues) {
+            val cell = addFrameGenCell(inflater, flowRow)
+            cell.text = "$value%"
+            flowCells.add(cell)
+        }
+
+        val inactiveAlpha = 0.38f
+
+        fun refresh() {
+            val enabled = BooleanSetting.RENDERER_FRAME_GEN.getBoolean(needsGlobal = false)
+            val multiplier = IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.getInt(needsGlobal = false)
+            val target = IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.getInt(needsGlobal = false)
+            val fixed = target == 0
+            val flowAuto =
+                BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.getBoolean(needsGlobal = false)
+            val flowScale = IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.getInt(needsGlobal = false)
+
+            var powerLabel = R.string.frame_gen_off
+            var rowAlpha = inactiveAlpha
+            if (enabled) {
+                powerLabel = R.string.frame_gen_on
+                rowAlpha = 1.0f
+            }
+
+            var multiplierAlpha = inactiveAlpha
+            if (enabled && fixed) {
+                multiplierAlpha = 1.0f
+            }
+
+            powerCell.setText(powerLabel)
+            powerCell.isSelected = enabled
+
+            multiplierCells.forEachIndexed { index, cell ->
+                cell.isEnabled = enabled
+                cell.isSelected = enabled && fixed && multiplierValues[index] == multiplier
+                cell.alpha = multiplierAlpha
+            }
+
+            targetSection.alpha = rowAlpha
+            targetCells.forEachIndexed { index, cell ->
+                cell.isEnabled = enabled
+                cell.isSelected = enabled && targetValues[index] == target
+            }
+
+            flowSection.alpha = rowAlpha
+            autoCell.isEnabled = enabled
+            autoCell.isSelected = enabled && flowAuto
+
+            flowCells.forEachIndexed { index, cell ->
+                cell.isEnabled = enabled
+                cell.isSelected = enabled && !flowAuto && flowValues[index] == flowScale
+            }
+        }
+
+        powerCell.setOnClickListener {
+            if (BooleanSetting.RENDERER_FRAME_GEN.getBoolean(needsGlobal = false)) {
+                BooleanSetting.RENDERER_FRAME_GEN.setBoolean(false)
+            } else {
+                IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.setInt(multiplierValues.first())
+                IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.setInt(0)
+                BooleanSetting.RENDERER_FRAME_GEN.setBoolean(true)
+            }
+            saveSettings()
+            refresh()
+        }
+
+        multiplierCells.forEachIndexed { index, cell ->
+            cell.setOnClickListener {
+                IntSetting.RENDERER_FRAME_GEN_MULTIPLIER.setInt(multiplierValues[index])
+                IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.setInt(0)
+                saveSettings()
+                refresh()
+            }
+        }
+
+        targetCells.forEachIndexed { index, cell ->
+            cell.setOnClickListener {
+                IntSetting.RENDERER_FRAME_GEN_TARGET_RATE.setInt(targetValues[index])
+                saveSettings()
+                refresh()
+            }
+        }
+
+        autoCell.setOnClickListener {
+            BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.setBoolean(true)
+            saveSettings()
+            refresh()
+        }
+
+        flowCells.forEachIndexed { index, cell ->
+            cell.setOnClickListener {
+                IntSetting.RENDERER_FRAME_GEN_FLOW_SCALE.setInt(flowValues[index])
+                BooleanSetting.RENDERER_FRAME_GEN_FLOW_SCALE_AUTO.setBoolean(false)
+                saveSettings()
+                refresh()
+            }
+        }
+
+        refresh()
+        container.addView(itemView)
     }
 
     fun addDivider(container: ViewGroup) {

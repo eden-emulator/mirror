@@ -304,8 +304,6 @@
     <string name="frame_gen_target_rate_60">60 FPS</string>
     <string name="frame_gen_target_rate_90">90 FPS</string>
     <string name="frame_gen_target_rate_120">120 FPS</string>
-    <string name="frame_gen_target_rate_144">144 FPS</string>
-    <string name="frame_gen_target_rate_165">165 FPS</string>
     <string name="frame_gen_queue_target_1">Ausbalanciert (1 Bild)</string>
     <string name="frame_gen_queue_target_2">Flüssigste (2 Bilder)</string>
     <string name="frame_gen_unsupported">Frame-Generation nicht verfügbar</string>

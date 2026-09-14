@@ -92,6 +92,7 @@ import org.yuzu.yuzu_emu.utils.GameIconUtils
 import org.yuzu.yuzu_emu.utils.GpuDriverHelper
 import org.yuzu.yuzu_emu.utils.InputHandler
 import org.yuzu.yuzu_emu.utils.Log
+import org.yuzu.yuzu_emu.utils.LosslessScalingHelper
 import org.yuzu.yuzu_emu.utils.NativeConfig
 import org.yuzu.yuzu_emu.utils.NativeFreedrenoConfig
 import org.yuzu.yuzu_emu.utils.NativePostProcessing
@@ -1187,6 +1188,11 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             )
 
             quickSettings.addDivider(container)
+
+            if (LosslessScalingHelper.isInstalled() && LosslessScalingHelper.isSupportedByGpu()) {
+                quickSettings.addFrameGen(container)
+                quickSettings.addDivider(container)
+            }
 
             quickSettings.addIntSetting(
                 R.string.renderer_accuracy,
