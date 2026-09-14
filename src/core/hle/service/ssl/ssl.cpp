@@ -409,7 +409,7 @@ private:
             *value = 0;
             break;
         }
-        LOG_DEBUG(Service_SSL, "GetOption called, option={}, ret value={}", option, value);
+        LOG_DEBUG(Service_SSL, "GetOption called, option={}, ret value={}", option, *value);
         R_SUCCEED();
     }
 
