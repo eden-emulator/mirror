@@ -423,7 +423,7 @@ private:
     Result GetNextAlpnProto(OutBuffer<BufferAttr_HipcMapAlias> data, Out<u32> to_write) {
         *to_write = u32((std::min)(next_alpn_proto.size(), data.size()));
         next_alpn_proto.assign(data.begin(), data.begin() + *to_write);
-        LOG_DEBUG(Service_SSL, "GetNextAlpnProto called, size={}", to_write);
+        LOG_DEBUG(Service_SSL, "GetNextAlpnProto called, size={}", *to_write);
         R_SUCCEED();
     }
 
