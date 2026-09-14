@@ -85,8 +85,13 @@ template<>
 
     code.mov(tmp, vaddr);
     code.shr(tmp, int(page_table_const_bits));
-    code.shl(tmp, int(ctx.conf.page_table_log2_stride));
-    code.mov(page, qword[r14 + tmp.cvt64()]);
+
+    if (ctx.conf.page_table_log2_stride > 3) {
+        code.shl(tmp, int(ctx.conf.page_table_log2_stride));
+        code.mov(page, qword[r14 + tmp.cvt64()]);
+    } else {
+        code.mov(page, qword[r14 + tmp.cvt64() * int(ctx.conf.page_table_log2_stride)]);
+    }
 
     // check for marked bit, use as unmapped if marked
 	if (ctx.conf.page_table_marked_bit) {
@@ -102,9 +107,10 @@ template<>
         code.mov(tmp, ctx.conf.page_table_pointer_mask);
         code.and_(page, tmp);
     }
+    // check for sign bit, apply sign extension as needed
     if (ctx.conf.page_table_sign_extension) {
-        code.shl(page, *ctx.conf.page_table_sign_extension);
-        code.sar(page, *ctx.conf.page_table_sign_extension);
+        code.shl(page, 63 - int(*ctx.conf.page_table_sign_extension));
+        code.sar(page, 63 - int(*ctx.conf.page_table_sign_extension));
     }
 
     code.jz(abort, code.T_NEAR);
