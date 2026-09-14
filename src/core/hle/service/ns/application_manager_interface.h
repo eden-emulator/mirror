@@ -72,6 +72,7 @@ public:
     Result Unknown4022(OutCopyHandle<Kernel::KReadableEvent> out_event);
     Result Unknown4023(Out<u64> out_result);
     Result Unknown4053();
+    Result Unknown4105();
 
     Result RequestDownloadApplicationControlDataInBackground(u64 control_source,
                                                              u64 application_id);

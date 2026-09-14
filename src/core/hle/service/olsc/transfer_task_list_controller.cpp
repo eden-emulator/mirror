@@ -36,7 +36,7 @@ ITransferTaskListController::ITransferTaskListController(Core::System& system_)
         {18, nullptr, "ListTransferTaskInfo"},
         {19, nullptr, "DeleteTransferTask"},
         {20, nullptr, "RaiseTransferTaskPriority"},
-        {21, nullptr, "GetTransferTaskProgress"},
+        {21, D<&ITransferTaskListController::GetTransferTaskProgress>, "GetTransferTaskProgress"}, //10.1.0+
         {22, nullptr, "GetTransferTaskLastResult"},
         {23, nullptr, "SuspendTransferTask"},
         {24, D<&ITransferTaskListController::GetCurrentTransferTaskInfo>, "GetCurrentTransferTaskInfo"},
@@ -79,6 +79,11 @@ Result ITransferTaskListController::GetCurrentTransferTaskInfo(Out<std::array<u8
                                                               u8 unknown) {
     LOG_WARNING(Service_OLSC, "(STUBBED) called, unknown={:#x}", unknown);
     out_info->fill(0);
+    R_SUCCEED();
+}
+
+Result ITransferTaskListController::GetTransferTaskProgress() {
+    LOG_WARNING(Service_OLSC, "(STUBBED) called.");
     R_SUCCEED();
 }
 

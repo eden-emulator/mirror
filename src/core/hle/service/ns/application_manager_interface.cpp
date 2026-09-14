@@ -476,6 +476,7 @@ IApplicationManagerInterface::IApplicationManagerInterface(Core::System& system_
         {4096, nullptr, "Unknown4096"}, //20.0.0+
         {4097, nullptr, "Unknown4097"}, //20.0.0+
         {4099, nullptr, "Unknown4099"}, //21.0.0+
+        {4105, D<&IApplicationManagerInterface::Unknown4105>, "Unknown4105"}, //23.0.0+
         {5000, nullptr, "Unknown5000"}, //18.0.0+
         {5001, nullptr, "Unknown5001"}, //18.0.0+
         {9999, nullptr, "GetApplicationCertificate"}, //10.0.0-10.2.0
@@ -862,6 +863,11 @@ Result IApplicationManagerInterface::Unknown4023(Out<u64> out_result) {
 }
 
 Result IApplicationManagerInterface::Unknown4053() {
+    LOG_WARNING(Service_NS, "(STUBBED) called.");
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown4105() {
     LOG_WARNING(Service_NS, "(STUBBED) called.");
     R_SUCCEED();
 }
