@@ -42,8 +42,13 @@ bool IsValidStreamCounts(u32 total_stream_count, u32 stereo_stream_count) {
         && s32(stereo_stream_count) >= 0 && stereo_stream_count <= total_stream_count;
 }
 
-class OpusGenericDecodeObject {
-public:
+struct OpusGenericDecodeParams {
+    AVPacket* pkt = nullptr;
+    AVFrame* frame = nullptr;
+    u8* tmp_buf[8] = {nullptr};
+};
+
+struct OpusGenericDecodeObject {
     static u32 GetWorkBufferSizeMultistream(u32 total_stream_count, u32 stereo_stream_count) {
         if (IsValidStreamCounts(total_stream_count, stereo_stream_count))
             return 32 + 2556 * (total_stream_count * stereo_stream_count);
@@ -97,8 +102,6 @@ public:
             av_channel_layout_default(&avc->ch_layout, channel_count);
             if (avcodec_open2(avc, codec, nullptr) >= 0) {
                 ASSERT(avc->request_sample_fmt == AV_SAMPLE_FMT_S16);
-                pkt = av_packet_alloc();
-                frame = av_frame_alloc();
                 // opus fltp -> libopus s16
                 if (swr_alloc_set_opts2(
                     &swr,
@@ -118,8 +121,6 @@ public:
     Result Shutdown() {
         LOG_DEBUG(Audio_DSP, "called avc={}", fmt::ptr(avc));
         swr_free(&swr);
-        av_frame_free(&frame);
-        av_packet_free(&pkt);
         avcodec_free_context(&avc);
         return ResultSuccess;
     }
@@ -133,34 +134,34 @@ public:
         return Service::Audio::ResultLibOpusInvalidState;
     }
 
-    Result Decode(u32& out_sample_count, u64 output_data, u64 output_data_size, u64 input_data, u64 input_data_size, u8* const* tmp_buf) {
+    Result Decode(u32& out_sample_count, u64 output_data, u64 output_data_size, u64 input_data, u64 input_data_size, OpusGenericDecodeParams params) {
         LOG_DEBUG(Audio_DSP, "called out_sample_count={},output_data={:#x},output_data_size={},input_data={:#x},input_data_size={}", fmt::ptr(&out_sample_count), output_data, output_data_size, input_data, input_data_size);
         ASSERT(avc && avcodec_is_open(avc));
         out_sample_count = 0;
         int r;
-        LOG_DEBUG(Audio_DSP, "old packet data={}", fmt::ptr(pkt->data));
-        if ((r = av_new_packet(pkt, int(input_data_size))) >= 0) {
-            LOG_DEBUG(Audio_DSP, "new packet data={}", fmt::ptr(pkt->data));
-            std::memcpy(pkt->data, reinterpret_cast<const u8*>(input_data), input_data_size);
+        LOG_DEBUG(Audio_DSP, "old packet data={}", fmt::ptr(params.pkt->data));
+        if ((r = av_new_packet(params.pkt, int(input_data_size))) >= 0) {
+            LOG_DEBUG(Audio_DSP, "new packet data={}", fmt::ptr(params.pkt->data));
+            std::memcpy(params.pkt->data, reinterpret_cast<const u8*>(input_data), input_data_size);
 
-            r = avcodec_send_packet(avc, pkt);
-            av_packet_unref(pkt);
+            r = avcodec_send_packet(avc, params.pkt);
+            av_packet_unref(params.pkt);
             if (r >= 0) {
-                while ((r = avcodec_receive_frame(avc, frame)) >= 0) {
-                    LOG_DEBUG(Audio_DSP, "frame data={},data[0]={},nb_samples={}", fmt::ptr(frame->data), fmt::ptr(frame->data[0]), frame->nb_samples);
-                    ASSERT(std::in_range<u16>(frame->nb_samples));
+                while ((r = avcodec_receive_frame(avc, params.frame)) >= 0) {
+                    LOG_DEBUG(Audio_DSP, "frame data={},data[0]={},nb_samples={}", fmt::ptr(params.frame->data), fmt::ptr(params.frame->data[0]), params.frame->nb_samples);
+                    ASSERT(std::in_range<u16>(params.frame->nb_samples));
                     u8 *dst_arr[2] = {reinterpret_cast<u8*>(output_data), nullptr};
-                    if (frame->format == avc->request_sample_fmt) {
+                    if (params.frame->format == avc->request_sample_fmt) {
                         // input_bsize == output_bsize
-                        av_samples_copy(dst_arr, frame->data, out_sample_count, 0, frame->nb_samples, frame->ch_layout.nb_channels, (enum AVSampleFormat)frame->format);
-                        out_sample_count += frame->nb_samples;
+                        av_samples_copy(dst_arr, params.frame->data, out_sample_count, 0, params.frame->nb_samples, params.frame->ch_layout.nb_channels, (enum AVSampleFormat)params.frame->format);
+                        out_sample_count += params.frame->nb_samples;
                     } else {
-                        int out_samples = int(av_rescale_rnd(swr_get_delay(swr, frame->sample_rate) + frame->nb_samples, frame->sample_rate, frame->sample_rate, AV_ROUND_UP));
-                        out_samples = swr_convert(swr, tmp_buf, out_samples, (const u8 **)frame->data, frame->nb_samples);
-                        av_samples_copy(dst_arr, tmp_buf, out_sample_count, 0, out_samples, frame->ch_layout.nb_channels, avc->request_sample_fmt);
+                        int out_samples = int(av_rescale_rnd(swr_get_delay(swr, params.frame->sample_rate) + params.frame->nb_samples, params.frame->sample_rate, params.frame->sample_rate, AV_ROUND_UP));
+                        out_samples = swr_convert(swr, params.tmp_buf, out_samples, (const u8 **)params.frame->data, params.frame->nb_samples);
+                        av_samples_copy(dst_arr, params.tmp_buf, out_sample_count, 0, out_samples, params.frame->ch_layout.nb_channels, avc->request_sample_fmt);
                         out_sample_count += out_samples;
                     }
-                    av_frame_unref(frame);
+                    av_frame_unref(params.frame);
                 }
                 if (r == AVERROR(EAGAIN) || r == AVERROR_EOF) {
                     LOG_DEBUG(Audio_DSP, "{}", r); // non-errors
@@ -175,8 +176,6 @@ public:
     }
 
     AVCodecContext* avc = nullptr;
-    AVPacket* pkt = nullptr;
-    AVFrame* frame = nullptr;
     SwrContext* swr = nullptr;
 };
 } // namespace
@@ -195,8 +194,10 @@ OpusDecoder::OpusDecoder(Core::System& system) {
         // Staging buffers used by various decoders
         // 1 <= channels <= 2, then, UPB channels => 2
         // 64K is enough for most
-        u8* tmp_buf[8] = {nullptr};
-        av_samples_alloc(tmp_buf, nullptr, 2, (int)0x10000, AV_SAMPLE_FMT_S16, 0);
+        OpusGenericDecodeParams params{};
+        av_samples_alloc(params.tmp_buf, nullptr, 2, (int)0x10000, AV_SAMPLE_FMT_S16, 0);
+        params.pkt = av_packet_alloc();
+        params.frame = av_frame_alloc();
 
         while (!stop_token.stop_requested()) {
             auto msg = Receive(Direction::DSP, stop_token);
@@ -265,7 +266,7 @@ OpusDecoder::OpusDecoder(Core::System& system) {
                     if (reset_requested)
                         res = it->second.ResetDecoder();
                     if (res == ResultSuccess)
-                        res = it->second.Decode(decoded_samples, output_data, output_data_size, input_data, input_data_size, tmp_buf);
+                        res = it->second.Decode(decoded_samples, output_data, output_data_size, input_data, input_data_size, params);
 
                     auto end_time = system.CoreTiming().GetGlobalTimeUs();
                     shared_memory->dsp_return_data[0] = res.raw;
@@ -359,7 +360,7 @@ OpusDecoder::OpusDecoder(Core::System& system) {
                     if (reset_requested)
                         res = it->second.ResetDecoder();
                     if (res == ResultSuccess)
-                        res = it->second.Decode(decoded_samples, output_data, output_data_size, input_data, input_data_size, tmp_buf);
+                        res = it->second.Decode(decoded_samples, output_data, output_data_size, input_data, input_data_size, params);
 
                     auto end_time = system.CoreTiming().GetGlobalTimeUs();
                     shared_memory->dsp_return_data[0] = res.raw;
@@ -379,7 +380,9 @@ OpusDecoder::OpusDecoder(Core::System& system) {
         }
         for (auto e : decode_objects)
             e.second.Shutdown();
-        av_freep(tmp_buf);
+        av_freep(params.tmp_buf);
+        av_frame_free(&params.frame);
+        av_packet_free(&params.pkt);
     });
 }
 
