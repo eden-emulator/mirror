@@ -10,6 +10,7 @@
 #include <regex>
 #include <string>
 #include "common/settings_enums.h"
+#include "core/launch_params.h"
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -52,12 +53,6 @@
 #include "common/windows/timer_resolution.h"
 #endif
 
-#undef _UNICODE
-#include <getopt.h>
-#ifndef _MSC_VER
-#include <unistd.h>
-#endif
-
 #ifdef _WIN32
 extern "C" {
 // tells Nvidia and AMD drivers to use the dedicated GPU by default on laptops with switchable
@@ -66,25 +61,6 @@ __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
 __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 #endif
-
-static void PrintHelp(const char* argv0) {
-    std::cout << "Usage: " << argv0
-              << " [options] <filename>\n"
-                 "-c, --config          Load the specified configuration file\n"
-                 "-f, --fullscreen      Start in fullscreen mode\n"
-                 "-g, --game            File path of the game to load\n"
-                 "-h, --help            Display this help and exit\n"
-                 "-m, --multiplayer=nick:password@address:port"
-                 " Nickname, password, address and port for multiplayer\n"
-                 "-p, --program         Pass following string as arguments to executable\n"
-                 "-u, --user            Select a specific user profile from 0 to 7\n"
-                 "-d, --debug           Run the GDB stub on a port from 1 to 65535\n"
-                 "-v, --version         Output version information and exit\n";
-}
-
-static void PrintVersion() {
-    std::cout << "Eden " << Common::g_scm_branch << " " << Common::g_scm_desc << std::endl;
-}
 
 static void OnStateChanged(const Network::RoomMember::State& state) {
     switch (state) {
@@ -208,168 +184,18 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         LOG_CRITICAL(Frontend, "Failed to get command line arguments");
         return SDL_APP_FAILURE;
     }
-#endif
-    std::string filepath;
-    std::optional<std::string> config_path{};
-    std::string program_args;
-    std::optional<int> selected_user{};
-    std::optional<u16> override_gdb_port{};
-    bool use_multiplayer = false;
-    bool fullscreen = false;
-    bool force_null_render = false;
-    bool force_single_core = false;
-    std::string nickname{};
-    std::string password{};
-    std::string address{};
-    std::string input_profile{};
-    std::optional<std::string> log_filter{};
-    u16 port = Network::DefaultRoomPort;
-
-    static struct option long_options[] = {
-        // clang-format off
-        {"debug", no_argument, 0, 'd'},
-        {"config", required_argument, 0, 'c'},
-        {"fullscreen", no_argument, 0, 'f'},
-        {"help", no_argument, 0, 'h'},
-        {"game", required_argument, 0, 'g'},
-        {"multiplayer", required_argument, 0, 'm'},
-        {"program", optional_argument, 0, 'p'},
-        {"user", required_argument, 0, 'u'},
-        {"version", no_argument, 0, 'v'},
-        {"input-profile", no_argument, 0, 'i'},
-        {"null-render", no_argument, 0, 'n'},
-        {"singlecore", no_argument, 0, 's'},
-        {"filter", no_argument, 0, 'x'},
-        {0, 0, 0, 0},
-        // clang-format on
-    };
-
-    while (optind < argc) {
-        int arg = getopt_long(argc, argv, "g:fhvcip::c:u:d:", long_options, &option_index);
-        if (arg != -1) {
-            switch (char(arg)) {
-            case 'd':
-                override_gdb_port = uint16_t(atoi(optarg));
-                break;
-            case 'c':
-                config_path = optarg;
-                break;
-            case 'f':
-                fullscreen = true;
-                LOG_INFO(Frontend, "Starting in fullscreen mode...");
-                break;
-            case 'h':
-                PrintHelp(argv[0]);
-                return SDL_APP_FAILURE;
-            case 'g':
-                filepath = std::string(optarg);
-                break;
-            case 'i': {
-                input_profile = std::string(optarg);
-                break;
-            }
-            case 'm': {
-                use_multiplayer = true;
-                const std::string str_arg(optarg);
-                // regex to check if the format is nickname:password@ip:port
-                // with optional :password
-                const std::regex re("^([^:]+)(?::(.+))?@([^:]+)(?::([0-9]+))?$");
-                if (!std::regex_match(str_arg, re)) {
-                    std::cout << "Wrong format for option --multiplayer\n";
-                    PrintHelp(argv[0]);
-                    return SDL_APP_FAILURE;
-                }
-
-                std::smatch match;
-                std::regex_search(str_arg, match, re);
-                ASSERT(match.size() == 5);
-                nickname = match[1];
-                password = match[2];
-                address = match[3];
-                if (!match[4].str().empty()) {
-                    port = u16(std::strtoul(match[4].str().c_str(), nullptr, 0));
-                }
-                std::regex nickname_re("^[a-zA-Z0-9._\\- ]+$");
-                if (!std::regex_match(nickname, nickname_re)) {
-                    LOG_ERROR(Frontend, "Nickname is not valid. Must be 4 to 20 alphanumeric characters");
-                    return SDL_APP_FAILURE;
-                }
-                if (address.empty()) {
-                    LOG_ERROR(Frontend, "Address to room must not be empty");
-                    return SDL_APP_FAILURE;
-                }
-                break;
-            }
-            case 'p':
-                program_args = argv[optind];
-                ++optind;
-                break;
-            case 'u':
-                selected_user = atoi(optarg);
-                break;
-            case 'v':
-                PrintVersion();
-                return SDL_APP_FAILURE;
-            case 'n':
-                force_null_render = true;
-                break;
-            case 's':
-                force_single_core = true;
-                break;
-            case 'x':
-                log_filter = argv[optind];
-                ++optind;
-                break;
-            }
-        } else {
-#ifdef _WIN32
-            filepath = Common::UTF16ToUTF8(argv_w[optind]);
 #else
-            filepath = argv[optind];
+    wchar_t **argv_w = nullptr;
 #endif
-            optind++;
-        }
-    }
-
-    SdlConfig config{config_path};
-
-    // apply the log_filter setting
-    // the logger was initialized before and doesn't pick up the filter on its own
-    Common::Log::Filter filter;
-    filter.ParseFilterString(log_filter.value_or(Settings::values.log_filter.GetValue()));
-    Common::Log::SetGlobalFilter(filter);
-
-    if (!program_args.empty()) {
-        Settings::values.program_args = program_args;
-    }
-
-    if (!input_profile.empty()) {
-        auto& players = Settings::values.players.GetValue();
-        players[0].profile_name = input_profile;
-    }
-
-    if (selected_user.has_value()) {
-        Settings::values.current_user = std::clamp(*selected_user, 0, 7);
-    }
-
-    if (override_gdb_port.has_value()) {
-        Settings::values.use_gdbstub = true;
-        Settings::values.gdbstub_port = *override_gdb_port;
-    }
-
-    if (force_single_core) {
-        Settings::values.use_multi_core = false;
-    }
-
-    if (force_null_render) {
-        Settings::values.renderer_backend = Settings::RendererBackend::Null;
-    }
-
+    Core::LaunchParams lp = Core::ParseLaunchParams(argc, argv, argv_w);
 #ifdef _WIN32
     LocalFree(argv_w);
 #endif
+    SdlConfig config{lp.config_path};
 
-    if (filepath.empty()) {
+    Core::ApplyLaunchParams(lp);
+
+    if (lp.filepath.empty()) {
         LOG_CRITICAL(Frontend, "Failed to load ROM: No ROM specified");
         return SDL_APP_FAILURE;
     }
@@ -386,14 +212,14 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     case Settings::RendererBackend::OpenGL_GLSL:
     case Settings::RendererBackend::OpenGL_GLASM:
     case Settings::RendererBackend::OpenGL_SPIRV:
-        state->emu_window = std::make_unique<EmuWindow_SDL3_GL>(&input_subsystem, state->system, fullscreen);
+        state->emu_window = std::make_unique<EmuWindow_SDL3_GL>(&input_subsystem, state->system, lp.fullscreen);
         break;
 #endif
     case Settings::RendererBackend::Vulkan:
-        state->emu_window = std::make_unique<EmuWindow_SDL3_VK>(&input_subsystem, state->system, fullscreen);
+        state->emu_window = std::make_unique<EmuWindow_SDL3_VK>(&input_subsystem, state->system, lp.fullscreen);
         break;
     case Settings::RendererBackend::Null:
-        state->emu_window = std::make_unique<EmuWindow_SDL3_Null>(&input_subsystem, state->system, fullscreen);
+        state->emu_window = std::make_unique<EmuWindow_SDL3_Null>(&input_subsystem, state->system, lp.fullscreen);
         break;
     default:
         LOG_CRITICAL(Frontend, "Invalid renderer backend");
@@ -413,12 +239,12 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     Service::AM::FrontendAppletParameters load_parameters{
         .applet_id = Service::AM::AppletId::Application,
     };
-    const Core::SystemResultStatus load_result = state->system.Load(*state->emu_window, filepath, load_parameters);
+    const Core::SystemResultStatus load_result = state->system.Load(*state->emu_window, lp.filepath, load_parameters);
     switch (load_result) {
     case Core::SystemResultStatus::Success:
         break; // Expected case
     case Core::SystemResultStatus::ErrorGetLoader:
-        LOG_CRITICAL(Frontend, "Failed to obtain loader for {}!", filepath);
+        LOG_CRITICAL(Frontend, "Failed to obtain loader for {}!", lp.filepath);
         return SDL_APP_FAILURE;
     case Core::SystemResultStatus::ErrorLoader:
         LOG_CRITICAL(Frontend, "Failed to load ROM!");
@@ -440,14 +266,14 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         return SDL_APP_FAILURE;
     }
 
-    if (use_multiplayer) {
+    if (lp.use_multiplayer) {
         if (auto member = Network::GetRoomMember().lock()) {
             member->BindOnChatMessageReceived(OnMessageReceived);
             member->BindOnStatusMessageReceived(OnStatusMessageReceived);
             member->BindOnStateChanged(OnStateChanged);
             member->BindOnError(OnNetworkError);
-            LOG_DEBUG(Network, "Start connection to {}:{} with nickname {}", address, port, nickname);
-            member->Join(nickname, address.c_str(), port, 0, Network::NoPreferredIP, password);
+            LOG_DEBUG(Network, "Start connection to {}:{} with nickname {}", lp.address, lp.port, lp.nickname);
+            member->Join(lp.nickname, lp.address.c_str(), lp.port, 0, Network::NoPreferredIP, lp.password);
         } else {
             LOG_ERROR(Network, "Could not access RoomMember");
             return SDL_APP_FAILURE;
