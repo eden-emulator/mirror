@@ -157,18 +157,30 @@ public:
         socket = std::move(socket_in);
     }
 
-    Result SetHostName(const std::string& hostname) override {
+    Result SetHostName(const char* hostname) override {
         if (!skip_cert_verification) {
-            if (!SSL_set1_host(ssl, hostname.c_str())) {
+            if (!SSL_set1_host(ssl, hostname)) {
                 LOG_ERROR(Service_SSL, "SSL_set1_host({}) failed", hostname);
                 return CheckOpenSSLErrors();
             }
         }
-        if (!SSL_set_tlsext_host_name(ssl, hostname.c_str())) { // hostname for SNI
+        if (!SSL_set_tlsext_host_name(ssl, hostname)) { // hostname for SNI
             LOG_ERROR(Service_SSL, "SSL_set_tlsext_host_name({}) failed", hostname);
             return CheckOpenSSLErrors();
         }
-        return ResultSuccess;
+        R_SUCCEED();
+    }
+
+    Result GetHostName(std::span<u8> data, u32* out_size) override {
+        auto const peer_name = SSL_get0_peername(ssl);
+        if (peer_name == nullptr) {
+            LOG_ERROR(Service_SSL, "SSL_get0_peername()");
+            return CheckOpenSSLErrors();
+        }
+        auto const s = std::string{peer_name};
+        *out_size = u32(s.size());
+        std::memcpy(data.data(), s.data(), (std::min)(s.size(), data.size()));
+        R_SUCCEED();
     }
 
     void SetVerifyOption(u32 option) override {
@@ -211,6 +223,13 @@ public:
     Result Read(size_t* out_size, std::span<u8> data) override {
         const int ret = SSL_read_ex(ssl, data.data(), data.size(), out_size);
         return HandleReturn("SSL_read_ex", out_size, ret);
+    }
+
+    Result Peek(size_t* out_size, std::span<u8> data) override {
+        auto const n = (std::min)(data.size(), *out_size);
+        const int ret = SSL_peek(ssl, data.data(), int(n));
+        *out_size = n;
+        return HandleReturn("SSL_write_ex", out_size, ret);
     }
 
     Result Write(size_t* out_size, std::span<const u8> data) override {
@@ -263,7 +282,25 @@ public:
             out_certs->emplace_back(buf, buf + len);
             OPENSSL_free(buf);
         }
-        return ResultSuccess;
+        R_SUCCEED();
+    }
+
+    int Pending() override {
+        return SSL_pending(ssl);
+    }
+
+    Result SetRenegotiationMode(u32 mode) override {
+        if (mode == 0) {
+            SSL_CTX_set_options(ssl_ctx, SSL_OP_NO_RENEGOTIATION);
+        } else {
+            SSL_CTX_set_options(ssl_ctx, SSL_OP_ALLOW_CLIENT_RENEGOTIATION);
+        }
+        R_SUCCEED();
+    }
+
+    Result GetRenegotiationMode(u32* mode) override {
+        *mode = SSL_get_secure_renegotiation_support(ssl) ? 1 : 0;
+        R_SUCCEED();
     }
 
     ~SSLConnectionBackendOpenSSL() {
