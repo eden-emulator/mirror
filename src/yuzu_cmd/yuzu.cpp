@@ -187,7 +187,7 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 #else
     wchar_t **argv_w = nullptr;
 #endif
-    Core::LaunchParams lp = Core::ParseLaunchParams(argc, argv, argv_w);
+    Core::LaunchParams lp = Core::ParseLaunchParams(state->system, argc, argv, argv_w);
 #ifdef _WIN32
     LocalFree(argv_w);
 #endif
