@@ -1,0 +1,34 @@
+diff --git a/libavutil/hwcontext_vulkan.c b/libavutil/hwcontext_vulkan.c
+index 2859ee1..766961f 100644
+--- a/libavutil/hwcontext_vulkan.c
++++ b/libavutil/hwcontext_vulkan.c
+@@ -1688,10 +1688,12 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
+ 
+     hwctx->nb_qf = 0;
+     hwctx->queue_flags = 0;
++/* SD gamemode vkroots crash
+ #ifdef VK_KHR_internally_synchronized_queues
+     if (p->vkctx.extensions & FF_VK_EXT_INTERNAL_QUEUE_SYNC)
+         hwctx->queue_flags |= VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR;
+ #endif
++*/
+ 
+     /* Pick each queue family to use. */
+ #define PICK_QF(type, vid_op)                                            \
+diff --git a/libavutil/vulkan.c b/libavutil/vulkan.c
+index b2e575c..5b3c9cf 100644
+--- a/libavutil/vulkan.c
++++ b/libavutil/vulkan.c
+@@ -574,10 +574,12 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, AVVulkanDeviceQueueFamily *qf,
+         e->qf = qf->idx;
+         VkDeviceQueueInfo2 qinfo = {
+             .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,
++/* SD gamemode vkroots crash
+ #ifdef VK_KHR_internally_synchronized_queues
+             .flags            = internal_queue_sync ?
+                                 VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR : 0,
+ #endif
++*/
+             .queueFamilyIndex = qf->idx,
+             .queueIndex       = e->qi,
+         };
