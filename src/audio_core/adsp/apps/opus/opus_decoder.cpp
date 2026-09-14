@@ -106,9 +106,7 @@ public:
                     &avc->ch_layout, (enum AVSampleFormat)avc->sample_fmt, avc->sample_rate,
                     0, nullptr) >= 0) {
                     if (swr_init(swr) >= 0) {
-                        if (av_samples_alloc(stg_arr, nullptr, avc->ch_layout.nb_channels, (int)avc->max_samples, AV_SAMPLE_FMT_S16, 0) >= 0) {
-                            return ResultSuccess;
-                        }
+                        return ResultSuccess;
                     }
                 }
             }
@@ -119,7 +117,6 @@ public:
 
     Result Shutdown() {
         LOG_INFO(Audio_DSP, "called avc={}", fmt::ptr(avc));
-        av_freep(&stg_arr[0]);
         swr_free(&swr);
         av_frame_free(&frame);
         av_packet_free(&pkt);
@@ -136,7 +133,7 @@ public:
         return Service::Audio::ResultLibOpusInvalidState;
     }
 
-    Result Decode(u32& out_sample_count, u64 output_data, u64 output_data_size, u64 input_data, u64 input_data_size) {
+    Result Decode(u32& out_sample_count, u64 output_data, u64 output_data_size, u64 input_data, u64 input_data_size, u8* const* tmp_buf) {
         LOG_INFO(Audio_DSP, "called out_sample_count={},output_data={:#x},output_data_size={},input_data={:#x},input_data_size={}", fmt::ptr(&out_sample_count), output_data, output_data_size, input_data, input_data_size);
         ASSERT(avc && avcodec_is_open(avc));
         out_sample_count = 0;
@@ -151,6 +148,7 @@ public:
             if (r >= 0) {
                 while ((r = avcodec_receive_frame(avc, frame)) >= 0) {
                     LOG_INFO(Audio_DSP, "frame data={},data[0]={},nb_samples={}", fmt::ptr(frame->data), fmt::ptr(frame->data[0]), frame->nb_samples);
+                    ASSERT(std::in_range<u16>(frame->nb_samples));
                     u8 *dst_arr[2] = {reinterpret_cast<u8*>(output_data), nullptr};
                     if (frame->format == avc->request_sample_fmt) {
                         // input_bsize == output_bsize
@@ -158,8 +156,8 @@ public:
                         out_sample_count += frame->nb_samples;
                     } else {
                         int out_samples = int(av_rescale_rnd(swr_get_delay(swr, frame->sample_rate) + frame->nb_samples, frame->sample_rate, frame->sample_rate, AV_ROUND_UP));
-                        out_samples = swr_convert(swr, stg_arr, out_samples, (const u8 **)frame->data, frame->nb_samples);
-                        av_samples_copy(dst_arr, stg_arr, out_sample_count, 0, out_samples, frame->ch_layout.nb_channels, avc->request_sample_fmt);
+                        out_samples = swr_convert(swr, tmp_buf, out_samples, (const u8 **)frame->data, frame->nb_samples);
+                        av_samples_copy(dst_arr, tmp_buf, out_sample_count, 0, out_samples, frame->ch_layout.nb_channels, avc->request_sample_fmt);
                         out_sample_count += out_samples;
                     }
                     av_frame_unref(frame);
@@ -180,8 +178,6 @@ public:
     AVPacket* pkt = nullptr;
     AVFrame* frame = nullptr;
     SwrContext* swr = nullptr;
-    // Array of staging buffers
-    u8* stg_arr[8] = {};
 };
 } // namespace
 
@@ -196,6 +192,12 @@ OpusDecoder::OpusDecoder(Core::System& system) {
 
         // Main OpusDecoder thread, responsible for processing the incoming Opus packets.
         ::Common::unordered_map<u64, OpusGenericDecodeObject> decode_objects;
+        // Staging buffers used by various decoders
+        // 1 <= channels <= 2, then, UPB channels => 2
+        // 64K is enough for most
+        u8* tmp_buf[8] = {nullptr};
+        av_samples_alloc(tmp_buf, nullptr, 2, (int)0x10000, AV_SAMPLE_FMT_S16, 0);
+
         while (!stop_token.stop_requested()) {
             auto msg = Receive(Direction::DSP, stop_token);
             LOG_INFO(Audio_DSP, "msg={}, buffer={}", msg, shared_memory->host_send_data[0]);
@@ -263,7 +265,7 @@ OpusDecoder::OpusDecoder(Core::System& system) {
                     if (reset_requested)
                         res = it->second.ResetDecoder();
                     if (res == ResultSuccess)
-                        res = it->second.Decode(decoded_samples, output_data, output_data_size, input_data, input_data_size);
+                        res = it->second.Decode(decoded_samples, output_data, output_data_size, input_data, input_data_size, tmp_buf);
 
                     auto end_time = system.CoreTiming().GetGlobalTimeUs();
                     shared_memory->dsp_return_data[0] = res.raw;
@@ -357,7 +359,7 @@ OpusDecoder::OpusDecoder(Core::System& system) {
                     if (reset_requested)
                         res = it->second.ResetDecoder();
                     if (res == ResultSuccess)
-                        res = it->second.Decode(decoded_samples, output_data, output_data_size, input_data, input_data_size);
+                        res = it->second.Decode(decoded_samples, output_data, output_data_size, input_data, input_data_size, tmp_buf);
 
                     auto end_time = system.CoreTiming().GetGlobalTimeUs();
                     shared_memory->dsp_return_data[0] = res.raw;
@@ -377,6 +379,7 @@ OpusDecoder::OpusDecoder(Core::System& system) {
         }
         for (auto e : decode_objects)
             e.second.Shutdown();
+        av_freep(tmp_buf);
     });
 }
 
