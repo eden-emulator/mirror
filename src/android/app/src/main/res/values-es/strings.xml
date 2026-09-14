@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
-    <string name="app_disclaimer">Este software arrancará juegos para la consola Nintendo Switch. No se incluyen títulos ni claves de juego.<br /><br />Antes de continuar, por favor localiza tu archivo <![CDATA[prod.keys ]]> en el almacenamiento de tu dispositivo. <br /><br /><![CDATA[<a href=\"https://yuzu-mirror.github.io/help/quickstart\">Aprender más</a>]]>&lt;b&gt;</string>
     <string name="notice_notification_channel_name">Avisos y errores</string>
     <string name="notice_notification_channel_description">Mostrar notificaciones cuando algo vaya mal.</string>
     <string name="notification_permission_not_granted">¡Permiso de notificación no concedido!</string>
@@ -290,6 +289,9 @@
     <string name="gpu_driver_fetcher">Obtenedor de controladores de la GPU</string>
     <string name="gpu_driver_manager">Gestor de controladores de la GPU</string>
     <string name="install_gpu_driver_description">Instale los controladores alternativos para obtener un posible mejor rendimiento o precisión</string>
+    <string name="post_processing_open_list">Abrir lista</string>
+    <string name="post_processing_close_list">Cerrar lista</string>
+    <string name="post_processing_reset">Restablecer a predeterminado</string>
     <string name="frame_gen">Generación de fotograma</string>
     <string name="frame_gen_per_game_description">Configurar la generación de fotogramas para este juego</string>
     <string name="frame_gen_multiplier">Multiplicador de fotograma</string>
@@ -309,7 +311,6 @@
     <string name="lossless_scaling_replace_description">Seleccionar una copia diferente de Lossless.dll</string>
     <string name="frame_generation_support">Generación de fotograma</string>
     <string name="frame_generation_supported">Soportado</string>
-    <string name="frame_generation_unsupported">No soportado (sin modelo de memoria de Vulkan)</string>
     <string name="lossless_scaling">Escalado sin pérdidas</string>
     <string name="lossless_scaling_installed">Instalado</string>
     <string name="lossless_scaling_not_installed">No instalado</string>
@@ -783,7 +784,7 @@
     <!-- Custom Paths settings -->
     <string name="custom_save_directory">Directorio de los datos de guardado</string>
     <string name="custom_save_directory_description">Establecer una ruta personalizada para el almacenamiento de los datos de guardado</string>
-    <string name="reset_to_nand">Restaurar valores predeterminados</string>
+    <string name="reset_to_nand">Restaurar los valores predeterminados</string>
     <string name="migrate_save_data">Migrar datos de guardado</string>
     <string name="migrate_save_data_question">¿Desea migrar los datos de guardado existentes a la nueva ubicación\?</string>
     <string name="save_migration_complete">Datos de guardado migrados con éxito</string>
@@ -877,8 +878,6 @@
     <string name="loader_error_file_not_found">Archivo ROM no existe</string>
 
     <string name="loader_requires_firmware">El juego requiere firmware</string>
-    <string name="loader_requires_firmware_description"><![CDATA[El juego que intenta iniciar requiere el firmware para arrancar o pasar el menú de inicio. Por favor <a href=\"https://yuzu-mirror.github.io/help/quickstart\"> vuelque e instale el firmware</a>, o pulse \"Aceptar\" para continuar de todos modos.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">Buscando juego...</string>
     <string name="game_not_found_for_title_id">Juego no encontrado para el ID de título: %1$s</string>

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
-    <string name="app_disclaimer">本软件可以运行Nintendo Switch游戏主机的游戏，但自身并不包含任何游戏或密钥。<br /><br />请于开始之前选定位于你的设备存储空间中的<![CDATA[<b>prod.keys</b>]]>。<br /><br /><![CDATA[<a href=\"https://yuzu-mirror.github.io/help/quickstart\">了解更多</a>]]></string>
     <string name="notice_notification_channel_name">错误与注意事项</string>
     <string name="notice_notification_channel_description">当发生错误时显示通知。</string>
     <string name="notification_permission_not_granted">未授予通知权限！</string>
@@ -315,14 +314,12 @@
     <string name="frame_gen_flow_scale">运动预估分辨率</string>
     <string name="frame_gen_flow_scale_description">光流通道的分辨率,以输出的比例表示。降低它是提升性能最经济的做法。</string>
     <string name="frame_gen_unsupported">帧生成不可用</string>
-    <string name="frame_gen_unsupported_description">这个 GPU 驱动不支持无损缩放着色器所需的 Vulkan 内存模型。</string>
     <string name="lossless_scaling_setup_description">作为可选项。请提供您自己的 Lossless.dll 以便在之后可以启用帧生成。</string>
     <string name="lossless_scaling_install">安装 Lossless.dll</string>
     <string name="lossless_scaling_install_description">帧生成需要您自己从 Lossless Scaling 获得合法的 Lossless.dll 副本</string>
     <string name="lossless_scaling_replace_description">选择其它 Lossless.dll 副本</string>
     <string name="frame_generation_support">帧生成</string>
     <string name="frame_generation_supported">支持</string>
-    <string name="frame_generation_unsupported">不支持 (无 Vulkan 内存模型)</string>
     <string name="lossless_scaling">无损缩放</string>
     <string name="lossless_scaling_description">提供您自己的 Lossless.dll 文件以启用帧生成</string>
     <string name="lossless_scaling_installed">已安装</string>
@@ -897,8 +894,6 @@
     <string name="loader_error_file_not_found">ROM 文件不存在</string>
 
     <string name="loader_requires_firmware">游戏需要固件</string>
-    <string name="loader_requires_firmware_description"><![CDATA[您尝试启动的游戏需要固件才能引导或通过启动菜单。请<a href=\"https://yuzu-mirror.github.io/help/quickstart\">转储并安装固件</a>，或点击\"确定\"继续。]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">正在搜索游戏...</string>
     <string name="game_not_found_for_title_id">未找到标题ID的游戏: %1$s</string>

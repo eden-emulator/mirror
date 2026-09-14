@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
-    <string name="app_disclaimer">Perangkat lunak ini akan menjalankan permainan dari konsol Nintendo Switch. Permainan maupun keys tidak disediakan.<br /><br />Sebelum memulai, tolong temukan berkas <![CDATA[<b> prod.keys </b>]]> didalam tempat penyimpanan mu.<br /><br /><![CDATA[<a href=\"https://yuzu-mirror.github.io/help/quickstart\">Pelajari lebih lanjut</a>]]></string>
     <string name="notice_notification_channel_name">Pemberitahuan dan error</string>
     <string name="notice_notification_channel_description">Menampilkan pemberitahuan ketika terjadi kesalahan.</string>
     <string name="notification_permission_not_granted">Izin notifikasi tidak diberikan!</string>
@@ -638,8 +637,6 @@
     <string name="loader_error_file_not_found">Berkas Tidak Ditemukan</string>
 
     <string name="loader_requires_firmware">Game memerlukan firmware</string>
-    <string name="loader_requires_firmware_description"><![CDATA[Game yang ingin Anda jalankan memerlukan firmware untuk boot atau melewati menu pembuka. Silakan <a href=\"https://yuzu-mirror.github.io/help/quickstart\"> dump dan instal firmware</a>, atau tekan \"OK\" untuk melanjutkan.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">Mencari game...</string>
     <string name="game_not_found_for_title_id">Game tidak ditemukan untuk ID Judul: %1$s</string>

@@ -483,8 +483,6 @@
     <string name="loader_error_file_not_found">Tệp ROM không tồn tại</string>
 
     <string name="loader_requires_firmware">Trò chơi yêu cầu firmware</string>
-    <string name="loader_requires_firmware_description"><![CDATA[Trò chơi bạn đang cố khởi chạy yêu cầu firmware để khởi động hoặc vượt qua menu mở đầu. Vui lòng <a href=\"https://yuzu-mirror.github.io/help/quickstart\"> dump và cài đặt firmware</a>, hoặc nhấn \"OK\" để tiếp tục dù sao đi nữa.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">Đang tìm kiếm trò chơi...</string>
     <string name="game_not_found_for_title_id">Không tìm thấy trò chơi cho ID Tiêu đề: %1$s</string>

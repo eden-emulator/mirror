@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
-    <string name="app_disclaimer">Это программное обеспечение предназначено для запуска игр для игровой консоли Nintendo Switch. Игры и ключи в комплект не входят.<br /><br />Прежде чем начать, пожалуйста, найдите файл <![CDATA[<b>prod.keys</b>]]> на вашем устройстве.<br /><br /> <![CDATA[<a href=\"https://yuzu-mirror.github.io/help/quickstart\">Узнать больше</a>]]></string>
+    <string name="app_disclaimer">Это программное обеспечение предназначено для запуска игр консоли Nintendo Switch. Никакие игры или ключи не входят в комплект.<br /><br />Перед началом работы найдите файл <![CDATA[<b> prod.keys </b>]]> во внутреннем хранилище вашего устройства. <br /><br /><![CDATA[<a href=\"https://git.eden-emu.dev/eden-emu/eden/src/branch/master/docs/user/QuickStart.md\">Узнать больше</a>]]></string>
     <string name="notice_notification_channel_name">Уведомления и ошибки</string>
     <string name="notice_notification_channel_description">Показывает уведомления, когда что-то пошло не так</string>
     <string name="notification_permission_not_granted">Вы не предоставили разрешение на уведомления!</string>
@@ -291,6 +291,25 @@
     <string name="gpu_driver_fetcher">Получение драйверов ГПУ</string>
     <string name="gpu_driver_manager">Менеджер драйверов ГПУ</string>
     <string name="install_gpu_driver_description">Установите альтернативные драйверы для потенциально лучшей производительности и/или точности</string>
+    <string name="post_processing">Эффекты постобработки</string>
+    <string name="post_processing_description">Эффекты ReShade FX, применяемые после рендеринга</string>
+    <string name="post_processing_per_game_description">Настроить цепочку эффектов для этой игры</string>
+    <string name="post_processing_add">Добавить эффект</string>
+    <string name="post_processing_remove">Удалить</string>
+    <string name="post_processing_open_list">Открыть список</string>
+    <string name="post_processing_close_list">Закрыть список</string>
+    <string name="post_processing_remove_all">Удалить эффекты</string>
+    <string name="post_processing_preset_locked">Пресет активен. Отредактируйте его в разделе \"Эффекты постобработки\" перед запуском игры.</string>
+    <string name="post_processing_preset_modified">Значения изменены относительно исходного пресета.</string>
+    <string name="post_processing_presets">Пресеты</string>
+    <string name="post_processing_preset_new">Новый пресет</string>
+    <string name="post_processing_preset_new_description">Сохраняет загруженные вами эффекты вместе с их текущими значениями в виде пресета, который можно будет выбрать позже.</string>
+    <string name="post_processing_preset_name_invalid">Дайте пресету имя без знака равенства.</string>
+    <string name="post_processing_preset_none">Нет пресета</string>
+    <string name="post_processing_preset_delete">Удалить пресет</string>
+    <string name="post_processing_preset_reset">Сбросить значения пресета</string>
+    <string name="post_processing_reset">Сбросить до значений по умолчанию</string>
+    <string name="post_processing_empty">Эффекты не найдены. Поместите файлы .fx в эту папку:</string>
     <string name="frame_gen">Генерация кадров</string>
     <string name="frame_gen_per_game_description">Настройка генерации кадров для данной игры</string>
     <string name="frame_gen_description">Вставляет промежуточные кадры между отрендеренными с помощью Lossless Scaling. При включении принудительно устанавливает режим вывода FIFO.</string>
@@ -309,14 +328,12 @@
     <string name="frame_gen_flow_scale">Разрешение оценки движения</string>
     <string name="frame_gen_flow_scale_description">Разрешение прохода оптического потока в долях от выходного разрешения. Его понижение — самый дешёвый способ вернуть производительность.</string>
     <string name="frame_gen_unsupported">Генерация кадров недоступна</string>
-    <string name="frame_gen_unsupported_description">Драйвер ГПУ не поддерживает модель памяти Vulkan, требуемую шейдерами Lossless Scaling.</string>
     <string name="lossless_scaling_setup_description">Опционально. Укажите свой Lossless.dll для включения генерации кадров позже.</string>
     <string name="lossless_scaling_install">Установить Lossless.dll</string>
     <string name="lossless_scaling_install_description">Для генерации кадров требуется ваша собственная легальная копия Lossless.dll из Lossless Scaling</string>
     <string name="lossless_scaling_replace_description">Выбрать другой файл Lossless.dll</string>
     <string name="frame_generation_support">Генерация кадров</string>
     <string name="frame_generation_supported">Поддерживается</string>
-    <string name="frame_generation_unsupported">Не поддерживается (нет модели памяти Vulkan)</string>
     <string name="lossless_scaling_description">Предоставьте свою копию Lossless.dll для включения генерации кадров</string>
     <string name="lossless_scaling_installed">Установлена</string>
     <string name="lossless_scaling_not_installed">Не установлена</string>
@@ -613,6 +630,11 @@
     <string name="log">Логирование</string>
     <string name="flush_by_line">Сбрасывать логи отладки построчно</string>
     <string name="flush_by_line_description">Сбрасывает логи отладки после каждой написанной строки, упрощая отладку в случае сбоев или зависаний.</string>
+    <string name="extended_logging">Включить расширенное логирование</string>
+    <string name="extended_logging_description">Увеличивает максимальный размер файла журнала со 100 МБ до 1 ГБ.</string>
+    <string name="log_filter">Фильтр журнала</string>
+    <string name="log_filter_description">Управляет категориями журнала Eden. Пример: :Info Service.LM:Debug</string>
+
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">Ведение журнала ГПУ</string>
     <string name="gpu_log_level">Уровень журналирования</string>
@@ -896,7 +918,7 @@
     <string name="loader_error_file_not_found">Файл ROM не существует</string>
 
     <string name="loader_requires_firmware">Игре требуется прошивка</string>
-    <string name="loader_requires_firmware_description"><![CDATA[Для запуска этой игры или прохождения начального меню требуется прошивка. Пожалуйста, <a href=\"https://yuzu-mirror.github.io/help/quickstart\">сохраните и установите прошивку</a> или нажмите \"OK\" для запуска в любом случае.]]></string>
+    <string name="loader_requires_firmware_description"><![CDATA[Для корректной работы этой игры может потребоваться прошивка, а у вас она не установлена. Пожалуйста, установите прошивку перед запуском или нажмите \"OK\", чтобы всё равно запустить.]]></string>
 
     <!-- Intent Launch strings -->
     <string name="searching_for_game">Поиск игры...</string>

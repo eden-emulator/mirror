@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
-    <string name="app_disclaimer">Este programa serve para rodar jogos do Nintendo Switch. Nenhum jogo ou chaves do sistema são inclusos<br /><br />Antes de começar, localize o seu <![CDATA[<b> prod.keys </b>]]> salvo no seu sistema.<br /><br /><![CDATA[<a href=\"https://yuzu-mirror.github.io/help/quickstart\">Saiba mais</a>]]></string>
     <string name="notice_notification_channel_name">Notificações e erros</string>
     <string name="notice_notification_channel_description">Mostra notificações quando acontecer um erro.</string>
     <string name="notification_permission_not_granted">Acesso às notificações não foi permitido!</string>
@@ -717,8 +716,6 @@
     <string name="loader_error_file_not_found">O arquivo ROM não existe</string>
 
     <string name="loader_requires_firmware">O jogo requer firmware</string>
-    <string name="loader_requires_firmware_description"><![CDATA[O jogo que você está tentando iniciar requer firmware para inicializar ou passar do menu de abertura. Por favor <a href=\"https://yuzu-mirror.github.io/help/quickstart\"> faça dump e instale o firmware</a>, ou pressione \"OK\" para continuar mesmo assim.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">Procurando jogo...</string>
     <string name="game_not_found_for_title_id">Jogo não encontrado para o ID do Título: %1$s</string>

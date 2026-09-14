@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
-    <string name="app_disclaimer">Цей застосунок запускає ігри для ігрової консолі Nintendo Switch. Він не містить ігор чи ключів.<br /><br />Перш ніж почати, укажіть розташування файлу <![CDATA[<b> prod.keys </b>]]> у пам’яті вашого пристрою.<br /><br /><![CDATA[<a href=\"https://yuzu-mirror.github.io/help/quickstart\">Дізнатися більше</a>]]></string>
     <string name="notice_notification_channel_name">Сповіщення та помилки</string>
     <string name="notice_notification_channel_description">Показує сповіщення у разі виникнення проблем.</string>
     <string name="notification_permission_not_granted">Дозвіл на сповіщення не надано!</string>
@@ -830,8 +829,6 @@
     <string name="loader_error_file_not_found">ROM файлу не існує</string>
 
     <string name="loader_requires_firmware">Гра вимагає прошивки</string>
-    <string name="loader_requires_firmware_description"><![CDATA[Гра, яку ви намагаєтеся запустити, вимагає прошивки для завантаження або пропуску початкового меню. Будь ласка, <a href=\"https://yuzu-mirror.github.io/help/quickstart\"> зробіть дамп і встановіть прошивку</a>, або натисніть \"OK\", щоб продовжити в будь-якому разі.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">Пошук гри...</string>
     <string name="game_not_found_for_title_id">Гру не знайдено для ID заголовку: %1$s</string>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
-    <string name="app_disclaimer">سيشغل هذا البرنامج ألعاب جهاز Nintendo Switch. لا يتضمن البرنامج أي ألعاب أو مفاتيح.<br /><br />قبل أن تبدأ، يرجى تحديد موقع ملف <![CDATA[<b> prod.keys </b>]]>  على وحدة تخزين جهازك.<br /><br /><![CDATA[<a href=\"https://yuzu-mirror.github.io/help/quickstart\">اعرف المزيد</a>]]></string>
+    <string name="app_disclaimer">سيعمل هذا البرنامج على تشغيل ألعاب منصة ألعاب «نينتندو سويتش». لا يتضمن البرنامج أي ألعاب أو مفاتيح تفعيل.<br /><br /> قبل البدء، يرجى تحديد موقع ملف <![CDATA[<b> prod.keys</b> ]]> في مساحة التخزين بجهازك.<br /><br /><![CDATA[<a href=\"https://git.eden-emu.dev/eden-emu/eden/src/branch/master/docs/user/QuickStart.md\">مزيد من المعلومات</a>]]></string>
     <string name="notice_notification_channel_name">الإشعارات والأخطاء</string>
     <string name="notice_notification_channel_description">عرض الإشعارات عند حدوث خطأ ما.</string>
     <string name="notification_permission_not_granted">لم يتم منح إذن الإشعار!</string>
@@ -291,6 +291,25 @@
     <string name="gpu_driver_fetcher">أداة جلب برامج تشغيل وحدة المعالجة الرسومية</string>
     <string name="gpu_driver_manager">إدارة برامج تشغيل وحدة معالجة الرسومات</string>
     <string name="install_gpu_driver_description">تثبيت برامج تشغيل بديلة لأداء أو دقة أفضل</string>
+    <string name="post_processing">تأثيرات ما بعد المعالجة</string>
+    <string name="post_processing_description">تأثيرات ReShade FX التي يتم تطبيقها بعد عملية العرض</string>
+    <string name="post_processing_per_game_description">ضبط تسلسل التأثيرات لهذه اللعبة</string>
+    <string name="post_processing_add">إضافة تأثير</string>
+    <string name="post_processing_remove">إزالة</string>
+    <string name="post_processing_open_list">فتح القائمة</string>
+    <string name="post_processing_close_list">إغلاق القائمة</string>
+    <string name="post_processing_remove_all">إزالة التأثيرات</string>
+    <string name="post_processing_preset_locked">الإعداد مسبقًا نشط. قم بتعديله في «تأثيرات ما بعد المعالجة» قبل بدء اللعبة.</string>
+    <string name="post_processing_preset_modified">تم تغيير القيم عن الإعداد الأصلي.</string>
+    <string name="post_processing_presets">الإعدادات المسبقة</string>
+    <string name="post_processing_preset_new">إعداد مسبق جديد</string>
+    <string name="post_processing_preset_new_description">يحفظ التأثيرات التي قمت بتحميلها، مع قيمها الحالية، كإعداد مسبق يمكنك اختياره لاحقًا.</string>
+    <string name="post_processing_preset_name_invalid">قم بتسمية الإعداد المسبق باسم لا يحتوي على علامة يساوي.</string>
+    <string name="post_processing_preset_none">لا يوجد إعداد مسبق</string>
+    <string name="post_processing_preset_delete">حذف الإعداد المسبق</string>
+    <string name="post_processing_preset_reset">إعادة تعيين القيم المحددة مسبقًا</string>
+    <string name="post_processing_reset">إعادة التعيين إلى الإعدادات الافتراضية</string>
+    <string name="post_processing_empty">لم يتم العثور على أي ملفات. ضع ملفات .fx في هذا المجلد:</string>
     <string name="frame_gen">توليد الإطار</string>
     <string name="frame_gen_per_game_description">ضبط إعدادات إنشاء الإطارات لهذه اللعبة</string>
     <string name="frame_gen_description">قم بإدراج الإطارات المُستكملة بين الإطارات المُعالجة باستخدام تقنية التحجيم بدون فقدان الجودة. يُفرض هذا الخيار عرض الإطارات وفقًا لترتيب FIFO عند تفعيله.</string>
@@ -305,6 +324,13 @@
     <string name="frame_gen_target_rate_60">60 إطارًا في الثانية</string>
     <string name="frame_gen_target_rate_90">90 إطارًا في الثانية</string>
     <string name="frame_gen_target_rate_120">120 إطارًا في الثانية</string>
+    <string name="frame_gen_on">تشغيل</string>
+    <string name="frame_gen_off">إيقاف</string>
+    <string name="frame_gen_fixed">مستقر</string>
+    <string name="frame_gen_flow_auto">تلقائي</string>
+    <string name="frame_gen_quick_description">قم بتشغيل أو إيقاف توليد الإطارات واختر مضاعف الإطارات.</string>
+    <string name="frame_gen_target_rate_quick_description">توليد إطارات بمعدل إطارات مستهدف. ويتم ضبط المضاعف تلقائيًا.</string>
+    <string name="frame_gen_flow_scale_quick_description">الدقة المستخدمة لتقدير الحركة بين الإطارات. تقلل القيم المنخفضة من الوقت الذي تستهلكه وحدة معالجة الرسومات.</string>
     <string name="frame_gen_queue_target">هدف قائمة انتظار الإطارات</string>
     <string name="frame_gen_queue_target_description">كم عدد الإطارات المكتملة التي قد تنتظر قبل عرضها؟ تعمل قوائم الانتظار الأكبر حجمًا على امتصاص الارتفاعات المفاجئة في حمل وحدة معالجة الرسومات على حساب زمن انتقال الإدخال.</string>
     <string name="frame_gen_queue_target_0">أقل زمن انتقال (بدون تخزين مؤقت)</string>
@@ -315,14 +341,14 @@
     <string name="frame_gen_flow_scale">دقة تقدير الحركة</string>
     <string name="frame_gen_flow_scale_description">دقة مسار التدفق البصري، كجزء من الناتج. ويُعد خفض هذه القيمة أرخص طريقة لاستعادة الأداء.</string>
     <string name="frame_gen_unsupported">توليد الإطار غير متاح</string>
-    <string name="frame_gen_unsupported_description">لا يدعم برنامج تشغيل وحدة معالجة الرسومات هذا نموذج ذاكرة Vulkan، الذي تتطلبه برامج التظليل الخاصة بـ«Lossless Scaling».</string>
+    <string name="frame_gen_unsupported_description">يفتقر برنامج تشغيل وحدة معالجة الرسومات هذا إلى نموذج ذاكرة Vulkan أو دعم الدقة النصفية (float16) التي تتطلبها برامج التظليل الخاصة بـ «Lossless Scaling».</string>
     <string name="lossless_scaling_setup_description">اختياري. قم بتوفير ملف Lossless.dll الخاص بك لتمكين إنشاء الإطارات لاحقًا</string>
     <string name="lossless_scaling_install">تثبيت ملف Lossless.dll</string>
     <string name="lossless_scaling_install_description">يتطلب إنشاء الإطارات أن تكون لديك نسخة قانونية خاصة بك من ملف Lossless.dll المأخوذ من برنامج Lossless Scaling</string>
     <string name="lossless_scaling_replace_description">اختر نسخة أخرى من ملف Lossless.dll</string>
     <string name="frame_generation_support">توليد الإطارات</string>
     <string name="frame_generation_supported">مدعوم</string>
-    <string name="frame_generation_unsupported">غير مدعوم (لا يتوفر نموذج ذاكرة Vulkan)</string>
+    <string name="frame_generation_unsupported">غير مدعوم (لا يتوفر نموذج ذاكرة Vulkan أو float16)</string>
     <string name="lossless_scaling">Lossless Scaling</string>
     <string name="lossless_scaling_description">قم بتوفير نسختك الخاصة من ملف Lossless.dll لتمكين توليد الإطارات</string>
     <string name="lossless_scaling_installed">مثبت</string>
@@ -912,7 +938,7 @@
     <string name="loader_error_file_not_found">ملف ROM غير موجود</string>
 
     <string name="loader_requires_firmware">اللعبة تتطلب الفيرموير</string>
-    <string name="loader_requires_firmware_description"><![CDATA[اللعبة التي تحاول تشغيلها تتطلب الفيرموير للتمهيد أو لتجاوز القائمة الافتتاحية. يرجى <a href=\"https://yuzu-mirror.github.io/help/quickstart\">نسخ وتثبيت الفيرموير</a>، أو اضغط \"موافق\" للمتابعة على أي حال.]]></string>
+    <string name="loader_requires_firmware_description"><![CDATA[قد تتطلب هذه اللعبة برنامجاً ثابتاً لتعمل بشكل صحيح، ولم يتم تثبيت أي منها لديك. يرجى تثبيت البرنامج الثابت قبل التشغيل، أو الضغط على \"موافق\" للتشغيل على أية حال.]]></string>
 
     <!-- Intent Launch strings -->
     <string name="searching_for_game">جارٍ البحث عن اللعبة...</string>

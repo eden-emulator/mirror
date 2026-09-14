@@ -508,8 +508,6 @@
     <string name="loader_error_file_not_found">ROMファイルが存在しません</string>
 
     <string name="loader_requires_firmware">ゲームにはファームウェアが必要です</string>
-    <string name="loader_requires_firmware_description"><![CDATA[起動しようとしているゲームは、起動または開始メニューを通過するためにファームウェアが必要です。<a href=\"https://yuzu-mirror.github.io/help/quickstart\"> ファームウェアをダンプしてインストール</a>するか、\"OK\"を押して続行してください。]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">ゲームを検索中...</string>
     <string name="game_not_found_for_title_id">タイトルID: %1$s のゲームが見つかりません</string>

@@ -510,8 +510,6 @@
     <string name="loader_error_file_not_found">קובץ המשחק לא קיים</string>
 
     <string name="loader_requires_firmware">המשחק דורש קושחה</string>
-    <string name="loader_requires_firmware_description"><![CDATA[המשחק שאתה מנסה להפעיל דורש קושחה לאתחול או למעבר מתפריט הפתיחה. אנא <a href=\"https://yuzu-mirror.github.io/help/quickstart\">שמור והתקן קושחה</a> או לחץ \"אישור\" כדי להמשיך בכל מקרה.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">מחפש משחק...</string>
     <string name="game_not_found_for_title_id">משחק לא נמצא למזהה כותרת: %1$s</string>

@@ -609,8 +609,6 @@ uma tentativa de mapeamento automático</string>
     <string name="loader_error_file_not_found">O ficheiro da ROM não existe</string>
 
     <string name="loader_requires_firmware">O jogo requer firmware</string>
-    <string name="loader_requires_firmware_description"><![CDATA[O jogo que está a tentar iniciar requer firmware para arrancar ou passar o menu inicial. Por favor <a href=\"https://yuzu-mirror.github.io/help/quickstart\"> faça dump e instale o firmware</a>, ou pressione \"OK\" para continuar mesmo assim.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">A procurar jogo...</string>
     <string name="game_not_found_for_title_id">Jogo não encontrado para o ID do Título: %1$s</string>

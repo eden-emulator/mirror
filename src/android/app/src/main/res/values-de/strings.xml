@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
-    <string name="app_disclaimer">Diese Software führt Spiele für die Nintendo Switch-Konsole aus. Es sind keine Spiele oder Schlüssel enthalten. Suche, bevor du beginnst, deine <![CDATA[<b> prod.keys </b>]]>-Datei auf deinem Gerät.<br /><br /><![CDATA[<a href=\"https://yuzu-mirror.github.io/help/quickstart\">Mehr Erfahren</a>]]></string>
     <string name="notice_notification_channel_name">Hinweise und Fehler</string>
     <string name="notice_notification_channel_description">Zeigt Benachrichtigungen an, wenn etwas schief läuft.</string>
     <string name="notification_permission_not_granted">Berechtigung für Benachrichtigungen nicht zugelassen!</string>
@@ -307,12 +306,10 @@
     <string name="frame_gen_queue_target_1">Ausbalanciert (1 Bild)</string>
     <string name="frame_gen_queue_target_2">Flüssigste (2 Bilder)</string>
     <string name="frame_gen_unsupported">Frame-Generation nicht verfügbar</string>
-    <string name="frame_gen_unsupported_description">Dieser GPU-Treiber unterstützt das Vulkan-Memory-Model nicht, welches Lossless Scaling-Shader benötigen.</string>
     <string name="lossless_scaling_setup_description">Optional. Stelle deine eigene Lossless.dll zur Verfügung, um Frame-Generation später zu aktivieren.</string>
     <string name="lossless_scaling_install">Installiere Lossless.dll</string>
     <string name="lossless_scaling_replace_description">Wähle eine andere Kopie von Lossless.dll</string>
     <string name="frame_generation_supported">Unterstützt</string>
-    <string name="frame_generation_unsupported">Nicht unterstützt (kein Vulkan-Memory-Model)</string>
     <string name="lossless_scaling">Lossless Scaling</string>
     <string name="lossless_scaling_installed">Installiert</string>
     <string name="lossless_scaling_not_installed">Nicht installiert</string>
@@ -811,8 +808,6 @@ Wirklich fortfahren?</string>
     <string name="loader_error_file_not_found">ROM-Datei existiert nicht</string>
 
     <string name="loader_requires_firmware">Spiel erfordert Firmware</string>
-    <string name="loader_requires_firmware_description"><![CDATA[Das Spiel, das Sie starten möchten, benötigt Firmware zum Booten oder zum Überspringen des Startmenüs. Bitte <a href=\"https://yuzu-mirror.github.io/help/quickstart\"> dumpen und installieren Sie Firmware</a>, oder drücken Sie \"OK\", um trotzdem zu starten.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">Suche nach Spiel...</string>
     <string name="game_not_found_for_title_id">Spiel nicht gefunden für Titel-ID: %1$s</string>

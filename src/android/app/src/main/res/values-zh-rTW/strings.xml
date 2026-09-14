@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
-    <string name="app_disclaimer">本軟體可執行Nintendo Switch主機的遊戲，軟體不提供遊戲和金鑰檔案。&lt;br/> &lt;br/>在開始之前，請先安裝您的 &lt;<![CDATA[ &lt;b>prod.keys&lt;/b> ]]> 檔案，&lt;br />&lt;br /><![CDATA[<a href=\"https://yuzu-mirror.github.io/help/quickstart\">了解更多</a>]]></string>
+    <string name="app_disclaimer">本軟體可執行Nintendo Switch主機的遊戲，軟體不提供遊戲和金鑰檔案。<br /><br />在開始之前，請先安裝您的 <![CDATA[<b> prod.keys </b>]]> 檔案，<![CDATA[<a href=\"https://git.eden-emu.dev/eden-emu/eden/src/branch/master/docs/user/QuickStart.md\">了解更多</a>]]></string>
     <string name="notice_notification_channel_name">通知和錯誤</string>
     <string name="notice_notification_channel_description">發生錯誤時顯示通知</string>
     <string name="notification_permission_not_granted">未授予通知權限！</string>
@@ -291,6 +291,25 @@
     <string name="gpu_driver_fetcher">GPU驅動程式下載器</string>
     <string name="gpu_driver_manager">GPU 驅動程式管理員</string>
     <string name="install_gpu_driver_description">安裝替代驅動程式以取得潛在的更佳效能或準確度</string>
+    <string name="post_processing">後製處理效果</string>
+    <string name="post_processing_description">在渲染完成後套用 ReShade FX 效果</string>
+    <string name="post_processing_per_game_description">為此遊戲設定特殊濾鏡或效果</string>
+    <string name="post_processing_add">新增效果</string>
+    <string name="post_processing_remove">移除</string>
+    <string name="post_processing_open_list">開啟清單</string>
+    <string name="post_processing_close_list">收起清單</string>
+    <string name="post_processing_remove_all">移除效果</string>
+    <string name="post_processing_preset_locked">濾鏡已啟用。請在開啟遊戲前於 後製處理效果 中調整</string>
+    <string name="post_processing_preset_modified">數值已變更，與原始濾鏡設定不同</string>
+    <string name="post_processing_presets">濾鏡</string>
+    <string name="post_processing_preset_new">新增濾鏡</string>
+    <string name="post_processing_preset_new_description">將目前載入的效果及數值儲存為設定檔方便日後使用</string>
+    <string name="post_processing_preset_name_invalid">請為此濾鏡設定檔命名，名稱中不得包含等號且不能與預先提供的設定檔名稱相同</string>
+    <string name="post_processing_preset_none">無濾鏡</string>
+    <string name="post_processing_preset_delete">刪除濾鏡</string>
+    <string name="post_processing_preset_reset">重設此濾鏡的所有設定值</string>
+    <string name="post_processing_reset">重設為預設值</string>
+    <string name="post_processing_empty">找不到設定檔。請將濾鏡效果的 .fx 檔案放置於此資料夾：</string>
     <string name="frame_gen">影格生成</string>
     <string name="frame_gen_per_game_description">調整此遊戲的影格生成設定</string>
     <string name="frame_gen_description">使用 Lossless Scaling 在已渲染的影格之間插入補間影格。啟用此功能時，會強制採用 FIFO 垂直同步</string>
@@ -315,10 +334,37 @@
     <string name="frame_gen_flow_scale">運動預測解析度</string>
     <string name="frame_gen_flow_scale_description">光流處理的解析度，以輸出解析度的比例表示。降低此設定值是減少效能負載最有效的方法</string>
     <string name="frame_gen_unsupported">無法使用影格生成</string>
-    <string name="frame_gen_unsupported_description">Lossless Scaling 的著色器需要 Vulkan 記憶體模型，所選的驅動程式不支援該功能</string>
     <string name="lossless_scaling_setup_description">可選擇安裝自己擁有的 Lossless.dll 以在之後啟用影格生成功能</string>
+    <string name="lossless_scaling_install">安裝 Lossless.dll</string>
+    <string name="lossless_scaling_install_description">您需要擁有從合法管道獲得的 Lossless Scaling 並從該軟體的資料夾中取得 Lossless.dll 檔案才能使用影格生成功能</string>
+    <string name="lossless_scaling_replace_description">安裝不同的 Lossless.dll 檔案</string>
+    <string name="frame_generation_support">影格生成</string>
+    <string name="frame_generation_supported">支援</string>
+    <string name="lossless_scaling">Lossless Scaling</string>
+    <string name="lossless_scaling_description">安裝您擁有的 Lossless.dll 檔案以使用影格生成</string>
+    <string name="lossless_scaling_installed">已安裝</string>
+    <string name="lossless_scaling_not_installed">未安裝</string>
+    <string name="lossless_scaling_replace">替換</string>
+    <string name="lossless_scaling_remove">刪除</string>
+    <string name="lossless_scaling_remove_description">刪除已安裝的 Lossless.dll 及預先編譯的著色器</string>
+    <string name="lossless_scaling_remove_confirmation">影格生成功能會停止運作直到您重新安裝 Lossless.dll 。您的 Lossless.dll 原始檔並不會被 Eden 修改</string>
+    <string name="lossless_scaling_missing">Lossless.dll 未安裝</string>
+    <string name="lossless_scaling_missing_description">前往 設定 -&gt; Lossless Scaling 安裝以使用影格生成功能</string>
+    <string name="lossless_scaling_locked">請先關閉遊戲</string>
+    <string name="lossless_scaling_locked_description">Lossless.dll 無法在遊戲執行時進行更換</string>
+    <string name="lossless_scaling_remove_unavailable">沒有東西可以刪除</string>
+    <string name="lossless_scaling_remove_unavailable_description">尚未安裝 Lossless.dll</string>
+    <string name="lossless_scaling_installing">準備影格生成著色器中...</string>
+    <string name="lossless_scaling_install_success">成功安裝 Lossless.dll</string>
+    <string name="lossless_scaling_install_failed">無法安裝 Lossless.dll</string>
+    <string name="error_lossless_copy_failed">無法複製選取的檔案</string>
+    <string name="error_lossless_unreadable">無法讀取選取的檔案</string>
+    <string name="error_lossless_not_pe">選取的檔案並不是 Windows 程式庫。請在 Lossless Scaling 的安裝位置（資料夾）中選擇 Lossless.dll</string>
+    <string name="error_lossless_missing_shaders">這個 Lossless.dll 的副本並未包含影格生成著色器。請更新 Lossless Scaling 後再試一次</string>
+    <string name="error_lossless_translation_failed">無法轉譯影格生成著色器。尚不支援此 Lossless Scaling 版本</string>
+    <string name="error_lossless_cache_failed">轉譯的著色器無法寫入到儲存空間。請確認手機容量是否充足</string>
     <string name="advanced_settings">進階設定</string>
-    <string name="settings_description">進行模擬器設定</string>
+    <string name="settings_description">調整模擬器設定</string>
     <string name="search_recently_played">最近遊玩</string>
     <string name="search_recently_added">最近新增</string>
     <string name="open_user_folder">開啟 Eden 資料夾</string>
@@ -512,7 +558,7 @@
     <string name="renderer_async_presentation">非同步呈現</string>
     <string name="renderer_async_presentation_description">此修改可以透過將渲染移至單獨的 CPU 執行緒來提升性能，但可能會導致圖形問題</string>
     <string name="renderer_reactive_flushing">使用重新啟用排清</string>
-    <string name="renderer_reactive_flushing_description">犧牲效能，以改善部分遊戲的轉譯準確度。</string>
+    <string name="renderer_reactive_flushing_description">犧牲效能，以改善部分遊戲的轉譯準確度</string>
     <string name="enable_buffer_history">啟用緩衝區歷史</string>
     <string name="enable_buffer_history_description">允許存取先前的緩衝區狀態。此選項可能會改善部分遊戲的渲染品質與效能穩定性</string>
     <string name="enable_gpu_buffer_readback">啟用 GPU 緩衝區讀回</string>
@@ -525,7 +571,7 @@
     <string name="fast_gpu_time">GPU 時脈</string>
     <string name="fast_gpu_time_description">讓遊戲誤以為 GPU 工作能更快完成，避免遊戲為了配合 Switch 的時脈而降低解析度與渲染距離</string>
     <string name="skip_cpu_inner_invalidation">跳過CPU內部失效處理</string>
-    <string name="skip_cpu_inner_invalidation_description">在記憶體更新期間跳過某些CPU端快取的失效處理，減少CPU使用率並提高其性能。可能會導致某些遊戲出現故障或當機。</string>
+    <string name="skip_cpu_inner_invalidation_description">在記憶體更新期間跳過某些CPU端快取的失效處理，減少CPU使用率並提高其性能。可能會導致某些遊戲出現故障或當機</string>
     <string name="fix_bloom_effects">修正光暈特效</string>
     <string name="fix_bloom_effects_description">在 薩爾達傳說：織夢島 和 薩爾達傳說：智慧的再現 中 減少光暈模糊的問題並移除 橫衝直撞：狂飆樂園重製版 中的光暈效果 (Adreno A6XX - A7XX/ Turnip)。警告：可能會在其它遊戲中導致圖形異常</string>
     <string name="emulate_bgr565">模擬 BGR565</string>
@@ -585,6 +631,11 @@
     <string name="log">日誌</string>
     <string name="flush_by_line">按行寫入偵錯日誌</string>
     <string name="flush_by_line_description">在每行寫入時重新整理偵錯日誌，讓程式在當機或閃退時更容易偵錯。</string>
+    <string name="extended_logging">啟用更詳細的日誌記錄</string>
+    <string name="extended_logging_description">將日誌檔的最大檔案限制從 100MB 提高到 1GB</string>
+    <string name="log_filter">日誌過濾器</string>
+    <string name="log_filter_description">控制 Eden 日誌的紀錄類別。例如： *:Info Service.LM:Debug</string>
+
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">GPU 日誌</string>
     <string name="gpu_log_level">記錄層級</string>
@@ -709,7 +760,7 @@
     <string name="import_failed">導入失敗</string>
     <string name="cancelling">正在取消</string>
     <string name="install">安裝</string>
-    <string name="fetch">獲取</string>
+    <string name="fetch">下載</string>
     <string name="delete">刪除</string>
     <string name="edit">編輯</string>
     <string name="import_success">已成功導入</string>
@@ -734,12 +785,12 @@
 
     <!-- GPU driver fetcher -->
     <string name="show_releases">顯示版本</string>
-    <string name="failed_to_fetch">獲取失敗</string>
-    <string name="error_during_fetch">獲取過程中發生錯誤</string>
+    <string name="failed_to_fetch">下載失敗</string>
+    <string name="error_during_fetch">下載過程中發生錯誤</string>
     <string name="show_downloads">顯示下載</string>
     <string name="hide_downloads">隱藏下載</string>
     <string name="failed_cache_dir">快取目錄不可用</string>
-    <string name="empty_response_body">回應內容為空</string>
+    <string name="empty_response_body">未回傳任何資料</string>
     <string name="successfully_installed">%1$s 安裝成功</string>
     <string name="driver_failed_title">驅動程式安裝失敗</string>
     <string name="failed_install_driver">無法安裝 %1$s 驅動程式，您的系統支援此驅動程式嗎？</string>
@@ -780,13 +831,21 @@
     <string name="save_migration_complete">成功遷移儲存資料</string>
     <string name="save_migration_failed">儲存資料遷移失敗</string>
     <string name="save_directory_set">存檔目錄設定完成</string>
+    <string name="destination_has_saves">所選取的位置已有儲存資料。是否要取代該檔案？</string>
+    <string name="all_files_permission_required">若要自訂路徑必須授予所有檔案的存取權</string>
+    <string name="grant_permission">授予權限</string>
+    <string name="custom_nand_directory">NAND 路徑</string>
+    <string name="custom_nand_directory_description">設定 NAND 資料的自訂路徑</string>
+    <string name="custom_sdmc_directory">虛擬 SD卡 路徑</string>
+    <string name="custom_sdmc_directory_description">設定虛擬 SD卡 儲存空間的自訂路徑</string>
+    <string name="path_set">路徑設定成功</string>
     <string name="skip_migration">跳過</string>
 
     <!-- Game properties -->
-    <string name="info">資訊</string>
+    <string name="info">軟體資訊</string>
     <string name="info_description">程式 ID、開發人員及版本資訊</string>
     <string name="per_game_settings">個別遊戲設定</string>
-    <string name="per_game_settings_description">編輯此遊戲的特定設定</string>
+    <string name="per_game_settings_description">調整此遊戲的專用設定</string>
     <string name="launch_options">啟動設定</string>
     <string name="path">路徑</string>
     <string name="program_id">程式 ID</string>
@@ -821,17 +880,17 @@
     <string name="save_data_description">管理此遊戲的儲存資料</string>
     <string name="delete_save_data">刪除儲存資料</string>
     <string name="delete_save_data_description">刪除此遊戲的所有儲存資料</string>
-    <string name="delete_save_data_warning_description">這將會刪除此遊戲的所有儲存資料，且無法復原，您確定要繼續嗎？</string>
+    <string name="delete_save_data_warning_description">這將會刪除此遊戲的所有儲存資料且無法復原，您確定要繼續嗎？</string>
     <string name="save_data_deleted_successfully">儲存資料已成功刪除</string>
     <string name="select_content_type">內容類型</string>
     <string name="updates_and_dlc">更新及 DLC</string>
-    <string name="mods_and_cheats">模組及密技</string>
+    <string name="mods_and_cheats">模組及金手指</string>
     <string name="addon_notice">重要的˙附加元件通知</string>
     <!-- \"cheats/" "romfs/" and \"exefs/ should not be translated -->
-    <string name="addon_notice_description">若要安裝模組及密技，您必須選擇一個包含 cheats/、romfs/ 或 exefs/ 的目錄。我們無法驗證這些內容是否與您的遊戲相容，所以請謹慎安裝！</string>
+    <string name="addon_notice_description">若要安裝模組及金手指，您必須選擇一個包含 cheats/、romfs/ 或 exefs/ 的目錄。我們無法驗證這些內容是否與您的遊戲相容，所以請謹慎安裝！</string>
     <string name="invalid_directory">無效的目錄</string>
     <!-- \"cheats/" "romfs/" and \"exefs/ should not be translated -->
-    <string name="invalid_directory_description">請確保您選取的目錄包含 cheats/、romfs/ 或 exefs/ 資料夾，然後再試一次。</string>
+    <string name="invalid_directory_description">請確保您選取的目錄包含 cheats/、romfs/ 或 exefs/ 資料夾，然後再試一次</string>
     <string name="addon_installed_successfully">附加元件已成功安裝</string>
     <string name="verifying_content">正在驗證內容…</string>
     <string name="content_install_notice">內容安裝通知</string>
@@ -839,11 +898,12 @@
     <string name="confirm_uninstall">確認刪除</string>
     <string name="confirm_uninstall_description">您確定要刪除此附加元件嗎？</string>
     <string name="verify_integrity">完整性驗證</string>
+    <string name="verifying">驗證中...</string>
     <string name="verify_success">完整性驗證成功！</string>
     <string name="verify_failure">完整性驗證失敗！</string>
     <string name="verify_failure_description">文件可能已經損壞</string>
-    <string name="verify_no_result">無法執行完整性驗證</string>
-    <string name="verify_no_result_description">未檢查文件的完整性</string>
+    <string name="verify_no_result">無法正常執行完整性驗證</string>
+    <string name="verify_no_result_description">未完成文件完整性檢查</string>
     <string name="verification_failed_for">以下文件的完整性驗證失敗：\n %1$s</string>
     <string name="share_game_settings">分享設定</string>
     <string name="import_config">導入設定</string>
@@ -853,13 +913,13 @@
     <!-- ROM loading errors -->
     <string name="loader_error_encrypted">您的 ROM 已加密</string>
     <string name="loader_error_encrypted_roms_description"><![CDATA[請按照指南重新轉儲您的<a href=\"https://yuzu-mirror.github.io/help/quickstart/#dumping-physical-titles-game-cards\">遊戲卡</a>或<a href=\"https://yuzu-mirror.github.io/help/quickstart/#dumping-digital-titles-eshop\">數位版遊戲</a>。]]></string>
-    <string name="loader_error_encrypted_keys_description"><![CDATA[請確保您的 <a href=\"https://yuzu-mirror.github.io/help/quickstart/#dumping-prodkeys-and-titlekeys\">prod.keys</a> 檔案已安裝，讓遊戲可以解密。]]></string>
+    <string name="loader_error_encrypted_keys_description"><![CDATA[請確保您的 <a href=\"https://yuzu-mirror.github.io/help/quickstart/#dumping-prodkeys-and-titlekeys\">prod.keys</a> 檔案已安裝，讓遊戲可以正常解密]]></string>
     <string name="loader_error_video_core">初始化視訊核心時發生錯誤</string>
     <string name="loader_error_video_core_description">這經常是因為不相容的 GPU 驅動程式造成，安裝自訂 GPU 驅動程式可能會解決此問題。</string>
     <string name="loader_error_file_not_found">ROM 檔案不存在</string>
 
     <string name="loader_requires_firmware">遊戲需要韌體</string>
-    <string name="loader_requires_firmware_description"><![CDATA[您嘗試啟動的遊戲需要韌體才能啟動或通過遊戲主選單。請<a href=\"https://yuzu-mirror.github.io/help/quickstart\">轉儲並安裝韌體</a>，或點擊\"確定\"繼續。]]></string>
+    <string name="loader_requires_firmware_description"><![CDATA[您嘗試啟動的遊戲需要韌體才能正常運作，而您並未安裝任何韌體。請於遊戲啟動前安裝韌體或按\"確定\"強制啟動遊戲]]></string>
 
     <!-- Intent Launch strings -->
     <string name="searching_for_game">正在搜尋遊戲...</string>
@@ -881,15 +941,15 @@
     <string name="config_write_failed">設定寫入失敗</string>
     <string name="config_apply_failed">套用設定失敗</string>
     <string name="config_already_exists_title">設定已存在</string>
-    <string name="config_already_exists_message">%1$s已存在自訂設定\n\n您要覆寫它嗎？\n\n這個動作無法復原</string>
+    <string name="config_already_exists_message">%1$s已存在自訂設定\n\n您要取代它嗎？\n\n這個動作無法復原</string>
     <string name="config_exists_prompt">正在檢查現有設定...</string>
-    <string name="overwrite_cancelled">覆寫已取消</string>
-    <string name="overwrite">覆寫</string>
+    <string name="overwrite_cancelled">已取消取代該設定</string>
+    <string name="overwrite">取代</string>
 
     <!-- Driver strings -->
-    <string name="driver_not_found">未安裝所需的驅動程式: %s</string>
-    <string name="invalid_driver_file">無效的驅動程式檔案: %s</string>
-    <string name="network_unavailable">無可用網路連線。請檢查您的網路連線並重試。</string>
+    <string name="driver_not_found">未安裝所需的驅動程式： %s</string>
+    <string name="invalid_driver_file">無效的驅動程式檔案： %s</string>
+    <string name="network_unavailable">無可用網路連線。請檢查您的網路連線並重試</string>
     <string name="driver_missing_title">需要GPU驅動程式</string>
     <string name="driver_missing_message">這個遊戲的設定需要 \"%s\"驅動程式，而它並沒有安裝在您的裝置上\n\n要下載並安裝此驅動程式嗎？</string>
     <string name="driver_download_cancelled">驅動程式下載已取消。沒有所需的驅動程式無法啟動遊戲。</string>
@@ -901,7 +961,7 @@
     <string name="emulation_toggle_controls">切換控制</string>
     <string name="emulation_rel_stick_center">相對搖桿中心</string>
     <string name="emulation_dpad_slide">方向鍵滑動</string>
-    <string name="emulation_haptics">觸覺回饋技術</string>
+    <string name="emulation_haptics">觸覺回饋</string>
     <string name="emulation_show_overlay">顯示虛擬按鍵</string>
     <string name="emulation_hide_overlay">隱藏虛擬按鍵</string>
     <string name="emulation_toggle_all">全部切換</string>
@@ -910,8 +970,9 @@
     <string name="emulation_control_opacity">不透明度</string>
     <string name="emulation_touch_overlay_reset">重設虛擬按鍵</string>
     <string name="emulation_touch_overlay_edit">編輯虛擬按鍵</string>
+    <string name="emulation_snap_to_grid">對齊網格</string>
     <string name="emulation_pause">暫停模擬</string>
-    <string name="emulation_unpause">取消暫停模擬</string>
+    <string name="emulation_unpause">繼續模擬</string>
     <string name="emulation_input_overlay">疊加層/虛擬按鍵設定</string>
     <string name="load_amiibo">導入Amiibo</string>
     <string name="touchscreen">觸控螢幕</string>

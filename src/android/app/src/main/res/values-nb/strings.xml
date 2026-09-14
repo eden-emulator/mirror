@@ -487,8 +487,6 @@
     <string name="loader_error_file_not_found">ROM-filen finnes ikke</string>
 
     <string name="loader_requires_firmware">Spillet krever fastvare</string>
-    <string name="loader_requires_firmware_description"><![CDATA[Spillet du prøver å starte krever fastvare for oppstart eller for å komme forbi startmenyen. Vennligst <a href=\"https://yuzu-mirror.github.io/help/quickstart\"> dump og installer fastvare</a>, eller trykk \"OK\" for å fortsette likevel.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">Søker etter spill...</string>
     <string name="game_not_found_for_title_id">Spill ikke funnet for tittel-ID: %1$s</string>

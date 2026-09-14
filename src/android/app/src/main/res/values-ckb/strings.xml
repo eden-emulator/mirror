@@ -474,8 +474,6 @@
     <string name="loader_error_file_not_found">فایلی ڕۆم بوونی نییە</string>
 
     <string name="loader_requires_firmware">یارییەکە فریموێر پێویستە</string>
-    <string name="loader_requires_firmware_description"><![CDATA[یارییەکە کە تۆ هەوڵ دەدەیت بیخەیتە کار فریموێر پێویستە بۆ کردنەوە یان تێپەڕاندنی مێنیوی کردنەوە. تکایە <a href=\"https://yuzu-mirror.github.io/help/quickstart\"> فریموێر دامپ بکە و دابنێ</a>, یان پەنجە بنێ سەر \"باشە\" بۆ بەردەوامبوون هەرچۆنێک بێت.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">گەڕان بە دوای یارییە...</string>
     <string name="game_not_found_for_title_id">یاری نەدۆزرایەوە بۆ ناسنامەی ناونیشان: %1$s</string>

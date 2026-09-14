@@ -606,8 +606,6 @@
     <string name="loader_error_file_not_found">РОМ датотека не постоји</string>
 
     <string name="loader_requires_firmware">Игра захтева firmware</string>
-    <string name="loader_requires_firmware_description"><![CDATA[Игра коју покушавате да покренете захтева firmware за покретање или прелазак почетног менија. Молимо <a href=\"https://yuzu-mirror.github.io/help/quickstart\"> направите дамп и инсталирајте firmware</a>, или притисните \"OK\" да бисте наставили у сваком случају.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">Тражење игре...</string>
     <string name="game_not_found_for_title_id">Игра није пронађена за ID наслова: %1$s</string>

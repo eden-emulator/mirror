@@ -598,8 +598,6 @@
     <string name="loader_error_file_not_found">ROM fájl nem létezik</string>
 
     <string name="loader_requires_firmware">A játék firmware-t igényel</string>
-    <string name="loader_requires_firmware_description"><![CDATA[A játék, amelyet el szeretne indítani, firmware-t igényel a bootoláshoz vagy a kezdőmenü átlépéséhez. Kérjük, <a href=\"https://yuzu-mirror.github.io/help/quickstart\"> dumpolja és telepítse a firmware-t</a>, vagy nyomja meg az \"OK\" gombot a folytatáshoz.]]></string>
-
     <!-- Intent Launch strings -->
     <string name="searching_for_game">Játék keresése...</string>
     <string name="game_not_found_for_title_id">A játék nem található a következő címazonosítóhoz: %1$s</string>
