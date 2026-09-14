@@ -246,6 +246,7 @@ SinkStream* SDLSink::AcquireSinkStream(Core::System& system, u32 system_channels
     system_channels = system_channels_;
     SinkStreamPtr& stream = sink_streams.emplace_back(std::make_unique<SDLSinkStream>(
         device_channels, system_channels, output_device, input_device, type, system));
+    stream->SetDeviceVolume(device_volume);
     return stream.get();
 }
 
@@ -264,14 +265,11 @@ void SDLSink::CloseStreams() {
 }
 
 f32 SDLSink::GetDeviceVolume() const {
-    if (sink_streams.empty()) {
-        return 1.0f;
-    }
-
-    return sink_streams[0]->GetDeviceVolume();
+    return device_volume;
 }
 
 void SDLSink::SetDeviceVolume(f32 volume) {
+    device_volume = volume;
     for (auto& stream : sink_streams) {
         stream->SetDeviceVolume(volume);
     }

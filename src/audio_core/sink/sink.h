@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -96,6 +99,8 @@ public:
     }
 
 protected:
+    /// Master volume, persists stream lifetimes
+    f32 device_volume{1.0f};
     /// Number of device channels supported by the hardware
     u32 device_channels{2};
     /// Number of channels the game is sending
