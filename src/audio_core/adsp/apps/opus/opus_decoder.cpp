@@ -46,18 +46,20 @@ class OpusGenericDecodeObject {
 public:
     static u32 GetWorkBufferSizeMultistream(u32 total_stream_count, u32 stereo_stream_count) {
         if (IsValidStreamCounts(total_stream_count, stereo_stream_count))
-            return 48 + 2556 * (total_stream_count * stereo_stream_count);
+            return 32 + 2556 * (total_stream_count * stereo_stream_count);
         return 0;
     }
 
     static u32 GetWorkBufferSize(u32 channel_count) {
         if (channel_count == 1 || channel_count == 2)
-            return 48 + 16 * channel_count;
+            return 32 + 2556 * channel_count;
         return 0;
     }
 
     /// idempotency of initialize is guaranteed
     Result InitializeDecoder(u32 sample_rate, u32 total_stream_count, u32 channel_count, u32 stereo_stream_count, u8 const* mappings) {
+        LOG_INFO(Audio_DSP, "sample_rate={}, total_stream_count={}, channel_count={}, stereo_stream_count={}, mappings={}", sample_rate, total_stream_count, channel_count, stereo_stream_count, fmt::ptr(mappings));
+        ASSERT(channel_count >= 1 && channel_count <= 2);
         // prefer libopus, ffmpeg docs say to use libopus **if** available
         // However, native opus can also work with swrescale:
         // it uses planarfloat, we can resample to s16
@@ -67,52 +69,66 @@ public:
             LOG_WARNING(Audio_DSP, "using ffmpeg native opus decoder");
             codec = avcodec_find_decoder(AV_CODEC_ID_OPUS);
         }
-        if (codec) {
-            if ((avc = avc ? avc : avcodec_alloc_context3(codec))) {
-                if (is_libopus) {
-                    const std::array<u8, 2> mapping_arr{0, 1};
-                    mappings = mappings ? mappings : mapping_arr.data();
+        ASSERT(!(avc && avcodec_is_open(avc)));
+        if ((avc = avcodec_alloc_context3(codec)) != nullptr) {
+            if (is_libopus) {
+                const std::array<u8, 2> mapping_arr{0, 1};
+                mappings = mappings ? mappings : mapping_arr.data();
 
-                    // freed by avcodec_context_free()
-                    u8 *edata = reinterpret_cast<u8*>(av_mallocz(OPUS_HEAD_SIZE + 2 * OPUS_MAX_CHANNELS + AV_INPUT_BUFFER_PADDING_SIZE));
-                    ASSERT(edata);
-                    edata[9] = u8(channel_count); //channels
-                    edata[10] = u8(0); //opus->pre_skip
-                    edata[16] = u8(0); //gain_db
-                    edata[18] = u8(0); //channel_map
-                    edata[OPUS_HEAD_SIZE + 0] = u8(total_stream_count);
-                    edata[OPUS_HEAD_SIZE + 1] = u8(stereo_stream_count);
-                    if (channel_count >= 1) edata[OPUS_HEAD_SIZE + 2] = mappings[0];
-                    if (channel_count >= 2) edata[OPUS_HEAD_SIZE + 3] = mappings[1];
-                    avc->extradata = edata;
-                    avc->extradata_size = OPUS_HEAD_SIZE + 2 * channel_count;
-                }
+                // freed by avcodec_context_free()
+                u8 *edata = reinterpret_cast<u8*>(av_mallocz(OPUS_HEAD_SIZE + 2 * OPUS_MAX_CHANNELS + AV_INPUT_BUFFER_PADDING_SIZE));
+                ASSERT(edata);
+                edata[9] = u8(channel_count); //channels
+                edata[10] = u8(0); //opus->pre_skip
+                edata[16] = u8(0); //gain_db
+                edata[18] = u8(0); //channel_map
+                edata[OPUS_HEAD_SIZE + 0] = u8(total_stream_count);
+                edata[OPUS_HEAD_SIZE + 1] = u8(stereo_stream_count);
+                if (channel_count >= 1) edata[OPUS_HEAD_SIZE + 2] = mappings[0];
+                if (channel_count >= 2) edata[OPUS_HEAD_SIZE + 3] = mappings[1];
+                avc->extradata = edata;
+                avc->extradata_size = OPUS_HEAD_SIZE + 2 * channel_count;
+            }
 
-
-                // FFmpeg hardcodes sample rate
-                avc->sample_rate = sample_rate;
-                avc->request_sample_fmt = AV_SAMPLE_FMT_S16;
-                av_channel_layout_default(&avc->ch_layout, channel_count);
-                if (avcodec_open2(avc, codec, nullptr) >= 0) {
-                    avpkt = av_packet_alloc();
-                    frame = av_frame_alloc();
-                    return ResultSuccess;
-                } else {
-                    avcodec_free_context(&avc);
+            // FFmpeg hardcodes sample rate
+            avc->sample_rate = sample_rate;
+            avc->request_sample_fmt = AV_SAMPLE_FMT_S16;
+            avc->max_samples = 0x10000; //64K
+            av_channel_layout_default(&avc->ch_layout, channel_count);
+            if (avcodec_open2(avc, codec, nullptr) >= 0) {
+                ASSERT(avc->request_sample_fmt == AV_SAMPLE_FMT_S16);
+                pkt = av_packet_alloc();
+                frame = av_frame_alloc();
+                // opus fltp -> libopus s16
+                if (swr_alloc_set_opts2(
+                    &swr,
+                    &avc->ch_layout, AV_SAMPLE_FMT_S16, avc->sample_rate,
+                    &avc->ch_layout, (enum AVSampleFormat)avc->sample_fmt, avc->sample_rate,
+                    0, nullptr) >= 0) {
+                    if (swr_init(swr) >= 0) {
+                        if (av_samples_alloc(stg_arr, nullptr, avc->ch_layout.nb_channels, (int)avc->max_samples, AV_SAMPLE_FMT_S16, 0) >= 0) {
+                            return ResultSuccess;
+                        }
+                    }
                 }
             }
         }
+        Shutdown();
         return Service::Audio::ResultLibOpusInternalError;
     }
 
     Result Shutdown() {
-        avcodec_free_context(&avc);
+        LOG_INFO(Audio_DSP, "called avc={}", fmt::ptr(avc));
+        av_freep(&stg_arr[0]);
+        swr_free(&swr);
         av_frame_free(&frame);
-        av_packet_free(&avpkt);
+        av_packet_free(&pkt);
+        avcodec_free_context(&avc);
         return ResultSuccess;
     }
 
     Result ResetDecoder() {
+        LOG_INFO(Audio_DSP, "called avc={}", fmt::ptr(avc));
         if (avc) {
             if (avcodec_is_open(avc)) avcodec_flush_buffers(avc);
             return ResultSuccess;
@@ -121,65 +137,51 @@ public:
     }
 
     Result Decode(u32& out_sample_count, u64 output_data, u64 output_data_size, u64 input_data, u64 input_data_size) {
+        LOG_INFO(Audio_DSP, "called out_sample_count={},output_data={:#x},output_data_size={},input_data={:#x},input_data_size={}", fmt::ptr(&out_sample_count), output_data, output_data_size, input_data, input_data_size);
+        ASSERT(avc && avcodec_is_open(avc));
         out_sample_count = 0;
-        if (avc) {
-            int rem_output_bytes = int(output_data_size);
-            while (rem_output_bytes > 0) {
-                int r = avcodec_receive_frame(avc, frame);
-                if (r == AVERROR(EAGAIN)) {
-                    av_packet_unref(avpkt);
-                    av_new_packet(avpkt, int(input_data_size));
-                    std::memcpy(avpkt->data, reinterpret_cast<const u8*>(input_data), input_data_size);
-                    r = avcodec_send_packet(avc, avpkt);
-                    ASSERT(r >= 0);
-                } else if (r == AVERROR_EOF) {
-                    break;
-                } else if (r >= 0) {
-                    auto const bsize = av_samples_get_buffer_size(nullptr, frame->ch_layout.nb_channels, frame->nb_samples, AV_SAMPLE_FMT_S16, 1);
-                    if (frame->format == AV_SAMPLE_FMT_S16) {
-                        std::memcpy(reinterpret_cast<s16*>(output_data) + (int(output_data_size) - rem_output_bytes), frame->data[0], size_t(bsize));
+        int r;
+        LOG_INFO(Audio_DSP, "old packet data={}", fmt::ptr(pkt->data));
+        if ((r = av_new_packet(pkt, int(input_data_size))) >= 0) {
+            LOG_INFO(Audio_DSP, "new packet data={}", fmt::ptr(pkt->data));
+            std::memcpy(pkt->data, reinterpret_cast<const u8*>(input_data), input_data_size);
+
+            r = avcodec_send_packet(avc, pkt);
+            av_packet_unref(pkt);
+            if (r >= 0) {
+                while ((r = avcodec_receive_frame(avc, frame)) >= 0) {
+                    LOG_INFO(Audio_DSP, "frame data={},data[0]={},nb_samples={}", fmt::ptr(frame->data), fmt::ptr(frame->data[0]), frame->nb_samples);
+                    u8 *dst_arr[2] = {reinterpret_cast<u8*>(output_data), nullptr};
+                    if (frame->format == avc->request_sample_fmt) {
+                        // input_bsize == output_bsize
+                        av_samples_copy(dst_arr, frame->data, out_sample_count, 0, frame->nb_samples, frame->ch_layout.nb_channels, (enum AVSampleFormat)frame->format);
+                        out_sample_count += frame->nb_samples;
                     } else {
-                        SwrContext *swr = nullptr;
-                        if (swr_alloc_set_opts2(
-                            &swr,
-                            &avc->ch_layout,
-                            AV_SAMPLE_FMT_S16,
-                            48000,
-                            &avc->ch_layout,
-                            (enum AVSampleFormat)frame->format,
-                            48000,
-                            0,
-                            nullptr
-                        ) >= 0) {
-                            if (swr_init(swr) >= 0) {
-                                AVFrame *s16_frame = av_frame_alloc();
-                                s16_frame->format = AV_SAMPLE_FMT_S16;
-                                s16_frame->sample_rate = frame->sample_rate;
-                                av_channel_layout_copy(&s16_frame->ch_layout, &frame->ch_layout);
-                                s16_frame->nb_samples = frame->nb_samples;
-                                av_frame_get_buffer(s16_frame, 0);
-                                swr_convert(swr, s16_frame->data, s16_frame->nb_samples, (const uint8_t **)frame->data, frame->nb_samples);
-                                std::memcpy(reinterpret_cast<s16*>(output_data) + (int(output_data_size) - rem_output_bytes), s16_frame->data[0], size_t(bsize));
-                                swr_free(&swr);
-                            }
-                        }
+                        int out_samples = int(av_rescale_rnd(swr_get_delay(swr, frame->sample_rate) + frame->nb_samples, frame->sample_rate, frame->sample_rate, AV_ROUND_UP));
+                        out_samples = swr_convert(swr, stg_arr, out_samples, (const u8 **)frame->data, frame->nb_samples);
+                        av_samples_copy(dst_arr, stg_arr, out_sample_count, 0, out_samples, frame->ch_layout.nb_channels, avc->request_sample_fmt);
+                        out_sample_count += out_samples;
                     }
-                    out_sample_count += frame->nb_samples;
-                    rem_output_bytes -= bsize;
-                } else {
-                    LOG_ERROR(Audio_DSP, "{}", r);
-                    break;
+                    av_frame_unref(frame);
                 }
+                if (r == AVERROR(EAGAIN) || r == AVERROR_EOF) {
+                    LOG_DEBUG(Audio_DSP, "{}", r); // non-errors
+                } else if (r < 0) {
+                    LOG_ERROR(Audio_DSP, "{}", r); // errors
+                }
+                return ResultSuccess;
             }
-            ASSERT(rem_output_bytes == 0 && "remaining bytes!");
-            return ResultSuccess;
         }
+        LOG_ERROR(Audio_DSP, "{}", r);
         return Service::Audio::ResultLibOpusInvalidState;
     }
 
     AVCodecContext* avc = nullptr;
-    AVPacket* avpkt = nullptr;
+    AVPacket* pkt = nullptr;
     AVFrame* frame = nullptr;
+    SwrContext* swr = nullptr;
+    // Array of staging buffers
+    u8* stg_arr[8] = {};
 };
 } // namespace
 
@@ -196,6 +198,7 @@ OpusDecoder::OpusDecoder(Core::System& system) {
         ::Common::unordered_map<u64, OpusGenericDecodeObject> decode_objects;
         while (!stop_token.stop_requested()) {
             auto msg = Receive(Direction::DSP, stop_token);
+            LOG_INFO(Audio_DSP, "msg={}, buffer={}", msg, shared_memory->host_send_data[0]);
             switch (msg) {
             case Shutdown:
                 Send(Direction::Host, Message::ShutdownOK);
