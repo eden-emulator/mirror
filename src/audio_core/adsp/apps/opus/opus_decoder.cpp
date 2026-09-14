@@ -58,7 +58,7 @@ public:
 
     /// idempotency of initialize is guaranteed
     Result InitializeDecoder(u32 sample_rate, u32 total_stream_count, u32 channel_count, u32 stereo_stream_count, u8 const* mappings) {
-        LOG_INFO(Audio_DSP, "sample_rate={}, total_stream_count={}, channel_count={}, stereo_stream_count={}, mappings={}", sample_rate, total_stream_count, channel_count, stereo_stream_count, fmt::ptr(mappings));
+        LOG_DEBUG(Audio_DSP, "sample_rate={}, total_stream_count={}, channel_count={}, stereo_stream_count={}, mappings={}", sample_rate, total_stream_count, channel_count, stereo_stream_count, fmt::ptr(mappings));
         ASSERT(channel_count >= 1 && channel_count <= 2);
         // prefer libopus, ffmpeg docs say to use libopus **if** available
         // However, native opus can also work with swrescale:
@@ -116,7 +116,7 @@ public:
     }
 
     Result Shutdown() {
-        LOG_INFO(Audio_DSP, "called avc={}", fmt::ptr(avc));
+        LOG_DEBUG(Audio_DSP, "called avc={}", fmt::ptr(avc));
         swr_free(&swr);
         av_frame_free(&frame);
         av_packet_free(&pkt);
@@ -125,7 +125,7 @@ public:
     }
 
     Result ResetDecoder() {
-        LOG_INFO(Audio_DSP, "called avc={}", fmt::ptr(avc));
+        LOG_DEBUG(Audio_DSP, "called avc={}", fmt::ptr(avc));
         if (avc) {
             if (avcodec_is_open(avc)) avcodec_flush_buffers(avc);
             return ResultSuccess;
@@ -134,20 +134,20 @@ public:
     }
 
     Result Decode(u32& out_sample_count, u64 output_data, u64 output_data_size, u64 input_data, u64 input_data_size, u8* const* tmp_buf) {
-        LOG_INFO(Audio_DSP, "called out_sample_count={},output_data={:#x},output_data_size={},input_data={:#x},input_data_size={}", fmt::ptr(&out_sample_count), output_data, output_data_size, input_data, input_data_size);
+        LOG_DEBUG(Audio_DSP, "called out_sample_count={},output_data={:#x},output_data_size={},input_data={:#x},input_data_size={}", fmt::ptr(&out_sample_count), output_data, output_data_size, input_data, input_data_size);
         ASSERT(avc && avcodec_is_open(avc));
         out_sample_count = 0;
         int r;
-        LOG_INFO(Audio_DSP, "old packet data={}", fmt::ptr(pkt->data));
+        LOG_DEBUG(Audio_DSP, "old packet data={}", fmt::ptr(pkt->data));
         if ((r = av_new_packet(pkt, int(input_data_size))) >= 0) {
-            LOG_INFO(Audio_DSP, "new packet data={}", fmt::ptr(pkt->data));
+            LOG_DEBUG(Audio_DSP, "new packet data={}", fmt::ptr(pkt->data));
             std::memcpy(pkt->data, reinterpret_cast<const u8*>(input_data), input_data_size);
 
             r = avcodec_send_packet(avc, pkt);
             av_packet_unref(pkt);
             if (r >= 0) {
                 while ((r = avcodec_receive_frame(avc, frame)) >= 0) {
-                    LOG_INFO(Audio_DSP, "frame data={},data[0]={},nb_samples={}", fmt::ptr(frame->data), fmt::ptr(frame->data[0]), frame->nb_samples);
+                    LOG_DEBUG(Audio_DSP, "frame data={},data[0]={},nb_samples={}", fmt::ptr(frame->data), fmt::ptr(frame->data[0]), frame->nb_samples);
                     ASSERT(std::in_range<u16>(frame->nb_samples));
                     u8 *dst_arr[2] = {reinterpret_cast<u8*>(output_data), nullptr};
                     if (frame->format == avc->request_sample_fmt) {
@@ -200,7 +200,7 @@ OpusDecoder::OpusDecoder(Core::System& system) {
 
         while (!stop_token.stop_requested()) {
             auto msg = Receive(Direction::DSP, stop_token);
-            LOG_INFO(Audio_DSP, "msg={}, buffer={}", msg, shared_memory->host_send_data[0]);
+            LOG_DEBUG(Audio_DSP, "msg={}, buffer={}", msg, shared_memory->host_send_data[0]);
             switch (msg) {
             case Shutdown:
                 Send(Direction::Host, Message::ShutdownOK);
