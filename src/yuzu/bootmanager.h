@@ -144,6 +144,7 @@ private:
     void TouchUpdateEvent(const QTouchEvent* event);
     void TouchEndEvent();
     void ConstrainMouse();
+    void UpdateMouse();
 
     void RequestCameraCapture();
     void OnCameraCapture(int requestId, const QImage& img);
@@ -184,6 +185,7 @@ private:
 #endif
 
     QTimer mouse_constrain_timer;
+    QTimer mouse_update_timer;
 
 protected:
     void showEvent(QShowEvent* event) override;

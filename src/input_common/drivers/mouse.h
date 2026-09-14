@@ -7,7 +7,9 @@
 #pragma once
 
 #include <thread>
+#include <chrono>
 
+#include "common/steady_clock.h"
 #include "common/polyfill_thread.h"
 #include "common/vector_math.h"
 #include "input_common/input_engine.h"
@@ -101,8 +103,8 @@ public:
     Common::Input::ButtonNames GetUIName(const Common::ParamPackage& params) const override;
 
 private:
-    void UpdateStickInput();
-    void UpdateMotionInput();
+    void UpdateStickInput(Common::SteadyClock::time_point timestamp);
+    void UpdateMotionInput(Common::SteadyClock::time_point timestamp);
     bool IsMousePanningEnabled();
 
     Common::Input::ButtonNames GetUIButtonName(const Common::ParamPackage& params) const;
@@ -112,6 +114,7 @@ private:
     Common::Vec<float, 2> last_mouse_change;
     Common::Vec<float, 3> last_motion_change;
     Common::Vec<int, 2> wheel_position;
+    Common::SteadyClock::time_point last_notify_timestamp{};
     bool button_pressed = false;
 };
 

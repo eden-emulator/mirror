@@ -73,6 +73,7 @@ class QPaintEngine;
 class QSurface;
 
 constexpr int default_mouse_constrain_timeout = 10;
+constexpr int default_mouse_update_timeout = 5;
 
 class RenderWidget : public QWidget {
 public:
@@ -138,6 +139,10 @@ GRenderWindow::GRenderWindow(MainWindow* parent,
 
     mouse_constrain_timer.setInterval(default_mouse_constrain_timeout);
     connect(&mouse_constrain_timer, &QTimer::timeout, this, &GRenderWindow::ConstrainMouse);
+
+    mouse_update_timer.setInterval(default_mouse_update_timeout);
+    connect(&mouse_update_timer, &QTimer::timeout, this, &GRenderWindow::UpdateMouse);
+    mouse_update_timer.start();
 }
 
 void GRenderWindow::ExecuteProgram(std::size_t program_index) {
@@ -487,7 +492,6 @@ void GRenderWindow::mousePressEvent(QMouseEvent* event) {
     input_subsystem->GetMouse()->PressMouseButton(button);
     input_subsystem->GetMouse()->PressButton(pos.x(), pos.y(), button);
     input_subsystem->GetMouse()->PressTouchButton(touch_x, touch_y, button);
-    input_subsystem->GetMouse()->NotifyChanged();
 
     emit MouseActivity();
 }
@@ -508,7 +512,6 @@ void GRenderWindow::mouseMoveEvent(QMouseEvent* event) {
     input_subsystem->GetMouse()->MouseMove(touch_x, touch_y);
     input_subsystem->GetMouse()->TouchMove(touch_x, touch_y);
     input_subsystem->GetMouse()->Move(pos.x(), pos.y(), center_x, center_y);
-    input_subsystem->GetMouse()->NotifyChanged();
 
     // Center mouse for mouse panning
     if (Settings::values.mouse_panning && !Settings::values.mouse_enabled) {
@@ -518,8 +521,7 @@ void GRenderWindow::mouseMoveEvent(QMouseEvent* event) {
     // Constrain mouse for mouse emulation with mouse panning
     if (Settings::values.mouse_panning && Settings::values.mouse_enabled) {
         const auto [clamped_mouse_x, clamped_mouse_y] = ClipToTouchScreen(x, y);
-        QCursor::setPos(mapToGlobal(
-            QPoint{static_cast<int>(clamped_mouse_x), static_cast<int>(clamped_mouse_y)}));
+        QCursor::setPos(mapToGlobal(QPoint{int(clamped_mouse_x), int(clamped_mouse_y)}));
     }
 
     mouse_constrain_timer.stop();
@@ -534,16 +536,10 @@ void GRenderWindow::mouseReleaseEvent(QMouseEvent* event) {
 
     const auto button = QtButtonToMouseButton(event->button());
     input_subsystem->GetMouse()->ReleaseButton(button);
-    input_subsystem->GetMouse()->NotifyChanged();
 }
 
 void GRenderWindow::ConstrainMouse() {
-    if (QtCommon::emu_thread == nullptr || !Settings::values.mouse_panning) {
-        mouse_constrain_timer.stop();
-        return;
-    }
-
-    if (!this->isActiveWindow()) {
+    if (QtCommon::emu_thread == nullptr || Settings::values.mouse_panning || !this->isActiveWindow()) {
         mouse_constrain_timer.stop();
         return;
     }
@@ -552,22 +548,22 @@ void GRenderWindow::ConstrainMouse() {
         const auto pos = mapFromGlobal(QCursor::pos());
         const int new_pos_x = std::clamp(pos.x(), 0, width());
         const int new_pos_y = std::clamp(pos.y(), 0, height());
-
         QCursor::setPos(mapToGlobal(QPoint{new_pos_x, new_pos_y}));
-        return;
+    } else {
+        const int center_x = width() / 2;
+        const int center_y = height() / 2;
+        QCursor::setPos(mapToGlobal(QPoint{center_x, center_y}));
     }
+}
 
-    const int center_x = width() / 2;
-    const int center_y = height() / 2;
-
-    QCursor::setPos(mapToGlobal(QPoint{center_x, center_y}));
+void GRenderWindow::UpdateMouse() {
+    input_subsystem->GetMouse()->NotifyChanged(); // required to reset mouse once it's no longer moved
 }
 
 void GRenderWindow::wheelEvent(QWheelEvent* event) {
     const int x = event->angleDelta().x();
     const int y = event->angleDelta().y();
     input_subsystem->GetMouse()->MouseWheelChange(x, y);
-    input_subsystem->GetMouse()->NotifyChanged();
 }
 
 void GRenderWindow::TouchBeginEvent(const QTouchEvent* event) {
@@ -716,7 +712,6 @@ void GRenderWindow::focusOutEvent(QFocusEvent* event) {
     input_subsystem->GetKeyboard()->ReleaseAllKeys();
     input_subsystem->GetTouchScreen()->ReleaseAllTouch();
     input_subsystem->GetMouse()->ReleaseAllButtons();
-    input_subsystem->GetMouse()->NotifyChanged();
 }
 
 void GRenderWindow::resizeEvent(QResizeEvent* event) {
