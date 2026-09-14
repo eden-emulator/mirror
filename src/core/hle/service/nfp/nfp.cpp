@@ -42,6 +42,7 @@ public:
             {22, &IUser::GetApplicationAreaSize, "GetApplicationAreaSize"},
             {23, &IUser::AttachAvailabilityChangeEvent, "AttachAvailabilityChangeEvent"},
             {24, &IUser::RecreateApplicationArea, "RecreateApplicationArea"},
+            {25, &IUser::StartDetection, "StartDetectionWithFilter"},
         };
         // clang-format on
 
@@ -74,6 +75,7 @@ public:
             {20, &ISystem::GetDeviceState, "GetDeviceState"},
             {21, &ISystem::GetNpadId, "GetNpadId"},
             {23, &ISystem::AttachAvailabilityChangeEvent, "AttachAvailabilityChangeEvent"},
+            {25, &ISystem::StartDetection, "StartDetectionWithFilter"},
             {100, &ISystem::Format, "Format"},
             {101, &ISystem::GetAdminInfo, "GetAdminInfo"},
             {102, &ISystem::GetRegisterInfoPrivate, "GetRegisterInfoPrivate"},
@@ -118,6 +120,7 @@ public:
             {22, &IDebug::GetApplicationAreaSize, "GetApplicationAreaSize"},
             {23, &IDebug::AttachAvailabilityChangeEvent, "AttachAvailabilityChangeEvent"},
             {24, &IDebug::RecreateApplicationArea, "RecreateApplicationArea"},
+            {25, &IDebug::StartDetection, "StartDetectionWithFilter"},
             {100, &IDebug::Format, "Format"},
             {101, &IDebug::GetAdminInfo, "GetAdminInfo"},
             {102, &IDebug::GetRegisterInfoPrivate, "GetRegisterInfoPrivate"},
