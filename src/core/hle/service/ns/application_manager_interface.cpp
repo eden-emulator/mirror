@@ -228,9 +228,9 @@ IApplicationManagerInterface::IApplicationManagerInterface(Core::System& system_
         {930, nullptr, "Unknown930"}, //20.0.0+
         {931, nullptr, "Unknown931"}, //20.0.0+
         {933, nullptr, "Unknown933"}, //20.0.0+
-        {934, nullptr, "Unknown934"}, //20.0.0+
-        {935, nullptr, "Unknown935"}, //20.0.0+
-        {936, nullptr, "Unknown936"}, //20.0.0+
+        {934, nullptr, "Unknown934"}, //21.0.0+
+        {935, nullptr, "Unknown935"}, //21.0.0+
+        {936, D<&IApplicationManagerInterface::Unknown936>, "Unknown936"}, //21.0.0+
         {1000, nullptr, "RequestVerifyApplicationDeprecated"},
         {1001, nullptr, "CorruptApplicationForDebug"},
         {1002, nullptr, "RequestVerifyAddOnContentsRights"},
@@ -422,7 +422,7 @@ IApplicationManagerInterface::IApplicationManagerInterface(Core::System& system_
         {4039, nullptr, "Unknown4039"}, //20.0.0+
         {4040, nullptr, "Unknown4040"}, //20.0.0+
         {4041, nullptr, "Unknown4041"}, //20.0.0+
-        {4042, nullptr, "Unknown4042"}, //20.0.0+
+        {4042, D<&IApplicationManagerInterface::Unknown4042>, "Unknown4042"}, //20.0.0+
         {4043, nullptr, "Unknown4043"}, //20.0.0+
         {4044, nullptr, "Unknown4044"}, //20.0.0+
         {4045, nullptr, "Unknown4045"}, //20.0.0+
@@ -636,6 +636,12 @@ Result IApplicationManagerInterface::GetGameCardWakenReadyEvent(
 Result IApplicationManagerInterface::IsGameCardApplicationRunning(Out<bool> out_is_running) {
     LOG_WARNING(Service_NS, "(STUBBED) called");
     *out_is_running = false;
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown936(Out<u64> out_result) {
+    LOG_WARNING(Service_NS, "(STUBBED) called.");
+    *out_result = 0;
     R_SUCCEED();
 }
 
@@ -859,6 +865,15 @@ Result IApplicationManagerInterface::Unknown4022(
 Result IApplicationManagerInterface::Unknown4023(Out<u64> out_result) {
     LOG_WARNING(Service_NS, "(STUBBED) called.");
     *out_result = 0;
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown4042(OutInterface<IAsyncResult> out_interface,
+                                                 OutCopyHandle<Kernel::KReadableEvent> out_event,
+                                                 u64 arg1, u64 arg2) {
+    LOG_WARNING(Service_NS, "(STUBBED) called, arg1={:016X}, arg2={:016X}", arg1, arg2);
+    *out_event = unknown_event.GetHandle();
+    *out_interface = std::make_shared<IAsyncResult>(system, &unknown_event);
     R_SUCCEED();
 }
 
