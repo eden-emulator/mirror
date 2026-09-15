@@ -68,7 +68,7 @@ endif()
 create_target_directory_groups(yuzu-cmd)
 
 if (NOT MSVC)
-    target_link_options(yuzu PRIVATE "LINKER:--icf=all,--gc-sections")
+    target_link_options(yuzu-cmd PRIVATE "LINKER:--icf=all,--gc-sections")
 endif()
 # needed for vma
 if (NOT MSVC)
