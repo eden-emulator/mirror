@@ -8,6 +8,7 @@
 #include "core/core.h"
 #include "core/hle/kernel/k_client_session.h"
 #include "core/hle/result.h"
+#include "core/hle/service/acc/profile_manager.h"
 #include "core/hle/service/cmif_types.h"
 #include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/ipc_helpers.h"
@@ -171,37 +172,43 @@ public:
     }
 };
 
-struct UndefinedIUserShimScopedObjectParam {
-    std::array<u8, 0x10> unk0;
+struct SaveDataHandle {
+    u64 unk0;
 };
-static_assert(sizeof(UndefinedIUserShimScopedObjectParam) == 0x10);
+static_assert(sizeof(SaveDataHandle) == 0x08);
 
 class IUserShimScopedObject final : public ServiceFramework<IUserShimScopedObject> {
 public:
     explicit IUserShimScopedObject(Core::System& system_) : ServiceFramework(system_, "IUserShimScopedObject") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {450, nullptr, "Cmd450"},
-            {451, nullptr, "Cmd451"},
-            {452, D<&IUserShimScopedObject::Cmd452>, "Cmd451"},
-            {453, nullptr, "Cmd453"},
-            {454, D<&IUserShimScopedObject::Cmd454>, "Cmd454"},
-            {455, nullptr, "Cmd455"},
-            {456, nullptr, "Cmd456"},
-            {457, nullptr, "Cmd457"},
+            {450, nullptr, "InitializeForSaveData"},
+            {451, nullptr, "FinalizeForSaveData"},
+            {452, D<&IUserShimScopedObject::OpenSaveData>, "OpenSaveData"},
+            {453, nullptr, "CloseSaveData"},
+            {454, D<&IUserShimScopedObject::ReadSaveSlot>, "ReadSaveSlot"},
+            {455, D<&IUserShimScopedObject::WriteSaveSlot>, "WriteSaveSlot"},
+            {456, nullptr, "FlushSaveSlot"},
+            {457, nullptr, "CommitSaveData"},
         };
         // clang-format on
         RegisterHandlers(functions);
     }
 
-    Result Cmd452(UndefinedIUserShimScopedObjectParam unk0, Out<u64> unk1) {
+    Result OpenSaveData(Account::Uid unk0, Out<SaveDataHandle> unk1) {
         LOG_WARNING(Service_NGC, "stubbed");
         R_THROW(IPC::ResultNotSupported);
     }
 
-    Result Cmd454(UndefinedIUserShimScopedObjectParam unk0, Out<u32> unk1, OutBuffer<BufferAttr_HipcAutoSelect> unk2) {
+    Result ReadSaveSlot(s32 offset, SaveDataHandle handle, OutBuffer<BufferAttr_HipcAutoSelect> out_data, Out<u32> out_size) {
         LOG_WARNING(Service_NGC, "stubbed");
         R_THROW(IPC::ResultNotSupported);
+    }
+
+    Result WriteSaveSlot(s32 offset, SaveDataHandle handle, InBuffer<BufferAttr_HipcAutoSelect> out_data) {
+        LOG_WARNING(Service_NGC, "stubbed");
+        // to implement
+        R_SUCCEED();
     }
 };
 
@@ -215,7 +222,7 @@ public:
         // clang-format on
         RegisterHandlers(functions);
     }
-    Result Cmd0(OutInterface<IUserShimScopedObject> out_interface) {
+    Result Cmd0(u32 unk0, OutInterface<IUserShimScopedObject> out_interface) {
         LOG_WARNING(Service_NGC, "stubbed");
         *out_interface = std::make_shared<IUserShimScopedObject>(system);
         R_SUCCEED();
