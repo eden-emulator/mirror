@@ -24,7 +24,7 @@ IReceiverService::~IReceiverService() = default;
 
 Result IReceiverService::OpenReceiver(Out<SharedPointer<IReceiver>> out_receiver) {
     LOG_DEBUG(Service_PSC, "called");
-    *out_receiver = std::shared_ptr<IReceiver>(new IReceiver(system));
+    *out_receiver = std::make_shared<IReceiver>(system);
     R_SUCCEED();
 }
 

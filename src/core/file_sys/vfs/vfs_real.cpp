@@ -109,8 +109,7 @@ VirtualFile RealVfsFilesystem::OpenFileFromEntry(std::string_view path_, std::op
     auto reference = std::make_unique<FileReference>();
     this->InsertReferenceIntoListLocked(*reference);
 
-    auto file = std::shared_ptr<RealVfsFile>(
-        new RealVfsFile(*this, std::move(reference), path, perms, size, std::move(parent_path)));
+    auto file = std::make_shared<RealVfsFile>(*this, std::move(reference), path, perms, size, std::move(parent_path));
     cache[path] = file;
 
     return file;
@@ -177,7 +176,7 @@ bool RealVfsFilesystem::DeleteFile(std::string_view path_) {
 
 VirtualDir RealVfsFilesystem::OpenDirectory(std::string_view path_, OpenMode perms) {
     const auto path = FS::SanitizePath(path_, FS::DirectorySeparator::PlatformDefault);
-    return std::shared_ptr<RealVfsDirectory>(new RealVfsDirectory(*this, path, perms));
+    return std::make_shared<RealVfsDirectory>(*this, path, perms);
 }
 
 VirtualDir RealVfsFilesystem::CreateDirectory(std::string_view path_, OpenMode perms) {
@@ -185,7 +184,7 @@ VirtualDir RealVfsFilesystem::CreateDirectory(std::string_view path_, OpenMode p
     if (!FS::CreateDirs(path)) {
         return nullptr;
     }
-    return std::shared_ptr<RealVfsDirectory>(new RealVfsDirectory(*this, path, perms));
+    return std::make_shared<RealVfsDirectory>(*this, path, perms);
 }
 
 VirtualDir RealVfsFilesystem::CopyDirectory(std::string_view old_path_,

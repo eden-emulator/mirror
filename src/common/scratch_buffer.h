@@ -8,8 +8,7 @@
 
 #include <iterator>
 #include <cstring>
-
-#include "common/make_unique_for_overwrite.h"
+#include <memory>
 
 namespace Common {
 
@@ -38,8 +37,9 @@ public:
     ScratchBuffer() = default;
 
     explicit ScratchBuffer(size_type initial_capacity)
-        : last_requested_size{initial_capacity}, buffer_capacity{initial_capacity},
-          buffer{Common::make_unique_for_overwrite<T[]>(initial_capacity)} {}
+        : last_requested_size{initial_capacity}
+        , buffer_capacity{initial_capacity}
+        , buffer{std::make_unique_for_overwrite<T[]>(initial_capacity)} {}
 
     ~ScratchBuffer() = default;
     ScratchBuffer(const ScratchBuffer&) = delete;
@@ -64,7 +64,7 @@ public:
     /// The previously held data will remain intact.
     void resize(size_type size) {
         if (size > buffer_capacity) {
-            auto new_buffer = Common::make_unique_for_overwrite<T[]>(size);
+            auto new_buffer = std::make_unique_for_overwrite<T[]>(size);
             std::memcpy(new_buffer.get(), buffer.get(), buffer_capacity * sizeof(T));
             buffer = std::move(new_buffer);
             buffer_capacity = size;
@@ -77,7 +77,7 @@ public:
     void resize_destructive(size_type size) {
         if (size > buffer_capacity) {
             buffer_capacity = size;
-            buffer = Common::make_unique_for_overwrite<T[]>(buffer_capacity);
+            buffer = std::make_unique_for_overwrite<T[]>(buffer_capacity);
         }
         last_requested_size = size;
     }
