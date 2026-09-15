@@ -448,6 +448,7 @@ private:
     void UpdateAPIText();
     void UpdateFilterText();
     void UpdateAAText();
+    void UpdatePostShaderText();
     void UpdateVolumeUI();
     void UpdateStatusBar();
     void UpdateGPUAccuracyButton();
@@ -524,6 +525,7 @@ private:
     QPushButton* dock_status_button = nullptr;
     QPushButton* filter_status_button = nullptr;
     QPushButton* aa_status_button = nullptr;
+    QPushButton* post_shader_status_button = nullptr;
     VolumeButton* volume_button = nullptr;
     QWidget* volume_popup = nullptr;
     QSlider* volume_slider = nullptr;

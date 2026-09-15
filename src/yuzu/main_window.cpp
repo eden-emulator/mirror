@@ -15,6 +15,7 @@
 #include "render/performance_overlay.h"
 #ifdef HAS_RESHADE
 #include "configuration/configure_post_processing.h"
+#include "video_core/post_processing/fx_preset.h"
 #endif
 #include "updater/update_dialog.h"
 
@@ -1089,6 +1090,41 @@ void MainWindow::InitializeWidgets() {
     connect(volume_button, &VolumeButton::VolumeChanged, this, &MainWindow::UpdateVolumeUI);
 
     statusBar()->insertPermanentWidget(0, volume_button);
+
+#ifdef HAS_RESHADE
+    post_shader_status_button = new QPushButton();
+    post_shader_status_button->setObjectName(QStringLiteral("TogglableStatusBarButton"));
+    post_shader_status_button->setFocusPolicy(Qt::NoFocus);
+    post_shader_status_button->setCheckable(true);
+    connect(post_shader_status_button, &QPushButton::clicked, this, [this] {
+        const bool enabled = Settings::values.post_shader_enabled.GetValue();
+        Settings::values.post_shader_enabled.SetValue(!enabled);
+        UpdatePostShaderText();
+    });
+    UpdatePostShaderText();
+    post_shader_status_button->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(post_shader_status_button, &QPushButton::customContextMenuRequested,
+            [this](const QPoint& menu_location) {
+                QMenu context_menu;
+
+                for (auto const& preset : VideoCore::GetFxPresetCatalog()) {
+                    context_menu.addAction(QString::fromStdString(preset.name),
+                                           [this, name = preset.name] {
+                                               VideoCore::ApplyFxPreset(name);
+                                               Settings::values.post_shader_enabled.SetValue(true);
+                                               UpdatePostShaderText();
+                                           });
+                }
+
+                context_menu.addSeparator();
+                context_menu.addAction(tr("Configure Effects..."), this,
+                                       &MainWindow::OnPostProcessingShaders);
+
+                context_menu.exec(post_shader_status_button->mapToGlobal(menu_location));
+                post_shader_status_button->repaint();
+            });
+    statusBar()->insertPermanentWidget(0, post_shader_status_button);
+#endif
 
     // setup AA button
     aa_status_button = new QPushButton();
@@ -3908,6 +3944,7 @@ void MainWindow::OnPostProcessingShaders() {
         connect(post_processing_dialog, &QDialog::finished, post_processing_dialog, [this]() {
             post_processing_dialog->deleteLater();
             post_processing_dialog = nullptr;
+            UpdatePostShaderText();
         });
     }
 
@@ -4261,6 +4298,26 @@ void MainWindow::UpdateAAText() {
                                   ? QStringLiteral(QT_TRANSLATE_NOOP("MainWindow", "NO AA"))
                                   : aa_text.toUpper());
 }
+
+#ifdef HAS_RESHADE
+void MainWindow::UpdatePostShaderText() {
+    const bool enabled = Settings::values.post_shader_enabled.GetValue();
+    post_shader_status_button->setChecked(enabled);
+
+    if (!enabled) {
+        post_shader_status_button->setText(tr("NO FX"));
+        return;
+    }
+
+    const std::string preset = VideoCore::GetActiveFxPreset();
+    if (preset.empty()) {
+        post_shader_status_button->setText(tr("FX"));
+        return;
+    }
+
+    post_shader_status_button->setText(QString::fromStdString(preset).toUpper());
+}
+#endif
 
 void MainWindow::UpdateVolumeUI() {
     const auto volume_value = static_cast<int>(Settings::values.volume.GetValue());

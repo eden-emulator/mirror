@@ -70,10 +70,8 @@ ConfigurePostProcessing::ConfigurePostProcessing(QWidget* parent) : QDialog(pare
 
     auto* root = new QVBoxLayout(this);
 
-    auto* description = new QLabel(
-        tr("ReShade FX effects are loaded from the post_shaders folder in the Eden data "
-           "directory. Changes apply immediately while a game is running."),
-        this);
+    auto* description =
+        new QLabel(tr("Changes apply immediately while a game is running."), this);
     description->setWordWrap(true);
     root->addWidget(description);
 
@@ -128,17 +126,15 @@ ConfigurePostProcessing::ConfigurePostProcessing(QWidget* parent) : QDialog(pare
     });
     preset_row->addWidget(save_button);
 
-    auto* delete_button = new QPushButton(tr("Delete"), this);
-    connect(delete_button, &QPushButton::clicked, this, [this]() {
-        const QString name = preset_combo->currentData().toString();
-        if (name.isEmpty()) {
-            return;
-        }
-        VideoCore::DeleteFxPreset(name.toStdString());
-        PopulatePresetCombo();
-        RefreshPresetStatus();
+    auto* clear_button = new QPushButton(tr("Clear"), this);
+    clear_button->setToolTip(tr("Remove every effect in use and deselect the preset."));
+    connect(clear_button, &QPushButton::clicked, this, [this]() {
+        VideoCore::FxChain::Instance().Clear();
+        VideoCore::SetActiveFxPreset(std::string());
+        preset_combo->setCurrentIndex(0);
+        ApplyStructuralChange();
     });
-    preset_row->addWidget(delete_button);
+    preset_row->addWidget(clear_button);
 
     root->addLayout(preset_row);
 
@@ -203,6 +199,7 @@ void ConfigurePostProcessing::ApplyStructuralChange() {
 void ConfigurePostProcessing::PopulatePresetCombo() {
     const QString previous = preset_combo->currentData().toString();
     preset_combo->clear();
+    preset_combo->addItem(tr("None"), QString());
 
     for (const auto& preset : VideoCore::GetFxPresetCatalog()) {
         const QString name = QString::fromStdString(preset.name);
@@ -212,7 +209,7 @@ void ConfigurePostProcessing::PopulatePresetCombo() {
     }
 
     const int restored = preset_combo->findData(previous);
-    if (restored >= 0) {
+    if (!previous.isEmpty() && restored >= 0) {
         preset_combo->setCurrentIndex(restored);
         return;
     }
@@ -220,12 +217,21 @@ void ConfigurePostProcessing::PopulatePresetCombo() {
     const int active = preset_combo->findData(QString::fromStdString(VideoCore::GetActiveFxPreset()));
     if (active >= 0) {
         preset_combo->setCurrentIndex(active);
+        return;
     }
+
+    preset_combo->setCurrentIndex(0);
 }
 
 void ConfigurePostProcessing::RefreshPresetStatus() {
     const std::string active = VideoCore::GetActiveFxPreset();
     if (active.empty()) {
+        if (VideoCore::FxChain::Instance().Size() == 0) {
+            preset_status->setText(
+                tr("No effects in use. Pick a preset and press Apply, or add effects one "
+                   "by one."));
+            return;
+        }
         preset_status->setText(tr("Custom chain. Pick a preset above and press Apply to replace it."));
         return;
     }

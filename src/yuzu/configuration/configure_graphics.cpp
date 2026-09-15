@@ -37,6 +37,10 @@
 #include "yuzu/configuration/configure_graphics.h"
 #include "yuzu/configuration/shared_widget.h"
 
+#ifdef HAS_RESHADE
+#include "yuzu/configuration/configure_post_processing.h"
+#endif
+
 ConfigureGraphics::ConfigureGraphics(
     const Core::System& system_, std::vector<VkDeviceInfo::Record>& records_,
     const std::function<void()>& expose_compute_option_,
@@ -216,6 +220,12 @@ void ConfigureGraphics::Setup(const ConfigurationShared::Builder& builder) {
     std::vector<QWidget*> hold_api;
 
     for (const auto setting : Settings::values.linkage.by_category[Settings::Category::Renderer]) {
+#ifndef HAS_RESHADE
+        if (setting->Id() == Settings::values.post_shader_enabled.Id()) {
+            continue;
+        }
+#endif
+
         ConfigurationShared::Widget* widget = [&]() {
             if (setting->Id() == Settings::values.fsr_sharpening_slider.Id()) {
                 // FSR needs a reversed slider and a 0.5 multiplier
@@ -295,6 +305,23 @@ void ConfigureGraphics::Setup(const ConfigurationShared::Builder& builder) {
             // Keep track of the resolution combobox to update other UI tabs that need it
             resolution_combobox = widget->combobox;
             hold_graphics.emplace(setting->Id(), widget);
+#ifdef HAS_RESHADE
+        } else if (setting->Id() == Settings::values.post_shader_enabled.Id()) {
+            QPushButton* post_shader_button = new QPushButton(tr("Configure Effects..."), widget);
+            post_shader_button->setVisible(widget->checkbox->isChecked());
+
+            connect(post_shader_button, &QAbstractButton::clicked, this, [this]() {
+                ConfigurePostProcessing dialog(this);
+                dialog.exec();
+            });
+            connect(widget->checkbox, &QCheckBox::toggled, post_shader_button,
+                    &QWidget::setVisible);
+
+            QBoxLayout* row = qobject_cast<QBoxLayout*>(widget->layout());
+            row->insertWidget(1, post_shader_button);
+
+            hold_graphics.emplace(setting->Id(), widget);
+#endif
         } else {
             hold_graphics.emplace(setting->Id(), widget);
         }

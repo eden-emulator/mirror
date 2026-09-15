@@ -151,6 +151,9 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
            tr("The anti-aliasing method to use.\nSMAA offers the best quality.\nFXAA "
               "can produce a more stable picture in lower resolutions."));
     INSERT(Settings, post_shader_chain, QString(), QString());
+    INSERT(Settings, post_shader_preset, QString(), QString());
+    INSERT(Settings, post_shader_enabled, tr("Enable post-processing effects"),
+           tr("Applies post-processing effects to the final image."));
     INSERT(Settings, fullscreen_mode, tr("Fullscreen Mode:"),
            tr("The method used to render the window in fullscreen.\nBorderless offers the best "
               "compatibility with the on-screen keyboard that some games request for "
