@@ -23,7 +23,7 @@ namespace ConfigurationShared {
 
 std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
     std::unique_ptr<TranslationMap> translations = std::make_unique<TranslationMap>();
-    const auto& tr = [parent](const char* text) -> QString { return parent->tr(text); };
+    const auto& tr = [](const char* text) -> QString { return QCoreApplication::translate("ConfigurationShared", text); };
 
 #define INSERT(SETTINGS, ID, NAME, TOOLTIP)                                                        \
     translations->insert(std::pair{SETTINGS::values.ID.Id(), std::pair{(NAME), (TOOLTIP)}})
@@ -368,8 +368,8 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
 std::unique_ptr<ComboboxTranslationMap> ComboboxEnumeration(QObject* parent) {
     std::unique_ptr<ComboboxTranslationMap> translations =
         std::make_unique<ComboboxTranslationMap>();
-    const auto& tr = [&](const char* text, const char* context = "") {
-        return parent->tr(text, context);
+    const auto& tr = [](const char* text, const char* context = "") {
+        return QCoreApplication::translate("ConfigurationShared", text, context);
     };
 
 #define PAIR(ENUM, VALUE, TRANSLATION) {static_cast<u32>(Settings::ENUM::VALUE), (TRANSLATION)}
