@@ -214,9 +214,9 @@ public:
         // clang-format on
         RegisterHandlers(functions);
     }
-    Result Cmd0(OutInterface<IUserService> out_interface) {
+    Result Cmd0(OutInterface<IUserShimScopedObject> out_interface) {
         LOG_WARNING(Service_NGC, "stubbed");
-        *out_interface = std::make_shared<IUserService>();
+        *out_interface = std::make_shared<IUserShimScopedObject>(system);
         R_SUCCEED();
     }
 };
@@ -263,7 +263,7 @@ public:
     }
     Result Cmd0(OutInterface<ISystemShimScopedObject> out_interface) {
         LOG_WARNING(Service_NGC, "stubbed");
-        *out_interface = std::make_shared<ISystemShimScopedObject>();
+        *out_interface = std::make_shared<ISystemShimScopedObject>(system);
         R_SUCCEED();
     }
 };
