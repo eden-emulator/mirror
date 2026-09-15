@@ -9,6 +9,7 @@
 #include "core/hle/kernel/k_client_session.h"
 #include "core/hle/result.h"
 #include "core/hle/service/cmif_types.h"
+#include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/ngc/ngc.h"
 #include "core/hle/service/server_manager.h"
