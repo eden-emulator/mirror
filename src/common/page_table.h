@@ -96,15 +96,15 @@ struct PageTable {
         }
 
         /// Write page info atomically
-        constexpr void Store(bool marked, PageType type, u16 block, uintptr_t pointer) noexcept {
+        inline void Store(bool marked, PageType type, u16 block, uintptr_t pointer) noexcept {
             data_raw.store(std::bit_cast<u64>(Data{marked, type, block, pointer}));
         }
 
-        constexpr void MarkRasterizerCached() noexcept {
+        inline void MarkRasterizerCached() noexcept {
             data_raw.fetch_or(0b111);
         }
 
-        constexpr void MarkDebug(u64 ptr, u16 block) noexcept {
+        inline void MarkDebug(u64 ptr, u16 block) noexcept {
             Store(true, PageType::DebugMemory, block, ptr);
         }
 
