@@ -405,11 +405,11 @@ private:
             *value = u8(enable_alpn);
             break;
         default:
-            LOG_WARNING(Service_SSL, "Unknown option={}", option);
+            LOG_WARNING(Service_SSL, "Unknown option={}", u32(option));
             *value = 0;
             break;
         }
-        LOG_DEBUG(Service_SSL, "GetOption called, option={}, ret value={}", option, *value);
+        LOG_DEBUG(Service_SSL, "GetOption called, option={}, ret value={}", u32(option), *value);
         R_SUCCEED();
     }
 
