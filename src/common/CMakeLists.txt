@@ -110,7 +110,6 @@ add_library(
     socket_types.h
     sparse_large_vector.cpp
     sparse_large_vector.h
-    spin_lock.h
     stb.cpp
     stb.h
     steady_clock.cpp
