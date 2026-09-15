@@ -82,6 +82,9 @@ class RealVfsFile : public VfsFile {
     friend class RealVfsFilesystem;
 
 public:
+    RealVfsFile(RealVfsFilesystem& base, std::unique_ptr<FileReference> reference,
+                const std::string& path, OpenMode perms = OpenMode::Read,
+                std::optional<u64> size = {}, std::optional<std::string> parent_path = {});
     ~RealVfsFile() override;
 
     std::string GetName() const override;
@@ -95,9 +98,6 @@ public:
     bool Rename(std::string_view name) override;
 
 private:
-    RealVfsFile(RealVfsFilesystem& base, std::unique_ptr<FileReference> reference,
-                const std::string& path, OpenMode perms = OpenMode::Read,
-                std::optional<u64> size = {}, std::optional<std::string> parent_path = {});
 
     RealVfsFilesystem& base;
     std::unique_ptr<FileReference> reference;
@@ -113,6 +113,8 @@ class RealVfsDirectory : public VfsDirectory {
     friend class RealVfsFilesystem;
 
 public:
+    RealVfsDirectory(RealVfsFilesystem& base, const std::string& path,
+                     OpenMode perms = OpenMode::Read);
     ~RealVfsDirectory() override;
 
     VirtualFile GetFileRelative(std::string_view relative_path) const override;
@@ -138,9 +140,6 @@ public:
     std::map<std::string, VfsEntryType, std::less<>> GetEntries() const override;
 
 private:
-    RealVfsDirectory(RealVfsFilesystem& base, const std::string& path,
-                     OpenMode perms = OpenMode::Read);
-
     template <typename T, typename R>
     std::vector<std::shared_ptr<R>> IterateEntries() const;
 
