@@ -536,7 +536,6 @@ private:
     struct VariantKey {
         bool reduce_anisotropy;
         bool force_nearest;
-        bool drop_depth_comparison;
         bool drop_reduction;
         bool drop_custom_border;
         bool srgb_border;
