@@ -6,10 +6,14 @@
 
 #include "common/string_util.h"
 #include "core/core.h"
+#include "core/hle/kernel/k_client_session.h"
+#include "core/hle/result.h"
+#include "core/hle/service/cmif_types.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/ngc/ngc.h"
 #include "core/hle/service/server_manager.h"
 #include "core/hle/service/service.h"
+#include "frontend_common/firmware_manager.h"
 
 namespace Service::NGC {
 
@@ -166,12 +170,147 @@ public:
     }
 };
 
+struct UndefinedIUserShimScopedObjectParam {
+    std::array<u8, 0x10> unk0;
+};
+static_assert(sizeof(UndefinedIUserShimScopedObjectParam) == 0x10);
+
+class IUserShimScopedObject final : public ServiceFramework<IUserShimScopedObject> {
+public:
+    explicit IUserShimScopedObject(Core::System& system_) : ServiceFramework(system_, "IUserShimScopedObject") {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {450, nullptr, "Cmd450"},
+            {451, D<&IUserShimScopedObject::Cmd451>, "Cmd451"},
+            {452, D<&IUserShimScopedObject::Cmd452>, "Cmd451"},
+            {453, nullptr, "Cmd453"},
+            {454, D<&IUserShimScopedObject::Cmd454>, "Cmd454"},
+            {455, nullptr, "Cmd455"},
+            {456, nullptr, "Cmd456"},
+            {457, nullptr, "Cmd457"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
+    }
+
+    Result Cmd451() {
+        LOG_WARNING(Service_NGC, "stubbed");
+        R_SUCCEED();
+    }
+
+    Result Cmd452(UndefinedIUserShimScopedObjectParam unk0, Out<u64> unk1) {
+        LOG_WARNING(Service_NGC, "stubbed");
+        R_THROW(IPC::ResultNotSupported);
+    }
+
+    Result Cmd454(UndefinedIUserShimScopedObjectParam unk0, Out<u32> unk1, OutBuffer<BufferAttr_HipcAutoSelect> unk2) {
+        LOG_WARNING(Service_NGC, "stubbed");
+        R_THROW(IPC::ResultNotSupported);
+    }
+};
+
+class IUserService final : public ServiceFramework<IUserService> {
+public:
+    explicit IUserService(Core::System& system_) : ServiceFramework(system_, "stpl:u") {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0 , D<&IUserService::Cmd0>, "Cmd0"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
+    }
+    Result Cmd0(OutInterface<IUserService> out_interface) {
+        LOG_WARNING(Service_NGC, "stubbed");
+        *out_interface = std::make_shared<IUserService>();
+        R_SUCCEED();
+    }
+};
+
+class ISystemShimScopedObject final : public ServiceFramework<ISystemShimScopedObject> {
+public:
+    explicit ISystemShimScopedObject(Core::System& system_) : ServiceFramework(system_, "ISystemShimScopedObject") {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {106, nullptr, "ConvertCurrentObjectToDomain"},
+            {107, D<&ISystemShimScopedObject::Cmd107>, "Cmd107"},
+            {108, D<&ISystemShimScopedObject::Cmd108>, "Cmd108"},
+            {207, nullptr, "Cmd207"},
+            {208, D<&ISystemShimScopedObject::Cmd208>, "Cmd208"},
+            {209, D<&ISystemShimScopedObject::Cmd209>, "Cmd209"},
+            {210, D<&ISystemShimScopedObject::Cmd210>, "Cmd210"},
+            {211, D<&ISystemShimScopedObject::Cmd211>, "Cmd211"},
+            {212, D<&ISystemShimScopedObject::Cmd212>, "Cmd212"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
+    }
+
+    Result Cmd107() {
+        LOG_WARNING(Service_NGC, "stubbed");
+        R_SUCCEED();
+    }
+
+    Result Cmd108() {
+        LOG_WARNING(Service_NGC, "stubbed");
+        R_THROW(IPC::ResultNotSupported);
+    }
+
+    Result Cmd208(Out<std::array<u8, 0x20>> unk0) {
+        LOG_WARNING(Service_NGC, "stubbed");
+        R_THROW(IPC::ResultNotSupported);
+    }
+
+    Result Cmd209(u32 unk0) {
+        LOG_WARNING(Service_NGC, "stubbed");
+        R_SUCCEED();
+    }
+
+    Result Cmd210() {
+        LOG_WARNING(Service_NGC, "stubbed");
+        R_SUCCEED();
+    }
+
+    Result Cmd211(Out<u32> unk1, OutBuffer<BufferAttr_HipcAutoSelect> unk0) {
+        LOG_WARNING(Service_NGC, "stubbed");
+        R_SUCCEED();
+    }
+
+    Result Cmd212(InBuffer<BufferAttr_HipcAutoSelect> unk0) {
+        LOG_WARNING(Service_NGC, "stubbed");
+        R_SUCCEED();
+    }
+};
+
+class ISystemService final : public ServiceFramework<ISystemService> {
+public:
+    explicit ISystemService(Core::System& system_) : ServiceFramework(system_, "stpl:sys") {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0 , D<&ISystemService::Cmd0>, "Cmd0"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
+    }
+    Result Cmd0(OutInterface<ISystemShimScopedObject> out_interface) {
+        LOG_WARNING(Service_NGC, "stubbed");
+        *out_interface = std::make_shared<ISystemShimScopedObject>();
+        R_SUCCEED();
+    }
+};
+
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
 
     server_manager->RegisterNamedService("ngct:u", std::make_shared<IService>(system), 4);
     server_manager->RegisterNamedService("ngct:s", std::make_shared<IServiceWithManagementApi>(system), 4);
     server_manager->RegisterNamedService("ngc:u", std::make_shared<NgcServiceImpl>(system), 4);
+
+    // +23.0.0
+    if (FirmwareManager::GetFirmwareVersion(system).first.major >= 23) {
+        server_manager->RegisterNamedService("stpl:u", std::make_shared<IUserService>(system), 4);
+        server_manager->RegisterNamedService("stpl:sys", std::make_shared<ISystemService>(system), 4);
+    }
+
     ServerManager::RunServer(std::move(server_manager));
 }
 

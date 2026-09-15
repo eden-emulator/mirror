@@ -22,6 +22,7 @@
 
 namespace IPC {
 
+constexpr Result ResultNotSupported{ErrorModule::HIPC, 1};
 constexpr Result ResultSessionClosed{ErrorModule::HIPC, 301};
 
 struct ResponseBuilder {
