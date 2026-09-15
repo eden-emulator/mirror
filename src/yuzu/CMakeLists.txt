@@ -444,9 +444,10 @@ if (YUZU_ROOM)
     target_link_libraries(yuzu PRIVATE yuzu-room)
 endif()
 
-if (NOT MSVC)
-    target_link_options(yuzu PRIVATE "LINKER:--icf=all,--gc-sections")
+if (LINKER STREQUAL "lld")
+    target_link_options(yuzu-cmd PRIVATE "LINKER:--icf=all")
 endif()
+
 if (NOT MSVC AND (APPLE OR NOT YUZU_STATIC_BUILD))
     # needed for vma
     target_compile_options(yuzu PRIVATE
