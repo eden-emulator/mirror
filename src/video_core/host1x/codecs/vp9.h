@@ -12,7 +12,6 @@
 
 #include "common/common_types.h"
 #include "common/scratch_buffer.h"
-#include "common/stream.h"
 #include "video_core/host1x/codecs/decoder.h"
 #include "video_core/host1x/codec_types.h"
 #include "video_core/host1x/nvdec_common.h"
@@ -52,16 +51,19 @@ public:
     void End();
 
     [[nodiscard]] std::vector<u8>& GetBuffer() {
-        return base_stream.GetBuffer();
+        return stream_data;
     }
 
     [[nodiscard]] const std::vector<u8>& GetBuffer() const {
-        return base_stream.GetBuffer();
+        return stream_data;
     }
 
 private:
     u8 PeekByte();
-    Common::Stream base_stream{};
+
+    std::vector<u8> stream_data{};
+    size_t stream_pos;
+
     u32 low_value{};
     u32 range{0xff};
     s32 count{-24};

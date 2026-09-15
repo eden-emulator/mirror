@@ -115,8 +115,6 @@ add_library(
     stb.h
     steady_clock.cpp
     steady_clock.h
-    stream.cpp
-    stream.h
     string_util.cpp
     string_util.h
     swap.h
