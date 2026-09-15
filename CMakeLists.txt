@@ -153,6 +153,13 @@ if (MSVC AND ARCHITECTURE_x86)
         instead, run vcvars64.bat directly, located at C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/vcvars64.bat")
 endif()
 
+# Required for ICF builds
+if (NOT MSVC)
+    add_compile_options(
+        $<$<COMPILE_LANGUAGE:C,CXX>:-ffunction-sections>
+        $<$<COMPILE_LANGUAGE:C,CXX>:-fdata-sections>)
+endif()
+
 if (CXX_CLANG_CL)
     # clang-cl prints literally 10000+ warnings without this
     add_compile_options(
