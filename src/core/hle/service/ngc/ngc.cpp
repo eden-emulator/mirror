@@ -181,7 +181,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {450, nullptr, "Cmd450"},
-            {451, D<&IUserShimScopedObject::Cmd451>, "Cmd451"},
+            {451, nullptr, "Cmd451"},
             {452, D<&IUserShimScopedObject::Cmd452>, "Cmd451"},
             {453, nullptr, "Cmd453"},
             {454, D<&IUserShimScopedObject::Cmd454>, "Cmd454"},
@@ -191,11 +191,6 @@ public:
         };
         // clang-format on
         RegisterHandlers(functions);
-    }
-
-    Result Cmd451() {
-        LOG_WARNING(Service_NGC, "stubbed");
-        R_SUCCEED();
     }
 
     Result Cmd452(UndefinedIUserShimScopedObjectParam unk0, Out<u64> unk1) {
@@ -231,23 +226,18 @@ public:
     explicit ISystemShimScopedObject(Core::System& system_) : ServiceFramework(system_, "ISystemShimScopedObject") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {106, nullptr, "ConvertCurrentObjectToDomain"},
-            {107, D<&ISystemShimScopedObject::Cmd107>, "Cmd107"},
+            {106, nullptr, "Cmd106"},
+            {107, nullptr, "Cmd107"},
             {108, D<&ISystemShimScopedObject::Cmd108>, "Cmd108"},
             {207, nullptr, "Cmd207"},
             {208, D<&ISystemShimScopedObject::Cmd208>, "Cmd208"},
-            {209, D<&ISystemShimScopedObject::Cmd209>, "Cmd209"},
-            {210, D<&ISystemShimScopedObject::Cmd210>, "Cmd210"},
-            {211, D<&ISystemShimScopedObject::Cmd211>, "Cmd211"},
-            {212, D<&ISystemShimScopedObject::Cmd212>, "Cmd212"},
+            {209, nullptr, "Cmd209"},
+            {210, nullptr, "Cmd210"},
+            {211, nullptr, "Cmd211"},
+            {212, nullptr, "Cmd212"},
         };
         // clang-format on
         RegisterHandlers(functions);
-    }
-
-    Result Cmd107() {
-        LOG_WARNING(Service_NGC, "stubbed");
-        R_SUCCEED();
     }
 
     Result Cmd108() {
@@ -258,26 +248,6 @@ public:
     Result Cmd208(Out<std::array<u8, 0x20>> unk0) {
         LOG_WARNING(Service_NGC, "stubbed");
         R_THROW(IPC::ResultNotSupported);
-    }
-
-    Result Cmd209(u32 unk0) {
-        LOG_WARNING(Service_NGC, "stubbed");
-        R_SUCCEED();
-    }
-
-    Result Cmd210() {
-        LOG_WARNING(Service_NGC, "stubbed");
-        R_SUCCEED();
-    }
-
-    Result Cmd211(Out<u32> unk1, OutBuffer<BufferAttr_HipcAutoSelect> unk0) {
-        LOG_WARNING(Service_NGC, "stubbed");
-        R_SUCCEED();
-    }
-
-    Result Cmd212(InBuffer<BufferAttr_HipcAutoSelect> unk0) {
-        LOG_WARNING(Service_NGC, "stubbed");
-        R_SUCCEED();
     }
 };
 
