@@ -29,7 +29,7 @@ public:
     };
 
 public:
-    constexpr KSlabHeapImpl() = default;
+    KSlabHeapImpl() = default;
 
     void Initialize() {
         ASSERT(m_head == nullptr);
