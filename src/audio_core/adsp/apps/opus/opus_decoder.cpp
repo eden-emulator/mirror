@@ -43,9 +43,26 @@ bool IsValidStreamCounts(u32 total_stream_count, u32 stereo_stream_count) {
 }
 
 struct OpusGenericDecodeParams {
+    static constexpr size_t SWR_CONV_16KHZ = 0;
+    static constexpr size_t SWR_CONV_24KHZ = 1;
+    static constexpr size_t SWR_CONV_48KHZ = 2;
+
+    static constexpr size_t SWR_CONV_1CH = 0;
+    static constexpr size_t SWR_CONV_2CH = 1;
+
+    SwrContext* swr_fltp_to_s16_from_48khz[3][2] = {};
     AVPacket* pkt = nullptr;
     AVFrame* frame = nullptr;
-    u8* tmp_buf[8] = {nullptr};
+    u8* tmp_buf[8] = {};
+
+    static size_t ToSampleIndex(size_t v) noexcept {
+        switch (v) {
+        case 48000: return SWR_CONV_48KHZ;
+        case 24000: return SWR_CONV_24KHZ;
+        case 16000: return SWR_CONV_16KHZ;
+        default: UNREACHABLE();
+        }
+    }
 };
 
 struct OpusGenericDecodeObject {
@@ -62,7 +79,7 @@ struct OpusGenericDecodeObject {
     }
 
     /// idempotency of initialize is guaranteed
-    Result InitializeDecoder(u32 sample_rate, u32 total_stream_count, u32 channel_count, u32 stereo_stream_count, u8 const* mappings) {
+    Result InitializeDecoder(u32 sample_rate, u32 total_stream_count, u32 channel_count, u32 stereo_stream_count, u8 const* mappings, OpusGenericDecodeParams params) {
         LOG_DEBUG(Audio_DSP, "sample_rate={}, total_stream_count={}, channel_count={}, stereo_stream_count={}, mappings={}", sample_rate, total_stream_count, channel_count, stereo_stream_count, fmt::ptr(mappings));
         ASSERT(channel_count >= 1 && channel_count <= 2);
         // prefer libopus, ffmpeg docs say to use libopus **if** available
@@ -74,7 +91,7 @@ struct OpusGenericDecodeObject {
             LOG_WARNING(Audio_DSP, "using ffmpeg native opus decoder");
             codec = avcodec_find_decoder(AV_CODEC_ID_OPUS);
         }
-        ASSERT(!(avc && avcodec_is_open(avc)));
+        ASSERT(!avc);
         if ((avc = avcodec_alloc_context3(codec)) != nullptr) {
             if (is_libopus) {
                 const std::array<u8, 2> mapping_arr{0, 1};
@@ -96,59 +113,56 @@ struct OpusGenericDecodeObject {
             }
 
             // FFmpeg hardcodes sample rate
+            exposed_sample_rate = sample_rate;
             avc->sample_rate = sample_rate;
             avc->request_sample_fmt = AV_SAMPLE_FMT_S16;
             avc->max_samples = 0x10000; //64K
             av_channel_layout_default(&avc->ch_layout, channel_count);
             if (avcodec_open2(avc, codec, nullptr) >= 0) {
                 ASSERT(avc->request_sample_fmt == AV_SAMPLE_FMT_S16);
-                // opus fltp -> libopus s16
-                if (swr_alloc_set_opts2(
-                    &swr,
-                    &avc->ch_layout, AV_SAMPLE_FMT_S16, avc->sample_rate,
-                    &avc->ch_layout, (enum AVSampleFormat)avc->sample_fmt, avc->sample_rate,
-                    0, nullptr) >= 0) {
-                    if (swr_init(swr) >= 0) {
-                        return ResultSuccess;
-                    }
-                }
+                return ResultSuccess;
             }
         }
-        Shutdown();
+        Shutdown(params);
         return Service::Audio::ResultLibOpusInternalError;
     }
 
-    Result Shutdown() {
+    Result Shutdown(OpusGenericDecodeParams params) {
         LOG_DEBUG(Audio_DSP, "called avc={}", fmt::ptr(avc));
-        swr_free(&swr);
-        avcodec_free_context(&avc);
+        if (avc) {
+            if (avcodec_is_open(avc))
+                avcodec_flush_buffers(avc);
+            avcodec_free_context(&avc);
+        }
         return ResultSuccess;
     }
 
-    Result ResetDecoder() {
+    Result ResetDecoder(OpusGenericDecodeParams params) {
         LOG_DEBUG(Audio_DSP, "called avc={}", fmt::ptr(avc));
         if (avc) {
-            if (avcodec_is_open(avc)) avcodec_flush_buffers(avc);
+            if (avcodec_is_open(avc))
+                avcodec_flush_buffers(avc);
             return ResultSuccess;
         }
         return Service::Audio::ResultLibOpusInvalidState;
     }
 
     Result Decode(u32& out_sample_count, u64 output_data, u64 output_data_size, u64 input_data, u64 input_data_size, OpusGenericDecodeParams params) {
-        LOG_DEBUG(Audio_DSP, "called out_sample_count={},output_data={:#x},output_data_size={},input_data={:#x},input_data_size={}", fmt::ptr(&out_sample_count), output_data, output_data_size, input_data, input_data_size);
+        LOG_TRACE(Audio_DSP, "called out_sample_count={},output_data={:#x},output_data_size={},input_data={:#x},input_data_size={}", fmt::ptr(&out_sample_count), output_data, output_data_size, input_data, input_data_size);
         ASSERT(avc && avcodec_is_open(avc));
         out_sample_count = 0;
         int r;
-        LOG_DEBUG(Audio_DSP, "old packet data={}", fmt::ptr(params.pkt->data));
-        if ((r = av_new_packet(params.pkt, int(input_data_size))) >= 0) {
-            LOG_DEBUG(Audio_DSP, "new packet data={}", fmt::ptr(params.pkt->data));
-            std::memcpy(params.pkt->data, reinterpret_cast<const u8*>(input_data), input_data_size);
+        LOG_TRACE(Audio_DSP, "old packet data={}", fmt::ptr(params.pkt->data));
 
-            r = avcodec_send_packet(avc, params.pkt);
-            av_packet_unref(params.pkt);
-            if (r >= 0) {
+        // select software raster (fltp -> s16)
+        ASSERT(avc->ch_layout.nb_channels - 1 >= 0 && avc->ch_layout.nb_channels - 1 <= 1);
+        if ((r = av_new_packet(params.pkt, int(input_data_size))) >= 0) {
+            LOG_TRACE(Audio_DSP, "new packet data={}", fmt::ptr(params.pkt->data));
+            std::memcpy(params.pkt->data, reinterpret_cast<const u8*>(input_data), input_data_size);
+            if ((r = avcodec_send_packet(avc, params.pkt)) >= 0) {
+                av_packet_unref(params.pkt);
                 while ((r = avcodec_receive_frame(avc, params.frame)) >= 0) {
-                    LOG_DEBUG(Audio_DSP, "frame data={},data[0]={},nb_samples={}", fmt::ptr(params.frame->data), fmt::ptr(params.frame->data[0]), params.frame->nb_samples);
+                    LOG_TRACE(Audio_DSP, "frame data={},data[0]={},nb_samples={}", fmt::ptr(params.frame->data), fmt::ptr(params.frame->data[0]), params.frame->nb_samples);
                     ASSERT(std::in_range<u16>(params.frame->nb_samples));
                     u8 *dst_arr[2] = {reinterpret_cast<u8*>(output_data), nullptr};
                     if (params.frame->format == avc->request_sample_fmt) {
@@ -156,27 +170,28 @@ struct OpusGenericDecodeObject {
                         av_samples_copy(dst_arr, params.frame->data, out_sample_count, 0, params.frame->nb_samples, params.frame->ch_layout.nb_channels, (enum AVSampleFormat)params.frame->format);
                         out_sample_count += params.frame->nb_samples;
                     } else {
-                        int out_samples = int(av_rescale_rnd(swr_get_delay(swr, params.frame->sample_rate) + params.frame->nb_samples, params.frame->sample_rate, params.frame->sample_rate, AV_ROUND_UP));
+                        // needs conversion
+                        SwrContext* swr = params.swr_fltp_to_s16_from_48khz[params.ToSampleIndex(exposed_sample_rate)][avc->ch_layout.nb_channels - 1];
+                        int out_samples = int(av_rescale_rnd(swr_get_delay(swr, exposed_sample_rate) + params.frame->nb_samples, params.frame->sample_rate, exposed_sample_rate, AV_ROUND_UP));
                         out_samples = swr_convert(swr, params.tmp_buf, out_samples, (const u8 **)params.frame->data, params.frame->nb_samples);
                         av_samples_copy(dst_arr, params.tmp_buf, out_sample_count, 0, out_samples, params.frame->ch_layout.nb_channels, avc->request_sample_fmt);
                         out_sample_count += out_samples;
                     }
                     av_frame_unref(params.frame);
                 }
-                if (r == AVERROR(EAGAIN) || r == AVERROR_EOF) {
-                    LOG_DEBUG(Audio_DSP, "{}", r); // non-errors
-                } else if (r < 0) {
-                    LOG_ERROR(Audio_DSP, "{}", r); // errors
-                }
+                ASSERT_MSG(r == AVERROR(EAGAIN) || r == AVERROR_EOF || r >= 0, "{}", r);
+                avcodec_flush_buffers(avc);
                 return ResultSuccess;
             }
         }
+        avcodec_flush_buffers(avc);
         LOG_ERROR(Audio_DSP, "{}", r);
         return Service::Audio::ResultLibOpusInvalidState;
     }
 
     AVCodecContext* avc = nullptr;
-    SwrContext* swr = nullptr;
+    // Sample rate that application will see
+    int exposed_sample_rate = 0;
 };
 } // namespace
 
@@ -199,9 +214,34 @@ OpusDecoder::OpusDecoder(Core::System& system) {
         params.pkt = av_packet_alloc();
         params.frame = av_frame_alloc();
 
+        // opus fltp -> libopus s16 software converters
+        AVChannelLayout channel_layouts[2];
+        av_channel_layout_default(&channel_layouts[0], 1);
+        av_channel_layout_default(&channel_layouts[1], 2);
+        int r;
+        int const sample_rates[] = { 16000, 24000, 48000 };
+        for (size_t i = 0; i < 3; ++i) {
+            if ((r = swr_alloc_set_opts2(&params.swr_fltp_to_s16_from_48khz[i][params.SWR_CONV_1CH],
+                &channel_layouts[0], AV_SAMPLE_FMT_S16, sample_rates[i],
+                &channel_layouts[0], AV_SAMPLE_FMT_FLTP, 48000,
+                0, nullptr)) < 0)
+                ASSERT_MSG(false, "{}", r);
+            if ((r = swr_alloc_set_opts2(&params.swr_fltp_to_s16_from_48khz[i][params.SWR_CONV_2CH],
+                &channel_layouts[1], AV_SAMPLE_FMT_S16, sample_rates[i],
+                &channel_layouts[1], AV_SAMPLE_FMT_FLTP, 48000,
+                0, nullptr)) < 0)
+                ASSERT_MSG(false, "{}", r);
+        }
+        for (size_t i = 0; i < 3; ++i) {
+            if ((r = swr_init(params.swr_fltp_to_s16_from_48khz[i][params.SWR_CONV_1CH])) < 0)
+                ASSERT_MSG(false, "{}", r);
+            if ((r = swr_init(params.swr_fltp_to_s16_from_48khz[i][params.SWR_CONV_2CH])) < 0)
+                ASSERT_MSG(false, "{}", r);
+        }
+
         while (!stop_token.stop_requested()) {
             auto msg = Receive(Direction::DSP, stop_token);
-            LOG_DEBUG(Audio_DSP, "msg={}, buffer={}", msg, shared_memory->host_send_data[0]);
+            LOG_TRACE(Audio_DSP, "msg={}, buffer={}", msg, shared_memory->host_send_data[0]);
             switch (msg) {
             case Shutdown:
                 Send(Direction::Host, Message::ShutdownOK);
@@ -226,11 +266,11 @@ OpusDecoder::OpusDecoder(Core::System& system) {
                 ASSERT(buffer_size >= OpusGenericDecodeObject::GetWorkBufferSize(channel_count));
 
                 if (auto const it = decode_objects.find(buffer); it != decode_objects.end()) {
-                    it->second.Shutdown();
-                    shared_memory->dsp_return_data[0] = it->second.InitializeDecoder(sample_rate, 1, channel_count, channel_count == 2 ? 1 : 0, nullptr).raw;
+                    it->second.Shutdown(params);
+                    shared_memory->dsp_return_data[0] = it->second.InitializeDecoder(sample_rate, 1, channel_count, channel_count == 2 ? 1 : 0, nullptr, params).raw;
                 } else {
                     OpusGenericDecodeObject obj{};
-                    shared_memory->dsp_return_data[0] = obj.InitializeDecoder(sample_rate, 1, channel_count, channel_count == 2 ? 1 : 0, nullptr).raw;
+                    shared_memory->dsp_return_data[0] = obj.InitializeDecoder(sample_rate, 1, channel_count, channel_count == 2 ? 1 : 0, nullptr, params).raw;
                     decode_objects.insert_or_assign(buffer, obj);
                 }
                 Send(Direction::Host, Message::InitializeDecodeObjectOK);
@@ -240,7 +280,8 @@ OpusDecoder::OpusDecoder(Core::System& system) {
                 auto buffer = shared_memory->host_send_data[0];
                 //[[maybe_unused]] auto buffer_size = shared_memory->host_send_data[1];
                 if (auto const it = decode_objects.find(buffer); it != decode_objects.end()) {
-                    shared_memory->dsp_return_data[0] = it->second.Shutdown().raw;
+                    shared_memory->dsp_return_data[0] = it->second.Shutdown(params).raw;
+                    decode_objects.erase(buffer);
                 } else {
                     LOG_ERROR(Audio_DSP, "operating unregistered buffer {}", buffer);
                     shared_memory->dsp_return_data[0] = Service::Audio::ResultLibOpusInvalidState.raw;
@@ -264,7 +305,7 @@ OpusDecoder::OpusDecoder(Core::System& system) {
                 if (auto const it = decode_objects.find(buffer); it != decode_objects.end()) {
                     auto res = ResultSuccess;
                     if (reset_requested)
-                        res = it->second.ResetDecoder();
+                        res = it->second.ResetDecoder(params);
                     if (res == ResultSuccess)
                         res = it->second.Decode(decoded_samples, output_data, output_data_size, input_data, input_data_size, params);
 
@@ -320,11 +361,11 @@ OpusDecoder::OpusDecoder(Core::System& system) {
                 ASSERT(sample_rate >= 0);
                 ASSERT(buffer_size >= OpusGenericDecodeObject::GetWorkBufferSizeMultistream(total_stream_count, stereo_stream_count));
                 if (auto const it = decode_objects.find(buffer); it != decode_objects.end()) {
-                    it->second.Shutdown();
-                    shared_memory->dsp_return_data[0] = it->second.InitializeDecoder(sample_rate, total_stream_count, channel_count, stereo_stream_count, mappings).raw;
+                    it->second.Shutdown(params);
+                    shared_memory->dsp_return_data[0] = it->second.InitializeDecoder(sample_rate, total_stream_count, channel_count, stereo_stream_count, mappings, params).raw;
                 } else {
                     OpusGenericDecodeObject obj{};
-                    shared_memory->dsp_return_data[0] = obj.InitializeDecoder(sample_rate, total_stream_count, channel_count, stereo_stream_count, mappings).raw;
+                    shared_memory->dsp_return_data[0] = obj.InitializeDecoder(sample_rate, total_stream_count, channel_count, stereo_stream_count, mappings, params).raw;
                     decode_objects.insert_or_assign(buffer, obj);
                 }
                 Send(Direction::Host, Message::InitializeMultiStreamDecodeObjectOK);
@@ -334,7 +375,8 @@ OpusDecoder::OpusDecoder(Core::System& system) {
                 auto buffer = shared_memory->host_send_data[0];
                 //[[maybe_unused]] auto buffer_size = shared_memory->host_send_data[1];
                 if (auto const it = decode_objects.find(buffer); it != decode_objects.end()) {
-                    shared_memory->dsp_return_data[0] = it->second.Shutdown().raw;
+                    shared_memory->dsp_return_data[0] = it->second.Shutdown(params).raw;
+                    decode_objects.erase(buffer);
                 } else {
                     LOG_ERROR(Audio_DSP, "operating unregistered buffer {}", buffer);
                     shared_memory->dsp_return_data[0] = Service::Audio::ResultLibOpusInvalidState.raw;
@@ -358,7 +400,7 @@ OpusDecoder::OpusDecoder(Core::System& system) {
                 if (auto const it = decode_objects.find(buffer); it != decode_objects.end()) {
                     auto res = ResultSuccess;
                     if (reset_requested)
-                        res = it->second.ResetDecoder();
+                        res = it->second.ResetDecoder(params);
                     if (res == ResultSuccess)
                         res = it->second.Decode(decoded_samples, output_data, output_data_size, input_data, input_data_size, params);
 
@@ -379,8 +421,14 @@ OpusDecoder::OpusDecoder(Core::System& system) {
             }
         }
         for (auto e : decode_objects)
-            e.second.Shutdown();
-        av_freep(params.tmp_buf);
+            e.second.Shutdown(params);
+        // global params handlers
+        for (size_t i = 0; i < 3; ++i) {
+            for (size_t j = 0; j < 2; ++j) {
+                swr_free(&params.swr_fltp_to_s16_from_48khz[i][j]);
+            }
+        }
+        av_freep(&params.tmp_buf[0]);
         av_frame_free(&params.frame);
         av_packet_free(&params.pkt);
     });
