@@ -114,6 +114,13 @@ public:
     bool UploadImageDirectly(Image& image, size_t window_index, u64 window_offset,
                              std::span<const VideoCommon::SwizzleParameters> swizzles);
 
+    [[nodiscard]] bool CanDownloadImageDirectly(const VideoCommon::ImageInfo& info) const;
+
+    bool DownloadImageDirectly(Image& image, size_t window_index, u64 window_offset);
+
+    [[nodiscard]] VkBuffer ResolveDirectWindow(size_t window_index, u64 window_offset,
+                                               u64 size) const;
+
     [[nodiscard]] u64 CurrentTick() const noexcept;
 
     [[nodiscard]] bool IsDirectUploadRetired(u64 tick);
@@ -178,6 +185,7 @@ public:
     std::optional<BlockLinearUnswizzle3DPass> bl3d_unswizzle_pass;
     std::optional<BlockLinearUnswizzle2DPass> bl2d_unswizzle_pass;
     std::optional<BlockLinearUnswizzle3DBufferPass> bl3db_unswizzle_pass;
+    std::optional<BlockLinearSwizzle2DPass> bl2d_swizzle_pass;
     const Settings::ResolutionScalingInfo& resolution;
     std::array<std::vector<VkFormat>, VideoCore::Surface::MaxPixelFormat> view_formats;
 

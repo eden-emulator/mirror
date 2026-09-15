@@ -187,6 +187,23 @@ private:
     ComputePassDescriptorQueue& compute_pass_descriptor_queue;
 };
 
+class BlockLinearSwizzle2DPass final : public ComputePass {
+public:
+    explicit BlockLinearSwizzle2DPass(const Device& device_, Scheduler& scheduler_,
+                                      DescriptorPool& descriptor_pool_,
+                                      StagingBufferPool& staging_buffer_pool_,
+                                      ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
+    ~BlockLinearSwizzle2DPass();
+
+    void SwizzleInto(Image& image, VkBuffer dst_buffer, VkDeviceSize dst_offset,
+                     bool foreign_ownership);
+
+private:
+    Scheduler& scheduler;
+    StagingBufferPool& staging_buffer_pool;
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue;
+};
+
 class BlockLinearUnswizzle3DBufferPass final : public ComputePass {
 public:
     explicit BlockLinearUnswizzle3DBufferPass(

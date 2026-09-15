@@ -972,6 +972,8 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
                                 compute_pass_descriptor_queue);
     bl3db_unswizzle_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
                                  compute_pass_descriptor_queue);
+    bl2d_swizzle_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
+                              compute_pass_descriptor_queue);
 }
 
 void TextureCacheRuntime::Finish() {
@@ -3209,25 +3211,48 @@ bool TextureCacheRuntime::CanUploadImageDirectly(const VideoCommon::ImageInfo& i
            BlockLinearUnswizzle2DPass::IsSupported(device, info);
 }
 
-bool TextureCacheRuntime::UploadImageDirectly(
-    Image& image, size_t window_index, u64 window_offset,
-    std::span<const VideoCommon::SwizzleParameters> swizzles) {
+VkBuffer TextureCacheRuntime::ResolveDirectWindow(size_t window_index, u64 window_offset,
+                                                  u64 size) const {
     if ((window_offset % device.GetStorageBufferAlignment()) != 0) {
-        return false;
+        return VK_NULL_HANDLE;
     }
-    if (image.guest_size_bytes > device.GetMaxStorageBufferRange()) {
-        return false;
+    if (size > device.GetMaxStorageBufferRange()) {
+        return VK_NULL_HANDLE;
     }
     const HostMemoryImport* const import = memory_allocator.GetHostMemoryImport();
     if (import == nullptr || window_index >= import->GetWindowCount()) {
-        return false;
+        return VK_NULL_HANDLE;
     }
-    const VkBuffer window_buffer = import->GetWindowBuffer(window_index);
+    return import->GetWindowBuffer(window_index);
+}
+
+bool TextureCacheRuntime::UploadImageDirectly(
+    Image& image, size_t window_index, u64 window_offset,
+    std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    const VkBuffer window_buffer =
+        ResolveDirectWindow(window_index, window_offset, image.guest_size_bytes);
     if (window_buffer == VK_NULL_HANDLE) {
         return false;
     }
     bl2d_unswizzle_pass->UnswizzleFrom(image, window_buffer,
                                        static_cast<VkDeviceSize>(window_offset), swizzles);
+    return true;
+}
+
+bool TextureCacheRuntime::CanDownloadImageDirectly(const VideoCommon::ImageInfo& info) const {
+    return bl2d_swizzle_pass.has_value() && BlockLinearUnswizzle2DPass::IsSupported(device, info);
+}
+
+bool TextureCacheRuntime::DownloadImageDirectly(Image& image, size_t window_index,
+                                                u64 window_offset) {
+    const u64 size = (std::max)(image.guest_size_bytes, image.unswizzled_size_bytes);
+    const VkBuffer window_buffer = ResolveDirectWindow(window_index, window_offset, size);
+    if (window_buffer == VK_NULL_HANDLE) {
+        return false;
+    }
+    const HostMemoryImport* const import = memory_allocator.GetHostMemoryImport();
+    bl2d_swizzle_pass->SwizzleInto(image, window_buffer, static_cast<VkDeviceSize>(window_offset),
+                                   import->NeedsForeignOwnershipTransfer());
     return true;
 }
 

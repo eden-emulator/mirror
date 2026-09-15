@@ -146,11 +146,15 @@ void TextureCache<P>::RunGarbageCollector() {
                 return false;
             }
             --num_downloads;
-            auto map = runtime.DownloadStagingBuffer(image.unswizzled_size_bytes);
-            const auto copies = FixSmallVectorADL(FullDownloadCopies(image.info));
-            image.DownloadMemory(map, copies);
-            runtime.Finish();
-            SwizzleImage(*gpu_memory, image.gpu_addr, image.info, copies, map.mapped_span, swizzle_data_buffer);
+            if (TryDownloadToUnifiedMemory(image)) {
+                runtime.Finish();
+            } else {
+                auto map = runtime.DownloadStagingBuffer(image.unswizzled_size_bytes);
+                const auto copies = FixSmallVectorADL(FullDownloadCopies(image.info));
+                image.DownloadMemory(map, copies);
+                runtime.Finish();
+                SwizzleImage(*gpu_memory, image.gpu_addr, image.info, copies, map.mapped_span, swizzle_data_buffer);
+            }
         }
         if (True(image.flags & ImageFlagBits::Tracked)) {
             UntrackImage(image, image_id);
@@ -642,14 +646,23 @@ void TextureCache<P>::DownloadMemory(DAddr cpu_addr, size_t size) {
     std::ranges::sort(images, [this](ImageId lhs, ImageId rhs) {
         return slot_images[lhs].modification_tick < slot_images[rhs].modification_tick;
     });
+    bool pending_unified = false;
     for (const ImageId image_id : images) {
         Image& image = slot_images[image_id];
+        if (TryDownloadToUnifiedMemory(image)) {
+            pending_unified = true;
+            continue;
+        }
         auto map = runtime.DownloadStagingBuffer(image.unswizzled_size_bytes);
         const auto copies = FixSmallVectorADL(FullDownloadCopies(image.info));
         image.DownloadMemory(map, copies);
         runtime.Finish();
+        pending_unified = false;
         SwizzleImage(*gpu_memory, image.gpu_addr, image.info, copies, map.mapped_span,
                      swizzle_data_buffer);
+    }
+    if (pending_unified) {
+        runtime.Finish();
     }
 }
 
@@ -897,6 +910,10 @@ void TextureCache<P>::CommitAsyncFlushes() {
         bool any_none_dma = false;
         for (PendingDownload& download_info : download_ids) {
             if (download_info.is_swizzle) {
+                if (TryDownloadToUnifiedMemory(slot_images[download_info.object_id])) {
+                    download_info.is_unified = true;
+                    continue;
+                }
                 total_size_bytes +=
                     Common::AlignUp(slot_images[download_info.object_id].unswizzled_size_bytes, 64);
                 any_none_dma = true;
@@ -907,7 +924,7 @@ void TextureCache<P>::CommitAsyncFlushes() {
         if (any_none_dma) {
             auto download_map = runtime.DownloadStagingBuffer(total_size_bytes, true);
             for (const PendingDownload& download_info : download_ids) {
-                if (download_info.is_swizzle) {
+                if (download_info.is_swizzle && !download_info.is_unified) {
                     Image& image = slot_images[download_info.object_id];
                     const auto copies = FixSmallVectorADL(FullDownloadCopies(image.info));
                     image.DownloadMemory(download_map, copies);
@@ -939,6 +956,9 @@ void TextureCache<P>::PopAsyncFlushes() {
         auto download_map = std::move(async_buffers.front());
         for (size_t i = download_ids.size(); i > 0; i--) {
             auto& download_info = download_ids[i - 1];
+            if (download_info.is_unified) {
+                continue;
+            }
             auto& download_buffer = download_map[download_info.async_buffer_id];
             if (download_info.is_swizzle) {
                 const ImageBase& image = slot_images[download_info.object_id];
@@ -1172,43 +1192,77 @@ void TextureCache<P>::RefreshContents(Image& image, ImageId image_id) {
 }
 
 template <class P>
-bool TextureCache<P>::TryUploadFromUnifiedMemory([[maybe_unused]] Image& image) {
+std::optional<std::pair<size_t, u64>> TextureCache<P>::ResolveUnifiedImageWindow(
+    [[maybe_unused]] const ImageBase& image) {
     if constexpr (USE_UNIFIED_MEMORY) {
-        if (image.direct_upload_blocked || image.guest_size_bytes == 0) {
-            return false;
-        }
-        if (!runtime.IsUnifiedMemoryBindable() || !runtime.CanUploadImageDirectly(image.info)) {
-            return false;
+        if (image.guest_size_bytes == 0 || !runtime.IsUnifiedMemoryBindable()) {
+            return std::nullopt;
         }
         const u64 window_size = runtime.UnifiedMemoryWindowSize();
         if (window_size == 0) {
-            return false;
+            return std::nullopt;
         }
         const u8* const first = gpu_memory->GetSpan(image.gpu_addr, image.guest_size_bytes);
         if (first == nullptr) {
-            return false;
+            return std::nullopt;
         }
         const u64 phys_offset = static_cast<u64>(first - device_memory.GetPhysicalBase());
         const u64 unified_base = runtime.UnifiedMemoryBase();
         if (phys_offset < unified_base) {
-            return false;
+            return std::nullopt;
         }
         const u64 relative = phys_offset - unified_base;
         const u64 unified_size = runtime.UnifiedMemorySize();
         if (relative >= unified_size || unified_size - relative < image.guest_size_bytes) {
-            return false;
+            return std::nullopt;
         }
         const u64 local_offset = relative % window_size;
         if (window_size - local_offset < image.guest_size_bytes) {
+            return std::nullopt;
+        }
+        return std::pair{static_cast<size_t>(relative / window_size), local_offset};
+    } else {
+        return std::nullopt;
+    }
+}
+
+template <class P>
+bool TextureCache<P>::TryUploadFromUnifiedMemory([[maybe_unused]] Image& image) {
+    if constexpr (USE_UNIFIED_MEMORY) {
+        if (image.direct_upload_blocked || !runtime.CanUploadImageDirectly(image.info)) {
+            return false;
+        }
+        const auto window = ResolveUnifiedImageWindow(image);
+        if (!window) {
             return false;
         }
         const auto swizzles = FullUploadSwizzles(image.info);
-        if (!runtime.UploadImageDirectly(image, static_cast<size_t>(relative / window_size),
-                                         local_offset, FixSmallVectorADL(swizzles))) {
+        if (!runtime.UploadImageDirectly(image, window->first, window->second,
+                                         FixSmallVectorADL(swizzles))) {
             return false;
         }
         image.direct_upload_tick = runtime.CurrentTick();
         return true;
+    } else {
+        return false;
+    }
+}
+
+template <class P>
+bool TextureCache<P>::TryDownloadToUnifiedMemory([[maybe_unused]] Image& image) {
+    if constexpr (USE_UNIFIED_MEMORY) {
+        if (!runtime.CanDownloadImageDirectly(image.info)) {
+            return false;
+        }
+        if (image.info.resources.layers > 1 &&
+            image.info.layer_stride != CalculateLayerStride(image.info)) {
+            return false;
+        }
+        const auto window = ResolveUnifiedImageWindow(image);
+        if (!window) {
+            return false;
+        }
+        return runtime.DownloadImageDirectly(image, window->first, window->second);
     } else {
         return false;
     }

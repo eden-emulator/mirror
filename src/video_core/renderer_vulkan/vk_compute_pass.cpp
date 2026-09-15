@@ -24,6 +24,7 @@
 #include "video_core/host_shaders/resolve_conditional_render_comp_spv.h"
 #include "video_core/host_shaders/vulkan_quad_indexed_comp_spv.h"
 #include "video_core/host_shaders/vulkan_uint8_comp_spv.h"
+#include "video_core/host_shaders/block_linear_swizzle_2d_buffer_comp_spv.h"
 #include "video_core/host_shaders/block_linear_unswizzle_2d_buffer_comp_spv.h"
 #include "video_core/host_shaders/block_linear_unswizzle_3d_bcn_comp_spv.h"
 #include "video_core/host_shaders/block_linear_unswizzle_3d_buffer_comp_spv.h"
@@ -35,6 +36,7 @@
 #include "video_core/renderer_vulkan/vk_update_descriptor.h"
 #include "video_core/texture_cache/accelerated_swizzle.h"
 #include "video_core/texture_cache/types.h"
+#include "video_core/texture_cache/util.h"
 #include "video_core/textures/decoders.h"
 #include "video_core/vulkan_common/vulkan_device.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
@@ -1153,6 +1155,141 @@ void BlockLinearUnswizzle2DPass::UnswizzleFrom(
         };
         cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
                                vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, 0, {}, {}, barrier);
+    });
+}
+
+BlockLinearSwizzle2DPass::BlockLinearSwizzle2DPass(
+    const Device& device_, Scheduler& scheduler_, DescriptorPool& descriptor_pool_,
+    StagingBufferPool& staging_buffer_pool_,
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue_)
+    : ComputePass(device_, scheduler_, descriptor_pool_, BL2D_BINDINGS, BL2D_TEMPLATE,
+                  BL2D_BANK_INFO,
+                  COMPUTE_PUSH_CONSTANT_RANGE<sizeof(BlockLinearUnswizzle2DPushConstants)>,
+                  BLOCK_LINEAR_SWIZZLE_2D_BUFFER_COMP_SPV),
+      scheduler{scheduler_}, staging_buffer_pool{staging_buffer_pool_},
+      compute_pass_descriptor_queue{compute_pass_descriptor_queue_} {}
+
+BlockLinearSwizzle2DPass::~BlockLinearSwizzle2DPass() = default;
+
+void BlockLinearSwizzle2DPass::SwizzleInto(Image& image, VkBuffer dst_buffer,
+                                           VkDeviceSize dst_offset, bool foreign_ownership) {
+    const u32 layers = image.info.resources.layers;
+    const VkDeviceSize guest_size = image.guest_size_bytes;
+    const VkDeviceSize input_alignment =
+        (std::max)(device.GetStorageBufferAlignment(), VkDeviceSize{16});
+    auto copies = VideoCommon::FullDownloadCopies(image.info);
+    const auto swizzles = VideoCommon::FullUploadSwizzles(image.info);
+    VkDeviceSize total_size = 0;
+    for (VideoCommon::BufferImageCopy& copy : copies) {
+        total_size = Common::AlignUp(total_size, input_alignment);
+        copy.buffer_offset = static_cast<size_t>(total_size);
+        total_size += copy.buffer_size;
+    }
+    const StagingBufferRef scratch =
+        staging_buffer_pool.Request(static_cast<size_t>(total_size), MemoryUsage::DeviceLocal);
+    const VkBuffer scratch_buffer = scratch.buffer;
+    const VkDeviceSize scratch_offset = scratch.offset;
+    image.DownloadMemory(scratch_buffer, static_cast<size_t>(scratch_offset),
+                         std::span<const VideoCommon::BufferImageCopy>(copies.data(),
+                                                                       copies.size()));
+
+    const u32 queue_family = device.GetGraphicsFamily();
+    scheduler.RequestOutsideRenderPassOperationContext();
+    scheduler.Record([scratch_buffer, scratch_offset, total_size, dst_buffer, dst_offset,
+                      guest_size, queue_family, foreign_ownership](vk::CommandBuffer cmdbuf) {
+        const VkBufferMemoryBarrier scratch_barrier{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .buffer = scratch_buffer,
+            .offset = scratch_offset,
+            .size = total_size,
+        };
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, scratch_barrier);
+        if (foreign_ownership) {
+            const VkBufferMemoryBarrier acquire{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                .pNext = nullptr,
+                .srcAccessMask = 0,
+                .dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+                .dstQueueFamilyIndex = queue_family,
+                .buffer = dst_buffer,
+                .offset = dst_offset,
+                .size = guest_size,
+            };
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                   VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, acquire);
+        }
+    });
+
+    for (size_t level = 0; level < copies.size(); ++level) {
+        const VideoCommon::SwizzleParameters& sw = swizzles[level];
+        const VideoCommon::BufferImageCopy& copy = copies[level];
+        const auto params =
+            VideoCommon::Accelerated::MakeBlockLinearSwizzle2DParams(sw, image.info);
+
+        BlockLinearUnswizzle2DPushConstants pc{};
+        pc.dim = {sw.num_tiles.width, sw.num_tiles.height, layers};
+        pc.bytes_per_block_log2 = params.bytes_per_block_log2;
+        pc.origin = params.origin;
+        pc.layer_stride = params.layer_stride;
+        pc.block_size = params.block_size;
+        pc.x_shift = params.x_shift;
+        pc.block_height = params.block_height;
+        pc.block_height_mask = params.block_height_mask;
+
+        compute_pass_descriptor_queue.Acquire(scheduler, 2);
+        compute_pass_descriptor_queue.AddBuffer(scratch_buffer, scratch_offset + copy.buffer_offset,
+                                                copy.buffer_size);
+        compute_pass_descriptor_queue.AddBuffer(dst_buffer, dst_offset + sw.buffer_offset,
+                                                guest_size - sw.buffer_offset);
+        const void* descriptor_data = compute_pass_descriptor_queue.UpdateData();
+        const VkDescriptorSet set = descriptor_allocator.Commit();
+
+        const u32 gx = Common::DivCeil(sw.num_tiles.width, 16u);
+        const u32 gy = Common::DivCeil(sw.num_tiles.height, 8u);
+
+        scheduler.Record(
+            [this, set, descriptor_data, pc, gx, gy, layers](vk::CommandBuffer cmdbuf) {
+                device.GetLogical().UpdateDescriptorSet(set, *descriptor_template,
+                                                        descriptor_data);
+                cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+                cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
+                cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pc), &pc);
+                cmdbuf.Dispatch(gx, gy, layers);
+            });
+    }
+
+    scheduler.Record([dst_buffer, dst_offset, guest_size, queue_family,
+                      foreign_ownership](vk::CommandBuffer cmdbuf) {
+        if (foreign_ownership) {
+            const VkBufferMemoryBarrier release{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                .pNext = nullptr,
+                .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+                .dstAccessMask = 0,
+                .srcQueueFamilyIndex = queue_family,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+                .buffer = dst_buffer,
+                .offset = dst_offset,
+                .size = guest_size,
+            };
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                   VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, release);
+        }
+        static constexpr VkMemoryBarrier HOST_BARRIER{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_HOST_READ_BIT,
+        };
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                               0, HOST_BARRIER);
     });
 }
 

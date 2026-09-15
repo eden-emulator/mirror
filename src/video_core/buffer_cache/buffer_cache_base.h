@@ -230,6 +230,8 @@ public:
     bool BindMultiRangeStorage(const Binding& binding, bool is_written,
                                std::span<const MultiRangeSegment> pool);
 
+    bool BindUnifiedStorage(const Binding& binding, bool is_written);
+
     void ResolveMultiRangeStorage(Binding& binding, bool is_written,
                                   std::vector<MultiRangeSegment>& pool);
 
@@ -473,6 +475,8 @@ private:
 
     std::optional<UnifiedWindowRange> TryResolveUnifiedRange(DAddr device_addr, u64 size);
 
+    void WaitForUnifiedWrites(DAddr device_addr, u64 size);
+
     using UnifiedWindowGroups =
         boost::container::small_vector<boost::container::small_vector<BufferCopy, 16>, 4>;
 
@@ -533,11 +537,15 @@ private:
     Common::RangeSet<DAddr> uncommitted_gpu_modified_ranges;
     Common::RangeSet<DAddr> gpu_modified_ranges;
     std::deque<Common::RangeSet<DAddr>> committed_gpu_modified_ranges;
+    Common::RangeSet<DAddr> unified_written_ranges;
+    u64 unified_write_tick = 0;
+    bool uncommitted_unified_writes = false;
 
     // Async Buffers
     struct AsyncDownloadBatch {
         boost::container::small_vector<BufferCopy, 4> staging_copies;
         boost::container::small_vector<BufferCopy, 4> unified_copies;
+        bool unified_writes = false;
     };
 
     Common::OverlapRangeSet<DAddr> async_downloads;

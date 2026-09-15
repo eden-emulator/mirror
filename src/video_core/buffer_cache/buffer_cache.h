@@ -78,6 +78,11 @@ void BufferCache<P>::TickFrame() {
         return;
     }
     runtime.TickFrame(slot_buffers);
+    if constexpr (USE_UNIFIED_MEMORY) {
+        if (!unified_written_ranges.Empty() && runtime.KnownGpuTick() >= unified_write_tick) {
+            unified_written_ranges.Clear();
+        }
+    }
 
     // Calculate hits and shots and move hit bits to the right
     const u32 hits = std::reduce(channel_state->uniform_cache_hits.begin(),
@@ -565,7 +570,8 @@ void BufferCache<P>::FlushCachedWrites() {
 
 template <class P>
 bool BufferCache<P>::HasUncommittedFlushes() const noexcept {
-    return !uncommitted_gpu_modified_ranges.Empty() || !committed_gpu_modified_ranges.empty();
+    return !uncommitted_gpu_modified_ranges.Empty() || !committed_gpu_modified_ranges.empty() ||
+           uncommitted_unified_writes;
 }
 
 template <class P>
@@ -582,15 +588,18 @@ bool BufferCache<P>::ShouldWaitAsyncFlushes() const noexcept {
         return false;
     }
     return async_buffers.front().has_value() ||
-           !pending_downloads.front().unified_copies.empty();
+           !pending_downloads.front().unified_copies.empty() ||
+           pending_downloads.front().unified_writes;
 }
 
 template <class P>
 void BufferCache<P>::CommitAsyncFlushesHigh() {
     AccumulateFlushes();
+    const bool unified_writes = uncommitted_unified_writes;
+    uncommitted_unified_writes = false;
 
     if (committed_gpu_modified_ranges.empty()) {
-        pending_downloads.emplace_back();
+        pending_downloads.emplace_back(AsyncDownloadBatch{.unified_writes = unified_writes});
         async_buffers.emplace_back(std::optional<Async_Buffer>{});
         return;
     }
@@ -650,7 +659,7 @@ void BufferCache<P>::CommitAsyncFlushesHigh() {
     }
     committed_gpu_modified_ranges.clear();
     if (downloads.empty()) {
-        pending_downloads.emplace_back();
+        pending_downloads.emplace_back(AsyncDownloadBatch{.unified_writes = unified_writes});
         async_buffers.emplace_back(std::optional<Async_Buffer>{});
         return;
     }
@@ -726,6 +735,7 @@ void BufferCache<P>::CommitAsyncFlushesHigh() {
         }
     }
     runtime.PostCopyBarrier();
+    batch.unified_writes = unified_writes;
     pending_downloads.emplace_back(std::move(batch));
     async_buffers.emplace_back(std::move(download_staging));
 }
@@ -1030,6 +1040,7 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
         || (has_host_buffer && size <= channel_state->uniform_buffer_skip_cache_size
             && !memory_tracker.IsRegionGpuModified(device_addr, size));
     if (use_fast_buffer) {
+        WaitForUnifiedWrites(device_addr, size);
         if constexpr (IS_OPENGL) {
             if (runtime.HasFastBufferSubData()) {
                 // Fast path for Nvidia
@@ -1155,6 +1166,47 @@ bool BufferCache<P>::BindMultiRangeStorage(const Binding& binding, bool is_writt
 }
 
 template <class P>
+void BufferCache<P>::WaitForUnifiedWrites([[maybe_unused]] DAddr device_addr,
+                                          [[maybe_unused]] u64 size) {
+    if constexpr (USE_UNIFIED_MEMORY) {
+        if (unified_written_ranges.Empty()) {
+            return;
+        }
+        bool overlaps = false;
+        unified_written_ranges.ForEachInRange(device_addr, size,
+                                              [&overlaps](DAddr, DAddr) { overlaps = true; });
+        if (!overlaps) {
+            return;
+        }
+        runtime.Wait(unified_write_tick);
+        unified_written_ranges.Clear();
+    }
+}
+
+template <class P>
+bool BufferCache<P>::BindUnifiedStorage([[maybe_unused]] const Binding& binding,
+                                        [[maybe_unused]] bool is_written) {
+    if constexpr (USE_UNIFIED_MEMORY) {
+        const auto window = TryResolveUnifiedRange(binding.device_addr, binding.size);
+        if (!window || !runtime.IsUnifiedStorageRange(binding.size, window->offset)) {
+            return false;
+        }
+        if (is_written) {
+            memory_tracker.MarkRegionAsCpuModified(binding.device_addr, binding.size);
+            unified_written_ranges.Add(binding.device_addr, binding.size);
+            unified_write_tick = runtime.CurrentTick();
+            uncommitted_unified_writes = true;
+        }
+        runtime.BindStorageBuffer(runtime.UnifiedWindowBuffer(window->window),
+                                  runtime.UnifiedWindowAddress(window->window),
+                                  static_cast<u32>(window->offset), binding.size, is_written);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <class P>
 void BufferCache<P>::BindHostGraphicsStorageBuffers(size_t stage) {
     u32 binding_index = 0;
     ForEachEnabledBit(channel_state->enabled_storage_buffers[stage], [&](u32 index) {
@@ -1165,20 +1217,10 @@ void BufferCache<P>::BindHostGraphicsStorageBuffers(size_t stage) {
         }
         Buffer& buffer = slot_buffers[binding.buffer_id];
         TouchBuffer(buffer, binding.buffer_id);
-        const u32 size = binding.size;
-
-        if constexpr (USE_UNIFIED_MEMORY) {
-            const auto window = TryResolveUnifiedRange(binding.device_addr, size);
-            if (window && runtime.IsUnifiedStorageRange(size, window->offset)) {
-                if (is_written) {
-                    memory_tracker.MarkRegionAsCpuModified(binding.device_addr, size);
-                }
-                runtime.BindStorageBuffer(runtime.UnifiedWindowBuffer(window->window),
-                                          runtime.UnifiedWindowAddress(window->window),
-                                          static_cast<u32>(window->offset), size, is_written);
-                return;
-            }
+        if (BindUnifiedStorage(binding, is_written)) {
+            return;
         }
+        const u32 size = binding.size;
 
         SynchronizeBuffer(buffer, binding.device_addr, size);
 
@@ -1288,6 +1330,7 @@ void BufferCache<P>::BindHostComputeUniformBuffers() {
         }();
         if constexpr (!IS_OPENGL) {
             if (needs_alignment_stream) {
+                WaitForUnifiedWrites(binding.device_addr, size);
                 const std::span<u8> span =
                     runtime.BindMappedUniformBuffer(0, binding_index, size);
                 device_memory.ReadBlockUnsafe(binding.device_addr, span.data(), size);
@@ -1319,6 +1362,9 @@ void BufferCache<P>::BindHostComputeStorageBuffers() {
         }
         Buffer& buffer = slot_buffers[binding.buffer_id];
         TouchBuffer(buffer, binding.buffer_id);
+        if (BindUnifiedStorage(binding, is_written)) {
+            return;
+        }
         const u32 size = binding.size;
         SynchronizeBuffer(buffer, binding.device_addr, size);
 
@@ -1847,6 +1893,7 @@ bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 si
     if (total_size_bytes == 0) {
         return true;
     }
+    WaitForUnifiedWrites(device_addr, size);
     const std::span<BufferCopy> copies_span(upload_copies.data(), upload_copies.size());
     UploadMemory(buffer, total_size_bytes, largest_copy, copies_span);
     any_buffer_uploaded = true;
