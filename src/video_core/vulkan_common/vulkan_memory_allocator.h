@@ -7,6 +7,8 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -134,12 +136,53 @@ namespace Vulkan {
             return bindable;
         }
 
+        [[nodiscard]] VkBufferUsageFlags GetUsage() const noexcept {
+            return buffer_usage;
+        }
+
+        struct Range {
+            VkBuffer buffer{};
+            VkDeviceAddress address{};
+            VkDeviceSize offset{};
+        };
+
+        [[nodiscard]] std::optional<Range> ResolveRange(VkDeviceSize relative,
+                                                        VkDeviceSize size) const noexcept;
+
+        struct ViewMemory {
+            VkBuffer buffer{};
+            VkDeviceMemory memory{};
+            VkDeviceSize offset{};
+            VkDeviceSize available{};
+            u32 memory_type{};
+        };
+
+        [[nodiscard]] std::optional<ViewMemory> ResolveViewMemory(
+                VkDeviceSize relative) const noexcept;
+
+        [[nodiscard]] VkBufferUsageFlags GetViewUsage() const noexcept {
+            if (!mirror_capable || !bindable) {
+                return 0;
+            }
+            return mirror_usage;
+        }
+
+        void CreateMirror(std::mutex &submit_mutex, VkDeviceSize max_size);
+
+        [[nodiscard]] VkDeviceSize GetMirrorSize() const noexcept {
+            return mirror_size;
+        }
+
     private:
         struct Window {
             vk::DeviceMemory memory;
             VkBuffer buffer{};
             VkDeviceAddress address{};
+            VkDeviceSize size{};
+            u32 memory_type{};
         };
+
+        [[nodiscard]] bool SupportsMirror(VkBufferUsageFlags usage) const;
 
         bool ImportHostPointer(void *base, size_t size);
 
@@ -154,6 +197,12 @@ namespace Vulkan {
         size_t base_offset{};
         bool foreign_ownership{};
         bool bindable{};
+        bool mirror_capable{};
+        VkBufferUsageFlags buffer_usage{};
+        VkBufferUsageFlags mirror_usage{};
+        VkBuffer mirror_buffer{};
+        VkDeviceAddress mirror_address{};
+        VkDeviceSize mirror_size{};
     };
 
 /// Memory allocator container.

@@ -178,6 +178,7 @@ struct InstanceDispatch {
     PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties{};
     PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices{};
     PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr{};
+    PFN_vkGetPhysicalDeviceExternalBufferProperties vkGetPhysicalDeviceExternalBufferProperties{};
     PFN_vkGetPhysicalDeviceFeatures2 vkGetPhysicalDeviceFeatures2{};
     PFN_vkGetPhysicalDeviceFormatProperties vkGetPhysicalDeviceFormatProperties{};
     PFN_vkGetPhysicalDeviceFormatProperties2 vkGetPhysicalDeviceFormatProperties2{};
@@ -1242,6 +1243,10 @@ public:
 
     VkPhysicalDeviceMemoryProperties2 GetMemoryProperties(
         void* next_structures = nullptr) const noexcept;
+
+    VkExternalMemoryProperties GetExternalBufferProperties(
+        VkBufferCreateFlags flags, VkBufferUsageFlags usage,
+        VkExternalMemoryHandleTypeFlagBits handle_type) const noexcept;
 
 private:
     VkPhysicalDevice physical_device = nullptr;

@@ -96,6 +96,11 @@ struct MultiRangeSegment {
     u32 size{};
 };
 
+struct UnifiedExtent {
+    u64 relative{};
+    u64 size{};
+};
+
 struct TextureBufferBinding : Binding {
     PixelFormat format;
 };
@@ -192,6 +197,9 @@ class BufferCache : public VideoCommon::ChannelSetupCaches<BufferCacheChannelInf
     static constexpr bool SEPARATE_IMAGE_BUFFERS_BINDINGS = P::SEPARATE_IMAGE_BUFFER_BINDINGS;
     static constexpr bool USE_MEMORY_MAPS_FOR_UPLOADS = P::USE_MEMORY_MAPS_FOR_UPLOADS;
     static constexpr bool USE_UNIFIED_MEMORY = P::USE_UNIFIED_MEMORY;
+    static constexpr u64 VERTEX_GEOMETRY_SALT = u64{1} << 47;
+    static constexpr u64 INDEX_GEOMETRY_SALT = u64{1} << 46;
+    static constexpr u64 VIEW_GEOMETRY_SALT = u64{1} << 45;
 
 #ifdef YUZU_LEGACY
     static constexpr s64 TARGET_THRESHOLD = 3_GiB;
@@ -231,6 +239,9 @@ public:
                                std::span<const MultiRangeSegment> pool);
 
     bool BindUnifiedStorage(const Binding& binding, bool is_written);
+
+    bool PushMultiRangeSources(const Binding& binding, bool is_written,
+                               std::span<const MultiRangeSegment> pool, u64 key);
 
     void ResolveMultiRangeStorage(Binding& binding, bool is_written,
                                   std::vector<MultiRangeSegment>& pool);
@@ -468,14 +479,31 @@ private:
 
     bool TryUnifiedDownloadMemory(Buffer& buffer, std::span<BufferCopy> copies);
 
-    struct UnifiedWindowRange {
-        size_t window;
-        u64 offset;
-    };
+    std::optional<u64> TryResolveUnifiedRange(DAddr device_addr, u64 size);
 
-    std::optional<UnifiedWindowRange> TryResolveUnifiedRange(DAddr device_addr, u64 size);
+    using UnifiedExtents = boost::container::small_vector<UnifiedExtent, 8>;
+
+    bool TryResolveUnifiedSegments(const Binding& binding, std::span<const MultiRangeSegment> pool,
+                                   UnifiedExtents& extents);
+
+    void ResolveGeometrySegments(bool is_indexed);
+
+    bool StageVirtualVertexBuffer(u32 index, const Binding& binding, bool force);
+
+    bool BindVirtualIndexBuffer();
+
+    void BindStagedVertexBuffers();
+
+    [[nodiscard]] u64 GeometryKey(GPUVAddr gpu_addr, u64 salt) const;
+
+    [[nodiscard]] u32 ClampToMappedRange(GPUVAddr gpu_addr, u32 size) const;
+
+    bool HasPendingUnifiedWrites(DAddr device_addr, u64 size);
 
     void WaitForUnifiedWrites(DAddr device_addr, u64 size);
+
+    template <typename Func>
+    bool CopyUnifiedWrites(Buffer& buffer, DAddr device_addr, u64 size, Func&& add_upload);
 
     using UnifiedWindowGroups =
         boost::container::small_vector<boost::container::small_vector<BufferCopy, 16>, 4>;
@@ -528,6 +556,7 @@ private:
     u32 last_index_count = 0;
 
     u32 enabled_vertex_buffers_mask = 0;
+    u32 virtual_vertex_buffers_mask = 0;
     u64 vertex_buffers_serial = 0;
     std::array<Binding, 32> v_buffer{};
 

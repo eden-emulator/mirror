@@ -137,6 +137,9 @@ void TextureCache<P>::RunGarbageCollector() {
         if (True(image.flags & ImageFlagBits::IsDecoding)) {
             return false;
         }
+        if (image.eviction_pending) {
+            return false;
+        }
         const bool must_download = IsDownloadable(image) && False(image.flags & ImageFlagBits::BadOverlap);
         if ((!aggressive_mode && True(image.flags & ImageFlagBits::CostlyLoad)) || (!high_priority_mode && must_download)) {
             return false;
@@ -146,15 +149,14 @@ void TextureCache<P>::RunGarbageCollector() {
                 return false;
             }
             --num_downloads;
-            if (TryDownloadToUnifiedMemory(image)) {
-                runtime.Finish();
-            } else {
-                auto map = runtime.DownloadStagingBuffer(image.unswizzled_size_bytes);
-                const auto copies = FixSmallVectorADL(FullDownloadCopies(image.info));
-                image.DownloadMemory(map, copies);
-                runtime.Finish();
-                SwizzleImage(*gpu_memory, image.gpu_addr, image.info, copies, map.mapped_span, swizzle_data_buffer);
+            if (StartEviction(image_id, image)) {
+                return false;
             }
+            auto map = runtime.DownloadStagingBuffer(image.unswizzled_size_bytes);
+            const auto copies = FixSmallVectorADL(FullDownloadCopies(image.info));
+            image.DownloadMemory(map, copies);
+            runtime.Finish();
+            SwizzleImage(*gpu_memory, image.gpu_addr, image.info, copies, map.mapped_span, swizzle_data_buffer);
         }
         if (True(image.flags & ImageFlagBits::Tracked)) {
             UntrackImage(image, image_id);
@@ -180,6 +182,7 @@ void TextureCache<P>::RunGarbageCollector() {
 
 template <class P>
 void TextureCache<P>::TickFrame() {
+    FinishEvictions();
     // If we can obtain the memory info, use it instead of the estimate.
     if (runtime.CanReportMemoryUsage()) {
         total_used_memory = runtime.GetDeviceMemoryUsage();
@@ -600,7 +603,7 @@ void TextureCache<P>::WriteMemory(DAddr cpu_addr, size_t size) {
             if (image.direct_upload_tick != 0) {
                 const u64 upload_tick = image.direct_upload_tick;
                 image.direct_upload_tick = 0;
-                if (!runtime.IsDirectUploadRetired(upload_tick)) {
+                if (!runtime.IsTickRetired(upload_tick)) {
             image.direct_upload_blocked = true;
         }
             }
@@ -910,10 +913,6 @@ void TextureCache<P>::CommitAsyncFlushes() {
         bool any_none_dma = false;
         for (PendingDownload& download_info : download_ids) {
             if (download_info.is_swizzle) {
-                if (TryDownloadToUnifiedMemory(slot_images[download_info.object_id])) {
-                    download_info.is_unified = true;
-                    continue;
-                }
                 total_size_bytes +=
                     Common::AlignUp(slot_images[download_info.object_id].unswizzled_size_bytes, 64);
                 any_none_dma = true;
@@ -924,7 +923,7 @@ void TextureCache<P>::CommitAsyncFlushes() {
         if (any_none_dma) {
             auto download_map = runtime.DownloadStagingBuffer(total_size_bytes, true);
             for (const PendingDownload& download_info : download_ids) {
-                if (download_info.is_swizzle && !download_info.is_unified) {
+                if (download_info.is_swizzle) {
                     Image& image = slot_images[download_info.object_id];
                     const auto copies = FixSmallVectorADL(FullDownloadCopies(image.info));
                     image.DownloadMemory(download_map, copies);
@@ -956,9 +955,6 @@ void TextureCache<P>::PopAsyncFlushes() {
         auto download_map = std::move(async_buffers.front());
         for (size_t i = download_ids.size(); i > 0; i--) {
             auto& download_info = download_ids[i - 1];
-            if (download_info.is_unified) {
-                continue;
-            }
             auto& download_buffer = download_map[download_info.async_buffer_id];
             if (download_info.is_swizzle) {
                 const ImageBase& image = slot_images[download_info.object_id];
@@ -1192,14 +1188,10 @@ void TextureCache<P>::RefreshContents(Image& image, ImageId image_id) {
 }
 
 template <class P>
-std::optional<std::pair<size_t, u64>> TextureCache<P>::ResolveUnifiedImageWindow(
+std::optional<u64> TextureCache<P>::ResolveUnifiedImageOffset(
     [[maybe_unused]] const ImageBase& image) {
     if constexpr (USE_UNIFIED_MEMORY) {
         if (image.guest_size_bytes == 0 || !runtime.IsUnifiedMemoryBindable()) {
-            return std::nullopt;
-        }
-        const u64 window_size = runtime.UnifiedMemoryWindowSize();
-        if (window_size == 0) {
             return std::nullopt;
         }
         const u8* const first = gpu_memory->GetSpan(image.gpu_addr, image.guest_size_bytes);
@@ -1216,11 +1208,7 @@ std::optional<std::pair<size_t, u64>> TextureCache<P>::ResolveUnifiedImageWindow
         if (relative >= unified_size || unified_size - relative < image.guest_size_bytes) {
             return std::nullopt;
         }
-        const u64 local_offset = relative % window_size;
-        if (window_size - local_offset < image.guest_size_bytes) {
-            return std::nullopt;
-        }
-        return std::pair{static_cast<size_t>(relative / window_size), local_offset};
+        return relative;
     } else {
         return std::nullopt;
     }
@@ -1232,13 +1220,12 @@ bool TextureCache<P>::TryUploadFromUnifiedMemory([[maybe_unused]] Image& image) 
         if (image.direct_upload_blocked || !runtime.CanUploadImageDirectly(image.info)) {
             return false;
         }
-        const auto window = ResolveUnifiedImageWindow(image);
-        if (!window) {
+        const auto relative = ResolveUnifiedImageOffset(image);
+        if (!relative) {
             return false;
         }
         const auto swizzles = FullUploadSwizzles(image.info);
-        if (!runtime.UploadImageDirectly(image, window->first, window->second,
-                                         FixSmallVectorADL(swizzles))) {
+        if (!runtime.UploadImageDirectly(image, *relative, FixSmallVectorADL(swizzles))) {
             return false;
         }
         image.direct_upload_tick = runtime.CurrentTick();
@@ -1258,14 +1245,73 @@ bool TextureCache<P>::TryDownloadToUnifiedMemory([[maybe_unused]] Image& image) 
             image.info.layer_stride != CalculateLayerStride(image.info)) {
             return false;
         }
-        const auto window = ResolveUnifiedImageWindow(image);
-        if (!window) {
+        const auto relative = ResolveUnifiedImageOffset(image);
+        if (!relative) {
             return false;
         }
-        return runtime.DownloadImageDirectly(image, window->first, window->second);
+        return runtime.DownloadImageDirectly(image, *relative);
     } else {
         return false;
     }
+}
+
+template <class P>
+bool TextureCache<P>::StartEviction([[maybe_unused]] ImageId image_id,
+                                    [[maybe_unused]] Image& image) {
+    if constexpr (requires { runtime.IsTickRetired(u64{}); }) {
+        auto staging = runtime.DownloadStagingBuffer(image.unswizzled_size_bytes, true);
+        const auto copies = FixSmallVectorADL(FullDownloadCopies(image.info));
+        image.DownloadMemory(staging, copies);
+        eviction_staging.emplace_back(image_id, staging);
+        image.eviction_pending = true;
+        image.eviction_tick = runtime.CurrentTick();
+        image.eviction_modification_tick = image.modification_tick;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <class P>
+void TextureCache<P>::FinishEvictions() {
+    if constexpr (requires { runtime.IsTickRetired(u64{}); }) {
+        size_t index = 0;
+        while (index < eviction_staging.size()) {
+            const ImageId image_id = eviction_staging[index].first;
+            Image& image = slot_images[image_id];
+            if (!runtime.IsTickRetired(image.eviction_tick)) {
+                ++index;
+                continue;
+            }
+            const bool unchanged = image.modification_tick == image.eviction_modification_tick;
+            if (unchanged && False(image.flags & ImageFlagBits::CpuModified)) {
+                const auto copies = FixSmallVectorADL(FullDownloadCopies(image.info));
+                SwizzleImage(*gpu_memory, image.gpu_addr, image.info, copies,
+                             eviction_staging[index].second.mapped_span, swizzle_data_buffer);
+            }
+            CancelEviction(image_id);
+            if (!unchanged) {
+                continue;
+            }
+            if (True(image.flags & ImageFlagBits::Tracked)) {
+                UntrackImage(image, image_id);
+            }
+            UnregisterImage(image_id);
+            DeleteImage(image_id, image.scale_tick > frame_tick + 5);
+        }
+    }
+}
+
+template <class P>
+void TextureCache<P>::CancelEviction(ImageId image_id) {
+    slot_images[image_id].eviction_pending = false;
+    const auto it = std::ranges::find_if(
+        eviction_staging, [image_id](const auto& entry) { return entry.first == image_id; });
+    if (it == eviction_staging.end()) {
+        return;
+    }
+    async_buffers_death_ring.emplace_back(std::move(it->second));
+    eviction_staging.erase(it);
 }
 
 template <class P>
@@ -2434,6 +2480,9 @@ void TextureCache<P>::UntrackImage(ImageBase& image, ImageId image_id) {
 template <class P>
 void TextureCache<P>::DeleteImage(ImageId image_id, bool immediate_delete) {
     ImageBase& image = slot_images[image_id];
+    if (image.eviction_pending) {
+        CancelEviction(image_id);
+    }
     if (image.HasScaled()) {
         total_used_memory -= GetScaledImageSizeBytes(image);
     }
@@ -2621,6 +2670,9 @@ void TextureCache<P>::SynchronizeAliases(ImageId image_id) {
 template <class P>
 void TextureCache<P>::PrepareImage(ImageId image_id, bool is_modification, bool invalidate) {
     Image& image = slot_images[image_id];
+    if (image.eviction_pending) {
+        CancelEviction(image_id);
+    }
     if (invalidate) {
         image.flags &= ~(ImageFlagBits::CpuModified | ImageFlagBits::GpuModified);
         if (False(image.flags & ImageFlagBits::Tracked)) {

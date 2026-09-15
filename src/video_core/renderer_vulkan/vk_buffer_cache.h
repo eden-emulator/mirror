@@ -135,6 +135,9 @@ public:
     void CopyToUnifiedMemory(size_t window_index, VkBuffer src_buffer,
                              std::span<const VideoCommon::BufferCopy> copies);
 
+    void CopyFromUnifiedMemory(size_t window_index, VkBuffer dst_buffer,
+                               std::span<const VideoCommon::BufferCopy> copies);
+
     void FlushUnifiedMemoryCopies();
 
     void UnifiedMemoryHostBarrier();
@@ -229,6 +232,21 @@ public:
 
     bool BindMultiRangeStorageBuffer(u64 key, bool is_written);
 
+    bool StageUnifiedVertexBuffer(u32 index, u64 key,
+                                  std::span<const VideoCommon::UnifiedExtent> extents, u32 size,
+                                  u32 stride, bool force);
+
+    bool StageMultiRangeVertexBuffer(u32 index, u64 key, u32 size, u32 stride, bool force);
+
+    void BindStagedVertexBuffers();
+
+    bool BindUnifiedIndexBuffer(PrimitiveTopology topology, IndexFormat index_format,
+                                u32 base_vertex, u32 num_indices, u64 key,
+                                std::span<const VideoCommon::UnifiedExtent> extents, u32 size);
+
+    bool BindMultiRangeIndexBuffer(PrimitiveTopology topology, IndexFormat index_format,
+                                   u32 base_vertex, u32 num_indices, u64 key, u32 size);
+
     void InvalidateMultiRange(u64 key) {
         multi_range_buffers.Invalidate(key);
     }
@@ -246,7 +264,7 @@ public:
         BindBuffer(buffer, offset, size);
     }
 
-    void BindStorageBuffer(VkBuffer buffer, VkDeviceAddress address, u32 offset, u32 size,
+    void BindStorageBuffer(VkBuffer buffer, VkDeviceAddress address, VkDeviceSize offset, u32 size,
                            [[maybe_unused]] bool is_written) {
         guest_descriptor_queue.AddBuffer(buffer, address, offset, size);
     }
@@ -256,17 +274,16 @@ public:
                unified_memory->IsBindable();
     }
 
-    [[nodiscard]] VkBuffer UnifiedWindowBuffer(size_t index) const noexcept {
-        return unified_memory->GetWindowBuffer(index);
-    }
-
-    [[nodiscard]] VkDeviceAddress UnifiedWindowAddress(size_t index) const noexcept {
-        return unified_memory->GetWindowAddress(index);
-    }
-
-    [[nodiscard]] bool IsUnifiedStorageRange(u32 size, u64 offset) const {
-        return size <= device.GetMaxStorageBufferRange() &&
-               (offset % device.GetStorageBufferAlignment()) == 0;
+    [[nodiscard]] std::optional<HostMemoryImport::Range> ResolveUnifiedStorage(u64 relative,
+                                                                             u32 size) const {
+        if (size > device.GetMaxStorageBufferRange()) {
+            return std::nullopt;
+        }
+        const auto range = unified_memory->ResolveRange(relative, size);
+        if (!range || (range->offset % device.GetStorageBufferAlignment()) != 0) {
+            return std::nullopt;
+        }
+        return range;
     }
 
     void BindTextureBuffer(Buffer& buffer, u32 offset, u32 size,
@@ -290,6 +307,29 @@ private:
         VkBuffer buffer;
         boost::container::small_vector<VkBufferCopy, 8> copies;
     };
+
+    struct StagedVertexBuffer {
+        u32 index;
+        VkBuffer buffer;
+        VkDeviceSize offset;
+        u32 size;
+        u32 stride;
+
+        bool operator==(const StagedVertexBuffer&) const = default;
+    };
+
+    [[nodiscard]] MultiRangeRef AcquireMultiRange(u64 key, bool require_sparse);
+
+    [[nodiscard]] std::optional<HostMemoryImport::Range> ResolveUnifiedExtents(
+        u64 key, std::span<const VideoCommon::UnifiedExtent> extents, u32 size);
+
+    [[nodiscard]] std::optional<HostMemoryImport::Range> AcquireUnifiedView(
+        u64 key, std::span<const VideoCommon::UnifiedExtent> extents);
+
+    void StageVertexBuffer(const StagedVertexBuffer& target, bool force);
+
+    [[nodiscard]] bool IsIndexRangeUsable(PrimitiveTopology topology, IndexFormat index_format,
+                                          VkDeviceSize offset, u32 size) const;
 
     void BindBuffer(const Buffer& buffer, u32 offset, u32 size) {
         const VkBuffer handle = buffer.Handle();
@@ -324,6 +364,9 @@ private:
     MultiRangeBufferCache multi_range_buffers;
     boost::container::small_vector<MultiRangeSource, 16> multi_range_sources;
     VkDeviceSize multi_range_total{};
+    boost::container::static_vector<StagedVertexBuffer, VideoCommon::NUM_VERTEX_BUFFERS>
+        staged_vertex_buffers;
+    std::array<StagedVertexBuffer, VideoCommon::NUM_VERTEX_BUFFERS> bound_vertex_buffers{};
 
     bool limit_dynamic_storage_buffers = false;
     u32 max_dynamic_storage_buffers = (std::numeric_limits<u32>::max)();

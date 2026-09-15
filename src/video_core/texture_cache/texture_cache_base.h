@@ -310,12 +310,17 @@ private:
 
     void RefreshContents(Image& image, ImageId image_id);
 
-    [[nodiscard]] std::optional<std::pair<size_t, u64>> ResolveUnifiedImageWindow(
-        const ImageBase& image);
+    [[nodiscard]] std::optional<u64> ResolveUnifiedImageOffset(const ImageBase& image);
 
     bool TryUploadFromUnifiedMemory(Image& image);
 
     bool TryDownloadToUnifiedMemory(Image& image);
+
+    bool StartEviction(ImageId image_id, Image& image);
+
+    void FinishEvictions();
+
+    void CancelEviction(ImageId image_id);
 
     /// Upload data from guest to an image
     template <typename StagingBuffer>
@@ -476,7 +481,6 @@ private:
         bool is_swizzle;
         size_t async_buffer_id;
         Common::SlotId object_id;
-        bool is_unified = false;
     };
 
     Common::SlotVector<Image> slot_images;
@@ -494,6 +498,7 @@ private:
     std::vector<AsyncBuffer> uncommitted_async_buffers;
     std::deque<std::vector<AsyncBuffer>> async_buffers;
     std::deque<AsyncBuffer> async_buffers_death_ring;
+    std::vector<std::pair<ImageId, AsyncBuffer>> eviction_staging;
 
     struct LRUItemParams {
         using ObjectType = ImageId;

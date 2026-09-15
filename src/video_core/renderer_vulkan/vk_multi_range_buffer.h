@@ -53,11 +53,18 @@ public:
                                     std::span<const MultiRangeSource> sources,
                                     VkDeviceSize total);
 
+    [[nodiscard]] MultiRangeRef GetView(const Device& device, Scheduler& scheduler, u64 key,
+                                        std::span<const MultiRangeSource> sources,
+                                        VkDeviceSize total, VkBufferUsageFlags usage,
+                                        VkExternalMemoryHandleTypeFlags handle_types);
+
     void MarkGathered(u64 key);
 
     void Invalidate(u64 key);
 
     void DropOwner(Scheduler& scheduler, VkBuffer owner);
+
+    void ReserveSparseAddressSpace(VkDeviceSize size) noexcept;
 
     VkDeviceSize block_size{DEFAULT_BLOCK_SIZE};
     bool use_sparse{};
@@ -67,6 +74,7 @@ private:
         SparseBuffer handle;
         vk::Buffer gathered;
         u64 tick{};
+        VkDeviceSize sparse_size{};
     };
 
     struct Entry {
@@ -77,6 +85,7 @@ private:
         VkDeviceSize size{};
         u64 geometry{};
         u64 content{};
+        u64 last_use{};
         bool dirty{true};
     };
 
@@ -88,7 +97,11 @@ private:
 
     [[nodiscard]] SparseBuffer CreateSparse(const Device& device, Scheduler& scheduler,
                                             std::span<const MultiRangeSource> sources,
-                                            VkDeviceSize total);
+                                            VkDeviceSize total, VkBufferCreateFlags flags,
+                                            VkBufferUsageFlags usage,
+                                            VkExternalMemoryHandleTypeFlags handle_types);
+
+    [[nodiscard]] bool FitsSparse(Scheduler& scheduler, VkDeviceSize total);
 
     [[nodiscard]] VkDeviceSize QueryBlockSize(const Device& device, u32& memory_type_bits) const;
 
@@ -100,6 +113,10 @@ private:
     boost::container::static_vector<Retired, MAX_RETIRED> retired;
     u32 sparse_memory_type_bits{};
     VkBufferUsageFlags sparse_usage{};
+    VkDeviceSize sparse_budget{};
+    VkDeviceSize sparse_in_use{};
+    VkDeviceSize sparse_retiring{};
+    bool views_supported{true};
 };
 
 } // namespace Vulkan

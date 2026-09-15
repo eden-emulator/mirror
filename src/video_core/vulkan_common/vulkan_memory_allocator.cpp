@@ -251,6 +251,7 @@ bool HostMemoryImport::ImportHostPointer(void *base, size_t size) {
         return false;
     }
     window_size = candidate_window;
+    buffer_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
     const auto &logical = device.GetLogical();
     const auto memory_props = device.GetPhysical().GetMemoryProperties().memoryProperties;
@@ -331,6 +332,9 @@ bool HostMemoryImport::ImportHostPointer(void *base, size_t size) {
         windows.push_back(Window{
                 .memory = std::move(memory),
                 .buffer = new_buffer,
+                .address = 0,
+                .size = window_len,
+                .memory_type = *type_index,
         });
         imported_size += static_cast<size_t>(window_len);
     }
@@ -361,7 +365,7 @@ bool HostMemoryImport::ImportHardwareBuffers(
     window_size = hardware_buffer_window;
     base_offset = hardware_buffer_base;
 
-        const auto import_all = [&](VkBufferUsageFlags usage, bool want_address) {
+        const auto import_all = [&](VkBufferUsageFlags usage, bool want_address, bool dedicated) {
     for (size_t i = 0; i < hardware_buffers.size(); ++i) {
         const size_t offset = hardware_buffer_base + i * hardware_buffer_window;
         if (offset >= size) {
@@ -424,13 +428,17 @@ bool HostMemoryImport::ImportHardwareBuffers(
                 .image = VK_NULL_HANDLE,
                 .buffer = new_buffer,
         };
+                const void *memory_next = &import_info;
+                if (dedicated) {
+                    memory_next = &dedicated_info;
+                }
                 const VkMemoryAllocateFlagsInfo flags_info{
                         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
-                        .pNext = &dedicated_info,
+                        .pNext = memory_next,
                         .flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
                         .deviceMask = 0,
                 };
-                const void *alloc_next = &dedicated_info;
+                const void *alloc_next = memory_next;
                 if (want_address) {
                     alloc_next = &flags_info;
                 }
@@ -457,6 +465,8 @@ bool HostMemoryImport::ImportHardwareBuffers(
                 .memory = std::move(memory),
                 .buffer = new_buffer,
                         .address = address,
+                        .size = window_len,
+                        .memory_type = *type_index,
         });
         imported_size += static_cast<size_t>(window_len);
     }
@@ -487,14 +497,26 @@ bool HostMemoryImport::ImportHardwareBuffers(
             imported_size = 0;
         };
 
-        bindable = import_all(shader_usage, want_address);
-        if (!bindable) {
+        mirror_capable = SupportsMirror(shader_usage);
+        buffer_usage = shader_usage;
+        bindable = import_all(shader_usage, want_address, !mirror_capable);
+        if (!bindable && mirror_capable) {
+            mirror_capable = false;
             reset_windows();
-            bindable = import_all(minimal_usage, want_address);
+            bindable = import_all(shader_usage, want_address, true);
+        }
+        if (bindable) {
+            mirror_usage = shader_usage;
         }
         if (!bindable) {
             reset_windows();
-            import_all(TransferUsage, false);
+            buffer_usage = minimal_usage;
+            bindable = import_all(minimal_usage, want_address, true);
+        }
+        if (!bindable) {
+            reset_windows();
+            buffer_usage = TransferUsage;
+            import_all(TransferUsage, false, true);
         }
     if (windows.empty()) {
         window_size = 0;
@@ -508,7 +530,181 @@ bool HostMemoryImport::ImportHardwareBuffers(
 #endif
 }
 
+bool HostMemoryImport::SupportsMirror([[maybe_unused]] VkBufferUsageFlags usage) const {
+#ifdef __ANDROID__
+    if (!device.IsSparseBindingSupported()) {
+        return false;
+    }
+    const auto supports = [&](VkBufferCreateFlags flags) {
+        const VkExternalMemoryProperties properties =
+                device.GetPhysical().GetExternalBufferProperties(
+                        flags, usage,
+                        VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID);
+        const VkExternalMemoryFeatureFlags features = properties.externalMemoryFeatures;
+        return (features & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT) != 0 &&
+               (features & VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT) == 0;
+    };
+    return supports(0) && supports(VK_BUFFER_CREATE_SPARSE_BINDING_BIT);
+#else
+    return false;
+#endif
+}
+
+std::optional<HostMemoryImport::Range> HostMemoryImport::ResolveRange(
+        VkDeviceSize relative, VkDeviceSize size) const noexcept {
+    if (window_size == 0 || size == 0 || relative >= imported_size ||
+        imported_size - relative < size) {
+        return std::nullopt;
+    }
+    const size_t index = static_cast<size_t>(relative / window_size);
+    const VkDeviceSize local_offset = relative % window_size;
+    if (index < windows.size() && windows[index].buffer != VK_NULL_HANDLE &&
+        local_offset < windows[index].size && windows[index].size - local_offset >= size) {
+        return Range{
+                .buffer = windows[index].buffer,
+                .address = windows[index].address,
+                .offset = local_offset,
+        };
+    }
+    if (mirror_buffer != VK_NULL_HANDLE && relative < mirror_size &&
+        mirror_size - relative >= size) {
+        return Range{
+                .buffer = mirror_buffer,
+                .address = mirror_address,
+                .offset = relative,
+        };
+    }
+    return std::nullopt;
+}
+
+std::optional<HostMemoryImport::ViewMemory> HostMemoryImport::ResolveViewMemory(
+        VkDeviceSize relative) const noexcept {
+    if (!mirror_capable || !bindable || window_size == 0) {
+        return std::nullopt;
+    }
+    const size_t index = static_cast<size_t>(relative / window_size);
+    if (index >= windows.size()) {
+        return std::nullopt;
+    }
+    const Window &window = windows[index];
+    const VkDeviceSize local_offset = relative % window_size;
+    if (window.buffer == VK_NULL_HANDLE || local_offset >= window.size) {
+        return std::nullopt;
+    }
+    return ViewMemory{
+            .buffer = window.buffer,
+            .memory = *window.memory,
+            .offset = local_offset,
+            .available = window.size - local_offset,
+            .memory_type = window.memory_type,
+    };
+}
+
+void HostMemoryImport::CreateMirror(std::mutex &submit_mutex, VkDeviceSize max_size) {
+    if (!mirror_capable || mirror_usage == 0 || !bindable || window_size == 0) {
+        return;
+    }
+    size_t mirror_windows = 0;
+    while (mirror_windows < windows.size() && windows[mirror_windows].size == window_size) {
+        ++mirror_windows;
+    }
+    mirror_windows = (std::min)(mirror_windows, static_cast<size_t>(max_size / window_size));
+    const u64 max_buffer_size = device.GetMaxBufferSize();
+    if (max_buffer_size != 0) {
+        const size_t max_windows = static_cast<size_t>(max_buffer_size / window_size);
+        mirror_windows = (std::min)(mirror_windows, max_windows);
+    }
+    if (mirror_windows < 2) {
+        return;
+    }
+    const auto &logical = device.GetLogical();
+    const VkDeviceSize total_size = static_cast<VkDeviceSize>(mirror_windows) * window_size;
+    const VkExternalMemoryBufferCreateInfo external_info{
+            .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+            .pNext = nullptr,
+            .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
+    };
+    const VkBufferCreateInfo buffer_ci{
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext = &external_info,
+            .flags = VK_BUFFER_CREATE_SPARSE_BINDING_BIT,
+            .size = total_size,
+            .usage = mirror_usage,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = nullptr,
+    };
+    VkBuffer buffer{};
+    if (logical.CreateBufferRaw(buffer_ci, &buffer) != VK_SUCCESS) {
+        return;
+    }
+    const VkMemoryRequirements requirements = logical.GetBufferMemoryRequirements(buffer);
+    bool compatible = requirements.alignment != 0 &&
+                      (window_size % requirements.alignment) == 0 &&
+                      requirements.size <= total_size;
+    for (size_t index = 0; index < mirror_windows && compatible; ++index) {
+        compatible = ((requirements.memoryTypeBits >> windows[index].memory_type) & 1u) != 0;
+    }
+    if (!compatible) {
+        logical.DestroyBufferRaw(buffer);
+        return;
+    }
+    std::vector<VkSparseMemoryBind> binds;
+    binds.reserve(mirror_windows);
+    for (size_t index = 0; index < mirror_windows; ++index) {
+        binds.push_back(VkSparseMemoryBind{
+                .resourceOffset = static_cast<VkDeviceSize>(index) * window_size,
+                .size = window_size,
+                .memory = *windows[index].memory,
+                .memoryOffset = 0,
+                .flags = 0,
+        });
+    }
+    const VkSparseBufferMemoryBindInfo buffer_bind{
+            .buffer = buffer,
+            .bindCount = static_cast<u32>(binds.size()),
+            .pBinds = binds.data(),
+    };
+    const VkBindSparseInfo bind_info{
+            .sType = VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,
+            .pNext = nullptr,
+            .waitSemaphoreCount = 0,
+            .pWaitSemaphores = nullptr,
+            .bufferBindCount = 1,
+            .pBufferBinds = &buffer_bind,
+            .imageOpaqueBindCount = 0,
+            .pImageOpaqueBinds = nullptr,
+            .imageBindCount = 0,
+            .pImageBinds = nullptr,
+            .signalSemaphoreCount = 0,
+            .pSignalSemaphores = nullptr,
+    };
+    vk::Fence fence = logical.CreateFence(VkFenceCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+    });
+    VkResult result = VK_ERROR_UNKNOWN;
+    {
+        std::scoped_lock lock{submit_mutex};
+        result = device.GetGraphicsQueue().BindSparse(bind_info, *fence);
+    }
+    if (result != VK_SUCCESS) {
+        logical.DestroyBufferRaw(buffer);
+        return;
+    }
+    fence.Wait();
+    mirror_buffer = buffer;
+    mirror_size = total_size;
+    if ((mirror_usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) != 0) {
+        mirror_address = logical.GetBufferDeviceAddress(buffer);
+    }
+}
+
 HostMemoryImport::~HostMemoryImport() {
+    if (mirror_buffer != VK_NULL_HANDLE) {
+        device.GetLogical().DestroyBufferRaw(mirror_buffer);
+    }
     for (Window &window : windows) {
         if (window.buffer != VK_NULL_HANDLE) {
             device.GetLogical().DestroyBufferRaw(window.buffer);

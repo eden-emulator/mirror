@@ -3198,44 +3198,35 @@ u64 TextureCacheRuntime::UnifiedMemorySize() const noexcept {
     return import->GetSize();
 }
 
-u64 TextureCacheRuntime::UnifiedMemoryWindowSize() const noexcept {
-    const HostMemoryImport* const import = memory_allocator.GetHostMemoryImport();
-    if (import == nullptr) {
-        return 0;
-    }
-    return import->GetWindowSize();
-}
-
 bool TextureCacheRuntime::CanUploadImageDirectly(const VideoCommon::ImageInfo& info) const {
     return bl2d_unswizzle_pass.has_value() &&
            BlockLinearUnswizzle2DPass::IsSupported(device, info);
 }
 
-VkBuffer TextureCacheRuntime::ResolveDirectWindow(size_t window_index, u64 window_offset,
-                                                  u64 size) const {
-    if ((window_offset % device.GetStorageBufferAlignment()) != 0) {
-        return VK_NULL_HANDLE;
-    }
+std::optional<HostMemoryImport::Range> TextureCacheRuntime::ResolveDirectRange(u64 relative,
+                                                                              u64 size) const {
     if (size > device.GetMaxStorageBufferRange()) {
-        return VK_NULL_HANDLE;
+        return std::nullopt;
     }
     const HostMemoryImport* const import = memory_allocator.GetHostMemoryImport();
-    if (import == nullptr || window_index >= import->GetWindowCount()) {
-        return VK_NULL_HANDLE;
+    if (import == nullptr) {
+        return std::nullopt;
     }
-    return import->GetWindowBuffer(window_index);
+    const auto range = import->ResolveRange(relative, size);
+    if (!range || range->buffer == VK_NULL_HANDLE ||
+        (range->offset % device.GetStorageBufferAlignment()) != 0) {
+        return std::nullopt;
+    }
+    return range;
 }
 
 bool TextureCacheRuntime::UploadImageDirectly(
-    Image& image, size_t window_index, u64 window_offset,
-    std::span<const VideoCommon::SwizzleParameters> swizzles) {
-    const VkBuffer window_buffer =
-        ResolveDirectWindow(window_index, window_offset, image.guest_size_bytes);
-    if (window_buffer == VK_NULL_HANDLE) {
+    Image& image, u64 relative, std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    const auto range = ResolveDirectRange(relative, image.guest_size_bytes);
+    if (!range) {
         return false;
     }
-    bl2d_unswizzle_pass->UnswizzleFrom(image, window_buffer,
-                                       static_cast<VkDeviceSize>(window_offset), swizzles);
+    bl2d_unswizzle_pass->UnswizzleFrom(image, range->buffer, range->offset, swizzles);
     return true;
 }
 
@@ -3243,15 +3234,16 @@ bool TextureCacheRuntime::CanDownloadImageDirectly(const VideoCommon::ImageInfo&
     return bl2d_swizzle_pass.has_value() && BlockLinearUnswizzle2DPass::IsSupported(device, info);
 }
 
-bool TextureCacheRuntime::DownloadImageDirectly(Image& image, size_t window_index,
-                                                u64 window_offset) {
-    const u64 size = (std::max)(image.guest_size_bytes, image.unswizzled_size_bytes);
-    const VkBuffer window_buffer = ResolveDirectWindow(window_index, window_offset, size);
-    if (window_buffer == VK_NULL_HANDLE) {
+bool TextureCacheRuntime::DownloadImageDirectly(Image& image, u64 relative) {
+    if (image.unswizzled_size_bytes > device.GetMaxStorageBufferRange()) {
+        return false;
+    }
+    const auto range = ResolveDirectRange(relative, image.guest_size_bytes);
+    if (!range) {
         return false;
     }
     const HostMemoryImport* const import = memory_allocator.GetHostMemoryImport();
-    bl2d_swizzle_pass->SwizzleInto(image, window_buffer, static_cast<VkDeviceSize>(window_offset),
+    bl2d_swizzle_pass->SwizzleInto(image, range->buffer, range->offset,
                                    import->NeedsForeignOwnershipTransfer());
     return true;
 }
@@ -3260,7 +3252,7 @@ u64 TextureCacheRuntime::CurrentTick() const noexcept {
     return scheduler.CurrentTick();
 }
 
-bool TextureCacheRuntime::IsDirectUploadRetired(u64 tick) {
+bool TextureCacheRuntime::IsTickRetired(u64 tick) {
     if (scheduler.IsFree(tick)) {
         return true;
     }

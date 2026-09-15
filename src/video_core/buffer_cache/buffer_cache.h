@@ -838,6 +838,9 @@ void BufferCache<P>::BindHostIndexBuffer() {
     const u32 size = channel_state->index_buffer.size;
     const auto& draw_state = maxwell3d->draw_manager.draw_state;
     if (draw_state.inline_index_draw_indexes.empty()) {
+        if (BindVirtualIndexBuffer()) {
+            return;
+        }
         SynchronizeBuffer(buffer, channel_state->index_buffer.device_addr, size);
     } else {
         if constexpr (USE_MEMORY_MAPS_FOR_UPLOADS) {
@@ -891,6 +894,7 @@ void BufferCache<P>::UpdateVertexBufferSlot(u32 index, const Binding& binding) {
         enabled_vertex_buffers_mask |= (1u << index);
     } else {
         enabled_vertex_buffers_mask &= ~(1u << index);
+        virtual_vertex_buffers_mask &= ~(1u << index);
     }
 }
 
@@ -923,8 +927,16 @@ void BufferCache<P>::BindHostVertexBuffers() {
             const Binding& binding = VertexBufferSlot(index);
             Buffer& buffer = slot_buffers[binding.buffer_id];
             TouchBuffer(buffer, binding.buffer_id);
+            if (StageVirtualVertexBuffer(index, binding, false)) {
+                continue;
+            }
+            bool needs_bind = flags[Dirty::VertexBuffer0 + index];
+            if (((virtual_vertex_buffers_mask >> index) & 1) != 0) {
+                virtual_vertex_buffers_mask &= ~(1u << index);
+                needs_bind = true;
+            }
             SynchronizeBuffer(buffer, binding.device_addr, binding.size);
-            if (!flags[Dirty::VertexBuffer0 + index]) {
+            if (!needs_bind) {
                 flush_bindings();
                 continue;
             }
@@ -945,6 +957,7 @@ void BufferCache<P>::BindHostVertexBuffers() {
             last_index = index;
         }
         flush_bindings();
+        BindStagedVertexBuffers();
     } else {
         HostBindings<typename P::Buffer> host_bindings;
         bool any_valid{false};
@@ -953,8 +966,17 @@ void BufferCache<P>::BindHostVertexBuffers() {
             const Binding& binding = channel_state->vertex_buffers[index];
             Buffer& buffer = slot_buffers[binding.buffer_id];
             TouchBuffer(buffer, binding.buffer_id);
+            if (((enabled_vertex_buffers_mask >> index) & 1) != 0 &&
+                StageVirtualVertexBuffer(index, binding, true)) {
+                continue;
+            }
+            bool needs_bind = flags[Dirty::VertexBuffer0 + index];
+            if (((virtual_vertex_buffers_mask >> index) & 1) != 0) {
+                virtual_vertex_buffers_mask &= ~(1u << index);
+                needs_bind = true;
+            }
             SynchronizeBuffer(buffer, binding.device_addr, binding.size);
-            if (!flags[Dirty::VertexBuffer0 + index]) {
+            if (!needs_bind) {
                 continue;
             }
             flags[Dirty::VertexBuffer0 + index] = false;
@@ -983,6 +1005,7 @@ void BufferCache<P>::BindHostVertexBuffers() {
             }
             runtime.BindVertexBuffers(host_bindings);
         }
+        BindStagedVertexBuffers();
     }
 }
 
@@ -1038,9 +1061,12 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
     }();
     const bool use_fast_buffer = needs_alignment_stream
         || (has_host_buffer && size <= channel_state->uniform_buffer_skip_cache_size
-            && !memory_tracker.IsRegionGpuModified(device_addr, size));
+            && !memory_tracker.IsRegionGpuModified(device_addr, size)
+            && !HasPendingUnifiedWrites(device_addr, size));
     if (use_fast_buffer) {
-        WaitForUnifiedWrites(device_addr, size);
+        if (needs_alignment_stream) {
+            WaitForUnifiedWrites(device_addr, size);
+        }
         if constexpr (IS_OPENGL) {
             if (runtime.HasFastBufferSubData()) {
                 // Fast path for Nvidia
@@ -1137,29 +1163,222 @@ template <class P>
 bool BufferCache<P>::BindMultiRangeStorage(const Binding& binding, bool is_written,
                                            std::span<const MultiRangeSegment> pool) {
     if constexpr (requires { runtime.BindMultiRangeStorageBuffer(u64{}, bool{}); }) {
+        const u64 key = GeometryKey(binding.gpu_addr, 0);
+        if (!PushMultiRangeSources(binding, is_written, pool, key)) {
+            return false;
+        }
+        return runtime.BindMultiRangeStorageBuffer(key, is_written);
+    } else {
+        return false;
+    }
+}
+
+template <class P>
+u64 BufferCache<P>::GeometryKey(GPUVAddr gpu_addr, u64 salt) const {
+    return ((static_cast<u64>(gpu_memory->GetID()) << 48) ^ gpu_addr) ^ salt;
+}
+
+template <class P>
+u32 BufferCache<P>::ClampToMappedRange(GPUVAddr gpu_addr, u32 size) const {
+    const size_t mapped = gpu_memory->MaxMappedRange(gpu_addr, size);
+    if (mapped == 0 || mapped >= size) {
+        return size;
+    }
+    return static_cast<u32>(mapped);
+}
+
+template <class P>
+bool BufferCache<P>::PushMultiRangeSources(const Binding& binding, bool is_written,
+                                           std::span<const MultiRangeSegment> pool, u64 key) {
+    if constexpr (requires { runtime.BindMultiRangeStorageBuffer(u64{}, bool{}); }) {
         if (binding.segment_count < 2) {
             return false;
         }
         if (binding.segment_first + binding.segment_count > pool.size()) {
             return false;
         }
-        const u64 key = (static_cast<u64>(gpu_memory->GetID()) << 48) ^ binding.gpu_addr;
+        const std::span<const MultiRangeSegment> segments =
+            pool.subspan(binding.segment_first, binding.segment_count);
+        boost::container::small_vector<BufferId, 8> buffer_ids;
+        for (const MultiRangeSegment& segment : segments) {
+            BufferId buffer_id = segment.buffer_id;
+            if (!buffer_id) {
+                buffer_id = page_table[segment.device_addr >> CACHING_PAGEBITS];
+            }
+            if (!buffer_id ||
+                !slot_buffers[buffer_id].IsInBounds(segment.device_addr, segment.size)) {
+                return false;
+            }
+            buffer_ids.push_back(buffer_id);
+        }
         runtime.ResetMultiRange();
         for (u32 index = 0; index < binding.segment_count; ++index) {
-            const MultiRangeSegment& segment = pool[binding.segment_first + index];
-            Buffer& buffer = slot_buffers[segment.buffer_id];
-            TouchBuffer(buffer, segment.buffer_id);
-            if (SynchronizeBuffer(buffer, segment.device_addr, segment.size)) {
+            const MultiRangeSegment& segment = segments[index];
+            const BufferId buffer_id = buffer_ids[index];
+            Buffer& buffer = slot_buffers[buffer_id];
+            TouchBuffer(buffer, buffer_id);
+            if (!SynchronizeBuffer(buffer, segment.device_addr, segment.size)) {
                 runtime.InvalidateMultiRange(key);
             }
             const u32 offset = buffer.Offset(segment.device_addr);
             buffer.MarkUsage(offset, segment.size);
             if (is_written) {
-                MarkWrittenBuffer(segment.buffer_id, segment.device_addr, segment.size);
+                MarkWrittenBuffer(buffer_id, segment.device_addr, segment.size);
             }
             runtime.PushMultiRangeSource(buffer, offset, segment.size);
         }
-        return runtime.BindMultiRangeStorageBuffer(key, is_written);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <class P>
+bool BufferCache<P>::TryResolveUnifiedSegments(
+    [[maybe_unused]] const Binding& binding,
+    [[maybe_unused]] std::span<const MultiRangeSegment> pool,
+    [[maybe_unused]] UnifiedExtents& extents) {
+    if constexpr (USE_UNIFIED_MEMORY) {
+        extents.clear();
+        const auto push = [&](DAddr device_addr, u64 size) {
+            const std::optional<u64> relative = TryResolveUnifiedRange(device_addr, size);
+            if (!relative) {
+                return false;
+            }
+            if (!extents.empty() && extents.back().relative + extents.back().size == *relative) {
+                extents.back().size += size;
+                return true;
+            }
+            extents.push_back(UnifiedExtent{.relative = *relative, .size = size});
+            return true;
+        };
+        if (binding.segment_count < 2) {
+            return push(binding.device_addr, binding.size);
+        }
+        if (binding.segment_first + binding.segment_count > pool.size()) {
+            return false;
+        }
+        for (const MultiRangeSegment& segment :
+             pool.subspan(binding.segment_first, binding.segment_count)) {
+            if (!push(segment.device_addr, segment.size)) {
+                return false;
+            }
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <class P>
+void BufferCache<P>::ResolveGeometrySegments([[maybe_unused]] bool is_indexed) {
+    if constexpr (requires { runtime.BindStagedVertexBuffers(); }) {
+        const auto& draw_state = maxwell3d->draw_manager.draw_state;
+        if (is_indexed && draw_state.inline_index_draw_indexes.empty()) {
+            ResolveMultiRangeStorage(channel_state->index_buffer, false, graphics_segments);
+        }
+        u32 enabled_mask = enabled_vertex_buffers_mask;
+        while (enabled_mask != 0) {
+            const u32 index = std::countr_zero(enabled_mask);
+            enabled_mask &= enabled_mask - 1;
+            Binding& slot = VertexBufferSlot(index);
+            ResolveMultiRangeStorage(slot, false, graphics_segments);
+            Binding& channel_binding = channel_state->vertex_buffers[index];
+            channel_binding.segment_first = slot.segment_first;
+            channel_binding.segment_count = slot.segment_count;
+        }
+    }
+}
+
+template <class P>
+bool BufferCache<P>::StageVirtualVertexBuffer([[maybe_unused]] u32 index,
+                                              [[maybe_unused]] const Binding& binding,
+                                              [[maybe_unused]] bool force) {
+    if constexpr (requires { runtime.BindStagedVertexBuffers(); }) {
+        auto& flags = maxwell3d->dirty.flags;
+        const bool rebind = force || flags[Dirty::VertexBuffer0 + index] ||
+                            ((virtual_vertex_buffers_mask >> index) & 1) == 0;
+        const u32 stride = maxwell3d->regs.vertex_streams[index].stride;
+        const u64 salt = VERTEX_GEOMETRY_SALT + (u64{index} << 40);
+        bool staged = false;
+        if constexpr (USE_UNIFIED_MEMORY) {
+            UnifiedExtents extents;
+            if (TryResolveUnifiedSegments(binding, graphics_segments, extents)) {
+                const u64 view_key = GeometryKey(binding.gpu_addr, salt + VIEW_GEOMETRY_SALT);
+                staged = runtime.StageUnifiedVertexBuffer(index, view_key, extents, binding.size,
+                                                          stride, rebind);
+            }
+        }
+        if (!staged) {
+            const u64 key = GeometryKey(binding.gpu_addr, salt);
+            if (PushMultiRangeSources(binding, false, graphics_segments, key)) {
+                staged = runtime.StageMultiRangeVertexBuffer(index, key, binding.size, stride,
+                                                             rebind);
+            }
+        }
+        if (!staged) {
+            return false;
+        }
+        flags[Dirty::VertexBuffer0 + index] = false;
+        virtual_vertex_buffers_mask |= 1u << index;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <class P>
+bool BufferCache<P>::BindVirtualIndexBuffer() {
+    if constexpr (!HAS_FULL_INDEX_AND_PRIMITIVE_SUPPORT &&
+                  requires { runtime.BindStagedVertexBuffers(); }) {
+        const Binding& binding = channel_state->index_buffer;
+        const auto& draw_state = maxwell3d->draw_manager.draw_state;
+        const auto& index_ref = draw_state.index_buffer;
+        if constexpr (USE_UNIFIED_MEMORY) {
+            UnifiedExtents extents;
+            const u64 view_key =
+                GeometryKey(binding.gpu_addr, INDEX_GEOMETRY_SALT + VIEW_GEOMETRY_SALT);
+            if (TryResolveUnifiedSegments(binding, graphics_segments, extents) &&
+                runtime.BindUnifiedIndexBuffer(draw_state.topology, index_ref.format,
+                                               index_ref.first, index_ref.count, view_key,
+                                               extents, binding.size)) {
+                return true;
+            }
+        }
+        const u64 key = GeometryKey(binding.gpu_addr, INDEX_GEOMETRY_SALT);
+        if (!PushMultiRangeSources(binding, false, graphics_segments, key)) {
+            return false;
+        }
+        return runtime.BindMultiRangeIndexBuffer(draw_state.topology, index_ref.format,
+                                                 index_ref.first, index_ref.count, key,
+                                                 binding.size);
+    } else {
+        return false;
+    }
+}
+
+template <class P>
+void BufferCache<P>::BindStagedVertexBuffers() {
+    if constexpr (requires { runtime.BindStagedVertexBuffers(); }) {
+        runtime.BindStagedVertexBuffers();
+    }
+}
+
+template <class P>
+bool BufferCache<P>::HasPendingUnifiedWrites([[maybe_unused]] DAddr device_addr,
+                                             [[maybe_unused]] u64 size) {
+    if constexpr (USE_UNIFIED_MEMORY) {
+        if (unified_written_ranges.Empty()) {
+            return false;
+        }
+        if (runtime.KnownGpuTick() >= unified_write_tick) {
+            unified_written_ranges.Clear();
+            return false;
+        }
+        bool overlaps = false;
+        unified_written_ranges.ForEachInRange(device_addr, size,
+                                              [&overlaps](DAddr, DAddr) { overlaps = true; });
+        return overlaps;
     } else {
         return false;
     }
@@ -1169,13 +1388,7 @@ template <class P>
 void BufferCache<P>::WaitForUnifiedWrites([[maybe_unused]] DAddr device_addr,
                                           [[maybe_unused]] u64 size) {
     if constexpr (USE_UNIFIED_MEMORY) {
-        if (unified_written_ranges.Empty()) {
-            return;
-        }
-        bool overlaps = false;
-        unified_written_ranges.ForEachInRange(device_addr, size,
-                                              [&overlaps](DAddr, DAddr) { overlaps = true; });
-        if (!overlaps) {
+        if (!HasPendingUnifiedWrites(device_addr, size)) {
             return;
         }
         runtime.Wait(unified_write_tick);
@@ -1184,11 +1397,62 @@ void BufferCache<P>::WaitForUnifiedWrites([[maybe_unused]] DAddr device_addr,
 }
 
 template <class P>
+template <typename Func>
+bool BufferCache<P>::CopyUnifiedWrites([[maybe_unused]] Buffer& buffer,
+                                       [[maybe_unused]] DAddr device_addr,
+                                       [[maybe_unused]] u64 size,
+                                       [[maybe_unused]] Func&& add_upload) {
+    if constexpr (USE_UNIFIED_MEMORY) {
+        if (!HasPendingUnifiedWrites(device_addr, size)) {
+            return false;
+        }
+        boost::container::small_vector<std::pair<DAddr, DAddr>, 4> overlaps;
+        unified_written_ranges.ForEachInRange(device_addr, size,
+                                              [&overlaps](DAddr start, DAddr end) {
+                                                  overlaps.emplace_back(start, end);
+                                              });
+        const DAddr buffer_start = buffer.CpuAddr();
+        boost::container::small_vector<u64, 4> window_ids;
+        UnifiedWindowGroups groups;
+        for (const auto& [start, end] : overlaps) {
+            if (!ResolveUnifiedWindows(start, start - buffer_start, end - start, window_ids,
+                                       groups)) {
+                runtime.Wait(unified_write_tick);
+                unified_written_ranges.Clear();
+                return false;
+            }
+        }
+        for (size_t i = 0; i < window_ids.size(); ++i) {
+            const std::span<const BufferCopy> group_span(groups[i].data(), groups[i].size());
+            runtime.CopyFromUnifiedMemory(window_ids[i], buffer, group_span);
+        }
+        DAddr cursor = device_addr;
+        for (const auto& [start, end] : overlaps) {
+            buffer.MarkUsage(start - buffer_start, end - start);
+            if (start > cursor) {
+                add_upload(cursor, start - cursor);
+            }
+            cursor = end;
+        }
+        if (cursor < device_addr + size) {
+            add_upload(cursor, device_addr + size - cursor);
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
+template <class P>
 bool BufferCache<P>::BindUnifiedStorage([[maybe_unused]] const Binding& binding,
                                         [[maybe_unused]] bool is_written) {
     if constexpr (USE_UNIFIED_MEMORY) {
-        const auto window = TryResolveUnifiedRange(binding.device_addr, binding.size);
-        if (!window || !runtime.IsUnifiedStorageRange(binding.size, window->offset)) {
+        const auto relative = TryResolveUnifiedRange(binding.device_addr, binding.size);
+        if (!relative) {
+            return false;
+        }
+        const auto range = runtime.ResolveUnifiedStorage(*relative, binding.size);
+        if (!range) {
             return false;
         }
         if (is_written) {
@@ -1197,9 +1461,8 @@ bool BufferCache<P>::BindUnifiedStorage([[maybe_unused]] const Binding& binding,
             unified_write_tick = runtime.CurrentTick();
             uncommitted_unified_writes = true;
         }
-        runtime.BindStorageBuffer(runtime.UnifiedWindowBuffer(window->window),
-                                  runtime.UnifiedWindowAddress(window->window),
-                                  static_cast<u32>(window->offset), binding.size, is_written);
+        runtime.BindStorageBuffer(range->buffer, range->address, range->offset,
+                                  binding.size, is_written);
         return true;
     } else {
         return false;
@@ -1421,6 +1684,7 @@ void BufferCache<P>::DoUpdateGraphicsBuffers(bool is_indexed) {
             UpdateIndexBuffer();
         }
         UpdateVertexBuffers();
+        ResolveGeometrySegments(is_indexed);
         UpdateTransformFeedbackBuffers();
         for (size_t stage = 0; stage < NUM_STAGES; ++stage) {
             UpdateUniformBuffers(stage);
@@ -1477,13 +1741,17 @@ void BufferCache<P>::UpdateIndexBuffer() {
     const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(gpu_addr_begin);
     const u32 address_size = static_cast<u32>(gpu_addr_end - gpu_addr_begin);
     const u32 draw_size = (index_buffer_ref.count + index_buffer_ref.first) * u32(index_buffer_ref.FormatSizeInBytes());
-    const u32 size = (std::min)(address_size, draw_size);
+    u32 size = (std::min)(address_size, draw_size);
     if (size == 0 || !device_addr) {
         channel_state->index_buffer = NULL_BINDING;
         return;
     }
+    if constexpr (requires { runtime.BindStagedVertexBuffers(); }) {
+        size = ClampToMappedRange(gpu_addr_begin, size);
+    }
     channel_state->index_buffer = Binding{
         .device_addr = *device_addr,
+        .gpu_addr = gpu_addr_begin,
         .size = size,
         .buffer_id = FindBuffer(*device_addr, size, false),
     };
@@ -1521,10 +1789,13 @@ void BufferCache<P>::UpdateVertexBuffer(u32 index) {
     }
     if (!gpu_memory->IsWithinGPUAddressRange(gpu_addr_end) || size >= 64_MiB) {
         size = static_cast<u32>(gpu_memory->MaxContinuousRange(gpu_addr_begin, size));
+    } else if constexpr (requires { runtime.BindStagedVertexBuffers(); }) {
+        size = ClampToMappedRange(gpu_addr_begin, size);
     }
     const BufferId buffer_id = FindBuffer(*device_addr, size, false);
     const Binding binding{
         .device_addr = *device_addr,
+        .gpu_addr = gpu_addr_begin,
         .size = size,
         .buffer_id = buffer_id,
     };
@@ -1881,19 +2152,30 @@ bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 si
     u64 total_size_bytes = 0;
     u64 largest_copy = 0;
     const DAddr buffer_start = buffer.cpu_addr_cached;
-    memory_tracker.ForEachUploadRange(device_addr, size, [&](u64 device_addr_out, u64 range_size) {
+    const auto add_upload = [&](u64 upload_addr, u64 upload_size) {
         upload_copies.push_back(BufferCopy{
             .src_offset = total_size_bytes,
-            .dst_offset = device_addr_out - buffer_start,
-            .size = range_size,
+            .dst_offset = upload_addr - buffer_start,
+            .size = upload_size,
         });
-        total_size_bytes += range_size;
-        largest_copy = (std::max)(largest_copy, range_size);
+        total_size_bytes += upload_size;
+        largest_copy = (std::max)(largest_copy, upload_size);
+    };
+    bool copied_from_windows = false;
+    memory_tracker.ForEachUploadRange(device_addr, size, [&](u64 device_addr_out, u64 range_size) {
+        if (CopyUnifiedWrites(buffer, device_addr_out, range_size, add_upload)) {
+            copied_from_windows = true;
+            return;
+        }
+        add_upload(device_addr_out, range_size);
     });
     if (total_size_bytes == 0) {
+        if (copied_from_windows) {
+            any_buffer_uploaded = true;
+            return false;
+        }
         return true;
     }
-    WaitForUnifiedWrites(device_addr, size);
     const std::span<BufferCopy> copies_span(upload_copies.data(), upload_copies.size());
     UploadMemory(buffer, total_size_bytes, largest_copy, copies_span);
     any_buffer_uploaded = true;
@@ -2004,15 +2286,10 @@ bool BufferCache<P>::ResolveUnifiedWindows(
 }
 
 template <class P>
-std::optional<typename BufferCache<P>::UnifiedWindowRange>
-BufferCache<P>::TryResolveUnifiedRange([[maybe_unused]] DAddr device_addr,
-                                       [[maybe_unused]] u64 size) {
+std::optional<u64> BufferCache<P>::TryResolveUnifiedRange([[maybe_unused]] DAddr device_addr,
+                                                          [[maybe_unused]] u64 size) {
     if constexpr (USE_UNIFIED_MEMORY) {
         if (size == 0 || !runtime.IsUnifiedMemoryBindable()) {
-            return std::nullopt;
-        }
-        const u64 window_size = runtime.UnifiedMemoryWindowSize();
-        if (window_size == 0) {
             return std::nullopt;
         }
         const u8* const first = device_memory.GetSpan(device_addr, size);
@@ -2029,18 +2306,11 @@ BufferCache<P>::TryResolveUnifiedRange([[maybe_unused]] DAddr device_addr,
         if (relative >= unified_size || unified_size - relative < size) {
             return std::nullopt;
         }
-        const u64 local_offset = relative % window_size;
-        if (window_size - local_offset < size) {
-            return std::nullopt;
-        }
         if (memory_tracker.IsRegionGpuModified(device_addr, size) ||
             IsRegionGpuModified(device_addr, size)) {
             return std::nullopt;
         }
-        return UnifiedWindowRange{
-            .window = static_cast<size_t>(relative / window_size),
-            .offset = local_offset,
-        };
+        return relative;
     } else {
         return std::nullopt;
     }
@@ -2245,6 +2515,15 @@ void BufferCache<P>::DeleteBuffer(BufferId buffer_id, bool do_not_mark) {
     replace(channel_state->transform_feedback_buffers);
     replace(channel_state->compute_uniform_buffers);
     replace(channel_state->compute_storage_buffers);
+    const auto drop_segments = [buffer_id](std::vector<MultiRangeSegment>& pool) {
+        for (MultiRangeSegment& segment : pool) {
+            if (segment.buffer_id == buffer_id) {
+                segment.buffer_id = BufferId{};
+            }
+        }
+    };
+    drop_segments(graphics_segments);
+    drop_segments(compute_segments);
 
     // Mark the whole buffer as CPU written to stop tracking CPU writes
     if (!do_not_mark) {

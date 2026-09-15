@@ -141,6 +141,8 @@ public:
 
     size_t MaxContinuousRange(GPUVAddr gpu_addr, size_t size) const;
 
+    size_t MaxMappedRange(GPUVAddr gpu_addr, size_t size) const;
+
     bool IsWithinGPUAddressRange(GPUVAddr gpu_addr) const {
         return gpu_addr < address_space_size;
     }

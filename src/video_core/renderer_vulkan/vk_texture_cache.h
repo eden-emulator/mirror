@@ -107,23 +107,21 @@ public:
 
     [[nodiscard]] u64 UnifiedMemorySize() const noexcept;
 
-    [[nodiscard]] u64 UnifiedMemoryWindowSize() const noexcept;
-
     [[nodiscard]] bool CanUploadImageDirectly(const VideoCommon::ImageInfo& info) const;
 
-    bool UploadImageDirectly(Image& image, size_t window_index, u64 window_offset,
+    bool UploadImageDirectly(Image& image, u64 relative,
                              std::span<const VideoCommon::SwizzleParameters> swizzles);
 
     [[nodiscard]] bool CanDownloadImageDirectly(const VideoCommon::ImageInfo& info) const;
 
-    bool DownloadImageDirectly(Image& image, size_t window_index, u64 window_offset);
+    bool DownloadImageDirectly(Image& image, u64 relative);
 
-    [[nodiscard]] VkBuffer ResolveDirectWindow(size_t window_index, u64 window_offset,
-                                               u64 size) const;
+    [[nodiscard]] std::optional<HostMemoryImport::Range> ResolveDirectRange(u64 relative,
+                                                                            u64 size) const;
 
     [[nodiscard]] u64 CurrentTick() const noexcept;
 
-    [[nodiscard]] bool IsDirectUploadRetired(u64 tick);
+    [[nodiscard]] bool IsTickRetired(u64 tick);
 
     void InsertUploadMemoryBarrier() {}
 

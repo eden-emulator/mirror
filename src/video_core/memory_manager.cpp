@@ -529,6 +529,29 @@ size_t MemoryManager::MaxContinuousRange(GPUVAddr gpu_addr, size_t size) const {
     return range_so_far;
 }
 
+size_t MemoryManager::MaxMappedRange(GPUVAddr gpu_addr, size_t size) const {
+    size_t range_so_far = 0;
+    bool stopped{false};
+    auto stop = [&]([[maybe_unused]] std::size_t page_index, [[maybe_unused]] std::size_t offset,
+                    [[maybe_unused]] std::size_t copy_amount) {
+        stopped = true;
+        return true;
+    };
+    auto accumulate = [&]([[maybe_unused]] std::size_t page_index,
+                          [[maybe_unused]] std::size_t offset, std::size_t copy_amount) {
+        range_so_far += copy_amount;
+        return false;
+    };
+    auto check_short_pages = [&](std::size_t page_index, std::size_t offset,
+                                 std::size_t copy_amount) {
+        GPUVAddr base = (page_index << big_page_bits) + offset;
+        MemoryOperation(base, copy_amount, false, accumulate, stop, stop);
+        return stopped;
+    };
+    MemoryOperation(gpu_addr, size, true, accumulate, stop, check_short_pages);
+    return range_so_far;
+}
+
 size_t MemoryManager::GetMemoryLayoutSize(GPUVAddr gpu_addr, size_t max_size) const {
     std::unique_lock<std::mutex> lock(guard);
     return kind_map.GetContinuousSizeFrom(gpu_addr);

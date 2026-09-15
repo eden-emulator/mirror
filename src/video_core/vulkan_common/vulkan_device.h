@@ -920,6 +920,10 @@ FN_MAX_LIMIT_LIST
         return properties.maintenance4.maxBufferSize;
     }
 
+    u64 GetSparseAddressSpaceSize() const {
+        return properties.properties.limits.sparseAddressSpaceSize;
+    }
+
     u64 GetMaxMemoryAllocationSize() const {
         return properties.maintenance3.maxMemoryAllocationSize;
     }

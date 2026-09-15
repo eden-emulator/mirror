@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "common/alignment.h"
 #include "video_core/buffer_cache/buffer_cache_base.h"
 #include "video_core/renderer_vulkan/vk_buffer_cache.h"
 
@@ -435,6 +436,11 @@ void BufferCacheRuntime::TryEnableUnifiedMemory(void* base, size_t size,
                                                 size_t hardware_buffer_base) {
     unified_memory = memory_allocator.CreateHostMemoryImport(
         base, size, hardware_buffers, hardware_buffer_window, hardware_buffer_base);
+    if (unified_memory) {
+        unified_memory->CreateMirror(scheduler.submit_mutex,
+                                     device.GetSparseAddressSpaceSize() / 2);
+        multi_range_buffers.ReserveSparseAddressSpace(unified_memory->GetMirrorSize());
+    }
 }
 
 void BufferCacheRuntime::CopyToUnifiedMemory(
@@ -450,6 +456,74 @@ void BufferCacheRuntime::CopyToUnifiedMemory(
     pending.buffer = src_buffer;
     pending.copies.resize(copies.size());
     std::ranges::transform(copies, pending.copies.begin(), MakeBufferCopy);
+}
+
+void BufferCacheRuntime::CopyFromUnifiedMemory(
+    size_t window_index, VkBuffer dst_buffer, std::span<const VideoCommon::BufferCopy> copies) {
+    if (!unified_memory || dst_buffer == VK_NULL_HANDLE || copies.empty() ||
+        window_index >= unified_memory->GetWindowCount()) {
+        return;
+    }
+    const VkBuffer window_buffer = unified_memory->GetWindowBuffer(window_index);
+    if (window_buffer == VK_NULL_HANDLE) {
+        return;
+    }
+    const bool foreign = unified_memory->NeedsForeignOwnershipTransfer();
+    const u32 queue_family = device.GetGraphicsFamily();
+    boost::container::small_vector<VkBufferCopy, 8> vk_copies;
+    WindowRanges ranges;
+    for (const VideoCommon::BufferCopy& copy : copies) {
+        vk_copies.push_back(VkBufferCopy{
+            .srcOffset = static_cast<VkDeviceSize>(copy.dst_offset),
+            .dstOffset = static_cast<VkDeviceSize>(copy.src_offset),
+            .size = static_cast<VkDeviceSize>(copy.size),
+        });
+        ranges.emplace_back(copy.dst_offset, copy.dst_offset + copy.size);
+    }
+    CoalesceWindowRanges(ranges);
+    boost::container::small_vector<VkBufferMemoryBarrier, MAX_WINDOW_BARRIER_RANGES> acquire;
+    boost::container::small_vector<VkBufferMemoryBarrier, MAX_WINDOW_BARRIER_RANGES> release;
+    if (foreign) {
+        for (const WindowRange& range : ranges) {
+            acquire.push_back(VkBufferMemoryBarrier{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                .pNext = nullptr,
+                .srcAccessMask = 0,
+                .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+                .dstQueueFamilyIndex = queue_family,
+                .buffer = window_buffer,
+                .offset = range.first,
+                .size = range.second - range.first,
+            });
+            release.push_back(VkBufferMemoryBarrier{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                .pNext = nullptr,
+                .srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                .dstAccessMask = 0,
+                .srcQueueFamilyIndex = queue_family,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_FOREIGN_EXT,
+                .buffer = window_buffer,
+                .offset = range.first,
+                .size = range.second - range.first,
+            });
+        }
+    }
+    scheduler.RequestOutsideRenderPassOperationContext();
+    scheduler.Record([window_buffer, dst_buffer, vk_copies, acquire = std::move(acquire),
+                      release = std::move(release)](vk::CommandBuffer cmdbuf) {
+        if (!acquire.empty()) {
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                   VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {},
+                                   VideoCommon::FixSmallVectorADL(acquire), {});
+        }
+        cmdbuf.CopyBuffer(window_buffer, dst_buffer, VideoCommon::FixSmallVectorADL(vk_copies));
+        if (!release.empty()) {
+            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                   VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, {},
+                                   VideoCommon::FixSmallVectorADL(release), {});
+        }
+    });
 }
 
 void BufferCacheRuntime::FlushUnifiedMemoryCopies() {
@@ -733,17 +807,17 @@ void BufferCacheRuntime::ClearBuffer(VkBuffer dest_buffer, u32 offset, size_t si
     });
 }
 
-bool BufferCacheRuntime::BindMultiRangeStorageBuffer(u64 key, bool is_written) {
+MultiRangeRef BufferCacheRuntime::AcquireMultiRange(u64 key, bool require_sparse) {
     if (multi_range_sources.empty() || multi_range_total == 0) {
-        return false;
+        return MultiRangeRef{};
     }
     const MultiRangeRef ref = multi_range_buffers.Get(device, scheduler, memory_allocator, key,
                                                      multi_range_sources, multi_range_total);
     if (ref.handle == VK_NULL_HANDLE) {
-        return false;
+        return MultiRangeRef{};
     }
-    if (is_written && !ref.sparse) {
-        return false;
+    if (require_sparse && !ref.sparse) {
+        return MultiRangeRef{};
     }
     if (ref.needs_gather) {
         PreCopyBarrier();
@@ -760,7 +834,217 @@ bool BufferCacheRuntime::BindMultiRangeStorageBuffer(u64 key, bool is_written) {
         PostCopyBarrier();
         multi_range_buffers.MarkGathered(key);
     }
+    return ref;
+}
+
+bool BufferCacheRuntime::BindMultiRangeStorageBuffer(u64 key, bool is_written) {
+    const MultiRangeRef ref = AcquireMultiRange(key, is_written);
+    if (ref.handle == VK_NULL_HANDLE) {
+        return false;
+    }
     guest_descriptor_queue.AddBuffer(ref.handle, ref.address, 0, ref.size);
+    return true;
+}
+
+std::optional<HostMemoryImport::Range> BufferCacheRuntime::ResolveUnifiedExtents(
+    u64 key, std::span<const VideoCommon::UnifiedExtent> extents, u32 size) {
+    if (extents.size() == 1) {
+        return unified_memory->ResolveRange(extents.front().relative, size);
+    }
+    return AcquireUnifiedView(key, extents);
+}
+
+std::optional<HostMemoryImport::Range> BufferCacheRuntime::AcquireUnifiedView(
+    u64 key, std::span<const VideoCommon::UnifiedExtent> extents) {
+    const VkBufferUsageFlags usage = unified_memory->GetViewUsage();
+    if (usage == 0 || !multi_range_buffers.use_sparse || extents.size() < 2) {
+        return std::nullopt;
+    }
+    const VkDeviceSize block = multi_range_buffers.block_size;
+    boost::container::small_vector<MultiRangeSource, 16> sources;
+    VkDeviceSize total = 0;
+    VkDeviceSize padding = 0;
+    for (size_t index = 0; index < extents.size(); ++index) {
+        VkDeviceSize begin = extents[index].relative;
+        VkDeviceSize end = begin + extents[index].size;
+        if (index == 0) {
+            padding = begin % block;
+            begin -= padding;
+        } else if ((begin % block) != 0) {
+            return std::nullopt;
+        }
+        if (index + 1 == extents.size()) {
+            end = Common::AlignUp(end, block);
+        } else if ((end % block) != 0) {
+            return std::nullopt;
+        }
+        while (begin < end) {
+            const auto memory = unified_memory->ResolveViewMemory(begin);
+            if (!memory || (memory->offset % block) != 0) {
+                return std::nullopt;
+            }
+            const VkDeviceSize length = (std::min)(end - begin, memory->available);
+            if ((length % block) != 0) {
+                return std::nullopt;
+            }
+            sources.push_back(MultiRangeSource{
+                .handle = memory->buffer,
+                .memory = memory->memory,
+                .memory_offset = 0,
+                .offset = memory->offset,
+                .size = length,
+                .write_tick = 0,
+                .memory_type = memory->memory_type,
+            });
+            total += length;
+            begin += length;
+        }
+    }
+    const MultiRangeRef ref = multi_range_buffers.GetView(
+        device, scheduler, key, sources, total, usage,
+        VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID);
+    if (ref.handle == VK_NULL_HANDLE) {
+        return std::nullopt;
+    }
+    return HostMemoryImport::Range{
+        .buffer = ref.handle,
+        .address = ref.address,
+        .offset = padding,
+    };
+}
+
+bool BufferCacheRuntime::StageUnifiedVertexBuffer(
+    u32 index, u64 key, std::span<const VideoCommon::UnifiedExtent> extents, u32 size, u32 stride,
+    bool force) {
+    if (!unified_memory ||
+        (unified_memory->GetUsage() & VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) == 0) {
+        return false;
+    }
+    const auto range = ResolveUnifiedExtents(key, extents, size);
+    if (!range) {
+        return false;
+    }
+    StageVertexBuffer(
+        StagedVertexBuffer{
+            .index = index,
+            .buffer = range->buffer,
+            .offset = range->offset,
+            .size = size,
+            .stride = stride,
+        },
+        force);
+    return true;
+}
+
+bool BufferCacheRuntime::StageMultiRangeVertexBuffer(u32 index, u64 key, u32 size, u32 stride,
+                                                     bool force) {
+    const MultiRangeRef ref = AcquireMultiRange(key, false);
+    if (ref.handle == VK_NULL_HANDLE) {
+        return false;
+    }
+    StageVertexBuffer(
+        StagedVertexBuffer{
+            .index = index,
+            .buffer = ref.handle,
+            .offset = 0,
+            .size = size,
+            .stride = stride,
+        },
+        force);
+    return true;
+}
+
+void BufferCacheRuntime::StageVertexBuffer(const StagedVertexBuffer& target, bool force) {
+    StagedVertexBuffer& bound = bound_vertex_buffers[target.index];
+    if (!force && bound == target) {
+        return;
+    }
+    bound = target;
+    if (target.index < device.GetMaxVertexInputBindings()) {
+        staged_vertex_buffers.push_back(target);
+    }
+}
+
+void BufferCacheRuntime::BindStagedVertexBuffers() {
+    if (staged_vertex_buffers.empty()) {
+        return;
+    }
+    scheduler.Record([staged = staged_vertex_buffers,
+                      extended = device.IsExtExtendedDynamicStateSupported()](
+                         vk::CommandBuffer cmdbuf) {
+        std::array<VkBuffer, VideoCommon::NUM_VERTEX_BUFFERS> buffers{};
+        std::array<VkDeviceSize, VideoCommon::NUM_VERTEX_BUFFERS> offsets{};
+        std::array<VkDeviceSize, VideoCommon::NUM_VERTEX_BUFFERS> sizes{};
+        std::array<VkDeviceSize, VideoCommon::NUM_VERTEX_BUFFERS> strides{};
+        size_t begin = 0;
+        while (begin < staged.size()) {
+            const u32 first = staged[begin].index;
+            u32 count = 0;
+            while (begin + count < staged.size() && staged[begin + count].index == first + count) {
+                const StagedVertexBuffer& entry = staged[begin + count];
+                buffers[count] = entry.buffer;
+                offsets[count] = entry.offset;
+                sizes[count] = entry.size;
+                strides[count] = entry.stride;
+                ++count;
+            }
+            if (extended) {
+                cmdbuf.BindVertexBuffers2EXT(first, count, buffers.data(), offsets.data(),
+                                             sizes.data(), strides.data());
+            } else {
+                cmdbuf.BindVertexBuffers(first, count, buffers.data(), offsets.data());
+            }
+            begin += count;
+        }
+    });
+    staged_vertex_buffers.clear();
+}
+
+bool BufferCacheRuntime::IsIndexRangeUsable(PrimitiveTopology topology, IndexFormat index_format,
+                                            VkDeviceSize offset, u32 size) const {
+    const VkIndexType vk_index_type = MaxwellToVK::IndexFormat(index_format);
+    const bool is_quad =
+        topology == PrimitiveTopology::Quads || topology == PrimitiveTopology::QuadStrip;
+    const bool is_emulated_uint8 =
+        vk_index_type == VK_INDEX_TYPE_UINT8_EXT && !device.IsExtIndexTypeUint8Supported();
+    if (is_quad || is_emulated_uint8) {
+        return size <= device.GetMaxStorageBufferRange() &&
+               (offset % device.GetStorageBufferAlignment()) == 0;
+    }
+    return (offset % BytesPerIndex(vk_index_type)) == 0;
+}
+
+bool BufferCacheRuntime::BindUnifiedIndexBuffer(PrimitiveTopology topology,
+                                                IndexFormat index_format, u32 base_vertex,
+                                                u32 num_indices, u64 key,
+                                                std::span<const VideoCommon::UnifiedExtent> extents,
+                                                u32 size) {
+    constexpr VkBufferUsageFlags GeometryUsage =
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    if (!unified_memory || (unified_memory->GetUsage() & GeometryUsage) != GeometryUsage) {
+        return false;
+    }
+    const auto range = ResolveUnifiedExtents(key, extents, size);
+    if (!range || range->offset > (std::numeric_limits<u32>::max)() - size ||
+        !IsIndexRangeUsable(topology, index_format, range->offset, size)) {
+        return false;
+    }
+    BindIndexBuffer(topology, index_format, base_vertex, num_indices, range->buffer,
+                    static_cast<u32>(range->offset), size);
+    return true;
+}
+
+bool BufferCacheRuntime::BindMultiRangeIndexBuffer(PrimitiveTopology topology,
+                                                   IndexFormat index_format, u32 base_vertex,
+                                                   u32 num_indices, u64 key, u32 size) {
+    if (!IsIndexRangeUsable(topology, index_format, 0, size)) {
+        return false;
+    }
+    const MultiRangeRef ref = AcquireMultiRange(key, false);
+    if (ref.handle == VK_NULL_HANDLE) {
+        return false;
+    }
+    BindIndexBuffer(topology, index_format, base_vertex, num_indices, ref.handle, 0, size);
     return true;
 }
 

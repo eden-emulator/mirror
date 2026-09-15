@@ -97,6 +97,9 @@ struct ImageBase {
     bool has_scaled = false;
     u64 direct_upload_tick = 0;
     bool direct_upload_blocked = false;
+    bool eviction_pending = false;
+    u64 eviction_tick = 0;
+    u64 eviction_modification_tick = 0;
 
     size_t channel = 0;
 

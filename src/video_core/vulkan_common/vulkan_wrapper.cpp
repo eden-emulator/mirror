@@ -316,6 +316,7 @@ bool Load(VkInstance instance, InstanceDispatch& dld) noexcept {
     X(vkDestroyDebugUtilsMessengerEXT);
     X(vkDestroyDebugReportCallbackEXT);
     X(vkDestroySurfaceKHR);
+    X(vkGetPhysicalDeviceExternalBufferProperties);
     X(vkGetPhysicalDeviceFeatures2);
     X(vkGetPhysicalDeviceFormatProperties2);
     X(vkGetPhysicalDeviceProperties2);
@@ -1036,6 +1037,28 @@ VkPhysicalDeviceMemoryProperties2 PhysicalDevice::GetMemoryProperties(
     properties.pNext = next_structures;
     dld->vkGetPhysicalDeviceMemoryProperties2(physical_device, &properties);
     return properties;
+}
+
+VkExternalMemoryProperties PhysicalDevice::GetExternalBufferProperties(
+    VkBufferCreateFlags flags, VkBufferUsageFlags usage,
+    VkExternalMemoryHandleTypeFlagBits handle_type) const noexcept {
+    VkExternalBufferProperties properties{
+        .sType = VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES,
+        .pNext = nullptr,
+        .externalMemoryProperties = {},
+    };
+    if (!dld->vkGetPhysicalDeviceExternalBufferProperties) {
+        return properties.externalMemoryProperties;
+    }
+    const VkPhysicalDeviceExternalBufferInfo info{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO,
+        .pNext = nullptr,
+        .flags = flags,
+        .usage = usage,
+        .handleType = handle_type,
+    };
+    dld->vkGetPhysicalDeviceExternalBufferProperties(physical_device, &info, &properties);
+    return properties.externalMemoryProperties;
 }
 
 u32 AvailableVersion(const InstanceDispatch& dld) noexcept {
