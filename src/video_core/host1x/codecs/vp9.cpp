@@ -892,21 +892,28 @@ void VpxRangeEncoder::Write(bool bit, s32 probability) {
     count += shift;
 
     if (count >= 0) {
-        const s32 offset = shift - count;
+        auto const write_byte = [&](u8 byte) {
+            if (stream_pos == stream_data.size()) {
+                stream_data.push_back(byte);
+                ++stream_pos;
+            } else {
+                stream_data.insert(stream_data.begin() + stream_pos, byte);
+            }
+        };
 
+        const s32 offset = shift - count;
         if (((low_value << (offset - 1)) >> 31) != 0) {
-            auto const current_pos = s32(stream_pos);
+            auto const current_pos = stream_pos;
             --stream_pos;
             while (stream_data[stream_pos] == 0xff) {
-                stream_data.resize(stream_pos + 1);
-                stream_data[stream_pos++] = 0;
+                write_byte(0);
                 stream_pos -= 2;
             }
-            stream_data[stream_pos]++;
+            write_byte(stream_data[stream_pos] + 1);
             stream_pos = current_pos;
         }
-        stream_data.resize(stream_pos + 1);
-        stream_data[stream_pos++] = u8((low_value >> (24 - offset)));
+        write_byte(u8((low_value >> (24 - offset))));
+        ++stream_pos;
 
         low_value <<= offset;
         shift = count;
