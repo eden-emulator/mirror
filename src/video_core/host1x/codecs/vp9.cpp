@@ -898,12 +898,14 @@ void VpxRangeEncoder::Write(bool bit, s32 probability) {
             auto const current_pos = s32(stream_pos);
             --stream_pos;
             while (stream_data[stream_pos] == 0xff) {
+                stream_data.resize(stream_pos + 1);
                 stream_data[stream_pos++] = 0;
                 stream_pos -= 2;
             }
             stream_data[stream_pos]++;
             stream_pos = current_pos;
         }
+        stream_data.resize(stream_pos + 1);
         stream_data[stream_pos++] = u8((low_value >> (24 - offset)));
 
         low_value <<= offset;
