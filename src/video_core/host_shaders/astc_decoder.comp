@@ -980,67 +980,42 @@ uint UnquantizeTexelWeight(EncodingData val) {
     const uint encoding = Encoding(val);
     const uint bitlen = NumBits(val);
     const uint bitval = BitValue(val);
-    const uint A = ReplicateBitTo7((bitval & 1));
-    uint B = 0, C = 0, D = 0;
+    const uint A = ReplicateBitTo7(bitval & 1u);
     uint result = 0;
-    const uint bitlen_0_results[5] = {0, 16, 32, 48, 64};
-    switch (encoding) {
-    case JUST_BITS:
+    if (encoding == JUST_BITS) {
         result = FastReplicateTo6(bitval, bitlen);
-        break;
-    case TRIT: {
-        D = QuintTritValue(val);
-        switch (bitlen) {
-        case 0:
-            return bitlen_0_results[D * 2];
-        case 1: {
-            C = 50;
-            break;
+    } else {
+        const uint D = QuintTritValue(val);
+        if (bitlen == 0u) {
+            if (encoding == TRIT) {
+                return D * 32u;
+            }
+            return D * 16u;
         }
-        case 2: {
-            C = 23;
-            const uint b = (bitval >> 1) & 1;
-            B = (b << 6) | (b << 2) | b;
-            break;
+        const uint b = (bitval >> 1u) & ((0x3100u >> (bitlen * 4u)) & 0xfu);
+        uint B = 0;
+        uint C = 0;
+        if (encoding == TRIT) {
+            if (bitlen == 1u) {
+                C = 50u;
+            } else if (bitlen == 2u) {
+                C = 23u;
+                B = (b << 6u) | (b << 2u) | b;
+            } else {
+                C = 11u;
+                B = (b << 5u) | b;
+            }
+        } else {
+            if (bitlen == 1u) {
+                C = 28u;
+            } else {
+                C = 13u;
+                B = (b << 6u) | (b << 1u);
+            }
         }
-        case 3: {
-            C = 11;
-            const uint cb = (bitval >> 1) & 3;
-            B = (cb << 5) | cb;
-            break;
-        }
-        default:
-            break;
-        }
-        break;
+        result = (A & 0x20u) | (((D * C + B) ^ A) >> 2u);
     }
-    case QUINT: {
-        D = QuintTritValue(val);
-        switch (bitlen) {
-        case 0:
-            return bitlen_0_results[D];
-        case 1: {
-            C = 28;
-            break;
-        }
-        case 2: {
-            C = 13;
-            const uint b = (bitval >> 1) & 1;
-            B = (b << 6) | (b << 1);
-            break;
-        }
-        }
-        break;
-    }
-    }
-    if (encoding != JUST_BITS && bitlen > 0) {
-        result = D * C + B;
-        result ^= A;
-        result = (A & 0x20) | (result >> 2);
-    }
-    if (result > 32) {
-        result += 1;
-    }
+    result += 1u - uint(result <= 32u);
     return result;
 }
 
@@ -1449,10 +1424,11 @@ void DecompressBlock(ivec3 coord) {
 }
 
 uint SwizzleOffset(uvec2 pos) {
-    const uint x = pos.x;
-    const uint y = pos.y;
-    return ((x % 64) / 32) * 256 + ((y % 8) / 2) * 64 +
-            ((x % 32) / 16) * 32 + (y % 2) * 16 + (x % 16);
+    return ((pos.x & 32u) << 3u) |
+           ((pos.y & 6u) << 5u) |
+           ((pos.x & 16u) << 1u) |
+           ((pos.y & 1u) << 4u) |
+           (pos.x & 15u);
 }
 
 void main() {
