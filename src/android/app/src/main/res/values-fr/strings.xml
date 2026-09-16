@@ -482,8 +482,6 @@
     <string name="emulate_bgr565">Emuler BGR565</string>
     <string name="renderer_asynchronous_shaders">Utiliser les shaders asynchrones</string>
     <string name="renderer_asynchronous_shaders_description">Compile les shaders de manière asynchrone. Cela peut réduire les saccades mais peut aussi provoquer des problèmes graphiques.</string>
-    <string name="gpu_unswizzle_disabled">Désactivé</string>
-    <string name="gpu_unswizzle_default_button">Par défaut</string>
 
 
     <string name="extensions">Extensions</string>
@@ -884,25 +882,10 @@
     <string name="memory_8gb">8 Go (Dangereux)</string>
 
     <!-- GPU swizzle texture size -->
-    <string name="gpu_texturesizeswizzle_verysmall">Très petit (16 Mo)</string>
-    <string name="gpu_texturesizeswizzle_small">Petit (32 Mo)</string>
-    <string name="gpu_texturesizeswizzle_normal">Normal (128 Mo)</string>
-    <string name="gpu_texturesizeswizzle_large">Large (256 Mo)</string>
-    <string name="gpu_texturesizeswizzle_verylarge">Très large (512 Mo)</string>
 
     <!-- GPU swizzle streams -->
-    <string name="gpu_swizzle_verylow">Très faible (4 Mo)</string>
-    <string name="gpu_swizzle_low">Faible (8 Mo)</string>
-    <string name="gpu_swizzle_normal">Normal (16 Mo)</string>
-    <string name="gpu_swizzle_medium">Moyen (32 Mo)</string>
-    <string name="gpu_swizzle_high">Élevé (64 Mo)</string>
 
     <!-- GPU swizzle chunks -->
-    <string name="gpu_swizzlechunk_verylow">Très faible (32)</string>
-    <string name="gpu_swizzlechunk_low">Faible (64)</string>
-    <string name="gpu_swizzlechunk_normal">Normal (128)</string>
-    <string name="gpu_swizzlechunk_medium">Moyen (256)</string>
-    <string name="gpu_swizzlechunk_high">Élevé (512)</string>
 
     <!-- Temperature Units -->
     <string name="temperature_celsius">Celsius</string>

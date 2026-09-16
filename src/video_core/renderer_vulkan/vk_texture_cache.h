@@ -52,7 +52,7 @@ public:
 
     void Finish();
 
-    StagingBufferRef UploadStagingBuffer(size_t size, bool deferred = false);
+    StagingBufferRef UploadStagingBuffer(size_t size);
 
     StagingBufferRef DownloadStagingBuffer(size_t size, bool deferred = false);
 
@@ -98,8 +98,7 @@ public:
     }
 
     void AccelerateImageUpload(Image&, const StagingBufferRef&,
-                               std::span<const VideoCommon::SwizzleParameters>,
-                               u32 z_start, u32 z_count);
+                               std::span<const VideoCommon::SwizzleParameters>);
 
     void InsertUploadMemoryBarrier() {}
 
@@ -157,8 +156,9 @@ public:
     BlitImageHelper& blit_image_helper;
     RenderPassCache& render_pass_cache;
     std::optional<ASTCDecoderPass> astc_decoder_pass;
-
-    std::optional<BlockLinearUnswizzle3DPass> bl3d_unswizzle_pass;
+    std::optional<BlockLinearUnswizzleImage2DPass> bl_unswizzle_2d_pass;
+    std::optional<BlockLinearUnswizzleImage3DPass> bl_unswizzle_3d_pass;
+    std::optional<PitchUnswizzlePass> pitch_unswizzle_pass;
     const Settings::ResolutionScalingInfo& resolution;
     std::array<std::vector<VkFormat>, VideoCore::Surface::MaxPixelFormat> view_formats;
 
@@ -334,8 +334,6 @@ public:
     void DownloadMemory(const StagingBufferRef& map,
                         std::span<const VideoCommon::BufferImageCopy> copies);
 
-    void AllocateComputeUnswizzleImage();
-
     [[nodiscard]] VkImage Handle() const noexcept {
         return *(this->*current_image);
     }
@@ -361,10 +359,6 @@ public:
 
     bool ScaleDown(bool ignore = false);
 
-    u64 allocation_tick;
-
-    friend class BlockLinearUnswizzle3DPass;
-
 private:
     bool BlitScaleHelper(bool scale_up);
 
@@ -375,12 +369,6 @@ private:
 
     vk::Image original_image;
     vk::Image scaled_image;
-
-    vk::Buffer compute_unswizzle_buffer;
-    VkDeviceSize compute_unswizzle_buffer_size = 0;
-    bool has_compute_unswizzle_buffer = false;
-
-    void AllocateComputeUnswizzleBuffer(u32 max_slices);
 
     // Use a pointer to field because it is relative, so that the object can be
     // moved without breaking the reference.

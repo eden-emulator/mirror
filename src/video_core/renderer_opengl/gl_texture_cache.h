@@ -77,7 +77,7 @@ public:
 
     void FlushDeferredClear() {}
 
-    StagingBufferMap UploadStagingBuffer(size_t size, bool deferred = false);
+    StagingBufferMap UploadStagingBuffer(size_t size);
 
     StagingBufferMap DownloadStagingBuffer(size_t size, bool deferred = false);
 
@@ -121,8 +121,7 @@ public:
                          Tegra::Engines::Fermi2D::Operation operation);
 
     void AccelerateImageUpload(Image& image, const StagingBufferMap& map,
-                               std::span<const VideoCommon::SwizzleParameters> swizzles,
-                               u32 z_start, u32 z_count);
+                               std::span<const VideoCommon::SwizzleParameters> swizzles);
 
     void InsertUploadMemoryBarrier();
 
@@ -228,8 +227,6 @@ public:
     bool ScaleUp(bool ignore = false);
 
     bool ScaleDown(bool ignore = false);
-
-    u64 allocation_tick;
 
 private:
     void CopyBufferToImage(const VideoCommon::BufferImageCopy& copy, size_t buffer_offset);

@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <bit>
 #include <span>
 #include <string_view>
 
@@ -116,7 +117,7 @@ void UtilShaders::ASTCDecode(Image& image, const StagingBufferMap& map,
 
 void UtilShaders::BlockLinearUpload2D(Image& image, const StagingBufferMap& map,
                                       std::span<const SwizzleParameters> swizzles) {
-    static constexpr Extent3D WORKGROUP_SIZE{32, 32, 1};
+    static constexpr Extent3D WORKGROUP_SIZE{32, 8, 1};
     static constexpr GLuint BINDING_INPUT_BUFFER = 0;
     static constexpr GLuint BINDING_OUTPUT_IMAGE = 0;
 
@@ -151,7 +152,7 @@ void UtilShaders::BlockLinearUpload2D(Image& image, const StagingBufferMap& map,
 
 void UtilShaders::BlockLinearUpload3D(Image& image, const StagingBufferMap& map,
                                       std::span<const SwizzleParameters> swizzles) {
-    static constexpr Extent3D WORKGROUP_SIZE{16, 8, 8};
+    static constexpr Extent3D WORKGROUP_SIZE{16, 8, 2};
     static constexpr GLuint BINDING_INPUT_BUFFER = 0;
     static constexpr GLuint BINDING_OUTPUT_IMAGE = 0;
 
@@ -189,12 +190,12 @@ void UtilShaders::BlockLinearUpload3D(Image& image, const StagingBufferMap& map,
 
 void UtilShaders::PitchUpload(Image& image, const StagingBufferMap& map,
                               std::span<const SwizzleParameters> swizzles) {
-    static constexpr Extent3D WORKGROUP_SIZE{32, 32, 1};
+    static constexpr Extent3D WORKGROUP_SIZE{32, 8, 1};
     static constexpr GLuint BINDING_INPUT_BUFFER = 0;
     static constexpr GLuint BINDING_OUTPUT_IMAGE = 0;
     static constexpr GLuint LOC_ORIGIN = 0;
     static constexpr GLuint LOC_DESTINATION = 1;
-    static constexpr GLuint LOC_BYTES_PER_BLOCK = 2;
+    static constexpr GLuint LOC_BYTES_PER_BLOCK_LOG2 = 2;
     static constexpr GLuint LOC_PITCH = 3;
 
     const u32 bytes_per_block = BytesPerBlock(image.info.format);
@@ -208,7 +209,7 @@ void UtilShaders::PitchUpload(Image& image, const StagingBufferMap& map,
     glFlushMappedNamedBufferRange(map.buffer, map.offset, image.guest_size_bytes);
     glUniform2ui(LOC_ORIGIN, 0, 0);
     glUniform2i(LOC_DESTINATION, 0, 0);
-    glUniform1ui(LOC_BYTES_PER_BLOCK, bytes_per_block);
+    glUniform1ui(LOC_BYTES_PER_BLOCK_LOG2, static_cast<GLuint>(std::countr_zero(bytes_per_block)));
     glUniform1ui(LOC_PITCH, pitch);
     glBindImageTexture(BINDING_OUTPUT_IMAGE, image.StorageHandle(), 0, GL_FALSE, 0, GL_WRITE_ONLY,
                        format);

@@ -16,13 +16,16 @@
 #include "common/common_types.h"
 #include "common/div_ceil.h"
 #include "common/vector_math.h"
+#include <bit>
 #include "video_core/host_shaders/astc_decoder_comp_spv.h"
 #include "video_core/host_shaders/queries_prefix_scan_sum_comp_spv.h"
 #include "video_core/host_shaders/queries_prefix_scan_sum_nosubgroups_comp_spv.h"
 #include "video_core/host_shaders/resolve_conditional_render_comp_spv.h"
 #include "video_core/host_shaders/vulkan_quad_indexed_comp_spv.h"
 #include "video_core/host_shaders/vulkan_uint8_comp_spv.h"
-#include "video_core/host_shaders/block_linear_unswizzle_3d_bcn_comp_spv.h"
+#include "video_core/host_shaders/block_linear_unswizzle_2d_comp_spv.h"
+#include "video_core/host_shaders/block_linear_unswizzle_3d_comp_spv.h"
+#include "video_core/host_shaders/pitch_unswizzle_comp_spv.h"
 #include "video_core/renderer_vulkan/vk_compute_pass.h"
 #include "video_core/surface.h"
 #include "video_core/renderer_vulkan/vk_descriptor_pool.h"
@@ -183,6 +186,26 @@ struct AstcPushConstants {
     u32 x_shift;
     u32 block_height;
     u32 block_height_mask;
+};
+
+struct BlockLinear3DImagePushConstants {
+    alignas(16) std::array<u32, 3> origin;
+    alignas(16) std::array<s32, 3> destination;
+    u32 bytes_per_block_log2;
+    u32 slice_size;
+    u32 block_size;
+    u32 x_shift;
+    u32 block_height;
+    u32 block_height_mask;
+    u32 block_depth;
+    u32 block_depth_mask;
+};
+
+struct PitchUnswizzlePushConstants {
+    std::array<u32, 2> origin;
+    std::array<s32, 2> destination;
+    u32 bytes_per_block_log2;
+    u32 pitch;
 };
 
 struct QueriesPrefixScanPushConstants {
@@ -616,260 +639,230 @@ void ASTCDecoderPass::Assemble(Image& image, const StagingBufferRef& map,
     scheduler.Finish();
 }
 
-constexpr u32 BL3D_BINDING_INPUT_BUFFER  = 0;
-constexpr u32 BL3D_BINDING_OUTPUT_BUFFER = 1;
+namespace {
 
-struct alignas(16) BlockLinearUnswizzle3DPushConstants {
-    u32 blocks_dim[3];           // Offset 0
-    u32 bytes_per_block_log2;    // Offset 12
-
-    u32 origin[3];               // Offset 16
-    u32 slice_size;              // Offset 28
-
-    u32 block_size;              // Offset 32
-    u32 x_shift;                 // Offset 36
-    u32 block_height;            // Offset 40
-    u32 block_height_mask;       // Offset 44
-
-    u32 block_depth;             // Offset 48
-    u32 block_depth_mask;        // Offset 52
-    s32 _pad;                    // Offset 56
-
-    s32 destination[3];          // Offset 60
-    s32 _pad_end;                // Offset 72
-};
-static_assert(sizeof(BlockLinearUnswizzle3DPushConstants) <= 128);
-
-BlockLinearUnswizzle3DPass::BlockLinearUnswizzle3DPass(
-    const Device& device_, Scheduler& scheduler_,
-    DescriptorPool& descriptor_pool_,
-    StagingBufferPool& staging_buffer_pool_,
-    ComputePassDescriptorQueue& compute_pass_descriptor_queue_)
-    : ComputePass(device_, scheduler_, descriptor_pool_,
-        std::array<VkDescriptorSetLayoutBinding, 2>{{
-    {
-        .binding = BL3D_BINDING_INPUT_BUFFER,
-        .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // block-linear input
-        .descriptorCount = 1,
-        .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
-        .pImmutableSamplers = nullptr,
-    },
-    {
-        .binding = BL3D_BINDING_OUTPUT_BUFFER,
-        .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-        .descriptorCount = 1,
-        .stageFlags = VK_SHADER_STAGE_COMPUTE_BIT,
-        .pImmutableSamplers = nullptr,
-    },
-        }},
-        std::array<VkDescriptorUpdateTemplateEntry, 2>{{
-        {
-            .dstBinding = BL3D_BINDING_INPUT_BUFFER,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .offset = BL3D_BINDING_INPUT_BUFFER * sizeof(DescriptorUpdateEntry),
-            .stride = sizeof(DescriptorUpdateEntry),
-        },
-        {
-            .dstBinding = BL3D_BINDING_OUTPUT_BUFFER,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-            .offset = BL3D_BINDING_OUTPUT_BUFFER * sizeof(DescriptorUpdateEntry),
-            .stride = sizeof(DescriptorUpdateEntry),
-        }
-        }},
-        DescriptorBankInfo{
-            .uniform_buffers = 0,
-            .storage_buffers = 2,
-            .texture_buffers = 0,
-            .image_buffers = 0,
-            .textures = 0,
-            .images = 0,
-            .score = 2,
-        },
-          COMPUTE_PUSH_CONSTANT_RANGE<sizeof(BlockLinearUnswizzle3DPushConstants)>,
-          BLOCK_LINEAR_UNSWIZZLE_3D_BCN_COMP_SPV),
-      scheduler{scheduler_},
-      staging_buffer_pool{staging_buffer_pool_},
-      compute_pass_descriptor_queue{compute_pass_descriptor_queue_} {}
-
-BlockLinearUnswizzle3DPass::~BlockLinearUnswizzle3DPass() = default;
-
-// God have mercy on my soul
-void BlockLinearUnswizzle3DPass::Unswizzle(
-    Image& image,
-    const StagingBufferRef& swizzled,
-    std::span<const VideoCommon::SwizzleParameters> swizzles,
-    u32 z_start, u32 z_count)
-{
-    using namespace VideoCommon::Accelerated;
-
-    const u32 MAX_BATCH_SLICES = (std::min)(z_count, image.info.size.depth);
-
-    // Allocate or grow to cover this batch's slice count
-    image.AllocateComputeUnswizzleBuffer(MAX_BATCH_SLICES);
-
-    ASSERT(swizzles.size() == 1);
-    const auto& sw = swizzles[0];
-    const auto params = MakeBlockLinearSwizzle3DParams(sw, image.info);
-
-    const u32 blocks_x = (image.info.size.width  + 3) / 4;
-    const u32 blocks_y = (image.info.size.height + 3) / 4;
-
-    scheduler.RequestOutsideRenderPassOperationContext();
-    for (u32 z_offset = 0; z_offset < z_count; z_offset += MAX_BATCH_SLICES) {
-        const u32 current_chunk_slices = (std::min)(MAX_BATCH_SLICES, z_count - z_offset);
-        const u32 current_z_start = z_start + z_offset;
-
-        UnswizzleChunk(image, swizzled, sw, params, blocks_x, blocks_y,
-                       current_z_start, current_chunk_slices);
+void RecordUnswizzleBeginBarrier(Scheduler& scheduler, VkPipeline vk_pipeline, VkImage vk_image,
+                                 VkImageAspectFlags aspect_mask, bool is_initialized) {
+    VkAccessFlags src_access = VK_ACCESS_NONE;
+    VkImageLayout old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
+    VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    if (is_initialized) {
+        src_access = VK_ACCESS_SHADER_WRITE_BIT;
+        old_layout = VK_IMAGE_LAYOUT_GENERAL;
+        src_stage = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER;
     }
-}
-
-void BlockLinearUnswizzle3DPass::UnswizzleChunk(
-    Image& image,
-    const StagingBufferRef& swizzled,
-    const VideoCommon::SwizzleParameters& sw,
-    const BlockLinearSwizzle3DParams& params,
-    u32 blocks_x, u32 blocks_y,
-    u32 z_start, u32 z_count)
-{
-    BlockLinearUnswizzle3DPushConstants pc{};
-    pc.origin[0] = params.origin[0];
-    pc.origin[1] = params.origin[1];
-    pc.origin[2] = z_start; // Current chunk's Z start
-
-    pc.destination[0] = params.destination[0];
-    pc.destination[1] = params.destination[1];
-    pc.destination[2] = 0; // Shader writes to start of output buffer
-
-    pc.bytes_per_block_log2 = params.bytes_per_block_log2;
-    pc.slice_size           = params.slice_size;
-    pc.block_size           = params.block_size;
-    pc.x_shift              = params.x_shift;
-    pc.block_height         = params.block_height;
-    pc.block_height_mask    = params.block_height_mask;
-    pc.block_depth          = params.block_depth;
-    pc.block_depth_mask     = params.block_depth_mask;
-
-    pc.blocks_dim[0] = blocks_x;
-    pc.blocks_dim[1] = blocks_y;
-    pc.blocks_dim[2] = z_count; // Only process the count
-
-    compute_pass_descriptor_queue.Acquire(scheduler, 3);
-    compute_pass_descriptor_queue.AddBuffer(swizzled.buffer,
-                                           sw.buffer_offset + swizzled.offset,
-                                           image.guest_size_bytes - sw.buffer_offset);
-    compute_pass_descriptor_queue.AddBuffer(*image.compute_unswizzle_buffer, 0,
-                                           image.compute_unswizzle_buffer_size);
-
-    const void* descriptor_data = compute_pass_descriptor_queue.UpdateData();
-    const VkDescriptorSet set = descriptor_allocator.Commit();
-
-    const u32 gx = Common::DivCeil(blocks_x, 8u);
-    const u32 gy = Common::DivCeil(blocks_y, 8u);
-    const u32 gz = Common::DivCeil(z_count, 4u);
-
-    const u32 bytes_per_block = 1u << pc.bytes_per_block_log2;
-    const VkDeviceSize output_slice_size =
-        static_cast<VkDeviceSize>(blocks_x) * blocks_y * bytes_per_block;
-    const VkDeviceSize barrier_size = output_slice_size * z_count;
-
-    const bool is_first_chunk = (z_start == 0);
-
-    const VkBuffer out_buffer = *image.compute_unswizzle_buffer;
-    const VkImage dst_image = image.Handle();
-    const VkImageAspectFlags aspect = image.AspectMask();
-    const u32 image_width = image.info.size.width;
-    const u32 image_height = image.info.size.height;
-
-    scheduler.Record([this, set, descriptor_data, pc, gx, gy, gz, z_start, z_count,
-                      barrier_size, is_first_chunk, out_buffer, dst_image, aspect,
-                      image_width, image_height
-                      ](vk::CommandBuffer cmdbuf) {
-
-        if (dst_image == VK_NULL_HANDLE || out_buffer == VK_NULL_HANDLE) {
-            return;
-        }
-
-        device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
-        cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-        cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
-        cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(pc), &pc);
-        cmdbuf.Dispatch(gx, gy, gz);
-
-        // Single barrier for compute -> transfer (buffer ready, image transition)
-        const VkBufferMemoryBarrier buffer_barrier{
-            .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-            .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .buffer = out_buffer,
-            .offset = 0,
-            .size = barrier_size,
-        };
-
-        // Image layout transition
-        const VkImageMemoryBarrier pre_barrier{
+    scheduler.Record([vk_pipeline, vk_image, aspect_mask, src_access, old_layout,
+                      src_stage](vk::CommandBuffer cmdbuf) {
+        const VkImageMemoryBarrier image_barrier{
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
             .pNext = nullptr,
-            .srcAccessMask = is_first_chunk ? VkAccessFlags{} :
-                            static_cast<VkAccessFlags>(VK_ACCESS_TRANSFER_WRITE_BIT),
-            .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-            .oldLayout = is_first_chunk ? VK_IMAGE_LAYOUT_UNDEFINED :
-                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = dst_image,
-            .subresourceRange = {aspect, 0, 1, 0, 1},
-        };
-
-        // Single barrier handles both buffer and image
-        cmdbuf.PipelineBarrier(
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            0,
-            nullptr, buffer_barrier, pre_barrier
-        );
-
-        // Copy chunk to correct Z position in image
-        const VkBufferImageCopy copy{
-            .bufferOffset = 0, // Read from start of staging buffer
-            .bufferRowLength = 0,
-            .bufferImageHeight = 0,
-            .imageSubresource = {aspect, 0, 0, 1},
-            .imageOffset = {0, 0, static_cast<s32>(z_start)}, // Write to correct Z
-            .imageExtent = {image_width, image_height, z_count},
-        };
-        cmdbuf.CopyBufferToImage(out_buffer, dst_image,
-                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy);
-
-        // Post-copy transition
-        const VkImageMemoryBarrier post_barrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-            .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .srcAccessMask = src_access,
             .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-            .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .oldLayout = old_layout,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = dst_image,
-            .subresourceRange = {aspect, 0, 1, 0, 1},
+            .image = vk_image,
+            .subresourceRange{
+                .aspectMask = aspect_mask,
+                .baseMipLevel = 0,
+                .levelCount = VK_REMAINING_MIP_LEVELS,
+                .baseArrayLayer = 0,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            },
         };
-
-        cmdbuf.PipelineBarrier(
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            0,
-            nullptr, nullptr, post_barrier
-        );
+        cmdbuf.PipelineBarrier(src_stage, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, image_barrier);
+        cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, vk_pipeline);
     });
+}
+
+void RecordUnswizzleEndBarrier(Scheduler& scheduler, VkImage vk_image,
+                               VkImageAspectFlags aspect_mask) {
+    scheduler.Record([vk_image, aspect_mask](vk::CommandBuffer cmdbuf) {
+        const VkImageMemoryBarrier image_barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
+                             VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+            .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = vk_image,
+            .subresourceRange{
+                .aspectMask = aspect_mask,
+                .baseMipLevel = 0,
+                .levelCount = VK_REMAINING_MIP_LEVELS,
+                .baseArrayLayer = 0,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            },
+        };
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                               vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, 0, image_barrier);
+    });
+}
+
+} // Anonymous namespace
+
+BlockLinearUnswizzleImage2DPass::BlockLinearUnswizzleImage2DPass(
+    const Device& device_, Scheduler& scheduler_, DescriptorPool& descriptor_pool_,
+    StagingBufferPool& staging_buffer_pool_,
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue_)
+    : ComputePass(device_, scheduler_, descriptor_pool_, ASTC_DESCRIPTOR_SET_BINDINGS,
+                  ASTC_PASS_DESCRIPTOR_UPDATE_TEMPLATE_ENTRY, ASTC_BANK_INFO,
+                  COMPUTE_PUSH_CONSTANT_RANGE<sizeof(BlockLinearSwizzle2DParams)>,
+                  BLOCK_LINEAR_UNSWIZZLE_2D_COMP_SPV),
+      scheduler{scheduler_}, staging_buffer_pool{staging_buffer_pool_},
+      compute_pass_descriptor_queue{compute_pass_descriptor_queue_} {}
+
+BlockLinearUnswizzleImage2DPass::~BlockLinearUnswizzleImage2DPass() = default;
+
+void BlockLinearUnswizzleImage2DPass::Unswizzle(
+    Image& image, const StagingBufferRef& map,
+    std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    using namespace VideoCommon::Accelerated;
+    scheduler.RequestOutsideRenderPassOperationContext();
+    const VkImageAspectFlags aspect_mask = image.AspectMask();
+    const VkImage vk_image = image.Handle();
+    RecordUnswizzleBeginBarrier(scheduler, *pipeline, vk_image, aspect_mask,
+                                image.ExchangeInitialization());
+    for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
+        const size_t input_offset = swizzle.buffer_offset + map.offset;
+        const u32 num_dispatches_x = Common::DivCeil(swizzle.num_tiles.width, 32U);
+        const u32 num_dispatches_y = Common::DivCeil(swizzle.num_tiles.height, 8U);
+        const u32 num_dispatches_z = image.info.resources.layers;
+
+        compute_pass_descriptor_queue.Acquire(scheduler, 2);
+        compute_pass_descriptor_queue.AddBuffer(map.buffer, input_offset,
+                                                image.guest_size_bytes - swizzle.buffer_offset);
+        compute_pass_descriptor_queue.AddImage(image.StorageImageView(swizzle.level));
+        const void* const descriptor_data{compute_pass_descriptor_queue.UpdateData()};
+
+        const auto params = MakeBlockLinearSwizzle2DParams(swizzle, image.info);
+        scheduler.Record([this, num_dispatches_x, num_dispatches_y, num_dispatches_z, params,
+                          descriptor_data](vk::CommandBuffer cmdbuf) {
+            const VkDescriptorSet set = descriptor_allocator.Commit();
+            device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
+            cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
+            cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, params);
+            cmdbuf.Dispatch(num_dispatches_x, num_dispatches_y, num_dispatches_z);
+        });
+    }
+    RecordUnswizzleEndBarrier(scheduler, vk_image, aspect_mask);
+    scheduler.Finish();
+}
+
+BlockLinearUnswizzleImage3DPass::BlockLinearUnswizzleImage3DPass(
+    const Device& device_, Scheduler& scheduler_, DescriptorPool& descriptor_pool_,
+    StagingBufferPool& staging_buffer_pool_,
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue_)
+    : ComputePass(device_, scheduler_, descriptor_pool_, ASTC_DESCRIPTOR_SET_BINDINGS,
+                  ASTC_PASS_DESCRIPTOR_UPDATE_TEMPLATE_ENTRY, ASTC_BANK_INFO,
+                  COMPUTE_PUSH_CONSTANT_RANGE<sizeof(BlockLinear3DImagePushConstants)>,
+                  BLOCK_LINEAR_UNSWIZZLE_3D_COMP_SPV),
+      scheduler{scheduler_}, staging_buffer_pool{staging_buffer_pool_},
+      compute_pass_descriptor_queue{compute_pass_descriptor_queue_} {}
+
+BlockLinearUnswizzleImage3DPass::~BlockLinearUnswizzleImage3DPass() = default;
+
+void BlockLinearUnswizzleImage3DPass::Unswizzle(
+    Image& image, const StagingBufferRef& map,
+    std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    using namespace VideoCommon::Accelerated;
+    scheduler.RequestOutsideRenderPassOperationContext();
+    const VkImageAspectFlags aspect_mask = image.AspectMask();
+    const VkImage vk_image = image.Handle();
+    RecordUnswizzleBeginBarrier(scheduler, *pipeline, vk_image, aspect_mask,
+                                image.ExchangeInitialization());
+    for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
+        const size_t input_offset = swizzle.buffer_offset + map.offset;
+        const u32 num_dispatches_x = Common::DivCeil(swizzle.num_tiles.width, 16U);
+        const u32 num_dispatches_y = Common::DivCeil(swizzle.num_tiles.height, 8U);
+        const u32 num_dispatches_z = Common::DivCeil(swizzle.num_tiles.depth, 2U);
+
+        compute_pass_descriptor_queue.Acquire(scheduler, 2);
+        compute_pass_descriptor_queue.AddBuffer(map.buffer, input_offset,
+                                                image.guest_size_bytes - swizzle.buffer_offset);
+        compute_pass_descriptor_queue.AddImage(image.StorageImageView(swizzle.level));
+        const void* const descriptor_data{compute_pass_descriptor_queue.UpdateData()};
+
+        const auto p = MakeBlockLinearSwizzle3DParams(swizzle, image.info);
+        const BlockLinear3DImagePushConstants params{
+            .origin = p.origin,
+            .destination = p.destination,
+            .bytes_per_block_log2 = p.bytes_per_block_log2,
+            .slice_size = p.slice_size,
+            .block_size = p.block_size,
+            .x_shift = p.x_shift,
+            .block_height = p.block_height,
+            .block_height_mask = p.block_height_mask,
+            .block_depth = p.block_depth,
+            .block_depth_mask = p.block_depth_mask,
+        };
+        scheduler.Record([this, num_dispatches_x, num_dispatches_y, num_dispatches_z, params,
+                          descriptor_data](vk::CommandBuffer cmdbuf) {
+            const VkDescriptorSet set = descriptor_allocator.Commit();
+            device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
+            cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
+            cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, params);
+            cmdbuf.Dispatch(num_dispatches_x, num_dispatches_y, num_dispatches_z);
+        });
+    }
+    RecordUnswizzleEndBarrier(scheduler, vk_image, aspect_mask);
+    scheduler.Finish();
+}
+
+PitchUnswizzlePass::PitchUnswizzlePass(const Device& device_, Scheduler& scheduler_,
+                                       DescriptorPool& descriptor_pool_,
+                                       StagingBufferPool& staging_buffer_pool_,
+                                       ComputePassDescriptorQueue& compute_pass_descriptor_queue_)
+    : ComputePass(device_, scheduler_, descriptor_pool_, ASTC_DESCRIPTOR_SET_BINDINGS,
+                  ASTC_PASS_DESCRIPTOR_UPDATE_TEMPLATE_ENTRY, ASTC_BANK_INFO,
+                  COMPUTE_PUSH_CONSTANT_RANGE<sizeof(PitchUnswizzlePushConstants)>,
+                  PITCH_UNSWIZZLE_COMP_SPV),
+      scheduler{scheduler_}, staging_buffer_pool{staging_buffer_pool_},
+      compute_pass_descriptor_queue{compute_pass_descriptor_queue_} {}
+
+PitchUnswizzlePass::~PitchUnswizzlePass() = default;
+
+void PitchUnswizzlePass::Unswizzle(Image& image, const StagingBufferRef& map,
+                                   std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    const u32 bytes_per_block = VideoCore::Surface::BytesPerBlock(image.info.format);
+    ASSERT(std::has_single_bit(bytes_per_block));
+    scheduler.RequestOutsideRenderPassOperationContext();
+    const VkImageAspectFlags aspect_mask = image.AspectMask();
+    const VkImage vk_image = image.Handle();
+    RecordUnswizzleBeginBarrier(scheduler, *pipeline, vk_image, aspect_mask,
+                                image.ExchangeInitialization());
+    for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
+        const size_t input_offset = swizzle.buffer_offset + map.offset;
+        const u32 num_dispatches_x = Common::DivCeil(swizzle.num_tiles.width, 32U);
+        const u32 num_dispatches_y = Common::DivCeil(swizzle.num_tiles.height, 8U);
+
+        compute_pass_descriptor_queue.Acquire(scheduler, 2);
+        compute_pass_descriptor_queue.AddBuffer(map.buffer, input_offset,
+                                                image.guest_size_bytes - swizzle.buffer_offset);
+        compute_pass_descriptor_queue.AddImage(image.StorageImageView(swizzle.level));
+        const void* const descriptor_data{compute_pass_descriptor_queue.UpdateData()};
+
+        const PitchUnswizzlePushConstants params{
+            .origin = {0, 0},
+            .destination = {0, 0},
+            .bytes_per_block_log2 = static_cast<u32>(std::countr_zero(bytes_per_block)),
+            .pitch = image.info.pitch,
+        };
+        scheduler.Record([this, num_dispatches_x, num_dispatches_y, params,
+                          descriptor_data](vk::CommandBuffer cmdbuf) {
+            const VkDescriptorSet set = descriptor_allocator.Commit();
+            device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
+            cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
+            cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, params);
+            cmdbuf.Dispatch(num_dispatches_x, num_dispatches_y, 1);
+        });
+    }
+    RecordUnswizzleEndBarrier(scheduler, vk_image, aspect_mask);
+    scheduler.Finish();
 }
 
 } // namespace Vulkan

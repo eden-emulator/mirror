@@ -541,17 +541,6 @@
     <string name="rescale_hack_description">Permite el manejo de versiones anteriores para el paso de configuración de reescalado para juegos mediante el uso de una ruta de reescalado rápida.</string>
     <string name="renderer_asynchronous_shaders">Usar sombreadores asíncronos</string>
     <string name="renderer_asynchronous_shaders_description">Compila los sombreadores de forma asíncrona. Esto puede reducir los tirones, pero también puede introducir errores gráficos.</string>
-    <string name="gpu_unswizzle_settings">Ajustes de desentrelazado de la GPU</string>
-    <string name="gpu_unswizzle_settings_description">Configura los parámetros de desentrelazado de texturas basadas ​​en la GPU o desactívelos por completo. Modifique estos ajustes para equilibrar el rendimiento y la calidad de las texturas cargadas.</string>
-    <string name="gpu_unswizzle_enable">Activar desentrelazado de la GPU</string>
-    <string name="gpu_unswizzle_disabled">Desactivado</string>
-    <string name="gpu_unswizzle_texture_size">Tamaño máximo de textura de desentrelazado de la GPU</string>
-    <string name="gpu_unswizzle_texture_size_description">Establece el tamaño máximo (en MB) para el desentrelazado de texturas basada en GPU. Aunque la GPU es más rápida para texturas medianas y grandes, la CPU puede ser más eficiente para texturas muy pequeñas. Ajuste este valor para encontrar el equilibrio entre la aceleración de la GPU y la sobrecarga de la CPU.</string>
-    <string name="gpu_unswizzle_stream_size">Tamaño del flujo de desentrelazado de la GPU</string>
-    <string name="gpu_unswizzle_stream_size_description">Establece el límite de datos por fotograma para desentrelazar texturas grandes. Los valores altos aceleran la carga de texturas, a coste de una mayor latencia por fotograma; los valores bajos reducen la carga de la GPU, pero pueden causar parpadeos visibles en las texturas.</string>
-    <string name="gpu_unswizzle_chunk_size">Tamaño del trozo de desentrelazado de la GPU</string>
-    <string name="gpu_unswizzle_chunk_size_description">Determina la cantidad de cortes de profundidad procesados ​​en un solo envío de texturas 3D. Aumentar este valor puede mejorar el rendimiento en una GPU de gama alta, pero puede causar tirones y problemas en los tiempos de respuesta en hardware más modesto.</string>
-    <string name="gpu_unswizzle_default_button">Por defecto</string>
 
 
     <string name="extensions">Extensiones</string>
@@ -988,25 +977,10 @@
     <string name="fast_gpu_high">Overclock</string>
 
     <!-- GPU swizzle texture size -->
-    <string name="gpu_texturesizeswizzle_verysmall">Muy pequeño (16 MB)</string>
-    <string name="gpu_texturesizeswizzle_small">Pequeño (32 MB)</string>
-    <string name="gpu_texturesizeswizzle_normal">Normal (128 MB)</string>
-    <string name="gpu_texturesizeswizzle_large">Grande (256 MB)</string>
-    <string name="gpu_texturesizeswizzle_verylarge">Muy grande (512 MB)</string>
 
     <!-- GPU swizzle streams -->
-    <string name="gpu_swizzle_verylow">Muy bajo (4 MB)</string>
-    <string name="gpu_swizzle_low">Bajo (8 MB)</string>
-    <string name="gpu_swizzle_normal">Normal (16 MB)</string>
-    <string name="gpu_swizzle_medium">Medio (32 MB)</string>
-    <string name="gpu_swizzle_high">Alto (64 MB)</string>
 
     <!-- GPU swizzle chunks -->
-    <string name="gpu_swizzlechunk_verylow">Muy bajo (32)</string>
-    <string name="gpu_swizzlechunk_low">Bajo (64)</string>
-    <string name="gpu_swizzlechunk_normal">Normal (128)</string>
-    <string name="gpu_swizzlechunk_medium">Medio (256)</string>
-    <string name="gpu_swizzlechunk_high">Alto (512)</string>
 
     <!-- Temperature Units -->
     <string name="temperature_celsius">Celsius</string>

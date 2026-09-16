@@ -666,27 +666,6 @@ struct Values {
     SwitchableSetting<bool> use_asynchronous_shaders{linkage, false, "use_asynchronous_shaders",
                                                      Category::RendererHacks};
 
-    SwitchableSetting<GpuUnswizzleSize> gpu_unswizzle_texture_size{linkage,
-                                                  GpuUnswizzleSize::Large,
-                                                  "gpu_unswizzle_texture_size",
-                                                  Category::RendererHacks,
-                                                  Specialization::Default};
-
-    SwitchableSetting<GpuUnswizzle> gpu_unswizzle_stream_size{linkage,
-                                                  GpuUnswizzle::Medium,
-                                                  "gpu_unswizzle_stream_size",
-                                                  Category::RendererHacks,
-                                                  Specialization::Default};
-
-    SwitchableSetting<GpuUnswizzleChunk> gpu_unswizzle_chunk_size{linkage,
-                                                  GpuUnswizzleChunk::Medium,
-                                                  "gpu_unswizzle_chunk_size",
-                                                  Category::RendererHacks,
-                                                  Specialization::Default};
-
-    SwitchableSetting<bool> gpu_unswizzle_enabled{linkage, false, "gpu_unswizzle_enabled",
-                                                  Category::RendererHacks};
-
     SwitchableSetting<ExtendedDynamicState> dyna_state{linkage,
 #if defined(__ANDROID__)
                                            ExtendedDynamicState::Disabled,

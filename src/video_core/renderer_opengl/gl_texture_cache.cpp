@@ -556,7 +556,7 @@ void TextureCacheRuntime::Finish() {
     glFinish();
 }
 
-StagingBufferMap TextureCacheRuntime::UploadStagingBuffer(size_t size, bool deferred) {
+StagingBufferMap TextureCacheRuntime::UploadStagingBuffer(size_t size) {
     return staging_buffer_pool.RequestUploadBuffer(size);
 }
 
@@ -651,8 +651,7 @@ void TextureCacheRuntime::BlitFramebuffer(Framebuffer* dst, Framebuffer* src,
 }
 
 void TextureCacheRuntime::AccelerateImageUpload(Image& image, const StagingBufferMap& map,
-                                                std::span<const SwizzleParameters> swizzles,
-                                                u32 z_start, u32 z_count) {
+                                                std::span<const SwizzleParameters> swizzles) {
     switch (image.info.type) {
     case ImageType::e2D:
         if (IsPixelFormatASTC(image.info.format)) {

@@ -234,23 +234,6 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
     INSERT(Settings, gpu_clock, tr("GPU Clocks"),
            tr("Makes the game believe GPU work finishes faster than it does, so it stops lowering "
               "resolution and render distance to fit the Switch's clocks."));
-    INSERT(Settings, gpu_unswizzle_enabled, tr("GPU Unswizzle"),
-           tr("Accelerates BCn 3D texture decoding using GPU compute.\n"
-              "Disable if experiencing crashes or graphical glitches."));
-    INSERT(Settings, gpu_unswizzle_texture_size, tr("GPU Unswizzle Max Texture Size"),
-           tr("Sets the maximum size (MiB) for GPU-based texture unswizzling.\n"
-              "While the GPU is faster for medium and large textures, the CPU may be more "
-              "efficient for very small ones.\n"
-              "Adjust this to find the balance between GPU acceleration and CPU overhead."));
-    INSERT(Settings, gpu_unswizzle_stream_size, tr("GPU Unswizzle Stream Size"),
-           tr("Sets the maximum amount of texture data (in MiB) processed per frame.\n"
-              "Higher values can reduce stutter during texture loading but may impact frame "
-              "consistency."));
-    INSERT(Settings, gpu_unswizzle_chunk_size, tr("GPU Unswizzle Chunk Size"),
-           tr("Determines the number of depth slices processed in a single dispatch.\n"
-              "Increasing this can improve throughput on high-end GPUs but may cause TDR or driver "
-              "timeouts on weaker hardware."));
-
     INSERT(Settings, use_vulkan_driver_pipeline_cache, tr("Use Vulkan pipeline cache"),
            tr("Enables GPU vendor-specific pipeline cache.\nThis option can improve shader loading "
               "time significantly in cases where the Vulkan driver does not store pipeline cache "
@@ -653,30 +636,6 @@ std::unique_ptr<ComboboxTranslationMap> ComboboxEnumeration(QObject* parent) {
                               PAIR(GpuClock, Normal, tr("Normal")),
                               PAIR(GpuClock, Boost, tr("Boost")),
                               PAIR(GpuClock, Overclock, tr("Overclock")),
-                          }});
-    translations->insert({Settings::EnumMetadata<Settings::GpuUnswizzleSize>::Index(),
-                          {
-                              PAIR(GpuUnswizzleSize, VerySmall, tr("Very Small (16 MB)")),
-                              PAIR(GpuUnswizzleSize, Small, tr("Small (32 MB)")),
-                              PAIR(GpuUnswizzleSize, Normal, tr("Normal (128 MB)")),
-                              PAIR(GpuUnswizzleSize, Large, tr("Large (256 MB)")),
-                              PAIR(GpuUnswizzleSize, VeryLarge, tr("Very Large (512 MB)")),
-                          }});
-    translations->insert({Settings::EnumMetadata<Settings::GpuUnswizzle>::Index(),
-                          {
-                              PAIR(GpuUnswizzle, VeryLow, tr("Very Low (4 MB)")),
-                              PAIR(GpuUnswizzle, Low, tr("Low (8 MB)")),
-                              PAIR(GpuUnswizzle, Normal, tr("Normal (16 MB)")),
-                              PAIR(GpuUnswizzle, Medium, tr("Medium (32 MB)")),
-                              PAIR(GpuUnswizzle, High, tr("High (64 MB)")),
-                          }});
-    translations->insert({Settings::EnumMetadata<Settings::GpuUnswizzleChunk>::Index(),
-                          {
-                              PAIR(GpuUnswizzleChunk, VeryLow, tr("Very Low (32)")),
-                              PAIR(GpuUnswizzleChunk, Low, tr("Low (64)")),
-                              PAIR(GpuUnswizzleChunk, Normal, tr("Normal (128)")),
-                              PAIR(GpuUnswizzleChunk, Medium, tr("Medium (256)")),
-                              PAIR(GpuUnswizzleChunk, High, tr("High (512)")),
                           }});
 
     translations->insert({Settings::EnumMetadata<Settings::ExtendedDynamicState>::Index(),

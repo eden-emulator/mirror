@@ -580,17 +580,6 @@
     <string name="rescale_hack_description">透過快速重新縮放處理來啟用遊戲重新縮放設定階段的舊版處理方式</string>
     <string name="renderer_asynchronous_shaders">使用非同步著色器</string>
     <string name="renderer_asynchronous_shaders_description">使用非同步編譯著色器。這可能會減少卡頓，但也可能導致圖形錯誤。</string>
-    <string name="gpu_unswizzle_settings">GPU Unswizzle 設定</string>
-    <string name="gpu_unswizzle_settings_description">設定基於 GPU 的 Unswizzling 參數或完全停用此功能。調整此設定以在性能與紋理載入品質中取得平衡</string>
-    <string name="gpu_unswizzle_enable">啟用 GPU Unswizzle</string>
-    <string name="gpu_unswizzle_disabled">停用</string>
-    <string name="gpu_unswizzle_texture_size">GPU Unswizzle 最大紋理尺寸</string>
-    <string name="gpu_unswizzle_texture_size_description">設定 GPU 紋理 Unswizzling 的最大值 （MB）。雖然 GPU 處理中型和大型紋理的速度較快，但 CPU 處理非常小的紋理可能更有效率。整此設定以在 GPU 加速與 CPU 負載之間取得平衡</string>
-    <string name="gpu_unswizzle_stream_size">GPU Unswizzle 流大小</string>
-    <string name="gpu_unswizzle_stream_size_description">設定每個影格處理大型紋理 Unswizzling 的資料上限。數值越高載入紋理的速度越快，但會增加畫面延遲；數值較低則能降低 GPU 負載，不過有可能導致至紋理載入不完全甚至突然出現</string>
-    <string name="gpu_unswizzle_chunk_size">GPU Unswizzle 塊大小</string>
-    <string name="gpu_unswizzle_chunk_size_description">設定 3D 紋理每批次處理的深度切片數量。增加此數值可提升規格較佳 GPU 的處理效率，但在較低規格的硬體上可能導致卡頓或驅動程式逾時</string>
-    <string name="gpu_unswizzle_default_button">預設</string>
 
 
     <string name="extensions">擴充功能</string>

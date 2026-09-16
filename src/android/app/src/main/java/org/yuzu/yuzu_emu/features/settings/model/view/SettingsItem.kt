@@ -141,14 +141,12 @@ abstract class SettingsItem(
         const val TYPE_SPINBOX = 12
         const val TYPE_LAUNCHABLE = 13
         const val TYPE_PATH = 14
-        const val TYPE_GPU_UNSWIZZLE = 15
         const val TYPE_FX_TOOLBAR = 16
         const val TYPE_FX_PRESET = 17
         const val TYPE_FX_SHADER = 18
         const val TYPE_FX_BUTTON = 19
 
         const val FASTMEM_COMBINED = "fastmem_combined"
-        const val GPU_UNSWIZZLE_COMBINED = "gpu_unswizzle_combined"
 
         val emptySetting = object : AbstractSetting {
             override val key: String = ""
@@ -792,45 +790,6 @@ abstract class SettingsItem(
                     descriptionId = R.string.fast_gpu_time_description,
                     choicesId = R.array.gpuEntries,
                     valuesId = R.array.gpuValues
-                )
-            )
-            put(
-                SingleChoiceSetting(
-                    IntSetting.GPU_UNSWIZZLE_TEXTURE_SIZE,
-                    titleId = R.string.gpu_unswizzle_texture_size,
-                    descriptionId = R.string.gpu_unswizzle_texture_size_description,
-                    choicesId = R.array.gpuTextureSizeSwizzleEntries,
-                    valuesId = R.array.gpuTextureSizeSwizzleValues
-                )
-            )
-            put(
-                SingleChoiceSetting(
-                    IntSetting.GPU_UNSWIZZLE_STREAM_SIZE,
-                    titleId = R.string.gpu_unswizzle_stream_size,
-                    descriptionId = R.string.gpu_unswizzle_stream_size_description,
-                    choicesId = R.array.gpuSwizzleEntries,
-                    valuesId = R.array.gpuSwizzleValues
-                )
-            )
-            put(
-                SingleChoiceSetting(
-                    IntSetting.GPU_UNSWIZZLE_CHUNK_SIZE,
-                    titleId = R.string.gpu_unswizzle_chunk_size,
-                    descriptionId = R.string.gpu_unswizzle_chunk_size_description,
-                    choicesId = R.array.gpuSwizzleChunkEntries,
-                    valuesId = R.array.gpuSwizzleChunkValues
-                )
-            )
-            put(
-                GpuUnswizzleSetting(
-                    titleId = R.string.gpu_unswizzle_settings,
-                    descriptionId = R.string.gpu_unswizzle_settings_description,
-                    textureSizeChoicesId = R.array.gpuTextureSizeSwizzleEntries,
-                    textureSizeValuesId = R.array.gpuTextureSizeSwizzleValues,
-                    streamSizeChoicesId = R.array.gpuSwizzleEntries,
-                    streamSizeValuesId = R.array.gpuSwizzleValues,
-                    chunkSizeChoicesId = R.array.gpuSwizzleChunkEntries,
-                    chunkSizeValuesId = R.array.gpuSwizzleChunkValues
                 )
             )
             put(

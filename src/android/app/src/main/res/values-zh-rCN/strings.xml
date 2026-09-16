@@ -560,17 +560,6 @@
     <string name="rescale_hack_description">启用通过使用快速缩放路径，来为游戏提供缩放配置处理的传统处理方式</string>
     <string name="renderer_asynchronous_shaders">使用异步着色器</string>
     <string name="renderer_asynchronous_shaders_description">以异步方式编译着色器。采用此方式或可减少卡顿，但也可能引入故障点。</string>
-    <string name="gpu_unswizzle_settings">GPU Unswizzle 设置</string>
-    <string name="gpu_unswizzle_settings_description">配置基于 GPU 的纹理 unswizzling 参数，或完全禁用该功能。通过调整这些设置，以尝试在性能与纹理加载质量之间取得平衡。</string>
-    <string name="gpu_unswizzle_enable">启用 GPU Unswizzle</string>
-    <string name="gpu_unswizzle_disabled">禁用</string>
-    <string name="gpu_unswizzle_texture_size">GPU Unswizzle 最大纹理尺寸</string>
-    <string name="gpu_unswizzle_texture_size_description">设置基于 GPU 的纹理 unswizzling 的最大尺寸（MB）。虽然 GPU 处理中等和大型纹理的速度更快，但对于非常小的纹理，CPU 可能更为高效。通过调节此项设置，以平衡GPU 加速与 CPU 开销。</string>
-    <string name="gpu_unswizzle_stream_size">GPU Unswizzle 流大小</string>
-    <string name="gpu_unswizzle_stream_size_description">设置用于 unswizzling 大型纹理时的每帧数据限制。较高的数值可以加速纹理的加载过程，但会带来更高的帧延迟。而较低的数值则可以降低 GPU 的开销，但也可能会导致可见的纹理闪现。</string>
-    <string name="gpu_unswizzle_chunk_size">GPU Unswizzle 块大小</string>
-    <string name="gpu_unswizzle_chunk_size_description">定义了 3D 纹理每批次处理的深度切片数量。增加此数值可在高性能 GPU 上提升吞吐效率，但在性能较弱的硬件上可能会导致卡顿或驱动超时。</string>
-    <string name="gpu_unswizzle_default_button">默认</string>
 
 
     <string name="extensions">扩展</string>
@@ -1004,25 +993,10 @@
     <string name="fast_gpu_high">超频</string>
 
     <!-- GPU swizzle texture size -->
-    <string name="gpu_texturesizeswizzle_verysmall">极小 (16 MB)</string>
-    <string name="gpu_texturesizeswizzle_small">较小 (32 MB)</string>
-    <string name="gpu_texturesizeswizzle_normal">正常 (128 MB)</string>
-    <string name="gpu_texturesizeswizzle_large">较大 (256 MB)</string>
-    <string name="gpu_texturesizeswizzle_verylarge">极大 (512 MB)</string>
 
     <!-- GPU swizzle streams -->
-    <string name="gpu_swizzle_verylow">极低 (4 MB)</string>
-    <string name="gpu_swizzle_low">低 (8 MB)</string>
-    <string name="gpu_swizzle_normal">正常 (16 MB)</string>
-    <string name="gpu_swizzle_medium">中 (32 MB)</string>
-    <string name="gpu_swizzle_high">高 (64 MB)</string>
 
     <!-- GPU swizzle chunks -->
-    <string name="gpu_swizzlechunk_verylow">极低 (32)</string>
-    <string name="gpu_swizzlechunk_low">低 (64)</string>
-    <string name="gpu_swizzlechunk_normal">正常 (128)</string>
-    <string name="gpu_swizzlechunk_medium">中 (256)</string>
-    <string name="gpu_swizzlechunk_high">高 (512)</string>
 
     <!-- Temperature Units -->
     <string name="temperature_celsius">摄氏度</string>

@@ -579,17 +579,6 @@
     <string name="rescale_hack_description">Включает старый метод обработки этапа перенастройки масштабирования для игр за счёт использования быстрого алгоритма перемасштабирования.</string>
     <string name="renderer_asynchronous_shaders">Использовать асинхронные шейдеры</string>
     <string name="renderer_asynchronous_shaders_description">Компилирует шейдеры асинхронно. Это может уменьшить подтормаживания, но также может вызвать графические артефакты.</string>
-    <string name="gpu_unswizzle_settings">Настройки распаковки текстур (Unswizzle)</string>
-    <string name="gpu_unswizzle_settings_description">Настройте параметры распаковки текстур на стороне ГПУ либо полностью отключите эту функцию. Изменение этих параметров позволяет найти баланс между производительностью и качеством загрузки текстур.</string>
-    <string name="gpu_unswizzle_enable">Включить распаковку текстур (Unswizzle)</string>
-    <string name="gpu_unswizzle_disabled">Отключено</string>
-    <string name="gpu_unswizzle_texture_size">Макс. размер текстуры Unswizzle</string>
-    <string name="gpu_unswizzle_texture_size_description">Задает максимальный размер (в МБ) текстур для преобразования формата (unswizzle) на ГПУ. Хотя ГПУ быстрее работает со средними и большими текстурами, ЦП может быть эффективнее для очень маленьких. Настройте это значение, чтобы найти баланс между ускорением на ГПУ и нагрузкой на ЦП.</string>
-    <string name="gpu_unswizzle_stream_size">Размер потока Unswizzle</string>
-    <string name="gpu_unswizzle_stream_size_description">Задает лимит данных на кадр для преобразования крупных текстур (unswizzle). Высокие значения ускоряют загрузку текстур ценой увеличения задержки кадра; низкие значения снижают нагрузку на ГПУ, но могут вызывать заметную постепенную подгрузку текстур.</string>
-    <string name="gpu_unswizzle_chunk_size">Размер блока Unswizzle</string>
-    <string name="gpu_unswizzle_chunk_size_description">Задает количество слоёв глубины, обрабатываемых за одну пачку для 3D-текстур. Увеличение этого значения улучшает пропускную способность на мощных ГПУ, но может вызывать подтормаживания или таймауты драйвера на слабом железе.</string>
-    <string name="gpu_unswizzle_default_button">По умолчанию</string>
 
 
     <string name="extensions">Расширения</string>
@@ -1030,25 +1019,10 @@
     <string name="fast_gpu_high">Разгон</string>
 
     <!-- GPU swizzle texture size -->
-    <string name="gpu_texturesizeswizzle_verysmall">Очень малый (16 МБ)</string>
-    <string name="gpu_texturesizeswizzle_small">Малый (32 МБ)</string>
-    <string name="gpu_texturesizeswizzle_normal">Обычный (128 МБ)</string>
-    <string name="gpu_texturesizeswizzle_large">Большой (256 МБ)</string>
-    <string name="gpu_texturesizeswizzle_verylarge">Очень большой (512 МБ)</string>
 
     <!-- GPU swizzle streams -->
-    <string name="gpu_swizzle_verylow">Очень низкий (4 МБ)</string>
-    <string name="gpu_swizzle_low">Низкий (8 МБ)</string>
-    <string name="gpu_swizzle_normal">Обычный (16 МБ)</string>
-    <string name="gpu_swizzle_medium">Средний (32 МБ)</string>
-    <string name="gpu_swizzle_high">Высокий (64 МБ)</string>
 
     <!-- GPU swizzle chunks -->
-    <string name="gpu_swizzlechunk_verylow">Очень малый (32)</string>
-    <string name="gpu_swizzlechunk_low">Малый (64)</string>
-    <string name="gpu_swizzlechunk_normal">Обычный (128)</string>
-    <string name="gpu_swizzlechunk_medium">Средний (256)</string>
-    <string name="gpu_swizzlechunk_high">Большой (512)</string>
 
     <!-- Temperature Units -->
     <string name="temperature_celsius">Цельсий</string>
