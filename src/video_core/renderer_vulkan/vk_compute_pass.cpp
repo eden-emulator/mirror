@@ -647,7 +647,7 @@ void RecordUnswizzleBeginBarrier(Scheduler& scheduler, VkPipeline vk_pipeline, V
     VkImageLayout old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
     VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     if (is_initialized) {
-        src_access = VK_ACCESS_SHADER_WRITE_BIT;
+        src_access = VK_ACCESS_MEMORY_WRITE_BIT;
         old_layout = VK_IMAGE_LAYOUT_GENERAL;
         src_stage = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER;
     }
@@ -683,8 +683,7 @@ void RecordUnswizzleEndBarrier(Scheduler& scheduler, VkImage vk_image,
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
             .pNext = nullptr,
             .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                             VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
             .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,

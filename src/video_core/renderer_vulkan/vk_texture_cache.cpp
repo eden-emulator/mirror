@@ -58,7 +58,7 @@ namespace {
 constexpr bool ENABLE_MSAA_TILER_RESOLVE = true;
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
 constexpr bool ENABLE_ACCELERATED_UNSWIZZLE = true;
-constexpr bool ENABLE_ACCELERATED_UNSWIZZLE_DISPATCH = false;
+constexpr bool ENABLE_ACCELERATED_UNSWIZZLE_DISPATCH = true;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_STENCIL_DISCARD = true;
 
