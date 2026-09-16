@@ -465,6 +465,10 @@ void KScheduler::ScheduleImplFiber(KernelCore& kernel) {
         // Check if we need scheduling. If we do, then we can't complete the switch and should
         // retry.
         if (m_state.needs_scheduling.load(std::memory_order_seq_cst)) {
+            // Some libc++ lazily init mutex
+            [[maybe_unused]] auto const can_lock = highest_priority_thread->m_context_guard.try_lock();
+            DEBUG_ASSERT(!can_lock);
+
             // Our switch failed.
             // We should unlock the thread context, and then retry.
             highest_priority_thread->m_context_guard.unlock();
@@ -496,6 +500,10 @@ void KScheduler::Unload(KernelCore& kernel, KThread* thread) {
 
     // Check if the thread is terminated by checking the DPC flags.
     if ((thread->GetStackParameters().dpc_flags & static_cast<u32>(DpcFlag::Terminated)) == 0) {
+        // Some libc++ lazily init mutex
+        [[maybe_unused]] auto const can_lock = thread->m_context_guard.try_lock();
+        DEBUG_ASSERT(!can_lock);
+
         // The thread isn't terminated, so we want to unlock it.
         thread->m_context_guard.unlock();
     }
