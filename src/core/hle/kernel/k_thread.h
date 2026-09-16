@@ -19,7 +19,6 @@
 
 #include "common/intrusive_red_black_tree.h"
 #include "common/scratch_buffer.h"
-#include "common/spin_lock.h"
 #include "core/arm/arm_interface.h"
 #include "core/hle/kernel/k_affinity_mask.h"
 #include "core/hle/kernel/k_light_lock.h"
@@ -920,7 +919,7 @@ private:
     bool m_resource_limit_release_hint{};
     bool m_is_kernel_address_key{};
     StackParameters m_stack_parameters{};
-    Common::SpinLock m_context_guard{};
+    std::mutex m_context_guard{};
 
     // For emulation
     std::shared_ptr<Common::Fiber> m_host_context{};
