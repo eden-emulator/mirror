@@ -7,7 +7,7 @@
 #pragma once
 
 #include "core/hle/service/cmif_types.h"
-#include "core/hle/service/ns/i_async_result.h"
+#include "core/hle/service/ns/async_result.h"
 #include "core/hle/service/ns/language.h"
 #include "core/hle/service/ns/ns_types.h"
 #include "core/hle/service/os/event.h"
