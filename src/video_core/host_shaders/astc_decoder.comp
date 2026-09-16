@@ -987,10 +987,7 @@ uint UnquantizeTexelWeight(EncodingData val) {
     } else {
         const uint D = QuintTritValue(val);
         if (bitlen == 0u) {
-            if (encoding == TRIT) {
-                return D * 32u;
-            }
-            return D * 16u;
+            return D << (4u | uint(encoding == TRIT));
         }
         const uint b = (bitval >> 1u) & ((0x3100u >> (bitlen * 4u)) & 0xfu);
         uint B = 0;
@@ -1015,8 +1012,7 @@ uint UnquantizeTexelWeight(EncodingData val) {
         }
         result = (A & 0x20u) | (((D * C + B) ^ A) >> 2u);
     }
-    result += 1u - uint(result <= 32u);
-    return result;
+    return result + (1u - uint(result <= 32u));
 }
 
 void UnquantizeTexelWeights(uvec2 size, bool is_dual_plane) {

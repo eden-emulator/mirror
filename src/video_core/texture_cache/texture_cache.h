@@ -1107,7 +1107,7 @@ void TextureCache<P>::UploadImageContents(Image& image, StagingBuffer& staging) 
     const GPUVAddr gpu_addr = image.gpu_addr;
 
     if (True(image.flags & ImageFlagBits::AcceleratedUpload)) {
-        gpu_memory->ReadBlock(gpu_addr, mapped_span.data(), mapped_span.size_bytes(),
+        gpu_memory->ReadBlock(gpu_addr, mapped_span.data(), image.guest_size_bytes,
                               VideoCommon::CacheType::NoTextureCache);
         const auto uploads = FullUploadSwizzles(image.info);
         runtime.AccelerateImageUpload(image, staging, FixSmallVectorADL(uploads));

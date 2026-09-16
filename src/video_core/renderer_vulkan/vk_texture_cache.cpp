@@ -323,6 +323,10 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         .pNext = nullptr,
         .usage = VK_IMAGE_USAGE_STORAGE_BIT,
     };
+    u32 layer_count = VK_REMAINING_ARRAY_LAYERS;
+    if (view_type == VK_IMAGE_VIEW_TYPE_2D || view_type == VK_IMAGE_VIEW_TYPE_3D) {
+        layer_count = 1;
+    }
     return device.CreateImageView(VkImageViewCreateInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = &storage_image_view_usage_create_info,
@@ -341,7 +345,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
             .baseMipLevel = level,
             .levelCount = 1,
             .baseArrayLayer = 0,
-            .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            .layerCount = layer_count,
         },
     });
 }
@@ -1989,14 +1993,6 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
             storage_image_views[level] =
                 MakeStorageView(device, level, *original_image, storage_format);
         }
-    } else if (True(flags & VideoCommon::ImageFlagBits::AcceleratedUpload)) {
-        const auto& device = runtime->device.GetLogical();
-        const VkFormat storage_format = UnswizzleStorageFormat(BytesPerBlock(info.format));
-        const VkImageViewType view_type = UnswizzleStorageViewType(info.type);
-        for (s32 level = 0; level < info.resources.levels; ++level) {
-            storage_image_views[level] =
-                MakeStorageView(device, level, *original_image, storage_format, view_type);
-        }
     }
 }
 
@@ -3178,20 +3174,31 @@ VkRenderPass Framebuffer::RenderPassVariant(u32 color_clear_mask, bool depth_ste
 void TextureCacheRuntime::AccelerateImageUpload(
     Image& image, const StagingBufferRef& map,
     std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    const bool is_rescaled = True(image.flags & ImageFlagBits::Rescaled);
+    if (is_rescaled) {
+        image.ScaleDown(true);
+    }
     if (IsPixelFormatASTC(image.info.format)) {
-        return astc_decoder_pass->Assemble(image, map, swizzles);
+        astc_decoder_pass->Assemble(image, map, swizzles);
+    } else {
+        switch (image.info.type) {
+        case ImageType::e2D:
+            bl_unswizzle_2d_pass->Unswizzle(image, map, swizzles);
+            break;
+        case ImageType::e3D:
+            bl_unswizzle_3d_pass->Unswizzle(image, map, swizzles);
+            break;
+        case ImageType::Linear:
+            pitch_unswizzle_pass->Unswizzle(image, map, swizzles);
+            break;
+        default:
+            ASSERT(false);
+            break;
+        }
     }
-    switch (image.info.type) {
-    case ImageType::e2D:
-        return bl_unswizzle_2d_pass->Unswizzle(image, map, swizzles);
-    case ImageType::e3D:
-        return bl_unswizzle_3d_pass->Unswizzle(image, map, swizzles);
-    case ImageType::Linear:
-        return pitch_unswizzle_pass->Unswizzle(image, map, swizzles);
-    default:
-        break;
+    if (is_rescaled) {
+        image.ScaleUp();
     }
-    ASSERT(false);
 }
 
 void TextureCacheRuntime::TransitionImageLayout(Image& image) {
