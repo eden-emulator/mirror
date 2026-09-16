@@ -950,7 +950,7 @@ void ConvertImage(std::span<const u8> input, const ImageInfo& info, std::span<u8
                 tile_size.height, output.subspan(output_offset));
 
             output_offset += copy.image_extent.width * copy.image_extent.height *
-                             copy.image_subresource.num_layers *
+                             copy.image_extent.depth * copy.image_subresource.num_layers *
                              BytesPerBlock(PixelFormat::A8B8G8R8_UNORM);
         } else if (astc) {
             // BC1 uses 0.5 bytes per texel
@@ -985,7 +985,7 @@ void ConvertImage(std::span<const u8> input, const ImageInfo& info, std::span<u8
         } else {
             DecompressBCn(input_offset, output.subspan(output_offset), copy, info.format);
             output_offset += copy.image_extent.width * copy.image_extent.height *
-                             copy.image_subresource.num_layers *
+                             copy.image_extent.depth * copy.image_subresource.num_layers *
                              ConvertedBytesPerBlock(info.format);
         }
 
