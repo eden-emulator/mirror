@@ -24,7 +24,7 @@ std::string NativeErrorToString(int e) {
     DWORD res = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER |
                                    FORMAT_MESSAGE_IGNORE_INSERTS,
                                nullptr, e, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                               reinterpret_cast<LPSTR>(&err_str), 1, nullptr);
+                               LPSTR(&err_str), 1, nullptr);
     if (!res) {
         return "(FormatMessageA failed to format error)";
     }
@@ -32,9 +32,10 @@ std::string NativeErrorToString(int e) {
     LocalFree(err_str);
     return ret;
 #else
-    char err_str[255];
-#if defined(__ANDROID__) ||                                                                            \
-    (defined(__GLIBC__) && (_GNU_SOURCE || (_POSIX_C_SOURCE < 200112L && _XOPEN_SOURCE < 600)))
+    char err_str[256];
+    // See https://github.com/llvm/llvm-project/blob/c8fdb5f8b93c3e1da5e2ff3ba8b18627d6147b51/openmp/runtime/src/kmp_i18n.cpp#L711
+    // musl doesn't provide a macro gate but defines strerror_r() even if _GNU_SOURCE is defined
+#if defined(__managarm__) || (defined(__GLIBC__) || defined(__BIONIC__)) || defined(_GNU_SOURCE)
     // Thread safe (GNU-specific)
     const char* str = strerror_r(e, err_str, sizeof(err_str));
     return std::string(str);
