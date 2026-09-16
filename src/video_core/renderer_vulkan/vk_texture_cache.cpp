@@ -204,6 +204,9 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     if (VideoCore::Surface::GetFormatType(format) != SurfaceType::ColorTexture) {
         return false;
     }
+    if (!MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, false, format).storage) {
+        return false;
+    }
     return IsUnswizzleStorageFormatSupported(device, BytesPerBlock(format));
 }
 
