@@ -90,7 +90,7 @@ template<>
         code.shl(tmp, int(ctx.conf.page_table_log2_stride));
         code.mov(page, qword[r14 + tmp.cvt64()]);
     } else {
-        code.mov(page, qword[r14 + tmp.cvt64() * int(ctx.conf.page_table_log2_stride)]);
+        code.mov(page, qword[r14 + tmp.cvt64() * int(1 << ctx.conf.page_table_log2_stride)]);
     }
 
     // check for marked bit, use as unmapped if marked
