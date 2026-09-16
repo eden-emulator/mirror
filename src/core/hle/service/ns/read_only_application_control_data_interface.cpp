@@ -311,27 +311,30 @@ void IReadOnlyApplicationControlDataInterface::ListApplicationIcon(HLERequestCon
         // u64 - app count
         memory.WriteBlock(t_mem_address + out_length, &app_count, sizeof(u64));
         out_length += sizeof(u64);
+        ASSERT(out_length <= t_mem->GetSize());
         // [list of u64] - size of icons
         for (size_t i = 0; i < app_count; ++i) {
             const u64 app_id = app_ids_buffer[i];
             const FileSys::PatchManager pm{app_id, system.GetFileSystemController(), system.GetContentProvider()};
-            const auto control = pm.GetControlMetadata();
-            u64 full_size = control.second->GetSize();
-            memory.WriteBlock(t_mem_address + out_length, &full_size, sizeof(u64));
+            if (const auto control = pm.GetControlMetadata(); control.second) {
+                u64 full_size = control.second->GetSize();
+                memory.WriteBlock(t_mem_address + out_length, &full_size, sizeof(u64));
+            }
             out_length += sizeof(u64);
+            ASSERT(out_length <= t_mem->GetSize());
         }
         // [list of raw icon data]
-        std::vector<u8> full_icon_data;
         for (size_t i = 0; i < app_count; ++i) {
             const u64 app_id = app_ids_buffer[i];
             const FileSys::PatchManager pm{app_id, system.GetFileSystemController(), system.GetContentProvider()};
-            const auto control = pm.GetControlMetadata();
-            auto const full_size = control.second->GetSize();
-            if (full_size > 0) {
-                full_icon_data.resize(full_size);
-                control.second->Read(full_icon_data.data(), full_size, 0);
-                memory.WriteBlock(t_mem_address + out_length, full_icon_data.data(), full_size);
-                out_length += full_size;
+            if (const auto control = pm.GetControlMetadata(); control.second) {
+                if (auto const full_size = control.second->GetSize(); full_size > 0) {
+                    std::vector<u8> full_icon_data(full_size);
+                    control.second->Read(full_icon_data.data(), full_size, 0);
+                    memory.WriteBlock(t_mem_address + out_length, full_icon_data.data(), full_size);
+                    out_length += full_size;
+                    ASSERT(out_length <= t_mem->GetSize());
+                }
             }
         }
     }
@@ -345,6 +348,12 @@ void IReadOnlyApplicationControlDataInterface::ListApplicationIcon(HLERequestCon
 void IReadOnlyApplicationControlDataInterface::ListApplicationTitle(HLERequestContext& ctx) {
     const auto app_ids_buffer = ctx.ReadBuffer();
     const size_t app_count = app_ids_buffer.size() / sizeof(u64);
+
+    std::vector<u64> application_ids(app_count);
+    if (app_count > 0) {
+        std::memcpy(application_ids.data(), app_ids_buffer.data(), app_count * sizeof(u64));
+    }
+
     auto t_mem_obj = ctx.GetObjectFromHandle<Kernel::KTransferMemory>(ctx.GetCopyHandle(0));
     auto* t_mem = t_mem_obj.GetPointerUnsafe();
     constexpr size_t title_entry_size = sizeof(FileSys::LanguageEntry);
@@ -354,8 +363,9 @@ void IReadOnlyApplicationControlDataInterface::ListApplicationTitle(HLERequestCo
         auto& memory = system.ApplicationMemory();
         const auto t_mem_address = t_mem->GetSourceAddress();
         for (size_t i = 0; i < app_count; ++i) {
-            const u64 app_id = app_ids_buffer[i];
-            const FileSys::PatchManager pm{app_id, system.GetFileSystemController(), system.GetContentProvider()};
+            const u64 app_id = application_ids[i];
+            const FileSys::PatchManager pm{app_id, system.GetFileSystemController(),
+                                           system.GetContentProvider()};
             const auto control = pm.GetControlMetadata();
             FileSys::LanguageEntry entry{};
             if (control.first != nullptr) {
