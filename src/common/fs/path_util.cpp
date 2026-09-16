@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <sstream>
 #include "common/container/unordered_map.h"
@@ -480,28 +481,80 @@ std::string SanitizePath(std::string_view path_, DirectorySeparator directory_se
                            [type2](char c1, char c2) { return c1 == type2 && c2 == type2; }),
                path.end());
 
-    const bool absolute = !path.empty() && path[0] == type2;
-    std::vector<std::string_view> parts;
+    std::string root;
+    std::string_view components{path};
+    bool drive_relative = false;
 
-    for (const auto part : SplitPathComponents(path))
-    {
-        if (part.empty() || part == ".")
-            continue;
-        if (part == ".." && !parts.empty() && parts.back() != "..")
-            parts.pop_back();
-        else if (part != "..") parts.push_back(part);
+#ifdef _WIN32
+    const bool network = path.size() > 1 && path[0] == type2 && path[1] == type2;
+    const bool drive =
+        path.size() > 1 && std::isalpha(static_cast<unsigned char>(path[0])) && path[1] == ':';
+
+    if (network) {
+        root.assign(2, type2);
+        components.remove_prefix(2);
+    } else if (drive) {
+        root.assign(path.data(), 2);
+        components.remove_prefix(2);
+        if (!components.empty() && components.front() == type2) {
+            root += type2;
+            components.remove_prefix(1);
+        } else {
+            drive_relative = true;
+        }
+    }
+#endif
+
+    if (root.empty() && !components.empty() && components.front() == type2) {
+        root += type2;
+        components.remove_prefix(1);
     }
 
-    std::string resolved = absolute ? std::string(1, type2) : std::string{};
-    for (std::size_t i = 0; i < parts.size(); ++i)
-    {
-        if (i != 0)
+    const auto path_parts = SplitPathComponents(components);
+    std::size_t root_component_count = 0;
+#ifdef _WIN32
+    if (network) {
+        root_component_count = 2;
+
+        const auto is_unc = [](std::string_view part) {
+            return part.size() == 3 && (part[0] == 'U' || part[0] == 'u') &&
+                   (part[1] == 'N' || part[1] == 'n') && (part[2] == 'C' || part[2] == 'c');
+        };
+        if (path_parts.size() >= 2 && path_parts[0] == "?" && is_unc(path_parts[1])) {
+            root_component_count = 4;
+        }
+    }
+#endif
+
+    std::vector<std::string_view> parts;
+    for (std::size_t i = 0; i < path_parts.size(); ++i) {
+        const auto part = path_parts[i];
+        if (i < root_component_count) {
+            parts.push_back(part);
+        } else if (part.empty() || part == ".") {
+            continue;
+        } else if (part == "..") {
+            if (parts.size() > root_component_count) {
+                parts.pop_back();
+            }
+        } else {
+            parts.push_back(part);
+        }
+    }
+
+    const std::size_t root_length = root.size();
+    std::string resolved = std::move(root);
+    for (std::size_t i = 0; i < parts.size(); ++i) {
+        if (i != 0 || (!resolved.empty() && resolved.back() != type2 && !drive_relative))
             resolved += type2;
         resolved.append(parts[i].data(), parts[i].size());
     }
 
     path = std::move(resolved);
 
+    if (!path.empty() && path.size() == root_length) {
+        return path;
+    }
     return std::string(RemoveTrailingSlash(path));
 }
 

@@ -347,8 +347,9 @@ enum class DirectorySeparator {
 // i.e. "C:\Users\Yuzu\Documents\save.bin" becomes {"C:", "Users", "Yuzu", "Documents", "save.bin" }
 [[nodiscard]] std::vector<std::string> SplitPathComponentsCopy(std::string_view filename);
 
-// Removes trailing slash, makes all '\\' into '/', and removes duplicate '/'. Makes '/' into '\\'
-// depending if directory_separator is BackwardSlash or PlatformDefault and running on windows
+// Normalizes directory separators, removes duplicate and non-root trailing separators, and resolves
+// '.' and '..' components without traversing above the path root. Windows drive and UNC roots are
+// preserved.
 [[nodiscard]] std::string SanitizePath(
     std::string_view path,
     DirectorySeparator directory_separator = DirectorySeparator::ForwardSlash);
