@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "core/hle/service/cmif_serialization.h"
-#include "core/hle/service/ns/i_async_result.h"
+#include "core/hle/service/ns/async_result.h"
 
 #include <cstring>
 
