@@ -57,7 +57,8 @@ using VideoCore::Surface::SurfaceType;
 namespace {
 constexpr bool ENABLE_MSAA_TILER_RESOLVE = true;
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
-constexpr bool ENABLE_ACCELERATED_UNSWIZZLE = false;
+constexpr bool ENABLE_ACCELERATED_UNSWIZZLE = true;
+constexpr bool ENABLE_ACCELERATED_UNSWIZZLE_DISPATCH = false;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_STENCIL_DISCARD = true;
 
@@ -207,6 +208,9 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
 }
 
 [[nodiscard]] bool WillUseAcceleratedUnswizzle(const Device& device, const ImageInfo& info) {
+    if (!ENABLE_ACCELERATED_UNSWIZZLE_DISPATCH) {
+        return false;
+    }
     switch (info.type) {
     case ImageType::e2D:
     case ImageType::e3D:

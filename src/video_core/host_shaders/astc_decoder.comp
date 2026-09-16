@@ -164,27 +164,19 @@ uint FastReplicateTo8(uint value, uint num_bits) {
     return ReplicateBits(value, num_bits, 8);
 }
 
+const uint REPLICATE_TO_6_ODD_HALVES = ((63u >> 1u) << 5u) | ((21u >> 1u) << 10u) |
+                                       ((9u >> 1u) << 15u) | ((17u >> 1u) << 20u) |
+                                       ((33u >> 1u) << 25u);
+const uint REPLICATE_TO_6_SHIFTS = (2u << 16u) | (4u << 20u);
+
 uint FastReplicateTo6(uint value, uint num_bits) {
-    if (num_bits == 0) {
-        return 0;
-    }
-    if (num_bits >= 6) {
+    if (num_bits >= 6u) {
         return value;
     }
     const uint v = value & ((1u << num_bits) - 1u);
-    if (num_bits == 1) {
-        return v * 63u;
-    }
-    if (num_bits == 2) {
-        return v * 21u;
-    }
-    if (num_bits == 3) {
-        return v * 9u;
-    }
-    if (num_bits == 4) {
-        return (v << 2u) | (v >> 2u);
-    }
-    return (v << 1u) | (v >> 4u);
+    const uint c = ((REPLICATE_TO_6_ODD_HALVES >> (num_bits * 5u)) & 0x1fu) * 2u + 1u;
+    const uint s = (REPLICATE_TO_6_SHIFTS >> (num_bits * 4u)) & 0xfu;
+    return (v * c) >> s;
 }
 
 uint Div3Floor(uint v) {
