@@ -711,7 +711,8 @@ BlockLinearUnswizzleImage2DPass::BlockLinearUnswizzleImage2DPass(
     ComputePassDescriptorQueue& compute_pass_descriptor_queue_)
     : ComputePass(device_, scheduler_, descriptor_pool_, ASTC_DESCRIPTOR_SET_BINDINGS,
                   ASTC_PASS_DESCRIPTOR_UPDATE_TEMPLATE_ENTRY, ASTC_BANK_INFO,
-                  COMPUTE_PUSH_CONSTANT_RANGE<sizeof(BlockLinearSwizzle2DParams)>,
+                  COMPUTE_PUSH_CONSTANT_RANGE<
+                      sizeof(VideoCommon::Accelerated::BlockLinearSwizzle2DParams)>,
                   BLOCK_LINEAR_UNSWIZZLE_2D_COMP_SPV),
       scheduler{scheduler_}, staging_buffer_pool{staging_buffer_pool_},
       compute_pass_descriptor_queue{compute_pass_descriptor_queue_} {}
