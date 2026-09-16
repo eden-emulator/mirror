@@ -30,26 +30,6 @@ namespace {
 
 // Helpers translating MemoryUsage to flags/usage
 
-    [[maybe_unused]] VkMemoryPropertyFlags MemoryUsagePropertyFlags(MemoryUsage usage) {
-        switch (usage) {
-            case MemoryUsage::DeviceLocal:
-                return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            case MemoryUsage::Upload:
-                return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            case MemoryUsage::Download:
-                return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
-                        VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
-            case MemoryUsage::Stream:
-                return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        }
-        ASSERT_MSG(false, "Invalid memory usage={}", usage);
-        return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    }
-
     [[nodiscard]] VkMemoryPropertyFlags MemoryUsagePreferredVmaFlags(MemoryUsage usage) {
         if (usage == MemoryUsage::Download) {
             return VK_MEMORY_PROPERTY_HOST_CACHED_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;

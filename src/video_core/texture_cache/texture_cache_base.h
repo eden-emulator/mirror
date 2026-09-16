@@ -63,6 +63,7 @@ struct ImageViewInOut {
 
 struct AsyncDecodeContext {
     ImageId image_id;
+    Common::ScratchBuffer<u8> input_data;
     Common::ScratchBuffer<u8> decoded_data;
     boost::container::small_vector<BufferImageCopy, 16> copies;
     std::mutex mutex;

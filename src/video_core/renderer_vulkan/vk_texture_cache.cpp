@@ -57,6 +57,7 @@ using VideoCore::Surface::SurfaceType;
 namespace {
 constexpr bool ENABLE_MSAA_TILER_RESOLVE = true;
 constexpr bool ENABLE_MSAA_RESOLVE_CONSUME = true;
+constexpr bool ENABLE_ACCELERATED_UNSWIZZLE = false;
 constexpr bool ENABLE_MSAA_COLOR_DISCARD = true;
 constexpr bool ENABLE_MSAA_DEPTH_STENCIL_DISCARD = true;
 
@@ -193,6 +194,9 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
 }
 
 [[nodiscard]] bool IsUnswizzleAcceleratedFormat(const Device& device, PixelFormat format) {
+    if (!ENABLE_ACCELERATED_UNSWIZZLE) {
+        return false;
+    }
     if (IsPixelFormatASTC(format) || VideoCore::Surface::IsPixelFormatBCn(format)) {
         return false;
     }
@@ -1018,7 +1022,7 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
         astc_decoder_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
                                   compute_pass_descriptor_queue, memory_allocator);
     }
-    if (device.IsKhrImageFormatListSupported()) {
+    if (ENABLE_ACCELERATED_UNSWIZZLE && device.IsKhrImageFormatListSupported()) {
         bl_unswizzle_2d_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
                                      compute_pass_descriptor_queue);
         bl_unswizzle_3d_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,

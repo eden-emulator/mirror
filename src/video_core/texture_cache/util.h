@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
@@ -71,6 +71,11 @@ struct OverlapResult {
 
 void ConvertImage(std::span<const u8> input, const ImageInfo& info, std::span<u8> output,
                   std::span<BufferImageCopy> copies);
+
+[[nodiscard]] bool CanConvertFromGuest(const ImageInfo& info);
+
+[[nodiscard]] boost::container::small_vector<BufferImageCopy, 16> ConvertImageFromGuest(
+    std::span<const u8> input, const ImageInfo& info, std::span<u8> output);
 
 [[nodiscard]] boost::container::small_vector<BufferImageCopy, 16> FullDownloadCopies(
     const ImageInfo& info);

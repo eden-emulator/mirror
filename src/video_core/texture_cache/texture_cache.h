@@ -1117,6 +1117,12 @@ void TextureCache<P>::UploadImageContents(Image& image, StagingBuffer& staging) 
     Tegra::Memory::GpuGuestMemory<u8, Tegra::Memory::GuestMemoryFlags::UnsafeRead> swizzle_data(
         *gpu_memory, gpu_addr, image.guest_size_bytes, &swizzle_data_buffer);
     if (True(image.flags & ImageFlagBits::Converted)) {
+        if (CanConvertFromGuest(image.info)) {
+            const auto copies =
+                FixSmallVectorADL(ConvertImageFromGuest(swizzle_data, image.info, mapped_span));
+            image.UploadMemory(staging, copies);
+            return;
+        }
         unswizzle_data_buffer.resize_destructive(image.unswizzled_size_bytes);
         auto copies = FixSmallVectorADL(UnswizzleImage(*gpu_memory, gpu_addr, image.info, swizzle_data, unswizzle_data_buffer));
         ConvertImage(unswizzle_data_buffer, image.info, mapped_span, copies);
@@ -1302,10 +1308,27 @@ void TextureCache<P>::QueueAsyncDecode(Image& image, ImageId image_id) {
     decode->image_id = image_id;
     async_decodes.push_back(std::move(decode));
 
+    const size_t out_size = MapSizeBytes(image);
+    if (CanConvertFromGuest(image.info)) {
+        decode_ptr->input_data.resize_destructive(image.guest_size_bytes);
+        gpu_memory->ReadBlockUnsafe(image.gpu_addr, decode_ptr->input_data.data(),
+                                    image.guest_size_bytes);
+
+        texture_decode_worker.QueueWork([out_size, info = image.info, async_decode = decode_ptr] {
+            async_decode->decoded_data.resize_destructive(out_size);
+            auto copies =
+                ConvertImageFromGuest(async_decode->input_data, info, async_decode->decoded_data);
+
+            std::unique_lock lock{async_decode->mutex};
+            async_decode->copies = std::move(copies);
+            async_decode->complete = true;
+        });
+        return;
+    }
+
     std::vector<u8> local_unswizzle_data_buffer(image.unswizzled_size_bytes, 0);
     Tegra::Memory::GpuGuestMemory<u8, Tegra::Memory::GuestMemoryFlags::UnsafeRead> swizzle_data(*gpu_memory, image.gpu_addr, image.guest_size_bytes, &swizzle_data_buffer);
     auto copies = UnswizzleImage(*gpu_memory, image.gpu_addr, image.info, swizzle_data, local_unswizzle_data_buffer);
-    const size_t out_size = MapSizeBytes(image);
 
     auto func = [out_size, copies, info = image.info,
                  input = std::move(local_unswizzle_data_buffer),

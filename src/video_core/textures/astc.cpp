@@ -20,6 +20,7 @@
 #include "common/common_types.h"
 #include <ranges>
 #include "video_core/textures/astc.h"
+#include "video_core/textures/decoders.h"
 #include "video_core/textures/workers.h"
 
 class InputBitStream {
@@ -1671,7 +1672,7 @@ static void ComputeEndpoints(Pixel& ep1, Pixel& ep2, const u32*& colorValues,
 }
 
 static void FillVoidExtentLDR(InputBitStream& strm, std::span<u32> outBuf, u32 blockWidth,
-                              u32 blockHeight) {
+                              u32 blockHeight, u32 stride) {
     // Don't actually care about the void extent, just read the bits...
     for (s32 i = 0; i < 4; ++i) {
         strm.ReadBits<13>();
@@ -1688,7 +1689,7 @@ static void FillVoidExtentLDR(InputBitStream& strm, std::span<u32> outBuf, u32 b
 
     for (u32 j = 0; j < blockHeight; j++) {
         for (u32 i = 0; i < blockWidth; i++) {
-            outBuf[j * blockWidth + i] = rgba;
+            outBuf[j * stride + i] = rgba;
         }
     }
 }
@@ -1726,52 +1727,52 @@ static u16 HalfToClampedByte(u16 half_bits) {
     return static_cast<u16>(clamped * 255.0f + 0.5f);
 }
 
-static void FillError(std::span<u32> outBuf, u32 blockWidth, u32 blockHeight) {
+static void FillError(std::span<u32> outBuf, u32 blockWidth, u32 blockHeight, u32 stride) {
     for (u32 j = 0; j < blockHeight; j++) {
         for (u32 i = 0; i < blockWidth; i++) {
-            outBuf[j * blockWidth + i] = 0x00000000;
+            outBuf[j * stride + i] = 0x00000000;
         }
     }
 }
 
 static void DecompressBlock(std::span<const u8, 16> inBuf, const u32 blockWidth,
-                            const u32 blockHeight, std::span<u32, 12 * 12> outBuf) {
+                            const u32 blockHeight, std::span<u32> outBuf, u32 stride) {
     InputBitStream strm(inBuf);
     TexelWeightParams weightParams = DecodeBlockInfo(strm);
 
     // Was there an error?
     if (weightParams.m_bError) {
         assert(false && "Invalid block mode");
-        FillError(outBuf, blockWidth, blockHeight);
+        FillError(outBuf, blockWidth, blockHeight, stride);
         return;
     }
 
     if (weightParams.m_bVoidExtentLDR) {
-        FillVoidExtentLDR(strm, outBuf, blockWidth, blockHeight);
+        FillVoidExtentLDR(strm, outBuf, blockWidth, blockHeight, stride);
         return;
     }
 
     if (weightParams.m_bVoidExtentHDR) {
         assert(false && "HDR void extent blocks are unsupported!");
-        FillError(outBuf, blockWidth, blockHeight);
+        FillError(outBuf, blockWidth, blockHeight, stride);
         return;
     }
 
     if (weightParams.m_Width > blockWidth) {
         assert(false && "Texel weight grid width should be smaller than block width");
-        FillError(outBuf, blockWidth, blockHeight);
+        FillError(outBuf, blockWidth, blockHeight, stride);
         return;
     }
 
     if (weightParams.m_Height > blockHeight) {
         assert(false && "Texel weight grid height should be smaller than block height");
-        FillError(outBuf, blockWidth, blockHeight);
+        FillError(outBuf, blockWidth, blockHeight, stride);
         return;
     }
 
     if (weightParams.GetNumWeightValues() > 64) {
         assert(false && "Too many weights in the weight grid");
-        FillError(outBuf, blockWidth, blockHeight);
+        FillError(outBuf, blockWidth, blockHeight, stride);
         return;
     }
 
@@ -1781,7 +1782,7 @@ static void DecompressBlock(std::span<const u8, 16> inBuf, const u32 blockWidth,
 
     if (nPartitions == 4 && weightParams.m_bDualPlane) {
         assert(false && "Dual plane mode is incompatible with four partition blocks");
-        FillError(outBuf, blockWidth, blockHeight);
+        FillError(outBuf, blockWidth, blockHeight, stride);
         return;
     }
 
@@ -1813,7 +1814,7 @@ static void DecompressBlock(std::span<const u8, 16> inBuf, const u32 blockWidth,
     u32 nWeightBits = weightParams.GetPackedBitSize();
     if (nWeightBits < 24 || nWeightBits > 96) {
         assert(false && "Invalid weight bit count");
-        FillError(outBuf, blockWidth, blockHeight);
+        FillError(outBuf, blockWidth, blockHeight, stride);
         return;
     }
     s32 remainingBits = 128 - nWeightBits - static_cast<int>(strm.GetBitsRead());
@@ -1995,8 +1996,33 @@ static void DecompressBlock(std::span<const u8, 16> inBuf, const u32 blockWidth,
                 }
             }
 
-            outBuf[j * blockWidth + i] = p.Pack();
+            outBuf[j * stride + i] = p.Pack();
         }
+}
+
+static void DecodeAndStoreBlock(std::span<const uint8_t> data, size_t src_offset, u32 x, u32 y,
+                                u32 width, u32 height, u32 block_width, u32 block_height,
+                                std::span<u32> out_slice) {
+    const u32 decomp_width = (std::min)(block_width, width - x);
+    const u32 decomp_height = (std::min)(block_height, height - y);
+    u32* const dst = out_slice.data() + size_t{y} * width + x;
+    if (src_offset + 16 > data.size()) {
+        for (u32 h = 0; h < decomp_height; ++h) {
+            std::memset(dst + size_t{h} * width, 0, decomp_width * 4);
+        }
+        return;
+    }
+    const std::span<const u8, 16> block_ptr{data.subspan(src_offset, 16)};
+    if (decomp_width == block_width && decomp_height == block_height) {
+        const size_t touched = size_t{block_height - 1} * width + block_width;
+        DecompressBlock(block_ptr, block_width, block_height, std::span<u32>{dst, touched}, width);
+        return;
+    }
+    std::array<u32, 12 * 12> staging;
+    DecompressBlock(block_ptr, block_width, block_height, staging, block_width);
+    for (u32 h = 0; h < decomp_height; ++h) {
+        std::memcpy(dst + size_t{h} * width, staging.data() + h * block_width, decomp_width * 4);
+    }
 }
 
 void Decompress(std::span<const uint8_t> data, uint32_t width, uint32_t height, uint32_t depth,
@@ -2005,37 +2031,71 @@ void Decompress(std::span<const uint8_t> data, uint32_t width, uint32_t height, 
     const u32 cols = Common::DivideUp(width, block_width);
 
     Common::ThreadWorker& workers{GetThreadWorkers()};
+    const std::span<u32> out{reinterpret_cast<u32*>(output.data()), output.size() / 4};
+    const size_t slice_texels = size_t{height} * width;
 
     for (u32 z = 0; z < depth; ++z) {
-        const u32 depth_offset = z * height * width * 4;
+        const std::span<u32> out_slice = out.subspan(z * slice_texels);
         for (u32 y_index = 0; y_index < rows; ++y_index) {
-            auto decompress_stride = [data, width, height, block_width, block_height, output, rows,
-                                      cols, z, depth_offset, y_index] {
+            auto decompress_stride = [data, width, height, block_width, block_height, out_slice,
+                                      rows, cols, z, y_index] {
                 const u32 y = y_index * block_height;
                 for (u32 x_index = 0; x_index < cols; ++x_index) {
                     const u32 block_index = (z * rows * cols) + (y_index * cols) + x_index;
-                    const u32 x = x_index * block_width;
-
-                    const std::span<const u8, 16> blockPtr{data.subspan(block_index * 16, 16)};
-
-                    // Blocks can be at most 12x12
-                    std::array<u32, 12 * 12> uncompData;
-                    DecompressBlock(blockPtr, block_width, block_height, uncompData);
-
-                    u32 decompWidth = (std::min)(block_width, width - x);
-                    u32 decompHeight = (std::min)(block_height, height - y);
-
-                    const std::span<u8> outRow = output.subspan(depth_offset + (y * width + x) * 4);
-                    for (u32 h = 0; h < decompHeight; ++h) {
-                        std::memcpy(outRow.data() + h * width * 4,
-                                    uncompData.data() + h * block_width, decompWidth * 4);
-                    }
+                    DecodeAndStoreBlock(data, size_t{block_index} * 16, x_index * block_width, y,
+                                        width, height, block_width, block_height, out_slice);
                 }
             };
             workers.QueueWork(std::move(decompress_stride));
         }
         workers.WaitForRequests();
     }
+}
+
+void DecompressBlockLinear(std::span<const uint8_t> data, uint32_t width, uint32_t height,
+                           uint32_t depth, uint32_t layers, uint32_t block_width,
+                           uint32_t block_height, const BlockLinearLayout& layout,
+                           std::span<uint8_t> output) {
+    const u32 rows = Common::DivideUp(height, block_height);
+    const u32 cols = Common::DivideUp(width, block_width);
+    const size_t slice_texels = size_t{height} * width;
+
+    Common::ThreadWorker& workers{GetThreadWorkers()};
+    const std::span<u32> out{reinterpret_cast<u32*>(output.data()), output.size() / 4};
+
+    for (u32 layer = 0; layer < layers; ++layer) {
+        const size_t layer_offset = size_t{layer} * layout.layer_stride;
+        for (u32 z = 0; z < depth; ++z) {
+            const size_t slice_offset =
+                layer_offset + (z >> layout.gob_depth) * size_t{layout.slice_size} +
+                ((z & layout.gob_depth_mask) << (GOB_SIZE_SHIFT + layout.gob_height));
+            const std::span<u32> out_slice =
+                out.subspan((size_t{layer} * depth + z) * slice_texels);
+            for (u32 y_index = 0; y_index < rows; ++y_index) {
+                auto decompress_stride = [data, width, height, block_width, block_height, out_slice,
+                                          cols, layout, slice_offset, y_index] {
+                    const u32 y = y_index * block_height;
+                    const u32 gob_y = y_index >> GOB_SIZE_Y_SHIFT;
+                    const size_t offset_y =
+                        (gob_y >> layout.gob_height) * size_t{layout.block_size} +
+                        ((gob_y & layout.gob_height_mask) << GOB_SIZE_SHIFT);
+                    const u32 swizzled_y = ((y_index & 1) << 4) | ((y_index & 6) << 5);
+                    for (u32 x_index = 0; x_index < cols; ++x_index) {
+                        const u32 byte_x = x_index * 16;
+                        const size_t offset_x = size_t{byte_x >> GOB_SIZE_X_SHIFT}
+                                                << layout.x_shift;
+                        const u32 swizzled_x = ((x_index & 1) << 5) | ((x_index & 2) << 7);
+                        const size_t src_offset = slice_offset + offset_y + offset_x +
+                                                  (swizzled_x | swizzled_y);
+                        DecodeAndStoreBlock(data, src_offset, x_index * block_width, y, width,
+                                            height, block_width, block_height, out_slice);
+                    }
+                };
+                workers.QueueWork(std::move(decompress_stride));
+            }
+        }
+    }
+    workers.WaitForRequests();
 }
 
 } // namespace Tegra::Texture::ASTC

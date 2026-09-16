@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
@@ -992,6 +992,78 @@ void ConvertImage(std::span<const u8> input, const ImageInfo& info, std::span<u8
         copy.buffer_row_length = mip_size.width;
         copy.buffer_image_height = mip_size.height;
     }
+}
+
+bool CanConvertFromGuest(const ImageInfo& info) {
+    if (!IsPixelFormatASTC(info.format) || info.type == ImageType::Linear) {
+        return false;
+    }
+    return Settings::values.astc_recompression.GetValue() ==
+           Settings::AstcRecompression::Uncompressed;
+}
+
+boost::container::small_vector<BufferImageCopy, 16> ConvertImageFromGuest(
+    std::span<const u8> input, const ImageInfo& info, std::span<u8> output) {
+    const u32 bpp_log2 = BytesPerBlockLog2(info.format);
+    const Extent2D tile_size = DefaultBlockSize(info.format);
+    const Extent3D size = info.size;
+    const LevelInfo level_info = MakeLevelInfo(info);
+    const s32 num_layers = info.resources.layers;
+    const s32 num_levels = info.resources.levels;
+    const std::array level_sizes = CalculateLevelSizes(level_info, num_levels);
+    const Extent2D gob = GobSize(bpp_log2, info.block.height, info.tile_width_spacing);
+    const u32 layer_size = CalculateLevelBytes(level_sizes, num_levels);
+    const u32 layer_stride = AlignLayerSize(layer_size, size, level_info.block, tile_size.height,
+                                            info.tile_width_spacing);
+    const u32 out_bytes_per_texel = BytesPerBlock(PixelFormat::A8B8G8R8_UNORM);
+    size_t guest_offset = 0;
+    u32 output_offset = 0;
+    boost::container::small_vector<BufferImageCopy, 16> copies(num_levels);
+
+    for (s32 level = 0; level < num_levels; ++level) {
+        const Extent3D level_size = AdjustMipSize(size, level);
+        const Extent3D num_tiles = AdjustTileSize(level_size, tile_size);
+        const Extent3D block =
+            AdjustMipBlockSize(num_tiles, level_info.block, level, level_info.num_levels);
+        const u32 stride_alignment = StrideAlignment(num_tiles, info.block, gob, bpp_log2);
+        const u32 stride = Common::AlignUpLog2(num_tiles.width, stride_alignment) << bpp_log2;
+        const u32 gobs_in_x = Common::DivCeilLog2(stride, GOB_SIZE_X_SHIFT);
+        const u32 gob_block_size = gobs_in_x << (GOB_SIZE_SHIFT + block.height + block.depth);
+        const u32 level_bytes = level_size.width * level_size.height * level_size.depth *
+                                num_layers * out_bytes_per_texel;
+        copies[level] = BufferImageCopy{
+            .buffer_offset = output_offset,
+            .buffer_size = level_bytes,
+            .buffer_row_length = level_size.width,
+            .buffer_image_height = level_size.height,
+            .image_subresource =
+                {
+                    .base_level = level,
+                    .base_layer = 0,
+                    .num_layers = num_layers,
+                },
+            .image_offset = {0, 0, 0},
+            .image_extent = level_size,
+        };
+        const Tegra::Texture::ASTC::BlockLinearLayout layout{
+            .layer_stride = layer_stride,
+            .slice_size =
+                Common::DivCeilLog2(num_tiles.height, block.height + GOB_SIZE_Y_SHIFT) *
+                gob_block_size,
+            .block_size = gob_block_size,
+            .x_shift = GOB_SIZE_SHIFT + block.height + block.depth,
+            .gob_height = block.height,
+            .gob_height_mask = (1U << block.height) - 1,
+            .gob_depth = block.depth,
+            .gob_depth_mask = (1U << block.depth) - 1,
+        };
+        Tegra::Texture::ASTC::DecompressBlockLinear(
+            input.subspan(guest_offset), level_size.width, level_size.height, level_size.depth,
+            num_layers, tile_size.width, tile_size.height, layout, output.subspan(output_offset));
+        output_offset += level_bytes;
+        guest_offset += level_sizes[level];
+    }
+    return copies;
 }
 
 boost::container::small_vector<BufferImageCopy, 16> FullDownloadCopies(const ImageInfo& info) {
