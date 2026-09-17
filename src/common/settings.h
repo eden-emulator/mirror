@@ -649,10 +649,10 @@ struct Values {
 
     SwitchableSetting<bool> fix_bloom_effects{linkage, false, "fix_bloom_effects",
                                                      Category::RendererHacks};
-
+#ifdef __ANDROID__
     SwitchableSetting<bool> emulate_bgr565{linkage, false, "emulate_bgr565",
                                             Category::RendererHacks};
-
+#endif
     SwitchableSetting<bool> rescale_hack{linkage, false, "rescale_hack",
                                          Category::RendererHacks};
     SwitchableSetting<bool> enable_gpu_buffer_readback{linkage,

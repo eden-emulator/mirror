@@ -774,7 +774,7 @@ Builder::~Builder() = default;
 
 static bool IsAndroidOnly(const Settings::BasicSetting& setting) {
     const std::string& label = setting.GetLabel();
-    return label.starts_with("frame_gen") || label == "emulate_bgr565";
+    return label.starts_with("frame_gen");
 }
 
 Widget* Builder::BuildWidget(Settings::BasicSetting* setting,

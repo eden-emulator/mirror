@@ -993,7 +993,11 @@ bool Device::HasTimelineSemaphore() const {
 }
 
 bool Device::MustEmulateBGR565() const {
+#ifdef __ANDROID__
     return Settings::values.emulate_bgr565.GetValue();
+#else
+    return false;
+#endif
 }
 
 bool Device::GetSuitability(bool requires_swapchain) {
