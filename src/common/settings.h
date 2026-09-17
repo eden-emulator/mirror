@@ -612,8 +612,7 @@ struct Values {
                                                   Specialization::Default,
                                                   true,
                                                   true};
-
-#ifdef __ANDROID__
+    // Only effects android
     SwitchableSetting<bool> use_optimized_vertex_buffers{linkage,
                                                  false,
                                                  "use_optimized_vertex_buffers",
@@ -621,7 +620,6 @@ struct Values {
                                                  Specialization::Default,
                                                  true,
                                                  true};
-#endif
 
     // Renderer Hacks //
     SwitchableSetting<GpuClock> gpu_clock{linkage,
@@ -688,9 +686,7 @@ struct Values {
                                                   Category::RendererHacks};
 
     SwitchableSetting<ExtendedDynamicState> dyna_state{linkage,
-#if defined(__ANDROID__)
-                                           ExtendedDynamicState::Disabled,
-#elif defined(__APPLE__)
+#if defined(__ANDROID__) || defined(__APPLE__)
                                            ExtendedDynamicState::Disabled,
 #else
                                            ExtendedDynamicState::EDS2,
@@ -723,11 +719,9 @@ struct Values {
                                                     linkage, false, "disable_shader_loop_safety_checks", Category::RendererDebug};
     Setting<bool> enable_renderdoc_hotkey{linkage, false, "renderdoc_hotkey",
                                           Category::RendererDebug};
-#if defined(__ANDROID__) && defined(ARCHITECTURE_arm64)
     // Debug override for automatic BCn patching detection
     Setting<bool> patch_old_qcom_drivers{linkage, false, "patch_old_qcom_drivers",
                                          Category::RendererDebug};
-#endif
     SwitchableSetting<bool> disable_buffer_reorder{linkage, false, "disable_buffer_reorder",
                                          Category::RendererDebug,
                                          Specialization::Default,
