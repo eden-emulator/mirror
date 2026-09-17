@@ -228,7 +228,11 @@ public:
     bool BindMultiRangeStorage(const Binding& binding, bool is_written,
                                std::span<const MultiRangeSegment> pool);
 
-    void ResolveMultiRangeStorage(Binding& binding, std::vector<MultiRangeSegment>& pool);
+
+
+
+
+                               void ResolveMultiRangeStorage(Binding& binding, std::vector<MultiRangeSegment>& pool);
 
     void UnmapGPUMemory(size_t as_id, GPUVAddr gpu_addr, size_t size);
 

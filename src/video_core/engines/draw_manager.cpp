@@ -83,7 +83,7 @@ void Maxwell3D::DrawManager::FlushInstanceArray(Maxwell3D& maxwell3d) {
     const u32 instance_count = draw_state.instance_count + 1;
     draw_state.draw_mode = DrawMode::General;
     draw_state.instance_count = 0;
-    if (draw_state.vertex_buffer.count != 0 && maxwell3d.ShouldExecute()) {
+    if (maxwell3d.ShouldExecute()) {
         maxwell3d.rasterizer->Draw(false, instance_count);
     }
 }
@@ -309,13 +309,6 @@ void Maxwell3D::DrawManager::UpdateTopology(Maxwell3D& maxwell3d) {
 void Maxwell3D::DrawManager::ProcessDraw(Maxwell3D& maxwell3d, bool draw_indexed, u32 instance_count) {
     LOG_TRACE(HW_GPU, "called, topology={}, count={}", draw_state.topology, draw_indexed ? draw_state.index_buffer.count : draw_state.vertex_buffer.count);
     UpdateTopology(maxwell3d);
-    u32 count = draw_state.vertex_buffer.count;
-    if (draw_indexed) {
-        count = draw_state.index_buffer.count;
-    }
-    if (count == 0) {
-        return;
-    }
     if (maxwell3d.ShouldExecute()) {
         maxwell3d.rasterizer->Draw(draw_indexed, instance_count);
     }
