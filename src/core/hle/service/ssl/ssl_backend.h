@@ -36,12 +36,17 @@ class SSLConnectionBackend {
 public:
     virtual ~SSLConnectionBackend() {}
     virtual void SetSocket(std::shared_ptr<Network::SocketBase> socket) = 0;
-    virtual Result SetHostName(const std::string& hostname) = 0;
     virtual void SetVerifyOption(u32 option) = 0;
     virtual Result DoHandshake() = 0;
     virtual Result Read(size_t* out_size, std::span<u8> data) = 0;
+    virtual Result Peek(size_t* out_size, std::span<u8> data) = 0;
     virtual Result Write(size_t* out_size, std::span<const u8> data) = 0;
     virtual Result GetServerCerts(std::vector<std::vector<u8>>* out_certs) = 0;
+    virtual Result SetHostName(const char* hostname) = 0;
+    virtual Result GetHostName(std::span<u8> hostname, u32* out_size) = 0;
+    virtual int Pending() = 0;
+    virtual Result SetRenegotiationMode(u32 mode) = 0;
+    virtual Result GetRenegotiationMode(u32* mode) = 0;
 };
 
 Result CreateSSLConnectionBackend(std::unique_ptr<SSLConnectionBackend>* out_backend);

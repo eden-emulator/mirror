@@ -48,6 +48,12 @@ enum class OptionType : u32 {
     EnableAlpn = 3,
 };
 
+// This is nn::ssl::sf::RenegotiationMode
+enum RenegotiationMode : u32 {
+    None = 0, ///< None
+    Secure = 1, ///< Secure
+};
+
 // This is nn::ssl::sf::SslVersion
 struct SslVersion {
     union {
@@ -75,34 +81,34 @@ public:
           shared_data{shared_data_in}, backend{std::move(backend_in)} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &ISslConnection::SetSocketDescriptor, "SetSocketDescriptor"},
-            {1, &ISslConnection::SetHostName, "SetHostName"},
-            {2, &ISslConnection::SetVerifyOption, "SetVerifyOption"},
-            {3, &ISslConnection::SetIoMode, "SetIoMode"},
-            {4, nullptr, "GetSocketDescriptor"},
-            {5, nullptr, "GetHostName"},
+            {0, D<&ISslConnection::SetSocketDescriptor>, "SetSocketDescriptor"},
+            {1, D<&ISslConnection::SetHostName>, "SetHostName"},
+            {2, D<&ISslConnection::SetVerifyOption>, "SetVerifyOption"},
+            {3, D<&ISslConnection::SetIoMode>, "SetIoMode"},
+            {4, D<&ISslConnection::GetSocketDescriptor>, "GetSocketDescriptor"},
+            {5, D<&ISslConnection::GetHostName>, "GetHostName"},
             {6, nullptr, "GetVerifyOption"},
-            {7, nullptr, "GetIoMode"},
-            {8, &ISslConnection::DoHandshake, "DoHandshake"},
+            {7, D<&ISslConnection::GetIoMode>, "GetIoMode"},
+            {8, D<&ISslConnection::DoHandshake>, "DoHandshake"},
             {9, &ISslConnection::DoHandshakeGetServerCert, "DoHandshakeGetServerCert"},
-            {10, &ISslConnection::Read, "Read"},
-            {11, &ISslConnection::Write, "Write"},
-            {12, &ISslConnection::Pending, "Pending"},
-            {13, nullptr, "Peek"},
-            {14, nullptr, "Poll"},
-            {15, nullptr, "GetVerifyCertError"},
-            {16, nullptr, "GetNeededServerCertBufferSize"},
-            {17, &ISslConnection::SetSessionCacheMode, "SetSessionCacheMode"},
-            {18, nullptr, "GetSessionCacheMode"},
-            {19, nullptr, "FlushSessionCache"},
-            {20, nullptr, "SetRenegotiationMode"},
-            {21, nullptr, "GetRenegotiationMode"},
-            {22, &ISslConnection::SetOption, "SetOption"},
-            {23, &ISslConnection::GetOption, "GetOption"},
+            {10, D<&ISslConnection::Read>, "Read"},
+            {11, D<&ISslConnection::Write>, "Write"},
+            {12, D<&ISslConnection::Pending>, "Pending"},
+            {13, D<&ISslConnection::Peek>, "Peek"},
+            {14, D<&ISslConnection::Poll>, "Poll"},
+            {15, D<&ISslConnection::GetVerifyCertError>, "GetVerifyCertError"},
+            {16, D<&ISslConnection::GetNeededServerCertBufferSize>, "GetNeededServerCertBufferSize"},
+            {17, D<&ISslConnection::SetSessionCacheMode>, "SetSessionCacheMode"},
+            {18, D<&ISslConnection::GetSessionCacheMode>, "GetSessionCacheMode"},
+            {19, D<&ISslConnection::FlushSessionCache>, "FlushSessionCache"},
+            {20, D<&ISslConnection::SetRenegotiationMode>, "SetRenegotiationMode"},
+            {21, D<&ISslConnection::GetRenegotiationMode>, "GetRenegotiationMode"},
+            {22, D<&ISslConnection::SetOption>, "SetOption"},
+            {23, D<&ISslConnection::GetOption>, "GetOption"},
             {24, nullptr, "GetVerifyCertErrors"},
             {25, nullptr, "GetCipherInfo"},
-            {26, &ISslConnection::SetNextAlpnProto, "SetNextAlpnProto"},
-            {27, &ISslConnection::GetNextAlpnProto, "GetNextAlpnProto"},
+            {26, D<&ISslConnection::SetNextAlpnProto>, "SetNextAlpnProto"},
+            {27, D<&ISslConnection::GetNextAlpnProto>, "GetNextAlpnProto"},
             {28, nullptr, "SetDtlsSocketDescriptor"},
             {29, nullptr, "GetDtlsHandshakeTimeout"},
             {30, nullptr, "SetPrivateOption"},
@@ -141,80 +147,6 @@ public:
     }
 
 private:
-    SslVersion ssl_version;
-    std::shared_ptr<SslContextSharedData> shared_data;
-    std::unique_ptr<SSLConnectionBackend> backend;
-    std::optional<int> fd_to_close;
-    bool do_not_close_socket = false;
-    bool get_server_cert_chain = false;
-    bool skip_default_verify = false;
-    bool enable_alpn = false;
-    std::shared_ptr<Network::SocketBase> socket;
-    std::vector<u8> next_alpn_proto;
-    bool did_handshake = false;
-    u32 verify_option = 0;
-
-    Result SetSocketDescriptorImpl(s32* out_fd, s32 fd) {
-        LOG_DEBUG(Service_SSL, "called, fd={}", fd);
-        ASSERT(!did_handshake);
-        auto bsd = system.ServiceManager().GetService<Service::Sockets::BSD_USA>("bsd:u");
-        ASSERT_OR_EXECUTE(bsd, { return ResultInternalError; });
-
-        auto const res_v = bsd->DuplicateSocketImpl(fd);
-        if (auto *res = std::get_if<s32>(&res_v)) {
-            const s32 duplicated_fd = *res;
-            if (do_not_close_socket) {
-                *out_fd = duplicated_fd;
-            } else {
-                *out_fd = -1;
-                fd_to_close = duplicated_fd;
-            }
-            std::optional<std::shared_ptr<Network::SocketBase>> sock = bsd->GetSocket(duplicated_fd);
-            if (!sock.has_value()) {
-                LOG_ERROR(Service_SSL, "invalid socket fd {} after duplication", duplicated_fd);
-                return ResultInvalidSocket;
-            }
-            socket = std::move(*sock);
-            backend->SetSocket(socket);
-            return ResultSuccess;
-        }
-        LOG_ERROR(Service_SSL, "Failed to duplicate socket with fd {}", fd);
-        return ResultInvalidSocket;
-    }
-
-    Result SetHostNameImpl(const std::string& hostname) {
-        LOG_DEBUG(Service_SSL, "called. hostname={}", hostname);
-        ASSERT(!did_handshake);
-        return backend->SetHostName(hostname);
-    }
-
-    Result SetVerifyOptionImpl(u32 option) {
-        ASSERT(!did_handshake);
-        LOG_DEBUG(Service_SSL, "called. option={} (forcing 0)", option);
-        verify_option = 0;
-        backend->SetVerifyOption(0);
-        return ResultSuccess;
-    }
-
-    Result SetIoModeImpl(u32 input_mode) {
-        auto mode = static_cast<IoMode>(input_mode);
-        ASSERT(mode == IoMode::Blocking || mode == IoMode::NonBlocking);
-        ASSERT_OR_EXECUTE(socket, { return ResultNoSocket; });
-
-        const bool non_block = mode == IoMode::NonBlocking;
-        const Network::Errno error = socket->SetNonBlock(non_block);
-        if (error != Network::Errno::SUCCESS) {
-            LOG_ERROR(Service_SSL, "Failed to set native socket non-block flag to {}", non_block);
-        }
-        return ResultSuccess;
-    }
-
-    Result SetSessionCacheModeImpl(u32 mode) {
-        ASSERT(!did_handshake);
-        LOG_WARNING(Service_SSL, "(STUBBED) called. value={}", mode);
-        return ResultSuccess;
-    }
-
     Result DoHandshakeImpl() {
         ASSERT_OR_EXECUTE(!did_handshake && socket, { return ResultNoSocket; });
         Result res = backend->DoHandshake();
@@ -234,19 +166,17 @@ private:
         };
         if (!get_server_cert_chain) {
             // Just return the first one, unencoded.
-            ASSERT_OR_EXECUTE_MSG(
-                !certs.empty(), { return {}; }, "Should be at least one server cert");
+            ASSERT_OR_EXECUTE_MSG(!certs.empty(), { return {}; }, "Should be at least one server cert");
             return certs[0];
         }
         std::vector<u8> ret;
-        Header header{0x4E4D684374726543, static_cast<u32>(certs.size()), 0};
+        Header header{0x4E4D684374726543, u32(certs.size()), 0};
         ret.insert(ret.end(), reinterpret_cast<u8*>(&header), reinterpret_cast<u8*>(&header + 1));
         size_t data_offset = sizeof(Header) + certs.size() * sizeof(EntryHeader);
         for (auto& cert : certs) {
-            EntryHeader entry_header{static_cast<u32>(cert.size()), static_cast<u32>(data_offset)};
+            EntryHeader entry_header{u32(cert.size()), u32(data_offset)};
             data_offset += cert.size();
-            ret.insert(ret.end(), reinterpret_cast<u8*>(&entry_header),
-                       reinterpret_cast<u8*>(&entry_header + 1));
+            ret.insert(ret.end(), reinterpret_cast<u8*>(&entry_header), reinterpret_cast<u8*>(&entry_header + 1));
         }
         for (auto& cert : certs) {
             ret.insert(ret.end(), cert.begin(), cert.end());
@@ -254,65 +184,77 @@ private:
         return ret;
     }
 
-    Result ReadImpl(std::vector<u8>* out_data) {
-        ASSERT_OR_EXECUTE(did_handshake, { return ResultInternalError; });
-        size_t actual_size{};
-        Result res = backend->Read(&actual_size, *out_data);
-        if (res != ResultSuccess) {
-            return res;
+    Result SetSocketDescriptor(s32 in_fd, Out<s32> out_fd) {
+        LOG_DEBUG(Service_SSL, "called, fd={}", in_fd);
+        ASSERT(!did_handshake);
+        auto bsd = system.ServiceManager().GetService<Service::Sockets::BSD_USA>("bsd:u");
+        ASSERT_OR_EXECUTE(bsd, { return ResultInternalError; });
+
+        auto const res_v = bsd->DuplicateSocketImpl(in_fd);
+        if (auto *res = std::get_if<s32>(&res_v)) {
+            const s32 dup_fd = *res;
+            *out_fd = do_not_close_socket ? dup_fd : -1;
+            if (!do_not_close_socket)
+                fd_to_close = dup_fd;
+            auto const sock = bsd->GetSocket(dup_fd);
+            if (!sock.has_value()) {
+                LOG_ERROR(Service_SSL, "invalid socket fd {} after duplication", dup_fd);
+                return ResultInvalidSocket;
+            }
+            socket = std::move(*sock);
+            backend->SetSocket(std::move(socket));
+            return ResultSuccess;
         }
-        out_data->resize(actual_size);
-        return res;
+        LOG_ERROR(Service_SSL, "Failed to duplicate socket with fd {}", in_fd);
+        return ResultInvalidSocket;
     }
 
-    Result WriteImpl(size_t* out_size, std::span<const u8> data) {
-        ASSERT_OR_EXECUTE(did_handshake, { return ResultInternalError; });
-        return backend->Write(out_size, data);
+    Result SetHostName(InBuffer<BufferAttr_HipcMapAlias> buf) {
+        auto const hostname = Common::StringFromBuffer(buf);
+        LOG_DEBUG(Service_SSL, "called. hostname={}", hostname);
+        ASSERT(!did_handshake);
+        return backend->SetHostName(hostname.c_str());
     }
 
-    Result PendingImpl(s32* out_pending) {
-        LOG_WARNING(Service_SSL, "(STUBBED) called.");
-        *out_pending = 0;
-        return ResultSuccess;
+    Result SetVerifyOption(u32 option) {
+        LOG_DEBUG(Service_SSL, "called. option={} (forcing 0)", option);
+        ASSERT(!did_handshake);
+        verify_option = 0;
+        backend->SetVerifyOption(0);
+        R_SUCCEED();
     }
 
-    void SetSocketDescriptor(HLERequestContext& ctx) {
-        IPC::RequestParser rp{ctx};
-        const s32 in_fd = rp.Pop<s32>();
-        s32 out_fd{-1};
-        const Result res = SetSocketDescriptorImpl(&out_fd, in_fd);
-        IPC::ResponseBuilder rb{ctx, 3};
-        rb.Push(res);
-        rb.Push<s32>(out_fd);
+    Result SetIoMode(u32 input_mode) {
+        auto mode = IoMode(input_mode);
+        ASSERT(mode == IoMode::Blocking || mode == IoMode::NonBlocking);
+        R_UNLESS(socket, ResultNoSocket);
+        const bool non_block = mode == IoMode::NonBlocking;
+        const Network::Errno error = socket->SetNonBlock(non_block);
+        if (error != Network::Errno::SUCCESS) {
+            LOG_ERROR(Service_SSL, "Failed to set native socket non-block flag to {}", non_block);
+        }
+        R_SUCCEED();
     }
 
-    void SetHostName(HLERequestContext& ctx) {
-        const std::string hostname = Common::StringFromBuffer(ctx.ReadBuffer());
-        const Result res = SetHostNameImpl(hostname);
-        IPC::ResponseBuilder rb{ctx, 2};
-        rb.Push(res);
+    Result GetSocketDescriptor(Out<u32> out_fd) {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        *out_fd = socket->GetFD();
+        R_SUCCEED();
     }
 
-    void SetVerifyOption(HLERequestContext& ctx) {
-        IPC::RequestParser rp{ctx};
-        const u32 option = rp.Pop<u32>();
-        const Result res = SetVerifyOptionImpl(option);
-        IPC::ResponseBuilder rb{ctx, 2};
-        rb.Push(res);
+    Result GetHostName(OutBuffer<BufferAttr_HipcMapAlias> data, Out<u32> out_size) {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        ASSERT(!did_handshake);
+        return backend->GetHostName(std::span<u8>{data.begin(), data.end()}, out_size);
     }
 
-    void SetIoMode(HLERequestContext& ctx) {
-        IPC::RequestParser rp{ctx};
-        const u32 mode = rp.Pop<u32>();
-        const Result res = SetIoModeImpl(mode);
-        IPC::ResponseBuilder rb{ctx, 2};
-        rb.Push(res);
+    Result GetIoMode(Out<u32> out_mode) {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        R_SUCCEED();
     }
 
-    void DoHandshake(HLERequestContext& ctx) {
-        const Result res = DoHandshakeImpl();
-        IPC::ResponseBuilder rb{ctx, 2};
-        rb.Push(res);
+    Result DoHandshake() {
+        return DoHandshakeImpl();
     }
 
     void DoHandshakeGetServerCert(HLERequestContext& ctx) {
@@ -351,131 +293,158 @@ private:
         rb.PushRaw(out);
     }
 
-    void Read(HLERequestContext& ctx) {
-        std::vector<u8> output_bytes(ctx.GetWriteBufferSize());
-        const Result res = ReadImpl(&output_bytes);
-        IPC::ResponseBuilder rb{ctx, 3};
-        rb.Push(res);
-        if (res == ResultSuccess) {
-            rb.Push(static_cast<u32>(output_bytes.size()));
-            ctx.WriteBuffer(output_bytes);
-        } else {
-            rb.Push(static_cast<u32>(0));
-        }
+    Result Read(OutBuffer<BufferAttr_HipcMapAlias> data, Out<u32> out_size) {
+        R_UNLESS(did_handshake, ResultInternalError);
+        size_t tmp{};
+        auto const res = backend->Read(&tmp, data);
+        *out_size = u32(tmp);
+        return res;
     }
 
-    void Write(HLERequestContext& ctx) {
-        size_t write_size{0};
-        const Result res = WriteImpl(&write_size, ctx.ReadBuffer());
-        IPC::ResponseBuilder rb{ctx, 3};
-        rb.Push(res);
-        rb.Push(static_cast<u32>(write_size));
+    Result Write(InBuffer<BufferAttr_HipcMapAlias> data, Out<u32> out_size) {
+        R_UNLESS(did_handshake, ResultInternalError);
+        size_t tmp{};
+        auto const res = backend->Write(&tmp, data);
+        *out_size = u32(tmp);
+        return res;
     }
 
-    void Pending(HLERequestContext& ctx) {
-        s32 pending_size{0};
-        const Result res = PendingImpl(&pending_size);
-        IPC::ResponseBuilder rb{ctx, 3};
-        rb.Push(res);
-        rb.Push<s32>(pending_size);
+    Result Pending(Out<s32> out_pending_size) {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        *out_pending_size = s32(backend->Pending());
+        R_SUCCEED();
     }
 
-    void SetSessionCacheMode(HLERequestContext& ctx) {
-        IPC::RequestParser rp{ctx};
-        const u32 mode = rp.Pop<u32>();
-        const Result res = SetSessionCacheModeImpl(mode);
-        IPC::ResponseBuilder rb{ctx, 2};
-        rb.Push(res);
+    Result Peek(OutBuffer<BufferAttr_HipcMapAlias> data, Out<u32> out_size) {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        size_t tmp{};
+        auto const res = backend->Peek(&tmp, data);
+        *out_size = u32(tmp);
+        return res;
     }
 
-    void SetOption(HLERequestContext& ctx) {
-        struct Parameters {
-            OptionType option;
-            s32 value;
-        };
-        static_assert(sizeof(Parameters) == 0x8, "Parameters is an invalid size");
-
-        IPC::RequestParser rp{ctx};
-        const auto parameters = rp.PopRaw<Parameters>();
-
-        switch (parameters.option) {
-        case OptionType::DoNotCloseSocket:
-            do_not_close_socket = static_cast<bool>(parameters.value);
-            break;
-        case OptionType::GetServerCertChain:
-            get_server_cert_chain = static_cast<bool>(parameters.value);
-            break;
-        case OptionType::SkipDefaultVerify:
-            skip_default_verify = static_cast<bool>(parameters.value);
-            break;
-        case OptionType::EnableAlpn:
-            enable_alpn = static_cast<bool>(parameters.value);
-            break;
-        default:
-            LOG_WARNING(Service_SSL, "Unknown option={}, value={}", parameters.option,
-                        parameters.value);
-        }
-
-        IPC::ResponseBuilder rb{ctx, 2};
-        rb.Push(ResultSuccess);
+    Result Poll(u32 in_pollevent, u32 timer, Out<u32> out_pollevent) {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        R_SUCCEED();
     }
 
-    void GetOption(HLERequestContext& ctx) {
-        IPC::RequestParser rp{ctx};
-        const auto option = rp.PopRaw<OptionType>();
+    Result GetVerifyCertError() {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        R_SUCCEED();
+    }
 
-        u8 value = 0;
+    Result GetNeededServerCertBufferSize(Out<u32> out_needed_buffer_size) {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        R_SUCCEED();
+    }
 
+    Result SetSessionCacheMode(u32 mode) {
+        LOG_WARNING(Service_SSL, "(STUBBED) called. value={}", mode);
+        R_UNLESS(!did_handshake, ResultInternalError);
+        R_SUCCEED();
+    }
+
+    Result GetSessionCacheMode(Out<u32> mode) {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        R_UNLESS(!did_handshake, ResultInternalError);
+        R_SUCCEED();
+    }
+
+    Result FlushSessionCache() {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        R_UNLESS(!did_handshake, ResultInternalError);
+        R_SUCCEED();
+    }
+
+    Result SetRenegotiationMode(RenegotiationMode mode) {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        backend->SetRenegotiationMode(u32(mode));
+        R_SUCCEED();
+    }
+
+    Result GetRenegotiationMode(Out<RenegotiationMode> mode) {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        u32 tmp{};
+        auto const res = backend->GetRenegotiationMode(&tmp);
+        *mode = RenegotiationMode(tmp);
+        return res;
+    }
+
+    Result SetOption(OptionType option, s32 value) {
         switch (option) {
         case OptionType::DoNotCloseSocket:
-            value = static_cast<u8>(do_not_close_socket);
+            do_not_close_socket = bool(value);
             break;
         case OptionType::GetServerCertChain:
-            value = static_cast<u8>(get_server_cert_chain);
+            get_server_cert_chain = bool(value);
             break;
         case OptionType::SkipDefaultVerify:
-            value = static_cast<u8>(skip_default_verify);
+            skip_default_verify = bool(value);
             break;
         case OptionType::EnableAlpn:
-            value = static_cast<u8>(enable_alpn);
+            enable_alpn = bool(value);
             break;
         default:
-            LOG_WARNING(Service_SSL, "Unknown option={}", option);
-            value = 0;
+            LOG_WARNING(Service_SSL, "Unknown option={}, value={}", option, value);
+        }
+        R_SUCCEED();
+    }
+
+    Result GetOption(OptionType option, Out<u8> value) {
+        switch (option) {
+        case OptionType::DoNotCloseSocket:
+            *value = u8(do_not_close_socket);
+            break;
+        case OptionType::GetServerCertChain:
+            *value = u8(get_server_cert_chain);
+            break;
+        case OptionType::SkipDefaultVerify:
+            *value = u8(skip_default_verify);
+            break;
+        case OptionType::EnableAlpn:
+            *value = u8(enable_alpn);
+            break;
+        default:
+            LOG_WARNING(Service_SSL, "Unknown option={}", u32(option));
+            *value = 0;
             break;
         }
-
-        LOG_DEBUG(Service_SSL, "GetOption called, option={}, ret value={}", option, value);
-
-        IPC::ResponseBuilder rb{ctx, 3};
-        rb.Push(ResultSuccess);
-        rb.Push<u8>(value);
+        LOG_DEBUG(Service_SSL, "GetOption called, option={}, ret value={}", u32(option), *value);
+        R_SUCCEED();
     }
 
-    void SetNextAlpnProto(HLERequestContext& ctx) {
-        const auto data = ctx.ReadBuffer(0);
-        next_alpn_proto.assign(data.begin(), data.end());
-
+    Result SetNextAlpnProto(InBuffer<BufferAttr_HipcMapAlias> data) {
+        auto const to_write = u32((std::min)(next_alpn_proto.size(), data.size()));
+        next_alpn_proto.assign(data.begin(), data.begin() + to_write);
         LOG_DEBUG(Service_SSL, "SetNextAlpnProto called, size={}", next_alpn_proto.size());
-
-        IPC::ResponseBuilder rb{ctx, 2};
-        rb.Push(ResultSuccess);
+        R_SUCCEED();
     }
 
-    void GetNextAlpnProto(HLERequestContext& ctx) {
-        const size_t writable = ctx.GetWriteBufferSize();
-        const size_t to_write = (std::min)(next_alpn_proto.size(), writable);
-
-        if (to_write != 0) {
-            ctx.WriteBuffer(std::span<const u8>(next_alpn_proto.data(), to_write));
-        }
-
-        LOG_DEBUG(Service_SSL, "GetNextAlpnProto called, size={}", to_write);
-
-        IPC::ResponseBuilder rb{ctx, 3};
-        rb.Push(ResultSuccess);
-        rb.Push<u32>(static_cast<u32>(to_write));
+    Result GetNextAlpnProto(OutBuffer<BufferAttr_HipcMapAlias> data, Out<u32> to_write) {
+        *to_write = u32((std::min)(next_alpn_proto.size(), data.size()));
+        next_alpn_proto.assign(data.begin(), data.begin() + *to_write);
+        LOG_DEBUG(Service_SSL, "GetNextAlpnProto called, size={}", *to_write);
+        R_SUCCEED();
     }
+
+    Result GetVerifyCertErrors(OutBuffer<BufferAttr_HipcMapAlias> unk0, Out<u32> unk1, Out<u32> unk2) {
+        LOG_WARNING(Service_SSL, "(STUBBED)");
+        R_SUCCEED();
+    }
+
+    SslVersion ssl_version;
+    std::shared_ptr<SslContextSharedData> shared_data;
+    std::unique_ptr<SSLConnectionBackend> backend;
+    std::optional<int> fd_to_close;
+    std::shared_ptr<Network::SocketBase> socket;
+    std::vector<u8> next_alpn_proto;
+    u32 verify_option = 0;
+
+    bool do_not_close_socket = false;
+    bool get_server_cert_chain = false;
+    bool skip_default_verify = false;
+    bool enable_alpn = false;
+    bool did_handshake = false;
 };
 
 class ISslContext final : public ServiceFramework<ISslContext> {
@@ -492,7 +461,7 @@ public:
             {5, &ISslContext::ImportClientPki, "ImportClientPki"},
             {6, nullptr, "RemoveServerPki"},
             {7, nullptr, "RemoveClientPki"},
-            {8, nullptr, "RegisterInternalPki"},
+            {8, D<&ISslContext::RegisterInternalPki>, "RegisterInternalPki"},
             {9, nullptr, "AddPolicyOid"},
             {10, nullptr, "ImportCrl"},
             {11, nullptr, "RemoveCrl"},
@@ -586,6 +555,11 @@ private:
         IPC::ResponseBuilder rb{ctx, 4};
         rb.Push(ResultSuccess);
         rb.Push(client_id);
+    }
+
+    Result RegisterInternalPki() {
+        LOG_WARNING(Service_SSL, "(STUBBED) called");
+        R_SUCCEED();
     }
 };
 
