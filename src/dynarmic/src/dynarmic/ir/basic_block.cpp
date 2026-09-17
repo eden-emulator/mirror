@@ -72,40 +72,6 @@ void Block::Reset(LocationDescriptor location_) noexcept {
     ASSERT(instructions.size() == 0);
 }
 
-static std::string TerminalToString(const Term::Terminal& terminal_variant) noexcept {
-    // struct : boost::static_visitor<std::string> {
-    //     std::string operator()(const std::monostate&) const {
-    //         return "<invalid>";
-    //     }
-    //     std::string operator()(const Term::ReturnToDispatch&) const {
-    //         return "ReturnToDispatch{}";
-    //     }
-    //     std::string operator()(const Term::LinkBlock& terminal) const {
-    //         return fmt::format("LinkBlock{{{}}}", terminal.next);
-    //     }
-    //     std::string operator()(const Term::LinkBlockFast& terminal) const {
-    //         return fmt::format("LinkBlockFast{{{}}}", terminal.next);
-    //     }
-    //     std::string operator()(const Term::PopRSBHint&) const {
-    //         return "PopRSBHint{}";
-    //     }
-    //     std::string operator()(const Term::FastDispatchHint&) const {
-    //         return "FastDispatchHint{}";
-    //     }
-    //     std::string operator()(const Term::If& terminal) const {
-    //         return fmt::format("If{{{}, {}, {}}}", A64::CondToString(terminal.if_), TerminalToString(terminal.then_), TerminalToString(terminal.else_));
-    //     }
-    //     std::string operator()(const Term::CheckBit& terminal) const {
-    //         return fmt::format("CheckBit{{{}, {}}}", TerminalToString(terminal.then_), TerminalToString(terminal.else_));
-    //     }
-    //     std::string operator()(const Term::CheckHalt& terminal) const {
-    //         return fmt::format("CheckHalt{{{}}}", TerminalToString(terminal.else_));
-    //     }
-    // } visitor;
-    // return boost::apply_visitor(visitor, terminal_variant);
-    return "";
-}
-
 std::string DumpBlock(const IR::Block& block) noexcept {
     std::string ret = fmt::format("Block: location={}-{}\n", block.Location(), block.EndLocation())
         + fmt::format("cycles={}", block.CycleCount())
@@ -174,8 +140,9 @@ std::string DumpBlock(const IR::Block& block) noexcept {
 
         ret += fmt::format(" (uses: {})", inst.UseCount()) + '\n';
     }
-    ret += "terminal = " + TerminalToString(block.GetTerminal()) + '\n';
-    return ret;
+    return ret + "terminal = " + [](const Term::Terminal&) -> std::string {
+        return "";
+    }(block.GetTerminal()) + '\n';
 }
 
 }  // namespace Dynarmic::IR
