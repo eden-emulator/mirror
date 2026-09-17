@@ -1680,6 +1680,11 @@ BufferId BufferCache<P>::CreateBuffer(DAddr device_addr, u32 wanted_size,
     wanted_size = static_cast<u32>(device_addr_end - device_addr);
     const OverlapResult overlap = ResolveOverlaps(device_addr, wanted_size);
     const u32 size = static_cast<u32>(overlap.end - overlap.begin);
+    if constexpr (requires(Buffer& buffer) { buffer.IsSparseCompatible(); }) {
+        for (const BufferId overlap_id : overlap.ids) {
+            sparse_compatible |= slot_buffers[overlap_id].IsSparseCompatible();
+        }
+    }
     const BufferId new_buffer_id =
         slot_buffers.insert(runtime, overlap.begin, size, sparse_compatible);
     auto& new_buffer = slot_buffers[new_buffer_id];
