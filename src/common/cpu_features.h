@@ -96,6 +96,7 @@ public:
     u64 ns_rdtsc_factor;
     u64 us_rdtsc_factor;
     u64 ms_rdtsc_factor;
+    u64 rdtsc_ns_integer;
     u64 rdtsc_ns_factor;
     u64 cntpct_rdtsc_factor;
     u64 gputick_rdtsc_factor;
