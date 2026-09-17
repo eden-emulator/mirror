@@ -752,13 +752,6 @@ abstract class SettingsItem(
                 )
             )
             put(
-                SwitchSetting(
-                    BooleanSetting.RENDERER_ASYNC_PRESENTATION,
-                    titleId = R.string.renderer_async_presentation,
-                    descriptionId = R.string.renderer_async_presentation_description
-                )
-            )
-            put(
                 SingleChoiceSetting(
                     IntSetting.DMA_ACCURACY,
                     titleId = R.string.dma_accuracy,

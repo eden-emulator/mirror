@@ -555,8 +555,6 @@
     <string name="renderer_force_max_clock_description">強制 GPU 以可能的最大時脈執行 (熱溫限制仍會被套用)</string>
     <string name="renderer_asynchronous_gpu_emulation">GPU 非同步模擬</string>
     <string name="renderer_asynchronous_gpu_emulation_description">此修改可透過使用 GPU 非同步模擬來提升性能，不過可能會導致圖形問題且會提高在進行時序相關操作時當機的機率</string>
-    <string name="renderer_async_presentation">非同步呈現</string>
-    <string name="renderer_async_presentation_description">此修改可以透過將渲染移至單獨的 CPU 執行緒來提升性能，但可能會導致圖形問題</string>
     <string name="renderer_reactive_flushing">使用重新啟用排清</string>
     <string name="renderer_reactive_flushing_description">犧牲效能，以改善部分遊戲的轉譯準確度</string>
     <string name="enable_buffer_history">啟用緩衝區歷史</string>

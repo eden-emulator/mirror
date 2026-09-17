@@ -560,7 +560,6 @@ class SettingsFragmentPresenter(
             add(BooleanSetting.RENDERER_ASYNCHRONOUS_SHADERS.key)
             add(IntSetting.ANDROID_PIPELINE_WORKERS.key)
             add(BooleanSetting.RENDERER_ASYNCHRONOUS_GPU_EMULATION.key)
-            add(BooleanSetting.RENDERER_ASYNC_PRESENTATION.key)
 
             add(HeaderSetting(R.string.extensions))
 

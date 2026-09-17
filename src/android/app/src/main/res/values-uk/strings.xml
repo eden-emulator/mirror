@@ -481,8 +481,6 @@
     <string name="renderer_force_max_clock_description">Змушує GPU працювати на максимальній тактовій частоті.</string>
     <string name="renderer_asynchronous_gpu_emulation">Асинхронна емуляція ГП</string>
     <string name="renderer_asynchronous_gpu_emulation_description">Це обхідне рішення може покращити продуктивність завдяки асинхронному виконанню емуляції ГП, але спричинить проблеми з графікою та збільшить частоту збоїв чутливих до таймінгів операцій.</string>
-    <string name="renderer_async_presentation">Асинхронне подання</string>
-    <string name="renderer_async_presentation_description">Це обхідне рішення може покращити продуктивність завдяки переміщенню подання на окремий потік ЦП, але спричинить проблеми з графікою.</string>
     <string name="renderer_reactive_flushing">Реактивне очищення</string>
     <string name="renderer_reactive_flushing_description">Покращує точність рендерингу в деяких іграх.</string>
     <string name="enable_buffer_history">Увімкнути історію буфера</string>

@@ -634,7 +634,7 @@ struct Values {
                                                         true};
     SwitchableSetting<bool> async_presentation{linkage,
 #ifdef __ANDROID__
-                                               false,
+                                               true,
 #else
                                                false,
 #endif

@@ -535,8 +535,6 @@
     <string name="renderer_force_max_clock_description">强制 GPU 以最大时钟运行 (温控依然生效)。</string>
     <string name="renderer_asynchronous_gpu_emulation">GPU 异步模拟</string>
     <string name="renderer_asynchronous_gpu_emulation_description">此技巧可通过异步运行 GPU 模拟来提升性能，但在执行与时序相关的操作时，可能带来图形显示问题以及增加崩溃概率。</string>
-    <string name="renderer_async_presentation">异步呈现</string>
-    <string name="renderer_async_presentation_description">此技巧通过将图形呈现移至独立的 CPU 线程来提升性能，但可能会带来图形显示问题。</string>
     <string name="renderer_reactive_flushing">启用反应性刷新</string>
     <string name="renderer_reactive_flushing_description">通过牺牲性能来提升某些游戏的渲染精度。</string>
     <string name="enable_buffer_history">启用缓冲区历史</string>

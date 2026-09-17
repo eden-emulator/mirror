@@ -574,8 +574,6 @@
     <string name="renderer_force_max_clock_description">يجبر وحدة معالجة الرسومات على العمل بأقصى سرعة ممكنة (سيظل يتم تطبيق القيود الحرارية).</string>
     <string name="renderer_asynchronous_gpu_emulation">محاكاة غير متزامنة لوحدة معالجة الرسومات</string>
     <string name="renderer_asynchronous_gpu_emulation_description">يمكن لهذه الحيلة أن تزيد الأداء عن طريق تشغيل محاكاة وحدة معالجة الرسومات بشكل غير متزامن على حساب مشاكل الرسومات وزيادة معدلات الأعطال بسبب العمليات المتعلقة بالتوقيت.</string>
-    <string name="renderer_async_presentation">عرض غير متزامن</string>
-    <string name="renderer_async_presentation_description">يمكن لهذه الحيلة أن تزيد من الأداء عن طريق نقل عملية العرض إلى خيط معالجة منفصل على حساب مشاكل الرسوميات.</string>
     <string name="renderer_reactive_flushing">استخدم التنظيف التفاعلي</string>
     <string name="renderer_reactive_flushing_description">يحسن دقة العرض في بعض الألعاب على حساب الأداء.</string>
     <string name="enable_buffer_history">تمكين سجل التخزين المؤقت</string>
