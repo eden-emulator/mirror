@@ -1006,15 +1006,12 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
 }
 
 template <class P>
-void BufferCache<P>::ResolveMultiRangeStorage(Binding& binding, bool is_written,
+void BufferCache<P>::ResolveMultiRangeStorage(Binding& binding,
                                               std::vector<MultiRangeSegment>& pool) {
     binding.segment_first = 0;
     binding.segment_count = 0;
     if constexpr (requires { runtime.BindMultiRangeStorageBuffer(u64{}, bool{}); }) {
         if (binding.gpu_addr == 0 || binding.size == 0) {
-            return;
-        }
-        if (is_written && !runtime.PrefersSparseSources()) {
             return;
         }
         const VirtualSegments* found =
@@ -1023,6 +1020,11 @@ void BufferCache<P>::ResolveMultiRangeStorage(Binding& binding, bool is_written,
             return;
         }
         const VirtualSegments segments = *found;
+        for (const VirtualSegment& segment : segments) {
+            if (memory_tracker.IsRegionGpuModified(segment.device_addr, segment.size)) {
+                return;
+            }
+        }
         const u32 first = static_cast<u32>(pool.size());
         const bool prefer_sparse = runtime.PrefersSparseSources();
         for (const VirtualSegment& segment : segments) {
@@ -1439,8 +1441,7 @@ void BufferCache<P>::UpdateStorageBuffers(size_t stage) {
         Binding& binding = channel_state->storage_buffers[stage][index];
         const BufferId buffer_id = FindBuffer(binding.device_addr, binding.size, false);
         binding.buffer_id = buffer_id;
-        const bool is_written = ((channel_state->written_storage_buffers[stage] >> index) & 1) != 0;
-        ResolveMultiRangeStorage(binding, is_written, graphics_segments);
+        ResolveMultiRangeStorage(binding, graphics_segments);
     });
 }
 
@@ -1504,9 +1505,7 @@ void BufferCache<P>::UpdateComputeStorageBuffers() {
         // Resolve buffer
         Binding& binding = channel_state->compute_storage_buffers[index];
         binding.buffer_id = FindBuffer(binding.device_addr, binding.size, false);
-        const bool is_written =
-            ((channel_state->written_compute_storage_buffers >> index) & 1) != 0;
-        ResolveMultiRangeStorage(binding, is_written, compute_segments);
+        ResolveMultiRangeStorage(binding, compute_segments);
     });
 }
 

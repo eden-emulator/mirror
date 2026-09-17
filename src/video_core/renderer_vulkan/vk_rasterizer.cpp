@@ -166,7 +166,11 @@ DrawParams MakeDrawParams(const Tegra::Engines::Maxwell3D::DrawManager::State& d
         params.base_vertex = 0;
         params.is_indexed = true;
     } else if (draw_state.topology == Maxwell::PrimitiveTopology::QuadStrip) {
-        params.num_vertices = (params.num_vertices - 2) / 2 * 6;
+        u32 strips = 0;
+        if (params.num_vertices >= 2) {
+            strips = (params.num_vertices - 2) / 2;
+        }
+        params.num_vertices = strips * 6;
         params.base_vertex = 0;
         params.is_indexed = true;
     }
@@ -251,7 +255,7 @@ void RasterizerVulkan::PrepareDraw(bool is_indexed, Func&& draw_func) {
     if (!pipeline->Configure(is_indexed))
         return;
 
-    UpdateDynamicStates();
+    UpdateDynamicStates(pipeline->HasDynamicVertexInput());
 
     query_cache.NotifySegment(true);
     HandleTransformFeedback();
@@ -361,7 +365,12 @@ void RasterizerVulkan::DrawTexture() {
     texture_cache.SynchronizeDescriptors(false);
     texture_cache.UpdateRenderTargets(false);
 
-    UpdateDynamicStates();
+    bool dynamic_vertex_input = false;
+    if (device.IsExtVertexInputDynamicStateSupported()) {
+        GraphicsPipeline* const gp = pipeline_cache.CurrentGraphicsPipeline();
+        dynamic_vertex_input = gp && gp->HasDynamicVertexInput();
+    }
+    UpdateDynamicStates(dynamic_vertex_input);
 
     query_cache.NotifySegment(true);
     query_cache.CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, maxwell3d->regs.zpass_pixel_count_enable);
@@ -1060,7 +1069,7 @@ bool AccelerateDMA::BufferToImage(const Tegra::DMA::ImageCopy& copy_info,
     return DmaBufferImageCopy<true>(copy_info, buffer_operand, image_operand);
 }
 
-void RasterizerVulkan::UpdateDynamicStates() {
+void RasterizerVulkan::UpdateDynamicStates(bool dynamic_vertex_input) {
     auto& regs = maxwell3d->regs;
     auto& flags = maxwell3d->dirty.flags;
     const auto topology = maxwell3d->draw_manager.draw_state.topology;
@@ -1137,10 +1146,8 @@ void RasterizerVulkan::UpdateDynamicStates() {
         UpdateColorWriteEnable(regs);
     }
 
-    if (device.IsExtVertexInputDynamicStateSupported()) {
-        if (auto* gp = pipeline_cache.CurrentGraphicsPipeline(); gp && gp->HasDynamicVertexInput()) {
-            UpdateVertexInput(regs);
-        }
+    if (dynamic_vertex_input) {
+        UpdateVertexInput(regs);
     }
 }
 

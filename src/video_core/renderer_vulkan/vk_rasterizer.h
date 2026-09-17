@@ -159,7 +159,7 @@ private:
 
     void FlushWork();
 
-    void UpdateDynamicStates();
+    void UpdateDynamicStates(bool dynamic_vertex_input);
 
     void HandleTransformFeedback();
 
