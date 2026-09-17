@@ -20,6 +20,7 @@
 #include "video_core/host_shaders/queries_prefix_scan_sum_comp_spv.h"
 #include "video_core/host_shaders/queries_prefix_scan_sum_nosubgroups_comp_spv.h"
 #include "video_core/host_shaders/resolve_conditional_render_comp_spv.h"
+#include "video_core/host_shaders/vulkan_indirect_quads_comp_spv.h"
 #include "video_core/host_shaders/vulkan_quad_indexed_comp_spv.h"
 #include "video_core/host_shaders/vulkan_uint8_comp_spv.h"
 #include "video_core/renderer_vulkan/vk_compute_pass.h"
@@ -371,6 +372,56 @@ std::pair<VkBuffer, VkDeviceSize> QuadIndexedPass::Assemble(
         cmdbuf.Dispatch(Common::DivCeil(num_tri_vertices, DISPATCH_SIZE), 1, 1);
         cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                                VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, WRITE_BARRIER);
+    });
+    return {staging.buffer, staging.offset};
+}
+
+IndirectQuadsPass::IndirectQuadsPass(const Device& device_, Scheduler& scheduler_,
+                                     DescriptorPool& descriptor_pool_,
+                                     StagingBufferPool& staging_buffer_pool_,
+                                     ComputePassDescriptorQueue& compute_pass_descriptor_queue_)
+    : ComputePass(device_, scheduler_, descriptor_pool_, INPUT_OUTPUT_DESCRIPTOR_SET_BINDINGS,
+                  INPUT_OUTPUT_DESCRIPTOR_UPDATE_TEMPLATE, INPUT_OUTPUT_BANK_INFO,
+                  COMPUTE_PUSH_CONSTANT_RANGE<sizeof(u32) * 2>, VULKAN_INDIRECT_QUADS_COMP_SPV),
+      scheduler{scheduler_}, staging_buffer_pool{staging_buffer_pool_},
+      compute_pass_descriptor_queue{compute_pass_descriptor_queue_} {}
+
+IndirectQuadsPass::~IndirectQuadsPass() = default;
+
+std::pair<VkBuffer, VkDeviceSize> IndirectQuadsPass::Assemble(u32 num_draws, u32 stride,
+                                                              VkBuffer src_buffer, u32 src_offset) {
+    u32 src_stride = stride / static_cast<u32>(sizeof(u32));
+    if (src_stride < COMMAND_WORDS) {
+        src_stride = COMMAND_WORDS;
+    }
+    const u32 input_size = num_draws * src_stride * static_cast<u32>(sizeof(u32));
+    const std::size_t staging_size = std::size_t(num_draws) * COMMAND_WORDS * sizeof(u32);
+    const auto staging = staging_buffer_pool.Request(staging_size, MemoryUsage::DeviceLocal);
+
+    compute_pass_descriptor_queue.Acquire(scheduler, 2);
+    compute_pass_descriptor_queue.AddBuffer(src_buffer, src_offset, input_size);
+    compute_pass_descriptor_queue.AddBuffer(staging.buffer, staging.offset, staging_size);
+    const void* const descriptor_data{compute_pass_descriptor_queue.UpdateData()};
+
+    scheduler.RequestOutsideRenderPassOperationContext();
+    scheduler.Record([this, descriptor_data, num_draws, src_stride](vk::CommandBuffer cmdbuf) {
+        static constexpr u32 DISPATCH_SIZE = 32;
+        static constexpr VkMemoryBarrier WRITE_BARRIER{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            .pNext = nullptr,
+            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
+        };
+        const std::array<u32, 2> push_constants{num_draws, src_stride};
+        const VkDescriptorSet set = descriptor_allocator.Commit();
+        device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
+        cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+        cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
+        cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push_constants),
+                             &push_constants);
+        cmdbuf.Dispatch(Common::DivCeil(num_draws, DISPATCH_SIZE), 1, 1);
+        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                               VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, WRITE_BARRIER);
     });
     return {staging.buffer, staging.offset};
 }

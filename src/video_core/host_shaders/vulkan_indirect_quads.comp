@@ -1,0 +1,33 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+#version 460 core
+
+layout (local_size_x = 32) in;
+
+layout (std430, set = 0, binding = 0) readonly buffer InputBuffer {
+    uint input_commands[];
+};
+
+layout (std430, set = 0, binding = 1) writeonly buffer OutputBuffer {
+    uint output_commands[];
+};
+
+layout (push_constant) uniform PushConstants {
+    uint num_draws;
+    uint src_stride;
+};
+
+void main() {
+    uint draw = gl_GlobalInvocationID.x;
+    if (draw >= num_draws) {
+        return;
+    }
+    uint src = draw * src_stride;
+    uint dst = draw * 5;
+    output_commands[dst + 0] = input_commands[src + 0] / 4 * 6;
+    output_commands[dst + 1] = input_commands[src + 1];
+    output_commands[dst + 2] = input_commands[src + 2] / 4 * 6;
+    output_commands[dst + 3] = input_commands[src + 3];
+    output_commands[dst + 4] = input_commands[src + 4];
+}

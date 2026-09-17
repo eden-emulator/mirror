@@ -282,27 +282,67 @@ void Maxwell3D::DrawManager::DrawTexture(Maxwell3D& maxwell3d) {
 }
 
 void Maxwell3D::DrawManager::UpdateTopology(Maxwell3D& maxwell3d) {
+    using Topology = Maxwell3D::Regs::PrimitiveTopology;
+    using Override = Maxwell3D::Regs::PrimitiveTopologyOverride;
     switch (maxwell3d.regs.primitive_topology_control) {
     case Maxwell3D::Regs::PrimitiveTopologyControl::UseInBeginMethods:
         break;
     case Maxwell3D::Regs::PrimitiveTopologyControl::UseSeparateState:
         switch (maxwell3d.regs.topology_override) {
-        case Maxwell3D::Regs::PrimitiveTopologyOverride::None:
+        case Override::None:
             break;
-        case Maxwell3D::Regs::PrimitiveTopologyOverride::Points:
-            draw_state.topology = Maxwell3D::Regs::PrimitiveTopology::Points;
+        case Override::Points:
+        case Override::LegacyPoints:
+            draw_state.topology = Topology::Points;
             break;
-        case Maxwell3D::Regs::PrimitiveTopologyOverride::Lines:
-            draw_state.topology = Maxwell3D::Regs::PrimitiveTopology::Lines;
+        case Override::Lines:
+        case Override::LegacyLines:
+        case Override::LegacyLinesImm:
+        case Override::LegacyIndexedLines:
+        case Override::LegacyIndexedLines2:
+            draw_state.topology = Topology::Lines;
             break;
-        case Maxwell3D::Regs::PrimitiveTopologyOverride::LineStrip:
-            draw_state.topology = Maxwell3D::Regs::PrimitiveTopology::LineStrip;
+        case Override::LineStrip:
+        case Override::LegacyLineStrip:
+        case Override::LegacyIndexedLineStrip:
+            draw_state.topology = Topology::LineStrip;
             break;
-        default:
-            draw_state.topology = Maxwell3D::Regs::PrimitiveTopology(maxwell3d.regs.topology_override);
+        case Override::Triangles:
+        case Override::LegacyTriangles:
+        case Override::LegacyIndexedTriangles:
+        case Override::LegacyIndexedTriangles2:
+            draw_state.topology = Topology::Triangles;
+            break;
+        case Override::TriangleStrip:
+        case Override::LegacyTriangleStrip:
+        case Override::LegacyIndexedTriangleStrip:
+            draw_state.topology = Topology::TriangleStrip;
+            break;
+        case Override::LegacyTriangleFan:
+        case Override::LegacyTriangleFanImm:
+        case Override::LegacyIndexedTriangleFan:
+            draw_state.topology = Topology::TriangleFan;
+            break;
+        case Override::LinesAdjacency:
+            draw_state.topology = Topology::LinesAdjacency;
+            break;
+        case Override::LineStripAdjacency:
+            draw_state.topology = Topology::LineStripAdjacency;
+            break;
+        case Override::TrianglesAdjacency:
+            draw_state.topology = Topology::TrianglesAdjacency;
+            break;
+        case Override::TriangleStripAdjacency:
+            draw_state.topology = Topology::TriangleStripAdjacency;
+            break;
+        case Override::Patches:
+            draw_state.topology = Topology::Patches;
             break;
         }
         break;
+    }
+    if (u32(draw_state.topology) > u32(Topology::Patches)) {
+        draw_state.topology = Topology::Triangles;
     }
 }
 

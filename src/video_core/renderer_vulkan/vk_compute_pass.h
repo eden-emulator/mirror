@@ -88,6 +88,25 @@ private:
     ComputePassDescriptorQueue& compute_pass_descriptor_queue;
 };
 
+class IndirectQuadsPass final : public ComputePass {
+public:
+    explicit IndirectQuadsPass(const Device& device_, Scheduler& scheduler_,
+                               DescriptorPool& descriptor_pool_,
+                               StagingBufferPool& staging_buffer_pool_,
+                               ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
+    ~IndirectQuadsPass();
+
+    static constexpr u32 COMMAND_WORDS = 5;
+
+    std::pair<VkBuffer, VkDeviceSize> Assemble(u32 num_draws, u32 stride, VkBuffer src_buffer,
+                                               u32 src_offset);
+
+private:
+    Scheduler& scheduler;
+    StagingBufferPool& staging_buffer_pool;
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue;
+};
+
 class ConditionalRenderingResolvePass final : public ComputePass {
 public:
     explicit ConditionalRenderingResolvePass(
