@@ -23,6 +23,12 @@ constexpr std::size_t profile_username_size{32};
 using ProfileUsername = std::array<u8, profile_username_size>;
 using UserIDArray = std::array<Common::UUID, MAX_USERS>;
 
+// This is nn::account::Uid
+struct Uid {
+    std::array<u8, 0x10> unk0;
+};
+static_assert(sizeof(Uid) == 0x10);
+
 /// Contains extra data related to a user.
 /// TODO: RE this structure
 struct UserData {
