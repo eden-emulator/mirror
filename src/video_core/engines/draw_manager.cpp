@@ -14,6 +14,10 @@
 namespace Tegra::Engines {
 
 void Maxwell3D::DrawManager::ProcessMethodCall(Maxwell3D& maxwell3d, u32 method, u32 argument) {
+    if (draw_state.draw_mode == DrawMode::InstanceArray &&
+        method != MAXWELL3D_REG_INDEX(vertex_array_instance_subsequent)) {
+        DrawDeferred(maxwell3d);
+    }
     switch (method) {
     case MAXWELL3D_REG_INDEX(clear_surface):
         return Clear(maxwell3d, 1);
@@ -73,6 +77,15 @@ void Maxwell3D::DrawManager::Clear(Maxwell3D& maxwell3d, u32 layer_count) {
 }
 
 void Maxwell3D::DrawManager::DrawDeferred(Maxwell3D& maxwell3d) {
+    if (draw_state.draw_mode == DrawMode::InstanceArray) {
+        const u32 instance_count = draw_state.instance_count + 1;
+        draw_state.draw_mode = DrawMode::General;
+        draw_state.instance_count = 0;
+        if (maxwell3d.ShouldExecute()) {
+            maxwell3d.rasterizer->Draw(false, instance_count);
+        }
+        return;
+    }
     if (draw_state.draw_mode != DrawMode::Instance || draw_state.instance_count == 0) {
         return;
     }
@@ -89,16 +102,25 @@ void Maxwell3D::DrawManager::DrawArray(Maxwell3D& maxwell3d, Maxwell3D::Regs::Pr
 }
 
 void Maxwell3D::DrawManager::DrawArrayInstanced(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 vertex_first, u32 vertex_count, bool subsequent) {
+    if (subsequent && draw_state.draw_mode == DrawMode::InstanceArray &&
+        instance_topology == topology && draw_state.vertex_buffer.first == vertex_first &&
+        draw_state.vertex_buffer.count == vertex_count) {
+        ++draw_state.instance_count;
+        return;
+    }
+    u32 base_instance = 0;
+    if (subsequent) {
+        base_instance = draw_state.base_instance + draw_state.instance_count + 1;
+    }
+    DrawDeferred(maxwell3d);
+    instance_topology = topology;
     draw_state.topology = topology;
     draw_state.vertex_buffer.first = vertex_first;
     draw_state.vertex_buffer.count = vertex_count;
-    if (!subsequent) {
-        draw_state.instance_count = 1;
-    }
-    draw_state.base_instance = draw_state.instance_count - 1;
-    draw_state.draw_mode = DrawMode::Instance;
-    draw_state.instance_count++;
-    ProcessDraw(maxwell3d, false, 1);
+    draw_state.base_instance = base_instance;
+    draw_state.instance_count = 0;
+    draw_state.draw_mode = DrawMode::InstanceArray;
+    UpdateTopology(maxwell3d);
 }
 
 void Maxwell3D::DrawManager::DrawIndex(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 index_first, u32 index_count, u32 base_index, u32 base_instance, u32 num_instances) {

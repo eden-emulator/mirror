@@ -984,6 +984,10 @@ FN_MAX_LIMIT_LIST
         return properties.properties.limits.maxVertexInputBindings;
     }
 
+    u32 GetMaxVertexAttribDivisor() const {
+        return max_vertex_attrib_divisor;
+    }
+
     u32 GetMaxViewports() const {
         return properties.properties.limits.maxViewports;
     }
@@ -1188,6 +1192,7 @@ private:
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};
         VkPhysicalDeviceDepthStencilResolveProperties depth_stencil_resolve{};
         VkPhysicalDeviceCustomBorderColorPropertiesEXT custom_border_color{};
+        VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT vertex_attribute_divisor{};
 
         VkPhysicalDeviceProperties properties{};
     };
@@ -1195,6 +1200,7 @@ private:
     Extensions extensions{};
     Features features{};
     Properties properties{};
+    u32 max_vertex_attrib_divisor{1};
 
     VkPhysicalDeviceFeatures2 features2{};
     VkPhysicalDeviceProperties2 properties2{};

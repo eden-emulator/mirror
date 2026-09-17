@@ -1130,11 +1130,19 @@ bool Device::GetSuitability(bool requires_swapchain) {
         SetNext(next, properties.custom_border_color);
     }
 
+    if (extensions.vertex_attribute_divisor) {
+        properties.vertex_attribute_divisor.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT;
+        SetNext(next, properties.vertex_attribute_divisor);
+    }
+
     // Perform the property fetch.
     physical.GetProperties2(properties2);
 
     // Store base properties
     properties.properties = properties2.properties;
+    max_vertex_attrib_divisor =
+        (std::max)(1U, properties.vertex_attribute_divisor.maxVertexAttribDivisor);
 
     // Unload extensions if feature support is insufficient.
     RemoveUnsuitableExtensions();

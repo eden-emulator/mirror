@@ -705,7 +705,8 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
             if (instanced) {
                 vertex_binding_divisors.push_back({
                     .binding = static_cast<u32>(index),
-                    .divisor = key.state.binding_divisors[index],
+                    .divisor = (std::min)(key.state.binding_divisors[index],
+                                          device.GetMaxVertexAttribDivisor()),
                 });
             }
         }
