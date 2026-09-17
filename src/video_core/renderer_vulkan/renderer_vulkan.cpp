@@ -217,13 +217,15 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
 
     scheduler.RequestOutsideRenderPassOperationContext();
     blit_swapchain.DrawToFrame(device, rasterizer, frame, framebuffers,
-                               render_window.GetFramebufferLayout(), swapchain.GetImageCount(),
+                               render_window.GetFramebufferLayout(),
+                               present_manager.SwapchainImageCount(),
                                swapchain.GetImageViewFormat());
 
 #ifdef HAS_LSFG
     void(frame_gen.WantedGenerations(present_manager.MaxExtraFrames()));
 
-    frame_gen.Process(device, frame, swapchain.GetImageFormat(), GuestExtent(framebuffers));
+    frame_gen.Process(device, frame, present_manager.SwapchainImageFormat(),
+                      GuestExtent(framebuffers));
 
     const size_t generated_frames = frame_gen.GeneratedFrameCount();
     for (size_t generation = 0; generation < generated_frames; ++generation) {

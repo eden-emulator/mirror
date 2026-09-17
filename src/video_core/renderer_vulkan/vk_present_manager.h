@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <boost/container/deque.hpp>
@@ -68,6 +69,9 @@ public:
     /// How many additional frames can be queued without stalling the render thread
     [[nodiscard]] size_t MaxExtraFrames() const;
 
+    [[nodiscard]] std::size_t SwapchainImageCount() const { return swapchain_image_count; }
+    [[nodiscard]] VkFormat SwapchainImageFormat() const { return swapchain_image_format; }
+
 private:
     void PresentThread(std::stop_token token);
 
@@ -76,6 +80,8 @@ private:
     void CopyToSwapchainImpl(Frame* frame);
 
     void RecreateSwapchain(Frame* frame);
+
+    void DiscardFrame(Frame* frame);
 
     void SetImageCount();
 
@@ -100,7 +106,9 @@ private:
     bool blit_supported;
     bool storage_supported;
     bool use_present_thread;
-    std::size_t image_count{};
+    std::atomic<std::size_t> image_count{};
+    std::atomic<std::size_t> swapchain_image_count{};
+    std::atomic<VkFormat> swapchain_image_format{};
 };
 
 } // namespace Vulkan
