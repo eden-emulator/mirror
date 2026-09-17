@@ -209,8 +209,6 @@ add_executable(yuzu
     util/overlay_dialog.ui
     util/sequence_dialog/sequence_dialog.cpp
     util/sequence_dialog/sequence_dialog.h
-    util/url_request_interceptor.cpp
-    util/url_request_interceptor.h
     util/util.cpp
     util/util.h
 
@@ -240,6 +238,12 @@ add_executable(yuzu
 )
 
 set_target_properties(yuzu PROPERTIES OUTPUT_NAME "eden")
+
+if (YUZU_USE_QT_WEB_ENGINE)
+    target_sources(yuzu PRIVATE
+        util/url_request_interceptor.cpp
+        util/url_request_interceptor.h)
+endif()
 
 if (YUZU_CRASH_DUMPS)
     target_sources(yuzu PRIVATE
