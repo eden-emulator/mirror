@@ -100,8 +100,7 @@ VirtualFile PatchIPS(const VirtualFile& in, const VirtualFile& ips) {
 
 
 struct IPSwitchRecord {
-    std::array<uint8_t, 256 - sizeof(size_t)> data;
-    size_t count;
+    std::vector<uint8_t> data;
 };
 struct IPSwitchCompiler::IPSwitchPatch {
     ::Common::unordered_map<u32, IPSwitchRecord> records;
@@ -122,22 +121,23 @@ static IPSwitchRecord EscapeStringSequences(std::string_view sv) {
     IPSwitchRecord r{};
     for (auto it = sv.cbegin(); it < sv.cend(); ) {
         if (*it == '\\' && it + 1 < sv.cend()) {
-            switch (it[1]) {
-            case 'a': r.data[r.count] = '\a'; break;
-            case 'b': r.data[r.count] = '\b'; break;
-            case 'e': r.data[r.count] = '\e'; break;
-            case 'f': r.data[r.count] = '\f'; break;
-            case 'n': r.data[r.count] = '\n'; break;
-            case 'r': r.data[r.count] = '\r'; break;
-            case 't': r.data[r.count] = '\t'; break;
-            case 'v': r.data[r.count] = '\v'; break;
-            case '?': r.data[r.count] = '\?'; break;
-            default: r.data[r.count] = it[1]; break;
-            }
-            ++r.count;
+            r.data.push_back([it]() {
+                switch (it[1]) {
+                case 'a': return '\a';
+                case 'b': return '\b';
+                case 'e': return '\e';
+                case 'f': return '\f';
+                case 'n': return '\n';
+                case 'r': return '\r';
+                case 't': return '\t';
+                case 'v': return '\v';
+                case '?': return '\?';
+                default: return it[1];
+                }
+            }());
             it += 2;
         } else {
-            ++r.count;
+            r.data.push_back(*it);
             ++it;
         }
     }
@@ -223,8 +223,8 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
                 if (start <= line.cend() && end <= line.cend()) {
                     // Actually IPS wants ordering from {lsb, ..., msb} -- so LE and BE are inverted, fun!
                     auto const hs = Common::HexStringToVector({start, end}, is_little_endian);
+                    r.data.resize(hs.size());
                     std::memcpy(r.data.data(), hs.data(), hs.size());
-                    r.count = hs.size();
                     LOG_INFO(Loader, "[H] value @ {:#08X}", offset);
                     patches.back().records.insert_or_assign(u32(offset), std::move(r));
                 } else {
@@ -293,7 +293,7 @@ VirtualFile IPSwitchCompiler::Apply(const VirtualFile& in) const {
         if (patch.enabled) {
             for (const auto& record : patch.records) {
                 if (record.first < in_data.size()) {
-                    auto replace_size = record.second.count;
+                    auto replace_size = record.second.data.size();
                     if (record.first + replace_size > in_data.size())
                         replace_size = in_data.size() - record.first;
                     std::memcpy(in_data.data() + record.first, record.second.data.data(), replace_size);
