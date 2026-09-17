@@ -101,7 +101,7 @@ VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t in
         .minDepth = src.translate_z - src.scale_z * reduce_z,
         .maxDepth = src.translate_z + src.scale_z,
     };
-    if (!device.IsExtDepthRangeUnrestrictedSupported()) {
+    if (!device.IsExtDepthRangeUnrestrictedSupported() && !Settings::values.force_unrestricted_depth.GetValue()) {
         viewport.minDepth = std::clamp(viewport.minDepth, 0.0f, 1.0f);
         viewport.maxDepth = std::clamp(viewport.maxDepth, 0.0f, 1.0f);
     }
