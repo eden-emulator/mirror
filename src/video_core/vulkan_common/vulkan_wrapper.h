@@ -211,6 +211,7 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCmdBeginTransformFeedbackEXT vkCmdBeginTransformFeedbackEXT{};
     PFN_vkCmdBindDescriptorSets vkCmdBindDescriptorSets{};
     PFN_vkCmdBindIndexBuffer vkCmdBindIndexBuffer{};
+    PFN_vkCmdBindIndexBuffer2KHR vkCmdBindIndexBuffer2KHR{};
     PFN_vkCmdBindPipeline vkCmdBindPipeline{};
     PFN_vkCmdBindTransformFeedbackBuffersEXT vkCmdBindTransformFeedbackBuffersEXT{};
     PFN_vkCmdBindVertexBuffers vkCmdBindVertexBuffers{};
@@ -1278,6 +1279,11 @@ public:
     void BindIndexBuffer(VkBuffer buffer, VkDeviceSize offset,
                          VkIndexType index_type) const noexcept {
         dld->vkCmdBindIndexBuffer(handle, buffer, offset, index_type);
+    }
+
+    void BindIndexBuffer2KHR(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size,
+                             VkIndexType index_type) const noexcept {
+        dld->vkCmdBindIndexBuffer2KHR(handle, buffer, offset, size, index_type);
     }
 
     void BindVertexBuffers(u32 first, u32 count, const VkBuffer* buffers,

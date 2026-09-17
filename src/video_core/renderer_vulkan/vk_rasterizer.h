@@ -17,7 +17,6 @@
 #include "video_core/rasterizer_interface.h"
 #include "video_core/renderer_vulkan/blit_image.h"
 #include "video_core/renderer_vulkan/vk_buffer_cache.h"
-#include "video_core/renderer_vulkan/vk_compute_pass.h"
 #include "video_core/renderer_vulkan/vk_descriptor_buffer.h"
 #include "video_core/renderer_vulkan/vk_descriptor_pool.h"
 #include "video_core/renderer_vulkan/vk_fence_manager.h"
@@ -212,7 +211,6 @@ private:
     DescriptorBufferRing descriptor_buffer_ring;
     BlitImageHelper blit_image;
     RenderPassCache render_pass_cache;
-    IndirectQuadsPass indirect_quads_pass;
 
     TextureCacheRuntime texture_cache_runtime;
     TextureCache texture_cache;

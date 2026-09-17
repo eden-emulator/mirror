@@ -342,7 +342,17 @@ std::pair<VkBuffer, VkDeviceSize> QuadIndexedPass::Assemble(
         return 2;
     }();
     const u32 input_size = num_vertices << index_shift;
-    const u32 num_tri_vertices = (is_strip ? (num_vertices - 2) / 2 : num_vertices / 4) * 6;
+    u32 quads = num_vertices / 4;
+    if (is_strip) {
+        quads = 0;
+        if (num_vertices >= 2) {
+            quads = (num_vertices - 2) / 2;
+        }
+    }
+    if (quads == 0) {
+        quads = 1;
+    }
+    const u32 num_tri_vertices = quads * 6;
 
     const std::size_t staging_size = num_tri_vertices * sizeof(u32);
     const auto staging = staging_buffer_pool.Request(staging_size, MemoryUsage::DeviceLocal);

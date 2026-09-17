@@ -62,10 +62,6 @@ bool IsTopologySafe(Maxwell3D::Regs::PrimitiveTopology topology) {
     }
 }
 
-bool IsTopologySafeIndexedIndirect(Maxwell3D::Regs::PrimitiveTopology topology) {
-    return IsTopologySafe(topology) || topology == Maxwell3D::Regs::PrimitiveTopology::Quads;
-}
-
 } // Anonymous namespace
 
 void HLE_DrawArraysIndirect::Execute(Core::System& system, Engines::Maxwell3D& maxwell3d, std::span<const u32> parameters, [[maybe_unused]] u32 method) {
@@ -129,7 +125,7 @@ void HLE_DrawArraysIndirect::Fallback(Core::System& system, Engines::Maxwell3D& 
 
 void HLE_DrawIndexedIndirect::Execute(Core::System& system, Engines::Maxwell3D& maxwell3d, std::span<const u32> parameters, [[maybe_unused]] u32 method) {
     auto topology = static_cast<Maxwell3D::Regs::PrimitiveTopology>(parameters[0]);
-    if (!maxwell3d.AnyParametersDirty() || !IsTopologySafeIndexedIndirect(topology)) {
+    if (!maxwell3d.AnyParametersDirty() || !IsTopologySafe(topology)) {
         Fallback(system, maxwell3d, parameters);
         return;
     }
@@ -202,7 +198,7 @@ void HLE_MultiLayerClear::Execute(Core::System& system, Engines::Maxwell3D& maxw
 }
 void HLE_MultiDrawIndexedIndirectCount::Execute(Core::System& system, Engines::Maxwell3D& maxwell3d, std::span<const u32> parameters, [[maybe_unused]] u32 method) {
     const auto topology = Maxwell3D::Regs::PrimitiveTopology(parameters[2]);
-    if (IsTopologySafeIndexedIndirect(topology)) {
+    if (IsTopologySafe(topology)) {
         const u32 start_indirect = parameters[0];
         const u32 end_indirect = parameters[1];
         if (start_indirect >= end_indirect) {

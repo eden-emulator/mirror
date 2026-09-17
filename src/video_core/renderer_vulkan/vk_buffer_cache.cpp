@@ -578,29 +578,40 @@ bool BufferCacheRuntime::BindMultiRangeStorageBuffer(u64 key, bool is_written) {
 
 void BufferCacheRuntime::BindIndexBuffer(PrimitiveTopology topology, IndexFormat index_format,
                                          u32 base_vertex, u32 num_indices, VkBuffer buffer,
-                                         u32 offset, [[maybe_unused]] u32 size) {
+                                         u32 offset, u32 size) {
     VkIndexType vk_index_type = MaxwellToVK::IndexFormat(index_format);
     VkDeviceSize vk_offset = offset;
+    VkDeviceSize vk_size = size;
     VkBuffer vk_buffer = buffer;
     if (topology == PrimitiveTopology::Quads || topology == PrimitiveTopology::QuadStrip) {
         vk_index_type = VK_INDEX_TYPE_UINT32;
+        vk_size = VK_WHOLE_SIZE;
         std::tie(vk_buffer, vk_offset) =
             quad_index_pass.Assemble(index_format, num_indices, base_vertex, buffer, offset,
                                      topology == PrimitiveTopology::QuadStrip);
     } else if (vk_index_type == VK_INDEX_TYPE_UINT8_EXT && !device.IsExtIndexTypeUint8Supported()) {
         vk_index_type = VK_INDEX_TYPE_UINT16;
         if (uint8_pass) {
+            vk_size = VK_WHOLE_SIZE;
             std::tie(vk_buffer, vk_offset) = uint8_pass->Assemble(num_indices, buffer, offset);
         } else if (device.GetDriverID() == VK_DRIVER_ID_QUALCOMM_PROPRIETARY) {
             ReserveNullBuffer();
             vk_buffer = *null_buffer;
             vk_offset = 0;
+            vk_size = VK_WHOLE_SIZE;
         }
     }
     if (vk_buffer == VK_NULL_HANDLE) {
         // Vulkan doesn't support null index buffers. Replace it with our own null buffer.
         ReserveNullBuffer();
         vk_buffer = *null_buffer;
+        vk_size = VK_WHOLE_SIZE;
+    }
+    if (device.IsKhrMaintenance5Supported()) {
+        scheduler.Record([vk_buffer, vk_offset, vk_size, vk_index_type](vk::CommandBuffer cmdbuf) {
+            cmdbuf.BindIndexBuffer2KHR(vk_buffer, vk_offset, vk_size, vk_index_type);
+        });
+        return;
     }
     scheduler.Record([vk_buffer, vk_offset, vk_index_type](vk::CommandBuffer cmdbuf) {
         cmdbuf.BindIndexBuffer(vk_buffer, vk_offset, vk_index_type);

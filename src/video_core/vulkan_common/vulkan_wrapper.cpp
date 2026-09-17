@@ -96,6 +96,7 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdBeginDebugUtilsLabelEXT);
     X(vkCmdBindDescriptorSets);
     X(vkCmdBindIndexBuffer);
+    X(vkCmdBindIndexBuffer2KHR);
     X(vkCmdBindPipeline);
     X(vkCmdBindTransformFeedbackBuffersEXT);
     X(vkCmdBindVertexBuffers);

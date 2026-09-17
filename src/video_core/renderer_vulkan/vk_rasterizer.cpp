@@ -212,8 +212,6 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
       compute_pass_descriptor_queue(device, UpdateDescriptorQueue::COMPUTE_FRAME_PAYLOAD_SIZE),
       descriptor_buffer_ring(device, memory_allocator),
       blit_image(device, scheduler, state_tracker, descriptor_pool), render_pass_cache(device),
-      indirect_quads_pass(device, scheduler, descriptor_pool, staging_pool,
-                          compute_pass_descriptor_queue),
       texture_cache_runtime{
           device,     scheduler,         memory_allocator, staging_pool,
           blit_image, render_pass_cache, descriptor_pool,  compute_pass_descriptor_queue},
@@ -319,15 +317,6 @@ void RasterizerVulkan::DrawIndirect() {
         VkBuffer command_buffer = buffer->Handle();
         VkDeviceSize command_offset = offset;
         u32 command_stride = static_cast<u32>(params.stride);
-        if (params.is_indexed &&
-            maxwell3d->draw_manager.draw_state.topology == Maxwell::PrimitiveTopology::Quads) {
-            const auto patched = indirect_quads_pass.Assemble(
-                static_cast<u32>(params.max_draw_counts), command_stride, command_buffer,
-                static_cast<u32>(offset));
-            command_buffer = patched.first;
-            command_offset = patched.second;
-            command_stride = IndirectQuadsPass::COMMAND_WORDS * static_cast<u32>(sizeof(u32));
-        }
         if (params.is_byte_count) {
             scheduler.Record([buffer_obj = buffer->Handle(), offset,
                               stride = params.stride](vk::CommandBuffer cmdbuf) {
