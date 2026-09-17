@@ -292,18 +292,20 @@ public:
      * @param data         The container/data to write into a buffer.
      * @param buffer_index The buffer in particular to write to.
      */
-    template <typename T, typename = std::enable_if_t<!std::is_pointer_v<T>>>
+    template <typename T>
+        requires !std::is_pointer_v<T>
+            && std::contiguous_iterator<typename T::iterator>
     std::size_t WriteBuffer(const T& data, std::size_t buffer_index = 0) const {
-        if constexpr (std::contiguous_iterator<typename T::iterator>) {
-            using ContiguousType = typename T::value_type;
-            static_assert(std::is_trivially_copyable_v<ContiguousType>,
-                          "Container to WriteBuffer must contain trivially copyable objects");
-            return WriteBuffer(std::data(data), std::size(data) * sizeof(ContiguousType),
-                               buffer_index);
-        } else {
-            static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable");
-            return WriteBuffer(&data, sizeof(T), buffer_index);
-        }
+        using C = typename T::value_type;
+        static_assert(std::is_trivially_copyable_v<C>, "Container to WriteBuffer must contain trivially copyable objects");
+        return WriteBuffer(std::data(data), std::size(data) * sizeof(C), buffer_index);
+    }
+    template <typename T>
+        requires !std::is_pointer_v<T>
+            && !std::contiguous_iterator<typename T::iterator>
+    std::size_t WriteBuffer(const T& data, std::size_t buffer_index = 0) const {
+        static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable");
+        return WriteBuffer(&data, sizeof(T), buffer_index);
     }
 
     /// Helper function to get the size of the input buffer
