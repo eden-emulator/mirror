@@ -41,9 +41,9 @@ void SwizzleImpl(std::span<u8> output, std::span<const u8> input, u32 width, u32
                  u32 block_height, u32 block_depth, u32 stride) {
     // The origin of the transformation can be configured here, leave it as zero as the current API
     // doesn't expose it.
-    static constexpr u32 origin_x = 0;
     static constexpr u32 origin_y = 0;
     static constexpr u32 origin_z = 0;
+    static constexpr u32 columns_per_gob = GOB_SIZE_X / BYTES_PER_PIXEL;
 
     // We can configure here a custom pitch
     // As it's not exposed 'width * BYTES_PER_PIXEL' will be the expected pitch.
@@ -63,29 +63,37 @@ void SwizzleImpl(std::span<u8> output, std::span<const u8> input, u32 width, u32
         const u32 offset_z = (z >> block_depth) * slice_size +
                              ((z & block_depth_mask) << (GOB_SIZE_SHIFT + block_height));
         const u32 slice_base = slice * pitch * height;
-        for (u32 line = 0; line < height; ++line) {
-            const u32 y = line + origin_y;
-            const u32 swizzled_y = ((y & 1) << 4) | ((y & 6) << 5);
-
-            const u32 block_y = y >> GOB_SIZE_Y_SHIFT;
+        for (u32 band = 0; band < height; band += GOB_SIZE_Y) {
+            const u32 band_end = (std::min)(band + GOB_SIZE_Y, height);
+            const u32 block_y = (band + origin_y) >> GOB_SIZE_Y_SHIFT;
             const u32 offset_y = (block_y >> block_height) * block_size +
                                  ((block_y & block_height_mask) << GOB_SIZE_SHIFT);
 
-            const u32 row_base = offset_z + offset_y + swizzled_y;
-            u32 linear_offset = slice_base + line * pitch;
-            u32 swizzled_x = pdep<SWIZZLE_X_BITS>(origin_x * BYTES_PER_PIXEL);
-            for (u32 column = 0; column < width;
-                 ++column, incrpdep<SWIZZLE_X_BITS, BYTES_PER_PIXEL>(swizzled_x),
-                 linear_offset += BYTES_PER_PIXEL) {
-                const u32 x = (column + origin_x) * BYTES_PER_PIXEL;
-                const u32 offset_x = (x >> GOB_SIZE_X_SHIFT) << x_shift;
+            const u32 band_base = offset_z + offset_y;
+            u32 band_linear = slice_base + band * pitch;
+            u32 offset_x = 0;
+            for (u32 gob = 0; gob < width; gob += columns_per_gob,
+                     offset_x += 1U << x_shift, band_linear += GOB_SIZE_X) {
+                const u32 columns = (std::min)(columns_per_gob, width - gob);
+                const u32 gob_base = band_base + offset_x;
+                u32 linear_row = band_linear;
+                for (u32 line = band; line < band_end; ++line, linear_row += pitch) {
+                    const u32 y = line + origin_y;
+                    const u32 row_base = gob_base + ((y & 1) << 4) + ((y & 6) << 5);
 
-                const u32 swizzled_offset = row_base + offset_x + swizzled_x;
+                    u32 linear_offset = linear_row;
+                    u32 swizzled_x = 0;
+                    for (u32 column = 0; column < columns;
+                         ++column, incrpdep<SWIZZLE_X_BITS, BYTES_PER_PIXEL>(swizzled_x),
+                         linear_offset += BYTES_PER_PIXEL) {
+                        const u32 swizzled_offset = row_base + swizzled_x;
 
-                u8* const dst = &output[TO_LINEAR ? swizzled_offset : linear_offset];
-                const u8* const src = &input[TO_LINEAR ? linear_offset : swizzled_offset];
+                        u8* const dst = &output[TO_LINEAR ? swizzled_offset : linear_offset];
+                        const u8* const src = &input[TO_LINEAR ? linear_offset : swizzled_offset];
 
-                std::memcpy(dst, src, BYTES_PER_PIXEL);
+                        std::memcpy(dst, src, BYTES_PER_PIXEL);
+                    }
+                }
             }
         }
     }
@@ -163,11 +171,8 @@ void Swizzle(std::span<u8> output, std::span<const u8> input, u32 bytes_per_pixe
                                          block_depth, stride_alignment);
         BPP_CASE(1)
         BPP_CASE(2)
-        BPP_CASE(3)
         BPP_CASE(4)
-        BPP_CASE(6)
         BPP_CASE(8)
-        BPP_CASE(12)
         BPP_CASE(16)
 #undef BPP_CASE
     default:
