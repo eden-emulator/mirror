@@ -208,6 +208,9 @@ void Maxwell3D::DrawManager::DrawBegin(Maxwell3D& maxwell3d) {
 
 void Maxwell3D::DrawManager::DrawEnd(Maxwell3D& maxwell3d, u32 instance_count, bool force_draw) {
     switch (draw_state.draw_mode) {
+    case DrawMode::InstanceArray:
+        DrawDeferred(maxwell3d);
+        break;
     case DrawMode::Instance:
         if (!force_draw) {
             break;
