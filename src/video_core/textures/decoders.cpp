@@ -4,7 +4,6 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstring>
@@ -16,7 +15,6 @@
 #include "common/div_ceil.h"
 #include "video_core/gpu.h"
 #include "video_core/textures/decoders.h"
-#include "video_core/textures/workers.h"
 
 namespace Tegra::Texture {
 namespace {
@@ -37,8 +35,6 @@ void incrpdep(u32& value) {
     static constexpr u32 swizzled_incr = pdep<mask>(incr_amount);
     value = ((value | ~mask) + swizzled_incr) & mask;
 }
-
-constexpr u32 PARALLEL_SWIZZLE_BYTES = 256 * 1024;
 
 template <bool TO_LINEAR, u32 BYTES_PER_PIXEL>
 void SwizzleImpl(std::span<u8> output, std::span<const u8> input, u32 width, u32 height, u32 depth,
@@ -62,12 +58,12 @@ void SwizzleImpl(std::span<u8> output, std::span<const u8> input, u32 width, u32
     const u32 block_depth_mask = (1U << block_depth) - 1;
     const u32 x_shift = GOB_SIZE_SHIFT + block_height + block_depth;
 
-    const auto process = [&](u32 slice, u32 line_begin, u32 line_end) {
+    for (u32 slice = 0; slice < depth; ++slice) {
         const u32 z = slice + origin_z;
         const u32 offset_z = (z >> block_depth) * slice_size +
                              ((z & block_depth_mask) << (GOB_SIZE_SHIFT + block_height));
         const u32 slice_base = slice * pitch * height;
-        for (u32 line = line_begin; line < line_end; ++line) {
+        for (u32 line = 0; line < height; ++line) {
             const u32 y = line + origin_y;
             const u32 swizzled_y = ((y & 1) << 4) | ((y & 6) << 5);
 
@@ -92,25 +88,7 @@ void SwizzleImpl(std::span<u8> output, std::span<const u8> input, u32 width, u32
                 std::memcpy(dst, src, BYTES_PER_PIXEL);
             }
         }
-    };
-
-    const u32 rows_per_task = (std::max)(1U, PARALLEL_SWIZZLE_BYTES / (std::max)(1U, pitch));
-    if (u64{depth} * height * pitch < PARALLEL_SWIZZLE_BYTES * 2) {
-        for (u32 slice = 0; slice < depth; ++slice) {
-            process(slice, 0, height);
-        }
-        return;
     }
-    Common::ThreadWorker& workers{GetThreadWorkers()};
-    for (u32 slice = 0; slice < depth; ++slice) {
-        for (u32 line = 0; line < height; line += rows_per_task) {
-            const u32 line_end = (std::min)(line + rows_per_task, height);
-            workers.QueueWork([&process, slice, line, line_end] {
-                process(slice, line, line_end);
-            });
-        }
-    }
-    workers.WaitForRequests();
 }
 
 template <bool TO_LINEAR, u32 BYTES_PER_PIXEL>
