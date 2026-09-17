@@ -6,12 +6,12 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstdio>
 #include <filesystem>
 #include <span>
 #include <type_traits>
 
-#include "common/concepts.h"
 #include "common/fs/fs_types.h"
 #include "common/fs/fs_util.h"
 
@@ -212,7 +212,7 @@ public:
 
     /**
      * Helper function which deduces the value type of a contiguous STL container used in ReadSpan.
-     * If T is not a contiguous container as defined by the concept IsContiguousContainer, this
+     * If T is not a contiguous container as defined by the concept, this
      * calls ReadObject and T must be a trivially copyable object.
      *
      * See ReadSpan for more details if T is a contiguous container.
@@ -226,7 +226,7 @@ public:
      */
     template <typename T>
     [[nodiscard]] size_t Read(T& data) const {
-        if constexpr (IsContiguousContainer<T>) {
+        if constexpr (std::contiguous_iterator<typename T::iterator>) {
             using ContiguousType = typename T::value_type;
             static_assert(std::is_trivially_copyable_v<ContiguousType>,
                           "Data type must be trivially copyable.");
@@ -238,7 +238,7 @@ public:
 
     /**
      * Helper function which deduces the value type of a contiguous STL container used in WriteSpan.
-     * If T is not a contiguous STL container as defined by the concept IsContiguousContainer, this
+     * If T is not a contiguous STL container as defined by the concept, this
      * calls WriteObject and T must be a trivially copyable object.
      *
      * See WriteSpan for more details if T is a contiguous container.
@@ -252,7 +252,7 @@ public:
      */
     template <typename T>
     [[nodiscard]] size_t Write(const T& data) const {
-        if constexpr (IsContiguousContainer<T>) {
+        if constexpr (std::contiguous_iterator<typename T::iterator>) {
             using ContiguousType = typename T::value_type;
             static_assert(std::is_trivially_copyable_v<ContiguousType>,
                           "Data type must be trivially copyable.");

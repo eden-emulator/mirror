@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <array>
 #include <functional>
 #include <memory>
@@ -18,7 +19,6 @@
 
 #include "common/assert.h"
 #include "common/common_types.h"
-#include "common/concepts.h"
 #include "common/swap.h"
 #include "core/hle/ipc.h"
 #include "core/hle/kernel/k_handle_table.h"
@@ -294,7 +294,7 @@ public:
      */
     template <typename T, typename = std::enable_if_t<!std::is_pointer_v<T>>>
     std::size_t WriteBuffer(const T& data, std::size_t buffer_index = 0) const {
-        if constexpr (Common::IsContiguousContainer<T>) {
+        if constexpr (std::contiguous_iterator<typename T::iterator>) {
             using ContiguousType = typename T::value_type;
             static_assert(std::is_trivially_copyable_v<ContiguousType>,
                           "Container to WriteBuffer must contain trivially copyable objects");
