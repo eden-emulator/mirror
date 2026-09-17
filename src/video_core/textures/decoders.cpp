@@ -1,9 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstring>
@@ -15,6 +16,7 @@
 #include "common/div_ceil.h"
 #include "video_core/gpu.h"
 #include "video_core/textures/decoders.h"
+#include "video_core/textures/workers.h"
 
 namespace Tegra::Texture {
 namespace {
@@ -35,6 +37,8 @@ void incrpdep(u32& value) {
     static constexpr u32 swizzled_incr = pdep<mask>(incr_amount);
     value = ((value | ~mask) + swizzled_incr) & mask;
 }
+
+constexpr u32 PARALLEL_SWIZZLE_BYTES = 256 * 1024;
 
 template <bool TO_LINEAR, u32 BYTES_PER_PIXEL>
 void SwizzleImpl(std::span<u8> output, std::span<const u8> input, u32 width, u32 height, u32 depth,
@@ -58,37 +62,55 @@ void SwizzleImpl(std::span<u8> output, std::span<const u8> input, u32 width, u32
     const u32 block_depth_mask = (1U << block_depth) - 1;
     const u32 x_shift = GOB_SIZE_SHIFT + block_height + block_depth;
 
-    for (u32 slice = 0; slice < depth; ++slice) {
+    const auto process = [&](u32 slice, u32 line_begin, u32 line_end) {
         const u32 z = slice + origin_z;
         const u32 offset_z = (z >> block_depth) * slice_size +
                              ((z & block_depth_mask) << (GOB_SIZE_SHIFT + block_height));
-        for (u32 line = 0; line < height; ++line) {
+        const u32 slice_base = slice * pitch * height;
+        for (u32 line = line_begin; line < line_end; ++line) {
             const u32 y = line + origin_y;
-            const u32 swizzled_y = pdep<SWIZZLE_Y_BITS>(y);
+            const u32 swizzled_y = ((y & 1) << 4) | ((y & 6) << 5);
 
             const u32 block_y = y >> GOB_SIZE_Y_SHIFT;
             const u32 offset_y = (block_y >> block_height) * block_size +
                                  ((block_y & block_height_mask) << GOB_SIZE_SHIFT);
 
+            const u32 row_base = offset_z + offset_y + swizzled_y;
+            u32 linear_offset = slice_base + line * pitch;
             u32 swizzled_x = pdep<SWIZZLE_X_BITS>(origin_x * BYTES_PER_PIXEL);
             for (u32 column = 0; column < width;
-                 ++column, incrpdep<SWIZZLE_X_BITS, BYTES_PER_PIXEL>(swizzled_x)) {
+                 ++column, incrpdep<SWIZZLE_X_BITS, BYTES_PER_PIXEL>(swizzled_x),
+                 linear_offset += BYTES_PER_PIXEL) {
                 const u32 x = (column + origin_x) * BYTES_PER_PIXEL;
                 const u32 offset_x = (x >> GOB_SIZE_X_SHIFT) << x_shift;
 
-                const u32 base_swizzled_offset = offset_z + offset_y + offset_x;
-                const u32 swizzled_offset = base_swizzled_offset + (swizzled_x | swizzled_y);
+                const u32 swizzled_offset = row_base + offset_x + swizzled_x;
 
-                const u32 unswizzled_offset =
-                    slice * pitch * height + line * pitch + column * BYTES_PER_PIXEL;
-
-                u8* const dst = &output[TO_LINEAR ? swizzled_offset : unswizzled_offset];
-                const u8* const src = &input[TO_LINEAR ? unswizzled_offset : swizzled_offset];
+                u8* const dst = &output[TO_LINEAR ? swizzled_offset : linear_offset];
+                const u8* const src = &input[TO_LINEAR ? linear_offset : swizzled_offset];
 
                 std::memcpy(dst, src, BYTES_PER_PIXEL);
             }
         }
+    };
+
+    const u32 rows_per_task = (std::max)(1U, PARALLEL_SWIZZLE_BYTES / (std::max)(1U, pitch));
+    if (u64{depth} * height * pitch < PARALLEL_SWIZZLE_BYTES * 2) {
+        for (u32 slice = 0; slice < depth; ++slice) {
+            process(slice, 0, height);
+        }
+        return;
     }
+    Common::ThreadWorker& workers{GetThreadWorkers()};
+    for (u32 slice = 0; slice < depth; ++slice) {
+        for (u32 line = 0; line < height; line += rows_per_task) {
+            const u32 line_end = (std::min)(line + rows_per_task, height);
+            workers.QueueWork([&process, slice, line, line_end] {
+                process(slice, line, line_end);
+            });
+        }
+    }
+    workers.WaitForRequests();
 }
 
 template <bool TO_LINEAR, u32 BYTES_PER_PIXEL>
@@ -123,26 +145,25 @@ void SwizzleSubrectImpl(std::span<u8> output, std::span<const u8> input, u32 wid
         const u32 lines_in_y = (std::min)(unprocessed_lines, extent_y);
         for (u32 line = 0; line < lines_in_y; ++line) {
             const u32 y = line + origin_y;
-            const u32 swizzled_y = pdep<SWIZZLE_Y_BITS>(y);
+            const u32 swizzled_y = ((y & 1) << 4) | ((y & 6) << 5);
 
             const u32 block_y = y >> GOB_SIZE_Y_SHIFT;
             const u32 offset_y = (block_y >> block_height) * block_size +
                                  ((block_y & block_height_mask) << GOB_SIZE_SHIFT);
 
+            const u32 row_base = offset_z + offset_y + swizzled_y;
+            u32 linear_offset = slice * pitch * height + line * pitch;
             u32 swizzled_x = pdep<SWIZZLE_X_BITS>(origin_x * BYTES_PER_PIXEL);
             for (u32 column = 0; column < extent_x;
-                 ++column, incrpdep<SWIZZLE_X_BITS, BYTES_PER_PIXEL>(swizzled_x)) {
+                 ++column, incrpdep<SWIZZLE_X_BITS, BYTES_PER_PIXEL>(swizzled_x),
+                 linear_offset += BYTES_PER_PIXEL) {
                 const u32 x = (column + origin_x) * BYTES_PER_PIXEL;
                 const u32 offset_x = (x >> GOB_SIZE_X_SHIFT) << x_shift;
 
-                const u32 base_swizzled_offset = offset_z + offset_y + offset_x;
-                const u32 swizzled_offset = base_swizzled_offset + (swizzled_x | swizzled_y);
+                const u32 swizzled_offset = row_base + offset_x + swizzled_x;
 
-                const u32 unswizzled_offset =
-                    slice * pitch * height + line * pitch + column * BYTES_PER_PIXEL;
-
-                u8* const dst = &output[TO_LINEAR ? swizzled_offset : unswizzled_offset];
-                const u8* const src = &input[TO_LINEAR ? unswizzled_offset : swizzled_offset];
+                u8* const dst = &output[TO_LINEAR ? swizzled_offset : linear_offset];
+                const u8* const src = &input[TO_LINEAR ? linear_offset : swizzled_offset];
 
                 std::memcpy(dst, src, BYTES_PER_PIXEL);
             }
