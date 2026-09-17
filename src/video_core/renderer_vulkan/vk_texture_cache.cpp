@@ -2677,7 +2677,7 @@ vk::ImageView ImageView::MakeView(VkFormat vk_format, VkImageAspectFlags aspect_
         .pNext = nullptr,
         .flags = 0,
         .image = image_handle,
-        .viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+        .viewType = view_type,
         .format = vk_format,
         .components{
             .r = VK_COMPONENT_SWIZZLE_IDENTITY,
