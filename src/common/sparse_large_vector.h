@@ -38,7 +38,8 @@ void FreeMemoryPages(void* base, std::size_t size) noexcept;
 
 /// A large page-aligned buffer that has optimized memory usage for zero-writes.
 template <typename T>
-requires std::is_trivially_copyable_v<T>
+    // MSVC doesn't regard structs with atomics as trivially copyable
+    // requires std::is_trivially_copyable_v<T>
 class SparseLargeVector final {
 public:
     constexpr SparseLargeVector() = default;

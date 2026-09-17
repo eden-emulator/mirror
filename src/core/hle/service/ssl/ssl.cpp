@@ -238,7 +238,7 @@ private:
 
     Result GetSocketDescriptor(Out<u32> out_fd) {
         LOG_WARNING(Service_SSL, "(STUBBED)");
-        *out_fd = socket->GetFD();
+        *out_fd = uint32_t(socket->GetFD());
         R_SUCCEED();
     }
 

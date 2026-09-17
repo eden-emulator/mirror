@@ -177,7 +177,7 @@ void ArmDynarmic32::MakeJit(Common::PageTable* page_table) {
         config.page_table = reinterpret_cast<std::array<std::uint8_t*, NumPageTableEntries>*>(
             const_cast<Common::PageTable::PageEntryData*>(page_table->entries.data()));
         config.page_table_pointer_mask = Common::PageTable::ATTRIBUTE_MASK;
-        config.page_table_marked_bit = 0;
+        config.page_table_marked_bit = uint8_t(0);
         config.absolute_offset_page_table = true;
         config.detect_misaligned_access_via_page_table = 16 | 32 | 64 | 128;
         config.only_detect_misalignment_via_page_table_on_page_boundary = true;
@@ -193,7 +193,7 @@ void ArmDynarmic32::MakeJit(Common::PageTable* page_table) {
             Kernel::Board::Nintendo::Nx::KSystemControl::Init::GetIntendedMemorySize()) < (1ULL << 39)) {
             // Systems like FreeBSD allocate memory really low by default, and since we pack our page table entries,
             // we have to manually sign extend when our actual pointer is negative.
-            config.page_table_sign_extension = Common::PageTable::SIGN_BIT;
+            config.page_table_sign_extension = std::uint8_t(Common::PageTable::SIGN_BIT);
         }
     }
 
