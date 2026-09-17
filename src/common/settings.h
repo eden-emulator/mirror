@@ -65,7 +65,6 @@ SWITCHABLE(AnisotropyMode, true);
 SWITCHABLE(AntiAliasing, false);
 SWITCHABLE(AspectRatio, true);
 SWITCHABLE(AstcDecodeMode, true);
-SWITCHABLE(AstcRecompression, true);
 SWITCHABLE(AudioMode, true);
 SWITCHABLE(CpuBackend, true);
 SWITCHABLE(CpuAccuracy, true);
@@ -562,12 +561,6 @@ struct Values {
                                                                Specialization::Default,
                                                                true,
                                                                true};
-
-    SwitchableSetting<AstcRecompression, true> astc_recompression{linkage,
-                                                                  AstcRecompression::Uncompressed,
-                                                                  "astc_recompression",
-                                                                  Category::RendererAdvanced};
-
 
     SwitchableSetting<bool> sync_memory_operations{linkage,
                                                    false,

@@ -12,6 +12,7 @@
 #include <boost/container/small_vector.hpp>
 
 #include "common/alignment.h"
+#include "common/cityhash.h"
 #include "common/settings.h"
 #include "common/slot_vector.h"
 #include "video_core/control/channel_state.h"
@@ -1075,6 +1076,29 @@ void TextureCache<P>::DownloadImageIntoBuffer(typename TextureCache<P>::Image* i
 }
 
 template <class P>
+bool TextureCache<P>::IsAstcDataUnchanged(Image& image) {
+    static constexpr u32 CHECK_THRESHOLD = 4;
+    if (False(image.flags & ImageFlagBits::Converted) ||
+        True(image.flags & ImageFlagBits::GpuModified) ||
+        !IsPixelFormatASTC(image.info.format)) {
+        return false;
+    }
+    if (image.guest_data_checks < CHECK_THRESHOLD) {
+        ++image.guest_data_checks;
+        return false;
+    }
+    Tegra::Memory::GpuGuestMemory<u8, Tegra::Memory::GuestMemoryFlags::UnsafeRead> guest_data(
+        *gpu_memory, image.gpu_addr, image.guest_size_bytes, &swizzle_data_buffer);
+    const u64 hash = Common::CityHash64(reinterpret_cast<const char*>(guest_data.data()),
+                                        image.guest_size_bytes);
+    if (image.guest_data_hash == hash) {
+        return true;
+    }
+    image.guest_data_hash = hash;
+    return false;
+}
+
+template <class P>
 void TextureCache<P>::RefreshContents(Image& image, ImageId image_id) {
     if (False(image.flags & ImageFlagBits::CpuModified)) {
         // Only upload modified images
@@ -1084,6 +1108,10 @@ void TextureCache<P>::RefreshContents(Image& image, ImageId image_id) {
     image.flags &= ~ImageFlagBits::CpuModified;
 
     TrackImage(image, image_id);
+
+    if (IsAstcDataUnchanged(image)) {
+        return;
+    }
 
     if (image.info.num_samples > 1 && !runtime.CanUploadMSAA()) {
         LOG_WARNING(HW_GPU, "MSAA image uploads are not implemented");

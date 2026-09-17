@@ -235,9 +235,7 @@ void ApplySwizzle(GLuint handle, PixelFormat format, std::array<SwizzleSource, 4
 [[nodiscard]] bool CanBeAccelerated(const TextureCacheRuntime& runtime,
                                     const VideoCommon::ImageInfo& info) {
     if (IsPixelFormatASTC(info.format) && info.size.depth == 1 && !runtime.HasNativeASTC()) {
-        return Settings::values.accelerate_astc.GetValue() == Settings::AstcDecodeMode::Gpu &&
-               Settings::values.astc_recompression.GetValue() ==
-                   Settings::AstcRecompression::Uncompressed;
+        return Settings::values.accelerate_astc.GetValue() == Settings::AstcDecodeMode::Gpu;
     }
     // Disable other accelerated uploads for now as they don't implement swizzled uploads
     return false;
@@ -442,23 +440,6 @@ OGLTexture MakeImage(const VideoCommon::ImageInfo& info, GLenum gl_internal_form
     return GL_R32UI;
 }
 
-[[nodiscard]] bool IsAstcRecompressionEnabled() {
-    return Settings::values.astc_recompression.GetValue() !=
-           Settings::AstcRecompression::Uncompressed;
-}
-
-[[nodiscard]] GLenum SelectAstcFormat(PixelFormat format, bool is_srgb) {
-    switch (Settings::values.astc_recompression.GetValue()) {
-    case Settings::AstcRecompression::Bc1:
-        return is_srgb ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT : GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-        break;
-    case Settings::AstcRecompression::Bc3:
-        return is_srgb ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-        break;
-    default:
-        return is_srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
-    }
-}
 } // Anonymous namespace
 
 TextureCacheRuntime::TextureCacheRuntime(const Device& device_, ProgramManager& program_manager,
@@ -708,11 +689,6 @@ Image::Image(TextureCacheRuntime& runtime_, const VideoCommon::ImageInfo& info_,
         gl_internal_format = is_srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
         gl_format = GL_RGBA;
         gl_type = GL_UNSIGNED_INT_8_8_8_8_REV;
-
-        if (IsPixelFormatASTC(info.format) && IsAstcRecompressionEnabled()) {
-            gl_internal_format = SelectAstcFormat(info.format, is_srgb);
-            gl_format = GL_NONE;
-        }
     } else {
         const auto& tuple = MaxwellToGL::GetFormatTuple(info.format);
         gl_internal_format = tuple.internal_format;
@@ -1109,10 +1085,6 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
     if (True(image.flags & ImageFlagBits::Converted)) {
         const bool is_srgb = IsPixelFormatSRGB(info.format);
         internal_format = is_srgb ? GL_SRGB8_ALPHA8 : GL_RGBA8;
-
-        if (IsPixelFormatASTC(info.format) && IsAstcRecompressionEnabled()) {
-            internal_format = SelectAstcFormat(info.format, is_srgb);
-        }
     } else {
         internal_format = MaxwellToGL::GetFormatTuple(format).internal_format;
     }

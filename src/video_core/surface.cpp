@@ -6,7 +6,6 @@
 
 #include "common/common_types.h"
 #include "common/math_util.h"
-#include "common/settings.h"
 #include "video_core/surface.h"
 
 namespace VideoCore::Surface {
@@ -469,14 +468,7 @@ u64 TranscodedAstcSize(u64 base_size, PixelFormat format) {
                                 static_cast<u64>(DefaultBlockHeight(format)) * RGBA8_PIXEL_SIZE;
     const u64 uncompressed_size = (base_size * base_block_size) / BytesPerBlock(format);
 
-    switch (Settings::values.astc_recompression.GetValue()) {
-    case Settings::AstcRecompression::Bc1:
-        return uncompressed_size / 8;
-    case Settings::AstcRecompression::Bc3:
-        return uncompressed_size / 4;
-    default:
-        return uncompressed_size;
-    }
+    return uncompressed_size;
 }
 
 } // namespace VideoCore::Surface

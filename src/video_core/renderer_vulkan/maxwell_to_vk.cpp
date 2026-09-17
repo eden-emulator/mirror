@@ -9,7 +9,6 @@
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "common/logging.h"
-#include "common/settings.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/renderer_vulkan/maxwell_to_vk.h"
 #include "video_core/surface.h"
@@ -246,21 +245,11 @@ FormatInfo SurfaceFormat(const Device& device, FormatType format_type, bool with
     bool const is_srgb = with_srgb && VideoCore::Surface::IsPixelFormatSRGB(pixel_format);
     // Transcode on hardware that doesn't support ASTC natively
     if (!device.IsOptimalAstcSupported() && VideoCore::Surface::IsPixelFormatASTC(pixel_format)) {
-        switch (Settings::values.astc_recompression.GetValue()) {
-        case Settings::AstcRecompression::Uncompressed:
-            if (is_srgb) {
-                tuple.format = VK_FORMAT_A8B8G8R8_SRGB_PACK32;
-            } else {
-                tuple.format = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
-                tuple.usage |= usage_storage;
-            }
-            break;
-        case Settings::AstcRecompression::Bc1:
-            tuple.format = is_srgb ? VK_FORMAT_BC1_RGBA_SRGB_BLOCK : VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
-            break;
-        case Settings::AstcRecompression::Bc3:
-            tuple.format = is_srgb ? VK_FORMAT_BC3_SRGB_BLOCK : VK_FORMAT_BC3_UNORM_BLOCK;
-            break;
+        if (is_srgb) {
+            tuple.format = VK_FORMAT_A8B8G8R8_SRGB_PACK32;
+        } else {
+            tuple.format = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
+            tuple.usage |= usage_storage;
         }
     }
     if (!device.IsOptimalBcnSupported() && VideoCore::Surface::IsPixelFormatBCn(pixel_format)) {

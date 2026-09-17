@@ -179,11 +179,6 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
               "GPU: Use the GPU's compute shaders to decode ASTC textures (recommended).\n"
               "CPU Asynchronously: Use the CPU to decode ASTC textures on demand. Eliminates"
               "ASTC decoding\nstuttering but may present artifacts."));
-    INSERT(Settings, astc_recompression, tr("ASTC Recompression Method:"),
-           tr("Most GPUs lack support for ASTC textures and must decompress to an"
-              "intermediate format: RGBA8.\n"
-              "BC1/BC3: The intermediate format will be recompressed to BC1 or BC3 format,\n"
-              " saving VRAM but degrading image quality."));
     INSERT(Settings, frame_pacing_mode, tr("Frame Pacing Mode (Vulkan only)"),
            tr("Controls how the emulator manages frame pacing to reduce stuttering and make the "
               "frame rate smoother and more consistent."));
@@ -379,13 +374,6 @@ std::unique_ptr<ComboboxTranslationMap> ComboboxEnumeration(QObject* parent) {
                               PAIR(AstcDecodeMode, Gpu, tr("GPU")),
                               PAIR(AstcDecodeMode, CpuAsynchronous, tr("CPU Asynchronous")),
                           }});
-    translations->insert(
-        {Settings::EnumMetadata<Settings::AstcRecompression>::Index(),
-         {
-             PAIR(AstcRecompression, Uncompressed, tr("Uncompressed (Best quality)")),
-             PAIR(AstcRecompression, Bc1, tr("BC1 (Low quality)")),
-             PAIR(AstcRecompression, Bc3, tr("BC3 (Medium quality)")),
-         }});
     translations->insert({Settings::EnumMetadata<Settings::FramePacingMode>::Index(),
                           {
                               PAIR(FramePacingMode, Target_Auto, tr("Auto")),

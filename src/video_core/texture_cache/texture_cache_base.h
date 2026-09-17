@@ -298,6 +298,8 @@ private:
 
     void RefreshContents(Image& image, ImageId image_id);
 
+    [[nodiscard]] bool IsAstcDataUnchanged(Image& image);
+
     /// Upload data from guest to an image
     template <typename StagingBuffer>
     void UploadImageContents(Image& image, StagingBuffer& staging_buffer);

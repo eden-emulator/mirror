@@ -155,9 +155,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
     if (Settings::values.accelerate_astc.GetValue() != Settings::AstcDecodeMode::Gpu) {
         return false;
     }
-    return Settings::values.astc_recompression.GetValue() ==
-              Settings::AstcRecompression::Uncompressed &&
-          info.size.depth == 1;
+    return info.size.depth == 1;
 }
 
 [[nodiscard]] VkImageCreateInfo MakeImageCreateInfo(const Device& device, const ImageInfo& info,
@@ -1880,8 +1878,9 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
         case Settings::AstcDecodeMode::Gpu:
             if (WillUseAcceleratedAstcDecode(runtime->device, info)) {
                 flags |= VideoCommon::ImageFlagBits::AcceleratedUpload;
+                break;
             }
-            break;
+            [[fallthrough]];
         case Settings::AstcDecodeMode::CpuAsynchronous:
             flags |= VideoCommon::ImageFlagBits::AsynchronousDecode;
             break;
