@@ -100,6 +100,8 @@ public:
         std::optional<TitleType> title_type = {}, std::optional<ContentRecordType> record_type = {},
         std::optional<u64> title_id = {}) const = 0;
 
+    [[nodiscard]] std::optional<u64> GetParentApplicationId(u64 program_id) const;
+
 protected:
     // A single instance of KeyManager to be used by GetEntry()
     Core::Crypto::KeyManager& keys = Core::Crypto::KeyManager::Instance();
