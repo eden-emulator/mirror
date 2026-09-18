@@ -332,6 +332,7 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkFreeDescriptorSets vkFreeDescriptorSets{};
     PFN_vkFreeMemory vkFreeMemory{};
     PFN_vkGetBufferMemoryRequirements2 vkGetBufferMemoryRequirements2{};
+    PFN_vkGetDeviceBufferMemoryRequirements vkGetDeviceBufferMemoryRequirements{};
     PFN_vkGetDeviceQueue vkGetDeviceQueue{};
     PFN_vkGetEventStatus vkGetEventStatus{};
     PFN_vkGetFenceStatus vkGetFenceStatus{};
@@ -1104,6 +1105,8 @@ public:
 
     VkMemoryRequirements GetBufferMemoryRequirements(VkBuffer buffer,
                                                      void* pnext = nullptr) const noexcept;
+
+    VkMemoryRequirements GetDeviceBufferMemoryRequirements(const VkBufferCreateInfo& ci) const noexcept;
 
     VkMemoryRequirements GetImageMemoryRequirements(VkImage image) const noexcept;
 

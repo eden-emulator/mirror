@@ -216,6 +216,7 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkFreeDescriptorSets);
     X(vkFreeMemory);
     X(vkGetBufferMemoryRequirements2);
+    X(vkGetDeviceBufferMemoryRequirements);
     X(vkGetDeviceQueue);
     X(vkGetEventStatus);
     X(vkGetFenceStatus);
@@ -264,6 +265,12 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     if (!dld.vkCmdDrawIndirectCount) {
         Proc(dld.vkCmdDrawIndirectCount, dld, "vkCmdDrawIndirectCountKHR", device);
         Proc(dld.vkCmdDrawIndexedIndirectCount, dld, "vkCmdDrawIndexedIndirectCountKHR", device);
+    }
+
+    // Maintenance4 queries are core in Vulkan 1.3, otherwise require VK_KHR_maintenance4
+    if (!dld.vkGetDeviceBufferMemoryRequirements) {
+        Proc(dld.vkGetDeviceBufferMemoryRequirements, dld,
+             "vkGetDeviceBufferMemoryRequirementsKHR", device);
     }
 
     // Synchronization2 is core in Vulkan 1.3, otherwise requires VK_KHR_synchronization2
@@ -871,6 +878,22 @@ VkMemoryRequirements Device::GetBufferMemoryRequirements(VkBuffer buffer,
         .memoryRequirements{},
     };
     dld->vkGetBufferMemoryRequirements2(handle, &info, &requirements);
+    return requirements.memoryRequirements;
+}
+
+VkMemoryRequirements Device::GetDeviceBufferMemoryRequirements(
+    const VkBufferCreateInfo& ci) const noexcept {
+    const VkDeviceBufferMemoryRequirements info{
+        .sType = VK_STRUCTURE_TYPE_DEVICE_BUFFER_MEMORY_REQUIREMENTS,
+        .pNext = nullptr,
+        .pCreateInfo = &ci,
+    };
+    VkMemoryRequirements2 requirements{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+        .pNext = nullptr,
+        .memoryRequirements{},
+    };
+    dld->vkGetDeviceBufferMemoryRequirements(handle, &info, &requirements);
     return requirements.memoryRequirements;
 }
 

@@ -326,6 +326,9 @@ void RasterizerVulkan::DrawIndirect() {
             return;
         }
         if (params.include_count) {
+            if (!device.IsDrawIndirectCountSupported()) {
+                return;
+            }
             const auto count = buffer_cache.GetDrawIndirectCount();
             const auto& draw_buffer = count.first;
             const auto& offset_base = count.second;

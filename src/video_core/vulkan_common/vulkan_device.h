@@ -72,7 +72,6 @@ VK_DEFINE_HANDLE(VmaAllocator)
     FEATURE(EXT, TransformFeedback, TRANSFORM_FEEDBACK, transform_feedback)                        \
     FEATURE(EXT, VertexInputDynamicState, VERTEX_INPUT_DYNAMIC_STATE, vertex_input_dynamic_state)  \
     FEATURE(KHR, Maintenance5, MAINTENANCE_5, maintenance5)                                        \
-    FEATURE(KHR, Maintenance6, MAINTENANCE_6, maintenance6)                                        \
     FEATURE(KHR, PipelineExecutableProperties, PIPELINE_EXECUTABLE_PROPERTIES,                     \
             pipeline_executable_properties)                                                        \
     FEATURE(KHR, ShaderQuadControl, SHADER_QUAD_CONTROL, shader_quad_control)                      \
@@ -104,17 +103,11 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION(KHR, SWAPCHAIN, swapchain)                                                           \
     EXTENSION(KHR, SWAPCHAIN_MUTABLE_FORMAT, swapchain_mutable_format)                             \
     EXTENSION(KHR, IMAGE_FORMAT_LIST, image_format_list)                                           \
-    EXTENSION(KHR, MAINTENANCE_1, maintenance1)                                                    \
-    EXTENSION(KHR, MAINTENANCE_2, maintenance2)                                                    \
-    EXTENSION(KHR, MAINTENANCE_3, maintenance3)                                                    \
-    EXTENSION(KHR, MAINTENANCE_7, maintenance7)                                                    \
-    EXTENSION(KHR, MAINTENANCE_8, maintenance8)                                                    \
     EXTENSION(NV, DEVICE_DIAGNOSTICS_CONFIG, device_diagnostics_config)                            \
     EXTENSION(NV, GEOMETRY_SHADER_PASSTHROUGH, geometry_shader_passthrough)                        \
     EXTENSION(NV, VIEWPORT_ARRAY2, viewport_array2)                                                \
     EXTENSION(NV, VIEWPORT_SWIZZLE, viewport_swizzle)                                              \
     EXTENSION(EXT, FILTER_CUBIC, filter_cubic)                                                     \
-    EXTENSION(IMG, FILTER_CUBIC, filter_cubic_img)                                                 \
     EXTENSION(QCOM, FILTER_CUBIC_WEIGHTS, filter_cubic_weights)
 
 // Define extensions which must be supported.
@@ -547,11 +540,6 @@ FN_MAX_LIMIT_LIST
     /// Returns true if the device supports VK_NV_geometry_shader_passthrough.
     bool IsNvGeometryShaderPassthroughSupported() const {
         return extensions.geometry_shader_passthrough;
-    }
-
-    /// Returns true if the device supports VK_KHR_uniform_buffer_standard_layout.
-    bool IsKhrUniformBufferStandardLayoutSupported() const {
-        return extensions.uniform_buffer_standard_layout;
     }
 
     /// Returns true if the device supports VK_KHR_push_descriptor.
@@ -1004,27 +992,27 @@ FN_MAX_LIMIT_LIST
         return features2.features.multiViewport;
     }
 
-    /// Returns true if the device supports VK_KHR_maintenance1.
-    bool IsKhrMaintenance1Supported() const {
-        return extensions.maintenance1;
-    }
-
-    /// Returns true if the device supports VK_KHR_maintenance2.
-    bool IsKhrMaintenance2Supported() const {
-        return extensions.maintenance2;
-    }
-
-    /// Returns true if the device supports VK_KHR_maintenance3.
-    bool IsKhrMaintenance3Supported() const {
-        return extensions.maintenance3;
-    }
-
+    /// Returns true if the device supports VK_KHR_maintenance5.
     /// Returns true if the device supports VK_KHR_maintenance4.
     bool IsKhrMaintenance4Supported() const {
         return extensions.maintenance4;
     }
 
-    /// Returns true if the device supports VK_KHR_maintenance5.
+    /// Returns true if the device can read the draw count from a buffer.
+    bool IsDrawIndirectCountSupported() const {
+        return extensions.draw_indirect_count;
+    }
+
+    /// Returns true if the device supports VK_EXT_vertex_attribute_divisor.
+    bool IsExtVertexAttributeDivisorSupported() const {
+        return extensions.vertex_attribute_divisor;
+    }
+
+    /// Returns true if the device supports VK_KHR_sampler_mirror_clamp_to_edge.
+    bool IsKhrSamplerMirrorClampToEdgeSupported() const {
+        return extensions.sampler_mirror_clamp_to_edge;
+    }
+
     bool IsKhrMaintenance5Supported() const {
         return extensions.maintenance5;
     }
@@ -1044,21 +1032,6 @@ FN_MAX_LIMIT_LIST
         return extensions.maintenance5 &&
                properties.maintenance5.earlyFragmentMultisampleCoverageAfterSampleCounting &&
                properties.maintenance5.earlyFragmentSampleMaskTestBeforeSampleCounting;
-    }
-
-    /// Returns true if the device supports VK_KHR_maintenance6.
-    bool IsKhrMaintenance6Supported() const {
-        return extensions.maintenance6;
-    }
-
-    /// Returns true if the device supports VK_KHR_maintenance7.
-    bool IsKhrMaintenance7Supported() const {
-        return extensions.maintenance7;
-    }
-
-    /// Returns true if the device supports VK_KHR_maintenance8.
-    bool IsKhrMaintenance8Supported() const {
-        return extensions.maintenance8;
     }
 
     /// Returns true if the device supports UINT8 index buffer conversion via compute shader.

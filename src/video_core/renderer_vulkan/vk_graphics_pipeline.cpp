@@ -740,7 +740,7 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
         .vertexBindingDivisorCount = static_cast<u32>(vertex_binding_divisors.size()),
         .pVertexBindingDivisors = vertex_binding_divisors.data(),
     };
-    if (!vertex_binding_divisors.empty()) {
+    if (!vertex_binding_divisors.empty() && device.IsExtVertexAttributeDivisorSupported()) {
         vertex_input_ci.pNext = &input_divisor_ci;
     }
     const bool has_tess_stages = spv_modules[1] || spv_modules[2];

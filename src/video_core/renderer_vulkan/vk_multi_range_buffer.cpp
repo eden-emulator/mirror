@@ -32,8 +32,6 @@ MultiRangeBufferCache::MultiRangeBufferCache(const Device& device) {
 
 VkDeviceSize MultiRangeBufferCache::QueryBlockSize(const Device& device,
                                                    u32& memory_type_bits) const {
-    const VkDevice logical = *device.GetLogical();
-    const auto& dld = device.GetDispatchLoader();
     const VkBufferCreateInfo probe_ci{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .pNext = nullptr,
@@ -44,6 +42,14 @@ VkDeviceSize MultiRangeBufferCache::QueryBlockSize(const Device& device,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = nullptr,
     };
+    if (device.IsKhrMaintenance4Supported()) {
+        const VkMemoryRequirements reqs =
+            device.GetLogical().GetDeviceBufferMemoryRequirements(probe_ci);
+        memory_type_bits = reqs.memoryTypeBits;
+        return reqs.alignment;
+    }
+    const VkDevice logical = *device.GetLogical();
+    const auto& dld = device.GetDispatchLoader();
     VkBuffer probe{};
     if (dld.vkCreateBuffer(logical, &probe_ci, nullptr, &probe) != VK_SUCCESS) {
         return 0;

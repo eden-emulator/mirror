@@ -70,12 +70,14 @@ VkSamplerAddressMode WrapMode(const Device& device,
         }
         ASSERT(false);
         return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    case Tegra::Texture::WrapMode::MirrorOnceClampToEdge:
-        return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
     case Tegra::Texture::WrapMode::MirrorOnceBorder:
         UNIMPLEMENTED();
-        return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
+        [[fallthrough]];
+    case Tegra::Texture::WrapMode::MirrorOnceClampToEdge:
     case Tegra::Texture::WrapMode::MirrorOnceClampOGL:
+        if (!device.IsKhrSamplerMirrorClampToEdgeSupported()) {
+            return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        }
         return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
     default:
         UNIMPLEMENTED_MSG("Unimplemented wrap mode={}", wrap_mode);

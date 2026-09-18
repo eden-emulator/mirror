@@ -949,6 +949,8 @@ bool Device::GetSuitability(bool requires_swapchain) {
     extensions.depth_stencil_resolve =
         extensions.depth_stencil_resolve &&
         (instance_version >= VK_API_VERSION_1_2 || extensions.create_renderpass2);
+    extensions.draw_indirect_count =
+        extensions.draw_indirect_count || instance_version >= VK_API_VERSION_1_2;
     RemoveExtensionIfUnsuitable(extensions.depth_stencil_resolve,
                                 VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
 
@@ -1408,18 +1410,6 @@ void Device::RemoveUnsuitableExtensions() {
                                        features.workgroup_memory_explicit_layout,
                                        VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
 
-    // VK_KHR_maintenance1
-    extensions.maintenance1 = loaded_extensions.contains(VK_KHR_MAINTENANCE_1_EXTENSION_NAME);
-    RemoveExtensionIfUnsuitable(extensions.maintenance1, VK_KHR_MAINTENANCE_1_EXTENSION_NAME);
-
-    // VK_KHR_maintenance2
-    extensions.maintenance2 = loaded_extensions.contains(VK_KHR_MAINTENANCE_2_EXTENSION_NAME);
-    RemoveExtensionIfUnsuitable(extensions.maintenance2, VK_KHR_MAINTENANCE_2_EXTENSION_NAME);
-
-    // VK_KHR_maintenance3
-    extensions.maintenance3 = loaded_extensions.contains(VK_KHR_MAINTENANCE_3_EXTENSION_NAME);
-    RemoveExtensionIfUnsuitable(extensions.maintenance3, VK_KHR_MAINTENANCE_3_EXTENSION_NAME);
-
     // VK_KHR_maintenance4
     extensions.maintenance4 = features.maintenance4.maintenance4;
     RemoveExtensionFeatureIfUnsuitable(extensions.maintenance4, features.maintenance4,
@@ -1430,18 +1420,6 @@ void Device::RemoveUnsuitableExtensions() {
     RemoveExtensionFeatureIfUnsuitable(extensions.maintenance5, features.maintenance5,
                                        VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
 
-    // VK_KHR_maintenance6
-    extensions.maintenance6 = features.maintenance6.maintenance6;
-    RemoveExtensionFeatureIfUnsuitable(extensions.maintenance6, features.maintenance6,
-                                       VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
-
-    // VK_KHR_maintenance7
-    extensions.maintenance7 = loaded_extensions.contains(VK_KHR_MAINTENANCE_7_EXTENSION_NAME);
-    RemoveExtensionIfUnsuitable(extensions.maintenance7, VK_KHR_MAINTENANCE_7_EXTENSION_NAME);
-
-    // VK_KHR_maintenance8
-    extensions.maintenance8 = loaded_extensions.contains(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
-    RemoveExtensionIfUnsuitable(extensions.maintenance8, VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
 
     // VK_KHR_synchronization2
     extensions.synchronization2 = features.synchronization2.synchronization2;
