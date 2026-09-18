@@ -1899,14 +1899,6 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
     }
     current_image = &Image::original_image;
     storage_image_views.resize(info.resources.levels);
-    if (WillUseAcceleratedAstcDecode(runtime->device, info)) {
-        const auto& device = runtime->device.GetLogical();
-        const VkFormat storage_format = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
-        for (s32 level = 0; level < info.resources.levels; ++level) {
-            storage_image_views[level] =
-                MakeStorageView(device, level, *original_image, storage_format);
-        }
-    }
 }
 
 Image::Image(const VideoCommon::NullImageParams& params) : VideoCommon::ImageBase{params} {}
@@ -2282,7 +2274,7 @@ VkImageView Image::StorageImageView(s32 level) noexcept {
         if (WillUseAcceleratedAstcDecode(runtime->device, info)) {
             format_info.format = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
         }
-        view = MakeStorageView(runtime->device.GetLogical(), level, *(this->*current_image),
+        view = MakeStorageView(runtime->device.GetLogical(), level, *original_image,
                                format_info.format);
     }
     return *view;
