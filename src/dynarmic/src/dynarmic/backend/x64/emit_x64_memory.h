@@ -135,10 +135,16 @@ template<>
     if (unused_top_bits == 0) {
         code.mov(tmp, vaddr);
         code.shr(tmp, int(page_table_const_bits));
+        if (ctx.conf.page_table_log2_stride > 3) {
+            code.shl(tmp, int(ctx.conf.page_table_log2_stride));
+            code.mov(page, qword[r14 + tmp.cvt64()]);
+        } else {
+            code.mov(page, qword[r14 + tmp.cvt64() * int(1 << ctx.conf.page_table_log2_stride)]);
+        }
     } else if (ctx.conf.silently_mirror_page_table) {
         if (valid_page_index_bits >= 32) {
             if (code.HasHostFeature(HostFeature::BMI2)) {
-                const Xbyak::Reg64 bit_count = ctx.reg_alloc.ScratchGpr(code);
+                auto const bit_count = ctx.reg_alloc.ScratchGpr(code);
                 code.mov(bit_count, unused_top_bits);
                 code.bzhi(tmp, vaddr, bit_count);
                 code.shr(tmp, int(page_table_const_bits));
@@ -153,19 +159,31 @@ template<>
             code.shr(tmp, int(page_table_const_bits));
             code.and_(tmp, u32((1 << valid_page_index_bits) - 1));
         }
+        if (ctx.conf.page_table_log2_stride > 3) {
+            code.shl(tmp, int(ctx.conf.page_table_log2_stride));
+            code.mov(page, qword[r14 + tmp.cvt64()]);
+        } else {
+            code.mov(page, qword[r14 + tmp.cvt64() * int(1 << ctx.conf.page_table_log2_stride)]);
+        }
     } else {
+        // Common VA sizes: 39 - 12 => 27, 42 - 12 => 30
+        // Check if bits outside of VA space are non-zero
         ASSERT(valid_page_index_bits < 32);
         code.mov(tmp, vaddr);
+        if (ctx.conf.check_halt_on_memory_access) {
+            auto const tmp2 = ctx.reg_alloc.ScratchGpr(code);
+            code.mov(tmp2, u64(-(1ull << valid_page_index_bits) << page_table_const_bits));
+            code.test(tmp, tmp2);
+            code.jnz(abort, code.T_NEAR);
+            ctx.reg_alloc.Release(tmp2);
+        }
         code.shr(tmp, int(page_table_const_bits));
-        code.test(tmp, u32(-(1 << valid_page_index_bits)));
-        code.jnz(abort, code.T_NEAR);
-    }
-
-    if (ctx.conf.page_table_log2_stride > 3) {
-        code.shl(tmp, int(ctx.conf.page_table_log2_stride));
-        code.mov(page, qword[r14 + tmp.cvt64()]);
-    } else {
-        code.mov(page, qword[r14 + tmp.cvt64() * int(1 << ctx.conf.page_table_log2_stride)]);
+        if (ctx.conf.page_table_log2_stride > 3) {
+            code.shl(tmp, int(ctx.conf.page_table_log2_stride));
+            code.mov(page, qword[r14 + tmp.cvt64()]);
+        } else {
+            code.mov(page, qword[r14 + tmp.cvt64() * int(1 << ctx.conf.page_table_log2_stride)]);
+        }
     }
 
     // check for marked bit, use as unmapped if marked
@@ -193,7 +211,7 @@ template<>
         return page + vaddr;
     }
     code.mov(tmp, vaddr);
-    code.and_(tmp, static_cast<u32>(page_table_const_mask));
+    code.and_(tmp, u32(page_table_const_mask));
     return page + tmp;
 }
 

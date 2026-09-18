@@ -11,8 +11,7 @@
 #include <tuple>
 #include <utility>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include "common/logging.h"
 #include "dynarmic/mcl/integer_of_size.hpp"
 #include "dynarmic/backend/x64/xbyak.h"
 
