@@ -13,12 +13,14 @@ struct ReclaimThresholds {
     u64 minimum{};
     u64 expected{};
     u64 critical{};
+    u64 headroom{};
 };
 
 [[nodiscard]] constexpr ReclaimThresholds MakeReclaimThresholds(u64 device_local_memory,
                                                                 u64 target_threshold,
                                                                 u64 default_expected,
-                                                                u64 default_critical) {
+                                                                u64 default_critical,
+                                                                u64 default_headroom) {
     u64 critical = default_critical;
     if (device_local_memory != 0) {
         const u64 budget = (std::min)(device_local_memory, target_threshold);
@@ -29,6 +31,7 @@ struct ReclaimThresholds {
         .minimum = (expected * 3) / 4,
         .expected = expected,
         .critical = critical,
+        .headroom = (std::clamp)(device_local_memory / 4, default_headroom, default_headroom * 2),
     };
 }
 

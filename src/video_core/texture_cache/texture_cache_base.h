@@ -446,6 +446,7 @@ private:
     u64 minimum_memory = 0;
     u64 expected_memory = 0;
     u64 critical_memory = 0;
+    u64 heap_headroom = 0;
     bool heap_pressure = false;
 
     struct BufferDownload {
@@ -498,8 +499,7 @@ private:
     u64 modification_tick = 0;
     u64 frame_tick = 0;
 
-    Common::ThreadWorker texture_decode_worker{1, "TextureDecoder", {},
-                                               Common::ThreadPlacement::Efficiency};
+    Common::ThreadWorker texture_decode_worker{1, "TextureDecoder"};
     std::vector<std::unique_ptr<AsyncDecodeContext>> async_decodes;
 
     // Join caching

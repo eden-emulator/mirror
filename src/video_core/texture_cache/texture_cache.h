@@ -62,10 +62,12 @@ TextureCache<P>::TextureCache(Runtime& runtime_, Tegra::MaxwellDeviceMemoryManag
     }
     const auto thresholds = VideoCommon::MakeReclaimThresholds(
         device_local_memory, static_cast<u64>(TARGET_THRESHOLD),
-        static_cast<u64>(DEFAULT_EXPECTED_MEMORY), static_cast<u64>(DEFAULT_CRITICAL_MEMORY));
+        static_cast<u64>(DEFAULT_EXPECTED_MEMORY), static_cast<u64>(DEFAULT_CRITICAL_MEMORY),
+        HEAP_PRESSURE_HEADROOM);
     minimum_memory = thresholds.minimum;
     expected_memory = thresholds.expected;
     critical_memory = thresholds.critical;
+    heap_headroom = thresholds.headroom;
 }
 
 template <class P>
@@ -127,8 +129,7 @@ template <class P>
 void TextureCache<P>::TickFrame() {
     heap_pressure = false;
     if (device_local_memory != 0 && runtime.CanReportMemoryUsage()) {
-        heap_pressure = runtime.GetDeviceMemoryUsage() + HEAP_PRESSURE_HEADROOM >=
-                        device_local_memory;
+        heap_pressure = runtime.GetDeviceMemoryUsage() + heap_headroom >= device_local_memory;
     }
     if (total_used_memory > minimum_memory || heap_pressure) {
         RunGarbageCollector();
@@ -1320,8 +1321,6 @@ u64 TextureCache<P>::GetScaledImageSizeBytes(const ImageBase& image) {
 template <class P>
 void TextureCache<P>::QueueAsyncDecode(Image& image, ImageId image_id) {
     UNIMPLEMENTED_IF(False(image.flags & ImageFlagBits::Converted));
-    LOG_INFO(HW_GPU, "Queuing async texture decode");
-
     image.flags |= ImageFlagBits::IsDecoding;
     auto decode = std::make_unique<AsyncDecodeContext>();
     auto* decode_ptr = decode.get();

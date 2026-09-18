@@ -549,6 +549,7 @@ private:
     u64 minimum_memory = 0;
     u64 expected_memory = 0;
     u64 critical_memory = 0;
+    u64 heap_headroom = 0;
     bool heap_pressure = false;
     BufferId inline_buffer_id;
 #ifdef YUZU_LEGACY

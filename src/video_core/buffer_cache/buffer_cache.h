@@ -33,10 +33,12 @@ BufferCache<P>::BufferCache(Tegra::MaxwellDeviceMemoryManager& device_memory_, R
     device_local_memory = runtime.GetDeviceLocalMemory();
     const auto thresholds = VideoCommon::MakeReclaimThresholds(
         device_local_memory, static_cast<u64>(TARGET_THRESHOLD),
-        static_cast<u64>(DEFAULT_EXPECTED_MEMORY), static_cast<u64>(DEFAULT_CRITICAL_MEMORY));
+        static_cast<u64>(DEFAULT_EXPECTED_MEMORY), static_cast<u64>(DEFAULT_CRITICAL_MEMORY),
+        HEAP_PRESSURE_HEADROOM);
     minimum_memory = thresholds.minimum;
     expected_memory = thresholds.expected;
     critical_memory = thresholds.critical;
+    heap_headroom = thresholds.headroom;
 }
 
 template <class P>
@@ -52,11 +54,11 @@ void BufferCache<P>::ReclaimInline() {
         if (num_iterations == 0) {
             return true;
         }
+        --num_iterations;
         Buffer& buffer = slot_buffers[buffer_id];
         if (memory_tracker.IsRegionGpuModified(buffer.CpuAddr(), buffer.SizeBytes())) {
             return false;
         }
-        --num_iterations;
         DeleteBuffer(buffer_id);
         return false;
     };
@@ -116,8 +118,7 @@ void BufferCache<P>::TickFrame() {
 
     heap_pressure = false;
     if (device_local_memory != 0 && runtime.CanReportMemoryUsage()) {
-        heap_pressure = runtime.GetDeviceMemoryUsage() + HEAP_PRESSURE_HEADROOM >=
-                        device_local_memory;
+        heap_pressure = runtime.GetDeviceMemoryUsage() + heap_headroom >= device_local_memory;
     }
     if (total_used_memory >= minimum_memory || heap_pressure) {
         RunGarbageCollector();
@@ -363,6 +364,7 @@ void BufferCache<P>::DisableGraphicsUniformBuffer(size_t stage, u32 index) {
 
 template <class P>
 void BufferCache<P>::UpdateGraphicsBuffers(bool is_indexed) {
+    ReclaimInline();
     do {
         channel_state->has_deleted_buffers = false;
         DoUpdateGraphicsBuffers(is_indexed);
@@ -371,6 +373,7 @@ void BufferCache<P>::UpdateGraphicsBuffers(bool is_indexed) {
 
 template <class P>
 void BufferCache<P>::UpdateComputeBuffers() {
+    ReclaimInline();
     do {
         channel_state->has_deleted_buffers = false;
         DoUpdateComputeBuffers();
@@ -1343,7 +1346,7 @@ void BufferCache<P>::UpdateIndexBuffer() {
             inline_buffer_id = CreateBuffer(0, buffer_size, false);
         }
         if (slot_buffers[inline_buffer_id].SizeBytes() < buffer_size) [[unlikely]] {
-            slot_buffers.erase(inline_buffer_id);
+            DeleteBuffer(inline_buffer_id, true);
             inline_buffer_id = CreateBuffer(0, buffer_size, false);
         }
         channel_state->index_buffer = Binding{
@@ -1693,7 +1696,6 @@ void BufferCache<P>::JoinOverlap(BufferId new_buffer_id, BufferId overlap_id,
 template <class P>
 BufferId BufferCache<P>::CreateBuffer(DAddr device_addr, u32 wanted_size,
                                       bool sparse_compatible) {
-    ReclaimInline();
     DAddr device_addr_end = Common::AlignUp(device_addr + wanted_size, CACHING_PAGESIZE);
     device_addr = Common::AlignDown(device_addr, CACHING_PAGESIZE);
     wanted_size = static_cast<u32>(device_addr_end - device_addr);
@@ -1992,6 +1994,10 @@ void BufferCache<P>::DeleteBuffer(BufferId buffer_id, bool do_not_mark) {
     if (!do_not_mark) {
         Buffer& buffer = slot_buffers[buffer_id];
         memory_tracker.MarkRegionAsCpuModified(buffer.CpuAddr(), buffer.SizeBytes());
+    }
+
+    if (inline_buffer_id == buffer_id) {
+        inline_buffer_id = NULL_BUFFER_ID;
     }
 
     Unregister(buffer_id);
