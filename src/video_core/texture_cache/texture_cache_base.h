@@ -31,6 +31,7 @@
 #include "common/thread_worker.h"
 #include "video_core/compatible_formats.h"
 #include "video_core/control/channel_state_cache.h"
+#include "video_core/cache_reclaim.h"
 #include "video_core/delayed_destruction_ring.h"
 #include "video_core/engines/fermi_2d.h"
 #include "video_core/surface.h"
@@ -121,6 +122,7 @@ class TextureCache : public VideoCommon::ChannelSetupCaches<TextureCacheChannelI
 
     static constexpr s64 DEFAULT_EXPECTED_MEMORY = 1_GiB + 125_MiB;
     static constexpr s64 DEFAULT_CRITICAL_MEMORY = 1_GiB + 625_MiB;
+    static constexpr u64 HEAP_PRESSURE_HEADROOM = 512_MiB;
     static constexpr size_t GC_EMERGENCY_COUNTS = 2;
 
     using Runtime = typename P::Runtime;
@@ -440,9 +442,11 @@ private:
     bool has_deleted_images = false;
     bool is_rescaling = false;
     u64 total_used_memory = 0;
-    u64 minimum_memory;
-    u64 expected_memory;
-    u64 critical_memory;
+    u64 device_local_memory = 0;
+    u64 minimum_memory = 0;
+    u64 expected_memory = 0;
+    u64 critical_memory = 0;
+    bool heap_pressure = false;
 
     struct BufferDownload {
         GPUVAddr address;

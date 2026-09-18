@@ -22,6 +22,7 @@ add_library(video_core STATIC
     buffer_cache/usage_tracker.h
     buffer_cache/virtual_range_cache.h
     buffer_cache/word_manager.h
+    cache_reclaim.h
     cache_types.h
     capture.h
     cdma_pusher.cpp

@@ -30,34 +30,52 @@ BufferCache<P>::BufferCache(Tegra::MaxwellDeviceMemoryManager& device_memory_, R
 #ifdef YUZU_LEGACY
     immediately_free = (Settings::values.vram_usage_mode.GetValue() == Settings::VramUsageMode::Aggressive);
 #endif
-    if (!runtime.CanReportMemoryUsage()) {
-        minimum_memory = DEFAULT_EXPECTED_MEMORY;
-        critical_memory = DEFAULT_CRITICAL_MEMORY;
-        return;
-    }
-
-    const s64 device_local_memory = static_cast<s64>(runtime.GetDeviceLocalMemory());
-    const s64 min_spacing_expected = device_local_memory - 1_GiB;
-    const s64 min_spacing_critical = device_local_memory - 512_MiB;
-    const s64 mem_threshold = (std::min)(device_local_memory, TARGET_THRESHOLD);
-    const s64 min_vacancy_expected = (6 * mem_threshold) / 10;
-    const s64 min_vacancy_critical = (2 * mem_threshold) / 10;
-    minimum_memory = static_cast<u64>(
-        (std::max)((std::min)(device_local_memory - min_vacancy_expected, min_spacing_expected),
-                 DEFAULT_EXPECTED_MEMORY));
-    critical_memory = static_cast<u64>(
-        (std::max)((std::min)(device_local_memory - min_vacancy_critical, min_spacing_critical),
-                 DEFAULT_CRITICAL_MEMORY));
+    device_local_memory = runtime.GetDeviceLocalMemory();
+    const auto thresholds = VideoCommon::MakeReclaimThresholds(
+        device_local_memory, static_cast<u64>(TARGET_THRESHOLD),
+        static_cast<u64>(DEFAULT_EXPECTED_MEMORY), static_cast<u64>(DEFAULT_CRITICAL_MEMORY));
+    minimum_memory = thresholds.minimum;
+    expected_memory = thresholds.expected;
+    critical_memory = thresholds.critical;
 }
 
 template <class P>
 BufferCache<P>::~BufferCache() = default;
 
 template <class P>
+void BufferCache<P>::ReclaimInline() {
+    if (total_used_memory < minimum_memory) {
+        return;
+    }
+    int num_iterations = 8;
+    const auto clean_up = [this, &num_iterations](BufferId buffer_id) {
+        if (num_iterations == 0) {
+            return true;
+        }
+        Buffer& buffer = slot_buffers[buffer_id];
+        if (memory_tracker.IsRegionGpuModified(buffer.CpuAddr(), buffer.SizeBytes())) {
+            return false;
+        }
+        --num_iterations;
+        DeleteBuffer(buffer_id);
+        return false;
+    };
+    lru_cache.ForEachItemBelow(frame_tick - INLINE_TICKS_TO_DESTROY, clean_up);
+}
+
+template <class P>
 void BufferCache<P>::RunGarbageCollector() {
-    const bool aggressive_gc = total_used_memory >= critical_memory;
-    const u64 ticks_to_destroy = aggressive_gc ? 60 : 120;
-    int num_iterations = aggressive_gc ? 64 : 32;
+    const bool aggressive_gc = heap_pressure || total_used_memory >= critical_memory;
+    const bool priority_gc = aggressive_gc || total_used_memory >= expected_memory;
+    u64 ticks_to_destroy = 120;
+    int num_iterations = 32;
+    if (aggressive_gc) {
+        ticks_to_destroy = 30;
+        num_iterations = 64;
+    } else if (priority_gc) {
+        ticks_to_destroy = 60;
+        num_iterations = 48;
+    }
     const auto clean_up = [this, &num_iterations](BufferId buffer_id) {
         if (num_iterations == 0) {
             return true;
@@ -96,11 +114,12 @@ void BufferCache<P>::TickFrame() {
     const bool skip_preferred = hits * 256 < shots * 251;
     channel_state->uniform_buffer_skip_cache_size = skip_preferred ? DEFAULT_SKIP_CACHE_SIZE : 0;
 
-    // If we can obtain the memory info, use it instead of the estimate.
-    if (runtime.CanReportMemoryUsage()) {
-        total_used_memory = runtime.GetDeviceMemoryUsage();
+    heap_pressure = false;
+    if (device_local_memory != 0 && runtime.CanReportMemoryUsage()) {
+        heap_pressure = runtime.GetDeviceMemoryUsage() + HEAP_PRESSURE_HEADROOM >=
+                        device_local_memory;
     }
-    if (total_used_memory >= minimum_memory) {
+    if (total_used_memory >= minimum_memory || heap_pressure) {
         RunGarbageCollector();
     }
     ++frame_tick;
@@ -1674,6 +1693,7 @@ void BufferCache<P>::JoinOverlap(BufferId new_buffer_id, BufferId overlap_id,
 template <class P>
 BufferId BufferCache<P>::CreateBuffer(DAddr device_addr, u32 wanted_size,
                                       bool sparse_compatible) {
+    ReclaimInline();
     DAddr device_addr_end = Common::AlignUp(device_addr + wanted_size, CACHING_PAGESIZE);
     device_addr = Common::AlignDown(device_addr, CACHING_PAGESIZE);
     wanted_size = static_cast<u32>(device_addr_end - device_addr);

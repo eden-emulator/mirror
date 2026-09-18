@@ -31,6 +31,7 @@
 #include "video_core/buffer_cache/buffer_base.h"
 #include "video_core/buffer_cache/virtual_range_cache.h"
 #include "video_core/control/channel_state_cache.h"
+#include "video_core/cache_reclaim.h"
 #include "video_core/delayed_destruction_ring.h"
 #include "video_core/dirty_flags.h"
 #include "video_core/engines/maxwell_3d.h"
@@ -199,6 +200,8 @@ class BufferCache : public VideoCommon::ChannelSetupCaches<BufferCacheChannelInf
 
     static constexpr s64 DEFAULT_EXPECTED_MEMORY = 512_MiB;
     static constexpr s64 DEFAULT_CRITICAL_MEMORY = 1_GiB;
+    static constexpr u64 HEAP_PRESSURE_HEADROOM = 512_MiB;
+    static constexpr u64 INLINE_TICKS_TO_DESTROY = 240;
 
     // Debug Flags.
 
@@ -381,6 +384,8 @@ private:
 
     void RunGarbageCollector();
 
+    void ReclaimInline();
+
     void BindHostIndexBuffer();
 
     void BindHostVertexBuffers();
@@ -540,8 +545,11 @@ private:
     std::vector<MultiRangeSegment> compute_segments;
     u64 frame_tick = 0;
     u64 total_used_memory = 0;
+    u64 device_local_memory = 0;
     u64 minimum_memory = 0;
+    u64 expected_memory = 0;
     u64 critical_memory = 0;
+    bool heap_pressure = false;
     BufferId inline_buffer_id;
 #ifdef YUZU_LEGACY
     bool immediately_free = false;
