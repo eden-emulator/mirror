@@ -26,6 +26,13 @@ namespace {
                                                     : VkMemoryPropertyFlagBits{};
     }
 
+    [[nodiscard]] VkMemoryPropertyFlags MemoryUsageRequiredVmaFlags(MemoryUsage usage) {
+        if (usage == MemoryUsage::Upload || usage == MemoryUsage::Download) {
+            return VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        }
+        return VkMemoryPropertyFlagBits{};
+    }
+
     [[nodiscard]] VmaAllocationCreateFlags MemoryUsageVmaFlags(MemoryUsage usage) {
         switch (usage) {
             case MemoryUsage::Upload:
@@ -103,7 +110,7 @@ vk::Image MemoryAllocator::CreateImage(const VkImageCreateInfo &ci) const
             .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
             .requiredFlags = 0,
             .preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            .memoryTypeBits = 0,
+            .memoryTypeBits = valid_memory_types,
             .pool = VK_NULL_HANDLE,
             .pUserData = nullptr,
             .priority = 0.f,
@@ -138,7 +145,7 @@ vk::Buffer MemoryAllocator::CreateBuffer(const VkBufferCreateInfo &ci, MemoryUsa
     VmaAllocationCreateInfo alloc_ci = {
         .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT | MemoryUsageVmaFlags(usage),
         .usage = MemoryUsageVma(usage),
-        .requiredFlags = 0,
+        .requiredFlags = MemoryUsageRequiredVmaFlags(usage),
         .preferredFlags = MemoryUsagePreferredVmaFlags(usage) | anv_flags,
         .memoryTypeBits = usage == MemoryUsage::Stream ? 0u : valid_memory_types,
         .pool = VK_NULL_HANDLE,
@@ -196,7 +203,7 @@ vk::Buffer MemoryAllocator::CreateBuffer(const VkBufferCreateInfo &ci, MemoryUsa
     VmaAllocationCreateInfo alloc_ci = {
         .flags = VMA_ALLOCATION_CREATE_WITHIN_BUDGET_BIT | MemoryUsageVmaFlags(usage),
         .usage = MemoryUsageVma(usage),
-        .requiredFlags = 0,
+        .requiredFlags = MemoryUsageRequiredVmaFlags(usage),
         .preferredFlags = MemoryUsagePreferredVmaFlags(usage) | anv_flags,
         .memoryTypeBits = memory_type_bits,
         .pool = VK_NULL_HANDLE,

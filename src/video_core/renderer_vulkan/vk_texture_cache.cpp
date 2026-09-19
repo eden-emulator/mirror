@@ -1091,11 +1091,12 @@ bool TextureCacheRuntime::ShouldReinterpret(Image& dst, Image& src) {
 }
 
 VkBuffer TextureCacheRuntime::GetTemporaryBuffer(size_t needed_size) {
-    const auto level = (8 * sizeof(size_t)) - std::countl_zero(needed_size - 1ULL);
+    const size_t wanted_size = (std::max)(needed_size, size_t{1});
+    const auto level = (8 * sizeof(size_t)) - std::countl_zero(wanted_size - 1ULL);
     if (buffers[level]) {
         return *buffers[level];
     }
-    const auto new_size = Common::NextPow2(needed_size);
+    const auto new_size = Common::NextPow2(wanted_size);
     static constexpr VkBufferUsageFlags flags =
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
         VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;

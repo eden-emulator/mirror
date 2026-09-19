@@ -741,7 +741,7 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
             .pHeapSizeLimit = nullptr,
             .pVulkanFunctions = &functions,
             .instance = instance,
-            .vulkanApiVersion = ApiVersion(),
+            .vulkanApiVersion = VK_API_VERSION_1_1,
             .pTypeExternalMemoryHandleTypes = nullptr,
     };
 
