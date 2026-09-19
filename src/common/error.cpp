@@ -17,35 +17,33 @@
 
 namespace Common {
 
+// glibc, mlibc, musl, and newlib all define their own variants of strerror_r
+// We don't need to use the preprocessor, we can just select depending on return type
+template<typename T> std::string HandleStrerrorR(T r, char *err_str);
+template<> std::string HandleStrerrorR(char* r, char *) { return std::string{r}; }
+template<> std::string HandleStrerrorR(const char* r, char *) { return std::string{r}; }
+template<> std::string HandleStrerrorR(int r, char *err_str) {
+    return std::string{r != 0
+        ? "(strerror_r failed to format error)"
+        : err_str};
+}
+
 std::string NativeErrorToString(int e) {
 #ifdef _WIN32
     LPSTR err_str;
-
     DWORD res = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER |
                                    FORMAT_MESSAGE_IGNORE_INSERTS,
                                nullptr, e, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                               reinterpret_cast<LPSTR>(&err_str), 1, nullptr);
-    if (!res) {
-        return "(FormatMessageA failed to format error)";
+                               LPSTR(&err_str), 1, nullptr);
+    if (res) {
+        std::string ret(err_str);
+        LocalFree(err_str);
+        return ret;
     }
-    std::string ret(err_str);
-    LocalFree(err_str);
-    return ret;
+    return "(FormatMessageA failed to format error)";
 #else
     char err_str[255];
-#if defined(__ANDROID__) ||                                                                            \
-    (defined(__GLIBC__) && (_GNU_SOURCE || (_POSIX_C_SOURCE < 200112L && _XOPEN_SOURCE < 600)))
-    // Thread safe (GNU-specific)
-    const char* str = strerror_r(e, err_str, sizeof(err_str));
-    return std::string(str);
-#else
-    // Thread safe (XSI-compliant)
-    int second_err = strerror_r(e, err_str, sizeof(err_str));
-    if (second_err != 0) {
-        return "(strerror_r failed to format error)";
-    }
-    return std::string(err_str);
-#endif // GLIBC etc.
+    return HandleStrerrorR(strerror_r(e, err_str, sizeof(err_str)), err_str);
 #endif // _WIN32
 }
 
