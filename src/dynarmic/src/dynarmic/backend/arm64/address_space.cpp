@@ -147,44 +147,37 @@ void AddressSpace::Link(EmittedBlockInfo& block_info) {
             break;
         // { this, vaddr, size }
         case LinkTarget::ReadMemory8:
-            c.LDR(X2, 1);
-            c.BL(prelude_info.read_memory);
+            c.BL(prelude_info.read_memory_8);
             break;
         case LinkTarget::ReadMemory16:
-            c.LDR(X2, 2);
-            c.BL(prelude_info.read_memory);
+            c.BL(prelude_info.read_memory_16);
             break;
         case LinkTarget::ReadMemory32:
-            c.LDR(X2, 4);
-            c.BL(prelude_info.read_memory);
+            c.BL(prelude_info.read_memory_32);
             break;
         case LinkTarget::ReadMemory64:
-            c.LDR(X2, 8);
-            c.BL(prelude_info.read_memory);
+            c.BL(prelude_info.read_memory_64);
             break;
         case LinkTarget::ReadMemory128:
             c.BL(prelude_info.read_memory_128);
             break;
         // { this, vaddr, size }
         case LinkTarget::WrappedReadMemory8:
-            c.LDR(X2, 1);
-            c.BL(prelude_info.wrapped_read_memory);
+            c.BL(prelude_info.wrapped_read_memory_8);
             break;
         case LinkTarget::WrappedReadMemory16:
-            c.LDR(X2, 2);
-            c.BL(prelude_info.wrapped_read_memory);
+            c.BL(prelude_info.wrapped_read_memory_16);
             break;
         case LinkTarget::WrappedReadMemory32:
-            c.LDR(X2, 4);
-            c.BL(prelude_info.wrapped_read_memory);
+            c.BL(prelude_info.wrapped_read_memory_32);
             break;
         case LinkTarget::WrappedReadMemory64:
-            c.LDR(X2, 8);
-            c.BL(prelude_info.wrapped_read_memory);
+            c.BL(prelude_info.wrapped_read_memory_64);
             break;
         case LinkTarget::WrappedReadMemory128:
             c.BL(prelude_info.wrapped_read_memory_128);
             break;
+        //
         case LinkTarget::ExclusiveReadMemory8:
             c.BL(prelude_info.exclusive_read_memory_8);
             break;
@@ -202,43 +195,37 @@ void AddressSpace::Link(EmittedBlockInfo& block_info) {
             break;
         // { this, vaddr, value, size }
         case LinkTarget::WriteMemory8:
-            c.LDR(X3, 1);
-            c.BL(prelude_info.write_memory);
+            c.BL(prelude_info.write_memory_8);
             break;
         case LinkTarget::WriteMemory16:
-            c.LDR(X3, 2);
-            c.BL(prelude_info.write_memory);
+            c.BL(prelude_info.write_memory_16);
             break;
         case LinkTarget::WriteMemory32:
-            c.LDR(X3, 4);
-            c.BL(prelude_info.write_memory);
+            c.BL(prelude_info.write_memory_32);
             break;
         case LinkTarget::WriteMemory64:
-            c.LDR(X3, 8);
-            c.BL(prelude_info.write_memory);
+            c.BL(prelude_info.write_memory_64);
             break;
         case LinkTarget::WriteMemory128:
             c.BL(prelude_info.write_memory_128);
             break;
+        //
         case LinkTarget::WrappedWriteMemory8:
-            c.LDR(X3, 1);
-            c.BL(prelude_info.wrapped_write_memory);
+            c.BL(prelude_info.wrapped_write_memory_8);
             break;
         case LinkTarget::WrappedWriteMemory16:
-            c.LDR(X3, 2);
-            c.BL(prelude_info.wrapped_write_memory);
+            c.BL(prelude_info.wrapped_write_memory_16);
             break;
         case LinkTarget::WrappedWriteMemory32:
-            c.LDR(X3, 4);
-            c.BL(prelude_info.wrapped_write_memory);
+            c.BL(prelude_info.wrapped_write_memory_32);
             break;
         case LinkTarget::WrappedWriteMemory64:
-            c.LDR(X3, 8);
-            c.BL(prelude_info.wrapped_write_memory);
+            c.BL(prelude_info.wrapped_write_memory_64);
             break;
         case LinkTarget::WrappedWriteMemory128:
             c.BL(prelude_info.wrapped_write_memory_128);
             break;
+        //
         case LinkTarget::ExclusiveWriteMemory8:
             c.BL(prelude_info.exclusive_write_memory_8);
             break;
