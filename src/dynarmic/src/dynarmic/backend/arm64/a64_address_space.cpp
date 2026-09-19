@@ -23,7 +23,7 @@
 namespace Dynarmic::Backend::Arm64 {
 
 template<auto mfp, typename T>
-static void* EmitCallReadTrampoline(oaknut::CodeGenerator& code, T* this_) {
+static void* EmitCallReadTrampoline(oaknut::CodeGenerator& code, T* this_, size_t bitsize) {
     using namespace oaknut::util;
     const auto info = Devirtualize<mfp>(this_);
     oaknut::Label l_addr, l_this;
@@ -43,7 +43,7 @@ static void* EmitCallReadTrampoline(oaknut::CodeGenerator& code, T* this_) {
 }
 
 template<auto mfp, typename T>
-static void* EmitCallWriteTrampoline(oaknut::CodeGenerator& code, T* this_) {
+static void* EmitCallWriteTrampoline(oaknut::CodeGenerator& code, T* this_, size_t bitsize) {
     using namespace oaknut::util;
     const auto info = Devirtualize<mfp>(this_);
     oaknut::Label l_addr, l_this;
