@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
+
 #include "common/container/unordered_map.h"
 
 #include <boost/container/static_vector.hpp>
@@ -229,17 +231,48 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         .preserveAttachmentCount = 0,
         .pPreserveAttachments = nullptr,
     };
-    const VkSubpassDependency dependency{
-            .srcSubpass = 0,  // Current subpass
-            .dstSubpass = 0,  // Same subpass (self-dependency)
-            .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-                            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+    static constexpr VkPipelineStageFlags ATTACHMENT_STAGES =
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+        VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    static constexpr VkAccessFlags ATTACHMENT_WRITE_ACCESS =
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    static constexpr VkAccessFlags ATTACHMENT_ACCESS =
+        ATTACHMENT_WRITE_ACCESS | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    static constexpr VkPipelineStageFlags OUTSIDE_STAGES =
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+        VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+    const std::array dependencies{
+        VkSubpassDependency{
+            .srcSubpass = VK_SUBPASS_EXTERNAL,
+            .dstSubpass = 0,
+            .srcStageMask = OUTSIDE_STAGES,
+            .dstStageMask = ATTACHMENT_STAGES,
+            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+            .dstAccessMask = ATTACHMENT_ACCESS,
+            .dependencyFlags = 0,
+        },
+        VkSubpassDependency{
+            .srcSubpass = 0,
+            .dstSubpass = 0,
+            .srcStageMask = ATTACHMENT_STAGES,
             .dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            .srcAccessMask = ATTACHMENT_WRITE_ACCESS,
             .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-            .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
+            .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+        },
+        VkSubpassDependency{
+            .srcSubpass = 0,
+            .dstSubpass = VK_SUBPASS_EXTERNAL,
+            .srcStageMask = ATTACHMENT_STAGES,
+            .dstStageMask = OUTSIDE_STAGES,
+            .srcAccessMask = ATTACHMENT_WRITE_ACCESS,
+            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT |
+                             VK_ACCESS_TRANSFER_WRITE_BIT,
+            .dependencyFlags = 0,
+        },
     };
 
     if (device->IsKhrCreateRenderPass2Supported()) {
@@ -299,18 +332,21 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
             .preserveAttachmentCount = 0,
             .pPreserveAttachments = nullptr,
         };
-        const VkSubpassDependency2 dependency2{
-            .sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2,
-            .pNext = nullptr,
-            .srcSubpass = dependency.srcSubpass,
-            .dstSubpass = dependency.dstSubpass,
-            .srcStageMask = dependency.srcStageMask,
-            .dstStageMask = dependency.dstStageMask,
-            .srcAccessMask = dependency.srcAccessMask,
-            .dstAccessMask = dependency.dstAccessMask,
-            .dependencyFlags = dependency.dependencyFlags,
-            .viewOffset = 0,
-        };
+        boost::container::static_vector<VkSubpassDependency2, 3> dependencies2;
+        for (const VkSubpassDependency& dependency : dependencies) {
+            dependencies2.push_back(VkSubpassDependency2{
+                .sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2,
+                .pNext = nullptr,
+                .srcSubpass = dependency.srcSubpass,
+                .dstSubpass = dependency.dstSubpass,
+                .srcStageMask = dependency.srcStageMask,
+                .dstStageMask = dependency.dstStageMask,
+                .srcAccessMask = dependency.srcAccessMask,
+                .dstAccessMask = dependency.dstAccessMask,
+                .dependencyFlags = dependency.dependencyFlags,
+                .viewOffset = 0,
+            });
+        }
         pair->second = device->GetLogical().CreateRenderPass2({
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
             .pNext = nullptr,
@@ -319,8 +355,8 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
             .pAttachments = descriptions2.empty() ? nullptr : descriptions2.data(),
             .subpassCount = 1,
             .pSubpasses = &subpass2,
-            .dependencyCount = 1,
-            .pDependencies = &dependency2,
+            .dependencyCount = static_cast<u32>(dependencies2.size()),
+            .pDependencies = dependencies2.data(),
             .correlatedViewMaskCount = 0,
             .pCorrelatedViewMasks = nullptr,
         });
@@ -335,8 +371,8 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         .pAttachments = descriptions.empty() ? nullptr : descriptions.data(),
         .subpassCount = 1,
         .pSubpasses = &subpass,
-        .dependencyCount = 1,
-        .pDependencies = &dependency,
+        .dependencyCount = static_cast<u32>(dependencies.size()),
+        .pDependencies = dependencies.data(),
     });
     return *pair->second;
 }
