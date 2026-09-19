@@ -122,7 +122,10 @@ std::shared_ptr<ILibraryAppletAccessor> CreateGuestApplet(Core::System& system,
         auto broker = std::make_shared<AppletDataBroker>(system);
         applet->caller_applet = caller_applet;
         applet->caller_applet_broker = broker;
-        caller_applet->child_applets.push_back(applet);
+        {
+            std::scoped_lock lk{caller_applet->lock};
+            caller_applet->child_applets.push_back(applet);
+        }
         window_system.TrackApplet(applet, false);
         return std::make_shared<ILibraryAppletAccessor>(system, broker, applet);
     }
@@ -148,10 +151,10 @@ std::shared_ptr<ILibraryAppletAccessor> CreateFrontendApplet(Core::System& syste
     applet->caller_applet = caller_applet;
     applet->caller_applet_broker = storage;
     applet->frontend = system.GetFrontendAppletHolder().GetApplet(applet, applet_id, mode);
-    caller_applet->child_applets.push_back(applet);
-
-    window_system.TrackApplet(applet, false);
-
+    {
+        std::scoped_lock lk{caller_applet->lock};
+        caller_applet->child_applets.push_back(applet);
+    }
     return std::make_shared<ILibraryAppletAccessor>(system, storage, applet);
 }
 
