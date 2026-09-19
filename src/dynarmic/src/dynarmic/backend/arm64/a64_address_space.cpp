@@ -48,7 +48,7 @@ static void* EmitCallWriteTrampoline(oaknut::CodeGenerator& code, T* this_, size
     const auto info = Devirtualize<mfp>(this_);
     oaknut::Label l_addr, l_this;
     void* target = code.xptr<void*>();
-    // params = { this, vaddr, bitsize }
+    // params = { this, vaddr, value, bitsize }
     code.LDR(X0, l_this);
     // X1 = vaddr
     // X2 = value

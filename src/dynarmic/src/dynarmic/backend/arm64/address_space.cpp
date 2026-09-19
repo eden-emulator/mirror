@@ -177,6 +177,7 @@ void AddressSpace::Link(EmittedBlockInfo& block_info) {
         case LinkTarget::WrappedReadMemory128:
             c.BL(prelude_info.wrapped_read_memory_128);
             break;
+        //
         case LinkTarget::ExclusiveReadMemory8:
             c.BL(prelude_info.exclusive_read_memory_8);
             break;
@@ -208,6 +209,7 @@ void AddressSpace::Link(EmittedBlockInfo& block_info) {
         case LinkTarget::WriteMemory128:
             c.BL(prelude_info.write_memory_128);
             break;
+        //
         case LinkTarget::WrappedWriteMemory8:
             c.BL(prelude_info.wrapped_write_memory_8);
             break;
@@ -223,6 +225,7 @@ void AddressSpace::Link(EmittedBlockInfo& block_info) {
         case LinkTarget::WrappedWriteMemory128:
             c.BL(prelude_info.wrapped_write_memory_128);
             break;
+        //
         case LinkTarget::ExclusiveWriteMemory8:
             c.BL(prelude_info.exclusive_write_memory_8);
             break;
