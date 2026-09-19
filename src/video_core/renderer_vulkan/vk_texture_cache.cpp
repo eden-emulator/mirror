@@ -180,7 +180,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         !device.IsStorageBuffer16BitAccessSupported()) {
         return false;
     }
-    if (IsPixelFormatASTC(format) || VideoCore::Surface::IsPixelFormatBCn(format)) {
+    if (DefaultBlockWidth(format) != 1 || DefaultBlockHeight(format) != 1) {
         return false;
     }
     if (VideoCore::Surface::GetFormatType(format) != SurfaceType::ColorTexture) {
@@ -202,6 +202,29 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         return false;
     }
     return IsUnswizzleAcceleratedFormat(device, info.format);
+}
+
+[[nodiscard]] std::array<VkFormat, 2> ShaderStorageViewFormats(PixelFormat format) {
+    if (VideoCore::Surface::GetFormatType(format) != SurfaceType::ColorTexture) {
+        return {};
+    }
+    if (DefaultBlockWidth(format) != 1 || DefaultBlockHeight(format) != 1) {
+        return {};
+    }
+    switch (BytesPerBlock(format)) {
+    case 1:
+        return {VK_FORMAT_R8_UINT, VK_FORMAT_R8_SINT};
+    case 2:
+        return {VK_FORMAT_R16_UINT, VK_FORMAT_R16_SINT};
+    case 4:
+        return {VK_FORMAT_R32_UINT, VK_FORMAT_UNDEFINED};
+    case 8:
+        return {VK_FORMAT_R32G32_UINT, VK_FORMAT_UNDEFINED};
+    case 16:
+        return {VK_FORMAT_R32G32B32A32_UINT, VK_FORMAT_UNDEFINED};
+    default:
+        return {};
+    }
 }
 
 [[nodiscard]] VkImageCreateInfo MakeImageCreateInfo(const Device& device, const ImageInfo& info,
@@ -1002,8 +1025,6 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
         const auto image_format = static_cast<PixelFormat>(index_a);
         if (IsPixelFormatASTC(image_format) && !device.IsOptimalAstcSupported()) {
             view_formats[index_a].push_back(VK_FORMAT_A8B8G8R8_UNORM_PACK32);
-        } else if (IsUnswizzleAcceleratedFormat(device, image_format)) {
-            view_formats[index_a].push_back(UnswizzleStorageFormat(BytesPerBlock(image_format)));
         }
         for (size_t index_b = 0; index_b < VideoCore::Surface::MaxPixelFormat; index_b++) {
             const auto view_format = static_cast<PixelFormat>(index_b);
@@ -1012,6 +1033,14 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
                     MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, true, view_format);
                 view_formats[index_a].push_back(view_info.format);
             }
+        }
+        auto& formats = view_formats[index_a];
+        for (const VkFormat storage_format : ShaderStorageViewFormats(image_format)) {
+            if (storage_format == VK_FORMAT_UNDEFINED ||
+                std::ranges::find(formats, storage_format) != formats.end()) {
+                continue;
+            }
+            formats.push_back(storage_format);
         }
     }
 
