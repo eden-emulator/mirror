@@ -205,9 +205,6 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
 }
 
 [[nodiscard]] std::array<VkFormat, 2> ShaderStorageViewFormats(PixelFormat format) {
-    if (VideoCore::Surface::GetFormatType(format) != SurfaceType::ColorTexture) {
-        return {};
-    }
     if (DefaultBlockWidth(format) != 1 || DefaultBlockHeight(format) != 1) {
         return {};
     }
