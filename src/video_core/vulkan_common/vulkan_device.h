@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <atomic>
 #include <optional>
 #include <set>
@@ -69,6 +70,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
             primitive_topology_list_restart)                                                       \
     FEATURE(EXT, ProvokingVertex, PROVOKING_VERTEX, provoking_vertex)                              \
     FEATURE(EXT, Robustness2, ROBUSTNESS_2, robustness2)                                           \
+    FEATURE(EXT, TexelBufferAlignment, TEXEL_BUFFER_ALIGNMENT, texel_buffer_alignment)             \
     FEATURE(EXT, TransformFeedback, TRANSFORM_FEEDBACK, transform_feedback)                        \
     FEATURE(EXT, VertexInputDynamicState, VERTEX_INPUT_DYNAMIC_STATE, vertex_input_dynamic_state)  \
     FEATURE(KHR, Maintenance5, MAINTENANCE_5, maintenance5)                                        \
@@ -289,6 +291,23 @@ public:
     /// Returns the current Vulkan API version provided in Vulkan-formatted version numbers.
     u32 ApiVersion() const {
         return properties.properties.apiVersion;
+    }
+
+    VkDeviceSize TexelBufferAlignment(u32 texel_size) const {
+        VkDeviceSize texel = texel_size;
+        if (texel % 3 == 0) {
+            texel /= 3;
+        }
+        const auto& limits = properties.texel_buffer_alignment;
+        VkDeviceSize storage = limits.storageTexelBufferOffsetAlignmentBytes;
+        if (limits.storageTexelBufferOffsetSingleTexelAlignment != VK_FALSE) {
+            storage = (std::min)(storage, texel);
+        }
+        VkDeviceSize uniform = limits.uniformTexelBufferOffsetAlignmentBytes;
+        if (limits.uniformTexelBufferOffsetSingleTexelAlignment != VK_FALSE) {
+            uniform = (std::min)(uniform, texel);
+        }
+        return (std::max)((std::max)(storage, uniform), VkDeviceSize{1});
     }
 
     /// Returns the current driver version provided in Vulkan-formatted version numbers.
@@ -1161,6 +1180,7 @@ private:
         VkPhysicalDevicePushDescriptorPropertiesKHR push_descriptor{};
         VkPhysicalDeviceDescriptorBufferPropertiesEXT descriptor_buffer{};
         VkPhysicalDeviceSubgroupSizeControlProperties subgroup_size_control{};
+        VkPhysicalDeviceTexelBufferAlignmentProperties texel_buffer_alignment{};
         VkPhysicalDeviceTransformFeedbackPropertiesEXT transform_feedback{};
         VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5{};
         VkPhysicalDeviceDepthStencilResolveProperties depth_stencil_resolve{};

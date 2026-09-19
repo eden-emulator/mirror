@@ -1112,6 +1112,16 @@ bool Device::GetSuitability(bool requires_swapchain) {
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES;
         SetNext(next, properties.subgroup_size_control);
     }
+    properties.texel_buffer_alignment.storageTexelBufferOffsetAlignmentBytes =
+        properties.properties.limits.minTexelBufferOffsetAlignment;
+    properties.texel_buffer_alignment.uniformTexelBufferOffsetAlignmentBytes =
+        properties.properties.limits.minTexelBufferOffsetAlignment;
+    if (features.texel_buffer_alignment.texelBufferAlignment == VK_TRUE ||
+        instance_version >= VK_API_VERSION_1_3) {
+        properties.texel_buffer_alignment.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT;
+        SetNext(next, properties.texel_buffer_alignment);
+    }
     if (extensions.transform_feedback) {
         properties.transform_feedback.sType =
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_PROPERTIES_EXT;

@@ -133,6 +133,11 @@ VkBufferView Buffer::View(u32 offset, u32 size, VideoCore::Surface::PixelFormat 
         offset = 0;
         size = 0;
     }
+    const u32 required =
+        static_cast<u32>(device->TexelBufferAlignment(VideoCore::Surface::BytesPerBlock(format)));
+    const u32 misalign = offset % required;
+    offset -= misalign;
+    size += misalign;
     const auto it{std::ranges::find_if(views, [offset, size, format](const BufferView& view) {
         return offset == view.offset && size == view.size && format == view.format;
     })};
