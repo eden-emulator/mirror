@@ -153,6 +153,23 @@ private:
     MemoryAllocator& memory_allocator;
 };
 
+class PitchUnswizzlePass final : public ComputePass {
+public:
+    explicit PitchUnswizzlePass(const Device& device_, Scheduler& scheduler_,
+                                DescriptorPool& descriptor_pool_,
+                                StagingBufferPool& staging_buffer_pool_,
+                                ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
+    ~PitchUnswizzlePass();
+
+    void Unswizzle(Image& image, const StagingBufferRef& map,
+                   std::span<const VideoCommon::SwizzleParameters> swizzles);
+
+private:
+    Scheduler& scheduler;
+    StagingBufferPool& staging_buffer_pool;
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue;
+};
+
 class BlockLinearUnswizzleImage3DPass final : public ComputePass {
 public:
     explicit BlockLinearUnswizzleImage3DPass(

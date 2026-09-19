@@ -12,6 +12,8 @@
 
 #include "video_core/renderer_vulkan/vk_texture_cache.h"
 
+#include <bit>
+
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "common/div_ceil.h"
@@ -19,6 +21,7 @@
 #include "video_core/host_shaders/astc_decoder_comp_spv.h"
 #include "video_core/host_shaders/block_linear_unswizzle_2d_comp_spv.h"
 #include "video_core/host_shaders/block_linear_unswizzle_3d_comp_spv.h"
+#include "video_core/host_shaders/pitch_unswizzle_comp_spv.h"
 #include "video_core/host_shaders/queries_prefix_scan_sum_comp_spv.h"
 #include "video_core/host_shaders/queries_prefix_scan_sum_nosubgroups_comp_spv.h"
 #include "video_core/host_shaders/resolve_conditional_render_comp_spv.h"
@@ -198,6 +201,13 @@ struct BlockLinear3DImagePushConstants {
     u32 block_height_mask;
     u32 block_depth;
     u32 block_depth_mask;
+};
+
+struct PitchUnswizzlePushConstants {
+    std::array<u32, 2> origin;
+    std::array<s32, 2> destination;
+    u32 bytes_per_block_log2;
+    u32 pitch;
 };
 
 struct QueriesPrefixScanPushConstants {
@@ -811,6 +821,57 @@ void BlockLinearUnswizzleImage3DPass::Unswizzle(
             cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
             cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, params);
             cmdbuf.Dispatch(num_dispatches_x, num_dispatches_y, num_dispatches_z);
+        });
+    }
+    RecordUnswizzleEndBarrier(scheduler, vk_image, aspect_mask);
+}
+
+PitchUnswizzlePass::PitchUnswizzlePass(const Device& device_, Scheduler& scheduler_,
+                                       DescriptorPool& descriptor_pool_,
+                                       StagingBufferPool& staging_buffer_pool_,
+                                       ComputePassDescriptorQueue& compute_pass_descriptor_queue_)
+    : ComputePass(device_, scheduler_, descriptor_pool_, ASTC_DESCRIPTOR_SET_BINDINGS,
+                  ASTC_PASS_DESCRIPTOR_UPDATE_TEMPLATE_ENTRY, ASTC_BANK_INFO,
+                  COMPUTE_PUSH_CONSTANT_RANGE<sizeof(PitchUnswizzlePushConstants)>,
+                  PITCH_UNSWIZZLE_COMP_SPV),
+      scheduler{scheduler_}, staging_buffer_pool{staging_buffer_pool_},
+      compute_pass_descriptor_queue{compute_pass_descriptor_queue_} {}
+
+PitchUnswizzlePass::~PitchUnswizzlePass() = default;
+
+void PitchUnswizzlePass::Unswizzle(Image& image, const StagingBufferRef& map,
+                                   std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    const u32 bytes_per_block = VideoCore::Surface::BytesPerBlock(image.info.format);
+    ASSERT(std::has_single_bit(bytes_per_block));
+    scheduler.RequestOutsideRenderPassOperationContext();
+    const VkImageAspectFlags aspect_mask = image.AspectMask();
+    const VkImage vk_image = image.Handle();
+    RecordUnswizzleBeginBarrier(scheduler, *pipeline, vk_image, aspect_mask,
+                                image.ExchangeInitialization());
+    for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
+        const size_t input_offset = swizzle.buffer_offset + map.offset;
+        const u32 num_dispatches_x = Common::DivCeil(swizzle.num_tiles.width, 32U);
+        const u32 num_dispatches_y = Common::DivCeil(swizzle.num_tiles.height, 8U);
+
+        compute_pass_descriptor_queue.Acquire(scheduler, 2);
+        compute_pass_descriptor_queue.AddBuffer(map.buffer, input_offset,
+                                                image.guest_size_bytes - swizzle.buffer_offset);
+        compute_pass_descriptor_queue.AddImage(image.StorageImageView(swizzle.level));
+        const void* const descriptor_data{compute_pass_descriptor_queue.UpdateData()};
+
+        const PitchUnswizzlePushConstants params{
+            .origin = {0, 0},
+            .destination = {0, 0},
+            .bytes_per_block_log2 = static_cast<u32>(std::countr_zero(bytes_per_block)),
+            .pitch = image.info.pitch,
+        };
+        scheduler.Record([this, num_dispatches_x, num_dispatches_y, params,
+                          descriptor_data](vk::CommandBuffer cmdbuf) {
+            const VkDescriptorSet set = descriptor_allocator.Commit();
+            device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
+            cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
+            cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, params);
+            cmdbuf.Dispatch(num_dispatches_x, num_dispatches_y, 1);
         });
     }
     RecordUnswizzleEndBarrier(scheduler, vk_image, aspect_mask);
