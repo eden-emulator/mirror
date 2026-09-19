@@ -1042,11 +1042,6 @@ void BufferCache<P>::ResolveMultiRangeStorage(Binding& binding,
             return;
         }
         const VirtualSegments segments = *found;
-        for (const VirtualSegment& segment : segments) {
-            if (memory_tracker.IsRegionGpuModified(segment.device_addr, segment.size)) {
-                return;
-            }
-        }
         const u32 first = static_cast<u32>(pool.size());
         const bool prefer_sparse = runtime.PrefersSparseSources();
         for (const VirtualSegment& segment : segments) {
