@@ -195,7 +195,8 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
 }
 
 [[nodiscard]] bool WillUseAcceleratedUnswizzle(const Device& device, const ImageInfo& info) {
-    if (info.type != ImageType::e2D || info.num_samples > 1) {
+    const bool supported_type = info.type == ImageType::e2D || info.type == ImageType::e3D;
+    if (!supported_type || info.num_samples > 1) {
         return false;
     }
     if (!device.IsKhrImageFormatListSupported()) {
@@ -313,7 +314,12 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
 }
 
 [[nodiscard]] vk::ImageView MakeStorageView(const vk::Device& device, u32 level, VkImage image,
-                                            VkFormat format) {
+                                            VkFormat format,
+                                            VkImageViewType view_type) {
+    u32 layer_count = VK_REMAINING_ARRAY_LAYERS;
+    if (view_type == VK_IMAGE_VIEW_TYPE_3D) {
+        layer_count = 1;
+    }
     static constexpr VkImageViewUsageCreateInfo storage_image_view_usage_create_info{
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO,
         .pNext = nullptr,
@@ -324,7 +330,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
         .pNext = &storage_image_view_usage_create_info,
         .flags = 0,
         .image = image,
-        .viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+        .viewType = view_type,
         .format = format,
         .components{
             .r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -337,7 +343,7 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
             .baseMipLevel = level,
             .levelCount = 1,
             .baseArrayLayer = 0,
-            .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            .layerCount = layer_count,
         },
     });
 }
@@ -1013,6 +1019,8 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
     if (device.IsKhrImageFormatListSupported() && device.IsStorageBuffer8BitAccessSupported() &&
         device.IsStorageBuffer16BitAccessSupported()) {
         bl_unswizzle_2d_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
+                                     compute_pass_descriptor_queue);
+        bl_unswizzle_3d_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
                                      compute_pass_descriptor_queue);
     }
     if (!device.IsKhrImageFormatListSupported()) {
@@ -2354,13 +2362,17 @@ VkImageView Image::StorageImageView(s32 level) noexcept {
     if (!view) {
         auto format_info =
             MaxwellToVK::SurfaceFormat(runtime->device, FormatType::Optimal, true, info.format);
+        VkImageViewType view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
         if (WillUseAcceleratedAstcDecode(runtime->device, info)) {
             format_info.format = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
         } else if (True(flags & VideoCommon::ImageFlagBits::AcceleratedUpload)) {
             format_info.format = UnswizzleStorageFormat(BytesPerBlock(info.format));
+            if (info.type == ImageType::e3D) {
+                view_type = VK_IMAGE_VIEW_TYPE_3D;
+            }
         }
         view = MakeStorageView(runtime->device.GetLogical(), level, *original_image,
-                               format_info.format);
+                               format_info.format, view_type);
     }
     return *view;
 }
@@ -3166,6 +3178,8 @@ void TextureCacheRuntime::AccelerateImageUpload(
     }
     if (IsPixelFormatASTC(image.info.format)) {
         astc_decoder_pass->Assemble(image, map, swizzles);
+    } else if (image.info.type == ImageType::e3D) {
+        bl_unswizzle_3d_pass->Unswizzle(image, map, swizzles);
     } else {
         bl_unswizzle_2d_pass->Unswizzle(image, map, swizzles);
     }
