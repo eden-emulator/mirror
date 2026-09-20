@@ -9,7 +9,6 @@
 #include "common/logging.h"
 #include "common/uuid.h"
 #include "core/core.h"
-#include "core/file_sys/registered_cache.h"
 #include "core/file_sys/savedata_factory.h"
 #include "core/file_sys/vfs/vfs.h"
 
@@ -62,24 +61,17 @@ SaveDataFactory::SaveDataFactory(Core::System& system_, ProgramId program_id_,
 
 SaveDataFactory::~SaveDataFactory() = default;
 
-std::string SaveDataFactory::GetSaveDataPath(SaveDataSpaceId space, SaveDataType type, u64 title_id, u128 user_id, u64 save_id) const {
-    if (type == SaveDataType::Account || type == SaveDataType::Device) {
-        const auto requested_id = title_id != 0 ? title_id : program_id;
-        const auto parent_id = system.GetContentProvider().GetParentApplicationId(requested_id);
-        title_id = parent_id.value_or(requested_id);
-    }
-    return GetFullPath(program_id, dir, space, type, title_id, user_id, save_id);
-}
-
 VirtualDir SaveDataFactory::Create(SaveDataSpaceId space, const SaveDataAttribute& meta) const {
-    const auto save_directory = GetSaveDataPath(space, meta.type, meta.program_id, meta.user_id, meta.system_save_data_id);
+    const auto save_directory = GetFullPath(program_id, dir, space, meta.type, meta.program_id,
+                                            meta.user_id, meta.system_save_data_id);
 
     return dir->CreateDirectoryRelative(save_directory);
 }
 
 VirtualDir SaveDataFactory::Open(SaveDataSpaceId space, const SaveDataAttribute& meta) const {
 
-    const auto save_directory = GetSaveDataPath(space, meta.type, meta.program_id, meta.user_id, meta.system_save_data_id);
+    const auto save_directory = GetFullPath(program_id, dir, space, meta.type, meta.program_id,
+                                            meta.user_id, meta.system_save_data_id);
 
     auto out = dir->GetDirectoryRelative(save_directory);
 
@@ -162,7 +154,8 @@ std::string SaveDataFactory::GetUserGameSaveDataRoot(u128 user_id, bool future) 
 
 SaveDataSize SaveDataFactory::ReadSaveDataSize(SaveDataType type, u64 title_id,
                                                u128 user_id) const {
-    const auto path = GetSaveDataPath(SaveDataSpaceId::User, type, title_id, user_id, 0);
+    const auto path =
+        GetFullPath(program_id, dir, SaveDataSpaceId::User, type, title_id, user_id, 0);
     const auto relative_dir = GetOrCreateDirectoryRelative(dir, path);
 
     const auto size_file = relative_dir->GetFile(GetSaveDataSizeFileName());
@@ -180,7 +173,8 @@ SaveDataSize SaveDataFactory::ReadSaveDataSize(SaveDataType type, u64 title_id,
 
 void SaveDataFactory::WriteSaveDataSize(SaveDataType type, u64 title_id, u128 user_id,
                                         SaveDataSize new_value) const {
-    const auto path = GetSaveDataPath(SaveDataSpaceId::User, type, title_id, user_id, 0);
+    const auto path =
+        GetFullPath(program_id, dir, SaveDataSpaceId::User, type, title_id, user_id, 0);
     const auto relative_dir = GetOrCreateDirectoryRelative(dir, path);
 
     const auto size_file = relative_dir->CreateFile(GetSaveDataSizeFileName());

@@ -50,7 +50,6 @@ public:
     void SetAutoCreate(bool state);
 
 private:
-    std::string GetSaveDataPath(SaveDataSpaceId space, SaveDataType type, u64 title_id, u128 user_id, u64 save_id) const;
     Core::System& system;
     ProgramId program_id;
     VirtualDir dir;
