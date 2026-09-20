@@ -9,6 +9,7 @@
 
 #include "common/assert.h"
 #include "common/fiber.h"
+#include "common/virtual_buffer.h"
 
 #include <boost/context/detail/fcontext.hpp>
 
