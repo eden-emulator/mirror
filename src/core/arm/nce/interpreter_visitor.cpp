@@ -5,779 +5,387 @@
 // SPDX-FileCopyrightText: Copyright 2023 merryhime <https://mary.rs>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <numeric>
+#include <atomic>
+
 #include "core/arm/nce/interpreter_visitor.h"
 
 namespace Core {
 
 namespace {
-// Prefetch tuning parameters
-[[maybe_unused]] constexpr size_t CACHE_LINE_SIZE = 64;
-[[maybe_unused]] constexpr size_t PREFETCH_STRIDE = 128; // 2 cache lines ahead
-[[maybe_unused]] constexpr size_t SIMD_PREFETCH_THRESHOLD = 32; // Bytes
+
+u64 SignExtend(u64 value, size_t bitsize, size_t regsize) {
+    const u64 mask = u64{1} << (bitsize - 1);
+    const u64 extended = ((value & ((u64{1} << bitsize) - 1)) ^ mask) - mask;
+    if (regsize == 64) {
+        return extended;
+    }
+    return static_cast<u32>(extended);
+}
+
+u128 VectorGetElement(u128 value, size_t bitsize) {
+    if (bitsize >= 128) {
+        return value;
+    }
+    if (bitsize >= 64) {
+        return {value[0], 0};
+    }
+    return {value[0] & ((u64{1} << bitsize) - 1), 0};
+}
+
 } // namespace
 
-template <u32 BitSize>
-u64 SignExtendToLong(u64 value) {
-    u64 mask = 1ULL << (BitSize - 1);
-    value &= (1ULL << BitSize) - 1;
-    return (value ^ mask) - mask;
-}
-
-static u64 SignExtendToLong(u64 value, u64 bitsize) {
-    switch (bitsize) {
-    case 8:
-        return SignExtendToLong<8>(value);
-    case 16:
-        return SignExtendToLong<16>(value);
-    case 32:
-        return SignExtendToLong<32>(value);
-    default:
-        return value;
-    }
-}
-
-template <u64 BitSize>
-u32 SignExtendToWord(u32 value) {
-    u32 mask = 1ULL << (BitSize - 1);
-    value &= (1ULL << BitSize) - 1;
-    return (value ^ mask) - mask;
-}
-
-static u32 SignExtendToWord(u32 value, u64 bitsize) {
-    switch (bitsize) {
-    case 8:
-        return SignExtendToWord<8>(value);
-    case 16:
-        return SignExtendToWord<16>(value);
-    default:
-        return value;
-    }
-}
-
-static u64 SignExtend(u64 value, u64 bitsize, u64 regsize) {
-    if (regsize == 64) {
-        return SignExtendToLong(value, bitsize);
-    } else {
-        return SignExtendToWord(static_cast<u32>(value), bitsize);
-    }
-}
-
-static u128 VectorGetElement(u128 value, u64 bitsize) {
-    switch (bitsize) {
-    case 8:
-        return {value[0] & ((1ULL << 8) - 1), 0};
-    case 16:
-        return {value[0] & ((1ULL << 16) - 1), 0};
-    case 32:
-        return {value[0] & ((1ULL << 32) - 1), 0};
-    case 64:
-        return {value[0], 0};
-    default:
-        return value;
-    }
-}
-
-u64 InterpreterVisitor::ExtendReg(size_t bitsize, Reg reg, Imm<3> option, u8 shift) {
-    ASSERT(shift <= 4);
-    ASSERT(bitsize == 32 || bitsize == 64);
+u64 InterpreterVisitor::ExtendReg(Reg reg, Imm<3> option, u8 shift) {
+    const size_t len = size_t{8} << option.Bits<0, 1, size_t>();
     u64 val = this->GetReg(reg);
-    size_t len;
-    u64 extended;
-    bool signed_extend;
-
-    switch (option.ZeroExtend()) {
-    case 0b000: { // UXTB
-        val &= ((1ULL << 8) - 1);
-        len = 8;
-        signed_extend = false;
-        break;
+    if (len < 64) {
+        val &= (u64{1} << len) - 1;
+        if (option.Bit<2>()) {
+            val = SignExtend(val, len, 64);
+        }
     }
-    case 0b001: { // UXTH
-        val &= ((1ULL << 16) - 1);
-        len = 16;
-        signed_extend = false;
-        break;
-    }
-    case 0b010: { // UXTW
-        val &= ((1ULL << 32) - 1);
-        len = 32;
-        signed_extend = false;
-        break;
-    }
-    case 0b011: { // UXTX
-        len = 64;
-        signed_extend = false;
-        break;
-    }
-    case 0b100: { // SXTB
-        val &= ((1ULL << 8) - 1);
-        len = 8;
-        signed_extend = true;
-        break;
-    }
-    case 0b101: { // SXTH
-        val &= ((1ULL << 16) - 1);
-        len = 16;
-        signed_extend = true;
-        break;
-    }
-    case 0b110: { // SXTW
-        val &= ((1ULL << 32) - 1);
-        len = 32;
-        signed_extend = true;
-        break;
-    }
-    case 0b111: { // SXTX
-        len = 64;
-        signed_extend = true;
-        break;
-    }
-    default:
-        UNREACHABLE();
-    }
-
-    if (len < bitsize && signed_extend) {
-        extended = SignExtend(val, len, bitsize);
-    } else {
-        extended = val;
-    }
-
-    return extended << shift;
+    return val << shift;
 }
 
-u128 InterpreterVisitor::GetVec(Vec v) {
-    return m_fpsimd_regs[static_cast<u32>(v)];
-}
-
-u64 InterpreterVisitor::GetReg(Reg r) {
-    return m_regs[static_cast<u32>(r)];
-}
-
-u64 InterpreterVisitor::GetSp() {
-    return m_sp;
-}
-
-u64 InterpreterVisitor::GetPc() {
-    return m_pc;
-}
-
-void InterpreterVisitor::SetVec(Vec v, u128 value) {
-    m_fpsimd_regs[static_cast<u32>(v)] = value;
-}
-
-void InterpreterVisitor::SetReg(Reg r, u64 value) {
-    m_regs[static_cast<u32>(r)] = value;
-}
-
-void InterpreterVisitor::SetSp(u64 value) {
-    m_sp = value;
-}
-
-bool InterpreterVisitor::Ordered(size_t size, bool L, bool o0, Reg Rn, Reg Rt) {
-    const auto memop = L ? MemOp::Load : MemOp::Store;
-    const size_t elsize = 8 << size;
-    const size_t datasize = elsize;
-    const size_t dbytes = datasize / 8;
-
-    u64 address = (Rn == Reg::SP) ? this->GetSp() : this->GetReg(Rn);
-    switch (memop) {
-    case MemOp::Store: {
-        std::atomic_thread_fence(std::memory_order_seq_cst);
-        u64 value = this->GetReg(Rt);
-        m_memory.WriteBlock(address, &value, dbytes);
-        std::atomic_thread_fence(std::memory_order_seq_cst);
-        break;
-    }
-    case MemOp::Load: {
+bool InterpreterVisitor::Ordered(size_t size, bool load, Reg Rn, Reg Rt) {
+    const size_t dbytes = size_t{1} << size;
+    const u64 address = this->GetRegSp(Rn);
+    if (load) {
         u64 value = 0;
         m_memory.ReadBlock(address, &value, dbytes);
         this->SetReg(Rt, value);
         std::atomic_thread_fence(std::memory_order_seq_cst);
-        break;
+        return true;
     }
-    default:
-        UNREACHABLE();
-    }
+    std::atomic_thread_fence(std::memory_order_seq_cst);
+    u64 value = this->GetReg(Rt);
+    m_memory.WriteBlock(address, &value, dbytes);
+    std::atomic_thread_fence(std::memory_order_seq_cst);
     return true;
 }
 
-bool InterpreterVisitor::STLLR(Imm<2> sz, Reg Rn, Reg Rt) {
-    const size_t size = sz.ZeroExtend<size_t>();
-    const bool L = 0;
-    const bool o0 = 0;
-    return this->Ordered(size, L, o0, Rn, Rt);
-}
-
-bool InterpreterVisitor::STLR(Imm<2> sz, Reg Rn, Reg Rt) {
-    const size_t size = sz.ZeroExtend<size_t>();
-    const bool L = 0;
-    const bool o0 = 1;
-    return this->Ordered(size, L, o0, Rn, Rt);
-}
-
-bool InterpreterVisitor::LDLAR(Imm<2> sz, Reg Rn, Reg Rt) {
-    const size_t size = sz.ZeroExtend<size_t>();
-    const bool L = 1;
-    const bool o0 = 0;
-    return this->Ordered(size, L, o0, Rn, Rt);
-}
-
-bool InterpreterVisitor::LDAR(Imm<2> sz, Reg Rn, Reg Rt) {
-    const size_t size = sz.ZeroExtend<size_t>();
-    const bool L = 1;
-    const bool o0 = 1;
-    return this->Ordered(size, L, o0, Rn, Rt);
-}
-
-bool InterpreterVisitor::LDR_lit_gen(bool opc_0, Imm<19> imm19, Reg Rt) {
-    const size_t size = opc_0 == 0 ? 4 : 8;
-    const s64 offset = Dynarmic::concatenate(imm19, Imm<2>{0}).SignExtend<s64>();
-    const u64 address = this->GetPc() + offset;
-
+bool InterpreterVisitor::LoadLiteral(bool wide, Imm<19> imm19, Reg Rt) {
+    size_t size = 4;
+    if (wide) {
+        size = 8;
+    }
     u64 data = 0;
-    m_memory.ReadBlock(address, &data, size);
-
+    m_memory.ReadBlock(m_pc + (imm19.SignExtend<u64>() << 2), &data, size);
     this->SetReg(Rt, data);
     return true;
 }
 
-bool InterpreterVisitor::LDR_lit_fpsimd(Imm<2> opc, Imm<19> imm19, Vec Vt) {
+bool InterpreterVisitor::LoadLiteralSimd(Imm<2> opc, Imm<19> imm19, Vec Vt) {
     if (opc == 0b11) {
-        // Unallocated encoding
         return false;
     }
-
-    // Size in bytes
-    const u64 size = 4 << opc.ZeroExtend();
-    const u64 offset = imm19.SignExtend<u64>() << 2;
-    const u64 address = this->GetPc() + offset;
-
     u128 data{};
-    m_memory.ReadBlock(address, &data, size);
+    m_memory.ReadBlock(m_pc + (imm19.SignExtend<u64>() << 2), &data,
+                       size_t{4} << opc.ZeroExtend<size_t>());
     this->SetVec(Vt, data);
     return true;
 }
 
-bool InterpreterVisitor::STP_LDP_gen(Imm<2> opc, bool not_postindex, bool wback, Imm<1> L,
-                                     Imm<7> imm7, Reg Rt2, Reg Rn, Reg Rt) {
-    if ((L == 0 && opc.Bit<0>() == 1) || opc == 0b11) {
-        // Unallocated encoding
+bool InterpreterVisitor::Pair(Imm<2> opc, bool not_postindex, bool wback, bool load, Imm<7> imm7,
+                              Reg Rt2, Reg Rn, Reg Rt) {
+    if (!not_postindex && !wback) {
+        return false;
+    }
+    const bool signed_ = opc.Bit<0>();
+    if (opc == 0b11 || (!load && signed_)) {
+        return false;
+    }
+    if (load && (Rt == Rt2 || (wback && (Rt == Rn || Rt2 == Rn) && Rn != Reg::R31))) {
+        return false;
+    }
+    if (!load && wback && (Rt == Rn || Rt2 == Rn) && Rn != Reg::R31) {
         return false;
     }
 
-    const auto memop = L == 1 ? MemOp::Load : MemOp::Store;
-    if (memop == MemOp::Load && wback && (Rt == Rn || Rt2 == Rn) && Rn != Reg::R31) {
-        // Unpredictable instruction
-        return false;
-    }
-    if (memop == MemOp::Store && wback && (Rt == Rn || Rt2 == Rn) && Rn != Reg::R31) {
-        // Unpredictable instruction
-        return false;
-    }
-    if (memop == MemOp::Load && Rt == Rt2) {
-        // Unpredictable instruction
-        return false;
-    }
-
-    u64 address;
-    if (Rn == Reg::SP) {
-        address = this->GetSp();
-    } else {
-        address = this->GetReg(Rn);
-    }
-
-    const bool postindex = !not_postindex;
-    const bool signed_ = opc.Bit<0>() != 0;
     const size_t scale = 2 + opc.Bit<1>();
-    const size_t datasize = 8 << scale;
+    const size_t dbytes = size_t{1} << scale;
     const u64 offset = imm7.SignExtend<u64>() << scale;
-
-    if (!postindex) {
+    u64 address = this->GetRegSp(Rn);
+    if (not_postindex) {
         address += offset;
     }
-
-    const size_t dbytes = datasize / 8;
-    switch (memop) {
-    case MemOp::Store: {
-        u64 data1 = this->GetReg(Rt);
-        u64 data2 = this->GetReg(Rt2);
-        m_memory.WriteBlock(address, &data1, dbytes);
-        m_memory.WriteBlock(address + dbytes, &data2, dbytes);
-        break;
-    }
-    case MemOp::Load: {
+    if (load) {
         u64 data1 = 0, data2 = 0;
         m_memory.ReadBlock(address, &data1, dbytes);
         m_memory.ReadBlock(address + dbytes, &data2, dbytes);
         if (signed_) {
-            this->SetReg(Rt, SignExtend(data1, datasize, 64));
-            this->SetReg(Rt2, SignExtend(data2, datasize, 64));
-        } else {
-            this->SetReg(Rt, data1);
-            this->SetReg(Rt2, data2);
+            data1 = SignExtend(data1, dbytes * 8, 64);
+            data2 = SignExtend(data2, dbytes * 8, 64);
         }
-        break;
+        this->SetReg(Rt, data1);
+        this->SetReg(Rt2, data2);
+    } else {
+        u64 data1 = this->GetReg(Rt);
+        u64 data2 = this->GetReg(Rt2);
+        m_memory.WriteBlock(address, &data1, dbytes);
+        m_memory.WriteBlock(address + dbytes, &data2, dbytes);
     }
-    default:
-        UNREACHABLE();
-    }
-
     if (wback) {
-        if (postindex) {
+        if (!not_postindex) {
             address += offset;
         }
-
-        if (Rn == Reg::SP) {
-            this->SetSp(address);
-        } else {
-            this->SetReg(Rn, address);
-        }
+        this->SetRegSp(Rn, address);
     }
-
     return true;
 }
 
-bool InterpreterVisitor::STP_LDP_fpsimd(Imm<2> opc, bool not_postindex, bool wback, Imm<1> L,
-                                        Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt) {
-    if (opc == 0b11) {
-        // Unallocated encoding
+bool InterpreterVisitor::PairSimd(Imm<2> opc, bool not_postindex, bool wback, bool load,
+                                  Imm<7> imm7, Vec Vt2, Reg Rn, Vec Vt) {
+    if (!not_postindex && !wback) {
+        return false;
+    }
+    if (opc == 0b11 || (load && Vt == Vt2)) {
         return false;
     }
 
-    const auto memop = L == 1 ? MemOp::Load : MemOp::Store;
-    if (memop == MemOp::Load && Vt == Vt2) {
-        // Unpredictable instruction
-        return false;
-    }
-
-    u64 address;
-    if (Rn == Reg::SP) {
-        address = this->GetSp();
-    } else {
-        address = this->GetReg(Rn);
-    }
-
-    const bool postindex = !not_postindex;
     const size_t scale = 2 + opc.ZeroExtend<size_t>();
-    const size_t datasize = 8 << scale;
+    const size_t dbytes = size_t{1} << scale;
     const u64 offset = imm7.SignExtend<u64>() << scale;
-    const size_t dbytes = datasize / 8;
-
-    if (!postindex) {
+    u64 address = this->GetRegSp(Rn);
+    if (not_postindex) {
         address += offset;
     }
-
-    switch (memop) {
-    case MemOp::Store: {
-        u128 data1 = VectorGetElement(this->GetVec(Vt), datasize);
-        u128 data2 = VectorGetElement(this->GetVec(Vt2), datasize);
-        m_memory.WriteBlock(address, &data1, dbytes);
-        m_memory.WriteBlock(address + dbytes, &data2, dbytes);
-        break;
-    }
-    case MemOp::Load: {
+    if (load) {
         u128 data1{}, data2{};
         m_memory.ReadBlock(address, &data1, dbytes);
         m_memory.ReadBlock(address + dbytes, &data2, dbytes);
         this->SetVec(Vt, data1);
         this->SetVec(Vt2, data2);
-        break;
+    } else {
+        u128 data1 = VectorGetElement(this->GetVec(Vt), dbytes * 8);
+        u128 data2 = VectorGetElement(this->GetVec(Vt2), dbytes * 8);
+        m_memory.WriteBlock(address, &data1, dbytes);
+        m_memory.WriteBlock(address + dbytes, &data2, dbytes);
     }
-    default:
-        UNREACHABLE();
+    if (wback) {
+        if (!not_postindex) {
+            address += offset;
+        }
+        this->SetRegSp(Rn, address);
+    }
+    return true;
+}
+
+bool InterpreterVisitor::RegisterImmediate(bool wback, bool postindex, u64 offset, Imm<2> size,
+                                           Imm<2> opc, Reg Rn, Reg Rt) {
+    const bool signed_ = opc.Bit<1>();
+    if (signed_ && (size == 0b11 || (size == 0b10 && opc.Bit<0>()))) {
+        return false;
     }
 
+    const size_t datasize = size_t{8} << size.ZeroExtend<size_t>();
+    size_t regsize = 32;
+    if (size == 0b11 || (signed_ && !opc.Bit<0>())) {
+        regsize = 64;
+    }
+    u64 address = this->GetRegSp(Rn);
+    if (!postindex) {
+        address += offset;
+    }
+    if (signed_ || opc.Bit<0>()) {
+        u64 data = 0;
+        m_memory.ReadBlock(address, &data, datasize / 8);
+        if (signed_) {
+            data = SignExtend(data, datasize, regsize);
+        }
+        this->SetReg(Rt, data);
+    } else {
+        u64 data = this->GetReg(Rt);
+        m_memory.WriteBlock(address, &data, datasize / 8);
+    }
     if (wback) {
         if (postindex) {
             address += offset;
         }
-
-        if (Rn == Reg::SP) {
-            this->SetSp(address);
-        } else {
-            this->SetReg(Rn, address);
-        }
+        this->SetRegSp(Rn, address);
     }
-
     return true;
 }
 
-bool InterpreterVisitor::RegisterImmediate(bool wback, bool postindex, size_t scale, u64 offset,
-                                           Imm<2> size, Imm<2> opc, Reg Rn, Reg Rt) {
-    MemOp memop;
-    bool signed_ = false;
-    size_t regsize = 0;
-    const size_t datasize = 8 << scale;
-
-    if (opc.Bit<1>() == 0) {
-        memop = opc.Bit<0>() ? MemOp::Load : MemOp::Store;
-        regsize = size == 0b11 ? 64 : 32;
-    } else if (size == 0b11) {
-        memop = MemOp::Prefetch;
-        ASSERT(!opc.Bit<0>());
-    } else {
-        memop = MemOp::Load;
-        ASSERT(!(size == 0b10 && opc.Bit<0>() == 1));
-        regsize = opc.Bit<0>() ? 32 : 64;
-        signed_ = true;
+bool InterpreterVisitor::RegisterOffset(bool S, Imm<2> size, Imm<1> opc_1, Imm<1> opc_0, Reg Rm,
+                                        Imm<3> option, Reg Rn, Reg Rt) {
+    if (!option.Bit<1>()) {
+        return false;
+    }
+    const bool high = opc_1 == 1;
+    const bool wide = size == 0b11;
+    if (high && opc_0 == 1 && (wide || size == 0b10)) {
+        return false;
+    }
+    if (high && wide) {
+        return true;
     }
 
-    u64 address = (Rn == Reg::SP) ? this->GetSp() : this->GetReg(Rn);
-    if (!postindex)
-        address += offset;
-
-    switch (memop) {
-    case MemOp::Store: {
-        u64 data = this->GetReg(Rt);
-        m_memory.WriteBlock(address, &data, datasize / 8);
-        break;
+    const size_t scale = size.ZeroExtend<size_t>();
+    const size_t datasize = size_t{8} << scale;
+    size_t regsize = 32;
+    if (wide || (high && opc_0 == 0)) {
+        regsize = 64;
     }
-    case MemOp::Load: {
+    u8 shift = 0;
+    if (S) {
+        shift = static_cast<u8>(scale);
+    }
+    const u64 address = this->GetRegSp(Rn) + this->ExtendReg(Rm, option, shift);
+    if (high || opc_0 == 1) {
         u64 data = 0;
         m_memory.ReadBlock(address, &data, datasize / 8);
-        if (signed_) {
-            this->SetReg(Rt, SignExtend(data, datasize, regsize));
-        } else {
-            this->SetReg(Rt, data);
+        if (high) {
+            data = SignExtend(data, datasize, regsize);
         }
-        break;
+        this->SetReg(Rt, data);
+        return true;
     }
-    case MemOp::Prefetch:
-        break;
-    }
-
-    if (wback) {
-        if (postindex)
-            address += offset;
-        if (Rn == Reg::SP)
-            this->SetSp(address);
-        else
-            this->SetReg(Rn, address);
-    }
+    u64 data = this->GetReg(Rt);
+    m_memory.WriteBlock(address, &data, datasize / 8);
     return true;
 }
 
-bool InterpreterVisitor::STRx_LDRx_imm_1(Imm<2> size, Imm<2> opc, Imm<9> imm9, bool not_postindex,
-                                         Reg Rn, Reg Rt) {
-    const bool wback = true;
-    const bool postindex = !not_postindex;
-    const size_t scale = size.ZeroExtend<size_t>();
-    const u64 offset = imm9.SignExtend<u64>();
+bool InterpreterVisitor::SimdImmediate(bool wback, bool postindex, size_t scale, u64 offset,
+                                       bool load, Reg Rn, Vec Vt) {
+    if (scale > 4) {
+        return false;
+    }
 
-    return this->RegisterImmediate(wback, postindex, scale, offset, size, opc, Rn, Rt);
-}
-
-bool InterpreterVisitor::STRx_LDRx_imm_2(Imm<2> size, Imm<2> opc, Imm<12> imm12, Reg Rn, Reg Rt) {
-    const bool wback = false;
-    const bool postindex = false;
-    const size_t scale = size.ZeroExtend<size_t>();
-    const u64 offset = imm12.ZeroExtend<u64>() << scale;
-
-    return this->RegisterImmediate(wback, postindex, scale, offset, size, opc, Rn, Rt);
-}
-
-bool InterpreterVisitor::STURx_LDURx(Imm<2> size, Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt) {
-    const bool wback = false;
-    const bool postindex = false;
-    const size_t scale = size.ZeroExtend<size_t>();
-    const u64 offset = imm9.SignExtend<u64>();
-
-    return this->RegisterImmediate(wback, postindex, scale, offset, size, opc, Rn, Rt);
-}
-
-bool InterpreterVisitor::SIMDImmediate(bool wback, bool postindex, size_t scale, u64 offset,
-                                       MemOp memop, Reg Rn, Vec Vt) {
-    const size_t datasize = 8 << scale;
-    u64 address = (Rn == Reg::SP) ? this->GetSp() : this->GetReg(Rn);
-    if (!postindex)
+    const size_t dbytes = size_t{1} << scale;
+    u64 address = this->GetRegSp(Rn);
+    if (!postindex) {
         address += offset;
-
-    switch (memop) {
-    case MemOp::Store: {
-        u128 data = VectorGetElement(this->GetVec(Vt), datasize);
-        m_memory.WriteBlock(address, &data, datasize / 8);
-        break;
     }
-    case MemOp::Load: {
+    if (load) {
         u128 data{};
-        m_memory.ReadBlock(address, &data, datasize / 8);
+        m_memory.ReadBlock(address, &data, dbytes);
         this->SetVec(Vt, data);
-        break;
+    } else {
+        u128 data = VectorGetElement(this->GetVec(Vt), dbytes * 8);
+        m_memory.WriteBlock(address, &data, dbytes);
     }
-    default:
-        UNREACHABLE();
-    }
-
     if (wback) {
-        if (postindex)
+        if (postindex) {
             address += offset;
-        if (Rn == Reg::SP)
-            this->SetSp(address);
-        else
-            this->SetReg(Rn, address);
+        }
+        this->SetRegSp(Rn, address);
     }
     return true;
 }
 
-bool InterpreterVisitor::STR_imm_fpsimd_1(Imm<2> size, Imm<1> opc_1, Imm<9> imm9,
-                                          bool not_postindex, Reg Rn, Vec Vt) {
-    const size_t scale = Dynarmic::concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) {
-        // Unallocated encoding
+bool InterpreterVisitor::SimdOffset(size_t scale, bool S, bool load, Reg Rm, Imm<3> option, Reg Rn,
+                                    Vec Vt) {
+    if (scale > 4 || !option.Bit<1>()) {
         return false;
     }
 
-    const bool wback = true;
-    const bool postindex = !not_postindex;
-    const u64 offset = imm9.SignExtend<u64>();
-
-    return this->SIMDImmediate(wback, postindex, scale, offset, MemOp::Store, Rn, Vt);
-}
-
-bool InterpreterVisitor::STR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm12, Reg Rn,
-                                          Vec Vt) {
-    const size_t scale = Dynarmic::concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) {
-        // Unallocated encoding
-        return false;
+    const size_t dbytes = size_t{1} << scale;
+    u8 shift = 0;
+    if (S) {
+        shift = static_cast<u8>(scale);
     }
-
-    const bool wback = false;
-    const bool postindex = false;
-    const u64 offset = imm12.ZeroExtend<u64>() << scale;
-
-    return this->SIMDImmediate(wback, postindex, scale, offset, MemOp::Store, Rn, Vt);
-}
-
-bool InterpreterVisitor::LDR_imm_fpsimd_1(Imm<2> size, Imm<1> opc_1, Imm<9> imm9,
-                                          bool not_postindex, Reg Rn, Vec Vt) {
-    const size_t scale = Dynarmic::concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) {
-        // Unallocated encoding
-        return false;
-    }
-
-    const bool wback = true;
-    const bool postindex = !not_postindex;
-    const u64 offset = imm9.SignExtend<u64>();
-
-    return this->SIMDImmediate(wback, postindex, scale, offset, MemOp::Load, Rn, Vt);
-}
-
-bool InterpreterVisitor::LDR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm12, Reg Rn,
-                                          Vec Vt) {
-    const size_t scale = Dynarmic::concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) {
-        // Unallocated encoding
-        return false;
-    }
-
-    const bool wback = false;
-    const bool postindex = false;
-    const u64 offset = imm12.ZeroExtend<u64>() << scale;
-
-    return this->SIMDImmediate(wback, postindex, scale, offset, MemOp::Load, Rn, Vt);
-}
-
-bool InterpreterVisitor::STUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg Rn, Vec Vt) {
-    const size_t scale = Dynarmic::concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) {
-        // Unallocated encoding
-        return false;
-    }
-
-    const bool wback = false;
-    const bool postindex = false;
-    const u64 offset = imm9.SignExtend<u64>();
-
-    return this->SIMDImmediate(wback, postindex, scale, offset, MemOp::Store, Rn, Vt);
-}
-
-bool InterpreterVisitor::LDUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg Rn, Vec Vt) {
-    const size_t scale = Dynarmic::concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) {
-        // Unallocated encoding
-        return false;
-    }
-
-    const bool wback = false;
-    const bool postindex = false;
-    const u64 offset = imm9.SignExtend<u64>();
-
-    return this->SIMDImmediate(wback, postindex, scale, offset, MemOp::Load, Rn, Vt);
-}
-
-bool InterpreterVisitor::RegisterOffset(size_t scale, u8 shift, Imm<2> size, Imm<1> opc_1,
-                                        Imm<1> opc_0, Reg Rm, Imm<3> option, Reg Rn, Reg Rt) {
-    MemOp memop;
-    size_t regsize = 64;
-    bool signed_ = false;
-
-    if (opc_1 == 0) {
-        memop = opc_0 == 1 ? MemOp::Load : MemOp::Store;
-        regsize = size == 0b11 ? 64 : 32;
-        signed_ = false;
-    } else if (size == 0b11) {
-        memop = MemOp::Prefetch;
-        if (opc_0 == 1) {
-            // Unallocated encoding
-            return false;
-        }
-    } else {
-        memop = MemOp::Load;
-        if (size == 0b10 && opc_0 == 1) {
-            // Unallocated encoding
-            return false;
-        }
-        regsize = opc_0 == 1 ? 32 : 64;
-        signed_ = true;
-    }
-
-    const size_t datasize = 8 << scale;
-
-    // Operation
-    const u64 offset = this->ExtendReg(64, Rm, option, shift);
-
-    u64 address;
-    if (Rn == Reg::SP) {
-        address = this->GetSp();
-    } else {
-        address = this->GetReg(Rn);
-    }
-    address += offset;
-
-    switch (memop) {
-    case MemOp::Store: {
-        u64 data = this->GetReg(Rt);
-        m_memory.WriteBlock(address, &data, datasize / 8);
-        break;
-    }
-    case MemOp::Load: {
-        u64 data = 0;
-        m_memory.ReadBlock(address, &data, datasize / 8);
-        if (signed_) {
-            this->SetReg(Rt, SignExtend(data, datasize, regsize));
-        } else {
-            this->SetReg(Rt, data);
-        }
-        break;
-    }
-    case MemOp::Prefetch:
-        break;
-    }
-
-    return true;
-}
-
-bool InterpreterVisitor::STRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn,
-                                  Reg Rt) {
-    const Imm<1> opc_0{0};
-    const size_t scale = size.ZeroExtend<size_t>();
-    const u8 shift = S ? static_cast<u8>(scale) : 0;
-    if (!option.Bit<1>()) {
-        // Unallocated encoding
-        return false;
-    }
-    return this->RegisterOffset(scale, shift, size, opc_1, opc_0, Rm, option, Rn, Rt);
-}
-
-bool InterpreterVisitor::LDRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn,
-                                  Reg Rt) {
-    const Imm<1> opc_0{1};
-    const size_t scale = size.ZeroExtend<size_t>();
-    const u8 shift = S ? static_cast<u8>(scale) : 0;
-    if (!option.Bit<1>()) {
-        // Unallocated encoding
-        return false;
-    }
-    return this->RegisterOffset(scale, shift, size, opc_1, opc_0, Rm, option, Rn, Rt);
-}
-
-bool InterpreterVisitor::SIMDOffset(size_t scale, u8 shift, Imm<1> opc_0, Reg Rm, Imm<3> option,
-                                    Reg Rn, Vec Vt) {
-    const auto memop = opc_0 == 1 ? MemOp::Load : MemOp::Store;
-    const size_t datasize = 8 << scale;
-
-    // Operation
-    const u64 offset = this->ExtendReg(64, Rm, option, shift);
-
-    u64 address;
-    if (Rn == Reg::SP) {
-        address = this->GetSp();
-    } else {
-        address = this->GetReg(Rn);
-    }
-    address += offset;
-
-    switch (memop) {
-    case MemOp::Store: {
-        u128 data = VectorGetElement(this->GetVec(Vt), datasize);
-        m_memory.WriteBlock(address, &data, datasize / 8);
-        break;
-    }
-    case MemOp::Load: {
+    const u64 address = this->GetRegSp(Rn) + this->ExtendReg(Rm, option, shift);
+    if (load) {
         u128 data{};
-        m_memory.ReadBlock(address, &data, datasize / 8);
+        m_memory.ReadBlock(address, &data, dbytes);
         this->SetVec(Vt, data);
-        break;
+        return true;
     }
-    default:
-        UNREACHABLE();
-    }
-
+    u128 data = VectorGetElement(this->GetVec(Vt), dbytes * 8);
+    m_memory.WriteBlock(address, &data, dbytes);
     return true;
 }
 
-bool InterpreterVisitor::STR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S,
-                                        Reg Rn, Vec Vt) {
-    const Imm<1> opc_0{0};
-    const size_t scale = Dynarmic::concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) {
-        // Unallocated encoding
-        return false;
+bool InterpreterVisitor::Execute(u32 inst) {
+    const Imm<2> size{inst >> 30};
+    const Imm<2> opc{(inst >> 22) & 3};
+    const Imm<3> option{(inst >> 13) & 7};
+    const Imm<19> imm19{(inst >> 5) & 0x7FFFF};
+    const Reg Rn = static_cast<Reg>((inst >> 5) & 31);
+    const Reg Rt = static_cast<Reg>(inst & 31);
+    const Vec Vt = static_cast<Vec>(inst & 31);
+    const bool load = (inst & (1U << 22)) != 0;
+    const bool not_postindex = (inst & (1U << 11)) != 0;
+    const bool scaled = (inst & (1U << 12)) != 0;
+    const size_t vscale = ((inst >> 21) & 4) | (inst >> 30);
+    const u64 imm9 = Imm<9>{(inst >> 12) & 0x1FF}.SignExtend<u64>();
+
+    switch ((inst >> 24) & 0x3F) {
+    case 0b001000:
+        if ((inst & 0x00BF7C00) != 0x009F7C00) {
+            return false;
+        }
+        return this->Ordered(size.ZeroExtend<size_t>(), load, Rn, Rt);
+    case 0b011000:
+        if ((inst & 0x80000000) != 0) {
+            return false;
+        }
+        return this->LoadLiteral((inst & 0x40000000) != 0, imm19, Rt);
+    case 0b011100:
+        return this->LoadLiteralSimd(size, imm19, Vt);
+    case 0b101000:
+    case 0b101001:
+        return this->Pair(size, (inst & (1U << 24)) != 0, (inst & (1U << 23)) != 0, load,
+                          Imm<7>{(inst >> 15) & 0x7F}, static_cast<Reg>((inst >> 10) & 31), Rn, Rt);
+    case 0b101100:
+    case 0b101101:
+        return this->PairSimd(size, (inst & (1U << 24)) != 0, (inst & (1U << 23)) != 0, load,
+                              Imm<7>{(inst >> 15) & 0x7F}, static_cast<Vec>((inst >> 10) & 31), Rn,
+                              Vt);
+    case 0b111000:
+        if ((inst & (1U << 21)) != 0) {
+            if ((inst & 0x00000C00) != 0x00000800) {
+                return false;
+            }
+            return this->RegisterOffset(scaled, size, Imm<1>{(inst >> 23) & 1},
+                                        Imm<1>{(inst >> 22) & 1},
+                                        static_cast<Reg>((inst >> 16) & 31), option, Rn, Rt);
+        }
+        if ((inst & (1U << 10)) != 0) {
+            return this->RegisterImmediate(true, !not_postindex, imm9, size, opc, Rn, Rt);
+        }
+        if (not_postindex) {
+            return false;
+        }
+        return this->RegisterImmediate(false, false, imm9, size, opc, Rn, Rt);
+    case 0b111001:
+        return this->RegisterImmediate(false, false,
+                                       u64{(inst >> 10) & 0xFFF} << size.ZeroExtend<size_t>(), size,
+                                       opc, Rn, Rt);
+    case 0b111100:
+        if ((inst & (1U << 21)) != 0) {
+            if ((inst & 0x00000C00) != 0x00000800) {
+                return false;
+            }
+            return this->SimdOffset(vscale, scaled, load, static_cast<Reg>((inst >> 16) & 31),
+                                    option, Rn, Vt);
+        }
+        if ((inst & (1U << 10)) != 0) {
+            return this->SimdImmediate(true, !not_postindex, vscale, imm9, load, Rn, Vt);
+        }
+        if (not_postindex) {
+            return false;
+        }
+        return this->SimdImmediate(false, false, vscale, imm9, load, Rn, Vt);
+    case 0b111101:
+        return this->SimdImmediate(false, false, vscale, u64{(inst >> 10) & 0xFFF} << vscale, load,
+                                   Rn, Vt);
     }
-    const u8 shift = S ? static_cast<u8>(scale) : 0;
-    if (!option.Bit<1>()) {
-        // Unallocated encoding
-        return false;
-    }
-    return this->SIMDOffset(scale, shift, opc_0, Rm, option, Rn, Vt);
+    return false;
 }
 
-bool InterpreterVisitor::LDR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S,
-                                        Reg Rn, Vec Vt) {
-    const Imm<1> opc_0{1};
-    const size_t scale = Dynarmic::concatenate(opc_1, size).ZeroExtend<size_t>();
-    if (scale > 4) {
-        // Unallocated encoding
-        return false;
-    }
-    const u8 shift = S ? static_cast<u8>(scale) : 0;
-    if (!option.Bit<1>()) {
-        // Unallocated encoding
-        return false;
-    }
-    return this->SIMDOffset(scale, shift, opc_0, Rm, option, Rn, Vt);
-}
-
-std::optional<u64> MatchAndExecuteOneInstruction(Core::Memory::Memory& memory, mcontext_t* context, fpsimd_context* fpsimd_context) {
+std::optional<u64> MatchAndExecuteOneInstruction(Core::Memory::Memory& memory, mcontext_t* context,
+                                                 fpsimd_context* fpsimd_context) {
     std::span<u64, 31> regs(reinterpret_cast<u64*>(context->regs), 31);
     std::span<u128, 32> vregs(reinterpret_cast<u128*>(fpsimd_context->vregs), 32);
     u64& sp = *reinterpret_cast<u64*>(&context->sp);
     const u64& pc = *reinterpret_cast<u64*>(&context->pc);
 
     InterpreterVisitor visitor(memory, regs, vregs, sp, pc);
-    u32 instruction = memory.Read32(pc);
-    bool was_executed = false;
-
-    auto decoder = Dynarmic::A64::Decode<VisitorBase, bool>(visitor, instruction);
-    if (decoder) {
-        was_executed = *decoder;
-    } else {
-        was_executed = false;
+    if (!visitor.Execute(memory.Read32(pc))) {
+        return std::nullopt;
     }
-    return was_executed ? std::optional<u64>(pc + 4) : std::nullopt;
+    return pc + 4;
 }
 
 } // namespace Core
