@@ -170,13 +170,19 @@ template<>
 
     // check for marked bit, use as unmapped if marked
     if (ctx.conf.page_table_marked_bit) {
-        code.bt(page, *ctx.conf.page_table_marked_bit);
-        code.jc(abort, code.T_NEAR);
+        auto const marked_bit = *ctx.conf.page_table_marked_bit;
+        if (s64(s32(1 << marked_bit)) == s64(1 << marked_bit)) {
+            code.test(page, s32(1 << marked_bit));
+            code.jnz(abort, code.T_NEAR);
+        } else {
+            code.bt(page, marked_bit);
+            code.jc(abort, code.T_NEAR);
+        }
     }
     // mask away attributes
     if (ctx.conf.page_table_pointer_mask == 0) {
         code.test(page, page);
-    } else if (std::in_range<s32>(ctx.conf.page_table_pointer_mask)) {
+    } else if (s64(s32(ctx.conf.page_table_pointer_mask)) == s64(ctx.conf.page_table_pointer_mask)) {
         code.and_(page, ctx.conf.page_table_pointer_mask);
     } else {
         code.mov(tmp, ctx.conf.page_table_pointer_mask);

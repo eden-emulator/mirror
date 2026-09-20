@@ -496,31 +496,30 @@ void SetupCapabilities(const Profile& profile, const Info& info, EmitContext& ct
 }
 
 void PatchPhiNodes(IR::Program& program, EmitContext& ctx) {
-            // Flatten all leading PHIs from each block into a vector
-            std::vector<IR::Inst*> phi_instructions;
-            for (IR::Block* block : program.blocks) {
-                for (auto it = block->begin(); it != block->end(); ++it) {
-                    if (it->GetOpcode() != IR::Opcode::Phi)
-                        break;
-                    phi_instructions.push_back(&*it);
-                }
-            }
-
-            if (phi_instructions.empty()) {
-                return; // nothing to patch
-            }
-
-            // Start "before" first PHI; advance on phi_arg == 0
-            size_t phi_index = static_cast<size_t>(-1);
-
-            ctx.PatchDeferredPhi([&](size_t phi_arg, Id parent) -> std::pair<Id, Id> {
-                if (phi_arg == 0) {
-                    ++phi_index;
-                }
-                IR::Inst* phi = phi_instructions[phi_index];
-                return { ctx.Def(phi->Arg(phi_arg)), parent };
-            });
+    // Flatten all leading PHIs from each block into a vector
+    std::vector<IR::Inst*> phi_instructions;
+    for (IR::Block* block : program.blocks) {
+        for (auto it = block->begin(); it != block->end(); ++it) {
+            if (it->GetOpcode() != IR::Opcode::Phi)
+                break;
+            phi_instructions.push_back(&*it);
         }
+    }
+
+    if (phi_instructions.empty()) {
+        return; // nothing to patch
+    }
+
+    // Start "before" first PHI; advance on phi_arg == 0
+    ctx.phi_index = std::size_t(-1);
+    ctx.PatchDeferredPhi([&ctx, phi_insts = std::move(phi_instructions)](size_t phi_arg, Id parent) -> std::pair<Id, Id> {
+        if (phi_arg == 0) {
+            ++ctx.phi_index;
+        }
+        IR::Inst* phi = phi_insts[ctx.phi_index];
+        return { ctx.Def(phi->Arg(phi_arg)), parent };
+    });
+}
 } // Anonymous namespace
 
 std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_info, IR::Program& program, Bindings& bindings) {

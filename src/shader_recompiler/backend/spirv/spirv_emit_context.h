@@ -371,6 +371,7 @@ public:
 
     // Sirit::Id doesn't play nice with *::set<>
     ::Common::unordered_set<u32> non_uniform_ids;
+    size_t phi_index{};
 
     bool uses_nonuniform_sampled_image{};
     bool uses_nonuniform_storage_image{};

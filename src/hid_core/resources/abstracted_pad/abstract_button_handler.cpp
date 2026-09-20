@@ -79,8 +79,10 @@ void NpadAbstractButtonHandler::UpdateAllButtonLifo() {
     Core::HID::NpadIdType npad_id = properties_handler->GetNpadId();
     for (std::size_t i = 0; i < AruidIndexMax; i++) {
         auto* data = applet_resource_holder->applet_resource->GetAruidDataByIndex(i);
-        auto& npad_entry = data->shared_memory_format->npad.npad_entry[NpadIdTypeToIndex(npad_id)];
-        UpdateButtonLifo(npad_entry, data->aruid);
+        if (auto const shfmt = data->shared_memory_format; shfmt) {
+            auto& npad_entry = shfmt->npad.npad_entry[NpadIdTypeToIndex(npad_id)];
+            UpdateButtonLifo(npad_entry, data->aruid);
+        }
     }
 }
 
@@ -88,19 +90,19 @@ void NpadAbstractButtonHandler::UpdateCoreBatteryState() {
     Core::HID::NpadIdType npad_id = properties_handler->GetNpadId();
     for (std::size_t i = 0; i < AruidIndexMax; i++) {
         auto* data = applet_resource_holder->applet_resource->GetAruidDataByIndex(i);
-        auto& npad_entry = data->shared_memory_format->npad.npad_entry[NpadIdTypeToIndex(npad_id)];
-        UpdateButtonLifo(npad_entry, data->aruid);
+        if (auto const shfmt = data->shared_memory_format; shfmt) {
+            auto& npad_entry = shfmt->npad.npad_entry[NpadIdTypeToIndex(npad_id)];
+            UpdateButtonLifo(npad_entry, data->aruid);
+        }
     }
 }
 
 void NpadAbstractButtonHandler::UpdateButtonState(u64 aruid) {
     Core::HID::NpadIdType npad_id = properties_handler->GetNpadId();
-    auto* data = applet_resource_holder->applet_resource->GetAruidData(aruid);
-    if (data == nullptr) {
-        return;
+    if (auto data = applet_resource_holder->applet_resource->GetAruidData(aruid); data) {
+        auto& npad_entry = data->shared_memory_format->npad.npad_entry[NpadIdTypeToIndex(npad_id)];
+        UpdateButtonLifo(npad_entry, aruid);
     }
-    auto& npad_entry = data->shared_memory_format->npad.npad_entry[NpadIdTypeToIndex(npad_id)];
-    UpdateButtonLifo(npad_entry, aruid);
 }
 
 Result NpadAbstractButtonHandler::SetHomeProtection(bool is_enabled, u64 aruid) {
