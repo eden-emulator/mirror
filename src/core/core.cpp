@@ -428,8 +428,8 @@ struct System::Impl {
         core_timing.SyncPause(false);
         Network::CancelPendingSocketOperations();
         kernel.SuspendEmulation(true);
-        kernel.CloseServices();
         kernel.ShutdownCores();
+        kernel.CloseServices();
         services.reset();
         service_manager.reset();
         fs_controller.Reset();
