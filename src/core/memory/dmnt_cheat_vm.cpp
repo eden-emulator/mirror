@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+// gcc14 bug
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 #include "common/assert.h"
 #include "common/scope_exit.h"
 #include "core/memory/dmnt_cheat_types.h"
@@ -223,7 +229,10 @@ DmntCheatVm::Callbacks::~Callbacks() = default;
 bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode& out) {
     // If we've ever seen a decode failure, return false.
     bool valid = decode_success;
-    CheatVmOpcode opcode = {};
+    CheatVmOpcode opcode = {
+        .begin_conditional_block = false,
+        .opcode = {}
+    };
     SCOPE_EXIT {
         decode_success &= valid;
         if (valid) {
@@ -1266,3 +1275,8 @@ void DmntCheatVm::Execute(const CheatProcessMetadata& metadata) {
 }
 
 } // namespace Core::Memory
+
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif

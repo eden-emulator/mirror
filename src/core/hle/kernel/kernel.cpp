@@ -967,12 +967,16 @@ Kernel::KHardwareTimer& KernelCore::HardwareTimer() {
     return *impl->hardware_timer;
 }
 
-KAutoObjectWithListContainer& KernelCore::ObjectListContainer() {
-    return *impl->global_object_list_container;
+KAutoObjectWithListContainer* KernelCore::ObjectListContainer() {
+    if (!impl->global_object_list_container)
+        return nullptr;
+    return std::addressof(*impl->global_object_list_container);
 }
 
-const KAutoObjectWithListContainer& KernelCore::ObjectListContainer() const {
-    return *impl->global_object_list_container;
+const KAutoObjectWithListContainer* KernelCore::ObjectListContainer() const {
+    if (!impl->global_object_list_container)
+        return nullptr;
+    return std::addressof(*impl->global_object_list_container);
 }
 
 void KernelCore::PrepareReschedule(std::size_t id) {
@@ -1001,16 +1005,10 @@ void KernelCore::UnregisterInUseObject(KAutoObject* object) {
 
 void KernelCore::RunServer(std::unique_ptr<Service::ServerManager>&& server_manager) {
     auto* manager = server_manager.get();
-
-    {
+    if (!impl->is_shutting_down) {
         std::scoped_lock lk{impl->server_lock};
-        if (impl->is_shutting_down) {
-            return;
-        }
-
         impl->server_managers.emplace_back(std::move(server_manager));
     }
-
     manager->LoopProcess();
 }
 

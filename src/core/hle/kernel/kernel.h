@@ -175,9 +175,8 @@ public:
     /// Stops execution of 'id' core, in order to reschedule a new thread.
     void PrepareReschedule(std::size_t id);
 
-    KAutoObjectWithListContainer& ObjectListContainer();
-
-    const KAutoObjectWithListContainer& ObjectListContainer() const;
+    KAutoObjectWithListContainer* ObjectListContainer();
+    const KAutoObjectWithListContainer* ObjectListContainer() const;
 
     /// Registers all kernel objects with the global emulation state, this is purely for tracking
     /// leaks after emulation has been shutdown.
