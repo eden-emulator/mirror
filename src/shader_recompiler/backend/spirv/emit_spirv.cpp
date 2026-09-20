@@ -511,12 +511,12 @@ void PatchPhiNodes(IR::Program& program, EmitContext& ctx) {
     }
 
     // Start "before" first PHI; advance on phi_arg == 0
-    ctx.phi_index = std::size_t(-1);
-    ctx.PatchDeferredPhi([&ctx, phi_insts = std::move(phi_instructions)](size_t phi_arg, Id parent) -> std::pair<Id, Id> {
+    size_t phi_index = size_t(-1);
+    ctx.PatchDeferredPhi([&ctx, &phi_index, phi_insts = std::move(phi_instructions)](size_t phi_arg, Id parent) -> std::pair<Id, Id> {
         if (phi_arg == 0) {
-            ++ctx.phi_index;
+            ++phi_index;
         }
-        IR::Inst* phi = phi_insts[ctx.phi_index];
+        IR::Inst* phi = phi_insts[phi_index];
         return { ctx.Def(phi->Arg(phi_arg)), parent };
     });
 }
