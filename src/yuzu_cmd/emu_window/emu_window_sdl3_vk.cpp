@@ -26,10 +26,9 @@ EmuWindow_SDL3_VK::EmuWindow_SDL3_VK(InputCommon::InputSubsystem* input_subsyste
                                                  Common::g_build_name,
                                                  Common::g_scm_branch,
                                                  Common::g_scm_desc);
-    render_window =
-        SDL_CreateWindow(window_title.c_str(), Layout::ScreenUndocked::Width,
-                         Layout::ScreenUndocked::Height,
-                         SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    render_window = SDL_CreateWindow(
+        window_title.c_str(), Layout::ScreenUndocked::Width, Layout::ScreenUndocked::Height,
+        SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
     const SDL_PropertiesID window_props = SDL_GetWindowProperties(render_window);
 
