@@ -788,7 +788,7 @@ int Java_org_yuzu_yuzu_1emu_NativeLibrary_installFileToNand(JNIEnv* env, jobject
 jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_doesUpdateMatchProgram(JNIEnv* env, jobject jobj,
                                                                       jstring jprogramId,
                                                                       jstring jupdatePath) {
-    u64 program_id = EmulationSession::GetProgramId(env, jprogramId);
+    const u64 program_id = FileSys::GetBaseTitleID(EmulationSession::GetProgramId(env, jprogramId));
     std::string updatePath = Common::Android::GetJString(env, jupdatePath);
     std::shared_ptr<FileSys::NSP> nsp = std::make_shared<FileSys::NSP>(
         EmulationSession::GetInstance().System().GetFilesystem()->OpenFile(
@@ -796,7 +796,7 @@ jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_doesUpdateMatchProgram(JNIEnv* en
     for (const auto& item : nsp->GetNCAs()) {
         for (const auto& nca_details : item.second) {
             if (nca_details.second->GetName().ends_with(".cnmt.nca")) {
-                auto update_id = nca_details.second->GetTitleId() & ~0xFFFULL;
+                const auto update_id = FileSys::GetBaseTitleID(nca_details.second->GetTitleId());
                 if (update_id == program_id) {
                     return true;
                 }
