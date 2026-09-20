@@ -35,7 +35,7 @@ void CircularBufferSinkInfo::Update(BehaviorInfo::ErrorInfo& error_info, OutStat
     auto current_params{reinterpret_cast<CircularBufferInParameter*>(parameter.data())};
     auto current_state{reinterpret_cast<CircularBufferState*>(state.data())};
 
-    if (in_use == buffer_params->in_use && !buffer_unmapped) {
+    if (in_use == bool(buffer_params->in_use) && !buffer_unmapped) {
         error_info.error_code = ResultSuccess;
         error_info.address = CpuAddr(0);
         out_status.writeOffset = current_state->last_pos2;
