@@ -254,14 +254,16 @@ struct UnrecognizedInstruction {
 
 struct CheatVmOpcode {
     bool begin_conditional_block{};
-    std::variant<StoreStaticOpcode, BeginConditionalOpcode, EndConditionalOpcode, ControlLoopOpcode,
-                 LoadRegisterStaticOpcode, LoadRegisterMemoryOpcode, StoreStaticToAddressOpcode,
-                 PerformArithmeticStaticOpcode, BeginKeypressConditionalOpcode,
-                 PerformArithmeticRegisterOpcode, StoreRegisterToAddressOpcode,
-                 BeginRegisterConditionalOpcode, SaveRestoreRegisterOpcode,
-                 SaveRestoreRegisterMaskOpcode, ReadWriteStaticRegisterOpcode, PauseProcessOpcode,
-                 ResumeProcessOpcode, DebugLogOpcode, UnrecognizedInstruction>
-        opcode{};
+    std::variant<
+        std::monostate,
+        StoreStaticOpcode, BeginConditionalOpcode, EndConditionalOpcode, ControlLoopOpcode,
+        LoadRegisterStaticOpcode, LoadRegisterMemoryOpcode, StoreStaticToAddressOpcode,
+        PerformArithmeticStaticOpcode, BeginKeypressConditionalOpcode,
+        PerformArithmeticRegisterOpcode, StoreRegisterToAddressOpcode,
+        BeginRegisterConditionalOpcode, SaveRestoreRegisterOpcode,
+        SaveRestoreRegisterMaskOpcode, ReadWriteStaticRegisterOpcode, PauseProcessOpcode,
+        ResumeProcessOpcode, DebugLogOpcode, UnrecognizedInstruction
+    > opcode{};
 };
 
 class DmntCheatVm {
