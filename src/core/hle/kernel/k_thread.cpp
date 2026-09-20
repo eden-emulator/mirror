@@ -1236,14 +1236,10 @@ namespace Kernel {
         KScopedSchedulerLock sl{kernel};
 
         // Determine if this is the first termination request.
-        const bool first_request = [&]() -> bool {
-            // Perform an atomic compare-and-swap from false to true.
-            bool expected = false;
-            return m_termination_requested.compare_exchange_strong(expected, true);
-        }();
-
+        // Perform an atomic compare-and-swap from false to true.
+        bool expected = false;
         // If this is the first request, start termination procedure.
-        if (first_request) {
+        if (m_termination_requested.compare_exchange_strong(expected, true)) {
             // If the thread is in initialized state, just change state to terminated.
             if (this->GetState() == ThreadState::Initialized) {
                 m_thread_state = ThreadState::Terminated;
