@@ -9,22 +9,22 @@
 #include <atomic>
 
 #include "common/common_types.h"
-#include "common/sparse_large_vector.h"
 #include "common/typed_address.h"
+#include "common/virtual_buffer.h"
 
 namespace Common {
 
 enum class PageType : u8 {
     /// Page is unmapped and should cause an access error.
-    Unmapped = 0b00,
+    Unmapped,
     /// Page is mapped to regular memory. This is the only type you can get pointers to.
-    Memory = 0b01,
+    Memory,
     /// Page is mapped to regular memory, but inaccessible from CPU fastmem and must use
     /// the callbacks.
-    DebugMemory = 0b10,
+    DebugMemory,
     /// Page is mapped to regular memory, but also needs to check for rasterizer cache flushing and
     /// invalidation
-    RasterizerCachedMemory = 0b11,
+    RasterizerCachedMemory,
 };
 
 /**
@@ -42,86 +42,57 @@ struct PageTable {
         u64 next_offset{};
     };
 
-    /// Masks out bits reserved for attribute tagging.
-    static constexpr u64 ATTRIBUTE_MASK = ((1ULL << 44) - 1) << 12;
-
-    /// Specifies sign bit for page table entries.
-    static constexpr u64 SIGN_BIT = 45 + 12; // 44 bits of data + page offset
+    /// Number of bits reserved for attribute tagging.
+    /// This can be at most the guaranteed alignment of the pointers in the page table.
+    static constexpr int ATTRIBUTE_BITS = 2;
 
     /**
-     * Atomic tuple of host pointer, page type, and block id.
-     * This uses the lower bits of a given pointer to store the attributes.
+     * Pair of host pointer and page type attribute.
+     * This uses the lower bits of a given pointer to store the attribute tag.
      * Writing and reading the pointer attribute pair is guaranteed to be atomic for the same method
      * call. In other words, they are guaranteed to be synchronized at all times.
      */
-    class PageEntryData {
+    class PageInfo {
     public:
-        struct Data {
-            Data(bool marked_, PageType type_, u16 block_, u64 page_)
-                : marked(static_cast<u64>(marked_)       & 0b1)
-                , type(static_cast<u64>(type_)           & ((1ULL << 2) - 1))
-                , block(static_cast<u64>(block_)         & ((1ULL << 9) - 1))
-                , page((page_ >> 12)                     & ((1ULL << 45) - 1))
-                , block2((static_cast<u64>(block_) >> 9) & ((1ULL << 7) - 1)) {}
-            u64 marked : 1;
-            u64 type   : 2;
-            u64 block  : 9;
-            u64 page   : 45; // 44 bits of actual data (64 - page offset (12) - reserved (8)) + a sign bit
-            u64 block2 : 7;
-        };
-
-        [[nodiscard]] Data Raw() const noexcept {
-            return std::bit_cast<Data>(data_raw.load(std::memory_order_relaxed));
-        }
-
         /// Returns the page pointer
-        [[nodiscard]] uintptr_t Pointer(bool ignored_marked = false) const noexcept {
-            return ExtractPointer(std::bit_cast<Data>(data_raw.load(std::memory_order_relaxed)), ignored_marked);
+        [[nodiscard]] uintptr_t Pointer() const noexcept {
+            return ExtractPointer(raw.load(std::memory_order_relaxed));
         }
 
         /// Returns the page type attribute
         [[nodiscard]] PageType Type() const noexcept {
-            return static_cast<PageType>(std::bit_cast<Data>(data_raw.load(std::memory_order_relaxed)).type);
-        }
-
-        /// Returns the block identifier.
-        [[nodiscard]] u16 Block() const noexcept {
-            return ExtractBlock(std::bit_cast<Data>(data_raw.load(std::memory_order_relaxed)));
+            return ExtractType(raw.load(std::memory_order_relaxed));
         }
 
         /// Returns the page pointer and attribute pair, extracted from the same atomic read
-        [[nodiscard]] std::tuple<uintptr_t, PageType, u16> PointerTypeBlock(bool ignore_marked = false) const noexcept {
-            const auto non_atomic_raw = std::bit_cast<Data>(data_raw.load(std::memory_order_relaxed));
-            return {ExtractPointer(non_atomic_raw, ignore_marked), static_cast<PageType>(non_atomic_raw.type), ExtractBlock(non_atomic_raw)};
+        [[nodiscard]] std::pair<uintptr_t, PageType> PointerType() const noexcept {
+            const uintptr_t non_atomic_raw = raw.load(std::memory_order_relaxed);
+            return {ExtractPointer(non_atomic_raw), ExtractType(non_atomic_raw)};
         }
 
-        /// Write page info atomically
-        inline void Store(bool marked, PageType type, u16 block, uintptr_t pointer) noexcept {
-            data_raw.store(std::bit_cast<u64>(Data{marked, type, block, pointer}));
+        /// Returns the raw representation of the page information.
+        /// Use ExtractPointer and ExtractType to unpack the value.
+        [[nodiscard]] uintptr_t Raw() const noexcept {
+            return raw.load(std::memory_order_relaxed);
         }
 
-        inline void MarkRasterizerCached() noexcept {
-            data_raw.fetch_or(0b111);
-        }
-
-        inline void MarkDebug(u64 ptr, u16 block) noexcept {
-            Store(true, PageType::DebugMemory, block, ptr);
+        /// Write a page pointer and type pair atomically
+        void Store(uintptr_t pointer, PageType type) noexcept {
+            raw.store(pointer | uintptr_t(type));
         }
 
         /// Unpack a pointer from a page info raw representation
-        [[nodiscard]] static uintptr_t ExtractPointer(Data raw, bool ignore_marked = false) noexcept {
-            return raw.marked && !ignore_marked ? 0
-                // shift raw.page's fake sign bit to the actual sign bit, then sign extend
-                : ((s64)(raw.page << (64 - 44))) >> (64 - 44 - 12);
+        [[nodiscard]] static uintptr_t ExtractPointer(uintptr_t raw) noexcept {
+            return raw & (~uintptr_t{0} << ATTRIBUTE_BITS);
         }
 
-        [[nodiscard]] static u16 ExtractBlock(Data raw) noexcept {
-            return static_cast<u16>(raw.block | (raw.block2 << 9));
+        /// Unpack a page type from a page info raw representation
+        [[nodiscard]] static PageType ExtractType(uintptr_t raw) noexcept {
+            return static_cast<PageType>(raw & ((uintptr_t{1} << ATTRIBUTE_BITS) - 1));
         }
 
     private:
-        std::atomic<u64> data_raw;
-        static_assert(sizeof(Data) == sizeof(std::atomic<u64>));
+        std::atomic<uintptr_t> raw;
     };
 
     PageTable();
@@ -129,8 +100,13 @@ struct PageTable {
 
     PageTable(const PageTable&) = delete;
     PageTable& operator=(const PageTable&) = delete;
-    PageTable(PageTable&&) noexcept = delete;
-    PageTable& operator=(PageTable&&) noexcept = delete;
+
+    PageTable(PageTable&&) noexcept = default;
+    PageTable& operator=(PageTable&&) noexcept = default;
+
+    bool BeginTraversal(TraversalEntry* out_entry, TraversalContext* out_context,
+                        Common::ProcessAddress address) const;
+    bool ContinueTraversal(TraversalEntry* out_entry, TraversalContext* context) const;
 
     /**
      * Resizes the page table to be able to accommodate enough pages within
@@ -145,14 +121,30 @@ struct PageTable {
         return current_address_space_width_in_bits;
     }
 
+    bool GetPhysicalAddress(Common::PhysicalAddress* out_phys_addr,
+                            Common::ProcessAddress virt_addr) const {
+        if (virt_addr > (1ULL << this->GetAddressSpaceBits())) {
+            return false;
+        }
+
+        *out_phys_addr = entries[virt_addr / page_size].addr + GetInteger(virt_addr);
+        return true;
+    }
+
     /// Vector of memory pointers backing each page. An entry can only be non-null if the
     /// corresponding attribute element is of type `Memory`.
-    SparseLargeVector<PageEntryData> entries;
-    static_assert(sizeof(PageEntryData) == 8);
+    struct PageEntryData {
+        PageInfo ptr;
+        u64 block;
+        u64 addr;
+        u64 padding;
+    };
+    VirtualBuffer<PageEntryData> entries;
+    static_assert(sizeof(PageEntryData) == 32);
 
     u8* fastmem_arena{};
     std::size_t current_address_space_width_in_bits{};
-    std::size_t current_page_bits{};
+    std::size_t page_size{};
 };
 
 } // namespace Common
