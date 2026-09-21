@@ -39,9 +39,10 @@ class AudioManager {
 public:
     explicit AudioManager();
 
-    /**
-     * Shutdown the audio manager.
-     */
+    /// @brief Notify of impending shutdown
+    void NotifyShutdown();
+
+    /// @brief Shutdown the audio manager.
     void Shutdown();
 
     /**

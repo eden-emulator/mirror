@@ -67,6 +67,8 @@ public:
         shared_memory = &shared_memory_;
     }
 
+    void NotifyShutdown();
+
 private:
     /**
      * Initializing thread, launched at audio_core boot to avoid blocking the main emu boot thread.

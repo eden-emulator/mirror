@@ -17,7 +17,7 @@ AudioManager::AudioManager() {
         std::unique_lock l{events.GetAudioEventLock()};
         events.ClearEvents();
         while (!stop_token.stop_requested()) {
-            const auto timed_out{events.Wait(l, std::chrono::seconds(2))};
+            const auto timed_out = events.Wait(l, std::chrono::seconds{2});
             if (events.CheckAudioEventSet(Event::Type::Max)) {
                 break;
             }
@@ -32,6 +32,11 @@ AudioManager::AudioManager() {
             }
         }
     });
+}
+
+void AudioManager::NotifyShutdown() {
+    events.SetAudioEvent(Event::Type::Max, true);
+    thread.request_stop();
 }
 
 void AudioManager::Shutdown() {

@@ -1253,6 +1253,11 @@ void KernelCore::SuspendEmulation(bool suspended) {
 }
 
 void KernelCore::ShutdownCores() {
+    // Notify shutdown (pre-emptively)
+    for (auto& sm : impl->server_managers) {
+        sm->NotifyShutdown();
+    }
+
     impl->TerminateAllProcesses();
     KScopedSchedulerLock lk{*this};
     for (auto* thread : impl->shutdown_threads)
