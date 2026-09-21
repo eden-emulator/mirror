@@ -59,7 +59,6 @@ Result TerminateChildren(KernelCore& kernel, KProcess* process, const KThread* t
         KThread* cur_child = nullptr;
         {
             KScopedLightLock proc_lk(process->GetListLock());
-
             auto& thread_list = process->GetThreadList();
             for (auto it = thread_list.begin(); it != thread_list.end(); ++it) {
                 if (KThread* thread = std::addressof(*it); thread != thread_to_not_terminate) {

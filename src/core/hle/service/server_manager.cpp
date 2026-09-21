@@ -253,6 +253,13 @@ void ServerManager::StartAdditionalHostThreads(const char* name, size_t num_thre
     }
 }
 
+/// @brief Notifies that the system is shutting down (pre-emptively terminate threads)
+void ServerManager::NotifyShutdown() {
+    m_stop_source.request_stop();
+    // Wake them up regardless
+    m_wakeup_event->Signal(m_system.Kernel());
+}
+
 Result ServerManager::LoopProcess() {
     SCOPE_EXIT {
         m_stopped.Set();
@@ -285,9 +292,8 @@ MultiWaitHolder* ServerManager::WaitSignaled() {
         this->LinkDeferred();
 
         // If we're done, return before we start waiting.
-        if (m_stop_source.stop_requested()) {
+        if (m_stop_source.stop_requested())
             return nullptr;
-        }
 
         auto* selected = m_multi_wait.WaitAny(m_system.Kernel());
         if (selected == std::addressof(*m_wakeup_holder)) {

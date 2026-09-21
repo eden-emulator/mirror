@@ -110,8 +110,13 @@ FileSys::VirtualFile GetGameFileFromPath(const FileSys::VirtualFilesystem& vfs,
 
 struct System::Impl {
     explicit Impl(System& system)
-        : kernel{system}, fs_controller{system}, hid_core{kernel}, cpu_manager{system},
-          reporter{system}, applet_manager{system}, frontend_applets{system}, profile_manager{} {}
+        : kernel{system}
+        , fs_controller{system}
+        , hid_core{kernel}
+        , cpu_manager{system}
+        , reporter{system}
+        , profile_manager{}
+    {}
 
     u64 program_id;
 
@@ -124,6 +129,12 @@ struct System::Impl {
         core_timing.SetMulticore(is_multicore);
         core_timing.Initialize([&system]() { system.RegisterHostThread(); });
 
+        applet_manager.emplace(system);
+        frontend_applets.emplace(system);
+        apm_controller.emplace(core_timing);
+        arp_manager.emplace();
+        profile_manager.emplace();
+
         // Create a default fs if one doesn't already exist.
         if (virtual_filesystem == nullptr) {
             virtual_filesystem = std::make_shared<FileSys::RealVfsFilesystem>();
@@ -133,7 +144,7 @@ struct System::Impl {
         }
 
         // Create default implementations of applets if one is not provided.
-        frontend_applets.SetDefaultAppletsIfMissing();
+        frontend_applets->SetDefaultAppletsIfMissing();
 
         auto const is_async_gpu = Settings::values.use_asynchronous_gpu_emulation.GetValue();
 
@@ -376,7 +387,7 @@ struct System::Impl {
 
         // Register with applet manager
         // All threads are started, begin main process execution, now that we're in the clear
-        applet_manager.CreateAndInsertByFrontendAppletParameters(std::move(process), params);
+        applet_manager->CreateAndInsertByFrontendAppletParameters(std::move(process), params);
 
         if (Settings::values.gamecard_inserted) {
             if (Settings::values.gamecard_current_game) {
@@ -429,9 +440,22 @@ struct System::Impl {
         Network::CancelPendingSocketOperations();
         kernel.SuspendEmulation(true);
         kernel.ShutdownCores();
+
+        // Notify services helpers of shutdown
+        audio_core->NotifyShutdown();
+
+        // Wait for threads/services to join
         kernel.CloseServices();
+
+        // service shutdown
         services.reset();
         service_manager.reset();
+        frontend_applets.reset();
+        applet_manager.reset();
+        apm_controller.reset();
+        arp_manager.reset();
+        profile_manager.reset();
+
         fs_controller.Reset();
         cheat_engine.reset();
         core_timing.ClearPendingEvents();
@@ -452,7 +476,7 @@ struct System::Impl {
         }
 
         // Reset all glue registrations
-        arp_manager.ResetAll();
+        arp_manager->ResetAll();
 
         LOG_DEBUG(Core, "Shutdown OK");
     }
@@ -482,13 +506,13 @@ struct System::Impl {
     CpuManager cpu_manager;
     Reporter reporter;
     /// Applets
-    Service::AM::AppletManager applet_manager;
-    Service::AM::Frontend::FrontendAppletHolder frontend_applets;
+    std::optional<Service::AM::AppletManager> applet_manager;
+    std::optional<Service::AM::Frontend::FrontendAppletHolder> frontend_applets;
     /// APM (Performance) services
-    Service::APM::Controller apm_controller{core_timing};
+    std::optional<Service::APM::Controller> apm_controller;
     /// Service State
-    Service::Glue::ARPManager arp_manager;
-    Service::Account::ProfileManager profile_manager;
+    std::optional<Service::Glue::ARPManager> arp_manager;
+    std::optional<Service::Account::ProfileManager> profile_manager;
     /// Network instance
     Network::NetworkInstance network_instance;
     Core::SpeedLimiter speed_limiter;
@@ -815,19 +839,19 @@ void System::RegisterCheatList(const std::vector<Memory::CheatEntry>& list,
 }
 
 void System::SetFrontendAppletSet(Service::AM::Frontend::FrontendAppletSet&& set) {
-    impl->frontend_applets.SetFrontendAppletSet(std::move(set));
+    impl->frontend_applets->SetFrontendAppletSet(std::move(set));
 }
 
 Service::AM::Frontend::FrontendAppletHolder& System::GetFrontendAppletHolder() {
-    return impl->frontend_applets;
+    return *impl->frontend_applets;
 }
 
 const Service::AM::Frontend::FrontendAppletHolder& System::GetFrontendAppletHolder() const {
-    return impl->frontend_applets;
+    return *impl->frontend_applets;
 }
 
 Service::AM::AppletManager& System::GetAppletManager() {
-    return impl->applet_manager;
+    return *impl->applet_manager;
 }
 
 void System::SetContentProvider(std::unique_ptr<FileSys::ContentProviderUnion> provider) {
@@ -868,27 +892,27 @@ const Reporter& System::GetReporter() const {
 }
 
 Service::Glue::ARPManager& System::GetARPManager() {
-    return impl->arp_manager;
+    return *impl->arp_manager;
 }
 
 const Service::Glue::ARPManager& System::GetARPManager() const {
-    return impl->arp_manager;
+    return *impl->arp_manager;
 }
 
 Service::APM::Controller& System::GetAPMController() {
-    return impl->apm_controller;
+    return *impl->apm_controller;
 }
 
 const Service::APM::Controller& System::GetAPMController() const {
-    return impl->apm_controller;
+    return *impl->apm_controller;
 }
 
 Service::Account::ProfileManager& System::GetProfileManager() {
-    return impl->profile_manager;
+    return *impl->profile_manager;
 }
 
 const Service::Account::ProfileManager& System::GetProfileManager() const {
-    return impl->profile_manager;
+    return *impl->profile_manager;
 }
 
 void System::SetExitLocked(bool locked) {

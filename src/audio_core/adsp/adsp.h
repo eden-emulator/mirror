@@ -45,6 +45,7 @@ public:
     explicit ADSP(Core::System& system, Sink::Sink& sink);
     ~ADSP() = default;
 
+    void NotifyShutdown();
     AudioRenderer::AudioRenderer& AudioRenderer();
     OpusDecoder::OpusDecoder& OpusDecoder();
 

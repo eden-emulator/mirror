@@ -82,6 +82,9 @@ void OpusDecoder::Main(std::stop_token stop_token) {
 
     while (!stop_token.stop_requested()) {
         auto msg = Receive(Direction::DSP, stop_token);
+        if (stop_token.stop_requested())
+            break;
+
         switch (msg) {
         case Shutdown:
             Send(Direction::Host, Message::ShutdownOK);
@@ -264,6 +267,11 @@ void OpusDecoder::Main(std::stop_token stop_token) {
             continue;
         }
     }
+}
+
+void OpusDecoder::NotifyShutdown() {
+    init_thread.request_stop();
+    main_thread.request_stop();
 }
 
 } // namespace AudioCore::ADSP::OpusDecoder
