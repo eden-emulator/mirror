@@ -49,14 +49,15 @@ TimeWorker::TimeWorker(Core::System& system, StandardSteadyClockResource& steady
 }
 
 TimeWorker::~TimeWorker() {
+    // Wait for processing to stop
+    m_stop_source.request_stop();
     m_local_clock_event->Signal(m_system.Kernel());
     m_network_clock_event->Signal(m_system.Kernel());
     m_ephemeral_clock_event->Signal(m_system.Kernel());
-
-    if (m_thread.joinable()) {
-        m_thread.request_stop();
-        m_event->Signal(m_system.Kernel());
-        m_thread.join();
+    m_event->Signal(m_system.Kernel());
+    {
+        std::unique_lock lk{m_process_mutex};
+        m_process_cv.wait(lk);
     }
 
     m_ctx.CloseEvent(m_event);
@@ -125,9 +126,8 @@ void TimeWorker::Initialize(std::shared_ptr<Service::PSC::Time::StaticService> t
 }
 
 void TimeWorker::StartThread() {
-    m_thread = m_system.Kernel().RunOnHostCoreThread("TimeWorker", [this]() {
-        auto const stop_token = m_thread.get_stop_token();
-        Common::SetCurrentThreadPriority(Common::ThreadPriority::Low);
+    m_system.Kernel().RunOnGuestCoreProcess("TimeWorker", [this]() {
+        auto const stop_token = m_stop_source.get_token();
         while (!stop_token.stop_requested()) {
             enum class EventType : s32 {
                 Exit = 0,
@@ -140,9 +140,7 @@ void TimeWorker::StartThread() {
                 UpdateFileTimestamp = 7,
                 AutoCorrect = 8,
             };
-
             s32 index{};
-
             if (m_pm_state_change_handler.m_priority != 0) {
                 // TODO: gIPmModuleService::GetEvent() 1
                 index = WaitAny(
@@ -282,6 +280,7 @@ void TimeWorker::StartThread() {
                 UNREACHABLE();
             }
         }
+        m_process_cv.notify_one();
     });
 }
 

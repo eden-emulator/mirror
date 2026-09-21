@@ -30,13 +30,10 @@ Conductor::Conductor(Core::System& system, Container& container, DisplayList& di
     });
 
     if (system.IsMulticore()) {
-        m_event = Core::Timing::CreateEvent(
-            "ScreenComposition",
-            [this](s64 time,
-                   std::chrono::nanoseconds ns_late) -> std::optional<std::chrono::nanoseconds> {
-                m_signal.Set();
-                return std::chrono::nanoseconds(this->GetNextTicks());
-            });
+        m_event = Core::Timing::CreateEvent("ScreenComposition", [this](s64 time, std::chrono::nanoseconds ns_late) -> std::optional<std::chrono::nanoseconds> {
+            m_signal.Set();
+            return std::chrono::nanoseconds(this->GetNextTicks());
+        });
 
         system.CoreTiming().ScheduleLoopingEvent(FrameNs, FrameNs, m_event);
         m_thread = system.Kernel().RunOnHostCoreThread("VSyncThread", [this]() {
@@ -52,13 +49,10 @@ Conductor::Conductor(Core::System& system, Container& container, DisplayList& di
             }
         });
     } else {
-        m_event = Core::Timing::CreateEvent(
-            "ScreenComposition",
-            [this](s64 time,
-                   std::chrono::nanoseconds ns_late) -> std::optional<std::chrono::nanoseconds> {
-                this->ProcessVsync();
-                return std::chrono::nanoseconds(this->GetNextTicks());
-            });
+        m_event = Core::Timing::CreateEvent("ScreenComposition", [this](s64 time, std::chrono::nanoseconds ns_late) -> std::optional<std::chrono::nanoseconds> {
+            this->ProcessVsync();
+            return std::chrono::nanoseconds(this->GetNextTicks());
+        });
 
         system.CoreTiming().ScheduleLoopingEvent(FrameNs, FrameNs, m_event);
     }

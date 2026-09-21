@@ -80,7 +80,10 @@ struct KernelCore::Impl {
     // so it will be statically given a TLS slot anyways.
     static inline thread_local ThreadLocalData tls_data = {};
 
-    explicit Impl(Core::System& system_, KernelCore& kernel_) : system{system_} {
+    explicit Impl(Core::System& system_, KernelCore& kernel_)
+        : worker_task_manager{kernel_}
+        , system{system_}
+    {
         tls_data.lock = true;
     }
 
@@ -1257,7 +1260,6 @@ void KernelCore::ShutdownCores() {
     for (auto& sm : impl->server_managers) {
         sm->NotifyShutdown();
     }
-
     impl->TerminateAllProcesses();
     KScopedSchedulerLock lk{*this};
     for (auto* thread : impl->shutdown_threads)

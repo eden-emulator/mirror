@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <condition_variable>
 #include "common/common_types.h"
 #include "core/hle/kernel/k_event.h"
 #include "core/hle/service/glue/time/alarm_worker.h"
@@ -39,13 +40,14 @@ public:
     template <typename T>
     T GetSettingsItemValue(const std::string& category, const std::string& name);
 
-    void ThreadFunc(std::stop_token stop_token);
-
     Core::System& m_system;
     KernelHelpers::ServiceContext m_ctx;
     std::shared_ptr<Service::Set::ISystemSettingsServer> m_set_sys;
 
-    std::jthread m_thread;
+    std::mutex m_process_mutex;
+    std::condition_variable m_process_cv;
+    std::stop_source m_stop_source;
+
     Kernel::KEvent* m_event{};
     std::shared_ptr<Service::PSC::Time::ServiceManager> m_time_m;
     std::shared_ptr<Service::PSC::Time::StaticService> m_time_sm;

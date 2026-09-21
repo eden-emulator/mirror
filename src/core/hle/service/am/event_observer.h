@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <condition_variable>
+#include <stop_token>
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
 #include "core/hle/service/kernel_helpers.h"
@@ -62,7 +64,9 @@ private:
     MultiWait m_deferred_wait_list;
 
     // Processing thread.
-    std::jthread m_thread{};
+    std::stop_source m_stop_source{};
+    std::mutex m_process_mutex;
+    std::condition_variable m_process_cv{};
 };
 
 } // namespace Service::AM

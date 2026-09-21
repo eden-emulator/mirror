@@ -26,24 +26,25 @@ EventObserver::EventObserver(Core::System& system, WindowSystem& window_system)
     m_window_system.SetEventObserver(this);
     m_wakeup_holder.SetUserData(static_cast<uintptr_t>(UserDataTag::WakeupEvent));
     m_wakeup_holder.LinkToMultiWait(std::addressof(m_multi_wait));
-    m_thread = std::jthread([this](std::stop_token stop_token) {
-        Common::SetCurrentThreadName("am:EventObserver");
+    system.Kernel().RunOnGuestCoreProcess("am:EventObserver", [this]() {
+        auto const stop_token = m_stop_source.get_token();
         while (!stop_token.stop_requested()) {
             auto* signaled_holder = this->WaitSignaled(stop_token);
-            if (!signaled_holder)
+            if (stop_token.stop_requested() || !signaled_holder)
                 break;
             this->Process(signaled_holder);
         }
+        m_process_cv.notify_one();
     });
 }
 
 EventObserver::~EventObserver() {
     // Signal thread and wait for processing to finish.
-    if (m_thread.joinable()) {
-        // Signal thread and wait for processing to finish.
-        m_thread.request_stop();
-        m_wakeup_event.Signal(m_system.Kernel());
-        m_thread.join();
+    m_stop_source.request_stop();
+    m_wakeup_event.Signal(m_system.Kernel());
+    {
+        std::unique_lock lk{m_process_mutex};
+        m_process_cv.wait(lk);
     }
 
     // Free remaining owned sessions.

@@ -232,10 +232,7 @@ DmntCheatVm::Callbacks::~Callbacks() = default;
 bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode& out) {
     // If we've ever seen a decode failure, return false.
     bool valid = decode_success;
-    CheatVmOpcode opcode = {
-        .begin_conditional_block = false,
-        .opcode = {}
-    };
+    CheatVmOpcode opcode = {};
     SCOPE_EXIT {
         decode_success &= valid;
         if (valid) {
