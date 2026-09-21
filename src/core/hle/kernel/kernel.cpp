@@ -81,8 +81,7 @@ struct KernelCore::Impl {
     static inline thread_local ThreadLocalData tls_data = {};
 
     explicit Impl(Core::System& system_, KernelCore& kernel_)
-        : worker_task_manager{kernel_}
-        , system{system_}
+        : system{system_}
     {
         tls_data.lock = true;
     }
