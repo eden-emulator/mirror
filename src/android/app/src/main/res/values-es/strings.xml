@@ -289,6 +289,7 @@
     <string name="gpu_driver_fetcher">Obtenedor de controladores de la GPU</string>
     <string name="gpu_driver_manager">Gestor de controladores de la GPU</string>
     <string name="install_gpu_driver_description">Instale los controladores alternativos para obtener un posible mejor rendimiento o precisión</string>
+    <string name="post_processing_add">Añadir efecto</string>
     <string name="post_processing_open_list">Abrir lista</string>
     <string name="post_processing_close_list">Cerrar lista</string>
     <string name="post_processing_reset">Restablecer a predeterminado</string>

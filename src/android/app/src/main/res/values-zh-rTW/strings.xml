@@ -229,7 +229,7 @@
     <string name="add_directory_success">遊戲目錄新增成功</string>
     <string name="enable_update_checks">檢查更新</string>
     <string name="enable_update_checks_description">在Eden啟動時檢查有無新版本並選擇是否要下載與安裝更新</string>
-    <string name="update_available">偵測到新版本</string>
+    <string name="update_available">發現新版本</string>
     <string name="update_available_description">有更新可供安裝：%1$s\n\n您要進行更新嗎？</string>
     <string name="downloading_update">下載更新中</string>
     <string name="update_download_failed">更新下載失敗</string>
@@ -1020,9 +1020,40 @@
     <string name="memory_6gb">6GB (不穩定)</string>
     <string name="memory_8gb">8GB (不穩定)</string>
 
+    <!-- CPU clock levels -->
+    <string name="clock_normal">正常</string>
+    <string name="clock_boost">加速</string>
+    <string name="clock_fast">超頻</string>
+
+    <!-- GPU clock levels -->
+    <string name="fast_gpu_normal">正常</string>
+    <string name="fast_gpu_medium">加速</string>
+    <string name="fast_gpu_high">超頻</string>
+
+    <!-- GPU swizzle texture size -->
+    <string name="gpu_texturesizeswizzle_verysmall">極小 （16MB）</string>
+    <string name="gpu_texturesizeswizzle_small">小（32MB）</string>
+    <string name="gpu_texturesizeswizzle_normal">正常（128MB）</string>
+    <string name="gpu_texturesizeswizzle_large">大（256MB）</string>
+    <string name="gpu_texturesizeswizzle_verylarge">極大（512MB）</string>
+
+    <!-- GPU swizzle streams -->
+    <string name="gpu_swizzle_verylow">極小（4MB）</string>
+    <string name="gpu_swizzle_low">小（8MB）</string>
+    <string name="gpu_swizzle_normal">正常（16MB）</string>
+    <string name="gpu_swizzle_medium">中（32MB）</string>
+    <string name="gpu_swizzle_high">大（64MB）</string>
+
+    <!-- GPU swizzle chunks -->
+    <string name="gpu_swizzlechunk_verylow">極小（32）</string>
+    <string name="gpu_swizzlechunk_low">小（64）</string>
+    <string name="gpu_swizzlechunk_normal">正常（128）</string>
+    <string name="gpu_swizzlechunk_medium">中（256）</string>
+    <string name="gpu_swizzlechunk_high">大（512）</string>
+
     <!-- Temperature Units -->
-    <string name="temperature_celsius">攝氏度</string>
-    <string name="temperature_fahrenheit">華氏度</string>
+    <string name="temperature_celsius">攝氏</string>
+    <string name="temperature_fahrenheit">華氏</string>
 
     <!-- Memory Sizes -->
     <string name="memory_byte_shorthand">B</string>
@@ -1035,6 +1066,8 @@
 
     <string name="renderer_none">無</string>
 
+    <!-- Renderer Accuracy -->
+    <string name="renderer_accuracy_low">效能</string>
     <string name="renderer_accuracy_high">準確</string>
 
     <!-- DMA Accuracy -->

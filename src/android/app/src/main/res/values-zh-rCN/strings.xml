@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
 
+    <string name="app_disclaimer">本软件可以运行用于 Nintendo Switch 游戏机的游戏。不包含任何游戏或密钥。<br /><br />在您开始之前, 请定位您设备存储上的 <![CDATA[<b> prod.keys </b>]]> 文件。<br /><br /><![CDATA[<a href=\"https://git.eden-emu.dev/eden-emu/eden/src/branch/master/docs/user/QuickStart.md\">了解更多</a>]]></string>
     <string name="notice_notification_channel_name">错误与注意事项</string>
     <string name="notice_notification_channel_description">当发生错误时显示通知。</string>
     <string name="notification_permission_not_granted">未授予通知权限！</string>
@@ -290,6 +291,25 @@
     <string name="gpu_driver_fetcher">GPU驱动获取器</string>
     <string name="gpu_driver_manager">GPU 驱动管理器</string>
     <string name="install_gpu_driver_description">安装替代的驱动程序以获得更好的性能和精度</string>
+    <string name="post_processing">后处理效果</string>
+    <string name="post_processing_description">在渲染完成后应用 ReShade FX 效果</string>
+    <string name="post_processing_per_game_description">配置此游戏的效果链</string>
+    <string name="post_processing_add">添加效果</string>
+    <string name="post_processing_remove">移除</string>
+    <string name="post_processing_open_list">打开列表</string>
+    <string name="post_processing_close_list">关闭列表</string>
+    <string name="post_processing_remove_all">移除效果</string>
+    <string name="post_processing_preset_locked">预设已激活。在开始游戏前可以在后处理效果中编辑它。</string>
+    <string name="post_processing_preset_modified">数值已从原始预设被更改。</string>
+    <string name="post_processing_presets">预设</string>
+    <string name="post_processing_preset_new">新建预设</string>
+    <string name="post_processing_preset_new_description">把您加载的效果及当前数值保存为一个预设,以便今后选用。</string>
+    <string name="post_processing_preset_name_invalid">请给预设起一个不含等号的名称。</string>
+    <string name="post_processing_preset_none">无预设</string>
+    <string name="post_processing_preset_delete">删除预设</string>
+    <string name="post_processing_preset_reset">重置预设值</string>
+    <string name="post_processing_reset">重置为默认值</string>
+    <string name="post_processing_empty">找不到效果。请在此文件中放置 .fx 文件:</string>
     <string name="frame_gen">帧生成</string>
     <string name="frame_gen_per_game_description">配置针对此游戏的帧生成设定</string>
     <string name="frame_gen_description">设定要在使用无损缩放渲染的帧之间应用的插帧。启用后强制采用FIFO呈现模式 。</string>
@@ -304,6 +324,13 @@
     <string name="frame_gen_target_rate_60">60 FPS</string>
     <string name="frame_gen_target_rate_90">90 FPS</string>
     <string name="frame_gen_target_rate_120">120 FPS</string>
+    <string name="frame_gen_on">开</string>
+    <string name="frame_gen_off">关</string>
+    <string name="frame_gen_fixed">固定</string>
+    <string name="frame_gen_flow_auto">自动</string>
+    <string name="frame_gen_quick_description">打开或关闭帧生成并选择帧生成倍数。</string>
+    <string name="frame_gen_target_rate_quick_description">生成帧到目标帧率。倍率会自动调整。</string>
+    <string name="frame_gen_flow_scale_quick_description">用来估算帧间运动的分辨率。较低的值可以节省 GPU 时间。</string>
     <string name="frame_gen_queue_target">帧队列目标</string>
     <string name="frame_gen_queue_target_description">在显示之前有多少已完成渲染的帧正在等待。较大的队列可以缓解 GPU 突发的压力，但会增加输入延迟。</string>
     <string name="frame_gen_queue_target_0">最低延迟 (无缓冲)</string>
@@ -314,12 +341,14 @@
     <string name="frame_gen_flow_scale">运动预估分辨率</string>
     <string name="frame_gen_flow_scale_description">光流通道的分辨率,以输出的比例表示。降低它是提升性能最经济的做法。</string>
     <string name="frame_gen_unsupported">帧生成不可用</string>
+    <string name="frame_gen_unsupported_description">这个 GPU 驱动缺少 Lossless Scaling 着色器所需的 Vulkan 内存模型或半精度 (float16) 支持。</string>
     <string name="lossless_scaling_setup_description">作为可选项。请提供您自己的 Lossless.dll 以便在之后可以启用帧生成。</string>
     <string name="lossless_scaling_install">安装 Lossless.dll</string>
     <string name="lossless_scaling_install_description">帧生成需要您自己从 Lossless Scaling 获得合法的 Lossless.dll 副本</string>
     <string name="lossless_scaling_replace_description">选择其它 Lossless.dll 副本</string>
     <string name="frame_generation_support">帧生成</string>
     <string name="frame_generation_supported">支持</string>
+    <string name="frame_generation_unsupported">不支持 (无 Vulkan 内存模型或 float16)</string>
     <string name="lossless_scaling">无损缩放</string>
     <string name="lossless_scaling_description">提供您自己的 Lossless.dll 文件以启用帧生成</string>
     <string name="lossless_scaling_installed">已安装</string>
@@ -611,6 +640,11 @@
     <string name="log">日志记录</string>
     <string name="flush_by_line">按行刷新调试日志</string>
     <string name="flush_by_line_description">在每行写入时刷新调试日志，使在崩溃或冻结时调试更容易。</string>
+    <string name="extended_logging">开启扩展日志</string>
+    <string name="extended_logging_description">将最大日志文件大小从 100 MiB 提升至 1GiB。</string>
+    <string name="log_filter">日志筛选器</string>
+    <string name="log_filter_description">控制 Eden 的日志类别。例如: *:Info Service.LM:Debug</string>
+
     <!-- GPU Logging strings -->
     <string name="gpu_logging_header">GPU 日志</string>
     <string name="gpu_log_level">日志等级</string>
@@ -894,6 +928,8 @@
     <string name="loader_error_file_not_found">ROM 文件不存在</string>
 
     <string name="loader_requires_firmware">游戏需要固件</string>
+    <string name="loader_requires_firmware_description"><![CDATA[这个游戏可能需要固件才能正常运行,但您还没有安装任何固件。请在启动前安装固件,或者按 “确定” 继续启动。]]></string>
+
     <!-- Intent Launch strings -->
     <string name="searching_for_game">正在搜索游戏...</string>
     <string name="game_not_found_for_title_id">未找到标题ID的游戏: %1$s</string>
