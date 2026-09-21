@@ -459,6 +459,7 @@ struct System::Impl {
         fs_controller.Reset();
         cheat_engine.reset();
         core_timing.ClearPendingEvents();
+        core_timing.Reset();
         app_loader.reset();
         audio_core.reset();
         gpu_core.reset();
