@@ -11,6 +11,7 @@
 #include "common/thread.h"
 #include "core/core.h"
 #include "core/core_timing.h"
+#include "core/hle/kernel/kernel.h"
 #include "core/hle/service/vi/conductor.h"
 #include "core/hle/service/vi/container.h"
 #include "core/hle/service/vi/display_list.h"
@@ -38,7 +39,18 @@ Conductor::Conductor(Core::System& system, Container& container, DisplayList& di
             });
 
         system.CoreTiming().ScheduleLoopingEvent(FrameNs, FrameNs, m_event);
-        m_thread = std::jthread([this](std::stop_token token) { this->VsyncThread(token); });
+        m_thread = system.Kernel().RunOnHostCoreThread("VSyncThread", [this]() {
+            auto const stop_token = m_thread.get_stop_token();
+            Common::SetCurrentThreadPriority(Common::ThreadPriority::VeryHigh);
+            Common::SetCurrentThreadToPerformanceCores();
+            while (!stop_token.stop_requested()) {
+                m_signal.Wait();
+                if (stop_token.stop_requested() || m_system.IsShuttingDown()) {
+                    break;
+                }
+                this->ProcessVsync();
+            }
+        });
     } else {
         m_event = Core::Timing::CreateEvent(
             "ScreenComposition",
@@ -54,10 +66,10 @@ Conductor::Conductor(Core::System& system, Container& container, DisplayList& di
 
 Conductor::~Conductor() {
     m_system.CoreTiming().UnscheduleEvent(m_event);
-
-    if (m_system.IsMulticore()) {
+    if (m_thread.joinable()) {
         m_thread.request_stop();
         m_signal.Set();
+        m_thread.join();
     }
 }
 
@@ -80,22 +92,6 @@ void Conductor::ProcessVsync() {
     for (auto& [display_id, manager] : m_vsync_managers) {
         m_container.ComposeOnDisplay(&m_swap_interval, &m_compose_speed_scale, display_id);
         manager.SignalVsync(m_system.Kernel());
-    }
-}
-
-void Conductor::VsyncThread(std::stop_token token) {
-    Common::SetCurrentThreadName("VSyncThread");
-    Common::SetCurrentThreadPriority(Common::ThreadPriority::VeryHigh);
-    Common::SetCurrentThreadToPerformanceCores();
-
-    while (!token.stop_requested()) {
-        m_signal.Wait();
-
-        if (m_system.IsShuttingDown()) {
-            return;
-        }
-
-        this->ProcessVsync();
     }
 }
 

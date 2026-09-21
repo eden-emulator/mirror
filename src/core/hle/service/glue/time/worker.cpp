@@ -20,15 +20,17 @@
 
 namespace Service::Glue::Time {
 
-TimeWorker::TimeWorker(Core::System& system, StandardSteadyClockResource& steady_clock_resource,
-                       FileTimestampWorker& file_timestamp_worker)
-    : m_system{system}, m_ctx{m_system, "Glue:TimeWorker"}, m_event{m_ctx.CreateEvent(
-                                                                "Glue:TimeWorker:Event")},
-      m_steady_clock_resource{steady_clock_resource},
-      m_file_timestamp_worker{file_timestamp_worker}, m_timer_steady_clock{m_ctx.CreateEvent(
-                                                          "Glue:TimeWorker:SteadyClockTimerEvent")},
-      m_timer_file_system{m_ctx.CreateEvent("Glue:TimeWorker:FileTimeTimerEvent")},
-      m_alarm_worker{m_system, m_steady_clock_resource}, m_pm_state_change_handler{m_alarm_worker} {
+TimeWorker::TimeWorker(Core::System& system, StandardSteadyClockResource& steady_clock_resource, FileTimestampWorker& file_timestamp_worker)
+    : m_system{system}
+    , m_ctx{m_system, "Glue:TimeWorker"}
+    , m_event{m_ctx.CreateEvent("Glue:TimeWorker:Event")}
+    , m_steady_clock_resource{steady_clock_resource}
+    , m_file_timestamp_worker{file_timestamp_worker}
+    , m_timer_steady_clock{m_ctx.CreateEvent("Glue:TimeWorker:SteadyClockTimerEvent")}
+    , m_timer_file_system{m_ctx.CreateEvent("Glue:TimeWorker:FileTimeTimerEvent")}
+    , m_alarm_worker{m_system, m_steady_clock_resource}
+    , m_pm_state_change_handler{m_alarm_worker}
+{
     m_timer_steady_clock_timing_event = Core::Timing::CreateEvent(
         "Time::SteadyClockEvent",
         [this](s64 time,
@@ -50,11 +52,12 @@ TimeWorker::~TimeWorker() {
     m_local_clock_event->Signal(m_system.Kernel());
     m_network_clock_event->Signal(m_system.Kernel());
     m_ephemeral_clock_event->Signal(m_system.Kernel());
-    std::this_thread::sleep_for(std::chrono::milliseconds(16));
 
-    m_thread.request_stop();
-    m_event->Signal(m_system.Kernel());
-    m_thread.join();
+    if (m_thread.joinable()) {
+        m_thread.request_stop();
+        m_event->Signal(m_system.Kernel());
+        m_thread.join();
+    }
 
     m_ctx.CloseEvent(m_event);
     m_system.CoreTiming().UnscheduleEvent(m_timer_steady_clock_timing_event);
@@ -122,166 +125,164 @@ void TimeWorker::Initialize(std::shared_ptr<Service::PSC::Time::StaticService> t
 }
 
 void TimeWorker::StartThread() {
-    m_thread = std::jthread(std::bind_front(&TimeWorker::ThreadFunc, this));
-}
+    m_thread = m_system.Kernel().RunOnHostCoreThread("TimeWorker", [this]() {
+        auto const stop_token = m_thread.get_stop_token();
+        Common::SetCurrentThreadPriority(Common::ThreadPriority::Low);
+        while (!stop_token.stop_requested()) {
+            enum class EventType : s32 {
+                Exit = 0,
+                PowerStateChange = 1,
+                SignalAlarms = 2,
+                UpdateLocalSystemClock = 3,
+                UpdateNetworkSystemClock = 4,
+                UpdateEphemeralSystemClock = 5,
+                UpdateSteadyClock = 6,
+                UpdateFileTimestamp = 7,
+                AutoCorrect = 8,
+            };
 
-void TimeWorker::ThreadFunc(std::stop_token stop_token) {
-    Common::SetCurrentThreadName("TimeWorker");
-    Common::SetCurrentThreadPriority(Common::ThreadPriority::Low);
+            s32 index{};
 
-    while (!stop_token.stop_requested()) {
-        enum class EventType : s32 {
-            Exit = 0,
-            PowerStateChange = 1,
-            SignalAlarms = 2,
-            UpdateLocalSystemClock = 3,
-            UpdateNetworkSystemClock = 4,
-            UpdateEphemeralSystemClock = 5,
-            UpdateSteadyClock = 6,
-            UpdateFileTimestamp = 7,
-            AutoCorrect = 8,
-        };
-
-        s32 index{};
-
-        if (m_pm_state_change_handler.m_priority != 0) {
-            // TODO: gIPmModuleService::GetEvent() 1
-            index = WaitAny(m_system.Kernel(),
-                            &m_event->GetReadableEvent(), // 0
-                            &m_alarm_worker.GetEvent()    // 1
-            );
-        } else {
-            // TODO: gIPmModuleService::GetEvent() 1
-            index = WaitAny(m_system.Kernel(),
-                            &m_event->GetReadableEvent(),                       // 0
-                            &m_alarm_worker.GetEvent(),                         // 1
-                            &m_alarm_worker.GetTimerEvent().GetReadableEvent(), // 2
-                            m_local_clock_event,                                // 3
-                            m_network_clock_event,                              // 4
-                            m_ephemeral_clock_event,                            // 5
-                            &m_timer_steady_clock->GetReadableEvent(),          // 6
-                            &m_timer_file_system->GetReadableEvent(),           // 7
-                            m_standard_user_auto_correct_clock_event            // 8
-            );
-        }
-
-        switch (static_cast<EventType>(index)) {
-        case EventType::Exit:
-            return;
-
-        case EventType::PowerStateChange:
-            m_alarm_worker.GetEvent().Clear(m_system.Kernel());
-            if (m_pm_state_change_handler.m_priority <= 1) {
-                m_alarm_worker.OnPowerStateChanged();
+            if (m_pm_state_change_handler.m_priority != 0) {
+                // TODO: gIPmModuleService::GetEvent() 1
+                index = WaitAny(
+                    m_system.Kernel(),
+                    &m_event->GetReadableEvent(), // 0
+                    &m_alarm_worker.GetEvent()    // 1
+                );
+            } else {
+                // TODO: gIPmModuleService::GetEvent() 1
+                index = WaitAny(
+                    m_system.Kernel(),
+                    &m_event->GetReadableEvent(),                       // 0
+                    &m_alarm_worker.GetEvent(),                         // 1
+                    &m_alarm_worker.GetTimerEvent().GetReadableEvent(), // 2
+                    m_local_clock_event,                                // 3
+                    m_network_clock_event,                              // 4
+                    m_ephemeral_clock_event,                            // 5
+                    &m_timer_steady_clock->GetReadableEvent(),          // 6
+                    &m_timer_file_system->GetReadableEvent(),           // 7
+                    m_standard_user_auto_correct_clock_event            // 8
+                );
             }
-            break;
 
-        case EventType::SignalAlarms:
-            m_alarm_worker.GetTimerEvent().Clear(m_system.Kernel());
-            m_time_m->CheckAndSignalAlarms();
-            break;
+            if (stop_token.stop_requested())
+                break;
 
-        case EventType::UpdateLocalSystemClock: {
-            m_local_clock_event->Clear(m_system.Kernel());
+            switch (EventType(index)) {
+            case EventType::Exit:
+                return;
 
-            Service::PSC::Time::SystemClockContext context{};
-            R_ASSERT(m_local_clock->GetSystemClockContext(&context));
+            case EventType::PowerStateChange:
+                m_alarm_worker.GetEvent().Clear(m_system.Kernel());
+                if (m_pm_state_change_handler.m_priority <= 1) {
+                    m_alarm_worker.OnPowerStateChanged();
+                }
+                break;
 
-            m_set_sys->SetUserSystemClockContext(context);
-            m_file_timestamp_worker.SetFilesystemPosixTime();
-            break;
-        }
+            case EventType::SignalAlarms:
+                m_alarm_worker.GetTimerEvent().Clear(m_system.Kernel());
+                m_time_m->CheckAndSignalAlarms();
+                break;
 
-        case EventType::UpdateNetworkSystemClock: {
-            m_network_clock_event->Clear(m_system.Kernel());
+            case EventType::UpdateLocalSystemClock: {
+                m_local_clock_event->Clear(m_system.Kernel());
 
-            Service::PSC::Time::SystemClockContext context{};
-            R_ASSERT(m_network_clock->GetSystemClockContext(&context));
+                Service::PSC::Time::SystemClockContext context{};
+                R_ASSERT(m_local_clock->GetSystemClockContext(&context));
 
-            m_set_sys->SetNetworkSystemClockContext(context);
-
-            s64 time{};
-            if (m_network_clock->GetCurrentTime(&time) != ResultSuccess) {
+                m_set_sys->SetUserSystemClockContext(context);
+                m_file_timestamp_worker.SetFilesystemPosixTime();
                 break;
             }
 
-            [[maybe_unused]] auto offset_before{
-                m_ig_report_network_clock_context_set ? m_report_network_clock_context.offset : 0};
-            // TODO system report "standard_netclock_operation"
-            //              "clock_time" = time
-            //              "context_offset_before" = offset_before
-            //              "context_offset_after"  = context.offset
-            m_report_network_clock_context = context;
-            if (!m_ig_report_network_clock_context_set) {
-                m_ig_report_network_clock_context_set = true;
-            }
+            case EventType::UpdateNetworkSystemClock: {
+                m_network_clock_event->Clear(m_system.Kernel());
 
-            m_file_timestamp_worker.SetFilesystemPosixTime();
-            break;
-        }
+                Service::PSC::Time::SystemClockContext context{};
+                R_ASSERT(m_network_clock->GetSystemClockContext(&context));
 
-        case EventType::UpdateEphemeralSystemClock: {
-            m_ephemeral_clock_event->Clear(m_system.Kernel());
+                m_set_sys->SetNetworkSystemClockContext(context);
 
-            Service::PSC::Time::SystemClockContext context{};
-            auto res = m_ephemeral_clock->GetSystemClockContext(&context);
-            if (res != ResultSuccess) {
+                s64 time{};
+                if (m_network_clock->GetCurrentTime(&time) != ResultSuccess) {
+                    break;
+                }
+
+                [[maybe_unused]] auto offset_before{
+                    m_ig_report_network_clock_context_set ? m_report_network_clock_context.offset : 0};
+                // TODO system report "standard_netclock_operation"
+                //              "clock_time" = time
+                //              "context_offset_before" = offset_before
+                //              "context_offset_after"  = context.offset
+                m_report_network_clock_context = context;
+                if (!m_ig_report_network_clock_context_set) {
+                    m_ig_report_network_clock_context_set = true;
+                }
+
+                m_file_timestamp_worker.SetFilesystemPosixTime();
                 break;
             }
 
-            s64 time{};
-            res = m_ephemeral_clock->GetCurrentTime(&time);
-            if (res != ResultSuccess) {
+            case EventType::UpdateEphemeralSystemClock: {
+                m_ephemeral_clock_event->Clear(m_system.Kernel());
+
+                Service::PSC::Time::SystemClockContext context{};
+                auto res = m_ephemeral_clock->GetSystemClockContext(&context);
+                if (res != ResultSuccess) {
+                    break;
+                }
+
+                s64 time{};
+                res = m_ephemeral_clock->GetCurrentTime(&time);
+                if (res != ResultSuccess) {
+                    break;
+                }
+
+                [[maybe_unused]] auto offset_before{m_ig_report_ephemeral_clock_context_set
+                                                        ? m_report_ephemeral_clock_context.offset
+                                                        : 0};
+                // TODO system report "ephemeral_netclock_operation"
+                //              "clock_time" = time
+                //              "context_offset_before" = offset_before
+                //              "context_offset_after"  = context.offset
+                m_report_ephemeral_clock_context = context;
+                if (!m_ig_report_ephemeral_clock_context_set) {
+                    m_ig_report_ephemeral_clock_context_set = true;
+                }
                 break;
             }
 
-            [[maybe_unused]] auto offset_before{m_ig_report_ephemeral_clock_context_set
-                                                    ? m_report_ephemeral_clock_context.offset
-                                                    : 0};
-            // TODO system report "ephemeral_netclock_operation"
-            //              "clock_time" = time
-            //              "context_offset_before" = offset_before
-            //              "context_offset_after"  = context.offset
-            m_report_ephemeral_clock_context = context;
-            if (!m_ig_report_ephemeral_clock_context_set) {
-                m_ig_report_ephemeral_clock_context_set = true;
+            case EventType::UpdateSteadyClock:
+                m_timer_steady_clock->Clear(m_system.Kernel());
+
+                m_steady_clock_resource.UpdateTime();
+                m_time_m->SetStandardSteadyClockBaseTime(m_steady_clock_resource.GetTime());
+                break;
+
+            case EventType::UpdateFileTimestamp:
+                m_timer_file_system->Clear(m_system.Kernel());
+                m_file_timestamp_worker.SetFilesystemPosixTime();
+                break;
+
+            case EventType::AutoCorrect: {
+                m_standard_user_auto_correct_clock_event->Clear(m_system.Kernel());
+
+                bool automatic_correction{};
+                R_ASSERT(m_time_sm->IsStandardUserSystemClockAutomaticCorrectionEnabled(&automatic_correction));
+
+                Service::PSC::Time::SteadyClockTimePoint time_point{};
+                R_ASSERT(m_time_sm->GetStandardUserSystemClockAutomaticCorrectionUpdatedTime(&time_point));
+
+                m_set_sys->SetUserSystemClockAutomaticCorrectionEnabled(automatic_correction);
+                m_set_sys->SetUserSystemClockAutomaticCorrectionUpdatedTime(time_point);
+                break;
             }
-            break;
+            default:
+                UNREACHABLE();
+            }
         }
-
-        case EventType::UpdateSteadyClock:
-            m_timer_steady_clock->Clear(m_system.Kernel());
-
-            m_steady_clock_resource.UpdateTime();
-            m_time_m->SetStandardSteadyClockBaseTime(m_steady_clock_resource.GetTime());
-            break;
-
-        case EventType::UpdateFileTimestamp:
-            m_timer_file_system->Clear(m_system.Kernel());
-
-            m_file_timestamp_worker.SetFilesystemPosixTime();
-            break;
-
-        case EventType::AutoCorrect: {
-            m_standard_user_auto_correct_clock_event->Clear(m_system.Kernel());
-
-            bool automatic_correction{};
-            R_ASSERT(m_time_sm->IsStandardUserSystemClockAutomaticCorrectionEnabled(
-                &automatic_correction));
-
-            Service::PSC::Time::SteadyClockTimePoint time_point{};
-            R_ASSERT(
-                m_time_sm->GetStandardUserSystemClockAutomaticCorrectionUpdatedTime(&time_point));
-
-            m_set_sys->SetUserSystemClockAutomaticCorrectionEnabled(automatic_correction);
-            m_set_sys->SetUserSystemClockAutomaticCorrectionUpdatedTime(time_point);
-            break;
-        }
-
-        default:
-            UNREACHABLE();
-        }
-    }
+    });
 }
 
 } // namespace Service::Glue::Time

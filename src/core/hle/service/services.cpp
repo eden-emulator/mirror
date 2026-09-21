@@ -94,6 +94,9 @@ Services::Services(std::shared_ptr<SM::ServiceManager>& sm, Core::System& system
         {"ldn",        &LDN::LoopProcess},
         {"nvservices", &Nvidia::LoopProcess},
         {"bsdsocket",  &Sockets::LoopProcess},
+        // TODO: glue is only required here as otherwise the dummythread doesn't close
+        // TODO: rework sched so this isn't needed
+        {"glue",       &Glue::LoopProcess},
     })
         kernel.RunOnHostCoreProcess(std::string(e.first), [&system, f = e.second] { f(system); }).detach();
     kernel.RunOnHostCoreProcess("vi",         [&, token] { VI::LoopProcess(system, token); }).detach();
@@ -117,7 +120,6 @@ Services::Services(std::shared_ptr<SM::ServiceManager>& sm, Core::System& system
         {"friends",    &Friend::LoopProcess},
         {"settings",   &Set::LoopProcess},
         {"psc",        &PSC::LoopProcess},
-        {"glue",       &Glue::LoopProcess},
         {"grc",        &GRC::LoopProcess},
         {"hid",        &HID::LoopProcess},
         {"jit",        &JIT::LoopProcess},
