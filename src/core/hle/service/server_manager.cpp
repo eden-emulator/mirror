@@ -98,8 +98,10 @@ ServerManager::~ServerManager() {
     // Signal stop.
     m_stop_source.request_stop();
     m_wakeup_event->Signal(m_system.Kernel());
+    if (m_deferral_event) m_deferral_event->Signal(m_system.Kernel()); //for sm: and ports
 
-    // Wait for processing to stop.
+
+    // Wait for processing to stop. Schedule
     m_stopped.Wait();
     m_threads.clear();
 
@@ -258,6 +260,7 @@ void ServerManager::NotifyShutdown() {
     m_stop_source.request_stop();
     // Wake them up regardless
     m_wakeup_event->Signal(m_system.Kernel());
+    if (m_deferral_event) m_deferral_event->Signal(m_system.Kernel()); //for sm: and ports
 }
 
 Result ServerManager::LoopProcess() {

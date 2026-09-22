@@ -305,16 +305,14 @@ SM::SM(ServiceManager& service_manager_, Core::System& system_)
 SM::~SM() = default;
 
 void LoopProcess(Core::System& system) {
-    auto& service_manager = system.ServiceManager();
     auto server_manager = std::make_unique<ServerManager>(system);
-
     Kernel::KEvent* deferral_event{};
     server_manager->ManageDeferral(&deferral_event);
-    service_manager.SetDeferralEvent(deferral_event);
-
+    system.ServiceManager().SetDeferralEvent(deferral_event);
     auto sm_service = std::make_shared<SM>(system.ServiceManager(), system);
-    server_manager->ManageNamedPort("sm:", [sm_service] { return sm_service; });
-
+    server_manager->ManageNamedPort("sm:", [sm_service] {
+        return sm_service;
+    });
     ServerManager::RunServer(std::move(server_manager));
 }
 
