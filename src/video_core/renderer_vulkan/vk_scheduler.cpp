@@ -56,9 +56,7 @@ Scheduler::~Scheduler() = default;
 
 u64 Scheduler::Flush(VkSemaphore signal_semaphore, VkSemaphore wait_semaphore) {
     // When flushing, we only send data to the worker thread; no waiting is necessary.
-    const u64 signal_value = SubmitExecution(signal_semaphore, wait_semaphore);
-    AllocateNewContext();
-    return signal_value;
+    return SubmitExecution(signal_semaphore, wait_semaphore);
 }
 
 void Scheduler::Finish(VkSemaphore signal_semaphore, VkSemaphore wait_semaphore) {
@@ -66,7 +64,6 @@ void Scheduler::Finish(VkSemaphore signal_semaphore, VkSemaphore wait_semaphore)
     const u64 presubmit_tick = CurrentTick();
     SubmitExecution(signal_semaphore, wait_semaphore);
     Wait(presubmit_tick);
-    AllocateNewContext();
 }
 
 void Scheduler::WaitWorker() {
@@ -382,10 +379,6 @@ u64 Scheduler::SubmitExecution(VkSemaphore signal_semaphore, VkSemaphore wait_se
     chunk->MarkSubmit();
     DispatchWork();
     return signal_value;
-}
-
-void Scheduler::AllocateNewContext() {
-    // Enable counters once again. These are disabled when a command buffer is finished.
 }
 
 void Scheduler::InvalidateState() {

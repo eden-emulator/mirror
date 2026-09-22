@@ -1011,7 +1011,6 @@ FN_MAX_LIMIT_LIST
         return features2.features.multiViewport;
     }
 
-    /// Returns true if the device supports VK_KHR_maintenance5.
     /// Returns true if the device supports VK_KHR_maintenance4.
     bool IsKhrMaintenance4Supported() const {
         return extensions.maintenance4;

@@ -287,8 +287,6 @@ private:
 
     u64 SubmitExecution(VkSemaphore signal_semaphore, VkSemaphore wait_semaphore);
 
-    void AllocateNewContext();
-
     void EndPendingOperations();
 
     void EndRenderPass();
