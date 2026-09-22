@@ -23,7 +23,7 @@ public:
         Count,
     };
 
-    KWorkerTaskManager();
+    KWorkerTaskManager(KernelCore& kernel);
     ~KWorkerTaskManager();
 
     static void AddTask(KernelCore& kernel, WorkerType type, KWorkerTask* task);

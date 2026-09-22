@@ -41,19 +41,16 @@ OpusDecoder::OpusDecoder(Core::System& system_) : system{system_} {
 }
 
 OpusDecoder::~OpusDecoder() {
-    if (!running) {
+    if (main_thread.joinable()) {
+        // Shutdown the thread
+        Send(Direction::DSP, Message::Shutdown);
+        main_thread.request_stop();
+        auto msg = Receive(Direction::Host, main_thread.get_stop_token());
+        ASSERT_MSG(msg == Message::ShutdownOK, "Expected Opus shutdown code {}, got {}", Message::ShutdownOK, msg);
+        main_thread.join();
+    } else {
         init_thread.request_stop();
-        return;
     }
-
-    // Shutdown the thread
-    Send(Direction::DSP, Message::Shutdown);
-    auto msg = Receive(Direction::Host);
-    ASSERT_MSG(msg == Message::ShutdownOK, "Expected Opus shutdown code {}, got {}",
-               Message::ShutdownOK, msg);
-    main_thread.request_stop();
-    main_thread.join();
-    running = false;
 }
 
 void OpusDecoder::Send(Direction dir, u32 message) {
@@ -73,7 +70,6 @@ void OpusDecoder::Init(std::stop_token stop_token) {
         return;
     }
     main_thread = std::jthread([this](std::stop_token st) { Main(st); });
-    running = true;
     Send(Direction::Host, Message::StartOK);
 }
 
