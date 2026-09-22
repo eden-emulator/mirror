@@ -227,11 +227,13 @@ public:
                     .dstOffset = 0,
                     .size = size_bytes,
                 };
-                const VkBufferMemoryBarrier write_barrier{
-                    .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                const VkBufferMemoryBarrier2 write_barrier{
+                    .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
                     .pNext = nullptr,
-                    .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                    .dstAccessMask = VK_ACCESS_INDEX_READ_BIT,
+                    .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                    .dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,
+                    .dstAccessMask = VK_ACCESS_2_INDEX_READ_BIT,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                     .buffer = dst_buffer,
@@ -239,8 +241,7 @@ public:
                     .size = size_bytes,
                 };
                 cmdbuf.CopyBuffer(src_buffer, dst_buffer, copy);
-                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                       VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, write_barrier);
+                cmdbuf.PipelineBarrier(write_barrier);
             });
         } else {
             buffer.Flush();
@@ -456,17 +457,21 @@ void BufferCacheRuntime::CopyBuffer(VkBuffer dst_buffer, VkBuffer src_buffer,
     if (dst_buffer == VK_NULL_HANDLE || src_buffer == VK_NULL_HANDLE) {
         return;
     }
-    static constexpr VkMemoryBarrier READ_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+    static constexpr VkMemoryBarrier2 READ_BARRIER{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
     };
-    static constexpr VkMemoryBarrier WRITE_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+    static constexpr VkMemoryBarrier2 WRITE_BARRIER{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
     };
 
     // Measuring a popular game, this number never exceeds the specified size once data is warmed up
@@ -483,42 +488,42 @@ void BufferCacheRuntime::CopyBuffer(VkBuffer dst_buffer, VkBuffer src_buffer,
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([src_buffer, dst_buffer, vk_copies, barrier](vk::CommandBuffer cmdbuf) {
         if (barrier) {
-            cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
-                                   VK_PIPELINE_STAGE_TRANSFER_BIT, 0, READ_BARRIER);
+            cmdbuf.PipelineBarrier(READ_BARRIER);
         }
         cmdbuf.CopyBuffer(src_buffer, dst_buffer, VideoCommon::FixSmallVectorADL(vk_copies));
         if (barrier) {
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, 0, WRITE_BARRIER);
+            cmdbuf.PipelineBarrier(WRITE_BARRIER);
         }
     });
 }
 
 void BufferCacheRuntime::PreCopyBarrier() {
-    static constexpr VkMemoryBarrier READ_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+    static constexpr VkMemoryBarrier2 READ_BARRIER{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
     };
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([](vk::CommandBuffer cmdbuf) {
-        cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               0, READ_BARRIER);
+        cmdbuf.PipelineBarrier(READ_BARRIER);
     });
 }
 
 void BufferCacheRuntime::PostCopyBarrier() {
-    static constexpr VkMemoryBarrier WRITE_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+    static constexpr VkMemoryBarrier2 WRITE_BARRIER{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
     };
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([](vk::CommandBuffer cmdbuf) {
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                               0, WRITE_BARRIER);
+        cmdbuf.PipelineBarrier(WRITE_BARRIER);
     });
 }
 
@@ -526,26 +531,28 @@ void BufferCacheRuntime::ClearBuffer(VkBuffer dest_buffer, u32 offset, size_t si
     if (dest_buffer == VK_NULL_HANDLE) {
         return;
     }
-    static constexpr VkMemoryBarrier READ_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+    static constexpr VkMemoryBarrier2 READ_BARRIER{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
     };
-    static constexpr VkMemoryBarrier WRITE_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+    static constexpr VkMemoryBarrier2 WRITE_BARRIER{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
     };
 
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([dest_buffer, offset, size, value](vk::CommandBuffer cmdbuf) {
-        cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               0, READ_BARRIER);
+        cmdbuf.PipelineBarrier(READ_BARRIER);
         cmdbuf.FillBuffer(dest_buffer, offset, size, value);
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                               0, WRITE_BARRIER);
+        cmdbuf.PipelineBarrier(WRITE_BARRIER);
     });
 }
 

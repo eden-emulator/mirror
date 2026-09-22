@@ -649,14 +649,15 @@ void RasterizerVulkan::DispatchCompute() {
         return;
     }
     scheduler.RequestOutsideRenderPassOperationContext();
-    static constexpr VkMemoryBarrier READ_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+    static constexpr VkMemoryBarrier2 READ_BARRIER{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
+        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
     };
-    scheduler.Record([](vk::CommandBuffer cmdbuf) { cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                               0, READ_BARRIER); });
+    scheduler.Record([](vk::CommandBuffer cmdbuf) { cmdbuf.PipelineBarrier(READ_BARRIER); });
     scheduler.Record([pipeline, dim](vk::CommandBuffer cmdbuf) {
         if (!pipeline->IsBound()) {
             return;
@@ -882,22 +883,42 @@ void RasterizerVulkan::FlushAndInvalidateRegion(DAddr addr, u64 size,
 void RasterizerVulkan::WaitForIdle() {
     // Everything but wait pixel operations. This intentionally includes FRAGMENT_SHADER_BIT because
     // fragment shaders can still write storage buffers.
-    VkPipelineStageFlags flags =
-        VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT |
-        VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT |
-        VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT |
-        VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT;
+    VkPipelineStageFlags2 flags =
+        VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT |
+        VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
+        VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT |
+        VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT |
+        VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_TRANSFER_BIT;
     if (device.IsExtTransformFeedbackSupported()) {
-        flags |= VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT;
+        flags |= VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
     }
 
     query_cache.NotifyWFI();
 
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([event = *wfi_event, flags](vk::CommandBuffer cmdbuf) {
-        cmdbuf.SetEvent(event, flags);
-        cmdbuf.WaitEvents(event, flags, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, {}, {}, {});
+        const VkMemoryBarrier2 barrier{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+            .pNext = nullptr,
+            .srcStageMask = flags,
+            .srcAccessMask = VK_ACCESS_2_NONE,
+            .dstStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+            .dstAccessMask = VK_ACCESS_2_NONE,
+        };
+        const VkDependencyInfo dependency_info{
+            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pNext = nullptr,
+            .dependencyFlags = 0,
+            .memoryBarrierCount = 1,
+            .pMemoryBarriers = &barrier,
+            .bufferMemoryBarrierCount = 0,
+            .pBufferMemoryBarriers = nullptr,
+            .imageMemoryBarrierCount = 0,
+            .pImageMemoryBarriers = nullptr,
+        };
+        cmdbuf.SetEvent(event, dependency_info);
+        cmdbuf.WaitEvents(event, dependency_info);
     });
     fence_manager.SignalOrdering();
 }

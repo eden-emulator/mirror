@@ -640,8 +640,7 @@ FN_MAX_LIMIT_LIST
 
     /// Returns true if the device supports VK_KHR_depth_stencil_resolve.
     bool IsKhrDepthStencilResolveSupported() const {
-        return (extensions.depth_stencil_resolve || instance_version >= VK_API_VERSION_1_2) &&
-               IsKhrCreateRenderPass2Supported();
+        return extensions.depth_stencil_resolve || instance_version >= VK_API_VERSION_1_2;
     }
 
     /// Returns the supported resolve modes for the depth aspect.
@@ -904,11 +903,6 @@ FN_MAX_LIMIT_LIST
     }
 
     bool HasTimelineSemaphore() const;
-
-    /// Returns true if the device supports VK_KHR_synchronization2.
-    bool HasSynchronization2() const {
-        return extensions.synchronization2;
-    }
 
     /// Returns the minimum supported version of SPIR-V.
     u32 SupportedSpirvVersion() const {

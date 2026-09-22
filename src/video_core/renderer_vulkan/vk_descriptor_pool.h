@@ -65,7 +65,8 @@ private:
 
 class DescriptorPool {
 public:
-    DescriptorPool();
+
+DescriptorPool();
     ~DescriptorPool();
 
     DescriptorPool& operator=(const DescriptorPool&) = delete;

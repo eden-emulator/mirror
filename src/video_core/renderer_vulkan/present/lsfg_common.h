@@ -147,10 +147,10 @@ public:
     void Build();
 
 private:
-    LsfgBarriers& Push(LsfgImage& image, VkAccessFlags src_access, VkAccessFlags dst_access);
+    LsfgBarriers& Push(LsfgImage& image, VkAccessFlags2 src_access, VkAccessFlags2 dst_access);
 
     vk::CommandBuffer cmdbuf;
-    std::vector<VkImageMemoryBarrier> barriers;
+    std::vector<VkImageMemoryBarrier2> barriers;
 };
 
 class LsfgDescriptorWriter {

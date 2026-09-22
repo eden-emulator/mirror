@@ -689,12 +689,12 @@ struct RangedBarrierRange {
 void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage image,
                        VkImageAspectFlags aspect_mask, bool is_initialized,
                        std::span<const VkBufferImageCopy> copies) {
-    static constexpr VkAccessFlags WRITE_ACCESS_FLAGS =
-                                           VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                           VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    static constexpr VkAccessFlags READ_ACCESS_FLAGS = VK_ACCESS_SHADER_READ_BIT |
-                                                       VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                                                       VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    static constexpr VkAccessFlags2 WRITE_ACCESS_FLAGS =
+                                           VK_ACCESS_2_SHADER_WRITE_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
+                                           VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    static constexpr VkAccessFlags2 READ_ACCESS_FLAGS = VK_ACCESS_2_SHADER_READ_BIT |
+                                                       VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
+                                                       VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 
     //  Compute exact mip/layer range being written to
     RangedBarrierRange range;
@@ -703,11 +703,15 @@ void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage im
     }
     const VkImageSubresourceRange subresource_range = range.SubresourceRange(aspect_mask);
 
-    const VkImageMemoryBarrier read_barrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+    const VkImageMemoryBarrier2 read_barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
+            .srcStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT |
+                            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+                            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
             .srcAccessMask = WRITE_ACCESS_FLAGS,
-            .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
             .oldLayout = is_initialized ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_UNDEFINED,
             .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -716,10 +720,14 @@ void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage im
             .subresourceRange = subresource_range,
     };
 
-    const VkImageMemoryBarrier write_barrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+    const VkImageMemoryBarrier2 write_barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT |
+                            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT |
+                            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
             .dstAccessMask = WRITE_ACCESS_FLAGS | READ_ACCESS_FLAGS,
             .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -729,18 +737,10 @@ void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage im
             .subresourceRange = subresource_range,
     };
 
-    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
-                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-                           read_barrier);
+    cmdbuf.PipelineBarrier(read_barrier);
     cmdbuf.CopyBufferToImage(src_buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copies);
     // TODO: Move this to another API
-    cmdbuf.PipelineBarrier(
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            0, nullptr, nullptr, write_barrier);
+    cmdbuf.PipelineBarrier(0, {}, {}, write_barrier);
 }
 
 [[nodiscard]] VkImageBlit MakeImageBlit(const Region2D& dst_region, const Region2D& src_region,
@@ -940,11 +940,13 @@ void BlitScale(Scheduler& scheduler, VkImage src_image, VkImage dst_image, const
             .layerCount = VK_REMAINING_ARRAY_LAYERS,
         };
         const std::array read_barriers{
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -952,13 +954,15 @@ void BlitScale(Scheduler& scheduler, VkImage src_image, VkImage dst_image, const
                 .image = src_image,
                 .subresourceRange = subresource_range,
             },
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT |
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, // Discard contents
                 .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -968,11 +972,13 @@ void BlitScale(Scheduler& scheduler, VkImage src_image, VkImage dst_image, const
             },
         };
         const std::array write_barriers{
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
+                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                 .srcAccessMask = 0,
-                .dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT,
+                .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+                .dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -980,11 +986,13 @@ void BlitScale(Scheduler& scheduler, VkImage src_image, VkImage dst_image, const
                 .image = src_image,
                 .subresourceRange = subresource_range,
             },
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT | VK_ACCESS_MEMORY_READ_BIT,
+                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+                .dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -993,12 +1001,10 @@ void BlitScale(Scheduler& scheduler, VkImage src_image, VkImage dst_image, const
                 .subresourceRange = subresource_range,
             },
         };
-        cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                       0, nullptr, nullptr, read_barriers);
+        cmdbuf.PipelineBarrier(0, {}, {}, read_barriers);
         cmdbuf.BlitImage(src_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst_image,
                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions, vk_filter);
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                       0, nullptr, nullptr, write_barriers);
+        cmdbuf.PipelineBarrier(0, {}, {}, write_barriers);
     });
 }
 } // Anonymous namespace
@@ -1253,26 +1259,32 @@ void TextureCacheRuntime::ReinterpretImage(Image& dst, Image& src,
         for (const VkBufferImageCopy& copy : vk_out_copies) {
             dst_range.AddLayers(copy.imageSubresource);
         }
-        static constexpr VkMemoryBarrier READ_BARRIER{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        static constexpr VkMemoryBarrier2 READ_BARRIER{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+            .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+            .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
         };
-        static constexpr VkMemoryBarrier WRITE_BARRIER{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        static constexpr VkMemoryBarrier2 WRITE_BARRIER{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+            .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
         };
         const std::array pre_barriers{
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1282,10 +1294,12 @@ void TextureCacheRuntime::ReinterpretImage(Image& dst, Image& src,
             },
         };
         const std::array middle_in_barrier{
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
+                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                 .srcAccessMask = 0,
+                .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
                 .dstAccessMask = 0,
                 .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -1296,13 +1310,15 @@ void TextureCacheRuntime::ReinterpretImage(Image& dst, Image& src,
             },
         };
         const std::array middle_out_barrier{
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1312,16 +1328,18 @@ void TextureCacheRuntime::ReinterpretImage(Image& dst, Image& src,
             },
         };
         const std::array post_barriers{
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                                 VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+                .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT |
+                                 VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
+                                 VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1330,19 +1348,15 @@ void TextureCacheRuntime::ReinterpretImage(Image& dst, Image& src,
                 .subresourceRange = dst_range.SubresourceRange(dst_aspect_mask),
             },
         };
-        cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                       0, {}, {}, pre_barriers);
+        cmdbuf.PipelineBarrier(0, {}, {}, pre_barriers);
 
         cmdbuf.CopyImageToBuffer(src_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, copy_buffer,
                                  vk_in_copies);
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                       0, WRITE_BARRIER, nullptr, middle_in_barrier);
+        cmdbuf.PipelineBarrier(0, WRITE_BARRIER, {}, middle_in_barrier);
 
-        cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                       0, READ_BARRIER, {}, middle_out_barrier);
+        cmdbuf.PipelineBarrier(0, READ_BARRIER, {}, middle_out_barrier);
         cmdbuf.CopyBufferToImage(copy_buffer, dst_image, VK_IMAGE_LAYOUT_GENERAL, vk_out_copies);
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                       0, {}, {}, post_barriers);
+        cmdbuf.PipelineBarrier(0, {}, {}, post_barriers);
     });
 }
 
@@ -1421,13 +1435,15 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
     scheduler.Record([filter, dst_region, src_region, dst_image, src_image, dst_layers, src_layers,
                       aspect_mask, is_resolve](vk::CommandBuffer cmdbuf) {
         const std::array read_barriers{
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT |
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1441,13 +1457,15 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
                     .layerCount = VK_REMAINING_ARRAY_LAYERS,
                 },
             },
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT |
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1462,14 +1480,16 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
                 },
             },
         };
-        VkImageMemoryBarrier write_barrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        VkImageMemoryBarrier2 write_barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                             VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+            .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT |
+                             VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                             VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                             VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
             .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1483,8 +1503,7 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         };
-        cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                       0, nullptr, nullptr, read_barriers);
+        cmdbuf.PipelineBarrier(0, {}, {}, read_barriers);
         if (is_resolve) {
             cmdbuf.ResolveImage(src_image, VK_IMAGE_LAYOUT_GENERAL, dst_image,
                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -1496,8 +1515,7 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
                 src_image, VK_IMAGE_LAYOUT_GENERAL, dst_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 MakeImageBlit(dst_region, src_region, dst_layers, src_layers), vk_filter);
         }
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                       0, write_barrier);
+        cmdbuf.PipelineBarrier(write_barrier);
     });
 }
 
@@ -1661,13 +1679,18 @@ void TextureCacheRuntime::CopyImage(Image& dst, Image& src,
             src_range.AddLayers(copy.srcSubresource);
         }
         const std::array pre_barriers{
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                .srcStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT |
+                                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT |
+                                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1675,13 +1698,18 @@ void TextureCacheRuntime::CopyImage(Image& dst, Image& src,
                 .image = src_image,
                 .subresourceRange = src_range.SubresourceRange(aspect_mask),
             },
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                .srcStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT |
+                                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT |
+                                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1691,10 +1719,15 @@ void TextureCacheRuntime::CopyImage(Image& dst, Image& src,
             },
         };
         const std::array post_barriers{
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
+                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                 .srcAccessMask = 0,
+                .dstStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT |
+                                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT |
+                                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                 .dstAccessMask = 0,
                 .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -1703,16 +1736,21 @@ void TextureCacheRuntime::CopyImage(Image& dst, Image& src,
                 .image = src_image,
                 .subresourceRange = src_range.SubresourceRange(aspect_mask),
             },
-            VkImageMemoryBarrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                                 VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
-                                 VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT |
+                                VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT |
+                                VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT |
+                                 VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
+                                 VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                 VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                 VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1721,18 +1759,10 @@ void TextureCacheRuntime::CopyImage(Image& dst, Image& src,
                 .subresourceRange = dst_range.SubresourceRange(aspect_mask),
             },
         };
-        cmdbuf.PipelineBarrier(
-                VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                0, nullptr, nullptr, pre_barriers);
+        cmdbuf.PipelineBarrier(0, {}, {}, pre_barriers);
         cmdbuf.CopyImage(src_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst_image,
                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VideoCommon::FixSmallVectorADL(vk_copies));
-        cmdbuf.PipelineBarrier(
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
-                0, nullptr, nullptr, post_barriers);
+        cmdbuf.PipelineBarrier(0, {}, {}, post_barriers);
     });
 }
 
@@ -1752,16 +1782,16 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
             static_cast<u32>(copy.src_subresource.base_layer + copy.src_subresource.num_layers) <=
                 shadow->layers) {
             const VkImageAspectFlags aspect_mask = shadow->aspect_mask;
-            VkPipelineStageFlags attachment_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            VkAccessFlags attachment_write = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            VkAccessFlags attachment_read_write =
-                VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            VkPipelineStageFlags2 attachment_stage = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+            VkAccessFlags2 attachment_write = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+            VkAccessFlags2 attachment_read_write =
+                VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
             if ((aspect_mask & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0) {
-                attachment_stage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-                                   VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-                attachment_write = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                attachment_read_write = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                attachment_stage = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
+                                   VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+                attachment_write = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                attachment_read_write = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                        VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
             }
             const VkImage shadow_image = *shadow->image;
             const VkImage dst_image = dst.Handle();
@@ -1787,11 +1817,13 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                               attachment_write,
                               attachment_read_write](vk::CommandBuffer cmdbuf) {
                 const std::array pre_barriers{
-                    VkImageMemoryBarrier{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    VkImageMemoryBarrier2{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                         .pNext = nullptr,
+                        .srcStageMask = attachment_stage | VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                         .srcAccessMask = attachment_write,
-                        .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
                         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1800,12 +1832,14 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                         .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
                                           VK_REMAINING_ARRAY_LAYERS},
                     },
-                    VkImageMemoryBarrier{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    VkImageMemoryBarrier2{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                         .pNext = nullptr,
-                        .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | attachment_write |
-                                         VK_ACCESS_TRANSFER_WRITE_BIT,
-                        .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                        .srcStageMask = attachment_stage | VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                        .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT | attachment_write |
+                                         VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                        .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
                         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1816,10 +1850,12 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                     },
                 };
                 const std::array post_barriers{
-                    VkImageMemoryBarrier{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    VkImageMemoryBarrier2{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                         .pNext = nullptr,
+                        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                         .srcAccessMask = 0,
+                        .dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
                         .dstAccessMask = 0,
                         .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -1829,12 +1865,14 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                         .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
                                           VK_REMAINING_ARRAY_LAYERS},
                     },
-                    VkImageMemoryBarrier{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    VkImageMemoryBarrier2{
+                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                         .pNext = nullptr,
-                        .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                        .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | attachment_read_write |
-                                         VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+                        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                        .dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                        .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | attachment_read_write |
+                                         VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
                         .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -1844,14 +1882,10 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                                           VK_REMAINING_ARRAY_LAYERS},
                     },
                 };
-                cmdbuf.PipelineBarrier(attachment_stage | VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                       VK_PIPELINE_STAGE_TRANSFER_BIT, 0, nullptr, nullptr,
-                                       pre_barriers);
+                cmdbuf.PipelineBarrier(0, {}, {}, pre_barriers);
                 cmdbuf.CopyImage(shadow_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst_image,
                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
-                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                       VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, nullptr, nullptr,
-                                       post_barriers);
+                cmdbuf.PipelineBarrier(0, {}, {}, post_barriers);
             });
             return;
         }
@@ -2148,23 +2182,25 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
             const VkImage temp_vk_image = runtime->AcquireMsaaScratchImage(image_ci);
 
             const VkImageAspectFlags temp_aspect_mask = aspect_mask;
-            const VkAccessFlags attachment_access =
-                msaa_download_is_depth ? (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                                          VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
-                                       : (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                                          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
-            const VkPipelineStageFlags attachment_stage =
-                msaa_download_is_depth ? (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-                                          VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT)
-                                       : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            const VkAccessFlags2 attachment_access =
+                msaa_download_is_depth ? (VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                                          VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)
+                                       : (VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
+                                          VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT);
+            const VkPipelineStageFlags2 attachment_stage =
+                msaa_download_is_depth ? (VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
+                                          VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT)
+                                       : VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
 
             scheduler->RequestOutsideRenderPassOperationContext();
             scheduler->Record([temp_vk_image, temp_aspect_mask, attachment_access,
                                attachment_stage](vk::CommandBuffer cmdbuf) {
-                const VkImageMemoryBarrier init_barrier{
-                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                const VkImageMemoryBarrier2 init_barrier{
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                     .pNext = nullptr,
+                    .srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
                     .srcAccessMask = 0,
+                    .dstStageMask = attachment_stage,
                     .dstAccessMask = attachment_access,
                     .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                     .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -2179,8 +2215,7 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
                         .layerCount = VK_REMAINING_ARRAY_LAYERS,
                     },
                 };
-                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, attachment_stage, 0,
-                                       init_barrier);
+                cmdbuf.PipelineBarrier(init_barrier);
             });
 
             boost::container::small_vector<VideoCommon::ImageCopy, 16> image_copies;
@@ -2220,11 +2255,13 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
             scheduler->RequestOutsideRenderPassOperationContext();
             scheduler->Record([buffers = std::move(buffers_vector), image = temp_vk_image,
                                aspect_mask_ = aspect_mask, vk_copies](vk::CommandBuffer cmdbuf) {
-                const VkImageMemoryBarrier read_barrier{
-                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                const VkImageMemoryBarrier2 read_barrier{
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                     .pNext = nullptr,
-                    .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-                    .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                    .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                    .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                    .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
                     .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -2238,25 +2275,28 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
                         .layerCount = VK_REMAINING_ARRAY_LAYERS,
                     },
                 };
-                cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                       0, read_barrier);
+                cmdbuf.PipelineBarrier(read_barrier);
 
                 for (size_t index = 0; index < buffers.size(); index++) {
                     cmdbuf.CopyImageToBuffer(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffers[index],
                                              vk_copies[index]);
                 }
 
-                const VkMemoryBarrier memory_write_barrier{
-                    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+                const VkMemoryBarrier2 memory_write_barrier{
+                    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
                     .pNext = nullptr,
-                    .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-                    .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+                    .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                    .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                    .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+                    .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
                 };
-                const VkImageMemoryBarrier image_write_barrier{
-                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                const VkImageMemoryBarrier2 image_write_barrier{
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                     .pNext = nullptr,
+                    .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                     .srcAccessMask = 0,
-                    .dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
+                    .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+                    .dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
                     .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                     .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                     .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -2270,8 +2310,7 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
                         .layerCount = VK_REMAINING_ARRAY_LAYERS,
                     },
                 };
-                cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                                       0, memory_write_barrier, nullptr, image_write_barrier);
+                cmdbuf.PipelineBarrier(0, memory_write_barrier, {}, image_write_barrier);
             });
             runtime->ReleaseMsaaScratchImage(temp_vk_image);
         }
@@ -2291,11 +2330,13 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
         scheduler->RequestOutsideRenderPassOperationContext();
         scheduler->Record([buffers = std::move(buffers_vector), image = *original_image,
                            aspect_mask_ = aspect_mask, vk_copies](vk::CommandBuffer cmdbuf) {
-            const VkImageMemoryBarrier read_barrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            const VkImageMemoryBarrier2 read_barrier{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -2309,25 +2350,28 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
                     .layerCount = VK_REMAINING_ARRAY_LAYERS,
                 },
             };
-            cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   0, read_barrier);
+            cmdbuf.PipelineBarrier(read_barrier);
 
             for (size_t index = 0; index < buffers.size(); index++) {
                 cmdbuf.CopyImageToBuffer(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffers[index],
                                          vk_copies[index]);
             }
 
-            const VkMemoryBarrier memory_write_barrier{
-                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            const VkMemoryBarrier2 memory_write_barrier{
+                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+                .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
             };
-            const VkImageMemoryBarrier image_write_barrier{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            const VkImageMemoryBarrier2 image_write_barrier{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
+                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
                 .srcAccessMask = 0,
-                .dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
+                .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+                .dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                 .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -2341,8 +2385,7 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
                     .layerCount = VK_REMAINING_ARRAY_LAYERS,
                 },
             };
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                                   0, memory_write_barrier, nullptr, image_write_barrier);
+            cmdbuf.PipelineBarrier(0, memory_write_barrier, {}, image_write_barrier);
         });
     }
 
@@ -3198,11 +3241,13 @@ void TextureCacheRuntime::AccelerateImageUpload(
 
 void TextureCacheRuntime::TransitionImageLayout(Image& image) {
     if (!image.ExchangeInitialization()) {
-        VkImageMemoryBarrier barrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        VkImageMemoryBarrier2 barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_NONE,
-            .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+            .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+            .srcAccessMask = VK_ACCESS_2_NONE,
+            .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+            .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
             .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -3218,8 +3263,7 @@ void TextureCacheRuntime::TransitionImageLayout(Image& image) {
         };
         scheduler.RequestOutsideRenderPassOperationContext();
         scheduler.Record([barrier](vk::CommandBuffer cmdbuf) {
-            cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                                   vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, 0, barrier);
+            cmdbuf.PipelineBarrier(barrier);
         });
     }
 }

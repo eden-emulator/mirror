@@ -123,7 +123,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdEndTransformFeedbackEXT);
     X(vkCmdEndDebugUtilsLabelEXT);
     X(vkCmdFillBuffer);
-    X(vkCmdPipelineBarrier);
     X(vkCmdPipelineBarrier2);
     X(vkCmdPushConstants);
     X(vkCmdPushDescriptorSetWithTemplateKHR);
@@ -131,13 +130,13 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdSetDepthBias);
     X(vkCmdSetDepthBias2EXT);
     X(vkCmdSetDepthBounds);
-    X(vkCmdSetEvent);
+    X(vkCmdSetEvent2);
     X(vkCmdSetScissor);
     X(vkCmdSetStencilCompareMask);
     X(vkCmdSetStencilReference);
     X(vkCmdSetStencilWriteMask);
     X(vkCmdSetViewport);
-    X(vkCmdWaitEvents);
+    X(vkCmdWaitEvents2);
     X(vkCmdBindVertexBuffers2EXT);
     X(vkCmdSetCullModeEXT);
     X(vkCmdSetDepthBoundsTestEnableEXT);
@@ -232,7 +231,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkGetSemaphoreCounterValue);
     X(vkMapMemory);
     X(vkQueueBindSparse);
-    X(vkQueueSubmit);
     X(vkQueueSubmit2);
     X(vkResetFences);
     X(vkResetQueryPool);
@@ -279,6 +277,12 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     }
     if (!dld.vkQueueSubmit2) {
         Proc(dld.vkQueueSubmit2, dld, "vkQueueSubmit2KHR", device);
+    }
+    if (!dld.vkCmdSetEvent2) {
+        Proc(dld.vkCmdSetEvent2, dld, "vkCmdSetEvent2KHR", device);
+    }
+    if (!dld.vkCmdWaitEvents2) {
+        Proc(dld.vkCmdWaitEvents2, dld, "vkCmdWaitEvents2KHR", device);
     }
 
     if (!dld.vkCreateRenderPass2) {

@@ -208,16 +208,22 @@ void TurboMode::Run(std::stop_token stop_token) {
         // Finish.
         cmdbuf.End();
 
-        const VkSubmitInfo submit_info{
-            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        const VkCommandBufferSubmitInfo cmdbuf_info{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
             .pNext = nullptr,
-            .waitSemaphoreCount = 0,
-            .pWaitSemaphores = nullptr,
-            .pWaitDstStageMask = nullptr,
-            .commandBufferCount = 1,
-            .pCommandBuffers = cmdbuf.address(),
-            .signalSemaphoreCount = 0,
-            .pSignalSemaphores = nullptr,
+            .commandBuffer = *cmdbuf,
+            .deviceMask = 0,
+        };
+        const VkSubmitInfo2 submit_info{
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+            .pNext = nullptr,
+            .flags = 0,
+            .waitSemaphoreInfoCount = 0,
+            .pWaitSemaphoreInfos = nullptr,
+            .commandBufferInfoCount = 1,
+            .pCommandBufferInfos = &cmdbuf_info,
+            .signalSemaphoreInfoCount = 0,
+            .pSignalSemaphoreInfos = nullptr,
         };
 
         m_device.GetGraphicsQueue().Submit(std::array{submit_info}, *fence);

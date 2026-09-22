@@ -49,12 +49,15 @@ vk::Image CreateWrappedImage(MemoryAllocator& allocator, VkExtent2D dimensions, 
 
 void TransitionImageLayout(vk::CommandBuffer& cmdbuf, VkImage image, VkImageLayout target_layout,
                            VkImageLayout source_layout) {
-    constexpr VkFlags flags{VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT};
-    const VkImageMemoryBarrier barrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+    constexpr VkAccessFlags2 flags{VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
+                                   VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
+                                   VK_ACCESS_2_SHADER_READ_BIT};
+    const VkImageMemoryBarrier2 barrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
+        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
         .srcAccessMask = flags,
+        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
         .dstAccessMask = flags,
         .oldLayout = source_layout,
         .newLayout = target_layout,
@@ -69,8 +72,7 @@ void TransitionImageLayout(vk::CommandBuffer& cmdbuf, VkImage image, VkImageLayo
             .layerCount = 1,
         },
     };
-    cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                           0, barrier);
+    cmdbuf.PipelineBarrier(barrier);
 }
 
 void UploadImage(const Device& device, MemoryAllocator& allocator, Scheduler& scheduler,
@@ -116,11 +118,13 @@ void UploadImage(const Device& device, MemoryAllocator& allocator, Scheduler& sc
 
 void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffer,
                         VkExtent3D extent) {
-    const VkImageMemoryBarrier read_barrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+    const VkImageMemoryBarrier2 read_barrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
         .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -134,11 +138,13 @@ void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffe
             .layerCount = VK_REMAINING_ARRAY_LAYERS,
         },
     };
-    const VkImageMemoryBarrier image_write_barrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+    const VkImageMemoryBarrier2 image_write_barrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = 0,
-        .dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
+        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .srcAccessMask = VK_ACCESS_2_NONE,
+        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+        .dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
         .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -152,11 +158,13 @@ void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffe
             .layerCount = VK_REMAINING_ARRAY_LAYERS,
         },
     };
-    static constexpr VkMemoryBarrier memory_write_barrier{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+    static constexpr VkMemoryBarrier2 memory_write_barrier{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
     };
     const VkBufferImageCopy copy{
         .bufferOffset = 0,
@@ -171,11 +179,9 @@ void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffe
         .imageOffset{.x = 0, .y = 0, .z = 0},
         .imageExtent{extent},
     };
-    cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-                           read_barrier);
+    cmdbuf.PipelineBarrier(read_barrier);
     cmdbuf.CopyImageToBuffer(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, copy);
-    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, 0,
-                           memory_write_barrier, nullptr, image_write_barrier);
+    cmdbuf.PipelineBarrier(0, memory_write_barrier, {}, image_write_barrier);
 }
 
 vk::ImageView CreateWrappedImageView(const Device& device, vk::Image& image, VkFormat format) {

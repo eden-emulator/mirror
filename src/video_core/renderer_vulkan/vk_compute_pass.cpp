@@ -322,19 +322,20 @@ std::pair<VkBuffer, VkDeviceSize> Uint8Pass::Assemble(u32 num_vertices, VkBuffer
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([this, descriptor_data, num_vertices](vk::CommandBuffer cmdbuf) {
         static constexpr u32 DISPATCH_SIZE = 1024;
-        static constexpr VkMemoryBarrier WRITE_BARRIER{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        static constexpr VkMemoryBarrier2 WRITE_BARRIER{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,
+            .dstAccessMask = VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT,
         };
         const VkDescriptorSet set = descriptor_allocator.Commit();
         device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
         cmdbuf.Dispatch(Common::DivCeil(num_vertices, DISPATCH_SIZE), 1, 1);
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                               VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, WRITE_BARRIER);
+        cmdbuf.PipelineBarrier(WRITE_BARRIER);
     });
     return {staging.buffer, staging.offset};
 }
@@ -391,11 +392,13 @@ std::pair<VkBuffer, VkDeviceSize> QuadIndexedPass::Assemble(
     scheduler.Record([this, descriptor_data, num_tri_vertices, base_vertex, index_shift,
                       is_strip](vk::CommandBuffer cmdbuf) {
         static constexpr u32 DISPATCH_SIZE = 1024;
-        static constexpr VkMemoryBarrier WRITE_BARRIER{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        static constexpr VkMemoryBarrier2 WRITE_BARRIER{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_INDEX_READ_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,
+            .dstAccessMask = VK_ACCESS_2_INDEX_READ_BIT,
         };
         const std::array<u32, 3> push_constants{base_vertex, index_shift, is_strip ? 1u : 0u};
         const VkDescriptorSet set = descriptor_allocator.Commit();
@@ -405,8 +408,7 @@ std::pair<VkBuffer, VkDeviceSize> QuadIndexedPass::Assemble(
         cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push_constants),
                              &push_constants);
         cmdbuf.Dispatch(Common::DivCeil(num_tri_vertices, DISPATCH_SIZE), 1, 1);
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                               VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, WRITE_BARRIER);
+        cmdbuf.PipelineBarrier(WRITE_BARRIER);
     });
     return {staging.buffer, staging.offset};
 }
@@ -441,11 +443,13 @@ std::pair<VkBuffer, VkDeviceSize> IndirectQuadsPass::Assemble(u32 num_draws, u32
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([this, descriptor_data, num_draws, src_stride](vk::CommandBuffer cmdbuf) {
         static constexpr u32 DISPATCH_SIZE = 32;
-        static constexpr VkMemoryBarrier WRITE_BARRIER{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        static constexpr VkMemoryBarrier2 WRITE_BARRIER{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,
+            .dstAccessMask = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT,
         };
         const std::array<u32, 2> push_constants{num_draws, src_stride};
         const VkDescriptorSet set = descriptor_allocator.Commit();
@@ -455,8 +459,7 @@ std::pair<VkBuffer, VkDeviceSize> IndirectQuadsPass::Assemble(u32 num_draws, u32
         cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(push_constants),
                              &push_constants);
         cmdbuf.Dispatch(Common::DivCeil(num_draws, DISPATCH_SIZE), 1, 1);
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                               VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, WRITE_BARRIER);
+        cmdbuf.PipelineBarrier(WRITE_BARRIER);
     });
     return {staging.buffer, staging.offset};
 }
@@ -484,17 +487,21 @@ void ConditionalRenderingResolvePass::Resolve(VkBuffer dst_buffer, VkBuffer src_
 
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([this, descriptor_data, compare_to_zero](vk::CommandBuffer cmdbuf) {
-        static constexpr VkMemoryBarrier read_barrier{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        static constexpr VkMemoryBarrier2 read_barrier{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+            .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+            .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT | VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT,
         };
-        static constexpr VkMemoryBarrier write_barrier{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+        static constexpr VkMemoryBarrier2 write_barrier{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT,
+            .dstAccessMask = VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT,
         };
         const ConditionalRenderingResolvePushConstants uniforms{
             .compare_to_zero = compare_to_zero ? 1U : 0U,
@@ -502,15 +509,12 @@ void ConditionalRenderingResolvePass::Resolve(VkBuffer dst_buffer, VkBuffer src_
         const VkDescriptorSet set = descriptor_allocator.Commit();
         device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
 
-        cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
-                       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, read_barrier);
+        cmdbuf.PipelineBarrier(read_barrier);
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
         cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
         cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, uniforms);
         cmdbuf.Dispatch(1, 1, 1);
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                               VK_PIPELINE_STAGE_CONDITIONAL_RENDERING_BIT_EXT, 0,
-                               write_barrier);
+        cmdbuf.PipelineBarrier(write_barrier);
     });
 }
 
@@ -532,14 +536,14 @@ QueriesPrefixScanPass::QueriesPrefixScanPass(
 void QueriesPrefixScanPass::Run(VkBuffer accumulation_buffer, VkBuffer dst_buffer,
                                 VkBuffer src_buffer, size_t number_of_sums,
                                 size_t min_accumulation_limit, size_t max_accumulation_limit) {
-    constexpr VkAccessFlags BASE_DST_ACCESS = VK_ACCESS_SHADER_READ_BIT |
-                                              VK_ACCESS_TRANSFER_READ_BIT |
-                                              VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT |
-                                              VK_ACCESS_INDIRECT_COMMAND_READ_BIT |
-                                              VK_ACCESS_INDEX_READ_BIT |
-                                              VK_ACCESS_UNIFORM_READ_BIT;
-    const VkAccessFlags conditional_access =
-        device.IsExtConditionalRendering() ? VK_ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT : 0;
+    constexpr VkAccessFlags2 BASE_DST_ACCESS = VK_ACCESS_2_SHADER_READ_BIT |
+                                               VK_ACCESS_2_TRANSFER_READ_BIT |
+                                               VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT |
+                                               VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT |
+                                               VK_ACCESS_2_INDEX_READ_BIT |
+                                               VK_ACCESS_2_UNIFORM_READ_BIT;
+    const VkAccessFlags2 conditional_access =
+        device.IsExtConditionalRendering() ? VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT : 0;
     size_t current_runs = number_of_sums;
     size_t offset = 0;
     while (current_runs != 0) {
@@ -557,16 +561,20 @@ void QueriesPrefixScanPass::Run(VkBuffer accumulation_buffer, VkBuffer dst_buffe
         scheduler.RequestOutsideRenderPassOperationContext();
         scheduler.Record([this, descriptor_data, min_accumulation_limit, max_accumulation_limit,
                           runs_to_do, used_offset, conditional_access](vk::CommandBuffer cmdbuf) {
-            static constexpr VkMemoryBarrier read_barrier{
-                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            static constexpr VkMemoryBarrier2 read_barrier{
+                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT,
             };
-            const VkMemoryBarrier write_barrier{
-                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            const VkMemoryBarrier2 write_barrier{
+                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
                 .pNext = nullptr,
-                .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+                .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+                .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+                .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
                 .dstAccessMask = BASE_DST_ACCESS | conditional_access,
             };
             const QueriesPrefixScanPushConstants uniforms{
@@ -578,14 +586,12 @@ void QueriesPrefixScanPass::Run(VkBuffer accumulation_buffer, VkBuffer dst_buffe
             const VkDescriptorSet set = descriptor_allocator.Commit();
             device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
 
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, read_barrier);
+            cmdbuf.PipelineBarrier(read_barrier);
             cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
             cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
             cmdbuf.PushConstants(*layout, VK_SHADER_STAGE_COMPUTE_BIT, uniforms);
             cmdbuf.Dispatch(1, 1, 1);
-            cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                   vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, 0, write_barrier);
+            cmdbuf.PipelineBarrier(write_barrier);
         });
     }
 }
@@ -594,21 +600,23 @@ namespace {
 
 void RecordUnswizzleBeginBarrier(Scheduler& scheduler, VkPipeline vk_pipeline, VkImage vk_image,
                                  VkImageAspectFlags aspect_mask, bool is_initialized) {
-    VkAccessFlags src_access = VK_ACCESS_NONE;
+    VkAccessFlags2 src_access = VK_ACCESS_2_NONE;
     VkImageLayout old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-    VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    VkPipelineStageFlags2 src_stage = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
     if (is_initialized) {
-        src_access = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+        src_access = VK_ACCESS_2_SHADER_WRITE_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT;
         old_layout = VK_IMAGE_LAYOUT_GENERAL;
         src_stage = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER;
     }
     scheduler.Record([vk_pipeline, vk_image, aspect_mask, src_access, old_layout,
                       src_stage](vk::CommandBuffer cmdbuf) {
-        const VkImageMemoryBarrier image_barrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        const VkImageMemoryBarrier2 image_barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
+            .srcStageMask = src_stage,
             .srcAccessMask = src_access,
-            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT,
             .oldLayout = old_layout,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -622,7 +630,7 @@ void RecordUnswizzleBeginBarrier(Scheduler& scheduler, VkPipeline vk_pipeline, V
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         };
-        cmdbuf.PipelineBarrier(src_stage, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, image_barrier);
+        cmdbuf.PipelineBarrier(image_barrier);
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, vk_pipeline);
     });
 }
@@ -630,12 +638,14 @@ void RecordUnswizzleBeginBarrier(Scheduler& scheduler, VkPipeline vk_pipeline, V
 void RecordUnswizzleEndBarrier(Scheduler& scheduler, VkImage vk_image,
                                VkImageAspectFlags aspect_mask) {
     scheduler.Record([vk_image, aspect_mask](vk::CommandBuffer cmdbuf) {
-        const VkImageMemoryBarrier image_barrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        const VkImageMemoryBarrier2 image_barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                             VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+            .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT |
+                             VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
             .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -649,8 +659,7 @@ void RecordUnswizzleEndBarrier(Scheduler& scheduler, VkImage vk_image,
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         };
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                               vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, 0, image_barrier);
+        cmdbuf.PipelineBarrier(image_barrier);
     });
 }
 

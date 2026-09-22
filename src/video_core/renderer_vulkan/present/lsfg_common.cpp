@@ -67,12 +67,14 @@ vk::Buffer CreateUniformBuffer(MemoryAllocator& memory_allocator, VkDeviceSize s
     return memory_allocator.CreateBuffer(buffer_ci, MemoryUsage::Upload);
 }
 
-VkImageMemoryBarrier MakeBarrier(const LsfgImage& image, VkAccessFlags src_access,
-                                 VkAccessFlags dst_access) {
-    return VkImageMemoryBarrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+VkImageMemoryBarrier2 MakeBarrier(const LsfgImage& image, VkAccessFlags2 src_access,
+                                  VkAccessFlags2 dst_access) {
+    return VkImageMemoryBarrier2{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
+        .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
         .srcAccessMask = src_access,
+        .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
         .dstAccessMask = dst_access,
         .oldLayout = image.Layout(),
         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -98,19 +100,19 @@ LsfgImage::LsfgImage(const Device& device, MemoryAllocator& memory_allocator, Vk
     view = CreateWrappedImageView(device, image, format);
 }
 
-LsfgBarriers& LsfgBarriers::Push(LsfgImage& image, VkAccessFlags src_access,
-                                 VkAccessFlags dst_access) {
+LsfgBarriers& LsfgBarriers::Push(LsfgImage& image, VkAccessFlags2 src_access,
+                                 VkAccessFlags2 dst_access) {
     barriers.push_back(MakeBarrier(image, src_access, dst_access));
     image.SetLayout(VK_IMAGE_LAYOUT_GENERAL);
     return *this;
 }
 
 LsfgBarriers& LsfgBarriers::WriteToRead(LsfgImage& image) {
-    return Push(image, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT);
+    return Push(image, VK_ACCESS_2_SHADER_WRITE_BIT, VK_ACCESS_2_SHADER_READ_BIT);
 }
 
 LsfgBarriers& LsfgBarriers::ReadToWrite(LsfgImage& image) {
-    return Push(image, VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT);
+    return Push(image, VK_ACCESS_2_SHADER_READ_BIT, VK_ACCESS_2_SHADER_WRITE_BIT);
 }
 
 LsfgBarriers& LsfgBarriers::WriteToRead(LsfgImage* image) {
@@ -122,11 +124,13 @@ LsfgBarriers& LsfgBarriers::ReadToWrite(LsfgImage* image) {
 }
 
 LsfgBarriers& LsfgBarriers::DiscardToWrite(VkImage image) {
-    barriers.push_back(VkImageMemoryBarrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+    barriers.push_back(VkImageMemoryBarrier2{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = 0,
-        .dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+        .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .srcAccessMask = VK_ACCESS_2_NONE,
+        .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .dstAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
         .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -199,8 +203,7 @@ void LsfgBarriers::Build() {
     if (barriers.empty()) {
         return;
     }
-    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                           VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, {}, {}, barriers);
+    cmdbuf.PipelineBarrier(0, {}, {}, barriers);
     barriers.clear();
 }
 
