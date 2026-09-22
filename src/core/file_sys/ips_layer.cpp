@@ -35,17 +35,20 @@ static IPSFileType IdentifyMagic(std::span<const u8> magic) {
 }
 
 static bool IsEOF(IPSFileType type, std::span<const u8> magic) {
-    return (type == IPSFileType::IPS && magic.size() > 3 && std::memcmp(magic.data(), "EOF", 3) == 0)
-        || (type == IPSFileType::IPS32 && magic.size() > 4 && std::memcmp(magic.data(), "EEOF", 4) == 0);
+    return (type == IPSFileType::IPS && magic.size() >= 3 && std::memcmp(magic.data(), "EOF", 3) == 0)
+        || (type == IPSFileType::IPS32 && magic.size() >= 4 && std::memcmp(magic.data(), "EEOF", 4) == 0);
 }
 
 VirtualFile PatchIPS(const VirtualFile& in, const VirtualFile& ips) {
     if (in == nullptr || ips == nullptr)
         return nullptr;
 
-    auto in_data = in->ReadAllBytes();
-    auto const type = IdentifyMagic(in_data);
+    const auto type = IdentifyMagic(ips->ReadBytes(0x5));
     if (type == IPSFileType::Error)
+        return nullptr;
+
+    auto in_data = in->ReadAllBytes();
+    if (in_data.size() == 0)
         return nullptr;
 
     std::vector<u8> temp(type == IPSFileType::IPS ? 3 : 4);
