@@ -125,6 +125,7 @@ vk::DescriptorSets DescriptorAllocator::AllocateDescriptors(size_t count) {
     throw vk::Exception(VK_ERROR_OUT_OF_POOL_MEMORY);
 }
 
+DescriptorPool::DescriptorPool() = default;
 DescriptorPool::~DescriptorPool() = default;
 
 DescriptorAllocator DescriptorPool::Allocator(const Device& device, Scheduler& scheduler, VkDescriptorSetLayout layout, std::span<const Shader::Info> infos) {
