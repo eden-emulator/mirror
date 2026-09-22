@@ -351,8 +351,12 @@
         "options": [
             "ZSTD_BUILD_SHARED OFF"
         ],
+        "patches": [
+            "0001-zbic-support.patch"
+        ],
         "repo": "facebook/zstd",
         "source_subdir": "build/cmake",
-        "version": "b8d6101fba"
+        "version": "b8d6101fba",
+        "bundled": true
     }
 }
