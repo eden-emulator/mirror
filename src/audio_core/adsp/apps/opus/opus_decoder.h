@@ -57,7 +57,7 @@ public:
     ~OpusDecoder();
 
     bool IsRunning() const noexcept {
-        return running;
+        return main_thread.joinable();
     }
 
     void Send(Direction dir, u32 message);
@@ -87,8 +87,6 @@ private:
     std::jthread init_thread{};
     /// Main thread
     std::jthread main_thread{};
-    /// The current state
-    bool running{};
     /// Structure shared with the host, input data set by the host before sending a mailbox message,
     /// and the responses are written back by the OpusDecoder.
     SharedMemory* shared_memory{};

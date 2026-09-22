@@ -6,6 +6,7 @@
 
 #include <thread>
 #include "common/assert.h"
+#include "common/thread.h"
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/k_thread.h"
 #include "core/hle/kernel/k_worker_task.h"
@@ -27,7 +28,23 @@ void KWorkerTask::DoWorkerTask(KernelCore& kernel) {
     }
 }
 
-KWorkerTaskManager::KWorkerTaskManager() {}
+KWorkerTaskManager::KWorkerTaskManager(KernelCore& kernel) {
+    m_waiting_thread = std::jthread([&kernel, this](std::stop_token stop_token) {
+        Common::SetCurrentThreadName("KWorkerManager");
+        while (!stop_token.stop_requested()) {
+            KWorkerTask* t;
+            {
+                std::unique_lock lk{m_task_mutex};
+                m_task_cv.wait(lk);
+                if (stop_token.stop_requested())
+                    break;
+                t = m_task_queue.back();
+                m_task_queue.pop_back();
+            }
+            t->DoWorkerTask(kernel);
+        }
+    });
+}
 
 KWorkerTaskManager::~KWorkerTaskManager() {
     if (m_waiting_thread.joinable()) {
@@ -44,26 +61,6 @@ void KWorkerTaskManager::AddTask(KernelCore& kernel, WorkerType type, KWorkerTas
 
 void KWorkerTaskManager::AddTask(KernelCore& kernel, KWorkerTask* task) {
     KScopedSchedulerLock sl(kernel);
-
-    // spawn thread on demand
-    if (!m_waiting_thread.joinable()) {
-        LOG_INFO(Kernel, "spawning KWorkerTaskManager thread");
-        m_waiting_thread = std::jthread([&kernel, this](std::stop_token stop_token) {
-            while (!stop_token.stop_requested()) {
-                KWorkerTask* t;
-                {
-                    std::unique_lock lk{m_task_mutex};
-                    m_task_cv.wait(lk);
-                    if (stop_token.stop_requested())
-                        break;
-                    t = m_task_queue.back();
-                    m_task_queue.pop_back();
-                }
-                t->DoWorkerTask(kernel);
-            }
-        });
-    }
-
     {
         std::scoped_lock lk{m_task_mutex};
         m_task_queue.emplace_back(task);
