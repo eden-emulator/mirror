@@ -476,9 +476,6 @@ struct System::Impl {
             room_member->SendGameInfo(game_info);
         }
 
-        // Reset all glue registrations
-        arp_manager->ResetAll();
-
         LOG_DEBUG(Core, "Shutdown OK");
     }
 
