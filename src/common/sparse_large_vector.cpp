@@ -96,6 +96,21 @@ bool CommitVectorPage(uintptr_t addr, bool write) noexcept {
 #ifndef MAP_NOCORE
 #define MAP_NOCORE 0
 #endif
+#ifndef MADV_FREE
+#define MADV_FREE MADV_DONTNEED
+#endif
+
+void DecommitVectorPage(uintptr_t base) noexcept {
+#if defined(_WIN32)
+    VirtualFree(reinterpret_cast<LPVOID>(base), HostPageSize, MEM_DECOMMIT);
+#elif defined(__linux__)
+    // Linux's MADV_DONTNEED zeros out pages for us
+    madvise(reinterpret_cast<void*>(base), HostPageSize, MADV_DONTNEED);
+#else
+    madvise(reinterpret_cast<void*>(base), HostPageSize, MADV_FREE);
+    std::memset(reinterpret_cast<void*>(base), 0, HostPageSize);
+#endif
+}
 
 void* AllocateMemoryPages(std::size_t size) noexcept {
     if (auto page = HostPageSize; size % page != 0) {
