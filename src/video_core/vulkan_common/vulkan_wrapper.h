@@ -299,7 +299,6 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCreatePipelineCache vkCreatePipelineCache{};
     PFN_vkCreatePipelineLayout vkCreatePipelineLayout{};
     PFN_vkCreateQueryPool vkCreateQueryPool{};
-    PFN_vkCreateRenderPass vkCreateRenderPass{};
     PFN_vkCreateRenderPass2 vkCreateRenderPass2{};
     PFN_vkCreateSampler vkCreateSampler{};
     PFN_vkCreateSemaphore vkCreateSemaphore{};
@@ -1056,8 +1055,6 @@ public:
     [[nodiscard]] Fence CreateFence(const VkFenceCreateInfo& ci) const;
 
     [[nodiscard]] DescriptorPool CreateDescriptorPool(const VkDescriptorPoolCreateInfo& ci) const;
-
-    [[nodiscard]] RenderPass CreateRenderPass(const VkRenderPassCreateInfo& ci) const;
 
     [[nodiscard]] RenderPass CreateRenderPass2(const VkRenderPassCreateInfo2& ci) const;
 

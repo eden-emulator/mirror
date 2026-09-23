@@ -183,7 +183,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCreatePipelineCache);
     X(vkCreatePipelineLayout);
     X(vkCreateQueryPool);
-    X(vkCreateRenderPass);
     X(vkCreateRenderPass2);
     X(vkCreateSampler);
     X(vkCreateSemaphore);
@@ -735,12 +734,6 @@ DescriptorPool Device::CreateDescriptorPool(const VkDescriptorPoolCreateInfo& ci
     VkDescriptorPool object;
     Check(dld->vkCreateDescriptorPool(handle, &ci, nullptr, &object));
     return DescriptorPool(object, handle, *dld);
-}
-
-RenderPass Device::CreateRenderPass(const VkRenderPassCreateInfo& ci) const {
-    VkRenderPass object;
-    Check(dld->vkCreateRenderPass(handle, &ci, nullptr, &object));
-    return RenderPass(object, handle, *dld);
 }
 
 RenderPass Device::CreateRenderPass2(const VkRenderPassCreateInfo2& ci) const {

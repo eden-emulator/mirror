@@ -203,7 +203,9 @@ vk::ImageView CreateWrappedImageView(const Device& device, vk::Image& image, VkF
 
 vk::RenderPass CreateWrappedRenderPass(const Device& device, VkFormat format,
                                        VkImageLayout initial_layout) {
-    const VkAttachmentDescription attachment{
+    const VkAttachmentDescription2 attachment{
+        .sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+        .pNext = nullptr,
         .flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
         .format = format,
         .samples = VK_SAMPLE_COUNT_1_BIT,
@@ -216,14 +218,20 @@ vk::RenderPass CreateWrappedRenderPass(const Device& device, VkFormat format,
         .finalLayout = VK_IMAGE_LAYOUT_GENERAL,
     };
 
-    constexpr VkAttachmentReference color_attachment_ref{
+    static constexpr VkAttachmentReference2 color_attachment_ref{
+        .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+        .pNext = nullptr,
         .attachment = 0,
         .layout = VK_IMAGE_LAYOUT_GENERAL,
+        .aspectMask = 0,
     };
 
-    const VkSubpassDescription subpass_description{
+    const VkSubpassDescription2 subpass_description{
+        .sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,
+        .pNext = nullptr,
         .flags = 0,
         .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .viewMask = 0,
         .inputAttachmentCount = 0,
         .pInputAttachments = nullptr,
         .colorAttachmentCount = 1,
@@ -234,18 +242,31 @@ vk::RenderPass CreateWrappedRenderPass(const Device& device, VkFormat format,
         .pPreserveAttachments = nullptr,
     };
 
-    constexpr VkSubpassDependency dependency{
-        .srcSubpass = VK_SUBPASS_EXTERNAL,
-        .dstSubpass = 0,
-        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+    static constexpr VkMemoryBarrier2 dependency_barrier{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .pNext = nullptr,
+        .srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
         .srcAccessMask = 0,
-        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        .dependencyFlags = 0,
+        .dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .dstAccessMask =
+            VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
     };
 
-    return device.GetLogical().CreateRenderPass(VkRenderPassCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+    static constexpr VkSubpassDependency2 dependency{
+        .sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2,
+        .pNext = &dependency_barrier,
+        .srcSubpass = VK_SUBPASS_EXTERNAL,
+        .dstSubpass = 0,
+        .srcStageMask = 0,
+        .dstStageMask = 0,
+        .srcAccessMask = 0,
+        .dstAccessMask = 0,
+        .dependencyFlags = 0,
+        .viewOffset = 0,
+    };
+
+    return device.GetLogical().CreateRenderPass2(VkRenderPassCreateInfo2{
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
         .pNext = nullptr,
         .flags = 0,
         .attachmentCount = 1,
@@ -254,6 +275,8 @@ vk::RenderPass CreateWrappedRenderPass(const Device& device, VkFormat format,
         .pSubpasses = &subpass_description,
         .dependencyCount = 1,
         .pDependencies = &dependency,
+        .correlatedViewMaskCount = 0,
+        .pCorrelatedViewMasks = nullptr,
     });
 }
 
