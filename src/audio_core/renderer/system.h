@@ -219,8 +219,6 @@ public:
 private:
     /// Core system
     Core::System& core;
-    /// Reference to the ADSP's AudioRenderer for communication
-    ::AudioCore::ADSP::AudioRenderer::AudioRenderer& audio_renderer;
     /// Is this system initialized?
     bool initialized{};
     /// Is this system currently active?
