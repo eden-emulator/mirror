@@ -82,11 +82,11 @@ void OpusDecoder::Main(std::stop_token stop_token) {
             break;
 
         switch (msg) {
-        case Shutdown:
+        case Message::Shutdown:
             Send(Direction::Host, Message::ShutdownOK);
             return;
 
-        case GetWorkBufferSize: {
+        case Message::GetWorkBufferSize: {
             auto channel_count = static_cast<s32>(shared_memory->host_send_data[0]);
 
             ASSERT(IsValidChannelCount(channel_count));
@@ -95,7 +95,7 @@ void OpusDecoder::Main(std::stop_token stop_token) {
             Send(Direction::Host, Message::GetWorkBufferSizeOK);
         } break;
 
-        case InitializeDecodeObject: {
+        case Message::InitializeDecodeObject: {
             auto buffer = shared_memory->host_send_data[0];
             auto buffer_size = shared_memory->host_send_data[1];
             auto sample_rate = static_cast<s32>(shared_memory->host_send_data[2]);
@@ -112,7 +112,7 @@ void OpusDecoder::Main(std::stop_token stop_token) {
             Send(Direction::Host, Message::InitializeDecodeObjectOK);
         } break;
 
-        case ShutdownDecodeObject: {
+        case Message::ShutdownDecodeObject: {
             auto buffer = shared_memory->host_send_data[0];
             [[maybe_unused]] auto buffer_size = shared_memory->host_send_data[1];
 
@@ -122,7 +122,7 @@ void OpusDecoder::Main(std::stop_token stop_token) {
             Send(Direction::Host, Message::ShutdownDecodeObjectOK);
         } break;
 
-        case DecodeInterleaved: {
+        case Message::DecodeInterleaved: {
             auto start_time = system.CoreTiming().GetGlobalTimeUs();
 
             auto buffer = shared_memory->host_send_data[0];
@@ -160,19 +160,19 @@ void OpusDecoder::Main(std::stop_token stop_token) {
             Send(Direction::Host, Message::DecodeInterleavedOK);
         } break;
 
-        case MapMemory: {
+        case Message::MapMemory: {
             [[maybe_unused]] auto buffer = shared_memory->host_send_data[0];
             [[maybe_unused]] auto buffer_size = shared_memory->host_send_data[1];
             Send(Direction::Host, Message::MapMemoryOK);
         } break;
 
-        case UnmapMemory: {
+        case Message::UnmapMemory: {
             [[maybe_unused]] auto buffer = shared_memory->host_send_data[0];
             [[maybe_unused]] auto buffer_size = shared_memory->host_send_data[1];
             Send(Direction::Host, Message::UnmapMemoryOK);
         } break;
 
-        case GetWorkBufferSizeForMultiStream: {
+        case Message::GetWorkBufferSizeForMultiStream: {
             auto total_stream_count = static_cast<s32>(shared_memory->host_send_data[0]);
             auto stereo_stream_count = static_cast<s32>(shared_memory->host_send_data[1]);
 
@@ -183,7 +183,7 @@ void OpusDecoder::Main(std::stop_token stop_token) {
             Send(Direction::Host, Message::GetWorkBufferSizeForMultiStreamOK);
         } break;
 
-        case InitializeMultiStreamDecodeObject: {
+        case Message::InitializeMultiStreamDecodeObject: {
             auto buffer = shared_memory->host_send_data[0];
             auto buffer_size = shared_memory->host_send_data[1];
             auto sample_rate = static_cast<s32>(shared_memory->host_send_data[2]);
@@ -210,7 +210,7 @@ void OpusDecoder::Main(std::stop_token stop_token) {
             Send(Direction::Host, Message::InitializeMultiStreamDecodeObjectOK);
         } break;
 
-        case ShutdownMultiStreamDecodeObject: {
+        case Message::ShutdownMultiStreamDecodeObject: {
             auto buffer = shared_memory->host_send_data[0];
             [[maybe_unused]] auto buffer_size = shared_memory->host_send_data[1];
 
@@ -220,7 +220,7 @@ void OpusDecoder::Main(std::stop_token stop_token) {
             Send(Direction::Host, Message::ShutdownMultiStreamDecodeObjectOK);
         } break;
 
-        case DecodeInterleavedForMultiStream: {
+        case Message::DecodeInterleavedForMultiStream: {
             auto start_time = system.CoreTiming().GetGlobalTimeUs();
 
             auto buffer = shared_memory->host_send_data[0];
@@ -265,10 +265,15 @@ void OpusDecoder::Main(std::stop_token stop_token) {
     }
 }
 
-void OpusDecoder::NotifyShutdown() {
-    init_thread.request_stop();
-    main_thread.request_stop();
-    Send(Direction::DSP, Message::Shutdown);
+void OpusDecoder::Shutdown() {
+    if (init_thread.joinable()) {
+        init_thread.request_stop();
+        init_thread.join(); //must explicitly wait for init to join
+    }
+    if (main_thread.joinable()) {
+        main_thread.request_stop();
+        Send(Direction::DSP, Message::Shutdown);
+    }
 }
 
 } // namespace AudioCore::ADSP::OpusDecoder

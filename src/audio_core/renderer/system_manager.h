@@ -75,14 +75,8 @@ private:
     std::list<System*> systems{};
     /// Main worker thread for generating command lists
     std::jthread thread;
-    /// Mutex for the systems
-    std::mutex mutex1{};
-    /// Mutex for adding/removing systems
-    std::mutex mutex2{};
-    /// Is the system manager thread active?
-    std::atomic<bool> active{};
-    /// Reference to the ADSP's AudioRenderer for communication
-    ::AudioCore::ADSP::AudioRenderer::AudioRenderer& audio_renderer;
+    /// Mutex for the reading and adding/removing systems
+    std::mutex mutex{};
 };
 
 } // namespace AudioCore::Renderer

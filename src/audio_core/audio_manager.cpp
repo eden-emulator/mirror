@@ -34,15 +34,10 @@ AudioManager::AudioManager() {
     });
 }
 
-void AudioManager::NotifyShutdown() {
-    events.SetAudioEvent(Event::Type::Max, true);
-    thread.request_stop();
-}
-
 void AudioManager::Shutdown() {
-    events.SetAudioEvent(Event::Type::Max, true);
     if (thread.joinable()) {
         thread.request_stop();
+        events.SetAudioEvent(Event::Type::Max, true);
         thread.join();
     }
 }

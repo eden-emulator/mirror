@@ -67,7 +67,7 @@ public:
         shared_memory = &shared_memory_;
     }
 
-    void NotifyShutdown();
+    void Shutdown();
 
 private:
     /**
