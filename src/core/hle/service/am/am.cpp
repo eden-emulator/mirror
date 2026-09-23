@@ -15,13 +15,9 @@ void LoopProcess(Core::System& system) {
     WindowSystem window_system(system);
     ButtonPoller button_poller(system, window_system);
     EventObserver event_observer(system, window_system);
-
     auto server_manager = std::make_unique<ServerManager>(system);
-
-    server_manager->RegisterNamedService(
-        "appletAE", std::make_shared<IAllSystemAppletProxiesService>(system, window_system));
-    server_manager->RegisterNamedService(
-        "appletOE", std::make_shared<IApplicationProxyService>(system, window_system));
+    server_manager->RegisterNamedService("appletAE", std::make_shared<IAllSystemAppletProxiesService>(system, window_system));
+    server_manager->RegisterNamedService("appletOE", std::make_shared<IApplicationProxyService>(system, window_system));
     ServerManager::RunServer(std::move(server_manager));
 }
 
