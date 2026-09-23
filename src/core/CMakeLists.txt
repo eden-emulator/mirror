@@ -23,6 +23,8 @@ add_library(core STATIC
     core_timing.h
     cpu_manager.cpp
     cpu_manager.h
+    launch_params.cpp
+    launch_params.h
     crypto/aes_util.cpp
     crypto/aes_util.h
     crypto/ctr_encryption_layer.cpp
@@ -1203,6 +1205,9 @@ endif()
 
 target_include_directories(core PRIVATE ${OPUS_INCLUDE_DIRS})
 target_link_libraries(core PUBLIC common PRIVATE audio_core hid_core network video_core nx_tzdb tz)
+if (MSVC)
+    target_link_libraries(core PRIVATE getopt)
+endif()
 
 if (BOOST_NO_HEADERS)
     target_link_libraries(core PUBLIC Boost::container Boost::heap Boost::asio Boost::process Boost::crc)
