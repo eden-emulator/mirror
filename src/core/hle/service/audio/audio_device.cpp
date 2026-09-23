@@ -97,7 +97,7 @@ Result IAudioDevice::SetAudioDeviceOutputVolumeAuto(
     LOG_DEBUG(Service_Audio, "called. name={}, volume={}", device_name, volume);
 
     if (device_name == "AudioTvOutput") {
-        impl->SetDeviceVolumes(volume);
+        impl->SetDeviceVolumes(system, volume);
     }
 
     R_SUCCEED();
@@ -112,7 +112,7 @@ Result IAudioDevice::GetAudioDeviceOutputVolumeAuto(
 
     *out_volume = 1.0f;
     if (device_name == "AudioTvOutput") {
-        *out_volume = impl->GetDeviceVolume(device_name);
+        *out_volume = impl->GetDeviceVolume(system, device_name);
     }
 
     R_SUCCEED();

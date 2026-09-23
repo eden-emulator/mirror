@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -54,7 +57,7 @@ public:
      *
      * @param volume - Volume to set.
      */
-    void SetDeviceVolumes(f32 volume);
+    void SetDeviceVolumes(Core::System& system, f32 volume);
 
     /**
      * Get the volume for a given device name.
@@ -63,11 +66,9 @@ public:
      * @param name - Name of the device to check. Unused.
      * @return Volume of the device.
      */
-    f32 GetDeviceVolume(std::string_view name) const;
+    f32 GetDeviceVolume(Core::System& system, std::string_view name) const;
 
 private:
-    /// Backend output sink for the device
-    Sink::Sink& output_sink;
     /// Resource id this device is used for
     const u64 applet_resource_user_id;
     /// User audio renderer revision

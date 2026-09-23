@@ -86,12 +86,8 @@ public:
                          std::span<u8> output);
 
 private:
-    /// System core
-    Core::System& system;
     /// Manager this renderer is registered with
     Manager& manager;
-    /// Is the audio renderer initialized?
-    bool initialized{};
     /// Is the system registered with the manager?
     bool system_registered{};
     /// Audio render system, main driver of audio rendering

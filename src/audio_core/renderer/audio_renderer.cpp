@@ -16,7 +16,7 @@
 namespace AudioCore::Renderer {
 
 Renderer::Renderer(Core::System& system_, Manager& manager_, Kernel::KEvent* rendered_event)
-    : system{system_}, manager{manager_}
+    : manager{manager_}
     , audio_system{system_, rendered_event}
 {}
 
@@ -28,8 +28,6 @@ Result Renderer::Initialize(const AudioRendererParameterInternal& params, Kernel
         }
         system_registered = true;
     }
-
-    initialized = true;
     audio_system.Initialize(params, transfer_memory, transfer_memory_size, process_handle, applet_resource_user_id, session_id);
     return ResultSuccess;
 }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
@@ -34,42 +34,37 @@ constexpr std::array output_device_names{
     AudioDevice::AudioDeviceName{"AudioExternalOutput"},
 };
 
-AudioDevice::AudioDevice(Core::System& system, const u64 applet_resource_user_id_,
-                         const u32 revision)
-    : output_sink{system.AudioCore().GetOutputSink()},
-      applet_resource_user_id{applet_resource_user_id_}, user_revision{revision} {}
+AudioDevice::AudioDevice(Core::System& system, const u64 applet_resource_user_id_, const u32 revision)
+    : applet_resource_user_id{applet_resource_user_id_}
+    , user_revision{revision}
+{}
 
 u32 AudioDevice::ListAudioDeviceName(std::span<AudioDeviceName> out_buffer) const {
     std::span<const AudioDeviceName> names{};
-
     if (CheckFeatureSupported(SupportTags::AudioUsbDeviceOutput, user_revision)) {
         names = usb_device_names;
     } else {
         names = device_names;
     }
-
-    const u32 out_count{static_cast<u32>((std::min)(out_buffer.size(), names.size()))};
-    for (u32 i = 0; i < out_count; i++) {
+    const u32 out_count = u32((std::min)(out_buffer.size(), names.size()));
+    for (u32 i = 0; i < out_count; i++)
         out_buffer[i] = names[i];
-    }
     return out_count;
 }
 
 u32 AudioDevice::ListAudioOutputDeviceName(std::span<AudioDeviceName> out_buffer) const {
-    const u32 out_count{static_cast<u32>((std::min)(out_buffer.size(), output_device_names.size()))};
-
-    for (u32 i = 0; i < out_count; i++) {
+    const u32 out_count = u32((std::min)(out_buffer.size(), output_device_names.size()));
+    for (u32 i = 0; i < out_count; i++)
         out_buffer[i] = output_device_names[i];
-    }
     return out_count;
 }
 
-void AudioDevice::SetDeviceVolumes(const f32 volume) {
-    output_sink.SetDeviceVolume(volume);
+void AudioDevice::SetDeviceVolumes(Core::System& system, const f32 volume) {
+    system.AudioCore().GetOutputSink().SetDeviceVolume(volume);
 }
 
-f32 AudioDevice::GetDeviceVolume([[maybe_unused]] std::string_view name) const {
-    return output_sink.GetDeviceVolume();
+f32 AudioDevice::GetDeviceVolume(Core::System& system, [[maybe_unused]] std::string_view name) const {
+    return system.AudioCore().GetOutputSink().GetDeviceVolume();
 }
 
 } // namespace AudioCore::Renderer
