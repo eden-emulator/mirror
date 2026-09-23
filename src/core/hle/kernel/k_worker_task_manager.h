@@ -32,7 +32,7 @@ private:
     std::jthread m_waiting_thread;
 
     std::mutex m_task_mutex;
-    std::condition_variable m_task_cv;
+    std::condition_variable_any m_task_cv;
     std::vector<KWorkerTask*> m_task_queue;
 };
 

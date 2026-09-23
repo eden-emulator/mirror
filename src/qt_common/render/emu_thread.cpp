@@ -66,14 +66,17 @@ void EmuThread::run() {
         } else {
             QtCommon::system->Pause();
             m_stopped.Set();
-
             EmulationPaused(lk);
-            m_should_run_cv.wait(lk, stop_token, [&] { return m_should_run; });
+            m_should_run_cv.wait(lk, stop_token, [&] {
+                return m_should_run;
+            });
             EmulationResumed(lk);
         }
     }
 
     // Shutdown the main emulated process
+    // Needs to pause first, we may not have paused before shutting down.
+    QtCommon::system->Pause();
     QtCommon::system->DetachDebugger();
     QtCommon::system->ShutdownMainProcess();
 }
