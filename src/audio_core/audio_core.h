@@ -24,8 +24,6 @@ public:
     explicit AudioCore(Core::System& system);
     ~AudioCore();
 
-    void NotifyShutdown();
-
     /**
      * Shutdown the audio core.
      */

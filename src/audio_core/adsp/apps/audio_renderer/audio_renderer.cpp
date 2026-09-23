@@ -34,36 +34,19 @@ void AudioRenderer::Start() {
 
     mailbox.Send(Direction::DSP, Message::InitializeOK);
     if (mailbox.Receive(Direction::Host) != Message::InitializeOK) {
-        LOG_ERROR(Service_Audio, "Host Audio Renderer -- Failed to receive shutdown "
-                                 "message response from ADSP!");
-        return;
-    }
-    running = true;
-}
-
-void AudioRenderer::NotifyShutdown() {
-    if (main_thread.joinable()) {
-        main_thread.request_stop();
-        mailbox.Send(Direction::DSP, Message::Shutdown);
-        main_thread.join();
+        LOG_ERROR(Service_Audio, "Host Audio Renderer -- Failed to receive shutdown message response from ADSP!");
     }
 }
 
 void AudioRenderer::Stop() {
-    if (!running) {
-        return;
-    }
-
     if (main_thread.joinable()) {
         main_thread.request_stop();
         mailbox.Send(Direction::DSP, Message::Shutdown);
         if (mailbox.Receive(Direction::Host, main_thread.get_stop_token()) != Message::Shutdown) {
-            LOG_ERROR(Service_Audio, "Host Audio Renderer -- Failed to receive shutdown "
-                                    "message response from ADSP!");
+            LOG_ERROR(Service_Audio, "Host Audio Renderer -- Failed to receive shutdown message response from ADSP!");
         }
         main_thread.join();
     }
-
     for (auto& stream : streams) {
         if (stream) {
             stream->Stop();
@@ -71,7 +54,6 @@ void AudioRenderer::Stop() {
             stream = nullptr;
         }
     }
-    running = false;
 }
 
 void AudioRenderer::Signal() {

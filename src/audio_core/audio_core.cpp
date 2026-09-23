@@ -31,13 +31,9 @@ void AudioCore::CreateSinks() {
     input_sink = Sink::CreateSinkFromID(sink_id.GetValue(), audio_input_device_id.GetValue());
 }
 
-void AudioCore::NotifyShutdown() {
-    audio_manager->NotifyShutdown();
-    adsp->NotifyShutdown();
-}
-
 void AudioCore::Shutdown() {
     audio_manager->Shutdown();
+    adsp->Shutdown();
 }
 
 AudioManager& AudioCore::GetAudioManager() {

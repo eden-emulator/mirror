@@ -442,7 +442,7 @@ struct System::Impl {
         kernel.ShutdownCores();
 
         // Notify services helpers of shutdown
-        audio_core->NotifyShutdown();
+        audio_core->Shutdown();
 
         // Wait for threads/services to join
         kernel.CloseServices();

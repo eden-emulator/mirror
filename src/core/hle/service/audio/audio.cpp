@@ -191,7 +191,7 @@ void LoopProcess(Core::System& system) {
     server_manager->RegisterNamedService("audout:d", std::make_shared<IAudioOutManagerForDebugger>(system), 30);
     server_manager->RegisterNamedService("audin:d", std::make_shared<IAudioInManagerForDebugger>(system), 30);
     server_manager->RegisterNamedService("audrec:d", std::make_shared<IFinalOutputRecorderManagerForDebugger>(system), 30);
-    server_manager->RegisterNamedService("audren:d", std::make_shared<IAudioInManager>(system), 30);
+    server_manager->RegisterNamedService("audren:d", std::make_shared<IAudioRendererManagerForDebugger>(system), 30);
 
     server_manager->RegisterNamedService("audin:u", std::make_shared<IAudioInManager>(system), 30);
     server_manager->RegisterNamedService("audin:a", std::make_shared<IAudioInManagerForApplet>(system), 30);
