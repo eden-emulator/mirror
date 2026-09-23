@@ -35,7 +35,9 @@ KWorkerTaskManager::KWorkerTaskManager(KernelCore& kernel) {
             KWorkerTask* t;
             {
                 std::unique_lock lk{m_task_mutex};
-                m_task_cv.wait(lk);
+                m_task_cv.wait(lk, m_waiting_thread.get_stop_token(), [&]() {
+                    return !m_task_queue.empty();
+                });
                 if (stop_token.stop_requested())
                     break;
                 t = m_task_queue.back();

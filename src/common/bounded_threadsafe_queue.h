@@ -109,12 +109,6 @@ private:
             if (read_index == producer.index.load(std::memory_order::acquire)) {
                 return false;
             }
-        } else if constexpr (Mode == PopMode::Wait) {
-            // Wait until the queue is not empty.
-            std::unique_lock lock{consumer.cv_mutex};
-            consumer.cv.wait(lock, [this, read_index] {
-                return read_index != producer.index.load(std::memory_order::acquire);
-            });
         } else if constexpr (Mode == PopMode::WaitWithStopToken) {
             // Wait until the queue is not empty.
             std::unique_lock lock{consumer.cv_mutex};
@@ -124,6 +118,12 @@ private:
             if (stop_token.stop_requested()) {
                 return false;
             }
+        } else if constexpr (Mode == PopMode::Wait) {
+            // Wait until the queue is not empty.
+            std::unique_lock lock{consumer.cv_mutex};
+            consumer.cv.wait(lock, [this, read_index] {
+                return read_index != producer.index.load(std::memory_order::acquire);
+            });
         } else {
             static_assert(Mode < PopMode::Count, "Invalid PopMode.");
         }
