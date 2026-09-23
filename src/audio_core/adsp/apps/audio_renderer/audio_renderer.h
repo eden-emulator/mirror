@@ -63,13 +63,15 @@ public:
      */
     void Start();
 
+    void NotifyShutdown();
+
     /**
      * Stop the AudioRenderer.
      */
     void Stop();
 
     void Signal();
-    void Wait();
+    void Wait(std::stop_token stop_token);
 
     void Send(Direction dir, u32 message);
     u32 Receive(Direction dir);

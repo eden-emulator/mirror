@@ -20,6 +20,7 @@ ADSP::ADSP(Core::System& system, Sink::Sink& sink) {
 }
 
 void ADSP::NotifyShutdown() {
+    audio_renderer->NotifyShutdown();
     opus_decoder->NotifyShutdown();
 }
 
