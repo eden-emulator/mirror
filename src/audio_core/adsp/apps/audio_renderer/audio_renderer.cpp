@@ -41,6 +41,14 @@ void AudioRenderer::Start() {
     running = true;
 }
 
+void AudioRenderer::NotifyShutdown() {
+    if (main_thread.joinable()) {
+        main_thread.request_stop();
+        mailbox.Send(Direction::DSP, Message::Shutdown);
+        main_thread.join();
+    }
+}
+
 void AudioRenderer::Stop() {
     if (!running) {
         return;
@@ -71,13 +79,12 @@ void AudioRenderer::Signal() {
     Send(Direction::DSP, Message::Render);
 }
 
-void AudioRenderer::Wait() {
-    auto msg = Receive(Direction::Host);
+void AudioRenderer::Wait(std::stop_token stop_token) {
+    auto msg = mailbox.Receive(Direction::Host, stop_token);
     if (msg != Message::RenderResponse) {
         LOG_ERROR(Service_Audio,
-                  "Did not receive the expected render response from the AudioRenderer! Expected "
-                  "{}, got {}",
-                  Message::RenderResponse, msg);
+            "Did not receive the expected render response from the AudioRenderer! Expected "
+            "{}, got {}", Message::RenderResponse, msg);
     }
     PostDSPClearCommandBuffer();
 }
