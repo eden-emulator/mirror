@@ -100,8 +100,9 @@ u64 System::GetWorkBufferSize(const AudioRendererParameterInternal& params) {
 }
 
 System::System(Core::System& core_, Kernel::KEvent* adsp_rendered_event_)
-    : core{core_}, audio_renderer{core.AudioCore().ADSP().AudioRenderer()},
-      adsp_rendered_event{adsp_rendered_event_} {}
+    : core{core_}
+    , adsp_rendered_event{adsp_rendered_event_}
+{}
 
 Result System::Initialize(const AudioRendererParameterInternal& params,
                           Kernel::KTransferMemory* transfer_memory, u64 transfer_memory_size,
@@ -406,7 +407,7 @@ void System::Finalize() {
         return;
     }
 
-    if (active) {
+    if (IsActive()) {
         Stop();
     }
 
@@ -433,14 +434,12 @@ void System::Start() {
     std::scoped_lock l{lock};
     frames_elapsed = 0;
     state = State::Started;
-    active = true;
 }
 
 void System::Stop() {
     {
         std::scoped_lock l{lock};
         state = State::Stopped;
-        active = false;
     }
 
     if (execution_mode == ExecutionMode::Auto) {
@@ -480,8 +479,7 @@ Result System::Update(std::span<const u8> input, std::span<u8> performance, std:
         return result;
     }
 
-    result = info_updater.UpdateEffects(effect_context, active, memory_pool_workbuffer,
-                                        memory_pool_count);
+    result = info_updater.UpdateEffects(effect_context, IsActive(), memory_pool_workbuffer, memory_pool_count);
     if (result.IsError()) {
         LOG_ERROR(Service_Audio, "Failed to update Effects!");
         return result;
@@ -582,16 +580,16 @@ u32 System::GetRenderingDevice() const {
 }
 
 bool System::IsActive() const {
-    return active;
+    return state == State::Started;
 }
 
 void System::SendCommandToDsp() {
     std::scoped_lock l{lock};
-
+    auto& audio_renderer = core.AudioCore().ADSP().AudioRenderer();
     if (initialized) {
-        if (active) {
+        if (IsActive()) {
             terminate_event.Reset();
-            const auto remaining_command_count{audio_renderer.GetRemainCommandCount(session_id)};
+            const auto remaining_command_count = audio_renderer.GetRemainCommandCount(session_id);
             u64 command_size{0};
 
             if (remaining_command_count) {
@@ -738,7 +736,7 @@ u64 System::GenerateCommand(std::span<u8> in_command_buffer,
     const auto end_time{core.CoreTiming().GetGlobalTimeNs().count()};
     total_ticks_elapsed += end_time - start_time;
     num_command_lists_generated++;
-    render_start_tick = audio_renderer.GetRenderingStartTick(session_id);
+    render_start_tick = core.AudioCore().ADSP().AudioRenderer().GetRenderingStartTick(session_id);
     frames_elapsed++;
 
     return command_buffer.size;

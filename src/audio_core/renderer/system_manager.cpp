@@ -16,22 +16,22 @@
 namespace AudioCore::Renderer {
 
 SystemManager::SystemManager(Core::System& core_)
-    : core{core_}, audio_renderer{core.AudioCore().ADSP().AudioRenderer()} {}
+    : core{core_}
+{}
 
 SystemManager::~SystemManager() {
     Stop();
 }
 
 void SystemManager::InitializeUnsafe() {
-    if (!active) {
-        active = true;
-        audio_renderer.Start();
+    if (!thread.joinable()) {
+        core.AudioCore().ADSP().AudioRenderer().Start();
         thread = std::jthread([this](std::stop_token stop_token) {
             Common::SetCurrentThreadName("AudioRenderSystemManager");
-            Common::SetCurrentThreadPriority(Common::ThreadPriority::High);
-            while (active && !stop_token.stop_requested()) {
+            auto& audio_renderer = core.AudioCore().ADSP().AudioRenderer();
+            while (!stop_token.stop_requested()) {
                 {
-                    std::scoped_lock l{mutex1};
+                    std::scoped_lock lk{mutex};
                     for (auto system : systems)
                         system->SendCommandToDsp();
                 }
@@ -43,39 +43,31 @@ void SystemManager::InitializeUnsafe() {
 }
 
 void SystemManager::Stop() {
-    if (active) {
-        active = false;
+    if (thread.joinable()) {
         thread.request_stop();
         thread.join();
-        audio_renderer.Stop();
+        core.AudioCore().ADSP().AudioRenderer().Stop();
     }
 }
 
 bool SystemManager::Add(System& system_) {
-    std::scoped_lock l2{mutex2};
+    std::scoped_lock lk{mutex};
     if (systems.size() + 1 > MaxRendererSessions) {
         LOG_ERROR(Service_Audio, "Maximum AudioRenderer Systems active, cannot add more!");
         return false;
     }
-    {
-        std::scoped_lock l{mutex1};
-        if (systems.empty())
-            InitializeUnsafe();
-    }
+    if (systems.empty())
+        InitializeUnsafe();
     systems.push_back(&system_);
     return true;
 }
 
 bool SystemManager::Remove(System& system_) {
-    std::scoped_lock l2{mutex2};
-    {
-        std::scoped_lock l{mutex1};
-        if (systems.remove(&system_) == 0) {
-            LOG_ERROR(Service_Audio, "Failed to remove a render system, it was not found in the list!");
-            return false;
-        }
+    std::scoped_lock lk{mutex};
+    if (systems.remove(&system_) == 0) {
+        LOG_ERROR(Service_Audio, "Failed to remove a render system, it was not found in the list!");
+        return false;
     }
-
     if (systems.empty())
         Stop();
     return true;
