@@ -13,6 +13,7 @@
 
 #include "video_core/renderer_vulkan/vk_query_cache.h"
 
+#include "common/make_unique_for_overwrite.h"
 #include "common/settings.h"
 #include "common/thread.h"
 #include "video_core/gpu_logging/gpu_logging.h"
@@ -484,7 +485,7 @@ void Scheduler::AcquireNewChunk() {
 
     if (chunk_reserve.empty()) {
         // If we don't have anything reserved, we need to make a new chunk.
-        chunk = std::make_unique<CommandChunk>();
+        chunk = Common::make_unique_for_overwrite<CommandChunk>();
     } else {
         // Otherwise, we can just take from the reserve.
         chunk = std::move(chunk_reserve.back());

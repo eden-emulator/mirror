@@ -1032,23 +1032,22 @@ void RasterizerVulkan::LoadDiskResources(u64 title_id, std::stop_token stop_load
 
 void RasterizerVulkan::FlushWork() {
 #ifdef __ANDROID__
-    static constexpr u32 DRAWS_TO_DISPATCH = 512;
-    static constexpr u32 CHECK_MASK = 3;
+    static constexpr u32 DRAWS_TO_DISPATCH = 1024;
 #else
     static constexpr u32 DRAWS_TO_DISPATCH = 4096;
-    static constexpr u32 CHECK_MASK = 7;
 #endif // __ANDROID__
+    static constexpr u32 CHECK_MASK = 7;
 
-    static_assert(DRAWS_TO_DISPATCH % (CHECK_MASK + 1) == 0);
-    if ((++draw_counter & CHECK_MASK) != CHECK_MASK) {
+    if (++draw_counter >= DRAWS_TO_DISPATCH &&
+        (!scheduler.IsRenderPassActive() ||
+         maxwell3d->dirty.flags[VideoCommon::Dirty::RenderTargets])) {
+        scheduler.Flush();
+        draw_counter = 0;
         return;
     }
-    if (draw_counter < DRAWS_TO_DISPATCH) {
+    if ((draw_counter & CHECK_MASK) == CHECK_MASK) {
         scheduler.DispatchWork();
-        return;
     }
-    scheduler.Flush();
-    draw_counter = 0;
 }
 
 AccelerateDMA::AccelerateDMA(BufferCache& buffer_cache_, TextureCache& texture_cache_,

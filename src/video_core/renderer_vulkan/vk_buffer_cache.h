@@ -244,6 +244,9 @@ private:
 
     VkFormat TexelBufferFormat(VideoCore::Surface::PixelFormat format) const;
 
+    template <u32 N>
+    void RecordVertexBuffers(const VideoCommon::HostBindings<Buffer>& bindings, u32 count);
+
     void ReserveNullBuffer();
     vk::Buffer CreateNullBuffer();
 

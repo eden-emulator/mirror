@@ -24,6 +24,18 @@
 
 namespace Vulkan {
 namespace {
+constexpr u32 COMPACT_VERTEX_BINDINGS = 8;
+
+template <u32 N>
+struct VertexBindings {
+    std::array<VkBuffer, N> buffers;
+    std::array<VkDeviceSize, N> offsets;
+    std::array<VkDeviceSize, N> sizes;
+    std::array<VkDeviceSize, N> strides;
+    u32 first;
+    u32 count;
+};
+
 VkBufferCopy MakeBufferCopy(const VideoCommon::BufferCopy& copy) {
     return VkBufferCopy{
         .srcOffset = copy.src_offset,
@@ -670,36 +682,52 @@ void BufferCacheRuntime::BindVertexBuffer(u32 index, VkBuffer buffer, u32 offset
     }
 }
 
-void BufferCacheRuntime::BindVertexBuffers(VideoCommon::HostBindings<Buffer>& bindings) {
-    boost::container::static_vector<VkBuffer, VideoCommon::NUM_VERTEX_BUFFERS> buffer_handles(bindings.buffers.size());
-    for (u32 i = 0; i < bindings.buffers.size(); ++i) {
-        auto handle = bindings.buffers[i]->Handle();
-        if (handle == VK_NULL_HANDLE) {
-            bindings.offsets[i] = 0;
-            bindings.sizes[i] = VK_WHOLE_SIZE;
+template <u32 N>
+void BufferCacheRuntime::RecordVertexBuffers(const VideoCommon::HostBindings<Buffer>& bindings,
+                                             u32 count) {
+    VertexBindings<N> vertex{};
+    vertex.first = bindings.min_index;
+    vertex.count = count;
+    for (u32 i = 0; i < count; ++i) {
+        vertex.buffers[i] = bindings.buffers[i]->Handle();
+        vertex.offsets[i] = bindings.offsets[i];
+        vertex.sizes[i] = bindings.sizes[i];
+        vertex.strides[i] = bindings.strides[i];
+        if (vertex.buffers[i] == VK_NULL_HANDLE) {
+            vertex.offsets[i] = 0;
+            vertex.sizes[i] = VK_WHOLE_SIZE;
             if (!device.HasNullDescriptor()) {
                 ReserveNullBuffer();
-                handle = *null_buffer;
+                vertex.buffers[i] = *null_buffer;
             }
         }
-        buffer_handles[i] = handle;
-    }
-    const u32 device_max = device.GetMaxVertexInputBindings();
-    const u32 min_binding = (std::min)(bindings.min_index, device_max);
-    const u32 max_binding = (std::min)(bindings.max_index, device_max);
-    const u32 binding_count = max_binding - min_binding;
-    if (binding_count == 0) {
-        return;
     }
     if (device.IsExtExtendedDynamicStateSupported()) {
-        scheduler.Record([bindings_ = std::move(bindings), buffer_handles_ = std::move(buffer_handles), binding_count](vk::CommandBuffer cmdbuf) {
-            cmdbuf.BindVertexBuffers2EXT(bindings_.min_index, binding_count, buffer_handles_.data(), bindings_.offsets.data(), bindings_.sizes.data(), bindings_.strides.data());
+        scheduler.Record([vertex](vk::CommandBuffer cmdbuf) {
+            cmdbuf.BindVertexBuffers2EXT(vertex.first, vertex.count, vertex.buffers.data(),
+                                         vertex.offsets.data(), vertex.sizes.data(),
+                                         vertex.strides.data());
         });
-    } else {
-        scheduler.Record([bindings_ = std::move(bindings), buffer_handles_ = std::move(buffer_handles), binding_count](vk::CommandBuffer cmdbuf) {
-            cmdbuf.BindVertexBuffers(bindings_.min_index, binding_count, buffer_handles_.data(), bindings_.offsets.data());
-        });
+        return;
     }
+    scheduler.Record([vertex](vk::CommandBuffer cmdbuf) {
+        cmdbuf.BindVertexBuffers(vertex.first, vertex.count, vertex.buffers.data(),
+                                 vertex.offsets.data());
+    });
+}
+
+void BufferCacheRuntime::BindVertexBuffers(VideoCommon::HostBindings<Buffer>& bindings) {
+    const u32 device_max = device.GetMaxVertexInputBindings();
+    const u32 count = (std::min)(bindings.max_index, device_max) -
+                      (std::min)(bindings.min_index, device_max);
+    if (count == 0) {
+        return;
+    }
+    if (count <= COMPACT_VERTEX_BINDINGS) {
+        RecordVertexBuffers<COMPACT_VERTEX_BINDINGS>(bindings, count);
+        return;
+    }
+    RecordVertexBuffers<VideoCommon::NUM_VERTEX_BUFFERS>(bindings, count);
 }
 
 void BufferCacheRuntime::BindTransformFeedbackBuffer(u32 index, VkBuffer buffer, u32 offset,
