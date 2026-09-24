@@ -297,10 +297,12 @@ if (YUZU_ROOM)
 endif()
 
 if (UNIX AND NOT (LINUX OR WIN32))
-    if(CXX_APPLE OR CXX_CLANG)
+    if(CXX_APPLE OR (CXX_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "20.0"))
         # libc++ has stop_token and jthread as experimental
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexperimental-library")
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexperimental-library")
+    elseif(CXX_CLANG)
+        # New clang >=20.0, so do nothing
     else()
         # Uses glibc, mostly?
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_LIBCPP_ENABLE_EXPERIMENTAL=1")
