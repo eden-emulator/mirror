@@ -121,7 +121,7 @@ void BufferCache<P>::UnmapGPUMemory(size_t as_id, GPUVAddr gpu_addr, size_t size
 
 template <class P>
 void BufferCache<P>::WriteMemory(DAddr device_addr, u64 size) {
-    if (memory_tracker.IsRegionGpuModified(device_addr, size)) {
+    if (IsRegionGpuModified(device_addr, size)) {
         ClearDownload(device_addr, size);
         gpu_modified_ranges.Subtract(device_addr, size);
     }
@@ -311,11 +311,8 @@ std::pair<typename P::Buffer*, u32> BufferCache<P>::ObtainCPUBuffer(
         MarkWrittenBuffer(buffer_id, device_addr, size);
         break;
     case ObtainBufferOperation::DiscardWrite: {
-        const DAddr device_addr_start = Common::AlignDown(device_addr, 64);
-        const DAddr device_addr_end = Common::AlignUp(device_addr + size, 64);
-        const size_t new_size = device_addr_end - device_addr_start;
-        ClearDownload(device_addr_start, new_size);
-        gpu_modified_ranges.Subtract(device_addr_start, new_size);
+        ClearDownload(device_addr, size);
+        gpu_modified_ranges.Subtract(device_addr, size);
         break;
     }
     default:
@@ -1742,14 +1739,24 @@ bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 si
     u64 total_size_bytes = 0;
     u64 largest_copy = 0;
     const DAddr buffer_start = buffer.cpu_addr_cached;
-    memory_tracker.ForEachUploadRange(device_addr, size, [&](u64 device_addr_out, u64 range_size) {
+    const auto add_upload = [&](DAddr start, DAddr end) {
+        if (start == end) return;
+        const u64 range_size = end - start;
         upload_copies.push_back(BufferCopy{
             .src_offset = total_size_bytes,
-            .dst_offset = device_addr_out - buffer_start,
+            .dst_offset = start - buffer_start,
             .size = range_size,
         });
         total_size_bytes += range_size;
         largest_copy = (std::max)(largest_copy, range_size);
+    };
+    memory_tracker.ForEachUploadRange(device_addr, size, [&](u64 device_addr_out, u64 range_size) {
+        DAddr upload_start = device_addr_out;
+        gpu_modified_ranges.ForEachInRange(device_addr_out, range_size, [&](DAddr gpu_start, DAddr gpu_end) {
+            add_upload(upload_start, gpu_start);
+            upload_start = gpu_end;
+        });
+        add_upload(upload_start, device_addr_out + range_size);
     });
     if (total_size_bytes == 0) {
         return true;

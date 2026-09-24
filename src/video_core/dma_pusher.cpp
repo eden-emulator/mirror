@@ -16,7 +16,7 @@
 namespace Tegra {
 
 constexpr u32 MacroRegistersStart = 0xE00;
-[[maybe_unused]] constexpr u32 ComputeInline = 0x6D;
+constexpr u32 ComputeInline = 0x6D;
 
 DmaPusher::DmaPusher(Core::System& system_, MemoryManager& memory_manager_, Control::ChannelState& channel_state_)
     : system{system_}
@@ -73,11 +73,16 @@ bool DmaPusher::Step() {
         synced = false;
     }
 
-    if (header.size > 0 && dma_state.method >= MacroRegistersStart && subchannels[dma_state.subchannel]) {
-        subchannels[dma_state.subchannel]->current_dirty = memory_manager.IsMemoryDirty(dma_state.dma_get, header.size * sizeof(u32));
-    }
-
     if (header.size > 0) {
+        if (subchannels[dma_state.subchannel] && dma_state.method_count) {
+            const auto engine = subchannel_type[dma_state.subchannel];
+            const bool kepler_payload = engine == Engines::EngineTypes::KeplerCompute && dma_state.method == ComputeInline && dma_state.non_incrementing;
+            const bool macro_payload = engine == Engines::EngineTypes::Maxwell3D && dma_state.method >= MacroRegistersStart;
+            if (kepler_payload || macro_payload) {
+                const size_t words = std::min<size_t>(dma_state.method_count, header.size);
+                subchannels[dma_state.subchannel]->current_dirty = memory_manager.IsMemoryDirty(dma_state.dma_get, words * sizeof(u32));
+            }
+        }
         const bool use_safe = Settings::IsDMALevelDefault() ? Settings::IsGPULevelHigh() : Settings::IsDMALevelSafe();
         if (use_safe) {
             Tegra::Memory::GpuGuestMemory<Tegra::CommandHeader, Tegra::Memory::GuestMemoryFlags::SafeRead>headers(memory_manager, dma_state.dma_get, header.size, &command_headers);

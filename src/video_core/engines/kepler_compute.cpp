@@ -49,13 +49,16 @@ void KeplerCompute::CallMethod(Core::System& system, u32 method, u32 method_argu
     case KEPLER_COMPUTE_REG_INDEX(exec_upload): {
         UploadInfo info{.upload_address = upload_address,
                         .exec_address = upload_state.ExecTargetAddress(),
-                        .copy_size = upload_state.GetUploadSize()};
+                        .copy_size = upload_state.GetUploadSize(),
+                        .was_dirty = upload_dirty};
         uploads.push_back(info);
         upload_state.ProcessExec(regs.exec_upload.linear != 0);
         break;
     }
     case KEPLER_COMPUTE_REG_INDEX(data_upload): {
         upload_address = current_dma_segment;
+        upload_dirty = current_dirty;
+        current_dirty = false;
         upload_state.ProcessData(method_argument, is_last_call);
         break;
     }
@@ -64,9 +67,11 @@ void KeplerCompute::CallMethod(Core::System& system, u32 method, u32 method_argu
 
         for (auto& data : uploads) {
             const GPUVAddr offset = data.exec_address - launch_desc_loc;
-            if (offset / sizeof(u32) == LAUNCH_REG_INDEX(grid_dim_x) &&
-                memory_manager.IsMemoryDirty(data.upload_address, data.copy_size)) {
-                indirect_compute = {data.upload_address};
+            if (offset / sizeof(u32) == LAUNCH_REG_INDEX(grid_dim_x)) {
+                const bool source_dirty = memory_manager.IsMemoryDirty(data.upload_address, data.copy_size);
+                if (data.was_dirty || source_dirty) {
+                    indirect_compute = {data.upload_address};
+                }
             }
         }
         uploads.clear();
@@ -83,6 +88,8 @@ void KeplerCompute::CallMultiMethod(Core::System& system, u32 method, const u32*
     switch (method) {
     case KEPLER_COMPUTE_REG_INDEX(data_upload):
         upload_address = current_dma_segment;
+        upload_dirty = current_dirty;
+        current_dirty = false;
         upload_state.ProcessData(base_start, amount);
         return;
     default:
