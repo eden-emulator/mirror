@@ -169,10 +169,8 @@ struct InstanceDispatch {
     PFN_vkEnumerateInstanceLayerProperties vkEnumerateInstanceLayerProperties{};
 
     PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT{};
-    PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT{};
     PFN_vkCreateDevice vkCreateDevice{};
     PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT{};
-    PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT{};
     PFN_vkDestroyDevice vkDestroyDevice{};
     PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR{};
     PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties{};
@@ -181,7 +179,6 @@ struct InstanceDispatch {
     PFN_vkGetPhysicalDeviceFeatures2 vkGetPhysicalDeviceFeatures2{};
     PFN_vkGetPhysicalDeviceFormatProperties vkGetPhysicalDeviceFormatProperties{};
     PFN_vkGetPhysicalDeviceFormatProperties2 vkGetPhysicalDeviceFormatProperties2{};
-    PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties{};
     PFN_vkGetPhysicalDeviceMemoryProperties2 vkGetPhysicalDeviceMemoryProperties2{};
     PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties{};
     PFN_vkGetPhysicalDeviceProperties2 vkGetPhysicalDeviceProperties2{};
@@ -200,12 +197,8 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR{};
     PFN_vkAllocateCommandBuffers vkAllocateCommandBuffers{};
     PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets{};
-    PFN_vkAllocateMemory vkAllocateMemory{};
     PFN_vkBeginCommandBuffer vkBeginCommandBuffer{};
-    PFN_vkBindBufferMemory vkBindBufferMemory{};
-    PFN_vkBindImageMemory vkBindImageMemory{};
     PFN_vkCmdBeginConditionalRenderingEXT vkCmdBeginConditionalRenderingEXT{};
-    PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT{};
     PFN_vkCmdBeginQuery vkCmdBeginQuery{};
     PFN_vkCmdBeginRenderPass vkCmdBeginRenderPass{};
     PFN_vkCmdBeginTransformFeedbackEXT vkCmdBeginTransformFeedbackEXT{};
@@ -234,7 +227,6 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCmdDrawIndexedIndirectCount vkCmdDrawIndexedIndirectCount{};
     PFN_vkCmdDrawIndirectByteCountEXT vkCmdDrawIndirectByteCountEXT{};
     PFN_vkCmdEndConditionalRenderingEXT vkCmdEndConditionalRenderingEXT{};
-    PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT{};
     PFN_vkCmdEndQuery vkCmdEndQuery{};
     PFN_vkCmdEndRenderPass vkCmdEndRenderPass{};
     PFN_vkCmdEndTransformFeedbackEXT vkCmdEndTransformFeedbackEXT{};
@@ -260,13 +252,11 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCmdSetConservativeRasterizationModeEXT vkCmdSetConservativeRasterizationModeEXT{};
     PFN_vkCmdSetLineRasterizationModeEXT vkCmdSetLineRasterizationModeEXT{};
     PFN_vkCmdSetLineStippleEnableEXT vkCmdSetLineStippleEnableEXT{};
-    PFN_vkCmdSetLineStippleEXT vkCmdSetLineStippleEXT{};
     PFN_vkCmdSetDepthBiasEnableEXT vkCmdSetDepthBiasEnableEXT{};
     PFN_vkCmdSetLogicOpEnableEXT vkCmdSetLogicOpEnableEXT{};
     PFN_vkCmdSetDepthClampEnableEXT vkCmdSetDepthClampEnableEXT{};
     PFN_vkCmdSetEvent2 vkCmdSetEvent2{};
     PFN_vkCmdSetFrontFaceEXT vkCmdSetFrontFaceEXT{};
-    PFN_vkCmdSetPatchControlPointsEXT vkCmdSetPatchControlPointsEXT{};
     PFN_vkCmdSetLogicOpEXT vkCmdSetLogicOpEXT{};
     PFN_vkCmdSetLineWidth vkCmdSetLineWidth{};
     PFN_vkCmdSetPrimitiveTopologyEXT vkCmdSetPrimitiveTopologyEXT{};
@@ -294,7 +284,6 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCreateFence vkCreateFence{};
     PFN_vkCreateFramebuffer vkCreateFramebuffer{};
     PFN_vkCreateGraphicsPipelines vkCreateGraphicsPipelines{};
-    PFN_vkCreateImage vkCreateImage{};
     PFN_vkCreateImageView vkCreateImageView{};
     PFN_vkCreatePipelineCache vkCreatePipelineCache{};
     PFN_vkCreatePipelineLayout vkCreatePipelineLayout{};
@@ -328,30 +317,21 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkEndCommandBuffer vkEndCommandBuffer{};
     PFN_vkFreeCommandBuffers vkFreeCommandBuffers{};
     PFN_vkFreeDescriptorSets vkFreeDescriptorSets{};
-    PFN_vkFreeMemory vkFreeMemory{};
     PFN_vkGetBufferMemoryRequirements2 vkGetBufferMemoryRequirements2{};
     PFN_vkGetDeviceBufferMemoryRequirements vkGetDeviceBufferMemoryRequirements{};
     PFN_vkGetDeviceQueue vkGetDeviceQueue{};
     PFN_vkGetEventStatus vkGetEventStatus{};
     PFN_vkGetFenceStatus vkGetFenceStatus{};
-    PFN_vkGetImageMemoryRequirements vkGetImageMemoryRequirements{};
     PFN_vkGetPipelineCacheData vkGetPipelineCacheData{};
-    PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR{};
-#ifdef _WIN32
-    PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR{};
-#endif
     PFN_vkGetPipelineExecutablePropertiesKHR vkGetPipelineExecutablePropertiesKHR{};
     PFN_vkGetPipelineExecutableStatisticsKHR vkGetPipelineExecutableStatisticsKHR{};
     PFN_vkGetQueryPoolResults vkGetQueryPoolResults{};
     PFN_vkGetSemaphoreCounterValue vkGetSemaphoreCounterValue{};
-    PFN_vkMapMemory vkMapMemory{};
     PFN_vkQueueBindSparse vkQueueBindSparse{};
     PFN_vkQueueSubmit2 vkQueueSubmit2{};
     PFN_vkResetFences vkResetFences{};
     PFN_vkResetQueryPool vkResetQueryPool{};
     PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT{};
-    PFN_vkSetDebugUtilsObjectTagEXT vkSetDebugUtilsObjectTagEXT{};
-    PFN_vkUnmapMemory vkUnmapMemory{};
     PFN_vkUpdateDescriptorSetWithTemplate vkUpdateDescriptorSetWithTemplate{};
     PFN_vkGetBufferDeviceAddress vkGetBufferDeviceAddress{};
     PFN_vkGetDescriptorSetLayoutSizeEXT vkGetDescriptorSetLayoutSizeEXT{};
@@ -381,7 +361,6 @@ void Destroy(VkDevice, VkCommandPool, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkDescriptorPool, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkDescriptorSetLayout, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkDescriptorUpdateTemplate, const DeviceDispatch&) noexcept;
-void Destroy(VkDevice, VkDeviceMemory, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkEvent, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkFence, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkFramebuffer, const DeviceDispatch&) noexcept;
@@ -397,7 +376,6 @@ void Destroy(VkDevice, VkSwapchainKHR, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkSemaphore, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkShaderModule, const DeviceDispatch&) noexcept;
 void Destroy(VkInstance, VkDebugUtilsMessengerEXT, const InstanceDispatch&) noexcept;
-void Destroy(VkInstance, VkDebugReportCallbackEXT, const InstanceDispatch&) noexcept;
 void Destroy(VkInstance, VkSurfaceKHR, const InstanceDispatch&) noexcept;
 
 VkResult Free(VkDevice, VkDescriptorPool, Span<VkDescriptorSet>, const DeviceDispatch&) noexcept;
@@ -635,7 +613,6 @@ private:
 };
 
 using DebugUtilsMessenger = Handle<VkDebugUtilsMessengerEXT, VkInstance, InstanceDispatch>;
-using DebugReportCallback = Handle<VkDebugReportCallbackEXT, VkInstance, InstanceDispatch>;
 using DescriptorSetLayout = Handle<VkDescriptorSetLayout, VkDevice, DeviceDispatch>;
 using DescriptorUpdateTemplate = Handle<VkDescriptorUpdateTemplate, VkDevice, DeviceDispatch>;
 using Pipeline = Handle<VkPipeline, VkDevice, DeviceDispatch>;
@@ -667,11 +644,6 @@ public:
     /// @throw Exception on creation failure.
     [[nodiscard]] DebugUtilsMessenger CreateDebugUtilsMessenger(
         const VkDebugUtilsMessengerCreateInfoEXT& create_info) const;
-
-    /// Creates a debug report callback.
-    /// @throw Exception on creation failure.
-    [[nodiscard]] DebugReportCallback CreateDebugReportCallback(
-        const VkDebugReportCallbackCreateInfoEXT& create_info) const;
 
     /// Returns dispatch table.
     const InstanceDispatch& Dispatch() const noexcept {
@@ -880,30 +852,6 @@ public:
     void SetObjectNameEXT(const char* name) const;
 };
 
-class DeviceMemory : public Handle<VkDeviceMemory, VkDevice, DeviceDispatch> {
-    using Handle<VkDeviceMemory, VkDevice, DeviceDispatch>::Handle;
-
-public:
-    int GetMemoryFdKHR() const;
-
-#ifdef _WIN32
-    HANDLE GetMemoryWin32HandleKHR() const;
-#endif
-
-    /// Set object name.
-    void SetObjectNameEXT(const char* name) const;
-
-    u8* Map(VkDeviceSize offset, VkDeviceSize size) const {
-        void* data;
-        Check(dld->vkMapMemory(owner, handle, offset, size, 0, &data));
-        return static_cast<u8*>(data);
-    }
-
-    void Unmap() const noexcept {
-        dld->vkUnmapMemory(owner, handle);
-    }
-};
-
 class Fence : public Handle<VkFence, VkDevice, DeviceDispatch> {
     using Handle<VkFence, VkDevice, DeviceDispatch>::Handle;
 
@@ -1088,16 +1036,7 @@ public:
 
     [[nodiscard]] SwapchainKHR CreateSwapchainKHR(const VkSwapchainCreateInfoKHR& ci) const;
 
-    [[nodiscard]] DeviceMemory TryAllocateMemory(const VkMemoryAllocateInfo& ai) const noexcept;
-
-    [[nodiscard]] DeviceMemory AllocateMemory(const VkMemoryAllocateInfo& ai) const;
-
-    VkMemoryRequirements GetBufferMemoryRequirements(VkBuffer buffer,
-                                                     void* pnext = nullptr) const noexcept;
-
     VkMemoryRequirements GetDeviceBufferMemoryRequirements(const VkBufferCreateInfo& ci) const noexcept;
-
-    VkMemoryRequirements GetImageMemoryRequirements(VkImage image) const noexcept;
 
     std::vector<VkPipelineExecutablePropertiesKHR> GetPipelineExecutablePropertiesKHR(
         VkPipeline pipeline) const;
@@ -1178,8 +1117,6 @@ public:
     VkPhysicalDeviceProperties GetProperties() const noexcept;
 
     void GetProperties2(VkPhysicalDeviceProperties2&) const noexcept;
-
-    VkPhysicalDeviceFeatures GetFeatures() const noexcept;
 
     void GetFeatures2(VkPhysicalDeviceFeatures2&) const noexcept;
 
@@ -1566,11 +1503,6 @@ public:
         dld->vkCmdSetLineStippleEnableEXT(handle, enable ? VK_TRUE : VK_FALSE);
     }
 
-    void SetLineStippleEXT(u32 factor, u16 pattern) const noexcept
-    {
-        dld->vkCmdSetLineStippleEXT(handle, factor, pattern);
-    }
-
     void SetDepthBiasEnableEXT(bool enable) const noexcept {
         dld->vkCmdSetDepthBiasEnableEXT(handle, enable ? VK_TRUE : VK_FALSE);
     }
@@ -1597,10 +1529,6 @@ public:
 
     void SetLogicOpEXT(VkLogicOp logic_op) const noexcept {
         dld->vkCmdSetLogicOpEXT(handle, logic_op);
-    }
-
-    void SetPatchControlPointsEXT(uint32_t patch_control_points) const noexcept {
-        dld->vkCmdSetPatchControlPointsEXT(handle, patch_control_points);
     }
 
     void SetColorWriteMaskEXT(u32 first, Span<VkColorComponentFlags> masks) const noexcept {
@@ -1671,20 +1599,6 @@ public:
 
     void EndConditionalRenderingEXT() const noexcept {
         dld->vkCmdEndConditionalRenderingEXT(handle);
-    }
-
-    void BeginDebugUtilsLabelEXT(const char* label, std::span<float, 4> color) const noexcept {
-        const VkDebugUtilsLabelEXT label_info{
-            .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-            .pNext = nullptr,
-            .pLabelName = label,
-            .color{color[0], color[1], color[2], color[3]},
-        };
-        dld->vkCmdBeginDebugUtilsLabelEXT(handle, &label_info);
-    }
-
-    void EndDebugUtilsLabelEXT() const noexcept {
-        dld->vkCmdEndDebugUtilsLabelEXT(handle);
     }
 
 private:

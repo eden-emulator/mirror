@@ -611,8 +611,6 @@ bool PostProcessChain::BuildEffects(const Device& device, MemoryAllocator& alloc
                                             *vertex_shader->second, *fragment_shader->second, pass);
 
             if (out.writes_backbuffer) {
-                out.backbuffer_slot = static_cast<u32>(effect.backbuffer_pass_count % 2);
-                ++effect.backbuffer_pass_count;
                 for (u32 image = 0; image < m_image_count; ++image) {
                     for (size_t slot = 0; slot < 2; ++slot) {
                         out.framebuffers.push_back(CreateWrappedFramebuffer(

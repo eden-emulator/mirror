@@ -128,7 +128,6 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION_NAME(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME)                                   \
     EXTENSION_NAME(VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME)                                 \
     EXTENSION_NAME(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME)                                 \
-    EXTENSION_NAME(VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME)                                     \
     EXTENSION_NAME(VK_EXT_4444_FORMATS_EXTENSION_NAME)                                             \
     EXTENSION_NAME(VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME)                                       \
     EXTENSION_NAME(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME)                                             \
@@ -362,11 +361,6 @@ public:
     std::array<u32, 3> GetMaxComputeWorkGroupCount() const {
         const auto& count = properties.properties.limits.maxComputeWorkGroupCount;
         return {count[0], count[1], count[2]};
-    }
-
-    /// Returns the maximum size for push constants.
-    VkDeviceSize GetMaxPushConstantsSize() const {
-        return properties.properties.limits.maxPushConstantsSize;
     }
 
 #define FN_MAX_LIMIT_LIST \
@@ -658,13 +652,6 @@ FN_MAX_LIMIT_LIST
         return properties.depth_stencil_resolve.independentResolveNone == VK_TRUE;
     }
 
-    /// Returns true if depth/stencil operations can be performed efficiently.
-    /// Either through shader export or hardware blits.
-    bool CanPerformDepthStencilOperations() const {
-        return extensions.shader_stencil_export || is_blit_depth24_stencil8_supported ||
-               is_blit_depth32_stencil8_supported;
-    }
-
     /// Returns true if the device supports VK_EXT_depth_range_unrestricted.
     bool IsExtDepthRangeUnrestrictedSupported() const {
         return extensions.depth_range_unrestricted;
@@ -705,12 +692,6 @@ FN_MAX_LIMIT_LIST
         return extensions.transform_feedback && properties.transform_feedback.transformFeedbackDraw;
     }
 
-    /// Returns true if transform feedback query types are supported.
-    bool IsTransformFeedbackQueriesSupported() const {
-        return extensions.transform_feedback &&
-               properties.transform_feedback.transformFeedbackQueries;
-    }
-
     /// Returns true if the device supports VK_EXT_transform_feedback properly.
     bool AreTransformFeedbackGeometryStreamsSupported() const {
         return features.transform_feedback.geometryStreams;
@@ -745,11 +726,6 @@ FN_MAX_LIMIT_LIST
                !features.border_color_swizzle.borderColorSwizzleFromImage;
     }
 
-    /// Returns true if borderColorSwizzleFromImage is available.
-    bool IsBorderColorSwizzleFromImageSupported() const {
-        return features.border_color_swizzle.borderColorSwizzleFromImage;
-    }
-
     /// Returns true if the device supports VK_EXT_extended_dynamic_state.
     bool IsExtExtendedDynamicStateSupported() const {
         return extensions.extended_dynamic_state;
@@ -762,11 +738,6 @@ FN_MAX_LIMIT_LIST
 
     bool IsExtExtendedDynamicState2ExtrasSupported() const {
         return features.extended_dynamic_state2.extendedDynamicState2LogicOp;
-    }
-
-    /// Returns true if the device supports VK_EXT_extended_dynamic_state3.
-    bool IsExtExtendedDynamicState3Supported() const {
-        return extensions.extended_dynamic_state3;
     }
 
     /// Returns true if the device supports VK_EXT_4444_formats.
@@ -973,10 +944,6 @@ FN_MAX_LIMIT_LIST
 
     bool MustEmulateBGR565() const;
 
-    bool HasExactDepthBiasControl() const {
-        return features.depth_bias_control.depthBiasExact;
-    }
-
     u32 GetMaxVertexInputAttributes() const {
         return properties.properties.limits.maxVertexInputAttributes;
     }
@@ -1029,21 +996,9 @@ FN_MAX_LIMIT_LIST
         return extensions.maintenance5;
     }
 
-    /// Returns true if polygon mode POINT supports gl_PointSize.
-    bool SupportsPolygonModePointSize() const {
-        return extensions.maintenance5 && properties.maintenance5.polygonModePointSize;
-    }
-
     /// Returns true if depth/stencil swizzle ONE is supported.
     bool SupportsDepthStencilSwizzleOne() const {
         return extensions.maintenance5 && properties.maintenance5.depthStencilSwizzleOneSupport;
-    }
-
-    /// Returns true if early fragment tests optimizations are available.
-    bool SupportsEarlyFragmentTests() const {
-        return extensions.maintenance5 &&
-               properties.maintenance5.earlyFragmentMultisampleCoverageAfterSampleCounting &&
-               properties.maintenance5.earlyFragmentSampleMaskTestBeforeSampleCounting;
     }
 
     /// Returns true if the device supports UINT8 index buffer conversion via compute shader.
@@ -1197,8 +1152,6 @@ private:
     bool is_blit_depth32_stencil8_supported{}; ///< Support for blitting from and to D32S8.
     bool is_warp_potentially_bigger{};         ///< Host warp size can be bigger than guest.
     bool is_integrated{};                      ///< Is GPU an iGPU.
-    bool is_virtual{};                         ///< Is GPU a virtual GPU.
-    bool is_non_gpu{};                         ///< Is SoftwareRasterizer, FPGA, non-GPU device.
     bool has_broken_compute{};                 ///< Compute shaders can cause crashes
     bool has_broken_cube_compatibility{};      ///< Has broken cube compatibility bit
     bool has_broken_descriptor_aliasing{};     ///< Miscompiles descriptors aliased on one binding

@@ -255,29 +255,6 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         .preserveAttachmentCount = 0,
         .pPreserveAttachments = nullptr,
     };
-    const VkMemoryBarrier2 dependency_barrier{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .pNext = nullptr,
-        .srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
-                        VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT |
-                        VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-        .srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
-                         VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-        .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT,
-    };
-    const VkSubpassDependency2 dependency{
-        .sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2,
-        .pNext = &dependency_barrier,
-        .srcSubpass = 0,
-        .dstSubpass = 0,
-        .srcStageMask = 0,
-        .dstStageMask = 0,
-        .srcAccessMask = 0,
-        .dstAccessMask = 0,
-        .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
-        .viewOffset = 0,
-    };
     pair->second = device->GetLogical().CreateRenderPass2({
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
         .pNext = nullptr,
@@ -286,8 +263,8 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         .pAttachments = descriptions.empty() ? nullptr : descriptions.data(),
         .subpassCount = 1,
         .pSubpasses = &subpass,
-        .dependencyCount = 1,
-        .pDependencies = &dependency,
+        .dependencyCount = 0,
+        .pDependencies = nullptr,
         .correlatedViewMaskCount = 0,
         .pCorrelatedViewMasks = nullptr,
     });

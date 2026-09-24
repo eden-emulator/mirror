@@ -85,15 +85,11 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkAcquireNextImageKHR);
     X(vkAllocateCommandBuffers);
     X(vkAllocateDescriptorSets);
-    X(vkAllocateMemory);
     X(vkBeginCommandBuffer);
-    X(vkBindBufferMemory);
-    X(vkBindImageMemory);
     X(vkCmdBeginConditionalRenderingEXT);
     X(vkCmdBeginQuery);
     X(vkCmdBeginRenderPass);
     X(vkCmdBeginTransformFeedbackEXT);
-    X(vkCmdBeginDebugUtilsLabelEXT);
     X(vkCmdBindDescriptorSets);
     X(vkCmdBindIndexBuffer);
     X(vkCmdBindIndexBuffer2KHR);
@@ -121,7 +117,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdEndQuery);
     X(vkCmdEndRenderPass);
     X(vkCmdEndTransformFeedbackEXT);
-    X(vkCmdEndDebugUtilsLabelEXT);
     X(vkCmdFillBuffer);
     X(vkCmdPipelineBarrier2);
     X(vkCmdPushConstants);
@@ -155,7 +150,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdSetDepthClampEnableEXT);
     X(vkCmdSetFrontFaceEXT);
     X(vkCmdSetLogicOpEXT);
-    X(vkCmdSetPatchControlPointsEXT);
     X(vkCmdSetLineWidth);
     X(vkCmdSetPrimitiveTopologyEXT);
     X(vkCmdSetStencilOpEXT);
@@ -178,7 +172,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCreateFence);
     X(vkCreateFramebuffer);
     X(vkCreateGraphicsPipelines);
-    X(vkCreateImage);
     X(vkCreateImageView);
     X(vkCreatePipelineCache);
     X(vkCreatePipelineLayout);
@@ -212,30 +205,21 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkEndCommandBuffer);
     X(vkFreeCommandBuffers);
     X(vkFreeDescriptorSets);
-    X(vkFreeMemory);
     X(vkGetBufferMemoryRequirements2);
     X(vkGetDeviceBufferMemoryRequirements);
     X(vkGetDeviceQueue);
     X(vkGetEventStatus);
     X(vkGetFenceStatus);
-    X(vkGetImageMemoryRequirements);
     X(vkGetPipelineCacheData);
-    X(vkGetMemoryFdKHR);
-#ifdef _WIN32
-    X(vkGetMemoryWin32HandleKHR);
-#endif
     X(vkGetQueryPoolResults);
     X(vkGetPipelineExecutablePropertiesKHR);
     X(vkGetPipelineExecutableStatisticsKHR);
     X(vkGetSemaphoreCounterValue);
-    X(vkMapMemory);
     X(vkQueueBindSparse);
     X(vkQueueSubmit2);
     X(vkResetFences);
     X(vkResetQueryPool);
     X(vkSetDebugUtilsObjectNameEXT);
-    X(vkSetDebugUtilsObjectTagEXT);
-    X(vkUnmapMemory);
     X(vkUpdateDescriptorSetWithTemplate);
     X(vkUpdateDescriptorSets);
     X(vkGetBufferDeviceAddress);
@@ -319,9 +303,7 @@ bool Load(VkInstance instance, InstanceDispatch& dld) noexcept {
     // These functions may fail to load depending on the enabled extensions.
     // Don't return a failure on these.
     X(vkCreateDebugUtilsMessengerEXT);
-    X(vkCreateDebugReportCallbackEXT);
     X(vkDestroyDebugUtilsMessengerEXT);
-    X(vkDestroyDebugReportCallbackEXT);
     X(vkDestroySurfaceKHR);
     X(vkGetPhysicalDeviceFeatures2);
     X(vkGetPhysicalDeviceFormatProperties2);
@@ -334,10 +316,10 @@ bool Load(VkInstance instance, InstanceDispatch& dld) noexcept {
     X(vkGetSwapchainImagesKHR);
     X(vkQueuePresentKHR);
 
-    return X(vkCreateDevice) && X(vkDestroyDevice) && X(vkDestroyDevice) &&
+    return X(vkCreateDevice) && X(vkDestroyDevice) &&
            X(vkEnumerateDeviceExtensionProperties) && X(vkEnumeratePhysicalDevices) &&
            X(vkGetDeviceProcAddr) && X(vkGetPhysicalDeviceFormatProperties) &&
-           X(vkGetPhysicalDeviceMemoryProperties) && X(vkGetPhysicalDeviceMemoryProperties2) &&
+           X(vkGetPhysicalDeviceMemoryProperties2) &&
            X(vkGetPhysicalDeviceProperties) && X(vkGetPhysicalDeviceQueueFamilyProperties);
 #undef X
 }
@@ -377,10 +359,6 @@ void Destroy(VkDevice device, VkDescriptorSetLayout handle, const DeviceDispatch
 void Destroy(VkDevice device, VkDescriptorUpdateTemplate handle,
              const DeviceDispatch& dld) noexcept {
     dld.vkDestroyDescriptorUpdateTemplate(device, handle, nullptr);
-}
-
-void Destroy(VkDevice device, VkDeviceMemory handle, const DeviceDispatch& dld) noexcept {
-    dld.vkFreeMemory(device, handle, nullptr);
 }
 
 void Destroy(VkDevice device, VkEvent handle, const DeviceDispatch& dld) noexcept {
@@ -442,11 +420,6 @@ void Destroy(VkDevice device, VkShaderModule handle, const DeviceDispatch& dld) 
 void Destroy(VkInstance instance, VkDebugUtilsMessengerEXT handle,
              const InstanceDispatch& dld) noexcept {
     dld.vkDestroyDebugUtilsMessengerEXT(instance, handle, nullptr);
-}
-
-void Destroy(VkInstance instance, VkDebugReportCallbackEXT handle,
-             const InstanceDispatch& dld) noexcept {
-    dld.vkDestroyDebugReportCallbackEXT(instance, handle, nullptr);
 }
 
 void Destroy(VkInstance instance, VkSurfaceKHR handle, const InstanceDispatch& dld) noexcept {
@@ -518,13 +491,6 @@ DebugUtilsMessenger Instance::CreateDebugUtilsMessenger(
     return DebugUtilsMessenger(object, handle, *dld);
 }
 
-DebugReportCallback Instance::CreateDebugReportCallback(
-    const VkDebugReportCallbackCreateInfoEXT& create_info) const {
-    VkDebugReportCallbackEXT object;
-    Check(dld->vkCreateDebugReportCallbackEXT(handle, &create_info, nullptr, &object));
-    return DebugReportCallback(object, handle, *dld);
-}
-
 void Image::SetObjectNameEXT(const char* name) const {
     SetObjectName(dld, owner, handle, VK_OBJECT_TYPE_IMAGE, name);
 }
@@ -563,36 +529,6 @@ void BufferView::SetObjectNameEXT(const char* name) const {
 
 void ImageView::SetObjectNameEXT(const char* name) const {
     SetObjectName(dld, owner, handle, VK_OBJECT_TYPE_IMAGE_VIEW, name);
-}
-
-int DeviceMemory::GetMemoryFdKHR() const {
-    const VkMemoryGetFdInfoKHR get_fd_info{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR,
-        .pNext = nullptr,
-        .memory = handle,
-        .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR,
-    };
-    int fd;
-    Check(dld->vkGetMemoryFdKHR(owner, &get_fd_info, &fd));
-    return fd;
-}
-
-#ifdef _WIN32
-HANDLE DeviceMemory::GetMemoryWin32HandleKHR() const {
-    const VkMemoryGetWin32HandleInfoKHR get_win32_handle_info{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR,
-        .pNext = nullptr,
-        .memory = handle,
-        .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR,
-    };
-    HANDLE win32_handle;
-    Check(dld->vkGetMemoryWin32HandleKHR(owner, &get_win32_handle_info, &win32_handle));
-    return win32_handle;
-}
-#endif
-
-void DeviceMemory::SetObjectNameEXT(const char* name) const {
-    SetObjectName(dld, owner, handle, VK_OBJECT_TYPE_DEVICE_MEMORY, name);
 }
 
 void Fence::SetObjectNameEXT(const char* name) const {
@@ -835,36 +771,6 @@ SwapchainKHR Device::CreateSwapchainKHR(const VkSwapchainCreateInfoKHR& ci) cons
     return SwapchainKHR(object, handle, *dld);
 }
 
-DeviceMemory Device::TryAllocateMemory(const VkMemoryAllocateInfo& ai) const noexcept {
-    VkDeviceMemory memory;
-    if (dld->vkAllocateMemory(handle, &ai, nullptr, &memory) != VK_SUCCESS) {
-        return {};
-    }
-    return DeviceMemory(memory, handle, *dld);
-}
-
-DeviceMemory Device::AllocateMemory(const VkMemoryAllocateInfo& ai) const {
-    VkDeviceMemory memory;
-    Check(dld->vkAllocateMemory(handle, &ai, nullptr, &memory));
-    return DeviceMemory(memory, handle, *dld);
-}
-
-VkMemoryRequirements Device::GetBufferMemoryRequirements(VkBuffer buffer,
-                                                         void* pnext) const noexcept {
-    const VkBufferMemoryRequirementsInfo2 info{
-        .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
-        .pNext = nullptr,
-        .buffer = buffer,
-    };
-    VkMemoryRequirements2 requirements{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
-        .pNext = pnext,
-        .memoryRequirements{},
-    };
-    dld->vkGetBufferMemoryRequirements2(handle, &info, &requirements);
-    return requirements.memoryRequirements;
-}
-
 VkMemoryRequirements Device::GetDeviceBufferMemoryRequirements(
     const VkBufferCreateInfo& ci) const noexcept {
     const VkDeviceBufferMemoryRequirements info{
@@ -879,12 +785,6 @@ VkMemoryRequirements Device::GetDeviceBufferMemoryRequirements(
     };
     dld->vkGetDeviceBufferMemoryRequirements(handle, &info, &requirements);
     return requirements.memoryRequirements;
-}
-
-VkMemoryRequirements Device::GetImageMemoryRequirements(VkImage image) const noexcept {
-    VkMemoryRequirements requirements;
-    dld->vkGetImageMemoryRequirements(handle, image, &requirements);
-    return requirements;
 }
 
 std::vector<VkPipelineExecutablePropertiesKHR> Device::GetPipelineExecutablePropertiesKHR(
@@ -936,14 +836,6 @@ VkPhysicalDeviceProperties PhysicalDevice::GetProperties() const noexcept {
 
 void PhysicalDevice::GetProperties2(VkPhysicalDeviceProperties2& properties) const noexcept {
     dld->vkGetPhysicalDeviceProperties2(physical_device, &properties);
-}
-
-VkPhysicalDeviceFeatures PhysicalDevice::GetFeatures() const noexcept {
-    VkPhysicalDeviceFeatures2 features2;
-    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    features2.pNext = nullptr;
-    dld->vkGetPhysicalDeviceFeatures2(physical_device, &features2);
-    return features2.features;
 }
 
 void PhysicalDevice::GetFeatures2(VkPhysicalDeviceFeatures2& features) const noexcept {

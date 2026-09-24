@@ -47,11 +47,6 @@ public:
         return IsSubOptimal() || NeedsPresentModeUpdate();
     }
 
-    /// Returns true when the swapchain is outdated.
-    bool IsOutDated() const {
-        return is_outdated;
-    }
-
     /// Returns true when the swapchain is suboptimal.
     bool IsSubOptimal() const {
         return is_suboptimal;
@@ -67,10 +62,6 @@ public:
 
     std::size_t GetImageIndex() const {
         return image_index;
-    }
-
-    std::size_t GetFrameIndex() const {
-        return frame_index;
     }
 
     VkImage GetImageIndex(std::size_t index) const {
@@ -112,7 +103,6 @@ public:
 private:
     void CreateSwapchain(const VkSurfaceCapabilitiesKHR& capabilities);
     void CreateSemaphores();
-    void CreateImageViews();
 
     void Destroy();
 

@@ -56,7 +56,6 @@ enum : u8 {
     ConservativeRasterizationMode,
     LineRasterizationMode,
     LineStippleEnable,
-    LineStippleParams,
     DepthBiasEnable,
     StateEnable,
     LogicOp,
@@ -87,14 +86,6 @@ public:
         (*flags) |= invalidation_flags;
         current_topology = INVALID_TOPOLOGY;
         stencil_reset = true;
-    }
-
-    void InvalidateViewports() {
-        (*flags)[Dirty::Viewports] = true;
-    }
-
-    void InvalidateScissors() {
-        (*flags)[Dirty::Scissors] = true;
     }
 
     void InvalidateStateEnableFlag() {
@@ -220,7 +211,6 @@ public:
 
     bool TouchLineStippleEnable() { return Exchange(Dirty::LineStippleEnable, false); }
 
-    bool TouchLineStipple() { return Exchange(Dirty::LineStippleParams, false); }
 
     bool TouchDepthBiasEnable() { return Exchange(Dirty::DepthBiasEnable, false); }
 

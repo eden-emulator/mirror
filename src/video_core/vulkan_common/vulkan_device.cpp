@@ -487,9 +487,6 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
                                  properties.subgroup_size_control.maxSubgroupSize > GuestWarpSize;
 
     is_integrated = properties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
-    is_virtual = properties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU;
-    is_non_gpu = properties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_OTHER ||
-                 properties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU;
 
     supports_d24_depth =
         IsFormatSupported(VK_FORMAT_D24_UNORM_S8_UINT,
@@ -897,10 +894,6 @@ bool Device::GetSuitability(bool requires_swapchain) {
     bool suitable = true;
 
     // Configure properties.
-    VkPhysicalDeviceVulkan12Features features_1_2{};
-    VkPhysicalDeviceVulkan13Features features_1_3{};
-
-    // Configure properties.
     properties.properties = physical.GetProperties();
 
     // Set instance version.
@@ -995,16 +988,6 @@ bool Device::GetSuitability(bool requires_swapchain) {
 
     // Set next pointer.
     void** next = &features2.pNext;
-
-    // Vulkan 1.2 and 1.3 features
-    if (instance_version >= VK_API_VERSION_1_2) {
-        features_1_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-        features_1_3.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-
-        features_1_2.pNext = &features_1_3;
-
-        *next = &features_1_2;
-    }
 
 // Test all features we know about. If the feature is not available in core at our
 // current API version, and was not enabled by an extension, skip testing the feature.

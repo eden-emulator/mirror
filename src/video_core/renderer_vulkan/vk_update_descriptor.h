@@ -47,10 +47,6 @@ public:
                                    bool supports_descriptor_buffer_ = false);
     ~UpdateDescriptorQueue();
 
-    [[nodiscard]] bool UsesDescriptorBuffer() const noexcept {
-        return use_descriptor_buffer;
-    }
-
     void TickFrame();
     void Acquire(Scheduler& scheduler, size_t required_entries = 0,
                  bool use_descriptor_buffer_ = false);

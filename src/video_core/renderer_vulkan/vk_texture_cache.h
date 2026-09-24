@@ -89,10 +89,6 @@ public:
 
     void ConvertImage(Framebuffer* dst, ImageView& dst_view, ImageView& src_view);
 
-    bool CanAccelerateImageUpload(Image&) const noexcept {
-        return false;
-    }
-
     bool CanUploadMSAA() const noexcept {
         return true;
     }
@@ -234,10 +230,6 @@ public:
         return samples;
     }
 
-    [[nodiscard]] u32 NumColorBuffers() const noexcept {
-        return num_color_buffers;
-    }
-
     [[nodiscard]] u32 NumImages() const noexcept {
         return num_images;
     }
@@ -285,7 +277,6 @@ private:
     VkRenderPass renderpass{};
     VkExtent2D render_area{};
     VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
-    u32 num_color_buffers = 0;
     u32 num_images = 0;
     std::array<VkImage, 9> images{};
     std::array<VkImageSubresourceRange, 9> image_ranges{};
@@ -428,10 +419,6 @@ public:
         return samples;
     }
 
-    [[nodiscard]] bool SupportsDepthComparison() const noexcept {
-        return supports_depth_comparison;
-    }
-
     [[nodiscard]] bool RequiresBorderColorFormat() const noexcept {
         return requires_border_color_format;
     }
@@ -482,7 +469,6 @@ private:
 
     VkComponentMapping swizzle_mapping{};
 
-    bool supports_depth_comparison = false;
     bool requires_border_color_format = false;
     bool supports_minmax_filter = false;
     bool has_identity_swizzle = true;
@@ -559,7 +545,6 @@ private:
 
     bool has_added_anisotropy{};
     bool has_linear_filtering{};
-    bool has_depth_comparison{};
     bool has_minmax_reduction{};
     bool has_custom_border_colors{};
     bool has_srgb_border_color{};

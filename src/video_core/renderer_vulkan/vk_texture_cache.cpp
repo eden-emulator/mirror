@@ -2613,13 +2613,9 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
     if (device->ApiVersion() >= VK_API_VERSION_1_3) {
         const VkFormatProperties3 properties3 =
             device->GetPhysical().GetFormatProperties3(format_info.format);
-        supports_depth_comparison =
-            (properties3.optimalTilingFeatures &
-             VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT) != 0;
         supports_minmax_filter = (properties3.optimalTilingFeatures &
                                   VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_MINMAX_BIT) != 0;
     } else {
-        supports_depth_comparison = true;
         supports_minmax_filter =
             (device->GetPhysical().GetFormatProperties(format_info.format).optimalTilingFeatures &
              VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT) != 0;
@@ -2888,7 +2884,6 @@ Sampler::Sampler(TextureCacheRuntime& runtime, const Tegra::Texture::TSCEntry& t
     has_added_anisotropy = max_anisotropy > default_anisotropy;
     has_linear_filtering = mag_filter == VK_FILTER_LINEAR || min_filter == VK_FILTER_LINEAR ||
                            mipmap_mode == VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    has_depth_comparison = tsc.depth_compare_enabled != 0;
     has_minmax_reduction = reduction_mode != VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT;
     has_srgb_border_color = tsc.srgb_conversion != 0 && srgb_border_color != border_color;
     if (has_minmax_reduction && !device.IsExtSamplerFilterMinmaxSupported()) {
@@ -3165,7 +3160,6 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
         resolve_shadow_images[num_resolve_shadows++] = depth_image;
     }
 
-    num_color_buffers = static_cast<u32>(num_colors);
     framebuffer = runtime.device.GetLogical().CreateFramebuffer({
         .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .pNext = nullptr,

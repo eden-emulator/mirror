@@ -286,7 +286,6 @@ LsfgPass::LsfgPass(const Device& device, const LsfgShaders& shaders, u32 shader_
     for (const auto& [count, type] : bindings) {
         types.insert(types.end(), count, type);
     }
-    descriptor_count = static_cast<u32>(types.size());
 
     descriptor_set_layout = CreateWrappedDescriptorSetLayout(
         device, std::span<const VkDescriptorType>{types}, VK_SHADER_STAGE_COMPUTE_BIT);
