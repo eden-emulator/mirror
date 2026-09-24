@@ -108,6 +108,8 @@ If you have `quazip1_qt6_devel`, uninstall it. It may call `Core5Compat` on CMak
 
 ## OpenBSD
 
+OpenSSL 4.0 is available via ports, needs to be pointed to directly via `-DOPENSSL_ROOT_DIR=/usr/local/include/eopenssl40`.
+
 System boost doesn't have `context` (as of 7.8); so you may need to specify `-DYUZU_USE_CPM=ON -DBoost_FORCE_BUNDLED=ON`.
 
 After configuration, you may need to modify `externals/ffmpeg/CMakeFiles/ffmpeg-build/build.make` to use `-j$(nproc)` instead of just `-j`.
