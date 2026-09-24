@@ -15,7 +15,7 @@
 ## Cloning Eden with Git
 
 ```sh
-git clone --recursive https://git.eden-emu.dev/eden-emu/eden.git
+git clone --depth=1 https://git.eden-emu.dev/eden-emu/eden.git
 ```
 
 Eden by default will be cloned into:

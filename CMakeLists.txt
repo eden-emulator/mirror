@@ -264,7 +264,7 @@ cmake_dependent_option(YUZU_USE_BUNDLED_MOLTENVK "Download bundled MoltenVK lib"
 option(YUZU_DISABLE_LLVM "Disable LLVM (useful for CI)" OFF)
 
 set(DEFAULT_YUZU_USE_BUNDLED_OPENSSL OFF)
-if (EXT_DEFAULT OR SOLARIS OR OPENBSD)
+if (EXT_DEFAULT)
     set(DEFAULT_YUZU_USE_BUNDLED_OPENSSL ON)
 endif()
 
