@@ -270,14 +270,11 @@ SamplerId TextureCache<P>::GetSamplerId(u32 index, bool compute) {
         LOG_DEBUG(HW_GPU, "Invalid sampler index={}", index);
         return NULL_SAMPLER_ID;
     }
-    auto const map_index = index | (compute ? Common::SlotId::TAGGED_VALUE : 0);
-    auto const [descriptor, is_new] = table.Read(*gpu_memory, index);
+    auto const [entry, is_new] = table.Read(*gpu_memory, index);
     if (is_new) {
-        auto const id = FindSampler(descriptor, compute);
-        channel_state->sampler_ids.insert_or_assign(map_index, id);
-        return id;
+        entry.id = FindSampler(entry.descriptor, compute);
     }
-    return channel_state->sampler_ids.find(map_index)->second;
+    return entry.id;
 }
 
 template <class P>
@@ -500,26 +497,19 @@ ImageViewId TextureCache<P>::VisitImageView(u32 index, bool compute) {
         LOG_DEBUG(HW_GPU, "Invalid image view index={}", index);
         return NULL_IMAGE_VIEW_ID;
     }
-    auto const map_index = index | (compute ? Common::SlotId::TAGGED_VALUE : 0);
-    // Is new (on the tegra engine side)?
-    auto const [descriptor, is_new] = table.Read(*gpu_memory, index);
+    auto const [entry, is_new] = table.Read(*gpu_memory, index);
     if (is_new) {
-        if (IsValidEntry(*gpu_memory, descriptor)) {
-            // Is new (registered view) on the texture cache side?
-            const auto [pair, is_new_tc] = channel_state->image_views.try_emplace(descriptor);
+        entry.id = NULL_IMAGE_VIEW_ID;
+        if (IsValidEntry(*gpu_memory, entry.descriptor)) {
+            const auto [pair, is_new_tc] = channel_state->image_views.try_emplace(entry.descriptor);
             if (is_new_tc)
-                pair->second = CreateImageView(descriptor);
-            PrepareImageView(pair->second, false, false);
-            channel_state->image_view_ids.insert_or_assign(map_index, pair->second);
-            return pair->second;
+                pair->second = CreateImageView(entry.descriptor);
+            entry.id = pair->second;
         }
-        channel_state->image_view_ids.insert_or_assign(map_index, NULL_IMAGE_VIEW_ID);
-        return NULL_IMAGE_VIEW_ID;
     }
-    auto const it = channel_state->image_view_ids.find(map_index);
-    if (it->second != NULL_IMAGE_VIEW_ID)
-        PrepareImageView(it->second, false, false);
-    return it->second;
+    if (entry.id != NULL_IMAGE_VIEW_ID)
+        PrepareImageView(entry.id, false, false);
+    return entry.id;
 }
 
 template <class P>
@@ -1296,9 +1286,6 @@ void TextureCache<P>::InvalidateScale(Image& image) {
     for (size_t c : active_channel_ids) {
         auto& channel_info = channel_storage[c];
 
-        if constexpr (ENABLE_VALIDATION)
-            for (auto& e : channel_info.image_view_ids)
-                e.second = CORRUPT_ID;
         channel_info.graphics_image_table.Invalidate();
         channel_info.compute_image_table.Invalidate();
     }
@@ -2295,9 +2282,6 @@ void TextureCache<P>::DeleteImage(ImageId image_id, bool immediate_delete) {
     }
     for (size_t c : active_channel_ids) {
         auto& channel_info = channel_storage[c];
-        if constexpr (ENABLE_VALIDATION)
-            for (auto& e : channel_info.image_view_ids)
-                e.second = CORRUPT_ID;
         channel_info.graphics_image_table.Invalidate();
         channel_info.compute_image_table.Invalidate();
     }

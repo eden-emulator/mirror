@@ -89,9 +89,6 @@ public:
     std::unordered_map<TICEntry, ImageViewId> image_views;
     std::unordered_map<TSCEntry, SamplerId> samplers;
 
-    ::Common::unordered_map<u32, SamplerId> sampler_ids;
-    ::Common::unordered_map<u32, ImageViewId> image_view_ids;
-
     TextureCacheGPUMap* gpu_page_table = nullptr;
     TextureCacheGPUMap* sparse_page_table = nullptr;
 };
@@ -101,8 +98,6 @@ class TextureCache : public VideoCommon::ChannelSetupCaches<TextureCacheChannelI
     /// Address shift for caching images into a hash table
     static constexpr u64 YUZU_PAGEBITS = 20;
 
-    /// Enables debugging features to the texture cache
-    static constexpr bool ENABLE_VALIDATION = P::ENABLE_VALIDATION;
     /// Implement blits as copies between framebuffers
     static constexpr bool FRAMEBUFFER_BLITS = P::FRAMEBUFFER_BLITS;
     /// True when some copies have to be emulated

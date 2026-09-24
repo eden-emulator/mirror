@@ -33,7 +33,7 @@ using TextureInstVector = boost::container::small_vector<TextureInst, 24>;
 
 constexpr u32 DESCRIPTOR_SIZE = 8;
 constexpr u32 DESCRIPTOR_SIZE_SHIFT = u32(std::countr_zero(DESCRIPTOR_SIZE));
-constexpr u32 DESCRIPTOR_MAX_COUNT = 512;
+constexpr u32 DESCRIPTOR_MAX_COUNT = 128;
 constexpr u32 DESCRIPTOR_CBUF_BYTES = 16 * 1024;
 
 u32 DynamicDescriptorSizeShift(const IR::U32& dynamic_offset) {
