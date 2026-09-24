@@ -213,7 +213,7 @@ First, enable the community repository; [see here](https://wiki.alpinelinux.org/
 # Enable the community repository
 setup-apkrepos -c
 # Install
-apk add g++ git cmake make mesa-dev qt6-qtbase-dev qt6-qtbase-private-dev libquazip1-qt6 ffmpeg-dev qt6-charts-dev libusb-dev libtool boost-dev sdl3-dev zstd-dev vulkan-utility-libraries spirv-tools-dev openssl-dev nlohmann-json lz4-dev opus-dev jq patch
+apk add g++ git cmake make mesa-dev qt6-qtbase-dev qt6-qtbase-private-dev libquazip1-qt6 ffmpeg-dev qt6-qtcharts-dev libusb-dev boost-dev sdl3-dev zstd-dev vulkan-utility-libraries spirv-tools-dev openssl-dev nlohmann-json lz4-dev opus-dev enet-dev glslang libtool jq patch
 ```
 
 </details>

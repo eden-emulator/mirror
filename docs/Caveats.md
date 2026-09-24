@@ -90,8 +90,6 @@ If it wasn't obvious already, you require a X11 server to properly run the emula
 
 For Solaris based OSes, `${CMAKE_SYSTEM_NAME}` isn't properly set on CMake (it's set to i686 on AMD64), you may find issues when building OpenSSL from `openssl-cmake`.
 
-For Solaris based OSes, `${CMAKE_SYSTEM_NAME}` isn't properly set on CMake (it's set to i686 on AMD64), you may find issues when building OpenSSL from `openssl-cmake`.
-
 ## HaikuOS
 
 It's recommended to do a `pkgman full-sync` before installing. See [HaikuOS: Installing applications](https://www.haiku-os.org/guides/daily-tasks/install-applications/). Sometimes the process may be interrupted by an error like "Interrupted syscall". Simply firing the command again fixes the issue. By default `g++` is included on the default installation.
@@ -149,15 +147,13 @@ System provides a default `g++-10` which doesn't support the current C++ codebas
 
 Make may error out when generating C++ headers of SPIRV shaders, hence it's recommended to use `gmake` over the default system one.
 
-[parallel/spirv-tools](https://iso.us.netbsd.org/pub/pkgsrc/current/pkgsrc/parallel/spirv-tools/index.html) isn't available in binary form and must be built from source.
-
-glslang is not available on NetBSD, to circumvent this simply build glslang by yourself:
+If [parallel/spirv-tools](https://iso.us.netbsd.org/pub/pkgsrc/current/pkgsrc/parallel/spirv-tools/index.html) isn't available in binary, build from source:
 
 ```sh
-pkgin python313
+pkgin install python314
 git clone --depth=1 https://github.com/KhronosGroup/glslang.git
 cd glslang
-python3.13 ./update_glslang_sources.py
+python3.14 ./update_glslang_sources.py
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -- -j`nproc`
 cmake --install build
@@ -165,7 +161,7 @@ cmake --install build
 
 However, pkgsrc is highly recommended, see [getting pkgsrc](https://iso.us.netbsd.org/pub/pkgsrc/current/pkgsrc/doc/pkgsrc.html#getting). You must get `current` not the `2025Q2` version.
 
-`QtCore` on NetBSD is included, but due to misconfigurations(!) we MUST include one of the standard headers that include `bits/c++config.h`, since source_location (required by `QtCore`) isn't properly configured to intake `bits/c++config.h` (none of the experimental library is). This is a bug with NetBSD packaging and not our fault, but alas.
+`QtCore` on NetBSD is included, but due to misconfigurations you must include `bits/c++config.h`, since source_location (required by `QtCore`) isn't properly configured to intake `bits/c++config.h` (none of the experimental library is).
 
 ## DragonFlyBSD
 
