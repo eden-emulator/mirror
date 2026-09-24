@@ -286,7 +286,7 @@ pkgin install git cmake boost fmtlib SDL3 catch2 libjwt spirv-headers spirv-tool
 
 ```sh
 pkg_add -u
-pkg_add cmake nasm git boost unzip--iconv autoconf-2.72p0 bash ffmpeg glslang gmake qt6 jq fmt nlohmann-json enet boost vulkan-utility-libraries vulkan-headers spirv-headers spirv-tools catch2 sdl3 libusb1-1.0.29 quazip-qt6
+pkg_add cmake nasm git boost unzip--iconv autoconf-2.72p0 bash ffmpeg glslang gmake qt6 jq fmt nlohmann-json enet boost vulkan-utility-libraries vulkan-headers spirv-headers spirv-tools catch2 sdl3 libusb1-1.0.29 quazip-qt6 openssl-4.0.2v0
 ```
 
 [Caveats](./Caveats.md#openbsd).
