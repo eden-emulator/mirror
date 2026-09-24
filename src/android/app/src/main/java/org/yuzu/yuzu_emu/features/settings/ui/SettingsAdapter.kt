@@ -482,14 +482,6 @@ class SettingsAdapter(
             position
         ).show(fragment.childFragmentManager, SettingsDialogFragment.TAG)
 
-        // reset language if detected
-        if (item.setting.key == "app_language") {
-            // recreate page apply language change instantly
-            fragment.requireActivity().recreate()
-
-            settingsViewModel.setShouldRecreateForLanguageChange(true)
-        }
-
         return true
     }
 

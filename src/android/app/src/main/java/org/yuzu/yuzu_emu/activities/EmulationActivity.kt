@@ -115,10 +115,6 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
         mainHandler.postDelayed(romSwapStopTimeoutRunnable, ROM_SWAP_STOP_TIMEOUT_MS)
     }
 
-    override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(YuzuApplication.applyLanguage(base))
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.gameLaunched = true
         ThemeHelper.setTheme(this)

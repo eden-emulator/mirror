@@ -1345,10 +1345,8 @@ class SettingsFragmentPresenter(
                 }
             }
 
-            add(HeaderSetting(R.string.app_settings))
-            add(IntSetting.APP_LANGUAGE.key)
-
             if (NativeLibrary.isUpdateCheckerEnabled()) {
+                add(HeaderSetting(R.string.app_settings))
                 add(BooleanSetting.ENABLE_UPDATE_CHECKS.key)
             }
 

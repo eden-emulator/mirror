@@ -4,7 +4,6 @@
 package org.yuzu.yuzu_emu.ui.main
 
 import android.content.Intent
-import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -70,10 +69,6 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
 
     private val CHECKED_DECRYPTION = "CheckedDecryption"
     private var checkedDecryption = false
-
-    override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(YuzuApplication.applyLanguage(base))
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
