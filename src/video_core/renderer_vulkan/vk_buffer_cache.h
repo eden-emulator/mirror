@@ -192,17 +192,13 @@ public:
             .memory_offset = location.offset,
             .offset = offset,
             .size = size,
-            .write_tick = buffer.getWriteTick(),
+            .content_serial = buffer.ContentSerial(),
             .memory_type = location.memory_type,
         });
         multi_range_total += size;
     }
 
     bool BindMultiRangeStorageBuffer(u64 key, bool is_written);
-
-    void InvalidateMultiRange(u64 key) {
-        multi_range_buffers.Invalidate(key);
-    }
 
     void OnBufferDeleted(const Buffer& buffer) {
         multi_range_buffers.DropOwner(scheduler, buffer.Handle());

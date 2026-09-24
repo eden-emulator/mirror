@@ -129,13 +129,24 @@ public:
         write_tick = write_tick_;
     }
 
+    u64 ContentSerial() const noexcept {
+        return content_serial;
+    }
+
+    void MarkContentModified() noexcept {
+        content_serial = ++next_content_serial;
+    }
+
 private:
+    static inline u64 next_content_serial = 0;
+
     VAddr cpu_addr = 0;
     BufferFlagBits flags{};
     int stream_score = 0;
     size_t lru_id = SIZE_MAX;
     size_t size_bytes = 0;
     u64 write_tick = 0;
+    u64 content_serial = ++next_content_serial;
 };
 
 } // namespace VideoCommon

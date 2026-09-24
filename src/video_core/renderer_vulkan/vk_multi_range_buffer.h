@@ -27,7 +27,7 @@ struct MultiRangeSource {
     VkDeviceSize memory_offset{};
     VkDeviceSize offset{};
     VkDeviceSize size{};
-    u64 write_tick{};
+    u64 content_serial{};
     u32 memory_type{};
 };
 
@@ -55,9 +55,9 @@ public:
 
     void MarkGathered(u64 key);
 
-    void Invalidate(u64 key);
-
     void DropOwner(Scheduler& scheduler, VkBuffer owner);
+
+    void DrainRetired(Scheduler& scheduler);
 
     VkDeviceSize block_size{DEFAULT_BLOCK_SIZE};
     bool use_sparse{};
@@ -93,8 +93,6 @@ private:
     [[nodiscard]] VkDeviceSize QueryBlockSize(const Device& device, u32& memory_type_bits) const;
 
     void RetireEntry(Scheduler& scheduler, Entry& entry);
-
-    void DrainRetired(Scheduler& scheduler);
 
     ::Common::unordered_map<u64, Entry> entries;
     boost::container::static_vector<Retired, MAX_RETIRED> retired;

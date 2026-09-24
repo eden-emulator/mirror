@@ -87,7 +87,7 @@ u64 MultiRangeBufferCache::HashSources(std::span<const MultiRangeSource> sources
 u64 MultiRangeBufferCache::HashContent(std::span<const MultiRangeSource> sources) const {
     u64 hash = 0xcbf29ce484222325ULL;
     for (const MultiRangeSource& source : sources) {
-        hash ^= source.write_tick;
+        hash ^= source.content_serial;
         hash *= 0x100000001b3ULL;
     }
     return hash;
@@ -219,9 +219,6 @@ MultiRangeRef MultiRangeBufferCache::Get(const Device& device, Scheduler& schedu
     if (sources.empty() || total == 0) {
         return MultiRangeRef{};
     }
-    if (!retired.empty()) {
-        DrainRetired(scheduler);
-    }
     const u64 geometry = HashSources(sources);
     const u64 content = HashContent(sources);
     const auto it = entries.find(key);
@@ -332,12 +329,6 @@ void MultiRangeBufferCache::DropOwner(Scheduler& scheduler, VkBuffer owner) {
         }
         RetireEntry(scheduler, entry);
         it = entries.erase(it);
-    }
-}
-
-void MultiRangeBufferCache::Invalidate(u64 key) {
-    if (auto const it = entries.find(key); it != entries.end()) {
-        it->second.dirty = true;
     }
 }
 

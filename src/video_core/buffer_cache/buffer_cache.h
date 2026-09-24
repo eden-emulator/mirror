@@ -266,6 +266,7 @@ bool BufferCache<P>::DMACopy(GPUVAddr src_address, GPUVAddr dest_address, u64 am
     const auto& copy = copies[0];
     src_buffer.MarkUsage(copy.src_offset, copy.size);
     dest_buffer.MarkUsage(copy.dst_offset, copy.size);
+    dest_buffer.MarkContentModified();
     runtime.CopyBuffer(dest_buffer, src_buffer, copies, true);
     if (has_new_downloads) {
         memory_tracker.MarkRegionAsGpuModified(*cpu_dest_address, amount);
@@ -297,6 +298,7 @@ bool BufferCache<P>::DMAClear(GPUVAddr dst_address, u64 amount, u32 value) {
     const u32 offset = dest_buffer.Offset(*cpu_dst_address);
     runtime.ClearBuffer(dest_buffer, offset, size, value);
     dest_buffer.MarkUsage(offset, size);
+    dest_buffer.MarkContentModified();
     return true;
 }
 
@@ -773,6 +775,7 @@ void BufferCache<P>::BindHostIndexBuffer() {
     if (draw_state.inline_index_draw_indexes.empty()) {
         SynchronizeBuffer(buffer, channel_state->index_buffer.device_addr, size);
     } else {
+        buffer.MarkContentModified();
         if constexpr (USE_MEMORY_MAPS_FOR_UPLOADS) {
             auto upload_staging = runtime.UploadStagingBuffer(size);
             std::array<BufferCopy, 1> copies{{BufferCopy{.src_offset = upload_staging.offset, .dst_offset = 0, .size = size}}};
@@ -1029,11 +1032,13 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
 
 template <class P>
 void BufferCache<P>::ResolveMultiRangeStorage(Binding& binding,
-                                              std::vector<MultiRangeSegment>& pool) {
+                                              std::vector<MultiRangeSegment>& pool,
+                                              bool is_written) {
     binding.segment_first = 0;
     binding.segment_count = 0;
     if constexpr (requires { runtime.BindMultiRangeStorageBuffer(u64{}, bool{}); }) {
-        if (binding.gpu_addr == 0 || binding.size == 0) {
+        if (binding.gpu_addr == 0 || binding.size == 0 ||
+            (is_written && !runtime.PrefersSparseSources())) {
             return;
         }
         const VirtualSegments* found =
@@ -1041,7 +1046,7 @@ void BufferCache<P>::ResolveMultiRangeStorage(Binding& binding,
         if (!found || found->size() < 2) {
             return;
         }
-        const VirtualSegments segments = *found;
+        const VirtualSegments& segments = *found;
         const u32 first = static_cast<u32>(pool.size());
         const bool prefer_sparse = runtime.PrefersSparseSources();
         for (const VirtualSegment& segment : segments) {
@@ -1078,9 +1083,7 @@ bool BufferCache<P>::BindMultiRangeStorage(const Binding& binding, bool is_writt
             const MultiRangeSegment& segment = pool[binding.segment_first + index];
             Buffer& buffer = slot_buffers[segment.buffer_id];
             TouchBuffer(buffer, segment.buffer_id);
-            if (SynchronizeBuffer(buffer, segment.device_addr, segment.size)) {
-                runtime.InvalidateMultiRange(key);
-            }
+            SynchronizeBuffer(buffer, segment.device_addr, segment.size);
             const u32 offset = buffer.Offset(segment.device_addr);
             buffer.MarkUsage(offset, segment.size);
             if (is_written) {
@@ -1456,9 +1459,12 @@ void BufferCache<P>::UpdateStorageBuffers(size_t stage) {
     ForEachEnabledBit(channel_state->enabled_storage_buffers[stage], [&](u32 index) {
         // Resolve buffer
         Binding& binding = channel_state->storage_buffers[stage][index];
-        const BufferId buffer_id = FindBuffer(binding.device_addr, binding.size, false);
-        binding.buffer_id = buffer_id;
-        ResolveMultiRangeStorage(binding, graphics_segments);
+        const bool is_written = ((channel_state->written_storage_buffers[stage] >> index) & 1) != 0;
+        ResolveMultiRangeStorage(binding, graphics_segments, is_written);
+        binding.buffer_id = NULL_BUFFER_ID;
+        if (binding.segment_count == 0 || is_written) {
+            binding.buffer_id = FindBuffer(binding.device_addr, binding.size, false);
+        }
     });
 }
 
@@ -1521,8 +1527,12 @@ void BufferCache<P>::UpdateComputeStorageBuffers() {
     ForEachEnabledBit(channel_state->enabled_compute_storage_buffers, [&](u32 index) {
         // Resolve buffer
         Binding& binding = channel_state->compute_storage_buffers[index];
-        binding.buffer_id = FindBuffer(binding.device_addr, binding.size, false);
-        ResolveMultiRangeStorage(binding, compute_segments);
+        const bool is_written = ((channel_state->written_compute_storage_buffers >> index) & 1) != 0;
+        ResolveMultiRangeStorage(binding, compute_segments, is_written);
+        binding.buffer_id = NULL_BUFFER_ID;
+        if (binding.segment_count == 0 || is_written) {
+            binding.buffer_id = FindBuffer(binding.device_addr, binding.size, false);
+        }
     });
 }
 
@@ -1539,6 +1549,7 @@ void BufferCache<P>::MarkWrittenBuffer(BufferId buffer_id, DAddr device_addr, u3
     if constexpr (!IS_OPENGL) {
         Buffer& buffer = slot_buffers[buffer_id];
         buffer.setWriteTick(runtime.CurrentTick());
+        buffer.MarkContentModified();
     }
     memory_tracker.MarkRegionAsGpuModified(device_addr, size);
     gpu_modified_ranges.Add(device_addr, size);
@@ -1784,6 +1795,7 @@ bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 si
 template <class P>
 void BufferCache<P>::UploadMemory(Buffer& buffer, u64 total_size_bytes, u64 largest_copy,
                                   std::span<BufferCopy> copies) {
+    buffer.MarkContentModified();
     if constexpr (USE_MEMORY_MAPS_FOR_UPLOADS) {
         MappedUploadMemory(buffer, total_size_bytes, copies);
     } else {
@@ -1869,6 +1881,7 @@ void BufferCache<P>::InlineMemoryImplementation(DAddr dest_address, size_t copy_
     BufferId buffer_id = FindBuffer(dest_address, static_cast<u32>(copy_size), false);
     auto& buffer = slot_buffers[buffer_id];
     SynchronizeBuffer(buffer, dest_address, static_cast<u32>(copy_size));
+    buffer.MarkContentModified();
 
     if constexpr (USE_MEMORY_MAPS_FOR_UPLOADS) {
         auto upload_staging = runtime.UploadStagingBuffer(copy_size);
