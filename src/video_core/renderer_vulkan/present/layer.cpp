@@ -98,7 +98,10 @@ void Layer::ConfigureDraw(const Device& device, PresentPushConstants* out_push_c
     RefreshResources(device, framebuffer);
     SetAntiAliasPass(device);
 #ifdef HAS_RESHADE
-    SetPostProcessPass(device);
+    const bool is_applet =
+        (framebuffer.layer_stack_mask & Service::Nvnflinger::LayerStackBit(
+                                            Service::Nvnflinger::LayerStackId::Recording)) == 0;
+    SetPostProcessPass(device, is_applet);
 #endif
 
     // Finish any pending renderpass
@@ -228,7 +231,11 @@ void Layer::SetAntiAliasPass(const Device& device) {
 }
 
 #ifdef HAS_RESHADE
-void Layer::SetPostProcessPass(const Device& device) {
+void Layer::SetPostProcessPass(const Device& device, bool is_applet) {
+    if (is_applet) {
+        post_process.reset();
+        return;
+    }
     const VkExtent2D render_area{
         .width = Settings::values.resolution_info.ScaleUp(raw_width),
         .height = Settings::values.resolution_info.ScaleUp(raw_height),

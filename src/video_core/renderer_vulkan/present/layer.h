@@ -70,7 +70,7 @@ private:
     void RefreshResources(const Device& device, const Tegra::FramebufferConfig& framebuffer);
     void SetAntiAliasPass(const Device& device);
 #ifdef HAS_RESHADE
-    void SetPostProcessPass(const Device& device);
+    void SetPostProcessPass(const Device& device, bool is_applet);
 #endif
     void ReleaseRawImages();
 
