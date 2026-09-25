@@ -180,14 +180,12 @@ protected:
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         auto it = handlers.find(key);
-        FunctionInfoBase const* info = it == handlers.end() ? nullptr : &it->second;
-        return !(info == nullptr || info->handler_callback == nullptr) ? info : nullptr;
+        return it != handlers.end() ? std::addressof(it->second) : nullptr;
     }
 
     FunctionInfoBase const* FindRequestTipc(u32 key) override {
         auto it = handlers_tipc.find(key);
-        FunctionInfoBase const* info = it == handlers_tipc.end() ? nullptr : &it->second;
-        return !(info == nullptr || info->handler_callback == nullptr) ? info : nullptr;
+        return it != handlers_tipc.end() ? std::addressof(it->second) : nullptr;
     }
 
     constexpr void RegisterHandlersBase(const FunctionInfoBase* functions, std::size_t n) {
