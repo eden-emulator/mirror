@@ -76,7 +76,6 @@ add_library(
     logging.h
     lz4_compression.cpp
     lz4_compression.h
-    make_unique_for_overwrite.h
     math_util.h
     memory_detect.cpp
     memory_detect.h
