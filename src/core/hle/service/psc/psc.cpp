@@ -22,11 +22,11 @@ public:
     explicit PSC_L(Core::System& system_) : ServiceFramework{system_, "psc:l"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "Initialize_3"},
-            {1, nullptr, "Lock"},
-            {2, nullptr, "Unlock"},
-            {3, nullptr, "IsLocked"},
-            {4, nullptr, "GetRelatedState"}
+            FunctionInfo{0, nullptr, "Initialize_3"},
+            FunctionInfo{1, nullptr, "Lock"},
+            FunctionInfo{2, nullptr, "Unlock"},
+            FunctionInfo{3, nullptr, "IsLocked"},
+            FunctionInfo{4, nullptr, "GetRelatedState"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -38,8 +38,8 @@ public:
     explicit INS_R(Core::System& system_) : ServiceFramework{system_, "ins:r"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetInputSourceState"},
-            {1, nullptr, "GetTriggerTargetEvent"}
+            FunctionInfo{0, nullptr, "GetInputSourceState"},
+            FunctionInfo{1, nullptr, "GetTriggerTargetEvent"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -51,7 +51,7 @@ public:
     explicit INS_S(Core::System& system_) : ServiceFramework{system_, "ins:s"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetNotifyEvent"}
+            FunctionInfo{0, nullptr, "GetNotifyEvent"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -63,22 +63,22 @@ public:
     explicit HSHL_SYS(Core::System& system_) : ServiceFramework{system_, "hshl:sys"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetBatteryPercentage"},
-            {1, nullptr, "GetChargerType"},
-            {2, nullptr, "OpenChargeSession"},
-            {3, nullptr, "GetRawBatteryPercentage"},
-            {4, nullptr, "GetBatteryVoltageLevel"},
-            {5, nullptr, "OpenThermalSession"},
-            {6, nullptr, "GetAbnormalTemperatureSet"},
-            {7, nullptr, "OpenClockSession"},
-            {8, nullptr, "GetClockRate"},
-            {9, nullptr, "OpenBridgeSession"},
-            {10, nullptr, "GetBridgePowerSupply"},
-            {11, nullptr, "OpenVsysVoltageSession"},
-            {12, nullptr, "GetIsBatteryEnoughForFullAwake"},
-            {13, nullptr, "GetIsCharging"},
-            {14, nullptr, "Cmd14"},
-            {15, nullptr, "Cmd15"}
+            FunctionInfo{0, nullptr, "GetBatteryPercentage"},
+            FunctionInfo{1, nullptr, "GetChargerType"},
+            FunctionInfo{2, nullptr, "OpenChargeSession"},
+            FunctionInfo{3, nullptr, "GetRawBatteryPercentage"},
+            FunctionInfo{4, nullptr, "GetBatteryVoltageLevel"},
+            FunctionInfo{5, nullptr, "OpenThermalSession"},
+            FunctionInfo{6, nullptr, "GetAbnormalTemperatureSet"},
+            FunctionInfo{7, nullptr, "OpenClockSession"},
+            FunctionInfo{8, nullptr, "GetClockRate"},
+            FunctionInfo{9, nullptr, "OpenBridgeSession"},
+            FunctionInfo{10, nullptr, "GetBridgePowerSupply"},
+            FunctionInfo{11, nullptr, "OpenVsysVoltageSession"},
+            FunctionInfo{12, nullptr, "GetIsBatteryEnoughForFullAwake"},
+            FunctionInfo{13, nullptr, "GetIsCharging"},
+            FunctionInfo{14, nullptr, "Cmd14"},
+            FunctionInfo{15, nullptr, "Cmd15"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -90,12 +90,12 @@ public:
     explicit HSHL_SET(Core::System& system_) : ServiceFramework{system_, "hshl:set"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "OpenChargeSession_2"},
-            {1, nullptr, "OpenThermalSession_2"},
-            {2, nullptr, "SetClockRate"},
-            {3, nullptr, "SetBridgePowerSupply"},
-            {4, nullptr, "Cmd4"},
-            {5, nullptr, "Cmd5"}
+            FunctionInfo{0, nullptr, "OpenChargeSession_2"},
+            FunctionInfo{1, nullptr, "OpenThermalSession_2"},
+            FunctionInfo{2, nullptr, "SetClockRate"},
+            FunctionInfo{3, nullptr, "SetBridgePowerSupply"},
+            FunctionInfo{4, nullptr, "Cmd4"},
+            FunctionInfo{5, nullptr, "Cmd5"}
         };
         // clang-format on
         RegisterHandlers(functions);

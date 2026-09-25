@@ -20,9 +20,9 @@ public:
         : ServiceFramework{system_, "psm:manu"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "EnableVdd50StateControl"},
-            {1, nullptr, "DisableVdd50StateControl"},
-            {2, nullptr, "SetVdd50State"}
+            FunctionInfo{0, nullptr, "EnableVdd50StateControl"},
+            FunctionInfo{1, nullptr, "DisableVdd50StateControl"},
+            FunctionInfo{2, nullptr, "SetVdd50State"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -35,7 +35,7 @@ public:
         : ServiceFramework{system_, "powctl"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "OpenSession"}
+            FunctionInfo{0, nullptr, "OpenSession"}
         };
         // clang-format on
         RegisterHandlers(functions);

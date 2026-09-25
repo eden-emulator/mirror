@@ -618,7 +618,7 @@ public:
         : ServiceFramework{system_, "ISessionObject"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {999, nullptr, "Dummy"}
+            FunctionInfo{999, nullptr, "Dummy"}
         };
         // clang-format on
 
@@ -632,14 +632,14 @@ public:
         : ServiceFramework{system_, "IGuestLoginRequest"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetSessionId"},
-            {11, nullptr, "Unknown"}, // 1.0.0 - 2.3.0 (the name is blank on Switchbrew)
-            {12, nullptr, "GetAccountId"},
-            {13, nullptr, "GetLinkedNintendoAccountId"},
-            {14, nullptr, "GetNickname"},
-            {15, nullptr, "GetProfileImage"},
-            {16, nullptr, "GetProfileLargeImage"}, // 18.0.0+
-            {21, nullptr, "LoadIdTokenCache"}, // 3.0.0+
+            FunctionInfo{0, nullptr, "GetSessionId"},
+            FunctionInfo{11, nullptr, "Unknown"}, // 1.0.0 - 2.3.0 (the name is blank on Switchbrew)
+            FunctionInfo{12, nullptr, "GetAccountId"},
+            FunctionInfo{13, nullptr, "GetLinkedNintendoAccountId"},
+            FunctionInfo{14, nullptr, "GetNickname"},
+            FunctionInfo{15, nullptr, "GetProfileImage"},
+            FunctionInfo{16, nullptr, "GetProfileLargeImage"}, // 18.0.0+
+            FunctionInfo{21, nullptr, "LoadIdTokenCache"}, // 3.0.0+
         };
         // clang-format on
 
@@ -683,16 +683,16 @@ public:
           profile_manager{profile_manager_} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IManagerForApplication::CheckAvailability, "CheckAvailability"},
-            {1, &IManagerForApplication::GetAccountId, "GetAccountId"},
-            {2, &IManagerForApplication::EnsureIdTokenCacheAsync, "EnsureIdTokenCacheAsync"},
-            {3, &IManagerForApplication::LoadIdTokenCacheDeprecated, "LoadIdTokenCacheDeprecated"},
-            {4, &IManagerForApplication::LoadIdTokenCache, "LoadIdTokenCache"},
-            {130, &IManagerForApplication::GetNintendoAccountUserResourceCacheForApplication, "GetNintendoAccountUserResourceCacheForApplication"},
-            {136, &IManagerForApplication::GetNintendoAccountUserResourceCacheForApplication, "GetNintendoAccountUserResourceCache"}, // 19.0.0+
-            {150, nullptr, "CreateAuthorizationRequest"},
-            {160, &IManagerForApplication::StoreOpenContext, "StoreOpenContext"},
-            {170, nullptr, "LoadNetworkServiceLicenseKindAsync"}
+            FunctionInfo{0, &IManagerForApplication::CheckAvailability, "CheckAvailability"},
+            FunctionInfo{1, &IManagerForApplication::GetAccountId, "GetAccountId"},
+            FunctionInfo{2, &IManagerForApplication::EnsureIdTokenCacheAsync, "EnsureIdTokenCacheAsync"},
+            FunctionInfo{3, &IManagerForApplication::LoadIdTokenCacheDeprecated, "LoadIdTokenCacheDeprecated"},
+            FunctionInfo{4, &IManagerForApplication::LoadIdTokenCache, "LoadIdTokenCache"},
+            FunctionInfo{130, &IManagerForApplication::GetNintendoAccountUserResourceCacheForApplication, "GetNintendoAccountUserResourceCacheForApplication"},
+            FunctionInfo{136, &IManagerForApplication::GetNintendoAccountUserResourceCacheForApplication, "GetNintendoAccountUserResourceCache"}, // 19.0.0+
+            FunctionInfo{150, nullptr, "CreateAuthorizationRequest"},
+            FunctionInfo{160, &IManagerForApplication::StoreOpenContext, "StoreOpenContext"},
+            FunctionInfo{170, nullptr, "LoadNetworkServiceLicenseKindAsync"}
         };
         // clang-format on
 
@@ -778,11 +778,11 @@ public:
         : ServiceFramework{system_, "IAsyncNetworkServiceLicenseKindContext"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetSystemEvent"},
-            {1, nullptr, "Cancel"},
-            {2, nullptr, "HasDone"},
-            {3, nullptr, "GetResult"},
-            {4, nullptr, "GetNetworkServiceLicenseKind"}
+            FunctionInfo{0, nullptr, "GetSystemEvent"},
+            FunctionInfo{1, nullptr, "Cancel"},
+            FunctionInfo{2, nullptr, "HasDone"},
+            FunctionInfo{3, nullptr, "GetResult"},
+            FunctionInfo{4, nullptr, "GetNetworkServiceLicenseKind"}
         };
         // clang-format on
 
@@ -798,24 +798,24 @@ public:
         : ServiceFramework{system_, "IOAuthProcedureForUserRegistration"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "PrepareAsync"},
-            {1, nullptr, "GetRequest"},
-            {2, nullptr, "ApplyResponse"},
-            {3, nullptr, "ApplyResponseAsync"},
-            {10, nullptr, "Suspend"},
-            {100, nullptr, "GetAccountId"},
-            {101, nullptr, "GetLinkedNintendoAccountId"},
-            {102, nullptr, "GetNickname"},
-            {103, nullptr, "GetProfileImage"},
-            {104, nullptr, "GetProfileLargeImage"}, // 18.0.0+
-            {110, nullptr, "RegisterUserAsync"},
-            {111, nullptr, "GetUid"},
-            {200, nullptr, "ApplyResponseForUserCreationAsync"}, // 17.0.0+
-            {205, nullptr, "SuspendAfterApplyResponse"}, // 17.0.0+
-            {210, nullptr, "IsProfileAvailable"}, // 17.0.0+
-            {220, nullptr, "RegisterUserAsyncWithoutProfile"}, // 17.0.0+
-            {221, nullptr, "RegisterUserWithProfileAsync"}, // 17.0.0+
-            {230, nullptr, "RegisterUserWithLargeImageProfileAsync"} // 18.0.0+
+            FunctionInfo{0, nullptr, "PrepareAsync"},
+            FunctionInfo{1, nullptr, "GetRequest"},
+            FunctionInfo{2, nullptr, "ApplyResponse"},
+            FunctionInfo{3, nullptr, "ApplyResponseAsync"},
+            FunctionInfo{10, nullptr, "Suspend"},
+            FunctionInfo{100, nullptr, "GetAccountId"},
+            FunctionInfo{101, nullptr, "GetLinkedNintendoAccountId"},
+            FunctionInfo{102, nullptr, "GetNickname"},
+            FunctionInfo{103, nullptr, "GetProfileImage"},
+            FunctionInfo{104, nullptr, "GetProfileLargeImage"}, // 18.0.0+
+            FunctionInfo{110, nullptr, "RegisterUserAsync"},
+            FunctionInfo{111, nullptr, "GetUid"},
+            FunctionInfo{200, nullptr, "ApplyResponseForUserCreationAsync"}, // 17.0.0+
+            FunctionInfo{205, nullptr, "SuspendAfterApplyResponse"}, // 17.0.0+
+            FunctionInfo{210, nullptr, "IsProfileAvailable"}, // 17.0.0+
+            FunctionInfo{220, nullptr, "RegisterUserAsyncWithoutProfile"}, // 17.0.0+
+            FunctionInfo{221, nullptr, "RegisterUserWithProfileAsync"}, // 17.0.0+
+            FunctionInfo{230, nullptr, "RegisterUserWithLargeImageProfileAsync"} // 18.0.0+
         };
         // clang-format on
 
@@ -828,19 +828,19 @@ public:
     explicit DAUTH_O(Core::System& system_, Common::UUID) : ServiceFramework{system_, "dauth:o"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
-            {1, nullptr, "LoadAuthenticationTokenCache"},
-            {2, nullptr, "InvalidateAuthenticationTokenCache"},
-            {3, nullptr, "IsDeviceAuthenticationTokenCacheAvailable"},
-            {10, nullptr, "EnsureEdgeTokenCacheAsync"},
-            {11, nullptr, "LoadEdgeTokenCache"},
-            {12, nullptr, "InvalidateEdgeTokenCache"},
-            {13, nullptr, "IsEdgeTokenCacheAvailable"},
-            {20, nullptr, "EnsureApplicationAuthenticationCacheAsync"},
-            {21, nullptr, "LoadApplicationAuthenticationTokenCache"},
-            {22, nullptr, "LoadApplicationNetworkServiceClientConfigCache"},
-            {23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
-            {24, nullptr, "InvalidateApplicationAuthenticationCache"}
+            FunctionInfo{0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
+            FunctionInfo{1, nullptr, "LoadAuthenticationTokenCache"},
+            FunctionInfo{2, nullptr, "InvalidateAuthenticationTokenCache"},
+            FunctionInfo{3, nullptr, "IsDeviceAuthenticationTokenCacheAvailable"},
+            FunctionInfo{10, nullptr, "EnsureEdgeTokenCacheAsync"},
+            FunctionInfo{11, nullptr, "LoadEdgeTokenCache"},
+            FunctionInfo{12, nullptr, "InvalidateEdgeTokenCache"},
+            FunctionInfo{13, nullptr, "IsEdgeTokenCacheAvailable"},
+            FunctionInfo{20, nullptr, "EnsureApplicationAuthenticationCacheAsync"},
+            FunctionInfo{21, nullptr, "LoadApplicationAuthenticationTokenCache"},
+            FunctionInfo{22, nullptr, "LoadApplicationNetworkServiceClientConfigCache"},
+            FunctionInfo{23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
+            FunctionInfo{24, nullptr, "InvalidateApplicationAuthenticationCache"}
         };
         // clang-format on
 
@@ -855,10 +855,10 @@ public:
         : ServiceFramework{system_, "IAsyncResult"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetResult"},
-            {1, nullptr, "Cancel"},
-            {2, nullptr, "IsAvailable"},
-            {3, nullptr, "GetSystemEvent"}
+            FunctionInfo{0, nullptr, "GetResult"},
+            FunctionInfo{1, nullptr, "Cancel"},
+            FunctionInfo{2, nullptr, "IsAvailable"},
+            FunctionInfo{3, nullptr, "GetSystemEvent"}
         };
         // clang-format on
 
@@ -1240,11 +1240,11 @@ public:
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:aa") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "EnsureCacheAsync"},
-            {1, nullptr, "LoadCache"},
-            {2, nullptr, "GetDeviceAccountId"},
-            {50, nullptr, "RegisterNotificationTokenAsync"},   // 1.0.0 - 6.2.0
-            {51, nullptr, "UnregisterNotificationTokenAsync"}, // 1.0.0 - 6.2.0
+            FunctionInfo{0, nullptr, "EnsureCacheAsync"},
+            FunctionInfo{1, nullptr, "LoadCache"},
+            FunctionInfo{2, nullptr, "GetDeviceAccountId"},
+            FunctionInfo{50, nullptr, "RegisterNotificationTokenAsync"},   // 1.0.0 - 6.2.0
+            FunctionInfo{51, nullptr, "UnregisterNotificationTokenAsync"}, // 1.0.0 - 6.2.0
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -1258,68 +1258,68 @@ public:
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:su") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &ACC_SU::GetUserCount, "GetUserCount"},
-            {1, &ACC_SU::GetUserExistence, "GetUserExistence"},
-            {2, &ACC_SU::ListAllUsers, "ListAllUsers"},
-            {3, &ACC_SU::ListOpenUsers, "ListOpenUsers"},
-            {4, &ACC_SU::GetLastOpenedUser, "GetLastOpenedUser"},
-            {5, &ACC_SU::GetProfile, "GetProfile"},
-            {6, nullptr, "GetProfileDigest"},
-            {50, &ACC_SU::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
-            {51, &ACC_SU::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
-            {52, &ACC_SU::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"}, // 19.0.0+
-            {60, &ACC_SU::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"},
-            {99, nullptr, "DebugActivateOpenContextRetention"},
-            {100, nullptr, "GetUserRegistrationNotifier"},
-            {101, nullptr, "GetUserStateChangeNotifier"},
-            {102, &ACC_SU::GetBaasAccountManagerForSystemService, "GetBaasAccountManagerForSystemService"},
-            {103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
-            {104, nullptr, "GetProfileUpdateNotifier"},
-            {105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
-            {106, nullptr, "GetProfileSyncNotifier"},
-            {110, &ACC_SU::StoreSaveDataThumbnailSystem, "StoreSaveDataThumbnail"},
-            {111, nullptr, "ClearSaveDataThumbnail"},
-            {112, nullptr, "LoadSaveDataThumbnail"},
-            {113, nullptr, "GetSaveDataThumbnailExistence"},
-            {120, nullptr, "ListOpenUsersInApplication"},
-            {130, nullptr, "ActivateOpenContextRetention"},
-            {140, &ACC_SU::ListQualifiedUsers, "ListQualifiedUsers"},
-            {150, nullptr, "AuthenticateApplicationAsync"},
-            {151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
-            {152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
-            {190, nullptr, "GetUserLastOpenedApplication"},
-            {191, nullptr, "ActivateOpenContextHolder"},
-            {200, &ACC_SU::BeginUserRegistration, "BeginUserRegistration"},
-            {201, &ACC_SU::CompleteUserRegistration, "CompleteUserRegistration"},
-            {202, nullptr, "CancelUserRegistration"},
-            {203, &ACC_SU::DeleteUser, "DeleteUser"},
-            {204, &ACC_SU::SetUserPosition, "SetUserPosition"},
-            {205, &ACC_SU::GetProfileEditor, "GetProfileEditor"},
-            {206, nullptr, "CompleteUserRegistrationForcibly"},
-            {210, nullptr, "CreateFloatingRegistrationRequest"},
-            {211, nullptr, "CreateProcedureToRegisterUserWithNintendoAccount"},
-            {212, nullptr, "ResumeProcedureToRegisterUserWithNintendoAccount"},
-            {230, nullptr, "AuthenticateServiceAsync"},
-            {250, &ACC_SU::GetBaasAccountAdministrator, "GetBaasAccountAdministrator"},
-            {290, nullptr, "ProxyProcedureForGuestLoginWithNintendoAccount"},
-            {291, nullptr, "ProxyProcedureForFloatingRegistrationWithNintendoAccount"},
-            {299, nullptr, "SuspendBackgroundDaemon"},
-            {400, nullptr, "SetPinCode"}, // 18.0.0+
-            {401, &ACC_SU::GetPinCodeLength, "GetPinCodeLength"}, // 18.0.0+
-            {402, nullptr, "GetPinCode"}, // 18.0.0+
-            {403, nullptr, "GetPinCodeParity"},
-            {404, nullptr, "VerifyPinCode"},
-            {405, nullptr, "IsPinCodeVerificationForbidden"},
-            {410, nullptr, "GetPinCodeErrorCount"}, // 18.0.0+
-            {411, nullptr, "ResetPinCodeErrorCount"}, // 18.0.0+
-            {412, nullptr, "IncrementPinCodeErrorCount"}, // 18.0.0+
-            {900, nullptr, "SetUserUnqualifiedForDebug"},
-            {901, nullptr, "UnsetUserUnqualifiedForDebug"},
-            {902, nullptr, "ListUsersUnqualifiedForDebug"},
-            {910, nullptr, "RefreshFirmwareSettingsForDebug"},
-            {997, nullptr, "DebugInvalidateTokenCacheForUser"},
-            {998, nullptr, "DebugSetUserStateClose"},
-            {999, nullptr, "DebugSetUserStateOpen"}
+            FunctionInfo{0, &ACC_SU::GetUserCount, "GetUserCount"},
+            FunctionInfo{1, &ACC_SU::GetUserExistence, "GetUserExistence"},
+            FunctionInfo{2, &ACC_SU::ListAllUsers, "ListAllUsers"},
+            FunctionInfo{3, &ACC_SU::ListOpenUsers, "ListOpenUsers"},
+            FunctionInfo{4, &ACC_SU::GetLastOpenedUser, "GetLastOpenedUser"},
+            FunctionInfo{5, &ACC_SU::GetProfile, "GetProfile"},
+            FunctionInfo{6, nullptr, "GetProfileDigest"},
+            FunctionInfo{50, &ACC_SU::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
+            FunctionInfo{51, &ACC_SU::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
+            FunctionInfo{52, &ACC_SU::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"}, // 19.0.0+
+            FunctionInfo{60, &ACC_SU::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"},
+            FunctionInfo{99, nullptr, "DebugActivateOpenContextRetention"},
+            FunctionInfo{100, nullptr, "GetUserRegistrationNotifier"},
+            FunctionInfo{101, nullptr, "GetUserStateChangeNotifier"},
+            FunctionInfo{102, &ACC_SU::GetBaasAccountManagerForSystemService, "GetBaasAccountManagerForSystemService"},
+            FunctionInfo{103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
+            FunctionInfo{104, nullptr, "GetProfileUpdateNotifier"},
+            FunctionInfo{105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
+            FunctionInfo{106, nullptr, "GetProfileSyncNotifier"},
+            FunctionInfo{110, &ACC_SU::StoreSaveDataThumbnailSystem, "StoreSaveDataThumbnail"},
+            FunctionInfo{111, nullptr, "ClearSaveDataThumbnail"},
+            FunctionInfo{112, nullptr, "LoadSaveDataThumbnail"},
+            FunctionInfo{113, nullptr, "GetSaveDataThumbnailExistence"},
+            FunctionInfo{120, nullptr, "ListOpenUsersInApplication"},
+            FunctionInfo{130, nullptr, "ActivateOpenContextRetention"},
+            FunctionInfo{140, &ACC_SU::ListQualifiedUsers, "ListQualifiedUsers"},
+            FunctionInfo{150, nullptr, "AuthenticateApplicationAsync"},
+            FunctionInfo{151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
+            FunctionInfo{152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
+            FunctionInfo{190, nullptr, "GetUserLastOpenedApplication"},
+            FunctionInfo{191, nullptr, "ActivateOpenContextHolder"},
+            FunctionInfo{200, &ACC_SU::BeginUserRegistration, "BeginUserRegistration"},
+            FunctionInfo{201, &ACC_SU::CompleteUserRegistration, "CompleteUserRegistration"},
+            FunctionInfo{202, nullptr, "CancelUserRegistration"},
+            FunctionInfo{203, &ACC_SU::DeleteUser, "DeleteUser"},
+            FunctionInfo{204, &ACC_SU::SetUserPosition, "SetUserPosition"},
+            FunctionInfo{205, &ACC_SU::GetProfileEditor, "GetProfileEditor"},
+            FunctionInfo{206, nullptr, "CompleteUserRegistrationForcibly"},
+            FunctionInfo{210, nullptr, "CreateFloatingRegistrationRequest"},
+            FunctionInfo{211, nullptr, "CreateProcedureToRegisterUserWithNintendoAccount"},
+            FunctionInfo{212, nullptr, "ResumeProcedureToRegisterUserWithNintendoAccount"},
+            FunctionInfo{230, nullptr, "AuthenticateServiceAsync"},
+            FunctionInfo{250, &ACC_SU::GetBaasAccountAdministrator, "GetBaasAccountAdministrator"},
+            FunctionInfo{290, nullptr, "ProxyProcedureForGuestLoginWithNintendoAccount"},
+            FunctionInfo{291, nullptr, "ProxyProcedureForFloatingRegistrationWithNintendoAccount"},
+            FunctionInfo{299, nullptr, "SuspendBackgroundDaemon"},
+            FunctionInfo{400, nullptr, "SetPinCode"}, // 18.0.0+
+            FunctionInfo{401, &ACC_SU::GetPinCodeLength, "GetPinCodeLength"}, // 18.0.0+
+            FunctionInfo{402, nullptr, "GetPinCode"}, // 18.0.0+
+            FunctionInfo{403, nullptr, "GetPinCodeParity"},
+            FunctionInfo{404, nullptr, "VerifyPinCode"},
+            FunctionInfo{405, nullptr, "IsPinCodeVerificationForbidden"},
+            FunctionInfo{410, nullptr, "GetPinCodeErrorCount"}, // 18.0.0+
+            FunctionInfo{411, nullptr, "ResetPinCodeErrorCount"}, // 18.0.0+
+            FunctionInfo{412, nullptr, "IncrementPinCodeErrorCount"}, // 18.0.0+
+            FunctionInfo{900, nullptr, "SetUserUnqualifiedForDebug"},
+            FunctionInfo{901, nullptr, "UnsetUserUnqualifiedForDebug"},
+            FunctionInfo{902, nullptr, "ListUsersUnqualifiedForDebug"},
+            FunctionInfo{910, nullptr, "RefreshFirmwareSettingsForDebug"},
+            FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
+            FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
+            FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
         };
         // clang-format on
 
@@ -1334,31 +1334,31 @@ public:
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u0") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &ACC_U0::GetUserCount, "GetUserCount"},
-            {1, &ACC_U0::GetUserExistence, "GetUserExistence"},
-            {2, &ACC_U0::ListAllUsers, "ListAllUsers"},
-            {3, &ACC_U0::ListOpenUsers, "ListOpenUsers"},
-            {4, &ACC_U0::GetLastOpenedUser, "GetLastOpenedUser"},
-            {5, &ACC_U0::GetProfile, "GetProfile"},
-            {6, nullptr, "GetProfileDigest"}, // 3.0.0+
-            {50, &ACC_U0::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
-            {51, &ACC_U0::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
-            {52, &ACC_U0::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"},
-            {60, &ACC_U0::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"}, // 5.0.0 - 5.1.0
-            {99, nullptr, "DebugActivateOpenContextRetention"}, // 6.0.0+
-            {100, &ACC_U0::InitializeApplicationInfo, "InitializeApplicationInfo"},
-            {101, &ACC_U0::GetBaasAccountManagerForApplication, "GetBaasAccountManagerForApplication"},
-            {102, nullptr, "AuthenticateApplicationAsync"},
-            {103, nullptr, "CheckNetworkServiceAvailabilityAsync"}, // 4.0.0+
-            {110, &ACC_U0::StoreSaveDataThumbnailApplication, "StoreSaveDataThumbnail"},
-            {111, nullptr, "ClearSaveDataThumbnail"},
-            {120, nullptr, "CreateGuestLoginRequest"},
-            {130, nullptr, "LoadOpenContext"}, // 5.0.0+
-            {131, &ACC_U0::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"}, // 6.0.0+
-            {140, &ACC_U0::InitializeApplicationInfoRestricted, "InitializeApplicationInfoRestricted"}, // 6.0.0+
-            {141, &ACC_U0::ListQualifiedUsers, "ListQualifiedUsers"}, // 6.0.0+
-            {150, &ACC_U0::IsUserAccountSwitchLocked, "IsUserAccountSwitchLocked"}, // 6.0.0+
-            {160, &ACC_U0::InitializeApplicationInfoV2, "InitializeApplicationInfoV2"}
+            FunctionInfo{0, &ACC_U0::GetUserCount, "GetUserCount"},
+            FunctionInfo{1, &ACC_U0::GetUserExistence, "GetUserExistence"},
+            FunctionInfo{2, &ACC_U0::ListAllUsers, "ListAllUsers"},
+            FunctionInfo{3, &ACC_U0::ListOpenUsers, "ListOpenUsers"},
+            FunctionInfo{4, &ACC_U0::GetLastOpenedUser, "GetLastOpenedUser"},
+            FunctionInfo{5, &ACC_U0::GetProfile, "GetProfile"},
+            FunctionInfo{6, nullptr, "GetProfileDigest"}, // 3.0.0+
+            FunctionInfo{50, &ACC_U0::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
+            FunctionInfo{51, &ACC_U0::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
+            FunctionInfo{52, &ACC_U0::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"},
+            FunctionInfo{60, &ACC_U0::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"}, // 5.0.0 - 5.1.0
+            FunctionInfo{99, nullptr, "DebugActivateOpenContextRetention"}, // 6.0.0+
+            FunctionInfo{100, &ACC_U0::InitializeApplicationInfo, "InitializeApplicationInfo"},
+            FunctionInfo{101, &ACC_U0::GetBaasAccountManagerForApplication, "GetBaasAccountManagerForApplication"},
+            FunctionInfo{102, nullptr, "AuthenticateApplicationAsync"},
+            FunctionInfo{103, nullptr, "CheckNetworkServiceAvailabilityAsync"}, // 4.0.0+
+            FunctionInfo{110, &ACC_U0::StoreSaveDataThumbnailApplication, "StoreSaveDataThumbnail"},
+            FunctionInfo{111, nullptr, "ClearSaveDataThumbnail"},
+            FunctionInfo{120, nullptr, "CreateGuestLoginRequest"},
+            FunctionInfo{130, nullptr, "LoadOpenContext"}, // 5.0.0+
+            FunctionInfo{131, &ACC_U0::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"}, // 6.0.0+
+            FunctionInfo{140, &ACC_U0::InitializeApplicationInfoRestricted, "InitializeApplicationInfoRestricted"}, // 6.0.0+
+            FunctionInfo{141, &ACC_U0::ListQualifiedUsers, "ListQualifiedUsers"}, // 6.0.0+
+            FunctionInfo{150, &ACC_U0::IsUserAccountSwitchLocked, "IsUserAccountSwitchLocked"}, // 6.0.0+
+            FunctionInfo{160, &ACC_U0::InitializeApplicationInfoV2, "InitializeApplicationInfoV2"}
         };
         // clang-format on
 
@@ -1373,42 +1373,42 @@ public:
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u1") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &ACC_U1::GetUserCount, "GetUserCount"},
-            {1, &ACC_U1::GetUserExistence, "GetUserExistence"},
-            {2, &ACC_U1::ListAllUsers, "ListAllUsers"},
-            {3, &ACC_U1::ListOpenUsers, "ListOpenUsers"},
-            {4, &ACC_U1::GetLastOpenedUser, "GetLastOpenedUser"},
-            {5, &ACC_U1::GetProfile, "GetProfile"},
-            {6, nullptr, "GetProfileDigest"},
-            {50, &ACC_U1::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
-            {51, &ACC_U1::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
-            {52, &ACC_U1::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"},
-            {60, &ACC_U1::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"},
-            {99, nullptr, "DebugActivateOpenContextRetention"},
-            {100, nullptr, "GetUserRegistrationNotifier"},
-            {101, nullptr, "GetUserStateChangeNotifier"},
-            {102, &ACC_U1::GetBaasAccountManagerForSystemService, "GetBaasAccountManagerForSystemService"},
-            {103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
-            {104, nullptr, "GetProfileUpdateNotifier"},
-            {105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
-            {106, nullptr, "GetProfileSyncNotifier"},
-            {110, &ACC_U1::StoreSaveDataThumbnailApplication, "StoreSaveDataThumbnail"},
-            {111, nullptr, "ClearSaveDataThumbnail"},
-            {112, nullptr, "LoadSaveDataThumbnail"},
-            {113, nullptr, "GetSaveDataThumbnailExistence"},
-            {120, nullptr, "ListOpenUsersInApplication"},
-            {130, nullptr, "ActivateOpenContextRetention"},
-            {140, &ACC_U1::ListQualifiedUsers, "ListQualifiedUsers"},
-            {150, nullptr, "AuthenticateApplicationAsync"},
-            {151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
-            {152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
-            {190, nullptr, "GetUserLastOpenedApplication"},
-            {191, nullptr, "ActivateOpenContextHolder"},
-            {401, &ACC_U1::GetPinCodeLength, "GetPinCodeLength"}, // 18.0.0+
-            {402, nullptr, "GetPinCode"}, // 18.0.0+
-            {997, nullptr, "DebugInvalidateTokenCacheForUser"},
-            {998, nullptr, "DebugSetUserStateClose"},
-            {999, nullptr, "DebugSetUserStateOpen"}
+            FunctionInfo{0, &ACC_U1::GetUserCount, "GetUserCount"},
+            FunctionInfo{1, &ACC_U1::GetUserExistence, "GetUserExistence"},
+            FunctionInfo{2, &ACC_U1::ListAllUsers, "ListAllUsers"},
+            FunctionInfo{3, &ACC_U1::ListOpenUsers, "ListOpenUsers"},
+            FunctionInfo{4, &ACC_U1::GetLastOpenedUser, "GetLastOpenedUser"},
+            FunctionInfo{5, &ACC_U1::GetProfile, "GetProfile"},
+            FunctionInfo{6, nullptr, "GetProfileDigest"},
+            FunctionInfo{50, &ACC_U1::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
+            FunctionInfo{51, &ACC_U1::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
+            FunctionInfo{52, &ACC_U1::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"},
+            FunctionInfo{60, &ACC_U1::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"},
+            FunctionInfo{99, nullptr, "DebugActivateOpenContextRetention"},
+            FunctionInfo{100, nullptr, "GetUserRegistrationNotifier"},
+            FunctionInfo{101, nullptr, "GetUserStateChangeNotifier"},
+            FunctionInfo{102, &ACC_U1::GetBaasAccountManagerForSystemService, "GetBaasAccountManagerForSystemService"},
+            FunctionInfo{103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
+            FunctionInfo{104, nullptr, "GetProfileUpdateNotifier"},
+            FunctionInfo{105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
+            FunctionInfo{106, nullptr, "GetProfileSyncNotifier"},
+            FunctionInfo{110, &ACC_U1::StoreSaveDataThumbnailApplication, "StoreSaveDataThumbnail"},
+            FunctionInfo{111, nullptr, "ClearSaveDataThumbnail"},
+            FunctionInfo{112, nullptr, "LoadSaveDataThumbnail"},
+            FunctionInfo{113, nullptr, "GetSaveDataThumbnailExistence"},
+            FunctionInfo{120, nullptr, "ListOpenUsersInApplication"},
+            FunctionInfo{130, nullptr, "ActivateOpenContextRetention"},
+            FunctionInfo{140, &ACC_U1::ListQualifiedUsers, "ListQualifiedUsers"},
+            FunctionInfo{150, nullptr, "AuthenticateApplicationAsync"},
+            FunctionInfo{151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
+            FunctionInfo{152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
+            FunctionInfo{190, nullptr, "GetUserLastOpenedApplication"},
+            FunctionInfo{191, nullptr, "ActivateOpenContextHolder"},
+            FunctionInfo{401, &ACC_U1::GetPinCodeLength, "GetPinCodeLength"}, // 18.0.0+
+            FunctionInfo{402, nullptr, "GetPinCode"}, // 18.0.0+
+            FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
+            FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
+            FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
         };
         // clang-format on
 
@@ -1422,26 +1422,26 @@ public:
     explicit DAUTH_0(Core::System& system_) : ServiceFramework{system_, "dauth:0"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
-            {1, nullptr, "LoadAuthenticationTokenCache"},
-            {2, nullptr, "InvalidateAuthenticationTokenCache"},
-            {3, nullptr, "IsDeviceAuthenticationTokenCacheAvailable"},
-            {10, nullptr, "EnsureEdgeTokenCacheAsync"},
-            {11, nullptr, "LoadEdgeTokenCache"},
-            {12, nullptr, "InvalidateEdgeTokenCache"},
-            {13, nullptr, "IsEdgeTokenCacheAvailable"},
-            {20, nullptr, "EnsureApplicationAuthenticationCacheAsync"},
-            {21, nullptr, "LoadApplicationAuthenticationTokenCache"},
-            {22, nullptr, "LoadApplicationNetworkServiceClientConfigCache"},
-            {23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
-            {24, nullptr, "InvalidateApplicationAuthenticationCache"},
-            {30, nullptr, "EnsureGameCardAuthenticationCacheAsync"},
-            {31, nullptr, "LoadGameCardAuthenticationTokenCache"},
-            {32, nullptr, "IsGameCardAuthenticationCacheAvailable"},
-            {33, nullptr, "InvalidateGameCardAuthenticationCache"},
-            {1000, nullptr, "GetInactiveElicenseUsedEvent"},
-            {9000, nullptr, "ImportVirtualClientCertificate"},
-            {9010, nullptr, "DeleteVirtualClientCertificate"}
+            FunctionInfo{0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
+            FunctionInfo{1, nullptr, "LoadAuthenticationTokenCache"},
+            FunctionInfo{2, nullptr, "InvalidateAuthenticationTokenCache"},
+            FunctionInfo{3, nullptr, "IsDeviceAuthenticationTokenCacheAvailable"},
+            FunctionInfo{10, nullptr, "EnsureEdgeTokenCacheAsync"},
+            FunctionInfo{11, nullptr, "LoadEdgeTokenCache"},
+            FunctionInfo{12, nullptr, "InvalidateEdgeTokenCache"},
+            FunctionInfo{13, nullptr, "IsEdgeTokenCacheAvailable"},
+            FunctionInfo{20, nullptr, "EnsureApplicationAuthenticationCacheAsync"},
+            FunctionInfo{21, nullptr, "LoadApplicationAuthenticationTokenCache"},
+            FunctionInfo{22, nullptr, "LoadApplicationNetworkServiceClientConfigCache"},
+            FunctionInfo{23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
+            FunctionInfo{24, nullptr, "InvalidateApplicationAuthenticationCache"},
+            FunctionInfo{30, nullptr, "EnsureGameCardAuthenticationCacheAsync"},
+            FunctionInfo{31, nullptr, "LoadGameCardAuthenticationTokenCache"},
+            FunctionInfo{32, nullptr, "IsGameCardAuthenticationCacheAvailable"},
+            FunctionInfo{33, nullptr, "InvalidateGameCardAuthenticationCache"},
+            FunctionInfo{1000, nullptr, "GetInactiveElicenseUsedEvent"},
+            FunctionInfo{9000, nullptr, "ImportVirtualClientCertificate"},
+            FunctionInfo{9010, nullptr, "DeleteVirtualClientCertificate"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -1543,37 +1543,37 @@ public:
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u1") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetUserCount"},
-            {1, nullptr, "GetUserExistence"},
-            {2, nullptr, "ListAllUsers"},
-            {3, nullptr, "ListOpenUsers"},
-            {4, nullptr, "GetLastOpenedUser"},
-            {5, nullptr, "GetProfile"},
-            {6, nullptr, "GetProfileDigest"},
-            {50, nullptr, "IsUserRegistrationRequestPermitted"},
-            {51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
-            {99, nullptr, "DebugActivateOpenContextRetention"},
-            {100, nullptr, "GetUserRegistrationNotifier"},
-            {101, nullptr, "GetUserStateChangeNotifier"},
-            {102, nullptr, "GetBaasAccountManagerForSystemService"},
-            {103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
-            {104, nullptr, "GetProfileUpdateNotifier"},
-            {105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
-            {106, nullptr, "GetProfileSyncNotifier"},
-            {110, nullptr, "StoreSaveDataThumbnail"},
-            {111, nullptr, "ClearSaveDataThumbnail"},
-            {112, nullptr, "LoadSaveDataThumbnail"},
-            {113, nullptr, "GetSaveDataThumbnailExistence"},
-            {120, nullptr, "ListOpenUsersInApplication"},
-            {130, nullptr, "ActivateOpenContextRetention"},
-            {140, nullptr, "ListQualifiedUsers"},
-            {151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
-            {152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
-            {170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
-            {191, nullptr, "UpdateNotificationReceiverInfo"},
-            {997, nullptr, "DebugInvalidateTokenCacheForUser"},
-            {998, nullptr, "DebugSetUserStateClose"},
-            {999, nullptr, "DebugSetUserStateOpen"}
+            FunctionInfo{0, nullptr, "GetUserCount"},
+            FunctionInfo{1, nullptr, "GetUserExistence"},
+            FunctionInfo{2, nullptr, "ListAllUsers"},
+            FunctionInfo{3, nullptr, "ListOpenUsers"},
+            FunctionInfo{4, nullptr, "GetLastOpenedUser"},
+            FunctionInfo{5, nullptr, "GetProfile"},
+            FunctionInfo{6, nullptr, "GetProfileDigest"},
+            FunctionInfo{50, nullptr, "IsUserRegistrationRequestPermitted"},
+            FunctionInfo{51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
+            FunctionInfo{99, nullptr, "DebugActivateOpenContextRetention"},
+            FunctionInfo{100, nullptr, "GetUserRegistrationNotifier"},
+            FunctionInfo{101, nullptr, "GetUserStateChangeNotifier"},
+            FunctionInfo{102, nullptr, "GetBaasAccountManagerForSystemService"},
+            FunctionInfo{103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
+            FunctionInfo{104, nullptr, "GetProfileUpdateNotifier"},
+            FunctionInfo{105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
+            FunctionInfo{106, nullptr, "GetProfileSyncNotifier"},
+            FunctionInfo{110, nullptr, "StoreSaveDataThumbnail"},
+            FunctionInfo{111, nullptr, "ClearSaveDataThumbnail"},
+            FunctionInfo{112, nullptr, "LoadSaveDataThumbnail"},
+            FunctionInfo{113, nullptr, "GetSaveDataThumbnailExistence"},
+            FunctionInfo{120, nullptr, "ListOpenUsersInApplication"},
+            FunctionInfo{130, nullptr, "ActivateOpenContextRetention"},
+            FunctionInfo{140, nullptr, "ListQualifiedUsers"},
+            FunctionInfo{151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
+            FunctionInfo{152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
+            FunctionInfo{170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
+            FunctionInfo{191, nullptr, "UpdateNotificationReceiverInfo"},
+            FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
+            FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
+            FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -1586,44 +1586,44 @@ public:
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u2") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetUserCount"},
-            {1, nullptr, "GetUserExistence"},
-            {2, nullptr, "ListAllUsers"},
-            {3, nullptr, "ListOpenUsers"},
-            {4, nullptr, "GetLastOpenedUser"},
-            {5, nullptr, "GetProfile"},
-            {6, nullptr, "GetProfileDigest"},
-            {50, nullptr, "#IsUserRegistrationRequestPermitted"},
-            {51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
-            {52, nullptr, "TrySelectUserWithoutInteraction"},
-            {99, nullptr, "DebugActivateOpenContextRetention"},
-            {100, nullptr, "GetUserRegistrationNotifier"},
-            {101, nullptr, "GetUserStateChangeNotifier"},
-            {102, nullptr, "GetBaasAccountManagerForSystemService"},
-            {103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
-            {104, nullptr, "GetProfileUpdateNotifier"},
-            {105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
-            {106, nullptr, "GetProfileSyncNotifier"},
-            {110, nullptr, "StoreSaveDataThumbnail"},
-            {111, nullptr, "ClearSaveDataThumbnail"},
-            {112, nullptr, "LoadSaveDataThumbnail"},
-            {113, nullptr, "GetSaveDataThumbnailExistence"},
-            {120, nullptr, "ListOpenUsersInApplication"},
-            {130, nullptr, "ActivateOpenContextRetention"},
-            {140, nullptr, "ListQualifiedUsers"},
-            {151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
-            {152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
-            {170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
-            {191, nullptr, "UpdateNotificationReceiverInfo"},
-            {205, nullptr, "GetProfileEditor"},
-            {401, nullptr, "GetPinCodeLength"},
-            {402, nullptr, "GetPinCode"},
-            {403, nullptr, "GetPinCodeParity"},
-            {404, nullptr, "VerifyPinCode"},
-            {405, nullptr, "IsPinCodeVerificationForbidden"},
-            {997, nullptr, "DebugInvalidateTokenCacheForUser"},
-            {998, nullptr, "DebugSetUserStateClose"},
-            {999, nullptr, "DebugSetUserStateOpen"}
+            FunctionInfo{0, nullptr, "GetUserCount"},
+            FunctionInfo{1, nullptr, "GetUserExistence"},
+            FunctionInfo{2, nullptr, "ListAllUsers"},
+            FunctionInfo{3, nullptr, "ListOpenUsers"},
+            FunctionInfo{4, nullptr, "GetLastOpenedUser"},
+            FunctionInfo{5, nullptr, "GetProfile"},
+            FunctionInfo{6, nullptr, "GetProfileDigest"},
+            FunctionInfo{50, nullptr, "#IsUserRegistrationRequestPermitted"},
+            FunctionInfo{51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
+            FunctionInfo{52, nullptr, "TrySelectUserWithoutInteraction"},
+            FunctionInfo{99, nullptr, "DebugActivateOpenContextRetention"},
+            FunctionInfo{100, nullptr, "GetUserRegistrationNotifier"},
+            FunctionInfo{101, nullptr, "GetUserStateChangeNotifier"},
+            FunctionInfo{102, nullptr, "GetBaasAccountManagerForSystemService"},
+            FunctionInfo{103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
+            FunctionInfo{104, nullptr, "GetProfileUpdateNotifier"},
+            FunctionInfo{105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
+            FunctionInfo{106, nullptr, "GetProfileSyncNotifier"},
+            FunctionInfo{110, nullptr, "StoreSaveDataThumbnail"},
+            FunctionInfo{111, nullptr, "ClearSaveDataThumbnail"},
+            FunctionInfo{112, nullptr, "LoadSaveDataThumbnail"},
+            FunctionInfo{113, nullptr, "GetSaveDataThumbnailExistence"},
+            FunctionInfo{120, nullptr, "ListOpenUsersInApplication"},
+            FunctionInfo{130, nullptr, "ActivateOpenContextRetention"},
+            FunctionInfo{140, nullptr, "ListQualifiedUsers"},
+            FunctionInfo{151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
+            FunctionInfo{152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
+            FunctionInfo{170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
+            FunctionInfo{191, nullptr, "UpdateNotificationReceiverInfo"},
+            FunctionInfo{205, nullptr, "GetProfileEditor"},
+            FunctionInfo{401, nullptr, "GetPinCodeLength"},
+            FunctionInfo{402, nullptr, "GetPinCode"},
+            FunctionInfo{403, nullptr, "GetPinCodeParity"},
+            FunctionInfo{404, nullptr, "VerifyPinCode"},
+            FunctionInfo{405, nullptr, "IsPinCodeVerificationForbidden"},
+            FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
+            FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
+            FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
         };
         // clang-format on
         RegisterHandlers(functions);

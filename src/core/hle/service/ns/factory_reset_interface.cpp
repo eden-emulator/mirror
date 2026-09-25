@@ -12,13 +12,13 @@ IFactoryResetInterface::IFactoryResetInterface(Core::System& system_)
     : ServiceFramework{system_, "IFactoryResetInterface"} {
     // clang-format off
         static const FunctionInfo functions[] = {
-            {100, nullptr, "ResetToFactorySettings"},
-            {101, nullptr, "ResetToFactorySettingsWithoutUserSaveData"},
-            {102, nullptr, "ResetToFactorySettingsForRefurbishment"},
-            {103, nullptr, "ResetToFactorySettingsWithPlatformRegion"},
-            {104, nullptr, "ResetToFactorySettingsWithPlatformRegionAuthentication"},
-            {105, nullptr, "RequestResetToFactorySettingsSecurely"},
-            {106, nullptr, "RequestResetToFactorySettingsWithPlatformRegionAuthenticationSecurely"}
+            FunctionInfo{100, nullptr, "ResetToFactorySettings"},
+            FunctionInfo{101, nullptr, "ResetToFactorySettingsWithoutUserSaveData"},
+            FunctionInfo{102, nullptr, "ResetToFactorySettingsForRefurbishment"},
+            FunctionInfo{103, nullptr, "ResetToFactorySettingsWithPlatformRegion"},
+            FunctionInfo{104, nullptr, "ResetToFactorySettingsWithPlatformRegionAuthentication"},
+            FunctionInfo{105, nullptr, "RequestResetToFactorySettingsSecurely"},
+            FunctionInfo{106, nullptr, "RequestResetToFactorySettingsWithPlatformRegionAuthenticationSecurely"}
         };
     // clang-format on
 

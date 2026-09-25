@@ -40,10 +40,10 @@ public:
 
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, C<&IJitEnvironment::GenerateCode>, "GenerateCode"},
-            {1, C<&IJitEnvironment::Control>, "Control"},
-            {1000, C<&IJitEnvironment::LoadPlugin>, "LoadPlugin"},
-            {1001, C<&IJitEnvironment::GetCodeAddress>, "GetCodeAddress"}
+            FunctionInfo{0, C<&IJitEnvironment::GenerateCode>, "GenerateCode"},
+            FunctionInfo{1, C<&IJitEnvironment::Control>, "Control"},
+            FunctionInfo{1000, C<&IJitEnvironment::LoadPlugin>, "LoadPlugin"},
+            FunctionInfo{1001, C<&IJitEnvironment::GetCodeAddress>, "GetCodeAddress"}
         };
         // clang-format on
 
@@ -261,7 +261,7 @@ public:
     explicit JITU(Core::System& system_) : ServiceFramework{system_, "jit:u"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, C<&JITU::CreateJitEnvironment>, "CreateJitEnvironment"}
+            FunctionInfo{0, C<&JITU::CreateJitEnvironment>, "CreateJitEnvironment"}
         };
         // clang-format on
 

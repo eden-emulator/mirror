@@ -17,8 +17,8 @@ public:
     explicit MNPP_APP(Core::System& system_) : ServiceFramework{system_, "mnpp:app"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &MNPP_APP::Cmd0, "Cmd0"},
-            {1, &MNPP_APP::Cmd1, "Cmd1"}
+            FunctionInfo{0, &MNPP_APP::Cmd0, "Cmd0"},
+            FunctionInfo{1, &MNPP_APP::Cmd1, "Cmd1"}
         };
         // clang-format on
 
@@ -46,12 +46,12 @@ public:
     explicit MNPP_SYS(Core::System& system_) : ServiceFramework{system_, "mnpp:sys"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "Cmd0"},
-            {10, nullptr, "Cmd10"},
-            {100, nullptr, "Cmd100"},
-            {200, nullptr, "Cmd200"},
-            {300, nullptr, "Cmd300"},
-            {400, nullptr, "Cmd400"}
+            FunctionInfo{0, nullptr, "Cmd0"},
+            FunctionInfo{10, nullptr, "Cmd10"},
+            FunctionInfo{100, nullptr, "Cmd100"},
+            FunctionInfo{200, nullptr, "Cmd200"},
+            FunctionInfo{300, nullptr, "Cmd300"},
+            FunctionInfo{400, nullptr, "Cmd400"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -63,11 +63,11 @@ public:
     explicit MNPP_WEB(Core::System& system_) : ServiceFramework{system_, "mnpp:web"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "Cmd0"},
-            {1, nullptr, "Cmd1"},
-            {10, nullptr, "Cmd10"},
-            {20, nullptr, "Cmd20"},
-            {100, nullptr, "Cmd100"}
+            FunctionInfo{0, nullptr, "Cmd0"},
+            FunctionInfo{1, nullptr, "Cmd1"},
+            FunctionInfo{10, nullptr, "Cmd10"},
+            FunctionInfo{20, nullptr, "Cmd20"},
+            FunctionInfo{100, nullptr, "Cmd100"}
         };
         // clang-format on
         RegisterHandlers(functions);

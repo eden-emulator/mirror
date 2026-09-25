@@ -85,10 +85,10 @@ public:
         , data_size{size}
     {
         static const FunctionInfo functions[] = {
-            {0, D<&IAsyncValue::GetSize>, "GetSize"},
-            {1, D<&IAsyncValue::Get>, "Get"},
-            {2, D<&IAsyncValue::Cancel>, "Cancel"},
-            {3, D<&IAsyncValue::GetErrorContext>, "GetErrorContext"}
+            FunctionInfo{0, D<&IAsyncValue::GetSize>, "GetSize"},
+            FunctionInfo{1, D<&IAsyncValue::Get>, "Get"},
+            FunctionInfo{2, D<&IAsyncValue::Cancel>, "Cancel"},
+            FunctionInfo{3, D<&IAsyncValue::GetErrorContext>, "GetErrorContext"}
         };
         RegisterHandlers(functions);
         completion_event = service_context.CreateEvent("IAsyncValue:Completion");

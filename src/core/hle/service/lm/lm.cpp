@@ -89,10 +89,10 @@ class ILogger final : public ServiceFramework<ILogger> {
 public:
     explicit ILogger(Core::System& system_) : ServiceFramework{system_, "ILogger"} {
         static const FunctionInfo functions[] = {
-            {0, &ILogger::Log, "Log"},
-            {1, &ILogger::SetDestination, "SetDestination"},
-            {2, nullptr, "TransmitHashedLog"}, //20.0.0+
-            {3, nullptr, "DevNotify"}, //20.0.0+
+            FunctionInfo{0, &ILogger::Log, "Log"},
+            FunctionInfo{1, &ILogger::SetDestination, "SetDestination"},
+            FunctionInfo{2, nullptr, "TransmitHashedLog"}, //20.0.0+
+            FunctionInfo{3, nullptr, "DevNotify"}, //20.0.0+
         };
         RegisterHandlers(functions);
     }
@@ -340,7 +340,7 @@ public:
     explicit LM(Core::System& system_) : ServiceFramework{system_, "lm"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &LM::OpenLogger, "OpenLogger"}
+            FunctionInfo{0, &LM::OpenLogger, "OpenLogger"}
         };
         // clang-format on
 
@@ -363,10 +363,10 @@ public:
         : ServiceFramework{system_, "lm:get"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "StartLogging"},
-            {1, nullptr, "StopLogging"},
-            {2, nullptr, "GetLog"},
-            {100, nullptr, "CreateDevNotificationReceiver"}
+            FunctionInfo{0, nullptr, "StartLogging"},
+            FunctionInfo{1, nullptr, "StopLogging"},
+            FunctionInfo{2, nullptr, "GetLog"},
+            FunctionInfo{100, nullptr, "CreateDevNotificationReceiver"}
         };
         RegisterHandlers(functions);
     }

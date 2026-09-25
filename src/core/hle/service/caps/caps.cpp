@@ -23,9 +23,9 @@ public:
     explicit IDecoderControlService(Core::System& system_) : ServiceFramework{system_, "grc:d"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {3001, nullptr, "DecodeJpeg"},
-            {4001, nullptr, "ShrinkJpeg"},
-            {4002, nullptr, "ShrinkJpegEx"}
+            FunctionInfo{3001, nullptr, "DecodeJpeg"},
+            FunctionInfo{4001, nullptr, "ShrinkJpeg"},
+            FunctionInfo{4002, nullptr, "ShrinkJpegEx"}
         };
         // clang-format on
         RegisterHandlers(functions);

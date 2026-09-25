@@ -24,8 +24,8 @@ public:
     explicit IService(Core::System& system_) : ServiceFramework{system_, "ngct:u"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IService::Match, "Match"},
-            {1, &IService::Filter, "Filter"}
+            FunctionInfo{0, &IService::Match, "Match"},
+            FunctionInfo{1, &IService::Filter, "Filter"}
         };
         // clang-format on
 
@@ -68,12 +68,12 @@ public:
     explicit NgcServiceImpl(Core::System& system_) : ServiceFramework(system_, "ngc:u") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &NgcServiceImpl::GetContentVersion, "GetContentVersion"},
-            {1, &NgcServiceImpl::Check, "Check"},
-            {2, &NgcServiceImpl::Mask, "Mask"},
-            {3, &NgcServiceImpl::Reload, "Reload"},
-            {4, &NgcServiceImpl::Check, "Check2"},
-            {5, &NgcServiceImpl::Mask, "Mask2"}
+            FunctionInfo{0, &NgcServiceImpl::GetContentVersion, "GetContentVersion"},
+            FunctionInfo{1, &NgcServiceImpl::Check, "Check"},
+            FunctionInfo{2, &NgcServiceImpl::Mask, "Mask"},
+            FunctionInfo{3, &NgcServiceImpl::Reload, "Reload"},
+            FunctionInfo{4, &NgcServiceImpl::Check, "Check2"},
+            FunctionInfo{5, &NgcServiceImpl::Mask, "Mask2"}
         };
         // clang-format on
 
@@ -159,13 +159,13 @@ public:
         static const FunctionInfo functions[] = {
             {0 , nullptr, "Match"},
             {1 , nullptr, "Filter"},
-            {100, nullptr, "ConfigureAutoUpdateSetting"},
-            {101, nullptr, "RequestResourceUpdateCheck"},
-            {110, nullptr, "Reload"},
-            {111, nullptr, "IsReloadRequired"},
-            {112, nullptr, "TryAcquireReloadRequestNotifier"},
-            {120, nullptr, "CalculateContentFingerprint"},
-            {130, nullptr, "TryEnableTemporalPassThrough"}
+            FunctionInfo{100, nullptr, "ConfigureAutoUpdateSetting"},
+            FunctionInfo{101, nullptr, "RequestResourceUpdateCheck"},
+            FunctionInfo{110, nullptr, "Reload"},
+            FunctionInfo{111, nullptr, "IsReloadRequired"},
+            FunctionInfo{112, nullptr, "TryAcquireReloadRequestNotifier"},
+            FunctionInfo{120, nullptr, "CalculateContentFingerprint"},
+            FunctionInfo{130, nullptr, "TryEnableTemporalPassThrough"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -182,14 +182,14 @@ public:
     explicit IUserShimScopedObject(Core::System& system_) : ServiceFramework(system_, "IUserShimScopedObject") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {450, nullptr, "InitializeForSaveData"},
-            {451, nullptr, "FinalizeForSaveData"},
-            {452, D<&IUserShimScopedObject::OpenSaveData>, "OpenSaveData"},
-            {453, nullptr, "CloseSaveData"},
-            {454, D<&IUserShimScopedObject::ReadSaveSlot>, "ReadSaveSlot"},
-            {455, D<&IUserShimScopedObject::WriteSaveSlot>, "WriteSaveSlot"},
-            {456, nullptr, "FlushSaveSlot"},
-            {457, nullptr, "CommitSaveData"}
+            FunctionInfo{450, nullptr, "InitializeForSaveData"},
+            FunctionInfo{451, nullptr, "FinalizeForSaveData"},
+            FunctionInfo{452, D<&IUserShimScopedObject::OpenSaveData>, "OpenSaveData"},
+            FunctionInfo{453, nullptr, "CloseSaveData"},
+            FunctionInfo{454, D<&IUserShimScopedObject::ReadSaveSlot>, "ReadSaveSlot"},
+            FunctionInfo{455, D<&IUserShimScopedObject::WriteSaveSlot>, "WriteSaveSlot"},
+            FunctionInfo{456, nullptr, "FlushSaveSlot"},
+            FunctionInfo{457, nullptr, "CommitSaveData"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -234,15 +234,15 @@ public:
     explicit ISystemShimScopedObject(Core::System& system_) : ServiceFramework(system_, "ISystemShimScopedObject") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {106, nullptr, "Cmd106"},
-            {107, nullptr, "Cmd107"},
-            {108, D<&ISystemShimScopedObject::Cmd108>, "Cmd108"},
-            {207, nullptr, "Cmd207"},
-            {208, D<&ISystemShimScopedObject::Cmd208>, "Cmd208"},
-            {209, nullptr, "Cmd209"},
-            {210, nullptr, "Cmd210"},
-            {211, nullptr, "Cmd211"},
-            {212, nullptr, "Cmd212"}
+            FunctionInfo{106, nullptr, "Cmd106"},
+            FunctionInfo{107, nullptr, "Cmd107"},
+            FunctionInfo{108, D<&ISystemShimScopedObject::Cmd108>, "Cmd108"},
+            FunctionInfo{207, nullptr, "Cmd207"},
+            FunctionInfo{208, D<&ISystemShimScopedObject::Cmd208>, "Cmd208"},
+            FunctionInfo{209, nullptr, "Cmd209"},
+            FunctionInfo{210, nullptr, "Cmd210"},
+            FunctionInfo{211, nullptr, "Cmd211"},
+            FunctionInfo{212, nullptr, "Cmd212"}
         };
         // clang-format on
         RegisterHandlers(functions);

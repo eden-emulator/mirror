@@ -44,25 +44,25 @@ StaticService::StaticService(Core::System& system_, StaticServiceSetupInfo setup
                                                                         m_time->m_shared_memory} {
     // clang-format off
         static const FunctionInfo functions[] = {
-            {0,   D<&StaticService::GetStandardUserSystemClock>, "GetStandardUserSystemClock"},
-            {1,   D<&StaticService::GetStandardNetworkSystemClock>, "GetStandardNetworkSystemClock"},
-            {2,   D<&StaticService::GetStandardSteadyClock>, "GetStandardSteadyClock"},
-            {3,   D<&StaticService::GetTimeZoneService>, "GetTimeZoneService"},
-            {4,   D<&StaticService::GetStandardLocalSystemClock>, "GetStandardLocalSystemClock"},
-            {5,   D<&StaticService::GetEphemeralNetworkSystemClock>, "GetEphemeralNetworkSystemClock"},
-            {20,  D<&StaticService::GetSharedMemoryNativeHandle>, "GetSharedMemoryNativeHandle"},
-            {50,  D<&StaticService::SetStandardSteadyClockInternalOffset>, "SetStandardSteadyClockInternalOffset"},
-            {51,  D<&StaticService::GetStandardSteadyClockRtcValue>, "GetStandardSteadyClockRtcValue"},
-            {100, D<&StaticService::IsStandardUserSystemClockAutomaticCorrectionEnabled>, "IsStandardUserSystemClockAutomaticCorrectionEnabled"},
-            {101, D<&StaticService::SetStandardUserSystemClockAutomaticCorrectionEnabled>, "SetStandardUserSystemClockAutomaticCorrectionEnabled"},
-            {102, D<&StaticService::GetStandardUserSystemClockInitialYear>, "GetStandardUserSystemClockInitialYear"},
-            {200, D<&StaticService::IsStandardNetworkSystemClockAccuracySufficient>, "IsStandardNetworkSystemClockAccuracySufficient"},
-            {201, D<&StaticService::GetStandardUserSystemClockAutomaticCorrectionUpdatedTime>, "GetStandardUserSystemClockAutomaticCorrectionUpdatedTime"},
-            {300, D<&StaticService::CalculateMonotonicSystemClockBaseTimePoint>, "CalculateMonotonicSystemClockBaseTimePoint"},
-            {400, D<&StaticService::GetClockSnapshot>, "GetClockSnapshot"},
-            {401, D<&StaticService::GetClockSnapshotFromSystemClockContext>, "GetClockSnapshotFromSystemClockContext"},
-            {500, D<&StaticService::CalculateStandardUserSystemClockDifferenceByUser>, "CalculateStandardUserSystemClockDifferenceByUser"},
-            {501, D<&StaticService::CalculateSpanBetween>, "CalculateSpanBetween"}
+            FunctionInfo{0,   D<&StaticService::GetStandardUserSystemClock>, "GetStandardUserSystemClock"},
+            FunctionInfo{1,   D<&StaticService::GetStandardNetworkSystemClock>, "GetStandardNetworkSystemClock"},
+            FunctionInfo{2,   D<&StaticService::GetStandardSteadyClock>, "GetStandardSteadyClock"},
+            FunctionInfo{3,   D<&StaticService::GetTimeZoneService>, "GetTimeZoneService"},
+            FunctionInfo{4,   D<&StaticService::GetStandardLocalSystemClock>, "GetStandardLocalSystemClock"},
+            FunctionInfo{5,   D<&StaticService::GetEphemeralNetworkSystemClock>, "GetEphemeralNetworkSystemClock"},
+            FunctionInfo{20,  D<&StaticService::GetSharedMemoryNativeHandle>, "GetSharedMemoryNativeHandle"},
+            FunctionInfo{50,  D<&StaticService::SetStandardSteadyClockInternalOffset>, "SetStandardSteadyClockInternalOffset"},
+            FunctionInfo{51,  D<&StaticService::GetStandardSteadyClockRtcValue>, "GetStandardSteadyClockRtcValue"},
+            FunctionInfo{100, D<&StaticService::IsStandardUserSystemClockAutomaticCorrectionEnabled>, "IsStandardUserSystemClockAutomaticCorrectionEnabled"},
+            FunctionInfo{101, D<&StaticService::SetStandardUserSystemClockAutomaticCorrectionEnabled>, "SetStandardUserSystemClockAutomaticCorrectionEnabled"},
+            FunctionInfo{102, D<&StaticService::GetStandardUserSystemClockInitialYear>, "GetStandardUserSystemClockInitialYear"},
+            FunctionInfo{200, D<&StaticService::IsStandardNetworkSystemClockAccuracySufficient>, "IsStandardNetworkSystemClockAccuracySufficient"},
+            FunctionInfo{201, D<&StaticService::GetStandardUserSystemClockAutomaticCorrectionUpdatedTime>, "GetStandardUserSystemClockAutomaticCorrectionUpdatedTime"},
+            FunctionInfo{300, D<&StaticService::CalculateMonotonicSystemClockBaseTimePoint>, "CalculateMonotonicSystemClockBaseTimePoint"},
+            FunctionInfo{400, D<&StaticService::GetClockSnapshot>, "GetClockSnapshot"},
+            FunctionInfo{401, D<&StaticService::GetClockSnapshotFromSystemClockContext>, "GetClockSnapshotFromSystemClockContext"},
+            FunctionInfo{500, D<&StaticService::CalculateStandardUserSystemClockDifferenceByUser>, "CalculateStandardUserSystemClockDifferenceByUser"},
+            FunctionInfo{501, D<&StaticService::CalculateSpanBetween>, "CalculateSpanBetween"}
         };
     // clang-format on
 

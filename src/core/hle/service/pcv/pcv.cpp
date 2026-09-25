@@ -18,36 +18,36 @@ public:
     explicit PCV(Core::System& system_) : ServiceFramework{system_, "pcv"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "SetPowerEnabled"},
-            {1, nullptr, "SetClockEnabled"},
-            {2, nullptr, "SetClockRate"},
-            {3, nullptr, "GetClockRate"},
-            {4, nullptr, "GetState"},
-            {5, nullptr, "GetPossibleClockRates"},
-            {6, nullptr, "SetMinVClockRate"},
-            {7, nullptr, "SetReset"},
-            {8, nullptr, "SetVoltageEnabled"},
-            {9, nullptr, "GetVoltageEnabled"},
-            {10, nullptr, "GetVoltageRange"},
-            {11, nullptr, "SetVoltageValue"},
-            {12, nullptr, "GetVoltageValue"},
-            {13, nullptr, "GetTemperatureThresholds"},
-            {14, nullptr, "SetTemperature"},
-            {15, nullptr, "Initialize"},
-            {16, nullptr, "IsInitialized"},
-            {17, nullptr, "Finalize"},
-            {18, nullptr, "PowerOn"},
-            {19, nullptr, "PowerOff"},
-            {20, nullptr, "ChangeVoltage"},
-            {21, nullptr, "GetPowerClockInfoEvent"},
-            {22, nullptr, "GetOscillatorClock"},
-            {23, nullptr, "GetDvfsTable"},
-            {24, nullptr, "GetModuleStateTable"},
-            {25, nullptr, "GetPowerDomainStateTable"},
-            {26, nullptr, "GetFuseInfo"},
-            {27, nullptr, "GetDramId"},
-            {28, nullptr, "IsPoweredOn"},
-            {29, nullptr, "GetVoltage"}
+            FunctionInfo{0, nullptr, "SetPowerEnabled"},
+            FunctionInfo{1, nullptr, "SetClockEnabled"},
+            FunctionInfo{2, nullptr, "SetClockRate"},
+            FunctionInfo{3, nullptr, "GetClockRate"},
+            FunctionInfo{4, nullptr, "GetState"},
+            FunctionInfo{5, nullptr, "GetPossibleClockRates"},
+            FunctionInfo{6, nullptr, "SetMinVClockRate"},
+            FunctionInfo{7, nullptr, "SetReset"},
+            FunctionInfo{8, nullptr, "SetVoltageEnabled"},
+            FunctionInfo{9, nullptr, "GetVoltageEnabled"},
+            FunctionInfo{10, nullptr, "GetVoltageRange"},
+            FunctionInfo{11, nullptr, "SetVoltageValue"},
+            FunctionInfo{12, nullptr, "GetVoltageValue"},
+            FunctionInfo{13, nullptr, "GetTemperatureThresholds"},
+            FunctionInfo{14, nullptr, "SetTemperature"},
+            FunctionInfo{15, nullptr, "Initialize"},
+            FunctionInfo{16, nullptr, "IsInitialized"},
+            FunctionInfo{17, nullptr, "Finalize"},
+            FunctionInfo{18, nullptr, "PowerOn"},
+            FunctionInfo{19, nullptr, "PowerOff"},
+            FunctionInfo{20, nullptr, "ChangeVoltage"},
+            FunctionInfo{21, nullptr, "GetPowerClockInfoEvent"},
+            FunctionInfo{22, nullptr, "GetOscillatorClock"},
+            FunctionInfo{23, nullptr, "GetDvfsTable"},
+            FunctionInfo{24, nullptr, "GetModuleStateTable"},
+            FunctionInfo{25, nullptr, "GetPowerDomainStateTable"},
+            FunctionInfo{26, nullptr, "GetFuseInfo"},
+            FunctionInfo{27, nullptr, "GetDramId"},
+            FunctionInfo{28, nullptr, "IsPoweredOn"},
+            FunctionInfo{29, nullptr, "GetVoltage"}
         };
         // clang-format on
 
@@ -60,7 +60,7 @@ public:
     explicit PCV_ARB(Core::System& system_) : ServiceFramework{system_, "pcv:arb"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "ReleaseControl"}
+            FunctionInfo{0, nullptr, "ReleaseControl"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -72,7 +72,7 @@ public:
     explicit PCV_IMM(Core::System& system_) : ServiceFramework{system_, "pcv:imm"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "SetClockRate"}
+            FunctionInfo{0, nullptr, "SetClockRate"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -85,18 +85,18 @@ public:
         : ServiceFramework{system_, "IClkrstSession"}, device_code(device_code_) {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "SetClockEnabled"},
-            {1, nullptr, "SetClockDisabled"},
-            {2, nullptr, "SetResetAsserted"},
-            {3, nullptr, "SetResetDeasserted"},
-            {4, nullptr, "SetPowerEnabled"},
-            {5, nullptr, "SetPowerDisabled"},
-            {6, nullptr, "GetState"},
-            {7, &IClkrstSession::SetClockRate, "SetClockRate"},
-            {8, &IClkrstSession::GetClockRate, "GetClockRate"},
-            {9, nullptr, "SetMinVClockRate"},
-            {10, nullptr, "GetPossibleClockRates"},
-            {11, nullptr, "GetDvfsTable"}
+            FunctionInfo{0, nullptr, "SetClockEnabled"},
+            FunctionInfo{1, nullptr, "SetClockDisabled"},
+            FunctionInfo{2, nullptr, "SetResetAsserted"},
+            FunctionInfo{3, nullptr, "SetResetDeasserted"},
+            FunctionInfo{4, nullptr, "SetPowerEnabled"},
+            FunctionInfo{5, nullptr, "SetPowerDisabled"},
+            FunctionInfo{6, nullptr, "GetState"},
+            FunctionInfo{7, &IClkrstSession::SetClockRate, "SetClockRate"},
+            FunctionInfo{8, &IClkrstSession::GetClockRate, "GetClockRate"},
+            FunctionInfo{9, nullptr, "SetMinVClockRate"},
+            FunctionInfo{10, nullptr, "GetPossibleClockRates"},
+            FunctionInfo{11, nullptr, "GetDvfsTable"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -129,12 +129,12 @@ public:
     explicit CLKRST(Core::System& system_, const char* name) : ServiceFramework{system_, name} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &CLKRST::OpenSession, "OpenSession"},
-            {1, nullptr, "GetTemperatureThresholds"},
-            {2, nullptr, "SetTemperature"},
-            {3, nullptr, "GetModuleStateTable"},
-            {4, nullptr, "GetModuleStateTableEvent"},
-            {5, nullptr, "GetModuleStateTableMaxCount"}
+            FunctionInfo{0, &CLKRST::OpenSession, "OpenSession"},
+            FunctionInfo{1, nullptr, "GetTemperatureThresholds"},
+            FunctionInfo{2, nullptr, "SetTemperature"},
+            FunctionInfo{3, nullptr, "GetModuleStateTable"},
+            FunctionInfo{4, nullptr, "GetModuleStateTableEvent"},
+            FunctionInfo{5, nullptr, "GetModuleStateTableMaxCount"}
         };
         // clang-format on
 
@@ -160,7 +160,7 @@ public:
     explicit CLKRST_A(Core::System& system_) : ServiceFramework{system_, "clkrst:a"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "ReleaseControl"}
+            FunctionInfo{0, nullptr, "ReleaseControl"}
         };
         // clang-format on
 

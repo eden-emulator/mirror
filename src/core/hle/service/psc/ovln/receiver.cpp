@@ -13,11 +13,11 @@ IReceiver::IReceiver(Core::System& system_)
     : ServiceFramework{system_, "IReceiver"}, service_context{system_, "IReceiver"} {
     // clang-format off
         static const FunctionInfo functions[] = {
-            {0, D<&IReceiver::AddSource>, "AddSource"},
-            {1, D<&IReceiver::RemoveSource>, "RemoveSource"},
-            {2, D<&IReceiver::GetReceiveEventHandle>, "GetReceiveEventHandle"},
-            {3, D<&IReceiver::Receive>, "Receive"},
-            {4, D<&IReceiver::ReceiveWithTick>, "ReceiveWithTick"}
+            FunctionInfo{0, D<&IReceiver::AddSource>, "AddSource"},
+            FunctionInfo{1, D<&IReceiver::RemoveSource>, "RemoveSource"},
+            FunctionInfo{2, D<&IReceiver::GetReceiveEventHandle>, "GetReceiveEventHandle"},
+            FunctionInfo{3, D<&IReceiver::Receive>, "Receive"},
+            FunctionInfo{4, D<&IReceiver::ReceiveWithTick>, "ReceiveWithTick"}
         };
     // clang-format on
 

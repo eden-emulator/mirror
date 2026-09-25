@@ -21,13 +21,13 @@ public:
         : ServiceFramework{system_, "I2CSession"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "SendOld"},
-            {1, nullptr, "ReceiveOld"},
-            {2, nullptr, "ExecuteCommandListOld"},
-            {10, C<&I2CSession::Send>, "Send"},
-            {11, nullptr, "Receive"},
-            {12, nullptr, "ExecuteCommandList"},
-            {13, nullptr, "SetRetryPolicy"}
+            FunctionInfo{0, nullptr, "SendOld"},
+            FunctionInfo{1, nullptr, "ReceiveOld"},
+            FunctionInfo{2, nullptr, "ExecuteCommandListOld"},
+            FunctionInfo{10, C<&I2CSession::Send>, "Send"},
+            FunctionInfo{11, nullptr, "Receive"},
+            FunctionInfo{12, nullptr, "ExecuteCommandList"},
+            FunctionInfo{13, nullptr, "SetRetryPolicy"}
         };
         RegisterHandlers(functions);
     }
@@ -49,11 +49,11 @@ public:
         : ServiceFramework{system_, "i2c"}
     {
         static const FunctionInfo functions[] = {
-            {0, C<&I2C::OpenSessionForDev>, "OpenSessionForDev"},
-            {1, C<&I2C::OpenSession>, "OpenSession"},
-            {2, C<&I2C::HasDevice>, "HasDevice"},
-            {3, C<&I2C::HasDeviceForDev>, "HasDeviceForDev"},
-            {4, C<&I2C::OpenSession2>, "OpenSession2"}
+            FunctionInfo{0, C<&I2C::OpenSessionForDev>, "OpenSessionForDev"},
+            FunctionInfo{1, C<&I2C::OpenSession>, "OpenSession"},
+            FunctionInfo{2, C<&I2C::HasDevice>, "HasDevice"},
+            FunctionInfo{3, C<&I2C::HasDeviceForDev>, "HasDeviceForDev"},
+            FunctionInfo{4, C<&I2C::OpenSession2>, "OpenSession2"}
         };
         RegisterHandlers(functions);
     }

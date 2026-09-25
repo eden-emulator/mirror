@@ -52,14 +52,14 @@ public:
         : ServiceFramework{system_, "nvgem:c"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "Initialize"},
-            {1, nullptr, "GetEventHandle"},
-            {2, nullptr, "ControlNotification"},
-            {3, nullptr, "SetNotificationPerm"},
-            {4, nullptr, "SetCoreDumpPerm"},
-            {5, nullptr, "GetAruid"},
-            {6, nullptr, "Reset"},
-            {7, nullptr, "GetAruid2"}
+            FunctionInfo{0, nullptr, "Initialize"},
+            FunctionInfo{1, nullptr, "GetEventHandle"},
+            FunctionInfo{2, nullptr, "ControlNotification"},
+            FunctionInfo{3, nullptr, "SetNotificationPerm"},
+            FunctionInfo{4, nullptr, "SetCoreDumpPerm"},
+            FunctionInfo{5, nullptr, "GetAruid"},
+            FunctionInfo{6, nullptr, "Reset"},
+            FunctionInfo{7, nullptr, "GetAruid2"}
         };
         RegisterHandlers(functions);
     }
@@ -71,11 +71,11 @@ public:
         : ServiceFramework{system_, "nvgem:cd"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "Initialize"},
-            {1, nullptr, "GetAruid"},
-            {2, nullptr, "ReadNextBlock"},
-            {3, nullptr, "GetNextBlockSize"},
-            {4, nullptr, "ReadNextBlock2"}
+            FunctionInfo{0, nullptr, "Initialize"},
+            FunctionInfo{1, nullptr, "GetAruid"},
+            FunctionInfo{2, nullptr, "ReadNextBlock"},
+            FunctionInfo{3, nullptr, "GetNextBlockSize"},
+            FunctionInfo{4, nullptr, "ReadNextBlock2"}
         };
         RegisterHandlers(functions);
     }
@@ -87,15 +87,15 @@ public:
         : ServiceFramework{system_, "nvdbg:d"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "Open"},
-            {1, nullptr, "Ioctl"},
-            {2, nullptr, "Close"},
-            {4, nullptr, "QueryEvent"},
-            {9, nullptr, "DumpStatus"},
-            {10, nullptr, "InitializeDevtools"},
-            {11, nullptr, "Ioctl2"},
-            {12, nullptr, "Ioctl3"},
-            {13, nullptr, "SetConfiguration"}
+            FunctionInfo{0, nullptr, "Open"},
+            FunctionInfo{1, nullptr, "Ioctl"},
+            FunctionInfo{2, nullptr, "Close"},
+            FunctionInfo{4, nullptr, "QueryEvent"},
+            FunctionInfo{9, nullptr, "DumpStatus"},
+            FunctionInfo{10, nullptr, "InitializeDevtools"},
+            FunctionInfo{11, nullptr, "Ioctl2"},
+            FunctionInfo{12, nullptr, "Ioctl3"},
+            FunctionInfo{13, nullptr, "SetConfiguration"}
         };
         RegisterHandlers(functions);
     }

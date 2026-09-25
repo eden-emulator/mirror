@@ -17,9 +17,9 @@ public:
     explicit ISession(Core::System& system_, Controller& controller_)
         : ServiceFramework{system_, "ISession"}, controller{controller_} {
         static const FunctionInfo functions[] = {
-            {0, &ISession::SetPerformanceConfiguration, "SetPerformanceConfiguration"},
-            {1, &ISession::GetPerformanceConfiguration, "GetPerformanceConfiguration"},
-            {2, &ISession::SetCpuOverclockEnabled, "SetCpuOverclockEnabled"}
+            FunctionInfo{0, &ISession::SetPerformanceConfiguration, "SetPerformanceConfiguration"},
+            FunctionInfo{1, &ISession::GetPerformanceConfiguration, "GetPerformanceConfiguration"},
+            FunctionInfo{2, &ISession::SetCpuOverclockEnabled, "SetCpuOverclockEnabled"}
         };
         RegisterHandlers(functions);
     }

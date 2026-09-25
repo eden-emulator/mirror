@@ -167,9 +167,9 @@ public:
         : ServiceFramework{system_, "IRegistrar"}, issue_process_id{std::move(issuer)} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IRegistrar::Issue, "Issue"},
-            {1, &IRegistrar::SetApplicationLaunchProperty, "SetApplicationLaunchProperty"},
-            {2, &IRegistrar::SetApplicationControlProperty, "SetApplicationControlProperty"}
+            FunctionInfo{0, &IRegistrar::Issue, "Issue"},
+            FunctionInfo{1, &IRegistrar::SetApplicationLaunchProperty, "SetApplicationLaunchProperty"},
+            FunctionInfo{2, &IRegistrar::SetApplicationControlProperty, "SetApplicationControlProperty"}
         };
         // clang-format on
 
@@ -248,9 +248,9 @@ ARP_W::ARP_W(Core::System& system_, ARPManager& manager_)
     : ServiceFramework{system_, "arp:w"}, manager{manager_} {
     // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &ARP_W::AcquireRegistrar, "AcquireRegistrar"},
-            {1, &ARP_W::UnregisterApplicationInstance , "UnregisterApplicationInstance "},
-            {2, nullptr, "AcquireUpdater"}
+            FunctionInfo{0, &ARP_W::AcquireRegistrar, "AcquireRegistrar"},
+            FunctionInfo{1, &ARP_W::UnregisterApplicationInstance , "UnregisterApplicationInstance "},
+            FunctionInfo{2, nullptr, "AcquireUpdater"}
         };
     // clang-format on
 

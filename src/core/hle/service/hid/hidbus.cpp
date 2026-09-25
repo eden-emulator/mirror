@@ -31,20 +31,20 @@ Hidbus::Hidbus(Core::System& system_)
 
     // clang-format off
     static const FunctionInfo functions[] = {
-            {1, C<&Hidbus::GetBusHandle>, "GetBusHandle"},
-            {2, C<&Hidbus::IsExternalDeviceConnected>, "IsExternalDeviceConnected"},
-            {3, C<&Hidbus::Initialize>, "Initialize"},
-            {4, C<&Hidbus::Finalize>, "Finalize"},
-            {5, C<&Hidbus::EnableExternalDevice>, "EnableExternalDevice"},
-            {6, C<&Hidbus::GetExternalDeviceId>, "GetExternalDeviceId"},
-            {7, C<&Hidbus::SendCommandAsync>, "SendCommandAsync"},
-            {8, C<&Hidbus::GetSendCommandAsynceResult>, "GetSendCommandAsynceResult"},
-            {9, C<&Hidbus::SetEventForSendCommandAsycResult>, "SetEventForSendCommandAsycResult"},
-            {10, C<&Hidbus::GetSharedMemoryHandle>, "GetSharedMemoryHandle"},
-            {11, C<&Hidbus::EnableJoyPollingReceiveMode>, "EnableJoyPollingReceiveMode"},
-            {12, C<&Hidbus::DisableJoyPollingReceiveMode>, "DisableJoyPollingReceiveMode"},
-            {13, nullptr, "GetPollingData"},
-            {14, C<&Hidbus::SetStatusManagerType>, "SetStatusManagerType"},
+            FunctionInfo{1, C<&Hidbus::GetBusHandle>, "GetBusHandle"},
+            FunctionInfo{2, C<&Hidbus::IsExternalDeviceConnected>, "IsExternalDeviceConnected"},
+            FunctionInfo{3, C<&Hidbus::Initialize>, "Initialize"},
+            FunctionInfo{4, C<&Hidbus::Finalize>, "Finalize"},
+            FunctionInfo{5, C<&Hidbus::EnableExternalDevice>, "EnableExternalDevice"},
+            FunctionInfo{6, C<&Hidbus::GetExternalDeviceId>, "GetExternalDeviceId"},
+            FunctionInfo{7, C<&Hidbus::SendCommandAsync>, "SendCommandAsync"},
+            FunctionInfo{8, C<&Hidbus::GetSendCommandAsynceResult>, "GetSendCommandAsynceResult"},
+            FunctionInfo{9, C<&Hidbus::SetEventForSendCommandAsycResult>, "SetEventForSendCommandAsycResult"},
+            FunctionInfo{10, C<&Hidbus::GetSharedMemoryHandle>, "GetSharedMemoryHandle"},
+            FunctionInfo{11, C<&Hidbus::EnableJoyPollingReceiveMode>, "EnableJoyPollingReceiveMode"},
+            FunctionInfo{12, C<&Hidbus::DisableJoyPollingReceiveMode>, "DisableJoyPollingReceiveMode"},
+            FunctionInfo{13, nullptr, "GetPollingData"},
+            FunctionInfo{14, C<&Hidbus::SetStatusManagerType>, "SetStatusManagerType"},
     };
     // clang-format on
 

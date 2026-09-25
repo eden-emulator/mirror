@@ -24,11 +24,11 @@ public:
         : ServiceFramework{system_, "IPsmSession"}, service_context{system_, "IPsmSession"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IPsmSession::BindStateChangeEvent, "BindStateChangeEvent"},
-            {1, &IPsmSession::UnbindStateChangeEvent, "UnbindStateChangeEvent"},
-            {2, &IPsmSession::SetChargerTypeChangeEventEnabled, "SetChargerTypeChangeEventEnabled"},
-            {3, &IPsmSession::SetPowerSupplyChangeEventEnabled, "SetPowerSupplyChangeEventEnabled"},
-            {4, &IPsmSession::SetBatteryVoltageStateChangeEventEnabled, "SetBatteryVoltageStateChangeEventEnabled"}
+            FunctionInfo{0, &IPsmSession::BindStateChangeEvent, "BindStateChangeEvent"},
+            FunctionInfo{1, &IPsmSession::UnbindStateChangeEvent, "UnbindStateChangeEvent"},
+            FunctionInfo{2, &IPsmSession::SetChargerTypeChangeEventEnabled, "SetChargerTypeChangeEventEnabled"},
+            FunctionInfo{3, &IPsmSession::SetPowerSupplyChangeEventEnabled, "SetPowerSupplyChangeEventEnabled"},
+            FunctionInfo{4, &IPsmSession::SetBatteryVoltageStateChangeEventEnabled, "SetBatteryVoltageStateChangeEventEnabled"}
         };
         // clang-format on
 

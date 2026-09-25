@@ -32,32 +32,32 @@ IBcatService::IBcatService(Core::System& system_, BcatBackend& backend_, u64 pro
       }} {
     // clang-format off
         static const FunctionInfo functions[] = {
-            {10100, D<&IBcatService::RequestSyncDeliveryCache>, "RequestSyncDeliveryCache"},
-            {10101, D<&IBcatService::RequestSyncDeliveryCacheWithDirectoryName>, "RequestSyncDeliveryCacheWithDirectoryName"},
-            {10200, nullptr, "CancelSyncDeliveryCacheRequest"},
-            {20100, nullptr, "RequestSyncDeliveryCacheWithApplicationId"},
-            {20101, nullptr, "RequestSyncDeliveryCacheWithApplicationIdAndDirectoryName"},
-            {20300, nullptr, "GetDeliveryCacheStorageUpdateNotifier"},
-            {20301, nullptr, "RequestSuspendDeliveryTask"},
-            {20400, nullptr, "RegisterSystemApplicationDeliveryTask"},
-            {20401, nullptr, "UnregisterSystemApplicationDeliveryTask"},
-            {20410, nullptr, "SetSystemApplicationDeliveryTaskTimer"},
-            {30100, D<&IBcatService::SetPassphrase>, "SetPassphrase"},
-            {30101, nullptr, "Unknown30101"}, //2.0.0-2.3.0
-            {30102, nullptr, "Unknown30102"}, //2.0.0-2.3.0
-            {30200, nullptr, "RegisterBackgroundDeliveryTask"},
-            {30201, nullptr, "UnregisterBackgroundDeliveryTask"},
-            {30202, nullptr, "BlockDeliveryTask"},
-            {30203, nullptr, "UnblockDeliveryTask"},
-            {30210, nullptr, "SetDeliveryTaskTimer"},
-            {30300, D<&IBcatService::RegisterSystemApplicationDeliveryTasks>, "RegisterSystemApplicationDeliveryTasks"},
-            {90100, nullptr, "GetDeliveryTaskList"},
-            {90101, nullptr, "GetDeliveryTaskListForSystem"}, //11.0.0+
-            {90200, nullptr, "GetDeliveryList"},
-            {90201, D<&IBcatService::ClearDeliveryCacheStorage>, "ClearDeliveryCacheStorage"},
-            {90202, nullptr, "ClearDeliveryTaskSubscriptionStatus"},
-            {90300, nullptr, "GetPushNotificationLog"},
-            {90301, nullptr, "GetDeliveryCacheStorageUsage"}, //11.0.0+
+            FunctionInfo{10100, D<&IBcatService::RequestSyncDeliveryCache>, "RequestSyncDeliveryCache"},
+            FunctionInfo{10101, D<&IBcatService::RequestSyncDeliveryCacheWithDirectoryName>, "RequestSyncDeliveryCacheWithDirectoryName"},
+            FunctionInfo{10200, nullptr, "CancelSyncDeliveryCacheRequest"},
+            FunctionInfo{20100, nullptr, "RequestSyncDeliveryCacheWithApplicationId"},
+            FunctionInfo{20101, nullptr, "RequestSyncDeliveryCacheWithApplicationIdAndDirectoryName"},
+            FunctionInfo{20300, nullptr, "GetDeliveryCacheStorageUpdateNotifier"},
+            FunctionInfo{20301, nullptr, "RequestSuspendDeliveryTask"},
+            FunctionInfo{20400, nullptr, "RegisterSystemApplicationDeliveryTask"},
+            FunctionInfo{20401, nullptr, "UnregisterSystemApplicationDeliveryTask"},
+            FunctionInfo{20410, nullptr, "SetSystemApplicationDeliveryTaskTimer"},
+            FunctionInfo{30100, D<&IBcatService::SetPassphrase>, "SetPassphrase"},
+            FunctionInfo{30101, nullptr, "Unknown30101"}, //2.0.0-2.3.0
+            FunctionInfo{30102, nullptr, "Unknown30102"}, //2.0.0-2.3.0
+            FunctionInfo{30200, nullptr, "RegisterBackgroundDeliveryTask"},
+            FunctionInfo{30201, nullptr, "UnregisterBackgroundDeliveryTask"},
+            FunctionInfo{30202, nullptr, "BlockDeliveryTask"},
+            FunctionInfo{30203, nullptr, "UnblockDeliveryTask"},
+            FunctionInfo{30210, nullptr, "SetDeliveryTaskTimer"},
+            FunctionInfo{30300, D<&IBcatService::RegisterSystemApplicationDeliveryTasks>, "RegisterSystemApplicationDeliveryTasks"},
+            FunctionInfo{90100, nullptr, "GetDeliveryTaskList"},
+            FunctionInfo{90101, nullptr, "GetDeliveryTaskListForSystem"}, //11.0.0+
+            FunctionInfo{90200, nullptr, "GetDeliveryList"},
+            FunctionInfo{90201, D<&IBcatService::ClearDeliveryCacheStorage>, "ClearDeliveryCacheStorage"},
+            FunctionInfo{90202, nullptr, "ClearDeliveryTaskSubscriptionStatus"},
+            FunctionInfo{90300, nullptr, "GetPushNotificationLog"},
+            FunctionInfo{90301, nullptr, "GetDeliveryCacheStorageUsage"}, //11.0.0+
         };
     // clang-format on
     RegisterHandlers(functions);

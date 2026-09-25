@@ -25,7 +25,7 @@ public:
     : ServiceFramework{system_, "hid:tmp"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetConsoleSixAxisSensorCalibrationValues"}
+            FunctionInfo{0, nullptr, "GetConsoleSixAxisSensorCalibrationValues"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -39,11 +39,11 @@ public:
     : ServiceFramework{system_, "ahid:cd"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "AcquireDevice"},
-            {1, nullptr, "ReleaseDevice"},
-            {2, nullptr, "GetCtrlSession"},
-            {3, nullptr, "GetReadSession"},
-            {4, nullptr, "GetWriteSession"}
+            FunctionInfo{0, nullptr, "AcquireDevice"},
+            FunctionInfo{1, nullptr, "ReleaseDevice"},
+            FunctionInfo{2, nullptr, "GetCtrlSession"},
+            FunctionInfo{3, nullptr, "GetReadSession"},
+            FunctionInfo{4, nullptr, "GetWriteSession"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -57,12 +57,12 @@ public:
     : ServiceFramework{system_, "ahid:hdr"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetDeviceEntries"},
-            {1, nullptr, "GetDeviceList"},
-            {2, nullptr, "GetDeviceParameters"},
-            {3, nullptr, "AttachDevice"},
-            {4, nullptr, "DetachDevice"},
-            {5, nullptr, "SetDeviceFilter"}
+            FunctionInfo{0, nullptr, "GetDeviceEntries"},
+            FunctionInfo{1, nullptr, "GetDeviceList"},
+            FunctionInfo{2, nullptr, "GetDeviceParameters"},
+            FunctionInfo{3, nullptr, "AttachDevice"},
+            FunctionInfo{4, nullptr, "DetachDevice"},
+            FunctionInfo{5, nullptr, "SetDeviceFilter"}
         };
         // clang-format on
         RegisterHandlers(functions);

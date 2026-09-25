@@ -24,12 +24,12 @@ public:
         : ServiceFramework{system_, "audout:a"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "RequestSuspend"},
-            {1, nullptr, "RequestResume"},
-            {2, nullptr, "GetProcessMasterVolume"},
-            {3, nullptr, "SetProcessMasterVolume"},
-            {4, nullptr, "GetProcessRecordVolume"},
-            {5, nullptr, "SetProcessRecordVolume"}
+            FunctionInfo{0, nullptr, "RequestSuspend"},
+            FunctionInfo{1, nullptr, "RequestResume"},
+            FunctionInfo{2, nullptr, "GetProcessMasterVolume"},
+            FunctionInfo{3, nullptr, "SetProcessMasterVolume"},
+            FunctionInfo{4, nullptr, "GetProcessRecordVolume"},
+            FunctionInfo{5, nullptr, "SetProcessRecordVolume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -42,11 +42,11 @@ public:
         : ServiceFramework{system_, "auddev"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetDspStatistics"},
-            {1, nullptr, "GetAppletStateSummaries"},
-            {2, nullptr, "SetDspStatisticsParameter"},
-            {3, nullptr, "GetDspStatisticsParameter"},
-            {6, nullptr, "GetDspUsage"}
+            FunctionInfo{0, nullptr, "GetDspStatistics"},
+            FunctionInfo{1, nullptr, "GetAppletStateSummaries"},
+            FunctionInfo{2, nullptr, "SetDspStatisticsParameter"},
+            FunctionInfo{3, nullptr, "GetDspStatisticsParameter"},
+            FunctionInfo{6, nullptr, "GetDspUsage"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -59,10 +59,10 @@ public:
         : ServiceFramework{system_, "audin:a"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "RequestSuspend"},
-            {1, nullptr, "RequestResume"},
-            {2, nullptr, "GetProcessMasterVolume"},
-            {3, nullptr, "SetProcessMasterVolume"}
+            FunctionInfo{0, nullptr, "RequestSuspend"},
+            FunctionInfo{1, nullptr, "RequestResume"},
+            FunctionInfo{2, nullptr, "GetProcessMasterVolume"},
+            FunctionInfo{3, nullptr, "SetProcessMasterVolume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -75,14 +75,14 @@ public:
         : ServiceFramework{system_, "audren:a"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "RequestSuspend"},
-            {1, nullptr, "RequestResume"},
-            {2, nullptr, "GetProcessMasterVolume"},
-            {3, nullptr, "SetProcessMasterVolume"},
-            {4, nullptr, "RegisterAppletResourceUserId"},
-            {5, nullptr, "UnregisterAppletResourceUserId"},
-            {6, nullptr, "GetProcessRecordVolume"},
-            {7, nullptr, "SetProcessRecordVolume"}
+            FunctionInfo{0, nullptr, "RequestSuspend"},
+            FunctionInfo{1, nullptr, "RequestResume"},
+            FunctionInfo{2, nullptr, "GetProcessMasterVolume"},
+            FunctionInfo{3, nullptr, "SetProcessMasterVolume"},
+            FunctionInfo{4, nullptr, "RegisterAppletResourceUserId"},
+            FunctionInfo{5, nullptr, "UnregisterAppletResourceUserId"},
+            FunctionInfo{6, nullptr, "GetProcessRecordVolume"},
+            FunctionInfo{7, nullptr, "SetProcessRecordVolume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -95,8 +95,8 @@ public:
         : ServiceFramework{system_, "audout:d"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "RequestSuspend"},
-            {1, nullptr, "RequestResume"}
+            FunctionInfo{0, nullptr, "RequestSuspend"},
+            FunctionInfo{1, nullptr, "RequestResume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -109,8 +109,8 @@ public:
         : ServiceFramework{system_, "audin:d"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "RequestSuspend"},
-            {1, nullptr, "RequestResume"}
+            FunctionInfo{0, nullptr, "RequestSuspend"},
+            FunctionInfo{1, nullptr, "RequestResume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -123,8 +123,8 @@ public:
         : ServiceFramework{system_, "audrec:d"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "RequestSuspend"},
-            {1, nullptr, "RequestResume"}
+            FunctionInfo{0, nullptr, "RequestSuspend"},
+            FunctionInfo{1, nullptr, "RequestResume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -137,8 +137,8 @@ public:
         : ServiceFramework{system_, "audren:d"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "RequestSuspend"},
-            {1, nullptr, "RequestResume"}
+            FunctionInfo{0, nullptr, "RequestSuspend"},
+            FunctionInfo{1, nullptr, "RequestResume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -151,17 +151,17 @@ public:
         : ServiceFramework{system_, "aud:a"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "RegisterAppletResourceUserId"},
-            {1, nullptr, "UnregisterAppletResourceUserId"},
-            {2, nullptr, "RequestSuspendAudio"},
-            {3, nullptr, "RequestResumeAudio"},
-            {4, nullptr, "GetAudioOutputProcessMasterVolume"},
-            {5, nullptr, "SetAudioOutputProcessMasterVolume"},
-            {6, nullptr, "GetAudioInputProcessMasterVolume"},
-            {7, nullptr, "SetAudioInputProcessMasterVolume"},
-            {8, nullptr, "GetAudioOutputProcessRecordVolume"},
-            {9, nullptr, "SetAudioOutputProcessRecordVolume"},
-            {10, nullptr, "GetAppletStateSummaries"}
+            FunctionInfo{0, nullptr, "RegisterAppletResourceUserId"},
+            FunctionInfo{1, nullptr, "UnregisterAppletResourceUserId"},
+            FunctionInfo{2, nullptr, "RequestSuspendAudio"},
+            FunctionInfo{3, nullptr, "RequestResumeAudio"},
+            FunctionInfo{4, nullptr, "GetAudioOutputProcessMasterVolume"},
+            FunctionInfo{5, nullptr, "SetAudioOutputProcessMasterVolume"},
+            FunctionInfo{6, nullptr, "GetAudioInputProcessMasterVolume"},
+            FunctionInfo{7, nullptr, "SetAudioInputProcessMasterVolume"},
+            FunctionInfo{8, nullptr, "GetAudioOutputProcessRecordVolume"},
+            FunctionInfo{9, nullptr, "SetAudioOutputProcessRecordVolume"},
+            FunctionInfo{10, nullptr, "GetAppletStateSummaries"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -174,8 +174,8 @@ public:
         : ServiceFramework{system_, "aud:d"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "RequestSuspendAudioForDebug"},
-            {1, nullptr, "RequestResumeAudioForDebug"}
+            FunctionInfo{0, nullptr, "RequestSuspendAudioForDebug"},
+            FunctionInfo{1, nullptr, "RequestResumeAudioForDebug"}
         };
         // clang-format on
         RegisterHandlers(functions);

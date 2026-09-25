@@ -52,14 +52,14 @@ public:
     explicit MM_U(Core::System& system_) : ServiceFramework{system_, "mm:u"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &MM_U::InitializeOld, "InitializeOld"},
-            {1, &MM_U::FinalizeOld, "FinalizeOld"},
-            {2, &MM_U::SetAndWaitOld, "SetAndWaitOld"},
-            {3, &MM_U::GetOld, "GetOld"},
-            {4, &MM_U::Initialize, "Initialize"},
-            {5, &MM_U::Finalize, "Finalize"},
-            {6, &MM_U::SetAndWait, "SetAndWait"},
-            {7, &MM_U::Get, "Get"}
+            FunctionInfo{0, &MM_U::InitializeOld, "InitializeOld"},
+            FunctionInfo{1, &MM_U::FinalizeOld, "FinalizeOld"},
+            FunctionInfo{2, &MM_U::SetAndWaitOld, "SetAndWaitOld"},
+            FunctionInfo{3, &MM_U::GetOld, "GetOld"},
+            FunctionInfo{4, &MM_U::Initialize, "Initialize"},
+            FunctionInfo{5, &MM_U::Finalize, "Finalize"},
+            FunctionInfo{6, &MM_U::SetAndWait, "SetAndWait"},
+            FunctionInfo{7, &MM_U::Get, "Get"}
         };
         // clang-format on
 

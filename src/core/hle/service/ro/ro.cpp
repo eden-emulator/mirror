@@ -512,12 +512,12 @@ public:
 
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0,  C<&RoInterface::MapManualLoadModuleMemory>, "MapManualLoadModuleMemory"},
-            {1,  C<&RoInterface::UnmapManualLoadModuleMemory>, "UnmapManualLoadModuleMemory"},
-            {2,  C<&RoInterface::RegisterModuleInfo>, "RegisterModuleInfo"},
-            {3,  C<&RoInterface::UnregisterModuleInfo>, "UnregisterModuleInfo"},
-            {4,  C<&RoInterface::RegisterProcessHandle>, "RegisterProcessHandle"},
-            {10, C<&RoInterface::RegisterProcessModuleInfo>, "RegisterProcessModuleInfo"}
+            FunctionInfo{0,  C<&RoInterface::MapManualLoadModuleMemory>, "MapManualLoadModuleMemory"},
+            FunctionInfo{1,  C<&RoInterface::UnmapManualLoadModuleMemory>, "UnmapManualLoadModuleMemory"},
+            FunctionInfo{2,  C<&RoInterface::RegisterModuleInfo>, "RegisterModuleInfo"},
+            FunctionInfo{3,  C<&RoInterface::UnregisterModuleInfo>, "UnregisterModuleInfo"},
+            FunctionInfo{4,  C<&RoInterface::RegisterProcessHandle>, "RegisterProcessHandle"},
+            FunctionInfo{10, C<&RoInterface::RegisterProcessModuleInfo>, "RegisterProcessModuleInfo"}
         };
         // clang-format on
 
