@@ -38,12 +38,12 @@ IQueryService::IQueryService(Core::System& system_) : ServiceFramework{system_, 
         {17, D<&IQueryService::QueryLastPlayTime>, "QueryLastPlayTime"},
         {18, D<&IQueryService::QueryApplicationPlayStatisticsForSystem>, "QueryApplicationPlayStatisticsForSystem"},
         {19, D<&IQueryService::QueryApplicationPlayStatisticsByUserAccountIdForSystem>, "QueryApplicationPlayStatisticsByUserAccountIdForSystem"},
-        { 30, nullptr, "Cmd30" },
-        { 31, nullptr, "Cmd31" },
-        { 100, nullptr, "Cmd100" },
-        { 110, nullptr, "Cmd110" },
-        { 118, nullptr, "Cmd118" },
-        { 119, nullptr, "Cmd119" },
+        FunctionInfo{30, nullptr, "Cmd30" },
+        FunctionInfo{31, nullptr, "Cmd31" },
+        FunctionInfo{100, nullptr, "Cmd100" },
+        FunctionInfo{110, nullptr, "Cmd110" },
+        FunctionInfo{118, nullptr, "Cmd118" },
+        FunctionInfo{119, nullptr, "Cmd119" },
     };
     // clang-format on
 

@@ -505,11 +505,12 @@ private:
 
 class RoInterface : public ServiceFramework<RoInterface> {
 public:
-    explicit RoInterface(Core::System& system_, const char* name_, std::shared_ptr<RoContext> ro,
-                         NrrKind nrr_kind)
-        : ServiceFramework{system_, name_}, m_ro(ro), m_context_id(InvalidContextId),
-          m_nrr_kind(nrr_kind) {
-
+    explicit RoInterface(Core::System& system_, const char* name_, std::shared_ptr<RoContext> ro, NrrKind nrr_kind)
+        : ServiceFramework{system_, name_}
+        , m_ro(ro)
+        , m_context_id(InvalidContextId)
+        , m_nrr_kind(nrr_kind)
+    {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
@@ -576,7 +577,7 @@ public:
         : ServiceFramework{system_, "ro:dmnt"}
     {
         static const FunctionInfo functions[] = {
-            { 0, nullptr, "GetProcessModuleInfo" },
+            FunctionInfo{0, nullptr, "GetProcessModuleInfo" },
         };
         RegisterHandlers(functions);
     }
