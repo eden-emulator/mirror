@@ -38,7 +38,7 @@ IUserLocalCommunicationService::IUserLocalCommunicationService(Core::System& sys
             FunctionInfo{102, D<&IUserLocalCommunicationService::Scan>, "Scan"},
             FunctionInfo{103, D<&IUserLocalCommunicationService::ScanPrivate>, "ScanPrivate"},
             FunctionInfo{104, D<&IUserLocalCommunicationService::SetWirelessControllerRestriction>, "SetWirelessControllerRestriction"},
-            { 106, D<&IUserLocalCommunicationService::SetProtocol>, "SetProtocol" },
+            FunctionInfo{106, D<&IUserLocalCommunicationService::SetProtocol>, "SetProtocol" },
             FunctionInfo{200, D<&IUserLocalCommunicationService::OpenAccessPoint>, "OpenAccessPoint"},
             FunctionInfo{201, D<&IUserLocalCommunicationService::CloseAccessPoint>, "CloseAccessPoint"},
             FunctionInfo{202, D<&IUserLocalCommunicationService::CreateNetwork>, "CreateNetwork"},

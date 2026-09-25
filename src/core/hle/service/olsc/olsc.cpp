@@ -18,7 +18,7 @@ public:
         : ServiceFramework{system_, "spbg:sp"}
     {
         static const FunctionInfo functions[] = {
-            { 100, nullptr, "OpenBgAgentController" },
+            FunctionInfo{100, nullptr, "OpenBgAgentController" },
         };
         RegisterHandlers(functions);
     }
