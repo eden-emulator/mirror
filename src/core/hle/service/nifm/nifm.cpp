@@ -236,11 +236,11 @@ public:
         : ServiceFramework{system_, "IScanRequest"}, svc_ctx{system_, "IScanRequest"} {
 
         static const FunctionInfo functions[] = {
-            {0, &IScanRequest::Submit, "Submit"},
-            {1, &IScanRequest::IsProcessing, "IsProcessing"},
-            {2, &IScanRequest::GetResult, "GetResult"},
-            {3, &IScanRequest::GetSystemEventReadableHandle, "GetSystemEventReadableHandle"},
-            {4, &IScanRequest::SetChannels, "SetChannels"}
+            FunctionInfo{0, &IScanRequest::Submit, "Submit"},
+            FunctionInfo{1, &IScanRequest::IsProcessing, "IsProcessing"},
+            FunctionInfo{2, &IScanRequest::GetResult, "GetResult"},
+            FunctionInfo{3, &IScanRequest::GetSystemEventReadableHandle, "GetSystemEventReadableHandle"},
+            FunctionInfo{4, &IScanRequest::SetChannels, "SetChannels"}
         };
         RegisterHandlers(functions);
 
@@ -343,32 +343,32 @@ public:
     explicit IRequest(Core::System& system_)
         : ServiceFramework{system_, "IRequest"}, service_context{system_, "IRequest"} {
         static const FunctionInfo functions[] = {
-            {0, &IRequest::GetRequestState, "GetRequestState"},
-            {1, &IRequest::GetResult, "GetResult"},
-            {2, &IRequest::GetSystemEventReadableHandles, "GetSystemEventReadableHandles"},
-            {3, &IRequest::Cancel, "Cancel"},
-            {4, &IRequest::Submit, "Submit"},
-            {5, nullptr, "SetRequirement"},
-            {6, &IRequest::SetRequirementPreset, "SetRequirementPreset"},
-            {8, nullptr, "SetPriority"},
-            {9, &IRequest::SetNetworkProfileId, "SetNetworkProfileId"},
-            {10, nullptr, "SetRejectable"},
-            {11, &IRequest::SetConnectionConfirmationOption, "SetConnectionConfirmationOption"},
-            {12, nullptr, "SetPersistent"},
-            {13, nullptr, "SetInstant"},
-            {14, nullptr, "SetSustainable"},
-            {15, nullptr, "SetRawPriority"},
-            {16, nullptr, "SetGreedy"},
-            {17, nullptr, "SetSharable"},
-            {18, nullptr, "SetRequirementByRevision"},
-            {19, nullptr, "GetRequirement"},
-            {20, nullptr, "GetRevision"},
-            {21, &IRequest::GetAppletInfo, "GetAppletInfo"},
-            {22, nullptr, "GetAdditionalInfo"},
-            {23, nullptr, "SetKeptInSleep"},
-            {24, nullptr, "RegisterSocketDescriptor"},
-            {25, nullptr, "UnregisterSocketDescriptor"},
-            {26, nullptr, "GetNetworkAccessStatus"}, //21.0.0+
+            FunctionInfo{0, &IRequest::GetRequestState, "GetRequestState"},
+            FunctionInfo{1, &IRequest::GetResult, "GetResult"},
+            FunctionInfo{2, &IRequest::GetSystemEventReadableHandles, "GetSystemEventReadableHandles"},
+            FunctionInfo{3, &IRequest::Cancel, "Cancel"},
+            FunctionInfo{4, &IRequest::Submit, "Submit"},
+            FunctionInfo{5, nullptr, "SetRequirement"},
+            FunctionInfo{6, &IRequest::SetRequirementPreset, "SetRequirementPreset"},
+            FunctionInfo{8, nullptr, "SetPriority"},
+            FunctionInfo{9, &IRequest::SetNetworkProfileId, "SetNetworkProfileId"},
+            FunctionInfo{10, nullptr, "SetRejectable"},
+            FunctionInfo{11, &IRequest::SetConnectionConfirmationOption, "SetConnectionConfirmationOption"},
+            FunctionInfo{12, nullptr, "SetPersistent"},
+            FunctionInfo{13, nullptr, "SetInstant"},
+            FunctionInfo{14, nullptr, "SetSustainable"},
+            FunctionInfo{15, nullptr, "SetRawPriority"},
+            FunctionInfo{16, nullptr, "SetGreedy"},
+            FunctionInfo{17, nullptr, "SetSharable"},
+            FunctionInfo{18, nullptr, "SetRequirementByRevision"},
+            FunctionInfo{19, nullptr, "GetRequirement"},
+            FunctionInfo{20, nullptr, "GetRevision"},
+            FunctionInfo{21, &IRequest::GetAppletInfo, "GetAppletInfo"},
+            FunctionInfo{22, nullptr, "GetAdditionalInfo"},
+            FunctionInfo{23, nullptr, "SetKeptInSleep"},
+            FunctionInfo{24, nullptr, "RegisterSocketDescriptor"},
+            FunctionInfo{25, nullptr, "UnregisterSocketDescriptor"},
+            FunctionInfo{26, nullptr, "GetNetworkAccessStatus"}, //21.0.0+
         };
         RegisterHandlers(functions);
 
@@ -510,9 +510,9 @@ class INetworkProfile final : public ServiceFramework<INetworkProfile> {
 public:
     explicit INetworkProfile(Core::System& system_) : ServiceFramework{system_, "INetworkProfile"} {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "Update"},
-            {1, nullptr, "PersistOld"},
-            {2, nullptr, "Persist"}
+            FunctionInfo{0, nullptr, "Update"},
+            FunctionInfo{1, nullptr, "PersistOld"},
+            FunctionInfo{2, nullptr, "Persist"}
         };
         RegisterHandlers(functions);
     }
@@ -1117,8 +1117,8 @@ public:
     explicit NetworkInterface(const char* name, Core::System& system_)
         : ServiceFramework{system_, name} {
         static const FunctionInfo functions[] = {
-            {4, &NetworkInterface::CreateGeneralServiceOld, "CreateGeneralServiceOld"},
-            {5, &NetworkInterface::CreateGeneralService, "CreateGeneralService"}
+            FunctionInfo{4, &NetworkInterface::CreateGeneralServiceOld, "CreateGeneralServiceOld"},
+            FunctionInfo{5, &NetworkInterface::CreateGeneralService, "CreateGeneralService"}
         };
         RegisterHandlers(functions);
     }

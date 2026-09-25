@@ -48,12 +48,12 @@ public:
         : ServiceFramework{system_, "ns:vm"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {1200, D<&IVulnerabilityManagerInterface::NeedsUpdateVulnerability>, "NeedsUpdateVulnerability"},
-            {1201, nullptr, "UpdateSafeSystemVersionForDebug"},
-            {1202, nullptr, "GetSafeSystemVersion"},
-            {3100, D<&IVulnerabilityManagerInterface::GetSafeSystemVersionCheckInfo>, "GetSafeSystemVersionCheckInfo"},
-            {3101, nullptr, "RequestUpdateSafeSystemVersionCheckInfo"},
-            {3102, D<&IVulnerabilityManagerInterface::ResetSafeSystemVersionCheckInfo>, "ResetSafeSystemVersionCheckInfo"}
+            FunctionInfo{1200, D<&IVulnerabilityManagerInterface::NeedsUpdateVulnerability>, "NeedsUpdateVulnerability"},
+            FunctionInfo{1201, nullptr, "UpdateSafeSystemVersionForDebug"},
+            FunctionInfo{1202, nullptr, "GetSafeSystemVersion"},
+            FunctionInfo{3100, D<&IVulnerabilityManagerInterface::GetSafeSystemVersionCheckInfo>, "GetSafeSystemVersionCheckInfo"},
+            FunctionInfo{3101, nullptr, "RequestUpdateSafeSystemVersionCheckInfo"},
+            FunctionInfo{3102, D<&IVulnerabilityManagerInterface::ResetSafeSystemVersionCheckInfo>, "ResetSafeSystemVersionCheckInfo"}
         };
         // clang-format on
         RegisterHandlers(functions);

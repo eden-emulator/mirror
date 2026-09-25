@@ -27,26 +27,26 @@ public:
         : ServiceFramework{system_, "ILocationResolver"}, storage{id} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "ResolveProgramPath"},
-            {1, nullptr, "RedirectProgramPath"},
-            {2, nullptr, "ResolveApplicationControlPath"},
-            {3, nullptr, "ResolveApplicationHtmlDocumentPath"},
-            {4, nullptr, "ResolveDataPath"},
-            {5, nullptr, "RedirectApplicationControlPath"},
-            {6, nullptr, "RedirectApplicationHtmlDocumentPath"},
-            {7, nullptr, "ResolveApplicationLegalInformationPath"},
-            {8, nullptr, "RedirectApplicationLegalInformationPath"},
-            {9, nullptr, "Refresh"},
-            {10, nullptr, "RedirectApplicationProgramPath"},
-            {11, nullptr, "ClearApplicationRedirection"},
-            {12, nullptr, "EraseProgramRedirection"},
-            {13, nullptr, "EraseApplicationControlRedirection"},
-            {14, nullptr, "EraseApplicationHtmlDocumentRedirection"},
-            {15, nullptr, "EraseApplicationLegalInformationRedirection"},
-            {16, nullptr, "ResolveProgramPathForDebug"},
-            {17, nullptr, "RedirectProgramPathForDebug"},
-            {18, nullptr, "RedirectApplicationProgramPathForDebug"},
-            {19, nullptr, "EraseProgramRedirectionForDebug"}
+            FunctionInfo{0, nullptr, "ResolveProgramPath"},
+            FunctionInfo{1, nullptr, "RedirectProgramPath"},
+            FunctionInfo{2, nullptr, "ResolveApplicationControlPath"},
+            FunctionInfo{3, nullptr, "ResolveApplicationHtmlDocumentPath"},
+            FunctionInfo{4, nullptr, "ResolveDataPath"},
+            FunctionInfo{5, nullptr, "RedirectApplicationControlPath"},
+            FunctionInfo{6, nullptr, "RedirectApplicationHtmlDocumentPath"},
+            FunctionInfo{7, nullptr, "ResolveApplicationLegalInformationPath"},
+            FunctionInfo{8, nullptr, "RedirectApplicationLegalInformationPath"},
+            FunctionInfo{9, nullptr, "Refresh"},
+            FunctionInfo{10, nullptr, "RedirectApplicationProgramPath"},
+            FunctionInfo{11, nullptr, "ClearApplicationRedirection"},
+            FunctionInfo{12, nullptr, "EraseProgramRedirection"},
+            FunctionInfo{13, nullptr, "EraseApplicationControlRedirection"},
+            FunctionInfo{14, nullptr, "EraseApplicationHtmlDocumentRedirection"},
+            FunctionInfo{15, nullptr, "EraseApplicationLegalInformationRedirection"},
+            FunctionInfo{16, nullptr, "ResolveProgramPathForDebug"},
+            FunctionInfo{17, nullptr, "RedirectProgramPathForDebug"},
+            FunctionInfo{18, nullptr, "RedirectApplicationProgramPathForDebug"},
+            FunctionInfo{19, nullptr, "EraseProgramRedirectionForDebug"}
         };
         // clang-format on
 
@@ -63,16 +63,16 @@ public:
         : ServiceFramework{system_, "IRegisteredLocationResolver"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "ResolveProgramPath"},
-            {1, nullptr, "RegisterProgramPath"},
-            {2, nullptr, "UnregisterProgramPath"},
-            {3, nullptr, "RedirectProgramPath"},
-            {4, nullptr, "ResolveHtmlDocumentPath"},
-            {5, nullptr, "RegisterHtmlDocumentPath"},
-            {6, nullptr, "UnregisterHtmlDocumentPath"},
-            {7, nullptr, "RedirectHtmlDocumentPath"},
-            {8, nullptr, "Refresh"},
-            {9, nullptr, "RefreshExcluding"}
+            FunctionInfo{0, nullptr, "ResolveProgramPath"},
+            FunctionInfo{1, nullptr, "RegisterProgramPath"},
+            FunctionInfo{2, nullptr, "UnregisterProgramPath"},
+            FunctionInfo{3, nullptr, "RedirectProgramPath"},
+            FunctionInfo{4, nullptr, "ResolveHtmlDocumentPath"},
+            FunctionInfo{5, nullptr, "RegisterHtmlDocumentPath"},
+            FunctionInfo{6, nullptr, "UnregisterHtmlDocumentPath"},
+            FunctionInfo{7, nullptr, "RedirectHtmlDocumentPath"},
+            FunctionInfo{8, nullptr, "Refresh"},
+            FunctionInfo{9, nullptr, "RefreshExcluding"}
         };
         // clang-format on
 
@@ -86,11 +86,11 @@ public:
         : ServiceFramework{system_, "IAddOnContentLocationResolver"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "ResolveAddOnContentPath"},
-            {1, nullptr, "RegisterAddOnContentStorage"},
-            {2, nullptr, "UnregisterAllAddOnContentPath"},
-            {3, nullptr, "RefreshApplicationAddOnContent"},
-            {4, nullptr, "UnregisterApplicationAddOnContent"}
+            FunctionInfo{0, nullptr, "ResolveAddOnContentPath"},
+            FunctionInfo{1, nullptr, "RegisterAddOnContentStorage"},
+            FunctionInfo{2, nullptr, "UnregisterAllAddOnContentPath"},
+            FunctionInfo{3, nullptr, "RefreshApplicationAddOnContent"},
+            FunctionInfo{4, nullptr, "UnregisterApplicationAddOnContent"}
         };
         // clang-format on
 
@@ -104,12 +104,12 @@ public:
         : ServiceFramework{system_, "IContentStorage"}, storage{id} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IContentStorage::GeneratePlaceHolderId, "GeneratePlaceHolderId"},
-            {1, &IContentStorage::CreatePlaceHolder, "CreatePlaceHolder"},
-            {2, &IContentStorage::DeletePlaceHolder, "DeletePlaceHolder"},
-            {4, &IContentStorage::WritePlaceHolder, "WritePlaceHolder"},
-            {5, &IContentStorage::Register, "Register"},
-            {6, &IContentStorage::Delete, "Delete"}
+            FunctionInfo{0, &IContentStorage::GeneratePlaceHolderId, "GeneratePlaceHolderId"},
+            FunctionInfo{1, &IContentStorage::CreatePlaceHolder, "CreatePlaceHolder"},
+            FunctionInfo{2, &IContentStorage::DeletePlaceHolder, "DeletePlaceHolder"},
+            FunctionInfo{4, &IContentStorage::WritePlaceHolder, "WritePlaceHolder"},
+            FunctionInfo{5, &IContentStorage::Register, "Register"},
+            FunctionInfo{6, &IContentStorage::Delete, "Delete"}
         };
         // clang-format on
 
@@ -261,10 +261,10 @@ public:
         : ServiceFramework{system_, "IContentMetaDatabase"}, storage{id} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IContentMetaDatabase::Set, "Set"},
-            {2, &IContentMetaDatabase::Remove, "Remove"},
-            {8, &IContentMetaDatabase::Has, "Has"},
-            {15, &IContentMetaDatabase::Commit, "Commit"}
+            FunctionInfo{0, &IContentMetaDatabase::Set, "Set"},
+            FunctionInfo{2, &IContentMetaDatabase::Remove, "Remove"},
+            FunctionInfo{8, &IContentMetaDatabase::Has, "Has"},
+            FunctionInfo{15, &IContentMetaDatabase::Commit, "Commit"}
         };
         // clang-format on
 
@@ -365,10 +365,10 @@ public:
     explicit LR(Core::System& system_) : ServiceFramework{system_, "lr"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "OpenLocationResolver"},
-            {1, nullptr, "OpenRegisteredLocationResolver"},
-            {2, nullptr, "RefreshLocationResolver"},
-            {3, nullptr, "OpenAddOnContentLocationResolver"}
+            FunctionInfo{0, nullptr, "OpenLocationResolver"},
+            FunctionInfo{1, nullptr, "OpenRegisteredLocationResolver"},
+            FunctionInfo{2, nullptr, "RefreshLocationResolver"},
+            FunctionInfo{3, nullptr, "OpenAddOnContentLocationResolver"}
         };
         // clang-format on
 
@@ -381,22 +381,22 @@ public:
     explicit NCM(Core::System& system_) : ServiceFramework{system_, "ncm"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "CreateContentStorage"},
-            {1, nullptr, "CreateContentMetaDatabase"},
-            {2, nullptr, "VerifyContentStorage"},
-            {3, nullptr, "VerifyContentMetaDatabase"},
-            {4, &NCM::OpenContentStorage, "OpenContentStorage"},
-            {5, &NCM::OpenContentMetaDatabase, "OpenContentMetaDatabase"},
-            {6, nullptr, "CloseContentStorageForcibly"},
-            {7, nullptr, "CloseContentMetaDatabaseForcibly"},
-            {8, nullptr, "CleanupContentMetaDatabase"},
-            {9, nullptr, "ActivateContentStorage"},
-            {10, nullptr, "InactivateContentStorage"},
-            {11, nullptr, "ActivateContentMetaDatabase"},
-            {12, nullptr, "InactivateContentMetaDatabase"},
-            {13, nullptr, "InvalidateRightsIdCache"},
-            {14, nullptr, "GetMemoryReport"},
-            {15, nullptr, "ActivateFsContentStorage"}
+            FunctionInfo{0, nullptr, "CreateContentStorage"},
+            FunctionInfo{1, nullptr, "CreateContentMetaDatabase"},
+            FunctionInfo{2, nullptr, "VerifyContentStorage"},
+            FunctionInfo{3, nullptr, "VerifyContentMetaDatabase"},
+            FunctionInfo{4, &NCM::OpenContentStorage, "OpenContentStorage"},
+            FunctionInfo{5, &NCM::OpenContentMetaDatabase, "OpenContentMetaDatabase"},
+            FunctionInfo{6, nullptr, "CloseContentStorageForcibly"},
+            FunctionInfo{7, nullptr, "CloseContentMetaDatabaseForcibly"},
+            FunctionInfo{8, nullptr, "CleanupContentMetaDatabase"},
+            FunctionInfo{9, nullptr, "ActivateContentStorage"},
+            FunctionInfo{10, nullptr, "InactivateContentStorage"},
+            FunctionInfo{11, nullptr, "ActivateContentMetaDatabase"},
+            FunctionInfo{12, nullptr, "InactivateContentMetaDatabase"},
+            FunctionInfo{13, nullptr, "InvalidateRightsIdCache"},
+            FunctionInfo{14, nullptr, "GetMemoryReport"},
+            FunctionInfo{15, nullptr, "ActivateFsContentStorage"}
         };
         // clang-format on
 
@@ -433,7 +433,7 @@ public:
         : ServiceFramework{system_, "ncm:v"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetSystemVersion"}
+            FunctionInfo{0, nullptr, "GetSystemVersion"}
         };
         RegisterHandlers(functions);
     }

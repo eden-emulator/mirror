@@ -23,7 +23,7 @@ public:
         : ServiceFramework{system_, "IClientProcessMonitor"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, D<&IClientProcessMonitor::RegisterClient>, "RegisterClient"}
+            FunctionInfo{0, D<&IClientProcessMonitor::RegisterClient>, "RegisterClient"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -41,7 +41,7 @@ public:
     explicit IMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:m"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, C<&IMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
+            FunctionInfo{0, C<&IMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -61,8 +61,8 @@ public:
     explicit ISystemServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:s"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, C<&ISystemServiceCreator::CreateSystemLocalCommunicationService>, "CreateSystemLocalCommunicationService"},
-            {1, C<&ISystemServiceCreator::CreateClientProcessMonitor>, "CreateClientProcessMonitor"} // 18.0.0+
+            FunctionInfo{0, C<&ISystemServiceCreator::CreateSystemLocalCommunicationService>, "CreateSystemLocalCommunicationService"},
+            FunctionInfo{1, C<&ISystemServiceCreator::CreateClientProcessMonitor>, "CreateClientProcessMonitor"} // 18.0.0+
         };
         // clang-format on
 
@@ -92,8 +92,8 @@ public:
     explicit IUserServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:u"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, D<&IUserServiceCreator::CreateUserLocalCommunicationService>, "CreateUserLocalCommunicationService"},
-            {1, D<&IUserServiceCreator::CreateClientProcessMonitor>, "CreateClientProcessMonitor"} // 18.0.0+
+            FunctionInfo{0, D<&IUserServiceCreator::CreateUserLocalCommunicationService>, "CreateUserLocalCommunicationService"},
+            FunctionInfo{1, D<&IUserServiceCreator::CreateClientProcessMonitor>, "CreateClientProcessMonitor"} // 18.0.0+
         };
         // clang-format on
 
@@ -124,8 +124,8 @@ public:
         : ServiceFramework{system_, name_}, is_system{is_system_} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, C<&ISfServiceCreator::CreateNetworkService>, "CreateNetworkService"},
-            {8, C<&ISfServiceCreator::CreateNetworkServiceMonitor>, "CreateNetworkServiceMonitor"}
+            FunctionInfo{0, C<&ISfServiceCreator::CreateNetworkService>, "CreateNetworkService"},
+            FunctionInfo{8, C<&ISfServiceCreator::CreateNetworkServiceMonitor>, "CreateNetworkServiceMonitor"}
         };
         // clang-format on
 
@@ -158,7 +158,7 @@ public:
     explicit ISfMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "lp2p:m"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, C<&ISfMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
+            FunctionInfo{0, C<&ISfMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
         };
         // clang-format on
 

@@ -17,11 +17,11 @@ public:
     explicit GRC(Core::System& system_) : ServiceFramework{system_, "grc:c"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {1, nullptr, "OpenContinuousRecorder"},
-            {2, nullptr, "OpenGameMovieTrimmer"},
-            {3, nullptr, "OpenOffscreenRecorder"},
-            {101, nullptr, "CreateMovieMaker"},
-            {9903, nullptr, "SetOffscreenRecordingMarker"}
+            FunctionInfo{1, nullptr, "OpenContinuousRecorder"},
+            FunctionInfo{2, nullptr, "OpenGameMovieTrimmer"},
+            FunctionInfo{3, nullptr, "OpenOffscreenRecorder"},
+            FunctionInfo{101, nullptr, "CreateMovieMaker"},
+            FunctionInfo{9903, nullptr, "SetOffscreenRecordingMarker"}
         };
         // clang-format on
 
@@ -34,9 +34,9 @@ public:
     explicit GRC_D(Core::System& system_) : ServiceFramework{system_, "grc:d"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {1, nullptr, "Initialize"},
-            {2, nullptr, "Transfer"},
-            {3, nullptr, "Cmd3"}
+            FunctionInfo{1, nullptr, "Initialize"},
+            FunctionInfo{2, nullptr, "Transfer"},
+            FunctionInfo{3, nullptr, "Cmd3"}
         };
         // clang-format on
         RegisterHandlers(functions);

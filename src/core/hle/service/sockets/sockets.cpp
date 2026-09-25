@@ -18,13 +18,13 @@ public:
         : ServiceFramework{system_, "ethc:c"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "Initialize"},
-            {1, nullptr, "Cancel"},
-            {2, nullptr, "GetResult"},
-            {3, nullptr, "GetMediaList"},
-            {4, nullptr, "SetMediaType"},
-            {5, nullptr, "GetMediaType"},
-            {6, nullptr, "GetMacAddress"}
+            FunctionInfo{0, nullptr, "Initialize"},
+            FunctionInfo{1, nullptr, "Cancel"},
+            FunctionInfo{2, nullptr, "GetResult"},
+            FunctionInfo{3, nullptr, "GetMediaList"},
+            FunctionInfo{4, nullptr, "SetMediaType"},
+            FunctionInfo{5, nullptr, "GetMediaType"},
+            FunctionInfo{6, nullptr, "GetMacAddress"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -37,11 +37,11 @@ public:
         : ServiceFramework{system_, "ethc:i"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetReadableHandle"},
-            {1, nullptr, "Cancel"},
-            {2, nullptr, "GetResult"},
-            {3, nullptr, "GetInterfaceList"},
-            {4, nullptr, "GetInterfaceCount"}
+            FunctionInfo{0, nullptr, "GetReadableHandle"},
+            FunctionInfo{1, nullptr, "Cancel"},
+            FunctionInfo{2, nullptr, "GetResult"},
+            FunctionInfo{3, nullptr, "GetInterfaceList"},
+            FunctionInfo{4, nullptr, "GetInterfaceCount"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -54,7 +54,7 @@ public:
         : ServiceFramework{system_, "eth:nd"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "CreateDriverService"}
+            FunctionInfo{0, nullptr, "CreateDriverService"}
         };
         // clang-format on
         RegisterHandlers(functions);

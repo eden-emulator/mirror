@@ -16,11 +16,11 @@ IPurchaseEventManager::IPurchaseEventManager(Core::System& system_)
                                                                           "IPurchaseEventManager"} {
     // clang-format off
         static const FunctionInfo functions[] = {
-            {0, D<&IPurchaseEventManager::SetDefaultDeliveryTarget>, "SetDefaultDeliveryTarget"},
-            {1, D<&IPurchaseEventManager::SetDeliveryTarget>, "SetDeliveryTarget"},
-            {2, D<&IPurchaseEventManager::GetPurchasedEvent>, "GetPurchasedEvent"},
-            {3, D<&IPurchaseEventManager::PopPurchasedProductInfo>, "PopPurchasedProductInfo"},
-            {4, D<&IPurchaseEventManager::PopPurchasedProductInfoWithUid>, "PopPurchasedProductInfoWithUid"}
+            FunctionInfo{0, D<&IPurchaseEventManager::SetDefaultDeliveryTarget>, "SetDefaultDeliveryTarget"},
+            FunctionInfo{1, D<&IPurchaseEventManager::SetDeliveryTarget>, "SetDeliveryTarget"},
+            FunctionInfo{2, D<&IPurchaseEventManager::GetPurchasedEvent>, "GetPurchasedEvent"},
+            FunctionInfo{3, D<&IPurchaseEventManager::PopPurchasedProductInfo>, "PopPurchasedProductInfo"},
+            FunctionInfo{4, D<&IPurchaseEventManager::PopPurchasedProductInfoWithUid>, "PopPurchasedProductInfoWithUid"}
         };
     // clang-format on
 

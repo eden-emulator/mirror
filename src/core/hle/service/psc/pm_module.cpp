@@ -11,11 +11,11 @@ namespace Service::PSC {
 IPmModule::IPmModule(Core::System& system_) : ServiceFramework{system_, "IPmModule"} {
     // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "Initialize"},
-            {1, nullptr, "GetRequest"},
-            {2, nullptr, "Acknowledge"},
-            {3, nullptr, "Finalize"},
-            {4, nullptr, "AcknowledgeEx"}
+            FunctionInfo{0, nullptr, "Initialize"},
+            FunctionInfo{1, nullptr, "GetRequest"},
+            FunctionInfo{2, nullptr, "Acknowledge"},
+            FunctionInfo{3, nullptr, "Finalize"},
+            FunctionInfo{4, nullptr, "AcknowledgeEx"}
         };
     // clang-format on
 

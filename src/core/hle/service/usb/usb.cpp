@@ -20,19 +20,19 @@ public:
     explicit IDsInterface(Core::System& system_) : ServiceFramework{system_, "IDsInterface"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "AddEndpoint"},
-            {1, nullptr, "GetSetupEvent"},
-            {2, nullptr, "GetSetupPacket"},
-            {3, nullptr, "Enable"},
-            {4, nullptr, "Disable"},
-            {5, nullptr, "CtrlIn"},
-            {6, nullptr, "CtrlOut"},
-            {7, nullptr, "GetCtrlInCompletionEvent"},
-            {8, nullptr, "GetCtrlInUrbReport"},
-            {9, nullptr, "GetCtrlOutCompletionEvent"},
-            {10, nullptr, "GetCtrlOutUrbReport"},
-            {11, nullptr, "CtrlStall"},
-            {12, nullptr, "AppendConfigurationData"}
+            FunctionInfo{0, nullptr, "AddEndpoint"},
+            FunctionInfo{1, nullptr, "GetSetupEvent"},
+            FunctionInfo{2, nullptr, "GetSetupPacket"},
+            FunctionInfo{3, nullptr, "Enable"},
+            FunctionInfo{4, nullptr, "Disable"},
+            FunctionInfo{5, nullptr, "CtrlIn"},
+            FunctionInfo{6, nullptr, "CtrlOut"},
+            FunctionInfo{7, nullptr, "GetCtrlInCompletionEvent"},
+            FunctionInfo{8, nullptr, "GetCtrlInUrbReport"},
+            FunctionInfo{9, nullptr, "GetCtrlOutCompletionEvent"},
+            FunctionInfo{10, nullptr, "GetCtrlOutUrbReport"},
+            FunctionInfo{11, nullptr, "CtrlStall"},
+            FunctionInfo{12, nullptr, "AppendConfigurationData"}
         };
         // clang-format on
 
@@ -45,7 +45,7 @@ public:
     explicit IDsRootSession(Core::System& system_) : ServiceFramework{system_, "usb:ds"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "OpenDsService"}
+            FunctionInfo{0, nullptr, "OpenDsService"}
         };
         // clang-format on
 
@@ -59,15 +59,15 @@ public:
         : ServiceFramework{system_, "IClientEpSession"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "ReOpen"},
-            {1, nullptr, "Close"},
-            {2, nullptr, "GetCompletionEvent"},
-            {3, nullptr, "PopulateRing"},
-            {4, nullptr, "PostBufferAsync"},
-            {5, nullptr, "GetXferReport"},
-            {6, nullptr, "PostBufferMultiAsync"},
-            {7, nullptr, "CreateSmmuSpace"},
-            {8, nullptr, "ShareReportRing"}
+            FunctionInfo{0, nullptr, "ReOpen"},
+            FunctionInfo{1, nullptr, "Close"},
+            FunctionInfo{2, nullptr, "GetCompletionEvent"},
+            FunctionInfo{3, nullptr, "PopulateRing"},
+            FunctionInfo{4, nullptr, "PostBufferAsync"},
+            FunctionInfo{5, nullptr, "GetXferReport"},
+            FunctionInfo{6, nullptr, "PostBufferMultiAsync"},
+            FunctionInfo{7, nullptr, "CreateSmmuSpace"},
+            FunctionInfo{8, nullptr, "ShareReportRing"}
         };
         // clang-format on
 
@@ -81,16 +81,16 @@ public:
         : ServiceFramework{system_, "IClientIfSession"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetStateChangeEvent"},
-            {1, nullptr, "SetInterface"},
-            {2, nullptr, "GetInterface"},
-            {3, nullptr, "GetAlternateInterface"},
-            {4, nullptr, "GetCurrentFrame"},
-            {5, nullptr, "CtrlXferAsync"},
-            {6, nullptr, "GetCtrlXferCompletionEvent"},
-            {7, nullptr, "GetCtrlXferReport"},
-            {8, nullptr, "ResetDevice"},
-            {9, nullptr, "OpenUsbEp"}
+            FunctionInfo{0, nullptr, "GetStateChangeEvent"},
+            FunctionInfo{1, nullptr, "SetInterface"},
+            FunctionInfo{2, nullptr, "GetInterface"},
+            FunctionInfo{3, nullptr, "GetAlternateInterface"},
+            FunctionInfo{4, nullptr, "GetCurrentFrame"},
+            FunctionInfo{5, nullptr, "CtrlXferAsync"},
+            FunctionInfo{6, nullptr, "GetCtrlXferCompletionEvent"},
+            FunctionInfo{7, nullptr, "GetCtrlXferReport"},
+            FunctionInfo{8, nullptr, "ResetDevice"},
+            FunctionInfo{9, nullptr, "OpenUsbEp"}
         };
         // clang-format on
 
@@ -103,15 +103,15 @@ public:
     explicit IClientRootSession(Core::System& system_) : ServiceFramework{system_, "usb:hs"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "BindClientProcess"},
-            {1, nullptr, "QueryAllInterfaces"},
-            {2, nullptr, "QueryAvailableInterfaces"},
-            {3, nullptr, "QueryAcquiredInterfaces"},
-            {4, nullptr, "CreateInterfaceAvailableEvent"},
-            {5, nullptr, "DestroyInterfaceAvailableEvent"},
-            {6, nullptr, "GetInterfaceStateChangeEvent"},
-            {7, nullptr, "AcquireUsbIf"},
-            {8, nullptr, "SetTestMode"}
+            FunctionInfo{0, nullptr, "BindClientProcess"},
+            FunctionInfo{1, nullptr, "QueryAllInterfaces"},
+            FunctionInfo{2, nullptr, "QueryAvailableInterfaces"},
+            FunctionInfo{3, nullptr, "QueryAcquiredInterfaces"},
+            FunctionInfo{4, nullptr, "CreateInterfaceAvailableEvent"},
+            FunctionInfo{5, nullptr, "DestroyInterfaceAvailableEvent"},
+            FunctionInfo{6, nullptr, "GetInterfaceStateChangeEvent"},
+            FunctionInfo{7, nullptr, "AcquireUsbIf"},
+            FunctionInfo{8, nullptr, "SetTestMode"}
         };
         // clang-format on
 
@@ -124,13 +124,13 @@ public:
     explicit IPdSession(Core::System& system_) : ServiceFramework{system_, "IPdSession"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "BindNoticeEvent"},
-            {1, nullptr, "UnbindNoticeEvent"},
-            {2, nullptr, "GetStatus"},
-            {3, nullptr, "GetNotice"},
-            {4, nullptr, "EnablePowerRequestNotice"},
-            {5, nullptr, "DisablePowerRequestNotice"},
-            {6, nullptr, "ReplyPowerRequest"}
+            FunctionInfo{0, nullptr, "BindNoticeEvent"},
+            FunctionInfo{1, nullptr, "UnbindNoticeEvent"},
+            FunctionInfo{2, nullptr, "GetStatus"},
+            FunctionInfo{3, nullptr, "GetNotice"},
+            FunctionInfo{4, nullptr, "EnablePowerRequestNotice"},
+            FunctionInfo{5, nullptr, "DisablePowerRequestNotice"},
+            FunctionInfo{6, nullptr, "ReplyPowerRequest"}
         };
         // clang-format on
 
@@ -143,7 +143,7 @@ public:
     explicit IPdManager(Core::System& system_) : ServiceFramework{system_, "usb:pd"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IPdManager::OpenSession, "OpenSession"}
+            FunctionInfo{0, &IPdManager::OpenSession, "OpenSession"}
         };
         // clang-format on
 
@@ -166,15 +166,15 @@ public:
         : ServiceFramework{system_, "IPdCradleSession"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "SetCradleVdo"},
-            {1, nullptr, "GetCradleVdo"},
-            {2, nullptr, "ResetCradleUsbHub"},
-            {3, nullptr, "GetHostPdcFirmwareType"},
-            {4, nullptr, "GetHostPdcFirmwareRevision"},
-            {5, nullptr, "GetHostPdcManufactureId"},
-            {6, nullptr, "GetHostPdcDeviceId"},
-            {7, nullptr, "EnableCradleRecovery"},
-            {8, nullptr, "DisableCradleRecovery"}
+            FunctionInfo{0, nullptr, "SetCradleVdo"},
+            FunctionInfo{1, nullptr, "GetCradleVdo"},
+            FunctionInfo{2, nullptr, "ResetCradleUsbHub"},
+            FunctionInfo{3, nullptr, "GetHostPdcFirmwareType"},
+            FunctionInfo{4, nullptr, "GetHostPdcFirmwareRevision"},
+            FunctionInfo{5, nullptr, "GetHostPdcManufactureId"},
+            FunctionInfo{6, nullptr, "GetHostPdcDeviceId"},
+            FunctionInfo{7, nullptr, "EnableCradleRecovery"},
+            FunctionInfo{8, nullptr, "DisableCradleRecovery"}
         };
         // clang-format on
 
@@ -187,7 +187,7 @@ public:
     explicit IPdCradleManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:c"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IPdCradleManager::OpenCradleSession, "OpenCradleSession"}
+            FunctionInfo{0, &IPdCradleManager::OpenCradleSession, "OpenCradleSession"}
         };
         // clang-format on
 
@@ -209,12 +209,12 @@ public:
     explicit IPmMainService(Core::System& system_) : ServiceFramework{system_, "usb:pm"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetPowerEvent"},
-            {1, nullptr, "GetPowerState"},
-            {2, nullptr, "GetDataEvent"},
-            {3, nullptr, "GetDataRole"},
-            {4, nullptr, "SetDiagData"},
-            {5, nullptr, "GetDiagData"}
+            FunctionInfo{0, nullptr, "GetPowerEvent"},
+            FunctionInfo{1, nullptr, "GetPowerState"},
+            FunctionInfo{2, nullptr, "GetDataEvent"},
+            FunctionInfo{3, nullptr, "GetDataRole"},
+            FunctionInfo{4, nullptr, "SetDiagData"},
+            FunctionInfo{5, nullptr, "GetDiagData"}
         };
         // clang-format on
 
@@ -227,7 +227,7 @@ public:
     explicit IPdManufactureManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:m"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "OpenManufactureSession"}
+            FunctionInfo{0, nullptr, "OpenManufactureSession"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -239,8 +239,8 @@ public:
     explicit IQdbManager(Core::System& system_) : ServiceFramework{system_, "usb:qdb"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "ImportQuirkDevices"},
-            {1, nullptr, "HasQuirk"}
+            FunctionInfo{0, nullptr, "ImportQuirkDevices"},
+            FunctionInfo{1, nullptr, "HasQuirk"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -252,8 +252,8 @@ public:
     explicit IPmObserverService(Core::System& system_) : ServiceFramework{system_, "usb:obsv"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetTopologyChangeEvent"},
-            {1, nullptr, "GetFlattenedTopology"}
+            FunctionInfo{0, nullptr, "GetTopologyChangeEvent"},
+            FunctionInfo{1, nullptr, "GetFlattenedTopology"}
         };
         // clang-format on
         RegisterHandlers(functions);

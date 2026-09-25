@@ -14,9 +14,9 @@ ISfMonitorService::ISfMonitorService(Core::System& system_)
     : ServiceFramework{system_, "ISfMonitorService"} {
     // clang-format off
         static const FunctionInfo functions[] = {
-            {0, C<&ISfMonitorService::Initialize>, "Initialize"},
-            {288, C<&ISfMonitorService::GetGroupInfo>, "GetGroupInfo"},
-            {320, nullptr, "GetLinkLevel"}
+            FunctionInfo{0, C<&ISfMonitorService::Initialize>, "Initialize"},
+            FunctionInfo{288, C<&ISfMonitorService::GetGroupInfo>, "GetGroupInfo"},
+            FunctionInfo{320, nullptr, "GetLinkLevel"}
         };
     // clang-format on
 

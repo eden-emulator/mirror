@@ -24,118 +24,118 @@ public:
         : ServiceFramework{system_, "IFriendService"}, service_context{system, "IFriendService"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IFriendService::GetCompletionEvent, "GetCompletionEvent"},
-            {1, &IFriendService::Cancel, "Cancel"},
-            {10100, nullptr, "GetFriendListIds"},
-            {10101, &IFriendService::GetFriendList, "GetFriendList"},
-            {10102, nullptr, "UpdateFriendInfo"},
-            {10110, nullptr, "GetFriendProfileImage"},
-            {10111, nullptr, "GetFriendProfileImageWithImageSize"}, // 18.0.0+
-            {10120, &IFriendService::CheckFriendListAvailability, "CheckFriendListAvailability"},
-            {10121, nullptr, "EnsureFriendListAvailable"},
-            {10200, nullptr, "SendFriendRequestForApplication"},
-            {10211, nullptr, "AddFacedFriendRequestForApplication"},
-            {10400, &IFriendService::GetBlockedUserListIds, "GetBlockedUserListIds"},
-            {10420, &IFriendService::CheckBlockedUserListAvailability, "CheckBlockedUserListAvailability"},
-            {10421, nullptr, "EnsureBlockedUserListAvailable"},
-            {10500, nullptr, "GetProfileList"},
-            {10501, nullptr, "GetProfileListV2"}, // 18.0.0+
-            {10600, nullptr, "DeclareOpenOnlinePlaySession"},
-            {10601, &IFriendService::DeclareCloseOnlinePlaySession, "DeclareCloseOnlinePlaySession"},
-            {10610, &IFriendService::UpdateUserPresence, "UpdateUserPresence"},
-            {10700, &IFriendService::GetPlayHistoryRegistrationKey, "GetPlayHistoryRegistrationKey"},
-            {10701, nullptr, "GetPlayHistoryRegistrationKeyWithNetworkServiceAccountId"},
-            {10702, nullptr, "AddPlayHistory"},
-            {11000, nullptr, "GetProfileImageUrl"},
-            {11001, nullptr, "GetProfileImageUrlV2"}, // 18.0.0+
-            {20100, &IFriendService::GetFriendCount, "GetFriendCount"},
-            {20101, &IFriendService::GetNewlyFriendCount, "GetNewlyFriendCount"},
-            {20102, nullptr, "GetFriendDetailedInfo"},
-            {20103, nullptr, "SyncFriendList"},
-            {20104, &IFriendService::RequestSyncFriendList, "RequestSyncFriendList"},
-            {20105, &IFriendService::GetFriendListForViewer, "GetFriendListForViewerV1"},
-            {20106, nullptr, "UpdateFriendInfoForViewerV1"},
-            {20107, nullptr, "GetFriendDetailedInfoV2"}, // 20.0.0+
-            {20108, &IFriendService::GetFriendListForViewer, "GetFriendListForViewerV2"}, // 22.0.0+
-            {20109, nullptr, "UpdateFriendInfoForViewerV2"}, // 22.0.0+
-            {20110, nullptr, "LoadFriendSettingV1"},
-            {20111, nullptr, "LoadFriendSettingV2"}, // 22.0.0+
-            {20200, &IFriendService::GetReceivedFriendRequestCount, "GetReceivedFriendRequestCount"},
-            {20201, nullptr, "GetFriendRequestListV1"},
-            {20202, nullptr, "GetFriendRequestListV2"}, // 20.0.0+
-            {20203, nullptr, "GetFriendRequestReceivedNotificationCount"}, // 22.0.0+
-            {20300, nullptr, "GetFriendCandidateList"},
-            {20301, nullptr, "GetNintendoNetworkIdInfo"},
-            {20302, nullptr, "GetSnsAccountLinkage"}, // 5.0.0-19.0.1
-            {20303, nullptr, "GetSnsAccountProfile"}, // 5.0.0-19.0.1
-            {20304, nullptr, "GetSnsAccountFriendList"}, // 5.0.0-19.0.1
-            {20400, nullptr, "GetBlockedUserListV1"},
-            {20401, nullptr, "SyncBlockedUserList"},
-            {20402, nullptr, "GetBlockedUserListV2"}, // 20.0.0+
-            {20500, nullptr, "GetProfileExtraListV1"},
-            {20501, nullptr, "GetRelationship"},
-            {20502, nullptr, "GetProfileExtraListV2"}, // 19.0.0+
-            {20600, &IFriendService::GetUserPresenceView, "GetUserPresenceViewV1"},
-            {20601, &IFriendService::GetUserPresenceView, "GetUserPresenceViewV2"}, // 19.0.0+
-            {20700, nullptr, "GetPlayHistoryListV1"},
-            {20701, &IFriendService::GetPlayHistoryStatistics, "GetPlayHistoryStatistics"},
-            {20702, nullptr, "GetPlayHistoryListV2"}, // 19.0.0+
-            {20800, &IFriendService::LoadUserSetting, "LoadUserSettingV1"},
-            {20801, nullptr, "SyncUserSetting"},
-            {20802, &IFriendService::LoadUserSetting, "LoadUserSettingV2"}, // 19.0.0+
-            {20900, &IFriendService::RequestListSummaryOverlayNotification, "RequestListSummaryOverlayNotification"},
-            {21000, nullptr, "GetExternalApplicationCatalog"},
-            {22000, nullptr, "GetReceivedFriendInvitationListV1"},
-            {22001, nullptr, "GetReceivedFriendInvitationDetailedInfoV1"},
-            {22002, nullptr, "GetReceivedFriendInvitationListV2"}, // 19.0.0+
-            {22003, nullptr, "GetReceivedFriendInvitationDetailedInfoV2"}, // 19.0.0+
-            {22010, &IFriendService::GetReceivedFriendInvitationCountCache, "GetReceivedFriendInvitationCountCache"},
-            {30100, nullptr, "DropFriendNewlyFlags"},
-            {30101, nullptr, "DeleteFriend"},
-            {30110, nullptr, "DropFriendNewlyFlag"},
-            {30120, nullptr, "ChangeFriendFavoriteFlag"},
-            {30121, nullptr, "ChangeFriendOnlineNotificationFlag"},
-            {30130, nullptr, "SetFriendNote"}, // 22.0.0+
-            {30131, nullptr, "RequestUploadPendingNote"}, // 22.0.0+
-            {30190, nullptr, "RequestSyncLocalUpdates"}, // 22.0.0+
-            {30200, nullptr, "SendFriendRequest"},
-            {30201, nullptr, "SendFriendRequestWithApplicationInfoV1"},
-            {30202, nullptr, "CancelFriendRequest"},
-            {30203, nullptr, "AcceptFriendRequest"},
-            {30204, nullptr, "RejectFriendRequest"},
-            {30205, nullptr, "ReadFriendRequest"},
-            {30210, nullptr, "GetFacedFriendRequestRegistrationKey"},
-            {30211, nullptr, "AddFacedFriendRequest"},
-            {30212, nullptr, "CancelFacedFriendRequest"},
-            {30213, nullptr, "GetFacedFriendRequestProfileImage"},
-            {30214, nullptr, "GetFacedFriendRequestProfileImageFromPath"},
-            {30215, nullptr, "SendFriendRequestWithExternalApplicationCatalogId"},
-            {30216, nullptr, "ResendFacedFriendRequest"},
-            {30217, nullptr, "SendFriendRequestWithNintendoNetworkIdInfo"},
-            {30218, nullptr, "SendFriendRequestWithApplicationInfoV2"}, // 20.0.0+
-            {30300, nullptr, "GetSnsAccountLinkPageUrl"}, // 5.0.0-19.0.1
-            {30301, nullptr, "UnlinkSnsAccount"}, // 5.0.0-19.0.1
-            {30400, nullptr, "BlockUser"},
-            {30401, nullptr, "BlockUserWithApplicationInfoV1"},
-            {30402, nullptr, "UnblockUser"},
-            {30403, nullptr, "BlockUserWithApplicationInfoV2"}, // 20.0.0+
-            {30500, nullptr, "GetProfileExtraFromFriendCodeV1"},
-            {30501, nullptr, "GetProfileExtraFromFriendCodeV2"}, // 19.0.0+
-            {30700, nullptr, "DeletePlayHistory"},
-            {30701, nullptr, "AddPlayHistoryWithApplication"}, // 19.0.0+
-            {30810, nullptr, "ChangePresencePermission"},
-            {30811, nullptr, "ChangeFriendRequestReception"},
-            {30812, nullptr, "ChangePlayLogPermission"},
-            {30820, nullptr, "IssueFriendCode"},
-            {30830, nullptr, "ClearPlayLog"},
-            {30900, nullptr, "SendFriendInvitationV1"},
-            {30901, nullptr, "SendFriendInvitationV2"}, // 19.0.0+
-            {30910, nullptr, "ReadFriendInvitation"},
-            {30911, nullptr, "ReadAllFriendInvitations"},
-            {31000, nullptr, "OpenUser"}, // 19.0.0+
-            {40100, nullptr, "DeleteFriendListCache"},
-            {40400, nullptr, "DeleteBlockedUserListCache"},
-            {49900, nullptr, "DeleteNetworkServiceAccountCache"}
+            FunctionInfo{0, &IFriendService::GetCompletionEvent, "GetCompletionEvent"},
+            FunctionInfo{1, &IFriendService::Cancel, "Cancel"},
+            FunctionInfo{10100, nullptr, "GetFriendListIds"},
+            FunctionInfo{10101, &IFriendService::GetFriendList, "GetFriendList"},
+            FunctionInfo{10102, nullptr, "UpdateFriendInfo"},
+            FunctionInfo{10110, nullptr, "GetFriendProfileImage"},
+            FunctionInfo{10111, nullptr, "GetFriendProfileImageWithImageSize"}, // 18.0.0+
+            FunctionInfo{10120, &IFriendService::CheckFriendListAvailability, "CheckFriendListAvailability"},
+            FunctionInfo{10121, nullptr, "EnsureFriendListAvailable"},
+            FunctionInfo{10200, nullptr, "SendFriendRequestForApplication"},
+            FunctionInfo{10211, nullptr, "AddFacedFriendRequestForApplication"},
+            FunctionInfo{10400, &IFriendService::GetBlockedUserListIds, "GetBlockedUserListIds"},
+            FunctionInfo{10420, &IFriendService::CheckBlockedUserListAvailability, "CheckBlockedUserListAvailability"},
+            FunctionInfo{10421, nullptr, "EnsureBlockedUserListAvailable"},
+            FunctionInfo{10500, nullptr, "GetProfileList"},
+            FunctionInfo{10501, nullptr, "GetProfileListV2"}, // 18.0.0+
+            FunctionInfo{10600, nullptr, "DeclareOpenOnlinePlaySession"},
+            FunctionInfo{10601, &IFriendService::DeclareCloseOnlinePlaySession, "DeclareCloseOnlinePlaySession"},
+            FunctionInfo{10610, &IFriendService::UpdateUserPresence, "UpdateUserPresence"},
+            FunctionInfo{10700, &IFriendService::GetPlayHistoryRegistrationKey, "GetPlayHistoryRegistrationKey"},
+            FunctionInfo{10701, nullptr, "GetPlayHistoryRegistrationKeyWithNetworkServiceAccountId"},
+            FunctionInfo{10702, nullptr, "AddPlayHistory"},
+            FunctionInfo{11000, nullptr, "GetProfileImageUrl"},
+            FunctionInfo{11001, nullptr, "GetProfileImageUrlV2"}, // 18.0.0+
+            FunctionInfo{20100, &IFriendService::GetFriendCount, "GetFriendCount"},
+            FunctionInfo{20101, &IFriendService::GetNewlyFriendCount, "GetNewlyFriendCount"},
+            FunctionInfo{20102, nullptr, "GetFriendDetailedInfo"},
+            FunctionInfo{20103, nullptr, "SyncFriendList"},
+            FunctionInfo{20104, &IFriendService::RequestSyncFriendList, "RequestSyncFriendList"},
+            FunctionInfo{20105, &IFriendService::GetFriendListForViewer, "GetFriendListForViewerV1"},
+            FunctionInfo{20106, nullptr, "UpdateFriendInfoForViewerV1"},
+            FunctionInfo{20107, nullptr, "GetFriendDetailedInfoV2"}, // 20.0.0+
+            FunctionInfo{20108, &IFriendService::GetFriendListForViewer, "GetFriendListForViewerV2"}, // 22.0.0+
+            FunctionInfo{20109, nullptr, "UpdateFriendInfoForViewerV2"}, // 22.0.0+
+            FunctionInfo{20110, nullptr, "LoadFriendSettingV1"},
+            FunctionInfo{20111, nullptr, "LoadFriendSettingV2"}, // 22.0.0+
+            FunctionInfo{20200, &IFriendService::GetReceivedFriendRequestCount, "GetReceivedFriendRequestCount"},
+            FunctionInfo{20201, nullptr, "GetFriendRequestListV1"},
+            FunctionInfo{20202, nullptr, "GetFriendRequestListV2"}, // 20.0.0+
+            FunctionInfo{20203, nullptr, "GetFriendRequestReceivedNotificationCount"}, // 22.0.0+
+            FunctionInfo{20300, nullptr, "GetFriendCandidateList"},
+            FunctionInfo{20301, nullptr, "GetNintendoNetworkIdInfo"},
+            FunctionInfo{20302, nullptr, "GetSnsAccountLinkage"}, // 5.0.0-19.0.1
+            FunctionInfo{20303, nullptr, "GetSnsAccountProfile"}, // 5.0.0-19.0.1
+            FunctionInfo{20304, nullptr, "GetSnsAccountFriendList"}, // 5.0.0-19.0.1
+            FunctionInfo{20400, nullptr, "GetBlockedUserListV1"},
+            FunctionInfo{20401, nullptr, "SyncBlockedUserList"},
+            FunctionInfo{20402, nullptr, "GetBlockedUserListV2"}, // 20.0.0+
+            FunctionInfo{20500, nullptr, "GetProfileExtraListV1"},
+            FunctionInfo{20501, nullptr, "GetRelationship"},
+            FunctionInfo{20502, nullptr, "GetProfileExtraListV2"}, // 19.0.0+
+            FunctionInfo{20600, &IFriendService::GetUserPresenceView, "GetUserPresenceViewV1"},
+            FunctionInfo{20601, &IFriendService::GetUserPresenceView, "GetUserPresenceViewV2"}, // 19.0.0+
+            FunctionInfo{20700, nullptr, "GetPlayHistoryListV1"},
+            FunctionInfo{20701, &IFriendService::GetPlayHistoryStatistics, "GetPlayHistoryStatistics"},
+            FunctionInfo{20702, nullptr, "GetPlayHistoryListV2"}, // 19.0.0+
+            FunctionInfo{20800, &IFriendService::LoadUserSetting, "LoadUserSettingV1"},
+            FunctionInfo{20801, nullptr, "SyncUserSetting"},
+            FunctionInfo{20802, &IFriendService::LoadUserSetting, "LoadUserSettingV2"}, // 19.0.0+
+            FunctionInfo{20900, &IFriendService::RequestListSummaryOverlayNotification, "RequestListSummaryOverlayNotification"},
+            FunctionInfo{21000, nullptr, "GetExternalApplicationCatalog"},
+            FunctionInfo{22000, nullptr, "GetReceivedFriendInvitationListV1"},
+            FunctionInfo{22001, nullptr, "GetReceivedFriendInvitationDetailedInfoV1"},
+            FunctionInfo{22002, nullptr, "GetReceivedFriendInvitationListV2"}, // 19.0.0+
+            FunctionInfo{22003, nullptr, "GetReceivedFriendInvitationDetailedInfoV2"}, // 19.0.0+
+            FunctionInfo{22010, &IFriendService::GetReceivedFriendInvitationCountCache, "GetReceivedFriendInvitationCountCache"},
+            FunctionInfo{30100, nullptr, "DropFriendNewlyFlags"},
+            FunctionInfo{30101, nullptr, "DeleteFriend"},
+            FunctionInfo{30110, nullptr, "DropFriendNewlyFlag"},
+            FunctionInfo{30120, nullptr, "ChangeFriendFavoriteFlag"},
+            FunctionInfo{30121, nullptr, "ChangeFriendOnlineNotificationFlag"},
+            FunctionInfo{30130, nullptr, "SetFriendNote"}, // 22.0.0+
+            FunctionInfo{30131, nullptr, "RequestUploadPendingNote"}, // 22.0.0+
+            FunctionInfo{30190, nullptr, "RequestSyncLocalUpdates"}, // 22.0.0+
+            FunctionInfo{30200, nullptr, "SendFriendRequest"},
+            FunctionInfo{30201, nullptr, "SendFriendRequestWithApplicationInfoV1"},
+            FunctionInfo{30202, nullptr, "CancelFriendRequest"},
+            FunctionInfo{30203, nullptr, "AcceptFriendRequest"},
+            FunctionInfo{30204, nullptr, "RejectFriendRequest"},
+            FunctionInfo{30205, nullptr, "ReadFriendRequest"},
+            FunctionInfo{30210, nullptr, "GetFacedFriendRequestRegistrationKey"},
+            FunctionInfo{30211, nullptr, "AddFacedFriendRequest"},
+            FunctionInfo{30212, nullptr, "CancelFacedFriendRequest"},
+            FunctionInfo{30213, nullptr, "GetFacedFriendRequestProfileImage"},
+            FunctionInfo{30214, nullptr, "GetFacedFriendRequestProfileImageFromPath"},
+            FunctionInfo{30215, nullptr, "SendFriendRequestWithExternalApplicationCatalogId"},
+            FunctionInfo{30216, nullptr, "ResendFacedFriendRequest"},
+            FunctionInfo{30217, nullptr, "SendFriendRequestWithNintendoNetworkIdInfo"},
+            FunctionInfo{30218, nullptr, "SendFriendRequestWithApplicationInfoV2"}, // 20.0.0+
+            FunctionInfo{30300, nullptr, "GetSnsAccountLinkPageUrl"}, // 5.0.0-19.0.1
+            FunctionInfo{30301, nullptr, "UnlinkSnsAccount"}, // 5.0.0-19.0.1
+            FunctionInfo{30400, nullptr, "BlockUser"},
+            FunctionInfo{30401, nullptr, "BlockUserWithApplicationInfoV1"},
+            FunctionInfo{30402, nullptr, "UnblockUser"},
+            FunctionInfo{30403, nullptr, "BlockUserWithApplicationInfoV2"}, // 20.0.0+
+            FunctionInfo{30500, nullptr, "GetProfileExtraFromFriendCodeV1"},
+            FunctionInfo{30501, nullptr, "GetProfileExtraFromFriendCodeV2"}, // 19.0.0+
+            FunctionInfo{30700, nullptr, "DeletePlayHistory"},
+            FunctionInfo{30701, nullptr, "AddPlayHistoryWithApplication"}, // 19.0.0+
+            FunctionInfo{30810, nullptr, "ChangePresencePermission"},
+            FunctionInfo{30811, nullptr, "ChangeFriendRequestReception"},
+            FunctionInfo{30812, nullptr, "ChangePlayLogPermission"},
+            FunctionInfo{30820, nullptr, "IssueFriendCode"},
+            FunctionInfo{30830, nullptr, "ClearPlayLog"},
+            FunctionInfo{30900, nullptr, "SendFriendInvitationV1"},
+            FunctionInfo{30901, nullptr, "SendFriendInvitationV2"}, // 19.0.0+
+            FunctionInfo{30910, nullptr, "ReadFriendInvitation"},
+            FunctionInfo{30911, nullptr, "ReadAllFriendInvitations"},
+            FunctionInfo{31000, nullptr, "OpenUser"}, // 19.0.0+
+            FunctionInfo{40100, nullptr, "DeleteFriendListCache"},
+            FunctionInfo{40400, nullptr, "DeleteBlockedUserListCache"},
+            FunctionInfo{49900, nullptr, "DeleteNetworkServiceAccountCache"}
         };
         // clang-format on
 
@@ -379,9 +379,9 @@ public:
           service_context{system_, "INotificationService"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &INotificationService::GetEvent, "GetEvent"},
-            {1, &INotificationService::Clear, "Clear"},
-            {2, &INotificationService::Pop, "Pop"}
+            FunctionInfo{0, &INotificationService::GetEvent, "GetEvent"},
+            FunctionInfo{1, &INotificationService::Clear, "Clear"},
+            FunctionInfo{2, &INotificationService::Pop, "Pop"}
         };
         // clang-format on
 
@@ -503,8 +503,8 @@ public:
         : ServiceFramework{system_, "nd:app"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetReceivableNeighborInfoCountMax"},
-            {10, nullptr, "IsNeighborDetectionEnabled"}
+            FunctionInfo{0, nullptr, "GetReceivableNeighborInfoCountMax"},
+            FunctionInfo{10, nullptr, "IsNeighborDetectionEnabled"}
         };
         RegisterHandlers(functions);
     }
@@ -516,43 +516,43 @@ public:
         : ServiceFramework{system_, "nd:sys"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetReceivableNeighborInfoCountMax"},
-            {10, nullptr, "IsNeighborDetectionEnabled"},
-            {200, nullptr, "SetSystemData"},
-            {201, nullptr, "ClearSystemData"},
-            {203, nullptr, "GetReceivableNeighborInfoCountForSystem"},
-            {204, nullptr, "ReceiveNeighborInfoForSystem"},
-            {205, nullptr, "SetSender"},
-            {206, nullptr, "GetSender"},
-            {207, nullptr, "CreateScannerForSystem"},
-            {208, nullptr, "CreateReceiveEventHolderForSystem"},
-            {223, nullptr, "EnableNeighborDetection"},
-            {224, nullptr, "DisableNeighborDetection"},
-            {226, nullptr, "EnablePowerSave"},
-            {227, nullptr, "DisablePowerSave"},
-            {228, nullptr, "IsPowerSaveEnabled"},
-            {232, nullptr, "ClearBlockedUsers"},
-            {233, nullptr, "GetBlockedUserCount"},
-            {234, nullptr, "BlockUserByLocalUserId"},
-            {235, nullptr, "BlockUserByNetworkUserId"},
-            {236, nullptr, "UnblockUserByLocalUserId"},
-            {237, nullptr, "UnblockUserByNetworkUserId"},
-            {240, nullptr, "DeleteApplication"},
-            {250, nullptr, "InitializeApplicationInfo"},
-            {260, nullptr, "CreateAccountSystemSaveDataAccessSuppressor"},
-            {300, nullptr, "AddReceivedNeighborInfoForSystemForDebug"},
-            {301, nullptr, "GetSendDataForDebug"},
-            {302, nullptr, "ClearReceiveCounterForDebug"},
-            {303, nullptr, "GetNextReceiveCounterForDebug"},
-            {304, nullptr, "ListBlockedUsersForDebug"},
-            {305, nullptr, "RefreshSendDataIdForDebug"},
-            {306, nullptr, "ReloadFwdbgSettingsForDebug"},
-            {307, nullptr, "EnableApplicationForDebug"},
-            {308, nullptr, "GetNextReceiveCountersForDebug"},
-            {309, nullptr, "ListApplicationInfoForDebug"},
-            {310, nullptr, "SetApplicationDataForDebug"},
-            {400, nullptr, "GetNetworkUserId"},
-            {401, nullptr, "DeleteNetworkUserId"}
+            FunctionInfo{0, nullptr, "GetReceivableNeighborInfoCountMax"},
+            FunctionInfo{10, nullptr, "IsNeighborDetectionEnabled"},
+            FunctionInfo{200, nullptr, "SetSystemData"},
+            FunctionInfo{201, nullptr, "ClearSystemData"},
+            FunctionInfo{203, nullptr, "GetReceivableNeighborInfoCountForSystem"},
+            FunctionInfo{204, nullptr, "ReceiveNeighborInfoForSystem"},
+            FunctionInfo{205, nullptr, "SetSender"},
+            FunctionInfo{206, nullptr, "GetSender"},
+            FunctionInfo{207, nullptr, "CreateScannerForSystem"},
+            FunctionInfo{208, nullptr, "CreateReceiveEventHolderForSystem"},
+            FunctionInfo{223, nullptr, "EnableNeighborDetection"},
+            FunctionInfo{224, nullptr, "DisableNeighborDetection"},
+            FunctionInfo{226, nullptr, "EnablePowerSave"},
+            FunctionInfo{227, nullptr, "DisablePowerSave"},
+            FunctionInfo{228, nullptr, "IsPowerSaveEnabled"},
+            FunctionInfo{232, nullptr, "ClearBlockedUsers"},
+            FunctionInfo{233, nullptr, "GetBlockedUserCount"},
+            FunctionInfo{234, nullptr, "BlockUserByLocalUserId"},
+            FunctionInfo{235, nullptr, "BlockUserByNetworkUserId"},
+            FunctionInfo{236, nullptr, "UnblockUserByLocalUserId"},
+            FunctionInfo{237, nullptr, "UnblockUserByNetworkUserId"},
+            FunctionInfo{240, nullptr, "DeleteApplication"},
+            FunctionInfo{250, nullptr, "InitializeApplicationInfo"},
+            FunctionInfo{260, nullptr, "CreateAccountSystemSaveDataAccessSuppressor"},
+            FunctionInfo{300, nullptr, "AddReceivedNeighborInfoForSystemForDebug"},
+            FunctionInfo{301, nullptr, "GetSendDataForDebug"},
+            FunctionInfo{302, nullptr, "ClearReceiveCounterForDebug"},
+            FunctionInfo{303, nullptr, "GetNextReceiveCounterForDebug"},
+            FunctionInfo{304, nullptr, "ListBlockedUsersForDebug"},
+            FunctionInfo{305, nullptr, "RefreshSendDataIdForDebug"},
+            FunctionInfo{306, nullptr, "ReloadFwdbgSettingsForDebug"},
+            FunctionInfo{307, nullptr, "EnableApplicationForDebug"},
+            FunctionInfo{308, nullptr, "GetNextReceiveCountersForDebug"},
+            FunctionInfo{309, nullptr, "ListApplicationInfoForDebug"},
+            FunctionInfo{310, nullptr, "SetApplicationDataForDebug"},
+            FunctionInfo{400, nullptr, "GetNetworkUserId"},
+            FunctionInfo{401, nullptr, "DeleteNetworkUserId"}
         };
         RegisterHandlers(functions);
     }

@@ -182,7 +182,7 @@ public:
           service_context{system_, "INotificationSystemEventAccessor"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, D<&INotificationSystemEventAccessor::GetSystemEvent>, "GetSystemEvent"}
+            FunctionInfo{0, D<&INotificationSystemEventAccessor::GetSystemEvent>, "GetSystemEvent"}
         };
         // clang-format on
 

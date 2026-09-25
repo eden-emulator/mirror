@@ -16,8 +16,8 @@ IPowerStateRequestHandler::IPowerStateRequestHandler(
 {
     // clang-format off
         static const FunctionInfo functions[] = {
-            {0, D<&IPowerStateRequestHandler::GetPowerStateRequestEventReadableHandle>, "GetPowerStateRequestEventReadableHandle"},
-            {1, D<&IPowerStateRequestHandler::GetAndClearPowerStateRequest>, "GetAndClearPowerStateRequest"}
+            FunctionInfo{0, D<&IPowerStateRequestHandler::GetPowerStateRequestEventReadableHandle>, "GetPowerStateRequestEventReadableHandle"},
+            FunctionInfo{1, D<&IPowerStateRequestHandler::GetAndClearPowerStateRequest>, "GetAndClearPowerStateRequest"}
         };
     // clang-format on
 

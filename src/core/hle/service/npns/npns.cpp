@@ -22,72 +22,72 @@ public:
           get_receive_event{service_context}, get_request_change_state_cancel_event{service_context} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {1, nullptr, "ListenAll"},
-            {2, C<&INpnsSystem::ListenTo>, "ListenTo"},
-            {3, nullptr, "Receive"},
-            {4, nullptr, "ReceiveRaw"},
-            {5, C<&INpnsSystem::GetReceiveEvent>, "GetReceiveEvent"},
-            {6, nullptr, "ListenUndelivered"},
-            {7, nullptr, "GetStateChangeEvent"},
-            {8, C<&INpnsSystem::ListenToByName>, "ListenToByName"},
-            {11, nullptr, "SubscribeTopic"},
-            {12, nullptr, "UnsubscribeTopic"},
-            {13, nullptr, "QueryIsTopicExist"},
-            {14, nullptr, "SubscribeTopicByAccount"}, // 18.0.0+
-            {15, nullptr, "UnsubscribeTopicByAccount"}, // 18.0.0+
-            {16, nullptr, "DownloadSubscriptionList"}, // 18.0.0+
-            {21, nullptr, "CreateToken"},
-            {22, nullptr, "CreateTokenWithApplicationId"},
-            {23, nullptr, "DestroyToken"},
-            {24, nullptr, "DestroyTokenWithApplicationId"},
-            {25, nullptr, "QueryIsTokenValid"},
-            {26, nullptr, "ListenToMyApplicationId"},
-            {27, nullptr, "DestroyTokenAll"},
-            {28, nullptr, "CreateTokenWithName"}, // 18.0.0+
-            {29, nullptr, "DestroyTokenWithName"}, // 18.0.0+
-            {31, nullptr, "UploadTokenToBaaS"},
-            {32, nullptr, "DestroyTokenForBaaS"},
-            {33, nullptr, "CreateTokenForBaaS"},
-            {34, nullptr, "SetBaaSDeviceAccountIdList"},
-            {35, nullptr, "LinkNsaId"}, // 17.0.0+
-            {36, nullptr, "UnlinkNsaId"}, // 17.0.0+
-            {37, nullptr, "RelinkNsaId"}, // 18.0.0+
-            {40, nullptr, "GetNetworkServiceAccountIdTokenRequestEvent"}, // 17.0.0+
-            {41, nullptr, "TryPopNetworkServiceAccountIdTokenRequestUid"}, // 17.0.0+
-            {42, nullptr, "SetNetworkServiceAccountIdTokenSuccess"}, // 17.0.0+
-            {43, nullptr, "SetNetworkServiceAccountIdTokenFailure"}, // 17.0.0+
-            {44, nullptr, "SetUidList"}, // 17.0.0+
-            {45, nullptr, "PutDigitalTwinKeyValue"}, // 17.0.0+
-            {51, nullptr, "DeleteDigitalTwinKeyValue"}, // 18.0.0+
-            {101, nullptr, "Suspend"},
-            {102, nullptr, "Resume"},
-            {103, C<&INpnsSystem::GetState>, "GetState"},
-            {104, nullptr, "GetStatistics"},
-            {105, nullptr, "GetPlayReportRequestEvent"},
-            {106, C<&INpnsSystem::GetLastNotifiedTime>, "GetLastNotifiedTime"}, // 18.0.0+
-            {107, nullptr, "SetLastNotifiedTime"}, // 18.0.0+
-            {111, nullptr, "GetJid"},
-            {112, nullptr, "CreateJid"},
-            {113, nullptr, "DestroyJid"},
-            {114, nullptr, "AttachJid"},
-            {115, nullptr, "DetachJid"},
-            {120, nullptr, "CreateNotificationReceiver"},
-            {151, nullptr, "GetStateWithHandover"},
-            {152, nullptr, "GetStateChangeEventWithHandover"},
-            {153, nullptr, "GetDropEventWithHandover"},
-            {154, nullptr, "CreateTokenAsync"},
-            {155, nullptr, "CreateTokenAsyncWithApplicationId"},
-            {156, nullptr, "CreateTokenWithNameAsync"}, // 18.0.0+
-            {161, C<&INpnsSystem::GetRequestChangeStateCancelEvent>, "GetRequestChangeStateCancelEvent"}, // 10.0.0+
-            {162, nullptr, "RequestChangeStateForceTimedWithCancelEvent"},
-            {201, nullptr, "RequestChangeStateForceTimed"},
-            {202, nullptr, "RequestChangeStateForceAsync"},
-            {301, nullptr, "GetPassword"}, // 18.0.0+
-            {302, nullptr, "GetAllImmigration"}, // 18.0.0+
-            {303, nullptr, "GetNotificationHistories"}, // 18.0.0+
-            {304, nullptr, "GetPersistentConnectionSummary"}, // 18.0.0+
-            {305, nullptr, "GetDigitalTwinSummary"}, // 18.0.0+
-            {306, nullptr, "GetDigitalTwinValue"}, // 18.0.0+
+            FunctionInfo{1, nullptr, "ListenAll"},
+            FunctionInfo{2, C<&INpnsSystem::ListenTo>, "ListenTo"},
+            FunctionInfo{3, nullptr, "Receive"},
+            FunctionInfo{4, nullptr, "ReceiveRaw"},
+            FunctionInfo{5, C<&INpnsSystem::GetReceiveEvent>, "GetReceiveEvent"},
+            FunctionInfo{6, nullptr, "ListenUndelivered"},
+            FunctionInfo{7, nullptr, "GetStateChangeEvent"},
+            FunctionInfo{8, C<&INpnsSystem::ListenToByName>, "ListenToByName"},
+            FunctionInfo{11, nullptr, "SubscribeTopic"},
+            FunctionInfo{12, nullptr, "UnsubscribeTopic"},
+            FunctionInfo{13, nullptr, "QueryIsTopicExist"},
+            FunctionInfo{14, nullptr, "SubscribeTopicByAccount"}, // 18.0.0+
+            FunctionInfo{15, nullptr, "UnsubscribeTopicByAccount"}, // 18.0.0+
+            FunctionInfo{16, nullptr, "DownloadSubscriptionList"}, // 18.0.0+
+            FunctionInfo{21, nullptr, "CreateToken"},
+            FunctionInfo{22, nullptr, "CreateTokenWithApplicationId"},
+            FunctionInfo{23, nullptr, "DestroyToken"},
+            FunctionInfo{24, nullptr, "DestroyTokenWithApplicationId"},
+            FunctionInfo{25, nullptr, "QueryIsTokenValid"},
+            FunctionInfo{26, nullptr, "ListenToMyApplicationId"},
+            FunctionInfo{27, nullptr, "DestroyTokenAll"},
+            FunctionInfo{28, nullptr, "CreateTokenWithName"}, // 18.0.0+
+            FunctionInfo{29, nullptr, "DestroyTokenWithName"}, // 18.0.0+
+            FunctionInfo{31, nullptr, "UploadTokenToBaaS"},
+            FunctionInfo{32, nullptr, "DestroyTokenForBaaS"},
+            FunctionInfo{33, nullptr, "CreateTokenForBaaS"},
+            FunctionInfo{34, nullptr, "SetBaaSDeviceAccountIdList"},
+            FunctionInfo{35, nullptr, "LinkNsaId"}, // 17.0.0+
+            FunctionInfo{36, nullptr, "UnlinkNsaId"}, // 17.0.0+
+            FunctionInfo{37, nullptr, "RelinkNsaId"}, // 18.0.0+
+            FunctionInfo{40, nullptr, "GetNetworkServiceAccountIdTokenRequestEvent"}, // 17.0.0+
+            FunctionInfo{41, nullptr, "TryPopNetworkServiceAccountIdTokenRequestUid"}, // 17.0.0+
+            FunctionInfo{42, nullptr, "SetNetworkServiceAccountIdTokenSuccess"}, // 17.0.0+
+            FunctionInfo{43, nullptr, "SetNetworkServiceAccountIdTokenFailure"}, // 17.0.0+
+            FunctionInfo{44, nullptr, "SetUidList"}, // 17.0.0+
+            FunctionInfo{45, nullptr, "PutDigitalTwinKeyValue"}, // 17.0.0+
+            FunctionInfo{51, nullptr, "DeleteDigitalTwinKeyValue"}, // 18.0.0+
+            FunctionInfo{101, nullptr, "Suspend"},
+            FunctionInfo{102, nullptr, "Resume"},
+            FunctionInfo{103, C<&INpnsSystem::GetState>, "GetState"},
+            FunctionInfo{104, nullptr, "GetStatistics"},
+            FunctionInfo{105, nullptr, "GetPlayReportRequestEvent"},
+            FunctionInfo{106, C<&INpnsSystem::GetLastNotifiedTime>, "GetLastNotifiedTime"}, // 18.0.0+
+            FunctionInfo{107, nullptr, "SetLastNotifiedTime"}, // 18.0.0+
+            FunctionInfo{111, nullptr, "GetJid"},
+            FunctionInfo{112, nullptr, "CreateJid"},
+            FunctionInfo{113, nullptr, "DestroyJid"},
+            FunctionInfo{114, nullptr, "AttachJid"},
+            FunctionInfo{115, nullptr, "DetachJid"},
+            FunctionInfo{120, nullptr, "CreateNotificationReceiver"},
+            FunctionInfo{151, nullptr, "GetStateWithHandover"},
+            FunctionInfo{152, nullptr, "GetStateChangeEventWithHandover"},
+            FunctionInfo{153, nullptr, "GetDropEventWithHandover"},
+            FunctionInfo{154, nullptr, "CreateTokenAsync"},
+            FunctionInfo{155, nullptr, "CreateTokenAsyncWithApplicationId"},
+            FunctionInfo{156, nullptr, "CreateTokenWithNameAsync"}, // 18.0.0+
+            FunctionInfo{161, C<&INpnsSystem::GetRequestChangeStateCancelEvent>, "GetRequestChangeStateCancelEvent"}, // 10.0.0+
+            FunctionInfo{162, nullptr, "RequestChangeStateForceTimedWithCancelEvent"},
+            FunctionInfo{201, nullptr, "RequestChangeStateForceTimed"},
+            FunctionInfo{202, nullptr, "RequestChangeStateForceAsync"},
+            FunctionInfo{301, nullptr, "GetPassword"}, // 18.0.0+
+            FunctionInfo{302, nullptr, "GetAllImmigration"}, // 18.0.0+
+            FunctionInfo{303, nullptr, "GetNotificationHistories"}, // 18.0.0+
+            FunctionInfo{304, nullptr, "GetPersistentConnectionSummary"}, // 18.0.0+
+            FunctionInfo{305, nullptr, "GetDigitalTwinSummary"}, // 18.0.0+
+            FunctionInfo{306, nullptr, "GetDigitalTwinValue"}, // 18.0.0+
         };
         // clang-format on
 
@@ -151,27 +151,27 @@ public:
         : ServiceFramework{system_, "npns:u"}, service_context{system, "npns:u"}, get_receive_event{service_context} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {1, nullptr, "ListenAll"},
-            {2, nullptr, "ListenTo"},
-            {3, nullptr, "Receive"},
-            {4, nullptr, "ReceiveRaw"},
-            {5, C<&INpnsUser::GetReceiveEvent>, "GetReceiveEvent"},
-            {7, nullptr, "GetStateChangeEvent"},
-            {8, C<&INpnsUser::ListenToByName>, "ListenToByName"}, // 18.0.0+
-            {21, nullptr, "CreateToken"},
-            {23, nullptr, "DestroyToken"},
-            {25, nullptr, "QueryIsTokenValid"},
-            {26, nullptr, "ListenToMyApplicationId"},
-            {101, nullptr, "Suspend"},
-            {102, nullptr, "Resume"},
-            {103, nullptr, "GetState"},
-            {104, nullptr, "GetStatistics"},
-            {111, nullptr, "GetJid"},
-            {120, nullptr, "CreateNotificationReceiver"},
-            {151, nullptr, "GetStateWithHandover"},
-            {152, nullptr, "GetStateChangeEventWithHandover"},
-            {153, nullptr, "GetDropEventWithHandover"},
-            {154, nullptr, "CreateTokenAsync"}
+            FunctionInfo{1, nullptr, "ListenAll"},
+            FunctionInfo{2, nullptr, "ListenTo"},
+            FunctionInfo{3, nullptr, "Receive"},
+            FunctionInfo{4, nullptr, "ReceiveRaw"},
+            FunctionInfo{5, C<&INpnsUser::GetReceiveEvent>, "GetReceiveEvent"},
+            FunctionInfo{7, nullptr, "GetStateChangeEvent"},
+            FunctionInfo{8, C<&INpnsUser::ListenToByName>, "ListenToByName"}, // 18.0.0+
+            FunctionInfo{21, nullptr, "CreateToken"},
+            FunctionInfo{23, nullptr, "DestroyToken"},
+            FunctionInfo{25, nullptr, "QueryIsTokenValid"},
+            FunctionInfo{26, nullptr, "ListenToMyApplicationId"},
+            FunctionInfo{101, nullptr, "Suspend"},
+            FunctionInfo{102, nullptr, "Resume"},
+            FunctionInfo{103, nullptr, "GetState"},
+            FunctionInfo{104, nullptr, "GetStatistics"},
+            FunctionInfo{111, nullptr, "GetJid"},
+            FunctionInfo{120, nullptr, "CreateNotificationReceiver"},
+            FunctionInfo{151, nullptr, "GetStateWithHandover"},
+            FunctionInfo{152, nullptr, "GetStateChangeEventWithHandover"},
+            FunctionInfo{153, nullptr, "GetDropEventWithHandover"},
+            FunctionInfo{154, nullptr, "CreateTokenAsync"}
         };
         // clang-format on
 

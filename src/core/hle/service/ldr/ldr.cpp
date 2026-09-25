@@ -15,9 +15,9 @@ public:
     explicit DebugMonitor(Core::System& system_) : ServiceFramework{system_, "ldr:dmnt"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "SetProgramArgument"},
-            {1, nullptr, "FlushArguments"},
-            {2, nullptr, "GetProcessModuleInfo"}
+            FunctionInfo{0, nullptr, "SetProgramArgument"},
+            FunctionInfo{1, nullptr, "FlushArguments"},
+            FunctionInfo{2, nullptr, "GetProcessModuleInfo"}
         };
         // clang-format on
 
@@ -30,11 +30,11 @@ public:
     explicit ProcessManager(Core::System& system_) : ServiceFramework{system_, "ldr:pm"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "CreateProcess"},
-            {1, nullptr, "GetProgramInfo"},
-            {2, nullptr, "PinProgram"},
-            {3, nullptr, "UnpinProgram"},
-            {4, nullptr, "SetEnabledProgramVerification"}
+            FunctionInfo{0, nullptr, "CreateProcess"},
+            FunctionInfo{1, nullptr, "GetProgramInfo"},
+            FunctionInfo{2, nullptr, "PinProgram"},
+            FunctionInfo{3, nullptr, "UnpinProgram"},
+            FunctionInfo{4, nullptr, "SetEnabledProgramVerification"}
         };
         // clang-format on
 
@@ -47,8 +47,8 @@ public:
     explicit Shell(Core::System& system_) : ServiceFramework{system_, "ldr:shel"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "SetProgramArgument"},
-            {1, nullptr, "FlushArguments"}
+            FunctionInfo{0, nullptr, "SetProgramArgument"},
+            FunctionInfo{1, nullptr, "FlushArguments"}
         };
         // clang-format on
 

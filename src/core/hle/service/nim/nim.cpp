@@ -28,12 +28,12 @@ public:
           service_context{system_, "IShopServiceAsync"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, D<&IShopServiceAsync::Cancel>, "Cancel"},
-            {1, D<&IShopServiceAsync::GetSize>, "GetSize"},
-            {2, D<&IShopServiceAsync::Read>, "Read"},
-            {3, D<&IShopServiceAsync::GetErrorCode>, "GetErrorCode"},
-            {4, D<&IShopServiceAsync::Request>, "Request"},
-            {5, D<&IShopServiceAsync::Prepare>, "Prepare"}
+            FunctionInfo{0, D<&IShopServiceAsync::Cancel>, "Cancel"},
+            FunctionInfo{1, D<&IShopServiceAsync::GetSize>, "GetSize"},
+            FunctionInfo{2, D<&IShopServiceAsync::Read>, "Read"},
+            FunctionInfo{3, D<&IShopServiceAsync::GetErrorCode>, "GetErrorCode"},
+            FunctionInfo{4, D<&IShopServiceAsync::Request>, "Request"},
+            FunctionInfo{5, D<&IShopServiceAsync::Prepare>, "Prepare"}
         };
         // clang-format on
 
@@ -144,7 +144,7 @@ public:
         : ServiceFramework{system_, "IShopServiceAccessor"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IShopServiceAccessor::CreateAsyncInterface, "CreateAsyncInterface"}
+            FunctionInfo{0, &IShopServiceAccessor::CreateAsyncInterface, "CreateAsyncInterface"}
         };
         // clang-format on
 
@@ -168,7 +168,7 @@ public:
         : ServiceFramework{system_, "IShopServiceAccessServer"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IShopServiceAccessServer::CreateAccessorInterface, "CreateAccessorInterface"}
+            FunctionInfo{0, &IShopServiceAccessServer::CreateAccessorInterface, "CreateAccessorInterface"}
         };
         // clang-format on
 
@@ -189,229 +189,229 @@ public:
     explicit NIM(Core::System& system_) : ServiceFramework{system_, "nim"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "CreateSystemUpdateTask"},
-            {1, nullptr, "DestroySystemUpdateTask"},
-            {2, nullptr, "ListSystemUpdateTask"},
-            {3, nullptr, "RequestSystemUpdateTaskRun"},
-            {4, nullptr, "GetSystemUpdateTaskInfo"},
-            {5, nullptr, "CommitSystemUpdateTask"},
-            {6, nullptr, "CreateNetworkInstallTask"},
-            {7, nullptr, "DestroyNetworkInstallTask"},
-            {8, nullptr, "ListNetworkInstallTask"},
-            {9, nullptr, "RequestNetworkInstallTaskRun"},
-            {10, nullptr, "GetNetworkInstallTaskInfo"},
-            {11, nullptr, "CommitNetworkInstallTask"},
-            {12, nullptr, "RequestLatestSystemUpdateMeta"},
-            {14, nullptr, "ListApplicationNetworkInstallTask"},
-            {15, nullptr, "ListNetworkInstallTaskContentMeta"},
-            {16, nullptr, "RequestLatestVersion"},
-            {17, nullptr, "SetNetworkInstallTaskAttribute"},
-            {18, nullptr, "AddNetworkInstallTaskContentMeta"},
-            {19, nullptr, "GetDownloadedSystemDataPath"},
-            {20, nullptr, "CalculateNetworkInstallTaskRequiredSize"},
-            {21, nullptr, "IsExFatDriverIncluded"},
-            {22, nullptr, "GetBackgroundDownloadStressTaskInfo"},
-            {23, nullptr, "RequestDeviceAuthenticationToken"},
-            {24, nullptr, "RequestGameCardRegistrationStatus"},
-            {25, nullptr, "RequestRegisterGameCard"},
-            {26, nullptr, "RequestRegisterNotificationToken"},
-            {27, nullptr, "RequestDownloadTaskList"},
-            {28, nullptr, "RequestApplicationControl"},
-            {29, nullptr, "RequestLatestApplicationControl"},
-            {30, nullptr, "RequestVersionList"},
-            {31, nullptr, "CreateApplyDeltaTask"},
-            {32, nullptr, "DestroyApplyDeltaTask"},
-            {33, nullptr, "ListApplicationApplyDeltaTask"},
-            {34, nullptr, "RequestApplyDeltaTaskRun"},
-            {35, nullptr, "GetApplyDeltaTaskInfo"},
-            {36, nullptr, "ListApplyDeltaTask"},
-            {37, nullptr, "CommitApplyDeltaTask"},
-            {38, nullptr, "CalculateApplyDeltaTaskRequiredSize"},
-            {39, nullptr, "PrepareShutdown"},
-            {40, nullptr, "ListApplyDeltaTask"},
-            {41, nullptr, "ClearNotEnoughSpaceStateOfApplyDeltaTask"},
-            {42, nullptr, "CreateApplyDeltaTaskFromDownloadTask"},
-            {43, nullptr, "GetBackgroundApplyDeltaStressTaskInfo"},
-            {44, nullptr, "GetApplyDeltaTaskRequiredStorage"},
-            {45, nullptr, "CalculateNetworkInstallTaskContentsSize"},
-            {46, nullptr, "PrepareShutdownForSystemUpdate"},
-            {47, nullptr, "FindMaxRequiredApplicationVersionOfTask"},
-            {48, nullptr, "CommitNetworkInstallTaskPartially"},
-            {49, nullptr, "ListNetworkInstallTaskCommittedContentMeta"},
-            {50, nullptr, "ListNetworkInstallTaskNotCommittedContentMeta"},
-            {51, nullptr, "FindMaxRequiredSystemVersionOfTask"},
-            {52, nullptr, "GetNetworkInstallTaskErrorContext"},
-            {53, nullptr, "CreateLocalCommunicationReceiveApplicationTask"},
-            {54, nullptr, "DestroyLocalCommunicationReceiveApplicationTask"},
-            {55, nullptr, "ListLocalCommunicationReceiveApplicationTask"},
-            {56, nullptr, "RequestLocalCommunicationReceiveApplicationTaskRun"},
-            {57, nullptr, "GetLocalCommunicationReceiveApplicationTaskInfo"},
-            {58, nullptr, "CommitLocalCommunicationReceiveApplicationTask"},
-            {59, nullptr, "ListLocalCommunicationReceiveApplicationTaskContentMeta"},
-            {60, nullptr, "CreateLocalCommunicationSendApplicationTask"},
-            {61, nullptr, "RequestLocalCommunicationSendApplicationTaskRun"},
-            {62, nullptr, "GetLocalCommunicationReceiveApplicationTaskErrorContext"},
-            {63, nullptr, "GetLocalCommunicationSendApplicationTaskInfo"},
-            {64, nullptr, "DestroyLocalCommunicationSendApplicationTask"},
-            {65, nullptr, "GetLocalCommunicationSendApplicationTaskErrorContext"},
-            {66, nullptr, "CalculateLocalCommunicationReceiveApplicationTaskRequiredSize"},
-            {67, nullptr, "ListApplicationLocalCommunicationReceiveApplicationTask"},
-            {68, nullptr, "ListApplicationLocalCommunicationSendApplicationTask"},
-            {69, nullptr, "CreateLocalCommunicationReceiveSystemUpdateTask"},
-            {70, nullptr, "DestroyLocalCommunicationReceiveSystemUpdateTask"},
-            {71, nullptr, "ListLocalCommunicationReceiveSystemUpdateTask"},
-            {72, nullptr, "RequestLocalCommunicationReceiveSystemUpdateTaskRun"},
-            {73, nullptr, "GetLocalCommunicationReceiveSystemUpdateTaskInfo"},
-            {74, nullptr, "CommitLocalCommunicationReceiveSystemUpdateTask"},
-            {75, nullptr, "GetLocalCommunicationReceiveSystemUpdateTaskErrorContext"},
-            {76, nullptr, "CreateLocalCommunicationSendSystemUpdateTask"},
-            {77, nullptr, "RequestLocalCommunicationSendSystemUpdateTaskRun"},
-            {78, nullptr, "GetLocalCommunicationSendSystemUpdateTaskInfo"},
-            {79, nullptr, "DestroyLocalCommunicationSendSystemUpdateTask"},
-            {80, nullptr, "GetLocalCommunicationSendSystemUpdateTaskErrorContext"},
-            {81, nullptr, "ListLocalCommunicationSendSystemUpdateTask"},
-            {82, nullptr, "GetReceivedSystemDataPath"},
-            {83, nullptr, "CalculateApplyDeltaTaskOccupiedSize"},
-            {84, nullptr, "ReloadErrorSimulation"},
-            {85, nullptr, "ListNetworkInstallTaskContentMetaFromInstallMeta"},
-            {86, nullptr, "ListNetworkInstallTaskOccupiedSize"},
-            {87, nullptr, "RequestQueryAvailableELicenses"},
-            {88, nullptr, "RequestAssignELicenses"},
-            {89, nullptr, "RequestExtendELicenses"},
-            {90, nullptr, "RequestSyncELicenses"},
-            {91, nullptr, "Unknown91"}, //6.0.0-14.1.2
-            {92, nullptr, "Unknown92"}, //21.0.0+
-            {93, nullptr, "RequestReportActiveELicenses"},
-            {94, nullptr, "RequestReportActiveELicensesPassively"},
-            {95, nullptr, "RequestRegisterDynamicRightsNotificationToken"},
-            {96, nullptr, "RequestAssignAllDeviceLinkedELicenses"},
-            {97, nullptr, "RequestRevokeAllELicenses"},
-            {98, nullptr, "RequestPrefetchForDynamicRights"},
-            {99, nullptr, "CreateNetworkInstallTask"},
-            {100, nullptr, "ListNetworkInstallTaskRightsIds"},
-            {101, nullptr, "RequestDownloadETickets"},
-            {102, nullptr, "RequestQueryDownloadableContents"},
-            {103, nullptr, "DeleteNetworkInstallTaskContentMeta"},
-            {104, nullptr, "RequestIssueEdgeTokenForDebug"},
-            {105, nullptr, "RequestQueryAvailableELicenses2"},
-            {106, nullptr, "RequestAssignELicenses2"},
-            {107, nullptr, "GetNetworkInstallTaskStateCounter"},
-            {108, nullptr, "InvalidateDynamicRightsNaIdTokenCacheForDebug"},
-            {109, nullptr, "ListNetworkInstallTaskPartialInstallContentMeta"},
-            {110, nullptr, "ListNetworkInstallTaskRightsIdsFromIndex"},
-            {111, nullptr, "AddNetworkInstallTaskContentMetaForUser"},
-            {112, nullptr, "RequestAssignELicensesAndDownloadETickets"},
-            {113, nullptr, "RequestQueryAvailableCommonELicenses"},
-            {114, nullptr, "SetNetworkInstallTaskExtendedAttribute"},
-            {115, nullptr, "GetNetworkInstallTaskExtendedAttribute"},
-            {116, nullptr, "GetAllocatorInfo"},
-            {117, nullptr, "RequestQueryDownloadableContentsByApplicationId"},
-            {118, nullptr, "MarkNoDownloadRightsErrorResolved"},
-            {119, nullptr, "GetApplyDeltaTaskAllAppliedContentMeta"},
-            {120, nullptr, "PrioritizeNetworkInstallTask"},
-            {121, nullptr, "RequestQueryAvailableCommonELicenses2"},
-            {122, nullptr, "RequestAssignCommonELicenses"},
-            {123, nullptr, "RequestAssignCommonELicenses2"},
-            {124, nullptr, "IsNetworkInstallTaskFrontOfQueue"},
-            {125, nullptr, "PrioritizeApplyDeltaTask"},
-            {126, nullptr, "RerouteDownloadingPatch"},
-            {127, nullptr, "UnmarkNoDownloadRightsErrorResolved"},
-            {128, nullptr, "RequestContentsSize"},
-            {129, nullptr, "RequestContentsAuthorizationToken"},
-            {130, nullptr, "RequestCdnVendorDiscovery"},
-            {131, nullptr, "RefreshDebugAvailability"},
-            {132, nullptr, "ClearResponseSimulationEntry"},
-            {133, nullptr, "RegisterResponseSimulationEntry"},
-            {134, nullptr, "GetProcessedCdnVendors"},
-            {135, nullptr, "RefreshRuntimeBehaviorsForDebug"},
-            {136, nullptr, "RequestOnlineSubscriptionFreeTrialAvailability"},
-            {137, nullptr, "GetNetworkInstallTaskContentMetaCount"},
-            {138, nullptr, "RequestRevokeELicenses"},
-            {139, nullptr, "EnableNetworkConnectionToUseApplicationCore"},
-            {140, nullptr, "DisableNetworkConnectionToUseApplicationCore"},
-            {141, nullptr, "IsNetworkConnectionEnabledToUseApplicationCore"},
-            {142, nullptr, "RequestCheckSafeSystemVersion"},
-            {143, nullptr, "RequestApplicationIcon"},
-            {144, nullptr, "RequestDownloadIdbeIconFile"},
-            {147, nullptr, "Unknown147"}, //18.0.0+
-            {148, nullptr, "Unknown148"}, //18.0.0+
-            {150, nullptr, "Unknown150"}, //19.0.0+
-            {151, nullptr, "Unknown151"}, //20.0.0+
-            {152, nullptr, "Unknown152"}, //20.0.0+
-            {153, nullptr, "Unknown153"}, //20.0.0+
-            {154, nullptr, "Unknown154"}, //20.0.0+
-            {155, nullptr, "Unknown155"}, //20.0.0+
-            {156, nullptr, "Unknown156"}, //20.0.0+
-            {157, nullptr, "Unknown157"}, //20.0.0+
-            {158, nullptr, "Unknown158"}, //20.0.0+
-            {159, nullptr, "Unknown159"}, //20.0.0+
-            {160, nullptr, "Unknown160"}, //20.0.0+
-            {161, nullptr, "Unknown161"}, //20.0.0+
-            {162, nullptr, "Unknown162"}, //20.0.0+
-            {163, nullptr, "Unknown163"}, //20.0.0+
-            {164, nullptr, "Unknown164"}, //20.0.0+
-            {165, nullptr, "Unknown165"}, //20.0.0+
-            {166, nullptr, "Unknown166"}, //20.0.0+
-            {167, nullptr, "Unknown167"}, //20.0.0+
-            {168, nullptr, "Unknown168"}, //20.0.0+
-            {169, nullptr, "Unknown169"}, //20.0.0+
-            {170, nullptr, "Unknown170"}, //20.0.0+
-            {171, nullptr, "Unknown171"}, //20.0.0+
-            {172, nullptr, "Unknown172"}, //20.0.0+
-            {173, nullptr, "Unknown173"}, //20.0.0+
-            {174, nullptr, "Unknown174"}, //20.0.0+
-            {175, nullptr, "Unknown175"}, //20.0.0+
-            {176, nullptr, "Unknown176"}, //20.0.0+
-            {177, nullptr, "Unknown177"}, //20.0.0+
-            {2000, nullptr, "Unknown2000"}, //20.0.0+
-            {2001, nullptr, "Unknown2001"}, //20.0.0+
-            {2002, nullptr, "Unknown2002"}, //20.0.0+
-            {2003, nullptr, "Unknown2003"}, //20.0.0+
-            {2004, nullptr, "Unknown2004"}, //20.0.0+
-            {2007, nullptr, "Unknown2007"}, //20.0.0+
-            {2011, nullptr, "Unknown2011"}, //20.0.0+
-            {2012, nullptr, "Unknown2012"}, //20.0.0+
-            {2013, nullptr, "Unknown2013"}, //20.0.0+
-            {2014, nullptr, "Unknown2014"}, //20.0.0+
-            {2015, nullptr, "Unknown2015"}, //20.0.0+
-            {2016, nullptr, "Unknown2016"}, //20.0.0+
-            {2017, nullptr, "Unknown2017"}, //20.0.0+
-            {2018, nullptr, "Unknown2018"}, //20.0.0+
-            {2019, nullptr, "Unknown2019"}, //20.0.0+
-            {2020, nullptr, "Unknown2020"}, //20.0.0+
-            {2021, nullptr, "Unknown2021"}, //20.0.0+
-            {2022, nullptr, "Unknown2022"}, //20.0.0+
-            {2023, nullptr, "Unknown2023"}, //20.0.0+
-            {2024, nullptr, "Unknown2024"}, //20.0.0+
-            {2025, nullptr, "Unknown2025"}, //20.0.0+
-            {2026, nullptr, "Unknown2026"}, //20.0.0+
-            {2027, nullptr, "Unknown2027"}, //20.0.0+
-            {2028, nullptr, "Unknown2028"}, //20.0.0+
-            {2029, nullptr, "Unknown2029"}, //20.0.0+
-            {2030, nullptr, "Unknown2030"}, //20.0.0+
-            {2031, nullptr, "Unknown2031"}, //20.0.0+
-            {2032, nullptr, "Unknown2032"}, //20.0.0+
-            {2033, nullptr, "Unknown2033"}, //20.0.0+
-            {2034, nullptr, "Unknown2034"}, //20.0.0+
-            {2035, nullptr, "Unknown2035"}, //20.0.0+
-            {2036, nullptr, "Unknown2036"}, //20.0.0+
-            {2037, nullptr, "Unknown2037"}, //20.0.0+
-            {2038, nullptr, "Unknown2038"}, //20.0.0+
-            {2039, nullptr, "Unknown2039"}, //20.0.0+
-            {2040, nullptr, "Unknown2040"}, //20.0.0+
-            {2041, nullptr, "Unknown2041"}, //20.0.0+
-            {2042, nullptr, "Unknown2042"}, //20.0.0+
-            {2043, nullptr, "Unknown2043"}, //20.0.0+
-            {2044, nullptr, "Unknown2044"}, //20.0.0+
-            {2045, nullptr, "Unknown2045"}, //20.0.0+
-            {2046, nullptr, "Unknown2046"}, //20.0.0+
-            {2047, nullptr, "Unknown2047"}, //20.0.0+
-            {2048, nullptr, "Unknown2048"}, //20.0.0+
-            {2049, nullptr, "Unknown2049"}, //20.0.0+
-            {2050, nullptr, "Unknown2050"}, //20.0.0+
-            {2051, nullptr, "Unknown2051"}, //20.0.0+
-            {3000, nullptr, "RequestLatestApplicationIcon"}, //17.0.0+
-            {3001, nullptr, "RequestDownloadIdbeLatestIconFile"}, //17.0.0+
+            FunctionInfo{0, nullptr, "CreateSystemUpdateTask"},
+            FunctionInfo{1, nullptr, "DestroySystemUpdateTask"},
+            FunctionInfo{2, nullptr, "ListSystemUpdateTask"},
+            FunctionInfo{3, nullptr, "RequestSystemUpdateTaskRun"},
+            FunctionInfo{4, nullptr, "GetSystemUpdateTaskInfo"},
+            FunctionInfo{5, nullptr, "CommitSystemUpdateTask"},
+            FunctionInfo{6, nullptr, "CreateNetworkInstallTask"},
+            FunctionInfo{7, nullptr, "DestroyNetworkInstallTask"},
+            FunctionInfo{8, nullptr, "ListNetworkInstallTask"},
+            FunctionInfo{9, nullptr, "RequestNetworkInstallTaskRun"},
+            FunctionInfo{10, nullptr, "GetNetworkInstallTaskInfo"},
+            FunctionInfo{11, nullptr, "CommitNetworkInstallTask"},
+            FunctionInfo{12, nullptr, "RequestLatestSystemUpdateMeta"},
+            FunctionInfo{14, nullptr, "ListApplicationNetworkInstallTask"},
+            FunctionInfo{15, nullptr, "ListNetworkInstallTaskContentMeta"},
+            FunctionInfo{16, nullptr, "RequestLatestVersion"},
+            FunctionInfo{17, nullptr, "SetNetworkInstallTaskAttribute"},
+            FunctionInfo{18, nullptr, "AddNetworkInstallTaskContentMeta"},
+            FunctionInfo{19, nullptr, "GetDownloadedSystemDataPath"},
+            FunctionInfo{20, nullptr, "CalculateNetworkInstallTaskRequiredSize"},
+            FunctionInfo{21, nullptr, "IsExFatDriverIncluded"},
+            FunctionInfo{22, nullptr, "GetBackgroundDownloadStressTaskInfo"},
+            FunctionInfo{23, nullptr, "RequestDeviceAuthenticationToken"},
+            FunctionInfo{24, nullptr, "RequestGameCardRegistrationStatus"},
+            FunctionInfo{25, nullptr, "RequestRegisterGameCard"},
+            FunctionInfo{26, nullptr, "RequestRegisterNotificationToken"},
+            FunctionInfo{27, nullptr, "RequestDownloadTaskList"},
+            FunctionInfo{28, nullptr, "RequestApplicationControl"},
+            FunctionInfo{29, nullptr, "RequestLatestApplicationControl"},
+            FunctionInfo{30, nullptr, "RequestVersionList"},
+            FunctionInfo{31, nullptr, "CreateApplyDeltaTask"},
+            FunctionInfo{32, nullptr, "DestroyApplyDeltaTask"},
+            FunctionInfo{33, nullptr, "ListApplicationApplyDeltaTask"},
+            FunctionInfo{34, nullptr, "RequestApplyDeltaTaskRun"},
+            FunctionInfo{35, nullptr, "GetApplyDeltaTaskInfo"},
+            FunctionInfo{36, nullptr, "ListApplyDeltaTask"},
+            FunctionInfo{37, nullptr, "CommitApplyDeltaTask"},
+            FunctionInfo{38, nullptr, "CalculateApplyDeltaTaskRequiredSize"},
+            FunctionInfo{39, nullptr, "PrepareShutdown"},
+            FunctionInfo{40, nullptr, "ListApplyDeltaTask"},
+            FunctionInfo{41, nullptr, "ClearNotEnoughSpaceStateOfApplyDeltaTask"},
+            FunctionInfo{42, nullptr, "CreateApplyDeltaTaskFromDownloadTask"},
+            FunctionInfo{43, nullptr, "GetBackgroundApplyDeltaStressTaskInfo"},
+            FunctionInfo{44, nullptr, "GetApplyDeltaTaskRequiredStorage"},
+            FunctionInfo{45, nullptr, "CalculateNetworkInstallTaskContentsSize"},
+            FunctionInfo{46, nullptr, "PrepareShutdownForSystemUpdate"},
+            FunctionInfo{47, nullptr, "FindMaxRequiredApplicationVersionOfTask"},
+            FunctionInfo{48, nullptr, "CommitNetworkInstallTaskPartially"},
+            FunctionInfo{49, nullptr, "ListNetworkInstallTaskCommittedContentMeta"},
+            FunctionInfo{50, nullptr, "ListNetworkInstallTaskNotCommittedContentMeta"},
+            FunctionInfo{51, nullptr, "FindMaxRequiredSystemVersionOfTask"},
+            FunctionInfo{52, nullptr, "GetNetworkInstallTaskErrorContext"},
+            FunctionInfo{53, nullptr, "CreateLocalCommunicationReceiveApplicationTask"},
+            FunctionInfo{54, nullptr, "DestroyLocalCommunicationReceiveApplicationTask"},
+            FunctionInfo{55, nullptr, "ListLocalCommunicationReceiveApplicationTask"},
+            FunctionInfo{56, nullptr, "RequestLocalCommunicationReceiveApplicationTaskRun"},
+            FunctionInfo{57, nullptr, "GetLocalCommunicationReceiveApplicationTaskInfo"},
+            FunctionInfo{58, nullptr, "CommitLocalCommunicationReceiveApplicationTask"},
+            FunctionInfo{59, nullptr, "ListLocalCommunicationReceiveApplicationTaskContentMeta"},
+            FunctionInfo{60, nullptr, "CreateLocalCommunicationSendApplicationTask"},
+            FunctionInfo{61, nullptr, "RequestLocalCommunicationSendApplicationTaskRun"},
+            FunctionInfo{62, nullptr, "GetLocalCommunicationReceiveApplicationTaskErrorContext"},
+            FunctionInfo{63, nullptr, "GetLocalCommunicationSendApplicationTaskInfo"},
+            FunctionInfo{64, nullptr, "DestroyLocalCommunicationSendApplicationTask"},
+            FunctionInfo{65, nullptr, "GetLocalCommunicationSendApplicationTaskErrorContext"},
+            FunctionInfo{66, nullptr, "CalculateLocalCommunicationReceiveApplicationTaskRequiredSize"},
+            FunctionInfo{67, nullptr, "ListApplicationLocalCommunicationReceiveApplicationTask"},
+            FunctionInfo{68, nullptr, "ListApplicationLocalCommunicationSendApplicationTask"},
+            FunctionInfo{69, nullptr, "CreateLocalCommunicationReceiveSystemUpdateTask"},
+            FunctionInfo{70, nullptr, "DestroyLocalCommunicationReceiveSystemUpdateTask"},
+            FunctionInfo{71, nullptr, "ListLocalCommunicationReceiveSystemUpdateTask"},
+            FunctionInfo{72, nullptr, "RequestLocalCommunicationReceiveSystemUpdateTaskRun"},
+            FunctionInfo{73, nullptr, "GetLocalCommunicationReceiveSystemUpdateTaskInfo"},
+            FunctionInfo{74, nullptr, "CommitLocalCommunicationReceiveSystemUpdateTask"},
+            FunctionInfo{75, nullptr, "GetLocalCommunicationReceiveSystemUpdateTaskErrorContext"},
+            FunctionInfo{76, nullptr, "CreateLocalCommunicationSendSystemUpdateTask"},
+            FunctionInfo{77, nullptr, "RequestLocalCommunicationSendSystemUpdateTaskRun"},
+            FunctionInfo{78, nullptr, "GetLocalCommunicationSendSystemUpdateTaskInfo"},
+            FunctionInfo{79, nullptr, "DestroyLocalCommunicationSendSystemUpdateTask"},
+            FunctionInfo{80, nullptr, "GetLocalCommunicationSendSystemUpdateTaskErrorContext"},
+            FunctionInfo{81, nullptr, "ListLocalCommunicationSendSystemUpdateTask"},
+            FunctionInfo{82, nullptr, "GetReceivedSystemDataPath"},
+            FunctionInfo{83, nullptr, "CalculateApplyDeltaTaskOccupiedSize"},
+            FunctionInfo{84, nullptr, "ReloadErrorSimulation"},
+            FunctionInfo{85, nullptr, "ListNetworkInstallTaskContentMetaFromInstallMeta"},
+            FunctionInfo{86, nullptr, "ListNetworkInstallTaskOccupiedSize"},
+            FunctionInfo{87, nullptr, "RequestQueryAvailableELicenses"},
+            FunctionInfo{88, nullptr, "RequestAssignELicenses"},
+            FunctionInfo{89, nullptr, "RequestExtendELicenses"},
+            FunctionInfo{90, nullptr, "RequestSyncELicenses"},
+            FunctionInfo{91, nullptr, "Unknown91"}, //6.0.0-14.1.2
+            FunctionInfo{92, nullptr, "Unknown92"}, //21.0.0+
+            FunctionInfo{93, nullptr, "RequestReportActiveELicenses"},
+            FunctionInfo{94, nullptr, "RequestReportActiveELicensesPassively"},
+            FunctionInfo{95, nullptr, "RequestRegisterDynamicRightsNotificationToken"},
+            FunctionInfo{96, nullptr, "RequestAssignAllDeviceLinkedELicenses"},
+            FunctionInfo{97, nullptr, "RequestRevokeAllELicenses"},
+            FunctionInfo{98, nullptr, "RequestPrefetchForDynamicRights"},
+            FunctionInfo{99, nullptr, "CreateNetworkInstallTask"},
+            FunctionInfo{100, nullptr, "ListNetworkInstallTaskRightsIds"},
+            FunctionInfo{101, nullptr, "RequestDownloadETickets"},
+            FunctionInfo{102, nullptr, "RequestQueryDownloadableContents"},
+            FunctionInfo{103, nullptr, "DeleteNetworkInstallTaskContentMeta"},
+            FunctionInfo{104, nullptr, "RequestIssueEdgeTokenForDebug"},
+            FunctionInfo{105, nullptr, "RequestQueryAvailableELicenses2"},
+            FunctionInfo{106, nullptr, "RequestAssignELicenses2"},
+            FunctionInfo{107, nullptr, "GetNetworkInstallTaskStateCounter"},
+            FunctionInfo{108, nullptr, "InvalidateDynamicRightsNaIdTokenCacheForDebug"},
+            FunctionInfo{109, nullptr, "ListNetworkInstallTaskPartialInstallContentMeta"},
+            FunctionInfo{110, nullptr, "ListNetworkInstallTaskRightsIdsFromIndex"},
+            FunctionInfo{111, nullptr, "AddNetworkInstallTaskContentMetaForUser"},
+            FunctionInfo{112, nullptr, "RequestAssignELicensesAndDownloadETickets"},
+            FunctionInfo{113, nullptr, "RequestQueryAvailableCommonELicenses"},
+            FunctionInfo{114, nullptr, "SetNetworkInstallTaskExtendedAttribute"},
+            FunctionInfo{115, nullptr, "GetNetworkInstallTaskExtendedAttribute"},
+            FunctionInfo{116, nullptr, "GetAllocatorInfo"},
+            FunctionInfo{117, nullptr, "RequestQueryDownloadableContentsByApplicationId"},
+            FunctionInfo{118, nullptr, "MarkNoDownloadRightsErrorResolved"},
+            FunctionInfo{119, nullptr, "GetApplyDeltaTaskAllAppliedContentMeta"},
+            FunctionInfo{120, nullptr, "PrioritizeNetworkInstallTask"},
+            FunctionInfo{121, nullptr, "RequestQueryAvailableCommonELicenses2"},
+            FunctionInfo{122, nullptr, "RequestAssignCommonELicenses"},
+            FunctionInfo{123, nullptr, "RequestAssignCommonELicenses2"},
+            FunctionInfo{124, nullptr, "IsNetworkInstallTaskFrontOfQueue"},
+            FunctionInfo{125, nullptr, "PrioritizeApplyDeltaTask"},
+            FunctionInfo{126, nullptr, "RerouteDownloadingPatch"},
+            FunctionInfo{127, nullptr, "UnmarkNoDownloadRightsErrorResolved"},
+            FunctionInfo{128, nullptr, "RequestContentsSize"},
+            FunctionInfo{129, nullptr, "RequestContentsAuthorizationToken"},
+            FunctionInfo{130, nullptr, "RequestCdnVendorDiscovery"},
+            FunctionInfo{131, nullptr, "RefreshDebugAvailability"},
+            FunctionInfo{132, nullptr, "ClearResponseSimulationEntry"},
+            FunctionInfo{133, nullptr, "RegisterResponseSimulationEntry"},
+            FunctionInfo{134, nullptr, "GetProcessedCdnVendors"},
+            FunctionInfo{135, nullptr, "RefreshRuntimeBehaviorsForDebug"},
+            FunctionInfo{136, nullptr, "RequestOnlineSubscriptionFreeTrialAvailability"},
+            FunctionInfo{137, nullptr, "GetNetworkInstallTaskContentMetaCount"},
+            FunctionInfo{138, nullptr, "RequestRevokeELicenses"},
+            FunctionInfo{139, nullptr, "EnableNetworkConnectionToUseApplicationCore"},
+            FunctionInfo{140, nullptr, "DisableNetworkConnectionToUseApplicationCore"},
+            FunctionInfo{141, nullptr, "IsNetworkConnectionEnabledToUseApplicationCore"},
+            FunctionInfo{142, nullptr, "RequestCheckSafeSystemVersion"},
+            FunctionInfo{143, nullptr, "RequestApplicationIcon"},
+            FunctionInfo{144, nullptr, "RequestDownloadIdbeIconFile"},
+            FunctionInfo{147, nullptr, "Unknown147"}, //18.0.0+
+            FunctionInfo{148, nullptr, "Unknown148"}, //18.0.0+
+            FunctionInfo{150, nullptr, "Unknown150"}, //19.0.0+
+            FunctionInfo{151, nullptr, "Unknown151"}, //20.0.0+
+            FunctionInfo{152, nullptr, "Unknown152"}, //20.0.0+
+            FunctionInfo{153, nullptr, "Unknown153"}, //20.0.0+
+            FunctionInfo{154, nullptr, "Unknown154"}, //20.0.0+
+            FunctionInfo{155, nullptr, "Unknown155"}, //20.0.0+
+            FunctionInfo{156, nullptr, "Unknown156"}, //20.0.0+
+            FunctionInfo{157, nullptr, "Unknown157"}, //20.0.0+
+            FunctionInfo{158, nullptr, "Unknown158"}, //20.0.0+
+            FunctionInfo{159, nullptr, "Unknown159"}, //20.0.0+
+            FunctionInfo{160, nullptr, "Unknown160"}, //20.0.0+
+            FunctionInfo{161, nullptr, "Unknown161"}, //20.0.0+
+            FunctionInfo{162, nullptr, "Unknown162"}, //20.0.0+
+            FunctionInfo{163, nullptr, "Unknown163"}, //20.0.0+
+            FunctionInfo{164, nullptr, "Unknown164"}, //20.0.0+
+            FunctionInfo{165, nullptr, "Unknown165"}, //20.0.0+
+            FunctionInfo{166, nullptr, "Unknown166"}, //20.0.0+
+            FunctionInfo{167, nullptr, "Unknown167"}, //20.0.0+
+            FunctionInfo{168, nullptr, "Unknown168"}, //20.0.0+
+            FunctionInfo{169, nullptr, "Unknown169"}, //20.0.0+
+            FunctionInfo{170, nullptr, "Unknown170"}, //20.0.0+
+            FunctionInfo{171, nullptr, "Unknown171"}, //20.0.0+
+            FunctionInfo{172, nullptr, "Unknown172"}, //20.0.0+
+            FunctionInfo{173, nullptr, "Unknown173"}, //20.0.0+
+            FunctionInfo{174, nullptr, "Unknown174"}, //20.0.0+
+            FunctionInfo{175, nullptr, "Unknown175"}, //20.0.0+
+            FunctionInfo{176, nullptr, "Unknown176"}, //20.0.0+
+            FunctionInfo{177, nullptr, "Unknown177"}, //20.0.0+
+            FunctionInfo{2000, nullptr, "Unknown2000"}, //20.0.0+
+            FunctionInfo{2001, nullptr, "Unknown2001"}, //20.0.0+
+            FunctionInfo{2002, nullptr, "Unknown2002"}, //20.0.0+
+            FunctionInfo{2003, nullptr, "Unknown2003"}, //20.0.0+
+            FunctionInfo{2004, nullptr, "Unknown2004"}, //20.0.0+
+            FunctionInfo{2007, nullptr, "Unknown2007"}, //20.0.0+
+            FunctionInfo{2011, nullptr, "Unknown2011"}, //20.0.0+
+            FunctionInfo{2012, nullptr, "Unknown2012"}, //20.0.0+
+            FunctionInfo{2013, nullptr, "Unknown2013"}, //20.0.0+
+            FunctionInfo{2014, nullptr, "Unknown2014"}, //20.0.0+
+            FunctionInfo{2015, nullptr, "Unknown2015"}, //20.0.0+
+            FunctionInfo{2016, nullptr, "Unknown2016"}, //20.0.0+
+            FunctionInfo{2017, nullptr, "Unknown2017"}, //20.0.0+
+            FunctionInfo{2018, nullptr, "Unknown2018"}, //20.0.0+
+            FunctionInfo{2019, nullptr, "Unknown2019"}, //20.0.0+
+            FunctionInfo{2020, nullptr, "Unknown2020"}, //20.0.0+
+            FunctionInfo{2021, nullptr, "Unknown2021"}, //20.0.0+
+            FunctionInfo{2022, nullptr, "Unknown2022"}, //20.0.0+
+            FunctionInfo{2023, nullptr, "Unknown2023"}, //20.0.0+
+            FunctionInfo{2024, nullptr, "Unknown2024"}, //20.0.0+
+            FunctionInfo{2025, nullptr, "Unknown2025"}, //20.0.0+
+            FunctionInfo{2026, nullptr, "Unknown2026"}, //20.0.0+
+            FunctionInfo{2027, nullptr, "Unknown2027"}, //20.0.0+
+            FunctionInfo{2028, nullptr, "Unknown2028"}, //20.0.0+
+            FunctionInfo{2029, nullptr, "Unknown2029"}, //20.0.0+
+            FunctionInfo{2030, nullptr, "Unknown2030"}, //20.0.0+
+            FunctionInfo{2031, nullptr, "Unknown2031"}, //20.0.0+
+            FunctionInfo{2032, nullptr, "Unknown2032"}, //20.0.0+
+            FunctionInfo{2033, nullptr, "Unknown2033"}, //20.0.0+
+            FunctionInfo{2034, nullptr, "Unknown2034"}, //20.0.0+
+            FunctionInfo{2035, nullptr, "Unknown2035"}, //20.0.0+
+            FunctionInfo{2036, nullptr, "Unknown2036"}, //20.0.0+
+            FunctionInfo{2037, nullptr, "Unknown2037"}, //20.0.0+
+            FunctionInfo{2038, nullptr, "Unknown2038"}, //20.0.0+
+            FunctionInfo{2039, nullptr, "Unknown2039"}, //20.0.0+
+            FunctionInfo{2040, nullptr, "Unknown2040"}, //20.0.0+
+            FunctionInfo{2041, nullptr, "Unknown2041"}, //20.0.0+
+            FunctionInfo{2042, nullptr, "Unknown2042"}, //20.0.0+
+            FunctionInfo{2043, nullptr, "Unknown2043"}, //20.0.0+
+            FunctionInfo{2044, nullptr, "Unknown2044"}, //20.0.0+
+            FunctionInfo{2045, nullptr, "Unknown2045"}, //20.0.0+
+            FunctionInfo{2046, nullptr, "Unknown2046"}, //20.0.0+
+            FunctionInfo{2047, nullptr, "Unknown2047"}, //20.0.0+
+            FunctionInfo{2048, nullptr, "Unknown2048"}, //20.0.0+
+            FunctionInfo{2049, nullptr, "Unknown2049"}, //20.0.0+
+            FunctionInfo{2050, nullptr, "Unknown2050"}, //20.0.0+
+            FunctionInfo{2051, nullptr, "Unknown2051"}, //20.0.0+
+            FunctionInfo{3000, nullptr, "RequestLatestApplicationIcon"}, //17.0.0+
+            FunctionInfo{3001, nullptr, "RequestDownloadIdbeLatestIconFile"}, //17.0.0+
         };
         // clang-format on
 
@@ -424,12 +424,12 @@ public:
     explicit NIM_ECA(Core::System& system_) : ServiceFramework{system_, "nim:eca"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &NIM_ECA::CreateServerInterface, "CreateServerInterface"},
-            {1, nullptr, "RefreshDebugAvailability"},
-            {2, nullptr, "ClearDebugResponse"},
-            {3, nullptr, "RegisterDebugResponse"},
-            {4, &NIM_ECA::IsLargeResourceAvailable, "IsLargeResourceAvailable"},
-            {5, &NIM_ECA::CreateServerInterface2, "CreateServerInterface2"} // 17.0.0+
+            FunctionInfo{0, &NIM_ECA::CreateServerInterface, "CreateServerInterface"},
+            FunctionInfo{1, nullptr, "RefreshDebugAvailability"},
+            FunctionInfo{2, nullptr, "ClearDebugResponse"},
+            FunctionInfo{3, nullptr, "RegisterDebugResponse"},
+            FunctionInfo{4, &NIM_ECA::IsLargeResourceAvailable, "IsLargeResourceAvailable"},
+            FunctionInfo{5, &NIM_ECA::CreateServerInterface2, "CreateServerInterface2"} // 17.0.0+
         };
         // clang-format on
 
@@ -470,34 +470,34 @@ public:
     explicit NIM_SHP(Core::System& system_) : ServiceFramework{system_, "nim:shp"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "RequestDeviceAuthenticationToken"},
-            {1, nullptr, "RequestCachedDeviceAuthenticationToken"},
-            {2, nullptr, "RequestEdgeToken"},
-            {3, nullptr, "RequestCachedEdgeToken"},
-            {100, nullptr, "RequestRegisterDeviceAccount"},
-            {101, nullptr, "RequestUnregisterDeviceAccount"},
-            {102, nullptr, "RequestDeviceAccountStatus"},
-            {103, nullptr, "GetDeviceAccountInfo"},
-            {104, nullptr, "RequestDeviceRegistrationInfo"},
-            {105, nullptr, "RequestTransferDeviceAccount"},
-            {106, nullptr, "RequestSyncRegistration"},
-            {107, nullptr, "IsOwnDeviceId"},
-            {200, nullptr, "RequestRegisterNotificationToken"},
-            {300, nullptr, "RequestUnlinkDevice"},
-            {301, nullptr, "RequestUnlinkDeviceIntegrated"},
-            {302, nullptr, "RequestLinkDevice"},
-            {303, nullptr, "HasDeviceLink"},
-            {304, nullptr, "RequestUnlinkDeviceAll"},
-            {305, nullptr, "RequestCreateVirtualAccount"},
-            {306, nullptr, "RequestDeviceLinkStatus"},
-            {400, nullptr, "GetAccountByVirtualAccount"},
-            {401, nullptr, "GetVirtualAccount"},
-            {500, nullptr, "RequestSyncTicketLegacy"},
-            {501, nullptr, "RequestDownloadTicket"},
-            {502, nullptr, "RequestDownloadTicketForPrepurchasedContents"},
-            {503, nullptr, "RequestSyncTicket"},
-            {504, nullptr, "RequestDownloadTicketForPrepurchasedContents2"},
-            {505, nullptr, "RequestDownloadTicketForPrepurchasedContentsForAccount"}
+            FunctionInfo{0, nullptr, "RequestDeviceAuthenticationToken"},
+            FunctionInfo{1, nullptr, "RequestCachedDeviceAuthenticationToken"},
+            FunctionInfo{2, nullptr, "RequestEdgeToken"},
+            FunctionInfo{3, nullptr, "RequestCachedEdgeToken"},
+            FunctionInfo{100, nullptr, "RequestRegisterDeviceAccount"},
+            FunctionInfo{101, nullptr, "RequestUnregisterDeviceAccount"},
+            FunctionInfo{102, nullptr, "RequestDeviceAccountStatus"},
+            FunctionInfo{103, nullptr, "GetDeviceAccountInfo"},
+            FunctionInfo{104, nullptr, "RequestDeviceRegistrationInfo"},
+            FunctionInfo{105, nullptr, "RequestTransferDeviceAccount"},
+            FunctionInfo{106, nullptr, "RequestSyncRegistration"},
+            FunctionInfo{107, nullptr, "IsOwnDeviceId"},
+            FunctionInfo{200, nullptr, "RequestRegisterNotificationToken"},
+            FunctionInfo{300, nullptr, "RequestUnlinkDevice"},
+            FunctionInfo{301, nullptr, "RequestUnlinkDeviceIntegrated"},
+            FunctionInfo{302, nullptr, "RequestLinkDevice"},
+            FunctionInfo{303, nullptr, "HasDeviceLink"},
+            FunctionInfo{304, nullptr, "RequestUnlinkDeviceAll"},
+            FunctionInfo{305, nullptr, "RequestCreateVirtualAccount"},
+            FunctionInfo{306, nullptr, "RequestDeviceLinkStatus"},
+            FunctionInfo{400, nullptr, "GetAccountByVirtualAccount"},
+            FunctionInfo{401, nullptr, "GetVirtualAccount"},
+            FunctionInfo{500, nullptr, "RequestSyncTicketLegacy"},
+            FunctionInfo{501, nullptr, "RequestDownloadTicket"},
+            FunctionInfo{502, nullptr, "RequestDownloadTicketForPrepurchasedContents"},
+            FunctionInfo{503, nullptr, "RequestSyncTicket"},
+            FunctionInfo{504, nullptr, "RequestDownloadTicketForPrepurchasedContents2"},
+            FunctionInfo{505, nullptr, "RequestDownloadTicketForPrepurchasedContentsForAccount"}
         };
         // clang-format on
 
@@ -512,13 +512,13 @@ public:
         : ServiceFramework{system_, "IEnsureNetworkClockAvailabilityService"},
           service_context{system_, "IEnsureNetworkClockAvailabilityService"} {
         static const FunctionInfo functions[] = {
-            {0, &IEnsureNetworkClockAvailabilityService::StartTask, "StartTask"},
-            {1, &IEnsureNetworkClockAvailabilityService::GetFinishNotificationEvent,
+            FunctionInfo{0, &IEnsureNetworkClockAvailabilityService::StartTask, "StartTask"},
+            FunctionInfo{1, &IEnsureNetworkClockAvailabilityService::GetFinishNotificationEvent,
              "GetFinishNotificationEvent"},
-            {2, &IEnsureNetworkClockAvailabilityService::GetResult, "GetResult"},
-            {3, &IEnsureNetworkClockAvailabilityService::Cancel, "Cancel"},
-            {4, &IEnsureNetworkClockAvailabilityService::IsProcessing, "IsProcessing"},
-            {5, &IEnsureNetworkClockAvailabilityService::GetServerTime, "GetServerTime"}
+            FunctionInfo{2, &IEnsureNetworkClockAvailabilityService::GetResult, "GetResult"},
+            FunctionInfo{3, &IEnsureNetworkClockAvailabilityService::Cancel, "Cancel"},
+            FunctionInfo{4, &IEnsureNetworkClockAvailabilityService::IsProcessing, "IsProcessing"},
+            FunctionInfo{5, &IEnsureNetworkClockAvailabilityService::GetServerTime, "GetServerTime"}
         };
         RegisterHandlers(functions);
 
@@ -590,9 +590,9 @@ public:
     explicit NTC(Core::System& system_) : ServiceFramework{system_, "ntc"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &NTC::OpenEnsureNetworkClockAvailabilityService, "OpenEnsureNetworkClockAvailabilityService"},
-            {100, &NTC::SuspendAutonomicTimeCorrection, "SuspendAutonomicTimeCorrection"},
-            {101, &NTC::ResumeAutonomicTimeCorrection, "ResumeAutonomicTimeCorrection"}
+            FunctionInfo{0, &NTC::OpenEnsureNetworkClockAvailabilityService, "OpenEnsureNetworkClockAvailabilityService"},
+            FunctionInfo{100, &NTC::SuspendAutonomicTimeCorrection, "SuspendAutonomicTimeCorrection"},
+            FunctionInfo{101, &NTC::ResumeAutonomicTimeCorrection, "ResumeAutonomicTimeCorrection"}
         };
         // clang-format on
 
@@ -629,8 +629,8 @@ public:
     explicit NIM_ECAS(Core::System& system_) : ServiceFramework{system_, "nim:ecas"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "RegisterSpecialClient"},
-            {1, nullptr, "UnregisterSpecialClient"}
+            FunctionInfo{0, nullptr, "RegisterSpecialClient"},
+            FunctionInfo{1, nullptr, "UnregisterSpecialClient"}
         };
         // clang-format on
         RegisterHandlers(functions);
