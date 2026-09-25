@@ -99,6 +99,7 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer, VkRenderPass
     state.framebuffer = framebuffer_handle;
     state.render_area = render_area;
     ++renderpass_serial;
+    renderpass_depth_writes = false;
 
     if (GPU::Logging::IsActive() && Settings::values.gpu_log_vulkan_calls.GetValue()) {
         const std::string render_pass_info =
@@ -161,6 +162,7 @@ void Scheduler::RealizeDeferredClear() {
         dc.color_clear_mask, dc.depth_stencil, color_discard_mask, depth_stencil_discard);
     EndRenderPass();
     BeginRenderPassImpl(dc.framebuffer, renderpass, clear_values.data(), count);
+    renderpass_depth_writes = dc.depth_stencil;
 }
 
 bool Scheduler::DeferColorClear(const Framebuffer* framebuffer, u32 rt_slot,

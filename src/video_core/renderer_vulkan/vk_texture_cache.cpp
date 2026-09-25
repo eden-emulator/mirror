@@ -1210,7 +1210,9 @@ void TextureCacheRuntime::EraseResolveShadow(VkImage msaa_image) {
 }
 
 void TextureCacheRuntime::BarrierFeedbackLoop() {
-    scheduler.RequestOutsideRenderPassOperationContext();
+    if (scheduler.HasDepthWrites()) {
+        scheduler.RequestOutsideRenderPassOperationContext();
+    }
 }
 
 void TextureCacheRuntime::ReinterpretImage(Image& dst, Image& src,

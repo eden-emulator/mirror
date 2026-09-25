@@ -97,6 +97,14 @@ public:
         renderpass_writes = true;
     }
 
+    void MarkDepthWrites(bool writes) noexcept {
+        renderpass_depth_writes |= writes;
+    }
+
+    bool HasDepthWrites() const noexcept {
+        return renderpass_depth_writes;
+    }
+
     /// Update the pipeline to the current execution context.
     bool UpdateGraphicsPipeline(GraphicsPipeline* pipeline);
 
@@ -334,6 +342,7 @@ private:
     u64 renderpass_serial = 0;
     u64 wfi_serial = 0;
     bool renderpass_writes = false;
+    bool renderpass_depth_writes = false;
     u32 num_renderpass_images = 0;
     std::array<VkImage, 9> renderpass_images{};
     std::array<VkImageSubresourceRange, 9> renderpass_image_ranges{};
