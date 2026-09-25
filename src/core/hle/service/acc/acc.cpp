@@ -75,41 +75,6 @@ class IManagerForSystemService final : public ServiceFramework<IManagerForSystem
 public:
     explicit IManagerForSystemService(Core::System& system_, Common::UUID uuid)
         : ServiceFramework{system_, "IManagerForSystemService"}, account_id{uuid} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            {0, D<&IManagerForSystemService::CheckAvailability>, "CheckAvailability"},
-            {1, D<&IManagerForSystemService::GetAccountId>, "GetAccountId"},
-            {2, nullptr, "EnsureIdTokenCacheAsync"},
-            {3, D<&IManagerForSystemService::LoadIdTokenCacheDeprecated>, "LoadIdTokenCacheDeprecated"}, // 19.0.0+
-            {4, D<&IManagerForSystemService::LoadIdTokenCache>, "LoadIdTokenCache"}, // 19.0.0+
-            {100, nullptr, "SetSystemProgramIdentification"},
-            {101, nullptr, "RefreshNotificationTokenAsync"}, // 7.0.0+
-            {110, nullptr, "GetServiceEntryRequirementCache"}, // 4.0.0+
-            {111, nullptr, "InvalidateServiceEntryRequirementCache"}, // 4.0.0+
-            {112, nullptr, "InvalidateTokenCache"}, // 4.0.0 - 6.2.0
-            {113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay"}, // 6.1.0+
-            {120, nullptr, "GetNintendoAccountId"},
-            {121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint"}, // 9.0.0+
-            {130, nullptr, "GetNintendoAccountUserResourceCache"},
-            {131, nullptr, "RefreshNintendoAccountUserResourceCacheAsync"},
-            {132, nullptr, "RefreshNintendoAccountUserResourceCacheAsyncIfSecondsElapsed"},
-            {133, nullptr, "GetNintendoAccountVerificationUrlCache"}, // 9.0.0+
-            {134, nullptr, "RefreshNintendoAccountVerificationUrlCache"}, // 9.0.0+
-            {135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed"}, // 9.0.0+
-            {136, nullptr, "GetNintendoAccountUserResourceCache"}, // 19.0.0+
-            {140, nullptr, "GetNetworkServiceLicenseCache"}, // 5.0.0+
-            {141, nullptr, "RefreshNetworkServiceLicenseCacheAsync"}, // 5.0.0+
-            {142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed"}, // 5.0.0+
-            {143, D<&IManagerForSystemService::GetNetworkServiceLicenseCacheEx>, "GetNetworkServiceLicenseCacheEx"}, // 15.0.0+
-            {150, nullptr, "CreateAuthorizationRequest"},
-            {160, nullptr, "RequiresUpdateNetworkServiceAccountIdTokenCache"},
-            {161, nullptr, "RequireReauthenticationOfNetworkServiceAccount"},
-            {170, nullptr, "CreateDeviceHistoryRequest"}, // 17.0.0+
-            {180, nullptr, "GetRequestForNintendoAccountReauthentication"} // 18.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
     }
 
 private:
@@ -143,6 +108,39 @@ private:
         R_SUCCEED();
     }
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, D<&IManagerForSystemService::CheckAvailability>, "CheckAvailability"},
+            FunctionInfo{1, D<&IManagerForSystemService::GetAccountId>, "GetAccountId"},
+            FunctionInfo{2, nullptr, "EnsureIdTokenCacheAsync"},
+            FunctionInfo{3, D<&IManagerForSystemService::LoadIdTokenCacheDeprecated>, "LoadIdTokenCacheDeprecated"}, // 19.0.0+
+            FunctionInfo{4, D<&IManagerForSystemService::LoadIdTokenCache>, "LoadIdTokenCache"}, // 19.0.0+
+            FunctionInfo{100, nullptr, "SetSystemProgramIdentification"},
+            FunctionInfo{101, nullptr, "RefreshNotificationTokenAsync"}, // 7.0.0+
+            FunctionInfo{110, nullptr, "GetServiceEntryRequirementCache"}, // 4.0.0+
+            FunctionInfo{111, nullptr, "InvalidateServiceEntryRequirementCache"}, // 4.0.0+
+            FunctionInfo{112, nullptr, "InvalidateTokenCache"}, // 4.0.0 - 6.2.0
+            FunctionInfo{113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay"}, // 6.1.0+
+            FunctionInfo{120, nullptr, "GetNintendoAccountId"},
+            FunctionInfo{121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint"}, // 9.0.0+
+            FunctionInfo{130, nullptr, "GetNintendoAccountUserResourceCache"},
+            FunctionInfo{131, nullptr, "RefreshNintendoAccountUserResourceCacheAsync"},
+            FunctionInfo{132, nullptr, "RefreshNintendoAccountUserResourceCacheAsyncIfSecondsElapsed"},
+            FunctionInfo{133, nullptr, "GetNintendoAccountVerificationUrlCache"}, // 9.0.0+
+            FunctionInfo{134, nullptr, "RefreshNintendoAccountVerificationUrlCache"}, // 9.0.0+
+            FunctionInfo{135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed"}, // 9.0.0+
+            FunctionInfo{136, nullptr, "GetNintendoAccountUserResourceCache"}, // 19.0.0+
+            FunctionInfo{140, nullptr, "GetNetworkServiceLicenseCache"}, // 5.0.0+
+            FunctionInfo{141, nullptr, "RefreshNetworkServiceLicenseCacheAsync"}, // 5.0.0+
+            FunctionInfo{142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed"}, // 5.0.0+
+            FunctionInfo{143, D<&IManagerForSystemService::GetNetworkServiceLicenseCacheEx>, "GetNetworkServiceLicenseCacheEx"}, // 15.0.0+
+            FunctionInfo{150, nullptr, "CreateAuthorizationRequest"},
+            FunctionInfo{160, nullptr, "RequiresUpdateNetworkServiceAccountIdTokenCache"},
+            FunctionInfo{161, nullptr, "RequireReauthenticationOfNetworkServiceAccount"},
+            FunctionInfo{170, nullptr, "CreateDeviceHistoryRequest"}, // 17.0.0+
+            FunctionInfo{180, nullptr, "GetRequestForNintendoAccountReauthentication"} // 18.0.0+
+        );
+    }
     Common::UUID account_id;
 };
 
@@ -151,25 +149,24 @@ class IFloatingRegistrationRequest final : public ServiceFramework<IFloatingRegi
 public:
     explicit IFloatingRegistrationRequest(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IFloatingRegistrationRequest"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            {0, nullptr, "GetSessionId"},
-            {12, nullptr, "GetAccountId"},
-            {13, nullptr, "GetLinkedNintendoAccountId"},
-            {14, nullptr, "GetNickname"},
-            {15, nullptr, "GetProfileImage"},
-            {16, nullptr, "GetProfileLargeImage"}, // 18.0.0+
-            {21, nullptr, "LoadIdTokenCache"},
-            {100, nullptr, "RegisterUser"}, // [1.0.0-3.0.2] RegisterAsync
-            {101, nullptr, "RegisterUserWithUid"}, // [1.0.0-3.0.2] RegisterWithUidAsync
-            {102, nullptr, "RegisterNetworkServiceAccountAsync"}, // 4.0.0+
-            {103, nullptr, "RegisterNetworkServiceAccountWithUidAsync"}, // 4.0.0+
-            {110, nullptr, "SetSystemProgramIdentification"},
-            {111, nullptr, "EnsureIdTokenCacheAsync"},
-        };
-        // clang-format on
+    }
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, nullptr, "GetSessionId"},
+            FunctionInfo{12, nullptr, "GetAccountId"},
+            FunctionInfo{13, nullptr, "GetLinkedNintendoAccountId"},
+            FunctionInfo{14, nullptr, "GetNickname"},
+            FunctionInfo{15, nullptr, "GetProfileImage"},
+            FunctionInfo{16, nullptr, "GetProfileLargeImage", MakeVersionGate({18,0,0})},
+            FunctionInfo{21, nullptr, "LoadIdTokenCache"},
+            FunctionInfo{100, nullptr, "RegisterUser"}, // [1.0.0-3.0.2] RegisterAsync
+            FunctionInfo{101, nullptr, "RegisterUserWithUid"}, // [1.0.0-3.0.2] RegisterWithUidAsync
+            FunctionInfo{102, nullptr, "RegisterNetworkServiceAccountAsync", MakeVersionGate({4,0,0})},
+            FunctionInfo{103, nullptr, "RegisterNetworkServiceAccountWithUidAsync", MakeVersionGate({4,0,0})},
+            FunctionInfo{110, nullptr, "SetSystemProgramIdentification"},
+            FunctionInfo{111, nullptr, "EnsureIdTokenCacheAsync"}
+        );
     }
 };
 
@@ -177,62 +174,6 @@ class IAdministrator final : public ServiceFramework<IAdministrator> {
 public:
     explicit IAdministrator(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IAdministrator"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            {0, nullptr, "CheckAvailability"},
-            {1, nullptr, "GetAccountId"},
-            {2, nullptr, "EnsureIdTokenCacheAsync"},
-            {3, nullptr, "LoadIdTokenCache"},
-            {100, nullptr, "SetSystemProgramIdentification"},
-            {101, nullptr, "RefreshNotificationTokenAsync"}, // 7.0.0+
-            {110, nullptr, "GetServiceEntryRequirementCache"}, // 4.0.0+
-            {111, nullptr, "InvalidateServiceEntryRequirementCache"}, // 4.0.0+
-            {112, nullptr, "InvalidateTokenCache"}, // 4.0.0 - 6.2.0
-            {113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay"}, // 6.1.0+
-            {120, nullptr, "GetNintendoAccountId"},
-            {121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint"}, // 9.0.0+
-            {130, nullptr, "GetNintendoAccountUserResourceCache"},
-            {131, nullptr, "RefreshNintendoAccountUserResourceCacheAsync"},
-            {132, nullptr, "RefreshNintendoAccountUserResourceCacheAsyncIfSecondsElapsed"},
-            {133, nullptr, "GetNintendoAccountVerificationUrlCache"}, // 9.0.0+
-            {134, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsync"}, // 9.0.0+
-            {135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed"}, // 9.0.0+
-            {140, nullptr, "GetNetworkServiceLicenseCache"}, // 5.0.0+
-            {141, nullptr, "RefreshNetworkServiceLicenseCacheAsync"}, // 5.0.0+
-            {142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed"}, // 5.0.0+
-            {143, nullptr, "GetNetworkServiceLicenseCacheEx"},
-            {150, nullptr, "CreateAuthorizationRequest"},
-            {160, nullptr, "RequiresUpdateNetworkServiceAccountIdTokenCache"},
-            {161, nullptr, "RequireReauthenticationOfNetworkServiceAccount"},
-            {170, nullptr, "CreateDeviceHistoryRequest"}, // 17.0.0+
-            {180, nullptr, "GetRequestForNintendoAccountReauthentication"}, // 18.0.0+
-            {200, nullptr, "IsRegistered"},
-            {201, nullptr, "RegisterAsync"},
-            {202, nullptr, "UnregisterAsync"},
-            {203, nullptr, "DeleteRegistrationInfoLocally"},
-            {220, nullptr, "SynchronizeProfileAsync"},
-            {221, nullptr, "UploadProfileAsync"},
-            {222, nullptr, "SynchronizaProfileAsyncIfSecondsElapsed"},
-            {250, &IAdministrator::IsLinkedWithNintendoAccount, "IsLinkedWithNintendoAccount"},
-            {251, nullptr, "CreateProcedureToLinkWithNintendoAccount"},
-            {252, nullptr, "ResumeProcedureToLinkWithNintendoAccount"},
-            {255, nullptr, "CreateProcedureToUpdateLinkageStateOfNintendoAccount"},
-            {256, nullptr, "ResumeProcedureToUpdateLinkageStateOfNintendoAccount"},
-            {260, nullptr, "CreateProcedureToLinkNnidWithNintendoAccount"}, // 3.0.0+
-            {261, nullptr, "ResumeProcedureToLinkNnidWithNintendoAccount"}, // 3.0.0+
-            {280, nullptr, "ProxyProcedureToAcquireApplicationAuthorizationForNintendoAccount"},
-            {290, nullptr, "GetRequestForNintendoAccountUserResourceView"}, // 8.0.0+
-            {300, nullptr, "TryRecoverNintendoAccountUserStateAsync"}, // 6.0.0+
-            {400, nullptr, "IsServiceEntryRequirementCacheRefreshRequiredForOnlinePlay"}, // 6.1.0+
-            {401, nullptr, "RefreshServiceEntryRequirementCacheForOnlinePlayAsync"}, // 6.1.0+
-            {900, nullptr, "GetAuthenticationInfoForWin"}, // 9.0.0+
-            {901, nullptr, "ImportAsyncForWin"}, // 9.0.0+
-            {997, nullptr, "DebugUnlinkNintendoAccountAsync"},
-            {998, nullptr, "DebugSetAvailabilityErrorDetail"},
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
     }
 
 private:
@@ -240,6 +181,61 @@ private:
         IPC::ResponseBuilder rb{ctx, 3};
         rb.Push(ResultSuccess);
         rb.Push(false);
+    }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, nullptr, "CheckAvailability"},
+            FunctionInfo{1, nullptr, "GetAccountId"},
+            FunctionInfo{2, nullptr, "EnsureIdTokenCacheAsync"},
+            FunctionInfo{3, nullptr, "LoadIdTokenCache"},
+            FunctionInfo{100, nullptr, "SetSystemProgramIdentification"},
+            FunctionInfo{101, nullptr, "RefreshNotificationTokenAsync", MakeVersionGate({7,0,0})},
+            FunctionInfo{110, nullptr, "GetServiceEntryRequirementCache"}, // 4.0.0+
+            FunctionInfo{111, nullptr, "InvalidateServiceEntryRequirementCache"}, // 4.0.0+
+            FunctionInfo{112, nullptr, "InvalidateTokenCache"}, // 4.0.0 - 6.2.0
+            FunctionInfo{113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay"}, // 6.1.0+
+            FunctionInfo{120, nullptr, "GetNintendoAccountId"},
+            FunctionInfo{121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint"}, // 9.0.0+
+            FunctionInfo{130, nullptr, "GetNintendoAccountUserResourceCache"},
+            FunctionInfo{131, nullptr, "RefreshNintendoAccountUserResourceCacheAsync"},
+            FunctionInfo{132, nullptr, "RefreshNintendoAccountUserResourceCacheAsyncIfSecondsElapsed"},
+            FunctionInfo{133, nullptr, "GetNintendoAccountVerificationUrlCache"}, // 9.0.0+
+            FunctionInfo{134, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsync"}, // 9.0.0+
+            FunctionInfo{135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed"}, // 9.0.0+
+            FunctionInfo{140, nullptr, "GetNetworkServiceLicenseCache"}, // 5.0.0+
+            FunctionInfo{141, nullptr, "RefreshNetworkServiceLicenseCacheAsync"}, // 5.0.0+
+            FunctionInfo{142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed"}, // 5.0.0+
+            FunctionInfo{143, nullptr, "GetNetworkServiceLicenseCacheEx"},
+            FunctionInfo{150, nullptr, "CreateAuthorizationRequest"},
+            FunctionInfo{160, nullptr, "RequiresUpdateNetworkServiceAccountIdTokenCache"},
+            FunctionInfo{161, nullptr, "RequireReauthenticationOfNetworkServiceAccount"},
+            FunctionInfo{170, nullptr, "CreateDeviceHistoryRequest"}, // 17.0.0+
+            FunctionInfo{180, nullptr, "GetRequestForNintendoAccountReauthentication"}, // 18.0.0+
+            FunctionInfo{200, nullptr, "IsRegistered"},
+            FunctionInfo{201, nullptr, "RegisterAsync"},
+            FunctionInfo{202, nullptr, "UnregisterAsync"},
+            FunctionInfo{203, nullptr, "DeleteRegistrationInfoLocally"},
+            FunctionInfo{220, nullptr, "SynchronizeProfileAsync"},
+            FunctionInfo{221, nullptr, "UploadProfileAsync"},
+            FunctionInfo{222, nullptr, "SynchronizaProfileAsyncIfSecondsElapsed"},
+            FunctionInfo{250, &IAdministrator::IsLinkedWithNintendoAccount, "IsLinkedWithNintendoAccount"},
+            FunctionInfo{251, nullptr, "CreateProcedureToLinkWithNintendoAccount"},
+            FunctionInfo{252, nullptr, "ResumeProcedureToLinkWithNintendoAccount"},
+            FunctionInfo{255, nullptr, "CreateProcedureToUpdateLinkageStateOfNintendoAccount"},
+            FunctionInfo{256, nullptr, "ResumeProcedureToUpdateLinkageStateOfNintendoAccount"},
+            FunctionInfo{260, nullptr, "CreateProcedureToLinkNnidWithNintendoAccount"}, // 3.0.0+
+            FunctionInfo{261, nullptr, "ResumeProcedureToLinkNnidWithNintendoAccount"}, // 3.0.0+
+            FunctionInfo{280, nullptr, "ProxyProcedureToAcquireApplicationAuthorizationForNintendoAccount"},
+            FunctionInfo{290, nullptr, "GetRequestForNintendoAccountUserResourceView"}, // 8.0.0+
+            FunctionInfo{300, nullptr, "TryRecoverNintendoAccountUserStateAsync"}, // 6.0.0+
+            FunctionInfo{400, nullptr, "IsServiceEntryRequirementCacheRefreshRequiredForOnlinePlay"}, // 6.1.0+
+            FunctionInfo{401, nullptr, "RefreshServiceEntryRequirementCacheForOnlinePlayAsync"}, // 6.1.0+
+            FunctionInfo{900, nullptr, "GetAuthenticationInfoForWin"}, // 9.0.0+
+            FunctionInfo{901, nullptr, "ImportAsyncForWin"}, // 9.0.0+
+            FunctionInfo{997, nullptr, "DebugUnlinkNintendoAccountAsync"},
+            FunctionInfo{998, nullptr, "DebugSetAvailabilityErrorDetail"}
+        );
     }
 };
 

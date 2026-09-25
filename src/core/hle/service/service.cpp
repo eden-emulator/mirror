@@ -47,22 +47,7 @@ ServiceFrameworkBase::~ServiceFrameworkBase() {
     const auto guard = ServiceFrameworkBase::LockService();
 }
 
-void ServiceFrameworkBase::RegisterHandlersBase(const FunctionInfoBase* functions, std::size_t n) {
-    // Usually this array is sorted by id already, so hint to insert at the end
-    handlers.reserve(handlers.size() + n);
-    for (std::size_t i = 0; i < n; ++i)
-        handlers.emplace_hint(handlers.cend(), functions[i].expected_header, functions[i]);
-}
-
-void ServiceFrameworkBase::RegisterHandlersBaseTipc(const FunctionInfoBase* functions, std::size_t n) {
-    // Usually this array is sorted by id already, so hint to insert at the end
-    handlers_tipc.reserve(handlers_tipc.size() + n);
-    for (std::size_t i = 0; i < n; ++i)
-        handlers_tipc.emplace_hint(handlers_tipc.cend(), functions[i].expected_header, functions[i]);
-}
-
-void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx,
-                                                       const FunctionInfoBase* info) {
+void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, const FunctionInfoBase* info) {
     auto cmd_buf = ctx.CommandBuffer();
     std::string function_name = info == nullptr ? "<unknown>" : info->name;
 
@@ -82,16 +67,10 @@ void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx,
 }
 
 void ServiceFrameworkBase::InvokeRequest(HLERequestContext& ctx) {
-    const auto command = ctx.GetCommand();
-    auto it = handlers.find(command);
-    const bool is_cmd_read = command == 0;
-    FunctionInfoBase const* info = it == handlers.end() ? nullptr : &it->second;
-    if (info == nullptr || info->handler_callback == nullptr)
-        return ReportUnimplementedFunction(ctx, info);
-
+    const bool is_cmd_read = ctx.GetCommand() == 0;
+    auto const info = FindRequest(ctx.GetCommand());
     LOG_TRACE(Service, "{}", MakeFunctionString(info->name, GetServiceName(), ctx.CommandBuffer()));
     handler_invoker(this, info->handler_callback, ctx);
-
     if (is_i_storage && is_cmd_read) {
         const auto* const process = ctx.GetThread().GetOwnerProcess();
         if (process != nullptr && system.IsNVDECActiveForProcess(process->GetId())) {
@@ -101,11 +80,7 @@ void ServiceFrameworkBase::InvokeRequest(HLERequestContext& ctx) {
 }
 
 void ServiceFrameworkBase::InvokeRequestTipc(HLERequestContext& ctx) {
-    auto it = handlers_tipc.find(ctx.GetCommand());
-    FunctionInfoBase const* info = it == handlers_tipc.end() ? nullptr : &it->second;
-    if (info == nullptr || info->handler_callback == nullptr)
-        return ReportUnimplementedFunction(ctx, info);
-
+    auto const info = FindRequestTipc(ctx.GetCommand());
     LOG_TRACE(Service, "{}", MakeFunctionString(info->name, GetServiceName(), ctx.CommandBuffer()));
     handler_invoker(this, info->handler_callback, ctx);
 }
