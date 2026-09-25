@@ -738,6 +738,35 @@ const char* fallback_cpu_detection() {
     return s_result.c_str();
 }
 
+#ifdef ARCHITECTURE_arm64
+struct SystemDriverInfo {
+    VkPhysicalDeviceProperties properties{};
+    VkPhysicalDeviceDriverProperties driver{};
+};
+
+SystemDriverInfo QuerySystemDriverInfo(JNIEnv* env, jstring j_hook_lib_dir) {
+    const std::string hook_lib_dir = Common::Android::GetJString(env, j_hook_lib_dir);
+    const Common::DynamicLibrary library{adrenotools_open_libvulkan(
+        RTLD_NOW, 0, nullptr, hook_lib_dir.c_str(), nullptr, nullptr, nullptr, nullptr)};
+    Vulkan::vk::InstanceDispatch dld;
+    const Vulkan::vk::Instance instance = Vulkan::CreateInstance(library, dld, VK_API_VERSION_1_1);
+    const std::vector<VkPhysicalDevice> devices = instance.EnumeratePhysicalDevices();
+    if (devices.empty()) {
+        throw Vulkan::vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
+    }
+    SystemDriverInfo info{};
+    info.driver.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+    VkPhysicalDeviceProperties2 properties2{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+        .pNext = &info.driver,
+        .properties = {},
+    };
+    Vulkan::vk::PhysicalDevice(devices[0], dld).GetProperties2(properties2);
+    info.properties = properties2.properties;
+    return info;
+}
+#endif
+
 } // namespace
 
 extern "C" {
@@ -854,39 +883,6 @@ jboolean JNICALL Java_org_yuzu_yuzu_1emu_utils_GpuDriverHelper_supportsCustomDri
     return false;
 #endif
 }
-
-#ifdef ARCHITECTURE_arm64
-namespace {
-
-struct SystemDriverInfo {
-    VkPhysicalDeviceProperties properties{};
-    VkPhysicalDeviceDriverProperties driver{};
-};
-
-SystemDriverInfo QuerySystemDriverInfo(JNIEnv* env, jstring j_hook_lib_dir) {
-    const std::string hook_lib_dir = Common::Android::GetJString(env, j_hook_lib_dir);
-    const Common::DynamicLibrary library{adrenotools_open_libvulkan(
-        RTLD_NOW, 0, nullptr, hook_lib_dir.c_str(), nullptr, nullptr, nullptr, nullptr)};
-    Vulkan::vk::InstanceDispatch dld;
-    const Vulkan::vk::Instance instance = Vulkan::CreateInstance(library, dld, VK_API_VERSION_1_1);
-    const std::vector<VkPhysicalDevice> devices = instance.EnumeratePhysicalDevices();
-    if (devices.empty()) {
-        throw Vulkan::vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
-    }
-    SystemDriverInfo info{};
-    info.driver.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
-    VkPhysicalDeviceProperties2 properties2{
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-        .pNext = &info.driver,
-        .properties = {},
-    };
-    Vulkan::vk::PhysicalDevice(devices[0], dld).GetProperties2(properties2);
-    info.properties = properties2.properties;
-    return info;
-}
-
-}
-#endif
 
 jobjectArray Java_org_yuzu_yuzu_1emu_utils_GpuDriverHelper_getSystemDriverInfo(
     JNIEnv* env, jobject j_obj, jobject j_surf, jstring j_hook_lib_dir) {
