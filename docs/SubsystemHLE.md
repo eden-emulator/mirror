@@ -1,4 +1,6 @@
-# HOS Kernel
+# Subsystem: HLE
+
+## HOS Kernel
 
 In brief, the HOS kernel is a microkernel, all services and programs run in userspace, the primary way to do communication between these is via `HIPC` (not covered here); otherwise most of the primitives reside in the forms of syscalls invoked via `svc #imm`. The kernel supports both 32-bit and 64-bit programs, and has the capacity to use 32, 36 and 39 bits of address space for spawned processes. Most of the networking stack is based off FreeBSD's network stack.
 
@@ -29,3 +31,42 @@ Every process keeps it's own tracking of the following structures:
 The emulator willingly restricts itself to only use 4 threads (to emulate 4 cores), this is because most existing applications do not benefit greatly from the added core count, and in fact can be detrimental due to extra contention. This translates equitatively to about 4 `ArmInterface` slots for each process, these are then redirected to whatever is the last `pc` of the last thread running on the core is meant to be; proceed to run it, then when returning (due to halt or interruption), proceed to reschedule the thread.
 
 The scheduler as-is isn't 100% faithful to the original (for example the original is cooperative and not preemptive), and has great timing variance (especially due to the fact the emulator can run in systems with wildly different timings).
+
+## Services
+
+Consult [SwitchBrew](https://switchbrew.org/) for per-service methods, and implementation details.
+
+All services are instatiated implicitly using `ServiceFramework`. To register a new interface or service, you can inherit from said class, providing additionally a template parameter that references `Self`, for example:
+
+```c++
+// Follows as:
+// class MyInterface [final] : public ServiceFramework<MyInterface> { ... };
+// [final] is optional, but should be used whenever there is no intention of this class itself being inherited.
+class IFloatingRegistrationRequest final : public ServiceFramework<IFloatingRegistrationRequest> {
+public:
+    // ctor, you can pass extra parameters here (if so required)
+    explicit IFloatingRegistrationRequest(Core::System& system_)
+        : ServiceFramework{system_, "IFloatingRegistrationRequest"}
+    {}
+
+    // Define here your functions and methods, please order them.
+    // Use FindRequestTipc for TIPC handlers.
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, nullptr, "GetSessionId"},
+            FunctionInfo{12, nullptr, "GetAccountId"},
+            FunctionInfo{13, nullptr, "GetLinkedNintendoAccountId"},
+            FunctionInfo{14, nullptr, "GetNickname"},
+            FunctionInfo{15, nullptr, "GetProfileImage"},
+            FunctionInfo{16, nullptr, "GetProfileLargeImage", MakeVersionGate({18,0,0})},
+            FunctionInfo{21, nullptr, "LoadIdTokenCache"},
+            FunctionInfo{100, nullptr, "RegisterUser"},
+            FunctionInfo{101, nullptr, "RegisterUserWithUid"},
+            FunctionInfo{102, nullptr, "RegisterNetworkServiceAccountAsync", MakeVersionGate({4,0,0})},
+            FunctionInfo{103, nullptr, "RegisterNetworkServiceAccountWithUidAsync", MakeVersionGate({4,0,0})},
+            FunctionInfo{110, nullptr, "SetSystemProgramIdentification"},
+            FunctionInfo{111, nullptr, "EnsureIdTokenCacheAsync"}
+        );
+    }
+};
+```
