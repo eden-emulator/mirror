@@ -15,7 +15,7 @@ public:
     IContextRegistrar(Core::System& system_) : ServiceFramework{system_, "IContextRegistrar"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IContextRegistrar::Complete, "Complete"},
+            {0, &IContextRegistrar::Complete, "Complete"}
         };
         // clang-format on
 

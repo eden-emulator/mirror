@@ -18,7 +18,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, &MNPP_APP::Cmd0, "Cmd0"},
-            {1, &MNPP_APP::Cmd1, "Cmd1"},
+            {1, &MNPP_APP::Cmd1, "Cmd1"}
         };
         // clang-format on
 
@@ -51,7 +51,7 @@ public:
             {100, nullptr, "Cmd100"},
             {200, nullptr, "Cmd200"},
             {300, nullptr, "Cmd300"},
-            {400, nullptr, "Cmd400"},
+            {400, nullptr, "Cmd400"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -67,7 +67,7 @@ public:
             {1, nullptr, "Cmd1"},
             {10, nullptr, "Cmd10"},
             {20, nullptr, "Cmd20"},
-            {100, nullptr, "Cmd100"},
+            {100, nullptr, "Cmd100"}
         };
         // clang-format on
         RegisterHandlers(functions);

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -39,7 +42,7 @@ ISystemLocalCommunicationService::ISystemLocalCommunicationService(Core::System&
             {400, nullptr, "InitializeSystem"},
             {401, nullptr, "FinalizeSystem"},
             {402, nullptr, "SetOperationMode"},
-            {403, C<&ISystemLocalCommunicationService::InitializeSystem2>, "InitializeSystem2"},
+            {403, C<&ISystemLocalCommunicationService::InitializeSystem2>, "InitializeSystem2"}
         };
     // clang-format on
 

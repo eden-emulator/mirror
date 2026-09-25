@@ -47,7 +47,7 @@ public:
             {26, nullptr, "GetFuseInfo"},
             {27, nullptr, "GetDramId"},
             {28, nullptr, "IsPoweredOn"},
-            {29, nullptr, "GetVoltage"},
+            {29, nullptr, "GetVoltage"}
         };
         // clang-format on
 
@@ -60,7 +60,7 @@ public:
     explicit PCV_ARB(Core::System& system_) : ServiceFramework{system_, "pcv:arb"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "ReleaseControl"},
+            {0, nullptr, "ReleaseControl"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -72,7 +72,7 @@ public:
     explicit PCV_IMM(Core::System& system_) : ServiceFramework{system_, "pcv:imm"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "SetClockRate"},
+            {0, nullptr, "SetClockRate"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -96,7 +96,7 @@ public:
             {8, &IClkrstSession::GetClockRate, "GetClockRate"},
             {9, nullptr, "SetMinVClockRate"},
             {10, nullptr, "GetPossibleClockRates"},
-            {11, nullptr, "GetDvfsTable"},
+            {11, nullptr, "GetDvfsTable"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -134,7 +134,7 @@ public:
             {2, nullptr, "SetTemperature"},
             {3, nullptr, "GetModuleStateTable"},
             {4, nullptr, "GetModuleStateTableEvent"},
-            {5, nullptr, "GetModuleStateTableMaxCount"},
+            {5, nullptr, "GetModuleStateTableMaxCount"}
         };
         // clang-format on
 
@@ -160,7 +160,7 @@ public:
     explicit CLKRST_A(Core::System& system_) : ServiceFramework{system_, "clkrst:a"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "ReleaseControl"},
+            {0, nullptr, "ReleaseControl"}
         };
         // clang-format on
 

@@ -27,7 +27,7 @@ public:
             {10, C<&I2CSession::Send>, "Send"},
             {11, nullptr, "Receive"},
             {12, nullptr, "ExecuteCommandList"},
-            {13, nullptr, "SetRetryPolicy"},
+            {13, nullptr, "SetRetryPolicy"}
         };
         RegisterHandlers(functions);
     }
@@ -53,7 +53,7 @@ public:
             {1, C<&I2C::OpenSession>, "OpenSession"},
             {2, C<&I2C::HasDevice>, "HasDevice"},
             {3, C<&I2C::HasDeviceForDev>, "HasDeviceForDev"},
-            {4, C<&I2C::OpenSession2>, "OpenSession2"},
+            {4, C<&I2C::OpenSession2>, "OpenSession2"}
         };
         RegisterHandlers(functions);
     }

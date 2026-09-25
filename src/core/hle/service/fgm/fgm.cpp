@@ -22,7 +22,7 @@ public:
             {0, nullptr, "Initialize"},
             {1, nullptr, "Set"},
             {2, nullptr, "Get"},
-            {3, nullptr, "Cancel"},
+            {3, nullptr, "Cancel"}
         };
         // clang-format on
 
@@ -35,7 +35,7 @@ public:
     explicit FGM(Core::System& system_, const char* name) : ServiceFramework{system_, name} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &FGM::Initialize, "Initialize"},
+            {0, &FGM::Initialize, "Initialize"}
         };
         // clang-format on
 
@@ -59,7 +59,7 @@ public:
         static const FunctionInfo functions[] = {
             {0, nullptr, "Initialize"},
             {1, nullptr, "Read"},
-            {2, nullptr, "Cancel"},
+            {2, nullptr, "Cancel"}
         };
         // clang-format on
 

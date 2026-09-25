@@ -24,7 +24,7 @@ public:
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetTemperatureRange"},
             {2, nullptr, "SetMeasurementMode"},
-            {4, &ISession::GetTemperature, "GetTemperature"},
+            {4, &ISession::GetTemperature, "GetTemperature"}
         };
         // clang-format on
 

@@ -19,7 +19,7 @@ public:
         static const FunctionInfo functions[] = {
             {0, &ISession::SetPerformanceConfiguration, "SetPerformanceConfiguration"},
             {1, &ISession::GetPerformanceConfiguration, "GetPerformanceConfiguration"},
-            {2, &ISession::SetCpuOverclockEnabled, "SetCpuOverclockEnabled"},
+            {2, &ISession::SetCpuOverclockEnabled, "SetCpuOverclockEnabled"}
         };
         RegisterHandlers(functions);
     }

@@ -22,7 +22,7 @@ public:
         static const FunctionInfo functions[] = {
             {0, nullptr, "EnableVdd50StateControl"},
             {1, nullptr, "DisableVdd50StateControl"},
-            {2, nullptr, "SetVdd50State"},
+            {2, nullptr, "SetVdd50State"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -35,7 +35,7 @@ public:
         : ServiceFramework{system_, "powctl"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "OpenSession"},
+            {0, nullptr, "OpenSession"}
         };
         // clang-format on
         RegisterHandlers(functions);

@@ -17,7 +17,7 @@ public:
         static const FunctionInfo functions[] = {
             {0, nullptr, "SetProgramArgument"},
             {1, nullptr, "FlushArguments"},
-            {2, nullptr, "GetProcessModuleInfo"},
+            {2, nullptr, "GetProcessModuleInfo"}
         };
         // clang-format on
 
@@ -34,7 +34,7 @@ public:
             {1, nullptr, "GetProgramInfo"},
             {2, nullptr, "PinProgram"},
             {3, nullptr, "UnpinProgram"},
-            {4, nullptr, "SetEnabledProgramVerification"},
+            {4, nullptr, "SetEnabledProgramVerification"}
         };
         // clang-format on
 
@@ -48,7 +48,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "SetProgramArgument"},
-            {1, nullptr, "FlushArguments"},
+            {1, nullptr, "FlushArguments"}
         };
         // clang-format on
 

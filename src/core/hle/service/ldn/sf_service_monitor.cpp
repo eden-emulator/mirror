@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -23,7 +26,7 @@ ISfServiceMonitor::ISfServiceMonitor(Core::System& system_)
             {312, nullptr, "GetIpConfig"},
             {320, nullptr, "GetLinkLevel"},
             {328, nullptr, "AttachJoinEvent"},
-            {336, nullptr, "GetMembers"},
+            {336, nullptr, "GetMembers"}
         };
     // clang-format on
 

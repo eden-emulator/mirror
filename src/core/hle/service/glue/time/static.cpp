@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -49,7 +52,7 @@ StaticService::StaticService(Core::System& system_,
             {400, D<&StaticService::GetClockSnapshot>, "GetClockSnapshot"},
             {401, D<&StaticService::GetClockSnapshotFromSystemClockContext>, "GetClockSnapshotFromSystemClockContext"},
             {500, D<&StaticService::CalculateStandardUserSystemClockDifferenceByUser>, "CalculateStandardUserSystemClockDifferenceByUser"},
-            {501, D<&StaticService::CalculateSpanBetween>, "CalculateSpanBetween"},
+            {501, D<&StaticService::CalculateSpanBetween>, "CalculateSpanBetween"}
         };
     // clang-format on
 

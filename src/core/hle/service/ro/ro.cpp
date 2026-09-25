@@ -517,7 +517,7 @@ public:
             {2,  C<&RoInterface::RegisterModuleInfo>, "RegisterModuleInfo"},
             {3,  C<&RoInterface::UnregisterModuleInfo>, "UnregisterModuleInfo"},
             {4,  C<&RoInterface::RegisterProcessHandle>, "RegisterProcessHandle"},
-            {10, C<&RoInterface::RegisterProcessModuleInfo>, "RegisterProcessModuleInfo"},
+            {10, C<&RoInterface::RegisterProcessModuleInfo>, "RegisterProcessModuleInfo"}
         };
         // clang-format on
 

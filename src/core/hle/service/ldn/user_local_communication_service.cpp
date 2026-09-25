@@ -56,7 +56,7 @@ IUserLocalCommunicationService::IUserLocalCommunicationService(Core::System& sys
             {304, D<&IUserLocalCommunicationService::Disconnect>, "Disconnect"},
             {400, D<&IUserLocalCommunicationService::Initialize>, "Initialize"},
             {401, D<&IUserLocalCommunicationService::Finalize>, "Finalize"},
-            {402, D<&IUserLocalCommunicationService::Initialize2>, "Initialize2"},
+            {402, D<&IUserLocalCommunicationService::Initialize2>, "Initialize2"}
         };
     // clang-format on
 

@@ -169,7 +169,7 @@ public:
         static const FunctionInfo functions[] = {
             {0, &IRegistrar::Issue, "Issue"},
             {1, &IRegistrar::SetApplicationLaunchProperty, "SetApplicationLaunchProperty"},
-            {2, &IRegistrar::SetApplicationControlProperty, "SetApplicationControlProperty"},
+            {2, &IRegistrar::SetApplicationControlProperty, "SetApplicationControlProperty"}
         };
         // clang-format on
 
@@ -250,7 +250,7 @@ ARP_W::ARP_W(Core::System& system_, ARPManager& manager_)
         static const FunctionInfo functions[] = {
             {0, &ARP_W::AcquireRegistrar, "AcquireRegistrar"},
             {1, &ARP_W::UnregisterApplicationInstance , "UnregisterApplicationInstance "},
-            {2, nullptr, "AcquireUpdater"},
+            {2, nullptr, "AcquireUpdater"}
         };
     // clang-format on
 

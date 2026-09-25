@@ -25,7 +25,7 @@ public:
         static const FunctionInfo functions[] = {
             {3001, nullptr, "DecodeJpeg"},
             {4001, nullptr, "ShrinkJpeg"},
-            {4002, nullptr, "ShrinkJpegEx"},
+            {4002, nullptr, "ShrinkJpegEx"}
         };
         // clang-format on
         RegisterHandlers(functions);

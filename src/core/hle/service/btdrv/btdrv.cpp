@@ -32,7 +32,7 @@ public:
             {6, nullptr, "SetLeResponse"},
             {7, nullptr, "LeSendIndication"},
             {8, nullptr, "GetLeEventInfo"},
-            {9, C<&IBluetoothUser::RegisterBleEvent>, "RegisterBleEvent"},
+            {9, C<&IBluetoothUser::RegisterBleEvent>, "RegisterBleEvent"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -192,7 +192,7 @@ public:
             {154, nullptr, "IsAudioSinkVolumeSupported"},
             {256, nullptr, "IsManufacturingMode"},
             {257, nullptr, "EmulateBluetoothCrash"},
-            {258, nullptr, "GetBleChannelMap"},
+            {258, nullptr, "GetBleChannelMap"}
         };
         // clang-format on
 

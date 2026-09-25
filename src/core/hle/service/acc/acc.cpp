@@ -243,18 +243,17 @@ class IAuthorizationRequest final : public ServiceFramework<IAuthorizationReques
 public:
     explicit IAuthorizationRequest(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IAuthorizationRequest"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            {0, nullptr, "GetSessionId"},
-            {10, nullptr, "InvokeWithoutInteractionAsync"},
-            {19, nullptr, "IsAuthorized"},
-            {20, nullptr, "GetAuthorizationCode"},
-            {21, nullptr, "GetIdToken"},
-            {22, nullptr, "GetState"},
-        };
-        // clang-format on
+    }
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, nullptr, "GetSessionId"},
+            FunctionInfo{10, nullptr, "InvokeWithoutInteractionAsync"},
+            FunctionInfo{19, nullptr, "IsAuthorized"},
+            FunctionInfo{20, nullptr, "GetAuthorizationCode"},
+            FunctionInfo{21, nullptr, "GetIdToken"},
+            FunctionInfo{22, nullptr, "GetState"}
+        );
     }
 };
 
@@ -264,11 +263,11 @@ public:
         : ServiceFramework{system_, "IOAuthProcedure"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "PrepareAsync"},
-            {1, nullptr, "GetRequest"},
-            {2, nullptr, "ApplyResponse"},
-            {3, nullptr, "ApplyResponseAsync"},
-            {10, nullptr, "Suspend"},
+            FunctionInfo{0, nullptr, "PrepareAsync"},
+            FunctionInfo{1, nullptr, "GetRequest"},
+            FunctionInfo{2, nullptr, "ApplyResponse"},
+            FunctionInfo{3, nullptr, "ApplyResponseAsync"},
+            FunctionInfo{10, nullptr, "Suspend"}
         };
         // clang-format on
 
@@ -283,16 +282,16 @@ public:
         : ServiceFramework{system_, "IOAuthProcedureForExternalNsa"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "PrepareAsync"},
-            {1, nullptr, "GetRequest"},
-            {2, nullptr, "ApplyResponse"},
-            {3, nullptr, "ApplyResponseAsync"},
-            {10, nullptr, "Suspend"},
-            {100, nullptr, "GetAccountId"},
-            {101, nullptr, "GetLinkedNintendoAccountId"},
-            {102, nullptr, "GetNickname"},
-            {103, nullptr, "GetProfileImage"},
-            {104, nullptr, "GetProfileLargeImage"} // 18.0.0+
+            FunctionInfo{0, nullptr, "PrepareAsync"},
+            FunctionInfo{1, nullptr, "GetRequest"},
+            FunctionInfo{2, nullptr, "ApplyResponse"},
+            FunctionInfo{3, nullptr, "ApplyResponseAsync"},
+            FunctionInfo{10, nullptr, "Suspend"},
+            FunctionInfo{100, nullptr, "GetAccountId"},
+            FunctionInfo{101, nullptr, "GetLinkedNintendoAccountId"},
+            FunctionInfo{102, nullptr, "GetNickname"},
+            FunctionInfo{103, nullptr, "GetProfileImage"},
+            FunctionInfo{104, nullptr, "GetProfileLargeImage"} // 18.0.0+
         };
         // clang-format on
 
@@ -307,19 +306,19 @@ public:
         : ServiceFramework{system_, "IOAuthProcedureForNintendoAccountLinkage"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "PrepareAsync"},
-            {1, nullptr, "GetRequest"},
-            {2, nullptr, "ApplyResponse"},
-            {3, nullptr, "ApplyResponseAsync"},
-            {10, nullptr, "Suspend"},
-            {100, nullptr, "GetRequestWithTheme"},
-            {101, nullptr, "IsNetworkServiceAccountReplaced"},
-            {199, nullptr, "GetUrlForIntroductionOfExtraMembership"}, // 2.0.0 - 5.1.0
-            {200, nullptr, "ApplyAsyncWithAuthorizedToken"},
-            {210, nullptr, "IsProfileAvailable"}, // 17.0.0+
-            {220, nullptr, "RegisterUserAsyncWithoutProfile"}, // 17.0.0+
-            {221, nullptr, "RegisterUserWithProfileAsync"}, // 17.0.0+
-            {230, nullptr, "RegisterUserWithLargeImageProfileAsync"}, // 18.0.0+
+            FunctionInfo{0, nullptr, "PrepareAsync"},
+            FunctionInfo{1, nullptr, "GetRequest"},
+            FunctionInfo{2, nullptr, "ApplyResponse"},
+            FunctionInfo{3, nullptr, "ApplyResponseAsync"},
+            FunctionInfo{10, nullptr, "Suspend"},
+            FunctionInfo{100, nullptr, "GetRequestWithTheme"},
+            FunctionInfo{101, nullptr, "IsNetworkServiceAccountReplaced"},
+            FunctionInfo{199, nullptr, "GetUrlForIntroductionOfExtraMembership"}, // 2.0.0 - 5.1.0
+            FunctionInfo{200, nullptr, "ApplyAsyncWithAuthorizedToken"},
+            FunctionInfo{210, nullptr, "IsProfileAvailable"}, // 17.0.0+
+            FunctionInfo{220, nullptr, "RegisterUserAsyncWithoutProfile"}, // 17.0.0+
+            FunctionInfo{221, nullptr, "RegisterUserWithProfileAsync"}, // 17.0.0+
+            FunctionInfo{230, nullptr, "RegisterUserWithLargeImageProfileAsync"}, // 18.0.0+
         };
         // clang-format on
 
@@ -333,7 +332,7 @@ public:
         : ServiceFramework{system_, "INotifier"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetSystemEvent"},
+            FunctionInfo{0, nullptr, "GetSystemEvent"}
         };
         // clang-format on
 
@@ -348,13 +347,13 @@ public:
         : ServiceFramework{system_, name}, profile_manager{profile_manager_}, user_id{user_id_} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IProfileCommon::Get, "Get"},
-            {1, &IProfileCommon::GetBase, "GetBase"},
-            {10, &IProfileCommon::GetImageSize, "GetImageSize"},
-            {11, &IProfileCommon::LoadImage, "LoadImage"},
-            {20, &IProfileCommon::Unknown20, "Unknown20"},
-            {21, &IProfileCommon::Unknown21, "Unknown21"},
-            {30, &IProfileCommon::Unknown30, "Unknown30"}
+            FunctionInfo{0, &IProfileCommon::Get, "Get"},
+            FunctionInfo{1, &IProfileCommon::GetBase, "GetBase"},
+            FunctionInfo{10, &IProfileCommon::GetImageSize, "GetImageSize"},
+            FunctionInfo{11, &IProfileCommon::LoadImage, "LoadImage"},
+            FunctionInfo{20, &IProfileCommon::Unknown20, "Unknown20"},
+            FunctionInfo{21, &IProfileCommon::Unknown21, "Unknown21"},
+            FunctionInfo{30, &IProfileCommon::Unknown30, "Unknown30"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -362,12 +361,11 @@ public:
         if (editor_commands) {
             // clang-format off
             static const FunctionInfo editor_functions[] = {
-                {100, &IProfileCommon::Store, "Store"},
-                {101, &IProfileCommon::StoreWithImage, "StoreWithImage"},
-                {110, &IProfileCommon::Unknown110, "Unknown110"}
+                FunctionInfo{100, &IProfileCommon::Store, "Store"},
+                FunctionInfo{101, &IProfileCommon::StoreWithImage, "StoreWithImage"},
+                FunctionInfo{110, &IProfileCommon::Unknown110, "Unknown110"}
             };
             // clang-format on
-
             RegisterHandlers(editor_functions);
         }
     }
@@ -620,7 +618,7 @@ public:
         : ServiceFramework{system_, "ISessionObject"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {999, nullptr, "Dummy"},
+            {999, nullptr, "Dummy"}
         };
         // clang-format on
 
@@ -694,7 +692,7 @@ public:
             {136, &IManagerForApplication::GetNintendoAccountUserResourceCacheForApplication, "GetNintendoAccountUserResourceCache"}, // 19.0.0+
             {150, nullptr, "CreateAuthorizationRequest"},
             {160, &IManagerForApplication::StoreOpenContext, "StoreOpenContext"},
-            {170, nullptr, "LoadNetworkServiceLicenseKindAsync"},
+            {170, nullptr, "LoadNetworkServiceLicenseKindAsync"}
         };
         // clang-format on
 
@@ -784,7 +782,7 @@ public:
             {1, nullptr, "Cancel"},
             {2, nullptr, "HasDone"},
             {3, nullptr, "GetResult"},
-            {4, nullptr, "GetNetworkServiceLicenseKind"},
+            {4, nullptr, "GetNetworkServiceLicenseKind"}
         };
         // clang-format on
 
@@ -842,7 +840,7 @@ public:
             {21, nullptr, "LoadApplicationAuthenticationTokenCache"},
             {22, nullptr, "LoadApplicationNetworkServiceClientConfigCache"},
             {23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
-            {24, nullptr, "InvalidateApplicationAuthenticationCache"},
+            {24, nullptr, "InvalidateApplicationAuthenticationCache"}
         };
         // clang-format on
 
@@ -860,7 +858,7 @@ public:
             {0, nullptr, "GetResult"},
             {1, nullptr, "Cancel"},
             {2, nullptr, "IsAvailable"},
-            {3, nullptr, "GetSystemEvent"},
+            {3, nullptr, "GetSystemEvent"}
         };
         // clang-format on
 
@@ -1321,7 +1319,7 @@ public:
             {910, nullptr, "RefreshFirmwareSettingsForDebug"},
             {997, nullptr, "DebugInvalidateTokenCacheForUser"},
             {998, nullptr, "DebugSetUserStateClose"},
-            {999, nullptr, "DebugSetUserStateOpen"},
+            {999, nullptr, "DebugSetUserStateOpen"}
         };
         // clang-format on
 
@@ -1360,7 +1358,7 @@ public:
             {140, &ACC_U0::InitializeApplicationInfoRestricted, "InitializeApplicationInfoRestricted"}, // 6.0.0+
             {141, &ACC_U0::ListQualifiedUsers, "ListQualifiedUsers"}, // 6.0.0+
             {150, &ACC_U0::IsUserAccountSwitchLocked, "IsUserAccountSwitchLocked"}, // 6.0.0+
-            {160, &ACC_U0::InitializeApplicationInfoV2, "InitializeApplicationInfoV2"},
+            {160, &ACC_U0::InitializeApplicationInfoV2, "InitializeApplicationInfoV2"}
         };
         // clang-format on
 
@@ -1410,7 +1408,7 @@ public:
             {402, nullptr, "GetPinCode"}, // 18.0.0+
             {997, nullptr, "DebugInvalidateTokenCacheForUser"},
             {998, nullptr, "DebugSetUserStateClose"},
-            {999, nullptr, "DebugSetUserStateOpen"},
+            {999, nullptr, "DebugSetUserStateOpen"}
         };
         // clang-format on
 
@@ -1443,7 +1441,7 @@ public:
             {33, nullptr, "InvalidateGameCardAuthenticationCache"},
             {1000, nullptr, "GetInactiveElicenseUsedEvent"},
             {9000, nullptr, "ImportVirtualClientCertificate"},
-            {9010, nullptr, "DeleteVirtualClientCertificate"},
+            {9010, nullptr, "DeleteVirtualClientCertificate"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -1532,7 +1530,7 @@ public:
             { 1000, nullptr, "CreateIAccountEntityServiceForApplication"},
             { 1100, nullptr, "CreateIUserStateManager"},
             { 10050, nullptr, "IsUserRegistrationRequestPermittedForAccountPolicy"},
-            { 10105, nullptr, "CheckNetworkServiceAvailabilityAsyncForAccountPolicy"},
+            { 10105, nullptr, "CheckNetworkServiceAvailabilityAsyncForAccountPolicy"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -1575,7 +1573,7 @@ public:
             {191, nullptr, "UpdateNotificationReceiverInfo"},
             {997, nullptr, "DebugInvalidateTokenCacheForUser"},
             {998, nullptr, "DebugSetUserStateClose"},
-            {999, nullptr, "DebugSetUserStateOpen"},
+            {999, nullptr, "DebugSetUserStateOpen"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -1625,7 +1623,7 @@ public:
             {405, nullptr, "IsPinCodeVerificationForbidden"},
             {997, nullptr, "DebugInvalidateTokenCacheForUser"},
             {998, nullptr, "DebugSetUserStateClose"},
-            {999, nullptr, "DebugSetUserStateOpen"},
+            {999, nullptr, "DebugSetUserStateOpen"}
         };
         // clang-format on
         RegisterHandlers(functions);

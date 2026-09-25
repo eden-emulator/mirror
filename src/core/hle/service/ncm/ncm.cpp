@@ -46,7 +46,7 @@ public:
             {16, nullptr, "ResolveProgramPathForDebug"},
             {17, nullptr, "RedirectProgramPathForDebug"},
             {18, nullptr, "RedirectApplicationProgramPathForDebug"},
-            {19, nullptr, "EraseProgramRedirectionForDebug"},
+            {19, nullptr, "EraseProgramRedirectionForDebug"}
         };
         // clang-format on
 
@@ -72,7 +72,7 @@ public:
             {6, nullptr, "UnregisterHtmlDocumentPath"},
             {7, nullptr, "RedirectHtmlDocumentPath"},
             {8, nullptr, "Refresh"},
-            {9, nullptr, "RefreshExcluding"},
+            {9, nullptr, "RefreshExcluding"}
         };
         // clang-format on
 
@@ -90,7 +90,7 @@ public:
             {1, nullptr, "RegisterAddOnContentStorage"},
             {2, nullptr, "UnregisterAllAddOnContentPath"},
             {3, nullptr, "RefreshApplicationAddOnContent"},
-            {4, nullptr, "UnregisterApplicationAddOnContent"},
+            {4, nullptr, "UnregisterApplicationAddOnContent"}
         };
         // clang-format on
 
@@ -109,7 +109,7 @@ public:
             {2, &IContentStorage::DeletePlaceHolder, "DeletePlaceHolder"},
             {4, &IContentStorage::WritePlaceHolder, "WritePlaceHolder"},
             {5, &IContentStorage::Register, "Register"},
-            {6, &IContentStorage::Delete, "Delete"},
+            {6, &IContentStorage::Delete, "Delete"}
         };
         // clang-format on
 
@@ -264,7 +264,7 @@ public:
             {0, &IContentMetaDatabase::Set, "Set"},
             {2, &IContentMetaDatabase::Remove, "Remove"},
             {8, &IContentMetaDatabase::Has, "Has"},
-            {15, &IContentMetaDatabase::Commit, "Commit"},
+            {15, &IContentMetaDatabase::Commit, "Commit"}
         };
         // clang-format on
 
@@ -368,7 +368,7 @@ public:
             {0, nullptr, "OpenLocationResolver"},
             {1, nullptr, "OpenRegisteredLocationResolver"},
             {2, nullptr, "RefreshLocationResolver"},
-            {3, nullptr, "OpenAddOnContentLocationResolver"},
+            {3, nullptr, "OpenAddOnContentLocationResolver"}
         };
         // clang-format on
 
@@ -396,7 +396,7 @@ public:
             {12, nullptr, "InactivateContentMetaDatabase"},
             {13, nullptr, "InvalidateRightsIdCache"},
             {14, nullptr, "GetMemoryReport"},
-            {15, nullptr, "ActivateFsContentStorage"},
+            {15, nullptr, "ActivateFsContentStorage"}
         };
         // clang-format on
 
@@ -433,7 +433,7 @@ public:
         : ServiceFramework{system_, "ncm:v"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetSystemVersion"},
+            {0, nullptr, "GetSystemVersion"}
         };
         RegisterHandlers(functions);
     }

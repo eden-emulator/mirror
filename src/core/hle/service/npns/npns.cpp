@@ -171,7 +171,7 @@ public:
             {151, nullptr, "GetStateWithHandover"},
             {152, nullptr, "GetStateChangeEventWithHandover"},
             {153, nullptr, "GetDropEventWithHandover"},
-            {154, nullptr, "CreateTokenAsync"},
+            {154, nullptr, "CreateTokenAsync"}
         };
         // clang-format on
 

@@ -32,7 +32,7 @@ public:
             {9, nullptr, "GetCtrlOutCompletionEvent"},
             {10, nullptr, "GetCtrlOutUrbReport"},
             {11, nullptr, "CtrlStall"},
-            {12, nullptr, "AppendConfigurationData"},
+            {12, nullptr, "AppendConfigurationData"}
         };
         // clang-format on
 
@@ -45,7 +45,7 @@ public:
     explicit IDsRootSession(Core::System& system_) : ServiceFramework{system_, "usb:ds"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "OpenDsService"},
+            {0, nullptr, "OpenDsService"}
         };
         // clang-format on
 
@@ -67,7 +67,7 @@ public:
             {5, nullptr, "GetXferReport"},
             {6, nullptr, "PostBufferMultiAsync"},
             {7, nullptr, "CreateSmmuSpace"},
-            {8, nullptr, "ShareReportRing"},
+            {8, nullptr, "ShareReportRing"}
         };
         // clang-format on
 
@@ -90,7 +90,7 @@ public:
             {6, nullptr, "GetCtrlXferCompletionEvent"},
             {7, nullptr, "GetCtrlXferReport"},
             {8, nullptr, "ResetDevice"},
-            {9, nullptr, "OpenUsbEp"},
+            {9, nullptr, "OpenUsbEp"}
         };
         // clang-format on
 
@@ -111,7 +111,7 @@ public:
             {5, nullptr, "DestroyInterfaceAvailableEvent"},
             {6, nullptr, "GetInterfaceStateChangeEvent"},
             {7, nullptr, "AcquireUsbIf"},
-            {8, nullptr, "SetTestMode"},
+            {8, nullptr, "SetTestMode"}
         };
         // clang-format on
 
@@ -130,7 +130,7 @@ public:
             {3, nullptr, "GetNotice"},
             {4, nullptr, "EnablePowerRequestNotice"},
             {5, nullptr, "DisablePowerRequestNotice"},
-            {6, nullptr, "ReplyPowerRequest"},
+            {6, nullptr, "ReplyPowerRequest"}
         };
         // clang-format on
 
@@ -143,7 +143,7 @@ public:
     explicit IPdManager(Core::System& system_) : ServiceFramework{system_, "usb:pd"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IPdManager::OpenSession, "OpenSession"},
+            {0, &IPdManager::OpenSession, "OpenSession"}
         };
         // clang-format on
 
@@ -174,7 +174,7 @@ public:
             {5, nullptr, "GetHostPdcManufactureId"},
             {6, nullptr, "GetHostPdcDeviceId"},
             {7, nullptr, "EnableCradleRecovery"},
-            {8, nullptr, "DisableCradleRecovery"},
+            {8, nullptr, "DisableCradleRecovery"}
         };
         // clang-format on
 
@@ -187,7 +187,7 @@ public:
     explicit IPdCradleManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:c"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IPdCradleManager::OpenCradleSession, "OpenCradleSession"},
+            {0, &IPdCradleManager::OpenCradleSession, "OpenCradleSession"}
         };
         // clang-format on
 
@@ -214,7 +214,7 @@ public:
             {2, nullptr, "GetDataEvent"},
             {3, nullptr, "GetDataRole"},
             {4, nullptr, "SetDiagData"},
-            {5, nullptr, "GetDiagData"},
+            {5, nullptr, "GetDiagData"}
         };
         // clang-format on
 
@@ -227,7 +227,7 @@ public:
     explicit IPdManufactureManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:m"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "OpenManufactureSession"},
+            {0, nullptr, "OpenManufactureSession"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -240,7 +240,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "ImportQuirkDevices"},
-            {1, nullptr, "HasQuirk"},
+            {1, nullptr, "HasQuirk"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -253,7 +253,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetTopologyChangeEvent"},
-            {1, nullptr, "GetFlattenedTopology"},
+            {1, nullptr, "GetFlattenedTopology"}
         };
         // clang-format on
         RegisterHandlers(functions);

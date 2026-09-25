@@ -56,7 +56,7 @@ public:
             {23, D<&IDatabaseService::Convert>, "Convert"},
             {24, D<&IDatabaseService::ConvertCoreDataToCharInfo>, "ConvertCoreDataToCharInfo"},
             {25, D<&IDatabaseService::ConvertCharInfoToCoreData>, "ConvertCharInfoToCoreData"},
-            {26,  D<&IDatabaseService::Append>, "Append"},
+            {26,  D<&IDatabaseService::Append>, "Append"}
         };
         // clang-format on
 
@@ -340,7 +340,7 @@ public:
             {101, nullptr, "DestroyFile"},
             {102, nullptr, "ImportFile"},
             {103, nullptr, "ExportFile"},
-            {104, nullptr, "ForceInitialize"},
+            {104, nullptr, "ForceInitialize"}
         };
         // clang-format on
 

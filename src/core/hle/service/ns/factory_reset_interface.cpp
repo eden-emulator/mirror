@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -15,7 +18,7 @@ IFactoryResetInterface::IFactoryResetInterface(Core::System& system_)
             {103, nullptr, "ResetToFactorySettingsWithPlatformRegion"},
             {104, nullptr, "ResetToFactorySettingsWithPlatformRegionAuthentication"},
             {105, nullptr, "RequestResetToFactorySettingsSecurely"},
-            {106, nullptr, "RequestResetToFactorySettingsWithPlatformRegionAuthenticationSecurely"},
+            {106, nullptr, "RequestResetToFactorySettingsWithPlatformRegionAuthenticationSecurely"}
         };
     // clang-format on
 

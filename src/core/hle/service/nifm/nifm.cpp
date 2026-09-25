@@ -240,7 +240,7 @@ public:
             {1, &IScanRequest::IsProcessing, "IsProcessing"},
             {2, &IScanRequest::GetResult, "GetResult"},
             {3, &IScanRequest::GetSystemEventReadableHandle, "GetSystemEventReadableHandle"},
-            {4, &IScanRequest::SetChannels, "SetChannels"},
+            {4, &IScanRequest::SetChannels, "SetChannels"}
         };
         RegisterHandlers(functions);
 
@@ -512,7 +512,7 @@ public:
         static const FunctionInfo functions[] = {
             {0, nullptr, "Update"},
             {1, nullptr, "PersistOld"},
-            {2, nullptr, "Persist"},
+            {2, nullptr, "Persist"}
         };
         RegisterHandlers(functions);
     }
@@ -1118,7 +1118,7 @@ public:
         : ServiceFramework{system_, name} {
         static const FunctionInfo functions[] = {
             {4, &NetworkInterface::CreateGeneralServiceOld, "CreateGeneralServiceOld"},
-            {5, &NetworkInterface::CreateGeneralService, "CreateGeneralService"},
+            {5, &NetworkInterface::CreateGeneralService, "CreateGeneralService"}
         };
         RegisterHandlers(functions);
     }

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -17,7 +20,7 @@ IPurchaseEventManager::IPurchaseEventManager(Core::System& system_)
             {1, D<&IPurchaseEventManager::SetDeliveryTarget>, "SetDeliveryTarget"},
             {2, D<&IPurchaseEventManager::GetPurchasedEvent>, "GetPurchasedEvent"},
             {3, D<&IPurchaseEventManager::PopPurchasedProductInfo>, "PopPurchasedProductInfo"},
-            {4, D<&IPurchaseEventManager::PopPurchasedProductInfoWithUid>, "PopPurchasedProductInfoWithUid"},
+            {4, D<&IPurchaseEventManager::PopPurchasedProductInfoWithUid>, "PopPurchasedProductInfoWithUid"}
         };
     // clang-format on
 

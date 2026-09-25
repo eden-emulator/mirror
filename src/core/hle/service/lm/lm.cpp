@@ -340,7 +340,7 @@ public:
     explicit LM(Core::System& system_) : ServiceFramework{system_, "lm"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &LM::OpenLogger, "OpenLogger"},
+            {0, &LM::OpenLogger, "OpenLogger"}
         };
         // clang-format on
 
@@ -366,7 +366,7 @@ public:
             {0, nullptr, "StartLogging"},
             {1, nullptr, "StopLogging"},
             {2, nullptr, "GetLog"},
-            {100, nullptr, "CreateDevNotificationReceiver"},
+            {100, nullptr, "CreateDevNotificationReceiver"}
         };
         RegisterHandlers(functions);
     }
