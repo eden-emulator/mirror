@@ -2028,6 +2028,9 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
     }
     current_image = &Image::original_image;
     storage_image_views.resize(info.resources.levels);
+    if (original_image) {
+        runtime->TransitionImageLayout(*this);
+    }
 }
 
 Image::Image(const VideoCommon::NullImageParams& params) : VideoCommon::ImageBase{params} {}
@@ -3238,9 +3241,9 @@ void TextureCacheRuntime::TransitionImageLayout(Image& image) {
         VkImageMemoryBarrier2 barrier{
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+            .srcStageMask = VK_PIPELINE_STAGE_2_NONE,
             .srcAccessMask = VK_ACCESS_2_NONE,
-            .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
+            .dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
             .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
             .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -3255,9 +3258,8 @@ void TextureCacheRuntime::TransitionImageLayout(Image& image) {
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         };
-        scheduler.RequestOutsideRenderPassOperationContext();
-        scheduler.Record([barrier](vk::CommandBuffer cmdbuf) {
-            cmdbuf.PipelineBarrier(barrier);
+        scheduler.RecordWithUploadBuffer([barrier](vk::CommandBuffer, vk::CommandBuffer upload_cmdbuf) {
+            upload_cmdbuf.PipelineBarrier(barrier);
         });
     }
 }
