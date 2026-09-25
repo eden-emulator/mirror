@@ -1275,6 +1275,12 @@
     <string name="use_black_backgrounds">Black backgrounds</string>
     <string name="use_black_backgrounds_description">When using the dark theme, apply black backgrounds.</string>
 
+    <!-- Buttons -->
+    <string name="enable_folder_button">Folder</string>
+    <string name="enable_folder_button_description">Show the button to add game folders</string>
+    <string name="enable_qlaunch_button">QLaunch</string>
+    <string name="enable_qlaunch_button_description">Show the button to launch QLaunch</string>
+
     <!-- Static Themes -->
     <string name="static_theme_color">Theme Color</string>
     <string name="eden_theme">Eden</string>
