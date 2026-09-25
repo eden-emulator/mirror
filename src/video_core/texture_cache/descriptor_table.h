@@ -31,12 +31,10 @@ public:
         u32 generation;
     };
 
-    [[nodiscard]] bool Synchronize(GPUVAddr gpu_addr, u32 limit) noexcept {
-        bool ret = !(current_gpu_addr == gpu_addr && current_limit == limit);
-        if (ret) {
+    void Synchronize(GPUVAddr gpu_addr, u32 limit) noexcept {
+        if (current_gpu_addr != gpu_addr || current_limit != limit) {
             Refresh(gpu_addr, limit);
         }
-        return ret;
     }
 
     void Invalidate() noexcept {

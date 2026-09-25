@@ -196,65 +196,16 @@ void TextureCache<P>::FillImageViews(std::span<ImageViewInOut> views, bool compu
 
 template <class P>
 void TextureCache<P>::CheckFeedbackLoop(std::span<const ImageViewInOut> views) {
-    if (!Settings::values.barrier_feedback_loops.GetValue()) {
+    if (!rt_depth_image_id || !Settings::values.barrier_feedback_loops.GetValue()) {
         return;
     }
-
-    if (render_targets_serial == last_feedback_loop_serial &&
-        texture_bindings_serial == last_feedback_texture_serial) {
-        if (last_feedback_loop_result) {
+    const ImageViewId depth_view_id = render_targets.depth_buffer_id;
+    for (const auto& view : views) {
+        if (view.id && view.id != depth_view_id &&
+            slot_image_views[view.id].image_id == rt_depth_image_id) {
             runtime.BarrierFeedbackLoop();
+            return;
         }
-        return;
-    }
-
-    if (rt_active_mask == 0) {
-        last_feedback_loop_serial = render_targets_serial;
-        last_feedback_texture_serial = texture_bindings_serial;
-        last_feedback_loop_result = false;
-        return;
-    }
-    const u32 depth_bit = 1u << NUM_RT;
-    const bool depth_active = (rt_active_mask & depth_bit) != 0;
-
-    const bool requires_barrier = [&] {
-        for (const auto& view : views) {
-            if (!view.id) {
-                continue;
-            }
-
-            {
-                bool is_continue = false;
-                for (size_t i = 0; i < 8; ++i)
-                    is_continue |= (rt_active_mask & (1u << i)) && view.id == render_targets.color_buffer_ids[i];
-                if (is_continue)
-                    continue;
-            }
-
-            if (depth_active && view.id == render_targets.depth_buffer_id)
-                continue;
-
-            const ImageId view_image_id = slot_image_views[view.id].image_id;
-            {
-                bool is_continue = false;
-                for (size_t i = 0; i < 8; ++i)
-                    is_continue |= (rt_active_mask & (1u << i)) && view_image_id == rt_image_id[i];
-                if (is_continue)
-                    continue;
-            }
-            if (depth_active && view_image_id == rt_depth_image_id) {
-                return true;
-            }
-        }
-
-        return false;
-    }();
-
-    last_feedback_loop_serial = render_targets_serial;
-    last_feedback_texture_serial = texture_bindings_serial;
-    last_feedback_loop_result = requires_barrier;
-    if (requires_barrier) {
-        runtime.BarrierFeedbackLoop();
     }
 }
 
@@ -293,26 +244,14 @@ void TextureCache<P>::SynchronizeDescriptors(bool compute) {
         const bool linked_tsc = kepler_compute->launch_description.linked_tsc;
         const u32 tic_limit = kepler_compute->regs.tic.limit;
         const u32 tsc_limit = linked_tsc ? tic_limit : kepler_compute->regs.tsc.limit;
-        bool bindings_changed = false;
-        if (channel_state->compute_sampler_table.Synchronize(kepler_compute->regs.tsc.Address(), tsc_limit))
-            bindings_changed = true;
-        if (channel_state->compute_image_table.Synchronize(kepler_compute->regs.tic.Address(), tic_limit))
-            bindings_changed = true;
-        if (bindings_changed) {
-            ++texture_bindings_serial;
-        }
+        channel_state->compute_sampler_table.Synchronize(kepler_compute->regs.tsc.Address(), tsc_limit);
+        channel_state->compute_image_table.Synchronize(kepler_compute->regs.tic.Address(), tic_limit);
     } else {
         const bool linked_tsc = maxwell3d->regs.sampler_binding == Tegra::Engines::Maxwell3D::Regs::SamplerBinding::ViaHeaderBinding;
         const u32 tic_limit = maxwell3d->regs.tex_header.limit;
         const u32 tsc_limit = linked_tsc ? tic_limit : maxwell3d->regs.tex_sampler.limit;
-        bool bindings_changed = false;
-        if (channel_state->graphics_sampler_table.Synchronize(maxwell3d->regs.tex_sampler.Address(), tsc_limit))
-            bindings_changed = true;
-        if (channel_state->graphics_image_table.Synchronize(maxwell3d->regs.tex_header.Address(), tic_limit))
-            bindings_changed = true;
-        if (bindings_changed) {
-            ++texture_bindings_serial;
-        }
+        channel_state->graphics_sampler_table.Synchronize(maxwell3d->regs.tex_sampler.Address(), tsc_limit);
+        channel_state->graphics_image_table.Synchronize(maxwell3d->regs.tex_header.Address(), tic_limit);
     }
 }
 
@@ -442,19 +381,9 @@ void TextureCache<P>::UpdateRenderTargets(bool is_clear) {
 
     PrepareImageView(depth_buffer_id, true, is_clear && IsFullClear(depth_buffer_id));
 
-    rt_active_mask = 0;
-    rt_image_id = {};
-    for (size_t i = 0; i < rt_image_id.size(); ++i) {
-        if (ImageViewId const view = render_targets.color_buffer_ids[i]; view) {
-            rt_active_mask |= 1u << i;
-            rt_image_id[i] = slot_image_views[view].image_id;
-        }
-    }
+    rt_depth_image_id = {};
     if (depth_buffer_id) {
-        rt_active_mask |= (1u << NUM_RT);
         rt_depth_image_id = slot_image_views[depth_buffer_id].image_id;
-    } else {
-        rt_depth_image_id = ImageId{};
     }
 
     for (size_t index = 0; index < NUM_RT; ++index) {

@@ -418,13 +418,7 @@ private:
 
     RenderTargets render_targets;
     u64 render_targets_serial = 0;
-    u32 rt_active_mask = 0;
-    std::array<ImageId, 8> rt_image_id{};
     ImageId rt_depth_image_id{};
-    u64 texture_bindings_serial = 0;
-    u64 last_feedback_loop_serial = 0;
-    u64 last_feedback_texture_serial = 0;
-    bool last_feedback_loop_result = false;
     FramebufferId last_framebuffer_id{};
     u64 last_framebuffer_serial = 0;
 
