@@ -92,7 +92,8 @@ void Bilinear(std::span<const f32> input, std::span<f32> output, size_t src_widt
 
             const auto read_src = [&](f32 in_x, f32 in_y) {
                 const size_t read_from =
-                    ((static_cast<size_t>(in_x) * src_width + static_cast<size_t>(in_y)) >> 32) *
+                    ((std::min)(static_cast<size_t>(in_y), src_height - 1) * src_width +
+                     (std::min)(static_cast<size_t>(in_x), src_width - 1)) *
                     ir_components;
                 return std::span<const f32>(&input[read_from], ir_components);
             };

@@ -255,7 +255,6 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCmdSetDepthBiasEnableEXT vkCmdSetDepthBiasEnableEXT{};
     PFN_vkCmdSetLogicOpEnableEXT vkCmdSetLogicOpEnableEXT{};
     PFN_vkCmdSetDepthClampEnableEXT vkCmdSetDepthClampEnableEXT{};
-    PFN_vkCmdSetEvent2 vkCmdSetEvent2{};
     PFN_vkCmdSetFrontFaceEXT vkCmdSetFrontFaceEXT{};
     PFN_vkCmdSetLogicOpEXT vkCmdSetLogicOpEXT{};
     PFN_vkCmdSetLineWidth vkCmdSetLineWidth{};
@@ -272,7 +271,6 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCmdSetColorWriteEnableEXT vkCmdSetColorWriteEnableEXT{};
     PFN_vkCmdSetColorBlendEnableEXT vkCmdSetColorBlendEnableEXT{};
     PFN_vkCmdSetColorBlendEquationEXT vkCmdSetColorBlendEquationEXT{};
-    PFN_vkCmdWaitEvents2 vkCmdWaitEvents2{};
     PFN_vkCreateBuffer vkCreateBuffer{};
     PFN_vkCreateBufferView vkCreateBufferView{};
     PFN_vkCreateCommandPool vkCreateCommandPool{};
@@ -280,7 +278,6 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCreateDescriptorPool vkCreateDescriptorPool{};
     PFN_vkCreateDescriptorSetLayout vkCreateDescriptorSetLayout{};
     PFN_vkCreateDescriptorUpdateTemplate vkCreateDescriptorUpdateTemplate{};
-    PFN_vkCreateEvent vkCreateEvent{};
     PFN_vkCreateFence vkCreateFence{};
     PFN_vkCreateFramebuffer vkCreateFramebuffer{};
     PFN_vkCreateGraphicsPipelines vkCreateGraphicsPipelines{};
@@ -299,7 +296,6 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkDestroyDescriptorPool vkDestroyDescriptorPool{};
     PFN_vkDestroyDescriptorSetLayout vkDestroyDescriptorSetLayout{};
     PFN_vkDestroyDescriptorUpdateTemplate vkDestroyDescriptorUpdateTemplate{};
-    PFN_vkDestroyEvent vkDestroyEvent{};
     PFN_vkDestroyFence vkDestroyFence{};
     PFN_vkDestroyFramebuffer vkDestroyFramebuffer{};
     PFN_vkDestroyImage vkDestroyImage{};
@@ -320,7 +316,6 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkGetBufferMemoryRequirements2 vkGetBufferMemoryRequirements2{};
     PFN_vkGetDeviceBufferMemoryRequirements vkGetDeviceBufferMemoryRequirements{};
     PFN_vkGetDeviceQueue vkGetDeviceQueue{};
-    PFN_vkGetEventStatus vkGetEventStatus{};
     PFN_vkGetFenceStatus vkGetFenceStatus{};
     PFN_vkGetPipelineCacheData vkGetPipelineCacheData{};
     PFN_vkGetPipelineExecutablePropertiesKHR vkGetPipelineExecutablePropertiesKHR{};
@@ -361,7 +356,6 @@ void Destroy(VkDevice, VkCommandPool, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkDescriptorPool, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkDescriptorSetLayout, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkDescriptorUpdateTemplate, const DeviceDispatch&) noexcept;
-void Destroy(VkDevice, VkEvent, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkFence, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkFramebuffer, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkImage, const DeviceDispatch&) noexcept;
@@ -908,18 +902,6 @@ public:
     std::vector<VkImage> GetImages() const;
 };
 
-class Event : public Handle<VkEvent, VkDevice, DeviceDispatch> {
-    using Handle<VkEvent, VkDevice, DeviceDispatch>::Handle;
-
-public:
-    /// Set object name.
-    void SetObjectNameEXT(const char* name) const;
-
-    VkResult GetStatus() const noexcept {
-        return dld->vkGetEventStatus(owner, handle);
-    }
-};
-
 class ShaderModule : public Handle<VkShaderModule, VkDevice, DeviceDispatch> {
     using Handle<VkShaderModule, VkDevice, DeviceDispatch>::Handle;
 
@@ -1031,8 +1013,6 @@ public:
     [[nodiscard]] QueryPool CreateQueryPool(const VkQueryPoolCreateInfo& ci) const;
 
     [[nodiscard]] ShaderModule CreateShaderModule(const VkShaderModuleCreateInfo& ci) const;
-
-    [[nodiscard]] Event CreateEvent() const;
 
     [[nodiscard]] SwapchainKHR CreateSwapchainKHR(const VkSwapchainCreateInfoKHR& ci) const;
 
@@ -1443,14 +1423,6 @@ public:
 
     void SetDepthBounds(float min_depth_bounds, float max_depth_bounds) const noexcept {
         dld->vkCmdSetDepthBounds(handle, min_depth_bounds, max_depth_bounds);
-    }
-
-    void SetEvent(VkEvent event, const VkDependencyInfo& dependency_info) const noexcept {
-        dld->vkCmdSetEvent2(handle, event, &dependency_info);
-    }
-
-    void WaitEvents(Span<VkEvent> events, const VkDependencyInfo& dependency_info) const noexcept {
-        dld->vkCmdWaitEvents2(handle, events.size(), events.data(), &dependency_info);
     }
 
     void BindVertexBuffers2EXT(u32 first_binding, u32 binding_count, const VkBuffer* buffers,

@@ -226,8 +226,7 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
                      descriptor_buffer_ring, render_pass_cache, buffer_cache, texture_cache,
                      gpu.ShaderNotify()),
       accelerate_dma(buffer_cache, texture_cache, scheduler),
-      fence_manager(*this, gpu, texture_cache, buffer_cache, query_cache, device, scheduler),
-      wfi_event(device.GetLogical().CreateEvent()) {
+      fence_manager(*this, gpu, texture_cache, buffer_cache, query_cache, device, scheduler) {
     scheduler.SetQueryCache(query_cache);
 }
 
@@ -881,45 +880,7 @@ void RasterizerVulkan::FlushAndInvalidateRegion(DAddr addr, u64 size,
 }
 
 void RasterizerVulkan::WaitForIdle() {
-    // Everything but wait pixel operations. This intentionally includes FRAGMENT_SHADER_BIT because
-    // fragment shaders can still write storage buffers.
-    VkPipelineStageFlags2 flags =
-        VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT |
-        VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT |
-        VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT |
-        VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT |
-        VK_PIPELINE_STAGE_2_GEOMETRY_SHADER_BIT | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
-        VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_TRANSFER_BIT;
-    if (device.IsExtTransformFeedbackSupported()) {
-        flags |= VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
-    }
-
     query_cache.NotifyWFI();
-
-    scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([event = *wfi_event, flags](vk::CommandBuffer cmdbuf) {
-        const VkMemoryBarrier2 barrier{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-            .pNext = nullptr,
-            .srcStageMask = flags,
-            .srcAccessMask = VK_ACCESS_2_NONE,
-            .dstStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
-            .dstAccessMask = VK_ACCESS_2_NONE,
-        };
-        const VkDependencyInfo dependency_info{
-            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-            .pNext = nullptr,
-            .dependencyFlags = 0,
-            .memoryBarrierCount = 1,
-            .pMemoryBarriers = &barrier,
-            .bufferMemoryBarrierCount = 0,
-            .pBufferMemoryBarriers = nullptr,
-            .imageMemoryBarrierCount = 0,
-            .pImageMemoryBarriers = nullptr,
-        };
-        cmdbuf.SetEvent(event, dependency_info);
-        cmdbuf.WaitEvents(event, dependency_info);
-    });
     fence_manager.SignalOrdering();
 }
 

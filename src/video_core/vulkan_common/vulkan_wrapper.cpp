@@ -125,13 +125,11 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdSetDepthBias);
     X(vkCmdSetDepthBias2EXT);
     X(vkCmdSetDepthBounds);
-    X(vkCmdSetEvent2);
     X(vkCmdSetScissor);
     X(vkCmdSetStencilCompareMask);
     X(vkCmdSetStencilReference);
     X(vkCmdSetStencilWriteMask);
     X(vkCmdSetViewport);
-    X(vkCmdWaitEvents2);
     X(vkCmdBindVertexBuffers2EXT);
     X(vkCmdSetCullModeEXT);
     X(vkCmdSetDepthBoundsTestEnableEXT);
@@ -168,7 +166,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCreateDescriptorPool);
     X(vkCreateDescriptorSetLayout);
     X(vkCreateDescriptorUpdateTemplate);
-    X(vkCreateEvent);
     X(vkCreateFence);
     X(vkCreateFramebuffer);
     X(vkCreateGraphicsPipelines);
@@ -187,7 +184,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkDestroyDescriptorPool);
     X(vkDestroyDescriptorSetLayout);
     X(vkDestroyDescriptorUpdateTemplate);
-    X(vkDestroyEvent);
     X(vkDestroyFence);
     X(vkDestroyFramebuffer);
     X(vkDestroyImage);
@@ -208,7 +204,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkGetBufferMemoryRequirements2);
     X(vkGetDeviceBufferMemoryRequirements);
     X(vkGetDeviceQueue);
-    X(vkGetEventStatus);
     X(vkGetFenceStatus);
     X(vkGetPipelineCacheData);
     X(vkGetQueryPoolResults);
@@ -260,12 +255,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     }
     if (!dld.vkQueueSubmit2) {
         Proc(dld.vkQueueSubmit2, dld, "vkQueueSubmit2KHR", device);
-    }
-    if (!dld.vkCmdSetEvent2) {
-        Proc(dld.vkCmdSetEvent2, dld, "vkCmdSetEvent2KHR", device);
-    }
-    if (!dld.vkCmdWaitEvents2) {
-        Proc(dld.vkCmdWaitEvents2, dld, "vkCmdWaitEvents2KHR", device);
     }
 
     if (!dld.vkCreateRenderPass2) {
@@ -359,10 +348,6 @@ void Destroy(VkDevice device, VkDescriptorSetLayout handle, const DeviceDispatch
 void Destroy(VkDevice device, VkDescriptorUpdateTemplate handle,
              const DeviceDispatch& dld) noexcept {
     dld.vkDestroyDescriptorUpdateTemplate(device, handle, nullptr);
-}
-
-void Destroy(VkDevice device, VkEvent handle, const DeviceDispatch& dld) noexcept {
-    dld.vkDestroyEvent(device, handle, nullptr);
 }
 
 void Destroy(VkDevice device, VkFence handle, const DeviceDispatch& dld) noexcept {
@@ -590,10 +575,6 @@ std::vector<VkImage> SwapchainKHR::GetImages() const {
     return images;
 }
 
-void Event::SetObjectNameEXT(const char* name) const {
-    SetObjectName(dld, owner, handle, VK_OBJECT_TYPE_EVENT, name);
-}
-
 void ShaderModule::SetObjectNameEXT(const char* name) const {
     SetObjectName(dld, owner, handle, VK_OBJECT_TYPE_SHADER_MODULE, name);
 }
@@ -751,18 +732,6 @@ ShaderModule Device::CreateShaderModule(const VkShaderModuleCreateInfo& ci) cons
     VkShaderModule object;
     Check(dld->vkCreateShaderModule(handle, &ci, nullptr, &object));
     return ShaderModule(object, handle, *dld);
-}
-
-Event Device::CreateEvent() const {
-    static constexpr VkEventCreateInfo ci{
-        .sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-    };
-
-    VkEvent object;
-    Check(dld->vkCreateEvent(handle, &ci, nullptr, &object));
-    return Event(object, handle, *dld);
 }
 
 SwapchainKHR Device::CreateSwapchainKHR(const VkSwapchainCreateInfoKHR& ci) const {
