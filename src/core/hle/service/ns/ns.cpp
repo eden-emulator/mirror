@@ -23,22 +23,20 @@ public:
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
-            { 0, nullptr, "NotifyAppletEvent" },
-            { 2, nullptr, "NotifyOperationModeChangeEvent" },
-            { 3, nullptr, "NotifyPowerStateChangeEvent" },
-            { 4, nullptr, "NotifyClearAllEvent" },
-            { 5, nullptr, "NotifyEventForDebug" },
-            { 6, nullptr, "SuspendUserAccountEventService" },
-            { 7, nullptr, "ResumeUserAccountEventService" },
-            { 8, nullptr, "NotifyLibraryAppletEvent" },
-            { 9, nullptr, "Cmd9" },
-            { 20, nullptr, "Cmd20" },
-            { 30, nullptr, "Cmd30" },
-            { 100, nullptr, "Cmd100" },
-            { 101, nullptr, "Cmd101" },
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+            FunctionInfo{ 0, nullptr, "NotifyAppletEvent" },
+            FunctionInfo{ 2, nullptr, "NotifyOperationModeChangeEvent" },
+            FunctionInfo{ 3, nullptr, "NotifyPowerStateChangeEvent" },
+            FunctionInfo{ 4, nullptr, "NotifyClearAllEvent" },
+            FunctionInfo{ 5, nullptr, "NotifyEventForDebug" },
+            FunctionInfo{ 6, nullptr, "SuspendUserAccountEventService" },
+            FunctionInfo{ 7, nullptr, "ResumeUserAccountEventService" },
+            FunctionInfo{ 8, nullptr, "NotifyLibraryAppletEvent" },
+            FunctionInfo{ 9, nullptr, "Cmd9" },
+            FunctionInfo{ 20, nullptr, "Cmd20" },
+            FunctionInfo{ 30, nullptr, "Cmd30" },
+            FunctionInfo{ 100, nullptr, "Cmd100" },
+            FunctionInfo{ 101, nullptr, "Cmd101" }
+        );
     }
 };
 

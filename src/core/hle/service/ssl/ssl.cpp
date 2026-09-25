@@ -74,11 +74,14 @@ struct SslContextSharedData {
 
 class ISslConnection final : public ServiceFramework<ISslConnection> {
 public:
-    explicit ISslConnection(Core::System& system_in, SslVersion ssl_version_in,
-                            std::shared_ptr<SslContextSharedData>& shared_data_in,
-                            std::unique_ptr<SSLConnectionBackend>&& backend_in)
-        : ServiceFramework{system_in, "ISslConnection"}, ssl_version{ssl_version_in},
-          shared_data{shared_data_in}, backend{std::move(backend_in)} {}
+    explicit ISslConnection(Core::System& system_in, SslVersion ssl_version_in, std::shared_ptr<SslContextSharedData>& shared_data_in, std::unique_ptr<SSLConnectionBackend>&& backend_in)
+        : ServiceFramework{system_in, "ISslConnection"}
+        , ssl_version{ssl_version_in}
+        , shared_data{shared_data_in}
+        , backend{std::move(backend_in)} {
+        backend->SetVerifyOption(verify_option);
+        shared_data->connection_count++;
+    }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
@@ -118,14 +121,7 @@ public:
             FunctionInfo{33, nullptr, "ExportKeyingMaterial"},
             FunctionInfo{34, nullptr, "SetIoTimeout"},
             FunctionInfo{35, nullptr, "GetIoTimeout"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
-
-        backend->SetVerifyOption(verify_option);
-
-        shared_data->connection_count++;
+        );
     }
 
     ~ISslConnection() {

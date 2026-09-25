@@ -21,7 +21,10 @@ namespace Service::PTM {
 class IPsmSession final : public ServiceFramework<IPsmSession> {
 public:
     explicit IPsmSession(Core::System& system_)
-        : ServiceFramework{system_, "IPsmSession"}, service_context{system_, "IPsmSession"} {}
+        : ServiceFramework{system_, "IPsmSession"}
+        , service_context{system_, "IPsmSession"} {
+        state_change_event = service_context.CreateEvent("IPsmSession::state_change_event");
+    }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
@@ -30,12 +33,7 @@ public:
             FunctionInfo{2, &IPsmSession::SetChargerTypeChangeEventEnabled, "SetChargerTypeChangeEventEnabled"},
             FunctionInfo{3, &IPsmSession::SetPowerSupplyChangeEventEnabled, "SetPowerSupplyChangeEventEnabled"},
             FunctionInfo{4, &IPsmSession::SetBatteryVoltageStateChangeEventEnabled, "SetBatteryVoltageStateChangeEventEnabled"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
-
-        state_change_event = service_context.CreateEvent("IPsmSession::state_change_event");
+        );
     }
 
     ~IPsmSession() override {

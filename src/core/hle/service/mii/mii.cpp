@@ -24,10 +24,13 @@ namespace Service::Mii {
 
 class IDatabaseService final : public ServiceFramework<IDatabaseService> {
 public:
-    explicit IDatabaseService(Core::System& system_, std::shared_ptr<MiiManager> mii_manager,
-                              bool is_system_)
-        : ServiceFramework{system_, "IDatabaseService"}, manager{mii_manager}, is_system{
-                                                                                   is_system_} {}
+    explicit IDatabaseService(Core::System& system_, std::shared_ptr<MiiManager> mii_manager, bool is_system_)
+        : ServiceFramework{system_, "IDatabaseService"}
+        , manager{mii_manager}
+        , is_system{is_system_} {
+        m_set_sys = system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);
+        manager->Initialize(metadata);
+    }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
@@ -58,14 +61,7 @@ public:
             FunctionInfo{24, D<&IDatabaseService::ConvertCoreDataToCharInfo>, "ConvertCoreDataToCharInfo"},
             FunctionInfo{25, D<&IDatabaseService::ConvertCharInfoToCoreData>, "ConvertCharInfoToCoreData"},
             FunctionInfo{26,  D<&IDatabaseService::Append>, "Append"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
-
-        m_set_sys = system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>(
-            "set:sys", true);
-        manager->Initialize(metadata);
+        );
     }
 
 private:

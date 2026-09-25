@@ -53,7 +53,7 @@ public:
             FunctionInfo{2300, nullptr, "Unknown2300"}, //20.0.0+
             FunctionInfo{2310, nullptr, "Unknown2310"}, //20.0.0+
             FunctionInfo{2400, nullptr, "Unknown2400"}, //20.0.0+
-            FunctionInfo{2420, nullptr, "Unknown2420"}, //20.0.0+
+            FunctionInfo{2420, nullptr, "Unknown2420"} //20.0.0+
         );
     }
 };

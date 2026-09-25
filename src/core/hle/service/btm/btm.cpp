@@ -107,7 +107,7 @@ public:
             FunctionInfo{114, nullptr, "IsFirstAudioControlConnection"}, //14.0.0+
             FunctionInfo{115, nullptr, "GetShortenedDeviceCondition"}, //14.0.0+
             FunctionInfo{116, nullptr, "SetAudioSinkVolume"}, //15.0.0+
-            FunctionInfo{117, nullptr, "GetAudioSinkVolume"}, //15.0.0+
+            FunctionInfo{117, nullptr, "GetAudioSinkVolume"} //15.0.0+
         );
     }
 };

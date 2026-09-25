@@ -37,19 +37,6 @@ public:
         , user_ro{std::move(user_ro_)}
         , context{process_->GetMemory()}
     {
-
-
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, C<&IJitEnvironment::GenerateCode>, "GenerateCode"},
-            FunctionInfo{1, C<&IJitEnvironment::Control>, "Control"},
-            FunctionInfo{1000, C<&IJitEnvironment::LoadPlugin>, "LoadPlugin"},
-            FunctionInfo{1001, C<&IJitEnvironment::GetCodeAddress>, "GetCodeAddress"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
-
         // Identity map user code range into sysmodule context
         configuration.user_rx_memory.size = user_rx.GetSize();
         configuration.user_rx_memory.offset = user_rx.GetAddress();
@@ -58,6 +45,15 @@ public:
 
         configuration.sys_rx_memory = configuration.user_rx_memory;
         configuration.sys_ro_memory = configuration.user_ro_memory;
+    }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, C<&IJitEnvironment::GenerateCode>, "GenerateCode"},
+            FunctionInfo{1, C<&IJitEnvironment::Control>, "Control"},
+            FunctionInfo{1000, C<&IJitEnvironment::LoadPlugin>, "LoadPlugin"},
+            FunctionInfo{1001, C<&IJitEnvironment::GetCodeAddress>, "GetCodeAddress"}
+        );
     }
 
     ~IJitEnvironment() {

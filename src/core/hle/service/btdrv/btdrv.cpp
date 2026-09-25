@@ -20,7 +20,10 @@ namespace Service::BtDrv {
 class IBluetoothUser final : public ServiceFramework<IBluetoothUser> {
 public:
     explicit IBluetoothUser(Core::System& system_)
-        : ServiceFramework{system_, "bt"}, service_context{system_, "bt"} {}
+        : ServiceFramework{system_, "bt"}
+        , service_context{system_, "bt"} {
+        register_event = service_context.CreateEvent("BT:RegisterEvent");
+    }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
@@ -34,11 +37,7 @@ public:
             FunctionInfo{7, nullptr, "LeSendIndication"},
             FunctionInfo{8, nullptr, "GetLeEventInfo"},
             FunctionInfo{9, C<&IBluetoothUser::RegisterBleEvent>, "RegisterBleEvent"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
-
-        register_event = service_context.CreateEvent("BT:RegisterEvent");
+        );
     }
 
     ~IBluetoothUser() override {
