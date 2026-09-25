@@ -316,7 +316,7 @@ sudo pkg install git cmake qt6 boost glslang libzip library/lz4 libusb-1 nlohman
 <summary>OmniOS</summary>
 
 ```sh
-sudo pkgin install git cmake autoconf build-essential libusb-1 nasm gcc13
+sudo pkg install git cmake autoconf build-essential libusb-1 nasm gcc15 ffmpeg lz4 pkg-config unzip bash jq xsvc
 ```
 
 [Caveats](./Caveats.md#omnios).
