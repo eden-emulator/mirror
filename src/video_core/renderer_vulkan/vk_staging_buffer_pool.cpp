@@ -74,11 +74,7 @@ StagingBufferPool::StagingBufferPool(const Device& device, MemoryAllocator& memo
     if (device.IsBufferDeviceAddressSupported()) {
         stream_ci.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
     }
-    // *BSD drivers are more sensitive to increased buffers for streaming.
-    // Windows ones however, can intake bigger buffers and generally do not OOM.
-    // - GTX 960 on Windows will not OOM with 256mib
-    // - GT 1030 on ^BSD will OOM with 256mib
-    // This doesn't seem to be, however, universally true
+    // Some drivers are more sensitive to increased buffer sizes
     try {
         stream_buffer = memory_allocator.CreateBuffer(stream_ci, MemoryUsage::Stream);
     } catch (vk::Exception& e) {
