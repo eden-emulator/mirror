@@ -260,18 +260,16 @@ public:
 class IOAuthProcedure final : public ServiceFramework<IOAuthProcedure> {
 public:
     explicit IOAuthProcedure(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IOAuthProcedure"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IOAuthProcedure"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "PrepareAsync"},
             FunctionInfo{1, nullptr, "GetRequest"},
             FunctionInfo{2, nullptr, "ApplyResponse"},
             FunctionInfo{3, nullptr, "ApplyResponseAsync"},
             FunctionInfo{10, nullptr, "Suspend"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -279,9 +277,10 @@ public:
 class IOAuthProcedureForExternalNsa final : public ServiceFramework<IOAuthProcedureForExternalNsa> {
 public:
     explicit IOAuthProcedureForExternalNsa(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IOAuthProcedureForExternalNsa"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IOAuthProcedureForExternalNsa"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "PrepareAsync"},
             FunctionInfo{1, nullptr, "GetRequest"},
             FunctionInfo{2, nullptr, "ApplyResponse"},
@@ -292,10 +291,7 @@ public:
             FunctionInfo{102, nullptr, "GetNickname"},
             FunctionInfo{103, nullptr, "GetProfileImage"},
             FunctionInfo{104, nullptr, "GetProfileLargeImage"} // 18.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -303,9 +299,10 @@ class IOAuthProcedureForNintendoAccountLinkage final
     : public ServiceFramework<IOAuthProcedureForNintendoAccountLinkage> {
 public:
     explicit IOAuthProcedureForNintendoAccountLinkage(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IOAuthProcedureForNintendoAccountLinkage"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IOAuthProcedureForNintendoAccountLinkage"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "PrepareAsync"},
             FunctionInfo{1, nullptr, "GetRequest"},
             FunctionInfo{2, nullptr, "ApplyResponse"},
@@ -319,24 +316,19 @@ public:
             FunctionInfo{220, nullptr, "RegisterUserAsyncWithoutProfile"}, // 17.0.0+
             FunctionInfo{221, nullptr, "RegisterUserWithProfileAsync"}, // 17.0.0+
             FunctionInfo{230, nullptr, "RegisterUserWithLargeImageProfileAsync"}, // 18.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class INotifier final : public ServiceFramework<INotifier> {
 public:
     explicit INotifier(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "INotifier"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "GetSystemEvent"}
-        };
-        // clang-format on
+        : ServiceFramework{system_, "INotifier"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, nullptr, "GetSystemEvent"}
+        );
     }
 };
 
@@ -615,23 +607,22 @@ public:
 class ISessionObject final : public ServiceFramework<ISessionObject> {
 public:
     explicit ISessionObject(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "ISessionObject"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{999, nullptr, "Dummy"}
-        };
-        // clang-format on
+        : ServiceFramework{system_, "ISessionObject"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{999, nullptr, "Dummy"}
+        );
     }
 };
 
 class IGuestLoginRequest final : public ServiceFramework<IGuestLoginRequest> {
 public:
     explicit IGuestLoginRequest(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IGuestLoginRequest"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IGuestLoginRequest"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetSessionId"},
             FunctionInfo{11, nullptr, "Unknown"}, // 1.0.0 - 2.3.0 (the name is blank on Switchbrew)
             FunctionInfo{12, nullptr, "GetAccountId"},
@@ -640,10 +631,7 @@ public:
             FunctionInfo{15, nullptr, "GetProfileImage"},
             FunctionInfo{16, nullptr, "GetProfileLargeImage"}, // 18.0.0+
             FunctionInfo{21, nullptr, "LoadIdTokenCache"}, // 3.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -680,9 +668,10 @@ public:
                                     const std::shared_ptr<ProfileManager>& profile_manager_)
         : ServiceFramework{system_, "IManagerForApplication"},
           ensure_token_id{std::make_shared<EnsureTokenIdCacheAsyncInterface>(system)},
-          profile_manager{profile_manager_} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+          profile_manager{profile_manager_} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &IManagerForApplication::CheckAvailability, "CheckAvailability"},
             FunctionInfo{1, &IManagerForApplication::GetAccountId, "GetAccountId"},
             FunctionInfo{2, &IManagerForApplication::EnsureIdTokenCacheAsync, "EnsureIdTokenCacheAsync"},
@@ -693,10 +682,7 @@ public:
             FunctionInfo{150, nullptr, "CreateAuthorizationRequest"},
             FunctionInfo{160, &IManagerForApplication::StoreOpenContext, "StoreOpenContext"},
             FunctionInfo{170, nullptr, "LoadNetworkServiceLicenseKindAsync"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -775,18 +761,16 @@ class IAsyncNetworkServiceLicenseKindContext final
     : public ServiceFramework<IAsyncNetworkServiceLicenseKindContext> {
 public:
     explicit IAsyncNetworkServiceLicenseKindContext(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IAsyncNetworkServiceLicenseKindContext"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IAsyncNetworkServiceLicenseKindContext"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetSystemEvent"},
             FunctionInfo{1, nullptr, "Cancel"},
             FunctionInfo{2, nullptr, "HasDone"},
             FunctionInfo{3, nullptr, "GetResult"},
             FunctionInfo{4, nullptr, "GetNetworkServiceLicenseKind"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -795,9 +779,10 @@ class IOAuthProcedureForUserRegistration final
     : public ServiceFramework<IOAuthProcedureForUserRegistration> {
 public:
     explicit IOAuthProcedureForUserRegistration(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IOAuthProcedureForUserRegistration"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IOAuthProcedureForUserRegistration"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "PrepareAsync"},
             FunctionInfo{1, nullptr, "GetRequest"},
             FunctionInfo{2, nullptr, "ApplyResponse"},
@@ -816,18 +801,16 @@ public:
             FunctionInfo{220, nullptr, "RegisterUserAsyncWithoutProfile"}, // 17.0.0+
             FunctionInfo{221, nullptr, "RegisterUserWithProfileAsync"}, // 17.0.0+
             FunctionInfo{230, nullptr, "RegisterUserWithLargeImageProfileAsync"} // 18.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class DAUTH_O final : public ServiceFramework<DAUTH_O> {
 public:
-    explicit DAUTH_O(Core::System& system_, Common::UUID) : ServiceFramework{system_, "dauth:o"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit DAUTH_O(Core::System& system_, Common::UUID) : ServiceFramework{system_, "dauth:o"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
             FunctionInfo{1, nullptr, "LoadAuthenticationTokenCache"},
             FunctionInfo{2, nullptr, "InvalidateAuthenticationTokenCache"},
@@ -841,10 +824,7 @@ public:
             FunctionInfo{22, nullptr, "LoadApplicationNetworkServiceClientConfigCache"},
             FunctionInfo{23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
             FunctionInfo{24, nullptr, "InvalidateApplicationAuthenticationCache"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -852,17 +832,15 @@ public:
 class IAsyncResult final : public ServiceFramework<IAsyncResult> {
 public:
     explicit IAsyncResult(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IAsyncResult"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IAsyncResult"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetResult"},
             FunctionInfo{1, nullptr, "Cancel"},
             FunctionInfo{2, nullptr, "IsAvailable"},
             FunctionInfo{3, nullptr, "GetSystemEvent"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -1237,9 +1215,10 @@ Module::Interface::~Interface() = default;
 class ACC_AA final : public Module::Interface {
 public:
     explicit ACC_AA(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:aa") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:aa") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "EnsureCacheAsync"},
             FunctionInfo{1, nullptr, "LoadCache"},
             FunctionInfo{2, nullptr, "GetDeviceAccountId"},
@@ -1255,9 +1234,10 @@ public:
 class ACC_SU final : public Module::Interface {
 public:
     explicit ACC_SU(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:su") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:su") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &ACC_SU::GetUserCount, "GetUserCount"},
             FunctionInfo{1, &ACC_SU::GetUserExistence, "GetUserExistence"},
             FunctionInfo{2, &ACC_SU::ListAllUsers, "ListAllUsers"},
@@ -1320,10 +1300,7 @@ public:
             FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
             FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
             FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
     ~ACC_SU() override = default;
 };
@@ -1331,9 +1308,10 @@ public:
 class ACC_U0 final : public Module::Interface {
 public:
     ACC_U0(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u0") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u0") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &ACC_U0::GetUserCount, "GetUserCount"},
             FunctionInfo{1, &ACC_U0::GetUserExistence, "GetUserExistence"},
             FunctionInfo{2, &ACC_U0::ListAllUsers, "ListAllUsers"},
@@ -1359,10 +1337,7 @@ public:
             FunctionInfo{141, &ACC_U0::ListQualifiedUsers, "ListQualifiedUsers"}, // 6.0.0+
             FunctionInfo{150, &ACC_U0::IsUserAccountSwitchLocked, "IsUserAccountSwitchLocked"}, // 6.0.0+
             FunctionInfo{160, &ACC_U0::InitializeApplicationInfoV2, "InitializeApplicationInfoV2"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
     ~ACC_U0() override = default;
 };
@@ -1370,9 +1345,10 @@ public:
 class ACC_U1 final : public Module::Interface {
 public:
     ACC_U1(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u1") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u1") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &ACC_U1::GetUserCount, "GetUserCount"},
             FunctionInfo{1, &ACC_U1::GetUserExistence, "GetUserExistence"},
             FunctionInfo{2, &ACC_U1::ListAllUsers, "ListAllUsers"},
@@ -1409,19 +1385,17 @@ public:
             FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
             FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
             FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
     ~ACC_U1() override = default;
 };
 
 class DAUTH_0 final : public ServiceFramework<DAUTH_0> {
 public:
-    explicit DAUTH_0(Core::System& system_) : ServiceFramework{system_, "dauth:0"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit DAUTH_0(Core::System& system_) : ServiceFramework{system_, "dauth:0"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
             FunctionInfo{1, nullptr, "LoadAuthenticationTokenCache"},
             FunctionInfo{2, nullptr, "InvalidateAuthenticationTokenCache"},
@@ -1442,18 +1416,17 @@ public:
             FunctionInfo{1000, nullptr, "GetInactiveElicenseUsedEvent"},
             FunctionInfo{9000, nullptr, "ImportVirtualClientCertificate"},
             FunctionInfo{9010, nullptr, "DeleteVirtualClientCertificate"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class ACC_E final : public Module::Interface {
 public:
     explicit ACC_E(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             { 0, nullptr, "GetUserCount"},
             { 1, nullptr, "GetUserExistence"},
             { 2, nullptr, "ListAllUsers"},
@@ -1531,18 +1504,17 @@ public:
             { 1100, nullptr, "CreateIUserStateManager"},
             { 10050, nullptr, "IsUserRegistrationRequestPermittedForAccountPolicy"},
             { 10105, nullptr, "CheckNetworkServiceAvailabilityAsyncForAccountPolicy"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class ACC_E_U1 final : public Module::Interface {
 public:
     explicit ACC_E_U1(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u1") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u1") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetUserCount"},
             FunctionInfo{1, nullptr, "GetUserExistence"},
             FunctionInfo{2, nullptr, "ListAllUsers"},
@@ -1574,18 +1546,17 @@ public:
             FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
             FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
             FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class ACC_E_U2 final : public Module::Interface {
 public:
     explicit ACC_E_U2(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u2") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u2") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetUserCount"},
             FunctionInfo{1, nullptr, "GetUserExistence"},
             FunctionInfo{2, nullptr, "ListAllUsers"},
@@ -1624,9 +1595,7 @@ public:
             FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
             FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
             FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 

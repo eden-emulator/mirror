@@ -19,9 +19,10 @@ namespace Service::NS {
 
 class INotifyService final : public ServiceFramework<INotifyService> {
 public:
-    explicit INotifyService(Core::System& system_) : ServiceFramework{system_, "pdm:ntfy"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit INotifyService(Core::System& system_) : ServiceFramework{system_, "pdm:ntfy"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             { 0, nullptr, "NotifyAppletEvent" },
             { 2, nullptr, "NotifyOperationModeChangeEvent" },
             { 3, nullptr, "NotifyPowerStateChangeEvent" },
@@ -45,18 +46,17 @@ class IVulnerabilityManagerInterface final
     : public ServiceFramework<IVulnerabilityManagerInterface> {
 public:
     explicit IVulnerabilityManagerInterface(Core::System& system_)
-        : ServiceFramework{system_, "ns:vm"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "ns:vm"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{1200, D<&IVulnerabilityManagerInterface::NeedsUpdateVulnerability>, "NeedsUpdateVulnerability"},
             FunctionInfo{1201, nullptr, "UpdateSafeSystemVersionForDebug"},
             FunctionInfo{1202, nullptr, "GetSafeSystemVersion"},
             FunctionInfo{3100, D<&IVulnerabilityManagerInterface::GetSafeSystemVersionCheckInfo>, "GetSafeSystemVersionCheckInfo"},
             FunctionInfo{3101, nullptr, "RequestUpdateSafeSystemVersionCheckInfo"},
             FunctionInfo{3102, D<&IVulnerabilityManagerInterface::ResetSafeSystemVersionCheckInfo>, "ResetSafeSystemVersionCheckInfo"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
     ~IVulnerabilityManagerInterface() override = default;
 

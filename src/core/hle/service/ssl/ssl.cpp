@@ -78,9 +78,10 @@ public:
                             std::shared_ptr<SslContextSharedData>& shared_data_in,
                             std::unique_ptr<SSLConnectionBackend>&& backend_in)
         : ServiceFramework{system_in, "ISslConnection"}, ssl_version{ssl_version_in},
-          shared_data{shared_data_in}, backend{std::move(backend_in)} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+          shared_data{shared_data_in}, backend{std::move(backend_in)} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, D<&ISslConnection::SetSocketDescriptor>, "SetSocketDescriptor"},
             FunctionInfo{1, D<&ISslConnection::SetHostName>, "SetHostName"},
             FunctionInfo{2, D<&ISslConnection::SetVerifyOption>, "SetVerifyOption"},
@@ -566,9 +567,10 @@ private:
 class ISslService final : public ServiceFramework<ISslService> {
 public:
     explicit ISslService(Core::System& system_)
-        : ServiceFramework{system_, "ssl"}, cert_store{system} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "ssl"}, cert_store{system} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &ISslService::CreateContext, "CreateContext"},
             FunctionInfo{1, nullptr, "GetContextCount"},
             FunctionInfo{2, D<&ISslService::GetCertificates>, "GetCertificates"},
@@ -579,10 +581,7 @@ public:
             FunctionInfo{7, nullptr, "SetDebugOption"},
             FunctionInfo{8, nullptr, "GetDebugOption"},
             FunctionInfo{8, nullptr, "ClearTls12FallbackFlag"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:

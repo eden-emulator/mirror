@@ -164,16 +164,14 @@ public:
     using IssuerFn = std::function<Result(u64, ApplicationLaunchProperty, std::vector<u8>)>;
 
     explicit IRegistrar(Core::System& system_, IssuerFn&& issuer)
-        : ServiceFramework{system_, "IRegistrar"}, issue_process_id{std::move(issuer)} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IRegistrar"}, issue_process_id{std::move(issuer)} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &IRegistrar::Issue, "Issue"},
             FunctionInfo{1, &IRegistrar::SetApplicationLaunchProperty, "SetApplicationLaunchProperty"},
             FunctionInfo{2, &IRegistrar::SetApplicationControlProperty, "SetApplicationControlProperty"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:

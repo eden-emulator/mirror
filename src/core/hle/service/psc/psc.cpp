@@ -19,50 +19,48 @@ namespace Service::PSC {
 
 class PSC_L final : public ServiceFramework<PSC_L> {
 public:
-    explicit PSC_L(Core::System& system_) : ServiceFramework{system_, "psc:l"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit PSC_L(Core::System& system_) : ServiceFramework{system_, "psc:l"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "Initialize_3"},
             FunctionInfo{1, nullptr, "Lock"},
             FunctionInfo{2, nullptr, "Unlock"},
             FunctionInfo{3, nullptr, "IsLocked"},
             FunctionInfo{4, nullptr, "GetRelatedState"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class INS_R final : public ServiceFramework<INS_R> {
 public:
-    explicit INS_R(Core::System& system_) : ServiceFramework{system_, "ins:r"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit INS_R(Core::System& system_) : ServiceFramework{system_, "ins:r"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetInputSourceState"},
             FunctionInfo{1, nullptr, "GetTriggerTargetEvent"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class INS_S final : public ServiceFramework<INS_S> {
 public:
-    explicit INS_S(Core::System& system_) : ServiceFramework{system_, "ins:s"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit INS_S(Core::System& system_) : ServiceFramework{system_, "ins:s"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetNotifyEvent"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class HSHL_SYS final : public ServiceFramework<HSHL_SYS> {
 public:
-    explicit HSHL_SYS(Core::System& system_) : ServiceFramework{system_, "hshl:sys"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit HSHL_SYS(Core::System& system_) : ServiceFramework{system_, "hshl:sys"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetBatteryPercentage"},
             FunctionInfo{1, nullptr, "GetChargerType"},
             FunctionInfo{2, nullptr, "OpenChargeSession"},
@@ -79,26 +77,23 @@ public:
             FunctionInfo{13, nullptr, "GetIsCharging"},
             FunctionInfo{14, nullptr, "Cmd14"},
             FunctionInfo{15, nullptr, "Cmd15"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class HSHL_SET final : public ServiceFramework<HSHL_SET> {
 public:
-    explicit HSHL_SET(Core::System& system_) : ServiceFramework{system_, "hshl:set"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit HSHL_SET(Core::System& system_) : ServiceFramework{system_, "hshl:set"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "OpenChargeSession_2"},
             FunctionInfo{1, nullptr, "OpenThermalSession_2"},
             FunctionInfo{2, nullptr, "SetClockRate"},
             FunctionInfo{3, nullptr, "SetBridgePowerSupply"},
             FunctionInfo{4, nullptr, "Cmd4"},
             FunctionInfo{5, nullptr, "Cmd5"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 

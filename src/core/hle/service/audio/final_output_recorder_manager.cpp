@@ -11,9 +11,10 @@ namespace Service::Audio {
 class IFinalOutputRecorder final : public ServiceFramework<IFinalOutputRecorder> {
 public:
     explicit IFinalOutputRecorder(Core::System& system_)
-        : ServiceFramework{system_, "IFinalOutputRecorder"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IFinalOutputRecorder"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetFinalOutputRecorderState"},
             FunctionInfo{1, nullptr, "Start"},
             FunctionInfo{2, nullptr, "Stop"},
@@ -26,10 +27,7 @@ public:
             FunctionInfo{9, nullptr, "GetReleasedFinalOutputRecorderBufferAuto"},
             FunctionInfo{10, nullptr, "FlushFinalOutputRecorderBuffers"},
             FunctionInfo{11, nullptr, "AttachWorkBuffer"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 

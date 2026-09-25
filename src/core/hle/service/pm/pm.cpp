@@ -78,9 +78,10 @@ private:
 
 class DebugMonitor final : public ServiceFramework<DebugMonitor> {
 public:
-    explicit DebugMonitor(Core::System& system_) : ServiceFramework{system_, "pm:dmnt"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit DebugMonitor(Core::System& system_) : ServiceFramework{system_, "pm:dmnt"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetJitDebugProcessIdList"},
             FunctionInfo{1, nullptr, "StartProcess"},
             FunctionInfo{2, &DebugMonitor::GetProcessId, "GetProcessId"},
@@ -90,10 +91,7 @@ public:
             FunctionInfo{6, nullptr, "ClearHook"},
             FunctionInfo{65000, &DebugMonitor::AtmosphereGetProcessInfo, "AtmosphereGetProcessInfo"},
             FunctionInfo{65001, nullptr, "AtmosphereGetCurrentLimitInfo"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -222,9 +220,10 @@ private:
 
 class Shell final : public ServiceFramework<Shell> {
 public:
-    explicit Shell(Core::System& system_) : ServiceFramework{system_, "pm:shell"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit Shell(Core::System& system_) : ServiceFramework{system_, "pm:shell"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "LaunchProgram"},
             FunctionInfo{1, nullptr, "TerminateProcess"},
             FunctionInfo{2, nullptr, "TerminateProgram"},
@@ -235,10 +234,7 @@ public:
             FunctionInfo{7, nullptr, "BoostSystemMemoryResourceLimit"},
             FunctionInfo{8, nullptr, "BoostApplicationThreadResourceLimit"},
             FunctionInfo{9, nullptr, "GetBootFinishedEventHandle"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:

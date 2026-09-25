@@ -18,9 +18,10 @@ namespace Service::NFC {
 
 class IUser final : public NfcInterface {
 public:
-    explicit IUser(Core::System& system_) : NfcInterface(system_, "NFC::IUser", BackendType::Nfc) {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IUser(Core::System& system_) : NfcInterface(system_, "NFC::IUser", BackendType::Nfc) {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &NfcInterface::Initialize, "InitializeOld"},
             FunctionInfo{1, &NfcInterface::Finalize, "FinalizeOld"},
             FunctionInfo{2, &NfcInterface::GetState, "GetStateOld"},
@@ -43,19 +44,17 @@ public:
             FunctionInfo{1300, &NfcInterface::SendCommandByPassThrough, "SendCommandByPassThrough"},
             FunctionInfo{1301, nullptr, "KeepPassThroughSession"},
             FunctionInfo{1302, nullptr, "ReleasePassThroughSession"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class ISystem final : public NfcInterface {
 public:
     explicit ISystem(Core::System& system_)
-        : NfcInterface{system_, "NFC::ISystem", BackendType::Nfc} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : NfcInterface{system_, "NFC::ISystem", BackendType::Nfc} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &NfcInterface::Initialize, "InitializeOld"},
             FunctionInfo{1, &NfcInterface::Finalize, "FinalizeOld"},
             FunctionInfo{2, &NfcInterface::GetState, "GetStateOld"},
@@ -81,10 +80,7 @@ public:
             FunctionInfo{1300, &NfcInterface::SendCommandByPassThrough, "SendCommandByPassThrough"},
             FunctionInfo{1301, nullptr, "KeepPassThroughSession"},
             FunctionInfo{1302, nullptr, "ReleasePassThroughSession"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -111,38 +107,31 @@ public:
             FunctionInfo{11, &MFIUser::GetDeviceState, "GetDeviceState"},
             FunctionInfo{12, &MFIUser::GetNpadId, "GetNpadId"},
             FunctionInfo{13, &MFIUser::AttachAvailabilityChangeEvent, "GetAvailabilityChangeEventHandle"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IAm final : public ServiceFramework<IAm> {
 public:
-    explicit IAm(Core::System& system_) : ServiceFramework{system_, "NFC::IAm"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IAm(Core::System& system_) : ServiceFramework{system_, "NFC::IAm"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "Initialize"},
             FunctionInfo{1, nullptr, "Finalize"},
             FunctionInfo{2, nullptr, "NotifyForegroundApplet"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class NFC_AM final : public ServiceFramework<NFC_AM> {
 public:
-    explicit NFC_AM(Core::System& system_) : ServiceFramework{system_, "nfc:am"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &NFC_AM::CreateAmNfcInterface, "CreateAmNfcInterface"}
-        };
-        // clang-format on
+    explicit NFC_AM(Core::System& system_) : ServiceFramework{system_, "nfc:am"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &NFC_AM::CreateAmNfcInterface, "CreateAmNfcInterface"}
+        );
     }
 
 private:
@@ -157,14 +146,12 @@ private:
 
 class NFC_MF_U final : public ServiceFramework<NFC_MF_U> {
 public:
-    explicit NFC_MF_U(Core::System& system_) : ServiceFramework{system_, "nfc:mf:u"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &NFC_MF_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
-        };
-        // clang-format on
+    explicit NFC_MF_U(Core::System& system_) : ServiceFramework{system_, "nfc:mf:u"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &NFC_MF_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
+        );
     }
 
 private:
@@ -179,14 +166,12 @@ private:
 
 class NFC_U final : public ServiceFramework<NFC_U> {
 public:
-    explicit NFC_U(Core::System& system_) : ServiceFramework{system_, "nfc:user"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &NFC_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
-        };
-        // clang-format on
+    explicit NFC_U(Core::System& system_) : ServiceFramework{system_, "nfc:user"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &NFC_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
+        );
     }
 
 private:
@@ -201,14 +186,12 @@ private:
 
 class NFC_SYS final : public ServiceFramework<NFC_SYS> {
 public:
-    explicit NFC_SYS(Core::System& system_) : ServiceFramework{system_, "nfc:sys"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &NFC_SYS::CreateSystemNfcInterface, "CreateSystemNfcInterface"}
-        };
-        // clang-format on
+    explicit NFC_SYS(Core::System& system_) : ServiceFramework{system_, "nfc:sys"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &NFC_SYS::CreateSystemNfcInterface, "CreateSystemNfcInterface"}
+        );
     }
 
 private:

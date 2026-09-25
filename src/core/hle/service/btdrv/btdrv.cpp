@@ -20,9 +20,10 @@ namespace Service::BtDrv {
 class IBluetoothUser final : public ServiceFramework<IBluetoothUser> {
 public:
     explicit IBluetoothUser(Core::System& system_)
-        : ServiceFramework{system_, "bt"}, service_context{system_, "bt"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "bt"}, service_context{system_, "bt"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "LeClientReadCharacteristic"},
             FunctionInfo{1, nullptr, "LeClientReadDescriptor"},
             FunctionInfo{2, nullptr, "LeClientWriteCharacteristic"},
@@ -59,9 +60,10 @@ private:
 
 class IBluetoothDriver final : public ServiceFramework<IBluetoothDriver> {
 public:
-    explicit IBluetoothDriver(Core::System& system_) : ServiceFramework{system_, "btdrv"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IBluetoothDriver(Core::System& system_) : ServiceFramework{system_, "btdrv"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "InitializeBluetoothDriver"},
             FunctionInfo{1, nullptr, "InitializeBluetooth"},
             FunctionInfo{2, nullptr, "EnableBluetooth"},
@@ -193,10 +195,7 @@ public:
             FunctionInfo{256, nullptr, "IsManufacturingMode"},
             FunctionInfo{257, nullptr, "EmulateBluetoothCrash"},
             FunctionInfo{258, nullptr, "GetBleChannelMap"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:

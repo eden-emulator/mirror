@@ -15,9 +15,10 @@ namespace Service::Sockets {
 class ETHC_C final : public ServiceFramework<ETHC_C> {
 public:
     explicit ETHC_C(Core::System& system_)
-        : ServiceFramework{system_, "ethc:c"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "ethc:c"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "Initialize"},
             FunctionInfo{1, nullptr, "Cancel"},
             FunctionInfo{2, nullptr, "GetResult"},
@@ -25,39 +26,35 @@ public:
             FunctionInfo{4, nullptr, "SetMediaType"},
             FunctionInfo{5, nullptr, "GetMediaType"},
             FunctionInfo{6, nullptr, "GetMacAddress"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class ETHC_I final : public ServiceFramework<ETHC_I> {
 public:
     explicit ETHC_I(Core::System& system_)
-        : ServiceFramework{system_, "ethc:i"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "ethc:i"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetReadableHandle"},
             FunctionInfo{1, nullptr, "Cancel"},
             FunctionInfo{2, nullptr, "GetResult"},
             FunctionInfo{3, nullptr, "GetInterfaceList"},
             FunctionInfo{4, nullptr, "GetInterfaceCount"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class ISfDriverServiceCreator final : public ServiceFramework<ISfDriverServiceCreator> {
 public:
     explicit ISfDriverServiceCreator(Core::System& system_)
-        : ServiceFramework{system_, "eth:nd"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "eth:nd"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "CreateDriverService"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 

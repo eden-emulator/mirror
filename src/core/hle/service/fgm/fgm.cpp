@@ -16,30 +16,26 @@ namespace Service::FGM {
 
 class IRequest final : public ServiceFramework<IRequest> {
 public:
-    explicit IRequest(Core::System& system_) : ServiceFramework{system_, "IRequest"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IRequest(Core::System& system_) : ServiceFramework{system_, "IRequest"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "Initialize"},
             FunctionInfo{1, nullptr, "Set"},
             FunctionInfo{2, nullptr, "Get"},
             FunctionInfo{3, nullptr, "Cancel"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class FGM final : public ServiceFramework<FGM> {
 public:
-    explicit FGM(Core::System& system_, const char* name) : ServiceFramework{system_, name} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &FGM::Initialize, "Initialize"}
-        };
-        // clang-format on
+    explicit FGM(Core::System& system_, const char* name) : ServiceFramework{system_, name} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &FGM::Initialize, "Initialize"}
+        );
     }
 
 private:
@@ -54,16 +50,14 @@ private:
 
 class FGM_DBG final : public ServiceFramework<FGM_DBG> {
 public:
-    explicit FGM_DBG(Core::System& system_) : ServiceFramework{system_, "fgm:dbg"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit FGM_DBG(Core::System& system_) : ServiceFramework{system_, "fgm:dbg"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "Initialize"},
             FunctionInfo{1, nullptr, "Read"},
             FunctionInfo{2, nullptr, "Cancel"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 

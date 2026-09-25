@@ -14,9 +14,10 @@ namespace Service::Migration {
 
 class MIG_USR final : public ServiceFramework<MIG_USR> {
 public:
-    explicit MIG_USR(Core::System& system_) : ServiceFramework{system_, "mig:usr"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit MIG_USR(Core::System& system_) : ServiceFramework{system_, "mig:usr"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "Unknown0"}, //19.0.0+
             FunctionInfo{1, nullptr, "Unknown1"}, //20.0.0+
             FunctionInfo{2, nullptr, "Unknown2"}, //20.0.0+
@@ -53,10 +54,7 @@ public:
             FunctionInfo{2310, nullptr, "Unknown2310"}, //20.0.0+
             FunctionInfo{2400, nullptr, "Unknown2400"}, //20.0.0+
             FunctionInfo{2420, nullptr, "Unknown2420"}, //20.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 

@@ -17,9 +17,10 @@ namespace Service::USB {
 
 class IDsInterface final : public ServiceFramework<IDsInterface> {
 public:
-    explicit IDsInterface(Core::System& system_) : ServiceFramework{system_, "IDsInterface"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IDsInterface(Core::System& system_) : ServiceFramework{system_, "IDsInterface"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "AddEndpoint"},
             FunctionInfo{1, nullptr, "GetSetupEvent"},
             FunctionInfo{2, nullptr, "GetSetupPacket"},
@@ -33,32 +34,28 @@ public:
             FunctionInfo{10, nullptr, "GetCtrlOutUrbReport"},
             FunctionInfo{11, nullptr, "CtrlStall"},
             FunctionInfo{12, nullptr, "AppendConfigurationData"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IDsRootSession final : public ServiceFramework<IDsRootSession> {
 public:
-    explicit IDsRootSession(Core::System& system_) : ServiceFramework{system_, "usb:ds"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "OpenDsService"}
-        };
-        // clang-format on
+    explicit IDsRootSession(Core::System& system_) : ServiceFramework{system_, "usb:ds"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, nullptr, "OpenDsService"}
+        );
     }
 };
 
 class IClientEpSession final : public ServiceFramework<IClientEpSession> {
 public:
     explicit IClientEpSession(Core::System& system_)
-        : ServiceFramework{system_, "IClientEpSession"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IClientEpSession"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "ReOpen"},
             FunctionInfo{1, nullptr, "Close"},
             FunctionInfo{2, nullptr, "GetCompletionEvent"},
@@ -68,19 +65,17 @@ public:
             FunctionInfo{6, nullptr, "PostBufferMultiAsync"},
             FunctionInfo{7, nullptr, "CreateSmmuSpace"},
             FunctionInfo{8, nullptr, "ShareReportRing"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IClientIfSession final : public ServiceFramework<IClientIfSession> {
 public:
     explicit IClientIfSession(Core::System& system_)
-        : ServiceFramework{system_, "IClientIfSession"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IClientIfSession"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetStateChangeEvent"},
             FunctionInfo{1, nullptr, "SetInterface"},
             FunctionInfo{2, nullptr, "GetInterface"},
@@ -91,18 +86,16 @@ public:
             FunctionInfo{7, nullptr, "GetCtrlXferReport"},
             FunctionInfo{8, nullptr, "ResetDevice"},
             FunctionInfo{9, nullptr, "OpenUsbEp"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IClientRootSession final : public ServiceFramework<IClientRootSession> {
 public:
-    explicit IClientRootSession(Core::System& system_) : ServiceFramework{system_, "usb:hs"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IClientRootSession(Core::System& system_) : ServiceFramework{system_, "usb:hs"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "BindClientProcess"},
             FunctionInfo{1, nullptr, "QueryAllInterfaces"},
             FunctionInfo{2, nullptr, "QueryAvailableInterfaces"},
@@ -112,18 +105,16 @@ public:
             FunctionInfo{6, nullptr, "GetInterfaceStateChangeEvent"},
             FunctionInfo{7, nullptr, "AcquireUsbIf"},
             FunctionInfo{8, nullptr, "SetTestMode"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IPdSession final : public ServiceFramework<IPdSession> {
 public:
-    explicit IPdSession(Core::System& system_) : ServiceFramework{system_, "IPdSession"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IPdSession(Core::System& system_) : ServiceFramework{system_, "IPdSession"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "BindNoticeEvent"},
             FunctionInfo{1, nullptr, "UnbindNoticeEvent"},
             FunctionInfo{2, nullptr, "GetStatus"},
@@ -131,23 +122,18 @@ public:
             FunctionInfo{4, nullptr, "EnablePowerRequestNotice"},
             FunctionInfo{5, nullptr, "DisablePowerRequestNotice"},
             FunctionInfo{6, nullptr, "ReplyPowerRequest"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IPdManager final : public ServiceFramework<IPdManager> {
 public:
-    explicit IPdManager(Core::System& system_) : ServiceFramework{system_, "usb:pd"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &IPdManager::OpenSession, "OpenSession"}
-        };
-        // clang-format on
+    explicit IPdManager(Core::System& system_) : ServiceFramework{system_, "usb:pd"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &IPdManager::OpenSession, "OpenSession"}
+        );
     }
 
 private:
@@ -163,9 +149,10 @@ private:
 class IPdCradleSession final : public ServiceFramework<IPdCradleSession> {
 public:
     explicit IPdCradleSession(Core::System& system_)
-        : ServiceFramework{system_, "IPdCradleSession"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IPdCradleSession"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "SetCradleVdo"},
             FunctionInfo{1, nullptr, "GetCradleVdo"},
             FunctionInfo{2, nullptr, "ResetCradleUsbHub"},
@@ -175,23 +162,18 @@ public:
             FunctionInfo{6, nullptr, "GetHostPdcDeviceId"},
             FunctionInfo{7, nullptr, "EnableCradleRecovery"},
             FunctionInfo{8, nullptr, "DisableCradleRecovery"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IPdCradleManager final : public ServiceFramework<IPdCradleManager> {
 public:
-    explicit IPdCradleManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:c"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &IPdCradleManager::OpenCradleSession, "OpenCradleSession"}
-        };
-        // clang-format on
+    explicit IPdCradleManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:c"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &IPdCradleManager::OpenCradleSession, "OpenCradleSession"}
+        );
     }
 
 private:
@@ -206,57 +188,52 @@ private:
 
 class IPmMainService final : public ServiceFramework<IPmMainService> {
 public:
-    explicit IPmMainService(Core::System& system_) : ServiceFramework{system_, "usb:pm"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IPmMainService(Core::System& system_) : ServiceFramework{system_, "usb:pm"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetPowerEvent"},
             FunctionInfo{1, nullptr, "GetPowerState"},
             FunctionInfo{2, nullptr, "GetDataEvent"},
             FunctionInfo{3, nullptr, "GetDataRole"},
             FunctionInfo{4, nullptr, "SetDiagData"},
             FunctionInfo{5, nullptr, "GetDiagData"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IPdManufactureManager final : public ServiceFramework<IPdManufactureManager> {
 public:
-    explicit IPdManufactureManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:m"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IPdManufactureManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:m"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "OpenManufactureSession"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IQdbManager final : public ServiceFramework<IQdbManager> {
 public:
-    explicit IQdbManager(Core::System& system_) : ServiceFramework{system_, "usb:qdb"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IQdbManager(Core::System& system_) : ServiceFramework{system_, "usb:qdb"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "ImportQuirkDevices"},
             FunctionInfo{1, nullptr, "HasQuirk"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IPmObserverService final : public ServiceFramework<IPmObserverService> {
 public:
-    explicit IPmObserverService(Core::System& system_) : ServiceFramework{system_, "usb:obsv"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IPmObserverService(Core::System& system_) : ServiceFramework{system_, "usb:obsv"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetTopologyChangeEvent"},
             FunctionInfo{1, nullptr, "GetFlattenedTopology"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 

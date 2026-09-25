@@ -12,14 +12,12 @@ namespace Service::Glue {
 // This is nn::err::context::IContextRegistrar
 class IContextRegistrar : public ServiceFramework<IContextRegistrar> {
 public:
-    IContextRegistrar(Core::System& system_) : ServiceFramework{system_, "IContextRegistrar"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &IContextRegistrar::Complete, "Complete"}
-        };
-        // clang-format on
+    IContextRegistrar(Core::System& system_) : ServiceFramework{system_, "IContextRegistrar"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &IContextRegistrar::Complete, "Complete"}
+        );
     }
 
     ~IContextRegistrar() override = default;

@@ -179,9 +179,10 @@ class INotificationSystemEventAccessor final
 public:
     explicit INotificationSystemEventAccessor(Core::System& system_)
         : ServiceFramework{system_, "INotificationSystemEventAccessor"},
-          service_context{system_, "INotificationSystemEventAccessor"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+          service_context{system_, "INotificationSystemEventAccessor"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, D<&INotificationSystemEventAccessor::GetSystemEvent>, "GetSystemEvent"}
         };
         // clang-format on

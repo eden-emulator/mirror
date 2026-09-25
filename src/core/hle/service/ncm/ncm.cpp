@@ -24,9 +24,10 @@ namespace Service::NCM {
 class ILocationResolver final : public ServiceFramework<ILocationResolver> {
 public:
     explicit ILocationResolver(Core::System& system_, FileSys::StorageId id)
-        : ServiceFramework{system_, "ILocationResolver"}, storage{id} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "ILocationResolver"}, storage{id} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "ResolveProgramPath"},
             FunctionInfo{1, nullptr, "RedirectProgramPath"},
             FunctionInfo{2, nullptr, "ResolveApplicationControlPath"},
@@ -47,10 +48,7 @@ public:
             FunctionInfo{17, nullptr, "RedirectProgramPathForDebug"},
             FunctionInfo{18, nullptr, "RedirectApplicationProgramPathForDebug"},
             FunctionInfo{19, nullptr, "EraseProgramRedirectionForDebug"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -60,9 +58,10 @@ private:
 class IRegisteredLocationResolver final : public ServiceFramework<IRegisteredLocationResolver> {
 public:
     explicit IRegisteredLocationResolver(Core::System& system_)
-        : ServiceFramework{system_, "IRegisteredLocationResolver"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IRegisteredLocationResolver"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "ResolveProgramPath"},
             FunctionInfo{1, nullptr, "RegisterProgramPath"},
             FunctionInfo{2, nullptr, "UnregisterProgramPath"},
@@ -73,47 +72,40 @@ public:
             FunctionInfo{7, nullptr, "RedirectHtmlDocumentPath"},
             FunctionInfo{8, nullptr, "Refresh"},
             FunctionInfo{9, nullptr, "RefreshExcluding"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IAddOnContentLocationResolver final : public ServiceFramework<IAddOnContentLocationResolver> {
 public:
     explicit IAddOnContentLocationResolver(Core::System& system_)
-        : ServiceFramework{system_, "IAddOnContentLocationResolver"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IAddOnContentLocationResolver"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "ResolveAddOnContentPath"},
             FunctionInfo{1, nullptr, "RegisterAddOnContentStorage"},
             FunctionInfo{2, nullptr, "UnregisterAllAddOnContentPath"},
             FunctionInfo{3, nullptr, "RefreshApplicationAddOnContent"},
             FunctionInfo{4, nullptr, "UnregisterApplicationAddOnContent"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IContentStorage final : public ServiceFramework<IContentStorage> {
 public:
     explicit IContentStorage(Core::System& system_, FileSys::StorageId id)
-        : ServiceFramework{system_, "IContentStorage"}, storage{id} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IContentStorage"}, storage{id} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &IContentStorage::GeneratePlaceHolderId, "GeneratePlaceHolderId"},
             FunctionInfo{1, &IContentStorage::CreatePlaceHolder, "CreatePlaceHolder"},
             FunctionInfo{2, &IContentStorage::DeletePlaceHolder, "DeletePlaceHolder"},
             FunctionInfo{4, &IContentStorage::WritePlaceHolder, "WritePlaceHolder"},
             FunctionInfo{5, &IContentStorage::Register, "Register"},
             FunctionInfo{6, &IContentStorage::Delete, "Delete"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -258,17 +250,15 @@ private:
 class IContentMetaDatabase final : public ServiceFramework<IContentMetaDatabase> {
 public:
     explicit IContentMetaDatabase(Core::System& system_, FileSys::StorageId id)
-        : ServiceFramework{system_, "IContentMetaDatabase"}, storage{id} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IContentMetaDatabase"}, storage{id} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &IContentMetaDatabase::Set, "Set"},
             FunctionInfo{2, &IContentMetaDatabase::Remove, "Remove"},
             FunctionInfo{8, &IContentMetaDatabase::Has, "Has"},
             FunctionInfo{15, &IContentMetaDatabase::Commit, "Commit"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -362,25 +352,24 @@ private:
 
 class LR final : public ServiceFramework<LR> {
 public:
-    explicit LR(Core::System& system_) : ServiceFramework{system_, "lr"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit LR(Core::System& system_) : ServiceFramework{system_, "lr"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "OpenLocationResolver"},
             FunctionInfo{1, nullptr, "OpenRegisteredLocationResolver"},
             FunctionInfo{2, nullptr, "RefreshLocationResolver"},
             FunctionInfo{3, nullptr, "OpenAddOnContentLocationResolver"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class NCM final : public ServiceFramework<NCM> {
 public:
-    explicit NCM(Core::System& system_) : ServiceFramework{system_, "ncm"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit NCM(Core::System& system_) : ServiceFramework{system_, "ncm"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "CreateContentStorage"},
             FunctionInfo{1, nullptr, "CreateContentMetaDatabase"},
             FunctionInfo{2, nullptr, "VerifyContentStorage"},
@@ -397,10 +386,7 @@ public:
             FunctionInfo{13, nullptr, "InvalidateRightsIdCache"},
             FunctionInfo{14, nullptr, "GetMemoryReport"},
             FunctionInfo{15, nullptr, "ActivateFsContentStorage"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:

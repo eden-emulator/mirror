@@ -19,16 +19,14 @@ enum class Location : u8 {
 
 class ISession : public ServiceFramework<ISession> {
 public:
-    explicit ISession(Core::System& system_) : ServiceFramework{system_, "ISession"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit ISession(Core::System& system_) : ServiceFramework{system_, "ISession"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetTemperatureRange"},
             FunctionInfo{2, nullptr, "SetMeasurementMode"},
             FunctionInfo{4, &ISession::GetTemperature, "GetTemperature"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:

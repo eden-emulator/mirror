@@ -14,9 +14,10 @@ namespace Service::BPC {
 
 class BPC final : public ServiceFramework<BPC> {
 public:
-    explicit BPC(Core::System& system_) : ServiceFramework{system_, "bpc"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit BPC(Core::System& system_) : ServiceFramework{system_, "bpc"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "ShutdownSystem"},
             FunctionInfo{1, nullptr, "RebootSystem"},
             FunctionInfo{2, nullptr, "GetWakeupReason"},
@@ -33,84 +34,75 @@ public:
             FunctionInfo{13, nullptr, "CleanAllWakeupTimers"},
             FunctionInfo{14, nullptr, "GetPowerButton"},
             FunctionInfo{15, nullptr, "SetEnableWakeupTimer"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class BPC_R final : public ServiceFramework<BPC_R> {
 public:
-    explicit BPC_R(Core::System& system_) : ServiceFramework{system_, "bpc:r"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit BPC_R(Core::System& system_) : ServiceFramework{system_, "bpc:r"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetRtcTime"},
             FunctionInfo{1, nullptr, "SetRtcTime"},
             FunctionInfo{2, nullptr, "GetRtcResetDetected"},
             FunctionInfo{3, nullptr, "ClearRtcResetDetected"},
             FunctionInfo{4, nullptr, "SetUpRtcResetOnShutdown"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class BPC_C final : public ServiceFramework<BPC_C> {
 public:
-    explicit BPC_C(Core::System& system_) : ServiceFramework{system_, "bpc:c"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit BPC_C(Core::System& system_) : ServiceFramework{system_, "bpc:c"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "ShutdownSystem"},
             FunctionInfo{1, nullptr, "RebootSystem"},
             FunctionInfo{2, nullptr, "GetWakeupReason"},
             FunctionInfo{3, nullptr, "GetShutdownReason"},
             FunctionInfo{4, nullptr, "GetAcOk"},
             FunctionInfo{5, nullptr, "GetPowerEvent"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class BPC_B final : public ServiceFramework<BPC_B> {
 public:
-    explicit BPC_B(Core::System& system_) : ServiceFramework{system_, "bpc:b"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit BPC_B(Core::System& system_) : ServiceFramework{system_, "bpc:b"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetSleepButtonState"},
             FunctionInfo{1, nullptr, "GetPowerButtonEvent"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class BPC_W final : public ServiceFramework<BPC_W> {
 public:
-    explicit BPC_W(Core::System& system_) : ServiceFramework{system_, "bpc:w"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit BPC_W(Core::System& system_) : ServiceFramework{system_, "bpc:w"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "CreateWakeupTimer"},
             FunctionInfo{1, nullptr, "CancelWakeupTimer"},
             FunctionInfo{2, nullptr, "EnableWakeupTimerOnDevice"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class BPC_AMS final : public ServiceFramework<BPC_AMS> {
 public:
-    explicit BPC_AMS(Core::System& system_) : ServiceFramework{system_, "bpc:ams"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit BPC_AMS(Core::System& system_) : ServiceFramework{system_, "bpc:ams"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{65000, nullptr, "RebootToFatalError"},
             FunctionInfo{65001, nullptr, "SetRebootPayload"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 

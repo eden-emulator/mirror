@@ -19,9 +19,10 @@ class INpnsSystem final : public ServiceFramework<INpnsSystem> {
 public:
     explicit INpnsSystem(Core::System& system_)
         : ServiceFramework{system_, "npns:s"}, service_context{system, "npns:s"},
-          get_receive_event{service_context}, get_request_change_state_cancel_event{service_context} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+          get_receive_event{service_context}, get_request_change_state_cancel_event{service_context} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{1, nullptr, "ListenAll"},
             FunctionInfo{2, C<&INpnsSystem::ListenTo>, "ListenTo"},
             FunctionInfo{3, nullptr, "Receive"},
@@ -88,10 +89,7 @@ public:
             FunctionInfo{304, nullptr, "GetPersistentConnectionSummary"}, // 18.0.0+
             FunctionInfo{305, nullptr, "GetDigitalTwinSummary"}, // 18.0.0+
             FunctionInfo{306, nullptr, "GetDigitalTwinValue"}, // 18.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
     ~INpnsSystem() override = default;
@@ -148,9 +146,10 @@ private:
 class INpnsUser final : public ServiceFramework<INpnsUser> {
 public:
     explicit INpnsUser(Core::System& system_)
-        : ServiceFramework{system_, "npns:u"}, service_context{system, "npns:u"}, get_receive_event{service_context} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "npns:u"}, service_context{system, "npns:u"}, get_receive_event{service_context} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{1, nullptr, "ListenAll"},
             FunctionInfo{2, nullptr, "ListenTo"},
             FunctionInfo{3, nullptr, "Receive"},
@@ -172,10 +171,7 @@ public:
             FunctionInfo{152, nullptr, "GetStateChangeEventWithHandover"},
             FunctionInfo{153, nullptr, "GetDropEventWithHandover"},
             FunctionInfo{154, nullptr, "CreateTokenAsync"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:

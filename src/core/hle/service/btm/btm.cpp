@@ -17,9 +17,10 @@ namespace Service::BTM {
 
 class IBtm final : public ServiceFramework<IBtm> {
 public:
-    explicit IBtm(Core::System& system_) : ServiceFramework{system_, "btm"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IBtm(Core::System& system_) : ServiceFramework{system_, "btm"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetState"},
             FunctionInfo{1, nullptr, "GetHostDeviceProperty"},
             FunctionInfo{2, nullptr, "AcquireDeviceConditionEvent"},
@@ -107,10 +108,7 @@ public:
             FunctionInfo{115, nullptr, "GetShortenedDeviceCondition"}, //14.0.0+
             FunctionInfo{116, nullptr, "SetAudioSinkVolume"}, //15.0.0+
             FunctionInfo{117, nullptr, "GetAudioSinkVolume"}, //15.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 

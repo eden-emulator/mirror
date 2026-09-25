@@ -20,13 +20,12 @@ class IClientProcessMonitor final
     : public ServiceFramework<IClientProcessMonitor> {
 public:
     explicit IClientProcessMonitor(Core::System& system_)
-        : ServiceFramework{system_, "IClientProcessMonitor"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IClientProcessMonitor"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, D<&IClientProcessMonitor::RegisterClient>, "RegisterClient"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
     ~IClientProcessMonitor() override = default;
 private:
@@ -38,13 +37,12 @@ private:
 
 class IMonitorServiceCreator final : public ServiceFramework<IMonitorServiceCreator> {
 public:
-    explicit IMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:m"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:m"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, C<&IMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -58,15 +56,13 @@ private:
 
 class ISystemServiceCreator final : public ServiceFramework<ISystemServiceCreator> {
 public:
-    explicit ISystemServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:s"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit ISystemServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:s"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, C<&ISystemServiceCreator::CreateSystemLocalCommunicationService>, "CreateSystemLocalCommunicationService"},
             FunctionInfo{1, C<&ISystemServiceCreator::CreateClientProcessMonitor>, "CreateClientProcessMonitor"} // 18.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -89,15 +85,13 @@ private:
 
 class IUserServiceCreator final : public ServiceFramework<IUserServiceCreator> {
 public:
-    explicit IUserServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:u"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IUserServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:u"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, D<&IUserServiceCreator::CreateUserLocalCommunicationService>, "CreateUserLocalCommunicationService"},
             FunctionInfo{1, D<&IUserServiceCreator::CreateClientProcessMonitor>, "CreateClientProcessMonitor"} // 18.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -121,15 +115,13 @@ private:
 class ISfServiceCreator final : public ServiceFramework<ISfServiceCreator> {
 public:
     explicit ISfServiceCreator(Core::System& system_, bool is_system_, const char* name_)
-        : ServiceFramework{system_, name_}, is_system{is_system_} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, name_}, is_system{is_system_} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, C<&ISfServiceCreator::CreateNetworkService>, "CreateNetworkService"},
             FunctionInfo{8, C<&ISfServiceCreator::CreateNetworkServiceMonitor>, "CreateNetworkServiceMonitor"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -155,14 +147,12 @@ private:
 
 class ISfMonitorServiceCreator final : public ServiceFramework<ISfMonitorServiceCreator> {
 public:
-    explicit ISfMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "lp2p:m"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, C<&ISfMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
-        };
-        // clang-format on
+    explicit ISfMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "lp2p:m"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, C<&ISfMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
+        );
     }
 
 private:

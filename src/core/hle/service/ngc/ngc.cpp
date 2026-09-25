@@ -21,15 +21,13 @@ namespace Service::NGC {
 
 class IService final : public ServiceFramework<IService> {
 public:
-    explicit IService(Core::System& system_) : ServiceFramework{system_, "ngct:u"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IService(Core::System& system_) : ServiceFramework{system_, "ngct:u"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &IService::Match, "Match"},
             FunctionInfo{1, &IService::Filter, "Filter"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -65,19 +63,17 @@ private:
 
 class NgcServiceImpl final : public ServiceFramework<NgcServiceImpl> {
 public:
-    explicit NgcServiceImpl(Core::System& system_) : ServiceFramework(system_, "ngc:u") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit NgcServiceImpl(Core::System& system_) : ServiceFramework(system_, "ngc:u") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &NgcServiceImpl::GetContentVersion, "GetContentVersion"},
             FunctionInfo{1, &NgcServiceImpl::Check, "Check"},
             FunctionInfo{2, &NgcServiceImpl::Mask, "Mask"},
             FunctionInfo{3, &NgcServiceImpl::Reload, "Reload"},
             FunctionInfo{4, &NgcServiceImpl::Check, "Check2"},
             FunctionInfo{5, &NgcServiceImpl::Mask, "Mask2"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -154,9 +150,10 @@ private:
 
 class IServiceWithManagementApi final : public ServiceFramework<IServiceWithManagementApi> {
 public:
-    explicit IServiceWithManagementApi(Core::System& system_) : ServiceFramework(system_, "ngct:s") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IServiceWithManagementApi(Core::System& system_) : ServiceFramework(system_, "ngct:s") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             {0 , nullptr, "Match"},
             {1 , nullptr, "Filter"},
             FunctionInfo{100, nullptr, "ConfigureAutoUpdateSetting"},
@@ -166,9 +163,7 @@ public:
             FunctionInfo{112, nullptr, "TryAcquireReloadRequestNotifier"},
             FunctionInfo{120, nullptr, "CalculateContentFingerprint"},
             FunctionInfo{130, nullptr, "TryEnableTemporalPassThrough"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -179,9 +174,10 @@ static_assert(sizeof(SaveDataHandle) == 0x08);
 
 class IUserShimScopedObject final : public ServiceFramework<IUserShimScopedObject> {
 public:
-    explicit IUserShimScopedObject(Core::System& system_) : ServiceFramework(system_, "IUserShimScopedObject") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IUserShimScopedObject(Core::System& system_) : ServiceFramework(system_, "IUserShimScopedObject") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{450, nullptr, "InitializeForSaveData"},
             FunctionInfo{451, nullptr, "FinalizeForSaveData"},
             FunctionInfo{452, D<&IUserShimScopedObject::OpenSaveData>, "OpenSaveData"},
@@ -190,9 +186,7 @@ public:
             FunctionInfo{455, D<&IUserShimScopedObject::WriteSaveSlot>, "WriteSaveSlot"},
             FunctionInfo{456, nullptr, "FlushSaveSlot"},
             FunctionInfo{457, nullptr, "CommitSaveData"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 
     Result OpenSaveData(Account::Uid unk0, Out<SaveDataHandle> unk1) {
@@ -214,13 +208,12 @@ public:
 
 class IUserService final : public ServiceFramework<IUserService> {
 public:
-    explicit IUserService(Core::System& system_) : ServiceFramework(system_, "stpl:u") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IUserService(Core::System& system_) : ServiceFramework(system_, "stpl:u") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             {0 , D<&IUserService::Cmd0>, "Cmd0"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
     Result Cmd0(u32 unk0, OutInterface<IUserShimScopedObject> out_interface) {
         LOG_WARNING(Service_NGC, "stubbed");
@@ -231,9 +224,10 @@ public:
 
 class ISystemShimScopedObject final : public ServiceFramework<ISystemShimScopedObject> {
 public:
-    explicit ISystemShimScopedObject(Core::System& system_) : ServiceFramework(system_, "ISystemShimScopedObject") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit ISystemShimScopedObject(Core::System& system_) : ServiceFramework(system_, "ISystemShimScopedObject") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{106, nullptr, "Cmd106"},
             FunctionInfo{107, nullptr, "Cmd107"},
             FunctionInfo{108, D<&ISystemShimScopedObject::Cmd108>, "Cmd108"},
@@ -243,9 +237,7 @@ public:
             FunctionInfo{210, nullptr, "Cmd210"},
             FunctionInfo{211, nullptr, "Cmd211"},
             FunctionInfo{212, nullptr, "Cmd212"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 
     Result Cmd108() {
@@ -261,13 +253,12 @@ public:
 
 class ISystemService final : public ServiceFramework<ISystemService> {
 public:
-    explicit ISystemService(Core::System& system_) : ServiceFramework(system_, "stpl:sys") {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit ISystemService(Core::System& system_) : ServiceFramework(system_, "stpl:sys") {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             {0 , D<&ISystemService::Cmd0>, "Cmd0"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
     Result Cmd0(OutInterface<ISystemShimScopedObject> out_interface) {
         LOG_WARNING(Service_NGC, "stubbed");
