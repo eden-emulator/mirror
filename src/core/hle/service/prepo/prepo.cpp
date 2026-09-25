@@ -21,9 +21,10 @@ namespace Service::PlayReport {
 
 class PlayReport final : public ServiceFramework<PlayReport> {
 public:
-    explicit PlayReport(const char* name, Core::System& system_) : ServiceFramework{system_, name} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit PlayReport(const char* name, Core::System& system_) : ServiceFramework{system_, name} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{10100, &PlayReport::SaveReport<Core::Reporter::PlayReportType::Old>, "SaveReportOld"},
             FunctionInfo{10101, &PlayReport::SaveReportWithUser<Core::Reporter::PlayReportType::Old>, "SaveReportWithUserOld"},
             FunctionInfo{10102, &PlayReport::SaveReport<Core::Reporter::PlayReportType::Old2>, "SaveReportOld2"},
@@ -56,10 +57,7 @@ public:
             FunctionInfo{90200, nullptr, "GetStatistics"},
             FunctionInfo{90201, nullptr, "GetThroughputHistory"},
             FunctionInfo{90300, nullptr, "GetLastUploadError"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:

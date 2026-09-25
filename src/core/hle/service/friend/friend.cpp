@@ -21,9 +21,10 @@ namespace Service::Friend {
 class IFriendService final : public ServiceFramework<IFriendService> {
 public:
     explicit IFriendService(Core::System& system_)
-        : ServiceFramework{system_, "IFriendService"}, service_context{system, "IFriendService"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IFriendService"}, service_context{system, "IFriendService"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &IFriendService::GetCompletionEvent, "GetCompletionEvent"},
             FunctionInfo{1, &IFriendService::Cancel, "Cancel"},
             FunctionInfo{10100, nullptr, "GetFriendListIds"},
@@ -376,9 +377,10 @@ class INotificationService final : public ServiceFramework<INotificationService>
 public:
     explicit INotificationService(Core::System& system_, Common::UUID uuid_)
         : ServiceFramework{system_, "INotificationService"}, uuid{uuid_},
-          service_context{system_, "INotificationService"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+          service_context{system_, "INotificationService"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &INotificationService::GetEvent, "GetEvent"},
             FunctionInfo{1, &INotificationService::Clear, "Clear"},
             FunctionInfo{2, &INotificationService::Pop, "Pop"}

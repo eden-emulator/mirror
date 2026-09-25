@@ -43,10 +43,7 @@ public:
             FunctionInfo{23, &IUser::AttachAvailabilityChangeEvent, "AttachAvailabilityChangeEvent"},
             FunctionInfo{24, &IUser::RecreateApplicationArea, "RecreateApplicationArea"},
             FunctionInfo{25, &IUser::StartDetection, "StartDetectionWithFilter"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -83,10 +80,7 @@ public:
             FunctionInfo{104, &ISystem::DeleteRegisterInfo, "DeleteRegisterInfo"},
             FunctionInfo{105, &ISystem::DeleteApplicationArea, "DeleteApplicationArea"},
             FunctionInfo{106, &ISystem::ExistsApplicationArea, "ExistsApplicationArea"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -135,23 +129,18 @@ public:
             FunctionInfo{204, &IDebug::ReadBackupData, "ReadBackupData"},
             FunctionInfo{205, &IDebug::WriteBackupData, "WriteBackupData"},
             FunctionInfo{206, &IDebug::WriteNtf, "WriteNtf"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IUserManager final : public ServiceFramework<IUserManager> {
 public:
-    explicit IUserManager(Core::System& system_) : ServiceFramework{system_, "nfp:user"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &IUserManager::CreateUserInterface, "CreateUserInterface"}
-        };
-        // clang-format on
+    explicit IUserManager(Core::System& system_) : ServiceFramework{system_, "nfp:user"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &IUserManager::CreateUserInterface, "CreateUserInterface"}
+        );
     }
 
 private:
@@ -166,14 +155,12 @@ private:
 
 class ISystemManager final : public ServiceFramework<ISystemManager> {
 public:
-    explicit ISystemManager(Core::System& system_) : ServiceFramework{system_, "nfp:sys"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &ISystemManager::CreateSystemInterface, "CreateSystemInterface"}
-        };
-        // clang-format on
+    explicit ISystemManager(Core::System& system_) : ServiceFramework{system_, "nfp:sys"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &ISystemManager::CreateSystemInterface, "CreateSystemInterface"}
+        );
     }
 
 private:
@@ -188,14 +175,12 @@ private:
 
 class IDebugManager final : public ServiceFramework<IDebugManager> {
 public:
-    explicit IDebugManager(Core::System& system_) : ServiceFramework{system_, "nfp:dbg"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &IDebugManager::CreateDebugInterface, "CreateDebugInterface"}
-        };
-        // clang-format on
+    explicit IDebugManager(Core::System& system_) : ServiceFramework{system_, "nfp:dbg"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &IDebugManager::CreateDebugInterface, "CreateDebugInterface"}
+        );
     }
 
 private:

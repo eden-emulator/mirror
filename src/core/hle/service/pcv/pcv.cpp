@@ -15,9 +15,10 @@ namespace Service::PCV {
 
 class PCV final : public ServiceFramework<PCV> {
 public:
-    explicit PCV(Core::System& system_) : ServiceFramework{system_, "pcv"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit PCV(Core::System& system_) : ServiceFramework{system_, "pcv"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "SetPowerEnabled"},
             FunctionInfo{1, nullptr, "SetClockEnabled"},
             FunctionInfo{2, nullptr, "SetClockRate"},
@@ -48,43 +49,39 @@ public:
             FunctionInfo{27, nullptr, "GetDramId"},
             FunctionInfo{28, nullptr, "IsPoweredOn"},
             FunctionInfo{29, nullptr, "GetVoltage"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class PCV_ARB final : public ServiceFramework<PCV_ARB> {
 public:
-    explicit PCV_ARB(Core::System& system_) : ServiceFramework{system_, "pcv:arb"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit PCV_ARB(Core::System& system_) : ServiceFramework{system_, "pcv:arb"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "ReleaseControl"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class PCV_IMM final : public ServiceFramework<PCV_IMM> {
 public:
-    explicit PCV_IMM(Core::System& system_) : ServiceFramework{system_, "pcv:imm"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit PCV_IMM(Core::System& system_) : ServiceFramework{system_, "pcv:imm"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "SetClockRate"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class IClkrstSession final : public ServiceFramework<IClkrstSession> {
 public:
     explicit IClkrstSession(Core::System& system_, DeviceCode device_code_)
-        : ServiceFramework{system_, "IClkrstSession"}, device_code(device_code_) {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IClkrstSession"}, device_code(device_code_) {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "SetClockEnabled"},
             FunctionInfo{1, nullptr, "SetClockDisabled"},
             FunctionInfo{2, nullptr, "SetResetAsserted"},
@@ -97,9 +94,7 @@ public:
             FunctionInfo{9, nullptr, "SetMinVClockRate"},
             FunctionInfo{10, nullptr, "GetPossibleClockRates"},
             FunctionInfo{11, nullptr, "GetDvfsTable"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -126,19 +121,17 @@ private:
 
 class CLKRST final : public ServiceFramework<CLKRST> {
 public:
-    explicit CLKRST(Core::System& system_, const char* name) : ServiceFramework{system_, name} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit CLKRST(Core::System& system_, const char* name) : ServiceFramework{system_, name} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &CLKRST::OpenSession, "OpenSession"},
             FunctionInfo{1, nullptr, "GetTemperatureThresholds"},
             FunctionInfo{2, nullptr, "SetTemperature"},
             FunctionInfo{3, nullptr, "GetModuleStateTable"},
             FunctionInfo{4, nullptr, "GetModuleStateTableEvent"},
             FunctionInfo{5, nullptr, "GetModuleStateTableMaxCount"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -157,14 +150,12 @@ private:
 
 class CLKRST_A final : public ServiceFramework<CLKRST_A> {
 public:
-    explicit CLKRST_A(Core::System& system_) : ServiceFramework{system_, "clkrst:a"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "ReleaseControl"}
-        };
-        // clang-format on
+    explicit CLKRST_A(Core::System& system_) : ServiceFramework{system_, "clkrst:a"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, nullptr, "ReleaseControl"}
+        );
     }
 };
 

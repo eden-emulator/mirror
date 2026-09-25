@@ -17,9 +17,10 @@ namespace Service::ERPT {
 
 class ErrorReportContext final : public ServiceFramework<ErrorReportContext> {
 public:
-    explicit ErrorReportContext(Core::System& system_) : ServiceFramework{system_, "erpt:c"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit ErrorReportContext(Core::System& system_) : ServiceFramework{system_, "erpt:c"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, C<&ErrorReportContext::SubmitContext>, "SubmitContext"},
             FunctionInfo{1, C<&ErrorReportContext::CreateReportV0>, "CreateReportV0"},
             FunctionInfo{2, nullptr, "SetInitialLaunchSettingsCompletionTime"},
@@ -37,10 +38,7 @@ public:
             FunctionInfo{21, nullptr, "UnregisterRunningApplet"},
             FunctionInfo{22, nullptr, "UpdateAppletSuspendedDuration"},
             FunctionInfo{30, nullptr, "InvalidateForcedShutdownDetection"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -89,16 +87,14 @@ private:
 
 class ErrorReportSession final : public ServiceFramework<ErrorReportSession> {
 public:
-    explicit ErrorReportSession(Core::System& system_) : ServiceFramework{system_, "erpt:r"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit ErrorReportSession(Core::System& system_) : ServiceFramework{system_, "erpt:r"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "OpenReport"},
             FunctionInfo{1, nullptr, "OpenManager"},
             FunctionInfo{2, nullptr, "OpenAttachment"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 

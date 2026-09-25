@@ -510,18 +510,16 @@ public:
         : ServiceFramework{system_, name_}, m_ro(ro), m_context_id(InvalidContextId),
           m_nrr_kind(nrr_kind) {
 
-        // clang-format off
-        static const FunctionInfo functions[] = {
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0,  C<&RoInterface::MapManualLoadModuleMemory>, "MapManualLoadModuleMemory"},
             FunctionInfo{1,  C<&RoInterface::UnmapManualLoadModuleMemory>, "UnmapManualLoadModuleMemory"},
             FunctionInfo{2,  C<&RoInterface::RegisterModuleInfo>, "RegisterModuleInfo"},
             FunctionInfo{3,  C<&RoInterface::UnregisterModuleInfo>, "UnregisterModuleInfo"},
             FunctionInfo{4,  C<&RoInterface::RegisterProcessHandle>, "RegisterProcessHandle"},
             FunctionInfo{10, C<&RoInterface::RegisterProcessModuleInfo>, "RegisterProcessModuleInfo"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
     ~RoInterface() {

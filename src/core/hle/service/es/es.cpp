@@ -18,9 +18,10 @@ constexpr Result ERROR_INVALID_RIGHTS_ID{ErrorModule::ETicket, 3};
 
 class ETicket final : public ServiceFramework<ETicket> {
 public:
-    explicit ETicket(Core::System& system_) : ServiceFramework{system_, "es"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit ETicket(Core::System& system_) : ServiceFramework{system_, "es"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{1, &ETicket::ImportTicket, "ImportTicket"},
             FunctionInfo{2, nullptr, "ImportTicketCertificateSet"},
             FunctionInfo{3, nullptr, "DeleteTicket"},
@@ -323,26 +324,26 @@ private:
 class NDRM_LU final : public ServiceFramework<NDRM_LU> {
 public:
     explicit NDRM_LU(Core::System& system_)
-        : ServiceFramework{system_, "ndrm:lu"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "ndrm:lu"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{1, nullptr, "Cmd1"},
             FunctionInfo{2, nullptr, "Cmd2"},
             FunctionInfo{3, nullptr, "Cmd3"},
             FunctionInfo{1000, nullptr, "Cmd1000"},
             FunctionInfo{8000, nullptr, "Cmd8000"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class NDRM_LA final : public ServiceFramework<NDRM_LA> {
 public:
     explicit NDRM_LA(Core::System& system_)
-        : ServiceFramework{system_, "ndrm:la"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "ndrm:la"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{1, nullptr, "Cmd1"},
             FunctionInfo{2, nullptr, "Cmd2"},
             FunctionInfo{3, nullptr, "Cmd3"},
@@ -397,9 +398,7 @@ public:
             FunctionInfo{8001, nullptr, "Cmd8001"},
             FunctionInfo{8002, nullptr, "Cmd8002"},
             FunctionInfo{8003, nullptr, "Cmd8003"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 

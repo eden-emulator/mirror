@@ -49,9 +49,10 @@ public:
 
 class MM_U final : public ServiceFramework<MM_U> {
 public:
-    explicit MM_U(Core::System& system_) : ServiceFramework{system_, "mm:u"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit MM_U(Core::System& system_) : ServiceFramework{system_, "mm:u"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &MM_U::InitializeOld, "InitializeOld"},
             FunctionInfo{1, &MM_U::FinalizeOld, "FinalizeOld"},
             FunctionInfo{2, &MM_U::SetAndWaitOld, "SetAndWaitOld"},
@@ -60,10 +61,7 @@ public:
             FunctionInfo{5, &MM_U::Finalize, "Finalize"},
             FunctionInfo{6, &MM_U::SetAndWait, "SetAndWait"},
             FunctionInfo{7, &MM_U::Get, "Get"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:

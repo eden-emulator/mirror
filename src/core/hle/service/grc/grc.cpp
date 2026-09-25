@@ -14,32 +14,29 @@ namespace Service::GRC {
 
 class GRC final : public ServiceFramework<GRC> {
 public:
-    explicit GRC(Core::System& system_) : ServiceFramework{system_, "grc:c"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit GRC(Core::System& system_) : ServiceFramework{system_, "grc:c"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{1, nullptr, "OpenContinuousRecorder"},
             FunctionInfo{2, nullptr, "OpenGameMovieTrimmer"},
             FunctionInfo{3, nullptr, "OpenOffscreenRecorder"},
             FunctionInfo{101, nullptr, "CreateMovieMaker"},
             FunctionInfo{9903, nullptr, "SetOffscreenRecordingMarker"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class GRC_D final : public ServiceFramework<GRC_D> {
 public:
-    explicit GRC_D(Core::System& system_) : ServiceFramework{system_, "grc:d"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit GRC_D(Core::System& system_) : ServiceFramework{system_, "grc:d"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{1, nullptr, "Initialize"},
             FunctionInfo{2, nullptr, "Transfer"},
             FunctionInfo{3, nullptr, "Cmd3"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 

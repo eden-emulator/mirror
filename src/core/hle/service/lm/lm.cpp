@@ -337,14 +337,12 @@ private:
 
 class LM final : public ServiceFramework<LM> {
 public:
-    explicit LM(Core::System& system_) : ServiceFramework{system_, "lm"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &LM::OpenLogger, "OpenLogger"}
-        };
-        // clang-format on
+    explicit LM(Core::System& system_) : ServiceFramework{system_, "lm"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &LM::OpenLogger, "OpenLogger"}
+        );
     }
 
 private:

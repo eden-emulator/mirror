@@ -38,8 +38,9 @@ public:
         , context{process_->GetMemory()}
     {
 
-        // clang-format off
-        static const FunctionInfo functions[] = {
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, C<&IJitEnvironment::GenerateCode>, "GenerateCode"},
             FunctionInfo{1, C<&IJitEnvironment::Control>, "Control"},
             FunctionInfo{1000, C<&IJitEnvironment::LoadPlugin>, "LoadPlugin"},
@@ -258,14 +259,12 @@ private:
 
 class JITU final : public ServiceFramework<JITU> {
 public:
-    explicit JITU(Core::System& system_) : ServiceFramework{system_, "jit:u"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, C<&JITU::CreateJitEnvironment>, "CreateJitEnvironment"}
-        };
-        // clang-format on
+    explicit JITU(Core::System& system_) : ServiceFramework{system_, "jit:u"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, C<&JITU::CreateJitEnvironment>, "CreateJitEnvironment"}
+        );
     }
 
 private:

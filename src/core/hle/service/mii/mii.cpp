@@ -27,9 +27,10 @@ public:
     explicit IDatabaseService(Core::System& system_, std::shared_ptr<MiiManager> mii_manager,
                               bool is_system_)
         : ServiceFramework{system_, "IDatabaseService"}, manager{mii_manager}, is_system{
-                                                                                   is_system_} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+                                                                                   is_system_} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, D<&IDatabaseService::IsUpdated>, "IsUpdated"},
             FunctionInfo{1, D<&IDatabaseService::IsFullDatabase>, "IsFullDatabase"},
             FunctionInfo{2, D<&IDatabaseService::GetCount>, "GetCount"},
@@ -324,9 +325,10 @@ std::shared_ptr<MiiManager> IStaticService::GetMiiManager() {
 
 class IImageDatabaseService final : public ServiceFramework<IImageDatabaseService> {
 public:
-    explicit IImageDatabaseService(Core::System& system_) : ServiceFramework{system_, "miiimg"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IImageDatabaseService(Core::System& system_) : ServiceFramework{system_, "miiimg"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, D<&IImageDatabaseService::Initialize>, "Initialize"},
             FunctionInfo{10, nullptr, "Reload"},
             FunctionInfo{11, D<&IImageDatabaseService::GetCount>, "GetCount"},
@@ -341,10 +343,7 @@ public:
             FunctionInfo{102, nullptr, "ImportFile"},
             FunctionInfo{103, nullptr, "ExportFile"},
             FunctionInfo{104, nullptr, "ForceInitialize"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:

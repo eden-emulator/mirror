@@ -15,9 +15,10 @@ namespace Service::PCIe {
 
 class ISession final : public ServiceFramework<ISession> {
 public:
-    explicit ISession(Core::System& system_) : ServiceFramework{system_, "ISession"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit ISession(Core::System& system_) : ServiceFramework{system_, "ISession"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "QueryFunctions"},
             FunctionInfo{1, nullptr, "AcquireFunction"},
             FunctionInfo{2, nullptr, "ReleaseFunction"},
@@ -42,37 +43,31 @@ public:
             FunctionInfo{21, nullptr, "SetAspmEnable"},
             FunctionInfo{22, nullptr, "SetResetUponResumeEnable"},
             FunctionInfo{23, nullptr, "ResetFunction"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class PCIE final : public ServiceFramework<PCIE> {
 public:
-    explicit PCIE(Core::System& system_) : ServiceFramework{system_, "pcie"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit PCIE(Core::System& system_) : ServiceFramework{system_, "pcie"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "RegisterClassDriver"},
             FunctionInfo{1, nullptr, "QueryFunctionsUnregistered"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class PCIE_LOG final : public ServiceFramework<PCIE_LOG> {
 public:
-    explicit PCIE_LOG(Core::System& system_) : ServiceFramework{system_, "pcie:log"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit PCIE_LOG(Core::System& system_) : ServiceFramework{system_, "pcie:log"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetLoggedState"},
             FunctionInfo{1, nullptr, "GetLoggedStateEvent"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 

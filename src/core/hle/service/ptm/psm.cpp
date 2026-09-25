@@ -21,9 +21,10 @@ namespace Service::PTM {
 class IPsmSession final : public ServiceFramework<IPsmSession> {
 public:
     explicit IPsmSession(Core::System& system_)
-        : ServiceFramework{system_, "IPsmSession"}, service_context{system_, "IPsmSession"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+        : ServiceFramework{system_, "IPsmSession"}, service_context{system_, "IPsmSession"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &IPsmSession::BindStateChangeEvent, "BindStateChangeEvent"},
             FunctionInfo{1, &IPsmSession::UnbindStateChangeEvent, "UnbindStateChangeEvent"},
             FunctionInfo{2, &IPsmSession::SetChargerTypeChangeEventEnabled, "SetChargerTypeChangeEventEnabled"},

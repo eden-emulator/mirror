@@ -25,9 +25,10 @@ class IShopServiceAsync final : public ServiceFramework<IShopServiceAsync> {
 public:
     explicit IShopServiceAsync(Core::System& system_)
         : ServiceFramework{system_, "IShopServiceAsync"},
-          service_context{system_, "IShopServiceAsync"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+          service_context{system_, "IShopServiceAsync"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, D<&IShopServiceAsync::Cancel>, "Cancel"},
             FunctionInfo{1, D<&IShopServiceAsync::GetSize>, "GetSize"},
             FunctionInfo{2, D<&IShopServiceAsync::Read>, "Read"},
@@ -141,14 +142,12 @@ private:
 class IShopServiceAccessor final : public ServiceFramework<IShopServiceAccessor> {
 public:
     explicit IShopServiceAccessor(Core::System& system_)
-        : ServiceFramework{system_, "IShopServiceAccessor"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &IShopServiceAccessor::CreateAsyncInterface, "CreateAsyncInterface"}
-        };
-        // clang-format on
+        : ServiceFramework{system_, "IShopServiceAccessor"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &IShopServiceAccessor::CreateAsyncInterface, "CreateAsyncInterface"}
+        );
     }
 
 private:
@@ -165,14 +164,12 @@ private:
 class IShopServiceAccessServer final : public ServiceFramework<IShopServiceAccessServer> {
 public:
     explicit IShopServiceAccessServer(Core::System& system_)
-        : ServiceFramework{system_, "IShopServiceAccessServer"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &IShopServiceAccessServer::CreateAccessorInterface, "CreateAccessorInterface"}
-        };
-        // clang-format on
+        : ServiceFramework{system_, "IShopServiceAccessServer"} {}
 
-        RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
+            FunctionInfo{0, &IShopServiceAccessServer::CreateAccessorInterface, "CreateAccessorInterface"}
+        );
     }
 
 private:
@@ -186,9 +183,10 @@ private:
 
 class NIM final : public ServiceFramework<NIM> {
 public:
-    explicit NIM(Core::System& system_) : ServiceFramework{system_, "nim"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit NIM(Core::System& system_) : ServiceFramework{system_, "nim"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "CreateSystemUpdateTask"},
             FunctionInfo{1, nullptr, "DestroySystemUpdateTask"},
             FunctionInfo{2, nullptr, "ListSystemUpdateTask"},
@@ -412,28 +410,23 @@ public:
             FunctionInfo{2051, nullptr, "Unknown2051"}, //20.0.0+
             FunctionInfo{3000, nullptr, "RequestLatestApplicationIcon"}, //17.0.0+
             FunctionInfo{3001, nullptr, "RequestDownloadIdbeLatestIconFile"}, //17.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
 class NIM_ECA final : public ServiceFramework<NIM_ECA> {
 public:
-    explicit NIM_ECA(Core::System& system_) : ServiceFramework{system_, "nim:eca"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit NIM_ECA(Core::System& system_) : ServiceFramework{system_, "nim:eca"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &NIM_ECA::CreateServerInterface, "CreateServerInterface"},
             FunctionInfo{1, nullptr, "RefreshDebugAvailability"},
             FunctionInfo{2, nullptr, "ClearDebugResponse"},
             FunctionInfo{3, nullptr, "RegisterDebugResponse"},
             FunctionInfo{4, &NIM_ECA::IsLargeResourceAvailable, "IsLargeResourceAvailable"},
             FunctionInfo{5, &NIM_ECA::CreateServerInterface2, "CreateServerInterface2"} // 17.0.0+
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -467,9 +460,10 @@ private:
 
 class NIM_SHP final : public ServiceFramework<NIM_SHP> {
 public:
-    explicit NIM_SHP(Core::System& system_) : ServiceFramework{system_, "nim:shp"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit NIM_SHP(Core::System& system_) : ServiceFramework{system_, "nim:shp"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "RequestDeviceAuthenticationToken"},
             FunctionInfo{1, nullptr, "RequestCachedDeviceAuthenticationToken"},
             FunctionInfo{2, nullptr, "RequestEdgeToken"},
@@ -498,10 +492,7 @@ public:
             FunctionInfo{503, nullptr, "RequestSyncTicket"},
             FunctionInfo{504, nullptr, "RequestDownloadTicketForPrepurchasedContents2"},
             FunctionInfo{505, nullptr, "RequestDownloadTicketForPrepurchasedContentsForAccount"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -587,16 +578,14 @@ private:
 
 class NTC final : public ServiceFramework<NTC> {
 public:
-    explicit NTC(Core::System& system_) : ServiceFramework{system_, "ntc"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit NTC(Core::System& system_) : ServiceFramework{system_, "ntc"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &NTC::OpenEnsureNetworkClockAvailabilityService, "OpenEnsureNetworkClockAvailabilityService"},
             FunctionInfo{100, &NTC::SuspendAutonomicTimeCorrection, "SuspendAutonomicTimeCorrection"},
             FunctionInfo{101, &NTC::ResumeAutonomicTimeCorrection, "ResumeAutonomicTimeCorrection"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:
@@ -626,14 +615,13 @@ private:
 
 class NIM_ECAS final : public ServiceFramework<NIM_ECAS> {
 public:
-    explicit NIM_ECAS(Core::System& system_) : ServiceFramework{system_, "nim:ecas"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit NIM_ECAS(Core::System& system_) : ServiceFramework{system_, "nim:ecas"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "RegisterSpecialClient"},
             FunctionInfo{1, nullptr, "UnregisterSpecialClient"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 

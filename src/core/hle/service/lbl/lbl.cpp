@@ -18,9 +18,10 @@ namespace Service::LBL {
 
 class LBL final : public ServiceFramework<LBL> {
 public:
-    explicit LBL(Core::System& system_) : ServiceFramework{system_, "lbl"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit LBL(Core::System& system_) : ServiceFramework{system_, "lbl"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &LBL::SaveCurrentSetting, "SaveCurrentSetting"},
             FunctionInfo{1, &LBL::LoadCurrentSetting, "LoadCurrentSetting"},
             FunctionInfo{2, &LBL::SetCurrentBrightnessSetting, "SetCurrentBrightnessSetting"},
@@ -51,10 +52,7 @@ public:
             FunctionInfo{27, &LBL::DisableVrMode, "DisableVrMode"},
             FunctionInfo{28, &LBL::IsVrModeEnabled, "IsVrModeEnabled"},
             FunctionInfo{29, &LBL::IsAutoBrightnessControlSupported, "IsAutoBrightnessControlSupported"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
+        );
     }
 
 private:

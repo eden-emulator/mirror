@@ -22,13 +22,12 @@ namespace Service::HID {
 class IHidTemporaryServer final : public ServiceFramework<IHidTemporaryServer> {
 public:
     explicit IHidTemporaryServer(Core::System& system_)
-    : ServiceFramework{system_, "hid:tmp"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    : ServiceFramework{system_, "hid:tmp"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetConsoleSixAxisSensorCalibrationValues"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
     ~IHidTemporaryServer() override = default;
 };
@@ -36,17 +35,16 @@ public:
 class AHID_CD final : public ServiceFramework<AHID_CD> {
 public:
     explicit AHID_CD(Core::System& system_)
-    : ServiceFramework{system_, "ahid:cd"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    : ServiceFramework{system_, "ahid:cd"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "AcquireDevice"},
             FunctionInfo{1, nullptr, "ReleaseDevice"},
             FunctionInfo{2, nullptr, "GetCtrlSession"},
             FunctionInfo{3, nullptr, "GetReadSession"},
             FunctionInfo{4, nullptr, "GetWriteSession"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
     ~AHID_CD() override = default;
 };
@@ -54,18 +52,17 @@ public:
 class AHID_HDR final : public ServiceFramework<AHID_HDR> {
 public:
     explicit AHID_HDR(Core::System& system_)
-    : ServiceFramework{system_, "ahid:hdr"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    : ServiceFramework{system_, "ahid:hdr"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetDeviceEntries"},
             FunctionInfo{1, nullptr, "GetDeviceList"},
             FunctionInfo{2, nullptr, "GetDeviceParameters"},
             FunctionInfo{3, nullptr, "AttachDevice"},
             FunctionInfo{4, nullptr, "DetachDevice"},
             FunctionInfo{5, nullptr, "SetDeviceFilter"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
     ~AHID_HDR() override = default;
 };

@@ -20,15 +20,14 @@ namespace Service::Capture {
 
 class IDecoderControlService final : public ServiceFramework<IDecoderControlService> {
 public:
-    explicit IDecoderControlService(Core::System& system_) : ServiceFramework{system_, "grc:d"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
+    explicit IDecoderControlService(Core::System& system_) : ServiceFramework{system_, "grc:d"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{3001, nullptr, "DecodeJpeg"},
             FunctionInfo{4001, nullptr, "ShrinkJpeg"},
             FunctionInfo{4002, nullptr, "ShrinkJpegEx"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+        );
     }
 };
 
