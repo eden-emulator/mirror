@@ -692,9 +692,6 @@ void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage im
     static constexpr VkAccessFlags2 WRITE_ACCESS_FLAGS =
                                            VK_ACCESS_2_SHADER_WRITE_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
                                            VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    static constexpr VkAccessFlags2 READ_ACCESS_FLAGS = VK_ACCESS_2_SHADER_READ_BIT |
-                                                       VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
-                                                       VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 
     //  Compute exact mip/layer range being written to
     RangedBarrierRange range;
@@ -725,10 +722,8 @@ void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage im
             .pNext = nullptr,
             .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
             .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            .dstStageMask = VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT |
-                            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT |
-                            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-            .dstAccessMask = WRITE_ACCESS_FLAGS | READ_ACCESS_FLAGS,
+            .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+            .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
             .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
