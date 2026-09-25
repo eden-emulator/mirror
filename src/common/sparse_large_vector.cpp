@@ -8,7 +8,14 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <mutex>
-#else
+#include <algorithm>
+#include <vector>
+#endif
+
+#include <cerrno>
+#include <cstring>
+
+#ifndef _WIN32
 #include <sys/mman.h>
 #endif
 
@@ -19,54 +26,60 @@
 namespace Common {
 
 #ifdef _WIN32
-static std::vector<std::pair<u64, u64>> vector_regions {};
 
-// Workaround for handling non-commited memory accessed by Dynarmic; usually result of an error
+struct VectorRegion {
+    u64 start_page;
+    u64 end_page;
+};
+
+static std::mutex& GetVectorRegionsMutex() {
+    static std::mutex* m = new std::mutex();
+    return *m;
+}
+
+static std::vector<VectorRegion>& GetVectorRegions() {
+    static std::vector<VectorRegion>* v = new std::vector<VectorRegion>();
+    return *v;
+}
+
 static LONG WINAPI FakePageFaultHandler(PEXCEPTION_POINTERS info) {
-    DWORD code = info->ExceptionRecord->ExceptionCode;
-    u64 exception_addr = reinterpret_cast<u64>(info->ExceptionRecord->ExceptionAddress);
-
-    if (code != EXCEPTION_ACCESS_VIOLATION) {
-        // Not our problem
+    if (info->ExceptionRecord->ExceptionCode != EXCEPTION_ACCESS_VIOLATION) {
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-    u64 addr = 0, addr2 = 0;
+    const u64 fault_addr = info->ExceptionRecord->ExceptionInformation[1];
+    const u64 access_type = info->ExceptionRecord->ExceptionInformation[0];
+    const bool is_write = (access_type == 1);
+    const u64 fault_page = fault_addr >> HostPageBits;
 
-    for (auto region: vector_regions) {
-        auto addr_shifted = exception_addr >> HostPageBits;
-        if (region.first <= addr_shifted && addr_shifted <= region.second) {
-            addr = addr_shifted;
-        }
+    u64 addr = 0;
+    u64 addr2 = 0;
 
-        // Page-boundary accesses
-        if (auto addr_ = (exception_addr + 0x40) >> HostPageBits; addr_ != addr_shifted && region.first <= addr_ && addr_ <= region.second) {
-            addr2 = addr_;
-        }
-
-        if (addr != 0 || addr2 != 0) {
-            break;
+    {
+        std::lock_guard lock(GetVectorRegionsMutex());
+        for (const auto& region : GetVectorRegions()) {
+            if (fault_page >= region.start_page && fault_page < region.end_page) {
+                addr = fault_page;
+            }
+            const u64 page2 = (fault_addr + 0x3F) >> HostPageBits;
+            if (page2 != fault_page && page2 >= region.start_page && page2 < region.end_page) {
+                addr2 = page2;
+            }
+            if (addr != 0 || addr2 != 0) break;
         }
     }
 
     if (addr == 0 && addr2 == 0) {
-        // Not our problem
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-    LOG_ERROR(HW_Memory, "Accessing an unallocated region of a SparseLargeVector at {:#x}; this shouldn't happen and is likely a Dynarmic error!", exception_addr);
+    LOG_ERROR(HW_Memory, "Accessing an unallocated region of a SparseLargeVector at {:#x}; this shouldn't happen and is likely a Dynarmic error!", fault_addr);
 
-    // Commit this region
-    if (addr != 0) {
-        if (!CommitVectorPage(addr << HostPageBits, false)) {
-            return EXCEPTION_CONTINUE_SEARCH;
-        }
+    if (addr != 0 && !CommitVectorPage(addr << HostPageBits, is_write)) {
+        return EXCEPTION_CONTINUE_SEARCH;
     }
-    // Commit next region if needed
-    if (addr2 != 0) {
-        if (!CommitVectorPage(addr2 << HostPageBits, false)) {
-            return EXCEPTION_CONTINUE_SEARCH;
-        }
+    if (addr2 != 0 && !CommitVectorPage(addr2 << HostPageBits, is_write)) {
+        return EXCEPTION_CONTINUE_SEARCH;
     }
 
     return EXCEPTION_CONTINUE_EXECUTION;
@@ -74,23 +87,31 @@ static LONG WINAPI FakePageFaultHandler(PEXCEPTION_POINTERS info) {
 
 bool CommitVectorPage(uintptr_t addr, bool write) noexcept {
     MEMORY_BASIC_INFORMATION info {};
-    auto res = VirtualQuery(reinterpret_cast<void*>(addr), &info, sizeof(info));
+    const auto res = VirtualQuery(reinterpret_cast<void*>(addr), &info, sizeof(info));
+    const DWORD perm = write ? PAGE_READWRITE : PAGE_READONLY;
+
     if (res == 0) {
         LOG_CRITICAL(HW_Memory, "Failed to query large buffer region at {:#x} with error {}, will try committing anyway", addr, GetLastError());
+    } else if (info.State == MEM_COMMIT) {
+        DWORD old_protect {};
+        if (!VirtualProtect(reinterpret_cast<void*>(addr), HostPageSize, perm, &old_protect)) {
+            LOG_ERROR(HW_Memory, "VirtualProtect failed at {:#x}, error {}", addr, GetLastError());
+            return false;
+        }
+        return true;
     } else if (info.State != MEM_RESERVE) {
-        LOG_ERROR(HW_Memory, "Tried to commit an unreserved large buffer region at {:#x} that is not mapped or is already committed (state {:#x})", addr, info.State);
+        LOG_ERROR(HW_Memory, "Tried to commit an unreserved large buffer region at {:#x} (state {:#x})", addr, info.State);
         return false;
     }
 
-    auto perm = write ? PAGE_READWRITE : PAGE_READONLY;
-    void* res2 = VirtualAlloc(reinterpret_cast<LPVOID>(addr), HostPageSize, MEM_COMMIT, perm);
-    if (res2 == nullptr) {
+    if (VirtualAlloc(reinterpret_cast<LPVOID>(addr), HostPageSize, MEM_COMMIT, perm) == nullptr) {
         LOG_ERROR(HW_Memory, "Failed to commit large buffer region at {:#x}, error {}", addr, GetLastError());
         return false;
     }
 
     return true;
 }
+
 #endif
 
 #ifndef MAP_NOCORE
@@ -102,56 +123,102 @@ bool CommitVectorPage(uintptr_t addr, bool write) noexcept {
 
 void DecommitVectorPage(uintptr_t base) noexcept {
 #if defined(_WIN32)
-    VirtualFree(reinterpret_cast<LPVOID>(base), HostPageSize, MEM_DECOMMIT);
+    if (!VirtualFree(reinterpret_cast<LPVOID>(base), HostPageSize, MEM_DECOMMIT)) {
+        LOG_WARNING(HW_Memory, "VirtualFree(MEM_DECOMMIT) failed at {:#x}, error {}", base, GetLastError());
+    }
 #elif defined(__linux__)
-    // Linux's MADV_DONTNEED zeros out pages for us
-    madvise(reinterpret_cast<void*>(base), HostPageSize, MADV_DONTNEED);
+    if (madvise(reinterpret_cast<void*>(base), HostPageSize, MADV_DONTNEED) != 0) {
+        LOG_WARNING(HW_Memory, "madvise(MADV_DONTNEED) failed at {:#x}: {}", base, std::strerror(errno));
+    }
 #else
-    madvise(reinterpret_cast<void*>(base), HostPageSize, MADV_FREE);
+    if (madvise(reinterpret_cast<void*>(base), HostPageSize, MADV_FREE) != 0) {
+        LOG_WARNING(HW_Memory, "madvise(MADV_FREE) failed at {:#x}: {}", base, std::strerror(errno));
+    }
     std::memset(reinterpret_cast<void*>(base), 0, HostPageSize);
 #endif
 }
 
 void* AllocateMemoryPages(std::size_t size) noexcept {
-    if (auto page = HostPageSize; size % page != 0) {
+    if (size == 0) {
+        return nullptr;
+    }
+
+    const auto page = HostPageSize;
+    if (size % page != 0) {
         LOG_WARNING(HW_Memory, "Allocating unaligned large vector with size {:#x}; aligning to {} page size", size, page);
+        if (size > SIZE_MAX - (page - 1)) {
+            LOG_CRITICAL(HW_Memory, "Size {:#x} would overflow page alignment", size);
+            return nullptr;
+        }
         size = AlignUp(size, page);
     }
 
 #ifdef _WIN32
-    // We will never use this memory entirely so instead of committing it up front let's just reserve it and commit each page individually
     void* base = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_READWRITE);
 
     if (base != nullptr) {
-        vector_regions.emplace_back(reinterpret_cast<u64>(base), reinterpret_cast<u64>(base) + size);
+        {
+            std::lock_guard lock(GetVectorRegionsMutex());
+            GetVectorRegions().push_back({
+                reinterpret_cast<u64>(base) >> HostPageBits,
+                (reinterpret_cast<u64>(base) + size) >> HostPageBits,
+            });
+        }
 
         static std::once_flag flag;
         std::call_once(flag, []() { AddVectoredExceptionHandler(1, FakePageFaultHandler); });
     } else {
-        // Try committing everything instead??
         LOG_WARNING(HW_Memory, "Failed to reserve large vector region with error {}, trying to commit instead..", GetLastError());
         base = VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_READWRITE);
     }
     ASSERT_MSG(base, "Failed to reserve {:#x} sized region with error {}", size, GetLastError());
 #else
-    void* base = mmap(nullptr, size, PROT_READ, MAP_ANON | MAP_PRIVATE | MAP_NOCORE, -1, 0);
-    if (base == MAP_FAILED)
-        base = nullptr;
-    ASSERT_MSG(base, "Failed to allocate {:#x} sized region with error {}", size, strerror(errno));
+    int flags = MAP_ANON | MAP_PRIVATE;
+#ifdef MAP_NORESERVE
+    flags |= MAP_NORESERVE;
 #endif
+#if defined(MAP_NOCORE)
+    flags |= MAP_NOCORE;
+#endif
+    void* base = mmap(nullptr, size, PROT_READ, flags, -1, 0);
+    if (base == MAP_FAILED) {
+        base = nullptr;
+    }
+#ifdef MADV_HUGEPAGE
+    if (base != nullptr) {
+        madvise(base, size, MADV_HUGEPAGE);
+    }
+#endif
+    ASSERT_MSG(base, "Failed to allocate {:#x} sized region with error {}", size, std::strerror(errno));
+#endif
+
     return base;
 }
 
 void FreeMemoryPages(void* base, [[maybe_unused]] std::size_t size) noexcept {
-    if (auto page = HostPageSize; size % page != 0) {
+    if (base == nullptr) {
+        return;
+    }
+
+    if (const auto page = HostPageSize; size % page != 0) {
         size = AlignUp(size, page);
     }
-    if (!base)
-        return;
+
 #ifdef _WIN32
-    ASSERT(VirtualFree(base, 0, MEM_RELEASE));
+    {
+        std::lock_guard lock(GetVectorRegionsMutex());
+        auto& regions = GetVectorRegions();
+        const u64 base_page = reinterpret_cast<u64>(base) >> HostPageBits;
+        regions.erase(std::remove_if(regions.begin(), regions.end(),
+            [base_page](const VectorRegion& r) { return r.start_page == base_page; }), regions.end());
+    }
+    if (!VirtualFree(base, 0, MEM_RELEASE)) {
+        LOG_ERROR(HW_Memory, "VirtualFree failed, error {}", GetLastError());
+    }
 #else
-    ASSERT(munmap(base, size) == 0);
+    if (munmap(base, size) != 0) {
+        LOG_ERROR(HW_Memory, "munmap failed: {}", std::strerror(errno));
+    }
 #endif
 }
 
