@@ -387,15 +387,18 @@ bool BufferCache<P>::TakeDrawHazard() noexcept {
 
 template <class P>
 void BufferCache<P>::CommitDrawWrites() {
-    recording_draw = false;
-    if (draw_writes.empty()) {
-        return;
+    if constexpr (!IS_OPENGL) {
+        recording_draw = false;
+        if (draw_writes.empty()) {
+            return;
+        }
+        const u64 pass = runtime.RenderPassSerial();
+        for (const DrawWrite& write : draw_writes) {
+            slot_buffers[write.buffer_id].MarkDrawWrite(pass, draw_wfi, write.device_addr,
+                                                        write.size);
+        }
+        runtime.MarkRenderPassWrites();
     }
-    const u64 pass = runtime.RenderPassSerial();
-    for (const DrawWrite& write : draw_writes) {
-        slot_buffers[write.buffer_id].MarkDrawWrite(pass, draw_wfi, write.device_addr, write.size);
-    }
-    runtime.MarkRenderPassWrites();
 }
 
 template <class P>
