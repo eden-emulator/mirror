@@ -53,7 +53,7 @@ public:
             {1202, nullptr, "GetSafeSystemVersion"},
             {3100, D<&IVulnerabilityManagerInterface::GetSafeSystemVersionCheckInfo>, "GetSafeSystemVersionCheckInfo"},
             {3101, nullptr, "RequestUpdateSafeSystemVersionCheckInfo"},
-            {3102, D<&IVulnerabilityManagerInterface::ResetSafeSystemVersionCheckInfo>, "ResetSafeSystemVersionCheckInfo"},
+            {3102, D<&IVulnerabilityManagerInterface::ResetSafeSystemVersionCheckInfo>, "ResetSafeSystemVersionCheckInfo"}
         };
         // clang-format on
         RegisterHandlers(functions);

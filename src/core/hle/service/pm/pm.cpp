@@ -50,7 +50,7 @@ public:
     explicit BootMode(Core::System& system_) : ServiceFramework{system_, "pm:bm"} {
         static const FunctionInfo functions[] = {
             {0, &BootMode::GetBootMode, "GetBootMode"},
-            {1, &BootMode::SetMaintenanceBoot, "SetMaintenanceBoot"},
+            {1, &BootMode::SetMaintenanceBoot, "SetMaintenanceBoot"}
         };
         RegisterHandlers(functions);
     }
@@ -89,7 +89,7 @@ public:
             {5, nullptr, "HookToCreateApplicationProgress"},
             {6, nullptr, "ClearHook"},
             {65000, &DebugMonitor::AtmosphereGetProcessInfo, "AtmosphereGetProcessInfo"},
-            {65001, nullptr, "AtmosphereGetCurrentLimitInfo"},
+            {65001, nullptr, "AtmosphereGetCurrentLimitInfo"}
         };
         // clang-format on
 
@@ -173,7 +173,7 @@ public:
             {0, &Info::GetProgramId, "GetProgramId"},
             {65000, &Info::AtmosphereGetProcessId, "AtmosphereGetProcessId"},
             {65001, nullptr, "AtmosphereHasLaunchedProgram"},
-            {65002, nullptr, "AtmosphereGetProcessInfo"},
+            {65002, nullptr, "AtmosphereGetProcessInfo"}
         };
         RegisterHandlers(functions);
     }
@@ -234,7 +234,7 @@ public:
             {6, &Shell::GetApplicationProcessIdForShell, "GetApplicationProcessIdForShell"},
             {7, nullptr, "BoostSystemMemoryResourceLimit"},
             {8, nullptr, "BoostApplicationThreadResourceLimit"},
-            {9, nullptr, "GetBootFinishedEventHandle"},
+            {9, nullptr, "GetBootFinishedEventHandle"}
         };
         // clang-format on
 

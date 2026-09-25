@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -22,7 +25,7 @@ public:
             {8, nullptr, "AppendFinalOutputRecorderBufferAuto"},
             {9, nullptr, "GetReleasedFinalOutputRecorderBufferAuto"},
             {10, nullptr, "FlushFinalOutputRecorderBuffers"},
-            {11, nullptr, "AttachWorkBuffer"},
+            {11, nullptr, "AttachWorkBuffer"}
         };
         // clang-format on
 

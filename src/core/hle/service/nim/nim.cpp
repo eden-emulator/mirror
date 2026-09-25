@@ -33,7 +33,7 @@ public:
             {2, D<&IShopServiceAsync::Read>, "Read"},
             {3, D<&IShopServiceAsync::GetErrorCode>, "GetErrorCode"},
             {4, D<&IShopServiceAsync::Request>, "Request"},
-            {5, D<&IShopServiceAsync::Prepare>, "Prepare"},
+            {5, D<&IShopServiceAsync::Prepare>, "Prepare"}
         };
         // clang-format on
 
@@ -144,7 +144,7 @@ public:
         : ServiceFramework{system_, "IShopServiceAccessor"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IShopServiceAccessor::CreateAsyncInterface, "CreateAsyncInterface"},
+            {0, &IShopServiceAccessor::CreateAsyncInterface, "CreateAsyncInterface"}
         };
         // clang-format on
 
@@ -168,7 +168,7 @@ public:
         : ServiceFramework{system_, "IShopServiceAccessServer"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IShopServiceAccessServer::CreateAccessorInterface, "CreateAccessorInterface"},
+            {0, &IShopServiceAccessServer::CreateAccessorInterface, "CreateAccessorInterface"}
         };
         // clang-format on
 
@@ -497,7 +497,7 @@ public:
             {502, nullptr, "RequestDownloadTicketForPrepurchasedContents"},
             {503, nullptr, "RequestSyncTicket"},
             {504, nullptr, "RequestDownloadTicketForPrepurchasedContents2"},
-            {505, nullptr, "RequestDownloadTicketForPrepurchasedContentsForAccount"},
+            {505, nullptr, "RequestDownloadTicketForPrepurchasedContentsForAccount"}
         };
         // clang-format on
 
@@ -518,7 +518,7 @@ public:
             {2, &IEnsureNetworkClockAvailabilityService::GetResult, "GetResult"},
             {3, &IEnsureNetworkClockAvailabilityService::Cancel, "Cancel"},
             {4, &IEnsureNetworkClockAvailabilityService::IsProcessing, "IsProcessing"},
-            {5, &IEnsureNetworkClockAvailabilityService::GetServerTime, "GetServerTime"},
+            {5, &IEnsureNetworkClockAvailabilityService::GetServerTime, "GetServerTime"}
         };
         RegisterHandlers(functions);
 
@@ -592,7 +592,7 @@ public:
         static const FunctionInfo functions[] = {
             {0, &NTC::OpenEnsureNetworkClockAvailabilityService, "OpenEnsureNetworkClockAvailabilityService"},
             {100, &NTC::SuspendAutonomicTimeCorrection, "SuspendAutonomicTimeCorrection"},
-            {101, &NTC::ResumeAutonomicTimeCorrection, "ResumeAutonomicTimeCorrection"},
+            {101, &NTC::ResumeAutonomicTimeCorrection, "ResumeAutonomicTimeCorrection"}
         };
         // clang-format on
 
@@ -630,7 +630,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "RegisterSpecialClient"},
-            {1, nullptr, "UnregisterSpecialClient"},
+            {1, nullptr, "UnregisterSpecialClient"}
         };
         // clang-format on
         RegisterHandlers(functions);

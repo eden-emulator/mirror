@@ -29,7 +29,7 @@ public:
             {2, nullptr, "GetProcessMasterVolume"},
             {3, nullptr, "SetProcessMasterVolume"},
             {4, nullptr, "GetProcessRecordVolume"},
-            {5, nullptr, "SetProcessRecordVolume"},
+            {5, nullptr, "SetProcessRecordVolume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -46,7 +46,7 @@ public:
             {1, nullptr, "GetAppletStateSummaries"},
             {2, nullptr, "SetDspStatisticsParameter"},
             {3, nullptr, "GetDspStatisticsParameter"},
-            {6, nullptr, "GetDspUsage"},
+            {6, nullptr, "GetDspUsage"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -62,7 +62,7 @@ public:
             {0, nullptr, "RequestSuspend"},
             {1, nullptr, "RequestResume"},
             {2, nullptr, "GetProcessMasterVolume"},
-            {3, nullptr, "SetProcessMasterVolume"},
+            {3, nullptr, "SetProcessMasterVolume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -82,7 +82,7 @@ public:
             {4, nullptr, "RegisterAppletResourceUserId"},
             {5, nullptr, "UnregisterAppletResourceUserId"},
             {6, nullptr, "GetProcessRecordVolume"},
-            {7, nullptr, "SetProcessRecordVolume"},
+            {7, nullptr, "SetProcessRecordVolume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -96,7 +96,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "RequestSuspend"},
-            {1, nullptr, "RequestResume"},
+            {1, nullptr, "RequestResume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -110,7 +110,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "RequestSuspend"},
-            {1, nullptr, "RequestResume"},
+            {1, nullptr, "RequestResume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -124,7 +124,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "RequestSuspend"},
-            {1, nullptr, "RequestResume"},
+            {1, nullptr, "RequestResume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -138,7 +138,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "RequestSuspend"},
-            {1, nullptr, "RequestResume"},
+            {1, nullptr, "RequestResume"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -161,7 +161,7 @@ public:
             {7, nullptr, "SetAudioInputProcessMasterVolume"},
             {8, nullptr, "GetAudioOutputProcessRecordVolume"},
             {9, nullptr, "SetAudioOutputProcessRecordVolume"},
-            {10, nullptr, "GetAppletStateSummaries"},
+            {10, nullptr, "GetAppletStateSummaries"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -175,7 +175,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "RequestSuspendAudioForDebug"},
-            {1, nullptr, "RequestResumeAudioForDebug"},
+            {1, nullptr, "RequestResumeAudioForDebug"}
         };
         // clang-format on
         RegisterHandlers(functions);

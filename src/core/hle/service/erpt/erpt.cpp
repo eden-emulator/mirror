@@ -36,7 +36,7 @@ public:
             {20, nullptr, "RegisterRunningApplet"},
             {21, nullptr, "UnregisterRunningApplet"},
             {22, nullptr, "UpdateAppletSuspendedDuration"},
-            {30, nullptr, "InvalidateForcedShutdownDetection"},
+            {30, nullptr, "InvalidateForcedShutdownDetection"}
         };
         // clang-format on
 
@@ -94,7 +94,7 @@ public:
         static const FunctionInfo functions[] = {
             {0, nullptr, "OpenReport"},
             {1, nullptr, "OpenManager"},
-            {2, nullptr, "OpenAttachment"},
+            {2, nullptr, "OpenAttachment"}
         };
         // clang-format on
 

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -18,7 +21,7 @@ public:
             {1, nullptr, "ImportCrt"},
             {2, nullptr, "ImportPki"},
             {3, nullptr, "SetAutoUpload"},
-            {4, nullptr, "GetAutoUpload"},
+            {4, nullptr, "GetAutoUpload"}
         };
         // clang-format on
 
@@ -36,7 +39,7 @@ public:
             {2, nullptr, "UploadSelected"},
             {3, nullptr, "GetUploadStatus"},
             {4, nullptr, "CancelUpload"},
-            {5, nullptr, "GetResult"},
+            {5, nullptr, "GetResult"}
         };
         // clang-format on
 

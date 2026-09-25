@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -12,7 +15,7 @@ IPmModule::IPmModule(Core::System& system_) : ServiceFramework{system_, "IPmModu
             {1, nullptr, "GetRequest"},
             {2, nullptr, "Acknowledge"},
             {3, nullptr, "Finalize"},
-            {4, nullptr, "AcknowledgeEx"},
+            {4, nullptr, "AcknowledgeEx"}
         };
     // clang-format on
 

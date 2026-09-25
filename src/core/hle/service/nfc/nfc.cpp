@@ -42,7 +42,7 @@ public:
             {1001, &NfcInterface::WriteMifare ,"WriteMifare"},
             {1300, &NfcInterface::SendCommandByPassThrough, "SendCommandByPassThrough"},
             {1301, nullptr, "KeepPassThroughSession"},
-            {1302, nullptr, "ReleasePassThroughSession"},
+            {1302, nullptr, "ReleasePassThroughSession"}
         };
         // clang-format on
 
@@ -80,7 +80,7 @@ public:
             {1001, &NfcInterface::WriteMifare, "WriteMifare"},
             {1300, &NfcInterface::SendCommandByPassThrough, "SendCommandByPassThrough"},
             {1301, nullptr, "KeepPassThroughSession"},
-            {1302, nullptr, "ReleasePassThroughSession"},
+            {1302, nullptr, "ReleasePassThroughSession"}
         };
         // clang-format on
 
@@ -110,7 +110,7 @@ public:
             {10, &MFIUser::GetState, "GetState"},
             {11, &MFIUser::GetDeviceState, "GetDeviceState"},
             {12, &MFIUser::GetNpadId, "GetNpadId"},
-            {13, &MFIUser::AttachAvailabilityChangeEvent, "GetAvailabilityChangeEventHandle"},
+            {13, &MFIUser::AttachAvailabilityChangeEvent, "GetAvailabilityChangeEventHandle"}
         };
         // clang-format on
 
@@ -125,7 +125,7 @@ public:
         static const FunctionInfo functions[] = {
             {0, nullptr, "Initialize"},
             {1, nullptr, "Finalize"},
-            {2, nullptr, "NotifyForegroundApplet"},
+            {2, nullptr, "NotifyForegroundApplet"}
         };
         // clang-format on
 
@@ -138,7 +138,7 @@ public:
     explicit NFC_AM(Core::System& system_) : ServiceFramework{system_, "nfc:am"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &NFC_AM::CreateAmNfcInterface, "CreateAmNfcInterface"},
+            {0, &NFC_AM::CreateAmNfcInterface, "CreateAmNfcInterface"}
         };
         // clang-format on
 
@@ -160,7 +160,7 @@ public:
     explicit NFC_MF_U(Core::System& system_) : ServiceFramework{system_, "nfc:mf:u"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &NFC_MF_U::CreateUserNfcInterface, "CreateUserNfcInterface"},
+            {0, &NFC_MF_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
         };
         // clang-format on
 
@@ -182,7 +182,7 @@ public:
     explicit NFC_U(Core::System& system_) : ServiceFramework{system_, "nfc:user"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &NFC_U::CreateUserNfcInterface, "CreateUserNfcInterface"},
+            {0, &NFC_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
         };
         // clang-format on
 
@@ -204,7 +204,7 @@ public:
     explicit NFC_SYS(Core::System& system_) : ServiceFramework{system_, "nfc:sys"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &NFC_SYS::CreateSystemNfcInterface, "CreateSystemNfcInterface"},
+            {0, &NFC_SYS::CreateSystemNfcInterface, "CreateSystemNfcInterface"}
         };
         // clang-format on
 

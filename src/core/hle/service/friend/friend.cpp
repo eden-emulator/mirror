@@ -135,7 +135,7 @@ public:
             {31000, nullptr, "OpenUser"}, // 19.0.0+
             {40100, nullptr, "DeleteFriendListCache"},
             {40400, nullptr, "DeleteBlockedUserListCache"},
-            {49900, nullptr, "DeleteNetworkServiceAccountCache"},
+            {49900, nullptr, "DeleteNetworkServiceAccountCache"}
         };
         // clang-format on
 
@@ -504,7 +504,7 @@ public:
     {
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetReceivableNeighborInfoCountMax"},
-            {10, nullptr, "IsNeighborDetectionEnabled"},
+            {10, nullptr, "IsNeighborDetectionEnabled"}
         };
         RegisterHandlers(functions);
     }
@@ -552,7 +552,7 @@ public:
             {309, nullptr, "ListApplicationInfoForDebug"},
             {310, nullptr, "SetApplicationDataForDebug"},
             {400, nullptr, "GetNetworkUserId"},
-            {401, nullptr, "DeleteNetworkUserId"},
+            {401, nullptr, "DeleteNetworkUserId"}
         };
         RegisterHandlers(functions);
     }

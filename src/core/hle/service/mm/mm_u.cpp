@@ -59,7 +59,7 @@ public:
             {4, &MM_U::Initialize, "Initialize"},
             {5, &MM_U::Finalize, "Finalize"},
             {6, &MM_U::SetAndWait, "SetAndWait"},
-            {7, &MM_U::Get, "Get"},
+            {7, &MM_U::Get, "Get"}
         };
         // clang-format on
 

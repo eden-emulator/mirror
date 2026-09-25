@@ -25,7 +25,7 @@ public:
     : ServiceFramework{system_, "hid:tmp"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetConsoleSixAxisSensorCalibrationValues"},
+            {0, nullptr, "GetConsoleSixAxisSensorCalibrationValues"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -43,7 +43,7 @@ public:
             {1, nullptr, "ReleaseDevice"},
             {2, nullptr, "GetCtrlSession"},
             {3, nullptr, "GetReadSession"},
-            {4, nullptr, "GetWriteSession"},
+            {4, nullptr, "GetWriteSession"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -62,7 +62,7 @@ public:
             {2, nullptr, "GetDeviceParameters"},
             {3, nullptr, "AttachDevice"},
             {4, nullptr, "DetachDevice"},
-            {5, nullptr, "SetDeviceFilter"},
+            {5, nullptr, "SetDeviceFilter"}
         };
         // clang-format on
         RegisterHandlers(functions);

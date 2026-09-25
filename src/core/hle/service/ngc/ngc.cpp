@@ -25,7 +25,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, &IService::Match, "Match"},
-            {1, &IService::Filter, "Filter"},
+            {1, &IService::Filter, "Filter"}
         };
         // clang-format on
 
@@ -73,7 +73,7 @@ public:
             {2, &NgcServiceImpl::Mask, "Mask"},
             {3, &NgcServiceImpl::Reload, "Reload"},
             {4, &NgcServiceImpl::Check, "Check2"},
-            {5, &NgcServiceImpl::Mask, "Mask2"},
+            {5, &NgcServiceImpl::Mask, "Mask2"}
         };
         // clang-format on
 
@@ -165,7 +165,7 @@ public:
             {111, nullptr, "IsReloadRequired"},
             {112, nullptr, "TryAcquireReloadRequestNotifier"},
             {120, nullptr, "CalculateContentFingerprint"},
-            {130, nullptr, "TryEnableTemporalPassThrough"},
+            {130, nullptr, "TryEnableTemporalPassThrough"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -189,7 +189,7 @@ public:
             {454, D<&IUserShimScopedObject::ReadSaveSlot>, "ReadSaveSlot"},
             {455, D<&IUserShimScopedObject::WriteSaveSlot>, "WriteSaveSlot"},
             {456, nullptr, "FlushSaveSlot"},
-            {457, nullptr, "CommitSaveData"},
+            {457, nullptr, "CommitSaveData"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -217,7 +217,7 @@ public:
     explicit IUserService(Core::System& system_) : ServiceFramework(system_, "stpl:u") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0 , D<&IUserService::Cmd0>, "Cmd0"},
+            {0 , D<&IUserService::Cmd0>, "Cmd0"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -242,7 +242,7 @@ public:
             {209, nullptr, "Cmd209"},
             {210, nullptr, "Cmd210"},
             {211, nullptr, "Cmd211"},
-            {212, nullptr, "Cmd212"},
+            {212, nullptr, "Cmd212"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -264,7 +264,7 @@ public:
     explicit ISystemService(Core::System& system_) : ServiceFramework(system_, "stpl:sys") {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0 , D<&ISystemService::Cmd0>, "Cmd0"},
+            {0 , D<&ISystemService::Cmd0>, "Cmd0"}
         };
         // clang-format on
         RegisterHandlers(functions);

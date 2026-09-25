@@ -42,7 +42,7 @@ public:
             {22, &IUser::GetApplicationAreaSize, "GetApplicationAreaSize"},
             {23, &IUser::AttachAvailabilityChangeEvent, "AttachAvailabilityChangeEvent"},
             {24, &IUser::RecreateApplicationArea, "RecreateApplicationArea"},
-            {25, &IUser::StartDetection, "StartDetectionWithFilter"},
+            {25, &IUser::StartDetection, "StartDetectionWithFilter"}
         };
         // clang-format on
 
@@ -82,7 +82,7 @@ public:
             {103, &ISystem::SetRegisterInfoPrivate, "SetRegisterInfoPrivate"},
             {104, &ISystem::DeleteRegisterInfo, "DeleteRegisterInfo"},
             {105, &ISystem::DeleteApplicationArea, "DeleteApplicationArea"},
-            {106, &ISystem::ExistsApplicationArea, "ExistsApplicationArea"},
+            {106, &ISystem::ExistsApplicationArea, "ExistsApplicationArea"}
         };
         // clang-format on
 
@@ -134,7 +134,7 @@ public:
             {203, &IDebug::BreakTag, "BreakTag"},
             {204, &IDebug::ReadBackupData, "ReadBackupData"},
             {205, &IDebug::WriteBackupData, "WriteBackupData"},
-            {206, &IDebug::WriteNtf, "WriteNtf"},
+            {206, &IDebug::WriteNtf, "WriteNtf"}
         };
         // clang-format on
 
@@ -147,7 +147,7 @@ public:
     explicit IUserManager(Core::System& system_) : ServiceFramework{system_, "nfp:user"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IUserManager::CreateUserInterface, "CreateUserInterface"},
+            {0, &IUserManager::CreateUserInterface, "CreateUserInterface"}
         };
         // clang-format on
 
@@ -169,7 +169,7 @@ public:
     explicit ISystemManager(Core::System& system_) : ServiceFramework{system_, "nfp:sys"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &ISystemManager::CreateSystemInterface, "CreateSystemInterface"},
+            {0, &ISystemManager::CreateSystemInterface, "CreateSystemInterface"}
         };
         // clang-format on
 
@@ -191,7 +191,7 @@ public:
     explicit IDebugManager(Core::System& system_) : ServiceFramework{system_, "nfp:dbg"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, &IDebugManager::CreateDebugInterface, "CreateDebugInterface"},
+            {0, &IDebugManager::CreateDebugInterface, "CreateDebugInterface"}
         };
         // clang-format on
 

@@ -59,7 +59,7 @@ public:
             {4, nullptr, "SetCoreDumpPerm"},
             {5, nullptr, "GetAruid"},
             {6, nullptr, "Reset"},
-            {7, nullptr, "GetAruid2"},
+            {7, nullptr, "GetAruid2"}
         };
         RegisterHandlers(functions);
     }
@@ -75,7 +75,7 @@ public:
             {1, nullptr, "GetAruid"},
             {2, nullptr, "ReadNextBlock"},
             {3, nullptr, "GetNextBlockSize"},
-            {4, nullptr, "ReadNextBlock2"},
+            {4, nullptr, "ReadNextBlock2"}
         };
         RegisterHandlers(functions);
     }
@@ -95,7 +95,7 @@ public:
             {10, nullptr, "InitializeDevtools"},
             {11, nullptr, "Ioctl2"},
             {12, nullptr, "Ioctl3"},
-            {13, nullptr, "SetConfiguration"},
+            {13, nullptr, "SetConfiguration"}
         };
         RegisterHandlers(functions);
     }

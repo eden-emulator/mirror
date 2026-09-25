@@ -88,7 +88,7 @@ public:
             {0, D<&IAsyncValue::GetSize>, "GetSize"},
             {1, D<&IAsyncValue::Get>, "Get"},
             {2, D<&IAsyncValue::Cancel>, "Cancel"},
-            {3, D<&IAsyncValue::GetErrorContext>, "GetErrorContext"},
+            {3, D<&IAsyncValue::GetErrorContext>, "GetErrorContext"}
         };
         RegisterHandlers(functions);
         completion_event = service_context.CreateEvent("IAsyncValue:Completion");

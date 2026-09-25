@@ -50,7 +50,7 @@ public:
             {26, &LBL::EnableVrMode, "EnableVrMode"},
             {27, &LBL::DisableVrMode, "DisableVrMode"},
             {28, &LBL::IsVrModeEnabled, "IsVrModeEnabled"},
-            {29, &LBL::IsAutoBrightnessControlSupported, "IsAutoBrightnessControlSupported"},
+            {29, &LBL::IsAutoBrightnessControlSupported, "IsAutoBrightnessControlSupported"}
         };
         // clang-format on
 

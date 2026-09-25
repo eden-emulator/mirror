@@ -17,7 +17,7 @@ IReceiver::IReceiver(Core::System& system_)
             {1, D<&IReceiver::RemoveSource>, "RemoveSource"},
             {2, D<&IReceiver::GetReceiveEventHandle>, "GetReceiveEventHandle"},
             {3, D<&IReceiver::Receive>, "Receive"},
-            {4, D<&IReceiver::ReceiveWithTick>, "ReceiveWithTick"},
+            {4, D<&IReceiver::ReceiveWithTick>, "ReceiveWithTick"}
         };
     // clang-format on
 

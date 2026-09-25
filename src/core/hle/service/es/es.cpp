@@ -114,7 +114,7 @@ public:
             {2502, nullptr, "Unknown2502"},
             {2601, nullptr, "Unknown2601"},
             {3001, nullptr, "Unknown3001"},
-            {3002, nullptr, "Unknown3002"},
+            {3002, nullptr, "Unknown3002"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -330,7 +330,7 @@ public:
             {2, nullptr, "Cmd2"},
             {3, nullptr, "Cmd3"},
             {1000, nullptr, "Cmd1000"},
-            {8000, nullptr, "Cmd8000"},
+            {8000, nullptr, "Cmd8000"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -396,7 +396,7 @@ public:
             {8000, nullptr, "Cmd8000"},
             {8001, nullptr, "Cmd8001"},
             {8002, nullptr, "Cmd8002"},
-            {8003, nullptr, "Cmd8003"},
+            {8003, nullptr, "Cmd8003"}
         };
         // clang-format on
         RegisterHandlers(functions);

@@ -19,7 +19,7 @@ IActiveVibrationDeviceList::IActiveVibrationDeviceList(Core::System& system_,
     : ServiceFramework{system_, "IActiveVibrationDeviceList"}, resource_manager(resource) {
     // clang-format off
         static const FunctionInfo functions[] = {
-            {0, C<&IActiveVibrationDeviceList::ActivateVibrationDevice>, "ActivateVibrationDevice"},
+            {0, C<&IActiveVibrationDeviceList::ActivateVibrationDevice>, "ActivateVibrationDevice"}
         };
     // clang-format on
 

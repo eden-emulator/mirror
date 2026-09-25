@@ -62,7 +62,7 @@ StaticService::StaticService(Core::System& system_, StaticServiceSetupInfo setup
             {400, D<&StaticService::GetClockSnapshot>, "GetClockSnapshot"},
             {401, D<&StaticService::GetClockSnapshotFromSystemClockContext>, "GetClockSnapshotFromSystemClockContext"},
             {500, D<&StaticService::CalculateStandardUserSystemClockDifferenceByUser>, "CalculateStandardUserSystemClockDifferenceByUser"},
-            {501, D<&StaticService::CalculateSpanBetween>, "CalculateSpanBetween"},
+            {501, D<&StaticService::CalculateSpanBetween>, "CalculateSpanBetween"}
         };
     // clang-format on
 

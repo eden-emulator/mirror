@@ -36,7 +36,7 @@ public:
         static const FunctionInfo functions[] = {
             {1, nullptr, "Initialize"},
             {2, nullptr, "Transfer"},
-            {3, nullptr, "Cmd3"},
+            {3, nullptr, "Cmd3"}
         };
         // clang-format on
         RegisterHandlers(functions);

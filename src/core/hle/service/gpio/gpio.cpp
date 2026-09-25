@@ -17,7 +17,7 @@ public:
         : ServiceFramework{system_, "gpio"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "Cmd0"},
+            {0, nullptr, "Cmd0"}
         };
         RegisterHandlers(functions);
     }

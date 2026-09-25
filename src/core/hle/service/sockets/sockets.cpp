@@ -24,7 +24,7 @@ public:
             {3, nullptr, "GetMediaList"},
             {4, nullptr, "SetMediaType"},
             {5, nullptr, "GetMediaType"},
-            {6, nullptr, "GetMacAddress"},
+            {6, nullptr, "GetMacAddress"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -41,7 +41,7 @@ public:
             {1, nullptr, "Cancel"},
             {2, nullptr, "GetResult"},
             {3, nullptr, "GetInterfaceList"},
-            {4, nullptr, "GetInterfaceCount"},
+            {4, nullptr, "GetInterfaceCount"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -54,7 +54,7 @@ public:
         : ServiceFramework{system_, "eth:nd"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "CreateDriverService"},
+            {0, nullptr, "CreateDriverService"}
         };
         // clang-format on
         RegisterHandlers(functions);

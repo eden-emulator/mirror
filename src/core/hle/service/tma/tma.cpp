@@ -21,7 +21,7 @@ public:
         : ServiceFramework{system_, "htc:tenv"}
     {
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetServiceInterface"},
+            {0, nullptr, "GetServiceInterface"}
         };
         RegisterHandlers(functions);
     }

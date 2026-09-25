@@ -41,7 +41,7 @@ public:
             {20, nullptr, "GetIrqEvent"},
             {21, nullptr, "SetAspmEnable"},
             {22, nullptr, "SetResetUponResumeEnable"},
-            {23, nullptr, "ResetFunction"},
+            {23, nullptr, "ResetFunction"}
         };
         // clang-format on
 
@@ -55,7 +55,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "RegisterClassDriver"},
-            {1, nullptr, "QueryFunctionsUnregistered"},
+            {1, nullptr, "QueryFunctionsUnregistered"}
         };
         // clang-format on
 
@@ -69,7 +69,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetLoggedState"},
-            {1, nullptr, "GetLoggedStateEvent"},
+            {1, nullptr, "GetLoggedStateEvent"}
         };
         // clang-format on
         RegisterHandlers(functions);

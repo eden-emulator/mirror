@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -13,7 +16,7 @@ ISfMonitorService::ISfMonitorService(Core::System& system_)
         static const FunctionInfo functions[] = {
             {0, C<&ISfMonitorService::Initialize>, "Initialize"},
             {288, C<&ISfMonitorService::GetGroupInfo>, "GetGroupInfo"},
-            {320, nullptr, "GetLinkLevel"},
+            {320, nullptr, "GetLinkLevel"}
         };
     // clang-format on
 

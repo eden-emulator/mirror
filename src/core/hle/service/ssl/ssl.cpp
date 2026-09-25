@@ -116,7 +116,7 @@ public:
             {32, nullptr, "GetSrtpCipher"},
             {33, nullptr, "ExportKeyingMaterial"},
             {34, nullptr, "SetIoTimeout"},
-            {35, nullptr, "GetIoTimeout"},
+            {35, nullptr, "GetIoTimeout"}
         };
         // clang-format on
 
@@ -466,7 +466,7 @@ public:
             {10, nullptr, "ImportCrl"},
             {11, nullptr, "RemoveCrl"},
             {12, nullptr, "ImportClientCertKeyPki"},
-            {13, nullptr, "GeneratePrivateKeyAndCert"},
+            {13, nullptr, "GeneratePrivateKeyAndCert"}
         };
         RegisterHandlers(functions);
     }
@@ -578,7 +578,7 @@ public:
             {6, nullptr, "FlushSessionCache"},
             {7, nullptr, "SetDebugOption"},
             {8, nullptr, "GetDebugOption"},
-            {8, nullptr, "ClearTls12FallbackFlag"},
+            {8, nullptr, "ClearTls12FallbackFlag"}
         };
         // clang-format on
 

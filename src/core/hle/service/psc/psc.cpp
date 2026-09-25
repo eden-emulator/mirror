@@ -26,7 +26,7 @@ public:
             {1, nullptr, "Lock"},
             {2, nullptr, "Unlock"},
             {3, nullptr, "IsLocked"},
-            {4, nullptr, "GetRelatedState"},
+            {4, nullptr, "GetRelatedState"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -39,7 +39,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetInputSourceState"},
-            {1, nullptr, "GetTriggerTargetEvent"},
+            {1, nullptr, "GetTriggerTargetEvent"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -51,7 +51,7 @@ public:
     explicit INS_S(Core::System& system_) : ServiceFramework{system_, "ins:s"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, nullptr, "GetNotifyEvent"},
+            {0, nullptr, "GetNotifyEvent"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -78,7 +78,7 @@ public:
             {12, nullptr, "GetIsBatteryEnoughForFullAwake"},
             {13, nullptr, "GetIsCharging"},
             {14, nullptr, "Cmd14"},
-            {15, nullptr, "Cmd15"},
+            {15, nullptr, "Cmd15"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -95,7 +95,7 @@ public:
             {2, nullptr, "SetClockRate"},
             {3, nullptr, "SetBridgePowerSupply"},
             {4, nullptr, "Cmd4"},
-            {5, nullptr, "Cmd5"},
+            {5, nullptr, "Cmd5"}
         };
         // clang-format on
         RegisterHandlers(functions);

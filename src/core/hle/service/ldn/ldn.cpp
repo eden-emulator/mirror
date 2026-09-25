@@ -23,7 +23,7 @@ public:
         : ServiceFramework{system_, "IClientProcessMonitor"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, D<&IClientProcessMonitor::RegisterClient>, "RegisterClient"},
+            {0, D<&IClientProcessMonitor::RegisterClient>, "RegisterClient"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -125,7 +125,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, C<&ISfServiceCreator::CreateNetworkService>, "CreateNetworkService"},
-            {8, C<&ISfServiceCreator::CreateNetworkServiceMonitor>, "CreateNetworkServiceMonitor"},
+            {8, C<&ISfServiceCreator::CreateNetworkServiceMonitor>, "CreateNetworkServiceMonitor"}
         };
         // clang-format on
 
@@ -158,7 +158,7 @@ public:
     explicit ISfMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "lp2p:m"} {
         // clang-format off
         static const FunctionInfo functions[] = {
-            {0, C<&ISfMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"},
+            {0, C<&ISfMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
         };
         // clang-format on
 

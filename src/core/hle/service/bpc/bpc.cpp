@@ -32,7 +32,7 @@ public:
             {12, nullptr, "GetLastEnabledWakeupTimerType"},
             {13, nullptr, "CleanAllWakeupTimers"},
             {14, nullptr, "GetPowerButton"},
-            {15, nullptr, "SetEnableWakeupTimer"},
+            {15, nullptr, "SetEnableWakeupTimer"}
         };
         // clang-format on
 
@@ -49,7 +49,7 @@ public:
             {1, nullptr, "SetRtcTime"},
             {2, nullptr, "GetRtcResetDetected"},
             {3, nullptr, "ClearRtcResetDetected"},
-            {4, nullptr, "SetUpRtcResetOnShutdown"},
+            {4, nullptr, "SetUpRtcResetOnShutdown"}
         };
         // clang-format on
 
@@ -67,7 +67,7 @@ public:
             {2, nullptr, "GetWakeupReason"},
             {3, nullptr, "GetShutdownReason"},
             {4, nullptr, "GetAcOk"},
-            {5, nullptr, "GetPowerEvent"},
+            {5, nullptr, "GetPowerEvent"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -80,7 +80,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, nullptr, "GetSleepButtonState"},
-            {1, nullptr, "GetPowerButtonEvent"},
+            {1, nullptr, "GetPowerButtonEvent"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -94,7 +94,7 @@ public:
         static const FunctionInfo functions[] = {
             {0, nullptr, "CreateWakeupTimer"},
             {1, nullptr, "CancelWakeupTimer"},
-            {2, nullptr, "EnableWakeupTimerOnDevice"},
+            {2, nullptr, "EnableWakeupTimerOnDevice"}
         };
         // clang-format on
         RegisterHandlers(functions);
@@ -107,7 +107,7 @@ public:
         // clang-format off
         static const FunctionInfo functions[] = {
             {65000, nullptr, "RebootToFatalError"},
-            {65001, nullptr, "SetRebootPayload"},
+            {65001, nullptr, "SetRebootPayload"}
         };
         // clang-format on
         RegisterHandlers(functions);
