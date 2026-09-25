@@ -21,7 +21,9 @@ namespace Service::Friend {
 class IFriendService final : public ServiceFramework<IFriendService> {
 public:
     explicit IFriendService(Core::System& system_)
-        : ServiceFramework{system_, "IFriendService"}, service_context{system, "IFriendService"} {}
+        : ServiceFramework{system_, "IFriendService"}, service_context{system, "IFriendService"} {
+        completion_event = service_context.CreateEvent("IFriendService:CompletionEvent");
+    }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
@@ -137,12 +139,7 @@ public:
             FunctionInfo{40100, nullptr, "DeleteFriendListCache"},
             FunctionInfo{40400, nullptr, "DeleteBlockedUserListCache"},
             FunctionInfo{49900, nullptr, "DeleteNetworkServiceAccountCache"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
-
-        completion_event = service_context.CreateEvent("IFriendService:CompletionEvent");
+        );
     }
 
     ~IFriendService() override {
@@ -376,20 +373,17 @@ private:
 class INotificationService final : public ServiceFramework<INotificationService> {
 public:
     explicit INotificationService(Core::System& system_, Common::UUID uuid_)
-        : ServiceFramework{system_, "INotificationService"}, uuid{uuid_},
-          service_context{system_, "INotificationService"} {}
+        : ServiceFramework{system_, "INotificationService"}, uuid{uuid_}
+        , service_context{system_, "INotificationService"} {
+        notification_event = service_context.CreateEvent("INotificationService:NotifyEvent");
+    }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, &INotificationService::GetEvent, "GetEvent"},
             FunctionInfo{1, &INotificationService::Clear, "Clear"},
             FunctionInfo{2, &INotificationService::Pop, "Pop"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
-
-        notification_event = service_context.CreateEvent("INotificationService:NotifyEvent");
+        );
     }
 
     ~INotificationService() override {
@@ -503,12 +497,13 @@ class IServiceForApplication final : public ServiceFramework<IServiceForApplicat
 public:
     explicit IServiceForApplication(Core::System& system_)
         : ServiceFramework{system_, "nd:app"}
-    {
-        static const FunctionInfo functions[] = {
+    {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetReceivableNeighborInfoCountMax"},
             FunctionInfo{10, nullptr, "IsNeighborDetectionEnabled"}
-        };
-        RegisterHandlers(functions);
+        );
     }
 };
 
@@ -516,8 +511,10 @@ class IServiceForSystem final : public ServiceFramework<IServiceForSystem> {
 public:
     explicit IServiceForSystem(Core::System& system_)
         : ServiceFramework{system_, "nd:sys"}
-    {
-        static const FunctionInfo functions[] = {
+    {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, nullptr, "GetReceivableNeighborInfoCountMax"},
             FunctionInfo{10, nullptr, "IsNeighborDetectionEnabled"},
             FunctionInfo{200, nullptr, "SetSystemData"},
@@ -555,8 +552,7 @@ public:
             FunctionInfo{310, nullptr, "SetApplicationDataForDebug"},
             FunctionInfo{400, nullptr, "GetNetworkUserId"},
             FunctionInfo{401, nullptr, "DeleteNetworkUserId"}
-        };
-        RegisterHandlers(functions);
+        );
     }
 };
 

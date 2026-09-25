@@ -154,8 +154,8 @@ public:
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
-            {0 , nullptr, "Match"},
-            {1 , nullptr, "Filter"},
+            FunctionInfo{0, nullptr, "Match"},
+            FunctionInfo{1, nullptr, "Filter"},
             FunctionInfo{100, nullptr, "ConfigureAutoUpdateSetting"},
             FunctionInfo{101, nullptr, "RequestResourceUpdateCheck"},
             FunctionInfo{110, nullptr, "Reload"},
@@ -212,7 +212,7 @@ public:
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
-            {0 , D<&IUserService::Cmd0>, "Cmd0"}
+            FunctionInfo{0, D<&IUserService::Cmd0>, "Cmd0"}
         );
     }
     Result Cmd0(u32 unk0, OutInterface<IUserShimScopedObject> out_interface) {
@@ -257,7 +257,7 @@ public:
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
-            {0 , D<&ISystemService::Cmd0>, "Cmd0"}
+            FunctionInfo{0, D<&ISystemService::Cmd0>, "Cmd0"}
         );
     }
     Result Cmd0(OutInterface<ISystemShimScopedObject> out_interface) {

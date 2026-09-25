@@ -277,7 +277,8 @@ public:
 class IOAuthProcedureForExternalNsa final : public ServiceFramework<IOAuthProcedureForExternalNsa> {
 public:
     explicit IOAuthProcedureForExternalNsa(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IOAuthProcedureForExternalNsa"} {}
+        : ServiceFramework{system_, "IOAuthProcedureForExternalNsa"}
+    {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
@@ -295,11 +296,11 @@ public:
     }
 };
 
-class IOAuthProcedureForNintendoAccountLinkage final
-    : public ServiceFramework<IOAuthProcedureForNintendoAccountLinkage> {
+class IOAuthProcedureForNintendoAccountLinkage final : public ServiceFramework<IOAuthProcedureForNintendoAccountLinkage> {
 public:
     explicit IOAuthProcedureForNintendoAccountLinkage(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IOAuthProcedureForNintendoAccountLinkage"} {}
+        : ServiceFramework{system_, "IOAuthProcedureForNintendoAccountLinkage"}
+    {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
@@ -315,7 +316,7 @@ public:
             FunctionInfo{210, nullptr, "IsProfileAvailable"}, // 17.0.0+
             FunctionInfo{220, nullptr, "RegisterUserAsyncWithoutProfile"}, // 17.0.0+
             FunctionInfo{221, nullptr, "RegisterUserWithProfileAsync"}, // 17.0.0+
-            FunctionInfo{230, nullptr, "RegisterUserWithLargeImageProfileAsync"}, // 18.0.0+
+            FunctionInfo{230, nullptr, "RegisterUserWithLargeImageProfileAsync"} // 18.0.0+
         );
     }
 };
@@ -630,7 +631,7 @@ public:
             FunctionInfo{14, nullptr, "GetNickname"},
             FunctionInfo{15, nullptr, "GetProfileImage"},
             FunctionInfo{16, nullptr, "GetProfileLargeImage"}, // 18.0.0+
-            FunctionInfo{21, nullptr, "LoadIdTokenCache"}, // 3.0.0+
+            FunctionInfo{21, nullptr, "LoadIdTokenCache"} // 3.0.0+
         );
     }
 };
@@ -1222,11 +1223,9 @@ public:
             FunctionInfo{0, nullptr, "EnsureCacheAsync"},
             FunctionInfo{1, nullptr, "LoadCache"},
             FunctionInfo{2, nullptr, "GetDeviceAccountId"},
-            FunctionInfo{50, nullptr, "RegisterNotificationTokenAsync"},   // 1.0.0 - 6.2.0
-            FunctionInfo{51, nullptr, "UnregisterNotificationTokenAsync"}, // 1.0.0 - 6.2.0
-        };
-        // clang-format on
-        RegisterHandlers(functions);
+            FunctionInfo{50, nullptr, "RegisterNotificationTokenAsync"}, // 1.0.0 - 6.2.0
+            FunctionInfo{51, nullptr, "UnregisterNotificationTokenAsync"} // 1.0.0 - 6.2.0
+        );
     }
     ~ACC_AA() override = default;
 };
@@ -1427,83 +1426,83 @@ public:
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
-            { 0, nullptr, "GetUserCount"},
-            { 1, nullptr, "GetUserExistence"},
-            { 2, nullptr, "ListAllUsers"},
-            { 3, nullptr, "ListOpenUsers"},
-            { 4, nullptr, "GetLastOpenedUser"},
-            { 5, nullptr, "GetProfile"},
-            { 6, nullptr, "GetProfileDigest"},
-            { 50, nullptr, "IsUserRegistrationRequestPermitted"},
-            { 51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
-            { 52, nullptr, "TrySelectUserWithoutInteraction"},
-            { 99, nullptr, "DebugActivateOpenContextRetention"},
-            { 100, nullptr, "GetUserRegistrationNotifier"},
-            { 101, nullptr, "GetUserStateChangeNotifier"},
-            { 102, nullptr, "GetBaasAccountManagerForSystemService"},
-            { 103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
-            { 104, nullptr, "GetProfileUpdateNotifier"},
-            { 105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
-            { 106, nullptr, "GetProfileSyncNotifier"},
-            { 110, nullptr, "StoreSaveDataThumbnail"},
-            { 111, nullptr, "ClearSaveDataThumbnail"},
-            { 112, nullptr, "LoadSaveDataThumbnail"},
-            { 113, nullptr, "GetSaveDataThumbnailExistence"},
-            { 120, nullptr, "ListOpenUsersInApplication"},
-            { 130, nullptr, "ActivateOpenContextRetention"},
-            { 140, nullptr, "ListQualifiedUsers"},
-            { 151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
-            { 152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
-            { 170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
-            { 191, nullptr, "UpdateNotificationReceiverInfo"},
-            { 200, nullptr, "BeginUserRegistration"},
-            { 201, nullptr, "CompleteUserRegistration"},
-            { 202, nullptr, "CancelUserRegistration"},
-            { 203, nullptr, "DeleteUser"},
-            { 204, nullptr, "SetUserPosition"},
-            { 205, nullptr, "GetProfileEditor"},
-            { 206, nullptr, "CompleteUserRegistrationForcibly"},
-            { 210, nullptr, "CreateFloatingRegistrationRequest"},
-            { 211, nullptr, "CreateProcedureToRegisterUserWithNintendoAccount"},
-            { 212, nullptr, "ResumeProcedureToRegisterUserWithNintendoAccount"},
-            { 213, nullptr, "CreateProcedureToCreateUserWithNintendoAccount"},
-            { 214, nullptr, "ResumeProcedureToCreateUserWithNintendoAccount"},
-            { 215, nullptr, "ResumeProcedureToCreateUserWithNintendoAccountAfterApplyResponse"},
-            { 230, nullptr, "AuthenticateServiceAsync"},
-            { 250, nullptr, "GetBaasAccountAdministrator"},
-            { 251, nullptr, "SynchronizeNetworkServiceAccountsSnapshotAsync"},
-            { 290, nullptr, "ProxyProcedureForGuestLoginWithNintendoAccount"},
-            { 291, nullptr, "ProxyProcedureForFloatingRegistrationWithNintendoAccount"},
-            { 292, nullptr, "ProxyProcedureForDeviceMigrationAuthenticatingOperatingUser"},
-            { 293, nullptr, "ProxyProcedureForDeviceMigrationDownload"},
-            { 299, nullptr, "SuspendBackgroundDaemon"},
-            { 350, nullptr, "CreateDeviceMigrationUserExportRequest"},
-            { 351, nullptr, "UploadNasCredential"},
-            { 352, nullptr, "CreateDeviceMigrationUserImportRequest"},
-            { 353, nullptr, "DeleteUserMigrationSaveData"},
-            { 400, nullptr, "SetPinCode"},
-            { 401, nullptr, "GetPinCodeLength"},
-            { 402, nullptr, "GetPinCode"},
-            { 403, nullptr, "GetPinCodeParity"},
-            { 404, nullptr, "VerifyPinCode"},
-            { 405, nullptr, "IsPinCodeVerificationForbidden"},
-            { 410, nullptr, "GetPinCodeErrorCount"},
-            { 411, nullptr, "ResetPinCodeErrorCount"},
-            { 412, nullptr, "IncrementPinCodeErrorCount"},
-            { 413, nullptr, "SetPinCodeErrorCount"},
-            { 420, nullptr, "SetStartPenaltyTime"},
-            { 421, nullptr, "GetStartPenaltyTime"},
-            { 900, nullptr, "SetUserUnqualifiedForDebug"},
-            { 901, nullptr, "UnsetUserUnqualifiedForDebug"},
-            { 902, nullptr, "ListUsersUnqualifiedForDebug"},
-            { 910, nullptr, "RefreshFirmwareSettingsForDebug"},
-            { 997, nullptr, "DebugInvalidateTokenCacheForUser"},
-            { 998, nullptr, "DebugSetUserStateClose"},
-            { 999, nullptr, "DebugSetUserStateOpen"},
-            { 1000, nullptr, "CreateIAccountEntityServiceForApplication"},
-            { 1100, nullptr, "CreateIUserStateManager"},
-            { 10050, nullptr, "IsUserRegistrationRequestPermittedForAccountPolicy"},
-            { 10105, nullptr, "CheckNetworkServiceAvailabilityAsyncForAccountPolicy"}
+            FunctionInfo{ 0, nullptr, "GetUserCount"},
+            FunctionInfo{ 1, nullptr, "GetUserExistence"},
+            FunctionInfo{ 2, nullptr, "ListAllUsers"},
+            FunctionInfo{ 3, nullptr, "ListOpenUsers"},
+            FunctionInfo{ 4, nullptr, "GetLastOpenedUser"},
+            FunctionInfo{ 5, nullptr, "GetProfile"},
+            FunctionInfo{ 6, nullptr, "GetProfileDigest"},
+            FunctionInfo{ 50, nullptr, "IsUserRegistrationRequestPermitted"},
+            FunctionInfo{ 51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
+            FunctionInfo{ 52, nullptr, "TrySelectUserWithoutInteraction"},
+            FunctionInfo{ 99, nullptr, "DebugActivateOpenContextRetention"},
+            FunctionInfo{ 100, nullptr, "GetUserRegistrationNotifier"},
+            FunctionInfo{ 101, nullptr, "GetUserStateChangeNotifier"},
+            FunctionInfo{ 102, nullptr, "GetBaasAccountManagerForSystemService"},
+            FunctionInfo{ 103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
+            FunctionInfo{ 104, nullptr, "GetProfileUpdateNotifier"},
+            FunctionInfo{ 105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
+            FunctionInfo{ 106, nullptr, "GetProfileSyncNotifier"},
+            FunctionInfo{ 110, nullptr, "StoreSaveDataThumbnail"},
+            FunctionInfo{ 111, nullptr, "ClearSaveDataThumbnail"},
+            FunctionInfo{ 112, nullptr, "LoadSaveDataThumbnail"},
+            FunctionInfo{ 113, nullptr, "GetSaveDataThumbnailExistence"},
+            FunctionInfo{ 120, nullptr, "ListOpenUsersInApplication"},
+            FunctionInfo{ 130, nullptr, "ActivateOpenContextRetention"},
+            FunctionInfo{ 140, nullptr, "ListQualifiedUsers"},
+            FunctionInfo{ 151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
+            FunctionInfo{ 152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
+            FunctionInfo{ 170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
+            FunctionInfo{ 191, nullptr, "UpdateNotificationReceiverInfo"},
+            FunctionInfo{ 200, nullptr, "BeginUserRegistration"},
+            FunctionInfo{ 201, nullptr, "CompleteUserRegistration"},
+            FunctionInfo{ 202, nullptr, "CancelUserRegistration"},
+            FunctionInfo{ 203, nullptr, "DeleteUser"},
+            FunctionInfo{ 204, nullptr, "SetUserPosition"},
+            FunctionInfo{ 205, nullptr, "GetProfileEditor"},
+            FunctionInfo{ 206, nullptr, "CompleteUserRegistrationForcibly"},
+            FunctionInfo{ 210, nullptr, "CreateFloatingRegistrationRequest"},
+            FunctionInfo{ 211, nullptr, "CreateProcedureToRegisterUserWithNintendoAccount"},
+            FunctionInfo{ 212, nullptr, "ResumeProcedureToRegisterUserWithNintendoAccount"},
+            FunctionInfo{ 213, nullptr, "CreateProcedureToCreateUserWithNintendoAccount"},
+            FunctionInfo{ 214, nullptr, "ResumeProcedureToCreateUserWithNintendoAccount"},
+            FunctionInfo{ 215, nullptr, "ResumeProcedureToCreateUserWithNintendoAccountAfterApplyResponse"},
+            FunctionInfo{ 230, nullptr, "AuthenticateServiceAsync"},
+            FunctionInfo{ 250, nullptr, "GetBaasAccountAdministrator"},
+            FunctionInfo{ 251, nullptr, "SynchronizeNetworkServiceAccountsSnapshotAsync"},
+            FunctionInfo{ 290, nullptr, "ProxyProcedureForGuestLoginWithNintendoAccount"},
+            FunctionInfo{ 291, nullptr, "ProxyProcedureForFloatingRegistrationWithNintendoAccount"},
+            FunctionInfo{ 292, nullptr, "ProxyProcedureForDeviceMigrationAuthenticatingOperatingUser"},
+            FunctionInfo{ 293, nullptr, "ProxyProcedureForDeviceMigrationDownload"},
+            FunctionInfo{ 299, nullptr, "SuspendBackgroundDaemon"},
+            FunctionInfo{ 350, nullptr, "CreateDeviceMigrationUserExportRequest"},
+            FunctionInfo{ 351, nullptr, "UploadNasCredential"},
+            FunctionInfo{ 352, nullptr, "CreateDeviceMigrationUserImportRequest"},
+            FunctionInfo{ 353, nullptr, "DeleteUserMigrationSaveData"},
+            FunctionInfo{ 400, nullptr, "SetPinCode"},
+            FunctionInfo{ 401, nullptr, "GetPinCodeLength"},
+            FunctionInfo{ 402, nullptr, "GetPinCode"},
+            FunctionInfo{ 403, nullptr, "GetPinCodeParity"},
+            FunctionInfo{ 404, nullptr, "VerifyPinCode"},
+            FunctionInfo{ 405, nullptr, "IsPinCodeVerificationForbidden"},
+            FunctionInfo{ 410, nullptr, "GetPinCodeErrorCount"},
+            FunctionInfo{ 411, nullptr, "ResetPinCodeErrorCount"},
+            FunctionInfo{ 412, nullptr, "IncrementPinCodeErrorCount"},
+            FunctionInfo{ 413, nullptr, "SetPinCodeErrorCount"},
+            FunctionInfo{ 420, nullptr, "SetStartPenaltyTime"},
+            FunctionInfo{ 421, nullptr, "GetStartPenaltyTime"},
+            FunctionInfo{ 900, nullptr, "SetUserUnqualifiedForDebug"},
+            FunctionInfo{ 901, nullptr, "UnsetUserUnqualifiedForDebug"},
+            FunctionInfo{ 902, nullptr, "ListUsersUnqualifiedForDebug"},
+            FunctionInfo{ 910, nullptr, "RefreshFirmwareSettingsForDebug"},
+            FunctionInfo{ 997, nullptr, "DebugInvalidateTokenCacheForUser"},
+            FunctionInfo{ 998, nullptr, "DebugSetUserStateClose"},
+            FunctionInfo{ 999, nullptr, "DebugSetUserStateOpen"},
+            FunctionInfo{ 1000, nullptr, "CreateIAccountEntityServiceForApplication"},
+            FunctionInfo{ 1100, nullptr, "CreateIUserStateManager"},
+            FunctionInfo{ 10050, nullptr, "IsUserRegistrationRequestPermittedForAccountPolicy"},
+            FunctionInfo{ 10105, nullptr, "CheckNetworkServiceAvailabilityAsyncForAccountPolicy"}
         );
     }
 };

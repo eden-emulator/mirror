@@ -178,19 +178,15 @@ class INotificationSystemEventAccessor final
     : public ServiceFramework<INotificationSystemEventAccessor> {
 public:
     explicit INotificationSystemEventAccessor(Core::System& system_)
-        : ServiceFramework{system_, "INotificationSystemEventAccessor"},
-          service_context{system_, "INotificationSystemEventAccessor"} {}
+        : ServiceFramework{system_, "INotificationSystemEventAccessor"}
+        , service_context{system_, "INotificationSystemEventAccessor"} {
+        notification_event = service_context.CreateEvent("INotificationSystemEventAccessor:NotificationEvent");
+    }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
             FunctionInfo{0, D<&INotificationSystemEventAccessor::GetSystemEvent>, "GetSystemEvent"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
-
-        notification_event =
-            service_context.CreateEvent("INotificationSystemEventAccessor:NotificationEvent");
+        );
     }
 
     ~INotificationSystemEventAccessor() {

@@ -24,8 +24,10 @@ namespace Service::NIM {
 class IShopServiceAsync final : public ServiceFramework<IShopServiceAsync> {
 public:
     explicit IShopServiceAsync(Core::System& system_)
-        : ServiceFramework{system_, "IShopServiceAsync"},
-          service_context{system_, "IShopServiceAsync"} {}
+        : ServiceFramework{system_, "IShopServiceAsync"}
+        , service_context{system_, "IShopServiceAsync"} {
+        completion_event = service_context.CreateEvent("IShopServiceAsync:Completion");
+    }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
@@ -35,12 +37,7 @@ public:
             FunctionInfo{3, D<&IShopServiceAsync::GetErrorCode>, "GetErrorCode"},
             FunctionInfo{4, D<&IShopServiceAsync::Request>, "Request"},
             FunctionInfo{5, D<&IShopServiceAsync::Prepare>, "Prepare"}
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
-
-        completion_event = service_context.CreateEvent("IShopServiceAsync:Completion");
+        );
     }
 
     ~IShopServiceAsync() override {
@@ -409,7 +406,7 @@ public:
             FunctionInfo{2050, nullptr, "Unknown2050"}, //20.0.0+
             FunctionInfo{2051, nullptr, "Unknown2051"}, //20.0.0+
             FunctionInfo{3000, nullptr, "RequestLatestApplicationIcon"}, //17.0.0+
-            FunctionInfo{3001, nullptr, "RequestDownloadIdbeLatestIconFile"}, //17.0.0+
+            FunctionInfo{3001, nullptr, "RequestDownloadIdbeLatestIconFile"} //17.0.0+
         );
     }
 };

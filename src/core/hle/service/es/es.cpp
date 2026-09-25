@@ -18,7 +18,10 @@ constexpr Result ERROR_INVALID_RIGHTS_ID{ErrorModule::ETicket, 3};
 
 class ETicket final : public ServiceFramework<ETicket> {
 public:
-    explicit ETicket(Core::System& system_) : ServiceFramework{system_, "es"} {}
+    explicit ETicket(Core::System& system_) : ServiceFramework{system_, "es"} {
+        keys.PopulateTickets();
+        keys.SynthesizeTickets();
+    }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key,
@@ -116,12 +119,7 @@ public:
             FunctionInfo{2601, nullptr, "Unknown2601"},
             FunctionInfo{3001, nullptr, "Unknown3001"},
             FunctionInfo{3002, nullptr, "Unknown3002"}
-        };
-        // clang-format on
-        RegisterHandlers(functions);
-
-        keys.PopulateTickets();
-        keys.SynthesizeTickets();
+        );
     }
 
 private:

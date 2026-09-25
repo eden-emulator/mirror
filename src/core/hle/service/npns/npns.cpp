@@ -88,7 +88,7 @@ public:
             FunctionInfo{303, nullptr, "GetNotificationHistories"}, // 18.0.0+
             FunctionInfo{304, nullptr, "GetPersistentConnectionSummary"}, // 18.0.0+
             FunctionInfo{305, nullptr, "GetDigitalTwinSummary"}, // 18.0.0+
-            FunctionInfo{306, nullptr, "GetDigitalTwinValue"}, // 18.0.0+
+            FunctionInfo{306, nullptr, "GetDigitalTwinValue"} // 18.0.0+
         );
     }
 
