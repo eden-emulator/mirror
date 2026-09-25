@@ -44,10 +44,6 @@ class SettingsSubscreenActivity : AppCompatActivity() {
 
     private val args by navArgs<SettingsSubscreenActivityArgs>()
 
-    override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(YuzuApplication.applyLanguage(base))
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeHelper.setTheme(this)
 
