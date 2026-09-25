@@ -94,7 +94,7 @@ LaunchParams ParseLaunchParams(Core::System& system, int argc, char *argv[], wch
                 break;
             case 'u': {
                 // Launch game with a specific user
-                bool argument_ok = isdigit(optarg[0]);
+                bool argument_ok = bool(isdigit(optarg[0]));
                 p.selected_user = atoi(optarg);
                 if (!argument_ok) {
                     // try to look it up by username, only finds the first username that matches.
