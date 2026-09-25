@@ -112,6 +112,12 @@ public:
 
     u64 CurrentTick();
 
+    u64 RenderPassSerial() const noexcept;
+
+    u64 WaitForIdleSerial() const noexcept;
+
+    void MarkRenderPassWrites() noexcept;
+
     u64 KnownGpuTick();
 
     void Wait(u64 buffer_tick);

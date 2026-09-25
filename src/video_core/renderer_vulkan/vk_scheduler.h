@@ -9,6 +9,7 @@
 #include <condition_variable>
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <thread>
 #include <utility>
@@ -75,6 +76,25 @@ public:
     /// Returns true when a render pass is currently active in the scheduler state.
     bool IsRenderPassActive() const {
         return state.renderpass != VK_NULL_HANDLE;
+    }
+
+    u64 ActiveRenderPassSerial() const noexcept {
+        if (state.renderpass) {
+            return renderpass_serial;
+        }
+        return (std::numeric_limits<u64>::max)();
+    }
+
+    u64 WaitForIdleSerial() const noexcept {
+        return wfi_serial;
+    }
+
+    void NotifyWaitForIdle() noexcept {
+        ++wfi_serial;
+    }
+
+    void MarkRenderPassWrites() noexcept {
+        renderpass_writes = true;
     }
 
     /// Update the pipeline to the current execution context.
@@ -311,6 +331,9 @@ private:
 
     State state;
 
+    u64 renderpass_serial = 0;
+    u64 wfi_serial = 0;
+    bool renderpass_writes = false;
     u32 num_renderpass_images = 0;
     std::array<VkImage, 9> renderpass_images{};
     std::array<VkImageSubresourceRange, 9> renderpass_image_ranges{};

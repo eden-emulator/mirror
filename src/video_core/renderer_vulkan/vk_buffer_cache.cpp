@@ -440,6 +440,18 @@ u64 BufferCacheRuntime::CurrentTick() {
     return scheduler.GetMasterSemaphore().CurrentTick();
 }
 
+u64 BufferCacheRuntime::RenderPassSerial() const noexcept {
+    return scheduler.ActiveRenderPassSerial();
+}
+
+u64 BufferCacheRuntime::WaitForIdleSerial() const noexcept {
+    return scheduler.WaitForIdleSerial();
+}
+
+void BufferCacheRuntime::MarkRenderPassWrites() noexcept {
+    scheduler.MarkRenderPassWrites();
+}
+
 u64 BufferCacheRuntime::KnownGpuTick() {
     return scheduler.GetMasterSemaphore().KnownGpuTick();
 }

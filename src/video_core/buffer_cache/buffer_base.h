@@ -137,6 +137,22 @@ public:
         content_serial = ++next_content_serial;
     }
 
+    [[nodiscard]] bool HasDrawHazard(u64 pass, u64 wfi, DAddr addr, u64 size) const noexcept {
+        return draw_write_pass == pass && draw_write_wfi < wfi && addr < draw_write_end &&
+               addr + size > draw_write_begin;
+    }
+
+    void MarkDrawWrite(u64 pass, u64 wfi, DAddr addr, u64 size) noexcept {
+        if (draw_write_pass != pass) {
+            draw_write_pass = pass;
+            draw_write_begin = addr;
+            draw_write_end = addr + size;
+        }
+        draw_write_wfi = wfi;
+        draw_write_begin = (std::min)(draw_write_begin, addr);
+        draw_write_end = (std::max)(draw_write_end, addr + size);
+    }
+
 private:
     static inline u64 next_content_serial = 0;
 
@@ -147,6 +163,10 @@ private:
     size_t size_bytes = 0;
     u64 write_tick = 0;
     u64 content_serial = ++next_content_serial;
+    u64 draw_write_pass = 0;
+    u64 draw_write_wfi = 0;
+    DAddr draw_write_begin = 0;
+    DAddr draw_write_end = 0;
 };
 
 } // namespace VideoCommon

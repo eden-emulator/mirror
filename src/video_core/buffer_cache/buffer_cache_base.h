@@ -260,6 +260,10 @@ public:
 
     void UpdateComputeBuffers();
 
+    [[nodiscard]] bool TakeDrawHazard() noexcept;
+
+    void CommitDrawWrites();
+
     void BindHostGeometryBuffers(bool is_indexed);
 
     void BindHostStageBuffers(size_t stage);
@@ -519,6 +523,17 @@ private:
     std::array<Binding, 32> v_buffer{};
 
     boost::container::small_vector<BufferCopy, 4> upload_copies;
+
+    struct DrawWrite {
+        BufferId buffer_id;
+        DAddr device_addr;
+        u32 size;
+    };
+    boost::container::small_vector<DrawWrite, 8> draw_writes;
+    u64 draw_pass = 0;
+    u64 draw_wfi = 0;
+    bool draw_hazard = false;
+    bool recording_draw = false;
 
     MemoryTracker memory_tracker;
     Common::RangeSet<DAddr> uncommitted_gpu_modified_ranges;

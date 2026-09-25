@@ -98,6 +98,7 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer, VkRenderPass
     state.renderpass = renderpass;
     state.framebuffer = framebuffer_handle;
     state.render_area = render_area;
+    ++renderpass_serial;
 
     if (GPU::Logging::IsActive() && Settings::values.gpu_log_vulkan_calls.GetValue()) {
         const std::string render_pass_info =
@@ -417,8 +418,17 @@ void Scheduler::EndRenderPass()
         Record([num_images = num_renderpass_images,
                        images = renderpass_images,
                        ranges = renderpass_image_ranges,
-                       has_transform_feedback = device.IsExtTransformFeedbackSupported()](
+                       num_memory_barriers =
+                           static_cast<size_t>(std::exchange(renderpass_writes, false))](
                           vk::CommandBuffer cmdbuf) {
+            static constexpr VkMemoryBarrier2 WRITE_BARRIER{
+                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+                .pNext = nullptr,
+                .srcStageMask = VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+                .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+                .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
+            };
             std::array<VkImageMemoryBarrier2, 9> barriers;
             for (size_t i = 0; i < num_images; ++i) {
                 const VkImageSubresourceRange& range = ranges[i];
@@ -459,20 +469,8 @@ void Scheduler::EndRenderPass()
                 };
             }
             cmdbuf.EndRenderPass();
-            cmdbuf.PipelineBarrier(0, {}, {}, vk::Span(barriers.data(), num_images));
-            if (has_transform_feedback) {
-                static constexpr VkMemoryBarrier2 XFB_OUTPUT_BARRIER{
-                    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-                    .pNext = nullptr,
-                    .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT,
-                    .srcAccessMask = VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT,
-                    .dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT
-                                    | VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                    .dstAccessMask = VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT
-                                     | VK_ACCESS_2_TRANSFER_READ_BIT,
-                };
-                cmdbuf.PipelineBarrier(XFB_OUTPUT_BARRIER);
-            }
+            cmdbuf.PipelineBarrier(0, vk::Span(&WRITE_BARRIER, num_memory_barriers), {},
+                                   vk::Span(barriers.data(), num_images));
         });
 
         state.renderpass = VkRenderPass{};

@@ -366,11 +366,36 @@ void BufferCache<P>::DisableGraphicsUniformBuffer(size_t stage, u32 index) {
 
 template <class P>
 void BufferCache<P>::UpdateGraphicsBuffers(bool is_indexed) {
+    if constexpr (!IS_OPENGL) {
+        draw_writes.clear();
+        draw_pass = runtime.RenderPassSerial();
+        draw_wfi = runtime.WaitForIdleSerial();
+        draw_hazard = false;
+        recording_draw = true;
+    }
     ReclaimInline();
     do {
         channel_state->has_deleted_buffers = false;
         DoUpdateGraphicsBuffers(is_indexed);
     } while (channel_state->has_deleted_buffers);
+}
+
+template <class P>
+bool BufferCache<P>::TakeDrawHazard() noexcept {
+    return std::exchange(draw_hazard, false);
+}
+
+template <class P>
+void BufferCache<P>::CommitDrawWrites() {
+    recording_draw = false;
+    if (draw_writes.empty()) {
+        return;
+    }
+    const u64 pass = runtime.RenderPassSerial();
+    for (const DrawWrite& write : draw_writes) {
+        slot_buffers[write.buffer_id].MarkDrawWrite(pass, draw_wfi, write.device_addr, write.size);
+    }
+    runtime.MarkRenderPassWrites();
 }
 
 template <class P>
@@ -1550,6 +1575,9 @@ void BufferCache<P>::MarkWrittenBuffer(BufferId buffer_id, DAddr device_addr, u3
         Buffer& buffer = slot_buffers[buffer_id];
         buffer.setWriteTick(runtime.CurrentTick());
         buffer.MarkContentModified();
+        if (recording_draw) {
+            draw_writes.push_back({buffer_id, device_addr, size});
+        }
     }
     memory_tracker.MarkRegionAsGpuModified(device_addr, size);
     gpu_modified_ranges.Add(device_addr, size);
@@ -1770,6 +1798,9 @@ void BufferCache<P>::TouchBuffer(Buffer& buffer, BufferId buffer_id) noexcept {
 
 template <class P>
 bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 size) {
+    if constexpr (!IS_OPENGL) {
+        draw_hazard |= buffer.HasDrawHazard(draw_pass, draw_wfi, device_addr, size);
+    }
     upload_copies.clear();
     u64 total_size_bytes = 0;
     u64 largest_copy = 0;

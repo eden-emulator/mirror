@@ -595,7 +595,11 @@ bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
         }
     }
 
+    if (buffer_cache.TakeDrawHazard()) {
+        scheduler.RequestOutsideRenderPassOperationContext();
+    }
     scheduler.RequestRenderpass(texture_cache.GetFramebuffer());
+    buffer_cache.CommitDrawWrites();
     if (!is_built.load(std::memory_order::relaxed)) {
         // Wait for the pipeline to be built
         scheduler.Record([this](vk::CommandBuffer) {

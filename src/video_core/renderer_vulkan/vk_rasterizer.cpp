@@ -894,6 +894,7 @@ void RasterizerVulkan::FlushAndInvalidateRegion(DAddr addr, u64 size,
 
 void RasterizerVulkan::WaitForIdle() {
     query_cache.NotifyWFI();
+    scheduler.NotifyWaitForIdle();
     fence_manager.SignalOrdering();
 }
 
