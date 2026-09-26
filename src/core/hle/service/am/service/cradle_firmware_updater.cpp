@@ -6,6 +6,18 @@
 
 namespace Service::AM {
 
+    ServiceFrameworkBase::FunctionInfoBase const* ICradleFirmwareUpdater::FindRequest(u32 key) {
+        static constexpr auto functions = CreateStaticMap(
+            FunctionInfo{0, D<&ICradleFirmwareUpdater::StartUpdate>, "StartUpdate"},
+            FunctionInfo{1, D<&ICradleFirmwareUpdater::FinishUpdate>, "FinishUpdate"},
+            FunctionInfo{2, D<&ICradleFirmwareUpdater::GetCradleDeviceInfo>, "GetCradleDeviceInfo"},
+            FunctionInfo{3, D<&ICradleFirmwareUpdater::GetCradleDeviceInfoChangeEvent>, "GetCradleDeviceInfoChangeEvent"},
+            FunctionInfo{4, nullptr, "GetUpdateProgressInfo"},
+            FunctionInfo{5, nullptr, "GetLastInternalResult"}
+        );
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+
 ICradleFirmwareUpdater::ICradleFirmwareUpdater(Core::System& system_)
     : ServiceFramework{system_, "ICradleFirmwareUpdater"},
       m_context{system, "ICradleFirmwareUpdater"}, m_cradle_device_info_event{m_context} {

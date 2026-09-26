@@ -11,6 +11,17 @@
 
 namespace Service::News {
 
+ServiceFrameworkBase::FunctionInfoBase const* IServiceCreator::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IServiceCreator::CreateNewsService>, "CreateNewsService"},
+        FunctionInfo{1, D<&IServiceCreator::CreateNewlyArrivedEventHolder>, "CreateNewlyArrivedEventHolder"},
+        FunctionInfo{2, D<&IServiceCreator::CreateNewsDataService>, "CreateNewsDataService"},
+        FunctionInfo{3, D<&IServiceCreator::CreateNewsDatabaseService>, "CreateNewsDatabaseService"},
+        FunctionInfo{4, D<&IServiceCreator::CreateOverwriteEventHolder>, "CreateOverwriteEventHolder"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IServiceCreator::IServiceCreator(Core::System& system_, u32 permissions_, const char* name_)
     : ServiceFramework{system_, name_}, permissions{permissions_} {
 }

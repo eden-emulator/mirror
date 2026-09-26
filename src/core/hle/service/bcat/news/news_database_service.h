@@ -50,18 +50,7 @@ private:
                    InBuffer<BufferAttr_HipcPointer> order_by_phrase,
                    s32 offset);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&INewsDatabaseService::GetListV1>, "GetListV1"},
-        FunctionInfo{1, D<&INewsDatabaseService::Count>, "Count"},
-        FunctionInfo{2, D<&INewsDatabaseService::CountWithKey>, "CountWithKey"},
-        FunctionInfo{3, D<&INewsDatabaseService::UpdateIntegerValue>, "UpdateIntegerValue"},
-        FunctionInfo{4, D<&INewsDatabaseService::UpdateIntegerValueWithAddition>, "UpdateIntegerValueWithAddition"},
-        FunctionInfo{5, D<&INewsDatabaseService::UpdateStringValue>, "UpdateStringValue"},
-        FunctionInfo{1000, D<&INewsDatabaseService::GetList>, "GetList"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
 };
 
 } // namespace Service::News

@@ -7,6 +7,20 @@
 
 namespace Service::LDN {
 
+ServiceFrameworkBase::FunctionInfoBase const* IMonitorService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IMonitorService::GetStateForMonitor>, "GetStateForMonitor"},
+        FunctionInfo{1, nullptr, "GetNetworkInfoForMonitor"},
+        FunctionInfo{2, nullptr, "GetIpv4AddressForMonitor"},
+        FunctionInfo{3, nullptr, "GetDisconnectReasonForMonitor"},
+        FunctionInfo{4, nullptr, "GetSecurityParameterForMonitor"},
+        FunctionInfo{5, nullptr, "GetNetworkConfigForMonitor"},
+        FunctionInfo{100, C<&IMonitorService::InitializeMonitor>, "InitializeMonitor"},
+        FunctionInfo{101, C<&IMonitorService::FinalizeMonitor>, "FinalizeMonitor"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IMonitorService::IMonitorService(Core::System& system_)
     : ServiceFramework{system_, "IMonitorService"} {
 }

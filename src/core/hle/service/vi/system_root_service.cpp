@@ -11,6 +11,14 @@
 
 namespace Service::VI {
 
+ServiceFrameworkBase::FunctionInfoBase const* ISystemRootService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{1, C<&ISystemRootService::GetDisplayService>, "GetDisplayService"},
+        FunctionInfo{3, nullptr, "GetDisplayServiceWithProxyNameExchange"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 ISystemRootService::ISystemRootService(Core::System& system_, std::shared_ptr<Container> container)
     : ServiceFramework{system_, "vi:s"}, m_container{std::move(container)}
 {}

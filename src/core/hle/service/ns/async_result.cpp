@@ -8,6 +8,15 @@
 
 namespace Service::NS {
 
+ServiceFrameworkBase::FunctionInfoBase const* IAsyncResult::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Get"},
+        FunctionInfo{1, D<&IAsyncResult::Cancel>, "Cancel"},
+        FunctionInfo{2, nullptr, "GetErrorContext"} // 4.0.0+
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IAsyncResult::IAsyncResult(Core::System& system_, Service::Event* event_)
     : ServiceFramework{system_, "nn::ns::detail::IAsyncResult"}, event{event_} {
 }

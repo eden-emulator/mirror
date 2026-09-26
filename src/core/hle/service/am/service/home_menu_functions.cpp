@@ -14,6 +14,27 @@
 
 namespace Service::AM {
 
+ServiceFrameworkBase::FunctionInfoBase const* IHomeMenuFunctions::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{10, D<&IHomeMenuFunctions::RequestToGetForeground>, "RequestToGetForeground"},
+        FunctionInfo{11, D<&IHomeMenuFunctions::LockForeground>, "LockForeground"},
+        FunctionInfo{12, D<&IHomeMenuFunctions::UnlockForeground>, "UnlockForeground"},
+        FunctionInfo{20, D<&IHomeMenuFunctions::PopFromGeneralChannel>, "PopFromGeneralChannel"},
+        FunctionInfo{21, D<&IHomeMenuFunctions::GetPopFromGeneralChannelEvent>, "GetPopFromGeneralChannelEvent"},
+        FunctionInfo{30, nullptr, "GetHomeButtonWriterLockAccessor"},
+        FunctionInfo{31, nullptr, "GetWriterLockAccessorEx"},
+        FunctionInfo{40, D<&IHomeMenuFunctions::IsSleepEnabled>, "IsSleepEnabled"},
+        FunctionInfo{41, D<&IHomeMenuFunctions::IsRebootEnabled>, "IsRebootEnabled"},
+        FunctionInfo{50, nullptr, "LaunchSystemApplet"},
+        FunctionInfo{51, nullptr, "LaunchStarter"},
+        FunctionInfo{100, nullptr, "PopRequestLaunchApplicationForDebug"},
+        FunctionInfo{110, D<&IHomeMenuFunctions::IsForceTerminateApplicationDisabledForDebug>, "IsForceTerminateApplicationDisabledForDebug"},
+        FunctionInfo{200, nullptr, "LaunchDevMenu"},
+        FunctionInfo{1000, nullptr, "SetLastApplicationExitReason"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IHomeMenuFunctions::IHomeMenuFunctions(Core::System& system_, std::shared_ptr<Applet> applet,
                                        WindowSystem& window_system)
     : ServiceFramework{system_, "IHomeMenuFunctions"}, m_window_system{window_system},

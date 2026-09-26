@@ -65,29 +65,8 @@ private:
     void SetupSAndP();
     Result GetStaticService(OutInterface<StaticService> out_service, StaticServiceSetupInfo setup_info, const char* name);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0,   D<&ServiceManager::GetStaticServiceAsUser>, "GetStaticServiceAsUser"},
-        FunctionInfo{5,   D<&ServiceManager::GetStaticServiceAsAdmin>, "GetStaticServiceAsAdmin"},
-        FunctionInfo{6,   D<&ServiceManager::GetStaticServiceAsRepair>, "GetStaticServiceAsRepair"},
-        FunctionInfo{9,   D<&ServiceManager::GetStaticServiceAsServiceManager>, "GetStaticServiceAsServiceManager"},
-        FunctionInfo{10,  D<&ServiceManager::SetupStandardSteadyClockCore>, "SetupStandardSteadyClockCore"},
-        FunctionInfo{11,  D<&ServiceManager::SetupStandardLocalSystemClockCore>, "SetupStandardLocalSystemClockCore"},
-        FunctionInfo{12,  D<&ServiceManager::SetupStandardNetworkSystemClockCore>, "SetupStandardNetworkSystemClockCore"},
-        FunctionInfo{13,  D<&ServiceManager::SetupStandardUserSystemClockCore>, "SetupStandardUserSystemClockCore"},
-        FunctionInfo{14,  D<&ServiceManager::SetupTimeZoneServiceCore>, "SetupTimeZoneServiceCore"},
-        FunctionInfo{15,  D<&ServiceManager::SetupEphemeralNetworkSystemClockCore>, "SetupEphemeralNetworkSystemClockCore"},
-        FunctionInfo{50,  D<&ServiceManager::GetStandardLocalClockOperationEvent>, "GetStandardLocalClockOperationEvent"},
-        FunctionInfo{51,  D<&ServiceManager::GetStandardNetworkClockOperationEventForServiceManager>, "GetStandardNetworkClockOperationEventForServiceManager"},
-        FunctionInfo{52,  D<&ServiceManager::GetEphemeralNetworkClockOperationEventForServiceManager>, "GetEphemeralNetworkClockOperationEventForServiceManager"},
-        FunctionInfo{60,  D<&ServiceManager::GetStandardUserSystemClockAutomaticCorrectionUpdatedEvent>, "GetStandardUserSystemClockAutomaticCorrectionUpdatedEvent"},
-        FunctionInfo{100, D<&ServiceManager::SetStandardSteadyClockBaseTime>, "SetStandardSteadyClockBaseTime"},
-        FunctionInfo{200, D<&ServiceManager::GetClosestAlarmUpdatedEvent>, "GetClosestAlarmUpdatedEvent"},
-        FunctionInfo{201, D<&ServiceManager::CheckAndSignalAlarms>, "CheckAndSignalAlarms"},
-        FunctionInfo{202, D<&ServiceManager::GetClosestAlarmInfo>, "GetClosestAlarmInfo "}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
+
     std::shared_ptr<TimeManager> m_time;
     ServerManager& m_server_manager;
     bool m_is_s_and_p_setup{};

@@ -26,30 +26,28 @@ namespace Service::HID {
 // (15ms, 66Hz)
 constexpr auto hidbus_update_ns = std::chrono::nanoseconds{15 * 1000 * 1000};
 
+ServiceFrameworkBase::FunctionInfoBase const* Hidbus::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{1, C<&Hidbus::GetBusHandle>, "GetBusHandle"},
+        FunctionInfo{2, C<&Hidbus::IsExternalDeviceConnected>, "IsExternalDeviceConnected"},
+        FunctionInfo{3, C<&Hidbus::Initialize>, "Initialize"},
+        FunctionInfo{4, C<&Hidbus::Finalize>, "Finalize"},
+        FunctionInfo{5, C<&Hidbus::EnableExternalDevice>, "EnableExternalDevice"},
+        FunctionInfo{6, C<&Hidbus::GetExternalDeviceId>, "GetExternalDeviceId"},
+        FunctionInfo{7, C<&Hidbus::SendCommandAsync>, "SendCommandAsync"},
+        FunctionInfo{8, C<&Hidbus::GetSendCommandAsynceResult>, "GetSendCommandAsynceResult"},
+        FunctionInfo{9, C<&Hidbus::SetEventForSendCommandAsycResult>, "SetEventForSendCommandAsycResult"},
+        FunctionInfo{10, C<&Hidbus::GetSharedMemoryHandle>, "GetSharedMemoryHandle"},
+        FunctionInfo{11, C<&Hidbus::EnableJoyPollingReceiveMode>, "EnableJoyPollingReceiveMode"},
+        FunctionInfo{12, C<&Hidbus::DisableJoyPollingReceiveMode>, "DisableJoyPollingReceiveMode"},
+        FunctionInfo{13, nullptr, "GetPollingData"},
+        FunctionInfo{14, C<&Hidbus::SetStatusManagerType>, "SetStatusManagerType"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 Hidbus::Hidbus(Core::System& system_)
     : ServiceFramework{system_, "hidbus"}, service_context{system_, service_name} {
-
-    // clang-format off
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{1, C<&Hidbus::GetBusHandle>, "GetBusHandle"},
-            FunctionInfo{2, C<&Hidbus::IsExternalDeviceConnected>, "IsExternalDeviceConnected"},
-            FunctionInfo{3, C<&Hidbus::Initialize>, "Initialize"},
-            FunctionInfo{4, C<&Hidbus::Finalize>, "Finalize"},
-            FunctionInfo{5, C<&Hidbus::EnableExternalDevice>, "EnableExternalDevice"},
-            FunctionInfo{6, C<&Hidbus::GetExternalDeviceId>, "GetExternalDeviceId"},
-            FunctionInfo{7, C<&Hidbus::SendCommandAsync>, "SendCommandAsync"},
-            FunctionInfo{8, C<&Hidbus::GetSendCommandAsynceResult>, "GetSendCommandAsynceResult"},
-            FunctionInfo{9, C<&Hidbus::SetEventForSendCommandAsycResult>, "SetEventForSendCommandAsycResult"},
-            FunctionInfo{10, C<&Hidbus::GetSharedMemoryHandle>, "GetSharedMemoryHandle"},
-            FunctionInfo{11, C<&Hidbus::EnableJoyPollingReceiveMode>, "EnableJoyPollingReceiveMode"},
-            FunctionInfo{12, C<&Hidbus::DisableJoyPollingReceiveMode>, "DisableJoyPollingReceiveMode"},
-            FunctionInfo{13, nullptr, "GetPollingData"},
-            FunctionInfo{14, C<&Hidbus::SetStatusManagerType>, "SetStatusManagerType"}
-    );
-
     // Register update callbacks
     hidbus_update_event = Core::Timing::CreateEvent(
         "Hidbus::UpdateCallback",

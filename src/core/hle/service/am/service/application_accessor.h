@@ -36,37 +36,7 @@ private:
     Result GetNsRightsEnvironmentHandle(Out<u64> out_handle);
     Result ReportApplicationExitTimeout();
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IApplicationAccessor::GetAppletStateChangedEvent>, "GetAppletStateChangedEvent"},
-        FunctionInfo{1, nullptr, "IsCompleted"},
-        FunctionInfo{10, D<&IApplicationAccessor::Start>, "Start"},
-        FunctionInfo{20, D<&IApplicationAccessor::RequestExit>, "RequestExit"},
-        FunctionInfo{25, D<&IApplicationAccessor::Terminate>, "Terminate"},
-        FunctionInfo{30, D<&IApplicationAccessor::GetResult>, "GetResult"},
-        FunctionInfo{101, D<&IApplicationAccessor::RequestForApplicationToGetForeground>, "RequestForApplicationToGetForeground"},
-        FunctionInfo{110, nullptr, "TerminateAllLibraryApplets"},
-        FunctionInfo{111, nullptr, "AreAnyLibraryAppletsLeft"},
-        FunctionInfo{112, D<&IApplicationAccessor::GetCurrentLibraryApplet>, "GetCurrentLibraryApplet"},
-        FunctionInfo{120, nullptr, "GetApplicationId"},
-        FunctionInfo{121, D<&IApplicationAccessor::PushLaunchParameter>, "PushLaunchParameter"},
-        FunctionInfo{122, D<&IApplicationAccessor::GetApplicationControlProperty>, "GetApplicationControlProperty"},
-        FunctionInfo{123, nullptr, "GetApplicationLaunchProperty"},
-        FunctionInfo{124, nullptr, "GetApplicationLaunchRequestInfo"},
-        FunctionInfo{130, D<&IApplicationAccessor::SetUsers>, "SetUsers"},
-        FunctionInfo{131, D<&IApplicationAccessor::CheckRightsEnvironmentAvailable>, "CheckRightsEnvironmentAvailable"},
-        FunctionInfo{132, D<&IApplicationAccessor::GetNsRightsEnvironmentHandle>, "GetNsRightsEnvironmentHandle"},
-        FunctionInfo{140, nullptr, "GetDesirableUids"},
-        FunctionInfo{150, D<&IApplicationAccessor::ReportApplicationExitTimeout>, "ReportApplicationExitTimeout"},
-        FunctionInfo{160, nullptr, "SetApplicationAttribute"},
-        FunctionInfo{170, nullptr, "HasSaveDataAccessPermission"},
-        FunctionInfo{180, nullptr, "PushToFriendInvitationStorageChannel"},
-        FunctionInfo{190, nullptr, "PushToNotificationStorageChannel"},
-        FunctionInfo{200, nullptr, "RequestApplicationSoftReset"},
-        FunctionInfo{201, nullptr, "RestartApplicationTimer"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     WindowSystem& m_window_system;
     const std::shared_ptr<Applet> m_applet;
 };

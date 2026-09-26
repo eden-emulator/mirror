@@ -1050,13 +1050,7 @@ void IGeneralService::GetCurrentAccessPoint(HLERequestContext& ctx) {
     rb.Push(ResultSuccess);
 }
 
-IGeneralService::IGeneralService(Core::System& system_)
-    : ServiceFramework{system_, "IGeneralService"} {
-    // clang-format off
-
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
+ServiceFrameworkBase::FunctionInfoBase const* IGeneralService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{1, &IGeneralService::GetClientId, "GetClientId"},
         FunctionInfo{2, &IGeneralService::CreateScanRequest, "CreateScanRequest"},
@@ -1108,6 +1102,11 @@ IGeneralService::IGeneralService(Core::System& system_)
         FunctionInfo{51, nullptr, "CreateRewriteRule"}, // 18.0.0+
         FunctionInfo{52, nullptr, "DestroyRewriteRule"} // 18.0.0+
     );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
+IGeneralService::IGeneralService(Core::System& system_)
+    : ServiceFramework{system_, "IGeneralService"} {
 }
 
 IGeneralService::~IGeneralService() = default;

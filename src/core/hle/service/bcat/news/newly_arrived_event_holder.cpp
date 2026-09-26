@@ -6,6 +6,13 @@
 
 namespace Service::News {
 
+ServiceFrameworkBase::FunctionInfoBase const* INewlyArrivedEventHolder::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&INewlyArrivedEventHolder::Get>, "Get"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 INewlyArrivedEventHolder::INewlyArrivedEventHolder(Core::System& system_)
     : ServiceFramework{system_, "INewlyArrivedEventHolder"}
     , service_context{system_, "INewlyArrivedEventHolder"} {

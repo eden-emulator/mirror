@@ -10,6 +10,26 @@
 namespace Service::Audio {
 using namespace AudioCore::Renderer;
 
+ServiceFrameworkBase::FunctionInfoBase const* IAudioRenderer::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IAudioRenderer::GetSampleRate>, "GetSampleRate"},
+        FunctionInfo{1, D<&IAudioRenderer::GetSampleCount>, "GetSampleCount"},
+        FunctionInfo{2, D<&IAudioRenderer::GetMixBufferCount>, "GetMixBufferCount"},
+        FunctionInfo{3, D<&IAudioRenderer::GetState>, "GetState"},
+        FunctionInfo{4, D<&IAudioRenderer::RequestUpdate>, "RequestUpdate"},
+        FunctionInfo{5, D<&IAudioRenderer::Start>, "Start"},
+        FunctionInfo{6, D<&IAudioRenderer::Stop>, "Stop"},
+        FunctionInfo{7, D<&IAudioRenderer::QuerySystemEvent>, "QuerySystemEvent"},
+        FunctionInfo{8, D<&IAudioRenderer::SetRenderingTimeLimit>, "SetRenderingTimeLimit"},
+        FunctionInfo{9, D<&IAudioRenderer::GetRenderingTimeLimit>, "GetRenderingTimeLimit"},
+        FunctionInfo{10, D<&IAudioRenderer::RequestUpdateAuto>, "RequestUpdateAuto"}, //3.0.0+
+        FunctionInfo{11, nullptr, "ExecuteAudioRendererRendering"}, //3.0.0+
+        FunctionInfo{12, D<&IAudioRenderer::SetVoiceDropParameter>, "SetVoiceDropParameter"}, //15.0.0+
+        FunctionInfo{13, D<&IAudioRenderer::GetVoiceDropParameter>, "GetVoiceDropParameter"} //15.0.0+
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IAudioRenderer::IAudioRenderer(Core::System& system_, Manager& manager_,
                                AudioCore::AudioRendererParameterInternal& params,
                                Kernel::KTransferMemory* transfer_memory, u64 transfer_memory_size,

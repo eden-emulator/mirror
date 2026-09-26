@@ -89,6 +89,25 @@ LanguageCode GetLanguageCodeFromIndex(std::size_t index) {
     return available_language_codes.at(index);
 }
 
+ServiceFrameworkBase::FunctionInfoBase const* ISettingsServer::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&ISettingsServer::GetLanguageCode>, "GetLanguageCode"},
+        FunctionInfo{1, C<&ISettingsServer::GetAvailableLanguageCodes>, "GetAvailableLanguageCodes"},
+        FunctionInfo{2, C<&ISettingsServer::MakeLanguageCode>, "MakeLanguageCode"},
+        FunctionInfo{3, C<&ISettingsServer::GetAvailableLanguageCodeCount>, "GetAvailableLanguageCodeCount"},
+        FunctionInfo{4, C<&ISettingsServer::GetRegionCode>, "GetRegionCode"},
+        FunctionInfo{5, C<&ISettingsServer::GetAvailableLanguageCodes2>, "GetAvailableLanguageCodes2"},
+        FunctionInfo{6, C<&ISettingsServer::GetAvailableLanguageCodeCount2>, "GetAvailableLanguageCodeCount2"},
+        FunctionInfo{7, C<&ISettingsServer::GetKeyCodeMap>, "GetKeyCodeMap"},
+        FunctionInfo{8, C<&ISettingsServer::GetQuestFlag>, "GetQuestFlag"},
+        FunctionInfo{9, C<&ISettingsServer::GetKeyCodeMap2>, "GetKeyCodeMap2"},
+        FunctionInfo{10, nullptr, "GetFirmwareVersionForDebug"},
+        FunctionInfo{11, C<&ISettingsServer::GetDeviceNickName>, "GetDeviceNickName"},
+        FunctionInfo{12, C<&ISettingsServer::GetKeyCodeMapByPort>, "GetKeyCodeMapByPort"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 ISettingsServer::ISettingsServer(Core::System& system_) : ServiceFramework{system_, "set"} {
 }
 

@@ -21,6 +21,7 @@ public:
 private:
     Result Initialize(Out<u32> out_value);
     Result GetGroupInfo(OutLargeData<GroupInfo, BufferAttr_HipcAutoSelect> out_group_info);
+    FunctionInfoBase const* FindRequest(u32 key) override;
 };
 
 } // namespace Service::LDN

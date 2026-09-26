@@ -7,6 +7,29 @@
 
 namespace Service::NS {
 
+ServiceFrameworkBase::FunctionInfoBase const* ISystemUpdateInterface::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&ISystemUpdateInterface::GetBackgroundNetworkUpdateState>, "GetBackgroundNetworkUpdateState"},
+        FunctionInfo{1, D<&ISystemUpdateInterface::OpenSystemUpdateControl>, "OpenSystemUpdateControl"},
+        FunctionInfo{2, nullptr, "NotifyExFatDriverRequired"},
+        FunctionInfo{3, nullptr, "ClearExFatDriverStatusForDebug"},
+        FunctionInfo{4, nullptr, "RequestBackgroundNetworkUpdate"},
+        FunctionInfo{5, nullptr, "NotifyBackgroundNetworkUpdate"},
+        FunctionInfo{6, nullptr, "NotifyExFatDriverDownloadedForDebug"},
+        FunctionInfo{9, D<&ISystemUpdateInterface::GetSystemUpdateNotificationEventForContentDelivery>, "GetSystemUpdateNotificationEventForContentDelivery"},
+        FunctionInfo{10, nullptr, "NotifySystemUpdateForContentDelivery"},
+        FunctionInfo{11, nullptr, "PrepareShutdown"},
+        FunctionInfo{12, nullptr, "Unknown12"},
+        FunctionInfo{13, nullptr, "Unknown13"},
+        FunctionInfo{14, nullptr, "Unknown14"},
+        FunctionInfo{15, nullptr, "Unknown15"},
+        FunctionInfo{16, nullptr, "DestroySystemUpdateTask"},
+        FunctionInfo{17, nullptr, "RequestSendSystemUpdate"},
+        FunctionInfo{18, nullptr, "GetSendSystemUpdateProgress"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 ISystemUpdateInterface::ISystemUpdateInterface(Core::System& system_)
     : ServiceFramework{system_, "ns:su"}, service_context{system_, "ns:su"},
       update_notification_event{service_context} {

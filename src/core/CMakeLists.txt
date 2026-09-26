@@ -444,8 +444,6 @@ add_library(core STATIC
     hle/service/am/process_creation.h
     hle/service/am/process_holder.cpp
     hle/service/am/process_holder.h
-    hle/service/am/service/all_system_applet_proxies_service.cpp
-    hle/service/am/service/all_system_applet_proxies_service.h
     hle/service/am/service/applet_common_functions.cpp
     hle/service/am/service/applet_common_functions.h
     hle/service/am/service/application_accessor.cpp
@@ -454,10 +452,6 @@ add_library(core STATIC
     hle/service/am/service/application_creator.h
     hle/service/am/service/application_functions.cpp
     hle/service/am/service/application_functions.h
-    hle/service/am/service/application_proxy.cpp
-    hle/service/am/service/application_proxy.h
-    hle/service/am/service/application_proxy_service.cpp
-    hle/service/am/service/application_proxy_service.h
     hle/service/am/service/audio_controller.cpp
     hle/service/am/service/audio_controller.h
     hle/service/am/service/common_state_getter.cpp
@@ -474,18 +468,8 @@ add_library(core STATIC
     hle/service/am/service/home_menu_functions.h
     hle/service/am/service/library_applet_accessor.cpp
     hle/service/am/service/library_applet_accessor.h
-    hle/service/am/service/library_applet_creator.cpp
-    hle/service/am/service/library_applet_creator.h
-    hle/service/am/service/library_applet_proxy.cpp
-    hle/service/am/service/library_applet_proxy.h
-    hle/service/am/service/library_applet_self_accessor.cpp
-    hle/service/am/service/library_applet_self_accessor.h
-    hle/service/am/service/lock_accessor.cpp
-    hle/service/am/service/lock_accessor.h
     hle/service/am/service/overlay_functions.cpp
     hle/service/am/service/overlay_functions.h
-    hle/service/am/service/overlay_applet_proxy.cpp
-    hle/service/am/service/overlay_applet_proxy.h
     hle/service/am/service/process_winding_controller.cpp
     hle/service/am/service/process_winding_controller.h
     hle/service/am/service/self_controller.cpp
@@ -494,8 +478,6 @@ add_library(core STATIC
     hle/service/am/service/storage.h
     hle/service/am/service/storage_accessor.cpp
     hle/service/am/service/storage_accessor.h
-    hle/service/am/service/system_applet_proxy.cpp
-    hle/service/am/service/system_applet_proxy.h
     hle/service/am/service/window_controller.cpp
     hle/service/am/service/window_controller.h
     hle/service/am/window_system.cpp
@@ -580,16 +562,6 @@ add_library(core STATIC
     hle/service/btdrv/btdrv.h
     hle/service/btm/btm.cpp
     hle/service/btm/btm.h
-    hle/service/btm/btm_debug.cpp
-    hle/service/btm/btm_debug.h
-    hle/service/btm/btm_system.cpp
-    hle/service/btm/btm_system.h
-    hle/service/btm/btm_system_core.cpp
-    hle/service/btm/btm_system_core.h
-    hle/service/btm/btm_user.cpp
-    hle/service/btm/btm_user.h
-    hle/service/btm/btm_user_core.cpp
-    hle/service/btm/btm_user_core.h
     hle/service/caps/caps.cpp
     hle/service/caps/caps.h
     hle/service/caps/caps_a.cpp
@@ -913,8 +885,6 @@ add_library(core STATIC
     hle/service/olsc/native_handle_holder.h
     hle/service/olsc/olsc_service_for_application.cpp
     hle/service/olsc/olsc_service_for_application.h
-    hle/service/olsc/olsc_service_for_system_service.cpp
-    hle/service/olsc/olsc_service_for_system_service.h
     hle/service/olsc/olsc.cpp
     hle/service/olsc/olsc.h
     hle/service/olsc/remote_storage_controller.cpp
@@ -944,14 +914,8 @@ add_library(core STATIC
     hle/service/os/process.h
     hle/service/pcie/pcie.cpp
     hle/service/pcie/pcie.h
-    hle/service/pctl/parental_control_service_factory.cpp
-    hle/service/pctl/parental_control_service_factory.h
-    hle/service/pctl/parental_control_service.cpp
-    hle/service/pctl/parental_control_service.h
     hle/service/pctl/pctl.cpp
     hle/service/pctl/pctl.h
-    hle/service/pctl/pctl_results.h
-    hle/service/pctl/pctl_types.h
     hle/service/pcv/pcv.cpp
     hle/service/pcv/pcv.h
     hle/service/pm/pm.cpp
@@ -971,8 +935,6 @@ add_library(core STATIC
     hle/service/psc/pm_control.h
     hle/service/psc/pm_module.cpp
     hle/service/psc/pm_module.h
-    hle/service/psc/pm_service.cpp
-    hle/service/psc/pm_service.h
     hle/service/psc/psc.cpp
     hle/service/psc/psc.h
     hle/service/psc/time/alarms.cpp

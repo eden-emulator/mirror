@@ -10,27 +10,27 @@
 
 namespace Service::LDN {
 
+ServiceFrameworkBase::FunctionInfoBase const* ISfServiceMonitor::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&ISfServiceMonitor::Initialize>, "Initialize"},
+        FunctionInfo{256, nullptr, "AttachNetworkInterfaceStateChangeEvent"},
+        FunctionInfo{264, nullptr, "GetNetworkInterfaceLastError"},
+        FunctionInfo{272, nullptr, "GetRole"},
+        FunctionInfo{280, nullptr, "GetAdvertiseData"},
+        FunctionInfo{281, nullptr, "GetAdvertiseData2"},
+        FunctionInfo{288, C<&ISfServiceMonitor::GetGroupInfo>, "GetGroupInfo"},
+        FunctionInfo{296, nullptr, "GetGroupInfo2"},
+        FunctionInfo{304, nullptr, "GetGroupOwner"},
+        FunctionInfo{312, nullptr, "GetIpConfig"},
+        FunctionInfo{320, nullptr, "GetLinkLevel"},
+        FunctionInfo{328, nullptr, "AttachJoinEvent"},
+        FunctionInfo{336, nullptr, "GetMembers"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 ISfServiceMonitor::ISfServiceMonitor(Core::System& system_)
     : ServiceFramework{system_, "ISfServiceMonitor"} {
-    // clang-format off
-        FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, C<&ISfServiceMonitor::Initialize>, "Initialize"},
-            FunctionInfo{256, nullptr, "AttachNetworkInterfaceStateChangeEvent"},
-            FunctionInfo{264, nullptr, "GetNetworkInterfaceLastError"},
-            FunctionInfo{272, nullptr, "GetRole"},
-            FunctionInfo{280, nullptr, "GetAdvertiseData"},
-            FunctionInfo{281, nullptr, "GetAdvertiseData2"},
-            FunctionInfo{288, C<&ISfServiceMonitor::GetGroupInfo>, "GetGroupInfo"},
-            FunctionInfo{296, nullptr, "GetGroupInfo2"},
-            FunctionInfo{304, nullptr, "GetGroupOwner"},
-            FunctionInfo{312, nullptr, "GetIpConfig"},
-            FunctionInfo{320, nullptr, "GetLinkLevel"},
-            FunctionInfo{328, nullptr, "AttachJoinEvent"},
-            FunctionInfo{336, nullptr, "GetMembers"}
-        );
 }
 
 ISfServiceMonitor::~ISfServiceMonitor() = default;

@@ -13,6 +13,29 @@
 
 namespace Service::FileSystem {
 
+ServiceFrameworkBase::FunctionInfoBase const* IFileSystem::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IFileSystem::CreateFile>, "CreateFile"},
+        FunctionInfo{1, D<&IFileSystem::DeleteFile>, "DeleteFile"},
+        FunctionInfo{2, D<&IFileSystem::CreateDirectory>, "CreateDirectory"},
+        FunctionInfo{3, D<&IFileSystem::DeleteDirectory>, "DeleteDirectory"},
+        FunctionInfo{4, D<&IFileSystem::DeleteDirectoryRecursively>, "DeleteDirectoryRecursively"},
+        FunctionInfo{5, D<&IFileSystem::RenameFile>, "RenameFile"},
+        FunctionInfo{6, D<&IFileSystem::RenameDirectory>, "RenameDirectory"},
+        FunctionInfo{7, D<&IFileSystem::GetEntryType>, "GetEntryType"},
+        FunctionInfo{8, D<&IFileSystem::OpenFile>, "OpenFile"},
+        FunctionInfo{9, D<&IFileSystem::OpenDirectory>, "OpenDirectory"},
+        FunctionInfo{10, D<&IFileSystem::Commit>, "Commit"},
+        FunctionInfo{11, D<&IFileSystem::GetFreeSpaceSize>, "GetFreeSpaceSize"},
+        FunctionInfo{12, D<&IFileSystem::GetTotalSpaceSize>, "GetTotalSpaceSize"},
+        FunctionInfo{13, D<&IFileSystem::CleanDirectoryRecursively>, "CleanDirectoryRecursively"},
+        FunctionInfo{14, D<&IFileSystem::GetFileTimeStampRaw>, "GetFileTimeStampRaw"},
+        FunctionInfo{15, nullptr, "QueryEntry"},
+        FunctionInfo{16, D<&IFileSystem::GetFileSystemAttribute>, "GetFileSystemAttribute"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IFileSystem::IFileSystem(Core::System& system_, FileSys::VirtualDir dir_, SizeGetter size_getter_)
     : ServiceFramework{system_, "IFileSystem"}, backend{std::make_unique<FileSys::Fsa::IFileSystem>(
                                                     dir_)},

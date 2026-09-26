@@ -8,21 +8,21 @@
 
 namespace Service::NS {
 
+ServiceFrameworkBase::FunctionInfoBase const* IFactoryResetInterface::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{100, nullptr, "ResetToFactorySettings"},
+        FunctionInfo{101, nullptr, "ResetToFactorySettingsWithoutUserSaveData"},
+        FunctionInfo{102, nullptr, "ResetToFactorySettingsForRefurbishment"},
+        FunctionInfo{103, nullptr, "ResetToFactorySettingsWithPlatformRegion"},
+        FunctionInfo{104, nullptr, "ResetToFactorySettingsWithPlatformRegionAuthentication"},
+        FunctionInfo{105, nullptr, "RequestResetToFactorySettingsSecurely"},
+        FunctionInfo{106, nullptr, "RequestResetToFactorySettingsWithPlatformRegionAuthenticationSecurely"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IFactoryResetInterface::IFactoryResetInterface(Core::System& system_)
     : ServiceFramework{system_, "IFactoryResetInterface"} {
-    // clang-format off
-        FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{100, nullptr, "ResetToFactorySettings"},
-            FunctionInfo{101, nullptr, "ResetToFactorySettingsWithoutUserSaveData"},
-            FunctionInfo{102, nullptr, "ResetToFactorySettingsForRefurbishment"},
-            FunctionInfo{103, nullptr, "ResetToFactorySettingsWithPlatformRegion"},
-            FunctionInfo{104, nullptr, "ResetToFactorySettingsWithPlatformRegionAuthentication"},
-            FunctionInfo{105, nullptr, "RequestResetToFactorySettingsSecurely"},
-            FunctionInfo{106, nullptr, "RequestResetToFactorySettingsWithPlatformRegionAuthenticationSecurely"}
-        );
 }
 
 IFactoryResetInterface::~IFactoryResetInterface() = default;

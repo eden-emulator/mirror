@@ -12,6 +12,19 @@
 
 namespace Service::Capture {
 
+ServiceFrameworkBase::FunctionInfoBase const* IScreenShotService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{201, nullptr, "SaveScreenShot"},
+        FunctionInfo{202, nullptr, "SaveEditedScreenShot"},
+        FunctionInfo{203, C<&IScreenShotService::SaveScreenShotEx0>, "SaveScreenShotEx0"},
+        FunctionInfo{204, nullptr, "SaveEditedScreenShotEx0"},
+        FunctionInfo{206, C<&IScreenShotService::SaveEditedScreenShotEx1>, "SaveEditedScreenShotEx1"},
+        FunctionInfo{208, nullptr, "SaveScreenShotOfMovieEx1"},
+        FunctionInfo{1000, nullptr, "Unknown1000"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IScreenShotService::IScreenShotService(Core::System& system_,
                                        std::shared_ptr<AlbumManager> album_manager)
     : ServiceFramework{system_, "caps:ss"}, manager{album_manager} {

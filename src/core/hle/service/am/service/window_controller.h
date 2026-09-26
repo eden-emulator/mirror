@@ -26,19 +26,7 @@ private:
     Result SetAppletWindowVisibility(bool visible);
     Result SetAppletGpuTimeSlice(s64 time_slice);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "CreateWindow"},
-        FunctionInfo{1,  D<&IWindowController::GetAppletResourceUserId>, "GetAppletResourceUserId"},
-        FunctionInfo{2,  D<&IWindowController::GetAppletResourceUserIdOfCallerApplet>, "GetAppletResourceUserIdOfCallerApplet"},
-        FunctionInfo{10, D<&IWindowController::AcquireForegroundRights>, "AcquireForegroundRights"},
-        FunctionInfo{11, D<&IWindowController::ReleaseForegroundRights>, "ReleaseForegroundRights"},
-        FunctionInfo{12, D<&IWindowController::RejectToChangeIntoBackground>, "RejectToChangeIntoBackground"},
-        FunctionInfo{20, D<&IWindowController::SetAppletWindowVisibility>, "SetAppletWindowVisibility"},
-        FunctionInfo{21, D<&IWindowController::SetAppletGpuTimeSlice>, "SetAppletGpuTimeSlice"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     WindowSystem& m_window_system;
     const std::shared_ptr<Applet> m_applet;
 };

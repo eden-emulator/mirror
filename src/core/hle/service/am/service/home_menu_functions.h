@@ -34,26 +34,7 @@ private:
     Result IsForceTerminateApplicationDisabledForDebug(
         Out<bool> out_is_force_terminate_application_disabled_for_debug);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{10, D<&IHomeMenuFunctions::RequestToGetForeground>, "RequestToGetForeground"},
-        FunctionInfo{11, D<&IHomeMenuFunctions::LockForeground>, "LockForeground"},
-        FunctionInfo{12, D<&IHomeMenuFunctions::UnlockForeground>, "UnlockForeground"},
-        FunctionInfo{20, D<&IHomeMenuFunctions::PopFromGeneralChannel>, "PopFromGeneralChannel"},
-        FunctionInfo{21, D<&IHomeMenuFunctions::GetPopFromGeneralChannelEvent>, "GetPopFromGeneralChannelEvent"},
-        FunctionInfo{30, nullptr, "GetHomeButtonWriterLockAccessor"},
-        FunctionInfo{31, nullptr, "GetWriterLockAccessorEx"},
-        FunctionInfo{40, D<&IHomeMenuFunctions::IsSleepEnabled>, "IsSleepEnabled"},
-        FunctionInfo{41, D<&IHomeMenuFunctions::IsRebootEnabled>, "IsRebootEnabled"},
-        FunctionInfo{50, nullptr, "LaunchSystemApplet"},
-        FunctionInfo{51, nullptr, "LaunchStarter"},
-        FunctionInfo{100, nullptr, "PopRequestLaunchApplicationForDebug"},
-        FunctionInfo{110, D<&IHomeMenuFunctions::IsForceTerminateApplicationDisabledForDebug>, "IsForceTerminateApplicationDisabledForDebug"},
-        FunctionInfo{200, nullptr, "LaunchDevMenu"},
-        FunctionInfo{1000, nullptr, "SetLastApplicationExitReason"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     WindowSystem& m_window_system;
     const std::shared_ptr<Applet> m_applet;
     KernelHelpers::ServiceContext m_context;

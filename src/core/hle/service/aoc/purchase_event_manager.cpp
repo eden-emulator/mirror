@@ -11,21 +11,20 @@ namespace Service::AOC {
 
 constexpr Result ResultNoPurchasedProductInfoAvailable{ErrorModule::NIMShop, 400};
 
-IPurchaseEventManager::IPurchaseEventManager(Core::System& system_)
-    : ServiceFramework{system_, "IPurchaseEventManager"}, service_context{system,
-                                                                          "IPurchaseEventManager"} {
-    // clang-format off
-        FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
+ServiceFrameworkBase::FunctionInfoBase const* IPurchaseEventManager::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, D<&IPurchaseEventManager::SetDefaultDeliveryTarget>, "SetDefaultDeliveryTarget"},
-            FunctionInfo{1, D<&IPurchaseEventManager::SetDeliveryTarget>, "SetDeliveryTarget"},
-            FunctionInfo{2, D<&IPurchaseEventManager::GetPurchasedEvent>, "GetPurchasedEvent"},
-            FunctionInfo{3, D<&IPurchaseEventManager::PopPurchasedProductInfo>, "PopPurchasedProductInfo"},
-            FunctionInfo{4, D<&IPurchaseEventManager::PopPurchasedProductInfoWithUid>, "PopPurchasedProductInfoWithUid"}
-        );
+        FunctionInfo{0, D<&IPurchaseEventManager::SetDefaultDeliveryTarget>, "SetDefaultDeliveryTarget"},
+        FunctionInfo{1, D<&IPurchaseEventManager::SetDeliveryTarget>, "SetDeliveryTarget"},
+        FunctionInfo{2, D<&IPurchaseEventManager::GetPurchasedEvent>, "GetPurchasedEvent"},
+        FunctionInfo{3, D<&IPurchaseEventManager::PopPurchasedProductInfo>, "PopPurchasedProductInfo"},
+        FunctionInfo{4, D<&IPurchaseEventManager::PopPurchasedProductInfoWithUid>, "PopPurchasedProductInfoWithUid"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
 
+IPurchaseEventManager::IPurchaseEventManager(Core::System& system_)
+    : ServiceFramework{system_, "IPurchaseEventManager"}
+    , service_context{system, "IPurchaseEventManager"} {
     purchased_event = service_context.CreateEvent("IPurchaseEventManager:PurchasedEvent");
 }
 

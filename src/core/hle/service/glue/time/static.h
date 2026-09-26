@@ -69,12 +69,11 @@ public:
     Result CalculateSpanBetween(Out<s64> out_time, InClockSnapshot a, InClockSnapshot b);
 
 private:
-    Core::System& m_system;
+    FunctionInfoBase const* FindRequest(u32 key) override;
 
     std::shared_ptr<Service::Set::ISystemSettingsServer> m_set_sys;
     std::shared_ptr<Service::PSC::Time::ServiceManager> m_time_m;
     std::shared_ptr<Service::PSC::Time::StaticService> m_wrapped_service;
-
     Service::PSC::Time::StaticServiceSetupInfo m_setup_info;
     std::shared_ptr<Service::PSC::Time::StaticService> m_time_sm;
     std::shared_ptr<Service::PSC::Time::TimeZoneService> m_time_zone;

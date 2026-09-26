@@ -33,25 +33,7 @@ private:
         AlbumFileDateTime end_date_time, ClientAppletResourceUserId aruid,
         OutArray<ApplicationAlbumEntry, BufferAttr_HipcMapAlias> out_entries);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{32, C<&IAlbumApplicationService::SetShimLibraryVersion>, "SetShimLibraryVersion"},
-        FunctionInfo{102, C<&IAlbumApplicationService::GetAlbumFileList0AafeAruidDeprecated>, "GetAlbumFileList0AafeAruidDeprecated"},
-        FunctionInfo{103, nullptr, "DeleteAlbumFileByAruid"},
-        FunctionInfo{104, nullptr, "GetAlbumFileSizeByAruid"},
-        FunctionInfo{105, nullptr, "DeleteAlbumFileByAruidForDebug"},
-        FunctionInfo{110, nullptr, "LoadAlbumScreenShotImageByAruid"},
-        FunctionInfo{120, nullptr, "LoadAlbumScreenShotThumbnailImageByAruid"},
-        FunctionInfo{130, nullptr, "PrecheckToCreateContentsByAruid"},
-        FunctionInfo{140, nullptr, "GetAlbumFileList1AafeAruidDeprecated"},
-        FunctionInfo{141, nullptr, "GetAlbumFileList2AafeUidAruidDeprecated"},
-        FunctionInfo{142, C<&IAlbumApplicationService::GetAlbumFileList3AaeAruid>, "GetAlbumFileList3AaeAruid"},
-        FunctionInfo{143, nullptr, "GetAlbumFileList4AaeUidAruid"},
-        FunctionInfo{144, nullptr, "GetAllAlbumFileList3AaeAruid"},
-        FunctionInfo{60002, nullptr, "OpenAccessorSessionForApplication"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     std::shared_ptr<AlbumManager> manager = nullptr;
 };
 

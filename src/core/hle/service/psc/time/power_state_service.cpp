@@ -9,20 +9,19 @@
 
 namespace Service::PSC::Time {
 
+ServiceFrameworkBase::FunctionInfoBase const* IPowerStateRequestHandler::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IPowerStateRequestHandler::GetPowerStateRequestEventReadableHandle>, "GetPowerStateRequestEventReadableHandle"},
+        FunctionInfo{1, D<&IPowerStateRequestHandler::GetAndClearPowerStateRequest>, "GetAndClearPowerStateRequest"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IPowerStateRequestHandler::IPowerStateRequestHandler(
     Core::System& system_, PowerStateRequestManager& power_state_request_manager)
     : ServiceFramework{system_, "time:p"}
     , m_power_state_request_manager{power_state_request_manager}
-{
-    // clang-format off
-        FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, D<&IPowerStateRequestHandler::GetPowerStateRequestEventReadableHandle>, "GetPowerStateRequestEventReadableHandle"},
-            FunctionInfo{1, D<&IPowerStateRequestHandler::GetAndClearPowerStateRequest>, "GetAndClearPowerStateRequest"}
-        );
-}
+{}
 
 Result IPowerStateRequestHandler::GetPowerStateRequestEventReadableHandle(
     OutCopyHandle<Kernel::KReadableEvent> out_event) {

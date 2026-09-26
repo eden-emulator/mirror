@@ -22,6 +22,13 @@
 
 namespace Service::Mii {
 
+ServiceFrameworkBase::FunctionInfoBase const* IStaticService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IStaticService::GetDatabaseService>, "GetDatabaseService"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 class IDatabaseService final : public ServiceFramework<IDatabaseService> {
 public:
     explicit IDatabaseService(Core::System& system_, std::shared_ptr<MiiManager> mii_manager, bool is_system_)

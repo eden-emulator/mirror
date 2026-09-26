@@ -6,14 +6,318 @@
 
 #include <memory>
 
+#include "common/logging.h"
+#include "core/hle/service/cmif_serialization.h"
+#include "core/hle/service/set/system_settings_server.h"
+#include "core/hle/service/sm/sm.h"
 #include "core/hle/service/btm/btm.h"
-#include "core/hle/service/btm/btm_debug.h"
-#include "core/hle/service/btm/btm_system.h"
-#include "core/hle/service/btm/btm_user.h"
 #include "core/hle/service/server_manager.h"
 #include "core/hle/service/service.h"
 
+namespace Kernel {
+class KEvent;
+class KReadableEvent;
+} // namespace Kernel
+
+namespace Core {
+class System;
+}
+
+namespace Service::Set {
+class ISystemSettingsServer;
+}
+
 namespace Service::BTM {
+
+class IBtmSystemCore final : public ServiceFramework<IBtmSystemCore> {
+public:
+    explicit IBtmSystemCore(Core::System& system_)
+        : ServiceFramework{system_, "IBtmSystemCore"}, service_context{system_, "IBtmSystemCore"} {
+        radio_event = service_context.CreateEvent("IBtmSystemCore:RadioEvent");
+        audio_device_connection_event = service_context.CreateEvent("IBtmSystemCore:AudioDeviceConnectionEvent");
+        m_set_sys = system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);
+    }
+
+    ~IBtmSystemCore() override {
+        service_context.CloseEvent(radio_event);
+        service_context.CloseEvent(audio_device_connection_event);
+    }
+
+    Result StartGamepadPairing() {
+        LOG_WARNING(Service_BTM, "(STUBBED) called");
+        R_SUCCEED();
+    }
+
+    Result CancelGamepadPairing() {
+        LOG_WARNING(Service_BTM, "(STUBBED) called");
+        R_SUCCEED();
+    }
+
+    Result EnableRadio() {
+        LOG_DEBUG(Service_BTM, "called");
+
+        R_RETURN(m_set_sys->SetBluetoothEnableFlag(true));
+    }
+    Result DisableRadio() {
+        LOG_DEBUG(Service_BTM, "called");
+
+        R_RETURN(m_set_sys->SetBluetoothEnableFlag(false));
+    }
+
+    Result IsRadioEnabled(Out<bool> out_is_enabled) {
+        LOG_DEBUG(Service_BTM, "called");
+
+        R_RETURN(m_set_sys->GetBluetoothEnableFlag(out_is_enabled));
+    }
+
+    Result AcquireRadioEvent(Out<bool> out_is_valid,
+                                            OutCopyHandle<Kernel::KReadableEvent> out_event) {
+        LOG_WARNING(Service_BTM, "(STUBBED) called");
+
+        *out_is_valid = true;
+        *out_event = &radio_event->GetReadableEvent();
+        R_SUCCEED();
+    }
+
+    Result GetDiscoveredAudioDevice(OutArray<std::array<u8, 0xFF>, BufferAttr_HipcPointer> out_audio_devices, s32 count, Out<s32> out_total) {
+        LOG_WARNING(Service_BTM, "(STUBBED) called");
+        R_SUCCEED();
+    }
+
+    Result AcquireAudioDeviceConnectionEvent(
+        OutCopyHandle<Kernel::KReadableEvent> out_event) {
+        LOG_WARNING(Service_BTM, "(STUBBED) called");
+
+        *out_event = &audio_device_connection_event->GetReadableEvent();
+        R_SUCCEED();
+    }
+
+    Result GetConnectedAudioDevices(
+        Out<s32> out_count, OutArray<std::array<u8, 0xFF>, BufferAttr_HipcPointer> out_audio_devices) {
+        LOG_WARNING(Service_BTM, "(STUBBED) called");
+
+        *out_count = 0;
+        R_SUCCEED();
+    }
+
+    Result GetPairedAudioDevices(
+        Out<s32> out_count, OutArray<std::array<u8, 0xFF>, BufferAttr_HipcPointer> out_audio_devices) {
+        LOG_WARNING(Service_BTM, "(STUBBED) called");
+
+        *out_count = 0;
+        R_SUCCEED();
+    }
+
+    Result RequestAudioDeviceConnectionRejection(ClientAppletResourceUserId aruid) {
+        LOG_WARNING(Service_BTM, "(STUBBED) called, applet_resource_user_id={}", aruid.pid);
+        R_SUCCEED();
+    }
+
+    Result CancelAudioDeviceConnectionRejection(ClientAppletResourceUserId aruid) {
+        LOG_WARNING(Service_BTM, "(STUBBED) called, applet_resource_user_id={}", aruid.pid);
+        R_SUCCEED();
+    }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IBtmSystemCore::StartGamepadPairing>, "StartGamepadPairing"},
+        FunctionInfo{1, C<&IBtmSystemCore::CancelGamepadPairing>, "CancelGamepadPairing"},
+        FunctionInfo{2, nullptr, "ClearGamepadPairingDatabase"},
+        FunctionInfo{3, nullptr, "GetPairedGamepadCount"},
+        FunctionInfo{4, C<&IBtmSystemCore::EnableRadio>, "EnableRadio"},
+        FunctionInfo{5, C<&IBtmSystemCore::DisableRadio>, "DisableRadio"},
+        FunctionInfo{6, C<&IBtmSystemCore::IsRadioEnabled>, "IsRadioEnabled"},
+        FunctionInfo{7, C<&IBtmSystemCore::AcquireRadioEvent>, "AcquireRadioEvent"},
+        FunctionInfo{8, nullptr, "AcquireGamepadPairingEvent"},
+        FunctionInfo{9, nullptr, "IsGamepadPairingStarted"},
+        FunctionInfo{10, nullptr, "StartAudioDeviceDiscovery"},
+        FunctionInfo{11, nullptr, "StopAudioDeviceDiscovery"},
+        FunctionInfo{12, nullptr, "IsDiscoveryingAudioDevice"},
+        FunctionInfo{13, C<&IBtmSystemCore::GetDiscoveredAudioDevice>, "GetDiscoveredAudioDevice"},
+        FunctionInfo{14, C<&IBtmSystemCore::AcquireAudioDeviceConnectionEvent>, "AcquireAudioDeviceConnectionEvent"},
+        FunctionInfo{15, nullptr, "ConnectAudioDevice"},
+        FunctionInfo{16, nullptr, "IsConnectingAudioDevice"},
+        FunctionInfo{17, C<&IBtmSystemCore::GetConnectedAudioDevices>, "GetConnectedAudioDevices"},
+        FunctionInfo{18, nullptr, "DisconnectAudioDevice"},
+        FunctionInfo{19, nullptr, "AcquirePairedAudioDeviceInfoChangedEvent"},
+        FunctionInfo{20, C<&IBtmSystemCore::GetPairedAudioDevices>, "GetPairedAudioDevices"},
+        FunctionInfo{21, nullptr, "RemoveAudioDevicePairing"},
+        FunctionInfo{22, C<&IBtmSystemCore::RequestAudioDeviceConnectionRejection>, "RequestAudioDeviceConnectionRejection"},
+        FunctionInfo{23, C<&IBtmSystemCore::CancelAudioDeviceConnectionRejection>, "CancelAudioDeviceConnectionRejection"}
+    );
+    KernelHelpers::ServiceContext service_context;
+    Kernel::KEvent* radio_event;
+    Kernel::KEvent* audio_device_connection_event;
+    std::shared_ptr<Service::Set::ISystemSettingsServer> m_set_sys;
+};
+
+class IBtmSystem final : public ServiceFramework<IBtmSystem> {
+public:
+    explicit IBtmSystem(Core::System& system_) : ServiceFramework{system_, "btm:sys"} {}
+    ~IBtmSystem() override = default;
+
+    Result GetCore(OutInterface<IBtmSystemCore> out_interface) {
+        LOG_WARNING(Service_BTM, "called");
+
+        *out_interface = std::make_shared<IBtmSystemCore>(system);
+        R_SUCCEED();
+    }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IBtmSystem::GetCore>, "GetCore"}
+    );
+};
+
+class IBtmUserCore final : public ServiceFramework<IBtmUserCore> {
+public:
+    explicit IBtmUserCore(Core::System& system_)
+        : ServiceFramework{system_, "IBtmUserCore"}, service_context{system_, "IBtmUserCore"} {
+        scan_event = service_context.CreateEvent("IBtmUserCore:ScanEvent");
+        connection_event = service_context.CreateEvent("IBtmUserCore:ConnectionEvent");
+        service_discovery_event = service_context.CreateEvent("IBtmUserCore:DiscoveryEvent");
+        config_event = service_context.CreateEvent("IBtmUserCore:ConfigEvent");
+    }
+
+    ~IBtmUserCore() override {
+        service_context.CloseEvent(scan_event);
+        service_context.CloseEvent(connection_event);
+        service_context.CloseEvent(service_discovery_event);
+        service_context.CloseEvent(config_event);
+    }
+
+    Result AcquireBleScanEvent(Out<bool> out_is_valid,
+                                            OutCopyHandle<Kernel::KReadableEvent> out_event) {
+        LOG_WARNING(Service_BTM, "(STUBBED) called");
+
+        *out_is_valid = true;
+        *out_event = &scan_event->GetReadableEvent();
+        R_SUCCEED();
+    }
+
+    Result AcquireBleConnectionEvent(Out<bool> out_is_valid,
+                                                OutCopyHandle<Kernel::KReadableEvent> out_event) {
+        LOG_WARNING(Service_BTM, "(STUBBED) called");
+
+        *out_is_valid = true;
+        *out_event = &connection_event->GetReadableEvent();
+        R_SUCCEED();
+    }
+
+    Result AcquireBleServiceDiscoveryEvent(
+        Out<bool> out_is_valid, OutCopyHandle<Kernel::KReadableEvent> out_event) {
+        LOG_WARNING(Service_BTM, "(STUBBED) called");
+
+        *out_is_valid = true;
+        *out_event = &service_discovery_event->GetReadableEvent();
+        R_SUCCEED();
+    }
+
+    Result AcquireBleMtuConfigEvent(Out<bool> out_is_valid,
+                                                OutCopyHandle<Kernel::KReadableEvent> out_event) {
+        LOG_WARNING(Service_BTM, "(STUBBED) called");
+
+        *out_is_valid = true;
+        *out_event = &config_event->GetReadableEvent();
+        R_SUCCEED();
+    }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IBtmUserCore::AcquireBleScanEvent>, "AcquireBleScanEvent"},
+        FunctionInfo{1, nullptr, "GetBleScanFilterParameter"},
+        FunctionInfo{2, nullptr, "GetBleScanFilterParameter2"},
+        FunctionInfo{3, nullptr, "StartBleScanForGeneral"},
+        FunctionInfo{4, nullptr, "StopBleScanForGeneral"},
+        FunctionInfo{5, nullptr, "GetBleScanResultsForGeneral"},
+        FunctionInfo{6, nullptr, "StartBleScanForPaired"},
+        FunctionInfo{7, nullptr, "StopBleScanForPaired"},
+        FunctionInfo{8, nullptr, "StartBleScanForSmartDevice"},
+        FunctionInfo{9, nullptr, "StopBleScanForSmartDevice"},
+        FunctionInfo{10, nullptr, "GetBleScanResultsForSmartDevice"},
+        FunctionInfo{17, C<&IBtmUserCore::AcquireBleConnectionEvent>, "AcquireBleConnectionEvent"},
+        FunctionInfo{18, nullptr, "BleConnect"},
+        FunctionInfo{19, nullptr, "BleDisconnect"},
+        FunctionInfo{20, nullptr, "BleGetConnectionState"},
+        FunctionInfo{21, nullptr, "AcquireBlePairingEvent"},
+        FunctionInfo{22, nullptr, "BlePairDevice"},
+        FunctionInfo{23, nullptr, "BleUnPairDevice"},
+        FunctionInfo{24, nullptr, "BleUnPairDevice2"},
+        FunctionInfo{25, nullptr, "BleGetPairedDevices"},
+        FunctionInfo{26, C<&IBtmUserCore::AcquireBleServiceDiscoveryEvent>, "AcquireBleServiceDiscoveryEvent"},
+        FunctionInfo{27, nullptr, "GetGattServices"},
+        FunctionInfo{28, nullptr, "GetGattService"},
+        FunctionInfo{29, nullptr, "GetGattIncludedServices"},
+        FunctionInfo{30, nullptr, "GetBelongingGattService"},
+        FunctionInfo{31, nullptr, "GetGattCharacteristics"},
+        FunctionInfo{32, nullptr, "GetGattDescriptors"},
+        FunctionInfo{33, C<&IBtmUserCore::AcquireBleMtuConfigEvent>, "AcquireBleMtuConfigEvent"},
+        FunctionInfo{34, nullptr, "ConfigureBleMtu"},
+        FunctionInfo{35, nullptr, "GetBleMtu"},
+        FunctionInfo{36, nullptr, "RegisterBleGattDataPath"},
+        FunctionInfo{37, nullptr, "UnregisterBleGattDataPath"}
+    );
+    KernelHelpers::ServiceContext service_context;
+    Kernel::KEvent* scan_event;
+    Kernel::KEvent* connection_event;
+    Kernel::KEvent* service_discovery_event;
+    Kernel::KEvent* config_event;
+};
+
+class IBtmUser final : public ServiceFramework<IBtmUser> {
+public:
+    explicit IBtmUser(Core::System& system_) : ServiceFramework{system_, "btm:u"} {}
+    ~IBtmUser() override = default;
+
+    Result GetCore(OutInterface<IBtmUserCore> out_interface) {
+        LOG_WARNING(Service_BTM, "called");
+
+        *out_interface = std::make_shared<IBtmUserCore>(system);
+        R_SUCCEED();
+    }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IBtmUser::GetCore>, "GetCore"}
+    );
+};
+
+class IBtmDebug final : public ServiceFramework<IBtmDebug> {
+public:
+    explicit IBtmDebug(Core::System& system_) : ServiceFramework{system_, "btm:dbg"} {}
+    ~IBtmDebug() override = default;
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "AcquireDiscoveryEvent"},
+        FunctionInfo{1, nullptr, "StartDiscovery"},
+        FunctionInfo{2, nullptr, "CancelDiscovery"},
+        FunctionInfo{3, nullptr, "GetDeviceProperty"},
+        FunctionInfo{4, nullptr, "CreateBond"},
+        FunctionInfo{5, nullptr, "CancelBond"},
+        FunctionInfo{6, nullptr, "SetTsiMode"},
+        FunctionInfo{7, nullptr, "GeneralTest"},
+        FunctionInfo{8, nullptr, "HidConnect"},
+        FunctionInfo{9, nullptr, "GeneralGet"}, //5.0.0+
+        FunctionInfo{10, nullptr, "GetGattClientDisconnectionReason"}, //5.0.0+
+        FunctionInfo{11, nullptr, "GetBleConnectionParameter"}, //5.1.0+
+        FunctionInfo{12, nullptr, "GetBleConnectionParameterRequest"}, //5.1.0+
+        FunctionInfo{13, nullptr, "GetDiscoveredDevice"}, //12.0.0+
+        FunctionInfo{14, nullptr, "SleepAwakeLoopTest"}, //15.0.0+
+        FunctionInfo{15, nullptr, "SleepTest"}, //15.0.0+
+        FunctionInfo{16, nullptr, "MinimumAwakeTest"}, //15.0.0+
+        FunctionInfo{17, nullptr, "ForceEnableBtm"} //15.0.0+
+    );
+};
 
 class IBtm final : public ServiceFramework<IBtm> {
 public:

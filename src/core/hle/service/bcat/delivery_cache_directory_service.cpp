@@ -27,6 +27,15 @@ static BcatDigest DigestFile(const FileSys::VirtualFile& file) {
     return out;
 }
 
+ServiceFrameworkBase::FunctionInfoBase const* IDeliveryCacheDirectoryService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IDeliveryCacheDirectoryService::Open>, "Open"},
+        FunctionInfo{1, D<&IDeliveryCacheDirectoryService::Read>, "Read"},
+        FunctionInfo{2, D<&IDeliveryCacheDirectoryService::GetCount>, "GetCount"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IDeliveryCacheDirectoryService::IDeliveryCacheDirectoryService(Core::System& system_,
                                                                FileSys::VirtualDir root_)
     : ServiceFramework{system_, "IDeliveryCacheDirectoryService"}, root(std::move(root_)) {

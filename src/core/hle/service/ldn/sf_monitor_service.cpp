@@ -10,17 +10,17 @@
 
 namespace Service::LDN {
 
+ServiceFrameworkBase::FunctionInfoBase const* ISfMonitorService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&ISfMonitorService::Initialize>, "Initialize"},
+        FunctionInfo{288, C<&ISfMonitorService::GetGroupInfo>, "GetGroupInfo"},
+        FunctionInfo{320, nullptr, "GetLinkLevel"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 ISfMonitorService::ISfMonitorService(Core::System& system_)
     : ServiceFramework{system_, "ISfMonitorService"} {
-    // clang-format off
-        FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, C<&ISfMonitorService::Initialize>, "Initialize"},
-            FunctionInfo{288, C<&ISfMonitorService::GetGroupInfo>, "GetGroupInfo"},
-            FunctionInfo{320, nullptr, "GetLinkLevel"}
-        );
 }
 
 ISfMonitorService::~ISfMonitorService() = default;

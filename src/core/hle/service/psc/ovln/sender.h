@@ -17,13 +17,7 @@ public:
 private:
     Result Send(const OverlayNotification& notification, MessageFlags flags);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&ISender::Send>, "Send"},
-        FunctionInfo{1, nullptr, "GetUnreceivedMessageCount"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
 };
 
 } // namespace Service::PSC

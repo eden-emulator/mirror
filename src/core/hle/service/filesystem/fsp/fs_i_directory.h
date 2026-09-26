@@ -27,13 +27,7 @@ private:
                 const OutArray<FileSys::DirectoryEntry, BufferAttr_HipcMapAlias> out_entries);
     Result GetEntryCount(Out<s64> out_count);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IDirectory::Read>, "Read"},
-        FunctionInfo{1, D<&IDirectory::GetEntryCount>, "GetEntryCount"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
 };
 
 } // namespace Service::FileSystem

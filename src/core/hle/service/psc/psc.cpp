@@ -7,7 +7,7 @@
 #include "core/hle/service/psc/ovln/receiver_service.h"
 #include "core/hle/service/psc/ovln/sender_service.h"
 #include "core/hle/service/psc/pm_control.h"
-#include "core/hle/service/psc/pm_service.h"
+#include "core/hle/service/psc/pm_module.h"
 #include "core/hle/service/psc/psc.h"
 #include "core/hle/service/psc/time/manager.h"
 #include "core/hle/service/psc/time/power_state_service.h"
@@ -100,6 +100,27 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
+};
+
+class IPmModule;
+
+class IPmService final : public ServiceFramework<IPmService> {
+public:
+    explicit IPmService(Core::System& system_) : ServiceFramework{system_, "psc:m"} {}
+    ~IPmService() override = default;
+
+    Result GetPmModule(Out<SharedPointer<IPmModule>> out_module) {
+        LOG_DEBUG(Service_PSC, "called");
+        *out_module = std::make_shared<IPmModule>(system);
+        R_SUCCEED();
+    }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IPmService::GetPmModule>, "GetPmModule"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

@@ -13,6 +13,16 @@
 namespace Service::Audio {
 using namespace AudioCore::AudioOut;
 
+ServiceFrameworkBase::FunctionInfoBase const* IAudioOutManager::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IAudioOutManager::ListAudioOuts>, "ListAudioOuts"},
+        FunctionInfo{1, D<&IAudioOutManager::OpenAudioOut>, "OpenAudioOut"},
+        FunctionInfo{2, D<&IAudioOutManager::ListAudioOutsAuto>, "ListAudioOutsAuto"},
+        FunctionInfo{3, D<&IAudioOutManager::OpenAudioOutAuto>, "OpenAudioOutAuto"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IAudioOutManager::IAudioOutManager(Core::System& system_)
     : ServiceFramework{system_, "audout:u"}
     , impl(system_)

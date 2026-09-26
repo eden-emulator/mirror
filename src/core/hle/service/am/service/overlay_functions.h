@@ -24,31 +24,7 @@ private:
     Result Unknown70();
 
 private:
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IOverlayFunctions::BeginToWatchShortHomeButtonMessage>, "BeginToWatchShortHomeButtonMessage"},
-        FunctionInfo{1, D<&IOverlayFunctions::EndToWatchShortHomeButtonMessage>, "EndToWatchShortHomeButtonMessage"},
-        FunctionInfo{2, D<&IOverlayFunctions::GetApplicationIdForLogo>, "GetApplicationIdForLogo"},
-        FunctionInfo{3, nullptr, "SetGpuTimeSliceBoost"},
-        FunctionInfo{4, D<&IOverlayFunctions::SetAutoSleepTimeAndDimmingTimeEnabled>, "SetAutoSleepTimeAndDimmingTimeEnabled"},
-        FunctionInfo{5, nullptr, "TerminateApplicationAndSetReason"},
-        FunctionInfo{6, nullptr, "SetScreenShotPermissionGlobally"},
-        FunctionInfo{10, nullptr, "StartShutdownSequenceForOverlay"},
-        FunctionInfo{11, nullptr, "StartRebootSequenceForOverlay"},
-        FunctionInfo{20, D<&IOverlayFunctions::SetHandlingHomeButtonShortPressedEnabled>, "SetHandlingHomeButtonShortPressedEnabled"},
-        FunctionInfo{21, D<&IOverlayFunctions::SetHandlingTouchScreenInputEnabled>, "SetHandlingTouchScreenInputEnabled"},
-        FunctionInfo{30, nullptr, "SetHealthWarningShowingState"},
-        FunctionInfo{31, D<&IOverlayFunctions::IsHealthWarningRequired>, "IsHealthWarningRequired"},
-        FunctionInfo{40, nullptr, "GetApplicationNintendoLogo"},
-        FunctionInfo{41, nullptr, "GetApplicationStartupMovie"},
-        FunctionInfo{50, nullptr, "SetGpuTimeSliceBoostForApplication"},
-        FunctionInfo{60, nullptr, "Unknown60"},
-        FunctionInfo{70, D<&IOverlayFunctions::Unknown70>, "Unknown70"},
-        FunctionInfo{90, nullptr, "SetRequiresGpuResourceUse"},
-        FunctionInfo{101, nullptr, "BeginToObserveHidInputForDevelop"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     const std::shared_ptr<Applet> m_applet;
 };
 } // namespace Service::AM
