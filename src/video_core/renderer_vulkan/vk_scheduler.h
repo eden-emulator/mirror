@@ -36,6 +36,7 @@ class GraphicsPipeline;
 class StateTracker;
 
 struct QueryCacheParams;
+struct RenderingAttachments;
 
 /// The scheduler abstracts command buffer and fence management with an interface that's able to do
 /// OpenGL-like operations on Vulkan command buffers.
@@ -77,11 +78,11 @@ public:
 
     /// Returns true when a render pass is currently active in the scheduler state.
     bool IsRenderPassActive() const {
-        return state.renderpass != VK_NULL_HANDLE;
+        return state.framebuffer_id != 0;
     }
 
     u64 ActiveRenderPassSerial() const noexcept {
-        if (state.renderpass) {
+        if (state.framebuffer_id != 0) {
             return renderpass_serial;
         }
         return (std::numeric_limits<u64>::max)();
@@ -285,9 +286,7 @@ private:
     };
 
     struct State {
-        VkRenderPass renderpass{};
-        VkFramebuffer framebuffer{};
-        VkExtent2D render_area = {0, 0};
+        u64 framebuffer_id = 0;
         GraphicsPipeline* graphics_pipeline = nullptr;
         bool is_rescaling = false;
         bool rescaling_defined = false;
@@ -305,8 +304,8 @@ private:
     };
 
     /// Begins a render pass for the given framebuffer, optionally with clear values.
-    void BeginRenderPassImpl(const Framebuffer* framebuffer, VkRenderPass renderpass,
-                             const VkClearValue* clear_values, u32 clear_value_count);
+    void BeginRenderPassImpl(const Framebuffer* framebuffer,
+                             const RenderingAttachments& attachments);
 
     /// If a deferred clear is pending.
     void RealizeDeferredClear();

@@ -343,12 +343,11 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
                              DescriptorPool& descriptor_pool_,
                              GuestDescriptorQueue& guest_descriptor_queue_,
                              DescriptorBufferRing& descriptor_buffer_ring_,
-                             RenderPassCache& render_pass_cache_, BufferCache& buffer_cache_,
-                             TextureCache& texture_cache_, VideoCore::ShaderNotify& shader_notify_)
+                             BufferCache& buffer_cache_, TextureCache& texture_cache_,
+                             VideoCore::ShaderNotify& shader_notify_)
     : VideoCommon::ShaderCache{device_memory_}, device{device_}, scheduler{scheduler_},
       descriptor_pool{descriptor_pool_}, guest_descriptor_queue{guest_descriptor_queue_},
-      descriptor_buffer_ring{descriptor_buffer_ring_},
-      render_pass_cache{render_pass_cache_}, buffer_cache{buffer_cache_},
+      descriptor_buffer_ring{descriptor_buffer_ring_}, buffer_cache{buffer_cache_},
       texture_cache{texture_cache_}, shader_notify{shader_notify_},
       use_asynchronous_shaders{Settings::values.use_asynchronous_shaders.GetValue()},
       use_vulkan_pipeline_cache{Settings::values.use_vulkan_driver_pipeline_cache.GetValue()},
@@ -896,7 +895,7 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
     return std::make_unique<GraphicsPipeline>(
         scheduler, buffer_cache, texture_cache, vulkan_pipeline_cache, &shader_notify, device,
         descriptor_pool, guest_descriptor_queue, descriptor_buffer_ring, thread_worker, statistics,
-        render_pass_cache, key, std::move(modules), infos);
+        key, std::move(modules), infos);
 
 } catch (const Shader::Exception& exception) {
     auto hash = key.Hash();

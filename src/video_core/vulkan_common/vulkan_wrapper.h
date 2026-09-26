@@ -238,6 +238,7 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCmdBeginConditionalRenderingEXT vkCmdBeginConditionalRenderingEXT{};
     PFN_vkCmdBeginQuery vkCmdBeginQuery{};
     PFN_vkCmdBeginRenderPass vkCmdBeginRenderPass{};
+    PFN_vkCmdBeginRendering vkCmdBeginRendering{};
     PFN_vkCmdBeginTransformFeedbackEXT vkCmdBeginTransformFeedbackEXT{};
     PFN_vkCmdBindDescriptorSets vkCmdBindDescriptorSets{};
     PFN_vkCmdBindIndexBuffer vkCmdBindIndexBuffer{};
@@ -266,6 +267,7 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCmdEndConditionalRenderingEXT vkCmdEndConditionalRenderingEXT{};
     PFN_vkCmdEndQuery vkCmdEndQuery{};
     PFN_vkCmdEndRenderPass vkCmdEndRenderPass{};
+    PFN_vkCmdEndRendering vkCmdEndRendering{};
     PFN_vkCmdEndTransformFeedbackEXT vkCmdEndTransformFeedbackEXT{};
     PFN_vkCmdFillBuffer vkCmdFillBuffer{};
     PFN_vkCmdPipelineBarrier2 vkCmdPipelineBarrier2{};
@@ -1192,6 +1194,14 @@ public:
 
     void EndRenderPass() const noexcept {
         dld->vkCmdEndRenderPass(handle);
+    }
+
+    void BeginRendering(const VkRenderingInfo& rendering_info) const noexcept {
+        dld->vkCmdBeginRendering(handle, &rendering_info);
+    }
+
+    void EndRendering() const noexcept {
+        dld->vkCmdEndRendering(handle);
     }
 
     void BeginQuery(VkQueryPool query_pool, u32 query, VkQueryControlFlags flags) const noexcept {

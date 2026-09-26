@@ -22,7 +22,6 @@
 #include "video_core/renderer_vulkan/vk_fence_manager.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
 #include "video_core/renderer_vulkan/vk_query_cache.h"
-#include "video_core/renderer_vulkan/vk_render_pass_cache.h"
 #include "video_core/renderer_vulkan/vk_staging_buffer_pool.h"
 #include "video_core/renderer_vulkan/vk_texture_cache.h"
 #include "video_core/renderer_vulkan/vk_update_descriptor.h"
@@ -209,7 +208,6 @@ private:
     ComputePassDescriptorQueue compute_pass_descriptor_queue;
     DescriptorBufferRing descriptor_buffer_ring;
     BlitImageHelper blit_image;
-    RenderPassCache render_pass_cache;
 
     TextureCacheRuntime texture_cache_runtime;
     TextureCache texture_cache;

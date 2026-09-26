@@ -85,7 +85,6 @@ class ComputePipeline;
 class DescriptorPool;
 class Device;
 class PipelineStatistics;
-class RenderPassCache;
 class Scheduler;
 
 using VideoCommon::ShaderInfo;
@@ -107,8 +106,7 @@ public:
     explicit PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_, const Device& device,
                            Scheduler& scheduler, DescriptorPool& descriptor_pool,
                            GuestDescriptorQueue& guest_descriptor_queue,
-                           DescriptorBufferRing& descriptor_buffer_ring,
-                           RenderPassCache& render_pass_cache, BufferCache& buffer_cache,
+                           DescriptorBufferRing& descriptor_buffer_ring, BufferCache& buffer_cache,
                            TextureCache& texture_cache, VideoCore::ShaderNotify& shader_notify_);
     ~PipelineCache();
 
@@ -153,7 +151,6 @@ private:
     DescriptorPool& descriptor_pool;
     GuestDescriptorQueue& guest_descriptor_queue;
     DescriptorBufferRing& descriptor_buffer_ring;
-    RenderPassCache& render_pass_cache;
     BufferCache& buffer_cache;
     TextureCache& texture_cache;
     VideoCore::ShaderNotify& shader_notify;

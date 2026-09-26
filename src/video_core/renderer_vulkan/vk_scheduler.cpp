@@ -108,45 +108,22 @@ void Scheduler::DispatchWork() {
     }
 }
 
-void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer, VkRenderPass renderpass,
-                                    const VkClearValue* clear_values, u32 clear_value_count) {
-    const VkFramebuffer framebuffer_handle = framebuffer->Handle();
-    const VkExtent2D render_area = framebuffer->RenderArea();
+void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer,
+                                    const RenderingAttachments& attachments) {
     PublishComputeWrites();
-    state.renderpass = renderpass;
-    state.framebuffer = framebuffer_handle;
-    state.render_area = render_area;
+    state.framebuffer_id = framebuffer->Id();
     ++renderpass_serial;
     renderpass_depth_writes = false;
 
     if (GPU::Logging::IsActive() && Settings::values.gpu_log_vulkan_calls.GetValue()) {
+        const VkExtent2D render_area = attachments.render_area.extent;
         const std::string render_pass_info =
             fmt::format("renderArea={}x{}, numImages={}", render_area.width, render_area.height,
                         framebuffer->NumImages());
         GPU::Logging::GPULogger::GetInstance().LogRenderPassBegin(render_pass_info);
     }
 
-    std::array<VkClearValue, 9> values{};
-    for (u32 i = 0; i < clear_value_count && i < values.size(); ++i) {
-        values[i] = clear_values[i];
-    }
-    Record([renderpass, framebuffer_handle, render_area, values, clear_value_count](
-               vk::CommandBuffer cmdbuf) {
-        const VkRenderPassBeginInfo renderpass_bi{
-            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .pNext = nullptr,
-            .renderPass = renderpass,
-            .framebuffer = framebuffer_handle,
-            .renderArea =
-                {
-                    .offset = {.x = 0, .y = 0},
-                    .extent = render_area,
-                },
-            .clearValueCount = clear_value_count,
-            .pClearValues = clear_value_count != 0 ? values.data() : nullptr,
-        };
-        cmdbuf.BeginRenderPass(renderpass_bi, VK_SUBPASS_CONTENTS_INLINE);
-    });
+    Record([attachments](vk::CommandBuffer cmdbuf) { BeginRendering(cmdbuf, attachments); });
     num_renderpass_images = framebuffer->NumImages();
     renderpass_images = framebuffer->Images();
     renderpass_image_ranges = framebuffer->ImageRanges();
@@ -160,26 +137,30 @@ void Scheduler::RealizeDeferredClear() {
     const DeferredClear dc = deferred_clear;
     deferred_clear = {};
 
-    std::array<VkClearValue, 9> clear_values{};
-    u32 count = 0;
-    const RenderPassKey& base = dc.framebuffer->RenderPassKeyBase();
-    for (u32 slot = 0; slot < 8; ++slot) {
-        if (base.color_formats[slot] == VideoCore::Surface::PixelFormat::Invalid) {
+    RenderingAttachments attachments = dc.framebuffer->Attachments();
+    for (u32 slot = 0; slot < attachments.num_colors; ++slot) {
+        if ((dc.color_clear_mask & (1u << slot)) == 0) {
             continue;
         }
-        clear_values[count++] = dc.color_values[slot];
+        VkRenderingAttachmentInfo& attachment = attachments.colors[slot];
+        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachment.clearValue = dc.color_values[slot];
+        if (dc.framebuffer->DiscardsMsaaColor()) {
+            attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        }
     }
-    if (base.depth_format != VideoCore::Surface::PixelFormat::Invalid) {
-        clear_values[count++] = dc.depth_stencil_value;
+    if (dc.depth_stencil) {
+        for (VkRenderingAttachmentInfo* const attachment :
+             {&attachments.depth, &attachments.stencil}) {
+            attachment->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            attachment->clearValue = dc.depth_stencil_value;
+            if (dc.framebuffer->DiscardsMsaaDepthStencil()) {
+                attachment->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            }
+        }
     }
-    const u32 color_discard_mask =
-        dc.framebuffer->DiscardsMsaaColor() ? dc.color_clear_mask : 0u;
-    const bool depth_stencil_discard =
-        dc.depth_stencil && dc.framebuffer->DiscardsMsaaDepthStencil();
-    const VkRenderPass renderpass = dc.framebuffer->RenderPassVariant(
-        dc.color_clear_mask, dc.depth_stencil, color_discard_mask, depth_stencil_discard);
     EndRenderPass();
-    BeginRenderPassImpl(dc.framebuffer, renderpass, clear_values.data(), count);
+    BeginRenderPassImpl(dc.framebuffer, attachments);
     renderpass_depth_writes = dc.depth_stencil;
 }
 
@@ -225,17 +206,12 @@ void Scheduler::RequestRenderpass(const Framebuffer* framebuffer) {
         RealizeDeferredClear();
         return;
     }
-    const VkRenderPass renderpass = framebuffer->RenderPass();
-    const VkFramebuffer framebuffer_handle = framebuffer->Handle();
-    const VkExtent2D render_area = framebuffer->RenderArea();
-    if (renderpass == state.renderpass && framebuffer_handle == state.framebuffer &&
-        render_area.width == state.render_area.width &&
-        render_area.height == state.render_area.height) {
+    if (framebuffer->Id() == state.framebuffer_id) {
         return;
     }
     // Ends any active pass and realizes a deferred clear
     EndRenderPass();
-    BeginRenderPassImpl(framebuffer, renderpass, nullptr, 0);
+    BeginRenderPassImpl(framebuffer, framebuffer->Attachments());
 }
 
 void Scheduler::RequestOutsideRenderPassOperationContext() {
@@ -427,7 +403,7 @@ void Scheduler::EndPendingOperations() {
 void Scheduler::EndRenderPass()
     {
         RealizeDeferredClear();
-        if (!state.renderpass) {
+        if (state.framebuffer_id == 0) {
             return;
         }
 
@@ -484,12 +460,12 @@ void Scheduler::EndRenderPass()
                         .subresourceRange = range,
                 };
             }
-            cmdbuf.EndRenderPass();
+            cmdbuf.EndRendering();
             cmdbuf.PipelineBarrier(0, vk::Span(write_barrier, num_memory_barriers), {},
                                    vk::Span(barriers.data(), num_images));
         });
 
-        state.renderpass = VkRenderPass{};
+        state.framebuffer_id = 0;
         num_renderpass_images = 0;
     }
 

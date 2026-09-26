@@ -4,9 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "common/container/unordered_map.h"
-
-#include <boost/container/static_vector.hpp>
+#include <algorithm>
 
 #include "video_core/renderer_vulkan/maxwell_to_vk.h"
 #include "video_core/renderer_vulkan/vk_render_pass_cache.h"
@@ -19,109 +17,90 @@ namespace {
 using VideoCore::Surface::PixelFormat;
 using VideoCore::Surface::SurfaceType;
 
-        constexpr SurfaceType GetSurfaceType(PixelFormat format) {
-            switch (format) {
-                // Depth formats
-                case PixelFormat::D16_UNORM:
-                case PixelFormat::D32_FLOAT:
-                case PixelFormat::X8_D24_UNORM:
-                    return SurfaceType::Depth;
+struct AttachmentAspects {
+    bool depth;
+    bool stencil;
+};
 
-                    // Stencil formats
-                case PixelFormat::S8_UINT:
-                    return SurfaceType::Stencil;
+constexpr SurfaceType GetSurfaceType(PixelFormat format) {
+    switch (format) {
+    case PixelFormat::D16_UNORM:
+    case PixelFormat::D32_FLOAT:
+    case PixelFormat::X8_D24_UNORM:
+        return SurfaceType::Depth;
+    case PixelFormat::S8_UINT:
+        return SurfaceType::Stencil;
+    case PixelFormat::D24_UNORM_S8_UINT:
+    case PixelFormat::S8_UINT_D24_UNORM:
+    case PixelFormat::D32_FLOAT_S8_UINT:
+        return SurfaceType::DepthStencil;
+    default:
+        return SurfaceType::ColorTexture;
+    }
+}
 
-                    // Depth+Stencil formats
-                case PixelFormat::D24_UNORM_S8_UINT:
-                case PixelFormat::S8_UINT_D24_UNORM:
-                case PixelFormat::D32_FLOAT_S8_UINT:
-                    return SurfaceType::DepthStencil;
+constexpr AttachmentAspects GetAttachmentAspects(PixelFormat format) {
+    const SurfaceType surface_type = GetSurfaceType(format);
+    return AttachmentAspects{
+        .depth = surface_type == SurfaceType::Depth || surface_type == SurfaceType::DepthStencil,
+        .stencil =
+            surface_type == SurfaceType::Stencil || surface_type == SurfaceType::DepthStencil,
+    };
+}
 
-                    // Everything else is a color texture
-                default:
-                    return SurfaceType::ColorTexture;
-            }
-        }
+VkFormat AttachmentFormat(const Device& device, PixelFormat format) {
+    return MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, true, format).format;
+}
 
-        VkAttachmentDescription2 AttachmentDescription(const Device& device, PixelFormat format,
-                                                       VkSampleCountFlagBits samples,
-                                                       VkAttachmentLoadOp load_op,
-                                                       VkAttachmentStoreOp store_op) {
-            using MaxwellToVK::SurfaceFormat;
+VkRenderingAttachmentInfo MakeAttachment(VkImageView view) {
+    return {
+        .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+        .pNext = nullptr,
+        .imageView = view,
+        .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+        .resolveMode = VK_RESOLVE_MODE_NONE,
+        .resolveImageView = VK_NULL_HANDLE,
+        .resolveImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .clearValue = {},
+    };
+}
+} // Anonymous namespace
 
-            const SurfaceType surface_type = GetSurfaceType(format);
-            const bool has_stencil = surface_type == SurfaceType::DepthStencil ||
-                                     surface_type == SurfaceType::Stencil;
+ResolveModes PickResolveModes(const Device& device, PixelFormat format) {
+    constexpr VkResolveModeFlagBits mode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
 
-            return {
-                .sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
-                .pNext = nullptr,
-                .flags = {},
-                .format = SurfaceFormat(device, FormatType::Optimal, true, format).format,
-                .samples = samples,
-                .loadOp = load_op,
-                .storeOp = store_op,
-                .stencilLoadOp = has_stencil ? load_op : VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = has_stencil ? store_op : VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .initialLayout = VK_IMAGE_LAYOUT_GENERAL,
-                .finalLayout = VK_IMAGE_LAYOUT_GENERAL,
-            };
-        }
+    const AttachmentAspects aspects = GetAttachmentAspects(format);
+    const bool depth_mode_supported = (device.GetDepthResolveModes() & mode) != 0;
+    const bool stencil_mode_supported = (device.GetStencilResolveModes() & mode) != 0;
 
-        struct ResolveAspects {
-            bool depth;
-            bool stencil;
-        };
-
-        struct ResolveModes {
-            VkResolveModeFlagBits depth;
-            VkResolveModeFlagBits stencil;
-        };
-
-        constexpr ResolveAspects GetResolveAspects(PixelFormat format) {
-            const SurfaceType surface_type = GetSurfaceType(format);
-            return ResolveAspects{
-                .depth = surface_type == SurfaceType::Depth ||
-                         surface_type == SurfaceType::DepthStencil,
-                .stencil = surface_type == SurfaceType::Stencil ||
-                           surface_type == SurfaceType::DepthStencil,
-            };
-        }
-
-        ResolveModes PickResolveModes(const Device& device, PixelFormat format) {
-            constexpr VkResolveModeFlagBits mode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
-
-            const ResolveAspects aspects = GetResolveAspects(format);
-            const bool depth_mode_supported = (device.GetDepthResolveModes() & mode) != 0;
-            const bool stencil_mode_supported = (device.GetStencilResolveModes() & mode) != 0;
-
-            ResolveModes modes{
-                .depth = VK_RESOLVE_MODE_NONE,
-                .stencil = VK_RESOLVE_MODE_NONE,
-            };
-            if (aspects.depth && depth_mode_supported) {
-                modes.depth = mode;
-            }
-            if (aspects.stencil && stencil_mode_supported) {
-                modes.stencil = mode;
-            }
-            if (modes.depth == modes.stencil || device.SupportsIndependentResolveNone()) {
-                return modes;
-            }
-            if (modes.depth != VK_RESOLVE_MODE_NONE && stencil_mode_supported) {
-                modes.stencil = mode;
-            } else if (modes.stencil != VK_RESOLVE_MODE_NONE && depth_mode_supported) {
-                modes.depth = mode;
-            }
-            return modes;
-        }
-    } // Anonymous namespace
+    ResolveModes modes{
+        .depth = VK_RESOLVE_MODE_NONE,
+        .stencil = VK_RESOLVE_MODE_NONE,
+    };
+    if (aspects.depth && depth_mode_supported) {
+        modes.depth = mode;
+    }
+    if (aspects.stencil && stencil_mode_supported) {
+        modes.stencil = mode;
+    }
+    if (modes.depth == modes.stencil || device.SupportsIndependentResolveNone()) {
+        return modes;
+    }
+    if (modes.depth != VK_RESOLVE_MODE_NONE && stencil_mode_supported) {
+        modes.stencil = mode;
+    } else if (modes.stencil != VK_RESOLVE_MODE_NONE && depth_mode_supported) {
+        modes.depth = mode;
+    }
+    return modes;
+}
 
 bool SupportsDepthStencilResolve(const Device& device, PixelFormat depth_format) {
     if (depth_format == PixelFormat::Invalid || !device.IsKhrDepthStencilResolveSupported()) {
         return false;
     }
-    const ResolveAspects aspects = GetResolveAspects(depth_format);
+    const AttachmentAspects aspects = GetAttachmentAspects(depth_format);
     if (!aspects.depth && !aspects.stencil) {
         return false;
     }
@@ -133,142 +112,65 @@ bool SupportsDepthStencilResolve(const Device& device, PixelFormat depth_format)
     return modes.depth == modes.stencil || device.SupportsIndependentResolveNone();
 }
 
-RenderPassCache::RenderPassCache(const Device& device_) : device{&device_} {}
+RenderingFormats MakeRenderingFormats(const Device& device, std::span<const PixelFormat> colors,
+                                      PixelFormat depth) {
+    RenderingFormats formats{};
+    for (size_t index = 0; index < colors.size(); ++index) {
+        if (colors[index] == PixelFormat::Invalid) {
+            continue;
+        }
+        formats.colors[index] = AttachmentFormat(device, colors[index]);
+        formats.num_colors = static_cast<u32>(index + 1);
+    }
+    if (depth == PixelFormat::Invalid) {
+        return formats;
+    }
+    const VkFormat depth_format = AttachmentFormat(device, depth);
+    const AttachmentAspects aspects = GetAttachmentAspects(depth);
+    if (aspects.depth) {
+        formats.depth = depth_format;
+    }
+    if (aspects.stencil) {
+        formats.stencil = depth_format;
+    }
+    return formats;
+}
 
-VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
-    std::scoped_lock lock{mutex};
-    const auto [pair, is_new] = cache.try_emplace(key);
-    if (!is_new) {
-        return *pair->second;
-    }
-    static constexpr size_t MAX_ATTACHMENTS =
-        2 * std::tuple_size_v<decltype(RenderPassKey::color_formats)> + 2;
-    boost::container::static_vector<VkAttachmentDescription2, MAX_ATTACHMENTS> descriptions;
-    std::array<VkAttachmentReference2, 8> references{};
-    u32 num_attachments{};
-    u32 num_colors{};
-    for (size_t index = 0; index < key.color_formats.size(); ++index) {
-        const PixelFormat format{key.color_formats[index]};
-        const bool is_valid{format != PixelFormat::Invalid};
-        references[index] = VkAttachmentReference2{
-            .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
-            .pNext = nullptr,
-            .attachment = is_valid ? num_colors : VK_ATTACHMENT_UNUSED,
-            .layout = VK_IMAGE_LAYOUT_GENERAL,
-            .aspectMask = 0,
-        };
-        if (is_valid) {
-            const VkAttachmentLoadOp load_op = (key.color_clear_mask & (1u << index)) != 0
-                                                   ? VK_ATTACHMENT_LOAD_OP_CLEAR
-                                                   : VK_ATTACHMENT_LOAD_OP_LOAD;
-            const VkAttachmentStoreOp store_op = (key.color_discard_mask & (1u << index)) != 0
-                                                     ? VK_ATTACHMENT_STORE_OP_DONT_CARE
-                                                     : VK_ATTACHMENT_STORE_OP_STORE;
-            descriptions.push_back(
-                AttachmentDescription(*device, format, key.samples, load_op, store_op));
-            num_attachments = static_cast<u32>(index + 1);
-            ++num_colors;
-        }
-    }
-    const bool has_depth{key.depth_format != PixelFormat::Invalid};
-    VkAttachmentReference2 depth_reference{};
-    if (has_depth) {
-        depth_reference = VkAttachmentReference2{
-            .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
-            .pNext = nullptr,
-            .attachment = num_colors,
-            .layout = VK_IMAGE_LAYOUT_GENERAL,
-            .aspectMask = 0,
-        };
-        const VkAttachmentLoadOp depth_load_op = key.depth_stencil_clear
-                                                     ? VK_ATTACHMENT_LOAD_OP_CLEAR
-                                                     : VK_ATTACHMENT_LOAD_OP_LOAD;
-        const VkAttachmentStoreOp depth_store_op = key.depth_stencil_discard
-                                                       ? VK_ATTACHMENT_STORE_OP_DONT_CARE
-                                                       : VK_ATTACHMENT_STORE_OP_STORE;
-        descriptions.push_back(AttachmentDescription(*device, key.depth_format, key.samples,
-                                                     depth_load_op, depth_store_op));
-    }
-    std::array<VkAttachmentReference2, 8> resolve_references{};
-    const bool do_resolve_color =
-        key.resolve_color && key.samples != VK_SAMPLE_COUNT_1_BIT && num_colors > 0;
-    if (do_resolve_color) {
-        for (size_t index = 0; index < key.color_formats.size(); ++index) {
-            const PixelFormat format{key.color_formats[index]};
-            const bool is_valid{format != PixelFormat::Invalid};
-            resolve_references[index] = VkAttachmentReference2{
-                .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
-                .pNext = nullptr,
-                .attachment = is_valid ? static_cast<u32>(descriptions.size())
-                                       : VK_ATTACHMENT_UNUSED,
-                .layout = VK_IMAGE_LAYOUT_GENERAL,
-                .aspectMask = 0,
-            };
-            if (is_valid) {
-                VkAttachmentDescription2 resolve_desc =
-                    AttachmentDescription(*device, format, VK_SAMPLE_COUNT_1_BIT,
-                                          VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                                          VK_ATTACHMENT_STORE_OP_STORE);
-                resolve_desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                descriptions.push_back(resolve_desc);
-            }
-        }
-    }
-    const bool do_resolve_depth_stencil = key.resolve_depth_stencil && has_depth &&
-                                          key.samples != VK_SAMPLE_COUNT_1_BIT &&
-                                          SupportsDepthStencilResolve(*device, key.depth_format);
-    VkAttachmentReference2 depth_resolve_reference{};
-    if (do_resolve_depth_stencil) {
-        depth_resolve_reference = VkAttachmentReference2{
-            .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
-            .pNext = nullptr,
-            .attachment = static_cast<u32>(descriptions.size()),
-            .layout = VK_IMAGE_LAYOUT_GENERAL,
-            .aspectMask = 0,
-        };
-        VkAttachmentDescription2 resolve_desc =
-            AttachmentDescription(*device, key.depth_format, VK_SAMPLE_COUNT_1_BIT,
-                                  VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE);
-        resolve_desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        descriptions.push_back(resolve_desc);
-    }
-    const ResolveModes resolve_modes = PickResolveModes(*device, key.depth_format);
-    const VkSubpassDescriptionDepthStencilResolve depth_stencil_resolve{
-        .sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,
-        .pNext = nullptr,
-        .depthResolveMode = resolve_modes.depth,
-        .stencilResolveMode = resolve_modes.stencil,
-        .pDepthStencilResolveAttachment = &depth_resolve_reference,
+RenderingAttachments MakeRenderingAttachments(const RenderingFormats& formats,
+                                              std::span<const VkImageView> colors,
+                                              VkImageView depth, const VkRect2D& render_area,
+                                              u32 layers) {
+    RenderingAttachments attachments{
+        .render_area = render_area,
+        .num_colors = formats.num_colors,
+        .layers = layers,
     };
-    const VkSubpassDescription2 subpass{
-        .sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,
-        .pNext = do_resolve_depth_stencil ? &depth_stencil_resolve : nullptr,
+    attachments.colors.fill(MakeAttachment(VK_NULL_HANDLE));
+    std::ranges::transform(colors, attachments.colors.begin(), MakeAttachment);
+    attachments.depth = MakeAttachment(VK_NULL_HANDLE);
+    attachments.stencil = attachments.depth;
+    if (formats.depth != VK_FORMAT_UNDEFINED) {
+        attachments.depth.imageView = depth;
+    }
+    if (formats.stencil != VK_FORMAT_UNDEFINED) {
+        attachments.stencil.imageView = depth;
+    }
+    return attachments;
+}
+
+void BeginRendering(vk::CommandBuffer cmdbuf, const RenderingAttachments& attachments) {
+    cmdbuf.BeginRendering(VkRenderingInfo{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .pNext = nullptr,
         .flags = 0,
-        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .renderArea = attachments.render_area,
+        .layerCount = attachments.layers,
         .viewMask = 0,
-        .inputAttachmentCount = 0,
-        .pInputAttachments = nullptr,
-        .colorAttachmentCount = num_attachments,
-        .pColorAttachments = references.data(),
-        .pResolveAttachments = do_resolve_color ? resolve_references.data() : nullptr,
-        .pDepthStencilAttachment = has_depth ? &depth_reference : nullptr,
-        .preserveAttachmentCount = 0,
-        .pPreserveAttachments = nullptr,
-    };
-    pair->second = device->GetLogical().CreateRenderPass2({
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
-        .pNext = nullptr,
-        .flags = 0,
-        .attachmentCount = static_cast<u32>(descriptions.size()),
-        .pAttachments = descriptions.empty() ? nullptr : descriptions.data(),
-        .subpassCount = 1,
-        .pSubpasses = &subpass,
-        .dependencyCount = 0,
-        .pDependencies = nullptr,
-        .correlatedViewMaskCount = 0,
-        .pCorrelatedViewMasks = nullptr,
+        .colorAttachmentCount = attachments.num_colors,
+        .pColorAttachments = attachments.colors.data(),
+        .pDepthAttachment = &attachments.depth,
+        .pStencilAttachment = &attachments.stencil,
     });
-    return *pair->second;
 }
 
 } // namespace Vulkan

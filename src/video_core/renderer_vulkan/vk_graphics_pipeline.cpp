@@ -125,22 +125,15 @@ PixelFormat DecodeFormat(u8 encoded_format) {
     return PixelFormatFromRenderTargetFormat(format);
 }
 
-RenderPassKey MakeRenderPassKey(const FixedPipelineState& state, const Device& device) {
-    RenderPassKey key{};
-    std::ranges::transform(state.color_formats, key.color_formats.begin(), DecodeFormat);
+RenderingFormats PipelineFormats(const FixedPipelineState& state, const Device& device) {
+    std::array<PixelFormat, Maxwell::NumRenderTargets> color_formats;
+    std::ranges::transform(state.color_formats, color_formats.begin(), DecodeFormat);
+    PixelFormat depth_format = PixelFormat::Invalid;
     if (state.depth_enabled != 0) {
-        const auto depth_format{static_cast<Tegra::DepthFormat>(state.depth_format.Value())};
-        key.depth_format = PixelFormatFromDepthFormat(depth_format);
-    } else {
-        key.depth_format = PixelFormat::Invalid;
+        depth_format = PixelFormatFromDepthFormat(
+            static_cast<Tegra::DepthFormat>(state.depth_format.Value()));
     }
-    key.samples = MaxwellToVK::MsaaMode(state.msaa_mode);
-    const bool has_color = std::ranges::any_of(key.color_formats, [](PixelFormat format) {
-        return format != PixelFormat::Invalid;
-    });
-    key.resolve_color =
-        key.samples != VK_SAMPLE_COUNT_1_BIT && has_color && device.IsTiler();
-    return key;
+    return MakeRenderingFormats(device, color_formats, depth_format);
 }
 
 size_t NumAttachments(const FixedPipelineState& state) {
@@ -253,8 +246,8 @@ GraphicsPipeline::GraphicsPipeline(
     const Device& device_, DescriptorPool& descriptor_pool,
     GuestDescriptorQueue& guest_descriptor_queue_, DescriptorBufferRing& descriptor_buffer_ring_,
     Common::ThreadWorker* worker_thread,
-    PipelineStatistics* pipeline_statistics, RenderPassCache& render_pass_cache,
-    const GraphicsPipelineCacheKey& key_, std::array<vk::ShaderModule, NUM_STAGES> stages,
+    PipelineStatistics* pipeline_statistics, const GraphicsPipelineCacheKey& key_,
+    std::array<vk::ShaderModule, NUM_STAGES> stages,
     const std::array<const Shader::Info*, NUM_STAGES>& infos)
     : key{key_}, device{device_}, texture_cache{texture_cache_}, buffer_cache{buffer_cache_},
       pipeline_cache(pipeline_cache_), scheduler{scheduler_},
@@ -309,11 +302,10 @@ GraphicsPipeline::GraphicsPipeline(
         }
     }
 
-    auto func{[this, shader_notify, &render_pass_cache, pipeline_statistics] {
-        const VkRenderPass render_pass{render_pass_cache.Get(MakeRenderPassKey(key.state, device))};
+    auto func{[this, shader_notify, pipeline_statistics] {
         Validate();
         try {
-            MakePipeline(render_pass);
+            MakePipeline(PipelineFormats(key.state, device));
         } catch (const vk::Exception& exception) {
             LOG_CRITICAL(Render_Vulkan, "Graphics pipeline build failed: {}", exception.what());
             std::scoped_lock lock{build_mutex};
@@ -684,7 +676,7 @@ bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
     return true;
 }
 
-void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
+void GraphicsPipeline::MakePipeline(const RenderingFormats& formats) {
     FixedPipelineState::DynamicState dynamic{};
     if (!key.state.extended_dynamic_state) {
         dynamic = key.state.dynamic_state;
@@ -1078,9 +1070,10 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
         flags |= VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
     }
 
+    const VkPipelineRenderingCreateInfo rendering_ci = formats.CreateInfo();
     pipeline = device.GetLogical().CreateGraphicsPipeline({
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = nullptr,
+        .pNext = &rendering_ci,
         .flags = flags,
         .stageCount = static_cast<u32>(shader_stages.size()),
         .pStages = shader_stages.data(),
@@ -1094,7 +1087,6 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
         .pColorBlendState = &color_blend_ci,
         .pDynamicState = &dynamic_state_ci,
         .layout = *pipeline_layout,
-        .renderPass = render_pass,
         .subpass = 0,
         .basePipelineHandle = nullptr,
         .basePipelineIndex = 0,

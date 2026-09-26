@@ -89,6 +89,7 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdBeginConditionalRenderingEXT);
     X(vkCmdBeginQuery);
     X(vkCmdBeginRenderPass);
+    X(vkCmdBeginRendering);
     X(vkCmdBeginTransformFeedbackEXT);
     X(vkCmdBindDescriptorSets);
     X(vkCmdBindIndexBuffer);
@@ -116,6 +117,7 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdEndConditionalRenderingEXT);
     X(vkCmdEndQuery);
     X(vkCmdEndRenderPass);
+    X(vkCmdEndRendering);
     X(vkCmdEndTransformFeedbackEXT);
     X(vkCmdFillBuffer);
     X(vkCmdPipelineBarrier2);
@@ -255,6 +257,13 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     }
     if (!dld.vkQueueSubmit2) {
         Proc(dld.vkQueueSubmit2, dld, "vkQueueSubmit2KHR", device);
+    }
+
+    if (!dld.vkCmdBeginRendering) {
+        Proc(dld.vkCmdBeginRendering, dld, "vkCmdBeginRenderingKHR", device);
+    }
+    if (!dld.vkCmdEndRendering) {
+        Proc(dld.vkCmdEndRendering, dld, "vkCmdEndRenderingKHR", device);
     }
 
     if (!dld.vkCreateRenderPass2) {

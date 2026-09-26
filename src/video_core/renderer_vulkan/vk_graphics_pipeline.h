@@ -67,7 +67,6 @@ namespace Vulkan {
 
 class Device;
 class PipelineStatistics;
-class RenderPassCache;
 class RescalingPushConstant;
 class RenderAreaPushConstant;
 class Scheduler;
@@ -82,8 +81,8 @@ public:
         const Device& device, DescriptorPool& descriptor_pool,
         GuestDescriptorQueue& guest_descriptor_queue,
         DescriptorBufferRing& descriptor_buffer_ring, Common::ThreadWorker* worker_thread,
-        PipelineStatistics* pipeline_statistics, RenderPassCache& render_pass_cache,
-        const GraphicsPipelineCacheKey& key, std::array<vk::ShaderModule, NUM_STAGES> stages,
+        PipelineStatistics* pipeline_statistics, const GraphicsPipelineCacheKey& key,
+        std::array<vk::ShaderModule, NUM_STAGES> stages,
         const std::array<const Shader::Info*, NUM_STAGES>& infos);
 
     bool HasDynamicVertexInput() const noexcept { return key.state.dynamic_vertex_input; }
@@ -140,7 +139,7 @@ private:
     bool ConfigureDraw(const RescalingPushConstant& rescaling,
                        const RenderAreaPushConstant& render_are);
 
-    void MakePipeline(VkRenderPass render_pass);
+    void MakePipeline(const RenderingFormats& formats);
 
     void Validate();
 

@@ -36,7 +36,6 @@ class Device;
 class Image;
 class ImageView;
 class Framebuffer;
-class RenderPassCache;
 class StagingBufferPool;
 class Scheduler;
 
@@ -46,7 +45,6 @@ public:
                                  MemoryAllocator& memory_allocator_,
                                  StagingBufferPool& staging_buffer_pool_,
                                  BlitImageHelper& blit_image_helper_,
-                                 RenderPassCache& render_pass_cache_,
                                  DescriptorPool& descriptor_pool,
                                  ComputePassDescriptorQueue& compute_pass_descriptor_queue);
 
@@ -150,7 +148,6 @@ public:
     MemoryAllocator& memory_allocator;
     StagingBufferPool& staging_buffer_pool;
     BlitImageHelper& blit_image_helper;
-    RenderPassCache& render_pass_cache;
     std::optional<ASTCDecoderPass> astc_decoder_pass;
     std::optional<BlockLinearUnswizzleImage2DPass> bl_unswizzle_2d_pass;
     std::optional<BlockLinearUnswizzleImage3DPass> bl_unswizzle_3d_pass;
@@ -184,6 +181,7 @@ public:
     std::vector<MsaaScratchImage> msaa_scratch_images;
     ::Common::unordered_map<VkImage, ResolveShadow> resolve_shadows;
     std::vector<std::pair<u64, ResolveShadow>> pending_resolve_shadows;
+    u64 framebuffer_serial{};
 };
 
 class Framebuffer {
@@ -206,21 +204,17 @@ public:
                            std::span<ImageView*, NUM_RT> color_buffers, ImageView* depth_buffer,
                            bool is_rescaled = false);
 
-    [[nodiscard]] VkFramebuffer Handle() const noexcept {
-        return *framebuffer;
+    [[nodiscard]] u64 Id() const noexcept {
+        return id;
     }
 
-    [[nodiscard]] VkRenderPass RenderPass() const noexcept {
-        return renderpass;
+    [[nodiscard]] const RenderingFormats& Formats() const noexcept {
+        return formats;
     }
 
-    [[nodiscard]] const RenderPassKey& RenderPassKeyBase() const noexcept {
-        return render_pass_key;
+    [[nodiscard]] const RenderingAttachments& Attachments() const noexcept {
+        return attachments;
     }
-
-    [[nodiscard]] VkRenderPass RenderPassVariant(u32 color_clear_mask, bool depth_stencil_clear,
-                                                 u32 color_discard_mask,
-                                                 bool depth_stencil_discard) const;
 
     [[nodiscard]] VkExtent2D RenderArea() const noexcept {
         return render_area;
@@ -271,10 +265,9 @@ public:
     void MarkResolveShadowsUpToDate() const;
 
 private:
-    static constexpr size_t NUM_MEMOIZED_RENDER_PASS_VARIANTS = 8;
-
-    vk::Framebuffer framebuffer;
-    VkRenderPass renderpass{};
+    RenderingFormats formats{};
+    RenderingAttachments attachments{};
+    u64 id{};
     VkExtent2D render_area{};
     VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
     u32 num_images = 0;
@@ -287,13 +280,8 @@ private:
     std::array<VkImage, 9> resolve_shadow_images{};
     u32 num_resolve_shadows = 0;
     TextureCacheRuntime* runtime_ptr{nullptr};
-    RenderPassKey render_pass_key{};
-    RenderPassCache* render_pass_cache{nullptr};
     bool discard_msaa_color{};
     bool discard_msaa_depth_stencil{};
-    mutable std::array<u32, NUM_MEMOIZED_RENDER_PASS_VARIANTS> variant_keys{};
-    mutable std::array<VkRenderPass, NUM_MEMOIZED_RENDER_PASS_VARIANTS> variant_render_passes{};
-    mutable u32 num_memoized_variants{};
 };
 
 class Image : public VideoCommon::ImageBase {

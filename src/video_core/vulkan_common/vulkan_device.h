@@ -43,6 +43,7 @@ VK_DEFINE_HANDLE(VmaAllocator)
     FEATURE(KHR, VulkanMemoryModel, VULKAN_MEMORY_MODEL, vulkan_memory_model)
 
 #define FOR_EACH_VK_FEATURE_1_3(FEATURE)                                                           \
+    FEATURE(KHR, DynamicRendering, DYNAMIC_RENDERING, dynamic_rendering)                           \
     FEATURE(EXT, ImageRobustness, IMAGE_ROBUSTNESS, robust_image_access)                           \
     FEATURE(EXT, ShaderDemoteToHelperInvocation, SHADER_DEMOTE_TO_HELPER_INVOCATION,               \
             shader_demote_to_helper_invocation)                                                    \

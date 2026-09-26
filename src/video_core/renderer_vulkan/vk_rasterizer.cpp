@@ -211,10 +211,10 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
                              device.IsExtDescriptorBufferSupported()),
       compute_pass_descriptor_queue(device, UpdateDescriptorQueue::COMPUTE_FRAME_PAYLOAD_SIZE),
       descriptor_buffer_ring(device, memory_allocator),
-      blit_image(device, scheduler, state_tracker, descriptor_pool), render_pass_cache(device),
-      texture_cache_runtime{
-          device,     scheduler,         memory_allocator, staging_pool,
-          blit_image, render_pass_cache, descriptor_pool,  compute_pass_descriptor_queue},
+      blit_image(device, scheduler, state_tracker, descriptor_pool),
+      texture_cache_runtime{device,       scheduler,  memory_allocator,
+                            staging_pool, blit_image, descriptor_pool,
+                            compute_pass_descriptor_queue},
       texture_cache(texture_cache_runtime, device_memory),
       buffer_cache_runtime(device, memory_allocator, scheduler, staging_pool,
                            guest_descriptor_queue, compute_pass_descriptor_queue, descriptor_pool),
@@ -223,8 +223,7 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
                           staging_pool, compute_pass_descriptor_queue, descriptor_pool, texture_cache),
       query_cache(gpu, *this, device_memory, query_cache_runtime),
       pipeline_cache(device_memory, device, scheduler, descriptor_pool, guest_descriptor_queue,
-                     descriptor_buffer_ring, render_pass_cache, buffer_cache, texture_cache,
-                     gpu.ShaderNotify()),
+                     descriptor_buffer_ring, buffer_cache, texture_cache, gpu.ShaderNotify()),
       accelerate_dma(buffer_cache, texture_cache, scheduler),
       fence_manager(*this, gpu, texture_cache, buffer_cache, query_cache, device, scheduler) {
     scheduler.SetQueryCache(query_cache);
