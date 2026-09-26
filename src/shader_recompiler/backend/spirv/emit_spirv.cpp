@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <span>
 #include <tuple>
 #include <type_traits>
@@ -439,10 +440,13 @@ void SetupCapabilities(const Profile& profile, const Info& info, EmitContext& ct
         ctx.AddCapability(spv::Capability::DrawParameters);
     }
     if ((info.uses_subgroup_vote || info.uses_subgroup_invocation_id ||
-         info.uses_subgroup_shuffles) &&
+         info.uses_subgroup_shuffles || info.uses_subgroup_mask) &&
         profile.support_vote && profile.SupportsSubgroupStage(ctx.stage)) {
         ctx.AddCapability(spv::Capability::GroupNonUniformBallot);
         ctx.AddCapability(spv::Capability::GroupNonUniformShuffle);
+        if (info.uses_subgroup_shuffles && profile.support_shuffle_relative) {
+            ctx.AddCapability(spv::Capability::GroupNonUniformShuffleRelative);
+        }
         if (!profile.warp_size_potentially_larger_than_guest) {
             // vote ops are only used when not taking the long path
             ctx.AddCapability(spv::Capability::GroupNonUniformVote);
@@ -521,6 +525,29 @@ void PatchPhiNodes(IR::Program& program, EmitContext& ctx) {
                 return { ctx.Def(phi->Arg(phi_arg)), parent };
             });
         }
+
+void RewriteOpcodes(std::vector<u32>& code, std::span<const std::pair<u32, spv::Op>> rewrites) {
+    if (rewrites.empty()) {
+        return;
+    }
+    size_t offset = 5;
+    while (offset + 2 < code.size()) {
+        const u32 word_count{code[offset] >> 16};
+        const auto opcode{static_cast<spv::Op>(code[offset] & 0xFFFFu)};
+        if (word_count == 0) {
+            return;
+        }
+        if (opcode == spv::Op::OpGroupNonUniformShuffleXor ||
+            opcode == spv::Op::OpGroupNonUniformQuadBroadcast) {
+            const auto it{std::ranges::find(rewrites, code[offset + 2],
+                                            &std::pair<u32, spv::Op>::first)};
+            if (it != rewrites.end()) {
+                code[offset] = (code[offset] & 0xFFFF0000u) | static_cast<u32>(it->second);
+            }
+        }
+        offset += word_count;
+    }
+}
 } // Anonymous namespace
 
 std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_info, IR::Program& program, Bindings& bindings) {
@@ -535,7 +562,9 @@ std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_in
     SetupCapabilities(profile, program.info, ctx);
     SetupTransformFeedbackCapabilities(ctx, main);
     PatchPhiNodes(program, ctx);
-    return ctx.Assemble();
+    std::vector<u32> code{ctx.Assemble()};
+    RewriteOpcodes(code, ctx.opcode_rewrites);
+    return code;
 }
 
 Id EmitPhi(EmitContext& ctx, IR::Inst* inst) {

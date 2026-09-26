@@ -485,6 +485,11 @@ FN_MAX_LIMIT_LIST
         return properties.subgroup_properties.supportedStages;
     }
 
+    u32 GetMaxSubgroupSize() const {
+        return (std::max)(properties.subgroup_properties.subgroupSize,
+                          properties.subgroup_size_control.maxSubgroupSize);
+    }
+
     /// Returns the maximum number of push descriptors.
     u32 MaxPushDescriptors() const {
         return properties.push_descriptor.maxPushDescriptors;
