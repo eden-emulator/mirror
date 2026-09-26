@@ -263,8 +263,6 @@ void RasterizerVulkan::PrepareDraw(bool is_indexed, bool skip_empty, Func&& draw
     pipeline->SetEngine(maxwell3d, gpu_memory);
     if (!pipeline->Configure(is_indexed))
         return;
-    scheduler.MarkDepthWrites(maxwell3d->regs.depth_test_enable != 0 &&
-                              maxwell3d->regs.depth_write_enabled != 0);
 
     UpdateDynamicStates(pipeline->HasDynamicVertexInput());
 
@@ -584,7 +582,6 @@ void RasterizerVulkan::Clear(u32 layer_count) {
     if (aspect_flags == 0) {
         return;
     }
-    scheduler.MarkDepthWrites(!can_defer_clear && (aspect_flags & VK_IMAGE_ASPECT_DEPTH_BIT) != 0);
 
     if (use_stencil && framebuffer->HasAspectStencilBit() && regs.stencil_front_mask != 0xFF &&
         regs.stencil_front_mask != 0) {

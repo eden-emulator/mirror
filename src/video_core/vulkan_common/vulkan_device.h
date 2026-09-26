@@ -106,6 +106,8 @@ VK_DEFINE_HANDLE(VmaAllocator)
     EXTENSION(KHR, SWAPCHAIN, swapchain)                                                           \
     EXTENSION(KHR, SWAPCHAIN_MUTABLE_FORMAT, swapchain_mutable_format)                             \
     EXTENSION(KHR, IMAGE_FORMAT_LIST, image_format_list)                                           \
+    EXTENSION(KHR, LOAD_STORE_OP_NONE, load_store_op_none)                                         \
+    EXTENSION(EXT, LOAD_STORE_OP_NONE, load_store_op_none_ext)                                     \
     EXTENSION(NV, DEVICE_DIAGNOSTICS_CONFIG, device_diagnostics_config)                            \
     EXTENSION(NV, GEOMETRY_SHADER_PASSTHROUGH, geometry_shader_passthrough)                        \
     EXTENSION(NV, VIEWPORT_ARRAY2, viewport_array2)                                                \
@@ -669,6 +671,10 @@ FN_MAX_LIMIT_LIST
     }
 
     /// Returns true if the device supports VK_EXT_depth_bias_control.
+    bool IsLoadOpNoneSupported() const {
+        return extensions.load_store_op_none || extensions.load_store_op_none_ext;
+    }
+
     bool IsExtDepthBiasControlSupported() const {
         return extensions.depth_bias_control;
     }

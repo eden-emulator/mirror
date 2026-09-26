@@ -27,6 +27,15 @@
 #include "video_core/vulkan_common/vulkan_wrapper.h"
 
 namespace Vulkan {
+namespace {
+struct BeginRenderingCommand {
+    void operator()(vk::CommandBuffer cmdbuf, vk::CommandBuffer) const {
+        BeginRendering(cmdbuf, attachments);
+    }
+
+    RenderingAttachments attachments;
+};
+} // Anonymous namespace
 
 void Scheduler::CommandChunk::ExecuteAll(vk::CommandBuffer cmdbuf,
                                          vk::CommandBuffer upload_cmdbuf) {
@@ -104,6 +113,7 @@ void Scheduler::DispatchWork() {
             work_queue.push(std::move(chunk));
         }
         event_cv.notify_all();
+        recorded_attachments = nullptr;
         AcquireNewChunk();
     }
 }
@@ -113,7 +123,8 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer,
     PublishComputeWrites();
     state.framebuffer_id = framebuffer->Id();
     ++renderpass_serial;
-    renderpass_depth_writes = false;
+    attachments_touched = 0;
+    attachments_written = 0;
 
     if (GPU::Logging::IsActive() && Settings::values.gpu_log_vulkan_calls.GetValue()) {
         const VkExtent2D render_area = attachments.render_area.extent;
@@ -123,7 +134,13 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer,
         GPU::Logging::GPULogger::GetInstance().LogRenderPassBegin(render_pass_info);
     }
 
-    Record([attachments](vk::CommandBuffer cmdbuf) { BeginRendering(cmdbuf, attachments); });
+    BeginRenderingCommand command{attachments};
+    BeginRenderingCommand* recorded = chunk->Record(command);
+    if (recorded == nullptr) {
+        DispatchWork();
+        recorded = chunk->Record(command);
+    }
+    recorded_attachments = &recorded->attachments;
     num_renderpass_images = framebuffer->NumImages();
     renderpass_images = framebuffer->Images();
     renderpass_image_ranges = framebuffer->ImageRanges();
@@ -161,7 +178,9 @@ void Scheduler::RealizeDeferredClear() {
     }
     EndRenderPass();
     BeginRenderPassImpl(dc.framebuffer, attachments);
-    renderpass_depth_writes = dc.depth_stencil;
+    if (dc.depth_stencil) {
+        attachments_written |= DEPTH_ATTACHMENT_BIT | STENCIL_ATTACHMENT_BIT;
+    }
 }
 
 bool Scheduler::DeferColorClear(const Framebuffer* framebuffer, u32 rt_slot,
@@ -201,17 +220,16 @@ void Scheduler::FlushDeferredClear() {
     EndRenderPass();
 }
 
-void Scheduler::RequestRenderpass(const Framebuffer* framebuffer) {
+void Scheduler::RequestRenderpass(const Framebuffer* framebuffer, u32 touched, u32 written) {
     if (deferred_clear.framebuffer == framebuffer) {
         RealizeDeferredClear();
-        return;
+    } else if (framebuffer->Id() != state.framebuffer_id) {
+        // Ends any active pass and realizes a deferred clear
+        EndRenderPass();
+        BeginRenderPassImpl(framebuffer, framebuffer->Attachments());
     }
-    if (framebuffer->Id() == state.framebuffer_id) {
-        return;
-    }
-    // Ends any active pass and realizes a deferred clear
-    EndRenderPass();
-    BeginRenderPassImpl(framebuffer, framebuffer->Attachments());
+    attachments_touched |= touched;
+    attachments_written |= written;
 }
 
 void Scheduler::RequestOutsideRenderPassOperationContext() {
@@ -222,6 +240,28 @@ void Scheduler::RequestOutsideRenderPassOperationContext() {
 void Scheduler::RequestComputeDispatchContext() {
     EndRenderPass();
     compute_writes = true;
+}
+
+void Scheduler::RelaxAttachmentOps(RenderingAttachments& attachments) const {
+    const bool load_op_none = device.IsLoadOpNoneSupported();
+    const auto relax = [&](VkRenderingAttachmentInfo& attachment, u32 bit) {
+        if (attachment.imageView == VK_NULL_HANDLE ||
+            attachment.resolveMode != VK_RESOLVE_MODE_NONE ||
+            attachment.loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR ||
+            attachment.storeOp != VK_ATTACHMENT_STORE_OP_STORE ||
+            (attachments_written & bit) != 0) {
+            return;
+        }
+        attachment.storeOp = VK_ATTACHMENT_STORE_OP_NONE;
+        if (load_op_none && (attachments_touched & bit) == 0) {
+            attachment.loadOp = VK_ATTACHMENT_LOAD_OP_NONE;
+        }
+    };
+    for (u32 slot = 0; slot < attachments.num_colors; ++slot) {
+        relax(attachments.colors[slot], 1u << slot);
+    }
+    relax(attachments.depth, DEPTH_ATTACHMENT_BIT);
+    relax(attachments.stencil, STENCIL_ATTACHMENT_BIT);
 }
 
 void Scheduler::PublishComputeWrites() {
@@ -405,6 +445,10 @@ void Scheduler::EndRenderPass()
         RealizeDeferredClear();
         if (state.framebuffer_id == 0) {
             return;
+        }
+        if (recorded_attachments != nullptr) {
+            RelaxAttachmentOps(*recorded_attachments);
+            recorded_attachments = nullptr;
         }
 
         query_cache->CounterClose(VideoCommon::QueryType::StreamingByteCount);

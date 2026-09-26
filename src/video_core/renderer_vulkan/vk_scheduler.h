@@ -42,6 +42,10 @@ struct RenderingAttachments;
 /// OpenGL-like operations on Vulkan command buffers.
 class Scheduler {
 public:
+    static constexpr u32 DEPTH_ATTACHMENT_BIT = 1u << 8;
+    static constexpr u32 STENCIL_ATTACHMENT_BIT = 1u << 9;
+    static constexpr u32 ALL_ATTACHMENTS = 0x3FF;
+
     explicit Scheduler(const Device& device, StateTracker& state_tracker);
     ~Scheduler();
 
@@ -59,7 +63,8 @@ public:
     void DispatchWork();
 
     /// Requests to begin a renderpass.
-    void RequestRenderpass(const Framebuffer* framebuffer);
+    void RequestRenderpass(const Framebuffer* framebuffer, u32 touched = ALL_ATTACHMENTS,
+                           u32 written = ALL_ATTACHMENTS);
 
     /// Defers a full-attachment color clear so it becomes the next render pass.
     bool DeferColorClear(const Framebuffer* framebuffer, u32 rt_slot, const VkClearValue& value);
@@ -100,12 +105,8 @@ public:
         renderpass_writes = true;
     }
 
-    void MarkDepthWrites(bool writes) noexcept {
-        renderpass_depth_writes |= writes;
-    }
-
     bool HasDepthWrites() const noexcept {
-        return renderpass_depth_writes;
+        return (attachments_written & DEPTH_ATTACHMENT_BIT) != 0;
     }
 
     /// Update the pipeline to the current execution context.
@@ -235,6 +236,10 @@ private:
             command(cmdbuf, upload_cmdbuf);
         }
 
+        T& Get() noexcept {
+            return command;
+        }
+
     private:
         T command;
     };
@@ -244,16 +249,18 @@ private:
         void ExecuteAll(vk::CommandBuffer cmdbuf, vk::CommandBuffer upload_cmdbuf);
 
         template <typename T>
-        bool Record(T& command) {
+        T* Record(T& command) {
             using FuncType = TypedCommand<T>;
             static_assert(sizeof(FuncType) < sizeof(data), "Lambda is too large");
 
             command_offset = Common::AlignUp(command_offset, alignof(FuncType));
             if (command_offset > sizeof(data) - sizeof(FuncType)) {
-                return false;
+                return nullptr;
             }
             Command* const current_last = last;
-            last = new (data.data() + command_offset) FuncType(std::move(command));
+            FuncType* const recorded =
+                new (data.data() + command_offset) FuncType(std::move(command));
+            last = recorded;
 
             if (current_last) {
                 current_last->SetNext(last);
@@ -261,7 +268,7 @@ private:
                 first = last;
             }
             command_offset += sizeof(FuncType);
-            return true;
+            return &recorded->Get();
         }
 
         void MarkSubmit() {
@@ -322,6 +329,8 @@ private:
 
     void PublishComputeWrites();
 
+    void RelaxAttachmentOps(RenderingAttachments& attachments) const;
+
     void AcquireNewChunk();
 
     const Device& device;
@@ -345,8 +354,10 @@ private:
     u64 renderpass_serial = 0;
     u64 wfi_serial = 0;
     bool renderpass_writes = false;
-    bool renderpass_depth_writes = false;
     bool compute_writes = false;
+    u32 attachments_touched = 0;
+    u32 attachments_written = 0;
+    RenderingAttachments* recorded_attachments = nullptr;
     VkMemoryBarrier2 renderpass_write_barrier{};
     VkMemoryBarrier2 compute_write_barrier{};
     VkMemoryBarrier2 upload_write_barrier{};

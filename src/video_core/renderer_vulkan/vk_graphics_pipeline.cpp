@@ -136,6 +136,37 @@ RenderingFormats PipelineFormats(const FixedPipelineState& state, const Device& 
     return MakeRenderingFormats(device, color_formats, depth_format);
 }
 
+struct AttachmentAccess {
+    u32 touched;
+    u32 written;
+};
+
+AttachmentAccess MakeAttachmentAccess(const Maxwell& regs) {
+    AttachmentAccess access{};
+    for (size_t index = 0; index < Maxwell::NumRenderTargets; ++index) {
+        size_t mask_index = index;
+        if (regs.color_mask_common) {
+            mask_index = 0;
+        }
+        const auto& mask = regs.color_mask[mask_index];
+        if (mask.R || mask.G || mask.B || mask.A) {
+            access.touched |= 1u << index;
+            access.written |= 1u << index;
+        }
+    }
+    if (regs.depth_test_enable || regs.depth_bounds_enable) {
+        access.touched |= Scheduler::DEPTH_ATTACHMENT_BIT;
+    }
+    if (regs.depth_test_enable && regs.depth_write_enabled) {
+        access.written |= Scheduler::DEPTH_ATTACHMENT_BIT;
+    }
+    if (regs.stencil_enable) {
+        access.touched |= Scheduler::STENCIL_ATTACHMENT_BIT;
+        access.written |= Scheduler::STENCIL_ATTACHMENT_BIT;
+    }
+    return access;
+}
+
 size_t NumAttachments(const FixedPipelineState& state) {
     size_t num{};
     for (size_t index = 0; index < Maxwell::NumRenderTargets; ++index) {
@@ -586,7 +617,8 @@ bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
     if (buffer_cache.TakeDrawHazard()) {
         scheduler.RequestOutsideRenderPassOperationContext();
     }
-    scheduler.RequestRenderpass(texture_cache.GetFramebuffer());
+    const AttachmentAccess access = MakeAttachmentAccess(maxwell3d->regs);
+    scheduler.RequestRenderpass(texture_cache.GetFramebuffer(), access.touched, access.written);
     buffer_cache.CommitDrawWrites();
     if (!is_built.load(std::memory_order::relaxed)) {
         // Wait for the pipeline to be built
