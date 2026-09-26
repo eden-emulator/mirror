@@ -150,7 +150,7 @@ add_library(
     container/unordered_map.h container/unordered_set.h)
 
 set_source_files_properties(zbic_compression.cpp PROPERTIES
-    INCLUDE_DIRECTORIES "${ATMOSPHERE_ZSTD_BIC_INCLUDE_DIR}"
+    INCLUDE_DIRECTORIES "${ZBIC_INCLUDE_DIR}"
     COMPILE_OPTIONS "$<$<CXX_COMPILER_ID:Clang,GNU>:-Wno-unused-function>")
 
 if(WIN32)

@@ -48,9 +48,9 @@ if (NOT TARGET stb::headers)
     add_library(stb::headers ALIAS stb)
 endif()
 
-AddJsonPackage(NAME atmosphere_zstd_bic DOWNLOAD_ONLY)
-set(ATMOSPHERE_ZSTD_BIC_INCLUDE_DIR
-    "${atmosphere_zstd_bic_SOURCE_DIR}/libraries/libstratosphere/source/util"
+AddJsonPackage(NAME zbic DOWNLOAD_ONLY)
+set(ZBIC_INCLUDE_DIR
+    "${zbic_SOURCE_DIR}/src"
     PARENT_SCOPE)
 
 # ItaniumDemangle (Windows only)
