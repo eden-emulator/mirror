@@ -11,15 +11,7 @@
 
 namespace Service::Glue {
 
-BGTC_T::BGTC_T(Core::System& system_) : ServiceFramework{system_, "bgtc:t"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        FunctionInfo{100, &BGTC_T::OpenTaskService, "OpenTaskService"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
-}
+BGTC_T::BGTC_T(Core::System& system_) : ServiceFramework{system_, "bgtc:t"} {}
 
 BGTC_T::~BGTC_T() = default;
 

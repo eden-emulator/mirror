@@ -25,15 +25,8 @@
 
 namespace Service::NS {
 
-IApplicationManagerInterface::IApplicationManagerInterface(Core::System& system_)
-    : ServiceFramework{system_, "IApplicationManagerInterface"},
-      service_context{system, "IApplicationManagerInterface"},
-      record_update_system_event{service_context}, sd_card_mount_status_event{service_context},
-      gamecard_update_detection_event{service_context},
-      gamecard_mount_status_event{service_context}, gamecard_mount_failure_event{service_context},
-      gamecard_waken_ready_event{service_context}, unknown_event{service_context} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
+ServiceFrameworkBase::FunctionInfoBase const* IApplicationManagerInterface::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IApplicationManagerInterface::ListApplicationRecord>, "ListApplicationRecord"},
         FunctionInfo{1, nullptr, "GenerateApplicationRecordCount"},
         FunctionInfo{2, D<&IApplicationManagerInterface::GetApplicationRecordUpdateSystemEvent>, "GetApplicationRecordUpdateSystemEvent"},
@@ -479,11 +472,18 @@ IApplicationManagerInterface::IApplicationManagerInterface(Core::System& system_
         FunctionInfo{4105, D<&IApplicationManagerInterface::Unknown4105>, "Unknown4105"}, //23.0.0+
         FunctionInfo{5000, nullptr, "Unknown5000"}, //18.0.0+
         FunctionInfo{5001, nullptr, "Unknown5001"}, //18.0.0+
-        FunctionInfo{9999, nullptr, "GetApplicationCertificate"}, //10.0.0-10.2.0
-    };
-    // clang-format on
+        FunctionInfo{9999, nullptr, "GetApplicationCertificate"} //10.0.0-10.2.0
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
 
-    RegisterHandlers(functions);
+IApplicationManagerInterface::IApplicationManagerInterface(Core::System& system_)
+    : ServiceFramework{system_, "IApplicationManagerInterface"},
+      service_context{system, "IApplicationManagerInterface"},
+      record_update_system_event{service_context}, sd_card_mount_status_event{service_context},
+      gamecard_update_detection_event{service_context},
+      gamecard_mount_status_event{service_context}, gamecard_mount_failure_event{service_context},
+      gamecard_waken_ready_event{service_context}, unknown_event{service_context} {
 }
 
 IApplicationManagerInterface::~IApplicationManagerInterface() = default;

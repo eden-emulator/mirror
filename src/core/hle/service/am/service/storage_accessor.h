@@ -19,6 +19,7 @@ private:
     Result Write(InBuffer<BufferAttr_HipcAutoSelect> buffer, s64 offset);
     Result Read(OutBuffer<BufferAttr_HipcAutoSelect> out_buffer, s64 offset);
 
+    FunctionInfoBase const* FindRequest(u32 key) override;
     const std::shared_ptr<LibraryAppletStorage> m_impl;
 };
 
@@ -32,6 +33,7 @@ private:
     Result GetSize(Out<s64> out_size);
     Result GetHandle(Out<s64> out_size, OutCopyHandle<Kernel::KTransferMemory> out_handle);
 
+    FunctionInfoBase const* FindRequest(u32 key) override;
     const std::shared_ptr<LibraryAppletStorage> m_impl;
 };
 

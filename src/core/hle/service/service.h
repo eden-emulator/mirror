@@ -108,7 +108,6 @@ private:
     virtual FunctionInfoBase const* FindRequest(u32 key) = 0;
     virtual FunctionInfoBase const* FindRequestTipc(u32 key) = 0;
 
-    void RegisterHandlersBase(const FunctionInfoBase* functions, std::size_t n);
     void ReportUnimplementedFunction(HLERequestContext& ctx, const FunctionInfoBase* info);
 
 protected:
@@ -132,8 +131,7 @@ protected:
 /**
  * Framework for implementing HLE services. Dispatches on the header id of incoming SyncRequests
  * based on a table mapping header ids to handler functions. Service implementations should inherit
- * from ServiceFramework using the CRTP (`class Foo : public ServiceFramework<Foo> { ... };`) and
- * populate it with handlers by calling #RegisterHandlers.
+ * from ServiceFramework using the CRTP (`class Foo : public ServiceFramework<Foo> { ... };`)
  *
  * In order to avoid duplicating code in the binary and exposing too many implementation details in
  * the header, this class is split into a non-templated base (ServiceFrameworkBase) and a template
@@ -196,17 +194,10 @@ protected:
     {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        auto it = handlers.find(key);
-        return it != handlers.end() ? std::addressof(it->second) : nullptr;
+        UNREACHABLE();
     }
-
-    /// Registers handlers in the service.
-    template <typename T = Self, std::size_t N>
-    constexpr void RegisterHandlers(const FunctionInfoTyped<T> (&functions)[N]) {
-        // Usually this array is sorted by id already, so hint to insert at the end
-        handlers.reserve(handlers.size() + N);
-        for (std::size_t i = 0; i < N; ++i)
-            handlers.emplace_hint(handlers.cend(), functions[i].expected_header, functions[i]);
+    FunctionInfoBase const* FindRequestTipc(u32 key) override {
+        UNREACHABLE();
     }
 
 protected:
@@ -237,8 +228,6 @@ private:
         // Cast back up to our original types and call the member function
         (static_cast<Self*>(object)->*HandlerFnP<Self>(member))(ctx);
     }
-
-    ::Common::unordered_map<u32, FunctionInfoBase> handlers;
 };
 
 } // namespace Service

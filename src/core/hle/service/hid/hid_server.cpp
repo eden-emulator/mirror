@@ -42,11 +42,8 @@
 
 namespace Service::HID {
 
-IHidServer::IHidServer(Core::System& system_, std::shared_ptr<ResourceManager> resource,
-                       std::shared_ptr<HidFirmwareSettings> settings)
-    : ServiceFramework{system_, "hid"}, resource_manager{resource}, firmware_settings{settings} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
+ServiceFrameworkBase::FunctionInfoBase const* IHidServer::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&IHidServer::CreateAppletResource>, "CreateAppletResource"},
         FunctionInfo{1, C<&IHidServer::ActivateDebugPad>, "ActivateDebugPad"},
         FunctionInfo{11, C<&IHidServer::ActivateTouchScreen>, "ActivateTouchScreen"},
@@ -237,12 +234,15 @@ IHidServer::IHidServer(Core::System& system_, std::shared_ptr<ResourceManager> r
         FunctionInfo{3013, nullptr, "SetDebugPadGenericPadMap"}, //21.0.0+
         FunctionInfo{3014, nullptr, "GetDebugPadKeyboardMap"}, //21.0.0+
         FunctionInfo{3015, nullptr, "SetDebugPadKeyboardMap"}, //21.0.0+
-        FunctionInfo{3150, C<&IHidServer::SetMouseLibraryVersion>, "SetMouseLibraryVersion"}, //21.0.0+
+        FunctionInfo{3150, C<&IHidServer::SetMouseLibraryVersion>, "SetMouseLibraryVersion"} //21.0.0+
         // What? -- {12010, nullptr, "SetButtonConfigLeft"},
-    };
-    // clang-format on
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
 
-    RegisterHandlers(functions);
+IHidServer::IHidServer(Core::System& system_, std::shared_ptr<ResourceManager> resource,
+                       std::shared_ptr<HidFirmwareSettings> settings)
+    : ServiceFramework{system_, "hid"}, resource_manager{resource}, firmware_settings{settings} {
 }
 
 IHidServer::~IHidServer() = default;

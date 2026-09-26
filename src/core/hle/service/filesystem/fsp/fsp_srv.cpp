@@ -47,11 +47,8 @@
 
 namespace Service::FileSystem {
 
-FSP_SRV::FSP_SRV(Core::System& system_)
-    : ServiceFramework{system_, "fsp-srv"}, fsc{system.GetFileSystemController()},
-      content_provider{system.GetContentProvider()}, reporter{system.GetReporter()} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
+ServiceFrameworkBase::FunctionInfoBase const* FSP_SRV::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "OpenFileSystem"},
         FunctionInfo{1, D<&FSP_SRV::SetCurrentProcess>, "SetCurrentProcess"},
         FunctionInfo{2, D<&FSP_SRV::OpenDataFileSystemByCurrentProcess>, "OpenDataFileSystemByCurrentProcess"},
@@ -179,11 +176,13 @@ FSP_SRV::FSP_SRV(Core::System& system_)
         FunctionInfo{1100, nullptr, "OverrideSaveDataTransferTokenSignVerificationKey"},
         FunctionInfo{1110, nullptr, "CorruptSaveDataFileSystemBySaveDataSpaceId2"},
         FunctionInfo{1200, D<&FSP_SRV::OpenMultiCommitManager>, "OpenMultiCommitManager"},
-        FunctionInfo{1300, nullptr, "OpenBisWiper"},
-    };
-    // clang-format on
-    RegisterHandlers(functions);
+        FunctionInfo{1300, nullptr, "OpenBisWiper"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
 
+FSP_SRV::FSP_SRV(Core::System& system_)
+    : ServiceFramework{system_, "fsp-srv"}, fsc{system.GetFileSystemController()}, content_provider{system.GetContentProvider()}, reporter{system.GetReporter()} {
     if (Settings::values.enable_fs_access_log) {
         access_log_mode = AccessLogMode::SdCard;
     }

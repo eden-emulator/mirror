@@ -29,9 +29,8 @@
 
 namespace Service::IRS {
 
-IRS::IRS(Core::System& system_) : ServiceFramework{system_, "irs"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
+ServiceFrameworkBase::FunctionInfoBase const* IRS::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{302, C<&IRS::ActivateIrsensor>, "ActivateIrsensor"},
         FunctionInfo{303, C<&IRS::DeactivateIrsensor>, "DeactivateIrsensor"},
         FunctionInfo{304, C<&IRS::GetIrsensorSharedMemoryHandle>, "GetIrsensorSharedMemoryHandle"},
@@ -49,12 +48,13 @@ IRS::IRS(Core::System& system_) : ServiceFramework{system_, "irs"} {
         FunctionInfo{316, C<&IRS::RunImageTransferExProcessor>, "RunImageTransferExProcessor"},
         FunctionInfo{317, C<&IRS::RunIrLedProcessor>, "RunIrLedProcessor"},
         FunctionInfo{318, C<&IRS::StopImageProcessorAsync>, "StopImageProcessorAsync"},
-        FunctionInfo{319, C<&IRS::ActivateIrsensorWithFunctionLevel>, "ActivateIrsensorWithFunctionLevel"},
-    };
-    // clang-format on
+        FunctionInfo{319, C<&IRS::ActivateIrsensorWithFunctionLevel>, "ActivateIrsensorWithFunctionLevel"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
 
+IRS::IRS(Core::System& system_) : ServiceFramework{system_, "irs"} {
     u8* raw_shared_memory = system.Kernel().GetIrsSharedMem().GetPointer();
-    RegisterHandlers(functions);
     shared_memory = std::construct_at(reinterpret_cast<StatusManager*>(raw_shared_memory));
 
     npad_device = system.HIDCore().GetEmulatedController(Core::HID::NpadIdType::Player1);

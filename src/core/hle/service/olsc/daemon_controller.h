@@ -38,6 +38,8 @@ private:
 
     Result GetAutonomyTaskStatus(Out<u8> out_status, Common::UUID user_id);
 
+    FunctionInfoBase const* FindRequest(u32 key) override;
+
     // Internal in-memory state to back the above APIs
     struct AppKey {
         Common::UUID user_id;

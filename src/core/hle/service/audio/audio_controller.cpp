@@ -20,10 +20,8 @@
 
 namespace Service::Audio {
 
-IAudioController::IAudioController(Core::System& system_)
-    : ServiceFramework{system_, "audctl"}, service_context{system, "audctl"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
+ServiceFrameworkBase::FunctionInfoBase const* IAudioController::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IAudioController::GetTargetVolume>, "GetTargetVolume"},
         FunctionInfo{1, D<&IAudioController::SetTargetVolume>, "SetTargetVolume"},
         FunctionInfo{2, D<&IAudioController::GetTargetVolumeMin>, "GetTargetVolumeMin"},
@@ -84,13 +82,13 @@ IAudioController::IAudioController(Core::System& system_)
         FunctionInfo{50001, nullptr, "OverrideDefaultTargetForDebug"}, //19.0.0-19.0.1
         FunctionInfo{50003, nullptr, "SetForceOverrideExternalDeviceNameForDebug"}, //19.0.0+
         FunctionInfo{50004, nullptr, "ClearForceOverrideExternalDeviceNameForDebug"} //19.0.0+
-    };
-    // clang-format on
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
 
-    RegisterHandlers(functions);
-
-    m_set_sys =
-        system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);
+IAudioController::IAudioController(Core::System& system_)
+    : ServiceFramework{system_, "audctl"}, service_context{system, "audctl"} {
+    m_set_sys = system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);
     notification_event = service_context.CreateEvent("IAudioController:NotificationEvent");
 
     // Probably shouldn't do this in constructor?

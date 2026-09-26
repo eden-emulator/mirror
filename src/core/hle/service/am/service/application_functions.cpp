@@ -51,10 +51,8 @@ FileSys::PatchManager::Metadata GetApplicationMetadata(Core::System& system, u64
 
 } // Anonymous namespace
 
-IApplicationFunctions::IApplicationFunctions(Core::System& system_, std::shared_ptr<Applet> applet)
-    : ServiceFramework{system_, "IApplicationFunctions"}, m_applet{std::move(applet)} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
+ServiceFrameworkBase::FunctionInfoBase const* IApplicationFunctions::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{1, D<&IApplicationFunctions::PopLaunchParameter>, "PopLaunchParameter"},
         FunctionInfo{10, nullptr, "CreateApplicationAndPushAndRequestToStart"},
         FunctionInfo{11, nullptr, "CreateApplicationAndPushAndRequestToStartForQuest"},
@@ -122,12 +120,15 @@ IApplicationFunctions::IApplicationFunctions(Core::System& system_, std::shared_
         FunctionInfo{330, D<&IApplicationFunctions::Unknown330>, "Unknown330"}, // [20.0.0+]
         FunctionInfo{500, nullptr, "StartContinuousRecordingFlushForDebug"},
         FunctionInfo{1000, nullptr, "CreateMovieMaker"},
-        FunctionInfo{1001, D<&IApplicationFunctions::PrepareForJit>, "PrepareForJit"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        FunctionInfo{1001, D<&IApplicationFunctions::PrepareForJit>, "PrepareForJit"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
 }
+
+IApplicationFunctions::IApplicationFunctions(Core::System& system_, std::shared_ptr<Applet> applet)
+    : ServiceFramework{system_, "IApplicationFunctions"}
+    , m_applet{std::move(applet)}
+{}
 
 IApplicationFunctions::~IApplicationFunctions() = default;
 
