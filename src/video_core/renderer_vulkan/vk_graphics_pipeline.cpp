@@ -929,8 +929,8 @@ void GraphicsPipeline::MakePipeline(const RenderingFormats& formats) {
         .stencilTestEnable = dynamic.stencil_enable,
         .front = GetStencilFaceState(dynamic.front),
         .back = GetStencilFaceState(dynamic.back),
-        .minDepthBounds = f32(key.state.depth_bounds_min),
-        .maxDepthBounds = f32(key.state.depth_bounds_max),
+        .minDepthBounds = 0.0f,
+        .maxDepthBounds = 1.0f,
     };
     if (dynamic.depth_bounds_enable && !device.IsDepthBoundsSupported()) {
         LOG_WARNING(Render_Vulkan, "Depth bounds is enabled but not supported");

@@ -230,7 +230,6 @@ struct FixedPipelineState {
         BitField<14, 1, u32> smooth_lines;
         BitField<15, 1, u32> alpha_to_coverage_enabled;
         BitField<16, 1, u32> alpha_to_one_enabled;
-        BitField<17, 3, Tegra::Engines::Maxwell3D::EngineHint> app_stage;
     };
     std::array<u8, Maxwell::NumRenderTargets> color_formats;
 
@@ -238,6 +237,8 @@ struct FixedPipelineState {
     u32 driver_version;
     u32 alpha_test_ref;
     u32 point_size;
+    u32 line_stipple_factor;
+    u32 line_stipple_pattern;
 
     std::array<u16, Maxwell::NumViewports> viewport_swizzles;
     union {
@@ -253,12 +254,6 @@ struct FixedPipelineState {
     std::array<u16, Maxwell::NumVertexArrays> vertex_strides;
 
     VideoCommon::TransformFeedbackState xfb_state;
-
-    u32 depth_bounds_min;
-    u32 depth_bounds_max;
-
-    u32 line_stipple_factor;
-    u32 line_stipple_pattern;
 
     void Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFeatures& features);
 
