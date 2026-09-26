@@ -47,11 +47,22 @@ Scheduler::Scheduler(const Device& device_, StateTracker& state_tracker_)
     : device{device_}, state_tracker{state_tracker_},
       master_semaphore{std::make_unique<MasterSemaphore>(device)},
       command_pool{std::make_unique<CommandPool>(*master_semaphore, device)} {
+    compute_write_barrier = VkMemoryBarrier2{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .pNext = nullptr,
+        .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+        .dstStageMask = device.GetBufferConsumerStages() | vk::PIPELINE_STAGE_ATTACHMENTS,
+        .dstAccessMask = device.GetBufferConsumerAccess() | vk::ACCESS_ATTACHMENTS,
+    };
+    renderpass_write_barrier = compute_write_barrier;
+    renderpass_write_barrier.srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_SHADERS;
+    upload_write_barrier = compute_write_barrier;
+    upload_write_barrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+    upload_write_barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
     if (device.IsExtTransformFeedbackSupported()) {
         renderpass_write_barrier.srcStageMask |= VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
         renderpass_write_barrier.srcAccessMask |= VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT;
-        renderpass_write_barrier.dstStageMask |= VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
-        renderpass_write_barrier.dstAccessMask |= VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT;
     }
 
     AcquireNewChunk();
@@ -241,18 +252,8 @@ void Scheduler::PublishComputeWrites() {
     if (!std::exchange(compute_writes, false)) {
         return;
     }
-    Record([](vk::CommandBuffer cmdbuf) {
-        static constexpr VkMemoryBarrier2 COMPUTE_WRITE_BARRIER{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-            .pNext = nullptr,
-            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
-            .dstStageMask = vk::PIPELINE_STAGE_BUFFER_INPUTS | vk::PIPELINE_STAGE_ATTACHMENTS |
-                            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            .dstAccessMask =
-                vk::ACCESS_BUFFER_INPUTS | vk::ACCESS_ATTACHMENTS | vk::ACCESS_TRANSFER,
-        };
-        cmdbuf.PipelineBarrier(COMPUTE_WRITE_BARRIER);
+    Record([barrier = &compute_write_barrier](vk::CommandBuffer cmdbuf) {
+        cmdbuf.PipelineBarrier(*barrier);
     });
 }
 
@@ -379,15 +380,7 @@ u64 Scheduler::SubmitExecution(VkSemaphore signal_semaphore, VkSemaphore wait_se
     const u64 signal_value = master_semaphore->NextTick();
     RecordWithUploadBuffer([signal_semaphore, wait_semaphore, signal_value,
                             this](vk::CommandBuffer cmdbuf, vk::CommandBuffer upload_cmdbuf) {
-        static constexpr VkMemoryBarrier2 WRITE_BARRIER{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-            .pNext = nullptr,
-            .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-            .dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-            .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
-        };
-        upload_cmdbuf.PipelineBarrier(WRITE_BARRIER);
+        upload_cmdbuf.PipelineBarrier(upload_write_barrier);
         upload_cmdbuf.End();
         cmdbuf.End();
 
@@ -481,12 +474,8 @@ void Scheduler::EndRenderPass()
                                         | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT
                                         | VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
                         .srcAccessMask = src_access,
-                        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                        .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT
-                                         | VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT
-                                         | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT
-                                         | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT
-                                         | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                        .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+                        .dstAccessMask = vk::ACCESS_IMAGE_USERS,
                         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,

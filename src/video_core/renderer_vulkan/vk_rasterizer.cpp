@@ -628,22 +628,13 @@ void RasterizerVulkan::DispatchCompute() {
         return;
     }
 
-    static constexpr VkMemoryBarrier2 READ_BARRIER{
+    const VkMemoryBarrier2 read_barrier{
         .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcStageMask = vk::PIPELINE_STAGE_BUFFER_INPUTS,
+        .srcStageMask = device.GetBufferUserStages(),
         .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
         .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
         .dstAccessMask = vk::ACCESS_SHADER_RESOURCES,
-    };
-    static constexpr VkMemoryBarrier2 INDIRECT_READ_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .pNext = nullptr,
-        .srcStageMask = vk::PIPELINE_STAGE_BUFFER_INPUTS,
-        .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
-        .dstStageMask =
-            VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-        .dstAccessMask = VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT | vk::ACCESS_SHADER_RESOURCES,
     };
     const auto& qmd{kepler_compute->launch_description};
     auto indirect_address = kepler_compute->GetIndirectComputeAddress();
@@ -654,12 +645,15 @@ void RasterizerVulkan::DispatchCompute() {
         const auto [buffer, offset] =
             buffer_cache.ObtainBuffer(*indirect_address, 12, sync_info, post_op);
         scheduler.RequestComputeDispatchContext();
-        scheduler.Record([pipeline, indirect_buffer = buffer->Handle(),
-                          indirect_offset = offset](vk::CommandBuffer cmdbuf) {
+        VkMemoryBarrier2 indirect_read_barrier = read_barrier;
+        indirect_read_barrier.dstStageMask |= VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+        indirect_read_barrier.dstAccessMask |= VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+        scheduler.Record([pipeline, indirect_buffer = buffer->Handle(), indirect_offset = offset,
+                          indirect_read_barrier](vk::CommandBuffer cmdbuf) {
             if (!pipeline->IsBound()) {
                 return;
             }
-            cmdbuf.PipelineBarrier(INDIRECT_READ_BARRIER);
+            cmdbuf.PipelineBarrier(indirect_read_barrier);
             cmdbuf.DispatchIndirect(indirect_buffer, indirect_offset);
         });
         return;
@@ -670,11 +664,11 @@ void RasterizerVulkan::DispatchCompute() {
         return;
     }
     scheduler.RequestComputeDispatchContext();
-    scheduler.Record([pipeline, dim](vk::CommandBuffer cmdbuf) {
+    scheduler.Record([pipeline, dim, read_barrier](vk::CommandBuffer cmdbuf) {
         if (!pipeline->IsBound()) {
             return;
         }
-        cmdbuf.PipelineBarrier(READ_BARRIER);
+        cmdbuf.PipelineBarrier(read_barrier);
         cmdbuf.Dispatch(dim[0], dim[1], dim[2]);
     });
 

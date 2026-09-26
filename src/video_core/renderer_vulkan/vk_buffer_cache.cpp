@@ -36,24 +36,6 @@ struct VertexBindings {
     u32 count;
 };
 
-constexpr VkMemoryBarrier2 READ_BARRIER{
-    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-    .pNext = nullptr,
-    .srcStageMask = vk::PIPELINE_STAGE_BUFFER_INPUTS | VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-    .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
-    .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-    .dstAccessMask = vk::ACCESS_TRANSFER,
-};
-
-constexpr VkMemoryBarrier2 WRITE_BARRIER{
-    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-    .pNext = nullptr,
-    .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-    .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-    .dstStageMask = vk::PIPELINE_STAGE_BUFFER_INPUTS,
-    .dstAccessMask = vk::ACCESS_BUFFER_INPUTS,
-};
-
 VkBufferCopy MakeBufferCopy(const VideoCommon::BufferCopy& copy) {
     return VkBufferCopy{
         .srcOffset = copy.src_offset,
@@ -392,7 +374,23 @@ BufferCacheRuntime::BufferCacheRuntime(const Device& device_, MemoryAllocator& m
       staging_pool{staging_pool_}, guest_descriptor_queue{guest_descriptor_queue_},
       quad_index_pass(device, scheduler, descriptor_pool, staging_pool,
                       compute_pass_descriptor_queue),
-      multi_range_buffers(device_) {
+      multi_range_buffers(device_),
+      read_barrier{
+          .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+          .pNext = nullptr,
+          .srcStageMask = device_.GetBufferUserStages(),
+          .srcAccessMask = vk::ACCESS_BUFFER_WRITES,
+          .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+          .dstAccessMask = vk::ACCESS_TRANSFER,
+      },
+      write_barrier{
+          .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+          .pNext = nullptr,
+          .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+          .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+          .dstStageMask = device_.GetBufferConsumerStages(),
+          .dstAccessMask = device_.GetBufferConsumerAccess(),
+      } {
     const VkDriverIdKHR driver_id = device.GetDriverID();
     limit_dynamic_storage_buffers = driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY ||
                                     driver_id == VK_DRIVER_ID_ARM_PROPRIETARY;
@@ -513,28 +511,28 @@ void BufferCacheRuntime::CopyBuffer(VkBuffer dst_buffer, VkBuffer src_buffer,
     }
 
     scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([src_buffer, dst_buffer, vk_copies, barrier](vk::CommandBuffer cmdbuf) {
+    scheduler.Record([this, src_buffer, dst_buffer, vk_copies, barrier](vk::CommandBuffer cmdbuf) {
         if (barrier) {
-            cmdbuf.PipelineBarrier(READ_BARRIER);
+            cmdbuf.PipelineBarrier(read_barrier);
         }
         cmdbuf.CopyBuffer(src_buffer, dst_buffer, VideoCommon::FixSmallVectorADL(vk_copies));
         if (barrier) {
-            cmdbuf.PipelineBarrier(WRITE_BARRIER);
+            cmdbuf.PipelineBarrier(write_barrier);
         }
     });
 }
 
 void BufferCacheRuntime::PreCopyBarrier() {
     scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([](vk::CommandBuffer cmdbuf) {
-        cmdbuf.PipelineBarrier(READ_BARRIER);
+    scheduler.Record([this](vk::CommandBuffer cmdbuf) {
+        cmdbuf.PipelineBarrier(read_barrier);
     });
 }
 
 void BufferCacheRuntime::PostCopyBarrier() {
     scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([](vk::CommandBuffer cmdbuf) {
-        cmdbuf.PipelineBarrier(WRITE_BARRIER);
+    scheduler.Record([this](vk::CommandBuffer cmdbuf) {
+        cmdbuf.PipelineBarrier(write_barrier);
     });
 }
 
@@ -544,10 +542,10 @@ void BufferCacheRuntime::ClearBuffer(VkBuffer dest_buffer, u32 offset, size_t si
     }
 
     scheduler.RequestOutsideRenderPassOperationContext();
-    scheduler.Record([dest_buffer, offset, size, value](vk::CommandBuffer cmdbuf) {
-        cmdbuf.PipelineBarrier(READ_BARRIER);
+    scheduler.Record([this, dest_buffer, offset, size, value](vk::CommandBuffer cmdbuf) {
+        cmdbuf.PipelineBarrier(read_barrier);
         cmdbuf.FillBuffer(dest_buffer, offset, size, value);
-        cmdbuf.PipelineBarrier(WRITE_BARRIER);
+        cmdbuf.PipelineBarrier(write_barrier);
     });
 }
 

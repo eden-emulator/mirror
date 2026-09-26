@@ -869,6 +869,32 @@ FN_MAX_LIMIT_LIST
         return extensions.conditional_rendering;
     }
 
+    VkPipelineStageFlags2 GetBufferUserStages() const {
+        VkPipelineStageFlags2 stages = vk::PIPELINE_STAGE_BUFFER_USERS;
+        if (IsExtConditionalRendering()) {
+            stages |= VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT;
+        }
+        if (IsExtTransformFeedbackSupported()) {
+            stages |= VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
+        }
+        return stages;
+    }
+
+    VkPipelineStageFlags2 GetBufferConsumerStages() const {
+        return GetBufferUserStages() | VK_PIPELINE_STAGE_2_HOST_BIT;
+    }
+
+    VkAccessFlags2 GetBufferConsumerAccess() const {
+        VkAccessFlags2 access = vk::ACCESS_BUFFER_CONSUMERS;
+        if (IsExtConditionalRendering()) {
+            access |= VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT;
+        }
+        if (IsExtTransformFeedbackSupported()) {
+            access |= VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT;
+        }
+        return access;
+    }
+
     bool IsExtAstcDecodeModeSupported() const {
         return extensions.astc_decode_mode;
     }

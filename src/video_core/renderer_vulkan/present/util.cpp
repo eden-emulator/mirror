@@ -49,16 +49,13 @@ vk::Image CreateWrappedImage(MemoryAllocator& allocator, VkExtent2D dimensions, 
 
 void TransitionImageLayout(vk::CommandBuffer& cmdbuf, VkImage image, VkImageLayout target_layout,
                            VkImageLayout source_layout) {
-    constexpr VkAccessFlags2 flags{VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT |
-                                   VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
-                                   VK_ACCESS_2_SHADER_READ_BIT};
     const VkImageMemoryBarrier2 barrier{
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-        .srcAccessMask = flags,
-        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-        .dstAccessMask = flags,
+        .srcStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+        .srcAccessMask = vk::ACCESS_IMAGE_WRITES,
+        .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+        .dstAccessMask = vk::ACCESS_IMAGE_USERS,
         .oldLayout = source_layout,
         .newLayout = target_layout,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -121,8 +118,8 @@ void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffe
     const VkImageMemoryBarrier2 read_barrier{
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
-        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+        .srcStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+        .srcAccessMask = vk::ACCESS_IMAGE_WRITES,
         .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
         .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -143,8 +140,8 @@ void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffe
         .pNext = nullptr,
         .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
         .srcAccessMask = VK_ACCESS_2_NONE,
-        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-        .dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+        .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+        .dstAccessMask = vk::ACCESS_IMAGE_USERS,
         .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -162,9 +159,9 @@ void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffe
         .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
         .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
-        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
+        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        .dstStageMask = vk::PIPELINE_STAGE_HOST,
+        .dstAccessMask = VK_ACCESS_2_HOST_READ_BIT,
     };
     const VkBufferImageCopy copy{
         .bufferOffset = 0,

@@ -328,7 +328,7 @@ std::pair<VkBuffer, VkDeviceSize> Uint8Pass::Assemble(u32 num_vertices, VkBuffer
             .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
             .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
             .dstStageMask = VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT,
-            .dstAccessMask = VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT,
+            .dstAccessMask = VK_ACCESS_2_INDEX_READ_BIT,
         };
         const VkDescriptorSet set = descriptor_allocator.Commit();
         device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
@@ -487,13 +487,13 @@ void ConditionalRenderingResolvePass::Resolve(VkBuffer dst_buffer, VkBuffer src_
 
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([this, descriptor_data, compare_to_zero](vk::CommandBuffer cmdbuf) {
-        static constexpr VkMemoryBarrier2 read_barrier{
+        const VkMemoryBarrier2 read_barrier{
             .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
-            .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT | VK_ACCESS_2_SHADER_WRITE_BIT,
+            .srcStageMask = device.GetBufferUserStages(),
+            .srcAccessMask = vk::ACCESS_BUFFER_WRITES,
             .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-            .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstAccessMask = vk::ACCESS_SHADER_RESOURCES,
         };
         static constexpr VkMemoryBarrier2 write_barrier{
             .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
@@ -536,14 +536,22 @@ QueriesPrefixScanPass::QueriesPrefixScanPass(
 void QueriesPrefixScanPass::Run(VkBuffer accumulation_buffer, VkBuffer dst_buffer,
                                 VkBuffer src_buffer, size_t number_of_sums,
                                 size_t min_accumulation_limit, size_t max_accumulation_limit) {
-    constexpr VkAccessFlags2 BASE_DST_ACCESS = VK_ACCESS_2_SHADER_READ_BIT |
-                                               VK_ACCESS_2_TRANSFER_READ_BIT |
-                                               VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT |
-                                               VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT |
-                                               VK_ACCESS_2_INDEX_READ_BIT |
-                                               VK_ACCESS_2_UNIFORM_READ_BIT;
-    const VkAccessFlags2 conditional_access =
-        device.IsExtConditionalRendering() ? VK_ACCESS_2_CONDITIONAL_RENDERING_READ_BIT_EXT : 0;
+    const VkMemoryBarrier2 read_barrier{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .pNext = nullptr,
+        .srcStageMask = device.GetBufferUserStages(),
+        .srcAccessMask = vk::ACCESS_BUFFER_WRITES,
+        .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .dstAccessMask = vk::ACCESS_SHADER_RESOURCES,
+    };
+    const VkMemoryBarrier2 write_barrier{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .pNext = nullptr,
+        .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+        .dstStageMask = device.GetBufferConsumerStages(),
+        .dstAccessMask = device.GetBufferConsumerAccess(),
+    };
     size_t current_runs = number_of_sums;
     size_t offset = 0;
     while (current_runs != 0) {
@@ -560,23 +568,8 @@ void QueriesPrefixScanPass::Run(VkBuffer accumulation_buffer, VkBuffer dst_buffe
 
         scheduler.RequestOutsideRenderPassOperationContext();
         scheduler.Record([this, descriptor_data, min_accumulation_limit, max_accumulation_limit,
-                          runs_to_do, used_offset, conditional_access](vk::CommandBuffer cmdbuf) {
-            static constexpr VkMemoryBarrier2 read_barrier{
-                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-                .pNext = nullptr,
-                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT | VK_ACCESS_2_SHADER_WRITE_BIT,
-            };
-            const VkMemoryBarrier2 write_barrier{
-                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-                .pNext = nullptr,
-                .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
-                .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                .dstAccessMask = BASE_DST_ACCESS | conditional_access,
-            };
+                          runs_to_do, used_offset, read_barrier,
+                          write_barrier](vk::CommandBuffer cmdbuf) {
             const QueriesPrefixScanPushConstants uniforms{
                 .min_accumulation_base = static_cast<u32>(min_accumulation_limit),
                 .max_accumulation_base = static_cast<u32>(max_accumulation_limit),
@@ -604,9 +597,9 @@ void RecordUnswizzleBeginBarrier(Scheduler& scheduler, VkPipeline vk_pipeline, V
     VkImageLayout old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
     VkPipelineStageFlags2 src_stage = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
     if (is_initialized) {
-        src_access = VK_ACCESS_2_SHADER_WRITE_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        src_access = vk::ACCESS_IMAGE_WRITES;
         old_layout = VK_IMAGE_LAYOUT_GENERAL;
-        src_stage = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER;
+        src_stage = vk::PIPELINE_STAGE_IMAGE_USERS;
     }
     scheduler.Record([vk_pipeline, vk_image, aspect_mask, src_access, old_layout,
                       src_stage](vk::CommandBuffer cmdbuf) {
@@ -643,8 +636,8 @@ void RecordUnswizzleEndBarrier(Scheduler& scheduler, VkImage vk_image,
             .pNext = nullptr,
             .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
             .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
-            .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
-            .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
+            .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+            .dstAccessMask = vk::ACCESS_IMAGE_USERS,
             .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,

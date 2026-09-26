@@ -869,7 +869,7 @@ public:
             .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
             .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
             .dstStageMask = vk::PIPELINE_STAGE_HOST,
-            .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
+            .dstAccessMask = VK_ACCESS_2_HOST_READ_BIT,
         };
         scheduler.RequestOutsideRenderPassOperationContext();
         scheduler.Record([](vk::CommandBuffer cmdbuf) {
@@ -1040,7 +1040,7 @@ private:
             .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
             .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
             .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-            .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT,
+            .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
         };
         scheduler.RequestOutsideRenderPassOperationContext();
         scheduler.Record([dst_buffer = current_bank->GetBuffer(),
@@ -1577,32 +1577,24 @@ VideoCommon::StreamerInterface* QueryCacheRuntime::GetStreamerInterface(QueryTyp
 }
 
 void QueryCacheRuntime::Barriers(bool is_prebarrier) {
-    static constexpr VkMemoryBarrier2 READ_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .pNext = nullptr,
-        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
-        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
-    };
-    static constexpr VkMemoryBarrier2 WRITE_BARRIER{
+    VkMemoryBarrier2 barrier{
         .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
         .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
         .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER_HOST,
-        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
+        .dstStageMask = impl->device.GetBufferConsumerStages(),
+        .dstAccessMask = impl->device.GetBufferConsumerAccess(),
     };
-    impl->scheduler.RequestOutsideRenderPassOperationContext();
     if (is_prebarrier) {
-        impl->scheduler.Record([](vk::CommandBuffer cmdbuf) {
-            cmdbuf.PipelineBarrier(READ_BARRIER);
-        });
-    } else {
-        impl->scheduler.Record([](vk::CommandBuffer cmdbuf) {
-            cmdbuf.PipelineBarrier(WRITE_BARRIER);
-        });
+        barrier.srcStageMask = impl->device.GetBufferUserStages();
+        barrier.srcAccessMask = vk::ACCESS_BUFFER_WRITES;
+        barrier.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        barrier.dstAccessMask = vk::ACCESS_TRANSFER;
     }
+    impl->scheduler.RequestOutsideRenderPassOperationContext();
+    impl->scheduler.Record([barrier](vk::CommandBuffer cmdbuf) {
+        cmdbuf.PipelineBarrier(barrier);
+    });
 }
 
 template <typename SyncValuesType>

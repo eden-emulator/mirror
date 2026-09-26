@@ -270,6 +270,9 @@ private:
     boost::container::small_vector<MultiRangeSource, 16> multi_range_sources;
     VkDeviceSize multi_range_total{};
 
+    VkMemoryBarrier2 read_barrier;
+    VkMemoryBarrier2 write_barrier;
+
     bool limit_dynamic_storage_buffers = false;
     u32 max_dynamic_storage_buffers = (std::numeric_limits<u32>::max)();
 };
