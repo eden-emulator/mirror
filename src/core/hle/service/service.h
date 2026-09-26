@@ -160,7 +160,7 @@ protected:
     using FunctionInfo = FunctionInfoTyped<Self>;
 
     template<typename ...Ts>
-        requires (std::same_as<Ts, FunctionInfo> && ...)
+        //requires (std::same_as<Ts, FunctionInfo> && ...)
     [[nodiscard]] static consteval frozen::map<u32, HandlerFnP<ServiceFrameworkBase>, sizeof...(Ts)> CreateStaticMap(Ts... args) {
         return frozen::map<u32, HandlerFnP<ServiceFrameworkBase>, sizeof...(args)>{
             {args.expected_header, HandlerFnP<ServiceFrameworkBase>(args.handler_callback)}...
@@ -169,7 +169,7 @@ protected:
 
     // Used exclusively by NFC
     template<typename T, typename ...Ts>
-        requires (std::same_as<Ts, FunctionInfoTyped<T>> && ...)
+        //requires (std::same_as<Ts, FunctionInfoTyped<T>> && ...)
     [[nodiscard]] static consteval frozen::map<u32, HandlerFnP<ServiceFrameworkBase>, sizeof...(Ts)> CreateStaticMapWithClass(Ts... args) {
         return frozen::map<u32, HandlerFnP<ServiceFrameworkBase>, sizeof...(args)>{
             {args.expected_header, HandlerFnP<ServiceFrameworkBase>(args.handler_callback)}...

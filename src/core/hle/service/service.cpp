@@ -47,9 +47,9 @@ ServiceFrameworkBase::~ServiceFrameworkBase() {
     const auto guard = ServiceFrameworkBase::LockService();
 }
 
-void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, std::optional<FunctionInfoBase> info) {
+void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, const FunctionInfoBase* info) {
     auto cmd_buf = ctx.CommandBuffer();
-    std::string function_name = info.has_value() ? info->name : "<unknown>";
+    std::string function_name = bool(info) ? info->name : "<unknown>";
 
     fmt::memory_buffer buf;
     fmt::format_to(std::back_inserter(buf), "function '{}({})': port='{}' cmd_buf={{[0]={:#x}", ctx.GetCommand(), function_name, service_name, cmd_buf[0]);
@@ -70,7 +70,7 @@ void ServiceFrameworkBase::InvokeRequest(HLERequestContext& ctx) {
     const bool is_cmd_read = ctx.GetCommand() == 0;
     auto const info = FindRequest(ctx.GetCommand());
     if (!info.has_value() || info->handler_callback == nullptr)
-        return ReportUnimplementedFunction(ctx, info);
+        return ReportUnimplementedFunction(ctx, &*info);
 
     LOG_TRACE(Service, "{}", MakeFunctionString(info->name, GetServiceName(), ctx.CommandBuffer()));
     handler_invoker(this, info->handler_callback, ctx);
@@ -85,7 +85,7 @@ void ServiceFrameworkBase::InvokeRequest(HLERequestContext& ctx) {
 void ServiceFrameworkBase::InvokeRequestTipc(HLERequestContext& ctx) {
     auto const info = FindRequestTipc(ctx.GetCommand());
     if (!info.has_value() || info->handler_callback == nullptr)
-        return ReportUnimplementedFunction(ctx, info);
+        return ReportUnimplementedFunction(ctx, &*info);
 
     LOG_TRACE(Service, "{}", MakeFunctionString(info->name, GetServiceName(), ctx.CommandBuffer()));
     handler_invoker(this, info->handler_callback, ctx);
