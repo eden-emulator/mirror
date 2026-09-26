@@ -343,28 +343,8 @@ public:
 
 class IProfileCommon : public ServiceFramework<IProfileCommon> {
 public:
-    explicit IProfileCommon(Core::System& system_, const char* name, bool editor_commands,
-                            Common::UUID user_id_, ProfileManager& profile_manager_)
+    explicit IProfileCommon(Core::System& system_, const char* name, bool editor_commands, Common::UUID user_id_, ProfileManager& profile_manager_)
         : ServiceFramework{system_, name}, profile_manager{profile_manager_}, user_id{user_id_} {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &IProfileCommon::Get, "Get"},
-            FunctionInfo{1, &IProfileCommon::GetBase, "GetBase"},
-            FunctionInfo{10, &IProfileCommon::GetImageSize, "GetImageSize"},
-            FunctionInfo{11, &IProfileCommon::LoadImage, "LoadImage"},
-            FunctionInfo{20, &IProfileCommon::Unknown20, "Unknown20"},
-            FunctionInfo{21, &IProfileCommon::Unknown21, "Unknown21"},
-            FunctionInfo{30, &IProfileCommon::Unknown30, "Unknown30"}
-        };
-        RegisterHandlers(functions);
-
-        if (editor_commands) {
-            static const FunctionInfo editor_functions[] = {
-                FunctionInfo{100, &IProfileCommon::Store, "Store"},
-                FunctionInfo{101, &IProfileCommon::StoreWithImage, "StoreWithImage"},
-                FunctionInfo{110, &IProfileCommon::Unknown110, "Unknown110"}
-            };
-            RegisterHandlers(editor_functions);
-        }
     }
 
 protected:
@@ -591,6 +571,22 @@ protected:
         rb.Push(ResultSuccess);
     }
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IProfileCommon::Get, "Get"},
+        FunctionInfo{1, &IProfileCommon::GetBase, "GetBase"},
+        FunctionInfo{10, &IProfileCommon::GetImageSize, "GetImageSize"},
+        FunctionInfo{11, &IProfileCommon::LoadImage, "LoadImage"},
+        FunctionInfo{20, &IProfileCommon::Unknown20, "Unknown20"},
+        FunctionInfo{21, &IProfileCommon::Unknown21, "Unknown21"},
+        FunctionInfo{30, &IProfileCommon::Unknown30, "Unknown30"},
+        // Editor commands
+        FunctionInfo{100, &IProfileCommon::Store, "Store"},
+        FunctionInfo{101, &IProfileCommon::StoreWithImage, "StoreWithImage"},
+        FunctionInfo{110, &IProfileCommon::Unknown110, "Unknown110"}
+    );
     ProfileManager& profile_manager;
     Common::UUID user_id{}; ///< The user id this profile refers to.
 };

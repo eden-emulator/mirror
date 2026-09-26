@@ -109,7 +109,6 @@ private:
     virtual FunctionInfoBase const* FindRequestTipc(u32 key) = 0;
 
     void RegisterHandlersBase(const FunctionInfoBase* functions, std::size_t n);
-    void RegisterHandlersBaseTipc(const FunctionInfoBase* functions, std::size_t n);
     void ReportUnimplementedFunction(HLERequestContext& ctx, const FunctionInfoBase* info);
 
 protected:
@@ -172,6 +171,15 @@ protected:
         };
     }
 
+    // Used exclusively by NFC
+    template<typename T, typename ...Ts>
+        requires (std::same_as<Ts, FunctionInfoTyped<T>> && ...)
+    static constexpr frozen::map<u32, FunctionInfoTyped<T>, sizeof...(Ts)> CreateStaticMapWithClass(Ts... args) {
+        return frozen::map<u32, FunctionInfoTyped<T>, sizeof...(args)>{
+            {args.expected_header, FunctionInfoTyped<T>(args)}...
+        };
+    }
+
     template<typename T>
     static FunctionInfoBase const* HandlerTableGenerateWithFind(u32 key, T const& map) {
         auto const it = map.find(key);
@@ -192,49 +200,13 @@ protected:
         return it != handlers.end() ? std::addressof(it->second) : nullptr;
     }
 
-    FunctionInfoBase const* FindRequestTipc(u32 key) override {
-        auto it = handlers_tipc.find(key);
-        return it != handlers_tipc.end() ? std::addressof(it->second) : nullptr;
-    }
-
-    constexpr void RegisterHandlersBase(const FunctionInfoBase* functions, std::size_t n) {
-        // Usually this array is sorted by id already, so hint to insert at the end
-        handlers.reserve(handlers.size() + n);
-        for (std::size_t i = 0; i < n; ++i)
-            handlers.emplace_hint(handlers.cend(), functions[i].expected_header, functions[i]);
-    }
-
-    constexpr void RegisterHandlersBaseTipc(const FunctionInfoBase* functions, std::size_t n) {
-        // Usually this array is sorted by id already, so hint to insert at the end
-        handlers_tipc.reserve(handlers_tipc.size() + n);
-        for (std::size_t i = 0; i < n; ++i)
-            handlers_tipc.emplace_hint(handlers_tipc.cend(), functions[i].expected_header, functions[i]);
-    }
-
     /// Registers handlers in the service.
     template <typename T = Self, std::size_t N>
     constexpr void RegisterHandlers(const FunctionInfoTyped<T> (&functions)[N]) {
-        RegisterHandlers(functions, N);
-    }
-
-    /// @brief Registers handlers in the service. Usually prefer using the other RegisterHandlers
-    /// overload in order to avoid needing to specify the array size.
-    template <typename T = Self>
-    constexpr void RegisterHandlers(const FunctionInfoTyped<T>* functions, std::size_t n) {
-        RegisterHandlersBase(functions, n);
-    }
-
-    /// @brief Registers handlers in the service.
-    template <typename T = Self, std::size_t N>
-    constexpr void RegisterHandlersTipc(const FunctionInfoTyped<T> (&functions)[N]) {
-        RegisterHandlersTipc(functions, N);
-    }
-
-    /// @brief Registers handlers in the service. Usually prefer using the other RegisterHandlers
-    /// overload in order to avoid needing to specify the array size.
-    template <typename T = Self>
-    constexpr void RegisterHandlersTipc(const FunctionInfoTyped<T>* functions, std::size_t n) {
-        RegisterHandlersBaseTipc(functions, n);
+        // Usually this array is sorted by id already, so hint to insert at the end
+        handlers.reserve(handlers.size() + N);
+        for (std::size_t i = 0; i < N; ++i)
+            handlers.emplace_hint(handlers.cend(), functions[i].expected_header, functions[i]);
     }
 
 protected:
@@ -267,7 +239,6 @@ private:
     }
 
     ::Common::unordered_map<u32, FunctionInfoBase> handlers;
-    ::Common::unordered_map<u32, FunctionInfoBase> handlers_tipc;
 };
 
 } // namespace Service

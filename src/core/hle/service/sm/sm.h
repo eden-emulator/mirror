@@ -33,29 +33,7 @@ class SessionRequestHandler;
 namespace Service::SM {
 
 class Controller;
-
-/// Interface to "sm:" service
-class SM final : public ServiceFramework<SM> {
-public:
-    explicit SM(ServiceManager& service_manager_, Core::System& system_);
-    ~SM() override;
-
-private:
-    void Initialize(HLERequestContext& ctx);
-    void GetServiceCmif(HLERequestContext& ctx);
-    void GetServiceTipc(HLERequestContext& ctx);
-    void RegisterServiceCmif(HLERequestContext& ctx);
-    void RegisterServiceTipc(HLERequestContext& ctx);
-    void UnregisterService(HLERequestContext& ctx);
-    void AtmosphereHasService(HLERequestContext& ctx);
-
-    Result GetServiceImpl(Kernel::KClientSession** out_client_session, HLERequestContext& ctx);
-    void RegisterServiceImpl(HLERequestContext& ctx, std::string name, u32 max_session_count,
-                             bool is_light);
-
-    ServiceManager& service_manager;
-    Kernel::KernelCore& kernel;
-};
+class SM;
 
 class ServiceManager {
 public:

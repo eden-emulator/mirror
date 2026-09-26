@@ -99,13 +99,6 @@ public:
         , data_offset{offset}
         , data_size{size}
     {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, D<&IAsyncValue::GetSize>, "GetSize"},
-            FunctionInfo{1, D<&IAsyncValue::Get>, "Get"},
-            FunctionInfo{2, D<&IAsyncValue::Cancel>, "Cancel"},
-            FunctionInfo{3, D<&IAsyncValue::GetErrorContext>, "GetErrorContext"}
-        };
-        RegisterHandlers(functions);
         completion_event = service_context.CreateEvent("IAsyncValue:Completion");
         completion_event->GetReadableEvent().Signal(system.Kernel());
     }
@@ -137,6 +130,16 @@ private:
         LOG_DEBUG(Service_NS, "called");
         R_SUCCEED();
     }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IAsyncValue::GetSize>, "GetSize"},
+        FunctionInfo{1, D<&IAsyncValue::Get>, "Get"},
+        FunctionInfo{2, D<&IAsyncValue::Cancel>, "Cancel"},
+        FunctionInfo{3, D<&IAsyncValue::GetErrorContext>, "GetErrorContext"}
+    );
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* completion_event{};
     s32 data_offset;

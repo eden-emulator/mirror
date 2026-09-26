@@ -13,15 +13,15 @@ namespace Service::GPIO {
 
 class GPIO final : public ServiceFramework<GPIO> {
 public:
-    explicit GPIO(Core::System& system_)
-        : ServiceFramework{system_, "gpio"}
-    {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "Cmd0"}
-        };
-        RegisterHandlers(functions);
-    }
+    explicit GPIO(Core::System& system_) : ServiceFramework{system_, "gpio"} {}
     ~GPIO() override = default;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Cmd0"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

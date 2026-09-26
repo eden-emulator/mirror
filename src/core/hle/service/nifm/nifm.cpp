@@ -235,15 +235,6 @@ public:
     explicit IScanRequest(Core::System& system_)
         : ServiceFramework{system_, "IScanRequest"}, svc_ctx{system_, "IScanRequest"} {
 
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &IScanRequest::Submit, "Submit"},
-            FunctionInfo{1, &IScanRequest::IsProcessing, "IsProcessing"},
-            FunctionInfo{2, &IScanRequest::GetResult, "GetResult"},
-            FunctionInfo{3, &IScanRequest::GetSystemEventReadableHandle, "GetSystemEventReadableHandle"},
-            FunctionInfo{4, &IScanRequest::SetChannels, "SetChannels"}
-        };
-        RegisterHandlers(functions);
-
         evt_scan_complete = CreateKEvent(svc_ctx, "IScanRequest:Complete");
         evt_processing = CreateKEvent(svc_ctx, "IScanRequest:Processing");
     }
@@ -257,8 +248,6 @@ public:
     }
 
 private:
-    std::vector<Network::ScanData> scan_results;
-
     void Submit(HLERequestContext& ctx) {
 
         if (state.load() == State::Finished) {
@@ -329,6 +318,17 @@ private:
         evt_scan_complete->Signal(system.Kernel());
     }
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IScanRequest::Submit, "Submit"},
+        FunctionInfo{1, &IScanRequest::IsProcessing, "IsProcessing"},
+        FunctionInfo{2, &IScanRequest::GetResult, "GetResult"},
+        FunctionInfo{3, &IScanRequest::GetSystemEventReadableHandle, "GetSystemEventReadableHandle"},
+        FunctionInfo{4, &IScanRequest::SetChannels, "SetChannels"}
+    );
+    std::vector<Network::ScanData> scan_results;
     KernelHelpers::ServiceContext svc_ctx;
 
     Kernel::KEvent* evt_scan_complete{};
@@ -342,36 +342,6 @@ class IRequest final : public ServiceFramework<IRequest> {
 public:
     explicit IRequest(Core::System& system_)
         : ServiceFramework{system_, "IRequest"}, service_context{system_, "IRequest"} {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &IRequest::GetRequestState, "GetRequestState"},
-            FunctionInfo{1, &IRequest::GetResult, "GetResult"},
-            FunctionInfo{2, &IRequest::GetSystemEventReadableHandles, "GetSystemEventReadableHandles"},
-            FunctionInfo{3, &IRequest::Cancel, "Cancel"},
-            FunctionInfo{4, &IRequest::Submit, "Submit"},
-            FunctionInfo{5, nullptr, "SetRequirement"},
-            FunctionInfo{6, &IRequest::SetRequirementPreset, "SetRequirementPreset"},
-            FunctionInfo{8, nullptr, "SetPriority"},
-            FunctionInfo{9, &IRequest::SetNetworkProfileId, "SetNetworkProfileId"},
-            FunctionInfo{10, nullptr, "SetRejectable"},
-            FunctionInfo{11, &IRequest::SetConnectionConfirmationOption, "SetConnectionConfirmationOption"},
-            FunctionInfo{12, nullptr, "SetPersistent"},
-            FunctionInfo{13, nullptr, "SetInstant"},
-            FunctionInfo{14, nullptr, "SetSustainable"},
-            FunctionInfo{15, nullptr, "SetRawPriority"},
-            FunctionInfo{16, nullptr, "SetGreedy"},
-            FunctionInfo{17, nullptr, "SetSharable"},
-            FunctionInfo{18, nullptr, "SetRequirementByRevision"},
-            FunctionInfo{19, nullptr, "GetRequirement"},
-            FunctionInfo{20, nullptr, "GetRevision"},
-            FunctionInfo{21, &IRequest::GetAppletInfo, "GetAppletInfo"},
-            FunctionInfo{22, nullptr, "GetAdditionalInfo"},
-            FunctionInfo{23, nullptr, "SetKeptInSleep"},
-            FunctionInfo{24, nullptr, "RegisterSocketDescriptor"},
-            FunctionInfo{25, nullptr, "UnregisterSocketDescriptor"},
-            FunctionInfo{26, nullptr, "GetNetworkAccessStatus"}, //21.0.0+
-        };
-        RegisterHandlers(functions);
-
         event1 = CreateKEvent(service_context, "IRequest:Event1");
         event2 = CreateKEvent(service_context, "IRequest:Event2");
         state = RequestState::NotSubmitted;
@@ -494,6 +464,37 @@ private:
         event1->Signal(system.Kernel());
     }
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IRequest::GetRequestState, "GetRequestState"},
+        FunctionInfo{1, &IRequest::GetResult, "GetResult"},
+        FunctionInfo{2, &IRequest::GetSystemEventReadableHandles, "GetSystemEventReadableHandles"},
+        FunctionInfo{3, &IRequest::Cancel, "Cancel"},
+        FunctionInfo{4, &IRequest::Submit, "Submit"},
+        FunctionInfo{5, nullptr, "SetRequirement"},
+        FunctionInfo{6, &IRequest::SetRequirementPreset, "SetRequirementPreset"},
+        FunctionInfo{8, nullptr, "SetPriority"},
+        FunctionInfo{9, &IRequest::SetNetworkProfileId, "SetNetworkProfileId"},
+        FunctionInfo{10, nullptr, "SetRejectable"},
+        FunctionInfo{11, &IRequest::SetConnectionConfirmationOption, "SetConnectionConfirmationOption"},
+        FunctionInfo{12, nullptr, "SetPersistent"},
+        FunctionInfo{13, nullptr, "SetInstant"},
+        FunctionInfo{14, nullptr, "SetSustainable"},
+        FunctionInfo{15, nullptr, "SetRawPriority"},
+        FunctionInfo{16, nullptr, "SetGreedy"},
+        FunctionInfo{17, nullptr, "SetSharable"},
+        FunctionInfo{18, nullptr, "SetRequirementByRevision"},
+        FunctionInfo{19, nullptr, "GetRequirement"},
+        FunctionInfo{20, nullptr, "GetRevision"},
+        FunctionInfo{21, &IRequest::GetAppletInfo, "GetAppletInfo"},
+        FunctionInfo{22, nullptr, "GetAdditionalInfo"},
+        FunctionInfo{23, nullptr, "SetKeptInSleep"},
+        FunctionInfo{24, nullptr, "RegisterSocketDescriptor"},
+        FunctionInfo{25, nullptr, "UnregisterSocketDescriptor"},
+        FunctionInfo{26, nullptr, "GetNetworkAccessStatus"} //21.0.0+
+    );
     KernelHelpers::ServiceContext service_context;
 
     RequestState state;
@@ -508,14 +509,16 @@ private:
 
 class INetworkProfile final : public ServiceFramework<INetworkProfile> {
 public:
-    explicit INetworkProfile(Core::System& system_) : ServiceFramework{system_, "INetworkProfile"} {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "Update"},
-            FunctionInfo{1, nullptr, "PersistOld"},
-            FunctionInfo{2, nullptr, "Persist"}
-        };
-        RegisterHandlers(functions);
+    explicit INetworkProfile(Core::System& system_) : ServiceFramework{system_, "INetworkProfile"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Update"},
+        FunctionInfo{1, nullptr, "PersistOld"},
+        FunctionInfo{2, nullptr, "Persist"}
+    );
 };
 
 void IGeneralService::GetClientId(HLERequestContext& ctx) {
@@ -1113,14 +1116,7 @@ IGeneralService::~IGeneralService() = default;
 
 class NetworkInterface final : public ServiceFramework<NetworkInterface> {
 public:
-    explicit NetworkInterface(const char* name, Core::System& system_)
-        : ServiceFramework{system_, name} {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{4, &NetworkInterface::CreateGeneralServiceOld, "CreateGeneralServiceOld"},
-            FunctionInfo{5, &NetworkInterface::CreateGeneralService, "CreateGeneralService"}
-        };
-        RegisterHandlers(functions);
-    }
+    explicit NetworkInterface(const char* name, Core::System& system_) : ServiceFramework{system_, name} {}
 
 private:
     void CreateGeneralServiceOld(HLERequestContext& ctx) {
@@ -1138,6 +1134,14 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IGeneralService>(ctx, system);
     }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{4, &NetworkInterface::CreateGeneralServiceOld, "CreateGeneralServiceOld"},
+        FunctionInfo{5, &NetworkInterface::CreateGeneralService, "CreateGeneralService"}
+    );
 };
 
 void LoopProcess(Core::System& system) {
