@@ -22,7 +22,6 @@
 #include "common/settings.h"
 #include "common/vector_math.h"
 #include "hid_core/frontend/motion_input.h"
-#include "hid_core/hid_core.h"
 #include "hid_core/hid_types.h"
 #include "hid_core/irsensor/irs_types.h"
 
@@ -585,7 +584,6 @@ private:
     std::array<VibrationValue, 2> last_vibration_value{DEFAULT_VIBRATION_VALUE,
                                                        DEFAULT_VIBRATION_VALUE};
     std::array<std::chrono::steady_clock::time_point, 2> last_vibration_timepoint{};
-    std::array<bool, HIDCore::available_controllers> controller_connected{};
 
     // Atomically synched values
     std::atomic<HID::NpadStyleIndex> npad_type{HID::NpadStyleIndex::None};
