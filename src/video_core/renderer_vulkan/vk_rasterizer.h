@@ -225,6 +225,7 @@ private:
     boost::container::static_vector<VkSampler, MAX_TEXTURES> sampler_handles;
 
     u32 draw_counter = 0;
+    Tegra::DepthFormat depth_bias_zeta_format{};
 };
 
 } // namespace Vulkan

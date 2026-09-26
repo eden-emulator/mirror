@@ -1299,10 +1299,18 @@ void RasterizerVulkan::UpdateScissorsState(Tegra::Engines::Maxwell3D::Regs& regs
 }
 
 void RasterizerVulkan::UpdateDepthBias(Tegra::Engines::Maxwell3D::Regs& regs) {
-    if (!state_tracker.TouchDepthBias()) {
+    const bool zeta_changed =
+        std::exchange(depth_bias_zeta_format, regs.zeta.format) != regs.zeta.format;
+    const bool bias_changed = state_tracker.TouchDepthBias();
+    if (!bias_changed && !zeta_changed) {
         return;
     }
     float units = regs.depth_bias / 2.0f;
+    const bool is_float = regs.zeta.format == Tegra::DepthFormat::Z32_FLOAT ||
+                          regs.zeta.format == Tegra::DepthFormat::Z32_FLOAT_X24S8_UINT;
+    if (is_float && !device.IsExtDepthBiasControlSupported()) {
+        units *= 256.0f;
+    }
     const bool is_d24 = regs.zeta.format == Tegra::DepthFormat::Z24_UNORM_S8_UINT ||
                         regs.zeta.format == Tegra::DepthFormat::X8Z24_UNORM ||
                         regs.zeta.format == Tegra::DepthFormat::S8Z24_UNORM ||
