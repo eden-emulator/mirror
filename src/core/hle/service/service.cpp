@@ -47,9 +47,9 @@ ServiceFrameworkBase::~ServiceFrameworkBase() {
     const auto guard = ServiceFrameworkBase::LockService();
 }
 
-void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, const FunctionInfoBase* info) {
+void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, std::optional<FunctionInfoBase> info) {
     auto cmd_buf = ctx.CommandBuffer();
-    std::string function_name = info == nullptr ? "<unknown>" : info->name;
+    std::string function_name = info.has_value() ? info->name : "<unknown>";
 
     fmt::memory_buffer buf;
     fmt::format_to(std::back_inserter(buf), "function '{}({})': port='{}' cmd_buf={{[0]={:#x}", ctx.GetCommand(), function_name, service_name, cmd_buf[0]);
