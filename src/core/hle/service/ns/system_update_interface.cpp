@@ -10,29 +10,6 @@ namespace Service::NS {
 ISystemUpdateInterface::ISystemUpdateInterface(Core::System& system_)
     : ServiceFramework{system_, "ns:su"}, service_context{system_, "ns:su"},
       update_notification_event{service_context} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&ISystemUpdateInterface::GetBackgroundNetworkUpdateState>, "GetBackgroundNetworkUpdateState"},
-        {1, D<&ISystemUpdateInterface::OpenSystemUpdateControl>, "OpenSystemUpdateControl"},
-        {2, nullptr, "NotifyExFatDriverRequired"},
-        {3, nullptr, "ClearExFatDriverStatusForDebug"},
-        {4, nullptr, "RequestBackgroundNetworkUpdate"},
-        {5, nullptr, "NotifyBackgroundNetworkUpdate"},
-        {6, nullptr, "NotifyExFatDriverDownloadedForDebug"},
-        {9, D<&ISystemUpdateInterface::GetSystemUpdateNotificationEventForContentDelivery>, "GetSystemUpdateNotificationEventForContentDelivery"},
-        {10, nullptr, "NotifySystemUpdateForContentDelivery"},
-        {11, nullptr, "PrepareShutdown"},
-        {12, nullptr, "Unknown12"},
-        {13, nullptr, "Unknown13"},
-        {14, nullptr, "Unknown14"},
-        {15, nullptr, "Unknown15"},
-        {16, nullptr, "DestroySystemUpdateTask"},
-        {17, nullptr, "RequestSendSystemUpdate"},
-        {18, nullptr, "GetSendSystemUpdateProgress"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 ISystemUpdateInterface::~ISystemUpdateInterface() = default;

@@ -49,6 +49,34 @@ private:
     void FrontendExecuteInteractive();
     void FrontendRequestExit();
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&ILibraryAppletAccessor::GetAppletStateChangedEvent>, "GetAppletStateChangedEvent"},
+        FunctionInfo{1, D<&ILibraryAppletAccessor::IsCompleted>, "IsCompleted"},
+        FunctionInfo{10, D<&ILibraryAppletAccessor::Start>, "Start"},
+        FunctionInfo{20, D<&ILibraryAppletAccessor::RequestExit>, "RequestExit"},
+        FunctionInfo{25, D<&ILibraryAppletAccessor::Terminate>, "Terminate"},
+        FunctionInfo{30, D<&ILibraryAppletAccessor::GetResult>, "GetResult"},
+        FunctionInfo{50, nullptr, "SetOutOfFocusApplicationSuspendingEnabled"},
+        FunctionInfo{60, D<&ILibraryAppletAccessor::PresetLibraryAppletGpuTimeSliceZero>, "PresetLibraryAppletGpuTimeSliceZero"}, //10.0.0+
+        FunctionInfo{80, nullptr, "RequestForLibraryAppletToGetForeground"}, //19.0.0+
+        FunctionInfo{81, nullptr, "GetCurrentChildLibraryApplet"}, //19.0.0+
+        FunctionInfo{90, D<&ILibraryAppletAccessor::Unknown90>, "Unknown90"}, //20.0.0+
+        FunctionInfo{100, D<&ILibraryAppletAccessor::PushInData>, "PushInData"},
+        FunctionInfo{101, D<&ILibraryAppletAccessor::PopOutData>, "PopOutData"},
+        FunctionInfo{102, nullptr, "PushExtraStorage"},
+        FunctionInfo{103, D<&ILibraryAppletAccessor::PushInteractiveInData>, "PushInteractiveInData"},
+        FunctionInfo{104, D<&ILibraryAppletAccessor::PopInteractiveOutData>, "PopInteractiveOutData"},
+        FunctionInfo{105, D<&ILibraryAppletAccessor::GetPopOutDataEvent>, "GetPopOutDataEvent"},
+        FunctionInfo{106, D<&ILibraryAppletAccessor::GetPopInteractiveOutDataEvent>, "GetPopInteractiveOutDataEvent"},
+        FunctionInfo{110, nullptr, "NeedsToExitProcess"},
+        FunctionInfo{120, D<&ILibraryAppletAccessor::GetLibraryAppletInfo>, "GetLibraryAppletInfo"},
+        FunctionInfo{150, nullptr, "RequestForAppletToGetForeground"},
+        FunctionInfo{160, D<&ILibraryAppletAccessor::GetIndirectLayerConsumerHandle>, "GetIndirectLayerConsumerHandle"}, //2.0.0+
+        FunctionInfo{170, D<&ILibraryAppletAccessor::Unknown170>, "Unknown170"}, //22.0.0+
+    );
     const std::shared_ptr<AppletDataBroker> m_broker;
     const std::shared_ptr<Applet> m_applet;
 };

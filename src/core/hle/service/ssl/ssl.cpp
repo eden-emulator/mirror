@@ -631,7 +631,10 @@ class ISslServiceForSystem final : public ServiceFramework<ISslServiceForSystem>
     public:
         explicit ISslServiceForSystem(Core::System& system_) : ServiceFramework{system_, "ssl:s"} {
             // clang-format off
-            static const FunctionInfo functions[] = {
+            FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
                 FunctionInfo{0, D<&ISslServiceForSystem::CreateContext>, "CreateContext"},
                 FunctionInfo{1, D<&ISslServiceForSystem::GetContextCount>, "GetContextCount"},
                 FunctionInfo{2, D<&ISslServiceForSystem::GetCertificates>, "GetCertificates"},
@@ -646,10 +649,7 @@ class ISslServiceForSystem final : public ServiceFramework<ISslServiceForSystem>
                 FunctionInfo{101, D<&ISslServiceForSystem::SetThreadCoreMask>, "SetThreadCoreMask"},
                 FunctionInfo{102, D<&ISslServiceForSystem::GetThreadCoreMask>, "GetThreadCoreMask"},
                 FunctionInfo{103, D<&ISslServiceForSystem::VerifySignature>, "VerifySignature"}
-            };
-            // clang-format on
-
-            RegisterHandlers(functions);
+            );
         };
 
         Result CreateContext() {

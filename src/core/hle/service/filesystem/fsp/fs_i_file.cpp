@@ -12,18 +12,6 @@ namespace Service::FileSystem {
 
 IFile::IFile(Core::System& system_, FileSys::VirtualFile file_)
     : ServiceFramework{system_, "IFile"}, backend{std::make_unique<FileSys::Fsa::IFile>(file_)} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IFile::Read>, "Read"},
-        {1, D<&IFile::Write>, "Write"},
-        {2, D<&IFile::Flush>, "Flush"},
-        {3, D<&IFile::SetSize>, "SetSize"},
-        {4, D<&IFile::GetSize>, "GetSize"},
-        {5, nullptr, "OperateRange"},
-        {6, nullptr, "OperateRangeWithBuffer"},
-    };
-    // clang-format on
-    RegisterHandlers(functions);
 }
 
 Result IFile::Read(

@@ -8,13 +8,6 @@
 namespace Service::PSC {
 
 ISenderService::ISenderService(Core::System& system_) : ServiceFramework{system_, "ovln:snd"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&ISenderService::OpenSender>, "OpenSender"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 ISenderService::~ISenderService() = default;

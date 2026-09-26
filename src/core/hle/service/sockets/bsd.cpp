@@ -1083,59 +1083,6 @@ void BSD_USA::OnProxyPacketReceived(const Network::ProxyPacket& packet) {
 BSD_USA::BSD_USA(Core::System& system_, const char* name, bool is_user_)
     : ServiceFramework{system_, name}
     , is_user{is_user_} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, &BSD_USA::RegisterClient, "RegisterClient"},
-        {1, &BSD_USA::StartMonitoring, "StartMonitoring"},
-        {2, &BSD_USA::Socket, "Socket"},
-        {3, &BSD_USA::SocketExempt, "SocketExempt"},
-        {4, nullptr, "Open"},
-        {5, &BSD_USA::Select, "Select"},
-        {6, &BSD_USA::Poll, "Poll"},
-        {7, nullptr, "Sysctl"},
-        {8, &BSD_USA::Recv, "Recv"},
-        {9, &BSD_USA::RecvFrom, "RecvFrom"},
-        {10, &BSD_USA::Send, "Send"},
-        {11, &BSD_USA::SendTo, "SendTo"},
-        {12, &BSD_USA::Accept, "Accept"},
-        {13, &BSD_USA::Bind, "Bind"},
-        {14, &BSD_USA::Connect, "Connect"},
-        {15, &BSD_USA::GetPeerName, "GetPeerName"},
-        {16, &BSD_USA::GetSockName, "GetSockName"},
-        {17, &BSD_USA::GetSockOpt, "GetSockOpt"},
-        {18, &BSD_USA::Listen, "Listen"},
-        {19, nullptr, "Ioctl"},
-        {20, &BSD_USA::Fcntl, "Fcntl"},
-        {21, &BSD_USA::SetSockOpt, "SetSockOpt"},
-        {22, &BSD_USA::Shutdown, "Shutdown"},
-        {23, nullptr, "ShutdownAllSockets"},
-        {24, &BSD_USA::Write, "Write"},
-        {25, &BSD_USA::Read, "Read"},
-        {26, &BSD_USA::Close, "Close"},
-        {27, &BSD_USA::DuplicateSocket, "DuplicateSocket"},
-        {28, nullptr, "GetResourceStatistics"},
-        {29, nullptr, "RecvMMsg"}, //3.0.0+
-        {30, nullptr, "SendMMsg"}, //3.0.0+
-        {31, &BSD_USA::EventFd, "EventFd"}, //7.0.0+
-        {32, nullptr, "RegisterResourceStatisticsName"}, //7.0.0+
-        {33, nullptr, "RegisterClientShared"}, //10.0.0+
-        {34, nullptr, "GetSocketStatistics"}, //15.0.0+
-        {35, nullptr, "NifIoctl"}, //17.0.0+
-        {36, nullptr, "Unknown36"}, //18.0.0+
-        {37, nullptr, "Unknown37"}, //18.0.0+
-        {38, nullptr, "Unknown38"}, //18.0.0+
-        {39, nullptr, "Unknown39"}, //20.0.0+
-        {40, nullptr, "Unknown40"}, //20.0.0+
-        {41, nullptr, "Unknown41"}, //21.0.0+
-        {42, nullptr, "Unknown42"}, //21.0.0+
-        {43, nullptr, "Unknown43"}, //21.0.0+
-        {200, nullptr, "SetThreadCoreMask"}, //15.0.0+
-        {201, nullptr, "GetThreadCoreMask"}, //15.0.0+
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
-
     if (auto room_member = Network::GetRoomMember().lock()) {
         proxy_packet_received = room_member->BindOnProxyPacketReceived(
             [this](const Network::ProxyPacket& packet) { OnProxyPacketReceived(packet); });
@@ -1156,40 +1103,12 @@ std::unique_lock<std::mutex> BSD_USA::LockService() noexcept {
 
 BSDCFG::BSDCFG(Core::System& system_, const char *name)
     : ServiceFramework{system_, name} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "SetIfUp"},
-        {1, nullptr, "SetIfUpWithEvent"},
-        {2, nullptr, "CancelIf"},
-        {3, nullptr, "SetIfDown"},
-        {4, nullptr, "GetIfState"},
-        {5, nullptr, "DhcpRenew"},
-        {6, nullptr, "AddStaticArpEntry"},
-        {7, nullptr, "RemoveArpEntry"},
-        {8, nullptr, "LookupArpEntry"},
-        {9, nullptr, "LookupArpEntry2"},
-        {10, nullptr, "ClearArpEntries"},
-        {11, nullptr, "ClearArpEntries2"},
-        {12, nullptr, "PrintArpEntries"},
-        {13, nullptr, "Unknown13"},
-        {14, nullptr, "Unknown14"},
-        {15, nullptr, "Unknown15"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 BSDCFG::~BSDCFG() = default;
 
 BSD_NU::BSD_NU(Core::System& system_)
     : ServiceFramework{system_, "bsd:nu"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "CreateUserService"},
-    };
-    // clang-format on
-    RegisterHandlers(functions);
 }
 
 BSD_NU::~BSD_NU() = default;

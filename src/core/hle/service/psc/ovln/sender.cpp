@@ -7,14 +7,6 @@
 namespace Service::PSC {
 
 ISender::ISender(Core::System& system_) : ServiceFramework{system_, "ISender"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&ISender::Send>, "Send"},
-        {1, nullptr, "GetUnreceivedMessageCount"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 ISender::~ISender() = default;

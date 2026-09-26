@@ -9,20 +9,6 @@ namespace Service::LDN {
 
 IMonitorService::IMonitorService(Core::System& system_)
     : ServiceFramework{system_, "IMonitorService"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, C<&IMonitorService::GetStateForMonitor>, "GetStateForMonitor"},
-        {1, nullptr, "GetNetworkInfoForMonitor"},
-        {2, nullptr, "GetIpv4AddressForMonitor"},
-        {3, nullptr, "GetDisconnectReasonForMonitor"},
-        {4, nullptr, "GetSecurityParameterForMonitor"},
-        {5, nullptr, "GetNetworkConfigForMonitor"},
-        {100, C<&IMonitorService::InitializeMonitor>, "InitializeMonitor"},
-        {101, C<&IMonitorService::FinalizeMonitor>, "FinalizeMonitor"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IMonitorService::~IMonitorService() = default;

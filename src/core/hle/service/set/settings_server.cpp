@@ -90,25 +90,6 @@ LanguageCode GetLanguageCodeFromIndex(std::size_t index) {
 }
 
 ISettingsServer::ISettingsServer(Core::System& system_) : ServiceFramework{system_, "set"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, C<&ISettingsServer::GetLanguageCode>, "GetLanguageCode"},
-        {1, C<&ISettingsServer::GetAvailableLanguageCodes>, "GetAvailableLanguageCodes"},
-        {2, C<&ISettingsServer::MakeLanguageCode>, "MakeLanguageCode"},
-        {3, C<&ISettingsServer::GetAvailableLanguageCodeCount>, "GetAvailableLanguageCodeCount"},
-        {4, C<&ISettingsServer::GetRegionCode>, "GetRegionCode"},
-        {5, C<&ISettingsServer::GetAvailableLanguageCodes2>, "GetAvailableLanguageCodes2"},
-        {6, C<&ISettingsServer::GetAvailableLanguageCodeCount2>, "GetAvailableLanguageCodeCount2"},
-        {7, C<&ISettingsServer::GetKeyCodeMap>, "GetKeyCodeMap"},
-        {8, C<&ISettingsServer::GetQuestFlag>, "GetQuestFlag"},
-        {9, C<&ISettingsServer::GetKeyCodeMap2>, "GetKeyCodeMap2"},
-        {10, nullptr, "GetFirmwareVersionForDebug"},
-        {11, C<&ISettingsServer::GetDeviceNickName>, "GetDeviceNickName"},
-        {12, C<&ISettingsServer::GetKeyCodeMapByPort>, "GetKeyCodeMapByPort"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 ISettingsServer::~ISettingsServer() = default;

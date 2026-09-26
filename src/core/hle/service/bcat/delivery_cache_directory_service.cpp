@@ -30,15 +30,6 @@ static BcatDigest DigestFile(const FileSys::VirtualFile& file) {
 IDeliveryCacheDirectoryService::IDeliveryCacheDirectoryService(Core::System& system_,
                                                                FileSys::VirtualDir root_)
     : ServiceFramework{system_, "IDeliveryCacheDirectoryService"}, root(std::move(root_)) {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IDeliveryCacheDirectoryService::Open>, "Open"},
-        {1, D<&IDeliveryCacheDirectoryService::Read>, "Read"},
-        {2, D<&IDeliveryCacheDirectoryService::GetCount>, "GetCount"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IDeliveryCacheDirectoryService::~IDeliveryCacheDirectoryService() = default;

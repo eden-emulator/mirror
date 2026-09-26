@@ -49,6 +49,22 @@ private:
 private:
     std::shared_ptr<Applet> GetAppletFromProcessId(ProcessId pid);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{100, D<&IAllSystemAppletProxiesService::OpenSystemAppletProxy>, "OpenSystemAppletProxy"},
+        FunctionInfo{110, D<&IAllSystemAppletProxiesService::OpenSystemAppletProxy>, "OpenSystemAppletProxyEx"},
+        FunctionInfo{200, D<&IAllSystemAppletProxiesService::OpenLibraryAppletProxyOld>, "OpenLibraryAppletProxyOld"},
+        FunctionInfo{201, D<&IAllSystemAppletProxiesService::OpenLibraryAppletProxy>, "OpenLibraryAppletProxy"},
+        FunctionInfo{300, D<&IAllSystemAppletProxiesService::OpenOverlayAppletProxy>, "OpenOverlayAppletProxy"},
+        FunctionInfo{350, D<&IAllSystemAppletProxiesService::OpenSystemApplicationProxy>, "OpenSystemApplicationProxy"},
+        FunctionInfo{400, nullptr, "CreateSelfLibraryAppletCreatorForDevelop"},
+        FunctionInfo{410, nullptr, "GetSystemAppletControllerForDebug"},
+        FunctionInfo{450, D<&IAllSystemAppletProxiesService::GetSystemProcessCommonFunctions>, "GetSystemProcessCommonFunctions"}, // 19.0.0+
+        FunctionInfo{460, D<&IAllSystemAppletProxiesService::GetAppletAlternativeFunctions>, "GetAppletAlternativeFunctions"}, // 20.0.0+
+        FunctionInfo{1000, nullptr, "GetDebugFunctions"}
+    );
     WindowSystem& m_window_system;
 };
 

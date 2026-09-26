@@ -21,8 +21,8 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {1, D<&IMultiCommitManager::Add>, "Add"},
-        {2, D<&IMultiCommitManager::Commit>, "Commit"}
+        FunctionInfo{1, D<&IMultiCommitManager::Add>, "Add"},
+        FunctionInfo{2, D<&IMultiCommitManager::Commit>, "Commit"}
     );
     FileSys::VirtualFile backend;
 };

@@ -34,6 +34,18 @@ private:
         const InBuffer<BufferAttr_HipcMapTransferAllowsNonSecure | BufferAttr_HipcMapAlias>
             thumbnail_image_data_buffer);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{201, nullptr, "SaveScreenShot"},
+        FunctionInfo{202, nullptr, "SaveEditedScreenShot"},
+        FunctionInfo{203, C<&IScreenShotService::SaveScreenShotEx0>, "SaveScreenShotEx0"},
+        FunctionInfo{204, nullptr, "SaveEditedScreenShotEx0"},
+        FunctionInfo{206, C<&IScreenShotService::SaveEditedScreenShotEx1>, "SaveEditedScreenShotEx1"},
+        FunctionInfo{208, nullptr, "SaveScreenShotOfMovieEx1"},
+        FunctionInfo{1000, nullptr, "Unknown1000"}
+    );
     std::shared_ptr<AlbumManager> manager;
 };
 

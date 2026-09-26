@@ -10,16 +10,16 @@ namespace Service::PSC {
 
 IPmModule::IPmModule(Core::System& system_) : ServiceFramework{system_, "IPmModule"} {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "Initialize"},
             FunctionInfo{1, nullptr, "GetRequest"},
             FunctionInfo{2, nullptr, "Acknowledge"},
             FunctionInfo{3, nullptr, "Finalize"},
             FunctionInfo{4, nullptr, "AcknowledgeEx"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 }
 
 IPmModule::~IPmModule() = default;

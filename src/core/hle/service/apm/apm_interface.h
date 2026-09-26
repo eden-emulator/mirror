@@ -25,9 +25,9 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, &APM::OpenSession, "OpenSession"},
-        {1, &APM::GetPerformanceMode, "GetPerformanceMode"},
-        {6, &APM::IsCpuOverclockEnabled, "IsCpuOverclockEnabled"}
+        FunctionInfo{0, &APM::OpenSession, "OpenSession"},
+        FunctionInfo{1, &APM::GetPerformanceMode, "GetPerformanceMode"},
+        FunctionInfo{6, &APM::IsCpuOverclockEnabled, "IsCpuOverclockEnabled"}
     );
     std::shared_ptr<Module> apm;
     Controller& controller;

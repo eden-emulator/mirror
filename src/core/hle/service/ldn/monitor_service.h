@@ -23,6 +23,19 @@ private:
     Result InitializeMonitor();
     Result FinalizeMonitor();
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IMonitorService::GetStateForMonitor>, "GetStateForMonitor"},
+        FunctionInfo{1, nullptr, "GetNetworkInfoForMonitor"},
+        FunctionInfo{2, nullptr, "GetIpv4AddressForMonitor"},
+        FunctionInfo{3, nullptr, "GetDisconnectReasonForMonitor"},
+        FunctionInfo{4, nullptr, "GetSecurityParameterForMonitor"},
+        FunctionInfo{5, nullptr, "GetNetworkConfigForMonitor"},
+        FunctionInfo{100, C<&IMonitorService::InitializeMonitor>, "InitializeMonitor"},
+        FunctionInfo{101, C<&IMonitorService::FinalizeMonitor>, "FinalizeMonitor"}
+    );
     State state{State::None};
 };
 

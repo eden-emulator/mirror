@@ -11,18 +11,6 @@ namespace Service::AM {
 
 IAudioController::IAudioController(Core::System& system_)
     : ServiceFramework{system_, "IAudioController"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IAudioController::SetExpectedMasterVolume>, "SetExpectedMasterVolume"},
-        {1, D<&IAudioController::GetMainAppletExpectedMasterVolume>, "GetMainAppletExpectedMasterVolume"},
-        {2, D<&IAudioController::GetLibraryAppletExpectedMasterVolume>, "GetLibraryAppletExpectedMasterVolume"},
-        {3, D<&IAudioController::ChangeMainAppletMasterVolume>, "ChangeMainAppletMasterVolume"},
-        {4, D<&IAudioController::SetTransparentVolumeRate>, "SetTransparentVolumeRate"},
-        {5, nullptr, "Unknown5"}, //20.0.0+
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IAudioController::~IAudioController() = default;

@@ -346,7 +346,6 @@ public:
     explicit IProfileCommon(Core::System& system_, const char* name, bool editor_commands,
                             Common::UUID user_id_, ProfileManager& profile_manager_)
         : ServiceFramework{system_, name}, profile_manager{profile_manager_}, user_id{user_id_} {
-        // clang-format off
         static const FunctionInfo functions[] = {
             FunctionInfo{0, &IProfileCommon::Get, "Get"},
             FunctionInfo{1, &IProfileCommon::GetBase, "GetBase"},
@@ -356,17 +355,14 @@ public:
             FunctionInfo{21, &IProfileCommon::Unknown21, "Unknown21"},
             FunctionInfo{30, &IProfileCommon::Unknown30, "Unknown30"}
         };
-        // clang-format on
         RegisterHandlers(functions);
 
         if (editor_commands) {
-            // clang-format off
             static const FunctionInfo editor_functions[] = {
                 FunctionInfo{100, &IProfileCommon::Store, "Store"},
                 FunctionInfo{101, &IProfileCommon::StoreWithImage, "StoreWithImage"},
                 FunctionInfo{110, &IProfileCommon::Unknown110, "Unknown110"}
             };
-            // clang-format on
             RegisterHandlers(editor_functions);
         }
     }

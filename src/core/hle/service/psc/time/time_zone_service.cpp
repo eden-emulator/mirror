@@ -19,27 +19,7 @@ TimeZoneService::TimeZoneService(Core::System& system_, StandardSteadyClockCore&
     , m_clock_core{clock_core}
     , m_time_zone{time_zone}
     , m_can_write_timezone_device_location{can_write_timezone_device_location}
-{
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0,   D<&TimeZoneService::GetDeviceLocationName>, "GetDeviceLocationName"},
-        {1,   D<&TimeZoneService::SetDeviceLocationName>, "SetDeviceLocationName"},
-        {2,   D<&TimeZoneService::GetTotalLocationNameCount>, "GetTotalLocationNameCount"},
-        {3,   D<&TimeZoneService::LoadLocationNameList>, "LoadLocationNameList"},
-        {4,   D<&TimeZoneService::LoadTimeZoneRule>, "LoadTimeZoneRule"},
-        {5,   D<&TimeZoneService::GetTimeZoneRuleVersion>, "GetTimeZoneRuleVersion"},
-        {6,   D<&TimeZoneService::GetDeviceLocationNameAndUpdatedTime>, "GetDeviceLocationNameAndUpdatedTime"},
-        {7,   D<&TimeZoneService::SetDeviceLocationNameWithTimeZoneRule>, "SetDeviceLocationNameWithTimeZoneRule"},
-        {8,   D<&TimeZoneService::ParseTimeZoneBinary>, "ParseTimeZoneBinary"},
-        {20,  D<&TimeZoneService::GetDeviceLocationNameOperationEventReadableHandle>, "GetDeviceLocationNameOperationEventReadableHandle"},
-        {100, D<&TimeZoneService::ToCalendarTime>, "ToCalendarTime"},
-        {101, D<&TimeZoneService::ToCalendarTimeWithMyRule>, "ToCalendarTimeWithMyRule"},
-        {201, D<&TimeZoneService::ToPosixTime>, "ToPosixTime"},
-        {202, D<&TimeZoneService::ToPosixTimeWithMyRule>, "ToPosixTimeWithMyRule"},
-    };
-    // clang-format on
-    RegisterHandlers(functions);
-}
+{}
 
 Result TimeZoneService::GetDeviceLocationName(Out<LocationName> out_location_name) {
     SCOPE_EXIT {

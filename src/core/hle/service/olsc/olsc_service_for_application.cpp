@@ -12,7 +12,10 @@ namespace Service::OLSC {
 IOlscServiceForApplication::IOlscServiceForApplication(Core::System& system_)
     : ServiceFramework{system_, "olsc:u"} {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&IOlscServiceForApplication::Initialize>, "Initialize"},
             FunctionInfo{10, nullptr, "VerifySaveDataBackupLicenseAsync"},
             FunctionInfo{13, D<&IOlscServiceForApplication::GetSaveDataBackupSetting>, "GetSaveDataBackupSetting"},
@@ -35,10 +38,7 @@ IOlscServiceForApplication::IOlscServiceForApplication(Core::System& system_)
             FunctionInfo{9022, nullptr, "DeleteSaveDataBackupAsyncForDebug"},
             FunctionInfo{9025, nullptr, "ListDownloadableSaveDataBackupInfoAsyncForDebug"},
             FunctionInfo{9026, nullptr, "DownloadSaveDataBackupAsyncForDebug"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 }
 
 IOlscServiceForApplication::~IOlscServiceForApplication() = default;

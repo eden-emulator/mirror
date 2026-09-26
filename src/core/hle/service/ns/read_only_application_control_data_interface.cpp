@@ -131,22 +131,6 @@ private:
 IReadOnlyApplicationControlDataInterface::IReadOnlyApplicationControlDataInterface(
     Core::System& system_)
     : ServiceFramework{system_, "IReadOnlyApplicationControlDataInterface"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData>, "GetApplicationControlData"},
-        {1, D<&IReadOnlyApplicationControlDataInterface::GetApplicationDesiredLanguage>, "GetApplicationDesiredLanguage"},
-        {2, D<&IReadOnlyApplicationControlDataInterface::ConvertApplicationLanguageToLanguageCode>, "ConvertApplicationLanguageToLanguageCode"},
-        {3, nullptr, "ConvertLanguageCodeToApplicationLanguage"},
-        {4, nullptr, "SelectApplicationDesiredLanguage"},
-        {5, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData2>, "GetApplicationControlData"},
-        {10, &IReadOnlyApplicationControlDataInterface::ListApplicationIcon, "ListApplicationIcon"},
-        {13, &IReadOnlyApplicationControlDataInterface::ListApplicationTitle, "ListApplicationTitle"},
-        {19, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData3>, "GetApplicationControlData"},
-        {23, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData3>, "GetApplicationControlData"}, //23.0.0+
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IReadOnlyApplicationControlDataInterface::~IReadOnlyApplicationControlDataInterface() = default;

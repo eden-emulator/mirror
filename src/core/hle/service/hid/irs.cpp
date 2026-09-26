@@ -32,24 +32,24 @@ namespace Service::IRS {
 IRS::IRS(Core::System& system_) : ServiceFramework{system_, "irs"} {
     // clang-format off
     static const FunctionInfo functions[] = {
-        {302, C<&IRS::ActivateIrsensor>, "ActivateIrsensor"},
-        {303, C<&IRS::DeactivateIrsensor>, "DeactivateIrsensor"},
-        {304, C<&IRS::GetIrsensorSharedMemoryHandle>, "GetIrsensorSharedMemoryHandle"},
-        {305, C<&IRS::StopImageProcessor>, "StopImageProcessor"},
-        {306, C<&IRS::RunMomentProcessor>, "RunMomentProcessor"},
-        {307, C<&IRS::RunClusteringProcessor>, "RunClusteringProcessor"},
-        {308, C<&IRS::RunImageTransferProcessor>, "RunImageTransferProcessor"},
-        {309, C<&IRS::GetImageTransferProcessorState>, "GetImageTransferProcessorState"},
-        {310, C<&IRS::RunTeraPluginProcessor>, "RunTeraPluginProcessor"},
-        {311, C<&IRS::GetNpadIrCameraHandle>, "GetNpadIrCameraHandle"},
-        {312, C<&IRS::RunPointingProcessor>, "RunPointingProcessor"},
-        {313, C<&IRS::SuspendImageProcessor>, "SuspendImageProcessor"},
-        {314, C<&IRS::CheckFirmwareVersion>, "CheckFirmwareVersion"},
-        {315, C<&IRS::SetFunctionLevel>, "SetFunctionLevel"},
-        {316, C<&IRS::RunImageTransferExProcessor>, "RunImageTransferExProcessor"},
-        {317, C<&IRS::RunIrLedProcessor>, "RunIrLedProcessor"},
-        {318, C<&IRS::StopImageProcessorAsync>, "StopImageProcessorAsync"},
-        {319, C<&IRS::ActivateIrsensorWithFunctionLevel>, "ActivateIrsensorWithFunctionLevel"},
+        FunctionInfo{302, C<&IRS::ActivateIrsensor>, "ActivateIrsensor"},
+        FunctionInfo{303, C<&IRS::DeactivateIrsensor>, "DeactivateIrsensor"},
+        FunctionInfo{304, C<&IRS::GetIrsensorSharedMemoryHandle>, "GetIrsensorSharedMemoryHandle"},
+        FunctionInfo{305, C<&IRS::StopImageProcessor>, "StopImageProcessor"},
+        FunctionInfo{306, C<&IRS::RunMomentProcessor>, "RunMomentProcessor"},
+        FunctionInfo{307, C<&IRS::RunClusteringProcessor>, "RunClusteringProcessor"},
+        FunctionInfo{308, C<&IRS::RunImageTransferProcessor>, "RunImageTransferProcessor"},
+        FunctionInfo{309, C<&IRS::GetImageTransferProcessorState>, "GetImageTransferProcessorState"},
+        FunctionInfo{310, C<&IRS::RunTeraPluginProcessor>, "RunTeraPluginProcessor"},
+        FunctionInfo{311, C<&IRS::GetNpadIrCameraHandle>, "GetNpadIrCameraHandle"},
+        FunctionInfo{312, C<&IRS::RunPointingProcessor>, "RunPointingProcessor"},
+        FunctionInfo{313, C<&IRS::SuspendImageProcessor>, "SuspendImageProcessor"},
+        FunctionInfo{314, C<&IRS::CheckFirmwareVersion>, "CheckFirmwareVersion"},
+        FunctionInfo{315, C<&IRS::SetFunctionLevel>, "SetFunctionLevel"},
+        FunctionInfo{316, C<&IRS::RunImageTransferExProcessor>, "RunImageTransferExProcessor"},
+        FunctionInfo{317, C<&IRS::RunIrLedProcessor>, "RunIrLedProcessor"},
+        FunctionInfo{318, C<&IRS::StopImageProcessorAsync>, "StopImageProcessorAsync"},
+        FunctionInfo{319, C<&IRS::ActivateIrsensorWithFunctionLevel>, "ActivateIrsensorWithFunctionLevel"},
     };
     // clang-format on
 
@@ -369,16 +369,6 @@ Core::IrSensor::DeviceFormat& IRS::GetIrCameraSharedMemoryDeviceEntry(
 }
 
 IRS_SYS::IRS_SYS(Core::System& system_) : ServiceFramework{system_, "irs:sys"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {500, nullptr, "SetAppletResourceUserId"},
-        {501, nullptr, "RegisterAppletResourceUserId"},
-        {502, nullptr, "UnregisterAppletResourceUserId"},
-        {503, nullptr, "EnableAppletToGetInput"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IRS_SYS::~IRS_SYS() = default;

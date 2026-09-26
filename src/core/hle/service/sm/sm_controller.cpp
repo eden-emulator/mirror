@@ -113,12 +113,12 @@ void Controller::SetPointerBufferSize(HLERequestContext& ctx) {
 // https://switchbrew.org/wiki/IPC_Marshalling
 Controller::Controller(Core::System& system_) : ServiceFramework{system_, "IpcController"} {
     static const FunctionInfo functions[] = {
-        {0, &Controller::ConvertCurrentObjectToDomain, "ConvertCurrentObjectToDomain"},
-        {1, nullptr, "CopyFromCurrentDomain"},
-        {2, &Controller::CloneCurrentObject, "CloneCurrentObject"},
-        {3, &Controller::QueryPointerBufferSize, "QueryPointerBufferSize"},
-        {4, &Controller::CloneCurrentObjectEx, "CloneCurrentObjectEx"},
-        {5, &Controller::SetPointerBufferSize, "SetPointerBufferSize"}, //TODO: where does this come from
+        FunctionInfo{0, &Controller::ConvertCurrentObjectToDomain, "ConvertCurrentObjectToDomain"},
+        FunctionInfo{1, nullptr, "CopyFromCurrentDomain"},
+        FunctionInfo{2, &Controller::CloneCurrentObject, "CloneCurrentObject"},
+        FunctionInfo{3, &Controller::QueryPointerBufferSize, "QueryPointerBufferSize"},
+        FunctionInfo{4, &Controller::CloneCurrentObjectEx, "CloneCurrentObjectEx"},
+        FunctionInfo{5, &Controller::SetPointerBufferSize, "SetPointerBufferSize"}, //TODO: where does this come from
     };
     RegisterHandlers(functions);
 }

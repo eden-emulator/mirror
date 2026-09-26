@@ -20,21 +20,6 @@ IApplicationProxy::IApplicationProxy(Core::System& system_, std::shared_ptr<Appl
                                      Kernel::KProcess* process, WindowSystem& window_system)
     : ServiceFramework{system_, "IApplicationProxy"},
       m_window_system{window_system}, m_process{process}, m_applet{std::move(applet)} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IApplicationProxy::GetCommonStateGetter>, "GetCommonStateGetter"},
-        {1, D<&IApplicationProxy::GetSelfController>, "GetSelfController"},
-        {2, D<&IApplicationProxy::GetWindowController>, "GetWindowController"},
-        {3, D<&IApplicationProxy::GetAudioController>, "GetAudioController"},
-        {4, D<&IApplicationProxy::GetDisplayController>, "GetDisplayController"},
-        {10, D<&IApplicationProxy::GetProcessWindingController>, "GetProcessWindingController"},
-        {11, D<&IApplicationProxy::GetLibraryAppletCreator>, "GetLibraryAppletCreator"},
-        {20, D<&IApplicationProxy::GetApplicationFunctions>, "GetApplicationFunctions"},
-        {1000, D<&IApplicationProxy::GetDebugFunctions>, "GetDebugFunctions"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IApplicationProxy::~IApplicationProxy() = default;

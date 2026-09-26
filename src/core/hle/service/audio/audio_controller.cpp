@@ -24,66 +24,66 @@ IAudioController::IAudioController(Core::System& system_)
     : ServiceFramework{system_, "audctl"}, service_context{system, "audctl"} {
     // clang-format off
     static const FunctionInfo functions[] = {
-        {0, D<&IAudioController::GetTargetVolume>, "GetTargetVolume"},
-        {1, D<&IAudioController::SetTargetVolume>, "SetTargetVolume"},
-        {2, D<&IAudioController::GetTargetVolumeMin>, "GetTargetVolumeMin"},
-        {3, D<&IAudioController::GetTargetVolumeMax>, "GetTargetVolumeMax"},
-        {4, D<&IAudioController::IsTargetMute>, "IsTargetMute"},
-        {5, D<&IAudioController::SetTargetMute>, "SetTargetMute"},
-        {6, nullptr, "IsTargetConnected"}, //20.0.0+
-        {7, nullptr, "SetDefaultTarget"},
-        {8, nullptr, "GetDefaultTarget"},
-        {9, D<&IAudioController::GetAudioOutputMode>, "GetAudioOutputMode"},
-        {10, D<&IAudioController::SetAudioOutputMode>, "SetAudioOutputMode"},
-        {11, nullptr, "SetForceMutePolicy"},
-        {12, D<&IAudioController::GetForceMutePolicy>, "GetForceMutePolicy"},
-        {13, D<&IAudioController::GetOutputModeSetting>, "GetOutputModeSetting"},
-        {14, D<&IAudioController::SetOutputModeSetting>, "SetOutputModeSetting"},
-        {15, nullptr, "SetOutputTarget"},
-        {16, nullptr, "SetInputTargetForceEnabled"},
-        {17, D<&IAudioController::SetHeadphoneOutputLevelMode>, "SetHeadphoneOutputLevelMode"},
-        {18, D<&IAudioController::GetHeadphoneOutputLevelMode>, "GetHeadphoneOutputLevelMode"},
-        {19, nullptr, "AcquireAudioVolumeUpdateEventForPlayReport"},
-        {20, nullptr, "AcquireAudioOutputDeviceUpdateEventForPlayReport"},
-        {21, nullptr, "GetAudioOutputTargetForPlayReport"},
-        {22, D<&IAudioController::NotifyHeadphoneVolumeWarningDisplayedEvent>, "NotifyHeadphoneVolumeWarningDisplayedEvent"},
-        {23, nullptr, "SetSystemOutputMasterVolume"},
-        {24, nullptr, "GetSystemOutputMasterVolume"},
-        {25, nullptr, "GetAudioVolumeDataForPlayReport"},
-        {26, nullptr, "UpdateHeadphoneSettings"},
-        {27, nullptr, "SetVolumeMappingTableForDev"},
-        {28, nullptr, "GetAudioOutputChannelCountForPlayReport"},
-        {29, nullptr, "BindAudioOutputChannelCountUpdateEventForPlayReport"},
-        {30, D<&IAudioController::SetSpeakerAutoMuteEnabled>, "SetSpeakerAutoMuteEnabled"},
-        {31, D<&IAudioController::IsSpeakerAutoMuteEnabled>, "IsSpeakerAutoMuteEnabled"},
-        {32, D<&IAudioController::GetActiveOutputTarget>, "GetActiveOutputTarget"},
-        {33, nullptr, "GetTargetDeviceInfo"},
-        {34, D<&IAudioController::AcquireTargetNotification>, "AcquireTargetNotification"},
-        {35, nullptr, "SetHearingProtectionSafeguardTimerRemainingTimeForDebug"},
-        {36, nullptr, "GetHearingProtectionSafeguardTimerRemainingTimeForDebug"},
-        {37, nullptr, "SetHearingProtectionSafeguardEnabled"},
-        {38, nullptr, "IsHearingProtectionSafeguardEnabled"},
-        {39, nullptr, "IsHearingProtectionSafeguardMonitoringOutputForDebug"},
-        {40, nullptr, "GetSystemInformationForDebug"},
-        {41, nullptr, "SetVolumeButtonLongPressTime"},
-        {42, nullptr, "SetNativeVolumeForDebug"},
-        {43, nullptr, "Unknown43"}, //21.0.0+
-        {5000, D<&IAudioController::Unknown5000>, "Unknown5000"}, //19.0.0+
-        {10000, nullptr, "NotifyAudioOutputTargetForPlayReport"},
-        {10001, nullptr, "NotifyAudioOutputChannelCountForPlayReport"},
-        {10002, nullptr, "NotifyUnsupportedUsbOutputDeviceAttachedForPlayReport"},
-        {10100, nullptr, "GetAudioVolumeDataForPlayReport"},
-        {10101, nullptr, "BindAudioVolumeUpdateEventForPlayReport"},
-        {10102, nullptr, "BindAudioOutputTargetUpdateEventForPlayReport"},
-        {10103, nullptr, "GetAudioOutputTargetForPlayReport"},
-        {10104, nullptr, "GetAudioOutputChannelCountForPlayReport"},
-        {10105, nullptr, "BindAudioOutputChannelCountUpdateEventForPlayReport"}, //14.0.0-19.0.1
-        {10106, nullptr, "GetDefaultAudioOutputTargetForPlayReport"}, //14.0.0-19.0.1
-        {10200, nullptr, "Unknown10200"}, //20.0.0+
-        {50000, nullptr, "SetAnalogInputBoostGainForPrototyping"}, //15.0.0-18.1.0
-        {50001, nullptr, "OverrideDefaultTargetForDebug"}, //19.0.0-19.0.1
-        {50003, nullptr, "SetForceOverrideExternalDeviceNameForDebug"}, //19.0.0+
-        {50004, nullptr, "ClearForceOverrideExternalDeviceNameForDebug"} //19.0.0+
+        FunctionInfo{0, D<&IAudioController::GetTargetVolume>, "GetTargetVolume"},
+        FunctionInfo{1, D<&IAudioController::SetTargetVolume>, "SetTargetVolume"},
+        FunctionInfo{2, D<&IAudioController::GetTargetVolumeMin>, "GetTargetVolumeMin"},
+        FunctionInfo{3, D<&IAudioController::GetTargetVolumeMax>, "GetTargetVolumeMax"},
+        FunctionInfo{4, D<&IAudioController::IsTargetMute>, "IsTargetMute"},
+        FunctionInfo{5, D<&IAudioController::SetTargetMute>, "SetTargetMute"},
+        FunctionInfo{6, nullptr, "IsTargetConnected"}, //20.0.0+
+        FunctionInfo{7, nullptr, "SetDefaultTarget"},
+        FunctionInfo{8, nullptr, "GetDefaultTarget"},
+        FunctionInfo{9, D<&IAudioController::GetAudioOutputMode>, "GetAudioOutputMode"},
+        FunctionInfo{10, D<&IAudioController::SetAudioOutputMode>, "SetAudioOutputMode"},
+        FunctionInfo{11, nullptr, "SetForceMutePolicy"},
+        FunctionInfo{12, D<&IAudioController::GetForceMutePolicy>, "GetForceMutePolicy"},
+        FunctionInfo{13, D<&IAudioController::GetOutputModeSetting>, "GetOutputModeSetting"},
+        FunctionInfo{14, D<&IAudioController::SetOutputModeSetting>, "SetOutputModeSetting"},
+        FunctionInfo{15, nullptr, "SetOutputTarget"},
+        FunctionInfo{16, nullptr, "SetInputTargetForceEnabled"},
+        FunctionInfo{17, D<&IAudioController::SetHeadphoneOutputLevelMode>, "SetHeadphoneOutputLevelMode"},
+        FunctionInfo{18, D<&IAudioController::GetHeadphoneOutputLevelMode>, "GetHeadphoneOutputLevelMode"},
+        FunctionInfo{19, nullptr, "AcquireAudioVolumeUpdateEventForPlayReport"},
+        FunctionInfo{20, nullptr, "AcquireAudioOutputDeviceUpdateEventForPlayReport"},
+        FunctionInfo{21, nullptr, "GetAudioOutputTargetForPlayReport"},
+        FunctionInfo{22, D<&IAudioController::NotifyHeadphoneVolumeWarningDisplayedEvent>, "NotifyHeadphoneVolumeWarningDisplayedEvent"},
+        FunctionInfo{23, nullptr, "SetSystemOutputMasterVolume"},
+        FunctionInfo{24, nullptr, "GetSystemOutputMasterVolume"},
+        FunctionInfo{25, nullptr, "GetAudioVolumeDataForPlayReport"},
+        FunctionInfo{26, nullptr, "UpdateHeadphoneSettings"},
+        FunctionInfo{27, nullptr, "SetVolumeMappingTableForDev"},
+        FunctionInfo{28, nullptr, "GetAudioOutputChannelCountForPlayReport"},
+        FunctionInfo{29, nullptr, "BindAudioOutputChannelCountUpdateEventForPlayReport"},
+        FunctionInfo{30, D<&IAudioController::SetSpeakerAutoMuteEnabled>, "SetSpeakerAutoMuteEnabled"},
+        FunctionInfo{31, D<&IAudioController::IsSpeakerAutoMuteEnabled>, "IsSpeakerAutoMuteEnabled"},
+        FunctionInfo{32, D<&IAudioController::GetActiveOutputTarget>, "GetActiveOutputTarget"},
+        FunctionInfo{33, nullptr, "GetTargetDeviceInfo"},
+        FunctionInfo{34, D<&IAudioController::AcquireTargetNotification>, "AcquireTargetNotification"},
+        FunctionInfo{35, nullptr, "SetHearingProtectionSafeguardTimerRemainingTimeForDebug"},
+        FunctionInfo{36, nullptr, "GetHearingProtectionSafeguardTimerRemainingTimeForDebug"},
+        FunctionInfo{37, nullptr, "SetHearingProtectionSafeguardEnabled"},
+        FunctionInfo{38, nullptr, "IsHearingProtectionSafeguardEnabled"},
+        FunctionInfo{39, nullptr, "IsHearingProtectionSafeguardMonitoringOutputForDebug"},
+        FunctionInfo{40, nullptr, "GetSystemInformationForDebug"},
+        FunctionInfo{41, nullptr, "SetVolumeButtonLongPressTime"},
+        FunctionInfo{42, nullptr, "SetNativeVolumeForDebug"},
+        FunctionInfo{43, nullptr, "Unknown43"}, //21.0.0+
+        FunctionInfo{5000, D<&IAudioController::Unknown5000>, "Unknown5000"}, //19.0.0+
+        FunctionInfo{10000, nullptr, "NotifyAudioOutputTargetForPlayReport"},
+        FunctionInfo{10001, nullptr, "NotifyAudioOutputChannelCountForPlayReport"},
+        FunctionInfo{10002, nullptr, "NotifyUnsupportedUsbOutputDeviceAttachedForPlayReport"},
+        FunctionInfo{10100, nullptr, "GetAudioVolumeDataForPlayReport"},
+        FunctionInfo{10101, nullptr, "BindAudioVolumeUpdateEventForPlayReport"},
+        FunctionInfo{10102, nullptr, "BindAudioOutputTargetUpdateEventForPlayReport"},
+        FunctionInfo{10103, nullptr, "GetAudioOutputTargetForPlayReport"},
+        FunctionInfo{10104, nullptr, "GetAudioOutputChannelCountForPlayReport"},
+        FunctionInfo{10105, nullptr, "BindAudioOutputChannelCountUpdateEventForPlayReport"}, //14.0.0-19.0.1
+        FunctionInfo{10106, nullptr, "GetDefaultAudioOutputTargetForPlayReport"}, //14.0.0-19.0.1
+        FunctionInfo{10200, nullptr, "Unknown10200"}, //20.0.0+
+        FunctionInfo{50000, nullptr, "SetAnalogInputBoostGainForPrototyping"}, //15.0.0-18.1.0
+        FunctionInfo{50001, nullptr, "OverrideDefaultTargetForDebug"}, //19.0.0-19.0.1
+        FunctionInfo{50003, nullptr, "SetForceOverrideExternalDeviceNameForDebug"}, //19.0.0+
+        FunctionInfo{50004, nullptr, "ClearForceOverrideExternalDeviceNameForDebug"} //19.0.0+
     };
     // clang-format on
 

@@ -19,23 +19,6 @@ namespace Service::AM {
 IAllSystemAppletProxiesService::IAllSystemAppletProxiesService(Core::System& system_,
                                                                WindowSystem& window_system)
     : ServiceFramework{system_, "appletAE"}, m_window_system{window_system} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {100, D<&IAllSystemAppletProxiesService::OpenSystemAppletProxy>, "OpenSystemAppletProxy"},
-        {110, D<&IAllSystemAppletProxiesService::OpenSystemAppletProxy>, "OpenSystemAppletProxyEx"},
-        {200, D<&IAllSystemAppletProxiesService::OpenLibraryAppletProxyOld>, "OpenLibraryAppletProxyOld"},
-        {201, D<&IAllSystemAppletProxiesService::OpenLibraryAppletProxy>, "OpenLibraryAppletProxy"},
-        {300, D<&IAllSystemAppletProxiesService::OpenOverlayAppletProxy>, "OpenOverlayAppletProxy"},
-        {350, D<&IAllSystemAppletProxiesService::OpenSystemApplicationProxy>, "OpenSystemApplicationProxy"},
-        {400, nullptr, "CreateSelfLibraryAppletCreatorForDevelop"},
-        {410, nullptr, "GetSystemAppletControllerForDebug"},
-        {450, D<&IAllSystemAppletProxiesService::GetSystemProcessCommonFunctions>, "GetSystemProcessCommonFunctions"}, // 19.0.0+
-        {460, D<&IAllSystemAppletProxiesService::GetAppletAlternativeFunctions>, "GetAppletAlternativeFunctions"}, // 20.0.0+
-        {1000, nullptr, "GetDebugFunctions"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IAllSystemAppletProxiesService::~IAllSystemAppletProxiesService() = default;

@@ -65,11 +65,32 @@ private:
     Result GetSharedMemoryNativeHandle(
         OutCopyHandle<Kernel::KSharedMemory> out_shared_memory_native_handle);
     Result GetSharedFontInOrderOfPriority(OutArray<u32, BufferAttr_HipcMapAlias> out_font_codes,
-                                          OutArray<u32, BufferAttr_HipcMapAlias> out_font_offsets,
-                                          OutArray<u32, BufferAttr_HipcMapAlias> out_font_sizes,
-                                          Out<bool> out_fonts_are_loaded, Out<u32> out_font_count,
-                                          Set::LanguageCode language_code);
+        OutArray<u32, BufferAttr_HipcMapAlias> out_font_offsets,
+        OutArray<u32, BufferAttr_HipcMapAlias> out_font_sizes,
+        Out<bool> out_fonts_are_loaded, Out<u32> out_font_count,
+        Set::LanguageCode language_code);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IPlatformServiceManager::RequestLoad>, "RequestLoad"},
+        FunctionInfo{1, D<&IPlatformServiceManager::GetLoadState>, "GetLoadState"},
+        FunctionInfo{2, D<&IPlatformServiceManager::GetSize>, "GetSize"},
+        FunctionInfo{3, D<&IPlatformServiceManager::GetSharedMemoryAddressOffset>, "GetSharedMemoryAddressOffset"},
+        FunctionInfo{4, D<&IPlatformServiceManager::GetSharedMemoryNativeHandle>, "GetSharedMemoryNativeHandle"},
+        FunctionInfo{5, D<&IPlatformServiceManager::GetSharedFontInOrderOfPriority>, "GetSharedFontInOrderOfPriority"},
+        FunctionInfo{6, D<&IPlatformServiceManager::GetSharedFontInOrderOfPriority>, "GetSharedFontInOrderOfPriorityForSystem"},
+        FunctionInfo{100, nullptr, "RequestApplicationFunctionAuthorization"},
+        FunctionInfo{101, nullptr, "RequestApplicationFunctionAuthorizationByProcessId"},
+        FunctionInfo{102, nullptr, "RequestApplicationFunctionAuthorizationByApplicationId"},
+        FunctionInfo{103, nullptr, "RefreshApplicationFunctionBlackListDebugRecord"},
+        FunctionInfo{104, nullptr, "RequestApplicationFunctionAuthorizationByProgramId"},
+        FunctionInfo{105, nullptr, "GetFunctionBlackListSystemVersionToAuthorize"},
+        FunctionInfo{106, nullptr, "GetFunctionBlackListVersion"},
+        FunctionInfo{1000, nullptr, "LoadNgWordDataForPlatformRegionChina"},
+        FunctionInfo{1001, nullptr, "GetNgWordDataSizeForPlatformRegionChina"}
+    );
     struct Impl;
     std::unique_ptr<Impl> impl;
 };

@@ -14,42 +14,9 @@ namespace Service::BTM {
 
 IBtmSystemCore::IBtmSystemCore(Core::System& system_)
     : ServiceFramework{system_, "IBtmSystemCore"}, service_context{system_, "IBtmSystemCore"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, C<&IBtmSystemCore::StartGamepadPairing>, "StartGamepadPairing"},
-        {1, C<&IBtmSystemCore::CancelGamepadPairing>, "CancelGamepadPairing"},
-        {2, nullptr, "ClearGamepadPairingDatabase"},
-        {3, nullptr, "GetPairedGamepadCount"},
-        {4, C<&IBtmSystemCore::EnableRadio>, "EnableRadio"},
-        {5, C<&IBtmSystemCore::DisableRadio>, "DisableRadio"},
-        {6, C<&IBtmSystemCore::IsRadioEnabled>, "IsRadioEnabled"},
-        {7, C<&IBtmSystemCore::AcquireRadioEvent>, "AcquireRadioEvent"},
-        {8, nullptr, "AcquireGamepadPairingEvent"},
-        {9, nullptr, "IsGamepadPairingStarted"},
-        {10, nullptr, "StartAudioDeviceDiscovery"},
-        {11, nullptr, "StopAudioDeviceDiscovery"},
-        {12, nullptr, "IsDiscoveryingAudioDevice"},
-        {13, C<&IBtmSystemCore::GetDiscoveredAudioDevice>, "GetDiscoveredAudioDevice"},
-        {14, C<&IBtmSystemCore::AcquireAudioDeviceConnectionEvent>, "AcquireAudioDeviceConnectionEvent"},
-        {15, nullptr, "ConnectAudioDevice"},
-        {16, nullptr, "IsConnectingAudioDevice"},
-        {17, C<&IBtmSystemCore::GetConnectedAudioDevices>, "GetConnectedAudioDevices"},
-        {18, nullptr, "DisconnectAudioDevice"},
-        {19, nullptr, "AcquirePairedAudioDeviceInfoChangedEvent"},
-        {20, C<&IBtmSystemCore::GetPairedAudioDevices>, "GetPairedAudioDevices"},
-        {21, nullptr, "RemoveAudioDevicePairing"},
-        {22, C<&IBtmSystemCore::RequestAudioDeviceConnectionRejection>, "RequestAudioDeviceConnectionRejection"},
-        {23, C<&IBtmSystemCore::CancelAudioDeviceConnectionRejection>, "CancelAudioDeviceConnectionRejection"}
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
     radio_event = service_context.CreateEvent("IBtmSystemCore::RadioEvent");
-    audio_device_connection_event =
-        service_context.CreateEvent("IBtmSystemCore::AudioDeviceConnectionEvent");
-
-    m_set_sys =
-        system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);
+    audio_device_connection_event = service_context.CreateEvent("IBtmSystemCore::AudioDeviceConnectionEvent");
+    m_set_sys = system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);
 }
 
 IBtmSystemCore::~IBtmSystemCore() {

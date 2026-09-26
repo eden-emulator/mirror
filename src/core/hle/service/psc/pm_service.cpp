@@ -8,13 +8,6 @@
 namespace Service::PSC {
 
 IPmService::IPmService(Core::System& system_) : ServiceFramework{system_, "psc:m"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IPmService::GetPmModule>, "GetPmModule"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IPmService::~IPmService() = default;

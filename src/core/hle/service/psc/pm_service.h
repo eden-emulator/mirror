@@ -17,6 +17,13 @@ public:
 
 private:
     Result GetPmModule(Out<SharedPointer<IPmModule>> out_module);
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IPmService::GetPmModule>, "GetPmModule"}
+    );
 };
 
 } // namespace Service::PSC

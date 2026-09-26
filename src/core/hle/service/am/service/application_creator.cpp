@@ -54,16 +54,6 @@ Result CreateGuestApplication(SharedPointer<IApplicationAccessor>* out_applicati
 
 IApplicationCreator::IApplicationCreator(Core::System& system_, WindowSystem& window_system)
     : ServiceFramework{system_, "IApplicationCreator"}, m_window_system{window_system} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IApplicationCreator::CreateApplication>, "CreateApplication"},
-        {1, nullptr, "PopLaunchRequestedApplication"},
-        {10, D<&IApplicationCreator::CreateSystemApplication>, "CreateSystemApplication"},
-        {100, nullptr, "PopFloatingApplicationForDevelopment"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IApplicationCreator::~IApplicationCreator() = default;

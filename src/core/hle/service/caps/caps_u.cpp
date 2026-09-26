@@ -16,26 +16,6 @@ namespace Service::Capture {
 IAlbumApplicationService::IAlbumApplicationService(Core::System& system_,
                                                    std::shared_ptr<AlbumManager> album_manager)
     : ServiceFramework{system_, "caps:u"}, manager{album_manager} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {32, C<&IAlbumApplicationService::SetShimLibraryVersion>, "SetShimLibraryVersion"},
-        {102, C<&IAlbumApplicationService::GetAlbumFileList0AafeAruidDeprecated>, "GetAlbumFileList0AafeAruidDeprecated"},
-        {103, nullptr, "DeleteAlbumFileByAruid"},
-        {104, nullptr, "GetAlbumFileSizeByAruid"},
-        {105, nullptr, "DeleteAlbumFileByAruidForDebug"},
-        {110, nullptr, "LoadAlbumScreenShotImageByAruid"},
-        {120, nullptr, "LoadAlbumScreenShotThumbnailImageByAruid"},
-        {130, nullptr, "PrecheckToCreateContentsByAruid"},
-        {140, nullptr, "GetAlbumFileList1AafeAruidDeprecated"},
-        {141, nullptr, "GetAlbumFileList2AafeUidAruidDeprecated"},
-        {142, C<&IAlbumApplicationService::GetAlbumFileList3AaeAruid>, "GetAlbumFileList3AaeAruid"},
-        {143, nullptr, "GetAlbumFileList4AaeUidAruid"},
-        {144, nullptr, "GetAllAlbumFileList3AaeAruid"},
-        {60002, nullptr, "OpenAccessorSessionForApplication"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IAlbumApplicationService::~IAlbumApplicationService() = default;

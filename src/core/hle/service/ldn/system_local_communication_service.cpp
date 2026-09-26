@@ -12,7 +12,10 @@ namespace Service::LDN {
 ISystemLocalCommunicationService::ISystemLocalCommunicationService(Core::System& system_)
     : ServiceFramework{system_, "ISystemLocalCommunicationService"} {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetState"},
             FunctionInfo{1, nullptr, "GetNetworkInfo"},
             FunctionInfo{2, nullptr, "GetIpv4Address"},
@@ -43,10 +46,7 @@ ISystemLocalCommunicationService::ISystemLocalCommunicationService(Core::System&
             FunctionInfo{401, nullptr, "FinalizeSystem"},
             FunctionInfo{402, nullptr, "SetOperationMode"},
             FunctionInfo{403, C<&ISystemLocalCommunicationService::InitializeSystem2>, "InitializeSystem2"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 }
 
 ISystemLocalCommunicationService::~ISystemLocalCommunicationService() = default;

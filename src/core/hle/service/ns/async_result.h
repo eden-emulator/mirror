@@ -13,6 +13,14 @@ public:
 private:
     Result Cancel();
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Get"},
+        FunctionInfo{1, D<&IAsyncResult::Cancel>, "Cancel"},
+        FunctionInfo{2, nullptr, "GetErrorContext"}, // 4.0.0+
+    );
     Service::Event* event{};
 };
 

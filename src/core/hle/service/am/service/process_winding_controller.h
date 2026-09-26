@@ -33,6 +33,19 @@ private:
         SharedPointer<ILibraryAppletAccessor> reserved_applet_accessor);
     Result ReserveToStartAndWait(SharedPointer<ILibraryAppletAccessor> reserved_applet_accessor);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IProcessWindingController::GetLaunchReason>, "GetLaunchReason"},
+        FunctionInfo{11, D<&IProcessWindingController::OpenCallingLibraryApplet>, "OpenCallingLibraryApplet"},
+        FunctionInfo{21, D<&IProcessWindingController::PushContext>, "PushContext"},
+        FunctionInfo{22, D<&IProcessWindingController::PopContext>, "PopContext"},
+        FunctionInfo{23, D<&IProcessWindingController::CancelWindingReservation>, "CancelWindingReservation"},
+        FunctionInfo{30, D<&IProcessWindingController::WindAndDoReserved>, "WindAndDoReserved"},
+        FunctionInfo{40, D<&IProcessWindingController::ReserveToStartAndWaitAndUnwindThis>, "ReserveToStartAndWaitAndUnwindThis"},
+        FunctionInfo{41, D<&IProcessWindingController::ReserveToStartAndWait>, "ReserveToStartAndWait"}
+    );
     const std::shared_ptr<Applet> m_applet;
 };
 

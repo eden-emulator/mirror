@@ -20,20 +20,7 @@ std::unique_ptr<BcatBackend> CreateBackendFromSettings([[maybe_unused]] Core::Sy
 
 IServiceCreator::IServiceCreator(Core::System& system_, const char* name_)
     : ServiceFramework{system_, name_}, fsc{system.GetFileSystemController()} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IServiceCreator::CreateBcatService>, "CreateBcatService"},
-        {1, D<&IServiceCreator::CreateDeliveryCacheStorageService>, "CreateDeliveryCacheStorageService"},
-        {2, D<&IServiceCreator::CreateDeliveryCacheStorageServiceWithApplicationId>, "CreateDeliveryCacheStorageServiceWithApplicationId"},
-        {3, nullptr, "CreateDeliveryCacheProgressService"},
-        {4, nullptr, "CreateDeliveryCacheProgressServiceWithApplicationId"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
-
-    backend =
-        CreateBackendFromSettings(system_, [this](u64 tid) { return fsc.GetBCATDirectory(tid); });
+    backend = CreateBackendFromSettings(system_, [this](u64 tid) { return fsc.GetBCATDirectory(tid); });
 }
 
 IServiceCreator::~IServiceCreator() = default;

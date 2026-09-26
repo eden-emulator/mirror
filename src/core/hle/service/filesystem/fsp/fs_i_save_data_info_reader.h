@@ -46,7 +46,7 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, D<&ISaveDataInfoReader::ReadSaveDataInfo>, "ReadSaveDataInfo"}
+        FunctionInfo{0, D<&ISaveDataInfoReader::ReadSaveDataInfo>, "ReadSaveDataInfo"}
     );
     std::shared_ptr<SaveDataController> save_data_controller;
     std::vector<SaveDataInfo> info;

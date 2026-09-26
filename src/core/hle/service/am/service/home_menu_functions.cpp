@@ -18,27 +18,6 @@ IHomeMenuFunctions::IHomeMenuFunctions(Core::System& system_, std::shared_ptr<Ap
                                        WindowSystem& window_system)
     : ServiceFramework{system_, "IHomeMenuFunctions"}, m_window_system{window_system},
       m_applet{std::move(applet)}, m_context{system, "IHomeMenuFunctions"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {10, D<&IHomeMenuFunctions::RequestToGetForeground>, "RequestToGetForeground"},
-        {11, D<&IHomeMenuFunctions::LockForeground>, "LockForeground"},
-        {12, D<&IHomeMenuFunctions::UnlockForeground>, "UnlockForeground"},
-        {20, D<&IHomeMenuFunctions::PopFromGeneralChannel>, "PopFromGeneralChannel"},
-        {21, D<&IHomeMenuFunctions::GetPopFromGeneralChannelEvent>, "GetPopFromGeneralChannelEvent"},
-        {30, nullptr, "GetHomeButtonWriterLockAccessor"},
-        {31, nullptr, "GetWriterLockAccessorEx"},
-        {40, D<&IHomeMenuFunctions::IsSleepEnabled>, "IsSleepEnabled"},
-        {41, D<&IHomeMenuFunctions::IsRebootEnabled>, "IsRebootEnabled"},
-        {50, nullptr, "LaunchSystemApplet"},
-        {51, nullptr, "LaunchStarter"},
-        {100, nullptr, "PopRequestLaunchApplicationForDebug"},
-        {110, D<&IHomeMenuFunctions::IsForceTerminateApplicationDisabledForDebug>, "IsForceTerminateApplicationDisabledForDebug"},
-        {200, nullptr, "LaunchDevMenu"},
-        {1000, nullptr, "SetLastApplicationExitReason"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IHomeMenuFunctions::~IHomeMenuFunctions() = default;

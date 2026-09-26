@@ -24,8 +24,8 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, &NVMEMP::Open, "Open"},
-        {1, &NVMEMP::GetAruid, "GetAruid"}
+        FunctionInfo{0, &NVMEMP::Open, "Open"},
+        FunctionInfo{1, &NVMEMP::GetAruid, "GetAruid"}
     );
 };
 

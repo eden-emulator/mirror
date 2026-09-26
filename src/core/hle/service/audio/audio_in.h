@@ -43,6 +43,26 @@ public:
     Result FlushAudioInBuffers(Out<bool> out_flushed);
 
 private:
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IAudioIn::GetAudioInState>, "GetAudioInState"},
+        FunctionInfo{1, D<&IAudioIn::Start>, "Start"},
+        FunctionInfo{2, D<&IAudioIn::Stop>, "Stop"},
+        FunctionInfo{3, D<&IAudioIn::AppendAudioInBuffer>, "AppendAudioInBuffer"},
+        FunctionInfo{4, D<&IAudioIn::RegisterBufferEvent>, "RegisterBufferEvent"},
+        FunctionInfo{5, D<&IAudioIn::GetReleasedAudioInBuffers>, "GetReleasedAudioInBuffers"},
+        FunctionInfo{6, D<&IAudioIn::ContainsAudioInBuffer>, "ContainsAudioInBuffer"},
+        FunctionInfo{7, D<&IAudioIn::AppendAudioInBuffer>, "AppendUacInBuffer"},
+        FunctionInfo{8, D<&IAudioIn::AppendAudioInBufferAuto>, "AppendAudioInBufferAuto"},
+        FunctionInfo{9, D<&IAudioIn::GetReleasedAudioInBuffersAuto>, "GetReleasedAudioInBuffersAuto"},
+        FunctionInfo{10, D<&IAudioIn::AppendAudioInBufferAuto>, "AppendUacInBufferAuto"},
+        FunctionInfo{11, D<&IAudioIn::GetAudioInBufferCount>, "GetAudioInBufferCount"},
+        FunctionInfo{12, D<&IAudioIn::SetDeviceGain>, "SetDeviceGain"},
+        FunctionInfo{13, D<&IAudioIn::GetDeviceGain>, "GetDeviceGain"},
+        FunctionInfo{14, D<&IAudioIn::FlushAudioInBuffers>, "FlushAudioInBuffers"}
+    );
     Kernel::KProcess* process;
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* event;

@@ -13,15 +13,6 @@ namespace Service::NS {
 
 IReadOnlyApplicationRecordInterface::IReadOnlyApplicationRecordInterface(Core::System& system_)
     : ServiceFramework{system_, "IReadOnlyApplicationRecordInterface"} {
-    static const FunctionInfo functions[] = {
-        {0, D<&IReadOnlyApplicationRecordInterface::HasApplicationRecord>, "HasApplicationRecord"},
-        {1, nullptr, "NotifyApplicationFailure"},
-        {2, D<&IReadOnlyApplicationRecordInterface::IsDataCorruptedResult>, "IsDataCorruptedResult"},
-        {3, D<&IReadOnlyApplicationRecordInterface::ListApplicationRecord>, "ListApplicationRecord"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IReadOnlyApplicationRecordInterface::~IReadOnlyApplicationRecordInterface() = default;

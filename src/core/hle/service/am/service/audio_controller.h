@@ -20,6 +20,17 @@ private:
     Result ChangeMainAppletMasterVolume(f32 volume, s64 fade_time_ns);
     Result SetTransparentVolumeRate(f32 transparent_volume_rate);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IAudioController::SetExpectedMasterVolume>, "SetExpectedMasterVolume"},
+        FunctionInfo{1, D<&IAudioController::GetMainAppletExpectedMasterVolume>, "GetMainAppletExpectedMasterVolume"},
+        FunctionInfo{2, D<&IAudioController::GetLibraryAppletExpectedMasterVolume>, "GetLibraryAppletExpectedMasterVolume"},
+        FunctionInfo{3, D<&IAudioController::ChangeMainAppletMasterVolume>, "ChangeMainAppletMasterVolume"},
+        FunctionInfo{4, D<&IAudioController::SetTransparentVolumeRate>, "SetTransparentVolumeRate"},
+        FunctionInfo{5, nullptr, "Unknown5"}, //20.0.0+
+    );
     static constexpr float MinAllowedVolume = 0.0f;
     static constexpr float MaxAllowedVolume = 1.0f;
 

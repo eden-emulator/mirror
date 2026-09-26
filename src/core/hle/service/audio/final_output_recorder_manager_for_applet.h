@@ -16,6 +16,14 @@ class IFinalOutputRecorderManagerForApplet final
 public:
     explicit IFinalOutputRecorderManagerForApplet(Core::System& system_);
     ~IFinalOutputRecorderManagerForApplet() override;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "RequestSuspend"},
+        FunctionInfo{1, nullptr, "RequestResume"}
+    );
 };
 
 } // namespace Service::Audio

@@ -19,17 +19,18 @@ SteadyClock::SteadyClock(Core::System& system_, std::shared_ptr<TimeManager> man
     , m_can_write_uninitialized_clock{can_write_uninitialized_clock}
 {
     // clang-format off
-         static const FunctionInfo functions[] = {
-        {0, D<&SteadyClock::GetCurrentTimePoint>, "GetCurrentTimePoint"},
-        {2, D<&SteadyClock::GetTestOffset>, "GetTestOffset"},
-        {3, D<&SteadyClock::SetTestOffset>, "SetTestOffset"},
-        {100, D<&SteadyClock::GetRtcValue>, "GetRtcValue"},
-        {101, D<&SteadyClock::IsRtcResetDetected>, "IsRtcResetDetected"},
-        {102, D<&SteadyClock::GetSetupResultValue>, "GetSetupResultValue"},
-        {200, D<&SteadyClock::GetInternalOffset>, "GetInternalOffset"},
-    };
-    // clang-format on
-    RegisterHandlers(functions);
+         FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&SteadyClock::GetCurrentTimePoint>, "GetCurrentTimePoint"},
+        FunctionInfo{2, D<&SteadyClock::GetTestOffset>, "GetTestOffset"},
+        FunctionInfo{3, D<&SteadyClock::SetTestOffset>, "SetTestOffset"},
+        FunctionInfo{100, D<&SteadyClock::GetRtcValue>, "GetRtcValue"},
+        FunctionInfo{101, D<&SteadyClock::IsRtcResetDetected>, "IsRtcResetDetected"},
+        FunctionInfo{102, D<&SteadyClock::GetSetupResultValue>, "GetSetupResultValue"},
+        FunctionInfo{200, D<&SteadyClock::GetInternalOffset>, "GetInternalOffset"}
+    );
 }
 
 Result SteadyClock::GetCurrentTimePoint(Out<SteadyClockTimePoint> out_time_point) {

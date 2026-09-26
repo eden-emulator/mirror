@@ -30,7 +30,10 @@ Hidbus::Hidbus(Core::System& system_)
     : ServiceFramework{system_, "hidbus"}, service_context{system_, service_name} {
 
     // clang-format off
-    static const FunctionInfo functions[] = {
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{1, C<&Hidbus::GetBusHandle>, "GetBusHandle"},
             FunctionInfo{2, C<&Hidbus::IsExternalDeviceConnected>, "IsExternalDeviceConnected"},
             FunctionInfo{3, C<&Hidbus::Initialize>, "Initialize"},
@@ -44,11 +47,8 @@ Hidbus::Hidbus(Core::System& system_)
             FunctionInfo{11, C<&Hidbus::EnableJoyPollingReceiveMode>, "EnableJoyPollingReceiveMode"},
             FunctionInfo{12, C<&Hidbus::DisableJoyPollingReceiveMode>, "DisableJoyPollingReceiveMode"},
             FunctionInfo{13, nullptr, "GetPollingData"},
-            FunctionInfo{14, C<&Hidbus::SetStatusManagerType>, "SetStatusManagerType"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
+            FunctionInfo{14, C<&Hidbus::SetStatusManagerType>, "SetStatusManagerType"}
+    );
 
     // Register update callbacks
     hidbus_update_event = Core::Timing::CreateEvent(

@@ -98,6 +98,17 @@ private:
     Result DeleteAlarmSetting(AlarmSettingId alarm_setting_id);
     Result Initialize(ClientAppletResourceUserId aruid);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{500, D<&INotificationServicesForApplication::RegisterAlarmSetting>, "RegisterAlarmSetting"},
+        FunctionInfo{510, D<&INotificationServicesForApplication::UpdateAlarmSetting>, "UpdateAlarmSetting"},
+        FunctionInfo{520, D<&INotificationServicesForApplication::ListAlarmSettings>, "ListAlarmSettings"},
+        FunctionInfo{530, D<&INotificationServicesForApplication::LoadApplicationParameter>, "LoadApplicationParameter"},
+        FunctionInfo{540, D<&INotificationServicesForApplication::DeleteAlarmSetting>, "DeleteAlarmSetting"},
+        FunctionInfo{1000, D<&INotificationServicesForApplication::Initialize>, "Initialize"}
+    );
     NotificationServiceImpl impl;
 };
 
@@ -127,6 +138,31 @@ private:
         Out<NotificationPresentationSetting> out_notification_presentation_setting,
         NotificationChannel notification_channel);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{500, D<&INotificationServices::RegisterAlarmSetting>, "RegisterAlarmSetting"},
+        FunctionInfo{510, D<&INotificationServices::UpdateAlarmSetting>, "UpdateAlarmSetting"},
+        FunctionInfo{520, D<&INotificationServices::ListAlarmSettings>, "ListAlarmSettings"},
+        FunctionInfo{530, D<&INotificationServices::LoadApplicationParameter>, "LoadApplicationParameter"},
+        FunctionInfo{540, D<&INotificationServices::DeleteAlarmSetting>, "DeleteAlarmSetting"},
+        FunctionInfo{1000, D<&INotificationServices::Initialize>, "Initialize"},
+        FunctionInfo{1010, nullptr, "ListNotifications"},
+        FunctionInfo{1020, nullptr, "DeleteNotification"},
+        FunctionInfo{1030, nullptr, "ClearNotifications"},
+        FunctionInfo{1040, D<&INotificationServices::OpenNotificationSystemEventAccessor>, "OpenNotificationSystemEventAccessor"},
+        FunctionInfo{1500, nullptr, "SetNotificationPresentationSetting"},
+        FunctionInfo{1510, D<&INotificationServices::GetNotificationPresentationSetting>, "GetNotificationPresentationSetting"},
+        FunctionInfo{2000, nullptr, "GetAlarmSetting"},
+        FunctionInfo{2001, nullptr, "GetAlarmSettingWithApplicationParameter"},
+        FunctionInfo{2010, nullptr, "MuteAlarmSetting"},
+        FunctionInfo{2020, nullptr, "IsAlarmSettingReady"},
+        FunctionInfo{8000, nullptr, "RegisterAppletResourceUserId"},
+        FunctionInfo{8010, nullptr, "UnregisterAppletResourceUserId"},
+        FunctionInfo{8999, nullptr, "GetCurrentTime"},
+        FunctionInfo{9000, nullptr, "GetAlarmSettingNextNotificationTime"}
+    );
     NotificationServiceImpl impl;
 };
 } // namespace Service::Glue

@@ -16,9 +16,9 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, &Friend::CreateFriendService, "CreateFriendService"},
-        {1, &Friend::CreateNotificationService, "CreateNotificationService"},
-        {2, nullptr, "CreateDaemonSuspendSessionService"}
+        FunctionInfo{0, &Friend::CreateFriendService, "CreateFriendService"},
+        FunctionInfo{1, &Friend::CreateNotificationService, "CreateNotificationService"},
+        FunctionInfo{2, nullptr, "CreateDaemonSuspendSessionService"}
     );
 };
 

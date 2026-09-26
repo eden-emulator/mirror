@@ -12,13 +12,6 @@
 namespace Service::BTM {
 
 IBtmUser::IBtmUser(Core::System& system_) : ServiceFramework{system_, "btm:u"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, C<&IBtmUser::GetCore>, "GetCore"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IBtmUser::~IBtmUser() = default;

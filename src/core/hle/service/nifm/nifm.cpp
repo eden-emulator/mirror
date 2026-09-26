@@ -1054,60 +1054,60 @@ IGeneralService::IGeneralService(Core::System& system_)
     : ServiceFramework{system_, "IGeneralService"} {
     // clang-format off
 
-    static const FunctionInfo functions[] = {
-        {1, &IGeneralService::GetClientId, "GetClientId"},
-        {2, &IGeneralService::CreateScanRequest, "CreateScanRequest"},
-        {4, &IGeneralService::CreateRequest, "CreateRequest"},
-        {5, &IGeneralService::GetCurrentNetworkProfile, "GetCurrentNetworkProfile"},
-        {6, &IGeneralService::EnumerateNetworkInterfaces, "EnumerateNetworkInterfaces"},
-        {7, &IGeneralService::EnumerateNetworkProfiles, "EnumerateNetworkProfiles"},
-        {8, &IGeneralService::GetNetworkProfile, "GetNetworkProfile"},
-        {9, &IGeneralService::SetNetworkProfile, "SetNetworkProfile"},
-        {10, &IGeneralService::RemoveNetworkProfile, "RemoveNetworkProfile"},
-        {11, &IGeneralService::GetScanData, "GetScanDataOld"},
-        {12, &IGeneralService::GetCurrentIpAddress, "GetCurrentIpAddress"},
-        {13, nullptr, "GetCurrentAccessPointOld"},
-        {14, &IGeneralService::CreateTemporaryNetworkProfile, "CreateTemporaryNetworkProfile"},
-        {15, &IGeneralService::GetCurrentIpConfigInfo, "GetCurrentIpConfigInfo"},
-        {16, &IGeneralService::SetWirelessCommunicationEnabled, "SetWirelessCommunicationEnabled"},
-        {17, &IGeneralService::IsWirelessCommunicationEnabled, "IsWirelessCommunicationEnabled"},
-        {18, &IGeneralService::GetInternetConnectionStatus, "GetInternetConnectionStatus"},
-        {19, &IGeneralService::SetEthernetCommunicationEnabled, "SetEthernetCommunicationEnabled"},
-        {20, &IGeneralService::IsEthernetCommunicationEnabled, "IsEthernetCommunicationEnabled"},
-        {21, &IGeneralService::IsAnyInternetRequestAccepted, "IsAnyInternetRequestAccepted"},
-        {22, &IGeneralService::IsAnyForegroundRequestAccepted, "IsAnyForegroundRequestAccepted"},
-        {23, nullptr, "PutToSleep"},
-        {24, nullptr, "WakeUp"},
-        {25, &IGeneralService::GetSsidListVersion, "GetSsidListVersion"},
-        {26, nullptr, "SetExclusiveClient"},
-        {27, nullptr, "GetDefaultIpSetting"},
-        {28, nullptr, "SetDefaultIpSetting"},
-        {29, nullptr, "SetWirelessCommunicationEnabledForTest"},
-        {30, nullptr, "SetEthernetCommunicationEnabledForTest"},
-        {31, nullptr, "GetTelemetorySystemEventReadableHandle"},
-        {32, nullptr, "GetTelemetryInfo"},
-        {33, &IGeneralService::ConfirmSystemAvailability, "ConfirmSystemAvailability"}, // 2.0.0+
-        {34, &IGeneralService::SetBackgroundRequestEnabled, "SetBackgroundRequestEnabled"}, // 4.0.0+
-        {35, &IGeneralService::GetScanDataV2, "GetScanData"},
-        {36, &IGeneralService::GetCurrentAccessPoint, "GetCurrentAccessPoint"},
-        {37, nullptr, "Shutdown"},
-        {38, nullptr, "GetAllowedChannels"},
-        {39, nullptr, "NotifyApplicationSuspended"},
-        {40, nullptr, "SetAcceptableNetworkTypeFlag"},
-        {41, nullptr, "GetAcceptableNetworkTypeFlag"},
-        {42, nullptr, "NotifyConnectionStateChanged"},
-        {43, nullptr, "SetWowlDelayedWakeTime"},
-        {44, nullptr, "IsWiredConnectionAvailable"}, // 18.0.0+
-        {45, nullptr, "IsNetworkEmulationFeatureEnabled"}, // 18.0.0+
-        {46, nullptr, "SelectActiveNetworkEmulationProfileIdForDebug"}, // 18.0.0+
-        {47, &IGeneralService::GetScanDataV3, "GetScanData"}, // 19.0.0+
-        {50, nullptr, "IsRewriteFeatureEnabled"}, // 18.0.0+
-        {51, nullptr, "CreateRewriteRule"}, // 18.0.0+
-        {52, nullptr, "DestroyRewriteRule"} // 18.0.0+
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{1, &IGeneralService::GetClientId, "GetClientId"},
+        FunctionInfo{2, &IGeneralService::CreateScanRequest, "CreateScanRequest"},
+        FunctionInfo{4, &IGeneralService::CreateRequest, "CreateRequest"},
+        FunctionInfo{5, &IGeneralService::GetCurrentNetworkProfile, "GetCurrentNetworkProfile"},
+        FunctionInfo{6, &IGeneralService::EnumerateNetworkInterfaces, "EnumerateNetworkInterfaces"},
+        FunctionInfo{7, &IGeneralService::EnumerateNetworkProfiles, "EnumerateNetworkProfiles"},
+        FunctionInfo{8, &IGeneralService::GetNetworkProfile, "GetNetworkProfile"},
+        FunctionInfo{9, &IGeneralService::SetNetworkProfile, "SetNetworkProfile"},
+        FunctionInfo{10, &IGeneralService::RemoveNetworkProfile, "RemoveNetworkProfile"},
+        FunctionInfo{11, &IGeneralService::GetScanData, "GetScanDataOld"},
+        FunctionInfo{12, &IGeneralService::GetCurrentIpAddress, "GetCurrentIpAddress"},
+        FunctionInfo{13, nullptr, "GetCurrentAccessPointOld"},
+        FunctionInfo{14, &IGeneralService::CreateTemporaryNetworkProfile, "CreateTemporaryNetworkProfile"},
+        FunctionInfo{15, &IGeneralService::GetCurrentIpConfigInfo, "GetCurrentIpConfigInfo"},
+        FunctionInfo{16, &IGeneralService::SetWirelessCommunicationEnabled, "SetWirelessCommunicationEnabled"},
+        FunctionInfo{17, &IGeneralService::IsWirelessCommunicationEnabled, "IsWirelessCommunicationEnabled"},
+        FunctionInfo{18, &IGeneralService::GetInternetConnectionStatus, "GetInternetConnectionStatus"},
+        FunctionInfo{19, &IGeneralService::SetEthernetCommunicationEnabled, "SetEthernetCommunicationEnabled"},
+        FunctionInfo{20, &IGeneralService::IsEthernetCommunicationEnabled, "IsEthernetCommunicationEnabled"},
+        FunctionInfo{21, &IGeneralService::IsAnyInternetRequestAccepted, "IsAnyInternetRequestAccepted"},
+        FunctionInfo{22, &IGeneralService::IsAnyForegroundRequestAccepted, "IsAnyForegroundRequestAccepted"},
+        FunctionInfo{23, nullptr, "PutToSleep"},
+        FunctionInfo{24, nullptr, "WakeUp"},
+        FunctionInfo{25, &IGeneralService::GetSsidListVersion, "GetSsidListVersion"},
+        FunctionInfo{26, nullptr, "SetExclusiveClient"},
+        FunctionInfo{27, nullptr, "GetDefaultIpSetting"},
+        FunctionInfo{28, nullptr, "SetDefaultIpSetting"},
+        FunctionInfo{29, nullptr, "SetWirelessCommunicationEnabledForTest"},
+        FunctionInfo{30, nullptr, "SetEthernetCommunicationEnabledForTest"},
+        FunctionInfo{31, nullptr, "GetTelemetorySystemEventReadableHandle"},
+        FunctionInfo{32, nullptr, "GetTelemetryInfo"},
+        FunctionInfo{33, &IGeneralService::ConfirmSystemAvailability, "ConfirmSystemAvailability"}, // 2.0.0+
+        FunctionInfo{34, &IGeneralService::SetBackgroundRequestEnabled, "SetBackgroundRequestEnabled"}, // 4.0.0+
+        FunctionInfo{35, &IGeneralService::GetScanDataV2, "GetScanData"},
+        FunctionInfo{36, &IGeneralService::GetCurrentAccessPoint, "GetCurrentAccessPoint"},
+        FunctionInfo{37, nullptr, "Shutdown"},
+        FunctionInfo{38, nullptr, "GetAllowedChannels"},
+        FunctionInfo{39, nullptr, "NotifyApplicationSuspended"},
+        FunctionInfo{40, nullptr, "SetAcceptableNetworkTypeFlag"},
+        FunctionInfo{41, nullptr, "GetAcceptableNetworkTypeFlag"},
+        FunctionInfo{42, nullptr, "NotifyConnectionStateChanged"},
+        FunctionInfo{43, nullptr, "SetWowlDelayedWakeTime"},
+        FunctionInfo{44, nullptr, "IsWiredConnectionAvailable"}, // 18.0.0+
+        FunctionInfo{45, nullptr, "IsNetworkEmulationFeatureEnabled"}, // 18.0.0+
+        FunctionInfo{46, nullptr, "SelectActiveNetworkEmulationProfileIdForDebug"}, // 18.0.0+
+        FunctionInfo{47, &IGeneralService::GetScanDataV3, "GetScanData"}, // 19.0.0+
+        FunctionInfo{50, nullptr, "IsRewriteFeatureEnabled"}, // 18.0.0+
+        FunctionInfo{51, nullptr, "CreateRewriteRule"}, // 18.0.0+
+        FunctionInfo{52, nullptr, "DestroyRewriteRule"} // 18.0.0+
+    );
 }
 
 IGeneralService::~IGeneralService() = default;

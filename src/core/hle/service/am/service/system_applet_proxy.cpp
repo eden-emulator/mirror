@@ -22,24 +22,6 @@ ISystemAppletProxy::ISystemAppletProxy(Core::System& system_, std::shared_ptr<Ap
                                        Kernel::KProcess* process, WindowSystem& window_system)
     : ServiceFramework{system_, "ISystemAppletProxy"},
       m_window_system{window_system}, m_process{process}, m_applet{std::move(applet)} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&ISystemAppletProxy::GetCommonStateGetter>, "GetCommonStateGetter"},
-        {1, D<&ISystemAppletProxy::GetSelfController>, "GetSelfController"},
-        {2, D<&ISystemAppletProxy::GetWindowController>, "GetWindowController"},
-        {3, D<&ISystemAppletProxy::GetAudioController>, "GetAudioController"},
-        {4, D<&ISystemAppletProxy::GetDisplayController>, "GetDisplayController"},
-        {10, D<&ISystemAppletProxy::GetProcessWindingController>, "GetProcessWindingController"},
-        {11, D<&ISystemAppletProxy::GetLibraryAppletCreator>, "GetLibraryAppletCreator"},
-        {20, D<&ISystemAppletProxy::GetHomeMenuFunctions>, "GetHomeMenuFunctions"},
-        {21, D<&ISystemAppletProxy::GetGlobalStateController>, "GetGlobalStateController"},
-        {22, D<&ISystemAppletProxy::GetApplicationCreator>, "GetApplicationCreator"},
-        {23, D<&ISystemAppletProxy::GetAppletCommonFunctions>, "GetAppletCommonFunctions"},
-        {1000, D<&ISystemAppletProxy::GetDebugFunctions>, "GetDebugFunctions"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 ISystemAppletProxy::~ISystemAppletProxy() = default;

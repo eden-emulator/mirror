@@ -35,11 +35,11 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, D<&INewsDataService::Open>, "Open"},
-        {1, D<&INewsDataService::OpenWithNewsRecordV1>, "OpenWithNewsRecordV1"},
-        {2, D<&INewsDataService::Read>, "Read"},
-        {3, D<&INewsDataService::GetSize>, "GetSize"},
-        {1001, D<&INewsDataService::OpenWithNewsRecord>, "OpenWithNewsRecord"}
+        FunctionInfo{0, D<&INewsDataService::Open>, "Open"},
+        FunctionInfo{1, D<&INewsDataService::OpenWithNewsRecordV1>, "OpenWithNewsRecordV1"},
+        FunctionInfo{2, D<&INewsDataService::Read>, "Read"},
+        FunctionInfo{3, D<&INewsDataService::GetSize>, "GetSize"},
+        FunctionInfo{1001, D<&INewsDataService::OpenWithNewsRecord>, "OpenWithNewsRecord"}
     );
     std::vector<u8> opened_payload;
 };

@@ -15,19 +15,6 @@ namespace Service::Capture {
 IScreenShotService::IScreenShotService(Core::System& system_,
                                        std::shared_ptr<AlbumManager> album_manager)
     : ServiceFramework{system_, "caps:ss"}, manager{album_manager} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {201, nullptr, "SaveScreenShot"},
-        {202, nullptr, "SaveEditedScreenShot"},
-        {203, C<&IScreenShotService::SaveScreenShotEx0>, "SaveScreenShotEx0"},
-        {204, nullptr, "SaveEditedScreenShotEx0"},
-        {206, C<&IScreenShotService::SaveEditedScreenShotEx1>, "SaveEditedScreenShotEx1"},
-        {208, nullptr, "SaveScreenShotOfMovieEx1"},
-        {1000, nullptr, "Unknown1000"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IScreenShotService::~IScreenShotService() = default;

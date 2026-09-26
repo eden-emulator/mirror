@@ -31,8 +31,8 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, C<&IApplicationRootService::GetDisplayService>, "GetDisplayService"},
-        {1, nullptr, "GetDisplayServiceWithProxyNameExchange"}
+        FunctionInfo{0, C<&IApplicationRootService::GetDisplayService>, "GetDisplayService"},
+        FunctionInfo{1, nullptr, "GetDisplayServiceWithProxyNameExchange"}
     );
     const std::shared_ptr<Container> m_container;
 };

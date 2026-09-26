@@ -20,7 +20,7 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, nullptr, "OpenFinalOutputRecorder"}
+        FunctionInfo{0, nullptr, "OpenFinalOutputRecorder"}
     );
 };
 

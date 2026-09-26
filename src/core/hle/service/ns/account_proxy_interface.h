@@ -11,6 +11,13 @@ class IAccountProxyInterface final : public ServiceFramework<IAccountProxyInterf
 public:
     explicit IAccountProxyInterface(Core::System& system_);
     ~IAccountProxyInterface() override;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "CreateUserAccount"}
+    );
 };
 
 } // namespace Service::NS

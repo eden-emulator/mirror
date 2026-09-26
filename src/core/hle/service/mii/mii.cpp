@@ -296,13 +296,6 @@ private:
 IStaticService::IStaticService(Core::System& system_, const char* name_,
                                std::shared_ptr<MiiManager> mii_manager, bool is_system_)
     : ServiceFramework{system_, name_}, manager{mii_manager}, is_system{is_system_} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IStaticService::GetDatabaseService>, "GetDatabaseService"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IStaticService::~IStaticService() = default;

@@ -47,6 +47,22 @@ private:
         Out<SharedPointer<IGlobalStateController>> out_global_state_controller);
     Result GetDebugFunctions(Out<SharedPointer<IDebugFunctions>> out_debug_functions);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IOverlayAppletProxy::GetCommonStateGetter>, "GetCommonStateGetter"},
+        FunctionInfo{1, D<&IOverlayAppletProxy::GetSelfController>, "GetSelfController"},
+        FunctionInfo{2, D<&IOverlayAppletProxy::GetWindowController>, "GetWindowController"},
+        FunctionInfo{3, D<&IOverlayAppletProxy::GetAudioController>, "GetAudioController"},
+        FunctionInfo{4, D<&IOverlayAppletProxy::GetDisplayController>, "GetDisplayController"},
+        FunctionInfo{10, D<&IOverlayAppletProxy::GetProcessWindingController>, "GetProcessWindingController"},
+        FunctionInfo{11, D<&IOverlayAppletProxy::GetLibraryAppletCreator>, "GetLibraryAppletCreator"},
+        FunctionInfo{20, D<&IOverlayAppletProxy::GetOverlayFunctions>, "GetOverlayFunctions"},
+        FunctionInfo{21, D<&IOverlayAppletProxy::GetAppletCommonFunctions>, "GetAppletCommonFunctions"},
+        FunctionInfo{23, D<&IOverlayAppletProxy::GetGlobalStateController>, "GetGlobalStateController"},
+        FunctionInfo{1000, D<&IOverlayAppletProxy::GetDebugFunctions>, "GetDebugFunctions"}
+    );
     WindowSystem& m_window_system;
     Kernel::KProcess* const m_process;
     const std::shared_ptr<Applet> m_applet;

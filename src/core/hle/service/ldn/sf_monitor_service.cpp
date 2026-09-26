@@ -13,14 +13,14 @@ namespace Service::LDN {
 ISfMonitorService::ISfMonitorService(Core::System& system_)
     : ServiceFramework{system_, "ISfMonitorService"} {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, C<&ISfMonitorService::Initialize>, "Initialize"},
             FunctionInfo{288, C<&ISfMonitorService::GetGroupInfo>, "GetGroupInfo"},
             FunctionInfo{320, nullptr, "GetLinkLevel"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 }
 
 ISfMonitorService::~ISfMonitorService() = default;

@@ -15,22 +15,6 @@ namespace Service::NS {
 
 IContentManagementInterface::IContentManagementInterface(Core::System& system_)
     : ServiceFramework{system_, "IContentManagementInterface"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {11, D<&IContentManagementInterface::CalculateApplicationOccupiedSize>, "CalculateApplicationOccupiedSize"},
-        {43, D<&IContentManagementInterface::CheckSdCardMountStatus>, "CheckSdCardMountStatus"},
-        {47, D<&IContentManagementInterface::GetTotalSpaceSize>, "GetTotalSpaceSize"},
-        {48, D<&IContentManagementInterface::GetFreeSpaceSize>, "GetFreeSpaceSize"},
-        {71, D<&IContentManagementInterface::GetUnknown71>, "Unknown71"},
-        {600, nullptr, "CountApplicationContentMeta"},
-        {601, nullptr, "ListApplicationContentMetaStatus"},
-        {605, nullptr, "ListApplicationContentMetaStatusWithRightsCheck"},
-        {607, nullptr, "IsAnyApplicationRunning"},
-        {608, nullptr, "Unknown608"}, //21.0.0+
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IContentManagementInterface::~IContentManagementInterface() = default;

@@ -15,36 +15,6 @@ namespace Service::AM {
 IAppletCommonFunctions::IAppletCommonFunctions(Core::System& system_,
                                                std::shared_ptr<Applet> applet_)
     : ServiceFramework{system_, "IAppletCommonFunctions"}, applet{std::move(applet_)} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "SetTerminateResult"},
-        {10, nullptr, "ReadThemeStorage"},
-        {11, nullptr, "WriteThemeStorage"},
-        {20, nullptr, "PushToAppletBoundChannel"},
-        {21, nullptr, "TryPopFromAppletBoundChannel"},
-        {40, nullptr, "GetDisplayLogicalResolution"},
-        {42, D<&IAppletCommonFunctions::SetDisplayMagnification>, "SetDisplayMagnification"},
-        {50, D<&IAppletCommonFunctions::SetHomeButtonDoubleClickEnabled>, "SetHomeButtonDoubleClickEnabled"},
-        {51, D<&IAppletCommonFunctions::GetHomeButtonDoubleClickEnabled>, "GetHomeButtonDoubleClickEnabled"},
-        {52, nullptr, "IsHomeButtonShortPressedBlocked"},
-        {60, nullptr, "IsVrModeCurtainRequired"},
-        {61, nullptr, "IsSleepRequiredByHighTemperature"},
-        {62, nullptr, "IsSleepRequiredByLowBattery"},
-        {70, D<&IAppletCommonFunctions::SetCpuBoostRequestPriority>, "SetCpuBoostRequestPriority"},
-        {80, nullptr, "SetHandlingCaptureButtonShortPressedMessageEnabledForApplet"},
-        {81, nullptr, "SetHandlingCaptureButtonLongPressedMessageEnabledForApplet"},
-        {90, nullptr, "OpenNamedChannelAsParent"},
-        {91, nullptr, "OpenNamedChannelAsChild"},
-        {100, nullptr, "SetApplicationCoreUsageMode"},
-        {300, D<&IAppletCommonFunctions::GetCurrentApplicationId>, "GetCurrentApplicationId"},
-        {310, nullptr, "IsSystemAppletHomeMenu"}, //19.0.0+
-        {320, D<&IAppletCommonFunctions::SetGpuTimeSliceBoost>, "SetGpuTimeSliceBoost"}, //19.0.0+
-        {321, nullptr, "SetGpuTimeSliceBoostDueToApplication"}, //19.0.0+
-        {350, D<&IAppletCommonFunctions::Unknown350>, "Unknown350"} //20.0.0+
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IAppletCommonFunctions::~IAppletCommonFunctions() = default;

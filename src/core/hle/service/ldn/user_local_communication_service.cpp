@@ -26,7 +26,10 @@ IUserLocalCommunicationService::IUserLocalCommunicationService(Core::System& sys
       service_context{system, "IUserLocalCommunicationService"},
       lan_discovery{} {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&IUserLocalCommunicationService::GetState>, "GetState"},
             FunctionInfo{1, D<&IUserLocalCommunicationService::GetNetworkInfo>, "GetNetworkInfo"},
             FunctionInfo{2, D<&IUserLocalCommunicationService::GetIpv4Address>, "GetIpv4Address"},
@@ -57,10 +60,7 @@ IUserLocalCommunicationService::IUserLocalCommunicationService(Core::System& sys
             FunctionInfo{400, D<&IUserLocalCommunicationService::Initialize>, "Initialize"},
             FunctionInfo{401, D<&IUserLocalCommunicationService::Finalize>, "Finalize"},
             FunctionInfo{402, D<&IUserLocalCommunicationService::Initialize2>, "Initialize2"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 
     state_change_event =
         service_context.CreateEvent("IUserLocalCommunicationService:StateChangeEvent");

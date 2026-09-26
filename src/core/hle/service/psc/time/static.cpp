@@ -43,7 +43,10 @@ StaticService::StaticService(Core::System& system_, StaticServiceSetupInfo setup
       m_ephemeral_network_clock{m_time->m_ephemeral_network_clock}, m_shared_memory{
                                                                         m_time->m_shared_memory} {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0,   D<&StaticService::GetStandardUserSystemClock>, "GetStandardUserSystemClock"},
             FunctionInfo{1,   D<&StaticService::GetStandardNetworkSystemClock>, "GetStandardNetworkSystemClock"},
             FunctionInfo{2,   D<&StaticService::GetStandardSteadyClock>, "GetStandardSteadyClock"},
@@ -63,10 +66,7 @@ StaticService::StaticService(Core::System& system_, StaticServiceSetupInfo setup
             FunctionInfo{401, D<&StaticService::GetClockSnapshotFromSystemClockContext>, "GetClockSnapshotFromSystemClockContext"},
             FunctionInfo{500, D<&StaticService::CalculateStandardUserSystemClockDifferenceByUser>, "CalculateStandardUserSystemClockDifferenceByUser"},
             FunctionInfo{501, D<&StaticService::CalculateSpanBetween>, "CalculateSpanBetween"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 }
 
 Result StaticService::GetStandardUserSystemClock(OutInterface<SystemClock> out_service) {

@@ -33,7 +33,7 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, C<&IAppletResource::GetSharedMemoryHandle>, "GetSharedMemoryHandle"}
+        FunctionInfo{0, C<&IAppletResource::GetSharedMemoryHandle>, "GetSharedMemoryHandle"}
     );
     u64 aruid{};
     std::shared_ptr<ResourceManager> resource_manager;

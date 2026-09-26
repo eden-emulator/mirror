@@ -56,6 +56,21 @@ private:
         InBuffer<BufferAttr_HipcMapAlias | BufferAttr_HipcMapTransferAllowsNonSecure> opus_data,
         bool reset);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IHardwareOpusDecoder::DecodeInterleavedOld>, "DecodeInterleavedOld"},
+        FunctionInfo{1, D<&IHardwareOpusDecoder::SetContext>, "SetContext"},
+        FunctionInfo{2, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStreamOld>, "DecodeInterleavedForMultiStreamOld"},
+        FunctionInfo{3, D<&IHardwareOpusDecoder::SetContextForMultiStream>, "SetContextForMultiStream"},
+        FunctionInfo{4, D<&IHardwareOpusDecoder::DecodeInterleavedWithPerfOld>, "DecodeInterleavedWithPerfOld"},
+        FunctionInfo{5, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStreamWithPerfOld>, "DecodeInterleavedForMultiStreamWithPerfOld"},
+        FunctionInfo{6, D<&IHardwareOpusDecoder::DecodeInterleavedWithPerfAndResetOld>, "DecodeInterleavedWithPerfAndResetOld"},
+        FunctionInfo{7, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStreamWithPerfAndResetOld>, "DecodeInterleavedForMultiStreamWithPerfAndResetOld"},
+        FunctionInfo{8, D<&IHardwareOpusDecoder::DecodeInterleaved>, "DecodeInterleaved"},
+        FunctionInfo{9, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStream>, "DecodeInterleavedForMultiStream"}
+    );
     std::unique_ptr<AudioCore::OpusDecoder::OpusDecoder> impl;
     Common::ScratchBuffer<u8> output_data;
 };

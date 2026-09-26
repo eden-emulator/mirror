@@ -15,13 +15,13 @@ IPowerStateRequestHandler::IPowerStateRequestHandler(
     , m_power_state_request_manager{power_state_request_manager}
 {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&IPowerStateRequestHandler::GetPowerStateRequestEventReadableHandle>, "GetPowerStateRequestEventReadableHandle"},
             FunctionInfo{1, D<&IPowerStateRequestHandler::GetAndClearPowerStateRequest>, "GetAndClearPowerStateRequest"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 }
 
 Result IPowerStateRequestHandler::GetPowerStateRequestEventReadableHandle(

@@ -41,13 +41,13 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, D<&ILibraryAppletCreator::CreateLibraryApplet>, "CreateLibraryApplet"},
-        {1, nullptr, "TerminateAllLibraryApplets"},
-        {2, nullptr, "AreAnyLibraryAppletsLeft"},
-        {3, D<&ILibraryAppletCreator::CreateLibraryAppletEx>, "CreateLibraryAppletEx"},
-        {10, D<&ILibraryAppletCreator::CreateStorage>, "CreateStorage"},
-        {11, D<&ILibraryAppletCreator::CreateTransferMemoryStorage>, "CreateTransferMemoryStorage"},
-        {12, D<&ILibraryAppletCreator::CreateHandleStorage>, "CreateHandleStorage"}
+        FunctionInfo{0, D<&ILibraryAppletCreator::CreateLibraryApplet>, "CreateLibraryApplet"},
+        FunctionInfo{1, nullptr, "TerminateAllLibraryApplets"},
+        FunctionInfo{2, nullptr, "AreAnyLibraryAppletsLeft"},
+        FunctionInfo{3, D<&ILibraryAppletCreator::CreateLibraryAppletEx>, "CreateLibraryAppletEx"},
+        FunctionInfo{10, D<&ILibraryAppletCreator::CreateStorage>, "CreateStorage"},
+        FunctionInfo{11, D<&ILibraryAppletCreator::CreateTransferMemoryStorage>, "CreateTransferMemoryStorage"},
+        FunctionInfo{12, D<&ILibraryAppletCreator::CreateHandleStorage>, "CreateHandleStorage"}
     );
     WindowSystem& m_window_system;
     const std::shared_ptr<Applet> m_applet;

@@ -8,21 +8,6 @@ namespace Service::NS {
 
 IDownloadTaskInterface::IDownloadTaskInterface(Core::System& system_)
     : ServiceFramework{system_, "IDownloadTaskInterface"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {701, nullptr, "ClearTaskStatusList"},
-        {702, nullptr, "RequestDownloadTaskList"},
-        {703, nullptr, "RequestEnsureDownloadTask"},
-        {704, nullptr, "ListDownloadTaskStatus"},
-        {705, nullptr, "RequestDownloadTaskListData"},
-        {706, nullptr, "TryCommitCurrentApplicationDownloadTask"},
-        {707, D<&IDownloadTaskInterface::EnableAutoCommit>, "EnableAutoCommit"},
-        {708, D<&IDownloadTaskInterface::DisableAutoCommit>, "DisableAutoCommit"},
-        {709, nullptr, "TriggerDynamicCommitEvent"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IDownloadTaskInterface::~IDownloadTaskInterface() = default;
