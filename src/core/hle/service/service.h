@@ -151,37 +151,40 @@ protected:
         /// @param expected_header_ request header in the command buffer which will trigger dispatch to this handler
         /// @param handler_callback_ member function in this service which will be called to handle the request
         /// @param name_ human-friendly name for the request. Used mostly for logging purposes.
-        constexpr FunctionInfoTyped(u32 expected_header_, HandlerFnP<T> handler_callback_, const char* name_, u32 version_gating_ = 0)
-            : FunctionInfoBase{HandlerFnP<ServiceFrameworkBase>(handler_callback_), name_, version_gating_}
+        explicit constexpr FunctionInfoTyped(u32 expected_header_, HandlerFnP<T> handler_callback_, const char* name_, u32 version_gating_ = 0)
+            : handler_callback{handler_callback_}
+            , version_gating{version_gating_}
             , expected_header{expected_header_}
         {}
+        HandlerFnP<T> handler_callback;
+        u32 version_gating;
         u32 expected_header;
     };
     using FunctionInfo = FunctionInfoTyped<Self>;
 
     template<typename ...Ts>
         //requires (std::same_as<Ts, FunctionInfo> && ...)
-    [[nodiscard]] static consteval frozen::map<u32, HandlerFnP<ServiceFrameworkBase>, sizeof...(Ts)> CreateStaticMap(Ts... args) {
-        return frozen::map<u32, HandlerFnP<ServiceFrameworkBase>, sizeof...(args)>{
-            {args.expected_header, HandlerFnP<ServiceFrameworkBase>(args.handler_callback)}...
+    [[nodiscard]] static consteval frozen::map<u32, HandlerFnP<Self>, sizeof...(Ts)> CreateStaticMap(Ts... args) {
+        return frozen::map<u32, HandlerFnP<Self>, sizeof...(args)>{
+            {args.expected_header, args.handler_callback}...
         };
     }
 
     // Used exclusively by NFC
     template<typename T, typename ...Ts>
         //requires (std::same_as<Ts, FunctionInfoTyped<T>> && ...)
-    [[nodiscard]] static consteval frozen::map<u32, HandlerFnP<ServiceFrameworkBase>, sizeof...(Ts)> CreateStaticMapWithClass(Ts... args) {
-        return frozen::map<u32, HandlerFnP<ServiceFrameworkBase>, sizeof...(args)>{
-            {args.expected_header, HandlerFnP<ServiceFrameworkBase>(args.handler_callback)}...
+    [[nodiscard]] static consteval frozen::map<u32, HandlerFnP<T>, sizeof...(Ts)> CreateStaticMapWithClass(Ts... args) {
+        return frozen::map<u32, HandlerFnP<T>, sizeof...(args)>{
+            {args.expected_header, args.handler_callback}...
         };
     }
 
     template<typename T>
-    [[nodiscard]] static constexpr std::optional<FunctionInfoBase> HandlerTableGenerateWithFind(u32 key, T const& map) {
+    [[nodiscard]] static std::optional<FunctionInfoBase> HandlerTableGenerateWithFind(u32 key, T const& map) {
         auto const it = map.find(key);
         if (it != map.end()) {
             auto fake = FunctionInfoBase{};
-            fake.handler_callback = it->second;
+            fake.handler_callback = HandlerFnP<ServiceFrameworkBase>(it->second);
             return std::optional<FunctionInfoBase>{fake};
         }
         return std::nullopt;
