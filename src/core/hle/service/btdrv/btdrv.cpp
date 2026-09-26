@@ -41,7 +41,7 @@ private:
         R_SUCCEED();
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "LeClientReadCharacteristic"},
         FunctionInfo{1, nullptr, "LeClientReadDescriptor"},
         FunctionInfo{2, nullptr, "LeClientWriteCharacteristic"},
@@ -71,7 +71,7 @@ private:
         R_SUCCEED();
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "InitializeBluetoothDriver"},
         FunctionInfo{1, nullptr, "InitializeBluetooth"},
         FunctionInfo{2, nullptr, "EnableBluetooth"},

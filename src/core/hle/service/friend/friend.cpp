@@ -252,7 +252,7 @@ private:
         rb.Push(0);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &IFriendService::GetCompletionEvent, "GetCompletionEvent"},
         FunctionInfo{1, &IFriendService::Cancel, "Cancel"},
         FunctionInfo{10100, nullptr, "GetFriendListIds"},
@@ -457,7 +457,7 @@ private:
         bool has_received_friend_request;
     };
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &INotificationService::GetEvent, "GetEvent"},
         FunctionInfo{1, &INotificationService::Clear, "Clear"},
         FunctionInfo{2, &INotificationService::Pop, "Pop"}
@@ -503,7 +503,7 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetReceivableNeighborInfoCountMax"},
         FunctionInfo{10, nullptr, "IsNeighborDetectionEnabled"}
     );
@@ -519,7 +519,7 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetReceivableNeighborInfoCountMax"},
         FunctionInfo{10, nullptr, "IsNeighborDetectionEnabled"},
         FunctionInfo{200, nullptr, "SetSystemData"},

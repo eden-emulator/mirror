@@ -13,7 +13,7 @@
 namespace Service::Capture {
 
 ServiceFrameworkBase::FunctionInfoBase const* IScreenShotService::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{201, nullptr, "SaveScreenShot"},
         FunctionInfo{202, nullptr, "SaveEditedScreenShot"},
         FunctionInfo{203, C<&IScreenShotService::SaveScreenShotEx0>, "SaveScreenShotEx0"},

@@ -172,7 +172,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{500, nullptr, "SetAppletResourceUserId"},
         FunctionInfo{501, nullptr, "RegisterAppletResourceUserId"},
         FunctionInfo{502, nullptr, "UnregisterAppletResourceUserId"},

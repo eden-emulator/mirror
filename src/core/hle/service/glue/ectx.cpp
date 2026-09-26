@@ -38,7 +38,7 @@ private:
         rb.Push(0);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &IContextRegistrar::Complete, "Complete"}
     );
 };

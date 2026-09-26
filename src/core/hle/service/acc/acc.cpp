@@ -108,7 +108,7 @@ private:
         R_SUCCEED();
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&IManagerForSystemService::CheckAvailability>, "CheckAvailability"},
             FunctionInfo{1, D<&IManagerForSystemService::GetAccountId>, "GetAccountId"},
             FunctionInfo{2, nullptr, "EnsureIdTokenCacheAsync"},
@@ -152,7 +152,7 @@ public:
         : ServiceFramework{system_, "IFloatingRegistrationRequest"} {
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetSessionId"},
         FunctionInfo{12, nullptr, "GetAccountId"},
         FunctionInfo{13, nullptr, "GetLinkedNintendoAccountId"},
@@ -185,7 +185,7 @@ private:
         rb.Push(false);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "CheckAvailability"},
             FunctionInfo{1, nullptr, "GetAccountId"},
             FunctionInfo{2, nullptr, "EnsureIdTokenCacheAsync"},
@@ -248,7 +248,7 @@ public:
         : ServiceFramework{system_, "IAuthorizationRequest"} {
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetSessionId"},
             FunctionInfo{10, nullptr, "InvokeWithoutInteractionAsync"},
             FunctionInfo{19, nullptr, "IsAuthorized"},
@@ -266,7 +266,7 @@ public:
     explicit IOAuthProcedure(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IOAuthProcedure"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "PrepareAsync"},
             FunctionInfo{1, nullptr, "GetRequest"},
             FunctionInfo{2, nullptr, "ApplyResponse"},
@@ -285,7 +285,7 @@ public:
         : ServiceFramework{system_, "IOAuthProcedureForExternalNsa"}
     {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "PrepareAsync"},
             FunctionInfo{1, nullptr, "GetRequest"},
             FunctionInfo{2, nullptr, "ApplyResponse"},
@@ -308,7 +308,7 @@ public:
         : ServiceFramework{system_, "IOAuthProcedureForNintendoAccountLinkage"}
     {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "PrepareAsync"},
             FunctionInfo{1, nullptr, "GetRequest"},
             FunctionInfo{2, nullptr, "ApplyResponse"},
@@ -333,7 +333,7 @@ public:
     explicit INotifier(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "INotifier"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetSystemEvent"}
     );
     FunctionInfoBase const* FindRequest(u32 key) override {
@@ -574,7 +574,7 @@ protected:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &IProfileCommon::Get, "Get"},
         FunctionInfo{1, &IProfileCommon::GetBase, "GetBase"},
         FunctionInfo{10, &IProfileCommon::GetImageSize, "GetImageSize"},
@@ -610,7 +610,7 @@ public:
     explicit ISessionObject(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "ISessionObject"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{999, nullptr, "Dummy"}
         );
     FunctionInfoBase const* FindRequest(u32 key) override {
@@ -623,7 +623,7 @@ public:
     explicit IGuestLoginRequest(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IGuestLoginRequest"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetSessionId"},
             FunctionInfo{11, nullptr, "Unknown"}, // 1.0.0 - 2.3.0 (the name is blank on Switchbrew)
             FunctionInfo{12, nullptr, "GetAccountId"},
@@ -744,7 +744,7 @@ private:
         rb.Push(ResultSuccess);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &IManagerForApplication::CheckAvailability, "CheckAvailability"},
         FunctionInfo{1, &IManagerForApplication::GetAccountId, "GetAccountId"},
         FunctionInfo{2, &IManagerForApplication::EnsureIdTokenCacheAsync, "EnsureIdTokenCacheAsync"},
@@ -767,7 +767,7 @@ public:
     explicit IAsyncNetworkServiceLicenseKindContext(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IAsyncNetworkServiceLicenseKindContext"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetSystemEvent"},
         FunctionInfo{1, nullptr, "Cancel"},
         FunctionInfo{2, nullptr, "HasDone"},
@@ -786,7 +786,7 @@ public:
     explicit IOAuthProcedureForUserRegistration(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IOAuthProcedureForUserRegistration"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "PrepareAsync"},
         FunctionInfo{1, nullptr, "GetRequest"},
         FunctionInfo{2, nullptr, "ApplyResponse"},
@@ -815,7 +815,7 @@ class DAUTH_O final : public ServiceFramework<DAUTH_O> {
 public:
     explicit DAUTH_O(Core::System& system_, Common::UUID) : ServiceFramework{system_, "dauth:o"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
         FunctionInfo{1, nullptr, "LoadAuthenticationTokenCache"},
         FunctionInfo{2, nullptr, "InvalidateAuthenticationTokenCache"},
@@ -841,7 +841,7 @@ public:
     explicit IAsyncResult(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IAsyncResult"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetResult"},
         FunctionInfo{1, nullptr, "Cancel"},
         FunctionInfo{2, nullptr, "IsAvailable"},
@@ -1256,7 +1256,7 @@ public:
     }
     ~ACC_AA() override = default;
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "EnsureCacheAsync"},
         FunctionInfo{1, nullptr, "LoadCache"},
         FunctionInfo{2, nullptr, "GetDeviceAccountId"},
@@ -1276,7 +1276,7 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &ACC_SU::GetUserCount, "GetUserCount"},
         FunctionInfo{1, &ACC_SU::GetUserExistence, "GetUserExistence"},
         FunctionInfo{2, &ACC_SU::ListAllUsers, "ListAllUsers"},
@@ -1352,7 +1352,7 @@ public:
     }
     ~ACC_U0() override = default;
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &ACC_U0::GetUserCount, "GetUserCount"},
         FunctionInfo{1, &ACC_U0::GetUserExistence, "GetUserExistence"},
         FunctionInfo{2, &ACC_U0::ListAllUsers, "ListAllUsers"},
@@ -1391,7 +1391,7 @@ public:
     }
     ~ACC_U1() override = default;
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &ACC_U1::GetUserCount, "GetUserCount"},
         FunctionInfo{1, &ACC_U1::GetUserExistence, "GetUserExistence"},
         FunctionInfo{2, &ACC_U1::ListAllUsers, "ListAllUsers"},
@@ -1439,7 +1439,7 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
         FunctionInfo{1, nullptr, "LoadAuthenticationTokenCache"},
         FunctionInfo{2, nullptr, "InvalidateAuthenticationTokenCache"},
@@ -1468,7 +1468,7 @@ public:
     explicit ACC_E(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e") {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetUserCount"},
         FunctionInfo{1, nullptr, "GetUserExistence"},
         FunctionInfo{2, nullptr, "ListAllUsers"},
@@ -1557,7 +1557,7 @@ public:
     explicit ACC_E_U1(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u1") {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetUserCount"},
         FunctionInfo{1, nullptr, "GetUserExistence"},
         FunctionInfo{2, nullptr, "ListAllUsers"},
@@ -1600,7 +1600,7 @@ public:
     explicit ACC_E_U2(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u2") {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetUserCount"},
         FunctionInfo{1, nullptr, "GetUserExistence"},
         FunctionInfo{2, nullptr, "ListAllUsers"},

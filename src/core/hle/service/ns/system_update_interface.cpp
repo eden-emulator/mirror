@@ -11,7 +11,7 @@
 namespace Service::NS {
 
 ServiceFrameworkBase::FunctionInfoBase const* ISystemUpdateInterface::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&ISystemUpdateInterface::GetBackgroundNetworkUpdateState>, "GetBackgroundNetworkUpdateState"},
         FunctionInfo{1, D<&ISystemUpdateInterface::OpenSystemUpdateControl>, "OpenSystemUpdateControl"},
         FunctionInfo{2, nullptr, "NotifyExFatDriverRequired"},

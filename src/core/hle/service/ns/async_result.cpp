@@ -9,7 +9,7 @@
 namespace Service::NS {
 
 ServiceFrameworkBase::FunctionInfoBase const* IAsyncResult::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Get"},
         FunctionInfo{1, D<&IAsyncResult::Cancel>, "Cancel"},
         FunctionInfo{2, nullptr, "GetErrorContext"} // 4.0.0+

@@ -15,7 +15,7 @@
 namespace Service::NS {
 
 ServiceFrameworkBase::FunctionInfoBase const* IQueryService::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "QueryAppletEvent"},
         FunctionInfo{1, nullptr, "QueryPlayStatistics"},
         FunctionInfo{2, nullptr, "QueryPlayStatisticsByUserAccountId"},

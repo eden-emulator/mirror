@@ -24,7 +24,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetTemperatureRange"},
         FunctionInfo{1, &TS::GetTemperature, "GetTemperature"},
         FunctionInfo{2, nullptr, "SetMeasurementMode"},

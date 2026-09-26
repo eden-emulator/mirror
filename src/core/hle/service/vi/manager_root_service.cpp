@@ -16,7 +16,7 @@
 namespace Service::VI {
 
 ServiceFrameworkBase::FunctionInfoBase const* IManagerRootService::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{2, C<&IManagerRootService::GetDisplayService>, "GetDisplayService"},
         FunctionInfo{3, nullptr, "GetDisplayServiceWithProxyNameExchange"},
         FunctionInfo{100, nullptr, "PrepareFatal"},

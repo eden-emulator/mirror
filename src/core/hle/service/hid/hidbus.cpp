@@ -27,7 +27,7 @@ namespace Service::HID {
 constexpr auto hidbus_update_ns = std::chrono::nanoseconds{15 * 1000 * 1000};
 
 ServiceFrameworkBase::FunctionInfoBase const* Hidbus::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{1, C<&Hidbus::GetBusHandle>, "GetBusHandle"},
         FunctionInfo{2, C<&Hidbus::IsExternalDeviceConnected>, "IsExternalDeviceConnected"},
         FunctionInfo{3, C<&Hidbus::Initialize>, "Initialize"},

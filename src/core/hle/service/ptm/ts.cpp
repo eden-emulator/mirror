@@ -34,7 +34,7 @@ private:
         rb.Push(temperature);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetTemperatureRange"},
         FunctionInfo{2, nullptr, "SetMeasurementMode"},
         FunctionInfo{4, &ISession::GetTemperature, "GetTemperature"}

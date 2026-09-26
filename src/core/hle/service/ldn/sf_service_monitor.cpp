@@ -11,7 +11,7 @@
 namespace Service::LDN {
 
 ServiceFrameworkBase::FunctionInfoBase const* ISfServiceMonitor::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&ISfServiceMonitor::Initialize>, "Initialize"},
         FunctionInfo{256, nullptr, "AttachNetworkInterfaceStateChangeEvent"},
         FunctionInfo{264, nullptr, "GetNetworkInterfaceLastError"},

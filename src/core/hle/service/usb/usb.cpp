@@ -19,7 +19,7 @@ class IDsInterface final : public ServiceFramework<IDsInterface> {
 public:
     explicit IDsInterface(Core::System& system_) : ServiceFramework{system_, "IDsInterface"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "AddEndpoint"},
             FunctionInfo{1, nullptr, "GetSetupEvent"},
             FunctionInfo{2, nullptr, "GetSetupPacket"},
@@ -43,7 +43,7 @@ class IDsRootSession final : public ServiceFramework<IDsRootSession> {
 public:
     explicit IDsRootSession(Core::System& system_) : ServiceFramework{system_, "usb:ds"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "OpenDsService"}
         );
     FunctionInfoBase const* FindRequest(u32 key) override {
@@ -56,7 +56,7 @@ public:
     explicit IClientEpSession(Core::System& system_)
         : ServiceFramework{system_, "IClientEpSession"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ReOpen"},
             FunctionInfo{1, nullptr, "Close"},
             FunctionInfo{2, nullptr, "GetCompletionEvent"},
@@ -77,7 +77,7 @@ public:
     explicit IClientIfSession(Core::System& system_)
         : ServiceFramework{system_, "IClientIfSession"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetStateChangeEvent"},
             FunctionInfo{1, nullptr, "SetInterface"},
             FunctionInfo{2, nullptr, "GetInterface"},
@@ -98,7 +98,7 @@ class IClientRootSession final : public ServiceFramework<IClientRootSession> {
 public:
     explicit IClientRootSession(Core::System& system_) : ServiceFramework{system_, "usb:hs"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "BindClientProcess"},
             FunctionInfo{1, nullptr, "QueryAllInterfaces"},
             FunctionInfo{2, nullptr, "QueryAvailableInterfaces"},
@@ -118,7 +118,7 @@ class IPdSession final : public ServiceFramework<IPdSession> {
 public:
     explicit IPdSession(Core::System& system_) : ServiceFramework{system_, "IPdSession"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "BindNoticeEvent"},
             FunctionInfo{1, nullptr, "UnbindNoticeEvent"},
             FunctionInfo{2, nullptr, "GetStatus"},
@@ -149,7 +149,7 @@ private:
         rb.PushIpcInterface<IPdSession>(ctx, system);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &IPdManager::OpenSession, "OpenSession"}
     );
 };
@@ -159,7 +159,7 @@ public:
     explicit IPdCradleSession(Core::System& system_)
         : ServiceFramework{system_, "IPdCradleSession"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "SetCradleVdo"},
             FunctionInfo{1, nullptr, "GetCradleVdo"},
             FunctionInfo{2, nullptr, "ResetCradleUsbHub"},
@@ -192,7 +192,7 @@ private:
         rb.PushIpcInterface<IPdCradleSession>(ctx, system);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &IPdCradleManager::OpenCradleSession, "OpenCradleSession"}
     );
 };
@@ -201,7 +201,7 @@ class IPmMainService final : public ServiceFramework<IPmMainService> {
 public:
     explicit IPmMainService(Core::System& system_) : ServiceFramework{system_, "usb:pm"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetPowerEvent"},
             FunctionInfo{1, nullptr, "GetPowerState"},
             FunctionInfo{2, nullptr, "GetDataEvent"},
@@ -218,7 +218,7 @@ class IPdManufactureManager final : public ServiceFramework<IPdManufactureManage
 public:
     explicit IPdManufactureManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:m"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "OpenManufactureSession"}
         );
     FunctionInfoBase const* FindRequest(u32 key) override {
@@ -230,7 +230,7 @@ class IQdbManager final : public ServiceFramework<IQdbManager> {
 public:
     explicit IQdbManager(Core::System& system_) : ServiceFramework{system_, "usb:qdb"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ImportQuirkDevices"},
             FunctionInfo{1, nullptr, "HasQuirk"}
         );
@@ -243,7 +243,7 @@ class IPmObserverService final : public ServiceFramework<IPmObserverService> {
 public:
     explicit IPmObserverService(Core::System& system_) : ServiceFramework{system_, "usb:obsv"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetTopologyChangeEvent"},
             FunctionInfo{1, nullptr, "GetFlattenedTopology"}
         );

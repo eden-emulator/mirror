@@ -12,7 +12,7 @@
 namespace Service::FileSystem {
 
 ServiceFrameworkBase::FunctionInfoBase const* IDirectory::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IDirectory::Read>, "Read"},
         FunctionInfo{1, D<&IDirectory::GetEntryCount>, "GetEntryCount"}
     );

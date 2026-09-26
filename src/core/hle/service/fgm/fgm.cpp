@@ -22,7 +22,7 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Initialize"},
         FunctionInfo{1, nullptr, "Set"},
         FunctionInfo{2, nullptr, "Get"},
@@ -47,7 +47,7 @@ private:
         rb.PushIpcInterface<IRequest>(ctx, system);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &FGM::Initialize, "Initialize"}
     );
 };
@@ -60,7 +60,7 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Initialize"},
         FunctionInfo{1, nullptr, "Read"},
         FunctionInfo{2, nullptr, "Cancel"}

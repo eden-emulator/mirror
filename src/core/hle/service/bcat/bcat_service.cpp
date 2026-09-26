@@ -25,7 +25,7 @@ static u64 GetCurrentBuildID(const Core::System::CurrentBuildProcessID& id) {
 }
 
 ServiceFrameworkBase::FunctionInfoBase const* IBcatService::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{10100, D<&IBcatService::RequestSyncDeliveryCache>, "RequestSyncDeliveryCache"},
         FunctionInfo{10101, D<&IBcatService::RequestSyncDeliveryCacheWithDirectoryName>, "RequestSyncDeliveryCacheWithDirectoryName"},
         FunctionInfo{10200, nullptr, "CancelSyncDeliveryCacheRequest"},

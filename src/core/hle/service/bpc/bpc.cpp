@@ -16,7 +16,7 @@ class BPC final : public ServiceFramework<BPC> {
 public:
     explicit BPC(Core::System& system_) : ServiceFramework{system_, "bpc"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ShutdownSystem"},
             FunctionInfo{1, nullptr, "RebootSystem"},
             FunctionInfo{2, nullptr, "GetWakeupReason"},
@@ -43,7 +43,7 @@ class BPC_R final : public ServiceFramework<BPC_R> {
 public:
     explicit BPC_R(Core::System& system_) : ServiceFramework{system_, "bpc:r"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetRtcTime"},
             FunctionInfo{1, nullptr, "SetRtcTime"},
             FunctionInfo{2, nullptr, "GetRtcResetDetected"},
@@ -59,7 +59,7 @@ class BPC_C final : public ServiceFramework<BPC_C> {
 public:
     explicit BPC_C(Core::System& system_) : ServiceFramework{system_, "bpc:c"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ShutdownSystem"},
             FunctionInfo{1, nullptr, "RebootSystem"},
             FunctionInfo{2, nullptr, "GetWakeupReason"},
@@ -76,7 +76,7 @@ class BPC_B final : public ServiceFramework<BPC_B> {
 public:
     explicit BPC_B(Core::System& system_) : ServiceFramework{system_, "bpc:b"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetSleepButtonState"},
             FunctionInfo{1, nullptr, "GetPowerButtonEvent"}
         );
@@ -89,7 +89,7 @@ class BPC_W final : public ServiceFramework<BPC_W> {
 public:
     explicit BPC_W(Core::System& system_) : ServiceFramework{system_, "bpc:w"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "CreateWakeupTimer"},
             FunctionInfo{1, nullptr, "CancelWakeupTimer"},
             FunctionInfo{2, nullptr, "EnableWakeupTimerOnDevice"}
@@ -103,7 +103,7 @@ class BPC_AMS final : public ServiceFramework<BPC_AMS> {
 public:
     explicit BPC_AMS(Core::System& system_) : ServiceFramework{system_, "bpc:ams"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{65000, nullptr, "RebootToFatalError"},
             FunctionInfo{65001, nullptr, "SetRebootPayload"}
         );

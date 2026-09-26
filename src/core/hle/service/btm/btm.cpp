@@ -121,7 +121,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&IBtmSystemCore::StartGamepadPairing>, "StartGamepadPairing"},
         FunctionInfo{1, C<&IBtmSystemCore::CancelGamepadPairing>, "CancelGamepadPairing"},
         FunctionInfo{2, nullptr, "ClearGamepadPairingDatabase"},
@@ -168,7 +168,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&IBtmSystem::GetCore>, "GetCore"}
     );
 };
@@ -229,7 +229,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&IBtmUserCore::AcquireBleScanEvent>, "AcquireBleScanEvent"},
         FunctionInfo{1, nullptr, "GetBleScanFilterParameter"},
         FunctionInfo{2, nullptr, "GetBleScanFilterParameter2"},
@@ -285,7 +285,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&IBtmUser::GetCore>, "GetCore"}
     );
 };
@@ -297,7 +297,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "AcquireDiscoveryEvent"},
         FunctionInfo{1, nullptr, "StartDiscovery"},
         FunctionInfo{2, nullptr, "CancelDiscovery"},
@@ -323,7 +323,7 @@ class IBtm final : public ServiceFramework<IBtm> {
 public:
     explicit IBtm(Core::System& system_) : ServiceFramework{system_, "btm"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetState"},
             FunctionInfo{1, nullptr, "GetHostDeviceProperty"},
             FunctionInfo{2, nullptr, "AcquireDeviceConditionEvent"},

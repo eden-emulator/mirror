@@ -13,7 +13,7 @@
 namespace Service::BCAT {
 
 ServiceFrameworkBase::FunctionInfoBase const* IDeliveryCacheFileService::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IDeliveryCacheFileService::Open>, "Open"},
         FunctionInfo{1, D<&IDeliveryCacheFileService::Read>, "Read"},
         FunctionInfo{2, D<&IDeliveryCacheFileService::GetSize>, "GetSize"},

@@ -24,7 +24,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{100, nullptr, "OpenBgAgentController" }
     );
 };
@@ -116,7 +116,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IOlscServiceForSystemService::GetTransferTaskListController>, "GetTransferTaskListController"},
         FunctionInfo{1, D<&IOlscServiceForSystemService::GetRemoteStorageController>, "GetRemoteStorageController"},
         FunctionInfo{2, D<&IOlscServiceForSystemService::GetDaemonController>, "GetDaemonController"},

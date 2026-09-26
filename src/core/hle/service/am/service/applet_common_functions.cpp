@@ -13,7 +13,7 @@
 namespace Service::AM {
 
 ServiceFrameworkBase::FunctionInfoBase const* IAppletCommonFunctions::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "SetTerminateResult"},
         FunctionInfo{10, nullptr, "ReadThemeStorage"},
         FunctionInfo{11, nullptr, "WriteThemeStorage"},

@@ -11,7 +11,7 @@
 namespace Service::VI {
 
 ServiceFrameworkBase::FunctionInfoBase const* IManagerDisplayService::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{200, nullptr, "AllocateProcessHeapBlock"},
         FunctionInfo{201, nullptr, "FreeProcessHeapBlock"},
         FunctionInfo{1102, nullptr, "GetDisplayResolution"},

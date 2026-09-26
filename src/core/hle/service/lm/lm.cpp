@@ -325,7 +325,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &ILogger::Log, "Log"},
         FunctionInfo{1, &ILogger::SetDestination, "SetDestination"},
         FunctionInfo{2, nullptr, "TransmitHashedLog"}, //20.0.0+
@@ -352,7 +352,7 @@ private:
         rb.PushIpcInterface<ILogger>(ctx, system);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &LM::OpenLogger, "OpenLogger"}
     );
 };
@@ -365,7 +365,7 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "StartLogging"},
         FunctionInfo{1, nullptr, "StopLogging"},
         FunctionInfo{2, nullptr, "GetLog"},

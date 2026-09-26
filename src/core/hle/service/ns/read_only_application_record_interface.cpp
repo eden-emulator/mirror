@@ -12,7 +12,7 @@
 namespace Service::NS {
 
 ServiceFrameworkBase::FunctionInfoBase const* IReadOnlyApplicationRecordInterface::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IReadOnlyApplicationRecordInterface::HasApplicationRecord>, "HasApplicationRecord"},
         FunctionInfo{1, nullptr, "NotifyApplicationFailure"},
         FunctionInfo{2, D<&IReadOnlyApplicationRecordInterface::IsDataCorruptedResult>, "IsDataCorruptedResult"},

@@ -22,7 +22,7 @@
 namespace Service::LDN {
 
 ServiceFrameworkBase::FunctionInfoBase const* IUserLocalCommunicationService::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IUserLocalCommunicationService::GetState>, "GetState"},
         FunctionInfo{1, D<&IUserLocalCommunicationService::GetNetworkInfo>, "GetNetworkInfo"},
         FunctionInfo{2, D<&IUserLocalCommunicationService::GetIpv4Address>, "GetIpv4Address"},

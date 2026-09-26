@@ -17,7 +17,7 @@ class ISession final : public ServiceFramework<ISession> {
 public:
     explicit ISession(Core::System& system_) : ServiceFramework{system_, "ISession"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "QueryFunctions"},
             FunctionInfo{1, nullptr, "AcquireFunction"},
             FunctionInfo{2, nullptr, "ReleaseFunction"},
@@ -52,7 +52,7 @@ class PCIE final : public ServiceFramework<PCIE> {
 public:
     explicit PCIE(Core::System& system_) : ServiceFramework{system_, "pcie"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RegisterClassDriver"},
             FunctionInfo{1, nullptr, "QueryFunctionsUnregistered"}
         );
@@ -65,7 +65,7 @@ class PCIE_LOG final : public ServiceFramework<PCIE_LOG> {
 public:
     explicit PCIE_LOG(Core::System& system_) : ServiceFramework{system_, "pcie:log"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetLoggedState"},
             FunctionInfo{1, nullptr, "GetLoggedStateEvent"}
         );

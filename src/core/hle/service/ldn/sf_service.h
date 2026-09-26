@@ -23,7 +23,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Initialize"},
         FunctionInfo{256, nullptr, "AttachNetworkInterfaceStateChangeEvent"},
         FunctionInfo{264, nullptr, "GetNetworkInterfaceLastError"},

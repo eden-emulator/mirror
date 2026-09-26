@@ -17,7 +17,7 @@ public:
     explicit ETHC_C(Core::System& system_)
         : ServiceFramework{system_, "ethc:c"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "Initialize"},
             FunctionInfo{1, nullptr, "Cancel"},
             FunctionInfo{2, nullptr, "GetResult"},
@@ -36,7 +36,7 @@ public:
     explicit ETHC_I(Core::System& system_)
         : ServiceFramework{system_, "ethc:i"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetReadableHandle"},
             FunctionInfo{1, nullptr, "Cancel"},
             FunctionInfo{2, nullptr, "GetResult"},
@@ -53,7 +53,7 @@ public:
     explicit ISfDriverServiceCreator(Core::System& system_)
         : ServiceFramework{system_, "eth:nd"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "CreateDriverService"}
         );
     FunctionInfoBase const* FindRequest(u32 key) override {

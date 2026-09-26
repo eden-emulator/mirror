@@ -20,7 +20,7 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Unknown0"}, //19.0.0+
         FunctionInfo{1, nullptr, "Unknown1"}, //20.0.0+
         FunctionInfo{2, nullptr, "Unknown2"}, //20.0.0+

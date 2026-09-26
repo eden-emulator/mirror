@@ -19,7 +19,7 @@
 namespace Service::AM {
 
 ServiceFrameworkBase::FunctionInfoBase const* IApplicationAccessor::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IApplicationAccessor::GetAppletStateChangedEvent>, "GetAppletStateChangedEvent"},
         FunctionInfo{1, nullptr, "IsCompleted"},
         FunctionInfo{10, D<&IApplicationAccessor::Start>, "Start"},

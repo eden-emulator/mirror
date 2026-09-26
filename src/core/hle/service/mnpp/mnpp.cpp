@@ -35,7 +35,7 @@ private:
         rb.Push(ResultSuccess);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &MNPP_APP::Cmd0, "Cmd0"},
         FunctionInfo{1, &MNPP_APP::Cmd1, "Cmd1"}
     );
@@ -45,7 +45,7 @@ class MNPP_SYS final : public ServiceFramework<MNPP_SYS> {
 public:
     explicit MNPP_SYS(Core::System& system_) : ServiceFramework{system_, "mnpp:sys"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "Cmd0"},
             FunctionInfo{10, nullptr, "Cmd10"},
             FunctionInfo{100, nullptr, "Cmd100"},
@@ -62,7 +62,7 @@ class MNPP_WEB final : public ServiceFramework<MNPP_WEB> {
 public:
     explicit MNPP_WEB(Core::System& system_) : ServiceFramework{system_, "mnpp:web"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "Cmd0"},
             FunctionInfo{1, nullptr, "Cmd1"},
             FunctionInfo{10, nullptr, "Cmd10"},
