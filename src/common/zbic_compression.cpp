@@ -12,8 +12,14 @@
 #define ZSTDERRORLIB_HIDDEN static
 #undef ZSTD_MULTITHREAD
 
+#if defined(__ANDROID__)
+#undef _GNU_SOURCE
+#endif
+
 #include "zstd.h"
+#define g_ZSTD_threading_useless_symbol g_ZSTD_zbic_threading_useless_symbol
 #include "zstd.c"
+#undef g_ZSTD_threading_useless_symbol
 
 namespace Common::Compression {
 
