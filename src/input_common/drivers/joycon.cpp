@@ -83,20 +83,21 @@ void Joycons::ScanThread(std::stop_token stop_token) {
     constexpr u16 nintendo_vendor_id = 0x057e;
     Common::SetCurrentThreadName("JoyconScanThread");
 
+    auto last_ret = 0u;
     do {
-        SDL_hid_device_info* devs = SDL_hid_enumerate(nintendo_vendor_id, 0x0);
-        SDL_hid_device_info* cur_dev = devs;
-
-        while (cur_dev) {
-            if (IsDeviceNew(cur_dev)) {
-                LOG_DEBUG(Input, "Device Found,type : {:04X} {:04X}", cur_dev->vendor_id,
-                          cur_dev->product_id);
-                RegisterNewDevice(cur_dev);
+        auto ret = SDL_hid_device_change_count();
+        if (last_ret == 0u || last_ret != ret) {
+            last_ret = ret;
+            SDL_hid_device_info* devs = SDL_hid_enumerate(nintendo_vendor_id, 0x0);
+            for (auto* cur_dev = devs; cur_dev; cur_dev = cur_dev->next) {
+                if (IsDeviceNew(cur_dev)) {
+                    LOG_DEBUG(Input, "Device Found,type : {:04X} {:04X}", cur_dev->vendor_id, cur_dev->product_id);
+                    RegisterNewDevice(cur_dev);
+                }
+                cur_dev = cur_dev->next;
             }
-            cur_dev = cur_dev->next;
+            SDL_hid_free_enumeration(devs);
         }
-
-        SDL_hid_free_enumeration(devs);
     } while (Common::StoppableTimedWait(stop_token, std::chrono::seconds{5}));
 }
 
