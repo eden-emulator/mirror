@@ -17,8 +17,7 @@ class ISession final : public ServiceFramework<ISession> {
 public:
     explicit ISession(Core::System& system_) : ServiceFramework{system_, "ISession"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "QueryFunctions"},
             FunctionInfo{1, nullptr, "AcquireFunction"},
             FunctionInfo{2, nullptr, "ReleaseFunction"},
@@ -44,6 +43,8 @@ public:
             FunctionInfo{22, nullptr, "SetResetUponResumeEnable"},
             FunctionInfo{23, nullptr, "ResetFunction"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -51,11 +52,12 @@ class PCIE final : public ServiceFramework<PCIE> {
 public:
     explicit PCIE(Core::System& system_) : ServiceFramework{system_, "pcie"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RegisterClassDriver"},
             FunctionInfo{1, nullptr, "QueryFunctionsUnregistered"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -63,11 +65,12 @@ class PCIE_LOG final : public ServiceFramework<PCIE_LOG> {
 public:
     explicit PCIE_LOG(Core::System& system_) : ServiceFramework{system_, "pcie:log"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetLoggedState"},
             FunctionInfo{1, nullptr, "GetLoggedStateEvent"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 

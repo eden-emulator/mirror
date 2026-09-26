@@ -167,11 +167,7 @@ public:
         : ServiceFramework{system_, "IRegistrar"}, issue_process_id{std::move(issuer)} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &IRegistrar::Issue, "Issue"},
-            FunctionInfo{1, &IRegistrar::SetApplicationLaunchProperty, "SetApplicationLaunchProperty"},
-            FunctionInfo{2, &IRegistrar::SetApplicationControlProperty, "SetApplicationControlProperty"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -236,6 +232,11 @@ private:
         rb.Push(ResultSuccess);
     }
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IRegistrar::Issue, "Issue"},
+        FunctionInfo{1, &IRegistrar::SetApplicationLaunchProperty, "SetApplicationLaunchProperty"},
+        FunctionInfo{2, &IRegistrar::SetApplicationControlProperty, "SetApplicationControlProperty"}
+    );
     IssuerFn issue_process_id;
     bool issued = false;
     ApplicationLaunchProperty launch{};

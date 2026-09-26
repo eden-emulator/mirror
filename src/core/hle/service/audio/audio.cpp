@@ -23,8 +23,7 @@ public:
     explicit IAudioOutManagerForApplet(Core::System& system_)
         : ServiceFramework{system_, "audout:a"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"},
             FunctionInfo{2, nullptr, "GetProcessMasterVolume"},
@@ -32,6 +31,8 @@ public:
             FunctionInfo{4, nullptr, "GetProcessRecordVolume"},
             FunctionInfo{5, nullptr, "SetProcessRecordVolume"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -40,14 +41,15 @@ public:
     explicit IAudioSnoopManager(Core::System& system_)
         : ServiceFramework{system_, "auddev"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetDspStatistics"},
             FunctionInfo{1, nullptr, "GetAppletStateSummaries"},
             FunctionInfo{2, nullptr, "SetDspStatisticsParameter"},
             FunctionInfo{3, nullptr, "GetDspStatisticsParameter"},
             FunctionInfo{6, nullptr, "GetDspUsage"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -56,13 +58,14 @@ public:
     explicit IAudioInManagerForApplet(Core::System& system_)
         : ServiceFramework{system_, "audin:a"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"},
             FunctionInfo{2, nullptr, "GetProcessMasterVolume"},
             FunctionInfo{3, nullptr, "SetProcessMasterVolume"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -71,8 +74,7 @@ public:
     explicit IAudioRendererManagerForApplet(Core::System& system_)
         : ServiceFramework{system_, "audren:a"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"},
             FunctionInfo{2, nullptr, "GetProcessMasterVolume"},
@@ -82,6 +84,8 @@ public:
             FunctionInfo{6, nullptr, "GetProcessRecordVolume"},
             FunctionInfo{7, nullptr, "SetProcessRecordVolume"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -90,11 +94,12 @@ public:
     explicit IAudioOutManagerForDebugger(Core::System& system_)
         : ServiceFramework{system_, "audout:d"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -103,11 +108,12 @@ public:
     explicit IAudioInManagerForDebugger(Core::System& system_)
         : ServiceFramework{system_, "audin:d"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -116,11 +122,12 @@ public:
     explicit IFinalOutputRecorderManagerForDebugger(Core::System& system_)
         : ServiceFramework{system_, "audrec:d"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -129,11 +136,12 @@ public:
     explicit IAudioRendererManagerForDebugger(Core::System& system_)
         : ServiceFramework{system_, "audren:d"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -142,8 +150,7 @@ public:
     explicit IAudioSystemManagerForApplet(Core::System& system_)
         : ServiceFramework{system_, "aud:a"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RegisterAppletResourceUserId"},
             FunctionInfo{1, nullptr, "UnregisterAppletResourceUserId"},
             FunctionInfo{2, nullptr, "RequestSuspendAudio"},
@@ -156,6 +163,8 @@ public:
             FunctionInfo{9, nullptr, "SetAudioOutputProcessRecordVolume"},
             FunctionInfo{10, nullptr, "GetAppletStateSummaries"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -164,11 +173,12 @@ public:
     explicit IAudioSystemManagerForDebugger(Core::System& system_)
         : ServiceFramework{system_, "aud:d"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspendAudioForDebug"},
             FunctionInfo{1, nullptr, "RequestResumeAudioForDebug"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 

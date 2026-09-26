@@ -10,6 +10,7 @@
 #include <memory>
 #include <mutex>
 #include <tuple>
+#include <type_traits>
 #include "frozen/map.h"
 #include "common/container/unordered_map.h"
 #include "common/common_types.h"
@@ -94,6 +95,7 @@ protected:
         const char* name;
         u32 version_gating;
     };
+    static_assert(std::is_trivially_constructible_v<FunctionInfoBase>);
 private:
     template <typename T>
     friend class ServiceFramework;
@@ -153,6 +155,9 @@ protected:
         /// @param expected_header_ request header in the command buffer which will trigger dispatch to this handler
         /// @param handler_callback_ member function in this service which will be called to handle the request
         /// @param name_ human-friendly name for the request. Used mostly for logging purposes.
+#ifndef _MSC_VER
+        constexpr
+#endif
         FunctionInfoTyped(u32 expected_header_, HandlerFnP<T> handler_callback_, const char* name_, u32 version_gating_ = 0)
             : FunctionInfoBase{expected_header_, HandlerFnP<ServiceFrameworkBase>(handler_callback_), name_, version_gating_}
         {}
@@ -161,10 +166,14 @@ protected:
 
     template<typename ...Ts>
         requires (std::same_as<Ts, FunctionInfo> && ...)
-    static FunctionInfoBase const* HandlerTableGenerateWithFind(u32 key, Ts... args) {
-        static auto const map = frozen::map<u32, FunctionInfo, sizeof...(args)>{
+    static constexpr frozen::map<u32, FunctionInfo, sizeof...(Ts)> CreateStaticMap(Ts... args) {
+        return frozen::map<u32, FunctionInfo, sizeof...(args)>{
             {args.expected_header, FunctionInfo(args)}...
         };
+    }
+
+    template<typename T>
+    static FunctionInfoBase const* HandlerTableGenerateWithFind(u32 key, T const& map) {
         auto const it = map.find(key);
         return it != map.end() ? std::addressof(it->second) : nullptr;
     }
@@ -208,25 +217,21 @@ protected:
         RegisterHandlers(functions, N);
     }
 
-    /**
-     * Registers handlers in the service. Usually prefer using the other RegisterHandlers
-     * overload in order to avoid needing to specify the array size.
-     */
+    /// @brief Registers handlers in the service. Usually prefer using the other RegisterHandlers
+    /// overload in order to avoid needing to specify the array size.
     template <typename T = Self>
     constexpr void RegisterHandlers(const FunctionInfoTyped<T>* functions, std::size_t n) {
         RegisterHandlersBase(functions, n);
     }
 
-    /// Registers handlers in the service.
+    /// @brief Registers handlers in the service.
     template <typename T = Self, std::size_t N>
     constexpr void RegisterHandlersTipc(const FunctionInfoTyped<T> (&functions)[N]) {
         RegisterHandlersTipc(functions, N);
     }
 
-    /**
-     * Registers handlers in the service. Usually prefer using the other RegisterHandlers
-     * overload in order to avoid needing to specify the array size.
-     */
+    /// @brief Registers handlers in the service. Usually prefer using the other RegisterHandlers
+    /// overload in order to avoid needing to specify the array size.
     template <typename T = Self>
     constexpr void RegisterHandlersTipc(const FunctionInfoTyped<T>* functions, std::size_t n) {
         RegisterHandlersBaseTipc(functions, n);

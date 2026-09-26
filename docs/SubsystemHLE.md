@@ -51,8 +51,7 @@ public:
 
     // Define here your functions and methods, please order them.
     // Use FindRequestTipc for TIPC handlers.
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetSessionId"},
             FunctionInfo{12, nullptr, "GetAccountId"},
             FunctionInfo{13, nullptr, "GetLinkedNintendoAccountId"},
@@ -67,6 +66,8 @@ public:
             FunctionInfo{110, nullptr, "SetSystemProgramIdentification"},
             FunctionInfo{111, nullptr, "EnsureIdTokenCacheAsync"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 ```

@@ -48,12 +48,7 @@ public:
     }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, C<&IJitEnvironment::GenerateCode>, "GenerateCode"},
-            FunctionInfo{1, C<&IJitEnvironment::Control>, "Control"},
-            FunctionInfo{1000, C<&IJitEnvironment::LoadPlugin>, "LoadPlugin"},
-            FunctionInfo{1001, C<&IJitEnvironment::GetCodeAddress>, "GetCodeAddress"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
     ~IJitEnvironment() {
@@ -245,6 +240,13 @@ private:
         return in;
     }
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IJitEnvironment::GenerateCode>, "GenerateCode"},
+        FunctionInfo{1, C<&IJitEnvironment::Control>, "Control"},
+        FunctionInfo{1000, C<&IJitEnvironment::LoadPlugin>, "LoadPlugin"},
+        FunctionInfo{1001, C<&IJitEnvironment::GetCodeAddress>, "GetCodeAddress"}
+    );
+
     Kernel::KScopedAutoObject<Kernel::KProcess> process;
     CodeMemory user_rx;
     CodeMemory user_ro;
@@ -258,9 +260,7 @@ public:
     explicit JITU(Core::System& system_) : ServiceFramework{system_, "jit:u"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, C<&JITU::CreateJitEnvironment>, "CreateJitEnvironment"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -289,6 +289,10 @@ private:
     }
 
 private:
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&JITU::CreateJitEnvironment>, "CreateJitEnvironment"}
+    );
+
     std::mt19937_64 generate_random{};
 };
 

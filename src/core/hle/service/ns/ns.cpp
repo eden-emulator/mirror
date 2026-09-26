@@ -21,22 +21,23 @@ class INotifyService final : public ServiceFramework<INotifyService> {
 public:
     explicit INotifyService(Core::System& system_) : ServiceFramework{system_, "pdm:ntfy"} {}
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "NotifyAppletEvent" },
+        FunctionInfo{2, nullptr, "NotifyOperationModeChangeEvent" },
+        FunctionInfo{3, nullptr, "NotifyPowerStateChangeEvent" },
+        FunctionInfo{4, nullptr, "NotifyClearAllEvent" },
+        FunctionInfo{5, nullptr, "NotifyEventForDebug" },
+        FunctionInfo{6, nullptr, "SuspendUserAccountEventService" },
+        FunctionInfo{7, nullptr, "ResumeUserAccountEventService" },
+        FunctionInfo{8, nullptr, "NotifyLibraryAppletEvent" },
+        FunctionInfo{9, nullptr, "Cmd9" },
+        FunctionInfo{20, nullptr, "Cmd20" },
+        FunctionInfo{30, nullptr, "Cmd30" },
+        FunctionInfo{100, nullptr, "Cmd100" },
+        FunctionInfo{101, nullptr, "Cmd101" }
+    );
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, nullptr, "NotifyAppletEvent" },
-            FunctionInfo{2, nullptr, "NotifyOperationModeChangeEvent" },
-            FunctionInfo{3, nullptr, "NotifyPowerStateChangeEvent" },
-            FunctionInfo{4, nullptr, "NotifyClearAllEvent" },
-            FunctionInfo{5, nullptr, "NotifyEventForDebug" },
-            FunctionInfo{6, nullptr, "SuspendUserAccountEventService" },
-            FunctionInfo{7, nullptr, "ResumeUserAccountEventService" },
-            FunctionInfo{8, nullptr, "NotifyLibraryAppletEvent" },
-            FunctionInfo{9, nullptr, "Cmd9" },
-            FunctionInfo{20, nullptr, "Cmd20" },
-            FunctionInfo{30, nullptr, "Cmd30" },
-            FunctionInfo{100, nullptr, "Cmd100" },
-            FunctionInfo{101, nullptr, "Cmd101" }
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -47,14 +48,7 @@ public:
         : ServiceFramework{system_, "ns:vm"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{1200, D<&IVulnerabilityManagerInterface::NeedsUpdateVulnerability>, "NeedsUpdateVulnerability"},
-            FunctionInfo{1201, nullptr, "UpdateSafeSystemVersionForDebug"},
-            FunctionInfo{1202, nullptr, "GetSafeSystemVersion"},
-            FunctionInfo{3100, D<&IVulnerabilityManagerInterface::GetSafeSystemVersionCheckInfo>, "GetSafeSystemVersionCheckInfo"},
-            FunctionInfo{3101, nullptr, "RequestUpdateSafeSystemVersionCheckInfo"},
-            FunctionInfo{3102, D<&IVulnerabilityManagerInterface::ResetSafeSystemVersionCheckInfo>, "ResetSafeSystemVersionCheckInfo"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
     ~IVulnerabilityManagerInterface() override = default;
 
@@ -74,6 +68,15 @@ public:
         LOG_WARNING(Service_NS, "(STUBBED)");
         R_SUCCEED();
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{1200, D<&IVulnerabilityManagerInterface::NeedsUpdateVulnerability>, "NeedsUpdateVulnerability"},
+        FunctionInfo{1201, nullptr, "UpdateSafeSystemVersionForDebug"},
+        FunctionInfo{1202, nullptr, "GetSafeSystemVersion"},
+        FunctionInfo{3100, D<&IVulnerabilityManagerInterface::GetSafeSystemVersionCheckInfo>, "GetSafeSystemVersionCheckInfo"},
+        FunctionInfo{3101, nullptr, "RequestUpdateSafeSystemVersionCheckInfo"},
+        FunctionInfo{3102, D<&IVulnerabilityManagerInterface::ResetSafeSystemVersionCheckInfo>, "ResetSafeSystemVersionCheckInfo"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

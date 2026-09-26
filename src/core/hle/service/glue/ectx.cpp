@@ -15,9 +15,7 @@ public:
     IContextRegistrar(Core::System& system_) : ServiceFramework{system_, "IContextRegistrar"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &IContextRegistrar::Complete, "Complete"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
     ~IContextRegistrar() override = default;
@@ -39,6 +37,10 @@ private:
         rb.Push(ResultSuccess);
         rb.Push(0);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IContextRegistrar::Complete, "Complete"}
+    );
 };
 
 ECTX_W::ECTX_W(Core::System& system_) : ServiceFramework{system_, "ectx:w"} {

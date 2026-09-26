@@ -24,10 +24,11 @@ public:
     explicit IHidTemporaryServer(Core::System& system_)
     : ServiceFramework{system_, "hid:tmp"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetConsoleSixAxisSensorCalibrationValues"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
     ~IHidTemporaryServer() override = default;
 };
@@ -37,14 +38,15 @@ public:
     explicit AHID_CD(Core::System& system_)
     : ServiceFramework{system_, "ahid:cd"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "AcquireDevice"},
             FunctionInfo{1, nullptr, "ReleaseDevice"},
             FunctionInfo{2, nullptr, "GetCtrlSession"},
             FunctionInfo{3, nullptr, "GetReadSession"},
             FunctionInfo{4, nullptr, "GetWriteSession"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
     ~AHID_CD() override = default;
 };
@@ -54,8 +56,7 @@ public:
     explicit AHID_HDR(Core::System& system_)
     : ServiceFramework{system_, "ahid:hdr"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetDeviceEntries"},
             FunctionInfo{1, nullptr, "GetDeviceList"},
             FunctionInfo{2, nullptr, "GetDeviceParameters"},
@@ -63,6 +64,8 @@ public:
             FunctionInfo{4, nullptr, "DetachDevice"},
             FunctionInfo{5, nullptr, "SetDeviceFilter"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
     ~AHID_HDR() override = default;
 };

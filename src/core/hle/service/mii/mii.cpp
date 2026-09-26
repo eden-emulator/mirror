@@ -33,35 +33,7 @@ public:
     }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, D<&IDatabaseService::IsUpdated>, "IsUpdated"},
-            FunctionInfo{1, D<&IDatabaseService::IsFullDatabase>, "IsFullDatabase"},
-            FunctionInfo{2, D<&IDatabaseService::GetCount>, "GetCount"},
-            FunctionInfo{3, D<&IDatabaseService::Get>, "Get"},
-            FunctionInfo{4, D<&IDatabaseService::Get1>, "Get1"},
-            FunctionInfo{5, D<&IDatabaseService::UpdateLatest>, "UpdateLatest"},
-            FunctionInfo{6, D<&IDatabaseService::BuildRandom>, "BuildRandom"},
-            FunctionInfo{7, D<&IDatabaseService::BuildDefault>, "BuildDefault"},
-            FunctionInfo{8, D<&IDatabaseService::Get2>, "Get2"},
-            FunctionInfo{9, D<&IDatabaseService::Get3>, "Get3"},
-            FunctionInfo{10, D<&IDatabaseService::UpdateLatest1>, "UpdateLatest1"},
-            FunctionInfo{11, D<&IDatabaseService::FindIndex>, "FindIndex"},
-            FunctionInfo{12, D<&IDatabaseService::Move>, "Move"},
-            FunctionInfo{13, D<&IDatabaseService::AddOrReplace>, "AddOrReplace"},
-            FunctionInfo{14, D<&IDatabaseService::Delete>, "Delete"},
-            FunctionInfo{15, D<&IDatabaseService::DestroyFile>, "DestroyFile"},
-            FunctionInfo{16, D<&IDatabaseService::DeleteFile>, "DeleteFile"},
-            FunctionInfo{17, D<&IDatabaseService::Format>, "Format"},
-            FunctionInfo{18, nullptr, "Import"},
-            FunctionInfo{19, nullptr, "Export"},
-            FunctionInfo{20, D<&IDatabaseService::IsBrokenDatabaseWithClearFlag>, "IsBrokenDatabaseWithClearFlag"},
-            FunctionInfo{21, D<&IDatabaseService::GetIndex>, "GetIndex"},
-            FunctionInfo{22, D<&IDatabaseService::SetInterfaceVersion>, "SetInterfaceVersion"},
-            FunctionInfo{23, D<&IDatabaseService::Convert>, "Convert"},
-            FunctionInfo{24, D<&IDatabaseService::ConvertCoreDataToCharInfo>, "ConvertCoreDataToCharInfo"},
-            FunctionInfo{25, D<&IDatabaseService::ConvertCharInfoToCoreData>, "ConvertCharInfoToCoreData"},
-            FunctionInfo{26,  D<&IDatabaseService::Append>, "Append"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -285,10 +257,39 @@ private:
         R_RETURN(manager->Append(metadata, char_info));
     }
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IDatabaseService::IsUpdated>, "IsUpdated"},
+        FunctionInfo{1, D<&IDatabaseService::IsFullDatabase>, "IsFullDatabase"},
+        FunctionInfo{2, D<&IDatabaseService::GetCount>, "GetCount"},
+        FunctionInfo{3, D<&IDatabaseService::Get>, "Get"},
+        FunctionInfo{4, D<&IDatabaseService::Get1>, "Get1"},
+        FunctionInfo{5, D<&IDatabaseService::UpdateLatest>, "UpdateLatest"},
+        FunctionInfo{6, D<&IDatabaseService::BuildRandom>, "BuildRandom"},
+        FunctionInfo{7, D<&IDatabaseService::BuildDefault>, "BuildDefault"},
+        FunctionInfo{8, D<&IDatabaseService::Get2>, "Get2"},
+        FunctionInfo{9, D<&IDatabaseService::Get3>, "Get3"},
+        FunctionInfo{10, D<&IDatabaseService::UpdateLatest1>, "UpdateLatest1"},
+        FunctionInfo{11, D<&IDatabaseService::FindIndex>, "FindIndex"},
+        FunctionInfo{12, D<&IDatabaseService::Move>, "Move"},
+        FunctionInfo{13, D<&IDatabaseService::AddOrReplace>, "AddOrReplace"},
+        FunctionInfo{14, D<&IDatabaseService::Delete>, "Delete"},
+        FunctionInfo{15, D<&IDatabaseService::DestroyFile>, "DestroyFile"},
+        FunctionInfo{16, D<&IDatabaseService::DeleteFile>, "DeleteFile"},
+        FunctionInfo{17, D<&IDatabaseService::Format>, "Format"},
+        FunctionInfo{18, nullptr, "Import"},
+        FunctionInfo{19, nullptr, "Export"},
+        FunctionInfo{20, D<&IDatabaseService::IsBrokenDatabaseWithClearFlag>, "IsBrokenDatabaseWithClearFlag"},
+        FunctionInfo{21, D<&IDatabaseService::GetIndex>, "GetIndex"},
+        FunctionInfo{22, D<&IDatabaseService::SetInterfaceVersion>, "SetInterfaceVersion"},
+        FunctionInfo{23, D<&IDatabaseService::Convert>, "Convert"},
+        FunctionInfo{24, D<&IDatabaseService::ConvertCoreDataToCharInfo>, "ConvertCoreDataToCharInfo"},
+        FunctionInfo{25, D<&IDatabaseService::ConvertCharInfoToCoreData>, "ConvertCharInfoToCoreData"},
+        FunctionInfo{26,  D<&IDatabaseService::Append>, "Append"}
+    );
+
     std::shared_ptr<MiiManager> manager = nullptr;
     DatabaseSessionMetadata metadata{};
     bool is_system{};
-
     std::shared_ptr<Service::Set::ISystemSettingsServer> m_set_sys;
 };
 
@@ -324,22 +325,7 @@ public:
     explicit IImageDatabaseService(Core::System& system_) : ServiceFramework{system_, "miiimg"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, D<&IImageDatabaseService::Initialize>, "Initialize"},
-            FunctionInfo{10, nullptr, "Reload"},
-            FunctionInfo{11, D<&IImageDatabaseService::GetCount>, "GetCount"},
-            FunctionInfo{12, nullptr, "IsEmpty"},
-            FunctionInfo{13, nullptr, "IsFull"},
-            FunctionInfo{14, nullptr, "GetAttribute"},
-            FunctionInfo{15, nullptr, "LoadImage"},
-            FunctionInfo{16, nullptr, "AddOrUpdateImage"},
-            FunctionInfo{17, nullptr, "DeleteImages"},
-            FunctionInfo{100, nullptr, "DeleteFile"},
-            FunctionInfo{101, nullptr, "DestroyFile"},
-            FunctionInfo{102, nullptr, "ImportFile"},
-            FunctionInfo{103, nullptr, "ExportFile"},
-            FunctionInfo{104, nullptr, "ForceInitialize"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -356,6 +342,23 @@ private:
 
         R_SUCCEED();
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IImageDatabaseService::Initialize>, "Initialize"},
+        FunctionInfo{10, nullptr, "Reload"},
+        FunctionInfo{11, D<&IImageDatabaseService::GetCount>, "GetCount"},
+        FunctionInfo{12, nullptr, "IsEmpty"},
+        FunctionInfo{13, nullptr, "IsFull"},
+        FunctionInfo{14, nullptr, "GetAttribute"},
+        FunctionInfo{15, nullptr, "LoadImage"},
+        FunctionInfo{16, nullptr, "AddOrUpdateImage"},
+        FunctionInfo{17, nullptr, "DeleteImages"},
+        FunctionInfo{100, nullptr, "DeleteFile"},
+        FunctionInfo{101, nullptr, "DestroyFile"},
+        FunctionInfo{102, nullptr, "ImportFile"},
+        FunctionInfo{103, nullptr, "ExportFile"},
+        FunctionInfo{104, nullptr, "ForceInitialize"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

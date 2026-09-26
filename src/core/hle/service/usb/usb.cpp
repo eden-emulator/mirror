@@ -19,8 +19,7 @@ class IDsInterface final : public ServiceFramework<IDsInterface> {
 public:
     explicit IDsInterface(Core::System& system_) : ServiceFramework{system_, "IDsInterface"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "AddEndpoint"},
             FunctionInfo{1, nullptr, "GetSetupEvent"},
             FunctionInfo{2, nullptr, "GetSetupPacket"},
@@ -35,6 +34,8 @@ public:
             FunctionInfo{11, nullptr, "CtrlStall"},
             FunctionInfo{12, nullptr, "AppendConfigurationData"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -42,10 +43,11 @@ class IDsRootSession final : public ServiceFramework<IDsRootSession> {
 public:
     explicit IDsRootSession(Core::System& system_) : ServiceFramework{system_, "usb:ds"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "OpenDsService"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -54,8 +56,7 @@ public:
     explicit IClientEpSession(Core::System& system_)
         : ServiceFramework{system_, "IClientEpSession"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ReOpen"},
             FunctionInfo{1, nullptr, "Close"},
             FunctionInfo{2, nullptr, "GetCompletionEvent"},
@@ -66,6 +67,8 @@ public:
             FunctionInfo{7, nullptr, "CreateSmmuSpace"},
             FunctionInfo{8, nullptr, "ShareReportRing"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -74,8 +77,7 @@ public:
     explicit IClientIfSession(Core::System& system_)
         : ServiceFramework{system_, "IClientIfSession"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetStateChangeEvent"},
             FunctionInfo{1, nullptr, "SetInterface"},
             FunctionInfo{2, nullptr, "GetInterface"},
@@ -87,6 +89,8 @@ public:
             FunctionInfo{8, nullptr, "ResetDevice"},
             FunctionInfo{9, nullptr, "OpenUsbEp"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -94,8 +98,7 @@ class IClientRootSession final : public ServiceFramework<IClientRootSession> {
 public:
     explicit IClientRootSession(Core::System& system_) : ServiceFramework{system_, "usb:hs"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "BindClientProcess"},
             FunctionInfo{1, nullptr, "QueryAllInterfaces"},
             FunctionInfo{2, nullptr, "QueryAvailableInterfaces"},
@@ -106,6 +109,8 @@ public:
             FunctionInfo{7, nullptr, "AcquireUsbIf"},
             FunctionInfo{8, nullptr, "SetTestMode"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -113,8 +118,7 @@ class IPdSession final : public ServiceFramework<IPdSession> {
 public:
     explicit IPdSession(Core::System& system_) : ServiceFramework{system_, "IPdSession"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "BindNoticeEvent"},
             FunctionInfo{1, nullptr, "UnbindNoticeEvent"},
             FunctionInfo{2, nullptr, "GetStatus"},
@@ -123,6 +127,8 @@ public:
             FunctionInfo{5, nullptr, "DisablePowerRequestNotice"},
             FunctionInfo{6, nullptr, "ReplyPowerRequest"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -131,9 +137,7 @@ public:
     explicit IPdManager(Core::System& system_) : ServiceFramework{system_, "usb:pd"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &IPdManager::OpenSession, "OpenSession"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -144,6 +148,10 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IPdSession>(ctx, system);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IPdManager::OpenSession, "OpenSession"}
+    );
 };
 
 class IPdCradleSession final : public ServiceFramework<IPdCradleSession> {
@@ -151,8 +159,7 @@ public:
     explicit IPdCradleSession(Core::System& system_)
         : ServiceFramework{system_, "IPdCradleSession"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "SetCradleVdo"},
             FunctionInfo{1, nullptr, "GetCradleVdo"},
             FunctionInfo{2, nullptr, "ResetCradleUsbHub"},
@@ -163,6 +170,8 @@ public:
             FunctionInfo{7, nullptr, "EnableCradleRecovery"},
             FunctionInfo{8, nullptr, "DisableCradleRecovery"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -171,9 +180,7 @@ public:
     explicit IPdCradleManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:c"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &IPdCradleManager::OpenCradleSession, "OpenCradleSession"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -184,14 +191,17 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IPdCradleSession>(ctx, system);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IPdCradleManager::OpenCradleSession, "OpenCradleSession"}
+    );
 };
 
 class IPmMainService final : public ServiceFramework<IPmMainService> {
 public:
     explicit IPmMainService(Core::System& system_) : ServiceFramework{system_, "usb:pm"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetPowerEvent"},
             FunctionInfo{1, nullptr, "GetPowerState"},
             FunctionInfo{2, nullptr, "GetDataEvent"},
@@ -199,6 +209,8 @@ public:
             FunctionInfo{4, nullptr, "SetDiagData"},
             FunctionInfo{5, nullptr, "GetDiagData"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -206,10 +218,11 @@ class IPdManufactureManager final : public ServiceFramework<IPdManufactureManage
 public:
     explicit IPdManufactureManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:m"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "OpenManufactureSession"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -217,11 +230,12 @@ class IQdbManager final : public ServiceFramework<IQdbManager> {
 public:
     explicit IQdbManager(Core::System& system_) : ServiceFramework{system_, "usb:qdb"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ImportQuirkDevices"},
             FunctionInfo{1, nullptr, "HasQuirk"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -229,11 +243,12 @@ class IPmObserverService final : public ServiceFramework<IPmObserverService> {
 public:
     explicit IPmObserverService(Core::System& system_) : ServiceFramework{system_, "usb:obsv"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetTopologyChangeEvent"},
             FunctionInfo{1, nullptr, "GetFlattenedTopology"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 

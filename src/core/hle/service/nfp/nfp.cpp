@@ -138,9 +138,7 @@ public:
     explicit IUserManager(Core::System& system_) : ServiceFramework{system_, "nfp:user"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &IUserManager::CreateUserInterface, "CreateUserInterface"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -151,6 +149,10 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IUser>(ctx, system);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IUserManager::CreateUserInterface, "CreateUserInterface"}
+    );
 };
 
 class ISystemManager final : public ServiceFramework<ISystemManager> {
@@ -158,9 +160,7 @@ public:
     explicit ISystemManager(Core::System& system_) : ServiceFramework{system_, "nfp:sys"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &ISystemManager::CreateSystemInterface, "CreateSystemInterface"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -171,6 +171,10 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<ISystem>(ctx, system);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &ISystemManager::CreateSystemInterface, "CreateSystemInterface"}
+    );
 };
 
 class IDebugManager final : public ServiceFramework<IDebugManager> {
@@ -178,9 +182,7 @@ public:
     explicit IDebugManager(Core::System& system_) : ServiceFramework{system_, "nfp:dbg"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &IDebugManager::CreateDebugInterface, "CreateDebugInterface"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -191,6 +193,10 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IDebug>(ctx, system);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IDebugManager::CreateDebugInterface, "CreateDebugInterface"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

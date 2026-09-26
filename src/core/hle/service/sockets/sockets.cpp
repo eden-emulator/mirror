@@ -17,8 +17,7 @@ public:
     explicit ETHC_C(Core::System& system_)
         : ServiceFramework{system_, "ethc:c"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "Initialize"},
             FunctionInfo{1, nullptr, "Cancel"},
             FunctionInfo{2, nullptr, "GetResult"},
@@ -27,6 +26,8 @@ public:
             FunctionInfo{5, nullptr, "GetMediaType"},
             FunctionInfo{6, nullptr, "GetMacAddress"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -35,14 +36,15 @@ public:
     explicit ETHC_I(Core::System& system_)
         : ServiceFramework{system_, "ethc:i"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetReadableHandle"},
             FunctionInfo{1, nullptr, "Cancel"},
             FunctionInfo{2, nullptr, "GetResult"},
             FunctionInfo{3, nullptr, "GetInterfaceList"},
             FunctionInfo{4, nullptr, "GetInterfaceCount"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -51,10 +53,11 @@ public:
     explicit ISfDriverServiceCreator(Core::System& system_)
         : ServiceFramework{system_, "eth:nd"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "CreateDriverService"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 

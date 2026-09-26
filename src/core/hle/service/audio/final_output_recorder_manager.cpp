@@ -13,8 +13,7 @@ public:
     explicit IFinalOutputRecorder(Core::System& system_)
         : ServiceFramework{system_, "IFinalOutputRecorder"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetFinalOutputRecorderState"},
             FunctionInfo{1, nullptr, "Start"},
             FunctionInfo{2, nullptr, "Stop"},
@@ -28,6 +27,8 @@ public:
             FunctionInfo{10, nullptr, "FlushFinalOutputRecorderBuffers"},
             FunctionInfo{11, nullptr, "AttachWorkBuffer"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
