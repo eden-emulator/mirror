@@ -49,6 +49,19 @@ private:
                    InBuffer<BufferAttr_HipcPointer> where_phrase,
                    InBuffer<BufferAttr_HipcPointer> order_by_phrase,
                    s32 offset);
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {0, D<&INewsDatabaseService::GetListV1>, "GetListV1"},
+        {1, D<&INewsDatabaseService::Count>, "Count"},
+        {2, D<&INewsDatabaseService::CountWithKey>, "CountWithKey"},
+        {3, D<&INewsDatabaseService::UpdateIntegerValue>, "UpdateIntegerValue"},
+        {4, D<&INewsDatabaseService::UpdateIntegerValueWithAddition>, "UpdateIntegerValueWithAddition"},
+        {5, D<&INewsDatabaseService::UpdateStringValue>, "UpdateStringValue"},
+        {1000, D<&INewsDatabaseService::GetList>, "GetList"}
+    );
 };
 
 } // namespace Service::News

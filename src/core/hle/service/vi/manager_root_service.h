@@ -26,6 +26,17 @@ public:
         Policy policy);
 
 private:
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {2, C<&IManagerRootService::GetDisplayService>, "GetDisplayService"},
+        {3, nullptr, "GetDisplayServiceWithProxyNameExchange"},
+        {100, nullptr, "PrepareFatal"},
+        {101, nullptr, "ShowFatal"},
+        {102, nullptr, "DrawFatalRectangle"},
+        {103, nullptr, "DrawFatalText32"}
+    );
     const std::shared_ptr<Container> m_container;
 };
 

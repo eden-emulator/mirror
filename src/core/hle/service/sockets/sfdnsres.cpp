@@ -21,25 +21,6 @@
 namespace Service::Sockets {
 
 SFDNSRES::SFDNSRES(Core::System& system_) : ServiceFramework{system_, "sfdnsres"} {
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "SetDnsAddressesPrivateRequest"},
-        {1, nullptr, "GetDnsAddressPrivateRequest"},
-        {2, &SFDNSRES::GetHostByNameRequest, "GetHostByNameRequest"},
-        {3, nullptr, "GetHostByAddrRequest"},
-        {4, nullptr, "GetHostStringErrorRequest"},
-        {5, &SFDNSRES::GetGaiStringErrorRequest, "GetGaiStringErrorRequest"},
-        {6, &SFDNSRES::GetAddrInfoRequest, "GetAddrInfoRequest"},
-        {7, nullptr, "GetNameInfoRequest"},
-        {8, nullptr, "RequestCancelHandleRequest"},
-        {9, nullptr, "CancelRequest"},
-        {10, &SFDNSRES::GetHostByNameRequestWithOptions, "GetHostByNameRequestWithOptions"},
-        {11, nullptr, "GetHostByAddrRequestWithOptions"},
-        {12, &SFDNSRES::GetAddrInfoRequestWithOptions, "GetAddrInfoRequestWithOptions"},
-        {13, nullptr, "GetNameInfoRequestWithOptions"},
-        {14, &SFDNSRES::ResolverSetOptionRequest, "ResolverSetOptionRequest"},
-        {15, nullptr, "ResolverGetOptionRequest"},
-    };
-    RegisterHandlers(functions);
 }
 
 SFDNSRES::~SFDNSRES() = default;

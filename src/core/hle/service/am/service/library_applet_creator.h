@@ -35,8 +35,20 @@ private:
         Out<SharedPointer<IStorage>> out_storage, bool is_writable, s64 size,
         InCopyHandle<Kernel::KTransferMemory> transfer_memory_handle);
     Result CreateHandleStorage(Out<SharedPointer<IStorage>> out_storage, s64 size,
-                               InCopyHandle<Kernel::KTransferMemory> transfer_memory_handle);
+        InCopyHandle<Kernel::KTransferMemory> transfer_memory_handle);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {0, D<&ILibraryAppletCreator::CreateLibraryApplet>, "CreateLibraryApplet"},
+        {1, nullptr, "TerminateAllLibraryApplets"},
+        {2, nullptr, "AreAnyLibraryAppletsLeft"},
+        {3, D<&ILibraryAppletCreator::CreateLibraryAppletEx>, "CreateLibraryAppletEx"},
+        {10, D<&ILibraryAppletCreator::CreateStorage>, "CreateStorage"},
+        {11, D<&ILibraryAppletCreator::CreateTransferMemoryStorage>, "CreateTransferMemoryStorage"},
+        {12, D<&ILibraryAppletCreator::CreateHandleStorage>, "CreateHandleStorage"}
+    );
     WindowSystem& m_window_system;
     const std::shared_ptr<Applet> m_applet;
 };

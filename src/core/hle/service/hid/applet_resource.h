@@ -29,6 +29,12 @@ public:
 private:
     Result GetSharedMemoryHandle(OutCopyHandle<Kernel::KSharedMemory> out_shared_memory_handle);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {0, C<&IAppletResource::GetSharedMemoryHandle>, "GetSharedMemoryHandle"}
+    );
     u64 aruid{};
     std::shared_ptr<ResourceManager> resource_manager;
 };

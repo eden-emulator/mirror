@@ -12,15 +12,6 @@ namespace Service::FileSystem {
 
 IStorage::IStorage(Core::System& system_, FileSys::VirtualFile backend_)
     : ServiceFramework{system_, "IStorage"}, backend(std::move(backend_)) {
-    static const FunctionInfo functions[] = {
-        {0, D<&IStorage::Read>, "Read"},
-        {1, nullptr, "Write"},
-        {2, nullptr, "Flush"},
-        {3, nullptr, "SetSize"},
-        {4, D<&IStorage::GetSize>, "GetSize"},
-        {5, nullptr, "OperateRange"},
-    };
-    RegisterHandlers(functions);
 }
 
 Result IStorage::Read(

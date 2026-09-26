@@ -35,8 +35,27 @@ private:
 
     void ServiceError(HLERequestContext& ctx, NvResult result);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {0, &NVDRV::Open, "Open"},
+        {1, &NVDRV::Ioctl1, "Ioctl"},
+        {2, &NVDRV::Close, "Close"},
+        {3, &NVDRV::Initialize, "Initialize"},
+        {4, &NVDRV::QueryEvent, "QueryEvent"},
+        {5, nullptr, "MapSharedMem"},
+        {6, &NVDRV::GetStatus, "GetStatus"},
+        {7, nullptr, "SetAruidForTest"},
+        {8, &NVDRV::SetAruid, "SetAruid"},
+        {9, &NVDRV::DumpGraphicsMemoryInfo, "DumpGraphicsMemoryInfo"},
+        {10, nullptr, "InitializeDevtools"},
+        {11, &NVDRV::Ioctl2, "Ioctl2"},
+        {12, &NVDRV::Ioctl3, "Ioctl3"},
+        {13, &NVDRV::SetGraphicsFirmwareMemoryMarginEnabled,
+         "SetGraphicsFirmwareMemoryMarginEnabled"}
+    );
     std::shared_ptr<Module> nvdrv;
-
     u64 pid{};
     bool is_initialized{};
     NvCore::SessionId session_id{};

@@ -16,10 +16,6 @@ IAppletResource::IAppletResource(Core::System& system_, std::shared_ptr<Resource
                                  u64 applet_resource_user_id)
     : ServiceFramework{system_, "IAppletResource"}, aruid{applet_resource_user_id},
       resource_manager{resource} {
-    static const FunctionInfo functions[] = {
-        {0, C<&IAppletResource::GetSharedMemoryHandle>, "GetSharedMemoryHandle"},
-    };
-    RegisterHandlers(functions);
 }
 
 IAppletResource::~IAppletResource() {

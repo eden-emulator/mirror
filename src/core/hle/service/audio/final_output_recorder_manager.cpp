@@ -34,10 +34,6 @@ public:
 
 IFinalOutputRecorderManager::IFinalOutputRecorderManager(Core::System& system_)
     : ServiceFramework{system_, "audrec:u"} {
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "OpenFinalOutputRecorder"},
-    };
-    RegisterHandlers(functions);
 }
 
 IFinalOutputRecorderManager::~IFinalOutputRecorderManager() = default;

@@ -17,26 +17,6 @@ IFileSystem::IFileSystem(Core::System& system_, FileSys::VirtualDir dir_, SizeGe
     : ServiceFramework{system_, "IFileSystem"}, backend{std::make_unique<FileSys::Fsa::IFileSystem>(
                                                     dir_)},
       size_getter{std::move(size_getter_)} {
-    static const FunctionInfo functions[] = {
-        {0, D<&IFileSystem::CreateFile>, "CreateFile"},
-        {1, D<&IFileSystem::DeleteFile>, "DeleteFile"},
-        {2, D<&IFileSystem::CreateDirectory>, "CreateDirectory"},
-        {3, D<&IFileSystem::DeleteDirectory>, "DeleteDirectory"},
-        {4, D<&IFileSystem::DeleteDirectoryRecursively>, "DeleteDirectoryRecursively"},
-        {5, D<&IFileSystem::RenameFile>, "RenameFile"},
-        {6, D<&IFileSystem::RenameDirectory>, "RenameDirectory"},
-        {7, D<&IFileSystem::GetEntryType>, "GetEntryType"},
-        {8, D<&IFileSystem::OpenFile>, "OpenFile"},
-        {9, D<&IFileSystem::OpenDirectory>, "OpenDirectory"},
-        {10, D<&IFileSystem::Commit>, "Commit"},
-        {11, D<&IFileSystem::GetFreeSpaceSize>, "GetFreeSpaceSize"},
-        {12, D<&IFileSystem::GetTotalSpaceSize>, "GetTotalSpaceSize"},
-        {13, D<&IFileSystem::CleanDirectoryRecursively>, "CleanDirectoryRecursively"},
-        {14, D<&IFileSystem::GetFileTimeStampRaw>, "GetFileTimeStampRaw"},
-        {15, nullptr, "QueryEntry"},
-        {16, D<&IFileSystem::GetFileSystemAttribute>, "GetFileSystemAttribute"},
-    };
-    RegisterHandlers(functions);
 }
 
 Result IFileSystem::CreateFile(const InLargeData<FileSys::Sf::Path, BufferAttr_HipcPointer> path,

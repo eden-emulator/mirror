@@ -26,6 +26,12 @@ private:
 private:
     std::shared_ptr<Applet> GetAppletFromProcessId(ProcessId pid);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {0, D<&IApplicationProxyService::OpenApplicationProxy>, "OpenApplicationProxy"}
+    );
     WindowSystem& m_window_system;
 };
 

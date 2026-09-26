@@ -19,6 +19,14 @@ public:
 private:
     void Open(HLERequestContext& ctx);
     void GetAruid(HLERequestContext& ctx);
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {0, &NVMEMP::Open, "Open"},
+        {1, &NVMEMP::GetAruid, "GetAruid"}
+    );
 };
 
 } // namespace Service::Nvidia

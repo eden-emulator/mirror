@@ -11,11 +11,6 @@
 namespace Service::Nvidia {
 
 NVMEMP::NVMEMP(Core::System& system_) : ServiceFramework{system_, "nvmemp"} {
-    static const FunctionInfo functions[] = {
-        {0, &NVMEMP::Open, "Open"},
-        {1, &NVMEMP::GetAruid, "GetAruid"},
-    };
-    RegisterHandlers(functions);
 }
 
 NVMEMP::~NVMEMP() = default;
