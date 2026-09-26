@@ -14,7 +14,7 @@
 namespace Service::PSC::Time {
 
     ServiceFrameworkBase::FunctionInfoBase const* ServiceManager::FindRequest(u32 key) {
-        static constexpr auto functions = CreateStaticMap(
+        static const auto functions = CreateStaticMap(
             FunctionInfo{0,   D<&ServiceManager::GetStaticServiceAsUser>, "GetStaticServiceAsUser"},
             FunctionInfo{5,   D<&ServiceManager::GetStaticServiceAsAdmin>, "GetStaticServiceAsAdmin"},
             FunctionInfo{6,   D<&ServiceManager::GetStaticServiceAsRepair>, "GetStaticServiceAsRepair"},

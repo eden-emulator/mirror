@@ -56,7 +56,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &ISession::SetPerformanceConfiguration, "SetPerformanceConfiguration"},
         FunctionInfo{1, &ISession::GetPerformanceConfiguration, "GetPerformanceConfiguration"},
         FunctionInfo{2, &ISession::SetCpuOverclockEnabled, "SetCpuOverclockEnabled"}

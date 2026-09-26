@@ -321,7 +321,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &IScanRequest::Submit, "Submit"},
         FunctionInfo{1, &IScanRequest::IsProcessing, "IsProcessing"},
         FunctionInfo{2, &IScanRequest::GetResult, "GetResult"},
@@ -467,7 +467,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &IRequest::GetRequestState, "GetRequestState"},
         FunctionInfo{1, &IRequest::GetResult, "GetResult"},
         FunctionInfo{2, &IRequest::GetSystemEventReadableHandles, "GetSystemEventReadableHandles"},
@@ -514,7 +514,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Update"},
         FunctionInfo{1, nullptr, "PersistOld"},
         FunctionInfo{2, nullptr, "Persist"}
@@ -1054,7 +1054,7 @@ void IGeneralService::GetCurrentAccessPoint(HLERequestContext& ctx) {
 }
 
 ServiceFrameworkBase::FunctionInfoBase const* IGeneralService::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{1, &IGeneralService::GetClientId, "GetClientId"},
         FunctionInfo{2, &IGeneralService::CreateScanRequest, "CreateScanRequest"},
         FunctionInfo{4, &IGeneralService::CreateRequest, "CreateRequest"},
@@ -1138,7 +1138,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{4, &NetworkInterface::CreateGeneralServiceOld, "CreateGeneralServiceOld"},
         FunctionInfo{5, &NetworkInterface::CreateGeneralService, "CreateGeneralService"}
     );

@@ -70,7 +70,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &BootMode::GetBootMode, "GetBootMode"},
         FunctionInfo{1, &BootMode::SetMaintenanceBoot, "SetMaintenanceBoot"}
     );
@@ -153,7 +153,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetJitDebugProcessIdList"},
         FunctionInfo{1, nullptr, "StartProcess"},
         FunctionInfo{2, &DebugMonitor::GetProcessId, "GetProcessId"},
@@ -214,7 +214,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &Info::GetProgramId, "GetProgramId"},
         FunctionInfo{65000, &Info::AtmosphereGetProcessId, "AtmosphereGetProcessId"},
         FunctionInfo{65001, nullptr, "AtmosphereHasLaunchedProgram"},
@@ -237,7 +237,7 @@ private:
         GetApplicationPidGeneric(system.Kernel(), ctx, list);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "LaunchProgram"},
         FunctionInfo{1, nullptr, "TerminateProcess"},
         FunctionInfo{2, nullptr, "TerminateProgram"},

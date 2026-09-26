@@ -590,10 +590,6 @@ add_library(core STATIC
     hle/service/eupld/eupld.h
     hle/service/fatal/fatal.cpp
     hle/service/fatal/fatal.h
-    hle/service/fatal/fatal_p.cpp
-    hle/service/fatal/fatal_p.h
-    hle/service/fatal/fatal_u.cpp
-    hle/service/fatal/fatal_u.h
     hle/service/fgm/fgm.cpp
     hle/service/fgm/fgm.h
     hle/service/filesystem/filesystem.cpp

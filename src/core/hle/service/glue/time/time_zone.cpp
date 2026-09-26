@@ -20,7 +20,7 @@
 namespace Service::Glue::Time {
 
 ServiceFrameworkBase::FunctionInfoBase const* TimeZoneService::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0,   D<&TimeZoneService::GetDeviceLocationName>, "GetDeviceLocationName"},
         FunctionInfo{1,   D<&TimeZoneService::SetDeviceLocationName>, "SetDeviceLocationName"},
         FunctionInfo{2,   D<&TimeZoneService::GetTotalLocationNameCount>, "GetTotalLocationNameCount"},

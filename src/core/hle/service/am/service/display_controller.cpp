@@ -13,7 +13,7 @@
 namespace Service::AM {
 
 ServiceFrameworkBase::FunctionInfoBase const* IDisplayController::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetLastForegroundCaptureImage"},
         FunctionInfo{1, nullptr, "UpdateLastForegroundCaptureImage"},
         FunctionInfo{2, nullptr, "GetLastApplicationCaptureImage"},

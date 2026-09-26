@@ -21,7 +21,7 @@ constexpr inline std::size_t MaxAlarms = 8;
 }
 
 ServiceFrameworkBase::FunctionInfoBase const* INotificationServicesForApplication::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{500, D<&INotificationServicesForApplication::RegisterAlarmSetting>, "RegisterAlarmSetting"},
         FunctionInfo{510, D<&INotificationServicesForApplication::UpdateAlarmSetting>, "UpdateAlarmSetting"},
         FunctionInfo{520, D<&INotificationServicesForApplication::ListAlarmSettings>, "ListAlarmSettings"},
@@ -33,7 +33,7 @@ ServiceFrameworkBase::FunctionInfoBase const* INotificationServicesForApplicatio
 }
 
 ServiceFrameworkBase::FunctionInfoBase const* INotificationServices::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{500, D<&INotificationServices::RegisterAlarmSetting>, "RegisterAlarmSetting"},
         FunctionInfo{510, D<&INotificationServices::UpdateAlarmSetting>, "UpdateAlarmSetting"},
         FunctionInfo{520, D<&INotificationServices::ListAlarmSettings>, "ListAlarmSettings"},
@@ -223,7 +223,7 @@ private:
         R_SUCCEED();
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, D<&INotificationSystemEventAccessor::GetSystemEvent>, "GetSystemEvent"}
     );
     KernelHelpers::ServiceContext service_context;

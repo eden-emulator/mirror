@@ -11,7 +11,7 @@
 namespace Service::LDN {
 
 ServiceFrameworkBase::FunctionInfoBase const* ISfMonitorService::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, C<&ISfMonitorService::Initialize>, "Initialize"},
         FunctionInfo{288, C<&ISfMonitorService::GetGroupInfo>, "GetGroupInfo"},
         FunctionInfo{320, nullptr, "GetLinkLevel"}

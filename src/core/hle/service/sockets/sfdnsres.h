@@ -30,7 +30,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "SetDnsAddressesPrivateRequest"},
         FunctionInfo{1, nullptr, "GetDnsAddressPrivateRequest"},
         FunctionInfo{2, &SFDNSRES::GetHostByNameRequest, "GetHostByNameRequest"},
@@ -58,7 +58,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Cmd0"},
         FunctionInfo{1, nullptr, "Cmd1"},
         FunctionInfo{2, nullptr, "Cmd2"}

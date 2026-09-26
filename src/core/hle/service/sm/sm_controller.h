@@ -29,7 +29,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &Controller::ConvertCurrentObjectToDomain, "ConvertCurrentObjectToDomain"},
         FunctionInfo{1, nullptr, "CopyFromCurrentDomain"},
         FunctionInfo{2, &Controller::CloneCurrentObject, "CloneCurrentObject"},

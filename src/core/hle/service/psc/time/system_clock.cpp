@@ -12,7 +12,7 @@
 namespace Service::PSC::Time {
 
 ServiceFrameworkBase::FunctionInfoBase const* SystemClock::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, D<&SystemClock::GetCurrentTime>, "GetCurrentTime"},
         FunctionInfo{1, D<&SystemClock::SetCurrentTime>, "SetCurrentTime"},
         FunctionInfo{2, D<&SystemClock::GetSystemClockContext>, "GetSystemClockContext"},

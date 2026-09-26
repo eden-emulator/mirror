@@ -13,7 +13,7 @@ namespace Service::Audio {
 using namespace AudioCore::AudioIn;
 
 ServiceFrameworkBase::FunctionInfoBase const* IAudioInManager::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IAudioInManager::ListAudioIns>, "ListAudioIns"},
         FunctionInfo{1, D<&IAudioInManager::OpenAudioIn>, "OpenAudioIn"},
         FunctionInfo{2, D<&IAudioInManager::ListAudioIns>, "ListAudioInsAuto"},

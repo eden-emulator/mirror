@@ -17,7 +17,7 @@ class PCV final : public ServiceFramework<PCV> {
 public:
     explicit PCV(Core::System& system_) : ServiceFramework{system_, "pcv"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "SetPowerEnabled"},
             FunctionInfo{1, nullptr, "SetClockEnabled"},
             FunctionInfo{2, nullptr, "SetClockRate"},
@@ -58,7 +58,7 @@ class PCV_ARB final : public ServiceFramework<PCV_ARB> {
 public:
     explicit PCV_ARB(Core::System& system_) : ServiceFramework{system_, "pcv:arb"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ReleaseControl"}
         );
     FunctionInfoBase const* FindRequest(u32 key) override {
@@ -70,7 +70,7 @@ class PCV_IMM final : public ServiceFramework<PCV_IMM> {
 public:
     explicit PCV_IMM(Core::System& system_) : ServiceFramework{system_, "pcv:imm"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "SetClockRate"}
         );
     FunctionInfoBase const* FindRequest(u32 key) override {
@@ -105,7 +105,7 @@ private:
         rb.Push<u32>(clock_rate);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "SetClockEnabled"},
         FunctionInfo{1, nullptr, "SetClockDisabled"},
         FunctionInfo{2, nullptr, "SetResetAsserted"},
@@ -144,7 +144,7 @@ private:
         rb.PushIpcInterface<IClkrstSession>(ctx, system, device_code);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &CLKRST::OpenSession, "OpenSession"},
         FunctionInfo{1, nullptr, "GetTemperatureThresholds"},
         FunctionInfo{2, nullptr, "SetTemperature"},
@@ -158,7 +158,7 @@ class CLKRST_A final : public ServiceFramework<CLKRST_A> {
 public:
     explicit CLKRST_A(Core::System& system_) : ServiceFramework{system_, "clkrst:a"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ReleaseControl"}
         );
     FunctionInfoBase const* FindRequest(u32 key) override {

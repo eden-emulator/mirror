@@ -13,7 +13,7 @@ public:
     explicit IFinalOutputRecorder(Core::System& system_)
         : ServiceFramework{system_, "IFinalOutputRecorder"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetFinalOutputRecorderState"},
             FunctionInfo{1, nullptr, "Start"},
             FunctionInfo{2, nullptr, "Stop"},

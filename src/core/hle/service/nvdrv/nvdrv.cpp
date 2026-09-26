@@ -55,7 +55,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Initialize"},
         FunctionInfo{1, nullptr, "GetEventHandle"},
         FunctionInfo{2, nullptr, "ControlNotification"},
@@ -76,7 +76,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Initialize"},
         FunctionInfo{1, nullptr, "GetAruid"},
         FunctionInfo{2, nullptr, "ReadNextBlock"},
@@ -94,7 +94,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Open"},
         FunctionInfo{1, nullptr, "Ioctl"},
         FunctionInfo{2, nullptr, "Close"},

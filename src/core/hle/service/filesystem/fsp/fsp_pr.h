@@ -22,7 +22,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "RegisterProgram"},
         FunctionInfo{1, nullptr, "UnregisterProgram"},
         FunctionInfo{2, nullptr, "SetCurrentProcess"},

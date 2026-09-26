@@ -46,7 +46,7 @@ bool UpdateField(NewsRecord& rec, std::string_view column, s32 value, bool addit
 } // namespace
 
 ServiceFrameworkBase::FunctionInfoBase const* INewsDatabaseService::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, D<&INewsDatabaseService::GetListV1>, "GetListV1"},
         FunctionInfo{1, D<&INewsDatabaseService::Count>, "Count"},
         FunctionInfo{2, D<&INewsDatabaseService::CountWithKey>, "CountWithKey"},

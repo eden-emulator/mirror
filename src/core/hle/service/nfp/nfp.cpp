@@ -19,7 +19,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMapWithClass<IUser>(
+    static const auto functions = CreateStaticMapWithClass<IUser>(
         FunctionInfoTyped<IUser>{0, &IUser::Initialize, "Initialize"},
         FunctionInfoTyped<IUser>{1, &IUser::Finalize, "Finalize"},
         FunctionInfoTyped<IUser>{2, &IUser::ListDevices, "ListDevices"},
@@ -56,7 +56,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMapWithClass<ISystem>(
+    static const auto functions = CreateStaticMapWithClass<ISystem>(
         FunctionInfoTyped<ISystem>{0, &ISystem::InitializeSystem, "InitializeSystem"},
         FunctionInfoTyped<ISystem>{1, &ISystem::FinalizeSystem, "FinalizeSystem"},
         FunctionInfoTyped<ISystem>{2, &ISystem::ListDevices, "ListDevices"},
@@ -95,7 +95,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMapWithClass<IDebug>(
+    static const auto functions = CreateStaticMapWithClass<IDebug>(
         FunctionInfoTyped<IDebug>{0, &IDebug::InitializeDebug, "InitializeDebug"},
         FunctionInfoTyped<IDebug>{1, &IDebug::FinalizeDebug, "FinalizeDebug"},
         FunctionInfoTyped<IDebug>{2, &IDebug::ListDevices, "ListDevices"},
@@ -155,7 +155,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &IUserManager::CreateUserInterface, "CreateUserInterface"}
     );
 };
@@ -177,7 +177,7 @@ private:
         rb.PushIpcInterface<ISystem>(ctx, system);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &ISystemManager::CreateSystemInterface, "CreateSystemInterface"}
     );
 };
@@ -199,7 +199,7 @@ private:
         rb.PushIpcInterface<IDebug>(ctx, system);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &IDebugManager::CreateDebugInterface, "CreateDebugInterface"}
     );
 };

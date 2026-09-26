@@ -21,7 +21,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
        FunctionInfo{0, nullptr, "OpenMasterMode" },
         FunctionInfo{0, nullptr, "OpenMode_2" },
         FunctionInfo{1, nullptr, "CloseMasterMode" },
@@ -131,7 +131,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetFrameRaw" }
     );
 };
@@ -145,7 +145,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetActionFrame" }
     );
 };
@@ -159,7 +159,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetFrameRaw" }
     );
 };
@@ -173,7 +173,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "PutFrameRaw_2" },
         FunctionInfo{1, nullptr, "CancelGetFrame_2" },
         FunctionInfo{2, nullptr, "CreateRxEntry_2" },
@@ -199,7 +199,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Cmd0" },
         FunctionInfo{1, nullptr, "Cmd1" },
         FunctionInfo{2, nullptr, "Cmd2" },
@@ -240,7 +240,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "CreateWirelessCommunicationService" },
             FunctionInfo{1, nullptr, "CreatePrivateWirelessCommunicationService" }
     );
@@ -255,7 +255,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "CreateDriverService" }
     );
 };

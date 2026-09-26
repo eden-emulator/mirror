@@ -16,7 +16,7 @@ class ErrorUploadContext final : public ServiceFramework<ErrorUploadContext> {
 public:
     explicit ErrorUploadContext(Core::System& system_) : ServiceFramework{system_, "eupld:c"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "SetUrl"},
             FunctionInfo{1, nullptr, "ImportCrt"},
             FunctionInfo{2, nullptr, "ImportPki"},
@@ -32,7 +32,7 @@ class ErrorUploadRequest final : public ServiceFramework<ErrorUploadRequest> {
 public:
     explicit ErrorUploadRequest(Core::System& system_) : ServiceFramework{system_, "eupld:r"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "Initialize"},
             FunctionInfo{1, nullptr, "UploadAll"},
             FunctionInfo{2, nullptr, "UploadSelected"},

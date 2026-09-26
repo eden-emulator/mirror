@@ -15,7 +15,7 @@
 namespace Service::AM {
 
 ServiceFrameworkBase::FunctionInfoBase const* IHomeMenuFunctions::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{10, D<&IHomeMenuFunctions::RequestToGetForeground>, "RequestToGetForeground"},
         FunctionInfo{11, D<&IHomeMenuFunctions::LockForeground>, "LockForeground"},
         FunctionInfo{12, D<&IHomeMenuFunctions::UnlockForeground>, "UnlockForeground"},

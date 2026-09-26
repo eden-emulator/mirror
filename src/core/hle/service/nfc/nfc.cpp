@@ -23,7 +23,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMapWithClass<IUser>(
+    static const auto functions = CreateStaticMapWithClass<IUser>(
         FunctionInfoTyped<IUser>{0, &NfcInterface::Initialize, "InitializeOld"},
         FunctionInfoTyped<IUser>{1, &NfcInterface::Finalize, "FinalizeOld"},
         FunctionInfoTyped<IUser>{2, &NfcInterface::GetState, "GetStateOld"},
@@ -56,7 +56,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMapWithClass<ISystem>(
+    static const auto functions = CreateStaticMapWithClass<ISystem>(
         FunctionInfoTyped<ISystem>{0, &NfcInterface::Initialize, "InitializeOld"},
         FunctionInfoTyped<ISystem>{1, &NfcInterface::Finalize, "FinalizeOld"},
         FunctionInfoTyped<ISystem>{2, &NfcInterface::GetState, "GetStateOld"},
@@ -95,7 +95,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMapWithClass<MFIUser>(
+    static const auto functions = CreateStaticMapWithClass<MFIUser>(
         FunctionInfoTyped<MFIUser>{0, &MFIUser::Initialize, "Initialize"},
         FunctionInfoTyped<MFIUser>{1, &MFIUser::Finalize, "Finalize"},
         FunctionInfoTyped<MFIUser>{2, &MFIUser::ListDevices, "ListDevices"},
@@ -117,7 +117,7 @@ class IAm final : public ServiceFramework<IAm> {
 public:
     explicit IAm(Core::System& system_) : ServiceFramework{system_, "NFC::IAm"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Initialize"},
         FunctionInfo{1, nullptr, "Finalize"},
         FunctionInfo{2, nullptr, "NotifyForegroundApplet"}
@@ -144,7 +144,7 @@ private:
         rb.PushIpcInterface<IAm>(ctx, system);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &NFC_AM::CreateAmNfcInterface, "CreateAmNfcInterface"}
     );
 };
@@ -166,7 +166,7 @@ private:
         rb.PushIpcInterface<MFIUser>(ctx, system);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &NFC_MF_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
     );
 };
@@ -188,7 +188,7 @@ private:
         rb.PushIpcInterface<IUser>(ctx, system);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &NFC_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
     );
 };
@@ -210,7 +210,7 @@ private:
         rb.PushIpcInterface<ISystem>(ctx, system);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &NFC_SYS::CreateSystemNfcInterface, "CreateSystemNfcInterface"}
     );
 };
