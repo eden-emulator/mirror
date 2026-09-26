@@ -137,6 +137,11 @@ add_library(
     uuid.cpp
     uuid.h
     vector_math.h
+    zbic_compression.cpp
+    zbic_compression.h
+    zstd.c
+    zstd.h
+    zstd_errors.h
     zstd_compression.cpp
     zstd_compression.h
     fs/ryujinx_compat.h fs/ryujinx_compat.cpp
@@ -241,6 +246,7 @@ endif()
 
 target_link_libraries(common PUBLIC fmt::fmt stb::headers Threads::Threads)
 target_link_libraries(common PRIVATE lz4::lz4 zstd::zstd)
+target_compile_definitions(common PRIVATE ZSTD_ZBIC_SUPPORT=1)
 
 # Please refer to src/common/demangle.cpp
 if (WIN32)
