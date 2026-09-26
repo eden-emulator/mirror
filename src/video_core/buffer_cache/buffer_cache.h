@@ -395,7 +395,7 @@ void BufferCache<P>::CommitDrawWrites() {
         const u64 pass = runtime.RenderPassSerial();
         for (const DrawWrite& write : draw_writes) {
             slot_buffers[write.buffer_id].MarkDrawWrite(pass, draw_wfi, write.device_addr,
-                                                        write.size);
+                                                        write.size, write.feedback);
         }
         runtime.MarkRenderPassWrites();
     }
@@ -1202,8 +1202,8 @@ void BufferCache<P>::BindHostTransformFeedbackBuffers() {
             Buffer& buffer = slot_buffers[binding.buffer_id];
             TouchBuffer(buffer, binding.buffer_id);
             size = binding.size;
-            SynchronizeBuffer(buffer, binding.device_addr, size);
-            MarkWrittenBuffer(binding.buffer_id, binding.device_addr, size);
+            SynchronizeBuffer(buffer, binding.device_addr, size, false);
+            MarkWrittenBuffer(binding.buffer_id, binding.device_addr, size, true);
             offset = buffer.Offset(binding.device_addr);
             buffer.MarkUsage(offset, size);
             host_buffer = &buffer;
@@ -1573,13 +1573,14 @@ void BufferCache<P>::UpdateComputeTextureBuffers() {
 }
 
 template <class P>
-void BufferCache<P>::MarkWrittenBuffer(BufferId buffer_id, DAddr device_addr, u32 size) {
+void BufferCache<P>::MarkWrittenBuffer(BufferId buffer_id, DAddr device_addr, u32 size,
+                                       bool feedback) {
     if constexpr (!IS_OPENGL) {
         Buffer& buffer = slot_buffers[buffer_id];
         buffer.setWriteTick(runtime.CurrentTick());
         buffer.MarkContentModified();
         if (recording_draw) {
-            draw_writes.push_back({buffer_id, device_addr, size});
+            draw_writes.push_back({buffer_id, device_addr, size, feedback});
         }
     }
     memory_tracker.MarkRegionAsGpuModified(device_addr, size);
@@ -1800,9 +1801,11 @@ void BufferCache<P>::TouchBuffer(Buffer& buffer, BufferId buffer_id) noexcept {
 }
 
 template <class P>
-bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 size) {
+bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 size,
+                                       bool check_feedback) {
     if constexpr (!IS_OPENGL) {
-        draw_hazard |= buffer.HasDrawHazard(draw_pass, draw_wfi, device_addr, size);
+        draw_hazard |=
+            buffer.HasDrawHazard(draw_pass, draw_wfi, device_addr, size, check_feedback);
     }
     upload_copies.clear();
     u64 total_size_bytes = 0;
