@@ -50,55 +50,61 @@ class NVGEM_C final : public ServiceFramework<NVGEM_C> {
 public:
     explicit NVGEM_C(Core::System& system_)
         : ServiceFramework{system_, "nvgem:c"}
-    {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "Initialize"},
-            FunctionInfo{1, nullptr, "GetEventHandle"},
-            FunctionInfo{2, nullptr, "ControlNotification"},
-            FunctionInfo{3, nullptr, "SetNotificationPerm"},
-            FunctionInfo{4, nullptr, "SetCoreDumpPerm"},
-            FunctionInfo{5, nullptr, "GetAruid"},
-            FunctionInfo{6, nullptr, "Reset"},
-            FunctionInfo{7, nullptr, "GetAruid2"}
-        };
-        RegisterHandlers(functions);
+    {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Initialize"},
+        FunctionInfo{1, nullptr, "GetEventHandle"},
+        FunctionInfo{2, nullptr, "ControlNotification"},
+        FunctionInfo{3, nullptr, "SetNotificationPerm"},
+        FunctionInfo{4, nullptr, "SetCoreDumpPerm"},
+        FunctionInfo{5, nullptr, "GetAruid"},
+        FunctionInfo{6, nullptr, "Reset"},
+        FunctionInfo{7, nullptr, "GetAruid2"}
+    );
 };
 
 class NVGEM_CD final : public ServiceFramework<NVGEM_CD> {
 public:
     explicit NVGEM_CD(Core::System& system_)
         : ServiceFramework{system_, "nvgem:cd"}
-    {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "Initialize"},
-            FunctionInfo{1, nullptr, "GetAruid"},
-            FunctionInfo{2, nullptr, "ReadNextBlock"},
-            FunctionInfo{3, nullptr, "GetNextBlockSize"},
-            FunctionInfo{4, nullptr, "ReadNextBlock2"}
-        };
-        RegisterHandlers(functions);
+    {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Initialize"},
+        FunctionInfo{1, nullptr, "GetAruid"},
+        FunctionInfo{2, nullptr, "ReadNextBlock"},
+        FunctionInfo{3, nullptr, "GetNextBlockSize"},
+        FunctionInfo{4, nullptr, "ReadNextBlock2"}
+    );
 };
 
 class NVDBG_D final : public ServiceFramework<NVDBG_D> {
 public:
     explicit NVDBG_D(Core::System& system_)
         : ServiceFramework{system_, "nvdbg:d"}
-    {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "Open"},
-            FunctionInfo{1, nullptr, "Ioctl"},
-            FunctionInfo{2, nullptr, "Close"},
-            FunctionInfo{4, nullptr, "QueryEvent"},
-            FunctionInfo{9, nullptr, "DumpStatus"},
-            FunctionInfo{10, nullptr, "InitializeDevtools"},
-            FunctionInfo{11, nullptr, "Ioctl2"},
-            FunctionInfo{12, nullptr, "Ioctl3"},
-            FunctionInfo{13, nullptr, "SetConfiguration"}
-        };
-        RegisterHandlers(functions);
+    {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Open"},
+        FunctionInfo{1, nullptr, "Ioctl"},
+        FunctionInfo{2, nullptr, "Close"},
+        FunctionInfo{4, nullptr, "QueryEvent"},
+        FunctionInfo{9, nullptr, "DumpStatus"},
+        FunctionInfo{10, nullptr, "InitializeDevtools"},
+        FunctionInfo{11, nullptr, "Ioctl2"},
+        FunctionInfo{12, nullptr, "Ioctl3"},
+        FunctionInfo{13, nullptr, "SetConfiguration"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

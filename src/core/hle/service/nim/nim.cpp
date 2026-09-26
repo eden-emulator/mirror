@@ -506,19 +506,7 @@ public:
     explicit IEnsureNetworkClockAvailabilityService(Core::System& system_)
         : ServiceFramework{system_, "IEnsureNetworkClockAvailabilityService"},
           service_context{system_, "IEnsureNetworkClockAvailabilityService"} {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &IEnsureNetworkClockAvailabilityService::StartTask, "StartTask"},
-            FunctionInfo{1, &IEnsureNetworkClockAvailabilityService::GetFinishNotificationEvent,
-             "GetFinishNotificationEvent"},
-            FunctionInfo{2, &IEnsureNetworkClockAvailabilityService::GetResult, "GetResult"},
-            FunctionInfo{3, &IEnsureNetworkClockAvailabilityService::Cancel, "Cancel"},
-            FunctionInfo{4, &IEnsureNetworkClockAvailabilityService::IsProcessing, "IsProcessing"},
-            FunctionInfo{5, &IEnsureNetworkClockAvailabilityService::GetServerTime, "GetServerTime"}
-        };
-        RegisterHandlers(functions);
-
-        finished_event =
-            service_context.CreateEvent("IEnsureNetworkClockAvailabilityService:FinishEvent");
+        finished_event = service_context.CreateEvent("IEnsureNetworkClockAvailabilityService:FinishEvent");
     }
 
     ~IEnsureNetworkClockAvailabilityService() override {
@@ -575,8 +563,18 @@ private:
         rb.PushRaw<s64>(server_time);
     }
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IEnsureNetworkClockAvailabilityService::StartTask, "StartTask"},
+        FunctionInfo{1, &IEnsureNetworkClockAvailabilityService::GetFinishNotificationEvent, "GetFinishNotificationEvent"},
+        FunctionInfo{2, &IEnsureNetworkClockAvailabilityService::GetResult, "GetResult"},
+        FunctionInfo{3, &IEnsureNetworkClockAvailabilityService::Cancel, "Cancel"},
+        FunctionInfo{4, &IEnsureNetworkClockAvailabilityService::IsProcessing, "IsProcessing"},
+        FunctionInfo{5, &IEnsureNetworkClockAvailabilityService::GetServerTime, "GetServerTime"}
+    );
     KernelHelpers::ServiceContext service_context;
-
     Kernel::KEvent* finished_event;
 };
 

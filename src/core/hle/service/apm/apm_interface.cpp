@@ -14,15 +14,7 @@ namespace Service::APM {
 
 class ISession final : public ServiceFramework<ISession> {
 public:
-    explicit ISession(Core::System& system_, Controller& controller_)
-        : ServiceFramework{system_, "ISession"}, controller{controller_} {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &ISession::SetPerformanceConfiguration, "SetPerformanceConfiguration"},
-            FunctionInfo{1, &ISession::GetPerformanceConfiguration, "GetPerformanceConfiguration"},
-            FunctionInfo{2, &ISession::SetCpuOverclockEnabled, "SetCpuOverclockEnabled"}
-        };
-        RegisterHandlers(functions);
-    }
+    explicit ISession(Core::System& system_, Controller& controller_) : ServiceFramework{system_, "ISession"}, controller{controller_} {}
 
 private:
     void SetPerformanceConfiguration(HLERequestContext& ctx) {
@@ -61,6 +53,14 @@ private:
         rb.Push(ResultSuccess);
     }
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &ISession::SetPerformanceConfiguration, "SetPerformanceConfiguration"},
+        FunctionInfo{1, &ISession::GetPerformanceConfiguration, "GetPerformanceConfiguration"},
+        FunctionInfo{2, &ISession::SetCpuOverclockEnabled, "SetCpuOverclockEnabled"}
+    );
     Controller& controller;
 };
 

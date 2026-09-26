@@ -425,12 +425,14 @@ class NCM_V final : public ServiceFramework<NCM_V> {
 public:
     explicit NCM_V(Core::System& system_)
         : ServiceFramework{system_, "ncm:v"}
-    {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "GetSystemVersion"}
-        };
-        RegisterHandlers(functions);
+    {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "GetSystemVersion"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

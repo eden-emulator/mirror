@@ -87,16 +87,7 @@ DECLARE_ENUM_FLAG_OPERATORS(LogPacketFlags);
 
 class ILogger final : public ServiceFramework<ILogger> {
 public:
-    explicit ILogger(Core::System& system_) : ServiceFramework{system_, "ILogger"} {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &ILogger::Log, "Log"},
-            FunctionInfo{1, &ILogger::SetDestination, "SetDestination"},
-            FunctionInfo{2, nullptr, "TransmitHashedLog"}, //20.0.0+
-            FunctionInfo{3, nullptr, "DevNotify"}, //20.0.0+
-        };
-        RegisterHandlers(functions);
-    }
-
+    explicit ILogger(Core::System& system_) : ServiceFramework{system_, "ILogger"} {}
 private:
     void Log(HLERequestContext& ctx) {
         std::size_t offset{};
@@ -331,6 +322,15 @@ private:
     };
     static_assert(sizeof(LogPacketHeader) == 0x18, "LogPacketHeader is an invalid size");
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &ILogger::Log, "Log"},
+        FunctionInfo{1, &ILogger::SetDestination, "SetDestination"},
+        FunctionInfo{2, nullptr, "TransmitHashedLog"}, //20.0.0+
+        FunctionInfo{3, nullptr, "DevNotify"} //20.0.0+
+    );
     ::Common::unordered_map<LogPacketHeaderEntry, std::vector<u8>> entries{};
     LogDestination destination{LogDestination::All};
 };

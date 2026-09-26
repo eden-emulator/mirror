@@ -47,13 +47,7 @@ void GetApplicationPidGeneric(Kernel::KernelCore& kernel, HLERequestContext& ctx
 
 class BootMode final : public ServiceFramework<BootMode> {
 public:
-    explicit BootMode(Core::System& system_) : ServiceFramework{system_, "pm:bm"} {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &BootMode::GetBootMode, "GetBootMode"},
-            FunctionInfo{1, &BootMode::SetMaintenanceBoot, "SetMaintenanceBoot"}
-        };
-        RegisterHandlers(functions);
-    }
+    explicit BootMode(Core::System& system_) : ServiceFramework{system_, "pm:bm"} {}
 
 private:
     void GetBootMode(HLERequestContext& ctx) {
@@ -73,16 +67,19 @@ private:
         rb.Push(ResultSuccess);
     }
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &BootMode::GetBootMode, "GetBootMode"},
+        FunctionInfo{1, &BootMode::SetMaintenanceBoot, "SetMaintenanceBoot"}
+    );
     SystemBootMode boot_mode = SystemBootMode::Normal;
 };
 
 class DebugMonitor final : public ServiceFramework<DebugMonitor> {
 public:
     explicit DebugMonitor(Core::System& system_) : ServiceFramework{system_, "pm:dmnt"} {}
-
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
 
 private:
     void GetProcessId(HLERequestContext& ctx) {
@@ -153,6 +150,9 @@ private:
         rb.PushRaw(override_status);
     }
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetJitDebugProcessIdList"},
         FunctionInfo{1, nullptr, "StartProcess"},
@@ -168,15 +168,7 @@ private:
 
 class Info final : public ServiceFramework<Info> {
 public:
-    explicit Info(Core::System& system_) : ServiceFramework{system_, "pm:info"} {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &Info::GetProgramId, "GetProgramId"},
-            FunctionInfo{65000, &Info::AtmosphereGetProcessId, "AtmosphereGetProcessId"},
-            FunctionInfo{65001, nullptr, "AtmosphereHasLaunchedProgram"},
-            FunctionInfo{65002, nullptr, "AtmosphereGetProcessInfo"}
-        };
-        RegisterHandlers(functions);
-    }
+    explicit Info(Core::System& system_) : ServiceFramework{system_, "pm:info"} {}
 
 private:
     void GetProgramId(HLERequestContext& ctx) {
@@ -218,6 +210,16 @@ private:
         rb.Push(ResultSuccess);
         rb.Push(process->GetProcessId());
     }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &Info::GetProgramId, "GetProgramId"},
+        FunctionInfo{65000, &Info::AtmosphereGetProcessId, "AtmosphereGetProcessId"},
+        FunctionInfo{65001, nullptr, "AtmosphereHasLaunchedProgram"},
+        FunctionInfo{65002, nullptr, "AtmosphereGetProcessInfo"}
+    );
 };
 
 class Shell final : public ServiceFramework<Shell> {

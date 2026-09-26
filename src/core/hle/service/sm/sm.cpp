@@ -112,6 +112,51 @@ Result ServiceManager::GetServicePort(Kernel::KClientPort** out_client_port,
     return ResultSuccess;
 }
 
+/// Interface to "sm:" service
+class SM final : public ServiceFramework<SM> {
+public:
+    explicit SM(ServiceManager& service_manager_, Core::System& system_);
+    ~SM() override;
+
+private:
+    void Initialize(HLERequestContext& ctx);
+    void GetServiceCmif(HLERequestContext& ctx);
+    void GetServiceTipc(HLERequestContext& ctx);
+    void RegisterServiceCmif(HLERequestContext& ctx);
+    void RegisterServiceTipc(HLERequestContext& ctx);
+    void UnregisterService(HLERequestContext& ctx);
+    void AtmosphereHasService(HLERequestContext& ctx);
+
+    Result GetServiceImpl(Kernel::KClientSession** out_client_session, HLERequestContext& ctx);
+    void RegisterServiceImpl(HLERequestContext& ctx, std::string name, u32 max_session_count, bool is_light);
+
+    // TODO: We reuse function list for both TIPC and non-TIPC
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    FunctionInfoBase const* FindRequestTipc(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &SM::Initialize, "Initialize"},
+        FunctionInfo{1, &SM::GetServiceTipc, "GetService"},
+        FunctionInfo{2, &SM::RegisterServiceTipc, "RegisterService"},
+        FunctionInfo{3, &SM::UnregisterService, "UnregisterService"},
+        FunctionInfo{4, nullptr, "DetachClient"},
+        FunctionInfo{65000, nullptr, "AtmosphereInstallMitm"},
+        FunctionInfo{65001, nullptr, "AtmosphereUninstallMitm"},
+        FunctionInfo{65002, nullptr, "Deprecated_AtmosphereAssociatePidTidForMitm"},
+        FunctionInfo{65003, nullptr, "AtmosphereAcknowledgeMitmSession"},
+        FunctionInfo{65004, nullptr, "AtmosphereHasMitm"},
+        FunctionInfo{65005, nullptr, "AtmosphereWaitMitm"},
+        FunctionInfo{65006, nullptr, "AtmosphereDeclareFutureMitm"},
+        FunctionInfo{65100, &SM::AtmosphereHasService, "AtmosphereHasService"},
+        FunctionInfo{65101, nullptr, "AtmosphereWaitService"}
+    );
+
+    ServiceManager& service_manager;
+};
+
 /**
  * SM::Initialize service function
  *  Inputs:
@@ -194,7 +239,7 @@ Result SM::GetServiceImpl(Kernel::KClientSession** out_client_session, HLEReques
 
     // Create a new session.
     Kernel::KClientSession* session{};
-    if (const auto result = client_port->CreateSession(kernel, &session); result.IsError()) {
+    if (const auto result = client_port->CreateSession(system.Kernel(), &session); result.IsError()) {
         LOG_ERROR(Service_SM, "called service={} -> error {:#08x}", name, result.raw);
         return result;
     }
@@ -265,42 +310,7 @@ void SM::AtmosphereHasService(HLERequestContext& ctx) {
 SM::SM(ServiceManager& service_manager_, Core::System& system_)
     : ServiceFramework{system_, "sm:", 64}
     , service_manager{service_manager_}
-    , kernel{system_.Kernel()}
-{
-    RegisterHandlers({
-        FunctionInfo{0, &SM::Initialize, "Initialize"},
-        FunctionInfo{1, &SM::GetServiceCmif, "GetService"},
-        FunctionInfo{2, &SM::RegisterServiceCmif, "RegisterService"},
-        FunctionInfo{3, &SM::UnregisterService, "UnregisterService"},
-        FunctionInfo{4, nullptr, "DetachClient"},
-        // TODO: are these non-TIPC as well?
-        FunctionInfo{65000, nullptr, "AtmosphereInstallMitm"},
-        FunctionInfo{65001, nullptr, "AtmosphereUninstallMitm"},
-        FunctionInfo{65002, nullptr, "Deprecated_AtmosphereAssociatePidTidForMitm"},
-        FunctionInfo{65003, nullptr, "AtmosphereAcknowledgeMitmSession"},
-        FunctionInfo{65004, nullptr, "AtmosphereHasMitm"},
-        FunctionInfo{65005, nullptr, "AtmosphereWaitMitm"},
-        FunctionInfo{65006, nullptr, "AtmosphereDeclareFutureMitm"},
-        FunctionInfo{65100, &SM::AtmosphereHasService, "AtmosphereHasService"},
-        FunctionInfo{65101, nullptr, "AtmosphereWaitService"},
-    });
-    RegisterHandlersTipc({
-        FunctionInfo{0, &SM::Initialize, "Initialize"},
-        FunctionInfo{1, &SM::GetServiceTipc, "GetService"},
-        FunctionInfo{2, &SM::RegisterServiceTipc, "RegisterService"},
-        FunctionInfo{3, &SM::UnregisterService, "UnregisterService"},
-        FunctionInfo{4, nullptr, "DetachClient"},
-        FunctionInfo{65000, nullptr, "AtmosphereInstallMitm"},
-        FunctionInfo{65001, nullptr, "AtmosphereUninstallMitm"},
-        FunctionInfo{65002, nullptr, "Deprecated_AtmosphereAssociatePidTidForMitm"},
-        FunctionInfo{65003, nullptr, "AtmosphereAcknowledgeMitmSession"},
-        FunctionInfo{65004, nullptr, "AtmosphereHasMitm"},
-        FunctionInfo{65005, nullptr, "AtmosphereWaitMitm"},
-        FunctionInfo{65006, nullptr, "AtmosphereDeclareFutureMitm"},
-        FunctionInfo{65100, &SM::AtmosphereHasService, "AtmosphereHasService"},
-        FunctionInfo{65101, nullptr, "AtmosphereWaitService"},
-    });
-}
+{}
 
 SM::~SM() = default;
 

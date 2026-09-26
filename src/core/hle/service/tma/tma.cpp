@@ -19,12 +19,14 @@ class HTC_TENV final : public ServiceFramework<HTC_TENV> {
 public:
     explicit HTC_TENV(Core::System& system_)
         : ServiceFramework{system_, "htc:tenv"}
-    {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "GetServiceInterface"}
-        };
-        RegisterHandlers(functions);
+    {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "GetServiceInterface"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

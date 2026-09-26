@@ -450,29 +450,9 @@ public:
     explicit ISslContext(Core::System& system_, SslVersion version)
         : ServiceFramework{system_, "ISslContext"}, ssl_version{version},
           shared_data{std::make_shared<SslContextSharedData>()} {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &ISslContext::SetOption, "SetOption"},
-            FunctionInfo{1, &ISslContext::GetOption, "GetOption"},
-            FunctionInfo{2, &ISslContext::CreateConnection, "CreateConnection"},
-            FunctionInfo{3, &ISslContext::GetConnectionCount, "GetConnectionCount"},
-            FunctionInfo{4, &ISslContext::ImportServerPki, "ImportServerPki"},
-            FunctionInfo{5, &ISslContext::ImportClientPki, "ImportClientPki"},
-            FunctionInfo{6, nullptr, "RemoveServerPki"},
-            FunctionInfo{7, nullptr, "RemoveClientPki"},
-            FunctionInfo{8, D<&ISslContext::RegisterInternalPki>, "RegisterInternalPki"},
-            FunctionInfo{9, nullptr, "AddPolicyOid"},
-            FunctionInfo{10, nullptr, "ImportCrl"},
-            FunctionInfo{11, nullptr, "RemoveCrl"},
-            FunctionInfo{12, nullptr, "ImportClientCertKeyPki"},
-            FunctionInfo{13, nullptr, "GeneratePrivateKeyAndCert"}
-        };
-        RegisterHandlers(functions);
     }
 
 private:
-    SslVersion ssl_version;
-    std::shared_ptr<SslContextSharedData> shared_data;
-
     void SetOption(HLERequestContext& ctx) {
         struct Parameters {
             ContextOption option;
@@ -559,6 +539,28 @@ private:
         LOG_WARNING(Service_SSL, "(STUBBED) called");
         R_SUCCEED();
     }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &ISslContext::SetOption, "SetOption"},
+        FunctionInfo{1, &ISslContext::GetOption, "GetOption"},
+        FunctionInfo{2, &ISslContext::CreateConnection, "CreateConnection"},
+        FunctionInfo{3, &ISslContext::GetConnectionCount, "GetConnectionCount"},
+        FunctionInfo{4, &ISslContext::ImportServerPki, "ImportServerPki"},
+        FunctionInfo{5, &ISslContext::ImportClientPki, "ImportClientPki"},
+        FunctionInfo{6, nullptr, "RemoveServerPki"},
+        FunctionInfo{7, nullptr, "RemoveClientPki"},
+        FunctionInfo{8, D<&ISslContext::RegisterInternalPki>, "RegisterInternalPki"},
+        FunctionInfo{9, nullptr, "AddPolicyOid"},
+        FunctionInfo{10, nullptr, "ImportCrl"},
+        FunctionInfo{11, nullptr, "RemoveCrl"},
+        FunctionInfo{12, nullptr, "ImportClientCertKeyPki"},
+        FunctionInfo{13, nullptr, "GeneratePrivateKeyAndCert"}
+    );
+    SslVersion ssl_version;
+    std::shared_ptr<SslContextSharedData> shared_data;
 };
 
 class ISslService final : public ServiceFramework<ISslService> {
