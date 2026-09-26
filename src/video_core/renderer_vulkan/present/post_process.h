@@ -89,7 +89,6 @@ private:
         u32 num_vertices{3};
         bool clear{};
         bool writes_backbuffer{};
-        u32 backbuffer_slot{};
     };
 
     struct Effect {
@@ -105,8 +104,6 @@ private:
         vk::DescriptorSetLayout uniform_layout{};
         vk::DescriptorPool descriptor_pool{};
         vk::DescriptorSets uniform_sets{};
-        size_t backbuffer_pass_count{};
-        u32 backbuffer_slots{1};
     };
 
     struct FrameImages {

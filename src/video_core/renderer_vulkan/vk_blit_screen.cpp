@@ -33,8 +33,8 @@ BlitScreen::BlitScreen(Tegra::MaxwellDeviceMemoryManager& device_memory_, const 
 BlitScreen::~BlitScreen() = default;
 
 void BlitScreen::WaitIdle(const Device& device) {
-    present_manager.WaitPresent();
     scheduler.Finish();
+    present_manager.WaitPresent();
     device.GetLogical().WaitIdle();
 }
 

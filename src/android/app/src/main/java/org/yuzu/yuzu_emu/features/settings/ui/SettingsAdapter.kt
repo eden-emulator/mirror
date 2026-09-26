@@ -106,10 +106,6 @@ class SettingsAdapter(
                 PathViewHolder(ListItemSettingBinding.inflate(inflater), this)
             }
 
-            SettingsItem.TYPE_GPU_UNSWIZZLE -> {
-                GpuUnswizzleViewHolder(ListItemSettingBinding.inflate(inflater), this)
-            }
-
             SettingsItem.TYPE_FX_TOOLBAR -> {
                 FxToolbarViewHolder(
                     ListItemSettingFxToolbarBinding.inflate(inflater, parent, false),
@@ -509,14 +505,6 @@ class SettingsAdapter(
         settingsViewModel.clickedItem = item
         settingsViewModel.setPathSettingPosition(position)
         settingsViewModel.setShouldShowPathResetDialog(true)
-    }
-
-    fun onGpuUnswizzleClick(item: GpuUnswizzleSetting, position: Int) {
-        GpuUnswizzleDialogFragment.newInstance(
-            settingsViewModel,
-            item,
-            position
-        ).show(fragment.childFragmentManager, GpuUnswizzleDialogFragment.TAG)
     }
 
     private class DiffCallback : DiffUtil.ItemCallback<SettingsItem>() {

@@ -9,6 +9,7 @@
 #include <condition_variable>
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <thread>
 #include <utility>
@@ -72,9 +73,38 @@ public:
     /// of a renderpass.
     void RequestOutsideRenderPassOperationContext();
 
+    void RequestComputeDispatchContext();
+
     /// Returns true when a render pass is currently active in the scheduler state.
     bool IsRenderPassActive() const {
         return state.renderpass != VK_NULL_HANDLE;
+    }
+
+    u64 ActiveRenderPassSerial() const noexcept {
+        if (state.renderpass) {
+            return renderpass_serial;
+        }
+        return (std::numeric_limits<u64>::max)();
+    }
+
+    u64 WaitForIdleSerial() const noexcept {
+        return wfi_serial;
+    }
+
+    void NotifyWaitForIdle() noexcept {
+        ++wfi_serial;
+    }
+
+    void MarkRenderPassWrites() noexcept {
+        renderpass_writes = true;
+    }
+
+    void MarkDepthWrites(bool writes) noexcept {
+        renderpass_depth_writes |= writes;
+    }
+
+    bool HasDepthWrites() const noexcept {
+        return renderpass_depth_writes;
     }
 
     /// Update the pipeline to the current execution context.
@@ -251,7 +281,7 @@ private:
 
         size_t command_offset = 0;
         bool submit = false;
-        alignas(std::max_align_t) std::array<u8, 0x8000> data{};
+        alignas(std::max_align_t) std::array<u8, 0x8000> data;
     };
 
     struct State {
@@ -287,11 +317,11 @@ private:
 
     u64 SubmitExecution(VkSemaphore signal_semaphore, VkSemaphore wait_semaphore);
 
-    void AllocateNewContext();
-
     void EndPendingOperations();
 
     void EndRenderPass();
+
+    void PublishComputeWrites();
 
     void AcquireNewChunk();
 
@@ -313,6 +343,14 @@ private:
 
     State state;
 
+    u64 renderpass_serial = 0;
+    u64 wfi_serial = 0;
+    bool renderpass_writes = false;
+    bool renderpass_depth_writes = false;
+    bool compute_writes = false;
+    VkMemoryBarrier2 renderpass_write_barrier{};
+    VkMemoryBarrier2 compute_write_barrier{};
+    VkMemoryBarrier2 upload_write_barrier{};
     u32 num_renderpass_images = 0;
     std::array<VkImage, 9> renderpass_images{};
     std::array<VkImageSubresourceRange, 9> renderpass_image_ranges{};

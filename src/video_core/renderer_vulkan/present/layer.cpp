@@ -364,11 +364,13 @@ void Layer::UpdateRawImage(const Tegra::FramebufferConfig& framebuffer, size_t i
     };
     scheduler.Record([this, copy, index = image_index](vk::CommandBuffer cmdbuf) {
         const VkImage image = *raw_images[index];
-        const VkImageMemoryBarrier base_barrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        const VkImageMemoryBarrier2 base_barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = 0,
-            .dstAccessMask = 0,
+            .srcStageMask = VK_PIPELINE_STAGE_2_NONE,
+            .srcAccessMask = VK_ACCESS_2_NONE,
+            .dstStageMask = VK_PIPELINE_STAGE_2_NONE,
+            .dstAccessMask = VK_ACCESS_2_NONE,
             .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -382,23 +384,24 @@ void Layer::UpdateRawImage(const Tegra::FramebufferConfig& framebuffer, size_t i
                 .layerCount = 1,
             },
         };
-        VkImageMemoryBarrier read_barrier = base_barrier;
-        read_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        VkImageMemoryBarrier2 read_barrier = base_barrier;
+        read_barrier.srcStageMask = VK_PIPELINE_STAGE_2_HOST_BIT;
+        read_barrier.dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        read_barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
         read_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         read_barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-        VkImageMemoryBarrier write_barrier = base_barrier;
-        write_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        write_barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        VkImageMemoryBarrier2 write_barrier = base_barrier;
+        write_barrier.srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        write_barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        write_barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT |
+                                     VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+        write_barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
         write_barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-                               read_barrier);
+        cmdbuf.PipelineBarrier(read_barrier);
         cmdbuf.CopyBufferToImage(*buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy);
-        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                                   VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                               0, write_barrier);
+        cmdbuf.PipelineBarrier(write_barrier);
     });
 }
 

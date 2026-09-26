@@ -508,7 +508,6 @@ Wird der Handheld-Modus verwendet, verringert es die Auflösung und erhöht die 
     <string name="skip_cpu_inner_invalidation_description">Überspringt bestimmte Cache-Invalidierungen auf CPU-Seite während Speicherupdates, reduziert die CPU-Auslastung und verbessert die Leistung. Kann in einigen Spielen zu Fehlern oder Abstürzen führen.</string>
     <string name="renderer_asynchronous_shaders">Asynchrone Shader</string>
     <string name="renderer_asynchronous_shaders_description">Kompiliert Shader asynchron. Dies kann Ruckler reduzieren, aber auch Grafikfehler verursachen.</string>
-    <string name="gpu_unswizzle_default_button">Standard</string>
 
 
     <string name="extensions">Erweiterungen</string>
@@ -918,25 +917,10 @@ Wirklich fortfahren?</string>
     <string name="fast_gpu_high">Übertaktung</string>
 
     <!-- GPU swizzle texture size -->
-    <string name="gpu_texturesizeswizzle_verysmall">Sehr klein (16 MB)</string>
-    <string name="gpu_texturesizeswizzle_small">Klein (32 MB)</string>
-    <string name="gpu_texturesizeswizzle_normal">Normal (128 MB)</string>
-    <string name="gpu_texturesizeswizzle_large">Groß (256 MB)</string>
-    <string name="gpu_texturesizeswizzle_verylarge">Sehr groß (512 MB)</string>
 
     <!-- GPU swizzle streams -->
-    <string name="gpu_swizzle_verylow">Sehr niedrig (4 MB)</string>
-    <string name="gpu_swizzle_low">Niedrig (8 MB)</string>
-    <string name="gpu_swizzle_normal">Normal (16 MB)</string>
-    <string name="gpu_swizzle_medium">Mittel (32 MB)</string>
-    <string name="gpu_swizzle_high">Hoch (64 MB)</string>
 
     <!-- GPU swizzle chunks -->
-    <string name="gpu_swizzlechunk_verylow">Sehr niedrig (32)</string>
-    <string name="gpu_swizzlechunk_low">Niedrig (64)</string>
-    <string name="gpu_swizzlechunk_normal">Normal (128)</string>
-    <string name="gpu_swizzlechunk_medium">Mittel (256)</string>
-    <string name="gpu_swizzlechunk_high">Hoch (512)</string>
 
     <!-- Temperature Units -->
     <string name="temperature_celsius">Celsius</string>

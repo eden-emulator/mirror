@@ -17,15 +17,12 @@
 #include "video_core/texture_cache/types.h"
 #include "video_core/vulkan_common/vulkan_memory_allocator.h"
 #include "video_core/vulkan_common/vulkan_wrapper.h"
-#include "video_core/texture_cache/accelerated_swizzle.h"
 
 namespace VideoCommon {
 struct SwizzleParameters;
 }
 
 namespace Vulkan {
-
-using VideoCommon::Accelerated::BlockLinearSwizzle3DParams;
 
 class Device;
 class StagingBufferPool;
@@ -91,6 +88,25 @@ private:
     ComputePassDescriptorQueue& compute_pass_descriptor_queue;
 };
 
+class IndirectQuadsPass final : public ComputePass {
+public:
+    explicit IndirectQuadsPass(const Device& device_, Scheduler& scheduler_,
+                               DescriptorPool& descriptor_pool_,
+                               StagingBufferPool& staging_buffer_pool_,
+                               ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
+    ~IndirectQuadsPass();
+
+    static constexpr u32 COMMAND_WORDS = 5;
+
+    std::pair<VkBuffer, VkDeviceSize> Assemble(u32 num_draws, u32 stride, VkBuffer src_buffer,
+                                               u32 src_offset);
+
+private:
+    Scheduler& scheduler;
+    StagingBufferPool& staging_buffer_pool;
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue;
+};
+
 class ConditionalRenderingResolvePass final : public ComputePass {
 public:
     explicit ConditionalRenderingResolvePass(
@@ -137,26 +153,50 @@ private:
     MemoryAllocator& memory_allocator;
 };
 
-class BlockLinearUnswizzle3DPass final : public ComputePass {
+class PitchUnswizzlePass final : public ComputePass {
 public:
-    explicit BlockLinearUnswizzle3DPass(const Device& device_, Scheduler& scheduler_,
-                             DescriptorPool& descriptor_pool_,
-                             StagingBufferPool& staging_buffer_pool_,
-                             ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
-    ~BlockLinearUnswizzle3DPass();
+    explicit PitchUnswizzlePass(const Device& device_, Scheduler& scheduler_,
+                                DescriptorPool& descriptor_pool_,
+                                StagingBufferPool& staging_buffer_pool_,
+                                ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
+    ~PitchUnswizzlePass();
 
-    void Unswizzle(Image& image,
-                   const StagingBufferRef& swizzled,
-                   std::span<const VideoCommon::SwizzleParameters> swizzles,
-                   u32 z_start, u32 z_count);
+    void Unswizzle(Image& image, const StagingBufferRef& map,
+                   std::span<const VideoCommon::SwizzleParameters> swizzles);
 
-    void UnswizzleChunk(
-        Image& image,
-        const StagingBufferRef& swizzled,
-        const VideoCommon::SwizzleParameters& sw,
-        const BlockLinearSwizzle3DParams& params,
-        u32 blocks_x, u32 blocks_y,
-        u32 z_start, u32 z_count);
+private:
+    Scheduler& scheduler;
+    StagingBufferPool& staging_buffer_pool;
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue;
+};
+
+class BlockLinearUnswizzleImage3DPass final : public ComputePass {
+public:
+    explicit BlockLinearUnswizzleImage3DPass(
+        const Device& device_, Scheduler& scheduler_, DescriptorPool& descriptor_pool_,
+        StagingBufferPool& staging_buffer_pool_,
+        ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
+    ~BlockLinearUnswizzleImage3DPass();
+
+    void Unswizzle(Image& image, const StagingBufferRef& map,
+                   std::span<const VideoCommon::SwizzleParameters> swizzles);
+
+private:
+    Scheduler& scheduler;
+    StagingBufferPool& staging_buffer_pool;
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue;
+};
+
+class BlockLinearUnswizzleImage2DPass final : public ComputePass {
+public:
+    explicit BlockLinearUnswizzleImage2DPass(
+        const Device& device_, Scheduler& scheduler_, DescriptorPool& descriptor_pool_,
+        StagingBufferPool& staging_buffer_pool_,
+        ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
+    ~BlockLinearUnswizzleImage2DPass();
+
+    void Unswizzle(Image& image, const StagingBufferRef& map,
+                   std::span<const VideoCommon::SwizzleParameters> swizzles);
 
 private:
     Scheduler& scheduler;

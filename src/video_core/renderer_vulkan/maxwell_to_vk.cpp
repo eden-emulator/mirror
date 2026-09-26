@@ -9,7 +9,6 @@
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "common/logging.h"
-#include "common/settings.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/renderer_vulkan/maxwell_to_vk.h"
 #include "video_core/surface.h"
@@ -71,12 +70,14 @@ VkSamplerAddressMode WrapMode(const Device& device,
         }
         ASSERT(false);
         return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    case Tegra::Texture::WrapMode::MirrorOnceClampToEdge:
-        return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
     case Tegra::Texture::WrapMode::MirrorOnceBorder:
         UNIMPLEMENTED();
-        return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
+        [[fallthrough]];
+    case Tegra::Texture::WrapMode::MirrorOnceClampToEdge:
     case Tegra::Texture::WrapMode::MirrorOnceClampOGL:
+        if (!device.IsKhrSamplerMirrorClampToEdgeSupported()) {
+            return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        }
         return VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE;
     default:
         UNIMPLEMENTED_MSG("Unimplemented wrap mode={}", wrap_mode);
@@ -223,10 +224,6 @@ FormatInfo SurfaceFormat(const Device& device, FormatType format_type, bool with
     SURFACE_FORMAT_ELEM(VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK, 0, ETC2_RGB_SRGB) \
     SURFACE_FORMAT_ELEM(VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK, 0, ETC2_RGBA_SRGB) \
     SURFACE_FORMAT_ELEM(VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK, 0, ETC2_RGB_PTA_SRGB) \
-    SURFACE_FORMAT_ELEM(VK_FORMAT_EAC_R11_UNORM_BLOCK, 0, EAC_R11_UNORM) \
-    SURFACE_FORMAT_ELEM(VK_FORMAT_EAC_R11_SNORM_BLOCK, 0, EAC_R11_SNORM) \
-    SURFACE_FORMAT_ELEM(VK_FORMAT_EAC_R11G11_UNORM_BLOCK, 0, EAC_R11G11_UNORM) \
-    SURFACE_FORMAT_ELEM(VK_FORMAT_EAC_R11G11_SNORM_BLOCK, 0, EAC_R11G11_SNORM) \
     /* Depth formats */ \
     SURFACE_FORMAT_ELEM(VK_FORMAT_D32_SFLOAT, usage_attachable, D32_FLOAT) \
     SURFACE_FORMAT_ELEM(VK_FORMAT_D16_UNORM, usage_attachable, D16_UNORM) \
@@ -246,21 +243,11 @@ FormatInfo SurfaceFormat(const Device& device, FormatType format_type, bool with
     bool const is_srgb = with_srgb && VideoCore::Surface::IsPixelFormatSRGB(pixel_format);
     // Transcode on hardware that doesn't support ASTC natively
     if (!device.IsOptimalAstcSupported() && VideoCore::Surface::IsPixelFormatASTC(pixel_format)) {
-        switch (Settings::values.astc_recompression.GetValue()) {
-        case Settings::AstcRecompression::Uncompressed:
-            if (is_srgb) {
-                tuple.format = VK_FORMAT_A8B8G8R8_SRGB_PACK32;
-            } else {
-                tuple.format = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
-                tuple.usage |= usage_storage;
-            }
-            break;
-        case Settings::AstcRecompression::Bc1:
-            tuple.format = is_srgb ? VK_FORMAT_BC1_RGBA_SRGB_BLOCK : VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
-            break;
-        case Settings::AstcRecompression::Bc3:
-            tuple.format = is_srgb ? VK_FORMAT_BC3_SRGB_BLOCK : VK_FORMAT_BC3_UNORM_BLOCK;
-            break;
+        if (is_srgb) {
+            tuple.format = VK_FORMAT_A8B8G8R8_SRGB_PACK32;
+        } else {
+            tuple.format = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
+            tuple.usage |= usage_storage;
         }
     }
     if (!device.IsOptimalBcnSupported() && VideoCore::Surface::IsPixelFormatBCn(pixel_format)) {
@@ -282,17 +269,7 @@ FormatInfo SurfaceFormat(const Device& device, FormatType format_type, bool with
         }
     } else if (!device.IsOptimalEtc2Supported() && VideoCore::Surface::IsPixelFormatETC2(pixel_format)) {
         // Transcode on hardware that doesn't support ETC2 natively
-        if (pixel_format == PixelFormat::EAC_R11_SNORM) {
-            tuple.format = VK_FORMAT_R8_SNORM;
-        } else if (pixel_format == PixelFormat::EAC_R11_UNORM) {
-            tuple.format = VK_FORMAT_R8_UNORM;
-        } else if (pixel_format == PixelFormat::EAC_R11G11_SNORM) {
-            tuple.format = VK_FORMAT_R8G8_SNORM;
-        } else if (pixel_format == PixelFormat::EAC_R11G11_UNORM) {
-            tuple.format = VK_FORMAT_R8G8_UNORM;
-        } else {
-            tuple.format = is_srgb ? VK_FORMAT_A8B8G8R8_SRGB_PACK32 : VK_FORMAT_A8B8G8R8_UNORM_PACK32;
-        }
+        tuple.format = is_srgb ? VK_FORMAT_A8B8G8R8_SRGB_PACK32 : VK_FORMAT_A8B8G8R8_UNORM_PACK32;
     }
     bool const attachable = (tuple.usage & usage_attachable) != 0;
     bool const storage = (tuple.usage & usage_storage) != 0;

@@ -22,7 +22,6 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/blit_depth_msaa.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/blit_depth_stencil_msaa.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/block_linear_unswizzle_3d.comp
-    ${CMAKE_CURRENT_SOURCE_DIR}/block_linear_unswizzle_3d_bcn.comp
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_abgr8_to_d24s8.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_abgr8_to_d32f.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/convert_d32f_to_abgr8.frag
@@ -79,6 +78,7 @@ set(SHADER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/vulkan_fidelityfx_fsr_easu_fp32.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/vulkan_fidelityfx_fsr_rcas_fp16.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/vulkan_fidelityfx_fsr_rcas_fp32.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/vulkan_indirect_quads.comp
     ${CMAKE_CURRENT_SOURCE_DIR}/vulkan_present.frag
     ${CMAKE_CURRENT_SOURCE_DIR}/vulkan_present.vert
     ${CMAKE_CURRENT_SOURCE_DIR}/vulkan_present_scaleforce_fp16.frag

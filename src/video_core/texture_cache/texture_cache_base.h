@@ -31,6 +31,7 @@
 #include "common/thread_worker.h"
 #include "video_core/compatible_formats.h"
 #include "video_core/control/channel_state_cache.h"
+#include "video_core/cache_reclaim.h"
 #include "video_core/delayed_destruction_ring.h"
 #include "video_core/engines/fermi_2d.h"
 #include "video_core/surface.h"
@@ -63,6 +64,7 @@ struct ImageViewInOut {
 
 struct AsyncDecodeContext {
     ImageId image_id;
+    Common::ScratchBuffer<u8> input_data;
     Common::ScratchBuffer<u8> decoded_data;
     boost::container::small_vector<BufferImageCopy, 16> copies;
     std::mutex mutex;
@@ -87,9 +89,6 @@ public:
     std::unordered_map<TICEntry, ImageViewId> image_views;
     std::unordered_map<TSCEntry, SamplerId> samplers;
 
-    ::Common::unordered_map<u32, SamplerId> sampler_ids;
-    ::Common::unordered_map<u32, ImageViewId> image_view_ids;
-
     TextureCacheGPUMap* gpu_page_table = nullptr;
     TextureCacheGPUMap* sparse_page_table = nullptr;
 };
@@ -99,8 +98,6 @@ class TextureCache : public VideoCommon::ChannelSetupCaches<TextureCacheChannelI
     /// Address shift for caching images into a hash table
     static constexpr u64 YUZU_PAGEBITS = 20;
 
-    /// Enables debugging features to the texture cache
-    static constexpr bool ENABLE_VALIDATION = P::ENABLE_VALIDATION;
     /// Implement blits as copies between framebuffers
     static constexpr bool FRAMEBUFFER_BLITS = P::FRAMEBUFFER_BLITS;
     /// True when some copies have to be emulated
@@ -120,6 +117,7 @@ class TextureCache : public VideoCommon::ChannelSetupCaches<TextureCacheChannelI
 
     static constexpr s64 DEFAULT_EXPECTED_MEMORY = 1_GiB + 125_MiB;
     static constexpr s64 DEFAULT_CRITICAL_MEMORY = 1_GiB + 625_MiB;
+    static constexpr u64 HEAP_PRESSURE_HEADROOM = 512_MiB;
     static constexpr size_t GC_EMERGENCY_COUNTS = 2;
 
     using Runtime = typename P::Runtime;
@@ -130,17 +128,6 @@ class TextureCache : public VideoCommon::ChannelSetupCaches<TextureCacheChannelI
     using Framebuffer = typename P::Framebuffer;
     using AsyncBuffer = typename P::AsyncBuffer;
     using BufferType = typename P::BufferType;
-
-    struct PendingUnswizzle {
-        ImageId image_id;
-        VideoCommon::ImageInfo info;
-        size_t current_offset = 0;
-        size_t total_size = 0;
-        AsyncBuffer staging_buffer;
-        size_t last_submitted_offset = 0;
-        size_t bytes_per_slice;
-        bool initialized = false;
-    };
 
     struct BlitImages {
         ImageId dst_id;
@@ -308,6 +295,8 @@ private:
 
     void RefreshContents(Image& image, ImageId image_id);
 
+    [[nodiscard]] bool IsAstcDataUnchanged(Image& image);
+
     /// Upload data from guest to an image
     template <typename StagingBuffer>
     void UploadImageContents(Image& image, StagingBuffer& staging_buffer);
@@ -422,9 +411,6 @@ private:
     void QueueAsyncDecode(Image& image, ImageId image_id);
     void TickAsyncDecode();
 
-    void QueueAsyncUnswizzle(Image& image, ImageId image_id);
-    void TickAsyncUnswizzle();
-
     Runtime& runtime;
 
     Tegra::MaxwellDeviceMemoryManager& device_memory;
@@ -432,13 +418,7 @@ private:
 
     RenderTargets render_targets;
     u64 render_targets_serial = 0;
-    u32 rt_active_mask = 0;
-    std::array<ImageId, 8> rt_image_id{};
     ImageId rt_depth_image_id{};
-    u64 texture_bindings_serial = 0;
-    u64 last_feedback_loop_serial = 0;
-    u64 last_feedback_texture_serial = 0;
-    bool last_feedback_loop_result = false;
     FramebufferId last_framebuffer_id{};
     u64 last_framebuffer_serial = 0;
 
@@ -451,12 +431,12 @@ private:
     bool has_deleted_images = false;
     bool is_rescaling = false;
     u64 total_used_memory = 0;
-    u64 minimum_memory;
-    u64 expected_memory;
-    u64 critical_memory;
-    size_t gpu_unswizzle_maxsize = 0;
-    size_t swizzle_chunk_size = 0;
-    u32 swizzle_slices_per_batch = 0;
+    u64 device_local_memory = 0;
+    u64 minimum_memory = 0;
+    u64 expected_memory = 0;
+    u64 critical_memory = 0;
+    u64 heap_headroom = 0;
+    bool heap_pressure = false;
 
     struct BufferDownload {
         GPUVAddr address;
@@ -508,12 +488,8 @@ private:
     u64 modification_tick = 0;
     u64 frame_tick = 0;
 
-    Common::ThreadWorker texture_decode_worker{1, "TextureDecoder", {},
-                                               Common::ThreadPlacement::Efficiency};
+    Common::ThreadWorker texture_decode_worker{1, "TextureDecoder"};
     std::vector<std::unique_ptr<AsyncDecodeContext>> async_decodes;
-
-    std::deque<PendingUnswizzle> unswizzle_queue;
-    u8 current_unswizzle_frame;
 
     // Join caching
     boost::container::small_vector<ImageId, 4> join_overlap_ids;

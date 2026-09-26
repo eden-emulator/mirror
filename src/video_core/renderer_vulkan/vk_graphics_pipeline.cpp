@@ -595,7 +595,11 @@ bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
         }
     }
 
+    if (buffer_cache.TakeDrawHazard()) {
+        scheduler.RequestOutsideRenderPassOperationContext();
+    }
     scheduler.RequestRenderpass(texture_cache.GetFramebuffer());
+    buffer_cache.CommitDrawWrites();
     if (!is_built.load(std::memory_order::relaxed)) {
         // Wait for the pipeline to be built
         scheduler.Record([this](vk::CommandBuffer) {
@@ -705,7 +709,8 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
             if (instanced) {
                 vertex_binding_divisors.push_back({
                     .binding = static_cast<u32>(index),
-                    .divisor = key.state.binding_divisors[index],
+                    .divisor = (std::min)(key.state.binding_divisors[index],
+                                          device.GetMaxVertexAttribDivisor()),
                 });
             }
         }
@@ -739,7 +744,7 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
         .vertexBindingDivisorCount = static_cast<u32>(vertex_binding_divisors.size()),
         .pVertexBindingDivisors = vertex_binding_divisors.data(),
     };
-    if (!vertex_binding_divisors.empty()) {
+    if (!vertex_binding_divisors.empty() && device.IsExtVertexAttributeDivisorSupported()) {
         vertex_input_ci.pNext = &input_divisor_ci;
     }
     const bool has_tess_stages = spv_modules[1] || spv_modules[2];

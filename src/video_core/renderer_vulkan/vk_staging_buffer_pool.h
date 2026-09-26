@@ -7,6 +7,7 @@
 #pragma once
 
 #include <climits>
+#include <optional>
 #include <vector>
 
 #include "common/common_types.h"
@@ -88,6 +89,11 @@ private:
 
     bool AreRegionsActive(size_t region_begin, size_t region_end) const;
 
+    u64 MaxRegionTick(size_t region_begin, size_t region_end) const;
+
+    std::optional<StagingBufferRef> OverflowStreamBuffer(size_t size, size_t region_begin,
+                                                         size_t region_end);
+
     StagingBufferRef GetStagingBuffer(size_t size, MemoryUsage usage, bool deferred = false);
 
     std::optional<StagingBufferRef> TryGetReservedBuffer(size_t size, MemoryUsage usage,
@@ -99,7 +105,7 @@ private:
 
     void ReleaseCache(MemoryUsage usage);
 
-    void ReleaseLevel(StagingBuffersCache& cache, size_t log2);
+    void ReleaseLevel(MemoryUsage usage, size_t log2);
     size_t Region(size_t iter) const noexcept {
         return iter / region_size;
     }
@@ -118,6 +124,8 @@ private:
     size_t used_iterator = 0;
     size_t free_iterator = 0;
     std::array<u64, NUM_SYNCS> sync_ticks{};
+
+    std::array<size_t, 4> cache_bytes{};
 
     StagingBuffersCache device_local_cache;
     StagingBuffersCache upload_cache;

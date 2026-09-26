@@ -1238,8 +1238,7 @@ if (HAS_NCE)
         arm/nce/interpreter_visitor.cpp
         arm/nce/interpreter_visitor.h
         arm/nce/patcher.cpp
-        arm/nce/patcher.h
-        arm/nce/visitor_base.h)
+        arm/nce/patcher.h)
     target_link_libraries(core PRIVATE merry::oaknut)
 endif()
 

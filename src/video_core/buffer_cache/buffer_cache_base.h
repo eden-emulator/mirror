@@ -31,6 +31,7 @@
 #include "video_core/buffer_cache/buffer_base.h"
 #include "video_core/buffer_cache/virtual_range_cache.h"
 #include "video_core/control/channel_state_cache.h"
+#include "video_core/cache_reclaim.h"
 #include "video_core/delayed_destruction_ring.h"
 #include "video_core/dirty_flags.h"
 #include "video_core/engines/maxwell_3d.h"
@@ -199,6 +200,8 @@ class BufferCache : public VideoCommon::ChannelSetupCaches<BufferCacheChannelInf
 
     static constexpr s64 DEFAULT_EXPECTED_MEMORY = 512_MiB;
     static constexpr s64 DEFAULT_CRITICAL_MEMORY = 1_GiB;
+    static constexpr u64 HEAP_PRESSURE_HEADROOM = 512_MiB;
+    static constexpr u64 INLINE_TICKS_TO_DESTROY = 240;
 
     // Debug Flags.
 
@@ -228,8 +231,12 @@ public:
     bool BindMultiRangeStorage(const Binding& binding, bool is_written,
                                std::span<const MultiRangeSegment> pool);
 
-    void ResolveMultiRangeStorage(Binding& binding, bool is_written,
-                                  std::vector<MultiRangeSegment>& pool);
+
+
+
+
+                               void ResolveMultiRangeStorage(Binding& binding, std::vector<MultiRangeSegment>& pool,
+                                                             bool is_written);
 
     void UnmapGPUMemory(size_t as_id, GPUVAddr gpu_addr, size_t size);
 
@@ -252,6 +259,10 @@ public:
     void UpdateGraphicsBuffers(bool is_indexed);
 
     void UpdateComputeBuffers();
+
+    [[nodiscard]] bool TakeDrawHazard() noexcept;
+
+    void CommitDrawWrites();
 
     void BindHostGeometryBuffers(bool is_indexed);
 
@@ -377,6 +388,8 @@ private:
     }
 
     void RunGarbageCollector();
+
+    void ReclaimInline();
 
     void BindHostIndexBuffer();
 
@@ -511,6 +524,17 @@ private:
 
     boost::container::small_vector<BufferCopy, 4> upload_copies;
 
+    struct DrawWrite {
+        BufferId buffer_id;
+        DAddr device_addr;
+        u32 size;
+    };
+    boost::container::small_vector<DrawWrite, 8> draw_writes;
+    u64 draw_pass = 0;
+    u64 draw_wfi = 0;
+    bool draw_hazard = false;
+    bool recording_draw = false;
+
     MemoryTracker memory_tracker;
     Common::RangeSet<DAddr> uncommitted_gpu_modified_ranges;
     Common::RangeSet<DAddr> gpu_modified_ranges;
@@ -537,8 +561,12 @@ private:
     std::vector<MultiRangeSegment> compute_segments;
     u64 frame_tick = 0;
     u64 total_used_memory = 0;
+    u64 device_local_memory = 0;
     u64 minimum_memory = 0;
+    u64 expected_memory = 0;
     u64 critical_memory = 0;
+    u64 heap_headroom = 0;
+    bool heap_pressure = false;
     BufferId inline_buffer_id;
 #ifdef YUZU_LEGACY
     bool immediately_free = false;

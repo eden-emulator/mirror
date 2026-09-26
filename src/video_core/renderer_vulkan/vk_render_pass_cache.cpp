@@ -43,10 +43,10 @@ using VideoCore::Surface::SurfaceType;
             }
         }
 
-        VkAttachmentDescription AttachmentDescription(const Device& device, PixelFormat format,
-                                                      VkSampleCountFlagBits samples,
-                                                      VkAttachmentLoadOp load_op,
-                                                      VkAttachmentStoreOp store_op) {
+        VkAttachmentDescription2 AttachmentDescription(const Device& device, PixelFormat format,
+                                                       VkSampleCountFlagBits samples,
+                                                       VkAttachmentLoadOp load_op,
+                                                       VkAttachmentStoreOp store_op) {
             using MaxwellToVK::SurfaceFormat;
 
             const SurfaceType surface_type = GetSurfaceType(format);
@@ -54,6 +54,8 @@ using VideoCore::Surface::SurfaceType;
                                      surface_type == SurfaceType::Stencil;
 
             return {
+                .sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+                .pNext = nullptr,
                 .flags = {},
                 .format = SurfaceFormat(device, FormatType::Optimal, true, format).format,
                 .samples = samples,
@@ -141,16 +143,19 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
     }
     static constexpr size_t MAX_ATTACHMENTS =
         2 * std::tuple_size_v<decltype(RenderPassKey::color_formats)> + 2;
-    boost::container::static_vector<VkAttachmentDescription, MAX_ATTACHMENTS> descriptions;
-    std::array<VkAttachmentReference, 8> references{};
+    boost::container::static_vector<VkAttachmentDescription2, MAX_ATTACHMENTS> descriptions;
+    std::array<VkAttachmentReference2, 8> references{};
     u32 num_attachments{};
     u32 num_colors{};
     for (size_t index = 0; index < key.color_formats.size(); ++index) {
         const PixelFormat format{key.color_formats[index]};
         const bool is_valid{format != PixelFormat::Invalid};
-        references[index] = VkAttachmentReference{
+        references[index] = VkAttachmentReference2{
+            .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+            .pNext = nullptr,
             .attachment = is_valid ? num_colors : VK_ATTACHMENT_UNUSED,
             .layout = VK_IMAGE_LAYOUT_GENERAL,
+            .aspectMask = 0,
         };
         if (is_valid) {
             const VkAttachmentLoadOp load_op = (key.color_clear_mask & (1u << index)) != 0
@@ -166,11 +171,14 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         }
     }
     const bool has_depth{key.depth_format != PixelFormat::Invalid};
-    VkAttachmentReference depth_reference{};
-    if (key.depth_format != PixelFormat::Invalid) {
-        depth_reference = VkAttachmentReference{
+    VkAttachmentReference2 depth_reference{};
+    if (has_depth) {
+        depth_reference = VkAttachmentReference2{
+            .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+            .pNext = nullptr,
             .attachment = num_colors,
             .layout = VK_IMAGE_LAYOUT_GENERAL,
+            .aspectMask = 0,
         };
         const VkAttachmentLoadOp depth_load_op = key.depth_stencil_clear
                                                      ? VK_ATTACHMENT_LOAD_OP_CLEAR
@@ -181,19 +189,23 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         descriptions.push_back(AttachmentDescription(*device, key.depth_format, key.samples,
                                                      depth_load_op, depth_store_op));
     }
-    std::array<VkAttachmentReference, 8> resolve_references{};
+    std::array<VkAttachmentReference2, 8> resolve_references{};
     const bool do_resolve_color =
         key.resolve_color && key.samples != VK_SAMPLE_COUNT_1_BIT && num_colors > 0;
     if (do_resolve_color) {
         for (size_t index = 0; index < key.color_formats.size(); ++index) {
             const PixelFormat format{key.color_formats[index]};
             const bool is_valid{format != PixelFormat::Invalid};
-            resolve_references[index] = VkAttachmentReference{
-                .attachment = is_valid ? static_cast<u32>(descriptions.size()) : VK_ATTACHMENT_UNUSED,
+            resolve_references[index] = VkAttachmentReference2{
+                .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+                .pNext = nullptr,
+                .attachment = is_valid ? static_cast<u32>(descriptions.size())
+                                       : VK_ATTACHMENT_UNUSED,
                 .layout = VK_IMAGE_LAYOUT_GENERAL,
+                .aspectMask = 0,
             };
             if (is_valid) {
-                VkAttachmentDescription resolve_desc =
+                VkAttachmentDescription2 resolve_desc =
                     AttachmentDescription(*device, format, VK_SAMPLE_COUNT_1_BIT,
                                           VK_ATTACHMENT_LOAD_OP_DONT_CARE,
                                           VK_ATTACHMENT_STORE_OP_STORE);
@@ -205,21 +217,35 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
     const bool do_resolve_depth_stencil = key.resolve_depth_stencil && has_depth &&
                                           key.samples != VK_SAMPLE_COUNT_1_BIT &&
                                           SupportsDepthStencilResolve(*device, key.depth_format);
-    VkAttachmentReference depth_resolve_reference{};
+    VkAttachmentReference2 depth_resolve_reference{};
     if (do_resolve_depth_stencil) {
-        depth_resolve_reference = VkAttachmentReference{
+        depth_resolve_reference = VkAttachmentReference2{
+            .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+            .pNext = nullptr,
             .attachment = static_cast<u32>(descriptions.size()),
             .layout = VK_IMAGE_LAYOUT_GENERAL,
+            .aspectMask = 0,
         };
-        VkAttachmentDescription resolve_desc =
+        VkAttachmentDescription2 resolve_desc =
             AttachmentDescription(*device, key.depth_format, VK_SAMPLE_COUNT_1_BIT,
                                   VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE);
         resolve_desc.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         descriptions.push_back(resolve_desc);
     }
-    const VkSubpassDescription subpass{
+    const ResolveModes resolve_modes = PickResolveModes(*device, key.depth_format);
+    const VkSubpassDescriptionDepthStencilResolve depth_stencil_resolve{
+        .sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,
+        .pNext = nullptr,
+        .depthResolveMode = resolve_modes.depth,
+        .stencilResolveMode = resolve_modes.stencil,
+        .pDepthStencilResolveAttachment = &depth_resolve_reference,
+    };
+    const VkSubpassDescription2 subpass{
+        .sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,
+        .pNext = do_resolve_depth_stencil ? &depth_stencil_resolve : nullptr,
         .flags = 0,
         .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .viewMask = 0,
         .inputAttachmentCount = 0,
         .pInputAttachments = nullptr,
         .colorAttachmentCount = num_attachments,
@@ -229,114 +255,18 @@ VkRenderPass RenderPassCache::Get(const RenderPassKey& key) {
         .preserveAttachmentCount = 0,
         .pPreserveAttachments = nullptr,
     };
-    const VkSubpassDependency dependency{
-            .srcSubpass = 0,  // Current subpass
-            .dstSubpass = 0,  // Same subpass (self-dependency)
-            .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-                            VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-            .dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-            .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
-    };
-
-    if (device->IsKhrCreateRenderPass2Supported()) {
-        boost::container::static_vector<VkAttachmentDescription2, MAX_ATTACHMENTS> descriptions2;
-        for (const VkAttachmentDescription& description : descriptions) {
-            descriptions2.push_back(VkAttachmentDescription2{
-                .sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
-                .pNext = nullptr,
-                .flags = description.flags,
-                .format = description.format,
-                .samples = description.samples,
-                .loadOp = description.loadOp,
-                .storeOp = description.storeOp,
-                .stencilLoadOp = description.stencilLoadOp,
-                .stencilStoreOp = description.stencilStoreOp,
-                .initialLayout = description.initialLayout,
-                .finalLayout = description.finalLayout,
-            });
-        }
-        const auto promote = [](const VkAttachmentReference& reference) {
-            return VkAttachmentReference2{
-                .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
-                .pNext = nullptr,
-                .attachment = reference.attachment,
-                .layout = reference.layout,
-                .aspectMask = 0,
-            };
-        };
-        std::array<VkAttachmentReference2, 8> references2{};
-        std::array<VkAttachmentReference2, 8> resolve_references2{};
-        for (size_t index = 0; index < references.size(); ++index) {
-            references2[index] = promote(references[index]);
-            resolve_references2[index] = promote(resolve_references[index]);
-        }
-        const VkAttachmentReference2 depth_reference2 = promote(depth_reference);
-        const VkAttachmentReference2 depth_resolve_reference2 = promote(depth_resolve_reference);
-        const ResolveModes resolve_modes = PickResolveModes(*device, key.depth_format);
-        const VkSubpassDescriptionDepthStencilResolve depth_stencil_resolve{
-            .sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE,
-            .pNext = nullptr,
-            .depthResolveMode = resolve_modes.depth,
-            .stencilResolveMode = resolve_modes.stencil,
-            .pDepthStencilResolveAttachment = &depth_resolve_reference2,
-        };
-        const VkSubpassDescription2 subpass2{
-            .sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,
-            .pNext = do_resolve_depth_stencil ? &depth_stencil_resolve : nullptr,
-            .flags = 0,
-            .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-            .viewMask = 0,
-            .inputAttachmentCount = 0,
-            .pInputAttachments = nullptr,
-            .colorAttachmentCount = num_attachments,
-            .pColorAttachments = references2.data(),
-            .pResolveAttachments = do_resolve_color ? resolve_references2.data() : nullptr,
-            .pDepthStencilAttachment = has_depth ? &depth_reference2 : nullptr,
-            .preserveAttachmentCount = 0,
-            .pPreserveAttachments = nullptr,
-        };
-        const VkSubpassDependency2 dependency2{
-            .sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2,
-            .pNext = nullptr,
-            .srcSubpass = dependency.srcSubpass,
-            .dstSubpass = dependency.dstSubpass,
-            .srcStageMask = dependency.srcStageMask,
-            .dstStageMask = dependency.dstStageMask,
-            .srcAccessMask = dependency.srcAccessMask,
-            .dstAccessMask = dependency.dstAccessMask,
-            .dependencyFlags = dependency.dependencyFlags,
-            .viewOffset = 0,
-        };
-        pair->second = device->GetLogical().CreateRenderPass2({
-            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
-            .pNext = nullptr,
-            .flags = 0,
-            .attachmentCount = static_cast<u32>(descriptions2.size()),
-            .pAttachments = descriptions2.empty() ? nullptr : descriptions2.data(),
-            .subpassCount = 1,
-            .pSubpasses = &subpass2,
-            .dependencyCount = 1,
-            .pDependencies = &dependency2,
-            .correlatedViewMaskCount = 0,
-            .pCorrelatedViewMasks = nullptr,
-        });
-        return *pair->second;
-    }
-
-    pair->second = device->GetLogical().CreateRenderPass({
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+    pair->second = device->GetLogical().CreateRenderPass2({
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
         .pNext = nullptr,
         .flags = 0,
         .attachmentCount = static_cast<u32>(descriptions.size()),
         .pAttachments = descriptions.empty() ? nullptr : descriptions.data(),
         .subpassCount = 1,
         .pSubpasses = &subpass,
-        .dependencyCount = 1,
-        .pDependencies = &dependency,
+        .dependencyCount = 0,
+        .pDependencies = nullptr,
+        .correlatedViewMaskCount = 0,
+        .pCorrelatedViewMasks = nullptr,
     });
     return *pair->second;
 }

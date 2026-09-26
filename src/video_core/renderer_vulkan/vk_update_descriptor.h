@@ -40,16 +40,12 @@ class UpdateDescriptorQueue final {
     static constexpr size_t FRAMES_IN_FLIGHT = 8;
 
 public:
-    static constexpr size_t GUEST_FRAME_PAYLOAD_SIZE = 0x80000;
-    static constexpr size_t COMPUTE_FRAME_PAYLOAD_SIZE = 0x20000;
+    static constexpr size_t GUEST_FRAME_PAYLOAD_SIZE = 0x20000;
+    static constexpr size_t COMPUTE_FRAME_PAYLOAD_SIZE = 0x8000;
 
     explicit UpdateDescriptorQueue(const Device& device_, size_t frame_payload_size_,
                                    bool supports_descriptor_buffer_ = false);
     ~UpdateDescriptorQueue();
-
-    [[nodiscard]] bool UsesDescriptorBuffer() const noexcept {
-        return use_descriptor_buffer;
-    }
 
     void TickFrame();
     void Acquire(Scheduler& scheduler, size_t required_entries = 0,

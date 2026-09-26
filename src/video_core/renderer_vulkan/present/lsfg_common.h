@@ -147,10 +147,10 @@ public:
     void Build();
 
 private:
-    LsfgBarriers& Push(LsfgImage& image, VkAccessFlags src_access, VkAccessFlags dst_access);
+    LsfgBarriers& Push(LsfgImage& image, VkAccessFlags2 src_access, VkAccessFlags2 dst_access);
 
     vk::CommandBuffer cmdbuf;
-    std::vector<VkImageMemoryBarrier> barriers;
+    std::vector<VkImageMemoryBarrier2> barriers;
 };
 
 class LsfgDescriptorWriter {
@@ -204,10 +204,6 @@ public:
         return *descriptor_set_layout;
     }
 
-    [[nodiscard]] u32 DescriptorCount() const {
-        return descriptor_count;
-    }
-
     void Bind(vk::CommandBuffer cmdbuf, VkDescriptorSet set) const;
     void BindPipeline(vk::CommandBuffer cmdbuf) const;
     void BindSet(vk::CommandBuffer cmdbuf, VkDescriptorSet set) const;
@@ -216,7 +212,6 @@ private:
     vk::DescriptorSetLayout descriptor_set_layout;
     vk::PipelineLayout pipeline_layout;
     vk::Pipeline pipeline;
-    u32 descriptor_count{};
 };
 
 [[nodiscard]] vk::DescriptorPool CreateLsfgDescriptorPool(const Device& device, u32 max_sets);

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -92,7 +95,8 @@ void Bilinear(std::span<const f32> input, std::span<f32> output, size_t src_widt
 
             const auto read_src = [&](f32 in_x, f32 in_y) {
                 const size_t read_from =
-                    ((static_cast<size_t>(in_x) * src_width + static_cast<size_t>(in_y)) >> 32) *
+                    ((std::min)(static_cast<size_t>(in_y), src_height - 1) * src_width +
+                     (std::min)(static_cast<size_t>(in_x), src_width - 1)) *
                     ir_components;
                 return std::span<const f32>(&input[read_from], ir_components);
             };

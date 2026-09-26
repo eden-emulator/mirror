@@ -23,6 +23,7 @@ namespace Vulkan {
 namespace {
 
 constexpr size_t MAX_FRAMES_IN_FLIGHT = 7;
+constexpr u32 MAX_PRESENT_ATTEMPTS = 3;
 #ifdef HAS_LSFG
 static_assert(MAX_FRAMES_IN_FLIGHT <= LSFG_MAX_TARGETS);
 #endif
@@ -372,12 +373,39 @@ void PresentManager::SetImageCount() {
 #else
     image_count = std::min<size_t>(swapchain.GetImageCount(), MAX_FRAMES_IN_FLIGHT);
 #endif
+    swapchain_image_count = swapchain.GetImageCount();
+    swapchain_image_format = swapchain.GetImageFormat();
+}
+
+void PresentManager::DiscardFrame(Frame* frame) {
+    const VkSemaphoreSubmitInfo wait_info{
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+        .pNext = nullptr,
+        .semaphore = *frame->render_ready,
+        .value = 0,
+        .stageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+        .deviceIndex = 0,
+    };
+    const VkSubmitInfo2 submit_info{
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+        .pNext = nullptr,
+        .flags = 0,
+        .waitSemaphoreInfoCount = 1U,
+        .pWaitSemaphoreInfos = &wait_info,
+        .commandBufferInfoCount = 0U,
+        .pCommandBufferInfos = nullptr,
+        .signalSemaphoreInfoCount = 0U,
+        .pSignalSemaphoreInfos = nullptr,
+    };
+
+    std::scoped_lock submit_lock{scheduler.submit_mutex};
+    void(device.GetGraphicsQueue().Submit(submit_info, *frame->present_done));
 }
 
 void PresentManager::CopyToSwapchain(Frame* frame) {
     bool requires_recreation = false;
 
-    while (true) {
+    for (u32 attempt = 0; attempt < MAX_PRESENT_ATTEMPTS; ++attempt) {
         try {
             // Recreate surface and swapchain if needed.
             if (requires_recreation) {
@@ -397,6 +425,8 @@ void PresentManager::CopyToSwapchain(Frame* frame) {
             requires_recreation = true;
         }
     }
+
+    DiscardFrame(frame);
 }
 
 void PresentManager::CopyToSwapchainImpl(Frame* frame) {
@@ -425,11 +455,13 @@ void PresentManager::CopyToSwapchainImpl(Frame* frame) {
     const VkImage image{swapchain.CurrentImage()};
     const VkExtent2D extent = swapchain.GetExtent();
     const std::array pre_barriers{
-        VkImageMemoryBarrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        VkImageMemoryBarrier2{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = 0,
-            .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .srcAccessMask = VK_ACCESS_2_NONE,
+            .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
             .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -443,11 +475,13 @@ void PresentManager::CopyToSwapchainImpl(Frame* frame) {
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         },
-        VkImageMemoryBarrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        VkImageMemoryBarrier2{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+            .srcStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+            .srcAccessMask = vk::ACCESS_IMAGE_WRITES,
+            .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
             .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
             .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -463,11 +497,13 @@ void PresentManager::CopyToSwapchainImpl(Frame* frame) {
         },
     };
     const std::array post_barriers{
-        VkImageMemoryBarrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        VkImageMemoryBarrier2{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-            .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_2_NONE,
+            .dstAccessMask = VK_ACCESS_2_NONE,
             .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -481,11 +517,13 @@ void PresentManager::CopyToSwapchainImpl(Frame* frame) {
                 .layerCount = VK_REMAINING_ARRAY_LAYERS,
             },
         },
-        VkImageMemoryBarrier{
-            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        VkImageMemoryBarrier2{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
-            .srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
-            .dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
+            .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .srcAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
+            .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+            .dstAccessMask = vk::ACCESS_IMAGE_USERS,
             .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
             .newLayout = VK_IMAGE_LAYOUT_GENERAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -501,8 +539,7 @@ void PresentManager::CopyToSwapchainImpl(Frame* frame) {
         },
     };
 
-    cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT, {},
-                           {}, {}, pre_barriers);
+    cmdbuf.PipelineBarrier(0, {}, {}, pre_barriers);
 
     if (blit_supported) {
         cmdbuf.BlitImage(*frame->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
@@ -515,30 +552,55 @@ void PresentManager::CopyToSwapchainImpl(Frame* frame) {
                          MakeImageCopy(frame->width, frame->height, extent.width, extent.height));
     }
 
-    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, {},
-                           {}, {}, post_barriers);
+    cmdbuf.PipelineBarrier(0, {}, {}, post_barriers);
 
     cmdbuf.End();
 
     const VkSemaphore present_semaphore = swapchain.CurrentPresentSemaphore();
     const VkSemaphore render_semaphore = swapchain.CurrentRenderSemaphore();
-    const std::array wait_semaphores = {present_semaphore, *frame->render_ready};
-
-    static constexpr std::array<VkPipelineStageFlags, 2> wait_stage_masks{
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
+    const std::array<VkSemaphoreSubmitInfo, 2> wait_infos{{
+        {
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+            .pNext = nullptr,
+            .semaphore = present_semaphore,
+            .value = 0,
+            .stageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .deviceIndex = 0,
+        },
+        {
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+            .pNext = nullptr,
+            .semaphore = *frame->render_ready,
+            .value = 0,
+            .stageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .deviceIndex = 0,
+        },
+    }};
+    const VkCommandBufferSubmitInfo cmdbuf_info{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+        .pNext = nullptr,
+        .commandBuffer = *cmdbuf,
+        .deviceMask = 0,
+    };
+    const VkSemaphoreSubmitInfo signal_info{
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+        .pNext = nullptr,
+        .semaphore = render_semaphore,
+        .value = 0,
+        .stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+        .deviceIndex = 0,
     };
 
-    const VkSubmitInfo submit_info{
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+    const VkSubmitInfo2 submit_info{
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
         .pNext = nullptr,
-        .waitSemaphoreCount = 2U,
-        .pWaitSemaphores = wait_semaphores.data(),
-        .pWaitDstStageMask = wait_stage_masks.data(),
-        .commandBufferCount = 1,
-        .pCommandBuffers = cmdbuf.address(),
-        .signalSemaphoreCount = 1U,
-        .pSignalSemaphores = &render_semaphore,
+        .flags = 0,
+        .waitSemaphoreInfoCount = 2U,
+        .pWaitSemaphoreInfos = wait_infos.data(),
+        .commandBufferInfoCount = 1U,
+        .pCommandBufferInfos = &cmdbuf_info,
+        .signalSemaphoreInfoCount = 1U,
+        .pSignalSemaphoreInfos = &signal_info,
     };
 
     // Submit the image copy/blit to the swapchain

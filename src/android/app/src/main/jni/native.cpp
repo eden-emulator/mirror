@@ -738,6 +738,35 @@ const char* fallback_cpu_detection() {
     return s_result.c_str();
 }
 
+#ifdef ARCHITECTURE_arm64
+struct SystemDriverInfo {
+    VkPhysicalDeviceProperties properties{};
+    VkPhysicalDeviceDriverProperties driver{};
+};
+
+SystemDriverInfo QuerySystemDriverInfo(JNIEnv* env, jstring j_hook_lib_dir) {
+    const std::string hook_lib_dir = Common::Android::GetJString(env, j_hook_lib_dir);
+    const Common::DynamicLibrary library{adrenotools_open_libvulkan(
+        RTLD_NOW, 0, nullptr, hook_lib_dir.c_str(), nullptr, nullptr, nullptr, nullptr)};
+    Vulkan::vk::InstanceDispatch dld;
+    const Vulkan::vk::Instance instance = Vulkan::CreateInstance(library, dld, VK_API_VERSION_1_1);
+    const std::vector<VkPhysicalDevice> devices = instance.EnumeratePhysicalDevices();
+    if (devices.empty()) {
+        throw Vulkan::vk::Exception(VK_ERROR_INITIALIZATION_FAILED);
+    }
+    SystemDriverInfo info{};
+    info.driver.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
+    VkPhysicalDeviceProperties2 properties2{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+        .pNext = &info.driver,
+        .properties = {},
+    };
+    Vulkan::vk::PhysicalDevice(devices[0], dld).GetProperties2(properties2);
+    info.properties = properties2.properties;
+    return info;
+}
+#endif
+
 } // namespace
 
 extern "C" {
@@ -857,34 +886,18 @@ jboolean JNICALL Java_org_yuzu_yuzu_1emu_utils_GpuDriverHelper_supportsCustomDri
 
 jobjectArray Java_org_yuzu_yuzu_1emu_utils_GpuDriverHelper_getSystemDriverInfo(
     JNIEnv* env, jobject j_obj, jobject j_surf, jstring j_hook_lib_dir) {
+    std::string version_string{"1.1.0"};
+    std::string driver_name{"generic"};
 #ifdef ARCHITECTURE_arm64
-    const char* file_redirect_dir_{};
-    int featureFlags{};
-    std::string hook_lib_dir = Common::Android::GetJString(env, j_hook_lib_dir);
-    auto handle = adrenotools_open_libvulkan(RTLD_NOW, featureFlags, nullptr, hook_lib_dir.c_str(),
-                                             nullptr, nullptr, file_redirect_dir_, nullptr);
-    auto driver_library = std::make_shared<Common::DynamicLibrary>(handle);
-    InputCommon::InputSubsystem input_subsystem;
-    auto window =
-        std::make_unique<EmuWindow_Android>(ANativeWindow_fromSurface(env, j_surf), driver_library);
-
-    Vulkan::vk::InstanceDispatch dld;
-    Vulkan::vk::Instance vk_instance = Vulkan::CreateInstance(
-        *driver_library, dld, VK_API_VERSION_1_1, Core::Frontend::WindowSystemType::Android);
-
-    auto surface = Vulkan::CreateSurface(vk_instance, window->GetWindowInfo());
-
-    auto device = Vulkan::CreateDevice(vk_instance, dld, *surface);
-
-    auto driver_version = device.GetDriverVersion();
-    auto version_string =
-        fmt::format("{}.{}.{}", VK_API_VERSION_MAJOR(driver_version),
-                    VK_API_VERSION_MINOR(driver_version), VK_API_VERSION_PATCH(driver_version));
-    auto driver_name = device.GetDriverName();
-#else
-    auto driver_version = "1.0.0";
-    auto version_string = "1.1.0"; //Assume lowest Vulkan level
-    auto driver_name = "generic";
+    try {
+        const SystemDriverInfo info = QuerySystemDriverInfo(env, j_hook_lib_dir);
+        const u32 driver_version = info.properties.driverVersion;
+        version_string =
+            fmt::format("{}.{}.{}", VK_API_VERSION_MAJOR(driver_version),
+                        VK_API_VERSION_MINOR(driver_version), VK_API_VERSION_PATCH(driver_version));
+        driver_name = Vulkan::vk::GetDriverName(info.driver);
+    } catch (...) {
+    }
 #endif
     jobjectArray j_driver_info = env->NewObjectArray(2, Common::Android::GetStringClass(), Common::Android::ToJString(env, version_string));
     env->SetObjectArrayElement(j_driver_info, 1, Common::Android::ToJString(env, driver_name));
@@ -893,32 +906,12 @@ jobjectArray Java_org_yuzu_yuzu_1emu_utils_GpuDriverHelper_getSystemDriverInfo(
 
 jstring Java_org_yuzu_yuzu_1emu_utils_GpuDriverHelper_getGpuModel(JNIEnv *env, jobject j_obj, jobject j_surf, jstring j_hook_lib_dir) {
 #ifdef ARCHITECTURE_arm64
-    const char* file_redirect_dir_{};
-    int featureFlags{};
-    std::string hook_lib_dir = Common::Android::GetJString(env, j_hook_lib_dir);
-    auto handle = adrenotools_open_libvulkan(RTLD_NOW, featureFlags, nullptr, hook_lib_dir.c_str(),
-                                             nullptr, nullptr, file_redirect_dir_, nullptr);
-    auto driver_library = std::make_shared<Common::DynamicLibrary>(handle);
-    InputCommon::InputSubsystem input_subsystem;
-    auto window =
-            std::make_unique<EmuWindow_Android>(ANativeWindow_fromSurface(env, j_surf), driver_library);
-
-    Vulkan::vk::InstanceDispatch dld;
-    Vulkan::vk::Instance vk_instance = Vulkan::CreateInstance(
-            *driver_library, dld, VK_API_VERSION_1_1, Core::Frontend::WindowSystemType::Android);
-
-    auto surface = Vulkan::CreateSurface(vk_instance, window->GetWindowInfo());
-
-    auto device = Vulkan::CreateDevice(vk_instance, dld, *surface);
-
-    const std::string model_name{device.GetModelName()};
-
-    window.release();
-
-    return Common::Android::ToJString(env, model_name);
-#else
-    return Common::Android::ToJString(env, "no-info");
+    try {
+        return Common::Android::ToJString(env, QuerySystemDriverInfo(env, j_hook_lib_dir).properties.deviceName);
+    } catch (...) {
+    }
 #endif
+    return Common::Android::ToJString(env, "no-info");
 }
 
 jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_reloadKeys(JNIEnv* env, jclass clazz) {

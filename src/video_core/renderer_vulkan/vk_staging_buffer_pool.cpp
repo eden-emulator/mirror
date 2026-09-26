@@ -28,16 +28,7 @@ using namespace Common::Literals;
 // Maximum potential alignment of a Vulkan buffer
 constexpr VkDeviceSize MAX_ALIGNMENT = 256;
 
-// Stream buffer size in bytes
-// *NIX drivers are more sensitive to increased buffers for streaming.
-// Windows ones however, can intake bigger buffers and generally do not OOM.
-// - GTX 960 on Windows will not OOM with 256mib
-// - GT 1030 on ^NIX will OOM with 256mib
-#if defined(__FreeBSD__)
 constexpr VkDeviceSize MAX_STREAM_BUFFER_SIZE = 128_MiB;
-#else
-constexpr VkDeviceSize MAX_STREAM_BUFFER_SIZE = 256_MiB;
-#endif
 
 size_t GetStreamBufferSize(const Device& device) {
     if (!device.HasDebuggingToolAttached()) {
@@ -120,7 +111,14 @@ void StagingBufferPool::FreeDeferred(StagingBufferRef& ref) {
 }
 
 void StagingBufferPool::TickFrame() {
-    current_delete_level = (current_delete_level + 1) % NUM_LEVELS;
+    for (size_t step = 0; step < NUM_LEVELS; ++step) {
+        current_delete_level = (current_delete_level + 1) % NUM_LEVELS;
+        if (!device_local_cache[current_delete_level].entries.empty() ||
+            !upload_cache[current_delete_level].entries.empty() ||
+            !download_cache[current_delete_level].entries.empty()) {
+            break;
+        }
+    }
 
     ReleaseCache(MemoryUsage::DeviceLocal);
     ReleaseCache(MemoryUsage::Upload);
@@ -128,10 +126,12 @@ void StagingBufferPool::TickFrame() {
 }
 
 StagingBufferRef StagingBufferPool::GetStreamBuffer(size_t size) {
-    if (AreRegionsActive(Region(free_iterator) + 1,
-                         (std::min)(Region(iterator + size) + 1, NUM_SYNCS))) {
-        // Avoid waiting for the previous usages to be free
-        return GetStagingBuffer(size, MemoryUsage::Upload);
+    const size_t wanted_begin = Region(free_iterator) + 1;
+    const size_t wanted_end = (std::min)(Region(iterator + size) + 1, NUM_SYNCS);
+    if (AreRegionsActive(wanted_begin, wanted_end)) {
+        if (auto ref = OverflowStreamBuffer(size, wanted_begin, wanted_end)) {
+            return *ref;
+        }
     }
     const u64 current_tick = scheduler.CurrentTick();
     std::fill(sync_ticks.begin() + Region(used_iterator), sync_ticks.begin() + Region(iterator),
@@ -147,8 +147,9 @@ StagingBufferRef StagingBufferPool::GetStreamBuffer(size_t size) {
         free_iterator = size;
 
         if (AreRegionsActive(0, Region(size) + 1)) {
-            // Avoid waiting for the previous usages to be free
-            return GetStagingBuffer(size, MemoryUsage::Upload);
+            if (auto ref = OverflowStreamBuffer(size, 0, Region(size) + 1)) {
+                return *ref;
+            }
         }
     }
     const size_t offset = iterator;
@@ -162,6 +163,27 @@ StagingBufferRef StagingBufferPool::GetStreamBuffer(size_t size) {
         .log2_level{},
         .index{},
     };
+}
+
+u64 StagingBufferPool::MaxRegionTick(size_t region_begin, size_t region_end) const {
+    u64 tick = 0;
+    for (size_t region = region_begin; region < region_end; ++region) {
+        tick = (std::max)(tick, sync_ticks[region]);
+    }
+    return tick;
+}
+
+std::optional<StagingBufferRef> StagingBufferPool::OverflowStreamBuffer(size_t size,
+                                                                        size_t region_begin,
+                                                                        size_t region_end) {
+    if (cache_bytes[static_cast<size_t>(MemoryUsage::Upload)] < stream_buffer_size) {
+        return GetStagingBuffer(size, MemoryUsage::Upload);
+    }
+    if (auto ref = TryGetReservedBuffer(size, MemoryUsage::Upload, false)) {
+        return ref;
+    }
+    scheduler.Wait(MaxRegionTick(region_begin, region_end));
+    return std::nullopt;
 }
 
 bool StagingBufferPool::AreRegionsActive(size_t region_begin, size_t region_end) const {
@@ -211,7 +233,8 @@ StagingBufferRef StagingBufferPool::CreateStagingBuffer(size_t size, MemoryUsage
         .size = 1ULL << log2_size,
         .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                 VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = nullptr,
@@ -232,6 +255,7 @@ StagingBufferRef StagingBufferPool::CreateStagingBuffer(size_t size, MemoryUsage
         device.IsBufferDeviceAddressSupported()
             ? device.GetLogical().GetBufferDeviceAddress(*buffer)
             : VkDeviceAddress{};
+    cache_bytes[static_cast<size_t>(usage)] += size_t{1} << log2_size;
     StagingBuffer& entry = GetCache(usage)[log2_size].entries.emplace_back(StagingBuffer{
         .buffer = std::move(buffer),
         .device_address = buffer_address,
@@ -260,12 +284,12 @@ StagingBufferPool::StagingBuffersCache& StagingBufferPool::GetCache(MemoryUsage 
 }
 
 void StagingBufferPool::ReleaseCache(MemoryUsage usage) {
-    ReleaseLevel(GetCache(usage), current_delete_level);
+    ReleaseLevel(usage, current_delete_level);
 }
 
-void StagingBufferPool::ReleaseLevel(StagingBuffersCache& cache, size_t log2) {
+void StagingBufferPool::ReleaseLevel(MemoryUsage usage, size_t log2) {
     constexpr size_t deletions_per_tick = 16;
-    auto& staging = cache[log2];
+    auto& staging = GetCache(usage)[log2];
     auto& entries = staging.entries;
     const size_t old_size = entries.size();
 
@@ -279,6 +303,7 @@ void StagingBufferPool::ReleaseLevel(StagingBuffersCache& cache, size_t log2) {
     entries.erase(std::remove_if(begin, end, is_deletable), end);
 
     const size_t new_size = entries.size();
+    cache_bytes[static_cast<size_t>(usage)] -= (old_size - new_size) << log2;
     staging.delete_index += deletions_per_tick;
     if (staging.delete_index >= new_size) {
         staging.delete_index = 0;

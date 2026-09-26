@@ -14,6 +14,10 @@
 namespace Tegra::Engines {
 
 void Maxwell3D::DrawManager::ProcessMethodCall(Maxwell3D& maxwell3d, u32 method, u32 argument) {
+    if (draw_state.draw_mode == DrawMode::InstanceArray &&
+        method != MAXWELL3D_REG_INDEX(vertex_array_instance_subsequent)) {
+        DrawDeferred(maxwell3d);
+    }
     switch (method) {
     case MAXWELL3D_REG_INDEX(clear_surface):
         return Clear(maxwell3d, 1);
@@ -72,7 +76,20 @@ void Maxwell3D::DrawManager::Clear(Maxwell3D& maxwell3d, u32 layer_count) {
     }
 }
 
+void Maxwell3D::DrawManager::FlushInstanceArray(Maxwell3D& maxwell3d) {
+    if (draw_state.draw_mode != DrawMode::InstanceArray) {
+        return;
+    }
+    const u32 instance_count = draw_state.instance_count + 1;
+    draw_state.draw_mode = DrawMode::General;
+    draw_state.instance_count = 0;
+    if (maxwell3d.ShouldExecute()) {
+        maxwell3d.rasterizer->Draw(false, instance_count);
+    }
+}
+
 void Maxwell3D::DrawManager::DrawDeferred(Maxwell3D& maxwell3d) {
+    FlushInstanceArray(maxwell3d);
     if (draw_state.draw_mode != DrawMode::Instance || draw_state.instance_count == 0) {
         return;
     }
@@ -81,6 +98,7 @@ void Maxwell3D::DrawManager::DrawDeferred(Maxwell3D& maxwell3d) {
 }
 
 void Maxwell3D::DrawManager::DrawArray(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 vertex_first, u32 vertex_count, u32 base_instance, u32 num_instances) {
+    FlushInstanceArray(maxwell3d);
     draw_state.topology = topology;
     draw_state.vertex_buffer.first = vertex_first;
     draw_state.vertex_buffer.count = vertex_count;
@@ -89,19 +107,29 @@ void Maxwell3D::DrawManager::DrawArray(Maxwell3D& maxwell3d, Maxwell3D::Regs::Pr
 }
 
 void Maxwell3D::DrawManager::DrawArrayInstanced(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 vertex_first, u32 vertex_count, bool subsequent) {
+    if (subsequent && draw_state.draw_mode == DrawMode::InstanceArray &&
+        instance_topology == topology && draw_state.vertex_buffer.first == vertex_first &&
+        draw_state.vertex_buffer.count == vertex_count) {
+        ++draw_state.instance_count;
+        return;
+    }
+    u32 base_instance = 0;
+    if (subsequent) {
+        base_instance = draw_state.base_instance + draw_state.instance_count + 1;
+    }
+    DrawDeferred(maxwell3d);
+    instance_topology = topology;
     draw_state.topology = topology;
     draw_state.vertex_buffer.first = vertex_first;
     draw_state.vertex_buffer.count = vertex_count;
-    if (!subsequent) {
-        draw_state.instance_count = 1;
-    }
-    draw_state.base_instance = draw_state.instance_count - 1;
-    draw_state.draw_mode = DrawMode::Instance;
-    draw_state.instance_count++;
-    ProcessDraw(maxwell3d, false, 1);
+    draw_state.base_instance = base_instance;
+    draw_state.instance_count = 0;
+    draw_state.draw_mode = DrawMode::InstanceArray;
+    UpdateTopology(maxwell3d);
 }
 
 void Maxwell3D::DrawManager::DrawIndex(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 index_first, u32 index_count, u32 base_index, u32 base_instance, u32 num_instances) {
+    FlushInstanceArray(maxwell3d);
     draw_state.topology = topology;
     draw_state.index_buffer = maxwell3d.regs.index_buffer;
     draw_state.index_buffer.first = index_first;
@@ -112,11 +140,13 @@ void Maxwell3D::DrawManager::DrawIndex(Maxwell3D& maxwell3d, Maxwell3D::Regs::Pr
 }
 
 void Maxwell3D::DrawManager::DrawArrayIndirect(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology) {
+    FlushInstanceArray(maxwell3d);
     draw_state.topology = topology;
     ProcessDrawIndirect(maxwell3d);
 }
 
 void Maxwell3D::DrawManager::DrawIndexedIndirect(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 index_first, u32 index_count) {
+    FlushInstanceArray(maxwell3d);
     draw_state.topology = topology;
     draw_state.index_buffer = maxwell3d.regs.index_buffer;
     draw_state.index_buffer.first = index_first;
@@ -186,6 +216,9 @@ void Maxwell3D::DrawManager::DrawBegin(Maxwell3D& maxwell3d) {
 
 void Maxwell3D::DrawManager::DrawEnd(Maxwell3D& maxwell3d, u32 instance_count, bool force_draw) {
     switch (draw_state.draw_mode) {
+    case DrawMode::InstanceArray:
+        FlushInstanceArray(maxwell3d);
+        break;
     case DrawMode::Instance:
         if (!force_draw) {
             break;
@@ -249,27 +282,67 @@ void Maxwell3D::DrawManager::DrawTexture(Maxwell3D& maxwell3d) {
 }
 
 void Maxwell3D::DrawManager::UpdateTopology(Maxwell3D& maxwell3d) {
+    using Topology = Maxwell3D::Regs::PrimitiveTopology;
+    using Override = Maxwell3D::Regs::PrimitiveTopologyOverride;
     switch (maxwell3d.regs.primitive_topology_control) {
     case Maxwell3D::Regs::PrimitiveTopologyControl::UseInBeginMethods:
         break;
     case Maxwell3D::Regs::PrimitiveTopologyControl::UseSeparateState:
         switch (maxwell3d.regs.topology_override) {
-        case Maxwell3D::Regs::PrimitiveTopologyOverride::None:
+        case Override::None:
             break;
-        case Maxwell3D::Regs::PrimitiveTopologyOverride::Points:
-            draw_state.topology = Maxwell3D::Regs::PrimitiveTopology::Points;
+        case Override::Points:
+        case Override::LegacyPoints:
+            draw_state.topology = Topology::Points;
             break;
-        case Maxwell3D::Regs::PrimitiveTopologyOverride::Lines:
-            draw_state.topology = Maxwell3D::Regs::PrimitiveTopology::Lines;
+        case Override::Lines:
+        case Override::LegacyLines:
+        case Override::LegacyLinesImm:
+        case Override::LegacyIndexedLines:
+        case Override::LegacyIndexedLines2:
+            draw_state.topology = Topology::Lines;
             break;
-        case Maxwell3D::Regs::PrimitiveTopologyOverride::LineStrip:
-            draw_state.topology = Maxwell3D::Regs::PrimitiveTopology::LineStrip;
+        case Override::LineStrip:
+        case Override::LegacyLineStrip:
+        case Override::LegacyIndexedLineStrip:
+            draw_state.topology = Topology::LineStrip;
             break;
-        default:
-            draw_state.topology = Maxwell3D::Regs::PrimitiveTopology(maxwell3d.regs.topology_override);
+        case Override::Triangles:
+        case Override::LegacyTriangles:
+        case Override::LegacyIndexedTriangles:
+        case Override::LegacyIndexedTriangles2:
+            draw_state.topology = Topology::Triangles;
+            break;
+        case Override::TriangleStrip:
+        case Override::LegacyTriangleStrip:
+        case Override::LegacyIndexedTriangleStrip:
+            draw_state.topology = Topology::TriangleStrip;
+            break;
+        case Override::LegacyTriangleFan:
+        case Override::LegacyTriangleFanImm:
+        case Override::LegacyIndexedTriangleFan:
+            draw_state.topology = Topology::TriangleFan;
+            break;
+        case Override::LinesAdjacency:
+            draw_state.topology = Topology::LinesAdjacency;
+            break;
+        case Override::LineStripAdjacency:
+            draw_state.topology = Topology::LineStripAdjacency;
+            break;
+        case Override::TrianglesAdjacency:
+            draw_state.topology = Topology::TrianglesAdjacency;
+            break;
+        case Override::TriangleStripAdjacency:
+            draw_state.topology = Topology::TriangleStripAdjacency;
+            break;
+        case Override::Patches:
+            draw_state.topology = Topology::Patches;
             break;
         }
         break;
+    }
+    if (u32(draw_state.topology) > u32(Topology::Patches)) {
+        draw_state.topology = Topology::Triangles;
     }
 }
 

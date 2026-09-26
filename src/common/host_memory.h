@@ -10,6 +10,7 @@
 #include <optional>
 #include "common/common_funcs.h"
 #include "common/common_types.h"
+#include "common/virtual_buffer.h"
 
 namespace Common {
 
@@ -85,7 +86,7 @@ private:
     u8* virtual_base{};
     size_t virtual_base_offset{};
     // Windows requires it for kernels whom lack proper support for some functions!
-    bool fallback_buffer{false};
+    std::optional<Common::VirtualBuffer<u8>> fallback_buffer;
 };
 
 } // namespace Common

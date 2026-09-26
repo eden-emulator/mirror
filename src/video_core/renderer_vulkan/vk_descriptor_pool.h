@@ -65,7 +65,8 @@ private:
 
 class DescriptorPool {
 public:
-    explicit DescriptorPool(const Device& device, Scheduler& scheduler);
+
+DescriptorPool();
     ~DescriptorPool();
 
     DescriptorPool& operator=(const DescriptorPool&) = delete;

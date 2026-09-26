@@ -65,7 +65,6 @@ SWITCHABLE(AnisotropyMode, true);
 SWITCHABLE(AntiAliasing, false);
 SWITCHABLE(AspectRatio, true);
 SWITCHABLE(AstcDecodeMode, true);
-SWITCHABLE(AstcRecompression, true);
 SWITCHABLE(AudioMode, true);
 SWITCHABLE(CpuBackend, true);
 SWITCHABLE(CpuAccuracy, true);
@@ -563,12 +562,6 @@ struct Values {
                                                                true,
                                                                true};
 
-    SwitchableSetting<AstcRecompression, true> astc_recompression{linkage,
-                                                                  AstcRecompression::Uncompressed,
-                                                                  "astc_recompression",
-                                                                  Category::RendererAdvanced};
-
-
     SwitchableSetting<bool> sync_memory_operations{linkage,
                                                    false,
                                                    "sync_memory_operations",
@@ -641,7 +634,7 @@ struct Values {
                                                         true};
     SwitchableSetting<bool> async_presentation{linkage,
 #ifdef __ANDROID__
-                                               false,
+                                               true,
 #else
                                                false,
 #endif
@@ -665,27 +658,6 @@ struct Values {
 
     SwitchableSetting<bool> use_asynchronous_shaders{linkage, false, "use_asynchronous_shaders",
                                                      Category::RendererHacks};
-
-    SwitchableSetting<GpuUnswizzleSize> gpu_unswizzle_texture_size{linkage,
-                                                  GpuUnswizzleSize::Large,
-                                                  "gpu_unswizzle_texture_size",
-                                                  Category::RendererHacks,
-                                                  Specialization::Default};
-
-    SwitchableSetting<GpuUnswizzle> gpu_unswizzle_stream_size{linkage,
-                                                  GpuUnswizzle::Medium,
-                                                  "gpu_unswizzle_stream_size",
-                                                  Category::RendererHacks,
-                                                  Specialization::Default};
-
-    SwitchableSetting<GpuUnswizzleChunk> gpu_unswizzle_chunk_size{linkage,
-                                                  GpuUnswizzleChunk::Medium,
-                                                  "gpu_unswizzle_chunk_size",
-                                                  Category::RendererHacks,
-                                                  Specialization::Default};
-
-    SwitchableSetting<bool> gpu_unswizzle_enabled{linkage, false, "gpu_unswizzle_enabled",
-                                                  Category::RendererHacks};
 
     SwitchableSetting<ExtendedDynamicState> dyna_state{linkage,
 #if defined(__ANDROID__)

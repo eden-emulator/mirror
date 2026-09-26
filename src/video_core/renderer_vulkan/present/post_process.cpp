@@ -134,7 +134,9 @@ vk::RenderPass CreateFxRenderPass(const Device& device, VkFormat format, bool cl
         initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
     }
 
-    const VkAttachmentDescription attachment{
+    const VkAttachmentDescription2 attachment{
+        .sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+        .pNext = nullptr,
         .flags = 0,
         .format = format,
         .samples = VK_SAMPLE_COUNT_1_BIT,
@@ -146,14 +148,20 @@ vk::RenderPass CreateFxRenderPass(const Device& device, VkFormat format, bool cl
         .finalLayout = VK_IMAGE_LAYOUT_GENERAL,
     };
 
-    const VkAttachmentReference reference{
+    static constexpr VkAttachmentReference2 reference{
+        .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+        .pNext = nullptr,
         .attachment = 0,
         .layout = VK_IMAGE_LAYOUT_GENERAL,
+        .aspectMask = 0,
     };
 
-    const VkSubpassDescription subpass{
+    const VkSubpassDescription2 subpass{
+        .sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,
+        .pNext = nullptr,
         .flags = 0,
         .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .viewMask = 0,
         .inputAttachmentCount = 0,
         .pInputAttachments = nullptr,
         .colorAttachmentCount = 1,
@@ -164,8 +172,8 @@ vk::RenderPass CreateFxRenderPass(const Device& device, VkFormat format, bool cl
         .pPreserveAttachments = nullptr,
     };
 
-    return device.GetLogical().CreateRenderPass(VkRenderPassCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+    return device.GetLogical().CreateRenderPass2(VkRenderPassCreateInfo2{
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
         .pNext = nullptr,
         .flags = 0,
         .attachmentCount = 1,
@@ -174,6 +182,8 @@ vk::RenderPass CreateFxRenderPass(const Device& device, VkFormat format, bool cl
         .pSubpasses = &subpass,
         .dependencyCount = 0,
         .pDependencies = nullptr,
+        .correlatedViewMaskCount = 0,
+        .pCorrelatedViewMasks = nullptr,
     });
 }
 
@@ -601,8 +611,6 @@ bool PostProcessChain::BuildEffects(const Device& device, MemoryAllocator& alloc
                                             *vertex_shader->second, *fragment_shader->second, pass);
 
             if (out.writes_backbuffer) {
-                out.backbuffer_slot = static_cast<u32>(effect.backbuffer_pass_count % 2);
-                ++effect.backbuffer_pass_count;
                 for (u32 image = 0; image < m_image_count; ++image) {
                     for (size_t slot = 0; slot < 2; ++slot) {
                         out.framebuffers.push_back(CreateWrappedFramebuffer(

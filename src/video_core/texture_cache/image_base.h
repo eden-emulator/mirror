@@ -95,6 +95,7 @@ struct ImageBase {
     u32 scale_rating = 0;
     u64 scale_tick = 0;
     bool has_scaled = false;
+    u32 guest_data_checks = 0;
 
     size_t channel = 0;
 
@@ -105,6 +106,7 @@ struct ImageBase {
     VAddr cpu_addr_end = 0;
 
     u64 modification_tick = 0;
+    u64 guest_data_hash = 0;
     size_t lru_index = SIZE_MAX;
 
     std::array<u32, MAX_MIP_LEVELS> mip_level_offsets{};

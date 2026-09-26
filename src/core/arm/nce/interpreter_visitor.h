@@ -7,97 +7,77 @@
 
 #pragma once
 
-#include <atomic>
-#include <signal.h>
-#include <unistd.h>
+#include <optional>
 #include <span>
+#include <signal.h>
 
-#include "core/hle/kernel/k_thread.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#include <dynarmic/frontend/A64/a64_types.h>
+#include <dynarmic/frontend/imm.h>
+#pragma GCC diagnostic pop
+
 #include "core/memory.h"
-#include "common/logging.h"
-#include "core/arm/nce/visitor_base.h"
 
 namespace Core {
 
-namespace Memory {
-class Memory;
-}
-
-class InterpreterVisitor final : public VisitorBase {
+class InterpreterVisitor {
 public:
     explicit InterpreterVisitor(Core::Memory::Memory& memory, std::span<u64, 31> regs,
                                 std::span<u128, 32> fpsimd_regs, u64& sp, const u64& pc)
         : m_memory(memory), m_regs(regs), m_fpsimd_regs(fpsimd_regs), m_sp(sp), m_pc(pc) {}
-    ~InterpreterVisitor() override = default;
 
-    enum class MemOp {
-        Load,
-        Store,
-        Prefetch,
-    };
-
-    u128 GetVec(Vec v);
-    u64 GetReg(Reg r);
-    u64 GetSp();
-    u64 GetPc();
-
-    void SetVec(Vec v, u128 value);
-    void SetReg(Reg r, u64 value);
-    void SetSp(u64 value);
-
-    u64 ExtendReg(size_t bitsize, Reg reg, Imm<3> option, u8 shift);
-
-    // Loads and stores - Load/Store Exclusive
-    bool Ordered(size_t size, bool L, bool o0, Reg Rn, Reg Rt);
-    bool STLLR(Imm<2> size, Reg Rn, Reg Rt) override;
-    bool STLR(Imm<2> size, Reg Rn, Reg Rt) override;
-    bool LDLAR(Imm<2> size, Reg Rn, Reg Rt) override;
-    bool LDAR(Imm<2> size, Reg Rn, Reg Rt) override;
-
-    // Loads and stores - Load register (literal)
-    bool LDR_lit_gen(bool opc_0, Imm<19> imm19, Reg Rt) override;
-    bool LDR_lit_fpsimd(Imm<2> opc, Imm<19> imm19, Vec Vt) override;
-
-    // Loads and stores - Load/Store register pair
-    bool STP_LDP_gen(Imm<2> opc, bool not_postindex, bool wback, Imm<1> L, Imm<7> imm7, Reg Rt2,
-                     Reg Rn, Reg Rt) override;
-    bool STP_LDP_fpsimd(Imm<2> opc, bool not_postindex, bool wback, Imm<1> L, Imm<7> imm7, Vec Vt2,
-                        Reg Rn, Vec Vt) override;
-
-    // Loads and stores - Load/Store register (immediate)
-    bool RegisterImmediate(bool wback, bool postindex, size_t scale, u64 offset, Imm<2> size,
-                           Imm<2> opc, Reg Rn, Reg Rt);
-    bool STRx_LDRx_imm_1(Imm<2> size, Imm<2> opc, Imm<9> imm9, bool not_postindex, Reg Rn,
-                         Reg Rt) override;
-    bool STRx_LDRx_imm_2(Imm<2> size, Imm<2> opc, Imm<12> imm12, Reg Rn, Reg Rt) override;
-    bool STURx_LDURx(Imm<2> size, Imm<2> opc, Imm<9> imm9, Reg Rn, Reg Rt) override;
-
-    bool SIMDImmediate(bool wback, bool postindex, size_t scale, u64 offset, MemOp memop, Reg Rn,
-                       Vec Vt);
-    bool STR_imm_fpsimd_1(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, bool not_postindex, Reg Rn,
-                          Vec Vt) override;
-    bool STR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm12, Reg Rn, Vec Vt) override;
-    bool LDR_imm_fpsimd_1(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, bool not_postindex, Reg Rn,
-                          Vec Vt) override;
-    bool LDR_imm_fpsimd_2(Imm<2> size, Imm<1> opc_1, Imm<12> imm12, Reg Rn, Vec Vt) override;
-    bool STUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg Rn, Vec Vt) override;
-    bool LDUR_fpsimd(Imm<2> size, Imm<1> opc_1, Imm<9> imm9, Reg Rn, Vec Vt) override;
-
-    // Loads and stores - Load/Store register (register offset)
-    bool RegisterOffset(size_t scale, u8 shift, Imm<2> size, Imm<1> opc_1, Imm<1> opc_0, Reg Rm,
-                        Imm<3> option, Reg Rn, Reg Rt);
-    bool STRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn,
-                  Reg Rt) override;
-    bool LDRx_reg(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn,
-                  Reg Rt) override;
-
-    bool SIMDOffset(size_t scale, u8 shift, Imm<1> opc_0, Reg Rm, Imm<3> option, Reg Rn, Vec Vt);
-    bool STR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn,
-                        Vec Vt) override;
-    bool LDR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3> option, bool S, Reg Rn,
-                        Vec Vt) override;
+    bool Execute(u32 inst);
 
 private:
+    template <size_t BitSize>
+    using Imm = Dynarmic::Imm<BitSize>;
+    using Reg = Dynarmic::A64::Reg;
+    using Vec = Dynarmic::A64::Vec;
+
+    u128 GetVec(Vec v) const {
+        return m_fpsimd_regs[static_cast<u32>(v)];
+    }
+    void SetVec(Vec v, u128 value) {
+        m_fpsimd_regs[static_cast<u32>(v)] = value;
+    }
+    u64 GetReg(Reg r) const {
+        return m_regs[static_cast<u32>(r)];
+    }
+    void SetReg(Reg r, u64 value) {
+        m_regs[static_cast<u32>(r)] = value;
+    }
+    u64 GetRegSp(Reg r) const {
+        if (r == Reg::SP) {
+            return m_sp;
+        }
+        return m_regs[static_cast<u32>(r)];
+    }
+    void SetRegSp(Reg r, u64 value) {
+        if (r == Reg::SP) {
+            m_sp = value;
+            return;
+        }
+        m_regs[static_cast<u32>(r)] = value;
+    }
+
+    u64 ExtendReg(Reg reg, Imm<3> option, u8 shift);
+
+    bool Ordered(size_t size, bool load, Reg Rn, Reg Rt);
+    bool LoadLiteral(bool wide, Imm<19> imm19, Reg Rt);
+    bool LoadLiteralSimd(Imm<2> opc, Imm<19> imm19, Vec Vt);
+    bool Pair(Imm<2> opc, bool not_postindex, bool wback, bool load, Imm<7> imm7, Reg Rt2, Reg Rn,
+              Reg Rt);
+    bool PairSimd(Imm<2> opc, bool not_postindex, bool wback, bool load, Imm<7> imm7, Vec Vt2,
+                  Reg Rn, Vec Vt);
+    bool RegisterImmediate(bool wback, bool postindex, u64 offset, Imm<2> size, Imm<2> opc, Reg Rn,
+                           Reg Rt);
+    bool RegisterOffset(bool S, Imm<2> size, Imm<1> opc_1, Imm<1> opc_0, Reg Rm, Imm<3> option,
+                        Reg Rn, Reg Rt);
+    bool SimdImmediate(bool wback, bool postindex, size_t scale, u64 offset, bool load, Reg Rn,
+                       Vec Vt);
+    bool SimdOffset(size_t scale, bool S, bool load, Reg Rm, Imm<3> option, Reg Rn, Vec Vt);
+
     Core::Memory::Memory& m_memory;
     std::span<u64, 31> m_regs;
     std::span<u128, 32> m_fpsimd_regs;

@@ -3034,7 +3034,7 @@ public:
     // clang-format on
 
     struct DrawManager {
-        enum class DrawMode : u32 { General = 0, Instance, InlineIndex };
+        enum class DrawMode : u32 { General = 0, Instance, InlineIndex, InstanceArray };
         struct State {
             Maxwell3D::Regs::PrimitiveTopology topology{};
             DrawMode draw_mode{};
@@ -3071,6 +3071,7 @@ public:
         void ProcessMethodCall(Maxwell3D& maxwell3d, u32 method, u32 argument);
         void Clear(Maxwell3D& maxwell3d, u32 layer_count);
         void DrawDeferred(Maxwell3D& maxwell3d);
+        void FlushInstanceArray(Maxwell3D& maxwell3d);
         void DrawArray(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 vertex_first, u32 vertex_count, u32 base_instance, u32 num_instances);
         void DrawArrayInstanced(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 vertex_first, u32 vertex_count, bool subsequent);
         void DrawIndex(Maxwell3D& maxwell3d, Maxwell3D::Regs::PrimitiveTopology topology, u32 index_first, u32 index_count, u32 base_index, u32 base_instance, u32 num_instances);
@@ -3086,6 +3087,7 @@ public:
         void ProcessDraw(Maxwell3D& maxwell3d, bool draw_indexed, u32 instance_count);
         void ProcessDrawIndirect(Maxwell3D& maxwell3d);
         State draw_state{};
+        Maxwell3D::Regs::PrimitiveTopology instance_topology{};
         DrawTextureState draw_texture_state{};
         IndirectParams indirect_state{};
     };

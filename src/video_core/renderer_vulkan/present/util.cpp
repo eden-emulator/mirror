@@ -49,13 +49,13 @@ vk::Image CreateWrappedImage(MemoryAllocator& allocator, VkExtent2D dimensions, 
 
 void TransitionImageLayout(vk::CommandBuffer& cmdbuf, VkImage image, VkImageLayout target_layout,
                            VkImageLayout source_layout) {
-    constexpr VkFlags flags{VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT};
-    const VkImageMemoryBarrier barrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+    const VkImageMemoryBarrier2 barrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = flags,
-        .dstAccessMask = flags,
+        .srcStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+        .srcAccessMask = vk::ACCESS_IMAGE_WRITES,
+        .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+        .dstAccessMask = vk::ACCESS_IMAGE_USERS,
         .oldLayout = source_layout,
         .newLayout = target_layout,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -69,8 +69,7 @@ void TransitionImageLayout(vk::CommandBuffer& cmdbuf, VkImage image, VkImageLayo
             .layerCount = 1,
         },
     };
-    cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-                           0, barrier);
+    cmdbuf.PipelineBarrier(barrier);
 }
 
 void UploadImage(const Device& device, MemoryAllocator& allocator, Scheduler& scheduler,
@@ -116,11 +115,13 @@ void UploadImage(const Device& device, MemoryAllocator& allocator, Scheduler& sc
 
 void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffer,
                         VkExtent3D extent) {
-    const VkImageMemoryBarrier read_barrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+    const VkImageMemoryBarrier2 read_barrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+        .srcStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+        .srcAccessMask = vk::ACCESS_IMAGE_WRITES,
+        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
         .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
         .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -134,11 +135,13 @@ void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffe
             .layerCount = VK_REMAINING_ARRAY_LAYERS,
         },
     };
-    const VkImageMemoryBarrier image_write_barrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+    const VkImageMemoryBarrier2 image_write_barrier{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = 0,
-        .dstAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
+        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .srcAccessMask = VK_ACCESS_2_NONE,
+        .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+        .dstAccessMask = vk::ACCESS_IMAGE_USERS,
         .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -152,11 +155,13 @@ void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffe
             .layerCount = VK_REMAINING_ARRAY_LAYERS,
         },
     };
-    static constexpr VkMemoryBarrier memory_write_barrier{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+    static constexpr VkMemoryBarrier2 memory_write_barrier{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
-        .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        .dstStageMask = vk::PIPELINE_STAGE_HOST,
+        .dstAccessMask = VK_ACCESS_2_HOST_READ_BIT,
     };
     const VkBufferImageCopy copy{
         .bufferOffset = 0,
@@ -171,11 +176,9 @@ void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffe
         .imageOffset{.x = 0, .y = 0, .z = 0},
         .imageExtent{extent},
     };
-    cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-                           read_barrier);
+    cmdbuf.PipelineBarrier(read_barrier);
     cmdbuf.CopyImageToBuffer(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, copy);
-    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, vk::PIPELINE_STAGE_GRAPHICS_COMPUTE, 0,
-                           memory_write_barrier, nullptr, image_write_barrier);
+    cmdbuf.PipelineBarrier(0, memory_write_barrier, {}, image_write_barrier);
 }
 
 vk::ImageView CreateWrappedImageView(const Device& device, vk::Image& image, VkFormat format) {
@@ -197,7 +200,9 @@ vk::ImageView CreateWrappedImageView(const Device& device, vk::Image& image, VkF
 
 vk::RenderPass CreateWrappedRenderPass(const Device& device, VkFormat format,
                                        VkImageLayout initial_layout) {
-    const VkAttachmentDescription attachment{
+    const VkAttachmentDescription2 attachment{
+        .sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+        .pNext = nullptr,
         .flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
         .format = format,
         .samples = VK_SAMPLE_COUNT_1_BIT,
@@ -210,14 +215,20 @@ vk::RenderPass CreateWrappedRenderPass(const Device& device, VkFormat format,
         .finalLayout = VK_IMAGE_LAYOUT_GENERAL,
     };
 
-    constexpr VkAttachmentReference color_attachment_ref{
+    static constexpr VkAttachmentReference2 color_attachment_ref{
+        .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+        .pNext = nullptr,
         .attachment = 0,
         .layout = VK_IMAGE_LAYOUT_GENERAL,
+        .aspectMask = 0,
     };
 
-    const VkSubpassDescription subpass_description{
+    const VkSubpassDescription2 subpass_description{
+        .sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,
+        .pNext = nullptr,
         .flags = 0,
         .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .viewMask = 0,
         .inputAttachmentCount = 0,
         .pInputAttachments = nullptr,
         .colorAttachmentCount = 1,
@@ -228,18 +239,31 @@ vk::RenderPass CreateWrappedRenderPass(const Device& device, VkFormat format,
         .pPreserveAttachments = nullptr,
     };
 
-    constexpr VkSubpassDependency dependency{
-        .srcSubpass = VK_SUBPASS_EXTERNAL,
-        .dstSubpass = 0,
-        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+    static constexpr VkMemoryBarrier2 dependency_barrier{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .pNext = nullptr,
+        .srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
         .srcAccessMask = 0,
-        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        .dependencyFlags = 0,
+        .dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .dstAccessMask =
+            VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
     };
 
-    return device.GetLogical().CreateRenderPass(VkRenderPassCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+    static constexpr VkSubpassDependency2 dependency{
+        .sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2,
+        .pNext = &dependency_barrier,
+        .srcSubpass = VK_SUBPASS_EXTERNAL,
+        .dstSubpass = 0,
+        .srcStageMask = 0,
+        .dstStageMask = 0,
+        .srcAccessMask = 0,
+        .dstAccessMask = 0,
+        .dependencyFlags = 0,
+        .viewOffset = 0,
+    };
+
+    return device.GetLogical().CreateRenderPass2(VkRenderPassCreateInfo2{
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
         .pNext = nullptr,
         .flags = 0,
         .attachmentCount = 1,
@@ -248,6 +272,8 @@ vk::RenderPass CreateWrappedRenderPass(const Device& device, VkFormat format,
         .pSubpasses = &subpass_description,
         .dependencyCount = 1,
         .pDependencies = &dependency,
+        .correlatedViewMaskCount = 0,
+        .pCorrelatedViewMasks = nullptr,
     });
 }
 
@@ -521,7 +547,7 @@ static vk::Pipeline CreateWrappedPipelineImpl(
         .subpass = 0,
         .basePipelineHandle = 0,
         .basePipelineIndex = 0,
-    }, device.StaticPipelineCache());
+    });
 }
 
 vk::Pipeline CreateWrappedPipeline(const Device& device, vk::RenderPass& renderpass,

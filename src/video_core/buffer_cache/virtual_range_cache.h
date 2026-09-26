@@ -126,11 +126,11 @@ private:
     }
 
     void ApplyDeferred() {
-        std::vector<DeferredUnmap> pending;
         bool overflow = false;
         {
             std::scoped_lock lock{deferred_mutex};
             has_deferred.store(false, std::memory_order_release);
+            pending.clear();
             pending.swap(deferred);
             overflow = deferred_overflow;
             deferred_overflow = false;
@@ -165,6 +165,7 @@ private:
 
     ::Common::unordered_map<u64, Entry> entries;
     std::vector<DeferredUnmap> deferred;
+    std::vector<DeferredUnmap> pending;
     std::mutex deferred_mutex;
     std::atomic<bool> has_deferred{false};
     bool deferred_overflow{};

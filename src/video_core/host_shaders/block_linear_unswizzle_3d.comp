@@ -53,7 +53,7 @@ layout(binding = BINDING_INPUT_BUFFER, std430) buffer InputBufferU128 { uvec4 u1
 
 layout(binding = BINDING_OUTPUT_IMAGE) uniform writeonly uimage3D output_image;
 
-layout(local_size_x = 16, local_size_y = 8, local_size_z = 8) in;
+layout(local_size_x = 16, local_size_y = 8, local_size_z = 2) in;
 
 const uint GOB_SIZE_X = 64;
 const uint GOB_SIZE_Y = 8;
@@ -67,19 +67,11 @@ const uint GOB_SIZE_SHIFT = GOB_SIZE_X_SHIFT + GOB_SIZE_Y_SHIFT + GOB_SIZE_Z_SHI
 
 const uvec2 SWIZZLE_MASK = uvec2(GOB_SIZE_X - 1, GOB_SIZE_Y - 1);
 
-uint SwizzleTable(uint pos) {
-    const uint t[8] = uint[](
-        0x12100200, 0x13110301, 0x16140604, 0x17150705,
-        0x1a180a08, 0x1b190b09, 0x1e1c0e0c, 0x1f1d0f0d
-    );
-    const uint i = pos >> 4;
-    const uint h = (t[i / 4] >> ((i % 4) * 8)) & 0xff;
-    return (h << 4) | (pos & 0xf);
-}
-
 uint SwizzleOffset(uvec2 pos) {
     pos = pos & SWIZZLE_MASK;
-    return SwizzleTable(pos.y * 64 + pos.x);
+    return ((pos.x & 32u) << 3u) | ((pos.y & 6u) << 5u) |
+           ((pos.x & 16u) << 1u) | ((pos.y & 1u) << 4u) |
+           (pos.x & 15u);
 }
 
 uvec4 ReadTexel(uint offset) {

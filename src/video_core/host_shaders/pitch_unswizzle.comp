@@ -33,7 +33,7 @@
 BEGIN_PUSH_CONSTANTS
 UNIFORM(0) uvec2 origin;
 UNIFORM(1) ivec2 destination;
-UNIFORM(2) uint bytes_per_block;
+UNIFORM(2) uint bytes_per_block_log2;
 UNIFORM(3) uint pitch;
 END_PUSH_CONSTANTS
 
@@ -47,26 +47,26 @@ layout(binding = BINDING_INPUT_BUFFER, std430) readonly buffer InputBufferU128 {
 
 layout(binding = BINDING_OUTPUT_IMAGE) writeonly uniform uimage2D output_image;
 
-layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+layout(local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
 
 uvec4 ReadTexel(uint offset) {
-    switch (bytes_per_block) {
+    switch (bytes_per_block_log2) {
 #if HAS_EXTENDED_TYPES
-    case 1:
+    case 0:
         return uvec4(u8data[offset], 0, 0, 0);
-    case 2:
+    case 1:
         return uvec4(u16data[offset / 2], 0, 0, 0);
 #else
-    case 1:
+    case 0:
         return uvec4(bitfieldExtract(u32data[offset / 4], int((offset * 8) & 24), 8), 0, 0, 0);
-    case 2:
+    case 1:
         return uvec4(bitfieldExtract(u32data[offset / 4], int((offset * 8) & 16), 16), 0, 0, 0);
 #endif
-    case 4:
+    case 2:
         return uvec4(u32data[offset / 4], 0, 0, 0);
-    case 8:
+    case 3:
         return uvec4(u64data[offset / 8], 0, 0);
-    case 16:
+    case 4:
         return u128data[offset / 16];
     }
     return uvec4(0);
@@ -76,7 +76,7 @@ void main() {
     uvec2 pos = gl_GlobalInvocationID.xy + origin;
 
     uint offset = 0;
-    offset += pos.x * bytes_per_block;
+    offset += pos.x << bytes_per_block_log2;
     offset += pos.y * pitch;
 
     const uvec4 texel = ReadTexel(offset);

@@ -112,6 +112,12 @@ public:
 
     u64 CurrentTick();
 
+    u64 RenderPassSerial() const noexcept;
+
+    u64 WaitForIdleSerial() const noexcept;
+
+    void MarkRenderPassWrites() noexcept;
+
     u64 KnownGpuTick();
 
     void Wait(u64 buffer_tick);
@@ -192,17 +198,13 @@ public:
             .memory_offset = location.offset,
             .offset = offset,
             .size = size,
-            .write_tick = buffer.getWriteTick(),
+            .content_serial = buffer.ContentSerial(),
             .memory_type = location.memory_type,
         });
         multi_range_total += size;
     }
 
     bool BindMultiRangeStorageBuffer(u64 key, bool is_written);
-
-    void InvalidateMultiRange(u64 key) {
-        multi_range_buffers.Invalidate(key);
-    }
 
     void OnBufferDeleted(const Buffer& buffer) {
         multi_range_buffers.DropOwner(scheduler, buffer.Handle());
@@ -244,6 +246,9 @@ private:
 
     VkFormat TexelBufferFormat(VideoCore::Surface::PixelFormat format) const;
 
+    template <u32 N>
+    void RecordVertexBuffers(const VideoCommon::HostBindings<Buffer>& bindings, u32 count);
+
     void ReserveNullBuffer();
     vk::Buffer CreateNullBuffer();
 
@@ -264,6 +269,9 @@ private:
     MultiRangeBufferCache multi_range_buffers;
     boost::container::small_vector<MultiRangeSource, 16> multi_range_sources;
     VkDeviceSize multi_range_total{};
+
+    VkMemoryBarrier2 read_barrier;
+    VkMemoryBarrier2 write_barrier;
 
     bool limit_dynamic_storage_buffers = false;
     u32 max_dynamic_storage_buffers = (std::numeric_limits<u32>::max)();

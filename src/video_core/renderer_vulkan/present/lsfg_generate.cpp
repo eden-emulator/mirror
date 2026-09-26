@@ -22,12 +22,15 @@ constexpr u32 DISPATCH_TILE_SHIFT = 4;
     return (size + (1u << DISPATCH_TILE_SHIFT) - 1) >> DISPATCH_TILE_SHIFT;
 }
 
-VkImageMemoryBarrier MakeTargetBarrier(VkImage image, VkAccessFlags src_access,
-                                       VkAccessFlags dst_access, VkImageLayout old_layout) {
-    return VkImageMemoryBarrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+VkImageMemoryBarrier2 MakeTargetBarrier(VkImage image, VkPipelineStageFlags2 src_stage,
+                                        VkAccessFlags2 src_access, VkPipelineStageFlags2 dst_stage,
+                                        VkAccessFlags2 dst_access, VkImageLayout old_layout) {
+    return VkImageMemoryBarrier2{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
+        .srcStageMask = src_stage,
         .srcAccessMask = src_access,
+        .dstStageMask = dst_stage,
         .dstAccessMask = dst_access,
         .oldLayout = old_layout,
         .newLayout = VK_IMAGE_LAYOUT_GENERAL,
@@ -118,13 +121,11 @@ void LsfgGenerate::Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t sl
     cmdbuf.Dispatch(GroupCount(extent.width), GroupCount(extent.height), 1);
 
     const std::array after{MakeTargetBarrier(
-        image, VK_ACCESS_SHADER_WRITE_BIT,
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_TRANSFER_READ_BIT,
+        image, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_WRITE_BIT,
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_2_TRANSFER_READ_BIT,
         VK_IMAGE_LAYOUT_GENERAL)};
-    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                               VK_PIPELINE_STAGE_TRANSFER_BIT,
-                           0, {}, {}, after);
+    cmdbuf.PipelineBarrier(0, {}, {}, after);
 }
 
 } // namespace Vulkan

@@ -7,12 +7,16 @@
 #pragma once
 
 #include <algorithm>
+#include <bit>
+#include <cstring>
+#include <utility>
 #include <vector>
 
 #include "common/alignment.h"
 #include "common/common_types.h"
 #include "common/div_ceil.h"
 #include "common/assert.h"
+#include "common/slot_vector.h"
 #include "video_core/memory_manager.h"
 #include "video_core/rasterizer_interface.h"
 
@@ -21,53 +25,55 @@ namespace VideoCommon {
 template <typename T>
 class DescriptorTable {
 public:
-    [[nodiscard]] bool Synchronize(GPUVAddr gpu_addr, u32 limit) noexcept {
-        bool ret = !(current_gpu_addr == gpu_addr && current_limit == limit);
-        if (ret) {
+    struct Entry {
+        T descriptor;
+        Common::SlotId id;
+        u32 generation;
+    };
+
+    void Synchronize(GPUVAddr gpu_addr, u32 limit) noexcept {
+        if (current_gpu_addr != gpu_addr || current_limit != limit) {
             Refresh(gpu_addr, limit);
         }
-        return ret;
     }
 
     void Invalidate() noexcept {
-        std::ranges::fill(read_descriptors, 0);
+        ++generation;
     }
 
-    [[nodiscard]] std::pair<T, bool> Read(Tegra::MemoryManager const& gpu_memory, u32 index) noexcept {
+    [[nodiscard]] std::pair<Entry&, bool> Read(Tegra::MemoryManager const& gpu_memory, u32 index) noexcept {
         DEBUG_ASSERT(index <= current_limit);
         const GPUVAddr gpu_addr = current_gpu_addr + index * sizeof(T);
-        std::pair<T, bool> result;
-        gpu_memory.ReadBlockUnsafe(gpu_addr, std::addressof(result.first), sizeof(T));
-        if ((read_descriptors[index / 64] & (1ULL << (index % 64))) != 0) {
-            result.second = result.first != descriptors[index];
-        } else {
-            read_descriptors[index / 64] |= 1ULL << (index % 64);
-            result.second = true;
+        T value{};
+        if (!aligned) {
+            gpu_memory.ReadBlockUnsafe(gpu_addr, std::addressof(value), sizeof(T));
+        } else if (const u8* const ptr = gpu_memory.GetPointer(gpu_addr)) {
+            std::memcpy(std::addressof(value), ptr, sizeof(T));
         }
-        if (result.second) {
-            descriptors[index] = result.first;
+        Entry& entry = entries[index];
+        const bool is_new = entry.generation != generation || entry.descriptor != value;
+        if (is_new) {
+            entry.descriptor = value;
+            entry.generation = generation;
         }
-        return result;
+        return {entry, is_new};
     }
 
     void Refresh(GPUVAddr gpu_addr, u32 limit) noexcept {
         current_gpu_addr = gpu_addr;
         current_limit = limit;
-        // Mario Brothership reallocates a lot of times, so use aggressive pre-alloc sizes
-        // std::vector<T> by default uses quadratic growth, but that isn't even enough to satisfy brothership
-        const size_t num_descriptors = ((limit + 0x80000) & (~0x7ffff)) + 1;
-        size_t old_size = read_descriptors.size();
-        read_descriptors.resize(Common::DivCeil(num_descriptors, 64U));
-        old_size = (std::min)(old_size, read_descriptors.size());
-        std::fill(read_descriptors.begin(), read_descriptors.begin() + old_size, 0);
-        //
-        descriptors.resize(num_descriptors);
+        aligned = gpu_addr % sizeof(T) == 0;
+        ++generation;
+        if (entries.size() <= limit) {
+            entries.resize(std::bit_ceil(size_t{limit} + 1));
+        }
     }
 
-    std::vector<u64> read_descriptors;
-    std::vector<T> descriptors;
+    std::vector<Entry> entries;
     GPUVAddr current_gpu_addr{};
     u32 current_limit{};
+    u32 generation{1};
+    bool aligned{};
 };
 
 } // namespace VideoCommon

@@ -39,51 +39,6 @@ namespace Vulkan {
         }
     }
 
-/// Ownership handle of a memory commitment (real VMA allocation).
-    class MemoryCommit {
-    public:
-        MemoryCommit() noexcept = default;
-
-        MemoryCommit(VmaAllocator allocator, VmaAllocation allocation,
-                     const VmaAllocationInfo &info) noexcept;
-
-        ~MemoryCommit();
-
-        MemoryCommit(const MemoryCommit &) = delete;
-
-        MemoryCommit &operator=(const MemoryCommit &) = delete;
-
-        MemoryCommit(MemoryCommit &&) noexcept;
-
-        MemoryCommit &operator=(MemoryCommit &&) noexcept;
-
-        [[nodiscard]] std::span<u8> Map();
-
-        [[nodiscard]] std::span<const u8> Map() const;
-
-        void Unmap();
-
-        explicit operator bool() const noexcept { return allocation != nullptr; }
-
-        VkDeviceMemory Memory() const noexcept { return memory; }
-
-        VkDeviceSize Offset() const noexcept { return offset; }
-
-        VkDeviceSize Size() const noexcept { return size; }
-
-        VmaAllocation Allocation() const noexcept { return allocation; }
-
-    private:
-        void Release();
-
-        VmaAllocator allocator{};   ///< VMA allocator
-        VmaAllocation allocation{};  ///< VMA allocation handle
-        VkDeviceMemory memory{};      ///< Underlying VkDeviceMemory chosen by VMA
-        VkDeviceSize offset{};      ///< Offset of this allocation inside VkDeviceMemory
-        VkDeviceSize size{};        ///< Size of the allocation
-        void *mapped_ptr{};  ///< Optional persistent mapped pointer
-    };
-
 /// Memory allocator container.
 /// Allocates and releases memory allocations on demand.
     class MemoryAllocator {
@@ -110,35 +65,10 @@ namespace Vulkan {
         vk::Buffer CreateBuffer(const VkBufferCreateInfo &ci, MemoryUsage usage,
                                 VkDeviceSize min_alignment) const;
 
-        /**
-         * Commits a memory with the specified requirements.
-         *
-         * @param requirements Requirements returned from a Vulkan call.
-         * @param usage        Indicates how the memory will be used.
-         *
-         * @returns A memory commit.
-         */
-        MemoryCommit Commit(const VkMemoryRequirements &requirements, MemoryUsage usage);
-
-        /// Commits memory required by the buffer and binds it (for buffers created outside VMA).
-        MemoryCommit Commit(const vk::Buffer &buffer, MemoryUsage usage);
-
     private:
-        static bool IsAutoUsage(VmaMemoryUsage u) noexcept {
-            switch (u) {
-                case VMA_MEMORY_USAGE_AUTO:
-                case VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE:
-                case VMA_MEMORY_USAGE_AUTO_PREFER_HOST:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
         const Device &device;                              ///< Device handle.
         VmaAllocator allocator;                           ///< VMA allocator.
         const VkPhysicalDeviceMemoryProperties properties; ///< Physical device memory properties.
-        VkDeviceSize buffer_image_granularity;            ///< Adjacent buffer/image granularity
         u32 valid_memory_types{~0u};
     };
 

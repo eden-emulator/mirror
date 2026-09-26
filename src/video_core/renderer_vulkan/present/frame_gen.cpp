@@ -113,13 +113,17 @@ void WriteColorPpm(const std::filesystem::path& path, VkExtent2D extent,
     WritePortablePixmap(path, "P6", extent, rgb);
 }
 
-VkImageMemoryBarrier MakeTransitionBarrier(VkImage image, VkAccessFlags src_access,
-                                           VkAccessFlags dst_access, VkImageLayout old_layout,
-                                           VkImageLayout new_layout) {
-    return VkImageMemoryBarrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+VkImageMemoryBarrier2 MakeTransitionBarrier(VkImage image, VkPipelineStageFlags2 src_stage,
+                                            VkAccessFlags2 src_access,
+                                            VkPipelineStageFlags2 dst_stage,
+                                            VkAccessFlags2 dst_access, VkImageLayout old_layout,
+                                            VkImageLayout new_layout) {
+    return VkImageMemoryBarrier2{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
+        .srcStageMask = src_stage,
         .srcAccessMask = src_access,
+        .dstStageMask = dst_stage,
         .dstAccessMask = dst_access,
         .oldLayout = old_layout,
         .newLayout = new_layout,
@@ -160,29 +164,31 @@ void CopyPresentedFrame(vk::CommandBuffer cmdbuf, VkImage source, LsfgImage& des
                         VkExtent2D extent) {
     const auto make_barrier = MakeTransitionBarrier;
 
+    static constexpr VkPipelineStageFlags2 present_stage =
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+
     const std::array before{
-        make_barrier(source, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+        make_barrier(source, present_stage, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT,
                      VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
-        make_barrier(destination.Handle(), VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+        make_barrier(destination.Handle(), present_stage, VK_ACCESS_2_SHADER_READ_BIT,
+                     VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_WRITE_BIT,
                      destination.Layout(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL),
     };
-    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {}, {}, before);
+    cmdbuf.PipelineBarrier(0, {}, {}, before);
 
     cmdbuf.CopyImage(source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, destination.Handle(),
                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, MakeCopyRegion(extent));
 
     const std::array after{
-        make_barrier(source, VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        make_barrier(source, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT,
+                     present_stage, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
                      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL),
-        make_barrier(destination.Handle(), VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+        make_barrier(destination.Handle(), VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                     VK_ACCESS_2_TRANSFER_WRITE_BIT, present_stage, VK_ACCESS_2_SHADER_READ_BIT,
                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL),
     };
-    cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                           0, {}, {}, after);
+    cmdbuf.PipelineBarrier(0, {}, {}, after);
 
     destination.SetLayout(VK_IMAGE_LAYOUT_GENERAL);
 }
