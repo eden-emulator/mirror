@@ -10,7 +10,7 @@
 
 namespace Service::PSC {
 
-    ServiceFrameworkBase::FunctionInfoBase const* IReceiverService::FindRequest(u32 key) {
+    std::optional<ServiceFrameworkBase::FunctionInfoBase> IReceiverService::FindRequest(u32 key) {
         static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&IReceiverService::OpenReceiver>, "OpenReceiver"}
         );

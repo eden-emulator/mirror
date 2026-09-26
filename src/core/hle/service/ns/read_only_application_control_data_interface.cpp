@@ -73,7 +73,7 @@ void SanitizeJPEGImageSize(std::vector<u8>& image) {
 
 } // namespace
 
-ServiceFrameworkBase::FunctionInfoBase const* IReadOnlyApplicationControlDataInterface::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IReadOnlyApplicationControlDataInterface::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData>, "GetApplicationControlData"},
         FunctionInfo{1, D<&IReadOnlyApplicationControlDataInterface::GetApplicationDesiredLanguage>, "GetApplicationDesiredLanguage"},
@@ -131,7 +131,7 @@ private:
         R_SUCCEED();
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

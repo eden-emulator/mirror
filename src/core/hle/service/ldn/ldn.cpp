@@ -21,7 +21,7 @@ class IClientProcessMonitor final
 public:
     explicit IClientProcessMonitor(Core::System& system_) : ServiceFramework{system_, "IClientProcessMonitor"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     ~IClientProcessMonitor() override = default;
@@ -40,7 +40,7 @@ class IMonitorServiceCreator final : public ServiceFramework<IMonitorServiceCrea
 public:
     explicit IMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:m"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 private:
@@ -60,7 +60,7 @@ class ISystemServiceCreator final : public ServiceFramework<ISystemServiceCreato
 public:
     explicit ISystemServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:s"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 private:
@@ -90,7 +90,7 @@ class IUserServiceCreator final : public ServiceFramework<IUserServiceCreator> {
 public:
     explicit IUserServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:u"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 private:
@@ -120,7 +120,7 @@ class ISfServiceCreator final : public ServiceFramework<ISfServiceCreator> {
 public:
     explicit ISfServiceCreator(Core::System& system_, bool is_system_, const char* name_) : ServiceFramework{system_, name_}, is_system{is_system_} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 private:
@@ -152,7 +152,7 @@ class ISfMonitorServiceCreator final : public ServiceFramework<ISfMonitorService
 public:
     explicit ISfMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "lp2p:m"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 private:

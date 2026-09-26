@@ -30,7 +30,7 @@ private:
     Result ClearStorage();
     Result ClearSubscriptionStatusAll();
     Result GetNewsDatabaseDump();
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::News

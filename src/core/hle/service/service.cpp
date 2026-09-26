@@ -69,7 +69,7 @@ void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, c
 void ServiceFrameworkBase::InvokeRequest(HLERequestContext& ctx) {
     const bool is_cmd_read = ctx.GetCommand() == 0;
     auto const info = FindRequest(ctx.GetCommand());
-    if (info == nullptr || info->handler_callback == nullptr)
+    if (!info.has_value() || info->handler_callback == nullptr)
         return ReportUnimplementedFunction(ctx, info);
 
     LOG_TRACE(Service, "{}", MakeFunctionString(info->name, GetServiceName(), ctx.CommandBuffer()));
@@ -84,7 +84,7 @@ void ServiceFrameworkBase::InvokeRequest(HLERequestContext& ctx) {
 
 void ServiceFrameworkBase::InvokeRequestTipc(HLERequestContext& ctx) {
     auto const info = FindRequestTipc(ctx.GetCommand());
-    if (info == nullptr || info->handler_callback == nullptr)
+    if (!info.has_value() || info->handler_callback == nullptr)
         return ReportUnimplementedFunction(ctx, info);
 
     LOG_TRACE(Service, "{}", MakeFunctionString(info->name, GetServiceName(), ctx.CommandBuffer()));

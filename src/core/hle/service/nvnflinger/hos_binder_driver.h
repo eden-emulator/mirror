@@ -44,7 +44,7 @@ private:
                               OutBuffer<BufferAttr_HipcAutoSelect> parcel_reply, u32 flags);
 
 private:
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<HosBinderDriverServer> m_server;
     const std::shared_ptr<SurfaceFlinger> m_surface_flinger;
 };

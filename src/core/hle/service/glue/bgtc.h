@@ -20,7 +20,7 @@ public:
     ~BGTC_T() override;
 
     void OpenTaskService(HLERequestContext& ctx);
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -33,7 +33,7 @@ public:
     explicit ITaskService(Core::System& system_);
     ~ITaskService() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -61,7 +61,7 @@ public:
     explicit BGTC_SC(Core::System& system_);
     ~BGTC_SC() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

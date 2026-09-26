@@ -118,7 +118,7 @@ public:
         R_SUCCEED();
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -165,7 +165,7 @@ public:
         R_SUCCEED();
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -226,7 +226,7 @@ public:
         R_SUCCEED();
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -282,7 +282,7 @@ public:
         R_SUCCEED();
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -294,7 +294,7 @@ class IBtmDebug final : public ServiceFramework<IBtmDebug> {
 public:
     explicit IBtmDebug(Core::System& system_) : ServiceFramework{system_, "btm:dbg"} {}
     ~IBtmDebug() override = default;
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -412,7 +412,7 @@ public:
             FunctionInfo{116, nullptr, "SetAudioSinkVolume"}, //15.0.0+
             FunctionInfo{117, nullptr, "GetAudioSinkVolume"} //15.0.0+
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

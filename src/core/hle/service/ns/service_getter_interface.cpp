@@ -20,7 +20,7 @@
 
 namespace Service::NS {
 
-ServiceFrameworkBase::FunctionInfoBase const* IServiceGetterInterface::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IServiceGetterInterface::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{7988, D<&IServiceGetterInterface::GetDynamicRightsInterface>, "GetDynamicRightsInterface"},
         FunctionInfo{7989, D<&IServiceGetterInterface::GetReadOnlyApplicationControlDataInterface>, "GetReadOnlyApplicationControlDataInterface"},

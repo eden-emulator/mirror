@@ -70,7 +70,7 @@ private:
     Result Unknown230(u32 in_val, Out<u16> out_val);
     Result Unknown240(u32 in_val);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     Kernel::KProcess* const m_process;
     const std::shared_ptr<Applet> m_applet;
 };

@@ -10,7 +10,7 @@
 namespace Service::Audio {
 using namespace AudioCore::Renderer;
 
-ServiceFrameworkBase::FunctionInfoBase const* IAudioRenderer::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioRenderer::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IAudioRenderer::GetSampleRate>, "GetSampleRate"},
         FunctionInfo{1, D<&IAudioRenderer::GetSampleCount>, "GetSampleCount"},

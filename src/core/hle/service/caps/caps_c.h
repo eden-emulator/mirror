@@ -23,7 +23,7 @@ public:
     ~IAlbumControlService() override;
 private:
     Result SetShimLibraryVersion(ShimLibraryVersion library_version, ClientAppletResourceUserId aruid);
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::shared_ptr<AlbumManager> manager = nullptr;
 };
 

@@ -41,7 +41,7 @@ private:
     ProgressServiceBackend& GetProgressBackend(SyncType type);
     const ProgressServiceBackend& GetProgressBackend(SyncType type) const;
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     BcatBackend& backend;
     u64 program_id;
     std::array<ProgressServiceBackend, static_cast<size_t>(SyncType::Count)> progress;

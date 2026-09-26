@@ -9,7 +9,7 @@
 
 namespace Service::News {
 
-ServiceFrameworkBase::FunctionInfoBase const* INewlyArrivedEventHolder::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> INewlyArrivedEventHolder::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&INewlyArrivedEventHolder::Get>, "Get"}
     );

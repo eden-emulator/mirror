@@ -80,7 +80,7 @@ public:
                                  const Service::PSC::Time::CalendarTime& calendar_time);
 
 private:
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::shared_ptr<Service::Set::ISystemSettingsServer> m_set_sys;
     bool m_can_write_timezone_device_location;
     FileTimestampWorker& m_file_timestamp_worker;

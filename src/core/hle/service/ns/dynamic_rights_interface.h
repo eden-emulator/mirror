@@ -22,7 +22,7 @@ private:
     Result VerifyActivatedRightsOwners(u64 rights_handle);
     Result HasAccountRestrictedRightsInRunningApplications(Out<bool> out_is_restricted);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::NS

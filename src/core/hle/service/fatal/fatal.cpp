@@ -170,7 +170,7 @@ public:
     explicit Fatal_P(std::shared_ptr<Module> module_, Core::System& system_) : Interface(std::move(module_), system_, "fatal:p") {}
     ~Fatal_P() override = default;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -184,7 +184,7 @@ public:
     explicit Fatal_U(std::shared_ptr<Module> module_, Core::System& system_) : Interface(std::move(module_), system_, "fatal:u") {}
     ~Fatal_U() override = default;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

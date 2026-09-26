@@ -24,7 +24,7 @@
 
 namespace Service::Glue::Time {
 
-ServiceFrameworkBase::FunctionInfoBase const* StaticService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> StaticService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0,   D<&StaticService::GetStandardUserSystemClock>, "GetStandardUserSystemClock"},
         FunctionInfo{1,   D<&StaticService::GetStandardNetworkSystemClock>, "GetStandardNetworkSystemClock"},

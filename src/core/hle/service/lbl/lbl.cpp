@@ -20,7 +20,7 @@ class LBL final : public ServiceFramework<LBL> {
 public:
     explicit LBL(Core::System& system_) : ServiceFramework{system_, "lbl"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

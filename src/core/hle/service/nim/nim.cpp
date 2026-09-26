@@ -29,7 +29,7 @@ public:
         completion_event = service_context.CreateEvent("IShopServiceAsync:Completion");
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -140,7 +140,7 @@ public:
     explicit IShopServiceAccessor(Core::System& system_)
         : ServiceFramework{system_, "IShopServiceAccessor"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -164,7 +164,7 @@ public:
     explicit IShopServiceAccessServer(Core::System& system_)
         : ServiceFramework{system_, "IShopServiceAccessServer"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -410,7 +410,7 @@ public:
         FunctionInfo{3000, nullptr, "RequestLatestApplicationIcon"}, //17.0.0+
         FunctionInfo{3001, nullptr, "RequestDownloadIdbeLatestIconFile"} //17.0.0+
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -419,7 +419,7 @@ class NIM_ECA final : public ServiceFramework<NIM_ECA> {
 public:
     explicit NIM_ECA(Core::System& system_) : ServiceFramework{system_, "nim:eca"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -495,7 +495,7 @@ public:
             FunctionInfo{504, nullptr, "RequestDownloadTicketForPrepurchasedContents2"},
             FunctionInfo{505, nullptr, "RequestDownloadTicketForPrepurchasedContentsForAccount"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -563,7 +563,7 @@ private:
         rb.PushRaw<s64>(server_time);
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -582,7 +582,7 @@ class NTC final : public ServiceFramework<NTC> {
 public:
     explicit NTC(Core::System& system_) : ServiceFramework{system_, "ntc"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -625,7 +625,7 @@ public:
             FunctionInfo{0, nullptr, "RegisterSpecialClient"},
             FunctionInfo{1, nullptr, "UnregisterSpecialClient"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

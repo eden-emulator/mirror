@@ -9,7 +9,7 @@
 
 namespace Service::OLSC {
 
-    ServiceFrameworkBase::FunctionInfoBase const* IRemoteStorageController::FindRequest(u32 key) {
+    std::optional<ServiceFrameworkBase::FunctionInfoBase> IRemoteStorageController::FindRequest(u32 key) {
         static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetSaveDataArchiveInfoBySaveDataId"},
             FunctionInfo{1, nullptr, "GetSaveDataArchiveInfoByApplicationId"},

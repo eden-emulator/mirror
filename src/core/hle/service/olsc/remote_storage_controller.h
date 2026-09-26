@@ -22,7 +22,7 @@ private:
     Result GetDataNewnessByApplicationId(Out<u8> out_newness, u64 application_id);
     Result GetDataInfo(Out<std::array<u8, 0x38>> out_data, u64 application_id);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::OLSC

@@ -21,7 +21,7 @@
 
 namespace Service::LDN {
 
-ServiceFrameworkBase::FunctionInfoBase const* IUserLocalCommunicationService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IUserLocalCommunicationService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IUserLocalCommunicationService::GetState>, "GetState"},
         FunctionInfo{1, D<&IUserLocalCommunicationService::GetNetworkInfo>, "GetNetworkInfo"},

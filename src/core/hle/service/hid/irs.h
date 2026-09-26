@@ -157,7 +157,7 @@ private:
         return static_cast<T&>(*processors[index]);
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     Core::HID::EmulatedController* npad_device = nullptr;
     StatusManager* shared_memory = nullptr;
@@ -169,7 +169,7 @@ public:
     explicit IRS_SYS(Core::System& system);
     ~IRS_SYS() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

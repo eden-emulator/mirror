@@ -21,7 +21,7 @@ public:
         : ServiceFramework{system_, "npns:s"}, service_context{system, "npns:s"},
           get_receive_event{service_context}, get_request_change_state_cancel_event{service_context} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -149,7 +149,7 @@ public:
     explicit INpnsUser(Core::System& system_)
         : ServiceFramework{system_, "npns:u"}, service_context{system, "npns:u"}, get_receive_event{service_context} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

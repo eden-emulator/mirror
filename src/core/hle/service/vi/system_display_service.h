@@ -47,7 +47,7 @@ private:
     Result CancelSharedFrameBuffer(u64 layer_id, s64 slot);
 
 private:
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<Container> m_container;
 };
 

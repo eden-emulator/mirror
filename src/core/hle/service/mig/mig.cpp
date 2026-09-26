@@ -16,7 +16,7 @@ class MIG_USR final : public ServiceFramework<MIG_USR> {
 public:
     explicit MIG_USR(Core::System& system_) : ServiceFramework{system_, "mig:usr"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

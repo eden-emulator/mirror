@@ -20,7 +20,7 @@ namespace {
 constexpr inline std::size_t MaxAlarms = 8;
 }
 
-ServiceFrameworkBase::FunctionInfoBase const* INotificationServicesForApplication::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> INotificationServicesForApplication::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{500, D<&INotificationServicesForApplication::RegisterAlarmSetting>, "RegisterAlarmSetting"},
         FunctionInfo{510, D<&INotificationServicesForApplication::UpdateAlarmSetting>, "UpdateAlarmSetting"},
@@ -32,7 +32,7 @@ ServiceFrameworkBase::FunctionInfoBase const* INotificationServicesForApplicatio
     return HandlerTableGenerateWithFind(key, functions);
 }
 
-ServiceFrameworkBase::FunctionInfoBase const* INotificationServices::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> INotificationServices::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{500, D<&INotificationServices::RegisterAlarmSetting>, "RegisterAlarmSetting"},
         FunctionInfo{510, D<&INotificationServices::UpdateAlarmSetting>, "UpdateAlarmSetting"},
@@ -207,7 +207,7 @@ public:
         notification_event = service_context.CreateEvent("INotificationSystemEventAccessor:NotificationEvent");
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

@@ -27,7 +27,7 @@ public:
             FunctionInfo{10, nullptr, "FlushFinalOutputRecorderBuffers"},
             FunctionInfo{11, nullptr, "AttachWorkBuffer"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

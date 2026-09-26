@@ -11,7 +11,7 @@
 
 namespace Service::OLSC {
 
-    ServiceFrameworkBase::FunctionInfoBase const* ITransferTaskListController::FindRequest(u32 key) {
+    std::optional<ServiceFrameworkBase::FunctionInfoBase> ITransferTaskListController::FindRequest(u32 key) {
         static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetTransferTaskCountForOcean"},
             FunctionInfo{1, nullptr, "GetTransferTaskInfoForOcean"},

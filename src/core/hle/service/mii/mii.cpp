@@ -22,7 +22,7 @@
 
 namespace Service::Mii {
 
-ServiceFrameworkBase::FunctionInfoBase const* IStaticService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IStaticService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IStaticService::GetDatabaseService>, "GetDatabaseService"}
     );
@@ -39,7 +39,7 @@ public:
         manager->Initialize(metadata);
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -324,7 +324,7 @@ class IImageDatabaseService final : public ServiceFramework<IImageDatabaseServic
 public:
     explicit IImageDatabaseService(Core::System& system_) : ServiceFramework{system_, "miiimg"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

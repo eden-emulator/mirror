@@ -16,7 +16,7 @@ class IUser final : public Interface {
 public:
     explicit IUser(Core::System& system_) : Interface(system_, "NFP:IUser") {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMapWithClass<IUser>(
@@ -53,7 +53,7 @@ class ISystem final : public Interface {
 public:
     explicit ISystem(Core::System& system_) : Interface(system_, "NFP:ISystem") {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMapWithClass<ISystem>(
@@ -92,7 +92,7 @@ class IDebug final : public Interface {
 public:
     explicit IDebug(Core::System& system_) : Interface(system_, "NFP:IDebug") {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMapWithClass<IDebug>(
@@ -152,7 +152,7 @@ private:
         rb.PushIpcInterface<IUser>(ctx, system);
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -164,7 +164,7 @@ class ISystemManager final : public ServiceFramework<ISystemManager> {
 public:
     explicit ISystemManager(Core::System& system_) : ServiceFramework{system_, "nfp:sys"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -186,7 +186,7 @@ class IDebugManager final : public ServiceFramework<IDebugManager> {
 public:
     explicit IDebugManager(Core::System& system_) : ServiceFramework{system_, "nfp:dbg"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

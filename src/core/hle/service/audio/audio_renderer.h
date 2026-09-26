@@ -45,7 +45,7 @@ private:
     Result SetVoiceDropParameter(f32 voice_drop_parameter);
     Result GetVoiceDropParameter(Out<f32> out_voice_drop_parameter);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* rendered_event;
     AudioCore::Renderer::Manager& manager;

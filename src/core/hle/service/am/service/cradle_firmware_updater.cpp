@@ -9,7 +9,7 @@
 
 namespace Service::AM {
 
-    ServiceFrameworkBase::FunctionInfoBase const* ICradleFirmwareUpdater::FindRequest(u32 key) {
+    std::optional<ServiceFrameworkBase::FunctionInfoBase> ICradleFirmwareUpdater::FindRequest(u32 key) {
         static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&ICradleFirmwareUpdater::StartUpdate>, "StartUpdate"},
             FunctionInfo{1, D<&ICradleFirmwareUpdater::FinishUpdate>, "FinishUpdate"},

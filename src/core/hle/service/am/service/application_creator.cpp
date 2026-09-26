@@ -20,7 +20,7 @@
 
 namespace Service::AM {
 
-ServiceFrameworkBase::FunctionInfoBase const* IApplicationCreator::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationCreator::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IApplicationCreator::CreateApplication>, "CreateApplication"},
         FunctionInfo{1, nullptr, "PopLaunchRequestedApplication"},

@@ -71,7 +71,7 @@ private:
     Result GetClockSnapshotImpl(OutClockSnapshot out_snapshot,
                                 const SystemClockContext& user_context,
                                 const SystemClockContext& network_context, TimeType type);
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     StaticServiceSetupInfo m_setup_info;
     std::shared_ptr<TimeManager> m_time;

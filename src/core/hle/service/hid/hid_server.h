@@ -265,7 +265,7 @@ private:
     Result SetTouchScreenResolution(u32 width, u32 height, ClientAppletResourceUserId aruid);
     Result SetMouseLibraryVersion(ClientAppletResourceUserId aruid);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     std::shared_ptr<ResourceManager> resource_manager;
     std::shared_ptr<HidFirmwareSettings> firmware_settings;

@@ -12,7 +12,7 @@
 
 namespace Service::VI {
 
-ServiceFrameworkBase::FunctionInfoBase const* ISystemDisplayService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> ISystemDisplayService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{1200, nullptr, "GetZOrderCountMin"},
         FunctionInfo{1202, nullptr, "GetZOrderCountMax"},

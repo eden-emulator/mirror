@@ -24,7 +24,7 @@ public:
             FunctionInfo{1, nullptr, "DisableVdd50StateControl"},
             FunctionInfo{2, nullptr, "SetVdd50State"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -37,7 +37,7 @@ public:
     static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "OpenSession"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

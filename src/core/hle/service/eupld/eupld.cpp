@@ -23,7 +23,7 @@ public:
             FunctionInfo{3, nullptr, "SetAutoUpload"},
             FunctionInfo{4, nullptr, "GetAutoUpload"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -40,7 +40,7 @@ public:
             FunctionInfo{4, nullptr, "CancelUpload"},
             FunctionInfo{5, nullptr, "GetResult"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

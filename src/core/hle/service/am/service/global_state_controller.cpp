@@ -10,7 +10,7 @@
 
 namespace Service::AM {
 
-    ServiceFrameworkBase::FunctionInfoBase const* IGlobalStateController::FindRequest(u32 key) {
+    std::optional<ServiceFrameworkBase::FunctionInfoBase> IGlobalStateController::FindRequest(u32 key) {
         static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestToEnterSleep"},
             FunctionInfo{1, nullptr, "EnterSleep"},

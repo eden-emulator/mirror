@@ -73,7 +73,7 @@ private:
         Out<bool> out_fonts_are_loaded, Out<u32> out_font_count,
         Set::LanguageCode language_code);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     struct Impl;
     std::unique_ptr<Impl> impl;
 };

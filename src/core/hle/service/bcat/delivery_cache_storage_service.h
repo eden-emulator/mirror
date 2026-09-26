@@ -31,7 +31,7 @@ private:
         Out<s32> out_directory_count,
         OutArray<DirectoryName, BufferAttr_HipcMapAlias> out_directories);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     FileSys::VirtualDir root;
     std::vector<DirectoryName> entries;
     std::size_t next_read_index = 0;

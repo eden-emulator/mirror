@@ -9,7 +9,7 @@
 
 namespace Service::NS {
 
-ServiceFrameworkBase::FunctionInfoBase const* IDynamicRightsInterface::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IDynamicRightsInterface::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "RequestApplicationRightsOnServer"},
         FunctionInfo{1, nullptr, "RequestAssignRights"},

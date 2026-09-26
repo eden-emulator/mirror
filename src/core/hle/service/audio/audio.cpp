@@ -31,7 +31,7 @@ public:
             FunctionInfo{4, nullptr, "GetProcessRecordVolume"},
             FunctionInfo{5, nullptr, "SetProcessRecordVolume"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -48,7 +48,7 @@ public:
             FunctionInfo{3, nullptr, "GetDspStatisticsParameter"},
             FunctionInfo{6, nullptr, "GetDspUsage"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -64,7 +64,7 @@ public:
             FunctionInfo{2, nullptr, "GetProcessMasterVolume"},
             FunctionInfo{3, nullptr, "SetProcessMasterVolume"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -84,7 +84,7 @@ public:
             FunctionInfo{6, nullptr, "GetProcessRecordVolume"},
             FunctionInfo{7, nullptr, "SetProcessRecordVolume"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -98,7 +98,7 @@ public:
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -112,7 +112,7 @@ public:
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -126,7 +126,7 @@ public:
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -140,7 +140,7 @@ public:
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -163,7 +163,7 @@ public:
             FunctionInfo{9, nullptr, "SetAudioOutputProcessRecordVolume"},
             FunctionInfo{10, nullptr, "GetAppletStateSummaries"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -177,7 +177,7 @@ public:
             FunctionInfo{0, nullptr, "RequestSuspendAudioForDebug"},
             FunctionInfo{1, nullptr, "RequestResumeAudioForDebug"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

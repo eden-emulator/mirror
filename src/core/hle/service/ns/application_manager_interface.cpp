@@ -25,7 +25,7 @@
 
 namespace Service::NS {
 
-ServiceFrameworkBase::FunctionInfoBase const* IApplicationManagerInterface::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationManagerInterface::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IApplicationManagerInterface::ListApplicationRecord>, "ListApplicationRecord"},
         FunctionInfo{1, nullptr, "GenerateApplicationRecordCount"},

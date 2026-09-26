@@ -29,7 +29,7 @@
 
 namespace Service::IRS {
 
-ServiceFrameworkBase::FunctionInfoBase const* IRS::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IRS::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{302, C<&IRS::ActivateIrsensor>, "ActivateIrsensor"},
         FunctionInfo{303, C<&IRS::DeactivateIrsensor>, "DeactivateIrsensor"},

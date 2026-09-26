@@ -12,7 +12,7 @@
 
 namespace Service::News {
 
-ServiceFrameworkBase::FunctionInfoBase const* INewsService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> INewsService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{10100, D<&INewsService::PostLocalNews>, "PostLocalNews"},
         FunctionInfo{20100, D<&INewsService::SetPassphrase>, "SetPassphrase"},

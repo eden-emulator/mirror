@@ -19,7 +19,7 @@ public:
     explicit SPL(Core::System& system_, std::shared_ptr<Module> module_);
     ~SPL() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -38,7 +38,7 @@ public:
     explicit SPL_MIG(Core::System& system_, std::shared_ptr<Module> module_);
     ~SPL_MIG() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -66,7 +66,7 @@ public:
     explicit SPL_FS(Core::System& system_, std::shared_ptr<Module> module_);
     ~SPL_FS() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -99,7 +99,7 @@ public:
     explicit SPL_SSL(Core::System& system_, std::shared_ptr<Module> module_);
     ~SPL_SSL() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -130,7 +130,7 @@ public:
     explicit SPL_ES(Core::System& system_, std::shared_ptr<Module> module_);
     ~SPL_ES() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -166,7 +166,7 @@ public:
     explicit SPL_MANU(Core::System& system_, std::shared_ptr<Module> module_);
     ~SPL_MANU() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

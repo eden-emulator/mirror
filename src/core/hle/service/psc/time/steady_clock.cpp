@@ -11,7 +11,7 @@
 
 namespace Service::PSC::Time {
 
-ServiceFrameworkBase::FunctionInfoBase const* SteadyClock::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> SteadyClock::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&SteadyClock::GetCurrentTimePoint>, "GetCurrentTimePoint"},
         FunctionInfo{2, D<&SteadyClock::GetTestOffset>, "GetTestOffset"},

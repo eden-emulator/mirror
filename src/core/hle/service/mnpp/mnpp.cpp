@@ -16,7 +16,7 @@ class MNPP_APP final : public ServiceFramework<MNPP_APP> {
 public:
     explicit MNPP_APP(Core::System& system_) : ServiceFramework{system_, "mnpp:app"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -53,7 +53,7 @@ public:
             FunctionInfo{300, nullptr, "Cmd300"},
             FunctionInfo{400, nullptr, "Cmd400"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -69,7 +69,7 @@ public:
             FunctionInfo{20, nullptr, "Cmd20"},
             FunctionInfo{100, nullptr, "Cmd100"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

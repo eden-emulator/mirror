@@ -11,7 +11,7 @@ namespace Service::Audio {
 
 using namespace AudioCore::OpusDecoder;
 
-    ServiceFrameworkBase::FunctionInfoBase const* IHardwareOpusDecoder::FindRequest(u32 key) {
+    std::optional<ServiceFrameworkBase::FunctionInfoBase> IHardwareOpusDecoder::FindRequest(u32 key) {
         static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&IHardwareOpusDecoder::DecodeInterleavedOld>, "DecodeInterleavedOld"},
             FunctionInfo{1, D<&IHardwareOpusDecoder::SetContext>, "SetContext"},

@@ -139,7 +139,7 @@ private:
             FunctionInfo{170, nullptr, "CreateDeviceHistoryRequest"}, // 17.0.0+
             FunctionInfo{180, nullptr, "GetRequestForNintendoAccountReauthentication"} // 18.0.0+
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     Common::UUID account_id;
@@ -167,7 +167,7 @@ public:
         FunctionInfo{110, nullptr, "SetSystemProgramIdentification"},
         FunctionInfo{111, nullptr, "EnsureIdTokenCacheAsync"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -237,7 +237,7 @@ private:
             FunctionInfo{997, nullptr, "DebugUnlinkNintendoAccountAsync"},
             FunctionInfo{998, nullptr, "DebugSetAvailabilityErrorDetail"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -256,7 +256,7 @@ public:
             FunctionInfo{21, nullptr, "GetIdToken"},
             FunctionInfo{22, nullptr, "GetState"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -273,7 +273,7 @@ public:
             FunctionInfo{3, nullptr, "ApplyResponseAsync"},
             FunctionInfo{10, nullptr, "Suspend"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -297,7 +297,7 @@ public:
             FunctionInfo{103, nullptr, "GetProfileImage"},
             FunctionInfo{104, nullptr, "GetProfileLargeImage"} // 18.0.0+
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -323,7 +323,7 @@ public:
             FunctionInfo{221, nullptr, "RegisterUserWithProfileAsync"}, // 17.0.0+
             FunctionInfo{230, nullptr, "RegisterUserWithLargeImageProfileAsync"} // 18.0.0+
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -336,7 +336,7 @@ public:
     static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetSystemEvent"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -571,7 +571,7 @@ protected:
         rb.Push(ResultSuccess);
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -613,7 +613,7 @@ public:
     static constexpr auto functions = CreateStaticMap(
             FunctionInfo{999, nullptr, "Dummy"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -633,7 +633,7 @@ public:
             FunctionInfo{16, nullptr, "GetProfileLargeImage"}, // 18.0.0+
             FunctionInfo{21, nullptr, "LoadIdTokenCache"} // 3.0.0+
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -673,7 +673,7 @@ public:
           ensure_token_id{std::make_shared<EnsureTokenIdCacheAsyncInterface>(system)},
           profile_manager{profile_manager_} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -774,7 +774,7 @@ public:
         FunctionInfo{3, nullptr, "GetResult"},
         FunctionInfo{4, nullptr, "GetNetworkServiceLicenseKind"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -806,7 +806,7 @@ public:
         FunctionInfo{221, nullptr, "RegisterUserWithProfileAsync"}, // 17.0.0+
         FunctionInfo{230, nullptr, "RegisterUserWithLargeImageProfileAsync"} // 18.0.0+
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -830,7 +830,7 @@ public:
         FunctionInfo{23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
         FunctionInfo{24, nullptr, "InvalidateApplicationAuthenticationCache"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -847,7 +847,7 @@ public:
         FunctionInfo{2, nullptr, "IsAvailable"},
         FunctionInfo{3, nullptr, "GetSystemEvent"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -1251,7 +1251,7 @@ public:
     explicit ACC_AA(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:aa") {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     ~ACC_AA() override = default;
@@ -1272,7 +1272,7 @@ public:
 
     ~ACC_SU() override = default;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -1347,7 +1347,7 @@ public:
     ACC_U0(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u0") {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     ~ACC_U0() override = default;
@@ -1386,7 +1386,7 @@ public:
     ACC_U1(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
         : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u1") {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     ~ACC_U1() override = default;
@@ -1435,7 +1435,7 @@ class DAUTH_0 final : public ServiceFramework<DAUTH_0> {
 public:
     explicit DAUTH_0(Core::System& system_) : ServiceFramework{system_, "dauth:0"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -1547,7 +1547,7 @@ public:
         FunctionInfo{10050, nullptr, "IsUserRegistrationRequestPermittedForAccountPolicy"},
         FunctionInfo{10105, nullptr, "CheckNetworkServiceAvailabilityAsyncForAccountPolicy"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -1590,7 +1590,7 @@ public:
         FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
         FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -1640,7 +1640,7 @@ public:
         FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
         FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

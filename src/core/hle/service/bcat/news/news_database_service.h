@@ -50,7 +50,7 @@ private:
                    InBuffer<BufferAttr_HipcPointer> order_by_phrase,
                    s32 offset);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::News

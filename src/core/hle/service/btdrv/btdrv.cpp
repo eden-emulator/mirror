@@ -25,7 +25,7 @@ public:
         register_event = service_context.CreateEvent("BT:RegisterEvent");
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -61,7 +61,7 @@ class IBluetoothDriver final : public ServiceFramework<IBluetoothDriver> {
 public:
     explicit IBluetoothDriver(Core::System& system_) : ServiceFramework{system_, "btdrv"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
