@@ -19,7 +19,7 @@ public:
     explicit PSM_MANU(Core::System& system_)
         : ServiceFramework{system_, "psm:manu"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "EnableVdd50StateControl"},
             FunctionInfo{1, nullptr, "DisableVdd50StateControl"},
             FunctionInfo{2, nullptr, "SetVdd50State"}
@@ -34,7 +34,7 @@ public:
     explicit POWCTL(Core::System& system_)
         : ServiceFramework{system_, "powctl"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "OpenSession"}
         );
     FunctionInfoBase const* FindRequest(u32 key) override {

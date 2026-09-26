@@ -173,7 +173,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetFatalEvent"},
         FunctionInfo{10, nullptr, "GetFatalContext"}
     );
@@ -187,7 +187,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &Fatal_U::ThrowFatal, "ThrowFatal"},
         FunctionInfo{1, &Fatal_U::ThrowFatalWithPolicy, "ThrowFatalWithPolicy"},
         FunctionInfo{2, &Fatal_U::ThrowFatalWithCpuContext, "ThrowFatalWithCpuContext"}

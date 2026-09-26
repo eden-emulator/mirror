@@ -9,7 +9,7 @@
 namespace Service::PSC {
 
 ServiceFrameworkBase::FunctionInfoBase const* IPmModule::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Initialize"},
         FunctionInfo{1, nullptr, "GetRequest"},
         FunctionInfo{2, nullptr, "Acknowledge"},

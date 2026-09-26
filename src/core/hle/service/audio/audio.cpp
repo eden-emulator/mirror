@@ -23,7 +23,7 @@ public:
     explicit IAudioOutManagerForApplet(Core::System& system_)
         : ServiceFramework{system_, "audout:a"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"},
             FunctionInfo{2, nullptr, "GetProcessMasterVolume"},
@@ -41,7 +41,7 @@ public:
     explicit IAudioSnoopManager(Core::System& system_)
         : ServiceFramework{system_, "auddev"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetDspStatistics"},
             FunctionInfo{1, nullptr, "GetAppletStateSummaries"},
             FunctionInfo{2, nullptr, "SetDspStatisticsParameter"},
@@ -58,7 +58,7 @@ public:
     explicit IAudioInManagerForApplet(Core::System& system_)
         : ServiceFramework{system_, "audin:a"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"},
             FunctionInfo{2, nullptr, "GetProcessMasterVolume"},
@@ -74,7 +74,7 @@ public:
     explicit IAudioRendererManagerForApplet(Core::System& system_)
         : ServiceFramework{system_, "audren:a"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"},
             FunctionInfo{2, nullptr, "GetProcessMasterVolume"},
@@ -94,7 +94,7 @@ public:
     explicit IAudioOutManagerForDebugger(Core::System& system_)
         : ServiceFramework{system_, "audout:d"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
@@ -108,7 +108,7 @@ public:
     explicit IAudioInManagerForDebugger(Core::System& system_)
         : ServiceFramework{system_, "audin:d"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
@@ -122,7 +122,7 @@ public:
     explicit IFinalOutputRecorderManagerForDebugger(Core::System& system_)
         : ServiceFramework{system_, "audrec:d"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
@@ -136,7 +136,7 @@ public:
     explicit IAudioRendererManagerForDebugger(Core::System& system_)
         : ServiceFramework{system_, "audren:d"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspend"},
             FunctionInfo{1, nullptr, "RequestResume"}
         );
@@ -150,7 +150,7 @@ public:
     explicit IAudioSystemManagerForApplet(Core::System& system_)
         : ServiceFramework{system_, "aud:a"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RegisterAppletResourceUserId"},
             FunctionInfo{1, nullptr, "UnregisterAppletResourceUserId"},
             FunctionInfo{2, nullptr, "RequestSuspendAudio"},
@@ -173,7 +173,7 @@ public:
     explicit IAudioSystemManagerForDebugger(Core::System& system_)
         : ServiceFramework{system_, "aud:d"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "RequestSuspendAudioForDebug"},
             FunctionInfo{1, nullptr, "RequestResumeAudioForDebug"}
         );

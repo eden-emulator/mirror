@@ -22,7 +22,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "CreateContextRegistrar"},
         FunctionInfo{1, nullptr, "CommitContext"},
         FunctionInfo{2, nullptr, "RemoveContext"}
@@ -37,7 +37,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetContextInfo"},
         FunctionInfo{1, nullptr, "PullContext"},
         FunctionInfo{2, nullptr, "ListContextDescriptorWithResultForDebug"}
@@ -55,7 +55,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &ECTX_AW::CreateContextRegistrar, "CreateContextRegistrar"},
         FunctionInfo{1, nullptr, "CommitContext"}
     );

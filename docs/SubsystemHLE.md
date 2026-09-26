@@ -52,7 +52,7 @@ public:
     // Must be placed after all methods are defined (or declared).
     // Define here your functions and methods, please order them.
     // Use FindRequestTipc for TIPC handlers.
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetSessionId"},
         FunctionInfo{12, nullptr, "GetAccountId"},
         FunctionInfo{13, nullptr, "GetLinkedNintendoAccountId"},

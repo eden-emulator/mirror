@@ -18,7 +18,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "RequestLinkDevice"},
         FunctionInfo{1, nullptr, "RequestCleanupAllPreInstalledApplications"},
         FunctionInfo{2, nullptr, "RequestCleanupPreInstalledApplication"},

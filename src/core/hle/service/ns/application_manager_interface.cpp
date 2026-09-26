@@ -26,7 +26,7 @@
 namespace Service::NS {
 
 ServiceFrameworkBase::FunctionInfoBase const* IApplicationManagerInterface::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IApplicationManagerInterface::ListApplicationRecord>, "ListApplicationRecord"},
         FunctionInfo{1, nullptr, "GenerateApplicationRecordCount"},
         FunctionInfo{2, D<&IApplicationManagerInterface::GetApplicationRecordUpdateSystemEvent>, "GetApplicationRecordUpdateSystemEvent"},

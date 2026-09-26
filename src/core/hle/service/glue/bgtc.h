@@ -23,7 +23,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{100, &BGTC_T::OpenTaskService, "OpenTaskService"}
     );
 };
@@ -36,7 +36,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{1, nullptr, "NotifyTaskStarting"},
         FunctionInfo{2, nullptr, "NotifyTaskFinished"},
         FunctionInfo{3, nullptr, "GetTriggerEvent"},
@@ -64,7 +64,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{1, nullptr, "GetState"},
         FunctionInfo{2, nullptr, "GetStateChangedEvent"},
         FunctionInfo{3, nullptr, "NotifyEnteringHalfAwake"},

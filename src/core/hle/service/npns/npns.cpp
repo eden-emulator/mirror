@@ -71,7 +71,7 @@ private:
         R_SUCCEED();
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{1, nullptr, "ListenAll"},
         FunctionInfo{2, C<&INpnsSystem::ListenTo>, "ListenTo"},
         FunctionInfo{3, nullptr, "Receive"},
@@ -170,7 +170,7 @@ private:
         R_SUCCEED();
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{1, nullptr, "ListenAll"},
         FunctionInfo{2, nullptr, "ListenTo"},
         FunctionInfo{3, nullptr, "Receive"},

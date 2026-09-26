@@ -66,7 +66,7 @@ private:
         R_SUCCEED();
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, C<&ErrorReportContext::SubmitContext>, "SubmitContext"},
         FunctionInfo{1, C<&ErrorReportContext::CreateReportV0>, "CreateReportV0"},
         FunctionInfo{2, nullptr, "SetInitialLaunchSettingsCompletionTime"},
@@ -95,7 +95,7 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "OpenReport"},
         FunctionInfo{1, nullptr, "OpenManager"},
         FunctionInfo{2, nullptr, "OpenAttachment"}

@@ -10,7 +10,7 @@
 namespace Service::PSC {
 
 ServiceFrameworkBase::FunctionInfoBase const* IReceiver::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IReceiver::AddSource>, "AddSource"},
         FunctionInfo{1, D<&IReceiver::RemoveSource>, "RemoveSource"},
         FunctionInfo{2, D<&IReceiver::GetReceiveEventHandle>, "GetReceiveEventHandle"},

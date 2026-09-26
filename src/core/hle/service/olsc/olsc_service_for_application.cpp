@@ -10,7 +10,7 @@
 namespace Service::OLSC {
 
 ServiceFrameworkBase::FunctionInfoBase const* IOlscServiceForApplication::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IOlscServiceForApplication::Initialize>, "Initialize"},
         FunctionInfo{10, nullptr, "VerifySaveDataBackupLicenseAsync"},
         FunctionInfo{13, D<&IOlscServiceForApplication::GetSaveDataBackupSetting>, "GetSaveDataBackupSetting"},

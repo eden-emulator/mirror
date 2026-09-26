@@ -13,7 +13,7 @@
 namespace Service::AM {
 
 ServiceFrameworkBase::FunctionInfoBase const* IStorage::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IStorage::Open>, "Open"},
         FunctionInfo{1, D<&IStorage::OpenTransferStorage>, "OpenTransferStorage"}
     );

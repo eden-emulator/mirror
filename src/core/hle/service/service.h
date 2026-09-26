@@ -152,9 +152,6 @@ protected:
         /// @param expected_header_ request header in the command buffer which will trigger dispatch to this handler
         /// @param handler_callback_ member function in this service which will be called to handle the request
         /// @param name_ human-friendly name for the request. Used mostly for logging purposes.
-#ifndef _MSC_VER
-        constexpr
-#endif
         FunctionInfoTyped(u32 expected_header_, HandlerFnP<T> handler_callback_, const char* name_, u32 version_gating_ = 0)
             : FunctionInfoBase{expected_header_, HandlerFnP<ServiceFrameworkBase>(handler_callback_), name_, version_gating_}
         {}
@@ -163,7 +160,7 @@ protected:
 
     template<typename ...Ts>
         requires (std::same_as<Ts, FunctionInfo> && ...)
-    static constexpr frozen::map<u32, FunctionInfo, sizeof...(Ts)> CreateStaticMap(Ts... args) {
+    [[nodiscard]] static constexpr frozen::map<u32, FunctionInfo, sizeof...(Ts)> CreateStaticMap(Ts... args) {
         return frozen::map<u32, FunctionInfo, sizeof...(args)>{
             {args.expected_header, FunctionInfo(args)}...
         };
@@ -172,14 +169,14 @@ protected:
     // Used exclusively by NFC
     template<typename T, typename ...Ts>
         requires (std::same_as<Ts, FunctionInfoTyped<T>> && ...)
-    static constexpr frozen::map<u32, FunctionInfoTyped<T>, sizeof...(Ts)> CreateStaticMapWithClass(Ts... args) {
+    [[nodiscard]] static constexpr frozen::map<u32, FunctionInfoTyped<T>, sizeof...(Ts)> CreateStaticMapWithClass(Ts... args) {
         return frozen::map<u32, FunctionInfoTyped<T>, sizeof...(args)>{
             {args.expected_header, FunctionInfoTyped<T>(args)}...
         };
     }
 
     template<typename T>
-    static FunctionInfoBase const* HandlerTableGenerateWithFind(u32 key, T const& map) {
+    [[nodiscard]] static FunctionInfoBase const* HandlerTableGenerateWithFind(u32 key, T const& map) {
         auto const it = map.find(key);
         return it != map.end() ? std::addressof(it->second) : nullptr;
     }

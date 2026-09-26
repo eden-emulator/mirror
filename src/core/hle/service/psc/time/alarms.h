@@ -118,7 +118,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &IAlarmService::CreateWakeupAlarm, "CreateWakeupAlarm"},
         FunctionInfo{1, &IAlarmService::CreateBackgroundTaskAlarm, "CreateBackgroundTaskAlarm"}
     );
@@ -139,7 +139,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0,  &ISteadyClockAlarm::GetAlarmEvent, "GetAlarmEvent"},
         FunctionInfo{1,  &ISteadyClockAlarm::Enable, "Enable"},
         FunctionInfo{2,  &ISteadyClockAlarm::Disable, "Disable"},

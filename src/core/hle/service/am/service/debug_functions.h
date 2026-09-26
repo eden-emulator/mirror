@@ -18,7 +18,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "NotifyMessageToHomeMenuForDebug"},
         FunctionInfo{1, nullptr, "OpenMainApplication"},
         FunctionInfo{10, nullptr, "PerformSystemButtonPressing"},

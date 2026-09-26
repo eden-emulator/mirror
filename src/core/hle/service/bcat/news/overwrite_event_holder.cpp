@@ -10,7 +10,7 @@
 namespace Service::News {
 
 ServiceFrameworkBase::FunctionInfoBase const* IOverwriteEventHolder::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IOverwriteEventHolder::Get>, "Get"}
     );
     return HandlerTableGenerateWithFind(key, functions);

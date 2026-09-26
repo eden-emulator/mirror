@@ -29,7 +29,7 @@ public:
     explicit IHidTemporaryServer(Core::System& system_)
     : ServiceFramework{system_, "hid:tmp"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetConsoleSixAxisSensorCalibrationValues"}
     );
     FunctionInfoBase const* FindRequest(u32 key) override {
@@ -43,7 +43,7 @@ public:
     explicit AHID_CD(Core::System& system_)
     : ServiceFramework{system_, "ahid:cd"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "AcquireDevice"},
         FunctionInfo{1, nullptr, "ReleaseDevice"},
         FunctionInfo{2, nullptr, "GetCtrlSession"},
@@ -61,7 +61,7 @@ public:
     explicit AHID_HDR(Core::System& system_)
     : ServiceFramework{system_, "ahid:hdr"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetDeviceEntries"},
         FunctionInfo{1, nullptr, "GetDeviceList"},
         FunctionInfo{2, nullptr, "GetDeviceParameters"},
@@ -211,7 +211,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "DeactivateDebugPad"},
         FunctionInfo{1, nullptr, "SetDebugPadAutoPilotState"},
         FunctionInfo{2, nullptr, "UnsetDebugPadAutoPilotState"},

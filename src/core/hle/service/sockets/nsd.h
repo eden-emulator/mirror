@@ -29,7 +29,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{5, nullptr, "GetSettingUrl"},
         FunctionInfo{10, nullptr, "GetSettingName"},
         FunctionInfo{11, &NSD::GetEnvironmentIdentifier, "GetEnvironmentIdentifier"},

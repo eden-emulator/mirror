@@ -14,7 +14,7 @@
 namespace Service::Capture {
 
 ServiceFrameworkBase::FunctionInfoBase const* IAlbumAccessorService::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetAlbumFileCount"},
         FunctionInfo{1, C<&IAlbumAccessorService::GetAlbumFileList>, "GetAlbumFileList"},
         FunctionInfo{2, nullptr, "LoadAlbumFile"},

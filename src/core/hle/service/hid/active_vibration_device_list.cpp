@@ -15,7 +15,7 @@
 namespace Service::HID {
 
 ServiceFrameworkBase::FunctionInfoBase const* IActiveVibrationDeviceList::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, C<&IActiveVibrationDeviceList::ActivateVibrationDevice>, "ActivateVibrationDevice"}
     );
     return HandlerTableGenerateWithFind(key, functions);

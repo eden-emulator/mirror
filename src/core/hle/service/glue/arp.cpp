@@ -216,7 +216,7 @@ private:
         rb.Push(ResultSuccess);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &IRegistrar::Issue, "Issue"},
         FunctionInfo{1, &IRegistrar::SetApplicationLaunchProperty, "SetApplicationLaunchProperty"},
         FunctionInfo{2, &IRegistrar::SetApplicationControlProperty, "SetApplicationControlProperty"}

@@ -13,7 +13,7 @@
 namespace Service::OLSC {
 
 ServiceFrameworkBase::FunctionInfoBase const* INativeHandleHolder::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, D<&INativeHandleHolder::GetNativeHandle>, "GetNativeHandle"}
     );
     return HandlerTableGenerateWithFind(key, functions);

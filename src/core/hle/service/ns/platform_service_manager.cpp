@@ -28,7 +28,7 @@
 namespace Service::NS {
 
 ServiceFrameworkBase::FunctionInfoBase const* IPlatformServiceManager::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IPlatformServiceManager::RequestLoad>, "RequestLoad"},
         FunctionInfo{1, D<&IPlatformServiceManager::GetLoadState>, "GetLoadState"},
         FunctionInfo{2, D<&IPlatformServiceManager::GetSize>, "GetSize"},

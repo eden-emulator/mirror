@@ -105,7 +105,7 @@ private:
         rb.Push(ResultSuccess);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{0, &IPsmSession::BindStateChangeEvent, "BindStateChangeEvent"},
         FunctionInfo{1, &IPsmSession::UnbindStateChangeEvent, "UnbindStateChangeEvent"},
         FunctionInfo{2, &IPsmSession::SetChargerTypeChangeEventEnabled, "SetChargerTypeChangeEventEnabled"},

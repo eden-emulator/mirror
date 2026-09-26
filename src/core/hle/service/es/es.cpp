@@ -221,7 +221,7 @@ private:
         rb.Push<u64>(write_size);
     }
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
         FunctionInfo{1, &ETicket::ImportTicket, "ImportTicket"},
         FunctionInfo{2, nullptr, "ImportTicketCertificateSet"},
         FunctionInfo{3, nullptr, "DeleteTicket"},
@@ -325,7 +325,7 @@ public:
     explicit NDRM_LU(Core::System& system_)
         : ServiceFramework{system_, "ndrm:lu"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{1, nullptr, "Cmd1"},
             FunctionInfo{2, nullptr, "Cmd2"},
             FunctionInfo{3, nullptr, "Cmd3"},
@@ -342,7 +342,7 @@ public:
     explicit NDRM_LA(Core::System& system_)
         : ServiceFramework{system_, "ndrm:la"} {}
 
-    static constexpr auto functions = CreateStaticMap(
+    static const auto functions = CreateStaticMap(
             FunctionInfo{1, nullptr, "Cmd1"},
             FunctionInfo{2, nullptr, "Cmd2"},
             FunctionInfo{3, nullptr, "Cmd3"},
