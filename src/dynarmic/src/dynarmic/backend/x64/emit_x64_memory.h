@@ -349,8 +349,8 @@ const void* EmitWriteMemoryMov(BlockOfCode& code, const Xbyak::RegExp& addr, int
         case 128: {
             Xbyak::Label loop;
             code.L(loop);
-            code.lock();
-            code.cmpxchg16b(xword[addr]);
+            code.pause();
+            code.lock(); code.cmpxchg16b(xword[addr]);
             code.jnz(loop, code.T_NEAR);
             break;
         }
