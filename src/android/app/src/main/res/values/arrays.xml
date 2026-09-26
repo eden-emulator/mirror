@@ -558,7 +558,6 @@
         <item>@string/gpu_fence_behavior_immediate</item>
         <item>@string/gpu_fence_behavior_balanced</item>
         <item>@string/gpu_fence_behavior_accurate</item>
-        <item>@string/gpu_fence_behavior_strict</item>
     </string-array>
     <integer-array name="gpuFenceBehaviorValues">
         <item>0</item>

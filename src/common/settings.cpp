@@ -178,10 +178,6 @@ bool IsGPUFenceBehaviorAccurate() {
     return values.gpu_fence_behavior.GetValue() == GpuFenceBehavior::Accurate;
 }
 
-bool IsGPUFenceBehaviorStrict() {
-    return values.gpu_fence_behavior.GetValue() == GpuFenceBehavior::Strict;
-}
-
 bool IsFastmemEnabled() {
     if (values.cpu_accuracy.GetValue() == Settings::CpuAccuracy::Debugging)
         return bool(values.cpuopt_fastmem);

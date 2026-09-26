@@ -419,15 +419,15 @@ void BufferCacheRuntime::TickFrame(Common::SlotVector<Buffer>& slot_buffers) noe
 }
 
 u64 BufferCacheRuntime::CurrentTick() {
-    return scheduler.GetMasterSemaphore().CurrentTick();
+    return scheduler.CurrentTick();
 }
 
-u64 BufferCacheRuntime::KnownGpuTick() {
-    return scheduler.GetMasterSemaphore().KnownGpuTick();
+bool BufferCacheRuntime::IsFree(u64 tick) {
+    return scheduler.IsFree(tick);
 }
 
-void BufferCacheRuntime::Wait(u64 buffer_tick) {
-    scheduler.Wait(buffer_tick);
+void BufferCacheRuntime::Wait(u64 tick) {
+    scheduler.Wait(tick);
 }
 
 void BufferCacheRuntime::Finish() {

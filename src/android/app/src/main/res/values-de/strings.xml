@@ -967,7 +967,6 @@ Wirklich fortfahren?</string>
     <string name="gpu_fence_behavior_immediate">Direkt</string>
     <string name="gpu_fence_behavior_balanced">Ausgewogen</string>
     <string name="gpu_fence_behavior_accurate">Genau</string>
-    <string name="gpu_fence_behavior_strict">Strikt</string>
 
     <string name="vram_usage_conservative">Konservativ</string>
     <string name="vram_usage_aggressive">Aggressiv</string>

@@ -561,8 +561,6 @@
     <string name="renderer_reactive_flushing_description">犧牲效能，以改善部分遊戲的轉譯準確度</string>
     <string name="enable_buffer_history">啟用緩衝區歷史</string>
     <string name="enable_buffer_history_description">允許存取先前的緩衝區狀態。此選項可能會改善部分遊戲的渲染品質與效能穩定性</string>
-    <string name="enable_gpu_buffer_readback">啟用 GPU 緩衝區讀回</string>
-    <string name="enable_gpu_buffer_readback_description">透過在上傳之前先將 GPU 修改過的緩衝區資料讀回來保存資料，部分遊戲需要啟用此功能才能正常渲染遊戲特效。如果硬體無法負荷可能會導致錯誤</string>
     <string name="use_optimized_vertex_buffers">最佳化頂點緩衝區</string>
     <string name="use_optimized_vertex_buffers_description">啟用最佳化的頂點緩衝區綁定。需要安裝 Mesa 26.0+ Turnip drivers/Qualcomm drivers。使用舊版 Turnip drivers 會導致當機 (25.3版和更低的版本)</string>
 

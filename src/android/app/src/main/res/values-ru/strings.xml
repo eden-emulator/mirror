@@ -569,8 +569,6 @@
     <string name="renderer_reactive_flushing_description">Повышение точности рендеринга в некоторых играх за счет снижения производительности.</string>
     <string name="enable_buffer_history">Включить историю буфера</string>
     <string name="enable_buffer_history_description">Позволяет обращаться к предыдущим состояниям буфера. Эта опция может повысить качество рендеринга и стабильность производительности в некоторых играх.</string>
-    <string name="enable_gpu_buffer_readback">Включить обратное чтение буфера ГПУ</string>
-    <string name="enable_gpu_buffer_readback_description">Сохраняет измененные ГПУ данные буфера путем чтения их обратно перед выгрузками. Некоторые игры требуют этого, чтобы рендерить определенные эффекты правильно. Может вызывать проблемы если оборудование не может обработать дополнительную рабочую нагрузку.</string>
     <string name="use_optimized_vertex_buffers">Оптимизированные вершинные буферы</string>
     <string name="use_optimized_vertex_buffers_description">Включает оптимизированную привязку вершинного буфера для повышения производительности. Требует Mesa Turnip 26.0+ / QCOM. Приводит к вылету на старых версиях драйверов Turnip (25.3 и ниже).</string>
 
@@ -1088,7 +1086,6 @@
     <string name="gpu_fence_behavior_immediate">Мгновенный</string>
     <string name="gpu_fence_behavior_balanced">Сбалансированный</string>
     <string name="gpu_fence_behavior_accurate">Точный</string>
-    <string name="gpu_fence_behavior_strict">Строгий</string>
 
     <string name="vram_usage_conservative">Консервативный</string>
     <string name="vram_usage_aggressive">Агрессивный</string>

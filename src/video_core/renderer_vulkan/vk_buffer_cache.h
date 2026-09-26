@@ -112,9 +112,9 @@ public:
 
     u64 CurrentTick();
 
-    u64 KnownGpuTick();
+    bool IsFree(u64 tick);
 
-    void Wait(u64 buffer_tick);
+    void Wait(u64 tick);
 
     void Finish();
 

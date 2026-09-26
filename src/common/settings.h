@@ -525,7 +525,7 @@ struct Values {
     SwitchableSetting<GpuFenceBehavior, true> gpu_fence_behavior{linkage,
                                                                  GpuFenceBehavior::Default,
                                                                  GpuFenceBehavior::Default,
-                                                                 GpuFenceBehavior::Strict,
+                                                                 GpuFenceBehavior::Accurate,
                                                                  "gpu_fence_behavior",
                                                                  Category::RendererAdvanced,
                                                                  Specialization::Default,
@@ -655,13 +655,6 @@ struct Values {
 
     SwitchableSetting<bool> rescale_hack{linkage, false, "rescale_hack",
                                          Category::RendererHacks};
-    SwitchableSetting<bool> enable_gpu_buffer_readback{linkage,
-                                                       false,
-                                                       "enable_gpu_buffer_readback",
-                                                       Category::RendererAdvanced,
-                                                       Specialization::Default,
-                                                       true,
-                                                       true};
 
     SwitchableSetting<bool> use_asynchronous_shaders{linkage, false, "use_asynchronous_shaders",
                                                      Category::RendererHacks};
@@ -979,7 +972,6 @@ bool IsDMALevelSafe();
 bool IsGPUFenceBehaviorDefault();
 bool IsGPUFenceBehaviorBalanced();
 bool IsGPUFenceBehaviorAccurate();
-bool IsGPUFenceBehaviorStrict();
 
 bool IsFastmemEnabled();
 void SetNceEnabled(bool is_64bit);
