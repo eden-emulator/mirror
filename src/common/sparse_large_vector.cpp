@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #ifdef _WIN32
+#include <algorithm>
 #include <windows.h>
 #include <mutex>
 #else
@@ -20,32 +21,36 @@ namespace Common {
 
 #ifdef _WIN32
 static std::vector<std::pair<u64, u64>> vector_regions {};
+static std::mutex vector_regions_mutex {};
 
 // Workaround for handling non-commited memory accessed by Dynarmic; usually result of an error
 static LONG WINAPI FakePageFaultHandler(PEXCEPTION_POINTERS info) {
     DWORD code = info->ExceptionRecord->ExceptionCode;
-    u64 exception_addr = reinterpret_cast<u64>(info->ExceptionRecord->ExceptionAddress);
+    u64 exception_addr = reinterpret_cast<u64>(info->ExceptionRecord->ExceptionInformation[1]);
 
-    if (code != EXCEPTION_ACCESS_VIOLATION) {
+    if (code != EXCEPTION_ACCESS_VIOLATION || info->ExceptionRecord->ExceptionInformation[0] == 1) {
         // Not our problem
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
     u64 addr = 0, addr2 = 0;
 
-    for (auto region: vector_regions) {
-        auto addr_shifted = exception_addr >> HostPageBits;
-        if (region.first <= addr_shifted && addr_shifted <= region.second) {
-            addr = addr_shifted;
-        }
+    {
+        std::lock_guard lock(vector_regions_mutex);
+        for (auto region: vector_regions) {
+            auto addr_shifted = exception_addr >> HostPageBits;
+            if (region.first <= addr_shifted && addr_shifted <= region.second) {
+                addr = addr_shifted;
+            }
 
-        // Page-boundary accesses
-        if (auto addr_ = (exception_addr + 0x40) >> HostPageBits; addr_ != addr_shifted && region.first <= addr_ && addr_ <= region.second) {
-            addr2 = addr_;
-        }
+            // Page-boundary accesses
+            if (auto addr_ = (exception_addr + 0x40) >> HostPageBits; addr_ != addr_shifted && region.first <= addr_ && addr_ <= region.second) {
+                addr2 = addr_;
+            }
 
-        if (addr != 0 || addr2 != 0) {
-            break;
+            if (addr != 0 || addr2 != 0) {
+                break;
+            }
         }
     }
 
@@ -77,8 +82,16 @@ bool CommitVectorPage(uintptr_t addr, bool write) noexcept {
     auto res = VirtualQuery(reinterpret_cast<void*>(addr), &info, sizeof(info));
     if (res == 0) {
         LOG_CRITICAL(HW_Memory, "Failed to query large buffer region at {:#x} with error {}, will try committing anyway", addr, GetLastError());
+    } else if (info.State == MEM_COMMIT) {
+        DWORD old_protect {};
+        auto perm = write ? PAGE_READWRITE : PAGE_READONLY;
+        if (!VirtualProtect(reinterpret_cast<void*>(addr), HostPageSize, perm, &old_protect)) {
+            LOG_ERROR(HW_Memory, "Failed to change permissions of large buffer region at {:#x}, error {}", addr, GetLastError());
+            return false;
+        }
+        return true;
     } else if (info.State != MEM_RESERVE) {
-        LOG_ERROR(HW_Memory, "Tried to commit an unreserved large buffer region at {:#x} that is not mapped or is already committed (state {:#x})", addr, info.State);
+        LOG_ERROR(HW_Memory, "Tried to commit an unreserved large buffer region at {:#x} that is not mapped (state {:#x})", addr, info.State);
         return false;
     }
 
@@ -123,7 +136,8 @@ void* AllocateMemoryPages(std::size_t size) noexcept {
     void* base = VirtualAlloc(nullptr, size, MEM_RESERVE, PAGE_READWRITE);
 
     if (base != nullptr) {
-        vector_regions.emplace_back(reinterpret_cast<u64>(base), reinterpret_cast<u64>(base) + size);
+        std::lock_guard lock(vector_regions_mutex);
+        vector_regions.emplace_back(reinterpret_cast<u64>(base) >> HostPageBits, (reinterpret_cast<u64>(base) + size) >> HostPageBits);
 
         static std::once_flag flag;
         std::call_once(flag, []() { AddVectoredExceptionHandler(1, FakePageFaultHandler); });
@@ -149,6 +163,8 @@ void FreeMemoryPages(void* base, [[maybe_unused]] std::size_t size) noexcept {
     if (!base)
         return;
 #ifdef _WIN32
+    std::lock_guard lock(vector_regions_mutex);
+    std::erase_if(vector_regions, [base](const auto& r) {return r.first == reinterpret_cast<u64>(base); });
     ASSERT(VirtualFree(base, 0, MEM_RELEASE));
 #else
     ASSERT(munmap(base, size) == 0);

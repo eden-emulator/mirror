@@ -28,9 +28,9 @@ constexpr u64 HostPageBits = 12;
 constexpr u64 HostPageMask = ~(HostPageSize - 1);
 bool CommitVectorPage(uintptr_t addr, bool write) noexcept;
 #else
-const u64 HostPageSize = sysconf(_SC_PAGESIZE);
-const u64 HostPageBits = std::countr_zero(HostPageSize);
-const u64 HostPageMask = ~(HostPageSize - 1);
+inline const u64 HostPageSize = sysconf(_SC_PAGESIZE);
+inline const u64 HostPageBits = std::countr_zero(HostPageSize);
+inline const u64 HostPageMask = ~(HostPageSize - 1);
 #endif
 
 void* AllocateMemoryPages(std::size_t size) noexcept;
@@ -81,8 +81,8 @@ public:
             UNREACHABLE_MSG("Out of bounds RW access on SparseLargeVector @ {}", index);
         }
 
-        if (!IsCommittedPage(index)) {
-            CommitPage(index);
+        if (!IsCommittedPage(index) && !CommitPage(index)) {
+            UNREACHABLE_MSG("Cannot access SparseLargeVector index {} with RW permission", index);
         }
         return base_ptr[index];
     }
@@ -103,9 +103,8 @@ public:
             LOG_CRITICAL(Common_Memory, "Out of bounds write on SparseLargeVector @ {}", index);
             return;
         }
-        if (!IsCommittedPage(index))
-            CommitPage(index);
-        base_ptr[index] = value;
+        if (IsCommittedPage(index) || CommitPage(index))
+            base_ptr[index] = value;
     }
 
     void ZeroRegion(std::size_t start, std::size_t end_) noexcept {
@@ -177,16 +176,22 @@ private:
         return (val >> (page & 63)) & 1;
     }
 
-    constexpr void CommitPage(std::size_t index) noexcept {
+    constexpr bool CommitPage(std::size_t index) noexcept {
         auto page_index = (index * sizeof(T)) >> HostPageBits;
         auto page = reinterpret_cast<uintptr_t>(base_ptr + index) & HostPageMask;
 #if defined(_WIN32)
-        CommitVectorPage(page, true);
+        if (!CommitVectorPage(page, true)) {
+            return false;
+        }
 #else
-        mprotect(reinterpret_cast<void*>(page), HostPageSize, PROT_READ | PROT_WRITE);
+        if (mprotect(reinterpret_cast<void*>(page), HostPageSize, PROT_READ | PROT_WRITE) != 0) {
+            LOG_ERROR(Common_Memory, "Failed to commit large buffer region at index {}, error {}", index, strerror(errno));
+            return false;
+        }
 #endif
 
         committed_pages[page_index >> 6].fetch_or(1ULL << (page_index & 63), std::memory_order_release);
+        return true;
     }
 
     constexpr void DecommitPage(std::size_t index) noexcept {
