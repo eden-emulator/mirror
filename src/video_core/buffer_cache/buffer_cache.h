@@ -1822,7 +1822,9 @@ bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 si
     }
     const std::span<BufferCopy> copies_span(upload_copies.data(), upload_copies.size());
     UploadMemory(buffer, total_size_bytes, largest_copy, copies_span);
-    any_buffer_uploaded = true;
+    if constexpr (IS_OPENGL) {
+        any_buffer_uploaded = true;
+    }
     return false;
 }
 
