@@ -1471,8 +1471,9 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
         DeleteImage(overlap_id);
     }
 
-    // TODO: Only upload what we need
+    new_image.flags |= ImageFlagBits::ReorderableUpload;
     RefreshContents(new_image, new_image_id);
+    new_image.flags &= ~ImageFlagBits::ReorderableUpload;
 
     if (can_rescale) {
         ScaleUp(new_image);

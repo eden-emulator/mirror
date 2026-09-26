@@ -2078,17 +2078,25 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
         return;
     }
 
-    scheduler->RequestOutsideRenderPassOperationContext();
     auto vk_copies = TransformBufferImageCopies(copies, offset, aspect_mask);
     const VkBuffer src_buffer = buffer;
     const VkImage vk_image = *original_image;
     const VkImageAspectFlags vk_aspect_mask = aspect_mask;
     const bool was_initialized = std::exchange(initialized, true);
 
-    scheduler->Record([src_buffer, vk_image, vk_aspect_mask, was_initialized,
-                       vk_copies](vk::CommandBuffer cmdbuf) {
+    auto copy = [src_buffer, vk_image, vk_aspect_mask, was_initialized,
+                 vk_copies](vk::CommandBuffer cmdbuf) {
         CopyBufferToImage(cmdbuf, src_buffer, vk_image, vk_aspect_mask, was_initialized, VideoCommon::FixSmallVectorADL(vk_copies));
-    });
+    };
+    if (True(flags & ImageFlagBits::ReorderableUpload)) {
+        scheduler->RecordWithUploadBuffer(
+            [copy = std::move(copy)](vk::CommandBuffer, vk::CommandBuffer upload_cmdbuf) {
+                copy(upload_cmdbuf);
+            });
+    } else {
+        scheduler->RequestOutsideRenderPassOperationContext();
+        scheduler->Record(std::move(copy));
+    }
 
     if (is_rescaled) {
         ScaleUp();

@@ -45,6 +45,7 @@ enum class ImageFlagBits : u32 {
 
     AsynchronousDecode = 1 << 16,
     IsDecoding = 1 << 17, ///< Is currently being decoded asynchronously.
+    ReorderableUpload = 1 << 18,
 };
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
