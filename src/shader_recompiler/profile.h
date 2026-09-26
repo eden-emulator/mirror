@@ -40,6 +40,7 @@ struct Profile {
     bool support_shader_quad_control{};
     bool support_quad_shuffles{};
     bool support_vote{};
+    bool support_shuffle_relative{};
     u32 supported_subgroup_stages{0x7F};
     bool support_viewport_index_layer_non_geometry{};
     bool support_viewport_mask{};
@@ -102,6 +103,8 @@ struct Profile {
     bool ignore_nan_fp_comparisons{};
     /// Some drivers have broken support for OpVectorExtractDynamic on subgroup mask inputs
     bool has_broken_spirv_subgroup_mask_vector_extract_dynamic{};
+    bool has_broken_spirv_subgroup_shuffle{};
+    u32 max_subgroup_size{};
 
     u32 gl_max_compute_smem_size{};
 
