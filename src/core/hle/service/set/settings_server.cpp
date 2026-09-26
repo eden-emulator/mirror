@@ -89,7 +89,7 @@ LanguageCode GetLanguageCodeFromIndex(std::size_t index) {
     return available_language_codes.at(index);
 }
 
-ServiceFrameworkBase::FunctionInfoBase const* ISettingsServer::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> ISettingsServer::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&ISettingsServer::GetLanguageCode>, "GetLanguageCode"},
         FunctionInfo{1, C<&ISettingsServer::GetAvailableLanguageCodes>, "GetAvailableLanguageCodes"},

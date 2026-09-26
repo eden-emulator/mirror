@@ -13,7 +13,7 @@
 
 namespace Service::Capture {
 
-ServiceFrameworkBase::FunctionInfoBase const* IAlbumAccessorService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IAlbumAccessorService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetAlbumFileCount"},
         FunctionInfo{1, C<&IAlbumAccessorService::GetAlbumFileList>, "GetAlbumFileList"},

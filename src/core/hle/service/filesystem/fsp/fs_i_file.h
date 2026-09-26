@@ -31,7 +31,7 @@ private:
     Result SetSize(s64 size);
     Result GetSize(Out<s64> out_size);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

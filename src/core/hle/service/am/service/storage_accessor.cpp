@@ -11,7 +11,7 @@
 
 namespace Service::AM {
 
-ServiceFrameworkBase::FunctionInfoBase const* IStorageAccessor::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IStorageAccessor::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IStorageAccessor::GetSize>, "GetSize"},
         FunctionInfo{10, D<&IStorageAccessor::Write>, "Write"},
@@ -43,7 +43,7 @@ Result IStorageAccessor::Read(OutBuffer<BufferAttr_HipcAutoSelect> out_buffer, s
     R_RETURN(m_impl->Read(offset, out_buffer.data(), out_buffer.size()));
 }
 
-ServiceFrameworkBase::FunctionInfoBase const* ITransferStorageAccessor::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> ITransferStorageAccessor::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&ITransferStorageAccessor::GetSize>, "GetSize"},
         FunctionInfo{1, D<&ITransferStorageAccessor::GetHandle>, "GetHandle"}

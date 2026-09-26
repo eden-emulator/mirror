@@ -23,7 +23,7 @@ public:
         keys.SynthesizeTickets();
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -332,7 +332,7 @@ public:
             FunctionInfo{1000, nullptr, "Cmd1000"},
             FunctionInfo{8000, nullptr, "Cmd8000"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -398,7 +398,7 @@ public:
             FunctionInfo{8002, nullptr, "Cmd8002"},
             FunctionInfo{8003, nullptr, "Cmd8003"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

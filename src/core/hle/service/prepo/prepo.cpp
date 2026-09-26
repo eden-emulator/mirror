@@ -23,7 +23,7 @@ class PlayReport final : public ServiceFramework<PlayReport> {
 public:
     explicit PlayReport(const char* name, Core::System& system_) : ServiceFramework{system_, name} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

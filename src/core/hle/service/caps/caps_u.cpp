@@ -13,7 +13,7 @@
 
 namespace Service::Capture {
 
-ServiceFrameworkBase::FunctionInfoBase const* IAlbumApplicationService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IAlbumApplicationService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{32, C<&IAlbumApplicationService::SetShimLibraryVersion>, "SetShimLibraryVersion"},
         FunctionInfo{102, C<&IAlbumApplicationService::GetAlbumFileList0AafeAruidDeprecated>, "GetAlbumFileList0AafeAruidDeprecated"},

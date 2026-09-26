@@ -207,7 +207,7 @@ public:
     explicit CSRNG(Core::System& system_, std::shared_ptr<Module> module_) : Interface(system_, std::move(module_), "csrng") {}
     ~CSRNG() override = default;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

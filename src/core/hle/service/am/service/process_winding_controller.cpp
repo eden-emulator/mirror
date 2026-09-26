@@ -13,7 +13,7 @@
 
 namespace Service::AM {
 
-    ServiceFrameworkBase::FunctionInfoBase const* IProcessWindingController::FindRequest(u32 key) {
+    std::optional<ServiceFrameworkBase::FunctionInfoBase> IProcessWindingController::FindRequest(u32 key) {
         static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&IProcessWindingController::GetLaunchReason>, "GetLaunchReason"},
             FunctionInfo{11, D<&IProcessWindingController::OpenCallingLibraryApplet>, "OpenCallingLibraryApplet"},

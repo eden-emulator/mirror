@@ -10,7 +10,7 @@
 
 namespace Service::LDN {
 
-ServiceFrameworkBase::FunctionInfoBase const* IMonitorService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IMonitorService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&IMonitorService::GetStateForMonitor>, "GetStateForMonitor"},
         FunctionInfo{1, nullptr, "GetNetworkInfoForMonitor"},

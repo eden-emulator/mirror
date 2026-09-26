@@ -57,7 +57,7 @@ private:
 
     Result GetAlbumAccessResultForDebug(Out<Result> out_result);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::shared_ptr<AlbumManager> manager = nullptr;
 };
 

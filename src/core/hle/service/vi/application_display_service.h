@@ -74,7 +74,7 @@ public:
                                                    s64 width, s64 height);
 
 private:
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<Container> m_container;
     KernelHelpers::ServiceContext m_context;
     std::mutex m_lock{};

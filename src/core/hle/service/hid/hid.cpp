@@ -32,7 +32,7 @@ public:
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetConsoleSixAxisSensorCalibrationValues"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     ~IHidTemporaryServer() override = default;
@@ -50,7 +50,7 @@ public:
         FunctionInfo{3, nullptr, "GetReadSession"},
         FunctionInfo{4, nullptr, "GetWriteSession"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     ~AHID_CD() override = default;
@@ -69,7 +69,7 @@ public:
         FunctionInfo{4, nullptr, "DetachDevice"},
         FunctionInfo{5, nullptr, "SetDeviceFilter"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     ~AHID_HDR() override = default;
@@ -208,7 +208,7 @@ public:
         return resource_manager;
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

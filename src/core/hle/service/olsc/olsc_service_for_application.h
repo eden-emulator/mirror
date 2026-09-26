@@ -22,7 +22,7 @@ private:
     Result GetSaveDataBackupSetting(Out<u8> out_save_data_backup_setting);
     Result SetSaveDataBackupSettingEnabled(bool enabled, NS::Uid account_id);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     bool initialized{};
 };

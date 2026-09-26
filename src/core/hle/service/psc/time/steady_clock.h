@@ -34,7 +34,7 @@ public:
     Result GetSetupResultValue(Out<Result> out_result);
     Result GetInternalOffset(Out<s64> out_internal_offset);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
 private:
     StandardSteadyClockCore& m_clock_core;

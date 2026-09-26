@@ -14,7 +14,7 @@
 
 namespace Service::Capture {
 
-ServiceFrameworkBase::FunctionInfoBase const* IAlbumControlService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IAlbumControlService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{1, nullptr, "CaptureRawImage"},
         FunctionInfo{2, nullptr, "CaptureRawImageWithTimeout"},

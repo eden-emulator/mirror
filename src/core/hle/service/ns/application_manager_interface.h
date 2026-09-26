@@ -85,7 +85,7 @@ public:
     void PushApplicationRecord(HLERequestContext& ctx);
     void ListApplicationTitle(HLERequestContext& ctx);
     void ListApplicationIcon(HLERequestContext& ctx);
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
 private:
     KernelHelpers::ServiceContext service_context;

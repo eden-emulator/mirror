@@ -89,7 +89,7 @@ private:
     /// Callback to parse and handle a received LDN packet.
     void OnLDNPacketReceived(const Network::LDNPacket& packet);
     void OnEventFired();
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* state_change_event;

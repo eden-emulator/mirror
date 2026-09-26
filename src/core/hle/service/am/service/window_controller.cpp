@@ -12,7 +12,7 @@
 
 namespace Service::AM {
 
-ServiceFrameworkBase::FunctionInfoBase const* IWindowController::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IWindowController::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "CreateWindow"},
         FunctionInfo{1,  D<&IWindowController::GetAppletResourceUserId>, "GetAppletResourceUserId"},

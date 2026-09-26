@@ -10,7 +10,7 @@
 
 namespace Service::NS {
 
-ServiceFrameworkBase::FunctionInfoBase const* ISystemUpdateInterface::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> ISystemUpdateInterface::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&ISystemUpdateInterface::GetBackgroundNetworkUpdateState>, "GetBackgroundNetworkUpdateState"},
         FunctionInfo{1, D<&ISystemUpdateInterface::OpenSystemUpdateControl>, "OpenSystemUpdateControl"},

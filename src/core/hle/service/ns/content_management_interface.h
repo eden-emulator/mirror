@@ -25,7 +25,7 @@ public:
     Result GetFreeSpaceSize(Out<s64> out_free_space_size, FileSys::StorageId storage_id);
     Result GetUnknown71(Out<u64> out_value_a, Out<u64> out_value_b, u8 flag);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

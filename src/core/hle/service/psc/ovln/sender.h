@@ -20,7 +20,7 @@ public:
 private:
     Result Send(const OverlayNotification& notification, MessageFlags flags);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::PSC

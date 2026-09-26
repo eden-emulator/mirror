@@ -318,7 +318,7 @@ private:
         evt_scan_complete->Signal(system.Kernel());
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -464,7 +464,7 @@ private:
         event1->Signal(system.Kernel());
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -511,7 +511,7 @@ class INetworkProfile final : public ServiceFramework<INetworkProfile> {
 public:
     explicit INetworkProfile(Core::System& system_) : ServiceFramework{system_, "INetworkProfile"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -1053,7 +1053,7 @@ void IGeneralService::GetCurrentAccessPoint(HLERequestContext& ctx) {
     rb.Push(ResultSuccess);
 }
 
-ServiceFrameworkBase::FunctionInfoBase const* IGeneralService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IGeneralService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{1, &IGeneralService::GetClientId, "GetClientId"},
         FunctionInfo{2, &IGeneralService::CreateScanRequest, "CreateScanRequest"},
@@ -1135,7 +1135,7 @@ private:
         rb.PushIpcInterface<IGeneralService>(ctx, system);
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

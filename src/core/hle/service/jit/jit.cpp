@@ -47,7 +47,7 @@ public:
         configuration.sys_ro_memory = configuration.user_ro_memory;
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -259,7 +259,7 @@ class JITU final : public ServiceFramework<JITU> {
 public:
     explicit JITU(Core::System& system_) : ServiceFramework{system_, "jit:u"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

@@ -150,7 +150,7 @@ public:
     explicit IRegistrar(Core::System& system_, IssuerFn&& issuer)
         : ServiceFramework{system_, "IRegistrar"}, issue_process_id{std::move(issuer)} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

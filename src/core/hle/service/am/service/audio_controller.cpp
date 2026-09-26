@@ -9,7 +9,7 @@
 
 namespace Service::AM {
 
-ServiceFrameworkBase::FunctionInfoBase const* IAudioController::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioController::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IAudioController::SetExpectedMasterVolume>, "SetExpectedMasterVolume"},
         FunctionInfo{1, D<&IAudioController::GetMainAppletExpectedMasterVolume>, "GetMainAppletExpectedMasterVolume"},

@@ -26,7 +26,7 @@ public:
         state_change_event = service_context.CreateEvent("IPsmSession::state_change_event");
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

@@ -15,7 +15,7 @@
 namespace Service::Audio {
 using namespace AudioCore::AudioOut;
 
-ServiceFrameworkBase::FunctionInfoBase const* IAudioOut::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioOut::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IAudioOut::GetAudioOutState>, "GetAudioOutState"},
         FunctionInfo{1, D<&IAudioOut::Start>, "Start"},

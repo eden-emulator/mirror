@@ -8,7 +8,7 @@
 
 namespace Service::NS {
 
-ServiceFrameworkBase::FunctionInfoBase const* IFactoryResetInterface::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IFactoryResetInterface::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{100, nullptr, "ResetToFactorySettings"},
         FunctionInfo{101, nullptr, "ResetToFactorySettingsWithoutUserSaveData"},

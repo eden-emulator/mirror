@@ -43,7 +43,7 @@ public:
             FunctionInfo{22, nullptr, "SetResetUponResumeEnable"},
             FunctionInfo{23, nullptr, "ResetFunction"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -56,7 +56,7 @@ public:
             FunctionInfo{0, nullptr, "RegisterClassDriver"},
             FunctionInfo{1, nullptr, "QueryFunctionsUnregistered"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -69,7 +69,7 @@ public:
             FunctionInfo{0, nullptr, "GetLoggedState"},
             FunctionInfo{1, nullptr, "GetLoggedStateEvent"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

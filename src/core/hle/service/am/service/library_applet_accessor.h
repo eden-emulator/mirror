@@ -68,7 +68,7 @@ private:
     void FrontendExecuteInteractive();
     void FrontendRequestExit();
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<AppletDataBroker> m_broker;
     const std::shared_ptr<Applet> m_applet;
 };

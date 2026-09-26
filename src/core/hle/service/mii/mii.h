@@ -27,7 +27,7 @@ public:
 private:
     Result GetDatabaseService(Out<SharedPointer<IDatabaseService>> out_database_service);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::shared_ptr<MiiManager> manager{nullptr};
     bool is_system{};
 };

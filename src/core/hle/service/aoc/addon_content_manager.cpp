@@ -28,7 +28,7 @@
 
 namespace Service::AOC {
 
-ServiceFrameworkBase::FunctionInfoBase const* IAddOnContentManager::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IAddOnContentManager::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "CountAddOnContentByApplicationId"},
         FunctionInfo{1, nullptr, "ListAddOnContentByApplicationId"},

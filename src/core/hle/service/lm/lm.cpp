@@ -322,7 +322,7 @@ private:
     };
     static_assert(sizeof(LogPacketHeader) == 0x18, "LogPacketHeader is an invalid size");
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -339,7 +339,7 @@ class LM final : public ServiceFramework<LM> {
 public:
     explicit LM(Core::System& system_) : ServiceFramework{system_, "lm"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -361,7 +361,7 @@ class LM_GET final : public ServiceFramework<LM_GET> {
 public:
     explicit LM_GET(Core::System& system_) : ServiceFramework{system_, "lm:get"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

@@ -29,7 +29,7 @@ public:
         FunctionInfo{3, nullptr, "IsLocked"},
         FunctionInfo{4, nullptr, "GetRelatedState"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -42,7 +42,7 @@ public:
             FunctionInfo{0, nullptr, "GetInputSourceState"},
             FunctionInfo{1, nullptr, "GetTriggerTargetEvent"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -54,7 +54,7 @@ public:
     static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetNotifyEvent"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -81,7 +81,7 @@ public:
             FunctionInfo{14, nullptr, "Cmd14"},
             FunctionInfo{15, nullptr, "Cmd15"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -98,7 +98,7 @@ public:
         FunctionInfo{4, nullptr, "Cmd4"},
         FunctionInfo{5, nullptr, "Cmd5"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -117,7 +117,7 @@ private:
         R_SUCCEED();
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

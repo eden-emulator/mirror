@@ -18,7 +18,7 @@ namespace Service::Audio {
 
 using namespace AudioCore::Renderer;
 
-ServiceFrameworkBase::FunctionInfoBase const* IAudioRendererManager::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioRendererManager::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IAudioRendererManager::OpenAudioRenderer>, "OpenAudioRenderer"},
         FunctionInfo{1, D<&IAudioRendererManager::GetWorkBufferSize>, "GetWorkBufferSize"},

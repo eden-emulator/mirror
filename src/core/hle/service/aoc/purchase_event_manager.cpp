@@ -11,7 +11,7 @@ namespace Service::AOC {
 
 constexpr Result ResultNoPurchasedProductInfoAvailable{ErrorModule::NIMShop, 400};
 
-ServiceFrameworkBase::FunctionInfoBase const* IPurchaseEventManager::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IPurchaseEventManager::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IPurchaseEventManager::SetDefaultDeliveryTarget>, "SetDefaultDeliveryTarget"},
         FunctionInfo{1, D<&IPurchaseEventManager::SetDeliveryTarget>, "SetDeliveryTarget"},

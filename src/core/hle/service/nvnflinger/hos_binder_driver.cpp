@@ -11,7 +11,7 @@
 
 namespace Service::Nvnflinger {
 
-ServiceFrameworkBase::FunctionInfoBase const* IHOSBinderDriver::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IHOSBinderDriver::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&IHOSBinderDriver::TransactParcel>, "TransactParcel"},
         FunctionInfo{1, C<&IHOSBinderDriver::AdjustRefcount>, "AdjustRefcount"},

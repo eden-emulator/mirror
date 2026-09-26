@@ -26,7 +26,7 @@ public:
             FunctionInfo{5, nullptr, "GetMediaType"},
             FunctionInfo{6, nullptr, "GetMacAddress"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -43,7 +43,7 @@ public:
             FunctionInfo{3, nullptr, "GetInterfaceList"},
             FunctionInfo{4, nullptr, "GetInterfaceCount"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -56,7 +56,7 @@ public:
     static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "CreateDriverService"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

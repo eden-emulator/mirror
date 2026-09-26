@@ -24,7 +24,7 @@ private:
     void GetApplicationControlProperty(HLERequestContext& ctx);
     void GetApplicationControlPropertyWithApplicationId(HLERequestContext& ctx);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -51,7 +51,7 @@ private:
     void AcquireRegistrar(HLERequestContext& ctx);
     void UnregisterApplicationInstance(HLERequestContext& ctx);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

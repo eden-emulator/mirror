@@ -34,7 +34,7 @@ private:
     Result IsForceTerminateApplicationDisabledForDebug(
         Out<bool> out_is_force_terminate_application_disabled_for_debug);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     WindowSystem& m_window_system;
     const std::shared_ptr<Applet> m_applet;
     KernelHelpers::ServiceContext m_context;

@@ -8,7 +8,7 @@
 #include "core/hle/service/am/window_system.h"
 
 namespace Service::AM {
-    ServiceFrameworkBase::FunctionInfoBase const* IOverlayFunctions::FindRequest(u32 key) {
+    std::optional<ServiceFrameworkBase::FunctionInfoBase> IOverlayFunctions::FindRequest(u32 key) {
         static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&IOverlayFunctions::BeginToWatchShortHomeButtonMessage>, "BeginToWatchShortHomeButtonMessage"},
             FunctionInfo{1, D<&IOverlayFunctions::EndToWatchShortHomeButtonMessage>, "EndToWatchShortHomeButtonMessage"},

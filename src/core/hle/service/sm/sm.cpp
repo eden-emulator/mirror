@@ -131,10 +131,10 @@ private:
     void RegisterServiceImpl(HLERequestContext& ctx, std::string name, u32 max_session_count, bool is_light);
 
     // TODO: We reuse function list for both TIPC and non-TIPC
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    FunctionInfoBase const* FindRequestTipc(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequestTipc(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

@@ -12,7 +12,7 @@
 
 namespace Service::HID {
 
-ServiceFrameworkBase::FunctionInfoBase const* IAppletResource::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IAppletResource::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&IAppletResource::GetSharedMemoryHandle>, "GetSharedMemoryHandle"}
     );

@@ -23,7 +23,7 @@ class IService final : public ServiceFramework<IService> {
 public:
     explicit IService(Core::System& system_) : ServiceFramework{system_, "ngct:u"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -67,7 +67,7 @@ class NgcServiceImpl final : public ServiceFramework<NgcServiceImpl> {
 public:
     explicit NgcServiceImpl(Core::System& system_) : ServiceFramework(system_, "ngc:u") {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -167,7 +167,7 @@ public:
             FunctionInfo{120, nullptr, "CalculateContentFingerprint"},
             FunctionInfo{130, nullptr, "TryEnableTemporalPassThrough"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -181,7 +181,7 @@ class IUserShimScopedObject final : public ServiceFramework<IUserShimScopedObjec
 public:
     explicit IUserShimScopedObject(Core::System& system_) : ServiceFramework(system_, "IUserShimScopedObject") {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -217,7 +217,7 @@ class IUserService final : public ServiceFramework<IUserService> {
 public:
     explicit IUserService(Core::System& system_) : ServiceFramework(system_, "stpl:u") {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     Result Cmd0(u32 unk0, OutInterface<IUserShimScopedObject> out_interface) {
@@ -235,7 +235,7 @@ class ISystemShimScopedObject final : public ServiceFramework<ISystemShimScopedO
 public:
     explicit ISystemShimScopedObject(Core::System& system_) : ServiceFramework(system_, "ISystemShimScopedObject") {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -266,7 +266,7 @@ class ISystemService final : public ServiceFramework<ISystemService> {
 public:
     explicit ISystemService(Core::System& system_) : ServiceFramework(system_, "stpl:sys") {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     Result Cmd0(OutInterface<ISystemShimScopedObject> out_interface) {

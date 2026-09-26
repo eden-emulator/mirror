@@ -54,7 +54,7 @@ private:
         AudioCore::AudioIn::AudioInParameter parameter,
         InCopyHandle<Kernel::KProcess> process_handle, ClientAppletResourceUserId aruid);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::unique_ptr<AudioCore::AudioIn::Manager> impl;
 };
 

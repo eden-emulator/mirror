@@ -18,7 +18,7 @@ class IRequest final : public ServiceFramework<IRequest> {
 public:
     explicit IRequest(Core::System& system_) : ServiceFramework{system_, "IRequest"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -34,7 +34,7 @@ class FGM final : public ServiceFramework<FGM> {
 public:
     explicit FGM(Core::System& system_, const char* name) : ServiceFramework{system_, name} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -56,7 +56,7 @@ class FGM_DBG final : public ServiceFramework<FGM_DBG> {
 public:
     explicit FGM_DBG(Core::System& system_) : ServiceFramework{system_, "fgm:dbg"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

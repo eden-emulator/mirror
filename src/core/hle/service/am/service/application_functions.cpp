@@ -51,7 +51,7 @@ FileSys::PatchManager::Metadata GetApplicationMetadata(Core::System& system, u64
 
 } // Anonymous namespace
 
-ServiceFrameworkBase::FunctionInfoBase const* IApplicationFunctions::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationFunctions::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{1, D<&IApplicationFunctions::PopLaunchParameter>, "PopLaunchParameter"},
         FunctionInfo{10, nullptr, "CreateApplicationAndPushAndRequestToStart"},

@@ -105,8 +105,8 @@ private:
     explicit ServiceFrameworkBase(Core::System& system_, const char* service_name_, u32 max_sessions_, InvokerFn* handler_invoker_);
     ~ServiceFrameworkBase() override;
 
-    virtual FunctionInfoBase const* FindRequest(u32 key) = 0;
-    virtual FunctionInfoBase const* FindRequestTipc(u32 key) = 0;
+    virtual std::optional<FunctionInfoBase> FindRequest(u32 key) = 0;
+    virtual std::optional<FunctionInfoBase> FindRequestTipc(u32 key) = 0;
 
     void ReportUnimplementedFunction(HLERequestContext& ctx, const FunctionInfoBase* info);
 
@@ -152,15 +152,20 @@ protected:
         /// @param expected_header_ request header in the command buffer which will trigger dispatch to this handler
         /// @param handler_callback_ member function in this service which will be called to handle the request
         /// @param name_ human-friendly name for the request. Used mostly for logging purposes.
-        FunctionInfoTyped(u32 expected_header_, HandlerFnP<T> handler_callback_, const char* name_, u32 version_gating_ = 0)
-            : FunctionInfoBase{expected_header_, HandlerFnP<ServiceFrameworkBase>(handler_callback_), name_, version_gating_}
+        constexpr FunctionInfoTyped(u32 expected_header_, HandlerFnP<T> handler_callback_, const char* name_, u32 version_gating_ = 0)
+            : FunctionInfoBase{
+                expected_header_,
+                HandlerFnP<ServiceFrameworkBase>(handler_callback_),
+                name_,
+                version_gating_
+            }
         {}
     };
     using FunctionInfo = FunctionInfoTyped<Self>;
 
     template<typename ...Ts>
         requires (std::same_as<Ts, FunctionInfo> && ...)
-    [[nodiscard]] static constexpr frozen::map<u32, FunctionInfo, sizeof...(Ts)> CreateStaticMap(Ts... args) {
+    [[nodiscard]] static consteval frozen::map<u32, FunctionInfo, sizeof...(Ts)> CreateStaticMap(Ts... args) {
         return frozen::map<u32, FunctionInfo, sizeof...(args)>{
             {args.expected_header, FunctionInfo(args)}...
         };
@@ -169,16 +174,16 @@ protected:
     // Used exclusively by NFC
     template<typename T, typename ...Ts>
         requires (std::same_as<Ts, FunctionInfoTyped<T>> && ...)
-    [[nodiscard]] static constexpr frozen::map<u32, FunctionInfoTyped<T>, sizeof...(Ts)> CreateStaticMapWithClass(Ts... args) {
+    [[nodiscard]] static consteval frozen::map<u32, FunctionInfoTyped<T>, sizeof...(Ts)> CreateStaticMapWithClass(Ts... args) {
         return frozen::map<u32, FunctionInfoTyped<T>, sizeof...(args)>{
             {args.expected_header, FunctionInfoTyped<T>(args)}...
         };
     }
 
     template<typename T>
-    [[nodiscard]] static FunctionInfoBase const* HandlerTableGenerateWithFind(u32 key, T const& map) {
+    [[nodiscard]] static constexpr std::optional<FunctionInfoBase> HandlerTableGenerateWithFind(u32 key, T const& map) {
         auto const it = map.find(key);
-        return it != map.end() ? std::addressof(it->second) : nullptr;
+        return it != map.end() ? std::optional<FunctionInfoBase>{it->second} : std::nullopt;
     }
 
     /// @brief Initializes the handler with no functions installed.
@@ -190,10 +195,10 @@ protected:
         : ServiceFrameworkBase(system_, service_name_, max_sessions_, Invoker)
     {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         UNREACHABLE();
     }
-    FunctionInfoBase const* FindRequestTipc(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequestTipc(u32 key) override {
         UNREACHABLE();
     }
 

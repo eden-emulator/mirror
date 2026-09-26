@@ -15,7 +15,7 @@ public:
     explicit IDevelopInterface(Core::System& system_);
     ~IDevelopInterface() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

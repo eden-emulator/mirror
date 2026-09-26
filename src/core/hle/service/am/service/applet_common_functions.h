@@ -27,7 +27,7 @@ private:
     Result SetGpuTimeSliceBoost(s64 time_span);
     Result Unknown350(Out<u16> out_unknown);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<Applet> applet;
 };
 

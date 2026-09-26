@@ -20,7 +20,7 @@ class IUser final : public NfcInterface {
 public:
     explicit IUser(Core::System& system_) : NfcInterface(system_, "NFC::IUser", BackendType::Nfc) {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMapWithClass<IUser>(
@@ -53,7 +53,7 @@ class ISystem final : public NfcInterface {
 public:
     explicit ISystem(Core::System& system_) : NfcInterface{system_, "NFC::ISystem", BackendType::Nfc} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMapWithClass<ISystem>(
@@ -92,7 +92,7 @@ class MFIUser final : public MFInterface {
 public:
     explicit MFIUser(Core::System& system_) : MFInterface{system_, "NFC::MFInterface", BackendType::Mifare} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMapWithClass<MFIUser>(
@@ -122,7 +122,7 @@ public:
         FunctionInfo{1, nullptr, "Finalize"},
         FunctionInfo{2, nullptr, "NotifyForegroundApplet"}
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -131,7 +131,7 @@ class NFC_AM final : public ServiceFramework<NFC_AM> {
 public:
     explicit NFC_AM(Core::System& system_) : ServiceFramework{system_, "nfc:am"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -153,7 +153,7 @@ class NFC_MF_U final : public ServiceFramework<NFC_MF_U> {
 public:
     explicit NFC_MF_U(Core::System& system_) : ServiceFramework{system_, "nfc:mf:u"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -175,7 +175,7 @@ class NFC_U final : public ServiceFramework<NFC_U> {
 public:
     explicit NFC_U(Core::System& system_) : ServiceFramework{system_, "nfc:user"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -197,7 +197,7 @@ class NFC_SYS final : public ServiceFramework<NFC_SYS> {
 public:
     explicit NFC_SYS(Core::System& system_) : ServiceFramework{system_, "nfc:sys"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

@@ -27,7 +27,7 @@ private:
     void GetAddrInfoRequestWithOptions(HLERequestContext& ctx);
     void ResolverSetOptionRequest(HLERequestContext& ctx);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -55,7 +55,7 @@ public:
     explicit DNS_PRIV(Core::System& system_);
     ~DNS_PRIV() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

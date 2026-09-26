@@ -179,7 +179,7 @@ private:
     void StoreSettings();
     void SetSaveNeeded();
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     Core::System& m_system;
     SystemSettings m_system_settings{};
     PrivateSettings m_private_settings{};

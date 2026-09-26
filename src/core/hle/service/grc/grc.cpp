@@ -23,7 +23,7 @@ public:
             FunctionInfo{101, nullptr, "CreateMovieMaker"},
             FunctionInfo{9903, nullptr, "SetOffscreenRecordingMarker"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -37,7 +37,7 @@ public:
             FunctionInfo{2, nullptr, "Transfer"},
             FunctionInfo{3, nullptr, "Cmd3"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

@@ -34,7 +34,7 @@ public:
             FunctionInfo{11, nullptr, "CtrlStall"},
             FunctionInfo{12, nullptr, "AppendConfigurationData"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -46,7 +46,7 @@ public:
     static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "OpenDsService"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -67,7 +67,7 @@ public:
             FunctionInfo{7, nullptr, "CreateSmmuSpace"},
             FunctionInfo{8, nullptr, "ShareReportRing"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -89,7 +89,7 @@ public:
             FunctionInfo{8, nullptr, "ResetDevice"},
             FunctionInfo{9, nullptr, "OpenUsbEp"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -109,7 +109,7 @@ public:
             FunctionInfo{7, nullptr, "AcquireUsbIf"},
             FunctionInfo{8, nullptr, "SetTestMode"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -127,7 +127,7 @@ public:
             FunctionInfo{5, nullptr, "DisablePowerRequestNotice"},
             FunctionInfo{6, nullptr, "ReplyPowerRequest"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -136,7 +136,7 @@ class IPdManager final : public ServiceFramework<IPdManager> {
 public:
     explicit IPdManager(Core::System& system_) : ServiceFramework{system_, "usb:pd"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -170,7 +170,7 @@ public:
             FunctionInfo{7, nullptr, "EnableCradleRecovery"},
             FunctionInfo{8, nullptr, "DisableCradleRecovery"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -179,7 +179,7 @@ class IPdCradleManager final : public ServiceFramework<IPdCradleManager> {
 public:
     explicit IPdCradleManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:c"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -209,7 +209,7 @@ public:
             FunctionInfo{4, nullptr, "SetDiagData"},
             FunctionInfo{5, nullptr, "GetDiagData"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -221,7 +221,7 @@ public:
     static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "OpenManufactureSession"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -234,7 +234,7 @@ public:
             FunctionInfo{0, nullptr, "ImportQuirkDevices"},
             FunctionInfo{1, nullptr, "HasQuirk"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -247,7 +247,7 @@ public:
             FunctionInfo{0, nullptr, "GetTopologyChangeEvent"},
             FunctionInfo{1, nullptr, "GetFlattenedTopology"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

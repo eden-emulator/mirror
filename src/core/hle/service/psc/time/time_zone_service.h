@@ -59,7 +59,7 @@ public:
                                  const CalendarTime& calendar_time);
 
 private:
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     StandardSteadyClockCore& m_clock_core;
     TimeZone& m_time_zone;
     bool m_can_write_timezone_device_location;

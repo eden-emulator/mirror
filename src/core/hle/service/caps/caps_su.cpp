@@ -15,7 +15,7 @@
 
 namespace Service::Capture {
 
-ServiceFrameworkBase::FunctionInfoBase const* IScreenShotApplicationService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IScreenShotApplicationService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{32, C<&IScreenShotApplicationService::SetShimLibraryVersion>, "SetShimLibraryVersion"},
         FunctionInfo{201, nullptr, "SaveScreenShot"},

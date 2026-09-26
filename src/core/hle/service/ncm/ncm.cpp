@@ -48,7 +48,7 @@ public:
             FunctionInfo{18, nullptr, "RedirectApplicationProgramPathForDebug"},
             FunctionInfo{19, nullptr, "EraseProgramRedirectionForDebug"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -73,7 +73,7 @@ public:
             FunctionInfo{8, nullptr, "Refresh"},
             FunctionInfo{9, nullptr, "RefreshExcluding"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -90,7 +90,7 @@ public:
             FunctionInfo{3, nullptr, "RefreshApplicationAddOnContent"},
             FunctionInfo{4, nullptr, "UnregisterApplicationAddOnContent"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -100,7 +100,7 @@ public:
     explicit IContentStorage(Core::System& system_, FileSys::StorageId id)
         : ServiceFramework{system_, "IContentStorage"}, storage{id} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -256,7 +256,7 @@ public:
     explicit IContentMetaDatabase(Core::System& system_, FileSys::StorageId id)
         : ServiceFramework{system_, "IContentMetaDatabase"}, storage{id} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -365,7 +365,7 @@ public:
             FunctionInfo{2, nullptr, "RefreshLocationResolver"},
             FunctionInfo{3, nullptr, "OpenAddOnContentLocationResolver"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -374,7 +374,7 @@ class NCM final : public ServiceFramework<NCM> {
 public:
     explicit NCM(Core::System& system_) : ServiceFramework{system_, "ncm"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -427,7 +427,7 @@ public:
         : ServiceFramework{system_, "ncm:v"}
     {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

@@ -21,7 +21,7 @@ public:
 private:
     Result OpenReceiver(Out<SharedPointer<IReceiver>> out_receiver);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::PSC

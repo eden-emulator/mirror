@@ -33,7 +33,7 @@ private:
     Result GetCradleDeviceInfoChangeEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
 
 private:
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     KernelHelpers::ServiceContext m_context;
     Event m_cradle_device_info_event;
 };

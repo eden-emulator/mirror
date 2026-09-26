@@ -34,7 +34,7 @@ public:
             FunctionInfo{14, nullptr, "GetPowerButton"},
             FunctionInfo{15, nullptr, "SetEnableWakeupTimer"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -50,7 +50,7 @@ public:
             FunctionInfo{3, nullptr, "ClearRtcResetDetected"},
             FunctionInfo{4, nullptr, "SetUpRtcResetOnShutdown"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -67,7 +67,7 @@ public:
             FunctionInfo{4, nullptr, "GetAcOk"},
             FunctionInfo{5, nullptr, "GetPowerEvent"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -80,7 +80,7 @@ public:
             FunctionInfo{0, nullptr, "GetSleepButtonState"},
             FunctionInfo{1, nullptr, "GetPowerButtonEvent"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -94,7 +94,7 @@ public:
             FunctionInfo{1, nullptr, "CancelWakeupTimer"},
             FunctionInfo{2, nullptr, "EnableWakeupTimerOnDevice"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -107,7 +107,7 @@ public:
             FunctionInfo{65000, nullptr, "RebootToFatalError"},
             FunctionInfo{65001, nullptr, "SetRebootPayload"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

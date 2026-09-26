@@ -30,7 +30,7 @@ private:
                 const OutArray<FileSys::DirectoryEntry, BufferAttr_HipcMapAlias> out_entries);
     Result GetEntryCount(Out<s64> out_count);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::FileSystem

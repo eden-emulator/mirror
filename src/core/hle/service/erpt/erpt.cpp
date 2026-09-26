@@ -19,7 +19,7 @@ class ErrorReportContext final : public ServiceFramework<ErrorReportContext> {
 public:
     explicit ErrorReportContext(Core::System& system_) : ServiceFramework{system_, "erpt:c"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -91,7 +91,7 @@ class ErrorReportSession final : public ServiceFramework<ErrorReportSession> {
 public:
     explicit ErrorReportSession(Core::System& system_) : ServiceFramework{system_, "erpt:r"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

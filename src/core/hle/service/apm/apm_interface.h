@@ -24,7 +24,7 @@ private:
     void GetPerformanceMode(HLERequestContext& ctx);
     void IsCpuOverclockEnabled(HLERequestContext& ctx);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
@@ -47,7 +47,7 @@ private:
     void GetPerformanceEvent(HLERequestContext& ctx);
     void GetCurrentPerformanceConfiguration(HLERequestContext& ctx);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

@@ -49,7 +49,7 @@ public:
             FunctionInfo{28, nullptr, "IsPoweredOn"},
             FunctionInfo{29, nullptr, "GetVoltage"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -61,7 +61,7 @@ public:
     static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ReleaseControl"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -73,7 +73,7 @@ public:
     static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "SetClockRate"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -83,7 +83,7 @@ public:
     explicit IClkrstSession(Core::System& system_, DeviceCode device_code_)
         : ServiceFramework{system_, "IClkrstSession"}, device_code(device_code_) {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -127,7 +127,7 @@ class CLKRST final : public ServiceFramework<CLKRST> {
 public:
     explicit CLKRST(Core::System& system_, const char* name) : ServiceFramework{system_, name} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -161,7 +161,7 @@ public:
     static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ReleaseControl"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };

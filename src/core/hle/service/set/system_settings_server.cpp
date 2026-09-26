@@ -114,7 +114,7 @@ Result GetFirmwareVersionImpl(FirmwareVersionFormat& out_firmware, Core::System&
     return ResultSuccess;
 }
 
-ServiceFrameworkBase::FunctionInfoBase const* ISystemSettingsServer::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> ISystemSettingsServer::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&ISystemSettingsServer::SetLanguageCode>, "SetLanguageCode"},
         FunctionInfo{1, nullptr, "SetNetworkSettings"},

@@ -147,7 +147,7 @@ private:
         }
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     bool is_hidbus_enabled{false};
     HidbusStatusManager hidbus_status{};

@@ -46,7 +46,7 @@ public:
         Out<SharedPointer<IContentManagementInterface>> out_interface);
     Result GetDocumentInterface(Out<SharedPointer<IDocumentInterface>> out_interface);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::NS

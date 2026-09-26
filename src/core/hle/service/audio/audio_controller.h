@@ -59,7 +59,7 @@ private:
     Result AcquireTargetNotification(OutCopyHandle<Kernel::KReadableEvent> out_notification_event);
     Result Unknown5000(Out<SharedPointer<IAudioController>> out_audio_controller);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* notification_event;
     std::shared_ptr<Service::Set::ISystemSettingsServer> m_set_sys;

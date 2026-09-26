@@ -19,7 +19,7 @@ public:
     explicit IPowerStateInterface(Core::System& system_);
     ~IPowerStateInterface() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

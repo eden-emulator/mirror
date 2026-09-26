@@ -36,7 +36,7 @@ public:
         FunctionInfo{100, nullptr, "Cmd100" },
         FunctionInfo{101, nullptr, "Cmd101" }
     );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -47,7 +47,7 @@ public:
     explicit IVulnerabilityManagerInterface(Core::System& system_)
         : ServiceFramework{system_, "ns:vm"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     ~IVulnerabilityManagerInterface() override = default;

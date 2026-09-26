@@ -51,7 +51,7 @@ class MM_U final : public ServiceFramework<MM_U> {
 public:
     explicit MM_U(Core::System& system_) : ServiceFramework{system_, "mm:u"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

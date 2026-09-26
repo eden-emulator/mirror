@@ -19,7 +19,7 @@ public:
     explicit FSP_PR(Core::System& system_);
     ~FSP_PR() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

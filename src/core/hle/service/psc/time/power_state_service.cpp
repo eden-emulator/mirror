@@ -9,7 +9,7 @@
 
 namespace Service::PSC::Time {
 
-ServiceFrameworkBase::FunctionInfoBase const* IPowerStateRequestHandler::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IPowerStateRequestHandler::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IPowerStateRequestHandler::GetPowerStateRequestEventReadableHandle>, "GetPowerStateRequestEventReadableHandle"},
         FunctionInfo{1, D<&IPowerStateRequestHandler::GetAndClearPowerStateRequest>, "GetAndClearPowerStateRequest"}

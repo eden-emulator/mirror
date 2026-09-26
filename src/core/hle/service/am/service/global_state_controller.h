@@ -28,7 +28,7 @@ private:
     Result GetHdcpAuthenticationFailedEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
     Result OpenCradleFirmwareUpdater(Out<SharedPointer<ICradleFirmwareUpdater>> out_cradle_firmware_updater);
 
-    FunctionInfoBase const* FindRequest(u32 key) override;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     KernelHelpers::ServiceContext m_context;
     Event m_hdcp_authentication_failed_event;
 };

@@ -17,7 +17,7 @@
 
 namespace Service::VI {
 
-ServiceFrameworkBase::FunctionInfoBase const* IApplicationDisplayService::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationDisplayService::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{100, C<&IApplicationDisplayService::GetRelayService>, "GetRelayService"},
         FunctionInfo{101, C<&IApplicationDisplayService::GetSystemDisplayService>, "GetSystemDisplayService"},

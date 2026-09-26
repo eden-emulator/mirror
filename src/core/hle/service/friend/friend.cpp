@@ -25,7 +25,7 @@ public:
         completion_event = service_context.CreateEvent("IFriendService:CompletionEvent");
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -378,7 +378,7 @@ public:
         notification_event = service_context.CreateEvent("INotificationService:NotifyEvent");
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -499,7 +499,7 @@ public:
         : ServiceFramework{system_, "nd:app"}
     {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -515,7 +515,7 @@ public:
         : ServiceFramework{system_, "nd:sys"}
     {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

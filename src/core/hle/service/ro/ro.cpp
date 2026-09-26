@@ -516,7 +516,7 @@ public:
         m_ro->UnregisterProcess(system.Kernel(), m_context_id);
     }
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 
@@ -578,7 +578,7 @@ public:
         : ServiceFramework{system_, "ro:dmnt"}
     {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

@@ -14,7 +14,7 @@
 
 namespace Service::News {
 
-ServiceFrameworkBase::FunctionInfoBase const* IServiceCreator::FindRequest(u32 key) {
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IServiceCreator::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IServiceCreator::CreateNewsService>, "CreateNewsService"},
         FunctionInfo{1, D<&IServiceCreator::CreateNewlyArrivedEventHolder>, "CreateNewlyArrivedEventHolder"},

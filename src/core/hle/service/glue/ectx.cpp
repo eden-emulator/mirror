@@ -14,7 +14,7 @@ class IContextRegistrar : public ServiceFramework<IContextRegistrar> {
 public:
     IContextRegistrar(Core::System& system_) : ServiceFramework{system_, "IContextRegistrar"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 

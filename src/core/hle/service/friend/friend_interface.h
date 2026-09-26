@@ -15,7 +15,7 @@ public:
     explicit Friend(std::shared_ptr<Module> module_, Core::System& system_, const char* name);
     ~Friend() override;
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(

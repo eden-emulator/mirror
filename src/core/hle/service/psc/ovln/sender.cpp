@@ -9,7 +9,7 @@
 
 namespace Service::PSC {
 
-    ServiceFrameworkBase::FunctionInfoBase const* ISender::FindRequest(u32 key) {
+    std::optional<ServiceFrameworkBase::FunctionInfoBase> ISender::FindRequest(u32 key) {
         static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&ISender::Send>, "Send"},
             FunctionInfo{1, nullptr, "GetUnreceivedMessageCount"}

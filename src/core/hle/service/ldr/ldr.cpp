@@ -19,7 +19,7 @@ public:
             FunctionInfo{1, nullptr, "FlushArguments"},
             FunctionInfo{2, nullptr, "GetProcessModuleInfo"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -35,7 +35,7 @@ public:
             FunctionInfo{3, nullptr, "UnpinProgram"},
             FunctionInfo{4, nullptr, "SetEnabledProgramVerification"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
@@ -48,7 +48,7 @@ public:
             FunctionInfo{0, nullptr, "SetProgramArgument"},
             FunctionInfo{1, nullptr, "FlushArguments"}
         );
-    FunctionInfoBase const* FindRequest(u32 key) override {
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
