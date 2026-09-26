@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cinttypes>
 #include <cstring>
+#include <span>
 #include <vector>
 
 #include "common/common_funcs.h"
@@ -108,10 +109,8 @@ std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::
                 if (nso_header.IsZBICCompressed()) {
                     // ZBIC compression
                     const int r = Common::Compression::DecompressDataZBIC(
-                        decompressed_size.data(),
-                        nso_header.segments[i].size,
-                        compressed_data.data(),
-                        nso_header.segments_compressed_size[i]
+                        std::span<u8>{decompressed_size}.first(nso_header.segments[i].size),
+                        std::span<const u8>{compressed_data}.first(nso_header.segments_compressed_size[i])
                     );
                     ASSERT(r > 0);
                 } else {

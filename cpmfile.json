@@ -5,6 +5,11 @@
         "repo": "lioncash/biscuit",
         "version": "v0.19.0"
     },
+    "atmosphere_zstd_bic": {
+        "hash": "204f7573ea40de2878759c7ff5b2c016111fc29ae8574df50a3a0db9018c3b012f9040ea7466559130424d4335f2dfd6d7abfdc4d4d67e8a34531b8284f0cc6a",
+        "repo": "Atmosphere-NX/Atmosphere",
+        "version": "3ace80cc7b87e1837fccca1522801bbf6fddc6aa"
+    },
     "boost": {
         "artifact": "boost-%VERSION%.tar.zst",
         "find_args": "CONFIG OPTIONAL_COMPONENTS headers context system fiber filesystem",

@@ -48,6 +48,11 @@ if (NOT TARGET stb::headers)
     add_library(stb::headers ALIAS stb)
 endif()
 
+AddJsonPackage(NAME atmosphere_zstd_bic DOWNLOAD_ONLY)
+set(ATMOSPHERE_ZSTD_BIC_INCLUDE_DIR
+    "${atmosphere_zstd_bic_SOURCE_DIR}/libraries/libstratosphere/source/util"
+    PARENT_SCOPE)
+
 # ItaniumDemangle (Windows only)
 if (WIN32 AND NOT TARGET LLVM::Demangle)
     add_library(demangle demangle/ItaniumDemangle.cpp)

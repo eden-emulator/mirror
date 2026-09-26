@@ -4,40 +4,37 @@
 #include <cstring>
 
 #include "common/zbic_compression.h"
-#include "common/zstd.h"
+
+#define ZSTD_ZBIC_SUPPORT 1
+#define ZSTDLIB_VISIBLE static
+#define ZSTDLIB_HIDDEN static
+#define ZSTDERRORLIB_VISIBLE static
+#define ZSTDERRORLIB_HIDDEN static
+#undef ZSTD_MULTITHREAD
+
+#include "zstd.h"
+#include "zstd.inc"
 
 namespace Common::Compression {
 
-bool IsZBIC(const void* src, size_t src_size) {
-    if (!src || src_size < 4) {
+bool IsZBIC(std::span<const u8> src) {
+    if (src.size() < sizeof(u32)) {
         return false;
     }
     u32 magic = 0;
-    std::memcpy(&magic, src, sizeof(u32));
+    std::memcpy(&magic, src.data(), sizeof(u32));
     return magic == ZSTD_MAGICNUMBER; // 0x4349425A ("ZBIC")
 }
 
-int DecompressDataZBIC(void* dst, size_t dst_size, const void* src, size_t src_size) {
-    if (!dst || !src || dst_size == 0 || src_size == 0) {
+int DecompressDataZBIC(std::span<u8> dst, std::span<const u8> src) {
+    if (dst.empty() || src.empty()) {
         return -1;
     }
-    const size_t res = ZSTD_decompress(dst, dst_size, src, src_size);
+    const size_t res = ZSTD_decompress(dst.data(), dst.size(), src.data(), src.size());
     if (ZSTD_isError(res)) {
         return -1;
     }
     return static_cast<int>(res);
-}
-
-std::vector<u8> DecompressDataZBIC(std::span<const u8> compressed, std::size_t uncompressed_size) {
-    std::vector<u8> uncompressed(uncompressed_size);
-    const int r = DecompressDataZBIC(uncompressed.data(), uncompressed_size, compressed.data(), compressed.size());
-    if (r <= 0) {
-        return {};
-    }
-    if (static_cast<size_t>(r) < uncompressed_size) {
-        uncompressed.resize(static_cast<size_t>(r));
-    }
-    return uncompressed;
 }
 
 } // namespace Common::Compression
