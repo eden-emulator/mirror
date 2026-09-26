@@ -512,12 +512,12 @@ public:
         , m_nrr_kind(nrr_kind)
     {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-
     ~RoInterface() {
         m_ro->UnregisterProcess(system.Kernel(), m_context_id);
+    }
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
     Result MapManualLoadModuleMemory(Out<u64> out_load_address, ClientProcessId client_pid,
@@ -576,12 +576,14 @@ class IDebugMonitorInterface final : public ServiceFramework<IDebugMonitorInterf
 public:
     explicit IDebugMonitorInterface(Core::System& system_)
         : ServiceFramework{system_, "ro:dmnt"}
-    {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "GetProcessModuleInfo" },
-        };
-        RegisterHandlers(functions);
+    {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "GetProcessModuleInfo" }
+    );
 };
 
 void LoopProcess(Core::System& system) {
