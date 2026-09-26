@@ -14,6 +14,7 @@
 #include "core/hle/service/psc/time/service_manager.h"
 #include "core/hle/service/psc/time/static.h"
 #include "core/hle/service/service.h"
+#include "core/hle/service/cmif_serialization.h"
 
 namespace Service::PSC {
 
@@ -109,6 +110,7 @@ public:
     explicit IPmService(Core::System& system_) : ServiceFramework{system_, "psc:m"} {}
     ~IPmService() override = default;
 
+private:
     Result GetPmModule(Out<SharedPointer<IPmModule>> out_module) {
         LOG_DEBUG(Service_PSC, "called");
         *out_module = std::make_shared<IPmModule>(system);
