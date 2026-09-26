@@ -49,25 +49,34 @@ public:
         : ServiceFramework{system_, "IFloatingRegistrationRequest"}
     {}
 
+    // Must be placed after all methods are defined (or declared).
     // Define here your functions and methods, please order them.
     // Use FindRequestTipc for TIPC handlers.
     static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetSessionId"},
-            FunctionInfo{12, nullptr, "GetAccountId"},
-            FunctionInfo{13, nullptr, "GetLinkedNintendoAccountId"},
-            FunctionInfo{14, nullptr, "GetNickname"},
-            FunctionInfo{15, nullptr, "GetProfileImage"},
-            FunctionInfo{16, nullptr, "GetProfileLargeImage", MakeVersionGate({18,0,0})},
-            FunctionInfo{21, nullptr, "LoadIdTokenCache"},
-            FunctionInfo{100, nullptr, "RegisterUser"},
-            FunctionInfo{101, nullptr, "RegisterUserWithUid"},
-            FunctionInfo{102, nullptr, "RegisterNetworkServiceAccountAsync", MakeVersionGate({4,0,0})},
-            FunctionInfo{103, nullptr, "RegisterNetworkServiceAccountWithUidAsync", MakeVersionGate({4,0,0})},
-            FunctionInfo{110, nullptr, "SetSystemProgramIdentification"},
-            FunctionInfo{111, nullptr, "EnsureIdTokenCacheAsync"}
-        );
+        FunctionInfo{0, nullptr, "GetSessionId"},
+        FunctionInfo{12, nullptr, "GetAccountId"},
+        FunctionInfo{13, nullptr, "GetLinkedNintendoAccountId"},
+        FunctionInfo{14, nullptr, "GetNickname"},
+        FunctionInfo{15, nullptr, "GetProfileImage"},
+        FunctionInfo{16, nullptr, "GetProfileLargeImage", MakeVersionGate({18,0,0})},
+        FunctionInfo{21, nullptr, "LoadIdTokenCache"},
+        FunctionInfo{100, nullptr, "RegisterUser"},
+        FunctionInfo{101, nullptr, "RegisterUserWithUid"},
+        FunctionInfo{102, nullptr, "RegisterNetworkServiceAccountAsync", MakeVersionGate({4,0,0})},
+        FunctionInfo{103, nullptr, "RegisterNetworkServiceAccountWithUidAsync", MakeVersionGate({4,0,0})},
+        FunctionInfo{110, nullptr, "SetSystemProgramIdentification"},
+        FunctionInfo{111, nullptr, "EnsureIdTokenCacheAsync"}
+    );
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
 };
 ```
+
+Try to keep service structures local, that is, don't place them on header files if they're only going to be used by a specific service.
+
+In each `.cpp` file that uses `D<...>/C<...>` CMIF wrapper helpers, remember to include the corresponding instancer, so you don't face linker errors:
+```c++
+#include "core/hle/service/cmif_serialization.h"
+```
+This will properly instatiate the corresponding wrappers and decompose the provided arguments in the wiring order.
