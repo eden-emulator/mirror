@@ -13,7 +13,7 @@
 #undef ZSTD_MULTITHREAD
 
 #include "zstd.h"
-#include "zstd.inc"
+#include "zstd.c"
 
 namespace Common::Compression {
 
