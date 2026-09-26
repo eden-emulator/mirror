@@ -55,6 +55,7 @@ private:
     Result SetAudioDeviceOutputVolumeAutoTuneEnabled(bool enabled);
     Result IsAudioDeviceOutputVolumeAutoTuneEnabled(Out<bool> out_enabled);
 
+    FunctionInfoBase const* FindRequest(u32 key) override;
     KernelHelpers::ServiceContext service_context;
     std::unique_ptr<AudioCore::Renderer::AudioDevice> impl;
     Kernel::KEvent* event;

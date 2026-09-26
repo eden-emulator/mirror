@@ -115,6 +115,7 @@ private:
                                     s64 available_size, s64 journal_size);
     Result GetCacheStorageSize(s32 index, Out<s64> out_data_size, Out<s64> out_journal_size);
 
+    FunctionInfoBase const* FindRequest(u32 key) override;
     FileSystemController& fsc;
     const FileSys::ContentProvider& content_provider;
     const Core::Reporter& reporter;

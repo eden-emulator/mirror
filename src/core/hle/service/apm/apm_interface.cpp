@@ -96,20 +96,6 @@ void APM::IsCpuOverclockEnabled(HLERequestContext& ctx) {
 
 APM_Sys::APM_Sys(Core::System& system_, Controller& controller_)
     : ServiceFramework{system_, "apm:sys"}, controller{controller_} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        FunctionInfo{0, nullptr, "RequestPerformanceMode"},
-        FunctionInfo{1, &APM_Sys::GetPerformanceEvent, "GetPerformanceEvent"},
-        FunctionInfo{2, nullptr, "GetThrottlingState"},
-        FunctionInfo{3, nullptr, "GetLastThrottlingState"},
-        FunctionInfo{4, nullptr, "ClearLastThrottlingState"},
-        FunctionInfo{5, nullptr, "LoadAndApplySettings"},
-        FunctionInfo{6, &APM_Sys::SetCpuBoostMode, "SetCpuBoostMode"},
-        FunctionInfo{7, &APM_Sys::GetCurrentPerformanceConfiguration, "GetCurrentPerformanceConfiguration"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 APM_Sys::~APM_Sys() = default;

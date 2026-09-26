@@ -12,9 +12,8 @@
 
 namespace Service::News {
 
-INewsService::INewsService(Core::System& system_) : ServiceFramework{system_, "INewsService"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
+ServiceFrameworkBase::FunctionInfoBase const* INewsService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{10100, D<&INewsService::PostLocalNews>, "PostLocalNews"},
         FunctionInfo{20100, D<&INewsService::SetPassphrase>, "SetPassphrase"},
         FunctionInfo{30100, D<&INewsService::GetSubscriptionStatus>, "GetSubscriptionStatus"},
@@ -33,11 +32,12 @@ INewsService::INewsService(Core::System& system_) : ServiceFramework{system_, "I
         FunctionInfo{40101, D<&INewsService::RequestAutoSubscription>, "RequestAutoSubscription"}, //3.0.0+
         FunctionInfo{40200, D<&INewsService::ClearStorage>, "ClearStorage"},
         FunctionInfo{40201, D<&INewsService::ClearSubscriptionStatusAll>, "ClearSubscriptionStatusAll"},
-        FunctionInfo{90100, D<&INewsService::GetNewsDatabaseDump>, "GetNewsDatabaseDump"},
-    };
-    // clang-format on
+        FunctionInfo{90100, D<&INewsService::GetNewsDatabaseDump>, "GetNewsDatabaseDump"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
 
-    RegisterHandlers(functions);
+INewsService::INewsService(Core::System& system_) : ServiceFramework{system_, "INewsService"} {
 }
 
 INewsService::~INewsService() = default;

@@ -13,8 +13,6 @@
 #include "common/swap.h"
 #include "core/core.h"
 #include "core/hle/service/fatal/fatal.h"
-#include "core/hle/service/fatal/fatal_p.h"
-#include "core/hle/service/fatal/fatal_u.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/server_manager.h"
 #include "core/reporter.h"
@@ -166,6 +164,35 @@ void Module::Interface::ThrowFatalWithCpuContext(HLERequestContext& ctx) {
     IPC::ResponseBuilder rb{ctx, 2};
     rb.Push(ResultSuccess);
 }
+
+class Fatal_P final : public Module::Interface {
+public:
+    explicit Fatal_P(std::shared_ptr<Module> module_, Core::System& system_) : Interface(std::move(module_), system_, "fatal:p") {}
+    ~Fatal_P() override = default;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "GetFatalEvent"},
+        FunctionInfo{10, nullptr, "GetFatalContext"}
+    );
+};
+
+class Fatal_U final : public Module::Interface {
+public:
+    explicit Fatal_U(std::shared_ptr<Module> module_, Core::System& system_) : Interface(std::move(module_), system_, "fatal:u") {}
+    ~Fatal_U() override = default;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &Fatal_U::ThrowFatal, "ThrowFatal"},
+        FunctionInfo{1, &Fatal_U::ThrowFatalWithPolicy, "ThrowFatalWithPolicy"},
+        FunctionInfo{2, &Fatal_U::ThrowFatalWithCpuContext, "ThrowFatalWithCpuContext"}
+    );
+};
 
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);

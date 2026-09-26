@@ -154,6 +154,8 @@ private:
         return static_cast<T&>(*processors[index]);
     }
 
+    FunctionInfoBase const* FindRequest(u32 key) override;
+
     Core::HID::EmulatedController* npad_device = nullptr;
     StatusManager* shared_memory = nullptr;
     std::array<std::unique_ptr<ProcessorBase>, 9> processors{};

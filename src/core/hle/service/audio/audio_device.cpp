@@ -12,12 +12,8 @@
 namespace Service::Audio {
 using namespace AudioCore::Renderer;
 
-IAudioDevice::IAudioDevice(Core::System& system_, u64 applet_resource_user_id, u32 revision,
-                           u32 device_num)
-    : ServiceFramework{system_, "IAudioDevice"}, service_context{system_, "IAudioDevice"},
-      impl{std::make_unique<AudioDevice>(system_, applet_resource_user_id, revision)},
-      event{service_context.CreateEvent(fmt::format("IAudioDeviceEvent-{}", device_num))} {
-    static const FunctionInfo functions[] = {
+ServiceFrameworkBase::FunctionInfoBase const* IAudioDevice::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IAudioDevice::ListAudioDeviceName>, "ListAudioDeviceName"},
         FunctionInfo{1, D<&IAudioDevice::SetAudioDeviceOutputVolume>, "SetAudioDeviceOutputVolume"},
         FunctionInfo{2, D<&IAudioDevice::GetAudioDeviceOutputVolume>, "GetAudioDeviceOutputVolume"},
@@ -39,9 +35,15 @@ IAudioDevice::IAudioDevice(Core::System& system_, u64 applet_resource_user_id, u
         FunctionInfo{19, D<&IAudioDevice::SetAudioDeviceOutputVolumeAutoTuneEnabled>, "SetAudioDeviceOutputVolumeAutoTuneEnabled"}, //18.0.0+
         FunctionInfo{20, D<&IAudioDevice::IsAudioDeviceOutputVolumeAutoTuneEnabled>, "IsAudioDeviceOutputVolumeAutoTuneEnabled"}, //18.0.0+
         FunctionInfo{21, nullptr, "IsActiveOutputDeviceEstimatedLowLatency"} //21.0.0+
-    };
-    RegisterHandlers(functions);
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
 
+IAudioDevice::IAudioDevice(Core::System& system_, u64 applet_resource_user_id, u32 revision,
+                           u32 device_num)
+    : ServiceFramework{system_, "IAudioDevice"}, service_context{system_, "IAudioDevice"},
+      impl{std::make_unique<AudioDevice>(system_, applet_resource_user_id, revision)},
+      event{service_context.CreateEvent(fmt::format("IAudioDeviceEvent-{}", device_num))} {
     event->Signal(system.Kernel());
 }
 

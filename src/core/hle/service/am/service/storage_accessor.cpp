@@ -8,16 +8,18 @@
 
 namespace Service::AM {
 
+ServiceFrameworkBase::FunctionInfoBase const* IStorageAccessor::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IStorageAccessor::GetSize>, "GetSize"},
+        FunctionInfo{10, D<&IStorageAccessor::Write>, "Write"},
+        FunctionInfo{11, D<&IStorageAccessor::Read>, "Read"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IStorageAccessor::IStorageAccessor(Core::System& system_,
                                    std::shared_ptr<LibraryAppletStorage> impl)
     : ServiceFramework{system_, "IStorageAccessor"}, m_impl{std::move(impl)} {
-    static const FunctionInfo functions[] = {
-        FunctionInfo{0, D<&IStorageAccessor::GetSize>, "GetSize"},
-        FunctionInfo{10, D<&IStorageAccessor::Write>, "Write"},
-        FunctionInfo{11, D<&IStorageAccessor::Read>, "Read"},
-    };
-
-    RegisterHandlers(functions);
 }
 
 IStorageAccessor::~IStorageAccessor() = default;
@@ -38,15 +40,17 @@ Result IStorageAccessor::Read(OutBuffer<BufferAttr_HipcAutoSelect> out_buffer, s
     R_RETURN(m_impl->Read(offset, out_buffer.data(), out_buffer.size()));
 }
 
+ServiceFrameworkBase::FunctionInfoBase const* ITransferStorageAccessor::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&ITransferStorageAccessor::GetSize>, "GetSize"},
+        FunctionInfo{1, D<&ITransferStorageAccessor::GetHandle>, "GetHandle"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 ITransferStorageAccessor::ITransferStorageAccessor(Core::System& system_,
                                                    std::shared_ptr<LibraryAppletStorage> impl)
     : ServiceFramework{system_, "ITransferStorageAccessor"}, m_impl{std::move(impl)} {
-    static const FunctionInfo functions[] = {
-        FunctionInfo{0, D<&ITransferStorageAccessor::GetSize>, "GetSize"},
-        FunctionInfo{1, D<&ITransferStorageAccessor::GetHandle>, "GetHandle"},
-    };
-
-    RegisterHandlers(functions);
 }
 
 ITransferStorageAccessor::~ITransferStorageAccessor() = default;

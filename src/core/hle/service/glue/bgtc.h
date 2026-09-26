@@ -17,6 +17,12 @@ public:
     ~BGTC_T() override;
 
     void OpenTaskService(HLERequestContext& ctx);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{100, &BGTC_T::OpenTaskService, "OpenTaskService"}
+    );
 };
 
 class ITaskService final : public ServiceFramework<ITaskService> {

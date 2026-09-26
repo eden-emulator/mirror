@@ -22,6 +22,18 @@ private:
     void CloneCurrentObjectEx(HLERequestContext& ctx);
     void QueryPointerBufferSize(HLERequestContext& ctx);
     void SetPointerBufferSize(HLERequestContext& ctx);
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &Controller::ConvertCurrentObjectToDomain, "ConvertCurrentObjectToDomain"},
+        FunctionInfo{1, nullptr, "CopyFromCurrentDomain"},
+        FunctionInfo{2, &Controller::CloneCurrentObject, "CloneCurrentObject"},
+        FunctionInfo{3, &Controller::QueryPointerBufferSize, "QueryPointerBufferSize"},
+        FunctionInfo{4, &Controller::CloneCurrentObjectEx, "CloneCurrentObjectEx"},
+        FunctionInfo{5, &Controller::SetPointerBufferSize, "SetPointerBufferSize"} //TODO: where does this come from
+    );
 };
 
 } // namespace Service::SM

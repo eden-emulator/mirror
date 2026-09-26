@@ -35,22 +35,6 @@ std::optional<u64> GetTitleIDForProcessID(Core::System& system, u64 process_id) 
 
 ARP_R::ARP_R(Core::System& system_, const ARPManager& manager_)
     : ServiceFramework{system_, "arp:r"}, manager{manager_} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        FunctionInfo{0, &ARP_R::GetApplicationLaunchProperty, "GetApplicationLaunchProperty"},
-        FunctionInfo{1, &ARP_R::GetApplicationLaunchPropertyWithApplicationId, "GetApplicationLaunchPropertyWithApplicationId"},
-        FunctionInfo{2, &ARP_R::GetApplicationControlProperty, "GetApplicationControlProperty"},
-        FunctionInfo{3, &ARP_R::GetApplicationControlPropertyWithApplicationId, "GetApplicationControlPropertyWithApplicationId"},
-        FunctionInfo{4, nullptr, "GetApplicationInstanceUnregistrationNotifier"},
-        FunctionInfo{5, nullptr, "ListApplicationInstanceId"},
-        FunctionInfo{6, nullptr, "GetMicroApplicationInstanceId"},
-        FunctionInfo{7, nullptr, "GetApplicationCertificate"},
-        FunctionInfo{9998, nullptr, "GetPreomiaApplicationLaunchProperty"},
-        FunctionInfo{9999, nullptr, "GetPreomiaApplicationControlProperty"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 ARP_R::~ARP_R() = default;
@@ -245,15 +229,6 @@ private:
 
 ARP_W::ARP_W(Core::System& system_, ARPManager& manager_)
     : ServiceFramework{system_, "arp:w"}, manager{manager_} {
-    // clang-format off
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, &ARP_W::AcquireRegistrar, "AcquireRegistrar"},
-            FunctionInfo{1, &ARP_W::UnregisterApplicationInstance , "UnregisterApplicationInstance "},
-            FunctionInfo{2, nullptr, "AcquireUpdater"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 ARP_W::~ARP_W() = default;

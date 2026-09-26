@@ -9,10 +9,8 @@
 
 namespace Service::OLSC {
 
-IDaemonController::IDaemonController(Core::System& system_)
-    : ServiceFramework{system_, "IDaemonController"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
+ServiceFrameworkBase::FunctionInfoBase const* IDaemonController::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IDaemonController::GetApplicationAutoTransferSetting>, "GetApplicationAutoTransferSetting"},
         FunctionInfo{1, D<&IDaemonController::SetApplicationAutoTransferSetting>, "SetApplicationAutoTransferSetting"},
         FunctionInfo{2, D<&IDaemonController::GetGlobalAutoUploadSetting>, "GetGlobalAutoUploadSetting"},
@@ -23,12 +21,12 @@ IDaemonController::IDaemonController(Core::System& system_)
         FunctionInfo{10, nullptr, "CreateForbiddenSaveDataInidication"},
         FunctionInfo{11, D<&IDaemonController::StopAutonomyTaskExecution>, "StopAutonomyTaskExecution"},
         FunctionInfo{12, D<&IDaemonController::GetAutonomyTaskStatus>, "GetAutonomyTaskStatus"},
-        FunctionInfo{13, nullptr, "Unknown13_20_0_0_Plus"}, // 20.0.0+
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        FunctionInfo{13, nullptr, "Unknown13_20_0_0_Plus"} // 20.0.0+
+    );
+    return HandlerTableGenerateWithFind(key, functions);
 }
+
+IDaemonController::IDaemonController(Core::System& system_) : ServiceFramework{system_, "IDaemonController"} {}
 
 IDaemonController::~IDaemonController() = default;
 
