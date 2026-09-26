@@ -74,8 +74,34 @@ public:
                                                    s64 width, s64 height);
 
 private:
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{100, C<&IApplicationDisplayService::GetRelayService>, "GetRelayService"},
+        FunctionInfo{101, C<&IApplicationDisplayService::GetSystemDisplayService>, "GetSystemDisplayService"},
+        FunctionInfo{102, C<&IApplicationDisplayService::GetManagerDisplayService>, "GetManagerDisplayService"},
+        FunctionInfo{103, C<&IApplicationDisplayService::GetIndirectDisplayTransactionService>, "GetIndirectDisplayTransactionService"},
+        FunctionInfo{1000, C<&IApplicationDisplayService::ListDisplays>, "ListDisplays"},
+        FunctionInfo{1010, C<&IApplicationDisplayService::OpenDisplay>, "OpenDisplay"},
+        FunctionInfo{1011, C<&IApplicationDisplayService::OpenDefaultDisplay>, "OpenDefaultDisplay"},
+        FunctionInfo{1020, C<&IApplicationDisplayService::CloseDisplay>, "CloseDisplay"},
+        FunctionInfo{1101, C<&IApplicationDisplayService::SetDisplayEnabled>, "SetDisplayEnabled"},
+        FunctionInfo{1102, C<&IApplicationDisplayService::GetDisplayResolution>, "GetDisplayResolution"},
+        FunctionInfo{2020, C<&IApplicationDisplayService::OpenLayer>, "OpenLayer"},
+        FunctionInfo{2021, C<&IApplicationDisplayService::CloseLayer>, "CloseLayer"},
+        FunctionInfo{2030, C<&IApplicationDisplayService::CreateStrayLayer>, "CreateStrayLayer"},
+        FunctionInfo{2031, C<&IApplicationDisplayService::DestroyStrayLayer>, "DestroyStrayLayer"},
+        FunctionInfo{2101, C<&IApplicationDisplayService::SetLayerScalingMode>, "SetLayerScalingMode"},
+        FunctionInfo{2102, C<&IApplicationDisplayService::ConvertScalingMode>, "ConvertScalingMode"},
+        FunctionInfo{2103, C<&IApplicationDisplayService::Cmd2103>, "Cmd2103"},
+        FunctionInfo{2450, C<&IApplicationDisplayService::GetIndirectLayerImageMap>, "GetIndirectLayerImageMap"},
+        FunctionInfo{2451, nullptr, "GetIndirectLayerImageCropMap"},
+        FunctionInfo{2460, C<&IApplicationDisplayService::GetIndirectLayerImageRequiredMemoryInfo>, "GetIndirectLayerImageRequiredMemoryInfo"},
+        FunctionInfo{5202, C<&IApplicationDisplayService::GetDisplayVsyncEvent>, "GetDisplayVsyncEvent"},
+        FunctionInfo{5203, nullptr, "GetDisplayVsyncEventForDebug"}
+    );
     const std::shared_ptr<Container> m_container;
-
     KernelHelpers::ServiceContext m_context;
     std::mutex m_lock{};
     std::set<u64> m_open_layer_ids{};

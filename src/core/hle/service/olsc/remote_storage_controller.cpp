@@ -11,42 +11,6 @@ namespace Service::OLSC {
 
 IRemoteStorageController::IRemoteStorageController(Core::System& system_)
     : ServiceFramework{system_, "IRemoteStorageController"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "GetSaveDataArchiveInfoBySaveDataId"},
-        {1, nullptr, "GetSaveDataArchiveInfoByApplicationId"},
-        {3, nullptr, "GetSaveDataArchiveCount"},
-        {6, nullptr, "CleanupSaveDataArchives"},
-        {7, nullptr, "CreateSaveDataArchiveCacheUpdationTask"},
-        {8, nullptr, "CreateSaveDataArchiveCacheUpdationForSpecifiedApplicationTask"},
-        {9, nullptr, "Delete"},
-        {10, nullptr, "GetSeriesInfo"},
-        {11, nullptr, "CreateDeleteDataTask"},
-        {12, nullptr, "DeleteSeriesInfo"},
-        {13, nullptr, "CreateRegisterNotificationTokenTask"},
-        {14, D<&IRemoteStorageController::GetDataNewnessByApplicationId>, "GetDataNewnessByApplicationId"},
-        {15, nullptr, "RegisterUploadSaveDataTransferTaskForAutonomyRegistration"},
-        {16, nullptr, "CreateCleanupToDeleteSaveDataArchiveInfoTask"},
-        {17, nullptr, "ListDataInfo"},
-        {18, D<&IRemoteStorageController::GetDataInfo>, "GetDataInfoV1"},
-        {19, nullptr, "GetDataInfoCacheUpdateNativeHandleHolder"},
-        {20, nullptr, "CreateSaveDataArchiveInfoCacheForSaveDataBackupUpdationTask"},
-        {21, nullptr, "ListSecondarySaves"},
-        {22, D<&IRemoteStorageController::GetSecondarySave>, "GetSecondarySave"},
-        {23, nullptr, "TouchSecondarySave"},
-        {24, nullptr, "GetSecondarySaveDataInfo"},
-        {25, nullptr, "RegisterDownloadSaveDataTransferTaskForAutonomyRegistration"},
-        {26, nullptr, "Unknown26"}, //20.0.0+
-        {27, D<&IRemoteStorageController::GetDataInfo>, "GetDataInfoV2"}, //20.0.0+
-        {28, nullptr, "Unknown28"}, //20.0.0+
-        {29, nullptr, "Unknown29"}, //21.0.0+
-        {800, nullptr, "Unknown800"}, //20.0.0+
-        {900, nullptr, "SetLoadedDataMissing"},
-        {901, nullptr, "Unknown901"}, //20.2.0+
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IRemoteStorageController::~IRemoteStorageController() = default;

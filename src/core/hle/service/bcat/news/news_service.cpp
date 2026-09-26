@@ -15,25 +15,25 @@ namespace Service::News {
 INewsService::INewsService(Core::System& system_) : ServiceFramework{system_, "INewsService"} {
     // clang-format off
     static const FunctionInfo functions[] = {
-        {10100, D<&INewsService::PostLocalNews>, "PostLocalNews"},
-        {20100, D<&INewsService::SetPassphrase>, "SetPassphrase"},
-        {30100, D<&INewsService::GetSubscriptionStatus>, "GetSubscriptionStatus"},
-        {30101, D<&INewsService::GetTopicList>, "GetTopicList"}, //3.0.0+
-        {30110, D<&INewsService::GetTopicList>, "Unknown30110"}, //6.0.0+ (stub)
-        {30200, D<&INewsService::IsSystemUpdateRequired>, "IsSystemUpdateRequired"},
-        {30201, D<&INewsService::IsSystemUpdateRequired>, "Unknown30201"}, //8.0.0+ (stub)
-        {30210, D<&INewsService::IsSystemUpdateRequired>, "Unknown30210"}, //10.0.0+ (stub)
-        {30300, nullptr, "RequestImmediateReception"},
-        {30400, nullptr, "DecodeArchiveFile"}, //3.0.0-18.1.0 (stub)
-        {30500, nullptr, "Unknown30500"}, //8.0.0+ (stub)
-        {30900, nullptr, "Unknown30900"}, //1.0.0 (stub)
-        {30901, nullptr, "Unknown30901"}, //1.0.0 (stub)
-        {30902, nullptr, "Unknown30902"}, //1.0.0 (stub)
-        {40100, nullptr, "SetSubscriptionStatus"},
-        {40101, D<&INewsService::RequestAutoSubscription>, "RequestAutoSubscription"}, //3.0.0+
-        {40200, D<&INewsService::ClearStorage>, "ClearStorage"},
-        {40201, D<&INewsService::ClearSubscriptionStatusAll>, "ClearSubscriptionStatusAll"},
-        {90100, D<&INewsService::GetNewsDatabaseDump>, "GetNewsDatabaseDump"},
+        FunctionInfo{10100, D<&INewsService::PostLocalNews>, "PostLocalNews"},
+        FunctionInfo{20100, D<&INewsService::SetPassphrase>, "SetPassphrase"},
+        FunctionInfo{30100, D<&INewsService::GetSubscriptionStatus>, "GetSubscriptionStatus"},
+        FunctionInfo{30101, D<&INewsService::GetTopicList>, "GetTopicList"}, //3.0.0+
+        FunctionInfo{30110, D<&INewsService::GetTopicList>, "Unknown30110"}, //6.0.0+ (stub)
+        FunctionInfo{30200, D<&INewsService::IsSystemUpdateRequired>, "IsSystemUpdateRequired"},
+        FunctionInfo{30201, D<&INewsService::IsSystemUpdateRequired>, "Unknown30201"}, //8.0.0+ (stub)
+        FunctionInfo{30210, D<&INewsService::IsSystemUpdateRequired>, "Unknown30210"}, //10.0.0+ (stub)
+        FunctionInfo{30300, nullptr, "RequestImmediateReception"},
+        FunctionInfo{30400, nullptr, "DecodeArchiveFile"}, //3.0.0-18.1.0 (stub)
+        FunctionInfo{30500, nullptr, "Unknown30500"}, //8.0.0+ (stub)
+        FunctionInfo{30900, nullptr, "Unknown30900"}, //1.0.0 (stub)
+        FunctionInfo{30901, nullptr, "Unknown30901"}, //1.0.0 (stub)
+        FunctionInfo{30902, nullptr, "Unknown30902"}, //1.0.0 (stub)
+        FunctionInfo{40100, nullptr, "SetSubscriptionStatus"},
+        FunctionInfo{40101, D<&INewsService::RequestAutoSubscription>, "RequestAutoSubscription"}, //3.0.0+
+        FunctionInfo{40200, D<&INewsService::ClearStorage>, "ClearStorage"},
+        FunctionInfo{40201, D<&INewsService::ClearSubscriptionStatusAll>, "ClearSubscriptionStatusAll"},
+        FunctionInfo{90100, D<&INewsService::GetNewsDatabaseDump>, "GetNewsDatabaseDump"},
     };
     // clang-format on
 

@@ -21,34 +21,6 @@ IApplicationDisplayService::IApplicationDisplayService(Core::System& system_,
                                                        std::shared_ptr<Container> container)
     : ServiceFramework{system_, "IApplicationDisplayService"},
       m_container{std::move(container)}, m_context{system, "IApplicationDisplayService"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {100, C<&IApplicationDisplayService::GetRelayService>, "GetRelayService"},
-        {101, C<&IApplicationDisplayService::GetSystemDisplayService>, "GetSystemDisplayService"},
-        {102, C<&IApplicationDisplayService::GetManagerDisplayService>, "GetManagerDisplayService"},
-        {103, C<&IApplicationDisplayService::GetIndirectDisplayTransactionService>, "GetIndirectDisplayTransactionService"},
-        {1000, C<&IApplicationDisplayService::ListDisplays>, "ListDisplays"},
-        {1010, C<&IApplicationDisplayService::OpenDisplay>, "OpenDisplay"},
-        {1011, C<&IApplicationDisplayService::OpenDefaultDisplay>, "OpenDefaultDisplay"},
-        {1020, C<&IApplicationDisplayService::CloseDisplay>, "CloseDisplay"},
-        {1101, C<&IApplicationDisplayService::SetDisplayEnabled>, "SetDisplayEnabled"},
-        {1102, C<&IApplicationDisplayService::GetDisplayResolution>, "GetDisplayResolution"},
-        {2020, C<&IApplicationDisplayService::OpenLayer>, "OpenLayer"},
-        {2021, C<&IApplicationDisplayService::CloseLayer>, "CloseLayer"},
-        {2030, C<&IApplicationDisplayService::CreateStrayLayer>, "CreateStrayLayer"},
-        {2031, C<&IApplicationDisplayService::DestroyStrayLayer>, "DestroyStrayLayer"},
-        {2101, C<&IApplicationDisplayService::SetLayerScalingMode>, "SetLayerScalingMode"},
-        {2102, C<&IApplicationDisplayService::ConvertScalingMode>, "ConvertScalingMode"},
-        {2103, C<&IApplicationDisplayService::Cmd2103>, "Cmd2103"},
-        {2450, C<&IApplicationDisplayService::GetIndirectLayerImageMap>, "GetIndirectLayerImageMap"},
-        {2451, nullptr, "GetIndirectLayerImageCropMap"},
-        {2460, C<&IApplicationDisplayService::GetIndirectLayerImageRequiredMemoryInfo>, "GetIndirectLayerImageRequiredMemoryInfo"},
-        {5202, C<&IApplicationDisplayService::GetDisplayVsyncEvent>, "GetDisplayVsyncEvent"},
-        {5203, nullptr, "GetDisplayVsyncEventForDebug"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IApplicationDisplayService::~IApplicationDisplayService() {

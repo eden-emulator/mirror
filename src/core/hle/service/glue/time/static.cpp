@@ -33,7 +33,10 @@ StaticService::StaticService(Core::System& system_,
       m_standard_steady_clock_resource{time->m_steady_clock_resource},
       m_time_zone_binary{time->m_time_zone_binary} {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0,   D<&StaticService::GetStandardUserSystemClock>, "GetStandardUserSystemClock"},
             FunctionInfo{1,   D<&StaticService::GetStandardNetworkSystemClock>, "GetStandardNetworkSystemClock"},
             FunctionInfo{2,   D<&StaticService::GetStandardSteadyClock>, "GetStandardSteadyClock"},
@@ -53,10 +56,7 @@ StaticService::StaticService(Core::System& system_,
             FunctionInfo{401, D<&StaticService::GetClockSnapshotFromSystemClockContext>, "GetClockSnapshotFromSystemClockContext"},
             FunctionInfo{500, D<&StaticService::CalculateStandardUserSystemClockDifferenceByUser>, "CalculateStandardUserSystemClockDifferenceByUser"},
             FunctionInfo{501, D<&StaticService::CalculateSpanBetween>, "CalculateSpanBetween"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 
     m_set_sys =
         m_system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);

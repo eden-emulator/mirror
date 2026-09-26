@@ -124,18 +124,6 @@ std::vector<AlarmSetting>::iterator NotificationServiceImpl::GetAlarmFromId(Alar
 
 INotificationServicesForApplication::INotificationServicesForApplication(Core::System& system_)
     : ServiceFramework{system_, "notif:a"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {500, D<&INotificationServicesForApplication::RegisterAlarmSetting>, "RegisterAlarmSetting"},
-        {510, D<&INotificationServicesForApplication::UpdateAlarmSetting>, "UpdateAlarmSetting"},
-        {520, D<&INotificationServicesForApplication::ListAlarmSettings>, "ListAlarmSettings"},
-        {530, D<&INotificationServicesForApplication::LoadApplicationParameter>, "LoadApplicationParameter"},
-        {540, D<&INotificationServicesForApplication::DeleteAlarmSetting>, "DeleteAlarmSetting"},
-        {1000, D<&INotificationServicesForApplication::Initialize>, "Initialize"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 INotificationServicesForApplication::~INotificationServicesForApplication() = default;
@@ -208,32 +196,6 @@ private:
 
 INotificationServices::INotificationServices(Core::System& system_)
     : ServiceFramework{system_, "notif:s"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {500, D<&INotificationServices::RegisterAlarmSetting>, "RegisterAlarmSetting"},
-        {510, D<&INotificationServices::UpdateAlarmSetting>, "UpdateAlarmSetting"},
-        {520, D<&INotificationServices::ListAlarmSettings>, "ListAlarmSettings"},
-        {530, D<&INotificationServices::LoadApplicationParameter>, "LoadApplicationParameter"},
-        {540, D<&INotificationServices::DeleteAlarmSetting>, "DeleteAlarmSetting"},
-        {1000, D<&INotificationServices::Initialize>, "Initialize"},
-        {1010, nullptr, "ListNotifications"},
-        {1020, nullptr, "DeleteNotification"},
-        {1030, nullptr, "ClearNotifications"},
-        {1040, D<&INotificationServices::OpenNotificationSystemEventAccessor>, "OpenNotificationSystemEventAccessor"},
-        {1500, nullptr, "SetNotificationPresentationSetting"},
-        {1510, D<&INotificationServices::GetNotificationPresentationSetting>, "GetNotificationPresentationSetting"},
-        {2000, nullptr, "GetAlarmSetting"},
-        {2001, nullptr, "GetAlarmSettingWithApplicationParameter"},
-        {2010, nullptr, "MuteAlarmSetting"},
-        {2020, nullptr, "IsAlarmSettingReady"},
-        {8000, nullptr, "RegisterAppletResourceUserId"},
-        {8010, nullptr, "UnregisterAppletResourceUserId"},
-        {8999, nullptr, "GetCurrentTime"},
-        {9000, nullptr, "GetAlarmSettingNextNotificationTime"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 INotificationServices::~INotificationServices() = default;

@@ -26,6 +26,12 @@ public:
 private:
     Result Get(OutCopyHandle<Kernel::KReadableEvent> out_event);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&INewlyArrivedEventHolder::Get>, "Get"}
+    );
     Kernel::KEvent* arrived_event;
     KernelHelpers::ServiceContext service_context;
 };

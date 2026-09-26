@@ -7,14 +7,6 @@ namespace Service::Audio {
 
 IFinalOutputRecorderManagerForApplet::IFinalOutputRecorderManagerForApplet(Core::System& system_)
     : ServiceFramework{system_, "audrec:a"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "RequestSuspend"},
-        {1, nullptr, "RequestResume"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IFinalOutputRecorderManagerForApplet::~IFinalOutputRecorderManagerForApplet() = default;

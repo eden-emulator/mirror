@@ -23,6 +23,15 @@ private:
     Result IsLocked(Out<bool> out_is_locked);
 
 private:
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{1, D<&ILockAccessor::TryLock>, "TryLock"},
+        FunctionInfo{2, D<&ILockAccessor::Unlock>, "Unlock"},
+        FunctionInfo{3, D<&ILockAccessor::GetEvent>, "GetEvent"},
+        FunctionInfo{4, D<&ILockAccessor::IsLocked>, "IsLocked"}
+    );
     KernelHelpers::ServiceContext m_context;
     Event m_event;
     std::mutex m_mutex{};

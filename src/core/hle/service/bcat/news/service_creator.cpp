@@ -13,17 +13,6 @@ namespace Service::News {
 
 IServiceCreator::IServiceCreator(Core::System& system_, u32 permissions_, const char* name_)
     : ServiceFramework{system_, name_}, permissions{permissions_} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IServiceCreator::CreateNewsService>, "CreateNewsService"},
-        {1, D<&IServiceCreator::CreateNewlyArrivedEventHolder>, "CreateNewlyArrivedEventHolder"},
-        {2, D<&IServiceCreator::CreateNewsDataService>, "CreateNewsDataService"},
-        {3, D<&IServiceCreator::CreateNewsDatabaseService>, "CreateNewsDatabaseService"},
-        {4, D<&IServiceCreator::CreateOverwriteEventHolder>, "CreateOverwriteEventHolder"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IServiceCreator::~IServiceCreator() = default;

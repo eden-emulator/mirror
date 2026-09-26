@@ -42,17 +42,6 @@ private:
 };
 
 TS::TS(Core::System& system_) : ServiceFramework{system_, "ts"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "GetTemperatureRange"},
-        {1, &TS::GetTemperature, "GetTemperature"},
-        {2, nullptr, "SetMeasurementMode"},
-        {3, &TS::GetTemperatureMilliC, "GetTemperatureMilliC"},
-        {4, &TS::OpenSession, "OpenSession"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 TS::~TS() = default;

@@ -12,17 +12,6 @@ namespace Service::AM {
 ILockAccessor::ILockAccessor(Core::System& system_)
     : ServiceFramework{system_, "ILockAccessor"}, m_context{system_, "ILockAccessor"},
       m_event{m_context} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {1, D<&ILockAccessor::TryLock>, "TryLock"},
-        {2, D<&ILockAccessor::Unlock>, "Unlock"},
-        {3, D<&ILockAccessor::GetEvent>, "GetEvent"},
-        {4, D<&ILockAccessor::IsLocked>, "IsLocked"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
-
     m_event.Signal(system.Kernel());
 }
 

@@ -11,7 +11,10 @@ namespace Service::NS {
 IFactoryResetInterface::IFactoryResetInterface(Core::System& system_)
     : ServiceFramework{system_, "IFactoryResetInterface"} {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{100, nullptr, "ResetToFactorySettings"},
             FunctionInfo{101, nullptr, "ResetToFactorySettingsWithoutUserSaveData"},
             FunctionInfo{102, nullptr, "ResetToFactorySettingsForRefurbishment"},
@@ -19,10 +22,7 @@ IFactoryResetInterface::IFactoryResetInterface(Core::System& system_)
             FunctionInfo{104, nullptr, "ResetToFactorySettingsWithPlatformRegionAuthentication"},
             FunctionInfo{105, nullptr, "RequestResetToFactorySettingsSecurely"},
             FunctionInfo{106, nullptr, "RequestResetToFactorySettingsWithPlatformRegionAuthenticationSecurely"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 }
 
 IFactoryResetInterface::~IFactoryResetInterface() = default;

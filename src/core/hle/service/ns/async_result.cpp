@@ -10,15 +10,6 @@ namespace Service::NS {
 
 IAsyncResult::IAsyncResult(Core::System& system_, Service::Event* event_)
     : ServiceFramework{system_, "nn::ns::detail::IAsyncResult"}, event{event_} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "Get"},
-        {1, D<&IAsyncResult::Cancel>, "Cancel"},
-        {2, nullptr, "GetErrorContext"}, // 4.0.0+
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IAsyncResult::~IAsyncResult() = default;

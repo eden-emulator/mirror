@@ -16,18 +16,7 @@ SystemClock::SystemClock(Core::System& system_, SystemClockCore& clock_core, boo
     , m_clock_core{clock_core}
     , m_can_write_clock{can_write_clock}
     , m_can_write_uninitialized_clock{can_write_uninitialized_clock}
-{
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&SystemClock::GetCurrentTime>, "GetCurrentTime"},
-        {1, D<&SystemClock::SetCurrentTime>, "SetCurrentTime"},
-        {2, D<&SystemClock::GetSystemClockContext>, "GetSystemClockContext"},
-        {3, D<&SystemClock::SetSystemClockContext>, "SetSystemClockContext"},
-        {4, D<&SystemClock::GetOperationEventReadableHandle>, "GetOperationEventReadableHandle"},
-    };
-    // clang-format on
-    RegisterHandlers(functions);
-}
+{}
 
 Result SystemClock::GetCurrentTime(Out<s64> out_time) {
     SCOPE_EXIT {

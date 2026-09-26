@@ -27,8 +27,8 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, D<&IParentalControlServiceFactory::CreateService>, "CreateService"},
-        {1, D<&IParentalControlServiceFactory::CreateServiceWithoutInitialize>, "CreateServiceWithoutInitialize"}
+        FunctionInfo{0, D<&IParentalControlServiceFactory::CreateService>, "CreateService"},
+        FunctionInfo{1, D<&IParentalControlServiceFactory::CreateServiceWithoutInitialize>, "CreateServiceWithoutInitialize"}
     );
     Capability capability{};
 };

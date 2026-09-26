@@ -17,6 +17,15 @@ public:
 private:
     Result ResolveApplicationContentPath(ContentPath content_path);
     Result GetRunningApplicationProgramId(Out<u64> out_program_id, u64 caller_program_id);
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{21, nullptr, "GetApplicationContentPath"},
+        FunctionInfo{23, D<&IDocumentInterface::ResolveApplicationContentPath>, "ResolveApplicationContentPath"},
+        FunctionInfo{92, D<&IDocumentInterface::GetRunningApplicationProgramId>, "GetRunningApplicationProgramId"}
+    );
 };
 
 } // namespace Service::NS

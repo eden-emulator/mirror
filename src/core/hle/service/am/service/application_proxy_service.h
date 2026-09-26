@@ -30,7 +30,7 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, D<&IApplicationProxyService::OpenApplicationProxy>, "OpenApplicationProxy"}
+        FunctionInfo{0, D<&IApplicationProxyService::OpenApplicationProxy>, "OpenApplicationProxy"}
     );
     WindowSystem& m_window_system;
 };

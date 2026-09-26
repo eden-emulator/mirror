@@ -17,6 +17,13 @@ public:
 
 private:
     Result OpenReceiver(Out<SharedPointer<IReceiver>> out_receiver);
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IReceiverService::OpenReceiver>, "OpenReceiver"}
+    );
 };
 
 } // namespace Service::PSC

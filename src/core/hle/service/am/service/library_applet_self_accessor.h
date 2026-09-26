@@ -80,6 +80,47 @@ private:
     Result ShouldSetGpuTimeSliceManually(Out<bool> out_should_set_gpu_time_slice_manually);
     Result GetLibraryAppletInfoEx(Out<LibraryAppletInfo> out_library_applet_info);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&ILibraryAppletSelfAccessor::PopInData>, "PopInData"},
+        FunctionInfo{1, D<&ILibraryAppletSelfAccessor::PushOutData>, "PushOutData"},
+        FunctionInfo{2, D<&ILibraryAppletSelfAccessor::PopInteractiveInData>, "PopInteractiveInData"},
+        FunctionInfo{3, D<&ILibraryAppletSelfAccessor::PushInteractiveOutData>, "PushInteractiveOutData"},
+        FunctionInfo{5, D<&ILibraryAppletSelfAccessor::GetPopInDataEvent>, "GetPopInDataEvent"},
+        FunctionInfo{6, D<&ILibraryAppletSelfAccessor::GetPopInteractiveInDataEvent>, "GetPopInteractiveInDataEvent"},
+        FunctionInfo{10, D<&ILibraryAppletSelfAccessor::ExitProcessAndReturn>, "ExitProcessAndReturn"},
+        FunctionInfo{11, D<&ILibraryAppletSelfAccessor::GetLibraryAppletInfo>, "GetLibraryAppletInfo"},
+        FunctionInfo{12, D<&ILibraryAppletSelfAccessor::GetMainAppletIdentityInfo>, "GetMainAppletIdentityInfo"},
+        FunctionInfo{13, D<&ILibraryAppletSelfAccessor::CanUseApplicationCore>, "CanUseApplicationCore"},
+        FunctionInfo{14, D<&ILibraryAppletSelfAccessor::GetCallerAppletIdentityInfo>, "GetCallerAppletIdentityInfo"},
+        FunctionInfo{15, D<&ILibraryAppletSelfAccessor::GetMainAppletApplicationControlProperty>, "GetMainAppletApplicationControlProperty"},
+        FunctionInfo{16, D<&ILibraryAppletSelfAccessor::GetMainAppletStorageId>, "GetMainAppletStorageId"},
+        FunctionInfo{17, D<&ILibraryAppletSelfAccessor::GetCallerAppletIdentityInfoStack>, "GetCallerAppletIdentityInfoStack"},
+        FunctionInfo{18, nullptr, "GetNextReturnDestinationAppletIdentityInfo"},
+        FunctionInfo{19, D<&ILibraryAppletSelfAccessor::GetDesirableKeyboardLayout>, "GetDesirableKeyboardLayout"},
+        FunctionInfo{20, nullptr, "PopExtraStorage"},
+        FunctionInfo{25, nullptr, "GetPopExtraStorageEvent"},
+        FunctionInfo{30, D<&ILibraryAppletSelfAccessor::UnpopInData>, "UnpopInData"},
+        FunctionInfo{31, nullptr, "UnpopExtraStorage"},
+        FunctionInfo{40, nullptr, "GetIndirectLayerProducerHandle"},
+        FunctionInfo{50, D<&ILibraryAppletSelfAccessor::ReportVisibleError>, "ReportVisibleError"},
+        FunctionInfo{51, D<&ILibraryAppletSelfAccessor::ReportVisibleErrorWithErrorContext>, "ReportVisibleErrorWithErrorContext"},
+        FunctionInfo{60, D<&ILibraryAppletSelfAccessor::GetMainAppletApplicationDesiredLanguage>, "GetMainAppletApplicationDesiredLanguage"},
+        FunctionInfo{70, D<&ILibraryAppletSelfAccessor::GetCurrentApplicationId>, "GetCurrentApplicationId"},
+        FunctionInfo{80, nullptr, "RequestExitToSelf"},
+        FunctionInfo{90, nullptr, "CreateApplicationAndPushAndRequestToLaunch"},
+        FunctionInfo{100, nullptr, "CreateGameMovieTrimmer"},
+        FunctionInfo{101, nullptr, "ReserveResourceForMovieOperation"},
+        FunctionInfo{102, nullptr, "UnreserveResourceForMovieOperation"},
+        FunctionInfo{110, D<&ILibraryAppletSelfAccessor::GetMainAppletAvailableUsers>, "GetMainAppletAvailableUsers"},
+        FunctionInfo{120, nullptr, "GetLaunchStorageInfoForDebug"},
+        FunctionInfo{130, nullptr, "GetGpuErrorDetectedSystemEvent"},
+        FunctionInfo{140, nullptr, "SetApplicationMemoryReservation"},
+        FunctionInfo{150, D<&ILibraryAppletSelfAccessor::ShouldSetGpuTimeSliceManually>, "ShouldSetGpuTimeSliceManually"},
+        FunctionInfo{160, D<&ILibraryAppletSelfAccessor::GetLibraryAppletInfoEx>, "GetLibraryAppletInfoEx"}
+    );
     const std::shared_ptr<Applet> m_applet;
     const std::shared_ptr<AppletDataBroker> m_broker;
 };

@@ -21,63 +21,6 @@ ISelfController::ISelfController(Core::System& system_, std::shared_ptr<Applet> 
                                  Kernel::KProcess* process)
     : ServiceFramework{system_, "ISelfController"}, m_process{process}, m_applet{
                                                                             std::move(applet)} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&ISelfController::Exit>, "Exit"},
-        {1, D<&ISelfController::LockExit>, "LockExit"},
-        {2, D<&ISelfController::UnlockExit>, "UnlockExit"},
-        {3, D<&ISelfController::EnterFatalSection>, "EnterFatalSection"},
-        {4, D<&ISelfController::LeaveFatalSection>, "LeaveFatalSection"},
-        {9, D<&ISelfController::GetLibraryAppletLaunchableEvent>, "GetLibraryAppletLaunchableEvent"},
-        {10, D<&ISelfController::SetScreenShotPermission>, "SetScreenShotPermission"},
-        {11, D<&ISelfController::SetOperationModeChangedNotification>, "SetOperationModeChangedNotification"},
-        {12, D<&ISelfController::SetPerformanceModeChangedNotification>, "SetPerformanceModeChangedNotification"},
-        {13, D<&ISelfController::SetFocusHandlingMode>, "SetFocusHandlingMode"},
-        {14, D<&ISelfController::SetRestartMessageEnabled>, "SetRestartMessageEnabled"},
-        {15, D<&ISelfController::SetScreenShotAppletIdentityInfo>, "SetScreenShotAppletIdentityInfo"},
-        {16, D<&ISelfController::SetOutOfFocusSuspendingEnabled>, "SetOutOfFocusSuspendingEnabled"},
-        {17, nullptr, "SetControllerFirmwareUpdateSection"},
-        {18, nullptr, "SetRequiresCaptureButtonShortPressedMessage"},
-        {19, D<&ISelfController::SetAlbumImageOrientation>, "SetAlbumImageOrientation"},
-        {20, nullptr, "SetDesirableKeyboardLayout"},
-        {21, nullptr, "GetScreenShotProgramId"},
-        {40, D<&ISelfController::CreateManagedDisplayLayer>, "CreateManagedDisplayLayer"},
-        {41, D<&ISelfController::IsSystemBufferSharingEnabled>, "IsSystemBufferSharingEnabled"},
-        {42, D<&ISelfController::GetSystemSharedLayerHandle>, "GetSystemSharedLayerHandle"},
-        {43, D<&ISelfController::GetSystemSharedBufferHandle>, "GetSystemSharedBufferHandle"},
-        {44, D<&ISelfController::CreateManagedDisplaySeparableLayer>, "CreateManagedDisplaySeparableLayer"},
-        {45, nullptr, "SetManagedDisplayLayerSeparationMode"},
-        {46, nullptr, "SetRecordingLayerCompositionEnabled"},
-        {50, D<&ISelfController::SetHandlesRequestToDisplay>, "SetHandlesRequestToDisplay"},
-        {51, D<&ISelfController::ApproveToDisplay>, "ApproveToDisplay"},
-        {60, D<&ISelfController::OverrideAutoSleepTimeAndDimmingTime>, "OverrideAutoSleepTimeAndDimmingTime"},
-        {61, D<&ISelfController::SetMediaPlaybackState>, "SetMediaPlaybackState"},
-        {62, D<&ISelfController::SetIdleTimeDetectionExtension>, "SetIdleTimeDetectionExtension"},
-        {63, D<&ISelfController::GetIdleTimeDetectionExtension>, "GetIdleTimeDetectionExtension"},
-        {64, nullptr, "SetInputDetectionSourceSet"},
-        {65, D<&ISelfController::ReportUserIsActive>, "ReportUserIsActive"},
-        {66, nullptr, "GetCurrentIlluminance"},
-        {67, D<&ISelfController::IsIlluminanceAvailable>, "IsIlluminanceAvailable"},
-        {68, D<&ISelfController::SetAutoSleepDisabled>, "SetAutoSleepDisabled"},
-        {69, D<&ISelfController::IsAutoSleepDisabled>, "IsAutoSleepDisabled"},
-        {70, nullptr, "ReportMultimediaError"},
-        {71, nullptr, "GetCurrentIlluminanceEx"},
-        {72, D<&ISelfController::SetInputDetectionPolicy>, "SetInputDetectionPolicy"},
-        {80, nullptr, "SetWirelessPriorityMode"},
-        {90, D<&ISelfController::GetAccumulatedSuspendedTickValue>, "GetAccumulatedSuspendedTickValue"},
-        {91, D<&ISelfController::GetAccumulatedSuspendedTickChangedEvent>, "GetAccumulatedSuspendedTickChangedEvent"},
-        {100, D<&ISelfController::SetAlbumImageTakenNotificationEnabled>, "SetAlbumImageTakenNotificationEnabled"},
-        {110, nullptr, "SetApplicationAlbumUserData"},
-        {120, D<&ISelfController::SaveCurrentScreenshot>, "SaveCurrentScreenshot"},
-        {130, D<&ISelfController::SetRecordVolumeMuted>, "SetRecordVolumeMuted"},
-        {230, D<&ISelfController::Unknown230>, "Unknown230"},
-        {240, D<&ISelfController::Unknown240>, "Unknown240"},
-        {1000, nullptr, "GetDebugStorageChannel"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
-
     std::scoped_lock lk{m_applet->lock};
     m_applet->display_layer_manager.Initialize(system, m_process, m_applet->applet_id,
                                                m_applet->library_applet_mode);

@@ -22,24 +22,6 @@ ILibraryAppletProxy::ILibraryAppletProxy(Core::System& system_, std::shared_ptr<
                                          Kernel::KProcess* process, WindowSystem& window_system)
     : ServiceFramework{system_, "ILibraryAppletProxy"},
       m_window_system{window_system}, m_process{process}, m_applet{std::move(applet)} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&ILibraryAppletProxy::GetCommonStateGetter>, "GetCommonStateGetter"},
-        {1, D<&ILibraryAppletProxy::GetSelfController>, "GetSelfController"},
-        {2, D<&ILibraryAppletProxy::GetWindowController>, "GetWindowController"},
-        {3, D<&ILibraryAppletProxy::GetAudioController>, "GetAudioController"},
-        {4, D<&ILibraryAppletProxy::GetDisplayController>, "GetDisplayController"},
-        {10, D<&ILibraryAppletProxy::GetProcessWindingController>, "GetProcessWindingController"},
-        {11, D<&ILibraryAppletProxy::GetLibraryAppletCreator>, "GetLibraryAppletCreator"},
-        {20, D<&ILibraryAppletProxy::OpenLibraryAppletSelfAccessor>, "OpenLibraryAppletSelfAccessor"},
-        {21, D<&ILibraryAppletProxy::GetAppletCommonFunctions>, "GetAppletCommonFunctions"},
-        {22, D<&ILibraryAppletProxy::GetHomeMenuFunctions>, "GetHomeMenuFunctions"},
-        {23, D<&ILibraryAppletProxy::GetGlobalStateController>, "GetGlobalStateController"},
-        {1000, D<&ILibraryAppletProxy::GetDebugFunctions>, "GetDebugFunctions"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 ILibraryAppletProxy::~ILibraryAppletProxy() = default;

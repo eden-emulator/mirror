@@ -16,20 +16,6 @@ namespace Service::AM {
 IProcessWindingController::IProcessWindingController(Core::System& system_,
                                                      std::shared_ptr<Applet> applet)
     : ServiceFramework{system_, "IProcessWindingController"}, m_applet{std::move(applet)} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IProcessWindingController::GetLaunchReason>, "GetLaunchReason"},
-        {11, D<&IProcessWindingController::OpenCallingLibraryApplet>, "OpenCallingLibraryApplet"},
-        {21, D<&IProcessWindingController::PushContext>, "PushContext"},
-        {22, D<&IProcessWindingController::PopContext>, "PopContext"},
-        {23, D<&IProcessWindingController::CancelWindingReservation>, "CancelWindingReservation"},
-        {30, D<&IProcessWindingController::WindAndDoReserved>, "WindAndDoReserved"},
-        {40, D<&IProcessWindingController::ReserveToStartAndWaitAndUnwindThis>, "ReserveToStartAndWaitAndUnwindThis"},
-        {41, D<&IProcessWindingController::ReserveToStartAndWait>, "ReserveToStartAndWait"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IProcessWindingController::~IProcessWindingController() = default;

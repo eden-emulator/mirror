@@ -13,13 +13,6 @@
 namespace Service::BTM {
 
 IBtmSystem::IBtmSystem(Core::System& system_) : ServiceFramework{system_, "btm:sys"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, C<&IBtmSystem::GetCore>, "GetCore"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IBtmSystem::~IBtmSystem() = default;

@@ -13,17 +13,17 @@ IDaemonController::IDaemonController(Core::System& system_)
     : ServiceFramework{system_, "IDaemonController"} {
     // clang-format off
     static const FunctionInfo functions[] = {
-        {0, D<&IDaemonController::GetApplicationAutoTransferSetting>, "GetApplicationAutoTransferSetting"},
-        {1, D<&IDaemonController::SetApplicationAutoTransferSetting>, "SetApplicationAutoTransferSetting"},
-        {2, D<&IDaemonController::GetGlobalAutoUploadSetting>, "GetGlobalAutoUploadSetting"},
-        {3, D<&IDaemonController::SetGlobalAutoUploadSetting>, "SetGlobalAutoUploadSetting"},
-        {4, D<&IDaemonController::RunTransferTaskAutonomyRegistration>, "RunTransferTaskAutonomyRegistration"},
-        {5, D<&IDaemonController::GetGlobalAutoDownloadSetting>, "GetGlobalAutoDownloadSetting"}, // 11.0.0+
-        {6, D<&IDaemonController::SetGlobalAutoDownloadSetting>, "SetGlobalAutoDownloadSetting"}, // 11.0.0+
-        {10, nullptr, "CreateForbiddenSaveDataInidication"},
-        {11, D<&IDaemonController::StopAutonomyTaskExecution>, "StopAutonomyTaskExecution"},
-        {12, D<&IDaemonController::GetAutonomyTaskStatus>, "GetAutonomyTaskStatus"},
-        {13, nullptr, "Unknown13_20_0_0_Plus"}, // 20.0.0+
+        FunctionInfo{0, D<&IDaemonController::GetApplicationAutoTransferSetting>, "GetApplicationAutoTransferSetting"},
+        FunctionInfo{1, D<&IDaemonController::SetApplicationAutoTransferSetting>, "SetApplicationAutoTransferSetting"},
+        FunctionInfo{2, D<&IDaemonController::GetGlobalAutoUploadSetting>, "GetGlobalAutoUploadSetting"},
+        FunctionInfo{3, D<&IDaemonController::SetGlobalAutoUploadSetting>, "SetGlobalAutoUploadSetting"},
+        FunctionInfo{4, D<&IDaemonController::RunTransferTaskAutonomyRegistration>, "RunTransferTaskAutonomyRegistration"},
+        FunctionInfo{5, D<&IDaemonController::GetGlobalAutoDownloadSetting>, "GetGlobalAutoDownloadSetting"}, // 11.0.0+
+        FunctionInfo{6, D<&IDaemonController::SetGlobalAutoDownloadSetting>, "SetGlobalAutoDownloadSetting"}, // 11.0.0+
+        FunctionInfo{10, nullptr, "CreateForbiddenSaveDataInidication"},
+        FunctionInfo{11, D<&IDaemonController::StopAutonomyTaskExecution>, "StopAutonomyTaskExecution"},
+        FunctionInfo{12, D<&IDaemonController::GetAutonomyTaskStatus>, "GetAutonomyTaskStatus"},
+        FunctionInfo{13, nullptr, "Unknown13_20_0_0_Plus"}, // 20.0.0+
     };
     // clang-format on
 

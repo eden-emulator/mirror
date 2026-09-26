@@ -30,26 +30,6 @@ TimeZoneService::TimeZoneService(
     , m_operation_event{system}
     , m_time_zone_binary{time_zone_binary}
 {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0,   D<&TimeZoneService::GetDeviceLocationName>, "GetDeviceLocationName"},
-        {1,   D<&TimeZoneService::SetDeviceLocationName>, "SetDeviceLocationName"},
-        {2,   D<&TimeZoneService::GetTotalLocationNameCount>, "GetTotalLocationNameCount"},
-        {3,   D<&TimeZoneService::LoadLocationNameList>, "LoadLocationNameList"},
-        {4,   D<&TimeZoneService::LoadTimeZoneRule>, "LoadTimeZoneRule"},
-        {5,   D<&TimeZoneService::GetTimeZoneRuleVersion>, "GetTimeZoneRuleVersion"},
-        {6,   D<&TimeZoneService::GetDeviceLocationNameAndUpdatedTime>, "GetDeviceLocationNameAndUpdatedTime"},
-        {7,   D<&TimeZoneService::SetDeviceLocationNameWithTimeZoneRule>, "SetDeviceLocationNameWithTimeZoneRule"},
-        {8,   D<&TimeZoneService::ParseTimeZoneBinary>, "ParseTimeZoneBinary"},
-        {20,  D<&TimeZoneService::GetDeviceLocationNameOperationEventReadableHandle>, "GetDeviceLocationNameOperationEventReadableHandle"},
-        {100, D<&TimeZoneService::ToCalendarTime>, "ToCalendarTime"},
-        {101, D<&TimeZoneService::ToCalendarTimeWithMyRule>, "ToCalendarTimeWithMyRule"},
-        {201, D<&TimeZoneService::ToPosixTime>, "ToPosixTime"},
-        {202, D<&TimeZoneService::ToPosixTimeWithMyRule>, "ToPosixTimeWithMyRule"},
-    };
-    // clang-format on
-    RegisterHandlers(functions);
-
     m_set_sys = system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);
 }
 

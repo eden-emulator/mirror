@@ -31,8 +31,8 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, D<&IDirectory::Read>, "Read"},
-        {1, D<&IDirectory::GetEntryCount>, "GetEntryCount"}
+        FunctionInfo{0, D<&IDirectory::Read>, "Read"},
+        FunctionInfo{1, D<&IDirectory::GetEntryCount>, "GetEntryCount"}
     );
 };
 

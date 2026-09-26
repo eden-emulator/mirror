@@ -24,12 +24,12 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, D<&IStorage::Read>, "Read"},
-        {1, nullptr, "Write"},
-        {2, nullptr, "Flush"},
-        {3, nullptr, "SetSize"},
-        {4, D<&IStorage::GetSize>, "GetSize"},
-        {5, nullptr, "OperateRange"}
+        FunctionInfo{0, D<&IStorage::Read>, "Read"},
+        FunctionInfo{1, nullptr, "Write"},
+        FunctionInfo{2, nullptr, "Flush"},
+        FunctionInfo{3, nullptr, "SetSize"},
+        FunctionInfo{4, D<&IStorage::GetSize>, "GetSize"},
+        FunctionInfo{5, nullptr, "OperateRange"}
     );
     FileSys::VirtualFile backend;
 };

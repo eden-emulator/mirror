@@ -9,19 +9,6 @@ namespace Service::AM {
 ICradleFirmwareUpdater::ICradleFirmwareUpdater(Core::System& system_)
     : ServiceFramework{system_, "ICradleFirmwareUpdater"},
       m_context{system, "ICradleFirmwareUpdater"}, m_cradle_device_info_event{m_context} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&ICradleFirmwareUpdater::StartUpdate>, "StartUpdate"},
-        {1, D<&ICradleFirmwareUpdater::FinishUpdate>, "FinishUpdate"},
-        {2, D<&ICradleFirmwareUpdater::GetCradleDeviceInfo>, "GetCradleDeviceInfo"},
-        {3, D<&ICradleFirmwareUpdater::GetCradleDeviceInfoChangeEvent>, "GetCradleDeviceInfoChangeEvent"},
-        {4, nullptr, "GetUpdateProgressInfo"},
-        {5, nullptr, "GetLastInternalResult"},
-
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 ICradleFirmwareUpdater::~ICradleFirmwareUpdater() = default;

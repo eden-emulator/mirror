@@ -31,6 +31,16 @@ public:
     Result GetOperationEventReadableHandle(OutCopyHandle<Kernel::KReadableEvent> out_event);
 
 private:
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&SystemClock::GetCurrentTime>, "GetCurrentTime"},
+        FunctionInfo{1, D<&SystemClock::SetCurrentTime>, "SetCurrentTime"},
+        FunctionInfo{2, D<&SystemClock::GetSystemClockContext>, "GetSystemClockContext"},
+        FunctionInfo{3, D<&SystemClock::SetSystemClockContext>, "SetSystemClockContext"},
+        FunctionInfo{4, D<&SystemClock::GetOperationEventReadableHandle>, "GetOperationEventReadableHandle"}
+    );
     SystemClockCore& m_clock_core;
     bool m_can_write_clock;
     bool m_can_write_uninitialized_clock;

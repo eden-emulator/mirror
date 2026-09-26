@@ -18,12 +18,12 @@ IActiveVibrationDeviceList::IActiveVibrationDeviceList(Core::System& system_,
                                                        std::shared_ptr<ResourceManager> resource)
     : ServiceFramework{system_, "IActiveVibrationDeviceList"}, resource_manager(resource) {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, C<&IActiveVibrationDeviceList::ActivateVibrationDevice>, "ActivateVibrationDevice"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 }
 
 IActiveVibrationDeviceList::~IActiveVibrationDeviceList() = default;

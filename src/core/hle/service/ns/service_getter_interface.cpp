@@ -19,23 +19,6 @@ namespace Service::NS {
 
 IServiceGetterInterface::IServiceGetterInterface(Core::System& system_, const char* name)
     : ServiceFramework{system_, name} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {7988, D<&IServiceGetterInterface::GetDynamicRightsInterface>, "GetDynamicRightsInterface"},
-        {7989, D<&IServiceGetterInterface::GetReadOnlyApplicationControlDataInterface>, "GetReadOnlyApplicationControlDataInterface"},
-        {7991, D<&IServiceGetterInterface::GetReadOnlyApplicationRecordInterface>, "GetReadOnlyApplicationRecordInterface"},
-        {7992, D<&IServiceGetterInterface::GetECommerceInterface>, "GetECommerceInterface"},
-        {7993, D<&IServiceGetterInterface::GetApplicationVersionInterface>, "GetApplicationVersionInterface"},
-        {7994, D<&IServiceGetterInterface::GetFactoryResetInterface>, "GetFactoryResetInterface"},
-        {7995, D<&IServiceGetterInterface::GetAccountProxyInterface>, "GetAccountProxyInterface"},
-        {7996, D<&IServiceGetterInterface::GetApplicationManagerInterface>, "GetApplicationManagerInterface"},
-        {7997, D<&IServiceGetterInterface::GetDownloadTaskInterface>, "GetDownloadTaskInterface"},
-        {7998, D<&IServiceGetterInterface::GetContentManagementInterface>, "GetContentManagementInterface"},
-        {7999, D<&IServiceGetterInterface::GetDocumentInterface>, "GetDocumentInterface"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IServiceGetterInterface::~IServiceGetterInterface() = default;

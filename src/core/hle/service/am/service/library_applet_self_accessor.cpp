@@ -46,47 +46,6 @@ ILibraryAppletSelfAccessor::ILibraryAppletSelfAccessor(Core::System& system_,
                                                        std::shared_ptr<Applet> applet)
     : ServiceFramework{system_, "ILibraryAppletSelfAccessor"}, m_applet{std::move(applet)},
       m_broker{m_applet->caller_applet_broker} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&ILibraryAppletSelfAccessor::PopInData>, "PopInData"},
-        {1, D<&ILibraryAppletSelfAccessor::PushOutData>, "PushOutData"},
-        {2, D<&ILibraryAppletSelfAccessor::PopInteractiveInData>, "PopInteractiveInData"},
-        {3, D<&ILibraryAppletSelfAccessor::PushInteractiveOutData>, "PushInteractiveOutData"},
-        {5, D<&ILibraryAppletSelfAccessor::GetPopInDataEvent>, "GetPopInDataEvent"},
-        {6, D<&ILibraryAppletSelfAccessor::GetPopInteractiveInDataEvent>, "GetPopInteractiveInDataEvent"},
-        {10, D<&ILibraryAppletSelfAccessor::ExitProcessAndReturn>, "ExitProcessAndReturn"},
-        {11, D<&ILibraryAppletSelfAccessor::GetLibraryAppletInfo>, "GetLibraryAppletInfo"},
-        {12, D<&ILibraryAppletSelfAccessor::GetMainAppletIdentityInfo>, "GetMainAppletIdentityInfo"},
-        {13, D<&ILibraryAppletSelfAccessor::CanUseApplicationCore>, "CanUseApplicationCore"},
-        {14, D<&ILibraryAppletSelfAccessor::GetCallerAppletIdentityInfo>, "GetCallerAppletIdentityInfo"},
-        {15, D<&ILibraryAppletSelfAccessor::GetMainAppletApplicationControlProperty>, "GetMainAppletApplicationControlProperty"},
-        {16, D<&ILibraryAppletSelfAccessor::GetMainAppletStorageId>, "GetMainAppletStorageId"},
-        {17, D<&ILibraryAppletSelfAccessor::GetCallerAppletIdentityInfoStack>, "GetCallerAppletIdentityInfoStack"},
-        {18, nullptr, "GetNextReturnDestinationAppletIdentityInfo"},
-        {19, D<&ILibraryAppletSelfAccessor::GetDesirableKeyboardLayout>, "GetDesirableKeyboardLayout"},
-        {20, nullptr, "PopExtraStorage"},
-        {25, nullptr, "GetPopExtraStorageEvent"},
-        {30, D<&ILibraryAppletSelfAccessor::UnpopInData>, "UnpopInData"},
-        {31, nullptr, "UnpopExtraStorage"},
-        {40, nullptr, "GetIndirectLayerProducerHandle"},
-        {50, D<&ILibraryAppletSelfAccessor::ReportVisibleError>, "ReportVisibleError"},
-        {51, D<&ILibraryAppletSelfAccessor::ReportVisibleErrorWithErrorContext>, "ReportVisibleErrorWithErrorContext"},
-        {60, D<&ILibraryAppletSelfAccessor::GetMainAppletApplicationDesiredLanguage>, "GetMainAppletApplicationDesiredLanguage"},
-        {70, D<&ILibraryAppletSelfAccessor::GetCurrentApplicationId>, "GetCurrentApplicationId"},
-        {80, nullptr, "RequestExitToSelf"},
-        {90, nullptr, "CreateApplicationAndPushAndRequestToLaunch"},
-        {100, nullptr, "CreateGameMovieTrimmer"},
-        {101, nullptr, "ReserveResourceForMovieOperation"},
-        {102, nullptr, "UnreserveResourceForMovieOperation"},
-        {110, D<&ILibraryAppletSelfAccessor::GetMainAppletAvailableUsers>, "GetMainAppletAvailableUsers"},
-        {120, nullptr, "GetLaunchStorageInfoForDebug"},
-        {130, nullptr, "GetGpuErrorDetectedSystemEvent"},
-        {140, nullptr, "SetApplicationMemoryReservation"},
-        {150, D<&ILibraryAppletSelfAccessor::ShouldSetGpuTimeSliceManually>, "ShouldSetGpuTimeSliceManually"},
-        {160, D<&ILibraryAppletSelfAccessor::GetLibraryAppletInfoEx>, "GetLibraryAppletInfoEx"},
-    };
-    // clang-format on
-    RegisterHandlers(functions);
 }
 
 ILibraryAppletSelfAccessor::~ILibraryAppletSelfAccessor() = default;

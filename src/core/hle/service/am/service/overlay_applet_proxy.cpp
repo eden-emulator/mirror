@@ -19,23 +19,6 @@ namespace Service::AM {
                                              Kernel::KProcess *process, WindowSystem &window_system)
         : ServiceFramework{system_, "IOverlayAppletProxy"},
           m_window_system{window_system}, m_process{process}, m_applet{std::move(applet)} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IOverlayAppletProxy::GetCommonStateGetter>, "GetCommonStateGetter"},
-        {1, D<&IOverlayAppletProxy::GetSelfController>, "GetSelfController"},
-        {2, D<&IOverlayAppletProxy::GetWindowController>, "GetWindowController"},
-        {3, D<&IOverlayAppletProxy::GetAudioController>, "GetAudioController"},
-        {4, D<&IOverlayAppletProxy::GetDisplayController>, "GetDisplayController"},
-        {10, D<&IOverlayAppletProxy::GetProcessWindingController>, "GetProcessWindingController"},
-        {11, D<&IOverlayAppletProxy::GetLibraryAppletCreator>, "GetLibraryAppletCreator"},
-        {20, D<&IOverlayAppletProxy::GetOverlayFunctions>, "GetOverlayFunctions"},
-        {21, D<&IOverlayAppletProxy::GetAppletCommonFunctions>, "GetAppletCommonFunctions"},
-        {23, D<&IOverlayAppletProxy::GetGlobalStateController>, "GetGlobalStateController"},
-        {1000, D<&IOverlayAppletProxy::GetDebugFunctions>, "GetDebugFunctions"},
-    };
-        // clang-format on
-
-        RegisterHandlers(functions);
     }
 
     IOverlayAppletProxy::~IOverlayAppletProxy() = default;

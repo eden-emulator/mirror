@@ -15,16 +15,16 @@ IPurchaseEventManager::IPurchaseEventManager(Core::System& system_)
     : ServiceFramework{system_, "IPurchaseEventManager"}, service_context{system,
                                                                           "IPurchaseEventManager"} {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&IPurchaseEventManager::SetDefaultDeliveryTarget>, "SetDefaultDeliveryTarget"},
             FunctionInfo{1, D<&IPurchaseEventManager::SetDeliveryTarget>, "SetDeliveryTarget"},
             FunctionInfo{2, D<&IPurchaseEventManager::GetPurchasedEvent>, "GetPurchasedEvent"},
             FunctionInfo{3, D<&IPurchaseEventManager::PopPurchasedProductInfo>, "PopPurchasedProductInfo"},
             FunctionInfo{4, D<&IPurchaseEventManager::PopPurchasedProductInfoWithUid>, "PopPurchasedProductInfoWithUid"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 
     purchased_event = service_context.CreateEvent("IPurchaseEventManager:PurchasedEvent");
 }

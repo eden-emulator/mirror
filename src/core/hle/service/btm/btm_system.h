@@ -20,6 +20,13 @@ public:
 
 private:
     Result GetCore(OutInterface<IBtmSystemCore> out_interface);
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IBtmSystem::GetCore>, "GetCore"}
+    );
 };
 
 } // namespace Service::BTM

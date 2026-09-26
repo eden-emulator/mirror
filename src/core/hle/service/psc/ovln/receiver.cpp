@@ -12,16 +12,16 @@ namespace Service::PSC {
 IReceiver::IReceiver(Core::System& system_)
     : ServiceFramework{system_, "IReceiver"}, service_context{system_, "IReceiver"} {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&IReceiver::AddSource>, "AddSource"},
             FunctionInfo{1, D<&IReceiver::RemoveSource>, "RemoveSource"},
             FunctionInfo{2, D<&IReceiver::GetReceiveEventHandle>, "GetReceiveEventHandle"},
             FunctionInfo{3, D<&IReceiver::Receive>, "Receive"},
             FunctionInfo{4, D<&IReceiver::ReceiveWithTick>, "ReceiveWithTick"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 
     receive_event = service_context.CreateEvent("IReceiver::ReceiveEvent");
 }

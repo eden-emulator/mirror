@@ -39,20 +39,20 @@ private:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, &NVDRV::Open, "Open"},
-        {1, &NVDRV::Ioctl1, "Ioctl"},
-        {2, &NVDRV::Close, "Close"},
-        {3, &NVDRV::Initialize, "Initialize"},
-        {4, &NVDRV::QueryEvent, "QueryEvent"},
-        {5, nullptr, "MapSharedMem"},
-        {6, &NVDRV::GetStatus, "GetStatus"},
-        {7, nullptr, "SetAruidForTest"},
-        {8, &NVDRV::SetAruid, "SetAruid"},
-        {9, &NVDRV::DumpGraphicsMemoryInfo, "DumpGraphicsMemoryInfo"},
-        {10, nullptr, "InitializeDevtools"},
-        {11, &NVDRV::Ioctl2, "Ioctl2"},
-        {12, &NVDRV::Ioctl3, "Ioctl3"},
-        {13, &NVDRV::SetGraphicsFirmwareMemoryMarginEnabled,
+        FunctionInfo{0, &NVDRV::Open, "Open"},
+        FunctionInfo{1, &NVDRV::Ioctl1, "Ioctl"},
+        FunctionInfo{2, &NVDRV::Close, "Close"},
+        FunctionInfo{3, &NVDRV::Initialize, "Initialize"},
+        FunctionInfo{4, &NVDRV::QueryEvent, "QueryEvent"},
+        FunctionInfo{5, nullptr, "MapSharedMem"},
+        FunctionInfo{6, &NVDRV::GetStatus, "GetStatus"},
+        FunctionInfo{7, nullptr, "SetAruidForTest"},
+        FunctionInfo{8, &NVDRV::SetAruid, "SetAruid"},
+        FunctionInfo{9, &NVDRV::DumpGraphicsMemoryInfo, "DumpGraphicsMemoryInfo"},
+        FunctionInfo{10, nullptr, "InitializeDevtools"},
+        FunctionInfo{11, &NVDRV::Ioctl2, "Ioctl2"},
+        FunctionInfo{12, &NVDRV::Ioctl3, "Ioctl3"},
+        FunctionInfo{13, &NVDRV::SetGraphicsFirmwareMemoryMarginEnabled,
          "SetGraphicsFirmwareMemoryMarginEnabled"}
     );
     std::shared_ptr<Module> nvdrv;

@@ -11,14 +11,6 @@ IDeliveryCacheProgressService::IDeliveryCacheProgressService(Core::System& syste
                                                              Kernel::KReadableEvent& event_,
                                                              const DeliveryCacheProgressImpl& impl_)
     : ServiceFramework{system_, "IDeliveryCacheProgressService"}, event{event_}, impl{impl_} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IDeliveryCacheProgressService::GetEvent>, "Get"},
-        {1, D<&IDeliveryCacheProgressService::GetImpl>, "Get"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IDeliveryCacheProgressService::~IDeliveryCacheProgressService() = default;

@@ -29,6 +29,16 @@ private:
     Result CreateNewsDatabaseService(OutInterface<INewsDatabaseService> out_interface);
     Result CreateOverwriteEventHolder(OutInterface<IOverwriteEventHolder> out_interface);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IServiceCreator::CreateNewsService>, "CreateNewsService"},
+        FunctionInfo{1, D<&IServiceCreator::CreateNewlyArrivedEventHolder>, "CreateNewlyArrivedEventHolder"},
+        FunctionInfo{2, D<&IServiceCreator::CreateNewsDataService>, "CreateNewsDataService"},
+        FunctionInfo{3, D<&IServiceCreator::CreateNewsDatabaseService>, "CreateNewsDatabaseService"},
+        FunctionInfo{4, D<&IServiceCreator::CreateOverwriteEventHolder>, "CreateOverwriteEventHolder"}
+    );
     u32 permissions;
 };
 

@@ -24,6 +24,15 @@ private:
     Result CreateApplication(Out<SharedPointer<IApplicationAccessor>>, u64 application_id);
     Result CreateSystemApplication(Out<SharedPointer<IApplicationAccessor>>, u64 application_id);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IApplicationCreator::CreateApplication>, "CreateApplication"},
+        FunctionInfo{1, nullptr, "PopLaunchRequestedApplication"},
+        FunctionInfo{10, D<&IApplicationCreator::CreateSystemApplication>, "CreateSystemApplication"},
+        FunctionInfo{100, nullptr, "PopFloatingApplicationForDevelopment"}
+    );
     WindowSystem& m_window_system;
 };
 

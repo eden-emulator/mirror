@@ -11,13 +11,6 @@
 namespace Service::PSC {
 
 IReceiverService::IReceiverService(Core::System& system_) : ServiceFramework{system_, "ovln:rcv"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&IReceiverService::OpenReceiver>, "OpenReceiver"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IReceiverService::~IReceiverService() = default;

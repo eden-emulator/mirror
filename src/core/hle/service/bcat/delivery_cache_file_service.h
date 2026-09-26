@@ -26,6 +26,15 @@ private:
     Result GetSize(Out<u64> out_size);
     Result GetDigest(Out<BcatDigest> out_digest);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IDeliveryCacheFileService::Open>, "Open"},
+        FunctionInfo{1, D<&IDeliveryCacheFileService::Read>, "Read"},
+        FunctionInfo{2, D<&IDeliveryCacheFileService::GetSize>, "GetSize"},
+        FunctionInfo{3, D<&IDeliveryCacheFileService::GetDigest>, "GetDigest"}
+    );
     FileSys::VirtualDir root;
     FileSys::VirtualFile current_file;
 };

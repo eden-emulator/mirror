@@ -41,6 +41,20 @@ private:
         Out<SharedPointer<IApplicationFunctions>> out_application_functions);
 
 private:
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IApplicationProxy::GetCommonStateGetter>, "GetCommonStateGetter"},
+        FunctionInfo{1, D<&IApplicationProxy::GetSelfController>, "GetSelfController"},
+        FunctionInfo{2, D<&IApplicationProxy::GetWindowController>, "GetWindowController"},
+        FunctionInfo{3, D<&IApplicationProxy::GetAudioController>, "GetAudioController"},
+        FunctionInfo{4, D<&IApplicationProxy::GetDisplayController>, "GetDisplayController"},
+        FunctionInfo{10, D<&IApplicationProxy::GetProcessWindingController>, "GetProcessWindingController"},
+        FunctionInfo{11, D<&IApplicationProxy::GetLibraryAppletCreator>, "GetLibraryAppletCreator"},
+        FunctionInfo{20, D<&IApplicationProxy::GetApplicationFunctions>, "GetApplicationFunctions"},
+        FunctionInfo{1000, D<&IApplicationProxy::GetDebugFunctions>, "GetDebugFunctions"}
+    );
     WindowSystem& m_window_system;
     Kernel::KProcess* const m_process;
     const std::shared_ptr<Applet> m_applet;

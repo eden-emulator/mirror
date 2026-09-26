@@ -13,7 +13,10 @@ namespace Service::LDN {
 ISfServiceMonitor::ISfServiceMonitor(Core::System& system_)
     : ServiceFramework{system_, "ISfServiceMonitor"} {
     // clang-format off
-        static const FunctionInfo functions[] = {
+        FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, C<&ISfServiceMonitor::Initialize>, "Initialize"},
             FunctionInfo{256, nullptr, "AttachNetworkInterfaceStateChangeEvent"},
             FunctionInfo{264, nullptr, "GetNetworkInterfaceLastError"},
@@ -27,10 +30,7 @@ ISfServiceMonitor::ISfServiceMonitor(Core::System& system_)
             FunctionInfo{320, nullptr, "GetLinkLevel"},
             FunctionInfo{328, nullptr, "AttachJoinEvent"},
             FunctionInfo{336, nullptr, "GetMembers"}
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
+        );
 }
 
 ISfServiceMonitor::~ISfServiceMonitor() = default;

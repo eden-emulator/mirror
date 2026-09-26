@@ -189,6 +189,58 @@ private:
 
 protected:
     std::unique_lock<std::mutex> LockService() noexcept override;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &BSD_USA::RegisterClient, "RegisterClient"},
+        FunctionInfo{1, &BSD_USA::StartMonitoring, "StartMonitoring"},
+        FunctionInfo{2, &BSD_USA::Socket, "Socket"},
+        FunctionInfo{3, &BSD_USA::SocketExempt, "SocketExempt"},
+        FunctionInfo{4, nullptr, "Open"},
+        FunctionInfo{5, &BSD_USA::Select, "Select"},
+        FunctionInfo{6, &BSD_USA::Poll, "Poll"},
+        FunctionInfo{7, nullptr, "Sysctl"},
+        FunctionInfo{8, &BSD_USA::Recv, "Recv"},
+        FunctionInfo{9, &BSD_USA::RecvFrom, "RecvFrom"},
+        FunctionInfo{10, &BSD_USA::Send, "Send"},
+        FunctionInfo{11, &BSD_USA::SendTo, "SendTo"},
+        FunctionInfo{12, &BSD_USA::Accept, "Accept"},
+        FunctionInfo{13, &BSD_USA::Bind, "Bind"},
+        FunctionInfo{14, &BSD_USA::Connect, "Connect"},
+        FunctionInfo{15, &BSD_USA::GetPeerName, "GetPeerName"},
+        FunctionInfo{16, &BSD_USA::GetSockName, "GetSockName"},
+        FunctionInfo{17, &BSD_USA::GetSockOpt, "GetSockOpt"},
+        FunctionInfo{18, &BSD_USA::Listen, "Listen"},
+        FunctionInfo{19, nullptr, "Ioctl"},
+        FunctionInfo{20, &BSD_USA::Fcntl, "Fcntl"},
+        FunctionInfo{21, &BSD_USA::SetSockOpt, "SetSockOpt"},
+        FunctionInfo{22, &BSD_USA::Shutdown, "Shutdown"},
+        FunctionInfo{23, nullptr, "ShutdownAllSockets"},
+        FunctionInfo{24, &BSD_USA::Write, "Write"},
+        FunctionInfo{25, &BSD_USA::Read, "Read"},
+        FunctionInfo{26, &BSD_USA::Close, "Close"},
+        FunctionInfo{27, &BSD_USA::DuplicateSocket, "DuplicateSocket"},
+        FunctionInfo{28, nullptr, "GetResourceStatistics"},
+        FunctionInfo{29, nullptr, "RecvMMsg"}, //3.0.0+
+        FunctionInfo{30, nullptr, "SendMMsg"}, //3.0.0+
+        FunctionInfo{31, &BSD_USA::EventFd, "EventFd"}, //7.0.0+
+        FunctionInfo{32, nullptr, "RegisterResourceStatisticsName"}, //7.0.0+
+        FunctionInfo{33, nullptr, "RegisterClientShared"}, //10.0.0+
+        FunctionInfo{34, nullptr, "GetSocketStatistics"}, //15.0.0+
+        FunctionInfo{35, nullptr, "NifIoctl"}, //17.0.0+
+        FunctionInfo{36, nullptr, "Unknown36"}, //18.0.0+
+        FunctionInfo{37, nullptr, "Unknown37"}, //18.0.0+
+        FunctionInfo{38, nullptr, "Unknown38"}, //18.0.0+
+        FunctionInfo{39, nullptr, "Unknown39"}, //20.0.0+
+        FunctionInfo{40, nullptr, "Unknown40"}, //20.0.0+
+        FunctionInfo{41, nullptr, "Unknown41"}, //21.0.0+
+        FunctionInfo{42, nullptr, "Unknown42"}, //21.0.0+
+        FunctionInfo{43, nullptr, "Unknown43"}, //21.0.0+
+        FunctionInfo{200, nullptr, "SetThreadCoreMask"}, //15.0.0+
+        FunctionInfo{201, nullptr, "GetThreadCoreMask"} //15.0.0+
+    );
     bool is_user = false;
 };
 
@@ -196,12 +248,41 @@ class BSDCFG final : public ServiceFramework<BSDCFG> {
 public:
     explicit BSDCFG(Core::System& system_, const char *name);
     ~BSDCFG() override;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "SetIfUp"},
+        FunctionInfo{1, nullptr, "SetIfUpWithEvent"},
+        FunctionInfo{2, nullptr, "CancelIf"},
+        FunctionInfo{3, nullptr, "SetIfDown"},
+        FunctionInfo{4, nullptr, "GetIfState"},
+        FunctionInfo{5, nullptr, "DhcpRenew"},
+        FunctionInfo{6, nullptr, "AddStaticArpEntry"},
+        FunctionInfo{7, nullptr, "RemoveArpEntry"},
+        FunctionInfo{8, nullptr, "LookupArpEntry"},
+        FunctionInfo{9, nullptr, "LookupArpEntry2"},
+        FunctionInfo{10, nullptr, "ClearArpEntries"},
+        FunctionInfo{11, nullptr, "ClearArpEntries2"},
+        FunctionInfo{12, nullptr, "PrintArpEntries"},
+        FunctionInfo{13, nullptr, "Unknown13"},
+        FunctionInfo{14, nullptr, "Unknown14"},
+        FunctionInfo{15, nullptr, "Unknown15"}
+    );
 };
 
 class BSD_NU final : public ServiceFramework<BSD_NU> {
 public:
     explicit BSD_NU(Core::System& system_);
     ~BSD_NU() override;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "CreateUserService"}
+    );
 };
 
 } // namespace Service::Sockets

@@ -163,6 +163,16 @@ class IRS_SYS final : public ServiceFramework<IRS_SYS> {
 public:
     explicit IRS_SYS(Core::System& system);
     ~IRS_SYS() override;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{500, nullptr, "SetAppletResourceUserId"},
+        FunctionInfo{501, nullptr, "RegisterAppletResourceUserId"},
+        FunctionInfo{502, nullptr, "UnregisterAppletResourceUserId"},
+        FunctionInfo{503, nullptr, "EnableAppletToGetInput"}
+    );
 };
 
 } // namespace Service::IRS

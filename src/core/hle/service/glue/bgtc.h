@@ -23,12 +23,45 @@ class ITaskService final : public ServiceFramework<ITaskService> {
 public:
     explicit ITaskService(Core::System& system_);
     ~ITaskService() override;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{1, nullptr, "NotifyTaskStarting"},
+        FunctionInfo{2, nullptr, "NotifyTaskFinished"},
+        FunctionInfo{3, nullptr, "GetTriggerEvent"},
+        FunctionInfo{4, nullptr, "IsInHalfAwake"},
+        FunctionInfo{5, nullptr, "NotifyClientName"},
+        FunctionInfo{6, nullptr, "IsInFullAwake"},
+        FunctionInfo{11, nullptr, "ScheduleTask"},
+        FunctionInfo{12, nullptr, "GetScheduledTaskInterval"},
+        FunctionInfo{13, nullptr, "UnscheduleTask"},
+        FunctionInfo{14, nullptr, "GetScheduleEvent"},
+        FunctionInfo{15, nullptr, "SchedulePeriodicTask"},
+        FunctionInfo{16, nullptr, "Unknown16"},
+        FunctionInfo{101, nullptr, "GetOperationMode"},
+        FunctionInfo{102, nullptr, "WillDisconnectNetworkWhenEnteringSleep"},
+        FunctionInfo{103, nullptr, "WillStayHalfAwakeInsteadSleep"},
+        FunctionInfo{200, nullptr, "Unknown200"}
+    );
 };
 
 class BGTC_SC final : public ServiceFramework<BGTC_SC> {
 public:
     explicit BGTC_SC(Core::System& system_);
     ~BGTC_SC() override;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{1, nullptr, "GetState"},
+        FunctionInfo{2, nullptr, "GetStateChangedEvent"},
+        FunctionInfo{3, nullptr, "NotifyEnteringHalfAwake"},
+        FunctionInfo{4, nullptr, "NotifyLeavingHalfAwake"},
+        FunctionInfo{5, nullptr, "SetIsUsingSleepUnsupportedDevices"}
+    );
 };
 
 } // namespace Service::Glue

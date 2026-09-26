@@ -16,12 +16,12 @@ INativeHandleHolder::INativeHandleHolder(Core::System& system_)
     : ServiceFramework{system_, "INativeHandleHolder"}, service_context{system_, "OLSC"} {
     event = service_context.CreateEvent("OLSC::INativeHandleHolder");
     // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, D<&INativeHandleHolder::GetNativeHandle>, "GetNativeHandle"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&INativeHandleHolder::GetNativeHandle>, "GetNativeHandle"}
+    );
 }
 
 INativeHandleHolder::~INativeHandleHolder() {

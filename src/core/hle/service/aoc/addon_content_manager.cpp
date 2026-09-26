@@ -57,35 +57,6 @@ static std::vector<u64> AccumulateAOCTitleIDs(Core::System& system) {
 IAddOnContentManager::IAddOnContentManager(Core::System& system_)
     : ServiceFramework{system_, "aoc:u"}, add_on_content{AccumulateAOCTitleIDs(system)},
       service_context{system_, "aoc:u"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "CountAddOnContentByApplicationId"},
-        {1, nullptr, "ListAddOnContentByApplicationId"},
-        {2, D<&IAddOnContentManager::CountAddOnContent>, "CountAddOnContent"},
-        {3, D<&IAddOnContentManager::ListAddOnContent>, "ListAddOnContent"},
-        {4, nullptr, "GetAddOnContentBaseIdByApplicationId"},
-        {5, D<&IAddOnContentManager::GetAddOnContentBaseId>, "GetAddOnContentBaseId"},
-        {6, nullptr, "PrepareAddOnContentByApplicationId"},
-        {7, D<&IAddOnContentManager::PrepareAddOnContent>, "PrepareAddOnContent"},
-        {8, D<&IAddOnContentManager::GetAddOnContentListChangedEvent>, "GetAddOnContentListChangedEvent"},
-        {9, nullptr, "GetAddOnContentLostErrorCode"},
-        {10, D<&IAddOnContentManager::GetAddOnContentListChangedEventWithProcessId>, "GetAddOnContentListChangedEventWithProcessId"},
-        {11, D<&IAddOnContentManager::NotifyMountAddOnContent>, "NotifyMountAddOnContent"},
-        {12, D<&IAddOnContentManager::NotifyUnmountAddOnContent>, "NotifyUnmountAddOnContent"},
-        {13, nullptr, "IsAddOnContentMountedForDebug"},
-        {50, D<&IAddOnContentManager::CheckAddOnContentMountStatus>, "CheckAddOnContentMountStatus"},
-        {100, D<&IAddOnContentManager::CreateEcPurchasedEventManager>, "CreateEcPurchasedEventManager"},
-        {101, D<&IAddOnContentManager::CreatePermanentEcPurchasedEventManager>, "CreatePermanentEcPurchasedEventManager"},
-        {110, nullptr, "CreateContentsServiceManager"},
-        {200, nullptr, "SetRequiredAddOnContentsOnContentsAvailabilityTransition"},
-        {300, nullptr, "SetupHostAddOnContent"},
-        {301, nullptr, "GetRegisteredAddOnContentPath"},
-        {302, nullptr, "UpdateCachedList"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
-
     aoc_change_event = service_context.CreateEvent("GetAddOnContentListChanged:Event");
 }
 

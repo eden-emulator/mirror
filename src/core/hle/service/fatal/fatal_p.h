@@ -16,8 +16,8 @@ public:
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-        {0, nullptr, "GetFatalEvent"},
-        {10, nullptr, "GetFatalContext"}
+        FunctionInfo{0, nullptr, "GetFatalEvent"},
+        FunctionInfo{10, nullptr, "GetFatalContext"}
     );
 };
 

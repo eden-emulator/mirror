@@ -16,52 +16,6 @@ namespace Service::Capture {
 IAlbumAccessorService::IAlbumAccessorService(Core::System& system_,
                                              std::shared_ptr<AlbumManager> album_manager)
     : ServiceFramework{system_, "caps:a"}, manager{album_manager} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "GetAlbumFileCount"},
-        {1, C<&IAlbumAccessorService::GetAlbumFileList>, "GetAlbumFileList"},
-        {2, nullptr, "LoadAlbumFile"},
-        {3, C<&IAlbumAccessorService::DeleteAlbumFile>, "DeleteAlbumFile"},
-        {4, nullptr, "StorageCopyAlbumFile"},
-        {5, C<&IAlbumAccessorService::IsAlbumMounted>, "IsAlbumMounted"},
-        {6, nullptr, "GetAlbumUsage"},
-        {7, nullptr, "GetAlbumFileSize"},
-        {8, nullptr, "LoadAlbumFileThumbnail"},
-        {9, nullptr, "LoadAlbumScreenShotImage"},
-        {10, nullptr, "LoadAlbumScreenShotThumbnailImage"},
-        {11, nullptr, "GetAlbumEntryFromApplicationAlbumEntry"},
-        {12, nullptr, "LoadAlbumScreenShotImageEx"},
-        {13, nullptr, "LoadAlbumScreenShotThumbnailImageEx"},
-        {14, nullptr, "LoadAlbumScreenShotImageEx0"},
-        {15, nullptr, "GetAlbumUsage3"},
-        {16, nullptr, "GetAlbumMountResult"},
-        {17, nullptr, "GetAlbumUsage16"},
-        {18, C<&IAlbumAccessorService::Unknown18>, "Unknown18"},
-        {19, nullptr, "Unknown19"},
-        {100, nullptr, "GetAlbumFileCountEx0"},
-        {101, C<&IAlbumAccessorService::GetAlbumFileListEx0>, "GetAlbumFileListEx0"},
-        {202, nullptr, "SaveEditedScreenShot"},
-        {301, nullptr, "GetLastThumbnail"},
-        {302, nullptr, "GetLastOverlayMovieThumbnail"},
-        {401,  C<&IAlbumAccessorService::GetAutoSavingStorage>, "GetAutoSavingStorage"},
-        {501, nullptr, "GetRequiredStorageSpaceSizeToCopyAll"},
-        {1001, nullptr, "LoadAlbumScreenShotThumbnailImageEx0"},
-        {1002, C<&IAlbumAccessorService::LoadAlbumScreenShotImageEx1>, "LoadAlbumScreenShotImageEx1"},
-        {1003, C<&IAlbumAccessorService::LoadAlbumScreenShotThumbnailImageEx1>, "LoadAlbumScreenShotThumbnailImageEx1"},
-        {8001, nullptr, "ForceAlbumUnmounted"},
-        {8002, nullptr, "ResetAlbumMountStatus"},
-        {8011, nullptr, "RefreshAlbumCache"},
-        {8012, nullptr, "GetAlbumCache"},
-        {8013, nullptr, "GetAlbumCacheEx"},
-        {8021, nullptr, "GetAlbumEntryFromApplicationAlbumEntryAruid"},
-        {10011, nullptr, "SetInternalErrorConversionEnabled"},
-        {50000, nullptr, "LoadMakerNoteInfoForDebug"},
-        {50011, C<&IAlbumAccessorService::GetAlbumAccessResultForDebug>, "GetAlbumAccessResultForDebug"},
-        {60002, nullptr, "OpenAccessorSession"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IAlbumAccessorService::~IAlbumAccessorService() = default;

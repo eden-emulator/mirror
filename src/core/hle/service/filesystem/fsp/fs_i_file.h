@@ -27,6 +27,19 @@ private:
     Result Flush();
     Result SetSize(s64 size);
     Result GetSize(Out<s64> out_size);
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IFile::Read>, "Read"},
+        FunctionInfo{1, D<&IFile::Write>, "Write"},
+        FunctionInfo{2, D<&IFile::Flush>, "Flush"},
+        FunctionInfo{3, D<&IFile::SetSize>, "SetSize"},
+        FunctionInfo{4, D<&IFile::GetSize>, "GetSize"},
+        FunctionInfo{5, nullptr, "OperateRange"},
+        FunctionInfo{6, nullptr, "OperateRangeWithBuffer"}
+    );
 };
 
 } // namespace Service::FileSystem

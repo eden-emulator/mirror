@@ -9,15 +9,6 @@ namespace Service::NS {
 
 IDocumentInterface::IDocumentInterface(Core::System& system_)
     : ServiceFramework{system_, "IDocumentInterface"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {21, nullptr, "GetApplicationContentPath"},
-        {23, D<&IDocumentInterface::ResolveApplicationContentPath>, "ResolveApplicationContentPath"},
-        {92, D<&IDocumentInterface::GetRunningApplicationProgramId>, "GetRunningApplicationProgramId"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IDocumentInterface::~IDocumentInterface() = default;

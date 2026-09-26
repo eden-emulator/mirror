@@ -16,8 +16,14 @@ public:
     ~ISenderService() override;
 
 private:
-    Result OpenSender(Out<SharedPointer<ISender>> out_sender, u32 sender_id,
-                      std::array<u64, 2> data);
+    Result OpenSender(Out<SharedPointer<ISender>> out_sender, u32 sender_id, std::array<u64, 2> data);
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&ISenderService::OpenSender>, "OpenSender"}
+    );
 };
 
 } // namespace Service::PSC
