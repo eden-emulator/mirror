@@ -26,14 +26,6 @@ std::string_view ToStringView(std::span<const char> buf) {
 
 INewsDataService::INewsDataService(Core::System& system_)
     : ServiceFramework{system_, "INewsDataService"} {
-    static const FunctionInfo functions[] = {
-        {0, D<&INewsDataService::Open>, "Open"},
-        {1, D<&INewsDataService::OpenWithNewsRecordV1>, "OpenWithNewsRecordV1"},
-        {2, D<&INewsDataService::Read>, "Read"},
-        {3, D<&INewsDataService::GetSize>, "GetSize"},
-        {1001, D<&INewsDataService::OpenWithNewsRecord>, "OpenWithNewsRecord"},
-    };
-    RegisterHandlers(functions);
 }
 
 INewsDataService::~INewsDataService() = default;

@@ -13,13 +13,6 @@ IHOSBinderDriver::IHOSBinderDriver(Core::System& system_,
                                    std::shared_ptr<SurfaceFlinger> surface_flinger)
     : ServiceFramework{system_, "IHOSBinderDriver"}, m_server(server),
       m_surface_flinger(surface_flinger) {
-    static const FunctionInfo functions[] = {
-        {0, C<&IHOSBinderDriver::TransactParcel>, "TransactParcel"},
-        {1, C<&IHOSBinderDriver::AdjustRefcount>, "AdjustRefcount"},
-        {2, C<&IHOSBinderDriver::GetNativeHandle>, "GetNativeHandle"},
-        {3, C<&IHOSBinderDriver::TransactParcelAuto>, "TransactParcelAuto"},
-    };
-    RegisterHandlers(functions);
 }
 
 IHOSBinderDriver::~IHOSBinderDriver() = default;

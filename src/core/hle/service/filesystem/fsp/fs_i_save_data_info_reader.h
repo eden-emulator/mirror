@@ -42,6 +42,12 @@ private:
     void FindNormalSaves(FileSys::SaveDataSpaceId space, const FileSys::VirtualDir& type);
     void FindTemporaryStorageSaves(FileSys::SaveDataSpaceId space, const FileSys::VirtualDir& type);
 
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {0, D<&ISaveDataInfoReader::ReadSaveDataInfo>, "ReadSaveDataInfo"}
+    );
     std::shared_ptr<SaveDataController> save_data_controller;
     std::vector<SaveDataInfo> info;
     u64 next_entry_index = 0;

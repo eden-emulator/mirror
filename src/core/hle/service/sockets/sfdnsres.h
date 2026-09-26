@@ -26,6 +26,28 @@ private:
     void GetAddrInfoRequest(HLERequestContext& ctx);
     void GetAddrInfoRequestWithOptions(HLERequestContext& ctx);
     void ResolverSetOptionRequest(HLERequestContext& ctx);
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {0, nullptr, "SetDnsAddressesPrivateRequest"},
+        {1, nullptr, "GetDnsAddressPrivateRequest"},
+        {2, &SFDNSRES::GetHostByNameRequest, "GetHostByNameRequest"},
+        {3, nullptr, "GetHostByAddrRequest"},
+        {4, nullptr, "GetHostStringErrorRequest"},
+        {5, &SFDNSRES::GetGaiStringErrorRequest, "GetGaiStringErrorRequest"},
+        {6, &SFDNSRES::GetAddrInfoRequest, "GetAddrInfoRequest"},
+        {7, nullptr, "GetNameInfoRequest"},
+        {8, nullptr, "RequestCancelHandleRequest"},
+        {9, nullptr, "CancelRequest"},
+        {10, &SFDNSRES::GetHostByNameRequestWithOptions, "GetHostByNameRequestWithOptions"},
+        {11, nullptr, "GetHostByAddrRequestWithOptions"},
+        {12, &SFDNSRES::GetAddrInfoRequestWithOptions, "GetAddrInfoRequestWithOptions"},
+        {13, nullptr, "GetNameInfoRequestWithOptions"},
+        {14, &SFDNSRES::ResolverSetOptionRequest, "ResolverSetOptionRequest"},
+        {15, nullptr, "ResolverGetOptionRequest"}
+    );
 };
 
 class DNS_PRIV final : public ServiceFramework<DNS_PRIV> {

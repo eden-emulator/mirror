@@ -15,15 +15,6 @@ namespace Service::VI {
 IManagerRootService::IManagerRootService(Core::System& system_,
                                          std::shared_ptr<Container> container)
     : ServiceFramework{system_, "vi:m"}, m_container{std::move(container)} {
-    static const FunctionInfo functions[] = {
-        {2, C<&IManagerRootService::GetDisplayService>, "GetDisplayService"},
-        {3, nullptr, "GetDisplayServiceWithProxyNameExchange"},
-        {100, nullptr, "PrepareFatal"},
-        {101, nullptr, "ShowFatal"},
-        {102, nullptr, "DrawFatalRectangle"},
-        {103, nullptr, "DrawFatalText32"},
-    };
-    RegisterHandlers(functions);
 }
 
 IManagerRootService::~IManagerRootService() = default;

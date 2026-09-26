@@ -58,6 +58,28 @@ public:
     Result GetFileSystemAttribute(Out<FileSys::FileSystemAttribute> out_attribute);
 
 private:
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {0, D<&IFileSystem::CreateFile>, "CreateFile"},
+        {1, D<&IFileSystem::DeleteFile>, "DeleteFile"},
+        {2, D<&IFileSystem::CreateDirectory>, "CreateDirectory"},
+        {3, D<&IFileSystem::DeleteDirectory>, "DeleteDirectory"},
+        {4, D<&IFileSystem::DeleteDirectoryRecursively>, "DeleteDirectoryRecursively"},
+        {5, D<&IFileSystem::RenameFile>, "RenameFile"},
+        {6, D<&IFileSystem::RenameDirectory>, "RenameDirectory"},
+        {7, D<&IFileSystem::GetEntryType>, "GetEntryType"},
+        {8, D<&IFileSystem::OpenFile>, "OpenFile"},
+        {9, D<&IFileSystem::OpenDirectory>, "OpenDirectory"},
+        {10, D<&IFileSystem::Commit>, "Commit"},
+        {11, D<&IFileSystem::GetFreeSpaceSize>, "GetFreeSpaceSize"},
+        {12, D<&IFileSystem::GetTotalSpaceSize>, "GetTotalSpaceSize"},
+        {13, D<&IFileSystem::CleanDirectoryRecursively>, "CleanDirectoryRecursively"},
+        {14, D<&IFileSystem::GetFileTimeStampRaw>, "GetFileTimeStampRaw"},
+        {15, nullptr, "QueryEntry"},
+        {16, D<&IFileSystem::GetFileSystemAttribute>, "GetFileSystemAttribute"}
+    );
     std::unique_ptr<FileSys::Fsa::IFileSystem> backend;
     SizeGetter size_getter;
 };

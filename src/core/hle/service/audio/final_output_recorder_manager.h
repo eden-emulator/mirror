@@ -15,6 +15,13 @@ class IFinalOutputRecorderManager final : public ServiceFramework<IFinalOutputRe
 public:
     explicit IFinalOutputRecorderManager(Core::System& system_);
     ~IFinalOutputRecorderManager() override;
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {0, nullptr, "OpenFinalOutputRecorder"}
+    );
 };
 
 } // namespace Service::Audio

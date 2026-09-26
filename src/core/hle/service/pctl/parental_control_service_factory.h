@@ -23,6 +23,13 @@ public:
                                           ClientProcessId process_id);
 
 private:
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        {0, D<&IParentalControlServiceFactory::CreateService>, "CreateService"},
+        {1, D<&IParentalControlServiceFactory::CreateServiceWithoutInitialize>, "CreateServiceWithoutInitialize"}
+    );
     Capability capability{};
 };
 
