@@ -12,13 +12,8 @@
 namespace Service::VI {
 
 ISystemRootService::ISystemRootService(Core::System& system_, std::shared_ptr<Container> container)
-    : ServiceFramework{system_, "vi:s"}, m_container{std::move(container)} {
-    static const FunctionInfo functions[] = {
-        {1, C<&ISystemRootService::GetDisplayService>, "GetDisplayService"},
-        {3, nullptr, "GetDisplayServiceWithProxyNameExchange"},
-    };
-    RegisterHandlers(functions);
-}
+    : ServiceFramework{system_, "vi:s"}, m_container{std::move(container)}
+{}
 
 ISystemRootService::~ISystemRootService() = default;
 

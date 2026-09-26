@@ -12,17 +12,6 @@
 namespace Service::Account {
 IAsyncContext::IAsyncContext(Core::System& system_)
     : ServiceFramework{system_, "IAsyncContext"}, service_context{system_, "IAsyncContext"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, &IAsyncContext::GetSystemEvent, "GetSystemEvent"},
-        {1, &IAsyncContext::Cancel, "Cancel"},
-        {2, &IAsyncContext::HasDone, "HasDone"},
-        {3, &IAsyncContext::GetResult, "GetResult"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
-
     completion_event = service_context.CreateEvent("IAsyncContext:CompletionEvent");
 }
 

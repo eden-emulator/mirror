@@ -12,62 +12,9 @@
 
 namespace Service::VI {
 
-ISystemDisplayService::ISystemDisplayService(Core::System& system_,
-                                             std::shared_ptr<Container> container)
-    : ServiceFramework{system_, "ISystemDisplayService"}, m_container{std::move(container)} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {1200, nullptr, "GetZOrderCountMin"},
-        {1202, nullptr, "GetZOrderCountMax"},
-        {1203, nullptr, "GetDisplayLogicalResolution"},
-        {1204, nullptr, "SetDisplayMagnification"},
-        {2201, nullptr, "SetLayerPosition"},
-        {2203, nullptr, "SetLayerSize"},
-        {2204, C<&ISystemDisplayService::GetLayerZ>, "GetLayerZ"},
-        {2205, C<&ISystemDisplayService::SetLayerZ>, "SetLayerZ"},
-        {2207, C<&ISystemDisplayService::SetLayerVisibility>, "SetLayerVisibility"},
-        {2209, nullptr, "SetLayerAlpha"},
-        {2210, nullptr, "SetLayerPositionAndSize"},
-        {2312, nullptr, "CreateStrayLayer"},
-        {2400, nullptr, "OpenIndirectLayer"},
-        {2401, nullptr, "CloseIndirectLayer"},
-        {2402, nullptr, "FlipIndirectLayer"},
-        {3000, C<&ISystemDisplayService::ListDisplayModes>, "ListDisplayModes"},
-        {3001, nullptr, "ListDisplayRgbRanges"},
-        {3002, nullptr, "ListDisplayContentTypes"},
-        {3200, C<&ISystemDisplayService::GetDisplayMode>, "GetDisplayMode"},
-        {3201, nullptr, "SetDisplayMode"},
-        {3202, nullptr, "GetDisplayUnderscan"},
-        {3203, nullptr, "SetDisplayUnderscan"},
-        {3204, nullptr, "GetDisplayContentType"},
-        {3205, nullptr, "SetDisplayContentType"},
-        {3206, nullptr, "GetDisplayRgbRange"},
-        {3207, nullptr, "SetDisplayRgbRange"},
-        {3208, nullptr, "GetDisplayCmuMode"},
-        {3209, nullptr, "SetDisplayCmuMode"},
-        {3210, nullptr, "GetDisplayContrastRatio"},
-        {3211, nullptr, "SetDisplayContrastRatio"},
-        {3214, nullptr, "GetDisplayGamma"},
-        {3215, nullptr, "SetDisplayGamma"},
-        {3216, nullptr, "GetDisplayCmuLuma"},
-        {3217, nullptr, "SetDisplayCmuLuma"},
-        {3218, nullptr, "SetDisplayCrcMode"},
-        {6013, nullptr, "GetLayerPresentationSubmissionTimestamps"},
-        {8225, C<&ISystemDisplayService::GetSharedBufferMemoryHandleId>, "GetSharedBufferMemoryHandleId"},
-        {8250, C<&ISystemDisplayService::OpenSharedLayer>, "OpenSharedLayer"},
-        {8251, nullptr, "CloseSharedLayer"},
-        {8252, C<&ISystemDisplayService::ConnectSharedLayer>, "ConnectSharedLayer"},
-        {8253, nullptr, "DisconnectSharedLayer"},
-        {8254, C<&ISystemDisplayService::AcquireSharedFrameBuffer>, "AcquireSharedFrameBuffer"},
-        {8255, C<&ISystemDisplayService::PresentSharedFrameBuffer>, "PresentSharedFrameBuffer"},
-        {8256, C<&ISystemDisplayService::GetSharedFrameBufferAcquirableEvent>, "GetSharedFrameBufferAcquirableEvent"},
-        {8257, nullptr, "FillSharedFrameBufferColor"},
-        {8258, C<&ISystemDisplayService::CancelSharedFrameBuffer>, "CancelSharedFrameBuffer"},
-        {9000, nullptr, "GetDp2hdmiController"},
-    };
-    // clang-format on
-    RegisterHandlers(functions);
-}
+ISystemDisplayService::ISystemDisplayService(Core::System& system_, std::shared_ptr<Container> container)
+    : ServiceFramework{system_, "ISystemDisplayService"}, m_container{std::move(container)}
+{}
 
 ISystemDisplayService::~ISystemDisplayService() = default;
 
