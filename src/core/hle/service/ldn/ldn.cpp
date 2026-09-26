@@ -19,13 +19,10 @@ namespace Service::LDN {
 class IClientProcessMonitor final
     : public ServiceFramework<IClientProcessMonitor> {
 public:
-    explicit IClientProcessMonitor(Core::System& system_)
-        : ServiceFramework{system_, "IClientProcessMonitor"} {}
+    explicit IClientProcessMonitor(Core::System& system_) : ServiceFramework{system_, "IClientProcessMonitor"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, D<&IClientProcessMonitor::RegisterClient>, "RegisterClient"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
     ~IClientProcessMonitor() override = default;
 private:
@@ -33,6 +30,10 @@ private:
         LOG_WARNING(Service_LDN, "(STUBBED) called");
         R_SUCCEED();
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IClientProcessMonitor::RegisterClient>, "RegisterClient"}
+    );
 };
 
 class IMonitorServiceCreator final : public ServiceFramework<IMonitorServiceCreator> {
@@ -40,11 +41,8 @@ public:
     explicit IMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:m"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, C<&IMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
-
 private:
     Result CreateMonitorService(OutInterface<IMonitorService> out_interface) {
         LOG_DEBUG(Service_LDN, "called");
@@ -52,6 +50,10 @@ private:
         *out_interface = std::make_shared<IMonitorService>(system);
         R_SUCCEED();
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
+    );
 };
 
 class ISystemServiceCreator final : public ServiceFramework<ISystemServiceCreator> {
@@ -59,12 +61,8 @@ public:
     explicit ISystemServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:s"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, C<&ISystemServiceCreator::CreateSystemLocalCommunicationService>, "CreateSystemLocalCommunicationService"},
-            FunctionInfo{1, C<&ISystemServiceCreator::CreateClientProcessMonitor>, "CreateClientProcessMonitor"} // 18.0.0+
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
-
 private:
     Result CreateSystemLocalCommunicationService(
         OutInterface<ISystemLocalCommunicationService> out_interface) {
@@ -81,6 +79,11 @@ private:
         *out_interface = std::make_shared<IClientProcessMonitor>(system);
         R_SUCCEED();
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&ISystemServiceCreator::CreateSystemLocalCommunicationService>, "CreateSystemLocalCommunicationService"},
+        FunctionInfo{1, C<&ISystemServiceCreator::CreateClientProcessMonitor>, "CreateClientProcessMonitor"} // 18.0.0+
+    );
 };
 
 class IUserServiceCreator final : public ServiceFramework<IUserServiceCreator> {
@@ -88,12 +91,8 @@ public:
     explicit IUserServiceCreator(Core::System& system_) : ServiceFramework{system_, "ldn:u"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, D<&IUserServiceCreator::CreateUserLocalCommunicationService>, "CreateUserLocalCommunicationService"},
-            FunctionInfo{1, D<&IUserServiceCreator::CreateClientProcessMonitor>, "CreateClientProcessMonitor"} // 18.0.0+
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
-
 private:
     Result CreateUserLocalCommunicationService(
         OutInterface<IUserLocalCommunicationService> out_interface) {
@@ -110,20 +109,20 @@ private:
         *out_interface = std::make_shared<IClientProcessMonitor>(system);
         R_SUCCEED();
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IUserServiceCreator::CreateUserLocalCommunicationService>, "CreateUserLocalCommunicationService"},
+        FunctionInfo{1, D<&IUserServiceCreator::CreateClientProcessMonitor>, "CreateClientProcessMonitor"} // 18.0.0+
+    );
 };
 
 class ISfServiceCreator final : public ServiceFramework<ISfServiceCreator> {
 public:
-    explicit ISfServiceCreator(Core::System& system_, bool is_system_, const char* name_)
-        : ServiceFramework{system_, name_}, is_system{is_system_} {}
+    explicit ISfServiceCreator(Core::System& system_, bool is_system_, const char* name_) : ServiceFramework{system_, name_}, is_system{is_system_} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, C<&ISfServiceCreator::CreateNetworkService>, "CreateNetworkService"},
-            FunctionInfo{8, C<&ISfServiceCreator::CreateNetworkServiceMonitor>, "CreateNetworkServiceMonitor"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
-
 private:
     Result CreateNetworkService(OutInterface<ISfService> out_interface, u32 input,
                                 u64 reserved_input) {
@@ -142,6 +141,10 @@ private:
         R_SUCCEED();
     }
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&ISfServiceCreator::CreateNetworkService>, "CreateNetworkService"},
+        FunctionInfo{8, C<&ISfServiceCreator::CreateNetworkServiceMonitor>, "CreateNetworkServiceMonitor"}
+    );
     bool is_system{};
 };
 
@@ -150,11 +153,8 @@ public:
     explicit ISfMonitorServiceCreator(Core::System& system_) : ServiceFramework{system_, "lp2p:m"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, C<&ISfMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
-
 private:
     Result CreateMonitorService(OutInterface<ISfMonitorService> out_interface, u64 reserved_input) {
         LOG_INFO(Service_LDN, "called, reserved_input={}", reserved_input);
@@ -162,6 +162,10 @@ private:
         *out_interface = std::make_shared<ISfMonitorService>(system);
         R_SUCCEED();
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&ISfMonitorServiceCreator::CreateMonitorService>, "CreateMonitorService"}
+    );
 };
 
 void LoopProcess(Core::System& system) {
@@ -171,12 +175,9 @@ void LoopProcess(Core::System& system) {
     server_manager->RegisterNamedService("ldn:s", std::make_shared<ISystemServiceCreator>(system));
     server_manager->RegisterNamedService("ldn:u", std::make_shared<IUserServiceCreator>(system));
 
-    server_manager->RegisterNamedService(
-        "lp2p:app", std::make_shared<ISfServiceCreator>(system, false, "lp2p:app"));
-    server_manager->RegisterNamedService(
-        "lp2p:sys", std::make_shared<ISfServiceCreator>(system, true, "lp2p:sys"));
-    server_manager->RegisterNamedService("lp2p:m",
-                                         std::make_shared<ISfMonitorServiceCreator>(system));
+    server_manager->RegisterNamedService("lp2p:app", std::make_shared<ISfServiceCreator>(system, false, "lp2p:app"));
+    server_manager->RegisterNamedService("lp2p:sys", std::make_shared<ISfServiceCreator>(system, true, "lp2p:sys"));
+    server_manager->RegisterNamedService("lp2p:m", std::make_shared<ISfMonitorServiceCreator>(system));
 
     ServerManager::RunServer(std::move(server_manager));
 }

@@ -19,8 +19,7 @@ class IBtm final : public ServiceFramework<IBtm> {
 public:
     explicit IBtm(Core::System& system_) : ServiceFramework{system_, "btm"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "GetState"},
             FunctionInfo{1, nullptr, "GetHostDeviceProperty"},
             FunctionInfo{2, nullptr, "AcquireDeviceConditionEvent"},
@@ -109,6 +108,8 @@ public:
             FunctionInfo{116, nullptr, "SetAudioSinkVolume"}, //15.0.0+
             FunctionInfo{117, nullptr, "GetAudioSinkVolume"} //15.0.0+
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 

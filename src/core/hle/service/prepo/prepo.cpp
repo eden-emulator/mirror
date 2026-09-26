@@ -24,40 +24,7 @@ public:
     explicit PlayReport(const char* name, Core::System& system_) : ServiceFramework{system_, name} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{10100, &PlayReport::SaveReport<Core::Reporter::PlayReportType::Old>, "SaveReportOld"},
-            FunctionInfo{10101, &PlayReport::SaveReportWithUser<Core::Reporter::PlayReportType::Old>, "SaveReportWithUserOld"},
-            FunctionInfo{10102, &PlayReport::SaveReport<Core::Reporter::PlayReportType::Old2>, "SaveReportOld2"},
-            FunctionInfo{10103, &PlayReport::SaveReportWithUser<Core::Reporter::PlayReportType::Old2>, "SaveReportWithUserOld2"},
-            FunctionInfo{10104, &PlayReport::SaveReport<Core::Reporter::PlayReportType::Old3>, "SaveReportOld3"},
-            FunctionInfo{10105, &PlayReport::SaveReportWithUser<Core::Reporter::PlayReportType::Old3>, "SaveReportWithUserOld3"},
-            FunctionInfo{10106, &PlayReport::SaveReport<Core::Reporter::PlayReportType::New>, "SaveReport"},
-            FunctionInfo{10107, &PlayReport::SaveReportWithUser<Core::Reporter::PlayReportType::New>, "SaveReportWithUser"},
-            FunctionInfo{10200, &PlayReport::RequestImmediateTransmission, "RequestImmediateTransmission"},
-            FunctionInfo{10300, &PlayReport::GetTransmissionStatus, "GetTransmissionStatus"},
-            FunctionInfo{10400, &PlayReport::GetSystemSessionId, "GetSystemSessionId"},
-            FunctionInfo{20100, &PlayReport::SaveSystemReportOld, "SaveSystemReport"},
-            FunctionInfo{20101, &PlayReport::SaveSystemReportWithUserOld, "SaveSystemReportWithUser"},
-            FunctionInfo{20102, &PlayReport::SaveSystemReport, "SaveSystemReport"},
-            FunctionInfo{20103, &PlayReport::SaveSystemReportWithUser, "SaveSystemReportWithUser"},
-            FunctionInfo{20200, nullptr, "SetOperationMode"},
-            FunctionInfo{30100, nullptr, "ClearStorage"},
-            FunctionInfo{30200, nullptr, "ClearStatistics"},
-            FunctionInfo{30300, nullptr, "GetStorageUsage"},
-            FunctionInfo{30400, nullptr, "GetStatistics"},
-            FunctionInfo{30401, nullptr, "GetThroughputHistory"},
-            FunctionInfo{30500, nullptr, "GetLastUploadError"},
-            FunctionInfo{30600, nullptr, "GetApplicationUploadSummary"},
-            FunctionInfo{40100, nullptr, "IsUserAgreementCheckEnabled"},
-            FunctionInfo{40101, nullptr, "SetUserAgreementCheckEnabled"},
-            FunctionInfo{50100, nullptr, "ReadAllApplicationReportFiles"},
-            FunctionInfo{90100, nullptr, "ReadAllReportFiles"},
-            FunctionInfo{90101, nullptr, "Unknown90101"},
-            FunctionInfo{90102, nullptr, "Unknown90102"},
-            FunctionInfo{90200, nullptr, "GetStatistics"},
-            FunctionInfo{90201, nullptr, "GetThroughputHistory"},
-            FunctionInfo{90300, nullptr, "GetLastUploadError"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -212,21 +179,51 @@ private:
         IPC::ResponseBuilder rb{ctx, 2};
         rb.Push(ResultSuccess);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{10100, &PlayReport::SaveReport<Core::Reporter::PlayReportType::Old>, "SaveReportOld"},
+        FunctionInfo{10101, &PlayReport::SaveReportWithUser<Core::Reporter::PlayReportType::Old>, "SaveReportWithUserOld"},
+        FunctionInfo{10102, &PlayReport::SaveReport<Core::Reporter::PlayReportType::Old2>, "SaveReportOld2"},
+        FunctionInfo{10103, &PlayReport::SaveReportWithUser<Core::Reporter::PlayReportType::Old2>, "SaveReportWithUserOld2"},
+        FunctionInfo{10104, &PlayReport::SaveReport<Core::Reporter::PlayReportType::Old3>, "SaveReportOld3"},
+        FunctionInfo{10105, &PlayReport::SaveReportWithUser<Core::Reporter::PlayReportType::Old3>, "SaveReportWithUserOld3"},
+        FunctionInfo{10106, &PlayReport::SaveReport<Core::Reporter::PlayReportType::New>, "SaveReport"},
+        FunctionInfo{10107, &PlayReport::SaveReportWithUser<Core::Reporter::PlayReportType::New>, "SaveReportWithUser"},
+        FunctionInfo{10200, &PlayReport::RequestImmediateTransmission, "RequestImmediateTransmission"},
+        FunctionInfo{10300, &PlayReport::GetTransmissionStatus, "GetTransmissionStatus"},
+        FunctionInfo{10400, &PlayReport::GetSystemSessionId, "GetSystemSessionId"},
+        FunctionInfo{20100, &PlayReport::SaveSystemReportOld, "SaveSystemReport"},
+        FunctionInfo{20101, &PlayReport::SaveSystemReportWithUserOld, "SaveSystemReportWithUser"},
+        FunctionInfo{20102, &PlayReport::SaveSystemReport, "SaveSystemReport"},
+        FunctionInfo{20103, &PlayReport::SaveSystemReportWithUser, "SaveSystemReportWithUser"},
+        FunctionInfo{20200, nullptr, "SetOperationMode"},
+        FunctionInfo{30100, nullptr, "ClearStorage"},
+        FunctionInfo{30200, nullptr, "ClearStatistics"},
+        FunctionInfo{30300, nullptr, "GetStorageUsage"},
+        FunctionInfo{30400, nullptr, "GetStatistics"},
+        FunctionInfo{30401, nullptr, "GetThroughputHistory"},
+        FunctionInfo{30500, nullptr, "GetLastUploadError"},
+        FunctionInfo{30600, nullptr, "GetApplicationUploadSummary"},
+        FunctionInfo{40100, nullptr, "IsUserAgreementCheckEnabled"},
+        FunctionInfo{40101, nullptr, "SetUserAgreementCheckEnabled"},
+        FunctionInfo{50100, nullptr, "ReadAllApplicationReportFiles"},
+        FunctionInfo{90100, nullptr, "ReadAllReportFiles"},
+        FunctionInfo{90101, nullptr, "Unknown90101"},
+        FunctionInfo{90102, nullptr, "Unknown90102"},
+        FunctionInfo{90200, nullptr, "GetStatistics"},
+        FunctionInfo{90201, nullptr, "GetThroughputHistory"},
+        FunctionInfo{90300, nullptr, "GetLastUploadError"}
+    );
 };
 
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);
 
-    server_manager->RegisterNamedService("prepo:a",
-                                         std::make_shared<PlayReport>("prepo:a", system));
-    server_manager->RegisterNamedService("prepo:a2",
-                                         std::make_shared<PlayReport>("prepo:a2", system));
-    server_manager->RegisterNamedService("prepo:m",
-                                         std::make_shared<PlayReport>("prepo:m", system));
-    server_manager->RegisterNamedService("prepo:s",
-                                         std::make_shared<PlayReport>("prepo:s", system));
-    server_manager->RegisterNamedService("prepo:u",
-                                         std::make_shared<PlayReport>("prepo:u", system));
+    server_manager->RegisterNamedService("prepo:a", std::make_shared<PlayReport>("prepo:a", system));
+    server_manager->RegisterNamedService("prepo:a2", std::make_shared<PlayReport>("prepo:a2", system));
+    server_manager->RegisterNamedService("prepo:m", std::make_shared<PlayReport>("prepo:m", system));
+    server_manager->RegisterNamedService("prepo:s", std::make_shared<PlayReport>("prepo:s", system));
+    server_manager->RegisterNamedService("prepo:u", std::make_shared<PlayReport>("prepo:u", system));
     ServerManager::RunServer(std::move(server_manager));
 }
 

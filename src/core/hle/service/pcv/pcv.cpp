@@ -17,8 +17,7 @@ class PCV final : public ServiceFramework<PCV> {
 public:
     explicit PCV(Core::System& system_) : ServiceFramework{system_, "pcv"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "SetPowerEnabled"},
             FunctionInfo{1, nullptr, "SetClockEnabled"},
             FunctionInfo{2, nullptr, "SetClockRate"},
@@ -50,6 +49,8 @@ public:
             FunctionInfo{28, nullptr, "IsPoweredOn"},
             FunctionInfo{29, nullptr, "GetVoltage"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -57,10 +58,11 @@ class PCV_ARB final : public ServiceFramework<PCV_ARB> {
 public:
     explicit PCV_ARB(Core::System& system_) : ServiceFramework{system_, "pcv:arb"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ReleaseControl"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -68,10 +70,11 @@ class PCV_IMM final : public ServiceFramework<PCV_IMM> {
 public:
     explicit PCV_IMM(Core::System& system_) : ServiceFramework{system_, "pcv:imm"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "SetClockRate"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -81,20 +84,7 @@ public:
         : ServiceFramework{system_, "IClkrstSession"}, device_code(device_code_) {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, nullptr, "SetClockEnabled"},
-            FunctionInfo{1, nullptr, "SetClockDisabled"},
-            FunctionInfo{2, nullptr, "SetResetAsserted"},
-            FunctionInfo{3, nullptr, "SetResetDeasserted"},
-            FunctionInfo{4, nullptr, "SetPowerEnabled"},
-            FunctionInfo{5, nullptr, "SetPowerDisabled"},
-            FunctionInfo{6, nullptr, "GetState"},
-            FunctionInfo{7, &IClkrstSession::SetClockRate, "SetClockRate"},
-            FunctionInfo{8, &IClkrstSession::GetClockRate, "GetClockRate"},
-            FunctionInfo{9, nullptr, "SetMinVClockRate"},
-            FunctionInfo{10, nullptr, "GetPossibleClockRates"},
-            FunctionInfo{11, nullptr, "GetDvfsTable"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -115,6 +105,20 @@ private:
         rb.Push<u32>(clock_rate);
     }
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "SetClockEnabled"},
+        FunctionInfo{1, nullptr, "SetClockDisabled"},
+        FunctionInfo{2, nullptr, "SetResetAsserted"},
+        FunctionInfo{3, nullptr, "SetResetDeasserted"},
+        FunctionInfo{4, nullptr, "SetPowerEnabled"},
+        FunctionInfo{5, nullptr, "SetPowerDisabled"},
+        FunctionInfo{6, nullptr, "GetState"},
+        FunctionInfo{7, &IClkrstSession::SetClockRate, "SetClockRate"},
+        FunctionInfo{8, &IClkrstSession::GetClockRate, "GetClockRate"},
+        FunctionInfo{9, nullptr, "SetMinVClockRate"},
+        FunctionInfo{10, nullptr, "GetPossibleClockRates"},
+        FunctionInfo{11, nullptr, "GetDvfsTable"}
+    );
     DeviceCode device_code;
     u32 clock_rate{};
 };
@@ -124,14 +128,7 @@ public:
     explicit CLKRST(Core::System& system_, const char* name) : ServiceFramework{system_, name} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &CLKRST::OpenSession, "OpenSession"},
-            FunctionInfo{1, nullptr, "GetTemperatureThresholds"},
-            FunctionInfo{2, nullptr, "SetTemperature"},
-            FunctionInfo{3, nullptr, "GetModuleStateTable"},
-            FunctionInfo{4, nullptr, "GetModuleStateTableEvent"},
-            FunctionInfo{5, nullptr, "GetModuleStateTableMaxCount"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -146,16 +143,26 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IClkrstSession>(ctx, system, device_code);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &CLKRST::OpenSession, "OpenSession"},
+        FunctionInfo{1, nullptr, "GetTemperatureThresholds"},
+        FunctionInfo{2, nullptr, "SetTemperature"},
+        FunctionInfo{3, nullptr, "GetModuleStateTable"},
+        FunctionInfo{4, nullptr, "GetModuleStateTableEvent"},
+        FunctionInfo{5, nullptr, "GetModuleStateTableMaxCount"}
+    );
 };
 
 class CLKRST_A final : public ServiceFramework<CLKRST_A> {
 public:
     explicit CLKRST_A(Core::System& system_) : ServiceFramework{system_, "clkrst:a"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ReleaseControl"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 

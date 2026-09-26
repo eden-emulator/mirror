@@ -21,38 +21,7 @@ public:
     explicit LBL(Core::System& system_) : ServiceFramework{system_, "lbl"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &LBL::SaveCurrentSetting, "SaveCurrentSetting"},
-            FunctionInfo{1, &LBL::LoadCurrentSetting, "LoadCurrentSetting"},
-            FunctionInfo{2, &LBL::SetCurrentBrightnessSetting, "SetCurrentBrightnessSetting"},
-            FunctionInfo{3, &LBL::GetCurrentBrightnessSetting, "GetCurrentBrightnessSetting"},
-            FunctionInfo{4, nullptr, "ApplyCurrentBrightnessSettingToBacklight"},
-            FunctionInfo{5, nullptr, "GetBrightnessSettingAppliedToBacklight"},
-            FunctionInfo{6, &LBL::SwitchBacklightOn, "SwitchBacklightOn"},
-            FunctionInfo{7, &LBL::SwitchBacklightOff, "SwitchBacklightOff"},
-            FunctionInfo{8, &LBL::GetBacklightSwitchStatus, "GetBacklightSwitchStatus"},
-            FunctionInfo{9, &LBL::EnableDimming, "EnableDimming"},
-            FunctionInfo{10, &LBL::DisableDimming, "DisableDimming"},
-            FunctionInfo{11, &LBL::IsDimmingEnabled, "IsDimmingEnabled"},
-            FunctionInfo{12, &LBL::EnableAutoBrightnessControl, "EnableAutoBrightnessControl"},
-            FunctionInfo{13, &LBL::DisableAutoBrightnessControl, "DisableAutoBrightnessControl"},
-            FunctionInfo{14, &LBL::IsAutoBrightnessControlEnabled, "IsAutoBrightnessControlEnabled"},
-            FunctionInfo{15, &LBL::SetAmbientLightSensorValue, "SetAmbientLightSensorValue"},
-            FunctionInfo{16, &LBL::GetAmbientLightSensorValue, "GetAmbientLightSensorValue"},
-            FunctionInfo{17, &LBL::SetBrightnessReflectionDelayLevel, "SetBrightnessReflectionDelayLevel"},
-            FunctionInfo{18, &LBL::GetBrightnessReflectionDelayLevel, "GetBrightnessReflectionDelayLevel"},
-            FunctionInfo{19, &LBL::SetCurrentBrightnessMapping, "SetCurrentBrightnessMapping"},
-            FunctionInfo{20, &LBL::GetCurrentBrightnessMapping, "GetCurrentBrightnessMapping"},
-            FunctionInfo{21, &LBL::SetCurrentAmbientLightSensorMapping, "SetCurrentAmbientLightSensorMapping"},
-            FunctionInfo{22, &LBL::GetCurrentAmbientLightSensorMapping, "GetCurrentAmbientLightSensorMapping"},
-            FunctionInfo{23, &LBL::IsAmbientLightSensorAvailable, "IsAmbientLightSensorAvailable"},
-            FunctionInfo{24, &LBL::SetCurrentBrightnessSettingForVrMode, "SetCurrentBrightnessSettingForVrMode"},
-            FunctionInfo{25, &LBL::GetCurrentBrightnessSettingForVrMode, "GetCurrentBrightnessSettingForVrMode"},
-            FunctionInfo{26, &LBL::EnableVrMode, "EnableVrMode"},
-            FunctionInfo{27, &LBL::DisableVrMode, "DisableVrMode"},
-            FunctionInfo{28, &LBL::IsVrModeEnabled, "IsVrModeEnabled"},
-            FunctionInfo{29, &LBL::IsAutoBrightnessControlSupported, "IsAutoBrightnessControlSupported"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -333,6 +302,38 @@ private:
         rb.Push<u8>(auto_brightness_supported);
     }
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &LBL::SaveCurrentSetting, "SaveCurrentSetting"},
+        FunctionInfo{1, &LBL::LoadCurrentSetting, "LoadCurrentSetting"},
+        FunctionInfo{2, &LBL::SetCurrentBrightnessSetting, "SetCurrentBrightnessSetting"},
+        FunctionInfo{3, &LBL::GetCurrentBrightnessSetting, "GetCurrentBrightnessSetting"},
+        FunctionInfo{4, nullptr, "ApplyCurrentBrightnessSettingToBacklight"},
+        FunctionInfo{5, nullptr, "GetBrightnessSettingAppliedToBacklight"},
+        FunctionInfo{6, &LBL::SwitchBacklightOn, "SwitchBacklightOn"},
+        FunctionInfo{7, &LBL::SwitchBacklightOff, "SwitchBacklightOff"},
+        FunctionInfo{8, &LBL::GetBacklightSwitchStatus, "GetBacklightSwitchStatus"},
+        FunctionInfo{9, &LBL::EnableDimming, "EnableDimming"},
+        FunctionInfo{10, &LBL::DisableDimming, "DisableDimming"},
+        FunctionInfo{11, &LBL::IsDimmingEnabled, "IsDimmingEnabled"},
+        FunctionInfo{12, &LBL::EnableAutoBrightnessControl, "EnableAutoBrightnessControl"},
+        FunctionInfo{13, &LBL::DisableAutoBrightnessControl, "DisableAutoBrightnessControl"},
+        FunctionInfo{14, &LBL::IsAutoBrightnessControlEnabled, "IsAutoBrightnessControlEnabled"},
+        FunctionInfo{15, &LBL::SetAmbientLightSensorValue, "SetAmbientLightSensorValue"},
+        FunctionInfo{16, &LBL::GetAmbientLightSensorValue, "GetAmbientLightSensorValue"},
+        FunctionInfo{17, &LBL::SetBrightnessReflectionDelayLevel, "SetBrightnessReflectionDelayLevel"},
+        FunctionInfo{18, &LBL::GetBrightnessReflectionDelayLevel, "GetBrightnessReflectionDelayLevel"},
+        FunctionInfo{19, &LBL::SetCurrentBrightnessMapping, "SetCurrentBrightnessMapping"},
+        FunctionInfo{20, &LBL::GetCurrentBrightnessMapping, "GetCurrentBrightnessMapping"},
+        FunctionInfo{21, &LBL::SetCurrentAmbientLightSensorMapping, "SetCurrentAmbientLightSensorMapping"},
+        FunctionInfo{22, &LBL::GetCurrentAmbientLightSensorMapping, "GetCurrentAmbientLightSensorMapping"},
+        FunctionInfo{23, &LBL::IsAmbientLightSensorAvailable, "IsAmbientLightSensorAvailable"},
+        FunctionInfo{24, &LBL::SetCurrentBrightnessSettingForVrMode, "SetCurrentBrightnessSettingForVrMode"},
+        FunctionInfo{25, &LBL::GetCurrentBrightnessSettingForVrMode, "GetCurrentBrightnessSettingForVrMode"},
+        FunctionInfo{26, &LBL::EnableVrMode, "EnableVrMode"},
+        FunctionInfo{27, &LBL::DisableVrMode, "DisableVrMode"},
+        FunctionInfo{28, &LBL::IsVrModeEnabled, "IsVrModeEnabled"},
+        FunctionInfo{29, &LBL::IsAutoBrightnessControlSupported, "IsAutoBrightnessControlSupported"}
+    );
     bool vr_mode_enabled = false;
     float current_brightness = 1.0f;
     float ambient_light_value = 0.0f;

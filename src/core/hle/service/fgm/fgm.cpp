@@ -19,13 +19,15 @@ public:
     explicit IRequest(Core::System& system_) : ServiceFramework{system_, "IRequest"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, nullptr, "Initialize"},
-            FunctionInfo{1, nullptr, "Set"},
-            FunctionInfo{2, nullptr, "Get"},
-            FunctionInfo{3, nullptr, "Cancel"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Initialize"},
+        FunctionInfo{1, nullptr, "Set"},
+        FunctionInfo{2, nullptr, "Get"},
+        FunctionInfo{3, nullptr, "Cancel"}
+    );
 };
 
 class FGM final : public ServiceFramework<FGM> {
@@ -33,9 +35,7 @@ public:
     explicit FGM(Core::System& system_, const char* name) : ServiceFramework{system_, name} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &FGM::Initialize, "Initialize"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -46,6 +46,10 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IRequest>(ctx, system);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &FGM::Initialize, "Initialize"}
+    );
 };
 
 class FGM_DBG final : public ServiceFramework<FGM_DBG> {
@@ -53,12 +57,14 @@ public:
     explicit FGM_DBG(Core::System& system_) : ServiceFramework{system_, "fgm:dbg"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, nullptr, "Initialize"},
-            FunctionInfo{1, nullptr, "Read"},
-            FunctionInfo{2, nullptr, "Cancel"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Initialize"},
+        FunctionInfo{1, nullptr, "Read"},
+        FunctionInfo{2, nullptr, "Cancel"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

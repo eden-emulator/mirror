@@ -22,12 +22,13 @@ class IDecoderControlService final : public ServiceFramework<IDecoderControlServ
 public:
     explicit IDecoderControlService(Core::System& system_) : ServiceFramework{system_, "grc:d"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{3001, nullptr, "DecodeJpeg"},
             FunctionInfo{4001, nullptr, "ShrinkJpeg"},
             FunctionInfo{4002, nullptr, "ShrinkJpegEx"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 

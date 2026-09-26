@@ -24,102 +24,7 @@ public:
     }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{1, &ETicket::ImportTicket, "ImportTicket"},
-            FunctionInfo{2, nullptr, "ImportTicketCertificateSet"},
-            FunctionInfo{3, nullptr, "DeleteTicket"},
-            FunctionInfo{4, nullptr, "DeletePersonalizedTicket"},
-            FunctionInfo{5, nullptr, "DeleteAllCommonTicket"},
-            FunctionInfo{6, nullptr, "DeleteAllPersonalizedTicket"},
-            FunctionInfo{7, nullptr, "DeleteAllPersonalizedTicketEx"},
-            FunctionInfo{8, &ETicket::GetTitleKey, "GetTitleKey"},
-            FunctionInfo{9, &ETicket::CountCommonTicket, "CountCommonTicket"},
-            FunctionInfo{10, &ETicket::CountPersonalizedTicket, "CountPersonalizedTicket"},
-            FunctionInfo{11, &ETicket::ListCommonTicketRightsIds, "ListCommonTicketRightsIds"},
-            FunctionInfo{12, &ETicket::ListPersonalizedTicketRightsIds, "ListPersonalizedTicketRightsIds"},
-            FunctionInfo{13, nullptr, "ListMissingPersonalizedTicket"},
-            FunctionInfo{14, &ETicket::GetCommonTicketSize, "GetCommonTicketSize"},
-            FunctionInfo{15, &ETicket::GetPersonalizedTicketSize, "GetPersonalizedTicketSize"},
-            FunctionInfo{16, &ETicket::GetCommonTicketData, "GetCommonTicketData"},
-            FunctionInfo{17, &ETicket::GetPersonalizedTicketData, "GetPersonalizedTicketData"},
-            FunctionInfo{18, nullptr, "OwnTicket"},
-            FunctionInfo{19, nullptr, "GetTicketInfo"},
-            FunctionInfo{20, nullptr, "ListLightTicketInfo"},
-            FunctionInfo{21, nullptr, "SignData"},
-            FunctionInfo{22, nullptr, "GetCommonTicketAndCertificateSize"},
-            FunctionInfo{23, nullptr, "GetCommonTicketAndCertificateData"},
-            FunctionInfo{24, nullptr, "ImportPrepurchaseRecord"},
-            FunctionInfo{25, nullptr, "DeletePrepurchaseRecord"},
-            FunctionInfo{26, nullptr, "DeleteAllPrepurchaseRecord"},
-            FunctionInfo{27, nullptr, "CountPrepurchaseRecord"},
-            FunctionInfo{28, nullptr, "ListPrepurchaseRecordRightsIds"},
-            FunctionInfo{29, nullptr, "ListPrepurchaseRecordInfo"},
-            FunctionInfo{30, nullptr, "CountTicket"},
-            FunctionInfo{31, nullptr, "ListTicketRightsIds"},
-            FunctionInfo{32, nullptr, "CountPrepurchaseRecordEx"},
-            FunctionInfo{33, nullptr, "ListPrepurchaseRecordRightsIdsEx"},
-            FunctionInfo{34, nullptr, "GetEncryptedTicketSize"},
-            FunctionInfo{35, nullptr, "GetEncryptedTicketData"},
-            FunctionInfo{36, nullptr, "DeleteAllInactiveELicenseRequiredPersonalizedTicket"},
-            FunctionInfo{37, nullptr, "OwnTicket2"},
-            FunctionInfo{38, nullptr, "OwnTicket3"},
-            FunctionInfo{39, nullptr, "DeleteAllInactivePersonalizedTicket"},
-            FunctionInfo{40, nullptr, "DeletePrepurchaseRecordByNintendoAccountId"},
-            FunctionInfo{101, nullptr, "Unknown101"}, //18.0.0+
-            FunctionInfo{102, nullptr, "Unknown102"}, //18.0.0+
-            FunctionInfo{103, nullptr, "Unknown103"}, //18.0.0+
-            FunctionInfo{104, nullptr, "Unknown104"}, //18.0.0+
-            FunctionInfo{105, nullptr, "Unknown105"}, //20.0.0+
-            FunctionInfo{201, nullptr, "Unknown201"}, //18.0.0+
-            FunctionInfo{202, nullptr, "Unknown202"}, //18.0.0+
-            FunctionInfo{203, nullptr, "Unknown203"}, //18.0.0+
-            FunctionInfo{204, nullptr, "Unknown204"}, //18.0.0+
-            FunctionInfo{205, nullptr, "Unknown205"}, //18.0.0+
-            FunctionInfo{501, nullptr, "Unknown501"},
-            FunctionInfo{502, nullptr, "Unknown502"},
-            FunctionInfo{503, nullptr, "GetTitleKey"},
-            FunctionInfo{504, nullptr, "Unknown504"},
-            FunctionInfo{508, nullptr, "Unknown508"},
-            FunctionInfo{509, nullptr, "Unknown509"},
-            FunctionInfo{510, nullptr, "Unknown510"},
-            FunctionInfo{511, nullptr, "Unknown511"},
-            FunctionInfo{1001, nullptr, "Unknown1001"},
-            FunctionInfo{1002, nullptr, "Unknown1001"},
-            FunctionInfo{1003, nullptr, "Unknown1003"},
-            FunctionInfo{1004, nullptr, "Unknown1004"},
-            FunctionInfo{1005, nullptr, "Unknown1005"},
-            FunctionInfo{1006, nullptr, "Unknown1006"},
-            FunctionInfo{1007, nullptr, "Unknown1007"},
-            FunctionInfo{1009, nullptr, "Unknown1009"},
-            FunctionInfo{1010, nullptr, "Unknown1010"},
-            FunctionInfo{1011, nullptr, "Unknown1011"},
-            FunctionInfo{1012, nullptr, "Unknown1012"},
-            FunctionInfo{1013, nullptr, "Unknown1013"},
-            FunctionInfo{1014, nullptr, "Unknown1014"},
-            FunctionInfo{1015, nullptr, "Unknown1015"},
-            FunctionInfo{1016, nullptr, "Unknown1016"},
-            FunctionInfo{1017, nullptr, "Unknown1017"},
-            FunctionInfo{1018, nullptr, "Unknown1018"},
-            FunctionInfo{1019, nullptr, "Unknown1019"},
-            FunctionInfo{1020, nullptr, "Unknown1020"},
-            FunctionInfo{1021, nullptr, "Unknown1021"},
-            FunctionInfo{1501, nullptr, "Unknown1501"},
-            FunctionInfo{1502, nullptr, "Unknown1502"},
-            FunctionInfo{1503, nullptr, "Unknown1503"},
-            FunctionInfo{1504, nullptr, "Unknown1504"},
-            FunctionInfo{1505, nullptr, "Unknown1505"},
-            FunctionInfo{1506, nullptr, "Unknown1506"},
-            FunctionInfo{2000, nullptr, "Unknown2000"},
-            FunctionInfo{2001, nullptr, "Unknown2001"},
-            FunctionInfo{2002, nullptr, "Unknown2002"},
-            FunctionInfo{2003, nullptr, "Unknown2003"},
-            FunctionInfo{2100, nullptr, "Unknown2100"},
-            FunctionInfo{2501, nullptr, "Unknown2501"},
-            FunctionInfo{2502, nullptr, "Unknown2502"},
-            FunctionInfo{2601, nullptr, "Unknown2601"},
-            FunctionInfo{3001, nullptr, "Unknown3001"},
-            FunctionInfo{3002, nullptr, "Unknown3002"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -316,6 +221,102 @@ private:
         rb.Push<u64>(write_size);
     }
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{1, &ETicket::ImportTicket, "ImportTicket"},
+        FunctionInfo{2, nullptr, "ImportTicketCertificateSet"},
+        FunctionInfo{3, nullptr, "DeleteTicket"},
+        FunctionInfo{4, nullptr, "DeletePersonalizedTicket"},
+        FunctionInfo{5, nullptr, "DeleteAllCommonTicket"},
+        FunctionInfo{6, nullptr, "DeleteAllPersonalizedTicket"},
+        FunctionInfo{7, nullptr, "DeleteAllPersonalizedTicketEx"},
+        FunctionInfo{8, &ETicket::GetTitleKey, "GetTitleKey"},
+        FunctionInfo{9, &ETicket::CountCommonTicket, "CountCommonTicket"},
+        FunctionInfo{10, &ETicket::CountPersonalizedTicket, "CountPersonalizedTicket"},
+        FunctionInfo{11, &ETicket::ListCommonTicketRightsIds, "ListCommonTicketRightsIds"},
+        FunctionInfo{12, &ETicket::ListPersonalizedTicketRightsIds, "ListPersonalizedTicketRightsIds"},
+        FunctionInfo{13, nullptr, "ListMissingPersonalizedTicket"},
+        FunctionInfo{14, &ETicket::GetCommonTicketSize, "GetCommonTicketSize"},
+        FunctionInfo{15, &ETicket::GetPersonalizedTicketSize, "GetPersonalizedTicketSize"},
+        FunctionInfo{16, &ETicket::GetCommonTicketData, "GetCommonTicketData"},
+        FunctionInfo{17, &ETicket::GetPersonalizedTicketData, "GetPersonalizedTicketData"},
+        FunctionInfo{18, nullptr, "OwnTicket"},
+        FunctionInfo{19, nullptr, "GetTicketInfo"},
+        FunctionInfo{20, nullptr, "ListLightTicketInfo"},
+        FunctionInfo{21, nullptr, "SignData"},
+        FunctionInfo{22, nullptr, "GetCommonTicketAndCertificateSize"},
+        FunctionInfo{23, nullptr, "GetCommonTicketAndCertificateData"},
+        FunctionInfo{24, nullptr, "ImportPrepurchaseRecord"},
+        FunctionInfo{25, nullptr, "DeletePrepurchaseRecord"},
+        FunctionInfo{26, nullptr, "DeleteAllPrepurchaseRecord"},
+        FunctionInfo{27, nullptr, "CountPrepurchaseRecord"},
+        FunctionInfo{28, nullptr, "ListPrepurchaseRecordRightsIds"},
+        FunctionInfo{29, nullptr, "ListPrepurchaseRecordInfo"},
+        FunctionInfo{30, nullptr, "CountTicket"},
+        FunctionInfo{31, nullptr, "ListTicketRightsIds"},
+        FunctionInfo{32, nullptr, "CountPrepurchaseRecordEx"},
+        FunctionInfo{33, nullptr, "ListPrepurchaseRecordRightsIdsEx"},
+        FunctionInfo{34, nullptr, "GetEncryptedTicketSize"},
+        FunctionInfo{35, nullptr, "GetEncryptedTicketData"},
+        FunctionInfo{36, nullptr, "DeleteAllInactiveELicenseRequiredPersonalizedTicket"},
+        FunctionInfo{37, nullptr, "OwnTicket2"},
+        FunctionInfo{38, nullptr, "OwnTicket3"},
+        FunctionInfo{39, nullptr, "DeleteAllInactivePersonalizedTicket"},
+        FunctionInfo{40, nullptr, "DeletePrepurchaseRecordByNintendoAccountId"},
+        FunctionInfo{101, nullptr, "Unknown101"}, //18.0.0+
+        FunctionInfo{102, nullptr, "Unknown102"}, //18.0.0+
+        FunctionInfo{103, nullptr, "Unknown103"}, //18.0.0+
+        FunctionInfo{104, nullptr, "Unknown104"}, //18.0.0+
+        FunctionInfo{105, nullptr, "Unknown105"}, //20.0.0+
+        FunctionInfo{201, nullptr, "Unknown201"}, //18.0.0+
+        FunctionInfo{202, nullptr, "Unknown202"}, //18.0.0+
+        FunctionInfo{203, nullptr, "Unknown203"}, //18.0.0+
+        FunctionInfo{204, nullptr, "Unknown204"}, //18.0.0+
+        FunctionInfo{205, nullptr, "Unknown205"}, //18.0.0+
+        FunctionInfo{501, nullptr, "Unknown501"},
+        FunctionInfo{502, nullptr, "Unknown502"},
+        FunctionInfo{503, nullptr, "GetTitleKey"},
+        FunctionInfo{504, nullptr, "Unknown504"},
+        FunctionInfo{508, nullptr, "Unknown508"},
+        FunctionInfo{509, nullptr, "Unknown509"},
+        FunctionInfo{510, nullptr, "Unknown510"},
+        FunctionInfo{511, nullptr, "Unknown511"},
+        FunctionInfo{1001, nullptr, "Unknown1001"},
+        FunctionInfo{1002, nullptr, "Unknown1001"},
+        FunctionInfo{1003, nullptr, "Unknown1003"},
+        FunctionInfo{1004, nullptr, "Unknown1004"},
+        FunctionInfo{1005, nullptr, "Unknown1005"},
+        FunctionInfo{1006, nullptr, "Unknown1006"},
+        FunctionInfo{1007, nullptr, "Unknown1007"},
+        FunctionInfo{1009, nullptr, "Unknown1009"},
+        FunctionInfo{1010, nullptr, "Unknown1010"},
+        FunctionInfo{1011, nullptr, "Unknown1011"},
+        FunctionInfo{1012, nullptr, "Unknown1012"},
+        FunctionInfo{1013, nullptr, "Unknown1013"},
+        FunctionInfo{1014, nullptr, "Unknown1014"},
+        FunctionInfo{1015, nullptr, "Unknown1015"},
+        FunctionInfo{1016, nullptr, "Unknown1016"},
+        FunctionInfo{1017, nullptr, "Unknown1017"},
+        FunctionInfo{1018, nullptr, "Unknown1018"},
+        FunctionInfo{1019, nullptr, "Unknown1019"},
+        FunctionInfo{1020, nullptr, "Unknown1020"},
+        FunctionInfo{1021, nullptr, "Unknown1021"},
+        FunctionInfo{1501, nullptr, "Unknown1501"},
+        FunctionInfo{1502, nullptr, "Unknown1502"},
+        FunctionInfo{1503, nullptr, "Unknown1503"},
+        FunctionInfo{1504, nullptr, "Unknown1504"},
+        FunctionInfo{1505, nullptr, "Unknown1505"},
+        FunctionInfo{1506, nullptr, "Unknown1506"},
+        FunctionInfo{2000, nullptr, "Unknown2000"},
+        FunctionInfo{2001, nullptr, "Unknown2001"},
+        FunctionInfo{2002, nullptr, "Unknown2002"},
+        FunctionInfo{2003, nullptr, "Unknown2003"},
+        FunctionInfo{2100, nullptr, "Unknown2100"},
+        FunctionInfo{2501, nullptr, "Unknown2501"},
+        FunctionInfo{2502, nullptr, "Unknown2502"},
+        FunctionInfo{2601, nullptr, "Unknown2601"},
+        FunctionInfo{3001, nullptr, "Unknown3001"},
+        FunctionInfo{3002, nullptr, "Unknown3002"}
+    );
     Core::Crypto::KeyManager& keys = Core::Crypto::KeyManager::Instance();
 };
 
@@ -324,14 +325,15 @@ public:
     explicit NDRM_LU(Core::System& system_)
         : ServiceFramework{system_, "ndrm:lu"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{1, nullptr, "Cmd1"},
             FunctionInfo{2, nullptr, "Cmd2"},
             FunctionInfo{3, nullptr, "Cmd3"},
             FunctionInfo{1000, nullptr, "Cmd1000"},
             FunctionInfo{8000, nullptr, "Cmd8000"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -340,8 +342,7 @@ public:
     explicit NDRM_LA(Core::System& system_)
         : ServiceFramework{system_, "ndrm:la"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{1, nullptr, "Cmd1"},
             FunctionInfo{2, nullptr, "Cmd2"},
             FunctionInfo{3, nullptr, "Cmd3"},
@@ -397,6 +398,8 @@ public:
             FunctionInfo{8002, nullptr, "Cmd8002"},
             FunctionInfo{8003, nullptr, "Cmd8003"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 

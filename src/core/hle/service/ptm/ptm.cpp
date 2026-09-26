@@ -19,12 +19,13 @@ public:
     explicit PSM_MANU(Core::System& system_)
         : ServiceFramework{system_, "psm:manu"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "EnableVdd50StateControl"},
             FunctionInfo{1, nullptr, "DisableVdd50StateControl"},
             FunctionInfo{2, nullptr, "SetVdd50State"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -33,10 +34,11 @@ public:
     explicit POWCTL(Core::System& system_)
         : ServiceFramework{system_, "powctl"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "OpenSession"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 

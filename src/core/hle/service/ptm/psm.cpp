@@ -27,13 +27,7 @@ public:
     }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &IPsmSession::BindStateChangeEvent, "BindStateChangeEvent"},
-            FunctionInfo{1, &IPsmSession::UnbindStateChangeEvent, "UnbindStateChangeEvent"},
-            FunctionInfo{2, &IPsmSession::SetChargerTypeChangeEventEnabled, "SetChargerTypeChangeEventEnabled"},
-            FunctionInfo{3, &IPsmSession::SetPowerSupplyChangeEventEnabled, "SetPowerSupplyChangeEventEnabled"},
-            FunctionInfo{4, &IPsmSession::SetBatteryVoltageStateChangeEventEnabled, "SetBatteryVoltageStateChangeEventEnabled"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
     ~IPsmSession() override {
@@ -111,8 +105,15 @@ private:
         rb.Push(ResultSuccess);
     }
 
-    KernelHelpers::ServiceContext service_context;
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IPsmSession::BindStateChangeEvent, "BindStateChangeEvent"},
+        FunctionInfo{1, &IPsmSession::UnbindStateChangeEvent, "UnbindStateChangeEvent"},
+        FunctionInfo{2, &IPsmSession::SetChargerTypeChangeEventEnabled, "SetChargerTypeChangeEventEnabled"},
+        FunctionInfo{3, &IPsmSession::SetPowerSupplyChangeEventEnabled, "SetPowerSupplyChangeEventEnabled"},
+        FunctionInfo{4, &IPsmSession::SetBatteryVoltageStateChangeEventEnabled, "SetBatteryVoltageStateChangeEventEnabled"}
+    );
 
+    KernelHelpers::ServiceContext service_context;
     bool should_signal_charger_type{};
     bool should_signal_power_supply{};
     bool should_signal_battery_voltage{};

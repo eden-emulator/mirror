@@ -81,17 +81,7 @@ public:
     explicit DebugMonitor(Core::System& system_) : ServiceFramework{system_, "pm:dmnt"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, nullptr, "GetJitDebugProcessIdList"},
-            FunctionInfo{1, nullptr, "StartProcess"},
-            FunctionInfo{2, &DebugMonitor::GetProcessId, "GetProcessId"},
-            FunctionInfo{3, nullptr, "HookToCreateProcess"},
-            FunctionInfo{4, &DebugMonitor::GetApplicationProcessId, "GetApplicationProcessId"},
-            FunctionInfo{5, nullptr, "HookToCreateApplicationProgress"},
-            FunctionInfo{6, nullptr, "ClearHook"},
-            FunctionInfo{65000, &DebugMonitor::AtmosphereGetProcessInfo, "AtmosphereGetProcessInfo"},
-            FunctionInfo{65001, nullptr, "AtmosphereGetCurrentLimitInfo"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -162,6 +152,18 @@ private:
         rb.PushRaw(program_location);
         rb.PushRaw(override_status);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "GetJitDebugProcessIdList"},
+        FunctionInfo{1, nullptr, "StartProcess"},
+        FunctionInfo{2, &DebugMonitor::GetProcessId, "GetProcessId"},
+        FunctionInfo{3, nullptr, "HookToCreateProcess"},
+        FunctionInfo{4, &DebugMonitor::GetApplicationProcessId, "GetApplicationProcessId"},
+        FunctionInfo{5, nullptr, "HookToCreateApplicationProgress"},
+        FunctionInfo{6, nullptr, "ClearHook"},
+        FunctionInfo{65000, &DebugMonitor::AtmosphereGetProcessInfo, "AtmosphereGetProcessInfo"},
+        FunctionInfo{65001, nullptr, "AtmosphereGetCurrentLimitInfo"}
+    );
 };
 
 class Info final : public ServiceFramework<Info> {
@@ -223,18 +225,7 @@ public:
     explicit Shell(Core::System& system_) : ServiceFramework{system_, "pm:shell"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, nullptr, "LaunchProgram"},
-            FunctionInfo{1, nullptr, "TerminateProcess"},
-            FunctionInfo{2, nullptr, "TerminateProgram"},
-            FunctionInfo{3, nullptr, "GetProcessEventHandle"},
-            FunctionInfo{4, nullptr, "GetProcessEventInfo"},
-            FunctionInfo{5, nullptr, "NotifyBootFinished"},
-            FunctionInfo{6, &Shell::GetApplicationProcessIdForShell, "GetApplicationProcessIdForShell"},
-            FunctionInfo{7, nullptr, "BoostSystemMemoryResourceLimit"},
-            FunctionInfo{8, nullptr, "BoostApplicationThreadResourceLimit"},
-            FunctionInfo{9, nullptr, "GetBootFinishedEventHandle"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -243,6 +234,19 @@ private:
         auto list = kernel.GetProcessList();
         GetApplicationPidGeneric(system.Kernel(), ctx, list);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "LaunchProgram"},
+        FunctionInfo{1, nullptr, "TerminateProcess"},
+        FunctionInfo{2, nullptr, "TerminateProgram"},
+        FunctionInfo{3, nullptr, "GetProcessEventHandle"},
+        FunctionInfo{4, nullptr, "GetProcessEventInfo"},
+        FunctionInfo{5, nullptr, "NotifyBootFinished"},
+        FunctionInfo{6, &Shell::GetApplicationProcessIdForShell, "GetApplicationProcessIdForShell"},
+        FunctionInfo{7, nullptr, "BoostSystemMemoryResourceLimit"},
+        FunctionInfo{8, nullptr, "BoostApplicationThreadResourceLimit"},
+        FunctionInfo{9, nullptr, "GetBootFinishedEventHandle"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

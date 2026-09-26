@@ -26,8 +26,7 @@ public:
     explicit ILocationResolver(Core::System& system_, FileSys::StorageId id)
         : ServiceFramework{system_, "ILocationResolver"}, storage{id} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ResolveProgramPath"},
             FunctionInfo{1, nullptr, "RedirectProgramPath"},
             FunctionInfo{2, nullptr, "ResolveApplicationControlPath"},
@@ -49,6 +48,8 @@ public:
             FunctionInfo{18, nullptr, "RedirectApplicationProgramPathForDebug"},
             FunctionInfo{19, nullptr, "EraseProgramRedirectionForDebug"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -60,8 +61,7 @@ public:
     explicit IRegisteredLocationResolver(Core::System& system_)
         : ServiceFramework{system_, "IRegisteredLocationResolver"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ResolveProgramPath"},
             FunctionInfo{1, nullptr, "RegisterProgramPath"},
             FunctionInfo{2, nullptr, "UnregisterProgramPath"},
@@ -73,6 +73,8 @@ public:
             FunctionInfo{8, nullptr, "Refresh"},
             FunctionInfo{9, nullptr, "RefreshExcluding"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -81,14 +83,15 @@ public:
     explicit IAddOnContentLocationResolver(Core::System& system_)
         : ServiceFramework{system_, "IAddOnContentLocationResolver"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ResolveAddOnContentPath"},
             FunctionInfo{1, nullptr, "RegisterAddOnContentStorage"},
             FunctionInfo{2, nullptr, "UnregisterAllAddOnContentPath"},
             FunctionInfo{3, nullptr, "RefreshApplicationAddOnContent"},
             FunctionInfo{4, nullptr, "UnregisterApplicationAddOnContent"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -98,14 +101,7 @@ public:
         : ServiceFramework{system_, "IContentStorage"}, storage{id} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &IContentStorage::GeneratePlaceHolderId, "GeneratePlaceHolderId"},
-            FunctionInfo{1, &IContentStorage::CreatePlaceHolder, "CreatePlaceHolder"},
-            FunctionInfo{2, &IContentStorage::DeletePlaceHolder, "DeletePlaceHolder"},
-            FunctionInfo{4, &IContentStorage::WritePlaceHolder, "WritePlaceHolder"},
-            FunctionInfo{5, &IContentStorage::Register, "Register"},
-            FunctionInfo{6, &IContentStorage::Delete, "Delete"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -244,6 +240,14 @@ private:
         rb.Push(succeeded ? ResultSuccess : ResultUnknown);
     }
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IContentStorage::GeneratePlaceHolderId, "GeneratePlaceHolderId"},
+        FunctionInfo{1, &IContentStorage::CreatePlaceHolder, "CreatePlaceHolder"},
+        FunctionInfo{2, &IContentStorage::DeletePlaceHolder, "DeletePlaceHolder"},
+        FunctionInfo{4, &IContentStorage::WritePlaceHolder, "WritePlaceHolder"},
+        FunctionInfo{5, &IContentStorage::Register, "Register"},
+        FunctionInfo{6, &IContentStorage::Delete, "Delete"}
+    );
     FileSys::StorageId storage;
 };
 
@@ -253,12 +257,7 @@ public:
         : ServiceFramework{system_, "IContentMetaDatabase"}, storage{id} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &IContentMetaDatabase::Set, "Set"},
-            FunctionInfo{2, &IContentMetaDatabase::Remove, "Remove"},
-            FunctionInfo{8, &IContentMetaDatabase::Has, "Has"},
-            FunctionInfo{15, &IContentMetaDatabase::Commit, "Commit"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -346,6 +345,12 @@ private:
         rb.Push(ResultSuccess);
     }
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IContentMetaDatabase::Set, "Set"},
+        FunctionInfo{2, &IContentMetaDatabase::Remove, "Remove"},
+        FunctionInfo{8, &IContentMetaDatabase::Has, "Has"},
+        FunctionInfo{15, &IContentMetaDatabase::Commit, "Commit"}
+    );
     FileSys::StorageId storage;
     std::vector<ContentMetaKey> entries;
 };
@@ -354,13 +359,14 @@ class LR final : public ServiceFramework<LR> {
 public:
     explicit LR(Core::System& system_) : ServiceFramework{system_, "lr"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "OpenLocationResolver"},
             FunctionInfo{1, nullptr, "OpenRegisteredLocationResolver"},
             FunctionInfo{2, nullptr, "RefreshLocationResolver"},
             FunctionInfo{3, nullptr, "OpenAddOnContentLocationResolver"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -369,24 +375,7 @@ public:
     explicit NCM(Core::System& system_) : ServiceFramework{system_, "ncm"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, nullptr, "CreateContentStorage"},
-            FunctionInfo{1, nullptr, "CreateContentMetaDatabase"},
-            FunctionInfo{2, nullptr, "VerifyContentStorage"},
-            FunctionInfo{3, nullptr, "VerifyContentMetaDatabase"},
-            FunctionInfo{4, &NCM::OpenContentStorage, "OpenContentStorage"},
-            FunctionInfo{5, &NCM::OpenContentMetaDatabase, "OpenContentMetaDatabase"},
-            FunctionInfo{6, nullptr, "CloseContentStorageForcibly"},
-            FunctionInfo{7, nullptr, "CloseContentMetaDatabaseForcibly"},
-            FunctionInfo{8, nullptr, "CleanupContentMetaDatabase"},
-            FunctionInfo{9, nullptr, "ActivateContentStorage"},
-            FunctionInfo{10, nullptr, "InactivateContentStorage"},
-            FunctionInfo{11, nullptr, "ActivateContentMetaDatabase"},
-            FunctionInfo{12, nullptr, "InactivateContentMetaDatabase"},
-            FunctionInfo{13, nullptr, "InvalidateRightsIdCache"},
-            FunctionInfo{14, nullptr, "GetMemoryReport"},
-            FunctionInfo{15, nullptr, "ActivateFsContentStorage"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -411,6 +400,25 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IContentMetaDatabase>(ctx, system, storage_id);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "CreateContentStorage"},
+        FunctionInfo{1, nullptr, "CreateContentMetaDatabase"},
+        FunctionInfo{2, nullptr, "VerifyContentStorage"},
+        FunctionInfo{3, nullptr, "VerifyContentMetaDatabase"},
+        FunctionInfo{4, &NCM::OpenContentStorage, "OpenContentStorage"},
+        FunctionInfo{5, &NCM::OpenContentMetaDatabase, "OpenContentMetaDatabase"},
+        FunctionInfo{6, nullptr, "CloseContentStorageForcibly"},
+        FunctionInfo{7, nullptr, "CloseContentMetaDatabaseForcibly"},
+        FunctionInfo{8, nullptr, "CleanupContentMetaDatabase"},
+        FunctionInfo{9, nullptr, "ActivateContentStorage"},
+        FunctionInfo{10, nullptr, "InactivateContentStorage"},
+        FunctionInfo{11, nullptr, "ActivateContentMetaDatabase"},
+        FunctionInfo{12, nullptr, "InactivateContentMetaDatabase"},
+        FunctionInfo{13, nullptr, "InvalidateRightsIdCache"},
+        FunctionInfo{14, nullptr, "GetMemoryReport"},
+        FunctionInfo{15, nullptr, "ActivateFsContentStorage"}
+    );
 };
 
 class NCM_V final : public ServiceFramework<NCM_V> {

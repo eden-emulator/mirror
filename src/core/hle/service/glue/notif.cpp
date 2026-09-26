@@ -184,9 +184,7 @@ public:
     }
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, D<&INotificationSystemEventAccessor::GetSystemEvent>, "GetSystemEvent"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
     ~INotificationSystemEventAccessor() {
@@ -201,6 +199,9 @@ private:
         R_SUCCEED();
     }
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&INotificationSystemEventAccessor::GetSystemEvent>, "GetSystemEvent"}
+    );
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* notification_event;
 };

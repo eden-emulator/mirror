@@ -112,12 +112,13 @@ class IAm final : public ServiceFramework<IAm> {
 public:
     explicit IAm(Core::System& system_) : ServiceFramework{system_, "NFC::IAm"} {}
 
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Initialize"},
+        FunctionInfo{1, nullptr, "Finalize"},
+        FunctionInfo{2, nullptr, "NotifyForegroundApplet"}
+    );
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, nullptr, "Initialize"},
-            FunctionInfo{1, nullptr, "Finalize"},
-            FunctionInfo{2, nullptr, "NotifyForegroundApplet"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -126,9 +127,7 @@ public:
     explicit NFC_AM(Core::System& system_) : ServiceFramework{system_, "nfc:am"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &NFC_AM::CreateAmNfcInterface, "CreateAmNfcInterface"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -139,6 +138,10 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IAm>(ctx, system);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &NFC_AM::CreateAmNfcInterface, "CreateAmNfcInterface"}
+    );
 };
 
 class NFC_MF_U final : public ServiceFramework<NFC_MF_U> {
@@ -146,9 +149,7 @@ public:
     explicit NFC_MF_U(Core::System& system_) : ServiceFramework{system_, "nfc:mf:u"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &NFC_MF_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -159,6 +160,10 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<MFIUser>(ctx, system);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &NFC_MF_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
+    );
 };
 
 class NFC_U final : public ServiceFramework<NFC_U> {
@@ -166,9 +171,7 @@ public:
     explicit NFC_U(Core::System& system_) : ServiceFramework{system_, "nfc:user"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &NFC_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -179,6 +182,10 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IUser>(ctx, system);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &NFC_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
+    );
 };
 
 class NFC_SYS final : public ServiceFramework<NFC_SYS> {
@@ -186,9 +193,7 @@ public:
     explicit NFC_SYS(Core::System& system_) : ServiceFramework{system_, "nfc:sys"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &NFC_SYS::CreateSystemNfcInterface, "CreateSystemNfcInterface"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -199,6 +204,10 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<ISystem>(ctx, system);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &NFC_SYS::CreateSystemNfcInterface, "CreateSystemNfcInterface"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

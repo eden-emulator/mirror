@@ -513,14 +513,7 @@ public:
     {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0,  C<&RoInterface::MapManualLoadModuleMemory>, "MapManualLoadModuleMemory"},
-            FunctionInfo{1,  C<&RoInterface::UnmapManualLoadModuleMemory>, "UnmapManualLoadModuleMemory"},
-            FunctionInfo{2,  C<&RoInterface::RegisterModuleInfo>, "RegisterModuleInfo"},
-            FunctionInfo{3,  C<&RoInterface::UnregisterModuleInfo>, "UnregisterModuleInfo"},
-            FunctionInfo{4,  C<&RoInterface::RegisterProcessHandle>, "RegisterProcessHandle"},
-            FunctionInfo{10, C<&RoInterface::RegisterProcessModuleInfo>, "RegisterProcessModuleInfo"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
     ~RoInterface() {
@@ -563,6 +556,14 @@ public:
     }
 
 private:
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0,  C<&RoInterface::MapManualLoadModuleMemory>, "MapManualLoadModuleMemory"},
+        FunctionInfo{1,  C<&RoInterface::UnmapManualLoadModuleMemory>, "UnmapManualLoadModuleMemory"},
+        FunctionInfo{2,  C<&RoInterface::RegisterModuleInfo>, "RegisterModuleInfo"},
+        FunctionInfo{3,  C<&RoInterface::UnregisterModuleInfo>, "UnregisterModuleInfo"},
+        FunctionInfo{4,  C<&RoInterface::RegisterProcessHandle>, "RegisterProcessHandle"},
+        FunctionInfo{10, C<&RoInterface::RegisterProcessModuleInfo>, "RegisterProcessModuleInfo"}
+    );
     std::shared_ptr<RoContext> m_ro{};
     size_t m_context_id{};
     NrrKind m_nrr_kind{};

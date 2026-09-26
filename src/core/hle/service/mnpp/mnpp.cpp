@@ -17,10 +17,7 @@ public:
     explicit MNPP_APP(Core::System& system_) : ServiceFramework{system_, "mnpp:app"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &MNPP_APP::Cmd0, "Cmd0"},
-            FunctionInfo{1, &MNPP_APP::Cmd1, "Cmd1"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -37,14 +34,18 @@ private:
         IPC::ResponseBuilder rb{ctx, 2};
         rb.Push(ResultSuccess);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &MNPP_APP::Cmd0, "Cmd0"},
+        FunctionInfo{1, &MNPP_APP::Cmd1, "Cmd1"}
+    );
 };
 
 class MNPP_SYS final : public ServiceFramework<MNPP_SYS> {
 public:
     explicit MNPP_SYS(Core::System& system_) : ServiceFramework{system_, "mnpp:sys"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "Cmd0"},
             FunctionInfo{10, nullptr, "Cmd10"},
             FunctionInfo{100, nullptr, "Cmd100"},
@@ -52,6 +53,8 @@ public:
             FunctionInfo{300, nullptr, "Cmd300"},
             FunctionInfo{400, nullptr, "Cmd400"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
@@ -59,14 +62,15 @@ class MNPP_WEB final : public ServiceFramework<MNPP_WEB> {
 public:
     explicit MNPP_WEB(Core::System& system_) : ServiceFramework{system_, "mnpp:web"} {}
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "Cmd0"},
             FunctionInfo{1, nullptr, "Cmd1"},
             FunctionInfo{10, nullptr, "Cmd10"},
             FunctionInfo{20, nullptr, "Cmd20"},
             FunctionInfo{100, nullptr, "Cmd100"}
         );
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 

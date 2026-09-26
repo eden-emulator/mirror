@@ -340,9 +340,7 @@ public:
     explicit LM(Core::System& system_) : ServiceFramework{system_, "lm"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, &LM::OpenLogger, "OpenLogger"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -353,21 +351,26 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<ILogger>(ctx, system);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &LM::OpenLogger, "OpenLogger"}
+    );
 };
 
 class LM_GET final : public ServiceFramework<LM_GET> {
 public:
-    explicit LM_GET(Core::System& system_)
-        : ServiceFramework{system_, "lm:get"}
-    {
-        static const FunctionInfo functions[] = {
-            FunctionInfo{0, nullptr, "StartLogging"},
-            FunctionInfo{1, nullptr, "StopLogging"},
-            FunctionInfo{2, nullptr, "GetLog"},
-            FunctionInfo{100, nullptr, "CreateDevNotificationReceiver"}
-        };
-        RegisterHandlers(functions);
+    explicit LM_GET(Core::System& system_) : ServiceFramework{system_, "lm:get"} {}
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "StartLogging"},
+        FunctionInfo{1, nullptr, "StopLogging"},
+        FunctionInfo{2, nullptr, "GetLog"},
+        FunctionInfo{100, nullptr, "CreateDevNotificationReceiver"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

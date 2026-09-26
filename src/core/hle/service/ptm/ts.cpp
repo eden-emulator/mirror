@@ -22,11 +22,7 @@ public:
     explicit ISession(Core::System& system_) : ServiceFramework{system_, "ISession"} {}
 
     FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key,
-            FunctionInfo{0, nullptr, "GetTemperatureRange"},
-            FunctionInfo{2, nullptr, "SetMeasurementMode"},
-            FunctionInfo{4, &ISession::GetTemperature, "GetTemperature"}
-        );
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -37,6 +33,12 @@ private:
         rb.Push(ResultSuccess);
         rb.Push(temperature);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "GetTemperatureRange"},
+        FunctionInfo{2, nullptr, "SetMeasurementMode"},
+        FunctionInfo{4, &ISession::GetTemperature, "GetTemperature"}
+    );
 };
 
 TS::TS(Core::System& system_) : ServiceFramework{system_, "ts"} {
