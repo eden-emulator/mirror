@@ -11,17 +11,7 @@
 
 namespace Service::PSC::Time {
 
-SteadyClock::SteadyClock(Core::System& system_, std::shared_ptr<TimeManager> manager,
-                         bool can_write_steady_clock, bool can_write_uninitialized_clock)
-    : ServiceFramework{system_, "ISteadyClock"}
-    , m_clock_core{manager->m_standard_steady_clock}
-    , m_can_write_steady_clock{can_write_steady_clock}
-    , m_can_write_uninitialized_clock{can_write_uninitialized_clock}
-{
-    // clang-format off
-         FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
+ServiceFrameworkBase::FunctionInfoBase const* SteadyClock::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&SteadyClock::GetCurrentTimePoint>, "GetCurrentTimePoint"},
         FunctionInfo{2, D<&SteadyClock::GetTestOffset>, "GetTestOffset"},
@@ -31,7 +21,16 @@ SteadyClock::SteadyClock(Core::System& system_, std::shared_ptr<TimeManager> man
         FunctionInfo{102, D<&SteadyClock::GetSetupResultValue>, "GetSetupResultValue"},
         FunctionInfo{200, D<&SteadyClock::GetInternalOffset>, "GetInternalOffset"}
     );
+    return HandlerTableGenerateWithFind(key, functions);
 }
+
+SteadyClock::SteadyClock(Core::System& system_, std::shared_ptr<TimeManager> manager,
+                         bool can_write_steady_clock, bool can_write_uninitialized_clock)
+    : ServiceFramework{system_, "ISteadyClock"}
+    , m_clock_core{manager->m_standard_steady_clock}
+    , m_can_write_steady_clock{can_write_steady_clock}
+    , m_can_write_uninitialized_clock{can_write_uninitialized_clock}
+{}
 
 Result SteadyClock::GetCurrentTimePoint(Out<SteadyClockTimePoint> out_time_point) {
     SCOPE_EXIT {

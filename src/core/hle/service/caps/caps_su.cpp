@@ -15,6 +15,17 @@
 
 namespace Service::Capture {
 
+ServiceFrameworkBase::FunctionInfoBase const* IScreenShotApplicationService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{32, C<&IScreenShotApplicationService::SetShimLibraryVersion>, "SetShimLibraryVersion"},
+        FunctionInfo{201, nullptr, "SaveScreenShot"},
+        FunctionInfo{203, C<&IScreenShotApplicationService::SaveScreenShotEx0>, "SaveScreenShotEx0"},
+        FunctionInfo{205, C<&IScreenShotApplicationService::SaveScreenShotEx1>, "SaveScreenShotEx1"},
+        FunctionInfo{210, nullptr, "SaveScreenShotEx2"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IScreenShotApplicationService::IScreenShotApplicationService(
     Core::System& system_, std::shared_ptr<AlbumManager> album_manager)
     : ServiceFramework{system_, "caps:su"}, manager{album_manager} {

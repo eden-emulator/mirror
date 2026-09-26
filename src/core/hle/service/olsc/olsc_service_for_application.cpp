@@ -9,36 +9,36 @@
 
 namespace Service::OLSC {
 
+ServiceFrameworkBase::FunctionInfoBase const* IOlscServiceForApplication::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IOlscServiceForApplication::Initialize>, "Initialize"},
+        FunctionInfo{10, nullptr, "VerifySaveDataBackupLicenseAsync"},
+        FunctionInfo{13, D<&IOlscServiceForApplication::GetSaveDataBackupSetting>, "GetSaveDataBackupSetting"},
+        FunctionInfo{14, D<&IOlscServiceForApplication::SetSaveDataBackupSettingEnabled>, "SetSaveDataBackupSettingEnabled"},
+        FunctionInfo{15, nullptr, "SetCustomData"},
+        FunctionInfo{16, nullptr, "DeleteSaveDataBackupSetting"},
+        FunctionInfo{18, nullptr, "GetSaveDataBackupInfoCache"},
+        FunctionInfo{19, nullptr, "UpdateSaveDataBackupInfoCacheAsync"},
+        FunctionInfo{22, nullptr, "DeleteSaveDataBackupAsync"},
+        FunctionInfo{25, nullptr, "ListDownloadableSaveDataBackupInfoAsync"},
+        FunctionInfo{26, nullptr, "DownloadSaveDataBackupAsync"},
+        FunctionInfo{27, nullptr, "UploadSaveDataBackupAsync"},
+        FunctionInfo{9010, nullptr, "VerifySaveDataBackupLicenseAsyncForDebug"},
+        FunctionInfo{9013, nullptr, "GetSaveDataBackupSettingForDebug"},
+        FunctionInfo{9014, nullptr, "SetSaveDataBackupSettingEnabledForDebug"},
+        FunctionInfo{9015, nullptr, "SetCustomDataForDebug"},
+        FunctionInfo{9016, nullptr, "DeleteSaveDataBackupSettingForDebug"},
+        FunctionInfo{9018, nullptr, "GetSaveDataBackupInfoCacheForDebug"},
+        FunctionInfo{9019, nullptr, "UpdateSaveDataBackupInfoCacheAsyncForDebug"},
+        FunctionInfo{9022, nullptr, "DeleteSaveDataBackupAsyncForDebug"},
+        FunctionInfo{9025, nullptr, "ListDownloadableSaveDataBackupInfoAsyncForDebug"},
+        FunctionInfo{9026, nullptr, "DownloadSaveDataBackupAsyncForDebug"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IOlscServiceForApplication::IOlscServiceForApplication(Core::System& system_)
     : ServiceFramework{system_, "olsc:u"} {
-    // clang-format off
-        FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, D<&IOlscServiceForApplication::Initialize>, "Initialize"},
-            FunctionInfo{10, nullptr, "VerifySaveDataBackupLicenseAsync"},
-            FunctionInfo{13, D<&IOlscServiceForApplication::GetSaveDataBackupSetting>, "GetSaveDataBackupSetting"},
-            FunctionInfo{14, D<&IOlscServiceForApplication::SetSaveDataBackupSettingEnabled>, "SetSaveDataBackupSettingEnabled"},
-            FunctionInfo{15, nullptr, "SetCustomData"},
-            FunctionInfo{16, nullptr, "DeleteSaveDataBackupSetting"},
-            FunctionInfo{18, nullptr, "GetSaveDataBackupInfoCache"},
-            FunctionInfo{19, nullptr, "UpdateSaveDataBackupInfoCacheAsync"},
-            FunctionInfo{22, nullptr, "DeleteSaveDataBackupAsync"},
-            FunctionInfo{25, nullptr, "ListDownloadableSaveDataBackupInfoAsync"},
-            FunctionInfo{26, nullptr, "DownloadSaveDataBackupAsync"},
-            FunctionInfo{27, nullptr, "UploadSaveDataBackupAsync"},
-            FunctionInfo{9010, nullptr, "VerifySaveDataBackupLicenseAsyncForDebug"},
-            FunctionInfo{9013, nullptr, "GetSaveDataBackupSettingForDebug"},
-            FunctionInfo{9014, nullptr, "SetSaveDataBackupSettingEnabledForDebug"},
-            FunctionInfo{9015, nullptr, "SetCustomDataForDebug"},
-            FunctionInfo{9016, nullptr, "DeleteSaveDataBackupSettingForDebug"},
-            FunctionInfo{9018, nullptr, "GetSaveDataBackupInfoCacheForDebug"},
-            FunctionInfo{9019, nullptr, "UpdateSaveDataBackupInfoCacheAsyncForDebug"},
-            FunctionInfo{9022, nullptr, "DeleteSaveDataBackupAsyncForDebug"},
-            FunctionInfo{9025, nullptr, "ListDownloadableSaveDataBackupInfoAsyncForDebug"},
-            FunctionInfo{9026, nullptr, "DownloadSaveDataBackupAsyncForDebug"}
-        );
 }
 
 IOlscServiceForApplication::~IOlscServiceForApplication() = default;

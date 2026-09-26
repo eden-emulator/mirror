@@ -17,6 +17,62 @@
 
 namespace Service::AM {
 
+    ServiceFrameworkBase::FunctionInfoBase const* ISelfController::FindRequest(u32 key) {
+        static constexpr auto functions = CreateStaticMap(
+            FunctionInfo{0, D<&ISelfController::Exit>, "Exit"},
+            FunctionInfo{1, D<&ISelfController::LockExit>, "LockExit"},
+            FunctionInfo{2, D<&ISelfController::UnlockExit>, "UnlockExit"},
+            FunctionInfo{3, D<&ISelfController::EnterFatalSection>, "EnterFatalSection"},
+            FunctionInfo{4, D<&ISelfController::LeaveFatalSection>, "LeaveFatalSection"},
+            FunctionInfo{9, D<&ISelfController::GetLibraryAppletLaunchableEvent>, "GetLibraryAppletLaunchableEvent"},
+            FunctionInfo{10, D<&ISelfController::SetScreenShotPermission>, "SetScreenShotPermission"},
+            FunctionInfo{11, D<&ISelfController::SetOperationModeChangedNotification>, "SetOperationModeChangedNotification"},
+            FunctionInfo{12, D<&ISelfController::SetPerformanceModeChangedNotification>, "SetPerformanceModeChangedNotification"},
+            FunctionInfo{13, D<&ISelfController::SetFocusHandlingMode>, "SetFocusHandlingMode"},
+            FunctionInfo{14, D<&ISelfController::SetRestartMessageEnabled>, "SetRestartMessageEnabled"},
+            FunctionInfo{15, D<&ISelfController::SetScreenShotAppletIdentityInfo>, "SetScreenShotAppletIdentityInfo"},
+            FunctionInfo{16, D<&ISelfController::SetOutOfFocusSuspendingEnabled>, "SetOutOfFocusSuspendingEnabled"},
+            FunctionInfo{17, nullptr, "SetControllerFirmwareUpdateSection"},
+            FunctionInfo{18, nullptr, "SetRequiresCaptureButtonShortPressedMessage"},
+            FunctionInfo{19, D<&ISelfController::SetAlbumImageOrientation>, "SetAlbumImageOrientation"},
+            FunctionInfo{20, nullptr, "SetDesirableKeyboardLayout"},
+            FunctionInfo{21, nullptr, "GetScreenShotProgramId"},
+            FunctionInfo{40, D<&ISelfController::CreateManagedDisplayLayer>, "CreateManagedDisplayLayer"},
+            FunctionInfo{41, D<&ISelfController::IsSystemBufferSharingEnabled>, "IsSystemBufferSharingEnabled"},
+            FunctionInfo{42, D<&ISelfController::GetSystemSharedLayerHandle>, "GetSystemSharedLayerHandle"},
+            FunctionInfo{43, D<&ISelfController::GetSystemSharedBufferHandle>, "GetSystemSharedBufferHandle"},
+            FunctionInfo{44, D<&ISelfController::CreateManagedDisplaySeparableLayer>, "CreateManagedDisplaySeparableLayer"},
+            FunctionInfo{45, nullptr, "SetManagedDisplayLayerSeparationMode"},
+            FunctionInfo{46, nullptr, "SetRecordingLayerCompositionEnabled"},
+            FunctionInfo{50, D<&ISelfController::SetHandlesRequestToDisplay>, "SetHandlesRequestToDisplay"},
+            FunctionInfo{51, D<&ISelfController::ApproveToDisplay>, "ApproveToDisplay"},
+            FunctionInfo{60, D<&ISelfController::OverrideAutoSleepTimeAndDimmingTime>, "OverrideAutoSleepTimeAndDimmingTime"},
+            FunctionInfo{61, D<&ISelfController::SetMediaPlaybackState>, "SetMediaPlaybackState"},
+            FunctionInfo{62, D<&ISelfController::SetIdleTimeDetectionExtension>, "SetIdleTimeDetectionExtension"},
+            FunctionInfo{63, D<&ISelfController::GetIdleTimeDetectionExtension>, "GetIdleTimeDetectionExtension"},
+            FunctionInfo{64, nullptr, "SetInputDetectionSourceSet"},
+            FunctionInfo{65, D<&ISelfController::ReportUserIsActive>, "ReportUserIsActive"},
+            FunctionInfo{66, nullptr, "GetCurrentIlluminance"},
+            FunctionInfo{67, D<&ISelfController::IsIlluminanceAvailable>, "IsIlluminanceAvailable"},
+            FunctionInfo{68, D<&ISelfController::SetAutoSleepDisabled>, "SetAutoSleepDisabled"},
+            FunctionInfo{69, D<&ISelfController::IsAutoSleepDisabled>, "IsAutoSleepDisabled"},
+            FunctionInfo{70, nullptr, "ReportMultimediaError"},
+            FunctionInfo{71, nullptr, "GetCurrentIlluminanceEx"},
+            FunctionInfo{72, D<&ISelfController::SetInputDetectionPolicy>, "SetInputDetectionPolicy"},
+            FunctionInfo{80, nullptr, "SetWirelessPriorityMode"},
+            FunctionInfo{90, D<&ISelfController::GetAccumulatedSuspendedTickValue>, "GetAccumulatedSuspendedTickValue"},
+            FunctionInfo{91, D<&ISelfController::GetAccumulatedSuspendedTickChangedEvent>, "GetAccumulatedSuspendedTickChangedEvent"},
+            FunctionInfo{100, D<&ISelfController::SetAlbumImageTakenNotificationEnabled>, "SetAlbumImageTakenNotificationEnabled"},
+            FunctionInfo{110, nullptr, "SetApplicationAlbumUserData"},
+            FunctionInfo{120, D<&ISelfController::SaveCurrentScreenshot>, "SaveCurrentScreenshot"},
+            FunctionInfo{130, D<&ISelfController::SetRecordVolumeMuted>, "SetRecordVolumeMuted"},
+            FunctionInfo{230, D<&ISelfController::Unknown230>, "Unknown230"},
+            FunctionInfo{240, D<&ISelfController::Unknown240>, "Unknown240"},
+            FunctionInfo{1000, nullptr, "GetDebugStorageChannel"}
+        );
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+
 ISelfController::ISelfController(Core::System& system_, std::shared_ptr<Applet> applet,
                                  Kernel::KProcess* process)
     : ServiceFramework{system_, "ISelfController"}, m_process{process}, m_applet{

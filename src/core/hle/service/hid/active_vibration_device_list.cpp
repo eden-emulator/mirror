@@ -14,16 +14,16 @@
 
 namespace Service::HID {
 
+ServiceFrameworkBase::FunctionInfoBase const* IActiveVibrationDeviceList::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IActiveVibrationDeviceList::ActivateVibrationDevice>, "ActivateVibrationDevice"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IActiveVibrationDeviceList::IActiveVibrationDeviceList(Core::System& system_,
                                                        std::shared_ptr<ResourceManager> resource)
     : ServiceFramework{system_, "IActiveVibrationDeviceList"}, resource_manager(resource) {
-    // clang-format off
-        FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, C<&IActiveVibrationDeviceList::ActivateVibrationDevice>, "ActivateVibrationDevice"}
-        );
 }
 
 IActiveVibrationDeviceList::~IActiveVibrationDeviceList() = default;

@@ -33,16 +33,7 @@ private:
     Result CreateDeliveryCacheStorageServiceWithApplicationId(
         u64 application_id, OutInterface<IDeliveryCacheStorageService> out_interface);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IServiceCreator::CreateBcatService>, "CreateBcatService"},
-        FunctionInfo{1, D<&IServiceCreator::CreateDeliveryCacheStorageService>, "CreateDeliveryCacheStorageService"},
-        FunctionInfo{2, D<&IServiceCreator::CreateDeliveryCacheStorageServiceWithApplicationId>, "CreateDeliveryCacheStorageServiceWithApplicationId"},
-        FunctionInfo{3, nullptr, "CreateDeliveryCacheProgressService"},
-        FunctionInfo{4, nullptr, "CreateDeliveryCacheProgressServiceWithApplicationId"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     std::unique_ptr<BcatBackend> backend;
     Service::FileSystem::FileSystemController& fsc;
 };

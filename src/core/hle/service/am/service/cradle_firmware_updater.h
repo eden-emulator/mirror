@@ -30,17 +30,7 @@ private:
     Result GetCradleDeviceInfoChangeEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
 
 private:
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&ICradleFirmwareUpdater::StartUpdate>, "StartUpdate"},
-        FunctionInfo{1, D<&ICradleFirmwareUpdater::FinishUpdate>, "FinishUpdate"},
-        FunctionInfo{2, D<&ICradleFirmwareUpdater::GetCradleDeviceInfo>, "GetCradleDeviceInfo"},
-        FunctionInfo{3, D<&ICradleFirmwareUpdater::GetCradleDeviceInfoChangeEvent>, "GetCradleDeviceInfoChangeEvent"},
-        FunctionInfo{4, nullptr, "GetUpdateProgressInfo"},
-        FunctionInfo{5, nullptr, "GetLastInternalResult"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     KernelHelpers::ServiceContext m_context;
     Event m_cradle_device_info_event;
 };

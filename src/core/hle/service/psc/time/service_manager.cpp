@@ -13,6 +13,30 @@
 
 namespace Service::PSC::Time {
 
+    ServiceFrameworkBase::FunctionInfoBase const* ServiceManager::FindRequest(u32 key) {
+        static constexpr auto functions = CreateStaticMap(
+            FunctionInfo{0,   D<&ServiceManager::GetStaticServiceAsUser>, "GetStaticServiceAsUser"},
+            FunctionInfo{5,   D<&ServiceManager::GetStaticServiceAsAdmin>, "GetStaticServiceAsAdmin"},
+            FunctionInfo{6,   D<&ServiceManager::GetStaticServiceAsRepair>, "GetStaticServiceAsRepair"},
+            FunctionInfo{9,   D<&ServiceManager::GetStaticServiceAsServiceManager>, "GetStaticServiceAsServiceManager"},
+            FunctionInfo{10,  D<&ServiceManager::SetupStandardSteadyClockCore>, "SetupStandardSteadyClockCore"},
+            FunctionInfo{11,  D<&ServiceManager::SetupStandardLocalSystemClockCore>, "SetupStandardLocalSystemClockCore"},
+            FunctionInfo{12,  D<&ServiceManager::SetupStandardNetworkSystemClockCore>, "SetupStandardNetworkSystemClockCore"},
+            FunctionInfo{13,  D<&ServiceManager::SetupStandardUserSystemClockCore>, "SetupStandardUserSystemClockCore"},
+            FunctionInfo{14,  D<&ServiceManager::SetupTimeZoneServiceCore>, "SetupTimeZoneServiceCore"},
+            FunctionInfo{15,  D<&ServiceManager::SetupEphemeralNetworkSystemClockCore>, "SetupEphemeralNetworkSystemClockCore"},
+            FunctionInfo{50,  D<&ServiceManager::GetStandardLocalClockOperationEvent>, "GetStandardLocalClockOperationEvent"},
+            FunctionInfo{51,  D<&ServiceManager::GetStandardNetworkClockOperationEventForServiceManager>, "GetStandardNetworkClockOperationEventForServiceManager"},
+            FunctionInfo{52,  D<&ServiceManager::GetEphemeralNetworkClockOperationEventForServiceManager>, "GetEphemeralNetworkClockOperationEventForServiceManager"},
+            FunctionInfo{60,  D<&ServiceManager::GetStandardUserSystemClockAutomaticCorrectionUpdatedEvent>, "GetStandardUserSystemClockAutomaticCorrectionUpdatedEvent"},
+            FunctionInfo{100, D<&ServiceManager::SetStandardSteadyClockBaseTime>, "SetStandardSteadyClockBaseTime"},
+            FunctionInfo{200, D<&ServiceManager::GetClosestAlarmUpdatedEvent>, "GetClosestAlarmUpdatedEvent"},
+            FunctionInfo{201, D<&ServiceManager::CheckAndSignalAlarms>, "CheckAndSignalAlarms"},
+            FunctionInfo{202, D<&ServiceManager::GetClosestAlarmInfo>, "GetClosestAlarmInfo "}
+        );
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+
 ServiceManager::ServiceManager(Core::System& system_, std::shared_ptr<TimeManager> time,
                                ServerManager* server_manager)
     : ServiceFramework{system_, "time:m"}, m_time{std::move(time)},

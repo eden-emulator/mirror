@@ -9,6 +9,18 @@
 
 namespace Service::AM {
 
+ServiceFrameworkBase::FunctionInfoBase const* IAudioController::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IAudioController::SetExpectedMasterVolume>, "SetExpectedMasterVolume"},
+        FunctionInfo{1, D<&IAudioController::GetMainAppletExpectedMasterVolume>, "GetMainAppletExpectedMasterVolume"},
+        FunctionInfo{2, D<&IAudioController::GetLibraryAppletExpectedMasterVolume>, "GetLibraryAppletExpectedMasterVolume"},
+        FunctionInfo{3, D<&IAudioController::ChangeMainAppletMasterVolume>, "ChangeMainAppletMasterVolume"},
+        FunctionInfo{4, D<&IAudioController::SetTransparentVolumeRate>, "SetTransparentVolumeRate"},
+        FunctionInfo{5, nullptr, "Unknown5"} //20.0.0+
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IAudioController::IAudioController(Core::System& system_)
     : ServiceFramework{system_, "IAudioController"} {
 }

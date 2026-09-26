@@ -11,6 +11,7 @@ class IPmModule final : public ServiceFramework<IPmModule> {
 public:
     explicit IPmModule(Core::System& system_);
     ~IPmModule() override;
+    FunctionInfoBase const* FindRequest(u32 key) override;
 };
 
 } // namespace Service::PSC

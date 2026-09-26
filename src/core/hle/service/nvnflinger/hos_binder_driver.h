@@ -44,15 +44,7 @@ private:
                               OutBuffer<BufferAttr_HipcAutoSelect> parcel_reply, u32 flags);
 
 private:
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, C<&IHOSBinderDriver::TransactParcel>, "TransactParcel"},
-        FunctionInfo{1, C<&IHOSBinderDriver::AdjustRefcount>, "AdjustRefcount"},
-        FunctionInfo{2, C<&IHOSBinderDriver::GetNativeHandle>, "GetNativeHandle"},
-        FunctionInfo{3, C<&IHOSBinderDriver::TransactParcelAuto>, "TransactParcelAuto"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     const std::shared_ptr<HosBinderDriverServer> m_server;
     const std::shared_ptr<SurfaceFlinger> m_surface_flinger;
 };

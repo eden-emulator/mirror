@@ -26,14 +26,7 @@ private:
                 OutArray<DeliveryCacheDirectoryEntry, BufferAttr_HipcMapAlias> out_buffer);
     Result GetCount(Out<s32> out_count);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IDeliveryCacheDirectoryService::Open>, "Open"},
-        FunctionInfo{1, D<&IDeliveryCacheDirectoryService::Read>, "Read"},
-        FunctionInfo{2, D<&IDeliveryCacheDirectoryService::GetCount>, "GetCount"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     FileSys::VirtualDir root;
     FileSys::VirtualDir current_dir;
 };

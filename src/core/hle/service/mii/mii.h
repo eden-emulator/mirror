@@ -24,12 +24,7 @@ public:
 private:
     Result GetDatabaseService(Out<SharedPointer<IDatabaseService>> out_database_service);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IStaticService::GetDatabaseService>, "GetDatabaseService"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     std::shared_ptr<MiiManager> manager{nullptr};
     bool is_system{};
 };

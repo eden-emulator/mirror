@@ -7,6 +7,13 @@
 
 namespace Service::PSC {
 
+    ServiceFrameworkBase::FunctionInfoBase const* ISenderService::FindRequest(u32 key) {
+        static constexpr auto functions = CreateStaticMap(
+            FunctionInfo{0, D<&ISenderService::OpenSender>, "OpenSender"}
+        );
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+
 ISenderService::ISenderService(Core::System& system_) : ServiceFramework{system_, "ovln:snd"} {
 }
 

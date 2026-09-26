@@ -38,7 +38,7 @@ public:
         FunctionInfo{601, nullptr, "ListApplicationContentMetaStatus"},
         FunctionInfo{605, nullptr, "ListApplicationContentMetaStatusWithRightsCheck"},
         FunctionInfo{607, nullptr, "IsAnyApplicationRunning"},
-        FunctionInfo{608, nullptr, "Unknown608"}, //21.0.0+
+        FunctionInfo{608, nullptr, "Unknown608"} //21.0.0+
     );
 };
 

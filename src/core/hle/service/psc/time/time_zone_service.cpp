@@ -13,6 +13,26 @@
 
 namespace Service::PSC::Time {
 
+    ServiceFrameworkBase::FunctionInfoBase const* TimeZoneService::FindRequest(u32 key) {
+        static constexpr auto functions = CreateStaticMap(
+            FunctionInfo{0,   D<&TimeZoneService::GetDeviceLocationName>, "GetDeviceLocationName"},
+            FunctionInfo{1,   D<&TimeZoneService::SetDeviceLocationName>, "SetDeviceLocationName"},
+            FunctionInfo{2,   D<&TimeZoneService::GetTotalLocationNameCount>, "GetTotalLocationNameCount"},
+            FunctionInfo{3,   D<&TimeZoneService::LoadLocationNameList>, "LoadLocationNameList"},
+            FunctionInfo{4,   D<&TimeZoneService::LoadTimeZoneRule>, "LoadTimeZoneRule"},
+            FunctionInfo{5,   D<&TimeZoneService::GetTimeZoneRuleVersion>, "GetTimeZoneRuleVersion"},
+            FunctionInfo{6,   D<&TimeZoneService::GetDeviceLocationNameAndUpdatedTime>, "GetDeviceLocationNameAndUpdatedTime"},
+            FunctionInfo{7,   D<&TimeZoneService::SetDeviceLocationNameWithTimeZoneRule>, "SetDeviceLocationNameWithTimeZoneRule"},
+            FunctionInfo{8,   D<&TimeZoneService::ParseTimeZoneBinary>, "ParseTimeZoneBinary"},
+            FunctionInfo{20,  D<&TimeZoneService::GetDeviceLocationNameOperationEventReadableHandle>, "GetDeviceLocationNameOperationEventReadableHandle"},
+            FunctionInfo{100, D<&TimeZoneService::ToCalendarTime>, "ToCalendarTime"},
+            FunctionInfo{101, D<&TimeZoneService::ToCalendarTimeWithMyRule>, "ToCalendarTimeWithMyRule"},
+            FunctionInfo{201, D<&TimeZoneService::ToPosixTime>, "ToPosixTime"},
+            FunctionInfo{202, D<&TimeZoneService::ToPosixTimeWithMyRule>, "ToPosixTimeWithMyRule"}
+        );
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+
 TimeZoneService::TimeZoneService(Core::System& system_, StandardSteadyClockCore& clock_core,
                                  TimeZone& time_zone, bool can_write_timezone_device_location)
     : ServiceFramework{system_, "ITimeZoneService"}

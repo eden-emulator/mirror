@@ -13,6 +13,26 @@
 
 namespace Service::Capture {
 
+ServiceFrameworkBase::FunctionInfoBase const* IAlbumApplicationService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{32, C<&IAlbumApplicationService::SetShimLibraryVersion>, "SetShimLibraryVersion"},
+        FunctionInfo{102, C<&IAlbumApplicationService::GetAlbumFileList0AafeAruidDeprecated>, "GetAlbumFileList0AafeAruidDeprecated"},
+        FunctionInfo{103, nullptr, "DeleteAlbumFileByAruid"},
+        FunctionInfo{104, nullptr, "GetAlbumFileSizeByAruid"},
+        FunctionInfo{105, nullptr, "DeleteAlbumFileByAruidForDebug"},
+        FunctionInfo{110, nullptr, "LoadAlbumScreenShotImageByAruid"},
+        FunctionInfo{120, nullptr, "LoadAlbumScreenShotThumbnailImageByAruid"},
+        FunctionInfo{130, nullptr, "PrecheckToCreateContentsByAruid"},
+        FunctionInfo{140, nullptr, "GetAlbumFileList1AafeAruidDeprecated"},
+        FunctionInfo{141, nullptr, "GetAlbumFileList2AafeUidAruidDeprecated"},
+        FunctionInfo{142, C<&IAlbumApplicationService::GetAlbumFileList3AaeAruid>, "GetAlbumFileList3AaeAruid"},
+        FunctionInfo{143, nullptr, "GetAlbumFileList4AaeUidAruid"},
+        FunctionInfo{144, nullptr, "GetAllAlbumFileList3AaeAruid"},
+        FunctionInfo{60002, nullptr, "OpenAccessorSessionForApplication"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IAlbumApplicationService::IAlbumApplicationService(Core::System& system_,
                                                    std::shared_ptr<AlbumManager> album_manager)
     : ServiceFramework{system_, "caps:u"}, manager{album_manager} {

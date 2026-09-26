@@ -8,9 +8,6 @@
 
 #include "common/polyfill_thread.h"
 #include "core/hle/service/sm/sm.h"
-// Include these for proper template instancing
-#include "core/hle/service/ipc_helpers.h"
-#include "core/hle/service/cmif_serialization.h"
 
 namespace Service {
 

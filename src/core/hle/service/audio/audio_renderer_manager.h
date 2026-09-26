@@ -33,16 +33,7 @@ private:
     Result GetAudioDeviceServiceWithRevisionInfo(Out<SharedPointer<IAudioDevice>> out_audio_device,
                                                  u32 revision, ClientAppletResourceUserId aruid);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IAudioRendererManager::OpenAudioRenderer>, "OpenAudioRenderer"},
-        FunctionInfo{1, D<&IAudioRendererManager::GetWorkBufferSize>, "GetWorkBufferSize"},
-        FunctionInfo{2, D<&IAudioRendererManager::GetAudioDeviceService>, "GetAudioDeviceService"},
-        FunctionInfo{3, nullptr, "OpenAudioRendererForManualExecution"},
-        FunctionInfo{4, D<&IAudioRendererManager::GetAudioDeviceServiceWithRevisionInfo>, "GetAudioDeviceServiceWithRevisionInfo"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     std::optional<AudioCore::Renderer::Manager> impl;
     u32 num_audio_devices{0};
 };

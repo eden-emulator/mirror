@@ -10,6 +10,13 @@
 
 namespace Service::PSC {
 
+    ServiceFrameworkBase::FunctionInfoBase const* IReceiverService::FindRequest(u32 key) {
+        static constexpr auto functions = CreateStaticMap(
+            FunctionInfo{0, D<&IReceiverService::OpenReceiver>, "OpenReceiver"}
+        );
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+
 IReceiverService::IReceiverService(Core::System& system_) : ServiceFramework{system_, "ovln:rcv"} {
 }
 

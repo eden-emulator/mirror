@@ -21,46 +21,46 @@
 
 namespace Service::LDN {
 
+ServiceFrameworkBase::FunctionInfoBase const* IUserLocalCommunicationService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IUserLocalCommunicationService::GetState>, "GetState"},
+        FunctionInfo{1, D<&IUserLocalCommunicationService::GetNetworkInfo>, "GetNetworkInfo"},
+        FunctionInfo{2, D<&IUserLocalCommunicationService::GetIpv4Address>, "GetIpv4Address"},
+        FunctionInfo{3, D<&IUserLocalCommunicationService::GetDisconnectReason>, "GetDisconnectReason"},
+        FunctionInfo{4, D<&IUserLocalCommunicationService::GetSecurityParameter>, "GetSecurityParameter"},
+        FunctionInfo{5, D<&IUserLocalCommunicationService::GetNetworkConfig>, "GetNetworkConfig"},
+        FunctionInfo{100, D<&IUserLocalCommunicationService::AttachStateChangeEvent>, "AttachStateChangeEvent"},
+        FunctionInfo{101, D<&IUserLocalCommunicationService::GetNetworkInfoLatestUpdate>, "GetNetworkInfoLatestUpdate"},
+        FunctionInfo{102, D<&IUserLocalCommunicationService::Scan>, "Scan"},
+        FunctionInfo{103, D<&IUserLocalCommunicationService::ScanPrivate>, "ScanPrivate"},
+        FunctionInfo{104, D<&IUserLocalCommunicationService::SetWirelessControllerRestriction>, "SetWirelessControllerRestriction"},
+        FunctionInfo{106, D<&IUserLocalCommunicationService::SetProtocol>, "SetProtocol" },
+        FunctionInfo{200, D<&IUserLocalCommunicationService::OpenAccessPoint>, "OpenAccessPoint"},
+        FunctionInfo{201, D<&IUserLocalCommunicationService::CloseAccessPoint>, "CloseAccessPoint"},
+        FunctionInfo{202, D<&IUserLocalCommunicationService::CreateNetwork>, "CreateNetwork"},
+        FunctionInfo{203, D<&IUserLocalCommunicationService::CreateNetworkPrivate>, "CreateNetworkPrivate"},
+        FunctionInfo{204, D<&IUserLocalCommunicationService::DestroyNetwork>, "DestroyNetwork"},
+        FunctionInfo{205, nullptr, "Reject"},
+        FunctionInfo{206, D<&IUserLocalCommunicationService::SetAdvertiseData>, "SetAdvertiseData"},
+        FunctionInfo{207, D<&IUserLocalCommunicationService::SetStationAcceptPolicy>, "SetStationAcceptPolicy"},
+        FunctionInfo{208, D<&IUserLocalCommunicationService::AddAcceptFilterEntry>, "AddAcceptFilterEntry"},
+        FunctionInfo{209, nullptr, "ClearAcceptFilter"},
+        FunctionInfo{300, D<&IUserLocalCommunicationService::OpenStation>, "OpenStation"},
+        FunctionInfo{301, D<&IUserLocalCommunicationService::CloseStation>, "CloseStation"},
+        FunctionInfo{302, D<&IUserLocalCommunicationService::Connect>, "Connect"},
+        FunctionInfo{303, nullptr, "ConnectPrivate"},
+        FunctionInfo{304, D<&IUserLocalCommunicationService::Disconnect>, "Disconnect"},
+        FunctionInfo{400, D<&IUserLocalCommunicationService::Initialize>, "Initialize"},
+        FunctionInfo{401, D<&IUserLocalCommunicationService::Finalize>, "Finalize"},
+        FunctionInfo{402, D<&IUserLocalCommunicationService::Initialize2>, "Initialize2"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IUserLocalCommunicationService::IUserLocalCommunicationService(Core::System& system_)
     : ServiceFramework{system_, "IUserLocalCommunicationService"},
       service_context{system, "IUserLocalCommunicationService"},
       lan_discovery{} {
-    // clang-format off
-        FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, D<&IUserLocalCommunicationService::GetState>, "GetState"},
-            FunctionInfo{1, D<&IUserLocalCommunicationService::GetNetworkInfo>, "GetNetworkInfo"},
-            FunctionInfo{2, D<&IUserLocalCommunicationService::GetIpv4Address>, "GetIpv4Address"},
-            FunctionInfo{3, D<&IUserLocalCommunicationService::GetDisconnectReason>, "GetDisconnectReason"},
-            FunctionInfo{4, D<&IUserLocalCommunicationService::GetSecurityParameter>, "GetSecurityParameter"},
-            FunctionInfo{5, D<&IUserLocalCommunicationService::GetNetworkConfig>, "GetNetworkConfig"},
-            FunctionInfo{100, D<&IUserLocalCommunicationService::AttachStateChangeEvent>, "AttachStateChangeEvent"},
-            FunctionInfo{101, D<&IUserLocalCommunicationService::GetNetworkInfoLatestUpdate>, "GetNetworkInfoLatestUpdate"},
-            FunctionInfo{102, D<&IUserLocalCommunicationService::Scan>, "Scan"},
-            FunctionInfo{103, D<&IUserLocalCommunicationService::ScanPrivate>, "ScanPrivate"},
-            FunctionInfo{104, D<&IUserLocalCommunicationService::SetWirelessControllerRestriction>, "SetWirelessControllerRestriction"},
-            FunctionInfo{106, D<&IUserLocalCommunicationService::SetProtocol>, "SetProtocol" },
-            FunctionInfo{200, D<&IUserLocalCommunicationService::OpenAccessPoint>, "OpenAccessPoint"},
-            FunctionInfo{201, D<&IUserLocalCommunicationService::CloseAccessPoint>, "CloseAccessPoint"},
-            FunctionInfo{202, D<&IUserLocalCommunicationService::CreateNetwork>, "CreateNetwork"},
-            FunctionInfo{203, D<&IUserLocalCommunicationService::CreateNetworkPrivate>, "CreateNetworkPrivate"},
-            FunctionInfo{204, D<&IUserLocalCommunicationService::DestroyNetwork>, "DestroyNetwork"},
-            FunctionInfo{205, nullptr, "Reject"},
-            FunctionInfo{206, D<&IUserLocalCommunicationService::SetAdvertiseData>, "SetAdvertiseData"},
-            FunctionInfo{207, D<&IUserLocalCommunicationService::SetStationAcceptPolicy>, "SetStationAcceptPolicy"},
-            FunctionInfo{208, D<&IUserLocalCommunicationService::AddAcceptFilterEntry>, "AddAcceptFilterEntry"},
-            FunctionInfo{209, nullptr, "ClearAcceptFilter"},
-            FunctionInfo{300, D<&IUserLocalCommunicationService::OpenStation>, "OpenStation"},
-            FunctionInfo{301, D<&IUserLocalCommunicationService::CloseStation>, "CloseStation"},
-            FunctionInfo{302, D<&IUserLocalCommunicationService::Connect>, "Connect"},
-            FunctionInfo{303, nullptr, "ConnectPrivate"},
-            FunctionInfo{304, D<&IUserLocalCommunicationService::Disconnect>, "Disconnect"},
-            FunctionInfo{400, D<&IUserLocalCommunicationService::Initialize>, "Initialize"},
-            FunctionInfo{401, D<&IUserLocalCommunicationService::Finalize>, "Finalize"},
-            FunctionInfo{402, D<&IUserLocalCommunicationService::Initialize2>, "Initialize2"}
-        );
 
     state_change_event =
         service_context.CreateEvent("IUserLocalCommunicationService:StateChangeEvent");

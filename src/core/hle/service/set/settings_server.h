@@ -35,24 +35,7 @@ private:
     Result GetDeviceNickName(OutLargeData<std::array<u8, 0x80>, BufferAttr_HipcMapAlias> out_device_name);
     Result GetKeyCodeMapByPort(OutLargeData<KeyCodeMap, BufferAttr_HipcMapAlias> out_key_code_map, u32 port);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, C<&ISettingsServer::GetLanguageCode>, "GetLanguageCode"},
-        FunctionInfo{1, C<&ISettingsServer::GetAvailableLanguageCodes>, "GetAvailableLanguageCodes"},
-        FunctionInfo{2, C<&ISettingsServer::MakeLanguageCode>, "MakeLanguageCode"},
-        FunctionInfo{3, C<&ISettingsServer::GetAvailableLanguageCodeCount>, "GetAvailableLanguageCodeCount"},
-        FunctionInfo{4, C<&ISettingsServer::GetRegionCode>, "GetRegionCode"},
-        FunctionInfo{5, C<&ISettingsServer::GetAvailableLanguageCodes2>, "GetAvailableLanguageCodes2"},
-        FunctionInfo{6, C<&ISettingsServer::GetAvailableLanguageCodeCount2>, "GetAvailableLanguageCodeCount2"},
-        FunctionInfo{7, C<&ISettingsServer::GetKeyCodeMap>, "GetKeyCodeMap"},
-        FunctionInfo{8, C<&ISettingsServer::GetQuestFlag>, "GetQuestFlag"},
-        FunctionInfo{9, C<&ISettingsServer::GetKeyCodeMap2>, "GetKeyCodeMap2"},
-        FunctionInfo{10, nullptr, "GetFirmwareVersionForDebug"},
-        FunctionInfo{11, C<&ISettingsServer::GetDeviceNickName>, "GetDeviceNickName"},
-        FunctionInfo{12, C<&ISettingsServer::GetKeyCodeMapByPort>, "GetKeyCodeMapByPort"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
 };
 
 } // namespace Service::Set

@@ -628,142 +628,99 @@ private:
 };
 
 class ISslServiceForSystem final : public ServiceFramework<ISslServiceForSystem> {
-    public:
-        explicit ISslServiceForSystem(Core::System& system_) : ServiceFramework{system_, "ssl:s"} {
-            // clang-format off
-            FunctionInfoBase const* FindRequest(u32 key) override {
+public:
+    explicit ISslServiceForSystem(Core::System& system_) : ServiceFramework{system_, "ssl:s"} {}
+
+    Result CreateContext() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result GetContextCount() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result GetCertificates() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result GetCertificateBufSize() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result DebugIoctl() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result SetInterfaceVersion() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result FlushSessionCache() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result SetDebugOption() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result GetDebugOption() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result ClearTls12FallbackFlag() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result CreateContextForSystem() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result SetThreadCoreMask() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result GetThreadCoreMask() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    Result VerifySignature() {
+        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+        R_SUCCEED();
+    };
+
+    FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
     static constexpr auto functions = CreateStaticMap(
-                FunctionInfo{0, D<&ISslServiceForSystem::CreateContext>, "CreateContext"},
-                FunctionInfo{1, D<&ISslServiceForSystem::GetContextCount>, "GetContextCount"},
-                FunctionInfo{2, D<&ISslServiceForSystem::GetCertificates>, "GetCertificates"},
-                FunctionInfo{3, D<&ISslServiceForSystem::GetCertificateBufSize>, "GetCertificateBufSize"},
-                FunctionInfo{4, D<&ISslServiceForSystem::DebugIoctl>, "DebugIoctl"},
-                FunctionInfo{5, D<&ISslServiceForSystem::SetInterfaceVersion>, "SetInterfaceVersion"},
-                FunctionInfo{6, D<&ISslServiceForSystem::FlushSessionCache>, "FlushSessionCache"},
-                FunctionInfo{7, D<&ISslServiceForSystem::SetDebugOption>, "SetDebugOption"},
-                FunctionInfo{8, D<&ISslServiceForSystem::GetDebugOption>, "GetDebugOption"},
-                FunctionInfo{9, D<&ISslServiceForSystem::ClearTls12FallbackFlag>, "ClearTls12FallbackFlag"},
-                FunctionInfo{100, D<&ISslServiceForSystem::CreateContextForSystem>, "CreateContextForSystem"},
-                FunctionInfo{101, D<&ISslServiceForSystem::SetThreadCoreMask>, "SetThreadCoreMask"},
-                FunctionInfo{102, D<&ISslServiceForSystem::GetThreadCoreMask>, "GetThreadCoreMask"},
-                FunctionInfo{103, D<&ISslServiceForSystem::VerifySignature>, "VerifySignature"}
-            );
-        };
-
-        Result CreateContext() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result GetContextCount() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result GetCertificates() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result GetCertificateBufSize() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result DebugIoctl() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result SetInterfaceVersion() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result FlushSessionCache() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result SetDebugOption() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result GetDebugOption() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result ClearTls12FallbackFlag() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result CreateContextForSystem() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result SetThreadCoreMask() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result GetThreadCoreMask() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-
-        Result VerifySignature() {
-            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-
-            // TODO (jarrodnorwell)
-
-            return ResultSuccess;
-        };
-    };
+        FunctionInfo{0, D<&ISslServiceForSystem::CreateContext>, "CreateContext"},
+        FunctionInfo{1, D<&ISslServiceForSystem::GetContextCount>, "GetContextCount"},
+        FunctionInfo{2, D<&ISslServiceForSystem::GetCertificates>, "GetCertificates"},
+        FunctionInfo{3, D<&ISslServiceForSystem::GetCertificateBufSize>, "GetCertificateBufSize"},
+        FunctionInfo{4, D<&ISslServiceForSystem::DebugIoctl>, "DebugIoctl"},
+        FunctionInfo{5, D<&ISslServiceForSystem::SetInterfaceVersion>, "SetInterfaceVersion"},
+        FunctionInfo{6, D<&ISslServiceForSystem::FlushSessionCache>, "FlushSessionCache"},
+        FunctionInfo{7, D<&ISslServiceForSystem::SetDebugOption>, "SetDebugOption"},
+        FunctionInfo{8, D<&ISslServiceForSystem::GetDebugOption>, "GetDebugOption"},
+        FunctionInfo{9, D<&ISslServiceForSystem::ClearTls12FallbackFlag>, "ClearTls12FallbackFlag"},
+        FunctionInfo{100, D<&ISslServiceForSystem::CreateContextForSystem>, "CreateContextForSystem"},
+        FunctionInfo{101, D<&ISslServiceForSystem::SetThreadCoreMask>, "SetThreadCoreMask"},
+        FunctionInfo{102, D<&ISslServiceForSystem::GetThreadCoreMask>, "GetThreadCoreMask"},
+        FunctionInfo{103, D<&ISslServiceForSystem::VerifySignature>, "VerifySignature"}
+    );
+};
 
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);

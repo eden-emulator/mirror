@@ -12,16 +12,16 @@
 
 namespace Service::OLSC {
 
-INativeHandleHolder::INativeHandleHolder(Core::System& system_)
-    : ServiceFramework{system_, "INativeHandleHolder"}, service_context{system_, "OLSC"} {
-    event = service_context.CreateEvent("OLSC::INativeHandleHolder");
-    // clang-format off
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
+ServiceFrameworkBase::FunctionInfoBase const* INativeHandleHolder::FindRequest(u32 key) {
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&INativeHandleHolder::GetNativeHandle>, "GetNativeHandle"}
     );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
+INativeHandleHolder::INativeHandleHolder(Core::System& system_)
+    : ServiceFramework{system_, "INativeHandleHolder"}, service_context{system_, "OLSC"} {
+    event = service_context.CreateEvent("OLSC::INativeHandleHolder");
 }
 
 INativeHandleHolder::~INativeHandleHolder() {

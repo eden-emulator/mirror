@@ -17,6 +17,23 @@
 
 namespace Service::NS {
 
+ServiceFrameworkBase::FunctionInfoBase const* IServiceGetterInterface::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{7988, D<&IServiceGetterInterface::GetDynamicRightsInterface>, "GetDynamicRightsInterface"},
+        FunctionInfo{7989, D<&IServiceGetterInterface::GetReadOnlyApplicationControlDataInterface>, "GetReadOnlyApplicationControlDataInterface"},
+        FunctionInfo{7991, D<&IServiceGetterInterface::GetReadOnlyApplicationRecordInterface>, "GetReadOnlyApplicationRecordInterface"},
+        FunctionInfo{7992, D<&IServiceGetterInterface::GetECommerceInterface>, "GetECommerceInterface"},
+        FunctionInfo{7993, D<&IServiceGetterInterface::GetApplicationVersionInterface>, "GetApplicationVersionInterface"},
+        FunctionInfo{7994, D<&IServiceGetterInterface::GetFactoryResetInterface>, "GetFactoryResetInterface"},
+        FunctionInfo{7995, D<&IServiceGetterInterface::GetAccountProxyInterface>, "GetAccountProxyInterface"},
+        FunctionInfo{7996, D<&IServiceGetterInterface::GetApplicationManagerInterface>, "GetApplicationManagerInterface"},
+        FunctionInfo{7997, D<&IServiceGetterInterface::GetDownloadTaskInterface>, "GetDownloadTaskInterface"},
+        FunctionInfo{7998, D<&IServiceGetterInterface::GetContentManagementInterface>, "GetContentManagementInterface"},
+        FunctionInfo{7999, D<&IServiceGetterInterface::GetDocumentInterface>, "GetDocumentInterface"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IServiceGetterInterface::IServiceGetterInterface(Core::System& system_, const char* name)
     : ServiceFramework{system_, name} {
 }

@@ -8,6 +8,16 @@
 
 namespace Service::Nvnflinger {
 
+ServiceFrameworkBase::FunctionInfoBase const* IHOSBinderDriver::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IHOSBinderDriver::TransactParcel>, "TransactParcel"},
+        FunctionInfo{1, C<&IHOSBinderDriver::AdjustRefcount>, "AdjustRefcount"},
+        FunctionInfo{2, C<&IHOSBinderDriver::GetNativeHandle>, "GetNativeHandle"},
+        FunctionInfo{3, C<&IHOSBinderDriver::TransactParcelAuto>, "TransactParcelAuto"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IHOSBinderDriver::IHOSBinderDriver(Core::System& system_,
                                    std::shared_ptr<HosBinderDriverServer> server,
                                    std::shared_ptr<SurfaceFlinger> surface_flinger)

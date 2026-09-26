@@ -12,6 +12,36 @@
 
 namespace Service::AM {
 
+ServiceFrameworkBase::FunctionInfoBase const* IAppletCommonFunctions::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "SetTerminateResult"},
+        FunctionInfo{10, nullptr, "ReadThemeStorage"},
+        FunctionInfo{11, nullptr, "WriteThemeStorage"},
+        FunctionInfo{20, nullptr, "PushToAppletBoundChannel"},
+        FunctionInfo{21, nullptr, "TryPopFromAppletBoundChannel"},
+        FunctionInfo{40, nullptr, "GetDisplayLogicalResolution"},
+        FunctionInfo{42, D<&IAppletCommonFunctions::SetDisplayMagnification>, "SetDisplayMagnification"},
+        FunctionInfo{50, D<&IAppletCommonFunctions::SetHomeButtonDoubleClickEnabled>, "SetHomeButtonDoubleClickEnabled"},
+        FunctionInfo{51, D<&IAppletCommonFunctions::GetHomeButtonDoubleClickEnabled>, "GetHomeButtonDoubleClickEnabled"},
+        FunctionInfo{52, nullptr, "IsHomeButtonShortPressedBlocked"},
+        FunctionInfo{60, nullptr, "IsVrModeCurtainRequired"},
+        FunctionInfo{61, nullptr, "IsSleepRequiredByHighTemperature"},
+        FunctionInfo{62, nullptr, "IsSleepRequiredByLowBattery"},
+        FunctionInfo{70, D<&IAppletCommonFunctions::SetCpuBoostRequestPriority>, "SetCpuBoostRequestPriority"},
+        FunctionInfo{80, nullptr, "SetHandlingCaptureButtonShortPressedMessageEnabledForApplet"},
+        FunctionInfo{81, nullptr, "SetHandlingCaptureButtonLongPressedMessageEnabledForApplet"},
+        FunctionInfo{90, nullptr, "OpenNamedChannelAsParent"},
+        FunctionInfo{91, nullptr, "OpenNamedChannelAsChild"},
+        FunctionInfo{100, nullptr, "SetApplicationCoreUsageMode"},
+        FunctionInfo{300, D<&IAppletCommonFunctions::GetCurrentApplicationId>, "GetCurrentApplicationId"},
+        FunctionInfo{310, nullptr, "IsSystemAppletHomeMenu"}, //19.0.0+
+        FunctionInfo{320, D<&IAppletCommonFunctions::SetGpuTimeSliceBoost>, "SetGpuTimeSliceBoost"}, //19.0.0+
+        FunctionInfo{321, nullptr, "SetGpuTimeSliceBoostDueToApplication"}, //19.0.0+
+        FunctionInfo{350, D<&IAppletCommonFunctions::Unknown350>, "Unknown350"} //20.0.0+
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IAppletCommonFunctions::IAppletCommonFunctions(Core::System& system_,
                                                std::shared_ptr<Applet> applet_)
     : ServiceFramework{system_, "IAppletCommonFunctions"}, applet{std::move(applet_)} {

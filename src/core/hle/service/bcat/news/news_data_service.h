@@ -31,16 +31,7 @@ private:
     Result Read(Out<u64> out_size, s64 offset, OutBuffer<BufferAttr_HipcMapAlias> out_buffer);
     Result GetSize(Out<s64> out_size);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&INewsDataService::Open>, "Open"},
-        FunctionInfo{1, D<&INewsDataService::OpenWithNewsRecordV1>, "OpenWithNewsRecordV1"},
-        FunctionInfo{2, D<&INewsDataService::Read>, "Read"},
-        FunctionInfo{3, D<&INewsDataService::GetSize>, "GetSize"},
-        FunctionInfo{1001, D<&INewsDataService::OpenWithNewsRecord>, "OpenWithNewsRecord"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     std::vector<u8> opened_payload;
 };
 

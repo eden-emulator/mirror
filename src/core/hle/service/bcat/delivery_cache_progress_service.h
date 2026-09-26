@@ -28,13 +28,7 @@ private:
     Result GetEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
     Result GetImpl(OutLargeData<DeliveryCacheProgressImpl, BufferAttr_HipcPointer> out_impl);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IDeliveryCacheProgressService::GetEvent>, "Get"},
-        FunctionInfo{1, D<&IDeliveryCacheProgressService::GetImpl>, "Get"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     Kernel::KReadableEvent& event;
     const DeliveryCacheProgressImpl& impl;
 };

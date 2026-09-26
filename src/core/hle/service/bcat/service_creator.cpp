@@ -13,6 +13,17 @@
 
 namespace Service::BCAT {
 
+ServiceFrameworkBase::FunctionInfoBase const* IServiceCreator::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IServiceCreator::CreateBcatService>, "CreateBcatService"},
+        FunctionInfo{1, D<&IServiceCreator::CreateDeliveryCacheStorageService>, "CreateDeliveryCacheStorageService"},
+        FunctionInfo{2, D<&IServiceCreator::CreateDeliveryCacheStorageServiceWithApplicationId>, "CreateDeliveryCacheStorageServiceWithApplicationId"},
+        FunctionInfo{3, nullptr, "CreateDeliveryCacheProgressService"},
+        FunctionInfo{4, nullptr, "CreateDeliveryCacheProgressServiceWithApplicationId"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 std::unique_ptr<BcatBackend> CreateBackendFromSettings([[maybe_unused]] Core::System& system,
                                                        DirectoryGetter getter) {
     return std::make_unique<NullBcatBackend>(std::move(getter));

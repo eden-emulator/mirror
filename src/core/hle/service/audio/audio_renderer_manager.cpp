@@ -18,6 +18,17 @@ namespace Service::Audio {
 
 using namespace AudioCore::Renderer;
 
+ServiceFrameworkBase::FunctionInfoBase const* IAudioRendererManager::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IAudioRendererManager::OpenAudioRenderer>, "OpenAudioRenderer"},
+        FunctionInfo{1, D<&IAudioRendererManager::GetWorkBufferSize>, "GetWorkBufferSize"},
+        FunctionInfo{2, D<&IAudioRendererManager::GetAudioDeviceService>, "GetAudioDeviceService"},
+        FunctionInfo{3, nullptr, "OpenAudioRendererForManualExecution"},
+        FunctionInfo{4, D<&IAudioRendererManager::GetAudioDeviceServiceWithRevisionInfo>, "GetAudioDeviceServiceWithRevisionInfo"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IAudioRendererManager::IAudioRendererManager(Core::System& system_)
     : ServiceFramework{system_, "audren:u"}
     , impl(system_)

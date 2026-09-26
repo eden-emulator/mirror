@@ -40,33 +40,7 @@ public:
         OutInterface<IPurchaseEventManager> out_interface);
 
 private:
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "CountAddOnContentByApplicationId"},
-        FunctionInfo{1, nullptr, "ListAddOnContentByApplicationId"},
-        FunctionInfo{2, D<&IAddOnContentManager::CountAddOnContent>, "CountAddOnContent"},
-        FunctionInfo{3, D<&IAddOnContentManager::ListAddOnContent>, "ListAddOnContent"},
-        FunctionInfo{4, nullptr, "GetAddOnContentBaseIdByApplicationId"},
-        FunctionInfo{5, D<&IAddOnContentManager::GetAddOnContentBaseId>, "GetAddOnContentBaseId"},
-        FunctionInfo{6, nullptr, "PrepareAddOnContentByApplicationId"},
-        FunctionInfo{7, D<&IAddOnContentManager::PrepareAddOnContent>, "PrepareAddOnContent"},
-        FunctionInfo{8, D<&IAddOnContentManager::GetAddOnContentListChangedEvent>, "GetAddOnContentListChangedEvent"},
-        FunctionInfo{9, nullptr, "GetAddOnContentLostErrorCode"},
-        FunctionInfo{10, D<&IAddOnContentManager::GetAddOnContentListChangedEventWithProcessId>, "GetAddOnContentListChangedEventWithProcessId"},
-        FunctionInfo{11, D<&IAddOnContentManager::NotifyMountAddOnContent>, "NotifyMountAddOnContent"},
-        FunctionInfo{12, D<&IAddOnContentManager::NotifyUnmountAddOnContent>, "NotifyUnmountAddOnContent"},
-        FunctionInfo{13, nullptr, "IsAddOnContentMountedForDebug"},
-        FunctionInfo{50, D<&IAddOnContentManager::CheckAddOnContentMountStatus>, "CheckAddOnContentMountStatus"},
-        FunctionInfo{100, D<&IAddOnContentManager::CreateEcPurchasedEventManager>, "CreateEcPurchasedEventManager"},
-        FunctionInfo{101, D<&IAddOnContentManager::CreatePermanentEcPurchasedEventManager>, "CreatePermanentEcPurchasedEventManager"},
-        FunctionInfo{110, nullptr, "CreateContentsServiceManager"},
-        FunctionInfo{200, nullptr, "SetRequiredAddOnContentsOnContentsAvailabilityTransition"},
-        FunctionInfo{300, nullptr, "SetupHostAddOnContent"},
-        FunctionInfo{301, nullptr, "GetRegisteredAddOnContentPath"},
-        FunctionInfo{302, nullptr, "UpdateCachedList"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     std::vector<u64> add_on_content;
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* aoc_change_event;

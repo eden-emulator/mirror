@@ -14,6 +14,38 @@
 
 namespace Service::NS {
 
+ServiceFrameworkBase::FunctionInfoBase const* IQueryService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "QueryAppletEvent"},
+        FunctionInfo{1, nullptr, "QueryPlayStatistics"},
+        FunctionInfo{2, nullptr, "QueryPlayStatisticsByUserAccountId"},
+        FunctionInfo{3, nullptr, "QueryPlayStatisticsByNetworkServiceAccountId"},
+        FunctionInfo{4, nullptr, "QueryPlayStatisticsByApplicationId"},
+        FunctionInfo{5, D<&IQueryService::QueryPlayStatisticsByApplicationIdAndUserAccountId>, "QueryPlayStatisticsByApplicationIdAndUserAccountId"},
+        FunctionInfo{6, nullptr, "QueryPlayStatisticsByApplicationIdAndNetworkServiceAccountId"},
+        FunctionInfo{7, nullptr, "QueryLastPlayTimeV0"},
+        FunctionInfo{8, nullptr, "QueryPlayEvent"},
+        FunctionInfo{9, nullptr, "GetAvailablePlayEventRange"},
+        FunctionInfo{10, nullptr, "QueryAccountEvent"},
+        FunctionInfo{11, nullptr, "QueryAccountPlayEvent"},
+        FunctionInfo{12, nullptr, "GetAvailableAccountPlayEventRange"},
+        FunctionInfo{13, nullptr, "QueryApplicationPlayStatisticsForSystemV0"},
+        FunctionInfo{14, nullptr, "QueryRecentlyPlayedApplication"},
+        FunctionInfo{15, nullptr, "GetRecentlyPlayedApplicationUpdateEvent"},
+        FunctionInfo{16, nullptr, "QueryApplicationPlayStatisticsByUserAccountIdForSystemV0"},
+        FunctionInfo{17, D<&IQueryService::QueryLastPlayTime>, "QueryLastPlayTime"},
+        FunctionInfo{18, D<&IQueryService::QueryApplicationPlayStatisticsForSystem>, "QueryApplicationPlayStatisticsForSystem"},
+        FunctionInfo{19, D<&IQueryService::QueryApplicationPlayStatisticsByUserAccountIdForSystem>, "QueryApplicationPlayStatisticsByUserAccountIdForSystem"},
+        FunctionInfo{30, nullptr, "Cmd30" },
+        FunctionInfo{31, nullptr, "Cmd31" },
+        FunctionInfo{100, nullptr, "Cmd100" },
+        FunctionInfo{110, nullptr, "Cmd110" },
+        FunctionInfo{118, nullptr, "Cmd118" },
+        FunctionInfo{119, nullptr, "Cmd119" }
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IQueryService::IQueryService(Core::System& system_) : ServiceFramework{system_, "pdm:qry"},
     play_time_manager{std::make_unique<PlayTime::PlayTimeManager>()} {
 }

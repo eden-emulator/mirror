@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "core/hle/service/am/service/library_applet_self_accessor.h"
 #include "core/hle/service/cmif_types.h"
 #include "core/hle/service/service.h"
 
@@ -15,6 +14,26 @@ namespace Service::AM {
 class AppletDataBroker;
 struct Applet;
 class IStorage;
+
+struct LibraryAppletInfo {
+    AppletId applet_id;
+    LibraryAppletMode library_applet_mode;
+};
+static_assert(sizeof(LibraryAppletInfo) == 0x8, "LibraryAppletInfo has incorrect size.");
+
+struct ErrorCode {
+    u32 category;
+    u32 number;
+};
+static_assert(sizeof(ErrorCode) == 0x8, "ErrorCode has incorrect size.");
+
+struct ErrorContext {
+    u8 type;
+    INSERT_PADDING_BYTES_NOINIT(0x7);
+    std::array<u8, 0x1f4> data;
+    Result result;
+};
+static_assert(sizeof(ErrorContext) == 0x200, "ErrorContext has incorrect size.");
 
 class ILibraryAppletAccessor final : public ServiceFramework<ILibraryAppletAccessor> {
 public:
@@ -49,34 +68,7 @@ private:
     void FrontendExecuteInteractive();
     void FrontendRequestExit();
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&ILibraryAppletAccessor::GetAppletStateChangedEvent>, "GetAppletStateChangedEvent"},
-        FunctionInfo{1, D<&ILibraryAppletAccessor::IsCompleted>, "IsCompleted"},
-        FunctionInfo{10, D<&ILibraryAppletAccessor::Start>, "Start"},
-        FunctionInfo{20, D<&ILibraryAppletAccessor::RequestExit>, "RequestExit"},
-        FunctionInfo{25, D<&ILibraryAppletAccessor::Terminate>, "Terminate"},
-        FunctionInfo{30, D<&ILibraryAppletAccessor::GetResult>, "GetResult"},
-        FunctionInfo{50, nullptr, "SetOutOfFocusApplicationSuspendingEnabled"},
-        FunctionInfo{60, D<&ILibraryAppletAccessor::PresetLibraryAppletGpuTimeSliceZero>, "PresetLibraryAppletGpuTimeSliceZero"}, //10.0.0+
-        FunctionInfo{80, nullptr, "RequestForLibraryAppletToGetForeground"}, //19.0.0+
-        FunctionInfo{81, nullptr, "GetCurrentChildLibraryApplet"}, //19.0.0+
-        FunctionInfo{90, D<&ILibraryAppletAccessor::Unknown90>, "Unknown90"}, //20.0.0+
-        FunctionInfo{100, D<&ILibraryAppletAccessor::PushInData>, "PushInData"},
-        FunctionInfo{101, D<&ILibraryAppletAccessor::PopOutData>, "PopOutData"},
-        FunctionInfo{102, nullptr, "PushExtraStorage"},
-        FunctionInfo{103, D<&ILibraryAppletAccessor::PushInteractiveInData>, "PushInteractiveInData"},
-        FunctionInfo{104, D<&ILibraryAppletAccessor::PopInteractiveOutData>, "PopInteractiveOutData"},
-        FunctionInfo{105, D<&ILibraryAppletAccessor::GetPopOutDataEvent>, "GetPopOutDataEvent"},
-        FunctionInfo{106, D<&ILibraryAppletAccessor::GetPopInteractiveOutDataEvent>, "GetPopInteractiveOutDataEvent"},
-        FunctionInfo{110, nullptr, "NeedsToExitProcess"},
-        FunctionInfo{120, D<&ILibraryAppletAccessor::GetLibraryAppletInfo>, "GetLibraryAppletInfo"},
-        FunctionInfo{150, nullptr, "RequestForAppletToGetForeground"},
-        FunctionInfo{160, D<&ILibraryAppletAccessor::GetIndirectLayerConsumerHandle>, "GetIndirectLayerConsumerHandle"}, //2.0.0+
-        FunctionInfo{170, D<&ILibraryAppletAccessor::Unknown170>, "Unknown170"}, //22.0.0+
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     const std::shared_ptr<AppletDataBroker> m_broker;
     const std::shared_ptr<Applet> m_applet;
 };

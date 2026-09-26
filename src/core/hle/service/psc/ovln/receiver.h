@@ -36,6 +36,7 @@ private:
     Result Receive(Out<OverlayNotification> out_notification, Out<MessageFlags> out_flags);
     Result ReceiveWithTick(Out<OverlayNotification> out_notification, Out<MessageFlags> out_flags,
                            Out<u64> out_tick);
+    FunctionInfoBase const* FindRequest(u32 key) override;
 
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* receive_event;

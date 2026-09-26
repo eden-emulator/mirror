@@ -24,6 +24,17 @@ std::string_view ToStringView(std::span<const char> buf) {
 
 } // namespace
 
+ServiceFrameworkBase::FunctionInfoBase const* INewsDataService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&INewsDataService::Open>, "Open"},
+        FunctionInfo{1, D<&INewsDataService::OpenWithNewsRecordV1>, "OpenWithNewsRecordV1"},
+        FunctionInfo{2, D<&INewsDataService::Read>, "Read"},
+        FunctionInfo{3, D<&INewsDataService::GetSize>, "GetSize"},
+        FunctionInfo{1001, D<&INewsDataService::OpenWithNewsRecord>, "OpenWithNewsRecord"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 INewsDataService::INewsDataService(Core::System& system_)
     : ServiceFramework{system_, "INewsDataService"} {
 }

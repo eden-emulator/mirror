@@ -42,16 +42,7 @@ private:
         const InBuffer<BufferAttr_HipcMapTransferAllowsNonSecure | BufferAttr_HipcMapAlias>
             image_data_buffer);
 
-    FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{32, C<&IScreenShotApplicationService::SetShimLibraryVersion>, "SetShimLibraryVersion"},
-        FunctionInfo{201, nullptr, "SaveScreenShot"},
-        FunctionInfo{203, C<&IScreenShotApplicationService::SaveScreenShotEx0>, "SaveScreenShotEx0"},
-        FunctionInfo{205, C<&IScreenShotApplicationService::SaveScreenShotEx1>, "SaveScreenShotEx1"},
-        FunctionInfo{210, nullptr, "SaveScreenShotEx2"}
-    );
+    FunctionInfoBase const* FindRequest(u32 key) override;
     std::array<u8, screenshot_width * screenshot_height * bytes_per_pixel> image_data;
     std::shared_ptr<AlbumManager> manager;
 };

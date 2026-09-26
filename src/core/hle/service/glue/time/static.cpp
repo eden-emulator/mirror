@@ -24,42 +24,42 @@
 
 namespace Service::Glue::Time {
 
+ServiceFrameworkBase::FunctionInfoBase const* StaticService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0,   D<&StaticService::GetStandardUserSystemClock>, "GetStandardUserSystemClock"},
+        FunctionInfo{1,   D<&StaticService::GetStandardNetworkSystemClock>, "GetStandardNetworkSystemClock"},
+        FunctionInfo{2,   D<&StaticService::GetStandardSteadyClock>, "GetStandardSteadyClock"},
+        FunctionInfo{3,   D<&StaticService::GetTimeZoneService>, "GetTimeZoneService"},
+        FunctionInfo{4,   D<&StaticService::GetStandardLocalSystemClock>, "GetStandardLocalSystemClock"},
+        FunctionInfo{5,   D<&StaticService::GetEphemeralNetworkSystemClock>, "GetEphemeralNetworkSystemClock"},
+        FunctionInfo{20,  D<&StaticService::GetSharedMemoryNativeHandle>, "GetSharedMemoryNativeHandle"},
+        FunctionInfo{50,  D<&StaticService::SetStandardSteadyClockInternalOffset>, "SetStandardSteadyClockInternalOffset"},
+        FunctionInfo{51,  D<&StaticService::GetStandardSteadyClockRtcValue>, "GetStandardSteadyClockRtcValue"},
+        FunctionInfo{100, D<&StaticService::IsStandardUserSystemClockAutomaticCorrectionEnabled>, "IsStandardUserSystemClockAutomaticCorrectionEnabled"},
+        FunctionInfo{101, D<&StaticService::SetStandardUserSystemClockAutomaticCorrectionEnabled>, "SetStandardUserSystemClockAutomaticCorrectionEnabled"},
+        FunctionInfo{102, D<&StaticService::GetStandardUserSystemClockInitialYear>, "GetStandardUserSystemClockInitialYear"},
+        FunctionInfo{200, D<&StaticService::IsStandardNetworkSystemClockAccuracySufficient>, "IsStandardNetworkSystemClockAccuracySufficient"},
+        FunctionInfo{201, D<&StaticService::GetStandardUserSystemClockAutomaticCorrectionUpdatedTime>, "GetStandardUserSystemClockAutomaticCorrectionUpdatedTime"},
+        FunctionInfo{300, D<&StaticService::CalculateMonotonicSystemClockBaseTimePoint>, "CalculateMonotonicSystemClockBaseTimePoint"},
+        FunctionInfo{400, D<&StaticService::GetClockSnapshot>, "GetClockSnapshot"},
+        FunctionInfo{401, D<&StaticService::GetClockSnapshotFromSystemClockContext>, "GetClockSnapshotFromSystemClockContext"},
+        FunctionInfo{500, D<&StaticService::CalculateStandardUserSystemClockDifferenceByUser>, "CalculateStandardUserSystemClockDifferenceByUser"},
+        FunctionInfo{501, D<&StaticService::CalculateSpanBetween>, "CalculateSpanBetween"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 StaticService::StaticService(Core::System& system_,
                              Service::PSC::Time::StaticServiceSetupInfo setup_info,
                              std::shared_ptr<TimeManager> time, const char* name)
-    : ServiceFramework{system_, name}, m_system{system_}, m_time_m{time->m_time_m},
+    : ServiceFramework{system_, name}, m_time_m{time->m_time_m},
       m_setup_info{setup_info}, m_time_sm{time->m_time_sm},
       m_file_timestamp_worker{time->m_file_timestamp_worker},
       m_standard_steady_clock_resource{time->m_steady_clock_resource},
       m_time_zone_binary{time->m_time_zone_binary} {
-    // clang-format off
-        FunctionInfoBase const* FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0,   D<&StaticService::GetStandardUserSystemClock>, "GetStandardUserSystemClock"},
-            FunctionInfo{1,   D<&StaticService::GetStandardNetworkSystemClock>, "GetStandardNetworkSystemClock"},
-            FunctionInfo{2,   D<&StaticService::GetStandardSteadyClock>, "GetStandardSteadyClock"},
-            FunctionInfo{3,   D<&StaticService::GetTimeZoneService>, "GetTimeZoneService"},
-            FunctionInfo{4,   D<&StaticService::GetStandardLocalSystemClock>, "GetStandardLocalSystemClock"},
-            FunctionInfo{5,   D<&StaticService::GetEphemeralNetworkSystemClock>, "GetEphemeralNetworkSystemClock"},
-            FunctionInfo{20,  D<&StaticService::GetSharedMemoryNativeHandle>, "GetSharedMemoryNativeHandle"},
-            FunctionInfo{50,  D<&StaticService::SetStandardSteadyClockInternalOffset>, "SetStandardSteadyClockInternalOffset"},
-            FunctionInfo{51,  D<&StaticService::GetStandardSteadyClockRtcValue>, "GetStandardSteadyClockRtcValue"},
-            FunctionInfo{100, D<&StaticService::IsStandardUserSystemClockAutomaticCorrectionEnabled>, "IsStandardUserSystemClockAutomaticCorrectionEnabled"},
-            FunctionInfo{101, D<&StaticService::SetStandardUserSystemClockAutomaticCorrectionEnabled>, "SetStandardUserSystemClockAutomaticCorrectionEnabled"},
-            FunctionInfo{102, D<&StaticService::GetStandardUserSystemClockInitialYear>, "GetStandardUserSystemClockInitialYear"},
-            FunctionInfo{200, D<&StaticService::IsStandardNetworkSystemClockAccuracySufficient>, "IsStandardNetworkSystemClockAccuracySufficient"},
-            FunctionInfo{201, D<&StaticService::GetStandardUserSystemClockAutomaticCorrectionUpdatedTime>, "GetStandardUserSystemClockAutomaticCorrectionUpdatedTime"},
-            FunctionInfo{300, D<&StaticService::CalculateMonotonicSystemClockBaseTimePoint>, "CalculateMonotonicSystemClockBaseTimePoint"},
-            FunctionInfo{400, D<&StaticService::GetClockSnapshot>, "GetClockSnapshot"},
-            FunctionInfo{401, D<&StaticService::GetClockSnapshotFromSystemClockContext>, "GetClockSnapshotFromSystemClockContext"},
-            FunctionInfo{500, D<&StaticService::CalculateStandardUserSystemClockDifferenceByUser>, "CalculateStandardUserSystemClockDifferenceByUser"},
-            FunctionInfo{501, D<&StaticService::CalculateSpanBetween>, "CalculateSpanBetween"}
-        );
 
     m_set_sys =
-        m_system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);
+        system.ServiceManager().GetService<Service::Set::ISystemSettingsServer>("set:sys", true);
 
     if (m_setup_info.can_write_local_clock && m_setup_info.can_write_user_clock &&
         !m_setup_info.can_write_network_clock && m_setup_info.can_write_timezone_device_location &&
@@ -109,7 +109,7 @@ Result StaticService::GetTimeZoneService(OutInterface<TimeZoneService> out_servi
     LOG_DEBUG(Service_Time, "called.");
 
     *out_service = std::make_shared<TimeZoneService>(
-        m_system, m_file_timestamp_worker, m_setup_info.can_write_timezone_device_location,
+        system, m_file_timestamp_worker, m_setup_info.can_write_timezone_device_location,
         m_time_zone_binary, m_time_zone);
     R_SUCCEED();
 }

@@ -30,7 +30,7 @@ public:
         FunctionInfo{22, nullptr, "SetHostFsMountPoint"},
         FunctionInfo{23, nullptr, "SetMemoryUsageRateFlag"},
         FunctionInfo{24, nullptr, "CommitSettings"}, //20.0.0+
-        FunctionInfo{27, nullptr, "SetHttpAuthConfigs"}, //21.0.0+
+        FunctionInfo{27, nullptr, "SetHttpAuthConfigs"} //21.0.0+
     );
 };
 

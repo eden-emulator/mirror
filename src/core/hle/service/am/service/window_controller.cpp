@@ -9,6 +9,20 @@
 
 namespace Service::AM {
 
+ServiceFrameworkBase::FunctionInfoBase const* IWindowController::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "CreateWindow"},
+        FunctionInfo{1,  D<&IWindowController::GetAppletResourceUserId>, "GetAppletResourceUserId"},
+        FunctionInfo{2,  D<&IWindowController::GetAppletResourceUserIdOfCallerApplet>, "GetAppletResourceUserIdOfCallerApplet"},
+        FunctionInfo{10, D<&IWindowController::AcquireForegroundRights>, "AcquireForegroundRights"},
+        FunctionInfo{11, D<&IWindowController::ReleaseForegroundRights>, "ReleaseForegroundRights"},
+        FunctionInfo{12, D<&IWindowController::RejectToChangeIntoBackground>, "RejectToChangeIntoBackground"},
+        FunctionInfo{20, D<&IWindowController::SetAppletWindowVisibility>, "SetAppletWindowVisibility"},
+        FunctionInfo{21, D<&IWindowController::SetAppletGpuTimeSlice>, "SetAppletGpuTimeSlice"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IWindowController::IWindowController(Core::System& system_, std::shared_ptr<Applet> applet,
                                      WindowSystem& window_system)
     : ServiceFramework{system_, "IWindowController"},

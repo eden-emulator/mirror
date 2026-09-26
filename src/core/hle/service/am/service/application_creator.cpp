@@ -20,6 +20,16 @@
 
 namespace Service::AM {
 
+ServiceFrameworkBase::FunctionInfoBase const* IApplicationCreator::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IApplicationCreator::CreateApplication>, "CreateApplication"},
+        FunctionInfo{1, nullptr, "PopLaunchRequestedApplication"},
+        FunctionInfo{10, D<&IApplicationCreator::CreateSystemApplication>, "CreateSystemApplication"},
+        FunctionInfo{100, nullptr, "PopFloatingApplicationForDevelopment"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 namespace {
 
 Result CreateGuestApplication(SharedPointer<IApplicationAccessor>* out_application_accessor, Core::System& system, WindowSystem& window_system, u64 program_id) {
