@@ -73,6 +73,8 @@ public:
     /// of a renderpass.
     void RequestOutsideRenderPassOperationContext();
 
+    void RequestComputeDispatchContext();
+
     /// Returns true when a render pass is currently active in the scheduler state.
     bool IsRenderPassActive() const {
         return state.renderpass != VK_NULL_HANDLE;
@@ -319,6 +321,8 @@ private:
 
     void EndRenderPass();
 
+    void PublishComputeWrites();
+
     void AcquireNewChunk();
 
     const Device& device;
@@ -343,6 +347,16 @@ private:
     u64 wfi_serial = 0;
     bool renderpass_writes = false;
     bool renderpass_depth_writes = false;
+    bool compute_writes = false;
+    VkMemoryBarrier2 renderpass_write_barrier{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .pNext = nullptr,
+        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_SHADERS,
+        .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+        .dstStageMask = vk::PIPELINE_STAGE_BUFFER_INPUTS | vk::PIPELINE_STAGE_ATTACHMENTS |
+                        VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+        .dstAccessMask = vk::ACCESS_BUFFER_INPUTS | vk::ACCESS_ATTACHMENTS | vk::ACCESS_TRANSFER,
+    };
     u32 num_renderpass_images = 0;
     std::array<VkImage, 9> renderpass_images{};
     std::array<VkImageSubresourceRange, 9> renderpass_image_ranges{};

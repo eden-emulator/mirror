@@ -47,6 +47,12 @@ Scheduler::Scheduler(const Device& device_, StateTracker& state_tracker_)
     : device{device_}, state_tracker{state_tracker_},
       master_semaphore{std::make_unique<MasterSemaphore>(device)},
       command_pool{std::make_unique<CommandPool>(*master_semaphore, device)} {
+    if (device.IsExtTransformFeedbackSupported()) {
+        renderpass_write_barrier.srcStageMask |= VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
+        renderpass_write_barrier.srcAccessMask |= VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT;
+        renderpass_write_barrier.dstStageMask |= VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
+        renderpass_write_barrier.dstAccessMask |= VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT;
+    }
 
     AcquireNewChunk();
     AllocateWorkerCommandBuffer();
@@ -95,6 +101,7 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer, VkRenderPass
                                     const VkClearValue* clear_values, u32 clear_value_count) {
     const VkFramebuffer framebuffer_handle = framebuffer->Handle();
     const VkExtent2D render_area = framebuffer->RenderArea();
+    PublishComputeWrites();
     state.renderpass = renderpass;
     state.framebuffer = framebuffer_handle;
     state.render_area = render_area;
@@ -222,6 +229,31 @@ void Scheduler::RequestRenderpass(const Framebuffer* framebuffer) {
 
 void Scheduler::RequestOutsideRenderPassOperationContext() {
     EndRenderPass();
+    PublishComputeWrites();
+}
+
+void Scheduler::RequestComputeDispatchContext() {
+    EndRenderPass();
+    compute_writes = true;
+}
+
+void Scheduler::PublishComputeWrites() {
+    if (!std::exchange(compute_writes, false)) {
+        return;
+    }
+    Record([](vk::CommandBuffer cmdbuf) {
+        static constexpr VkMemoryBarrier2 COMPUTE_WRITE_BARRIER{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+            .pNext = nullptr,
+            .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+            .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,
+            .dstStageMask = vk::PIPELINE_STAGE_BUFFER_INPUTS | vk::PIPELINE_STAGE_ATTACHMENTS |
+                            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            .dstAccessMask =
+                vk::ACCESS_BUFFER_INPUTS | vk::ACCESS_ATTACHMENTS | vk::ACCESS_TRANSFER,
+        };
+        cmdbuf.PipelineBarrier(COMPUTE_WRITE_BARRIER);
+    });
 }
 
 bool Scheduler::UpdateGraphicsPipeline(GraphicsPipeline* pipeline) {
@@ -420,17 +452,10 @@ void Scheduler::EndRenderPass()
         Record([num_images = num_renderpass_images,
                        images = renderpass_images,
                        ranges = renderpass_image_ranges,
+                       write_barrier = &renderpass_write_barrier,
                        num_memory_barriers =
                            static_cast<size_t>(std::exchange(renderpass_writes, false))](
                           vk::CommandBuffer cmdbuf) {
-            static constexpr VkMemoryBarrier2 WRITE_BARRIER{
-                .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-                .pNext = nullptr,
-                .srcStageMask = VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
-                .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
-                .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
-                .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
-            };
             std::array<VkImageMemoryBarrier2, 9> barriers;
             for (size_t i = 0; i < num_images; ++i) {
                 const VkImageSubresourceRange& range = ranges[i];
@@ -471,7 +496,7 @@ void Scheduler::EndRenderPass()
                 };
             }
             cmdbuf.EndRenderPass();
-            cmdbuf.PipelineBarrier(0, vk::Span(&WRITE_BARRIER, num_memory_barriers), {},
+            cmdbuf.PipelineBarrier(0, vk::Span(write_barrier, num_memory_barriers), {},
                                    vk::Span(barriers.data(), num_images));
         });
 

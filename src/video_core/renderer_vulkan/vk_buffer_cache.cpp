@@ -36,6 +36,24 @@ struct VertexBindings {
     u32 count;
 };
 
+constexpr VkMemoryBarrier2 READ_BARRIER{
+    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+    .pNext = nullptr,
+    .srcStageMask = vk::PIPELINE_STAGE_BUFFER_INPUTS | VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+    .srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
+    .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+    .dstAccessMask = vk::ACCESS_TRANSFER,
+};
+
+constexpr VkMemoryBarrier2 WRITE_BARRIER{
+    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+    .pNext = nullptr,
+    .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+    .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+    .dstStageMask = vk::PIPELINE_STAGE_BUFFER_INPUTS,
+    .dstAccessMask = vk::ACCESS_BUFFER_INPUTS,
+};
+
 VkBufferCopy MakeBufferCopy(const VideoCommon::BufferCopy& copy) {
     return VkBufferCopy{
         .srcOffset = copy.src_offset,
@@ -482,22 +500,6 @@ void BufferCacheRuntime::CopyBuffer(VkBuffer dst_buffer, VkBuffer src_buffer,
     if (dst_buffer == VK_NULL_HANDLE || src_buffer == VK_NULL_HANDLE) {
         return;
     }
-    static constexpr VkMemoryBarrier2 READ_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .pNext = nullptr,
-        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
-        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
-    };
-    static constexpr VkMemoryBarrier2 WRITE_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .pNext = nullptr,
-        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
-    };
 
     // Measuring a popular game, this number never exceeds the specified size once data is warmed up
     boost::container::small_vector<VkBufferCopy, 8> vk_copies(copies.size());
@@ -523,14 +525,6 @@ void BufferCacheRuntime::CopyBuffer(VkBuffer dst_buffer, VkBuffer src_buffer,
 }
 
 void BufferCacheRuntime::PreCopyBarrier() {
-    static constexpr VkMemoryBarrier2 READ_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .pNext = nullptr,
-        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
-        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
-    };
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([](vk::CommandBuffer cmdbuf) {
         cmdbuf.PipelineBarrier(READ_BARRIER);
@@ -538,14 +532,6 @@ void BufferCacheRuntime::PreCopyBarrier() {
 }
 
 void BufferCacheRuntime::PostCopyBarrier() {
-    static constexpr VkMemoryBarrier2 WRITE_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .pNext = nullptr,
-        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
-    };
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([](vk::CommandBuffer cmdbuf) {
         cmdbuf.PipelineBarrier(WRITE_BARRIER);
@@ -556,22 +542,6 @@ void BufferCacheRuntime::ClearBuffer(VkBuffer dest_buffer, u32 offset, size_t si
     if (dest_buffer == VK_NULL_HANDLE) {
         return;
     }
-    static constexpr VkMemoryBarrier2 READ_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .pNext = nullptr,
-        .srcStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
-        .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT,
-    };
-    static constexpr VkMemoryBarrier2 WRITE_BARRIER{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .pNext = nullptr,
-        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-        .dstStageMask = vk::PIPELINE_STAGE_GRAPHICS_COMPUTE,
-        .dstAccessMask = VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT,
-    };
 
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([dest_buffer, offset, size, value](vk::CommandBuffer cmdbuf) {
