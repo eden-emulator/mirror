@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /* This file is part of the dynarmic project.
  * Copyright (c) 2021 MerryMage
  * SPDX-License-Identifier: 0BSD
@@ -8,7 +11,7 @@
 
 namespace Dynarmic::A32 {
 static bool PLDHandler(TranslatorVisitor& v, bool W) {
-    if (!v.options.hook_hint_instructions) {
+    if (!v.conf.hook_hint_instructions) {
         return true;
     }
 
@@ -18,7 +21,7 @@ static bool PLDHandler(TranslatorVisitor& v, bool W) {
 }
 
 static bool PLIHandler(TranslatorVisitor& v) {
-    if (!v.options.hook_hint_instructions) {
+    if (!v.conf.hook_hint_instructions) {
         return true;
     }
 

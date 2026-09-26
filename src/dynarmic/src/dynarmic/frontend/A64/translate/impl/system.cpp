@@ -42,35 +42,35 @@ bool TranslatorVisitor::NOP() {
 }
 
 bool TranslatorVisitor::YIELD() {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
     return RaiseException(Exception::Yield);
 }
 
 bool TranslatorVisitor::WFE() {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
     return RaiseException(Exception::WaitForEvent);
 }
 
 bool TranslatorVisitor::WFI() {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
     return RaiseException(Exception::WaitForInterrupt);
 }
 
 bool TranslatorVisitor::SEV() {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
     return RaiseException(Exception::SendEvent);
 }
 
 bool TranslatorVisitor::SEVL() {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
     return RaiseException(Exception::SendEventLocal);
@@ -129,7 +129,7 @@ bool TranslatorVisitor::MRS(Imm<1> o0, Imm<3> op1, Imm<4> CRn, Imm<4> CRm, Imm<3
         return true;
     case SystemRegisterEncoding::CNTPCT_EL0:
         // HACK: Ensure that this is the first instruction in the block it's emitted in, so the cycle count is most up-to-date.
-        if (!ir.block.instructions.empty() && !options.wall_clock_cntpct) {
+        if (!ir.block.instructions.empty() && !conf.wall_clock_cntpct) {
             ir.block.CycleCount()--;
             ir.SetTerm(IR::Term::LinkBlock{*ir.current_location});
             return false;

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /* This file is part of the dynarmic project.
  * Copyright (c) 2018 MerryMage
  * SPDX-License-Identifier: 0BSD
@@ -25,7 +28,7 @@ static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& v, bool pair, s
     if (memop == IR::MemOp::LOAD && pair && Rt == *Rt2) {
         return v.UnpredictableInstruction();
     } else if (memop == IR::MemOp::STORE && (*Rs == Rt || (pair && *Rs == *Rt2))) {
-        if (!v.options.define_unpredictable_behaviour) {
+        if (!v.conf.define_unpredictable_behaviour) {
             return v.UnpredictableInstruction();
         }
         // UNPREDICTABLE: The Constraint_NONE case is executed.

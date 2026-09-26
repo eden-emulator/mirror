@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /* This file is part of the dynarmic project.
  * Copyright (c) 2016 MerryMage
  * SPDX-License-Identifier: 0BSD
@@ -10,7 +13,7 @@ namespace Dynarmic::A32 {
 
 // BKPT #<imm16>
 bool TranslatorVisitor::arm_BKPT(Cond cond, Imm<12> /*imm12*/, Imm<4> /*imm4*/) {
-    if (cond != Cond::AL && !options.define_unpredictable_behaviour) {
+    if (cond != Cond::AL && !conf.define_unpredictable_behaviour) {
         return UnpredictableInstruction();
     }
     // UNPREDICTABLE: The instruction executes conditionally.

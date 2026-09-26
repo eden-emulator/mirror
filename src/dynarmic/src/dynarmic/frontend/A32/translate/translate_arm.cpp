@@ -22,10 +22,12 @@
 
 namespace Dynarmic::A32 {
 
-void TranslateArm(IR::Block& block, LocationDescriptor descriptor, TranslateCallbacks* tcb, const TranslationOptions& options) {
+void TranslateArm(IR::Block& block, LocationDescriptor descriptor, const A32::UserConfig& conf) {
     const bool single_step = descriptor.SingleStepping();
-    TranslatorVisitor visitor{block, descriptor, options};
+    TranslatorVisitor visitor{block, descriptor, conf};
     bool should_continue = true;
+
+    auto tcb = conf.callbacks;
     do {
         const u32 arm_pc = visitor.ir.current_location.PC();
         u64 ticks_for_instruction = 1;

@@ -9,15 +9,16 @@
 #include "dynarmic/frontend/A32/translate/a32_translate.h"
 
 #include "dynarmic/frontend/A32/a32_location_descriptor.h"
+#include "dynarmic/interface/A32/config.h"
 #include "dynarmic/ir/basic_block.h"
 
 namespace Dynarmic::A32 {
 
-void TranslateArm(IR::Block& block, LocationDescriptor descriptor, TranslateCallbacks* tcb, const TranslationOptions& options);
-void TranslateThumb(IR::Block& block, LocationDescriptor descriptor, TranslateCallbacks* tcb, const TranslationOptions& options);
+void TranslateArm(IR::Block& block, LocationDescriptor descriptor, const A32::UserConfig& conf);
+void TranslateThumb(IR::Block& block, LocationDescriptor descriptor, const A32::UserConfig& conf);
 
-void Translate(IR::Block& block, LocationDescriptor descriptor, TranslateCallbacks* tcb, const TranslationOptions& options) {
-    return (descriptor.TFlag() ? TranslateThumb : TranslateArm)(block, descriptor, tcb, options);
+void Translate(IR::Block& block, LocationDescriptor descriptor, const A32::UserConfig& conf) {
+    return (descriptor.TFlag() ? TranslateThumb : TranslateArm)(block, descriptor, conf);
 }
 
 bool TranslateSingleArmInstruction(IR::Block& block, LocationDescriptor descriptor, u32 instruction);

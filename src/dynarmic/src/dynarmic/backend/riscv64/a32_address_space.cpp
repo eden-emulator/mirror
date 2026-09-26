@@ -27,7 +27,7 @@ A32AddressSpace::A32AddressSpace(const A32::UserConfig& conf)
 }
 
 void A32AddressSpace::GenerateIR(IR::Block& ir_block, IR::LocationDescriptor descriptor) const {
-    A32::Translate(ir_block, A32::LocationDescriptor{descriptor}, conf.callbacks, {conf.arch_version, conf.define_unpredictable_behaviour, conf.hook_hint_instructions});
+    A32::Translate(ir_block, A32::LocationDescriptor{descriptor}, conf);
     Optimization::Optimize(ir_block, conf, {});
 }
 

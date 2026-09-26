@@ -10,6 +10,7 @@
 #include "common/common_types.h"
 
 #include "dynarmic/interface/A32/arch_version.h"
+#include "dynarmic/interface/A32/config.h"
 
 namespace Dynarmic::IR {
 class Block;
@@ -20,28 +21,14 @@ namespace Dynarmic::A32 {
 class LocationDescriptor;
 struct TranslateCallbacks;
 
-struct TranslationOptions {
-    ArchVersion arch_version;
-
-    /// This changes what IR we emit when we translate an unpredictable instruction.
-    /// If this is false, the ExceptionRaised IR instruction is emitted.
-    /// If this is true, we define some behaviour for some instructions.
-    bool define_unpredictable_behaviour = false;
-
-    /// This changes what IR we emit when we translate a hint instruction.
-    /// If this is false, we treat the instruction as a NOP.
-    /// If this is true, we emit an ExceptionRaised instruction.
-    bool hook_hint_instructions = true;
-};
-
 /**
  * This function translates instructions in memory into our intermediate representation.
  * @param descriptor The starting location of the basic block. Includes information like PC, Thumb state, &c.
  * @param tcb The callbacks we should use to read emulated memory.
- * @param options Configures how certain instructions are translated.
+ * @param conf Configures how certain instructions are translated.
  * @return A translated basic block in the intermediate representation.
  */
-void Translate(IR::Block& block, LocationDescriptor descriptor, TranslateCallbacks* tcb, const TranslationOptions& options);
+void Translate(IR::Block& block, LocationDescriptor descriptor, const A32::UserConfig& conf);
 
 /**
  * This function translates a single provided instruction into our intermediate representation.
