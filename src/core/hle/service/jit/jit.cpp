@@ -240,7 +240,7 @@ private:
         return in;
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&IJitEnvironment::GenerateCode>, "GenerateCode"},
         FunctionInfo{1, C<&IJitEnvironment::Control>, "Control"},
         FunctionInfo{1000, C<&IJitEnvironment::LoadPlugin>, "LoadPlugin"},
@@ -289,7 +289,7 @@ private:
     }
 
 private:
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&JITU::CreateJitEnvironment>, "CreateJitEnvironment"}
     );
 

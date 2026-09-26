@@ -23,7 +23,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{1, D<&IMultiCommitManager::Add>, "Add"},
         FunctionInfo{2, D<&IMultiCommitManager::Commit>, "Commit"}
     );

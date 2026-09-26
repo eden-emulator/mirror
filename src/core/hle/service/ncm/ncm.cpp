@@ -26,7 +26,7 @@ public:
     explicit ILocationResolver(Core::System& system_, FileSys::StorageId id)
         : ServiceFramework{system_, "ILocationResolver"}, storage{id} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ResolveProgramPath"},
             FunctionInfo{1, nullptr, "RedirectProgramPath"},
             FunctionInfo{2, nullptr, "ResolveApplicationControlPath"},
@@ -61,7 +61,7 @@ public:
     explicit IRegisteredLocationResolver(Core::System& system_)
         : ServiceFramework{system_, "IRegisteredLocationResolver"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ResolveProgramPath"},
             FunctionInfo{1, nullptr, "RegisterProgramPath"},
             FunctionInfo{2, nullptr, "UnregisterProgramPath"},
@@ -83,7 +83,7 @@ public:
     explicit IAddOnContentLocationResolver(Core::System& system_)
         : ServiceFramework{system_, "IAddOnContentLocationResolver"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "ResolveAddOnContentPath"},
             FunctionInfo{1, nullptr, "RegisterAddOnContentStorage"},
             FunctionInfo{2, nullptr, "UnregisterAllAddOnContentPath"},
@@ -240,7 +240,7 @@ private:
         rb.Push(succeeded ? ResultSuccess : ResultUnknown);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &IContentStorage::GeneratePlaceHolderId, "GeneratePlaceHolderId"},
         FunctionInfo{1, &IContentStorage::CreatePlaceHolder, "CreatePlaceHolder"},
         FunctionInfo{2, &IContentStorage::DeletePlaceHolder, "DeletePlaceHolder"},
@@ -345,7 +345,7 @@ private:
         rb.Push(ResultSuccess);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &IContentMetaDatabase::Set, "Set"},
         FunctionInfo{2, &IContentMetaDatabase::Remove, "Remove"},
         FunctionInfo{8, &IContentMetaDatabase::Has, "Has"},
@@ -359,7 +359,7 @@ class LR final : public ServiceFramework<LR> {
 public:
     explicit LR(Core::System& system_) : ServiceFramework{system_, "lr"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "OpenLocationResolver"},
             FunctionInfo{1, nullptr, "OpenRegisteredLocationResolver"},
             FunctionInfo{2, nullptr, "RefreshLocationResolver"},
@@ -401,7 +401,7 @@ private:
         rb.PushIpcInterface<IContentMetaDatabase>(ctx, system, storage_id);
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "CreateContentStorage"},
         FunctionInfo{1, nullptr, "CreateContentMetaDatabase"},
         FunctionInfo{2, nullptr, "VerifyContentStorage"},
@@ -430,7 +430,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetSystemVersion"}
     );
 };

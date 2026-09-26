@@ -36,7 +36,7 @@ protected:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &IAsyncContext::GetSystemEvent, "GetSystemEvent"},
         FunctionInfo{1, &IAsyncContext::Cancel, "Cancel"},
         FunctionInfo{2, &IAsyncContext::HasDone, "HasDone"},

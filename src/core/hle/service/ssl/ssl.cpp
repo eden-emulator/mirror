@@ -392,7 +392,7 @@ private:
         R_SUCCEED();
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&ISslConnection::SetSocketDescriptor>, "SetSocketDescriptor"},
         FunctionInfo{1, D<&ISslConnection::SetHostName>, "SetHostName"},
         FunctionInfo{2, D<&ISslConnection::SetVerifyOption>, "SetVerifyOption"},
@@ -543,7 +543,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &ISslContext::SetOption, "SetOption"},
         FunctionInfo{1, &ISslContext::GetOption, "GetOption"},
         FunctionInfo{2, &ISslContext::CreateConnection, "CreateConnection"},
@@ -614,7 +614,7 @@ private:
     }
 
 private:
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &ISslService::CreateContext, "CreateContext"},
         FunctionInfo{1, nullptr, "GetContextCount"},
         FunctionInfo{2, D<&ISslService::GetCertificates>, "GetCertificates"},
@@ -706,7 +706,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&ISslServiceForSystem::CreateContext>, "CreateContext"},
         FunctionInfo{1, D<&ISslServiceForSystem::GetContextCount>, "GetContextCount"},
         FunctionInfo{2, D<&ISslServiceForSystem::GetCertificates>, "GetCertificates"},

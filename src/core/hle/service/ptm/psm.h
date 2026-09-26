@@ -32,7 +32,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &PSM::GetBatteryChargePercentage, "GetBatteryChargePercentage"},
         FunctionInfo{1, &PSM::GetChargerType, "GetChargerType"},
         FunctionInfo{2, nullptr, "EnableBatteryCharging"},

@@ -34,7 +34,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IFile::Read>, "Read"},
         FunctionInfo{1, D<&IFile::Write>, "Write"},
         FunctionInfo{2, D<&IFile::Flush>, "Flush"},

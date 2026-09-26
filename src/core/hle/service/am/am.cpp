@@ -140,7 +140,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IApplicationProxy::GetCommonStateGetter>, "GetCommonStateGetter"},
         FunctionInfo{1, D<&IApplicationProxy::GetSelfController>, "GetSelfController"},
         FunctionInfo{2, D<&IApplicationProxy::GetWindowController>, "GetWindowController"},
@@ -187,7 +187,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IApplicationProxyService::OpenApplicationProxy>, "OpenApplicationProxy"}
     );
     WindowSystem& m_window_system;
@@ -291,7 +291,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&ISystemAppletProxy::GetCommonStateGetter>, "GetCommonStateGetter"},
         FunctionInfo{1, D<&ISystemAppletProxy::GetSelfController>, "GetSelfController"},
         FunctionInfo{2, D<&ISystemAppletProxy::GetWindowController>, "GetWindowController"},
@@ -576,7 +576,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&ILibraryAppletSelfAccessor::PopInData>, "PopInData"},
         FunctionInfo{1, D<&ILibraryAppletSelfAccessor::PushOutData>, "PushOutData"},
         FunctionInfo{2, D<&ILibraryAppletSelfAccessor::PopInteractiveInData>, "PopInteractiveInData"},
@@ -717,7 +717,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&ILibraryAppletProxy::GetCommonStateGetter>, "GetCommonStateGetter"},
         FunctionInfo{1, D<&ILibraryAppletProxy::GetSelfController>, "GetSelfController"},
         FunctionInfo{2, D<&ILibraryAppletProxy::GetWindowController>, "GetWindowController"},
@@ -827,7 +827,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IOverlayAppletProxy::GetCommonStateGetter>, "GetCommonStateGetter"},
         FunctionInfo{1, D<&IOverlayAppletProxy::GetSelfController>, "GetSelfController"},
         FunctionInfo{2, D<&IOverlayAppletProxy::GetWindowController>, "GetWindowController"},
@@ -1096,7 +1096,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&ILibraryAppletCreator::CreateLibraryApplet>, "CreateLibraryApplet"},
         FunctionInfo{1, nullptr, "TerminateAllLibraryApplets"},
         FunctionInfo{2, nullptr, "AreAnyLibraryAppletsLeft"},
@@ -1207,7 +1207,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{100, D<&IAllSystemAppletProxiesService::OpenSystemAppletProxy>, "OpenSystemAppletProxy"},
         FunctionInfo{110, D<&IAllSystemAppletProxiesService::OpenSystemAppletProxy>, "OpenSystemAppletProxyEx"},
         FunctionInfo{200, D<&IAllSystemAppletProxiesService::OpenLibraryAppletProxyOld>, "OpenLibraryAppletProxyOld"},

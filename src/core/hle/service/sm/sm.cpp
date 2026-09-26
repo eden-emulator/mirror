@@ -137,7 +137,7 @@ private:
     FunctionInfoBase const* FindRequestTipc(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &SM::Initialize, "Initialize"},
         FunctionInfo{1, &SM::GetServiceTipc, "GetService"},
         FunctionInfo{2, &SM::RegisterServiceTipc, "RegisterService"},

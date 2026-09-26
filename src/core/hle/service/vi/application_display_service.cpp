@@ -18,7 +18,7 @@
 namespace Service::VI {
 
 ServiceFrameworkBase::FunctionInfoBase const* IApplicationDisplayService::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{100, C<&IApplicationDisplayService::GetRelayService>, "GetRelayService"},
         FunctionInfo{101, C<&IApplicationDisplayService::GetSystemDisplayService>, "GetSystemDisplayService"},
         FunctionInfo{102, C<&IApplicationDisplayService::GetManagerDisplayService>, "GetManagerDisplayService"},

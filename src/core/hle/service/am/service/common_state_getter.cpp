@@ -18,7 +18,7 @@
 namespace Service::AM {
 
 ServiceFrameworkBase::FunctionInfoBase const* ICommonStateGetter::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&ICommonStateGetter::GetEventHandle>, "GetEventHandle"},
         FunctionInfo{1, D<&ICommonStateGetter::ReceiveMessage>, "ReceiveMessage"},
         FunctionInfo{2, nullptr, "GetThisAppletKind"},
@@ -144,7 +144,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{1, D<&ILockAccessor::TryLock>, "TryLock"},
         FunctionInfo{2, D<&ILockAccessor::Unlock>, "Unlock"},
         FunctionInfo{3, D<&ILockAccessor::GetEvent>, "GetEvent"},

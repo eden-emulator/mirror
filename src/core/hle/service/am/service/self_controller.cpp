@@ -18,7 +18,7 @@
 namespace Service::AM {
 
     ServiceFrameworkBase::FunctionInfoBase const* ISelfController::FindRequest(u32 key) {
-        static const auto functions = CreateStaticMap(
+        static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&ISelfController::Exit>, "Exit"},
             FunctionInfo{1, D<&ISelfController::LockExit>, "LockExit"},
             FunctionInfo{2, D<&ISelfController::UnlockExit>, "UnlockExit"},

@@ -48,7 +48,7 @@
 namespace Service::FileSystem {
 
 ServiceFrameworkBase::FunctionInfoBase const* FSP_SRV::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "OpenFileSystem"},
         FunctionInfo{1, D<&FSP_SRV::SetCurrentProcess>, "SetCurrentProcess"},
         FunctionInfo{2, D<&FSP_SRV::OpenDataFileSystemByCurrentProcess>, "OpenDataFileSystemByCurrentProcess"},

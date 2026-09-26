@@ -28,7 +28,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "SendOld"},
         FunctionInfo{1, nullptr, "ReceiveOld"},
         FunctionInfo{2, nullptr, "ExecuteCommandListOld"},
@@ -78,7 +78,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, C<&I2C::OpenSessionForDev>, "OpenSessionForDev"},
         FunctionInfo{1, C<&I2C::OpenSession>, "OpenSession"},
         FunctionInfo{2, C<&I2C::HasDevice>, "HasDevice"},

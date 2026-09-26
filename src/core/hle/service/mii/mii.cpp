@@ -23,7 +23,7 @@
 namespace Service::Mii {
 
 ServiceFrameworkBase::FunctionInfoBase const* IStaticService::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IStaticService::GetDatabaseService>, "GetDatabaseService"}
     );
     return HandlerTableGenerateWithFind(key, functions);
@@ -264,7 +264,7 @@ private:
         R_RETURN(manager->Append(metadata, char_info));
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IDatabaseService::IsUpdated>, "IsUpdated"},
         FunctionInfo{1, D<&IDatabaseService::IsFullDatabase>, "IsFullDatabase"},
         FunctionInfo{2, D<&IDatabaseService::GetCount>, "GetCount"},
@@ -343,7 +343,7 @@ private:
         R_SUCCEED();
     }
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IImageDatabaseService::Initialize>, "Initialize"},
         FunctionInfo{10, nullptr, "Reload"},
         FunctionInfo{11, D<&IImageDatabaseService::GetCount>, "GetCount"},

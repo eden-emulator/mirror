@@ -11,7 +11,7 @@
 namespace Service::BCAT {
 
 ServiceFrameworkBase::FunctionInfoBase const* IDeliveryCacheProgressService::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IDeliveryCacheProgressService::GetEvent>, "GetEvent"},
         FunctionInfo{1, D<&IDeliveryCacheProgressService::GetImpl>, "GetImpl"}
     );

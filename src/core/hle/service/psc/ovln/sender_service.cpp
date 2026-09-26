@@ -11,7 +11,7 @@
 namespace Service::PSC {
 
     ServiceFrameworkBase::FunctionInfoBase const* ISenderService::FindRequest(u32 key) {
-        static const auto functions = CreateStaticMap(
+        static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, D<&ISenderService::OpenSender>, "OpenSender"}
         );
         return HandlerTableGenerateWithFind(key, functions);

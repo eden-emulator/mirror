@@ -21,7 +21,7 @@
 namespace Service::Audio {
 
 ServiceFrameworkBase::FunctionInfoBase const* IAudioController::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IAudioController::GetTargetVolume>, "GetTargetVolume"},
         FunctionInfo{1, D<&IAudioController::SetTargetVolume>, "SetTargetVolume"},
         FunctionInfo{2, D<&IAudioController::GetTargetVolumeMin>, "GetTargetVolumeMin"},

@@ -14,7 +14,7 @@ class DebugMonitor final : public ServiceFramework<DebugMonitor> {
 public:
     explicit DebugMonitor(Core::System& system_) : ServiceFramework{system_, "ldr:dmnt"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "SetProgramArgument"},
             FunctionInfo{1, nullptr, "FlushArguments"},
             FunctionInfo{2, nullptr, "GetProcessModuleInfo"}
@@ -28,7 +28,7 @@ class ProcessManager final : public ServiceFramework<ProcessManager> {
 public:
     explicit ProcessManager(Core::System& system_) : ServiceFramework{system_, "ldr:pm"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "CreateProcess"},
             FunctionInfo{1, nullptr, "GetProgramInfo"},
             FunctionInfo{2, nullptr, "PinProgram"},
@@ -44,7 +44,7 @@ class Shell final : public ServiceFramework<Shell> {
 public:
     explicit Shell(Core::System& system_) : ServiceFramework{system_, "ldr:shel"} {}
 
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
             FunctionInfo{0, nullptr, "SetProgramArgument"},
             FunctionInfo{1, nullptr, "FlushArguments"}
         );

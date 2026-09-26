@@ -48,7 +48,7 @@ private:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&ISaveDataInfoReader::ReadSaveDataInfo>, "ReadSaveDataInfo"}
     );
     std::shared_ptr<SaveDataController> save_data_controller;

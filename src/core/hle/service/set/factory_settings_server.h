@@ -22,7 +22,7 @@ public:
     FunctionInfoBase const* FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "GetBluetoothBdAddress"},
         FunctionInfo{1, nullptr, "GetConfigurationId1"},
         FunctionInfo{2, nullptr, "GetAccelerometerOffset"},

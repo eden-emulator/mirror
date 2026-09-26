@@ -15,7 +15,7 @@
 namespace Service::Capture {
 
 ServiceFrameworkBase::FunctionInfoBase const* IAlbumControlService::FindRequest(u32 key) {
-    static const auto functions = CreateStaticMap(
+    static constexpr auto functions = CreateStaticMap(
         FunctionInfo{1, nullptr, "CaptureRawImage"},
         FunctionInfo{2, nullptr, "CaptureRawImageWithTimeout"},
         FunctionInfo{33, C<&IAlbumControlService::SetShimLibraryVersion>, "SetShimLibraryVersion"},
