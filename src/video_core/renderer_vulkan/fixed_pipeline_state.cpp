@@ -202,12 +202,15 @@ void FixedPipelineState::Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFe
     const auto previous_formats = color_formats;
     color_formats.fill(static_cast<u8>(Tegra::RenderTargetFormat::NONE));
     const size_t num_targets = (std::min)(size_t{regs.rt_control.count}, color_formats.size());
+    size_t num_formats = 0;
     for (size_t index = 0; index < num_targets; ++index) {
         const bool used = ((color_outputs >> index) & 1) != 0 &&
                           WritesColorTarget(regs, index, static_masks);
-        if (regs.rt[index].Address() == 0 || (drop_unused && !used)) {
-            continue;
+        if (regs.rt[index].Address() != 0 && (used || !drop_unused)) {
+            num_formats = index + 1;
         }
+    }
+    for (size_t index = 0; index < num_formats; ++index) {
         color_formats[index] = static_cast<u8>(regs.rt[index].format);
     }
     alpha_test_ref = 0;
