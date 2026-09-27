@@ -41,39 +41,23 @@ public:
     YUZU_NON_MOVEABLE(SocketBase);
 
     virtual Errno Initialize(Domain domain, Type type, Protocol protocol) = 0;
-
     virtual Errno Close() = 0;
-
     virtual std::pair<AcceptResult, Errno> Accept() = 0;
-
     virtual Errno Connect(Network::SockAddrIn addr_in) = 0;
-
     virtual std::pair<Network::SockAddrIn, Errno> GetPeerName() = 0;
-
     virtual std::pair<Network::SockAddrIn, Errno> GetSockName() = 0;
-
     virtual Errno Bind(Network::SockAddrIn addr) = 0;
-
     virtual Errno Listen(s32 backlog) = 0;
-
     virtual Errno Shutdown(ShutdownHow how) = 0;
-
     virtual std::pair<s32, Errno> Recv(int flags, std::span<u8> message) = 0;
-
     virtual std::pair<s32, Errno> RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) = 0;
-
     virtual std::pair<s32, Errno> Send(std::span<const u8> message, int flags) = 0;
-
     virtual std::pair<s32, Errno> SendTo(u32 flags, std::span<const u8> message, const Network::SockAddrIn* addr) = 0;
-
+    virtual bool GetNonBlock() = 0;
     virtual Errno SetNonBlock(bool enable) = 0;
-
     virtual Errno SetSockOpt(Network::SocketLevel level, Network::OptName option, std::span<const u8> value) = 0;
-
     virtual std::pair<Errno, Errno> GetPendingError() = 0;
-
     virtual bool IsOpened() const = 0;
-
     virtual void HandleProxyPacket(const ProxyPacket& packet) = 0;
 
     [[nodiscard]] SOCKET GetFD() const {

@@ -876,9 +876,12 @@ std::pair<s32, Network::Errno> BSD_USA::RecvImpl(s32 fd, u32 flags, std::vector<
 
 std::pair<s32, Network::Errno> BSD_USA::RecvFromImpl(s32 fd, u32 flags, std::vector<u8>& message, std::vector<u8>& addr) {
     LOG_DEBUG(Network, "fd={},flags={}", fd, flags);
-    if (!IsFileDescriptorValid(fd)) {
+    if (!IsFileDescriptorValid(fd))
         return {-1, Network::Errno::E_BADF};
-    }
+    if (message.size() == 0)
+        return {0, Network::Errno::E_SUCCESS};
+    if (!std::in_range<u32>(message.size()))
+        return {0, Network::Errno::E_FAULT};
 
     FileDescriptor& descriptor = *file_descriptors[fd];
 
@@ -892,19 +895,16 @@ std::pair<s32, Network::Errno> BSD_USA::RecvFromImpl(s32 fd, u32 flags, std::vec
     }
 
     // Apply flags
-    if ((flags & u32(Network::MsgOpt::DONTWAIT)) != 0) {
-        flags &= ~u32(Network::MsgOpt::DONTWAIT);
-        if ((descriptor.flags & u32(Network::FcntlFlags::NONBLOCK_NX)) == 0) {
-            descriptor.socket->SetNonBlock(true);
-        }
-    }
+    auto const is_nonblock = descriptor.socket->GetNonBlock();
+    auto const f_dontwait = (flags & u32(Network::MsgOpt::DONTWAIT)) != 0;
+    auto const f_waitall = (flags & u32(Network::MsgOpt::WAITALL)) != 0;
+    // DONTWAIT set clears WAITALL, if socket is non-blocking it also clears WAITALL
+    if (f_dontwait || (f_waitall && is_nonblock))
+        flags &= ~u32(Network::MsgOpt::WAITALL);
 
+    if (f_dontwait) descriptor.socket->SetNonBlock(true); //set non-block
     const auto [ret, bsd_errno] = descriptor.socket->RecvFrom(flags, message, p_addr_in);
-
-    // Restore original state
-    if ((descriptor.flags & u32(Network::FcntlFlags::NONBLOCK_NX)) == 0) {
-        descriptor.socket->SetNonBlock(false);
-    }
+    if (f_dontwait) descriptor.socket->SetNonBlock(is_nonblock); //restore
 
     if (p_addr_in) {
         if (ret < 0) {

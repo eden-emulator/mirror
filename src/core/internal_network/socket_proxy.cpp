@@ -47,6 +47,10 @@ void ProxySocket::HandleProxyPacket(const ProxyPacket& packet) {
     received_packets.push(decompressed);
 }
 
+bool ProxySocket::GetNonBlock() {
+    return blocking;
+}
+
 Errno ProxySocket::SetNonBlock(bool enable) {
     blocking = !enable;
     return Errno::E_SUCCESS;
@@ -115,41 +119,19 @@ Errno ProxySocket::Shutdown(ShutdownHow how) {
 
 std::pair<s32, Errno> ProxySocket::Recv(int flags, std::span<u8> message) {
     LOG_WARNING(Network, "(stubbed) called");
-    ASSERT(flags == 0);
-    ASSERT(message.size() < std::size_t((std::numeric_limits<int>::max)()));
+    ASSERT(flags == 0 && message.size() < std::size_t((std::numeric_limits<int>::max)()));
     return {s32(0), Errno::E_SUCCESS};
 }
 
 std::pair<s32, Errno> ProxySocket::RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) {
-    ASSERT(flags == 0);
-    ASSERT(message.size() < std::size_t((std::numeric_limits<int>::max)()));
-
-    // TODO (flTobi): Verify the timeout behavior and break when connection is lost
-    const auto timestamp = std::chrono::steady_clock::now();
-    // When receive_timeout is set to zero, the socket is supposed to wait indefinitely until a
-    // packet arrives. In order to prevent lost packets from hanging the emulation thread, we set
-    // the timeout to 5s instead
-    const auto timeout = receive_timeout == 0 ? 5000 : receive_timeout;
-    while (true) {
-        {
-            std::lock_guard guard(packets_mutex);
-            if (received_packets.size() > 0) {
-                return ReceivePacket(flags, message, addr, message.size());
-            }
-        }
-
-        if (!blocking) {
-            return {-1, Errno::E_AGAIN};
-        }
-
-        std::this_thread::yield();
-
-        const auto time_diff = std::chrono::steady_clock::now() - timestamp;
-        const auto time_diff_ms = std::chrono::duration_cast<std::chrono::milliseconds>(time_diff).count();
-        if (time_diff_ms > timeout) {
-            return {-1, Errno::E_TIMEDOUT};
-        }
-    }
+    LOG_DEBUG(Network, "called");
+    ASSERT(flags == 0 && message.size() < std::size_t((std::numeric_limits<int>::max)()));
+    do {
+        std::unique_lock lk{packets_mutex};
+        if (received_packets.size() > 0)
+            return ReceivePacket(flags, message, addr, message.size());
+    } while (blocking);
+    return {-1, Errno::E_AGAIN};
 }
 
 std::pair<s32, Errno> ProxySocket::ReceivePacket(int flags, std::span<u8> message, Network::SockAddrIn* addr, std::size_t max_length) {
@@ -164,29 +146,17 @@ std::pair<s32, Errno> ProxySocket::ReceivePacket(int flags, std::span<u8> messag
     }
 
     bool peek = (flags & u32(Network::MsgOpt::PEEK)) != 0;
-    std::size_t read_bytes;
-    if (packet.data.size() > max_length) {
-        read_bytes = max_length;
-        std::memcpy(message.data(), packet.data.data(), max_length);
-
-        if (protocol == Protocol::UDP) {
-            if (!peek) {
-                received_packets.pop();
-            }
-            return {-1, Errno::E_MSGSIZE};
-        } else if (protocol == Protocol::TCP) {
-            std::vector<u8> numArray(packet.data.size() - max_length);
-            std::copy(packet.data.begin() + max_length, packet.data.end(), std::back_inserter(numArray));
-            packet.data = numArray;
-        }
-    } else {
-        read_bytes = packet.data.size();
-        std::memcpy(message.data(), packet.data.data(), read_bytes);
-        if (!peek) {
+    std::size_t read_bytes = (std::min)(max_length, packet.data.size());
+    std::memcpy(message.data(), packet.data.data(), read_bytes);
+    if (!peek) {
+        packet.data.erase(packet.data.begin(), packet.data.begin() + read_bytes);
+        if (packet.data.empty())
             received_packets.pop();
-        }
     }
-
+    if (packet.data.size() > max_length && protocol == Protocol::UDP) {
+        LOG_ERROR(Network, "Packet size");
+        return {-1, Errno::E_MSGSIZE};
+    }
     return {u32(read_bytes), Errno::E_SUCCESS};
 }
 

@@ -44,6 +44,8 @@ public:
     std::pair<Errno, Errno> GetPendingError() override;
     bool IsOpened() const override;
     void HandleProxyPacket(const ProxyPacket& packet) override;
+
+    bool GetNonBlock() override;
     Errno SetNonBlock(bool enable) override;
 
     boost::container::static_vector<PingProcessData, 128> pings;

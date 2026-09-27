@@ -269,6 +269,10 @@ bool IcmpSocket::IsOpened() const {
 void IcmpSocket::HandleProxyPacket(const ProxyPacket& packet) {
     LOG_WARNING(Network, "(stubbed) called");
 }
+
+bool IcmpSocket::GetNonBlock() {
+    return !blocking;
+}
 Errno IcmpSocket::SetNonBlock(bool enable) {
     blocking = !enable;
     return Errno::E_SUCCESS;
