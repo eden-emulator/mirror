@@ -41,6 +41,7 @@ namespace Network {
 namespace {
 
 enum class CallType {
+    Connect,
     Send,
     Other,
 };
@@ -1112,7 +1113,7 @@ Errno Socket::Connect(Network::SockAddrIn addr_in) {
     LOG_INFO(Network, "len={}, family={} - {}.{}.{}.{}:{}", addr_in.len, addr_in.family, addr_in.ip[0], addr_in.ip[1], addr_in.ip[2], addr_in.ip[3], ntohs(addr_in.portno));
     if (connect(fd, reinterpret_cast<sockaddr const*>(&host_addr_in), sizeof(host_addr_in)) != SOCKET_ERROR)
         return Errno::E_SUCCESS;
-    return GetAndLogLastError(CallType::Other);
+    return GetAndLogLastError(CallType::Connect);
 }
 
 std::pair<Network::SockAddrIn, Errno> Socket::GetPeerName() {
