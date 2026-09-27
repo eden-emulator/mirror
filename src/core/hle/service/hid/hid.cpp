@@ -278,7 +278,7 @@ public:
         FunctionInfo{209, nullptr, "GetAvailableFirmwareVersionForRevert"},
         FunctionInfo{210, nullptr, "IsFirmwareUpdatingDevice"},
         FunctionInfo{211, nullptr, "StartFirmwareUpdateIndividual"},
-        FunctionInfo{212, nullptr, "GetDetailFirmwareVersion"}, // 19.0.0+
+        FunctionInfo{212, nullptr, "GetDetailFirmwareVersion", MakeVersionGate({19,0,0})},
         FunctionInfo{215, nullptr, "SetUsbFirmwareForceUpdateEnabled"},
         FunctionInfo{216, nullptr, "SetAllKuinaDevicesToFirmwareUpdateMode"},
         FunctionInfo{221, nullptr, "UpdateControllerColor"},
@@ -312,11 +312,11 @@ public:
         FunctionInfo{249, nullptr, "ConnectUniquePad"},
         FunctionInfo{250, nullptr, "IsVirtual"},
         FunctionInfo{251, nullptr, "GetAnalogStickModuleParam"},
-        FunctionInfo{253, nullptr, "ClearStorageForShipment"}, //19.0.0+
-        FunctionInfo{261, nullptr, "UpdateDesignInfo12"}, //21.0.0+
-        FunctionInfo{262, nullptr, "GetUniquePadButtonCount"}, //21.0.0+
-        FunctionInfo{267, nullptr, "SetAnalogStickCalibration"}, //21.0.0+
-        FunctionInfo{268, nullptr, "ResetAnalogStickCalibration"}, //21.0.0+
+        FunctionInfo{253, nullptr, "ClearStorageForShipment", MakeVersionGate({19,0,0})},
+        FunctionInfo{261, nullptr, "UpdateDesignInfo12", MakeVersionGate({21,0,0})},
+        FunctionInfo{262, nullptr, "GetUniquePadButtonCount", MakeVersionGate({21,0,0})},
+        FunctionInfo{267, nullptr, "SetAnalogStickCalibration", MakeVersionGate({21,0,0})},
+        FunctionInfo{268, nullptr, "ResetAnalogStickCalibration", MakeVersionGate({21,0,0})},
         FunctionInfo{301, nullptr, "GetAbstractedPadHandles"},
         FunctionInfo{302, nullptr, "GetAbstractedPadState"},
         FunctionInfo{303, nullptr, "GetAbstractedPadsState"},
@@ -333,8 +333,8 @@ public:
         FunctionInfo{331, nullptr, "DetachHdlsVirtualDevice"},
         FunctionInfo{332, nullptr, "SetHdlsState"},
         FunctionInfo{350, nullptr, "AddRegisteredDevice"},
-        FunctionInfo{351, nullptr, "GetRegisteredDevicesCountDebug"}, //17.0.0-18.1.0
-        FunctionInfo{352, nullptr, "DeleteRegisteredDevicesDebug"}, //17.0.0-18.1.0
+        FunctionInfo{351, nullptr, "GetRegisteredDevicesCountDebug", MakeVersionGate({17,0,0}, {18,1,0})},
+        FunctionInfo{352, nullptr, "DeleteRegisteredDevicesDebug", MakeVersionGate({17,0,0}, {18,1,0})},
         FunctionInfo{400, nullptr, "DisableExternalMcuOnNxDevice"},
         FunctionInfo{401, nullptr, "DisableRailDeviceFiltering"},
         FunctionInfo{402, nullptr, "EnableWiredPairing"},
@@ -346,26 +346,26 @@ public:
         FunctionInfo{551, nullptr, "GetAnalogStickModelData"},
         FunctionInfo{552, nullptr, "ResetAnalogStickModelData"},
         FunctionInfo{600, nullptr, "ConvertPadState"},
-        FunctionInfo{601, nullptr, "IsButtonConfigSupported"}, //18.0.0+
-        FunctionInfo{602, nullptr, "IsButtonConfigEmbeddedSupported"}, //18.0.0+
-        FunctionInfo{603, nullptr, "DeleteButtonConfig"}, //18.0.0+
-        FunctionInfo{604, nullptr, "DeleteButtonConfigEmbedded"}, //18.0.0+
-        FunctionInfo{605, nullptr, "SetButtonConfigEnabled"}, //18.0.0+
-        FunctionInfo{606, nullptr, "SetButtonConfigEmbeddedEnabled"}, //18.0.0+
-        FunctionInfo{607, nullptr, "IsButtonConfigEnabled"}, //18.0.0+
-        FunctionInfo{608, nullptr, "IsButtonConfigEmbeddedEnabled"}, //18.0.0+
-        FunctionInfo{609, nullptr, "SetButtonConfigEmbedded"}, //18.0.0+
-        FunctionInfo{610, nullptr, "SetButtonConfigFull"}, //18.0.0+
-        FunctionInfo{611, nullptr, "SetButtonConfigLeft"}, //18.0.0+
-        FunctionInfo{612, nullptr, "SetButtonConfigRight"}, //18.0.0+
-        FunctionInfo{613, nullptr, "GetButtonConfigEmbedded"}, //18.0.0+
-        FunctionInfo{614, nullptr, "GetButtonConfigFull"}, //18.0.0+
-        FunctionInfo{615, nullptr, "GetButtonConfigLeft"}, //18.0.0+
-        FunctionInfo{616, nullptr, "GetButtonConfigRight"}, //18.0.0+
+        FunctionInfo{601, nullptr, "IsButtonConfigSupported", MakeVersionGate({18,0,0})},
+        FunctionInfo{602, nullptr, "IsButtonConfigEmbeddedSupported", MakeVersionGate({18,0,0})},
+        FunctionInfo{603, nullptr, "DeleteButtonConfig", MakeVersionGate({18,0,0})},
+        FunctionInfo{604, nullptr, "DeleteButtonConfigEmbedded", MakeVersionGate({18,0,0})},
+        FunctionInfo{605, nullptr, "SetButtonConfigEnabled", MakeVersionGate({18,0,0})},
+        FunctionInfo{606, nullptr, "SetButtonConfigEmbeddedEnabled", MakeVersionGate({18,0,0})},
+        FunctionInfo{607, nullptr, "IsButtonConfigEnabled", MakeVersionGate({18,0,0})},
+        FunctionInfo{608, nullptr, "IsButtonConfigEmbeddedEnabled", MakeVersionGate({18,0,0})},
+        FunctionInfo{609, nullptr, "SetButtonConfigEmbedded", MakeVersionGate({18,0,0})},
+        FunctionInfo{610, nullptr, "SetButtonConfigFull", MakeVersionGate({18,0,0})},
+        FunctionInfo{611, nullptr, "SetButtonConfigLeft", MakeVersionGate({18,0,0})},
+        FunctionInfo{612, nullptr, "SetButtonConfigRight", MakeVersionGate({18,0,0})},
+        FunctionInfo{613, nullptr, "GetButtonConfigEmbedded", MakeVersionGate({18,0,0})},
+        FunctionInfo{614, nullptr, "GetButtonConfigFull", MakeVersionGate({18,0,0})},
+        FunctionInfo{615, nullptr, "GetButtonConfigLeft", MakeVersionGate({18,0,0})},
+        FunctionInfo{616, nullptr, "GetButtonConfigRight", MakeVersionGate({18,0,0})},
         FunctionInfo{650, nullptr, "AddButtonPlayData"},
         FunctionInfo{651, nullptr, "StartButtonPlayData"},
         FunctionInfo{652, nullptr, "StopButtonPlayData"},
-        FunctionInfo{700, nullptr, "GetRailAttachEventCount"}, //21.0.0+
+        FunctionInfo{700, nullptr, "GetRailAttachEventCount", MakeVersionGate({21,0,0})},
         FunctionInfo{2000, nullptr, "DeactivateDigitizer"},
         FunctionInfo{2001, nullptr, "SetDigitizerAutoPilotState"},
         FunctionInfo{2002, nullptr, "UnsetDigitizerAutoPilotState"},

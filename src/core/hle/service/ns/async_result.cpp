@@ -12,7 +12,7 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IAsyncResult::FindRequest(
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, nullptr, "Get"},
         FunctionInfo{1, D<&IAsyncResult::Cancel>, "Cancel"},
-        FunctionInfo{2, nullptr, "GetErrorContext"} // 4.0.0+
+        FunctionInfo{2, nullptr, "GetErrorContext", MakeVersionGate({4,0,0})}
     );
     return HandlerTableGenerateWithFind(key, functions);
 }

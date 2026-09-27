@@ -22,10 +22,10 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioRenderer::FindReques
         FunctionInfo{7, D<&IAudioRenderer::QuerySystemEvent>, "QuerySystemEvent"},
         FunctionInfo{8, D<&IAudioRenderer::SetRenderingTimeLimit>, "SetRenderingTimeLimit"},
         FunctionInfo{9, D<&IAudioRenderer::GetRenderingTimeLimit>, "GetRenderingTimeLimit"},
-        FunctionInfo{10, D<&IAudioRenderer::RequestUpdateAuto>, "RequestUpdateAuto"}, //3.0.0+
-        FunctionInfo{11, nullptr, "ExecuteAudioRendererRendering"}, //3.0.0+
-        FunctionInfo{12, D<&IAudioRenderer::SetVoiceDropParameter>, "SetVoiceDropParameter"}, //15.0.0+
-        FunctionInfo{13, D<&IAudioRenderer::GetVoiceDropParameter>, "GetVoiceDropParameter"} //15.0.0+
+        FunctionInfo{10, D<&IAudioRenderer::RequestUpdateAuto>, "RequestUpdateAuto", MakeVersionGate({3,0,0})},
+        FunctionInfo{11, nullptr, "ExecuteAudioRendererRendering", MakeVersionGate({3,0,0})},
+        FunctionInfo{12, D<&IAudioRenderer::SetVoiceDropParameter>, "SetVoiceDropParameter", MakeVersionGate({15,0,0})},
+        FunctionInfo{13, D<&IAudioRenderer::GetVoiceDropParameter>, "GetVoiceDropParameter", MakeVersionGate({15,0,0})}
     );
     return HandlerTableGenerateWithFind(key, functions);
 }

@@ -36,10 +36,10 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IDynamicRightsInterface::F
         FunctionInfo{24, nullptr, "NotifyLimitedApplicationLicenseUpgradableEventForDebug"},
         FunctionInfo{25, nullptr, "RequestProceedDynamicRightsState"},
         FunctionInfo{26, D<&IDynamicRightsInterface::HasAccountRestrictedRightsInRunningApplications>, "HasAccountRestrictedRightsInRunningApplications"},
-        FunctionInfo{27, nullptr, "Unknown27"}, //20.0.0+
-        FunctionInfo{28, nullptr, "Unknown28"}, //20.0.0+
-        FunctionInfo{29, nullptr, "Unknown29"}, //21.0.0+
-        FunctionInfo{30, nullptr, "Unknown30"} //21.0.0+
+        FunctionInfo{27, nullptr, "Unknown27", MakeVersionGate({20,0,0})},
+        FunctionInfo{28, nullptr, "Unknown28", MakeVersionGate({20,0,0})},
+        FunctionInfo{29, nullptr, "Unknown29", MakeVersionGate({21,0,0})},
+        FunctionInfo{30, nullptr, "Unknown30", MakeVersionGate({21,0,0})}
     );
     return HandlerTableGenerateWithFind(key, functions);
 }

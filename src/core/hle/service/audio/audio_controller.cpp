@@ -28,7 +28,7 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioController::FindRequ
         FunctionInfo{3, D<&IAudioController::GetTargetVolumeMax>, "GetTargetVolumeMax"},
         FunctionInfo{4, D<&IAudioController::IsTargetMute>, "IsTargetMute"},
         FunctionInfo{5, D<&IAudioController::SetTargetMute>, "SetTargetMute"},
-        FunctionInfo{6, nullptr, "IsTargetConnected"}, //20.0.0+
+        FunctionInfo{6, nullptr, "IsTargetConnected", MakeVersionGate({20,0,0})},
         FunctionInfo{7, nullptr, "SetDefaultTarget"},
         FunctionInfo{8, nullptr, "GetDefaultTarget"},
         FunctionInfo{9, D<&IAudioController::GetAudioOutputMode>, "GetAudioOutputMode"},
@@ -65,8 +65,8 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioController::FindRequ
         FunctionInfo{40, nullptr, "GetSystemInformationForDebug"},
         FunctionInfo{41, nullptr, "SetVolumeButtonLongPressTime"},
         FunctionInfo{42, nullptr, "SetNativeVolumeForDebug"},
-        FunctionInfo{43, nullptr, "Unknown43"}, //21.0.0+
-        FunctionInfo{5000, D<&IAudioController::Unknown5000>, "Unknown5000"}, //19.0.0+
+        FunctionInfo{43, nullptr, "Unknown43", MakeVersionGate({21,0,0})},
+        FunctionInfo{5000, D<&IAudioController::Unknown5000>, "Unknown5000", MakeVersionGate({19,0,0})},
         FunctionInfo{10000, nullptr, "NotifyAudioOutputTargetForPlayReport"},
         FunctionInfo{10001, nullptr, "NotifyAudioOutputChannelCountForPlayReport"},
         FunctionInfo{10002, nullptr, "NotifyUnsupportedUsbOutputDeviceAttachedForPlayReport"},
@@ -75,13 +75,13 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioController::FindRequ
         FunctionInfo{10102, nullptr, "BindAudioOutputTargetUpdateEventForPlayReport"},
         FunctionInfo{10103, nullptr, "GetAudioOutputTargetForPlayReport"},
         FunctionInfo{10104, nullptr, "GetAudioOutputChannelCountForPlayReport"},
-        FunctionInfo{10105, nullptr, "BindAudioOutputChannelCountUpdateEventForPlayReport"}, //14.0.0-19.0.1
-        FunctionInfo{10106, nullptr, "GetDefaultAudioOutputTargetForPlayReport"}, //14.0.0-19.0.1
-        FunctionInfo{10200, nullptr, "Unknown10200"}, //20.0.0+
-        FunctionInfo{50000, nullptr, "SetAnalogInputBoostGainForPrototyping"}, //15.0.0-18.1.0
-        FunctionInfo{50001, nullptr, "OverrideDefaultTargetForDebug"}, //19.0.0-19.0.1
-        FunctionInfo{50003, nullptr, "SetForceOverrideExternalDeviceNameForDebug"}, //19.0.0+
-        FunctionInfo{50004, nullptr, "ClearForceOverrideExternalDeviceNameForDebug"} //19.0.0+
+        FunctionInfo{10105, nullptr, "BindAudioOutputChannelCountUpdateEventForPlayReport", MakeVersionGate({14,0,0}, {19,0,1})},
+        FunctionInfo{10106, nullptr, "GetDefaultAudioOutputTargetForPlayReport", MakeVersionGate({14,0,0}, {19,0,1})},
+        FunctionInfo{10200, nullptr, "Unknown10200", MakeVersionGate({20,0,0})},
+        FunctionInfo{50000, nullptr, "SetAnalogInputBoostGainForPrototyping", MakeVersionGate({15,0,0}, {18,1,0})},
+        FunctionInfo{50001, nullptr, "OverrideDefaultTargetForDebug", MakeVersionGate({19,0,0}, {19,0,1})},
+        FunctionInfo{50003, nullptr, "SetForceOverrideExternalDeviceNameForDebug", MakeVersionGate({19,0,0})},
+        FunctionInfo{50004, nullptr, "ClearForceOverrideExternalDeviceNameForDebug", MakeVersionGate({19,0,0})}
     );
     return HandlerTableGenerateWithFind(key, functions);
 }

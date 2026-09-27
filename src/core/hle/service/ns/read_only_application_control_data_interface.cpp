@@ -84,7 +84,7 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IReadOnlyApplicationContro
         FunctionInfo{10, &IReadOnlyApplicationControlDataInterface::ListApplicationIcon, "ListApplicationIcon"},
         FunctionInfo{13, &IReadOnlyApplicationControlDataInterface::ListApplicationTitle, "ListApplicationTitle"},
         FunctionInfo{19, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData3>, "GetApplicationControlData"},
-        FunctionInfo{23, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData3>, "GetApplicationControlData"} //23.0.0+
+        FunctionInfo{23, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData3>, "GetApplicationControlData", MakeVersionGate({23,0,0})}
     );
     return HandlerTableGenerateWithFind(key, functions);
 }

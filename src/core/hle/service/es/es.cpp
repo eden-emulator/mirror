@@ -262,16 +262,16 @@ private:
         FunctionInfo{38, nullptr, "OwnTicket3"},
         FunctionInfo{39, nullptr, "DeleteAllInactivePersonalizedTicket"},
         FunctionInfo{40, nullptr, "DeletePrepurchaseRecordByNintendoAccountId"},
-        FunctionInfo{101, nullptr, "Unknown101"}, //18.0.0+
-        FunctionInfo{102, nullptr, "Unknown102"}, //18.0.0+
-        FunctionInfo{103, nullptr, "Unknown103"}, //18.0.0+
-        FunctionInfo{104, nullptr, "Unknown104"}, //18.0.0+
-        FunctionInfo{105, nullptr, "Unknown105"}, //20.0.0+
-        FunctionInfo{201, nullptr, "Unknown201"}, //18.0.0+
-        FunctionInfo{202, nullptr, "Unknown202"}, //18.0.0+
-        FunctionInfo{203, nullptr, "Unknown203"}, //18.0.0+
-        FunctionInfo{204, nullptr, "Unknown204"}, //18.0.0+
-        FunctionInfo{205, nullptr, "Unknown205"}, //18.0.0+
+        FunctionInfo{101, nullptr, "Unknown101", MakeVersionGate({18,0,0})},
+        FunctionInfo{102, nullptr, "Unknown102", MakeVersionGate({18,0,0})},
+        FunctionInfo{103, nullptr, "Unknown103", MakeVersionGate({18,0,0})},
+        FunctionInfo{104, nullptr, "Unknown104", MakeVersionGate({18,0,0})},
+        FunctionInfo{105, nullptr, "Unknown105", MakeVersionGate({20,0,0})},
+        FunctionInfo{201, nullptr, "Unknown201", MakeVersionGate({18,0,0})},
+        FunctionInfo{202, nullptr, "Unknown202", MakeVersionGate({18,0,0})},
+        FunctionInfo{203, nullptr, "Unknown203", MakeVersionGate({18,0,0})},
+        FunctionInfo{204, nullptr, "Unknown204", MakeVersionGate({18,0,0})},
+        FunctionInfo{205, nullptr, "Unknown205", MakeVersionGate({18,0,0})},
         FunctionInfo{501, nullptr, "Unknown501"},
         FunctionInfo{502, nullptr, "Unknown502"},
         FunctionInfo{503, nullptr, "GetTitleKey"},

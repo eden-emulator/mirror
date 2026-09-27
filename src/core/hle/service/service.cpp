@@ -19,6 +19,7 @@
 #include "core/hle/service/service.h"
 #include "core/hle/service/sm/sm.h"
 #include "core/reporter.h"
+#include "frontend_common/firmware_manager.h"
 
 namespace Service {
 
@@ -47,7 +48,7 @@ ServiceFrameworkBase::~ServiceFrameworkBase() {
     const auto guard = ServiceFrameworkBase::LockService();
 }
 
-void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, const FunctionInfoBase* info) {
+void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, const FunctionInfoBase* info, bool gated) {
     auto cmd_buf = ctx.CommandBuffer();
     std::string function_name = bool(info) ? info->name : "<unknown>";
 
@@ -58,7 +59,11 @@ void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, c
     buf.push_back('}');
 
     system.GetReporter().SaveUnimplementedFunctionReport(ctx, ctx.GetCommand(), function_name, service_name);
-    UNIMPLEMENTED_MSG("Unknown / unimplemented {}", fmt::to_string(buf));
+    if (gated) {
+        LOG_ERROR(Service, "Version gated {}", fmt::to_string(buf));
+    } else {
+        UNIMPLEMENTED_MSG("Unknown / unimplemented {}", fmt::to_string(buf));
+    }
     if (Settings::values.use_auto_stub) {
         LOG_WARNING(Service, "Using auto stub fallback!");
         IPC::ResponseBuilder rb{ctx, 2};
@@ -66,11 +71,29 @@ void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, c
     }
 }
 
+[[nodiscard]] static bool VersionGateCheck(Core::System& system, u32 vg) {
+    auto const c_maj = FirmwareManager::GetFirmwareVersion(system).first.major;
+    auto const c_min = FirmwareManager::GetFirmwareVersion(system).first.minor;
+    auto const c_pat = FirmwareManager::GetFirmwareVersion(system).first.micro;
+    auto const cg = (c_pat << 0) | (c_min << 4) | (c_maj << 8);
+
+    auto const sg = vg & 0xfff;
+    auto const ug = (vg >> 12) & 0xfff;
+    // feature available after current
+    if (sg && cg < sg)
+        return false;
+    // feature until xxx (0 = up to current)
+    return ug ? ug >= cg : true;
+}
+
 void ServiceFrameworkBase::InvokeRequest(HLERequestContext& ctx) {
     const bool is_cmd_read = ctx.GetCommand() == 0;
     auto const info = FindRequest(ctx.GetCommand());
     if (!info.has_value() || info->handler_callback == nullptr)
-        return ReportUnimplementedFunction(ctx, &*info);
+        return ReportUnimplementedFunction(ctx, &*info, false);
+
+    if (VersionGateCheck(system, info->version_gating))
+        return ReportUnimplementedFunction(ctx, &*info, true);
 
     LOG_TRACE(Service, "{}", MakeFunctionString(info->name, GetServiceName(), ctx.CommandBuffer()));
     handler_invoker(this, info->handler_callback, ctx);
@@ -85,7 +108,10 @@ void ServiceFrameworkBase::InvokeRequest(HLERequestContext& ctx) {
 void ServiceFrameworkBase::InvokeRequestTipc(HLERequestContext& ctx) {
     auto const info = FindRequestTipc(ctx.GetCommand());
     if (!info.has_value() || info->handler_callback == nullptr)
-        return ReportUnimplementedFunction(ctx, &*info);
+        return ReportUnimplementedFunction(ctx, &*info, false);
+
+    if (VersionGateCheck(system, info->version_gating))
+        return ReportUnimplementedFunction(ctx, &*info, true);
 
     LOG_TRACE(Service, "{}", MakeFunctionString(info->name, GetServiceName(), ctx.CommandBuffer()));
     handler_invoker(this, info->handler_callback, ctx);

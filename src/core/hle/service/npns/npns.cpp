@@ -83,9 +83,9 @@ private:
         FunctionInfo{11, nullptr, "SubscribeTopic"},
         FunctionInfo{12, nullptr, "UnsubscribeTopic"},
         FunctionInfo{13, nullptr, "QueryIsTopicExist"},
-        FunctionInfo{14, nullptr, "SubscribeTopicByAccount"}, // 18.0.0+
-        FunctionInfo{15, nullptr, "UnsubscribeTopicByAccount"}, // 18.0.0+
-        FunctionInfo{16, nullptr, "DownloadSubscriptionList"}, // 18.0.0+
+        FunctionInfo{14, nullptr, "SubscribeTopicByAccount", MakeVersionGate({18,0,0})},
+        FunctionInfo{15, nullptr, "UnsubscribeTopicByAccount", MakeVersionGate({18,0,0})},
+        FunctionInfo{16, nullptr, "DownloadSubscriptionList", MakeVersionGate({18,0,0})},
         FunctionInfo{21, nullptr, "CreateToken"},
         FunctionInfo{22, nullptr, "CreateTokenWithApplicationId"},
         FunctionInfo{23, nullptr, "DestroyToken"},
@@ -93,29 +93,29 @@ private:
         FunctionInfo{25, nullptr, "QueryIsTokenValid"},
         FunctionInfo{26, nullptr, "ListenToMyApplicationId"},
         FunctionInfo{27, nullptr, "DestroyTokenAll"},
-        FunctionInfo{28, nullptr, "CreateTokenWithName"}, // 18.0.0+
-        FunctionInfo{29, nullptr, "DestroyTokenWithName"}, // 18.0.0+
+        FunctionInfo{28, nullptr, "CreateTokenWithName", MakeVersionGate({18,0,0})},
+        FunctionInfo{29, nullptr, "DestroyTokenWithName", MakeVersionGate({18,0,0})},
         FunctionInfo{31, nullptr, "UploadTokenToBaaS"},
         FunctionInfo{32, nullptr, "DestroyTokenForBaaS"},
         FunctionInfo{33, nullptr, "CreateTokenForBaaS"},
         FunctionInfo{34, nullptr, "SetBaaSDeviceAccountIdList"},
-        FunctionInfo{35, nullptr, "LinkNsaId"}, // 17.0.0+
-        FunctionInfo{36, nullptr, "UnlinkNsaId"}, // 17.0.0+
-        FunctionInfo{37, nullptr, "RelinkNsaId"}, // 18.0.0+
-        FunctionInfo{40, nullptr, "GetNetworkServiceAccountIdTokenRequestEvent"}, // 17.0.0+
-        FunctionInfo{41, nullptr, "TryPopNetworkServiceAccountIdTokenRequestUid"}, // 17.0.0+
-        FunctionInfo{42, nullptr, "SetNetworkServiceAccountIdTokenSuccess"}, // 17.0.0+
-        FunctionInfo{43, nullptr, "SetNetworkServiceAccountIdTokenFailure"}, // 17.0.0+
-        FunctionInfo{44, nullptr, "SetUidList"}, // 17.0.0+
-        FunctionInfo{45, nullptr, "PutDigitalTwinKeyValue"}, // 17.0.0+
-        FunctionInfo{51, nullptr, "DeleteDigitalTwinKeyValue"}, // 18.0.0+
+        FunctionInfo{35, nullptr, "LinkNsaId", MakeVersionGate({17,0,0})},
+        FunctionInfo{36, nullptr, "UnlinkNsaId", MakeVersionGate({17,0,0})},
+        FunctionInfo{37, nullptr, "RelinkNsaId", MakeVersionGate({18,0,0})},
+        FunctionInfo{40, nullptr, "GetNetworkServiceAccountIdTokenRequestEvent", MakeVersionGate({17,0,0})},
+        FunctionInfo{41, nullptr, "TryPopNetworkServiceAccountIdTokenRequestUid", MakeVersionGate({17,0,0})},
+        FunctionInfo{42, nullptr, "SetNetworkServiceAccountIdTokenSuccess", MakeVersionGate({17,0,0})},
+        FunctionInfo{43, nullptr, "SetNetworkServiceAccountIdTokenFailure", MakeVersionGate({17,0,0})},
+        FunctionInfo{44, nullptr, "SetUidList", MakeVersionGate({17,0,0})},
+        FunctionInfo{45, nullptr, "PutDigitalTwinKeyValue", MakeVersionGate({17,0,0})},
+        FunctionInfo{51, nullptr, "DeleteDigitalTwinKeyValue", MakeVersionGate({18,0,0})},
         FunctionInfo{101, nullptr, "Suspend"},
         FunctionInfo{102, nullptr, "Resume"},
         FunctionInfo{103, C<&INpnsSystem::GetState>, "GetState"},
         FunctionInfo{104, nullptr, "GetStatistics"},
         FunctionInfo{105, nullptr, "GetPlayReportRequestEvent"},
-        FunctionInfo{106, C<&INpnsSystem::GetLastNotifiedTime>, "GetLastNotifiedTime"}, // 18.0.0+
-        FunctionInfo{107, nullptr, "SetLastNotifiedTime"}, // 18.0.0+
+        FunctionInfo{106, C<&INpnsSystem::GetLastNotifiedTime>, "GetLastNotifiedTime", MakeVersionGate({18,0,0})},
+        FunctionInfo{107, nullptr, "SetLastNotifiedTime", MakeVersionGate({18,0,0})},
         FunctionInfo{111, nullptr, "GetJid"},
         FunctionInfo{112, nullptr, "CreateJid"},
         FunctionInfo{113, nullptr, "DestroyJid"},
@@ -127,17 +127,17 @@ private:
         FunctionInfo{153, nullptr, "GetDropEventWithHandover"},
         FunctionInfo{154, nullptr, "CreateTokenAsync"},
         FunctionInfo{155, nullptr, "CreateTokenAsyncWithApplicationId"},
-        FunctionInfo{156, nullptr, "CreateTokenWithNameAsync"}, // 18.0.0+
-        FunctionInfo{161, C<&INpnsSystem::GetRequestChangeStateCancelEvent>, "GetRequestChangeStateCancelEvent"}, // 10.0.0+
+        FunctionInfo{156, nullptr, "CreateTokenWithNameAsync", MakeVersionGate({18,0,0})},
+        FunctionInfo{161, C<&INpnsSystem::GetRequestChangeStateCancelEvent>, "GetRequestChangeStateCancelEvent", MakeVersionGate({10,0,0})},
         FunctionInfo{162, nullptr, "RequestChangeStateForceTimedWithCancelEvent"},
         FunctionInfo{201, nullptr, "RequestChangeStateForceTimed"},
         FunctionInfo{202, nullptr, "RequestChangeStateForceAsync"},
-        FunctionInfo{301, nullptr, "GetPassword"}, // 18.0.0+
-        FunctionInfo{302, nullptr, "GetAllImmigration"}, // 18.0.0+
-        FunctionInfo{303, nullptr, "GetNotificationHistories"}, // 18.0.0+
-        FunctionInfo{304, nullptr, "GetPersistentConnectionSummary"}, // 18.0.0+
-        FunctionInfo{305, nullptr, "GetDigitalTwinSummary"}, // 18.0.0+
-        FunctionInfo{306, nullptr, "GetDigitalTwinValue"} // 18.0.0+
+        FunctionInfo{301, nullptr, "GetPassword", MakeVersionGate({18,0,0})},
+        FunctionInfo{302, nullptr, "GetAllImmigration", MakeVersionGate({18,0,0})},
+        FunctionInfo{303, nullptr, "GetNotificationHistories", MakeVersionGate({18,0,0})},
+        FunctionInfo{304, nullptr, "GetPersistentConnectionSummary", MakeVersionGate({18,0,0})},
+        FunctionInfo{305, nullptr, "GetDigitalTwinSummary", MakeVersionGate({18,0,0})},
+        FunctionInfo{306, nullptr, "GetDigitalTwinValue", MakeVersionGate({18,0,0})}
     );
     KernelHelpers::ServiceContext service_context;
     Event get_receive_event;
@@ -177,7 +177,7 @@ private:
         FunctionInfo{4, nullptr, "ReceiveRaw"},
         FunctionInfo{5, C<&INpnsUser::GetReceiveEvent>, "GetReceiveEvent"},
         FunctionInfo{7, nullptr, "GetStateChangeEvent"},
-        FunctionInfo{8, C<&INpnsUser::ListenToByName>, "ListenToByName"}, // 18.0.0+
+        FunctionInfo{8, C<&INpnsUser::ListenToByName>, "ListenToByName", MakeVersionGate({18,0,0})},
         FunctionInfo{21, nullptr, "CreateToken"},
         FunctionInfo{23, nullptr, "DestroyToken"},
         FunctionInfo{25, nullptr, "QueryIsTokenValid"},

@@ -328,8 +328,8 @@ private:
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, &ILogger::Log, "Log"},
         FunctionInfo{1, &ILogger::SetDestination, "SetDestination"},
-        FunctionInfo{2, nullptr, "TransmitHashedLog"}, //20.0.0+
-        FunctionInfo{3, nullptr, "DevNotify"} //20.0.0+
+        FunctionInfo{2, nullptr, "TransmitHashedLog", MakeVersionGate({20,0,0})},
+        FunctionInfo{3, nullptr, "DevNotify", MakeVersionGate({20,0,0})}
     );
     ::Common::unordered_map<LogPacketHeaderEntry, std::vector<u8>> entries{};
     LogDestination destination{LogDestination::All};

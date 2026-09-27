@@ -307,15 +307,15 @@ public:
         FunctionInfo{6, nullptr, "SetTsiMode"},
         FunctionInfo{7, nullptr, "GeneralTest"},
         FunctionInfo{8, nullptr, "HidConnect"},
-        FunctionInfo{9, nullptr, "GeneralGet"}, //5.0.0+
-        FunctionInfo{10, nullptr, "GetGattClientDisconnectionReason"}, //5.0.0+
-        FunctionInfo{11, nullptr, "GetBleConnectionParameter"}, //5.1.0+
-        FunctionInfo{12, nullptr, "GetBleConnectionParameterRequest"}, //5.1.0+
-        FunctionInfo{13, nullptr, "GetDiscoveredDevice"}, //12.0.0+
-        FunctionInfo{14, nullptr, "SleepAwakeLoopTest"}, //15.0.0+
-        FunctionInfo{15, nullptr, "SleepTest"}, //15.0.0+
-        FunctionInfo{16, nullptr, "MinimumAwakeTest"}, //15.0.0+
-        FunctionInfo{17, nullptr, "ForceEnableBtm"} //15.0.0+
+        FunctionInfo{9, nullptr, "GeneralGet", MakeVersionGate({5,0,0})},
+        FunctionInfo{10, nullptr, "GetGattClientDisconnectionReason", MakeVersionGate({5,0,0})},
+        FunctionInfo{11, nullptr, "GetBleConnectionParameter", MakeVersionGate({5,1,0})},
+        FunctionInfo{12, nullptr, "GetBleConnectionParameterRequest", MakeVersionGate({5,1,0})},
+        FunctionInfo{13, nullptr, "GetDiscoveredDevice", MakeVersionGate({12,0,0})},
+        FunctionInfo{14, nullptr, "SleepAwakeLoopTest", MakeVersionGate({15,0,0})},
+        FunctionInfo{15, nullptr, "SleepTest", MakeVersionGate({15,0,0})},
+        FunctionInfo{16, nullptr, "MinimumAwakeTest", MakeVersionGate({15,0,0})},
+        FunctionInfo{17, nullptr, "ForceEnableBtm", MakeVersionGate({15,0,0})}
     );
 };
 
@@ -384,33 +384,33 @@ public:
             FunctionInfo{57, nullptr, "RegisterAppletResourceUserId"},
             FunctionInfo{58, nullptr, "UnregisterAppletResourceUserId"},
             FunctionInfo{59, nullptr, "SetAppletResourceUserId"},
-            FunctionInfo{60, nullptr, "AcquireBleConnectionParameterUpdateEvent"}, //8.0.0+
-            FunctionInfo{61, nullptr, "SetCeLength"}, //8.0.0+
-            FunctionInfo{62, nullptr, "EnsureSlotExpansion"}, //9.0.0+
-            FunctionInfo{63, nullptr, "IsSlotExpansionEnsured"}, //9.0.0+
-            FunctionInfo{64, nullptr, "CancelConnectionTrigger"}, //10.0.0+
-            FunctionInfo{65, nullptr, "GetConnectionCapacity"}, //13.0.0+
-            FunctionInfo{66, nullptr, "GetWlanMode"}, //13.0.0+
-            FunctionInfo{67, nullptr, "IsSlotSavingEnabled"}, //13.0.0+
-            FunctionInfo{68, nullptr, "IsSlotSavingForPairingEnabled"}, //13.0.0+
-            FunctionInfo{69, nullptr, "AcquireAudioDeviceConnectionEvent"}, //13.0.0+
-            FunctionInfo{70, nullptr, "GetConnectedAudioDevices"}, //13.0.0+
-            FunctionInfo{71, nullptr, "SetAudioSourceVolume"}, //13.0.0+
-            FunctionInfo{72, nullptr, "GetAudioSourceVolume"}, //13.0.0+
-            FunctionInfo{73, nullptr, "RequestAudioDeviceConnectionRejection"}, //13.0.0+
-            FunctionInfo{74, nullptr, "CancelAudioDeviceConnectionRejection"}, //13.0.0+
-            FunctionInfo{75, nullptr, "GetPairedAudioDevices"}, //13.0.0+
-            FunctionInfo{76, nullptr, "SetWlanModeWithOption"}, //13.1.0+
-            FunctionInfo{100, nullptr, "AcquireConnectionDisallowedEvent"}, //13.0.0+
-            FunctionInfo{101, nullptr, "GetUsecaseViolationFactor"}, //13.0.0+
-            FunctionInfo{110, nullptr, "GetShortenedDeviceInfo"}, //13.0.0+
+            FunctionInfo{60, nullptr, "AcquireBleConnectionParameterUpdateEvent", MakeVersionGate({8,0,0})},
+            FunctionInfo{61, nullptr, "SetCeLength", MakeVersionGate({8,0,0})},
+            FunctionInfo{62, nullptr, "EnsureSlotExpansion", MakeVersionGate({9,0,0})},
+            FunctionInfo{63, nullptr, "IsSlotExpansionEnsured", MakeVersionGate({9,0,0})},
+            FunctionInfo{64, nullptr, "CancelConnectionTrigger", MakeVersionGate({10,0,0})},
+            FunctionInfo{65, nullptr, "GetConnectionCapacity", MakeVersionGate({13,0,0})},
+            FunctionInfo{66, nullptr, "GetWlanMode", MakeVersionGate({13,0,0})},
+            FunctionInfo{67, nullptr, "IsSlotSavingEnabled", MakeVersionGate({13,0,0})},
+            FunctionInfo{68, nullptr, "IsSlotSavingForPairingEnabled", MakeVersionGate({13,0,0})},
+            FunctionInfo{69, nullptr, "AcquireAudioDeviceConnectionEvent", MakeVersionGate({13,0,0})},
+            FunctionInfo{70, nullptr, "GetConnectedAudioDevices", MakeVersionGate({13,0,0})},
+            FunctionInfo{71, nullptr, "SetAudioSourceVolume", MakeVersionGate({13,0,0})},
+            FunctionInfo{72, nullptr, "GetAudioSourceVolume", MakeVersionGate({13,0,0})},
+            FunctionInfo{73, nullptr, "RequestAudioDeviceConnectionRejection", MakeVersionGate({13,0,0})},
+            FunctionInfo{74, nullptr, "CancelAudioDeviceConnectionRejection", MakeVersionGate({13,0,0})},
+            FunctionInfo{75, nullptr, "GetPairedAudioDevices", MakeVersionGate({13,0,0})},
+            FunctionInfo{76, nullptr, "SetWlanModeWithOption", MakeVersionGate({13,1,0})},
+            FunctionInfo{100, nullptr, "AcquireConnectionDisallowedEvent", MakeVersionGate({13,0,0})},
+            FunctionInfo{101, nullptr, "GetUsecaseViolationFactor", MakeVersionGate({13,0,0})},
+            FunctionInfo{110, nullptr, "GetShortenedDeviceInfo", MakeVersionGate({13,0,0})},
             FunctionInfo{111, nullptr, "AcquirePairingCountUpdateEvent"},//13.0.0+
-            FunctionInfo{112, nullptr, "Unknown112"}, //14.0.0-14.1.2
-            FunctionInfo{113, nullptr, "Unknown113"}, //14.0.0-14.1.2
-            FunctionInfo{114, nullptr, "IsFirstAudioControlConnection"}, //14.0.0+
-            FunctionInfo{115, nullptr, "GetShortenedDeviceCondition"}, //14.0.0+
-            FunctionInfo{116, nullptr, "SetAudioSinkVolume"}, //15.0.0+
-            FunctionInfo{117, nullptr, "GetAudioSinkVolume"} //15.0.0+
+            FunctionInfo{112, nullptr, "Unknown112", MakeVersionGate({14,0,0}, {14,1,2})},
+            FunctionInfo{113, nullptr, "Unknown113", MakeVersionGate({14,0,0}, {14,1,2})},
+            FunctionInfo{114, nullptr, "IsFirstAudioControlConnection", MakeVersionGate({14,0,0})},
+            FunctionInfo{115, nullptr, "GetShortenedDeviceCondition", MakeVersionGate({14,0,0})},
+            FunctionInfo{116, nullptr, "SetAudioSinkVolume", MakeVersionGate({15,0,0})},
+            FunctionInfo{117, nullptr, "GetAudioSinkVolume", MakeVersionGate({15,0,0})}
         );
     std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);

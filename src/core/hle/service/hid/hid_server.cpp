@@ -140,8 +140,8 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IHidServer::FindRequest(u3
         FunctionInfo{308, nullptr, "SetSevenSixAxisSensorFusionStrength"},
         FunctionInfo{309, nullptr, "GetSevenSixAxisSensorFusionStrength"},
         FunctionInfo{310, C<&IHidServer::ResetSevenSixAxisSensorTimestamp>, "ResetSevenSixAxisSensorTimestamp"},
-        FunctionInfo{320, nullptr, "EnableNpadImu"}, //21.0.0+
-        FunctionInfo{321, nullptr, "DisableNpadImu"}, //21.0.0+
+        FunctionInfo{320, nullptr, "EnableNpadImu", MakeVersionGate({21,0,0})},
+        FunctionInfo{321, nullptr, "DisableNpadImu", MakeVersionGate({21,0,0})},
         FunctionInfo{400, C<&IHidServer::IsUsbFullKeyControllerEnabled>, "IsUsbFullKeyControllerEnabled"},
         FunctionInfo{401, nullptr, "EnableUsbFullKeyController"},
         FunctionInfo{402, nullptr, "IsUsbFullKeyControllerConnected"},
@@ -230,11 +230,11 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IHidServer::FindRequest(u3
         FunctionInfo{3009, nullptr, "GetFullKeyKeyboardMap"},
         FunctionInfo{3010, nullptr, "SetFullKeyKeyboardMap"},
         FunctionInfo{3011, nullptr, "ResetFullKeyKeyboardMap"},
-        FunctionInfo{3012, nullptr, "GetDebugPadGenericPadMap"}, //21.0.0+
-        FunctionInfo{3013, nullptr, "SetDebugPadGenericPadMap"}, //21.0.0+
-        FunctionInfo{3014, nullptr, "GetDebugPadKeyboardMap"}, //21.0.0+
-        FunctionInfo{3015, nullptr, "SetDebugPadKeyboardMap"}, //21.0.0+
-        FunctionInfo{3150, C<&IHidServer::SetMouseLibraryVersion>, "SetMouseLibraryVersion"} //21.0.0+
+        FunctionInfo{3012, nullptr, "GetDebugPadGenericPadMap", MakeVersionGate({21,0,0})},
+        FunctionInfo{3013, nullptr, "SetDebugPadGenericPadMap", MakeVersionGate({21,0,0})},
+        FunctionInfo{3014, nullptr, "GetDebugPadKeyboardMap", MakeVersionGate({21,0,0})},
+        FunctionInfo{3015, nullptr, "SetDebugPadKeyboardMap", MakeVersionGate({21,0,0})},
+        FunctionInfo{3150, C<&IHidServer::SetMouseLibraryVersion>, "SetMouseLibraryVersion", MakeVersionGate({21,0,0})}
         // What? -- {12010, nullptr, "SetButtonConfigLeft"},
     );
     return HandlerTableGenerateWithFind(key, functions);

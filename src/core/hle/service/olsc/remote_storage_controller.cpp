@@ -34,13 +34,13 @@ namespace Service::OLSC {
             FunctionInfo{23, nullptr, "TouchSecondarySave"},
             FunctionInfo{24, nullptr, "GetSecondarySaveDataInfo"},
             FunctionInfo{25, nullptr, "RegisterDownloadSaveDataTransferTaskForAutonomyRegistration"},
-            FunctionInfo{26, nullptr, "Unknown26"}, //20.0.0+
-            FunctionInfo{27, D<&IRemoteStorageController::GetDataInfo>, "GetDataInfoV2"}, //20.0.0+
-            FunctionInfo{28, nullptr, "Unknown28"}, //20.0.0+
-            FunctionInfo{29, nullptr, "Unknown29"}, //21.0.0+
-            FunctionInfo{800, nullptr, "Unknown800"}, //20.0.0+
+            FunctionInfo{26, nullptr, "Unknown26", MakeVersionGate({20,0,0})},
+            FunctionInfo{27, D<&IRemoteStorageController::GetDataInfo>, "GetDataInfoV2", MakeVersionGate({20,0,0})},
+            FunctionInfo{28, nullptr, "Unknown28", MakeVersionGate({20,0,0})},
+            FunctionInfo{29, nullptr, "Unknown29", MakeVersionGate({21,0,0})},
+            FunctionInfo{800, nullptr, "Unknown800", MakeVersionGate({20,0,0})},
             FunctionInfo{900, nullptr, "SetLoadedDataMissing"},
-            FunctionInfo{901, nullptr, "Unknown901"} //20.2.0+
+            FunctionInfo{901, nullptr, "Unknown901", MakeVersionGate({20,2,0})}
         );
         return HandlerTableGenerateWithFind(key, functions);
     }

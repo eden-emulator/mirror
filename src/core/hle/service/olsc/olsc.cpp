@@ -136,10 +136,10 @@ public:
         FunctionInfo{203, nullptr, "RequestUpdateDataTransferPolicyCacheAsync"},
         FunctionInfo{204, nullptr, "ClearDataTransferPolicyCache"},
         FunctionInfo{205, nullptr, "RequestGetDataTransferPolicyAsync"},
-        FunctionInfo{206, nullptr, "Unknown206"}, //21.0.0+
+        FunctionInfo{206, nullptr, "Unknown206", MakeVersionGate({21,0,0})},
         FunctionInfo{300, nullptr, "GetUserSaveDataProperty"},
         FunctionInfo{301, nullptr, "SetUserSaveDataProperty"},
-        FunctionInfo{302, nullptr, "Unknown302"}, //21.0.0+
+        FunctionInfo{302, nullptr, "Unknown302", MakeVersionGate({21,0,0})},
         FunctionInfo{400, nullptr, "CleanupSaveDataBackupContextForSpecificApplications"},
         FunctionInfo{900, nullptr, "DeleteAllTransferTask"},
         FunctionInfo{902, nullptr, "DeleteAllSeriesInfo"},
@@ -154,7 +154,7 @@ public:
         FunctionInfo{911, nullptr, "DeleteAllSeriesInfoForSaveDataBackup"},
         FunctionInfo{912, nullptr, "DeleteSeriesInfoForSaveDataBackup"},
         FunctionInfo{913, nullptr, "GetSeriesInfoForSaveDataBackup"},
-        FunctionInfo{914, nullptr, "Unknown914"}, //20.2.0+
+        FunctionInfo{914, nullptr, "Unknown914", MakeVersionGate({20,2,0})},
         FunctionInfo{1000, nullptr, "UpdateIssueOld"},
         FunctionInfo{1010, nullptr, "Unknown1010"},
         FunctionInfo{1011, nullptr, "Unknown1011"},

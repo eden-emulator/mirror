@@ -324,23 +324,23 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> ISystemSettingsServer::Fin
         FunctionInfo{208, nullptr, "SetHearingProtectionSafeguardFlag"},
         FunctionInfo{209, nullptr, "GetHearingProtectionSafeguardRemainingTime"},
         FunctionInfo{210, nullptr, "SetHearingProtectionSafeguardRemainingTime"},
-        FunctionInfo{221, nullptr, "GetForceMonauralOutputFlag"}, //17.0.0+
-        FunctionInfo{222, nullptr, "SetForceMonauralOutputFlag"}, //17.0.0+
-        FunctionInfo{251, nullptr, "GetAccountIdentificationSettings"}, //18.0.0+
-        FunctionInfo{252, nullptr, "SetAccountIdentificationSettings"}, //18.0.0+
-        FunctionInfo{263, nullptr, "AcquireVphymDirtyFlagEventHandle"}, //20.0.0+
-        FunctionInfo{264, nullptr, "GetVphymDirtyFlags"}, //20.0.0+
-        FunctionInfo{282, nullptr, "ConvertToProductModel"}, //20.0.0+
-        FunctionInfo{283, nullptr, "ConvertToProductModelName"}, //20.0.0+
-        FunctionInfo{289, nullptr, "GetDefaultAccountIdentificationFlagSet"}, //20.0.0+
-        FunctionInfo{300, nullptr, "AcquirePushNotificationDirtyFlagEventHandle"}, //20.0.0+
-        FunctionInfo{301, nullptr, "GetPushNotificationDirtyFlags"}, //20.0.0+
-        FunctionInfo{306, nullptr, "GetPinCodeReregistrationGuideAccounts"}, //20.0.0+
-        FunctionInfo{307, nullptr, "SetPinCodeReregistrationGuideAccounts"}, //20.0.0+
-        FunctionInfo{315, C<&ISystemSettingsServer::GetHttpAuthConfigs>, "GetHttpAuthConfigs"}, //21.0.0+
-        FunctionInfo{319, C<&ISystemSettingsServer::GetAccountUserSettings>, "GetAccountUserSettings"}, //21.0.0+
-        FunctionInfo{320, nullptr, "SetAccountUserSettings"}, //21.0.0+
-        FunctionInfo{321, C<&ISystemSettingsServer::GetDefaultAccountUserSettings>, "GetDefaultAccountUserSettings"} //21.0.0+
+        FunctionInfo{221, nullptr, "GetForceMonauralOutputFlag", MakeVersionGate({17,0,0})},
+        FunctionInfo{222, nullptr, "SetForceMonauralOutputFlag", MakeVersionGate({17,0,0})},
+        FunctionInfo{251, nullptr, "GetAccountIdentificationSettings", MakeVersionGate({18,0,0})},
+        FunctionInfo{252, nullptr, "SetAccountIdentificationSettings", MakeVersionGate({18,0,0})},
+        FunctionInfo{263, nullptr, "AcquireVphymDirtyFlagEventHandle", MakeVersionGate({20,0,0})},
+        FunctionInfo{264, nullptr, "GetVphymDirtyFlags", MakeVersionGate({20,0,0})},
+        FunctionInfo{282, nullptr, "ConvertToProductModel", MakeVersionGate({20,0,0})},
+        FunctionInfo{283, nullptr, "ConvertToProductModelName", MakeVersionGate({20,0,0})},
+        FunctionInfo{289, nullptr, "GetDefaultAccountIdentificationFlagSet", MakeVersionGate({20,0,0})},
+        FunctionInfo{300, nullptr, "AcquirePushNotificationDirtyFlagEventHandle", MakeVersionGate({20,0,0})},
+        FunctionInfo{301, nullptr, "GetPushNotificationDirtyFlags", MakeVersionGate({20,0,0})},
+        FunctionInfo{306, nullptr, "GetPinCodeReregistrationGuideAccounts", MakeVersionGate({20,0,0})},
+        FunctionInfo{307, nullptr, "SetPinCodeReregistrationGuideAccounts", MakeVersionGate({20,0,0})},
+        FunctionInfo{315, C<&ISystemSettingsServer::GetHttpAuthConfigs>, "GetHttpAuthConfigs", MakeVersionGate({21,0,0})},
+        FunctionInfo{319, C<&ISystemSettingsServer::GetAccountUserSettings>, "GetAccountUserSettings", MakeVersionGate({21,0,0})},
+        FunctionInfo{320, nullptr, "SetAccountUserSettings", MakeVersionGate({21,0,0})},
+        FunctionInfo{321, C<&ISystemSettingsServer::GetDefaultAccountUserSettings>, "GetDefaultAccountUserSettings", MakeVersionGate({21,0,0})}
     );
     return HandlerTableGenerateWithFind(key, functions);
 }

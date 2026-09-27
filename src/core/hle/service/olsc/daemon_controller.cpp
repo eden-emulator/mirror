@@ -16,12 +16,12 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IDaemonController::FindReq
         FunctionInfo{2, D<&IDaemonController::GetGlobalAutoUploadSetting>, "GetGlobalAutoUploadSetting"},
         FunctionInfo{3, D<&IDaemonController::SetGlobalAutoUploadSetting>, "SetGlobalAutoUploadSetting"},
         FunctionInfo{4, D<&IDaemonController::RunTransferTaskAutonomyRegistration>, "RunTransferTaskAutonomyRegistration"},
-        FunctionInfo{5, D<&IDaemonController::GetGlobalAutoDownloadSetting>, "GetGlobalAutoDownloadSetting"}, // 11.0.0+
-        FunctionInfo{6, D<&IDaemonController::SetGlobalAutoDownloadSetting>, "SetGlobalAutoDownloadSetting"}, // 11.0.0+
+        FunctionInfo{5, D<&IDaemonController::GetGlobalAutoDownloadSetting>, "GetGlobalAutoDownloadSetting", MakeVersionGate({11,0,0})},
+        FunctionInfo{6, D<&IDaemonController::SetGlobalAutoDownloadSetting>, "SetGlobalAutoDownloadSetting", MakeVersionGate({11,0,0})},
         FunctionInfo{10, nullptr, "CreateForbiddenSaveDataInidication"},
         FunctionInfo{11, D<&IDaemonController::StopAutonomyTaskExecution>, "StopAutonomyTaskExecution"},
         FunctionInfo{12, D<&IDaemonController::GetAutonomyTaskStatus>, "GetAutonomyTaskStatus"},
-        FunctionInfo{13, nullptr, "Unknown13_20_0_0_Plus"} // 20.0.0+
+        FunctionInfo{13, nullptr, "Unknown13_20_0_0_Plus", MakeVersionGate({20,0,0})}
     );
     return HandlerTableGenerateWithFind(key, functions);
 }

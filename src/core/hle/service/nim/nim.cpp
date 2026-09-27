@@ -276,8 +276,8 @@ public:
         FunctionInfo{88, nullptr, "RequestAssignELicenses"},
         FunctionInfo{89, nullptr, "RequestExtendELicenses"},
         FunctionInfo{90, nullptr, "RequestSyncELicenses"},
-        FunctionInfo{91, nullptr, "Unknown91"}, //6.0.0-14.1.2
-        FunctionInfo{92, nullptr, "Unknown92"}, //21.0.0+
+        FunctionInfo{91, nullptr, "Unknown91", MakeVersionGate({6,0,0}, {14,1,2})},
+        FunctionInfo{92, nullptr, "Unknown92", MakeVersionGate({21,0,0})},
         FunctionInfo{93, nullptr, "RequestReportActiveELicenses"},
         FunctionInfo{94, nullptr, "RequestReportActiveELicensesPassively"},
         FunctionInfo{95, nullptr, "RequestRegisterDynamicRightsNotificationToken"},
@@ -330,85 +330,85 @@ public:
         FunctionInfo{142, nullptr, "RequestCheckSafeSystemVersion"},
         FunctionInfo{143, nullptr, "RequestApplicationIcon"},
         FunctionInfo{144, nullptr, "RequestDownloadIdbeIconFile"},
-        FunctionInfo{147, nullptr, "Unknown147"}, //18.0.0+
-        FunctionInfo{148, nullptr, "Unknown148"}, //18.0.0+
-        FunctionInfo{150, nullptr, "Unknown150"}, //19.0.0+
-        FunctionInfo{151, nullptr, "Unknown151"}, //20.0.0+
-        FunctionInfo{152, nullptr, "Unknown152"}, //20.0.0+
-        FunctionInfo{153, nullptr, "Unknown153"}, //20.0.0+
-        FunctionInfo{154, nullptr, "Unknown154"}, //20.0.0+
-        FunctionInfo{155, nullptr, "Unknown155"}, //20.0.0+
-        FunctionInfo{156, nullptr, "Unknown156"}, //20.0.0+
-        FunctionInfo{157, nullptr, "Unknown157"}, //20.0.0+
-        FunctionInfo{158, nullptr, "Unknown158"}, //20.0.0+
-        FunctionInfo{159, nullptr, "Unknown159"}, //20.0.0+
-        FunctionInfo{160, nullptr, "Unknown160"}, //20.0.0+
-        FunctionInfo{161, nullptr, "Unknown161"}, //20.0.0+
-        FunctionInfo{162, nullptr, "Unknown162"}, //20.0.0+
-        FunctionInfo{163, nullptr, "Unknown163"}, //20.0.0+
-        FunctionInfo{164, nullptr, "Unknown164"}, //20.0.0+
-        FunctionInfo{165, nullptr, "Unknown165"}, //20.0.0+
-        FunctionInfo{166, nullptr, "Unknown166"}, //20.0.0+
-        FunctionInfo{167, nullptr, "Unknown167"}, //20.0.0+
-        FunctionInfo{168, nullptr, "Unknown168"}, //20.0.0+
-        FunctionInfo{169, nullptr, "Unknown169"}, //20.0.0+
-        FunctionInfo{170, nullptr, "Unknown170"}, //20.0.0+
-        FunctionInfo{171, nullptr, "Unknown171"}, //20.0.0+
-        FunctionInfo{172, nullptr, "Unknown172"}, //20.0.0+
-        FunctionInfo{173, nullptr, "Unknown173"}, //20.0.0+
-        FunctionInfo{174, nullptr, "Unknown174"}, //20.0.0+
-        FunctionInfo{175, nullptr, "Unknown175"}, //20.0.0+
-        FunctionInfo{176, nullptr, "Unknown176"}, //20.0.0+
-        FunctionInfo{177, nullptr, "Unknown177"}, //20.0.0+
-        FunctionInfo{2000, nullptr, "Unknown2000"}, //20.0.0+
-        FunctionInfo{2001, nullptr, "Unknown2001"}, //20.0.0+
-        FunctionInfo{2002, nullptr, "Unknown2002"}, //20.0.0+
-        FunctionInfo{2003, nullptr, "Unknown2003"}, //20.0.0+
-        FunctionInfo{2004, nullptr, "Unknown2004"}, //20.0.0+
-        FunctionInfo{2007, nullptr, "Unknown2007"}, //20.0.0+
-        FunctionInfo{2011, nullptr, "Unknown2011"}, //20.0.0+
-        FunctionInfo{2012, nullptr, "Unknown2012"}, //20.0.0+
-        FunctionInfo{2013, nullptr, "Unknown2013"}, //20.0.0+
-        FunctionInfo{2014, nullptr, "Unknown2014"}, //20.0.0+
-        FunctionInfo{2015, nullptr, "Unknown2015"}, //20.0.0+
-        FunctionInfo{2016, nullptr, "Unknown2016"}, //20.0.0+
-        FunctionInfo{2017, nullptr, "Unknown2017"}, //20.0.0+
-        FunctionInfo{2018, nullptr, "Unknown2018"}, //20.0.0+
-        FunctionInfo{2019, nullptr, "Unknown2019"}, //20.0.0+
-        FunctionInfo{2020, nullptr, "Unknown2020"}, //20.0.0+
-        FunctionInfo{2021, nullptr, "Unknown2021"}, //20.0.0+
-        FunctionInfo{2022, nullptr, "Unknown2022"}, //20.0.0+
-        FunctionInfo{2023, nullptr, "Unknown2023"}, //20.0.0+
-        FunctionInfo{2024, nullptr, "Unknown2024"}, //20.0.0+
-        FunctionInfo{2025, nullptr, "Unknown2025"}, //20.0.0+
-        FunctionInfo{2026, nullptr, "Unknown2026"}, //20.0.0+
-        FunctionInfo{2027, nullptr, "Unknown2027"}, //20.0.0+
-        FunctionInfo{2028, nullptr, "Unknown2028"}, //20.0.0+
-        FunctionInfo{2029, nullptr, "Unknown2029"}, //20.0.0+
-        FunctionInfo{2030, nullptr, "Unknown2030"}, //20.0.0+
-        FunctionInfo{2031, nullptr, "Unknown2031"}, //20.0.0+
-        FunctionInfo{2032, nullptr, "Unknown2032"}, //20.0.0+
-        FunctionInfo{2033, nullptr, "Unknown2033"}, //20.0.0+
-        FunctionInfo{2034, nullptr, "Unknown2034"}, //20.0.0+
-        FunctionInfo{2035, nullptr, "Unknown2035"}, //20.0.0+
-        FunctionInfo{2036, nullptr, "Unknown2036"}, //20.0.0+
-        FunctionInfo{2037, nullptr, "Unknown2037"}, //20.0.0+
-        FunctionInfo{2038, nullptr, "Unknown2038"}, //20.0.0+
-        FunctionInfo{2039, nullptr, "Unknown2039"}, //20.0.0+
-        FunctionInfo{2040, nullptr, "Unknown2040"}, //20.0.0+
-        FunctionInfo{2041, nullptr, "Unknown2041"}, //20.0.0+
-        FunctionInfo{2042, nullptr, "Unknown2042"}, //20.0.0+
-        FunctionInfo{2043, nullptr, "Unknown2043"}, //20.0.0+
-        FunctionInfo{2044, nullptr, "Unknown2044"}, //20.0.0+
-        FunctionInfo{2045, nullptr, "Unknown2045"}, //20.0.0+
-        FunctionInfo{2046, nullptr, "Unknown2046"}, //20.0.0+
-        FunctionInfo{2047, nullptr, "Unknown2047"}, //20.0.0+
-        FunctionInfo{2048, nullptr, "Unknown2048"}, //20.0.0+
-        FunctionInfo{2049, nullptr, "Unknown2049"}, //20.0.0+
-        FunctionInfo{2050, nullptr, "Unknown2050"}, //20.0.0+
-        FunctionInfo{2051, nullptr, "Unknown2051"}, //20.0.0+
-        FunctionInfo{3000, nullptr, "RequestLatestApplicationIcon"}, //17.0.0+
-        FunctionInfo{3001, nullptr, "RequestDownloadIdbeLatestIconFile"} //17.0.0+
+        FunctionInfo{147, nullptr, "Unknown147", MakeVersionGate({18,0,0})},
+        FunctionInfo{148, nullptr, "Unknown148", MakeVersionGate({18,0,0})},
+        FunctionInfo{150, nullptr, "Unknown150", MakeVersionGate({19,0,0})},
+        FunctionInfo{151, nullptr, "Unknown151", MakeVersionGate({20,0,0})},
+        FunctionInfo{152, nullptr, "Unknown152", MakeVersionGate({20,0,0})},
+        FunctionInfo{153, nullptr, "Unknown153", MakeVersionGate({20,0,0})},
+        FunctionInfo{154, nullptr, "Unknown154", MakeVersionGate({20,0,0})},
+        FunctionInfo{155, nullptr, "Unknown155", MakeVersionGate({20,0,0})},
+        FunctionInfo{156, nullptr, "Unknown156", MakeVersionGate({20,0,0})},
+        FunctionInfo{157, nullptr, "Unknown157", MakeVersionGate({20,0,0})},
+        FunctionInfo{158, nullptr, "Unknown158", MakeVersionGate({20,0,0})},
+        FunctionInfo{159, nullptr, "Unknown159", MakeVersionGate({20,0,0})},
+        FunctionInfo{160, nullptr, "Unknown160", MakeVersionGate({20,0,0})},
+        FunctionInfo{161, nullptr, "Unknown161", MakeVersionGate({20,0,0})},
+        FunctionInfo{162, nullptr, "Unknown162", MakeVersionGate({20,0,0})},
+        FunctionInfo{163, nullptr, "Unknown163", MakeVersionGate({20,0,0})},
+        FunctionInfo{164, nullptr, "Unknown164", MakeVersionGate({20,0,0})},
+        FunctionInfo{165, nullptr, "Unknown165", MakeVersionGate({20,0,0})},
+        FunctionInfo{166, nullptr, "Unknown166", MakeVersionGate({20,0,0})},
+        FunctionInfo{167, nullptr, "Unknown167", MakeVersionGate({20,0,0})},
+        FunctionInfo{168, nullptr, "Unknown168", MakeVersionGate({20,0,0})},
+        FunctionInfo{169, nullptr, "Unknown169", MakeVersionGate({20,0,0})},
+        FunctionInfo{170, nullptr, "Unknown170", MakeVersionGate({20,0,0})},
+        FunctionInfo{171, nullptr, "Unknown171", MakeVersionGate({20,0,0})},
+        FunctionInfo{172, nullptr, "Unknown172", MakeVersionGate({20,0,0})},
+        FunctionInfo{173, nullptr, "Unknown173", MakeVersionGate({20,0,0})},
+        FunctionInfo{174, nullptr, "Unknown174", MakeVersionGate({20,0,0})},
+        FunctionInfo{175, nullptr, "Unknown175", MakeVersionGate({20,0,0})},
+        FunctionInfo{176, nullptr, "Unknown176", MakeVersionGate({20,0,0})},
+        FunctionInfo{177, nullptr, "Unknown177", MakeVersionGate({20,0,0})},
+        FunctionInfo{2000, nullptr, "Unknown2000", MakeVersionGate({20,0,0})},
+        FunctionInfo{2001, nullptr, "Unknown2001", MakeVersionGate({20,0,0})},
+        FunctionInfo{2002, nullptr, "Unknown2002", MakeVersionGate({20,0,0})},
+        FunctionInfo{2003, nullptr, "Unknown2003", MakeVersionGate({20,0,0})},
+        FunctionInfo{2004, nullptr, "Unknown2004", MakeVersionGate({20,0,0})},
+        FunctionInfo{2007, nullptr, "Unknown2007", MakeVersionGate({20,0,0})},
+        FunctionInfo{2011, nullptr, "Unknown2011", MakeVersionGate({20,0,0})},
+        FunctionInfo{2012, nullptr, "Unknown2012", MakeVersionGate({20,0,0})},
+        FunctionInfo{2013, nullptr, "Unknown2013", MakeVersionGate({20,0,0})},
+        FunctionInfo{2014, nullptr, "Unknown2014", MakeVersionGate({20,0,0})},
+        FunctionInfo{2015, nullptr, "Unknown2015", MakeVersionGate({20,0,0})},
+        FunctionInfo{2016, nullptr, "Unknown2016", MakeVersionGate({20,0,0})},
+        FunctionInfo{2017, nullptr, "Unknown2017", MakeVersionGate({20,0,0})},
+        FunctionInfo{2018, nullptr, "Unknown2018", MakeVersionGate({20,0,0})},
+        FunctionInfo{2019, nullptr, "Unknown2019", MakeVersionGate({20,0,0})},
+        FunctionInfo{2020, nullptr, "Unknown2020", MakeVersionGate({20,0,0})},
+        FunctionInfo{2021, nullptr, "Unknown2021", MakeVersionGate({20,0,0})},
+        FunctionInfo{2022, nullptr, "Unknown2022", MakeVersionGate({20,0,0})},
+        FunctionInfo{2023, nullptr, "Unknown2023", MakeVersionGate({20,0,0})},
+        FunctionInfo{2024, nullptr, "Unknown2024", MakeVersionGate({20,0,0})},
+        FunctionInfo{2025, nullptr, "Unknown2025", MakeVersionGate({20,0,0})},
+        FunctionInfo{2026, nullptr, "Unknown2026", MakeVersionGate({20,0,0})},
+        FunctionInfo{2027, nullptr, "Unknown2027", MakeVersionGate({20,0,0})},
+        FunctionInfo{2028, nullptr, "Unknown2028", MakeVersionGate({20,0,0})},
+        FunctionInfo{2029, nullptr, "Unknown2029", MakeVersionGate({20,0,0})},
+        FunctionInfo{2030, nullptr, "Unknown2030", MakeVersionGate({20,0,0})},
+        FunctionInfo{2031, nullptr, "Unknown2031", MakeVersionGate({20,0,0})},
+        FunctionInfo{2032, nullptr, "Unknown2032", MakeVersionGate({20,0,0})},
+        FunctionInfo{2033, nullptr, "Unknown2033", MakeVersionGate({20,0,0})},
+        FunctionInfo{2034, nullptr, "Unknown2034", MakeVersionGate({20,0,0})},
+        FunctionInfo{2035, nullptr, "Unknown2035", MakeVersionGate({20,0,0})},
+        FunctionInfo{2036, nullptr, "Unknown2036", MakeVersionGate({20,0,0})},
+        FunctionInfo{2037, nullptr, "Unknown2037", MakeVersionGate({20,0,0})},
+        FunctionInfo{2038, nullptr, "Unknown2038", MakeVersionGate({20,0,0})},
+        FunctionInfo{2039, nullptr, "Unknown2039", MakeVersionGate({20,0,0})},
+        FunctionInfo{2040, nullptr, "Unknown2040", MakeVersionGate({20,0,0})},
+        FunctionInfo{2041, nullptr, "Unknown2041", MakeVersionGate({20,0,0})},
+        FunctionInfo{2042, nullptr, "Unknown2042", MakeVersionGate({20,0,0})},
+        FunctionInfo{2043, nullptr, "Unknown2043", MakeVersionGate({20,0,0})},
+        FunctionInfo{2044, nullptr, "Unknown2044", MakeVersionGate({20,0,0})},
+        FunctionInfo{2045, nullptr, "Unknown2045", MakeVersionGate({20,0,0})},
+        FunctionInfo{2046, nullptr, "Unknown2046", MakeVersionGate({20,0,0})},
+        FunctionInfo{2047, nullptr, "Unknown2047", MakeVersionGate({20,0,0})},
+        FunctionInfo{2048, nullptr, "Unknown2048", MakeVersionGate({20,0,0})},
+        FunctionInfo{2049, nullptr, "Unknown2049", MakeVersionGate({20,0,0})},
+        FunctionInfo{2050, nullptr, "Unknown2050", MakeVersionGate({20,0,0})},
+        FunctionInfo{2051, nullptr, "Unknown2051", MakeVersionGate({20,0,0})},
+        FunctionInfo{3000, nullptr, "RequestLatestApplicationIcon", MakeVersionGate({17,0,0})},
+        FunctionInfo{3001, nullptr, "RequestDownloadIdbeLatestIconFile", MakeVersionGate({17,0,0})}
     );
     std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
@@ -457,7 +457,7 @@ private:
         FunctionInfo{2, nullptr, "ClearDebugResponse"},
         FunctionInfo{3, nullptr, "RegisterDebugResponse"},
         FunctionInfo{4, &NIM_ECA::IsLargeResourceAvailable, "IsLargeResourceAvailable"},
-        FunctionInfo{5, &NIM_ECA::CreateServerInterface2, "CreateServerInterface2"} // 17.0.0+
+        FunctionInfo{5, &NIM_ECA::CreateServerInterface2, "CreateServerInterface2", MakeVersionGate({17,0,0})}
     );
 };
 

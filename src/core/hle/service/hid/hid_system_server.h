@@ -154,9 +154,9 @@ private:
         FunctionInfo{328, nullptr, "AttachAbstractedPadToNpad"},
         FunctionInfo{329, nullptr, "DetachAbstractedPadAll"},
         FunctionInfo{330, nullptr, "CheckAbstractedPadConnection"},
-        FunctionInfo{332, nullptr, "ConvertAppletDetailedUiTypeFromPlayReportType"}, //19.0.0+
-        FunctionInfo{333, nullptr, "SetNpadUserSpgApplet"}, //20.0.0+
-        FunctionInfo{334, nullptr, "AcquireUniquePadButtonStateChangedEventHandle"}, //20.0.0+
+        FunctionInfo{332, nullptr, "ConvertAppletDetailedUiTypeFromPlayReportType", MakeVersionGate({19,0,0})},
+        FunctionInfo{333, nullptr, "SetNpadUserSpgApplet", MakeVersionGate({20,0,0})},
+        FunctionInfo{334, nullptr, "AcquireUniquePadButtonStateChangedEventHandle", MakeVersionGate({20,0,0})},
         FunctionInfo{501, &IHidSystemServer::RegisterAppletResourceUserId, "RegisterAppletResourceUserId"},
         FunctionInfo{502, &IHidSystemServer::UnregisterAppletResourceUserId, "UnregisterAppletResourceUserId"},
         FunctionInfo{503, &IHidSystemServer::EnableAppletToGetInput, "EnableAppletToGetInput"},
@@ -185,12 +185,12 @@ private:
         FunctionInfo{547, nullptr, "GetAllowedBluetoothLinksCount"},
         FunctionInfo{548, &IHidSystemServer::GetRegisteredDevices, "GetRegisteredDevices"},
         FunctionInfo{549, nullptr, "GetConnectableRegisteredDevices"},
-        FunctionInfo{551, &IHidSystemServer::GetRegisteredDevices, "GetRegisteredDevicesForControllerSupport"}, //20.0.0+ //mocked via 548 for Diablo 3 (at least)
+        FunctionInfo{551, &IHidSystemServer::GetRegisteredDevices, "GetRegisteredDevicesForControllerSupport", MakeVersionGate({20,0,0})}, //mocked via 548 for Diablo 3 (at least)
         FunctionInfo{700, nullptr, "ActivateUniquePad"},
         FunctionInfo{702, &IHidSystemServer::AcquireUniquePadConnectionEventHandle, "AcquireUniquePadConnectionEventHandle"},
         FunctionInfo{703, &IHidSystemServer::GetUniquePadIds, "GetUniquePadIds"},
-        FunctionInfo{711, nullptr, "AcquireUniquePadConnectionOnHandheldForNsEventHandle"}, //20.0.0+
-        FunctionInfo{712, nullptr, "GetUniquePadColor12"}, //20.0.0+
+        FunctionInfo{711, nullptr, "AcquireUniquePadConnectionOnHandheldForNsEventHandle", MakeVersionGate({20,0,0})},
+        FunctionInfo{712, nullptr, "GetUniquePadColor12", MakeVersionGate({20,0,0})},
         FunctionInfo{751, &IHidSystemServer::AcquireJoyDetachOnBluetoothOffEventHandle, "AcquireJoyDetachOnBluetoothOffEventHandle"},
         FunctionInfo{800, nullptr, "ListSixAxisSensorHandles"},
         FunctionInfo{801, nullptr, "IsSixAxisSensorUserCalibrationSupported"},
@@ -257,8 +257,8 @@ private:
         FunctionInfo{1155, &IHidSystemServer::SetForceHandheldStyleVibration, "SetForceHandheldStyleVibration"},
         FunctionInfo{1156, nullptr, "SendConnectionTriggerWithoutTimeoutEvent"},
         FunctionInfo{1157, nullptr, "CancelConnectionTrigger"},
-        FunctionInfo{1158, nullptr, "SetConnectionLimitForSplay"}, //20.1.0+
-        FunctionInfo{1159, nullptr, "ClearConnectionLimitForSplay"}, //20.1.0+
+        FunctionInfo{1158, nullptr, "SetConnectionLimitForSplay", MakeVersionGate({20,1,0})},
+        FunctionInfo{1159, nullptr, "ClearConnectionLimitForSplay", MakeVersionGate({20,1,0})},
         FunctionInfo{1200, nullptr, "IsButtonConfigSupported"},
         FunctionInfo{1201, nullptr, "IsButtonConfigEmbeddedSupported"},
         FunctionInfo{1202, nullptr, "DeleteButtonConfig"},
@@ -317,17 +317,17 @@ private:
         FunctionInfo{1289, nullptr, "SetButtonConfigStorageFull"},
         FunctionInfo{1290, nullptr, "DeleteButtonConfigStorageRight"},
         FunctionInfo{1291, nullptr, "DeleteButtonConfigStorageRight"},
-        FunctionInfo{1308, nullptr, "SetButtonConfigVisible"}, //18.0.0+
-        FunctionInfo{1309, nullptr, "IsButtonConfigVisible"}, //18.0.0+
-        FunctionInfo{1320, nullptr, "WakeTouchScreenUp"}, //17.0.0+
-        FunctionInfo{1321, nullptr, "PutTouchScreenToSleep"}, //17.0.0+
-        FunctionInfo{1322, nullptr, "AcquireTouchScreenAsyncWakeCompletedEvent"}, //20.0.0+
-        FunctionInfo{1323, nullptr, "StartTouchScreenAutoTuneForSystemSettings"}, //21.0.0+
-        FunctionInfo{1324, nullptr, "AcquireTouchScreenAutoTuneCompletedEvent"}, //21.0.0+
-        FunctionInfo{1325, nullptr, "IsTouchScreenAutoTuneRequiredForRepairProviderReplacement"}, //21.0.0+
-        FunctionInfo{1326, nullptr, "SetTouchScreenOffset"}, //21.0.0+
-        FunctionInfo{1420, nullptr, "GetAppletResourceProperty"}, //19.0.0+
-        FunctionInfo{12010, nullptr, "SetButtonConfigLeft"} //11.0.0-17.0.1
+        FunctionInfo{1308, nullptr, "SetButtonConfigVisible", MakeVersionGate({18,0,0})},
+        FunctionInfo{1309, nullptr, "IsButtonConfigVisible", MakeVersionGate({18,0,0})},
+        FunctionInfo{1320, nullptr, "WakeTouchScreenUp", MakeVersionGate({17,0,0})},
+        FunctionInfo{1321, nullptr, "PutTouchScreenToSleep", MakeVersionGate({17,0,0})},
+        FunctionInfo{1322, nullptr, "AcquireTouchScreenAsyncWakeCompletedEvent", MakeVersionGate({20,0,0})},
+        FunctionInfo{1323, nullptr, "StartTouchScreenAutoTuneForSystemSettings", MakeVersionGate({21,0,0})},
+        FunctionInfo{1324, nullptr, "AcquireTouchScreenAutoTuneCompletedEvent", MakeVersionGate({21,0,0})},
+        FunctionInfo{1325, nullptr, "IsTouchScreenAutoTuneRequiredForRepairProviderReplacement", MakeVersionGate({21,0,0})},
+        FunctionInfo{1326, nullptr, "SetTouchScreenOffset", MakeVersionGate({21,0,0})},
+        FunctionInfo{1420, nullptr, "GetAppletResourceProperty", MakeVersionGate({19,0,0})},
+        FunctionInfo{12010, nullptr, "SetButtonConfigLeft", MakeVersionGate({11,0,0}, {17,0,1})}
     );
 
     Kernel::KEvent* acquire_connection_trigger_timeout_event;

@@ -473,9 +473,9 @@ public:
         FunctionInfo{1017, D<&IParentalControlService::EndFreeCommunication>, "EndFreeCommunication"},
         FunctionInfo{1018, D<&IParentalControlService::IsFreeCommunicationAvailable>, "IsFreeCommunicationAvailable"},
         FunctionInfo{1019, D<&IParentalControlService::ConfirmLaunchApplicationPermission>, "ConfirmLaunchApplicationPermission"},
-        FunctionInfo{1020, nullptr, "ConfirmLaunchSharedApplicationPermission"}, //20.0.0+
-        FunctionInfo{1021, nullptr, "TryBeginFreeCommunicationForStreamPlay"}, //21.0.0+
-        FunctionInfo{1022, nullptr, "EndFreeCommunicationForStreamPlay"}, //21.0.0+
+        FunctionInfo{1020, nullptr, "ConfirmLaunchSharedApplicationPermission", MakeVersionGate({20,0,0})},
+        FunctionInfo{1021, nullptr, "TryBeginFreeCommunicationForStreamPlay", MakeVersionGate({21,0,0})},
+        FunctionInfo{1022, nullptr, "EndFreeCommunicationForStreamPlay", MakeVersionGate({21,0,0})},
         FunctionInfo{1031, D<&IParentalControlService::IsRestrictionEnabled>, "IsRestrictionEnabled"},
         FunctionInfo{1032, D<&IParentalControlService::GetSafetyLevel>, "GetSafetyLevel"},
         FunctionInfo{1033, nullptr, "SetSafetyLevel"},
@@ -493,8 +493,8 @@ public:
         FunctionInfo{1047, nullptr, "NotifyApplicationDownloadStarted"},
         FunctionInfo{1048, nullptr, "NotifyNetworkProfileCreated"},
         FunctionInfo{1049, nullptr, "ResetFreeCommunicationApplicationList"},
-        FunctionInfo{1050, nullptr, "AddToFreeCommunicationApplicationList"}, //20.0.0+
-        FunctionInfo{1051, nullptr, "NotifyApplicationDownloadStarted"}, //20.0.0+
+        FunctionInfo{1050, nullptr, "AddToFreeCommunicationApplicationList", MakeVersionGate({20,0,0})},
+        FunctionInfo{1051, nullptr, "NotifyApplicationDownloadStarted", MakeVersionGate({20,0,0})},
         FunctionInfo{1061, D<&IParentalControlService::ConfirmStereoVisionRestrictionConfigurable>, "ConfirmStereoVisionRestrictionConfigurable"},
         FunctionInfo{1062, D<&IParentalControlService::GetStereoVisionRestriction>, "GetStereoVisionRestriction"},
         FunctionInfo{1063, D<&IParentalControlService::SetStereoVisionRestriction>, "SetStereoVisionRestriction"},
@@ -531,7 +531,7 @@ public:
         FunctionInfo{1472, nullptr, "CancelNetworkRequest"},
         FunctionInfo{1473, D<&IParentalControlService::GetUnlinkedEvent>, "GetUnlinkedEvent"},
         FunctionInfo{1474, nullptr, "ClearUnlinkedEvent"},
-        FunctionInfo{1475, nullptr, "GetExtendedPlayTimerEvent"}, // 18.0.0+
+        FunctionInfo{1475, nullptr, "GetExtendedPlayTimerEvent", MakeVersionGate({18,0,0})},
         FunctionInfo{1601, nullptr, "DisableAllFeatures"},
         FunctionInfo{1602, nullptr, "PostEnableAllFeatures"},
         FunctionInfo{1603, nullptr, "IsAllFeaturesDisabled"},
@@ -547,10 +547,10 @@ public:
         FunctionInfo{1951, nullptr, "SetPlayTimerSettingsForDebug"},
         FunctionInfo{1952, nullptr, "GetPlayTimerSpentTimeForTest"},
         FunctionInfo{1953, nullptr, "SetPlayTimerAlarmDisabledForDebug"},
-        FunctionInfo{1954, nullptr, "IsBedtimeAlarmEnabled"}, // 18.0.0+
-        FunctionInfo{1955, nullptr, "GetBedtimeAlarmTime"}, // 18.0.0+
-        FunctionInfo{1956, nullptr, "GetBedtimeAlarmTimeHour"}, // 18.0.0+
-        FunctionInfo{1957, nullptr, "GetBedtimeAlarmTimeMinute"}, // 18.0.0+
+        FunctionInfo{1954, nullptr, "IsBedtimeAlarmEnabled", MakeVersionGate({18,0,0})},
+        FunctionInfo{1955, nullptr, "GetBedtimeAlarmTime", MakeVersionGate({18,0,0})},
+        FunctionInfo{1956, nullptr, "GetBedtimeAlarmTimeHour", MakeVersionGate({18,0,0})},
+        FunctionInfo{1957, nullptr, "GetBedtimeAlarmTimeMinute", MakeVersionGate({18,0,0})},
         FunctionInfo{2001, nullptr, "RequestPairingAsync"},
         FunctionInfo{2002, nullptr, "FinishRequestPairing"},
         FunctionInfo{2003, nullptr, "AuthorizePairingAsync"},
@@ -566,17 +566,17 @@ public:
         FunctionInfo{2013, nullptr, "SynchronizeParentalControlSettingsAsync"},
         FunctionInfo{2014, nullptr, "FinishSynchronizeParentalControlSettings"},
         FunctionInfo{2015, nullptr, "FinishSynchronizeParentalControlSettingsWithLastUpdated"},
-        FunctionInfo{2016, nullptr, "RequestUpdateExemptionListAsync"}, //5.0.0+
-        FunctionInfo{145601, D<&IParentalControlService::GetPlayTimerSettings>, "GetPlayTimerSettings"}, // 18.0.0+
-        FunctionInfo{2017, nullptr, "AuthorizePairingAsync"}, //19.0.0+
-        FunctionInfo{2019, nullptr, "RequestUpdateDeviceUsersBackground"}, //19.0.0+
-        FunctionInfo{2021, nullptr, "RequestCopyPairingAsync"}, //20.0.0+
-        FunctionInfo{2022, nullptr, "FinishRequestCopyPairing"}, //20.0.0+
-        FunctionInfo{2023, nullptr, "IsFromPairingActiveDevice"}, //20.0.0+
-        FunctionInfo{2024, nullptr, "RollbackCopyPairing"}, //21.0.0+
-        FunctionInfo{3001, nullptr, "GetErrorContextChangedEvent"}, //20.0.0+
-        FunctionInfo{145601, D<&IParentalControlService::GetPlayTimerSettings>, "GetPlayTimerSettings"}, // 18.0.0+
-        FunctionInfo{195101, D<&IParentalControlService::SetPlayTimerSettings>, "SetPlayTimerSettingsForDebug"} //18.0.0+
+        FunctionInfo{2016, nullptr, "RequestUpdateExemptionListAsync", MakeVersionGate({5,0,0})},
+        FunctionInfo{145601, D<&IParentalControlService::GetPlayTimerSettings>, "GetPlayTimerSettings", MakeVersionGate({18,0,0})},
+        FunctionInfo{2017, nullptr, "AuthorizePairingAsync", MakeVersionGate({19,0,0})},
+        FunctionInfo{2019, nullptr, "RequestUpdateDeviceUsersBackground", MakeVersionGate({19,0,0})},
+        FunctionInfo{2021, nullptr, "RequestCopyPairingAsync", MakeVersionGate({20,0,0})},
+        FunctionInfo{2022, nullptr, "FinishRequestCopyPairing", MakeVersionGate({20,0,0})},
+        FunctionInfo{2023, nullptr, "IsFromPairingActiveDevice", MakeVersionGate({20,0,0})},
+        FunctionInfo{2024, nullptr, "RollbackCopyPairing", MakeVersionGate({21,0,0})},
+        FunctionInfo{3001, nullptr, "GetErrorContextChangedEvent", MakeVersionGate({20,0,0})},
+        FunctionInfo{145601, D<&IParentalControlService::GetPlayTimerSettings>, "GetPlayTimerSettings", MakeVersionGate({18,0,0})},
+        FunctionInfo{195101, D<&IParentalControlService::SetPlayTimerSettings>, "SetPlayTimerSettingsForDebug", MakeVersionGate({18,0,0})}
     );
     States states{};
     ParentalControlSettings settings{};

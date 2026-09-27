@@ -16,7 +16,7 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioController::FindRequ
         FunctionInfo{2, D<&IAudioController::GetLibraryAppletExpectedMasterVolume>, "GetLibraryAppletExpectedMasterVolume"},
         FunctionInfo{3, D<&IAudioController::ChangeMainAppletMasterVolume>, "ChangeMainAppletMasterVolume"},
         FunctionInfo{4, D<&IAudioController::SetTransparentVolumeRate>, "SetTransparentVolumeRate"},
-        FunctionInfo{5, nullptr, "Unknown5"} //20.0.0+
+        FunctionInfo{5, nullptr, "Unknown5", MakeVersionGate({20,0,0})}
     );
     return HandlerTableGenerateWithFind(key, functions);
 }

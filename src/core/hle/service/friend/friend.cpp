@@ -273,7 +273,7 @@ private:
         FunctionInfo{10101, &IFriendService::GetFriendList, "GetFriendList"},
         FunctionInfo{10102, nullptr, "UpdateFriendInfo"},
         FunctionInfo{10110, nullptr, "GetFriendProfileImage"},
-        FunctionInfo{10111, nullptr, "GetFriendProfileImageWithImageSize"}, // 18.0.0+
+        FunctionInfo{10111, nullptr, "GetFriendProfileImageWithImageSize", MakeVersionGate({18,0,0})},
         FunctionInfo{10120, &IFriendService::CheckFriendListAvailability, "CheckFriendListAvailability"},
         FunctionInfo{10121, nullptr, "EnsureFriendListAvailable"},
         FunctionInfo{10200, nullptr, "SendFriendRequestForApplication"},
@@ -282,7 +282,7 @@ private:
         FunctionInfo{10420, &IFriendService::CheckBlockedUserListAvailability, "CheckBlockedUserListAvailability"},
         FunctionInfo{10421, nullptr, "EnsureBlockedUserListAvailable"},
         FunctionInfo{10500, nullptr, "GetProfileList"},
-        FunctionInfo{10501, nullptr, "GetProfileListV2"}, // 18.0.0+
+        FunctionInfo{10501, nullptr, "GetProfileListV2", MakeVersionGate({18,0,0})},
         FunctionInfo{10600, nullptr, "DeclareOpenOnlinePlaySession"},
         FunctionInfo{10601, &IFriendService::DeclareCloseOnlinePlaySession, "DeclareCloseOnlinePlaySession"},
         FunctionInfo{10610, &IFriendService::UpdateUserPresence, "UpdateUserPresence"},
@@ -290,7 +290,7 @@ private:
         FunctionInfo{10701, nullptr, "GetPlayHistoryRegistrationKeyWithNetworkServiceAccountId"},
         FunctionInfo{10702, nullptr, "AddPlayHistory"},
         FunctionInfo{11000, nullptr, "GetProfileImageUrl"},
-        FunctionInfo{11001, nullptr, "GetProfileImageUrlV2"}, // 18.0.0+
+        FunctionInfo{11001, nullptr, "GetProfileImageUrlV2", MakeVersionGate({18,0,0})},
         FunctionInfo{20100, &IFriendService::GetFriendCount, "GetFriendCount"},
         FunctionInfo{20101, &IFriendService::GetNewlyFriendCount, "GetNewlyFriendCount"},
         FunctionInfo{20102, nullptr, "GetFriendDetailedInfo"},
@@ -298,49 +298,49 @@ private:
         FunctionInfo{20104, &IFriendService::RequestSyncFriendList, "RequestSyncFriendList"},
         FunctionInfo{20105, &IFriendService::GetFriendListForViewer, "GetFriendListForViewerV1"},
         FunctionInfo{20106, nullptr, "UpdateFriendInfoForViewerV1"},
-        FunctionInfo{20107, nullptr, "GetFriendDetailedInfoV2"}, // 20.0.0+
-        FunctionInfo{20108, &IFriendService::GetFriendListForViewer, "GetFriendListForViewerV2"}, // 22.0.0+
-        FunctionInfo{20109, nullptr, "UpdateFriendInfoForViewerV2"}, // 22.0.0+
+        FunctionInfo{20107, nullptr, "GetFriendDetailedInfoV2", MakeVersionGate({20,0,0})},
+        FunctionInfo{20108, &IFriendService::GetFriendListForViewer, "GetFriendListForViewerV2", MakeVersionGate({22,0,0})},
+        FunctionInfo{20109, nullptr, "UpdateFriendInfoForViewerV2", MakeVersionGate({22,0,0})},
         FunctionInfo{20110, nullptr, "LoadFriendSettingV1"},
-        FunctionInfo{20111, nullptr, "LoadFriendSettingV2"}, // 22.0.0+
+        FunctionInfo{20111, nullptr, "LoadFriendSettingV2", MakeVersionGate({22,0,0})},
         FunctionInfo{20200, &IFriendService::GetReceivedFriendRequestCount, "GetReceivedFriendRequestCount"},
         FunctionInfo{20201, nullptr, "GetFriendRequestListV1"},
-        FunctionInfo{20202, nullptr, "GetFriendRequestListV2"}, // 20.0.0+
-        FunctionInfo{20203, nullptr, "GetFriendRequestReceivedNotificationCount"}, // 22.0.0+
+        FunctionInfo{20202, nullptr, "GetFriendRequestListV2", MakeVersionGate({20,0,0})},
+        FunctionInfo{20203, nullptr, "GetFriendRequestReceivedNotificationCount", MakeVersionGate({22,0,0})},
         FunctionInfo{20300, nullptr, "GetFriendCandidateList"},
         FunctionInfo{20301, nullptr, "GetNintendoNetworkIdInfo"},
-        FunctionInfo{20302, nullptr, "GetSnsAccountLinkage"}, // 5.0.0-19.0.1
-        FunctionInfo{20303, nullptr, "GetSnsAccountProfile"}, // 5.0.0-19.0.1
-        FunctionInfo{20304, nullptr, "GetSnsAccountFriendList"}, // 5.0.0-19.0.1
+        FunctionInfo{20302, nullptr, "GetSnsAccountLinkage", MakeVersionGate({5,0,0}, {19,0,1})},
+        FunctionInfo{20303, nullptr, "GetSnsAccountProfile", MakeVersionGate({5,0,0}, {19,0,1})},
+        FunctionInfo{20304, nullptr, "GetSnsAccountFriendList", MakeVersionGate({5,0,0}, {19,0,1})},
         FunctionInfo{20400, nullptr, "GetBlockedUserListV1"},
         FunctionInfo{20401, nullptr, "SyncBlockedUserList"},
-        FunctionInfo{20402, nullptr, "GetBlockedUserListV2"}, // 20.0.0+
+        FunctionInfo{20402, nullptr, "GetBlockedUserListV2", MakeVersionGate({20,0,0})},
         FunctionInfo{20500, nullptr, "GetProfileExtraListV1"},
         FunctionInfo{20501, nullptr, "GetRelationship"},
-        FunctionInfo{20502, nullptr, "GetProfileExtraListV2"}, // 19.0.0+
+        FunctionInfo{20502, nullptr, "GetProfileExtraListV2", MakeVersionGate({19,0,0})},
         FunctionInfo{20600, &IFriendService::GetUserPresenceView, "GetUserPresenceViewV1"},
-        FunctionInfo{20601, &IFriendService::GetUserPresenceView, "GetUserPresenceViewV2"}, // 19.0.0+
+        FunctionInfo{20601, &IFriendService::GetUserPresenceView, "GetUserPresenceViewV2", MakeVersionGate({19,0,0})},
         FunctionInfo{20700, nullptr, "GetPlayHistoryListV1"},
         FunctionInfo{20701, &IFriendService::GetPlayHistoryStatistics, "GetPlayHistoryStatistics"},
-        FunctionInfo{20702, nullptr, "GetPlayHistoryListV2"}, // 19.0.0+
+        FunctionInfo{20702, nullptr, "GetPlayHistoryListV2", MakeVersionGate({19,0,0})},
         FunctionInfo{20800, &IFriendService::LoadUserSetting, "LoadUserSettingV1"},
         FunctionInfo{20801, nullptr, "SyncUserSetting"},
-        FunctionInfo{20802, &IFriendService::LoadUserSetting, "LoadUserSettingV2"}, // 19.0.0+
+        FunctionInfo{20802, &IFriendService::LoadUserSetting, "LoadUserSettingV2", MakeVersionGate({19,0,0})},
         FunctionInfo{20900, &IFriendService::RequestListSummaryOverlayNotification, "RequestListSummaryOverlayNotification"},
         FunctionInfo{21000, nullptr, "GetExternalApplicationCatalog"},
         FunctionInfo{22000, nullptr, "GetReceivedFriendInvitationListV1"},
         FunctionInfo{22001, nullptr, "GetReceivedFriendInvitationDetailedInfoV1"},
-        FunctionInfo{22002, nullptr, "GetReceivedFriendInvitationListV2"}, // 19.0.0+
-        FunctionInfo{22003, nullptr, "GetReceivedFriendInvitationDetailedInfoV2"}, // 19.0.0+
+        FunctionInfo{22002, nullptr, "GetReceivedFriendInvitationListV2", MakeVersionGate({19,0,0})},
+        FunctionInfo{22003, nullptr, "GetReceivedFriendInvitationDetailedInfoV2", MakeVersionGate({19,0,0})},
         FunctionInfo{22010, &IFriendService::GetReceivedFriendInvitationCountCache, "GetReceivedFriendInvitationCountCache"},
         FunctionInfo{30100, nullptr, "DropFriendNewlyFlags"},
         FunctionInfo{30101, nullptr, "DeleteFriend"},
         FunctionInfo{30110, nullptr, "DropFriendNewlyFlag"},
         FunctionInfo{30120, nullptr, "ChangeFriendFavoriteFlag"},
         FunctionInfo{30121, nullptr, "ChangeFriendOnlineNotificationFlag"},
-        FunctionInfo{30130, nullptr, "SetFriendNote"}, // 22.0.0+
-        FunctionInfo{30131, nullptr, "RequestUploadPendingNote"}, // 22.0.0+
-        FunctionInfo{30190, nullptr, "RequestSyncLocalUpdates"}, // 22.0.0+
+        FunctionInfo{30130, nullptr, "SetFriendNote", MakeVersionGate({22,0,0})},
+        FunctionInfo{30131, nullptr, "RequestUploadPendingNote", MakeVersionGate({22,0,0})},
+        FunctionInfo{30190, nullptr, "RequestSyncLocalUpdates", MakeVersionGate({22,0,0})},
         FunctionInfo{30200, nullptr, "SendFriendRequest"},
         FunctionInfo{30201, nullptr, "SendFriendRequestWithApplicationInfoV1"},
         FunctionInfo{30202, nullptr, "CancelFriendRequest"},
@@ -355,27 +355,27 @@ private:
         FunctionInfo{30215, nullptr, "SendFriendRequestWithExternalApplicationCatalogId"},
         FunctionInfo{30216, nullptr, "ResendFacedFriendRequest"},
         FunctionInfo{30217, nullptr, "SendFriendRequestWithNintendoNetworkIdInfo"},
-        FunctionInfo{30218, nullptr, "SendFriendRequestWithApplicationInfoV2"}, // 20.0.0+
-        FunctionInfo{30300, nullptr, "GetSnsAccountLinkPageUrl"}, // 5.0.0-19.0.1
-        FunctionInfo{30301, nullptr, "UnlinkSnsAccount"}, // 5.0.0-19.0.1
+        FunctionInfo{30218, nullptr, "SendFriendRequestWithApplicationInfoV2", MakeVersionGate({20,0,0})},
+        FunctionInfo{30300, nullptr, "GetSnsAccountLinkPageUrl", MakeVersionGate({5,0,0}, {19,0,1})},
+        FunctionInfo{30301, nullptr, "UnlinkSnsAccount", MakeVersionGate({5,0,0}, {19,0,1})},
         FunctionInfo{30400, nullptr, "BlockUser"},
         FunctionInfo{30401, nullptr, "BlockUserWithApplicationInfoV1"},
         FunctionInfo{30402, nullptr, "UnblockUser"},
-        FunctionInfo{30403, nullptr, "BlockUserWithApplicationInfoV2"}, // 20.0.0+
+        FunctionInfo{30403, nullptr, "BlockUserWithApplicationInfoV2", MakeVersionGate({20,0,0})},
         FunctionInfo{30500, nullptr, "GetProfileExtraFromFriendCodeV1"},
-        FunctionInfo{30501, nullptr, "GetProfileExtraFromFriendCodeV2"}, // 19.0.0+
+        FunctionInfo{30501, nullptr, "GetProfileExtraFromFriendCodeV2", MakeVersionGate({19,0,0})},
         FunctionInfo{30700, nullptr, "DeletePlayHistory"},
-        FunctionInfo{30701, nullptr, "AddPlayHistoryWithApplication"}, // 19.0.0+
+        FunctionInfo{30701, nullptr, "AddPlayHistoryWithApplication", MakeVersionGate({19,0,0})},
         FunctionInfo{30810, nullptr, "ChangePresencePermission"},
         FunctionInfo{30811, nullptr, "ChangeFriendRequestReception"},
         FunctionInfo{30812, nullptr, "ChangePlayLogPermission"},
         FunctionInfo{30820, nullptr, "IssueFriendCode"},
         FunctionInfo{30830, nullptr, "ClearPlayLog"},
         FunctionInfo{30900, nullptr, "SendFriendInvitationV1"},
-        FunctionInfo{30901, nullptr, "SendFriendInvitationV2"}, // 19.0.0+
+        FunctionInfo{30901, nullptr, "SendFriendInvitationV2", MakeVersionGate({19,0,0})},
         FunctionInfo{30910, nullptr, "ReadFriendInvitation"},
         FunctionInfo{30911, nullptr, "ReadAllFriendInvitations"},
-        FunctionInfo{31000, nullptr, "OpenUser"}, // 19.0.0+
+        FunctionInfo{31000, nullptr, "OpenUser", MakeVersionGate({19,0,0})},
         FunctionInfo{40100, nullptr, "DeleteFriendListCache"},
         FunctionInfo{40400, nullptr, "DeleteBlockedUserListCache"},
         FunctionInfo{49900, nullptr, "DeleteNetworkServiceAccountCache"}

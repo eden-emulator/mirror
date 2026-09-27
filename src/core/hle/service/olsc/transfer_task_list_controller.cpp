@@ -34,16 +34,16 @@ namespace Service::OLSC {
             FunctionInfo{18, nullptr, "ListTransferTaskInfo"},
             FunctionInfo{19, nullptr, "DeleteTransferTask"},
             FunctionInfo{20, nullptr, "RaiseTransferTaskPriority"},
-            FunctionInfo{21, D<&ITransferTaskListController::GetTransferTaskProgress>, "GetTransferTaskProgress"}, //10.1.0+
+            FunctionInfo{21, D<&ITransferTaskListController::GetTransferTaskProgress>, "GetTransferTaskProgress", MakeVersionGate({10,1,0})},
             FunctionInfo{22, nullptr, "GetTransferTaskLastResult"},
             FunctionInfo{23, nullptr, "SuspendTransferTask"},
             FunctionInfo{24, D<&ITransferTaskListController::GetCurrentTransferTaskInfo>, "GetCurrentTransferTaskInfo"},
             FunctionInfo{25, D<&ITransferTaskListController::FindTransferTaskInfo>, "FindTransferTaskInfo"},
-            FunctionInfo{26, nullptr, "Unknown26"}, //20.1.0+
-            FunctionInfo{27, nullptr, "Unknown27"}, //20.1.0+
-            FunctionInfo{28, nullptr, "Unknown28"}, //20.1.0+
-            FunctionInfo{29, nullptr, "Unknown29"}, //20.1.0+
-            FunctionInfo{30, nullptr, "Unknown30"} //20.1.0+
+            FunctionInfo{26, nullptr, "Unknown26", MakeVersionGate({20,1,0})},
+            FunctionInfo{27, nullptr, "Unknown27", MakeVersionGate({20,1,0})},
+            FunctionInfo{28, nullptr, "Unknown28", MakeVersionGate({20,1,0})},
+            FunctionInfo{29, nullptr, "Unknown29", MakeVersionGate({20,1,0})},
+            FunctionInfo{30, nullptr, "Unknown30", MakeVersionGate({20,1,0})}
         );
         return HandlerTableGenerateWithFind(key, functions);
     }

@@ -133,26 +133,26 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationManagerInterfa
         FunctionInfo{406, nullptr, "GetApplicationControlProperty"},
         FunctionInfo{407, &IApplicationManagerInterface::ListApplicationTitle, "ListApplicationTitle"},
         FunctionInfo{408, &IApplicationManagerInterface::ListApplicationIcon, "ListApplicationIcon"},
-        FunctionInfo{411, nullptr, "Unknown411"}, //19.0.0+
-        FunctionInfo{412, nullptr, "Unknown412"}, //19.0.0+
-        FunctionInfo{413, nullptr, "Unknown413"}, //19.0.0+
-        FunctionInfo{414, nullptr, "Unknown414"}, //19.0.0+
-        FunctionInfo{415, nullptr, "Unknown415"}, //19.0.0+
-        FunctionInfo{416, nullptr, "Unknown416"}, //19.0.0+
-        FunctionInfo{417, nullptr, "InvalidateAllApplicationControlCacheOfTheStage"}, //19.0.0+
-        FunctionInfo{418, nullptr, "InvalidateApplicationControlCacheOfTheStage"}, //19.0.0+
+        FunctionInfo{411, nullptr, "Unknown411", MakeVersionGate({19,0,0})},
+        FunctionInfo{412, nullptr, "Unknown412", MakeVersionGate({19,0,0})},
+        FunctionInfo{413, nullptr, "Unknown413", MakeVersionGate({19,0,0})},
+        FunctionInfo{414, nullptr, "Unknown414", MakeVersionGate({19,0,0})},
+        FunctionInfo{415, nullptr, "Unknown415", MakeVersionGate({19,0,0})},
+        FunctionInfo{416, nullptr, "Unknown416", MakeVersionGate({19,0,0})},
+        FunctionInfo{417, nullptr, "InvalidateAllApplicationControlCacheOfTheStage", MakeVersionGate({19,0,0})},
+        FunctionInfo{418, nullptr, "InvalidateApplicationControlCacheOfTheStage", MakeVersionGate({19,0,0})},
         FunctionInfo{419, D<&IApplicationManagerInterface::RequestDownloadApplicationControlDataInBackground>, "RequestDownloadApplicationControlDataInBackground"},
         FunctionInfo{420, nullptr, "CloneApplicationControlDataCacheForDebug"},
-        FunctionInfo{421, nullptr, "Unknown421"}, //20.0.0+
-        FunctionInfo{422, nullptr, "Unknown422"}, //20.0.0+
-        FunctionInfo{423, nullptr, "Unknown423"}, //20.0.0+
-        FunctionInfo{424, nullptr, "Unknown424"}, //20.0.0+
-        FunctionInfo{425, nullptr, "Unknown425"}, //20.0.0+
-        FunctionInfo{426, nullptr, "Unknown426"}, //20.0.0+
-        FunctionInfo{427, nullptr, "Unknown427"}, //20.0.0+
-        FunctionInfo{428, nullptr, "Unknown428"}, //21.0.0+
-        FunctionInfo{429, nullptr, "Unknown429"}, //21.0.0+
-        FunctionInfo{430, nullptr, "Unknown430"}, //21.0.0+
+        FunctionInfo{421, nullptr, "Unknown421", MakeVersionGate({20,0,0})},
+        FunctionInfo{422, nullptr, "Unknown422", MakeVersionGate({20,0,0})},
+        FunctionInfo{423, nullptr, "Unknown423", MakeVersionGate({20,0,0})},
+        FunctionInfo{424, nullptr, "Unknown424", MakeVersionGate({20,0,0})},
+        FunctionInfo{425, nullptr, "Unknown425", MakeVersionGate({20,0,0})},
+        FunctionInfo{426, nullptr, "Unknown426", MakeVersionGate({20,0,0})},
+        FunctionInfo{427, nullptr, "Unknown427", MakeVersionGate({20,0,0})},
+        FunctionInfo{428, nullptr, "Unknown428", MakeVersionGate({21,0,0})},
+        FunctionInfo{429, nullptr, "Unknown429", MakeVersionGate({21,0,0})},
+        FunctionInfo{430, nullptr, "Unknown430", MakeVersionGate({21,0,0})},
         FunctionInfo{502, nullptr, "RequestCheckGameCardRegistration"},
         FunctionInfo{503, nullptr, "RequestGameCardRegistrationGoldPoint"},
         FunctionInfo{504, nullptr, "RequestRegisterGameCard"},
@@ -164,13 +164,13 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationManagerInterfa
         FunctionInfo{510, nullptr, "GetGameCardPlatformRegion"},
         FunctionInfo{511, D<&IApplicationManagerInterface::GetGameCardWakenReadyEvent>, "GetGameCardWakenReadyEvent"},
         FunctionInfo{512, D<&IApplicationManagerInterface::IsGameCardApplicationRunning>, "IsGameCardApplicationRunning"},
-        FunctionInfo{513, nullptr, "Unknown513"}, //20.0.0+
-        FunctionInfo{514, nullptr, "Unknown514"}, //20.0.0+
-        FunctionInfo{515, nullptr, "Unknown515"}, //20.0.0+
-        FunctionInfo{516, nullptr, "Unknown516"}, //21.0.0+
-        FunctionInfo{517, nullptr, "Unknown517"}, //21.0.0+
-        FunctionInfo{518, nullptr, "Unknown518"}, //21.0.0+
-        FunctionInfo{519, nullptr, "Unknown519"}, //21.0.0+
+        FunctionInfo{513, nullptr, "Unknown513", MakeVersionGate({20,0,0})},
+        FunctionInfo{514, nullptr, "Unknown514", MakeVersionGate({20,0,0})},
+        FunctionInfo{515, nullptr, "Unknown515", MakeVersionGate({20,0,0})},
+        FunctionInfo{516, nullptr, "Unknown516", MakeVersionGate({21,0,0})},
+        FunctionInfo{517, nullptr, "Unknown517", MakeVersionGate({21,0,0})},
+        FunctionInfo{518, nullptr, "Unknown518", MakeVersionGate({21,0,0})},
+        FunctionInfo{519, nullptr, "Unknown519", MakeVersionGate({21,0,0})},
         FunctionInfo{600, nullptr, "CountApplicationContentMeta"},
         FunctionInfo{601, nullptr, "ListApplicationContentMetaStatus"},
         FunctionInfo{602, nullptr, "ListAvailableAddOnContent"},
@@ -208,22 +208,22 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationManagerInterfa
         FunctionInfo{914, nullptr, "HideApplicationRecord"},
         FunctionInfo{915, nullptr, "ShowApplicationRecord"},
         FunctionInfo{916, nullptr, "IsApplicationAutoDeleteDisabled"},
-        FunctionInfo{916, nullptr, "Unknown916"}, //20.0.0+
-        FunctionInfo{917, nullptr, "Unknown917"}, //20.0.0+
-        FunctionInfo{918, nullptr, "Unknown918"}, //20.0.0+
-        FunctionInfo{919, nullptr, "Unknown919"}, //20.0.0+
-        FunctionInfo{920, nullptr, "Unknown920"}, //20.0.0+
-        FunctionInfo{921, nullptr, "Unknown921"}, //20.0.0+
-        FunctionInfo{922, nullptr, "Unknown922"}, //20.0.0+
-        FunctionInfo{923, nullptr, "Unknown923"}, //20.0.0+
-        FunctionInfo{928, nullptr, "Unknown928"}, //20.0.0+
-        FunctionInfo{929, nullptr, "Unknown929"}, //20.0.0+
-        FunctionInfo{930, nullptr, "Unknown930"}, //20.0.0+
-        FunctionInfo{931, nullptr, "Unknown931"}, //20.0.0+
-        FunctionInfo{933, nullptr, "Unknown933"}, //20.0.0+
-        FunctionInfo{934, nullptr, "Unknown934"}, //21.0.0+
-        FunctionInfo{935, nullptr, "Unknown935"}, //21.0.0+
-        FunctionInfo{936, D<&IApplicationManagerInterface::Unknown936>, "Unknown936"}, //21.0.0+
+        FunctionInfo{916, nullptr, "Unknown916", MakeVersionGate({20,0,0})},
+        FunctionInfo{917, nullptr, "Unknown917", MakeVersionGate({20,0,0})},
+        FunctionInfo{918, nullptr, "Unknown918", MakeVersionGate({20,0,0})},
+        FunctionInfo{919, nullptr, "Unknown919", MakeVersionGate({20,0,0})},
+        FunctionInfo{920, nullptr, "Unknown920", MakeVersionGate({20,0,0})},
+        FunctionInfo{921, nullptr, "Unknown921", MakeVersionGate({20,0,0})},
+        FunctionInfo{922, nullptr, "Unknown922", MakeVersionGate({20,0,0})},
+        FunctionInfo{923, nullptr, "Unknown923", MakeVersionGate({20,0,0})},
+        FunctionInfo{928, nullptr, "Unknown928", MakeVersionGate({20,0,0})},
+        FunctionInfo{929, nullptr, "Unknown929", MakeVersionGate({20,0,0})},
+        FunctionInfo{930, nullptr, "Unknown930", MakeVersionGate({20,0,0})},
+        FunctionInfo{931, nullptr, "Unknown931", MakeVersionGate({20,0,0})},
+        FunctionInfo{933, nullptr, "Unknown933", MakeVersionGate({20,0,0})},
+        FunctionInfo{934, nullptr, "Unknown934", MakeVersionGate({21,0,0})},
+        FunctionInfo{935, nullptr, "Unknown935", MakeVersionGate({21,0,0})},
+        FunctionInfo{936, D<&IApplicationManagerInterface::Unknown936>, "Unknown936", MakeVersionGate({21,0,0})},
         FunctionInfo{1000, nullptr, "RequestVerifyApplicationDeprecated"},
         FunctionInfo{1001, nullptr, "CorruptApplicationForDebug"},
         FunctionInfo{1002, nullptr, "RequestVerifyAddOnContentsRights"},
@@ -252,11 +252,11 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationManagerInterfa
         FunctionInfo{1504, nullptr, "InsertSdCard"},
         FunctionInfo{1505, nullptr, "RemoveSdCard"},
         FunctionInfo{1506, nullptr, "GetSdCardStartupStatus"},
-        FunctionInfo{1508, nullptr, "Unknown1508"}, //20.0.0+
-        FunctionInfo{1509, nullptr, "Unknown1509"}, //20.0.0+
-        FunctionInfo{1510, nullptr, "Unknown1510"}, //20.0.0+
-        FunctionInfo{1511, nullptr, "Unknown1511"}, //20.0.0+
-        FunctionInfo{1512, nullptr, "Unknown1512"}, //20.0.0+
+        FunctionInfo{1508, nullptr, "Unknown1508", MakeVersionGate({20,0,0})},
+        FunctionInfo{1509, nullptr, "Unknown1509", MakeVersionGate({20,0,0})},
+        FunctionInfo{1510, nullptr, "Unknown1510", MakeVersionGate({20,0,0})},
+        FunctionInfo{1511, nullptr, "Unknown1511", MakeVersionGate({20,0,0})},
+        FunctionInfo{1512, nullptr, "Unknown1512", MakeVersionGate({20,0,0})},
         FunctionInfo{1600, nullptr, "GetSystemSeedForPseudoDeviceId"},
         FunctionInfo{1601, nullptr, "ResetSystemSeedForPseudoDeviceId"},
         FunctionInfo{1700, nullptr, "ListApplicationDownloadingContentMeta"},
@@ -293,11 +293,11 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationManagerInterfa
         FunctionInfo{2016, nullptr, "ListNotCommittedContentMeta"},
         FunctionInfo{2017, nullptr, "CreateDownloadTask"},
         FunctionInfo{2018, nullptr, "GetApplicationDeliveryInfoHash"},
-        FunctionInfo{2019, nullptr, "Unknown2019"}, //20.0.0+
+        FunctionInfo{2019, nullptr, "Unknown2019", MakeVersionGate({20,0,0})},
         FunctionInfo{2050, D<&IApplicationManagerInterface::GetApplicationRightsOnClient>, "GetApplicationRightsOnClient"},
         FunctionInfo{2051, nullptr, "InvalidateRightsIdCache"},
-        FunctionInfo{2052, nullptr, "Unknown2052"}, //20.0.0+
-        FunctionInfo{2053, nullptr, "Unknown2053"}, //20.0.0+
+        FunctionInfo{2052, nullptr, "Unknown2052", MakeVersionGate({20,0,0})},
+        FunctionInfo{2053, nullptr, "Unknown2053", MakeVersionGate({20,0,0})},
         FunctionInfo{2100, D<&IApplicationManagerInterface::GetApplicationTerminateResult>, "GetApplicationTerminateResult"},
         FunctionInfo{2101, nullptr, "GetRawApplicationTerminateResult"},
         FunctionInfo{2150, nullptr, "CreateRightsEnvironment"},
@@ -314,7 +314,7 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationManagerInterfa
         FunctionInfo{2180, nullptr, "RequestExtendRightsInRightsEnvironment"},
         FunctionInfo{2181, nullptr, "GetResultOfExtendRightsInRightsEnvironment"},
         FunctionInfo{2182, nullptr, "SetActiveRightsContextUsingStateToRightsEnvironment"},
-        FunctionInfo{2183, nullptr, "Unknown2183"}, //20.1.0+
+        FunctionInfo{2183, nullptr, "Unknown2183", MakeVersionGate({20,1,0})},
         FunctionInfo{2190, nullptr, "GetRightsEnvironmentHandleForApplication"},
         FunctionInfo{2199, nullptr, "GetRightsEnvironmentCountForDebug"},
         FunctionInfo{2200, nullptr, "GetGameCardApplicationCopyIdentifier"},
@@ -331,16 +331,16 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationManagerInterfa
         FunctionInfo{2357, nullptr, "EnableMultiCoreDownload"},
         FunctionInfo{2358, nullptr, "DisableMultiCoreDownload"},
         FunctionInfo{2359, nullptr, "IsMultiCoreDownloadEnabled"},
-        FunctionInfo{2360, nullptr, "GetApplicationDownloadTaskCount"}, //19.0.0+
-        FunctionInfo{2361, nullptr, "GetMaxApplicationDownloadTaskCount"}, //19.0.0+
-        FunctionInfo{2362, nullptr, "Unknown2362"}, //20.0.0+
-        FunctionInfo{2363, nullptr, "Unknown2363"}, //20.0.0+
-        FunctionInfo{2364, nullptr, "Unknown2364"}, //20.0.0+
-        FunctionInfo{2365, nullptr, "Unknown2365"}, //20.0.0+
-        FunctionInfo{2366, nullptr, "Unknown2366"}, //20.0.0+
-        FunctionInfo{2367, nullptr, "Unknown2367"}, //20.0.0+
-        FunctionInfo{2368, nullptr, "Unknown2368"}, //20.0.0+
-        FunctionInfo{2369, nullptr, "Unknown2369"}, //21.0.0+
+        FunctionInfo{2360, nullptr, "GetApplicationDownloadTaskCount", MakeVersionGate({19,0,0})},
+        FunctionInfo{2361, nullptr, "GetMaxApplicationDownloadTaskCount", MakeVersionGate({19,0,0})},
+        FunctionInfo{2362, nullptr, "Unknown2362", MakeVersionGate({20,0,0})},
+        FunctionInfo{2363, nullptr, "Unknown2363", MakeVersionGate({20,0,0})},
+        FunctionInfo{2364, nullptr, "Unknown2364", MakeVersionGate({20,0,0})},
+        FunctionInfo{2365, nullptr, "Unknown2365", MakeVersionGate({20,0,0})},
+        FunctionInfo{2366, nullptr, "Unknown2366", MakeVersionGate({20,0,0})},
+        FunctionInfo{2367, nullptr, "Unknown2367", MakeVersionGate({20,0,0})},
+        FunctionInfo{2368, nullptr, "Unknown2368", MakeVersionGate({20,0,0})},
+        FunctionInfo{2369, nullptr, "Unknown2369", MakeVersionGate({21,0,0})},
         FunctionInfo{2400, nullptr, "GetPromotionInfo"},
         FunctionInfo{2401, nullptr, "CountPromotionInfo"},
         FunctionInfo{2402, nullptr, "ListPromotionInfo"},
@@ -359,9 +359,9 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationManagerInterfa
         FunctionInfo{2520, D<&IApplicationManagerInterface::IsQualificationTransitionSupportedByProcessId>, "IsQualificationTransitionSupportedByProcessId"},
         FunctionInfo{2521, nullptr, "GetRightsUserChangedEvent"},
         FunctionInfo{2522, nullptr, "IsRomRedirectionAvailable"},
-        FunctionInfo{2523, nullptr, "GetProgramId"}, //17.0.0+
-        FunctionInfo{2524, nullptr, "Unknown2524"}, //19.0.0+
-        FunctionInfo{2525, nullptr, "Unknown2525"}, //20.0.0+
+        FunctionInfo{2523, nullptr, "GetProgramId", MakeVersionGate({17,0,0})},
+        FunctionInfo{2524, nullptr, "Unknown2524", MakeVersionGate({19,0,0})},
+        FunctionInfo{2525, nullptr, "Unknown2525", MakeVersionGate({20,0,0})},
         FunctionInfo{2800, nullptr, "GetApplicationIdOfPreomia"},
         FunctionInfo{3000, nullptr, "RegisterDeviceLockKey"},
         FunctionInfo{3001, nullptr, "UnregisterDeviceLockKey"},
@@ -379,100 +379,100 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationManagerInterfa
         FunctionInfo{3013, nullptr, "IsGameCardEnabled"},
         FunctionInfo{3014, nullptr, "IsLocalContentShareEnabled"},
         FunctionInfo{3050, nullptr, "ListAssignELicenseTaskResult"},
-        FunctionInfo{3104, nullptr, "GetApplicationNintendoLogo"}, //18.0.0+
-        FunctionInfo{3105, nullptr, "GetApplicationStartupMovie"}, //18.0.0+
-        FunctionInfo{4000, nullptr, "Unknown4000"}, //20.0.0+
-        FunctionInfo{4004, nullptr, "Unknown4004"}, //20.0.0+
-        FunctionInfo{4006, nullptr, "Unknown4006"}, //20.0.0+
-        FunctionInfo{4007, nullptr, "Unknown4007"}, //20.0.0+
-        FunctionInfo{4008, nullptr, "Unknown4008"}, //20.0.0+
-        FunctionInfo{4009, nullptr, "Unknown4009"}, //20.0.0+
-        FunctionInfo{4010, nullptr, "Unknown4010"}, //20.0.0+
-        FunctionInfo{4011, nullptr, "Unknown4011"}, //20.0.0+
-        FunctionInfo{4012, nullptr, "Unknown4012"}, //20.0.0+
-        FunctionInfo{4013, nullptr, "Unknown4013"}, //20.0.0+
-        FunctionInfo{4015, nullptr, "Unknown4015"}, //20.0.0+
-        FunctionInfo{4017, nullptr, "Unknown4017"}, //20.0.0+
-        FunctionInfo{4019, nullptr, "Unknown4019"}, //20.0.0+
-        FunctionInfo{4020, nullptr, "Unknown4020"}, //20.0.0+
-        FunctionInfo{4021, nullptr, "Unknown4021"}, //20.0.0+
-        FunctionInfo{4022, D<&IApplicationManagerInterface::Unknown4022>, "Unknown4022"}, //20.0.0+
-        FunctionInfo{4023, D<&IApplicationManagerInterface::Unknown4023>, "Unknown4023"}, //20.0.0+
-        FunctionInfo{4024, nullptr, "Unknown4024"}, //20.0.0+
-        FunctionInfo{4025, nullptr, "Unknown4025"}, //20.0.0+
-        FunctionInfo{4026, nullptr, "Unknown4026"}, //20.0.0+
-        FunctionInfo{4027, nullptr, "Unknown4027"}, //20.0.0+
-        FunctionInfo{4028, nullptr, "Unknown4028"}, //20.0.0+
-        FunctionInfo{4029, nullptr, "Unknown4029"}, //20.0.0+
-        FunctionInfo{4030, nullptr, "Unknown4030"}, //20.0.0+
-        FunctionInfo{4031, nullptr, "Unknown4031"}, //20.0.0+
-        FunctionInfo{4032, nullptr, "Unknown4032"}, //20.0.0+
-        FunctionInfo{4033, nullptr, "Unknown4033"}, //20.0.0+
-        FunctionInfo{4034, nullptr, "Unknown4034"}, //20.0.0+
-        FunctionInfo{4035, nullptr, "Unknown4035"}, //20.0.0+
-        FunctionInfo{4037, nullptr, "Unknown4037"}, //20.0.0+
-        FunctionInfo{4038, nullptr, "Unknown4038"}, //20.0.0+
-        FunctionInfo{4039, nullptr, "Unknown4039"}, //20.0.0+
-        FunctionInfo{4040, nullptr, "Unknown4040"}, //20.0.0+
-        FunctionInfo{4041, nullptr, "Unknown4041"}, //20.0.0+
-        FunctionInfo{4042, D<&IApplicationManagerInterface::Unknown4042>, "Unknown4042"}, //20.0.0+
-        FunctionInfo{4043, nullptr, "Unknown4043"}, //20.0.0+
-        FunctionInfo{4044, nullptr, "Unknown4044"}, //20.0.0+
-        FunctionInfo{4045, nullptr, "Unknown4045"}, //20.0.0+
-        FunctionInfo{4046, nullptr, "Unknown4046"}, //20.0.0+
-        FunctionInfo{4049, nullptr, "Unknown4049"}, //20.0.0+
-        FunctionInfo{4050, nullptr, "Unknown4050"}, //20.0.0+
-        FunctionInfo{4051, nullptr, "Unknown4051"}, //20.0.0+
-        FunctionInfo{4052, nullptr, "Unknown4052"}, //20.0.0+
-        FunctionInfo{4053, D<&IApplicationManagerInterface::Unknown4053>, "Unknown4053"}, //20.0.0+
-        FunctionInfo{4054, nullptr, "Unknown4054"}, //20.0.0+
-        FunctionInfo{4055, nullptr, "Unknown4055"}, //20.0.0+
-        FunctionInfo{4056, nullptr, "Unknown4056"}, //20.0.0+
-        FunctionInfo{4057, nullptr, "Unknown4057"}, //20.0.0+
-        FunctionInfo{4058, nullptr, "Unknown4058"}, //20.0.0+
-        FunctionInfo{4059, nullptr, "Unknown4059"}, //20.0.0+
-        FunctionInfo{4060, nullptr, "Unknown4060"}, //20.0.0+
-        FunctionInfo{4061, nullptr, "Unknown4061"}, //20.0.0+
-        FunctionInfo{4062, nullptr, "Unknown4062"}, //20.0.0+
-        FunctionInfo{4063, nullptr, "Unknown4063"}, //20.0.0+
-        FunctionInfo{4064, nullptr, "Unknown4064"}, //20.0.0+
-        FunctionInfo{4065, nullptr, "Unknown4065"}, //20.0.0+
-        FunctionInfo{4066, nullptr, "Unknown4066"}, //20.0.0+
-        FunctionInfo{4067, nullptr, "Unknown4067"}, //20.0.0+
-        FunctionInfo{4068, nullptr, "Unknown4068"}, //20.0.0+
-        FunctionInfo{4069, nullptr, "Unknown4069"}, //20.0.0+
-        FunctionInfo{4070, nullptr, "Unknown4070"}, //20.0.0+
-        FunctionInfo{4071, nullptr, "Unknown4071"}, //20.0.0+
-        FunctionInfo{4072, nullptr, "Unknown4072"}, //20.0.0+
-        FunctionInfo{4073, nullptr, "Unknown4073"}, //20.0.0+
-        FunctionInfo{4074, nullptr, "Unknown4074"}, //20.0.0+
-        FunctionInfo{4075, nullptr, "Unknown4075"}, //20.0.0+
-        FunctionInfo{4076, nullptr, "Unknown4076"}, //20.0.0+
-        FunctionInfo{4077, nullptr, "Unknown4077"}, //20.0.0+
-        FunctionInfo{4078, nullptr, "Unknown4078"}, //20.0.0+
-        FunctionInfo{4079, nullptr, "Unknown4079"}, //20.0.0+
-        FunctionInfo{4080, nullptr, "Unknown4080"}, //20.0.0+
-        FunctionInfo{4081, nullptr, "Unknown4081"}, //20.0.0+
-        FunctionInfo{4083, nullptr, "Unknown4083"}, //20.0.0+
-        FunctionInfo{4084, nullptr, "Unknown4084"}, //20.0.0+
-        FunctionInfo{4085, nullptr, "Unknown4085"}, //20.0.0+
-        FunctionInfo{4086, nullptr, "Unknown4086"}, //20.0.0+
-        FunctionInfo{4087, nullptr, "Unknown4087"}, //20.0.0+
-        FunctionInfo{4088, D<&IApplicationManagerInterface::Unknown4022>, "Unknown4088"}, //20.0.0+
-        FunctionInfo{4089, nullptr, "Unknown4089"}, //20.0.0+
-        FunctionInfo{4090, nullptr, "Unknown4090"}, //20.0.0+
-        FunctionInfo{4091, nullptr, "Unknown4091"}, //20.0.0+
-        FunctionInfo{4092, nullptr, "Unknown4092"}, //20.0.0+
-        FunctionInfo{4093, nullptr, "Unknown4093"}, //20.0.0+
-        FunctionInfo{4094, nullptr, "Unknown4094"}, //20.0.0+
-        FunctionInfo{4095, nullptr, "Unknown4095"}, //20.0.0+
-        FunctionInfo{4096, nullptr, "Unknown4096"}, //20.0.0+
-        FunctionInfo{4097, nullptr, "Unknown4097"}, //20.0.0+
-        FunctionInfo{4099, nullptr, "Unknown4099"}, //21.0.0+
-        FunctionInfo{4105, D<&IApplicationManagerInterface::Unknown4105>, "Unknown4105"}, //23.0.0+
-        FunctionInfo{5000, nullptr, "Unknown5000"}, //18.0.0+
-        FunctionInfo{5001, nullptr, "Unknown5001"}, //18.0.0+
-        FunctionInfo{9999, nullptr, "GetApplicationCertificate"} //10.0.0-10.2.0
+        FunctionInfo{3104, nullptr, "GetApplicationNintendoLogo", MakeVersionGate({18,0,0})},
+        FunctionInfo{3105, nullptr, "GetApplicationStartupMovie", MakeVersionGate({18,0,0})},
+        FunctionInfo{4000, nullptr, "Unknown4000", MakeVersionGate({20,0,0})},
+        FunctionInfo{4004, nullptr, "Unknown4004", MakeVersionGate({20,0,0})},
+        FunctionInfo{4006, nullptr, "Unknown4006", MakeVersionGate({20,0,0})},
+        FunctionInfo{4007, nullptr, "Unknown4007", MakeVersionGate({20,0,0})},
+        FunctionInfo{4008, nullptr, "Unknown4008", MakeVersionGate({20,0,0})},
+        FunctionInfo{4009, nullptr, "Unknown4009", MakeVersionGate({20,0,0})},
+        FunctionInfo{4010, nullptr, "Unknown4010", MakeVersionGate({20,0,0})},
+        FunctionInfo{4011, nullptr, "Unknown4011", MakeVersionGate({20,0,0})},
+        FunctionInfo{4012, nullptr, "Unknown4012", MakeVersionGate({20,0,0})},
+        FunctionInfo{4013, nullptr, "Unknown4013", MakeVersionGate({20,0,0})},
+        FunctionInfo{4015, nullptr, "Unknown4015", MakeVersionGate({20,0,0})},
+        FunctionInfo{4017, nullptr, "Unknown4017", MakeVersionGate({20,0,0})},
+        FunctionInfo{4019, nullptr, "Unknown4019", MakeVersionGate({20,0,0})},
+        FunctionInfo{4020, nullptr, "Unknown4020", MakeVersionGate({20,0,0})},
+        FunctionInfo{4021, nullptr, "Unknown4021", MakeVersionGate({20,0,0})},
+        FunctionInfo{4022, D<&IApplicationManagerInterface::Unknown4022>, "Unknown4022", MakeVersionGate({20,0,0})},
+        FunctionInfo{4023, D<&IApplicationManagerInterface::Unknown4023>, "Unknown4023", MakeVersionGate({20,0,0})},
+        FunctionInfo{4024, nullptr, "Unknown4024", MakeVersionGate({20,0,0})},
+        FunctionInfo{4025, nullptr, "Unknown4025", MakeVersionGate({20,0,0})},
+        FunctionInfo{4026, nullptr, "Unknown4026", MakeVersionGate({20,0,0})},
+        FunctionInfo{4027, nullptr, "Unknown4027", MakeVersionGate({20,0,0})},
+        FunctionInfo{4028, nullptr, "Unknown4028", MakeVersionGate({20,0,0})},
+        FunctionInfo{4029, nullptr, "Unknown4029", MakeVersionGate({20,0,0})},
+        FunctionInfo{4030, nullptr, "Unknown4030", MakeVersionGate({20,0,0})},
+        FunctionInfo{4031, nullptr, "Unknown4031", MakeVersionGate({20,0,0})},
+        FunctionInfo{4032, nullptr, "Unknown4032", MakeVersionGate({20,0,0})},
+        FunctionInfo{4033, nullptr, "Unknown4033", MakeVersionGate({20,0,0})},
+        FunctionInfo{4034, nullptr, "Unknown4034", MakeVersionGate({20,0,0})},
+        FunctionInfo{4035, nullptr, "Unknown4035", MakeVersionGate({20,0,0})},
+        FunctionInfo{4037, nullptr, "Unknown4037", MakeVersionGate({20,0,0})},
+        FunctionInfo{4038, nullptr, "Unknown4038", MakeVersionGate({20,0,0})},
+        FunctionInfo{4039, nullptr, "Unknown4039", MakeVersionGate({20,0,0})},
+        FunctionInfo{4040, nullptr, "Unknown4040", MakeVersionGate({20,0,0})},
+        FunctionInfo{4041, nullptr, "Unknown4041", MakeVersionGate({20,0,0})},
+        FunctionInfo{4042, D<&IApplicationManagerInterface::Unknown4042>, "Unknown4042", MakeVersionGate({20,0,0})},
+        FunctionInfo{4043, nullptr, "Unknown4043", MakeVersionGate({20,0,0})},
+        FunctionInfo{4044, nullptr, "Unknown4044", MakeVersionGate({20,0,0})},
+        FunctionInfo{4045, nullptr, "Unknown4045", MakeVersionGate({20,0,0})},
+        FunctionInfo{4046, nullptr, "Unknown4046", MakeVersionGate({20,0,0})},
+        FunctionInfo{4049, nullptr, "Unknown4049", MakeVersionGate({20,0,0})},
+        FunctionInfo{4050, nullptr, "Unknown4050", MakeVersionGate({20,0,0})},
+        FunctionInfo{4051, nullptr, "Unknown4051", MakeVersionGate({20,0,0})},
+        FunctionInfo{4052, nullptr, "Unknown4052", MakeVersionGate({20,0,0})},
+        FunctionInfo{4053, D<&IApplicationManagerInterface::Unknown4053>, "Unknown4053", MakeVersionGate({20,0,0})},
+        FunctionInfo{4054, nullptr, "Unknown4054", MakeVersionGate({20,0,0})},
+        FunctionInfo{4055, nullptr, "Unknown4055", MakeVersionGate({20,0,0})},
+        FunctionInfo{4056, nullptr, "Unknown4056", MakeVersionGate({20,0,0})},
+        FunctionInfo{4057, nullptr, "Unknown4057", MakeVersionGate({20,0,0})},
+        FunctionInfo{4058, nullptr, "Unknown4058", MakeVersionGate({20,0,0})},
+        FunctionInfo{4059, nullptr, "Unknown4059", MakeVersionGate({20,0,0})},
+        FunctionInfo{4060, nullptr, "Unknown4060", MakeVersionGate({20,0,0})},
+        FunctionInfo{4061, nullptr, "Unknown4061", MakeVersionGate({20,0,0})},
+        FunctionInfo{4062, nullptr, "Unknown4062", MakeVersionGate({20,0,0})},
+        FunctionInfo{4063, nullptr, "Unknown4063", MakeVersionGate({20,0,0})},
+        FunctionInfo{4064, nullptr, "Unknown4064", MakeVersionGate({20,0,0})},
+        FunctionInfo{4065, nullptr, "Unknown4065", MakeVersionGate({20,0,0})},
+        FunctionInfo{4066, nullptr, "Unknown4066", MakeVersionGate({20,0,0})},
+        FunctionInfo{4067, nullptr, "Unknown4067", MakeVersionGate({20,0,0})},
+        FunctionInfo{4068, nullptr, "Unknown4068", MakeVersionGate({20,0,0})},
+        FunctionInfo{4069, nullptr, "Unknown4069", MakeVersionGate({20,0,0})},
+        FunctionInfo{4070, nullptr, "Unknown4070", MakeVersionGate({20,0,0})},
+        FunctionInfo{4071, nullptr, "Unknown4071", MakeVersionGate({20,0,0})},
+        FunctionInfo{4072, nullptr, "Unknown4072", MakeVersionGate({20,0,0})},
+        FunctionInfo{4073, nullptr, "Unknown4073", MakeVersionGate({20,0,0})},
+        FunctionInfo{4074, nullptr, "Unknown4074", MakeVersionGate({20,0,0})},
+        FunctionInfo{4075, nullptr, "Unknown4075", MakeVersionGate({20,0,0})},
+        FunctionInfo{4076, nullptr, "Unknown4076", MakeVersionGate({20,0,0})},
+        FunctionInfo{4077, nullptr, "Unknown4077", MakeVersionGate({20,0,0})},
+        FunctionInfo{4078, nullptr, "Unknown4078", MakeVersionGate({20,0,0})},
+        FunctionInfo{4079, nullptr, "Unknown4079", MakeVersionGate({20,0,0})},
+        FunctionInfo{4080, nullptr, "Unknown4080", MakeVersionGate({20,0,0})},
+        FunctionInfo{4081, nullptr, "Unknown4081", MakeVersionGate({20,0,0})},
+        FunctionInfo{4083, nullptr, "Unknown4083", MakeVersionGate({20,0,0})},
+        FunctionInfo{4084, nullptr, "Unknown4084", MakeVersionGate({20,0,0})},
+        FunctionInfo{4085, nullptr, "Unknown4085", MakeVersionGate({20,0,0})},
+        FunctionInfo{4086, nullptr, "Unknown4086", MakeVersionGate({20,0,0})},
+        FunctionInfo{4087, nullptr, "Unknown4087", MakeVersionGate({20,0,0})},
+        FunctionInfo{4088, D<&IApplicationManagerInterface::Unknown4022>, "Unknown4088", MakeVersionGate({20,0,0})},
+        FunctionInfo{4089, nullptr, "Unknown4089", MakeVersionGate({20,0,0})},
+        FunctionInfo{4090, nullptr, "Unknown4090", MakeVersionGate({20,0,0})},
+        FunctionInfo{4091, nullptr, "Unknown4091", MakeVersionGate({20,0,0})},
+        FunctionInfo{4092, nullptr, "Unknown4092", MakeVersionGate({20,0,0})},
+        FunctionInfo{4093, nullptr, "Unknown4093", MakeVersionGate({20,0,0})},
+        FunctionInfo{4094, nullptr, "Unknown4094", MakeVersionGate({20,0,0})},
+        FunctionInfo{4095, nullptr, "Unknown4095", MakeVersionGate({20,0,0})},
+        FunctionInfo{4096, nullptr, "Unknown4096", MakeVersionGate({20,0,0})},
+        FunctionInfo{4097, nullptr, "Unknown4097", MakeVersionGate({20,0,0})},
+        FunctionInfo{4099, nullptr, "Unknown4099", MakeVersionGate({21,0,0})},
+        FunctionInfo{4105, D<&IApplicationManagerInterface::Unknown4105>, "Unknown4105", MakeVersionGate({23,0,0})},
+        FunctionInfo{5000, nullptr, "Unknown5000", MakeVersionGate({18,0,0})},
+        FunctionInfo{5001, nullptr, "Unknown5001", MakeVersionGate({18,0,0})},
+        FunctionInfo{9999, nullptr, "GetApplicationCertificate", MakeVersionGate({10,0,0}, {10,2,0})}
     );
     return HandlerTableGenerateWithFind(key, functions);
 }

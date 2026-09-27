@@ -28,13 +28,13 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioDevice::FindRequest(
         FunctionInfo{12, D<&IAudioDevice::QueryAudioDeviceOutputEvent>, "QueryAudioDeviceOutputEvent"},
         FunctionInfo{13, D<&IAudioDevice::GetActiveAudioDeviceName>, "GetActiveAudioOutputDeviceName"},
         FunctionInfo{14, D<&IAudioDevice::ListAudioOutputDeviceName>, "ListAudioOutputDeviceName"},
-        FunctionInfo{15, nullptr, "AcquireAudioInputDeviceNotification"}, //17.0.0+
-        FunctionInfo{16, nullptr, "ReleaseAudioInputDeviceNotification"}, //17.0.0+
-        FunctionInfo{17, nullptr, "AcquireAudioOutputDeviceNotification"}, //17.0.0+
-        FunctionInfo{18, nullptr, "ReleaseAudioOutputDeviceNotification"}, //17.0.0+
-        FunctionInfo{19, D<&IAudioDevice::SetAudioDeviceOutputVolumeAutoTuneEnabled>, "SetAudioDeviceOutputVolumeAutoTuneEnabled"}, //18.0.0+
-        FunctionInfo{20, D<&IAudioDevice::IsAudioDeviceOutputVolumeAutoTuneEnabled>, "IsAudioDeviceOutputVolumeAutoTuneEnabled"}, //18.0.0+
-        FunctionInfo{21, nullptr, "IsActiveOutputDeviceEstimatedLowLatency"} //21.0.0+
+        FunctionInfo{15, nullptr, "AcquireAudioInputDeviceNotification", MakeVersionGate({17,0,0})},
+        FunctionInfo{16, nullptr, "ReleaseAudioInputDeviceNotification", MakeVersionGate({17,0,0})},
+        FunctionInfo{17, nullptr, "AcquireAudioOutputDeviceNotification", MakeVersionGate({17,0,0})},
+        FunctionInfo{18, nullptr, "ReleaseAudioOutputDeviceNotification", MakeVersionGate({17,0,0})},
+        FunctionInfo{19, D<&IAudioDevice::SetAudioDeviceOutputVolumeAutoTuneEnabled>, "SetAudioDeviceOutputVolumeAutoTuneEnabled", MakeVersionGate({18,0,0})},
+        FunctionInfo{20, D<&IAudioDevice::IsAudioDeviceOutputVolumeAutoTuneEnabled>, "IsAudioDeviceOutputVolumeAutoTuneEnabled", MakeVersionGate({18,0,0})},
+        FunctionInfo{21, nullptr, "IsActiveOutputDeviceEstimatedLowLatency", MakeVersionGate({21,0,0})}
     );
     return HandlerTableGenerateWithFind(key, functions);
 }

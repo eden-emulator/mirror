@@ -493,7 +493,7 @@ private:
         FunctionInfo{23, nullptr, "SetKeptInSleep"},
         FunctionInfo{24, nullptr, "RegisterSocketDescriptor"},
         FunctionInfo{25, nullptr, "UnregisterSocketDescriptor"},
-        FunctionInfo{26, nullptr, "GetNetworkAccessStatus"} //21.0.0+
+        FunctionInfo{26, nullptr, "GetNetworkAccessStatus", MakeVersionGate({21,0,0})}
     );
     KernelHelpers::ServiceContext service_context;
 
@@ -1086,8 +1086,8 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IGeneralService::FindReque
         FunctionInfo{30, nullptr, "SetEthernetCommunicationEnabledForTest"},
         FunctionInfo{31, nullptr, "GetTelemetorySystemEventReadableHandle"},
         FunctionInfo{32, nullptr, "GetTelemetryInfo"},
-        FunctionInfo{33, &IGeneralService::ConfirmSystemAvailability, "ConfirmSystemAvailability"}, // 2.0.0+
-        FunctionInfo{34, &IGeneralService::SetBackgroundRequestEnabled, "SetBackgroundRequestEnabled"}, // 4.0.0+
+        FunctionInfo{33, &IGeneralService::ConfirmSystemAvailability, "ConfirmSystemAvailability", MakeVersionGate({2,0,0})},
+        FunctionInfo{34, &IGeneralService::SetBackgroundRequestEnabled, "SetBackgroundRequestEnabled", MakeVersionGate({4,0,0})},
         FunctionInfo{35, &IGeneralService::GetScanDataV2, "GetScanData"},
         FunctionInfo{36, &IGeneralService::GetCurrentAccessPoint, "GetCurrentAccessPoint"},
         FunctionInfo{37, nullptr, "Shutdown"},
@@ -1097,13 +1097,13 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> IGeneralService::FindReque
         FunctionInfo{41, nullptr, "GetAcceptableNetworkTypeFlag"},
         FunctionInfo{42, nullptr, "NotifyConnectionStateChanged"},
         FunctionInfo{43, nullptr, "SetWowlDelayedWakeTime"},
-        FunctionInfo{44, nullptr, "IsWiredConnectionAvailable"}, // 18.0.0+
-        FunctionInfo{45, nullptr, "IsNetworkEmulationFeatureEnabled"}, // 18.0.0+
-        FunctionInfo{46, nullptr, "SelectActiveNetworkEmulationProfileIdForDebug"}, // 18.0.0+
-        FunctionInfo{47, &IGeneralService::GetScanDataV3, "GetScanData"}, // 19.0.0+
-        FunctionInfo{50, nullptr, "IsRewriteFeatureEnabled"}, // 18.0.0+
-        FunctionInfo{51, nullptr, "CreateRewriteRule"}, // 18.0.0+
-        FunctionInfo{52, nullptr, "DestroyRewriteRule"} // 18.0.0+
+        FunctionInfo{44, nullptr, "IsWiredConnectionAvailable", MakeVersionGate({18,0,0})},
+        FunctionInfo{45, nullptr, "IsNetworkEmulationFeatureEnabled", MakeVersionGate({18,0,0})},
+        FunctionInfo{46, nullptr, "SelectActiveNetworkEmulationProfileIdForDebug", MakeVersionGate({18,0,0})},
+        FunctionInfo{47, &IGeneralService::GetScanDataV3, "GetScanData", MakeVersionGate({19,0,0})},
+        FunctionInfo{50, nullptr, "IsRewriteFeatureEnabled", MakeVersionGate({18,0,0})},
+        FunctionInfo{51, nullptr, "CreateRewriteRule", MakeVersionGate({18,0,0})},
+        FunctionInfo{52, nullptr, "DestroyRewriteRule", MakeVersionGate({18,0,0})}
     );
     return HandlerTableGenerateWithFind(key, functions);
 }

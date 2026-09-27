@@ -54,10 +54,10 @@ static void ReplaceEmptyUuidWithCurrentUser(const std::shared_ptr<LibraryAppletS
             FunctionInfo{25, D<&ILibraryAppletAccessor::Terminate>, "Terminate"},
             FunctionInfo{30, D<&ILibraryAppletAccessor::GetResult>, "GetResult"},
             FunctionInfo{50, nullptr, "SetOutOfFocusApplicationSuspendingEnabled"},
-            FunctionInfo{60, D<&ILibraryAppletAccessor::PresetLibraryAppletGpuTimeSliceZero>, "PresetLibraryAppletGpuTimeSliceZero"}, //10.0.0+
-            FunctionInfo{80, nullptr, "RequestForLibraryAppletToGetForeground"}, //19.0.0+
-            FunctionInfo{81, nullptr, "GetCurrentChildLibraryApplet"}, //19.0.0+
-            FunctionInfo{90, D<&ILibraryAppletAccessor::Unknown90>, "Unknown90"}, //20.0.0+
+            FunctionInfo{60, D<&ILibraryAppletAccessor::PresetLibraryAppletGpuTimeSliceZero>, "PresetLibraryAppletGpuTimeSliceZero", MakeVersionGate({10,0,0})},
+            FunctionInfo{80, nullptr, "RequestForLibraryAppletToGetForeground", MakeVersionGate({19,0,0})},
+            FunctionInfo{81, nullptr, "GetCurrentChildLibraryApplet", MakeVersionGate({19,0,0})},
+            FunctionInfo{90, D<&ILibraryAppletAccessor::Unknown90>, "Unknown90", MakeVersionGate({20,0,0})},
             FunctionInfo{100, D<&ILibraryAppletAccessor::PushInData>, "PushInData"},
             FunctionInfo{101, D<&ILibraryAppletAccessor::PopOutData>, "PopOutData"},
             FunctionInfo{102, nullptr, "PushExtraStorage"},
@@ -68,8 +68,8 @@ static void ReplaceEmptyUuidWithCurrentUser(const std::shared_ptr<LibraryAppletS
             FunctionInfo{110, nullptr, "NeedsToExitProcess"},
             FunctionInfo{120, D<&ILibraryAppletAccessor::GetLibraryAppletInfo>, "GetLibraryAppletInfo"},
             FunctionInfo{150, nullptr, "RequestForAppletToGetForeground"},
-            FunctionInfo{160, D<&ILibraryAppletAccessor::GetIndirectLayerConsumerHandle>, "GetIndirectLayerConsumerHandle"}, //2.0.0+
-            FunctionInfo{170, D<&ILibraryAppletAccessor::Unknown170>, "Unknown170"} //22.0.0+
+            FunctionInfo{160, D<&ILibraryAppletAccessor::GetIndirectLayerConsumerHandle>, "GetIndirectLayerConsumerHandle", MakeVersionGate({2,0,0})},
+            FunctionInfo{170, D<&ILibraryAppletAccessor::Unknown170>, "Unknown170", MakeVersionGate({22,0,0})}
         );
         return HandlerTableGenerateWithFind(key, functions);
     }

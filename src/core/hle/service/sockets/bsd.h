@@ -223,23 +223,23 @@ protected:
         FunctionInfo{26, &BSD_USA::Close, "Close"},
         FunctionInfo{27, &BSD_USA::DuplicateSocket, "DuplicateSocket"},
         FunctionInfo{28, nullptr, "GetResourceStatistics"},
-        FunctionInfo{29, nullptr, "RecvMMsg"}, //3.0.0+
-        FunctionInfo{30, nullptr, "SendMMsg"}, //3.0.0+
-        FunctionInfo{31, &BSD_USA::EventFd, "EventFd"}, //7.0.0+
-        FunctionInfo{32, nullptr, "RegisterResourceStatisticsName"}, //7.0.0+
-        FunctionInfo{33, nullptr, "RegisterClientShared"}, //10.0.0+
-        FunctionInfo{34, nullptr, "GetSocketStatistics"}, //15.0.0+
-        FunctionInfo{35, nullptr, "NifIoctl"}, //17.0.0+
-        FunctionInfo{36, nullptr, "Unknown36"}, //18.0.0+
-        FunctionInfo{37, nullptr, "Unknown37"}, //18.0.0+
-        FunctionInfo{38, nullptr, "Unknown38"}, //18.0.0+
-        FunctionInfo{39, nullptr, "Unknown39"}, //20.0.0+
-        FunctionInfo{40, nullptr, "Unknown40"}, //20.0.0+
-        FunctionInfo{41, nullptr, "Unknown41"}, //21.0.0+
-        FunctionInfo{42, nullptr, "Unknown42"}, //21.0.0+
-        FunctionInfo{43, nullptr, "Unknown43"}, //21.0.0+
-        FunctionInfo{200, nullptr, "SetThreadCoreMask"}, //15.0.0+
-        FunctionInfo{201, nullptr, "GetThreadCoreMask"} //15.0.0+
+        FunctionInfo{29, nullptr, "RecvMMsg", MakeVersionGate({3,0,0})},
+        FunctionInfo{30, nullptr, "SendMMsg", MakeVersionGate({3,0,0})},
+        FunctionInfo{31, &BSD_USA::EventFd, "EventFd", MakeVersionGate({7,0,0})},
+        FunctionInfo{32, nullptr, "RegisterResourceStatisticsName", MakeVersionGate({7,0,0})},
+        FunctionInfo{33, nullptr, "RegisterClientShared", MakeVersionGate({10,0,0})},
+        FunctionInfo{34, nullptr, "GetSocketStatistics", MakeVersionGate({15,0,0})},
+        FunctionInfo{35, nullptr, "NifIoctl", MakeVersionGate({17,0,0})},
+        FunctionInfo{36, nullptr, "Unknown36", MakeVersionGate({18,0,0})},
+        FunctionInfo{37, nullptr, "Unknown37", MakeVersionGate({18,0,0})},
+        FunctionInfo{38, nullptr, "Unknown38", MakeVersionGate({18,0,0})},
+        FunctionInfo{39, nullptr, "Unknown39", MakeVersionGate({20,0,0})},
+        FunctionInfo{40, nullptr, "Unknown40", MakeVersionGate({20,0,0})},
+        FunctionInfo{41, nullptr, "Unknown41", MakeVersionGate({21,0,0})},
+        FunctionInfo{42, nullptr, "Unknown42", MakeVersionGate({21,0,0})},
+        FunctionInfo{43, nullptr, "Unknown43", MakeVersionGate({21,0,0})},
+        FunctionInfo{200, nullptr, "SetThreadCoreMask", MakeVersionGate({15,0,0})},
+        FunctionInfo{201, nullptr, "GetThreadCoreMask", MakeVersionGate({15,0,0})}
     );
     bool is_user = false;
 };

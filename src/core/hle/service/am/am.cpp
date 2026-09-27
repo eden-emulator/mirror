@@ -300,10 +300,10 @@ public:
         FunctionInfo{91, nullptr, "OpenNamedChannelAsChild"},
         FunctionInfo{100, nullptr, "SetApplicationCoreUsageMode"},
         FunctionInfo{300, D<&IAppletCommonFunctions::GetCurrentApplicationId>, "GetCurrentApplicationId"},
-        FunctionInfo{310, nullptr, "IsSystemAppletHomeMenu"}, //19.0.0+
-        FunctionInfo{320, D<&IAppletCommonFunctions::SetGpuTimeSliceBoost>, "SetGpuTimeSliceBoost"}, //19.0.0+
-        FunctionInfo{321, nullptr, "SetGpuTimeSliceBoostDueToApplication"}, //19.0.0+
-        FunctionInfo{350, D<&IAppletCommonFunctions::Unknown350>, "Unknown350"} //20.0.0+
+        FunctionInfo{310, nullptr, "IsSystemAppletHomeMenu", MakeVersionGate({19,0,0})},
+        FunctionInfo{320, D<&IAppletCommonFunctions::SetGpuTimeSliceBoost>, "SetGpuTimeSliceBoost", MakeVersionGate({19,0,0})},
+        FunctionInfo{321, nullptr, "SetGpuTimeSliceBoostDueToApplication", MakeVersionGate({19,0,0})},
+        FunctionInfo{350, D<&IAppletCommonFunctions::Unknown350>, "Unknown350", MakeVersionGate({20,0,0})}
     );
     const std::shared_ptr<Applet> applet;
 };
@@ -1331,8 +1331,8 @@ public:
         FunctionInfo{350, D<&IAllSystemAppletProxiesService::OpenSystemApplicationProxy>, "OpenSystemApplicationProxy"},
         FunctionInfo{400, nullptr, "CreateSelfLibraryAppletCreatorForDevelop"},
         FunctionInfo{410, nullptr, "GetSystemAppletControllerForDebug"},
-        FunctionInfo{450, D<&IAllSystemAppletProxiesService::GetSystemProcessCommonFunctions>, "GetSystemProcessCommonFunctions"}, // 19.0.0+
-        FunctionInfo{460, D<&IAllSystemAppletProxiesService::GetAppletAlternativeFunctions>, "GetAppletAlternativeFunctions"}, // 20.0.0+
+        FunctionInfo{450, D<&IAllSystemAppletProxiesService::GetSystemProcessCommonFunctions>, "GetSystemProcessCommonFunctions", MakeVersionGate({19,0,0})},
+        FunctionInfo{460, D<&IAllSystemAppletProxiesService::GetAppletAlternativeFunctions>, "GetAppletAlternativeFunctions", MakeVersionGate({20,0,0})},
         FunctionInfo{1000, nullptr, "GetDebugFunctions"}
     );
     WindowSystem& m_window_system;
