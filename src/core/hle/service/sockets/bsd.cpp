@@ -881,7 +881,7 @@ std::pair<s32, Network::Errno> BSD_USA::RecvFromImpl(s32 fd, u32 flags, std::vec
     if (message.size() == 0)
         return {0, Network::Errno::E_SUCCESS};
     if (!std::in_range<u32>(message.size()))
-        return {0, Network::Errno::E_FAULT};
+        return {-1, Network::Errno::E_FAULT};
 
     FileDescriptor& descriptor = *file_descriptors[fd];
 
