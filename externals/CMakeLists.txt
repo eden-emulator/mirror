@@ -48,6 +48,11 @@ if (NOT TARGET stb::headers)
     add_library(stb::headers ALIAS stb)
 endif()
 
+AddJsonPackage(NAME zbic DOWNLOAD_ONLY)
+set(ZBIC_INCLUDE_DIR
+    "${zbic_SOURCE_DIR}/src"
+    PARENT_SCOPE)
+
 # ItaniumDemangle (Windows only)
 if (WIN32 AND NOT TARGET LLVM::Demangle)
     add_library(demangle demangle/ItaniumDemangle.cpp)

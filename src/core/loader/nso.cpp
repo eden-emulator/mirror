@@ -7,12 +7,14 @@
 #include <algorithm>
 #include <cinttypes>
 #include <cstring>
+#include <span>
 #include <vector>
 
 #include "common/common_funcs.h"
 #include "common/hex_util.h"
 #include "common/logging.h"
 #include "common/lz4_compression.h"
+#include "common/zbic_compression.h"
 #include "common/settings.h"
 #include "common/swap.h"
 #include "core/core.h"
@@ -104,11 +106,36 @@ std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::
         for (std::size_t i = 0; i < nso_header.segments.size(); ++i) {
             nso_file.Read(compressed_data.data(), nso_header.segments_compressed_size[i], nso_header.segments[i].offset);
             if (nso_header.IsSegmentCompressed(i)) {
-                int r = Common::Compression::DecompressDataLZ4(decompressed_size.data(), nso_header.segments[i].size, compressed_data.data(), nso_header.segments_compressed_size[i]);
-                ASSERT(r == int(nso_header.segments[i].size));
-                std::memcpy(codeset.memory.data() + module_start + nso_header.segments[i].location, decompressed_size.data(), nso_header.segments[i].size);
+                if (nso_header.IsZBICCompressed()) {
+                    // ZBIC compression
+                    const int r = Common::Compression::DecompressDataZBIC(
+                        std::span<u8>{decompressed_size}.first(nso_header.segments[i].size),
+                        std::span<const u8>{compressed_data}.first(nso_header.segments_compressed_size[i])
+                    );
+                    ASSERT(r > 0);
+                } else {
+                    // LZ4 compression
+                    int r = Common::Compression::DecompressDataLZ4(
+                        decompressed_size.data(),
+                        nso_header.segments[i].size,
+                        compressed_data.data(),
+                        nso_header.segments_compressed_size[i]
+                    );
+                    ASSERT(r == int(nso_header.segments[i].size));
+                }
+
+                std::memcpy(
+                    codeset.memory.data() + module_start + nso_header.segments[i].location,
+                    decompressed_size.data(),
+                    nso_header.segments[i].size
+                );
             } else {
-                std::memcpy(codeset.memory.data() + module_start + nso_header.segments[i].location, compressed_data.data(), nso_header.segments[i].size);
+                // Not compressed
+                std::memcpy(
+                    codeset.memory.data() + module_start + nso_header.segments[i].location,
+                    compressed_data.data(),
+                    nso_header.segments[i].size
+                );
             }
             codeset.segments[i].addr = module_start + nso_header.segments[i].location;
             codeset.segments[i].offset = module_start + nso_header.segments[i].location;
