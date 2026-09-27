@@ -346,7 +346,7 @@ std::optional<ServiceFrameworkBase::FunctionInfoBase> ISystemSettingsServer::Fin
 }
 
 ISystemSettingsServer::ISystemSettingsServer(Core::System& system_)
-    : ServiceFramework{system_, "set:sys"}, m_system{system} {
+    : ServiceFramework{system_, "set:sys"} {
     SetupSettings();
 
     m_system_settings.region_code =

@@ -180,7 +180,6 @@ private:
     void SetSaveNeeded();
 
     std::optional<FunctionInfoBase> FindRequest(u32 key) override;
-    Core::System& m_system;
     SystemSettings m_system_settings{};
     PrivateSettings m_private_settings{};
     DeviceSettings m_device_settings{};

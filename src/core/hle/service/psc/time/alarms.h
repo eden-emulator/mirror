@@ -95,7 +95,6 @@ private:
     void Erase(Kernel::KernelCore& kernel, Alarm& alarm);
     Result UpdateClosestAndSignal(Kernel::KernelCore& kernel);
 
-    Core::System& m_system;
     KernelHelpers::ServiceContext m_ctx;
 
     StandardSteadyClockCore& m_steady_clock;

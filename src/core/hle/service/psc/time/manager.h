@@ -23,20 +23,20 @@ namespace Service::PSC::Time {
 class TimeManager {
 public:
     explicit TimeManager(Core::System& system)
-        : m_system{system}, m_standard_steady_clock{system}, m_tick_based_steady_clock{m_system},
-          m_standard_local_system_clock{m_standard_steady_clock},
-          m_standard_network_system_clock{m_standard_steady_clock},
-          m_standard_user_system_clock{m_system, m_standard_local_system_clock,
-                                       m_standard_network_system_clock},
-          m_ephemeral_network_clock{m_tick_based_steady_clock}, m_shared_memory{m_system},
-          m_power_state_request_manager{m_system}, m_alarms{m_system, m_standard_steady_clock,
-                                                            m_power_state_request_manager},
-          m_local_system_clock_context_writer{m_system, m_shared_memory},
-          m_network_system_clock_context_writer{m_system, m_shared_memory,
-                                                m_standard_user_system_clock},
-          m_ephemeral_network_clock_context_writer{m_system} {}
-
-    Core::System& m_system;
+        : m_standard_steady_clock{system}
+        , m_tick_based_steady_clock{system}
+        , m_standard_local_system_clock{m_standard_steady_clock}
+        , m_standard_network_system_clock{m_standard_steady_clock}
+        , m_standard_user_system_clock{system, m_standard_local_system_clock
+        , m_standard_network_system_clock}
+        , m_ephemeral_network_clock{m_tick_based_steady_clock}
+        , m_shared_memory{system}
+        , m_power_state_request_manager{system}
+        , m_alarms{system, m_standard_steady_clock, m_power_state_request_manager}
+        , m_local_system_clock_context_writer{system, m_shared_memory}
+        , m_network_system_clock_context_writer{system, m_shared_memory, m_standard_user_system_clock}
+        , m_ephemeral_network_clock_context_writer{system}
+    {}
 
     StandardSteadyClockCore m_standard_steady_clock;
     TickBasedSteadyClockCore m_tick_based_steady_clock;
