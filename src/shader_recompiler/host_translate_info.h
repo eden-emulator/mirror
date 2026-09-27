@@ -34,6 +34,7 @@ struct HostTranslateInfo {
     bool needs_demote_reorder{}; ///< True when the device needs DemoteToHelperInvocation reordered
     bool support_snorm_render_buffer{};  ///< True when the device supports SNORM render buffers
     bool support_viewport_index_layer{}; ///< True when the device supports gl_Layer in VS
+    bool support_viewport_mask{};
     bool support_geometry_shader_passthrough{}; ///< True when the device supports geometry
                                                 ///< passthrough shaders
     bool support_conditional_barrier{}; ///< True when the device supports barriers in conditional
