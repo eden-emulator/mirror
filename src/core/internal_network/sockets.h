@@ -77,41 +77,24 @@ public:
     Socket(Socket&& rhs) noexcept;
 
     Errno Initialize(Domain domain, Type type, Protocol protocol) override;
-
     Errno Close() override;
-
     std::pair<AcceptResult, Errno> Accept() override;
-
     Errno Connect(Network::SockAddrIn addr_in) override;
-
     std::pair<Network::SockAddrIn, Errno> GetPeerName() override;
-
     std::pair<Network::SockAddrIn, Errno> GetSockName() override;
-
     Errno Bind(Network::SockAddrIn addr) override;
-
     Errno Listen(s32 backlog) override;
-
     Errno Shutdown(ShutdownHow how) override;
-
     std::pair<s32, Errno> Recv(int flags, std::span<u8> message) override;
-
     std::pair<s32, Errno> RecvFrom(int flags, std::span<u8> message, Network::SockAddrIn* addr) override;
-
     std::pair<s32, Errno> Send(std::span<const u8> message, int flags) override;
-
     std::pair<s32, Errno> SendTo(u32 flags, std::span<const u8> message, const Network::SockAddrIn* addr) override;
-
+    bool GetNonBlock() override;
     Errno SetNonBlock(bool enable) override;
-
     Errno SetSockOpt(Network::SocketLevel level, Network::OptName option, std::span<const u8> value) override;
-
     std::pair<Errno, Errno> GetPendingError() override;
-
     Errno GetSockOpt(Network::SocketLevel level, Network::OptName optname, std::span<u8> value);
-
     bool IsOpened() const override;
-
     void HandleProxyPacket(const ProxyPacket& packet) override;
 
 private:

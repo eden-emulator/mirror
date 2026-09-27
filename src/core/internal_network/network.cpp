@@ -1227,6 +1227,7 @@ std::pair<s32, Errno> Socket::RecvFrom(int flags, std::span<u8> message, Network
     socklen_t* const p_addrlen = addr ? &addrlen : nullptr;
     sockaddr* const p_addr_in = addr ? reinterpret_cast<sockaddr*>(&addr_in) : nullptr;
 
+    auto const native_flags = TranslateMsgOptToNative(flags);
     auto const result = recvfrom(fd, reinterpret_cast<char*>(message.data()), int(message.size()), native_flags, p_addr_in, p_addrlen);
     if (result != SOCKET_ERROR) {
         if (addr) {
