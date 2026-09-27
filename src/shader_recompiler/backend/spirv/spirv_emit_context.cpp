@@ -948,12 +948,16 @@ void EmitContext::DefineGlobalMemoryFunctions(const Info& info) {
     const auto define_body{[&](DefPtr ssbo_member, Id addr, Id element_pointer, u32 shift,
                                auto&& callback) {
         AddLabel();
+        const Id addr_words{OpBitcast(U32[2], addr)};
+        const Id addr_low{OpCompositeExtract(U32[1], addr_words, 0U)};
+        const Id addr_high{OpCompositeExtract(U32[1], addr_words, 1U)};
+        const Id align_mask{Const(~(static_cast<u32>(profile.min_ssbo_alignment) - 1U))};
         const size_t num_buffers{info.storage_buffers_descriptors.size()};
         for (size_t index = 0; index < num_buffers; ++index) {
-            if (!info.nvn_buffer_used[index]) {
+            const auto& ssbo{info.storage_buffers_descriptors[index]};
+            if (!ssbo.is_global_fallback) {
                 continue;
             }
-            const auto& ssbo{info.storage_buffers_descriptors[index]};
             const Id ssbo_addr_cbuf_offset{Const(ssbo.cbuf_offset / 8)};
             const Id ssbo_size_cbuf_offset{Const(ssbo.cbuf_offset / 4 + 2)};
             const Id ssbo_addr_pointer{OpAccessChain(
@@ -961,20 +965,23 @@ void EmitContext::DefineGlobalMemoryFunctions(const Info& info) {
             const Id ssbo_size_pointer{OpAccessChain(uniform_types.U32, cbufs[ssbo.cbuf_index].U32,
                                                      zero, ssbo_size_cbuf_offset)};
 
-            const u64 ssbo_align_mask{~(profile.min_ssbo_alignment - 1U)};
-            const Id unaligned_addr{OpBitcast(U64, OpLoad(U32[2], ssbo_addr_pointer))};
-            const Id ssbo_addr{OpBitwiseAnd(U64, unaligned_addr, Constant(U64, ssbo_align_mask))};
-            const Id ssbo_size{OpUConvert(U64, OpLoad(U32[1], ssbo_size_pointer))};
-            const Id ssbo_end{OpIAdd(U64, ssbo_addr, ssbo_size)};
-            const Id cond{OpLogicalAnd(U1, OpUGreaterThanEqual(U1, addr, ssbo_addr),
-                                       OpULessThan(U1, addr, ssbo_end))};
+            const Id ssbo_addr{OpLoad(U32[2], ssbo_addr_pointer)};
+            const Id ssbo_low{
+                OpBitwiseAnd(U32[1], OpCompositeExtract(U32[1], ssbo_addr, 0U), align_mask)};
+            const Id ssbo_high{OpCompositeExtract(U32[1], ssbo_addr, 1U)};
+            const Id ssbo_size{OpLoad(U32[1], ssbo_size_pointer)};
+            const Id ssbo_offset{OpISub(U32[1], addr_low, ssbo_low)};
+            const Id borrow{
+                OpSelect(U32[1], OpULessThan(U1, addr_low, ssbo_low), Const(1U), zero)};
+            const Id cond{
+                OpLogicalAnd(U1, OpULessThan(U1, ssbo_offset, ssbo_size),
+                             OpIEqual(U1, OpISub(U32[1], addr_high, borrow), ssbo_high))};
             const Id then_label{OpLabel()};
             const Id else_label{OpLabel()};
             OpSelectionMerge(else_label, spv::SelectionControlMask::MaskNone);
             OpBranchConditional(cond, then_label, else_label);
             AddLabel(then_label);
             const Id ssbo_id{ssbos[index].*ssbo_member};
-            const Id ssbo_offset{OpUConvert(U32[1], OpISub(U64, addr, ssbo_addr))};
             const Id ssbo_index{OpShiftRightLogical(U32[1], ssbo_offset, Const(shift))};
             const Id ssbo_pointer{OpAccessChain(element_pointer, ssbo_id, zero, ssbo_index)};
             callback(ssbo_pointer);

@@ -121,9 +121,12 @@ void AddNVNStorageBuffers(IR::Program& program) {
             continue;
         }
         const u32 offset{base + index * descriptor_size};
-        const auto it{std::ranges::find(descs, offset, &StorageBufferDescriptor::cbuf_offset)};
+        const auto it{std::ranges::find_if(descs, [&](const StorageBufferDescriptor& desc) {
+            return desc.cbuf_index == driver_cbuf && desc.cbuf_offset == offset;
+        })};
         if (it != descs.end()) {
             it->is_written |= program.info.stores_global_memory;
+            it->is_global_fallback = true;
             continue;
         }
         descs.push_back({
@@ -131,6 +134,7 @@ void AddNVNStorageBuffers(IR::Program& program) {
             .cbuf_offset = offset,
             .count = 1,
             .is_written = program.info.stores_global_memory,
+            .is_global_fallback = true,
         });
     }
 }

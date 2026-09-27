@@ -562,6 +562,7 @@ void JoinStorageInfo(Info& base, Info& source) {
         })};
         if (it != descriptors.end()) {
             it->is_written |= desc.is_written;
+            it->is_global_fallback |= desc.is_global_fallback;
             continue;
         }
         descriptors.push_back(desc);

@@ -172,6 +172,7 @@ struct StorageBufferDescriptor {
     u32 cbuf_offset;
     u32 count;
     bool is_written;
+    bool is_global_fallback{};
 
     auto operator<=>(const StorageBufferDescriptor&) const = default;
 };

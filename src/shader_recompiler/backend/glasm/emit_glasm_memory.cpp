@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -32,10 +35,10 @@ void GlobalStorageOp(EmitContext& ctx, Register address, bool pointer_based, std
                      std::string_view else_expr = {}) {
     const size_t num_buffers{ctx.info.storage_buffers_descriptors.size()};
     for (size_t index = 0; index < num_buffers; ++index) {
-        if (!ctx.info.nvn_buffer_used[index]) {
+        const auto& ssbo{ctx.info.storage_buffers_descriptors[index]};
+        if (!ssbo.is_global_fallback) {
             continue;
         }
-        const auto& ssbo{ctx.info.storage_buffers_descriptors[index]};
         const u64 ssbo_align_mask{~(ctx.profile.min_ssbo_alignment - 1U)};
         ctx.Add("LDC.U64 DC.x,c{}[{}];"    // unaligned_ssbo_addr
                 "AND.U64 DC.x,DC.x,{};"    // ssbo_addr = unaligned_ssbo_addr & ssbo_align_mask
@@ -65,9 +68,10 @@ void GlobalStorageOp(EmitContext& ctx, Register address, bool pointer_based, std
     if (!else_expr.empty()) {
         ctx.Add("{}", else_expr);
     }
-    const size_t num_used_buffers{ctx.info.nvn_buffer_used.count()};
-    for (size_t index = 0; index < num_used_buffers; ++index) {
-        ctx.Add("ENDIF;");
+    for (const auto& ssbo : ctx.info.storage_buffers_descriptors) {
+        if (ssbo.is_global_fallback) {
+            ctx.Add("ENDIF;");
+        }
     }
 }
 
