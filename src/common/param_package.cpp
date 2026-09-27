@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <utility>
 #include <vector>
+#include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
 
@@ -34,11 +35,11 @@ ParamPackage::ParamPackage(const std::string& serialized) {
     }
 
     std::vector<std::string> pairs;
-    boost::split(pairs, serialized, PARAM_SEPARATOR);
+    boost::split(pairs, serialized, boost::is_any_of(PARAM_SEPARATOR));
 
     for (const std::string& pair : pairs) {
         std::vector<std::string> key_value;
-        boost::split(key_value, pair, KEY_VALUE_SEPARATOR);
+        boost::split(key_value, pair, boost::is_any_of(KEY_VALUE_SEPARATOR));
         if (key_value.size() != 2) {
             LOG_ERROR(Common, "invalid key pair {}", pair);
             continue;
