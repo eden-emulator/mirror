@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstring>
+#include <boost/algorithm/string/case_conv.hpp>
 #include "common/common_funcs.h"
 #include "common/common_types.h"
 #include "common/hex_util.h"
@@ -41,16 +42,13 @@ static_assert(sizeof(Package2Header) == 0x200, "Package2Header has incorrect siz
 
 const u8 PartitionDataManager::MAX_KEYBLOB_SOURCE_HASH = 32;
 
-static FileSys::VirtualFile FindFileInDirWithNames(const FileSys::VirtualDir& dir,
-                                                   const std::string& name) {
-    const auto upper = Common::ToUpper(name);
-
+static FileSys::VirtualFile FindFileInDirWithNames(const FileSys::VirtualDir& dir, const std::string& name) {
+    const auto upper = boost::algorithm::to_upper_copy(name);
     for (const auto& fname : {name, name + ".bin", upper, upper + ".BIN"}) {
         if (dir->GetFile(fname) != nullptr) {
             return dir->GetFile(fname);
         }
     }
-
     return nullptr;
 }
 

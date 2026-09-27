@@ -1404,7 +1404,7 @@ void FormatConversionPass::ConvertImage(Image& dst_image, Image& src_image,
         const u32 copy_size = region.width * region.height * region.depth * img_bpp;
         if (pbo_size < copy_size) {
             intermediate_pbo.Create();
-            pbo_size = Common::NextPow2(copy_size);
+            pbo_size = std::bit_ceil(copy_size);
             glNamedBufferData(intermediate_pbo.handle, pbo_size, nullptr, GL_STREAM_COPY);
         }
         // Copy from source to PBO

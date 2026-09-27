@@ -62,7 +62,6 @@ add_library(
     fs/fs_util.h
     fs/path_util.cpp
     fs/path_util.h
-    hash.h
     heap_tracker.cpp
     heap_tracker.h
     hex_util.cpp

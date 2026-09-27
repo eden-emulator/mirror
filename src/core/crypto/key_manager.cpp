@@ -14,6 +14,7 @@
 #include <tuple>
 #include <vector>
 
+#include <boost/algorithm/string/case_conv.hpp>
 #include <openssl/evp.h>
 
 #include "common/fs/file.h"
@@ -622,7 +623,7 @@ void KeyManager::LoadFromFile(const std::filesystem::path& file_path, bool is_ti
                 Key128 key = Common::HexStringToArray<16>(out[1]);
                 s128_keys[{S128KeyType::Titlekey, rights_id[1], rights_id[0]}] = key;
             } else {
-                out[0] = Common::ToLower(out[0]);
+                boost::algorithm::to_lower(out[0]);
                 if (const auto iter128 = Find128ByName(out[0]); iter128 != s128_file_id.end()) {
                     const auto& index = iter128->second;
                     const Key128 key = Common::HexStringToArray<16>(out[1]);

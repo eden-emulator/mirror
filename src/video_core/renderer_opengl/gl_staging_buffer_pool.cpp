@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -55,7 +55,7 @@ size_t StagingBuffers::RequestBuffer(size_t requested_size) {
     }
     StagingBufferAlloc alloc;
     alloc.buffer.Create();
-    const auto next_pow2_size = Common::NextPow2(requested_size);
+    const auto next_pow2_size = std::bit_ceil(requested_size);
     glNamedBufferStorage(alloc.buffer.handle, next_pow2_size, nullptr,
                          storage_flags | GL_MAP_PERSISTENT_BIT);
     alloc.map = static_cast<u8*>(glMapNamedBufferRange(alloc.buffer.handle, 0, next_pow2_size,

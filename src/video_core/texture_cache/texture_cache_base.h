@@ -22,7 +22,6 @@
 #include <queue>
 
 #include "common/common_types.h"
-#include "common/hash.h"
 #include "common/literals.h"
 #include "common/lru_cache.h"
 #include <ranges>
@@ -69,7 +68,7 @@ struct AsyncDecodeContext {
     std::atomic_bool complete;
 };
 
-using TextureCacheGPUMap = ::Common::unordered_map<u64, std::vector<ImageId>, Common::IdentityHash<u64>>;
+using TextureCacheGPUMap = ::Common::unordered_map<u64, std::vector<ImageId>>;
 
 class TextureCacheChannelInfo : public ChannelInfo {
 public:
@@ -443,7 +442,7 @@ private:
     u64 last_framebuffer_serial = 0;
 
     ::Common::unordered_map<RenderTargets, FramebufferId> framebuffers;
-    ::Common::unordered_map<u64, std::vector<ImageMapId>, Common::IdentityHash<u64>> page_table;
+    ::Common::unordered_map<u64, std::vector<ImageMapId>> page_table;
     ::Common::unordered_map<ImageId, boost::container::small_vector<ImageViewId, 16>> sparse_views;
 
     DAddr virtual_invalid_space{};

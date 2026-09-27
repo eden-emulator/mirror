@@ -14,6 +14,7 @@
 #include <regex>
 #include <string>
 #include <thread>
+#include <boost/algorithm/string/trim.hpp>
 
 #ifdef _WIN32
 // windows.h needs to be included before shellapi.h
@@ -132,7 +133,7 @@ static Network::Room::BanList LoadBanList(const std::string& path) {
         std::string line;
         std::getline(file, line);
         line.erase(std::remove(line.begin(), line.end(), '\0'), line.end());
-        line = Common::StripSpaces(line);
+        boost::trim(line);
         if (line.empty()) {
             // An empty line marks start of the IP ban list
             ban_list_type = true;

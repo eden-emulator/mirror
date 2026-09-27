@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <regex>
 #include <thread>
+#include <boost/algorithm/string/predicate.hpp>
 
 #if defined(__ANDROID__)
 #include <android/log.h>
@@ -95,9 +96,10 @@ std::string FormatLogMessage(const Entry& entry) noexcept {
 
 template <typename It>
 Level GetLevelByName(const It begin, const It end) {
+    std::string_view const sv{begin, end};
     for (u32 i = 0; i < u32(Level::Count); ++i) {
-        const char* level_name = GetLevelName(Level(i));
-        if (Common::ComparePartialString(begin, end, level_name))
+        auto const level_name = GetLevelName(Level(i));
+        if (boost::iequals(sv, level_name))
             return Level(i);
     }
     return Level::Count;
@@ -105,9 +107,10 @@ Level GetLevelByName(const It begin, const It end) {
 
 template <typename It>
 Class GetClassByName(const It begin, const It end) {
+    std::string_view const sv{begin, end};
     for (u32 i = 0; i < u32(Class::Count); ++i) {
-        const char* level_name = GetLogClassName(Class(i));
-        if (Common::ComparePartialString(begin, end, level_name))
+        auto const level_name = GetLogClassName(Class(i));
+        if (boost::iequals(sv, level_name))
             return Class(i);
     }
     return Class::Count;
@@ -120,12 +123,13 @@ bool ParseFilterRule(Filter& instance, Iterator begin, Iterator end) {
         LOG_ERROR(Log, "Invalid log filter. Must specify a log level after `:`: {}", std::string(begin, end));
         return false;
     }
-    const Level level = GetLevelByName(level_separator + 1, end);
+    auto const sv = std::string_view{begin, level_separator};
+    auto const level = GetLevelByName(level_separator + 1, end);
     if (level == Level::Count) {
         LOG_ERROR(Log, "Unknown log level in filter: {}", std::string(begin, end));
         return false;
     }
-    if (Common::ComparePartialString(begin, level_separator, "*")) {
+    if (boost::iequals(sv, "*")) {
         instance.class_levels.fill(level);
         return true;
     }

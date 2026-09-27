@@ -8,6 +8,7 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
+#include <boost/algorithm/string/case_conv.hpp>
 
 #include "common/assert.h"
 #include "common/hex_util.h"
@@ -73,12 +74,10 @@ VirtualDir FindSubdirectoryCaseless(const VirtualDir dir, std::string_view name)
 #else
     const auto subdirs = dir->GetSubdirectories();
     for (const auto& subdir : subdirs) {
-        std::string dir_name = Common::ToLower(subdir->GetName());
-        if (dir_name == name) {
+        if (name == boost::algorithm::to_lower_copy(subdir->GetName())) {
             return subdir;
         }
     }
-
     return nullptr;
 #endif
 }

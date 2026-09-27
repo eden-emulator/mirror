@@ -8,6 +8,7 @@
 
 #include <array>
 #include <atomic>
+#include <barrier>
 #include <functional>
 #include <memory>
 #include <thread>
@@ -52,7 +53,7 @@ public:
     }
 
     void OnGpuReady() {
-        gpu_barrier->Sync();
+        gpu_barrier->arrive_and_wait();
     }
 
     void Initialize();
@@ -95,7 +96,7 @@ private:
 
     static constexpr std::size_t max_cycle_runs = 5;
 
-    std::optional<Common::Barrier> gpu_barrier{};
+    std::optional<std::barrier<>> gpu_barrier{};
     struct CoreData {
         std::shared_ptr<Common::Fiber> host_context;
         std::jthread host_thread;

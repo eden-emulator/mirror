@@ -12,93 +12,94 @@
 #include "common/android/multiplayer/multiplayer.h"
 #include <network/network.h>
 
+static struct {
+    JavaVM *java_vm;
+    jclass native_library_class;
+    jclass disk_cache_progress_class;
+    jclass load_callback_stage_class;
+    jclass game_dir_class;
+    jmethodID game_dir_constructor;
+    jmethodID exit_emulation_activity;
+    jmethodID disk_cache_load_progress;
+    jmethodID on_emulation_started;
+    jmethodID on_emulation_stopped;
+    jmethodID on_program_changed;
+    jmethodID copy_to_storage;
+    jmethodID file_exists;
+    jmethodID file_extension;
 
-static JavaVM *s_java_vm;
-static jclass s_native_library_class;
-static jclass s_disk_cache_progress_class;
-static jclass s_load_callback_stage_class;
-static jclass s_game_dir_class;
-static jmethodID s_game_dir_constructor;
-static jmethodID s_exit_emulation_activity;
-static jmethodID s_disk_cache_load_progress;
-static jmethodID s_on_emulation_started;
-static jmethodID s_on_emulation_stopped;
-static jmethodID s_on_program_changed;
-static jmethodID s_copy_to_storage;
-static jmethodID s_file_exists;
-static jmethodID s_file_extension;
+    jclass game_class;
+    jmethodID game_constructor;
+    jfieldID game_title_field;
+    jfieldID game_path_field;
+    jfieldID game_program_id_field;
+    jfieldID game_developer_field;
+    jfieldID game_version_field;
+    jfieldID game_is_homebrew_field;
 
-static jclass s_game_class;
-static jmethodID s_game_constructor;
-static jfieldID s_game_title_field;
-static jfieldID s_game_path_field;
-static jfieldID s_game_program_id_field;
-static jfieldID s_game_developer_field;
-static jfieldID s_game_version_field;
-static jfieldID s_game_is_homebrew_field;
+    jclass string_class;
+    jclass pair_class;
+    jmethodID pair_constructor;
+    jfieldID pair_first_field;
+    jfieldID pair_second_field;
 
-static jclass s_string_class;
-static jclass s_pair_class;
-static jmethodID s_pair_constructor;
-static jfieldID s_pair_first_field;
-static jfieldID s_pair_second_field;
+    jclass overlay_control_data_class;
+    jmethodID overlay_control_data_constructor;
+    jfieldID overlay_control_data_id_field;
+    jfieldID overlay_control_data_enabled_field;
+    jfieldID overlay_control_data_individual_scale_field;
+    jfieldID overlay_control_data_landscape_position_field;
+    jfieldID overlay_control_data_portrait_position_field;
+    jfieldID overlay_control_data_foldable_position_field;
 
-static jclass s_overlay_control_data_class;
-static jmethodID s_overlay_control_data_constructor;
-static jfieldID s_overlay_control_data_id_field;
-static jfieldID s_overlay_control_data_enabled_field;
-static jfieldID s_overlay_control_data_individual_scale_field;
-static jfieldID s_overlay_control_data_landscape_position_field;
-static jfieldID s_overlay_control_data_portrait_position_field;
-static jfieldID s_overlay_control_data_foldable_position_field;
+    jclass patch_class;
+    jmethodID patch_constructor;
+    jfieldID patch_enabled_field;
+    jfieldID patch_name_field;
+    jfieldID patch_version_field;
+    jfieldID patch_type_field;
+    jfieldID patch_program_id_field;
+    jfieldID patch_title_id_field;
 
-static jclass s_patch_class;
-static jmethodID s_patch_constructor;
-static jfieldID s_patch_enabled_field;
-static jfieldID s_patch_name_field;
-static jfieldID s_patch_version_field;
-static jfieldID s_patch_type_field;
-static jfieldID s_patch_program_id_field;
-static jfieldID s_patch_title_id_field;
+    jclass double_class;
+    jmethodID double_constructor;
+    jmethodID double_value_method;
 
-static jclass s_double_class;
-static jmethodID s_double_constructor;
-static jmethodID s_double_value_method;
+    jclass integer_class;
+    jmethodID integer_constructor;
+    jmethodID integer_value_method;
 
-static jclass s_integer_class;
-static jmethodID s_integer_constructor;
-static jmethodID s_integer_value_method;
+    jclass boolean_class;
+    jmethodID boolean_constructor;
+    jmethodID boolean_value_method;
 
-static jclass s_boolean_class;
-static jmethodID s_boolean_constructor;
-static jmethodID s_boolean_value_method;
+    jclass player_input_class;
+    jmethodID player_input_constructor;
+    jfieldID player_input_connected_field;
+    jfieldID player_input_buttons_field;
+    jfieldID player_input_analogs_field;
+    jfieldID player_input_motions_field;
+    jfieldID player_input_vibration_enabled_field;
+    jfieldID player_input_vibration_strength_field;
+    jfieldID player_input_body_color_left_field;
+    jfieldID player_input_body_color_right_field;
+    jfieldID player_input_button_color_left_field;
+    jfieldID player_input_button_color_right_field;
+    jfieldID player_input_profile_name_field;
+    jfieldID player_input_use_system_vibrator_field;
 
-static jclass s_player_input_class;
-static jmethodID s_player_input_constructor;
-static jfieldID s_player_input_connected_field;
-static jfieldID s_player_input_buttons_field;
-static jfieldID s_player_input_analogs_field;
-static jfieldID s_player_input_motions_field;
-static jfieldID s_player_input_vibration_enabled_field;
-static jfieldID s_player_input_vibration_strength_field;
-static jfieldID s_player_input_body_color_left_field;
-static jfieldID s_player_input_body_color_right_field;
-static jfieldID s_player_input_button_color_left_field;
-static jfieldID s_player_input_button_color_right_field;
-static jfieldID s_player_input_profile_name_field;
-static jfieldID s_player_input_use_system_vibrator_field;
+    jclass yuzu_input_device_interface;
+    jmethodID yuzu_input_device_get_name;
+    jmethodID yuzu_input_device_get_guid;
+    jmethodID yuzu_input_device_get_port;
+    jmethodID yuzu_input_device_get_supports_vibration;
+    jmethodID yuzu_input_device_vibrate;
+    jmethodID yuzu_input_device_get_axes;
+    jmethodID yuzu_input_device_has_keys;
 
-static jclass s_yuzu_input_device_interface;
-static jmethodID s_yuzu_input_device_get_name;
-static jmethodID s_yuzu_input_device_get_guid;
-static jmethodID s_yuzu_input_device_get_port;
-static jmethodID s_yuzu_input_device_get_supports_vibration;
-static jmethodID s_yuzu_input_device_vibrate;
-static jmethodID s_yuzu_input_device_get_axes;
-static jmethodID s_yuzu_input_device_has_keys;
-
-static jmethodID s_add_netplay_message;
-static jmethodID s_clear_chat;
+    jmethodID add_netplay_message;
+    jmethodID clear_chat;
+} state;
 
 static constexpr jint JNI_VERSION = JNI_VERSION_1_6;
 
@@ -123,303 +124,303 @@ namespace Common::Android {
     }
 
     jclass GetNativeLibraryClass() {
-        return s_native_library_class;
+        return state.native_library_class;
     }
 
     jclass GetDiskCacheProgressClass() {
-        return s_disk_cache_progress_class;
+        return state.disk_cache_progress_class;
     }
 
     jclass GetDiskCacheLoadCallbackStageClass() {
-        return s_load_callback_stage_class;
+        return state.load_callback_stage_class;
     }
 
     jclass GetGameDirClass() {
-        return s_game_dir_class;
+        return state.game_dir_class;
     }
 
     jmethodID GetGameDirConstructor() {
-        return s_game_dir_constructor;
+        return state.game_dir_constructor;
     }
 
     jmethodID GetExitEmulationActivity() {
-        return s_exit_emulation_activity;
+        return state.exit_emulation_activity;
     }
 
     jmethodID GetDiskCacheLoadProgress() {
-        return s_disk_cache_load_progress;
+        return state.disk_cache_load_progress;
     }
 
     jmethodID GetCopyToStorage() {
-        return s_copy_to_storage;
+        return state.copy_to_storage;
     }
 
     jmethodID GetFileExists() {
-        return s_file_exists;
+        return state.file_exists;
     }
 
     jmethodID GetFileExtension() {
-        return s_file_extension;
+        return state.file_extension;
     }
 
     jmethodID GetOnEmulationStarted() {
-        return s_on_emulation_started;
+        return state.on_emulation_started;
     }
 
     jmethodID GetOnEmulationStopped() {
-        return s_on_emulation_stopped;
+        return state.on_emulation_stopped;
     }
 
     jmethodID GetOnProgramChanged() {
-        return s_on_program_changed;
+        return state.on_program_changed;
     }
 
     jclass GetGameClass() {
-        return s_game_class;
+        return state.game_class;
     }
 
     jmethodID GetGameConstructor() {
-        return s_game_constructor;
+        return state.game_constructor;
     }
 
     jfieldID GetGameTitleField() {
-        return s_game_title_field;
+        return state.game_title_field;
     }
 
     jfieldID GetGamePathField() {
-        return s_game_path_field;
+        return state.game_path_field;
     }
 
     jfieldID GetGameProgramIdField() {
-        return s_game_program_id_field;
+        return state.game_program_id_field;
     }
 
     jfieldID GetGameDeveloperField() {
-        return s_game_developer_field;
+        return state.game_developer_field;
     }
 
     jfieldID GetGameVersionField() {
-        return s_game_version_field;
+        return state.game_version_field;
     }
 
     jfieldID GetGameIsHomebrewField() {
-        return s_game_is_homebrew_field;
+        return state.game_is_homebrew_field;
     }
 
     jclass GetStringClass() {
-        return s_string_class;
+        return state.string_class;
     }
 
     jclass GetPairClass() {
-        return s_pair_class;
+        return state.pair_class;
     }
 
     jmethodID GetPairConstructor() {
-        return s_pair_constructor;
+        return state.pair_constructor;
     }
 
     jfieldID GetPairFirstField() {
-        return s_pair_first_field;
+        return state.pair_first_field;
     }
 
     jfieldID GetPairSecondField() {
-        return s_pair_second_field;
+        return state.pair_second_field;
     }
 
     jclass GetOverlayControlDataClass() {
-        return s_overlay_control_data_class;
+        return state.overlay_control_data_class;
     }
 
     jmethodID GetOverlayControlDataConstructor() {
-        return s_overlay_control_data_constructor;
+        return state.overlay_control_data_constructor;
     }
 
     jfieldID GetOverlayControlDataIdField() {
-        return s_overlay_control_data_id_field;
+        return state.overlay_control_data_id_field;
     }
 
     jfieldID GetOverlayControlDataEnabledField() {
-        return s_overlay_control_data_enabled_field;
+        return state.overlay_control_data_enabled_field;
     }
 
     jfieldID GetOverlayControlDataIndividualScaleField() {
-        return s_overlay_control_data_individual_scale_field;
+        return state.overlay_control_data_individual_scale_field;
     }
 
     jfieldID GetOverlayControlDataLandscapePositionField() {
-        return s_overlay_control_data_landscape_position_field;
+        return state.overlay_control_data_landscape_position_field;
     }
 
     jfieldID GetOverlayControlDataPortraitPositionField() {
-        return s_overlay_control_data_portrait_position_field;
+        return state.overlay_control_data_portrait_position_field;
     }
 
     jfieldID GetOverlayControlDataFoldablePositionField() {
-        return s_overlay_control_data_foldable_position_field;
+        return state.overlay_control_data_foldable_position_field;
     }
 
     jclass GetPatchClass() {
-        return s_patch_class;
+        return state.patch_class;
     }
 
     jmethodID GetPatchConstructor() {
-        return s_patch_constructor;
+        return state.patch_constructor;
     }
 
     jfieldID GetPatchEnabledField() {
-        return s_patch_enabled_field;
+        return state.patch_enabled_field;
     }
 
     jfieldID GetPatchNameField() {
-        return s_patch_name_field;
+        return state.patch_name_field;
     }
 
     jfieldID GetPatchVersionField() {
-        return s_patch_version_field;
+        return state.patch_version_field;
     }
 
     jfieldID GetPatchTypeField() {
-        return s_patch_type_field;
+        return state.patch_type_field;
     }
 
     jfieldID GetPatchProgramIdField() {
-        return s_patch_program_id_field;
+        return state.patch_program_id_field;
     }
 
     jfieldID GetPatchTitleIdField() {
-        return s_patch_title_id_field;
+        return state.patch_title_id_field;
     }
 
     jclass GetDoubleClass() {
-        return s_double_class;
+        return state.double_class;
     }
 
     jmethodID GetDoubleConstructor() {
-        return s_double_constructor;
+        return state.double_constructor;
     }
 
     jmethodID GetDoubleValueMethod() {
-        return s_double_value_method;
+        return state.double_value_method;
     }
 
     jclass GetIntegerClass() {
-        return s_integer_class;
+        return state.integer_class;
     }
 
     jmethodID GetIntegerConstructor() {
-        return s_integer_constructor;
+        return state.integer_constructor;
     }
 
     jmethodID GetIntegerValueMethod() {
-        return s_integer_value_method;
+        return state.integer_value_method;
     }
 
     jclass GetBooleanClass() {
-        return s_boolean_class;
+        return state.boolean_class;
     }
 
     jmethodID GetBooleanConstructor() {
-        return s_boolean_constructor;
+        return state.boolean_constructor;
     }
 
     jmethodID GetBooleanValueMethod() {
-        return s_boolean_value_method;
+        return state.boolean_value_method;
     }
 
     jclass GetPlayerInputClass() {
-        return s_player_input_class;
+        return state.player_input_class;
     }
 
     jmethodID GetPlayerInputConstructor() {
-        return s_player_input_constructor;
+        return state.player_input_constructor;
     }
 
     jfieldID GetPlayerInputConnectedField() {
-        return s_player_input_connected_field;
+        return state.player_input_connected_field;
     }
 
     jfieldID GetPlayerInputButtonsField() {
-        return s_player_input_buttons_field;
+        return state.player_input_buttons_field;
     }
 
     jfieldID GetPlayerInputAnalogsField() {
-        return s_player_input_analogs_field;
+        return state.player_input_analogs_field;
     }
 
     jfieldID GetPlayerInputMotionsField() {
-        return s_player_input_motions_field;
+        return state.player_input_motions_field;
     }
 
     jfieldID GetPlayerInputVibrationEnabledField() {
-        return s_player_input_vibration_enabled_field;
+        return state.player_input_vibration_enabled_field;
     }
 
     jfieldID GetPlayerInputVibrationStrengthField() {
-        return s_player_input_vibration_strength_field;
+        return state.player_input_vibration_strength_field;
     }
 
     jfieldID GetPlayerInputBodyColorLeftField() {
-        return s_player_input_body_color_left_field;
+        return state.player_input_body_color_left_field;
     }
 
     jfieldID GetPlayerInputBodyColorRightField() {
-        return s_player_input_body_color_right_field;
+        return state.player_input_body_color_right_field;
     }
 
     jfieldID GetPlayerInputButtonColorLeftField() {
-        return s_player_input_button_color_left_field;
+        return state.player_input_button_color_left_field;
     }
 
     jfieldID GetPlayerInputButtonColorRightField() {
-        return s_player_input_button_color_right_field;
+        return state.player_input_button_color_right_field;
     }
 
     jfieldID GetPlayerInputProfileNameField() {
-        return s_player_input_profile_name_field;
+        return state.player_input_profile_name_field;
     }
 
     jfieldID GetPlayerInputUseSystemVibratorField() {
-        return s_player_input_use_system_vibrator_field;
+        return state.player_input_use_system_vibrator_field;
     }
 
     jclass GetYuzuInputDeviceInterface() {
-        return s_yuzu_input_device_interface;
+        return state.yuzu_input_device_interface;
     }
 
     jmethodID GetYuzuDeviceGetName() {
-        return s_yuzu_input_device_get_name;
+        return state.yuzu_input_device_get_name;
     }
 
     jmethodID GetYuzuDeviceGetGUID() {
-        return s_yuzu_input_device_get_guid;
+        return state.yuzu_input_device_get_guid;
     }
 
     jmethodID GetYuzuDeviceGetPort() {
-        return s_yuzu_input_device_get_port;
+        return state.yuzu_input_device_get_port;
     }
 
     jmethodID GetYuzuDeviceGetSupportsVibration() {
-        return s_yuzu_input_device_get_supports_vibration;
+        return state.yuzu_input_device_get_supports_vibration;
     }
 
     jmethodID GetYuzuDeviceVibrate() {
-        return s_yuzu_input_device_vibrate;
+        return state.yuzu_input_device_vibrate;
     }
 
     jmethodID GetYuzuDeviceGetAxes() {
-        return s_yuzu_input_device_get_axes;
+        return state.yuzu_input_device_get_axes;
     }
 
     jmethodID GetYuzuDeviceHasKeys() {
-        return s_yuzu_input_device_has_keys;
+        return state.yuzu_input_device_has_keys;
     }
 
     jmethodID GetAddNetPlayMessage() {
-        return s_add_netplay_message;
+        return state.add_netplay_message;
     }
 
     jmethodID ClearChat() {
-        return s_clear_chat;
+        return state.clear_chat;
     }
 
 #ifdef __cplusplus
@@ -436,20 +437,20 @@ namespace Common::Android {
 
         // UnInitialize Android Storage
         Common::FS::Android::UnRegisterCallbacks();
-        env->DeleteGlobalRef(s_native_library_class);
-        env->DeleteGlobalRef(s_disk_cache_progress_class);
-        env->DeleteGlobalRef(s_load_callback_stage_class);
-        env->DeleteGlobalRef(s_game_dir_class);
-        env->DeleteGlobalRef(s_game_class);
-        env->DeleteGlobalRef(s_string_class);
-        env->DeleteGlobalRef(s_pair_class);
-        env->DeleteGlobalRef(s_overlay_control_data_class);
-        env->DeleteGlobalRef(s_patch_class);
-        env->DeleteGlobalRef(s_double_class);
-        env->DeleteGlobalRef(s_integer_class);
-        env->DeleteGlobalRef(s_boolean_class);
-        env->DeleteGlobalRef(s_player_input_class);
-        env->DeleteGlobalRef(s_yuzu_input_device_interface);
+        env->DeleteGlobalRef(state.native_library_class);
+        env->DeleteGlobalRef(state.disk_cache_progress_class);
+        env->DeleteGlobalRef(state.load_callback_stage_class);
+        env->DeleteGlobalRef(state.game_dir_class);
+        env->DeleteGlobalRef(state.game_class);
+        env->DeleteGlobalRef(state.string_class);
+        env->DeleteGlobalRef(state.pair_class);
+        env->DeleteGlobalRef(state.overlay_control_data_class);
+        env->DeleteGlobalRef(state.patch_class);
+        env->DeleteGlobalRef(state.double_class);
+        env->DeleteGlobalRef(state.integer_class);
+        env->DeleteGlobalRef(state.boolean_class);
+        env->DeleteGlobalRef(state.player_input_class);
+        env->DeleteGlobalRef(state.yuzu_input_device_interface);
 
         // UnInitialize applets
         SoftwareKeyboard::CleanupJNI(env);
@@ -463,7 +464,7 @@ namespace Common::Android {
 #endif
 
 void Initialize(JavaVM* vm, JNIEnv *env) {
-    s_java_vm = vm;
+    state.java_vm = vm;
     InitFFmpegOnLoad(vm);
 
     if (env->ExceptionCheck()) {
@@ -472,169 +473,169 @@ void Initialize(JavaVM* vm, JNIEnv *env) {
 
     // Initialize Java classes
     const jclass native_library_class = env->FindClass("org/yuzu/yuzu_emu/NativeLibrary");
-    s_native_library_class = reinterpret_cast<jclass>(env->NewGlobalRef(native_library_class));
-    s_disk_cache_progress_class = reinterpret_cast<jclass>(env->NewGlobalRef(
+    state.native_library_class = reinterpret_cast<jclass>(env->NewGlobalRef(native_library_class));
+    state.disk_cache_progress_class = reinterpret_cast<jclass>(env->NewGlobalRef(
         env->FindClass("org/yuzu/yuzu_emu/disk_shader_cache/DiskShaderCacheProgress")));
-    s_load_callback_stage_class = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass(
+    state.load_callback_stage_class = reinterpret_cast<jclass>(env->NewGlobalRef(env->FindClass(
         "org/yuzu/yuzu_emu/disk_shader_cache/DiskShaderCacheProgress$LoadCallbackStage")));
 
     const jclass game_dir_class = env->FindClass("org/yuzu/yuzu_emu/model/GameDir");
-    s_game_dir_class = reinterpret_cast<jclass>(env->NewGlobalRef(game_dir_class));
-    s_game_dir_constructor = env->GetMethodID(game_dir_class, "<init>",
+    state.game_dir_class = reinterpret_cast<jclass>(env->NewGlobalRef(game_dir_class));
+    state.game_dir_constructor = env->GetMethodID(game_dir_class, "<init>",
                                               "(Ljava/lang/String;Z)V");
     env->DeleteLocalRef(game_dir_class);
 
     // Initialize methods
-    s_exit_emulation_activity =
-        env->GetStaticMethodID(s_native_library_class, "exitEmulationActivity", "(I)V");
-    s_disk_cache_load_progress =
-        env->GetStaticMethodID(s_disk_cache_progress_class, "loadProgress", "(III)V");
-    s_copy_to_storage = env->GetStaticMethodID(s_native_library_class, "copyFileToStorage",
+    state.exit_emulation_activity =
+        env->GetStaticMethodID(state.native_library_class, "exitEmulationActivity", "(I)V");
+    state.disk_cache_load_progress =
+        env->GetStaticMethodID(state.disk_cache_progress_class, "loadProgress", "(III)V");
+    state.copy_to_storage = env->GetStaticMethodID(state.native_library_class, "copyFileToStorage",
                                                "(Ljava/lang/String;Ljava/lang/String;)Z");
-    s_file_exists = env->GetStaticMethodID(s_native_library_class, "exists",
+    state.file_exists = env->GetStaticMethodID(state.native_library_class, "exists",
                                            "(Ljava/lang/String;)Z");
-    s_file_extension = env->GetStaticMethodID(s_native_library_class, "getFileExtension",
+    state.file_extension = env->GetStaticMethodID(state.native_library_class, "getFileExtension",
                                               "(Ljava/lang/String;)Ljava/lang/String;");
-    s_on_emulation_started =
-        env->GetStaticMethodID(s_native_library_class, "onEmulationStarted", "()V");
-    s_on_emulation_stopped =
-        env->GetStaticMethodID(s_native_library_class, "onEmulationStopped", "(I)V");
-    s_on_program_changed =
-        env->GetStaticMethodID(s_native_library_class, "onProgramChanged", "(I)V");
+    state.on_emulation_started =
+        env->GetStaticMethodID(state.native_library_class, "onEmulationStarted", "()V");
+    state.on_emulation_stopped =
+        env->GetStaticMethodID(state.native_library_class, "onEmulationStopped", "(I)V");
+    state.on_program_changed =
+        env->GetStaticMethodID(state.native_library_class, "onProgramChanged", "(I)V");
 
     const jclass game_class = env->FindClass("org/yuzu/yuzu_emu/model/Game");
-    s_game_class = reinterpret_cast<jclass>(env->NewGlobalRef(game_class));
-    s_game_constructor = env->GetMethodID(game_class, "<init>",
+    state.game_class = reinterpret_cast<jclass>(env->NewGlobalRef(game_class));
+    state.game_constructor = env->GetMethodID(game_class, "<init>",
                                           "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
                                           "String;Ljava/lang/String;Ljava/lang/String;Z)V");
-    s_game_title_field = env->GetFieldID(game_class, "title", "Ljava/lang/String;");
-    s_game_path_field = env->GetFieldID(game_class, "path", "Ljava/lang/String;");
-    s_game_program_id_field = env->GetFieldID(game_class, "programId", "Ljava/lang/String;");
-    s_game_developer_field = env->GetFieldID(game_class, "developer", "Ljava/lang/String;");
-    s_game_version_field = env->GetFieldID(game_class, "version", "Ljava/lang/String;");
-    s_game_is_homebrew_field = env->GetFieldID(game_class, "isHomebrew", "Z");
+    state.game_title_field = env->GetFieldID(game_class, "title", "Ljava/lang/String;");
+    state.game_path_field = env->GetFieldID(game_class, "path", "Ljava/lang/String;");
+    state.game_program_id_field = env->GetFieldID(game_class, "programId", "Ljava/lang/String;");
+    state.game_developer_field = env->GetFieldID(game_class, "developer", "Ljava/lang/String;");
+    state.game_version_field = env->GetFieldID(game_class, "version", "Ljava/lang/String;");
+    state.game_is_homebrew_field = env->GetFieldID(game_class, "isHomebrew", "Z");
     env->DeleteLocalRef(game_class);
 
     const jclass string_class = env->FindClass("java/lang/String");
-    s_string_class = reinterpret_cast<jclass>(env->NewGlobalRef(string_class));
+    state.string_class = reinterpret_cast<jclass>(env->NewGlobalRef(string_class));
     env->DeleteLocalRef(string_class);
 
     const jclass pair_class = env->FindClass("kotlin/Pair");
-    s_pair_class = reinterpret_cast<jclass>(env->NewGlobalRef(pair_class));
-    s_pair_constructor =
+    state.pair_class = reinterpret_cast<jclass>(env->NewGlobalRef(pair_class));
+    state.pair_constructor =
         env->GetMethodID(pair_class, "<init>", "(Ljava/lang/Object;Ljava/lang/Object;)V");
-    s_pair_first_field = env->GetFieldID(pair_class, "first", "Ljava/lang/Object;");
-    s_pair_second_field = env->GetFieldID(pair_class, "second", "Ljava/lang/Object;");
+    state.pair_first_field = env->GetFieldID(pair_class, "first", "Ljava/lang/Object;");
+    state.pair_second_field = env->GetFieldID(pair_class, "second", "Ljava/lang/Object;");
     env->DeleteLocalRef(pair_class);
 
     const jclass overlay_control_data_class =
         env->FindClass("org/yuzu/yuzu_emu/overlay/model/OverlayControlData");
-    s_overlay_control_data_class =
+    state.overlay_control_data_class =
         reinterpret_cast<jclass>(env->NewGlobalRef(overlay_control_data_class));
-    s_overlay_control_data_constructor =
+    state.overlay_control_data_constructor =
         env->GetMethodID(overlay_control_data_class, "<init>",
                          "(Ljava/lang/String;ZLkotlin/Pair;Lkotlin/Pair;Lkotlin/Pair;F)V");
-    s_overlay_control_data_id_field =
+    state.overlay_control_data_id_field =
         env->GetFieldID(overlay_control_data_class, "id", "Ljava/lang/String;");
-    s_overlay_control_data_enabled_field =
+    state.overlay_control_data_enabled_field =
         env->GetFieldID(overlay_control_data_class, "enabled", "Z");
-    s_overlay_control_data_landscape_position_field =
+    state.overlay_control_data_landscape_position_field =
         env->GetFieldID(overlay_control_data_class, "landscapePosition", "Lkotlin/Pair;");
-    s_overlay_control_data_portrait_position_field =
+    state.overlay_control_data_portrait_position_field =
         env->GetFieldID(overlay_control_data_class, "portraitPosition", "Lkotlin/Pair;");
-    s_overlay_control_data_foldable_position_field =
+    state.overlay_control_data_foldable_position_field =
         env->GetFieldID(overlay_control_data_class, "foldablePosition", "Lkotlin/Pair;");
-    s_overlay_control_data_individual_scale_field =
+    state.overlay_control_data_individual_scale_field =
         env->GetFieldID(overlay_control_data_class, "individualScale", "F");
     env->DeleteLocalRef(overlay_control_data_class);
 
     const jclass patch_class = env->FindClass("org/yuzu/yuzu_emu/model/Patch");
-    s_patch_class = reinterpret_cast<jclass>(env->NewGlobalRef(patch_class));
-    s_patch_constructor = env->GetMethodID(
+    state.patch_class = reinterpret_cast<jclass>(env->NewGlobalRef(patch_class));
+    state.patch_constructor = env->GetMethodID(
         patch_class, "<init>",
         "(ZLjava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;JI)V");
-    s_patch_enabled_field = env->GetFieldID(patch_class, "enabled", "Z");
-    s_patch_name_field = env->GetFieldID(patch_class, "name", "Ljava/lang/String;");
-    s_patch_version_field = env->GetFieldID(patch_class, "version", "Ljava/lang/String;");
-    s_patch_type_field = env->GetFieldID(patch_class, "type", "I");
-    s_patch_program_id_field = env->GetFieldID(patch_class, "programId", "Ljava/lang/String;");
-    s_patch_title_id_field = env->GetFieldID(patch_class, "titleId", "Ljava/lang/String;");
+    state.patch_enabled_field = env->GetFieldID(patch_class, "enabled", "Z");
+    state.patch_name_field = env->GetFieldID(patch_class, "name", "Ljava/lang/String;");
+    state.patch_version_field = env->GetFieldID(patch_class, "version", "Ljava/lang/String;");
+    state.patch_type_field = env->GetFieldID(patch_class, "type", "I");
+    state.patch_program_id_field = env->GetFieldID(patch_class, "programId", "Ljava/lang/String;");
+    state.patch_title_id_field = env->GetFieldID(patch_class, "titleId", "Ljava/lang/String;");
     env->DeleteLocalRef(patch_class);
 
     const jclass double_class = env->FindClass("java/lang/Double");
-    s_double_class = reinterpret_cast<jclass>(env->NewGlobalRef(double_class));
-    s_double_constructor = env->GetMethodID(double_class, "<init>", "(D)V");
-    s_double_value_method = env->GetMethodID(double_class, "doubleValue", "()D");
+    state.double_class = reinterpret_cast<jclass>(env->NewGlobalRef(double_class));
+    state.double_constructor = env->GetMethodID(double_class, "<init>", "(D)V");
+    state.double_value_method = env->GetMethodID(double_class, "doubleValue", "()D");
     env->DeleteLocalRef(double_class);
 
     const jclass int_class = env->FindClass("java/lang/Integer");
-    s_integer_class = reinterpret_cast<jclass>(env->NewGlobalRef(int_class));
-    s_integer_constructor = env->GetMethodID(int_class, "<init>", "(I)V");
-    s_integer_value_method = env->GetMethodID(int_class, "intValue", "()I");
+    state.integer_class = reinterpret_cast<jclass>(env->NewGlobalRef(int_class));
+    state.integer_constructor = env->GetMethodID(int_class, "<init>", "(I)V");
+    state.integer_value_method = env->GetMethodID(int_class, "intValue", "()I");
     env->DeleteLocalRef(int_class);
 
     const jclass boolean_class = env->FindClass("java/lang/Boolean");
-    s_boolean_class = reinterpret_cast<jclass>(env->NewGlobalRef(boolean_class));
-    s_boolean_constructor = env->GetMethodID(boolean_class, "<init>", "(Z)V");
-    s_boolean_value_method = env->GetMethodID(boolean_class, "booleanValue", "()Z");
+    state.boolean_class = reinterpret_cast<jclass>(env->NewGlobalRef(boolean_class));
+    state.boolean_constructor = env->GetMethodID(boolean_class, "<init>", "(Z)V");
+    state.boolean_value_method = env->GetMethodID(boolean_class, "booleanValue", "()Z");
     env->DeleteLocalRef(boolean_class);
 
     const jclass player_input_class =
         env->FindClass("org/yuzu/yuzu_emu/features/input/model/PlayerInput");
-    s_player_input_class = reinterpret_cast<jclass>(env->NewGlobalRef(player_input_class));
-    s_player_input_constructor = env->GetMethodID(
+    state.player_input_class = reinterpret_cast<jclass>(env->NewGlobalRef(player_input_class));
+    state.player_input_constructor = env->GetMethodID(
         player_input_class, "<init>",
         "(Z[Ljava/lang/String;[Ljava/lang/String;[Ljava/lang/String;ZIJJJJLjava/lang/String;Z)V");
-    s_player_input_connected_field = env->GetFieldID(player_input_class, "connected", "Z");
-    s_player_input_buttons_field =
+    state.player_input_connected_field = env->GetFieldID(player_input_class, "connected", "Z");
+    state.player_input_buttons_field =
         env->GetFieldID(player_input_class, "buttons", "[Ljava/lang/String;");
-    s_player_input_analogs_field =
+    state.player_input_analogs_field =
         env->GetFieldID(player_input_class, "analogs", "[Ljava/lang/String;");
-    s_player_input_motions_field =
+    state.player_input_motions_field =
         env->GetFieldID(player_input_class, "motions", "[Ljava/lang/String;");
-    s_player_input_vibration_enabled_field =
+    state.player_input_vibration_enabled_field =
         env->GetFieldID(player_input_class, "vibrationEnabled", "Z");
-    s_player_input_vibration_strength_field =
+    state.player_input_vibration_strength_field =
         env->GetFieldID(player_input_class, "vibrationStrength", "I");
-    s_player_input_body_color_left_field =
+    state.player_input_body_color_left_field =
         env->GetFieldID(player_input_class, "bodyColorLeft", "J");
-    s_player_input_body_color_right_field =
+    state.player_input_body_color_right_field =
         env->GetFieldID(player_input_class, "bodyColorRight", "J");
-    s_player_input_button_color_left_field =
+    state.player_input_button_color_left_field =
         env->GetFieldID(player_input_class, "buttonColorLeft", "J");
-    s_player_input_button_color_right_field =
+    state.player_input_button_color_right_field =
         env->GetFieldID(player_input_class, "buttonColorRight", "J");
-    s_player_input_profile_name_field =
+    state.player_input_profile_name_field =
         env->GetFieldID(player_input_class, "profileName", "Ljava/lang/String;");
-    s_player_input_use_system_vibrator_field =
+    state.player_input_use_system_vibrator_field =
         env->GetFieldID(player_input_class, "useSystemVibrator", "Z");
     env->DeleteLocalRef(player_input_class);
 
     const jclass yuzu_input_device_interface =
         env->FindClass("org/yuzu/yuzu_emu/features/input/YuzuInputDevice");
-    s_yuzu_input_device_interface =
+    state.yuzu_input_device_interface =
         reinterpret_cast<jclass>(env->NewGlobalRef(yuzu_input_device_interface));
-    s_yuzu_input_device_get_name =
+    state.yuzu_input_device_get_name =
         env->GetMethodID(yuzu_input_device_interface, "getName", "()Ljava/lang/String;");
-    s_yuzu_input_device_get_guid =
+    state.yuzu_input_device_get_guid =
         env->GetMethodID(yuzu_input_device_interface, "getGUID", "()Ljava/lang/String;");
-    s_yuzu_input_device_get_port = env->GetMethodID(yuzu_input_device_interface, "getPort",
+    state.yuzu_input_device_get_port = env->GetMethodID(yuzu_input_device_interface, "getPort",
                                                     "()I");
-    s_yuzu_input_device_get_supports_vibration =
+    state.yuzu_input_device_get_supports_vibration =
         env->GetMethodID(yuzu_input_device_interface, "getSupportsVibration", "()Z");
-    s_yuzu_input_device_vibrate = env->GetMethodID(yuzu_input_device_interface, "vibrate",
+    state.yuzu_input_device_vibrate = env->GetMethodID(yuzu_input_device_interface, "vibrate",
                                                    "(F)V");
-    s_yuzu_input_device_get_axes =
+    state.yuzu_input_device_get_axes =
         env->GetMethodID(yuzu_input_device_interface, "getAxes", "()[Ljava/lang/Integer;");
-    s_yuzu_input_device_has_keys =
+    state.yuzu_input_device_has_keys =
         env->GetMethodID(yuzu_input_device_interface, "hasKeys", "([I)[Z");
     env->DeleteLocalRef(yuzu_input_device_interface);
-    s_add_netplay_message = env->GetStaticMethodID(s_native_library_class, "addNetPlayMessage",
+    state.add_netplay_message = env->GetStaticMethodID(state.native_library_class, "addNetPlayMessage",
                                                    "(ILjava/lang/String;)V");
-    s_clear_chat = env->GetStaticMethodID(s_native_library_class, "clearChat", "()V");
+    state.clear_chat = env->GetStaticMethodID(state.native_library_class, "clearChat", "()V");
 
     // Initialize Android Storage
-    Common::FS::Android::RegisterCallbacks(env, s_native_library_class);
+    Common::FS::Android::RegisterCallbacks(env, state.native_library_class);
 
     // Initialize applets
     Common::Android::SoftwareKeyboard::InitJNI(env);

@@ -8,6 +8,7 @@
 #include <string>
 
 #include <QEventLoop>
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include "common/httplib.h"
 
@@ -45,7 +46,7 @@ void DiscordImpl::Pause() {
 
 std::string DiscordImpl::GetGameString(const std::string& title) {
     // Convert to lowercase
-    std::string icon_name = Common::ToLower(title);
+    std::string icon_name = boost::algorithm::to_lower_copy(title);
 
     // Replace spaces with dashes
     std::replace(icon_name.begin(), icon_name.end(), ' ', '-');

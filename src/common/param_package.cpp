@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <utility>
 #include <vector>
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 #include "common/logging.h"
 #include "common/param_package.h"
@@ -15,17 +17,16 @@
 
 namespace Common {
 
-constexpr char KEY_VALUE_SEPARATOR = ':';
-constexpr char PARAM_SEPARATOR = ',';
-
-constexpr char ESCAPE_CHARACTER = '$';
-constexpr char KEY_VALUE_SEPARATOR_ESCAPE[] = "$0";
-constexpr char PARAM_SEPARATOR_ESCAPE[] = "$1";
-constexpr char ESCAPE_CHARACTER_ESCAPE[] = "$2";
+constexpr auto KEY_VALUE_SEPARATOR = ":";
+constexpr auto PARAM_SEPARATOR = ",";
+constexpr auto ESCAPE_CHARACTER = "$";
+constexpr auto KEY_VALUE_SEPARATOR_ESCAPE = "$0";
+constexpr auto PARAM_SEPARATOR_ESCAPE = "$1";
+constexpr auto ESCAPE_CHARACTER_ESCAPE = "$2";
 
 /// A placeholder for empty param packages to avoid empty strings
 /// (they may be recognized as "not set" by some frontend libraries like qt)
-constexpr char EMPTY_PLACEHOLDER[] = "[empty]";
+constexpr auto EMPTY_PLACEHOLDER = "[empty]";
 
 ParamPackage::ParamPackage(const std::string& serialized) {
     if (serialized == EMPTY_PLACEHOLDER) {
@@ -33,20 +34,20 @@ ParamPackage::ParamPackage(const std::string& serialized) {
     }
 
     std::vector<std::string> pairs;
-    Common::SplitString(serialized, PARAM_SEPARATOR, pairs);
+    boost::split(pairs, serialized, PARAM_SEPARATOR);
 
     for (const std::string& pair : pairs) {
         std::vector<std::string> key_value;
-        Common::SplitString(pair, KEY_VALUE_SEPARATOR, key_value);
+        boost::split(key_value, pair, KEY_VALUE_SEPARATOR);
         if (key_value.size() != 2) {
             LOG_ERROR(Common, "invalid key pair {}", pair);
             continue;
         }
 
-        for (std::string& part : key_value) {
-            part = Common::ReplaceAll(part, KEY_VALUE_SEPARATOR_ESCAPE, {KEY_VALUE_SEPARATOR});
-            part = Common::ReplaceAll(part, PARAM_SEPARATOR_ESCAPE, {PARAM_SEPARATOR});
-            part = Common::ReplaceAll(part, ESCAPE_CHARACTER_ESCAPE, {ESCAPE_CHARACTER});
+        for (auto& part : key_value) {
+            boost::replace_all(part, KEY_VALUE_SEPARATOR_ESCAPE, KEY_VALUE_SEPARATOR);
+            boost::replace_all(part, PARAM_SEPARATOR_ESCAPE, PARAM_SEPARATOR);
+            boost::replace_all(part, ESCAPE_CHARACTER_ESCAPE, ESCAPE_CHARACTER);
         }
 
         Set(key_value[0], std::move(key_value[1]));
@@ -63,10 +64,10 @@ std::string ParamPackage::Serialize() const {
 
     for (const auto& pair : data) {
         std::array<std::string, 2> key_value{{pair.first, pair.second}};
-        for (std::string& part : key_value) {
-            part = Common::ReplaceAll(part, {ESCAPE_CHARACTER}, ESCAPE_CHARACTER_ESCAPE);
-            part = Common::ReplaceAll(part, {PARAM_SEPARATOR}, PARAM_SEPARATOR_ESCAPE);
-            part = Common::ReplaceAll(part, {KEY_VALUE_SEPARATOR}, KEY_VALUE_SEPARATOR_ESCAPE);
+        for (auto& part : key_value) {
+            boost::replace_all(part, ESCAPE_CHARACTER, ESCAPE_CHARACTER_ESCAPE);
+            boost::replace_all(part, PARAM_SEPARATOR, PARAM_SEPARATOR_ESCAPE);
+            boost::replace_all(part, KEY_VALUE_SEPARATOR, KEY_VALUE_SEPARATOR_ESCAPE);
         }
         result += key_value[0] + KEY_VALUE_SEPARATOR + key_value[1] + PARAM_SEPARATOR;
     }

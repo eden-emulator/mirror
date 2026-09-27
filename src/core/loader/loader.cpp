@@ -10,6 +10,7 @@
 #include <string>
 #include <concepts>
 #include <algorithm>
+#include <boost/algorithm/string/case_conv.hpp>
 #include "common/concepts.h"
 #include "common/fs/path_util.h"
 #include "common/logging.h"
@@ -170,8 +171,7 @@ FileType GuessFromFilename(const std::string& name) {
     else if (name == "00")
         return FileType::NCA;
 
-    auto const extension =
-        Common::ToLower(std::string(Common::FS::GetExtensionFromFilename(name)));
+    auto const extension = boost::algorithm::to_lower_copy(std::string(Common::FS::GetExtensionFromFilename(name)));
     if (extension == "nro")
         return FileType::NRO;
     else if (extension == "nso")

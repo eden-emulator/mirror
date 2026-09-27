@@ -25,26 +25,18 @@ template <typename T>
     requires std::is_unsigned_v<T>
 inline std::size_t HashValue(T val) {
     const unsigned int size_t_bits = std::numeric_limits<std::size_t>::digits;
-    const unsigned int length =
-        (std::numeric_limits<T>::digits - 1) / static_cast<unsigned int>(size_t_bits);
-
+    const unsigned int length = (std::numeric_limits<T>::digits - 1) / static_cast<unsigned int>(size_t_bits);
     std::size_t seed = 0;
-
-    for (unsigned int i = length * size_t_bits; i > 0; i -= size_t_bits) {
-        seed ^= static_cast<size_t>(val >> i) + (seed << 6) + (seed >> 2);
-    }
-
-    seed ^= static_cast<size_t>(val) + (seed << 6) + (seed >> 2);
-
-    return seed;
+    for (unsigned int i = length * size_t_bits; i > 0; i -= size_t_bits)
+        seed ^= std::size_t(val >> i) + (seed << 6) + (seed >> 2);
+    return seed ^= std::size_t(val) + (seed << 6) + (seed >> 2);
 }
 
 template <size_t Bits>
 struct HashCombineImpl {
     template <typename T>
     static inline T fn(T seed, T value) {
-        seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        return seed;
+        return seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
 };
 

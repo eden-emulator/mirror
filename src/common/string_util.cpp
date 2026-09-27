@@ -24,22 +24,6 @@
 
 namespace Common {
 
-/// Make a string lowercase
-std::string ToLower(const std::string_view sv) {
-    std::string str{sv};
-    std::transform(str.begin(), str.end(), str.begin(),
-                   [](auto const c) { return char(std::tolower(c)); });
-    return str;
-}
-
-/// Make a string uppercase
-std::string ToUpper(const std::string_view sv) {
-    std::string str{sv};
-    std::transform(str.begin(), str.end(), str.begin(),
-                   [](auto const c) { return char(std::toupper(c)); });
-    return str;
-}
-
 bool SplitPath(const std::string& full_path, std::string* _pPath, std::string* _pFilename,
                std::string* _pExtension) {
     if (full_path.empty())
@@ -78,41 +62,6 @@ bool SplitPath(const std::string& full_path, std::string* _pPath, std::string* _
         *_pExtension = full_path.substr(fname_end);
 
     return true;
-}
-
-void SplitString(const std::string& str, const char delim, std::vector<std::string>& output) {
-    std::istringstream iss(str);
-    output.resize(1);
-
-    while (std::getline(iss, *output.rbegin(), delim)) {
-        output.emplace_back();
-    }
-
-    output.pop_back();
-}
-
-std::string TabsToSpaces(int tab_size, std::string in) {
-    std::size_t i = 0;
-
-    while ((i = in.find('\t')) != std::string::npos) {
-        in.replace(i, 1, tab_size, ' ');
-    }
-
-    return in;
-}
-
-std::string ReplaceAll(std::string result, const std::string& src, const std::string& dest) {
-    std::size_t pos = 0;
-
-    if (src == dest)
-        return result;
-
-    while ((pos = result.find(src, pos)) != std::string::npos) {
-        result.replace(pos, src.size(), dest);
-        pos += dest.length();
-    }
-
-    return result;
 }
 
 std::string UTF16ToUTF8(std::u16string_view input) {
