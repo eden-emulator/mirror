@@ -242,7 +242,7 @@ u32 GetOutputTopologyVertices(OutputTopology output_topology) {
 }
 
 std::optional<IR::Reg> FindFreeRegister(const IR::Program& program) {
-    std::bitset<IR::NUM_USER_REGS> used;
+    std::bitset<IR::NUM_REGS> used;
     for (IR::Block* const block : program.blocks) {
         for (const IR::Inst& inst : block->Instructions()) {
             const IR::Opcode opcode{inst.GetOpcode()};
