@@ -11,12 +11,26 @@
 #include "core/hle/kernel/k_event.h"
 #include "core/hle/service/acc/errors.h"
 #include "core/hle/service/friend/friend.h"
-#include "core/hle/service/friend/friend_interface.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/kernel_helpers.h"
 #include "core/hle/service/server_manager.h"
 
 namespace Service::Friend {
+
+class Friend final : public Module::Interface {
+public:
+    explicit Friend(std::shared_ptr<Module> module_, Core::System& system_, const char* name) : Interface(std::move(module_), system_, name) {}
+    ~Friend() override = default;
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &Friend::CreateFriendService, "CreateFriendService"},
+        FunctionInfo{1, &Friend::CreateNotificationService, "CreateNotificationService"},
+        FunctionInfo{2, nullptr, "CreateDaemonSuspendSessionService"}
+    );
+};
 
 class IFriendService final : public ServiceFramework<IFriendService> {
 public:

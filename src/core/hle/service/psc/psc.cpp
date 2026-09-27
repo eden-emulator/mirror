@@ -6,8 +6,6 @@
 
 #include "core/hle/service/psc/ovln/receiver_service.h"
 #include "core/hle/service/psc/ovln/sender_service.h"
-#include "core/hle/service/psc/pm_control.h"
-#include "core/hle/service/psc/pm_module.h"
 #include "core/hle/service/psc/psc.h"
 #include "core/hle/service/psc/time/manager.h"
 #include "core/hle/service/psc/time/power_state_service.h"
@@ -103,7 +101,22 @@ public:
     }
 };
 
-class IPmModule;
+class IPmModule final : public ServiceFramework<IPmModule> {
+public:
+    explicit IPmModule(Core::System& system_) : ServiceFramework{system_, "IPmModule"} {}
+    ~IPmModule() override = default;
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Initialize"},
+        FunctionInfo{1, nullptr, "GetRequest"},
+        FunctionInfo{2, nullptr, "Acknowledge"},
+        FunctionInfo{3, nullptr, "Finalize"},
+        FunctionInfo{4, nullptr, "AcknowledgeEx"}
+    );
+};
 
 class IPmService final : public ServiceFramework<IPmService> {
 public:
@@ -122,6 +135,27 @@ private:
     }
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IPmService::GetPmModule>, "GetPmModule"}
+    );
+};
+
+class IPmControl final : public ServiceFramework<IPmControl> {
+public:
+    explicit IPmControl(Core::System& system_) : ServiceFramework{system_, "psc:c"} {}
+    ~IPmControl() override = default;
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Initialize"},
+        FunctionInfo{1, nullptr, "DispatchRequest"},
+        FunctionInfo{2, nullptr, "GetResult"},
+        FunctionInfo{3, nullptr, "GetState"},
+        FunctionInfo{4, nullptr, "Cancel"},
+        FunctionInfo{5, nullptr, "PrintModuleInformation"},
+        FunctionInfo{6, nullptr, "GetModuleInformation"},
+        FunctionInfo{10, nullptr, "AcquireStateLock"},
+        FunctionInfo{11, nullptr, "HasStateLock"}
     );
 };
 

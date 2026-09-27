@@ -5,17 +5,41 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/hle/service/cmif_serialization.h"
-#include "core/hle/service/psc/ovln/sender.h"
+#include "core/hle/service/psc/ovln/ovln_types.h"
 #include "core/hle/service/psc/ovln/sender_service.h"
 
 namespace Service::PSC {
 
-    std::optional<ServiceFrameworkBase::FunctionInfoBase> ISenderService::FindRequest(u32 key) {
-        static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, D<&ISenderService::OpenSender>, "OpenSender"}
-        );
+class ISender final : public ServiceFramework<ISender> {
+public:
+    explicit ISender(Core::System& system_) : ServiceFramework{system_, "ISender"} {}
+    ~ISender() override = default;
+
+    Result Send(const OverlayNotification& notification, MessageFlags flags) {
+        std::string data;
+        for (const auto m : notification) {
+            data += fmt::format("{:016X} ", m);
+        }
+
+        LOG_WARNING(Service_PSC, "(STUBBED) called, flags={} notification={}", flags.raw, data);
+        R_SUCCEED();
+    }
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
         return HandlerTableGenerateWithFind(key, functions);
     }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&ISender::Send>, "Send"},
+        FunctionInfo{1, nullptr, "GetUnreceivedMessageCount"}
+    );
+};
+
+std::optional<ServiceFrameworkBase::FunctionInfoBase> ISenderService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&ISenderService::OpenSender>, "OpenSender"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
 
 ISenderService::ISenderService(Core::System& system_) : ServiceFramework{system_, "ovln:snd"} {
 }

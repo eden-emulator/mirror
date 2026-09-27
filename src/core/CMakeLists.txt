@@ -444,8 +444,6 @@ add_library(core STATIC
     hle/service/am/process_creation.h
     hle/service/am/process_holder.cpp
     hle/service/am/process_holder.h
-    hle/service/am/service/applet_common_functions.cpp
-    hle/service/am/service/applet_common_functions.h
     hle/service/am/service/application_accessor.cpp
     hle/service/am/service/application_accessor.h
     hle/service/am/service/application_creator.cpp
@@ -458,8 +456,6 @@ add_library(core STATIC
     hle/service/am/service/common_state_getter.h
     hle/service/am/service/cradle_firmware_updater.cpp
     hle/service/am/service/cradle_firmware_updater.h
-    hle/service/am/service/debug_functions.cpp
-    hle/service/am/service/debug_functions.h
     hle/service/am/service/display_controller.cpp
     hle/service/am/service/display_controller.h
     hle/service/am/service/global_state_controller.cpp
@@ -476,8 +472,6 @@ add_library(core STATIC
     hle/service/am/service/self_controller.h
     hle/service/am/service/storage.cpp
     hle/service/am/service/storage.h
-    hle/service/am/service/storage_accessor.cpp
-    hle/service/am/service/storage_accessor.h
     hle/service/am/service/window_controller.cpp
     hle/service/am/service/window_controller.h
     hle/service/am/window_system.cpp
@@ -564,8 +558,6 @@ add_library(core STATIC
     hle/service/btm/btm.h
     hle/service/caps/caps.cpp
     hle/service/caps/caps.h
-    hle/service/caps/caps_a.cpp
-    hle/service/caps/caps_a.h
     hle/service/caps/caps_c.cpp
     hle/service/caps/caps_c.h
     hle/service/caps/caps_manager.cpp
@@ -621,8 +613,6 @@ add_library(core STATIC
     hle/service/filesystem/save_data_controller.h
     hle/service/friend/friend.cpp
     hle/service/friend/friend.h
-    hle/service/friend/friend_interface.cpp
-    hle/service/friend/friend_interface.h
     hle/service/glue/arp.cpp
     hle/service/glue/arp.h
     hle/service/glue/bgtc.cpp
@@ -691,8 +681,6 @@ add_library(core STATIC
     hle/service/ldn/monitor_service.h
     hle/service/ldn/sf_monitor_service.cpp
     hle/service/ldn/sf_monitor_service.h
-    hle/service/ldn/sf_service.cpp
-    hle/service/ldn/sf_service.h
     hle/service/ldn/sf_service_monitor.cpp
     hle/service/ldn/sf_service_monitor.h
     hle/service/ldn/system_local_communication_service.cpp
@@ -921,16 +909,8 @@ add_library(core STATIC
     hle/service/psc/ovln/ovln_types.h
     hle/service/psc/ovln/receiver_service.cpp
     hle/service/psc/ovln/receiver_service.h
-    hle/service/psc/ovln/receiver.cpp
-    hle/service/psc/ovln/receiver.h
     hle/service/psc/ovln/sender_service.cpp
     hle/service/psc/ovln/sender_service.h
-    hle/service/psc/ovln/sender.cpp
-    hle/service/psc/ovln/sender.h
-    hle/service/psc/pm_control.cpp
-    hle/service/psc/pm_control.h
-    hle/service/psc/pm_module.cpp
-    hle/service/psc/pm_module.h
     hle/service/psc/psc.cpp
     hle/service/psc/psc.h
     hle/service/psc/time/alarms.cpp
@@ -981,10 +961,6 @@ add_library(core STATIC
     hle/service/ptm/ts.h
     hle/service/ro/ro.cpp
     hle/service/ro/ro.h
-    hle/service/ro/ro_nro_utils.cpp
-    hle/service/ro/ro_nro_utils.h
-    hle/service/ro/ro_results.h
-    hle/service/ro/ro_types.h
     hle/service/server_manager.cpp
     hle/service/server_manager.h
     hle/service/service.cpp
@@ -1013,8 +989,6 @@ add_library(core STATIC
     hle/service/set/system_settings_server.h
     hle/service/sm/sm.cpp
     hle/service/sm/sm.h
-    hle/service/sm/sm_controller.cpp
-    hle/service/sm/sm_controller.h
     hle/service/sockets/bsd.cpp
     hle/service/sockets/bsd.h
     hle/service/sockets/nsd.cpp

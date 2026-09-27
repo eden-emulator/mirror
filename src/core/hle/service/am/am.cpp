@@ -6,6 +6,7 @@
 
 #include "common/settings.h"
 #include "core/core.h"
+#include "core/file_sys/common_funcs.h"
 #include "core/file_sys/patch_manager.h"
 #include "core/file_sys/romfs_factory.h"
 #include "core/file_sys/control_metadata.h"
@@ -17,11 +18,9 @@
 #include "core/hle/service/am/am.h"
 #include "core/hle/service/am/button_poller.h"
 #include "core/hle/service/am/event_observer.h"
-#include "core/hle/service/am/service/applet_common_functions.h"
 #include "core/hle/service/am/service/application_creator.h"
 #include "core/hle/service/am/service/audio_controller.h"
 #include "core/hle/service/am/service/common_state_getter.h"
-#include "core/hle/service/am/service/debug_functions.h"
 #include "core/hle/service/am/service/display_controller.h"
 #include "core/hle/service/am/service/global_state_controller.h"
 #include "core/hle/service/am/service/home_menu_functions.h"
@@ -61,6 +60,41 @@ class IProcessWindingController;
 class ISelfController;
 class IWindowController;
 class WindowSystem;
+
+class IDebugFunctions final : public ServiceFramework<IDebugFunctions> {
+public:
+    explicit IDebugFunctions(Core::System& system_) : ServiceFramework{system_, "IDebugFunctions"} {}
+    ~IDebugFunctions() override = default;
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "NotifyMessageToHomeMenuForDebug"},
+        FunctionInfo{1, nullptr, "OpenMainApplication"},
+        FunctionInfo{10, nullptr, "PerformSystemButtonPressing"},
+        FunctionInfo{20, nullptr, "InvalidateTransitionLayer"},
+        FunctionInfo{30, nullptr, "RequestLaunchApplicationWithUserAndArgumentForDebug"},
+        FunctionInfo{31, nullptr, "RequestLaunchApplicationByApplicationLaunchInfoForDebug"},
+        FunctionInfo{40, nullptr, "GetAppletResourceUsageInfo"},
+        FunctionInfo{50, nullptr, "AddSystemProgramIdAndAppletIdForDebug"},
+        FunctionInfo{51, nullptr, "AddOperationConfirmedLibraryAppletIdForDebug"},
+        FunctionInfo{100, nullptr, "SetCpuBoostModeForApplet"},
+        FunctionInfo{101, nullptr, "CancelCpuBoostModeForApplet"},
+        FunctionInfo{110, nullptr, "PushToAppletBoundChannelForDebug"},
+        FunctionInfo{111, nullptr, "TryPopFromAppletBoundChannelForDebug"},
+        FunctionInfo{120, nullptr, "AlarmSettingNotificationEnableAppEventReserve"},
+        FunctionInfo{121, nullptr, "AlarmSettingNotificationDisableAppEventReserve"},
+        FunctionInfo{122, nullptr, "AlarmSettingNotificationPushAppEventNotify"},
+        FunctionInfo{130, nullptr, "FriendInvitationSetApplicationParameter"},
+        FunctionInfo{131, nullptr, "FriendInvitationClearApplicationParameter"},
+        FunctionInfo{132, nullptr, "FriendInvitationPushApplicationParameter"},
+        FunctionInfo{140, nullptr, "RestrictPowerOperationForSecureLaunchModeForDebug"},
+        FunctionInfo{200, nullptr, "CreateFloatingLibraryAppletAccepterForDebug"},
+        FunctionInfo{300, nullptr, "TerminateAllRunningApplicationsForDebug"},
+        FunctionInfo{900, nullptr, "GetGrcProcessLaunchedSystemEvent"}
+    );
+};
 
 class IApplicationProxy final : public ServiceFramework<IApplicationProxy> {
 public:
@@ -191,6 +225,87 @@ public:
         FunctionInfo{0, D<&IApplicationProxyService::OpenApplicationProxy>, "OpenApplicationProxy"}
     );
     WindowSystem& m_window_system;
+};
+
+class IAppletCommonFunctions final : public ServiceFramework<IAppletCommonFunctions> {
+public:
+    explicit IAppletCommonFunctions(Core::System& system_, std::shared_ptr<Applet> applet_) : ServiceFramework{system_, "IAppletCommonFunctions"}, applet{std::move(applet_)} {}
+    ~IAppletCommonFunctions() override = default;
+
+    Result SetHomeButtonDoubleClickEnabled(
+        bool home_button_double_click_enabled) {
+        LOG_WARNING(Service_AM, "(STUBBED) called, home_button_double_click_enabled={}", home_button_double_click_enabled);
+        R_SUCCEED();
+    }
+
+    Result GetHomeButtonDoubleClickEnabled(
+        Out<bool> out_home_button_double_click_enabled) {
+        LOG_WARNING(Service_AM, "(STUBBED) called");
+        *out_home_button_double_click_enabled = false;
+        R_SUCCEED();
+    }
+
+    Result SetDisplayMagnification(f32 x, f32 y, f32 width, f32 height) {
+        LOG_DEBUG(Service_AM, "(STUBBED) called, x={}, y={}, width={}, height={}", x, y, width, height);
+        std::scoped_lock lk{applet->lock};
+        applet->display_magnification = Common::Rectangle<f32>{x, y, x + width, y + height};
+        R_SUCCEED();
+    }
+
+    Result SetCpuBoostRequestPriority(s32 priority) {
+        LOG_WARNING(Service_AM, "(STUBBED) called");
+        std::scoped_lock lk{applet->lock};
+        applet->cpu_boost_request_priority = priority;
+        R_SUCCEED();
+    }
+
+    Result GetCurrentApplicationId(Out<u64> out_application_id) {
+        LOG_WARNING(Service_AM, "(STUBBED) called");
+        *out_application_id = FileSys::GetBaseTitleID(system.GetApplicationProcessProgramID());
+        R_SUCCEED();
+    }
+
+    Result SetGpuTimeSliceBoost(s64 time_span) {
+        LOG_WARNING(Service_AM, "(STUBBED) called, time_span={}", time_span);
+        R_SUCCEED();
+    }
+
+    Result Unknown350(Out<u16> out_unknown) {
+        LOG_WARNING(Service_AM, "(STUBBED) called");
+        *out_unknown = 0;
+        R_SUCCEED();
+    }
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "SetTerminateResult"},
+        FunctionInfo{10, nullptr, "ReadThemeStorage"},
+        FunctionInfo{11, nullptr, "WriteThemeStorage"},
+        FunctionInfo{20, nullptr, "PushToAppletBoundChannel"},
+        FunctionInfo{21, nullptr, "TryPopFromAppletBoundChannel"},
+        FunctionInfo{40, nullptr, "GetDisplayLogicalResolution"},
+        FunctionInfo{42, D<&IAppletCommonFunctions::SetDisplayMagnification>, "SetDisplayMagnification"},
+        FunctionInfo{50, D<&IAppletCommonFunctions::SetHomeButtonDoubleClickEnabled>, "SetHomeButtonDoubleClickEnabled"},
+        FunctionInfo{51, D<&IAppletCommonFunctions::GetHomeButtonDoubleClickEnabled>, "GetHomeButtonDoubleClickEnabled"},
+        FunctionInfo{52, nullptr, "IsHomeButtonShortPressedBlocked"},
+        FunctionInfo{60, nullptr, "IsVrModeCurtainRequired"},
+        FunctionInfo{61, nullptr, "IsSleepRequiredByHighTemperature"},
+        FunctionInfo{62, nullptr, "IsSleepRequiredByLowBattery"},
+        FunctionInfo{70, D<&IAppletCommonFunctions::SetCpuBoostRequestPriority>, "SetCpuBoostRequestPriority"},
+        FunctionInfo{80, nullptr, "SetHandlingCaptureButtonShortPressedMessageEnabledForApplet"},
+        FunctionInfo{81, nullptr, "SetHandlingCaptureButtonLongPressedMessageEnabledForApplet"},
+        FunctionInfo{90, nullptr, "OpenNamedChannelAsParent"},
+        FunctionInfo{91, nullptr, "OpenNamedChannelAsChild"},
+        FunctionInfo{100, nullptr, "SetApplicationCoreUsageMode"},
+        FunctionInfo{300, D<&IAppletCommonFunctions::GetCurrentApplicationId>, "GetCurrentApplicationId"},
+        FunctionInfo{310, nullptr, "IsSystemAppletHomeMenu"}, //19.0.0+
+        FunctionInfo{320, D<&IAppletCommonFunctions::SetGpuTimeSliceBoost>, "SetGpuTimeSliceBoost"}, //19.0.0+
+        FunctionInfo{321, nullptr, "SetGpuTimeSliceBoostDueToApplication"}, //19.0.0+
+        FunctionInfo{350, D<&IAppletCommonFunctions::Unknown350>, "Unknown350"} //20.0.0+
+    );
+    const std::shared_ptr<Applet> applet;
 };
 
 class ISystemAppletProxy final : public ServiceFramework<ISystemAppletProxy> {

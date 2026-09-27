@@ -9,7 +9,6 @@
 #include "core/hle/service/ldn/ldn.h"
 #include "core/hle/service/ldn/monitor_service.h"
 #include "core/hle/service/ldn/sf_monitor_service.h"
-#include "core/hle/service/ldn/sf_service.h"
 #include "core/hle/service/ldn/sf_service_monitor.h"
 #include "core/hle/service/ldn/system_local_communication_service.h"
 #include "core/hle/service/ldn/user_local_communication_service.h"
@@ -113,6 +112,36 @@ private:
     static constexpr auto functions = CreateStaticMap(
         FunctionInfo{0, D<&IUserServiceCreator::CreateUserLocalCommunicationService>, "CreateUserLocalCommunicationService"},
         FunctionInfo{1, D<&IUserServiceCreator::CreateClientProcessMonitor>, "CreateClientProcessMonitor"} // 18.0.0+
+    );
+};
+
+class ISfService final : public ServiceFramework<ISfService> {
+public:
+    explicit ISfService(Core::System& system_) : ServiceFramework{system_, "ISfService"} {}
+    ~ISfService() override = default;
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "Initialize"},
+        FunctionInfo{256, nullptr, "AttachNetworkInterfaceStateChangeEvent"},
+        FunctionInfo{264, nullptr, "GetNetworkInterfaceLastError"},
+        FunctionInfo{272, nullptr, "GetRole"},
+        FunctionInfo{280, nullptr, "GetAdvertiseData"},
+        FunctionInfo{288, nullptr, "GetGroupInfo"},
+        FunctionInfo{296, nullptr, "GetGroupInfo2"},
+        FunctionInfo{304, nullptr, "GetGroupOwner"},
+        FunctionInfo{312, nullptr, "GetIpConfig"},
+        FunctionInfo{320, nullptr, "GetLinkLevel"},
+        FunctionInfo{512, nullptr, "Scan"},
+        FunctionInfo{768, nullptr, "CreateGroup"},
+        FunctionInfo{776, nullptr, "DestroyGroup"},
+        FunctionInfo{784, nullptr, "SetAdvertiseData"},
+        FunctionInfo{1536, nullptr, "SendToOtherGroup"},
+        FunctionInfo{1544, nullptr, "RecvFromOtherGroup"},
+        FunctionInfo{1552, nullptr, "AddAcceptableGroupId"},
+        FunctionInfo{1560, nullptr, "ClearAcceptableGroupId"}
     );
 };
 

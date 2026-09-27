@@ -18,7 +18,16 @@
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/server_manager.h"
 #include "core/hle/service/sm/sm.h"
-#include "core/hle/service/sm/sm_controller.h"
+#include "common/assert.h"
+#include "common/logging.h"
+#include "core/core.h"
+#include "core/hle/kernel/k_client_port.h"
+#include "core/hle/kernel/k_port.h"
+#include "core/hle/kernel/k_scoped_resource_reservation.h"
+#include "core/hle/kernel/k_server_session.h"
+#include "core/hle/kernel/k_session.h"
+#include "core/hle/service/ipc_helpers.h"
+#include "core/hle/service/server_manager.h"
 
 namespace Service::SM {
 
@@ -26,6 +35,116 @@ constexpr Result ResultInvalidClient(ErrorModule::SM, 2);
 constexpr Result ResultAlreadyRegistered(ErrorModule::SM, 4);
 constexpr Result ResultInvalidServiceName(ErrorModule::SM, 6);
 constexpr Result ResultNotRegistered(ErrorModule::SM, 7);
+
+class Controller final : public ServiceFramework<Controller> {
+public:
+    // https://switchbrew.org/wiki/IPC_Marshalling
+    explicit Controller(Core::System& system_) : ServiceFramework{system_, "IpcController"} {}
+    ~Controller() override = default;
+
+    void ConvertCurrentObjectToDomain(HLERequestContext& ctx) {
+        ASSERT_MSG(!ctx.GetManager()->IsDomain(), "Session is already a domain");
+        LOG_DEBUG(Service, "called, server_session={}", ctx.Session()->GetId());
+        ctx.GetManager()->ConvertToDomainOnRequestEnd();
+
+        IPC::ResponseBuilder rb{ctx, 3};
+        rb.Push(ResultSuccess);
+        rb.Push<u32>(1); // Converted sessions start with 1 request handler
+    }
+
+    void CloneCurrentObject(HLERequestContext& ctx) {
+        LOG_DEBUG(Service, "called");
+
+        auto session_manager = ctx.GetManager();
+
+        // FIXME: this is duplicated from the SVC, it should just call it instead
+        // once this is a proper process
+
+        // Reserve a new session from the process resource limit.
+        Kernel::KScopedResourceReservation session_reservation(system.Kernel(), Kernel::GetCurrentProcessPointer(kernel), Kernel::LimitableResource::SessionCountMax);
+        ASSERT(session_reservation.Succeeded());
+
+        // Create the session.
+        Kernel::KSession* session = Kernel::KSession::Create(kernel);
+        ASSERT(session != nullptr);
+
+        // Initialize the session.
+        session->Initialize(kernel, nullptr, 0);
+
+        // Commit the session reservation.
+        session_reservation.Commit();
+
+        // Register the session.
+        Kernel::KSession::Register(kernel, session);
+
+        // Register with server manager.
+        session_manager->GetServerManager().RegisterSession(&session->GetServerSession(),
+                                                            session_manager);
+
+        // We succeeded.
+        IPC::ResponseBuilder rb{ctx, 2, 0, 1, IPC::ResponseBuilder::Flags::AlwaysMoveHandles};
+        rb.Push(ResultSuccess);
+        rb.PushMoveObjects(ctx, session->GetClientSession());
+    }
+
+    void CloneCurrentObjectEx(HLERequestContext& ctx) {
+        LOG_DEBUG(Service, "called");
+
+        CloneCurrentObject(ctx);
+    }
+
+    void QueryPointerBufferSize(HLERequestContext& ctx) {
+        LOG_DEBUG(Service, "called");
+
+        auto* process = Kernel::GetCurrentProcessPointer(kernel);
+        ASSERT(process != nullptr);
+
+        u32 buffer_size = process->GetPointerBufferSize();
+        if (buffer_size > (std::numeric_limits<u16>::max)()) {
+            LOG_WARNING(Service, "Pointer buffer size exceeds u16 max, clamping");
+            buffer_size = (std::numeric_limits<u16>::max)();
+        }
+
+        IPC::ResponseBuilder rb{ctx, 3};
+        rb.Push(ResultSuccess);
+        rb.Push<u16>(static_cast<u16>(buffer_size));
+    }
+
+    void SetPointerBufferSize(HLERequestContext& ctx) {
+        LOG_DEBUG(Service, "called");
+
+        auto* process = Kernel::GetCurrentProcessPointer(kernel);
+        ASSERT(process != nullptr);
+
+        IPC::RequestParser rp{ctx};
+
+        u32 requested_size = rp.PopRaw<u32>();
+
+        if (requested_size > (std::numeric_limits<u16>::max)()) {
+            LOG_WARNING(Service, "Requested pointer buffer size too large, clamping to 0xFFFF");
+            requested_size = (std::numeric_limits<u16>::max)();
+        }
+
+        process->SetPointerBufferSize(requested_size);
+
+        LOG_INFO(Service, "Pointer buffer size dynamically updated to {:#x} bytes by process", requested_size);
+
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(ResultSuccess);
+    }
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &Controller::ConvertCurrentObjectToDomain, "ConvertCurrentObjectToDomain"},
+        FunctionInfo{1, nullptr, "CopyFromCurrentDomain"},
+        FunctionInfo{2, &Controller::CloneCurrentObject, "CloneCurrentObject"},
+        FunctionInfo{3, &Controller::QueryPointerBufferSize, "QueryPointerBufferSize"},
+        FunctionInfo{4, &Controller::CloneCurrentObjectEx, "CloneCurrentObjectEx"},
+        FunctionInfo{5, &Controller::SetPointerBufferSize, "SetPointerBufferSize"} //TODO: where does this come from
+    );
+};
 
 ServiceManager::ServiceManager(Kernel::KernelCore& kernel_) : kernel{kernel_} {
     controller_interface = std::make_unique<Controller>(kernel.System());

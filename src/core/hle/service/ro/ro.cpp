@@ -8,20 +8,333 @@
 #include <openssl/evp.h>
 
 #include "core/hle/kernel/k_process.h"
-
-#include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/ro/ro.h"
-#include "core/hle/service/ro/ro_nro_utils.h"
-#include "core/hle/service/ro/ro_results.h"
-#include "core/hle/service/ro/ro_types.h"
 #include "core/hle/service/server_manager.h"
 #include "core/hle/service/service.h"
 #ifdef HAS_NCE
 #include "core/arm/nce/patcher.h"
 #include "core/hle/kernel/k_shared_memory.h"
 #endif
+#include "core/hle/service/cmif_serialization.h"
 
 namespace Service::RO {
+
+constexpr Result ResultOutOfAddressSpace{ErrorModule::RO, 2};
+constexpr Result ResultAlreadyLoaded{ErrorModule::RO, 3};
+constexpr Result ResultInvalidNro{ErrorModule::RO, 4};
+constexpr Result ResultInvalidNrr{ErrorModule::RO, 6};
+constexpr Result ResultTooManyNro{ErrorModule::RO, 7};
+constexpr Result ResultTooManyNrr{ErrorModule::RO, 8};
+constexpr Result ResultNotAuthorized{ErrorModule::RO, 9};
+constexpr Result ResultInvalidNrrKind{ErrorModule::RO, 10};
+constexpr Result ResultInternalError{ErrorModule::RO, 1023};
+constexpr Result ResultInvalidAddress{ErrorModule::RO, 1025};
+constexpr Result ResultInvalidSize{ErrorModule::RO, 1026};
+constexpr Result ResultNotLoaded{ErrorModule::RO, 1028};
+constexpr Result ResultNotRegistered{ErrorModule::RO, 1029};
+constexpr Result ResultInvalidSession{ErrorModule::RO, 1030};
+constexpr Result ResultInvalidProcess{ErrorModule::RO, 1031};
+
+namespace {
+
+struct ProcessMemoryRegion {
+    u64 address;
+    u64 size;
+};
+
+size_t GetTotalProcessMemoryRegionSize(const ProcessMemoryRegion* regions, size_t num_regions) {
+    size_t total = 0;
+
+    for (size_t i = 0; i < num_regions; ++i) {
+        total += regions[i].size;
+    }
+
+    return total;
+}
+
+size_t SetupNroProcessMemoryRegions(ProcessMemoryRegion* regions, u64 nro_heap_address,
+                                    u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size) {
+    // Reset region count.
+    size_t num_regions = 0;
+
+    // We always want a region for the nro.
+    regions[num_regions++] = {nro_heap_address, nro_heap_size};
+
+    // If we have bss, create a region for bss.
+    if (bss_heap_size > 0) {
+        regions[num_regions++] = {bss_heap_address, bss_heap_size};
+    }
+
+    return num_regions;
+}
+
+Result SetProcessMemoryPermission(Kernel::KProcess* process, u64 address, u64 size,
+                                  Kernel::Svc::MemoryPermission permission) {
+    auto& page_table = process->GetPageTable();
+
+    // Set permission.
+    R_RETURN(page_table.SetProcessMemoryPermission(address, size, permission));
+}
+
+Result UnmapProcessCodeMemory(Kernel::KProcess* process, u64 process_code_address,
+                              const ProcessMemoryRegion* regions, size_t num_regions) {
+    // Get the total process memory region size.
+    const size_t total_size = GetTotalProcessMemoryRegionSize(regions, num_regions);
+
+    auto& page_table = process->GetPageTable();
+
+    // Unmap each region in order.
+    size_t cur_offset = total_size;
+    for (size_t i = 0; i < num_regions; ++i) {
+        // We want to unmap in reverse order.
+        const auto& cur_region = regions[num_regions - 1 - i];
+
+        // Subtract to update the current offset.
+        cur_offset -= cur_region.size;
+
+        // Unmap.
+        R_TRY(page_table.UnmapCodeMemory(process_code_address + cur_offset, cur_region.address,
+                                         cur_region.size));
+    }
+
+    R_SUCCEED();
+}
+
+Result EnsureGuardPages(Kernel::KProcessPageTable& page_table, u64 map_address, u64 map_size) {
+    Kernel::KMemoryInfo memory_info;
+    Kernel::Svc::PageInfo page_info;
+
+    // Ensure page before mapping is unmapped.
+    R_TRY(page_table.QueryInfo(std::addressof(memory_info), std::addressof(page_info),
+                               map_address - 1));
+    R_UNLESS(memory_info.GetSvcState() == Kernel::Svc::MemoryState::Free,
+             Kernel::ResultInvalidState);
+
+    // Ensure page after mapping is unmapped.
+    R_TRY(page_table.QueryInfo(std::addressof(memory_info), std::addressof(page_info),
+                               map_address + map_size));
+    R_UNLESS(memory_info.GetSvcState() == Kernel::Svc::MemoryState::Free,
+             Kernel::ResultInvalidState);
+
+    // Successfully verified guard pages.
+    R_SUCCEED();
+}
+
+Result MapProcessCodeMemory(u64* out, Kernel::KProcess* process, const ProcessMemoryRegion* regions,
+                            size_t num_regions, std::mt19937_64& generate_random) {
+    auto& page_table = process->GetPageTable();
+    const u64 alias_code_start =
+        GetInteger(page_table.GetAliasCodeRegionStart()) / Kernel::PageSize;
+    const u64 alias_code_size = page_table.GetAliasCodeRegionSize() / Kernel::PageSize;
+
+    for (size_t trial = 0; trial < 64; trial++) {
+        // Generate a new trial address.
+        const u64 mapped_address =
+            (alias_code_start + (generate_random() % alias_code_size)) * Kernel::PageSize;
+
+        const auto MapRegions = [&] {
+            // Map the regions in order.
+            u64 mapped_size = 0;
+            for (size_t i = 0; i < num_regions; ++i) {
+                // If we fail, unmap up to where we've mapped.
+                ON_RESULT_FAILURE {
+                    R_ASSERT(UnmapProcessCodeMemory(process, mapped_address, regions, i));
+                };
+
+                // Map the current region.
+                R_TRY(page_table.MapCodeMemory(mapped_address + mapped_size, regions[i].address,
+                                               regions[i].size));
+
+                mapped_size += regions[i].size;
+            }
+
+            // If we fail, unmap all mapped regions.
+            ON_RESULT_FAILURE {
+                R_ASSERT(UnmapProcessCodeMemory(process, mapped_address, regions, num_regions));
+            };
+
+            // Ensure guard pages.
+            R_RETURN(EnsureGuardPages(page_table, mapped_address, mapped_size));
+        };
+
+        if (R_SUCCEEDED(MapRegions())) {
+            // Set the output address.
+            *out = mapped_address;
+            R_SUCCEED();
+        }
+    }
+
+    // We failed to map anything.
+    R_THROW(RO::ResultOutOfAddressSpace);
+}
+
+Result MapNro(u64* out_base_address, Kernel::KProcess* process, u64 nro_heap_address,
+              u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size,
+              std::mt19937_64& generate_random) {
+    // Set up the process memory regions.
+    std::array<ProcessMemoryRegion, 2> regions{};
+    const size_t num_regions = SetupNroProcessMemoryRegions(
+        regions.data(), nro_heap_address, nro_heap_size, bss_heap_address, bss_heap_size);
+
+    // Re-map the nro/bss as code memory in the destination process.
+    R_RETURN(MapProcessCodeMemory(out_base_address, process, regions.data(), num_regions,
+                                  generate_random));
+}
+
+Result SetNroPerms(Kernel::KProcess* process, u64 base_address, u64 rx_size, u64 ro_size,
+                   u64 rw_size) {
+    const u64 rx_offset = 0;
+    const u64 ro_offset = rx_offset + rx_size;
+    const u64 rw_offset = ro_offset + ro_size;
+
+    R_TRY(SetProcessMemoryPermission(process, base_address + rx_offset, rx_size,
+                                     Kernel::Svc::MemoryPermission::ReadExecute));
+    R_TRY(SetProcessMemoryPermission(process, base_address + ro_offset, ro_size,
+                                     Kernel::Svc::MemoryPermission::Read));
+    R_TRY(SetProcessMemoryPermission(process, base_address + rw_offset, rw_size,
+                                     Kernel::Svc::MemoryPermission::ReadWrite));
+
+    R_SUCCEED();
+}
+
+Result UnmapNro(Kernel::KProcess* process, u64 base_address, u64 nro_heap_address,
+                u64 nro_heap_size, u64 bss_heap_address, u64 bss_heap_size) {
+    // Set up the process memory regions.
+    std::array<ProcessMemoryRegion, 2> regions{};
+    const size_t num_regions = SetupNroProcessMemoryRegions(
+        regions.data(), nro_heap_address, nro_heap_size, bss_heap_address, bss_heap_size);
+
+    // Unmap the nro/bss.
+    R_RETURN(UnmapProcessCodeMemory(process, base_address, regions.data(), num_regions));
+}
+
+} // namespace
+
+enum class NrrKind : u8 {
+    User = 0,
+    JitPlugin = 1,
+    Count,
+};
+
+static constexpr size_t ModuleIdSize = 0x20;
+struct ModuleId {
+    std::array<u8, ModuleIdSize> data;
+};
+static_assert(sizeof(ModuleId) == ModuleIdSize);
+
+struct NrrCertification {
+    static constexpr size_t RsaKeySize = 0x100;
+    static constexpr size_t SignedSize = 0x120;
+
+    u64 program_id_mask;
+    u64 program_id_pattern;
+    std::array<u8, 0x10> reserved_10;
+    std::array<u8, RsaKeySize> modulus;
+    std::array<u8, RsaKeySize> signature;
+};
+static_assert(sizeof(NrrCertification) == NrrCertification::RsaKeySize + NrrCertification::SignedSize);
+
+class NrrHeader {
+public:
+    static constexpr u32 Magic = Common::MakeMagic('N', 'R', 'R', '0');
+
+public:
+    bool IsMagicValid() const {
+        return m_magic == Magic;
+    }
+
+    bool IsProgramIdValid() const {
+        return (m_program_id & m_certification.program_id_mask) ==
+               m_certification.program_id_pattern;
+    }
+
+    NrrKind GetNrrKind() const {
+        const NrrKind kind = static_cast<NrrKind>(m_nrr_kind);
+        ASSERT(kind < NrrKind::Count);
+        return kind;
+    }
+
+    u64 GetProgramId() const {
+        return m_program_id;
+    }
+
+    u32 GetSize() const {
+        return m_size;
+    }
+
+    u32 GetNumHashes() const {
+        return m_num_hashes;
+    }
+
+    size_t GetHashesOffset() const {
+        return m_hashes_offset;
+    }
+
+    u32 GetKeyGeneration() const {
+        return m_key_generation;
+    }
+
+    const u8* GetCertificationSignature() const {
+        return m_certification.signature.data();
+    }
+
+    const u8* GetCertificationSignedArea() const {
+        return reinterpret_cast<const u8*>(std::addressof(m_certification));
+    }
+
+    const u8* GetCertificationModulus() const {
+        return m_certification.modulus.data();
+    }
+
+    const u8* GetSignature() const {
+        return m_signature.data();
+    }
+
+    size_t GetSignedAreaSize() const {
+        return m_size - GetSignedAreaOffset();
+    }
+
+    static constexpr size_t GetSignedAreaOffset() {
+        return offsetof(NrrHeader, m_program_id);
+    }
+
+private:
+    u32 m_magic;
+    u32 m_key_generation;
+    INSERT_PADDING_BYTES_NOINIT(8);
+    NrrCertification m_certification;
+    std::array<u8, 0x100> m_signature;
+    u64 m_program_id;
+    u32 m_size;
+    u8 m_nrr_kind; // 7.0.0+
+    INSERT_PADDING_BYTES_NOINIT(3);
+    u32 m_hashes_offset;
+    u32 m_num_hashes;
+    INSERT_PADDING_BYTES_NOINIT(8);
+};
+static_assert(sizeof(NrrHeader) == 0x350, "NrrHeader has wrong size");
+
+static constexpr u32 NRO_HEADER_MAGIC = Common::MakeMagic('N', 'R', 'O', '0');
+struct NroHeader {
+    u32 m_entrypoint_insn;
+    u32 m_mod_offset;
+    INSERT_PADDING_BYTES_NOINIT(0x8);
+    u32 m_magic;
+    INSERT_PADDING_BYTES_NOINIT(0x4);
+    u32 m_size;
+    INSERT_PADDING_BYTES_NOINIT(0x4);
+    u32 m_text_offset;
+    u32 m_text_size;
+    u32 m_ro_offset;
+    u32 m_ro_size;
+    u32 m_rw_offset;
+    u32 m_rw_size;
+    u32 m_bss_size;
+    INSERT_PADDING_BYTES_NOINIT(0x4);
+    ModuleId m_module_id;
+    INSERT_PADDING_BYTES_NOINIT(0x20);
+};
+static_assert(sizeof(NroHeader) == 0x80, "NroHeader has wrong size");
 
 namespace {
 
