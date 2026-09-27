@@ -855,6 +855,13 @@ abstract class SettingsItem(
             )
             put(
                 SwitchSetting(
+                    BooleanSetting.RENDERER_BARRIER_FEEDBACK_LOOPS,
+                    titleId = R.string.renderer_barrier_feedback_loops,
+                    descriptionId = R.string.renderer_barrier_feedback_loops_description
+                )
+            )
+            put(
+                SwitchSetting(
                     BooleanSetting.ENABLE_BUFFER_HISTORY,
                     titleId = R.string.enable_buffer_history,
                     descriptionId = R.string.enable_buffer_history_description

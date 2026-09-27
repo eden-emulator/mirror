@@ -582,6 +582,8 @@
     <string name="renderer_asynchronous_gpu_emulation_description">This hack can increase performance by running GPU emulation asynchronously at the cost of graphical issues and increased crash rates by timing-related operations.</string>
     <string name="renderer_reactive_flushing">Use reactive flushing</string>
     <string name="renderer_reactive_flushing_description">Improves rendering accuracy in some games at the cost of performance.</string>
+    <string name="renderer_barrier_feedback_loops">Barrier feedback loops</string>
+    <string name="renderer_barrier_feedback_loops_description">Improves rendering of transparency effects in specific games at the cost of performance.</string>
     <string name="enable_buffer_history">Enable buffer history</string>
     <string name="enable_buffer_history_description">Enables access to previous buffer states. This option may improve rendering quality and performance consistency in some games.</string>
     <string name="enable_gpu_buffer_readback">Enable GPU Buffer Readback</string>

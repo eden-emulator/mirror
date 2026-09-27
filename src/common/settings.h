@@ -595,8 +595,13 @@ struct Values {
                                                   "use_reactive_flushing",
                                                   Category::RendererAdvanced};
 
-    SwitchableSetting<bool> barrier_feedback_loops{linkage, true, "barrier_feedback_loops",
-                                                   Category::RendererAdvanced};
+    SwitchableSetting<bool> barrier_feedback_loops{linkage,
+                                                   true,
+                                                   "barrier_feedback_loops",
+                                                   Category::RendererAdvanced,
+                                                   Specialization::Default,
+                                                   true,
+                                                   true};
 
     SwitchableSetting<bool> enable_buffer_history{linkage,
                                                   false,
