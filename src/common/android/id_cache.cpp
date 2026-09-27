@@ -107,14 +107,14 @@ namespace Common::Android {
     JNIEnv *GetEnvForThread() {
         thread_local static struct OwnedEnv {
             OwnedEnv() {
-                status = s_java_vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
+                status = state.java_vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
                 if (status == JNI_EDETACHED)
-                    s_java_vm->AttachCurrentThread(&env, nullptr);
+                    state.java_vm->AttachCurrentThread(&env, nullptr);
             }
 
             ~OwnedEnv() {
                 if (status == JNI_EDETACHED)
-                    s_java_vm->DetachCurrentThread();
+                    state.java_vm->DetachCurrentThread();
             }
 
             int status;
