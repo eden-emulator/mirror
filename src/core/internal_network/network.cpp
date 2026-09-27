@@ -105,7 +105,7 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
     case WSAEINVAL: return Errno::E_INVAL;
     case WSAEMFILE: return Errno::E_MFILE;
     case WSAENOTCONN: return Errno::E_NOTCONN;
-    case WSAEWOULDBLOCK: return Errno::E_AGAIN;
+    case WSAEWOULDBLOCK: return call_type == CallType::Connect ? Errno::E_INPROGRESS : Errno::E_AGAIN;
     case WSAECONNREFUSED: return Errno::E_CONNREFUSED;
     case WSAECONNRESET: return Errno::E_CONNRESET;
     case WSAEHOSTUNREACH: return Errno::E_HOSTUNREACH;
