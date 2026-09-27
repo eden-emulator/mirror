@@ -88,6 +88,18 @@ bool ComputeAttachment0DualSourceBlend(const Maxwell& regs) {
                                          : uses_dual_source(regs.blend);
 }
 
+bool WritesColorTarget(const Maxwell& regs, size_t index, bool static_masks) {
+    if (!static_masks || (index == 0 && regs.anti_alias_alpha_control.alpha_to_coverage != 0)) {
+        return true;
+    }
+    size_t mask_index = index;
+    if (regs.color_mask_common) {
+        mask_index = 0;
+    }
+    const auto& mask = regs.color_mask[mask_index];
+    return mask.R || mask.G || mask.B || mask.A;
+}
+
 void RefreshXfbState(VideoCommon::TransformFeedbackState& state, const Maxwell& regs) {
     std::ranges::transform(regs.transform_feedback.controls, state.layouts.begin(),
                            [](const auto& layout) {
@@ -101,7 +113,8 @@ void RefreshXfbState(VideoCommon::TransformFeedbackState& state, const Maxwell& 
 }
 } // Anonymous namespace
 
-void FixedPipelineState::Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFeatures& features) {
+void FixedPipelineState::Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFeatures& features,
+                                 u32 color_outputs) {
     const Maxwell& regs = maxwell3d.regs;
     const auto topology_ = maxwell3d.draw_manager.draw_state.topology;
 
@@ -141,8 +154,13 @@ void FixedPipelineState::Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFe
         regs.alpha_test_enabled != 0 ? regs.alpha_test_func : Maxwell::ComparisonOp::Always_GL;
     alpha_test_func.Assign(PackComparisonOp(test_func));
     early_z.Assign(regs.mandated_early_z != 0 ? 1 : 0);
-    depth_enabled.Assign(regs.zeta_enable != 0 ? 1 : 0);
-    depth_format.Assign(static_cast<u32>(regs.zeta.format));
+    const bool drop_unused = features.has_dynamic_rendering_unused_attachments;
+    const bool depth_used = regs.depth_test_enable || regs.depth_bounds_enable ||
+                            regs.stencil_enable || extended_dynamic_state;
+    if (regs.zeta_enable != 0 && regs.zeta.Address() != 0 && (depth_used || !drop_unused)) {
+        depth_enabled.Assign(1);
+        depth_format.Assign(static_cast<u32>(regs.zeta.format));
+    }
     y_negate.Assign(regs.window_origin.mode != Maxwell::WindowOrigin::Mode::UpperLeft ? 1 : 0);
 
     bool use_last_provoking_vertex = false;
@@ -179,8 +197,18 @@ void FixedPipelineState::Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFe
         line_stipple_pattern = regs.line_stipple_params.pattern;
     }
 
-    for (size_t i = 0; i < regs.rt.size(); ++i) {
-        color_formats[i] = static_cast<u8>(regs.rt[i].format);
+    const bool static_masks =
+        !features.has_extended_dynamic_state_3_blend && !features.has_color_write_enable;
+    const auto previous_formats = color_formats;
+    color_formats.fill(static_cast<u8>(Tegra::RenderTargetFormat::NONE));
+    const size_t num_targets = (std::min)(size_t{regs.rt_control.count}, color_formats.size());
+    for (size_t index = 0; index < num_targets; ++index) {
+        const bool used = ((color_outputs >> index) & 1) != 0 &&
+                          WritesColorTarget(regs, index, static_masks);
+        if (regs.rt[index].Address() == 0 || (drop_unused && !used)) {
+            continue;
+        }
+        color_formats[index] = static_cast<u8>(regs.rt[index].format);
     }
     alpha_test_ref = 0;
     if (regs.alpha_test_enabled != 0) {
@@ -251,11 +279,15 @@ void FixedPipelineState::Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFe
         dynamic_state.Refresh2(regs, topology_, extended_dynamic_state_2);
     }
     if (!extended_dynamic_state_3_blend) {
-        if (maxwell3d.dirty.flags[Dirty::Blending]) {
+        if (maxwell3d.dirty.flags[Dirty::Blending] || color_formats != previous_formats) {
             maxwell3d.dirty.flags[Dirty::Blending] = false;
             for (size_t index = 0; index < attachments.size(); ++index) {
-                attachments[index].Refresh(regs, index);
                 auto& attachment = attachments[index];
+                attachment.raw = 0;
+                if (color_formats[index] == static_cast<u8>(Tegra::RenderTargetFormat::NONE)) {
+                    continue;
+                }
+                attachment.Refresh(regs, index);
                 if (color_write_enable_dynamic && attachment.mask_r == 0 &&
                     attachment.mask_g == 0 && attachment.mask_b == 0 &&
                     attachment.mask_a == 0) {

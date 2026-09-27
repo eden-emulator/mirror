@@ -61,6 +61,8 @@ VK_DEFINE_HANDLE(VmaAllocator)
     FEATURE(EXT, DepthBiasControl, DEPTH_BIAS_CONTROL, depth_bias_control)                         \
     FEATURE(EXT, DepthClipControl, DEPTH_CLIP_CONTROL, depth_clip_control)                         \
     FEATURE(EXT, DescriptorBuffer, DESCRIPTOR_BUFFER, descriptor_buffer)                           \
+    FEATURE(EXT, DynamicRenderingUnusedAttachments, DYNAMIC_RENDERING_UNUSED_ATTACHMENTS,          \
+            dynamic_rendering_unused_attachments)                                                  \
     FEATURE(EXT, ExtendedDynamicState, EXTENDED_DYNAMIC_STATE, extended_dynamic_state)             \
     FEATURE(EXT, ExtendedDynamicState2, EXTENDED_DYNAMIC_STATE_2, extended_dynamic_state2)         \
     FEATURE(EXT, ExtendedDynamicState3, EXTENDED_DYNAMIC_STATE_3, extended_dynamic_state3)         \
@@ -670,11 +672,15 @@ FN_MAX_LIMIT_LIST
         return extensions.depth_clip_control;
     }
 
-    /// Returns true if the device supports VK_EXT_depth_bias_control.
     bool IsLoadOpNoneSupported() const {
         return extensions.load_store_op_none || extensions.load_store_op_none_ext;
     }
 
+    bool IsExtDynamicRenderingUnusedAttachmentsSupported() const {
+        return extensions.dynamic_rendering_unused_attachments;
+    }
+
+    /// Returns true if the device supports VK_EXT_depth_bias_control.
     bool IsExtDepthBiasControlSupported() const {
         return extensions.depth_bias_control;
     }

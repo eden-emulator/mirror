@@ -38,6 +38,7 @@ struct DynamicFeatures {
     bool has_provoking_vertex_first_mode;
     bool has_provoking_vertex_last_mode;
     bool has_provoking_vertex_tf_preserve;
+    bool has_dynamic_rendering_unused_attachments;
 };
 
 struct FixedPipelineState {
@@ -255,7 +256,8 @@ struct FixedPipelineState {
 
     VideoCommon::TransformFeedbackState xfb_state;
 
-    void Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFeatures& features);
+    void Refresh(Tegra::Engines::Maxwell3D& maxwell3d, DynamicFeatures& features,
+                 u32 color_outputs);
 
     size_t Hash() const noexcept;
 

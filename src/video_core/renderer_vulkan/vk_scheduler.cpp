@@ -244,24 +244,37 @@ void Scheduler::RequestComputeDispatchContext() {
 
 void Scheduler::RelaxAttachmentOps(RenderingAttachments& attachments) const {
     const bool load_op_none = device.IsLoadOpNoneSupported();
+    const bool drop_unused = device.IsExtDynamicRenderingUnusedAttachmentsSupported();
     const auto relax = [&](VkRenderingAttachmentInfo& attachment, u32 bit) {
-        if (attachment.imageView == VK_NULL_HANDLE ||
-            attachment.resolveMode != VK_RESOLVE_MODE_NONE ||
+        if (attachment.imageView == VK_NULL_HANDLE) {
+            return true;
+        }
+        if (attachment.resolveMode != VK_RESOLVE_MODE_NONE ||
             attachment.loadOp == VK_ATTACHMENT_LOAD_OP_CLEAR ||
             attachment.storeOp != VK_ATTACHMENT_STORE_OP_STORE ||
             (attachments_written & bit) != 0) {
-            return;
+            return false;
         }
         attachment.storeOp = VK_ATTACHMENT_STORE_OP_NONE;
-        if (load_op_none && (attachments_touched & bit) == 0) {
-            attachment.loadOp = VK_ATTACHMENT_LOAD_OP_NONE;
-        }
+        return (attachments_touched & bit) == 0;
     };
     for (u32 slot = 0; slot < attachments.num_colors; ++slot) {
-        relax(attachments.colors[slot], 1u << slot);
+        VkRenderingAttachmentInfo& color = attachments.colors[slot];
+        if (!relax(color, 1u << slot)) {
+            continue;
+        }
+        if (drop_unused) {
+            color.imageView = VK_NULL_HANDLE;
+        } else if (load_op_none) {
+            color.loadOp = VK_ATTACHMENT_LOAD_OP_NONE;
+        }
     }
-    relax(attachments.depth, DEPTH_ATTACHMENT_BIT);
-    relax(attachments.stencil, STENCIL_ATTACHMENT_BIT);
+    const bool depth_unused = relax(attachments.depth, DEPTH_ATTACHMENT_BIT);
+    const bool stencil_unused = relax(attachments.stencil, STENCIL_ATTACHMENT_BIT);
+    if (drop_unused && depth_unused && stencil_unused) {
+        attachments.depth.imageView = VK_NULL_HANDLE;
+        attachments.stencil.imageView = VK_NULL_HANDLE;
+    }
 }
 
 void Scheduler::PublishComputeWrites() {

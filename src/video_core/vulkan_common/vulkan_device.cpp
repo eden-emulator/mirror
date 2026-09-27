@@ -1247,6 +1247,12 @@ void Device::RemoveUnsuitableExtensions() {
     RemoveExtensionFeatureIfUnsuitable(extensions.descriptor_buffer, features.descriptor_buffer,
                                        VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
 
+    extensions.dynamic_rendering_unused_attachments =
+        features.dynamic_rendering_unused_attachments.dynamicRenderingUnusedAttachments;
+    RemoveExtensionFeatureIfUnsuitable(extensions.dynamic_rendering_unused_attachments,
+                                       features.dynamic_rendering_unused_attachments,
+                                       VK_EXT_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_EXTENSION_NAME);
+
     // VK_EXT_extended_dynamic_state
     extensions.extended_dynamic_state = features.extended_dynamic_state.extendedDynamicState;
     RemoveExtensionFeatureIfUnsuitable(extensions.extended_dynamic_state,

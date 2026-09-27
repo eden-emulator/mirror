@@ -36,6 +36,7 @@ class GenericEnvironment;
 struct ShaderInfo {
     u64 unique_hash{};
     size_t size_bytes{};
+    u32 color_outputs{};
 };
 
 class ShaderCache : public VideoCommon::ChannelSetupCaches<VideoCommon::ChannelInfo> {
@@ -98,6 +99,7 @@ protected:
 
     std::array<const ShaderInfo*, NUM_PROGRAMS> shader_infos{};
     bool last_shaders_valid = false;
+    u32 fragment_color_outputs{};
 
 private:
     /// @brief Tries to obtain a cached shader starting in a given address

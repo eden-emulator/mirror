@@ -49,6 +49,7 @@ bool ShaderCache::RefreshStages(std::array<u64, 6>& unique_hashes) {
         return last_shaders_valid;
     }
     dirty[VideoCommon::Dirty::Shaders] = false;
+    fragment_color_outputs = 0;
 
     const GPUVAddr base_addr{maxwell3d->regs.program_region.Address()};
     for (size_t index = 0; index < Tegra::Engines::Maxwell3D::Regs::MaxShaderProgram; ++index) {
@@ -78,6 +79,9 @@ bool ShaderCache::RefreshStages(std::array<u64, 6>& unique_hashes) {
         }
         shader_infos[index] = shader_info;
         unique_hashes[index] = shader_info->unique_hash;
+        if (program == Tegra::Engines::Maxwell3D::Regs::ShaderType::Pixel) {
+            fragment_color_outputs = shader_info->color_outputs;
+        }
     }
     last_shaders_valid = true;
     return true;
@@ -240,6 +244,13 @@ const ShaderInfo* ShaderCache::MakeShaderInfo(GenericEnvironment& env, VAddr cpu
         Shader::Maxwell::Flow::CFG cfg{env, flow_block, env.StartAddress()};
         info->unique_hash = env.CalculateHash();
         info->size_bytes = env.ReadSizeBytes();
+    }
+    if (env.ShaderStage() == Shader::Stage::Fragment) {
+        for (u32 target = 0; target < Tegra::Engines::Maxwell3D::Regs::NumRenderTargets; ++target) {
+            if (env.SPH().ps.HasOutputComponents(target)) {
+                info->color_outputs |= 1U << target;
+            }
+        }
     }
     const size_t size_bytes{info->size_bytes};
     const ShaderInfo* const result{info.get()};
