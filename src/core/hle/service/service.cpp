@@ -72,13 +72,12 @@ void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, c
 }
 
 [[nodiscard]] static bool VersionGateCheck(Core::System& system, u32 vg) {
-    auto const c_maj = FirmwareManager::GetFirmwareVersion(system).first.major;
-    auto const c_min = FirmwareManager::GetFirmwareVersion(system).first.minor;
-    auto const c_pat = FirmwareManager::GetFirmwareVersion(system).first.micro;
-    auto const cg = (c_pat << 0) | (c_min << 4) | (c_maj << 8);
-
-    auto const sg = vg & 0xfff;
-    auto const ug = (vg >> 12) & 0xfff;
+    u32 const c_maj = FirmwareManager::GetFirmwareVersion(system).first.major;
+    u32 const c_min = FirmwareManager::GetFirmwareVersion(system).first.minor;
+    u32 const c_pat = FirmwareManager::GetFirmwareVersion(system).first.micro;
+    u32 const cg = (c_pat << 0) | (c_min << 4) | (c_maj << 8);
+    u32 const sg = vg & 0xfff;
+    u32 const ug = (vg >> 12) & 0xfff;
     // feature available after current
     if (sg && cg < sg)
         return false;
