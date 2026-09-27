@@ -48,13 +48,12 @@ template <std::size_t Size, bool le = false>
 template <typename ContiguousContainer>
     requires std::is_same_v<typename ContiguousContainer::value_type, u8>
 [[nodiscard]] std::string HexToString(const ContiguousContainer& data, bool upper = true) {
-    auto const* htbl = upper ? "0123456789ABCDEF" : "0123456789abcdef";
-    std::string out(std::size(data) * 2);
-    for (size_t i = 0; i < std::size(data); ++i) {
-        auto const c = data[i];
-        out[i * 2 + 0] = htbl[(c >> 4) & 0xf];
-        out[i * 2 + 1] = htbl[(c >> 0) & 0xf];
-    }
+    constexpr std::size_t pad_width = 2;
+    std::string out;
+    out.reserve(std::size(data) * pad_width);
+    const auto format_str = fmt::runtime(upper ? "{:02X}" : "{:02x}");
+    for (const u8 c : data)
+        out += fmt::format(format_str, c);
     return out;
 }
 
