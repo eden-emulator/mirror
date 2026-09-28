@@ -547,20 +547,18 @@ std::pair<s32, Errno> BSD_USA::SocketImpl(Domain domain, Type type, Protocol pro
 
     LOG_INFO(Service, "New socket fd={}", fd);
 
-    auto room_member = Network::GetRoomMember().lock();
-    if (room_member && room_member->IsConnected()) {
+    if (Network::IsConnectedToAnyRoom()) {
         descriptor.socket = std::make_shared<Network::ProxySocket>();
     } else {
         descriptor.socket = std::make_shared<Network::Socket>();
+        if (Settings::values.airplane_mode.GetValue() && descriptor.is_connection_based) {
+            LOG_ERROR(Service, "Airplane mode is enabled, cannot create socket");
+            return {-1, Errno::NOTCONN};
+        }
     }
 
     descriptor.socket->Initialize(Translate(domain), Translate(type), Translate(protocol));
     descriptor.is_connection_based = IsConnectionBased(type);
-
-    if (Settings::values.airplane_mode.GetValue() && descriptor.is_connection_based) {
-        LOG_ERROR(Service, "Airplane mode is enabled, cannot create socket");
-        return {-1, Errno::NOTCONN};
-    }
 
     return {fd, Errno::SUCCESS};
 }

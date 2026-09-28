@@ -32,6 +32,11 @@ std::weak_ptr<RoomMember> GetRoomMember() {
     return g_room_member;
 }
 
+bool IsConnectedToAnyRoom() {
+    auto const room_member = GetRoomMember().lock();
+    return room_member && room_member->IsConnected();
+}
+
 void Shutdown() {
     if (g_room_member) {
         if (g_room_member->IsConnected())

@@ -20,6 +20,8 @@ std::weak_ptr<Room> GetRoom();
 /// Returns a pointer to the room member handle
 std::weak_ptr<RoomMember> GetRoomMember();
 
+bool IsConnectedToAnyRoom();
+
 /// Unregisters the network device, the room, and the room member and shut them down.
 void Shutdown();
 

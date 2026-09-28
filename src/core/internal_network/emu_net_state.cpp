@@ -53,7 +53,7 @@ void RefreshFromHost() {
         return;
     }
 
-    st.wifi_enabled = !Settings::values.airplane_mode.GetValue();
+    st.wifi_enabled = (!Settings::values.airplane_mode.GetValue() || Network::IsConnectedToAnyRoom());
     st.ethernet_enabled = sel->kind == HostAdapterKind::Ethernet;
 
     st.connected = true;
