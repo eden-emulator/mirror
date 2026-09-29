@@ -16,6 +16,10 @@
 #include "core/hle/service/ro/ro_types.h"
 #include "core/hle/service/server_manager.h"
 #include "core/hle/service/service.h"
+#ifdef HAS_NCE
+#include "core/arm/nce/patcher.h"
+#include "core/hle/kernel/k_shared_memory.h"
+#endif
 
 namespace Service::RO {
 
@@ -386,7 +390,7 @@ public:
         R_SUCCEED();
     }
 
-    Result MapManualLoadModuleMemory(u64* out_address, size_t context_id, u64 nro_address,
+    Result MapManualLoadModuleMemory(Kernel::KernelCore& kernel, u64* out_address, size_t context_id, u64 nro_address,
                                      u64 nro_size, u64 bss_address, u64 bss_size) {
         // Get context.
         ProcessContext* context = this->GetContextById(context_id);
@@ -421,7 +425,31 @@ public:
         R_TRY(context->ValidateNro(std::addressof(nro_info->module_id), std::addressof(rx_size),
                                    std::addressof(ro_size), std::addressof(rw_size),
                                    nro_info->base_address, nro_size, bss_size));
+#ifdef HAS_NCE
+        if (Settings::IsNceEnabled()) {
+            auto* process = context->GetProcess();
+            auto& memory = process->GetMemory();
 
+            std::vector<u8> image(total_size);
+            memory.ReadBlock(nro_info->base_address, image.data(), rx_size);
+
+            Kernel::CodeSet::Segment code{.size = static_cast<u32>(rx_size)};
+            Core::NCE::Patcher patch;
+            patch.PatchText(image, code);
+            patch.RelocateAndCopy(nro_info->base_address, code, image, nullptr);
+
+            const u64 patch_address = nro_info->base_address + total_size;
+            const size_t patch_size = patch.GetSectionSize();
+            constexpr auto permission = Kernel::Svc::MemoryPermission::ReadExecute;
+
+            auto* patch_memory = Kernel::KSharedMemory::Create(kernel);
+            R_TRY(patch_memory->Initialize(kernel, kernel.System().DeviceMemory(), process, permission, permission, patch_size));
+            std::memcpy(patch_memory->GetPointer(), image.data() + total_size, patch_size);
+            R_TRY(process->AddSharedMemory(kernel, patch_memory, patch_address, patch_size));
+            R_TRY(patch_memory->Map(*process, patch_address, patch_size, permission));
+            memory.WriteBlock(nro_info->base_address, image.data(), rx_size);
+        }
+#endif
         // Set NRO perms.
         R_TRY(SetNroPerms(context->GetProcess(), nro_info->base_address, rx_size, ro_size,
                           rw_size + bss_size));
@@ -531,7 +559,7 @@ public:
     Result MapManualLoadModuleMemory(Out<u64> out_load_address, ClientProcessId client_pid,
                                      u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
         R_TRY(m_ro->ValidateProcess(m_context_id, *client_pid));
-        R_RETURN(m_ro->MapManualLoadModuleMemory(out_load_address.Get(), m_context_id, nro_address,
+        R_RETURN(m_ro->MapManualLoadModuleMemory(system.Kernel(), out_load_address.Get(), m_context_id, nro_address,
                                                  nro_size, bss_address, bss_size));
     }
 
