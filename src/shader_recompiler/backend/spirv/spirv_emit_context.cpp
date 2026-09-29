@@ -962,7 +962,7 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
             OpBranchConditional(cond, then_label, else_label);
             AddLabel(then_label);
             const Id word{OpShiftRightLogical(U32[1], offset, Const(2U))};
-            const Id result{callback(ssbos[index].U32, word, offset, value)};
+            const Id result{callback(ssbos[index], word, offset, value)};
             if (returns_value) {
                 OpReturnValue(result);
             } else {
@@ -978,11 +978,22 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
         OpFunctionEnd();
         global_memory_funcs.emplace(opcode, func);
     }};
+    const auto vector_pointer{[&](const StorageDefinitions& ssbo, Id word, u32 count) {
+        if (count == 2) {
+            return OpAccessChain(storage_types.U32x2.element, ssbo.U32x2, zero,
+                                 OpShiftRightLogical(U32[1], word, Const(1U)));
+        }
+        return OpAccessChain(storage_types.U32x4.element, ssbo.U32x4, zero,
+                             OpShiftRightLogical(U32[1], word, Const(2U)));
+    }};
     const auto load{[&](Id type, u32 count) {
-        return [&, type, count](Id ssbo, Id word, Id, Id) {
+        return [&, type, count](const StorageDefinitions& ssbo, Id word, Id, Id) {
+            if (count > 1 && profile.support_descriptor_aliasing) {
+                return OpLoad(type, vector_pointer(ssbo, word, count));
+            }
             std::array<Id, 4> words{};
             for (u32 element = 0; element < count; ++element) {
-                words[element] = OpLoad(U32[1], word_pointer(ssbo, word, element));
+                words[element] = OpLoad(U32[1], word_pointer(ssbo.U32, word, element));
             }
             if (count == 1) {
                 return words[0];
@@ -991,21 +1002,25 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
         };
     }};
     const auto store{[&](u32 count) {
-        return [&, count](Id ssbo, Id word, Id, Id value) {
+        return [&, count](const StorageDefinitions& ssbo, Id word, Id, Id value) {
+            if (count > 1 && profile.support_descriptor_aliasing) {
+                OpStore(vector_pointer(ssbo, word, count), value);
+                return Id{};
+            }
             if (count == 1) {
-                OpStore(word_pointer(ssbo, word, 0), value);
+                OpStore(word_pointer(ssbo.U32, word, 0), value);
                 return Id{};
             }
             for (u32 element = 0; element < count; ++element) {
-                OpStore(word_pointer(ssbo, word, element),
+                OpStore(word_pointer(ssbo.U32, word, element),
                         OpCompositeExtract(U32[1], value, element));
             }
             return Id{};
         };
     }};
     const auto extract{[&](bool is_signed, u32 count) {
-        return [&, is_signed, count](Id ssbo, Id word, Id offset, Id) {
-            const Id loaded{OpLoad(U32[1], word_pointer(ssbo, word, 0))};
+        return [&, is_signed, count](const StorageDefinitions& ssbo, Id word, Id offset, Id) {
+            const Id loaded{OpLoad(U32[1], word_pointer(ssbo.U32, word, 0))};
             if (is_signed) {
                 return OpBitFieldSExtract(U32[1], loaded, bits(offset, count), Const(count));
             }
@@ -1013,28 +1028,28 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
         };
     }};
     const auto insert{[&](u32 count) {
-        return [&, count](Id ssbo, Id word, Id offset, Id value) {
-            AtomicBitFieldInsert(word_pointer(ssbo, word, 0), value, bits(offset, count),
+        return [&, count](const StorageDefinitions& ssbo, Id word, Id offset, Id value) {
+            AtomicBitFieldInsert(word_pointer(ssbo.U32, word, 0), value, bits(offset, count),
                                  Const(count));
             return Id{};
         };
     }};
     const auto atomic{[&](Id (Sirit::Module::*func)(Id, Id, Id, Id, Id)) {
-        return [&, func](Id ssbo, Id word, Id, Id value) {
-            return (this->*func)(U32[1], word_pointer(ssbo, word, 0), scope, zero, value);
+        return [&, func](const StorageDefinitions& ssbo, Id word, Id, Id value) {
+            return (this->*func)(U32[1], word_pointer(ssbo.U32, word, 0), scope, zero, value);
         };
     }};
     const auto cas{[&](Id type, Id helper) {
-        return [&, type, helper](Id ssbo, Id word, Id, Id value) {
-            return OpFunctionCall(type, helper, word, value, ssbo);
+        return [&, type, helper](const StorageDefinitions& ssbo, Id word, Id, Id value) {
+            return OpFunctionCall(type, helper, word, value, ssbo.U32);
         };
     }};
     const auto packed{[&](bool is_half, Id helper) {
-        return [&, is_half, helper](Id ssbo, Id word, Id, Id value) {
+        return [&, is_half, helper](const StorageDefinitions& ssbo, Id word, Id, Id value) {
             if (is_half) {
-                return OpBitcast(U32[1], OpFunctionCall(F16[2], helper, word, value, ssbo));
+                return OpBitcast(U32[1], OpFunctionCall(F16[2], helper, word, value, ssbo.U32));
             }
-            return OpPackHalf2x16(U32[1], OpFunctionCall(F32[2], helper, word, value, ssbo));
+            return OpPackHalf2x16(U32[1], OpFunctionCall(F32[2], helper, word, value, ssbo.U32));
         };
     }};
     for (const IR::Block* const block : program.post_order_blocks) {

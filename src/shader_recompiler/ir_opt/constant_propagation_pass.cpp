@@ -414,6 +414,14 @@ void FoldSelect(IR::Inst& inst) {
     }
 }
 
+void FoldAtomicWrap(IR::Inst& inst, IR::Opcode opcode, u32 addend) {
+    const IR::Value limit{inst.Arg(1)};
+    if (limit.IsImmediate() && limit.U32() == 0xFFFFFFFFU) {
+        inst.ReplaceOpcode(opcode);
+        inst.SetArg(1, IR::Value{addend});
+    }
+}
+
 void FoldFPAdd32(IR::Inst& inst) {
     if (FoldWhenAllImmediates(inst, [](f32 a, f32 b) { return a + b; })) {
         return;
@@ -1104,6 +1112,14 @@ void ConstantPropagation(Environment& env, IR::Block& block, IR::Inst& inst) {
                                     IR::Opcode::CompositeInsertF16x4);
     case IR::Opcode::FSwizzleAdd:
         return FoldFSwizzleAdd(block, inst);
+    case IR::Opcode::GlobalAtomicInc32:
+        return FoldAtomicWrap(inst, IR::Opcode::GlobalAtomicIAdd32, 1U);
+    case IR::Opcode::GlobalAtomicDec32:
+        return FoldAtomicWrap(inst, IR::Opcode::GlobalAtomicIAdd32, 0xFFFFFFFFU);
+    case IR::Opcode::SharedAtomicInc32:
+        return FoldAtomicWrap(inst, IR::Opcode::SharedAtomicIAdd32, 1U);
+    case IR::Opcode::SharedAtomicDec32:
+        return FoldAtomicWrap(inst, IR::Opcode::SharedAtomicIAdd32, 0xFFFFFFFFU);
     case IR::Opcode::GetCbufF32:
     case IR::Opcode::GetCbufU32:
         if (env.HasHLEMacroState()) {

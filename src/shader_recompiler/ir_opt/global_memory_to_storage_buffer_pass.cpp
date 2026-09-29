@@ -4,14 +4,15 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <map>
 #include <optional>
+#include <unordered_set>
 
 #include <boost/container/flat_set.hpp>
 #include <boost/container/small_vector.hpp>
 
 #include "common/alignment.h"
 #include "shader_recompiler/frontend/ir/basic_block.h"
-#include "shader_recompiler/frontend/ir/breadth_first_search.h"
 #include "shader_recompiler/frontend/ir/ir_emitter.h"
 #include "shader_recompiler/frontend/ir/value.h"
 #include "shader_recompiler/host_translate_info.h"
@@ -49,6 +50,7 @@ using StorageBufferSet =
 using StorageInstVector = small_vector<StorageInst, 24>;
 using StorageWritesSet =
     flat_set<StorageBufferAddr, std::less<StorageBufferAddr>, small_vector<StorageBufferAddr, 16>>;
+using LocalStores = std::multimap<u32, IR::Value>;
 
 struct StorageInfo {
     StorageBufferSet set;
@@ -333,7 +335,7 @@ std::optional<LowAddrInfo> TrackLowAddress(IR::Inst* inst) {
 }
 
 /// Tries to track the storage buffer address used by a global memory instruction
-std::optional<StorageBufferAddr> Track(const IR::Value& value, const Bias* bias) {
+StorageBufferSet Track(const IR::Value& value, const Bias* bias, const LocalStores& local_stores) {
     const auto pred{[bias](const IR::Inst* inst) -> std::optional<StorageBufferAddr> {
         if (inst->GetOpcode() != IR::Opcode::GetCbufU32 &&
             inst->GetOpcode() != IR::Opcode::GetCbufU32x2) {
@@ -366,11 +368,83 @@ std::optional<StorageBufferAddr> Track(const IR::Value& value, const Bias* bias)
         }
         return storage_buffer;
     }};
-    return BreadthFirstSearch(value, pred);
+    StorageBufferSet result;
+    std::unordered_set<const IR::Inst*> visited;
+    small_vector<const IR::Inst*, 32> pending;
+    const auto push{[&](const IR::Value& arg) {
+        if (!arg.IsImmediate() && visited.insert(arg.InstRecursive()).second) {
+            pending.push_back(arg.InstRecursive());
+        }
+    }};
+    push(value);
+    while (!pending.empty()) {
+        const IR::Inst* const inst{pending.back()};
+        pending.pop_back();
+        if (const std::optional<StorageBufferAddr> storage_buffer{pred(inst)}) {
+            result.insert(*storage_buffer);
+            continue;
+        }
+        switch (inst->GetOpcode()) {
+        case IR::Opcode::LoadLocal:
+            if (inst->Arg(0).IsImmediate()) {
+                const auto [begin, end]{local_stores.equal_range(inst->Arg(0).U32())};
+                for (auto it = begin; it != end; ++it) {
+                    push(it->second);
+                }
+            }
+            continue;
+        case IR::Opcode::SelectU32:
+        case IR::Opcode::SelectU64:
+            push(inst->Arg(1));
+            push(inst->Arg(2));
+            continue;
+        case IR::Opcode::GetCbufU8:
+        case IR::Opcode::GetCbufS8:
+        case IR::Opcode::GetCbufU16:
+        case IR::Opcode::GetCbufS16:
+        case IR::Opcode::GetCbufU32:
+        case IR::Opcode::GetCbufF32:
+        case IR::Opcode::GetCbufU32x2:
+        case IR::Opcode::LoadSharedU8:
+        case IR::Opcode::LoadSharedS8:
+        case IR::Opcode::LoadSharedU16:
+        case IR::Opcode::LoadSharedS16:
+        case IR::Opcode::LoadSharedU32:
+        case IR::Opcode::LoadSharedU64:
+        case IR::Opcode::LoadSharedU128:
+            continue;
+        default:
+            break;
+        }
+        if (IsGlobalMemory(*inst) || inst->MayHaveSideEffects()) {
+            continue;
+        }
+        for (size_t arg = 0; arg < inst->NumArgs(); ++arg) {
+            push(inst->Arg(arg));
+        }
+    }
+    return result;
+}
+
+LocalStores GatherLocalStores(const IR::Program& program) {
+    LocalStores stores;
+    for (IR::Block* const block : program.post_order_blocks) {
+        for (const IR::Inst& inst : block->Instructions()) {
+            if (inst.GetOpcode() != IR::Opcode::WriteLocal) {
+                continue;
+            }
+            if (!inst.Arg(0).IsImmediate()) {
+                return {};
+            }
+            stores.emplace(inst.Arg(0).U32(), inst.Arg(1));
+        }
+    }
+    return stores;
 }
 
 /// Collects the storage buffer used by a global memory instruction and the instruction itself
-void CollectStorageBuffers(IR::Block& block, IR::Inst& inst, StorageInfo& info) {
+void CollectStorageBuffers(IR::Block& block, IR::Inst& inst, StorageInfo& info,
+                           const LocalStores& local_stores) {
     // NVN puts storage buffers in a specific range, we have to bias towards these addresses to
     // avoid getting false positives
     static constexpr Bias nvn_bias{
@@ -387,25 +461,24 @@ void CollectStorageBuffers(IR::Block& block, IR::Inst& inst, StorageInfo& info) 
     }
     // First try to find storage buffers in the NVN address
     const IR::U32 low_addr{low_addr_info->value};
-    std::optional<StorageBufferAddr> storage_buffer{Track(low_addr, &nvn_bias)};
-    if (!storage_buffer) {
+    StorageBufferSet candidates{Track(low_addr, &nvn_bias, local_stores)};
+    if (candidates.empty()) {
         // If it fails, track without a bias
-        storage_buffer = Track(low_addr, nullptr);
-        if (!storage_buffer) {
-            // If that also fails, use NVN fallbacks
-            LOG_WARNING(Shader, "Storage buffer failed to track, using global memory fallbacks");
-            return;
-        }
-        LOG_WARNING(Shader, "Storage buffer tracked without bias, index {} offset {}",
-                    storage_buffer->index, storage_buffer->offset);
+        candidates = Track(low_addr, nullptr, local_stores);
     }
+    if (candidates.size() != 1) {
+        // If that also fails, use NVN fallbacks
+        LOG_WARNING(Shader, "Storage buffer failed to track, using global memory fallbacks");
+        return;
+    }
+    const StorageBufferAddr storage_buffer{*candidates.begin()};
     // Collect storage buffer and the instruction
     if (IsGlobalMemoryWrite(inst)) {
-        info.writes.insert(*storage_buffer);
+        info.writes.insert(storage_buffer);
     }
-    info.set.insert(*storage_buffer);
+    info.set.insert(storage_buffer);
     info.to_replace.push_back(StorageInst{
-        .storage_buffer{*storage_buffer},
+        .storage_buffer{storage_buffer},
         .inst = &inst,
         .block = &block,
     });
@@ -525,12 +598,13 @@ void Replace(IR::Block& block, IR::Inst& inst, const IR::U32& storage_index,
 
 void GlobalMemoryToStorageBufferPass(IR::Program& program, const HostTranslateInfo& host_info) {
     StorageInfo info;
+    const LocalStores local_stores{GatherLocalStores(program)};
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (!IsGlobalMemory(inst)) {
                 continue;
             }
-            CollectStorageBuffers(*block, inst, info);
+            CollectStorageBuffers(*block, inst, info, local_stores);
         }
     }
     for (const StorageBufferAddr& storage_buffer : info.set) {
