@@ -1786,7 +1786,7 @@ bool MainWindow::LoadROM(const QString& filename, Service::AM::FrontendAppletPar
 
     QtCommon::system->SetFrontendAppletSet({
         std::make_unique<QtAmiiboSettings>(*this), // Amiibo Settings
-        (UISettings::values.controller_applet_disabled.GetValue() == true)
+        (Settings::values.controller_applet_mode.GetValue() == Settings::AppletMode::Disabled)
             ? nullptr
             : std::make_unique<QtControllerSelector>(*this), // Controller Selector
         std::make_unique<QtErrorDisplay>(*this),             // Error Display

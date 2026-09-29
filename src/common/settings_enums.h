@@ -150,7 +150,7 @@ ENUM(ScalingFilter, NearestNeighbor, Bilinear, Bicubic, Gaussian, Lanczos, Scale
 ENUM(AntiAliasing, None, Fxaa, Smaa);
 ENUM(AspectRatio, R16_9, R4_3, R21_9, R16_10, Stretch);
 ENUM(ConsoleMode, Handheld, Docked);
-ENUM(AppletMode, HLE, LLE);
+ENUM(AppletMode, HLE, LLE, Disabled);
 ENUM(SpirvOptimizeMode, Never, OnLoad, Always);
 ENUM(GpuClock, Normal, Boost, Overclock)
 ENUM(GpuUnswizzleSize, VerySmall, Small, Normal, Large, VeryLarge)

@@ -127,8 +127,6 @@ struct Values {
     Setting<bool> hide_mouse{
         linkage, true, "hideInactiveMouse", Category::UiGeneral, Settings::Specialization::Default,
         true,    true};
-    Setting<bool> controller_applet_disabled{linkage, false, "disableControllerApplet",
-                                             Category::UiGeneral};
     // Set when Vulkan is known to crash the application
     bool has_broken_vulkan = false;
 
