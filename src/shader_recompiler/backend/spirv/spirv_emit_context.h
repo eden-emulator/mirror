@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <unordered_map>
 
 #include <sirit/sirit.h>
 #include "common/container/unordered_set.h"
@@ -173,6 +174,9 @@ public:
     [[nodiscard]] Id BitOffset8(const IR::Value& offset);
     [[nodiscard]] Id BitOffset16(const IR::Value& offset);
 
+    Id CallGlobalMemory(IR::Opcode opcode, Id result_type, Id address, Id value);
+    void AtomicBitFieldInsert(Id pointer, Id value, Id offset, Id count);
+
     Id Const(u32 value) {
         return Constant(U32[1], value);
     }
@@ -335,14 +339,7 @@ public:
     Id f32x2_min_cas{};
     Id f32x2_max_cas{};
 
-    Id write_storage_cas_loop_func{};
-
-    Id load_global_func_u32{};
-    Id load_global_func_u32x2{};
-    Id load_global_func_u32x4{};
-    Id write_global_func_u32{};
-    Id write_global_func_u32x2{};
-    Id write_global_func_u32x4{};
+    std::unordered_map<IR::Opcode, Id> global_memory_funcs;
 
     bool need_input_position_indirect{};
     Id input_position{};
@@ -393,8 +390,7 @@ private:
     void DefineTextures(const Info& info, u32& binding, u32& scaling_index);
     void DefineImages(const Info& info, u32& binding, u32& scaling_index);
     void DefineAttributeMemAccess(const Info& info);
-    void DefineWriteStorageCasLoopFunction(const Info& info);
-    void DefineGlobalMemoryFunctions(const Info& info);
+    void DefineGlobalMemoryFunctions(const IR::Program& program);
     void DefineRescalingInput(const Info& info);
     void DefineRescalingInputPushConstant();
     void DefineRescalingInputUniformConstant();

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -35,6 +35,12 @@ void TranslatorVisitor::MEMBAR(u64 inst) {
 void TranslatorVisitor::DEPBAR(u64) {
     // DEPBAR is a no-op
 }
+
+void TranslatorVisitor::CCTL(u64) {}
+
+void TranslatorVisitor::CCTLL(u64) {}
+
+void TranslatorVisitor::CCTLT(u64) {}
 
 void TranslatorVisitor::BAR(u64 insn) {
     enum class Mode {

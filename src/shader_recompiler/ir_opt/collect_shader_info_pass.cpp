@@ -424,8 +424,8 @@ void VisitUsages(Info& info, IR::Inst& inst) {
     case IR::Opcode::LoadGlobal128:
         info.uses_int64 = true;
         info.uses_global_memory = true;
-        info.used_constant_buffer_types |= IR::Type::U32 | IR::Type::U32x2;
-        info.used_storage_buffer_types |= IR::Type::U32 | IR::Type::U32x2 | IR::Type::U32x4;
+        info.used_constant_buffer_types |= IR::Type::U32;
+        info.used_storage_buffer_types |= IR::Type::U32;
         break;
     case IR::Opcode::LoadLocal:
     case IR::Opcode::WriteLocal:

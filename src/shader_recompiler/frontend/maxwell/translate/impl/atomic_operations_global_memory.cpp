@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -93,7 +93,7 @@ IR::U64 AtomOffset(TranslatorVisitor& v, u64 insn) {
     } const mem{insn};
 
     const IR::U64 address{[&]() -> IR::U64 {
-        if (mem.e == 0)
+        if (mem.e == 0 || mem.addr_reg == IR::Reg::RZ)
             return v.ir.UConvert(64, v.X(mem.addr_reg));
         return v.L(mem.addr_reg);
     }()};
@@ -108,14 +108,9 @@ IR::U64 AtomOffset(TranslatorVisitor& v, u64 insn) {
     return v.ir.IAdd(address, v.ir.Imm64(addr_offset));
 }
 
-// INC, DEC for U32/S32/U64 does nothing
-// ADD, INC, DEC for S64 does nothing
-// Only ADD does something for F32
-// Only ADD, MIN and MAX does something for F16x2
 bool AtomOpNotApplicable(AtomSize size, AtomOp op) {
     // TODO: SAFEADD
     switch (size) {
-    case AtomSize::U32:
     case AtomSize::S32:
     case AtomSize::U64:
         return (op == AtomOp::INC || op == AtomOp::DEC);

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -55,7 +58,7 @@ IR::U64 Address(TranslatorVisitor& v, u64 insn) {
     } const mem{insn};
 
     const IR::U64 address{[&]() -> IR::U64 {
-        if (mem.e == 0) {
+        if (mem.e == 0 || mem.addr_reg == IR::Reg::RZ) {
             // LDG/STG without .E uses a 32-bit pointer, zero-extend it
             return v.ir.UConvert(64, v.X(mem.addr_reg));
         }
