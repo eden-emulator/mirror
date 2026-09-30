@@ -250,14 +250,6 @@ public:
         return is_rescaled;
     }
 
-    [[nodiscard]] bool DiscardsMsaaColor() const noexcept {
-        return discard_msaa_color;
-    }
-
-    [[nodiscard]] bool DiscardsMsaaDepthStencil() const noexcept {
-        return discard_msaa_depth_stencil;
-    }
-
     /// Records that a render pass has begun, so its resolve attachments will hold valid contents
     /// once it ends.
     void MarkResolveShadowsUpToDate() const;
@@ -278,8 +270,6 @@ private:
     std::array<VkImage, 9> resolve_shadow_images{};
     u32 num_resolve_shadows = 0;
     TextureCacheRuntime* runtime_ptr{nullptr};
-    bool discard_msaa_color{};
-    bool discard_msaa_depth_stencil{};
 };
 
 class Image : public VideoCommon::ImageBase {

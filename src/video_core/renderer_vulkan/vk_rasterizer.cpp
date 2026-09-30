@@ -550,7 +550,8 @@ void RasterizerVulkan::Clear(u32 layer_count) {
                 Offset2D{.x = clear_rect.rect.offset.x + s32(clear_rect.rect.extent.width),
                          .y = clear_rect.rect.offset.y + s32(clear_rect.rect.extent.height)}};
             request_renderpass();
-            blit_image.ClearColor(framebuffer, color_mask, regs.clear_color, dst_region);
+            blit_image.ClearColor(framebuffer, color_attachment, color_mask, regs.clear_color,
+                                  dst_region);
         } else if (!clear_on_load ||
                    !scheduler.OverrideLoadOps(framebuffer, 1u << color_attachment,
                                               VK_ATTACHMENT_LOAD_OP_CLEAR, clear_value)) {

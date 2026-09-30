@@ -4,8 +4,10 @@
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <memory>
 #include <mutex>
+#include <span>
 #include <thread>
 #include <utility>
 
@@ -116,6 +118,7 @@ void Scheduler::DispatchWork() {
         }
         event_cv.notify_all();
         recorded_attachments = nullptr;
+        ended_attachments = nullptr;
         AcquireNewChunk();
     }
 }
@@ -169,27 +172,39 @@ bool Scheduler::OverrideLoadOps(const Framebuffer* framebuffer, u32 attachments,
     if (!renderpass_pristine || recorded_attachments == nullptr) {
         return false;
     }
-    const auto set_load_op = [&](VkRenderingAttachmentInfo& attachment, bool discards_msaa) {
+    const auto set_load_op = [&](VkRenderingAttachmentInfo& attachment) {
         attachment.loadOp = load_op;
         attachment.clearValue = value;
-        if (discards_msaa && load_op == VK_ATTACHMENT_LOAD_OP_CLEAR) {
-            attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        }
     };
     for (u32 slot = 0; slot < recorded_attachments->num_colors; ++slot) {
         if ((attachments & (1u << slot)) != 0) {
-            set_load_op(recorded_attachments->colors[slot], framebuffer->DiscardsMsaaColor());
+            set_load_op(recorded_attachments->colors[slot]);
         }
     }
     if ((attachments & DEPTH_ATTACHMENT_BIT) != 0) {
-        set_load_op(recorded_attachments->depth, framebuffer->DiscardsMsaaDepthStencil());
+        set_load_op(recorded_attachments->depth);
     }
     if ((attachments & STENCIL_ATTACHMENT_BIT) != 0) {
-        set_load_op(recorded_attachments->stencil, framebuffer->DiscardsMsaaDepthStencil());
+        set_load_op(recorded_attachments->stencil);
     }
     attachments_touched |= attachments;
     attachments_written |= attachments;
     return true;
+}
+
+void Scheduler::DiscardResolvedAttachments(VkImageView resolve_view) {
+    if (ended_attachments == nullptr) {
+        return;
+    }
+    const auto discard = [resolve_view](VkRenderingAttachmentInfo& attachment) {
+        if (attachment.resolveImageView == resolve_view) {
+            attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        }
+    };
+    std::ranges::for_each(std::span(ended_attachments->colors).first(ended_attachments->num_colors),
+                          discard);
+    discard(ended_attachments->depth);
+    discard(ended_attachments->stencil);
 }
 
 void Scheduler::RequestOutsideRenderPassOperationContext() {
@@ -420,8 +435,8 @@ void Scheduler::EndRenderPass()
         }
         if (recorded_attachments != nullptr) {
             RelaxAttachmentOps(*recorded_attachments);
-            recorded_attachments = nullptr;
         }
+        ended_attachments = std::exchange(recorded_attachments, nullptr);
 
         query_cache->CounterClose(VideoCommon::QueryType::StreamingByteCount);
 

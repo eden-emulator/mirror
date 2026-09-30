@@ -1838,6 +1838,11 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
                 cmdbuf.PipelineBarrier(0, {}, {}, post_barriers);
             });
+            const bool is_color = aspect_mask == VK_IMAGE_ASPECT_COLOR_BIT;
+            if ((is_color && ENABLE_MSAA_COLOR_DISCARD) ||
+                (!is_color && ENABLE_MSAA_DEPTH_STENCIL_DISCARD)) {
+                scheduler.DiscardResolvedAttachments(*shadow->view);
+            }
             return;
         }
     }
@@ -3075,11 +3080,6 @@ void Framebuffer::CreateFramebuffer(TextureCacheRuntime& runtime,
     const bool do_resolve_depth_stencil = ENABLE_MSAA_TILER_RESOLVE &&
         samples != VK_SAMPLE_COUNT_1_BIT && depth_image != VK_NULL_HANDLE &&
         runtime.device.IsTiler() && SupportsDepthStencilResolve(runtime.device, depth_format);
-
-    discard_msaa_color =
-        ENABLE_MSAA_RESOLVE_CONSUME && ENABLE_MSAA_COLOR_DISCARD && do_resolve_color;
-    discard_msaa_depth_stencil = ENABLE_MSAA_RESOLVE_CONSUME &&
-                                 ENABLE_MSAA_DEPTH_STENCIL_DISCARD && do_resolve_depth_stencil;
 
     runtime_ptr = &runtime;
     id = ++runtime.framebuffer_serial;

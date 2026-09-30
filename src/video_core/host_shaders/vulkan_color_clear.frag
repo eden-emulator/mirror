@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,8 +10,10 @@ layout (push_constant) uniform PushConstants {
     vec4 clear_color;
 };
 
-layout(location = 0) out vec4 color;
+layout(location = 0) out vec4 colors[8];
 
 void main() {
-    color = clear_color;
+    for (int index = 0; index < 8; ++index) {
+        colors[index] = clear_color;
+    }
 }

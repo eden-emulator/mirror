@@ -33,6 +33,8 @@ struct BlitImagePipelineKey {
 
     RenderingFormats formats;
     Tegra::Engines::Fermi2D::Operation operation;
+    VkSampleCountFlagBits samples;
+    u32 target;
 };
 
 struct BlitDepthStencilPipelineKey {
@@ -43,6 +45,14 @@ struct BlitDepthStencilPipelineKey {
     u8 stencil_mask;
     u32 stencil_compare_mask;
     u32 stencil_ref;
+    VkSampleCountFlagBits samples;
+};
+
+struct ConvertPipelineKey {
+    constexpr auto operator<=>(const ConvertPipelineKey&) const noexcept = default;
+
+    RenderingFormats formats;
+    VkShaderModule module;
 };
 
 enum class MSAACopyFormatClass : u32 {
@@ -117,7 +127,7 @@ public:
 
     void ConvertS8D24ToABGR8(const Framebuffer* dst_framebuffer, ImageView& src_image_view);
 
-    void ClearColor(const Framebuffer* dst_framebuffer, u8 color_mask,
+    void ClearColor(const Framebuffer* dst_framebuffer, u32 target, u8 color_mask,
                     const std::array<f32, 4>& clear_color, const Region2D& dst_region);
 
     void ClearDepthStencil(const Framebuffer* dst_framebuffer, bool depth_clear, f32 clear_depth,
@@ -156,10 +166,10 @@ private:
                       std::span<const VideoCommon::ImageCopy> copies,
                       const MSAACopyAspectInfo& aspect_info, bool copy_stencil);
 
-    void Convert(VkPipeline pipeline, const Framebuffer* dst_framebuffer,
+    void Convert(VkShaderModule module, const Framebuffer* dst_framebuffer,
                  const ImageView& src_image_view);
 
-    void ConvertDepthStencil(VkPipeline pipeline, const Framebuffer* dst_framebuffer,
+    void ConvertDepthStencil(VkShaderModule module, const Framebuffer* dst_framebuffer,
                              ImageView& src_image_view);
 
     [[nodiscard]] VkPipeline FindOrEmplaceColorPipeline(const BlitImagePipelineKey& key);
@@ -179,22 +189,9 @@ private:
     [[nodiscard]] VkPipeline FindOrEmplaceBlitDepthPipeline(const RenderingFormats& formats);
     [[nodiscard]] VkPipeline FindOrEmplaceResolveDepthStencilPipeline(
         const RenderingFormats& formats, bool resolve_stencil);
-
-    void ConvertPipeline(vk::Pipeline& pipeline, const RenderingFormats& formats,
-                         bool is_target_depth);
-
-    void ConvertDepthToColorPipeline(vk::Pipeline& pipeline, const RenderingFormats& formats);
-
-    void ConvertColorToDepthPipeline(vk::Pipeline& pipeline, const RenderingFormats& formats);
-
-    void ConvertPipelineEx(vk::Pipeline& pipeline, const RenderingFormats& formats,
-                           vk::ShaderModule& module, bool single_texture, bool is_target_depth);
-
-    void ConvertPipelineColorTargetEx(vk::Pipeline& pipeline, const RenderingFormats& formats,
-                                      vk::ShaderModule& module);
-
-    void ConvertPipelineDepthTargetEx(vk::Pipeline& pipeline, const RenderingFormats& formats,
-                                      vk::ShaderModule& module);
+    [[nodiscard]] VkPipeline FindOrEmplaceConvertPipeline(const RenderingFormats& formats,
+                                                          VkShaderModule module,
+                                                          VkPipelineLayout layout);
 
     const Device& device;
     Scheduler& scheduler;
@@ -271,15 +268,8 @@ private:
         vk::ImageView dst_view;
     };
     std::deque<MSAACopyResources> msaa_copy_resources;
-    vk::Pipeline convert_d32_to_r32_pipeline;
-    vk::Pipeline convert_r32_to_d32_pipeline;
-    vk::Pipeline convert_d16_to_r16_pipeline;
-    vk::Pipeline convert_r16_to_d16_pipeline;
-    vk::Pipeline convert_abgr8_to_d24s8_pipeline;
-    vk::Pipeline convert_abgr8_to_d32f_pipeline;
-    vk::Pipeline convert_d32f_to_abgr8_pipeline;
-    vk::Pipeline convert_d24s8_to_abgr8_pipeline;
-    vk::Pipeline convert_s8d24_to_abgr8_pipeline;
+    std::vector<ConvertPipelineKey> convert_keys;
+    std::vector<vk::Pipeline> convert_pipelines;
 };
 
 } // namespace Vulkan

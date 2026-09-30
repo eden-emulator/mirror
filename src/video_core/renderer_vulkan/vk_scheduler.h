@@ -69,6 +69,8 @@ public:
     bool OverrideLoadOps(const Framebuffer* framebuffer, u32 attachments,
                          VkAttachmentLoadOp load_op, const VkClearValue& value);
 
+    void DiscardResolvedAttachments(VkImageView resolve_view);
+
     /// Requests the current execution context to be able to execute operations only allowed outside
     /// of a renderpass.
     void RequestOutsideRenderPassOperationContext();
@@ -338,6 +340,7 @@ private:
     u32 attachments_touched = 0;
     u32 attachments_written = 0;
     RenderingAttachments* recorded_attachments = nullptr;
+    RenderingAttachments* ended_attachments = nullptr;
     VkMemoryBarrier2 renderpass_write_barrier{};
     VkMemoryBarrier2 compute_write_barrier{};
     VkMemoryBarrier2 upload_write_barrier{};
