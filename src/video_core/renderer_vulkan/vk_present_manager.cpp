@@ -175,7 +175,7 @@ Frame* PresentManager::GetRenderFrame() {
 
 Frame* PresentManager::TryGetRenderFrame() {
     std::scoped_lock lock{free_mutex};
-    if (free_queue.empty() || free_queue.front()->present_done.GetStatus() != VK_SUCCESS) {
+    if (free_queue.size() < 2 || free_queue.front()->present_done.GetStatus() != VK_SUCCESS) {
         return nullptr;
     }
     Frame* const frame = free_queue.front();
@@ -316,7 +316,7 @@ void PresentManager::SetImageCount() {
     const size_t generations = Settings::FrameGenMaxGenerations();
     const size_t queued_composites = Settings::values.frame_gen_queue_target.GetValue() + 1;
     const size_t baseline = swapchain.GetImageCount() + generations;
-    image_count = std::min<size_t>(std::max((generations + 1) * queued_composites, baseline),
+    image_count = std::min<size_t>((std::max)((generations + 1) * queued_composites, baseline),
                                    MAX_FRAMES_IN_FLIGHT);
 #else
     image_count = std::min<size_t>(swapchain.GetImageCount(), MAX_FRAMES_IN_FLIGHT);

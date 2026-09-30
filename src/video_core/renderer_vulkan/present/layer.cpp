@@ -150,7 +150,7 @@ void Layer::ConfigureDraw(const Device& device, PresentPushConstants* out_push_c
 #endif
 
     auto crop_rect = Tegra::NormalizeCrop(framebuffer, texture_width, texture_height);
-    generation_source = source_image;
+    generation_source = source_image_view;
     generation_extent = source_extent;
     generation_render_extent = render_extent;
     generation_crop = crop_rect;

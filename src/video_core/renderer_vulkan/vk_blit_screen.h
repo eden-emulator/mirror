@@ -49,7 +49,7 @@ struct FramebufferTextureInfo {
 };
 
 struct FrameGenSource {
-    VkImage image{};
+    VkImageView view{};
     VkExtent2D extent{};
 };
 

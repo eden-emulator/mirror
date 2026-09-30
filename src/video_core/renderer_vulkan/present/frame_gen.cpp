@@ -9,9 +9,12 @@
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
 #include "common/settings.h"
+#include "video_core/host_shaders/vulkan_fidelityfx_fsr_vert_spv.h"
+#include "video_core/host_shaders/vulkan_present_frag_spv.h"
 #include "video_core/renderer_vulkan/present/frame_gen.h"
 #include "video_core/renderer_vulkan/present/util.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/vulkan_common/vulkan_device.h"
 
 namespace Vulkan {
@@ -24,7 +27,7 @@ constexpr u32 LSFG_RECURRENCE_FRAMES = 2;
 
 [[nodiscard]] f32 ConfiguredFlowScale() {
     if (Settings::values.frame_gen_flow_scale_auto.GetValue()) {
-        return 1.0f;
+        return std::clamp(1.0f / Settings::values.resolution_info.up_factor, 0.25f, 1.0f);
     }
     return static_cast<f32>(Settings::values.frame_gen_flow_scale.GetValue()) / 100.0f;
 }
@@ -65,7 +68,7 @@ void WritePortablePixmap(const std::filesystem::path& path, const std::string& m
 void WriteGrayscalePgm(const std::filesystem::path& path, VkExtent2D extent,
                        std::span<const u8> pixels) {
     const size_t expected = static_cast<size_t>(extent.width) * extent.height;
-    WritePortablePixmap(path, "P5", extent, pixels.subspan(0, std::min(expected, pixels.size())));
+    WritePortablePixmap(path, "P5", extent, pixels.subspan(0, (std::min)(expected, pixels.size())));
 }
 
 void WriteRaw(const std::filesystem::path& path, std::span<const u8> pixels) {
@@ -125,56 +128,63 @@ VkImageMemoryBarrier2 MakeTransitionBarrier(VkImage image, VkPipelineStageFlags2
     };
 }
 
-VkImageBlit2 MakeBlitRegion(VkExtent2D extent) {
-    const VkImageSubresourceLayers layers{
-        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .mipLevel = 0,
-        .baseArrayLayer = 0,
-        .layerCount = 1,
-    };
-    const VkOffset3D end{
-        .x = static_cast<s32>(extent.width),
-        .y = static_cast<s32>(extent.height),
-        .z = 1,
-    };
-    return VkImageBlit2{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
-        .pNext = nullptr,
-        .srcSubresource = layers,
-        .srcOffsets = {VkOffset3D{}, end},
-        .dstSubresource = layers,
-        .dstOffsets = {VkOffset3D{}, end},
-    };
-}
+void DrawSourceFrame(vk::CommandBuffer cmdbuf, VkPipeline pipeline, VkPipelineLayout layout,
+                     VkDescriptorSet set, LsfgImage& destination, VkExtent2D extent) {
+    const VkImageMemoryBarrier2 before = MakeTransitionBarrier(
+        destination.Handle(), VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_NONE,
+        VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+        destination.Layout(), VK_IMAGE_LAYOUT_GENERAL);
+    cmdbuf.PipelineBarrier(before);
 
-void CopySourceFrame(vk::CommandBuffer cmdbuf, VkImage source, LsfgImage& destination,
-                     VkExtent2D extent) {
-    const std::array before{
-        MakeTransitionBarrier(source, vk::PIPELINE_STAGE_IMAGE_USERS, vk::ACCESS_IMAGE_WRITES,
-                              VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_TRANSFER_READ_BIT,
-                              VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL),
-        MakeTransitionBarrier(destination.Handle(), VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-                              VK_ACCESS_2_NONE, VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                              VK_ACCESS_2_TRANSFER_WRITE_BIT, destination.Layout(),
-                              VK_IMAGE_LAYOUT_GENERAL),
+    const VkViewport viewport{
+        .x = 0.0f,
+        .y = 0.0f,
+        .width = static_cast<f32>(extent.width),
+        .height = static_cast<f32>(extent.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
     };
-    cmdbuf.PipelineBarrier(0, {}, {}, before);
-
-    cmdbuf.BlitImage(source, VK_IMAGE_LAYOUT_GENERAL, destination.Handle(),
-                     VK_IMAGE_LAYOUT_GENERAL, MakeBlitRegion(extent), VK_FILTER_NEAREST);
-
-    const std::array after{
-        MakeTransitionBarrier(source, VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_ACCESS_2_NONE,
-                              vk::PIPELINE_STAGE_IMAGE_USERS, VK_ACCESS_2_NONE,
-                              VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL),
-        MakeTransitionBarrier(destination.Handle(), VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                              VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                              VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_SHADER_READ_BIT,
-                              VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL),
+    const VkRect2D scissor{
+        .offset = {0, 0},
+        .extent = extent,
     };
-    cmdbuf.PipelineBarrier(0, {}, {}, after);
+    BeginRendering(cmdbuf, destination.View(), extent, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+    cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, set, {});
+    cmdbuf.SetViewport(0, viewport);
+    cmdbuf.SetScissor(0, scissor);
+    cmdbuf.Draw(3, 1, 0, 0);
+    cmdbuf.EndRendering();
+
+    const VkImageMemoryBarrier2 after = MakeTransitionBarrier(
+        destination.Handle(), VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+        VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        VK_ACCESS_2_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL);
+    cmdbuf.PipelineBarrier(after);
 
     destination.SetLayout(VK_IMAGE_LAYOUT_GENERAL);
+}
+
+void UpdateSourceSet(const Device& device, VkDescriptorSet set, VkSampler sampler,
+                     VkImageView view) {
+    const VkDescriptorImageInfo image_info{
+        .sampler = sampler,
+        .imageView = view,
+        .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+    };
+    const VkWriteDescriptorSet write{
+        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext = nullptr,
+        .dstSet = set,
+        .dstBinding = 0,
+        .dstArrayElement = 0,
+        .descriptorCount = 1,
+        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .pImageInfo = &image_info,
+        .pBufferInfo = nullptr,
+        .pTexelBufferView = nullptr,
+    };
+    device.GetLogical().UpdateDescriptorSets(std::array{write}, {});
 }
 
 } // Anonymous namespace
@@ -184,11 +194,12 @@ FrameGen::FrameGen(MemoryAllocator& memory_allocator_, Scheduler& scheduler_)
 
 FrameGen::~FrameGen() = default;
 
-void FrameGen::Process(const Device& device, VkImage source, VkExtent2D extent) {
+void FrameGen::Process(const Device& device, VkImageView source, VkExtent2D extent) {
     generated = false;
 
     if (!shaders) {
         shaders.emplace(device);
+        CreateInputPass(device);
     }
 
     if (unavailable || !Settings::values.frame_gen.GetValue()) {
@@ -221,14 +232,20 @@ void FrameGen::Process(const Device& device, VkImage source, VkExtent2D extent) 
     last_count = count;
     last_generations = plan.generations;
 
-    const bool warm = plan.warm && count + 1 >= LSFG_REQUIRED_FRAMES;
+    const size_t input_slot = count % INPUT_SLOTS;
+    const bool warm = plan.warm && count + 1 >= LSFG_REQUIRED_FRAMES &&
+                      scheduler.IsFree(input_ticks[input_slot]);
     warm_streak = warm ? warm_streak + 1 : 0;
     generated = warm && warm_streak >= LSFG_RECURRENCE_FRAMES && plan.generations > 0;
 
     if (warm) {
+        const VkDescriptorSet set = input_sets[input_slot];
+        input_ticks[input_slot] = scheduler.CurrentTick();
+        UpdateSourceSet(device, set, *input_sampler, source);
         scheduler.RequestOutsideRenderPassOperationContext();
-        scheduler.Record([this, source, extent, count](vk::CommandBuffer cmdbuf) {
-            CopySourceFrame(cmdbuf, source, chain->Input(count), extent);
+        scheduler.Record([this, set, extent, count](vk::CommandBuffer cmdbuf) {
+            DrawSourceFrame(cmdbuf, *input_pipeline, *input_layout, set, chain->Input(count),
+                            extent);
             chain->DispatchShared(cmdbuf, count);
         });
     }
@@ -265,6 +282,21 @@ const LsfgImage& FrameGen::Generate(const Device& device, size_t generation) {
         chain->DispatchGeneration(cmdbuf, count, generation_count, generation, image, extent);
     });
     return output;
+}
+
+void FrameGen::CreateInputPass(const Device& device) {
+    input_set_layout =
+        CreateWrappedDescriptorSetLayout(device, {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER});
+    input_layout = CreateWrappedPipelineLayout(device, input_set_layout);
+    input_pool = CreateWrappedDescriptorPool(device, INPUT_SLOTS, INPUT_SLOTS);
+    std::array<VkDescriptorSetLayout, INPUT_SLOTS> layouts;
+    layouts.fill(*input_set_layout);
+    input_sets = CreateWrappedDescriptorSets(input_pool, layouts);
+    input_vertex_shader = BuildShader(device, VULKAN_FIDELITYFX_FSR_VERT_SPV);
+    input_fragment_shader = BuildShader(device, VULKAN_PRESENT_FRAG_SPV);
+    input_pipeline = CreateWrappedPipeline(device, LSFG_DEFAULT_FORMAT, input_layout,
+                                           std::tie(input_vertex_shader, input_fragment_shader));
+    input_sampler = CreateNearestNeighborSampler(device);
 }
 
 void FrameGen::Rebuild(const Device& device, VkExtent2D extent, f32 flow_scale) {

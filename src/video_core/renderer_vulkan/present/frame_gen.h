@@ -22,7 +22,7 @@ public:
     explicit FrameGen(MemoryAllocator& memory_allocator, Scheduler& scheduler);
     ~FrameGen();
 
-    void Process(const Device& device, VkImage source, VkExtent2D extent);
+    void Process(const Device& device, VkImageView source, VkExtent2D extent);
 
     [[nodiscard]] size_t WantedGenerations(size_t capacity);
 
@@ -31,6 +31,9 @@ public:
     [[nodiscard]] const LsfgImage& Generate(const Device& device, size_t generation);
 
 private:
+    static constexpr size_t INPUT_SLOTS = 4;
+
+    void CreateInputPass(const Device& device);
     void Rebuild(const Device& device, VkExtent2D extent, f32 flow_scale);
     void DumpDebugImages(u64 count);
 
@@ -40,6 +43,15 @@ private:
     std::optional<LsfgShaders> shaders;
     std::optional<LsfgChain> chain;
     std::array<LsfgImage, LSFG_MAX_GENERATIONS> outputs;
+    vk::DescriptorSetLayout input_set_layout;
+    vk::PipelineLayout input_layout;
+    vk::DescriptorPool input_pool;
+    vk::DescriptorSets input_sets;
+    vk::ShaderModule input_vertex_shader;
+    vk::ShaderModule input_fragment_shader;
+    vk::Pipeline input_pipeline;
+    vk::Sampler input_sampler;
+    std::array<u64, INPUT_SLOTS> input_ticks{};
     FrameGenPacer pacer;
     FrameGenPlan plan{};
     VkExtent2D built_extent{};

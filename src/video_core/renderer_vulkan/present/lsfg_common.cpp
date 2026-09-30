@@ -44,7 +44,8 @@ vk::Image CreateChainImage(MemoryAllocator& memory_allocator, VkExtent2D extent,
         .samples = VK_SAMPLE_COUNT_1_BIT,
         .tiling = VK_IMAGE_TILING_OPTIMAL,
         .usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                 VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                 VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
+                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = nullptr,
@@ -95,7 +96,7 @@ VkImageMemoryBarrier2 MakeBarrier(const LsfgImage& image, VkAccessFlags2 src_acc
 
 LsfgImage::LsfgImage(const Device& device, MemoryAllocator& memory_allocator, VkExtent2D extent_,
                      VkFormat format_)
-    : extent{std::max(1u, extent_.width), std::max(1u, extent_.height)}, format{format_} {
+    : extent{(std::max)(1u, extent_.width), (std::max)(1u, extent_.height)}, format{format_} {
     image = CreateChainImage(memory_allocator, extent, format);
     view = CreateWrappedImageView(device, image, format);
 }

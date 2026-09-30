@@ -55,7 +55,7 @@ namespace {
 
 QString LosslessSearchDirectory() {
     const QString suffix = QStringLiteral("/steamapps/common/Lossless Scaling");
-    const std::array roots{
+    const std::array<QString, 4> roots{
         QDir::homePath() + QStringLiteral("/.local/share/Steam"),
         QDir::homePath() + QStringLiteral("/.steam/steam"),
         QDir::homePath() + QStringLiteral("/.var/app/com.valvesoftware.Steam/.local/share/Steam"),

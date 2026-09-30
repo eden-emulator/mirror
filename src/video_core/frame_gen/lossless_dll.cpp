@@ -157,7 +157,7 @@ private:
 
 [[nodiscard]] std::optional<size_t> RvaToFileOffset(std::span<const Section> sections, u32 rva) {
     for (const Section& section : sections) {
-        const u32 span = std::max(section.virtual_size, section.raw_size);
+        const u32 span = (std::max)(section.virtual_size, section.raw_size);
         if (span == 0 || rva < section.virtual_address) {
             continue;
         }

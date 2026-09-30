@@ -105,7 +105,7 @@ FrameGenSource BlitScreen::GenerationSource() const {
         return {};
     }
     return FrameGenSource{
-        .image = layers.front().GenerationSource(),
+        .view = layers.front().GenerationSource(),
         .extent = layers.front().GenerationExtent(),
     };
 }

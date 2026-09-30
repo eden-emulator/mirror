@@ -47,7 +47,7 @@ constexpr auto PROBE_STEP_DELAY = std::chrono::milliseconds(250);
 } // Anonymous namespace
 
 FrameGenPlan FrameGenPacer::Plan(size_t capacity) {
-    const size_t ceiling = std::min(capacity, Settings::FrameGenMaxGenerations());
+    const size_t ceiling = (std::min)(capacity, Settings::FrameGenMaxGenerations());
     if (ceiling == 0) {
         Reset();
         return {};
@@ -74,7 +74,7 @@ FrameGenPlan FrameGenPacer::Plan(size_t capacity) {
     if (smoothed_interval > 0.0f) {
         f32 burst_threshold = BURST_CADENCE_RATIO / smoothed_interval;
         if (target_rate > 0.0f) {
-            burst_threshold = std::max(burst_threshold, target_rate * BURST_TARGET_RATIO);
+            burst_threshold = (std::max)(burst_threshold, target_rate * BURST_TARGET_RATIO);
         }
         if (1.0f / interval_seconds > burst_threshold) {
             DeferEvaluations(interval);
@@ -109,7 +109,7 @@ FrameGenPlan FrameGenPacer::Plan(size_t capacity) {
     }
 
     if (target_rate == 0.0f) {
-        limit = std::min(Settings::FrameGenGenerations(), ceiling);
+        limit = (std::min)(Settings::FrameGenGenerations(), ceiling);
         output_credit = 0.0f;
         issued_generations = limit;
         return {.generations = limit, .warm = limit > 0};
@@ -117,7 +117,7 @@ FrameGenPlan FrameGenPacer::Plan(size_t capacity) {
 
     UpdateLimit(now, 1.0f / smoothed_interval, target_rate, ceiling);
 
-    const size_t allowed = std::min(limit, ceiling);
+    const size_t allowed = (std::min)(limit, ceiling);
     const f32 desired_outputs = smoothed_interval * target_rate;
     if (allowed == 0 || desired_outputs <= 1.0f) {
         output_credit = 0.0f;
@@ -127,7 +127,7 @@ FrameGenPlan FrameGenPacer::Plan(size_t capacity) {
     output_credit += desired_outputs;
     const size_t outputs =
         std::max<size_t>(1, static_cast<size_t>(std::floor(output_credit + CREDIT_EPSILON)));
-    const size_t generations = std::min(outputs - 1, allowed);
+    const size_t generations = (std::min)(outputs - 1, allowed);
 
     output_credit -= static_cast<f32>(generations + 1);
     if (output_credit < 0.0f) {
@@ -142,7 +142,7 @@ FrameGenPlan FrameGenPacer::Plan(size_t capacity) {
 
 void FrameGenPacer::UpdateLimit(Clock::time_point now, f32 base_rate, f32 target_rate,
                                 size_t ceiling) {
-    limit = std::min(limit, ceiling);
+    limit = (std::min)(limit, ceiling);
 
     if (probe_until) {
         if (now < *probe_until) {
@@ -152,9 +152,9 @@ void FrameGenPacer::UpdateLimit(Clock::time_point now, f32 base_rate, f32 target
         output_credit = 0.0f;
 
         const f32 previous_output =
-            std::min(target_rate, probe_base_rate * static_cast<f32>(probe_previous_limit + 1));
+            (std::min)(target_rate, probe_base_rate * static_cast<f32>(probe_previous_limit + 1));
         const f32 current_output =
-            std::min(target_rate, base_rate * static_cast<f32>(limit + 1));
+            (std::min)(target_rate, base_rate * static_cast<f32>(limit + 1));
 
         const bool throughput_regressed =
             current_output < previous_output * PROBE_THROUGHPUT_TOLERANCE;
@@ -166,7 +166,7 @@ void FrameGenPacer::UpdateLimit(Clock::time_point now, f32 base_rate, f32 target
 
         if (throughput_regressed || collapsed_for_marginal_gain || emulation_slowed) {
             limit = probe_previous_limit;
-            probe_failures = std::min(probe_failures + 1, MAX_PROBE_FAILURES);
+            probe_failures = (std::min)(probe_failures + 1, MAX_PROBE_FAILURES);
             next_probe = now + ProbeBackoff(probe_failures);
             deficit_since.reset();
             return;

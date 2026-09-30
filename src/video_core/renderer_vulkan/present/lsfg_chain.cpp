@@ -47,7 +47,7 @@ LsfgChain::LsfgChain(const Device& device, MemoryAllocator& memory_allocator,
         const size_t level = LSFG_MIP_LEVELS - 1 - i;
         gamma[i] = LsfgGamma(device, memory_allocator, shaders, resources, descriptor_pool,
                              alpha[level].Outputs(),
-                             beta.Output(std::min(level, LSFG_BETA_OUTPUTS - 1)),
+                             beta.Output((std::min)(level, LSFG_BETA_OUTPUTS - 1)),
                              i == 0 ? nullptr : &gamma[i - 1].Output());
 
         if (i < FIRST_DELTA_LEVEL) {

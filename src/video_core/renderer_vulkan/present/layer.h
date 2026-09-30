@@ -68,7 +68,7 @@ public:
 
     [[nodiscard]] bool IsGenerationFree(size_t generation) const;
 
-    [[nodiscard]] VkImage GenerationSource() const {
+    [[nodiscard]] VkImageView GenerationSource() const {
         return generation_source;
     }
 
@@ -125,7 +125,7 @@ private:
 #endif
     std::vector<u64> resource_ticks{};
     std::vector<u64> generation_ticks{};
-    VkImage generation_source{};
+    VkImageView generation_source{};
     VkExtent2D generation_extent{};
     VkExtent2D generation_render_extent{};
     Common::Rectangle<f32> generation_crop{};

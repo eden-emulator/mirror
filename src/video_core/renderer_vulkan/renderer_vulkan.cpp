@@ -208,7 +208,7 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
     void(frame_gen.WantedGenerations(present_manager.MaxExtraFrames()));
 
     const FrameGenSource source = blit_swapchain.GenerationSource();
-    frame_gen.Process(device, source.image, source.extent);
+    frame_gen.Process(device, source.view, source.extent);
 
     const Layout::FramebufferLayout layout = render_window.GetFramebufferLayout();
     const size_t generated_frames = frame_gen.GeneratedFrameCount();

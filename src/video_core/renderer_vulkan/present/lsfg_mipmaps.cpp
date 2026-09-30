@@ -40,8 +40,10 @@ LsfgMipmaps::LsfgMipmaps(const Device& device, MemoryAllocator& memory_allocator
 
     const VkExtent2D input_extent = (*frames)[0].Extent();
     flow_extent = VkExtent2D{
-        .width = std::max(1u, static_cast<u32>(static_cast<f32>(input_extent.width) * flow_scale)),
-        .height = std::max(1u, static_cast<u32>(static_cast<f32>(input_extent.height) * flow_scale)),
+        .width = (std::max)(1u,
+                            static_cast<u32>(static_cast<f32>(input_extent.width) * flow_scale)),
+        .height = (std::max)(1u,
+                             static_cast<u32>(static_cast<f32>(input_extent.height) * flow_scale)),
     };
 
     for (size_t i = 0; i < LSFG_MIP_LEVELS; ++i) {
