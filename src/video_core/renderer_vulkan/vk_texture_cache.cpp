@@ -1884,10 +1884,6 @@ bool TextureCacheRuntime::CanReportMemoryUsage() const {
     return device.CanReportMemoryUsage();
 }
 
-void TextureCacheRuntime::FlushDeferredClear() {
-    scheduler.FlushDeferredClear();
-}
-
 VkImage TextureCacheRuntime::AcquireMsaaScratchImage(const VkImageCreateInfo& image_ci) {
     const MsaaScratchKey key{
         .format = image_ci.format,

@@ -476,6 +476,23 @@ void RecordShaderReadBarrier(Scheduler& scheduler, const ImageView& image_view) 
     });
 }
 
+void DiscardCoveredAttachments(Scheduler& scheduler, const Framebuffer* framebuffer,
+                               const Region2D& region, bool writes_stencil) {
+    const VkExtent2D area = framebuffer->RenderArea();
+    if ((std::min)(region.start.x, region.end.x) > 0 ||
+        (std::min)(region.start.y, region.end.y) > 0 ||
+        (std::max)(region.start.x, region.end.x) < static_cast<s32>(area.width) ||
+        (std::max)(region.start.y, region.end.y) < static_cast<s32>(area.height) ||
+        framebuffer->Attachments().layers != 1) {
+        return;
+    }
+    u32 attachments = 1u | Scheduler::DEPTH_ATTACHMENT_BIT;
+    if (writes_stencil) {
+        attachments |= Scheduler::STENCIL_ATTACHMENT_BIT;
+    }
+    scheduler.OverrideLoadOps(framebuffer, attachments, VK_ATTACHMENT_LOAD_OP_DONT_CARE, {});
+}
+
 [[nodiscard]] VkSampleCountFlagBits SampleCountFlag(u32 num_samples) {
     switch (num_samples) {
     case 2:
@@ -661,6 +678,7 @@ void BlitImageHelper::BlitImpl(const Framebuffer* dst_framebuffer,
     }
 
     RecordShaderReadBarrier(scheduler, src_image_view);
+    DiscardCoveredAttachments(scheduler, dst_framebuffer, dst_region, blit_stencil);
     scheduler.RequestRenderpass(dst_framebuffer);
     scheduler.Record([this, dst_region, src_region, pipeline, layout, sampler, src_view,
                       src_stencil_view, blit_stencil](vk::CommandBuffer cmdbuf) {
@@ -1067,8 +1085,13 @@ void BlitImageHelper::Convert(VkPipeline pipeline, const Framebuffer* dst_frameb
     const VkImageView src_view = src_image_view.Handle(Shader::TextureType::Color2D);
     const VkSampler sampler = *nearest_sampler;
     const VkExtent2D extent = GetConversionExtent(src_image_view);
+    const Region2D region{
+        .start = {0, 0},
+        .end = {static_cast<s32>(extent.width), static_cast<s32>(extent.height)},
+    };
 
     RecordShaderReadBarrier(scheduler, src_image_view);
+    DiscardCoveredAttachments(scheduler, dst_framebuffer, region, false);
     scheduler.RequestRenderpass(dst_framebuffer);
     scheduler.Record([pipeline, layout, sampler, src_view, extent, this](vk::CommandBuffer cmdbuf) {
         const VkOffset2D offset{
@@ -1112,8 +1135,13 @@ void BlitImageHelper::ConvertDepthStencil(VkPipeline pipeline, const Framebuffer
     const VkImageView src_stencil_view = src_image_view.StencilView();
     const VkSampler sampler = *nearest_sampler;
     const VkExtent2D extent = GetConversionExtent(src_image_view);
+    const Region2D region{
+        .start = {0, 0},
+        .end = {static_cast<s32>(extent.width), static_cast<s32>(extent.height)},
+    };
 
     RecordShaderReadBarrier(scheduler, src_image_view);
+    DiscardCoveredAttachments(scheduler, dst_framebuffer, region, false);
     scheduler.RequestRenderpass(dst_framebuffer);
     scheduler.Record([pipeline, layout, sampler, src_depth_view, src_stencil_view, extent,
                       this](vk::CommandBuffer cmdbuf) {

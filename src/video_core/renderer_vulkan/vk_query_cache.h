@@ -48,6 +48,8 @@ public:
 
     void ResumeHostConditionalRendering();
 
+    [[nodiscard]] bool IsHostConditionalRenderingSet() const noexcept;
+
     bool HostConditionalRenderingCompareValue(VideoCommon::LookupData object_1, bool qc_dirty);
 
     bool HostConditionalRenderingCompareValues(VideoCommon::LookupData object_1,

@@ -143,6 +143,9 @@ struct AttachmentAccess {
 
 AttachmentAccess MakeAttachmentAccess(const Maxwell& regs) {
     AttachmentAccess access{};
+    if (regs.rasterize_enable == 0) {
+        return access;
+    }
     for (size_t index = 0; index < Maxwell::NumRenderTargets; ++index) {
         size_t mask_index = index;
         if (regs.color_mask_common) {

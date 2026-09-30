@@ -66,14 +66,8 @@ public:
     void RequestRenderpass(const Framebuffer* framebuffer, u32 touched = ALL_ATTACHMENTS,
                            u32 written = ALL_ATTACHMENTS);
 
-    /// Defers a full-attachment color clear so it becomes the next render pass.
-    bool DeferColorClear(const Framebuffer* framebuffer, u32 rt_slot, const VkClearValue& value);
-
-    /// Defers a full depth/stencil clear so it becomes the next render pass.
-    bool DeferDepthStencilClear(const Framebuffer* framebuffer, const VkClearValue& value);
-
-    /// Realizes any pending deferred clear before its framebuffer can be moved or freed.
-    void FlushDeferredClear();
+    bool OverrideLoadOps(const Framebuffer* framebuffer, u32 attachments,
+                         VkAttachmentLoadOp load_op, const VkClearValue& value);
 
     /// Requests the current execution context to be able to execute operations only allowed outside
     /// of a renderpass.
@@ -302,20 +296,7 @@ private:
         bool descriptor_buffer_bound = false;
     };
 
-    struct DeferredClear {
-        const Framebuffer* framebuffer = nullptr;
-        u32 color_clear_mask = 0;
-        std::array<VkClearValue, 8> color_values{};
-        bool depth_stencil = false;
-        VkClearValue depth_stencil_value{};
-    };
-
-    /// Begins a render pass for the given framebuffer, optionally with clear values.
-    void BeginRenderPassImpl(const Framebuffer* framebuffer,
-                             const RenderingAttachments& attachments);
-
-    /// If a deferred clear is pending.
-    void RealizeDeferredClear();
+    void BeginRenderPassImpl(const Framebuffer* framebuffer);
 
     void WorkerThread(std::stop_token stop_token);
 
@@ -344,8 +325,6 @@ private:
     vk::CommandBuffer current_cmdbuf;
     vk::CommandBuffer current_upload_cmdbuf;
 
-    DeferredClear deferred_clear;
-
     std::unique_ptr<CommandChunk> chunk;
     std::function<void()> on_submit;
 
@@ -354,6 +333,7 @@ private:
     u64 renderpass_serial = 0;
     u64 wfi_serial = 0;
     bool renderpass_writes = false;
+    bool renderpass_pristine = false;
     bool compute_writes = false;
     u32 attachments_touched = 0;
     u32 attachments_written = 0;

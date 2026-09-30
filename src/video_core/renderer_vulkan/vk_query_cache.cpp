@@ -1402,6 +1402,10 @@ void QueryCacheRuntime::ResumeHostConditionalRendering() {
     impl->is_hcr_running = true;
 }
 
+bool QueryCacheRuntime::IsHostConditionalRenderingSet() const noexcept {
+    return impl->hcr_is_set;
+}
+
 void QueryCacheRuntime::HostConditionalRenderingCompareValueImpl(VideoCommon::LookupData object,
                                                                  bool is_equal) {
     {

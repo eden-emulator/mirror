@@ -120,11 +120,12 @@ void Scheduler::DispatchWork() {
     }
 }
 
-void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer,
-                                    const RenderingAttachments& attachments) {
+void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer) {
+    const RenderingAttachments& attachments = framebuffer->Attachments();
     PublishComputeWrites();
     state.framebuffer_id = framebuffer->Id();
     ++renderpass_serial;
+    renderpass_pristine = true;
     attachments_touched = 0;
     attachments_written = 0;
 
@@ -149,89 +150,46 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer,
     framebuffer->MarkResolveShadowsUpToDate();
 }
 
-void Scheduler::RealizeDeferredClear() {
-    if (deferred_clear.framebuffer == nullptr) {
-        return;
-    }
-    const DeferredClear dc = deferred_clear;
-    deferred_clear = {};
-
-    RenderingAttachments attachments = dc.framebuffer->Attachments();
-    for (u32 slot = 0; slot < attachments.num_colors; ++slot) {
-        if ((dc.color_clear_mask & (1u << slot)) == 0) {
-            continue;
-        }
-        VkRenderingAttachmentInfo& attachment = attachments.colors[slot];
-        attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        attachment.clearValue = dc.color_values[slot];
-        if (dc.framebuffer->DiscardsMsaaColor()) {
-            attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        }
-    }
-    if (dc.depth_stencil) {
-        for (VkRenderingAttachmentInfo* const attachment :
-             {&attachments.depth, &attachments.stencil}) {
-            attachment->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-            attachment->clearValue = dc.depth_stencil_value;
-            if (dc.framebuffer->DiscardsMsaaDepthStencil()) {
-                attachment->storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            }
-        }
-    }
-    EndRenderPass();
-    BeginRenderPassImpl(dc.framebuffer, attachments);
-    if (dc.depth_stencil) {
-        attachments_written |= DEPTH_ATTACHMENT_BIT | STENCIL_ATTACHMENT_BIT;
-    }
-}
-
-bool Scheduler::DeferColorClear(const Framebuffer* framebuffer, u32 rt_slot,
-                                const VkClearValue& value) {
-    if (IsRenderPassActive()) {
-        return false;
-    }
-    if (deferred_clear.framebuffer != nullptr && deferred_clear.framebuffer != framebuffer) {
-        RealizeDeferredClear();
-        EndRenderPass();
-    }
-    deferred_clear.framebuffer = framebuffer;
-    deferred_clear.color_clear_mask |= 1u << rt_slot;
-    deferred_clear.color_values[rt_slot] = value;
-    return true;
-}
-
-bool Scheduler::DeferDepthStencilClear(const Framebuffer* framebuffer, const VkClearValue& value) {
-    if (IsRenderPassActive()) {
-        return false;
-    }
-    if (deferred_clear.framebuffer != nullptr && deferred_clear.framebuffer != framebuffer) {
-        RealizeDeferredClear();
-        EndRenderPass();
-    }
-    deferred_clear.framebuffer = framebuffer;
-    deferred_clear.depth_stencil = true;
-    deferred_clear.depth_stencil_value = value;
-    return true;
-}
-
-void Scheduler::FlushDeferredClear() {
-    if (deferred_clear.framebuffer == nullptr) {
-        return;
-    }
-    RealizeDeferredClear();
-    EndRenderPass();
-}
-
 void Scheduler::RequestRenderpass(const Framebuffer* framebuffer, u32 touched, u32 written) {
-    if (deferred_clear.framebuffer == framebuffer) {
-        RealizeDeferredClear();
-    } else if (framebuffer->Id() != state.framebuffer_id) {
-        // Ends any active pass and realizes a deferred clear
+    if (framebuffer->Id() != state.framebuffer_id) {
         EndRenderPass();
-        BeginRenderPassImpl(framebuffer, framebuffer->Attachments());
+        BeginRenderPassImpl(framebuffer);
     }
+    renderpass_pristine = false;
     attachments_touched |= touched;
     attachments_written |= written;
+}
+
+bool Scheduler::OverrideLoadOps(const Framebuffer* framebuffer, u32 attachments,
+                                VkAttachmentLoadOp load_op, const VkClearValue& value) {
+    if (framebuffer->Id() != state.framebuffer_id) {
+        EndRenderPass();
+        BeginRenderPassImpl(framebuffer);
+    }
+    if (!renderpass_pristine || recorded_attachments == nullptr) {
+        return false;
+    }
+    const auto set_load_op = [&](VkRenderingAttachmentInfo& attachment, bool discards_msaa) {
+        attachment.loadOp = load_op;
+        attachment.clearValue = value;
+        if (discards_msaa && load_op == VK_ATTACHMENT_LOAD_OP_CLEAR) {
+            attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        }
+    };
+    for (u32 slot = 0; slot < recorded_attachments->num_colors; ++slot) {
+        if ((attachments & (1u << slot)) != 0) {
+            set_load_op(recorded_attachments->colors[slot], framebuffer->DiscardsMsaaColor());
+        }
+    }
+    if ((attachments & DEPTH_ATTACHMENT_BIT) != 0) {
+        set_load_op(recorded_attachments->depth, framebuffer->DiscardsMsaaDepthStencil());
+    }
+    if ((attachments & STENCIL_ATTACHMENT_BIT) != 0) {
+        set_load_op(recorded_attachments->stencil, framebuffer->DiscardsMsaaDepthStencil());
+    }
+    attachments_touched |= attachments;
+    attachments_written |= attachments;
+    return true;
 }
 
 void Scheduler::RequestOutsideRenderPassOperationContext() {
@@ -457,7 +415,6 @@ void Scheduler::EndPendingOperations() {
 
 void Scheduler::EndRenderPass()
     {
-        RealizeDeferredClear();
         if (state.framebuffer_id == 0) {
             return;
         }
