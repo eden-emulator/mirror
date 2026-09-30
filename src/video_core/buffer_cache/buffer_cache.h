@@ -123,6 +123,8 @@ void BufferCache<P>::TickFrame() {
     if (total_used_memory >= minimum_memory || heap_pressure) {
         RunGarbageCollector();
     }
+    std::erase_if(pointer_ranges,
+                  [this](const PointerRange& range) { return range.frame + 2 < frame_tick; });
     ++frame_tick;
     delayed_destruction_ring.Tick();
 
@@ -956,7 +958,6 @@ void BufferCache<P>::BindHostDrawIndirectBuffers() {
         Buffer& buffer = slot_buffers[binding.buffer_id];
         TouchBuffer(buffer, binding.buffer_id);
         SynchronizeBuffer(buffer, binding.device_addr, binding.size);
-        RecordPointerRange(binding);
     };
     if (current_draw_indirect->include_count) {
         bind_buffer(channel_state->count_buffer_binding);
@@ -1458,7 +1459,6 @@ void BufferCache<P>::UpdateDrawIndirect() {
         }
         binding = Binding{
             .device_addr = *device_addr,
-            .gpu_addr = gpu_addr,
             .size = static_cast<u32>(size),
             .buffer_id = FindBuffer(*device_addr, static_cast<u32>(size), false),
         };
@@ -1517,7 +1517,7 @@ void BufferCache<P>::UpdatePointerRanges() {
 
 template <class P>
 void BufferCache<P>::RecordPointerRange(const Binding& binding) {
-    if (!record_pointer_ranges || binding.size == 0) {
+    if (!record_pointer_ranges) {
         return;
     }
     const auto it = std::ranges::find(pointer_ranges, binding.gpu_addr, &PointerRange::gpu_addr);
@@ -1527,13 +1527,10 @@ void BufferCache<P>::RecordPointerRange(const Binding& binding) {
         it->frame = frame_tick;
         return;
     }
-    const PointerRange range{binding.gpu_addr, binding.device_addr, binding.size, frame_tick,
-                             NULL_BUFFER_ID};
     if (pointer_ranges.size() < MAX_POINTER_RANGES) {
-        pointer_ranges.push_back(range);
-        return;
+        pointer_ranges.push_back({binding.gpu_addr, binding.device_addr, binding.size, frame_tick,
+                                  NULL_BUFFER_ID});
     }
-    *std::ranges::min_element(pointer_ranges, {}, &PointerRange::frame) = range;
 }
 
 template <class P>
