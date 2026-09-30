@@ -757,7 +757,7 @@ struct Memory::Impl {
         };
         auto& gpu = system.GPU();
         gpu_device_memory->ApplyOpOnPointer(
-            p, scratch_buffers[core], [&](DAddr address) { gpu.InvalidateRegion(address, size); });
+            p, scratch_buffers[core], [&](DAddr address) { gpu.InvalidateRegion(address, size, true); });
     }
 
     Core::System& system;
