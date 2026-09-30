@@ -653,11 +653,13 @@ public:
         scheduler.RequestOutsideRenderPassOperationContext();
         scheduler.Record([this, dst_buffer = stagging_buffer.buffer, extra_offset, start,
                           size](vk::CommandBuffer cmdbuf) {
-            std::array<VkBufferCopy, 1> copy{VkBufferCopy{
+            const VkBufferCopy2 copy{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                .pNext = nullptr,
                 .srcOffset = start * QUERY_SIZE,
                 .dstOffset = extra_offset,
                 .size = size * QUERY_SIZE,
-            }};
+            };
             cmdbuf.CopyBuffer(*buffer, dst_buffer, copy);
         });
     }
@@ -1040,11 +1042,13 @@ private:
                           src_offset = offsets[slot_index],
                           slot](vk::CommandBuffer cmdbuf) {
             cmdbuf.PipelineBarrier(READ_BARRIER);
-            std::array<VkBufferCopy, 1> copy{VkBufferCopy{
+            const VkBufferCopy2 copy{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                .pNext = nullptr,
                 .srcOffset = src_offset,
                 .dstOffset = slot * TFBQueryBank::QUERY_SIZE,
                 .size = TFBQueryBank::QUERY_SIZE,
-            }};
+            };
             cmdbuf.CopyBuffer(src_buffer, dst_buffer, copy);
             cmdbuf.PipelineBarrier(WRITE_BARRIER);
         });
@@ -1339,7 +1343,7 @@ struct QueryCacheRuntimeImpl {
     std::vector<std::pair<DAddr, DAddr>> little_cache;
     std::vector<std::pair<VkBuffer, VkDeviceSize>> buffers_to_upload_to;
     std::vector<size_t> redirect_cache;
-    std::vector<std::vector<VkBufferCopy>> copies_setup;
+    std::vector<std::vector<VkBufferCopy2>> copies_setup;
 
     // Host conditional rendering data
     std::optional<ConditionalRenderingResolvePass> conditional_resolve_pass;
@@ -1657,7 +1661,9 @@ void QueryCacheRuntime::SyncValues(std::span<SyncValuesType> values, VkBuffer ba
         size_t accumulated_size = 0;
         for (size_t i = 0; i < values.size(); i++) {
             size_t which_copy = impl->redirect_cache[i];
-            impl->copies_setup[which_copy].emplace_back(VkBufferCopy{
+            impl->copies_setup[which_copy].emplace_back(VkBufferCopy2{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                .pNext = nullptr,
                 .srcOffset = current_offset + accumulated_size,
                 .dstOffset = impl->buffers_to_upload_to[which_copy].second + values[i].address -
                              impl->little_cache[which_copy].first,
@@ -1671,7 +1677,9 @@ void QueryCacheRuntime::SyncValues(std::span<SyncValuesType> values, VkBuffer ba
     } else {
         for (size_t i = 0; i < values.size(); i++) {
             size_t which_copy = impl->redirect_cache[i];
-            impl->copies_setup[which_copy].emplace_back(VkBufferCopy{
+            impl->copies_setup[which_copy].emplace_back(VkBufferCopy2{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                .pNext = nullptr,
                 .srcOffset = values[i].offset,
                 .dstOffset = impl->buffers_to_upload_to[which_copy].second + values[i].address -
                              impl->little_cache[which_copy].first,

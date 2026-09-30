@@ -89,7 +89,9 @@ void UploadImage(const Device& device, MemoryAllocator& allocator, Scheduler& sc
     std::ranges::copy(initial_contents, upload_buffer.Mapped().begin());
     upload_buffer.Flush();
 
-    const std::array<VkBufferImageCopy, 1> regions{{{
+    const VkBufferImageCopy2 region{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+        .pNext = nullptr,
         .bufferOffset = 0,
         .bufferRowLength = dimensions.width,
         .bufferImageHeight = dimensions.height,
@@ -99,14 +101,14 @@ void UploadImage(const Device& device, MemoryAllocator& allocator, Scheduler& sc
                           .layerCount = 1},
         .imageOffset{},
         .imageExtent{.width = dimensions.width, .height = dimensions.height, .depth = 1},
-    }}};
+    };
 
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([&](vk::CommandBuffer cmdbuf) {
         TransitionImageLayout(cmdbuf, *image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                               VK_IMAGE_LAYOUT_UNDEFINED);
         cmdbuf.CopyBufferToImage(*upload_buffer, *image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                 regions);
+                                 region);
         TransitionImageLayout(cmdbuf, *image, VK_IMAGE_LAYOUT_GENERAL,
                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     });
@@ -163,7 +165,9 @@ void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffe
         .dstStageMask = vk::PIPELINE_STAGE_HOST,
         .dstAccessMask = VK_ACCESS_2_HOST_READ_BIT,
     };
-    const VkBufferImageCopy copy{
+    const VkBufferImageCopy2 copy{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+        .pNext = nullptr,
         .bufferOffset = 0,
         .bufferRowLength = 0,
         .bufferImageHeight = 0,

@@ -1423,7 +1423,9 @@ void Device::RemoveUnsuitableExtensions() {
 
     extensions.synchronization2 = features.synchronization2.synchronization2;
     extensions.dynamic_rendering = features.dynamic_rendering.dynamicRendering;
-    if (!extensions.synchronization2 || !extensions.dynamic_rendering) {
+    const bool copy_commands2 =
+        extensions.copy_commands2 || instance_version >= VK_API_VERSION_1_3;
+    if (!extensions.synchronization2 || !extensions.dynamic_rendering || !copy_commands2) {
         throw vk::Exception(VK_ERROR_FEATURE_NOT_PRESENT);
     }
 }

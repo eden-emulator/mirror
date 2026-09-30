@@ -51,9 +51,11 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice& physical_device, VkFormat form
     };
 }
 
-[[nodiscard]] VkImageBlit MakeImageBlit(s32 frame_width, s32 frame_height, s32 swapchain_width,
-                                        s32 swapchain_height) {
-    return VkImageBlit{
+[[nodiscard]] VkImageBlit2 MakeImageBlit(s32 frame_width, s32 frame_height, s32 swapchain_width,
+                                         s32 swapchain_height) {
+    return VkImageBlit2{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+        .pNext = nullptr,
         .srcSubresource = MakeImageSubresourceLayers(),
         .srcOffsets =
             {
@@ -85,9 +87,11 @@ bool CanBlitToSwapchain(const vk::PhysicalDevice& physical_device, VkFormat form
     };
 }
 
-[[nodiscard]] VkImageCopy MakeImageCopy(u32 frame_width, u32 frame_height, u32 swapchain_width,
-                                        u32 swapchain_height) {
-    return VkImageCopy{
+[[nodiscard]] VkImageCopy2 MakeImageCopy(u32 frame_width, u32 frame_height, u32 swapchain_width,
+                                         u32 swapchain_height) {
+    return VkImageCopy2{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+        .pNext = nullptr,
         .srcSubresource = MakeImageSubresourceLayers(),
         .srcOffset =
             {

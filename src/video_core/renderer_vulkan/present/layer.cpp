@@ -343,7 +343,9 @@ void Layer::UpdateRawImage(const Tegra::FramebufferConfig& framebuffer, size_t i
         buffer.Flush();  // Ensure host writes are visible before the GPU copy.
     }
 
-    const VkBufferImageCopy copy{
+    const VkBufferImageCopy2 copy{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+        .pNext = nullptr,
         .bufferOffset = image_offset,
         .bufferRowLength = 0,
         .bufferImageHeight = 0,

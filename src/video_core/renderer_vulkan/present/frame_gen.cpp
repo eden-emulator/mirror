@@ -140,8 +140,10 @@ VkImageMemoryBarrier2 MakeTransitionBarrier(VkImage image, VkPipelineStageFlags2
     };
 }
 
-VkImageCopy MakeCopyRegion(VkExtent2D extent) {
-    return VkImageCopy{
+VkImageCopy2 MakeCopyRegion(VkExtent2D extent) {
+    return VkImageCopy2{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+        .pNext = nullptr,
         .srcSubresource{
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
             .mipLevel = 0,

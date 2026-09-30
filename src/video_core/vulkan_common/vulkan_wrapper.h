@@ -246,13 +246,13 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCmdBindTransformFeedbackBuffersEXT vkCmdBindTransformFeedbackBuffersEXT{};
     PFN_vkCmdBindVertexBuffers vkCmdBindVertexBuffers{};
     PFN_vkCmdBindVertexBuffers2EXT vkCmdBindVertexBuffers2EXT{};
-    PFN_vkCmdBlitImage vkCmdBlitImage{};
+    PFN_vkCmdBlitImage2 vkCmdBlitImage2{};
     PFN_vkCmdClearAttachments vkCmdClearAttachments{};
     PFN_vkCmdClearColorImage vkCmdClearColorImage{};
-    PFN_vkCmdCopyBuffer vkCmdCopyBuffer{};
-    PFN_vkCmdCopyBufferToImage vkCmdCopyBufferToImage{};
-    PFN_vkCmdCopyImage vkCmdCopyImage{};
-    PFN_vkCmdCopyImageToBuffer vkCmdCopyImageToBuffer{};
+    PFN_vkCmdCopyBuffer2 vkCmdCopyBuffer2{};
+    PFN_vkCmdCopyBufferToImage2 vkCmdCopyBufferToImage2{};
+    PFN_vkCmdCopyImage2 vkCmdCopyImage2{};
+    PFN_vkCmdCopyImageToBuffer2 vkCmdCopyImageToBuffer2{};
     PFN_vkCmdCopyQueryPoolResults vkCmdCopyQueryPoolResults{};
     PFN_vkCmdDispatch vkCmdDispatch{};
     PFN_vkCmdDispatchIndirect vkCmdDispatchIndirect{};
@@ -272,7 +272,7 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCmdPushConstants vkCmdPushConstants{};
     PFN_vkCmdPushDescriptorSetWithTemplateKHR vkCmdPushDescriptorSetWithTemplateKHR{};
     PFN_vkCmdResetQueryPool vkCmdResetQueryPool{};
-    PFN_vkCmdResolveImage vkCmdResolveImage{};
+    PFN_vkCmdResolveImage2 vkCmdResolveImage2{};
     PFN_vkCmdSetBlendConstants vkCmdSetBlendConstants{};
     PFN_vkCmdSetCullModeEXT vkCmdSetCullModeEXT{};
     PFN_vkCmdSetDepthBias vkCmdSetDepthBias{};
@@ -1274,16 +1274,35 @@ public:
     }
 
     void BlitImage(VkImage src_image, VkImageLayout src_layout, VkImage dst_image,
-                   VkImageLayout dst_layout, Span<VkImageBlit> regions,
+                   VkImageLayout dst_layout, Span<VkImageBlit2> regions,
                    VkFilter filter) const noexcept {
-        dld->vkCmdBlitImage(handle, src_image, src_layout, dst_image, dst_layout, regions.size(),
-                            regions.data(), filter);
+        const VkBlitImageInfo2 info{
+            .sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+            .pNext = nullptr,
+            .srcImage = src_image,
+            .srcImageLayout = src_layout,
+            .dstImage = dst_image,
+            .dstImageLayout = dst_layout,
+            .regionCount = regions.size(),
+            .pRegions = regions.data(),
+            .filter = filter,
+        };
+        dld->vkCmdBlitImage2(handle, &info);
     }
 
     void ResolveImage(VkImage src_image, VkImageLayout src_layout, VkImage dst_image,
-                      VkImageLayout dst_layout, Span<VkImageResolve> regions) {
-        dld->vkCmdResolveImage(handle, src_image, src_layout, dst_image, dst_layout, regions.size(),
-                               regions.data());
+                      VkImageLayout dst_layout, Span<VkImageResolve2> regions) const noexcept {
+        const VkResolveImageInfo2 info{
+            .sType = VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2,
+            .pNext = nullptr,
+            .srcImage = src_image,
+            .srcImageLayout = src_layout,
+            .dstImage = dst_image,
+            .dstImageLayout = dst_layout,
+            .regionCount = regions.size(),
+            .pRegions = regions.data(),
+        };
+        dld->vkCmdResolveImage2(handle, &info);
     }
 
     void Dispatch(u32 x, u32 y, u32 z) const noexcept {
@@ -1353,26 +1372,59 @@ public:
     }
 
     void CopyBufferToImage(VkBuffer src_buffer, VkImage dst_image, VkImageLayout dst_image_layout,
-                           Span<VkBufferImageCopy> regions) const noexcept {
-        dld->vkCmdCopyBufferToImage(handle, src_buffer, dst_image, dst_image_layout, regions.size(),
-                                    regions.data());
+                           Span<VkBufferImageCopy2> regions) const noexcept {
+        const VkCopyBufferToImageInfo2 info{
+            .sType = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
+            .pNext = nullptr,
+            .srcBuffer = src_buffer,
+            .dstImage = dst_image,
+            .dstImageLayout = dst_image_layout,
+            .regionCount = regions.size(),
+            .pRegions = regions.data(),
+        };
+        dld->vkCmdCopyBufferToImage2(handle, &info);
     }
 
     void CopyBuffer(VkBuffer src_buffer, VkBuffer dst_buffer,
-                    Span<VkBufferCopy> regions) const noexcept {
-        dld->vkCmdCopyBuffer(handle, src_buffer, dst_buffer, regions.size(), regions.data());
+                    Span<VkBufferCopy2> regions) const noexcept {
+        const VkCopyBufferInfo2 info{
+            .sType = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+            .pNext = nullptr,
+            .srcBuffer = src_buffer,
+            .dstBuffer = dst_buffer,
+            .regionCount = regions.size(),
+            .pRegions = regions.data(),
+        };
+        dld->vkCmdCopyBuffer2(handle, &info);
     }
 
     void CopyImage(VkImage src_image, VkImageLayout src_layout, VkImage dst_image,
-                   VkImageLayout dst_layout, Span<VkImageCopy> regions) const noexcept {
-        dld->vkCmdCopyImage(handle, src_image, src_layout, dst_image, dst_layout, regions.size(),
-                            regions.data());
+                   VkImageLayout dst_layout, Span<VkImageCopy2> regions) const noexcept {
+        const VkCopyImageInfo2 info{
+            .sType = VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
+            .pNext = nullptr,
+            .srcImage = src_image,
+            .srcImageLayout = src_layout,
+            .dstImage = dst_image,
+            .dstImageLayout = dst_layout,
+            .regionCount = regions.size(),
+            .pRegions = regions.data(),
+        };
+        dld->vkCmdCopyImage2(handle, &info);
     }
 
     void CopyImageToBuffer(VkImage src_image, VkImageLayout src_layout, VkBuffer dst_buffer,
-                           Span<VkBufferImageCopy> regions) const noexcept {
-        dld->vkCmdCopyImageToBuffer(handle, src_image, src_layout, dst_buffer, regions.size(),
-                                    regions.data());
+                           Span<VkBufferImageCopy2> regions) const noexcept {
+        const VkCopyImageToBufferInfo2 info{
+            .sType = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2,
+            .pNext = nullptr,
+            .srcImage = src_image,
+            .srcImageLayout = src_layout,
+            .dstBuffer = dst_buffer,
+            .regionCount = regions.size(),
+            .pRegions = regions.data(),
+        };
+        dld->vkCmdCopyImageToBuffer2(handle, &info);
     }
 
     void CopyQueryPoolResults(VkQueryPool query_pool, u32 first_query, u32 query_count,

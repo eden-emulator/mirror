@@ -96,13 +96,13 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdBindPipeline);
     X(vkCmdBindTransformFeedbackBuffersEXT);
     X(vkCmdBindVertexBuffers);
-    X(vkCmdBlitImage);
+    X(vkCmdBlitImage2);
     X(vkCmdClearAttachments);
     X(vkCmdClearColorImage);
-    X(vkCmdCopyBuffer);
-    X(vkCmdCopyBufferToImage);
-    X(vkCmdCopyImage);
-    X(vkCmdCopyImageToBuffer);
+    X(vkCmdCopyBuffer2);
+    X(vkCmdCopyBufferToImage2);
+    X(vkCmdCopyImage2);
+    X(vkCmdCopyImageToBuffer2);
     X(vkCmdCopyQueryPoolResults);
     X(vkCmdDispatch);
     X(vkCmdDispatchIndirect);
@@ -158,7 +158,7 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdSetColorBlendEnableEXT);
     X(vkCmdSetColorBlendEquationEXT);
     X(vkCmdResetQueryPool);
-    X(vkCmdResolveImage);
+    X(vkCmdResolveImage2);
     X(vkCreateBuffer);
     X(vkCreateBufferView);
     X(vkCreateCommandPool);
@@ -253,12 +253,19 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
         Proc(dld.vkQueueSubmit2, dld, "vkQueueSubmit2KHR", device);
     }
 
-    if (!dld.vkCmdBeginRendering) {
-        Proc(dld.vkCmdBeginRendering, dld, "vkCmdBeginRenderingKHR", device);
-    }
-    if (!dld.vkCmdEndRendering) {
-        Proc(dld.vkCmdEndRendering, dld, "vkCmdEndRenderingKHR", device);
-    }
+    const auto load_khr = [&](auto& function, const char* name) {
+        if (!function) {
+            Proc(function, dld, name, device);
+        }
+    };
+    load_khr(dld.vkCmdBeginRendering, "vkCmdBeginRenderingKHR");
+    load_khr(dld.vkCmdEndRendering, "vkCmdEndRenderingKHR");
+    load_khr(dld.vkCmdBlitImage2, "vkCmdBlitImage2KHR");
+    load_khr(dld.vkCmdCopyBuffer2, "vkCmdCopyBuffer2KHR");
+    load_khr(dld.vkCmdCopyBufferToImage2, "vkCmdCopyBufferToImage2KHR");
+    load_khr(dld.vkCmdCopyImage2, "vkCmdCopyImage2KHR");
+    load_khr(dld.vkCmdCopyImageToBuffer2, "vkCmdCopyImageToBuffer2KHR");
+    load_khr(dld.vkCmdResolveImage2, "vkCmdResolveImage2KHR");
 #undef X
 }
 

@@ -503,9 +503,11 @@ void SanitizeDepthStencilSwizzle(std::array<SwizzleSource, 4>& swizzle,
     };
 }
 
-[[nodiscard]] VkImageCopy MakeImageCopy(const VideoCommon::ImageCopy& copy,
-                                        VkImageAspectFlags aspect_mask) noexcept {
-    return VkImageCopy{
+[[nodiscard]] VkImageCopy2 MakeImageCopy(const VideoCommon::ImageCopy& copy,
+                                         VkImageAspectFlags aspect_mask) noexcept {
+    return VkImageCopy2{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+        .pNext = nullptr,
         .srcSubresource = MakeImageSubresourceLayers(copy.src_subresource, aspect_mask),
         .srcOffset = MakeOffset3D(copy.src_offset),
         .dstSubresource = MakeImageSubresourceLayers(copy.dst_subresource, aspect_mask),
@@ -514,9 +516,12 @@ void SanitizeDepthStencilSwizzle(std::array<SwizzleSource, 4>& swizzle,
     };
 }
 
-[[nodiscard]] VkBufferImageCopy MakeBufferImageCopy(const VideoCommon::ImageCopy& copy, bool is_src,
-                                                    VkImageAspectFlags aspect_mask) noexcept {
-    return VkBufferImageCopy{
+[[nodiscard]] VkBufferImageCopy2 MakeBufferImageCopy(const VideoCommon::ImageCopy& copy,
+                                                     bool is_src,
+                                                     VkImageAspectFlags aspect_mask) noexcept {
+    return VkBufferImageCopy2{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+        .pNext = nullptr,
         .bufferOffset = 0,
         .bufferRowLength = 0,
         .bufferImageHeight = 0,
@@ -527,25 +532,13 @@ void SanitizeDepthStencilSwizzle(std::array<SwizzleSource, 4>& swizzle,
     };
 }
 
-[[maybe_unused]] [[nodiscard]] boost::container::small_vector<VkBufferCopy, 16>
-TransformBufferCopies(std::span<const VideoCommon::BufferCopy> copies, size_t buffer_offset) {
-    boost::container::small_vector<VkBufferCopy, 16> result(copies.size());
-    std::ranges::transform(
-        copies, result.begin(), [buffer_offset](const VideoCommon::BufferCopy& copy) {
-            return VkBufferCopy{
-                .srcOffset = static_cast<VkDeviceSize>(copy.src_offset + buffer_offset),
-                .dstOffset = static_cast<VkDeviceSize>(copy.dst_offset),
-                .size = static_cast<VkDeviceSize>(copy.size),
-            };
-        });
-    return result;
-}
-
-[[nodiscard]] boost::container::small_vector<VkBufferImageCopy, 16> TransformBufferImageCopies(
+[[nodiscard]] boost::container::small_vector<VkBufferImageCopy2, 16> TransformBufferImageCopies(
     std::span<const BufferImageCopy> copies, size_t buffer_offset, VkImageAspectFlags aspect_mask) {
     struct Maker {
-        VkBufferImageCopy operator()(const BufferImageCopy& copy) const {
-            return VkBufferImageCopy{
+        VkBufferImageCopy2 operator()(const BufferImageCopy& copy) const {
+            return VkBufferImageCopy2{
+                .sType = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+                .pNext = nullptr,
                 .bufferOffset = copy.buffer_offset + buffer_offset,
                 .bufferRowLength = copy.buffer_row_length,
                 .bufferImageHeight = copy.buffer_image_height,
@@ -574,14 +567,14 @@ TransformBufferCopies(std::span<const VideoCommon::BufferCopy> copies, size_t bu
         VkImageAspectFlags aspect_mask;
     };
     if (aspect_mask == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) {
-        boost::container::small_vector<VkBufferImageCopy, 16> result(copies.size() * 2);
+        boost::container::small_vector<VkBufferImageCopy2, 16> result(copies.size() * 2);
         std::ranges::transform(copies, result.begin(),
                                Maker{buffer_offset, VK_IMAGE_ASPECT_DEPTH_BIT});
         std::ranges::transform(copies, result.begin() + copies.size(),
                                Maker{buffer_offset, VK_IMAGE_ASPECT_STENCIL_BIT});
         return result;
     } else {
-        boost::container::small_vector<VkBufferImageCopy, 16> result(copies.size());
+        boost::container::small_vector<VkBufferImageCopy2, 16> result(copies.size());
         std::ranges::transform(copies, result.begin(), Maker{buffer_offset, aspect_mask});
         return result;
     }
@@ -688,7 +681,7 @@ struct RangedBarrierRange {
 };
 void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage image,
                        VkImageAspectFlags aspect_mask, bool is_initialized,
-                       std::span<const VkBufferImageCopy> copies) {
+                       std::span<const VkBufferImageCopy2> copies) {
     //  Compute exact mip/layer range being written to
     RangedBarrierRange range;
     for (const auto& region : copies) {
@@ -732,10 +725,12 @@ void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage im
     cmdbuf.PipelineBarrier(0, {}, {}, write_barrier);
 }
 
-[[nodiscard]] VkImageBlit MakeImageBlit(const Region2D& dst_region, const Region2D& src_region,
-                                        const VkImageSubresourceLayers& dst_layers,
-                                        const VkImageSubresourceLayers& src_layers) {
-    return VkImageBlit{
+[[nodiscard]] VkImageBlit2 MakeImageBlit(const Region2D& dst_region, const Region2D& src_region,
+                                         const VkImageSubresourceLayers& dst_layers,
+                                         const VkImageSubresourceLayers& src_layers) {
+    return VkImageBlit2{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+        .pNext = nullptr,
         .srcSubresource = src_layers,
         .srcOffsets =
             {
@@ -772,11 +767,13 @@ void CopyBufferToImage(vk::CommandBuffer cmdbuf, VkBuffer src_buffer, VkImage im
            dst_region.end.y - dst_region.start.y == src_region.end.y - src_region.start.y;
 }
 
-[[nodiscard]] VkImageResolve MakeImageResolve(const Region2D& dst_region,
-                                              const Region2D& src_region,
-                                              const VkImageSubresourceLayers& dst_layers,
-                                              const VkImageSubresourceLayers& src_layers) {
-    return VkImageResolve{
+[[nodiscard]] VkImageResolve2 MakeImageResolve(const Region2D& dst_region,
+                                               const Region2D& src_region,
+                                               const VkImageSubresourceLayers& dst_layers,
+                                               const VkImageSubresourceLayers& src_layers) {
+    return VkImageResolve2{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2,
+        .pNext = nullptr,
         .srcSubresource = src_layers,
         .srcOffset =
             {
@@ -879,10 +876,12 @@ void BlitScale(Scheduler& scheduler, VkImage src_image, VkImage dst_image, const
             .x = static_cast<s32>(up_scaling ? scaled_width : extent.width),
             .y = static_cast<s32>(up_scaling ? scaled_height : extent.height),
         };
-        boost::container::small_vector<VkImageBlit, 4> regions;
+        boost::container::small_vector<VkImageBlit2, 4> regions;
         regions.reserve(resources.levels);
         for (s32 level = 0; level < resources.levels; level++) {
             regions.push_back({
+                .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+                .pNext = nullptr,
                 .srcSubresource{
                     .aspectMask = aspect_mask,
                     .mipLevel = static_cast<u32>(level),
@@ -1237,8 +1236,8 @@ void TextureCacheRuntime::ReinterpretImage(Image& dst, Image& src,
     if (ENABLE_MSAA_RESOLVE_CONSUME) {
         InvalidateResolveShadow(dst.Handle());
     }
-    boost::container::small_vector<VkBufferImageCopy, 16> vk_in_copies(copies.size());
-    boost::container::small_vector<VkBufferImageCopy, 16> vk_out_copies(copies.size());
+    boost::container::small_vector<VkBufferImageCopy2, 16> vk_in_copies(copies.size());
+    boost::container::small_vector<VkBufferImageCopy2, 16> vk_out_copies(copies.size());
     const VkImageAspectFlags src_aspect_mask = src.AspectMask();
     const VkImageAspectFlags dst_aspect_mask = dst.AspectMask();
 
@@ -1267,10 +1266,10 @@ void TextureCacheRuntime::ReinterpretImage(Image& dst, Image& src,
                       vk_in_copies, vk_out_copies](vk::CommandBuffer cmdbuf) {
         RangedBarrierRange dst_range;
         RangedBarrierRange src_range;
-        for (const VkBufferImageCopy& copy : vk_in_copies) {
+        for (const VkBufferImageCopy2& copy : vk_in_copies) {
             src_range.AddLayers(copy.imageSubresource);
         }
-        for (const VkBufferImageCopy& copy : vk_out_copies) {
+        for (const VkBufferImageCopy2& copy : vk_out_copies) {
             dst_range.AddLayers(copy.imageSubresource);
         }
         static constexpr VkMemoryBarrier2 READ_BARRIER{
@@ -1397,7 +1396,6 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
             }
         }();
         // Use shader-based depth/stencil blits if hardware doesn't support the format
-        // Note: MSAA resolves (MSAA->single) use vkCmdResolveImage which works fine
         if (!can_blit_depth_stencil) {
             UNIMPLEMENTED_IF(is_src_msaa || is_dst_msaa);
             blit_image_helper.BlitDepthStencil(dst_framebuffer, src, dst_region, src_region,
@@ -1647,7 +1645,7 @@ void TextureCacheRuntime::CopyImage(Image& dst, Image& src,
         };
         return ReinterpretImage(dst, src, std::span{&oneCopy, 1});
     }
-    boost::container::small_vector<VkImageCopy, 16> vk_copies(copies.size());
+    boost::container::small_vector<VkImageCopy2, 16> vk_copies(copies.size());
     const VkImageAspectFlags aspect_mask = dst.AspectMask();
     ASSERT(aspect_mask == src.AspectMask());
 
@@ -1660,7 +1658,7 @@ void TextureCacheRuntime::CopyImage(Image& dst, Image& src,
     scheduler.Record([dst_image, src_image, aspect_mask, vk_copies](vk::CommandBuffer cmdbuf) {
         RangedBarrierRange dst_range;
         RangedBarrierRange src_range;
-        for (const VkImageCopy& copy : vk_copies) {
+        for (const VkImageCopy2& copy : vk_copies) {
             dst_range.AddLayers(copy.dstSubresource);
             src_range.AddLayers(copy.srcSubresource);
         }
@@ -1749,7 +1747,9 @@ void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
             const VkImageAspectFlags aspect_mask = shadow->aspect_mask;
             const VkImage shadow_image = *shadow->image;
             const VkImage dst_image = dst.Handle();
-            const VkImageCopy region{
+            const VkImageCopy2 region{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+                .pNext = nullptr,
                 .srcSubresource{
                     .aspectMask = aspect_mask,
                     .mipLevel = 0,
@@ -2199,7 +2199,8 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
             }
 
             boost::container::small_vector<VkBuffer, 8> buffers_vector{};
-            boost::container::small_vector<boost::container::small_vector<VkBufferImageCopy, 16>, 8>
+            boost::container::small_vector<
+                boost::container::small_vector<VkBufferImageCopy2, 16>, 8>
                 vk_copies;
             for (size_t index = 0; index < buffers_span.size(); index++) {
                 buffers_vector.emplace_back(buffers_span[index]);
@@ -2278,7 +2279,7 @@ void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> o
         return;
     } else {
         boost::container::small_vector<VkBuffer, 8> buffers_vector{};
-        boost::container::small_vector<boost::container::small_vector<VkBufferImageCopy, 16>, 8>
+        boost::container::small_vector<boost::container::small_vector<VkBufferImageCopy2, 16>, 8>
             vk_copies;
         for (size_t index = 0; index < buffers_span.size(); index++) {
             buffers_vector.emplace_back(buffers_span[index]);

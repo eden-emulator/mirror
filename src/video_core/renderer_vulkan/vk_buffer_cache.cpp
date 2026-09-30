@@ -36,8 +36,10 @@ struct VertexBindings {
     u32 count;
 };
 
-VkBufferCopy MakeBufferCopy(const VideoCommon::BufferCopy& copy) {
-    return VkBufferCopy{
+VkBufferCopy2 MakeBufferCopy(const VideoCommon::BufferCopy& copy) {
+    return VkBufferCopy2{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+        .pNext = nullptr,
         .srcOffset = copy.src_offset,
         .dstOffset = copy.dst_offset,
         .size = copy.size,
@@ -234,7 +236,9 @@ public:
             scheduler.RequestOutsideRenderPassOperationContext();
             scheduler.Record([src_buffer = staging.buffer, src_offset = staging.offset,
                               dst_buffer = *buffer, size_bytes](vk::CommandBuffer cmdbuf) {
-                const VkBufferCopy copy{
+                const VkBufferCopy2 copy{
+                    .sType = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                    .pNext = nullptr,
                     .srcOffset = src_offset,
                     .dstOffset = 0,
                     .size = size_bytes,
@@ -500,7 +504,7 @@ void BufferCacheRuntime::CopyBuffer(VkBuffer dst_buffer, VkBuffer src_buffer,
     }
 
     // Measuring a popular game, this number never exceeds the specified size once data is warmed up
-    boost::container::small_vector<VkBufferCopy, 8> vk_copies(copies.size());
+    boost::container::small_vector<VkBufferCopy2, 8> vk_copies(copies.size());
     std::ranges::transform(copies, vk_copies.begin(), MakeBufferCopy);
     if (src_buffer == staging_pool.StreamBuf() && can_reorder_upload) {
         scheduler.RecordWithUploadBuffer([src_buffer, dst_buffer, vk_copies](
