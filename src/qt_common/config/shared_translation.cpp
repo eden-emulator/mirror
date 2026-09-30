@@ -154,6 +154,25 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
     INSERT(Settings, post_shader_preset, QString(), QString());
     INSERT(Settings, post_shader_enabled, tr("Enable post-processing effects"),
            tr("Applies post-processing effects to the final image."));
+    INSERT(Settings, frame_gen, tr("Frame generation (Lossless Scaling)"),
+           tr("Generates intermediate frames with the Lossless Scaling frame generation "
+              "shaders.\nRequires your own legal copy of Lossless.dll and forces VSync (FIFO)."));
+    INSERT(Settings, frame_gen_multiplier, tr("Frame generation multiplier:"),
+           tr("How many frames are shown for each frame the game renders.\nOnly used when the "
+              "target frame rate is 0."));
+    INSERT(Settings, frame_gen_target_rate, tr("Frame generation target rate:"),
+           tr("Pick the rate your display can actually show. The multiplier then rises or falls "
+              "on its own to hold it.\n0 uses the fixed multiplier."));
+    INSERT(Settings, frame_gen_flow_scale_auto, tr("Match motion estimation to the game"),
+           tr("Estimate motion at the resolution the game actually renders instead of the "
+              "upscaled output."));
+    INSERT(Settings, frame_gen_flow_scale, tr("Motion estimation resolution:"),
+           tr("Resolution of the optical flow pass, as a fraction of the game's render "
+              "resolution.\nLowering it is the cheapest way to reclaim performance."));
+    INSERT(Settings, frame_gen_queue_target, tr("Frame generation queue target:"),
+           tr("How many finished frames may wait ahead of the display.\nLarger queues absorb GPU "
+              "spikes at the cost of input latency."));
+    INSERT(Settings, frame_gen_dump_flow, QString(), QString());
     INSERT(Settings, fullscreen_mode, tr("Fullscreen Mode:"),
            tr("The method used to render the window in fullscreen.\nBorderless offers the best "
               "compatibility with the on-screen keyboard that some games request for "

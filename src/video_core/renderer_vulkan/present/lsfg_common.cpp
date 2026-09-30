@@ -127,7 +127,7 @@ LsfgBarriers& LsfgBarriers::DiscardToWrite(VkImage image) {
     barriers.push_back(VkImageMemoryBarrier2{
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext = nullptr,
-        .srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .srcStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
         .srcAccessMask = VK_ACCESS_2_NONE,
         .dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
         .dstAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT,

@@ -10,7 +10,7 @@ namespace Vulkan {
 
 LsfgShaders::LsfgShaders(const Device& device) {
     if (!device.IsVulkanMemoryModelSupported() || !device.HasNullDescriptor() ||
-        !device.IsFloat16Supported()) {
+        !device.IsNativeFloat16Enabled()) {
         return;
     }
 

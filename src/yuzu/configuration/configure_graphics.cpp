@@ -41,6 +41,37 @@
 #include "yuzu/configuration/configure_post_processing.h"
 #endif
 
+#ifdef HAS_LSFG
+#include <array>
+#include <filesystem>
+#include <system_error>
+#include <QDir>
+#include <QFileDialog>
+#include <QMessageBox>
+#include "common/string_util.h"
+#include "video_core/frame_gen/lossless_dll.h"
+
+namespace {
+
+QString LosslessSearchDirectory() {
+    const QString suffix = QStringLiteral("/steamapps/common/Lossless Scaling");
+    const std::array roots{
+        QDir::homePath() + QStringLiteral("/.local/share/Steam"),
+        QDir::homePath() + QStringLiteral("/.steam/steam"),
+        QDir::homePath() + QStringLiteral("/.var/app/com.valvesoftware.Steam/.local/share/Steam"),
+        QStringLiteral("C:/Program Files (x86)/Steam"),
+    };
+    for (const QString& root : roots) {
+        if (QDir(root + suffix).exists()) {
+            return root + suffix;
+        }
+    }
+    return QDir::homePath();
+}
+
+} // Anonymous namespace
+#endif
+
 ConfigureGraphics::ConfigureGraphics(
     const Core::System& system_, std::vector<VkDeviceInfo::Record>& records_,
     const std::function<void()>& expose_compute_option_,
@@ -322,10 +353,26 @@ void ConfigureGraphics::Setup(const ConfigurationShared::Builder& builder) {
 
             hold_graphics.emplace(setting->Id(), widget);
 #endif
+#ifdef HAS_LSFG
+        } else if (setting->Id() == Settings::values.frame_gen.Id()) {
+            SetupFrameGen(widget);
+            hold_graphics.emplace(setting->Id(), widget);
+        } else if (setting->PairedSetting() == &Settings::values.frame_gen) {
+            frame_gen_widgets.push_back(widget);
+            hold_graphics.emplace(setting->Id(), widget);
+#endif
         } else {
             hold_graphics.emplace(setting->Id(), widget);
         }
     }
+
+#ifdef HAS_LSFG
+    if (frame_gen_checkbox != nullptr) {
+        for (QWidget* frame_gen_widget : frame_gen_widgets) {
+            frame_gen_widget->setVisible(frame_gen_checkbox->isChecked());
+        }
+    }
+#endif
 
     for (const auto& [id, widget] : hold_graphics) {
         graphics_layout.addWidget(widget);
@@ -511,3 +558,84 @@ Settings::RendererBackend ConfigureGraphics::GetCurrentGraphicsBackend() const {
         return Settings::RendererBackend::OpenGL_GLSL;
     return selected_backend;
 }
+
+#ifdef HAS_LSFG
+void ConfigureGraphics::SetupFrameGen(ConfigurationShared::Widget* widget) {
+    frame_gen_checkbox = widget->checkbox;
+    lossless_button = new QPushButton(widget);
+    lossless_button->setEnabled(!system.IsPoweredOn());
+    UpdateLosslessButton();
+
+    connect(lossless_button, &QAbstractButton::clicked, this, [this] { InstallLosslessDll(); });
+    connect(frame_gen_checkbox, &QCheckBox::toggled, this, [this](bool checked) {
+        for (QWidget* frame_gen_widget : frame_gen_widgets) {
+            frame_gen_widget->setVisible(checked);
+        }
+    });
+
+    QBoxLayout* row = qobject_cast<QBoxLayout*>(widget->layout());
+    row->insertWidget(1, lossless_button);
+}
+
+void ConfigureGraphics::UpdateLosslessButton() {
+    using VideoCore::FrameGen::LosslessStatus;
+    if (VideoCore::FrameGen::GetInstalledLosslessStatus() == LosslessStatus::Ok) {
+        lossless_button->setText(tr("Replace Lossless.dll..."));
+    } else {
+        lossless_button->setText(tr("Install Lossless.dll..."));
+    }
+}
+
+void ConfigureGraphics::InstallLosslessDll() {
+    using VideoCore::FrameGen::LosslessStatus;
+    const auto status_text = [this](LosslessStatus status) {
+        switch (status) {
+        case LosslessStatus::NotPortableExecutable:
+            return tr("The selected file is not a Windows library. Select Lossless.dll from your "
+                      "Lossless Scaling installation.");
+        case LosslessStatus::MissingShaders:
+            return tr("This copy of Lossless.dll does not contain the frame generation shaders. "
+                      "Update Lossless Scaling and try again.");
+        case LosslessStatus::TranslationFailed:
+            return tr("The frame generation shaders could not be translated. This version of "
+                      "Lossless Scaling is not supported yet.");
+        case LosslessStatus::CacheUnusable:
+            return tr("The translated shaders could not be written to storage. Check that there "
+                      "is free space available.");
+        default:
+            return tr("The selected file could not be read.");
+        }
+    };
+
+    const QString file =
+        QFileDialog::getOpenFileName(this, tr("Select Lossless.dll"), LosslessSearchDirectory(),
+                                     tr("Lossless Scaling library (Lossless.dll)"));
+    if (file.isEmpty()) {
+        return;
+    }
+
+    const std::filesystem::path source{Common::U16StringFromBuffer(file.utf16(), file.size())};
+    LosslessStatus status = VideoCore::FrameGen::ValidateLosslessDll(source);
+    if (status == LosslessStatus::Ok) {
+        const std::filesystem::path target = VideoCore::FrameGen::GetLosslessDllPath();
+        std::error_code error;
+        std::filesystem::create_directories(target.parent_path(), error);
+        std::filesystem::copy_file(source, target,
+                                   std::filesystem::copy_options::overwrite_existing, error);
+        if (error) {
+            QMessageBox::warning(this, tr("Could not install Lossless.dll"),
+                                 tr("The selected file could not be copied."));
+            return;
+        }
+        status = VideoCore::FrameGen::BuildShaderCache();
+    }
+
+    UpdateLosslessButton();
+    if (status == LosslessStatus::Ok) {
+        QMessageBox::information(this, tr("Lossless Scaling"),
+                                 tr("Lossless.dll installed successfully."));
+        return;
+    }
+    QMessageBox::warning(this, tr("Could not install Lossless.dll"), status_text(status));
+}
+#endif

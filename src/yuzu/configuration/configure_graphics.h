@@ -22,6 +22,7 @@
 #include "qt_common/util/vk.h"
 #include "yuzu/configuration/configuration_shared.h"
 
+class QCheckBox;
 class QPushButton;
 class QEvent;
 class QObject;
@@ -42,6 +43,7 @@ class ConfigureGraphics;
 
 namespace ConfigurationShared {
 class Builder;
+class Widget;
 }
 
 class ConfigureGraphics : public ConfigurationShared::Tab {
@@ -83,6 +85,12 @@ private:
 
     int FindIndex(u32 enumeration, int value) const;
 
+#ifdef HAS_LSFG
+    void SetupFrameGen(ConfigurationShared::Widget* widget);
+    void InstallLosslessDll();
+    void UpdateLosslessButton();
+#endif
+
     std::unique_ptr<Ui::ConfigureGraphics> ui;
     QColor bg_color;
 
@@ -110,4 +118,9 @@ private:
     QWidget* api_widget;
     QComboBox* aspect_ratio_combobox;
     QComboBox* resolution_combobox;
+#ifdef HAS_LSFG
+    QCheckBox* frame_gen_checkbox{};
+    QPushButton* lossless_button{};
+    std::vector<QWidget*> frame_gen_widgets;
+#endif
 };

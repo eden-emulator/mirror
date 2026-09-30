@@ -52,23 +52,6 @@ constexpr VkExtent2D CaptureImageSize{
     .height = VideoCore::Capture::LinearHeight,
 };
 
-#ifdef HAS_LSFG
-[[nodiscard]] VkExtent2D GuestExtent(std::span<const Tegra::FramebufferConfig> framebuffers) {
-    if (framebuffers.empty()) {
-        return VkExtent2D{};
-    }
-
-    const auto& framebuffer = framebuffers.front();
-    if (framebuffer.crop_rect.IsEmpty()) {
-        return VkExtent2D{.width = framebuffer.width, .height = framebuffer.height};
-    }
-    return VkExtent2D{
-        .width = static_cast<u32>(framebuffer.crop_rect.GetWidth()),
-        .height = static_cast<u32>(framebuffer.crop_rect.GetHeight()),
-    };
-}
-#endif
-
 constexpr VkExtent3D CaptureImageExtent{
     .width = VideoCore::Capture::LinearWidth,
     .height = VideoCore::Capture::LinearHeight,
@@ -224,14 +207,23 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
 #ifdef HAS_LSFG
     void(frame_gen.WantedGenerations(present_manager.MaxExtraFrames()));
 
-    frame_gen.Process(device, frame, present_manager.SwapchainImageFormat(),
-                      GuestExtent(framebuffers));
+    const FrameGenSource source = blit_swapchain.GenerationSource();
+    frame_gen.Process(device, source.image, source.extent);
 
+    const Layout::FramebufferLayout layout = render_window.GetFramebufferLayout();
     const size_t generated_frames = frame_gen.GeneratedFrameCount();
     for (size_t generation = 0; generation < generated_frames; ++generation) {
-        Frame* generated = present_manager.GetRenderFrame();
-        blit_swapchain.PrepareFrame(device, generated, render_window.GetFramebufferLayout());
-        frame_gen.GenerateInto(device, generated, generation);
+        if (!blit_swapchain.IsGenerationFree(generation)) {
+            break;
+        }
+        Frame* const generated = present_manager.TryGetRenderFrame();
+        if (generated == nullptr) {
+            break;
+        }
+        blit_swapchain.PrepareFrame(device, generated, layout);
+        const LsfgImage& output = frame_gen.Generate(device, generation);
+        blit_swapchain.DrawGenerated(device, generated, layout, generation, output.Handle(),
+                                     output.View());
         scheduler.Flush(*generated->render_ready);
         present_manager.Present(generated);
     }

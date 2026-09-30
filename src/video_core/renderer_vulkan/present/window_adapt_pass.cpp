@@ -34,7 +34,47 @@ void WindowAdaptPass::Draw(const Device& device, RasterizerVulkan& rasterizer, S
                            std::list<Layer>& layers,
                            std::span<const Tegra::FramebufferConfig> configs,
                            const Layout::FramebufferLayout& layout, Frame* dst) {
+    const size_t layer_count = configs.size();
+    layer_push_constants.resize(layer_count);
+    layer_descriptor_sets.resize(layer_count);
+    layer_pipelines.resize(layer_count);
 
+    auto layer_it = layers.begin();
+    for (size_t i = 0; i < layer_count; i++) {
+        switch (configs[i].blending) {
+        case Tegra::BlendMode::Opaque:
+        default:
+            layer_pipelines[i] = *opaque_pipeline;
+            break;
+        case Tegra::BlendMode::Premultiplied:
+            layer_pipelines[i] = *premultiplied_pipeline;
+            break;
+        case Tegra::BlendMode::Coverage:
+            layer_pipelines[i] = *coverage_pipeline;
+            break;
+        }
+
+        layer_it->ConfigureDraw(device, &layer_push_constants[i], &layer_descriptor_sets[i],
+                                rasterizer, *sampler, image_index, configs[i], layout);
+        layer_it++;
+    }
+
+    Record(scheduler, dst, layer_push_constants, layer_descriptor_sets);
+}
+
+void WindowAdaptPass::DrawGenerated(const Device& device, Scheduler& scheduler, Layer& layer,
+                                    size_t generation, VkImage image, VkImageView view,
+                                    const Layout::FramebufferLayout& layout, Frame* dst) {
+    std::vector<PresentPushConstants> push_constants = layer_push_constants;
+    std::vector<VkDescriptorSet> descriptor_sets = layer_descriptor_sets;
+    layer.ConfigureGenerated(device, &push_constants.front(), &descriptor_sets.front(), *sampler,
+                             generation, image, view, layout);
+    Record(scheduler, dst, std::move(push_constants), std::move(descriptor_sets));
+}
+
+void WindowAdaptPass::Record(Scheduler& scheduler, Frame* dst,
+                             std::vector<PresentPushConstants> push_constants,
+                             std::vector<VkDescriptorSet> descriptor_sets) const {
     const VkImage host_image{*dst->image};
     const VkImageView host_view{*dst->image_view};
     const VkPipelineLayout graphics_pipeline_layout{*pipeline_layout};
@@ -42,33 +82,10 @@ void WindowAdaptPass::Draw(const Device& device, RasterizerVulkan& rasterizer, S
         .width = dst->width,
         .height = dst->height,
     };
-
-    const size_t layer_count = configs.size();
-    std::vector<PresentPushConstants> push_constants(layer_count);
-    std::vector<VkDescriptorSet> descriptor_sets(layer_count);
-    std::vector<VkPipeline> graphics_pipelines(layer_count);
-
-    auto layer_it = layers.begin();
-    for (size_t i = 0; i < layer_count; i++) {
-        switch (configs[i].blending) {
-        case Tegra::BlendMode::Opaque:
-        default:
-            graphics_pipelines[i] = *opaque_pipeline;
-            break;
-        case Tegra::BlendMode::Premultiplied:
-            graphics_pipelines[i] = *premultiplied_pipeline;
-            break;
-        case Tegra::BlendMode::Coverage:
-            graphics_pipelines[i] = *coverage_pipeline;
-            break;
-        }
-
-        layer_it->ConfigureDraw(device, &push_constants[i], &descriptor_sets[i], rasterizer, *sampler,
-                                image_index, configs[i], layout);
-        layer_it++;
-    }
-
-    scheduler.Record([=](vk::CommandBuffer cmdbuf) {
+    scheduler.Record([host_image, host_view, graphics_pipeline_layout, render_area,
+                      graphics_pipelines = layer_pipelines,
+                      push_constants = std::move(push_constants),
+                      descriptor_sets = std::move(descriptor_sets)](vk::CommandBuffer cmdbuf) {
         const f32 bg_red = Settings::values.bg_red.GetValue() / 255.0f;
         const f32 bg_green = Settings::values.bg_green.GetValue() / 255.0f;
         const f32 bg_blue = Settings::values.bg_blue.GetValue() / 255.0f;
@@ -80,7 +97,7 @@ void WindowAdaptPass::Draw(const Device& device, RasterizerVulkan& rasterizer, S
                               VK_IMAGE_LAYOUT_UNDEFINED);
         BeginRendering(cmdbuf, host_view, render_area, VK_ATTACHMENT_LOAD_OP_CLEAR, clear_value);
 
-        for (size_t i = 0; i < layer_count; i++) {
+        for (size_t i = 0; i < graphics_pipelines.size(); i++) {
             cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipelines[i]);
             cmdbuf.PushConstants(graphics_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT,
                                  push_constants[i]);

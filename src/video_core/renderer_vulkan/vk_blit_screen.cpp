@@ -92,13 +92,33 @@ void BlitScreen::PrepareFrame(const Device& device, Frame* frame,
         return;
     }
 
-    if (frame->width != layout.width || frame->height != layout.height) {
-        WaitIdle(device);
-    } else if (!present_manager.NeedsStorage(frame, true)) {
+    if (frame->width == layout.width && frame->height == layout.height) {
         return;
     }
 
-    present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format, true);
+    WaitIdle(device);
+    present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format);
+}
+
+FrameGenSource BlitScreen::GenerationSource() const {
+    if (layers.empty()) {
+        return {};
+    }
+    return FrameGenSource{
+        .image = layers.front().GenerationSource(),
+        .extent = layers.front().GenerationExtent(),
+    };
+}
+
+bool BlitScreen::IsGenerationFree(size_t generation) const {
+    return !layers.empty() && layers.front().IsGenerationFree(generation);
+}
+
+void BlitScreen::DrawGenerated(const Device& device, Frame* frame,
+                               const Layout::FramebufferLayout& layout, size_t generation,
+                               VkImage image, VkImageView view) {
+    window_adapt->DrawGenerated(device, scheduler, layers.front(), generation, image, view, layout,
+                                frame);
 }
 
 void BlitScreen::DrawToFrame(const Device& device, RasterizerVulkan& rasterizer, Frame* frame,
@@ -125,20 +145,16 @@ void BlitScreen::DrawToFrame(const Device& device, RasterizerVulkan& rasterizer,
         swapchain_view_format = current_swapchain_view_format;
     }
 
-    const bool storage_required = Settings::values.frame_gen.GetValue();
     if (resource_update_required) {
         WaitIdle(device);
         SetWindowAdaptPass(device);
 
         if (presentation_recreate_required) {
-            present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format,
-                                          storage_required);
+            present_manager.RecreateFrame(frame, layout.width, layout.height,
+                                          swapchain_view_format);
         }
 
         image_index = 0;
-    } else if (present_manager.NeedsStorage(frame, storage_required)) {
-        present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format,
-                                      true);
     }
 
     const VkExtent2D window_size{
@@ -146,11 +162,14 @@ void BlitScreen::DrawToFrame(const Device& device, RasterizerVulkan& rasterizer,
         .height = layout.screen.GetHeight(),
     };
 
-    if (layers.size() != framebuffers.size()) {
+    const size_t generations = Settings::FrameGenMaxGenerations();
+    if (layers.size() != framebuffers.size() || generation_count != generations) {
         layers.clear();
+        generation_count = generations;
         for (size_t i = 0; i < framebuffers.size(); ++i) {
             layers.emplace_back(device, memory_allocator, scheduler, device_memory, image_count,
-                                window_size, window_adapt->GetDescriptorSetLayout(), filters);
+                                generation_count, window_size,
+                                window_adapt->GetDescriptorSetLayout(), filters);
         }
     }
 

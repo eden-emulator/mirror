@@ -346,7 +346,7 @@
     <string name="frame_gen_flow_scale_auto">Match motion estimation to the game</string>
     <string name="frame_gen_flow_scale_auto_description">Estimate motion at the resolution the game actually renders instead of the upscaled output. Costs nothing in accuracy, since upscaling adds no motion detail.</string>
     <string name="frame_gen_flow_scale">Motion estimation resolution</string>
-    <string name="frame_gen_flow_scale_description">Resolution of the optical flow pass, as a fraction of the output. Lowering it is the cheapest way to reclaim performance.</string>
+    <string name="frame_gen_flow_scale_description">Resolution of the optical flow pass, as a fraction of the game\'s render resolution. Lowering it is the cheapest way to reclaim performance.</string>
     <string name="frame_gen_unsupported">Frame generation unavailable</string>
     <string name="frame_gen_unsupported_description">This GPU driver lacks the Vulkan memory model or half precision (float16) support that the Lossless Scaling shaders require.</string>
     <string name="lossless_scaling_setup_description">Optional. Provide your own Lossless.dll to enable frame generation later</string>

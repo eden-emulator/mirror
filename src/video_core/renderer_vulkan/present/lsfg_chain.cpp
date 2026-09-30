@@ -15,7 +15,7 @@ namespace Vulkan {
 namespace {
 
 constexpr u32 FIXED_DESCRIPTOR_SETS = 64;
-constexpr u32 DESCRIPTOR_SETS_PER_SLOT = 112;
+constexpr u32 DESCRIPTOR_SETS_PER_SLOT = 100;
 constexpr size_t FIRST_DELTA_LEVEL = 4;
 
 } // Anonymous namespace
@@ -88,8 +88,8 @@ void LsfgChain::DispatchShared(vk::CommandBuffer cmdbuf, u64 frame_count) {
 }
 
 void LsfgChain::DispatchGeneration(vk::CommandBuffer cmdbuf, u64 frame_count,
-                                   size_t generation_count, size_t generation, u32 target,
-                                   VkImage image, VkExtent2D extent) {
+                                   size_t generation_count, size_t generation, VkImage image,
+                                   VkExtent2D extent) {
     const size_t slot = LsfgGenerationSlot(generation_count, generation);
     for (size_t i = 0; i < LSFG_MIP_LEVELS; ++i) {
         gamma[i].Dispatch(cmdbuf, frame_count, slot);
@@ -97,7 +97,7 @@ void LsfgChain::DispatchGeneration(vk::CommandBuffer cmdbuf, u64 frame_count,
             delta[i - FIRST_DELTA_LEVEL].Dispatch(cmdbuf, frame_count, slot);
         }
     }
-    generate.Dispatch(cmdbuf, frame_count, slot, target, image, extent);
+    generate.Dispatch(cmdbuf, frame_count, slot, image, extent);
 }
 
 } // namespace Vulkan

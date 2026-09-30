@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <array>
 #include <optional>
 
 #include "common/common_types.h"
@@ -15,23 +16,22 @@ namespace Vulkan {
 
 class Device;
 class Scheduler;
-struct Frame;
 
 class FrameGen {
 public:
     explicit FrameGen(MemoryAllocator& memory_allocator, Scheduler& scheduler);
     ~FrameGen();
 
-    void Process(const Device& device, Frame* frame, VkFormat format, VkExtent2D guest_extent);
+    void Process(const Device& device, VkImage source, VkExtent2D extent);
 
     [[nodiscard]] size_t WantedGenerations(size_t capacity);
 
     [[nodiscard]] size_t GeneratedFrameCount() const;
 
-    void GenerateInto(const Device& device, Frame* destination, size_t generation);
+    [[nodiscard]] const LsfgImage& Generate(const Device& device, size_t generation);
 
 private:
-    void Rebuild(const Device& device, VkExtent2D extent, VkFormat format, f32 flow_scale);
+    void Rebuild(const Device& device, VkExtent2D extent, f32 flow_scale);
     void DumpDebugImages(u64 count);
 
     MemoryAllocator& memory_allocator;
@@ -39,11 +39,10 @@ private:
 
     std::optional<LsfgShaders> shaders;
     std::optional<LsfgChain> chain;
+    std::array<LsfgImage, LSFG_MAX_GENERATIONS> outputs;
     FrameGenPacer pacer;
     FrameGenPlan plan{};
-    VkExtent2D peak_guest_extent{};
     VkExtent2D built_extent{};
-    VkFormat built_format{VK_FORMAT_UNDEFINED};
     f32 built_flow_scale{};
     u64 frame_count{};
     u64 last_count{};

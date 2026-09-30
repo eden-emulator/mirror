@@ -32,11 +32,9 @@ struct Frame {
     u32 index;
     vk::Image image;
     vk::ImageView image_view;
-    vk::ImageView storage_view;
     vk::CommandBuffer cmdbuf;
     vk::Semaphore render_ready;
     vk::Fence present_done;
-    bool storage_capable{};
 };
 
 class PresentManager {
@@ -53,14 +51,13 @@ public:
     /// Returns the last used presentation frame
     Frame* GetRenderFrame();
 
+    [[nodiscard]] Frame* TryGetRenderFrame();
+
     /// Pushes a frame for presentation
     void Present(Frame* frame);
 
     /// Recreates the present frame to match the provided parameters
-    void RecreateFrame(Frame* frame, u32 width, u32 height, VkFormat image_view_format,
-                       bool storage);
-
-    [[nodiscard]] bool NeedsStorage(const Frame* frame, bool required) const;
+    void RecreateFrame(Frame* frame, u32 width, u32 height, VkFormat image_view_format);
 
     /// Waits for the present thread to finish presenting all queued frames.
     void WaitPresent();
@@ -103,7 +100,6 @@ private:
     std::mutex free_mutex;
     std::jthread present_thread;
     bool blit_supported;
-    bool storage_supported;
     bool use_present_thread;
     std::atomic<std::size_t> image_count{};
     std::atomic<std::size_t> swapchain_image_count{};

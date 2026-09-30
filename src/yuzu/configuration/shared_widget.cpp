@@ -511,7 +511,12 @@ void Widget::SetupComponent(const QString& label, std::function<void()>& load_fu
     layout->setContentsMargins(0, 0, 0, 0);
 
     if (other_setting == nullptr) {
-        other_setting = setting.PairedSetting();
+        Settings::BasicSetting* const paired = setting.PairedSetting();
+        const bool paired_standalone = paired != nullptr && translations.contains(paired->Id()) &&
+                                       !translations.at(paired->Id()).first.isEmpty();
+        if (!paired_standalone) {
+            other_setting = paired;
+        }
     }
 
     const bool require_checkbox = other_setting != nullptr && other_setting->TypeId() == "bool";
@@ -774,7 +779,12 @@ Builder::~Builder() = default;
 
 static bool IsAndroidOnly(const Settings::BasicSetting& setting) {
     const std::string& label = setting.GetLabel();
-    return label.starts_with("frame_gen") || label == "emulate_bgr565";
+#ifndef HAS_LSFG
+    if (label.starts_with("frame_gen")) {
+        return true;
+    }
+#endif
+    return label == "emulate_bgr565";
 }
 
 Widget* Builder::BuildWidget(Settings::BasicSetting* setting,

@@ -35,11 +35,11 @@ public:
     void DispatchShared(vk::CommandBuffer cmdbuf, u64 frame_count);
 
     void DispatchGeneration(vk::CommandBuffer cmdbuf, u64 frame_count, size_t generation_count,
-                            size_t generation, u32 target, VkImage image, VkExtent2D extent);
+                            size_t generation, VkImage image, VkExtent2D extent);
 
-    void SetTarget(const Device& device, size_t generation_count, size_t generation, u32 target,
+    void SetTarget(const Device& device, size_t generation_count, size_t generation,
                    VkImageView view) {
-        generate.SetTarget(device, LsfgGenerationSlot(generation_count, generation), target, view);
+        generate.SetTarget(device, LsfgGenerationSlot(generation_count, generation), view);
     }
 
     [[nodiscard]] LsfgImage& Input(u64 frame_count) {
