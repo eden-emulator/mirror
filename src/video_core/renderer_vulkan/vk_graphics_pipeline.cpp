@@ -575,8 +575,16 @@ bool GraphicsPipeline::ConfigureImpl(bool is_indexed) {
         prepare_stage(4);
     }
     texture_cache.UpdateRenderTargets(false);
-    texture_cache.CheckFeedbackLoop(std::span<const VideoCommon::ImageViewInOut>{views.data(),
-                                                                                 views.size()});
+    const std::span<const VideoCommon::ImageViewInOut> view_span{views.data(), views.size()};
+    texture_cache.CheckFeedbackLoop(view_span);
+    const auto samples_render_pass_image = [&](const VideoCommon::ImageViewInOut& view) {
+        return view.id &&
+               scheduler.IsRenderPassImage(texture_cache.GetImageView(view.id).ImageHandle());
+    };
+    if (scheduler.CanAliasRenderPass(texture_cache.GetFramebuffer()) &&
+        std::ranges::any_of(view_span, samples_render_pass_image)) {
+        scheduler.RequestOutsideRenderPassOperationContext();
+    }
     if (IsBuilt() && !pipeline) {
         return false;
     }

@@ -30,6 +30,8 @@
 
 namespace Vulkan {
 namespace {
+constexpr size_t DEPTH_VIEW = 8;
+
 struct BeginRenderingCommand {
     void operator()(vk::CommandBuffer cmdbuf, vk::CommandBuffer) const {
         BeginRendering(cmdbuf, attachments);
@@ -37,6 +39,24 @@ struct BeginRenderingCommand {
 
     RenderingAttachments attachments;
 };
+
+VkImageView DepthStencilView(const RenderingAttachments& attachments) {
+    if (attachments.depth.imageView != VK_NULL_HANDLE) {
+        return attachments.depth.imageView;
+    }
+    return attachments.stencil.imageView;
+}
+
+VkAccessFlags2 AttachmentWriteAccess(VkImageAspectFlags aspect_mask) {
+    if ((aspect_mask & VK_IMAGE_ASPECT_COLOR_BIT) != 0) {
+        return VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+    }
+    if ((aspect_mask & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0) {
+        return VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    }
+    return VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT |
+           VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+}
 } // Anonymous namespace
 
 void Scheduler::CommandChunk::ExecuteAll(vk::CommandBuffer cmdbuf,
@@ -129,6 +149,12 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer) {
     state.framebuffer_id = framebuffer->Id();
     ++renderpass_serial;
     renderpass_pristine = true;
+    alias_framebuffer_id = 0;
+    std::ranges::transform(attachments.colors, renderpass_views.begin(),
+                           &VkRenderingAttachmentInfo::imageView);
+    renderpass_views[DEPTH_VIEW] = DepthStencilView(attachments);
+    renderpass_extent = attachments.render_area.extent;
+    renderpass_layers = attachments.layers;
     attachments_touched = 0;
     attachments_written = 0;
 
@@ -153,11 +179,49 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer) {
     framebuffer->MarkResolveShadowsUpToDate();
 }
 
-void Scheduler::RequestRenderpass(const Framebuffer* framebuffer, u32 touched, u32 written) {
-    if (framebuffer->Id() != state.framebuffer_id) {
-        EndRenderPass();
-        BeginRenderPassImpl(framebuffer);
+void Scheduler::BindFramebuffer(const Framebuffer* framebuffer) {
+    if (framebuffer->Id() == state.framebuffer_id) {
+        return;
     }
+    if (CanAliasRenderPass(framebuffer)) {
+        alias_framebuffer_id = framebuffer->Id();
+        return;
+    }
+    EndRenderPass();
+    BeginRenderPassImpl(framebuffer);
+}
+
+bool Scheduler::CanAliasRenderPass(const Framebuffer* framebuffer) const {
+    const u64 id = framebuffer->Id();
+    if (id == alias_framebuffer_id) {
+        return true;
+    }
+    if (id == state.framebuffer_id || state.framebuffer_id == 0 ||
+        !device.IsExtDynamicRenderingUnusedAttachmentsSupported()) {
+        return false;
+    }
+    const RenderingAttachments& attachments = framebuffer->Attachments();
+    if (attachments.layers != renderpass_layers ||
+        attachments.render_area.extent.width != renderpass_extent.width ||
+        attachments.render_area.extent.height != renderpass_extent.height) {
+        return false;
+    }
+    for (u32 slot = 0; slot < attachments.num_colors; ++slot) {
+        if (attachments.colors[slot].imageView != renderpass_views[slot]) {
+            return false;
+        }
+    }
+    const VkImageView depth_stencil = DepthStencilView(attachments);
+    return depth_stencil == VK_NULL_HANDLE || depth_stencil == renderpass_views[DEPTH_VIEW];
+}
+
+bool Scheduler::IsRenderPassImage(VkImage image) const {
+    const auto images = std::span(renderpass_images).first(num_renderpass_images);
+    return std::ranges::find(images, image) != images.end();
+}
+
+void Scheduler::RequestRenderpass(const Framebuffer* framebuffer, u32 touched, u32 written) {
+    BindFramebuffer(framebuffer);
     renderpass_pristine = false;
     attachments_touched |= touched;
     attachments_written |= written;
@@ -165,10 +229,7 @@ void Scheduler::RequestRenderpass(const Framebuffer* framebuffer, u32 touched, u
 
 bool Scheduler::OverrideLoadOps(const Framebuffer* framebuffer, u32 attachments,
                                 VkAttachmentLoadOp load_op, const VkClearValue& value) {
-    if (framebuffer->Id() != state.framebuffer_id) {
-        EndRenderPass();
-        BeginRenderPassImpl(framebuffer);
-    }
+    BindFramebuffer(framebuffer);
     if (!renderpass_pristine || recorded_attachments == nullptr) {
         return false;
     }
@@ -250,6 +311,36 @@ void Scheduler::RelaxAttachmentOps(RenderingAttachments& attachments) const {
         attachments.depth.imageView = VK_NULL_HANDLE;
         attachments.stencil.imageView = VK_NULL_HANDLE;
     }
+}
+
+u32 Scheduler::RefineImageAccesses(const RenderingAttachments& attachments,
+                                   std::array<VkAccessFlags2, 9>& accesses) const {
+    const auto stores = [](const VkRenderingAttachmentInfo& attachment) {
+        return attachment.imageView != VK_NULL_HANDLE &&
+               attachment.storeOp != VK_ATTACHMENT_STORE_OP_NONE;
+    };
+    u32 unused_images = 0;
+    u32 image = 0;
+    const auto refine = [&](bool used, bool stored) {
+        if (!used) {
+            unused_images |= 1u << image;
+        }
+        if (!stored) {
+            accesses[image] = 0;
+        }
+        ++image;
+    };
+    for (u32 slot = 0; slot < attachments.num_colors; ++slot) {
+        if (renderpass_views[slot] != VK_NULL_HANDLE) {
+            const VkRenderingAttachmentInfo& color = attachments.colors[slot];
+            refine(color.imageView != VK_NULL_HANDLE, stores(color));
+        }
+    }
+    if (renderpass_views[DEPTH_VIEW] != VK_NULL_HANDLE) {
+        refine(DepthStencilView(attachments) != VK_NULL_HANDLE,
+               stores(attachments.depth) || stores(attachments.stencil));
+    }
+    return unused_images;
 }
 
 void Scheduler::PublishComputeWrites() {
@@ -428,78 +519,68 @@ void Scheduler::EndPendingOperations() {
     EndRenderPass();
 }
 
-void Scheduler::EndRenderPass()
-    {
-        if (state.framebuffer_id == 0) {
-            return;
-        }
-        if (recorded_attachments != nullptr) {
-            RelaxAttachmentOps(*recorded_attachments);
-        }
-        ended_attachments = std::exchange(recorded_attachments, nullptr);
+void Scheduler::EndRenderPass() {
+    if (state.framebuffer_id == 0) {
+        return;
+    }
+    std::array<VkAccessFlags2, 9> accesses{};
+    for (u32 index = 0; index < num_renderpass_images; ++index) {
+        accesses[index] = AttachmentWriteAccess(renderpass_image_ranges[index].aspectMask);
+    }
+    u32 unused_images = 0;
+    if (recorded_attachments != nullptr) {
+        RelaxAttachmentOps(*recorded_attachments);
+        unused_images = RefineImageAccesses(*recorded_attachments, accesses);
+    }
+    ended_attachments = std::exchange(recorded_attachments, nullptr);
 
-        query_cache->CounterClose(VideoCommon::QueryType::StreamingByteCount);
+    query_cache->CounterClose(VideoCommon::QueryType::StreamingByteCount);
 
-        // Log render pass end
-        if (GPU::Logging::IsActive() &&
-            Settings::values.gpu_log_vulkan_calls.GetValue()) {
-            GPU::Logging::GPULogger::GetInstance().LogRenderPassEnd();
-        }
-
-        query_cache->CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, false);
-        query_cache->NotifySegment(false);
-
-        Record([num_images = num_renderpass_images,
-                       images = renderpass_images,
-                       ranges = renderpass_image_ranges,
-                       write_barrier = &renderpass_write_barrier,
-                       num_memory_barriers =
-                           static_cast<size_t>(std::exchange(renderpass_writes, false))](
-                          vk::CommandBuffer cmdbuf) {
-            std::array<VkImageMemoryBarrier2, 9> barriers;
-            for (size_t i = 0; i < num_images; ++i) {
-                const VkImageSubresourceRange& range = ranges[i];
-                const bool is_color = (range.aspectMask & VK_IMAGE_ASPECT_COLOR_BIT) != 0;
-                const bool is_depth_stencil = (range.aspectMask
-                                              & (VK_IMAGE_ASPECT_DEPTH_BIT
-                                                 | VK_IMAGE_ASPECT_STENCIL_BIT)) !=0;
-
-                VkAccessFlags2 src_access = 0;
-
-                if (is_color)
-                    src_access |= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-                else if (is_depth_stencil)
-                    src_access |= VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-                else
-                    src_access |= VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT
-                                  | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-                barriers[i] = VkImageMemoryBarrier2{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                        .pNext = nullptr,
-                        .srcStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT
-                                        | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT
-                                        | VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-                        .srcAccessMask = src_access,
-                        .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
-                        .dstAccessMask = vk::ACCESS_IMAGE_USERS,
-                        .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
-                        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image = images[i],
-                        .subresourceRange = range,
-                };
-            }
-            cmdbuf.EndRendering();
-            cmdbuf.PipelineBarrier(0, vk::Span(write_barrier, num_memory_barriers), {},
-                                   vk::Span(barriers.data(), num_images));
-        });
-
-        state.framebuffer_id = 0;
-        num_renderpass_images = 0;
+    // Log render pass end
+    if (GPU::Logging::IsActive() && Settings::values.gpu_log_vulkan_calls.GetValue()) {
+        GPU::Logging::GPULogger::GetInstance().LogRenderPassEnd();
     }
 
+    query_cache->CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, false);
+    query_cache->NotifySegment(false);
+
+    Record([num_images = num_renderpass_images, images = renderpass_images,
+            ranges = renderpass_image_ranges, accesses, unused_images,
+            write_barrier = &renderpass_write_barrier,
+            num_memory_barriers = static_cast<size_t>(std::exchange(renderpass_writes, false))](
+               vk::CommandBuffer cmdbuf) {
+        std::array<VkImageMemoryBarrier2, 9> barriers;
+        size_t num_barriers = 0;
+        for (size_t i = 0; i < num_images; ++i) {
+            if (((unused_images >> i) & 1) != 0) {
+                continue;
+            }
+            barriers[num_barriers++] = VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .pNext = nullptr,
+                .srcStageMask = vk::PIPELINE_STAGE_ATTACHMENTS,
+                .srcAccessMask = accesses[i],
+                .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+                .dstAccessMask = vk::ACCESS_IMAGE_USERS,
+                .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = images[i],
+                .subresourceRange = ranges[i],
+            };
+        }
+        cmdbuf.EndRendering();
+        if (num_barriers + num_memory_barriers != 0) {
+            cmdbuf.PipelineBarrier(0, vk::Span(write_barrier, num_memory_barriers), {},
+                                   vk::Span(barriers.data(), num_barriers));
+        }
+    });
+
+    state.framebuffer_id = 0;
+    alias_framebuffer_id = 0;
+    num_renderpass_images = 0;
+}
 
 void Scheduler::AcquireNewChunk() {
     std::scoped_lock rl{reserve_mutex};

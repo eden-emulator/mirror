@@ -690,9 +690,7 @@ void BlitImageHelper::BlitColor(const Framebuffer* dst_framebuffer, VkImageView 
     };
     const VkPipelineLayout layout = *one_texture_pipeline_layout;
     const VkPipeline pipeline = FindOrEmplaceColorPipeline(key);
-    const auto attachments =
-        std::span(dst_framebuffer->Images()).first(dst_framebuffer->NumImages());
-    if (std::ranges::find(attachments, src_image) != attachments.end()) {
+    if (scheduler.IsRenderPassImage(src_image)) {
         scheduler.RequestOutsideRenderPassOperationContext();
     }
     scheduler.RequestRenderpass(dst_framebuffer);
@@ -958,9 +956,14 @@ void BlitImageHelper::CopyMSAAImpl(const RenderingFormats& formats, VkPipeline p
                 .extent = dst_extent,
             };
             const VkImageView dst_view_handle = *dst_view;
-            const RenderingAttachments attachments =
+            RenderingAttachments attachments =
                 MakeRenderingAttachments(formats, std::span(&dst_view_handle, formats.num_colors),
                                          dst_view_handle, render_area, 1);
+            attachments.colors[0].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            attachments.depth.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            if (copy_stencil) {
+                attachments.stencil.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            }
             const MSAACopyPushConstants push_constants{
                 .dst_offset = {dst_offset.x, dst_offset.y},
                 .src_offset = {copy.src_offset.x, copy.src_offset.y},

@@ -37,6 +37,12 @@ using Tegra::Engines::Maxwell3D;
 using VideoCommon::QueryType;
 
 namespace {
+bool LacksQueryWriteBack(const Device& device) {
+    const VkDriverId driver_id = device.GetDriverID();
+    return driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY ||
+           driver_id == VK_DRIVER_ID_ARM_PROPRIETARY || driver_id == VK_DRIVER_ID_MESA_TURNIP;
+}
+
 class SamplesQueryBank : public VideoCommon::BankBase {
 public:
     static constexpr size_t BANK_SIZE = 256;
@@ -235,9 +241,7 @@ public:
             return;
         }
         PauseCounter();
-        const auto driver_id = device.GetDriverID();
-        if (driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY ||
-            driver_id == VK_DRIVER_ID_ARM_PROPRIETARY || driver_id == VK_DRIVER_ID_MESA_TURNIP) {
+        if (LacksQueryWriteBack(device)) {
             pending_sync.clear();
             sync_values_stash.clear();
             return;
@@ -1467,6 +1471,10 @@ bool QueryCacheRuntime::HostConditionalRenderingCompareValue(VideoCommon::Lookup
     if (!impl->device.IsExtConditionalRendering()) {
         return false;
     }
+    if (LacksQueryWriteBack(impl->device)) {
+        EndHostConditionalRendering();
+        return true;
+    }
     HostConditionalRenderingCompareBCImpl(object_1.address, true, true);
     return true;
 }
@@ -1516,7 +1524,8 @@ bool QueryCacheRuntime::HostConditionalRenderingCompareValues(VideoCommon::Looku
     auto driver_id = impl->device.GetDriverID();
     const bool is_gpu_high = Settings::IsGPULevelHigh();
 
-    if ((!is_gpu_high && driver_id == VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS) || driver_id == VK_DRIVER_ID_QUALCOMM_PROPRIETARY || driver_id == VK_DRIVER_ID_ARM_PROPRIETARY || driver_id == VK_DRIVER_ID_MESA_TURNIP) {
+    if ((!is_gpu_high && driver_id == VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS) ||
+        LacksQueryWriteBack(impl->device)) {
         EndHostConditionalRendering();
         return true;
     }

@@ -130,6 +130,8 @@ public:
 
     void EraseResolveShadow(VkImage msaa_image);
 
+    bool CopyResolveShadow(VkImage msaa_image, VkImage dst_image, const VkImageCopy2& region);
+
     std::span<const VkFormat> ViewFormats(PixelFormat format) {
         return view_formats[static_cast<std::size_t>(format)];
     }

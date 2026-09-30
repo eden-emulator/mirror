@@ -1373,7 +1373,24 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
         return;
     }
     ASSERT(src.format == dst.format);
-    if (is_src_msaa && !is_dst_msaa &&
+    const bool is_resolve = is_src_msaa && !is_dst_msaa;
+    if (ENABLE_MSAA_RESOLVE_CONSUME && is_resolve && HaveSameExtent(dst_region, src_region)) {
+        const VkImageResolve2 resolve = MakeImageResolve(
+            dst_region, src_region, MakeSubresourceLayers(&dst), MakeSubresourceLayers(&src));
+        const VkImageCopy2 region{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+            .pNext = nullptr,
+            .srcSubresource = resolve.srcSubresource,
+            .srcOffset = resolve.srcOffset,
+            .dstSubresource = resolve.dstSubresource,
+            .dstOffset = resolve.dstOffset,
+            .extent = resolve.extent,
+        };
+        if (CopyResolveShadow(src.ImageHandle(), dst.ImageHandle(), region)) {
+            return;
+        }
+    }
+    if (is_resolve &&
         (aspect_mask & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) != 0) {
         if ((aspect_mask & VK_IMAGE_ASPECT_DEPTH_BIT) == 0) {
             UNIMPLEMENTED_MSG("Stencil-only MSAA resolve is not supported");
@@ -1416,7 +1433,6 @@ void TextureCacheRuntime::BlitImage(Framebuffer* dst_framebuffer, ImageView& dst
         return;
     }
 
-    const bool is_resolve = is_src_msaa && !is_dst_msaa;
     if (is_resolve && !HaveSameExtent(dst_region, src_region)) {
         blit_image_helper.BlitColorMSAA(dst_framebuffer, src, dst_region, src_region);
         return;
@@ -1729,120 +1745,126 @@ void TextureCacheRuntime::CopyImage(Image& dst, Image& src,
     });
 }
 
+bool TextureCacheRuntime::CopyResolveShadow(VkImage msaa_image, VkImage dst_image,
+                                            const VkImageCopy2& region) {
+    const ResolveShadow* const shadow = GetValidResolveShadow(msaa_image);
+    if (shadow == nullptr || shadow->aspect_mask != region.srcSubresource.aspectMask ||
+        region.srcSubresource.mipLevel != 0 || region.srcOffset.x < 0 || region.srcOffset.y < 0 ||
+        static_cast<u32>(region.srcOffset.x) + region.extent.width > shadow->extent.width ||
+        static_cast<u32>(region.srcOffset.y) + region.extent.height > shadow->extent.height ||
+        region.srcSubresource.baseArrayLayer + region.srcSubresource.layerCount >
+            shadow->layers) {
+        return false;
+    }
+    const VkImageAspectFlags aspect_mask = shadow->aspect_mask;
+    const VkImage shadow_image = *shadow->image;
+    scheduler.RequestOutsideRenderPassOperationContext();
+    scheduler.Record([shadow_image, dst_image, region, aspect_mask](vk::CommandBuffer cmdbuf) {
+        const std::array pre_barriers{
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .pNext = nullptr,
+                .srcStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+                .srcAccessMask = vk::ACCESS_IMAGE_WRITES,
+                .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = shadow_image,
+                .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
+                                  VK_REMAINING_ARRAY_LAYERS},
+            },
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .pNext = nullptr,
+                .srcStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+                .srcAccessMask = vk::ACCESS_IMAGE_WRITES,
+                .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = dst_image,
+                .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
+                                  VK_REMAINING_ARRAY_LAYERS},
+            },
+        };
+        const std::array post_barriers{
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .pNext = nullptr,
+                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask = 0,
+                .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+                .dstAccessMask = vk::ACCESS_IMAGE_USERS,
+                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = shadow_image,
+                .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
+                                  VK_REMAINING_ARRAY_LAYERS},
+            },
+            VkImageMemoryBarrier2{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .pNext = nullptr,
+                .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+                .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
+                .dstAccessMask = vk::ACCESS_IMAGE_USERS,
+                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = dst_image,
+                .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
+                                  VK_REMAINING_ARRAY_LAYERS},
+            },
+        };
+        cmdbuf.PipelineBarrier(0, {}, {}, pre_barriers);
+        cmdbuf.CopyImage(shadow_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst_image,
+                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
+        cmdbuf.PipelineBarrier(0, {}, {}, post_barriers);
+    });
+    const bool is_color = aspect_mask == VK_IMAGE_ASPECT_COLOR_BIT;
+    if ((is_color && ENABLE_MSAA_COLOR_DISCARD) ||
+        (!is_color && ENABLE_MSAA_DEPTH_STENCIL_DISCARD)) {
+        scheduler.DiscardResolvedAttachments(*shadow->view);
+    }
+    return true;
+}
+
 void TextureCacheRuntime::CopyImageMSAA(Image& dst, Image& src,
                                         std::span<const VideoCommon::ImageCopy> copies) {
     const bool msaa_to_non_msaa = src.info.num_samples > 1 && dst.info.num_samples == 1;
     const u32 num_samples = msaa_to_non_msaa ? src.info.num_samples : dst.info.num_samples;
     if (ENABLE_MSAA_RESOLVE_CONSUME && msaa_to_non_msaa && copies.size() == 1 &&
-        src.info.format == dst.info.format) {
+        src.info.format == dst.info.format && copies.front().src_offset.x == 0 &&
+        copies.front().src_offset.y == 0) {
         const VideoCommon::ImageCopy& copy = copies.front();
-        const ResolveShadow* const shadow = GetValidResolveShadow(src.Handle());
-        if (shadow != nullptr && shadow->aspect_mask == dst.AspectMask() &&
-            copy.src_offset.x == 0 && copy.src_offset.y == 0 &&
-            copy.src_subresource.base_level == 0 &&
-            static_cast<u32>(copy.extent.width) <= shadow->extent.width &&
-            static_cast<u32>(copy.extent.height) <= shadow->extent.height &&
-            static_cast<u32>(copy.src_subresource.base_layer + copy.src_subresource.num_layers) <=
-                shadow->layers) {
-            const VkImageAspectFlags aspect_mask = shadow->aspect_mask;
-            const VkImage shadow_image = *shadow->image;
-            const VkImage dst_image = dst.Handle();
-            const VkImageCopy2 region{
-                .sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
-                .pNext = nullptr,
-                .srcSubresource{
-                    .aspectMask = aspect_mask,
-                    .mipLevel = 0,
-                    .baseArrayLayer = static_cast<u32>(copy.src_subresource.base_layer),
-                    .layerCount = static_cast<u32>(copy.src_subresource.num_layers),
-                },
-                .srcOffset = {0, 0, 0},
-                .dstSubresource{
-                    .aspectMask = aspect_mask,
-                    .mipLevel = static_cast<u32>(copy.dst_subresource.base_level),
-                    .baseArrayLayer = static_cast<u32>(copy.dst_subresource.base_layer),
-                    .layerCount = static_cast<u32>(copy.dst_subresource.num_layers),
-                },
-                .dstOffset = {copy.dst_offset.x, copy.dst_offset.y, copy.dst_offset.z},
-                .extent = {copy.extent.width, copy.extent.height, 1},
-            };
-            scheduler.RequestOutsideRenderPassOperationContext();
-            scheduler.Record([shadow_image, dst_image, region,
-                              aspect_mask](vk::CommandBuffer cmdbuf) {
-                const std::array pre_barriers{
-                    VkImageMemoryBarrier2{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                        .pNext = nullptr,
-                        .srcStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
-                        .srcAccessMask = vk::ACCESS_IMAGE_WRITES,
-                        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                        .dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT,
-                        .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
-                        .newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image = shadow_image,
-                        .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
-                                          VK_REMAINING_ARRAY_LAYERS},
-                    },
-                    VkImageMemoryBarrier2{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                        .pNext = nullptr,
-                        .srcStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
-                        .srcAccessMask = vk::ACCESS_IMAGE_WRITES,
-                        .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                        .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                        .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
-                        .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image = dst_image,
-                        .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
-                                          VK_REMAINING_ARRAY_LAYERS},
-                    },
-                };
-                const std::array post_barriers{
-                    VkImageMemoryBarrier2{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                        .pNext = nullptr,
-                        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                        .srcAccessMask = 0,
-                        .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
-                        .dstAccessMask = vk::ACCESS_IMAGE_USERS,
-                        .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image = shadow_image,
-                        .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
-                                          VK_REMAINING_ARRAY_LAYERS},
-                    },
-                    VkImageMemoryBarrier2{
-                        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-                        .pNext = nullptr,
-                        .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-                        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
-                        .dstStageMask = vk::PIPELINE_STAGE_IMAGE_USERS,
-                        .dstAccessMask = vk::ACCESS_IMAGE_USERS,
-                        .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
-                        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image = dst_image,
-                        .subresourceRange{aspect_mask, 0, VK_REMAINING_MIP_LEVELS, 0,
-                                          VK_REMAINING_ARRAY_LAYERS},
-                    },
-                };
-                cmdbuf.PipelineBarrier(0, {}, {}, pre_barriers);
-                cmdbuf.CopyImage(shadow_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst_image,
-                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, region);
-                cmdbuf.PipelineBarrier(0, {}, {}, post_barriers);
-            });
-            const bool is_color = aspect_mask == VK_IMAGE_ASPECT_COLOR_BIT;
-            if ((is_color && ENABLE_MSAA_COLOR_DISCARD) ||
-                (!is_color && ENABLE_MSAA_DEPTH_STENCIL_DISCARD)) {
-                scheduler.DiscardResolvedAttachments(*shadow->view);
-            }
+        const VkImageCopy2 region{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_COPY_2,
+            .pNext = nullptr,
+            .srcSubresource{
+                .aspectMask = dst.AspectMask(),
+                .mipLevel = static_cast<u32>(copy.src_subresource.base_level),
+                .baseArrayLayer = static_cast<u32>(copy.src_subresource.base_layer),
+                .layerCount = static_cast<u32>(copy.src_subresource.num_layers),
+            },
+            .srcOffset = {0, 0, 0},
+            .dstSubresource{
+                .aspectMask = dst.AspectMask(),
+                .mipLevel = static_cast<u32>(copy.dst_subresource.base_level),
+                .baseArrayLayer = static_cast<u32>(copy.dst_subresource.base_layer),
+                .layerCount = static_cast<u32>(copy.dst_subresource.num_layers),
+            },
+            .dstOffset = {copy.dst_offset.x, copy.dst_offset.y, copy.dst_offset.z},
+            .extent = {copy.extent.width, copy.extent.height, 1},
+        };
+        if (CopyResolveShadow(src.Handle(), dst.Handle(), region)) {
             return;
         }
     }

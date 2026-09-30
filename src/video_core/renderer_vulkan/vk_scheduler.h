@@ -71,6 +71,10 @@ public:
 
     void DiscardResolvedAttachments(VkImageView resolve_view);
 
+    bool CanAliasRenderPass(const Framebuffer* framebuffer) const;
+
+    bool IsRenderPassImage(VkImage image) const;
+
     /// Requests the current execution context to be able to execute operations only allowed outside
     /// of a renderpass.
     void RequestOutsideRenderPassOperationContext();
@@ -300,6 +304,8 @@ private:
 
     void BeginRenderPassImpl(const Framebuffer* framebuffer);
 
+    void BindFramebuffer(const Framebuffer* framebuffer);
+
     void WorkerThread(std::stop_token stop_token);
 
     void AllocateWorkerCommandBuffer();
@@ -313,6 +319,9 @@ private:
     void PublishComputeWrites();
 
     void RelaxAttachmentOps(RenderingAttachments& attachments) const;
+
+    u32 RefineImageAccesses(const RenderingAttachments& attachments,
+                            std::array<VkAccessFlags2, 9>& accesses) const;
 
     void AcquireNewChunk();
 
@@ -333,6 +342,7 @@ private:
     State state;
 
     u64 renderpass_serial = 0;
+    u64 alias_framebuffer_id = 0;
     u64 wfi_serial = 0;
     bool renderpass_writes = false;
     bool renderpass_pristine = false;
@@ -347,6 +357,9 @@ private:
     u32 num_renderpass_images = 0;
     std::array<VkImage, 9> renderpass_images{};
     std::array<VkImageSubresourceRange, 9> renderpass_image_ranges{};
+    std::array<VkImageView, 9> renderpass_views{};
+    VkExtent2D renderpass_extent{};
+    u32 renderpass_layers = 0;
 
     std::queue<std::unique_ptr<CommandChunk>> work_queue;
     std::vector<std::unique_ptr<CommandChunk>> chunk_reserve;
