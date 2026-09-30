@@ -588,7 +588,7 @@ void ConfigureGraphics::UpdateLosslessButton() {
 
 void ConfigureGraphics::InstallLosslessDll() {
     using VideoCore::FrameGen::LosslessStatus;
-    const auto status_text = [this](LosslessStatus status) {
+    const auto status_text = [](LosslessStatus status) {
         switch (status) {
         case LosslessStatus::NotPortableExecutable:
             return tr("The selected file is not a Windows library. Select Lossless.dll from your "
