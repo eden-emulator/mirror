@@ -552,16 +552,6 @@ struct Values {
                                                             "accelerate_astc",
                                                             Category::RendererAdvanced};
 
-    SwitchableSetting<FramePacingMode, true> frame_pacing_mode{linkage,
-                                                               FramePacingMode::Target_Auto,
-                                                               FramePacingMode::Target_Auto,
-                                                               FramePacingMode::Target_120,
-                                                               "frame_pacing_mode",
-                                                               Category::RendererAdvanced,
-                                                               Specialization::Default,
-                                                               true,
-                                                               true};
-
     SwitchableSetting<bool> sync_memory_operations{linkage,
                                                    false,
                                                    "sync_memory_operations",

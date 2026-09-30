@@ -28,6 +28,8 @@ public:
 
     [[nodiscard]] size_t GeneratedFrameCount() const;
 
+    [[nodiscard]] std::chrono::nanoseconds PaceStep() const;
+
     [[nodiscard]] const LsfgImage& Generate(const Device& device, size_t generation);
 
 private:

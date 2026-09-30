@@ -13,6 +13,7 @@ namespace Vulkan {
 struct FrameGenPlan {
     size_t generations{};
     bool warm{};
+    f32 interval{};
 };
 
 class FrameGenPacer {

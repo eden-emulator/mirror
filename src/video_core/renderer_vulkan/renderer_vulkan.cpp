@@ -204,6 +204,8 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
                                present_manager.SwapchainImageCount(),
                                swapchain.GetImageViewFormat());
 
+    u32 pace_index = 0;
+    std::chrono::nanoseconds pace_step{};
 #ifdef HAS_LSFG
     void(frame_gen.WantedGenerations(present_manager.MaxExtraFrames()));
 
@@ -212,6 +214,7 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
 
     const Layout::FramebufferLayout layout = render_window.GetFramebufferLayout();
     const size_t generated_frames = frame_gen.GeneratedFrameCount();
+    const std::chrono::nanoseconds generated_step = frame_gen.PaceStep();
     for (size_t generation = 0; generation < generated_frames; ++generation) {
         if (!blit_swapchain.IsGenerationFree(generation)) {
             break;
@@ -225,13 +228,15 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
         blit_swapchain.DrawGenerated(device, generated, layout, generation, output.Handle(),
                                      output.View());
         scheduler.Flush(*generated->render_ready);
-        present_manager.Present(generated);
+        present_manager.Present(generated, static_cast<u32>(generation), generated_step);
+        pace_index = static_cast<u32>(generated_frames);
+        pace_step = generated_step;
     }
 #endif
 
     scheduler.Flush(*frame->render_ready);
 
-    present_manager.Present(frame);
+    present_manager.Present(frame, pace_index, pace_step);
 #ifdef HAS_LSFG
     scheduler.DispatchWork();
 #endif

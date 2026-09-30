@@ -112,7 +112,7 @@ FrameGenPlan FrameGenPacer::Plan(size_t capacity) {
         limit = (std::min)(Settings::FrameGenGenerations(), ceiling);
         output_credit = 0.0f;
         issued_generations = limit;
-        return {.generations = limit, .warm = limit > 0};
+        return {.generations = limit, .warm = limit > 0, .interval = smoothed_interval};
     }
 
     UpdateLimit(now, 1.0f / smoothed_interval, target_rate, ceiling);
@@ -137,7 +137,7 @@ FrameGenPlan FrameGenPacer::Plan(size_t capacity) {
     }
 
     issued_generations = generations;
-    return {.generations = generations, .warm = true};
+    return {.generations = generations, .warm = true, .interval = smoothed_interval};
 }
 
 void FrameGenPacer::UpdateLimit(Clock::time_point now, f32 base_rate, f32 target_rate,

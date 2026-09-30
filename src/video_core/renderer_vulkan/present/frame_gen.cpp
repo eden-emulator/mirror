@@ -272,6 +272,11 @@ size_t FrameGen::GeneratedFrameCount() const {
     return generated ? last_generations : 0;
 }
 
+std::chrono::nanoseconds FrameGen::PaceStep() const {
+    const f32 step = plan.interval / static_cast<f32>(last_generations + 1);
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<f32>(step));
+}
+
 const LsfgImage& FrameGen::Generate(const Device& device, size_t generation) {
     LsfgImage& output = outputs[generation];
     chain->SetTarget(device, last_generations, generation, output.View());

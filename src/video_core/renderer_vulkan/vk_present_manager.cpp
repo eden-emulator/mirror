@@ -117,7 +117,8 @@ PresentManager::PresentManager(const vk::Instance& instance_,
     , swapchain{swapchain_}
     , surface{surface_}
     , blit_supported{CanBlitToSwapchain(device.GetPhysical(), swapchain.GetImageViewFormat())}
-    , use_present_thread{Settings::values.async_presentation.GetValue()}
+    , use_present_thread{Settings::values.async_presentation.GetValue() ||
+                         Settings::values.frame_gen.GetValue()}
 {
     SetImageCount();
 
@@ -184,7 +185,9 @@ Frame* PresentManager::TryGetRenderFrame() {
     return frame;
 }
 
-void PresentManager::Present(Frame* frame) {
+void PresentManager::Present(Frame* frame, u32 pace_index, std::chrono::nanoseconds pace_step) {
+    frame->pace_index = pace_index;
+    frame->pace_step = pace_step;
     if (use_present_thread) {
         scheduler.Record([this, frame](vk::CommandBuffer) {
             std::unique_lock lock{queue_mutex};
@@ -279,21 +282,33 @@ void PresentManager::PresentThread(std::stop_token token) {
     Common::SetCurrentThreadName("VulkanPresent");
     Common::SetCurrentThreadPriority(Common::ThreadPriority::High);
     Common::SetCurrentThreadToPerformanceCores();
+    std::chrono::steady_clock::time_point pace_anchor{};
     while (!token.stop_requested()) {
         std::unique_lock lock{queue_mutex};
         // Wait for presentation frames
         frame_cv.wait(lock, token, [this] { return !present_queue.empty(); });
+        if (!present_queue.empty() && present_queue.front()->pace_index != 0) {
+            const Frame* const held = present_queue.front();
+            const auto next_anchor = [this] {
+                return std::any_of(present_queue.begin() + 1, present_queue.end(),
+                                   [](const Frame* next) { return next->pace_index == 0; });
+            };
+            void(frame_cv.wait_until(lock, token,
+                                     pace_anchor + held->pace_step * held->pace_index,
+                                     next_anchor));
+        }
         if (!token.stop_requested()) {
             // Take the frame and notify anyone waiting
             Frame* frame = present_queue.front();
             present_queue.pop_front();
             frame_cv.notify_one();
 
-            // By exchanging the lock ownership we take the swapchain lock
-            // before the queue lock goes out of scope. This way the swapchain
-            // lock in WaitPresent is guaranteed to occur after here.
             void(std::exchange(lock, std::unique_lock{swapchain_mutex}));
             CopyToSwapchain(frame);
+            if (frame->pace_index == 0 && frame->pace_step.count() != 0) {
+                frame->present_done.Wait(static_cast<u64>(frame->pace_step.count()));
+                pace_anchor = std::chrono::steady_clock::now();
+            }
 
             // Free the frame for reuse
             std::scoped_lock fl{free_mutex};

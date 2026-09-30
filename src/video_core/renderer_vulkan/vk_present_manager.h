@@ -7,6 +7,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <boost/container/deque.hpp>
@@ -35,6 +36,8 @@ struct Frame {
     vk::CommandBuffer cmdbuf;
     vk::Semaphore render_ready;
     vk::Fence present_done;
+    std::chrono::nanoseconds pace_step{};
+    u32 pace_index{};
 };
 
 class PresentManager {
@@ -54,7 +57,7 @@ public:
     [[nodiscard]] Frame* TryGetRenderFrame();
 
     /// Pushes a frame for presentation
-    void Present(Frame* frame);
+    void Present(Frame* frame, u32 pace_index, std::chrono::nanoseconds pace_step);
 
     /// Recreates the present frame to match the provided parameters
     void RecreateFrame(Frame* frame, u32 width, u32 height, VkFormat image_view_format);

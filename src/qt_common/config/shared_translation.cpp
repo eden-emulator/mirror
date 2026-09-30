@@ -198,9 +198,6 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
               "GPU: Use the GPU's compute shaders to decode ASTC textures (recommended).\n"
               "CPU Asynchronously: Use the CPU to decode ASTC textures on demand. Eliminates"
               "ASTC decoding\nstuttering but may present artifacts."));
-    INSERT(Settings, frame_pacing_mode, tr("Frame Pacing Mode (Vulkan only)"),
-           tr("Controls how the emulator manages frame pacing to reduce stuttering and make the "
-              "frame rate smoother and more consistent."));
     INSERT(Settings, vram_usage_mode, tr("VRAM Usage Mode:"),
            tr("Selects whether the emulator should prefer to conserve memory or make maximum usage "
               "of available video memory for performance.\nAggressive mode may impact performance "
@@ -392,14 +389,6 @@ std::unique_ptr<ComboboxTranslationMap> ComboboxEnumeration(QObject* parent) {
                               PAIR(AstcDecodeMode, Cpu, tr("CPU")),
                               PAIR(AstcDecodeMode, Gpu, tr("GPU")),
                               PAIR(AstcDecodeMode, CpuAsynchronous, tr("CPU Asynchronous")),
-                          }});
-    translations->insert({Settings::EnumMetadata<Settings::FramePacingMode>::Index(),
-                          {
-                              PAIR(FramePacingMode, Target_Auto, tr("Auto")),
-                              PAIR(FramePacingMode, Target_30, tr("30 FPS")),
-                              PAIR(FramePacingMode, Target_60, tr("60 FPS")),
-                              PAIR(FramePacingMode, Target_90, tr("90 FPS")),
-                              PAIR(FramePacingMode, Target_120, tr("120 FPS")),
                           }});
     translations->insert({Settings::EnumMetadata<Settings::VramUsageMode>::Index(),
                           {
