@@ -33,7 +33,6 @@ struct Frame {
     vk::Image image;
     vk::ImageView image_view;
     vk::ImageView storage_view;
-    vk::Framebuffer framebuffer;
     vk::CommandBuffer cmdbuf;
     vk::Semaphore render_ready;
     vk::Fence present_done;
@@ -59,7 +58,7 @@ public:
 
     /// Recreates the present frame to match the provided parameters
     void RecreateFrame(Frame* frame, u32 width, u32 height, VkFormat image_view_format,
-                       VkRenderPass rd, bool storage);
+                       bool storage);
 
     [[nodiscard]] bool NeedsStorage(const Frame* frame, bool required) const;
 

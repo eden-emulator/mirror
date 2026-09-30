@@ -98,8 +98,7 @@ void BlitScreen::PrepareFrame(const Device& device, Frame* frame,
         return;
     }
 
-    present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format,
-                                  window_adapt->GetRenderPass(), true);
+    present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format, true);
 }
 
 void BlitScreen::DrawToFrame(const Device& device, RasterizerVulkan& rasterizer, Frame* frame,
@@ -133,13 +132,13 @@ void BlitScreen::DrawToFrame(const Device& device, RasterizerVulkan& rasterizer,
 
         if (presentation_recreate_required) {
             present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format,
-                                          window_adapt->GetRenderPass(), storage_required);
+                                          storage_required);
         }
 
         image_index = 0;
     } else if (present_manager.NeedsStorage(frame, storage_required)) {
         present_manager.RecreateFrame(frame, layout.width, layout.height, swapchain_view_format,
-                                      window_adapt->GetRenderPass(), true);
+                                      true);
     }
 
     const VkExtent2D window_size{
@@ -160,41 +159,6 @@ void BlitScreen::DrawToFrame(const Device& device, RasterizerVulkan& rasterizer,
     if (++image_index >= image_count) {
         image_index = 0;
     }
-}
-
-vk::Framebuffer BlitScreen::CreateFramebuffer(const Device& device, const Layout::FramebufferLayout& layout,
-                                              VkImageView image_view,
-                                              VkFormat current_view_format) {
-    bool format_updated = swapchain_view_format != current_view_format;
-    swapchain_view_format = current_view_format;
-
-    if (!window_adapt || scaling_filter != filters.get_scaling_filter() || format_updated) {
-        WaitIdle(device);
-        SetWindowAdaptPass(device);
-        image_index = 0;
-    }
-
-    const VkExtent2D extent{
-        .width = layout.width,
-        .height = layout.height,
-    };
-
-    return CreateFramebuffer(device, image_view, extent, window_adapt->GetRenderPass());
-}
-
-vk::Framebuffer BlitScreen::CreateFramebuffer(const Device& device, const VkImageView& image_view, VkExtent2D extent,
-                                              VkRenderPass render_pass) {
-    return device.GetLogical().CreateFramebuffer(VkFramebufferCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-        .renderPass = render_pass,
-        .attachmentCount = 1,
-        .pAttachments = &image_view,
-        .width = extent.width,
-        .height = extent.height,
-        .layers = 1,
-    });
 }
 
 } // namespace Vulkan

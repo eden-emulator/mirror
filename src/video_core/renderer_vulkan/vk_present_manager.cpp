@@ -209,7 +209,7 @@ bool PresentManager::NeedsStorage(const Frame* frame, bool required) const {
 }
 
 void PresentManager::RecreateFrame(Frame* frame, u32 width, u32 height, VkFormat image_view_format,
-                                   VkRenderPass rd, bool storage) {
+                                   bool storage) {
     auto& dld = device.GetLogical();
 
     frame->width = width;
@@ -295,19 +295,6 @@ void PresentManager::RecreateFrame(Frame* frame, u32 width, u32 height, VkFormat
                 },
         });
     }
-
-    const VkImageView image_view{*frame->image_view};
-    frame->framebuffer = dld.CreateFramebuffer({
-        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-        .renderPass = rd,
-        .attachmentCount = 1,
-        .pAttachments = &image_view,
-        .width = width,
-        .height = height,
-        .layers = 1,
-    });
 }
 
 void PresentManager::WaitPresent() {

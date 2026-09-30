@@ -88,7 +88,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkBeginCommandBuffer);
     X(vkCmdBeginConditionalRenderingEXT);
     X(vkCmdBeginQuery);
-    X(vkCmdBeginRenderPass);
     X(vkCmdBeginRendering);
     X(vkCmdBeginTransformFeedbackEXT);
     X(vkCmdBindDescriptorSets);
@@ -116,7 +115,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCmdDrawIndirectByteCountEXT);
     X(vkCmdEndConditionalRenderingEXT);
     X(vkCmdEndQuery);
-    X(vkCmdEndRenderPass);
     X(vkCmdEndRendering);
     X(vkCmdEndTransformFeedbackEXT);
     X(vkCmdFillBuffer);
@@ -169,13 +167,11 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkCreateDescriptorSetLayout);
     X(vkCreateDescriptorUpdateTemplate);
     X(vkCreateFence);
-    X(vkCreateFramebuffer);
     X(vkCreateGraphicsPipelines);
     X(vkCreateImageView);
     X(vkCreatePipelineCache);
     X(vkCreatePipelineLayout);
     X(vkCreateQueryPool);
-    X(vkCreateRenderPass2);
     X(vkCreateSampler);
     X(vkCreateSemaphore);
     X(vkCreateShaderModule);
@@ -187,14 +183,12 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkDestroyDescriptorSetLayout);
     X(vkDestroyDescriptorUpdateTemplate);
     X(vkDestroyFence);
-    X(vkDestroyFramebuffer);
     X(vkDestroyImage);
     X(vkDestroyImageView);
     X(vkDestroyPipeline);
     X(vkDestroyPipelineCache);
     X(vkDestroyPipelineLayout);
     X(vkDestroyQueryPool);
-    X(vkDestroyRenderPass);
     X(vkDestroySampler);
     X(vkDestroySemaphore);
     X(vkDestroyShaderModule);
@@ -264,10 +258,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     }
     if (!dld.vkCmdEndRendering) {
         Proc(dld.vkCmdEndRendering, dld, "vkCmdEndRenderingKHR", device);
-    }
-
-    if (!dld.vkCreateRenderPass2) {
-        Proc(dld.vkCreateRenderPass2, dld, "vkCreateRenderPass2KHR", device);
     }
 #undef X
 }
@@ -363,10 +353,6 @@ void Destroy(VkDevice device, VkFence handle, const DeviceDispatch& dld) noexcep
     dld.vkDestroyFence(device, handle, nullptr);
 }
 
-void Destroy(VkDevice device, VkFramebuffer handle, const DeviceDispatch& dld) noexcept {
-    dld.vkDestroyFramebuffer(device, handle, nullptr);
-}
-
 void Destroy(VkDevice device, VkImage handle, const DeviceDispatch& dld) noexcept {
     dld.vkDestroyImage(device, handle, nullptr);
 }
@@ -389,10 +375,6 @@ void Destroy(VkDevice device, VkPipelineLayout handle, const DeviceDispatch& dld
 
 void Destroy(VkDevice device, VkQueryPool handle, const DeviceDispatch& dld) noexcept {
     dld.vkDestroyQueryPool(device, handle, nullptr);
-}
-
-void Destroy(VkDevice device, VkRenderPass handle, const DeviceDispatch& dld) noexcept {
-    dld.vkDestroyRenderPass(device, handle, nullptr);
 }
 
 void Destroy(VkDevice device, VkSampler handle, const DeviceDispatch& dld) noexcept {
@@ -529,10 +511,6 @@ void Fence::SetObjectNameEXT(const char* name) const {
     SetObjectName(dld, owner, handle, VK_OBJECT_TYPE_FENCE, name);
 }
 
-void Framebuffer::SetObjectNameEXT(const char* name) const {
-    SetObjectName(dld, owner, handle, VK_OBJECT_TYPE_FRAMEBUFFER, name);
-}
-
 DescriptorSets DescriptorPool::Allocate(const VkDescriptorSetAllocateInfo& ai) const {
     const std::size_t num = ai.descriptorSetCount;
     std::unique_ptr sets = std::make_unique<VkDescriptorSet[]>(num);
@@ -662,12 +640,6 @@ DescriptorPool Device::CreateDescriptorPool(const VkDescriptorPoolCreateInfo& ci
     return DescriptorPool(object, handle, *dld);
 }
 
-RenderPass Device::CreateRenderPass2(const VkRenderPassCreateInfo2& ci) const {
-    VkRenderPass object;
-    Check(dld->vkCreateRenderPass2(handle, &ci, nullptr, &object));
-    return RenderPass(object, handle, *dld);
-}
-
 DescriptorSetLayout Device::CreateDescriptorSetLayout(
     const VkDescriptorSetLayoutCreateInfo& ci) const {
     VkDescriptorSetLayout object;
@@ -710,12 +682,6 @@ Sampler Device::CreateSampler(const VkSamplerCreateInfo& ci) const {
     VkSampler object;
     Check(dld->vkCreateSampler(handle, &ci, nullptr, &object));
     return Sampler(object, handle, *dld);
-}
-
-Framebuffer Device::CreateFramebuffer(const VkFramebufferCreateInfo& ci) const {
-    VkFramebuffer object;
-    Check(dld->vkCreateFramebuffer(handle, &ci, nullptr, &object));
-    return Framebuffer(object, handle, *dld);
 }
 
 CommandPool Device::CreateCommandPool(const VkCommandPoolCreateInfo& ci) const {

@@ -198,100 +198,6 @@ vk::ImageView CreateWrappedImageView(const Device& device, vk::Image& image, VkF
     });
 }
 
-vk::RenderPass CreateWrappedRenderPass(const Device& device, VkFormat format,
-                                       VkImageLayout initial_layout) {
-    const VkAttachmentDescription2 attachment{
-        .sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
-        .pNext = nullptr,
-        .flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        .format = format,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp = initial_layout == VK_IMAGE_LAYOUT_UNDEFINED ? VK_ATTACHMENT_LOAD_OP_DONT_CARE
-                                                              : VK_ATTACHMENT_LOAD_OP_LOAD,
-        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .initialLayout = initial_layout,
-        .finalLayout = VK_IMAGE_LAYOUT_GENERAL,
-    };
-
-    static constexpr VkAttachmentReference2 color_attachment_ref{
-        .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
-        .pNext = nullptr,
-        .attachment = 0,
-        .layout = VK_IMAGE_LAYOUT_GENERAL,
-        .aspectMask = 0,
-    };
-
-    const VkSubpassDescription2 subpass_description{
-        .sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,
-        .pNext = nullptr,
-        .flags = 0,
-        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .viewMask = 0,
-        .inputAttachmentCount = 0,
-        .pInputAttachments = nullptr,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = &color_attachment_ref,
-        .pResolveAttachments = nullptr,
-        .pDepthStencilAttachment = nullptr,
-        .preserveAttachmentCount = 0,
-        .pPreserveAttachments = nullptr,
-    };
-
-    static constexpr VkMemoryBarrier2 dependency_barrier{
-        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .pNext = nullptr,
-        .srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .srcAccessMask = 0,
-        .dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstAccessMask =
-            VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
-    };
-
-    static constexpr VkSubpassDependency2 dependency{
-        .sType = VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2,
-        .pNext = &dependency_barrier,
-        .srcSubpass = VK_SUBPASS_EXTERNAL,
-        .dstSubpass = 0,
-        .srcStageMask = 0,
-        .dstStageMask = 0,
-        .srcAccessMask = 0,
-        .dstAccessMask = 0,
-        .dependencyFlags = 0,
-        .viewOffset = 0,
-    };
-
-    return device.GetLogical().CreateRenderPass2(VkRenderPassCreateInfo2{
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
-        .pNext = nullptr,
-        .flags = 0,
-        .attachmentCount = 1,
-        .pAttachments = &attachment,
-        .subpassCount = 1,
-        .pSubpasses = &subpass_description,
-        .dependencyCount = 1,
-        .pDependencies = &dependency,
-        .correlatedViewMaskCount = 0,
-        .pCorrelatedViewMasks = nullptr,
-    });
-}
-
-vk::Framebuffer CreateWrappedFramebuffer(const Device& device, vk::RenderPass& render_pass,
-                                         vk::ImageView& dest_image, VkExtent2D extent) {
-    return device.GetLogical().CreateFramebuffer(VkFramebufferCreateInfo{
-        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-        .renderPass = *render_pass,
-        .attachmentCount = 1,
-        .pAttachments = dest_image.address(),
-        .width = extent.width,
-        .height = extent.height,
-        .layers = 1,
-    });
-}
-
 vk::Sampler CreateWrappedSampler(const Device& device, VkFilter filter) {
     return device.GetLogical().CreateSampler(VkSamplerCreateInfo{
         .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -422,8 +328,20 @@ vk::PipelineLayout CreateWrappedPipelineLayout(const Device& device,
     });
 }
 
+VkPipelineRenderingCreateInfo ColorRenderingInfo(const VkFormat& format) {
+    return {
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        .pNext = nullptr,
+        .viewMask = 0,
+        .colorAttachmentCount = 1,
+        .pColorAttachmentFormats = &format,
+        .depthAttachmentFormat = VK_FORMAT_UNDEFINED,
+        .stencilAttachmentFormat = VK_FORMAT_UNDEFINED,
+    };
+}
+
 static vk::Pipeline CreateWrappedPipelineImpl(
-    const Device& device, vk::RenderPass& renderpass, vk::PipelineLayout& layout,
+    const Device& device, VkFormat format, vk::PipelineLayout& layout,
     std::tuple<vk::ShaderModule&, vk::ShaderModule&> shaders,
     VkPipelineColorBlendAttachmentState blending) {
     const std::array<VkPipelineShaderStageCreateInfo, 2> shader_stages{{
@@ -527,9 +445,10 @@ static vk::Pipeline CreateWrappedPipelineImpl(
         .pDynamicStates = dynamic_states.data(),
     };
 
+    const VkPipelineRenderingCreateInfo rendering_ci = ColorRenderingInfo(format);
     return device.GetLogical().CreateGraphicsPipeline(VkGraphicsPipelineCreateInfo{
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = nullptr,
+        .pNext = &rendering_ci,
         .flags = 0,
         .stageCount = static_cast<u32>(shader_stages.size()),
         .pStages = shader_stages.data(),
@@ -543,14 +462,14 @@ static vk::Pipeline CreateWrappedPipelineImpl(
         .pColorBlendState = &color_blend_ci,
         .pDynamicState = &dynamic_state_ci,
         .layout = *layout,
-        .renderPass = *renderpass,
+        .renderPass = VK_NULL_HANDLE,
         .subpass = 0,
         .basePipelineHandle = 0,
         .basePipelineIndex = 0,
     });
 }
 
-vk::Pipeline CreateWrappedPipeline(const Device& device, vk::RenderPass& renderpass,
+vk::Pipeline CreateWrappedPipeline(const Device& device, VkFormat format,
                                    vk::PipelineLayout& layout,
                                    std::tuple<vk::ShaderModule&, vk::ShaderModule&> shaders) {
     constexpr VkPipelineColorBlendAttachmentState color_blend_attachment_disabled{
@@ -565,12 +484,12 @@ vk::Pipeline CreateWrappedPipeline(const Device& device, vk::RenderPass& renderp
                           VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
-    return CreateWrappedPipelineImpl(device, renderpass, layout, shaders,
+    return CreateWrappedPipelineImpl(device, format, layout, shaders,
                                      color_blend_attachment_disabled);
 }
 
 vk::Pipeline CreateWrappedPremultipliedBlendingPipeline(
-    const Device& device, vk::RenderPass& renderpass, vk::PipelineLayout& layout,
+    const Device& device, VkFormat format, vk::PipelineLayout& layout,
     std::tuple<vk::ShaderModule&, vk::ShaderModule&> shaders) {
     constexpr VkPipelineColorBlendAttachmentState color_blend_attachment_premultiplied{
         .blendEnable = VK_TRUE,
@@ -584,12 +503,12 @@ vk::Pipeline CreateWrappedPremultipliedBlendingPipeline(
                           VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
-    return CreateWrappedPipelineImpl(device, renderpass, layout, shaders,
+    return CreateWrappedPipelineImpl(device, format, layout, shaders,
                                      color_blend_attachment_premultiplied);
 }
 
 vk::Pipeline CreateWrappedCoverageBlendingPipeline(
-    const Device& device, vk::RenderPass& renderpass, vk::PipelineLayout& layout,
+    const Device& device, VkFormat format, vk::PipelineLayout& layout,
     std::tuple<vk::ShaderModule&, vk::ShaderModule&> shaders) {
     constexpr VkPipelineColorBlendAttachmentState color_blend_attachment_coverage{
         .blendEnable = VK_TRUE,
@@ -603,7 +522,7 @@ vk::Pipeline CreateWrappedCoverageBlendingPipeline(
                           VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
-    return CreateWrappedPipelineImpl(device, renderpass, layout, shaders,
+    return CreateWrappedPipelineImpl(device, format, layout, shaders,
                                      color_blend_attachment_coverage);
 }
 
@@ -725,21 +644,35 @@ void ClearColorImage(vk::CommandBuffer& cmdbuf, VkImage image) {
     cmdbuf.ClearColorImage(image, VK_IMAGE_LAYOUT_GENERAL, {}, subresources);
 }
 
-void BeginRenderPass(vk::CommandBuffer& cmdbuf, VkRenderPass render_pass, VkFramebuffer framebuffer,
-                     VkExtent2D extent) {
-    const VkRenderPassBeginInfo renderpass_bi{
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+void BeginRendering(vk::CommandBuffer& cmdbuf, VkImageView view, VkExtent2D extent,
+                    VkAttachmentLoadOp load_op, const VkClearValue& clear_value) {
+    const VkRenderingAttachmentInfo attachment{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
         .pNext = nullptr,
-        .renderPass = render_pass,
-        .framebuffer = framebuffer,
+        .imageView = view,
+        .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+        .resolveMode = VK_RESOLVE_MODE_NONE,
+        .resolveImageView = VK_NULL_HANDLE,
+        .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .loadOp = load_op,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .clearValue = clear_value,
+    };
+    cmdbuf.BeginRendering(VkRenderingInfo{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .pNext = nullptr,
+        .flags = 0,
         .renderArea{
             .offset{},
             .extent = extent,
         },
-        .clearValueCount = 0,
-        .pClearValues = nullptr,
-    };
-    cmdbuf.BeginRenderPass(renderpass_bi, VK_SUBPASS_CONTENTS_INLINE);
+        .layerCount = 1,
+        .viewMask = 0,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &attachment,
+        .pDepthAttachment = nullptr,
+        .pStencilAttachment = nullptr,
+    });
 
     const VkViewport viewport{
         .x = 0.0f,

@@ -275,7 +275,6 @@ vk::Buffer RendererVulkan::RenderToBuffer(std::span<const Tegra::FramebufferConf
         f.image =
             CreateWrappedImage(memory_allocator, VkExtent2D{layout.width, layout.height}, format);
         f.image_view = CreateWrappedImageView(device, f.image, format);
-        f.framebuffer = blit_capture.CreateFramebuffer(device, layout, *f.image_view, format);
         return f;
     }();
 
@@ -353,8 +352,6 @@ void RendererVulkan::RenderAppletCaptureLayer(
     if (!applet_frame.image) {
         applet_frame.image = CreateWrappedImage(memory_allocator, CaptureImageSize, CaptureFormat);
         applet_frame.image_view = CreateWrappedImageView(device, applet_frame.image, CaptureFormat);
-        applet_frame.framebuffer = blit_applet.CreateFramebuffer(device,
-            VideoCore::Capture::Layout, *applet_frame.image_view, CaptureFormat);
     }
 
     scheduler.RequestOutsideRenderPassOperationContext();

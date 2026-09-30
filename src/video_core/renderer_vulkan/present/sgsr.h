@@ -19,7 +19,6 @@ public:
     VkImageView Draw(const Device& device, Scheduler& scheduler, size_t image_index, VkImage source_image, VkImageView source_image_view, VkExtent2D input_image_extent, const Common::Rectangle<f32>& crop_rect);
 private:
     void Initialize(const Device& device);
-    void UploadImages(const Device& device, Scheduler& scheduler);
     void UpdateDescriptorSets(const Device& device, VkImageView image_view, size_t image_index);
 
     MemoryAllocator& m_memory_allocator;
@@ -32,17 +31,14 @@ private:
     vk::ShaderModule m_vert_shader;
     vk::ShaderModule m_stage_shader;
     vk::Pipeline m_stage_pipeline;
-    vk::RenderPass m_renderpass;
     vk::Sampler m_sampler;
 
     struct Images {
         vk::DescriptorSets descriptor_sets;
         vk::Image image;
         vk::ImageView image_view;
-        vk::Framebuffer framebuffer;
     };
     std::vector<Images> m_dynamic_images;
-    bool m_images_ready{};
     bool m_edge_dir{};
 };
 

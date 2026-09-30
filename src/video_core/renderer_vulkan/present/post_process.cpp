@@ -126,68 +126,7 @@ VkPrimitiveTopology ToTopology(reshadefx::primitive_topology topology) {
     }
 }
 
-vk::RenderPass CreateFxRenderPass(const Device& device, VkFormat format, bool clear) {
-    VkAttachmentLoadOp load_op = VK_ATTACHMENT_LOAD_OP_LOAD;
-    VkImageLayout initial_layout = VK_IMAGE_LAYOUT_GENERAL;
-    if (clear) {
-        load_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        initial_layout = VK_IMAGE_LAYOUT_UNDEFINED;
-    }
-
-    const VkAttachmentDescription2 attachment{
-        .sType = VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
-        .pNext = nullptr,
-        .flags = 0,
-        .format = format,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp = load_op,
-        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout = initial_layout,
-        .finalLayout = VK_IMAGE_LAYOUT_GENERAL,
-    };
-
-    static constexpr VkAttachmentReference2 reference{
-        .sType = VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
-        .pNext = nullptr,
-        .attachment = 0,
-        .layout = VK_IMAGE_LAYOUT_GENERAL,
-        .aspectMask = 0,
-    };
-
-    const VkSubpassDescription2 subpass{
-        .sType = VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,
-        .pNext = nullptr,
-        .flags = 0,
-        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .viewMask = 0,
-        .inputAttachmentCount = 0,
-        .pInputAttachments = nullptr,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = &reference,
-        .pResolveAttachments = nullptr,
-        .pDepthStencilAttachment = nullptr,
-        .preserveAttachmentCount = 0,
-        .pPreserveAttachments = nullptr,
-    };
-
-    return device.GetLogical().CreateRenderPass2(VkRenderPassCreateInfo2{
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
-        .pNext = nullptr,
-        .flags = 0,
-        .attachmentCount = 1,
-        .pAttachments = &attachment,
-        .subpassCount = 1,
-        .pSubpasses = &subpass,
-        .dependencyCount = 0,
-        .pDependencies = nullptr,
-        .correlatedViewMaskCount = 0,
-        .pCorrelatedViewMasks = nullptr,
-    });
-}
-
-vk::Pipeline CreateFxPipeline(const Device& device, vk::RenderPass& renderpass,
+vk::Pipeline CreateFxPipeline(const Device& device, VkFormat format,
                               vk::PipelineLayout& layout, VkShaderModule vertex_shader,
                               VkShaderModule fragment_shader,
                               const reshadefx::pass& pass) {
@@ -308,9 +247,10 @@ vk::Pipeline CreateFxPipeline(const Device& device, vk::RenderPass& renderpass,
         .pDynamicStates = dynamic_states.data(),
     };
 
+    const VkPipelineRenderingCreateInfo rendering_ci = ColorRenderingInfo(format);
     return device.GetLogical().CreateGraphicsPipeline(VkGraphicsPipelineCreateInfo{
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = nullptr,
+        .pNext = &rendering_ci,
         .flags = 0,
         .stageCount = static_cast<u32>(stages.size()),
         .pStages = stages.data(),
@@ -324,7 +264,7 @@ vk::Pipeline CreateFxPipeline(const Device& device, vk::RenderPass& renderpass,
         .pColorBlendState = &color_blend,
         .pDynamicState = &dynamic_state,
         .layout = *layout,
-        .renderPass = *renderpass,
+        .renderPass = VK_NULL_HANDLE,
         .subpass = 0,
         .basePipelineHandle = nullptr,
         .basePipelineIndex = 0,
@@ -540,7 +480,9 @@ bool PostProcessChain::BuildEffects(const Device& device, MemoryAllocator& alloc
         for (const auto& pass : technique->passes) {
             Pass out;
             out.num_vertices = pass.num_vertices;
-            out.clear = pass.clear_render_targets != 0;
+            if (pass.clear_render_targets != 0) {
+                out.load_op = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            }
             out.target_texture = NO_TEXTURE;
             out.extent = m_extent;
 
@@ -606,22 +548,8 @@ bool PostProcessChain::BuildEffects(const Device& device, MemoryAllocator& alloc
                 continue;
             }
 
-            out.renderpass = CreateFxRenderPass(device, target_format, out.clear);
-            out.pipeline = CreateFxPipeline(device, out.renderpass, out.pipeline_layout,
+            out.pipeline = CreateFxPipeline(device, target_format, out.pipeline_layout,
                                             *vertex_shader->second, *fragment_shader->second, pass);
-
-            if (out.writes_backbuffer) {
-                for (u32 image = 0; image < m_image_count; ++image) {
-                    for (size_t slot = 0; slot < 2; ++slot) {
-                        out.framebuffers.push_back(CreateWrappedFramebuffer(
-                            device, out.renderpass, m_frames[image].views[slot], out.extent));
-                    }
-                }
-            } else {
-                out.framebuffers.push_back(
-                    CreateWrappedFramebuffer(device, out.renderpass,
-                                             effect.textures[out.target_texture].view, out.extent));
-            }
 
             effect.passes.push_back(std::move(out));
         }
@@ -859,19 +787,20 @@ void PostProcessChain::Draw(const Device& device, Scheduler& scheduler, size_t i
 
             UpdateDescriptors(device, effect, pass, image_index, current_view);
 
-            VkFramebuffer framebuffer{};
             VkImage target_image{};
+            VkImageView target_view{};
             if (pass.writes_backbuffer) {
                 const u32 target_slot = (slot + 1) % 2;
-                framebuffer = *pass.framebuffers[image_index * 2 + target_slot];
                 target_image = *frame.images[target_slot];
+                target_view = *frame.views[target_slot];
             } else {
-                framebuffer = *pass.framebuffers[0];
-                target_image = *effect.textures[pass.target_texture].image;
+                const Texture& texture = effect.textures[pass.target_texture];
+                target_image = *texture.image;
+                target_view = *texture.view;
             }
 
             const VkImage source_image = current_image;
-            const VkRenderPass renderpass = *pass.renderpass;
+            const VkAttachmentLoadOp load_op = pass.load_op;
             const VkPipeline pipeline = *pass.pipeline;
             const VkPipelineLayout layout = *pass.pipeline_layout;
             const VkDescriptorSet uniform_set = effect.uniform_sets[image_index];
@@ -883,12 +812,12 @@ void PostProcessChain::Draw(const Device& device, Scheduler& scheduler, size_t i
             scheduler.Record([=](vk::CommandBuffer cmdbuf) {
                 TransitionImageLayout(cmdbuf, source_image, VK_IMAGE_LAYOUT_GENERAL);
                 TransitionImageLayout(cmdbuf, target_image, VK_IMAGE_LAYOUT_GENERAL);
-                BeginRenderPass(cmdbuf, renderpass, framebuffer, extent);
+                BeginRendering(cmdbuf, target_view, extent, load_op);
                 cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
                 cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0,
                                           std::array{uniform_set, sampler_set}, {});
                 cmdbuf.Draw(vertices, 1, 0, 0);
-                cmdbuf.EndRenderPass();
+                cmdbuf.EndRendering();
                 TransitionImageLayout(cmdbuf, target_image, VK_IMAGE_LAYOUT_GENERAL);
             });
 

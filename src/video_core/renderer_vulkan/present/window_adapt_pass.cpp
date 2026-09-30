@@ -25,8 +25,7 @@ WindowAdaptPass::WindowAdaptPass(const Device& device, VkFormat frame_format, vk
     CreateDescriptorSetLayout(device);
     CreatePipelineLayout(device);
     CreateVertexShader(device);
-    CreateRenderPass(device, frame_format);
-    CreatePipelines(device);
+    CreatePipelines(device, frame_format);
 }
 
 WindowAdaptPass::~WindowAdaptPass() = default;
@@ -36,8 +35,8 @@ void WindowAdaptPass::Draw(const Device& device, RasterizerVulkan& rasterizer, S
                            std::span<const Tegra::FramebufferConfig> configs,
                            const Layout::FramebufferLayout& layout, Frame* dst) {
 
-    const VkFramebuffer host_framebuffer{*dst->framebuffer};
-    const VkRenderPass renderpass{*render_pass};
+    const VkImage host_image{*dst->image};
+    const VkImageView host_view{*dst->image_view};
     const VkPipelineLayout graphics_pipeline_layout{*pipeline_layout};
     const VkExtent2D render_area{
         .width = dst->width,
@@ -73,26 +72,13 @@ void WindowAdaptPass::Draw(const Device& device, RasterizerVulkan& rasterizer, S
         const f32 bg_red = Settings::values.bg_red.GetValue() / 255.0f;
         const f32 bg_green = Settings::values.bg_green.GetValue() / 255.0f;
         const f32 bg_blue = Settings::values.bg_blue.GetValue() / 255.0f;
-        const VkClearAttachment clear_attachment{
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .colorAttachment = 0,
-            .clearValue =
-                {
-                    .color = {.float32 = {bg_red, bg_green, bg_blue, 1.0f}},
-                },
-        };
-        const VkClearRect clear_rect{
-            .rect =
-                {
-                    .offset = {0, 0},
-                    .extent = render_area,
-                },
-            .baseArrayLayer = 0,
-            .layerCount = 1,
+        const VkClearValue clear_value{
+            .color = {.float32 = {bg_red, bg_green, bg_blue, 1.0f}},
         };
 
-        BeginRenderPass(cmdbuf, renderpass, host_framebuffer, render_area);
-        cmdbuf.ClearAttachments({clear_attachment}, {clear_rect});
+        TransitionImageLayout(cmdbuf, host_image, VK_IMAGE_LAYOUT_GENERAL,
+                              VK_IMAGE_LAYOUT_UNDEFINED);
+        BeginRendering(cmdbuf, host_view, render_area, VK_ATTACHMENT_LOAD_OP_CLEAR, clear_value);
 
         for (size_t i = 0; i < layer_count; i++) {
             cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipelines[i]);
@@ -103,16 +89,12 @@ void WindowAdaptPass::Draw(const Device& device, RasterizerVulkan& rasterizer, S
             cmdbuf.Draw(4, 1, 0, 0);
         }
 
-        cmdbuf.EndRenderPass();
+        cmdbuf.EndRendering();
     });
 }
 
 VkDescriptorSetLayout WindowAdaptPass::GetDescriptorSetLayout() {
     return *descriptor_set_layout;
-}
-
-VkRenderPass WindowAdaptPass::GetRenderPass() {
-    return *render_pass;
 }
 
 void WindowAdaptPass::CreateDescriptorSetLayout(const Device& device) {
@@ -142,17 +124,13 @@ void WindowAdaptPass::CreateVertexShader(const Device& device) {
     vertex_shader = BuildShader(device, VULKAN_PRESENT_VERT_SPV);
 }
 
-void WindowAdaptPass::CreateRenderPass(const Device& device, VkFormat frame_format) {
-    render_pass = CreateWrappedRenderPass(device, frame_format, VK_IMAGE_LAYOUT_UNDEFINED);
-}
-
-void WindowAdaptPass::CreatePipelines(const Device& device) {
-    opaque_pipeline = CreateWrappedPipeline(device, render_pass, pipeline_layout,
+void WindowAdaptPass::CreatePipelines(const Device& device, VkFormat frame_format) {
+    opaque_pipeline = CreateWrappedPipeline(device, frame_format, pipeline_layout,
                                             std::tie(vertex_shader, fragment_shader));
     premultiplied_pipeline = CreateWrappedPremultipliedBlendingPipeline(
-        device, render_pass, pipeline_layout, std::tie(vertex_shader, fragment_shader));
+        device, frame_format, pipeline_layout, std::tie(vertex_shader, fragment_shader));
     coverage_pipeline = CreateWrappedCoverageBlendingPipeline(
-        device, render_pass, pipeline_layout, std::tie(vertex_shader, fragment_shader));
+        device, frame_format, pipeline_layout, std::tie(vertex_shader, fragment_shader));
 }
 
 } // namespace Vulkan

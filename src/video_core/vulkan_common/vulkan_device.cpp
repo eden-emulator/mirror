@@ -1423,8 +1423,7 @@ void Device::RemoveUnsuitableExtensions() {
 
     extensions.synchronization2 = features.synchronization2.synchronization2;
     extensions.dynamic_rendering = features.dynamic_rendering.dynamicRendering;
-    if (!extensions.synchronization2 || !extensions.dynamic_rendering ||
-        !IsKhrCreateRenderPass2Supported()) {
+    if (!extensions.synchronization2 || !extensions.dynamic_rendering) {
         throw vk::Exception(VK_ERROR_FEATURE_NOT_PRESENT);
     }
 }

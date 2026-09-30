@@ -24,7 +24,6 @@ public:
 
 private:
     void CreateImages(const Device& device);
-    void CreateRenderPasses(const Device& device);
     void CreateSampler(const Device& device);
     void CreateShaders(const Device& device);
     void CreateDescriptorPool(const Device& device);
@@ -33,7 +32,6 @@ private:
     void CreatePipelineLayouts(const Device& device);
     void CreatePipelines(const Device& device);
 
-    void UploadImages(const Device& device, Scheduler& scheduler);
     void UpdateDescriptorSets(const Device& device, VkImageView image_view, size_t image_index);
 
     MemoryAllocator& m_memory_allocator;
@@ -54,17 +52,14 @@ private:
     vk::ShaderModule m_rcas_shader;
     vk::Pipeline m_easu_pipeline;
     vk::Pipeline m_rcas_pipeline;
-    vk::RenderPass m_renderpass;
     vk::Sampler m_sampler;
 
     struct Images {
         vk::DescriptorSets descriptor_sets;
         std::array<vk::Image, MaxFsrStage> images;
         std::array<vk::ImageView, MaxFsrStage> image_views;
-        std::array<vk::Framebuffer, MaxFsrStage> framebuffers;
     };
     std::vector<Images> m_dynamic_images;
-    bool m_images_ready{};
 };
 
 } // namespace Vulkan

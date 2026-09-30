@@ -38,21 +38,18 @@ public:
               const Layout::FramebufferLayout& layout, Frame* dst);
 
     VkDescriptorSetLayout GetDescriptorSetLayout();
-    VkRenderPass GetRenderPass();
 
 private:
     void CreateDescriptorSetLayout(const Device& device);
     void CreatePipelineLayout(const Device& device);
     void CreateVertexShader(const Device& device);
-    void CreateRenderPass(const Device& device, VkFormat frame_format);
-    void CreatePipelines(const Device& device);
+    void CreatePipelines(const Device& device, VkFormat frame_format);
 
     vk::DescriptorSetLayout descriptor_set_layout;
     vk::PipelineLayout pipeline_layout;
     vk::Sampler sampler;
     vk::ShaderModule vertex_shader;
     vk::ShaderModule fragment_shader;
-    vk::RenderPass render_pass;
     vk::Pipeline opaque_pipeline;
     vk::Pipeline premultiplied_pipeline;
     vk::Pipeline coverage_pipeline;

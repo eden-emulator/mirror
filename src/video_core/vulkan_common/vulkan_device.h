@@ -637,11 +637,6 @@ FN_MAX_LIMIT_LIST
         return extensions.shader_stencil_export;
     }
 
-    /// Returns true if the device supports VK_KHR_create_renderpass2.
-    bool IsKhrCreateRenderPass2Supported() const {
-        return extensions.create_renderpass2 || instance_version >= VK_API_VERSION_1_2;
-    }
-
     /// Returns true if the device supports VK_KHR_depth_stencil_resolve.
     bool IsKhrDepthStencilResolveSupported() const {
         return extensions.depth_stencil_resolve || instance_version >= VK_API_VERSION_1_2;

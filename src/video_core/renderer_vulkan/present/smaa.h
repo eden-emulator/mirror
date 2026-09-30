@@ -47,7 +47,6 @@ private:
     };
 
     void CreateImages(const Device& device);
-    void CreateRenderPasses(const Device& device);
     void CreateSampler(const Device& device);
     void CreateShaders(const Device& device);
     void CreateDescriptorPool(const Device& device);
@@ -68,7 +67,6 @@ private:
     std::array<vk::ShaderModule, MaxSMAAStage> m_vertex_shaders{};
     std::array<vk::ShaderModule, MaxSMAAStage> m_fragment_shaders{};
     std::array<vk::Pipeline, MaxSMAAStage> m_pipelines{};
-    std::array<vk::RenderPass, MaxSMAAStage> m_renderpasses{};
 
     std::array<vk::Image, MaxStaticImage> m_static_images{};
     std::array<vk::ImageView, MaxStaticImage> m_static_image_views{};
@@ -77,7 +75,6 @@ private:
         vk::DescriptorSets descriptor_sets{};
         std::array<vk::Image, MaxDynamicImage> images{};
         std::array<vk::ImageView, MaxDynamicImage> image_views{};
-        std::array<vk::Framebuffer, MaxSMAAStage> framebuffers{};
     };
     std::vector<Images> m_dynamic_images{};
     bool m_images_ready{};

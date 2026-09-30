@@ -32,7 +32,6 @@ SMAA::SMAA(const Device& device, MemoryAllocator& allocator, size_t image_count,
     , m_image_count(u32(image_count))
 {
     CreateImages(device);
-    CreateRenderPasses(device);
     CreateSampler(device);
     CreateShaders(device);
     CreateDescriptorPool(device);
@@ -71,26 +70,6 @@ void SMAA::CreateImages(const Device& device) {
             CreateWrappedImageView(device, images.images[Edges], VK_FORMAT_R16G16_SFLOAT);
         images.image_views[Output] =
             CreateWrappedImageView(device, images.images[Output], VK_FORMAT_R16G16B16A16_SFLOAT);
-    }
-}
-
-void SMAA::CreateRenderPasses(const Device& device) {
-    m_renderpasses[EdgeDetection] = CreateWrappedRenderPass(device, VK_FORMAT_R16G16_SFLOAT);
-    m_renderpasses[BlendingWeightCalculation] =
-        CreateWrappedRenderPass(device, VK_FORMAT_R16G16B16A16_SFLOAT);
-    m_renderpasses[NeighborhoodBlending] =
-        CreateWrappedRenderPass(device, VK_FORMAT_R16G16B16A16_SFLOAT);
-
-    for (auto& images : m_dynamic_images) {
-        images.framebuffers[EdgeDetection] = CreateWrappedFramebuffer(
-            device, m_renderpasses[EdgeDetection], images.image_views[Edges], m_extent);
-
-        images.framebuffers[BlendingWeightCalculation] =
-            CreateWrappedFramebuffer(device, m_renderpasses[BlendingWeightCalculation],
-                                     images.image_views[Blend], m_extent);
-
-        images.framebuffers[NeighborhoodBlending] = CreateWrappedFramebuffer(
-            device, m_renderpasses[NeighborhoodBlending], images.image_views[Output], m_extent);
     }
 }
 
@@ -155,9 +134,14 @@ void SMAA::CreatePipelineLayouts(const Device& device) {
 }
 
 void SMAA::CreatePipelines(const Device& device) {
+    static constexpr std::array<VkFormat, MaxSMAAStage> formats{
+        VK_FORMAT_R16G16_SFLOAT,
+        VK_FORMAT_R16G16B16A16_SFLOAT,
+        VK_FORMAT_R16G16B16A16_SFLOAT,
+    };
     for (size_t i = 0; i < MaxSMAAStage; i++) {
         m_pipelines[i] =
-            CreateWrappedPipeline(device, m_renderpasses[i], m_pipeline_layouts[i],
+            CreateWrappedPipeline(device, formats[i], m_pipeline_layouts[i],
                                   std::tie(m_vertex_shaders[i], m_fragment_shaders[i]));
     }
 }
@@ -202,15 +186,6 @@ void SMAA::UploadImages(const Device& device, Scheduler& scheduler) {
     UploadImage(device, m_allocator, scheduler, m_static_images[Search], search_extent,
                 VK_FORMAT_R8_UNORM, ARRAY_TO_SPAN(searchTexBytes));
 
-    scheduler.Record([&](vk::CommandBuffer cmdbuf) {
-        for (auto& images : m_dynamic_images) {
-            for (size_t i = 0; i < MaxDynamicImage; i++) {
-                ClearColorImage(cmdbuf, *images.images[i]);
-            }
-        }
-    });
-    scheduler.Finish();
-
     m_images_ready = true;
 }
 
@@ -228,10 +203,9 @@ void SMAA::Draw(const Device& device, Scheduler& scheduler, size_t image_index, 
     VkDescriptorSet neighborhood_blending_descriptor_set =
         images.descriptor_sets[NeighborhoodBlending];
 
-    VkFramebuffer edge_detection_framebuffer = *images.framebuffers[EdgeDetection];
-    VkFramebuffer blending_weight_calculation_framebuffer =
-        *images.framebuffers[BlendingWeightCalculation];
-    VkFramebuffer neighborhood_blending_framebuffer = *images.framebuffers[NeighborhoodBlending];
+    VkImageView edges_view = *images.image_views[Edges];
+    VkImageView blend_view = *images.image_views[Blend];
+    VkImageView output_view = *images.image_views[Output];
 
     UploadImages(device, scheduler);
     UpdateDescriptorSets(device, *inout_image_view, image_index);
@@ -239,38 +213,38 @@ void SMAA::Draw(const Device& device, Scheduler& scheduler, size_t image_index, 
     scheduler.RequestOutsideRenderPassOperationContext();
     scheduler.Record([=, this](vk::CommandBuffer cmdbuf) {
         TransitionImageLayout(cmdbuf, input_image, VK_IMAGE_LAYOUT_GENERAL);
-        TransitionImageLayout(cmdbuf, edges_image, VK_IMAGE_LAYOUT_GENERAL);
-        BeginRenderPass(cmdbuf, *m_renderpasses[EdgeDetection], edge_detection_framebuffer,
-                        m_extent);
+        TransitionImageLayout(cmdbuf, edges_image, VK_IMAGE_LAYOUT_GENERAL,
+                              VK_IMAGE_LAYOUT_UNDEFINED);
+        BeginRendering(cmdbuf, edges_view, m_extent, VK_ATTACHMENT_LOAD_OP_CLEAR);
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelines[EdgeDetection]);
         cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS,
                                   *m_pipeline_layouts[EdgeDetection], 0,
                                   edge_detection_descriptor_set, {});
         cmdbuf.Draw(3, 1, 0, 0);
-        cmdbuf.EndRenderPass();
+        cmdbuf.EndRendering();
 
         TransitionImageLayout(cmdbuf, edges_image, VK_IMAGE_LAYOUT_GENERAL);
-        TransitionImageLayout(cmdbuf, blend_image, VK_IMAGE_LAYOUT_GENERAL);
-        BeginRenderPass(cmdbuf, *m_renderpasses[BlendingWeightCalculation],
-                        blending_weight_calculation_framebuffer, m_extent);
+        TransitionImageLayout(cmdbuf, blend_image, VK_IMAGE_LAYOUT_GENERAL,
+                              VK_IMAGE_LAYOUT_UNDEFINED);
+        BeginRendering(cmdbuf, blend_view, m_extent, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS,
                             *m_pipelines[BlendingWeightCalculation]);
         cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS,
                                   *m_pipeline_layouts[BlendingWeightCalculation], 0,
                                   blending_weight_calculation_descriptor_set, {});
         cmdbuf.Draw(3, 1, 0, 0);
-        cmdbuf.EndRenderPass();
+        cmdbuf.EndRendering();
 
         TransitionImageLayout(cmdbuf, blend_image, VK_IMAGE_LAYOUT_GENERAL);
-        TransitionImageLayout(cmdbuf, output_image, VK_IMAGE_LAYOUT_GENERAL);
-        BeginRenderPass(cmdbuf, *m_renderpasses[NeighborhoodBlending],
-                        neighborhood_blending_framebuffer, m_extent);
+        TransitionImageLayout(cmdbuf, output_image, VK_IMAGE_LAYOUT_GENERAL,
+                              VK_IMAGE_LAYOUT_UNDEFINED);
+        BeginRendering(cmdbuf, output_view, m_extent, VK_ATTACHMENT_LOAD_OP_DONT_CARE);
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelines[NeighborhoodBlending]);
         cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS,
                                   *m_pipeline_layouts[NeighborhoodBlending], 0,
                                   neighborhood_blending_descriptor_set, {});
         cmdbuf.Draw(3, 1, 0, 0);
-        cmdbuf.EndRenderPass();
+        cmdbuf.EndRendering();
         TransitionImageLayout(cmdbuf, output_image, VK_IMAGE_LAYOUT_GENERAL);
     });
 

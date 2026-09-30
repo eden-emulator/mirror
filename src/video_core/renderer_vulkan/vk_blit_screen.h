@@ -62,15 +62,9 @@ public:
 
     void PrepareFrame(const Device& device, Frame* frame, const Layout::FramebufferLayout& layout);
 
-    [[nodiscard]] vk::Framebuffer CreateFramebuffer(const Device& device, const Layout::FramebufferLayout& layout,
-                                                    VkImageView image_view,
-                                                    VkFormat current_view_format);
-
 private:
     void WaitIdle(const Device& device);
     void SetWindowAdaptPass(const Device& device);
-    vk::Framebuffer CreateFramebuffer(const Device& device, const VkImageView& image_view, VkExtent2D extent,
-                                      VkRenderPass render_pass);
 
     Tegra::MaxwellDeviceMemoryManager& device_memory;
     MemoryAllocator& memory_allocator;

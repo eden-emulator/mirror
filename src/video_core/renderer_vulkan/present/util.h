@@ -27,10 +27,6 @@ void DownloadColorImage(vk::CommandBuffer& cmdbuf, VkImage image, VkBuffer buffe
 void ClearColorImage(vk::CommandBuffer& cmdbuf, VkImage image);
 
 vk::ImageView CreateWrappedImageView(const Device& device, vk::Image& image, VkFormat format);
-vk::RenderPass CreateWrappedRenderPass(const Device& device, VkFormat format,
-                                       VkImageLayout initial_layout = VK_IMAGE_LAYOUT_GENERAL);
-vk::Framebuffer CreateWrappedFramebuffer(const Device& device, vk::RenderPass& render_pass,
-                                         vk::ImageView& dest_image, VkExtent2D extent);
 vk::Sampler CreateWrappedSampler(const Device& device, VkFilter filter = VK_FILTER_LINEAR);
 vk::ShaderModule CreateWrappedShaderModule(const Device& device, std::span<const u32> code);
 vk::DescriptorPool CreateWrappedDescriptorPool(const Device& device, size_t max_descriptors,
@@ -47,16 +43,17 @@ vk::DescriptorSets CreateWrappedDescriptorSets(vk::DescriptorPool& pool,
                                                vk::Span<VkDescriptorSetLayout> layouts);
 vk::PipelineLayout CreateWrappedPipelineLayout(const Device& device,
                                                vk::DescriptorSetLayout& layout);
-vk::Pipeline CreateWrappedPipeline(const Device& device, vk::RenderPass& renderpass,
+[[nodiscard]] VkPipelineRenderingCreateInfo ColorRenderingInfo(const VkFormat& format);
+vk::Pipeline CreateWrappedPipeline(const Device& device, VkFormat format,
                                    vk::PipelineLayout& layout,
                                    std::tuple<vk::ShaderModule&, vk::ShaderModule&> shaders);
 vk::Pipeline CreateWrappedComputePipeline(const Device& device, vk::PipelineLayout& layout,
                                           VkShaderModule shader);
 vk::Pipeline CreateWrappedPremultipliedBlendingPipeline(
-    const Device& device, vk::RenderPass& renderpass, vk::PipelineLayout& layout,
+    const Device& device, VkFormat format, vk::PipelineLayout& layout,
     std::tuple<vk::ShaderModule&, vk::ShaderModule&> shaders);
 vk::Pipeline CreateWrappedCoverageBlendingPipeline(
-    const Device& device, vk::RenderPass& renderpass, vk::PipelineLayout& layout,
+    const Device& device, VkFormat format, vk::PipelineLayout& layout,
     std::tuple<vk::ShaderModule&, vk::ShaderModule&> shaders);
 VkWriteDescriptorSet CreateWriteDescriptorSet(std::vector<VkDescriptorImageInfo>& images,
                                               VkSampler sampler, VkImageView view,
@@ -65,7 +62,7 @@ vk::Sampler CreateBilinearSampler(const Device& device);
 vk::Sampler CreateNearestNeighborSampler(const Device& device);
 vk::Sampler CreateCubicSampler(const Device& device, VkCubicFilterWeightsQCOM qcom_weights);
 
-void BeginRenderPass(vk::CommandBuffer& cmdbuf, VkRenderPass render_pass, VkFramebuffer framebuffer,
-                     VkExtent2D extent);
+void BeginRendering(vk::CommandBuffer& cmdbuf, VkImageView view, VkExtent2D extent,
+                    VkAttachmentLoadOp load_op, const VkClearValue& clear_value = {});
 
 } // namespace Vulkan

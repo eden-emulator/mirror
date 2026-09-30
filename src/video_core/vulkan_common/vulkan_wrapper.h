@@ -237,7 +237,6 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkBeginCommandBuffer vkBeginCommandBuffer{};
     PFN_vkCmdBeginConditionalRenderingEXT vkCmdBeginConditionalRenderingEXT{};
     PFN_vkCmdBeginQuery vkCmdBeginQuery{};
-    PFN_vkCmdBeginRenderPass vkCmdBeginRenderPass{};
     PFN_vkCmdBeginRendering vkCmdBeginRendering{};
     PFN_vkCmdBeginTransformFeedbackEXT vkCmdBeginTransformFeedbackEXT{};
     PFN_vkCmdBindDescriptorSets vkCmdBindDescriptorSets{};
@@ -266,7 +265,6 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCmdDrawIndirectByteCountEXT vkCmdDrawIndirectByteCountEXT{};
     PFN_vkCmdEndConditionalRenderingEXT vkCmdEndConditionalRenderingEXT{};
     PFN_vkCmdEndQuery vkCmdEndQuery{};
-    PFN_vkCmdEndRenderPass vkCmdEndRenderPass{};
     PFN_vkCmdEndRendering vkCmdEndRendering{};
     PFN_vkCmdEndTransformFeedbackEXT vkCmdEndTransformFeedbackEXT{};
     PFN_vkCmdFillBuffer vkCmdFillBuffer{};
@@ -318,13 +316,11 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkCreateDescriptorSetLayout vkCreateDescriptorSetLayout{};
     PFN_vkCreateDescriptorUpdateTemplate vkCreateDescriptorUpdateTemplate{};
     PFN_vkCreateFence vkCreateFence{};
-    PFN_vkCreateFramebuffer vkCreateFramebuffer{};
     PFN_vkCreateGraphicsPipelines vkCreateGraphicsPipelines{};
     PFN_vkCreateImageView vkCreateImageView{};
     PFN_vkCreatePipelineCache vkCreatePipelineCache{};
     PFN_vkCreatePipelineLayout vkCreatePipelineLayout{};
     PFN_vkCreateQueryPool vkCreateQueryPool{};
-    PFN_vkCreateRenderPass2 vkCreateRenderPass2{};
     PFN_vkCreateSampler vkCreateSampler{};
     PFN_vkCreateSemaphore vkCreateSemaphore{};
     PFN_vkCreateShaderModule vkCreateShaderModule{};
@@ -336,14 +332,12 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkDestroyDescriptorSetLayout vkDestroyDescriptorSetLayout{};
     PFN_vkDestroyDescriptorUpdateTemplate vkDestroyDescriptorUpdateTemplate{};
     PFN_vkDestroyFence vkDestroyFence{};
-    PFN_vkDestroyFramebuffer vkDestroyFramebuffer{};
     PFN_vkDestroyImage vkDestroyImage{};
     PFN_vkDestroyImageView vkDestroyImageView{};
     PFN_vkDestroyPipeline vkDestroyPipeline{};
     PFN_vkDestroyPipelineCache vkDestroyPipelineCache{};
     PFN_vkDestroyPipelineLayout vkDestroyPipelineLayout{};
     PFN_vkDestroyQueryPool vkDestroyQueryPool{};
-    PFN_vkDestroyRenderPass vkDestroyRenderPass{};
     PFN_vkDestroySampler vkDestroySampler{};
     PFN_vkDestroySemaphore vkDestroySemaphore{};
     PFN_vkDestroyShaderModule vkDestroyShaderModule{};
@@ -396,14 +390,12 @@ void Destroy(VkDevice, VkDescriptorPool, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkDescriptorSetLayout, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkDescriptorUpdateTemplate, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkFence, const DeviceDispatch&) noexcept;
-void Destroy(VkDevice, VkFramebuffer, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkImage, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkImageView, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkPipeline, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkPipelineCache, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkPipelineLayout, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkQueryPool, const DeviceDispatch&) noexcept;
-void Destroy(VkDevice, VkRenderPass, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkSampler, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkSwapchainKHR, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkSemaphore, const DeviceDispatch&) noexcept;
@@ -651,7 +643,6 @@ using DescriptorUpdateTemplate = Handle<VkDescriptorUpdateTemplate, VkDevice, De
 using Pipeline = Handle<VkPipeline, VkDevice, DeviceDispatch>;
 using PipelineLayout = Handle<VkPipelineLayout, VkDevice, DeviceDispatch>;
 using QueryPool = Handle<VkQueryPool, VkDevice, DeviceDispatch>;
-using RenderPass = Handle<VkRenderPass, VkDevice, DeviceDispatch>;
 using Sampler = Handle<VkSampler, VkDevice, DeviceDispatch>;
 using SurfaceKHR = Handle<VkSurfaceKHR, VkInstance, InstanceDispatch>;
 
@@ -905,14 +896,6 @@ public:
     }
 };
 
-class Framebuffer : public Handle<VkFramebuffer, VkDevice, DeviceDispatch> {
-    using Handle<VkFramebuffer, VkDevice, DeviceDispatch>::Handle;
-
-public:
-    /// Set object name.
-    void SetObjectNameEXT(const char* name) const;
-};
-
 class DescriptorPool : public Handle<VkDescriptorPool, VkDevice, DeviceDispatch> {
     using Handle<VkDescriptorPool, VkDevice, DeviceDispatch>::Handle;
 
@@ -1025,8 +1008,6 @@ public:
 
     [[nodiscard]] DescriptorPool CreateDescriptorPool(const VkDescriptorPoolCreateInfo& ci) const;
 
-    [[nodiscard]] RenderPass CreateRenderPass2(const VkRenderPassCreateInfo2& ci) const;
-
     [[nodiscard]] DescriptorSetLayout CreateDescriptorSetLayout(
         const VkDescriptorSetLayoutCreateInfo& ci) const;
 
@@ -1041,8 +1022,6 @@ public:
                                                  VkPipelineCache cache = {}) const;
 
     [[nodiscard]] Sampler CreateSampler(const VkSamplerCreateInfo& ci) const;
-
-    [[nodiscard]] Framebuffer CreateFramebuffer(const VkFramebufferCreateInfo& ci) const;
 
     [[nodiscard]] CommandPool CreateCommandPool(const VkCommandPoolCreateInfo& ci) const;
 
@@ -1185,15 +1164,6 @@ public:
 
     void End() const {
         Check(dld->vkEndCommandBuffer(handle));
-    }
-
-    void BeginRenderPass(const VkRenderPassBeginInfo& renderpass_bi,
-                         VkSubpassContents contents) const noexcept {
-        dld->vkCmdBeginRenderPass(handle, &renderpass_bi, contents);
-    }
-
-    void EndRenderPass() const noexcept {
-        dld->vkCmdEndRenderPass(handle);
     }
 
     void BeginRendering(const VkRenderingInfo& rendering_info) const noexcept {
