@@ -930,16 +930,7 @@ private:
             });
             return;
         }
-        static constexpr VkMemoryBarrier2 COUNTER_RESUME_BARRIER{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-            .pNext = nullptr,
-            .srcStageMask = VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT,
-            .srcAccessMask = VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT,
-            .dstStageMask = VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT,
-            .dstAccessMask = VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT,
-        };
         scheduler.Record([this, total = static_cast<u32>(buffers_count)](vk::CommandBuffer cmdbuf) {
-            cmdbuf.PipelineBarrier(COUNTER_RESUME_BARRIER);
             cmdbuf.BeginTransformFeedbackEXT(0, total, counter_buffers.data(), offsets.data());
         });
     }
@@ -963,6 +954,7 @@ private:
             });
         } else {
             LOG_DEBUG(Render_Vulkan, "EndTransformFeedbackEXT called with counters (buffers_count={})", buffers_count);
+            scheduler.MarkRenderPassWrites();
             scheduler.Record([this,
                               total = static_cast<u32>(buffers_count)](vk::CommandBuffer cmdbuf) {
                 cmdbuf.EndTransformFeedbackEXT(0, total, counter_buffers.data(), offsets.data());

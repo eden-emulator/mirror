@@ -71,7 +71,9 @@ Scheduler::Scheduler(const Device& device_, StateTracker& state_tracker_)
     upload_write_barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
     if (device.IsExtTransformFeedbackSupported()) {
         renderpass_write_barrier.srcStageMask |= VK_PIPELINE_STAGE_2_TRANSFORM_FEEDBACK_BIT_EXT;
-        renderpass_write_barrier.srcAccessMask |= VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT;
+        renderpass_write_barrier.srcAccessMask |=
+            VK_ACCESS_2_TRANSFORM_FEEDBACK_WRITE_BIT_EXT |
+            VK_ACCESS_2_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT;
     }
 
     AcquireNewChunk();

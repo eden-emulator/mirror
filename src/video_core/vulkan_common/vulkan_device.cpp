@@ -1212,6 +1212,11 @@ void Device::RemoveUnsuitableExtensions() {
     RemoveExtensionFeatureIfUnsuitable(extensions.color_write_enable, features.color_write_enable,
                                        VK_EXT_COLOR_WRITE_ENABLE_EXTENSION_NAME);
 
+    extensions.conditional_rendering = features.conditional_rendering.conditionalRendering;
+    RemoveExtensionFeatureIfUnsuitable(extensions.conditional_rendering,
+                                       features.conditional_rendering,
+                                       VK_EXT_CONDITIONAL_RENDERING_EXTENSION_NAME);
+
     // VK_EXT_custom_border_color
     if (extensions.custom_border_color) {
         extensions.custom_border_color =
