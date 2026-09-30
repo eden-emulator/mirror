@@ -23,6 +23,7 @@ import org.yuzu.yuzu_emu.model.Driver.Companion.toDriver
 import org.yuzu.yuzu_emu.utils.GpuDriverHelper
 import org.yuzu.yuzu_emu.NativeLibrary
 import org.yuzu.yuzu_emu.utils.GpuDriverMetadata
+import org.yuzu.yuzu_emu.utils.DirectoryInitialization
 import org.yuzu.yuzu_emu.utils.NativeConfig
 import java.io.File
 
@@ -146,11 +147,11 @@ class DriverViewModel : ViewModel() {
     private fun wipeGameShaders(game: Game) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                val externalFilesDir = YuzuApplication.appContext.getExternalFilesDir(null)
+                val userDirectory = DirectoryInitialization.userDirectory
                     ?: return@withContext
                 val shaderDir = File(
-                    externalFilesDir.absolutePath +
-                    "/shader/" + game.settingsName.lowercase()
+                    userDirectory +
+                    "/cache/shader/" + game.settingsName.lowercase()
                 )
                 if (shaderDir.exists()) {
                     shaderDir.deleteRecursively()
