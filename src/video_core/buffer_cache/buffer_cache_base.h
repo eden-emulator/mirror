@@ -270,10 +270,6 @@ public:
 
     void BindHostComputeBuffers();
 
-    void RequestPointerTable(bool enable) noexcept;
-
-    [[nodiscard]] std::array<u32, 3> BindHostPointerTable(bool is_written);
-
     void SetUniformBuffersState(const std::array<u32, NUM_STAGES>& mask,
                                 const UniformBufferSizes* sizes);
 
@@ -435,10 +431,6 @@ private:
 
     void UpdateStorageBuffers(size_t stage);
 
-    void UpdatePointerRanges();
-
-    void RecordPointerRange(const Binding& binding);
-
     void UpdateTextureBuffers(size_t stage);
 
     void UpdateTransformFeedbackBuffers();
@@ -571,17 +563,6 @@ private:
     std::vector<MultiRangeSegment> graphics_segments;
     std::vector<MultiRangeSegment> compute_segments;
     u64 frame_tick = 0;
-    struct PointerRange {
-        GPUVAddr gpu_addr;
-        DAddr device_addr;
-        u32 size;
-        u64 frame;
-        BufferId buffer_id;
-    };
-    static constexpr size_t MAX_POINTER_RANGES = 256;
-    std::vector<PointerRange> pointer_ranges;
-    bool record_pointer_ranges = false;
-    bool pointer_table_requested = false;
     u64 total_used_memory = 0;
     u64 device_local_memory = 0;
     u64 minimum_memory = 0;

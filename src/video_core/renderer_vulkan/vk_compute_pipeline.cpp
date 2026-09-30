@@ -28,7 +28,6 @@
 namespace Vulkan {
 
 using Shader::ImageBufferDescriptor;
-using Shader::Backend::SPIRV::GLOBAL_POINTER_LAYOUT_OFFSET;
 using Shader::Backend::SPIRV::RESCALING_LAYOUT_WORDS_OFFSET;
 using Tegra::Texture::TexturePair;
 
@@ -246,14 +245,8 @@ bool ComputePipeline::Configure(Tegra::Engines::KeplerCompute& kepler_compute,
     std::ranges::for_each(info.texture_buffer_descriptors, add_buffer);
     std::ranges::for_each(info.image_buffer_descriptors, add_buffer);
 
-    const bool uses_pointers{info.uses_global_pointers && device.IsBufferDeviceAddressSupported()};
-    buffer_cache.RequestPointerTable(uses_pointers);
     buffer_cache.UpdateComputeBuffers();
     buffer_cache.BindHostComputeBuffers();
-    std::array<u32, 3> pointer_table{};
-    if (uses_pointers) {
-        pointer_table = buffer_cache.BindHostPointerTable(info.stores_global_memory);
-    }
 
     RescalingPushConstant rescaling;
     const VideoCommon::SamplerId* samplers_it{samplers.data()};
@@ -295,7 +288,7 @@ bool ComputePipeline::Configure(Tegra::Engines::KeplerCompute& kepler_compute,
 
     const bool is_rescaling = !info.texture_descriptors.empty() || !info.image_descriptors.empty();
     scheduler.Record([this, descriptor_data, is_rescaling, descriptor_buffer_offset,
-                      descriptor_buffer_chunk, bind_descriptor_buffer, uses_pointers, pointer_table,
+                      descriptor_buffer_chunk, bind_descriptor_buffer,
                       rescaling_data = rescaling.Data()](vk::CommandBuffer cmdbuf) {
         if (bind_descriptor_buffer) {
             const VkDescriptorBufferBindingInfoEXT binding_info{
@@ -306,11 +299,6 @@ bool ComputePipeline::Configure(Tegra::Engines::KeplerCompute& kepler_compute,
             return;
         }
         cmdbuf.BindPipeline(VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-        if (uses_pointers) {
-            cmdbuf.PushConstants(*pipeline_layout, VK_SHADER_STAGE_COMPUTE_BIT,
-                                 GLOBAL_POINTER_LAYOUT_OFFSET, sizeof(pointer_table),
-                                 pointer_table.data());
-        }
         if (!descriptor_set_layout) {
             return;
         }

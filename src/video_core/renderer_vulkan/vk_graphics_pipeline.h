@@ -168,9 +168,6 @@ private:
     size_t num_image_elements{};
     u32 num_textures{};
     bool fragment_has_color0_output{};
-    bool uses_global_pointers{};
-    bool stores_global_pointers{};
-    std::array<u32, 3> pointer_table{};
 
     vk::DescriptorSetLayout descriptor_set_layout;
     DescriptorAllocator descriptor_allocator;

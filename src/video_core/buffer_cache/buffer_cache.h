@@ -123,8 +123,6 @@ void BufferCache<P>::TickFrame() {
     if (total_used_memory >= minimum_memory || heap_pressure) {
         RunGarbageCollector();
     }
-    std::erase_if(pointer_ranges,
-                  [this](const PointerRange& range) { return range.frame + 2 < frame_tick; });
     ++frame_tick;
     delayed_destruction_ring.Tick();
 
@@ -1146,7 +1144,6 @@ void BufferCache<P>::BindHostGraphicsStorageBuffers(size_t stage) {
 
         if (is_written) {
             MarkWrittenBuffer(binding.buffer_id, binding.device_addr, size);
-            RecordPointerRange(binding);
         }
 
         if constexpr (NEEDS_BIND_STORAGE_INDEX) {
@@ -1287,7 +1284,6 @@ void BufferCache<P>::BindHostComputeStorageBuffers() {
 
         if (is_written) {
             MarkWrittenBuffer(binding.buffer_id, binding.device_addr, size);
-            RecordPointerRange(binding);
         }
 
         if constexpr (NEEDS_BIND_STORAGE_INDEX) {
@@ -1345,7 +1341,6 @@ void BufferCache<P>::DoUpdateGraphicsBuffers(bool is_indexed) {
         if (current_draw_indirect) {
             UpdateDrawIndirect();
         }
-        UpdatePointerRanges();
     });
 }
 
@@ -1356,7 +1351,6 @@ void BufferCache<P>::DoUpdateComputeBuffers() {
         UpdateComputeUniformBuffers();
         UpdateComputeStorageBuffers();
         UpdateComputeTextureBuffers();
-        UpdatePointerRanges();
     });
 }
 
@@ -1500,72 +1494,6 @@ void BufferCache<P>::UpdateStorageBuffers(size_t stage) {
             binding.buffer_id = FindBuffer(binding.device_addr, binding.size, false);
         }
     });
-}
-
-template <class P>
-void BufferCache<P>::UpdatePointerRanges() {
-    if (!pointer_table_requested) {
-        return;
-    }
-    for (PointerRange& range : pointer_ranges) {
-        range.buffer_id = NULL_BUFFER_ID;
-        if (gpu_memory->GpuToCpuAddress(range.gpu_addr) == range.device_addr) {
-            range.buffer_id = FindBuffer(range.device_addr, range.size, false);
-        }
-    }
-}
-
-template <class P>
-void BufferCache<P>::RecordPointerRange(const Binding& binding) {
-    if (!record_pointer_ranges) {
-        return;
-    }
-    const auto it = std::ranges::find(pointer_ranges, binding.gpu_addr, &PointerRange::gpu_addr);
-    if (it != pointer_ranges.end()) {
-        it->device_addr = binding.device_addr;
-        it->size = (std::max)(it->size, binding.size);
-        it->frame = frame_tick;
-        return;
-    }
-    if (pointer_ranges.size() < MAX_POINTER_RANGES) {
-        pointer_ranges.push_back({binding.gpu_addr, binding.device_addr, binding.size, frame_tick,
-                                  NULL_BUFFER_ID});
-    }
-}
-
-template <class P>
-void BufferCache<P>::RequestPointerTable(bool enable) noexcept {
-    pointer_table_requested = enable;
-    record_pointer_ranges |= enable;
-}
-
-template <class P>
-std::array<u32, 3> BufferCache<P>::BindHostPointerTable(bool is_written) {
-    std::array<u32, 3> table{};
-    if constexpr (!IS_OPENGL) {
-        const size_t capacity = (std::max)(pointer_ranges.size(), size_t{1});
-        const auto upload = runtime.UploadStagingBuffer(capacity * sizeof(std::array<u64, 4>));
-        u32 count = 0;
-        for (const PointerRange& range : pointer_ranges) {
-            if (range.buffer_id == NULL_BUFFER_ID) {
-                continue;
-            }
-            Buffer& buffer = slot_buffers[range.buffer_id];
-            TouchBuffer(buffer, range.buffer_id);
-            SynchronizeBuffer(buffer, range.device_addr, range.size);
-            if (is_written) {
-                MarkWrittenBuffer(range.buffer_id, range.device_addr, range.size);
-            }
-            const u64 host_address = buffer.DeviceAddress() + buffer.Offset(range.device_addr);
-            const std::array<u64, 4> entry{range.gpu_addr, range.size, host_address, 0};
-            std::memcpy(upload.mapped_span.data() + count * sizeof(entry), entry.data(),
-                        sizeof(entry));
-            ++count;
-        }
-        const u64 address = upload.device_address + upload.offset;
-        table = {static_cast<u32>(address), static_cast<u32>(address >> 32), count};
-    }
-    return table;
 }
 
 template <class P>
