@@ -618,7 +618,8 @@ std::string EmitContext::DefineGlobalMemoryFunctions() {
 
         const auto size_vec{fmt::format("uvec2({},{})", size_xy[0], size_xy[1])};
         const auto comp_lhs{fmt::format("(addr>={})", ssbo_addr)};
-        const auto comp_rhs{fmt::format("(addr<({}+uint64_t({})))", ssbo_addr, size_vec)};
+        const auto comp_rhs{fmt::format("(addr<(packUint2x32(uvec2({},{}))+uint64_t({})))",
+                                        addr_xy[0], addr_xy[1], size_vec)};
         const auto comparison{fmt::format("if({}&&{}){{", comp_lhs, comp_rhs)};
         func += comparison;
 

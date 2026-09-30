@@ -307,6 +307,8 @@ public:
     u32 rescaling_textures_member_index{};
     u32 rescaling_images_member_index{};
     u32 rescaling_downfactor_member_index{};
+    u32 global_pointer_member_index{};
+    bool uses_global_pointers{};
     u32 texture_rescaling_index{};
     u32 image_rescaling_index{};
 

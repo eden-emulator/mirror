@@ -486,9 +486,9 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
     DefineTextures(program.info, texture_binding, bindings.texture_scaling_index);
     DefineImages(program.info, image_binding, bindings.image_scaling_index);
     DefineAttributeMemAccess(program.info);
-    DefineGlobalMemoryFunctions(program);
     DefineRescalingInput(program.info);
     DefineRenderArea(program.info);
+    DefineGlobalMemoryFunctions(program);
 }
 
 EmitContext::~EmitContext() = default;
@@ -911,12 +911,48 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
     if (!info.uses_global_memory || !profile.support_int64) {
         return;
     }
+    struct Access {
+        const StorageDefinitions* ssbo;
+        Id word;
+        Id address;
+    };
     const Id zero{u32_zero_value};
     const Id scope{Const(static_cast<u32>(spv::Scope::Device))};
     const Id align_mask{Const(~(static_cast<u32>(profile.min_ssbo_alignment) - 1U))};
-    const auto word_pointer{[&](Id ssbo, Id word, u32 element) {
-        return OpAccessChain(storage_types.U32.element, ssbo, zero,
-                             OpIAdd(U32[1], word, Const(element)));
+    Id physical_u32{};
+    Id physical_u32x4{};
+    if (uses_global_pointers) {
+        AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
+        AddExtension("SPV_KHR_physical_storage_buffer");
+        SetMemoryModel(spv::AddressingModel::PhysicalStorageBuffer64, spv::MemoryModel::GLSL450);
+        physical_u32 = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U32[1]);
+        physical_u32x4 = TypePointer(spv::StorageClass::PhysicalStorageBuffer, U32[4]);
+    }
+    const auto word_pointer{[&](const Access& access, u32 element) {
+        if (access.ssbo) {
+            return OpAccessChain(storage_types.U32.element, access.ssbo->U32, zero,
+                                 OpIAdd(U32[1], access.word, Const(element)));
+        }
+        return OpConvertUToPtr(physical_u32,
+                               OpIAdd(U64, access.address, Constant(U64, u64{element} * 4)));
+    }};
+    const auto load_word{[&](const Access& access, u32 element) {
+        if (access.ssbo) {
+            return OpLoad(U32[1], word_pointer(access, element));
+        }
+        return OpLoad(U32[1], word_pointer(access, element), spv::MemoryAccessMask::Aligned, 4U);
+    }};
+    const auto store_word{[&](const Access& access, u32 element, Id value) {
+        if (access.ssbo) {
+            OpStore(word_pointer(access, element), value);
+            return;
+        }
+        OpStore(word_pointer(access, element), value, spv::MemoryAccessMask::Aligned, 4U);
+    }};
+    const auto load_entry{[&](Id address) {
+        const Id entry{OpLoad(U32[4], OpConvertUToPtr(physical_u32x4, address),
+                              spv::MemoryAccessMask::Aligned, 16U)};
+        return std::pair{entry, OpBitcast(U64, OpVectorShuffle(U32[2], entry, entry, 0U, 1U))};
     }};
     const auto cbuf_word{[&](u32 index, u32 offset) {
         if (profile.support_descriptor_aliasing) {
@@ -938,7 +974,19 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
         const Id addr{OpFunctionParameter(U64)};
         const Id value{OpFunctionParameter(value_type)};
         const bool returns_value{result_type.value != void_id.value};
+        const auto finish{[&](Id result) {
+            if (returns_value) {
+                OpReturnValue(result);
+            } else {
+                OpReturn();
+            }
+        }};
         AddLabel();
+        Id entry_index{};
+        if (uses_global_pointers) {
+            entry_index = AddLocalVariable(TypePointer(spv::StorageClass::Function, U32[1]),
+                                           spv::StorageClass::Function, zero);
+        }
         const Id addr_words{OpBitcast(U32[2], addr)};
         const Id addr_low{OpCompositeExtract(U32[1], addr_words, 0U)};
         const Id addr_high{OpCompositeExtract(U32[1], addr_words, 1U)};
@@ -947,8 +995,7 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
             if (!desc.is_global_fallback) {
                 continue;
             }
-            const Id ssbo_low{
-                OpBitwiseAnd(U32[1], cbuf_word(desc.cbuf_index, desc.cbuf_offset), align_mask)};
+            const Id ssbo_low{cbuf_word(desc.cbuf_index, desc.cbuf_offset)};
             const Id ssbo_high{cbuf_word(desc.cbuf_index, desc.cbuf_offset + 4)};
             const Id ssbo_size{cbuf_word(desc.cbuf_index, desc.cbuf_offset + 8)};
             const Id offset{OpISub(U32[1], addr_low, ssbo_low)};
@@ -961,14 +1008,54 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
             OpSelectionMerge(else_label, spv::SelectionControlMask::MaskNone);
             OpBranchConditional(cond, then_label, else_label);
             AddLabel(then_label);
-            const Id word{OpShiftRightLogical(U32[1], offset, Const(2U))};
-            const Id result{callback(ssbos[index], word, offset, value)};
-            if (returns_value) {
-                OpReturnValue(result);
-            } else {
-                OpReturn();
-            }
+            const Id aligned_offset{
+                OpISub(U32[1], addr_low, OpBitwiseAnd(U32[1], ssbo_low, align_mask))};
+            const Id word{OpShiftRightLogical(U32[1], aligned_offset, Const(2U))};
+            finish(callback(Access{&ssbos[index], word, Id{}}, aligned_offset, value));
             AddLabel(else_label);
+        }
+        if (uses_global_pointers) {
+            const Id table_pointer{
+                OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[2]),
+                              rescaling_push_constants, Const(global_pointer_member_index))};
+            const Id count_pointer{
+                OpAccessChain(TypePointer(spv::StorageClass::PushConstant, U32[1]),
+                              rescaling_push_constants, Const(global_pointer_member_index + 1))};
+            const Id table{OpBitcast(U64, OpLoad(U32[2], table_pointer))};
+            const Id count{OpLoad(U32[1], count_pointer)};
+            const Id header_label{OpLabel()};
+            const Id body_label{OpLabel()};
+            const Id hit_label{OpLabel()};
+            const Id skip_label{OpLabel()};
+            const Id continue_label{OpLabel()};
+            const Id merge_label{OpLabel()};
+            OpBranch(header_label);
+            AddLabel(header_label);
+            const Id entry{OpLoad(U32[1], entry_index)};
+            const Id in_table{OpULessThan(U1, entry, count)};
+            OpLoopMerge(merge_label, continue_label, spv::LoopControlMask::MaskNone);
+            OpBranchConditional(in_table, body_label, merge_label);
+            AddLabel(body_label);
+            const Id entry_address{OpIAdd(
+                U64, table, OpUConvert(U64, OpShiftLeftLogical(U32[1], entry, Const(5U))))};
+            const auto [guest, guest_base]{load_entry(entry_address)};
+            const Id guest_offset{OpISub(U64, addr, guest_base)};
+            const Id guest_size{OpUConvert(U64, OpCompositeExtract(U32[1], guest, 2U))};
+            const Id hit{OpULessThan(U1, guest_offset, guest_size)};
+            OpSelectionMerge(skip_label, spv::SelectionControlMask::MaskNone);
+            OpBranchConditional(hit, hit_label, skip_label);
+            AddLabel(hit_label);
+            const Id host_base{
+                load_entry(OpIAdd(U64, entry_address, Constant(U64, u64{16}))).second};
+            const Id target{OpBitwiseAnd(U64, OpIAdd(U64, host_base, guest_offset),
+                                         Constant(U64, ~u64{3}))};
+            finish(callback(Access{nullptr, Id{}, target}, addr_low, value));
+            AddLabel(skip_label);
+            OpBranch(continue_label);
+            AddLabel(continue_label);
+            OpStore(entry_index, OpIAdd(U32[1], entry, Const(1U)));
+            OpBranch(header_label);
+            AddLabel(merge_label);
         }
         if (returns_value) {
             OpReturnValue(ConstantNull(result_type));
@@ -987,13 +1074,13 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
                              OpShiftRightLogical(U32[1], word, Const(2U)));
     }};
     const auto load{[&](Id type, u32 count) {
-        return [&, type, count](const StorageDefinitions& ssbo, Id word, Id, Id) {
-            if (count > 1 && profile.support_descriptor_aliasing) {
-                return OpLoad(type, vector_pointer(ssbo, word, count));
+        return [&, type, count](const Access& access, Id, Id) {
+            if (count > 1 && access.ssbo && profile.support_descriptor_aliasing) {
+                return OpLoad(type, vector_pointer(*access.ssbo, access.word, count));
             }
             std::array<Id, 4> words{};
             for (u32 element = 0; element < count; ++element) {
-                words[element] = OpLoad(U32[1], word_pointer(ssbo.U32, word, element));
+                words[element] = load_word(access, element);
             }
             if (count == 1) {
                 return words[0];
@@ -1002,25 +1089,24 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
         };
     }};
     const auto store{[&](u32 count) {
-        return [&, count](const StorageDefinitions& ssbo, Id word, Id, Id value) {
-            if (count > 1 && profile.support_descriptor_aliasing) {
-                OpStore(vector_pointer(ssbo, word, count), value);
+        return [&, count](const Access& access, Id, Id value) {
+            if (count > 1 && access.ssbo && profile.support_descriptor_aliasing) {
+                OpStore(vector_pointer(*access.ssbo, access.word, count), value);
                 return Id{};
             }
             if (count == 1) {
-                OpStore(word_pointer(ssbo.U32, word, 0), value);
+                store_word(access, 0, value);
                 return Id{};
             }
             for (u32 element = 0; element < count; ++element) {
-                OpStore(word_pointer(ssbo.U32, word, element),
-                        OpCompositeExtract(U32[1], value, element));
+                store_word(access, element, OpCompositeExtract(U32[1], value, element));
             }
             return Id{};
         };
     }};
     const auto extract{[&](bool is_signed, u32 count) {
-        return [&, is_signed, count](const StorageDefinitions& ssbo, Id word, Id offset, Id) {
-            const Id loaded{OpLoad(U32[1], word_pointer(ssbo.U32, word, 0))};
+        return [&, is_signed, count](const Access& access, Id offset, Id) {
+            const Id loaded{load_word(access, 0)};
             if (is_signed) {
                 return OpBitFieldSExtract(U32[1], loaded, bits(offset, count), Const(count));
             }
@@ -1028,28 +1114,36 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
         };
     }};
     const auto insert{[&](u32 count) {
-        return [&, count](const StorageDefinitions& ssbo, Id word, Id offset, Id value) {
-            AtomicBitFieldInsert(word_pointer(ssbo.U32, word, 0), value, bits(offset, count),
+        return [&, count](const Access& access, Id offset, Id value) {
+            AtomicBitFieldInsert(word_pointer(access, 0), value, bits(offset, count),
                                  Const(count));
             return Id{};
         };
     }};
     const auto atomic{[&](Id (Sirit::Module::*func)(Id, Id, Id, Id, Id)) {
-        return [&, func](const StorageDefinitions& ssbo, Id word, Id, Id value) {
-            return (this->*func)(U32[1], word_pointer(ssbo.U32, word, 0), scope, zero, value);
+        return [&, func](const Access& access, Id, Id value) {
+            return (this->*func)(U32[1], word_pointer(access, 0), scope, zero, value);
         };
     }};
     const auto cas{[&](Id type, Id helper) {
-        return [&, type, helper](const StorageDefinitions& ssbo, Id word, Id, Id value) {
-            return OpFunctionCall(type, helper, word, value, ssbo.U32);
+        return [&, type, helper](const Access& access, Id, Id value) {
+            if (!access.ssbo) {
+                return ConstantNull(type);
+            }
+            return OpFunctionCall(type, helper, access.word, value, access.ssbo->U32);
         };
     }};
     const auto packed{[&](bool is_half, Id helper) {
-        return [&, is_half, helper](const StorageDefinitions& ssbo, Id word, Id, Id value) {
-            if (is_half) {
-                return OpBitcast(U32[1], OpFunctionCall(F16[2], helper, word, value, ssbo.U32));
+        return [&, is_half, helper](const Access& access, Id, Id value) {
+            if (!access.ssbo) {
+                return ConstantNull(U32[1]);
             }
-            return OpPackHalf2x16(U32[1], OpFunctionCall(F32[2], helper, word, value, ssbo.U32));
+            const Id ssbo{access.ssbo->U32};
+            if (is_half) {
+                return OpBitcast(U32[1], OpFunctionCall(F16[2], helper, access.word, value, ssbo));
+            }
+            return OpPackHalf2x16(U32[1],
+                                  OpFunctionCall(F32[2], helper, access.word, value, ssbo));
         };
     }};
     for (const IR::Block* const block : program.post_order_blocks) {
@@ -1159,7 +1253,9 @@ void EmitContext::DefineGlobalMemoryFunctions(const IR::Program& program) {
 }
 
 void EmitContext::DefineRescalingInput(const Info& info) {
-    if (!info.uses_rescaling_uniform) {
+    uses_global_pointers = info.uses_global_pointers && profile.support_buffer_device_address &&
+                           profile.support_int64 && profile.unified_descriptor_binding;
+    if (!info.uses_rescaling_uniform && !uses_global_pointers) {
         return;
     }
     if (profile.unified_descriptor_binding) {
@@ -1170,7 +1266,7 @@ void EmitContext::DefineRescalingInput(const Info& info) {
 }
 
 void EmitContext::DefineRescalingInputPushConstant() {
-    boost::container::static_vector<Id, 3> members{};
+    boost::container::static_vector<Id, 5> members{};
     u32 member_index{0};
 
     rescaling_textures_type = TypeArray(U32[1], Const(4u));
@@ -1186,6 +1282,11 @@ void EmitContext::DefineRescalingInputPushConstant() {
     if (stage != Stage::Compute) {
         members.push_back(F32[1]);
         rescaling_downfactor_member_index = member_index++;
+    }
+    if (uses_global_pointers) {
+        members.push_back(U32[2]);
+        members.push_back(U32[1]);
+        global_pointer_member_index = member_index;
     }
     const Id push_constant_struct{TypeStruct(std::span(members.data(), members.size()))};
     Decorate(push_constant_struct, spv::Decoration::Block);
@@ -1204,6 +1305,14 @@ void EmitContext::DefineRescalingInputPushConstant() {
                        spv::Decoration::Offset,
                        static_cast<u32>(offsetof(RescalingLayout, down_factor)));
         MemberName(push_constant_struct, rescaling_downfactor_member_index, "down_factor");
+    }
+    if (uses_global_pointers) {
+        MemberDecorate(push_constant_struct, global_pointer_member_index, spv::Decoration::Offset,
+                       GLOBAL_POINTER_LAYOUT_OFFSET);
+        MemberDecorate(push_constant_struct, global_pointer_member_index + 1,
+                       spv::Decoration::Offset,
+                       GLOBAL_POINTER_LAYOUT_OFFSET +
+                           static_cast<u32>(offsetof(GlobalPointerLayout, count)));
     }
     const Id pointer_type{TypePointer(spv::StorageClass::PushConstant, push_constant_struct)};
     rescaling_push_constants = AddGlobalVariable(pointer_type, spv::StorageClass::PushConstant);

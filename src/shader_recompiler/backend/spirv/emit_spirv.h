@@ -29,6 +29,11 @@ struct RescalingLayout {
 struct RenderAreaLayout {
     std::array<f32, 4> render_area;
 };
+struct GlobalPointerLayout {
+    std::array<u32, 2> table;
+    u32 count;
+};
+constexpr u32 GLOBAL_POINTER_LAYOUT_OFFSET = 64;
 constexpr u32 RESCALING_LAYOUT_WORDS_OFFSET = offsetof(RescalingLayout, rescaling_textures);
 constexpr u32 RESCALING_LAYOUT_DOWN_FACTOR_OFFSET = offsetof(RescalingLayout, down_factor);
 constexpr u32 RENDERAREA_LAYOUT_OFFSET = offsetof(RenderAreaLayout, render_area);

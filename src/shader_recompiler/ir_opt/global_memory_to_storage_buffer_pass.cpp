@@ -56,6 +56,7 @@ struct StorageInfo {
     StorageBufferSet set;
     StorageInstVector to_replace;
     StorageWritesSet writes;
+    bool pointers{};
 };
 
 /// Returns true when the instruction is a global memory instruction
@@ -335,7 +336,8 @@ std::optional<LowAddrInfo> TrackLowAddress(IR::Inst* inst) {
 }
 
 /// Tries to track the storage buffer address used by a global memory instruction
-StorageBufferSet Track(const IR::Value& value, const Bias* bias, const LocalStores& local_stores) {
+StorageBufferSet Track(const IR::Value& value, const Bias* bias, const LocalStores& local_stores,
+                       bool& from_memory) {
     const auto pred{[bias](const IR::Inst* inst) -> std::optional<StorageBufferAddr> {
         if (inst->GetOpcode() != IR::Opcode::GetCbufU32 &&
             inst->GetOpcode() != IR::Opcode::GetCbufU32x2) {
@@ -386,6 +388,8 @@ StorageBufferSet Track(const IR::Value& value, const Bias* bias, const LocalStor
         }
         switch (inst->GetOpcode()) {
         case IR::Opcode::LoadLocal:
+            from_memory |=
+                !inst->Arg(0).IsImmediate() || !local_stores.contains(inst->Arg(0).U32());
             if (inst->Arg(0).IsImmediate()) {
                 const auto [begin, end]{local_stores.equal_range(inst->Arg(0).U32())};
                 for (auto it = begin; it != end; ++it) {
@@ -405,6 +409,7 @@ StorageBufferSet Track(const IR::Value& value, const Bias* bias, const LocalStor
         case IR::Opcode::GetCbufU32:
         case IR::Opcode::GetCbufF32:
         case IR::Opcode::GetCbufU32x2:
+            continue;
         case IR::Opcode::LoadSharedU8:
         case IR::Opcode::LoadSharedS8:
         case IR::Opcode::LoadSharedU16:
@@ -412,11 +417,13 @@ StorageBufferSet Track(const IR::Value& value, const Bias* bias, const LocalStor
         case IR::Opcode::LoadSharedU32:
         case IR::Opcode::LoadSharedU64:
         case IR::Opcode::LoadSharedU128:
+            from_memory = true;
             continue;
         default:
             break;
         }
         if (IsGlobalMemory(*inst) || inst->MayHaveSideEffects()) {
+            from_memory = true;
             continue;
         }
         for (size_t arg = 0; arg < inst->NumArgs(); ++arg) {
@@ -457,18 +464,21 @@ void CollectStorageBuffers(IR::Block& block, IR::Inst& inst, StorageInfo& info,
     const std::optional<LowAddrInfo> low_addr_info{TrackLowAddress(&inst)};
     if (!low_addr_info) {
         // Failed to track the low address, use NVN fallbacks
+        info.pointers = true;
         return;
     }
     // First try to find storage buffers in the NVN address
     const IR::U32 low_addr{low_addr_info->value};
-    StorageBufferSet candidates{Track(low_addr, &nvn_bias, local_stores)};
+    bool from_memory{};
+    StorageBufferSet candidates{Track(low_addr, &nvn_bias, local_stores, from_memory)};
     if (candidates.empty()) {
         // If it fails, track without a bias
-        candidates = Track(low_addr, nullptr, local_stores);
+        candidates = Track(low_addr, nullptr, local_stores, from_memory);
     }
     if (candidates.size() != 1) {
         // If that also fails, use NVN fallbacks
         LOG_WARNING(Shader, "Storage buffer failed to track, using global memory fallbacks");
+        info.pointers |= from_memory;
         return;
     }
     const StorageBufferAddr storage_buffer{*candidates.begin()};
@@ -615,6 +625,7 @@ void GlobalMemoryToStorageBufferPass(IR::Program& program, const HostTranslateIn
             .is_written = info.writes.contains(storage_buffer),
         });
     }
+    program.info.uses_global_pointers = info.pointers;
     for (const StorageInst& storage_inst : info.to_replace) {
         const StorageBufferAddr storage_buffer{storage_inst.storage_buffer};
         const auto it{info.set.find(storage_inst.storage_buffer)};
@@ -628,6 +639,7 @@ void GlobalMemoryToStorageBufferPass(IR::Program& program, const HostTranslateIn
 }
 
 void JoinStorageInfo(Info& base, Info& source) {
+    base.uses_global_pointers |= source.uses_global_pointers;
     auto& descriptors = base.storage_buffers_descriptors;
     for (auto& desc : source.storage_buffers_descriptors) {
         auto it{std::ranges::find_if(descriptors, [&desc](const auto& existing) {
