@@ -95,6 +95,7 @@ public:
     bool IsReadable() const override;
     std::size_t Read(u8* data, std::size_t length, std::size_t offset) const override;
     std::size_t Write(const u8* data, std::size_t length, std::size_t offset) override;
+    bool Flush() override;
     bool Rename(std::string_view name) override;
 
 private:

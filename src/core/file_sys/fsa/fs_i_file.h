@@ -140,17 +140,17 @@ private:
     }
 
     Result DoFlush() {
-        // Exists for SDK compatibiltity -- No need to flush file.
+        R_UNLESS(backend->Flush(), ResultUnknown);
         R_SUCCEED();
     }
 
     Result DoWrite(s64 offset, const void* buffer, size_t size, const WriteOption& option) {
         const std::size_t written = backend->Write(static_cast<const u8*>(buffer), size, offset);
 
-        ASSERT_MSG(written == size,
-                   "Could not write all bytes to file (requested={:016X}, actual={:016X}).", size,
-                   written);
-
+        R_UNLESS(written == size, ResultUnknown);
+        if (option.HasFlushFlag()) {
+            R_TRY(this->Flush());
+        }
         R_SUCCEED();
     }
 

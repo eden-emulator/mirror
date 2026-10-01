@@ -348,6 +348,11 @@ std::size_t RealVfsFile::Write(const u8* data, std::size_t length, std::size_t o
     return reference->file->WriteSpan(std::span{data, length});
 }
 
+bool RealVfsFile::Flush() {
+    auto lk = base.RefreshReference(path, perms, *reference);
+    return reference->file && reference->file->Commit();
+}
+
 bool RealVfsFile::Rename(std::string_view name) {
     return base.MoveFile(path, parent_path + '/' + std::string(name)) != nullptr;
 }

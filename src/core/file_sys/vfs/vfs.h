@@ -119,6 +119,11 @@ public:
     // into file. Returns number of bytes successfully written.
     virtual std::size_t Write(const u8* data, std::size_t length, std::size_t offset = 0) = 0;
 
+    // Flush buffered writes. Memory-backed/read-only implementations have no buffer.
+    virtual bool Flush() {
+        return true;
+    }
+
     // Reads exactly one byte at the offset provided, returning std::nullopt on error.
     virtual std::optional<u8> ReadByte(std::size_t offset = 0) const;
     // Reads size bytes starting at offset in file into a vector.
