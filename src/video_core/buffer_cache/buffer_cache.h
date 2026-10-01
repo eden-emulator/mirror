@@ -804,16 +804,18 @@ void BufferCache<P>::BindHostIndexBuffer() {
     const auto& draw_state = maxwell3d->draw_manager.draw_state;
     if (draw_state.inline_index_draw_indexes.empty()) {
         SynchronizeBuffer(buffer, channel_state->index_buffer.device_addr, size);
+    } else if constexpr (USE_MEMORY_MAPS_FOR_UPLOADS) {
+        const auto upload_staging = runtime.UploadStagingBuffer(size);
+        std::memcpy(upload_staging.mapped_span.data(),
+                    draw_state.inline_index_draw_indexes.data(), size);
+        runtime.BindIndexBuffer(draw_state.topology, draw_state.index_buffer.format,
+                                draw_state.index_buffer.first, draw_state.index_buffer.count,
+                                upload_staging.buffer, static_cast<u32>(upload_staging.offset),
+                                size);
+        return;
     } else {
         buffer.MarkContentModified();
-        if constexpr (USE_MEMORY_MAPS_FOR_UPLOADS) {
-            auto upload_staging = runtime.UploadStagingBuffer(size);
-            std::array<BufferCopy, 1> copies{{BufferCopy{.src_offset = upload_staging.offset, .dst_offset = 0, .size = size}}};
-            std::memcpy(upload_staging.mapped_span.data(), draw_state.inline_index_draw_indexes.data(), size);
-            runtime.CopyBuffer(buffer, upload_staging.buffer, copies, true);
-        } else {
-            buffer.ImmediateUpload(0, draw_state.inline_index_draw_indexes);
-        }
+        buffer.ImmediateUpload(0, draw_state.inline_index_draw_indexes);
     }
     if constexpr (HAS_FULL_INDEX_AND_PRIMITIVE_SUPPORT) {
         const u32 new_offset = offset + draw_state.index_buffer.first * u32(draw_state.index_buffer.FormatSizeInBytes());
@@ -1370,13 +1372,15 @@ void BufferCache<P>::UpdateIndexBuffer() {
     flags[Dirty::IndexBuffer] = false;
     if (!draw_state.inline_index_draw_indexes.empty()) [[unlikely]] {
         auto inline_index_size = static_cast<u32>(draw_state.inline_index_draw_indexes.size());
-        u32 buffer_size = Common::AlignUp(inline_index_size, CACHING_PAGESIZE);
-        if (inline_buffer_id == NULL_BUFFER_ID) [[unlikely]] {
-            inline_buffer_id = CreateBuffer(0, buffer_size, false);
-        }
-        if (slot_buffers[inline_buffer_id].SizeBytes() < buffer_size) [[unlikely]] {
-            DeleteBuffer(inline_buffer_id, true);
-            inline_buffer_id = CreateBuffer(0, buffer_size, false);
+        if constexpr (!USE_MEMORY_MAPS_FOR_UPLOADS) {
+            const u32 buffer_size = Common::AlignUp(inline_index_size, CACHING_PAGESIZE);
+            if (inline_buffer_id == NULL_BUFFER_ID) [[unlikely]] {
+                inline_buffer_id = CreateBuffer(0, buffer_size, false);
+            }
+            if (slot_buffers[inline_buffer_id].SizeBytes() < buffer_size) [[unlikely]] {
+                DeleteBuffer(inline_buffer_id, true);
+                inline_buffer_id = CreateBuffer(0, buffer_size, false);
+            }
         }
         channel_state->index_buffer = Binding{
             .device_addr = 0,
