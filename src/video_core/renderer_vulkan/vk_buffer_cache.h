@@ -149,6 +149,8 @@ public:
 
     bool CanReorderUpload(const Buffer& buffer, std::span<const VideoCommon::BufferCopy> copies);
 
+    [[nodiscard]] std::span<const u8> DirectDownloadSpan(Buffer& buffer);
+
     [[nodiscard]] std::span<u8> DirectUploadSpan(Buffer& buffer,
                                                  std::span<const VideoCommon::BufferCopy> copies);
 

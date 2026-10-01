@@ -32,6 +32,15 @@ namespace Vulkan {
 namespace {
 constexpr size_t DEPTH_VIEW = 8;
 
+constexpr VkMemoryBarrier2 HOST_READ_BARRIER{
+    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+    .pNext = nullptr,
+    .srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+    .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+    .dstStageMask = VK_PIPELINE_STAGE_2_HOST_BIT,
+    .dstAccessMask = VK_ACCESS_2_HOST_READ_BIT,
+};
+
 struct BeginRenderingCommand {
     void operator()(vk::CommandBuffer cmdbuf, vk::CommandBuffer) const {
         BeginRendering(cmdbuf, attachments);
@@ -477,6 +486,9 @@ u64 Scheduler::SubmitExecution(VkSemaphore signal_semaphore, VkSemaphore wait_se
                             this](vk::CommandBuffer cmdbuf, vk::CommandBuffer upload_cmdbuf) {
         upload_cmdbuf.PipelineBarrier(upload_write_barrier);
         upload_cmdbuf.End();
+        if (device.IsUMA()) {
+            cmdbuf.PipelineBarrier(HOST_READ_BARRIER);
+        }
         cmdbuf.End();
 
         if (on_submit) {

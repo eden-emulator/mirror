@@ -327,6 +327,7 @@ std::pair<typename P::Buffer*, u32> BufferCache<P>::ObtainCPUBuffer(
     default:
         break;
     }
+    buffer.MarkUsage(buffer.Offset(device_addr), size);
 
     switch (post_op) {
     case ObtainBufferOperation::MarkAsWritten:
@@ -394,8 +395,9 @@ void BufferCache<P>::CommitDrawWrites() {
         }
         const u64 pass = runtime.RenderPassSerial();
         for (const DrawWrite& write : draw_writes) {
-            slot_buffers[write.buffer_id].MarkDrawWrite(pass, draw_wfi, write.device_addr,
-                                                        write.size, write.feedback);
+            Buffer& buffer = slot_buffers[write.buffer_id];
+            buffer.setWriteTick(runtime.CurrentTick());
+            buffer.MarkDrawWrite(pass, draw_wfi, write.device_addr, write.size, write.feedback);
         }
         runtime.MarkRenderPassWrites();
     }
@@ -956,6 +958,7 @@ void BufferCache<P>::BindHostDrawIndirectBuffers() {
         Buffer& buffer = slot_buffers[binding.buffer_id];
         TouchBuffer(buffer, binding.buffer_id);
         SynchronizeBuffer(buffer, binding.device_addr, binding.size);
+        buffer.MarkUsage(buffer.Offset(binding.device_addr), binding.size);
     };
     if (current_draw_indirect->include_count) {
         bind_buffer(channel_state->count_buffer_binding);
@@ -1989,6 +1992,16 @@ void BufferCache<P>::DownloadBufferMemory(Buffer& buffer, DAddr device_addr, u64
     }
 
     if constexpr (USE_MEMORY_MAPS) {
+        if constexpr (requires { runtime.DirectDownloadSpan(buffer); }) {
+            const std::span<const u8> direct = runtime.DirectDownloadSpan(buffer);
+            if (!direct.empty()) {
+                for (const BufferCopy& copy : copies) {
+                    device_memory.WriteBlockUnsafe(buffer.CpuAddr() + copy.src_offset,
+                                                   direct.data() + copy.src_offset, copy.size);
+                }
+                return;
+            }
+        }
         auto download_staging = runtime.DownloadStagingBuffer(total_size_bytes);
         const u8* const mapped_memory = download_staging.mapped_span.data();
         const std::span<BufferCopy> copies_span(copies.data(), copies.data() + copies.size());

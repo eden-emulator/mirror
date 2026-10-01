@@ -511,6 +511,14 @@ bool BufferCacheRuntime::CanReorderUpload(const Buffer& buffer,
     return can_use_upload_cmdbuf;
 }
 
+std::span<const u8> BufferCacheRuntime::DirectDownloadSpan(Buffer& buffer) {
+    const std::span<u8> mapping = buffer.CoherentMapping();
+    if (!mapping.empty()) {
+        scheduler.Wait((std::max)(buffer.getWriteTick(), buffer.LastUploadTick()));
+    }
+    return mapping;
+}
+
 std::span<u8> BufferCacheRuntime::DirectUploadSpan(
     Buffer& buffer, std::span<const VideoCommon::BufferCopy> copies) {
     const std::span<u8> mapping = buffer.CoherentMapping();
