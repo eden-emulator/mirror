@@ -178,6 +178,9 @@ public:
 
     void BindQuadIndexBuffer(PrimitiveTopology topology, u32 first, u32 count);
 
+    bool BindQuadIndices(PrimitiveTopology topology, IndexFormat index_format, u32 base_vertex,
+                         u32 num_indices, std::span<const u8> indices);
+
     void BindVertexBuffer(u32 index, VkBuffer buffer, u32 offset, u32 size, u32 stride);
 
     void BindVertexBuffers(VideoCommon::HostBindings<Buffer>& bindings);

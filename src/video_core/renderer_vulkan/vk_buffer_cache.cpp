@@ -677,6 +677,57 @@ void BufferCacheRuntime::BindQuadIndexBuffer(PrimitiveTopology topology, u32 fir
     }
 }
 
+bool BufferCacheRuntime::BindQuadIndices(PrimitiveTopology topology, IndexFormat index_format,
+                                         u32 base_vertex, u32 num_indices,
+                                         std::span<const u8> indices) {
+    const size_t index_size = size_t{1} << static_cast<u32>(index_format);
+    if (indices.size() < num_indices * index_size) {
+        return false;
+    }
+    u32 quads = num_indices / 4;
+    u32 stride = 4;
+    std::array<u32, 6> swizzle{0, 1, 2, 0, 2, 3};
+    if (topology == PrimitiveTopology::QuadStrip) {
+        quads = 0;
+        if (num_indices >= 2) {
+            quads = (num_indices - 2) / 2;
+        }
+        stride = 2;
+        swizzle = {0, 3, 1, 0, 2, 3};
+    }
+    const size_t size = (std::max)(quads, 1U) * sizeof(swizzle);
+    const StagingBufferRef staging = staging_pool.Request(size, MemoryUsage::Upload);
+    const auto convert = [&](auto index_type) {
+        u8* output = staging.mapped_span.data();
+        for (u32 quad = 0; quad < quads; ++quad) {
+            std::array<u32, 6> triangles;
+            for (size_t vertex = 0; vertex < triangles.size(); ++vertex) {
+                decltype(index_type) index;
+                std::memcpy(&index,
+                            indices.data() + (quad * stride + swizzle[vertex]) * sizeof(index),
+                            sizeof(index));
+                triangles[vertex] = index + base_vertex;
+            }
+            std::memcpy(output, triangles.data(), sizeof(triangles));
+            output += sizeof(triangles);
+        }
+    };
+    switch (index_format) {
+    case IndexFormat::UnsignedByte:
+        convert(u8{});
+        break;
+    case IndexFormat::UnsignedShort:
+        convert(u16{});
+        break;
+    case IndexFormat::UnsignedInt:
+        convert(u32{});
+        break;
+    }
+    BindIndexBuffer(PrimitiveTopology::Triangles, IndexFormat::UnsignedInt, 0, 0, staging.buffer,
+                    static_cast<u32>(staging.offset), static_cast<u32>(size));
+    return true;
+}
+
 void BufferCacheRuntime::BindVertexBuffer(u32 index, VkBuffer buffer, u32 offset, u32 size, u32 stride) {
     if (index >= device.GetMaxVertexInputBindings()) {
         return;
