@@ -206,6 +206,8 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkGetPipelineExecutablePropertiesKHR);
     X(vkGetPipelineExecutableStatisticsKHR);
     X(vkGetSemaphoreCounterValue);
+    X(vkCopyMemoryToImageEXT);
+    X(vkTransitionImageLayoutEXT);
     X(vkQueueBindSparse);
     X(vkQueueSubmit2);
     X(vkResetFences);

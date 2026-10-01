@@ -1033,6 +1033,18 @@ void TextureCache<P>::RefreshContents(Image& image, ImageId image_id) {
         QueueAsyncDecode(image, image_id);
         return;
     }
+    if constexpr (requires { image.UploadHostMemory(unswizzle_data_buffer, {}); }) {
+        if (True(image.flags & ImageFlagBits::ReorderableUpload) && image.CanUploadHostMemory()) {
+            Tegra::Memory::GpuGuestMemory<u8, Tegra::Memory::GuestMemoryFlags::UnsafeRead>
+                swizzle_data(*gpu_memory, image.gpu_addr, image.guest_size_bytes,
+                             &swizzle_data_buffer);
+            unswizzle_data_buffer.resize_destructive(image.unswizzled_size_bytes);
+            const auto copies = FixSmallVectorADL(UnswizzleImage(
+                *gpu_memory, image.gpu_addr, image.info, swizzle_data, unswizzle_data_buffer));
+            image.UploadHostMemory(unswizzle_data_buffer, copies);
+            return;
+        }
+    }
 
     auto staging = runtime.UploadStagingBuffer(MapSizeBytes(image));
     UploadImageContents(image, staging);

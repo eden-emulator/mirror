@@ -355,6 +355,8 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkGetPipelineExecutableStatisticsKHR vkGetPipelineExecutableStatisticsKHR{};
     PFN_vkGetQueryPoolResults vkGetQueryPoolResults{};
     PFN_vkGetSemaphoreCounterValue vkGetSemaphoreCounterValue{};
+    PFN_vkCopyMemoryToImageEXT vkCopyMemoryToImageEXT{};
+    PFN_vkTransitionImageLayoutEXT vkTransitionImageLayoutEXT{};
     PFN_vkQueueBindSparse vkQueueBindSparse{};
     PFN_vkQueueSubmit2 vkQueueSubmit2{};
     PFN_vkResetFences vkResetFences{};
@@ -1090,6 +1092,14 @@ public:
 
     void ResetQueryPool(VkQueryPool query_pool, u32 first, u32 count) const noexcept {
         dld->vkResetQueryPool(handle, query_pool, first, count);
+    }
+
+    void CopyMemoryToImageEXT(const VkCopyMemoryToImageInfoEXT& info) const {
+        Check(dld->vkCopyMemoryToImageEXT(handle, &info));
+    }
+
+    void TransitionImageLayoutEXT(const VkHostImageLayoutTransitionInfoEXT& info) const {
+        Check(dld->vkTransitionImageLayoutEXT(handle, 1, &info));
     }
 
     VkResult GetQueryResults(VkQueryPool query_pool, u32 first, u32 count, std::size_t data_size,

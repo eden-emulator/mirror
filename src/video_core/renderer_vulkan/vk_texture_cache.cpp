@@ -283,11 +283,13 @@ constexpr VkBorderColor ConvertBorderColor(const std::array<float, 4>& color) {
 
 [[nodiscard]] vk::Image MakeImage(const Device& device, const MemoryAllocator& allocator,
                                   const ImageInfo& info, std::span<const VkFormat> view_formats,
-                                  std::optional<VkFormat> format_override = {}) {
+                                  std::optional<VkFormat> format_override = {},
+                                  VkImageUsageFlags host_usage = 0) {
     if (info.type == ImageType::Buffer) {
         return vk::Image{};
     }
     VkImageCreateInfo image_ci = MakeImageCreateInfo(device, info, format_override);
+    image_ci.usage |= host_usage;
     const VkImageFormatListCreateInfo image_format_list = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,
         .pNext = nullptr,
@@ -1041,6 +1043,17 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
                                      compute_pass_descriptor_queue);
         pitch_unswizzle_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
                                      compute_pass_descriptor_queue);
+    }
+    for (size_t index = 0; index < VideoCore::Surface::MaxPixelFormat; index++) {
+        const auto format = static_cast<PixelFormat>(index);
+        if (!device.IsHostImageCopySupported() || DefaultBlockWidth(format) == 1) {
+            continue;
+        }
+        const VkFormat vk_format =
+            MaxwellToVK::SurfaceFormat(device, FormatType::Optimal, false, format).format;
+        host_copy_formats[index] =
+            (device.GetPhysical().GetFormatProperties3(vk_format).optimalTilingFeatures &
+             VK_FORMAT_FEATURE_2_HOST_IMAGE_TRANSFER_BIT_EXT) != 0;
     }
     if (!device.IsKhrImageFormatListSupported()) {
         return;
@@ -1968,10 +1981,7 @@ void TextureCacheRuntime::TickFrame() {
 Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu_addr_,
              VAddr cpu_addr_)
     : VideoCommon::ImageBase(info_, gpu_addr_, cpu_addr_), scheduler{&runtime_.scheduler},
-      runtime{&runtime_},
-      original_image(MakeImage(runtime_.device, runtime_.memory_allocator, info,
-                               runtime->ViewFormats(info.format))),
-      aspect_mask(ImageAspectMask(info.format)) {
+      runtime{&runtime_}, aspect_mask(ImageAspectMask(info.format)) {
     if (IsPixelFormatASTC(info.format) && !runtime->device.IsOptimalAstcSupported()) {
         switch (Settings::values.accelerate_astc.GetValue()) {
         case Settings::AstcDecodeMode::Gpu:
@@ -1997,6 +2007,13 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
         WillUseAcceleratedUnswizzle(runtime->device, info)) {
         flags |= VideoCommon::ImageFlagBits::AcceleratedUpload;
     }
+    VkImageUsageFlags host_usage{};
+    if (False(flags & VideoCommon::ImageFlagBits::Converted) &&
+        runtime->host_copy_formats[static_cast<size_t>(info.format)]) {
+        host_usage = VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT;
+    }
+    original_image = MakeImage(runtime->device, runtime->memory_allocator, info,
+                               runtime->ViewFormats(info.format), {}, host_usage);
     if (runtime->device.HasDebuggingToolAttached()) {
         original_image.SetObjectNameEXT(VideoCommon::Name(*this).c_str());
     }
@@ -2128,6 +2145,33 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
 
 void Image::UploadMemory(const StagingBufferRef& map, std::span<const BufferImageCopy> copies) {
     UploadMemory(map.buffer, map.offset, copies);
+}
+
+void Image::UploadHostMemory(std::span<const u8> memory,
+                             std::span<const BufferImageCopy> copies) {
+    const auto vk_copies = TransformBufferImageCopies(copies, 0, aspect_mask);
+    boost::container::small_vector<VkMemoryToImageCopyEXT, 16> regions;
+    for (const VkBufferImageCopy2& copy : vk_copies) {
+        regions.push_back(VkMemoryToImageCopyEXT{
+            .sType = VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY_EXT,
+            .pNext = nullptr,
+            .pHostPointer = memory.data() + copy.bufferOffset,
+            .memoryRowLength = copy.bufferRowLength,
+            .memoryImageHeight = copy.bufferImageHeight,
+            .imageSubresource = copy.imageSubresource,
+            .imageOffset = copy.imageOffset,
+            .imageExtent = copy.imageExtent,
+        });
+    }
+    runtime->device.GetLogical().CopyMemoryToImageEXT(VkCopyMemoryToImageInfoEXT{
+        .sType = VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO_EXT,
+        .pNext = nullptr,
+        .flags = 0,
+        .dstImage = *original_image,
+        .dstImageLayout = VK_IMAGE_LAYOUT_GENERAL,
+        .regionCount = static_cast<u32>(regions.size()),
+        .pRegions = regions.data(),
+    });
 }
 
 void Image::DownloadMemory(VkBuffer buffer, size_t offset,
@@ -3177,9 +3221,27 @@ void TextureCacheRuntime::AccelerateImageUpload(
 }
 
 void TextureCacheRuntime::TransitionImageLayout(Image& image) {
-    if (!image.ExchangeInitialization()) {
-        RecordInitialLayout(scheduler, image.Handle(), image.AspectMask());
+    if (image.ExchangeInitialization()) {
+        return;
     }
+    if (!image.CanUploadHostMemory()) {
+        RecordInitialLayout(scheduler, image.Handle(), image.AspectMask());
+        return;
+    }
+    device.GetLogical().TransitionImageLayoutEXT(VkHostImageLayoutTransitionInfoEXT{
+        .sType = VK_STRUCTURE_TYPE_HOST_IMAGE_LAYOUT_TRANSITION_INFO_EXT,
+        .pNext = nullptr,
+        .image = image.Handle(),
+        .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+        .subresourceRange{
+            .aspectMask = image.AspectMask(),
+            .baseMipLevel = 0,
+            .levelCount = VK_REMAINING_MIP_LEVELS,
+            .baseArrayLayer = 0,
+            .layerCount = VK_REMAINING_ARRAY_LAYERS,
+        },
+    });
 }
 
 } // namespace Vulkan

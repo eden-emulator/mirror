@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <bitset>
 #include <span>
 
 #include "video_core/texture_cache/texture_cache_base.h"
@@ -154,6 +155,7 @@ public:
     std::optional<PitchUnswizzlePass> pitch_unswizzle_pass;
     const Settings::ResolutionScalingInfo& resolution;
     std::array<std::vector<VkFormat>, VideoCore::Surface::MaxPixelFormat> view_formats;
+    std::bitset<VideoCore::Surface::MaxPixelFormat> host_copy_formats;
 
     static constexpr size_t indexing_slots = 8 * sizeof(size_t);
     std::array<vk::Buffer, indexing_slots> buffers{};
@@ -293,6 +295,13 @@ public:
 
     void UploadMemory(const StagingBufferRef& map,
                       std::span<const VideoCommon::BufferImageCopy> copies);
+
+    void UploadHostMemory(std::span<const u8> memory,
+                          std::span<const VideoCommon::BufferImageCopy> copies);
+
+    [[nodiscard]] bool CanUploadHostMemory() const noexcept {
+        return (original_image.UsageFlags() & VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT) != 0;
+    }
 
     void DownloadMemory(VkBuffer buffer, size_t offset,
                         std::span<const VideoCommon::BufferImageCopy> copies);
