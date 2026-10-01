@@ -1127,6 +1127,9 @@ bool Device::GetSuitability(bool requires_swapchain) {
     properties.properties = properties2.properties;
     max_vertex_attrib_divisor =
         (std::max)(1U, properties.vertex_attribute_divisor.maxVertexAttribDivisor);
+    if (!features.vertex_attribute_divisor.vertexAttributeInstanceRateDivisor) {
+        max_vertex_attrib_divisor = 1;
+    }
 
     // Unload extensions if feature support is insufficient.
     RemoveUnsuitableExtensions();

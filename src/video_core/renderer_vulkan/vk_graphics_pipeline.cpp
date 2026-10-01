@@ -306,6 +306,11 @@ GraphicsPipeline::GraphicsPipeline(
         num_descriptor_entries += NumDescriptorEntries(*info);
     }
     fragment_has_color0_output = stage_infos[NUM_STAGES - 1].stores_frag_color[0];
+    for (size_t index = 0; index < Maxwell::NumVertexAttributes; ++index) {
+        if (stage_infos[0].loads.Generic(index)) {
+            vertex_attribute_mask |= 1u << index;
+        }
+    }
 
     DescriptorLayoutBuilder builder{MakeBuilder(device, stage_infos)};
     uses_push_descriptor = builder.CanUsePushDescriptor();

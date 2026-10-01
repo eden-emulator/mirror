@@ -264,7 +264,7 @@ void RasterizerVulkan::PrepareDraw(bool is_indexed, bool skip_empty, Func&& draw
     if (!pipeline->Configure(is_indexed))
         return;
 
-    UpdateDynamicStates(pipeline->HasDynamicVertexInput());
+    UpdateDynamicStates(*pipeline);
 
     query_cache.NotifySegment(true);
     HandleTransformFeedback();
@@ -382,13 +382,6 @@ void RasterizerVulkan::DrawTexture() {
     std::scoped_lock l{texture_cache.mutex};
     texture_cache.SynchronizeDescriptors(false);
     texture_cache.UpdateRenderTargets(false);
-
-    bool dynamic_vertex_input = false;
-    if (device.IsExtVertexInputDynamicStateSupported()) {
-        GraphicsPipeline* const gp = pipeline_cache.CurrentGraphicsPipeline();
-        dynamic_vertex_input = gp && gp->HasDynamicVertexInput();
-    }
-    UpdateDynamicStates(dynamic_vertex_input);
 
     const auto& draw_texture_state = maxwell3d->draw_manager.draw_texture_state;
     const auto& sampler = texture_cache.GetSampler(draw_texture_state.src_sampler, false);
@@ -1078,7 +1071,7 @@ bool AccelerateDMA::BufferToImage(const Tegra::DMA::ImageCopy& copy_info,
     return DmaBufferImageCopy<true>(copy_info, buffer_operand, image_operand);
 }
 
-void RasterizerVulkan::UpdateDynamicStates(bool dynamic_vertex_input) {
+void RasterizerVulkan::UpdateDynamicStates(const GraphicsPipeline& pipeline) {
     auto& regs = maxwell3d->regs;
     auto& flags = maxwell3d->dirty.flags;
     const auto topology = maxwell3d->draw_manager.draw_state.topology;
@@ -1126,27 +1119,13 @@ void RasterizerVulkan::UpdateDynamicStates(bool dynamic_vertex_input) {
     }
 
     if (device.IsExtExtendedDynamicState3EnablesSupported()) {
-        using namespace Tegra::Engines;
-        // AMD Workaround: LogicOp incompatible with float render targets
-        if (device.GetDriverID() == VkDriverIdKHR::VK_DRIVER_ID_AMD_OPEN_SOURCE ||
-            device.GetDriverID() == VkDriverIdKHR::VK_DRIVER_ID_AMD_PROPRIETARY) {
-            const auto has_float = std::any_of(
-                regs.vertex_attrib_format.begin(), regs.vertex_attrib_format.end(),
-                [](const auto& attrib) {
-                    return attrib.type == Maxwell3D::Regs::VertexAttribute::Type::Float;
-                }
-            );
-            if (regs.logic_op.enable) {
-                regs.logic_op.enable = static_cast<u32>(!has_float);
-            }
-        }
         UpdateLogicOpEnable(regs);
         UpdateDepthClampEnable(regs);
         UpdateLineRasterizationMode(regs);
         UpdateLineStippleEnable(regs);
         UpdateConservativeRasterizationMode(regs);
-        UpdateAlphaToCoverageEnable(regs);
-        UpdateAlphaToOneEnable(regs);
+        UpdateAlphaToCoverageEnable(regs, pipeline);
+        UpdateAlphaToOneEnable(regs, pipeline);
     }
 
     if (device.IsExtExtendedDynamicState3BlendingSupported()) {
@@ -1155,8 +1134,8 @@ void RasterizerVulkan::UpdateDynamicStates(bool dynamic_vertex_input) {
         UpdateColorWriteEnable(regs);
     }
 
-    if (dynamic_vertex_input) {
-        UpdateVertexInput(regs);
+    if (pipeline.HasDynamicVertexInput()) {
+        UpdateVertexInput(regs, pipeline.VertexAttributeMask());
     }
 }
 
@@ -1690,36 +1669,33 @@ void RasterizerVulkan::UpdateDepthClampEnable(Tegra::Engines::Maxwell3D::Regs& r
         [is_enabled](vk::CommandBuffer cmdbuf) { cmdbuf.SetDepthClampEnableEXT(is_enabled); });
 }
 
-void RasterizerVulkan::UpdateAlphaToCoverageEnable(Tegra::Engines::Maxwell3D::Regs& regs) {
-    if (!state_tracker.TouchAlphaToCoverageEnable()) {
-        return;
-    }
+void RasterizerVulkan::UpdateAlphaToCoverageEnable(Tegra::Engines::Maxwell3D::Regs& regs,
+                                                   const GraphicsPipeline& pipeline) {
     if (!device.SupportsDynamicState3AlphaToCoverageEnable()) {
         return;
     }
-    GraphicsPipeline* const pipeline = pipeline_cache.CurrentGraphicsPipeline();
-    const bool enable = pipeline != nullptr && pipeline->SupportsAlphaToCoverage() &&
-                        regs.anti_alias_alpha_control.alpha_to_coverage != 0;
+    const bool enable =
+        pipeline.SupportsAlphaToCoverage() && regs.anti_alias_alpha_control.alpha_to_coverage != 0;
+    if (!state_tracker.TouchAlphaToCoverageEnable() && enable == alpha_to_coverage_enabled) {
+        return;
+    }
+    alpha_to_coverage_enabled = enable;
     scheduler.Record([enable](vk::CommandBuffer cmdbuf) {
         cmdbuf.SetAlphaToCoverageEnableEXT(enable ? VK_TRUE : VK_FALSE);
     });
 }
 
-void RasterizerVulkan::UpdateAlphaToOneEnable(Tegra::Engines::Maxwell3D::Regs& regs) {
-    if (!state_tracker.TouchAlphaToOneEnable()) {
-        return;
-    }
+void RasterizerVulkan::UpdateAlphaToOneEnable(Tegra::Engines::Maxwell3D::Regs& regs,
+                                              const GraphicsPipeline& pipeline) {
     if (!device.SupportsDynamicState3AlphaToOneEnable()) {
-        static std::once_flag warn_alpha_to_one;
-        std::call_once(warn_alpha_to_one, [] {
-            LOG_WARNING(Render_Vulkan,
-                        "Alpha-to-one is not supported on this device; forcing it disabled");
-        });
         return;
     }
-    GraphicsPipeline* const pipeline = pipeline_cache.CurrentGraphicsPipeline();
-    const bool enable = pipeline != nullptr && pipeline->SupportsAlphaToOne() &&
-                        regs.anti_alias_alpha_control.alpha_to_one != 0;
+    const bool enable =
+        pipeline.SupportsAlphaToOne() && regs.anti_alias_alpha_control.alpha_to_one != 0;
+    if (!state_tracker.TouchAlphaToOneEnable() && enable == alpha_to_one_enabled) {
+        return;
+    }
+    alpha_to_one_enabled = enable;
     scheduler.Record([enable](vk::CommandBuffer cmdbuf) {
         cmdbuf.SetAlphaToOneEnableEXT(enable ? VK_TRUE : VK_FALSE);
     });
@@ -1793,7 +1769,17 @@ void RasterizerVulkan::UpdateLogicOp(Tegra::Engines::Maxwell3D::Regs& regs) {
 }
 
 void RasterizerVulkan::UpdateBlending(Tegra::Engines::Maxwell3D::Regs& regs) {
-    if (!state_tracker.TouchBlending()) {
+    u8 integer_targets = 0;
+    for (size_t index = 0; index < Maxwell::NumRenderTargets; index++) {
+        const auto format = regs.rt[index].format;
+        if (format != Tegra::RenderTargetFormat::NONE &&
+            IsPixelFormatInteger(VideoCore::Surface::PixelFormatFromRenderTargetFormat(format))) {
+            integer_targets |= static_cast<u8>(1u << index);
+        }
+    }
+    const bool targets_changed =
+        std::exchange(blend_integer_targets, integer_targets) != integer_targets;
+    if (!state_tracker.TouchBlending() && !targets_changed) {
         return;
     }
 
@@ -1820,17 +1806,12 @@ void RasterizerVulkan::UpdateBlending(Tegra::Engines::Maxwell3D::Regs& regs) {
         });
     }
 
-    if (state_tracker.TouchBlendEnable()) {
+    if (state_tracker.TouchBlendEnable() || targets_changed) {
         std::array<VkBool32, Maxwell::NumRenderTargets> setup_enables{};
         for (size_t index = 0; index < Maxwell::NumRenderTargets; index++) {
-            bool is_integer = false;
-            if (regs.rt[index].format != Tegra::RenderTargetFormat::NONE) {
-                const auto format =
-                    VideoCore::Surface::PixelFormatFromRenderTargetFormat(regs.rt[index].format);
-                is_integer = IsPixelFormatInteger(format);
-            }
+            const bool is_integer = ((integer_targets >> index) & 1) != 0;
             setup_enables[index] =
-                (!is_integer && regs.blend.enable[index] != 0) ? VK_TRUE : VK_FALSE;
+                static_cast<VkBool32>(!is_integer && regs.blend.enable[index] != 0);
         }
         scheduler.Record([setup_enables](vk::CommandBuffer cmdbuf) {
             cmdbuf.SetColorBlendEnableEXT(0, setup_enables);
@@ -1903,18 +1884,9 @@ void RasterizerVulkan::UpdateStencilTestEnable(Tegra::Engines::Maxwell3D::Regs& 
     });
 }
 
-void RasterizerVulkan::UpdateVertexInput(Tegra::Engines::Maxwell3D::Regs& regs) {
+void RasterizerVulkan::UpdateVertexInput(Tegra::Engines::Maxwell3D::Regs& regs,
+                                         u32 attribute_mask) {
     auto& dirty{maxwell3d->dirty.flags};
-    const bool vertex_input_dirty = dirty[Dirty::VertexInput];
-    const bool vertex_buffers_dirty = dirty[VideoCommon::Dirty::VertexBuffers];
-    if (!vertex_input_dirty && !vertex_buffers_dirty) {
-        return;
-    }
-    dirty[Dirty::VertexInput] = false;
-
-    boost::container::static_vector<VkVertexInputBindingDescription2EXT, 32> bindings;
-    boost::container::static_vector<VkVertexInputAttributeDescription2EXT, 32> attributes;
-
     const u32 max_attributes =
         static_cast<u32>(std::min<size_t>(Maxwell::NumVertexAttributes,
                                           device.GetMaxVertexInputAttributes()));
@@ -1922,11 +1894,25 @@ void RasterizerVulkan::UpdateVertexInput(Tegra::Engines::Maxwell3D::Regs& regs) 
         static_cast<u32>(std::min<size_t>(Maxwell::NumVertexArrays,
                                           device.GetMaxVertexInputBindings()));
 
+    bool changed = dirty[Dirty::VertexInput] || vertex_input_attributes != attribute_mask;
+    dirty[Dirty::VertexInput] = false;
+    vertex_input_attributes = attribute_mask;
+    for (u32 binding = 0; binding < max_bindings; ++binding) {
+        const u32 stride = regs.vertex_streams[binding].stride;
+        changed |= vertex_input_strides[binding] != stride;
+        vertex_input_strides[binding] = stride;
+    }
+    if (!changed) {
+        return;
+    }
+
+    boost::container::static_vector<VkVertexInputBindingDescription2EXT, 32> bindings;
+    boost::container::static_vector<VkVertexInputAttributeDescription2EXT, 32> attributes;
 
     for (u32 index = 0; index < max_attributes; ++index) {
         const Maxwell::VertexAttribute attribute{regs.vertex_attrib_format[index]};
         const u32 binding{attribute.buffer};
-        if (attribute.constant || binding >= max_bindings) {
+        if (((attribute_mask >> index) & 1) == 0 || attribute.constant || binding >= max_bindings) {
             continue;
         }
         attributes.push_back({
@@ -1941,17 +1927,19 @@ void RasterizerVulkan::UpdateVertexInput(Tegra::Engines::Maxwell3D::Regs& regs) 
 
     for (u32 binding = 0; binding < max_bindings; ++binding) {
         const auto& input_binding{regs.vertex_streams[binding]};
-        const bool is_instanced{regs.vertex_stream_instances.IsInstancingEnabled(binding)};
+        VkVertexInputRate input_rate = VK_VERTEX_INPUT_RATE_VERTEX;
         u32 divisor = 1;
-        if (is_instanced) {
+        if (regs.vertex_stream_instances.IsInstancingEnabled(binding) &&
+            input_binding.frequency != 0) {
+            input_rate = VK_VERTEX_INPUT_RATE_INSTANCE;
             divisor = (std::min)(input_binding.frequency, device.GetMaxVertexAttribDivisor());
         }
         bindings.push_back({
             .sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
             .pNext = nullptr,
             .binding = binding,
-            .stride = input_binding.stride,
-            .inputRate = is_instanced ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX,
+            .stride = vertex_input_strides[binding],
+            .inputRate = input_rate,
             .divisor = divisor,
         });
     }

@@ -649,11 +649,17 @@ void BufferCacheRuntime::BindVertexBuffer(u32 index, VkBuffer buffer, u32 offset
         return;
     }
     if (device.IsExtExtendedDynamicStateSupported()) {
-        scheduler.Record([index, buffer, offset, size, stride](vk::CommandBuffer cmdbuf) {
+        const bool dynamic_stride = !device.IsExtVertexInputDynamicStateSupported();
+        scheduler.Record([index, buffer, offset, size, stride,
+                          dynamic_stride](vk::CommandBuffer cmdbuf) {
             const VkDeviceSize vk_offset = buffer != VK_NULL_HANDLE ? offset : 0;
             const VkDeviceSize vk_size = buffer != VK_NULL_HANDLE ? size : VK_WHOLE_SIZE;
             const VkDeviceSize vk_stride = stride;
-            cmdbuf.BindVertexBuffers2EXT(index, 1, &buffer, &vk_offset, &vk_size, &vk_stride);
+            const VkDeviceSize* strides = nullptr;
+            if (dynamic_stride) {
+                strides = &vk_stride;
+            }
+            cmdbuf.BindVertexBuffers2EXT(index, 1, &buffer, &vk_offset, &vk_size, strides);
         });
     } else {
         if (!device.HasNullDescriptor() && buffer == VK_NULL_HANDLE) {
@@ -688,10 +694,14 @@ void BufferCacheRuntime::RecordVertexBuffers(const VideoCommon::HostBindings<Buf
         }
     }
     if (device.IsExtExtendedDynamicStateSupported()) {
-        scheduler.Record([vertex](vk::CommandBuffer cmdbuf) {
+        const bool dynamic_stride = !device.IsExtVertexInputDynamicStateSupported();
+        scheduler.Record([vertex, dynamic_stride](vk::CommandBuffer cmdbuf) {
+            const VkDeviceSize* strides = nullptr;
+            if (dynamic_stride) {
+                strides = vertex.strides.data();
+            }
             cmdbuf.BindVertexBuffers2EXT(vertex.first, vertex.count, vertex.buffers.data(),
-                                         vertex.offsets.data(), vertex.sizes.data(),
-                                         vertex.strides.data());
+                                         vertex.offsets.data(), vertex.sizes.data(), strides);
         });
         return;
     }

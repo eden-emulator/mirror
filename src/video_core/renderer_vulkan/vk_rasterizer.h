@@ -158,7 +158,7 @@ private:
 
     void FlushWork();
 
-    void UpdateDynamicStates(bool dynamic_vertex_input);
+    void UpdateDynamicStates(const GraphicsPipeline& pipeline);
 
     void HandleTransformFeedback();
 
@@ -183,8 +183,10 @@ private:
     void UpdateDepthBiasEnable(Tegra::Engines::Maxwell3D::Regs& regs);
     void UpdateLogicOpEnable(Tegra::Engines::Maxwell3D::Regs& regs);
     void UpdateDepthClampEnable(Tegra::Engines::Maxwell3D::Regs& regs);
-    void UpdateAlphaToCoverageEnable(Tegra::Engines::Maxwell3D::Regs& regs);
-    void UpdateAlphaToOneEnable(Tegra::Engines::Maxwell3D::Regs& regs);
+    void UpdateAlphaToCoverageEnable(Tegra::Engines::Maxwell3D::Regs& regs,
+                                     const GraphicsPipeline& pipeline);
+    void UpdateAlphaToOneEnable(Tegra::Engines::Maxwell3D::Regs& regs,
+                                const GraphicsPipeline& pipeline);
     void UpdateFrontFace(Tegra::Engines::Maxwell3D::Regs& regs);
     void UpdateStencilOp(Tegra::Engines::Maxwell3D::Regs& regs);
     void UpdateStencilTestEnable(Tegra::Engines::Maxwell3D::Regs& regs);
@@ -192,7 +194,7 @@ private:
     void UpdateBlending(Tegra::Engines::Maxwell3D::Regs& regs);
     void UpdateColorWriteEnable(Tegra::Engines::Maxwell3D::Regs& regs);
 
-    void UpdateVertexInput(Tegra::Engines::Maxwell3D::Regs& regs);
+    void UpdateVertexInput(Tegra::Engines::Maxwell3D::Regs& regs, u32 attribute_mask);
 
     Tegra::GPU& gpu;
     Tegra::MaxwellDeviceMemoryManager& device_memory;
@@ -226,6 +228,11 @@ private:
 
     u32 draw_counter = 0;
     Tegra::DepthFormat depth_bias_zeta_format{};
+    std::array<u32, Tegra::Engines::Maxwell3D::Regs::NumVertexArrays> vertex_input_strides{};
+    u32 vertex_input_attributes{};
+    u8 blend_integer_targets{};
+    bool alpha_to_coverage_enabled{};
+    bool alpha_to_one_enabled{};
 };
 
 } // namespace Vulkan
