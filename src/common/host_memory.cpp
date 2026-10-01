@@ -72,7 +72,7 @@ static int memfd_create(const char* name, unsigned int flags) {
 
 namespace Common {
 
-[[maybe_unused]] constexpr size_t PageAlignment = 0x1000;
+[[maybe_unused]] const size_t PageAlignment = HostMemory::GetMappingAlignment();
 [[maybe_unused]] constexpr size_t HugePageSize = 0x200000;
 
 #ifdef _WIN32
@@ -410,7 +410,7 @@ private:
 #define MAP_NOCORE 0
 #endif
 
-#ifdef ARCHITECTURE_arm64
+#if defined(ARCHITECTURE_arm64) && !defined(__APPLE__)
 
 static void* ChooseVirtualBase(size_t virtual_size) {
     constexpr uintptr_t Map39BitSize = (1ULL << 39);
@@ -519,7 +519,8 @@ public:
 
     bool Init() {
         long page_size = sysconf(_SC_PAGESIZE);
-        ASSERT_MSG(page_size == 0x1000, "page size {:#x} is incompatible with 4K paging", page_size);
+        ASSERT_MSG(page_size > 0 && Common::IsAligned(backing_size, static_cast<size_t>(page_size)),
+                   "backing size must be aligned to the host page size");
         // Backing memory initialization
 #if defined(__sun__) || defined(__HAIKU__) || defined(__NetBSD__) || defined(__DragonFly__)
         fd = shm_open_anon(O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
@@ -538,7 +539,7 @@ public:
         fd = memfd_create("HostMemory", 0);
 #endif
         bool use_anon = false;
-        if (fd <= 0) {
+        if (fd < 0) {
             LOG_WARNING(Common_Memory, "memfd_create: {}", strerror(errno));
             use_anon = true;
         }
@@ -553,9 +554,9 @@ public:
         if (use_anon) {
             LOG_WARNING(Common_Memory, "Using private mappings instead of shared ones");
             backing_base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_NOCORE, -1, 0));
-            if (fd > 0) {
-                fd = -1;
+            if (fd >= 0) {
                 close(fd);
+                fd = -1;
             }
         } else {
             backing_base = static_cast<u8*>(mmap(nullptr, backing_size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_NOCORE, fd, 0));
@@ -730,6 +731,21 @@ HostMemory::HostMemory(size_t backing_size_, size_t virtual_size_)
         virtual_base = nullptr;
         impl.reset();
     }
+#endif
+}
+
+size_t HostMemory::GetMappingAlignment() {
+#ifdef _WIN32
+    return 0x1000;
+#else
+    static const size_t alignment = [] {
+        const long page_size = sysconf(_SC_PAGESIZE);
+        if (page_size <= 0) {
+            throw std::bad_alloc{};
+        }
+        return static_cast<size_t>(page_size);
+    }();
+    return alignment;
 #endif
 }
 

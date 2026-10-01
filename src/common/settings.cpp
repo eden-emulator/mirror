@@ -19,12 +19,13 @@
 #include <deque>
 #include <fmt/core.h>
 
-#include "common/settings_enums.h"
 #include "common/assert.h"
 #include "common/fs/fs_util.h"
 #include "common/fs/path_util.h"
+#include "common/host_memory.h"
 #include "common/logging.h"
 #include "common/settings.h"
+#include "common/settings_enums.h"
 #include "common/time_zone.h"
 
 #if defined(__linux__ ) && defined(ARCHITECTURE_arm64)
@@ -179,6 +180,11 @@ bool IsGPUFenceBehaviorAccurate() {
 }
 
 bool IsFastmemEnabled() {
+    // Guest pages are 4 KiB. A larger host page cannot independently map them.
+    // Keep the software page-table path even when an accuracy preset requests fastmem.
+    if (Common::HostMemory::GetMappingAlignment() != 4096) {
+        return false;
+    }
     if (values.cpu_accuracy.GetValue() == Settings::CpuAccuracy::Debugging)
         return bool(values.cpuopt_fastmem);
     else if (values.cpu_accuracy.GetValue() == CpuAccuracy::Unsafe)

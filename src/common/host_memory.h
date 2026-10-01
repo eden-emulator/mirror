@@ -30,6 +30,9 @@ public:
     explicit HostMemory(size_t backing_size_, size_t virtual_size_);
     ~HostMemory();
 
+    /// Minimum alignment supported by the host's memory mapping API.
+    [[nodiscard]] static size_t GetMappingAlignment();
+
     /**
      * Copy constructors. They shall return a copy of the buffer without the mappings.
      * TODO: Implement them with COW if needed.
