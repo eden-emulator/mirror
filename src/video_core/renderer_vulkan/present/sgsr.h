@@ -33,12 +33,9 @@ private:
     vk::Pipeline m_stage_pipeline;
     vk::Sampler m_sampler;
 
-    struct Images {
-        vk::DescriptorSets descriptor_sets;
-        vk::Image image;
-        vk::ImageView image_view;
-    };
-    std::vector<Images> m_dynamic_images;
+    vk::Image m_image;
+    vk::ImageView m_image_view;
+    std::vector<vk::DescriptorSets> m_descriptor_sets;
     bool m_edge_dir{};
 };
 

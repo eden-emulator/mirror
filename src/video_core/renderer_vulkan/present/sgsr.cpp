@@ -27,12 +27,8 @@ SGSR::SGSR(const Device& device, MemoryAllocator& memory_allocator, size_t image
     , m_extent{extent}
     , m_edge_dir{edge_dir}
 {
-    // Not finished yet initializing at ctor time?
-    m_dynamic_images.resize(m_image_count);
-    for (auto& images : m_dynamic_images) {
-        images.image = CreateWrappedImage(m_memory_allocator, m_extent, VK_FORMAT_R16G16B16A16_SFLOAT);
-        images.image_view = CreateWrappedImageView(device, images.image, VK_FORMAT_R16G16B16A16_SFLOAT);
-    }
+    m_image = CreateWrappedImage(m_memory_allocator, m_extent, VK_FORMAT_R16G16B16A16_SFLOAT);
+    m_image_view = CreateWrappedImageView(device, m_image, VK_FORMAT_R16G16B16A16_SFLOAT);
 
     m_sampler = CreateBilinearSampler(device);
     m_vert_shader = BuildShader(device, SGSR1_SHADER_VERT_SPV);
@@ -44,8 +40,8 @@ SGSR::SGSR(const Device& device, MemoryAllocator& memory_allocator, size_t image
     m_descriptor_set_layout = CreateWrappedDescriptorSetLayout(device, {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER});
 
     VkDescriptorSetLayout layout = *m_descriptor_set_layout;
-    for (auto& images : m_dynamic_images)
-        images.descriptor_sets = CreateWrappedDescriptorSets(m_descriptor_pool, layout);
+    for (size_t i = 0; i < m_image_count; ++i)
+        m_descriptor_sets.push_back(CreateWrappedDescriptorSets(m_descriptor_pool, layout));
 
     const VkPushConstantRange range{
         .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -68,19 +64,17 @@ SGSR::SGSR(const Device& device, MemoryAllocator& memory_allocator, size_t image
 }
 
 void SGSR::UpdateDescriptorSets(const Device& device, VkImageView image_view, size_t image_index) {
-    Images& images = m_dynamic_images[image_index];
     std::vector<VkDescriptorImageInfo> image_infos;
     std::vector<VkWriteDescriptorSet> updates;
     image_infos.reserve(1);
-    updates.push_back(CreateWriteDescriptorSet(image_infos, *m_sampler, image_view, images.descriptor_sets[0], 0));
+    updates.push_back(CreateWriteDescriptorSet(image_infos, *m_sampler, image_view, m_descriptor_sets[image_index][0], 0));
     device.GetLogical().UpdateDescriptorSets(updates, {});
 }
 
 VkImageView SGSR::Draw(const Device& device, Scheduler& scheduler, size_t image_index, VkImage source_image, VkImageView source_image_view, VkExtent2D input_image_extent, const Common::Rectangle<f32>& crop_rect) {
-    Images& images = m_dynamic_images[image_index];
-    auto const output_image = *images.image;
-    auto const output_view = *images.image_view;
-    auto const descriptor_set = images.descriptor_sets[0];
+    auto const output_image = *m_image;
+    auto const output_view = *m_image_view;
+    auto const descriptor_set = m_descriptor_sets[image_index][0];
     auto const pipeline = *m_stage_pipeline;
 
     VkPipelineLayout layout = *m_pipeline_layout;
@@ -126,7 +120,7 @@ VkImageView SGSR::Draw(const Device& device, Scheduler& scheduler, size_t image_
         cmdbuf.EndRendering();
         TransitionImageLayout(cmdbuf, output_image, VK_IMAGE_LAYOUT_GENERAL);
     });
-    return *images.image_view;
+    return output_view;
 }
 
 } // namespace Vulkan

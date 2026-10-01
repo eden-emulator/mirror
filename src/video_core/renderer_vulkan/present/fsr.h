@@ -54,12 +54,9 @@ private:
     vk::Pipeline m_rcas_pipeline;
     vk::Sampler m_sampler;
 
-    struct Images {
-        vk::DescriptorSets descriptor_sets;
-        std::array<vk::Image, MaxFsrStage> images;
-        std::array<vk::ImageView, MaxFsrStage> image_views;
-    };
-    std::vector<Images> m_dynamic_images;
+    std::array<vk::Image, MaxFsrStage> m_images;
+    std::array<vk::ImageView, MaxFsrStage> m_image_views;
+    std::vector<vk::DescriptorSets> m_descriptor_sets;
 };
 
 } // namespace Vulkan

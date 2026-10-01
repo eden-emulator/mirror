@@ -34,12 +34,9 @@ private:
     void CreatePipelines(const Device& device);
     void UpdateDescriptorSets(const Device& device, VkImageView image_view, size_t image_index);
 
-    struct Image {
-        vk::DescriptorSets descriptor_sets{};
-        vk::Image image{};
-        vk::ImageView image_view{};
-    };
-    std::vector<Image> m_dynamic_images{};
+    vk::Image m_image{};
+    vk::ImageView m_image_view{};
+    std::vector<vk::DescriptorSets> m_descriptor_sets{};
     const VkExtent2D m_extent;
     const u32 m_image_count;
     vk::ShaderModule m_vertex_shader{};

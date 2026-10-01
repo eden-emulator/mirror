@@ -41,12 +41,9 @@ FSR::FSR(const Device& device, MemoryAllocator& memory_allocator, size_t image_c
 }
 
 void FSR::CreateImages(const Device& device) {
-    m_dynamic_images.resize(m_image_count);
-    for (auto& images : m_dynamic_images) {
-        images.images[Easu] = CreateWrappedImage(m_memory_allocator, m_extent, VK_FORMAT_R16G16B16A16_SFLOAT);
-        images.images[Rcas] = CreateWrappedImage(m_memory_allocator, m_extent, VK_FORMAT_R16G16B16A16_SFLOAT);
-        images.image_views[Easu] = CreateWrappedImageView(device, images.images[Easu], VK_FORMAT_R16G16B16A16_SFLOAT);
-        images.image_views[Rcas] = CreateWrappedImageView(device, images.images[Rcas], VK_FORMAT_R16G16B16A16_SFLOAT);
+    for (size_t stage = 0; stage < MaxFsrStage; ++stage) {
+        m_images[stage] = CreateWrappedImage(m_memory_allocator, m_extent, VK_FORMAT_R16G16B16A16_SFLOAT);
+        m_image_views[stage] = CreateWrappedImageView(device, m_images[stage], VK_FORMAT_R16G16B16A16_SFLOAT);
     }
 }
 
@@ -79,8 +76,8 @@ void FSR::CreateDescriptorSetLayout(const Device& device) {
 
 void FSR::CreateDescriptorSets(const Device& device) {
     std::vector<VkDescriptorSetLayout> layouts(MaxFsrStage, *m_descriptor_set_layout);
-    for (auto& images : m_dynamic_images)
-        images.descriptor_sets = CreateWrappedDescriptorSets(m_descriptor_pool, layouts);
+    for (size_t i = 0; i < m_image_count; ++i)
+        m_descriptor_sets.push_back(CreateWrappedDescriptorSets(m_descriptor_pool, layouts));
 }
 
 void FSR::CreatePipelineLayouts(const Device& device) {
@@ -112,12 +109,12 @@ void FSR::CreatePipelines(const Device& device) {
 }
 
 void FSR::UpdateDescriptorSets(const Device& device, VkImageView image_view, size_t image_index) {
-    Images& images = m_dynamic_images[image_index];
+    const vk::DescriptorSets& descriptor_sets = m_descriptor_sets[image_index];
     std::vector<VkDescriptorImageInfo> image_infos;
     image_infos.reserve(2);
     std::vector<VkWriteDescriptorSet> updates{
-        CreateWriteDescriptorSet(image_infos, *m_sampler, image_view, images.descriptor_sets[Easu], 0),
-        CreateWriteDescriptorSet(image_infos, *m_sampler, *images.image_views[Easu], images.descriptor_sets[Rcas], 0)
+        CreateWriteDescriptorSet(image_infos, *m_sampler, image_view, descriptor_sets[Easu], 0),
+        CreateWriteDescriptorSet(image_infos, *m_sampler, *m_image_views[Easu], descriptor_sets[Rcas], 0)
     };
     device.GetLogical().UpdateDescriptorSets(updates, {});
 }
@@ -125,14 +122,14 @@ void FSR::UpdateDescriptorSets(const Device& device, VkImageView image_view, siz
 VkImageView FSR::Draw(const Device& device, Scheduler& scheduler, size_t image_index, VkImage source_image,
                       VkImageView source_image_view, VkExtent2D input_image_extent,
                       const Common::Rectangle<f32>& crop_rect) {
-    Images& images = m_dynamic_images[image_index];
+    const vk::DescriptorSets& descriptor_sets = m_descriptor_sets[image_index];
 
-    VkImage easu_image = *images.images[Easu];
-    VkImage rcas_image = *images.images[Rcas];
-    VkDescriptorSet easu_descriptor_set = images.descriptor_sets[Easu];
-    VkDescriptorSet rcas_descriptor_set = images.descriptor_sets[Rcas];
-    VkImageView easu_view = *images.image_views[Easu];
-    VkImageView rcas_view = *images.image_views[Rcas];
+    VkImage easu_image = *m_images[Easu];
+    VkImage rcas_image = *m_images[Rcas];
+    VkDescriptorSet easu_descriptor_set = descriptor_sets[Easu];
+    VkDescriptorSet rcas_descriptor_set = descriptor_sets[Rcas];
+    VkImageView easu_view = *m_image_views[Easu];
+    VkImageView rcas_view = *m_image_views[Rcas];
     VkPipeline easu_pipeline = *m_easu_pipeline;
     VkPipeline rcas_pipeline = *m_rcas_pipeline;
     VkPipelineLayout pipeline_layout = *m_pipeline_layout;
@@ -187,7 +184,7 @@ VkImageView FSR::Draw(const Device& device, Scheduler& scheduler, size_t image_i
         TransitionImageLayout(cmdbuf, rcas_image, VK_IMAGE_LAYOUT_GENERAL);
     });
 
-    return *images.image_views[Rcas];
+    return rcas_view;
 }
 
 } // namespace Vulkan

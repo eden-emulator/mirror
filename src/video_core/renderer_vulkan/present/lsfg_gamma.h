@@ -26,7 +26,9 @@ public:
               LsfgResources& resources, vk::DescriptorPool& descriptor_pool,
               LsfgImageHistory& inputs, LsfgImage& flow_input, LsfgImage* previous);
 
-    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t slot);
+    void PushBarriers(LsfgBarriers& barriers, u64 frame_count, size_t stage);
+
+    void DispatchStage(vk::CommandBuffer cmdbuf, u64 frame_count, size_t slot, size_t stage) const;
 
     [[nodiscard]] LsfgImage& Output() {
         return out_image;

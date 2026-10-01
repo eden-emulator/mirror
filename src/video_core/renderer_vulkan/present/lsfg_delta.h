@@ -27,7 +27,9 @@ public:
               LsfgImageHistory& inputs, LsfgImage& flow_input, LsfgImage* previous_gamma,
               LsfgImage* previous1, LsfgImage* previous2);
 
-    void Dispatch(vk::CommandBuffer cmdbuf, u64 frame_count, size_t slot);
+    void PushBarriers(LsfgBarriers& barriers, u64 frame_count, size_t stage);
+
+    void DispatchStage(vk::CommandBuffer cmdbuf, u64 frame_count, size_t slot, size_t stage) const;
 
     [[nodiscard]] LsfgImage& Output1() {
         return out_image1;

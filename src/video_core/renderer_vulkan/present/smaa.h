@@ -71,12 +71,9 @@ private:
     std::array<vk::Image, MaxStaticImage> m_static_images{};
     std::array<vk::ImageView, MaxStaticImage> m_static_image_views{};
 
-    struct Images {
-        vk::DescriptorSets descriptor_sets{};
-        std::array<vk::Image, MaxDynamicImage> images{};
-        std::array<vk::ImageView, MaxDynamicImage> image_views{};
-    };
-    std::vector<Images> m_dynamic_images{};
+    std::array<vk::Image, MaxDynamicImage> m_dynamic_images{};
+    std::array<vk::ImageView, MaxDynamicImage> m_dynamic_image_views{};
+    std::vector<vk::DescriptorSets> m_descriptor_sets{};
     bool m_images_ready{};
 
     vk::Sampler m_sampler{};

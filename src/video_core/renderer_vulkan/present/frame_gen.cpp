@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <algorithm>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -223,14 +224,15 @@ void FrameGen::Process(const Device& device, VkImageView source, VkExtent2D exte
     }
 
     const f32 flow_scale = ConfiguredFlowScale();
+    const size_t generations = Settings::FrameGenMaxGenerations();
     if (!chain || built_extent.width != extent.width || built_extent.height != extent.height ||
-        built_flow_scale != flow_scale) {
-        Rebuild(device, extent, flow_scale);
+        built_flow_scale != flow_scale || built_generations != generations) {
+        Rebuild(device, extent, flow_scale, generations);
     }
 
     const u64 count = frame_count++;
     last_count = count;
-    last_generations = plan.generations;
+    last_generations = (std::min)(plan.generations, built_generations);
 
     const size_t input_slot = count % INPUT_SLOTS;
     const bool warm = plan.warm && count + 1 >= LSFG_REQUIRED_FRAMES &&
@@ -304,7 +306,8 @@ void FrameGen::CreateInputPass(const Device& device) {
     input_sampler = CreateNearestNeighborSampler(device);
 }
 
-void FrameGen::Rebuild(const Device& device, VkExtent2D extent, f32 flow_scale) {
+void FrameGen::Rebuild(const Device& device, VkExtent2D extent, f32 flow_scale,
+                       size_t generations) {
     scheduler.Finish();
     chain.reset();
 
@@ -312,10 +315,12 @@ void FrameGen::Rebuild(const Device& device, VkExtent2D extent, f32 flow_scale) 
 
     chain.emplace(device, memory_allocator, *shaders, extent, LSFG_DEFAULT_FORMAT,
                   built_flow_scale);
-    for (LsfgImage& output : outputs) {
+    outputs = {};
+    for (LsfgImage& output : std::span{outputs}.first(generations)) {
         output = LsfgImage(device, memory_allocator, extent, LSFG_DEFAULT_FORMAT);
     }
     built_extent = extent;
+    built_generations = generations;
     frame_count = 0;
     warm_streak = 0;
     generated = false;

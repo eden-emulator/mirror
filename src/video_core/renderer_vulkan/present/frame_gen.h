@@ -36,7 +36,7 @@ private:
     static constexpr size_t INPUT_SLOTS = 4;
 
     void CreateInputPass(const Device& device);
-    void Rebuild(const Device& device, VkExtent2D extent, f32 flow_scale);
+    void Rebuild(const Device& device, VkExtent2D extent, f32 flow_scale, size_t generations);
     void DumpDebugImages(u64 count);
 
     MemoryAllocator& memory_allocator;
@@ -58,6 +58,7 @@ private:
     FrameGenPlan plan{};
     VkExtent2D built_extent{};
     f32 built_flow_scale{};
+    size_t built_generations{};
     u64 frame_count{};
     u64 last_count{};
     size_t last_generations{};
