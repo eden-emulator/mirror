@@ -105,6 +105,8 @@
     <string name="use_sync_core_description">Synchronize the core tick speed to the maximum speed percentage to improve performance without altering the game\'s actual speed.</string>
     <string name="cpuopt_unsafe_host_mmu">Enable Host MMU Emulation</string>
     <string name="cpuopt_unsafe_host_mmu_description">This optimization speeds up memory accesses by the guest program. Enabling it causes guest memory reads/writes to be done directly into memory and make use of Host\'s MMU. Disabling this forces all memory accesses to use Software MMU Emulation.</string>
+    <string name="relocate_36bit_address_space">Run 36-bit games natively</string>
+    <string name="relocate_36bit_address_space_description">Gives games built for the 36-bit address space the 39-bit layout so they can run with NCE instead of the JIT. Experimental: a game that relies on 36-bit addresses can crash.</string>
     <string name="debug_knobs">Debug knobs</string>
     <string name="debug_knobs_description">For development use only.</string>
     <string name="debug_knobs_hint">0 to 65535</string>

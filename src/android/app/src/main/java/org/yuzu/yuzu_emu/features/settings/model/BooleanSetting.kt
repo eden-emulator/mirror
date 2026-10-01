@@ -20,6 +20,7 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     EMULATE_BGR565("emulate_bgr565"),
     RESCALE_HACK("rescale_hack"),
     CPUOPT_UNSAFE_HOST_MMU("cpuopt_unsafe_host_mmu"),
+    RELOCATE_36BIT_ADDRESS_SPACE("relocate_36bit_address_space"),
     USE_DOCKED_MODE("use_docked_mode"),
     USE_AUTO_STUB("use_auto_stub"),
     RENDERER_USE_DISK_SHADER_CACHE("use_disk_shader_cache"),

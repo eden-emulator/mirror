@@ -259,6 +259,8 @@ struct Values {
                                                     Category::Cpu};
     SwitchableSetting<CpuAccuracy, true> cpu_accuracy{linkage, CpuAccuracy::Auto,
                                                       "cpu_accuracy", Category::Cpu};
+    SwitchableSetting<bool> relocate_36bit_address_space{
+        linkage, false, "relocate_36bit_address_space", Category::Cpu};
     SwitchableSetting<CpuClock> cpu_clock{linkage,
                                               CpuClock::Normal,
                                               "fast_cpu_time",

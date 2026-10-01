@@ -848,6 +848,13 @@ abstract class SettingsItem(
             )
             put(
                 SwitchSetting(
+                    BooleanSetting.RELOCATE_36BIT_ADDRESS_SPACE,
+                    titleId = R.string.relocate_36bit_address_space,
+                    descriptionId = R.string.relocate_36bit_address_space_description
+                )
+            )
+            put(
+                SwitchSetting(
                     BooleanSetting.RENDERER_REACTIVE_FLUSHING,
                     titleId = R.string.renderer_reactive_flushing,
                     descriptionId = R.string.renderer_reactive_flushing_description

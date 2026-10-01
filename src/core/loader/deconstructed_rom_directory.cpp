@@ -182,6 +182,12 @@ AppLoader_DeconstructedRomDirectory::LoadResult AppLoader_DeconstructedRomDirect
     }
     metadata.Print();
 
+    if (Settings::values.relocate_36bit_address_space.GetValue() &&
+        Settings::values.cpu_backend.GetValue() == Settings::CpuBackend::Nce &&
+        metadata.GetAddressSpaceType() == FileSys::ProgramAddressSpaceType::Is36Bit) {
+        metadata.SetAddressSpaceType(FileSys::ProgramAddressSpaceType::Is39Bit);
+    }
+
     // Enable NCE only for applications with 39-bit address space.
     const bool is_39bit =
         metadata.GetAddressSpaceType() == FileSys::ProgramAddressSpaceType::Is39Bit;

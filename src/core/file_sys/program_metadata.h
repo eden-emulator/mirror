@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -73,6 +76,7 @@ public:
 
     bool Is64BitProgram() const;
     ProgramAddressSpaceType GetAddressSpaceType() const;
+    void SetAddressSpaceType(ProgramAddressSpaceType address_space);
     u8 GetMainThreadPriority() const;
     u8 GetMainThreadCore() const;
     u32 GetMainThreadStackSize() const;

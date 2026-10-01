@@ -1527,6 +1527,7 @@ class SettingsFragmentPresenter(
             add(HeaderSetting(R.string.cpu))
 
             add(IntSetting.CPU_BACKEND.key)
+            add(BooleanSetting.RELOCATE_36BIT_ADDRESS_SPACE.key)
             add(IntSetting.CPU_ACCURACY.key)
             add(BooleanSetting.USE_AUTO_STUB.key)
             add(SettingsItem.FASTMEM_COMBINED)
