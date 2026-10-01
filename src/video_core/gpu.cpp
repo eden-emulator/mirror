@@ -227,15 +227,17 @@ struct GPU::Impl {
 
     /// Notify rasterizer that any caches of the specified region should be invalidated
     void InvalidateRegion(DAddr addr, u64 size, bool preserve_gpu_writes) {
-        VideoCore::RasterizerInterface* rasterizer = renderer->ReadRasterizer();
-        if (preserve_gpu_writes && rasterizer->MustFlushRegion(addr, size, VideoCommon::CacheType::BufferCache)) {
-            const u64 fence = RequestSyncOperation([rasterizer, addr, size] {
-                rasterizer->FlushRegion(addr, size, VideoCommon::CacheType::BufferCache);
-                rasterizer->OnCacheInvalidation(addr, size);
-            });
-            gpu_thread.TickGPU(is_async);
-            WaitForSyncOperation(fence);
-            return;
+        if (Settings::values.nce_invalidation_gpu_readback.GetValue()) {
+            VideoCore::RasterizerInterface* rasterizer = renderer->ReadRasterizer();
+            if (preserve_gpu_writes && rasterizer->MustFlushRegion(addr, size, VideoCommon::CacheType::BufferCache)) {
+                const u64 fence = RequestSyncOperation([rasterizer, addr, size] {
+                    rasterizer->FlushRegion(addr, size, VideoCommon::CacheType::BufferCache);
+                    rasterizer->OnCacheInvalidation(addr, size);
+                });
+                gpu_thread.TickGPU(is_async);
+                WaitForSyncOperation(fence);
+                return;
+            }
         }
         gpu_thread.InvalidateRegion(addr, size);
     }

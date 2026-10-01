@@ -426,28 +426,30 @@ public:
                                    std::addressof(ro_size), std::addressof(rw_size),
                                    nro_info->base_address, nro_size, bss_size));
 #ifdef HAS_NCE
-        if (Settings::IsNceEnabled()) {
-            auto* process = context->GetProcess();
-            auto& memory = process->GetMemory();
+        if (Settings::values.nce_runtime_nro_patch.GetValue()) {
+            if (Settings::IsNceEnabled()) {
+                auto* process = context->GetProcess();
+                auto& memory = process->GetMemory();
 
-            std::vector<u8> image(total_size);
-            memory.ReadBlock(nro_info->base_address, image.data(), rx_size);
+                std::vector<u8> image(total_size);
+                memory.ReadBlock(nro_info->base_address, image.data(), rx_size);
 
-            Kernel::CodeSet::Segment code{.size = static_cast<u32>(rx_size)};
-            Core::NCE::Patcher patch;
-            patch.PatchText(image, code);
-            patch.RelocateAndCopy(nro_info->base_address, code, image, nullptr);
+                Kernel::CodeSet::Segment code{.size = static_cast<u32>(rx_size)};
+                Core::NCE::Patcher patch;
+                patch.PatchText(image, code);
+                patch.RelocateAndCopy(nro_info->base_address, code, image, nullptr);
 
-            const u64 patch_address = nro_info->base_address + total_size;
-            const size_t patch_size = patch.GetSectionSize();
-            constexpr auto permission = Kernel::Svc::MemoryPermission::ReadExecute;
+                const u64 patch_address = nro_info->base_address + total_size;
+                const size_t patch_size = patch.GetSectionSize();
+                constexpr auto permission = Kernel::Svc::MemoryPermission::ReadExecute;
 
-            auto* patch_memory = Kernel::KSharedMemory::Create(kernel);
-            R_TRY(patch_memory->Initialize(kernel, kernel.System().DeviceMemory(), process, permission, permission, patch_size));
-            std::memcpy(patch_memory->GetPointer(), image.data() + total_size, patch_size);
-            R_TRY(process->AddSharedMemory(kernel, patch_memory, patch_address, patch_size));
-            R_TRY(patch_memory->Map(*process, patch_address, patch_size, permission));
-            memory.WriteBlock(nro_info->base_address, image.data(), rx_size);
+                auto* patch_memory = Kernel::KSharedMemory::Create(kernel);
+                R_TRY(patch_memory->Initialize(kernel, kernel.System().DeviceMemory(), process, permission, permission, patch_size));
+                std::memcpy(patch_memory->GetPointer(), image.data() + total_size, patch_size);
+                R_TRY(process->AddSharedMemory(kernel, patch_memory, patch_address, patch_size));
+                R_TRY(patch_memory->Map(*process, patch_address, patch_size, permission));
+                memory.WriteBlock(nro_info->base_address, image.data(), rx_size);
+            }
         }
 #endif
         // Set NRO perms.
