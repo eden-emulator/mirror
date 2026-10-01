@@ -183,6 +183,13 @@ QString ConfigureInputPlayer::ButtonToText(const Common::ParamPackage& param) {
         return QObject::tr("[not set]");
     }
 
+    if (param.Has("alt")) {
+        Common::ParamPackage main_param = param;
+        main_param.Erase("alt");
+        return QObject::tr("%1 / %2").arg(ButtonToText(main_param),
+                                          ButtonToText(Common::ParamPackage{param.Get("alt", "")}));
+    }
+
     const QString toggle = QString::fromStdString(param.Get("toggle", false) ? "~" : "");
     const QString inverted = QString::fromStdString(param.Get("inverted", false) ? "!" : "");
     const QString invert = QString::fromStdString(param.Get("invert", "+") == "-" ? "-" : "");
@@ -374,7 +381,12 @@ ConfigureInputPlayer::ConfigureInputPlayer(QWidget* parent, std::size_t player_i
             HandleClick(
                 button, button_id,
                 [=, this](const Common::ParamPackage& params) {
-                    emulated_controller->SetButtonParam(button_id, params);
+                    Common::ParamPackage new_param = params;
+                    const auto old_param = emulated_controller->GetButtonParam(button_id);
+                    if (old_param.Has("alt")) {
+                        new_param.Set("alt", old_param.Get("alt", ""));
+                    }
+                    emulated_controller->SetButtonParam(button_id, new_param);
                 },
                 InputCommon::Polling::InputType::Button);
         });
@@ -387,7 +399,39 @@ ConfigureInputPlayer::ConfigureInputPlayer(QWidget* parent, std::size_t player_i
                     context_menu.addAction(tr("Clear"), [&] {
                         emulated_controller->SetButtonParam(button_id, {});
                         button_map[button_id]->setText(tr("[not set]"));
+                        button_map[button_id]->setToolTip({});
                     });
+                    if (param.Has("engine")) {
+                        context_menu.addAction(
+                            param.Has("alt") ? tr("Change alternate key") : tr("Set alternate key"),
+                            [&] {
+                                HandleClick(
+                                    button, button_id,
+                                    [=, this](const Common::ParamPackage& params) {
+                                        Common::ParamPackage new_param =
+                                            emulated_controller->GetButtonParam(button_id);
+                                        Common::ParamPackage main_param = new_param;
+                                        main_param.Erase("alt");
+                                        main_param.Erase("toggle");
+                                        main_param.Erase("turbo");
+                                        main_param.Erase("inverted");
+                                        if (ButtonToText(main_param) == ButtonToText(params)) {
+                                            return;
+                                        }
+                                        new_param.Set("alt", params.Serialize());
+                                        emulated_controller->SetButtonParam(button_id, new_param);
+                                    },
+                                    InputCommon::Polling::InputType::Button);
+                            });
+                    }
+                    if (param.Has("alt")) {
+                        context_menu.addAction(tr("Clear alternate"), [&] {
+                            param.Erase("alt");
+                            button_map[button_id]->setText(ButtonToText(param));
+                            button_map[button_id]->setToolTip({});
+                            emulated_controller->SetButtonParam(button_id, param);
+                        });
+                    }
                     if (param.Has("code") || param.Has("button") || param.Has("hat")) {
                         context_menu.addAction(tr("Invert button"), [&] {
                             const bool invert_value = !param.Get("inverted", false);
@@ -1016,6 +1060,7 @@ void ConfigureInputPlayer::UpdateUI() {
     for (int button = 0; button < Settings::NativeButton::NumButtons; ++button) {
         const Common::ParamPackage param = emulated_controller->GetButtonParam(button);
         button_map[button]->setText(ButtonToText(param));
+        button_map[button]->setToolTip(param.Has("alt") ? ButtonToText(param) : QString{});
     }
 
     const Common::ParamPackage ZL_param =

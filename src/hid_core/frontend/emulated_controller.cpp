@@ -215,6 +215,20 @@ void EmulatedController::LoadDevices() {
     std::ranges::transform(output_params, output_devices.begin(),
                            Common::Input::CreateOutputDevice);
 
+    const auto create_alt_device =
+        [](const Common::ParamPackage& params) -> std::unique_ptr<Common::Input::InputDevice> {
+        if (!params.Has("alt")) {
+            return nullptr;
+        }
+        Common::ParamPackage alt_params{params.Get("alt", "")};
+        alt_params.Set("toggle", params.Get("toggle", false));
+        alt_params.Set("turbo", params.Get("turbo", false));
+        alt_params.Set("inverted", params.Get("inverted", false));
+        return Common::Input::CreateInputDevice(alt_params);
+    };
+    std::ranges::transform(button_params, alt_button_devices.begin(), create_alt_device);
+    std::ranges::transform(trigger_params, alt_trigger_devices.begin(), create_alt_device);
+
     // Initialize TAS devices
     std::ranges::transform(tas_button_params, tas_button_devices.begin(),
                            Common::Input::CreateInputDevice);
@@ -342,13 +356,29 @@ void EmulatedController::ReloadInput() {
             continue;
         }
         const auto uuid = Common::UUID{button_params[index].Get("guid", "")};
+        const bool has_alt = alt_button_devices[index] != nullptr;
+        alt_button_callbacks[index] = {};
         button_devices[index]->SetCallback({
             .on_change =
-                [this, index, uuid](const Common::Input::CallbackStatus& callback) {
+                [this, index, uuid, has_alt](const Common::Input::CallbackStatus& callback) {
+                    if (has_alt) {
+                        SetAltButton(callback, index, 0, uuid);
+                        return;
+                    }
                     SetButton(callback, index, uuid);
                 },
         });
         button_devices[index]->ForceUpdate();
+        if (!has_alt) {
+            continue;
+        }
+        alt_button_devices[index]->SetCallback({
+            .on_change =
+                [this, index, uuid](const Common::Input::CallbackStatus& callback) {
+                    SetAltButton(callback, index, 1, uuid);
+                },
+        });
+        alt_button_devices[index]->ForceUpdate();
     }
 
     for (std::size_t index = 0; index < stick_devices.size(); ++index) {
@@ -370,13 +400,29 @@ void EmulatedController::ReloadInput() {
             continue;
         }
         const auto uuid = Common::UUID{trigger_params[index].Get("guid", "")};
+        const bool has_alt = alt_trigger_devices[index] != nullptr;
+        alt_trigger_callbacks[index] = {};
         trigger_devices[index]->SetCallback({
             .on_change =
-                [this, index, uuid](const Common::Input::CallbackStatus& callback) {
+                [this, index, uuid, has_alt](const Common::Input::CallbackStatus& callback) {
+                    if (has_alt) {
+                        SetAltTrigger(callback, index, 0, uuid);
+                        return;
+                    }
                     SetTrigger(callback, index, uuid);
                 },
         });
         trigger_devices[index]->ForceUpdate();
+        if (!has_alt) {
+            continue;
+        }
+        alt_trigger_devices[index]->SetCallback({
+            .on_change =
+                [this, index, uuid](const Common::Input::CallbackStatus& callback) {
+                    SetAltTrigger(callback, index, 1, uuid);
+                },
+        });
+        alt_trigger_devices[index]->ForceUpdate();
     }
 
     for (std::size_t index = 0; index < battery_devices.size(); ++index) {
@@ -549,6 +595,12 @@ void EmulatedController::UnloadInput() {
     }
     for (auto& output : output_devices) {
         output.reset();
+    }
+    for (auto& button : alt_button_devices) {
+        button.reset();
+    }
+    for (auto& trigger : alt_trigger_devices) {
+        trigger.reset();
     }
     for (auto& button : tas_button_devices) {
         button.reset();
@@ -1036,6 +1088,36 @@ void EmulatedController::SetTrigger(const Common::Input::CallbackStatus& callbac
         controller.npad_button_state.zr.Assign(trigger.pressed.value);
         break;
     }
+}
+
+void EmulatedController::SetAltButton(const Common::Input::CallbackStatus& callback,
+                                      std::size_t index, std::size_t source, Common::UUID uuid) {
+    auto& callbacks = alt_button_callbacks[index];
+    callbacks[source] = callback;
+    if (callbacks[0].type == Common::Input::InputType::None ||
+        callbacks[1].type == Common::Input::InputType::None) {
+        SetButton(callback, index, uuid);
+        return;
+    }
+    const auto main_status = TransformToButton(callbacks[0]);
+    const auto alt_status = TransformToButton(callbacks[1]);
+    const bool use_alt =
+        main_status.value != alt_status.value && alt_status.value != main_status.inverted;
+    SetButton(callbacks[use_alt ? 1 : 0], index, uuid);
+}
+
+void EmulatedController::SetAltTrigger(const Common::Input::CallbackStatus& callback,
+                                       std::size_t index, std::size_t source, Common::UUID uuid) {
+    auto& callbacks = alt_trigger_callbacks[index];
+    callbacks[source] = callback;
+    if (callbacks[0].type == Common::Input::InputType::None ||
+        callbacks[1].type == Common::Input::InputType::None) {
+        SetTrigger(callback, index, uuid);
+        return;
+    }
+    const bool use_alt = TransformToTrigger(callbacks[1]).pressed.value &&
+                         !TransformToTrigger(callbacks[0]).pressed.value;
+    SetTrigger(callbacks[use_alt ? 1 : 0], index, uuid);
 }
 
 void EmulatedController::SetMotion(const Common::Input::CallbackStatus& callback,

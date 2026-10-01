@@ -523,6 +523,24 @@ private:
                     Common::UUID uuid);
 
     /**
+     * Updates the button status of the controller from a button with an alternate binding
+     * @param callback A CallbackStatus containing the button status
+     * @param index Button ID of the to be updated
+     * @param source 0 for the main binding, 1 for the alternate binding
+     */
+    void SetAltButton(const Common::Input::CallbackStatus& callback, std::size_t index,
+                      std::size_t source, Common::UUID uuid);
+
+    /**
+     * Updates the trigger status of the controller from a trigger with an alternate binding
+     * @param callback A CallbackStatus containing the trigger status
+     * @param index trigger ID of the to be updated
+     * @param source 0 for the main binding, 1 for the alternate binding
+     */
+    void SetAltTrigger(const Common::Input::CallbackStatus& callback, std::size_t index,
+                       std::size_t source, Common::UUID uuid);
+
+    /**
      * Updates the motion status of the controller
      * @param callback A CallbackStatus containing gyro and accelerometer data
      * @param index motion ID of the to be updated
@@ -620,6 +638,13 @@ private:
     RingAnalogDevices ring_analog_devices;
     NfcDevices nfc_devices;
     OutputDevices output_devices;
+
+    ButtonDevices alt_button_devices;
+    TriggerDevices alt_trigger_devices;
+    std::array<std::array<Common::Input::CallbackStatus, 2>, Settings::NativeButton::NumButtons>
+        alt_button_callbacks;
+    std::array<std::array<Common::Input::CallbackStatus, 2>, Settings::NativeTrigger::NumTriggers>
+        alt_trigger_callbacks;
 
     // TAS related variables
     ButtonParams tas_button_params;
