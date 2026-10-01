@@ -487,6 +487,15 @@ Device::Device(VkInstance instance_, vk::PhysicalDevice physical_, VkSurfaceKHR 
                                  properties.subgroup_size_control.maxSubgroupSize > GuestWarpSize;
 
     is_integrated = properties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+    const VkPhysicalDeviceMemoryProperties memory_properties =
+        physical.GetMemoryProperties().memoryProperties;
+    is_uma = std::all_of(memory_properties.memoryTypes,
+                         memory_properties.memoryTypes + memory_properties.memoryTypeCount,
+                         [](const VkMemoryType& type) {
+                             return (type.propertyFlags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) ==
+                                        0 ||
+                                    (type.propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
+                         });
 
     supports_d24_depth =
         IsFormatSupported(VK_FORMAT_D24_UNORM_S8_UINT,

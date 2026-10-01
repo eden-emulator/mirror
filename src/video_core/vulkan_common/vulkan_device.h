@@ -984,6 +984,10 @@ FN_MAX_LIMIT_LIST
         return must_emulate_scaled_formats;
     }
 
+    bool IsUMA() const {
+        return is_uma;
+    }
+
     bool HasNullDescriptor() const {
         return features.robustness2.nullDescriptor;
     }
@@ -1198,6 +1202,7 @@ private:
     bool is_blit_depth32_stencil8_supported{}; ///< Support for blitting from and to D32S8.
     bool is_warp_potentially_bigger{};         ///< Host warp size can be bigger than guest.
     bool is_integrated{};                      ///< Is GPU an iGPU.
+    bool is_uma{};
     bool has_broken_compute{};                 ///< Compute shaders can cause crashes
     bool has_broken_cube_compatibility{};      ///< Has broken cube compatibility bit
     bool has_broken_float16_math{};

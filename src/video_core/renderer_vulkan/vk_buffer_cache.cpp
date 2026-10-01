@@ -97,10 +97,14 @@ vk::Buffer CreateBuffer(const Device& device, const MemoryAllocator& memory_allo
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = nullptr,
     };
-    if (sparse_alignment > 1) {
-        return memory_allocator.CreateBuffer(buffer_ci, MemoryUsage::DeviceLocal, sparse_alignment);
+    MemoryUsage usage = MemoryUsage::DeviceLocal;
+    if (device.IsUMA()) {
+        usage = MemoryUsage::Stream;
     }
-    return memory_allocator.CreateBuffer(buffer_ci, MemoryUsage::DeviceLocal);
+    if (sparse_alignment > 1) {
+        return memory_allocator.CreateBuffer(buffer_ci, usage, sparse_alignment);
+    }
+    return memory_allocator.CreateBuffer(buffer_ci, usage);
 }
 } // Anonymous namespace
 
@@ -136,6 +140,17 @@ Buffer::Buffer(BufferCacheRuntime& runtime, DAddr cpu_addr_, u64 size_bytes_,
 void Buffer::MarkUsage(u64 offset, u64 size) noexcept {
     tracker.Track(offset, size);
     last_usage_tick = scheduler->CurrentTick();
+}
+
+void Buffer::MarkUpload() noexcept {
+    last_upload_tick = scheduler->CurrentTick();
+}
+
+std::span<u8> Buffer::CoherentMapping() noexcept {
+    if (!buffer.IsHostCoherent()) {
+        return {};
+    }
+    return buffer.Mapped();
 }
 
 VkBufferView Buffer::View(u32 offset, u32 size, VideoCore::Surface::PixelFormat format) {
@@ -494,6 +509,16 @@ bool BufferCacheRuntime::CanReorderUpload(const Buffer& buffer,
             return !buffer.IsRegionUsed(copy.dst_offset, copy.size);
         });
     return can_use_upload_cmdbuf;
+}
+
+std::span<u8> BufferCacheRuntime::DirectUploadSpan(
+    Buffer& buffer, std::span<const VideoCommon::BufferCopy> copies) {
+    const std::span<u8> mapping = buffer.CoherentMapping();
+    if (mapping.empty() || !scheduler.IsFree(buffer.LastUploadTick()) ||
+        !CanReorderUpload(buffer, copies)) {
+        return {};
+    }
+    return mapping;
 }
 
 void BufferCacheRuntime::CopyBuffer(VkBuffer dst_buffer, VkBuffer src_buffer,

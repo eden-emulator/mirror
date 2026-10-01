@@ -69,6 +69,14 @@ public:
         return last_usage_tick;
     }
 
+    void MarkUpload() noexcept;
+
+    [[nodiscard]] u64 LastUploadTick() const noexcept {
+        return last_upload_tick;
+    }
+
+    [[nodiscard]] std::span<u8> CoherentMapping() noexcept;
+
     operator VkBuffer() const noexcept {
         return *buffer;
     }
@@ -88,6 +96,7 @@ private:
     VideoCommon::UsageTracker tracker;
     VkDeviceAddress device_address{};
     u64 last_usage_tick{};
+    u64 last_upload_tick{};
     bool is_null{};
     bool sparse_compatible{};
 };
@@ -140,6 +149,9 @@ public:
 
     bool CanReorderUpload(const Buffer& buffer, std::span<const VideoCommon::BufferCopy> copies);
 
+    [[nodiscard]] std::span<u8> DirectUploadSpan(Buffer& buffer,
+                                                 std::span<const VideoCommon::BufferCopy> copies);
+
     void FreeDeferredStagingBuffer(StagingBufferRef& ref);
 
     void PreCopyBarrier();
@@ -147,6 +159,13 @@ public:
     void CopyBuffer(VkBuffer dst_buffer, VkBuffer src_buffer,
                     std::span<const VideoCommon::BufferCopy> copies, bool barrier,
                     bool can_reorder_upload = false);
+
+    void CopyBuffer(Buffer& dst_buffer, VkBuffer src_buffer,
+                    std::span<const VideoCommon::BufferCopy> copies, bool barrier,
+                    bool can_reorder_upload = false) {
+        dst_buffer.MarkUpload();
+        CopyBuffer(dst_buffer.Handle(), src_buffer, copies, barrier, can_reorder_upload);
+    }
 
     void PostCopyBarrier();
 

@@ -1876,6 +1876,20 @@ void BufferCache<P>::MappedUploadMemory([[maybe_unused]] Buffer& buffer,
                                         [[maybe_unused]] u64 total_size_bytes,
                                         [[maybe_unused]] std::span<BufferCopy> copies) {
     if constexpr (USE_MEMORY_MAPS) {
+        if constexpr (requires { runtime.DirectUploadSpan(buffer, copies); }) {
+            const std::span<u8> direct = runtime.DirectUploadSpan(buffer, copies);
+            if (!direct.empty()) {
+                for (const BufferCopy& copy : copies) {
+                    const DAddr device_addr = buffer.CpuAddr() + copy.dst_offset;
+                    if (Settings::values.enable_gpu_buffer_readback.GetValue()) {
+                        DownloadBufferMemory(buffer, device_addr, copy.size);
+                    }
+                    device_memory.ReadBlockUnsafe(device_addr, direct.data() + copy.dst_offset,
+                                                  copy.size);
+                }
+                return;
+            }
+        }
         auto upload_staging = runtime.UploadStagingBuffer(total_size_bytes);
         const std::span<u8> staging_pointer = upload_staging.mapped_span;
         for (BufferCopy& copy : copies) {
