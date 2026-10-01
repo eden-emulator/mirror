@@ -79,7 +79,7 @@ void VendorWorkaroundPass(IR::Program& program) {
     }
 }
 
-bool HasProblematicFragmentShaderPattern(const IR::Program& program) {
+bool HasBrokenPattern(const IR::Program& program) {
     if (program.stage != Stage::Fragment) {
         return false;
     }

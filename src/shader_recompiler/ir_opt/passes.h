@@ -30,8 +30,8 @@ void PositionPass(Environment& env, IR::Program& program);
 void TexturePass(Environment& env, IR::Program& program, const HostTranslateInfo& host_info);
 void LayerPass(IR::Program& program, const HostTranslateInfo& host_info);
 void VendorWorkaroundPass(IR::Program& program);
-bool HasProblematicFragmentShaderPattern(const IR::Program& program);
 void VerificationPass(const IR::Program& program);
+bool HasBrokenPattern(const IR::Program& program);
 
 // Dual Vertex
 void VertexATransformPass(IR::Program& program);
