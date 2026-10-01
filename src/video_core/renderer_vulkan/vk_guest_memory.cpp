@@ -3,14 +3,10 @@
 
 #include <algorithm>
 #include <array>
-#include <bit>
 #include <cstring>
-#include <span>
 
-#include "common/host_memory.h"
 #include "video_core/renderer_vulkan/vk_guest_memory.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
-#include "video_core/vulkan_common/vulkan_device.h"
 #include "video_core/vulkan_common/vulkan_memory_allocator.h"
 
 namespace Vulkan {
@@ -21,9 +17,9 @@ constexpr u32 PROBE_CPU_STRIDE = 0x9E3779B9U;
 constexpr u32 PROBE_GPU_VALUE = 0x5AC3E10FU;
 }
 
-GuestMemory::GuestMemory(const Device& device, MemoryAllocator& memory_allocator,
-                         Scheduler& scheduler, const Common::HostMemory& host_memory) {
-    Import(device, host_memory);
+GuestMemory::GuestMemory([[maybe_unused]] const Device& device,
+                         MemoryAllocator& memory_allocator, Scheduler& scheduler,
+                         [[maybe_unused]] const Common::HostMemory& host_memory) {
     if (!windows.empty() && !IsCoherent(memory_allocator, scheduler)) {
         windows.clear();
     }
@@ -40,71 +36,6 @@ std::optional<GuestMemory::Range> GuestMemory::Find(const u8* pointer, size_t si
         return std::nullopt;
     }
     return Range{*windows[index].buffer, local_offset};
-}
-
-void GuestMemory::Import([[maybe_unused]] const Device& device,
-                         [[maybe_unused]] const Common::HostMemory& host_memory) {
-#ifdef __ANDROID__
-    const std::span<AHardwareBuffer* const> hardware_buffers =
-        host_memory.BackingHardwareBuffers();
-    window_size = host_memory.BackingHardwareBufferWindowSize();
-    if (hardware_buffers.empty() || window_size == 0 || !device.IsAhbImportSupported()) {
-        return;
-    }
-    base = const_cast<u8*>(host_memory.BackingBasePointer()) +
-           host_memory.BackingHardwareBufferBase();
-    const vk::Device& logical = device.GetLogical();
-    try {
-        for (AHardwareBuffer* const hardware_buffer : hardware_buffers) {
-            const VkAndroidHardwareBufferPropertiesANDROID properties =
-                logical.GetAndroidHardwareBufferProperties(hardware_buffer);
-            const VkExternalMemoryBufferCreateInfo external_info{
-                .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
-                .pNext = nullptr,
-                .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID,
-            };
-            Window& window = windows.emplace_back();
-            window.buffer = logical.CreateExternalBuffer(VkBufferCreateInfo{
-                .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                .pNext = &external_info,
-                .flags = 0,
-                .size = window_size,
-                .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                         VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                .queueFamilyIndexCount = 0,
-                .pQueueFamilyIndices = nullptr,
-            });
-            const u32 type_bits =
-                logical.GetBufferMemoryRequirements(*window.buffer).memoryTypeBits &
-                properties.memoryTypeBits;
-            if (type_bits == 0) {
-                windows.clear();
-                return;
-            }
-            const VkImportAndroidHardwareBufferInfoANDROID import_info{
-                .sType = VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID,
-                .pNext = nullptr,
-                .buffer = hardware_buffer,
-            };
-            const VkMemoryDedicatedAllocateInfo dedicated_info{
-                .sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
-                .pNext = &import_info,
-                .image = VK_NULL_HANDLE,
-                .buffer = *window.buffer,
-            };
-            window.memory = logical.AllocateMemory(VkMemoryAllocateInfo{
-                .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                .pNext = &dedicated_info,
-                .allocationSize = properties.allocationSize,
-                .memoryTypeIndex = static_cast<u32>(std::countr_zero(type_bits)),
-            });
-            logical.BindBufferMemory(*window.buffer, *window.memory, 0);
-        }
-    } catch (const vk::Exception&) {
-        windows.clear();
-    }
-#endif
 }
 
 bool GuestMemory::IsCoherent(MemoryAllocator& memory_allocator, Scheduler& scheduler) const {

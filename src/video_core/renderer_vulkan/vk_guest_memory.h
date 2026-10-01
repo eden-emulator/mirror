@@ -41,8 +41,6 @@ private:
         vk::ExternalBuffer buffer;
     };
 
-    void Import(const Device& device, const Common::HostMemory& host_memory);
-
     [[nodiscard]] bool IsCoherent(MemoryAllocator& memory_allocator, Scheduler& scheduler) const;
 
     std::vector<Window> windows;

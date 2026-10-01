@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -15,21 +12,9 @@ constexpr size_t VirtualReserveSize = 1ULL << 38;
 constexpr size_t VirtualReserveSize = 1ULL << 39;
 #endif
 
-namespace {
-size_t ApplicationPoolOffset() {
-    using Init = Kernel::Board::Nintendo::Nx::KSystemControl::Init;
-    const size_t dram_size = Init::GetIntendedMemorySize();
-    const size_t application_pool_size = Init::GetApplicationPoolSize();
-    if (dram_size <= application_pool_size) {
-        return 0;
-    }
-    return dram_size - application_pool_size;
-}
-}
-
 DeviceMemory::DeviceMemory()
     : buffer{Kernel::Board::Nintendo::Nx::KSystemControl::Init::GetIntendedMemorySize(),
-             VirtualReserveSize, ApplicationPoolOffset()} {}
+             VirtualReserveSize} {}
 
 DeviceMemory::~DeviceMemory() = default;
 

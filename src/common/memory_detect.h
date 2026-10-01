@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -20,9 +17,5 @@ struct MemoryInfo {
  * @return Reference to a MemoryInfo struct with the physical and swap memory sizes in bytes
  */
 [[nodiscard]] const MemoryInfo& GetMemInfo();
-
-[[nodiscard]] u64 GetPermissibleMapCount();
-
-[[nodiscard]] u64 GetAvailablePhysicalMemory();
 
 } // namespace Common

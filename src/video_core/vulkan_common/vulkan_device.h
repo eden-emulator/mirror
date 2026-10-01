@@ -993,10 +993,6 @@ FN_MAX_LIMIT_LIST
         return extensions.host_image_copy;
     }
 
-    bool IsAhbImportSupported() const {
-        return has_ahb_import;
-    }
-
     bool HasNullDescriptor() const {
         return features.robustness2.nullDescriptor;
     }
@@ -1212,7 +1208,6 @@ private:
     bool is_warp_potentially_bigger{};         ///< Host warp size can be bigger than guest.
     bool is_integrated{};                      ///< Is GPU an iGPU.
     bool is_uma{};
-    bool has_ahb_import{};
     bool has_broken_compute{};                 ///< Compute shaders can cause crashes
     bool has_broken_cube_compatibility{};      ///< Has broken cube compatibility bit
     bool has_broken_float16_math{};

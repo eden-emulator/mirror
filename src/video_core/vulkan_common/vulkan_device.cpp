@@ -934,15 +934,6 @@ bool Device::GetSuitability(bool requires_swapchain) {
 
     FOR_EACH_VK_FEATURE_EXT(FEATURE_EXTENSION);
     FOR_EACH_VK_EXTENSION(EXTENSION);
-#ifdef __ANDROID__
-    if (supported_extensions.contains(
-            VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME) &&
-        supported_extensions.contains(VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME)) {
-        loaded_extensions.insert(VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME);
-        loaded_extensions.insert(VK_EXT_QUEUE_FAMILY_FOREIGN_EXTENSION_NAME);
-        has_ahb_import = true;
-    }
-#endif
 
     extensions.depth_stencil_resolve =
         extensions.depth_stencil_resolve &&

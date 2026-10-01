@@ -237,9 +237,6 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkAllocateMemory vkAllocateMemory{};
     PFN_vkBindBufferMemory vkBindBufferMemory{};
     PFN_vkFreeMemory vkFreeMemory{};
-#ifdef __ANDROID__
-    PFN_vkGetAndroidHardwareBufferPropertiesANDROID vkGetAndroidHardwareBufferPropertiesANDROID{};
-#endif
     PFN_vkBeginCommandBuffer vkBeginCommandBuffer{};
     PFN_vkCmdBeginConditionalRenderingEXT vkCmdBeginConditionalRenderingEXT{};
     PFN_vkCmdBeginQuery vkCmdBeginQuery{};
@@ -1016,11 +1013,6 @@ public:
     void BindBufferMemory(VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize offset) const;
 
     [[nodiscard]] VkMemoryRequirements GetBufferMemoryRequirements(VkBuffer buffer) const noexcept;
-
-#ifdef __ANDROID__
-    [[nodiscard]] VkAndroidHardwareBufferPropertiesANDROID GetAndroidHardwareBufferProperties(
-        const AHardwareBuffer* buffer) const;
-#endif
 
     [[nodiscard]] ImageView CreateImageView(const VkImageViewCreateInfo& ci) const;
 

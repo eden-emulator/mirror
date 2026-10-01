@@ -88,9 +88,6 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkAllocateMemory);
     X(vkBindBufferMemory);
     X(vkFreeMemory);
-#ifdef __ANDROID__
-    X(vkGetAndroidHardwareBufferPropertiesANDROID);
-#endif
     X(vkBeginCommandBuffer);
     X(vkCmdBeginConditionalRenderingEXT);
     X(vkCmdBeginQuery);
@@ -656,20 +653,6 @@ VkMemoryRequirements Device::GetBufferMemoryRequirements(VkBuffer buffer) const 
     dld->vkGetBufferMemoryRequirements2(handle, &info, &requirements);
     return requirements.memoryRequirements;
 }
-
-#ifdef __ANDROID__
-VkAndroidHardwareBufferPropertiesANDROID Device::GetAndroidHardwareBufferProperties(
-    const AHardwareBuffer* buffer) const {
-    VkAndroidHardwareBufferPropertiesANDROID properties{
-        .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
-        .pNext = nullptr,
-        .allocationSize = 0,
-        .memoryTypeBits = 0,
-    };
-    Check(dld->vkGetAndroidHardwareBufferPropertiesANDROID(handle, buffer, &properties));
-    return properties;
-}
-#endif
 
 ImageView Device::CreateImageView(const VkImageViewCreateInfo& ci) const {
     VkImageView object;
