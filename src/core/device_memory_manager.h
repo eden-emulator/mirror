@@ -20,6 +20,10 @@
 #include "common/scratch_buffer.h"
 #include "common/virtual_buffer.h"
 
+namespace Common {
+class HostMemory;
+}
+
 namespace Core {
 
 constexpr size_t DEVICE_PAGEBITS = 12ULL;
@@ -126,6 +130,10 @@ public:
     // New batch API to update multiple ranges with a single lock acquisition.
     void UpdatePagesCachedBatch(std::span<const std::pair<DAddr, size_t>> ranges, s32 delta);
 
+    const Common::HostMemory& GetHostMemory() const noexcept {
+        return host_memory;
+    }
+
 private:
     struct TranslationEntry {
         DAddr guest_page{};
@@ -171,6 +179,7 @@ private:
     std::unique_ptr<DeviceMemoryManagerAllocator<Traits>> impl;
 
     const uintptr_t physical_base;
+    const Common::HostMemory& host_memory;
     DeviceInterface* device_inter;
 
     struct TrackedEntry {

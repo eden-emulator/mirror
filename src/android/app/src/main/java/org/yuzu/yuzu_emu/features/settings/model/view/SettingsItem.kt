@@ -876,6 +876,13 @@ abstract class SettingsItem(
             )
             put(
                 SwitchSetting(
+                    BooleanSetting.USE_UNIFIED_MEMORY,
+                    titleId = R.string.use_unified_memory,
+                    descriptionId = R.string.use_unified_memory_description
+                )
+            )
+            put(
+                SwitchSetting(
                     BooleanSetting.USE_OPTIMIZED_VERTEX_BUFFERS,
                     titleId = R.string.use_optimized_vertex_buffers,
                     descriptionId = R.string.use_optimized_vertex_buffers_description

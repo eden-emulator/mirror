@@ -3206,18 +3206,38 @@ void TextureCacheRuntime::AccelerateImageUpload(
     if (is_rescaled) {
         image.ScaleDown(true);
     }
+    const bool reorder = !is_rescaled && True(image.flags & ImageFlagBits::ReorderableUpload);
     if (IsPixelFormatASTC(image.info.format)) {
-        astc_decoder_pass->Assemble(image, map, swizzles);
+        astc_decoder_pass->Assemble(image, map, swizzles, reorder);
     } else if (image.info.type == ImageType::e3D) {
-        bl_unswizzle_3d_pass->Unswizzle(image, map, swizzles);
+        bl_unswizzle_3d_pass->Unswizzle(image, map, swizzles, reorder);
     } else if (image.info.type == ImageType::Linear) {
-        pitch_unswizzle_pass->Unswizzle(image, map, swizzles);
+        pitch_unswizzle_pass->Unswizzle(image, map, swizzles, reorder);
     } else {
-        bl_unswizzle_2d_pass->Unswizzle(image, map, swizzles);
+        bl_unswizzle_2d_pass->Unswizzle(image, map, swizzles, reorder);
     }
     if (is_rescaled) {
         image.ScaleUp();
     }
+}
+
+void TextureCacheRuntime::ImportGuestMemory(const Common::HostMemory& host_memory) {
+    guest_memory.emplace(device, memory_allocator, scheduler, host_memory);
+    if (guest_memory->Empty()) {
+        guest_memory.reset();
+    }
+}
+
+std::optional<StagingBufferRef> TextureCacheRuntime::GuestMemorySource(const u8* pointer,
+                                                                       size_t size) const {
+    if (pointer == nullptr) {
+        return std::nullopt;
+    }
+    const std::optional<GuestMemory::Range> range = guest_memory->Find(pointer, size);
+    if (!range || range->offset % device.GetStorageBufferAlignment() != 0) {
+        return std::nullopt;
+    }
+    return StagingBufferRef{.buffer = range->buffer, .offset = range->offset};
 }
 
 void TextureCacheRuntime::TransitionImageLayout(Image& image) {

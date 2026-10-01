@@ -551,6 +551,7 @@ class SettingsFragmentPresenter(
             add(BooleanSetting.RENDERER_BARRIER_FEEDBACK_LOOPS.key)
             add(BooleanSetting.ENABLE_BUFFER_HISTORY.key)
             add(BooleanSetting.ENABLE_GPU_BUFFER_READBACK.key)
+            add(BooleanSetting.USE_UNIFIED_MEMORY.key)
             add(BooleanSetting.USE_OPTIMIZED_VERTEX_BUFFERS.key)
 
             add(HeaderSetting(R.string.hacks))

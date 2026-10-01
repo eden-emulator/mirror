@@ -591,8 +591,21 @@ void QueriesPrefixScanPass::Run(VkBuffer accumulation_buffer, VkBuffer dst_buffe
 
 namespace {
 
-void RecordUnswizzleBeginBarrier(Scheduler& scheduler, VkPipeline vk_pipeline, VkImage vk_image,
-                                 VkImageAspectFlags aspect_mask, bool is_initialized) {
+template <typename Func>
+void RecordUnswizzle(Scheduler& scheduler, bool reorder, Func&& func) {
+    if (reorder) {
+        scheduler.RecordWithUploadBuffer(
+            [func = std::forward<Func>(func)](vk::CommandBuffer, vk::CommandBuffer upload_cmdbuf) {
+                func(upload_cmdbuf);
+            });
+        return;
+    }
+    scheduler.Record(std::forward<Func>(func));
+}
+
+void RecordUnswizzleBeginBarrier(Scheduler& scheduler, bool reorder, VkPipeline vk_pipeline,
+                                 VkImage vk_image, VkImageAspectFlags aspect_mask,
+                                 bool is_initialized) {
     VkAccessFlags2 src_access = VK_ACCESS_2_NONE;
     VkImageLayout old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
     VkPipelineStageFlags2 src_stage = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
@@ -601,8 +614,8 @@ void RecordUnswizzleBeginBarrier(Scheduler& scheduler, VkPipeline vk_pipeline, V
         old_layout = VK_IMAGE_LAYOUT_GENERAL;
         src_stage = vk::PIPELINE_STAGE_IMAGE_USERS;
     }
-    scheduler.Record([vk_pipeline, vk_image, aspect_mask, src_access, old_layout,
-                      src_stage](vk::CommandBuffer cmdbuf) {
+    RecordUnswizzle(scheduler, reorder, [vk_pipeline, vk_image, aspect_mask, src_access,
+                                         old_layout, src_stage](vk::CommandBuffer cmdbuf) {
         const VkImageMemoryBarrier2 image_barrier{
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
@@ -628,9 +641,9 @@ void RecordUnswizzleBeginBarrier(Scheduler& scheduler, VkPipeline vk_pipeline, V
     });
 }
 
-void RecordUnswizzleEndBarrier(Scheduler& scheduler, VkImage vk_image,
+void RecordUnswizzleEndBarrier(Scheduler& scheduler, bool reorder, VkImage vk_image,
                                VkImageAspectFlags aspect_mask) {
-    scheduler.Record([vk_image, aspect_mask](vk::CommandBuffer cmdbuf) {
+    RecordUnswizzle(scheduler, reorder, [vk_image, aspect_mask](vk::CommandBuffer cmdbuf) {
         const VkImageMemoryBarrier2 image_barrier{
             .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext = nullptr,
@@ -672,16 +685,19 @@ ASTCDecoderPass::ASTCDecoderPass(const Device& device_, Scheduler& scheduler_,
 ASTCDecoderPass::~ASTCDecoderPass() = default;
 
 void ASTCDecoderPass::Assemble(Image& image, const StagingBufferRef& map,
-                               std::span<const VideoCommon::SwizzleParameters> swizzles) {
+                               std::span<const VideoCommon::SwizzleParameters> swizzles,
+                               bool reorder) {
     using namespace VideoCommon::Accelerated;
     const std::array<u32, 2> block_dims{
         VideoCore::Surface::DefaultBlockWidth(image.info.format),
         VideoCore::Surface::DefaultBlockHeight(image.info.format),
     };
-    scheduler.RequestOutsideRenderPassOperationContext();
+    if (!reorder) {
+        scheduler.RequestOutsideRenderPassOperationContext();
+    }
     const VkImageAspectFlags aspect_mask = image.AspectMask();
     const VkImage vk_image = image.Handle();
-    RecordUnswizzleBeginBarrier(scheduler, *pipeline, vk_image, aspect_mask,
+    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask,
                                 image.ExchangeInitialization());
     for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
         const size_t input_offset = swizzle.buffer_offset + map.offset;
@@ -700,8 +716,9 @@ void ASTCDecoderPass::Assemble(Image& image, const StagingBufferRef& map,
         ASSERT(params.origin == (std::array<u32, 3>{0, 0, 0}));
         ASSERT(params.destination == (std::array<s32, 3>{0, 0, 0}));
         ASSERT(params.bytes_per_block_log2 == 4);
-        scheduler.Record([this, num_dispatches_x, num_dispatches_y, num_dispatches_z, block_dims,
-                          params, descriptor_data](vk::CommandBuffer cmdbuf) {
+        RecordUnswizzle(scheduler, reorder,
+                        [this, num_dispatches_x, num_dispatches_y, num_dispatches_z, block_dims,
+                         params, descriptor_data](vk::CommandBuffer cmdbuf) {
             const AstcPushConstants uniforms{
                 .blocks_dims = block_dims,
                 .layer_stride = params.layer_stride,
@@ -717,7 +734,7 @@ void ASTCDecoderPass::Assemble(Image& image, const StagingBufferRef& map,
             cmdbuf.Dispatch(num_dispatches_x, num_dispatches_y, num_dispatches_z);
         });
     }
-    RecordUnswizzleEndBarrier(scheduler, vk_image, aspect_mask);
+    RecordUnswizzleEndBarrier(scheduler, reorder, vk_image, aspect_mask);
 }
 
 BlockLinearUnswizzleImage2DPass::BlockLinearUnswizzleImage2DPass(
@@ -736,12 +753,14 @@ BlockLinearUnswizzleImage2DPass::~BlockLinearUnswizzleImage2DPass() = default;
 
 void BlockLinearUnswizzleImage2DPass::Unswizzle(
     Image& image, const StagingBufferRef& map,
-    std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    std::span<const VideoCommon::SwizzleParameters> swizzles, bool reorder) {
     using namespace VideoCommon::Accelerated;
-    scheduler.RequestOutsideRenderPassOperationContext();
+    if (!reorder) {
+        scheduler.RequestOutsideRenderPassOperationContext();
+    }
     const VkImageAspectFlags aspect_mask = image.AspectMask();
     const VkImage vk_image = image.Handle();
-    RecordUnswizzleBeginBarrier(scheduler, *pipeline, vk_image, aspect_mask,
+    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask,
                                 image.ExchangeInitialization());
     for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
         const size_t input_offset = swizzle.buffer_offset + map.offset;
@@ -756,8 +775,9 @@ void BlockLinearUnswizzleImage2DPass::Unswizzle(
         const void* const descriptor_data{compute_pass_descriptor_queue.UpdateData()};
 
         const auto params = MakeBlockLinearSwizzle2DParams(swizzle, image.info);
-        scheduler.Record([this, num_dispatches_x, num_dispatches_y, num_dispatches_z, params,
-                          descriptor_data](vk::CommandBuffer cmdbuf) {
+        RecordUnswizzle(scheduler, reorder,
+                        [this, num_dispatches_x, num_dispatches_y, num_dispatches_z, params,
+                         descriptor_data](vk::CommandBuffer cmdbuf) {
             const VkDescriptorSet set = descriptor_allocator.Commit();
             device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
             cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
@@ -765,7 +785,7 @@ void BlockLinearUnswizzleImage2DPass::Unswizzle(
             cmdbuf.Dispatch(num_dispatches_x, num_dispatches_y, num_dispatches_z);
         });
     }
-    RecordUnswizzleEndBarrier(scheduler, vk_image, aspect_mask);
+    RecordUnswizzleEndBarrier(scheduler, reorder, vk_image, aspect_mask);
 }
 
 BlockLinearUnswizzleImage3DPass::BlockLinearUnswizzleImage3DPass(
@@ -783,12 +803,14 @@ BlockLinearUnswizzleImage3DPass::~BlockLinearUnswizzleImage3DPass() = default;
 
 void BlockLinearUnswizzleImage3DPass::Unswizzle(
     Image& image, const StagingBufferRef& map,
-    std::span<const VideoCommon::SwizzleParameters> swizzles) {
+    std::span<const VideoCommon::SwizzleParameters> swizzles, bool reorder) {
     using namespace VideoCommon::Accelerated;
-    scheduler.RequestOutsideRenderPassOperationContext();
+    if (!reorder) {
+        scheduler.RequestOutsideRenderPassOperationContext();
+    }
     const VkImageAspectFlags aspect_mask = image.AspectMask();
     const VkImage vk_image = image.Handle();
-    RecordUnswizzleBeginBarrier(scheduler, *pipeline, vk_image, aspect_mask,
+    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask,
                                 image.ExchangeInitialization());
     for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
         const size_t input_offset = swizzle.buffer_offset + map.offset;
@@ -815,8 +837,9 @@ void BlockLinearUnswizzleImage3DPass::Unswizzle(
             .block_depth = p.block_depth,
             .block_depth_mask = p.block_depth_mask,
         };
-        scheduler.Record([this, num_dispatches_x, num_dispatches_y, num_dispatches_z, params,
-                          descriptor_data](vk::CommandBuffer cmdbuf) {
+        RecordUnswizzle(scheduler, reorder,
+                        [this, num_dispatches_x, num_dispatches_y, num_dispatches_z, params,
+                         descriptor_data](vk::CommandBuffer cmdbuf) {
             const VkDescriptorSet set = descriptor_allocator.Commit();
             device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
             cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
@@ -824,7 +847,7 @@ void BlockLinearUnswizzleImage3DPass::Unswizzle(
             cmdbuf.Dispatch(num_dispatches_x, num_dispatches_y, num_dispatches_z);
         });
     }
-    RecordUnswizzleEndBarrier(scheduler, vk_image, aspect_mask);
+    RecordUnswizzleEndBarrier(scheduler, reorder, vk_image, aspect_mask);
 }
 
 PitchUnswizzlePass::PitchUnswizzlePass(const Device& device_, Scheduler& scheduler_,
@@ -841,13 +864,16 @@ PitchUnswizzlePass::PitchUnswizzlePass(const Device& device_, Scheduler& schedul
 PitchUnswizzlePass::~PitchUnswizzlePass() = default;
 
 void PitchUnswizzlePass::Unswizzle(Image& image, const StagingBufferRef& map,
-                                   std::span<const VideoCommon::SwizzleParameters> swizzles) {
+                                   std::span<const VideoCommon::SwizzleParameters> swizzles,
+                                   bool reorder) {
     const u32 bytes_per_block = VideoCore::Surface::BytesPerBlock(image.info.format);
     ASSERT(std::has_single_bit(bytes_per_block));
-    scheduler.RequestOutsideRenderPassOperationContext();
+    if (!reorder) {
+        scheduler.RequestOutsideRenderPassOperationContext();
+    }
     const VkImageAspectFlags aspect_mask = image.AspectMask();
     const VkImage vk_image = image.Handle();
-    RecordUnswizzleBeginBarrier(scheduler, *pipeline, vk_image, aspect_mask,
+    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask,
                                 image.ExchangeInitialization());
     for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
         const size_t input_offset = swizzle.buffer_offset + map.offset;
@@ -866,8 +892,9 @@ void PitchUnswizzlePass::Unswizzle(Image& image, const StagingBufferRef& map,
             .bytes_per_block_log2 = static_cast<u32>(std::countr_zero(bytes_per_block)),
             .pitch = image.info.pitch,
         };
-        scheduler.Record([this, num_dispatches_x, num_dispatches_y, params,
-                          descriptor_data](vk::CommandBuffer cmdbuf) {
+        RecordUnswizzle(scheduler, reorder,
+                        [this, num_dispatches_x, num_dispatches_y, params,
+                         descriptor_data](vk::CommandBuffer cmdbuf) {
             const VkDescriptorSet set = descriptor_allocator.Commit();
             device.GetLogical().UpdateDescriptorSet(set, *descriptor_template, descriptor_data);
             cmdbuf.BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, *layout, 0, set, {});
@@ -875,7 +902,7 @@ void PitchUnswizzlePass::Unswizzle(Image& image, const StagingBufferRef& map,
             cmdbuf.Dispatch(num_dispatches_x, num_dispatches_y, 1);
         });
     }
-    RecordUnswizzleEndBarrier(scheduler, vk_image, aspect_mask);
+    RecordUnswizzleEndBarrier(scheduler, reorder, vk_image, aspect_mask);
 }
 
 } // namespace Vulkan

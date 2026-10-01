@@ -85,6 +85,12 @@ void Load(VkDevice device, DeviceDispatch& dld) noexcept {
     X(vkAcquireNextImageKHR);
     X(vkAllocateCommandBuffers);
     X(vkAllocateDescriptorSets);
+    X(vkAllocateMemory);
+    X(vkBindBufferMemory);
+    X(vkFreeMemory);
+#ifdef __ANDROID__
+    X(vkGetAndroidHardwareBufferPropertiesANDROID);
+#endif
     X(vkBeginCommandBuffer);
     X(vkCmdBeginConditionalRenderingEXT);
     X(vkCmdBeginQuery);
@@ -335,6 +341,10 @@ void Destroy(VkDevice device, const InstanceDispatch& dld) noexcept {
 
 void Destroy(VkDevice device, VkBuffer handle, const DeviceDispatch& dld) noexcept {
     dld.vkDestroyBuffer(device, handle, nullptr);
+}
+
+void Destroy(VkDevice device, VkDeviceMemory handle, const DeviceDispatch& dld) noexcept {
+    dld.vkFreeMemory(device, handle, nullptr);
 }
 
 void Destroy(VkDevice device, VkBufferView handle, const DeviceDispatch& dld) noexcept {
@@ -615,6 +625,51 @@ BufferView Device::CreateBufferView(const VkBufferViewCreateInfo& ci) const {
     Check(dld->vkCreateBufferView(handle, &ci, nullptr, &object));
     return BufferView(object, handle, *dld);
 }
+
+ExternalBuffer Device::CreateExternalBuffer(const VkBufferCreateInfo& ci) const {
+    VkBuffer object;
+    Check(dld->vkCreateBuffer(handle, &ci, nullptr, &object));
+    return ExternalBuffer(object, handle, *dld);
+}
+
+DeviceMemory Device::AllocateMemory(const VkMemoryAllocateInfo& ai) const {
+    VkDeviceMemory object;
+    Check(dld->vkAllocateMemory(handle, &ai, nullptr, &object));
+    return DeviceMemory(object, handle, *dld);
+}
+
+void Device::BindBufferMemory(VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize offset) const {
+    Check(dld->vkBindBufferMemory(handle, buffer, memory, offset));
+}
+
+VkMemoryRequirements Device::GetBufferMemoryRequirements(VkBuffer buffer) const noexcept {
+    const VkBufferMemoryRequirementsInfo2 info{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
+        .pNext = nullptr,
+        .buffer = buffer,
+    };
+    VkMemoryRequirements2 requirements{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+        .pNext = nullptr,
+        .memoryRequirements = {},
+    };
+    dld->vkGetBufferMemoryRequirements2(handle, &info, &requirements);
+    return requirements.memoryRequirements;
+}
+
+#ifdef __ANDROID__
+VkAndroidHardwareBufferPropertiesANDROID Device::GetAndroidHardwareBufferProperties(
+    const AHardwareBuffer* buffer) const {
+    VkAndroidHardwareBufferPropertiesANDROID properties{
+        .sType = VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID,
+        .pNext = nullptr,
+        .allocationSize = 0,
+        .memoryTypeBits = 0,
+    };
+    Check(dld->vkGetAndroidHardwareBufferPropertiesANDROID(handle, buffer, &properties));
+    return properties;
+}
+#endif
 
 ImageView Device::CreateImageView(const VkImageViewCreateInfo& ci) const {
     VkImageView object;

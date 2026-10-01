@@ -144,7 +144,7 @@ public:
     ~ASTCDecoderPass();
 
     void Assemble(Image& image, const StagingBufferRef& map,
-                  std::span<const VideoCommon::SwizzleParameters> swizzles);
+                  std::span<const VideoCommon::SwizzleParameters> swizzles, bool reorder);
 
 private:
     Scheduler& scheduler;
@@ -162,7 +162,7 @@ public:
     ~PitchUnswizzlePass();
 
     void Unswizzle(Image& image, const StagingBufferRef& map,
-                   std::span<const VideoCommon::SwizzleParameters> swizzles);
+                   std::span<const VideoCommon::SwizzleParameters> swizzles, bool reorder);
 
 private:
     Scheduler& scheduler;
@@ -179,7 +179,7 @@ public:
     ~BlockLinearUnswizzleImage3DPass();
 
     void Unswizzle(Image& image, const StagingBufferRef& map,
-                   std::span<const VideoCommon::SwizzleParameters> swizzles);
+                   std::span<const VideoCommon::SwizzleParameters> swizzles, bool reorder);
 
 private:
     Scheduler& scheduler;
@@ -196,7 +196,7 @@ public:
     ~BlockLinearUnswizzleImage2DPass();
 
     void Unswizzle(Image& image, const StagingBufferRef& map,
-                   std::span<const VideoCommon::SwizzleParameters> swizzles);
+                   std::span<const VideoCommon::SwizzleParameters> swizzles, bool reorder);
 
 private:
     Scheduler& scheduler;

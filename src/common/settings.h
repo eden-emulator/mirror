@@ -654,6 +654,9 @@ struct Values {
     SwitchableSetting<bool> use_asynchronous_shaders{linkage, false, "use_asynchronous_shaders",
                                                      Category::RendererHacks};
 
+    SwitchableSetting<bool> use_unified_memory{linkage, false, "use_unified_memory",
+                                               Category::RendererHacks};
+
     SwitchableSetting<ExtendedDynamicState> dyna_state{linkage,
 #if defined(__ANDROID__)
                                            ExtendedDynamicState::Disabled,

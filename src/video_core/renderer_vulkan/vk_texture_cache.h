@@ -13,6 +13,7 @@
 
 #include "shader_recompiler/shader_info.h"
 #include "video_core/renderer_vulkan/vk_compute_pass.h"
+#include "video_core/renderer_vulkan/vk_guest_memory.h"
 #include "video_core/renderer_vulkan/vk_render_pass_cache.h"
 #include "video_core/renderer_vulkan/vk_staging_buffer_pool.h"
 #include "video_core/texture_cache/image_view_base.h"
@@ -93,6 +94,15 @@ public:
     void AccelerateImageUpload(Image&, const StagingBufferRef&,
                                std::span<const VideoCommon::SwizzleParameters>);
 
+    void ImportGuestMemory(const Common::HostMemory& host_memory);
+
+    [[nodiscard]] bool HasGuestMemory() const noexcept {
+        return guest_memory.has_value();
+    }
+
+    [[nodiscard]] std::optional<StagingBufferRef> GuestMemorySource(const u8* pointer,
+                                                                    size_t size) const;
+
     void InsertUploadMemoryBarrier() {}
 
     void TransitionImageLayout(Image& image);
@@ -153,6 +163,7 @@ public:
     std::optional<BlockLinearUnswizzleImage2DPass> bl_unswizzle_2d_pass;
     std::optional<BlockLinearUnswizzleImage3DPass> bl_unswizzle_3d_pass;
     std::optional<PitchUnswizzlePass> pitch_unswizzle_pass;
+    std::optional<GuestMemory> guest_memory;
     const Settings::ResolutionScalingInfo& resolution;
     std::array<std::vector<VkFormat>, VideoCore::Surface::MaxPixelFormat> view_formats;
     std::bitset<VideoCore::Surface::MaxPixelFormat> host_copy_formats;

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -16,6 +19,10 @@
 #include <unistd.h>
 #endif
 #endif
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #include "common/memory_detect.h"
 
@@ -67,6 +74,63 @@ static MemoryInfo Detect() {
 const MemoryInfo& GetMemInfo() {
     static MemoryInfo mem_info = Detect();
     return mem_info;
+}
+
+u64 GetPermissibleMapCount() {
+    constexpr u64 DefaultMapCount = 65530;
+    constexpr u64 ReservedMaps = 20000;
+    u64 count = DefaultMapCount;
+#ifdef __linux__
+    if (std::FILE* const file = std::fopen("/proc/sys/vm/max_map_count", "re")) {
+        char line[32];
+        if (std::fgets(line, sizeof(line), file) != nullptr) {
+            const u64 parsed = std::strtoull(line, nullptr, 10);
+            if (parsed != 0) {
+                count = parsed;
+            }
+        }
+        std::fclose(file);
+    }
+#endif
+    if (count <= ReservedMaps) {
+        return 0;
+    }
+    return count - ReservedMaps;
+}
+
+u64 GetAvailablePhysicalMemory() {
+#ifdef _WIN32
+    MEMORYSTATUSEX memorystatus;
+    memorystatus.dwLength = sizeof(memorystatus);
+    if (GlobalMemoryStatusEx(&memorystatus) == 0) {
+        return 0;
+    }
+    return memorystatus.ullAvailPhys;
+#elif defined(__linux__)
+    static constexpr char AvailableKey[] = "MemAvailable:";
+    if (std::FILE* const file = std::fopen("/proc/meminfo", "re")) {
+        char line[256];
+        u64 available = 0;
+        while (std::fgets(line, sizeof(line), file) != nullptr) {
+            if (std::strncmp(line, AvailableKey, sizeof(AvailableKey) - 1) != 0) {
+                continue;
+            }
+            available = std::strtoull(line + sizeof(AvailableKey) - 1, nullptr, 10) * 1024;
+            break;
+        }
+        std::fclose(file);
+        if (available != 0) {
+            return available;
+        }
+    }
+    struct sysinfo meminfo;
+    if (sysinfo(&meminfo) != 0) {
+        return 0;
+    }
+    return static_cast<u64>(meminfo.freeram) * static_cast<u64>(meminfo.mem_unit);
+#else
+    return 0;
+#endif
 }
 
 } // namespace Common

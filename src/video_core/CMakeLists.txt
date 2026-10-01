@@ -168,6 +168,8 @@ add_library(video_core STATIC
     renderer_vulkan/vk_fence_manager.h
     renderer_vulkan/vk_graphics_pipeline.cpp
     renderer_vulkan/vk_graphics_pipeline.h
+    renderer_vulkan/vk_guest_memory.cpp
+    renderer_vulkan/vk_guest_memory.h
     renderer_vulkan/vk_multi_range_buffer.cpp
     renderer_vulkan/vk_multi_range_buffer.h
     renderer_vulkan/vk_master_semaphore.cpp

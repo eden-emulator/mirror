@@ -227,6 +227,9 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
       accelerate_dma(buffer_cache, texture_cache, scheduler),
       fence_manager(*this, gpu, texture_cache, buffer_cache, query_cache, device, scheduler) {
     scheduler.SetQueryCache(query_cache);
+    if (Settings::values.use_unified_memory.GetValue()) {
+        texture_cache_runtime.ImportGuestMemory(device_memory.GetHostMemory());
+    }
 }
 
 RasterizerVulkan::~RasterizerVulkan() {

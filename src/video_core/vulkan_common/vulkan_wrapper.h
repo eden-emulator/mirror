@@ -234,6 +234,12 @@ struct DeviceDispatch : InstanceDispatch {
     PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR{};
     PFN_vkAllocateCommandBuffers vkAllocateCommandBuffers{};
     PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets{};
+    PFN_vkAllocateMemory vkAllocateMemory{};
+    PFN_vkBindBufferMemory vkBindBufferMemory{};
+    PFN_vkFreeMemory vkFreeMemory{};
+#ifdef __ANDROID__
+    PFN_vkGetAndroidHardwareBufferPropertiesANDROID vkGetAndroidHardwareBufferPropertiesANDROID{};
+#endif
     PFN_vkBeginCommandBuffer vkBeginCommandBuffer{};
     PFN_vkCmdBeginConditionalRenderingEXT vkCmdBeginConditionalRenderingEXT{};
     PFN_vkCmdBeginQuery vkCmdBeginQuery{};
@@ -387,6 +393,7 @@ void Destroy(VkDevice, const InstanceDispatch&) noexcept;
 
 void Destroy(VkDevice, VkBuffer, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkBufferView, const DeviceDispatch&) noexcept;
+void Destroy(VkDevice, VkDeviceMemory, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkCommandPool, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkDescriptorPool, const DeviceDispatch&) noexcept;
 void Destroy(VkDevice, VkDescriptorSetLayout, const DeviceDispatch&) noexcept;
@@ -646,6 +653,8 @@ using Pipeline = Handle<VkPipeline, VkDevice, DeviceDispatch>;
 using PipelineLayout = Handle<VkPipelineLayout, VkDevice, DeviceDispatch>;
 using QueryPool = Handle<VkQueryPool, VkDevice, DeviceDispatch>;
 using Sampler = Handle<VkSampler, VkDevice, DeviceDispatch>;
+using DeviceMemory = Handle<VkDeviceMemory, VkDevice, DeviceDispatch>;
+using ExternalBuffer = Handle<VkBuffer, VkDevice, DeviceDispatch>;
 using SurfaceKHR = Handle<VkSurfaceKHR, VkInstance, InstanceDispatch>;
 
 using DescriptorSets = PoolAllocations<VkDescriptorSet, VkDescriptorPool>;
@@ -999,6 +1008,19 @@ public:
     [[nodiscard]] Queue GetQueue(u32 family_index) const noexcept;
 
     [[nodiscard]] BufferView CreateBufferView(const VkBufferViewCreateInfo& ci) const;
+
+    [[nodiscard]] ExternalBuffer CreateExternalBuffer(const VkBufferCreateInfo& ci) const;
+
+    [[nodiscard]] DeviceMemory AllocateMemory(const VkMemoryAllocateInfo& ai) const;
+
+    void BindBufferMemory(VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize offset) const;
+
+    [[nodiscard]] VkMemoryRequirements GetBufferMemoryRequirements(VkBuffer buffer) const noexcept;
+
+#ifdef __ANDROID__
+    [[nodiscard]] VkAndroidHardwareBufferPropertiesANDROID GetAndroidHardwareBufferProperties(
+        const AHardwareBuffer* buffer) const;
+#endif
 
     [[nodiscard]] ImageView CreateImageView(const VkImageViewCreateInfo& ci) const;
 

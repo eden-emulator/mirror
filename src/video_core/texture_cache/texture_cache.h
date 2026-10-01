@@ -1033,6 +1033,24 @@ void TextureCache<P>::RefreshContents(Image& image, ImageId image_id) {
         QueueAsyncDecode(image, image_id);
         return;
     }
+    if constexpr (requires { runtime.GuestMemorySource(nullptr, size_t{}); }) {
+        if (True(image.flags & ImageFlagBits::AcceleratedUpload) && runtime.HasGuestMemory() &&
+            gpu_memory->IsContinuousRange(image.gpu_addr, image.guest_size_bytes)) {
+            const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(image.gpu_addr);
+            if (device_addr) {
+                const auto source = runtime.GuestMemorySource(
+                    device_memory.GetSpan(*device_addr, image.guest_size_bytes),
+                    image.guest_size_bytes);
+                if (source) {
+                    gpu_memory->FlushRegion(image.gpu_addr, image.guest_size_bytes,
+                                            VideoCommon::CacheType::NoTextureCache);
+                    runtime.AccelerateImageUpload(
+                        image, *source, FixSmallVectorADL(FullUploadSwizzles(image.info)));
+                    return;
+                }
+            }
+        }
+    }
     if constexpr (requires { image.UploadHostMemory(unswizzle_data_buffer, {}); }) {
         if (True(image.flags & ImageFlagBits::ReorderableUpload) && image.CanUploadHostMemory()) {
             Tegra::Memory::GpuGuestMemory<u8, Tegra::Memory::GuestMemoryFlags::UnsafeRead>
