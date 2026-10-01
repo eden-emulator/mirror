@@ -23,6 +23,7 @@
 #include "shader_recompiler/environment.h"
 #include "shader_recompiler/frontend/maxwell/control_flow.h"
 #include "shader_recompiler/frontend/maxwell/translate_program.h"
+#include "shader_recompiler/ir_opt/passes.h"
 #include "shader_recompiler/program_header.h"
 #include "video_core/engines/kepler_compute.h"
 #include "video_core/engines/maxwell_3d.h"
@@ -824,6 +825,11 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
             auto& program_va{programs[0]};
             auto program_vb{TranslateProgram(pools.inst, pools.block, env, cfg, host_info)};
             programs[index] = MergeDualVertexPrograms(program_va, program_vb, env);
+        }
+
+        if (device.GetDriverID() != VK_DRIVER_ID_NVIDIA_PROPRIETARY && Shader::Optimization::HasProblematicFragmentShaderPattern(programs[index])) {
+            LOG_WARNING(Render_Vulkan, "0x{:016x}: Skipping incompatible fragment shader.", key.unique_hashes[index]);
+            return nullptr;
         }
 
         if (Settings::values.dump_guest_shaders) {
