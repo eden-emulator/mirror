@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <thread>
 
 #include "core/core.h"
 #include "core/core_timing.h"
@@ -33,6 +34,9 @@ std::optional<std::chrono::nanoseconds> HostCallbackTemplate(s64 time,
 
 struct ScopeInit final {
     ScopeInit() {
+        callbacks_ran_flags.reset();
+        delays.fill(0);
+        expected_callback = 0;
         core_timing.SetMulticore(true);
         core_timing.Initialize([]() {});
     }
@@ -138,4 +142,19 @@ TEST_CASE("CoreTiming[BasicOrderNoPausing]", "[core]") {
     printf("HostTimer No Pausing Scheduling Time: %.3f %.6f\n", micro, mili);
     printf("HostTimer No Pausing Timer Time: %.3f %.6f\n", timer_time / 1000.f,
            timer_time / 1000000.f);
+}
+
+TEST_CASE("CoreTiming reset wakes a paused worker after requesting stop", "[core][timing-reset]") {
+    Core::Timing::CoreTiming timing;
+    timing.SetMulticore(true);
+    for (int iteration = 0; iteration < 200; ++iteration) {
+        timing.Initialize([] {});
+        while (!timing.HasStarted()) {
+            std::this_thread::yield();
+        }
+        timing.SyncPause(true);
+        timing.Reset();
+        REQUIRE_FALSE(timing.timer_thread.joinable());
+        REQUIRE_FALSE(timing.HasStarted());
+    }
 }

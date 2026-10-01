@@ -304,10 +304,14 @@ std::optional<s64> CoreTiming::Advance() {
 
 void CoreTiming::Reset() {
     paused = true;
+    if (timer_thread.joinable()) {
+        // Stop before waking the worker. Otherwise it can consume the wakeup,
+        // observe no stop request, and sleep again while Reset waits in join().
+        timer_thread.request_stop();
+    }
     pause_event.Set();
     event.Set();
     if (timer_thread.joinable()) {
-        timer_thread.request_stop();
         timer_thread.join();
     }
     has_started = false;
