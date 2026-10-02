@@ -147,8 +147,14 @@ bool Buffer::IsRegionUploading(u64 offset, u64 size) const noexcept {
 }
 
 void Buffer::MarkUsage(u64 offset, u64 size) noexcept {
-    tracker.Track(offset, size, scheduler->CurrentTick(),
-                  scheduler->GetMasterSemaphore().KnownGpuTick());
+    const u64 tick = scheduler->CurrentTick();
+    if (tick == usage_tick && offset >= usage_begin && offset + size <= usage_end) {
+        return;
+    }
+    tracker.Track(offset, size, tick, scheduler->GetMasterSemaphore().KnownGpuTick());
+    usage_tick = tick;
+    usage_begin = offset;
+    usage_end = offset + size;
 }
 
 void Buffer::MarkUpload(std::span<const VideoCommon::BufferCopy> copies) noexcept {

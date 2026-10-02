@@ -88,6 +88,9 @@ private:
     VideoCommon::UsageTracker tracker;
     VideoCommon::UsageTracker uploads;
     VkDeviceAddress device_address{};
+    u64 usage_tick{};
+    u64 usage_begin{};
+    u64 usage_end{};
     u64 last_upload_tick{};
     bool is_null{};
     bool sparse_compatible{};

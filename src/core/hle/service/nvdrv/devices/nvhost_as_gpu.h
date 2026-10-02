@@ -113,8 +113,6 @@ private:
     };
     static_assert(sizeof(IoctlRemapEntry) == 20, "IoctlRemapEntry is incorrect size");
 
-    ::Common::unordered_set<s64_le> map_buffer_offsets{};
-
     struct IoctlMapBufferEx {
         MappingFlags flags{}; // bit0: fixed_offset, bit2: cacheable
         u32_le kind{};        // -1 is default
