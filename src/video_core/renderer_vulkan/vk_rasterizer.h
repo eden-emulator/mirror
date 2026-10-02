@@ -227,6 +227,7 @@ private:
     boost::container::static_vector<VkSampler, MAX_TEXTURES> sampler_handles;
 
     u32 draw_counter = 0;
+    u64 draw_tick = 0;
     Tegra::DepthFormat depth_bias_zeta_format{};
     std::array<u32, Tegra::Engines::Maxwell3D::Regs::NumVertexArrays> vertex_input_strides{};
     u32 vertex_input_attributes{};

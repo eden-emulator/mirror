@@ -898,7 +898,9 @@ void RasterizerVulkan::TiledCacheBarrier() {
 }
 
 void RasterizerVulkan::FlushCommands() {
-    if (draw_counter == 0) {
+    if (draw_tick != scheduler.CurrentTick() ||
+        (scheduler.IsRenderPassActive() &&
+         !maxwell3d->dirty.flags[VideoCommon::Dirty::RenderTargets])) {
         return;
     }
     draw_counter = 0;
@@ -1008,11 +1010,10 @@ void RasterizerVulkan::FlushWork() {
          maxwell3d->dirty.flags[VideoCommon::Dirty::RenderTargets])) {
         scheduler.Flush();
         draw_counter = 0;
-        return;
-    }
-    if ((draw_counter & CHECK_MASK) == CHECK_MASK && !scheduler.IsRenderPassActive()) {
+    } else if ((draw_counter & CHECK_MASK) == CHECK_MASK && !scheduler.IsRenderPassActive()) {
         scheduler.DispatchWork();
     }
+    draw_tick = scheduler.CurrentTick();
 }
 
 AccelerateDMA::AccelerateDMA(BufferCache& buffer_cache_, TextureCache& texture_cache_,

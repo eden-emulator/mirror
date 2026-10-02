@@ -26,6 +26,15 @@ namespace Vulkan {
 namespace {
 constexpr u32 COMPACT_VERTEX_BINDINGS = 8;
 
+constexpr VkMemoryBarrier2 HOST_READ_BARRIER{
+    .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+    .pNext = nullptr,
+    .srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+    .srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT,
+    .dstStageMask = VK_PIPELINE_STAGE_2_HOST_BIT,
+    .dstAccessMask = VK_ACCESS_2_HOST_READ_BIT,
+};
+
 template <u32 N>
 struct VertexBindings {
     std::array<VkBuffer, N> buffers;
@@ -527,9 +536,16 @@ bool BufferCacheRuntime::CanReorderUpload(const Buffer& buffer,
 
 std::span<const u8> BufferCacheRuntime::DirectDownloadSpan(Buffer& buffer) {
     const std::span<u8> mapping = buffer.CoherentMapping();
-    if (!mapping.empty()) {
-        scheduler.Wait((std::max)(buffer.getWriteTick(), buffer.LastUploadTick()));
+    if (mapping.empty()) {
+        return mapping;
     }
+    if ((std::max)(buffer.getWriteTick(), buffer.LastUploadTick()) > host_read_tick) {
+        scheduler.RequestOutsideRenderPassOperationContext();
+        scheduler.Record(
+            [](vk::CommandBuffer cmdbuf) { cmdbuf.PipelineBarrier(HOST_READ_BARRIER); });
+        host_read_tick = scheduler.CurrentTick();
+    }
+    scheduler.Wait(host_read_tick);
     return mapping;
 }
 

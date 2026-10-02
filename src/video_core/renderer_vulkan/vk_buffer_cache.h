@@ -291,6 +291,7 @@ private:
 
     VkMemoryBarrier2 read_barrier;
     VkMemoryBarrier2 write_barrier;
+    u64 host_read_tick = 0;
 
     bool limit_dynamic_storage_buffers = false;
     u32 max_dynamic_storage_buffers = (std::numeric_limits<u32>::max)();
