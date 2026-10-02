@@ -828,7 +828,7 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
         }
 
         if (device.GetDriverID() != VK_DRIVER_ID_NVIDIA_PROPRIETARY && Shader::Optimization::HasBrokenPattern(programs[index])) {
-            LOG_WARNING(Render_Vulkan, "0x{:016x}: Skipping shader with broken pattern", key.unique_hashes[index]);
+            LOG_WARNING(Render_Vulkan, "0x{:016x}: Skipping shader with known issues", key.unique_hashes[index]);
             return nullptr;
         }
 
