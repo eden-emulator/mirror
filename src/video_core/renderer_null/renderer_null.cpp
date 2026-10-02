@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -20,7 +23,7 @@ void RendererNull::Composite(std::span<const Tegra::FramebufferConfig> framebuff
     }
 
     m_gpu.RendererFrameEndNotify();
-    render_window.OnFrameDisplayed();
+    render_window.OnFrameDisplayed(1);
 }
 
 std::vector<u8> RendererNull::GetAppletCaptureBuffer() {

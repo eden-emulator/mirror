@@ -109,7 +109,8 @@ vk::Buffer CreateBuffer(const Device& device, const MemoryAllocator& memory_allo
 } // Anonymous namespace
 
 Buffer::Buffer(BufferCacheRuntime& runtime, VideoCommon::NullBufferParams null_params)
-    : VideoCommon::BufferBase(null_params), scheduler{&runtime.scheduler}, tracker{4096} {
+    : VideoCommon::BufferBase(null_params), scheduler{&runtime.scheduler}, tracker{4096},
+      uploads{4096} {
     if (runtime.device.HasNullDescriptor()) {
         return;
     }
@@ -127,7 +128,7 @@ Buffer::Buffer(BufferCacheRuntime& runtime, DAddr cpu_addr_, u64 size_bytes_,
       scheduler{&runtime.scheduler},
       buffer{CreateBuffer(*device, runtime.memory_allocator, SizeBytes(),
                           runtime.SparseAlignmentFor(sparse_compatible_))},
-      tracker{SizeBytes()} {
+      tracker{SizeBytes()}, uploads{SizeBytes()} {
     sparse_compatible = sparse_compatible_;
     if (runtime.device.HasDebuggingToolAttached()) {
         buffer.SetObjectNameEXT(fmt::format("Buffer {:#x}", CpuAddr()).c_str());
@@ -137,13 +138,25 @@ Buffer::Buffer(BufferCacheRuntime& runtime, DAddr cpu_addr_, u64 size_bytes_,
     }
 }
 
-void Buffer::MarkUsage(u64 offset, u64 size) noexcept {
-    tracker.Track(offset, size);
-    last_usage_tick = scheduler->CurrentTick();
+bool Buffer::IsRegionUsed(u64 offset, u64 size) const noexcept {
+    return tracker.IsUsed(offset, size, scheduler->GetMasterSemaphore().KnownGpuTick());
 }
 
-void Buffer::MarkUpload() noexcept {
+bool Buffer::IsRegionUploading(u64 offset, u64 size) const noexcept {
+    return uploads.IsUsed(offset, size, scheduler->GetMasterSemaphore().KnownGpuTick());
+}
+
+void Buffer::MarkUsage(u64 offset, u64 size) noexcept {
+    tracker.Track(offset, size, scheduler->CurrentTick(),
+                  scheduler->GetMasterSemaphore().KnownGpuTick());
+}
+
+void Buffer::MarkUpload(std::span<const VideoCommon::BufferCopy> copies) noexcept {
     last_upload_tick = scheduler->CurrentTick();
+    const u64 gpu_tick = scheduler->GetMasterSemaphore().KnownGpuTick();
+    for (const VideoCommon::BufferCopy& copy : copies) {
+        uploads.Track(copy.dst_offset, copy.size, last_upload_tick, gpu_tick);
+    }
 }
 
 std::span<u8> Buffer::CoherentMapping() noexcept {
@@ -462,13 +475,8 @@ u32 BufferCacheRuntime::GetStorageBufferAlignment() const {
     return static_cast<u32>(device.GetStorageBufferAlignment());
 }
 
-void BufferCacheRuntime::TickFrame(Common::SlotVector<Buffer>& slot_buffers) noexcept {
+void BufferCacheRuntime::TickFrame(Common::SlotVector<Buffer>&) noexcept {
     multi_range_buffers.DrainRetired(scheduler);
-    for (auto it = slot_buffers.begin(); it != slot_buffers.end(); it++) {
-        if (scheduler.IsFree(it->LastUsageTick())) {
-            it->ResetUsageTracking();
-        }
-    }
 }
 
 u64 BufferCacheRuntime::CurrentTick() {
@@ -522,8 +530,11 @@ std::span<const u8> BufferCacheRuntime::DirectDownloadSpan(Buffer& buffer) {
 std::span<u8> BufferCacheRuntime::DirectUploadSpan(
     Buffer& buffer, std::span<const VideoCommon::BufferCopy> copies) {
     const std::span<u8> mapping = buffer.CoherentMapping();
-    if (mapping.empty() || !scheduler.IsFree(buffer.LastUploadTick()) ||
-        !CanReorderUpload(buffer, copies)) {
+    const bool uploading =
+        std::ranges::any_of(copies, [&buffer](const VideoCommon::BufferCopy& copy) {
+            return buffer.IsRegionUploading(copy.dst_offset, copy.size);
+        });
+    if (mapping.empty() || uploading || !CanReorderUpload(buffer, copies)) {
         return {};
     }
     return mapping;

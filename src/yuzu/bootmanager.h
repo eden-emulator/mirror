@@ -67,7 +67,7 @@ public:
     ~GRenderWindow() override;
 
     // EmuWindow implementation.
-    void OnFrameDisplayed() override;
+    void OnFrameDisplayed(u32 presented_frames) override;
     bool IsShown() const override;
     std::unique_ptr<Core::Frontend::GraphicsContext> CreateSharedContext() const override;
 

@@ -64,8 +64,8 @@ void EmuWindow_Android::OnTouchReleased(int id) {
     EmulationSession::GetInstance().GetInputSubsystem().GetTouchScreen()->TouchReleased(id);
 }
 
-void EmuWindow_Android::OnFrameDisplayed() {
-    UpdateObservedFrameRate();
+void EmuWindow_Android::OnFrameDisplayed(u32 presented_frames) {
+    UpdateObservedFrameRate(presented_frames);
     UpdateFrameRateHint();
 
     if (!m_first_frame) {
@@ -75,15 +75,16 @@ void EmuWindow_Android::OnFrameDisplayed() {
     }
 }
 
-void EmuWindow_Android::UpdateObservedFrameRate() {
+void EmuWindow_Android::UpdateObservedFrameRate(u32 presented_frames) {
+    m_presented_frames = static_cast<float>((std::max)(presented_frames, 1u));
     const auto now = Clock::now();
     if (m_last_frame_display_time.time_since_epoch().count() != 0) {
         const auto frame_time = std::chrono::duration<float>(now - m_last_frame_display_time);
         const float seconds = frame_time.count();
         if (seconds > 0.0f) {
-            const float instantaneous_rate = 1.0f / seconds;
+            const float instantaneous_rate = m_presented_frames / seconds;
             if (std::isfinite(instantaneous_rate) && instantaneous_rate >= 1.0f &&
-                instantaneous_rate <= 240.0f) {
+                instantaneous_rate <= 240.0f * m_presented_frames) {
                 constexpr float SmoothingFactor = 0.15f;
                 if (m_smoothed_present_rate <= 0.0f) {
                     m_smoothed_present_rate = instantaneous_rate;
@@ -124,18 +125,9 @@ float EmuWindow_Android::GetFrameTimeVerifiedHint() const {
     return QuantizeFrameRateHint(verified_rate);
 }
 
-float EmuWindow_Android::GetPresentedFrameMultiplier() {
-    if (!Settings::values.frame_gen.GetValue()) {
-        return 1.0f;
-    }
-    return static_cast<float>(std::clamp<u32>(Settings::values.frame_gen_multiplier.GetValue(), 2, 4));
-}
-
 float EmuWindow_Android::GetFrameRateHint() const {
-    const float presented_multiplier = GetPresentedFrameMultiplier();
-    const float observed_rate =
-        std::clamp(m_smoothed_present_rate * presented_multiplier, 0.0f, 240.0f);
-    const float frame_time_verified_hint = GetFrameTimeVerifiedHint() * presented_multiplier;
+    const float observed_rate = std::clamp(m_smoothed_present_rate, 0.0f, 240.0f);
+    const float frame_time_verified_hint = GetFrameTimeVerifiedHint() * m_presented_frames;
 
     if (m_last_frame_rate_hint > 0.0f && observed_rate > 0.0f) {
         const float tolerance = std::max(m_last_frame_rate_hint * 0.12f, 4.0f);
@@ -159,7 +151,7 @@ float EmuWindow_Android::GetFrameRateHint() const {
         return frame_time_verified_hint;
     }
 
-    const float nominal_rate = 60.0f * presented_multiplier;
+    const float nominal_rate = 60.0f * m_presented_frames;
     if (!Settings::values.use_speed_limit.GetValue()) {
         return QuantizeFrameRateHint(nominal_rate);
     }

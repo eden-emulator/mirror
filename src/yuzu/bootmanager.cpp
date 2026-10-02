@@ -157,7 +157,7 @@ GRenderWindow::~GRenderWindow() {
     input_subsystem->Shutdown();
 }
 
-void GRenderWindow::OnFrameDisplayed() {
+void GRenderWindow::OnFrameDisplayed([[maybe_unused]] u32 presented_frames) {
     input_subsystem->GetTas()->UpdateThread();
     const InputCommon::TasInput::TasState new_tas_state =
         std::get<0>(input_subsystem->GetTas()->GetStatus());

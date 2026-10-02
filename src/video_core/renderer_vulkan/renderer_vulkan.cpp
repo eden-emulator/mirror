@@ -185,8 +185,9 @@ RendererVulkan::~RendererVulkan() {
 }
 
 void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebuffers) {
+    u32 pace_index = 0;
     SCOPE_EXIT {
-        render_window.OnFrameDisplayed();
+        render_window.OnFrameDisplayed(pace_index + 1);
     };
 
     RenderAppletCaptureLayer(framebuffers);
@@ -204,7 +205,6 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
                                present_manager.SwapchainImageCount(),
                                swapchain.GetImageViewFormat());
 
-    u32 pace_index = 0;
     std::chrono::nanoseconds pace_step{};
 #ifdef HAS_LSFG
     void(frame_gen.WantedGenerations(present_manager.MaxExtraFrames()));
@@ -229,7 +229,7 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
                                      output.View());
         scheduler.Flush(*generated->render_ready);
         present_manager.Present(generated, static_cast<u32>(generation), generated_step);
-        pace_index = static_cast<u32>(generated_frames);
+        pace_index = static_cast<u32>(generation + 1);
         pace_step = generated_step;
     }
 #endif

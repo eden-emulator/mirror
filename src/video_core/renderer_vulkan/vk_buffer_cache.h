@@ -55,21 +55,13 @@ public:
         return buffer.Location();
     }
 
-    [[nodiscard]] bool IsRegionUsed(u64 offset, u64 size) const noexcept {
-        return tracker.IsUsed(offset, size);
-    }
+    [[nodiscard]] bool IsRegionUsed(u64 offset, u64 size) const noexcept;
+
+    [[nodiscard]] bool IsRegionUploading(u64 offset, u64 size) const noexcept;
 
     void MarkUsage(u64 offset, u64 size) noexcept;
 
-    void ResetUsageTracking() noexcept {
-        tracker.Reset();
-    }
-
-    [[nodiscard]] u64 LastUsageTick() const noexcept {
-        return last_usage_tick;
-    }
-
-    void MarkUpload() noexcept;
+    void MarkUpload(std::span<const VideoCommon::BufferCopy> copies) noexcept;
 
     [[nodiscard]] u64 LastUploadTick() const noexcept {
         return last_upload_tick;
@@ -94,8 +86,8 @@ private:
     vk::Buffer buffer;
     std::vector<BufferView> views;
     VideoCommon::UsageTracker tracker;
+    VideoCommon::UsageTracker uploads;
     VkDeviceAddress device_address{};
-    u64 last_usage_tick{};
     u64 last_upload_tick{};
     bool is_null{};
     bool sparse_compatible{};
@@ -117,7 +109,7 @@ public:
                                 ComputePassDescriptorQueue& compute_pass_descriptor_queue,
                                 DescriptorPool& descriptor_pool);
 
-    void TickFrame(Common::SlotVector<Buffer>& slot_buffers) noexcept;
+    void TickFrame(Common::SlotVector<Buffer>&) noexcept;
 
     u64 CurrentTick();
 
@@ -165,7 +157,7 @@ public:
     void CopyBuffer(Buffer& dst_buffer, VkBuffer src_buffer,
                     std::span<const VideoCommon::BufferCopy> copies, bool barrier,
                     bool can_reorder_upload = false) {
-        dst_buffer.MarkUpload();
+        dst_buffer.MarkUpload(copies);
         CopyBuffer(dst_buffer.Handle(), src_buffer, copies, barrier, can_reorder_upload);
     }
 

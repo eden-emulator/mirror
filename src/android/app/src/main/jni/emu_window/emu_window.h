@@ -41,7 +41,7 @@ public:
     ~EmuWindow_Android() = default;
 
     void OnSurfaceChanged(ANativeWindow* surface);
-    void OnFrameDisplayed() override;
+    void OnFrameDisplayed(u32 presented_frames) override;
 
     void OnTouchPressed(int id, float x, float y);
     void OnTouchMoved(int id, float x, float y);
@@ -58,10 +58,9 @@ private:
     using Clock = std::chrono::steady_clock;
 
     void UpdateFrameRateHint();
-    void UpdateObservedFrameRate();
+    void UpdateObservedFrameRate(u32 presented_frames);
     [[nodiscard]] float GetFrameRateHint() const;
     [[nodiscard]] float GetFrameTimeVerifiedHint() const;
-    [[nodiscard]] static float GetPresentedFrameMultiplier();
     [[nodiscard]] static float QuantizeFrameRateHint(float frame_rate);
 
     float m_window_width{};
@@ -73,6 +72,7 @@ private:
     float m_last_frame_rate_hint = -1.0f;
     float m_pending_frame_rate_hint = -1.0f;
     float m_smoothed_present_rate = 0.0f;
+    float m_presented_frames = 1.0f;
     Clock::time_point m_last_frame_display_time{};
     Clock::time_point m_pending_frame_rate_since{};
     std::uint32_t m_pending_frame_rate_hint_votes = 0;

@@ -151,7 +151,7 @@ void RendererOpenGL::Composite(std::span<const Tegra::FramebufferConfig> framebu
     rasterizer.TickFrame();
 
     context->SwapBuffers();
-    render_window.OnFrameDisplayed();
+    render_window.OnFrameDisplayed(1);
 }
 
 void RendererOpenGL::AddTelemetryFields() {
