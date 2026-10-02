@@ -879,6 +879,9 @@ bool Device::ShouldBoostClocks() const {
 }
 
 bool Device::HasTimelineSemaphore() const {
+    if (GetDriverID() == VK_DRIVER_ID_MESA_TURNIP) {
+        return false;
+    }
     return features.timeline_semaphore.timelineSemaphore;
 }
 

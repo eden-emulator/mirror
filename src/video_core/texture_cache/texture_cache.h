@@ -1029,6 +1029,8 @@ void TextureCache<P>::RefreshContents(Image& image, ImageId image_id) {
         runtime.TransitionImageLayout(image);
         return;
     }
+    gpu_memory->FlushRegion(image.gpu_addr, image.guest_size_bytes,
+                            VideoCommon::CacheType::NoTextureCache);
     if (True(image.flags & ImageFlagBits::AsynchronousDecode)) {
         QueueAsyncDecode(image, image_id);
         return;
@@ -1042,8 +1044,6 @@ void TextureCache<P>::RefreshContents(Image& image, ImageId image_id) {
                     device_memory.GetSpan(*device_addr, image.guest_size_bytes),
                     image.guest_size_bytes);
                 if (source) {
-                    gpu_memory->FlushRegion(image.gpu_addr, image.guest_size_bytes,
-                                            VideoCommon::CacheType::NoTextureCache);
                     runtime.AccelerateImageUpload(
                         image, *source, FixSmallVectorADL(FullUploadSwizzles(image.info)));
                     return;
@@ -1076,8 +1076,7 @@ void TextureCache<P>::UploadImageContents(Image& image, StagingBuffer& staging) 
     const GPUVAddr gpu_addr = image.gpu_addr;
 
     if (True(image.flags & ImageFlagBits::AcceleratedUpload)) {
-        gpu_memory->ReadBlock(gpu_addr, mapped_span.data(), image.guest_size_bytes,
-                              VideoCommon::CacheType::NoTextureCache);
+        gpu_memory->ReadBlockUnsafe(gpu_addr, mapped_span.data(), image.guest_size_bytes);
         const auto uploads = FullUploadSwizzles(image.info);
         runtime.AccelerateImageUpload(image, staging, FixSmallVectorADL(uploads));
         return;

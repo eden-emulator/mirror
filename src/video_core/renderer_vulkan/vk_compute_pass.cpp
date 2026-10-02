@@ -697,8 +697,7 @@ void ASTCDecoderPass::Assemble(Image& image, const StagingBufferRef& map,
     }
     const VkImageAspectFlags aspect_mask = image.AspectMask();
     const VkImage vk_image = image.Handle();
-    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask,
-                                image.ExchangeInitialization());
+    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask, !reorder);
     for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
         const size_t input_offset = swizzle.buffer_offset + map.offset;
         const u32 num_dispatches_x = Common::DivCeil(swizzle.num_tiles.width, 8U);
@@ -760,8 +759,7 @@ void BlockLinearUnswizzleImage2DPass::Unswizzle(
     }
     const VkImageAspectFlags aspect_mask = image.AspectMask();
     const VkImage vk_image = image.Handle();
-    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask,
-                                image.ExchangeInitialization());
+    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask, !reorder);
     for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
         const size_t input_offset = swizzle.buffer_offset + map.offset;
         const u32 num_dispatches_x = Common::DivCeil(swizzle.num_tiles.width, 32U);
@@ -810,8 +808,7 @@ void BlockLinearUnswizzleImage3DPass::Unswizzle(
     }
     const VkImageAspectFlags aspect_mask = image.AspectMask();
     const VkImage vk_image = image.Handle();
-    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask,
-                                image.ExchangeInitialization());
+    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask, !reorder);
     for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
         const size_t input_offset = swizzle.buffer_offset + map.offset;
         const u32 num_dispatches_x = Common::DivCeil(swizzle.num_tiles.width, 16U);
@@ -873,8 +870,7 @@ void PitchUnswizzlePass::Unswizzle(Image& image, const StagingBufferRef& map,
     }
     const VkImageAspectFlags aspect_mask = image.AspectMask();
     const VkImage vk_image = image.Handle();
-    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask,
-                                image.ExchangeInitialization());
+    RecordUnswizzleBeginBarrier(scheduler, reorder, *pipeline, vk_image, aspect_mask, !reorder);
     for (const VideoCommon::SwizzleParameters& swizzle : swizzles) {
         const size_t input_offset = swizzle.buffer_offset + map.offset;
         const u32 num_dispatches_x = Common::DivCeil(swizzle.num_tiles.width, 32U);
