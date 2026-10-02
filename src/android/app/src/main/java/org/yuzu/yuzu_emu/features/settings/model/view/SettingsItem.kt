@@ -904,6 +904,13 @@ abstract class SettingsItem(
             )
             put(
                 SwitchSetting(
+                    BooleanSetting.STALL_ON_GPU_FENCE_WAIT,
+                    titleId = R.string.stall_on_gpu_fence_wait,
+                    descriptionId = R.string.stall_on_gpu_fence_wait_description
+                )
+            )
+            put(
+                SwitchSetting(
                     BooleanSetting.BUFFER_REORDER_DISABLE,
                     titleId = R.string.buffer_reorder_disable,
                     descriptionId = R.string.buffer_reorder_disable_description

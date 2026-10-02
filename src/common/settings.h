@@ -561,6 +561,8 @@ struct Values {
                                                    Specialization::Default,
                                                    true,
                                                    true};
+    SwitchableSetting<bool> stall_on_gpu_fence_wait{linkage, true, "stall_on_gpu_fence_wait",
+                                                    Category::RendererAdvanced};
 
     SwitchableSetting<bool> renderer_force_max_clock{linkage, false, "force_max_clock",
                                                      Category::RendererAdvanced};

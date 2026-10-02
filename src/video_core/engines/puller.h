@@ -72,6 +72,7 @@ public:
 
     void CallMethod(DmaPusher& dma_pusher, const MethodCall& method_call);
     void CallMultiMethod(DmaPusher& dma_pusher, u32 method, u32 subchannel, const u32* base_start, u32 amount, u32 methods_pending);
+    [[nodiscard]] bool IsIncrementRun(u32 method, const u32* base_start, u32 amount) const;
     void BindRasterizer(DmaPusher& dma_pusher, VideoCore::RasterizerInterface* rasterizer);
     void CallPullerMethod(DmaPusher& dma_pusher, const MethodCall& method_call);
     void CallEngineMethod(DmaPusher& dma_pusher, const MethodCall& method_call);

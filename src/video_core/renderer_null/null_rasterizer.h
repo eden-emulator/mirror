@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -61,7 +64,7 @@ public:
     void ModifyGPUMemory(size_t as_id, GPUVAddr addr, u64 size) override;
     void SignalFence(std::function<void()>&& func) override;
     void SyncOperation(std::function<void()>&& func) override;
-    void SignalSyncPoint(u32 value) override;
+    void SignalSyncPoint(u32 value, u32 count) override;
     void SignalReference() override;
     void ReleaseFences(bool force) override;
     void FlushAndInvalidateRegion(

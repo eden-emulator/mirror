@@ -34,6 +34,7 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     ENABLE_GPU_BUFFER_READBACK("enable_gpu_buffer_readback"),
     USE_UNIFIED_MEMORY("use_unified_memory"),
     SYNC_MEMORY_OPERATIONS("sync_memory_operations"),
+    STALL_ON_GPU_FENCE_WAIT("stall_on_gpu_fence_wait"),
     BUFFER_REORDER_DISABLE("disable_buffer_reorder"),
     RENDERER_DEBUG("debug"),
     RENDERER_PATCH_OLD_QCOM_DRIVERS("patch_old_qcom_drivers"),

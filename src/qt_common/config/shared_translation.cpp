@@ -222,6 +222,10 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
            tr("Ensures data consistency between compute and memory operations.\nThis option fixes "
               "issues in games, but may degrade performance.\nUnreal Engine 4 games often see the "
               "most significant changes thereof."));
+    INSERT(Settings, stall_on_gpu_fence_wait, tr("Pause CPU on GPU fence timeouts"),
+           tr("When a game keeps timing out while waiting for the GPU, pauses every CPU thread "
+              "until the GPU catches up.\nDisabling it keeps the other threads running, which can "
+              "reduce stutter but may break games that rely on it."));
     INSERT(Settings, async_presentation, tr("Enable asynchronous presentation (Vulkan only)"),
            tr("Slightly improves performance by moving presentation to a separate CPU thread."));
     INSERT(

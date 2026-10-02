@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -75,7 +78,7 @@ public:
     virtual void SyncOperation(std::function<void()>&& func) = 0;
 
     /// Signal a GPU based syncpoint as a fence
-    virtual void SignalSyncPoint(u32 value) = 0;
+    virtual void SignalSyncPoint(u32 value, u32 count) = 0;
 
     /// Signal a GPU based reference as point
     virtual void SignalReference() = 0;

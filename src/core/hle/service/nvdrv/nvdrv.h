@@ -65,10 +65,7 @@ public:
     /// Returns a pointer to one of the available devices, identified by its name.
     template <typename T>
     std::shared_ptr<T> GetDevice(DeviceFD fd) {
-        auto itr = open_files.find(fd);
-        if (itr == open_files.end())
-            return nullptr;
-        return std::static_pointer_cast<T>(itr->second);
+        return std::static_pointer_cast<T>(FindDevice(fd));
     }
 
     NvResult VerifyFD(DeviceFD fd) const;
@@ -97,6 +94,8 @@ public:
 private:
     friend class EventInterface;
 
+    std::shared_ptr<Devices::nvdevice> FindDevice(DeviceFD fd) const;
+
     /// Manages syncpoints on the host
     NvCore::Container container;
 
@@ -106,6 +105,7 @@ private:
     using FilesContainerType = ::Common::unordered_map<DeviceFD, std::shared_ptr<Devices::nvdevice>>;
     /// Mapping of file descriptors to the devices they reference.
     FilesContainerType open_files;
+    mutable std::mutex open_files_mutex;
 
     KernelHelpers::ServiceContext service_context;
 

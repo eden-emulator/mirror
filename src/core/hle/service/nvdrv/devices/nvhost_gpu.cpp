@@ -312,19 +312,17 @@ static boost::container::small_vector<Tegra::CommandHeader, 512> BuildWaitComman
 
 static boost::container::small_vector<Tegra::CommandHeader, 512> BuildIncrementCommandList(
     NvFence fence) {
-    boost::container::small_vector<Tegra::CommandHeader, 512> result{
+    const Tegra::CommandHeader increment =
+        BuildFenceAction(Tegra::Engines::Puller::FenceOperation::Increment, fence.id);
+    return {
         Tegra::BuildCommandHeader(Tegra::BufferMethods::SyncpointPayload, 1,
                                   Tegra::SubmissionMode::Increasing),
-        {}};
-
-    for (u32 count = 0; count < 2; ++count) {
-        result.push_back(Tegra::BuildCommandHeader(Tegra::BufferMethods::SyncpointOperation, 1,
-                                                   Tegra::SubmissionMode::Increasing));
-        result.push_back(
-            BuildFenceAction(Tegra::Engines::Puller::FenceOperation::Increment, fence.id));
-    }
-
-    return result;
+        {},
+        Tegra::BuildCommandHeader(Tegra::BufferMethods::SyncpointOperation, 2,
+                                  Tegra::SubmissionMode::NonIncreasing),
+        increment,
+        increment,
+    };
 }
 
 static boost::container::small_vector<Tegra::CommandHeader, 512> BuildIncrementWithWfiCommandList(
@@ -370,17 +368,14 @@ NvResult nvhost_gpu::SubmitGPFIFOImpl(IoctlSubmitGpfifo& params, Tegra::CommandL
     u32 increment{(flags.fence_increment.Value() != 0 ? 2 : 0) +
                   (flags.increment_value.Value() != 0 ? params.fence.value : 0)};
     params.fence.value = syncpoint_manager.IncrementSyncpointMaxExt(channel_syncpoint, increment);
-    gpu.PushGPUEntries(bind_id, std::move(entries));
-
     if (flags.fence_increment.Value()) {
         if (flags.suppress_wfi.Value()) {
-            gpu.PushGPUEntries(bind_id,
-                               Tegra::CommandList{BuildIncrementCommandList(params.fence)});
+            entries.prefetch_command_list = BuildIncrementCommandList(params.fence);
         } else {
-            gpu.PushGPUEntries(bind_id,
-                               Tegra::CommandList{BuildIncrementWithWfiCommandList(params.fence)});
+            entries.prefetch_command_list = BuildIncrementWithWfiCommandList(params.fence);
         }
     }
+    gpu.PushGPUEntries(bind_id, std::move(entries));
 
     flags.raw = 0;
 

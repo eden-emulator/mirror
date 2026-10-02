@@ -13,6 +13,7 @@
 #include "common/assert.h"
 #include "common/logging.h"
 #include "common/scope_exit.h"
+#include "common/settings.h"
 #include "core/core.h"
 #include "core/hle/kernel/k_event.h"
 #include "core/hle/service/nvdrv/core/container.h"
@@ -147,9 +148,12 @@ NvResult nvhost_ctrl::IocCtrlEventWait(IocCtrlEventWaitParams& params, bool is_a
 
     const auto check_failing = [&]() {
         if (events[slot].fails > 2) {
-            {
-                auto lk = system.StallApplication();
-                host1x_syncpoint_manager.WaitHost(fence_id, target_value);
+            std::unique_lock<std::mutex> stall;
+            if (Settings::values.stall_on_gpu_fence_wait.GetValue()) {
+                stall = system.StallApplication();
+            }
+            host1x_syncpoint_manager.WaitHost(fence_id, target_value);
+            if (stall.owns_lock()) {
                 system.UnstallApplication();
             }
             params.value.raw = target_value;

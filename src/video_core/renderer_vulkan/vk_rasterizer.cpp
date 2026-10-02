@@ -862,8 +862,8 @@ void RasterizerVulkan::SyncOperation(std::function<void()>&& func) {
     fence_manager.SyncOperation(std::move(func));
 }
 
-void RasterizerVulkan::SignalSyncPoint(u32 value) {
-    fence_manager.SignalSyncPoint(value);
+void RasterizerVulkan::SignalSyncPoint(u32 value, u32 count) {
+    fence_manager.SignalSyncPoint(value, count);
 }
 
 void RasterizerVulkan::SignalReference() {

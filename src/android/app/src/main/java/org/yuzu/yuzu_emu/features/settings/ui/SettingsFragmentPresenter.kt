@@ -545,6 +545,7 @@ class SettingsFragmentPresenter(
             add(IntSetting.RENDERER_NVDEC_EMULATION.key)
 
             add(BooleanSetting.SYNC_MEMORY_OPERATIONS.key)
+            add(BooleanSetting.STALL_ON_GPU_FENCE_WAIT.key)
             add(BooleanSetting.RENDERER_USE_DISK_SHADER_CACHE.key)
             add(BooleanSetting.RENDERER_FORCE_MAX_CLOCK.key)
             add(BooleanSetting.RENDERER_REACTIVE_FLUSHING.key)

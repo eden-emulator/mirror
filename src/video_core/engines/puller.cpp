@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <algorithm>
+
 #include "common/assert.h"
 #include "common/logging.h"
 #include "common/settings.h"
@@ -71,7 +73,7 @@ void Puller::ProcessFenceActionMethod(DmaPusher& dma_pusher) {
         dma_pusher.rasterizer->ReleaseFences();
         break;
     case Puller::FenceOperation::Increment:
-        dma_pusher.rasterizer->SignalSyncPoint(regs.fence_action.syncpoint_id);
+        dma_pusher.rasterizer->SignalSyncPoint(regs.fence_action.syncpoint_id, 1);
         break;
     default:
         UNIMPLEMENTED_MSG("Unimplemented operation {}", regs.fence_action.op.Value());
@@ -278,6 +280,9 @@ void Puller::CallMultiMethod(DmaPusher& dma_pusher, u32 method, u32 subchannel, 
     ASSERT(subchannel < bound_engines.size());
     if (ExecuteMethodOnEngine(dma_pusher, method)) {
         CallEngineMultiMethod(dma_pusher, method, subchannel, base_start, amount, methods_pending);
+    } else if (IsIncrementRun(method, base_start, amount)) {
+        regs.reg_array[method] = base_start[0];
+        dma_pusher.rasterizer->SignalSyncPoint(regs.fence_action.syncpoint_id, amount);
     } else {
         for (u32 i = 0; i < amount; i++) {
             CallPullerMethod(dma_pusher, MethodCall{
@@ -288,6 +293,16 @@ void Puller::CallMultiMethod(DmaPusher& dma_pusher, u32 method, u32 subchannel, 
             });
         }
     }
+}
+
+bool Puller::IsIncrementRun(u32 method, const u32* base_start, u32 amount) const {
+    if (BufferMethods(method) != BufferMethods::SyncpointOperation || amount < 2) {
+        return false;
+    }
+    const FenceAction action{.raw = base_start[0]};
+    return action.op == FenceOperation::Increment &&
+           std::all_of(base_start, base_start + amount,
+                       [first = base_start[0]](u32 argument) { return argument == first; });
 }
 
 /// Determines where the method should be executed.

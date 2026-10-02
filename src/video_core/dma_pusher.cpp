@@ -56,7 +56,7 @@ bool DmaPusher::Step() {
         return true;
     }
 
-    if (prefetch_size > 0) {
+    if (command_list_size == 0) {
         ProcessCommands(command_list.prefetch_command_list);
         dma_pushbuffer.pop();
         return true;
@@ -89,6 +89,7 @@ bool DmaPusher::Step() {
     }
 
     if (++dma_pushbuffer_subindex >= command_list_size) {
+        ProcessCommands(command_list.prefetch_command_list);
         dma_pushbuffer.pop();
         dma_pushbuffer_subindex = 0;
     } else {

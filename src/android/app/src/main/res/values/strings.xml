@@ -575,6 +575,8 @@
     <string name="accelerate_astc_description">Pick how ASTC-compressed textures are decoded for rendering: CPU (slow, safe), GPU (fast, recommended), or CPU Async (no stutters, may cause issues)</string>
 
     <string name="sync_memory_operations">Sync Memory Operations</string>
+    <string name="stall_on_gpu_fence_wait">Pause CPU on GPU fence timeouts</string>
+    <string name="stall_on_gpu_fence_wait_description">When a game keeps timing out while waiting for the GPU, pauses every CPU thread until the GPU catches up. Disabling it keeps the other threads running, which can reduce stutter but may break games that rely on it.</string>
     <string name="sync_memory_operations_description">Ensures data consistency between compute and memory operations. This option should fix issues in some games, but may also reduce performance in some cases. Unreal Engine 4 games often see the most significant changes thereof.</string>
     <string name="use_disk_shader_cache">Disk shader cache</string>
     <string name="use_disk_shader_cache_description">Reduces stuttering by locally storing and loading generated shaders.</string>
