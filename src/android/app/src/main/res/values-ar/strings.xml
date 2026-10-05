@@ -28,7 +28,7 @@
     <string name="input_overlay_behavior">السلوك</string>
     <string name="overlay_auto_hide">إخفاء الطبقة تلقائيًا</string>
     <string name="overlay_auto_hide_description">إخفاء طبقة ذراع التحكم باللمس تلقائيًا بعد مرور الوقت المحدد من عدم النشاط.</string>
-    <string name="enable_input_overlay_auto_hide">تمكين إخفاء الطبقة تلقائيًا</string>
+    <string name="enable_input_overlay_auto_hide">تفعيل إخفاء الطبقة تلقائيًا</string>
     <string name="hide_overlay_on_controller_input">إخفاء الطبقة عند إدخال ذراع التحكم</string>
     <string name="hide_overlay_on_controller_input_description">إخفاء تلقائي لطبقة عناصر التحكم باللمس عند استخدام ذراع تحكم فعلية. تظهر الطبقة مرة أخرى عند فصل ذراع التحكم.</string>
     <string name="invert_confirm_back_controller_buttons">عكس أزرار التأكيد/الرجوع في وحدة التحكم</string>
@@ -51,7 +51,7 @@
     <string name="stats_overlay_customization">التخصيص</string>
     <string name="stats_overlay_items">الرؤية</string>
     <string name="stats_overlay_options">طبقة الأداء</string>
-    <string name="enable_stats_overlay_">تمكين طبقة إحصائيات الأداء</string>
+    <string name="enable_stats_overlay_">تفعيل طبقة إحصائيات الأداء</string>
     <string name="stats_overlay_options_description">ضبط المعلومات التي يتم عرضها في طبقة إحصائيات الأداء</string>
     <string name="show_fps">عرض معدل الإطارات</string>
     <string name="show_fps_description">عرض معدل الإطارات الحالي</string>
@@ -81,7 +81,7 @@
 
     <!-- Device Overlay settings -->
     <string name="show_soc_overlay">عرض طبقة معلومات الجهاز</string>
-    <string name="enable_soc_overlay">تمكين طبقة الجهاز</string>
+    <string name="enable_soc_overlay">تفعيل طبقة الجهاز</string>
     <string name="soc_overlay_options">طبقة الجهاز</string>
     <string name="soc_overlay_options_description">ضبط المعلومات التي يتم عرضها في طبقة الجهاز</string>
 
@@ -98,8 +98,8 @@
 
     <string name="use_sync_core">مزامنة سرعة النواة</string>
     <string name="use_sync_core_description">قم بمزامنة سرعة النواة مع النسبة المئوية للسرعة القصوى لتحسين الأداء دون تغيير السرعة الفعلية للعبة.</string>
-    <string name="cpuopt_unsafe_host_mmu">تمكين محاكاة MMU المضيف</string>
-    <string name="cpuopt_unsafe_host_mmu_description">يعمل هذا التحسين على تسريع وصول الذاكرة بواسطة البرنامج الضيف. يؤدي تمكينه إلى إجراء عمليات قراءة/كتابة ذاكرة الضيف مباشرة في الذاكرة والاستفادة من MMU المضيف. يؤدي تعطيل هذا إلى إجبار جميع عمليات الوصول إلى الذاكرة على استخدام محاكاة MMU البرمجية.</string>
+    <string name="cpuopt_unsafe_host_mmu">تفعيل محاكاة MMU المضيف</string>
+    <string name="cpuopt_unsafe_host_mmu_description">يعمل هذا التحسين على تسريع وصول الذاكرة بواسطة البرنامج الضيف. يؤدي تفعيله إلى إجراء عمليات قراءة/كتابة ذاكرة الضيف مباشرة في الذاكرة والاستفادة من MMU المضيف. يؤدي تعطيل هذا إلى إجبار جميع عمليات الوصول إلى الذاكرة على استخدام محاكاة MMU البرمجية.</string>
     <string name="debug_knobs">مقابض تصحيح الأخطاء</string>
     <string name="debug_knobs_description">للإستخدام في التطوير فقط.</string>
     <string name="debug_knobs_hint">0 إلى 65535</string>
@@ -342,7 +342,7 @@
     <string name="frame_gen_flow_scale_description">دقة مسار التدفق البصري، كجزء من الناتج. ويُعد خفض هذه القيمة أرخص طريقة لاستعادة الأداء.</string>
     <string name="frame_gen_unsupported">توليد الإطار غير متاح</string>
     <string name="frame_gen_unsupported_description">يفتقر برنامج تشغيل وحدة معالجة الرسومات هذا إلى نموذج ذاكرة Vulkan أو دعم الدقة النصفية (float16) التي تتطلبها برامج التظليل الخاصة بـ «Lossless Scaling».</string>
-    <string name="lossless_scaling_setup_description">اختياري. قم بتوفير ملف Lossless.dll الخاص بك لتمكين إنشاء الإطارات لاحقًا</string>
+    <string name="lossless_scaling_setup_description">اختياري. قم بتوفير ملف Lossless.dll الخاص بك لتفعيل إنشاء الإطارات لاحقًا</string>
     <string name="lossless_scaling_install">تثبيت ملف Lossless.dll</string>
     <string name="lossless_scaling_install_description">يتطلب إنشاء الإطارات أن تكون لديك نسخة قانونية خاصة بك من ملف Lossless.dll المأخوذ من برنامج Lossless Scaling</string>
     <string name="lossless_scaling_replace_description">اختر نسخة أخرى من ملف Lossless.dll</string>
@@ -350,7 +350,7 @@
     <string name="frame_generation_supported">مدعوم</string>
     <string name="frame_generation_unsupported">غير مدعوم (لا يتوفر نموذج ذاكرة Vulkan أو float16)</string>
     <string name="lossless_scaling">Lossless Scaling</string>
-    <string name="lossless_scaling_description">قم بتوفير نسختك الخاصة من ملف Lossless.dll لتمكين توليد الإطارات</string>
+    <string name="lossless_scaling_description">قم بتوفير نسختك الخاصة من ملف Lossless.dll لتفعيل توليد الإطارات</string>
     <string name="lossless_scaling_installed">مثبت</string>
     <string name="lossless_scaling_not_installed">غير مثبت</string>
     <string name="lossless_scaling_replace">استبدل</string>
@@ -502,9 +502,9 @@
     <string name="frame_limit_slider">نسبة الحد الأقصى للسرعة</string>
     <string name="frame_limit_slider_description">يحدد النسبة المئوية للحد من سرعة المحاكاة. %100 هي السرعة الطبيعية. القيم الأعلى أو الأقل ستزيد أو تقلل من الحد الأقصى للسرعة.</string>
     <string name="turbo_speed_limit">سرعة تيربو</string>
-    <string name="turbo_speed_limit_description">عند تمكين وضع التيربو، سيتم تشغيل المحاكاة بهذه السرعة.</string>
+    <string name="turbo_speed_limit_description">عند تفعيل وضع التيربو، سيتم تشغيل المحاكاة بهذه السرعة.</string>
     <string name="slow_speed_limit">سرعة بطيئة</string>
-    <string name="slow_speed_limit_description">عند تمكين الوضع البطيء، سيتم تشغيل المحاكاة بهذه السرعة.</string>
+    <string name="slow_speed_limit_description">عند تفعيل الوضع البطيء، سيتم تشغيل المحاكاة بهذه السرعة.</string>
     <string name="cpu_backend">خلفية وحدة المعالجة المركزية</string>
     <string name="cpu_accuracy">دقة وحدة المعالجة المركزية</string>
     <string name="value_with_units">%1$s%2$s</string>
@@ -578,7 +578,7 @@
     <string name="renderer_async_presentation_description">يمكن لهذه الحيلة أن تزيد من الأداء عن طريق نقل عملية العرض إلى خيط معالجة منفصل على حساب مشاكل الرسوميات.</string>
     <string name="renderer_reactive_flushing">استخدم التنظيف التفاعلي</string>
     <string name="renderer_reactive_flushing_description">يحسن دقة العرض في بعض الألعاب على حساب الأداء.</string>
-    <string name="enable_buffer_history">تمكين سجل التخزين المؤقت</string>
+    <string name="enable_buffer_history">تفعيل سجل التخزين المؤقت</string>
     <string name="enable_buffer_history_description">يُتيح هذا الخيار الوصول إلى حالات التخزين المؤقت السابقة. وقد يُحسّن جودة العرض وثبات الأداء في بعض الألعاب.</string>
     <string name="use_optimized_vertex_buffers">مخازن الرؤوس المُحسّنة</string>
     <string name="use_optimized_vertex_buffers_description">يُتيح ربطًا مُحسَّنًا لمخازن الرؤوس لتحسين الأداء. يتطلب برامج تشغيل Mesa 26.0+ Turnip/ برامج تشغيل QCOM. قد يتعطل على برامج تشغيل Turnip القديمة (25.3 وما دون).</string>
@@ -616,7 +616,7 @@
     <string name="dyna_state_description">يتحكم هذا الخيار في عدد الميزات التي يمكن استخدامها في ExtendedDynamicState (EDS). كلما زادت القيمة، قلّ عدد عمليات تجميع خط الأنابيب بناءً على الحالة الديناميكية التي يدعمها برنامج التشغيل.</string>
     <string name="disabled">معطل</string>
     <string name="vertex_input_dynamic_state">حالة ديناميكية لإدخال الرأس</string>
-    <string name="vertex_input_dynamic_state_description">يتيح تمكين هذه الميزة معالجة أكثر مرونة لمدخلات الرؤوس، مما قد يقلل من وقت تجميع خط الأنابيب في vertex/buffer.</string>
+    <string name="vertex_input_dynamic_state_description">يتيح تفعيل هذه الميزة معالجة أكثر مرونة لمدخلات الرؤوس، مما قد يقلل من وقت تجميع خط الأنابيب في vertex/buffer.</string>
     <string name="sample_shading_fraction">تظليل العينة</string>
     <string name="sample_shading_fraction_description">يسمح هذا الخيار بتنفيذ مُظلل الأجزاء لكل عينة في جزء متعدد العينات بدلاً من تنفيذه مرة واحدة لكل جزء. يُحسّن هذا من جودة الرسومات على حساب بعض الأداء.</string>
 
@@ -825,9 +825,9 @@
     <string name="preferences_system">النظام</string>
     <string name="preferences_system_description">وضع الإرساء، المنطقة، اللغة</string>
     <string name="preferences_graphics">الرسومات</string>
-    <string name="preferences_graphics_description">مستوى الدقة، الدقة، ذاكرة التخزين المؤقتة للتظليل</string>
+    <string name="preferences_graphics_description">مستوى دقة المحاكاة، الدقة، ذاكرة التخزين المؤقتة للتظليل</string>
     <string name="quick_settings">الإعدادات السريعة</string>
-    <string name="enable_quick_settings">تمكين الإعدادات السريعة</string>
+    <string name="enable_quick_settings">تفعيل الإعدادات السريعة</string>
     <string name="enable_quick_settings_description">السماح بالوصول إلى قائمة الإعدادات السريعة عن طريق التمرير و زر القائمة</string>
     <string name="preferences_audio">الصوت</string>
     <string name="preferences_audio_description">محرك الإخراج، مستوى الصوت</string>
@@ -1223,8 +1223,8 @@
     <string name="airplane_mode">وضع الطيران</string>
     <string name="airplane_mode_description">يمرر وضع الطيران إلى نظام تشغيل Switch</string>
 
-    <string name="enable_overlay">تمكين التطبيق الصغير للطبقة</string>
-    <string name="enable_overlay_description">تمكين التطبيق الصغير المدمج في Horizon. اضغط مع الاستمرار على زر الشاشة الرئيسية لمدة 1 ثانية لإظهاره.</string>
+    <string name="enable_overlay">تفعيل التطبيق الصغير للطبقة</string>
+    <string name="enable_overlay_description">تفعيل التطبيق الصغير المدمج في Horizon. اضغط مع الاستمرار على زر الشاشة الرئيسية لمدة 1 ثانية لإظهاره.</string>
 
     <!-- Profile Management -->
     <string name="profile_manager">إدارة ملف التعريف</string>
