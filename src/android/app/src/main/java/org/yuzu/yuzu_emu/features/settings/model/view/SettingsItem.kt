@@ -868,6 +868,20 @@ abstract class SettingsItem(
             )
             put(
                 SwitchSetting(
+                    BooleanSetting.NCE_INVALIDATION_GPU_READBACK,
+                    titleId = R.string.nce_invalidation_gpu_readback,
+                    descriptionId = R.string.nce_invalidation_gpu_readback_description
+                )
+            )
+            put(
+                SwitchSetting(
+                    BooleanSetting.NCE_RUNTIME_NRO_PATCH,
+                    titleId = R.string.nce_runtime_nro_patch,
+                    descriptionId = R.string.nce_runtime_nro_patch_description
+                )
+            )
+            put(
+                SwitchSetting(
                     BooleanSetting.FIX_BLOOM_EFFECTS,
                     titleId = R.string.fix_bloom_effects,
                     descriptionId = R.string.fix_bloom_effects_description

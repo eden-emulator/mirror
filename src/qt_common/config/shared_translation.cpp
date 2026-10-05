@@ -194,6 +194,14 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
     INSERT(Settings, skip_cpu_inner_invalidation, tr("Skip CPU Inner Invalidation"),
            tr("Skips certain cache invalidations during memory updates, reducing CPU usage and "
               "improving latency. This may cause soft-crashes."));
+    INSERT(Settings, nce_invalidation_gpu_readback,
+           tr("GPU Readback Before NCE Invalidation"),
+           tr("Flushes GPU buffer data back to guest memory before NCE invalidates the whole "
+              "guest page, preserving it while the CPU store proceeds."));
+    INSERT(Settings, nce_runtime_nro_patch,
+           tr("Patch Runtime NROs for NCE"),
+           tr("Applies NCE code patches to runtime-loaded NRO modules."
+              "This is required for some games to run correctly."));
     INSERT(Settings, vsync_mode, tr("VSync Mode:"),
            tr("FIFO (VSync) does not drop frames or exhibit tearing but is limited by the screen "
               "refresh rate.\nFIFO Relaxed allows tearing as it recovers from a slow down.\n"

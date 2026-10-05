@@ -595,6 +595,10 @@
     <string name="fast_gpu_time_description">Makes the game believe GPU work finishes faster than it does, so it stops lowering resolution and render distance to fit the Switch\'s clocks.</string>
     <string name="skip_cpu_inner_invalidation">Skip CPU Inner Invalidation</string>
     <string name="skip_cpu_inner_invalidation_description">Skips certain CPU-side cache invalidations during memory updates, reducing CPU usage and improving it\'s performance. This may cause glitches or crashes on some games.</string>
+    <string name="nce_invalidation_gpu_readback">GPU Readback Before NCE Invalidation</string>
+    <string name="nce_invalidation_gpu_readback_description">Temporary. Fix Ender Magnolia (and other UE titles) crashes. May reduce performance. Improvement in progress.</string>
+    <string name="nce_runtime_nro_patch">Patch Runtime NROs for NCE</string>
+    <string name="nce_runtime_nro_patch_description">Temporary. Fix Biomutant boot. May impact performance. Improvement in progress.</string>
     <string name="fix_bloom_effects">Fix Bloom Effects</string>
     <string name="fix_bloom_effects_description">Reduces bloom blur in LA/EOW (Adreno A6XX - A7XX/ Turnip), removes bloom in Burnout. Warning: may cause graphical artifacts in other games.</string>
     <string name="emulate_bgr565">Emulate BGR565</string>
