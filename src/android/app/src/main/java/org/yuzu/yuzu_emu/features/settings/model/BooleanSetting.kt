@@ -19,6 +19,7 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     NCE_INVALIDATION_GPU_READBACK("nce_invalidation_gpu_readback"),
     NCE_RUNTIME_NRO_PATCH("nce_runtime_nro_patch"),
     FIX_BLOOM_EFFECTS("fix_bloom_effects"),
+    FORCE_UNRESTRICTED_DEPTH("force_unrestricted_depth"),
     EMULATE_BGR565("emulate_bgr565"),
     RESCALE_HACK("rescale_hack"),
     CPUOPT_UNSAFE_HOST_MMU("cpuopt_unsafe_host_mmu"),
