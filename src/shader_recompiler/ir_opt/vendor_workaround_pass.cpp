@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -74,6 +77,46 @@ void VendorWorkaroundPass(IR::Program& program) {
             }
         }
     }
+}
+
+bool HasBrokenPattern(const IR::Program& program) {
+    if (program.stage != Stage::Fragment) {
+        return false;
+    }
+    for (const IR::Block* block : program.post_order_blocks) {
+        for (const IR::Inst& inst : block->Instructions()) {
+            switch (inst.GetOpcode()) {
+            case IR::Opcode::ShuffleIndex:
+            case IR::Opcode::ShuffleUp:
+            case IR::Opcode::ShuffleDown:
+            case IR::Opcode::ShuffleButterfly:
+                break;
+            default:
+                continue;
+            }
+            const IR::Value shuffle_arg{inst.Arg(0)};
+            if (shuffle_arg.IsImmediate()) {
+                continue;
+            }
+            const IR::Inst* bitcast{shuffle_arg.InstRecursive()};
+            if (!bitcast || bitcast->GetOpcode() != IR::Opcode::BitCastU32F32) {
+                continue;
+            }
+            const IR::Value bitcast_arg{bitcast->Arg(0)};
+            if (bitcast_arg.IsImmediate()) {
+                continue;
+            }
+            const IR::Inst* attribute{bitcast_arg.InstRecursive()};
+            if (!attribute || attribute->GetOpcode() != IR::Opcode::GetAttribute) {
+                continue;
+            }
+            const IR::Attribute attr{attribute->Arg(0).Attribute()};
+            if (attr == IR::Attribute::PositionX || attr == IR::Attribute::PositionY) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 } // namespace Shader::Optimization
