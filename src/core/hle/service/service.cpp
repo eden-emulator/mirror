@@ -76,8 +76,9 @@ void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, c
     u32 const c_min = FirmwareManager::GetFirmwareVersion(system).first.minor;
     u32 const c_pat = FirmwareManager::GetFirmwareVersion(system).first.micro;
     u32 const cg = (c_pat << 0) | (c_min << 4) | (c_maj << 8);
-    u32 const sg = vg & 0xfff;
-    u32 const ug = (vg >> 12) & 0xfff;
+    u32 const sg = (vg >> 16) & 0xffff;
+    u32 const ug = vg & 0xffff;
+    LOG_ERROR(Service, "sg: {}, cg: {}, ug: {}", sg, cg, ug);
     // feature available after current
     if (sg && cg < sg)
         return false;
@@ -91,8 +92,11 @@ void ServiceFrameworkBase::InvokeRequest(HLERequestContext& ctx) {
     if (!info.has_value() || info->handler_callback == nullptr)
         return ReportUnimplementedFunction(ctx, &*info, false);
 
-    if (VersionGateCheck(system, info->version_gating))
+    LOG_ERROR(Service, "check for {} version_gating: {}", info->name, info->version_gating);
+    if (!VersionGateCheck(system, info->version_gating))
+    {
         return ReportUnimplementedFunction(ctx, &*info, true);
+    }
 
     LOG_TRACE(Service, "{}", MakeFunctionString(info->name, GetServiceName(), ctx.CommandBuffer()));
     handler_invoker(this, info->handler_callback, ctx);
@@ -109,8 +113,11 @@ void ServiceFrameworkBase::InvokeRequestTipc(HLERequestContext& ctx) {
     if (!info.has_value() || info->handler_callback == nullptr)
         return ReportUnimplementedFunction(ctx, &*info, false);
 
-    if (VersionGateCheck(system, info->version_gating))
+    LOG_ERROR(Service, "check for {} version_gating: {}", info->name, info->version_gating);
+    if (!VersionGateCheck(system, info->version_gating))
+    {
         return ReportUnimplementedFunction(ctx, &*info, true);
+    }
 
     LOG_TRACE(Service, "{}", MakeFunctionString(info->name, GetServiceName(), ctx.CommandBuffer()));
     handler_invoker(this, info->handler_callback, ctx);

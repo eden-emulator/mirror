@@ -86,7 +86,7 @@ protected:
         auto const [s_maj, s_min, s_pat] = since;
         auto const [u_maj, u_min, u_pat] = until;
         return (u_pat << 0) | (u_min << 4) | (u_maj << 8)
-            | (s_pat << 12) | (s_min << 16) | (s_maj << 20);
+            | (s_pat << 16) | (s_min << 20) | (s_maj << 24);
     }
 
     struct FunctionInfoBase {
@@ -153,10 +153,12 @@ protected:
         /// @param name_ human-friendly name for the request. Used mostly for logging purposes.
         explicit constexpr FunctionInfoTyped(u32 expected_header_, HandlerFnP<T> handler_callback_, const char* name_, u32 version_gating_ = 0)
             : handler_callback{handler_callback_}
+            , name{name_}
             , version_gating{version_gating_}
             , expected_header{expected_header_}
         {}
         HandlerFnP<T> handler_callback;
+        const char* name;
         u32 version_gating;
         u32 expected_header;
     };
@@ -165,11 +167,13 @@ protected:
     // expected_header serves as a key to 'address' function handlers, thus only include the minimal
     template <typename T>
     struct FunctionValueInfo {
-        explicit constexpr FunctionValueInfo(HandlerFnP<T> handler_callback_, u32 version_gating_)
+        explicit constexpr FunctionValueInfo(HandlerFnP<T> handler_callback_, const char* name_, u32 version_gating_)
             : handler_callback{handler_callback_}
+            , name{name_}
             , version_gating{version_gating_}
         {}
         HandlerFnP<T> handler_callback;
+        const char* name;
         u32 version_gating;
     };
 
@@ -177,7 +181,7 @@ protected:
         //requires (std::same_as<Ts, FunctionInfo> && ...)
     [[nodiscard]] static consteval frozen::map<u32, FunctionValueInfo<Self>, sizeof...(Ts)> CreateStaticMap(Ts... args) {
         return frozen::map<u32, FunctionValueInfo<Self>, sizeof...(args)>{
-            {args.expected_header, FunctionValueInfo<Self>{args.handler_callback, args.version_gating}}...
+            {args.expected_header, FunctionValueInfo<Self>{args.handler_callback, args.name, args.version_gating}}...
         };
     }
 
@@ -186,7 +190,7 @@ protected:
         //requires (std::same_as<Ts, FunctionInfoTyped<T>> && ...)
     [[nodiscard]] static consteval frozen::map<u32, FunctionValueInfo<T>, sizeof...(Ts)> CreateStaticMapWithClass(Ts... args) {
         return frozen::map<u32, FunctionValueInfo<T>, sizeof...(args)>{
-            {args.expected_header, FunctionValueInfo<T>{args.handler_callback, args.version_gating}}...
+            {args.expected_header, FunctionValueInfo<T>{args.handler_callback, args.name, args.version_gating}}...
         };
     }
 
@@ -197,7 +201,7 @@ protected:
             auto const r = it->second;
             return std::optional<FunctionInfoBase>{{
                 HandlerFnP<ServiceFrameworkBase>(r.handler_callback),
-                nullptr,
+                r.name,
                 r.version_gating
             }};
         }
