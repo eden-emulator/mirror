@@ -1217,7 +1217,7 @@ public:
                 replaced_src = static_cast<char*>(Allocate(replaced_src_len));
             }
 
-            Strlcpy<char>(replaced_src, src, replaced_src_len);
+            strlcpy(replaced_src, src, replaced_src_len);
 
             Replace(replaced_src, replaced_src_len, AlternateDirectorySeparator,
                     DirectorySeparator);

@@ -143,20 +143,16 @@ public:
         return m_str;
     }
 
-    constexpr size_t GetLength() const {
-        if (std::is_constant_evaluated()) {
-            return Strlen(this->GetString());
-        } else {
-            return std::strlen(this->GetString());
-        }
+    size_t GetLength() const {
+        return std::strlen(this->GetString());
     }
 
     constexpr bool IsEmpty() const {
         return *m_str == '\x00';
     }
 
-    constexpr bool IsMatchHead(const char* p, size_t len) const {
-        return Strncmp(this->GetString(), p, len) == 0;
+    bool IsMatchHead(const char* p, size_t len) const {
+        return std::strncmp(this->GetString(), p, len) == 0;
     }
 
     Result Initialize(const Path& rhs) {
@@ -169,7 +165,7 @@ public:
         R_TRY(this->Preallocate(len + 1));
 
         // Copy the path
-        const size_t copied = Strlcpy<char>(m_write_buffer.Get(), rhs.GetString(), len + 1);
+        const size_t copied = strlcpy(m_write_buffer.Get(), rhs.GetString(), len + 1);
         R_UNLESS(copied == len, ResultUnexpectedInPathA);
 
         // Set normalized
@@ -331,14 +327,14 @@ public:
         // Get our write buffer
         auto* dst = m_write_buffer.Get();
         if (old_write_buffer.Get() != nullptr && cur_len > 0) {
-            Strlcpy<char>(dst, old_write_buffer.Get(), cur_len + 1);
+            strlcpy(dst, old_write_buffer.Get(), cur_len + 1);
         }
 
         // Add separator
         dst[cur_len] = '/';
 
         // Copy the child path
-        const size_t copied = Strlcpy<char>(dst + cur_len + 1, c, child_len + 1);
+        const size_t copied = strlcpy(dst + cur_len + 1, c, child_len + 1);
         R_UNLESS(copied == child_len, ResultUnexpectedInPathA);
 
         R_SUCCEED();
@@ -375,7 +371,7 @@ public:
         if (m_write_buffer.Get() == nullptr) {
             if (const auto len = std::strlen(m_str); len > 0) {
                 R_TRY(this->Preallocate(len));
-                Strlcpy<char>(m_write_buffer.Get(), m_str, len + 1);
+                strlcpy(m_write_buffer.Get(), m_str, len + 1);
             }
         }
 
@@ -497,7 +493,7 @@ private:
             R_TRY(this->Preallocate(size + 1));
 
             // Copy the path
-            const size_t copied = Strlcpy<char>(m_write_buffer.Get(), path, size + 1);
+            const size_t copied = strlcpy(m_write_buffer.Get(), path, size + 1);
             R_UNLESS(copied >= size, ResultUnexpectedInPathA);
         } else {
             // We can just clear the buffer
