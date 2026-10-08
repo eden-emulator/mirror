@@ -2632,3 +2632,66 @@ TEST_CASE("A64: Rounding", "[a64]") {
     CHECK(jit.GetVector(5) == Vector{0x4000000040000000, 0x4000000040000000});
     CHECK(jit.GetVector(6) == Vector{0x4000000040000000, 0x4000000040000000});
 }
+
+TEST_CASE("A64: SM4", "[a64]") {
+    A64TestEnv env;
+    A64::UserConfig jit_user_config{};
+    jit_user_config.callbacks = &env;
+    A64::Jit jit{jit_user_config};
+
+    oaknut::VectorCodeGenerator code{env.code_mem, nullptr};
+
+    code.SM4EKEY(V4.S4(), V0.S4(), V1.S4());
+    code.SM4E(V5.S4(), V0.S4(), V1.S4());
+
+    jit.SetPC(0);
+    jit.SetVector(0, {0xefcdab8967452301, 0x1032547698badcfe});
+    jit.SetVector(1, {0xefcdab8967452301, 0x1032547698badcfe});
+    env.ticks_left = env.code_mem.size();
+    CheckedRun([&]() { jit.Run(); });
+
+    CHECK(jit.GetVector(4) == Vector{0x486a0c2e00224466, 0x5c7e183a62402604});
+    CHECK(jit.GetVector(5) == Vector{0xc2e086a43c1e785a, 0xd7f593b104264062});
+}
+
+TEST_CASE("A64: SM3", "[a64]") {
+    A64TestEnv env;
+    A64::UserConfig jit_user_config{};
+    jit_user_config.callbacks = &env;
+    SECTION("SM3SS1") {
+        A64::Jit jit{jit_user_config};
+        oaknut::VectorCodeGenerator code{env.code_mem, nullptr};
+        code.SM3SS1(V0.S4(), V0.S4(), V1.S4(), V2.S4());
+        jit.SetPC(0);
+        jit.SetVector(0, {0xec4aff517369c667, 0x46e3fbf2abbacd29});
+        jit.SetVector(1, {0x8de7e81bf854c27c, 0x9ac99f33632e5a76});
+        jit.SetVector(2, {0x5aa35831b70d3266, 0xd45ee95817055d25});
+        env.ticks_left = env.code_mem.size();
+        CheckedRun([&]() { jit.Run(); });
+        CHECK(jit.GetVector(0) == Vector{0x0000000000000000, 0x73d67cd700000000});
+    }
+    SECTION("SM3PARTW1") {
+        A64::Jit jit{jit_user_config};
+        oaknut::VectorCodeGenerator code{env.code_mem, nullptr};
+        code.SM3PARTW1(V0.S4(), V0.S4(), V1.S4(), V2.S4());
+        jit.SetPC(0);
+        jit.SetVector(0, {0xec4aff517369c667, 0x46e3fbf2abbacd29});
+        jit.SetVector(1, {0x8de7e81bf854c27c, 0x9ac99f33632e5a76});
+        jit.SetVector(2, {0x5aa35831b70d3266, 0xd45ee95817055d25});
+        env.ticks_left = env.code_mem.size();
+        CheckedRun([&]() { jit.Run(); });
+        CHECK(jit.GetVector(0) == Vector{0x653c64995693280c, 0xabcc7db97adebf12});
+    }
+    SECTION("SM3PARTW2") {
+        A64::Jit jit{jit_user_config};
+        oaknut::VectorCodeGenerator code{env.code_mem, nullptr};
+        code.SM3PARTW2(V0.S4(), V0.S4(), V1.S4(), V2.S4());
+        jit.SetPC(0);
+        jit.SetVector(0, {0xec4aff517369c667, 0x46e3fbf2abbacd29});
+        jit.SetVector(1, {0x8de7e81bf854c27c, 0x9ac99f33632e5a76});
+        jit.SetVector(2, {0x5aa35831b70d3266, 0xd45ee95817055d25});
+        env.ticks_left = env.code_mem.size();
+        CheckedRun([&]() { jit.Run(); });
+        CHECK(jit.GetVector(0) == Vector{0x30010fe70da43740, 0x6702425b4a3a05d4});
+    }
+}
