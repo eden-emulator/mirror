@@ -1,0 +1,13 @@
+diff --git a/include/jwt/algorithm.hpp b/include/jwt/algorithm.hpp
+index 35347fe..183fcc2 100644
+--- a/include/jwt/algorithm.hpp
++++ b/include/jwt/algorithm.hpp
+@@ -484,7 +484,7 @@ public:
+   {
+     std::error_code ec{};
+ 
+-    std::string ii{data.data(), data.length()};
++    //std::string ii{data.data(), data.length()};
+ 
+     EC_PKEY_uptr pkey{load_key(key, ec), ev_pkey_deletor};
+     if (ec) return { std::string{}, ec };

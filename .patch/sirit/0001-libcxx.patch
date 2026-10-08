@@ -1,0 +1,12 @@
+diff --git a/src/stream.h b/src/stream.h
+index 31c2680..1b6c0e8 100644
+--- a/src/stream.h
++++ b/src/stream.h
+@@ -17,6 +17,7 @@
+ #include <variant>
+ #include <vector>
+ #include <utility>
++#include <cstdlib>
+ 
+ #ifndef __cpp_lib_bit_cast
+ #include <cstring>

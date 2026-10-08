@@ -38,7 +38,8 @@
             "CPP_JWT_USE_VENDORED_NLOHMANN_JSON OFF"
         ],
         "patches": [
-            "0001-fix-missing-decl.patch"
+            "0001-fix-missing-decl.patch",
+            "0002-libcxx.patch"
         ],
         "repo": "arun11299/cpp-jwt",
         "version": "7f24eb4c32"
@@ -269,6 +270,9 @@
         "hash": "b7cd6885acae3fc8698288d19febba0dd45e4a02a2b6563d2eb995a988d0847046e8d16a5dea7e0bf832b4321bcec134cdbafc553f6ede039e4cf34525c5dce5",
         "options": [
             "SIRIT_USE_SYSTEM_SPIRV_HEADERS ON"
+        ],
+        "patches": [
+            "0001-libcxx.patch"
         ],
         "repo": "eden-emulator/sirit",
         "version": "v1.0.5"
