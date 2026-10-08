@@ -28,5 +28,5 @@ endforeach()
 STRING(REGEX REPLACE "{{SEMICOLON}}" ";" CONTENTS "${CONTENTS}")
 
 get_filename_component(OUTPUT_DIR ${HEADER_FILE} DIRECTORY)
-make_directory(${OUTPUT_DIR})
+file(MAKE_DIRECTORY ${OUTPUT_DIR})
 configure_file(${INPUT_FILE} ${HEADER_FILE} @ONLY)
