@@ -322,46 +322,41 @@ endif()
 
 # Build/optimization presets
 if (CXX_GCC OR CXX_CLANG)
-    if (ARCHITECTURE_x86_64)
+    # GCC/clang will -mtune=generic by default
+    if ("${YUZU_BUILD_PRESET}" STREQUAL "native")
+        add_compile_options(
+            $<$<COMPILE_LANGUAGE:C,CXX>:-march=native>
+            $<$<COMPILE_LANGUAGE:C,CXX>:-mtune=native>)
+    elseif (ARCHITECTURE_x86_64)
         # See https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html
         # Generic supports Pentium Pro instruction set and above
         # TODO: if a value is unknown, pass that as march and mtune
         set(YUZU_BUILD_PRESET "custom" CACHE STRING "Build preset to use. One of: custom, generic, v3, zen2, zen4, native")
-
         if (${YUZU_BUILD_PRESET} STREQUAL "generic")
-            set(march x86-64)
-            set(mtune generic)
+            add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-march=x86-64>)
         elseif (${YUZU_BUILD_PRESET} STREQUAL "v3")
-            set(march x86-64-v3)
-            set(mtune generic)
+            add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-march=x86-64-v3>)
         elseif (${YUZU_BUILD_PRESET} STREQUAL "zen2")
-            set(march znver2)
-            set(mtune znver2)
+            add_compile_options(
+                $<$<COMPILE_LANGUAGE:C,CXX>:-march=znver2>
+                $<$<COMPILE_LANGUAGE:C,CXX>:-mtune=znver4>)
         elseif (${YUZU_BUILD_PRESET} STREQUAL "zen4")
-            set(march znver4)
-            set(mtune znver4)
+            add_compile_options(
+                $<$<COMPILE_LANGUAGE:C,CXX>:-march=znver4>
+                $<$<COMPILE_LANGUAGE:C,CXX>:-mtune=znver4>)
         endif()
     elseif(ARCHITECTURE_arm64)
         # See https://gcc.gnu.org/onlinedocs/gcc/AArch64-Options.html
-        set(YUZU_BUILD_PRESET "custom" CACHE STRING "Build preset to use. One of: custom, generic, optimized, armv9, native")
-        set(mtune generic)
+        set(YUZU_BUILD_PRESET "custom" CACHE STRING "Build preset to use. One of: custom, generic, optimized, armv9, m1, native")
         if (${YUZU_BUILD_PRESET} STREQUAL "generic")
-            set(march armv8-a)
+            add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-march=armv8-a>)
         elseif (${YUZU_BUILD_PRESET} STREQUAL "optimized")
-            set(march armv8.2-a+lse+rcpc)
+            add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-march=armv8.2-a+lse+rcpc>)
         elseif (${YUZU_BUILD_PRESET} STREQUAL "armv9")
-            set(march armv9-a)
+            add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-march=armv9-a>)
+        elseif (${YUZU_BUILD_PRESET} STREQUAL "m1")
+            add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:-mcpu=apple-m1>)
         endif()
-    endif()
-
-    if ("${YUZU_BUILD_PRESET}" STREQUAL "native")
-        set(march native)
-        set(mtune native)
-    endif()
-
-    if (DEFINED march AND DEFINED mtune)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=${march} -mtune=${mtune}")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=${march} -mtune=${mtune}")
     endif()
 endif()
 
