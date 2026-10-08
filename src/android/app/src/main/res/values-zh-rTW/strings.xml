@@ -560,12 +560,10 @@
     <string name="sync_memory_operations_description">確保計算和記憶體操作之間的資料一致性，此選項應能修復某些遊戲中的問題，但在某些情況下可能會降低效能。使用Unreal Engine 4的遊戲似乎受影響最大</string>
     <string name="use_disk_shader_cache">磁碟著色器快取</string>
     <string name="use_disk_shader_cache_description">將產生的著色器快取儲存至硬碟以減少中斷</string>
-    <string name="renderer_force_max_clock">強制使用最大時脈（僅限Adreno）</string>
-    <string name="renderer_force_max_clock_description">強制GPU以可能的最大時脈運作（熱溫限制仍會被套用）</string>
-    <string name="renderer_asynchronous_gpu_emulation">GPU非同步模擬</string>
-    <string name="renderer_asynchronous_gpu_emulation_description">此修改可透過使用GPU非同步模擬來提升性能，不過可能會導致圖形問題且會提高在進行時序相關操作時當機的機率</string>
-    <string name="renderer_async_presentation">非同步呈現</string>
-    <string name="renderer_async_presentation_description">此修改可以透過將渲染移至單獨的CPU執行緒來提升性能，但可能會導致圖形問題</string>
+    <string name="renderer_force_max_clock">強制使用最大時脈 (僅限Adreno)</string>
+    <string name="renderer_force_max_clock_description">強制 GPU 以可能的最大時脈執行 (熱溫限制仍會被套用)</string>
+    <string name="renderer_asynchronous_gpu_emulation">GPU 非同步模擬</string>
+    <string name="renderer_asynchronous_gpu_emulation_description">此修改可透過使用 GPU 非同步模擬來提升性能，不過可能會導致圖形問題且會提高在進行時序相關操作時當機的機率</string>
     <string name="renderer_reactive_flushing">使用重新啟用排清</string>
     <string name="renderer_reactive_flushing_description">犧牲效能以改善部分遊戲的轉譯準確度</string>
     <string name="enable_buffer_history">啟用緩衝區歷史</string>

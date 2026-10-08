@@ -23,6 +23,7 @@ namespace Vulkan {
 namespace {
 
 constexpr size_t MAX_FRAMES_IN_FLIGHT = 7;
+constexpr u32 MAX_PRESENT_ATTEMPTS = 3;
 #ifdef HAS_LSFG
 static_assert(MAX_FRAMES_IN_FLIGHT <= LSFG_MAX_TARGETS);
 #endif
@@ -372,12 +373,33 @@ void PresentManager::SetImageCount() {
 #else
     image_count = std::min<size_t>(swapchain.GetImageCount(), MAX_FRAMES_IN_FLIGHT);
 #endif
+    swapchain_image_count = swapchain.GetImageCount();
+    swapchain_image_format = swapchain.GetImageFormat();
+}
+
+void PresentManager::DiscardFrame(Frame* frame) {
+    static constexpr VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    const VkSemaphore render_ready = *frame->render_ready;
+    const VkSubmitInfo submit_info{
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = nullptr,
+        .waitSemaphoreCount = 1U,
+        .pWaitSemaphores = &render_ready,
+        .pWaitDstStageMask = &wait_stage,
+        .commandBufferCount = 0U,
+        .pCommandBuffers = nullptr,
+        .signalSemaphoreCount = 0U,
+        .pSignalSemaphores = nullptr,
+    };
+
+    std::scoped_lock submit_lock{scheduler.submit_mutex};
+    void(device.GetGraphicsQueue().Submit(submit_info, *frame->present_done));
 }
 
 void PresentManager::CopyToSwapchain(Frame* frame) {
     bool requires_recreation = false;
 
-    while (true) {
+    for (u32 attempt = 0; attempt < MAX_PRESENT_ATTEMPTS; ++attempt) {
         try {
             // Recreate surface and swapchain if needed.
             if (requires_recreation) {
@@ -397,6 +419,8 @@ void PresentManager::CopyToSwapchain(Frame* frame) {
             requires_recreation = true;
         }
     }
+
+    DiscardFrame(frame);
 }
 
 void PresentManager::CopyToSwapchainImpl(Frame* frame) {

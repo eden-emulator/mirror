@@ -171,8 +171,13 @@ struct Values {
     SwitchableSetting<bool> enable_overlay{linkage, false, "enable_overlay", Category::LibraryApplet};
 
     // Audio
-    SwitchableSetting<AudioEngine> sink_id{linkage, AudioEngine::Auto, "output_engine",
-                                           Category::Audio, Specialization::RuntimeList};
+    SwitchableSetting<AudioEngine> sink_id{linkage,
+#ifdef __ANDROID__
+                                           AudioEngine::Sdl3,
+#else
+                                           AudioEngine::Auto,
+#endif
+                                           "output_engine", Category::Audio, Specialization::RuntimeList};
     SwitchableSetting<std::string> audio_output_device_id{
                                                           linkage, "auto", "output_device", Category::Audio, Specialization::RuntimeList};
     SwitchableSetting<std::string> audio_input_device_id{
@@ -472,13 +477,8 @@ struct Values {
     SwitchableSetting<bool> frame_gen_dump_flow{linkage, false, "frame_gen_dump_flow",
                                                 Category::Renderer};
 
-    SwitchableSetting<bool> use_asynchronous_gpu_emulation{linkage,
-#ifdef __ANDROID__
-        false,
-#else
-        true,
-#endif
-        "use_asynchronous_gpu_emulation", Category::Renderer};
+    SwitchableSetting<bool> use_asynchronous_gpu_emulation{linkage, true, "use_asynchronous_gpu_emulation",
+                                                           Category::Renderer};
     // *nix platforms may have issues with the borderless windowed fullscreen mode.
     // Default to exclusive fullscreen on these platforms for now.
     SwitchableSetting<FullscreenMode, true> fullscreen_mode{linkage,
@@ -537,7 +537,7 @@ struct Values {
                                                            "vram_usage_mode",
                                                            Category::RendererAdvanced};
 
-    SwitchableSetting<NvdecEmulation> nvdec_emulation{linkage, NvdecEmulation::Gpu,
+    SwitchableSetting<NvdecEmulation> nvdec_emulation{linkage, NvdecEmulation::Cpu,
                                                       "nvdec_emulation", Category::RendererAdvanced};
 
     SwitchableSetting<AnisotropyMode, true> max_anisotropy{linkage,
@@ -645,7 +645,7 @@ struct Values {
         linkage, false, "nce_runtime_nro_patch", Category::RendererHacks};
     SwitchableSetting<bool> async_presentation{linkage,
 #ifdef __ANDROID__
-                                               false,
+                                               true,
 #else
                                                false,
 #endif
@@ -936,7 +936,7 @@ struct Values {
     // Network
     Setting<std::string> network_interface{linkage, std::string(), "network_interface",
                                            Category::Network};
-    SwitchableSetting<bool> airplane_mode{linkage, false, "airplane_mode", Category::Network};
+    SwitchableSetting<bool> airplane_mode{linkage, true, "airplane_mode", Category::Network};
 
     // WebService
     Setting<std::string> web_api_url{linkage, "api.ynet-fun.xyz", "web_api_url",
