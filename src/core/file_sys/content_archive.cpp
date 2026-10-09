@@ -45,6 +45,7 @@ NCA::NCA(VirtualFile file_, const NCA* base_nca, bool allow_missing_base)
     // Ensure we have the proper key area keys to continue.
     const u8 master_key_id = MasterKeyIdForKeyGeneration(reader->GetKeyGeneration());
     if (!keys.HasKey(Core::Crypto::S128KeyType::KeyArea, master_key_id, reader->GetKeyIndex())) {
+        LOG_ERROR(Loader, "Cannot decrypt {}: keys for gen 0x{:02X}+ required.", file->GetName(), reader->GetKeyGeneration());
         status = Loader::ResultStatus::ErrorMissingKeyAreaKey;
         return;
     }
