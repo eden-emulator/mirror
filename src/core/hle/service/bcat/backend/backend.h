@@ -6,12 +6,11 @@
 
 #pragma once
 
-#include <functional>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "common/common_types.h"
-#include "core/file_sys/vfs/vfs_types.h"
 #include "core/hle/result.h"
 #include "core/hle/service/bcat/bcat_types.h"
 #include "core/hle/service/kernel_helpers.h"
