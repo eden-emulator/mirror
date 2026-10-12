@@ -254,7 +254,7 @@
     <string name="emulator_data">إعداد بيانات المحاكي</string>
     <string name="emulator_data_description">يلزم وجود مفاتيح حتى يعمل المحاكي، ويوصى باستخدام الفيرموير ويكون ضروريًا لاستخدام تطبيق القائمة الرئيسية.</string>
     <string name="permissions">منح الأذونات</string>
-    <string name="permissions_description">منح أذونات اختيارية لاستخدام ميزات معينة للمحاكي</string>
+    <string name="permissions_description">منح أذونات اختيارية لاستخدام ميزات محددة في المحاكي</string>
     <string name="install_firmware_warning_description">العديد من الألعاب تتطلب الوصول إلى الفيرموير لتشغيل بشكل صحيح.</string>
     <string name="install_firmware_warning_help">https://yuzu-mirror.github.io/help/quickstart/#guide-introduction</string>
     <string name="notifications">الإشعارات</string>
@@ -587,6 +587,10 @@
     <string name="fast_gpu_time_description">يجعل اللعبة تعتقد أن عمل وحدة معالجة الرسومات ينتهي بشكل أسرع مما هو عليه في الواقع، لذلك تتوقف عن خفض الدقة ومسافة العرض لتتناسب مع سرعات جهاز Switch.</string>
     <string name="skip_cpu_inner_invalidation">تخطي إبطال صلاحية وحدة المعالجة المركزية الداخلية</string>
     <string name="skip_cpu_inner_invalidation_description">يتخطى بعض عمليات إبطال ذاكرة التخزين المؤقتة من جانب وحدة المعالجة المركزية أثناء تحديثات الذاكرة، مما يقلل من استخدام وحدة المعالجة المركزية ويحسن أداءها. قد يتسبب ذلك في حدوث أعطال أو تعطل في بعض الألعاب.</string>
+    <string name="nce_invalidation_gpu_readback">إعادة قراءة وحدة معالجة الرسومات قبل إبطال صلاحية NCE</string>
+    <string name="nce_invalidation_gpu_readback_description">إصلاح مؤقت. يعالج مشكلة تعطل لعبة Ender Magnolia (وغيرها من ألعاب UE). قد يؤدي إلى انخفاض في الأداء. يجري العمل على تحسينه.</string>
+    <string name="nce_runtime_nro_patch">تصحيح حالات NRO في وقت التشغيل لـ NCE</string>
+    <string name="nce_runtime_nro_patch_description">حل مؤقت. إصلاح مشكلة تشغيل لعبة Biomutant. قد يؤثر ذلك على الأداء. يجري العمل على تحسينه.</string>
     <string name="fix_bloom_effects">إصلاح تأثيرات التوهج</string>
     <string name="fix_bloom_effects_description">يقلل من ضبابية التوهج في LA/EOW  (Adreno A6XX - A7XX/ Turnip)، ويزيل التوهج في Burnout. تحذير: قد يسبب تشوهات رسومية في ألعاب أخرى.</string>
     <string name="emulate_bgr565">محاكاة BGR565</string>
