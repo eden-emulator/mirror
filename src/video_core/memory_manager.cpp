@@ -713,7 +713,7 @@ void MemoryManager::FlushCaching() {
     if (accumulator.InvalidateAll([this](GPUVAddr addr, size_t size) {
         GetSubmappedRangeImpl<false>(addr, size, page_stash2);
     })) {
-        rasterizer->InnerInvalidation(VideoCommon::FixSmallVectorADL(page_stash2));
+        rasterizer->InnerInvalidation(page_stash2);
         page_stash2.clear();
     }
 }
