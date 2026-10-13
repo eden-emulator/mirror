@@ -361,6 +361,7 @@ public:
     Id frag_depth{};
 
     std::vector<Id> interfaces;
+    std::vector<std::pair<u32, spv::Op>> opcode_rewrites;
 
     Id load_const_func_u8{};
     Id load_const_func_u16{};

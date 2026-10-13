@@ -77,19 +77,56 @@ Id GetMaxThreadId(EmitContext& ctx, Id thread_id, Id clamp, Id segmentation_mask
     return ComputeMaxThreadId(ctx, min_thread_id, clamp, not_seg_mask);
 }
 
-Id SelectValue(EmitContext& ctx, Id in_range, Id value, Id src_thread_id) {
-    if (!StageSupportsSubgroups(ctx)) {
-        return value;
+Id HostThreadId(EmitContext& ctx, Id thread_id) {
+    if (!ctx.profile.warp_size_potentially_larger_than_guest) {
+        return thread_id;
     }
-    return ctx.OpSelect(
-        ctx.U32[1], in_range,
-        ctx.OpGroupNonUniformShuffle(ctx.U32[1], SubgroupScope(ctx), value, src_thread_id), value);
-}
-
-Id AddPartitionBase(EmitContext& ctx, Id thread_id) {
     const Id partition_idx{ctx.OpShiftRightLogical(ctx.U32[1], GetThreadId(ctx), ctx.Const(5u))};
     const Id partition_base{ctx.OpShiftLeftLogical(ctx.U32[1], partition_idx, ctx.Const(5u))};
     return ctx.OpIAdd(ctx.U32[1], thread_id, partition_base);
+}
+
+Id GuestLane(EmitContext& ctx, Id index) {
+    return ctx.OpBitwiseAnd(ctx.U32[1], index, ctx.Const(31U));
+}
+
+Id ShuffleAbsolute(EmitContext& ctx, Id value, Id src_thread_id) {
+    if (!ctx.profile.has_broken_spirv_subgroup_shuffle) {
+        return ctx.OpGroupNonUniformShuffle(ctx.U32[1], SubgroupScope(ctx), value, src_thread_id);
+    }
+    Id result{ctx.u32_zero_value};
+    for (u32 lane = 0; lane < ctx.profile.max_subgroup_size; ++lane) {
+        const Id read{
+            ctx.OpGroupNonUniformBroadcast(ctx.U32[1], SubgroupScope(ctx), value, ctx.Const(lane))};
+        const Id matches{ctx.OpIEqual(ctx.U1, src_thread_id, ctx.Const(lane))};
+        result = ctx.OpSelect(ctx.U32[1], matches, read, result);
+    }
+    return result;
+}
+
+Id ShuffleRelative(EmitContext& ctx, Id value, Id delta, Id src_thread_id, spv::Op op) {
+    if (!ctx.profile.support_shuffle_relative) {
+        return ShuffleAbsolute(ctx, value, HostThreadId(ctx, src_thread_id));
+    }
+    const Id result{ctx.OpGroupNonUniformShuffleXor(ctx.U32[1], SubgroupScope(ctx), value, delta)};
+    ctx.opcode_rewrites.emplace_back(result.value, op);
+    return result;
+}
+
+Id BroadcastLane(EmitContext& ctx, Id value, u32 lane) {
+    Id result{
+        ctx.OpGroupNonUniformBroadcast(ctx.U32[1], SubgroupScope(ctx), value, ctx.Const(lane))};
+    if (!ctx.profile.warp_size_potentially_larger_than_guest) {
+        return result;
+    }
+    const Id partition_idx{ctx.OpShiftRightLogical(ctx.U32[1], GetThreadId(ctx), ctx.Const(5u))};
+    for (u32 base = 32; base < ctx.profile.max_subgroup_size; base += 32) {
+        const Id read{ctx.OpGroupNonUniformBroadcast(ctx.U32[1], SubgroupScope(ctx), value,
+                                                     ctx.Const(base + lane))};
+        const Id matches{ctx.OpIEqual(ctx.U1, partition_idx, ctx.Const(base >> 5))};
+        result = ctx.OpSelect(ctx.U32[1], matches, read, result);
+    }
+    return result;
 }
 } // Anonymous namespace
 
@@ -203,61 +240,75 @@ Id EmitShuffleIndex(EmitContext& ctx, IR::Inst* inst, Id value, Id index, Id cla
     const Id min_thread_id{ComputeMinThreadId(ctx, thread_id, segmentation_mask)};
     const Id max_thread_id{ComputeMaxThreadId(ctx, min_thread_id, clamp, not_seg_mask)};
 
-    const Id lhs{ctx.OpBitwiseAnd(ctx.U32[1], index, not_seg_mask)};
-    Id src_thread_id{ctx.OpBitwiseOr(ctx.U32[1], lhs, min_thread_id)};
+    const Id lhs{ctx.OpBitwiseAnd(ctx.U32[1], GuestLane(ctx, index), not_seg_mask)};
+    const Id src_thread_id{ctx.OpBitwiseOr(ctx.U32[1], lhs, min_thread_id)};
     const Id in_range{ctx.OpSLessThanEqual(ctx.U1, src_thread_id, max_thread_id)};
 
-    if (ctx.profile.warp_size_potentially_larger_than_guest) {
-        src_thread_id = AddPartitionBase(ctx, src_thread_id);
-    }
-
     SetInBoundsFlag(inst, in_range);
-    return SelectValue(ctx, in_range, value, src_thread_id);
+    if (!StageSupportsSubgroups(ctx)) {
+        return value;
+    }
+    const IR::Value lane{inst->Arg(1).Resolve()};
+    const IR::Value segment{inst->Arg(3).Resolve()};
+    if (lane.IsImmediate() && segment.IsImmediate() && segment.U32() == 0) {
+        return ctx.OpSelect(ctx.U32[1], in_range, BroadcastLane(ctx, value, lane.U32() & 31),
+                            value);
+    }
+    const Id shuffled{ShuffleAbsolute(ctx, value, HostThreadId(ctx, src_thread_id))};
+    return ctx.OpSelect(ctx.U32[1], in_range, shuffled, value);
 }
 
 Id EmitShuffleUp(EmitContext& ctx, IR::Inst* inst, Id value, Id index, Id clamp,
                  Id segmentation_mask) {
+    if (!StageSupportsSubgroups(ctx)) {
+        SetInBoundsFlag(inst, ctx.false_value);
+        return value;
+    }
+    const Id delta{GuestLane(ctx, index)};
     const Id thread_id{EmitLaneId(ctx)};
     const Id max_thread_id{GetMaxThreadId(ctx, thread_id, clamp, segmentation_mask)};
-    Id src_thread_id{ctx.OpISub(ctx.U32[1], thread_id, index)};
+    const Id src_thread_id{ctx.OpISub(ctx.U32[1], thread_id, delta)};
     const Id in_range{ctx.OpSGreaterThanEqual(ctx.U1, src_thread_id, max_thread_id)};
 
-    if (ctx.profile.warp_size_potentially_larger_than_guest) {
-        src_thread_id = AddPartitionBase(ctx, src_thread_id);
-    }
-
     SetInBoundsFlag(inst, in_range);
-    return SelectValue(ctx, in_range, value, src_thread_id);
+    const Id shuffled{ShuffleRelative(ctx, value, delta, src_thread_id,
+                                      spv::Op::OpGroupNonUniformShuffleUp)};
+    return ctx.OpSelect(ctx.U32[1], in_range, shuffled, value);
 }
 
 Id EmitShuffleDown(EmitContext& ctx, IR::Inst* inst, Id value, Id index, Id clamp,
                    Id segmentation_mask) {
+    if (!StageSupportsSubgroups(ctx)) {
+        SetInBoundsFlag(inst, ctx.false_value);
+        return value;
+    }
+    const Id delta{GuestLane(ctx, index)};
     const Id thread_id{EmitLaneId(ctx)};
     const Id max_thread_id{GetMaxThreadId(ctx, thread_id, clamp, segmentation_mask)};
-    Id src_thread_id{ctx.OpIAdd(ctx.U32[1], thread_id, index)};
+    const Id src_thread_id{ctx.OpIAdd(ctx.U32[1], thread_id, delta)};
     const Id in_range{ctx.OpSLessThanEqual(ctx.U1, src_thread_id, max_thread_id)};
 
-    if (ctx.profile.warp_size_potentially_larger_than_guest) {
-        src_thread_id = AddPartitionBase(ctx, src_thread_id);
-    }
-
     SetInBoundsFlag(inst, in_range);
-    return SelectValue(ctx, in_range, value, src_thread_id);
+    const Id shuffled{ShuffleRelative(ctx, value, delta, src_thread_id,
+                                      spv::Op::OpGroupNonUniformShuffleDown)};
+    return ctx.OpSelect(ctx.U32[1], in_range, shuffled, value);
 }
 
 Id EmitShuffleButterfly(EmitContext& ctx, IR::Inst* inst, Id value, Id index, Id clamp,
                         Id segmentation_mask) {
+    if (!StageSupportsSubgroups(ctx)) {
+        SetInBoundsFlag(inst, ctx.false_value);
+        return value;
+    }
+    const Id mask{GuestLane(ctx, index)};
     const Id thread_id{EmitLaneId(ctx)};
     const Id max_thread_id{GetMaxThreadId(ctx, thread_id, clamp, segmentation_mask)};
-    Id src_thread_id{ctx.OpBitwiseXor(ctx.U32[1], thread_id, index)};
+    const Id src_thread_id{ctx.OpBitwiseXor(ctx.U32[1], thread_id, mask)};
     const Id in_range{ctx.OpSLessThanEqual(ctx.U1, src_thread_id, max_thread_id)};
 
-    if (ctx.profile.warp_size_potentially_larger_than_guest) {
-        src_thread_id = AddPartitionBase(ctx, src_thread_id);
-    }
-
     SetInBoundsFlag(inst, in_range);
-    return SelectValue(ctx, in_range, value, src_thread_id);
+    const Id shuffled{ctx.OpGroupNonUniformShuffleXor(ctx.U32[1], SubgroupScope(ctx), value, mask)};
+    return ctx.OpSelect(ctx.U32[1], in_range, shuffled, value);
 }
 
 Id EmitQuadBroadcast(EmitContext& ctx, Id value, Id lane) {
@@ -267,10 +318,16 @@ Id EmitQuadBroadcast(EmitContext& ctx, Id value, Id lane) {
     const Id base{ctx.OpBitwiseAnd(ctx.U32[1], GetThreadId(ctx), ctx.Const(~3u))};
     const Id local_lane{ctx.OpBitwiseAnd(ctx.U32[1], lane, ctx.Const(3u))};
     const Id src_thread_id{ctx.OpBitwiseOr(ctx.U32[1], base, local_lane)};
-    return ctx.OpGroupNonUniformShuffle(ctx.U32[1], SubgroupScope(ctx), value, src_thread_id);
+    return ShuffleAbsolute(ctx, value, src_thread_id);
 }
 
 Id EmitQuadSwap(EmitContext& ctx, Id value, Id direction) {
+    if (ctx.profile.support_quad_shuffles) {
+        const Id result{
+            ctx.OpGroupNonUniformQuadBroadcast(ctx.U32[1], SubgroupScope(ctx), value, direction)};
+        ctx.opcode_rewrites.emplace_back(result.value, spv::Op::OpGroupNonUniformQuadSwap);
+        return result;
+    }
     const Id xor_mask{ctx.OpIAdd(ctx.U32[1], direction, ctx.Const(1u))};
     return ctx.OpGroupNonUniformShuffleXor(ctx.U32[1], SubgroupScope(ctx), value, xor_mask);
 }
