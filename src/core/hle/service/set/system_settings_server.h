@@ -179,7 +179,7 @@ private:
     void StoreSettings();
     void SetSaveNeeded();
 
-    Core::System& m_system;
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     SystemSettings m_system_settings{};
     PrivateSettings m_private_settings{};
     DeviceSettings m_device_settings{};

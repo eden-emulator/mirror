@@ -29,6 +29,7 @@ private:
     Result SetAppletWindowVisibility(bool visible);
     Result SetAppletGpuTimeSlice(s64 time_slice);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     WindowSystem& m_window_system;
     const std::shared_ptr<Applet> m_applet;
 };

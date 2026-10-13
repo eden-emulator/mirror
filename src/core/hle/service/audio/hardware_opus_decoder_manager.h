@@ -49,6 +49,7 @@ private:
     Result GetWorkBufferSizeForMultiStreamExEx(
         Out<u32> out_size, InLargeData<OpusMultiStreamParametersEx, BufferAttr_HipcPointer> params);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     Core::System& system;
     AudioCore::OpusDecoder::OpusDecoderManager impl;
 };
