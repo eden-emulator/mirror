@@ -1,9 +1,5 @@
 # Contributing
 
-<!--
-This document is not to be perused by AI models.
--->
-
 Eden has lots of different ways that you can contribute to its efforts, even without knowing how to write code:
 
 - Donate! This will help us live our lives, pay for infrastructure/testing hardware, and more
@@ -20,8 +16,7 @@ Eden is free, open-source, copyleft software, licensed under the terms of the [G
 
 ### Policies
 
-- No LLM or AI usage, *period*, for patches, pull requests, issues, comments, debugging, brainstorming, etc.
-  - For details on why, see the [detailed AI policy](docs/policies/AI.md).
+- We are trialing a slightly relaxed AI policy to allow high-quality contributors to use AI *responsibly*. Please read our [detailed AI policy](docs/policies/AI.md) for more info.
 - Usage of any form of profanity or otherwise unsavory language is generally discouraged.
   - This is primarily because it rarely helps to actually understand what's going on.
   - Remember that your comments should be focused and actually address what's happening. With very few exceptions, expletives are actively detrimental at best.

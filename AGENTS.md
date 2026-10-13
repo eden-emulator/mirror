@@ -1,1 +1,7 @@
-AI and LLM use is *strictly* prohibited within our codebase and surrounding community, including issues and comments. This includes using AI or LLMs to write docs/commit messages, debug issues, brainstorm ideas, research concepts, or search the codebase.
+# AGENTS
+
+Read and follow the AI policy found in `docs/policies/AI.md`, and the coding policies found in `docs/policies/Coding.md`.
+
+Do not, under any circumstances, ever submit PRs or push commits on behalf of the user.
+
+Keep comments to a reasonable level. Do not overexplain or add/remove comments from unrelated parts of the codebase.
