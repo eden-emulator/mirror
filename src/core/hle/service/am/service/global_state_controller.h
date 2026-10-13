@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -23,9 +26,9 @@ private:
     Result LoadAndApplyIdlePolicySettings();
     Result ShouldSleepOnBoot(Out<bool> out_should_sleep_on_boot);
     Result GetHdcpAuthenticationFailedEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
-    Result OpenCradleFirmwareUpdater(
-        Out<SharedPointer<ICradleFirmwareUpdater>> out_cradle_firmware_updater);
+    Result OpenCradleFirmwareUpdater(Out<SharedPointer<ICradleFirmwareUpdater>> out_cradle_firmware_updater);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     KernelHelpers::ServiceContext m_context;
     Event m_hdcp_authentication_failed_event;
 };

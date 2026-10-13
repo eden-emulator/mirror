@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -8,21 +11,20 @@ namespace Service::AOC {
 
 constexpr Result ResultNoPurchasedProductInfoAvailable{ErrorModule::NIMShop, 400};
 
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IPurchaseEventManager::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, D<&IPurchaseEventManager::SetDefaultDeliveryTarget>, "SetDefaultDeliveryTarget"},
+        FunctionInfo{1, D<&IPurchaseEventManager::SetDeliveryTarget>, "SetDeliveryTarget"},
+        FunctionInfo{2, D<&IPurchaseEventManager::GetPurchasedEvent>, "GetPurchasedEvent"},
+        FunctionInfo{3, D<&IPurchaseEventManager::PopPurchasedProductInfo>, "PopPurchasedProductInfo"},
+        FunctionInfo{4, D<&IPurchaseEventManager::PopPurchasedProductInfoWithUid>, "PopPurchasedProductInfoWithUid"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IPurchaseEventManager::IPurchaseEventManager(Core::System& system_)
-    : ServiceFramework{system_, "IPurchaseEventManager"}, service_context{system,
-                                                                          "IPurchaseEventManager"} {
-    // clang-format off
-        static const FunctionInfo functions[] = {
-            {0, D<&IPurchaseEventManager::SetDefaultDeliveryTarget>, "SetDefaultDeliveryTarget"},
-            {1, D<&IPurchaseEventManager::SetDeliveryTarget>, "SetDeliveryTarget"},
-            {2, D<&IPurchaseEventManager::GetPurchasedEvent>, "GetPurchasedEvent"},
-            {3, D<&IPurchaseEventManager::PopPurchasedProductInfo>, "PopPurchasedProductInfo"},
-            {4, D<&IPurchaseEventManager::PopPurchasedProductInfoWithUid>, "PopPurchasedProductInfoWithUid"},
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
-
+    : ServiceFramework{system_, "IPurchaseEventManager"}
+    , service_context{system, "IPurchaseEventManager"} {
     purchased_event = service_context.CreateEvent("IPurchaseEventManager:PurchasedEvent");
 }
 

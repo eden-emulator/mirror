@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -34,6 +37,7 @@ private:
         const InBuffer<BufferAttr_HipcMapTransferAllowsNonSecure | BufferAttr_HipcMapAlias>
             thumbnail_image_data_buffer);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::shared_ptr<AlbumManager> manager;
 };
 

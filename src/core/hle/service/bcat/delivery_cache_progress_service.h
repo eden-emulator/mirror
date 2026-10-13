@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -28,6 +31,7 @@ private:
     Result GetEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
     Result GetImpl(OutLargeData<DeliveryCacheProgressImpl, BufferAttr_HipcPointer> out_impl);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     Kernel::KReadableEvent& event;
     const DeliveryCacheProgressImpl& impl;
 };

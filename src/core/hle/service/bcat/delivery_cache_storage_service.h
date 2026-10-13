@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -28,6 +31,7 @@ private:
         Out<s32> out_directory_count,
         OutArray<DirectoryName, BufferAttr_HipcMapAlias> out_directories);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     FileSys::VirtualDir root;
     std::vector<DirectoryName> entries;
     std::size_t next_read_index = 0;

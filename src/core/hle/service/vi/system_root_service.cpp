@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -11,14 +14,17 @@
 
 namespace Service::VI {
 
-ISystemRootService::ISystemRootService(Core::System& system_, std::shared_ptr<Container> container)
-    : ServiceFramework{system_, "vi:s"}, m_container{std::move(container)} {
-    static const FunctionInfo functions[] = {
-        {1, C<&ISystemRootService::GetDisplayService>, "GetDisplayService"},
-        {3, nullptr, "GetDisplayServiceWithProxyNameExchange"},
-    };
-    RegisterHandlers(functions);
+std::optional<ServiceFrameworkBase::FunctionInfoBase> ISystemRootService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{1, C<&ISystemRootService::GetDisplayService>, "GetDisplayService"},
+        FunctionInfo{3, nullptr, "GetDisplayServiceWithProxyNameExchange"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
 }
+
+ISystemRootService::ISystemRootService(Core::System& system_, std::shared_ptr<Container> container)
+    : ServiceFramework{system_, "vi:s"}, m_container{std::move(container)}
+{}
 
 ISystemRootService::~ISystemRootService() = default;
 

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -11,14 +14,17 @@
 
 namespace Service::VI {
 
+std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationRootService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&IApplicationRootService::GetDisplayService>, "GetDisplayService"},
+        FunctionInfo{1, nullptr, "GetDisplayServiceWithProxyNameExchange"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 IApplicationRootService::IApplicationRootService(Core::System& system_,
                                                  std::shared_ptr<Container> container)
     : ServiceFramework{system_, "vi:u"}, m_container{std::move(container)} {
-    static const FunctionInfo functions[] = {
-        {0, C<&IApplicationRootService::GetDisplayService>, "GetDisplayService"},
-        {1, nullptr, "GetDisplayServiceWithProxyNameExchange"},
-    };
-    RegisterHandlers(functions);
 }
 
 IApplicationRootService::~IApplicationRootService() = default;

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -26,8 +29,8 @@ public:
 
 private:
     static constexpr std::size_t MaxVibrationDevicesHandles{0x100};
-
     Result ActivateVibrationDevice(Core::HID::VibrationDeviceHandle vibration_device_handle);
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     mutable std::mutex mutex;
     std::size_t list_size{};

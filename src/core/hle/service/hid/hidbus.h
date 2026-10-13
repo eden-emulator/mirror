@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -143,6 +146,8 @@ private:
             devices[device_index.value()].device = std::make_unique<T>(system, service_context);
         }
     }
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     bool is_hidbus_enabled{false};
     HidbusStatusManager hidbus_status{};

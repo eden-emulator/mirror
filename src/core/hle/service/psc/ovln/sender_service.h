@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -16,8 +19,9 @@ public:
     ~ISenderService() override;
 
 private:
-    Result OpenSender(Out<SharedPointer<ISender>> out_sender, u32 sender_id,
-                      std::array<u64, 2> data);
+    Result OpenSender(Out<SharedPointer<ISender>> out_sender, u32 sender_id, std::array<u64, 2> data);
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::PSC

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -20,6 +23,7 @@ private:
     Result ChangeMainAppletMasterVolume(f32 volume, s64 fade_time_ns);
     Result SetTransparentVolumeRate(f32 transparent_volume_rate);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     static constexpr float MinAllowedVolume = 0.0f;
     static constexpr float MaxAllowedVolume = 1.0f;
 

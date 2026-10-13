@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -49,6 +49,8 @@ private:
                    InBuffer<BufferAttr_HipcPointer> where_phrase,
                    InBuffer<BufferAttr_HipcPointer> order_by_phrase,
                    s32 offset);
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::News

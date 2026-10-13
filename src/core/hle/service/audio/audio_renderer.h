@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -42,6 +45,7 @@ private:
     Result SetVoiceDropParameter(f32 voice_drop_parameter);
     Result GetVoiceDropParameter(Out<f32> out_voice_drop_parameter);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* rendered_event;
     AudioCore::Renderer::Manager& manager;

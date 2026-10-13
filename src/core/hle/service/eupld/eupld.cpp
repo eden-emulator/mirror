@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -11,36 +14,34 @@ namespace Service::EUPLD {
 
 class ErrorUploadContext final : public ServiceFramework<ErrorUploadContext> {
 public:
-    explicit ErrorUploadContext(Core::System& system_) : ServiceFramework{system_, "eupld:c"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            {0, nullptr, "SetUrl"},
-            {1, nullptr, "ImportCrt"},
-            {2, nullptr, "ImportPki"},
-            {3, nullptr, "SetAutoUpload"},
-            {4, nullptr, "GetAutoUpload"},
-        };
-        // clang-format on
+    explicit ErrorUploadContext(Core::System& system_) : ServiceFramework{system_, "eupld:c"} {}
 
-        RegisterHandlers(functions);
+    static constexpr auto functions = CreateStaticMap(
+            FunctionInfo{0, nullptr, "SetUrl"},
+            FunctionInfo{1, nullptr, "ImportCrt"},
+            FunctionInfo{2, nullptr, "ImportPki"},
+            FunctionInfo{3, nullptr, "SetAutoUpload"},
+            FunctionInfo{4, nullptr, "GetAutoUpload"}
+        );
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 
 class ErrorUploadRequest final : public ServiceFramework<ErrorUploadRequest> {
 public:
-    explicit ErrorUploadRequest(Core::System& system_) : ServiceFramework{system_, "eupld:r"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            {0, nullptr, "Initialize"},
-            {1, nullptr, "UploadAll"},
-            {2, nullptr, "UploadSelected"},
-            {3, nullptr, "GetUploadStatus"},
-            {4, nullptr, "CancelUpload"},
-            {5, nullptr, "GetResult"},
-        };
-        // clang-format on
+    explicit ErrorUploadRequest(Core::System& system_) : ServiceFramework{system_, "eupld:r"} {}
 
-        RegisterHandlers(functions);
+    static constexpr auto functions = CreateStaticMap(
+            FunctionInfo{0, nullptr, "Initialize"},
+            FunctionInfo{1, nullptr, "UploadAll"},
+            FunctionInfo{2, nullptr, "UploadSelected"},
+            FunctionInfo{3, nullptr, "GetUploadStatus"},
+            FunctionInfo{4, nullptr, "CancelUpload"},
+            FunctionInfo{5, nullptr, "GetResult"}
+        );
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 };
 

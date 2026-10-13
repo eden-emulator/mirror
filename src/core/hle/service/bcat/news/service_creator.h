@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -29,6 +32,7 @@ private:
     Result CreateNewsDatabaseService(OutInterface<INewsDatabaseService> out_interface);
     Result CreateOverwriteEventHolder(OutInterface<IOverwriteEventHolder> out_interface);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     u32 permissions;
 };
 

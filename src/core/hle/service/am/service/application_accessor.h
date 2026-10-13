@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -36,6 +39,7 @@ private:
     Result GetNsRightsEnvironmentHandle(Out<u64> out_handle);
     Result ReportApplicationExitTimeout();
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     WindowSystem& m_window_system;
     const std::shared_ptr<Applet> m_applet;
 };

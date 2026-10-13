@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -9,11 +12,6 @@ namespace Service::FileSystem {
 
 IMultiCommitManager::IMultiCommitManager(Core::System& system_)
     : ServiceFramework{system_, "IMultiCommitManager"} {
-    static const FunctionInfo functions[] = {
-        {1, D<&IMultiCommitManager::Add>, "Add"},
-        {2, D<&IMultiCommitManager::Commit>, "Commit"},
-    };
-    RegisterHandlers(functions);
 }
 
 IMultiCommitManager::~IMultiCommitManager() = default;

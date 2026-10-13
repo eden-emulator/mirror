@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -26,6 +29,8 @@ private:
     Result Read(Out<s64> out_count,
                 const OutArray<FileSys::DirectoryEntry, BufferAttr_HipcMapAlias> out_entries);
     Result GetEntryCount(Out<s64> out_count);
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::FileSystem

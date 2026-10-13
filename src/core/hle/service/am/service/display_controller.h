@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -35,6 +35,7 @@ private:
                                                      Out<s32> out_fbshare_layer_index);
     Result ReleaseLastApplicationCaptureSharedBuffer();
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<Applet> applet;
 };
 

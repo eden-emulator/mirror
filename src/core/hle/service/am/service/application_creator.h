@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -24,6 +24,7 @@ private:
     Result CreateApplication(Out<SharedPointer<IApplicationAccessor>>, u64 application_id);
     Result CreateSystemApplication(Out<SharedPointer<IApplicationAccessor>>, u64 application_id);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     WindowSystem& m_window_system;
 };
 

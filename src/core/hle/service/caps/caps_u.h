@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -33,6 +36,7 @@ private:
         AlbumFileDateTime end_date_time, ClientAppletResourceUserId aruid,
         OutArray<ApplicationAlbumEntry, BufferAttr_HipcMapAlias> out_entries);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::shared_ptr<AlbumManager> manager = nullptr;
 };
 

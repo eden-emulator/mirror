@@ -13,6 +13,7 @@ public:
 private:
     Result Cancel();
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     Service::Event* event{};
 };
 

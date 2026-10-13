@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator
@@ -51,6 +51,7 @@ private:
     void SetBackgroundRequestEnabled(HLERequestContext& ctx);
     void GetCurrentAccessPoint(HLERequestContext& ctx);
     void GetScanDataV3(HLERequestContext& ctx);
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::NIFM

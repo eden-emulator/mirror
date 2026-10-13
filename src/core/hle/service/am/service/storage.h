@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -29,6 +32,7 @@ private:
     Result OpenTransferStorage(
         Out<SharedPointer<ITransferStorageAccessor>> out_transfer_storage_accessor);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<LibraryAppletStorage> m_impl;
 };
 

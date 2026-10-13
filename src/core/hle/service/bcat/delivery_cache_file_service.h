@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -26,6 +29,7 @@ private:
     Result GetSize(Out<u64> out_size);
     Result GetDigest(Out<BcatDigest> out_digest);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     FileSys::VirtualDir root;
     FileSys::VirtualFile current_file;
 };

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,14 +10,6 @@ namespace Service::Audio {
 
 IFinalOutputRecorderManagerForApplet::IFinalOutputRecorderManagerForApplet(Core::System& system_)
     : ServiceFramework{system_, "audrec:a"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {0, nullptr, "RequestSuspend"},
-        {1, nullptr, "RequestResume"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IFinalOutputRecorderManagerForApplet::~IFinalOutputRecorderManagerForApplet() = default;

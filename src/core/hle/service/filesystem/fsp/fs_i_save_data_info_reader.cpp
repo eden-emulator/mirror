@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
@@ -17,11 +17,6 @@ ISaveDataInfoReader::ISaveDataInfoReader(Core::System& system_,
                                          FileSys::SaveDataSpaceId space)
     : ServiceFramework{system_, "ISaveDataInfoReader"}, save_data_controller{
                                                             save_data_controller_} {
-    static const FunctionInfo functions[] = {
-        {0, D<&ISaveDataInfoReader::ReadSaveDataInfo>, "ReadSaveDataInfo"},
-    };
-    RegisterHandlers(functions);
-
     FindAllSaves(space);
 }
 

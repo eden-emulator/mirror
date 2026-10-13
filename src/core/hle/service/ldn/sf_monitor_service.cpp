@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -7,17 +10,17 @@
 
 namespace Service::LDN {
 
+std::optional<ServiceFrameworkBase::FunctionInfoBase> ISfMonitorService::FindRequest(u32 key) {
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, C<&ISfMonitorService::Initialize>, "Initialize"},
+        FunctionInfo{288, C<&ISfMonitorService::GetGroupInfo>, "GetGroupInfo"},
+        FunctionInfo{320, nullptr, "GetLinkLevel"}
+    );
+    return HandlerTableGenerateWithFind(key, functions);
+}
+
 ISfMonitorService::ISfMonitorService(Core::System& system_)
     : ServiceFramework{system_, "ISfMonitorService"} {
-    // clang-format off
-        static const FunctionInfo functions[] = {
-            {0, C<&ISfMonitorService::Initialize>, "Initialize"},
-            {288, C<&ISfMonitorService::GetGroupInfo>, "GetGroupInfo"},
-            {320, nullptr, "GetLinkLevel"},
-        };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 ISfMonitorService::~ISfMonitorService() = default;

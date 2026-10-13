@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -11,6 +14,13 @@ class IAccountProxyInterface final : public ServiceFramework<IAccountProxyInterf
 public:
     explicit IAccountProxyInterface(Core::System& system_);
     ~IAccountProxyInterface() override;
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "CreateUserAccount"}
+    );
 };
 
 } // namespace Service::NS

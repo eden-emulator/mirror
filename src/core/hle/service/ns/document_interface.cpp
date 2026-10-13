@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -9,15 +12,6 @@ namespace Service::NS {
 
 IDocumentInterface::IDocumentInterface(Core::System& system_)
     : ServiceFramework{system_, "IDocumentInterface"} {
-    // clang-format off
-    static const FunctionInfo functions[] = {
-        {21, nullptr, "GetApplicationContentPath"},
-        {23, D<&IDocumentInterface::ResolveApplicationContentPath>, "ResolveApplicationContentPath"},
-        {92, D<&IDocumentInterface::GetRunningApplicationProgramId>, "GetRunningApplicationProgramId"},
-    };
-    // clang-format on
-
-    RegisterHandlers(functions);
 }
 
 IDocumentInterface::~IDocumentInterface() = default;

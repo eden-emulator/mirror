@@ -245,24 +245,6 @@ void NVDRV::DumpGraphicsMemoryInfo(HLERequestContext& ctx) {
 
 NVDRV::NVDRV(Core::System& system_, std::shared_ptr<Module> nvdrv_, const char* name)
     : ServiceFramework{system_, name}, nvdrv{std::move(nvdrv_)} {
-    static const FunctionInfo functions[] = {
-        {0, &NVDRV::Open, "Open"},
-        {1, &NVDRV::Ioctl1, "Ioctl"},
-        {2, &NVDRV::Close, "Close"},
-        {3, &NVDRV::Initialize, "Initialize"},
-        {4, &NVDRV::QueryEvent, "QueryEvent"},
-        {5, nullptr, "MapSharedMem"},
-        {6, &NVDRV::GetStatus, "GetStatus"},
-        {7, nullptr, "SetAruidForTest"},
-        {8, &NVDRV::SetAruid, "SetAruid"},
-        {9, &NVDRV::DumpGraphicsMemoryInfo, "DumpGraphicsMemoryInfo"},
-        {10, nullptr, "InitializeDevtools"},
-        {11, &NVDRV::Ioctl2, "Ioctl2"},
-        {12, &NVDRV::Ioctl3, "Ioctl3"},
-        {13, &NVDRV::SetGraphicsFirmwareMemoryMarginEnabled,
-         "SetGraphicsFirmwareMemoryMarginEnabled"},
-    };
-    RegisterHandlers(functions);
 }
 
 NVDRV::~NVDRV() {

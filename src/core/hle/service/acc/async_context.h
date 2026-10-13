@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -29,6 +32,16 @@ protected:
     virtual Result GetResult() const = 0;
 
     void MarkComplete();
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &IAsyncContext::GetSystemEvent, "GetSystemEvent"},
+        FunctionInfo{1, &IAsyncContext::Cancel, "Cancel"},
+        FunctionInfo{2, &IAsyncContext::HasDone, "HasDone"},
+        FunctionInfo{3, &IAsyncContext::GetResult, "GetResult"}
+    );
 
     KernelHelpers::ServiceContext service_context;
 

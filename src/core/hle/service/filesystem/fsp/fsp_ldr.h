@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -15,6 +18,15 @@ class FSP_LDR final : public ServiceFramework<FSP_LDR> {
 public:
     explicit FSP_LDR(Core::System& system_);
     ~FSP_LDR() override;
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "OpenCodeFileSystem"},
+        FunctionInfo{1, nullptr, "IsArchivedProgram"},
+        FunctionInfo{2, nullptr, "SetCurrentProcess"}
+    );
 };
 
 } // namespace Service::FileSystem

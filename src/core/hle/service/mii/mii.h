@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -24,6 +27,7 @@ public:
 private:
     Result GetDatabaseService(Out<SharedPointer<IDatabaseService>> out_database_service);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::shared_ptr<MiiManager> manager{nullptr};
     bool is_system{};
 };

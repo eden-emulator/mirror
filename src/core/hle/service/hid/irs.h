@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -154,6 +157,8 @@ private:
         return static_cast<T&>(*processors[index]);
     }
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
+
     Core::HID::EmulatedController* npad_device = nullptr;
     StatusManager* shared_memory = nullptr;
     std::array<std::unique_ptr<ProcessorBase>, 9> processors{};
@@ -163,6 +168,16 @@ class IRS_SYS final : public ServiceFramework<IRS_SYS> {
 public:
     explicit IRS_SYS(Core::System& system);
     ~IRS_SYS() override;
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{500, nullptr, "SetAppletResourceUserId"},
+        FunctionInfo{501, nullptr, "RegisterAppletResourceUserId"},
+        FunctionInfo{502, nullptr, "UnregisterAppletResourceUserId"},
+        FunctionInfo{503, nullptr, "EnableAppletToGetInput"}
+    );
 };
 
 } // namespace Service::IRS

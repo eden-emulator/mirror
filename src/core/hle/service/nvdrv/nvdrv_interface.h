@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -35,8 +38,27 @@ private:
 
     void ServiceError(HLERequestContext& ctx, NvResult result);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &NVDRV::Open, "Open"},
+        FunctionInfo{1, &NVDRV::Ioctl1, "Ioctl"},
+        FunctionInfo{2, &NVDRV::Close, "Close"},
+        FunctionInfo{3, &NVDRV::Initialize, "Initialize"},
+        FunctionInfo{4, &NVDRV::QueryEvent, "QueryEvent"},
+        FunctionInfo{5, nullptr, "MapSharedMem"},
+        FunctionInfo{6, &NVDRV::GetStatus, "GetStatus"},
+        FunctionInfo{7, nullptr, "SetAruidForTest"},
+        FunctionInfo{8, &NVDRV::SetAruid, "SetAruid"},
+        FunctionInfo{9, &NVDRV::DumpGraphicsMemoryInfo, "DumpGraphicsMemoryInfo"},
+        FunctionInfo{10, nullptr, "InitializeDevtools"},
+        FunctionInfo{11, &NVDRV::Ioctl2, "Ioctl2"},
+        FunctionInfo{12, &NVDRV::Ioctl3, "Ioctl3"},
+        FunctionInfo{13, &NVDRV::SetGraphicsFirmwareMemoryMarginEnabled,
+         "SetGraphicsFirmwareMemoryMarginEnabled"}
+    );
     std::shared_ptr<Module> nvdrv;
-
     u64 pid{};
     bool is_initialized{};
     NvCore::SessionId session_id{};

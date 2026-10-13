@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -55,6 +58,7 @@ private:
         Out<u32> out_data_size, Out<u32> out_sample_count, Out<u64> out_time_taken,
         InBuffer<BufferAttr_HipcMapAlias | BufferAttr_HipcMapTransferAllowsNonSecure> opus_data,
         bool reset);
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     std::unique_ptr<AudioCore::OpusDecoder::OpusDecoder> impl;
     Common::ScratchBuffer<u8> output_data;
