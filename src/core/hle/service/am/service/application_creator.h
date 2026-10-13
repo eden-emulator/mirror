@@ -24,6 +24,7 @@ private:
     Result CreateApplication(Out<SharedPointer<IApplicationAccessor>>, u64 application_id);
     Result CreateSystemApplication(Out<SharedPointer<IApplicationAccessor>>, u64 application_id);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     WindowSystem& m_window_system;
 };
 

@@ -23,6 +23,7 @@ public:
 
 private:
     Result InitializeSystem2();
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::LDN

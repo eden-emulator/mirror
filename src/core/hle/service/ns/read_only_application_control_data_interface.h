@@ -45,6 +45,8 @@ public:
         u8 flag1,
         u8 flag2,
         u64 application_id);
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::NS

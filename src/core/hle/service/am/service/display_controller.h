@@ -35,6 +35,7 @@ private:
                                                      Out<s32> out_fbshare_layer_index);
     Result ReleaseLastApplicationCaptureSharedBuffer();
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<Applet> applet;
 };
 

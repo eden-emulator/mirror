@@ -47,13 +47,7 @@ void GetApplicationPidGeneric(Kernel::KernelCore& kernel, HLERequestContext& ctx
 
 class BootMode final : public ServiceFramework<BootMode> {
 public:
-    explicit BootMode(Core::System& system_) : ServiceFramework{system_, "pm:bm"} {
-        static const FunctionInfo functions[] = {
-            {0, &BootMode::GetBootMode, "GetBootMode"},
-            {1, &BootMode::SetMaintenanceBoot, "SetMaintenanceBoot"},
-        };
-        RegisterHandlers(functions);
-    }
+    explicit BootMode(Core::System& system_) : ServiceFramework{system_, "pm:bm"} {}
 
 private:
     void GetBootMode(HLERequestContext& ctx) {
@@ -73,28 +67,19 @@ private:
         rb.Push(ResultSuccess);
     }
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &BootMode::GetBootMode, "GetBootMode"},
+        FunctionInfo{1, &BootMode::SetMaintenanceBoot, "SetMaintenanceBoot"}
+    );
     SystemBootMode boot_mode = SystemBootMode::Normal;
 };
 
 class DebugMonitor final : public ServiceFramework<DebugMonitor> {
 public:
-    explicit DebugMonitor(Core::System& system_) : ServiceFramework{system_, "pm:dmnt"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            {0, nullptr, "GetJitDebugProcessIdList"},
-            {1, nullptr, "StartProcess"},
-            {2, &DebugMonitor::GetProcessId, "GetProcessId"},
-            {3, nullptr, "HookToCreateProcess"},
-            {4, &DebugMonitor::GetApplicationProcessId, "GetApplicationProcessId"},
-            {5, nullptr, "HookToCreateApplicationProgress"},
-            {6, nullptr, "ClearHook"},
-            {65000, &DebugMonitor::AtmosphereGetProcessInfo, "AtmosphereGetProcessInfo"},
-            {65001, nullptr, "AtmosphereGetCurrentLimitInfo"},
-        };
-        // clang-format on
-
-        RegisterHandlers(functions);
-    }
+    explicit DebugMonitor(Core::System& system_) : ServiceFramework{system_, "pm:dmnt"} {}
 
 private:
     void GetProcessId(HLERequestContext& ctx) {
@@ -164,19 +149,26 @@ private:
         rb.PushRaw(program_location);
         rb.PushRaw(override_status);
     }
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "GetJitDebugProcessIdList"},
+        FunctionInfo{1, nullptr, "StartProcess"},
+        FunctionInfo{2, &DebugMonitor::GetProcessId, "GetProcessId"},
+        FunctionInfo{3, nullptr, "HookToCreateProcess"},
+        FunctionInfo{4, &DebugMonitor::GetApplicationProcessId, "GetApplicationProcessId"},
+        FunctionInfo{5, nullptr, "HookToCreateApplicationProgress"},
+        FunctionInfo{6, nullptr, "ClearHook"},
+        FunctionInfo{65000, &DebugMonitor::AtmosphereGetProcessInfo, "AtmosphereGetProcessInfo"},
+        FunctionInfo{65001, nullptr, "AtmosphereGetCurrentLimitInfo"}
+    );
 };
 
 class Info final : public ServiceFramework<Info> {
 public:
-    explicit Info(Core::System& system_) : ServiceFramework{system_, "pm:info"} {
-        static const FunctionInfo functions[] = {
-            {0, &Info::GetProgramId, "GetProgramId"},
-            {65000, &Info::AtmosphereGetProcessId, "AtmosphereGetProcessId"},
-            {65001, nullptr, "AtmosphereHasLaunchedProgram"},
-            {65002, nullptr, "AtmosphereGetProcessInfo"},
-        };
-        RegisterHandlers(functions);
-    }
+    explicit Info(Core::System& system_) : ServiceFramework{system_, "pm:info"} {}
 
 private:
     void GetProgramId(HLERequestContext& ctx) {
@@ -218,27 +210,24 @@ private:
         rb.Push(ResultSuccess);
         rb.Push(process->GetProcessId());
     }
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
+    }
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, &Info::GetProgramId, "GetProgramId"},
+        FunctionInfo{65000, &Info::AtmosphereGetProcessId, "AtmosphereGetProcessId"},
+        FunctionInfo{65001, nullptr, "AtmosphereHasLaunchedProgram"},
+        FunctionInfo{65002, nullptr, "AtmosphereGetProcessInfo"}
+    );
 };
 
 class Shell final : public ServiceFramework<Shell> {
 public:
-    explicit Shell(Core::System& system_) : ServiceFramework{system_, "pm:shell"} {
-        // clang-format off
-        static const FunctionInfo functions[] = {
-            {0, nullptr, "LaunchProgram"},
-            {1, nullptr, "TerminateProcess"},
-            {2, nullptr, "TerminateProgram"},
-            {3, nullptr, "GetProcessEventHandle"},
-            {4, nullptr, "GetProcessEventInfo"},
-            {5, nullptr, "NotifyBootFinished"},
-            {6, &Shell::GetApplicationProcessIdForShell, "GetApplicationProcessIdForShell"},
-            {7, nullptr, "BoostSystemMemoryResourceLimit"},
-            {8, nullptr, "BoostApplicationThreadResourceLimit"},
-            {9, nullptr, "GetBootFinishedEventHandle"},
-        };
-        // clang-format on
+    explicit Shell(Core::System& system_) : ServiceFramework{system_, "pm:shell"} {}
 
-        RegisterHandlers(functions);
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
+        return HandlerTableGenerateWithFind(key, functions);
     }
 
 private:
@@ -247,6 +236,19 @@ private:
         auto list = kernel.GetProcessList();
         GetApplicationPidGeneric(system.Kernel(), ctx, list);
     }
+
+    static constexpr auto functions = CreateStaticMap(
+        FunctionInfo{0, nullptr, "LaunchProgram"},
+        FunctionInfo{1, nullptr, "TerminateProcess"},
+        FunctionInfo{2, nullptr, "TerminateProgram"},
+        FunctionInfo{3, nullptr, "GetProcessEventHandle"},
+        FunctionInfo{4, nullptr, "GetProcessEventInfo"},
+        FunctionInfo{5, nullptr, "NotifyBootFinished"},
+        FunctionInfo{6, &Shell::GetApplicationProcessIdForShell, "GetApplicationProcessIdForShell"},
+        FunctionInfo{7, nullptr, "BoostSystemMemoryResourceLimit"},
+        FunctionInfo{8, nullptr, "BoostApplicationThreadResourceLimit"},
+        FunctionInfo{9, nullptr, "GetBootFinishedEventHandle"}
+    );
 };
 
 void LoopProcess(Core::System& system) {

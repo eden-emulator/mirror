@@ -19,8 +19,9 @@ public:
     ~ISenderService() override;
 
 private:
-    Result OpenSender(Out<SharedPointer<ISender>> out_sender, u32 sender_id,
-                      std::array<u64, 2> data);
+    Result OpenSender(Out<SharedPointer<ISender>> out_sender, u32 sender_id, std::array<u64, 2> data);
+
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::PSC

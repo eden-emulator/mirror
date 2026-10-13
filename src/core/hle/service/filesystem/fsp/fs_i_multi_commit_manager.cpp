@@ -12,11 +12,6 @@ namespace Service::FileSystem {
 
 IMultiCommitManager::IMultiCommitManager(Core::System& system_)
     : ServiceFramework{system_, "IMultiCommitManager"} {
-    static const FunctionInfo functions[] = {
-        {1, D<&IMultiCommitManager::Add>, "Add"},
-        {2, D<&IMultiCommitManager::Commit>, "Commit"},
-    };
-    RegisterHandlers(functions);
 }
 
 IMultiCommitManager::~IMultiCommitManager() = default;

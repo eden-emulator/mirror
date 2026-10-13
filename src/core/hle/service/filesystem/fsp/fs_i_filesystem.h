@@ -58,6 +58,7 @@ public:
     Result GetFileSystemAttribute(Out<FileSys::FileSystemAttribute> out_attribute);
 
 private:
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::unique_ptr<FileSys::Fsa::IFileSystem> backend;
     SizeGetter size_getter;
 };

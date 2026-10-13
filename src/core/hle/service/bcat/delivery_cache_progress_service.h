@@ -31,6 +31,7 @@ private:
     Result GetEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
     Result GetImpl(OutLargeData<DeliveryCacheProgressImpl, BufferAttr_HipcPointer> out_impl);
 
+    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     Kernel::KReadableEvent& event;
     const DeliveryCacheProgressImpl& impl;
 };
