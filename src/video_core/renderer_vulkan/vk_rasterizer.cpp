@@ -798,6 +798,18 @@ void RasterizerVulkan::OnCacheInvalidation(DAddr addr, u64 size) {
     pipeline_cache.InvalidateRegion(addr, size);
 }
 
+bool RasterizerVulkan::TryCacheInvalidation(DAddr addr, u64 size) {
+    if (addr == 0 || size == 0) return true;
+    {
+        std::scoped_lock lock{buffer_cache.mutex, texture_cache.mutex};
+        if (buffer_cache.IsRegionGpuModified(addr, size)) return false;
+        texture_cache.WriteMemory(addr, size);
+        buffer_cache.WriteMemory(addr, size);
+    }
+    pipeline_cache.InvalidateRegion(addr, size);
+    return true;
+}
+
 void RasterizerVulkan::InvalidateGPUCache() {
     gpu.InvalidateGPUCache();
 }
