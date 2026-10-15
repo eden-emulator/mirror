@@ -17,26 +17,25 @@ namespace Service::I2C {
 
 class I2CSession final : public ServiceFramework<I2CSession> {
 public:
-    explicit I2CSession(Core::System& system_) : ServiceFramework{system_, "I2CSession"} {}
+    explicit I2CSession(Core::System& system_)
+        : ServiceFramework{system_, "I2CSession"}
+    {
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "SendOld"},
+            {1, nullptr, "ReceiveOld"},
+            {2, nullptr, "ExecuteCommandListOld"},
+            {10, C<&I2CSession::Send>, "Send"},
+            {11, nullptr, "Receive"},
+            {12, nullptr, "ExecuteCommandList"},
+            {13, nullptr, "SetRetryPolicy"},
+        };
+        RegisterHandlers(functions);
+    }
     ~I2CSession() override = default;
-
     Result Send(InBuffer<BufferAttr_HipcMapAlias> in_data, u32 transaction_option) {
         LOG_WARNING(Service, "(stubbed) topt={}", transaction_option);
         R_THROW(ResultUnknown);
     }
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "SendOld"},
-        FunctionInfo{1, nullptr, "ReceiveOld"},
-        FunctionInfo{2, nullptr, "ExecuteCommandListOld"},
-        FunctionInfo{10, C<&I2CSession::Send>, "Send"},
-        FunctionInfo{11, nullptr, "Receive"},
-        FunctionInfo{12, nullptr, "ExecuteCommandList"},
-        FunctionInfo{13, nullptr, "SetRetryPolicy"}
-    );
 };
 
 enum class I2CDevice : u32 {
@@ -46,9 +45,19 @@ enum class I2CDevice : u32 {
 
 class I2C final : public ServiceFramework<I2C> {
 public:
-    explicit I2C(Core::System& system_) : ServiceFramework{system_, "i2c"} {}
+    explicit I2C(Core::System& system_)
+        : ServiceFramework{system_, "i2c"}
+    {
+        static const FunctionInfo functions[] = {
+            {0, C<&I2C::OpenSessionForDev>, "OpenSessionForDev"},
+            {1, C<&I2C::OpenSession>, "OpenSession"},
+            {2, C<&I2C::HasDevice>, "HasDevice"},
+            {3, C<&I2C::HasDeviceForDev>, "HasDeviceForDev"},
+            {4, C<&I2C::OpenSession2>, "OpenSession2"},
+        };
+        RegisterHandlers(functions);
+    }
     ~I2C() override = default;
-
     Result OpenSessionForDev(OutInterface<I2CSession> out_session, s32 bus_idx, u32 slave_address, u32 addressing_mode, u32 speed_mode) {
         LOG_DEBUG(Service, "(stubbed)");
         *out_session = std::make_shared<I2CSession>(system);
@@ -74,17 +83,6 @@ public:
         *out_session = std::make_shared<I2CSession>(system);
         R_SUCCEED();
     }
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, C<&I2C::OpenSessionForDev>, "OpenSessionForDev"},
-        FunctionInfo{1, C<&I2C::OpenSession>, "OpenSession"},
-        FunctionInfo{2, C<&I2C::HasDevice>, "HasDevice"},
-        FunctionInfo{3, C<&I2C::HasDeviceForDev>, "HasDeviceForDev"},
-        FunctionInfo{4, C<&I2C::OpenSession2>, "OpenSession2"}
-    );
 };
 
 void LoopProcess(Core::System& system) {

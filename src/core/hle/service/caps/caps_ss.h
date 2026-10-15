@@ -37,7 +37,6 @@ private:
         const InBuffer<BufferAttr_HipcMapTransferAllowsNonSecure | BufferAttr_HipcMapAlias>
             thumbnail_image_data_buffer);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::shared_ptr<AlbumManager> manager;
 };
 

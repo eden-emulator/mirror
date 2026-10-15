@@ -14,7 +14,15 @@ namespace Service::APM {
 
 class ISession final : public ServiceFramework<ISession> {
 public:
-    explicit ISession(Core::System& system_, Controller& controller_) : ServiceFramework{system_, "ISession"}, controller{controller_} {}
+    explicit ISession(Core::System& system_, Controller& controller_)
+        : ServiceFramework{system_, "ISession"}, controller{controller_} {
+        static const FunctionInfo functions[] = {
+            {0, &ISession::SetPerformanceConfiguration, "SetPerformanceConfiguration"},
+            {1, &ISession::GetPerformanceConfiguration, "GetPerformanceConfiguration"},
+            {2, &ISession::SetCpuOverclockEnabled, "SetCpuOverclockEnabled"},
+        };
+        RegisterHandlers(functions);
+    }
 
 private:
     void SetPerformanceConfiguration(HLERequestContext& ctx) {
@@ -53,20 +61,18 @@ private:
         rb.Push(ResultSuccess);
     }
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &ISession::SetPerformanceConfiguration, "SetPerformanceConfiguration"},
-        FunctionInfo{1, &ISession::GetPerformanceConfiguration, "GetPerformanceConfiguration"},
-        FunctionInfo{2, &ISession::SetCpuOverclockEnabled, "SetCpuOverclockEnabled"}
-    );
     Controller& controller;
 };
 
 APM::APM(Core::System& system_, std::shared_ptr<Module> apm_, Controller& controller_,
          const char* name)
     : ServiceFramework{system_, name}, apm(std::move(apm_)), controller{controller_} {
+    static const FunctionInfo functions[] = {
+        {0, &APM::OpenSession, "OpenSession"},
+        {1, &APM::GetPerformanceMode, "GetPerformanceMode"},
+        {6, &APM::IsCpuOverclockEnabled, "IsCpuOverclockEnabled"},
+    };
+    RegisterHandlers(functions);
 }
 
 APM::~APM() = default;
@@ -96,6 +102,20 @@ void APM::IsCpuOverclockEnabled(HLERequestContext& ctx) {
 
 APM_Sys::APM_Sys(Core::System& system_, Controller& controller_)
     : ServiceFramework{system_, "apm:sys"}, controller{controller_} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "RequestPerformanceMode"},
+        {1, &APM_Sys::GetPerformanceEvent, "GetPerformanceEvent"},
+        {2, nullptr, "GetThrottlingState"},
+        {3, nullptr, "GetLastThrottlingState"},
+        {4, nullptr, "ClearLastThrottlingState"},
+        {5, nullptr, "LoadAndApplySettings"},
+        {6, &APM_Sys::SetCpuBoostMode, "SetCpuBoostMode"},
+        {7, &APM_Sys::GetCurrentPerformanceConfiguration, "GetCurrentPerformanceConfiguration"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 APM_Sys::~APM_Sys() = default;

@@ -62,7 +62,6 @@ private:
         OutArray<ApplicationPlayStatistics, BufferAttr_HipcMapAlias> out_stats,
         InArray<u64, BufferAttr_HipcMapAlias> application_ids);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::unique_ptr<PlayTime::PlayTimeManager> play_time_manager;
 };
 

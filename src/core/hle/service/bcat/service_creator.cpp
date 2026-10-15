@@ -13,17 +13,6 @@
 
 namespace Service::BCAT {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IServiceCreator::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IServiceCreator::CreateBcatService>, "CreateBcatService"},
-        FunctionInfo{1, D<&IServiceCreator::CreateDeliveryCacheStorageService>, "CreateDeliveryCacheStorageService"},
-        FunctionInfo{2, D<&IServiceCreator::CreateDeliveryCacheStorageServiceWithApplicationId>, "CreateDeliveryCacheStorageServiceWithApplicationId"},
-        FunctionInfo{3, nullptr, "CreateDeliveryCacheProgressService"},
-        FunctionInfo{4, nullptr, "CreateDeliveryCacheProgressServiceWithApplicationId"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 std::unique_ptr<BcatBackend> CreateBackendFromSettings([[maybe_unused]] Core::System& system,
                                                        DirectoryGetter getter) {
     return std::make_unique<NullBcatBackend>(std::move(getter));
@@ -31,7 +20,20 @@ std::unique_ptr<BcatBackend> CreateBackendFromSettings([[maybe_unused]] Core::Sy
 
 IServiceCreator::IServiceCreator(Core::System& system_, const char* name_)
     : ServiceFramework{system_, name_}, fsc{system.GetFileSystemController()} {
-    backend = CreateBackendFromSettings(system_, [this](u64 tid) { return fsc.GetBCATDirectory(tid); });
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IServiceCreator::CreateBcatService>, "CreateBcatService"},
+        {1, D<&IServiceCreator::CreateDeliveryCacheStorageService>, "CreateDeliveryCacheStorageService"},
+        {2, D<&IServiceCreator::CreateDeliveryCacheStorageServiceWithApplicationId>, "CreateDeliveryCacheStorageServiceWithApplicationId"},
+        {3, nullptr, "CreateDeliveryCacheProgressService"},
+        {4, nullptr, "CreateDeliveryCacheProgressServiceWithApplicationId"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
+
+    backend =
+        CreateBackendFromSettings(system_, [this](u64 tid) { return fsc.GetBCATDirectory(tid); });
 }
 
 IServiceCreator::~IServiceCreator() = default;

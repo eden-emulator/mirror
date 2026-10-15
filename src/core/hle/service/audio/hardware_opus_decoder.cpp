@@ -11,25 +11,25 @@ namespace Service::Audio {
 
 using namespace AudioCore::OpusDecoder;
 
-    std::optional<ServiceFrameworkBase::FunctionInfoBase> IHardwareOpusDecoder::FindRequest(u32 key) {
-        static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, D<&IHardwareOpusDecoder::DecodeInterleavedOld>, "DecodeInterleavedOld"},
-            FunctionInfo{1, D<&IHardwareOpusDecoder::SetContext>, "SetContext"},
-            FunctionInfo{2, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStreamOld>, "DecodeInterleavedForMultiStreamOld"},
-            FunctionInfo{3, D<&IHardwareOpusDecoder::SetContextForMultiStream>, "SetContextForMultiStream"},
-            FunctionInfo{4, D<&IHardwareOpusDecoder::DecodeInterleavedWithPerfOld>, "DecodeInterleavedWithPerfOld"},
-            FunctionInfo{5, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStreamWithPerfOld>, "DecodeInterleavedForMultiStreamWithPerfOld"},
-            FunctionInfo{6, D<&IHardwareOpusDecoder::DecodeInterleavedWithPerfAndResetOld>, "DecodeInterleavedWithPerfAndResetOld"},
-            FunctionInfo{7, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStreamWithPerfAndResetOld>, "DecodeInterleavedForMultiStreamWithPerfAndResetOld"},
-            FunctionInfo{8, D<&IHardwareOpusDecoder::DecodeInterleaved>, "DecodeInterleaved"},
-            FunctionInfo{9, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStream>, "DecodeInterleavedForMultiStream"}
-        );
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-
 IHardwareOpusDecoder::IHardwareOpusDecoder(Core::System& system_, HardwareOpus& hardware_opus)
     : ServiceFramework{system_, "IHardwareOpusDecoder"},
       impl{std::make_unique<AudioCore::OpusDecoder::OpusDecoder>(system_, hardware_opus)} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IHardwareOpusDecoder::DecodeInterleavedOld>, "DecodeInterleavedOld"},
+        {1, D<&IHardwareOpusDecoder::SetContext>, "SetContext"},
+        {2, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStreamOld>, "DecodeInterleavedForMultiStreamOld"},
+        {3, D<&IHardwareOpusDecoder::SetContextForMultiStream>, "SetContextForMultiStream"},
+        {4, D<&IHardwareOpusDecoder::DecodeInterleavedWithPerfOld>, "DecodeInterleavedWithPerfOld"},
+        {5, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStreamWithPerfOld>, "DecodeInterleavedForMultiStreamWithPerfOld"},
+        {6, D<&IHardwareOpusDecoder::DecodeInterleavedWithPerfAndResetOld>, "DecodeInterleavedWithPerfAndResetOld"},
+        {7, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStreamWithPerfAndResetOld>, "DecodeInterleavedForMultiStreamWithPerfAndResetOld"},
+        {8, D<&IHardwareOpusDecoder::DecodeInterleaved>, "DecodeInterleaved"},
+        {9, D<&IHardwareOpusDecoder::DecodeInterleavedForMultiStream>, "DecodeInterleavedForMultiStream"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IHardwareOpusDecoder::~IHardwareOpusDecoder() = default;

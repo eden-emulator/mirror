@@ -10,28 +10,28 @@
 
 namespace Service::AM {
 
-    std::optional<ServiceFrameworkBase::FunctionInfoBase> IGlobalStateController::FindRequest(u32 key) {
-        static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "RequestToEnterSleep"},
-            FunctionInfo{1, nullptr, "EnterSleep"},
-            FunctionInfo{2, nullptr, "StartSleepSequence"},
-            FunctionInfo{3, D<&IGlobalStateController::StartShutdownSequence>, "StartShutdownSequence"},
-            FunctionInfo{4, D<&IGlobalStateController::StartRebootSequence>, "StartRebootSequence"},
-            FunctionInfo{9, nullptr, "IsAutoPowerDownRequested"},
-            FunctionInfo{10, D<&IGlobalStateController::LoadAndApplyIdlePolicySettings>, "LoadAndApplyIdlePolicySettings"},
-            FunctionInfo{11, nullptr, "NotifyCecSettingsChanged"},
-            FunctionInfo{12, nullptr, "SetDefaultHomeButtonLongPressTime"},
-            FunctionInfo{13, nullptr, "UpdateDefaultDisplayResolution"},
-            FunctionInfo{14, D<&IGlobalStateController::ShouldSleepOnBoot>, "ShouldSleepOnBoot"},
-            FunctionInfo{15, D<&IGlobalStateController::GetHdcpAuthenticationFailedEvent>, "GetHdcpAuthenticationFailedEvent"},
-            FunctionInfo{30, D<&IGlobalStateController::OpenCradleFirmwareUpdater>, "OpenCradleFirmwareUpdater"}
-        );
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-
 IGlobalStateController::IGlobalStateController(Core::System& system_)
     : ServiceFramework{system_, "IGlobalStateController"},
       m_context{system_, "IGlobalStateController"}, m_hdcp_authentication_failed_event{m_context} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "RequestToEnterSleep"},
+        {1, nullptr, "EnterSleep"},
+        {2, nullptr, "StartSleepSequence"},
+        {3, D<&IGlobalStateController::StartShutdownSequence>, "StartShutdownSequence"},
+        {4, D<&IGlobalStateController::StartRebootSequence>, "StartRebootSequence"},
+        {9, nullptr, "IsAutoPowerDownRequested"},
+        {10, D<&IGlobalStateController::LoadAndApplyIdlePolicySettings>, "LoadAndApplyIdlePolicySettings"},
+        {11, nullptr, "NotifyCecSettingsChanged"},
+        {12, nullptr, "SetDefaultHomeButtonLongPressTime"},
+        {13, nullptr, "UpdateDefaultDisplayResolution"},
+        {14, D<&IGlobalStateController::ShouldSleepOnBoot>, "ShouldSleepOnBoot"},
+        {15, D<&IGlobalStateController::GetHdcpAuthenticationFailedEvent>, "GetHdcpAuthenticationFailedEvent"},
+        {30, D<&IGlobalStateController::OpenCradleFirmwareUpdater>, "OpenCradleFirmwareUpdater"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 Result IGlobalStateController::StartShutdownSequence() {

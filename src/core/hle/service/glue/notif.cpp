@@ -17,45 +17,9 @@
 namespace Service::Glue {
 
 namespace {
+
 constexpr inline std::size_t MaxAlarms = 8;
-}
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> INotificationServicesForApplication::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{500, D<&INotificationServicesForApplication::RegisterAlarmSetting>, "RegisterAlarmSetting"},
-        FunctionInfo{510, D<&INotificationServicesForApplication::UpdateAlarmSetting>, "UpdateAlarmSetting"},
-        FunctionInfo{520, D<&INotificationServicesForApplication::ListAlarmSettings>, "ListAlarmSettings"},
-        FunctionInfo{530, D<&INotificationServicesForApplication::LoadApplicationParameter>, "LoadApplicationParameter"},
-        FunctionInfo{540, D<&INotificationServicesForApplication::DeleteAlarmSetting>, "DeleteAlarmSetting"},
-        FunctionInfo{1000, D<&INotificationServicesForApplication::Initialize>, "Initialize"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
-std::optional<ServiceFrameworkBase::FunctionInfoBase> INotificationServices::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{500, D<&INotificationServices::RegisterAlarmSetting>, "RegisterAlarmSetting"},
-        FunctionInfo{510, D<&INotificationServices::UpdateAlarmSetting>, "UpdateAlarmSetting"},
-        FunctionInfo{520, D<&INotificationServices::ListAlarmSettings>, "ListAlarmSettings"},
-        FunctionInfo{530, D<&INotificationServices::LoadApplicationParameter>, "LoadApplicationParameter"},
-        FunctionInfo{540, D<&INotificationServices::DeleteAlarmSetting>, "DeleteAlarmSetting"},
-        FunctionInfo{1000, D<&INotificationServices::Initialize>, "Initialize"},
-        FunctionInfo{1010, nullptr, "ListNotifications"},
-        FunctionInfo{1020, nullptr, "DeleteNotification"},
-        FunctionInfo{1030, nullptr, "ClearNotifications"},
-        FunctionInfo{1040, D<&INotificationServices::OpenNotificationSystemEventAccessor>, "OpenNotificationSystemEventAccessor"},
-        FunctionInfo{1500, nullptr, "SetNotificationPresentationSetting"},
-        FunctionInfo{1510, D<&INotificationServices::GetNotificationPresentationSetting>, "GetNotificationPresentationSetting"},
-        FunctionInfo{2000, nullptr, "GetAlarmSetting"},
-        FunctionInfo{2001, nullptr, "GetAlarmSettingWithApplicationParameter"},
-        FunctionInfo{2010, nullptr, "MuteAlarmSetting"},
-        FunctionInfo{2020, nullptr, "IsAlarmSettingReady"},
-        FunctionInfo{8000, nullptr, "RegisterAppletResourceUserId"},
-        FunctionInfo{8010, nullptr, "UnregisterAppletResourceUserId"},
-        FunctionInfo{8999, nullptr, "GetCurrentTime"},
-        FunctionInfo{9000, nullptr, "GetAlarmSettingNextNotificationTime"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
 }
 
 Result NotificationServiceImpl::RegisterAlarmSetting(AlarmSettingId* out_alarm_setting_id,
@@ -160,6 +124,18 @@ std::vector<AlarmSetting>::iterator NotificationServiceImpl::GetAlarmFromId(Alar
 
 INotificationServicesForApplication::INotificationServicesForApplication(Core::System& system_)
     : ServiceFramework{system_, "notif:a"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {500, D<&INotificationServicesForApplication::RegisterAlarmSetting>, "RegisterAlarmSetting"},
+        {510, D<&INotificationServicesForApplication::UpdateAlarmSetting>, "UpdateAlarmSetting"},
+        {520, D<&INotificationServicesForApplication::ListAlarmSettings>, "ListAlarmSettings"},
+        {530, D<&INotificationServicesForApplication::LoadApplicationParameter>, "LoadApplicationParameter"},
+        {540, D<&INotificationServicesForApplication::DeleteAlarmSetting>, "DeleteAlarmSetting"},
+        {1000, D<&INotificationServicesForApplication::Initialize>, "Initialize"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 INotificationServicesForApplication::~INotificationServicesForApplication() = default;
@@ -202,13 +178,18 @@ class INotificationSystemEventAccessor final
     : public ServiceFramework<INotificationSystemEventAccessor> {
 public:
     explicit INotificationSystemEventAccessor(Core::System& system_)
-        : ServiceFramework{system_, "INotificationSystemEventAccessor"}
-        , service_context{system_, "INotificationSystemEventAccessor"} {
-        notification_event = service_context.CreateEvent("INotificationSystemEventAccessor:NotificationEvent");
-    }
+        : ServiceFramework{system_, "INotificationSystemEventAccessor"},
+          service_context{system_, "INotificationSystemEventAccessor"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, D<&INotificationSystemEventAccessor::GetSystemEvent>, "GetSystemEvent"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
+
+        notification_event =
+            service_context.CreateEvent("INotificationSystemEventAccessor:NotificationEvent");
     }
 
     ~INotificationSystemEventAccessor() {
@@ -223,15 +204,38 @@ private:
         R_SUCCEED();
     }
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&INotificationSystemEventAccessor::GetSystemEvent>, "GetSystemEvent"}
-    );
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* notification_event;
 };
 
 INotificationServices::INotificationServices(Core::System& system_)
     : ServiceFramework{system_, "notif:s"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {500, D<&INotificationServices::RegisterAlarmSetting>, "RegisterAlarmSetting"},
+        {510, D<&INotificationServices::UpdateAlarmSetting>, "UpdateAlarmSetting"},
+        {520, D<&INotificationServices::ListAlarmSettings>, "ListAlarmSettings"},
+        {530, D<&INotificationServices::LoadApplicationParameter>, "LoadApplicationParameter"},
+        {540, D<&INotificationServices::DeleteAlarmSetting>, "DeleteAlarmSetting"},
+        {1000, D<&INotificationServices::Initialize>, "Initialize"},
+        {1010, nullptr, "ListNotifications"},
+        {1020, nullptr, "DeleteNotification"},
+        {1030, nullptr, "ClearNotifications"},
+        {1040, D<&INotificationServices::OpenNotificationSystemEventAccessor>, "OpenNotificationSystemEventAccessor"},
+        {1500, nullptr, "SetNotificationPresentationSetting"},
+        {1510, D<&INotificationServices::GetNotificationPresentationSetting>, "GetNotificationPresentationSetting"},
+        {2000, nullptr, "GetAlarmSetting"},
+        {2001, nullptr, "GetAlarmSettingWithApplicationParameter"},
+        {2010, nullptr, "MuteAlarmSetting"},
+        {2020, nullptr, "IsAlarmSettingReady"},
+        {8000, nullptr, "RegisterAppletResourceUserId"},
+        {8010, nullptr, "UnregisterAppletResourceUserId"},
+        {8999, nullptr, "GetCurrentTime"},
+        {9000, nullptr, "GetAlarmSettingNextNotificationTime"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 INotificationServices::~INotificationServices() = default;

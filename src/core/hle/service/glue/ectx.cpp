@@ -12,10 +12,14 @@ namespace Service::Glue {
 // This is nn::err::context::IContextRegistrar
 class IContextRegistrar : public ServiceFramework<IContextRegistrar> {
 public:
-    IContextRegistrar(Core::System& system_) : ServiceFramework{system_, "IContextRegistrar"} {}
+    IContextRegistrar(Core::System& system_) : ServiceFramework{system_, "IContextRegistrar"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &IContextRegistrar::Complete, "Complete"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
     ~IContextRegistrar() override = default;
@@ -37,21 +41,41 @@ private:
         rb.Push(ResultSuccess);
         rb.Push(0);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &IContextRegistrar::Complete, "Complete"}
-    );
 };
 
 ECTX_W::ECTX_W(Core::System& system_) : ServiceFramework{system_, "ectx:w"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "CreateContextRegistrar"},
+        {1, nullptr, "CommitContext"},
+        {2, nullptr, "RemoveContext"},
+    };
+    // clang-format on
+    RegisterHandlers(functions);
 }
 ECTX_W::~ECTX_W() = default;
 
 ECTX_R::ECTX_R(Core::System& system_) : ServiceFramework{system_, "ectx:r"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "GetContextInfo"},
+        {1, nullptr, "PullContext"},
+        {2, nullptr, "ListContextDescriptorWithResultForDebug"},
+    };
+    // clang-format on
+    RegisterHandlers(functions);
 }
 ECTX_R::~ECTX_R() = default;
 
 ECTX_AW::ECTX_AW(Core::System& system_) : ServiceFramework{system_, "ectx:aw"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, &ECTX_AW::CreateContextRegistrar, "CreateContextRegistrar"},
+        {1, nullptr, "CommitContext"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 ECTX_AW::~ECTX_AW() = default;

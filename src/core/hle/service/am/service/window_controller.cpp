@@ -12,24 +12,24 @@
 
 namespace Service::AM {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IWindowController::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "CreateWindow"},
-        FunctionInfo{1,  D<&IWindowController::GetAppletResourceUserId>, "GetAppletResourceUserId"},
-        FunctionInfo{2,  D<&IWindowController::GetAppletResourceUserIdOfCallerApplet>, "GetAppletResourceUserIdOfCallerApplet"},
-        FunctionInfo{10, D<&IWindowController::AcquireForegroundRights>, "AcquireForegroundRights"},
-        FunctionInfo{11, D<&IWindowController::ReleaseForegroundRights>, "ReleaseForegroundRights"},
-        FunctionInfo{12, D<&IWindowController::RejectToChangeIntoBackground>, "RejectToChangeIntoBackground"},
-        FunctionInfo{20, D<&IWindowController::SetAppletWindowVisibility>, "SetAppletWindowVisibility"},
-        FunctionInfo{21, D<&IWindowController::SetAppletGpuTimeSlice>, "SetAppletGpuTimeSlice"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IWindowController::IWindowController(Core::System& system_, std::shared_ptr<Applet> applet,
                                      WindowSystem& window_system)
     : ServiceFramework{system_, "IWindowController"},
       m_window_system{window_system}, m_applet{std::move(applet)} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "CreateWindow"},
+        {1,  D<&IWindowController::GetAppletResourceUserId>, "GetAppletResourceUserId"},
+        {2,  D<&IWindowController::GetAppletResourceUserIdOfCallerApplet>, "GetAppletResourceUserIdOfCallerApplet"},
+        {10, D<&IWindowController::AcquireForegroundRights>, "AcquireForegroundRights"},
+        {11, D<&IWindowController::ReleaseForegroundRights>, "ReleaseForegroundRights"},
+        {12, D<&IWindowController::RejectToChangeIntoBackground>, "RejectToChangeIntoBackground"},
+        {20, D<&IWindowController::SetAppletWindowVisibility>, "SetAppletWindowVisibility"},
+        {21, D<&IWindowController::SetAppletGpuTimeSlice>, "SetAppletGpuTimeSlice"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IWindowController::~IWindowController() = default;

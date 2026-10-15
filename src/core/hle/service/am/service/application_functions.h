@@ -84,7 +84,6 @@ private:
     Result GetUnknownEvent210(OutCopyHandle<Kernel::KReadableEvent> out_event);
     Result Unknown330(Out<u8> out);
     Result PrepareForJit();
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     const std::shared_ptr<Applet> m_applet;
 };

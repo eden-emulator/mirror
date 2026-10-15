@@ -18,30 +18,12 @@ class ECTX_W final : public ServiceFramework<ECTX_W> {
 public:
     explicit ECTX_W(Core::System& system_);
     ~ECTX_W() override;
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "CreateContextRegistrar"},
-        FunctionInfo{1, nullptr, "CommitContext"},
-        FunctionInfo{2, nullptr, "RemoveContext"}
-    );
 };
 
 class ECTX_R final : public ServiceFramework<ECTX_R> {
 public:
     explicit ECTX_R(Core::System& system_);
     ~ECTX_R() override;
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "GetContextInfo"},
-        FunctionInfo{1, nullptr, "PullContext"},
-        FunctionInfo{2, nullptr, "ListContextDescriptorWithResultForDebug"}
-    );
 };
 
 class ECTX_AW final : public ServiceFramework<ECTX_AW> {
@@ -51,14 +33,6 @@ public:
 
 private:
     void CreateContextRegistrar(HLERequestContext& ctx);
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &ECTX_AW::CreateContextRegistrar, "CreateContextRegistrar"},
-        FunctionInfo{1, nullptr, "CommitContext"}
-    );
 };
 
 } // namespace Service::Glue

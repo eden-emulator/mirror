@@ -73,21 +73,6 @@ void SanitizeJPEGImageSize(std::vector<u8>& image) {
 
 } // namespace
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IReadOnlyApplicationControlDataInterface::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData>, "GetApplicationControlData"},
-        FunctionInfo{1, D<&IReadOnlyApplicationControlDataInterface::GetApplicationDesiredLanguage>, "GetApplicationDesiredLanguage"},
-        FunctionInfo{2, D<&IReadOnlyApplicationControlDataInterface::ConvertApplicationLanguageToLanguageCode>, "ConvertApplicationLanguageToLanguageCode"},
-        FunctionInfo{3, nullptr, "ConvertLanguageCodeToApplicationLanguage"},
-        FunctionInfo{4, nullptr, "SelectApplicationDesiredLanguage"},
-        FunctionInfo{5, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData2>, "GetApplicationControlData"},
-        FunctionInfo{10, &IReadOnlyApplicationControlDataInterface::ListApplicationIcon, "ListApplicationIcon"},
-        FunctionInfo{13, &IReadOnlyApplicationControlDataInterface::ListApplicationTitle, "ListApplicationTitle"},
-        FunctionInfo{19, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData3>, "GetApplicationControlData"},
-        FunctionInfo{23, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData3>, "GetApplicationControlData", MakeVersionGate({23,0,0})}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
 
 // IAsyncValue implementation for ListApplicationTitle
 // https://switchbrew.org/wiki/NS_services#ListApplicationTitle
@@ -99,6 +84,13 @@ public:
         , data_offset{offset}
         , data_size{size}
     {
+        static const FunctionInfo functions[] = {
+            {0, D<&IAsyncValue::GetSize>, "GetSize"},
+            {1, D<&IAsyncValue::Get>, "Get"},
+            {2, D<&IAsyncValue::Cancel>, "Cancel"},
+            {3, D<&IAsyncValue::GetErrorContext>, "GetErrorContext"},
+        };
+        RegisterHandlers(functions);
         completion_event = service_context.CreateEvent("IAsyncValue:Completion");
         completion_event->GetReadableEvent().Signal(system.Kernel());
     }
@@ -130,16 +122,6 @@ private:
         LOG_DEBUG(Service_NS, "called");
         R_SUCCEED();
     }
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IAsyncValue::GetSize>, "GetSize"},
-        FunctionInfo{1, D<&IAsyncValue::Get>, "Get"},
-        FunctionInfo{2, D<&IAsyncValue::Cancel>, "Cancel"},
-        FunctionInfo{3, D<&IAsyncValue::GetErrorContext>, "GetErrorContext"}
-    );
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* completion_event{};
     s32 data_offset;
@@ -149,6 +131,22 @@ private:
 IReadOnlyApplicationControlDataInterface::IReadOnlyApplicationControlDataInterface(
     Core::System& system_)
     : ServiceFramework{system_, "IReadOnlyApplicationControlDataInterface"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData>, "GetApplicationControlData"},
+        {1, D<&IReadOnlyApplicationControlDataInterface::GetApplicationDesiredLanguage>, "GetApplicationDesiredLanguage"},
+        {2, D<&IReadOnlyApplicationControlDataInterface::ConvertApplicationLanguageToLanguageCode>, "ConvertApplicationLanguageToLanguageCode"},
+        {3, nullptr, "ConvertLanguageCodeToApplicationLanguage"},
+        {4, nullptr, "SelectApplicationDesiredLanguage"},
+        {5, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData2>, "GetApplicationControlData"},
+        {10, &IReadOnlyApplicationControlDataInterface::ListApplicationIcon, "ListApplicationIcon"},
+        {13, &IReadOnlyApplicationControlDataInterface::ListApplicationTitle, "ListApplicationTitle"},
+        {19, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData3>, "GetApplicationControlData"},
+        {23, D<&IReadOnlyApplicationControlDataInterface::GetApplicationControlData3>, "GetApplicationControlData"}, //23.0.0+
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IReadOnlyApplicationControlDataInterface::~IReadOnlyApplicationControlDataInterface() = default;

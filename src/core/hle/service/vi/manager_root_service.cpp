@@ -15,21 +15,18 @@
 
 namespace Service::VI {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IManagerRootService::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{2, C<&IManagerRootService::GetDisplayService>, "GetDisplayService"},
-        FunctionInfo{3, nullptr, "GetDisplayServiceWithProxyNameExchange"},
-        FunctionInfo{100, nullptr, "PrepareFatal"},
-        FunctionInfo{101, nullptr, "ShowFatal"},
-        FunctionInfo{102, nullptr, "DrawFatalRectangle"},
-        FunctionInfo{103, nullptr, "DrawFatalText32"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IManagerRootService::IManagerRootService(Core::System& system_,
                                          std::shared_ptr<Container> container)
     : ServiceFramework{system_, "vi:m"}, m_container{std::move(container)} {
+    static const FunctionInfo functions[] = {
+        {2, C<&IManagerRootService::GetDisplayService>, "GetDisplayService"},
+        {3, nullptr, "GetDisplayServiceWithProxyNameExchange"},
+        {100, nullptr, "PrepareFatal"},
+        {101, nullptr, "ShowFatal"},
+        {102, nullptr, "DrawFatalRectangle"},
+        {103, nullptr, "DrawFatalText32"},
+    };
+    RegisterHandlers(functions);
 }
 
 IManagerRootService::~IManagerRootService() = default;

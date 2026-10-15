@@ -43,9 +43,9 @@ public:
         OutInterface<IPurchaseEventManager> out_interface);
 
 private:
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::vector<u64> add_on_content;
     KernelHelpers::ServiceContext service_context;
+
     Kernel::KEvent* aoc_change_event;
 };
 

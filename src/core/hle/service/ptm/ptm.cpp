@@ -17,28 +17,28 @@ namespace Service::PTM {
 class PSM_MANU final : public ServiceFramework<PSM_MANU> {
 public:
     explicit PSM_MANU(Core::System& system_)
-        : ServiceFramework{system_, "psm:manu"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "EnableVdd50StateControl"},
-            FunctionInfo{1, nullptr, "DisableVdd50StateControl"},
-            FunctionInfo{2, nullptr, "SetVdd50State"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        : ServiceFramework{system_, "psm:manu"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "EnableVdd50StateControl"},
+            {1, nullptr, "DisableVdd50StateControl"},
+            {2, nullptr, "SetVdd50State"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class POWCTL final : public ServiceFramework<POWCTL> {
 public:
     explicit POWCTL(Core::System& system_)
-        : ServiceFramework{system_, "powctl"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "OpenSession"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        : ServiceFramework{system_, "powctl"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "OpenSession"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 

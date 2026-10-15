@@ -8,6 +8,7 @@
 #include "core/hle/service/am/am_results.h"
 #include "core/hle/service/am/applet.h"
 #include "core/hle/service/am/service/common_state_getter.h"
+#include "core/hle/service/am/service/lock_accessor.h"
 #include "core/hle/service/am/service/storage.h"
 #include "core/hle/service/apm/apm_interface.h"
 #include "core/hle/service/cmif_serialization.h"
@@ -17,147 +18,77 @@
 
 namespace Service::AM {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> ICommonStateGetter::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&ICommonStateGetter::GetEventHandle>, "GetEventHandle"},
-        FunctionInfo{1, D<&ICommonStateGetter::ReceiveMessage>, "ReceiveMessage"},
-        FunctionInfo{2, nullptr, "GetThisAppletKind"},
-        FunctionInfo{3, nullptr, "AllowToEnterSleep"},
-        FunctionInfo{4, nullptr, "DisallowToEnterSleep"},
-        FunctionInfo{5, D<&ICommonStateGetter::GetOperationMode>, "GetOperationMode"},
-        FunctionInfo{6, D<&ICommonStateGetter::GetPerformanceMode>, "GetPerformanceMode"},
-        FunctionInfo{7, nullptr, "GetCradleStatus"},
-        FunctionInfo{8, D<&ICommonStateGetter::GetBootMode>, "GetBootMode"},
-        FunctionInfo{9, D<&ICommonStateGetter::GetCurrentFocusState>, "GetCurrentFocusState"},
-        FunctionInfo{10, D<&ICommonStateGetter::RequestToAcquireSleepLock>, "RequestToAcquireSleepLock"},
-        FunctionInfo{11, D<&ICommonStateGetter::ReleaseSleepLock>, "ReleaseSleepLock"},
-        FunctionInfo{12, D<&ICommonStateGetter::ReleaseSleepLockTransiently>, "ReleaseSleepLockTransiently"},
-        FunctionInfo{13, D<&ICommonStateGetter::GetAcquiredSleepLockEvent>, "GetAcquiredSleepLockEvent"},
-        FunctionInfo{14, nullptr, "GetWakeupCount", MakeVersionGate({11,0,0})},
-        FunctionInfo{15, nullptr, "Unknown15", MakeVersionGate({19,0,0})},
-        FunctionInfo{20, D<&ICommonStateGetter::PushToGeneralChannel>, "PushToGeneralChannel"},
-        FunctionInfo{30, D<&ICommonStateGetter::GetHomeButtonReaderLockAccessor>, "GetHomeButtonReaderLockAccessor"},
-        FunctionInfo{31, D<&ICommonStateGetter::GetReaderLockAccessorEx>, "GetReaderLockAccessorEx", MakeVersionGate({2,0,0})},
-        FunctionInfo{32, D<&ICommonStateGetter::GetWriterLockAccessorEx>, "GetWriterLockAccessorEx", MakeVersionGate({7,0,0})},
-        FunctionInfo{40, nullptr, "GetCradleFwVersion", MakeVersionGate({2,0,0})},
-        FunctionInfo{50, D<&ICommonStateGetter::IsVrModeEnabled>, "IsVrModeEnabled", MakeVersionGate({3,0,0})},
-        FunctionInfo{51, D<&ICommonStateGetter::SetVrModeEnabled>, "SetVrModeEnabled", MakeVersionGate({3,0,0})},
-        FunctionInfo{52, D<&ICommonStateGetter::SetLcdBacklighOffEnabled>, "SetLcdBacklighOffEnabled", MakeVersionGate({4,0,0})},
-        FunctionInfo{53, D<&ICommonStateGetter::BeginVrModeEx>, "BeginVrModeEx", MakeVersionGate({7,0,0})},
-        FunctionInfo{54, D<&ICommonStateGetter::EndVrModeEx>, "EndVrModeEx", MakeVersionGate({7,0,0})},
-        FunctionInfo{55, D<&ICommonStateGetter::IsInControllerFirmwareUpdateSection>, "IsInControllerFirmwareUpdateSection", MakeVersionGate({3,0,0})},
-        FunctionInfo{59, nullptr, "SetVrPositionForDebug", MakeVersionGate({1,0,0})},
-        FunctionInfo{60, D<&ICommonStateGetter::GetDefaultDisplayResolution>, "GetDefaultDisplayResolution"},
-        FunctionInfo{61, D<&ICommonStateGetter::GetDefaultDisplayResolutionChangeEvent>, "GetDefaultDisplayResolutionChangeEvent"},
-        FunctionInfo{62, D<&ICommonStateGetter::GetHdcpAuthenticationState>, "GetHdcpAuthenticationState"},
-        FunctionInfo{63, D<&ICommonStateGetter::GetHdcpAuthenticationStateChangeEvent>, "GetHdcpAuthenticationStateChangeEvent"},
-        FunctionInfo{64, nullptr, "SetTvPowerStateMatchingMode"},
-        FunctionInfo{65, nullptr, "GetApplicationIdByContentActionName"},
-        FunctionInfo{66, &ICommonStateGetter::SetCpuBoostMode, "SetCpuBoostMode"},
-        FunctionInfo{67, nullptr, "CancelCpuBoostMode"},
-        FunctionInfo{68, D<&ICommonStateGetter::GetBuiltInDisplayType>, "GetBuiltInDisplayType"},
-        FunctionInfo{80, D<&ICommonStateGetter::PerformSystemButtonPressingIfInFocus>, "PerformSystemButtonPressingIfInFocus"},
-        FunctionInfo{90, nullptr, "SetPerformanceConfigurationChangedNotification"},
-        FunctionInfo{91, nullptr, "GetCurrentPerformanceConfiguration"},
-        FunctionInfo{100, D<&ICommonStateGetter::SetHandlingHomeButtonShortPressedEnabled>, "SetHandlingHomeButtonShortPressedEnabled"},
-        FunctionInfo{110, nullptr, "OpenMyGpuErrorHandler"},
-        FunctionInfo{120, D<&ICommonStateGetter::GetAppletLaunchedHistory>, "GetAppletLaunchedHistory", MakeVersionGate({13,0,0})},
-        FunctionInfo{130, D<&ICommonStateGetter::EnableStartupLogoDisappearedMessage>, "EnableStartupLogoDisappearedMessage", MakeVersionGate({21,0,0})},
-        FunctionInfo{200, D<&ICommonStateGetter::GetOperationModeSystemInfo>, "GetOperationModeSystemInfo"},
-        FunctionInfo{300, D<&ICommonStateGetter::GetSettingsPlatformRegion>, "GetSettingsPlatformRegion"},
-        FunctionInfo{400, nullptr, "ActivateMigrationService"},
-        FunctionInfo{401, nullptr, "DeactivateMigrationService"},
-        FunctionInfo{500, nullptr, "DisableSleepTillShutdown"},
-        FunctionInfo{501, nullptr, "SuppressDisablingSleepTemporarily"},
-        FunctionInfo{502, nullptr, "IsSleepEnabled"},
-        FunctionInfo{503, nullptr, "IsDisablingSleepSuppressed"},
-        FunctionInfo{600, nullptr, "SetHidInputMagnificationForApplication", MakeVersionGate({20,0,0})},
-        FunctionInfo{610, D<&ICommonStateGetter::Unknown610>, "Unknown610", MakeVersionGate({21,0,0})},
-        FunctionInfo{611, D<&ICommonStateGetter::Unknown611>, "Unknown611", MakeVersionGate({22,0,0})},
-        FunctionInfo{900, D<&ICommonStateGetter::SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled>, "SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled", MakeVersionGate({11,0,0})},
-        FunctionInfo{910, nullptr, "GetLaunchRequiredTick", MakeVersionGate({17,0,0})},
-        FunctionInfo{1000, D<&ICommonStateGetter::BeginVrMode3d>, "BeginVrMode3d", MakeVersionGate({19,0,0})},
-        FunctionInfo{1001, D<&ICommonStateGetter::EndVrMode3d>, "EndVrMode3d", MakeVersionGate({19,0,0})},
-        FunctionInfo{1002, D<&ICommonStateGetter::IsVrModeEnabled3d>, "IsVrModeEnabled3d", MakeVersionGate({19,0,0})},
-        FunctionInfo{1003, D<&ICommonStateGetter::GetVrLaboGoggleViewport>, "GetVrLaboGoggleViewport", MakeVersionGate({21,0,0})},
-        FunctionInfo{1004, D<&ICommonStateGetter::GetPanelPhysicalSizeForSpecificTitle>, "GetPanelPhysicalSizeForSpecificTitle", MakeVersionGate({21,0,0})},
-        FunctionInfo{1005, D<&ICommonStateGetter::GetPanelResolutionForSpecificTitle>, "GetPanelResolutionForSpecificTitle", MakeVersionGate({21,0,0})}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
-class ILockAccessor final : public ServiceFramework<ILockAccessor> {
-public:
-    explicit ILockAccessor(Core::System& system_)
-        : ServiceFramework{system_, "ILockAccessor"}, m_context{system_, "ILockAccessor"},
-        m_event{m_context} {
-        m_event.Signal(system.Kernel());
-    }
-    ~ILockAccessor() override = default;
-
-    Result TryLock(Out<bool> out_is_locked, OutCopyHandle<Kernel::KReadableEvent> out_handle, bool return_handle) {
-        LOG_INFO(Service_AM, "called, return_handle={}", return_handle);
-
-        {
-            std::scoped_lock lk{m_mutex};
-            if (m_is_locked) {
-                *out_is_locked = false;
-            } else {
-                m_is_locked = true;
-                *out_is_locked = true;
-            }
-        }
-
-        if (return_handle) {
-            *out_handle = m_event.GetHandle();
-        }
-
-        R_SUCCEED();
-    }
-
-    Result Unlock() {
-        LOG_INFO(Service_AM, "called");
-
-        {
-            std::scoped_lock lk{m_mutex};
-            m_is_locked = false;
-        }
-
-        m_event.Signal(system.Kernel());
-        R_SUCCEED();
-    }
-
-    Result GetEvent(OutCopyHandle<Kernel::KReadableEvent> out_handle) {
-        LOG_INFO(Service_AM, "called");
-        *out_handle = m_event.GetHandle();
-        R_SUCCEED();
-    }
-
-    Result IsLocked(Out<bool> out_is_locked) {
-        LOG_INFO(Service_AM, "called");
-        std::scoped_lock lk{m_mutex};
-        *out_is_locked = m_is_locked;
-        R_SUCCEED();
-    }
-
-private:
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{1, D<&ILockAccessor::TryLock>, "TryLock"},
-        FunctionInfo{2, D<&ILockAccessor::Unlock>, "Unlock"},
-        FunctionInfo{3, D<&ILockAccessor::GetEvent>, "GetEvent"},
-        FunctionInfo{4, D<&ILockAccessor::IsLocked>, "IsLocked"}
-    );
-    KernelHelpers::ServiceContext m_context;
-    Event m_event;
-    std::mutex m_mutex{};
-    bool m_is_locked{};
-};
-
 ICommonStateGetter::ICommonStateGetter(Core::System& system_, std::shared_ptr<Applet> applet)
     : ServiceFramework{system_, "ICommonStateGetter"}, m_applet{std::move(applet)} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&ICommonStateGetter::GetEventHandle>, "GetEventHandle"},
+        {1, D<&ICommonStateGetter::ReceiveMessage>, "ReceiveMessage"},
+        {2, nullptr, "GetThisAppletKind"},
+        {3, nullptr, "AllowToEnterSleep"},
+        {4, nullptr, "DisallowToEnterSleep"},
+        {5, D<&ICommonStateGetter::GetOperationMode>, "GetOperationMode"},
+        {6, D<&ICommonStateGetter::GetPerformanceMode>, "GetPerformanceMode"},
+        {7, nullptr, "GetCradleStatus"},
+        {8, D<&ICommonStateGetter::GetBootMode>, "GetBootMode"},
+        {9, D<&ICommonStateGetter::GetCurrentFocusState>, "GetCurrentFocusState"},
+        {10, D<&ICommonStateGetter::RequestToAcquireSleepLock>, "RequestToAcquireSleepLock"},
+        {11, D<&ICommonStateGetter::ReleaseSleepLock>, "ReleaseSleepLock"},
+        {12, D<&ICommonStateGetter::ReleaseSleepLockTransiently>, "ReleaseSleepLockTransiently"},
+        {13, D<&ICommonStateGetter::GetAcquiredSleepLockEvent>, "GetAcquiredSleepLockEvent"},
+        {14, nullptr, "GetWakeupCount"}, //11.0.0+
+        {15, nullptr, "Unknown15"}, //19.0.0+
+        {20, D<&ICommonStateGetter::PushToGeneralChannel>, "PushToGeneralChannel"},
+        {30, D<&ICommonStateGetter::GetHomeButtonReaderLockAccessor>, "GetHomeButtonReaderLockAccessor"},
+        {31, D<&ICommonStateGetter::GetReaderLockAccessorEx>, "GetReaderLockAccessorEx"}, //2.0.0+
+        {32, D<&ICommonStateGetter::GetWriterLockAccessorEx>, "GetWriterLockAccessorEx"}, //7.0.0+
+        {40, nullptr, "GetCradleFwVersion"}, //2.0.0+
+        {50, D<&ICommonStateGetter::IsVrModeEnabled>, "IsVrModeEnabled"}, //3.0.0+
+        {51, D<&ICommonStateGetter::SetVrModeEnabled>, "SetVrModeEnabled"}, //3.0.0+
+        {52, D<&ICommonStateGetter::SetLcdBacklighOffEnabled>, "SetLcdBacklighOffEnabled"}, //4.0.0+
+        {53, D<&ICommonStateGetter::BeginVrModeEx>, "BeginVrModeEx"}, //7.0.0+
+        {54, D<&ICommonStateGetter::EndVrModeEx>, "EndVrModeEx"}, //7.0.0+
+        {55, D<&ICommonStateGetter::IsInControllerFirmwareUpdateSection>, "IsInControllerFirmwareUpdateSection"}, //3.0.0+
+        {59, nullptr, "SetVrPositionForDebug"}, //1.0.0+
+        {60, D<&ICommonStateGetter::GetDefaultDisplayResolution>, "GetDefaultDisplayResolution"},
+        {61, D<&ICommonStateGetter::GetDefaultDisplayResolutionChangeEvent>, "GetDefaultDisplayResolutionChangeEvent"},
+        {62, D<&ICommonStateGetter::GetHdcpAuthenticationState>, "GetHdcpAuthenticationState"},
+        {63, D<&ICommonStateGetter::GetHdcpAuthenticationStateChangeEvent>, "GetHdcpAuthenticationStateChangeEvent"},
+        {64, nullptr, "SetTvPowerStateMatchingMode"},
+        {65, nullptr, "GetApplicationIdByContentActionName"},
+        {66, &ICommonStateGetter::SetCpuBoostMode, "SetCpuBoostMode"},
+        {67, nullptr, "CancelCpuBoostMode"},
+        {68, D<&ICommonStateGetter::GetBuiltInDisplayType>, "GetBuiltInDisplayType"},
+        {80, D<&ICommonStateGetter::PerformSystemButtonPressingIfInFocus>, "PerformSystemButtonPressingIfInFocus"},
+        {90, nullptr, "SetPerformanceConfigurationChangedNotification"},
+        {91, nullptr, "GetCurrentPerformanceConfiguration"},
+        {100, D<&ICommonStateGetter::SetHandlingHomeButtonShortPressedEnabled>, "SetHandlingHomeButtonShortPressedEnabled"},
+        {110, nullptr, "OpenMyGpuErrorHandler"},
+        {120, D<&ICommonStateGetter::GetAppletLaunchedHistory>, "GetAppletLaunchedHistory"}, //13.0.0+
+        {130, D<&ICommonStateGetter::EnableStartupLogoDisappearedMessage>, "EnableStartupLogoDisappearedMessage"}, //21.0.0+
+        {200, D<&ICommonStateGetter::GetOperationModeSystemInfo>, "GetOperationModeSystemInfo"},
+        {300, D<&ICommonStateGetter::GetSettingsPlatformRegion>, "GetSettingsPlatformRegion"},
+        {400, nullptr, "ActivateMigrationService"},
+        {401, nullptr, "DeactivateMigrationService"},
+        {500, nullptr, "DisableSleepTillShutdown"},
+        {501, nullptr, "SuppressDisablingSleepTemporarily"},
+        {502, nullptr, "IsSleepEnabled"},
+        {503, nullptr, "IsDisablingSleepSuppressed"},
+        {600, nullptr, "SetHidInputMagnificationForApplication"}, //20.0.0+
+        {610, D<&ICommonStateGetter::Unknown610>, "Unknown610"}, //21.0.0+
+        {611, D<&ICommonStateGetter::Unknown611>, "Unknown611"}, //22.0.0+
+        {900, D<&ICommonStateGetter::SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled>, "SetRequestExitToLibraryAppletAtExecuteNextProgramEnabled"}, //11.0.0+
+        {910, nullptr, "GetLaunchRequiredTick"}, //17.0.0+
+        {1000, D<&ICommonStateGetter::BeginVrMode3d>, "BeginVrMode3d"}, //19.0.0+
+        {1001, D<&ICommonStateGetter::EndVrMode3d>, "EndVrMode3d"}, //19.0.0+
+        {1002, D<&ICommonStateGetter::IsVrModeEnabled3d>, "IsVrModeEnabled3d"}, //19.0.0+
+        {1003, D<&ICommonStateGetter::GetVrLaboGoggleViewport>, "GetVrLaboGoggleViewport"}, //21.0.0+
+        {1004, D<&ICommonStateGetter::GetPanelPhysicalSizeForSpecificTitle>, "GetPanelPhysicalSizeForSpecificTitle"}, //21.0.0+
+        {1005, D<&ICommonStateGetter::GetPanelResolutionForSpecificTitle>, "GetPanelResolutionForSpecificTitle"}, //21.0.0+
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 ICommonStateGetter::~ICommonStateGetter() = default;

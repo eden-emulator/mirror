@@ -36,7 +36,6 @@ private:
     Result CreateDeliveryCacheStorageServiceWithApplicationId(
         u64 application_id, OutInterface<IDeliveryCacheStorageService> out_interface);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::unique_ptr<BcatBackend> backend;
     Service::FileSystem::FileSystemController& fsc;
 };

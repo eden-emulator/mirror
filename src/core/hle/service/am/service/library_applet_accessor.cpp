@@ -17,7 +17,9 @@
 
 namespace Service::AM {
 
-static void EnableSingleUserPlay(const std::shared_ptr<LibraryAppletStorage>& impl) {
+namespace {
+
+void EnableSingleUserPlay(const std::shared_ptr<LibraryAppletStorage>& impl) {
     constexpr s64 DisplayOptionsOffset = 0x90;
     constexpr s64 IsSkipEnabledOffset = 1;
     constexpr s64 ShowSkipButtonOffset = 4;
@@ -27,7 +29,7 @@ static void EnableSingleUserPlay(const std::shared_ptr<LibraryAppletStorage>& im
     impl->Write(DisplayOptionsOffset + ShowSkipButtonOffset, &enabled, sizeof(enabled));
 }
 
-static void ReplaceEmptyUuidWithCurrentUser(const std::shared_ptr<LibraryAppletStorage>& impl) {
+void ReplaceEmptyUuidWithCurrentUser(const std::shared_ptr<LibraryAppletStorage>& impl) {
     Frontend::UiReturnArg return_arg{};
     impl->Read(0, &return_arg, sizeof(return_arg));
 
@@ -45,40 +47,42 @@ static void ReplaceEmptyUuidWithCurrentUser(const std::shared_ptr<LibraryAppletS
     }
 }
 
-    std::optional<ServiceFrameworkBase::FunctionInfoBase> ILibraryAppletAccessor::FindRequest(u32 key) {
-        static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, D<&ILibraryAppletAccessor::GetAppletStateChangedEvent>, "GetAppletStateChangedEvent"},
-            FunctionInfo{1, D<&ILibraryAppletAccessor::IsCompleted>, "IsCompleted"},
-            FunctionInfo{10, D<&ILibraryAppletAccessor::Start>, "Start"},
-            FunctionInfo{20, D<&ILibraryAppletAccessor::RequestExit>, "RequestExit"},
-            FunctionInfo{25, D<&ILibraryAppletAccessor::Terminate>, "Terminate"},
-            FunctionInfo{30, D<&ILibraryAppletAccessor::GetResult>, "GetResult"},
-            FunctionInfo{50, nullptr, "SetOutOfFocusApplicationSuspendingEnabled"},
-            FunctionInfo{60, D<&ILibraryAppletAccessor::PresetLibraryAppletGpuTimeSliceZero>, "PresetLibraryAppletGpuTimeSliceZero", MakeVersionGate({10,0,0})},
-            FunctionInfo{80, nullptr, "RequestForLibraryAppletToGetForeground", MakeVersionGate({19,0,0})},
-            FunctionInfo{81, nullptr, "GetCurrentChildLibraryApplet", MakeVersionGate({19,0,0})},
-            FunctionInfo{90, D<&ILibraryAppletAccessor::Unknown90>, "Unknown90", MakeVersionGate({20,0,0})},
-            FunctionInfo{100, D<&ILibraryAppletAccessor::PushInData>, "PushInData"},
-            FunctionInfo{101, D<&ILibraryAppletAccessor::PopOutData>, "PopOutData"},
-            FunctionInfo{102, nullptr, "PushExtraStorage"},
-            FunctionInfo{103, D<&ILibraryAppletAccessor::PushInteractiveInData>, "PushInteractiveInData"},
-            FunctionInfo{104, D<&ILibraryAppletAccessor::PopInteractiveOutData>, "PopInteractiveOutData"},
-            FunctionInfo{105, D<&ILibraryAppletAccessor::GetPopOutDataEvent>, "GetPopOutDataEvent"},
-            FunctionInfo{106, D<&ILibraryAppletAccessor::GetPopInteractiveOutDataEvent>, "GetPopInteractiveOutDataEvent"},
-            FunctionInfo{110, nullptr, "NeedsToExitProcess"},
-            FunctionInfo{120, D<&ILibraryAppletAccessor::GetLibraryAppletInfo>, "GetLibraryAppletInfo"},
-            FunctionInfo{150, nullptr, "RequestForAppletToGetForeground"},
-            FunctionInfo{160, D<&ILibraryAppletAccessor::GetIndirectLayerConsumerHandle>, "GetIndirectLayerConsumerHandle", MakeVersionGate({2,0,0})},
-            FunctionInfo{170, D<&ILibraryAppletAccessor::Unknown170>, "Unknown170", MakeVersionGate({22,0,0})}
-        );
-        return HandlerTableGenerateWithFind(key, functions);
-    }
+} // namespace
 
 ILibraryAppletAccessor::ILibraryAppletAccessor(Core::System& system_,
                                                std::shared_ptr<AppletDataBroker> broker,
                                                std::shared_ptr<Applet> applet)
     : ServiceFramework{system_, "ILibraryAppletAccessor"}, m_broker{std::move(broker)},
       m_applet{std::move(applet)} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&ILibraryAppletAccessor::GetAppletStateChangedEvent>, "GetAppletStateChangedEvent"},
+        {1, D<&ILibraryAppletAccessor::IsCompleted>, "IsCompleted"},
+        {10, D<&ILibraryAppletAccessor::Start>, "Start"},
+        {20, D<&ILibraryAppletAccessor::RequestExit>, "RequestExit"},
+        {25, D<&ILibraryAppletAccessor::Terminate>, "Terminate"},
+        {30, D<&ILibraryAppletAccessor::GetResult>, "GetResult"},
+        {50, nullptr, "SetOutOfFocusApplicationSuspendingEnabled"},
+        {60, D<&ILibraryAppletAccessor::PresetLibraryAppletGpuTimeSliceZero>, "PresetLibraryAppletGpuTimeSliceZero"}, //10.0.0+
+        {80, nullptr, "RequestForLibraryAppletToGetForeground"}, //19.0.0+
+        {81, nullptr, "GetCurrentChildLibraryApplet"}, //19.0.0+
+        {90, D<&ILibraryAppletAccessor::Unknown90>, "Unknown90"}, //20.0.0+
+        {100, D<&ILibraryAppletAccessor::PushInData>, "PushInData"},
+        {101, D<&ILibraryAppletAccessor::PopOutData>, "PopOutData"},
+        {102, nullptr, "PushExtraStorage"},
+        {103, D<&ILibraryAppletAccessor::PushInteractiveInData>, "PushInteractiveInData"},
+        {104, D<&ILibraryAppletAccessor::PopInteractiveOutData>, "PopInteractiveOutData"},
+        {105, D<&ILibraryAppletAccessor::GetPopOutDataEvent>, "GetPopOutDataEvent"},
+        {106, D<&ILibraryAppletAccessor::GetPopInteractiveOutDataEvent>, "GetPopInteractiveOutDataEvent"},
+        {110, nullptr, "NeedsToExitProcess"},
+        {120, D<&ILibraryAppletAccessor::GetLibraryAppletInfo>, "GetLibraryAppletInfo"},
+        {150, nullptr, "RequestForAppletToGetForeground"},
+        {160, D<&ILibraryAppletAccessor::GetIndirectLayerConsumerHandle>, "GetIndirectLayerConsumerHandle"}, //2.0.0+
+        {170, D<&ILibraryAppletAccessor::Unknown170>, "Unknown170"}, //22.0.0+
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 ILibraryAppletAccessor::~ILibraryAppletAccessor() = default;

@@ -21,7 +21,7 @@ This contains documentation created by developers, build instructions, guideline
 - Subsystems:
   - **[Design Overview](./DesignOverview.md)**
   - **[Dynarmic](./dynarmic/README.md)**
-  - **[Subsystem: HLE](./SubsystemHLE.md)**
+  - **[HOS Kernel](./HosKernel.md)**
   - **[Settings](./Settings.md)**
 
 ## Policies

@@ -32,7 +32,6 @@ public:
 private:
     Result GetSharedMemoryHandle(OutCopyHandle<Kernel::KSharedMemory> out_shared_memory_handle);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     u64 aruid{};
     std::shared_ptr<ResourceManager> resource_manager;
 };

@@ -95,6 +95,7 @@ private:
     void Erase(Kernel::KernelCore& kernel, Alarm& alarm);
     Result UpdateClosestAndSignal(Kernel::KernelCore& kernel);
 
+    Core::System& m_system;
     KernelHelpers::ServiceContext m_ctx;
 
     StandardSteadyClockCore& m_steady_clock;
@@ -113,14 +114,6 @@ public:
 private:
     void CreateWakeupAlarm(HLERequestContext& ctx);
     void CreateBackgroundTaskAlarm(HLERequestContext& ctx);
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &IAlarmService::CreateWakeupAlarm, "CreateWakeupAlarm"},
-        FunctionInfo{1, &IAlarmService::CreateBackgroundTaskAlarm, "CreateBackgroundTaskAlarm"}
-    );
     Alarms& m_alarms;
 };
 
@@ -135,18 +128,8 @@ private:
     void Disable(HLERequestContext& ctx);
     void IsEnabled(HLERequestContext& ctx);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0,  &ISteadyClockAlarm::GetAlarmEvent, "GetAlarmEvent"},
-        FunctionInfo{1,  &ISteadyClockAlarm::Enable, "Enable"},
-        FunctionInfo{2,  &ISteadyClockAlarm::Disable, "Disable"},
-        FunctionInfo{3,  &ISteadyClockAlarm::IsEnabled, "IsEnabled"},
-        FunctionInfo{10, nullptr, "CreateWakeLock"},
-        FunctionInfo{11, nullptr, "DestroyWakeLock"}
-    );
     KernelHelpers::ServiceContext m_ctx;
+
     Alarms& m_alarms;
     Alarm m_alarm;
 };

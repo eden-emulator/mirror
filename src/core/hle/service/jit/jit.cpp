@@ -37,6 +37,18 @@ public:
         , user_ro{std::move(user_ro_)}
         , context{process_->GetMemory()}
     {
+
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, C<&IJitEnvironment::GenerateCode>, "GenerateCode"},
+            {1, C<&IJitEnvironment::Control>, "Control"},
+            {1000, C<&IJitEnvironment::LoadPlugin>, "LoadPlugin"},
+            {1001, C<&IJitEnvironment::GetCodeAddress>, "GetCodeAddress"},
+        };
+        // clang-format on
+
+        RegisterHandlers(functions);
+
         // Identity map user code range into sysmodule context
         configuration.user_rx_memory.size = user_rx.GetSize();
         configuration.user_rx_memory.offset = user_rx.GetAddress();
@@ -45,10 +57,6 @@ public:
 
         configuration.sys_rx_memory = configuration.user_rx_memory;
         configuration.sys_ro_memory = configuration.user_ro_memory;
-    }
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
     }
 
     ~IJitEnvironment() {
@@ -240,13 +248,6 @@ private:
         return in;
     }
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, C<&IJitEnvironment::GenerateCode>, "GenerateCode"},
-        FunctionInfo{1, C<&IJitEnvironment::Control>, "Control"},
-        FunctionInfo{1000, C<&IJitEnvironment::LoadPlugin>, "LoadPlugin"},
-        FunctionInfo{1001, C<&IJitEnvironment::GetCodeAddress>, "GetCodeAddress"}
-    );
-
     Kernel::KScopedAutoObject<Kernel::KProcess> process;
     CodeMemory user_rx;
     CodeMemory user_ro;
@@ -257,10 +258,14 @@ private:
 
 class JITU final : public ServiceFramework<JITU> {
 public:
-    explicit JITU(Core::System& system_) : ServiceFramework{system_, "jit:u"} {}
+    explicit JITU(Core::System& system_) : ServiceFramework{system_, "jit:u"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, C<&JITU::CreateJitEnvironment>, "CreateJitEnvironment"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -289,10 +294,6 @@ private:
     }
 
 private:
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, C<&JITU::CreateJitEnvironment>, "CreateJitEnvironment"}
-    );
-
     std::mt19937_64 generate_random{};
 };
 

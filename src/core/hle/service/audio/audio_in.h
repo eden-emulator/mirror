@@ -46,7 +46,6 @@ public:
     Result FlushAudioInBuffers(Out<bool> out_flushed);
 
 private:
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     Kernel::KProcess* process;
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* event;

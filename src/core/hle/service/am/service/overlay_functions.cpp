@@ -8,34 +8,34 @@
 #include "core/hle/service/am/window_system.h"
 
 namespace Service::AM {
-    std::optional<ServiceFrameworkBase::FunctionInfoBase> IOverlayFunctions::FindRequest(u32 key) {
-        static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, D<&IOverlayFunctions::BeginToWatchShortHomeButtonMessage>, "BeginToWatchShortHomeButtonMessage"},
-            FunctionInfo{1, D<&IOverlayFunctions::EndToWatchShortHomeButtonMessage>, "EndToWatchShortHomeButtonMessage"},
-            FunctionInfo{2, D<&IOverlayFunctions::GetApplicationIdForLogo>, "GetApplicationIdForLogo"},
-            FunctionInfo{3, nullptr, "SetGpuTimeSliceBoost"},
-            FunctionInfo{4, D<&IOverlayFunctions::SetAutoSleepTimeAndDimmingTimeEnabled>, "SetAutoSleepTimeAndDimmingTimeEnabled"},
-            FunctionInfo{5, nullptr, "TerminateApplicationAndSetReason"},
-            FunctionInfo{6, nullptr, "SetScreenShotPermissionGlobally"},
-            FunctionInfo{10, nullptr, "StartShutdownSequenceForOverlay"},
-            FunctionInfo{11, nullptr, "StartRebootSequenceForOverlay"},
-            FunctionInfo{20, D<&IOverlayFunctions::SetHandlingHomeButtonShortPressedEnabled>, "SetHandlingHomeButtonShortPressedEnabled"},
-            FunctionInfo{21, D<&IOverlayFunctions::SetHandlingTouchScreenInputEnabled>, "SetHandlingTouchScreenInputEnabled"},
-            FunctionInfo{30, nullptr, "SetHealthWarningShowingState"},
-            FunctionInfo{31, D<&IOverlayFunctions::IsHealthWarningRequired>, "IsHealthWarningRequired"},
-            FunctionInfo{40, nullptr, "GetApplicationNintendoLogo"},
-            FunctionInfo{41, nullptr, "GetApplicationStartupMovie"},
-            FunctionInfo{50, nullptr, "SetGpuTimeSliceBoostForApplication"},
-            FunctionInfo{60, nullptr, "Unknown60"},
-            FunctionInfo{70, D<&IOverlayFunctions::Unknown70>, "Unknown70"},
-            FunctionInfo{90, nullptr, "SetRequiresGpuResourceUse"},
-            FunctionInfo{101, nullptr, "BeginToObserveHidInputForDevelop"}
-        );
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-
     IOverlayFunctions::IOverlayFunctions(Core::System &system_, std::shared_ptr<Applet> applet)
         : ServiceFramework{system_, "IOverlayFunctions"}, m_applet{std::move(applet)} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IOverlayFunctions::BeginToWatchShortHomeButtonMessage>, "BeginToWatchShortHomeButtonMessage"},
+        {1, D<&IOverlayFunctions::EndToWatchShortHomeButtonMessage>, "EndToWatchShortHomeButtonMessage"},
+        {2, D<&IOverlayFunctions::GetApplicationIdForLogo>, "GetApplicationIdForLogo"},
+        {3, nullptr, "SetGpuTimeSliceBoost"},
+        {4, D<&IOverlayFunctions::SetAutoSleepTimeAndDimmingTimeEnabled>, "SetAutoSleepTimeAndDimmingTimeEnabled"},
+        {5, nullptr, "TerminateApplicationAndSetReason"},
+        {6, nullptr, "SetScreenShotPermissionGlobally"},
+        {10, nullptr, "StartShutdownSequenceForOverlay"},
+        {11, nullptr, "StartRebootSequenceForOverlay"},
+        {20, D<&IOverlayFunctions::SetHandlingHomeButtonShortPressedEnabled>, "SetHandlingHomeButtonShortPressedEnabled"},
+        {21, D<&IOverlayFunctions::SetHandlingTouchScreenInputEnabled>, "SetHandlingTouchScreenInputEnabled"},
+        {30, nullptr, "SetHealthWarningShowingState"},
+        {31, D<&IOverlayFunctions::IsHealthWarningRequired>, "IsHealthWarningRequired"},
+        {40, nullptr, "GetApplicationNintendoLogo"},
+        {41, nullptr, "GetApplicationStartupMovie"},
+        {50, nullptr, "SetGpuTimeSliceBoostForApplication"},
+        {60, nullptr, "Unknown60"},
+        {70, D<&IOverlayFunctions::Unknown70>, "Unknown70"},
+        {90, nullptr, "SetRequiresGpuResourceUse"},
+        {101, nullptr, "BeginToObserveHidInputForDevelop"},
+    };
+        // clang-format on
+
+        RegisterHandlers(functions);
     }
 
     IOverlayFunctions::~IOverlayFunctions() = default;

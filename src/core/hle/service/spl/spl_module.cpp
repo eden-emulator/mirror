@@ -204,15 +204,14 @@ Result Module::Interface::GetConfigImpl(u64* out_config, ConfigItem config_item)
 
 class CSRNG final : public Module::Interface {
 public:
-    explicit CSRNG(Core::System& system_, std::shared_ptr<Module> module_) : Interface(system_, std::move(module_), "csrng") {}
-    ~CSRNG() override = default;
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit CSRNG(Core::System& system_, std::shared_ptr<Module> module_)
+        : Interface(system_, std::move(module_), "csrng") {
+        static const FunctionInfo functions[] = {
+            {0, &CSRNG::GenerateRandomBytes, "GenerateRandomBytes"},
+        };
+        RegisterHandlers(functions);
     }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &CSRNG::GenerateRandomBytes, "GenerateRandomBytes"}
-    );
+    ~CSRNG() override = default;
 };
 
 void LoopProcess(Core::System& system) {

@@ -12,17 +12,14 @@
 
 namespace Service::HID {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IAppletResource::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, C<&IAppletResource::GetSharedMemoryHandle>, "GetSharedMemoryHandle"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IAppletResource::IAppletResource(Core::System& system_, std::shared_ptr<ResourceManager> resource,
                                  u64 applet_resource_user_id)
     : ServiceFramework{system_, "IAppletResource"}, aruid{applet_resource_user_id},
       resource_manager{resource} {
+    static const FunctionInfo functions[] = {
+        {0, C<&IAppletResource::GetSharedMemoryHandle>, "GetSharedMemoryHandle"},
+    };
+    RegisterHandlers(functions);
 }
 
 IAppletResource::~IAppletResource() {

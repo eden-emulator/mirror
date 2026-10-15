@@ -32,7 +32,6 @@ private:
     Result CreateNewsDatabaseService(OutInterface<INewsDatabaseService> out_interface);
     Result CreateOverwriteEventHolder(OutInterface<IOverwriteEventHolder> out_interface);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     u32 permissions;
 };
 

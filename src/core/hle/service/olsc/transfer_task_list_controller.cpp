@@ -11,45 +11,45 @@
 
 namespace Service::OLSC {
 
-    std::optional<ServiceFrameworkBase::FunctionInfoBase> ITransferTaskListController::FindRequest(u32 key) {
-        static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetTransferTaskCountForOcean"},
-            FunctionInfo{1, nullptr, "GetTransferTaskInfoForOcean"},
-            FunctionInfo{2, nullptr, "ListTransferTaskInfoForOcean"},
-            FunctionInfo{3, nullptr, "DeleteTransferTaskForOcean"},
-            FunctionInfo{4, nullptr, "RaiseTransferTaskPriorityForOcean"},
-            FunctionInfo{5, D<&ITransferTaskListController::GetTransferTaskEndEventNativeHandleHolder>, "GetTransferTaskEndEventNativeHandleHolder"},
-            FunctionInfo{6, nullptr, "GetTransferTaskProgressForOcean"},
-            FunctionInfo{7, nullptr, "GetTransferTaskLastResultForOcean"},
-            FunctionInfo{8, D<&ITransferTaskListController::StopNextTransferTaskExecution>, "StopNextTransferTaskExecution"},
-            FunctionInfo{9, D<&ITransferTaskListController::GetTransferTaskStartEventNativeHandleHolder>, "GetTransferTaskStartEventNativeHandleHolder"},
-            FunctionInfo{10, nullptr, "SuspendTransferTaskForOcean"},
-            FunctionInfo{11, nullptr, "GetCurrentTransferTaskInfoForOcean"},
-            FunctionInfo{12, nullptr, "FindTransferTaskInfoForOcean"},
-            FunctionInfo{13, nullptr, "CancelCurrentRepairTransferTask"},
-            FunctionInfo{14, nullptr, "GetRepairTransferTaskProgress"},
-            FunctionInfo{15, nullptr, "EnsureExecutableForRepairTransferTask"},
-            FunctionInfo{16, D<&ITransferTaskListController::GetTransferTaskCount>, "GetTransferTaskCount"},
-            FunctionInfo{17, nullptr, "GetTransferTaskInfo"},
-            FunctionInfo{18, nullptr, "ListTransferTaskInfo"},
-            FunctionInfo{19, nullptr, "DeleteTransferTask"},
-            FunctionInfo{20, nullptr, "RaiseTransferTaskPriority"},
-            FunctionInfo{21, D<&ITransferTaskListController::GetTransferTaskProgress>, "GetTransferTaskProgress", MakeVersionGate({10,1,0})},
-            FunctionInfo{22, nullptr, "GetTransferTaskLastResult"},
-            FunctionInfo{23, nullptr, "SuspendTransferTask"},
-            FunctionInfo{24, D<&ITransferTaskListController::GetCurrentTransferTaskInfo>, "GetCurrentTransferTaskInfo"},
-            FunctionInfo{25, D<&ITransferTaskListController::FindTransferTaskInfo>, "FindTransferTaskInfo"},
-            FunctionInfo{26, nullptr, "Unknown26", MakeVersionGate({20,1,0})},
-            FunctionInfo{27, nullptr, "Unknown27", MakeVersionGate({20,1,0})},
-            FunctionInfo{28, nullptr, "Unknown28", MakeVersionGate({20,1,0})},
-            FunctionInfo{29, nullptr, "Unknown29", MakeVersionGate({20,1,0})},
-            FunctionInfo{30, nullptr, "Unknown30", MakeVersionGate({20,1,0})}
-        );
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-
 ITransferTaskListController::ITransferTaskListController(Core::System& system_)
     : ServiceFramework{system_, "ITransferTaskListController"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "GetTransferTaskCountForOcean"},
+        {1, nullptr, "GetTransferTaskInfoForOcean"},
+        {2, nullptr, "ListTransferTaskInfoForOcean"},
+        {3, nullptr, "DeleteTransferTaskForOcean"},
+        {4, nullptr, "RaiseTransferTaskPriorityForOcean"},
+        {5, D<&ITransferTaskListController::GetTransferTaskEndEventNativeHandleHolder>, "GetTransferTaskEndEventNativeHandleHolder"},
+        {6, nullptr, "GetTransferTaskProgressForOcean"},
+        {7, nullptr, "GetTransferTaskLastResultForOcean"},
+        {8, D<&ITransferTaskListController::StopNextTransferTaskExecution>, "StopNextTransferTaskExecution"},
+        {9, D<&ITransferTaskListController::GetTransferTaskStartEventNativeHandleHolder>, "GetTransferTaskStartEventNativeHandleHolder"},
+        {10, nullptr, "SuspendTransferTaskForOcean"},
+        {11, nullptr, "GetCurrentTransferTaskInfoForOcean"},
+        {12, nullptr, "FindTransferTaskInfoForOcean"},
+        {13, nullptr, "CancelCurrentRepairTransferTask"},
+        {14, nullptr, "GetRepairTransferTaskProgress"},
+        {15, nullptr, "EnsureExecutableForRepairTransferTask"},
+        {16, D<&ITransferTaskListController::GetTransferTaskCount>, "GetTransferTaskCount"},
+        {17, nullptr, "GetTransferTaskInfo"},
+        {18, nullptr, "ListTransferTaskInfo"},
+        {19, nullptr, "DeleteTransferTask"},
+        {20, nullptr, "RaiseTransferTaskPriority"},
+        {21, D<&ITransferTaskListController::GetTransferTaskProgress>, "GetTransferTaskProgress"}, //10.1.0+
+        {22, nullptr, "GetTransferTaskLastResult"},
+        {23, nullptr, "SuspendTransferTask"},
+        {24, D<&ITransferTaskListController::GetCurrentTransferTaskInfo>, "GetCurrentTransferTaskInfo"},
+        {25, D<&ITransferTaskListController::FindTransferTaskInfo>, "FindTransferTaskInfo"},
+        {26, nullptr, "Unknown26"}, //20.1.0+
+        {27, nullptr, "Unknown27"}, //20.1.0+
+        {28, nullptr, "Unknown28"}, //20.1.0+
+        {29, nullptr, "Unknown29"}, //20.1.0+
+        {30, nullptr, "Unknown30"}, //20.1.0+
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 ITransferTaskListController::~ITransferTaskListController() = default;

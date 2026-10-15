@@ -10,22 +10,22 @@
 
 namespace Service::LDN {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IMonitorService::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, C<&IMonitorService::GetStateForMonitor>, "GetStateForMonitor"},
-        FunctionInfo{1, nullptr, "GetNetworkInfoForMonitor"},
-        FunctionInfo{2, nullptr, "GetIpv4AddressForMonitor"},
-        FunctionInfo{3, nullptr, "GetDisconnectReasonForMonitor"},
-        FunctionInfo{4, nullptr, "GetSecurityParameterForMonitor"},
-        FunctionInfo{5, nullptr, "GetNetworkConfigForMonitor"},
-        FunctionInfo{100, C<&IMonitorService::InitializeMonitor>, "InitializeMonitor"},
-        FunctionInfo{101, C<&IMonitorService::FinalizeMonitor>, "FinalizeMonitor"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IMonitorService::IMonitorService(Core::System& system_)
     : ServiceFramework{system_, "IMonitorService"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, C<&IMonitorService::GetStateForMonitor>, "GetStateForMonitor"},
+        {1, nullptr, "GetNetworkInfoForMonitor"},
+        {2, nullptr, "GetIpv4AddressForMonitor"},
+        {3, nullptr, "GetDisconnectReasonForMonitor"},
+        {4, nullptr, "GetSecurityParameterForMonitor"},
+        {5, nullptr, "GetNetworkConfigForMonitor"},
+        {100, C<&IMonitorService::InitializeMonitor>, "InitializeMonitor"},
+        {101, C<&IMonitorService::FinalizeMonitor>, "FinalizeMonitor"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IMonitorService::~IMonitorService() = default;

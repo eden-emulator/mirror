@@ -13,30 +13,6 @@
 
 namespace Service::PSC::Time {
 
-    std::optional<ServiceFrameworkBase::FunctionInfoBase> ServiceManager::FindRequest(u32 key) {
-        static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0,   D<&ServiceManager::GetStaticServiceAsUser>, "GetStaticServiceAsUser"},
-            FunctionInfo{5,   D<&ServiceManager::GetStaticServiceAsAdmin>, "GetStaticServiceAsAdmin"},
-            FunctionInfo{6,   D<&ServiceManager::GetStaticServiceAsRepair>, "GetStaticServiceAsRepair"},
-            FunctionInfo{9,   D<&ServiceManager::GetStaticServiceAsServiceManager>, "GetStaticServiceAsServiceManager"},
-            FunctionInfo{10,  D<&ServiceManager::SetupStandardSteadyClockCore>, "SetupStandardSteadyClockCore"},
-            FunctionInfo{11,  D<&ServiceManager::SetupStandardLocalSystemClockCore>, "SetupStandardLocalSystemClockCore"},
-            FunctionInfo{12,  D<&ServiceManager::SetupStandardNetworkSystemClockCore>, "SetupStandardNetworkSystemClockCore"},
-            FunctionInfo{13,  D<&ServiceManager::SetupStandardUserSystemClockCore>, "SetupStandardUserSystemClockCore"},
-            FunctionInfo{14,  D<&ServiceManager::SetupTimeZoneServiceCore>, "SetupTimeZoneServiceCore"},
-            FunctionInfo{15,  D<&ServiceManager::SetupEphemeralNetworkSystemClockCore>, "SetupEphemeralNetworkSystemClockCore"},
-            FunctionInfo{50,  D<&ServiceManager::GetStandardLocalClockOperationEvent>, "GetStandardLocalClockOperationEvent"},
-            FunctionInfo{51,  D<&ServiceManager::GetStandardNetworkClockOperationEventForServiceManager>, "GetStandardNetworkClockOperationEventForServiceManager"},
-            FunctionInfo{52,  D<&ServiceManager::GetEphemeralNetworkClockOperationEventForServiceManager>, "GetEphemeralNetworkClockOperationEventForServiceManager"},
-            FunctionInfo{60,  D<&ServiceManager::GetStandardUserSystemClockAutomaticCorrectionUpdatedEvent>, "GetStandardUserSystemClockAutomaticCorrectionUpdatedEvent"},
-            FunctionInfo{100, D<&ServiceManager::SetStandardSteadyClockBaseTime>, "SetStandardSteadyClockBaseTime"},
-            FunctionInfo{200, D<&ServiceManager::GetClosestAlarmUpdatedEvent>, "GetClosestAlarmUpdatedEvent"},
-            FunctionInfo{201, D<&ServiceManager::CheckAndSignalAlarms>, "CheckAndSignalAlarms"},
-            FunctionInfo{202, D<&ServiceManager::GetClosestAlarmInfo>, "GetClosestAlarmInfo "}
-        );
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-
 ServiceManager::ServiceManager(Core::System& system_, std::shared_ptr<TimeManager> time,
                                ServerManager* server_manager)
     : ServiceFramework{system_, "time:m"}, m_time{std::move(time)},
@@ -51,6 +27,30 @@ ServiceManager::ServiceManager(Core::System& system_, std::shared_ptr<TimeManage
       m_network_system_context_writer{m_time->m_network_system_clock_context_writer},
       m_ephemeral_system_context_writer{m_time->m_ephemeral_network_clock_context_writer},
       m_local_operation{system_}, m_network_operation{system_}, m_ephemeral_operation{system_} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0,   D<&ServiceManager::GetStaticServiceAsUser>, "GetStaticServiceAsUser"},
+        {5,   D<&ServiceManager::GetStaticServiceAsAdmin>, "GetStaticServiceAsAdmin"},
+        {6,   D<&ServiceManager::GetStaticServiceAsRepair>, "GetStaticServiceAsRepair"},
+        {9,   D<&ServiceManager::GetStaticServiceAsServiceManager>, "GetStaticServiceAsServiceManager"},
+        {10,  D<&ServiceManager::SetupStandardSteadyClockCore>, "SetupStandardSteadyClockCore"},
+        {11,  D<&ServiceManager::SetupStandardLocalSystemClockCore>, "SetupStandardLocalSystemClockCore"},
+        {12,  D<&ServiceManager::SetupStandardNetworkSystemClockCore>, "SetupStandardNetworkSystemClockCore"},
+        {13,  D<&ServiceManager::SetupStandardUserSystemClockCore>, "SetupStandardUserSystemClockCore"},
+        {14,  D<&ServiceManager::SetupTimeZoneServiceCore>, "SetupTimeZoneServiceCore"},
+        {15,  D<&ServiceManager::SetupEphemeralNetworkSystemClockCore>, "SetupEphemeralNetworkSystemClockCore"},
+        {50,  D<&ServiceManager::GetStandardLocalClockOperationEvent>, "GetStandardLocalClockOperationEvent"},
+        {51,  D<&ServiceManager::GetStandardNetworkClockOperationEventForServiceManager>, "GetStandardNetworkClockOperationEventForServiceManager"},
+        {52,  D<&ServiceManager::GetEphemeralNetworkClockOperationEventForServiceManager>, "GetEphemeralNetworkClockOperationEventForServiceManager"},
+        {60,  D<&ServiceManager::GetStandardUserSystemClockAutomaticCorrectionUpdatedEvent>, "GetStandardUserSystemClockAutomaticCorrectionUpdatedEvent"},
+        {100, D<&ServiceManager::SetStandardSteadyClockBaseTime>, "SetStandardSteadyClockBaseTime"},
+        {200, D<&ServiceManager::GetClosestAlarmUpdatedEvent>, "GetClosestAlarmUpdatedEvent"},
+        {201, D<&ServiceManager::CheckAndSignalAlarms>, "CheckAndSignalAlarms"},
+        {202, D<&ServiceManager::GetClosestAlarmInfo>, "GetClosestAlarmInfo "},
+    };
+    // clang-format on
+    RegisterHandlers(functions);
+
     m_local_system_context_writer.Link(m_local_operation);
     m_network_system_context_writer.Link(m_network_operation);
     m_ephemeral_system_context_writer.Link(m_ephemeral_operation);

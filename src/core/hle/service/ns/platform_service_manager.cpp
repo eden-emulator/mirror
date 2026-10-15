@@ -27,28 +27,6 @@
 
 namespace Service::NS {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IPlatformServiceManager::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IPlatformServiceManager::RequestLoad>, "RequestLoad"},
-        FunctionInfo{1, D<&IPlatformServiceManager::GetLoadState>, "GetLoadState"},
-        FunctionInfo{2, D<&IPlatformServiceManager::GetSize>, "GetSize"},
-        FunctionInfo{3, D<&IPlatformServiceManager::GetSharedMemoryAddressOffset>, "GetSharedMemoryAddressOffset"},
-        FunctionInfo{4, D<&IPlatformServiceManager::GetSharedMemoryNativeHandle>, "GetSharedMemoryNativeHandle"},
-        FunctionInfo{5, D<&IPlatformServiceManager::GetSharedFontInOrderOfPriority>, "GetSharedFontInOrderOfPriority"},
-        FunctionInfo{6, D<&IPlatformServiceManager::GetSharedFontInOrderOfPriority>, "GetSharedFontInOrderOfPriorityForSystem"},
-        FunctionInfo{100, nullptr, "RequestApplicationFunctionAuthorization"},
-        FunctionInfo{101, nullptr, "RequestApplicationFunctionAuthorizationByProcessId"},
-        FunctionInfo{102, nullptr, "RequestApplicationFunctionAuthorizationByApplicationId"},
-        FunctionInfo{103, nullptr, "RefreshApplicationFunctionBlackListDebugRecord"},
-        FunctionInfo{104, nullptr, "RequestApplicationFunctionAuthorizationByProgramId"},
-        FunctionInfo{105, nullptr, "GetFunctionBlackListSystemVersionToAuthorize"},
-        FunctionInfo{106, nullptr, "GetFunctionBlackListVersion"},
-        FunctionInfo{1000, nullptr, "LoadNgWordDataForPlatformRegionChina"},
-        FunctionInfo{1001, nullptr, "GetNgWordDataSizeForPlatformRegionChina"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 struct FontRegion {
     u32 offset;
     u32 size;
@@ -111,6 +89,28 @@ struct IPlatformServiceManager::Impl {
 
 IPlatformServiceManager::IPlatformServiceManager(Core::System& system_, const char* service_name_)
     : ServiceFramework{system_, service_name_}, impl{std::make_unique<Impl>()} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IPlatformServiceManager::RequestLoad>, "RequestLoad"},
+        {1, D<&IPlatformServiceManager::GetLoadState>, "GetLoadState"},
+        {2, D<&IPlatformServiceManager::GetSize>, "GetSize"},
+        {3, D<&IPlatformServiceManager::GetSharedMemoryAddressOffset>, "GetSharedMemoryAddressOffset"},
+        {4, D<&IPlatformServiceManager::GetSharedMemoryNativeHandle>, "GetSharedMemoryNativeHandle"},
+        {5, D<&IPlatformServiceManager::GetSharedFontInOrderOfPriority>, "GetSharedFontInOrderOfPriority"},
+        {6, D<&IPlatformServiceManager::GetSharedFontInOrderOfPriority>, "GetSharedFontInOrderOfPriorityForSystem"},
+        {100, nullptr, "RequestApplicationFunctionAuthorization"},
+        {101, nullptr, "RequestApplicationFunctionAuthorizationByProcessId"},
+        {102, nullptr, "RequestApplicationFunctionAuthorizationByApplicationId"},
+        {103, nullptr, "RefreshApplicationFunctionBlackListDebugRecord"},
+        {104, nullptr, "RequestApplicationFunctionAuthorizationByProgramId"},
+        {105, nullptr, "GetFunctionBlackListSystemVersionToAuthorize"},
+        {106, nullptr, "GetFunctionBlackListVersion"},
+        {1000, nullptr, "LoadNgWordDataForPlatformRegionChina"},
+        {1001, nullptr, "GetNgWordDataSizeForPlatformRegionChina"},
+    };
+    // clang-format on
+    RegisterHandlers(functions);
+
     auto& fsc = system.GetFileSystemController();
 
     // Attempt to load shared font data from disk

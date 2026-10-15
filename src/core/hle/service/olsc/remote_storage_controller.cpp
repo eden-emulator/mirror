@@ -9,44 +9,44 @@
 
 namespace Service::OLSC {
 
-    std::optional<ServiceFrameworkBase::FunctionInfoBase> IRemoteStorageController::FindRequest(u32 key) {
-        static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetSaveDataArchiveInfoBySaveDataId"},
-            FunctionInfo{1, nullptr, "GetSaveDataArchiveInfoByApplicationId"},
-            FunctionInfo{3, nullptr, "GetSaveDataArchiveCount"},
-            FunctionInfo{6, nullptr, "CleanupSaveDataArchives"},
-            FunctionInfo{7, nullptr, "CreateSaveDataArchiveCacheUpdationTask"},
-            FunctionInfo{8, nullptr, "CreateSaveDataArchiveCacheUpdationForSpecifiedApplicationTask"},
-            FunctionInfo{9, nullptr, "Delete"},
-            FunctionInfo{10, nullptr, "GetSeriesInfo"},
-            FunctionInfo{11, nullptr, "CreateDeleteDataTask"},
-            FunctionInfo{12, nullptr, "DeleteSeriesInfo"},
-            FunctionInfo{13, nullptr, "CreateRegisterNotificationTokenTask"},
-            FunctionInfo{14, D<&IRemoteStorageController::GetDataNewnessByApplicationId>, "GetDataNewnessByApplicationId"},
-            FunctionInfo{15, nullptr, "RegisterUploadSaveDataTransferTaskForAutonomyRegistration"},
-            FunctionInfo{16, nullptr, "CreateCleanupToDeleteSaveDataArchiveInfoTask"},
-            FunctionInfo{17, nullptr, "ListDataInfo"},
-            FunctionInfo{18, D<&IRemoteStorageController::GetDataInfo>, "GetDataInfoV1"},
-            FunctionInfo{19, nullptr, "GetDataInfoCacheUpdateNativeHandleHolder"},
-            FunctionInfo{20, nullptr, "CreateSaveDataArchiveInfoCacheForSaveDataBackupUpdationTask"},
-            FunctionInfo{21, nullptr, "ListSecondarySaves"},
-            FunctionInfo{22, D<&IRemoteStorageController::GetSecondarySave>, "GetSecondarySave"},
-            FunctionInfo{23, nullptr, "TouchSecondarySave"},
-            FunctionInfo{24, nullptr, "GetSecondarySaveDataInfo"},
-            FunctionInfo{25, nullptr, "RegisterDownloadSaveDataTransferTaskForAutonomyRegistration"},
-            FunctionInfo{26, nullptr, "Unknown26", MakeVersionGate({20,0,0})},
-            FunctionInfo{27, D<&IRemoteStorageController::GetDataInfo>, "GetDataInfoV2", MakeVersionGate({20,0,0})},
-            FunctionInfo{28, nullptr, "Unknown28", MakeVersionGate({20,0,0})},
-            FunctionInfo{29, nullptr, "Unknown29", MakeVersionGate({21,0,0})},
-            FunctionInfo{800, nullptr, "Unknown800", MakeVersionGate({20,0,0})},
-            FunctionInfo{900, nullptr, "SetLoadedDataMissing"},
-            FunctionInfo{901, nullptr, "Unknown901", MakeVersionGate({20,2,0})}
-        );
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-
 IRemoteStorageController::IRemoteStorageController(Core::System& system_)
     : ServiceFramework{system_, "IRemoteStorageController"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "GetSaveDataArchiveInfoBySaveDataId"},
+        {1, nullptr, "GetSaveDataArchiveInfoByApplicationId"},
+        {3, nullptr, "GetSaveDataArchiveCount"},
+        {6, nullptr, "CleanupSaveDataArchives"},
+        {7, nullptr, "CreateSaveDataArchiveCacheUpdationTask"},
+        {8, nullptr, "CreateSaveDataArchiveCacheUpdationForSpecifiedApplicationTask"},
+        {9, nullptr, "Delete"},
+        {10, nullptr, "GetSeriesInfo"},
+        {11, nullptr, "CreateDeleteDataTask"},
+        {12, nullptr, "DeleteSeriesInfo"},
+        {13, nullptr, "CreateRegisterNotificationTokenTask"},
+        {14, D<&IRemoteStorageController::GetDataNewnessByApplicationId>, "GetDataNewnessByApplicationId"},
+        {15, nullptr, "RegisterUploadSaveDataTransferTaskForAutonomyRegistration"},
+        {16, nullptr, "CreateCleanupToDeleteSaveDataArchiveInfoTask"},
+        {17, nullptr, "ListDataInfo"},
+        {18, D<&IRemoteStorageController::GetDataInfo>, "GetDataInfoV1"},
+        {19, nullptr, "GetDataInfoCacheUpdateNativeHandleHolder"},
+        {20, nullptr, "CreateSaveDataArchiveInfoCacheForSaveDataBackupUpdationTask"},
+        {21, nullptr, "ListSecondarySaves"},
+        {22, D<&IRemoteStorageController::GetSecondarySave>, "GetSecondarySave"},
+        {23, nullptr, "TouchSecondarySave"},
+        {24, nullptr, "GetSecondarySaveDataInfo"},
+        {25, nullptr, "RegisterDownloadSaveDataTransferTaskForAutonomyRegistration"},
+        {26, nullptr, "Unknown26"}, //20.0.0+
+        {27, D<&IRemoteStorageController::GetDataInfo>, "GetDataInfoV2"}, //20.0.0+
+        {28, nullptr, "Unknown28"}, //20.0.0+
+        {29, nullptr, "Unknown29"}, //21.0.0+
+        {800, nullptr, "Unknown800"}, //20.0.0+
+        {900, nullptr, "SetLoadedDataMissing"},
+        {901, nullptr, "Unknown901"}, //20.2.0+
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IRemoteStorageController::~IRemoteStorageController() = default;

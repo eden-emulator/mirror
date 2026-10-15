@@ -29,7 +29,6 @@ public:
 private:
     Result Get(OutCopyHandle<Kernel::KReadableEvent> out_event);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     Kernel::KEvent* overwrite_event;
     KernelHelpers::ServiceContext service_context;
 };

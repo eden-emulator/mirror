@@ -23,8 +23,8 @@ public:
 
 private:
     Result Initialize(Out<u32> out_value);
-    Result GetGroupInfo(OutLargeData<GroupInfo, BufferAttr_HipcAutoSelect> out_group_info, GroupInfo in_group_info);
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
+    Result GetGroupInfo(OutLargeData<GroupInfo, BufferAttr_HipcAutoSelect> out_group_info,
+                        GroupInfo in_group_info);
 };
 
 } // namespace Service::LDN

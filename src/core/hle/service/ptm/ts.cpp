@@ -19,10 +19,16 @@ enum class Location : u8 {
 
 class ISession : public ServiceFramework<ISession> {
 public:
-    explicit ISession(Core::System& system_) : ServiceFramework{system_, "ISession"} {}
+    explicit ISession(Core::System& system_) : ServiceFramework{system_, "ISession"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetTemperatureRange"},
+            {2, nullptr, "SetMeasurementMode"},
+            {4, &ISession::GetTemperature, "GetTemperature"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -33,15 +39,20 @@ private:
         rb.Push(ResultSuccess);
         rb.Push(temperature);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "GetTemperatureRange"},
-        FunctionInfo{2, nullptr, "SetMeasurementMode"},
-        FunctionInfo{4, &ISession::GetTemperature, "GetTemperature"}
-    );
 };
 
 TS::TS(Core::System& system_) : ServiceFramework{system_, "ts"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "GetTemperatureRange"},
+        {1, &TS::GetTemperature, "GetTemperature"},
+        {2, nullptr, "SetMeasurementMode"},
+        {3, &TS::GetTemperatureMilliC, "GetTemperatureMilliC"},
+        {4, &TS::OpenSession, "OpenSession"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 TS::~TS() = default;

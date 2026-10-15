@@ -45,8 +45,8 @@ private:
         const InBuffer<BufferAttr_HipcMapTransferAllowsNonSecure | BufferAttr_HipcMapAlias>
             image_data_buffer);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::array<u8, screenshot_width * screenshot_height * bytes_per_pixel> image_data;
+
     std::shared_ptr<AlbumManager> manager;
 };
 

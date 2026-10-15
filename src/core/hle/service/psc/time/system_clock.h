@@ -31,7 +31,6 @@ public:
     Result GetOperationEventReadableHandle(OutCopyHandle<Kernel::KReadableEvent> out_event);
 
 private:
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     SystemClockCore& m_clock_core;
     bool m_can_write_clock;
     bool m_can_write_uninitialized_clock;

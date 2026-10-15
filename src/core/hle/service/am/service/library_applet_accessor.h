@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "core/hle/service/am/service/library_applet_self_accessor.h"
 #include "core/hle/service/cmif_types.h"
 #include "core/hle/service/service.h"
 
@@ -14,26 +15,6 @@ namespace Service::AM {
 class AppletDataBroker;
 struct Applet;
 class IStorage;
-
-struct LibraryAppletInfo {
-    AppletId applet_id;
-    LibraryAppletMode library_applet_mode;
-};
-static_assert(sizeof(LibraryAppletInfo) == 0x8, "LibraryAppletInfo has incorrect size.");
-
-struct ErrorCode {
-    u32 category;
-    u32 number;
-};
-static_assert(sizeof(ErrorCode) == 0x8, "ErrorCode has incorrect size.");
-
-struct ErrorContext {
-    u8 type;
-    INSERT_PADDING_BYTES_NOINIT(0x7);
-    std::array<u8, 0x1f4> data;
-    Result result;
-};
-static_assert(sizeof(ErrorContext) == 0x200, "ErrorContext has incorrect size.");
 
 class ILibraryAppletAccessor final : public ServiceFramework<ILibraryAppletAccessor> {
 public:
@@ -68,7 +49,6 @@ private:
     void FrontendExecuteInteractive();
     void FrontendRequestExit();
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<AppletDataBroker> m_broker;
     const std::shared_ptr<Applet> m_applet;
 };

@@ -24,8 +24,6 @@ private:
     Result ListApplicationRecord(
         OutArray<ApplicationRecord, BufferAttr_HipcMapAlias> out_records, Out<s32> out_count,
         s32 entry_offset);
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::NS

@@ -18,10 +18,6 @@ class KPageGroup;
 class KReadableEvent;
 } // namespace Kernel
 
-namespace Core {
-class System;
-}
-
 namespace Service::android {
 class BufferQueueProducer;
 }

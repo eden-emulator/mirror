@@ -16,26 +16,30 @@ namespace Service::FGM {
 
 class IRequest final : public ServiceFramework<IRequest> {
 public:
-    explicit IRequest(Core::System& system_) : ServiceFramework{system_, "IRequest"} {}
+    explicit IRequest(Core::System& system_) : ServiceFramework{system_, "IRequest"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "Initialize"},
+            {1, nullptr, "Set"},
+            {2, nullptr, "Get"},
+            {3, nullptr, "Cancel"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "Initialize"},
-        FunctionInfo{1, nullptr, "Set"},
-        FunctionInfo{2, nullptr, "Get"},
-        FunctionInfo{3, nullptr, "Cancel"}
-    );
 };
 
 class FGM final : public ServiceFramework<FGM> {
 public:
-    explicit FGM(Core::System& system_, const char* name) : ServiceFramework{system_, name} {}
+    explicit FGM(Core::System& system_, const char* name) : ServiceFramework{system_, name} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &FGM::Initialize, "Initialize"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -46,25 +50,21 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IRequest>(ctx, system);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &FGM::Initialize, "Initialize"}
-    );
 };
 
 class FGM_DBG final : public ServiceFramework<FGM_DBG> {
 public:
-    explicit FGM_DBG(Core::System& system_) : ServiceFramework{system_, "fgm:dbg"} {}
+    explicit FGM_DBG(Core::System& system_) : ServiceFramework{system_, "fgm:dbg"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "Initialize"},
+            {1, nullptr, "Read"},
+            {2, nullptr, "Cancel"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "Initialize"},
-        FunctionInfo{1, nullptr, "Read"},
-        FunctionInfo{2, nullptr, "Cancel"}
-    );
 };
 
 void LoopProcess(Core::System& system) {

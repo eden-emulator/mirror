@@ -45,21 +45,18 @@ bool UpdateField(NewsRecord& rec, std::string_view column, s32 value, bool addit
 
 } // namespace
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> INewsDatabaseService::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&INewsDatabaseService::GetListV1>, "GetListV1"},
-        FunctionInfo{1, D<&INewsDatabaseService::Count>, "Count"},
-        FunctionInfo{2, D<&INewsDatabaseService::CountWithKey>, "CountWithKey"},
-        FunctionInfo{3, D<&INewsDatabaseService::UpdateIntegerValue>, "UpdateIntegerValue"},
-        FunctionInfo{4, D<&INewsDatabaseService::UpdateIntegerValueWithAddition>, "UpdateIntegerValueWithAddition"},
-        FunctionInfo{5, D<&INewsDatabaseService::UpdateStringValue>, "UpdateStringValue"},
-        FunctionInfo{1000, D<&INewsDatabaseService::GetList>, "GetList"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 INewsDatabaseService::INewsDatabaseService(Core::System& system_)
     : ServiceFramework{system_, "INewsDatabaseService"} {
+    static const FunctionInfo functions[] = {
+        {0, D<&INewsDatabaseService::GetListV1>, "GetListV1"},
+        {1, D<&INewsDatabaseService::Count>, "Count"},
+        {2, D<&INewsDatabaseService::CountWithKey>, "CountWithKey"},
+        {3, D<&INewsDatabaseService::UpdateIntegerValue>, "UpdateIntegerValue"},
+        {4, D<&INewsDatabaseService::UpdateIntegerValueWithAddition>, "UpdateIntegerValueWithAddition"},
+        {5, D<&INewsDatabaseService::UpdateStringValue>, "UpdateStringValue"},
+        {1000, D<&INewsDatabaseService::GetList>, "GetList"},
+    };
+    RegisterHandlers(functions);
 }
 
 INewsDatabaseService::~INewsDatabaseService() = default;

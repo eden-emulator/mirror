@@ -6,157 +6,100 @@
 
 #include "core/hle/service/psc/ovln/receiver_service.h"
 #include "core/hle/service/psc/ovln/sender_service.h"
+#include "core/hle/service/psc/pm_control.h"
+#include "core/hle/service/psc/pm_service.h"
 #include "core/hle/service/psc/psc.h"
 #include "core/hle/service/psc/time/manager.h"
 #include "core/hle/service/psc/time/power_state_service.h"
 #include "core/hle/service/psc/time/service_manager.h"
 #include "core/hle/service/psc/time/static.h"
 #include "core/hle/service/service.h"
-#include "core/hle/service/cmif_serialization.h"
 
 namespace Service::PSC {
 
 class PSC_L final : public ServiceFramework<PSC_L> {
 public:
-    explicit PSC_L(Core::System& system_) : ServiceFramework{system_, "psc:l"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "Initialize_3"},
-        FunctionInfo{1, nullptr, "Lock"},
-        FunctionInfo{2, nullptr, "Unlock"},
-        FunctionInfo{3, nullptr, "IsLocked"},
-        FunctionInfo{4, nullptr, "GetRelatedState"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit PSC_L(Core::System& system_) : ServiceFramework{system_, "psc:l"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "Initialize_3"},
+            {1, nullptr, "Lock"},
+            {2, nullptr, "Unlock"},
+            {3, nullptr, "IsLocked"},
+            {4, nullptr, "GetRelatedState"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class INS_R final : public ServiceFramework<INS_R> {
 public:
-    explicit INS_R(Core::System& system_) : ServiceFramework{system_, "ins:r"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetInputSourceState"},
-            FunctionInfo{1, nullptr, "GetTriggerTargetEvent"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit INS_R(Core::System& system_) : ServiceFramework{system_, "ins:r"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetInputSourceState"},
+            {1, nullptr, "GetTriggerTargetEvent"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class INS_S final : public ServiceFramework<INS_S> {
 public:
-    explicit INS_S(Core::System& system_) : ServiceFramework{system_, "ins:s"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetNotifyEvent"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit INS_S(Core::System& system_) : ServiceFramework{system_, "ins:s"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetNotifyEvent"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class HSHL_SYS final : public ServiceFramework<HSHL_SYS> {
 public:
-    explicit HSHL_SYS(Core::System& system_) : ServiceFramework{system_, "hshl:sys"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetBatteryPercentage"},
-            FunctionInfo{1, nullptr, "GetChargerType"},
-            FunctionInfo{2, nullptr, "OpenChargeSession"},
-            FunctionInfo{3, nullptr, "GetRawBatteryPercentage"},
-            FunctionInfo{4, nullptr, "GetBatteryVoltageLevel"},
-            FunctionInfo{5, nullptr, "OpenThermalSession"},
-            FunctionInfo{6, nullptr, "GetAbnormalTemperatureSet"},
-            FunctionInfo{7, nullptr, "OpenClockSession"},
-            FunctionInfo{8, nullptr, "GetClockRate"},
-            FunctionInfo{9, nullptr, "OpenBridgeSession"},
-            FunctionInfo{10, nullptr, "GetBridgePowerSupply"},
-            FunctionInfo{11, nullptr, "OpenVsysVoltageSession"},
-            FunctionInfo{12, nullptr, "GetIsBatteryEnoughForFullAwake"},
-            FunctionInfo{13, nullptr, "GetIsCharging"},
-            FunctionInfo{14, nullptr, "Cmd14"},
-            FunctionInfo{15, nullptr, "Cmd15"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit HSHL_SYS(Core::System& system_) : ServiceFramework{system_, "hshl:sys"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetBatteryPercentage"},
+            {1, nullptr, "GetChargerType"},
+            {2, nullptr, "OpenChargeSession"},
+            {3, nullptr, "GetRawBatteryPercentage"},
+            {4, nullptr, "GetBatteryVoltageLevel"},
+            {5, nullptr, "OpenThermalSession"},
+            {6, nullptr, "GetAbnormalTemperatureSet"},
+            {7, nullptr, "OpenClockSession"},
+            {8, nullptr, "GetClockRate"},
+            {9, nullptr, "OpenBridgeSession"},
+            {10, nullptr, "GetBridgePowerSupply"},
+            {11, nullptr, "OpenVsysVoltageSession"},
+            {12, nullptr, "GetIsBatteryEnoughForFullAwake"},
+            {13, nullptr, "GetIsCharging"},
+            {14, nullptr, "Cmd14"},
+            {15, nullptr, "Cmd15"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class HSHL_SET final : public ServiceFramework<HSHL_SET> {
 public:
-    explicit HSHL_SET(Core::System& system_) : ServiceFramework{system_, "hshl:set"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "OpenChargeSession_2"},
-        FunctionInfo{1, nullptr, "OpenThermalSession_2"},
-        FunctionInfo{2, nullptr, "SetClockRate"},
-        FunctionInfo{3, nullptr, "SetBridgePowerSupply"},
-        FunctionInfo{4, nullptr, "Cmd4"},
-        FunctionInfo{5, nullptr, "Cmd5"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit HSHL_SET(Core::System& system_) : ServiceFramework{system_, "hshl:set"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "OpenChargeSession_2"},
+            {1, nullptr, "OpenThermalSession_2"},
+            {2, nullptr, "SetClockRate"},
+            {3, nullptr, "SetBridgePowerSupply"},
+            {4, nullptr, "Cmd4"},
+            {5, nullptr, "Cmd5"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
-};
-
-class IPmModule final : public ServiceFramework<IPmModule> {
-public:
-    explicit IPmModule(Core::System& system_) : ServiceFramework{system_, "IPmModule"} {}
-    ~IPmModule() override = default;
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "Initialize"},
-        FunctionInfo{1, nullptr, "GetRequest"},
-        FunctionInfo{2, nullptr, "Acknowledge"},
-        FunctionInfo{3, nullptr, "Finalize"},
-        FunctionInfo{4, nullptr, "AcknowledgeEx"}
-    );
-};
-
-class IPmService final : public ServiceFramework<IPmService> {
-public:
-    explicit IPmService(Core::System& system_) : ServiceFramework{system_, "psc:m"} {}
-    ~IPmService() override = default;
-
-private:
-    Result GetPmModule(Out<SharedPointer<IPmModule>> out_module) {
-        LOG_DEBUG(Service_PSC, "called");
-        *out_module = std::make_shared<IPmModule>(system);
-        R_SUCCEED();
-    }
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IPmService::GetPmModule>, "GetPmModule"}
-    );
-};
-
-class IPmControl final : public ServiceFramework<IPmControl> {
-public:
-    explicit IPmControl(Core::System& system_) : ServiceFramework{system_, "psc:c"} {}
-    ~IPmControl() override = default;
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "Initialize"},
-        FunctionInfo{1, nullptr, "DispatchRequest"},
-        FunctionInfo{2, nullptr, "GetResult"},
-        FunctionInfo{3, nullptr, "GetState"},
-        FunctionInfo{4, nullptr, "Cancel"},
-        FunctionInfo{5, nullptr, "PrintModuleInformation"},
-        FunctionInfo{6, nullptr, "GetModuleInformation"},
-        FunctionInfo{10, nullptr, "AcquireStateLock"},
-        FunctionInfo{11, nullptr, "HasStateLock"}
-    );
 };
 
 void LoopProcess(Core::System& system) {

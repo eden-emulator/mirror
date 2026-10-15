@@ -75,6 +75,41 @@ class IManagerForSystemService final : public ServiceFramework<IManagerForSystem
 public:
     explicit IManagerForSystemService(Core::System& system_, Common::UUID uuid)
         : ServiceFramework{system_, "IManagerForSystemService"}, account_id{uuid} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, D<&IManagerForSystemService::CheckAvailability>, "CheckAvailability"},
+            {1, D<&IManagerForSystemService::GetAccountId>, "GetAccountId"},
+            {2, nullptr, "EnsureIdTokenCacheAsync"},
+            {3, D<&IManagerForSystemService::LoadIdTokenCacheDeprecated>, "LoadIdTokenCacheDeprecated"}, // 19.0.0+
+            {4, D<&IManagerForSystemService::LoadIdTokenCache>, "LoadIdTokenCache"}, // 19.0.0+
+            {100, nullptr, "SetSystemProgramIdentification"},
+            {101, nullptr, "RefreshNotificationTokenAsync"}, // 7.0.0+
+            {110, nullptr, "GetServiceEntryRequirementCache"}, // 4.0.0+
+            {111, nullptr, "InvalidateServiceEntryRequirementCache"}, // 4.0.0+
+            {112, nullptr, "InvalidateTokenCache"}, // 4.0.0 - 6.2.0
+            {113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay"}, // 6.1.0+
+            {120, nullptr, "GetNintendoAccountId"},
+            {121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint"}, // 9.0.0+
+            {130, nullptr, "GetNintendoAccountUserResourceCache"},
+            {131, nullptr, "RefreshNintendoAccountUserResourceCacheAsync"},
+            {132, nullptr, "RefreshNintendoAccountUserResourceCacheAsyncIfSecondsElapsed"},
+            {133, nullptr, "GetNintendoAccountVerificationUrlCache"}, // 9.0.0+
+            {134, nullptr, "RefreshNintendoAccountVerificationUrlCache"}, // 9.0.0+
+            {135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed"}, // 9.0.0+
+            {136, nullptr, "GetNintendoAccountUserResourceCache"}, // 19.0.0+
+            {140, nullptr, "GetNetworkServiceLicenseCache"}, // 5.0.0+
+            {141, nullptr, "RefreshNetworkServiceLicenseCacheAsync"}, // 5.0.0+
+            {142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed"}, // 5.0.0+
+            {143, D<&IManagerForSystemService::GetNetworkServiceLicenseCacheEx>, "GetNetworkServiceLicenseCacheEx"}, // 15.0.0+
+            {150, nullptr, "CreateAuthorizationRequest"},
+            {160, nullptr, "RequiresUpdateNetworkServiceAccountIdTokenCache"},
+            {161, nullptr, "RequireReauthenticationOfNetworkServiceAccount"},
+            {170, nullptr, "CreateDeviceHistoryRequest"}, // 17.0.0+
+            {180, nullptr, "GetRequestForNintendoAccountReauthentication"} // 18.0.0+
+        };
+        // clang-format on
+
+        RegisterHandlers(functions);
     }
 
 private:
@@ -108,40 +143,6 @@ private:
         R_SUCCEED();
     }
 
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, D<&IManagerForSystemService::CheckAvailability>, "CheckAvailability"},
-            FunctionInfo{1, D<&IManagerForSystemService::GetAccountId>, "GetAccountId"},
-            FunctionInfo{2, nullptr, "EnsureIdTokenCacheAsync"},
-            FunctionInfo{3, D<&IManagerForSystemService::LoadIdTokenCacheDeprecated>, "LoadIdTokenCacheDeprecated", MakeVersionGate({19,0,0})},
-            FunctionInfo{4, D<&IManagerForSystemService::LoadIdTokenCache>, "LoadIdTokenCache", MakeVersionGate({19,0,0})},
-            FunctionInfo{100, nullptr, "SetSystemProgramIdentification"},
-            FunctionInfo{101, nullptr, "RefreshNotificationTokenAsync", MakeVersionGate({7,0,0})},
-            FunctionInfo{110, nullptr, "GetServiceEntryRequirementCache", MakeVersionGate({4,0,0})},
-            FunctionInfo{111, nullptr, "InvalidateServiceEntryRequirementCache", MakeVersionGate({4,0,0})},
-            FunctionInfo{112, nullptr, "InvalidateTokenCache", MakeVersionGate({4,0,0}, {6,2,0})},
-            FunctionInfo{113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay", MakeVersionGate({6,1,0})},
-            FunctionInfo{120, nullptr, "GetNintendoAccountId"},
-            FunctionInfo{121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint", MakeVersionGate({9,0,0})},
-            FunctionInfo{130, nullptr, "GetNintendoAccountUserResourceCache"},
-            FunctionInfo{131, nullptr, "RefreshNintendoAccountUserResourceCacheAsync"},
-            FunctionInfo{132, nullptr, "RefreshNintendoAccountUserResourceCacheAsyncIfSecondsElapsed"},
-            FunctionInfo{133, nullptr, "GetNintendoAccountVerificationUrlCache", MakeVersionGate({9,0,0})},
-            FunctionInfo{134, nullptr, "RefreshNintendoAccountVerificationUrlCache", MakeVersionGate({9,0,0})},
-            FunctionInfo{135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed", MakeVersionGate({9,0,0})},
-            FunctionInfo{136, nullptr, "GetNintendoAccountUserResourceCache", MakeVersionGate({19,0,0})},
-            FunctionInfo{140, nullptr, "GetNetworkServiceLicenseCache", MakeVersionGate({5,0,0})},
-            FunctionInfo{141, nullptr, "RefreshNetworkServiceLicenseCacheAsync", MakeVersionGate({5,0,0})},
-            FunctionInfo{142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed", MakeVersionGate({5,0,0})},
-            FunctionInfo{143, D<&IManagerForSystemService::GetNetworkServiceLicenseCacheEx>, "GetNetworkServiceLicenseCacheEx", MakeVersionGate({15,0,0})},
-            FunctionInfo{150, nullptr, "CreateAuthorizationRequest"},
-            FunctionInfo{160, nullptr, "RequiresUpdateNetworkServiceAccountIdTokenCache"},
-            FunctionInfo{161, nullptr, "RequireReauthenticationOfNetworkServiceAccount"},
-            FunctionInfo{170, nullptr, "CreateDeviceHistoryRequest", MakeVersionGate({17,0,0})},
-            FunctionInfo{180, nullptr, "GetRequestForNintendoAccountReauthentication", MakeVersionGate({18,0,0})}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
     Common::UUID account_id;
 };
 
@@ -150,25 +151,25 @@ class IFloatingRegistrationRequest final : public ServiceFramework<IFloatingRegi
 public:
     explicit IFloatingRegistrationRequest(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IFloatingRegistrationRequest"} {
-    }
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetSessionId"},
+            {12, nullptr, "GetAccountId"},
+            {13, nullptr, "GetLinkedNintendoAccountId"},
+            {14, nullptr, "GetNickname"},
+            {15, nullptr, "GetProfileImage"},
+            {16, nullptr, "GetProfileLargeImage"}, // 18.0.0+
+            {21, nullptr, "LoadIdTokenCache"},
+            {100, nullptr, "RegisterUser"}, // [1.0.0-3.0.2] RegisterAsync
+            {101, nullptr, "RegisterUserWithUid"}, // [1.0.0-3.0.2] RegisterWithUidAsync
+            {102, nullptr, "RegisterNetworkServiceAccountAsync"}, // 4.0.0+
+            {103, nullptr, "RegisterNetworkServiceAccountWithUidAsync"}, // 4.0.0+
+            {110, nullptr, "SetSystemProgramIdentification"},
+            {111, nullptr, "EnsureIdTokenCacheAsync"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "GetSessionId"},
-        FunctionInfo{12, nullptr, "GetAccountId"},
-        FunctionInfo{13, nullptr, "GetLinkedNintendoAccountId"},
-        FunctionInfo{14, nullptr, "GetNickname"},
-        FunctionInfo{15, nullptr, "GetProfileImage"},
-        FunctionInfo{16, nullptr, "GetProfileLargeImage", MakeVersionGate({18,0,0})},
-        FunctionInfo{21, nullptr, "LoadIdTokenCache"},
-        FunctionInfo{100, nullptr, "RegisterUser"}, // [1.0.0-3.0.2] RegisterAsync
-        FunctionInfo{101, nullptr, "RegisterUserWithUid"}, // [1.0.0-3.0.2] RegisterWithUidAsync
-        FunctionInfo{102, nullptr, "RegisterNetworkServiceAccountAsync", MakeVersionGate({4,0,0})},
-        FunctionInfo{103, nullptr, "RegisterNetworkServiceAccountWithUidAsync", MakeVersionGate({4,0,0})},
-        FunctionInfo{110, nullptr, "SetSystemProgramIdentification"},
-        FunctionInfo{111, nullptr, "EnsureIdTokenCacheAsync"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
@@ -176,6 +177,62 @@ class IAdministrator final : public ServiceFramework<IAdministrator> {
 public:
     explicit IAdministrator(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IAdministrator"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "CheckAvailability"},
+            {1, nullptr, "GetAccountId"},
+            {2, nullptr, "EnsureIdTokenCacheAsync"},
+            {3, nullptr, "LoadIdTokenCache"},
+            {100, nullptr, "SetSystemProgramIdentification"},
+            {101, nullptr, "RefreshNotificationTokenAsync"}, // 7.0.0+
+            {110, nullptr, "GetServiceEntryRequirementCache"}, // 4.0.0+
+            {111, nullptr, "InvalidateServiceEntryRequirementCache"}, // 4.0.0+
+            {112, nullptr, "InvalidateTokenCache"}, // 4.0.0 - 6.2.0
+            {113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay"}, // 6.1.0+
+            {120, nullptr, "GetNintendoAccountId"},
+            {121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint"}, // 9.0.0+
+            {130, nullptr, "GetNintendoAccountUserResourceCache"},
+            {131, nullptr, "RefreshNintendoAccountUserResourceCacheAsync"},
+            {132, nullptr, "RefreshNintendoAccountUserResourceCacheAsyncIfSecondsElapsed"},
+            {133, nullptr, "GetNintendoAccountVerificationUrlCache"}, // 9.0.0+
+            {134, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsync"}, // 9.0.0+
+            {135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed"}, // 9.0.0+
+            {140, nullptr, "GetNetworkServiceLicenseCache"}, // 5.0.0+
+            {141, nullptr, "RefreshNetworkServiceLicenseCacheAsync"}, // 5.0.0+
+            {142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed"}, // 5.0.0+
+            {143, nullptr, "GetNetworkServiceLicenseCacheEx"},
+            {150, nullptr, "CreateAuthorizationRequest"},
+            {160, nullptr, "RequiresUpdateNetworkServiceAccountIdTokenCache"},
+            {161, nullptr, "RequireReauthenticationOfNetworkServiceAccount"},
+            {170, nullptr, "CreateDeviceHistoryRequest"}, // 17.0.0+
+            {180, nullptr, "GetRequestForNintendoAccountReauthentication"}, // 18.0.0+
+            {200, nullptr, "IsRegistered"},
+            {201, nullptr, "RegisterAsync"},
+            {202, nullptr, "UnregisterAsync"},
+            {203, nullptr, "DeleteRegistrationInfoLocally"},
+            {220, nullptr, "SynchronizeProfileAsync"},
+            {221, nullptr, "UploadProfileAsync"},
+            {222, nullptr, "SynchronizaProfileAsyncIfSecondsElapsed"},
+            {250, &IAdministrator::IsLinkedWithNintendoAccount, "IsLinkedWithNintendoAccount"},
+            {251, nullptr, "CreateProcedureToLinkWithNintendoAccount"},
+            {252, nullptr, "ResumeProcedureToLinkWithNintendoAccount"},
+            {255, nullptr, "CreateProcedureToUpdateLinkageStateOfNintendoAccount"},
+            {256, nullptr, "ResumeProcedureToUpdateLinkageStateOfNintendoAccount"},
+            {260, nullptr, "CreateProcedureToLinkNnidWithNintendoAccount"}, // 3.0.0+
+            {261, nullptr, "ResumeProcedureToLinkNnidWithNintendoAccount"}, // 3.0.0+
+            {280, nullptr, "ProxyProcedureToAcquireApplicationAuthorizationForNintendoAccount"},
+            {290, nullptr, "GetRequestForNintendoAccountUserResourceView"}, // 8.0.0+
+            {300, nullptr, "TryRecoverNintendoAccountUserStateAsync"}, // 6.0.0+
+            {400, nullptr, "IsServiceEntryRequirementCacheRefreshRequiredForOnlinePlay"}, // 6.1.0+
+            {401, nullptr, "RefreshServiceEntryRequirementCacheForOnlinePlayAsync"}, // 6.1.0+
+            {900, nullptr, "GetAuthenticationInfoForWin"}, // 9.0.0+
+            {901, nullptr, "ImportAsyncForWin"}, // 9.0.0+
+            {997, nullptr, "DebugUnlinkNintendoAccountAsync"},
+            {998, nullptr, "DebugSetAvailabilityErrorDetail"},
+        };
+        // clang-format on
+
+        RegisterHandlers(functions);
     }
 
 private:
@@ -184,97 +241,42 @@ private:
         rb.Push(ResultSuccess);
         rb.Push(false);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "CheckAvailability"},
-            FunctionInfo{1, nullptr, "GetAccountId"},
-            FunctionInfo{2, nullptr, "EnsureIdTokenCacheAsync"},
-            FunctionInfo{3, nullptr, "LoadIdTokenCache"},
-            FunctionInfo{100, nullptr, "SetSystemProgramIdentification"},
-            FunctionInfo{101, nullptr, "RefreshNotificationTokenAsync", MakeVersionGate({7,0,0})},
-            FunctionInfo{110, nullptr, "GetServiceEntryRequirementCache", MakeVersionGate({4,0,0})},
-            FunctionInfo{111, nullptr, "InvalidateServiceEntryRequirementCache", MakeVersionGate({4,0,0})},
-            FunctionInfo{112, nullptr, "InvalidateTokenCache", MakeVersionGate({4,0,0}, {6,2,0})},
-            FunctionInfo{113, nullptr, "GetServiceEntryRequirementCacheForOnlinePlay", MakeVersionGate({6,1,0})},
-            FunctionInfo{120, nullptr, "GetNintendoAccountId"},
-            FunctionInfo{121, nullptr, "CalculateNintendoAccountAuthenticationFingerprint", MakeVersionGate({9,0,0})},
-            FunctionInfo{130, nullptr, "GetNintendoAccountUserResourceCache"},
-            FunctionInfo{131, nullptr, "RefreshNintendoAccountUserResourceCacheAsync"},
-            FunctionInfo{132, nullptr, "RefreshNintendoAccountUserResourceCacheAsyncIfSecondsElapsed"},
-            FunctionInfo{133, nullptr, "GetNintendoAccountVerificationUrlCache", MakeVersionGate({9,0,0})},
-            FunctionInfo{134, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsync", MakeVersionGate({9,0,0})},
-            FunctionInfo{135, nullptr, "RefreshNintendoAccountVerificationUrlCacheAsyncIfSecondsElapsed", MakeVersionGate({9,0,0})},
-            FunctionInfo{140, nullptr, "GetNetworkServiceLicenseCache", MakeVersionGate({5,0,0})},
-            FunctionInfo{141, nullptr, "RefreshNetworkServiceLicenseCacheAsync", MakeVersionGate({5,0,0})},
-            FunctionInfo{142, nullptr, "RefreshNetworkServiceLicenseCacheAsyncIfSecondsElapsed", MakeVersionGate({5,0,0})},
-            FunctionInfo{143, nullptr, "GetNetworkServiceLicenseCacheEx"},
-            FunctionInfo{150, nullptr, "CreateAuthorizationRequest"},
-            FunctionInfo{160, nullptr, "RequiresUpdateNetworkServiceAccountIdTokenCache"},
-            FunctionInfo{161, nullptr, "RequireReauthenticationOfNetworkServiceAccount"},
-            FunctionInfo{170, nullptr, "CreateDeviceHistoryRequest", MakeVersionGate({17,0,0})},
-            FunctionInfo{180, nullptr, "GetRequestForNintendoAccountReauthentication", MakeVersionGate({18,0,0})},
-            FunctionInfo{200, nullptr, "IsRegistered"},
-            FunctionInfo{201, nullptr, "RegisterAsync"},
-            FunctionInfo{202, nullptr, "UnregisterAsync"},
-            FunctionInfo{203, nullptr, "DeleteRegistrationInfoLocally"},
-            FunctionInfo{220, nullptr, "SynchronizeProfileAsync"},
-            FunctionInfo{221, nullptr, "UploadProfileAsync"},
-            FunctionInfo{222, nullptr, "SynchronizaProfileAsyncIfSecondsElapsed"},
-            FunctionInfo{250, &IAdministrator::IsLinkedWithNintendoAccount, "IsLinkedWithNintendoAccount"},
-            FunctionInfo{251, nullptr, "CreateProcedureToLinkWithNintendoAccount"},
-            FunctionInfo{252, nullptr, "ResumeProcedureToLinkWithNintendoAccount"},
-            FunctionInfo{255, nullptr, "CreateProcedureToUpdateLinkageStateOfNintendoAccount"},
-            FunctionInfo{256, nullptr, "ResumeProcedureToUpdateLinkageStateOfNintendoAccount"},
-            FunctionInfo{260, nullptr, "CreateProcedureToLinkNnidWithNintendoAccount", MakeVersionGate({3,0,0})},
-            FunctionInfo{261, nullptr, "ResumeProcedureToLinkNnidWithNintendoAccount", MakeVersionGate({3,0,0})},
-            FunctionInfo{280, nullptr, "ProxyProcedureToAcquireApplicationAuthorizationForNintendoAccount"},
-            FunctionInfo{290, nullptr, "GetRequestForNintendoAccountUserResourceView", MakeVersionGate({8,0,0})},
-            FunctionInfo{300, nullptr, "TryRecoverNintendoAccountUserStateAsync", MakeVersionGate({6,0,0})},
-            FunctionInfo{400, nullptr, "IsServiceEntryRequirementCacheRefreshRequiredForOnlinePlay", MakeVersionGate({6,1,0})},
-            FunctionInfo{401, nullptr, "RefreshServiceEntryRequirementCacheForOnlinePlayAsync", MakeVersionGate({6,1,0})},
-            FunctionInfo{900, nullptr, "GetAuthenticationInfoForWin", MakeVersionGate({9,0,0})},
-            FunctionInfo{901, nullptr, "ImportAsyncForWin", MakeVersionGate({9,0,0})},
-            FunctionInfo{997, nullptr, "DebugUnlinkNintendoAccountAsync"},
-            FunctionInfo{998, nullptr, "DebugSetAvailabilityErrorDetail"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
 };
 
 class IAuthorizationRequest final : public ServiceFramework<IAuthorizationRequest> {
 public:
     explicit IAuthorizationRequest(Core::System& system_, Common::UUID)
         : ServiceFramework{system_, "IAuthorizationRequest"} {
-    }
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetSessionId"},
+            {10, nullptr, "InvokeWithoutInteractionAsync"},
+            {19, nullptr, "IsAuthorized"},
+            {20, nullptr, "GetAuthorizationCode"},
+            {21, nullptr, "GetIdToken"},
+            {22, nullptr, "GetState"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetSessionId"},
-            FunctionInfo{10, nullptr, "InvokeWithoutInteractionAsync"},
-            FunctionInfo{19, nullptr, "IsAuthorized"},
-            FunctionInfo{20, nullptr, "GetAuthorizationCode"},
-            FunctionInfo{21, nullptr, "GetIdToken"},
-            FunctionInfo{22, nullptr, "GetState"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class IOAuthProcedure final : public ServiceFramework<IOAuthProcedure> {
 public:
     explicit IOAuthProcedure(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IOAuthProcedure"} {}
+        : ServiceFramework{system_, "IOAuthProcedure"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "PrepareAsync"},
+            {1, nullptr, "GetRequest"},
+            {2, nullptr, "ApplyResponse"},
+            {3, nullptr, "ApplyResponseAsync"},
+            {10, nullptr, "Suspend"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "PrepareAsync"},
-            FunctionInfo{1, nullptr, "GetRequest"},
-            FunctionInfo{2, nullptr, "ApplyResponse"},
-            FunctionInfo{3, nullptr, "ApplyResponseAsync"},
-            FunctionInfo{10, nullptr, "Suspend"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
@@ -282,69 +284,96 @@ public:
 class IOAuthProcedureForExternalNsa final : public ServiceFramework<IOAuthProcedureForExternalNsa> {
 public:
     explicit IOAuthProcedureForExternalNsa(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IOAuthProcedureForExternalNsa"}
-    {}
+        : ServiceFramework{system_, "IOAuthProcedureForExternalNsa"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "PrepareAsync"},
+            {1, nullptr, "GetRequest"},
+            {2, nullptr, "ApplyResponse"},
+            {3, nullptr, "ApplyResponseAsync"},
+            {10, nullptr, "Suspend"},
+            {100, nullptr, "GetAccountId"},
+            {101, nullptr, "GetLinkedNintendoAccountId"},
+            {102, nullptr, "GetNickname"},
+            {103, nullptr, "GetProfileImage"},
+            {104, nullptr, "GetProfileLargeImage"} // 18.0.0+
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "PrepareAsync"},
-            FunctionInfo{1, nullptr, "GetRequest"},
-            FunctionInfo{2, nullptr, "ApplyResponse"},
-            FunctionInfo{3, nullptr, "ApplyResponseAsync"},
-            FunctionInfo{10, nullptr, "Suspend"},
-            FunctionInfo{100, nullptr, "GetAccountId"},
-            FunctionInfo{101, nullptr, "GetLinkedNintendoAccountId"},
-            FunctionInfo{102, nullptr, "GetNickname"},
-            FunctionInfo{103, nullptr, "GetProfileImage"},
-            FunctionInfo{104, nullptr, "GetProfileLargeImage", MakeVersionGate({18,0,0})}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
-class IOAuthProcedureForNintendoAccountLinkage final : public ServiceFramework<IOAuthProcedureForNintendoAccountLinkage> {
+class IOAuthProcedureForNintendoAccountLinkage final
+    : public ServiceFramework<IOAuthProcedureForNintendoAccountLinkage> {
 public:
     explicit IOAuthProcedureForNintendoAccountLinkage(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IOAuthProcedureForNintendoAccountLinkage"}
-    {}
+        : ServiceFramework{system_, "IOAuthProcedureForNintendoAccountLinkage"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "PrepareAsync"},
+            {1, nullptr, "GetRequest"},
+            {2, nullptr, "ApplyResponse"},
+            {3, nullptr, "ApplyResponseAsync"},
+            {10, nullptr, "Suspend"},
+            {100, nullptr, "GetRequestWithTheme"},
+            {101, nullptr, "IsNetworkServiceAccountReplaced"},
+            {199, nullptr, "GetUrlForIntroductionOfExtraMembership"}, // 2.0.0 - 5.1.0
+            {200, nullptr, "ApplyAsyncWithAuthorizedToken"},
+            {210, nullptr, "IsProfileAvailable"}, // 17.0.0+
+            {220, nullptr, "RegisterUserAsyncWithoutProfile"}, // 17.0.0+
+            {221, nullptr, "RegisterUserWithProfileAsync"}, // 17.0.0+
+            {230, nullptr, "RegisterUserWithLargeImageProfileAsync"}, // 18.0.0+
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "PrepareAsync"},
-            FunctionInfo{1, nullptr, "GetRequest"},
-            FunctionInfo{2, nullptr, "ApplyResponse"},
-            FunctionInfo{3, nullptr, "ApplyResponseAsync"},
-            FunctionInfo{10, nullptr, "Suspend"},
-            FunctionInfo{100, nullptr, "GetRequestWithTheme"},
-            FunctionInfo{101, nullptr, "IsNetworkServiceAccountReplaced"},
-            FunctionInfo{199, nullptr, "GetUrlForIntroductionOfExtraMembership", MakeVersionGate({2,0,0}, {5,1,0})},
-            FunctionInfo{200, nullptr, "ApplyAsyncWithAuthorizedToken"},
-            FunctionInfo{210, nullptr, "IsProfileAvailable", MakeVersionGate({17,0,0})},
-            FunctionInfo{220, nullptr, "RegisterUserAsyncWithoutProfile", MakeVersionGate({17,0,0})},
-            FunctionInfo{221, nullptr, "RegisterUserWithProfileAsync", MakeVersionGate({17,0,0})},
-            FunctionInfo{230, nullptr, "RegisterUserWithLargeImageProfileAsync", MakeVersionGate({18,0,0})}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class INotifier final : public ServiceFramework<INotifier> {
 public:
     explicit INotifier(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "INotifier"} {}
+        : ServiceFramework{system_, "INotifier"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetSystemEvent"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetSystemEvent"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class IProfileCommon : public ServiceFramework<IProfileCommon> {
 public:
-    explicit IProfileCommon(Core::System& system_, const char* name, bool editor_commands, Common::UUID user_id_, ProfileManager& profile_manager_)
+    explicit IProfileCommon(Core::System& system_, const char* name, bool editor_commands,
+                            Common::UUID user_id_, ProfileManager& profile_manager_)
         : ServiceFramework{system_, name}, profile_manager{profile_manager_}, user_id{user_id_} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &IProfileCommon::Get, "Get"},
+            {1, &IProfileCommon::GetBase, "GetBase"},
+            {10, &IProfileCommon::GetImageSize, "GetImageSize"},
+            {11, &IProfileCommon::LoadImage, "LoadImage"},
+            {20, &IProfileCommon::Unknown20, "Unknown20"},
+            {21, &IProfileCommon::Unknown21, "Unknown21"},
+            {30, &IProfileCommon::Unknown30, "Unknown30"}
+        };
+        // clang-format on
+        RegisterHandlers(functions);
+
+        if (editor_commands) {
+            // clang-format off
+            static const FunctionInfo editor_functions[] = {
+                {100, &IProfileCommon::Store, "Store"},
+                {101, &IProfileCommon::StoreWithImage, "StoreWithImage"},
+                {110, &IProfileCommon::Unknown110, "Unknown110"}
+            };
+            // clang-format on
+
+            RegisterHandlers(editor_functions);
+        }
     }
 
 protected:
@@ -571,22 +600,6 @@ protected:
         rb.Push(ResultSuccess);
     }
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &IProfileCommon::Get, "Get"},
-        FunctionInfo{1, &IProfileCommon::GetBase, "GetBase"},
-        FunctionInfo{10, &IProfileCommon::GetImageSize, "GetImageSize"},
-        FunctionInfo{11, &IProfileCommon::LoadImage, "LoadImage"},
-        FunctionInfo{20, &IProfileCommon::Unknown20, "Unknown20"},
-        FunctionInfo{21, &IProfileCommon::Unknown21, "Unknown21"},
-        FunctionInfo{30, &IProfileCommon::Unknown30, "Unknown30"},
-        // Editor commands
-        FunctionInfo{100, &IProfileCommon::Store, "Store"},
-        FunctionInfo{101, &IProfileCommon::StoreWithImage, "StoreWithImage"},
-        FunctionInfo{110, &IProfileCommon::Unknown110, "Unknown110"}
-    );
     ProfileManager& profile_manager;
     Common::UUID user_id{}; ///< The user id this profile refers to.
 };
@@ -608,33 +621,35 @@ public:
 class ISessionObject final : public ServiceFramework<ISessionObject> {
 public:
     explicit ISessionObject(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "ISessionObject"} {}
+        : ServiceFramework{system_, "ISessionObject"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {999, nullptr, "Dummy"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{999, nullptr, "Dummy"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class IGuestLoginRequest final : public ServiceFramework<IGuestLoginRequest> {
 public:
     explicit IGuestLoginRequest(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IGuestLoginRequest"} {}
+        : ServiceFramework{system_, "IGuestLoginRequest"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetSessionId"},
+            {11, nullptr, "Unknown"}, // 1.0.0 - 2.3.0 (the name is blank on Switchbrew)
+            {12, nullptr, "GetAccountId"},
+            {13, nullptr, "GetLinkedNintendoAccountId"},
+            {14, nullptr, "GetNickname"},
+            {15, nullptr, "GetProfileImage"},
+            {16, nullptr, "GetProfileLargeImage"}, // 18.0.0+
+            {21, nullptr, "LoadIdTokenCache"}, // 3.0.0+
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetSessionId"},
-            FunctionInfo{11, nullptr, "Unknown", MakeVersionGate({1,0,0}, {2,3,0})}, // the name is blank on Switchbrew
-            FunctionInfo{12, nullptr, "GetAccountId"},
-            FunctionInfo{13, nullptr, "GetLinkedNintendoAccountId"},
-            FunctionInfo{14, nullptr, "GetNickname"},
-            FunctionInfo{15, nullptr, "GetProfileImage"},
-            FunctionInfo{16, nullptr, "GetProfileLargeImage", MakeVersionGate({18,0,0})},
-            FunctionInfo{21, nullptr, "LoadIdTokenCache", MakeVersionGate({3,0,0})}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
@@ -671,10 +686,23 @@ public:
                                     const std::shared_ptr<ProfileManager>& profile_manager_)
         : ServiceFramework{system_, "IManagerForApplication"},
           ensure_token_id{std::make_shared<EnsureTokenIdCacheAsyncInterface>(system)},
-          profile_manager{profile_manager_} {}
+          profile_manager{profile_manager_} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &IManagerForApplication::CheckAvailability, "CheckAvailability"},
+            {1, &IManagerForApplication::GetAccountId, "GetAccountId"},
+            {2, &IManagerForApplication::EnsureIdTokenCacheAsync, "EnsureIdTokenCacheAsync"},
+            {3, &IManagerForApplication::LoadIdTokenCacheDeprecated, "LoadIdTokenCacheDeprecated"},
+            {4, &IManagerForApplication::LoadIdTokenCache, "LoadIdTokenCache"},
+            {130, &IManagerForApplication::GetNintendoAccountUserResourceCacheForApplication, "GetNintendoAccountUserResourceCacheForApplication"},
+            {136, &IManagerForApplication::GetNintendoAccountUserResourceCacheForApplication, "GetNintendoAccountUserResourceCache"}, // 19.0.0+
+            {150, nullptr, "CreateAuthorizationRequest"},
+            {160, &IManagerForApplication::StoreOpenContext, "StoreOpenContext"},
+            {170, nullptr, "LoadNetworkServiceLicenseKindAsync"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -744,18 +772,6 @@ private:
         rb.Push(ResultSuccess);
     }
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &IManagerForApplication::CheckAvailability, "CheckAvailability"},
-        FunctionInfo{1, &IManagerForApplication::GetAccountId, "GetAccountId"},
-        FunctionInfo{2, &IManagerForApplication::EnsureIdTokenCacheAsync, "EnsureIdTokenCacheAsync"},
-        FunctionInfo{3, &IManagerForApplication::LoadIdTokenCacheDeprecated, "LoadIdTokenCacheDeprecated"},
-        FunctionInfo{4, &IManagerForApplication::LoadIdTokenCache, "LoadIdTokenCache"},
-        FunctionInfo{130, &IManagerForApplication::GetNintendoAccountUserResourceCacheForApplication, "GetNintendoAccountUserResourceCacheForApplication"},
-        FunctionInfo{136, &IManagerForApplication::GetNintendoAccountUserResourceCacheForApplication, "GetNintendoAccountUserResourceCache", MakeVersionGate({19,0,0})},
-        FunctionInfo{150, nullptr, "CreateAuthorizationRequest"},
-        FunctionInfo{160, &IManagerForApplication::StoreOpenContext, "StoreOpenContext"},
-        FunctionInfo{170, nullptr, "LoadNetworkServiceLicenseKindAsync"}
-    );
     std::shared_ptr<EnsureTokenIdCacheAsyncInterface> ensure_token_id{};
     std::shared_ptr<ProfileManager> profile_manager;
 };
@@ -765,17 +781,18 @@ class IAsyncNetworkServiceLicenseKindContext final
     : public ServiceFramework<IAsyncNetworkServiceLicenseKindContext> {
 public:
     explicit IAsyncNetworkServiceLicenseKindContext(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IAsyncNetworkServiceLicenseKindContext"} {}
+        : ServiceFramework{system_, "IAsyncNetworkServiceLicenseKindContext"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetSystemEvent"},
+            {1, nullptr, "Cancel"},
+            {2, nullptr, "HasDone"},
+            {3, nullptr, "GetResult"},
+            {4, nullptr, "GetNetworkServiceLicenseKind"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "GetSystemEvent"},
-        FunctionInfo{1, nullptr, "Cancel"},
-        FunctionInfo{2, nullptr, "HasDone"},
-        FunctionInfo{3, nullptr, "GetResult"},
-        FunctionInfo{4, nullptr, "GetNetworkServiceLicenseKind"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
@@ -784,54 +801,56 @@ class IOAuthProcedureForUserRegistration final
     : public ServiceFramework<IOAuthProcedureForUserRegistration> {
 public:
     explicit IOAuthProcedureForUserRegistration(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IOAuthProcedureForUserRegistration"} {}
+        : ServiceFramework{system_, "IOAuthProcedureForUserRegistration"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "PrepareAsync"},
+            {1, nullptr, "GetRequest"},
+            {2, nullptr, "ApplyResponse"},
+            {3, nullptr, "ApplyResponseAsync"},
+            {10, nullptr, "Suspend"},
+            {100, nullptr, "GetAccountId"},
+            {101, nullptr, "GetLinkedNintendoAccountId"},
+            {102, nullptr, "GetNickname"},
+            {103, nullptr, "GetProfileImage"},
+            {104, nullptr, "GetProfileLargeImage"}, // 18.0.0+
+            {110, nullptr, "RegisterUserAsync"},
+            {111, nullptr, "GetUid"},
+            {200, nullptr, "ApplyResponseForUserCreationAsync"}, // 17.0.0+
+            {205, nullptr, "SuspendAfterApplyResponse"}, // 17.0.0+
+            {210, nullptr, "IsProfileAvailable"}, // 17.0.0+
+            {220, nullptr, "RegisterUserAsyncWithoutProfile"}, // 17.0.0+
+            {221, nullptr, "RegisterUserWithProfileAsync"}, // 17.0.0+
+            {230, nullptr, "RegisterUserWithLargeImageProfileAsync"} // 18.0.0+
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "PrepareAsync"},
-        FunctionInfo{1, nullptr, "GetRequest"},
-        FunctionInfo{2, nullptr, "ApplyResponse"},
-        FunctionInfo{3, nullptr, "ApplyResponseAsync"},
-        FunctionInfo{10, nullptr, "Suspend"},
-        FunctionInfo{100, nullptr, "GetAccountId"},
-        FunctionInfo{101, nullptr, "GetLinkedNintendoAccountId"},
-        FunctionInfo{102, nullptr, "GetNickname"},
-        FunctionInfo{103, nullptr, "GetProfileImage"},
-        FunctionInfo{104, nullptr, "GetProfileLargeImage", MakeVersionGate({18,0,0})},
-        FunctionInfo{110, nullptr, "RegisterUserAsync"},
-        FunctionInfo{111, nullptr, "GetUid"},
-        FunctionInfo{200, nullptr, "ApplyResponseForUserCreationAsync", MakeVersionGate({17,0,0})},
-        FunctionInfo{205, nullptr, "SuspendAfterApplyResponse", MakeVersionGate({17,0,0})},
-        FunctionInfo{210, nullptr, "IsProfileAvailable", MakeVersionGate({17,0,0})},
-        FunctionInfo{220, nullptr, "RegisterUserAsyncWithoutProfile", MakeVersionGate({17,0,0})},
-        FunctionInfo{221, nullptr, "RegisterUserWithProfileAsync", MakeVersionGate({17,0,0})},
-        FunctionInfo{230, nullptr, "RegisterUserWithLargeImageProfileAsync", MakeVersionGate({18,0,0})}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class DAUTH_O final : public ServiceFramework<DAUTH_O> {
 public:
-    explicit DAUTH_O(Core::System& system_, Common::UUID) : ServiceFramework{system_, "dauth:o"} {}
+    explicit DAUTH_O(Core::System& system_, Common::UUID) : ServiceFramework{system_, "dauth:o"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
+            {1, nullptr, "LoadAuthenticationTokenCache"},
+            {2, nullptr, "InvalidateAuthenticationTokenCache"},
+            {3, nullptr, "IsDeviceAuthenticationTokenCacheAvailable"},
+            {10, nullptr, "EnsureEdgeTokenCacheAsync"},
+            {11, nullptr, "LoadEdgeTokenCache"},
+            {12, nullptr, "InvalidateEdgeTokenCache"},
+            {13, nullptr, "IsEdgeTokenCacheAvailable"},
+            {20, nullptr, "EnsureApplicationAuthenticationCacheAsync"},
+            {21, nullptr, "LoadApplicationAuthenticationTokenCache"},
+            {22, nullptr, "LoadApplicationNetworkServiceClientConfigCache"},
+            {23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
+            {24, nullptr, "InvalidateApplicationAuthenticationCache"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
-        FunctionInfo{1, nullptr, "LoadAuthenticationTokenCache"},
-        FunctionInfo{2, nullptr, "InvalidateAuthenticationTokenCache"},
-        FunctionInfo{3, nullptr, "IsDeviceAuthenticationTokenCacheAvailable"},
-        FunctionInfo{10, nullptr, "EnsureEdgeTokenCacheAsync"},
-        FunctionInfo{11, nullptr, "LoadEdgeTokenCache"},
-        FunctionInfo{12, nullptr, "InvalidateEdgeTokenCache"},
-        FunctionInfo{13, nullptr, "IsEdgeTokenCacheAvailable"},
-        FunctionInfo{20, nullptr, "EnsureApplicationAuthenticationCacheAsync"},
-        FunctionInfo{21, nullptr, "LoadApplicationAuthenticationTokenCache"},
-        FunctionInfo{22, nullptr, "LoadApplicationNetworkServiceClientConfigCache"},
-        FunctionInfo{23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
-        FunctionInfo{24, nullptr, "InvalidateApplicationAuthenticationCache"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
@@ -839,809 +858,781 @@ public:
 class IAsyncResult final : public ServiceFramework<IAsyncResult> {
 public:
     explicit IAsyncResult(Core::System& system_, Common::UUID)
-        : ServiceFramework{system_, "IAsyncResult"} {}
+        : ServiceFramework{system_, "IAsyncResult"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetResult"},
+            {1, nullptr, "Cancel"},
+            {2, nullptr, "IsAvailable"},
+            {3, nullptr, "GetSystemEvent"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "GetResult"},
-        FunctionInfo{1, nullptr, "Cancel"},
-        FunctionInfo{2, nullptr, "IsAvailable"},
-        FunctionInfo{3, nullptr, "GetSystemEvent"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
-class Module final {
-public:
-    class Interface : public ServiceFramework<Interface> {
-    public:
-        explicit Interface(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_, const char* name)
-            : ServiceFramework{system_, name}
-            , module{std::move(module_)}
-            , profile_manager{std::move(profile_manager_)}
-        {}
-        ~Interface() override = default;
+void Module::Interface::GetUserCount(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+    IPC::ResponseBuilder rb{ctx, 3};
+    rb.Push(ResultSuccess);
+    rb.Push<u32>(static_cast<u32>(profile_manager->GetUserCount()));
+}
 
-        void GetUserCount(HLERequestContext& ctx) {
-            LOG_DEBUG(Service_ACC, "called");
-            IPC::ResponseBuilder rb{ctx, 3};
-            rb.Push(ResultSuccess);
-            rb.Push<u32>(static_cast<u32>(profile_manager->GetUserCount()));
+void Module::Interface::GetUserExistence(HLERequestContext& ctx) {
+    IPC::RequestParser rp{ctx};
+    Common::UUID user_id = rp.PopRaw<Common::UUID>();
+    LOG_DEBUG(Service_ACC, "called user_id=0x{}", user_id.RawString());
+
+    IPC::ResponseBuilder rb{ctx, 3};
+    rb.Push(ResultSuccess);
+    rb.Push(profile_manager->UserExists(user_id));
+}
+
+void Module::Interface::ListAllUsers(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+    ctx.WriteBuffer(profile_manager->GetAllUsers());
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(ResultSuccess);
+}
+
+void Module::Interface::ListOpenUsers(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+    ctx.WriteBuffer(profile_manager->GetOpenUsers());
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(ResultSuccess);
+}
+
+void Module::Interface::GetLastOpenedUser(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+    IPC::ResponseBuilder rb{ctx, 6};
+    rb.Push(ResultSuccess);
+    rb.PushRaw<Common::UUID>(profile_manager->GetLastOpenedUser());
+}
+
+void Module::Interface::GetProfile(HLERequestContext& ctx) {
+    IPC::RequestParser rp{ctx};
+    Common::UUID user_id = rp.PopRaw<Common::UUID>();
+    LOG_DEBUG(Service_ACC, "called user_id=0x{}", user_id.RawString());
+
+    IPC::ResponseBuilder rb{ctx, 2, 0, 1};
+    rb.Push(ResultSuccess);
+    rb.PushIpcInterface<IProfile>(ctx, system, user_id, *profile_manager);
+}
+
+void Module::Interface::IsUserRegistrationRequestPermitted(HLERequestContext& ctx) {
+    LOG_WARNING(Service_ACC, "(STUBBED) called");
+    IPC::ResponseBuilder rb{ctx, 3};
+    rb.Push(ResultSuccess);
+    rb.Push(profile_manager->CanSystemRegisterUser());
+}
+
+void Module::Interface::InitializeApplicationInfo(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(InitializeApplicationInfoBase());
+}
+
+void Module::Interface::InitializeApplicationInfoRestricted(HLERequestContext& ctx) {
+    LOG_WARNING(Service_ACC, "(Partial implementation) called");
+
+    // TODO(ogniK): We require checking if the user actually owns the title and what not. As of
+    // currently, we assume the user owns the title. InitializeApplicationInfoBase SHOULD be called
+    // first then we do extra checks if the game is a digital copy.
+
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(InitializeApplicationInfoBase());
+}
+
+Result Module::Interface::InitializeApplicationInfoBase() {
+    if (application_info) {
+        LOG_ERROR(Service_ACC, "Application already initialized");
+        return Account::ResultApplicationInfoAlreadyInitialized;
+    }
+
+    // TODO(ogniK): This should be changed to reflect the target process for when we have multiple
+    // processes emulated. As we don't actually have pid support we should assume we're just using
+    // our own process
+    Glue::ApplicationLaunchProperty launch_property{};
+    const auto result = system.GetARPManager().GetLaunchProperty(
+        &launch_property, system.GetApplicationProcessProgramID());
+
+    if (result != ResultSuccess) {
+        LOG_ERROR(Service_ACC, "Failed to get launch property");
+        return Account::ResultInvalidApplication;
+    }
+
+    switch (launch_property.base_game_storage_id) {
+    case FileSys::StorageId::GameCard:
+        application_info.application_type = ApplicationType::GameCard;
+        break;
+    case FileSys::StorageId::Host:
+    case FileSys::StorageId::NandSystem:
+    case FileSys::StorageId::NandUser:
+    case FileSys::StorageId::SdCard:
+    case FileSys::StorageId::None: // Yuzu specific, differs from hardware
+        application_info.application_type = ApplicationType::Digital;
+        break;
+    default:
+        LOG_ERROR(Service_ACC, "Invalid game storage ID! storage_id={}",
+                  launch_property.base_game_storage_id);
+        return Account::ResultInvalidApplication;
+    }
+
+    LOG_WARNING(Service_ACC, "ApplicationInfo init required");
+    // TODO(ogniK): Actual initialization here
+
+    return ResultSuccess;
+}
+
+void Module::Interface::GetBaasAccountManagerForApplication(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+    IPC::ResponseBuilder rb{ctx, 2, 0, 1};
+    rb.Push(ResultSuccess);
+    rb.PushIpcInterface<IManagerForApplication>(ctx, system, profile_manager);
+}
+
+void Module::Interface::IsUserAccountSwitchLocked(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+    FileSys::NACP nacp;
+    const auto res = system.GetAppLoader().ReadControlData(nacp);
+
+    bool is_locked = false;
+
+    if (res != Loader::ResultStatus::Success) {
+        const FileSys::PatchManager pm{system.GetApplicationProcessProgramID(),
+                                       system.GetFileSystemController(),
+                                       system.GetContentProvider()};
+        const auto nacp_unique = pm.GetControlMetadata().first;
+
+        if (nacp_unique != nullptr) {
+            is_locked = nacp_unique->GetUserAccountSwitchLock();
+        } else {
+            LOG_ERROR(Service_ACC, "nacp_unique is null!");
         }
+    } else {
+        is_locked = nacp.GetUserAccountSwitchLock();
+    }
 
-        void GetUserExistence(HLERequestContext& ctx) {
-            IPC::RequestParser rp{ctx};
-            Common::UUID user_id = rp.PopRaw<Common::UUID>();
-            LOG_DEBUG(Service_ACC, "called user_id=0x{}", user_id.RawString());
-
-            IPC::ResponseBuilder rb{ctx, 3};
-            rb.Push(ResultSuccess);
-            rb.Push(profile_manager->UserExists(user_id));
-        }
-
-        void ListAllUsers(HLERequestContext& ctx) {
-            LOG_DEBUG(Service_ACC, "called");
-            ctx.WriteBuffer(profile_manager->GetAllUsers());
-            IPC::ResponseBuilder rb{ctx, 2};
-            rb.Push(ResultSuccess);
-        }
-
-        void ListOpenUsers(HLERequestContext& ctx) {
-            LOG_DEBUG(Service_ACC, "called");
-            ctx.WriteBuffer(profile_manager->GetOpenUsers());
-            IPC::ResponseBuilder rb{ctx, 2};
-            rb.Push(ResultSuccess);
-        }
-
-        void GetLastOpenedUser(HLERequestContext& ctx) {
-            LOG_DEBUG(Service_ACC, "called");
-            IPC::ResponseBuilder rb{ctx, 6};
-            rb.Push(ResultSuccess);
-            rb.PushRaw<Common::UUID>(profile_manager->GetLastOpenedUser());
-        }
-
-        void GetProfile(HLERequestContext& ctx) {
-            IPC::RequestParser rp{ctx};
-            Common::UUID user_id = rp.PopRaw<Common::UUID>();
-            LOG_DEBUG(Service_ACC, "called user_id=0x{}", user_id.RawString());
-
-            IPC::ResponseBuilder rb{ctx, 2, 0, 1};
-            rb.Push(ResultSuccess);
-            rb.PushIpcInterface<Service::Account::IProfile>(ctx, system, user_id, *profile_manager);
-        }
-
-        void IsUserRegistrationRequestPermitted(HLERequestContext& ctx) {
-            LOG_WARNING(Service_ACC, "(STUBBED) called");
-            IPC::ResponseBuilder rb{ctx, 3};
-            rb.Push(ResultSuccess);
-            rb.Push(profile_manager->CanSystemRegisterUser());
-        }
-
-        void InitializeApplicationInfo(HLERequestContext& ctx) {
-            LOG_DEBUG(Service_ACC, "called");
-            IPC::ResponseBuilder rb{ctx, 2};
-            rb.Push(InitializeApplicationInfoBase());
-        }
-
-        void InitializeApplicationInfoRestricted(HLERequestContext& ctx) {
-            LOG_WARNING(Service_ACC, "(Partial implementation) called");
-
-            // TODO(ogniK): We require checking if the user actually owns the title and what not. As of
-            // currently, we assume the user owns the title. InitializeApplicationInfoBase SHOULD be called
-            // first then we do extra checks if the game is a digital copy.
-
-            IPC::ResponseBuilder rb{ctx, 2};
-            rb.Push(InitializeApplicationInfoBase());
-        }
-
-        void GetBaasAccountManagerForApplication(HLERequestContext& ctx) {
-            LOG_DEBUG(Service_ACC, "called");
-            IPC::ResponseBuilder rb{ctx, 2, 0, 1};
-            rb.Push(ResultSuccess);
-            rb.PushIpcInterface<IManagerForApplication>(ctx, system, profile_manager);
-        }
-
-        void IsUserAccountSwitchLocked(HLERequestContext& ctx) {
-            LOG_DEBUG(Service_ACC, "called");
-            FileSys::NACP nacp;
-            const auto res = system.GetAppLoader().ReadControlData(nacp);
-
-            bool is_locked = false;
-
-            if (res != Loader::ResultStatus::Success) {
-                const FileSys::PatchManager pm{system.GetApplicationProcessProgramID(),
-                                            system.GetFileSystemController(),
-                                            system.GetContentProvider()};
-                const auto nacp_unique = pm.GetControlMetadata().first;
-
-                if (nacp_unique != nullptr) {
-                    is_locked = nacp_unique->GetUserAccountSwitchLock();
-                } else {
-                    LOG_ERROR(Service_ACC, "nacp_unique is null!");
-                }
-            } else {
-                is_locked = nacp.GetUserAccountSwitchLock();
-            }
-
-            IPC::ResponseBuilder rb{ctx, 3};
-            rb.Push(ResultSuccess);
-            rb.Push(is_locked);
-        }
-
-        void InitializeApplicationInfoV2(HLERequestContext& ctx) {
-            LOG_WARNING(Service_ACC, "(STUBBED) called");
-
-            IPC::ResponseBuilder rb{ctx, 2};
-            rb.Push(ResultSuccess);
-        }
+    IPC::ResponseBuilder rb{ctx, 3};
+    rb.Push(ResultSuccess);
+    rb.Push(is_locked);
+}
 
-        void BeginUserRegistration(HLERequestContext& ctx) {
-            const auto user_id = Common::UUID::MakeRandom();
-            profile_manager->CreateNewUser(user_id, "Eden");
-
-            LOG_INFO(Service_ACC, "called, uuid={}", user_id.FormattedString());
+void Module::Interface::InitializeApplicationInfoV2(HLERequestContext& ctx) {
+    LOG_WARNING(Service_ACC, "(STUBBED) called");
+
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(ResultSuccess);
+}
 
-            IPC::ResponseBuilder rb{ctx, 6};
-            rb.Push(ResultSuccess);
-            rb.PushRaw(user_id);
-        }
-
-        void CompleteUserRegistration(HLERequestContext& ctx) {
-            IPC::RequestParser rp{ctx};
-            Common::UUID user_id = rp.PopRaw<Common::UUID>();
-
-            LOG_INFO(Service_ACC, "called, uuid={}", user_id.FormattedString());
+void Module::Interface::BeginUserRegistration(HLERequestContext& ctx) {
+    const auto user_id = Common::UUID::MakeRandom();
+    profile_manager->CreateNewUser(user_id, "Eden");
+
+    LOG_INFO(Service_ACC, "called, uuid={}", user_id.FormattedString());
+
+    IPC::ResponseBuilder rb{ctx, 6};
+    rb.Push(ResultSuccess);
+    rb.PushRaw(user_id);
+}
+
+void Module::Interface::CompleteUserRegistration(HLERequestContext& ctx) {
+    IPC::RequestParser rp{ctx};
+    Common::UUID user_id = rp.PopRaw<Common::UUID>();
+
+    LOG_INFO(Service_ACC, "called, uuid={}", user_id.FormattedString());
 
-            profile_manager->WriteUserSaveFile();
-
-            IPC::ResponseBuilder rb{ctx, 2};
-            rb.Push(ResultSuccess);
-        }
-
-        void DeleteUser(HLERequestContext& ctx) {
-            IPC::RequestParser rp{ctx};
-            Common::UUID user_id = rp.PopRaw<Common::UUID>();
-            LOG_INFO(Service_ACC, "called, uuid={}", user_id.FormattedString());
-            if (!profile_manager->RemoveUser(user_id)) {
-                LOG_ERROR(Service_ACC, "Failed to delete user with uuid={}", user_id.RawString());
-                IPC::ResponseBuilder rb{ctx, 2};
-                rb.Push(1U);
-                return;
-            }
-            IPC::ResponseBuilder rb{ctx, 2};
-            rb.Push(ResultSuccess);
-        }
-
-        void SetUserPosition(HLERequestContext& ctx) {
-            IPC::RequestParser rp{ctx};
-
-            u64 position = rp.Pop<u64>();
-            Common::UUID user_id = rp.PopRaw<Common::UUID>();
-
-            LOG_DEBUG(Service_ACC, "called, position={} user_id={}", position, user_id.FormattedString());
-
-            profile_manager->SetUserPosition(position, user_id);
-
-            IPC::ResponseBuilder rb{ctx, 2};
-            rb.Push(ResultSuccess);
-        }
-
-        void GetProfileEditor(HLERequestContext& ctx) {
-            IPC::RequestParser rp{ctx};
-            Common::UUID user_id = rp.PopRaw<Common::UUID>();
-
-            LOG_DEBUG(Service_ACC, "called, user_id=0x{}", user_id.RawString());
-
-            IPC::ResponseBuilder rb{ctx, 2, 0, 1};
-            rb.Push(ResultSuccess);
-            rb.PushIpcInterface<IProfileEditor>(ctx, system, user_id, *profile_manager);
-        }
-
-        void GetBaasAccountAdministrator(HLERequestContext &ctx) {
-            IPC::RequestParser rp{ctx};
-            const auto uuid = rp.PopRaw<Common::UUID>();
-
-            LOG_INFO(Service_ACC, "called, uuid=0x{}", uuid.RawString());
-
-            IPC::ResponseBuilder rb{ctx, 2, 0, 1};
-            rb.Push(ResultSuccess);
-            rb.PushIpcInterface<IAdministrator>(ctx, system, uuid);
-        }
-
-        void ListQualifiedUsers(HLERequestContext& ctx) {
-            LOG_DEBUG(Service_ACC, "called");
-
-            // All users should be qualified. We don't actually have parental control or anything to do with
-            // nintendo online currently. We're just going to assume the user running the game has access to
-            // the game regardless of parental control settings.
-            ctx.WriteBuffer(profile_manager->GetAllUsers());
-            IPC::ResponseBuilder rb{ctx, 2};
-            rb.Push(ResultSuccess);
-        }
-
-        void ListOpenContextStoredUsers(HLERequestContext& ctx) {
-            LOG_DEBUG(Service_ACC, "called");
-
-            ctx.WriteBuffer(profile_manager->GetStoredOpenedUsers());
-            IPC::ResponseBuilder rb{ctx, 2};
-            rb.Push(ResultSuccess);
-        }
-
-        void StoreSaveDataThumbnailApplication(HLERequestContext& ctx) {
-            IPC::RequestParser rp{ctx};
-            const auto uuid = rp.PopRaw<Common::UUID>();
-
-            LOG_WARNING(Service_ACC, "(STUBBED) called, uuid=0x{}", uuid.RawString());
-
-            // TODO(ogniK): Check if application ID is zero on acc initialize. As we don't have a reliable
-            // way of confirming things like the TID, we're going to assume a non zero value for the time
-            // being.
-            constexpr u64 tid{1};
-            StoreSaveDataThumbnail(ctx, uuid, tid);
-        }
-
-        void GetBaasAccountManagerForSystemService(HLERequestContext& ctx) {
-            IPC::RequestParser rp{ctx};
-            const auto uuid = rp.PopRaw<Common::UUID>();
-
-            LOG_INFO(Service_ACC, "called, uuid=0x{}", uuid.RawString());
-
-            IPC::ResponseBuilder rb{ctx, 2, 0, 1};
-            rb.Push(ResultSuccess);
-            rb.PushIpcInterface<IManagerForSystemService>(ctx, system, uuid);
-        }
-
-        void StoreSaveDataThumbnailSystem(HLERequestContext& ctx) {
-            IPC::RequestParser rp{ctx};
-            const auto uuid = rp.PopRaw<Common::UUID>();
-            const auto tid = rp.Pop<u64_le>();
-
-            LOG_WARNING(Service_ACC, "(STUBBED) called, uuid=0x{}, tid={:016X}", uuid.RawString(), tid);
-            StoreSaveDataThumbnail(ctx, uuid, tid);
-        }
-
-        void GetPinCodeLength(HLERequestContext& ctx) {
-            LOG_WARNING(Service_ACC, "(STUBBED) called");
-
-            IPC::ResponseBuilder rb{ctx, 3};
-            rb.Push(ResultSuccess);
-            rb.Push<u32>(0);
-        }
-
-        void TrySelectUserWithoutInteractionDeprecated(HLERequestContext& ctx) {
-            LOG_DEBUG(Service_ACC, "called");
-            // A u8 is passed into this function which we can safely ignore. It's to determine if we have
-            // access to use the network or not by the looks of it
-            IPC::ResponseBuilder rb{ctx, 6};
-            if (profile_manager->GetUserCount() != 1) {
-                rb.Push(ResultSuccess);
-                rb.PushRaw(Common::InvalidUUID);
-                return;
-            }
-
-            const auto user_list = profile_manager->GetAllUsers();
-            if (std::ranges::all_of(user_list, [](const auto& user) { return user.IsInvalid(); })) {
-                rb.Push(ResultUnknown); // TODO(ogniK): Find the correct error code
-                rb.PushRaw(Common::InvalidUUID);
-                return;
-            }
-
-            // Select the first user we have
-            rb.Push(ResultSuccess);
-            rb.PushRaw(profile_manager->GetUser(0)->uuid);
-        }
-
-        void TrySelectUserWithoutInteraction(HLERequestContext& ctx) {
-            LOG_DEBUG(Service_ACC, "called");
-            // A u8 is passed into this function which we can safely ignore. It's to determine if we have
-            // access to use the network or not by the looks of it
-            IPC::ResponseBuilder rb{ctx, 6};
-            if (profile_manager->GetUserCount() != 1) {
-                rb.Push(ResultSuccess);
-                rb.PushRaw(Common::InvalidUUID);
-                return;
-            }
-
-            const auto user_list = profile_manager->GetAllUsers();
-            if (std::ranges::all_of(user_list, [](const auto& user) { return user.IsInvalid(); })) {
-                rb.Push(ResultUnknown); // TODO(ogniK): Find the correct error code
-                rb.PushRaw(Common::InvalidUUID);
-                return;
-            }
-
-            // Select the first user we have
-            rb.Push(ResultSuccess);
-            rb.PushRaw(profile_manager->GetUser(0)->uuid);
-        }
-
-    private:
-        Result InitializeApplicationInfoBase() {
-            if (application_info) {
-                LOG_ERROR(Service_ACC, "Application already initialized");
-                return Account::ResultApplicationInfoAlreadyInitialized;
-            }
-
-            // TODO(ogniK): This should be changed to reflect the target process for when we have multiple
-            // processes emulated. As we don't actually have pid support we should assume we're just using
-            // our own process
-            Glue::ApplicationLaunchProperty launch_property{};
-            const auto result = system.GetARPManager().GetLaunchProperty(
-                &launch_property, system.GetApplicationProcessProgramID());
-
-            if (result != ResultSuccess) {
-                LOG_ERROR(Service_ACC, "Failed to get launch property");
-                return Account::ResultInvalidApplication;
-            }
-
-            switch (launch_property.base_game_storage_id) {
-            case FileSys::StorageId::GameCard:
-                application_info.application_type = ApplicationType::GameCard;
-                break;
-            case FileSys::StorageId::Host:
-            case FileSys::StorageId::NandSystem:
-            case FileSys::StorageId::NandUser:
-            case FileSys::StorageId::SdCard:
-            case FileSys::StorageId::None: // Yuzu specific, differs from hardware
-                application_info.application_type = ApplicationType::Digital;
-                break;
-            default:
-                LOG_ERROR(Service_ACC, "Invalid game storage ID! storage_id={}",
-                        launch_property.base_game_storage_id);
-                return Account::ResultInvalidApplication;
-            }
-
-            LOG_WARNING(Service_ACC, "ApplicationInfo init required");
-            // TODO(ogniK): Actual initialization here
-
-            return ResultSuccess;
-        }
-
-        void StoreSaveDataThumbnail(HLERequestContext& ctx, const Common::UUID& uuid,
-                                                    const u64 tid) {
-            IPC::ResponseBuilder rb{ctx, 2};
-
-            if (tid == 0) {
-                LOG_ERROR(Service_ACC, "TitleID is not valid!");
-                rb.Push(Account::ResultInvalidApplication);
-                return;
-            }
-
-            if (uuid.IsInvalid()) {
-                LOG_ERROR(Service_ACC, "User ID is not valid!");
-                rb.Push(Account::ResultInvalidUserId);
-                return;
-            }
-            const auto thumbnail_size = ctx.GetReadBufferSize();
-            if (thumbnail_size != THUMBNAIL_SIZE) {
-                LOG_ERROR(Service_ACC, "Buffer size is empty! size={:X} expecting {:X}", thumbnail_size,
-                        THUMBNAIL_SIZE);
-                rb.Push(Account::ResultInvalidArrayLength);
-                return;
-            }
-
-            // TODO(ogniK): Construct save data thumbnail
-            rb.Push(ResultSuccess);
-        }
-
-        enum class ApplicationType : u32_le {
-            GameCard = 0,
-            Digital = 1,
-            Unknown = 3,
-        };
-
-        struct ApplicationInfo {
-            Service::Glue::ApplicationLaunchProperty launch_property;
-            ApplicationType application_type;
-
-            constexpr explicit operator bool() const {
-                return launch_property.title_id != 0x0;
-            }
-        };
-
-        ApplicationInfo application_info{};
-    protected:
-        std::shared_ptr<Module> module;
-        std::shared_ptr<ProfileManager> profile_manager;
-    };
-};
+    profile_manager->WriteUserSaveFile();
+
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(ResultSuccess);
+}
+
+void Module::Interface::DeleteUser(HLERequestContext& ctx) {
+    IPC::RequestParser rp{ctx};
+    Common::UUID user_id = rp.PopRaw<Common::UUID>();
+    LOG_INFO(Service_ACC, "called, uuid={}", user_id.FormattedString());
+    if (!profile_manager->RemoveUser(user_id)) {
+        LOG_ERROR(Service_ACC, "Failed to delete user with uuid={}", user_id.RawString());
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(1U);
+        return;
+    }
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(ResultSuccess);
+}
+
+void Module::Interface::SetUserPosition(HLERequestContext& ctx) {
+    IPC::RequestParser rp{ctx};
+
+    u64 position = rp.Pop<u64>();
+    Common::UUID user_id = rp.PopRaw<Common::UUID>();
+
+    LOG_DEBUG(Service_ACC, "called, position={} user_id={}", position, user_id.FormattedString());
+
+    profile_manager->SetUserPosition(position, user_id);
+
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(ResultSuccess);
+}
+
+void Module::Interface::GetProfileEditor(HLERequestContext& ctx) {
+    IPC::RequestParser rp{ctx};
+    Common::UUID user_id = rp.PopRaw<Common::UUID>();
+
+    LOG_DEBUG(Service_ACC, "called, user_id=0x{}", user_id.RawString());
+
+    IPC::ResponseBuilder rb{ctx, 2, 0, 1};
+    rb.Push(ResultSuccess);
+    rb.PushIpcInterface<IProfileEditor>(ctx, system, user_id, *profile_manager);
+}
+
+void Module::Interface::GetBaasAccountAdministrator(HLERequestContext &ctx) {
+    IPC::RequestParser rp{ctx};
+    const auto uuid = rp.PopRaw<Common::UUID>();
+
+    LOG_INFO(Service_ACC, "called, uuid=0x{}", uuid.RawString());
+
+    IPC::ResponseBuilder rb{ctx, 2, 0, 1};
+    rb.Push(ResultSuccess);
+    rb.PushIpcInterface<IAdministrator>(ctx, system, uuid);
+}
+
+void Module::Interface::ListQualifiedUsers(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+
+    // All users should be qualified. We don't actually have parental control or anything to do with
+    // nintendo online currently. We're just going to assume the user running the game has access to
+    // the game regardless of parental control settings.
+    ctx.WriteBuffer(profile_manager->GetAllUsers());
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(ResultSuccess);
+}
+
+void Module::Interface::ListOpenContextStoredUsers(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+
+    ctx.WriteBuffer(profile_manager->GetStoredOpenedUsers());
+    IPC::ResponseBuilder rb{ctx, 2};
+    rb.Push(ResultSuccess);
+}
+
+void Module::Interface::StoreSaveDataThumbnailApplication(HLERequestContext& ctx) {
+    IPC::RequestParser rp{ctx};
+    const auto uuid = rp.PopRaw<Common::UUID>();
+
+    LOG_WARNING(Service_ACC, "(STUBBED) called, uuid=0x{}", uuid.RawString());
+
+    // TODO(ogniK): Check if application ID is zero on acc initialize. As we don't have a reliable
+    // way of confirming things like the TID, we're going to assume a non zero value for the time
+    // being.
+    constexpr u64 tid{1};
+    StoreSaveDataThumbnail(ctx, uuid, tid);
+}
+
+void Module::Interface::GetBaasAccountManagerForSystemService(HLERequestContext& ctx) {
+    IPC::RequestParser rp{ctx};
+    const auto uuid = rp.PopRaw<Common::UUID>();
+
+    LOG_INFO(Service_ACC, "called, uuid=0x{}", uuid.RawString());
+
+    IPC::ResponseBuilder rb{ctx, 2, 0, 1};
+    rb.Push(ResultSuccess);
+    rb.PushIpcInterface<IManagerForSystemService>(ctx, system, uuid);
+}
+
+void Module::Interface::StoreSaveDataThumbnailSystem(HLERequestContext& ctx) {
+    IPC::RequestParser rp{ctx};
+    const auto uuid = rp.PopRaw<Common::UUID>();
+    const auto tid = rp.Pop<u64_le>();
+
+    LOG_WARNING(Service_ACC, "(STUBBED) called, uuid=0x{}, tid={:016X}", uuid.RawString(), tid);
+    StoreSaveDataThumbnail(ctx, uuid, tid);
+}
+
+void Module::Interface::GetPinCodeLength(HLERequestContext& ctx) {
+    LOG_WARNING(Service_ACC, "(STUBBED) called");
+
+    IPC::ResponseBuilder rb{ctx, 3};
+    rb.Push(ResultSuccess);
+    rb.Push<u32>(0);
+}
+
+void Module::Interface::StoreSaveDataThumbnail(HLERequestContext& ctx, const Common::UUID& uuid,
+                                               const u64 tid) {
+    IPC::ResponseBuilder rb{ctx, 2};
+
+    if (tid == 0) {
+        LOG_ERROR(Service_ACC, "TitleID is not valid!");
+        rb.Push(Account::ResultInvalidApplication);
+        return;
+    }
+
+    if (uuid.IsInvalid()) {
+        LOG_ERROR(Service_ACC, "User ID is not valid!");
+        rb.Push(Account::ResultInvalidUserId);
+        return;
+    }
+    const auto thumbnail_size = ctx.GetReadBufferSize();
+    if (thumbnail_size != THUMBNAIL_SIZE) {
+        LOG_ERROR(Service_ACC, "Buffer size is empty! size={:X} expecting {:X}", thumbnail_size,
+                  THUMBNAIL_SIZE);
+        rb.Push(Account::ResultInvalidArrayLength);
+        return;
+    }
+
+    // TODO(ogniK): Construct save data thumbnail
+    rb.Push(ResultSuccess);
+}
+
+void Module::Interface::TrySelectUserWithoutInteractionDeprecated(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+    // A u8 is passed into this function which we can safely ignore. It's to determine if we have
+    // access to use the network or not by the looks of it
+    IPC::ResponseBuilder rb{ctx, 6};
+    if (profile_manager->GetUserCount() != 1) {
+        rb.Push(ResultSuccess);
+        rb.PushRaw(Common::InvalidUUID);
+        return;
+    }
+
+    const auto user_list = profile_manager->GetAllUsers();
+    if (std::ranges::all_of(user_list, [](const auto& user) { return user.IsInvalid(); })) {
+        rb.Push(ResultUnknown); // TODO(ogniK): Find the correct error code
+        rb.PushRaw(Common::InvalidUUID);
+        return;
+    }
+
+    // Select the first user we have
+    rb.Push(ResultSuccess);
+    rb.PushRaw(profile_manager->GetUser(0)->uuid);
+}
+
+void Module::Interface::TrySelectUserWithoutInteraction(HLERequestContext& ctx) {
+    LOG_DEBUG(Service_ACC, "called");
+    // A u8 is passed into this function which we can safely ignore. It's to determine if we have
+    // access to use the network or not by the looks of it
+    IPC::ResponseBuilder rb{ctx, 6};
+    if (profile_manager->GetUserCount() != 1) {
+        rb.Push(ResultSuccess);
+        rb.PushRaw(Common::InvalidUUID);
+        return;
+    }
+
+    const auto user_list = profile_manager->GetAllUsers();
+    if (std::ranges::all_of(user_list, [](const auto& user) { return user.IsInvalid(); })) {
+        rb.Push(ResultUnknown); // TODO(ogniK): Find the correct error code
+        rb.PushRaw(Common::InvalidUUID);
+        return;
+    }
+
+    // Select the first user we have
+    rb.Push(ResultSuccess);
+    rb.PushRaw(profile_manager->GetUser(0)->uuid);
+}
+
+Module::Interface::Interface(std::shared_ptr<Module> module_,
+                             std::shared_ptr<ProfileManager> profile_manager_,
+                             Core::System& system_, const char* name)
+    : ServiceFramework{system_, name}, module{std::move(module_)},
+      profile_manager{std::move(profile_manager_)} {}
+
+Module::Interface::~Interface() = default;
 
 class ACC_AA final : public Module::Interface {
 public:
     explicit ACC_AA(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:aa") {}
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:aa") {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "EnsureCacheAsync"},
+            {1, nullptr, "LoadCache"},
+            {2, nullptr, "GetDeviceAccountId"},
+            {50, nullptr, "RegisterNotificationTokenAsync"},   // 1.0.0 - 6.2.0
+            {51, nullptr, "UnregisterNotificationTokenAsync"}, // 1.0.0 - 6.2.0
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
     ~ACC_AA() override = default;
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "EnsureCacheAsync"},
-        FunctionInfo{1, nullptr, "LoadCache"},
-        FunctionInfo{2, nullptr, "GetDeviceAccountId"},
-        FunctionInfo{50, nullptr, "RegisterNotificationTokenAsync", MakeVersionGate({1,0,0}, {6,2,0})},
-        FunctionInfo{51, nullptr, "UnregisterNotificationTokenAsync", MakeVersionGate({1,0,0}, {6,2,0})}
-    );
 };
 
 class ACC_SU final : public Module::Interface {
 public:
     explicit ACC_SU(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:su") {}
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:su") {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &ACC_SU::GetUserCount, "GetUserCount"},
+            {1, &ACC_SU::GetUserExistence, "GetUserExistence"},
+            {2, &ACC_SU::ListAllUsers, "ListAllUsers"},
+            {3, &ACC_SU::ListOpenUsers, "ListOpenUsers"},
+            {4, &ACC_SU::GetLastOpenedUser, "GetLastOpenedUser"},
+            {5, &ACC_SU::GetProfile, "GetProfile"},
+            {6, nullptr, "GetProfileDigest"},
+            {50, &ACC_SU::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
+            {51, &ACC_SU::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
+            {52, &ACC_SU::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"}, // 19.0.0+
+            {60, &ACC_SU::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"},
+            {99, nullptr, "DebugActivateOpenContextRetention"},
+            {100, nullptr, "GetUserRegistrationNotifier"},
+            {101, nullptr, "GetUserStateChangeNotifier"},
+            {102, &ACC_SU::GetBaasAccountManagerForSystemService, "GetBaasAccountManagerForSystemService"},
+            {103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
+            {104, nullptr, "GetProfileUpdateNotifier"},
+            {105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
+            {106, nullptr, "GetProfileSyncNotifier"},
+            {110, &ACC_SU::StoreSaveDataThumbnailSystem, "StoreSaveDataThumbnail"},
+            {111, nullptr, "ClearSaveDataThumbnail"},
+            {112, nullptr, "LoadSaveDataThumbnail"},
+            {113, nullptr, "GetSaveDataThumbnailExistence"},
+            {120, nullptr, "ListOpenUsersInApplication"},
+            {130, nullptr, "ActivateOpenContextRetention"},
+            {140, &ACC_SU::ListQualifiedUsers, "ListQualifiedUsers"},
+            {150, nullptr, "AuthenticateApplicationAsync"},
+            {151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
+            {152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
+            {190, nullptr, "GetUserLastOpenedApplication"},
+            {191, nullptr, "ActivateOpenContextHolder"},
+            {200, &ACC_SU::BeginUserRegistration, "BeginUserRegistration"},
+            {201, &ACC_SU::CompleteUserRegistration, "CompleteUserRegistration"},
+            {202, nullptr, "CancelUserRegistration"},
+            {203, &ACC_SU::DeleteUser, "DeleteUser"},
+            {204, &ACC_SU::SetUserPosition, "SetUserPosition"},
+            {205, &ACC_SU::GetProfileEditor, "GetProfileEditor"},
+            {206, nullptr, "CompleteUserRegistrationForcibly"},
+            {210, nullptr, "CreateFloatingRegistrationRequest"},
+            {211, nullptr, "CreateProcedureToRegisterUserWithNintendoAccount"},
+            {212, nullptr, "ResumeProcedureToRegisterUserWithNintendoAccount"},
+            {230, nullptr, "AuthenticateServiceAsync"},
+            {250, &ACC_SU::GetBaasAccountAdministrator, "GetBaasAccountAdministrator"},
+            {290, nullptr, "ProxyProcedureForGuestLoginWithNintendoAccount"},
+            {291, nullptr, "ProxyProcedureForFloatingRegistrationWithNintendoAccount"},
+            {299, nullptr, "SuspendBackgroundDaemon"},
+            {400, nullptr, "SetPinCode"}, // 18.0.0+
+            {401, &ACC_SU::GetPinCodeLength, "GetPinCodeLength"}, // 18.0.0+
+            {402, nullptr, "GetPinCode"}, // 18.0.0+
+            {403, nullptr, "GetPinCodeParity"},
+            {404, nullptr, "VerifyPinCode"},
+            {405, nullptr, "IsPinCodeVerificationForbidden"},
+            {410, nullptr, "GetPinCodeErrorCount"}, // 18.0.0+
+            {411, nullptr, "ResetPinCodeErrorCount"}, // 18.0.0+
+            {412, nullptr, "IncrementPinCodeErrorCount"}, // 18.0.0+
+            {900, nullptr, "SetUserUnqualifiedForDebug"},
+            {901, nullptr, "UnsetUserUnqualifiedForDebug"},
+            {902, nullptr, "ListUsersUnqualifiedForDebug"},
+            {910, nullptr, "RefreshFirmwareSettingsForDebug"},
+            {997, nullptr, "DebugInvalidateTokenCacheForUser"},
+            {998, nullptr, "DebugSetUserStateClose"},
+            {999, nullptr, "DebugSetUserStateOpen"},
+        };
+        // clang-format on
 
-    ~ACC_SU() override = default;
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &ACC_SU::GetUserCount, "GetUserCount"},
-        FunctionInfo{1, &ACC_SU::GetUserExistence, "GetUserExistence"},
-        FunctionInfo{2, &ACC_SU::ListAllUsers, "ListAllUsers"},
-        FunctionInfo{3, &ACC_SU::ListOpenUsers, "ListOpenUsers"},
-        FunctionInfo{4, &ACC_SU::GetLastOpenedUser, "GetLastOpenedUser"},
-        FunctionInfo{5, &ACC_SU::GetProfile, "GetProfile"},
-        FunctionInfo{6, nullptr, "GetProfileDigest"},
-        FunctionInfo{50, &ACC_SU::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
-        FunctionInfo{51, &ACC_SU::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
-        FunctionInfo{52, &ACC_SU::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction", MakeVersionGate({19,0,0})},
-        FunctionInfo{60, &ACC_SU::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"},
-        FunctionInfo{99, nullptr, "DebugActivateOpenContextRetention"},
-        FunctionInfo{100, nullptr, "GetUserRegistrationNotifier"},
-        FunctionInfo{101, nullptr, "GetUserStateChangeNotifier"},
-        FunctionInfo{102, &ACC_SU::GetBaasAccountManagerForSystemService, "GetBaasAccountManagerForSystemService"},
-        FunctionInfo{103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
-        FunctionInfo{104, nullptr, "GetProfileUpdateNotifier"},
-        FunctionInfo{105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
-        FunctionInfo{106, nullptr, "GetProfileSyncNotifier"},
-        FunctionInfo{110, &ACC_SU::StoreSaveDataThumbnailSystem, "StoreSaveDataThumbnail"},
-        FunctionInfo{111, nullptr, "ClearSaveDataThumbnail"},
-        FunctionInfo{112, nullptr, "LoadSaveDataThumbnail"},
-        FunctionInfo{113, nullptr, "GetSaveDataThumbnailExistence"},
-        FunctionInfo{120, nullptr, "ListOpenUsersInApplication"},
-        FunctionInfo{130, nullptr, "ActivateOpenContextRetention"},
-        FunctionInfo{140, &ACC_SU::ListQualifiedUsers, "ListQualifiedUsers"},
-        FunctionInfo{150, nullptr, "AuthenticateApplicationAsync"},
-        FunctionInfo{151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
-        FunctionInfo{152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
-        FunctionInfo{190, nullptr, "GetUserLastOpenedApplication"},
-        FunctionInfo{191, nullptr, "ActivateOpenContextHolder"},
-        FunctionInfo{200, &ACC_SU::BeginUserRegistration, "BeginUserRegistration"},
-        FunctionInfo{201, &ACC_SU::CompleteUserRegistration, "CompleteUserRegistration"},
-        FunctionInfo{202, nullptr, "CancelUserRegistration"},
-        FunctionInfo{203, &ACC_SU::DeleteUser, "DeleteUser"},
-        FunctionInfo{204, &ACC_SU::SetUserPosition, "SetUserPosition"},
-        FunctionInfo{205, &ACC_SU::GetProfileEditor, "GetProfileEditor"},
-        FunctionInfo{206, nullptr, "CompleteUserRegistrationForcibly"},
-        FunctionInfo{210, nullptr, "CreateFloatingRegistrationRequest"},
-        FunctionInfo{211, nullptr, "CreateProcedureToRegisterUserWithNintendoAccount"},
-        FunctionInfo{212, nullptr, "ResumeProcedureToRegisterUserWithNintendoAccount"},
-        FunctionInfo{230, nullptr, "AuthenticateServiceAsync"},
-        FunctionInfo{250, &ACC_SU::GetBaasAccountAdministrator, "GetBaasAccountAdministrator"},
-        FunctionInfo{290, nullptr, "ProxyProcedureForGuestLoginWithNintendoAccount"},
-        FunctionInfo{291, nullptr, "ProxyProcedureForFloatingRegistrationWithNintendoAccount"},
-        FunctionInfo{299, nullptr, "SuspendBackgroundDaemon"},
-        FunctionInfo{400, nullptr, "SetPinCode", MakeVersionGate({18,0,0})},
-        FunctionInfo{401, &ACC_SU::GetPinCodeLength, "GetPinCodeLength", MakeVersionGate({18,0,0})},
-        FunctionInfo{402, nullptr, "GetPinCode", MakeVersionGate({18,0,0})},
-        FunctionInfo{403, nullptr, "GetPinCodeParity"},
-        FunctionInfo{404, nullptr, "VerifyPinCode"},
-        FunctionInfo{405, nullptr, "IsPinCodeVerificationForbidden"},
-        FunctionInfo{410, nullptr, "GetPinCodeErrorCount", MakeVersionGate({18,0,0})},
-        FunctionInfo{411, nullptr, "ResetPinCodeErrorCount", MakeVersionGate({18,0,0})},
-        FunctionInfo{412, nullptr, "IncrementPinCodeErrorCount", MakeVersionGate({18,0,0})},
-        FunctionInfo{900, nullptr, "SetUserUnqualifiedForDebug"},
-        FunctionInfo{901, nullptr, "UnsetUserUnqualifiedForDebug"},
-        FunctionInfo{902, nullptr, "ListUsersUnqualifiedForDebug"},
-        FunctionInfo{910, nullptr, "RefreshFirmwareSettingsForDebug"},
-        FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
-        FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
-        FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
-    );
+    ~ACC_SU() override = default;
 };
 
 class ACC_U0 final : public Module::Interface {
 public:
     ACC_U0(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u0") {}
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u0") {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &ACC_U0::GetUserCount, "GetUserCount"},
+            {1, &ACC_U0::GetUserExistence, "GetUserExistence"},
+            {2, &ACC_U0::ListAllUsers, "ListAllUsers"},
+            {3, &ACC_U0::ListOpenUsers, "ListOpenUsers"},
+            {4, &ACC_U0::GetLastOpenedUser, "GetLastOpenedUser"},
+            {5, &ACC_U0::GetProfile, "GetProfile"},
+            {6, nullptr, "GetProfileDigest"}, // 3.0.0+
+            {50, &ACC_U0::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
+            {51, &ACC_U0::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
+            {52, &ACC_U0::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"},
+            {60, &ACC_U0::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"}, // 5.0.0 - 5.1.0
+            {99, nullptr, "DebugActivateOpenContextRetention"}, // 6.0.0+
+            {100, &ACC_U0::InitializeApplicationInfo, "InitializeApplicationInfo"},
+            {101, &ACC_U0::GetBaasAccountManagerForApplication, "GetBaasAccountManagerForApplication"},
+            {102, nullptr, "AuthenticateApplicationAsync"},
+            {103, nullptr, "CheckNetworkServiceAvailabilityAsync"}, // 4.0.0+
+            {110, &ACC_U0::StoreSaveDataThumbnailApplication, "StoreSaveDataThumbnail"},
+            {111, nullptr, "ClearSaveDataThumbnail"},
+            {120, nullptr, "CreateGuestLoginRequest"},
+            {130, nullptr, "LoadOpenContext"}, // 5.0.0+
+            {131, &ACC_U0::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"}, // 6.0.0+
+            {140, &ACC_U0::InitializeApplicationInfoRestricted, "InitializeApplicationInfoRestricted"}, // 6.0.0+
+            {141, &ACC_U0::ListQualifiedUsers, "ListQualifiedUsers"}, // 6.0.0+
+            {150, &ACC_U0::IsUserAccountSwitchLocked, "IsUserAccountSwitchLocked"}, // 6.0.0+
+            {160, &ACC_U0::InitializeApplicationInfoV2, "InitializeApplicationInfoV2"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
     ~ACC_U0() override = default;
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &ACC_U0::GetUserCount, "GetUserCount"},
-        FunctionInfo{1, &ACC_U0::GetUserExistence, "GetUserExistence"},
-        FunctionInfo{2, &ACC_U0::ListAllUsers, "ListAllUsers"},
-        FunctionInfo{3, &ACC_U0::ListOpenUsers, "ListOpenUsers"},
-        FunctionInfo{4, &ACC_U0::GetLastOpenedUser, "GetLastOpenedUser"},
-        FunctionInfo{5, &ACC_U0::GetProfile, "GetProfile"},
-        FunctionInfo{6, nullptr, "GetProfileDigest", MakeVersionGate({3,0,0})},
-        FunctionInfo{50, &ACC_U0::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
-        FunctionInfo{51, &ACC_U0::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
-        FunctionInfo{52, &ACC_U0::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"},
-        FunctionInfo{60, &ACC_U0::ListOpenContextStoredUsers, "ListOpenContextStoredUsers", MakeVersionGate({5,0,0}, {5,1,0})},
-        FunctionInfo{99, nullptr, "DebugActivateOpenContextRetention", MakeVersionGate({6,0,0})},
-        FunctionInfo{100, &ACC_U0::InitializeApplicationInfo, "InitializeApplicationInfo"},
-        FunctionInfo{101, &ACC_U0::GetBaasAccountManagerForApplication, "GetBaasAccountManagerForApplication"},
-        FunctionInfo{102, nullptr, "AuthenticateApplicationAsync"},
-        FunctionInfo{103, nullptr, "CheckNetworkServiceAvailabilityAsync", MakeVersionGate({4,0,0})},
-        FunctionInfo{110, &ACC_U0::StoreSaveDataThumbnailApplication, "StoreSaveDataThumbnail"},
-        FunctionInfo{111, nullptr, "ClearSaveDataThumbnail"},
-        FunctionInfo{120, nullptr, "CreateGuestLoginRequest"},
-        FunctionInfo{130, nullptr, "LoadOpenContext", MakeVersionGate({5,0,0})},
-        FunctionInfo{131, &ACC_U0::ListOpenContextStoredUsers, "ListOpenContextStoredUsers", MakeVersionGate({6,0,0})},
-        FunctionInfo{140, &ACC_U0::InitializeApplicationInfoRestricted, "InitializeApplicationInfoRestricted", MakeVersionGate({6,0,0})},
-        FunctionInfo{141, &ACC_U0::ListQualifiedUsers, "ListQualifiedUsers", MakeVersionGate({6,0,0})},
-        FunctionInfo{150, &ACC_U0::IsUserAccountSwitchLocked, "IsUserAccountSwitchLocked", MakeVersionGate({6,0,0})},
-        FunctionInfo{160, &ACC_U0::InitializeApplicationInfoV2, "InitializeApplicationInfoV2"}
-    );
 };
 
 class ACC_U1 final : public Module::Interface {
 public:
     ACC_U1(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u1") {}
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:u1") {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &ACC_U1::GetUserCount, "GetUserCount"},
+            {1, &ACC_U1::GetUserExistence, "GetUserExistence"},
+            {2, &ACC_U1::ListAllUsers, "ListAllUsers"},
+            {3, &ACC_U1::ListOpenUsers, "ListOpenUsers"},
+            {4, &ACC_U1::GetLastOpenedUser, "GetLastOpenedUser"},
+            {5, &ACC_U1::GetProfile, "GetProfile"},
+            {6, nullptr, "GetProfileDigest"},
+            {50, &ACC_U1::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
+            {51, &ACC_U1::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
+            {52, &ACC_U1::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"},
+            {60, &ACC_U1::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"},
+            {99, nullptr, "DebugActivateOpenContextRetention"},
+            {100, nullptr, "GetUserRegistrationNotifier"},
+            {101, nullptr, "GetUserStateChangeNotifier"},
+            {102, &ACC_U1::GetBaasAccountManagerForSystemService, "GetBaasAccountManagerForSystemService"},
+            {103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
+            {104, nullptr, "GetProfileUpdateNotifier"},
+            {105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
+            {106, nullptr, "GetProfileSyncNotifier"},
+            {110, &ACC_U1::StoreSaveDataThumbnailApplication, "StoreSaveDataThumbnail"},
+            {111, nullptr, "ClearSaveDataThumbnail"},
+            {112, nullptr, "LoadSaveDataThumbnail"},
+            {113, nullptr, "GetSaveDataThumbnailExistence"},
+            {120, nullptr, "ListOpenUsersInApplication"},
+            {130, nullptr, "ActivateOpenContextRetention"},
+            {140, &ACC_U1::ListQualifiedUsers, "ListQualifiedUsers"},
+            {150, nullptr, "AuthenticateApplicationAsync"},
+            {151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
+            {152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
+            {190, nullptr, "GetUserLastOpenedApplication"},
+            {191, nullptr, "ActivateOpenContextHolder"},
+            {401, &ACC_U1::GetPinCodeLength, "GetPinCodeLength"}, // 18.0.0+
+            {402, nullptr, "GetPinCode"}, // 18.0.0+
+            {997, nullptr, "DebugInvalidateTokenCacheForUser"},
+            {998, nullptr, "DebugSetUserStateClose"},
+            {999, nullptr, "DebugSetUserStateOpen"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
     ~ACC_U1() override = default;
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &ACC_U1::GetUserCount, "GetUserCount"},
-        FunctionInfo{1, &ACC_U1::GetUserExistence, "GetUserExistence"},
-        FunctionInfo{2, &ACC_U1::ListAllUsers, "ListAllUsers"},
-        FunctionInfo{3, &ACC_U1::ListOpenUsers, "ListOpenUsers"},
-        FunctionInfo{4, &ACC_U1::GetLastOpenedUser, "GetLastOpenedUser"},
-        FunctionInfo{5, &ACC_U1::GetProfile, "GetProfile"},
-        FunctionInfo{6, nullptr, "GetProfileDigest"},
-        FunctionInfo{50, &ACC_U1::IsUserRegistrationRequestPermitted, "IsUserRegistrationRequestPermitted"},
-        FunctionInfo{51, &ACC_U1::TrySelectUserWithoutInteractionDeprecated, "TrySelectUserWithoutInteractionDeprecated"},
-        FunctionInfo{52, &ACC_U1::TrySelectUserWithoutInteraction, "TrySelectUserWithoutInteraction"},
-        FunctionInfo{60, &ACC_U1::ListOpenContextStoredUsers, "ListOpenContextStoredUsers"},
-        FunctionInfo{99, nullptr, "DebugActivateOpenContextRetention"},
-        FunctionInfo{100, nullptr, "GetUserRegistrationNotifier"},
-        FunctionInfo{101, nullptr, "GetUserStateChangeNotifier"},
-        FunctionInfo{102, &ACC_U1::GetBaasAccountManagerForSystemService, "GetBaasAccountManagerForSystemService"},
-        FunctionInfo{103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
-        FunctionInfo{104, nullptr, "GetProfileUpdateNotifier"},
-        FunctionInfo{105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
-        FunctionInfo{106, nullptr, "GetProfileSyncNotifier"},
-        FunctionInfo{110, &ACC_U1::StoreSaveDataThumbnailApplication, "StoreSaveDataThumbnail"},
-        FunctionInfo{111, nullptr, "ClearSaveDataThumbnail"},
-        FunctionInfo{112, nullptr, "LoadSaveDataThumbnail"},
-        FunctionInfo{113, nullptr, "GetSaveDataThumbnailExistence"},
-        FunctionInfo{120, nullptr, "ListOpenUsersInApplication"},
-        FunctionInfo{130, nullptr, "ActivateOpenContextRetention"},
-        FunctionInfo{140, &ACC_U1::ListQualifiedUsers, "ListQualifiedUsers"},
-        FunctionInfo{150, nullptr, "AuthenticateApplicationAsync"},
-        FunctionInfo{151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
-        FunctionInfo{152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
-        FunctionInfo{190, nullptr, "GetUserLastOpenedApplication"},
-        FunctionInfo{191, nullptr, "ActivateOpenContextHolder"},
-        FunctionInfo{401, &ACC_U1::GetPinCodeLength, "GetPinCodeLength", MakeVersionGate({18,0,0})},
-        FunctionInfo{402, nullptr, "GetPinCode", MakeVersionGate({18,0,0})},
-        FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
-        FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
-        FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
-    );
 };
 
 class DAUTH_0 final : public ServiceFramework<DAUTH_0> {
 public:
-    explicit DAUTH_0(Core::System& system_) : ServiceFramework{system_, "dauth:0"} {}
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit DAUTH_0(Core::System& system_) : ServiceFramework{system_, "dauth:0"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
+            {1, nullptr, "LoadAuthenticationTokenCache"},
+            {2, nullptr, "InvalidateAuthenticationTokenCache"},
+            {3, nullptr, "IsDeviceAuthenticationTokenCacheAvailable"},
+            {10, nullptr, "EnsureEdgeTokenCacheAsync"},
+            {11, nullptr, "LoadEdgeTokenCache"},
+            {12, nullptr, "InvalidateEdgeTokenCache"},
+            {13, nullptr, "IsEdgeTokenCacheAvailable"},
+            {20, nullptr, "EnsureApplicationAuthenticationCacheAsync"},
+            {21, nullptr, "LoadApplicationAuthenticationTokenCache"},
+            {22, nullptr, "LoadApplicationNetworkServiceClientConfigCache"},
+            {23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
+            {24, nullptr, "InvalidateApplicationAuthenticationCache"},
+            {30, nullptr, "EnsureGameCardAuthenticationCacheAsync"},
+            {31, nullptr, "LoadGameCardAuthenticationTokenCache"},
+            {32, nullptr, "IsGameCardAuthenticationCacheAvailable"},
+            {33, nullptr, "InvalidateGameCardAuthenticationCache"},
+            {1000, nullptr, "GetInactiveElicenseUsedEvent"},
+            {9000, nullptr, "ImportVirtualClientCertificate"},
+            {9010, nullptr, "DeleteVirtualClientCertificate"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "EnsureAuthenticationTokenCacheAsync"},
-        FunctionInfo{1, nullptr, "LoadAuthenticationTokenCache"},
-        FunctionInfo{2, nullptr, "InvalidateAuthenticationTokenCache"},
-        FunctionInfo{3, nullptr, "IsDeviceAuthenticationTokenCacheAvailable"},
-        FunctionInfo{10, nullptr, "EnsureEdgeTokenCacheAsync"},
-        FunctionInfo{11, nullptr, "LoadEdgeTokenCache"},
-        FunctionInfo{12, nullptr, "InvalidateEdgeTokenCache"},
-        FunctionInfo{13, nullptr, "IsEdgeTokenCacheAvailable"},
-        FunctionInfo{20, nullptr, "EnsureApplicationAuthenticationCacheAsync"},
-        FunctionInfo{21, nullptr, "LoadApplicationAuthenticationTokenCache"},
-        FunctionInfo{22, nullptr, "LoadApplicationNetworkServiceClientConfigCache"},
-        FunctionInfo{23, nullptr, "IsApplicationAuthenticationCacheAvailable"},
-        FunctionInfo{24, nullptr, "InvalidateApplicationAuthenticationCache"},
-        FunctionInfo{30, nullptr, "EnsureGameCardAuthenticationCacheAsync"},
-        FunctionInfo{31, nullptr, "LoadGameCardAuthenticationTokenCache"},
-        FunctionInfo{32, nullptr, "IsGameCardAuthenticationCacheAvailable"},
-        FunctionInfo{33, nullptr, "InvalidateGameCardAuthenticationCache"},
-        FunctionInfo{1000, nullptr, "GetInactiveElicenseUsedEvent"},
-        FunctionInfo{9000, nullptr, "ImportVirtualClientCertificate"},
-        FunctionInfo{9010, nullptr, "DeleteVirtualClientCertificate"}
-    );
 };
 
 class ACC_E final : public Module::Interface {
 public:
     explicit ACC_E(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e") {}
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "GetUserCount"},
-        FunctionInfo{1, nullptr, "GetUserExistence"},
-        FunctionInfo{2, nullptr, "ListAllUsers"},
-        FunctionInfo{3, nullptr, "ListOpenUsers"},
-        FunctionInfo{4, nullptr, "GetLastOpenedUser"},
-        FunctionInfo{5, nullptr, "GetProfile"},
-        FunctionInfo{6, nullptr, "GetProfileDigest"},
-        FunctionInfo{50, nullptr, "IsUserRegistrationRequestPermitted"},
-        FunctionInfo{51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
-        FunctionInfo{52, nullptr, "TrySelectUserWithoutInteraction"},
-        FunctionInfo{99, nullptr, "DebugActivateOpenContextRetention"},
-        FunctionInfo{100, nullptr, "GetUserRegistrationNotifier"},
-        FunctionInfo{101, nullptr, "GetUserStateChangeNotifier"},
-        FunctionInfo{102, nullptr, "GetBaasAccountManagerForSystemService"},
-        FunctionInfo{103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
-        FunctionInfo{104, nullptr, "GetProfileUpdateNotifier"},
-        FunctionInfo{105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
-        FunctionInfo{106, nullptr, "GetProfileSyncNotifier"},
-        FunctionInfo{110, nullptr, "StoreSaveDataThumbnail"},
-        FunctionInfo{111, nullptr, "ClearSaveDataThumbnail"},
-        FunctionInfo{112, nullptr, "LoadSaveDataThumbnail"},
-        FunctionInfo{113, nullptr, "GetSaveDataThumbnailExistence"},
-        FunctionInfo{120, nullptr, "ListOpenUsersInApplication"},
-        FunctionInfo{130, nullptr, "ActivateOpenContextRetention"},
-        FunctionInfo{140, nullptr, "ListQualifiedUsers"},
-        FunctionInfo{151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
-        FunctionInfo{152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
-        FunctionInfo{170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
-        FunctionInfo{191, nullptr, "UpdateNotificationReceiverInfo"},
-        FunctionInfo{200, nullptr, "BeginUserRegistration"},
-        FunctionInfo{201, nullptr, "CompleteUserRegistration"},
-        FunctionInfo{202, nullptr, "CancelUserRegistration"},
-        FunctionInfo{203, nullptr, "DeleteUser"},
-        FunctionInfo{204, nullptr, "SetUserPosition"},
-        FunctionInfo{205, nullptr, "GetProfileEditor"},
-        FunctionInfo{206, nullptr, "CompleteUserRegistrationForcibly"},
-        FunctionInfo{210, nullptr, "CreateFloatingRegistrationRequest"},
-        FunctionInfo{211, nullptr, "CreateProcedureToRegisterUserWithNintendoAccount"},
-        FunctionInfo{212, nullptr, "ResumeProcedureToRegisterUserWithNintendoAccount"},
-        FunctionInfo{213, nullptr, "CreateProcedureToCreateUserWithNintendoAccount"},
-        FunctionInfo{214, nullptr, "ResumeProcedureToCreateUserWithNintendoAccount"},
-        FunctionInfo{215, nullptr, "ResumeProcedureToCreateUserWithNintendoAccountAfterApplyResponse"},
-        FunctionInfo{230, nullptr, "AuthenticateServiceAsync"},
-        FunctionInfo{250, nullptr, "GetBaasAccountAdministrator"},
-        FunctionInfo{251, nullptr, "SynchronizeNetworkServiceAccountsSnapshotAsync"},
-        FunctionInfo{290, nullptr, "ProxyProcedureForGuestLoginWithNintendoAccount"},
-        FunctionInfo{291, nullptr, "ProxyProcedureForFloatingRegistrationWithNintendoAccount"},
-        FunctionInfo{292, nullptr, "ProxyProcedureForDeviceMigrationAuthenticatingOperatingUser"},
-        FunctionInfo{293, nullptr, "ProxyProcedureForDeviceMigrationDownload"},
-        FunctionInfo{299, nullptr, "SuspendBackgroundDaemon"},
-        FunctionInfo{350, nullptr, "CreateDeviceMigrationUserExportRequest"},
-        FunctionInfo{351, nullptr, "UploadNasCredential"},
-        FunctionInfo{352, nullptr, "CreateDeviceMigrationUserImportRequest"},
-        FunctionInfo{353, nullptr, "DeleteUserMigrationSaveData"},
-        FunctionInfo{400, nullptr, "SetPinCode"},
-        FunctionInfo{401, nullptr, "GetPinCodeLength"},
-        FunctionInfo{402, nullptr, "GetPinCode"},
-        FunctionInfo{403, nullptr, "GetPinCodeParity"},
-        FunctionInfo{404, nullptr, "VerifyPinCode"},
-        FunctionInfo{405, nullptr, "IsPinCodeVerificationForbidden"},
-        FunctionInfo{410, nullptr, "GetPinCodeErrorCount"},
-        FunctionInfo{411, nullptr, "ResetPinCodeErrorCount"},
-        FunctionInfo{412, nullptr, "IncrementPinCodeErrorCount"},
-        FunctionInfo{413, nullptr, "SetPinCodeErrorCount"},
-        FunctionInfo{420, nullptr, "SetStartPenaltyTime"},
-        FunctionInfo{421, nullptr, "GetStartPenaltyTime"},
-        FunctionInfo{900, nullptr, "SetUserUnqualifiedForDebug"},
-        FunctionInfo{901, nullptr, "UnsetUserUnqualifiedForDebug"},
-        FunctionInfo{902, nullptr, "ListUsersUnqualifiedForDebug"},
-        FunctionInfo{910, nullptr, "RefreshFirmwareSettingsForDebug"},
-        FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
-        FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
-        FunctionInfo{999, nullptr, "DebugSetUserStateOpen"},
-        FunctionInfo{1000, nullptr, "CreateIAccountEntityServiceForApplication"},
-        FunctionInfo{1100, nullptr, "CreateIUserStateManager"},
-        FunctionInfo{10050, nullptr, "IsUserRegistrationRequestPermittedForAccountPolicy"},
-        FunctionInfo{10105, nullptr, "CheckNetworkServiceAvailabilityAsyncForAccountPolicy"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e") {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            { 0, nullptr, "GetUserCount"},
+            { 1, nullptr, "GetUserExistence"},
+            { 2, nullptr, "ListAllUsers"},
+            { 3, nullptr, "ListOpenUsers"},
+            { 4, nullptr, "GetLastOpenedUser"},
+            { 5, nullptr, "GetProfile"},
+            { 6, nullptr, "GetProfileDigest"},
+            { 50, nullptr, "IsUserRegistrationRequestPermitted"},
+            { 51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
+            { 52, nullptr, "TrySelectUserWithoutInteraction"},
+            { 99, nullptr, "DebugActivateOpenContextRetention"},
+            { 100, nullptr, "GetUserRegistrationNotifier"},
+            { 101, nullptr, "GetUserStateChangeNotifier"},
+            { 102, nullptr, "GetBaasAccountManagerForSystemService"},
+            { 103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
+            { 104, nullptr, "GetProfileUpdateNotifier"},
+            { 105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
+            { 106, nullptr, "GetProfileSyncNotifier"},
+            { 110, nullptr, "StoreSaveDataThumbnail"},
+            { 111, nullptr, "ClearSaveDataThumbnail"},
+            { 112, nullptr, "LoadSaveDataThumbnail"},
+            { 113, nullptr, "GetSaveDataThumbnailExistence"},
+            { 120, nullptr, "ListOpenUsersInApplication"},
+            { 130, nullptr, "ActivateOpenContextRetention"},
+            { 140, nullptr, "ListQualifiedUsers"},
+            { 151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
+            { 152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
+            { 170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
+            { 191, nullptr, "UpdateNotificationReceiverInfo"},
+            { 200, nullptr, "BeginUserRegistration"},
+            { 201, nullptr, "CompleteUserRegistration"},
+            { 202, nullptr, "CancelUserRegistration"},
+            { 203, nullptr, "DeleteUser"},
+            { 204, nullptr, "SetUserPosition"},
+            { 205, nullptr, "GetProfileEditor"},
+            { 206, nullptr, "CompleteUserRegistrationForcibly"},
+            { 210, nullptr, "CreateFloatingRegistrationRequest"},
+            { 211, nullptr, "CreateProcedureToRegisterUserWithNintendoAccount"},
+            { 212, nullptr, "ResumeProcedureToRegisterUserWithNintendoAccount"},
+            { 213, nullptr, "CreateProcedureToCreateUserWithNintendoAccount"},
+            { 214, nullptr, "ResumeProcedureToCreateUserWithNintendoAccount"},
+            { 215, nullptr, "ResumeProcedureToCreateUserWithNintendoAccountAfterApplyResponse"},
+            { 230, nullptr, "AuthenticateServiceAsync"},
+            { 250, nullptr, "GetBaasAccountAdministrator"},
+            { 251, nullptr, "SynchronizeNetworkServiceAccountsSnapshotAsync"},
+            { 290, nullptr, "ProxyProcedureForGuestLoginWithNintendoAccount"},
+            { 291, nullptr, "ProxyProcedureForFloatingRegistrationWithNintendoAccount"},
+            { 292, nullptr, "ProxyProcedureForDeviceMigrationAuthenticatingOperatingUser"},
+            { 293, nullptr, "ProxyProcedureForDeviceMigrationDownload"},
+            { 299, nullptr, "SuspendBackgroundDaemon"},
+            { 350, nullptr, "CreateDeviceMigrationUserExportRequest"},
+            { 351, nullptr, "UploadNasCredential"},
+            { 352, nullptr, "CreateDeviceMigrationUserImportRequest"},
+            { 353, nullptr, "DeleteUserMigrationSaveData"},
+            { 400, nullptr, "SetPinCode"},
+            { 401, nullptr, "GetPinCodeLength"},
+            { 402, nullptr, "GetPinCode"},
+            { 403, nullptr, "GetPinCodeParity"},
+            { 404, nullptr, "VerifyPinCode"},
+            { 405, nullptr, "IsPinCodeVerificationForbidden"},
+            { 410, nullptr, "GetPinCodeErrorCount"},
+            { 411, nullptr, "ResetPinCodeErrorCount"},
+            { 412, nullptr, "IncrementPinCodeErrorCount"},
+            { 413, nullptr, "SetPinCodeErrorCount"},
+            { 420, nullptr, "SetStartPenaltyTime"},
+            { 421, nullptr, "GetStartPenaltyTime"},
+            { 900, nullptr, "SetUserUnqualifiedForDebug"},
+            { 901, nullptr, "UnsetUserUnqualifiedForDebug"},
+            { 902, nullptr, "ListUsersUnqualifiedForDebug"},
+            { 910, nullptr, "RefreshFirmwareSettingsForDebug"},
+            { 997, nullptr, "DebugInvalidateTokenCacheForUser"},
+            { 998, nullptr, "DebugSetUserStateClose"},
+            { 999, nullptr, "DebugSetUserStateOpen"},
+            { 1000, nullptr, "CreateIAccountEntityServiceForApplication"},
+            { 1100, nullptr, "CreateIUserStateManager"},
+            { 10050, nullptr, "IsUserRegistrationRequestPermittedForAccountPolicy"},
+            { 10105, nullptr, "CheckNetworkServiceAvailabilityAsyncForAccountPolicy"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class ACC_E_U1 final : public Module::Interface {
 public:
     explicit ACC_E_U1(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u1") {}
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "GetUserCount"},
-        FunctionInfo{1, nullptr, "GetUserExistence"},
-        FunctionInfo{2, nullptr, "ListAllUsers"},
-        FunctionInfo{3, nullptr, "ListOpenUsers"},
-        FunctionInfo{4, nullptr, "GetLastOpenedUser"},
-        FunctionInfo{5, nullptr, "GetProfile"},
-        FunctionInfo{6, nullptr, "GetProfileDigest"},
-        FunctionInfo{50, nullptr, "IsUserRegistrationRequestPermitted"},
-        FunctionInfo{51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
-        FunctionInfo{99, nullptr, "DebugActivateOpenContextRetention"},
-        FunctionInfo{100, nullptr, "GetUserRegistrationNotifier"},
-        FunctionInfo{101, nullptr, "GetUserStateChangeNotifier"},
-        FunctionInfo{102, nullptr, "GetBaasAccountManagerForSystemService"},
-        FunctionInfo{103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
-        FunctionInfo{104, nullptr, "GetProfileUpdateNotifier"},
-        FunctionInfo{105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
-        FunctionInfo{106, nullptr, "GetProfileSyncNotifier"},
-        FunctionInfo{110, nullptr, "StoreSaveDataThumbnail"},
-        FunctionInfo{111, nullptr, "ClearSaveDataThumbnail"},
-        FunctionInfo{112, nullptr, "LoadSaveDataThumbnail"},
-        FunctionInfo{113, nullptr, "GetSaveDataThumbnailExistence"},
-        FunctionInfo{120, nullptr, "ListOpenUsersInApplication"},
-        FunctionInfo{130, nullptr, "ActivateOpenContextRetention"},
-        FunctionInfo{140, nullptr, "ListQualifiedUsers"},
-        FunctionInfo{151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
-        FunctionInfo{152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
-        FunctionInfo{170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
-        FunctionInfo{191, nullptr, "UpdateNotificationReceiverInfo"},
-        FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
-        FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
-        FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u1") {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetUserCount"},
+            {1, nullptr, "GetUserExistence"},
+            {2, nullptr, "ListAllUsers"},
+            {3, nullptr, "ListOpenUsers"},
+            {4, nullptr, "GetLastOpenedUser"},
+            {5, nullptr, "GetProfile"},
+            {6, nullptr, "GetProfileDigest"},
+            {50, nullptr, "IsUserRegistrationRequestPermitted"},
+            {51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
+            {99, nullptr, "DebugActivateOpenContextRetention"},
+            {100, nullptr, "GetUserRegistrationNotifier"},
+            {101, nullptr, "GetUserStateChangeNotifier"},
+            {102, nullptr, "GetBaasAccountManagerForSystemService"},
+            {103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
+            {104, nullptr, "GetProfileUpdateNotifier"},
+            {105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
+            {106, nullptr, "GetProfileSyncNotifier"},
+            {110, nullptr, "StoreSaveDataThumbnail"},
+            {111, nullptr, "ClearSaveDataThumbnail"},
+            {112, nullptr, "LoadSaveDataThumbnail"},
+            {113, nullptr, "GetSaveDataThumbnailExistence"},
+            {120, nullptr, "ListOpenUsersInApplication"},
+            {130, nullptr, "ActivateOpenContextRetention"},
+            {140, nullptr, "ListQualifiedUsers"},
+            {151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
+            {152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
+            {170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
+            {191, nullptr, "UpdateNotificationReceiverInfo"},
+            {997, nullptr, "DebugInvalidateTokenCacheForUser"},
+            {998, nullptr, "DebugSetUserStateClose"},
+            {999, nullptr, "DebugSetUserStateOpen"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class ACC_E_U2 final : public Module::Interface {
 public:
     explicit ACC_E_U2(std::shared_ptr<Module> module_, std::shared_ptr<ProfileManager> profile_manager_, Core::System& system_)
-        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u2") {}
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "GetUserCount"},
-        FunctionInfo{1, nullptr, "GetUserExistence"},
-        FunctionInfo{2, nullptr, "ListAllUsers"},
-        FunctionInfo{3, nullptr, "ListOpenUsers"},
-        FunctionInfo{4, nullptr, "GetLastOpenedUser"},
-        FunctionInfo{5, nullptr, "GetProfile"},
-        FunctionInfo{6, nullptr, "GetProfileDigest"},
-        FunctionInfo{50, nullptr, "IsUserRegistrationRequestPermitted"},
-        FunctionInfo{51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
-        FunctionInfo{52, nullptr, "TrySelectUserWithoutInteraction"},
-        FunctionInfo{99, nullptr, "DebugActivateOpenContextRetention"},
-        FunctionInfo{100, nullptr, "GetUserRegistrationNotifier"},
-        FunctionInfo{101, nullptr, "GetUserStateChangeNotifier"},
-        FunctionInfo{102, nullptr, "GetBaasAccountManagerForSystemService"},
-        FunctionInfo{103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
-        FunctionInfo{104, nullptr, "GetProfileUpdateNotifier"},
-        FunctionInfo{105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
-        FunctionInfo{106, nullptr, "GetProfileSyncNotifier"},
-        FunctionInfo{110, nullptr, "StoreSaveDataThumbnail"},
-        FunctionInfo{111, nullptr, "ClearSaveDataThumbnail"},
-        FunctionInfo{112, nullptr, "LoadSaveDataThumbnail"},
-        FunctionInfo{113, nullptr, "GetSaveDataThumbnailExistence"},
-        FunctionInfo{120, nullptr, "ListOpenUsersInApplication"},
-        FunctionInfo{130, nullptr, "ActivateOpenContextRetention"},
-        FunctionInfo{140, nullptr, "ListQualifiedUsers"},
-        FunctionInfo{151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
-        FunctionInfo{152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
-        FunctionInfo{170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
-        FunctionInfo{191, nullptr, "UpdateNotificationReceiverInfo"},
-        FunctionInfo{205, nullptr, "GetProfileEditor"},
-        FunctionInfo{401, nullptr, "GetPinCodeLength"},
-        FunctionInfo{402, nullptr, "GetPinCode"},
-        FunctionInfo{403, nullptr, "GetPinCodeParity"},
-        FunctionInfo{404, nullptr, "VerifyPinCode"},
-        FunctionInfo{405, nullptr, "IsPinCodeVerificationForbidden"},
-        FunctionInfo{997, nullptr, "DebugInvalidateTokenCacheForUser"},
-        FunctionInfo{998, nullptr, "DebugSetUserStateClose"},
-        FunctionInfo{999, nullptr, "DebugSetUserStateOpen"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        : Interface(std::move(module_), std::move(profile_manager_), system_, "acc:e:u2") {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetUserCount"},
+            {1, nullptr, "GetUserExistence"},
+            {2, nullptr, "ListAllUsers"},
+            {3, nullptr, "ListOpenUsers"},
+            {4, nullptr, "GetLastOpenedUser"},
+            {5, nullptr, "GetProfile"},
+            {6, nullptr, "GetProfileDigest"},
+            {50, nullptr, "#IsUserRegistrationRequestPermitted"},
+            {51, nullptr, "TrySelectUserWithoutInteractionDeprecated"},
+            {52, nullptr, "TrySelectUserWithoutInteraction"},
+            {99, nullptr, "DebugActivateOpenContextRetention"},
+            {100, nullptr, "GetUserRegistrationNotifier"},
+            {101, nullptr, "GetUserStateChangeNotifier"},
+            {102, nullptr, "GetBaasAccountManagerForSystemService"},
+            {103, nullptr, "GetBaasUserAvailabilityChangeNotifier"},
+            {104, nullptr, "GetProfileUpdateNotifier"},
+            {105, nullptr, "CheckNetworkServiceAvailabilityAsync"},
+            {106, nullptr, "GetProfileSyncNotifier"},
+            {110, nullptr, "StoreSaveDataThumbnail"},
+            {111, nullptr, "ClearSaveDataThumbnail"},
+            {112, nullptr, "LoadSaveDataThumbnail"},
+            {113, nullptr, "GetSaveDataThumbnailExistence"},
+            {120, nullptr, "ListOpenUsersInApplication"},
+            {130, nullptr, "ActivateOpenContextRetention"},
+            {140, nullptr, "ListQualifiedUsers"},
+            {151, nullptr, "EnsureSignedDeviceIdentifierCacheForNintendoAccountAsync"},
+            {152, nullptr, "LoadSignedDeviceIdentifierCacheForNintendoAccount"},
+            {170, nullptr, "GetNasOp2MembershipStateChangeNotifier"},
+            {191, nullptr, "UpdateNotificationReceiverInfo"},
+            {205, nullptr, "GetProfileEditor"},
+            {401, nullptr, "GetPinCodeLength"},
+            {402, nullptr, "GetPinCode"},
+            {403, nullptr, "GetPinCodeParity"},
+            {404, nullptr, "VerifyPinCode"},
+            {405, nullptr, "IsPinCodeVerificationForbidden"},
+            {997, nullptr, "DebugInvalidateTokenCacheForUser"},
+            {998, nullptr, "DebugSetUserStateClose"},
+            {999, nullptr, "DebugSetUserStateOpen"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 

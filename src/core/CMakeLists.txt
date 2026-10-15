@@ -444,18 +444,28 @@ add_library(core STATIC
     hle/service/am/process_creation.h
     hle/service/am/process_holder.cpp
     hle/service/am/process_holder.h
+    hle/service/am/service/all_system_applet_proxies_service.cpp
+    hle/service/am/service/all_system_applet_proxies_service.h
+    hle/service/am/service/applet_common_functions.cpp
+    hle/service/am/service/applet_common_functions.h
     hle/service/am/service/application_accessor.cpp
     hle/service/am/service/application_accessor.h
     hle/service/am/service/application_creator.cpp
     hle/service/am/service/application_creator.h
     hle/service/am/service/application_functions.cpp
     hle/service/am/service/application_functions.h
+    hle/service/am/service/application_proxy.cpp
+    hle/service/am/service/application_proxy.h
+    hle/service/am/service/application_proxy_service.cpp
+    hle/service/am/service/application_proxy_service.h
     hle/service/am/service/audio_controller.cpp
     hle/service/am/service/audio_controller.h
     hle/service/am/service/common_state_getter.cpp
     hle/service/am/service/common_state_getter.h
     hle/service/am/service/cradle_firmware_updater.cpp
     hle/service/am/service/cradle_firmware_updater.h
+    hle/service/am/service/debug_functions.cpp
+    hle/service/am/service/debug_functions.h
     hle/service/am/service/display_controller.cpp
     hle/service/am/service/display_controller.h
     hle/service/am/service/global_state_controller.cpp
@@ -464,14 +474,28 @@ add_library(core STATIC
     hle/service/am/service/home_menu_functions.h
     hle/service/am/service/library_applet_accessor.cpp
     hle/service/am/service/library_applet_accessor.h
+    hle/service/am/service/library_applet_creator.cpp
+    hle/service/am/service/library_applet_creator.h
+    hle/service/am/service/library_applet_proxy.cpp
+    hle/service/am/service/library_applet_proxy.h
+    hle/service/am/service/library_applet_self_accessor.cpp
+    hle/service/am/service/library_applet_self_accessor.h
+    hle/service/am/service/lock_accessor.cpp
+    hle/service/am/service/lock_accessor.h
     hle/service/am/service/overlay_functions.cpp
     hle/service/am/service/overlay_functions.h
+    hle/service/am/service/overlay_applet_proxy.cpp
+    hle/service/am/service/overlay_applet_proxy.h
     hle/service/am/service/process_winding_controller.cpp
     hle/service/am/service/process_winding_controller.h
     hle/service/am/service/self_controller.cpp
     hle/service/am/service/self_controller.h
     hle/service/am/service/storage.cpp
     hle/service/am/service/storage.h
+    hle/service/am/service/storage_accessor.cpp
+    hle/service/am/service/storage_accessor.h
+    hle/service/am/service/system_applet_proxy.cpp
+    hle/service/am/service/system_applet_proxy.h
     hle/service/am/service/window_controller.cpp
     hle/service/am/service/window_controller.h
     hle/service/am/window_system.cpp
@@ -556,8 +580,20 @@ add_library(core STATIC
     hle/service/btdrv/btdrv.h
     hle/service/btm/btm.cpp
     hle/service/btm/btm.h
+    hle/service/btm/btm_debug.cpp
+    hle/service/btm/btm_debug.h
+    hle/service/btm/btm_system.cpp
+    hle/service/btm/btm_system.h
+    hle/service/btm/btm_system_core.cpp
+    hle/service/btm/btm_system_core.h
+    hle/service/btm/btm_user.cpp
+    hle/service/btm/btm_user.h
+    hle/service/btm/btm_user_core.cpp
+    hle/service/btm/btm_user_core.h
     hle/service/caps/caps.cpp
     hle/service/caps/caps.h
+    hle/service/caps/caps_a.cpp
+    hle/service/caps/caps_a.h
     hle/service/caps/caps_c.cpp
     hle/service/caps/caps_c.h
     hle/service/caps/caps_manager.cpp
@@ -582,6 +618,10 @@ add_library(core STATIC
     hle/service/eupld/eupld.h
     hle/service/fatal/fatal.cpp
     hle/service/fatal/fatal.h
+    hle/service/fatal/fatal_p.cpp
+    hle/service/fatal/fatal_p.h
+    hle/service/fatal/fatal_u.cpp
+    hle/service/fatal/fatal_u.h
     hle/service/fgm/fgm.cpp
     hle/service/fgm/fgm.h
     hle/service/filesystem/filesystem.cpp
@@ -613,6 +653,8 @@ add_library(core STATIC
     hle/service/filesystem/save_data_controller.h
     hle/service/friend/friend.cpp
     hle/service/friend/friend.h
+    hle/service/friend/friend_interface.cpp
+    hle/service/friend/friend_interface.h
     hle/service/glue/arp.cpp
     hle/service/glue/arp.h
     hle/service/glue/bgtc.cpp
@@ -681,6 +723,8 @@ add_library(core STATIC
     hle/service/ldn/monitor_service.h
     hle/service/ldn/sf_monitor_service.cpp
     hle/service/ldn/sf_monitor_service.h
+    hle/service/ldn/sf_service.cpp
+    hle/service/ldn/sf_service.h
     hle/service/ldn/sf_service_monitor.cpp
     hle/service/ldn/sf_service_monitor.h
     hle/service/ldn/system_local_communication_service.cpp
@@ -869,6 +913,8 @@ add_library(core STATIC
     hle/service/olsc/native_handle_holder.h
     hle/service/olsc/olsc_service_for_application.cpp
     hle/service/olsc/olsc_service_for_application.h
+    hle/service/olsc/olsc_service_for_system_service.cpp
+    hle/service/olsc/olsc_service_for_system_service.h
     hle/service/olsc/olsc.cpp
     hle/service/olsc/olsc.h
     hle/service/olsc/remote_storage_controller.cpp
@@ -898,8 +944,14 @@ add_library(core STATIC
     hle/service/os/process.h
     hle/service/pcie/pcie.cpp
     hle/service/pcie/pcie.h
+    hle/service/pctl/parental_control_service_factory.cpp
+    hle/service/pctl/parental_control_service_factory.h
+    hle/service/pctl/parental_control_service.cpp
+    hle/service/pctl/parental_control_service.h
     hle/service/pctl/pctl.cpp
     hle/service/pctl/pctl.h
+    hle/service/pctl/pctl_results.h
+    hle/service/pctl/pctl_types.h
     hle/service/pcv/pcv.cpp
     hle/service/pcv/pcv.h
     hle/service/pm/pm.cpp
@@ -909,8 +961,18 @@ add_library(core STATIC
     hle/service/psc/ovln/ovln_types.h
     hle/service/psc/ovln/receiver_service.cpp
     hle/service/psc/ovln/receiver_service.h
+    hle/service/psc/ovln/receiver.cpp
+    hle/service/psc/ovln/receiver.h
     hle/service/psc/ovln/sender_service.cpp
     hle/service/psc/ovln/sender_service.h
+    hle/service/psc/ovln/sender.cpp
+    hle/service/psc/ovln/sender.h
+    hle/service/psc/pm_control.cpp
+    hle/service/psc/pm_control.h
+    hle/service/psc/pm_module.cpp
+    hle/service/psc/pm_module.h
+    hle/service/psc/pm_service.cpp
+    hle/service/psc/pm_service.h
     hle/service/psc/psc.cpp
     hle/service/psc/psc.h
     hle/service/psc/time/alarms.cpp
@@ -961,6 +1023,10 @@ add_library(core STATIC
     hle/service/ptm/ts.h
     hle/service/ro/ro.cpp
     hle/service/ro/ro.h
+    hle/service/ro/ro_nro_utils.cpp
+    hle/service/ro/ro_nro_utils.h
+    hle/service/ro/ro_results.h
+    hle/service/ro/ro_types.h
     hle/service/server_manager.cpp
     hle/service/server_manager.h
     hle/service/service.cpp
@@ -989,6 +1055,8 @@ add_library(core STATIC
     hle/service/set/system_settings_server.h
     hle/service/sm/sm.cpp
     hle/service/sm/sm.h
+    hle/service/sm/sm_controller.cpp
+    hle/service/sm/sm_controller.h
     hle/service/sockets/bsd.cpp
     hle/service/sockets/bsd.h
     hle/service/sockets/nsd.cpp
@@ -1154,7 +1222,7 @@ target_link_libraries(core PRIVATE
     RenderDoc::API
     ZLIB::ZLIB)
 
-target_link_libraries(core PUBLIC httplib::httplib zstd::zstd frozen::frozen-headers)
+target_link_libraries(core PUBLIC httplib::httplib zstd::zstd)
 
 if (ENABLE_WEB_SERVICE)
     target_compile_definitions(core PUBLIC ENABLE_WEB_SERVICE)

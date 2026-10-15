@@ -15,32 +15,32 @@
 namespace Service::Audio {
 using namespace AudioCore::AudioOut;
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioOut::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IAudioOut::GetAudioOutState>, "GetAudioOutState"},
-        FunctionInfo{1, D<&IAudioOut::Start>, "Start"},
-        FunctionInfo{2, D<&IAudioOut::Stop>, "Stop"},
-        FunctionInfo{3, D<&IAudioOut::AppendAudioOutBuffer>, "AppendAudioOutBuffer"},
-        FunctionInfo{4, D<&IAudioOut::RegisterBufferEvent>, "RegisterBufferEvent"},
-        FunctionInfo{5, D<&IAudioOut::GetReleasedAudioOutBuffers>, "GetReleasedAudioOutBuffers"},
-        FunctionInfo{6, D<&IAudioOut::ContainsAudioOutBuffer>, "ContainsAudioOutBuffer"},
-        FunctionInfo{7, D<&IAudioOut::AppendAudioOutBufferAuto>, "AppendAudioOutBufferAuto"},
-        FunctionInfo{8, D<&IAudioOut::GetReleasedAudioOutBuffersAuto>, "GetReleasedAudioOutBuffersAuto"},
-        FunctionInfo{9, D<&IAudioOut::GetAudioOutBufferCount>, "GetAudioOutBufferCount"},
-        FunctionInfo{10, D<&IAudioOut::GetAudioOutPlayedSampleCount>, "GetAudioOutPlayedSampleCount"},
-        FunctionInfo{11, D<&IAudioOut::FlushAudioOutBuffers>, "FlushAudioOutBuffers"},
-        FunctionInfo{12, D<&IAudioOut::SetAudioOutVolume>, "SetAudioOutVolume"},
-        FunctionInfo{13, D<&IAudioOut::GetAudioOutVolume>, "GetAudioOutVolume"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IAudioOut::IAudioOut(Core::System& system_, Manager& manager, size_t session_id,
                      const std::string& device_name, const AudioOutParameter& in_params,
                      Kernel::KProcess* handle, u64 applet_resource_user_id)
     : ServiceFramework{system_, "IAudioOut"}, service_context{system_, "IAudioOut"},
       event{service_context.CreateEvent("AudioOutEvent")}, process{handle},
       impl{std::make_shared<AudioCore::AudioOut::Out>(system_, manager, event, session_id)} {
+
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IAudioOut::GetAudioOutState>, "GetAudioOutState"},
+        {1, D<&IAudioOut::Start>, "Start"},
+        {2, D<&IAudioOut::Stop>, "Stop"},
+        {3, D<&IAudioOut::AppendAudioOutBuffer>, "AppendAudioOutBuffer"},
+        {4, D<&IAudioOut::RegisterBufferEvent>, "RegisterBufferEvent"},
+        {5, D<&IAudioOut::GetReleasedAudioOutBuffers>, "GetReleasedAudioOutBuffers"},
+        {6, D<&IAudioOut::ContainsAudioOutBuffer>, "ContainsAudioOutBuffer"},
+        {7, D<&IAudioOut::AppendAudioOutBufferAuto>, "AppendAudioOutBufferAuto"},
+        {8, D<&IAudioOut::GetReleasedAudioOutBuffersAuto>, "GetReleasedAudioOutBuffersAuto"},
+        {9, D<&IAudioOut::GetAudioOutBufferCount>, "GetAudioOutBufferCount"},
+        {10, D<&IAudioOut::GetAudioOutPlayedSampleCount>, "GetAudioOutPlayedSampleCount"},
+        {11, D<&IAudioOut::FlushAudioOutBuffers>, "FlushAudioOutBuffers"},
+        {12, D<&IAudioOut::SetAudioOutVolume>, "SetAudioOutVolume"},
+        {13, D<&IAudioOut::GetAudioOutVolume>, "GetAudioOutVolume"},
+    };
+    // clang-format on
+    RegisterHandlers(functions);
 
     process->Open(system.Kernel());
 }

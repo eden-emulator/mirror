@@ -25,8 +25,6 @@ public:
     Result PopPurchasedProductInfo();
     Result PopPurchasedProductInfoWithUid();
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
-
 private:
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* purchased_event;
