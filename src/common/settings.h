@@ -639,8 +639,6 @@ struct Values {
                                                         Specialization::Default,
                                                         true,
                                                         true};
-    SwitchableSetting<bool> nce_invalidation_gpu_readback{
-        linkage, false, "nce_invalidation_gpu_readback", Category::RendererHacks};
     SwitchableSetting<bool> async_presentation{linkage,
 #ifdef __ANDROID__
                                                true,
