@@ -641,8 +641,6 @@ struct Values {
                                                         true};
     SwitchableSetting<bool> nce_invalidation_gpu_readback{
         linkage, false, "nce_invalidation_gpu_readback", Category::RendererHacks};
-    SwitchableSetting<bool> nce_runtime_nro_patch{
-        linkage, false, "nce_runtime_nro_patch", Category::RendererHacks};
     SwitchableSetting<bool> async_presentation{linkage,
 #ifdef __ANDROID__
                                                true,
