@@ -76,7 +76,6 @@ private:
 
     void SetCpuBoostMode(HLERequestContext& ctx);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<Applet> m_applet;
 };
 

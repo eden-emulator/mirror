@@ -29,8 +29,8 @@ public:
 
 private:
     static constexpr std::size_t MaxVibrationDevicesHandles{0x100};
+
     Result ActivateVibrationDevice(Core::HID::VibrationDeviceHandle vibration_device_handle);
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     mutable std::mutex mutex;
     std::size_t list_size{};

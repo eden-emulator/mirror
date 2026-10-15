@@ -11,23 +11,23 @@
 
 namespace Service::PSC::Time {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> SystemClock::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&SystemClock::GetCurrentTime>, "GetCurrentTime"},
-        FunctionInfo{1, D<&SystemClock::SetCurrentTime>, "SetCurrentTime"},
-        FunctionInfo{2, D<&SystemClock::GetSystemClockContext>, "GetSystemClockContext"},
-        FunctionInfo{3, D<&SystemClock::SetSystemClockContext>, "SetSystemClockContext"},
-        FunctionInfo{4, D<&SystemClock::GetOperationEventReadableHandle>, "GetOperationEventReadableHandle"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 SystemClock::SystemClock(Core::System& system_, SystemClockCore& clock_core, bool can_write_clock, bool can_write_uninitialized_clock)
     : ServiceFramework{system_, "ISystemClock"}
     , m_clock_core{clock_core}
     , m_can_write_clock{can_write_clock}
     , m_can_write_uninitialized_clock{can_write_uninitialized_clock}
-{}
+{
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&SystemClock::GetCurrentTime>, "GetCurrentTime"},
+        {1, D<&SystemClock::SetCurrentTime>, "SetCurrentTime"},
+        {2, D<&SystemClock::GetSystemClockContext>, "GetSystemClockContext"},
+        {3, D<&SystemClock::SetSystemClockContext>, "SetSystemClockContext"},
+        {4, D<&SystemClock::GetOperationEventReadableHandle>, "GetOperationEventReadableHandle"},
+    };
+    // clang-format on
+    RegisterHandlers(functions);
+}
 
 Result SystemClock::GetCurrentTime(Out<s64> out_time) {
     SCOPE_EXIT {

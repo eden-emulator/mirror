@@ -33,7 +33,6 @@ private:
         SharedPointer<ILibraryAppletAccessor> reserved_applet_accessor);
     Result ReserveToStartAndWait(SharedPointer<ILibraryAppletAccessor> reserved_applet_accessor);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<Applet> m_applet;
 };
 

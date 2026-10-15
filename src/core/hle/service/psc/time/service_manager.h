@@ -65,8 +65,6 @@ private:
     void SetupSAndP();
     Result GetStaticService(OutInterface<StaticService> out_service, StaticServiceSetupInfo setup_info, const char* name);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
-
     std::shared_ptr<TimeManager> m_time;
     ServerManager& m_server_manager;
     bool m_is_s_and_p_setup{};

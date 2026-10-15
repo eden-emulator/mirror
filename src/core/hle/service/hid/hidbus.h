@@ -147,8 +147,6 @@ private:
         }
     }
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
-
     bool is_hidbus_enabled{false};
     HidbusStatusManager hidbus_status{};
     std::array<HidbusDevice, max_number_of_handles> devices{};

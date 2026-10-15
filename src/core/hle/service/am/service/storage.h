@@ -32,7 +32,6 @@ private:
     Result OpenTransferStorage(
         Out<SharedPointer<ITransferStorageAccessor>> out_transfer_storage_accessor);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<LibraryAppletStorage> m_impl;
 };
 

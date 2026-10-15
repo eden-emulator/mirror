@@ -37,7 +37,6 @@ public:
     Result SetLayerVisibility(bool visible, u64 layer_id);
 
 private:
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<Container> m_container;
 };
 

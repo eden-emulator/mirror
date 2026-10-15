@@ -9,43 +9,43 @@
 
 namespace Service::NS {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IDynamicRightsInterface::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "RequestApplicationRightsOnServer"},
-        FunctionInfo{1, nullptr, "RequestAssignRights"},
-        FunctionInfo{4, nullptr, "DeprecatedRequestAssignRightsToResume"},
-        FunctionInfo{5, D<&IDynamicRightsInterface::VerifyActivatedRightsOwners>, "VerifyActivatedRightsOwners"},
-        FunctionInfo{6, nullptr, "DeprecatedGetApplicationRightsStatus"},
-        FunctionInfo{7, nullptr, "RequestPrefetchForDynamicRights"},
-        FunctionInfo{8, nullptr, "GetDynamicRightsState"},
-        FunctionInfo{9, nullptr, "RequestApplicationRightsOnServerToResume"},
-        FunctionInfo{10, nullptr, "RequestAssignRightsToResume"},
-        FunctionInfo{11, nullptr, "GetActivatedRightsUsers"},
-        FunctionInfo{12, nullptr, "GetApplicationRightsStatus"},
-        FunctionInfo{13, D<&IDynamicRightsInterface::GetRunningApplicationStatus>, "GetRunningApplicationStatus"},
-        FunctionInfo{14, nullptr, "SelectApplicationLicense"},
-        FunctionInfo{15, nullptr, "RequestContentsAuthorizationToken"},
-        FunctionInfo{16, nullptr, "QualifyUser"},
-        FunctionInfo{17, nullptr, "QualifyUserWithProcessId"},
-        FunctionInfo{18, D<&IDynamicRightsInterface::NotifyApplicationRightsCheckStart>, "NotifyApplicationRightsCheckStart"},
-        FunctionInfo{19, nullptr, "UpdateUserList"},
-        FunctionInfo{20, nullptr, "IsRightsLostUser"},
-        FunctionInfo{21, nullptr, "SetRequiredAddOnContentsOnContentsAvailabilityTransition"},
-        FunctionInfo{22, nullptr, "GetLimitedApplicationLicense"},
-        FunctionInfo{23, nullptr, "GetLimitedApplicationLicenseUpgradableEvent"},
-        FunctionInfo{24, nullptr, "NotifyLimitedApplicationLicenseUpgradableEventForDebug"},
-        FunctionInfo{25, nullptr, "RequestProceedDynamicRightsState"},
-        FunctionInfo{26, D<&IDynamicRightsInterface::HasAccountRestrictedRightsInRunningApplications>, "HasAccountRestrictedRightsInRunningApplications"},
-        FunctionInfo{27, nullptr, "Unknown27", MakeVersionGate({20,0,0})},
-        FunctionInfo{28, nullptr, "Unknown28", MakeVersionGate({20,0,0})},
-        FunctionInfo{29, nullptr, "Unknown29", MakeVersionGate({21,0,0})},
-        FunctionInfo{30, nullptr, "Unknown30", MakeVersionGate({21,0,0})}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IDynamicRightsInterface::IDynamicRightsInterface(Core::System& system_)
     : ServiceFramework{system_, "DynamicRightsInterface"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "RequestApplicationRightsOnServer"},
+        {1, nullptr, "RequestAssignRights"},
+        {4, nullptr, "DeprecatedRequestAssignRightsToResume"},
+        {5, D<&IDynamicRightsInterface::VerifyActivatedRightsOwners>, "VerifyActivatedRightsOwners"},
+        {6, nullptr, "DeprecatedGetApplicationRightsStatus"},
+        {7, nullptr, "RequestPrefetchForDynamicRights"},
+        {8, nullptr, "GetDynamicRightsState"},
+        {9, nullptr, "RequestApplicationRightsOnServerToResume"},
+        {10, nullptr, "RequestAssignRightsToResume"},
+        {11, nullptr, "GetActivatedRightsUsers"},
+        {12, nullptr, "GetApplicationRightsStatus"},
+        {13, D<&IDynamicRightsInterface::GetRunningApplicationStatus>, "GetRunningApplicationStatus"},
+        {14, nullptr, "SelectApplicationLicense"},
+        {15, nullptr, "RequestContentsAuthorizationToken"},
+        {16, nullptr, "QualifyUser"},
+        {17, nullptr, "QualifyUserWithProcessId"},
+        {18, D<&IDynamicRightsInterface::NotifyApplicationRightsCheckStart>, "NotifyApplicationRightsCheckStart"},
+        {19, nullptr, "UpdateUserList"},
+        {20, nullptr, "IsRightsLostUser"},
+        {21, nullptr, "SetRequiredAddOnContentsOnContentsAvailabilityTransition"},
+        {22, nullptr, "GetLimitedApplicationLicense"},
+        {23, nullptr, "GetLimitedApplicationLicenseUpgradableEvent"},
+        {24, nullptr, "NotifyLimitedApplicationLicenseUpgradableEventForDebug"},
+        {25, nullptr, "RequestProceedDynamicRightsState"},
+        {26, D<&IDynamicRightsInterface::HasAccountRestrictedRightsInRunningApplications>, "HasAccountRestrictedRightsInRunningApplications"},
+        {27, nullptr, "Unknown27"}, //20.0.0+
+        {28, nullptr, "Unknown28"}, //20.0.0+
+        {29, nullptr, "Unknown29"}, //21.0.0+
+        {30, nullptr, "Unknown30"}, //21.0.0+
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IDynamicRightsInterface::~IDynamicRightsInterface() = default;

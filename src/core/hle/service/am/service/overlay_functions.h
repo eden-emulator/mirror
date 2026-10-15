@@ -6,25 +6,24 @@
 #include "core/hle/service/service.h"
 
 namespace Service::AM {
-struct Applet;
+    struct Applet;
 
-class IOverlayFunctions final : public ServiceFramework<IOverlayFunctions> {
-public:
-    explicit IOverlayFunctions(Core::System &system_, std::shared_ptr<Applet> applet);
-    ~IOverlayFunctions() override;
+    class IOverlayFunctions final : public ServiceFramework<IOverlayFunctions> {
+    public:
+        explicit IOverlayFunctions(Core::System &system_, std::shared_ptr<Applet> applet);
+        ~IOverlayFunctions() override;
 
-private:
-    Result BeginToWatchShortHomeButtonMessage();
-    Result EndToWatchShortHomeButtonMessage();
-    Result GetApplicationIdForLogo(Out<u64> out_application_id);
-    Result SetAutoSleepTimeAndDimmingTimeEnabled(bool enabled);
-    Result IsHealthWarningRequired(Out<bool> is_required);
-    Result SetHandlingHomeButtonShortPressedEnabled(bool enabled);
-    Result SetHandlingTouchScreenInputEnabled(bool enabled);
-    Result Unknown70();
+    private:
+        Result BeginToWatchShortHomeButtonMessage();
+        Result EndToWatchShortHomeButtonMessage();
+        Result GetApplicationIdForLogo(Out<u64> out_application_id);
+        Result SetAutoSleepTimeAndDimmingTimeEnabled(bool enabled);
+        Result IsHealthWarningRequired(Out<bool> is_required);
+        Result SetHandlingHomeButtonShortPressedEnabled(bool enabled);
+        Result SetHandlingTouchScreenInputEnabled(bool enabled);
+        Result Unknown70();
 
-private:
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
-    const std::shared_ptr<Applet> m_applet;
-};
+    private:
+        const std::shared_ptr<Applet> m_applet;
+    };
 } // namespace Service::AM

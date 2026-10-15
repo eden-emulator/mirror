@@ -14,40 +14,40 @@
 
 namespace Service::NS {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IQueryService::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "QueryAppletEvent"},
-        FunctionInfo{1, nullptr, "QueryPlayStatistics"},
-        FunctionInfo{2, nullptr, "QueryPlayStatisticsByUserAccountId"},
-        FunctionInfo{3, nullptr, "QueryPlayStatisticsByNetworkServiceAccountId"},
-        FunctionInfo{4, nullptr, "QueryPlayStatisticsByApplicationId"},
-        FunctionInfo{5, D<&IQueryService::QueryPlayStatisticsByApplicationIdAndUserAccountId>, "QueryPlayStatisticsByApplicationIdAndUserAccountId"},
-        FunctionInfo{6, nullptr, "QueryPlayStatisticsByApplicationIdAndNetworkServiceAccountId"},
-        FunctionInfo{7, nullptr, "QueryLastPlayTimeV0"},
-        FunctionInfo{8, nullptr, "QueryPlayEvent"},
-        FunctionInfo{9, nullptr, "GetAvailablePlayEventRange"},
-        FunctionInfo{10, nullptr, "QueryAccountEvent"},
-        FunctionInfo{11, nullptr, "QueryAccountPlayEvent"},
-        FunctionInfo{12, nullptr, "GetAvailableAccountPlayEventRange"},
-        FunctionInfo{13, nullptr, "QueryApplicationPlayStatisticsForSystemV0"},
-        FunctionInfo{14, nullptr, "QueryRecentlyPlayedApplication"},
-        FunctionInfo{15, nullptr, "GetRecentlyPlayedApplicationUpdateEvent"},
-        FunctionInfo{16, nullptr, "QueryApplicationPlayStatisticsByUserAccountIdForSystemV0"},
-        FunctionInfo{17, D<&IQueryService::QueryLastPlayTime>, "QueryLastPlayTime"},
-        FunctionInfo{18, D<&IQueryService::QueryApplicationPlayStatisticsForSystem>, "QueryApplicationPlayStatisticsForSystem"},
-        FunctionInfo{19, D<&IQueryService::QueryApplicationPlayStatisticsByUserAccountIdForSystem>, "QueryApplicationPlayStatisticsByUserAccountIdForSystem"},
-        FunctionInfo{30, nullptr, "Cmd30" },
-        FunctionInfo{31, nullptr, "Cmd31" },
-        FunctionInfo{100, nullptr, "Cmd100" },
-        FunctionInfo{110, nullptr, "Cmd110" },
-        FunctionInfo{118, nullptr, "Cmd118" },
-        FunctionInfo{119, nullptr, "Cmd119" }
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IQueryService::IQueryService(Core::System& system_) : ServiceFramework{system_, "pdm:qry"},
     play_time_manager{std::make_unique<PlayTime::PlayTimeManager>()} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "QueryAppletEvent"},
+        {1, nullptr, "QueryPlayStatistics"},
+        {2, nullptr, "QueryPlayStatisticsByUserAccountId"},
+        {3, nullptr, "QueryPlayStatisticsByNetworkServiceAccountId"},
+        {4, nullptr, "QueryPlayStatisticsByApplicationId"},
+        {5, D<&IQueryService::QueryPlayStatisticsByApplicationIdAndUserAccountId>, "QueryPlayStatisticsByApplicationIdAndUserAccountId"},
+        {6, nullptr, "QueryPlayStatisticsByApplicationIdAndNetworkServiceAccountId"},
+        {7, nullptr, "QueryLastPlayTimeV0"},
+        {8, nullptr, "QueryPlayEvent"},
+        {9, nullptr, "GetAvailablePlayEventRange"},
+        {10, nullptr, "QueryAccountEvent"},
+        {11, nullptr, "QueryAccountPlayEvent"},
+        {12, nullptr, "GetAvailableAccountPlayEventRange"},
+        {13, nullptr, "QueryApplicationPlayStatisticsForSystemV0"},
+        {14, nullptr, "QueryRecentlyPlayedApplication"},
+        {15, nullptr, "GetRecentlyPlayedApplicationUpdateEvent"},
+        {16, nullptr, "QueryApplicationPlayStatisticsByUserAccountIdForSystemV0"},
+        {17, D<&IQueryService::QueryLastPlayTime>, "QueryLastPlayTime"},
+        {18, D<&IQueryService::QueryApplicationPlayStatisticsForSystem>, "QueryApplicationPlayStatisticsForSystem"},
+        {19, D<&IQueryService::QueryApplicationPlayStatisticsByUserAccountIdForSystem>, "QueryApplicationPlayStatisticsByUserAccountIdForSystem"},
+        { 30, nullptr, "Cmd30" },
+        { 31, nullptr, "Cmd31" },
+        { 100, nullptr, "Cmd100" },
+        { 110, nullptr, "Cmd110" },
+        { 118, nullptr, "Cmd118" },
+        { 119, nullptr, "Cmd119" },
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IQueryService::~IQueryService() = default;

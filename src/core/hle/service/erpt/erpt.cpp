@@ -17,10 +17,30 @@ namespace Service::ERPT {
 
 class ErrorReportContext final : public ServiceFramework<ErrorReportContext> {
 public:
-    explicit ErrorReportContext(Core::System& system_) : ServiceFramework{system_, "erpt:c"} {}
+    explicit ErrorReportContext(Core::System& system_) : ServiceFramework{system_, "erpt:c"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, C<&ErrorReportContext::SubmitContext>, "SubmitContext"},
+            {1, C<&ErrorReportContext::CreateReportV0>, "CreateReportV0"},
+            {2, nullptr, "SetInitialLaunchSettingsCompletionTime"},
+            {3, nullptr, "ClearInitialLaunchSettingsCompletionTime"},
+            {4, nullptr, "UpdatePowerOnTime"},
+            {5, D<&ErrorReportContext::UpdateAwakeTime>, "UpdateAwakeTime"},
+            {6, nullptr, "SubmitMultipleCategoryContext"},
+            {7, nullptr, "UpdateApplicationLaunchTime"},
+            {8, nullptr, "ClearApplicationLaunchTime"},
+            {9, nullptr, "SubmitAttachment"},
+            {10, nullptr, "CreateReportWithAttachments"},
+            {11, C<&ErrorReportContext::CreateReportV1>, "CreateReportV1"},
+            {12, C<&ErrorReportContext::CreateReport>, "CreateReport"},
+            {20, nullptr, "RegisterRunningApplet"},
+            {21, nullptr, "UnregisterRunningApplet"},
+            {22, nullptr, "UpdateAppletSuspendedDuration"},
+            {30, nullptr, "InvalidateForcedShutdownDetection"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -65,41 +85,21 @@ private:
                     data_a.size(), data_b.size(), flag_a, flag_b);
         R_SUCCEED();
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, C<&ErrorReportContext::SubmitContext>, "SubmitContext"},
-        FunctionInfo{1, C<&ErrorReportContext::CreateReportV0>, "CreateReportV0"},
-        FunctionInfo{2, nullptr, "SetInitialLaunchSettingsCompletionTime"},
-        FunctionInfo{3, nullptr, "ClearInitialLaunchSettingsCompletionTime"},
-        FunctionInfo{4, nullptr, "UpdatePowerOnTime"},
-        FunctionInfo{5, D<&ErrorReportContext::UpdateAwakeTime>, "UpdateAwakeTime"},
-        FunctionInfo{6, nullptr, "SubmitMultipleCategoryContext"},
-        FunctionInfo{7, nullptr, "UpdateApplicationLaunchTime"},
-        FunctionInfo{8, nullptr, "ClearApplicationLaunchTime"},
-        FunctionInfo{9, nullptr, "SubmitAttachment"},
-        FunctionInfo{10, nullptr, "CreateReportWithAttachments"},
-        FunctionInfo{11, C<&ErrorReportContext::CreateReportV1>, "CreateReportV1"},
-        FunctionInfo{12, C<&ErrorReportContext::CreateReport>, "CreateReport"},
-        FunctionInfo{20, nullptr, "RegisterRunningApplet"},
-        FunctionInfo{21, nullptr, "UnregisterRunningApplet"},
-        FunctionInfo{22, nullptr, "UpdateAppletSuspendedDuration"},
-        FunctionInfo{30, nullptr, "InvalidateForcedShutdownDetection"}
-    );
 };
 
 class ErrorReportSession final : public ServiceFramework<ErrorReportSession> {
 public:
-    explicit ErrorReportSession(Core::System& system_) : ServiceFramework{system_, "erpt:r"} {}
+    explicit ErrorReportSession(Core::System& system_) : ServiceFramework{system_, "erpt:r"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "OpenReport"},
+            {1, nullptr, "OpenManager"},
+            {2, nullptr, "OpenAttachment"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "OpenReport"},
-        FunctionInfo{1, nullptr, "OpenManager"},
-        FunctionInfo{2, nullptr, "OpenAttachment"}
-    );
 };
 
 void LoopProcess(Core::System& system) {

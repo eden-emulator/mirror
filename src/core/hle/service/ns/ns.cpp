@@ -19,25 +19,25 @@ namespace Service::NS {
 
 class INotifyService final : public ServiceFramework<INotifyService> {
 public:
-    explicit INotifyService(Core::System& system_) : ServiceFramework{system_, "pdm:ntfy"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "NotifyAppletEvent" },
-        FunctionInfo{2, nullptr, "NotifyOperationModeChangeEvent" },
-        FunctionInfo{3, nullptr, "NotifyPowerStateChangeEvent" },
-        FunctionInfo{4, nullptr, "NotifyClearAllEvent" },
-        FunctionInfo{5, nullptr, "NotifyEventForDebug" },
-        FunctionInfo{6, nullptr, "SuspendUserAccountEventService" },
-        FunctionInfo{7, nullptr, "ResumeUserAccountEventService" },
-        FunctionInfo{8, nullptr, "NotifyLibraryAppletEvent" },
-        FunctionInfo{9, nullptr, "Cmd9" },
-        FunctionInfo{20, nullptr, "Cmd20" },
-        FunctionInfo{30, nullptr, "Cmd30" },
-        FunctionInfo{100, nullptr, "Cmd100" },
-        FunctionInfo{101, nullptr, "Cmd101" }
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit INotifyService(Core::System& system_) : ServiceFramework{system_, "pdm:ntfy"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            { 0, nullptr, "NotifyAppletEvent" },
+            { 2, nullptr, "NotifyOperationModeChangeEvent" },
+            { 3, nullptr, "NotifyPowerStateChangeEvent" },
+            { 4, nullptr, "NotifyClearAllEvent" },
+            { 5, nullptr, "NotifyEventForDebug" },
+            { 6, nullptr, "SuspendUserAccountEventService" },
+            { 7, nullptr, "ResumeUserAccountEventService" },
+            { 8, nullptr, "NotifyLibraryAppletEvent" },
+            { 9, nullptr, "Cmd9" },
+            { 20, nullptr, "Cmd20" },
+            { 30, nullptr, "Cmd30" },
+            { 100, nullptr, "Cmd100" },
+            { 101, nullptr, "Cmd101" },
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
@@ -45,10 +45,18 @@ class IVulnerabilityManagerInterface final
     : public ServiceFramework<IVulnerabilityManagerInterface> {
 public:
     explicit IVulnerabilityManagerInterface(Core::System& system_)
-        : ServiceFramework{system_, "ns:vm"} {}
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        : ServiceFramework{system_, "ns:vm"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {1200, D<&IVulnerabilityManagerInterface::NeedsUpdateVulnerability>, "NeedsUpdateVulnerability"},
+            {1201, nullptr, "UpdateSafeSystemVersionForDebug"},
+            {1202, nullptr, "GetSafeSystemVersion"},
+            {3100, D<&IVulnerabilityManagerInterface::GetSafeSystemVersionCheckInfo>, "GetSafeSystemVersionCheckInfo"},
+            {3101, nullptr, "RequestUpdateSafeSystemVersionCheckInfo"},
+            {3102, D<&IVulnerabilityManagerInterface::ResetSafeSystemVersionCheckInfo>, "ResetSafeSystemVersionCheckInfo"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
     ~IVulnerabilityManagerInterface() override = default;
 
@@ -68,15 +76,6 @@ public:
         LOG_WARNING(Service_NS, "(STUBBED)");
         R_SUCCEED();
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{1200, D<&IVulnerabilityManagerInterface::NeedsUpdateVulnerability>, "NeedsUpdateVulnerability"},
-        FunctionInfo{1201, nullptr, "UpdateSafeSystemVersionForDebug"},
-        FunctionInfo{1202, nullptr, "GetSafeSystemVersion"},
-        FunctionInfo{3100, D<&IVulnerabilityManagerInterface::GetSafeSystemVersionCheckInfo>, "GetSafeSystemVersionCheckInfo"},
-        FunctionInfo{3101, nullptr, "RequestUpdateSafeSystemVersionCheckInfo"},
-        FunctionInfo{3102, D<&IVulnerabilityManagerInterface::ResetSafeSystemVersionCheckInfo>, "ResetSafeSystemVersionCheckInfo"}
-    );
 };
 
 void LoopProcess(Core::System& system) {

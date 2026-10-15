@@ -18,71 +18,74 @@ namespace Service::NFC {
 
 class IUser final : public NfcInterface {
 public:
-    explicit IUser(Core::System& system_) : NfcInterface(system_, "NFC::IUser", BackendType::Nfc) {}
+    explicit IUser(Core::System& system_) : NfcInterface(system_, "NFC::IUser", BackendType::Nfc) {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &NfcInterface::Initialize, "InitializeOld"},
+            {1, &NfcInterface::Finalize, "FinalizeOld"},
+            {2, &NfcInterface::GetState, "GetStateOld"},
+            {3, &NfcInterface::IsNfcEnabled, "IsNfcEnabledOld"},
+            {400, &NfcInterface::Initialize, "Initialize"},
+            {401, &NfcInterface::Finalize, "Finalize"},
+            {402, &NfcInterface::GetState, "GetState"},
+            {403, &NfcInterface::IsNfcEnabled, "IsNfcEnabled"},
+            {404, &NfcInterface::ListDevices, "ListDevices"},
+            {405, &NfcInterface::GetDeviceState, "GetDeviceState"},
+            {406, &NfcInterface::GetNpadId, "GetNpadId"},
+            {407, &NfcInterface::AttachAvailabilityChangeEvent, "AttachAvailabilityChangeEvent"},
+            {408, &NfcInterface::StartDetection, "StartDetection"},
+            {409, &NfcInterface::StopDetection, "StopDetection"},
+            {410, &NfcInterface::GetTagInfo, "GetTagInfo"},
+            {411, &NfcInterface::AttachActivateEvent, "AttachActivateEvent"},
+            {412, &NfcInterface::AttachDeactivateEvent, "AttachDeactivateEvent"},
+            {1000, &NfcInterface::ReadMifare, "ReadMifare"},
+            {1001, &NfcInterface::WriteMifare ,"WriteMifare"},
+            {1300, &NfcInterface::SendCommandByPassThrough, "SendCommandByPassThrough"},
+            {1301, nullptr, "KeepPassThroughSession"},
+            {1302, nullptr, "ReleasePassThroughSession"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
-    static constexpr auto functions = CreateStaticMapWithClass<IUser>(
-        FunctionInfoTyped<IUser>{0, &NfcInterface::Initialize, "InitializeOld"},
-        FunctionInfoTyped<IUser>{1, &NfcInterface::Finalize, "FinalizeOld"},
-        FunctionInfoTyped<IUser>{2, &NfcInterface::GetState, "GetStateOld"},
-        FunctionInfoTyped<IUser>{3, &NfcInterface::IsNfcEnabled, "IsNfcEnabledOld"},
-        FunctionInfoTyped<IUser>{400, &NfcInterface::Initialize, "Initialize"},
-        FunctionInfoTyped<IUser>{401, &NfcInterface::Finalize, "Finalize"},
-        FunctionInfoTyped<IUser>{402, &NfcInterface::GetState, "GetState"},
-        FunctionInfoTyped<IUser>{403, &NfcInterface::IsNfcEnabled, "IsNfcEnabled"},
-        FunctionInfoTyped<IUser>{404, &NfcInterface::ListDevices, "ListDevices"},
-        FunctionInfoTyped<IUser>{405, &NfcInterface::GetDeviceState, "GetDeviceState"},
-        FunctionInfoTyped<IUser>{406, &NfcInterface::GetNpadId, "GetNpadId"},
-        FunctionInfoTyped<IUser>{407, &NfcInterface::AttachAvailabilityChangeEvent, "AttachAvailabilityChangeEvent"},
-        FunctionInfoTyped<IUser>{408, &NfcInterface::StartDetection, "StartDetection"},
-        FunctionInfoTyped<IUser>{409, &NfcInterface::StopDetection, "StopDetection"},
-        FunctionInfoTyped<IUser>{410, &NfcInterface::GetTagInfo, "GetTagInfo"},
-        FunctionInfoTyped<IUser>{411, &NfcInterface::AttachActivateEvent, "AttachActivateEvent"},
-        FunctionInfoTyped<IUser>{412, &NfcInterface::AttachDeactivateEvent, "AttachDeactivateEvent"},
-        FunctionInfoTyped<IUser>{1000, &NfcInterface::ReadMifare, "ReadMifare"},
-        FunctionInfoTyped<IUser>{1001, &NfcInterface::WriteMifare ,"WriteMifare"},
-        FunctionInfoTyped<IUser>{1300, &NfcInterface::SendCommandByPassThrough, "SendCommandByPassThrough"},
-        FunctionInfoTyped<IUser>{1301, nullptr, "KeepPassThroughSession"},
-        FunctionInfoTyped<IUser>{1302, nullptr, "ReleasePassThroughSession"}
-    );
 };
 
 class ISystem final : public NfcInterface {
 public:
-    explicit ISystem(Core::System& system_) : NfcInterface{system_, "NFC::ISystem", BackendType::Nfc} {}
+    explicit ISystem(Core::System& system_)
+        : NfcInterface{system_, "NFC::ISystem", BackendType::Nfc} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &NfcInterface::Initialize, "InitializeOld"},
+            {1, &NfcInterface::Finalize, "FinalizeOld"},
+            {2, &NfcInterface::GetState, "GetStateOld"},
+            {3, &NfcInterface::IsNfcEnabled, "IsNfcEnabledOld"},
+            {100, &NfcInterface::SetNfcEnabled, "SetNfcEnabledOld"},
+            {400, &NfcInterface::Initialize, "Initialize"},
+            {401, &NfcInterface::Finalize, "Finalize"},
+            {402, &NfcInterface::GetState, "GetState"},
+            {403, &NfcInterface::IsNfcEnabled, "IsNfcEnabled"},
+            {404, &NfcInterface::ListDevices, "ListDevices"},
+            {405, &NfcInterface::GetDeviceState, "GetDeviceState"},
+            {406, &NfcInterface::GetNpadId, "GetNpadId"},
+            {407, &NfcInterface::AttachAvailabilityChangeEvent, "AttachAvailabilityChangeEvent"},
+            {408, &NfcInterface::StartDetection, "StartDetection"},
+            {409, &NfcInterface::StopDetection, "StopDetection"},
+            {410, &NfcInterface::GetTagInfo, "GetTagInfo"},
+            {411, &NfcInterface::AttachActivateEvent, "AttachActivateEvent"},
+            {412, &NfcInterface::AttachDeactivateEvent, "AttachDeactivateEvent"},
+            {500, &NfcInterface::SetNfcEnabled, "SetNfcEnabled"},
+            {510, nullptr, "OutputTestWave"},
+            {1000, &NfcInterface::ReadMifare, "ReadMifare"},
+            {1001, &NfcInterface::WriteMifare, "WriteMifare"},
+            {1300, &NfcInterface::SendCommandByPassThrough, "SendCommandByPassThrough"},
+            {1301, nullptr, "KeepPassThroughSession"},
+            {1302, nullptr, "ReleasePassThroughSession"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
-    static constexpr auto functions = CreateStaticMapWithClass<ISystem>(
-        FunctionInfoTyped<ISystem>{0, &NfcInterface::Initialize, "InitializeOld"},
-        FunctionInfoTyped<ISystem>{1, &NfcInterface::Finalize, "FinalizeOld"},
-        FunctionInfoTyped<ISystem>{2, &NfcInterface::GetState, "GetStateOld"},
-        FunctionInfoTyped<ISystem>{3, &NfcInterface::IsNfcEnabled, "IsNfcEnabledOld"},
-        FunctionInfoTyped<ISystem>{100, &NfcInterface::SetNfcEnabled, "SetNfcEnabledOld"},
-        FunctionInfoTyped<ISystem>{400, &NfcInterface::Initialize, "Initialize"},
-        FunctionInfoTyped<ISystem>{401, &NfcInterface::Finalize, "Finalize"},
-        FunctionInfoTyped<ISystem>{402, &NfcInterface::GetState, "GetState"},
-        FunctionInfoTyped<ISystem>{403, &NfcInterface::IsNfcEnabled, "IsNfcEnabled"},
-        FunctionInfoTyped<ISystem>{404, &NfcInterface::ListDevices, "ListDevices"},
-        FunctionInfoTyped<ISystem>{405, &NfcInterface::GetDeviceState, "GetDeviceState"},
-        FunctionInfoTyped<ISystem>{406, &NfcInterface::GetNpadId, "GetNpadId"},
-        FunctionInfoTyped<ISystem>{407, &NfcInterface::AttachAvailabilityChangeEvent, "AttachAvailabilityChangeEvent"},
-        FunctionInfoTyped<ISystem>{408, &NfcInterface::StartDetection, "StartDetection"},
-        FunctionInfoTyped<ISystem>{409, &NfcInterface::StopDetection, "StopDetection"},
-        FunctionInfoTyped<ISystem>{410, &NfcInterface::GetTagInfo, "GetTagInfo"},
-        FunctionInfoTyped<ISystem>{411, &NfcInterface::AttachActivateEvent, "AttachActivateEvent"},
-        FunctionInfoTyped<ISystem>{412, &NfcInterface::AttachDeactivateEvent, "AttachDeactivateEvent"},
-        FunctionInfoTyped<ISystem>{500, &NfcInterface::SetNfcEnabled, "SetNfcEnabled"},
-        FunctionInfoTyped<ISystem>{510, nullptr, "OutputTestWave"},
-        FunctionInfoTyped<ISystem>{1000, &NfcInterface::ReadMifare, "ReadMifare"},
-        FunctionInfoTyped<ISystem>{1001, &NfcInterface::WriteMifare, "WriteMifare"},
-        FunctionInfoTyped<ISystem>{1300, &NfcInterface::SendCommandByPassThrough, "SendCommandByPassThrough"},
-        FunctionInfoTyped<ISystem>{1301, nullptr, "KeepPassThroughSession"},
-        FunctionInfoTyped<ISystem>{1302, nullptr, "ReleasePassThroughSession"}
-    );
 };
 
 // MFInterface has an unique interface but it's identical to NfcInterface so we can keep the code
@@ -90,49 +93,56 @@ public:
 using MFInterface = NfcInterface;
 class MFIUser final : public MFInterface {
 public:
-    explicit MFIUser(Core::System& system_) : MFInterface{system_, "NFC::MFInterface", BackendType::Mifare} {}
+    explicit MFIUser(Core::System& system_)
+        : MFInterface{system_, "NFC::MFInterface", BackendType::Mifare} {
+        // clang-format off
+        static const FunctionInfoTyped<MFIUser> functions[] = {
+            {0, &MFIUser::Initialize, "Initialize"},
+            {1, &MFIUser::Finalize, "Finalize"},
+            {2, &MFIUser::ListDevices, "ListDevices"},
+            {3, &MFIUser::StartDetection, "StartDetection"},
+            {4, &MFIUser::StopDetection, "StopDetection"},
+            {5, &MFIUser::ReadMifare, "Read"},
+            {6, &MFIUser::WriteMifare, "Write"},
+            {7, &MFIUser::GetTagInfo, "GetTagInfo"},
+            {8, &MFIUser::AttachActivateEvent, "GetActivateEventHandle"},
+            {9, &MFIUser::AttachDeactivateEvent, "GetDeactivateEventHandle"},
+            {10, &MFIUser::GetState, "GetState"},
+            {11, &MFIUser::GetDeviceState, "GetDeviceState"},
+            {12, &MFIUser::GetNpadId, "GetNpadId"},
+            {13, &MFIUser::AttachAvailabilityChangeEvent, "GetAvailabilityChangeEventHandle"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
-    static constexpr auto functions = CreateStaticMapWithClass<MFIUser>(
-        FunctionInfoTyped<MFIUser>{0, &MFIUser::Initialize, "Initialize"},
-        FunctionInfoTyped<MFIUser>{1, &MFIUser::Finalize, "Finalize"},
-        FunctionInfoTyped<MFIUser>{2, &MFIUser::ListDevices, "ListDevices"},
-        FunctionInfoTyped<MFIUser>{3, &MFIUser::StartDetection, "StartDetection"},
-        FunctionInfoTyped<MFIUser>{4, &MFIUser::StopDetection, "StopDetection"},
-        FunctionInfoTyped<MFIUser>{5, &MFIUser::ReadMifare, "Read"},
-        FunctionInfoTyped<MFIUser>{6, &MFIUser::WriteMifare, "Write"},
-        FunctionInfoTyped<MFIUser>{7, &MFIUser::GetTagInfo, "GetTagInfo"},
-        FunctionInfoTyped<MFIUser>{8, &MFIUser::AttachActivateEvent, "GetActivateEventHandle"},
-        FunctionInfoTyped<MFIUser>{9, &MFIUser::AttachDeactivateEvent, "GetDeactivateEventHandle"},
-        FunctionInfoTyped<MFIUser>{10, &MFIUser::GetState, "GetState"},
-        FunctionInfoTyped<MFIUser>{11, &MFIUser::GetDeviceState, "GetDeviceState"},
-        FunctionInfoTyped<MFIUser>{12, &MFIUser::GetNpadId, "GetNpadId"},
-        FunctionInfoTyped<MFIUser>{13, &MFIUser::AttachAvailabilityChangeEvent, "GetAvailabilityChangeEventHandle"}
-    );
 };
 
 class IAm final : public ServiceFramework<IAm> {
 public:
-    explicit IAm(Core::System& system_) : ServiceFramework{system_, "NFC::IAm"} {}
+    explicit IAm(Core::System& system_) : ServiceFramework{system_, "NFC::IAm"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "Initialize"},
+            {1, nullptr, "Finalize"},
+            {2, nullptr, "NotifyForegroundApplet"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "Initialize"},
-        FunctionInfo{1, nullptr, "Finalize"},
-        FunctionInfo{2, nullptr, "NotifyForegroundApplet"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class NFC_AM final : public ServiceFramework<NFC_AM> {
 public:
-    explicit NFC_AM(Core::System& system_) : ServiceFramework{system_, "nfc:am"} {}
+    explicit NFC_AM(Core::System& system_) : ServiceFramework{system_, "nfc:am"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &NFC_AM::CreateAmNfcInterface, "CreateAmNfcInterface"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -143,18 +153,18 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IAm>(ctx, system);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &NFC_AM::CreateAmNfcInterface, "CreateAmNfcInterface"}
-    );
 };
 
 class NFC_MF_U final : public ServiceFramework<NFC_MF_U> {
 public:
-    explicit NFC_MF_U(Core::System& system_) : ServiceFramework{system_, "nfc:mf:u"} {}
+    explicit NFC_MF_U(Core::System& system_) : ServiceFramework{system_, "nfc:mf:u"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &NFC_MF_U::CreateUserNfcInterface, "CreateUserNfcInterface"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -165,18 +175,18 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<MFIUser>(ctx, system);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &NFC_MF_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
-    );
 };
 
 class NFC_U final : public ServiceFramework<NFC_U> {
 public:
-    explicit NFC_U(Core::System& system_) : ServiceFramework{system_, "nfc:user"} {}
+    explicit NFC_U(Core::System& system_) : ServiceFramework{system_, "nfc:user"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &NFC_U::CreateUserNfcInterface, "CreateUserNfcInterface"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -187,18 +197,18 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IUser>(ctx, system);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &NFC_U::CreateUserNfcInterface, "CreateUserNfcInterface"}
-    );
 };
 
 class NFC_SYS final : public ServiceFramework<NFC_SYS> {
 public:
-    explicit NFC_SYS(Core::System& system_) : ServiceFramework{system_, "nfc:sys"} {}
+    explicit NFC_SYS(Core::System& system_) : ServiceFramework{system_, "nfc:sys"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &NFC_SYS::CreateSystemNfcInterface, "CreateSystemNfcInterface"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -209,10 +219,6 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<ISystem>(ctx, system);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &NFC_SYS::CreateSystemNfcInterface, "CreateSystemNfcInterface"}
-    );
 };
 
 void LoopProcess(Core::System& system) {

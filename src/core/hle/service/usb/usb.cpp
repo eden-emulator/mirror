@@ -17,127 +17,137 @@ namespace Service::USB {
 
 class IDsInterface final : public ServiceFramework<IDsInterface> {
 public:
-    explicit IDsInterface(Core::System& system_) : ServiceFramework{system_, "IDsInterface"} {}
+    explicit IDsInterface(Core::System& system_) : ServiceFramework{system_, "IDsInterface"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "AddEndpoint"},
+            {1, nullptr, "GetSetupEvent"},
+            {2, nullptr, "GetSetupPacket"},
+            {3, nullptr, "Enable"},
+            {4, nullptr, "Disable"},
+            {5, nullptr, "CtrlIn"},
+            {6, nullptr, "CtrlOut"},
+            {7, nullptr, "GetCtrlInCompletionEvent"},
+            {8, nullptr, "GetCtrlInUrbReport"},
+            {9, nullptr, "GetCtrlOutCompletionEvent"},
+            {10, nullptr, "GetCtrlOutUrbReport"},
+            {11, nullptr, "CtrlStall"},
+            {12, nullptr, "AppendConfigurationData"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "AddEndpoint"},
-        FunctionInfo{1, nullptr, "GetSetupEvent"},
-        FunctionInfo{2, nullptr, "GetSetupPacket"},
-        FunctionInfo{3, nullptr, "Enable"},
-        FunctionInfo{4, nullptr, "Disable"},
-        FunctionInfo{5, nullptr, "CtrlIn"},
-        FunctionInfo{6, nullptr, "CtrlOut"},
-        FunctionInfo{7, nullptr, "GetCtrlInCompletionEvent"},
-        FunctionInfo{8, nullptr, "GetCtrlInUrbReport"},
-        FunctionInfo{9, nullptr, "GetCtrlOutCompletionEvent"},
-        FunctionInfo{10, nullptr, "GetCtrlOutUrbReport"},
-        FunctionInfo{11, nullptr, "CtrlStall"},
-        FunctionInfo{12, nullptr, "AppendConfigurationData"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class IDsRootSession final : public ServiceFramework<IDsRootSession> {
 public:
-    explicit IDsRootSession(Core::System& system_) : ServiceFramework{system_, "usb:ds"} {}
+    explicit IDsRootSession(Core::System& system_) : ServiceFramework{system_, "usb:ds"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "OpenDsService"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "OpenDsService"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class IClientEpSession final : public ServiceFramework<IClientEpSession> {
 public:
     explicit IClientEpSession(Core::System& system_)
-        : ServiceFramework{system_, "IClientEpSession"} {}
+        : ServiceFramework{system_, "IClientEpSession"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "ReOpen"},
+            {1, nullptr, "Close"},
+            {2, nullptr, "GetCompletionEvent"},
+            {3, nullptr, "PopulateRing"},
+            {4, nullptr, "PostBufferAsync"},
+            {5, nullptr, "GetXferReport"},
+            {6, nullptr, "PostBufferMultiAsync"},
+            {7, nullptr, "CreateSmmuSpace"},
+            {8, nullptr, "ShareReportRing"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "ReOpen"},
-        FunctionInfo{1, nullptr, "Close"},
-        FunctionInfo{2, nullptr, "GetCompletionEvent"},
-        FunctionInfo{3, nullptr, "PopulateRing"},
-        FunctionInfo{4, nullptr, "PostBufferAsync"},
-        FunctionInfo{5, nullptr, "GetXferReport"},
-        FunctionInfo{6, nullptr, "PostBufferMultiAsync"},
-        FunctionInfo{7, nullptr, "CreateSmmuSpace"},
-        FunctionInfo{8, nullptr, "ShareReportRing"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class IClientIfSession final : public ServiceFramework<IClientIfSession> {
 public:
     explicit IClientIfSession(Core::System& system_)
-        : ServiceFramework{system_, "IClientIfSession"} {}
+        : ServiceFramework{system_, "IClientIfSession"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetStateChangeEvent"},
+            {1, nullptr, "SetInterface"},
+            {2, nullptr, "GetInterface"},
+            {3, nullptr, "GetAlternateInterface"},
+            {4, nullptr, "GetCurrentFrame"},
+            {5, nullptr, "CtrlXferAsync"},
+            {6, nullptr, "GetCtrlXferCompletionEvent"},
+            {7, nullptr, "GetCtrlXferReport"},
+            {8, nullptr, "ResetDevice"},
+            {9, nullptr, "OpenUsbEp"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "GetStateChangeEvent"},
-        FunctionInfo{1, nullptr, "SetInterface"},
-        FunctionInfo{2, nullptr, "GetInterface"},
-        FunctionInfo{3, nullptr, "GetAlternateInterface"},
-        FunctionInfo{4, nullptr, "GetCurrentFrame"},
-        FunctionInfo{5, nullptr, "CtrlXferAsync"},
-        FunctionInfo{6, nullptr, "GetCtrlXferCompletionEvent"},
-        FunctionInfo{7, nullptr, "GetCtrlXferReport"},
-        FunctionInfo{8, nullptr, "ResetDevice"},
-        FunctionInfo{9, nullptr, "OpenUsbEp"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class IClientRootSession final : public ServiceFramework<IClientRootSession> {
 public:
-    explicit IClientRootSession(Core::System& system_) : ServiceFramework{system_, "usb:hs"} {}
+    explicit IClientRootSession(Core::System& system_) : ServiceFramework{system_, "usb:hs"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "BindClientProcess"},
+            {1, nullptr, "QueryAllInterfaces"},
+            {2, nullptr, "QueryAvailableInterfaces"},
+            {3, nullptr, "QueryAcquiredInterfaces"},
+            {4, nullptr, "CreateInterfaceAvailableEvent"},
+            {5, nullptr, "DestroyInterfaceAvailableEvent"},
+            {6, nullptr, "GetInterfaceStateChangeEvent"},
+            {7, nullptr, "AcquireUsbIf"},
+            {8, nullptr, "SetTestMode"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "BindClientProcess"},
-        FunctionInfo{1, nullptr, "QueryAllInterfaces"},
-        FunctionInfo{2, nullptr, "QueryAvailableInterfaces"},
-        FunctionInfo{3, nullptr, "QueryAcquiredInterfaces"},
-        FunctionInfo{4, nullptr, "CreateInterfaceAvailableEvent"},
-        FunctionInfo{5, nullptr, "DestroyInterfaceAvailableEvent"},
-        FunctionInfo{6, nullptr, "GetInterfaceStateChangeEvent"},
-        FunctionInfo{7, nullptr, "AcquireUsbIf"},
-        FunctionInfo{8, nullptr, "SetTestMode"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class IPdSession final : public ServiceFramework<IPdSession> {
 public:
-    explicit IPdSession(Core::System& system_) : ServiceFramework{system_, "IPdSession"} {}
+    explicit IPdSession(Core::System& system_) : ServiceFramework{system_, "IPdSession"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "BindNoticeEvent"},
+            {1, nullptr, "UnbindNoticeEvent"},
+            {2, nullptr, "GetStatus"},
+            {3, nullptr, "GetNotice"},
+            {4, nullptr, "EnablePowerRequestNotice"},
+            {5, nullptr, "DisablePowerRequestNotice"},
+            {6, nullptr, "ReplyPowerRequest"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "BindNoticeEvent"},
-        FunctionInfo{1, nullptr, "UnbindNoticeEvent"},
-        FunctionInfo{2, nullptr, "GetStatus"},
-        FunctionInfo{3, nullptr, "GetNotice"},
-        FunctionInfo{4, nullptr, "EnablePowerRequestNotice"},
-        FunctionInfo{5, nullptr, "DisablePowerRequestNotice"},
-        FunctionInfo{6, nullptr, "ReplyPowerRequest"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class IPdManager final : public ServiceFramework<IPdManager> {
 public:
-    explicit IPdManager(Core::System& system_) : ServiceFramework{system_, "usb:pd"} {}
+    explicit IPdManager(Core::System& system_) : ServiceFramework{system_, "usb:pd"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &IPdManager::OpenSession, "OpenSession"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -148,39 +158,40 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IPdSession>(ctx, system);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &IPdManager::OpenSession, "OpenSession"}
-    );
 };
 
 class IPdCradleSession final : public ServiceFramework<IPdCradleSession> {
 public:
     explicit IPdCradleSession(Core::System& system_)
-        : ServiceFramework{system_, "IPdCradleSession"} {}
+        : ServiceFramework{system_, "IPdCradleSession"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "SetCradleVdo"},
+            {1, nullptr, "GetCradleVdo"},
+            {2, nullptr, "ResetCradleUsbHub"},
+            {3, nullptr, "GetHostPdcFirmwareType"},
+            {4, nullptr, "GetHostPdcFirmwareRevision"},
+            {5, nullptr, "GetHostPdcManufactureId"},
+            {6, nullptr, "GetHostPdcDeviceId"},
+            {7, nullptr, "EnableCradleRecovery"},
+            {8, nullptr, "DisableCradleRecovery"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "SetCradleVdo"},
-        FunctionInfo{1, nullptr, "GetCradleVdo"},
-        FunctionInfo{2, nullptr, "ResetCradleUsbHub"},
-        FunctionInfo{3, nullptr, "GetHostPdcFirmwareType"},
-        FunctionInfo{4, nullptr, "GetHostPdcFirmwareRevision"},
-        FunctionInfo{5, nullptr, "GetHostPdcManufactureId"},
-        FunctionInfo{6, nullptr, "GetHostPdcDeviceId"},
-        FunctionInfo{7, nullptr, "EnableCradleRecovery"},
-        FunctionInfo{8, nullptr, "DisableCradleRecovery"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class IPdCradleManager final : public ServiceFramework<IPdCradleManager> {
 public:
-    explicit IPdCradleManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:c"} {}
+    explicit IPdCradleManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:c"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &IPdCradleManager::OpenCradleSession, "OpenCradleSession"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -191,64 +202,61 @@ private:
         rb.Push(ResultSuccess);
         rb.PushIpcInterface<IPdCradleSession>(ctx, system);
     }
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &IPdCradleManager::OpenCradleSession, "OpenCradleSession"}
-    );
 };
 
 class IPmMainService final : public ServiceFramework<IPmMainService> {
 public:
-    explicit IPmMainService(Core::System& system_) : ServiceFramework{system_, "usb:pm"} {}
+    explicit IPmMainService(Core::System& system_) : ServiceFramework{system_, "usb:pm"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetPowerEvent"},
+            {1, nullptr, "GetPowerState"},
+            {2, nullptr, "GetDataEvent"},
+            {3, nullptr, "GetDataRole"},
+            {4, nullptr, "SetDiagData"},
+            {5, nullptr, "GetDiagData"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "GetPowerEvent"},
-        FunctionInfo{1, nullptr, "GetPowerState"},
-        FunctionInfo{2, nullptr, "GetDataEvent"},
-        FunctionInfo{3, nullptr, "GetDataRole"},
-        FunctionInfo{4, nullptr, "SetDiagData"},
-        FunctionInfo{5, nullptr, "GetDiagData"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class IPdManufactureManager final : public ServiceFramework<IPdManufactureManager> {
 public:
-    explicit IPdManufactureManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:m"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "OpenManufactureSession"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit IPdManufactureManager(Core::System& system_) : ServiceFramework{system_, "usb:pd:m"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "OpenManufactureSession"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class IQdbManager final : public ServiceFramework<IQdbManager> {
 public:
-    explicit IQdbManager(Core::System& system_) : ServiceFramework{system_, "usb:qdb"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "ImportQuirkDevices"},
-        FunctionInfo{1, nullptr, "HasQuirk"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit IQdbManager(Core::System& system_) : ServiceFramework{system_, "usb:qdb"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "ImportQuirkDevices"},
+            {1, nullptr, "HasQuirk"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class IPmObserverService final : public ServiceFramework<IPmObserverService> {
 public:
-    explicit IPmObserverService(Core::System& system_) : ServiceFramework{system_, "usb:obsv"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "GetTopologyChangeEvent"},
-        FunctionInfo{1, nullptr, "GetFlattenedTopology"}
-    );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit IPmObserverService(Core::System& system_) : ServiceFramework{system_, "usb:obsv"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetTopologyChangeEvent"},
+            {1, nullptr, "GetFlattenedTopology"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 

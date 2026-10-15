@@ -27,7 +27,6 @@ public:
     Result GetAndClearPowerStateRequest(Out<bool> out_cleared, Out<u32> out_priority);
 
 private:
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     PowerStateRequestManager& m_power_state_request_manager;
 };
 

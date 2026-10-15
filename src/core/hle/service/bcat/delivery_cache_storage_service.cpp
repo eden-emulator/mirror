@@ -12,18 +12,18 @@
 
 namespace Service::BCAT {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IDeliveryCacheStorageService::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IDeliveryCacheStorageService::CreateFileService>, "CreateFileService"},
-        FunctionInfo{1, D<&IDeliveryCacheStorageService::CreateDirectoryService>, "CreateDirectoryService"},
-        FunctionInfo{10, D<&IDeliveryCacheStorageService::EnumerateDeliveryCacheDirectory>, "EnumerateDeliveryCacheDirectory"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IDeliveryCacheStorageService::IDeliveryCacheStorageService(Core::System& system_,
                                                            FileSys::VirtualDir root_)
     : ServiceFramework{system_, "IDeliveryCacheStorageService"}, root(std::move(root_)) {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IDeliveryCacheStorageService::CreateFileService>, "CreateFileService"},
+        {1, D<&IDeliveryCacheStorageService::CreateDirectoryService>, "CreateDirectoryService"},
+        {10, D<&IDeliveryCacheStorageService::EnumerateDeliveryCacheDirectory>, "EnumerateDeliveryCacheDirectory"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IDeliveryCacheStorageService::~IDeliveryCacheStorageService() = default;

@@ -10,37 +10,38 @@
 namespace Service::Audio {
 using namespace AudioCore::Renderer;
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioRenderer::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IAudioRenderer::GetSampleRate>, "GetSampleRate"},
-        FunctionInfo{1, D<&IAudioRenderer::GetSampleCount>, "GetSampleCount"},
-        FunctionInfo{2, D<&IAudioRenderer::GetMixBufferCount>, "GetMixBufferCount"},
-        FunctionInfo{3, D<&IAudioRenderer::GetState>, "GetState"},
-        FunctionInfo{4, D<&IAudioRenderer::RequestUpdate>, "RequestUpdate"},
-        FunctionInfo{5, D<&IAudioRenderer::Start>, "Start"},
-        FunctionInfo{6, D<&IAudioRenderer::Stop>, "Stop"},
-        FunctionInfo{7, D<&IAudioRenderer::QuerySystemEvent>, "QuerySystemEvent"},
-        FunctionInfo{8, D<&IAudioRenderer::SetRenderingTimeLimit>, "SetRenderingTimeLimit"},
-        FunctionInfo{9, D<&IAudioRenderer::GetRenderingTimeLimit>, "GetRenderingTimeLimit"},
-        FunctionInfo{10, D<&IAudioRenderer::RequestUpdateAuto>, "RequestUpdateAuto", MakeVersionGate({3,0,0})},
-        FunctionInfo{11, nullptr, "ExecuteAudioRendererRendering", MakeVersionGate({3,0,0})},
-        FunctionInfo{12, D<&IAudioRenderer::SetVoiceDropParameter>, "SetVoiceDropParameter", MakeVersionGate({15,0,0})},
-        FunctionInfo{13, D<&IAudioRenderer::GetVoiceDropParameter>, "GetVoiceDropParameter", MakeVersionGate({15,0,0})}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IAudioRenderer::IAudioRenderer(Core::System& system_, Manager& manager_,
                                AudioCore::AudioRendererParameterInternal& params,
                                Kernel::KTransferMemory* transfer_memory, u64 transfer_memory_size,
                                Kernel::KProcess* process_handle_, u64 applet_resource_user_id,
                                s32 session_id)
-    : ServiceFramework{system_, "IAudioRenderer"}, service_context{system_, "IAudioRenderer"}
-    , rendered_event{service_context.CreateEvent("IAudioRendererEvent")}, manager{manager_}
-    , impl{std::make_unique<Renderer>(system_, manager, rendered_event)}
-    , process_handle{process_handle_} {
+    : ServiceFramework{system_, "IAudioRenderer"}, service_context{system_, "IAudioRenderer"},
+      rendered_event{service_context.CreateEvent("IAudioRendererEvent")}, manager{manager_},
+      impl{std::make_unique<Renderer>(system_, manager, rendered_event)}, process_handle{
+                                                                              process_handle_} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IAudioRenderer::GetSampleRate>, "GetSampleRate"},
+        {1, D<&IAudioRenderer::GetSampleCount>, "GetSampleCount"},
+        {2, D<&IAudioRenderer::GetMixBufferCount>, "GetMixBufferCount"},
+        {3, D<&IAudioRenderer::GetState>, "GetState"},
+        {4, D<&IAudioRenderer::RequestUpdate>, "RequestUpdate"},
+        {5, D<&IAudioRenderer::Start>, "Start"},
+        {6, D<&IAudioRenderer::Stop>, "Stop"},
+        {7, D<&IAudioRenderer::QuerySystemEvent>, "QuerySystemEvent"},
+        {8, D<&IAudioRenderer::SetRenderingTimeLimit>, "SetRenderingTimeLimit"},
+        {9, D<&IAudioRenderer::GetRenderingTimeLimit>, "GetRenderingTimeLimit"},
+        {10, D<&IAudioRenderer::RequestUpdateAuto>, "RequestUpdateAuto"}, //3.0.0+
+        {11, nullptr, "ExecuteAudioRendererRendering"}, //3.0.0+
+        {12, D<&IAudioRenderer::SetVoiceDropParameter>, "SetVoiceDropParameter"}, //15.0.0+
+        {13, D<&IAudioRenderer::GetVoiceDropParameter>, "GetVoiceDropParameter"}, //15.0.0+
+    };
+    // clang-format on
+    RegisterHandlers(functions);
+
     process_handle->Open(system_.Kernel());
-    impl->Initialize(params, transfer_memory, transfer_memory_size, process_handle, applet_resource_user_id, session_id);
+    impl->Initialize(params, transfer_memory, transfer_memory_size, process_handle,
+                     applet_resource_user_id, session_id);
 }
 
 IAudioRenderer::~IAudioRenderer() {

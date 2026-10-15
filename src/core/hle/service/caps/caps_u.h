@@ -36,7 +36,6 @@ private:
         AlbumFileDateTime end_date_time, ClientAppletResourceUserId aruid,
         OutArray<ApplicationAlbumEntry, BufferAttr_HipcMapAlias> out_entries);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::shared_ptr<AlbumManager> manager = nullptr;
 };
 

@@ -12,22 +12,22 @@
 namespace Service::Audio {
 using namespace AudioCore::AudioIn;
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioInManager::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IAudioInManager::ListAudioIns>, "ListAudioIns"},
-        FunctionInfo{1, D<&IAudioInManager::OpenAudioIn>, "OpenAudioIn"},
-        FunctionInfo{2, D<&IAudioInManager::ListAudioIns>, "ListAudioInsAuto"},
-        FunctionInfo{3, D<&IAudioInManager::OpenAudioIn>, "OpenAudioInAuto"},
-        FunctionInfo{4, D<&IAudioInManager::ListAudioInsAutoFiltered>, "ListAudioInsAutoFiltered"},
-        FunctionInfo{5, D<&IAudioInManager::OpenAudioInProtocolSpecified>, "OpenAudioInProtocolSpecified"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IAudioInManager::IAudioInManager(Core::System& system_)
-    : ServiceFramework{system_, "audin:u"}
-    , impl{std::make_unique<AudioCore::AudioIn::Manager>(system_)}
-{}
+    : ServiceFramework{system_, "audin:u"}, impl{std::make_unique<AudioCore::AudioIn::Manager>(
+                                                system_)} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IAudioInManager::ListAudioIns>, "ListAudioIns"},
+        {1, D<&IAudioInManager::OpenAudioIn>, "OpenAudioIn"},
+        {2, D<&IAudioInManager::ListAudioIns>, "ListAudioInsAuto"},
+        {3, D<&IAudioInManager::OpenAudioIn>, "OpenAudioInAuto"},
+        {4, D<&IAudioInManager::ListAudioInsAutoFiltered>, "ListAudioInsAutoFiltered"},
+        {5, D<&IAudioInManager::OpenAudioInProtocolSpecified>, "OpenAudioInProtocolSpecified"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
+}
 
 IAudioInManager::~IAudioInManager() = default;
 

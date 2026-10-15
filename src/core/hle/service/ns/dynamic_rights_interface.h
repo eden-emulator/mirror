@@ -21,8 +21,6 @@ private:
     Result GetRunningApplicationStatus(Out<u32> out_status, u64 rights_handle);
     Result VerifyActivatedRightsOwners(u64 rights_handle);
     Result HasAccountRestrictedRightsInRunningApplications(Out<bool> out_is_restricted);
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::NS

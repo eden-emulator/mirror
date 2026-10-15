@@ -21,13 +21,20 @@ namespace Service::PTM {
 class IPsmSession final : public ServiceFramework<IPsmSession> {
 public:
     explicit IPsmSession(Core::System& system_)
-        : ServiceFramework{system_, "IPsmSession"}
-        , service_context{system_, "IPsmSession"} {
-        state_change_event = service_context.CreateEvent("IPsmSession::state_change_event");
-    }
+        : ServiceFramework{system_, "IPsmSession"}, service_context{system_, "IPsmSession"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &IPsmSession::BindStateChangeEvent, "BindStateChangeEvent"},
+            {1, &IPsmSession::UnbindStateChangeEvent, "UnbindStateChangeEvent"},
+            {2, &IPsmSession::SetChargerTypeChangeEventEnabled, "SetChargerTypeChangeEventEnabled"},
+            {3, &IPsmSession::SetPowerSupplyChangeEventEnabled, "SetPowerSupplyChangeEventEnabled"},
+            {4, &IPsmSession::SetBatteryVoltageStateChangeEventEnabled, "SetBatteryVoltageStateChangeEventEnabled"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
+
+        state_change_event = service_context.CreateEvent("IPsmSession::state_change_event");
     }
 
     ~IPsmSession() override {
@@ -105,15 +112,8 @@ private:
         rb.Push(ResultSuccess);
     }
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &IPsmSession::BindStateChangeEvent, "BindStateChangeEvent"},
-        FunctionInfo{1, &IPsmSession::UnbindStateChangeEvent, "UnbindStateChangeEvent"},
-        FunctionInfo{2, &IPsmSession::SetChargerTypeChangeEventEnabled, "SetChargerTypeChangeEventEnabled"},
-        FunctionInfo{3, &IPsmSession::SetPowerSupplyChangeEventEnabled, "SetPowerSupplyChangeEventEnabled"},
-        FunctionInfo{4, &IPsmSession::SetBatteryVoltageStateChangeEventEnabled, "SetBatteryVoltageStateChangeEventEnabled"}
-    );
-
     KernelHelpers::ServiceContext service_context;
+
     bool should_signal_charger_type{};
     bool should_signal_power_supply{};
     bool should_signal_battery_voltage{};
@@ -122,6 +122,31 @@ private:
 };
 
 PSM::PSM(Core::System& system_) : ServiceFramework{system_, "psm"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, &PSM::GetBatteryChargePercentage, "GetBatteryChargePercentage"},
+        {1, &PSM::GetChargerType, "GetChargerType"},
+        {2, nullptr, "EnableBatteryCharging"},
+        {3, nullptr, "DisableBatteryCharging"},
+        {4, nullptr, "IsBatteryChargingEnabled"},
+        {5, nullptr, "AcquireControllerPowerSupply"},
+        {6, nullptr, "ReleaseControllerPowerSupply"},
+        {7, &PSM::OpenSession, "OpenSession"},
+        {8, nullptr, "EnableEnoughPowerChargeEmulation"},
+        {9, nullptr, "DisableEnoughPowerChargeEmulation"},
+        {10, nullptr, "EnableFastBatteryCharging"},
+        {11, nullptr, "DisableFastBatteryCharging"},
+        {12, &PSM::GetBatteryVoltageState, "GetBatteryVoltageState"},
+        {13, nullptr, "GetRawBatteryChargePercentage"},
+        {14, nullptr, "IsEnoughPowerSupplied"},
+        {15, &PSM::GetBatteryAgePercentage, "GetBatteryAgePercentage"},
+        {16, nullptr, "GetBatteryChargeInfoEvent"},
+        {17, &PSM::GetBatteryChargeInfoFields, "GetBatteryChargeInfoFields"},
+        {18, nullptr, "GetBatteryChargeCalibratedEvent"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 PSM::~PSM() = default;

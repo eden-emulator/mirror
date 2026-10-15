@@ -101,7 +101,6 @@ private:
     Result DeleteAlarmSetting(AlarmSettingId alarm_setting_id);
     Result Initialize(ClientAppletResourceUserId aruid);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     NotificationServiceImpl impl;
 };
 
@@ -131,7 +130,6 @@ private:
         Out<NotificationPresentationSetting> out_notification_presentation_setting,
         NotificationChannel notification_channel);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     NotificationServiceImpl impl;
 };
 } // namespace Service::Glue

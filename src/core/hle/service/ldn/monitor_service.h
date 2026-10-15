@@ -26,7 +26,6 @@ private:
     Result InitializeMonitor();
     Result FinalizeMonitor();
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     State state{State::None};
 };
 

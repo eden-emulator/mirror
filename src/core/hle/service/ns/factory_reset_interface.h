@@ -14,7 +14,6 @@ class IFactoryResetInterface final : public ServiceFramework<IFactoryResetInterf
 public:
     explicit IFactoryResetInterface(Core::System& system_);
     ~IFactoryResetInterface() override;
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::NS

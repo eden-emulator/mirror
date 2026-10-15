@@ -24,14 +24,6 @@ private:
     void GetPerformanceMode(HLERequestContext& ctx);
     void IsCpuOverclockEnabled(HLERequestContext& ctx);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &APM::OpenSession, "OpenSession"},
-        FunctionInfo{1, &APM::GetPerformanceMode, "GetPerformanceMode"},
-        FunctionInfo{6, &APM::IsCpuOverclockEnabled, "IsCpuOverclockEnabled"}
-    );
     std::shared_ptr<Module> apm;
     Controller& controller;
 };
@@ -47,19 +39,6 @@ private:
     void GetPerformanceEvent(HLERequestContext& ctx);
     void GetCurrentPerformanceConfiguration(HLERequestContext& ctx);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "RequestPerformanceMode"},
-        FunctionInfo{1, &APM_Sys::GetPerformanceEvent, "GetPerformanceEvent"},
-        FunctionInfo{2, nullptr, "GetThrottlingState"},
-        FunctionInfo{3, nullptr, "GetLastThrottlingState"},
-        FunctionInfo{4, nullptr, "ClearLastThrottlingState"},
-        FunctionInfo{5, nullptr, "LoadAndApplySettings"},
-        FunctionInfo{6, &APM_Sys::SetCpuBoostMode, "SetCpuBoostMode"},
-        FunctionInfo{7, &APM_Sys::GetCurrentPerformanceConfiguration, "GetCurrentPerformanceConfiguration"}
-    );
     Controller& controller;
 };
 

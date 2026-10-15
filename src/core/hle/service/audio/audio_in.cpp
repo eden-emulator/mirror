@@ -11,33 +11,35 @@
 namespace Service::Audio {
 using namespace AudioCore::AudioIn;
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioIn::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IAudioIn::GetAudioInState>, "GetAudioInState"},
-        FunctionInfo{1, D<&IAudioIn::Start>, "Start"},
-        FunctionInfo{2, D<&IAudioIn::Stop>, "Stop"},
-        FunctionInfo{3, D<&IAudioIn::AppendAudioInBuffer>, "AppendAudioInBuffer"},
-        FunctionInfo{4, D<&IAudioIn::RegisterBufferEvent>, "RegisterBufferEvent"},
-        FunctionInfo{5, D<&IAudioIn::GetReleasedAudioInBuffers>, "GetReleasedAudioInBuffers"},
-        FunctionInfo{6, D<&IAudioIn::ContainsAudioInBuffer>, "ContainsAudioInBuffer"},
-        FunctionInfo{7, D<&IAudioIn::AppendAudioInBuffer>, "AppendUacInBuffer"},
-        FunctionInfo{8, D<&IAudioIn::AppendAudioInBufferAuto>, "AppendAudioInBufferAuto"},
-        FunctionInfo{9, D<&IAudioIn::GetReleasedAudioInBuffersAuto>, "GetReleasedAudioInBuffersAuto"},
-        FunctionInfo{10, D<&IAudioIn::AppendAudioInBufferAuto>, "AppendUacInBufferAuto"},
-        FunctionInfo{11, D<&IAudioIn::GetAudioInBufferCount>, "GetAudioInBufferCount"},
-        FunctionInfo{12, D<&IAudioIn::SetDeviceGain>, "SetDeviceGain"},
-        FunctionInfo{13, D<&IAudioIn::GetDeviceGain>, "GetDeviceGain"},
-        FunctionInfo{14, D<&IAudioIn::FlushAudioInBuffers>, "FlushAudioInBuffers"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IAudioIn::IAudioIn(Core::System& system_, Manager& manager, size_t session_id,
                    const std::string& device_name, const AudioInParameter& in_params,
                    Kernel::KProcess* handle, u64 applet_resource_user_id)
-    : ServiceFramework{system_, "IAudioIn"}, process{handle}, service_context{system_, "IAudioIn"}
-    , event{service_context.CreateEvent("AudioInEvent")}, impl{std::make_shared<In>(system_, manager, event, session_id)}
-{
+    : ServiceFramework{system_, "IAudioIn"}, process{handle}, service_context{system_, "IAudioIn"},
+      event{service_context.CreateEvent("AudioInEvent")}, impl{std::make_shared<In>(system_,
+                                                                                    manager, event,
+                                                                                    session_id)} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IAudioIn::GetAudioInState>, "GetAudioInState"},
+        {1, D<&IAudioIn::Start>, "Start"},
+        {2, D<&IAudioIn::Stop>, "Stop"},
+        {3, D<&IAudioIn::AppendAudioInBuffer>, "AppendAudioInBuffer"},
+        {4, D<&IAudioIn::RegisterBufferEvent>, "RegisterBufferEvent"},
+        {5, D<&IAudioIn::GetReleasedAudioInBuffers>, "GetReleasedAudioInBuffers"},
+        {6, D<&IAudioIn::ContainsAudioInBuffer>, "ContainsAudioInBuffer"},
+        {7, D<&IAudioIn::AppendAudioInBuffer>, "AppendUacInBuffer"},
+        {8, D<&IAudioIn::AppendAudioInBufferAuto>, "AppendAudioInBufferAuto"},
+        {9, D<&IAudioIn::GetReleasedAudioInBuffersAuto>, "GetReleasedAudioInBuffersAuto"},
+        {10, D<&IAudioIn::AppendAudioInBufferAuto>, "AppendUacInBufferAuto"},
+        {11, D<&IAudioIn::GetAudioInBufferCount>, "GetAudioInBufferCount"},
+        {12, D<&IAudioIn::SetDeviceGain>, "SetDeviceGain"},
+        {13, D<&IAudioIn::GetDeviceGain>, "GetDeviceGain"},
+        {14, D<&IAudioIn::FlushAudioInBuffers>, "FlushAudioInBuffers"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
+
     process->Open(system.Kernel());
 
     if (impl->GetSystem()

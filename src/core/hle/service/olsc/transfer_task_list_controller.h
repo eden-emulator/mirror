@@ -27,8 +27,6 @@ private:
     Result GetTransferTaskProgress();
     Result GetCurrentTransferTaskInfo(Out<std::array<u8, 0x30>> out_info, u8 unknown);
     Result FindTransferTaskInfo(Out<std::array<u8, 0x30>> out_info, InBuffer<BufferAttr_HipcAutoSelect> in);
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::OLSC

@@ -74,17 +74,57 @@ struct SslContextSharedData {
 
 class ISslConnection final : public ServiceFramework<ISslConnection> {
 public:
-    explicit ISslConnection(Core::System& system_in, SslVersion ssl_version_in, std::shared_ptr<SslContextSharedData>& shared_data_in, std::unique_ptr<SSLConnectionBackend>&& backend_in)
-        : ServiceFramework{system_in, "ISslConnection"}
-        , ssl_version{ssl_version_in}
-        , shared_data{shared_data_in}
-        , backend{std::move(backend_in)} {
-        backend->SetVerifyOption(verify_option);
-        shared_data->connection_count++;
-    }
+    explicit ISslConnection(Core::System& system_in, SslVersion ssl_version_in,
+                            std::shared_ptr<SslContextSharedData>& shared_data_in,
+                            std::unique_ptr<SSLConnectionBackend>&& backend_in)
+        : ServiceFramework{system_in, "ISslConnection"}, ssl_version{ssl_version_in},
+          shared_data{shared_data_in}, backend{std::move(backend_in)} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, D<&ISslConnection::SetSocketDescriptor>, "SetSocketDescriptor"},
+            {1, D<&ISslConnection::SetHostName>, "SetHostName"},
+            {2, D<&ISslConnection::SetVerifyOption>, "SetVerifyOption"},
+            {3, D<&ISslConnection::SetIoMode>, "SetIoMode"},
+            {4, D<&ISslConnection::GetSocketDescriptor>, "GetSocketDescriptor"},
+            {5, D<&ISslConnection::GetHostName>, "GetHostName"},
+            {6, nullptr, "GetVerifyOption"},
+            {7, D<&ISslConnection::GetIoMode>, "GetIoMode"},
+            {8, D<&ISslConnection::DoHandshake>, "DoHandshake"},
+            {9, &ISslConnection::DoHandshakeGetServerCert, "DoHandshakeGetServerCert"},
+            {10, D<&ISslConnection::Read>, "Read"},
+            {11, D<&ISslConnection::Write>, "Write"},
+            {12, D<&ISslConnection::Pending>, "Pending"},
+            {13, D<&ISslConnection::Peek>, "Peek"},
+            {14, D<&ISslConnection::Poll>, "Poll"},
+            {15, D<&ISslConnection::GetVerifyCertError>, "GetVerifyCertError"},
+            {16, D<&ISslConnection::GetNeededServerCertBufferSize>, "GetNeededServerCertBufferSize"},
+            {17, D<&ISslConnection::SetSessionCacheMode>, "SetSessionCacheMode"},
+            {18, D<&ISslConnection::GetSessionCacheMode>, "GetSessionCacheMode"},
+            {19, D<&ISslConnection::FlushSessionCache>, "FlushSessionCache"},
+            {20, D<&ISslConnection::SetRenegotiationMode>, "SetRenegotiationMode"},
+            {21, D<&ISslConnection::GetRenegotiationMode>, "GetRenegotiationMode"},
+            {22, D<&ISslConnection::SetOption>, "SetOption"},
+            {23, D<&ISslConnection::GetOption>, "GetOption"},
+            {24, nullptr, "GetVerifyCertErrors"},
+            {25, nullptr, "GetCipherInfo"},
+            {26, D<&ISslConnection::SetNextAlpnProto>, "SetNextAlpnProto"},
+            {27, D<&ISslConnection::GetNextAlpnProto>, "GetNextAlpnProto"},
+            {28, nullptr, "SetDtlsSocketDescriptor"},
+            {29, nullptr, "GetDtlsHandshakeTimeout"},
+            {30, nullptr, "SetPrivateOption"},
+            {31, nullptr, "SetSrtpCiphers"},
+            {32, nullptr, "GetSrtpCipher"},
+            {33, nullptr, "ExportKeyingMaterial"},
+            {34, nullptr, "SetIoTimeout"},
+            {35, nullptr, "GetIoTimeout"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
+
+        backend->SetVerifyOption(verify_option);
+
+        shared_data->connection_count++;
     }
 
     ~ISslConnection() {
@@ -392,44 +432,6 @@ private:
         R_SUCCEED();
     }
 
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&ISslConnection::SetSocketDescriptor>, "SetSocketDescriptor"},
-        FunctionInfo{1, D<&ISslConnection::SetHostName>, "SetHostName"},
-        FunctionInfo{2, D<&ISslConnection::SetVerifyOption>, "SetVerifyOption"},
-        FunctionInfo{3, D<&ISslConnection::SetIoMode>, "SetIoMode"},
-        FunctionInfo{4, D<&ISslConnection::GetSocketDescriptor>, "GetSocketDescriptor"},
-        FunctionInfo{5, D<&ISslConnection::GetHostName>, "GetHostName"},
-        FunctionInfo{6, nullptr, "GetVerifyOption"},
-        FunctionInfo{7, D<&ISslConnection::GetIoMode>, "GetIoMode"},
-        FunctionInfo{8, D<&ISslConnection::DoHandshake>, "DoHandshake"},
-        FunctionInfo{9, &ISslConnection::DoHandshakeGetServerCert, "DoHandshakeGetServerCert"},
-        FunctionInfo{10, D<&ISslConnection::Read>, "Read"},
-        FunctionInfo{11, D<&ISslConnection::Write>, "Write"},
-        FunctionInfo{12, D<&ISslConnection::Pending>, "Pending"},
-        FunctionInfo{13, D<&ISslConnection::Peek>, "Peek"},
-        FunctionInfo{14, D<&ISslConnection::Poll>, "Poll"},
-        FunctionInfo{15, D<&ISslConnection::GetVerifyCertError>, "GetVerifyCertError"},
-        FunctionInfo{16, D<&ISslConnection::GetNeededServerCertBufferSize>, "GetNeededServerCertBufferSize"},
-        FunctionInfo{17, D<&ISslConnection::SetSessionCacheMode>, "SetSessionCacheMode"},
-        FunctionInfo{18, D<&ISslConnection::GetSessionCacheMode>, "GetSessionCacheMode"},
-        FunctionInfo{19, D<&ISslConnection::FlushSessionCache>, "FlushSessionCache"},
-        FunctionInfo{20, D<&ISslConnection::SetRenegotiationMode>, "SetRenegotiationMode"},
-        FunctionInfo{21, D<&ISslConnection::GetRenegotiationMode>, "GetRenegotiationMode"},
-        FunctionInfo{22, D<&ISslConnection::SetOption>, "SetOption"},
-        FunctionInfo{23, D<&ISslConnection::GetOption>, "GetOption"},
-        FunctionInfo{24, nullptr, "GetVerifyCertErrors"},
-        FunctionInfo{25, nullptr, "GetCipherInfo"},
-        FunctionInfo{26, D<&ISslConnection::SetNextAlpnProto>, "SetNextAlpnProto"},
-        FunctionInfo{27, D<&ISslConnection::GetNextAlpnProto>, "GetNextAlpnProto"},
-        FunctionInfo{28, nullptr, "SetDtlsSocketDescriptor"},
-        FunctionInfo{29, nullptr, "GetDtlsHandshakeTimeout"},
-        FunctionInfo{30, nullptr, "SetPrivateOption"},
-        FunctionInfo{31, nullptr, "SetSrtpCiphers"},
-        FunctionInfo{32, nullptr, "GetSrtpCipher"},
-        FunctionInfo{33, nullptr, "ExportKeyingMaterial"},
-        FunctionInfo{34, nullptr, "SetIoTimeout"},
-        FunctionInfo{35, nullptr, "GetIoTimeout"}
-    );
     SslVersion ssl_version;
     std::shared_ptr<SslContextSharedData> shared_data;
     std::unique_ptr<SSLConnectionBackend> backend;
@@ -450,9 +452,29 @@ public:
     explicit ISslContext(Core::System& system_, SslVersion version)
         : ServiceFramework{system_, "ISslContext"}, ssl_version{version},
           shared_data{std::make_shared<SslContextSharedData>()} {
+        static const FunctionInfo functions[] = {
+            {0, &ISslContext::SetOption, "SetOption"},
+            {1, &ISslContext::GetOption, "GetOption"},
+            {2, &ISslContext::CreateConnection, "CreateConnection"},
+            {3, &ISslContext::GetConnectionCount, "GetConnectionCount"},
+            {4, &ISslContext::ImportServerPki, "ImportServerPki"},
+            {5, &ISslContext::ImportClientPki, "ImportClientPki"},
+            {6, nullptr, "RemoveServerPki"},
+            {7, nullptr, "RemoveClientPki"},
+            {8, D<&ISslContext::RegisterInternalPki>, "RegisterInternalPki"},
+            {9, nullptr, "AddPolicyOid"},
+            {10, nullptr, "ImportCrl"},
+            {11, nullptr, "RemoveCrl"},
+            {12, nullptr, "ImportClientCertKeyPki"},
+            {13, nullptr, "GeneratePrivateKeyAndCert"},
+        };
+        RegisterHandlers(functions);
     }
 
 private:
+    SslVersion ssl_version;
+    std::shared_ptr<SslContextSharedData> shared_data;
+
     void SetOption(HLERequestContext& ctx) {
         struct Parameters {
             ContextOption option;
@@ -539,36 +561,28 @@ private:
         LOG_WARNING(Service_SSL, "(STUBBED) called");
         R_SUCCEED();
     }
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &ISslContext::SetOption, "SetOption"},
-        FunctionInfo{1, &ISslContext::GetOption, "GetOption"},
-        FunctionInfo{2, &ISslContext::CreateConnection, "CreateConnection"},
-        FunctionInfo{3, &ISslContext::GetConnectionCount, "GetConnectionCount"},
-        FunctionInfo{4, &ISslContext::ImportServerPki, "ImportServerPki"},
-        FunctionInfo{5, &ISslContext::ImportClientPki, "ImportClientPki"},
-        FunctionInfo{6, nullptr, "RemoveServerPki"},
-        FunctionInfo{7, nullptr, "RemoveClientPki"},
-        FunctionInfo{8, D<&ISslContext::RegisterInternalPki>, "RegisterInternalPki"},
-        FunctionInfo{9, nullptr, "AddPolicyOid"},
-        FunctionInfo{10, nullptr, "ImportCrl"},
-        FunctionInfo{11, nullptr, "RemoveCrl"},
-        FunctionInfo{12, nullptr, "ImportClientCertKeyPki"},
-        FunctionInfo{13, nullptr, "GeneratePrivateKeyAndCert"}
-    );
-    SslVersion ssl_version;
-    std::shared_ptr<SslContextSharedData> shared_data;
 };
 
 class ISslService final : public ServiceFramework<ISslService> {
 public:
-    explicit ISslService(Core::System& system_) : ServiceFramework{system_, "ssl"}, cert_store{system} {}
+    explicit ISslService(Core::System& system_)
+        : ServiceFramework{system_, "ssl"}, cert_store{system} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, &ISslService::CreateContext, "CreateContext"},
+            {1, nullptr, "GetContextCount"},
+            {2, D<&ISslService::GetCertificates>, "GetCertificates"},
+            {3, D<&ISslService::GetCertificateBufSize>, "GetCertificateBufSize"},
+            {4, nullptr, "DebugIoctl"},
+            {5, &ISslService::SetInterfaceVersion, "SetInterfaceVersion"},
+            {6, nullptr, "FlushSessionCache"},
+            {7, nullptr, "SetDebugOption"},
+            {8, nullptr, "GetDebugOption"},
+            {8, nullptr, "ClearTls12FallbackFlag"},
+        };
+        // clang-format on
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 
 private:
@@ -614,115 +628,146 @@ private:
     }
 
 private:
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, &ISslService::CreateContext, "CreateContext"},
-        FunctionInfo{1, nullptr, "GetContextCount"},
-        FunctionInfo{2, D<&ISslService::GetCertificates>, "GetCertificates"},
-        FunctionInfo{3, D<&ISslService::GetCertificateBufSize>, "GetCertificateBufSize"},
-        FunctionInfo{4, nullptr, "DebugIoctl"},
-        FunctionInfo{5, &ISslService::SetInterfaceVersion, "SetInterfaceVersion"},
-        FunctionInfo{6, nullptr, "FlushSessionCache"},
-        FunctionInfo{7, nullptr, "SetDebugOption"},
-        FunctionInfo{8, nullptr, "GetDebugOption"},
-        FunctionInfo{8, nullptr, "ClearTls12FallbackFlag"}
-    );
     CertStore cert_store;
 };
 
 class ISslServiceForSystem final : public ServiceFramework<ISslServiceForSystem> {
-public:
-    explicit ISslServiceForSystem(Core::System& system_) : ServiceFramework{system_, "ssl:s"} {}
+    public:
+        explicit ISslServiceForSystem(Core::System& system_) : ServiceFramework{system_, "ssl:s"} {
+            // clang-format off
+            static const FunctionInfo functions[] = {
+                {0, D<&ISslServiceForSystem::CreateContext>, "CreateContext"},
+                {1, D<&ISslServiceForSystem::GetContextCount>, "GetContextCount"},
+                {2, D<&ISslServiceForSystem::GetCertificates>, "GetCertificates"},
+                {3, D<&ISslServiceForSystem::GetCertificateBufSize>, "GetCertificateBufSize"},
+                {4, D<&ISslServiceForSystem::DebugIoctl>, "DebugIoctl"},
+                {5, D<&ISslServiceForSystem::SetInterfaceVersion>, "SetInterfaceVersion"},
+                {6, D<&ISslServiceForSystem::FlushSessionCache>, "FlushSessionCache"},
+                {7, D<&ISslServiceForSystem::SetDebugOption>, "SetDebugOption"},
+                {8, D<&ISslServiceForSystem::GetDebugOption>, "GetDebugOption"},
+                {9, D<&ISslServiceForSystem::ClearTls12FallbackFlag>, "ClearTls12FallbackFlag"},
+                {100, D<&ISslServiceForSystem::CreateContextForSystem>, "CreateContextForSystem"},
+                {101, D<&ISslServiceForSystem::SetThreadCoreMask>, "SetThreadCoreMask"},
+                {102, D<&ISslServiceForSystem::GetThreadCoreMask>, "GetThreadCoreMask"},
+                {103, D<&ISslServiceForSystem::VerifySignature>, "VerifySignature"}
+            };
+            // clang-format on
 
-    Result CreateContext() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
+            RegisterHandlers(functions);
+        };
+
+        Result CreateContext() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result GetContextCount() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result GetCertificates() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result GetCertificateBufSize() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result DebugIoctl() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result SetInterfaceVersion() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result FlushSessionCache() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result SetDebugOption() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result GetDebugOption() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result ClearTls12FallbackFlag() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result CreateContextForSystem() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result SetThreadCoreMask() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result GetThreadCoreMask() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
+
+        Result VerifySignature() {
+            LOG_DEBUG(Service_SSL, "(STUBBED) called.");
+
+            // TODO (jarrodnorwell)
+
+            return ResultSuccess;
+        };
     };
-
-    Result GetContextCount() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result GetCertificates() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result GetCertificateBufSize() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result DebugIoctl() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result SetInterfaceVersion() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result FlushSessionCache() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result SetDebugOption() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result GetDebugOption() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result ClearTls12FallbackFlag() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result CreateContextForSystem() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result SetThreadCoreMask() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result GetThreadCoreMask() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    Result VerifySignature() {
-        LOG_DEBUG(Service_SSL, "(STUBBED) called.");
-        R_SUCCEED();
-    };
-
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&ISslServiceForSystem::CreateContext>, "CreateContext"},
-        FunctionInfo{1, D<&ISslServiceForSystem::GetContextCount>, "GetContextCount"},
-        FunctionInfo{2, D<&ISslServiceForSystem::GetCertificates>, "GetCertificates"},
-        FunctionInfo{3, D<&ISslServiceForSystem::GetCertificateBufSize>, "GetCertificateBufSize"},
-        FunctionInfo{4, D<&ISslServiceForSystem::DebugIoctl>, "DebugIoctl"},
-        FunctionInfo{5, D<&ISslServiceForSystem::SetInterfaceVersion>, "SetInterfaceVersion"},
-        FunctionInfo{6, D<&ISslServiceForSystem::FlushSessionCache>, "FlushSessionCache"},
-        FunctionInfo{7, D<&ISslServiceForSystem::SetDebugOption>, "SetDebugOption"},
-        FunctionInfo{8, D<&ISslServiceForSystem::GetDebugOption>, "GetDebugOption"},
-        FunctionInfo{9, D<&ISslServiceForSystem::ClearTls12FallbackFlag>, "ClearTls12FallbackFlag"},
-        FunctionInfo{100, D<&ISslServiceForSystem::CreateContextForSystem>, "CreateContextForSystem"},
-        FunctionInfo{101, D<&ISslServiceForSystem::SetThreadCoreMask>, "SetThreadCoreMask"},
-        FunctionInfo{102, D<&ISslServiceForSystem::GetThreadCoreMask>, "GetThreadCoreMask"},
-        FunctionInfo{103, D<&ISslServiceForSystem::VerifySignature>, "VerifySignature"}
-    );
-};
 
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);

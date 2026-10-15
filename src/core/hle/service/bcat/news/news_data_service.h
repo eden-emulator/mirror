@@ -31,7 +31,6 @@ private:
     Result Read(Out<u64> out_size, s64 offset, OutBuffer<BufferAttr_HipcMapAlias> out_buffer);
     Result GetSize(Out<s64> out_size);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::vector<u8> opened_payload;
 };
 

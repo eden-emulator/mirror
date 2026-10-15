@@ -51,7 +51,6 @@ private:
     void SetBackgroundRequestEnabled(HLERequestContext& ctx);
     void GetCurrentAccessPoint(HLERequestContext& ctx);
     void GetScanDataV3(HLERequestContext& ctx);
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 };
 
 } // namespace Service::NIFM

@@ -18,42 +18,42 @@
 
 namespace Service::AM {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationAccessor::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IApplicationAccessor::GetAppletStateChangedEvent>, "GetAppletStateChangedEvent"},
-        FunctionInfo{1, nullptr, "IsCompleted"},
-        FunctionInfo{10, D<&IApplicationAccessor::Start>, "Start"},
-        FunctionInfo{20, D<&IApplicationAccessor::RequestExit>, "RequestExit"},
-        FunctionInfo{25, D<&IApplicationAccessor::Terminate>, "Terminate"},
-        FunctionInfo{30, D<&IApplicationAccessor::GetResult>, "GetResult"},
-        FunctionInfo{101, D<&IApplicationAccessor::RequestForApplicationToGetForeground>, "RequestForApplicationToGetForeground"},
-        FunctionInfo{110, nullptr, "TerminateAllLibraryApplets"},
-        FunctionInfo{111, nullptr, "AreAnyLibraryAppletsLeft"},
-        FunctionInfo{112, D<&IApplicationAccessor::GetCurrentLibraryApplet>, "GetCurrentLibraryApplet"},
-        FunctionInfo{120, nullptr, "GetApplicationId"},
-        FunctionInfo{121, D<&IApplicationAccessor::PushLaunchParameter>, "PushLaunchParameter"},
-        FunctionInfo{122, D<&IApplicationAccessor::GetApplicationControlProperty>, "GetApplicationControlProperty"},
-        FunctionInfo{123, nullptr, "GetApplicationLaunchProperty"},
-        FunctionInfo{124, nullptr, "GetApplicationLaunchRequestInfo"},
-        FunctionInfo{130, D<&IApplicationAccessor::SetUsers>, "SetUsers"},
-        FunctionInfo{131, D<&IApplicationAccessor::CheckRightsEnvironmentAvailable>, "CheckRightsEnvironmentAvailable"},
-        FunctionInfo{132, D<&IApplicationAccessor::GetNsRightsEnvironmentHandle>, "GetNsRightsEnvironmentHandle"},
-        FunctionInfo{140, nullptr, "GetDesirableUids"},
-        FunctionInfo{150, D<&IApplicationAccessor::ReportApplicationExitTimeout>, "ReportApplicationExitTimeout"},
-        FunctionInfo{160, nullptr, "SetApplicationAttribute"},
-        FunctionInfo{170, nullptr, "HasSaveDataAccessPermission"},
-        FunctionInfo{180, nullptr, "PushToFriendInvitationStorageChannel"},
-        FunctionInfo{190, nullptr, "PushToNotificationStorageChannel"},
-        FunctionInfo{200, nullptr, "RequestApplicationSoftReset"},
-        FunctionInfo{201, nullptr, "RestartApplicationTimer"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IApplicationAccessor::IApplicationAccessor(Core::System& system_, std::shared_ptr<Applet> applet,
                                            WindowSystem& window_system)
     : ServiceFramework{system_, "IApplicationAccessor"}, m_window_system(window_system),
       m_applet(std::move(applet)) {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IApplicationAccessor::GetAppletStateChangedEvent>, "GetAppletStateChangedEvent"},
+        {1, nullptr, "IsCompleted"},
+        {10, D<&IApplicationAccessor::Start>, "Start"},
+        {20, D<&IApplicationAccessor::RequestExit>, "RequestExit"},
+        {25, D<&IApplicationAccessor::Terminate>, "Terminate"},
+        {30, D<&IApplicationAccessor::GetResult>, "GetResult"},
+        {101, D<&IApplicationAccessor::RequestForApplicationToGetForeground>, "RequestForApplicationToGetForeground"},
+        {110, nullptr, "TerminateAllLibraryApplets"},
+        {111, nullptr, "AreAnyLibraryAppletsLeft"},
+        {112, D<&IApplicationAccessor::GetCurrentLibraryApplet>, "GetCurrentLibraryApplet"},
+        {120, nullptr, "GetApplicationId"},
+        {121, D<&IApplicationAccessor::PushLaunchParameter>, "PushLaunchParameter"},
+        {122, D<&IApplicationAccessor::GetApplicationControlProperty>, "GetApplicationControlProperty"},
+        {123, nullptr, "GetApplicationLaunchProperty"},
+        {124, nullptr, "GetApplicationLaunchRequestInfo"},
+        {130, D<&IApplicationAccessor::SetUsers>, "SetUsers"},
+        {131, D<&IApplicationAccessor::CheckRightsEnvironmentAvailable>, "CheckRightsEnvironmentAvailable"},
+        {132, D<&IApplicationAccessor::GetNsRightsEnvironmentHandle>, "GetNsRightsEnvironmentHandle"},
+        {140, nullptr, "GetDesirableUids"},
+        {150, D<&IApplicationAccessor::ReportApplicationExitTimeout>, "ReportApplicationExitTimeout"},
+        {160, nullptr, "SetApplicationAttribute"},
+        {170, nullptr, "HasSaveDataAccessPermission"},
+        {180, nullptr, "PushToFriendInvitationStorageChannel"},
+        {190, nullptr, "PushToNotificationStorageChannel"},
+        {200, nullptr, "RequestApplicationSoftReset"},
+        {201, nullptr, "RestartApplicationTimer"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IApplicationAccessor::~IApplicationAccessor() = default;

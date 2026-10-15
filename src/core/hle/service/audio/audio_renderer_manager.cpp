@@ -18,21 +18,21 @@ namespace Service::Audio {
 
 using namespace AudioCore::Renderer;
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioRendererManager::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IAudioRendererManager::OpenAudioRenderer>, "OpenAudioRenderer"},
-        FunctionInfo{1, D<&IAudioRendererManager::GetWorkBufferSize>, "GetWorkBufferSize"},
-        FunctionInfo{2, D<&IAudioRendererManager::GetAudioDeviceService>, "GetAudioDeviceService"},
-        FunctionInfo{3, nullptr, "OpenAudioRendererForManualExecution"},
-        FunctionInfo{4, D<&IAudioRendererManager::GetAudioDeviceServiceWithRevisionInfo>, "GetAudioDeviceServiceWithRevisionInfo"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IAudioRendererManager::IAudioRendererManager(Core::System& system_)
     : ServiceFramework{system_, "audren:u"}
     , impl(system_)
 {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IAudioRendererManager::OpenAudioRenderer>, "OpenAudioRenderer"},
+        {1, D<&IAudioRendererManager::GetWorkBufferSize>, "GetWorkBufferSize"},
+        {2, D<&IAudioRendererManager::GetAudioDeviceService>, "GetAudioDeviceService"},
+        {3, nullptr, "OpenAudioRendererForManualExecution"},
+        {4, D<&IAudioRendererManager::GetAudioDeviceServiceWithRevisionInfo>, "GetAudioDeviceServiceWithRevisionInfo"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IAudioRendererManager::~IAudioRendererManager() = default;

@@ -20,13 +20,6 @@ private:
     Result Add(std::shared_ptr<IFileSystem> filesystem);
     Result Commit();
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{1, D<&IMultiCommitManager::Add>, "Add"},
-        FunctionInfo{2, D<&IMultiCommitManager::Commit>, "Commit"}
-    );
     FileSys::VirtualFile backend;
 };
 

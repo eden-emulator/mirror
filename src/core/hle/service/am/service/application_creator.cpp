@@ -20,16 +20,6 @@
 
 namespace Service::AM {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IApplicationCreator::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IApplicationCreator::CreateApplication>, "CreateApplication"},
-        FunctionInfo{1, nullptr, "PopLaunchRequestedApplication"},
-        FunctionInfo{10, D<&IApplicationCreator::CreateSystemApplication>, "CreateSystemApplication"},
-        FunctionInfo{100, nullptr, "PopFloatingApplicationForDevelopment"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 namespace {
 
 Result CreateGuestApplication(SharedPointer<IApplicationAccessor>* out_application_accessor, Core::System& system, WindowSystem& window_system, u64 program_id) {
@@ -64,6 +54,16 @@ Result CreateGuestApplication(SharedPointer<IApplicationAccessor>* out_applicati
 
 IApplicationCreator::IApplicationCreator(Core::System& system_, WindowSystem& window_system)
     : ServiceFramework{system_, "IApplicationCreator"}, m_window_system{window_system} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IApplicationCreator::CreateApplication>, "CreateApplication"},
+        {1, nullptr, "PopLaunchRequestedApplication"},
+        {10, D<&IApplicationCreator::CreateSystemApplication>, "CreateSystemApplication"},
+        {100, nullptr, "PopFloatingApplicationForDevelopment"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IApplicationCreator::~IApplicationCreator() = default;

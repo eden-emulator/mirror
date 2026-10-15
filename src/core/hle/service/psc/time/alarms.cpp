@@ -33,7 +33,8 @@ Alarm::~Alarm() {
 }
 
 Alarms::Alarms(Core::System& system, StandardSteadyClockCore& steady_clock, PowerStateRequestManager& power_state_request_manager)
-    : m_ctx{system, "Psc:Alarms"}
+    : m_system{system}
+    , m_ctx{system, "Psc:Alarms"}
     , m_steady_clock{steady_clock}
     , m_power_state_request_manager{power_state_request_manager}
     , m_event{m_ctx.CreateEvent("Psc:Alarms:Event")}
@@ -135,7 +136,15 @@ Result Alarms::UpdateClosestAndSignal(Kernel::KernelCore& kernel) {
 IAlarmService::IAlarmService(Core::System& system_, std::shared_ptr<TimeManager> manager)
     : ServiceFramework{system_, "time:al"}
     , m_alarms{manager->m_alarms}
-{}
+{
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, &IAlarmService::CreateWakeupAlarm, "CreateWakeupAlarm"},
+        {1, &IAlarmService::CreateBackgroundTaskAlarm, "CreateBackgroundTaskAlarm"},
+    };
+    // clang-format on
+    RegisterHandlers(functions);
+}
 
 void IAlarmService::CreateWakeupAlarm(HLERequestContext& ctx) {
     LOG_DEBUG(Service_Time, "called.");
@@ -156,6 +165,17 @@ void IAlarmService::CreateBackgroundTaskAlarm(HLERequestContext& ctx) {
 ISteadyClockAlarm::ISteadyClockAlarm(Core::System& system_, Alarms& alarms, AlarmType type)
     : ServiceFramework{system_, "ISteadyClockAlarm"}, m_ctx{system, "Psc:ISteadyClockAlarm"},
       m_alarms{alarms}, m_alarm{system, m_ctx, type} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0,  &ISteadyClockAlarm::GetAlarmEvent, "GetAlarmEvent"},
+        {1,  &ISteadyClockAlarm::Enable, "Enable"},
+        {2,  &ISteadyClockAlarm::Disable, "Disable"},
+        {3,  &ISteadyClockAlarm::IsEnabled, "IsEnabled"},
+        {10, nullptr, "CreateWakeLock"},
+        {11, nullptr, "DestroyWakeLock"},
+    };
+    // clang-format on
+    RegisterHandlers(functions);
 }
 
 void ISteadyClockAlarm::GetAlarmEvent(HLERequestContext& ctx) {

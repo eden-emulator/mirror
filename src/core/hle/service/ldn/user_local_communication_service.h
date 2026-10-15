@@ -1,7 +1,7 @@
-// SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
@@ -89,7 +89,6 @@ private:
     /// Callback to parse and handle a received LDN packet.
     void OnLDNPacketReceived(const Network::LDNPacket& packet);
     void OnEventFired();
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* state_change_event;

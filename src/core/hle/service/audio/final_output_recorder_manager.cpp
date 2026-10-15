@@ -11,29 +11,34 @@ namespace Service::Audio {
 class IFinalOutputRecorder final : public ServiceFramework<IFinalOutputRecorder> {
 public:
     explicit IFinalOutputRecorder(Core::System& system_)
-        : ServiceFramework{system_, "IFinalOutputRecorder"} {}
+        : ServiceFramework{system_, "IFinalOutputRecorder"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetFinalOutputRecorderState"},
+            {1, nullptr, "Start"},
+            {2, nullptr, "Stop"},
+            {3, nullptr, "AppendFinalOutputRecorderBuffer"},
+            {4, nullptr, "RegisterBufferEvent"},
+            {5, nullptr, "GetReleasedFinalOutputRecorderBuffers"},
+            {6, nullptr, "ContainsFinalOutputRecorderBuffer"},
+            {7, nullptr, "GetFinalOutputRecorderBufferEndTime"},
+            {8, nullptr, "AppendFinalOutputRecorderBufferAuto"},
+            {9, nullptr, "GetReleasedFinalOutputRecorderBufferAuto"},
+            {10, nullptr, "FlushFinalOutputRecorderBuffers"},
+            {11, nullptr, "AttachWorkBuffer"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetFinalOutputRecorderState"},
-            FunctionInfo{1, nullptr, "Start"},
-            FunctionInfo{2, nullptr, "Stop"},
-            FunctionInfo{3, nullptr, "AppendFinalOutputRecorderBuffer"},
-            FunctionInfo{4, nullptr, "RegisterBufferEvent"},
-            FunctionInfo{5, nullptr, "GetReleasedFinalOutputRecorderBuffers"},
-            FunctionInfo{6, nullptr, "ContainsFinalOutputRecorderBuffer"},
-            FunctionInfo{7, nullptr, "GetFinalOutputRecorderBufferEndTime"},
-            FunctionInfo{8, nullptr, "AppendFinalOutputRecorderBufferAuto"},
-            FunctionInfo{9, nullptr, "GetReleasedFinalOutputRecorderBufferAuto"},
-            FunctionInfo{10, nullptr, "FlushFinalOutputRecorderBuffers"},
-            FunctionInfo{11, nullptr, "AttachWorkBuffer"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 IFinalOutputRecorderManager::IFinalOutputRecorderManager(Core::System& system_)
     : ServiceFramework{system_, "audrec:u"} {
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "OpenFinalOutputRecorder"},
+    };
+    RegisterHandlers(functions);
 }
 
 IFinalOutputRecorderManager::~IFinalOutputRecorderManager() = default;

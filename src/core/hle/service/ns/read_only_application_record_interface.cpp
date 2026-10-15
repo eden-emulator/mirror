@@ -11,18 +11,17 @@
 
 namespace Service::NS {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IReadOnlyApplicationRecordInterface::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IReadOnlyApplicationRecordInterface::HasApplicationRecord>, "HasApplicationRecord"},
-        FunctionInfo{1, nullptr, "NotifyApplicationFailure"},
-        FunctionInfo{2, D<&IReadOnlyApplicationRecordInterface::IsDataCorruptedResult>, "IsDataCorruptedResult"},
-        FunctionInfo{3, D<&IReadOnlyApplicationRecordInterface::ListApplicationRecord>, "ListApplicationRecord"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IReadOnlyApplicationRecordInterface::IReadOnlyApplicationRecordInterface(Core::System& system_)
     : ServiceFramework{system_, "IReadOnlyApplicationRecordInterface"} {
+    static const FunctionInfo functions[] = {
+        {0, D<&IReadOnlyApplicationRecordInterface::HasApplicationRecord>, "HasApplicationRecord"},
+        {1, nullptr, "NotifyApplicationFailure"},
+        {2, D<&IReadOnlyApplicationRecordInterface::IsDataCorruptedResult>, "IsDataCorruptedResult"},
+        {3, D<&IReadOnlyApplicationRecordInterface::ListApplicationRecord>, "ListApplicationRecord"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IReadOnlyApplicationRecordInterface::~IReadOnlyApplicationRecordInterface() = default;

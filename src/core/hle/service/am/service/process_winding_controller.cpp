@@ -13,23 +13,23 @@
 
 namespace Service::AM {
 
-    std::optional<ServiceFrameworkBase::FunctionInfoBase> IProcessWindingController::FindRequest(u32 key) {
-        static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, D<&IProcessWindingController::GetLaunchReason>, "GetLaunchReason"},
-            FunctionInfo{11, D<&IProcessWindingController::OpenCallingLibraryApplet>, "OpenCallingLibraryApplet"},
-            FunctionInfo{21, D<&IProcessWindingController::PushContext>, "PushContext"},
-            FunctionInfo{22, D<&IProcessWindingController::PopContext>, "PopContext"},
-            FunctionInfo{23, D<&IProcessWindingController::CancelWindingReservation>, "CancelWindingReservation"},
-            FunctionInfo{30, D<&IProcessWindingController::WindAndDoReserved>, "WindAndDoReserved"},
-            FunctionInfo{40, D<&IProcessWindingController::ReserveToStartAndWaitAndUnwindThis>, "ReserveToStartAndWaitAndUnwindThis"},
-            FunctionInfo{41, D<&IProcessWindingController::ReserveToStartAndWait>, "ReserveToStartAndWait"}
-        );
-        return HandlerTableGenerateWithFind(key, functions);
-    }
-
 IProcessWindingController::IProcessWindingController(Core::System& system_,
                                                      std::shared_ptr<Applet> applet)
     : ServiceFramework{system_, "IProcessWindingController"}, m_applet{std::move(applet)} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, D<&IProcessWindingController::GetLaunchReason>, "GetLaunchReason"},
+        {11, D<&IProcessWindingController::OpenCallingLibraryApplet>, "OpenCallingLibraryApplet"},
+        {21, D<&IProcessWindingController::PushContext>, "PushContext"},
+        {22, D<&IProcessWindingController::PopContext>, "PopContext"},
+        {23, D<&IProcessWindingController::CancelWindingReservation>, "CancelWindingReservation"},
+        {30, D<&IProcessWindingController::WindAndDoReserved>, "WindAndDoReserved"},
+        {40, D<&IProcessWindingController::ReserveToStartAndWaitAndUnwindThis>, "ReserveToStartAndWaitAndUnwindThis"},
+        {41, D<&IProcessWindingController::ReserveToStartAndWait>, "ReserveToStartAndWait"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IProcessWindingController::~IProcessWindingController() = default;

@@ -29,7 +29,6 @@ private:
                 OutArray<DeliveryCacheDirectoryEntry, BufferAttr_HipcMapAlias> out_buffer);
     Result GetCount(Out<s32> out_count);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     FileSys::VirtualDir root;
     FileSys::VirtualDir current_dir;
 };

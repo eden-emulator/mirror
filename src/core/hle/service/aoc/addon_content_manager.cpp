@@ -28,34 +28,6 @@
 
 namespace Service::AOC {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IAddOnContentManager::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, nullptr, "CountAddOnContentByApplicationId"},
-        FunctionInfo{1, nullptr, "ListAddOnContentByApplicationId"},
-        FunctionInfo{2, D<&IAddOnContentManager::CountAddOnContent>, "CountAddOnContent"},
-        FunctionInfo{3, D<&IAddOnContentManager::ListAddOnContent>, "ListAddOnContent"},
-        FunctionInfo{4, nullptr, "GetAddOnContentBaseIdByApplicationId"},
-        FunctionInfo{5, D<&IAddOnContentManager::GetAddOnContentBaseId>, "GetAddOnContentBaseId"},
-        FunctionInfo{6, nullptr, "PrepareAddOnContentByApplicationId"},
-        FunctionInfo{7, D<&IAddOnContentManager::PrepareAddOnContent>, "PrepareAddOnContent"},
-        FunctionInfo{8, D<&IAddOnContentManager::GetAddOnContentListChangedEvent>, "GetAddOnContentListChangedEvent"},
-        FunctionInfo{9, nullptr, "GetAddOnContentLostErrorCode"},
-        FunctionInfo{10, D<&IAddOnContentManager::GetAddOnContentListChangedEventWithProcessId>, "GetAddOnContentListChangedEventWithProcessId"},
-        FunctionInfo{11, D<&IAddOnContentManager::NotifyMountAddOnContent>, "NotifyMountAddOnContent"},
-        FunctionInfo{12, D<&IAddOnContentManager::NotifyUnmountAddOnContent>, "NotifyUnmountAddOnContent"},
-        FunctionInfo{13, nullptr, "IsAddOnContentMountedForDebug"},
-        FunctionInfo{50, D<&IAddOnContentManager::CheckAddOnContentMountStatus>, "CheckAddOnContentMountStatus"},
-        FunctionInfo{100, D<&IAddOnContentManager::CreateEcPurchasedEventManager>, "CreateEcPurchasedEventManager"},
-        FunctionInfo{101, D<&IAddOnContentManager::CreatePermanentEcPurchasedEventManager>, "CreatePermanentEcPurchasedEventManager"},
-        FunctionInfo{110, nullptr, "CreateContentsServiceManager"},
-        FunctionInfo{200, nullptr, "SetRequiredAddOnContentsOnContentsAvailabilityTransition"},
-        FunctionInfo{300, nullptr, "SetupHostAddOnContent"},
-        FunctionInfo{301, nullptr, "GetRegisteredAddOnContentPath"},
-        FunctionInfo{302, nullptr, "UpdateCachedList"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 static bool CheckAOCTitleIDMatchesBase(u64 title_id, u64 base) {
     return FileSys::GetBaseTitleID(title_id) == base;
 }
@@ -85,6 +57,35 @@ static std::vector<u64> AccumulateAOCTitleIDs(Core::System& system) {
 IAddOnContentManager::IAddOnContentManager(Core::System& system_)
     : ServiceFramework{system_, "aoc:u"}, add_on_content{AccumulateAOCTitleIDs(system)},
       service_context{system_, "aoc:u"} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {0, nullptr, "CountAddOnContentByApplicationId"},
+        {1, nullptr, "ListAddOnContentByApplicationId"},
+        {2, D<&IAddOnContentManager::CountAddOnContent>, "CountAddOnContent"},
+        {3, D<&IAddOnContentManager::ListAddOnContent>, "ListAddOnContent"},
+        {4, nullptr, "GetAddOnContentBaseIdByApplicationId"},
+        {5, D<&IAddOnContentManager::GetAddOnContentBaseId>, "GetAddOnContentBaseId"},
+        {6, nullptr, "PrepareAddOnContentByApplicationId"},
+        {7, D<&IAddOnContentManager::PrepareAddOnContent>, "PrepareAddOnContent"},
+        {8, D<&IAddOnContentManager::GetAddOnContentListChangedEvent>, "GetAddOnContentListChangedEvent"},
+        {9, nullptr, "GetAddOnContentLostErrorCode"},
+        {10, D<&IAddOnContentManager::GetAddOnContentListChangedEventWithProcessId>, "GetAddOnContentListChangedEventWithProcessId"},
+        {11, D<&IAddOnContentManager::NotifyMountAddOnContent>, "NotifyMountAddOnContent"},
+        {12, D<&IAddOnContentManager::NotifyUnmountAddOnContent>, "NotifyUnmountAddOnContent"},
+        {13, nullptr, "IsAddOnContentMountedForDebug"},
+        {50, D<&IAddOnContentManager::CheckAddOnContentMountStatus>, "CheckAddOnContentMountStatus"},
+        {100, D<&IAddOnContentManager::CreateEcPurchasedEventManager>, "CreateEcPurchasedEventManager"},
+        {101, D<&IAddOnContentManager::CreatePermanentEcPurchasedEventManager>, "CreatePermanentEcPurchasedEventManager"},
+        {110, nullptr, "CreateContentsServiceManager"},
+        {200, nullptr, "SetRequiredAddOnContentsOnContentsAvailabilityTransition"},
+        {300, nullptr, "SetupHostAddOnContent"},
+        {301, nullptr, "GetRegisteredAddOnContentPath"},
+        {302, nullptr, "UpdateCachedList"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
+
     aoc_change_event = service_context.CreateEvent("GetAddOnContentListChanged:Event");
 }
 

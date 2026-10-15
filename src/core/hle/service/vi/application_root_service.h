@@ -30,7 +30,6 @@ private:
         Policy policy);
 
 private:
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     const std::shared_ptr<Container> m_container;
 };
 

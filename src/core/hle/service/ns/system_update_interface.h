@@ -33,7 +33,7 @@ private:
     Result GetSystemUpdateNotificationEventForContentDelivery(
         OutCopyHandle<Kernel::KReadableEvent> out_event);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
+private:
     KernelHelpers::ServiceContext service_context;
     Event update_notification_event;
 };

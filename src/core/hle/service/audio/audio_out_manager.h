@@ -43,7 +43,6 @@ private:
         AudioCore::AudioOut::AudioOutParameter parameter,
         InCopyHandle<Kernel::KProcess> process_handle, ClientAppletResourceUserId aruid);
 
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
     std::optional<AudioCore::AudioOut::Manager> impl;
 };
 

@@ -12,38 +12,36 @@
 namespace Service::Audio {
 using namespace AudioCore::Renderer;
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IAudioDevice::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{0, D<&IAudioDevice::ListAudioDeviceName>, "ListAudioDeviceName"},
-        FunctionInfo{1, D<&IAudioDevice::SetAudioDeviceOutputVolume>, "SetAudioDeviceOutputVolume"},
-        FunctionInfo{2, D<&IAudioDevice::GetAudioDeviceOutputVolume>, "GetAudioDeviceOutputVolume"},
-        FunctionInfo{3, D<&IAudioDevice::GetActiveAudioDeviceName>, "GetActiveAudioDeviceName"},
-        FunctionInfo{4, D<&IAudioDevice::QueryAudioDeviceSystemEvent>, "QueryAudioDeviceSystemEvent"},
-        FunctionInfo{5, D<&IAudioDevice::GetActiveChannelCount>, "GetActiveChannelCount"},
-        FunctionInfo{6, D<&IAudioDevice::ListAudioDeviceNameAuto>, "ListAudioDeviceNameAuto"},
-        FunctionInfo{7, D<&IAudioDevice::SetAudioDeviceOutputVolumeAuto>, "SetAudioDeviceOutputVolumeAuto"},
-        FunctionInfo{8, D<&IAudioDevice::GetAudioDeviceOutputVolumeAuto>, "GetAudioDeviceOutputVolumeAuto"},
-        FunctionInfo{10, D<&IAudioDevice::GetActiveAudioDeviceNameAuto>, "GetActiveAudioDeviceNameAuto"},
-        FunctionInfo{11, D<&IAudioDevice::QueryAudioDeviceInputEvent>, "QueryAudioDeviceInputEvent"},
-        FunctionInfo{12, D<&IAudioDevice::QueryAudioDeviceOutputEvent>, "QueryAudioDeviceOutputEvent"},
-        FunctionInfo{13, D<&IAudioDevice::GetActiveAudioDeviceName>, "GetActiveAudioOutputDeviceName"},
-        FunctionInfo{14, D<&IAudioDevice::ListAudioOutputDeviceName>, "ListAudioOutputDeviceName"},
-        FunctionInfo{15, nullptr, "AcquireAudioInputDeviceNotification", MakeVersionGate({17,0,0})},
-        FunctionInfo{16, nullptr, "ReleaseAudioInputDeviceNotification", MakeVersionGate({17,0,0})},
-        FunctionInfo{17, nullptr, "AcquireAudioOutputDeviceNotification", MakeVersionGate({17,0,0})},
-        FunctionInfo{18, nullptr, "ReleaseAudioOutputDeviceNotification", MakeVersionGate({17,0,0})},
-        FunctionInfo{19, D<&IAudioDevice::SetAudioDeviceOutputVolumeAutoTuneEnabled>, "SetAudioDeviceOutputVolumeAutoTuneEnabled", MakeVersionGate({18,0,0})},
-        FunctionInfo{20, D<&IAudioDevice::IsAudioDeviceOutputVolumeAutoTuneEnabled>, "IsAudioDeviceOutputVolumeAutoTuneEnabled", MakeVersionGate({18,0,0})},
-        FunctionInfo{21, nullptr, "IsActiveOutputDeviceEstimatedLowLatency", MakeVersionGate({21,0,0})}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IAudioDevice::IAudioDevice(Core::System& system_, u64 applet_resource_user_id, u32 revision,
                            u32 device_num)
     : ServiceFramework{system_, "IAudioDevice"}, service_context{system_, "IAudioDevice"},
       impl{std::make_unique<AudioDevice>(system_, applet_resource_user_id, revision)},
       event{service_context.CreateEvent(fmt::format("IAudioDeviceEvent-{}", device_num))} {
+    static const FunctionInfo functions[] = {
+        {0, D<&IAudioDevice::ListAudioDeviceName>, "ListAudioDeviceName"},
+        {1, D<&IAudioDevice::SetAudioDeviceOutputVolume>, "SetAudioDeviceOutputVolume"},
+        {2, D<&IAudioDevice::GetAudioDeviceOutputVolume>, "GetAudioDeviceOutputVolume"},
+        {3, D<&IAudioDevice::GetActiveAudioDeviceName>, "GetActiveAudioDeviceName"},
+        {4, D<&IAudioDevice::QueryAudioDeviceSystemEvent>, "QueryAudioDeviceSystemEvent"},
+        {5, D<&IAudioDevice::GetActiveChannelCount>, "GetActiveChannelCount"},
+        {6, D<&IAudioDevice::ListAudioDeviceNameAuto>, "ListAudioDeviceNameAuto"},
+        {7, D<&IAudioDevice::SetAudioDeviceOutputVolumeAuto>, "SetAudioDeviceOutputVolumeAuto"},
+        {8, D<&IAudioDevice::GetAudioDeviceOutputVolumeAuto>, "GetAudioDeviceOutputVolumeAuto"},
+        {10, D<&IAudioDevice::GetActiveAudioDeviceNameAuto>, "GetActiveAudioDeviceNameAuto"},
+        {11, D<&IAudioDevice::QueryAudioDeviceInputEvent>, "QueryAudioDeviceInputEvent"},
+        {12, D<&IAudioDevice::QueryAudioDeviceOutputEvent>, "QueryAudioDeviceOutputEvent"},
+        {13, D<&IAudioDevice::GetActiveAudioDeviceName>, "GetActiveAudioOutputDeviceName"},
+        {14, D<&IAudioDevice::ListAudioOutputDeviceName>, "ListAudioOutputDeviceName"},
+        {15, nullptr, "AcquireAudioInputDeviceNotification"}, //17.0.0+
+        {16, nullptr, "ReleaseAudioInputDeviceNotification"}, //17.0.0+
+        {17, nullptr, "AcquireAudioOutputDeviceNotification"}, //17.0.0+
+        {18, nullptr, "ReleaseAudioOutputDeviceNotification"}, //17.0.0+
+        {19, D<&IAudioDevice::SetAudioDeviceOutputVolumeAutoTuneEnabled>, "SetAudioDeviceOutputVolumeAutoTuneEnabled"}, //18.0.0+
+        {20, D<&IAudioDevice::IsAudioDeviceOutputVolumeAutoTuneEnabled>, "IsAudioDeviceOutputVolumeAutoTuneEnabled"}, //18.0.0+
+        {21, nullptr, "IsActiveOutputDeviceEstimatedLowLatency"} //21.0.0+
+    };
+    RegisterHandlers(functions);
+
     event->Signal(system.Kernel());
 }
 

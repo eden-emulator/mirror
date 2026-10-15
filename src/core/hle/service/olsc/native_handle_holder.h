@@ -25,7 +25,6 @@ public:
 
 private:
     Result GetNativeHandle(OutCopyHandle<Kernel::KReadableEvent> out_event);
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
 
     Service::KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* event{};

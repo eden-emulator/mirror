@@ -52,8 +52,6 @@ public:
     Result GetAudioOutVolume(Out<f32> out_volume);
 
 private:
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override;
-
     KernelHelpers::ServiceContext service_context;
     Kernel::KEvent* event;
     Kernel::KProcess* process;

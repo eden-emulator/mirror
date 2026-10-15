@@ -14,101 +14,103 @@ namespace Service::BPC {
 
 class BPC final : public ServiceFramework<BPC> {
 public:
-    explicit BPC(Core::System& system_) : ServiceFramework{system_, "bpc"} {}
+    explicit BPC(Core::System& system_) : ServiceFramework{system_, "bpc"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "ShutdownSystem"},
+            {1, nullptr, "RebootSystem"},
+            {2, nullptr, "GetWakeupReason"},
+            {3, nullptr, "GetShutdownReason"},
+            {4, nullptr, "GetAcOk"},
+            {5, nullptr, "GetBoardPowerControlEvent"},
+            {6, nullptr, "GetSleepButtonState"},
+            {7, nullptr, "GetPowerEvent"},
+            {8, nullptr, "CreateWakeupTimer"},
+            {9, nullptr, "CancelWakeupTimer"},
+            {10, nullptr, "EnableWakeupTimerOnDevice"},
+            {11, nullptr, "CreateWakeupTimerEx"},
+            {12, nullptr, "GetLastEnabledWakeupTimerType"},
+            {13, nullptr, "CleanAllWakeupTimers"},
+            {14, nullptr, "GetPowerButton"},
+            {15, nullptr, "SetEnableWakeupTimer"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "ShutdownSystem"},
-            FunctionInfo{1, nullptr, "RebootSystem"},
-            FunctionInfo{2, nullptr, "GetWakeupReason"},
-            FunctionInfo{3, nullptr, "GetShutdownReason"},
-            FunctionInfo{4, nullptr, "GetAcOk"},
-            FunctionInfo{5, nullptr, "GetBoardPowerControlEvent"},
-            FunctionInfo{6, nullptr, "GetSleepButtonState"},
-            FunctionInfo{7, nullptr, "GetPowerEvent"},
-            FunctionInfo{8, nullptr, "CreateWakeupTimer"},
-            FunctionInfo{9, nullptr, "CancelWakeupTimer"},
-            FunctionInfo{10, nullptr, "EnableWakeupTimerOnDevice"},
-            FunctionInfo{11, nullptr, "CreateWakeupTimerEx"},
-            FunctionInfo{12, nullptr, "GetLastEnabledWakeupTimerType"},
-            FunctionInfo{13, nullptr, "CleanAllWakeupTimers"},
-            FunctionInfo{14, nullptr, "GetPowerButton"},
-            FunctionInfo{15, nullptr, "SetEnableWakeupTimer"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class BPC_R final : public ServiceFramework<BPC_R> {
 public:
-    explicit BPC_R(Core::System& system_) : ServiceFramework{system_, "bpc:r"} {}
+    explicit BPC_R(Core::System& system_) : ServiceFramework{system_, "bpc:r"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetRtcTime"},
+            {1, nullptr, "SetRtcTime"},
+            {2, nullptr, "GetRtcResetDetected"},
+            {3, nullptr, "ClearRtcResetDetected"},
+            {4, nullptr, "SetUpRtcResetOnShutdown"},
+        };
+        // clang-format on
 
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetRtcTime"},
-            FunctionInfo{1, nullptr, "SetRtcTime"},
-            FunctionInfo{2, nullptr, "GetRtcResetDetected"},
-            FunctionInfo{3, nullptr, "ClearRtcResetDetected"},
-            FunctionInfo{4, nullptr, "SetUpRtcResetOnShutdown"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+        RegisterHandlers(functions);
     }
 };
 
 class BPC_C final : public ServiceFramework<BPC_C> {
 public:
-    explicit BPC_C(Core::System& system_) : ServiceFramework{system_, "bpc:c"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "ShutdownSystem"},
-            FunctionInfo{1, nullptr, "RebootSystem"},
-            FunctionInfo{2, nullptr, "GetWakeupReason"},
-            FunctionInfo{3, nullptr, "GetShutdownReason"},
-            FunctionInfo{4, nullptr, "GetAcOk"},
-            FunctionInfo{5, nullptr, "GetPowerEvent"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit BPC_C(Core::System& system_) : ServiceFramework{system_, "bpc:c"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "ShutdownSystem"},
+            {1, nullptr, "RebootSystem"},
+            {2, nullptr, "GetWakeupReason"},
+            {3, nullptr, "GetShutdownReason"},
+            {4, nullptr, "GetAcOk"},
+            {5, nullptr, "GetPowerEvent"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class BPC_B final : public ServiceFramework<BPC_B> {
 public:
-    explicit BPC_B(Core::System& system_) : ServiceFramework{system_, "bpc:b"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "GetSleepButtonState"},
-            FunctionInfo{1, nullptr, "GetPowerButtonEvent"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit BPC_B(Core::System& system_) : ServiceFramework{system_, "bpc:b"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "GetSleepButtonState"},
+            {1, nullptr, "GetPowerButtonEvent"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class BPC_W final : public ServiceFramework<BPC_W> {
 public:
-    explicit BPC_W(Core::System& system_) : ServiceFramework{system_, "bpc:w"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{0, nullptr, "CreateWakeupTimer"},
-            FunctionInfo{1, nullptr, "CancelWakeupTimer"},
-            FunctionInfo{2, nullptr, "EnableWakeupTimerOnDevice"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit BPC_W(Core::System& system_) : ServiceFramework{system_, "bpc:w"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {0, nullptr, "CreateWakeupTimer"},
+            {1, nullptr, "CancelWakeupTimer"},
+            {2, nullptr, "EnableWakeupTimerOnDevice"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 
 class BPC_AMS final : public ServiceFramework<BPC_AMS> {
 public:
-    explicit BPC_AMS(Core::System& system_) : ServiceFramework{system_, "bpc:ams"} {}
-
-    static constexpr auto functions = CreateStaticMap(
-            FunctionInfo{65000, nullptr, "RebootToFatalError"},
-            FunctionInfo{65001, nullptr, "SetRebootPayload"}
-        );
-    std::optional<FunctionInfoBase> FindRequest(u32 key) override {
-        return HandlerTableGenerateWithFind(key, functions);
+    explicit BPC_AMS(Core::System& system_) : ServiceFramework{system_, "bpc:ams"} {
+        // clang-format off
+        static const FunctionInfo functions[] = {
+            {65000, nullptr, "RebootToFatalError"},
+            {65001, nullptr, "SetRebootPayload"},
+        };
+        // clang-format on
+        RegisterHandlers(functions);
     }
 };
 

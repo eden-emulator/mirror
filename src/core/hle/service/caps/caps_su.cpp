@@ -15,20 +15,20 @@
 
 namespace Service::Capture {
 
-std::optional<ServiceFrameworkBase::FunctionInfoBase> IScreenShotApplicationService::FindRequest(u32 key) {
-    static constexpr auto functions = CreateStaticMap(
-        FunctionInfo{32, C<&IScreenShotApplicationService::SetShimLibraryVersion>, "SetShimLibraryVersion"},
-        FunctionInfo{201, nullptr, "SaveScreenShot"},
-        FunctionInfo{203, C<&IScreenShotApplicationService::SaveScreenShotEx0>, "SaveScreenShotEx0"},
-        FunctionInfo{205, C<&IScreenShotApplicationService::SaveScreenShotEx1>, "SaveScreenShotEx1"},
-        FunctionInfo{210, nullptr, "SaveScreenShotEx2"}
-    );
-    return HandlerTableGenerateWithFind(key, functions);
-}
-
 IScreenShotApplicationService::IScreenShotApplicationService(
     Core::System& system_, std::shared_ptr<AlbumManager> album_manager)
     : ServiceFramework{system_, "caps:su"}, manager{album_manager} {
+    // clang-format off
+    static const FunctionInfo functions[] = {
+        {32, C<&IScreenShotApplicationService::SetShimLibraryVersion>, "SetShimLibraryVersion"},
+        {201, nullptr, "SaveScreenShot"},
+        {203, C<&IScreenShotApplicationService::SaveScreenShotEx0>, "SaveScreenShotEx0"},
+        {205, C<&IScreenShotApplicationService::SaveScreenShotEx1>, "SaveScreenShotEx1"},
+        {210, nullptr, "SaveScreenShotEx2"},
+    };
+    // clang-format on
+
+    RegisterHandlers(functions);
 }
 
 IScreenShotApplicationService::~IScreenShotApplicationService() = default;
