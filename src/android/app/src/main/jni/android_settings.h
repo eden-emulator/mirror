@@ -75,6 +75,15 @@ namespace AndroidSettings {
                                              Settings::Category::Overlay};
         Settings::Setting<s32> overlay_opacity{linkage, 100, "control_opacity",
                                                Settings::Category::Overlay};
+        // Overlay base color (opaque white default). A white multiply-tint leaves stock artwork unchanged.
+        Settings::Setting<s32> overlay_color{linkage, static_cast<s32>(0xFFFFFFFFu), "overlay_color",
+                                             Settings::Category::Overlay,
+                                             Settings::Specialization::Default, true, true};
+        // Per-control tints, "id=AARRGGBB,id=AARRGGBB". Empty means every control uses the base color.
+        Settings::Setting<std::string> overlay_control_colors{linkage, "", "overlay_control_colors",
+                                                              Settings::Category::Overlay,
+                                                              Settings::Specialization::Default, true,
+                                                              true};
 
         Settings::Setting<bool> joystick_rel_center{linkage, true, "joystick_rel_center",
                                                     Settings::Category::Overlay};
