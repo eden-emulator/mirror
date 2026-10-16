@@ -393,8 +393,35 @@ void RasterizerVulkan::DrawTexture() {
                                     .y = ScaleSrc(draw_texture_state.src_y1)}};
     Extent3D src_size = {static_cast<u32>(ScaleSrc(texture.size.width)),
                          static_cast<u32>(ScaleSrc(texture.size.height)), texture.size.depth};
+    // DrawTexture rectangles go through the fragment pipeline, scissor included.
+    std::optional<VkRect2D> scissor;
+    if (maxwell3d->regs.scissor_test[0].enable) {
+        u32 up_scale = 1;
+        u32 down_shift = 0;
+        if (dst_rescaling) {
+            up_scale = Settings::values.resolution_info.up_scale;
+            down_shift = Settings::values.resolution_info.down_shift;
+        }
+        scissor = GetScissorState(maxwell3d->regs, 0, up_scale, down_shift);
+    }
+
+    // Drawing a texture 1:1 onto itself without blending changes nothing on hardware, but here
+    // it samples the image the render pass is writing to: undefined in Vulkan, and on tiled GPUs
+    // it reads whatever the image memory last held. Crysis Remastered does this every frame for
+    // its post-processing buffers (suspected cause of its map covering the whole screen).
+    const auto& fb_images = framebuffer->Images();
+    const bool src_is_target =
+        std::find(fb_images.begin(), fb_images.begin() + framebuffer->NumImages(),
+                  texture.ImageHandle()) != fb_images.begin() + framebuffer->NumImages();
+    if (src_is_target && src_rescaling == dst_rescaling &&
+        src_region.start.x == dst_region.start.x && src_region.start.y == dst_region.start.y &&
+        src_region.end.x == dst_region.end.x && src_region.end.y == dst_region.end.y &&
+        maxwell3d->regs.blend.enable[0] == 0) {
+        return;
+    }
+
     blit_image.BlitColor(framebuffer, texture.RenderTarget(), texture.ImageHandle(),
-                         sampler->Handle(), dst_region, src_region, src_size);
+                         sampler->Handle(), dst_region, src_region, src_size, scissor);
 }
 
 void RasterizerVulkan::Clear(u32 layer_count) {
