@@ -579,8 +579,6 @@
     <string name="skip_cpu_inner_invalidation_description">在記憶體更新期間跳過某些 CPU 端快取的失效處理，減少 CPU 使用率並提高其性能。可能會導致某些遊戲出現故障或當機</string>
     <string name="nce_invalidation_gpu_readback">在 NCE 無效化前進行 GPU 回讀</string>
     <string name="nce_invalidation_gpu_readback_description">（暫時性功能）修復 \"終結者瑪格諾莉亞：霧中綻放\" 及其它使用虛幻引擎之遊戲中的當機問題，可能會降低效能。此功能正在改善中</string>
-    <string name="nce_runtime_nro_patch">對 NCE Runtime 的 NRO 檔案進行修補</string>
-    <string name="nce_runtime_nro_patch_description">（暫時性功能）修復 \"Biomutant\" 的啟動問題，可能會對效能造成影響。此功能正在改善中</string>
     <string name="fix_bloom_effects">修正光暈特效</string>
     <string name="fix_bloom_effects_description">在 \"薩爾達傳說：織夢島\" 和 \"薩爾達傳說：智慧的再現\" 中減少光暈模糊的問題並移除 \"橫衝直撞：狂飆樂園重製版\" 中的光暈效果（適用於 Adreno A6XX - A7XX/ Turnip）。警告：可能會在其它遊戲中導致圖形異常</string>
     <string name="emulate_bgr565">模擬 BGR565</string>

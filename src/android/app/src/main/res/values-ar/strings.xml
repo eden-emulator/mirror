@@ -589,8 +589,6 @@
     <string name="skip_cpu_inner_invalidation_description">يتخطى بعض عمليات إبطال ذاكرة التخزين المؤقتة من جانب وحدة المعالجة المركزية أثناء تحديثات الذاكرة، مما يقلل من استخدام وحدة المعالجة المركزية ويحسن أداءها. قد يتسبب ذلك في حدوث أعطال أو تعطل في بعض الألعاب.</string>
     <string name="nce_invalidation_gpu_readback">إعادة قراءة وحدة معالجة الرسومات قبل إبطال صلاحية NCE</string>
     <string name="nce_invalidation_gpu_readback_description">إصلاح مؤقت. يعالج مشكلة تعطل لعبة Ender Magnolia (وغيرها من ألعاب UE). قد يؤدي إلى انخفاض في الأداء. يجري العمل على تحسينه.</string>
-    <string name="nce_runtime_nro_patch">تصحيح حالات NRO في وقت التشغيل لـ NCE</string>
-    <string name="nce_runtime_nro_patch_description">حل مؤقت. إصلاح مشكلة تشغيل لعبة Biomutant. قد يؤثر ذلك على الأداء. يجري العمل على تحسينه.</string>
     <string name="fix_bloom_effects">إصلاح تأثيرات التوهج</string>
     <string name="fix_bloom_effects_description">يقلل من ضبابية التوهج في LA/EOW  (Adreno A6XX - A7XX/ Turnip)، ويزيل التوهج في Burnout. تحذير: قد يسبب تشوهات رسومية في ألعاب أخرى.</string>
     <string name="emulate_bgr565">محاكاة BGR565</string>
