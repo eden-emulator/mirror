@@ -82,12 +82,12 @@ std::shared_ptr<FileSys::NSP> OpenContainerAsNsp(FileSys::VirtualFile file, File
         return nullptr;
     }
 
-    if (type == FileType::NSP) {
+    if (type == FileType::NSP || type == FileType::NSZ) {
         auto nsp = std::make_shared<FileSys::NSP>(file, program_id, program_index);
         return nsp->GetStatus() == ResultStatus::Success ? nsp : nullptr;
     }
 
-    if (type == FileType::XCI) {
+    if (type == FileType::XCI || type == FileType::XCZ) {
         FileSys::XCI xci{file, program_id, program_index};
         if (xci.GetStatus() != ResultStatus::Success) {
             return nullptr;
@@ -144,7 +144,8 @@ FileType IdentifyFile(FileSys::VirtualFile file) {
 }
 
 bool IsContainerType(FileType type) {
-    return type == FileType::NSP || type == FileType::XCI;
+    return type == FileType::NSP || type == FileType::NSZ || type == FileType::XCI ||
+           type == FileType::XCZ;
 }
 
 bool IsBootableGameContainer(FileSys::VirtualFile file, FileType type, u64 program_id,
@@ -180,8 +181,12 @@ FileType GuessFromFilename(const std::string& name) {
         return FileType::NCA;
     else if (extension == "xci")
         return FileType::XCI;
+    else if (extension == "xcz")
+        return FileType::XCZ;
     else if (extension == "nsp")
         return FileType::NSP;
+    else if (extension == "nsz")
+        return FileType::NSZ;
     else if (extension == "kip")
         return FileType::KIP;
     return FileType::Unknown;
@@ -197,10 +202,14 @@ std::string GetFileTypeString(FileType type) {
         return "NCA";
     case FileType::XCI:
         return "XCI";
+    case FileType::XCZ:
+        return "XCZ";
     case FileType::NAX:
         return "NAX";
     case FileType::NSP:
         return "NSP";
+    case FileType::NSZ:
+        return "NSZ";
     case FileType::KIP:
         return "KIP";
     case FileType::DeconstructedRomDirectory:
@@ -322,6 +331,7 @@ static std::unique_ptr<AppLoader> GetFileLoader(Core::System& system, FileSys::V
 
     // NX XCI (nX Card Image) file format.
     case FileType::XCI:
+    case FileType::XCZ:
         return std::make_unique<AppLoader_XCI>(std::move(file), system.GetFileSystemController(),
                                                system.GetContentProvider(), program_id,
                                                program_index);
@@ -332,6 +342,7 @@ static std::unique_ptr<AppLoader> GetFileLoader(Core::System& system, FileSys::V
 
     // NX NSP (Nintendo Submission Package) file format
     case FileType::NSP:
+    case FileType::NSZ:
         return std::make_unique<AppLoader_NSP>(std::move(file), system.GetFileSystemController(),
                                                system.GetContentProvider(), program_id,
                                                program_index);

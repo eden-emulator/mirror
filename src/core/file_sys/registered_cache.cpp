@@ -21,6 +21,7 @@
 #include "core/file_sys/content_archive.h"
 #include "core/file_sys/control_metadata.h"
 #include "core/file_sys/nca_metadata.h"
+#include "core/file_sys/ncz_decompressor.h"
 #include "core/file_sys/registered_cache.h"
 #include "core/file_sys/romfs.h"
 #include "core/file_sys/submission_package.h"
@@ -156,6 +157,25 @@ static std::shared_ptr<NSP> OpenContainerAsNsp(const VirtualFile& file, Loader::
     }
 
     return nullptr;
+}
+
+// Checks that every .ncz entry in the container is NCZBLOCK. Solid NCZ has no random access,
+// and the whole point of this build is to reject it at scan time so such files never appear
+// in the game list. Containers without any .ncz (plain NSP/XCI) pass through.
+static bool ContainerIsFullyBlockCompressed(const std::shared_ptr<NSP>& nsp) {
+    if (!nsp) {
+        return false;
+    }
+    for (const auto& entry : nsp->GetFiles()) {
+        const auto name = entry->GetName();
+        if (name.size() < 4 || name.substr(name.size() - 4) != ".ncz") {
+            continue;
+        }
+        if (!Core::Crypto::IsBlockCompressedNCZ(entry)) {
+            return false; // solid NCZ -> reject the whole container
+        }
+    }
+    return true; // no .ncz at all, or all block-compressed
 }
 
 template <typename Callback>
@@ -1273,6 +1293,12 @@ bool ManualContentProvider::AddEntriesFromContainer(VirtualFile file, bool only_
         return false;
     }
 
+    // Reject solid NCZ (.nsz without -B): only block-compressed NCZ is supported.
+    if (!ContainerIsFullyBlockCompressed(nsp)) {
+        LOG_DEBUG(Service_FS, "Skipping solid-compressed container: {}", file->GetName());
+        return false;
+    }
+
     return ForEachContainerEntry(
         nsp, only_content, base_program_id,
         [this](TitleType title_type, ContentRecordType content_type, u64 title_id,
@@ -1434,6 +1460,12 @@ void ExternalContentProvider::ProcessNSP(const VirtualFile& file) {
         return;
     }
 
+    // Reject solid NCZ (.nsz without -B): Eden only supports block-compressed NCZ.
+    if (!ContainerIsFullyBlockCompressed(nsp)) {
+        LOG_DEBUG(Service_FS, "Skipping solid-compressed container: {}", file->GetName());
+        return;
+    }
+
     LOG_DEBUG(Service_FS, "Processing NSP file: {}", file->GetName());
     AddExternalEntriesFromContainer(nsp, entries, versions, multi_version_entries);
 }
@@ -1441,6 +1473,11 @@ void ExternalContentProvider::ProcessNSP(const VirtualFile& file) {
 void ExternalContentProvider::ProcessXCI(const VirtualFile& file) {
     const auto nsp = OpenContainerAsNsp(file, Loader::FileType::XCI);
     if (!nsp) {
+        return;
+    }
+
+    if (!ContainerIsFullyBlockCompressed(nsp)) {
+        LOG_DEBUG(Service_FS, "Skipping solid-compressed container: {}", file->GetName());
         return;
     }
 

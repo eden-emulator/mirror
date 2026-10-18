@@ -15,6 +15,7 @@
 #include "core/file_sys/common_funcs.h"
 #include "core/file_sys/content_archive.h"
 #include "core/file_sys/nca_metadata.h"
+#include "core/file_sys/ncz_decompressor.h"
 #include "core/file_sys/partition_filesystem.h"
 #include "core/file_sys/program_metadata.h"
 #include "core/file_sys/submission_package.h"
@@ -245,6 +246,18 @@ void NSP::ReadNCAs(const std::vector<VirtualFile>& files) {
             for (const auto& rec : cnmt.GetContentRecords()) {
                 const auto id_string = Common::HexToString(rec.nca_id, false);
                 auto next_file = pfs->GetFile(fmt::format("{}.nca", id_string));
+
+                if (next_file == nullptr) {
+                    auto ncz_file = pfs->GetFile(fmt::format("{}.ncz", id_string));
+                    if (ncz_file != nullptr) {
+                        next_file = Core::Crypto::DecompressNCZ(ncz_file, fmt::format("{}.nca", id_string));
+                        if (next_file == nullptr) {
+                            LOG_WARNING(Service_FS, "Skipping unsupported or corrupt NCZ content {}.ncz",
+                                        id_string);
+                            continue;
+                        }
+                    }
+                }
 
                 if (next_file == nullptr) {
                     if (rec.type != ContentRecordType::DeltaFragment) {
