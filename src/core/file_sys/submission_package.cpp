@@ -252,8 +252,7 @@ void NSP::ReadNCAs(const std::vector<VirtualFile>& files) {
                     if (ncz_file != nullptr) {
                         next_file = Core::Crypto::DecompressNCZ(ncz_file, fmt::format("{}.nca", id_string));
                         if (next_file == nullptr) {
-                            LOG_WARNING(Service_FS, "Skipping unsupported or corrupt NCZ content {}.ncz",
-                                        id_string);
+                            LOG_DEBUG(Service_FS, "Skipping solid or unsupported NCZ content {}.ncz", id_string);
                             continue;
                         }
                     }

@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+#include <zstd.h>
+
 #include "common/common_types.h"
 #include "common/logging.h"
 #include "common/zstd_compression.h"
@@ -26,6 +28,11 @@ namespace {
 constexpr u64 HeaderSize = 0x4000;
 constexpr std::size_t SectionWire = 0x40;
 constexpr std::size_t BlockFixed = 0x18;
+constexpr std::size_t Chunk = 0x100000;
+// Upper bound on NCZ section entries (64 bytes each, so the table is at most 4 MiB). A base NCA
+// has a handful of sections, but nsz stores an update's patch (BKTR) data one entry per
+// subsection, which is thousands of them.
+constexpr u64 MaxSectionCount = 0x10000;
 constexpr std::array<u8, 8> SectionsMagic{'N', 'C', 'Z', 'S', 'E', 'C', 'T', 'N'};
 constexpr std::array<u8, 8> BlockMagic{'N', 'C', 'Z', 'B', 'L', 'O', 'C', 'K'};
 
@@ -65,7 +72,7 @@ std::optional<std::pair<std::vector<Section>, std::optional<BlockHeader>>> Parse
     if (head.size() != 16 || !std::equal(head.begin(), head.begin() + 8, SectionsMagic.begin()))
         return std::nullopt;
     const u64 count = Le(head.data() + 8, 8);
-    if (count == 0 || count > 64 || count * SectionWire > fsize - HeaderSize - 16)
+    if (count == 0 || count > MaxSectionCount || count * SectionWire > fsize - HeaderSize - 16)
         return std::nullopt;
 
     const auto table = f->ReadBytes(count * SectionWire, HeaderSize + 16);
@@ -245,6 +252,163 @@ private:
     u64 nca_size{};
 };
 
+// Solid NCZ: one zstd stream over the whole body. Decoded incrementally into memory, up to the
+// requested offset, so sequential install reads are O(n) instead of O(n^2).
+class SolidNczFile final : public FileSys::VfsFile {
+public:
+    SolidNczFile(std::string name_, FileSys::VirtualFile source_,
+                 std::vector<Section> sections_, u64 payload_start_)
+        : name{std::move(name_)}, source{std::move(source_)}, sections{std::move(sections_)},
+          payload_start{payload_start_} {
+        const auto raw_header = source->ReadBytes(HeaderSize, 0);
+        data.assign(raw_header.begin(), raw_header.end());
+        frontier = HeaderSize;
+    }
+
+    ~SolidNczFile() override {
+        if (stream != nullptr) ZSTD_freeDStream(stream);
+    }
+
+    std::string GetName() const override { return name; }
+    std::size_t GetSize() const override {
+        u64 size = HeaderSize;
+        for (const auto& s : sections)
+            size = std::max<u64>(size, static_cast<u64>(s.offset + s.size));
+        return static_cast<std::size_t>(size);
+    }
+    bool Resize(std::size_t) override { return false; }
+    FileSys::VirtualDir GetContainingDirectory() const override { return nullptr; }
+    bool IsWritable() const override { return false; }
+    bool IsReadable() const override { return true; }
+
+    std::size_t Read(u8* out, std::size_t len, std::size_t off) const override {
+        std::scoped_lock lock{mutex};
+        const u64 nca_size = GetSize();
+        if (off >= nca_size) return 0;
+        len = static_cast<std::size_t>(std::min<u64>(len, nca_size - off));
+        const u64 needed = off + len;
+        if (needed > frontier && !DecodeTo(needed)) return 0;
+        std::memcpy(out, data.data() + off, len);
+        return len;
+    }
+
+    std::size_t Write(const u8*, std::size_t, std::size_t) override { return 0; }
+    bool Rename(std::string_view) override { return false; }
+
+private:
+    bool DecodeTo(u64 needed) const {
+        if (stream == nullptr) {
+            stream = ZSTD_createDStream();
+            if (stream == nullptr) return false;
+            ZSTD_DCtx_setParameter(stream, ZSTD_d_windowLogMax, 31);
+            read_pos = payload_start;
+        }
+
+        const u64 file_size = source->GetSize();
+        std::vector<u8> out_buf(Chunk);
+
+        std::size_t index = 0;
+        for (; index < sections.size(); ++index) {
+            const auto& s = sections[index];
+            const u64 begin = std::max<u64>(static_cast<u64>(s.offset), HeaderSize);
+            const u64 end = std::max<u64>(static_cast<u64>(s.offset) + static_cast<u64>(s.size),
+                                          begin);
+            if (end > frontier) break;
+        }
+
+        for (; index < sections.size() && frontier < needed; ++index) {
+            const auto& s = sections[index];
+            const u64 begin = std::max<u64>(static_cast<u64>(s.offset), HeaderSize);
+            const u64 end = std::max<u64>(static_cast<u64>(s.offset) + static_cast<u64>(s.size),
+                                          begin);
+            if (end <= frontier) continue;
+            u64 pos = std::max<u64>(begin, frontier);
+
+            std::optional<AESCipher<Key128>> cipher;
+            if (s.Ctr()) cipher.emplace(s.key, Mode::CTR);
+
+            while (pos < end && frontier < needed) {
+                const u64 want = std::min<u64>(end - pos, out_buf.size());
+                std::size_t produced = 0;
+                while (produced < want) {
+                    if (in.pos >= in.size) {
+                        const u64 remaining = file_size - read_pos;
+                        const std::size_t chunk = static_cast<std::size_t>(
+                            std::min<u64>(Chunk, remaining));
+                        if (chunk == 0) { LOG_ERROR(Crypto, "Solid NCZ: truncated"); return false; }
+                        const auto bytes = source->ReadBytes(chunk, read_pos);
+                        if (bytes.empty()) { LOG_ERROR(Crypto, "Solid NCZ: truncated"); return false; }
+                        read_pos += bytes.size();
+                        in_buf.assign(bytes.begin(), bytes.end());
+                        in.src = in_buf.data();
+                        in.size = in_buf.size();
+                        in.pos = 0;
+                    }
+                    ZSTD_outBuffer outb{out_buf.data() + produced, want - produced, 0};
+                    const std::size_t res = ZSTD_decompressStream(stream, &outb, &in);
+                    if (ZSTD_isError(res)) {
+                        LOG_ERROR(Crypto, "Solid NCZ: zstd error");
+                        return false;
+                    }
+                    produced += outb.pos;
+                }
+                if (cipher) {
+                    Key128 iv{};
+                    SetIv(iv, s.counter, pos);
+                    cipher->SetIV(iv);
+                    cipher->Transcode(out_buf.data(), produced, out_buf.data(), Op::Encrypt);
+                }
+                data.insert(data.end(), out_buf.begin(), out_buf.begin() + produced);
+                pos += produced;
+                frontier = pos;
+            }
+        }
+        return frontier >= needed;
+    }
+
+    const std::string name;
+    const FileSys::VirtualFile source;
+    const std::vector<Section> sections;
+    const u64 payload_start;
+    mutable std::mutex mutex;
+    mutable std::vector<u8> data;
+    mutable ZSTD_DStream* stream = nullptr;
+    mutable u64 read_pos = 0;
+    mutable u64 frontier = 0;
+    mutable std::vector<u8> in_buf;
+    mutable ZSTD_inBuffer in{nullptr, 0, 0};
+};
+
+// Shared opener: block path always; solid only when allow_solid is true.
+FileSys::VirtualFile OpenNcz(const FileSys::VirtualFile& f, std::string_view name,
+                             bool allow_solid) {
+    if (!f) return nullptr;
+    u64 ps = 0;
+    auto parsed = ParseHeader(f, ps);
+    if (!parsed) return nullptr;
+    auto& [sections, block] = *parsed;
+
+    if (block) {
+        auto hdr = f->ReadBytes(HeaderSize, 0);
+        if (hdr.size() != HeaderSize) return nullptr;
+        std::unique_ptr<BlockReader> body;
+        try { body = std::make_unique<BlockReader>(f, *block, ps); }
+        catch (const std::exception& e) {
+            LOG_ERROR(Crypto, "Failed to open NCZBLOCK: {}", e.what());
+            return nullptr;
+        }
+        return std::make_shared<BlockNczFile>(std::string{name}, std::move(hdr),
+                                              std::move(sections), std::move(body));
+    }
+
+    if (allow_solid) {
+        return std::make_shared<SolidNczFile>(std::string{name}, f, std::move(sections), ps);
+    }
+
+    LOG_DEBUG(Crypto, "Solid NCZ {} skipped (only NCZBLOCK is supported for play)", name);
+    return nullptr;
+}
+
 } // Anonymous namespace
 
 bool IsBlockCompressedNCZ(const FileSys::VirtualFile& f) {
@@ -255,25 +419,12 @@ bool IsBlockCompressedNCZ(const FileSys::VirtualFile& f) {
 }
 
 FileSys::VirtualFile DecompressNCZ(const FileSys::VirtualFile& f, std::string_view name) {
-    if (!f) return nullptr;
-    u64 ps = 0;
-    auto parsed = ParseHeader(f, ps);
-    if (!parsed) return nullptr;
-    auto& [sections, block] = *parsed;
-    if (!block) {
-        LOG_ERROR(Crypto, "Solid NCZ is not supported (only NCZBLOCK / nsz -B)");
-        return nullptr;
-    }
-    auto hdr = f->ReadBytes(HeaderSize, 0);
-    if (hdr.size() != HeaderSize) return nullptr;
-    std::unique_ptr<BlockReader> body;
-    try { body = std::make_unique<BlockReader>(f, *block, ps); }
-    catch (const std::exception& e) {
-        LOG_ERROR(Crypto, "Failed to open NCZBLOCK: {}", e.what());
-        return nullptr;
-    }
-    return std::make_shared<BlockNczFile>(std::string{name}, std::move(hdr),
-                                          std::move(sections), std::move(body));
+    return OpenNcz(f, name, /*allow_solid=*/false);
+}
+
+FileSys::VirtualFile DecompressNCZForInstall(const FileSys::VirtualFile& f,
+                                             std::string_view name) {
+    return OpenNcz(f, name, /*allow_solid=*/true);
 }
 
 } // namespace Core::Crypto

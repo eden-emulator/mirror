@@ -831,7 +831,14 @@ std::vector<ContentProviderEntry> RegisteredCache::ListEntriesFilter(
 }
 
 static std::shared_ptr<NCA> GetNCAFromNSPForID(const NSP& nsp, const NcaID& id) {
-    auto file = nsp.GetFile(fmt::format("{}.nca", Common::HexToString(id, false)));
+    const auto id_string = Common::HexToString(id, false);
+    auto file = nsp.GetFile(fmt::format("{}.nca", id_string));
+    if (file == nullptr) {
+        if (auto ncz_file = nsp.GetFile(fmt::format("{}.ncz", id_string))) {
+            file = Core::Crypto::DecompressNCZForInstall(
+                ncz_file, fmt::format("{}.nca", id_string));
+        }
+    }
     if (file == nullptr) {
         return nullptr;
     }

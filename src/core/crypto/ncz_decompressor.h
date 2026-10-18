@@ -28,4 +28,8 @@ namespace Core::Crypto {
  */
 [[nodiscard]] bool IsBlockCompressedNCZ(const FileSys::VirtualFile& ncz_file);
 
+// Install to NAND: same as DecompressNCZ, but solid NCZ is decoded on demand too.
+[[nodiscard]] FileSys::VirtualFile DecompressNCZForInstall(
+    const FileSys::VirtualFile& ncz_file, std::string_view output_name);
+
 } // namespace Core::Crypto
