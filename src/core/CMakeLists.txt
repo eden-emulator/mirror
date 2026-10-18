@@ -33,6 +33,8 @@ add_library(core STATIC
     crypto/encryption_layer.h
     crypto/key_manager.cpp
     crypto/key_manager.h
+    crypto/ncz_decompressor.cpp
+    crypto/ncz_decompressor.h
     crypto/partition_data_manager.cpp
     crypto/partition_data_manager.h
     crypto/xts_encryption_layer.cpp
@@ -122,8 +124,6 @@ add_library(core STATIC
     file_sys/kernel_executable.h
     file_sys/nca_metadata.cpp
     file_sys/nca_metadata.h
-    file_sys/ncz_decompressor.cpp
-    file_sys/ncz_decompressor.h
     file_sys/partition_filesystem.cpp
     file_sys/partition_filesystem.h
     file_sys/patch_manager.cpp

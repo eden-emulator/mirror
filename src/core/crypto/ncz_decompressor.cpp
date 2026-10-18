@@ -16,7 +16,7 @@
 #include "common/zstd_compression.h"
 #include "core/crypto/aes_util.h"
 #include "core/crypto/key_manager.h"
-#include "core/file_sys/ncz_decompressor.h"
+#include "core/crypto/ncz_decompressor.h"
 #include "core/file_sys/vfs/vfs.h"
 
 namespace Core::Crypto {
