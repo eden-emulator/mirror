@@ -57,8 +57,21 @@ u32 HardwareComposer::ComposeLocked(f32* out_speed_scale, Display& display,
     // Set default speed limit to 100%.
     *out_speed_scale = 1.0f;
 
+    // If no layers are visible, skip the logic. Acquiring and holding buffers here would
+    // consume the producer's queue without ever presenting.
+    bool any_visible = false;
+    for (auto& layer : display.stack.layers) {
+        if (layer->visible) {
+            any_visible = true;
+            break;
+        }
+    }
+    if (!any_visible) {
+        return 1;
+    }
+
+    // Wait for the previous composite, bounding the number of in-flight composites.
     nvdisp.WaitForComposite();
-    this->ReleaseFramebuffersLocked(display);
 
     // Determine the number of vsync periods to wait before composing again.
     std::optional<s32> swap_interval{};
@@ -151,6 +164,13 @@ u32 HardwareComposer::ComposeLocked(f32* out_speed_scale, Display& display,
 
     // Advance by 1 frame (60 FPS compositing)
     m_frame_number += 1;
+
+    // Release framebuffers once the frame has been handed to the compositor. This happens
+    // within the same vsync period as the acquire (release_frame_number is checked against
+    // the advanced counter), so the producer gets its buffers back immediately instead of
+    // losing a queue slot for a whole frame.
+    // TODO: support release fences; releasing before the composite has finished can tear.
+    this->ReleaseFramebuffersLocked(display);
 
     return 1;
 }
