@@ -36,7 +36,7 @@
 
     <string name="input_overlay_options">虛擬按鍵設定</string>
     <string name="input_overlay_options_description">調整虛擬按鍵的位置與顯示設定</string>
-    <string name="edit_overlay_layout">編輯虛擬按鍵</string>
+    <string name="edit_overlay_layout">調整虛擬按鍵</string>
     <string name="edit_overlay_layout_description">調整虛擬按鍵的位置和大小</string>
 
 
@@ -253,8 +253,8 @@
     <string name="install_firmware_warning">跳過安裝韌體？</string>
     <string name="emulator_data">設定模擬器資料</string>
     <string name="emulator_data_description">模擬器需要金鑰才能正常執行，同時建議安裝韌體以啟動 QLaunch 小程式</string>
-    <string name="permissions">授予權限</string>
-    <string name="permissions_description">授予權限以使用模擬器的特定功能</string>
+    <string name="permissions">授予通知權限</string>
+    <string name="permissions_description">授予 Eden 傳送通知的權限以使用模擬器的特定功能</string>
     <string name="install_firmware_warning_description">許多遊戲需要韌體才能正常運作</string>
     <string name="install_firmware_warning_help">https://yuzu-mirror.github.io/help/quickstart/#guide-introduction</string>
     <string name="notifications">通知</string>
@@ -268,8 +268,8 @@
     <string name="device_manufacturer">製造商</string>
     <string name="device_model">型號</string>
     <string name="product">型號代碼</string>
-    <string name="android_version">安卓版本</string>
-    <string name="android_security_patch">安卓安全性修補程式等級</string>
+    <string name="android_version">Android 版本</string>
+    <string name="android_security_patch">Android 安全性修補程式等級</string>
     <string name="build_id">版本號碼</string>
     <string name="general_information">基本資訊</string>
     <string name="hardware">硬體</string>
@@ -287,7 +287,7 @@
     <string name="warning_skip">跳過</string>
     <string name="warning_cancel">取消</string>
     <string name="install_amiibo_keys">安裝 Amiibo 金鑰</string>
-    <string name="install_amiibo_keys_description">需要先安裝才能在遊戲中使用 Amiibo</string>
+    <string name="install_amiibo_keys_description">安裝 Amiibo 以在日後遊玩時使用</string>
     <string name="gpu_driver_fetcher">GPU 驅動程式下載器</string>
     <string name="gpu_driver_manager">GPU 驅動程式管理員</string>
     <string name="install_gpu_driver_description">安裝替代驅動程式以取得潛在的更佳效能或準確度</string>
@@ -417,17 +417,17 @@
     <string name="custom_driver_not_supported">您的裝置不支援自訂驅動程式</string>
     <string name="custom_driver_not_supported_description">此裝置不支援注入自訂驅動程式\n請以後再來查看是否已新增支援！</string>
     <string name="manage_yuzu_data">管理 Eden 資料</string>
-    <string name="manage_yuzu_data_description">安裝韌體、金鑰，導入/導出使用者資料及安裝其它項目！</string>
+    <string name="manage_yuzu_data_description">安裝韌體、金鑰，匯入/匯出使用者資料及安裝其它項目！</string>
     <string name="game_folders">遊戲資料夾</string>
     <string name="deep_scan">深度掃描</string>
     <string name="add_game_folder">新增遊戲資料夾</string>
     <string name="folder_already_added">這個資料夾已經新增過了！</string>
     <string name="game_folder_properties">遊戲資料夾設定</string>
     <plurals name="saves_import_failed">
-        <item quantity="other">%d 個存檔導入失敗</item>
+        <item quantity="other">%d 個存檔匯入失敗</item>
     </plurals>
     <plurals name="saves_import_success">
-        <item quantity="other">成功導入 %d 個存檔</item>
+        <item quantity="other">成功匯入 %d 個存檔</item>
     </plurals>
     <string name="no_save_data_found">找不到儲存資料</string>
     <string name="verify_installed_content">驗證已安裝內容的完整性</string>
@@ -578,9 +578,9 @@
     <string name="skip_cpu_inner_invalidation">跳過 CPU 內部失效處理</string>
     <string name="skip_cpu_inner_invalidation_description">在記憶體更新期間跳過某些 CPU 端快取的失效處理，減少 CPU 使用率並提高其性能。可能會導致某些遊戲出現故障或當機</string>
     <string name="nce_invalidation_gpu_readback">在 NCE 無效化前進行 GPU 回讀</string>
-    <string name="nce_invalidation_gpu_readback_description">（暫時性功能）修復 \"終結者瑪格諾莉亞：霧中綻放\" 及其它使用虛幻引擎之遊戲中的當機問題，可能會降低效能。此功能正在改善中</string>
+    <string name="nce_invalidation_gpu_readback_description">（暫時性功能）修復《終結者瑪格諾莉亞：霧中綻放》及其它使用虛幻引擎之遊戲中的當機問題，可能會降低效能。此功能正在改善中</string>
     <string name="fix_bloom_effects">修正光暈特效</string>
-    <string name="fix_bloom_effects_description">在 \"薩爾達傳說：織夢島\" 和 \"薩爾達傳說：智慧的再現\" 中減少光暈模糊的問題並移除 \"橫衝直撞：狂飆樂園重製版\" 中的光暈效果（適用於 Adreno A6XX - A7XX/ Turnip）。警告：可能會在其它遊戲中導致圖形異常</string>
+    <string name="fix_bloom_effects_description">在《薩爾達傳說：織夢島》和《薩爾達傳說：智慧的再現》中減少光暈模糊的問題並移除《橫衝直撞：狂飆樂園重製版》中的光暈效果（適用於 Adreno A6XX - A7XX/ Turnip）。警告：可能會在其它遊戲中導致圖形異常</string>
     <string name="emulate_bgr565">模擬 BGR565</string>
     <string name="emulate_bgr565_description">修正遊戲中出現的色彩反轉、圖形異常或陰影異常</string>
     <string name="rescale_hack">啟用舊版重新縮放處理</string>
@@ -603,7 +603,7 @@
     <string name="extensions">擴充功能</string>
 
     <string name="dyna_state">擴展動態狀態</string>
-    <string name="dyna_state_description">控制擴展動態狀態中可使用的功能數量，較高的數值可根據驅動程式支援的動態狀態減少管線編譯的次數</string>
+    <string name="dyna_state_description">控制 Vulkan 擴展動態狀態中可使用的功能數量，較高的數值可根據驅動程式支援的動態狀態減少管線編譯的次數</string>
     <string name="disabled">停用</string>
     <string name="vertex_input_dynamic_state">頂點輸入動態狀態</string>
     <string name="vertex_input_dynamic_state_description">啟用此功能可提供更彈性的頂點輸入處理方式，並可能減少頂點/緩衝區的管線編譯時間</string>
@@ -808,7 +808,7 @@
     <string name="recommended_driver">推薦驅動程式：</string>
     <string name="gpu_model">GPU 型號</string>
     <string name="unsupported_gpu">不支援的 GPU</string>
-    <string name="unsupported_gpu_warning">您的 GPU 不支援驅動程式注入，不建議嘗試設定自訂驅動程式</string>
+    <string name="unsupported_gpu_warning">您的 GPU 不支援驅動程式注入，不建議嘗試安裝自訂驅動程式</string>
 
     <!-- Preferences Screen -->
     <string name="preferences_settings">設定</string>
@@ -892,7 +892,7 @@
     <string name="select_content_type">內容類型</string>
     <string name="updates_and_dlc">更新及 DLC</string>
     <string name="mods_and_cheats">模組及金手指</string>
-    <string name="addon_notice">重要的˙附加元件通知</string>
+    <string name="addon_notice">注意！</string>
     <!-- \"cheats/" "romfs/" and \"exefs/ should not be translated -->
     <string name="addon_notice_description">若要安裝模組及金手指，您必須選擇一個包含 cheats/、romfs/ 或 exefs/ 的目錄。我們無法驗證這些內容是否與您的遊戲相容，所以請謹慎安裝！</string>
     <string name="invalid_directory">無效的目錄</string>
@@ -981,7 +981,7 @@
     <string name="emulation_pause">暫停模擬</string>
     <string name="emulation_unpause">繼續模擬</string>
     <string name="emulation_input_overlay">疊加層/虛擬按鍵設定</string>
-    <string name="load_amiibo">導入 Amiibo</string>
+    <string name="load_amiibo">匯入 Amiibo</string>
     <string name="touchscreen">觸控螢幕</string>
     <string name="lock_drawer">鎖定側邊選單</string>
     <string name="unlock_drawer">解鎖側邊選單</string>
@@ -1128,6 +1128,16 @@
     <string name="freedreno_clear_all">全部清除</string>
     <string name="freedreno_saved">Freedreno 設定已儲存</string>
     <string name="freedreno_cleared_all">已清除所有 Freedreno 變數</string>
+    <string name="freedreno_variable_added">變數 %1$s 已新增</string>
+    <string name="freedreno_preset_applied">設定檔 \"%1$s\" 已套用</string>
+    <string name="freedreno_error_empty_name">變數名稱不可空白</string>
+    <string name="freedreno_error_setting_variable">變數設定失敗</string>
+    <string name="freedreno_info_title">關於 Freedreno 設定</string>
+    <string name="freedreno_info_description">透過調整 Freedreno/Turnip GPU 驅動程式的設定來偵錯、分析和最佳化效能，會自動儲存變更。詳情請參閱 https://docs.mesa3d.org/drivers/freedreno.html</string>
+    <string name="freedreno_per_game_title">Freedreno 設定</string>
+    <string name="freedreno_per_game_description">調整此遊戲的 GPU 驅動程式設定</string>
+    <string name="freedreno_per_game_saved">Freedreno 設定已儲存</string>
+
     <!-- Gamepad Buttons -->
     <string name="gamepad_d_pad">方向鍵</string>
     <string name="gamepad_left_stick">左搖桿</string>
@@ -1136,14 +1146,17 @@
     <string name="gamepad_screenshot">螢幕截圖</string>
 
     <!-- Disk shader cache -->
-    <string name="building_shaders">正在建置著色器</string>
+    <string name="building_shaders">正在編譯著色器</string>
 
     <!-- App options -->
     <string name="change_app_theme">變更應用程式主題</string>
     <string name="theme_default">預設</string>
-    <string name="theme_material_you">質感設計3</string>
-    <string name="app_settings">Eden介面設定</string>
+    <string name="theme_material_you">Material You</string>
+    <string name="app_settings">Eden 介面設定</string>
     <string name="theme_and_color">主題和顏色</string>
+    <string name="fullscreen_mode">全螢幕模式</string>
+    <string name="fullscreen_mode_description">在使用 Eden 時隱藏 Android 系統的導覽列，在直向時從螢幕底部往上滑以暫時顯示它們；橫向時則從螢幕側邊往內滑動</string>
+
     <!-- Theme Modes -->
     <string name="change_theme_mode">變更主題模式</string>
     <string name="theme_mode_follow_system">跟隨系統</string>
@@ -1152,18 +1165,26 @@
 
     <!-- Black backgrounds theme -->
     <string name="use_black_backgrounds">黑色背景</string>
-    <string name="use_black_backgrounds_description">使用深色主題時，套用黑色背景。</string>
+    <string name="use_black_backgrounds_description">使用深色主題時套用黑色背景</string>
+
+    <!-- Buttons -->
+    <string name="enable_folder_button">遊戲資料夾</string>
+    <string name="enable_folder_button_description">在 Eden 首頁顯示新增遊戲資料夾的按鈕</string>
+    <string name="enable_qlaunch_button">QLaunch</string>
+    <string name="enable_qlaunch_button_description">在 Eden 首頁顯示 QLaunch 按鈕</string>
 
     <!-- App Language -->
     <string name="app_language">語言</string>
-    <string name="app_language_description">選擇Eden顯示的語言</string>
+    <string name="app_language_description">選擇 Eden 顯示的語言</string>
     <string name="app_language_system">跟隨系統</string>
     <!-- Static Themes -->
     <string name="static_theme_color">主題色彩</string>
+    <string name="eden_theme">Eden</string>
     <string name="violet">紫色</string>
     <string name="blue">藍色</string>
     <string name="cyan">青色</string>
     <string name="red">紅色</string>
+    <string name="green">綠色</string>
     <string name="yellow">黃色</string>
     <string name="orange">橘色</string>
     <string name="pink">粉紅色</string>
@@ -1185,13 +1206,27 @@
     <string name="applets_menu_description">更改小程式前端和設定</string>
 
     <string name="applet_hle">自訂前端</string>
-    <string name="applet_lle">Switch小程式</string>
+    <string name="applet_lle">Switch 小程式</string>
 
     <string name="swkbd_applet">軟體鍵盤</string>
 
     <string name="airplane_mode">飛航模式</string>
-    <string name="airplane_mode_description">將飛航模式傳遞給Switch作業系統</string>
+    <string name="airplane_mode_description">將飛航模式傳遞給 Switch 作業系統</string>
 
+    <string name="enable_overlay">啟用小程式虛擬按鍵</string>
+    <string name="enable_overlay_description">啟用 Horizon OS 內建的小程式虛擬按鍵，長按 Home 鍵 1 秒以顯示虛擬按鍵</string>
+
+    <!-- Profile Management -->
+    <string name="profile_manager">使用者管理</string>
+    <string name="profile_manager_description">更改使用者名稱、圖片及新增或刪除使用者</string>
+    <string name="profile_add_user">新增使用者</string>
+    <string name="profile_new_user">新增使用者</string>
+    <string name="profile_edit_user">編輯使用者資料</string>
+    <string name="profile_edit">編輯</string>
+    <string name="profile_delete">刪除</string>
+    <string name="profile_username">使用者名稱</string>
+    <string name="profile_uuid">使用者 ID （通用唯一辨識碼）</string>
+    <string name="profile_uuid_description">這是此使用者設定檔的唯一識別碼，建立後就無法進行更改</string>
     <!-- Licenses screen strings -->
     <string name="licenses">授權</string>
     <string name="license_fidelityfx_fsr_description">來自 AMD 的升級圖像品質</string>

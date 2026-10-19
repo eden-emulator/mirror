@@ -696,7 +696,7 @@
     <string name="control_stick">عصا التحكم</string>
     <string name="right_stick">العصا اليمنى</string>
     <string name="c_stick">عصا-C</string>
-    <string name="pressed">مضغوط</string>
+    <string name="pressed">ضغط العصا</string>
     <string name="range">النطاق</string>
     <string name="deadzone">المنطقة الميتة</string>
     <string name="modifier">معدل</string>
