@@ -57,7 +57,7 @@ AppLoader_NSP::AppLoader_NSP(FileSys::VirtualFile file_,
 AppLoader_NSP::~AppLoader_NSP() = default;
 
 FileType AppLoader_NSP::IdentifyType(const FileSys::VirtualFile& nsp_file) {
-
+    const auto name = Common::ToLower(nsp_file->GetName());
     // .nsz is NSP-compatible; return NSZ so the game list shows the right type.
     if (name.ends_with(".nsz")) {
         return FileType::NSZ;
