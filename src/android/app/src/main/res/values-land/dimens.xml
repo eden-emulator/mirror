@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Landscape preset grid: two columns on typical phone/tablet widths. -->
+    <dimen name="overlay_preset_grid_min_column_width">168dp</dimen>
+</resources>
