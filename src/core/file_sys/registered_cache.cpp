@@ -1449,9 +1449,9 @@ void ExternalContentProvider::ScanDirectory(const VirtualDir& dir) {
 
         const auto extension = Common::ToLower(filename.substr(dot_pos + 1));
 
-        if (extension == "nsp") {
+        if (extension == "nsp" || extension == "nsz") {
             ProcessNSP(file);
-        } else if (extension == "xci") {
+        } else if (extension == "xci" || extension == "xcz") {
             ProcessXCI(file);
         }
     }
