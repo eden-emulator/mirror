@@ -1483,11 +1483,6 @@ void ExternalContentProvider::ProcessXCI(const VirtualFile& file) {
         return;
     }
 
-    if (!ContainerIsFullyBlockCompressed(nsp)) {
-        LOG_DEBUG(Service_FS, "Skipping solid-compressed container: {}", file->GetName());
-        return;
-    }
-
     AddExternalEntriesFromContainer(nsp, entries, versions, multi_version_entries);
 }
 
