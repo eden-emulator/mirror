@@ -1467,6 +1467,12 @@ void ExternalContentProvider::ProcessNSP(const VirtualFile& file) {
         return;
     }
 
+    // Reject solid NCZ (.nsz without -B): Eden only supports block-compressed NCZ.
+    if (!ContainerIsFullyBlockCompressed(nsp)) {
+        LOG_DEBUG(Service_FS, "Skipping solid-compressed container: {}", file->GetName());
+        return;
+    }
+
     LOG_DEBUG(Service_FS, "Processing NSP file: {}", file->GetName());
     AddExternalEntriesFromContainer(nsp, entries, versions, multi_version_entries);
 }
@@ -1474,6 +1480,11 @@ void ExternalContentProvider::ProcessNSP(const VirtualFile& file) {
 void ExternalContentProvider::ProcessXCI(const VirtualFile& file) {
     const auto nsp = OpenContainerAsNsp(file, Loader::FileType::XCI);
     if (!nsp) {
+        return;
+    }
+
+    if (!ContainerIsFullyBlockCompressed(nsp)) {
+        LOG_DEBUG(Service_FS, "Skipping solid-compressed container: {}", file->GetName());
         return;
     }
 
