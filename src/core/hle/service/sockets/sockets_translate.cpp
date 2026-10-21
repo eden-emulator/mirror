@@ -43,9 +43,23 @@ Errno Translate(Network::Errno value) {
         return Errno::INPROGRESS;
     case Network::Errno::ISCONN:
         return Errno::ISCONN;
+    case Network::Errno::NOTSOCK:
+        return Errno::NOTSOCK;
+    case Network::Errno::PROTONOSUPPORT:
+        return Errno::PROTONOSUPPORT;
+    case Network::Errno::MSGSIZE:
+        return Errno::MSGSIZE;
+    case Network::Errno::NETDOWN:
+        return Errno::NETDOWN;
+    case Network::Errno::NETUNREACH:
+        return Errno::NETUNREACH;
+    case Network::Errno::HOSTUNREACH:
+        return Errno::HOSTUNREACH;
+    case Network::Errno::OTHER:
+        return Errno::IO;
     default:
-        UNIMPLEMENTED_MSG("Unimplemented errno={}", value);
-        return Errno::SUCCESS;
+        LOG_WARNING(Service, "Unknown network errno={}", value);
+        return Errno::IO;
     }
 }
 
@@ -301,8 +315,10 @@ Type Translate(Network::Type type) {
     NETWORK_PROTOCOL_TRANSLATE_ELEM(PFSYNC)
 [[nodiscard]] Network::Protocol Translate(Protocol protocol) {
     switch (protocol) {
-#define NETWORK_PROTOCOL_TRANSLATE_ELEM(name) case Protocol::name: return Network::Protocol::name;
-    NETWORK_PROTOCOL_TRANSLATE_LIST
+#define NETWORK_PROTOCOL_TRANSLATE_ELEM(name)                                                      \
+    case Protocol::name:                                                                           \
+        return Network::Protocol::name;
+        NETWORK_PROTOCOL_TRANSLATE_LIST
 #undef NETWORK_PROTOCOL_TRANSLATE_ELEM
     default:
         UNIMPLEMENTED_MSG("Unimplemented protocol={}", protocol);
@@ -311,8 +327,10 @@ Type Translate(Network::Type type) {
 }
 [[nodiscard]] Protocol Translate(Network::Protocol protocol) {
     switch (protocol) {
-#define NETWORK_PROTOCOL_TRANSLATE_ELEM(name) case Network::Protocol::name: return Protocol::name;
-    NETWORK_PROTOCOL_TRANSLATE_LIST
+#define NETWORK_PROTOCOL_TRANSLATE_ELEM(name)                                                      \
+    case Network::Protocol::name:                                                                  \
+        return Protocol::name;
+        NETWORK_PROTOCOL_TRANSLATE_LIST
 #undef NETWORK_PROTOCOL_TRANSLATE_ELEM
     default:
         UNIMPLEMENTED_MSG("Unimplemented protocol={}", protocol);

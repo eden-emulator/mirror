@@ -23,17 +23,16 @@
 #include <netinet/in.h>
 #include <poll.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 #endif
 
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "common/logging.h"
-#include "common/settings.h"
 #include "core/internal_network/network.h"
 #include "core/internal_network/network_interface.h"
 #include "core/internal_network/sockets.h"
-#include "network/network.h"
 
 namespace Network {
 
@@ -124,6 +123,10 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
         return Errno::SUCCESS;
     case WSAEBADF:
         return Errno::BADF;
+    case WSAENOTSOCK:
+        return Errno::NOTSOCK;
+    case WSAEPROTONOSUPPORT:
+        return Errno::PROTONOSUPPORT;
     case WSAEINVAL:
         return Errno::INVAL;
     case WSAEMFILE:
@@ -269,6 +272,10 @@ Errno TranslateNativeError(int e, CallType call_type = CallType::Other) {
         return Errno::SUCCESS;
     case EBADF:
         return Errno::BADF;
+    case ENOTSOCK:
+        return Errno::NOTSOCK;
+    case EPROTONOSUPPORT:
+        return Errno::PROTONOSUPPORT;
     case EINVAL:
         return Errno::INVAL;
     case EMFILE:
@@ -563,34 +570,35 @@ int TranslateTypeToNative(Type type) {
     NETWORK_PROTOCOL_TRANSLATE_ELEM(SCTP) \
     NETWORK_PROTOCOL_TRANSLATE_ELEM(UDPLITE)
 #elif defined(_WIN32)
-#define NETWORK_PROTOCOL_TRANSLATE_LIST \
-    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(HOPOPTS)*/ \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(ICMP) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(IGMP) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(GGP) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(IPV4) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(ST) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(TCP) \
-    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(CBT)*/ \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(EGP) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(IGP) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(PUP) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(UDP) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(IDP) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(RDP) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(IPV6) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(ROUTING) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(FRAGMENT) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(ESP) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(AH) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(ICMPV6) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(NONE) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(DSTOPTS) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(ND) \
-    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(ICLFXBM)*/ \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(PIM) \
-    NETWORK_PROTOCOL_TRANSLATE_ELEM(PGM) \
-    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(L2TP)*/ \
+#define NETWORK_PROTOCOL_TRANSLATE_LIST                                                            \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(IP)                                                            \
+    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(HOPOPTS)*/                                                   \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(ICMP)                                                          \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(IGMP)                                                          \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(GGP)                                                           \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(IPV4)                                                          \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(ST)                                                            \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(TCP)                                                           \
+    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(CBT)*/                                                       \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(EGP)                                                           \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(IGP)                                                           \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(PUP)                                                           \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(UDP)                                                           \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(IDP)                                                           \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(RDP)                                                           \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(IPV6)                                                          \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(ROUTING)                                                       \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(FRAGMENT)                                                      \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(ESP)                                                           \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(AH)                                                            \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(ICMPV6)                                                        \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(NONE)                                                          \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(DSTOPTS)                                                       \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(ND)                                                            \
+    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(ICLFXBM)*/                                                   \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(PIM)                                                           \
+    NETWORK_PROTOCOL_TRANSLATE_ELEM(PGM)                                                           \
+    /*NETWORK_PROTOCOL_TRANSLATE_ELEM(L2TP)*/                                                      \
     NETWORK_PROTOCOL_TRANSLATE_ELEM(SCTP)
 #else
 #define NETWORK_PROTOCOL_TRANSLATE_LIST \
@@ -600,8 +608,10 @@ int TranslateTypeToNative(Type type) {
 #endif
 [[nodiscard]] Protocol TranslateProtocolFromNative(u32 protocol) {
     switch (protocol) {
-#define NETWORK_PROTOCOL_TRANSLATE_ELEM(x) case IPPROTO_##x: return Protocol::x;
-    NETWORK_PROTOCOL_TRANSLATE_LIST
+#define NETWORK_PROTOCOL_TRANSLATE_ELEM(x)                                                         \
+    case IPPROTO_##x:                                                                              \
+        return Protocol::x;
+        NETWORK_PROTOCOL_TRANSLATE_LIST
 #undef NETWORK_PROTOCOL_TRANSLATE_ELEM
     default:
         UNIMPLEMENTED_MSG("Unimplemented protocol={}", protocol);
@@ -610,8 +620,12 @@ int TranslateTypeToNative(Type type) {
 }
 [[nodiscard]] u32 TranslateProtocolToNative(Protocol protocol) {
     switch (protocol) {
-#define NETWORK_PROTOCOL_TRANSLATE_ELEM(x) case Protocol::x: return IPPROTO_##x;
-    NETWORK_PROTOCOL_TRANSLATE_LIST
+    case Protocol::Unspecified:
+        return 0;
+#define NETWORK_PROTOCOL_TRANSLATE_ELEM(x)                                                         \
+    case Protocol::x:                                                                              \
+        return IPPROTO_##x;
+        NETWORK_PROTOCOL_TRANSLATE_LIST
 #undef NETWORK_PROTOCOL_TRANSLATE_ELEM
     default:
         UNIMPLEMENTED_MSG("Unimplemented protocol={}", protocol);
@@ -639,7 +653,11 @@ short TranslatePollEvents(PollEvents events) {
     };
 
     translate(PollEvents::In, POLLIN);
+#ifdef _WIN32
+    translate(PollEvents::Pri, POLLRDBAND);
+#else
     translate(PollEvents::Pri, POLLPRI);
+#endif
     translate(PollEvents::Out, POLLOUT);
     translate(PollEvents::Err, POLLERR);
     translate(PollEvents::Hup, POLLHUP);
@@ -666,15 +684,20 @@ short TranslatePollEvents(PollEvents events) {
 
 PollEvents TranslatePollRevents(short revents) {
     PollEvents result{};
-    const auto translate = [&result, &revents](short host, PollEvents guest) {
+    short remaining = revents;
+    const auto translate = [&result, &remaining, revents](short host, PollEvents guest) {
         if ((revents & host) != 0) {
-            revents &= static_cast<short>(~host);
+            remaining &= static_cast<short>(~host);
             result |= guest;
         }
     };
 
     translate(POLLIN, PollEvents::In);
+#ifdef _WIN32
+    translate(POLLRDBAND, PollEvents::Pri);
+#else
     translate(POLLPRI, PollEvents::Pri);
+#endif
     translate(POLLOUT, PollEvents::Out);
     translate(POLLERR, PollEvents::Err);
     translate(POLLHUP, PollEvents::Hup);
@@ -683,7 +706,7 @@ PollEvents TranslatePollRevents(short revents) {
     translate(POLLRDBAND, PollEvents::RdBand);
     translate(POLLWRBAND, PollEvents::WrBand);
 
-    UNIMPLEMENTED_IF_MSG(revents != 0, "Unhandled host revents={:#x}", revents);
+    UNIMPLEMENTED_IF_MSG(remaining != 0, "Unhandled host revents={:#x}", remaining);
 
     return result;
 }
@@ -764,42 +787,40 @@ std::variant<std::vector<AddrInfo>, GetAddrInfoError> GetAddressInfo(
 }
 
 std::pair<s32, Errno> Poll(std::vector<PollFD>& pollfds, s32 timeout) {
-    const size_t num = pollfds.size();
+    std::vector<WSAPOLLFD> host_pollfds;
+    std::vector<size_t> indices;
+    s32 ready = 0;
+    for (size_t i = 0; i < pollfds.size(); ++i) {
+        auto& entry = pollfds[i];
+        entry.revents = {};
+        if (!entry.socket || !entry.socket->IsOpened()) {
+            entry.revents = PollEvents::Nval;
+            ++ready;
+            continue;
+        }
+        host_pollfds.push_back({entry.socket->GetFD(), TranslatePollEvents(entry.events), 0});
+        indices.push_back(i);
+    }
 
-    std::vector<WSAPOLLFD> host_pollfds(pollfds.size());
-    std::transform(pollfds.begin(), pollfds.end(), host_pollfds.begin(), [](PollFD fd) {
-        WSAPOLLFD result;
-        result.fd = fd.socket->GetFD();
-        result.events = TranslatePollEvents(fd.events);
-        result.revents = 0;
-        return result;
-    });
-
-    host_pollfds.push_back(WSAPOLLFD{
-        .fd = GetInterruptSocket(),
-        .events = POLLIN,
-        .revents = 0,
-    });
-
+    host_pollfds.push_back({GetInterruptSocket(), TranslatePollEvents(PollEvents::In), 0});
     const int result =
-        WSAPoll(host_pollfds.data(), static_cast<ULONG>(host_pollfds.size()), timeout);
-    if (result == 0) {
-        ASSERT(std::all_of(host_pollfds.begin(), host_pollfds.end(),
-                           [](WSAPOLLFD fd) { return fd.revents == 0; }));
-        return {0, Errno::SUCCESS};
+        WSAPoll(host_pollfds.data(), static_cast<ULONG>(host_pollfds.size()), ready ? 0 : timeout);
+    if (result == SOCKET_ERROR) {
+        return {-1, GetAndLogLastError()};
     }
 
-    for (size_t i = 0; i < num; ++i) {
-        pollfds[i].revents = TranslatePollRevents(host_pollfds[i].revents);
+    constexpr auto errors = PollEvents::Err | PollEvents::Hup | PollEvents::Nval;
+    for (size_t i = 0; i < indices.size(); ++i) {
+        auto& entry = pollfds[indices[i]];
+        entry.revents = TranslatePollRevents(host_pollfds[i].revents) & (entry.events | errors);
+        if (True(entry.revents)) {
+            ++ready;
+        }
     }
-
-    if (result > 0) {
-        return {result, Errno::SUCCESS};
+    if (!ready && host_pollfds.back().revents != 0) {
+        return {-1, Errno::AGAIN};
     }
-
-    ASSERT(result == SOCKET_ERROR);
-
-    return {-1, GetAndLogLastError()};
+    return {ready, Errno::SUCCESS};
 }
 
 Socket::~Socket() {
@@ -812,6 +833,7 @@ Socket::~Socket() {
 
 Socket::Socket(Socket&& rhs) noexcept {
     fd = std::exchange(rhs.fd, INVALID_SOCKET);
+    is_non_blocking = rhs.is_non_blocking.load();
 }
 
 template <typename T>
@@ -837,7 +859,11 @@ Errno Socket::SetSockOpt(SOCKET fd_so, int option, T value) {
 }
 
 Errno Socket::Initialize(Domain domain, Type type, Protocol protocol) {
-    fd = socket(TranslateDomainToNative(domain), TranslateTypeToNative(type), TranslateProtocolToNative(protocol));
+    if (IsOpened()) {
+        return Errno::INVAL;
+    }
+    fd = socket(TranslateDomainToNative(domain), TranslateTypeToNative(type),
+                TranslateProtocolToNative(protocol));
     if (fd != INVALID_SOCKET) {
         return Errno::SUCCESS;
     }
@@ -859,6 +885,9 @@ std::pair<SocketBase::AcceptResult, Errno> Socket::Accept() {
         while (true) {
             const int pollres =
                 WSAPoll(host_pollfds.data(), static_cast<ULONG>(host_pollfds.size()), -1);
+            if (pollres == SOCKET_ERROR) {
+                return {AcceptResult{}, GetAndLogLastError()};
+            }
             if (host_pollfds[1].revents != 0) {
                 // Interrupt signaled before a client could be accepted, break
                 return {AcceptResult{}, Errno::AGAIN};
@@ -1026,13 +1055,13 @@ std::pair<s32, Errno> Socket::SendTo(u32 flags, std::span<const u8> message,
 }
 
 Errno Socket::Close() {
-    [[maybe_unused]] const int result = closesocket(fd);
-    if (result != 0) {
-        LOG_WARNING(Network, "closesocket failed, socket may already be closed");
+    if (fd == INVALID_SOCKET) {
+        return Errno::BADF;
     }
-    fd = INVALID_SOCKET;
-
-    return Errno::SUCCESS;
+    const auto native_fd = std::exchange(fd, INVALID_SOCKET);
+    const Errno result = closesocket(native_fd) == 0 ? Errno::SUCCESS : GetAndLogLastError();
+    LOG_DEBUG(Network, "Close native_fd={} errno={}", native_fd, static_cast<u32>(result));
+    return result;
 }
 
 std::pair<Errno, Errno> Socket::GetPendingError() {
@@ -1065,11 +1094,23 @@ Errno Socket::SetRcvBuf(u32 value) {
 }
 
 Errno Socket::SetSndTimeo(u32 value) {
+#ifndef _WIN32
+    const timeval timeout{static_cast<time_t>(value / 1000),
+                          static_cast<suseconds_t>((value % 1000) * 1000)};
+    return SetSockOpt(fd, SO_SNDTIMEO, timeout);
+#else
     return SetSockOpt(fd, SO_SNDTIMEO, value);
+#endif
 }
 
 Errno Socket::SetRcvTimeo(u32 value) {
+#ifndef _WIN32
+    const timeval timeout{static_cast<time_t>(value / 1000),
+                          static_cast<suseconds_t>((value % 1000) * 1000)};
+    return SetSockOpt(fd, SO_RCVTIMEO, timeout);
+#else
     return SetSockOpt(fd, SO_RCVTIMEO, value);
+#endif
 }
 
 Errno Socket::SetNonBlock(bool enable) {
