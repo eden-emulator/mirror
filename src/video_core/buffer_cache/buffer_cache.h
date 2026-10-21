@@ -948,9 +948,14 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
             return alignment > 1 && (offset % alignment) != 0;
         }
     }();
+    // Uniform data rewritten by the CPU between draws would need a transfer copy into the cached
+    // buffer, which ends the current render pass. Read it from the stream buffer instead.
+    static constexpr u32 MAX_STREAMED_UNIFORM_BYTES = static_cast<u32>(16_KiB);
     const bool use_fast_buffer = needs_alignment_stream
-        || (has_host_buffer && size <= channel_state->uniform_buffer_skip_cache_size
-            && !memory_tracker.IsRegionGpuModified(device_addr, size));
+        || (has_host_buffer && !memory_tracker.IsRegionGpuModified(device_addr, size)
+            && (size <= channel_state->uniform_buffer_skip_cache_size
+                || (size <= MAX_STREAMED_UNIFORM_BYTES
+                    && memory_tracker.IsRegionCpuModified(device_addr, size))));
     if (use_fast_buffer) {
         if constexpr (IS_OPENGL) {
             if (runtime.HasFastBufferSubData()) {

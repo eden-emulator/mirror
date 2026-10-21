@@ -946,6 +946,8 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, Scheduler& sched
         astc_decoder_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
                                   compute_pass_descriptor_queue, memory_allocator);
     }
+    bl2d_buffer_unswizzle_pass.emplace(device, scheduler, descriptor_pool, staging_buffer_pool,
+                                       compute_pass_descriptor_queue);
     if (!device.IsKhrImageFormatListSupported()) {
         return;
     }
@@ -2118,6 +2120,27 @@ void Image::UploadMemory(VkBuffer buffer, VkDeviceSize offset,
     if (is_rescaled) {
         ScaleUp();
     }
+}
+
+bool Image::UploadSwizzledFromBuffer(VkBuffer buffer, VkDeviceSize offset) {
+    if (runtime == nullptr || !runtime->bl2d_buffer_unswizzle_pass || offset % 4 != 0 ||
+        guest_size_bytes > runtime->device.GetMaxStorageBufferRange() ||
+        !BlockLinearUnswizzle2DBufferPass::IsSupported(*this)) {
+        return false;
+    }
+    if (ENABLE_MSAA_RESOLVE_CONSUME) {
+        runtime->InvalidateResolveShadow(Handle());
+    }
+    auto [linear_buffer, copies] =
+        runtime->bl2d_buffer_unswizzle_pass->Unswizzle(*this, buffer, offset);
+    const VkImage vk_image = *original_image;
+    const VkImageAspectFlags vk_aspect_mask = aspect_mask;
+    const bool was_initialized = std::exchange(initialized, true);
+    scheduler->Record([linear_buffer, vk_image, vk_aspect_mask, was_initialized,
+                       copies = std::move(copies)](vk::CommandBuffer cmdbuf) {
+        CopyBufferToImage(cmdbuf, linear_buffer, vk_image, vk_aspect_mask, was_initialized, copies);
+    });
+    return true;
 }
 
 void Image::UploadMemory(const StagingBufferRef& map, std::span<const BufferImageCopy> copies) {

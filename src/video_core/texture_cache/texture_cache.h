@@ -596,6 +596,36 @@ void TextureCache<P>::WriteMemory(DAddr cpu_addr, size_t size) {
 }
 
 template <class P>
+template <typename BufferHandle>
+void TextureCache<P>::UpdateImagesFromBuffer(DAddr cpu_addr, size_t size, BufferHandle buffer,
+                                             u64 buffer_offset) {
+    if constexpr (requires(Image& image) { image.UploadSwizzledFromBuffer(buffer, buffer_offset); }) {
+        // The guest can write a render target through a storage buffer bound over its memory
+        // (e.g. a compute clear). Only images the binding matches exactly are replaced, a larger
+        // binding may hold unrelated live images in the parts the shader does not write.
+        static constexpr size_t MAX_BINDING_PADDING = 64 * 1024;
+        ForEachImageInRegion(cpu_addr, size, [&](ImageId image_id, Image& image) {
+            if (image.cpu_addr != cpu_addr || size < image.guest_size_bytes ||
+                size - image.guest_size_bytes > MAX_BINDING_PADDING ||
+                True(image.flags & ImageFlagBits::Remapped) ||
+                True(image.flags & ImageFlagBits::Sparse)) {
+                return;
+            }
+            if (!image.UploadSwizzledFromBuffer(buffer, buffer_offset)) {
+                return;
+            }
+            if (True(image.flags & ImageFlagBits::CpuModified)) {
+                image.flags &= ~ImageFlagBits::CpuModified;
+                if (False(image.flags & ImageFlagBits::Tracked)) {
+                    TrackImage(image, image_id);
+                }
+            }
+            MarkModification(image);
+        });
+    }
+}
+
+template <class P>
 bool TextureCache<P>::IsDownloadable(const ImageBase& image) const noexcept {
     if (!image.IsSafeGpuCopy()) {
         return false;
