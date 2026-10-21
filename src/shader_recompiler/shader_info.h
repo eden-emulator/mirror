@@ -186,6 +186,8 @@ struct TextureBufferDescriptor {
     u32 secondary_shift_left;
     u32 count;
     u32 size_shift;
+    u32 mask = 0xffffffff;
+    u32 secondary_mask = 0xffffffff;
 
     auto operator<=>(const TextureBufferDescriptor&) const = default;
 };
@@ -219,6 +221,13 @@ struct TextureDescriptor {
     u32 secondary_shift_left;
     u32 count;
     u32 size_shift;
+    /// The handle offset is moved by a constant buffer value read when drawing
+    bool has_index_cbuf;
+    u32 index_cbuf_index;
+    u32 index_cbuf_offset;
+    u32 index_shift;
+    u32 mask = 0xffffffff;
+    u32 secondary_mask = 0xffffffff;
 
     auto operator<=>(const TextureDescriptor&) const = default;
 };

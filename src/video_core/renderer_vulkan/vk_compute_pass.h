@@ -10,6 +10,8 @@
 #include <span>
 #include <utility>
 
+#include <boost/container/small_vector.hpp>
+
 #include "common/common_types.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/renderer_vulkan/vk_descriptor_pool.h"
@@ -135,6 +137,28 @@ private:
     StagingBufferPool& staging_buffer_pool;
     ComputePassDescriptorQueue& compute_pass_descriptor_queue;
     MemoryAllocator& memory_allocator;
+};
+
+class BlockLinearUnswizzle2DBufferPass final : public ComputePass {
+public:
+    explicit BlockLinearUnswizzle2DBufferPass(
+        const Device& device_, Scheduler& scheduler_, DescriptorPool& descriptor_pool_,
+        StagingBufferPool& staging_buffer_pool_,
+        ComputePassDescriptorQueue& compute_pass_descriptor_queue_);
+    ~BlockLinearUnswizzle2DBufferPass();
+
+    /// Returns true when the guest layout of the image can be unswizzled by this pass
+    [[nodiscard]] static bool IsSupported(const Image& image);
+
+    /// Unswizzles the block linear guest data of the image, read from a GPU buffer, into a linear
+    /// buffer. Returns the linear buffer and the copies that upload it into the image.
+    std::pair<VkBuffer, boost::container::small_vector<VkBufferImageCopy, 16>> Unswizzle(
+        Image& image, VkBuffer src_buffer, VkDeviceSize src_offset);
+
+private:
+    Scheduler& scheduler;
+    StagingBufferPool& staging_buffer_pool;
+    ComputePassDescriptorQueue& compute_pass_descriptor_queue;
 };
 
 class BlockLinearUnswizzle3DPass final : public ComputePass {
