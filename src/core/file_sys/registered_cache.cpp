@@ -1448,10 +1448,11 @@ void ExternalContentProvider::ScanDirectory(const VirtualDir& dir) {
         }
 
         const auto extension = Common::ToLower(filename.substr(dot_pos + 1));
-
-        if (extension == "nsp" || extension == "nsz") {
+        // .xcz is an XCI container, but its updates only work through the NSP/PFS0 path
+        // (DecompressNCZ), not ProcessXCI. So route .xcz here on purpose.
+        if (extension == "nsp" || extension == "nsz" || extension == "xcz") {
             ProcessNSP(file);
-        } else if (extension == "xci" || extension == "xcz") {
+        } else if (extension == "xci") {
             ProcessXCI(file);
         }
     }

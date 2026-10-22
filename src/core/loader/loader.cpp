@@ -89,16 +89,20 @@ std::shared_ptr<FileSys::NSP> OpenContainerAsNsp(FileSys::VirtualFile file, File
 
     if (type == FileType::XCI || type == FileType::XCZ) {
         FileSys::XCI xci{file, program_id, program_index};
-        if (xci.GetStatus() != ResultStatus::Success) {
-            return nullptr;
+        if (xci.GetStatus() == ResultStatus::Success) {
+            auto secure_nsp = xci.GetSecurePartitionNSP();
+            if (secure_nsp != nullptr && secure_nsp->GetStatus() == ResultStatus::Success) {
+                return secure_nsp;
+            }
         }
 
-        auto secure_nsp = xci.GetSecurePartitionNSP();
-        if (secure_nsp == nullptr || secure_nsp->GetStatus() != ResultStatus::Success) {
-            return nullptr;
+        // PFS0-shaped .xcz (NSZ-style container) does not parse as XCI; fall back to NSP.
+        if (type == FileType::XCZ) {
+            auto nsp = std::make_shared<FileSys::NSP>(file, program_id, program_index);
+            return nsp->GetStatus() == ResultStatus::Success ? nsp : nullptr;
         }
 
-        return secure_nsp;
+        return nullptr;
     }
 
     return nullptr;
@@ -331,10 +335,25 @@ static std::unique_ptr<AppLoader> GetFileLoader(Core::System& system, FileSys::V
 
     // NX XCI (nX Card Image) file format.
     case FileType::XCI:
-    case FileType::XCZ:
         return std::make_unique<AppLoader_XCI>(std::move(file), system.GetFileSystemController(),
                                                system.GetContentProvider(), program_id,
                                                program_index);
+
+    // NCZ-compressed XCI container. XCI-shaped .xcz goes to the XCI loader, while
+    // PFS0-shaped (NSZ-style) .xcz containers fall back to the NSP loader.
+    case FileType::XCZ: {
+        FileSys::XCI probe{file, program_id, program_index};
+        if (probe.GetStatus() == ResultStatus::Success &&
+            probe.GetSecurePartitionNSP() != nullptr) {
+            return std::make_unique<AppLoader_XCI>(std::move(file),
+                                                   system.GetFileSystemController(),
+                                                   system.GetContentProvider(), program_id,
+                                                   program_index);
+        }
+        return std::make_unique<AppLoader_NSP>(std::move(file), system.GetFileSystemController(),
+                                               system.GetContentProvider(), program_id,
+                                               program_index);
+    }
 
     // NX NAX (NintendoAesXts) file format.
     case FileType::NAX:
