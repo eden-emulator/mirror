@@ -4,6 +4,8 @@
 #pragma once
 
 #include "common/common_types.h"
+#include <mutex>
+
 #include "core/core.h"
 #include "core/file_sys/nca_metadata.h"
 #include "core/file_sys/content_archive.h"
@@ -95,13 +97,28 @@ FirmwareCheckResult VerifyFirmware(Core::System &system);
  */
 inline std::pair<Service::Set::FirmwareVersionFormat, Result> GetFirmwareVersion(Core::System &system)
 {
+    // The version cannot change while a session runs, and this is on the IPC dispatch path:
+    // looking it up per call costs a firmware data read with firmware installed, and a
+    // synthesized SystemVersion archive without one. Remember it.
+    static std::mutex cache_mutex;
+    static std::pair<Core::System*, std::pair<Service::Set::FirmwareVersionFormat, Result>> cache{};
+    {
+        std::scoped_lock lock{cache_mutex};
+        if (cache.first == &system) {
+            return cache.second;
+        }
+    }
+
     Service::Set::FirmwareVersionFormat firmware_data{};
     const auto result
         = Service::Set::GetFirmwareVersionImpl(firmware_data,
                                                system,
                                                Service::Set::GetFirmwareVersionType::Version2);
-
-    return {firmware_data, result};
+    {
+        std::scoped_lock lock{cache_mutex};
+        cache = {&system, {firmware_data, result}};
+        return cache.second;
+    }
 }
 
 // TODO(crueter): GET AS STRING
