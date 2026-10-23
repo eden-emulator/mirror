@@ -102,11 +102,6 @@ fi
 cd src/android
 chmod +x ./gradlew
 
-if [ -n "${ANDROID_HOME}" ] && [ -x "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" ]; then
-    yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
-    "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "cmake;3.31.6" >/dev/null 2>&1 || true
-fi
-
 set -- "$@" -DUSE_CCACHE="${CCACHE}"
 
 nightly() {
