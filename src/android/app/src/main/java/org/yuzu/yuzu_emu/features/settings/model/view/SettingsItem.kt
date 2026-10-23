@@ -282,8 +282,14 @@ abstract class SettingsItem(
                     return BooleanSetting.USE_DOCKED_MODE.getBoolean(needsGlobal)
                 }
 
-                override fun setBoolean(value: Boolean) =
-                    BooleanSetting.USE_DOCKED_MODE.setBoolean(value)
+                override fun setBoolean(value: Boolean) {
+                    val setting = BooleanSetting.USE_DOCKED_MODE
+                    val wasDocked = setting.getBoolean(false)
+
+                    // Store the setting and broadcast to the notification handler
+                    setting.setBoolean(value)
+                    NativeLibrary.onDockedModeChanged(wasDocked)
+                }
 
                 override val defaultValue = BooleanSetting.USE_DOCKED_MODE.defaultValue
 

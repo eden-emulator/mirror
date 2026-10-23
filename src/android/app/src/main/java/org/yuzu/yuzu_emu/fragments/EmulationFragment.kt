@@ -1181,11 +1181,19 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                 units = "%",
             )
 
-            quickSettings.addBooleanSetting(
+            quickSettings.addCustomToggle(
                 R.string.use_docked_mode,
-                container,
-                BooleanSetting.USE_DOCKED_MODE,
-            )
+                BooleanSetting.USE_DOCKED_MODE.getBoolean(false),
+                true,
+                container
+            ) { enabled ->
+                val setting = BooleanSetting.USE_DOCKED_MODE
+                val wasDocked = setting.getBoolean(false)
+
+                // Store the setting and broadcast to the notification handler
+                setting.setBoolean(enabled)
+                NativeLibrary.onDockedModeChanged(wasDocked)
+            }
 
             quickSettings.addDivider(container)
 

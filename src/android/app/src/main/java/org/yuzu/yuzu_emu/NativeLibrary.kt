@@ -226,6 +226,11 @@ object NativeLibrary {
     external fun GetDebugKnobAt(index: Int): Boolean
 
     /**
+     * Notification handler for when the docked mode changes.
+     */
+    external fun onDockedModeChanged(wasDocked: Boolean)
+
+    /**
      * Set the current speed limit to the configured turbo speed.
      */
     external fun setTurboSpeedLimit(enabled: Boolean)
