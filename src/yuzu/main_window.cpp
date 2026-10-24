@@ -3661,12 +3661,12 @@ void MainWindow::OnToggleGraphicsAPI() {
         api = Settings::RendererBackend::OpenGL_GLSL;
         break;
     case Settings::RendererBackend::OpenGL_GLSL:
-        api = Settings::RendererBackend::OpenGL_GLSL;
-        break;
-    case Settings::RendererBackend::OpenGL_SPIRV:
         api = Settings::RendererBackend::OpenGL_GLASM;
         break;
     case Settings::RendererBackend::OpenGL_GLASM:
+        api = Settings::RendererBackend::OpenGL_SPIRV;
+        break;
+    case Settings::RendererBackend::OpenGL_SPIRV:
         api = Settings::RendererBackend::Null;
         break;
 #else
