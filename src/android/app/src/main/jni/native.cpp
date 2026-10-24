@@ -1308,6 +1308,32 @@ jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_GetDebugKnobAt(JNIEnv* env, jobje
     return static_cast<jboolean>(Settings::GetDebugKnobAt(static_cast<u8>(index)));
 }
 
+void Java_org_yuzu_yuzu_1emu_NativeLibrary_onDockedModeChanged(JNIEnv* env, jobject obj,
+                                                           jboolean previous_mode) {
+    auto& system = EmulationSession::GetInstance().System();
+    const bool was_docked = static_cast<bool>(previous_mode);
+    const bool is_docked = Settings::IsDockedMode();
+
+    // If the setting changes are the same or the emulator isn't on, don't waste time
+    if (was_docked == is_docked || !system.IsPoweredOn()) {
+        return;
+    }
+
+    // Switch to a pro controller if handheld mode is present
+    // TODO: Convert this into a warning alert (like PC) instead of a log
+    auto& hid_core = system.HIDCore();
+    auto* handheld = hid_core.GetEmulatedController(Core::HID::NpadIdType::Handheld);
+    if (is_docked && handheld->IsConnected()) {
+        handheld->Disconnect();
+        auto* player_one = hid_core.GetEmulatedController(Core::HID::NpadIdType::Player1);
+        player_one->SetNpadStyleIndex(Core::HID::NpadStyleIndex::Fullkey);
+        player_one->Connect();
+        LOG_INFO(Frontend, "Docked mode: switched handheld controller to Pro Controller");
+    }
+
+    system.GetAppletManager().OperationModeChanged();
+}
+
 void Java_org_yuzu_yuzu_1emu_NativeLibrary_setTurboSpeedLimit(JNIEnv *env, jobject jobj, jboolean enabled) {
     if (enabled) {
         Settings::values.use_speed_limit.SetValue(true);
