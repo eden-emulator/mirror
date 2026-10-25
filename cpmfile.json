@@ -243,6 +243,27 @@
         "repo": "crosire/reshade",
         "version": "v6.8.0"
     },
+    "scarletnx": {
+        "bundled": true,
+        "hash": "93f7e6810644253d6396239092d5769c44b005fa7a17cf39c6d773050a19de74fca1f96bb6eec7cb40384eb158b2595c9e1171ad592d8eb8326fd31f5632f505",
+        "options": [
+            "SNX_BUILD_NX OFF",
+            "SNX_BUILD_GNUABI OFF",
+            "SNX_BUILD_3DS OFF",
+            "SNX_BUILD_VITA OFF",
+            "SNX_BUILD_AGB OFF",
+            "SNX_DEPLOY OFF",
+            "SNX_BUILD_TESTING OFF",
+            "SNX_BUILD_GUI OFF",
+            "SNX_MULTICALL OFF",
+            "SNX_TRACY OFF",
+            "SNX_RECOMPILER_SHARED OFF",
+            "SNX_LLVM_SHARED OFF"
+        ],
+        "package": "ScarletNX",
+        "repo": "scarletnx/ScarletNX",
+        "version": "f16810ce9c"
+    },
     "sdl3": {
         "hash": "df5a323af7ac366661a3c0e887969c72584d232f3cc211419d59b0487b620b6b2859d4549c9e8df002ee489290062e466fcfddf7edc0872a37b1f2845e81c0f3",
         "min_version": "3.2.10",

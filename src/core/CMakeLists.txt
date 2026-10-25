@@ -1248,6 +1248,18 @@ if (HAS_NCE)
     target_link_libraries(core PRIVATE merry::oaknut)
 endif()
 
+if (HAS_SCARLETNX)
+    target_sources(core PRIVATE
+        arm/scarletnx/arm_scarletnx_32.cpp
+        arm/scarletnx/arm_scarletnx_32.h
+        arm/scarletnx/arm_scarletnx_64.cpp
+        arm/scarletnx/arm_scarletnx_64.h
+        arm/scarletnx/scarletnx_api.h
+        arm/scarletnx/scarletnx_process.cpp
+        arm/scarletnx/scarletnx_process.h)
+    target_link_libraries(core PRIVATE ScarletNX::recompiler)
+endif()
+
 if (ARCHITECTURE_x86_64 OR ARCHITECTURE_arm64 OR ARCHITECTURE_riscv64 OR ARCHITECTURE_loongarch64)
     target_sources(core PRIVATE
         arm/dynarmic/arm_dynarmic.h

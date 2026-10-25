@@ -256,7 +256,9 @@ struct Values {
                                                     CpuBackend::Dynarmic,
 #endif
                                                     CpuBackend::Dynarmic,
-#ifdef HAS_NCE
+#if defined(HAS_SCARLETNX)
+                                                    CpuBackend::ScarletNx,
+#elif defined(HAS_NCE)
                                                     CpuBackend::Nce,
 #else
                                                     CpuBackend::Dynarmic,

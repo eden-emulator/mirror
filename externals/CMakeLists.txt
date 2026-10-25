@@ -249,6 +249,14 @@ if (YUZU_TESTS OR DYNARMIC_TESTS)
     AddJsonPackage(catch2)
 endif()
 
+# ScarletNX
+if (ENABLE_SCARLETNX)
+    AddJsonPackage(scarletnx)
+    if (TARGET scarletnx-recompiler)
+        set_target_properties(scarletnx-recompiler PROPERTIES SYSTEM ON)
+    endif()
+endif()
+
 # getopt
 if (MSVC)
     add_subdirectory(getopt)
