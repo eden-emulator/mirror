@@ -6,7 +6,6 @@
 
 #include <boost/container/static_vector.hpp>
 
-#include "common/settings.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
@@ -586,9 +585,10 @@ Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, const IR::Value&
     const bool is_integer{IsTextureInteger(ctx, info)};
     const Id result_type{is_integer ? ctx.U32[4] : ctx.F32[4]};
     const ImageOperands operands(ctx, false, true, false, lod, offset);
-    return Emit(&EmitContext::OpImageSparseSampleExplicitLod,
-                &EmitContext::OpImageSampleExplicitLod, ctx, inst, ctx.F32[4],
-                Texture(ctx, info, index), coords, operands.Mask(), operands.Span());
+ 	Id result = Emit(&EmitContext::OpImageSparseSampleExplicitLod,
+	                 &EmitContext::OpImageSampleExplicitLod, ctx, inst, result_type,
+	                 Texture(ctx, info, index), coords, operands.Mask(), operands.Span());
+	return is_integer ? ctx.OpBitcast(ctx.F32[4], result) : result;
 }
 
 Id EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst* inst, const IR::Value& index,
