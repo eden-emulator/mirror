@@ -78,6 +78,9 @@ The following options are desktop only.
 - `ENABLE_OPENGL` (ON) Enable the OpenGL graphics backend
   - Unavailable on Windows/ARM64 and on Android
   - You probably shouldn't turn this off.
+- `ENABLE_SCARLETNX` (OFF) Enable the ScarletNX recompiler
+  - Requires Clang and LLVM's development files
+  - Needs multicore and fastmem
 
 ### Qt
 
