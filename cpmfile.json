@@ -351,13 +351,13 @@
     },
     "zstd": {
         "find_args": "MODULE",
-        "hash": "cc5ad4b119a9c2ea57f0b71eeff01113bb506e0d17000159c5409cb8236d22e38c52d5e9e97e7947a4bf1b2dfc44b6c503ab2d9aedbd59458435c6a2849cb029",
+        "hash": "2b006c3c110c38bd2f5896b42d36a38931c8eae261f30552f9a9fd04458d218d8f1a1425f117fd12af545ed77042e4b2d1a1a9b6286c4d0b9d74ef79f20a8f08",
         "min_version": "1.5",
         "options": [
             "ZSTD_BUILD_SHARED OFF"
         ],
         "repo": "facebook/zstd",
         "source_subdir": "build/cmake",
-        "version": "b8d6101fba"
+        "version": "33618c8"
     }
 }

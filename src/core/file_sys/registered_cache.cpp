@@ -16,6 +16,7 @@
 #include "common/random.h"
 #include "common/string_util.h"
 #include "core/crypto/key_manager.h"
+#include "core/crypto/ncz_decompressor.h"
 #include "core/file_sys/card_image.h"
 #include "core/file_sys/common_funcs.h"
 #include "core/file_sys/content_archive.h"
@@ -156,6 +157,25 @@ static std::shared_ptr<NSP> OpenContainerAsNsp(const VirtualFile& file, Loader::
     }
 
     return nullptr;
+}
+
+// Checks that every .ncz entry in the container is NCZBLOCK. Solid NCZ has no random access,
+// and the whole point of this build is to reject it at scan time so such files never appear
+// in the game list. Containers without any .ncz (plain NSP/XCI) pass through.
+static bool ContainerIsFullyBlockCompressed(const std::shared_ptr<NSP>& nsp) {
+    if (!nsp) {
+        return false;
+    }
+    for (const auto& entry : nsp->GetFiles()) {
+        const auto name = entry->GetName();
+        if (name.size() < 4 || name.substr(name.size() - 4) != ".ncz") {
+            continue;
+        }
+        if (!Core::Crypto::IsBlockCompressedNCZ(entry)) {
+            return false; // solid NCZ -> reject the whole container
+        }
+    }
+    return true; // no .ncz at all, or all block-compressed
 }
 
 template <typename Callback>
@@ -811,7 +831,14 @@ std::vector<ContentProviderEntry> RegisteredCache::ListEntriesFilter(
 }
 
 static std::shared_ptr<NCA> GetNCAFromNSPForID(const NSP& nsp, const NcaID& id) {
-    auto file = nsp.GetFile(fmt::format("{}.nca", Common::HexToString(id, false)));
+    const auto id_string = Common::HexToString(id, false);
+    auto file = nsp.GetFile(fmt::format("{}.nca", id_string));
+    if (file == nullptr) {
+        if (auto ncz_file = nsp.GetFile(fmt::format("{}.ncz", id_string))) {
+            file = Core::Crypto::DecompressNCZForInstall(
+                ncz_file, fmt::format("{}.nca", id_string));
+        }
+    }
     if (file == nullptr) {
         return nullptr;
     }
@@ -1273,6 +1300,12 @@ bool ManualContentProvider::AddEntriesFromContainer(VirtualFile file, bool only_
         return false;
     }
 
+    // Reject solid NCZ (.nsz without -B): only block-compressed NCZ is supported.
+    if (!ContainerIsFullyBlockCompressed(nsp)) {
+        LOG_DEBUG(Service_FS, "Skipping solid-compressed container: {}", file->GetName());
+        return false;
+    }
+
     return ForEachContainerEntry(
         nsp, only_content, base_program_id,
         [this](TitleType title_type, ContentRecordType content_type, u64 title_id,
@@ -1415,8 +1448,9 @@ void ExternalContentProvider::ScanDirectory(const VirtualDir& dir) {
         }
 
         const auto extension = Common::ToLower(filename.substr(dot_pos + 1));
-
-        if (extension == "nsp") {
+        // .xcz is an XCI container, but its updates only work through the NSP/PFS0 path
+        // (DecompressNCZ), not ProcessXCI. So route .xcz here on purpose.
+        if (extension == "nsp" || extension == "nsz" || extension == "xcz") {
             ProcessNSP(file);
         } else if (extension == "xci") {
             ProcessXCI(file);
@@ -1431,6 +1465,12 @@ void ExternalContentProvider::ScanDirectory(const VirtualDir& dir) {
 void ExternalContentProvider::ProcessNSP(const VirtualFile& file) {
     const auto nsp = OpenContainerAsNsp(file, Loader::FileType::NSP);
     if (!nsp) {
+        return;
+    }
+
+    // Reject solid NCZ (.nsz without -B): Eden only supports block-compressed NCZ.
+    if (!ContainerIsFullyBlockCompressed(nsp)) {
+        LOG_DEBUG(Service_FS, "Skipping solid-compressed container: {}", file->GetName());
         return;
     }
 

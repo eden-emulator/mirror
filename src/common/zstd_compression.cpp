@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -44,6 +47,12 @@ std::vector<u8> DecompressDataZSTD(std::span<const u8> compressed) {
         return {};
     }
     return decompressed;
+}
+
+std::size_t DecompressDataZSTD(std::span<const u8> compressed, std::span<u8> output) {
+    const std::size_t result =
+        ZSTD_decompress(output.data(), output.size(), compressed.data(), compressed.size());
+    return ZSTD_isError(result) ? 0 : result;
 }
 
 } // namespace Common::Compression

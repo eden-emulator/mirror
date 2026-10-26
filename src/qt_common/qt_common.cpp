@@ -57,7 +57,8 @@ std::unique_ptr<EmuThread> emu_thread = nullptr;
 
 const QStringList supported_file_extensions = {QStringLiteral("nro"), QStringLiteral("nso"),
                                                QStringLiteral("nca"), QStringLiteral("xci"),
-                                               QStringLiteral("nsp"), QStringLiteral("kip")};
+                                               QStringLiteral("xcz"), QStringLiteral("nsp"),
+                                               QStringLiteral("nsz"), QStringLiteral("kip")};
 
 Core::Frontend::WindowSystemType GetWindowSystemType() {
     // Determine WSI type based on Qt platform.
