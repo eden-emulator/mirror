@@ -191,10 +191,8 @@ public:
     std::unique_lock<std::mutex> StallApplication();
     void UnstallApplication();
 
-    void NotifyNVDECChannelOpen(u64 process_id);
-    void NotifyNVDECChannelClose(u64 process_id);
+    void SetNVDECActive(bool is_nvdec_active);
     [[nodiscard]] bool GetNVDECActive();
-    [[nodiscard]] bool IsNVDECActiveForProcess(u64 process_id);
 
     /**
      * Initialize the debugger.
