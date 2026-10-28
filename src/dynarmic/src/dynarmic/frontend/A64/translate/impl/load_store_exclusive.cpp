@@ -6,8 +6,116 @@
 #include <optional>
 
 #include "dynarmic/frontend/A64/translate/impl/impl.h"
+#include "dynarmic/ir/terminal.h"
 
 namespace Dynarmic::A64 {
+
+bool TranslatorVisitor::CAS(Imm<2> sz, bool L, Reg Rs, bool o0, Reg Rn, Reg Rt) {
+    const size_t bits = 8U << sz.ZeroExtend<size_t>();
+    const size_t reg_bits = bits == 64 ? 64 : 32;
+    const IR::U64 address = Rn == Reg::SP ? IR::U64{SP(64)} : IR::U64{X(64, Rn)};
+    const IR::U64 original_expected = X(64, Rs);
+    const IR::U32U64 expected = ZeroExtend(X(bits, Rs), reg_bits);
+    const IR::U32U64 desired = ZeroExtend(X(bits, Rt), reg_bits);
+    const auto flags = ir.GetNZCVRaw();
+    const auto access = L || o0 ? IR::AccType::ORDERED : IR::AccType::ATOMIC;
+    const auto observed = ZeroExtend(ExclusiveMem(address, bits / 8, access), reg_bits);
+
+    ir.SetNZCV(ir.NZCVFrom(ir.SubWithCarry(observed, expected, ir.Imm1(1))));
+    const auto replacement = ir.ConditionalSelect(IR::Cond::EQ, desired, observed);
+    ir.SetNZCVRaw(flags);
+    // A failed comparison may atomically write back the observed value.
+    IR::UAny store_value = replacement;
+    if (bits == 8) {
+        store_value = ir.LeastSignificantByte(replacement);
+    } else if (bits == 16) {
+        store_value = ir.LeastSignificantHalf(replacement);
+    }
+    const auto status = ExclusiveMem(address, bits / 8, access, store_value);
+    ir.SetNZCV(ir.NZCVFrom(ir.SubWithCarry(status, ir.Imm32(0), ir.Imm1(1))));
+    X(64, Rs, ir.ConditionalSelect(IR::Cond::EQ, ir.ZeroExtendToLong(observed), original_expected));
+    ir.SetNZCVRaw(flags);
+    ir.ClearExclusive();
+
+    // A store-exclusive failure must retry without changing the expected value.
+    ir.SetCheckBit(ir.IsZero(status));
+    ir.SetTerm(IR::Term::CheckBit{
+        IR::Term::LinkBlock{ir.current_location->AdvancePC(4)},
+        IR::Term::LinkBlock{*ir.current_location}});
+    return false;
+}
+
+bool TranslatorVisitor::LDAPR(Imm<2> size, Reg Rn, Reg Rt) {
+    // LDAR provides ordering at least as strong as an RCpc acquire load.
+    return LDAR(size, Rn, Rt);
+}
+
+enum class AtomicRegisterOperation { Add, Set, Clear, Swap };
+
+static bool AtomicRegisterOperationImpl(TranslatorVisitor& v, size_t bits, bool A, bool R,
+                                        Reg Rs, Reg Rn, Reg Rt, AtomicRegisterOperation operation) {
+    const size_t reg_bits = bits == 64 ? 64 : 32;
+    const IR::U64 address = Rn == Reg::SP ? IR::U64{v.SP(64)} : IR::U64{v.X(64, Rn)};
+    const IR::U64 original_result = v.X(64, Rt);
+    const IR::U32U64 operand = v.ZeroExtend(v.X(bits, Rs), reg_bits);
+    const auto flags = v.ir.GetNZCVRaw();
+    const auto access = A || R ? IR::AccType::ORDERED : IR::AccType::ATOMIC;
+    const auto observed = v.ZeroExtend(v.ExclusiveMem(address, bits / 8, access), reg_bits);
+    auto replacement = operand;
+    switch (operation) {
+    case AtomicRegisterOperation::Add:
+        replacement = v.ir.Add(observed, operand);
+        break;
+    case AtomicRegisterOperation::Set:
+        replacement = v.ir.Or(observed, operand);
+        break;
+    case AtomicRegisterOperation::Clear:
+        replacement = v.ir.And(observed, v.ir.Not(operand));
+        break;
+    case AtomicRegisterOperation::Swap:
+        break;
+    }
+    IR::UAny store_value = replacement;
+    if (bits == 8) {
+        store_value = v.ir.LeastSignificantByte(replacement);
+    } else if (bits == 16) {
+        store_value = v.ir.LeastSignificantHalf(replacement);
+    }
+    const auto status = v.ExclusiveMem(address, bits / 8, access, store_value);
+    v.ir.SetNZCV(v.ir.NZCVFrom(v.ir.SubWithCarry(status, v.ir.Imm32(0), v.ir.Imm1(1))));
+    v.X(64, Rt, v.ir.ConditionalSelect(IR::Cond::EQ, v.ir.ZeroExtendToLong(observed), original_result));
+    v.ir.SetNZCVRaw(flags);
+    v.ir.ClearExclusive();
+    v.ir.SetCheckBit(v.ir.IsZero(status));
+    v.ir.SetTerm(IR::Term::CheckBit{
+        IR::Term::LinkBlock{v.ir.current_location->AdvancePC(4)},
+        IR::Term::LinkBlock{*v.ir.current_location}});
+    return false;
+}
+
+bool TranslatorVisitor::LDADD(bool sz, bool A, bool R, Reg Rs, Reg Rn, Reg Rt) {
+    return AtomicRegisterOperationImpl(*this, sz ? 64 : 32, A, R, Rs, Rn, Rt, AtomicRegisterOperation::Add);
+}
+
+bool TranslatorVisitor::LDCLR(bool sz, bool A, bool R, Reg Rs, Reg Rn, Reg Rt) {
+    return AtomicRegisterOperationImpl(*this, sz ? 64 : 32, A, R, Rs, Rn, Rt, AtomicRegisterOperation::Clear);
+}
+
+bool TranslatorVisitor::LDSET(bool sz, bool A, bool R, Reg Rs, Reg Rn, Reg Rt) {
+    return AtomicRegisterOperationImpl(*this, sz ? 64 : 32, A, R, Rs, Rn, Rt, AtomicRegisterOperation::Set);
+}
+
+bool TranslatorVisitor::SWPB(bool A, bool R, Reg Rs, Reg Rn, Reg Rt) {
+    return AtomicRegisterOperationImpl(*this, 8, A, R, Rs, Rn, Rt, AtomicRegisterOperation::Swap);
+}
+
+bool TranslatorVisitor::SWPH(bool A, bool R, Reg Rs, Reg Rn, Reg Rt) {
+    return AtomicRegisterOperationImpl(*this, 16, A, R, Rs, Rn, Rt, AtomicRegisterOperation::Swap);
+}
+
+bool TranslatorVisitor::SWP(bool sz, bool A, bool R, Reg Rs, Reg Rn, Reg Rt) {
+    return AtomicRegisterOperationImpl(*this, sz ? 64 : 32, A, R, Rs, Rn, Rt, AtomicRegisterOperation::Swap);
+}
 
 static bool ExclusiveSharedDecodeAndOperation(TranslatorVisitor& v, bool pair, size_t size, bool L, bool o0, std::optional<Reg> Rs, std::optional<Reg> Rt2, Reg Rn, Reg Rt) {
     // Shared Decode

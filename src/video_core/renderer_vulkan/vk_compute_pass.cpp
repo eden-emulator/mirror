@@ -633,7 +633,7 @@ struct alignas(16) BlockLinearUnswizzle3DPushConstants {
 
     u32 block_depth;             // Offset 48
     u32 block_depth_mask;        // Offset 52
-    s32 _pad;                    // Offset 56
+    u32 native_tiling;           // Offset 56
 
     s32 destination[3];          // Offset 60
     s32 _pad_end;                // Offset 72
@@ -753,6 +753,7 @@ void BlockLinearUnswizzle3DPass::UnswizzleChunk(
     pc.block_height_mask    = params.block_height_mask;
     pc.block_depth          = params.block_depth;
     pc.block_depth_mask     = params.block_depth_mask;
+    pc.native_tiling        = params.native_tiling;
 
     pc.blocks_dim[0] = blocks_x;
     pc.blocks_dim[1] = blocks_y;

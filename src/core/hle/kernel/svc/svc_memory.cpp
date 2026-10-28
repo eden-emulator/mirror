@@ -126,6 +126,31 @@ Result SetMemoryAttribute(Core::System& system, u64 address, u64 size, u32 mask,
     R_UNLESS(page_table.Contains(address, size), ResultInvalidCurrentMemory);
 
     // Set the memory attribute.
+    const auto result = page_table.SetMemoryAttribute(address, size,
+                                                      static_cast<KMemoryAttribute>(mask),
+                                                      static_cast<KMemoryAttribute>(attr));
+    if (GetCurrentProcess(system.Kernel()).UsesPAuthReturns()) {
+        LOG_DEBUG(Kernel_SVC, "native memory attribute result={:#x}", result.raw);
+    }
+    R_RETURN(result);
+}
+
+// Captured native SDK callers set bit 0x20 before registering GPU-accessible
+// memory and clear it during destruction. This tracks eligibility on real mapped
+// memory; GPU mappings and submission remain separate operations.
+Result SetGpuMemoryAttribute(Core::System& system, u64 address, u64 size, u32 mask, u32 attr) {
+    auto& process = GetCurrentProcess(system.Kernel());
+    R_UNLESS(process.UsesPAuthReturns(), ResultNotImplemented);
+    LOG_DEBUG(Kernel_SVC, "GPU memory address={:#x}, size={:#x}, mask={:#x}, attr={:#x}",
+              address, size, mask, attr);
+    R_UNLESS(Common::IsAligned(address, PageSize), ResultInvalidAddress);
+    R_UNLESS(size > 0 && Common::IsAligned(size, PageSize), ResultInvalidSize);
+    R_UNLESS(address < address + size, ResultInvalidCurrentMemory);
+    constexpr u32 SupportedMask = static_cast<u32>(MemoryAttribute::GpuAccessible);
+    R_UNLESS((attr & ~mask) == 0 && ((mask | attr) & ~SupportedMask) == 0,
+             ResultInvalidCombination);
+    auto& page_table = process.GetPageTable();
+    R_UNLESS(page_table.Contains(address, size), ResultInvalidCurrentMemory);
     R_RETURN(page_table.SetMemoryAttribute(address, size, static_cast<KMemoryAttribute>(mask),
                                            static_cast<KMemoryAttribute>(attr)));
 }

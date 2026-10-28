@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <cstdlib>
+#include <fstream>
 #include <mutex>
 
 #include <fmt/format.h>
@@ -14,12 +16,14 @@
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 #include "common/assert.h"
+#include "shader_recompiler/exception.h"
 #include "common/logging.h"
 #include "common/scope_exit.h"
 #include "common/settings.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/gpu_logging/gpu_logging.h"
 #include "video_core/control/channel_state.h"
+#include "video_core/native_query_trace.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/engines/kepler_compute.h"
 #include "video_core/engines/maxwell_3d.h"
@@ -238,6 +242,14 @@ void RasterizerVulkan::PrepareDraw(bool is_indexed, Func&& draw_func) {
     SCOPE_EXIT {
         gpu.TickWork();
     };
+    bool submitted = false;
+    SCOPE_EXIT {
+        auto& native = maxwell3d->GetNativeMacroEngine();
+        if (native.native_turing && !submitted) {
+            native.native_execution_failed = true;
+            LOG_ERROR(HW_GPU, "Native graphics draw failed; refusing submission completion");
+        }
+    };
     FlushWork();
     gpu_memory->FlushCaching();
 
@@ -257,6 +269,45 @@ void RasterizerVulkan::PrepareDraw(bool is_indexed, Func&& draw_func) {
     HandleTransformFeedback();
     query_cache.CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, maxwell3d->regs.zpass_pixel_count_enable);
     draw_func();
+    submitted = true;
+    static u32 native_capture_count{};
+    if (maxwell3d->GetNativeMacroEngine().native_turing &&
+        std::getenv("EDEN_NATIVE_DRAW_CAPTURE") && native_capture_count < 16) {
+        const u32 capture = native_capture_count++;
+        const auto prefix = fmt::format("native-draw-{}", capture);
+        const auto dump = [&](const std::string& name, GPUVAddr address, size_t size) {
+            if (!size || !gpu_memory->IsFullyMappedRange(address, size)) return;
+            std::vector<u8> bytes(size);
+            gpu_memory->ReadBlockUnsafe(address, bytes.data(), bytes.size());
+            std::ofstream file(prefix + name + ".bin", std::ios::binary);
+            file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+            LOG_INFO(HW_GPU, "Native draw capture {}{}: address={:#x}, bytes={}, nonzero={}",
+                     capture, name, address, size,
+                     std::count_if(bytes.begin(), bytes.end(), [](u8 byte) { return byte != 0; }));
+        };
+        const auto& regs = maxwell3d->regs;
+        const auto& rt = regs.rt[0];
+        const size_t size = static_cast<size_t>(rt.array_pitch) * 4;
+        if (size && size <= 16 * 1024 * 1024) {
+            if (const auto address = gpu_memory->GpuToCpuAddress(rt.Address(), size)) {
+                LOG_INFO(HW_GPU, "Native draw {} render target physical address={:#x}", capture, *address);
+                texture_cache.DownloadMemory(*address, size);
+                dump("-rt0", rt.Address(), size);
+            }
+        }
+        std::ofstream registers(prefix + "-registers.bin", std::ios::binary);
+        registers.write(reinterpret_cast<const char*>(&regs), sizeof(regs));
+        for (size_t stream = 0; stream < 4; ++stream) {
+            if (regs.vertex_streams[stream].IsEnabled())
+                dump(fmt::format("-vertex-{}", stream), regs.vertex_streams[stream].Address(), 128);
+        }
+        for (size_t stage : {0U, 4U}) {
+            for (size_t bank : {2U, 3U}) {
+                const auto& cb = maxwell3d->state.shader_stages[stage].const_buffers[bank];
+                if (cb.enabled) dump(fmt::format("-cbuf-{}-{}", stage, bank), cb.address, std::min<size_t>(cb.size, 128));
+            }
+        }
+    }
 }
 
 void RasterizerVulkan::Draw(bool is_indexed, u32 instance_count) {
@@ -588,11 +639,13 @@ void RasterizerVulkan::DispatchCompute() {
 
     ComputePipeline* const pipeline{pipeline_cache.CurrentComputePipeline()};
     if (!pipeline) {
+        if (kepler_compute->IsNativeMode()) throw Shader::RuntimeError("Native compute pipeline unavailable");
         return;
     }
     std::scoped_lock lock{texture_cache.mutex, buffer_cache.mutex};
     if (!pipeline->Configure(*kepler_compute, *gpu_memory, scheduler, buffer_cache,
                              texture_cache)) {
+        if (kepler_compute->IsNativeMode()) throw Shader::RuntimeError("Native compute resources unavailable");
         return;
     }
 
@@ -942,6 +995,12 @@ Tegra::Engines::AccelerateDMAInterface& RasterizerVulkan::AccessAccelerateDMA() 
 void RasterizerVulkan::AccelerateInlineToMemory(GPUVAddr address, size_t copy_size,
                                                 std::span<const u8> memory) {
     auto cpu_addr = gpu_memory->GpuToCpuAddress(address);
+    if (gpu_memory->UsesNativeTiling()) {
+        u32 first_word{};
+        if (memory.size() >= sizeof(first_word)) std::memcpy(&first_word, memory.data(), sizeof(first_word));
+        VideoCommon::TraceNativeQuery(11, gpu_memory->GetID(), address, cpu_addr.value_or(0),
+            0, first_word, static_cast<u32>(copy_size));
+    }
     if (!cpu_addr) [[unlikely]] {
         gpu_memory->WriteBlock(address, memory.data(), copy_size);
         return;
@@ -969,6 +1028,12 @@ std::optional<FramebufferTextureInfo> RasterizerVulkan::AccelerateDisplay(
     std::scoped_lock lock{texture_cache.mutex};
     const auto [image_view, scaled] =
         texture_cache.TryFindFramebufferImageView(config, framebuffer_addr);
+    static u32 display_trace_count{};
+    if (std::getenv("EDEN_NATIVE_FRAME_CAPTURE") && display_trace_count++ < 64) {
+        LOG_INFO(HW_GPU, "Native display source: address={:#x}, offset={:#x}, dimensions={}x{}, stride={}, accelerated={}, mask={:#x}",
+                 framebuffer_addr, config.offset, config.width, config.height, pixel_stride,
+                 image_view != nullptr, config.layer_stack_mask);
+    }
     if (!image_view) {
         return {};
     }

@@ -18,6 +18,8 @@
 #include "core/hle/service/nvdrv/devices/nvhost_ctrl.h"
 #include "core/hle/service/nvdrv/devices/nvhost_ctrl_gpu.h"
 #include "core/hle/service/nvdrv/devices/nvhost_gpu.h"
+#include "core/hle/service/nvdrv/devices/nvhost_tsg_gpu.h"
+#include "core/hle/kernel/k_process.h"
 #include "core/hle/service/nvdrv/devices/nvhost_nvdec.h"
 #include "core/hle/service/nvdrv/devices/nvhost_nvdec_common.h"
 #include "core/hle/service/nvdrv/devices/nvhost_nvjpg.h"
@@ -133,6 +135,10 @@ Module::Module(Core::System& system)
         auto device = std::make_shared<Devices::nvhost_gpu>(system, events_interface, container);
         return open_files.emplace(fd, std::move(device)).first;
     };
+    builders["/dev/nvhost-tsg-gpu"] = [this, &system](DeviceFD fd) {
+        auto device = std::make_shared<Devices::nvhost_tsg_gpu>(system, *this, container);
+        return open_files.emplace(fd, std::move(device)).first;
+    };
     builders["/dev/nvhost-ctrl-gpu"] = [this, &system](DeviceFD fd) {
         auto device = std::make_shared<Devices::nvhost_ctrl_gpu>(system, events_interface);
         return open_files.emplace(fd, std::move(device)).first;
@@ -163,7 +169,12 @@ Module::Module(Core::System& system)
     };
 }
 
-Module::~Module() {}
+Module::~Module() {
+    // Devices (including TSG-retained channels) release events and core state.
+    // Destroy them while those module members are still alive.
+    for (const auto& [fd, device] : open_files) { device->OnClose(fd); }
+    open_files.clear();
+}
 
 NvResult Module::VerifyFD(DeviceFD fd) const {
     if (fd < 0) {
@@ -180,6 +191,12 @@ NvResult Module::VerifyFD(DeviceFD fd) const {
 }
 
 DeviceFD Module::Open(const std::string& device_name, NvCore::SessionId session_id) {
+    if (device_name == "/dev/nvhost-tsg-gpu") {
+        const auto* session = container.GetSession(session_id);
+        if (!session || !session->process || !session->process->UsesPAuthReturns()) {
+            return INVALID_NVDRV_FD;
+        }
+    }
     auto it = builders.find(device_name);
     if (it == builders.end()) {
         LOG_ERROR(Service_NVDRV, "Trying to open unknown device {}", device_name);

@@ -2370,6 +2370,10 @@ static void Call32(Core::System& system, u32 imm, std::span<uint64_t, 8> args) {
 
 static void Call64(Core::System& system, u32 imm, std::span<uint64_t, 8> args) {
     switch (SvcId(imm)) {
+    case SvcId::SetGpuMemoryAttribute:
+        args[0] = SetGpuMemoryAttribute(system, args[0], args[1],
+                                        static_cast<u32>(args[2]), static_cast<u32>(args[3])).raw;
+        return;
     case SvcId::SetHeapSize: return SvcWrap_SetHeapSize64(system, args);
     case SvcId::SetMemoryPermission: return SvcWrap_SetMemoryPermission64(system, args);
     case SvcId::SetMemoryAttribute: return SvcWrap_SetMemoryAttribute64(system, args);

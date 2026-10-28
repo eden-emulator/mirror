@@ -22,6 +22,7 @@ namespace Kernel::Svc {
 Result SetHeapSize(Core::System& system, uint64_t* out_address, uint64_t size);
 Result SetMemoryPermission(Core::System& system, uint64_t address, uint64_t size, MemoryPermission perm);
 Result SetMemoryAttribute(Core::System& system, uint64_t address, uint64_t size, uint32_t mask, uint32_t attr);
+Result SetGpuMemoryAttribute(Core::System& system, uint64_t address, uint64_t size, uint32_t mask, uint32_t attr);
 Result MapMemory(Core::System& system, uint64_t dst_address, uint64_t src_address, uint64_t size);
 Result UnmapMemory(Core::System& system, uint64_t dst_address, uint64_t src_address, uint64_t size);
 Result QueryMemory(Core::System& system, uint64_t out_memory_info, PageInfo* out_page_info, uint64_t address);
@@ -504,6 +505,7 @@ enum class SvcId : u32 {
     CreateResourceLimit = 0x7d,
     SetResourceLimitLimitValue = 0x7e,
     CallSecureMonitor = 0x7f,
+    SetGpuMemoryAttribute = 0x80,
     MapInsecureMemory = 0x90,
     UnmapInsecureMemory = 0x91,
 };

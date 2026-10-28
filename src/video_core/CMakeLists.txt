@@ -93,6 +93,8 @@ add_library(video_core STATIC
     fence_manager.h
     gpu.cpp
     gpu.h
+    native_query_trace.h
+    native_semaphore.h
     gpu_thread.cpp
     gpu_thread.h
     guest_memory.h
@@ -242,6 +244,7 @@ add_library(video_core STATIC
     texture_cache/image_base.h
     texture_cache/image_info.cpp
     texture_cache/image_info.h
+    texture_cache/pending_download.h
     texture_cache/image_view_base.cpp
     texture_cache/image_view_base.h
     texture_cache/image_view_info.cpp

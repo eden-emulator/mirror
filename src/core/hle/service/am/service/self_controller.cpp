@@ -5,10 +5,17 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging.h"
+#include "core/hle/kernel/k_scoped_resource_reservation.h"
+#include "core/hle/kernel/k_session.h"
+#include "core/hle/kernel/k_client_session.h"
+#include "core/hle/kernel/k_thread.h"
 #include "core/hle/result.h"
 #include "core/hle/service/am/am_results.h"
 #include "core/hle/service/am/frontend/applets.h"
 #include "core/hle/service/am/service/self_controller.h"
+#include "core/hle/service/am/service/graphics_supervisor.h"
+#include "core/hle/service/ipc_helpers.h"
+#include "core/hle/service/server_manager.h"
 #include "core/hle/service/caps/caps_su.h"
 #include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/nvnflinger/nvnflinger.h"
@@ -73,6 +80,7 @@ ISelfController::ISelfController(Core::System& system_, std::shared_ptr<Applet> 
         {230, D<&ISelfController::Unknown230>, "Unknown230"},
         {240, D<&ISelfController::Unknown240>, "Unknown240"},
         {1000, nullptr, "GetDebugStorageChannel"},
+        {2000, &ISelfController::GetGraphicsSupervisor, "GetGraphicsSupervisor"},
     };
     // clang-format on
 
@@ -84,8 +92,45 @@ ISelfController::ISelfController(Core::System& system_, std::shared_ptr<Applet> 
 }
 
 ISelfController::~ISelfController() {
+    if (m_graphics_supervisor_session != nullptr) {
+        m_graphics_supervisor_session->Close(kernel);
+    }
     std::scoped_lock lk{m_applet->lock};
     m_applet->display_layer_manager.Finalize();
+}
+
+void ISelfController::GetGraphicsSupervisor(HLERequestContext& ctx) {
+    if (m_graphics_supervisor_session != nullptr) {
+        IPC::ResponseBuilder rb{ctx, 2, 1};
+        rb.Push(ResultSuccess);
+        rb.PushCopyObjects(ctx, m_graphics_supervisor_session);
+        return;
+    }
+    Kernel::KScopedResourceReservation reservation(
+        kernel, Kernel::GetCurrentProcessPointer(kernel), Kernel::LimitableResource::SessionCountMax);
+    if (!reservation.Succeeded()) {
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(Kernel::ResultLimitReached);
+        return;
+    }
+    auto* session = Kernel::KSession::Create(kernel);
+    if (session == nullptr) {
+        IPC::ResponseBuilder rb{ctx, 2};
+        rb.Push(Kernel::ResultOutOfResource);
+        return;
+    }
+    session->Initialize(kernel, nullptr, 0);
+    reservation.Commit();
+    Kernel::KSession::Register(kernel, session);
+    auto& server = ctx.GetManager()->GetServerManager();
+    auto manager = std::make_shared<SessionRequestManager>(kernel, server);
+    manager->SetSessionHandler(std::make_shared<IGraphicsSupervisor>(system, m_process, m_applet->aruid.pid));
+    server.RegisterSession(&session->GetServerSession(), std::move(manager));
+    LOG_DEBUG(Service_AM, "created graphics-supervisor session");
+    m_graphics_supervisor_session = &session->GetClientSession();
+    IPC::ResponseBuilder rb{ctx, 2, 1};
+    rb.Push(ResultSuccess);
+    rb.PushCopyObjects(ctx, m_graphics_supervisor_session);
 }
 
 Result ISelfController::Exit() {

@@ -17,7 +17,15 @@ add_executable(tests
     common/undefined_fix.cpp
     common/unique_function.cpp
     core/core_timing.cpp
+    core/program_metadata.cpp
+    core/native_gpu_characteristics.cpp
+    core/graphics_supervisor.cpp
     core/internal_network/network.cpp
+    video_core/native_semaphore.cpp
+    video_core/native_shader.cpp
+    video_core/native_swizzle.cpp
+    video_core/image_overlap.cpp
+    video_core/pending_download.cpp
     video_core/memory_tracker.cpp
     input_common/calibration_configuration_job.cpp
 )

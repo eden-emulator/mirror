@@ -2085,6 +2085,11 @@ void Image::DownloadMemory(VkBuffer buffer, size_t offset,
 
 void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> offsets_span,
                             std::span<const VideoCommon::BufferImageCopy> copies) {
+    if (!original_image) {
+        LOG_CRITICAL(Render_Vulkan, "Missing image at download: gpu={:#x}, cpu={:#x}, type={}, format={}, flags={:#x}, size={}, dimensions={}x{}",
+                     gpu_addr, cpu_addr, static_cast<u32>(info.type), static_cast<u32>(info.format),
+                     static_cast<u32>(flags), unswizzled_size_bytes, info.size.width, info.size.height);
+    }
     const bool is_rescaled = True(flags & ImageFlagBits::Rescaled);
     if (is_rescaled) {
         ScaleDown();

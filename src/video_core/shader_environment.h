@@ -47,6 +47,8 @@ public:
 
     [[nodiscard]] u64 ReadInstruction(u32 address) final;
 
+    [[nodiscard]] u32 TranslateProgramAddress(u32 address) const override;
+
     [[nodiscard]] std::optional<u64> Analyze();
 
     void SetCachedSize(size_t size_bytes);
@@ -56,6 +58,10 @@ public:
     [[nodiscard]] size_t CachedSizeBytes() const noexcept;
 
     [[nodiscard]] size_t ReadSizeBytes() const noexcept;
+
+    [[nodiscard]] size_t SourceSizeBytes() const noexcept {
+        return native_source_size;
+    }
 
     [[nodiscard]] bool CanBeSerialized() const noexcept;
 
@@ -71,6 +77,9 @@ public:
 
 protected:
     std::optional<u64> TryFindSize();
+
+    void InitializeNativeCode(u32 source_header_size = 128);
+    size_t native_source_size{};
 
     Tegra::Texture::TICEntry ReadTextureInfo(GPUVAddr tic_addr, u32 tic_limit,
                                              bool via_header_index, u32 raw);
@@ -171,6 +180,8 @@ public:
     void Deserialize(std::ifstream& file);
 
     [[nodiscard]] u64 ReadInstruction(u32 address) override;
+
+    [[nodiscard]] u32 TranslateProgramAddress(u32 address) const override;
 
     [[nodiscard]] u32 ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) override;
 

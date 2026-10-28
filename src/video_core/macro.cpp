@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdlib>
+#include <unordered_set>
 #include <cstring>
 #include <fstream>
 #include <optional>
@@ -1339,6 +1341,32 @@ static void Dump(u64 hash, std::span<const u32> code, bool decompiled = false) {
 
 void MacroEngine::Execute(Core::System& system, Engines::Maxwell3D& maxwell3d, u32 method,
                           std::span<const u32> parameters) {
+    if (native_turing) {
+        maxwell3d.RefreshParameters();
+        const auto context = reinterpret_cast<std::uintptr_t>(this);
+        static std::unordered_set<std::uintptr_t> captured_contexts;
+        if (std::getenv("EDEN_NATIVE_FRAME_CAPTURE") && captured_contexts.insert(context).second) {
+            std::ofstream dump("native-graphics-mme-" + std::to_string(context) + ".bin", std::ios::binary);
+            dump.write(reinterpret_cast<const char*>(native_code.data()), sizeof(native_code));
+        }
+        LOG_DEBUG(HW_GPU, "Native MME context={:#x}", context);
+        LOG_DEBUG(HW_GPU, "Native MME start={:#x}, parameters={}, data={:08x}", method, parameters.size(), fmt::join(parameters, ","));
+        const auto result = native_interpreter.Execute(native_code, method, parameters,
+            [&](u32 address) { return address < Maxwell3D::Regs::NUM_REGS ? maxwell3d.GetRegisterValue(address) : 0U; },
+            [&](u32 address, u32 value) {
+                if (address >= 0xe00) return false;
+                maxwell3d.CallMethod(system, address, value, true);
+                return true;
+            });
+        if (!result.success) {
+            native_execution_failed = true;
+            std::ofstream dump("native-mme-" + std::to_string(method) + ".bin", std::ios::binary);
+            dump.write(reinterpret_cast<const char*>(native_code.data()), sizeof(native_code));
+            LOG_ERROR(HW_GPU, "Native MME failed: start={:#x}, pc={:#x}, consumed={}/{}, error={}",
+                      method, result.pc, result.consumed, parameters.size(), result.error);
+        }
+        return;
+    }
     const auto execute_variant = [&system, &maxwell3d, &parameters,
                                   method](AnyCachedMacro& cached) {
         if (std::holds_alternative<MacroInterpreterImpl>(cached) ||

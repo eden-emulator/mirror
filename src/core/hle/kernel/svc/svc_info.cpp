@@ -14,11 +14,32 @@
 #include "core/hle/kernel/svc_version.h"
 
 namespace Kernel::Svc {
+namespace {
+// Identified from the extended SDK's RemoteRegionManager initialization.
+constexpr InfoType RemoteRegionAddress = static_cast<InfoType>(29);
+constexpr InfoType RemoteRegionSize = static_cast<InfoType>(30);
+constexpr InfoType RemoteMemoryUsed = static_cast<InfoType>(31);
+constexpr InfoType RemoteMemoryTotal = static_cast<InfoType>(32);
+constexpr InfoType MemoryMappingAlignment = static_cast<InfoType>(33);
+} // namespace
 
 /// Gets system/memory information for the current process
 Result GetInfo(Core::System& system, u64* result, InfoType info_id_type, Handle handle, u64 info_sub_id) {
     LOG_TRACE(Kernel_SVC, "called info_id={:#x}, info_sub_id={:#x}, handle={:#08x}", info_id_type, info_sub_id, handle);
     u32 info_id = u32(info_id_type);
+    if (info_id_type == RemoteRegionAddress || info_id_type == RemoteRegionSize ||
+        info_id_type == RemoteMemoryUsed || info_id_type == RemoteMemoryTotal ||
+        info_id_type == MemoryMappingAlignment) {
+        R_UNLESS(info_sub_id == 0, ResultInvalidEnumValue);
+        const auto& handle_table = GetCurrentProcess(system.Kernel()).GetHandleTable();
+        KScopedAutoObject process = handle_table.GetObject<KProcess>(system.Kernel(), handle);
+        R_UNLESS(process.IsNotNull(), ResultInvalidHandle);
+        R_UNLESS(process->UsesPAuthReturns(), ResultInvalidEnumValue);
+        // Remote mappings are absent; ordinary mappings use the kernel page size.
+        *result = info_id_type == MemoryMappingAlignment ? PageSize : 0;
+        LOG_DEBUG(Kernel_SVC, "Extended memory info_id={:#x}, value={:#x}", info_id, *result);
+        R_SUCCEED();
+    }
     switch (info_id_type) {
     case InfoType::CoreMask:
     case InfoType::PriorityMask:
@@ -124,7 +145,8 @@ Result GetInfo(Core::System& system, u64* result, InfoType info_id_type, Handle 
         default:
             break;
         }
-        LOG_ERROR(Kernel_SVC, "Unimplemented svcGetInfo id={:#016x}", info_id);
+        LOG_ERROR(Kernel_SVC, "Unimplemented svcGetInfo id={:#x}, sub_id={:#x}, handle={:#x}",
+                  info_id, info_sub_id, handle);
         R_THROW(ResultInvalidEnumValue);
     }
     case InfoType::DebuggerAttached:
@@ -258,7 +280,8 @@ Result GetInfo(Core::System& system, u64* result, InfoType info_id_type, Handle 
         R_SUCCEED();
     }
     default:
-        LOG_ERROR(Kernel_SVC, "Unimplemented svcGetInfo id={:#016x}", info_id);
+        LOG_ERROR(Kernel_SVC, "Unimplemented svcGetInfo id={:#x}, sub_id={:#x}, handle={:#x}",
+                  info_id, info_sub_id, handle);
         R_THROW(ResultInvalidEnumValue);
     }
 }

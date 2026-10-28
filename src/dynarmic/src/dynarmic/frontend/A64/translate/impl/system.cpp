@@ -34,6 +34,27 @@ enum class SystemRegisterEncoding : u32 {
 };
 
 bool TranslatorVisitor::HINT([[maybe_unused]] Imm<4> CRm, [[maybe_unused]] Imm<3> op2) {
+    if (options.enable_pauth_returns && CRm == 0 && op2 == 7) {
+        return XPAC_1(false, Reg::R30);
+    }
+    return true;
+}
+
+bool TranslatorVisitor::XPAC_1([[maybe_unused]] bool D, Reg Rd) {
+    if (!options.enable_pauth_returns) {
+        return UnallocatedEncoding();
+    }
+    const auto bits = options.address_space_bits;
+    if (bits >= 64) {
+        return true;
+    }
+    const IR::U64 pointer = X(64, Rd);
+    const u64 address_mask = (u64{1} << bits) - 1;
+    // This compatibility model has TBI disabled; bit 55 selects the address extension.
+    const auto extension = ir.ArithmeticShiftRight(
+        ir.LogicalShiftLeft(pointer, ir.Imm8(8)), ir.Imm8(63));
+    X(64, Rd, ir.Or(ir.And(pointer, ir.Imm64(address_mask)),
+                   ir.And(extension, ir.Imm64(~address_mask))));
     return true;
 }
 

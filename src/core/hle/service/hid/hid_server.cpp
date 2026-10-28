@@ -132,6 +132,7 @@ IHidServer::IHidServer(Core::System& system_, std::shared_ptr<ResourceManager> r
         {210, C<&IHidServer::EndPermitVibrationSession>, "EndPermitVibrationSession"},
         {211, C<&IHidServer::IsVibrationDeviceMounted>, "IsVibrationDeviceMounted"},
         {212, C<&IHidServer::SendVibrationValueInBool>, "SendVibrationValueInBool"},
+        {214, C<&IHidServer::SendNativeVibrationValues>, "SendNativeVibrationValues"},
         {300, C<&IHidServer::ActivateConsoleSixAxisSensor>, "ActivateConsoleSixAxisSensor"},
         {301, C<&IHidServer::StartConsoleSixAxisSensor>, "StartConsoleSixAxisSensor"},
         {302, C<&IHidServer::StopConsoleSixAxisSensor>, "StopConsoleSixAxisSensor"},
@@ -237,6 +238,11 @@ IHidServer::IHidServer(Core::System& system_, std::shared_ptr<ResourceManager> r
         {3013, nullptr, "SetDebugPadGenericPadMap"}, //21.0.0+
         {3014, nullptr, "GetDebugPadKeyboardMap"}, //21.0.0+
         {3015, nullptr, "SetDebugPadKeyboardMap"}, //21.0.0+
+        {3110, C<&IHidServer::RegisterJcmsMemory>, "RegisterJcmsMemory"},
+        {3136, C<&IHidServer::SetNmouseButtonConfigJoyLeftJcms>, "SetNmouseButtonConfigJoyLeftJcms"},
+        {3137, C<&IHidServer::SetNmouseButtonConfigJoyRightJcms>, "SetNmouseButtonConfigJoyRightJcms"},
+        {3138, C<&IHidServer::SetMergedNmouseSourceTypes>, "SetMergedNmouseSourceTypes"},
+        {3139, C<&IHidServer::RegisterNativeInputMemory>, "RegisterNativeInputMemory"},
         {3150, C<&IHidServer::SetMouseLibraryVersion>, "SetMouseLibraryVersion"}, //21.0.0+
         // What? -- {12010, nullptr, "SetButtonConfigLeft"},
     };
@@ -245,7 +251,11 @@ IHidServer::IHidServer(Core::System& system_, std::shared_ptr<ResourceManager> r
     RegisterHandlers(functions);
 }
 
-IHidServer::~IHidServer() = default;
+IHidServer::~IHidServer() {
+    for (const auto& registration : native_input_memories) {
+        registration.memory->Close(kernel);
+    }
+}
 
 Result IHidServer::CreateAppletResource(OutInterface<IAppletResource> out_applet_resource,
                                         ClientAppletResourceUserId aruid) {
@@ -984,6 +994,17 @@ Result IHidServer::SendVibrationValues(
     R_SUCCEED();
 }
 
+Result IHidServer::SendNativeVibrationValues(
+    u16 flags, AppletResourceUserId aruid,
+    InArray<Core::HID::VibrationDeviceHandle, BufferAttr_HipcPointer> vibration_handles,
+    InArray<Core::HID::VibrationValue, BufferAttr_HipcPointer> vibration_values) {
+    static u32 diagnostic_batches{};
+    if (diagnostic_batches++ < 8) LOG_INFO(Service_HID, "Native vibration batch flags={:#x}, aruid={}, handles={}, values={}",
+             flags, aruid.pid, vibration_handles.size(), vibration_values.size());
+    R_UNLESS(flags == 0 || flags == 2, IPC::ResultNotSupported);
+    R_RETURN(SendVibrationValues(ClientAppletResourceUserId{aruid.pid}, vibration_handles, vibration_values));
+}
+
 Result IHidServer::SendVibrationGcErmCommand(
     Core::HID::VibrationDeviceHandle vibration_device_handle, ClientAppletResourceUserId aruid,
     Core::HID::VibrationGcErmCommand gc_erm_command) {
@@ -1469,6 +1490,63 @@ Result IHidServer::SetTouchScreenResolution(u32 width, u32 height,
 
     GetResourceManager()->GetTouchScreen()->SetTouchScreenResolution(width, height, aruid.pid);
     R_SUCCEED();
+}
+
+Result IHidServer::RegisterNativeInputMemory(
+    u8 mode, u32 parameter0, u32 parameter1, u32 parameter2,
+    ClientAppletResourceUserId aruid, u64 size,
+    InCopyHandle<Kernel::KTransferMemory> memory) {
+    LOG_INFO(Service_HID, "Native input memory mode={}, parameters={:#x}/{:#x}/{:#x}, aruid={}, size={:#x}",
+             mode, parameter0, parameter1, parameter2, aruid.pid, size);
+    R_UNLESS(memory.Get() && memory->GetOwner()->UsesPAuthReturns() &&
+             memory->GetOwner()->GetProcessId() == aruid.pid, Kernel::ResultInvalidHandle);
+    R_UNLESS(mode <= 1 && size && size == memory->GetSize() && size <= 0x1000000,
+             Kernel::ResultInvalidSize);
+    R_UNLESS(native_input_memories.size() < 64, Kernel::ResultOutOfResource);
+    const auto existing = std::ranges::find(native_input_memories, memory.Get(), &NativeInputMemory::memory);
+    R_UNLESS(existing == native_input_memories.end(), Kernel::ResultInvalidState);
+    memory->Open(kernel);
+    native_input_memories.push_back({memory.Get(), aruid.pid, size, {mode, parameter0, parameter1, parameter2}});
+    // Retain the real guest-owned input buffer. No Joy-Con mouse samples are
+    // produced while those devices are disconnected.
+    R_SUCCEED();
+}
+
+Result IHidServer::RegisterJcmsMemory(ClientAppletResourceUserId aruid, u64 size,
+                                      InCopyHandle<Kernel::KTransferMemory> memory) {
+    LOG_INFO(Service_HID, "Native Joy-Con mouse memory: aruid={}, size={:#x}", aruid.pid, size);
+    return RegisterNativeInputMemory(1, 0, 0, 0, aruid, size, memory);
+}
+
+Result IHidServer::SetMergedNmouseSourceTypes(u32 source_types, ClientAppletResourceUserId aruid) {
+    LOG_INFO(Service_HID, "Native merged mouse sources: types={:#x}, aruid={}", source_types, aruid.pid);
+    R_UNLESS((source_types & ~6U) == 0, Kernel::ResultInvalidCombination);
+    const auto memory = std::ranges::find_if(native_input_memories, [&](const auto& registration) {
+        return registration.aruid == aruid.pid && registration.parameters[0] == 0;
+    });
+    R_UNLESS(memory != native_input_memories.end(), Kernel::ResultNotFound);
+    memory->merged_source_types = source_types;
+    R_SUCCEED();
+}
+
+Result IHidServer::SetNmouseButtonConfiguration(ClientAppletResourceUserId aruid, u64 configuration,
+                                                size_t side) {
+    LOG_INFO(Service_HID, "Native Joy-Con mouse buttons: side={}, config={:#x}, aruid={}",
+             side, configuration, aruid.pid);
+    const auto memory = std::ranges::find_if(native_input_memories, [&](const auto& registration) {
+        return registration.aruid == aruid.pid && registration.parameters[0] == 0;
+    });
+    R_UNLESS(memory != native_input_memories.end(), Kernel::ResultNotFound);
+    memory->jcms_button_configurations[side] = configuration;
+    R_SUCCEED();
+}
+
+Result IHidServer::SetNmouseButtonConfigJoyLeftJcms(ClientAppletResourceUserId aruid, u64 configuration) {
+    return SetNmouseButtonConfiguration(aruid, configuration, 0);
+}
+
+Result IHidServer::SetNmouseButtonConfigJoyRightJcms(ClientAppletResourceUserId aruid, u64 configuration) {
+    return SetNmouseButtonConfiguration(aruid, configuration, 1);
 }
 
 Result IHidServer::SetMouseLibraryVersion(ClientAppletResourceUserId aruid) {

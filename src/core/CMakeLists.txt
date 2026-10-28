@@ -460,6 +460,18 @@ add_library(core STATIC
     hle/service/am/service/application_proxy.h
     hle/service/am/service/application_proxy_service.cpp
     hle/service/am/service/application_proxy_service.h
+    hle/service/am/service/performance_functions.cpp
+    hle/service/am/service/performance_functions.h
+    hle/service/am/service/gpu_session.cpp
+    hle/service/am/service/gpu_session.h
+    hle/service/am/service/graphics_session.cpp
+    hle/service/am/service/graphics_session.h
+    hle/service/am/service/graphics_supervisor.cpp
+    hle/service/am/service/graphics_supervisor.h
+    hle/service/am/service/graphics_supervisor_protocol.h
+    hle/service/am/service/graphics_syncpoint_cache.h
+    hle/service/am/service/graphics_scaling_parameters_functions.cpp
+    hle/service/am/service/graphics_scaling_parameters_functions.h
     hle/service/am/service/audio_controller.cpp
     hle/service/am/service/audio_controller.h
     hle/service/am/service/common_state_getter.cpp
@@ -855,6 +867,8 @@ add_library(core STATIC
     hle/service/nvdrv/devices/nvhost_ctrl_gpu.h
     hle/service/nvdrv/devices/nvhost_gpu.cpp
     hle/service/nvdrv/devices/nvhost_gpu.h
+    hle/service/nvdrv/devices/nvhost_tsg_gpu.cpp
+    hle/service/nvdrv/devices/nvhost_tsg_gpu.h
     hle/service/nvdrv/devices/nvhost_nvdec.cpp
     hle/service/nvdrv/devices/nvhost_nvdec.h
     hle/service/nvdrv/devices/nvhost_nvdec_common.cpp

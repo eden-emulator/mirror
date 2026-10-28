@@ -7,6 +7,7 @@
 #include "common/settings.h"
 #include "core/core.h"
 #include "video_core/dma_pusher.h"
+#include "video_core/control/channel_state.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/gpu.h"
 #include "video_core/guest_memory.h"
@@ -29,7 +30,6 @@ DmaPusher::DmaPusher(Core::System& system_, MemoryManager& memory_manager_, Cont
 DmaPusher::~DmaPusher() = default;
 
 void DmaPusher::DispatchCalls() {
-    dma_pushbuffer_subindex = 0;
     dma_state.is_last_call = true;
     while (system.IsPoweredOn()) {
         if (!Step()) {
@@ -40,10 +40,19 @@ void DmaPusher::DispatchCalls() {
     system.GPU().OnCommandListEnd();
 }
 
+bool DmaPusher::HasFailedNativeWork() const {
+    const auto& context = channel_state.native_macro_context;
+    return channel_state.native_abi && context &&
+           (context->engine.native_execution_failed || context->compute_engine.native_execution_failed);
+}
+
 bool DmaPusher::Step() {
+    if (HasFailedNativeWork()) return false;
     if (!ib_enable || dma_pushbuffer.empty()) {
         return false;
     }
+
+    if (!puller.ResumeNativeAcquire(*this)) return false;
 
     CommandList& command_list = dma_pushbuffer.front();
 
@@ -57,7 +66,10 @@ bool DmaPusher::Step() {
     }
 
     if (prefetch_size > 0) {
-        ProcessCommands(command_list.prefetch_command_list);
+        const std::span<const CommandHeader> commands{command_list.prefetch_command_list};
+        command_resume_offset += ProcessCommands(commands.subspan(command_resume_offset), command_resume_offset);
+        if (puller.HasPendingNativeAcquire() || HasFailedNativeWork()) return false;
+        command_resume_offset = 0;
         dma_pushbuffer.pop();
         return true;
     }
@@ -86,13 +98,17 @@ bool DmaPusher::Step() {
         const bool use_safe = Settings::IsDMALevelDefault() ? Settings::IsGPULevelHigh() : Settings::IsDMALevelSafe();
         if (use_safe) {
             Tegra::Memory::GpuGuestMemory<Tegra::CommandHeader, Tegra::Memory::GuestMemoryFlags::SafeRead>headers(memory_manager, dma_state.dma_get, header.size, &command_headers);
-            ProcessCommands(headers);
+            const std::span<const CommandHeader> commands{headers.data(), headers.size()};
+            command_resume_offset += ProcessCommands(commands.subspan(command_resume_offset), command_resume_offset);
         } else {
             Tegra::Memory::GpuGuestMemory<Tegra::CommandHeader, Tegra::Memory::GuestMemoryFlags::UnsafeRead>headers(memory_manager, dma_state.dma_get, header.size, &command_headers);
-            ProcessCommands(headers);
+            const std::span<const CommandHeader> commands{headers.data(), headers.size()};
+            command_resume_offset += ProcessCommands(commands.subspan(command_resume_offset), command_resume_offset);
         }
     }
 
+    if (puller.HasPendingNativeAcquire() || HasFailedNativeWork()) return false;
+    command_resume_offset = 0;
     if (++dma_pushbuffer_subindex >= command_list_size) {
         dma_pushbuffer.pop();
         dma_pushbuffer_subindex = 0;
@@ -111,20 +127,21 @@ bool DmaPusher::Step() {
     return true;
 }
 
-void DmaPusher::ProcessCommands(std::span<const CommandHeader> commands) {
+size_t DmaPusher::ProcessCommands(std::span<const CommandHeader> commands, size_t word_offset) {
     for (size_t index = 0; index < commands.size();) {
         // Data word of methods command
         if (dma_state.method_count && dma_state.non_incrementing) {
             auto const& command_header = commands[index]; //must ref (MUltiMethod re)
-            dma_state.dma_word_offset = u32(index * sizeof(u32));
-            const u32 max_write = u32(std::min<std::size_t>(index + dma_state.method_count, commands.size()) - index);
+            dma_state.dma_word_offset = u64((word_offset + index) * sizeof(u32));
+            u32 max_write = u32(std::min<std::size_t>(index + dma_state.method_count, commands.size()) - index);
+            if (channel_state.native_abi && dma_state.method < non_puller_methods) max_write = 1;
             CallMultiMethod(&command_header.argument, max_write);
             dma_state.method_count -= max_write;
             dma_state.is_last_call = true;
             index += max_write;
         } else if (dma_state.method_count) {
             auto const command_header = commands[index]; //can copy
-            dma_state.dma_word_offset = u32(index * sizeof(u32));
+            dma_state.dma_word_offset = u64((word_offset + index) * sizeof(u32));
             dma_state.is_last_call = dma_state.method_count <= 1;
             CallMethod(command_header.argument);
             dma_state.method += !dma_state.non_incrementing ? 1 : 0;
@@ -163,7 +180,9 @@ void DmaPusher::ProcessCommands(std::span<const CommandHeader> commands) {
             }
             index++;
         }
+        if (puller.HasPendingNativeAcquire() || HasFailedNativeWork()) return index;
     }
+    return commands.size();
 }
 
 void DmaPusher::SetState(const CommandHeader& command_header) {

@@ -194,6 +194,7 @@ void ArmDynarmic64::MakeJit(Common::PageTable* page_table, std::size_t address_s
 
     // Callbacks
     config.callbacks = std::addressof(*m_cb);
+    config.enable_pauth_returns = m_cb->m_process && m_cb->m_process->UsesPAuthReturns();
 
     // Memory
     if (page_table) {
@@ -444,6 +445,8 @@ void ArmDynarmic64::ClearInstructionCache() {
 }
 
 void ArmDynarmic64::InvalidateCacheRange(u64 addr, std::size_t size) {
+    // Refetch the source page too, including instructions restored by the debugger.
+    m_cb->last_code_addr = u64(-1);
     m_jit->InvalidateCacheRange(addr, size);
 }
 

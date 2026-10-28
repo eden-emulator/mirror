@@ -39,6 +39,7 @@ UNIFORM(4) uint block_size;
 UNIFORM(5) uint x_shift;
 UNIFORM(6) uint block_height;
 UNIFORM(7) uint block_height_mask;
+UNIFORM(8) uint native_tiling;
 END_PUSH_CONSTANTS
 
 #if HAS_EXTENDED_TYPES
@@ -77,7 +78,12 @@ uint SwizzleTable(uint pos) {
 
 uint SwizzleOffset(uvec2 pos) {
     pos = pos & SWIZZLE_MASK;
-    return SwizzleTable(pos.y * 64 + pos.x);
+    uint offset = SwizzleTable(pos.y * 64 + pos.x);
+    if (native_tiling != 0) {
+        uint difference = ((offset >> 5) ^ (offset >> 6)) & 1;
+        offset ^= (difference << 5) | (difference << 6);
+    }
+    return offset;
 }
 
 uvec4 ReadTexel(uint offset) {

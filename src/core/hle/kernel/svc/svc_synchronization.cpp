@@ -15,13 +15,24 @@
 
 namespace Kernel::Svc {
 
+namespace {
+void LogInvalidNativeSyncHandle(Core::System& system, const char* operation, Handle handle) {
+    if (!GetCurrentProcess(system.Kernel()).UsesPAuthReturns()) { return; }
+    const auto& context = GetCurrentThread(system.Kernel()).GetContext();
+    LOG_DEBUG(Kernel_SVC, "native {} invalid handle={:#x}, pc={:#x}, lr={:#x}, fp={:#x}",
+              operation, handle, context.pc, context.lr, context.fp);
+}
+}
+
 /// Close a handle
 Result CloseHandle(Core::System& system, Handle handle) {
     LOG_TRACE(Kernel_SVC, "Closing handle {:#08x}", handle);
 
     // Remove the handle.
-    R_UNLESS(GetCurrentProcess(system.Kernel()).GetHandleTable().Remove(system.Kernel(), handle),
-             ResultInvalidHandle);
+    if (!GetCurrentProcess(system.Kernel()).GetHandleTable().Remove(system.Kernel(), handle)) {
+        LogInvalidNativeSyncHandle(system, "CloseHandle", handle);
+        R_THROW(ResultInvalidHandle);
+    }
 
     R_SUCCEED();
 }
@@ -49,6 +60,7 @@ Result ResetSignal(Core::System& system, Handle handle) {
         }
     }
 
+    LogInvalidNativeSyncHandle(system, "ResetSignal", handle);
     R_THROW(ResultInvalidHandle);
 }
 
@@ -72,7 +84,10 @@ Result WaitSynchronization(Core::System& system, int32_t* out_index, u64 user_ha
         R_UNLESS(GetCurrentMemory(system.Kernel()).ReadBlock(user_handles, handles.data(), sizeof(Handle) * num_handles), ResultInvalidPointer);
 
         // Convert the handles to objects.
-        R_UNLESS(handle_table.GetMultipleObjects<KSynchronizationObject>(system.Kernel(), objs.data(), handles.data(), num_handles), ResultInvalidHandle);
+        if (!handle_table.GetMultipleObjects<KSynchronizationObject>(system.Kernel(), objs.data(), handles.data(), num_handles)) {
+            for (s32 i = 0; i < num_handles; ++i) { LogInvalidNativeSyncHandle(system, "WaitSynchronization set", handles[i]); }
+            R_THROW(ResultInvalidHandle);
+        }
     }
 
     // Ensure handles are closed when we're done.

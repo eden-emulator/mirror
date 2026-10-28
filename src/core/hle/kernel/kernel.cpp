@@ -120,13 +120,13 @@ struct KernelCore::Impl {
     }
 
     void TerminateAllProcesses() {
-        std::scoped_lock lk{process_list_lock};
-        for (auto& process : process_list) {
-            process->Terminate(system.Kernel());
-            process->Close(system.Kernel());
-            process = nullptr;
+        auto& kernel = system.Kernel();
+        // Applet cleanup can remove processes while termination waits for its threads.
+        auto processes = kernel.GetProcessList();
+        for (auto& process : processes) {
+            process->Terminate(kernel);
+            kernel.RemoveProcess(process.GetPointerUnsafe());
         }
-        process_list.clear();
     }
 
     void Shutdown(KernelCore& kernel) {

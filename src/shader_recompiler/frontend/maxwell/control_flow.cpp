@@ -457,7 +457,7 @@ CFG::AnalysisState CFG::AnalyzeBRX(Block* block, Location pc, Instruction inst, 
 
     block->indirect_branches.reserve(targets.size());
     for (const u32 target : targets) {
-        Block* const branch{AddLabel(block, block->stack, target, function_id)};
+        Block* const branch{AddLabel(block, block->stack, env.TranslateProgramAddress(target), function_id)};
         block->indirect_branches.push_back({
             .block = branch,
             .address = target,

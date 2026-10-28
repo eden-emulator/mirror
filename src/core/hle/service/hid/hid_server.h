@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <array>
+#include <vector>
 #include "core/hle/service/cmif_types.h"
 #include "core/hle/service/service.h"
 #include "hid_core/hid_types.h"
@@ -175,6 +177,10 @@ private:
         ClientAppletResourceUserId aruid,
         InArray<Core::HID::VibrationDeviceHandle, BufferAttr_HipcPointer> vibration_handles,
         InArray<Core::HID::VibrationValue, BufferAttr_HipcPointer> vibration_values);
+    Result SendNativeVibrationValues(
+        u16 flags, AppletResourceUserId aruid,
+        InArray<Core::HID::VibrationDeviceHandle, BufferAttr_HipcPointer> vibration_handles,
+        InArray<Core::HID::VibrationValue, BufferAttr_HipcPointer> vibration_values);
     Result SendVibrationGcErmCommand(Core::HID::VibrationDeviceHandle vibration_device_handle,
                                      ClientAppletResourceUserId aruid,
                                      Core::HID::VibrationGcErmCommand gc_erm_command);
@@ -265,6 +271,24 @@ private:
     Result SetTouchScreenResolution(u32 width, u32 height, ClientAppletResourceUserId aruid);
     Result SetMouseLibraryVersion(ClientAppletResourceUserId aruid);
 
+    Result RegisterNativeInputMemory(u8 mode, u32 parameter0, u32 parameter1, u32 parameter2,
+                                     ClientAppletResourceUserId aruid, u64 size,
+                                     InCopyHandle<Kernel::KTransferMemory> memory);
+    Result RegisterJcmsMemory(ClientAppletResourceUserId aruid, u64 size,
+                              InCopyHandle<Kernel::KTransferMemory> memory);
+    Result SetMergedNmouseSourceTypes(u32 source_types, ClientAppletResourceUserId aruid);
+    Result SetNmouseButtonConfigJoyLeftJcms(ClientAppletResourceUserId aruid, u64 configuration);
+    Result SetNmouseButtonConfigJoyRightJcms(ClientAppletResourceUserId aruid, u64 configuration);
+    Result SetNmouseButtonConfiguration(ClientAppletResourceUserId aruid, u64 configuration, size_t side);
+    struct NativeInputMemory {
+        Kernel::KTransferMemory* memory;
+        u64 aruid;
+        u64 size;
+        std::array<u32, 4> parameters;
+        u32 merged_source_types{};
+        std::array<u64, 2> jcms_button_configurations{};
+    };
+    std::vector<NativeInputMemory> native_input_memories;
     std::shared_ptr<ResourceManager> resource_manager;
     std::shared_ptr<HidFirmwareSettings> firmware_settings;
 };

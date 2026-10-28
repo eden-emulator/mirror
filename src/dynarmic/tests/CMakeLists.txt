@@ -17,6 +17,8 @@ add_executable(dynarmic_tests
     decoder_tests.cpp
     # A64
     A64/a64.cpp
+    A64/pauth_returns.cpp
+    A64/lse.cpp
     A64/fibonacci.cpp
     A64/fp_min_max.cpp
     A64/misaligned_page_table.cpp

@@ -22,6 +22,11 @@
 #include "video_core/texture_cache/util.h"
 
 namespace Tegra {
+
+bool MemoryManager::IsShuttingDown() const {
+    return system.IsShuttingDown();
+}
+
 using Tegra::Memory::GuestMemoryFlags;
 
 std::atomic<size_t> MemoryManager::unique_identifier_generator{};
@@ -55,6 +60,10 @@ MemoryManager::MemoryManager(Core::System& system_, MaxwellDeviceMemoryManager& 
 MemoryManager::MemoryManager(Core::System& system_, u64 address_space_bits_, GPUVAddr split_address_, u64 big_page_bits_, u64 page_bits_)
     : MemoryManager(system_, system_.Host1x().MemoryManager(), address_space_bits_, split_address_, big_page_bits_, page_bits_)
 {}
+
+void MemoryManager::SetNativeSyncpointShim(GPUVAddr address) {
+    native_syncpoint_shim.store(address, std::memory_order_release);
+}
 
 MemoryManager::~MemoryManager() = default;
 
@@ -231,6 +240,15 @@ std::optional<DAddr> MemoryManager::GpuToCpuAddress(GPUVAddr addr, std::size_t s
 
 template <typename T>
 T MemoryManager::Read(GPUVAddr addr) const {
+    if constexpr (sizeof(T) == sizeof(u32)) {
+        const auto shim = native_syncpoint_shim.load(std::memory_order_acquire);
+        if (shim && addr >= shim && addr - shim < 192 * sizeof(u32) &&
+            Common::IsAligned(addr - shim, sizeof(u32))) {
+            return static_cast<T>(system.Host1x().GetSyncpointManager().GetGuestSyncpointValue(
+                static_cast<u32>((addr - shim) / sizeof(u32))));
+        }
+    }
+
     if (auto page_pointer{GetPointer(addr)}; page_pointer) {
         // NOTE: Avoid adding any extra logic to this fast-path block
         T value;

@@ -11,7 +11,9 @@
 #include "core/hle/service/am/service/common_state_getter.h"
 #include "core/hle/service/am/service/debug_functions.h"
 #include "core/hle/service/am/service/display_controller.h"
+#include "core/hle/service/am/service/graphics_scaling_parameters_functions.h"
 #include "core/hle/service/am/service/library_applet_creator.h"
+#include "core/hle/service/am/service/performance_functions.h"
 #include "core/hle/service/am/service/process_winding_controller.h"
 #include "core/hle/service/am/service/self_controller.h"
 #include "core/hle/service/am/service/window_controller.h"
@@ -33,6 +35,9 @@ IApplicationProxy::IApplicationProxy(Core::System& system_, std::shared_ptr<Appl
         {10, D<&IApplicationProxy::GetProcessWindingController>, "GetProcessWindingController"},
         {11, D<&IApplicationProxy::GetLibraryAppletCreator>, "GetLibraryAppletCreator"},
         {20, D<&IApplicationProxy::GetApplicationFunctions>, "GetApplicationFunctions"},
+        {40, D<&IApplicationProxy::GetPerformanceFunctions>, "GetPerformanceFunctions"},
+        {60, D<&IApplicationProxy::GetGraphicsScalingParametersFunctions>,
+         "GetGraphicsScalingParametersFunctions"},
         {1000, D<&IApplicationProxy::GetDebugFunctions>, "GetDebugFunctions"},
     };
     // clang-format on
@@ -103,6 +108,20 @@ Result IApplicationProxy::GetApplicationFunctions(
     Out<SharedPointer<IApplicationFunctions>> out_application_functions) {
     LOG_DEBUG(Service_AM, "called");
     *out_application_functions = std::make_shared<IApplicationFunctions>(system, m_applet);
+    R_SUCCEED();
+}
+
+Result IApplicationProxy::GetPerformanceFunctions(
+    Out<SharedPointer<IPerformanceFunctions>> out_functions) {
+    LOG_DEBUG(Service_AM, "called");
+    *out_functions = std::make_shared<IPerformanceFunctions>(system);
+    R_SUCCEED();
+}
+
+Result IApplicationProxy::GetGraphicsScalingParametersFunctions(
+    Out<SharedPointer<IGraphicsScalingParametersFunctions>> out_functions) {
+    LOG_DEBUG(Service_AM, "called");
+    *out_functions = std::make_shared<IGraphicsScalingParametersFunctions>(system, m_applet);
     R_SUCCEED();
 }
 

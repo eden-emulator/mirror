@@ -4,12 +4,18 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <chrono>
+#include <limits>
 #include <fmt/ranges.h>
+#include <string_view>
+#include <thread>
 #include "common/assert.h"
 #include "common/logging.h"
 #include "common/settings.h"
 #include "core/core.h"
 #include "core/hle/ipc.h"
+#include "core/hle/kernel/k_process.h"
+#include "core/hle/kernel/k_thread.h"
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/service.h"
@@ -67,6 +73,26 @@ void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx,
         fmt::format_to(std::back_inserter(buf), ", [{}]={:#x}", i, cmd_buf[i]);
     buf.push_back('}');
 
+    if (ctx.GetThread().GetOwnerProcess()->UsesPAuthReturns()) {
+        const auto& context = ctx.GetThread().GetContext();
+        LOG_DEBUG(Service, "Unsupported IPC caller pc={:#x}, lr={:#x}, sp={:#x}, fp={:#x}",
+                  context.pc, context.lr, context.sp, context.fp);
+        u64 frame = context.fp;
+        for (u32 depth = 0; depth < 8 && frame != 0; ++depth) {
+            if (frame > (std::numeric_limits<u64>::max)() - 15 ||
+                !ctx.GetMemory().IsValidVirtualAddress(frame) ||
+                !ctx.GetMemory().IsValidVirtualAddress(frame + 15)) {
+                break;
+            }
+            const u64 next = ctx.GetMemory().Read64(frame);
+            LOG_DEBUG(Service, "Unsupported IPC frame {}: return={:#x}", depth,
+                      ctx.GetMemory().Read64(frame + 8));
+            if (next <= frame) {
+                break;
+            }
+            frame = next;
+        }
+    }
     system.GetReporter().SaveUnimplementedFunctionReport(ctx, ctx.GetCommand(), function_name, service_name);
     UNIMPLEMENTED_MSG("Unknown / unimplemented {}", fmt::to_string(buf));
     if (Settings::values.use_auto_stub) {

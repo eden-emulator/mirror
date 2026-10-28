@@ -5,7 +5,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <chrono>
+#include <cstdlib>
+#include <thread>
 #include <filesystem>
+#include <cstring>
 #include <fstream>
 #include <memory>
 #include <optional>
@@ -21,6 +25,11 @@
 #include "common/settings.h"
 #include <ranges>
 #include "shader_recompiler/environment.h"
+#include "shader_recompiler/exception.h"
+#include "shader_recompiler/frontend/ampere/lower_to_maxwell.h"
+#include "shader_recompiler/frontend/ampere/program_override.h"
+#include "shader_recompiler/frontend/ampere/program_capture.h"
+#include "shader_recompiler/frontend/ampere/program_address_map.h"
 #include "video_core/engines/kepler_compute.h"
 #include "video_core/memory_manager.h"
 #include "video_core/shader_environment.h"
@@ -149,11 +158,26 @@ u64 GenericEnvironment::ReadInstruction(u32 address) {
     if (address >= cached_lowest && address < cached_highest) {
         return code[(address - cached_lowest) / INST_SIZE];
     }
+    if (native_source_size) {
+        throw Shader::RuntimeError("Lowered native instruction address out of range: {:#x}", address);
+    }
     has_unbound_instructions = true;
     return gpu_memory->Read<u64>(program_base + address);
 }
 
+u32 GenericEnvironment::TranslateProgramAddress(u32 address) const {
+    if (const auto translated = Shader::Ampere::NativeProgramAddress(code, address)) return *translated;
+    if (native_source_size || Shader::Ampere::HasNativeAddressMap(code))
+        throw Shader::RuntimeError("Invalid native indirect branch address {:#x}", address);
+    return address;
+}
+
 std::optional<u64> GenericEnvironment::Analyze() {
+    if (native_source_size) {
+        // Include the converted header and a version tag to isolate this experimental ABI.
+        return Common::CityHash64(reinterpret_cast<const char*>(code.data()),
+                                  code.size() * sizeof(u64)) ^ 0x4f554e4345000002ULL;
+    }
     const std::optional<u64> size{TryFindSize()};
     if (!size) {
         return std::nullopt;
@@ -164,6 +188,12 @@ std::optional<u64> GenericEnvironment::Analyze() {
 }
 
 void GenericEnvironment::SetCachedSize(size_t size_bytes) {
+    if (native_source_size) {
+        if (size_bytes != CachedSizeBytes()) {
+            throw Shader::RuntimeError("Native shader changed while constructing pipeline");
+        }
+        return;
+    }
     cached_lowest = start_address;
     cached_highest = start_address + static_cast<u32>(size_bytes);
     code.resize(CachedSizeWords());
@@ -291,6 +321,104 @@ Tegra::Texture::TICEntry GenericEnvironment::ReadTextureInfo(GPUVAddr tic_addr, 
     return entry;
 }
 
+void GenericEnvironment::InitializeNativeCode(u32 source_header_size) {
+    using Shader::Ampere::Instruction;
+    const u32 native_header_size = source_header_size;
+    constexpr u32 maximum_instructions = Shader::Ampere::ProgramCaptureState::MaximumInstructions;
+    std::vector<Instruction> native;
+    Shader::Ampere::ProgramCaptureState capture;
+    for (u32 index = 0; index < maximum_instructions; ++index) {
+        const GPUVAddr address = program_base + native_header_size + index * sizeof(Instruction);
+        if (!gpu_memory->IsFullyMappedRange(address, sizeof(Instruction))) {
+            throw Shader::RuntimeError("Unmapped native shader instruction at {:#x}", address);
+        }
+        auto& instruction = native.emplace_back();
+        gpu_memory->ReadBlock(address, &instruction, sizeof(instruction));
+        const auto status = capture.Observe(instruction, index);
+        if (status == Shader::Ampere::ProgramCaptureState::Result::InvalidTarget)
+            throw Shader::RuntimeError("Native shader branch outside capture bounds");
+        if (status == Shader::Ampere::ProgramCaptureState::Result::Complete) break;
+    }
+    auto lowered = Shader::Ampere::LowerToMaxwell(native);
+    if (!lowered) {
+        if (const char* directory = std::getenv("EDEN_NATIVE_SHADER_OVERRIDE_DIR")) {
+            const auto key = fmt::format("{:016x}", Shader::Ampere::NativeProgramKey(native));
+            const auto folder = std::filesystem::path{directory};
+            std::filesystem::create_directories(folder);
+            const auto source_path = folder / (key + ".source.bin");
+            const auto override_path = folder / (key + ".override.bin");
+            {
+                std::ofstream dump(source_path, std::ios::binary);
+                dump.write(reinterpret_cast<const char*>(native.data()), native.size() * sizeof(Shader::Ampere::Instruction));
+            }
+            {
+                // Retain mapped bytes beyond the first EXIT for investigating
+                // native CALL targets in compiler library subroutines.
+                std::ofstream mapped(folder / (key + ".mapped.bin"), std::ios::binary);
+                std::array<u8, 0x1000> block{};
+                for (u32 offset = 0; offset < 0x10000; offset += 0x1000) {
+                    if (!gpu_memory->IsFullyMappedRange(program_base + offset, block.size())) break;
+                    gpu_memory->ReadBlock(program_base + offset, block.data(), block.size());
+                    mapped.write(reinterpret_cast<const char*>(block.data()), block.size());
+                }
+            }
+            LOG_WARNING(Shader, "Native shader paused: key={}, offset={:#x}, reason={}, source={}",
+                        key, lowered.error_offset, lowered.error, source_path.string());
+            const auto deadline = std::chrono::steady_clock::now() + std::chrono::minutes{30};
+            while (!gpu_memory->IsShuttingDown() && std::chrono::steady_clock::now() < deadline) {
+                if (std::filesystem::exists(override_path)) {
+                    std::ifstream file(override_path, std::ios::binary | std::ios::ate);
+                    const auto length = file.tellg();
+                    if (length <= 0 || length > 16 * 1024 * 1024) {
+                        throw Shader::RuntimeError("Invalid native shader override size");
+                    }
+                    std::vector<u8> bytes(static_cast<size_t>(length));
+                    file.seekg(0);
+                    file.read(reinterpret_cast<char*>(bytes.data()), bytes.size());
+                    if (!file) throw Shader::RuntimeError("Native shader override read failed");
+                    const u32 source_bytes = Shader::Ampere::ProgramOverrideSourceSize(bytes);
+                    if (source_bytes > native.size() * sizeof(Shader::Ampere::Instruction)) {
+                        if (!gpu_memory->IsFullyMappedRange(program_base + native_header_size, source_bytes))
+                            throw Shader::RuntimeError("Unmapped extended native shader source");
+                        native.resize(source_bytes / sizeof(Shader::Ampere::Instruction));
+                        gpu_memory->ReadBlock(program_base + native_header_size, native.data(), source_bytes);
+                    }
+                    lowered = Shader::Ampere::DecodeProgramOverride(bytes, native);
+                    if (!lowered) throw Shader::RuntimeError("Native shader override rejected: {}", lowered.error);
+                    LOG_WARNING(Shader, "Native shader resumed: key={}, instructions={}", key, lowered.instructions.size());
+                    break;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds{100});
+            }
+        }
+    }
+    if (!lowered) {
+        throw Shader::RuntimeError("Native shader at {:#x}, instruction {:#x}: {}",
+                                   program_base, lowered.error_offset, lowered.error);
+    }
+    if (lowered.required_texture_buffer != ~0U) {
+        // Native TEX carries its cbuf index explicitly; TEXS obtains it from the environment.
+        texture_bound = lowered.required_texture_buffer;
+    }
+    native_source_size = native_header_size + lowered.source_size;
+    code.resize(sizeof(sph) / sizeof(u64));
+    std::memcpy(code.data(), &sph, sizeof(sph));
+    for (const u64 instruction : lowered.instructions) {
+        if ((code.size() * sizeof(u64)) % 32 == 0) {
+            code.push_back(0); // Maxwell scheduling word, absent from native instructions.
+        }
+        code.push_back(instruction);
+    }
+    // Keep the original padding ABI, then retain the native address map as
+    // unreachable data. Existing disk-cache serialization carries it with code.
+    code.push_back(0);
+    Shader::Ampere::AppendNativeAddressMap(code, lowered.source_instruction_offsets);
+    cached_lowest = 0;
+    cached_highest = static_cast<u32>((code.size() - 1) * sizeof(u64));
+    LOG_INFO(Shader, "Lowered native shader at {:#x}: {} source bytes, {} instructions",
+             program_base, native_source_size, lowered.instructions.size());
+}
+
 GraphicsEnvironment::GraphicsEnvironment(Tegra::Engines::Maxwell3D& maxwell3d_,
                                          Tegra::MemoryManager& gpu_memory_,
                                          Maxwell::ShaderType program, GPUVAddr program_base_,
@@ -298,6 +426,23 @@ GraphicsEnvironment::GraphicsEnvironment(Tegra::Engines::Maxwell3D& maxwell3d_,
     : GenericEnvironment{gpu_memory_, program_base_, start_address_}, maxwell3d{&maxwell3d_} {
     gpu_memory->ReadBlock(program_base + start_address, &sph, sizeof(sph));
     initial_offset = sizeof(sph);
+    texture_bound = maxwell3d->regs.bindless_texture_const_buffer_slot;
+    if (maxwell3d->GetNativeMacroEngine().native_turing) {
+        if (program != Maxwell::ShaderType::VertexB && program != Maxwell::ShaderType::Pixel) {
+            throw Shader::RuntimeError("Unsupported native graphics shader stage {}", static_cast<u32>(program));
+        }
+        if (std::getenv("EDEN_NATIVE_DRAW_DIAGNOSTICS")) {
+            const u32 native_stage = program == Maxwell::ShaderType::Pixel ? 4 : 0;
+            const auto& table = maxwell3d->state.shader_stages[native_stage].const_buffers[1];
+            if (table.enabled && table.size && table.size <= Tegra::Engines::Maxwell3D::Regs::MaxConstBufferSize) {
+                std::vector<u8> bytes(table.size);
+                gpu_memory->ReadBlock(table.address, bytes.data(), bytes.size());
+                std::ofstream dump(fmt::format("native-graphics-cbuf-{}-1.bin", static_cast<u32>(program)), std::ios::binary);
+                dump.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+            }
+        }
+        InitializeNativeCode();
+    }
     gp_passthrough_mask = maxwell3d->regs.post_vtg_shader_attrib_skip_mask;
     switch (program) {
     case Maxwell::ShaderType::VertexA:
@@ -331,8 +476,7 @@ GraphicsEnvironment::GraphicsEnvironment(Tegra::Engines::Maxwell3D& maxwell3d_,
     const u64 local_size{sph.LocalMemorySize()};
     ASSERT(local_size <= (std::numeric_limits<u32>::max)());
     local_memory_size = static_cast<u32>(local_size) + sph.common3.shader_local_memory_crs_size;
-    texture_bound = maxwell3d->regs.bindless_texture_const_buffer_slot;
-    is_proprietary_driver = texture_bound == 2;
+    is_proprietary_driver = maxwell3d->GetNativeMacroEngine().native_turing || texture_bound == 2;
     has_hle_engine_state =
         maxwell3d->engine_state == Tegra::Engines::Maxwell3D::EngineHint::OnHLEMacro;
 }
@@ -417,6 +561,12 @@ ComputeEnvironment::ComputeEnvironment(Tegra::Engines::KeplerCompute& kepler_com
     is_proprietary_driver = texture_bound == 2;
     shared_memory_size = qmd.shared_alloc;
     workgroup_size = {qmd.block_dim_x, qmd.block_dim_y, qmd.block_dim_z};
+    if (kepler_compute->IsNativeMode()) {
+        initial_offset = sizeof(sph);
+        is_proprietary_driver = true;
+        InitializeNativeCode(0);
+        start_address = sizeof(sph);
+    }
 }
 
 u32 ComputeEnvironment::ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) {
@@ -511,7 +661,7 @@ void FileEnvironment::Deserialize(std::ifstream& file) {
     if (stage == Shader::Stage::Compute) {
         file.read(reinterpret_cast<char*>(&workgroup_size), sizeof(workgroup_size))
             .read(reinterpret_cast<char*>(&shared_memory_size), sizeof(shared_memory_size));
-        initial_offset = 0;
+        initial_offset = Shader::Ampere::HasNativeAddressMap(code) ? sizeof(sph) : 0;
     } else {
         file.read(reinterpret_cast<char*>(&sph), sizeof(sph));
         initial_offset = sizeof(sph);
@@ -524,6 +674,13 @@ void FileEnvironment::Deserialize(std::ifstream& file) {
 
 void FileEnvironment::Dump(u64 pipeline_hash, u64 shader_hash) {
     DumpImpl(pipeline_hash, shader_hash, code, read_highest, read_lowest, initial_offset, stage);
+}
+
+u32 FileEnvironment::TranslateProgramAddress(u32 address) const {
+    if (const auto translated = Shader::Ampere::NativeProgramAddress(code, address)) return *translated;
+    if (Shader::Ampere::HasNativeAddressMap(code))
+        throw Shader::RuntimeError("Invalid cached native indirect branch address {:#x}", address);
+    return address;
 }
 
 u64 FileEnvironment::ReadInstruction(u32 address) {

@@ -242,6 +242,10 @@ struct UserConfig {
     /// instruction is executed.
     bool hook_hint_instructions = false;
 
+    /// Expose authenticated returns and PAC stripping with authentication keys disabled.
+    /// This does not generate or verify PACs. PAC/AUT hint instructions remain NOPs.
+    bool enable_pauth_returns = false;
+
     /// Determines what happens if the guest accesses an entry that is off the end of the
     /// page table. If true, Dynarmic will silently mirror page_table's address space. If
     /// false, accessing memory outside of page_table bounds will result in a call to the

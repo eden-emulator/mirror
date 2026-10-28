@@ -15,6 +15,8 @@
 #include "common/common_types.h"
 #include "video_core/engines/engine_interface.h"
 #include "video_core/engines/engine_upload.h"
+#include "video_core/macro.h"
+#include "video_core/native_qmd.h"
 #include "video_core/textures/texture.h"
 
 namespace Core {
@@ -50,6 +52,22 @@ public:
 
     /// Binds a rasterizer to this engine.
     void BindRasterizer(VideoCore::RasterizerInterface* rasterizer);
+
+    void SetNativeMacroMode(MacroEngine* shared_macro, std::span<u32> positions, NativeMacroContext* context = nullptr) {
+        if (native_context != context) native_compute_uploaded = false;
+        native_context = context;
+        native_mode = shared_macro != nullptr;
+        upload_state.SetNativePartialTransfers(native_mode);
+        native_macro = shared_macro;
+        native_macro_positions = positions;
+        if (native_mode) execution_mask.set();
+        else {
+            execution_mask.reset();
+            execution_mask[KEPLER_COMPUTE_REG_INDEX(exec_upload)] = true;
+            execution_mask[KEPLER_COMPUTE_REG_INDEX(data_upload)] = true;
+            execution_mask[KEPLER_COMPUTE_REG_INDEX(launch)] = true;
+        }
+    }
 
     static constexpr std::size_t NumConstBuffers = 8;
 
@@ -211,7 +229,22 @@ public:
         return indirect_compute;
     }
 
+    bool IsNativeMode() const { return native_mode; }
+
 private:
+    bool DispatchNativeCompute(const NativeQmdScheduler::Descriptor& descriptor);
+    bool ProcessNativeMethod(Core::System& system, u32 method, u32 argument, bool is_last_call);
+    NativeQmdScheduler native_qmd;
+    bool native_mode{};
+    NativeMacroContext* native_context{};
+    bool native_compute_uploaded{};
+    MacroEngine* native_macro{};
+    std::array<u32, 0x1000> native_registers{};
+    std::span<u32> native_macro_positions;
+    std::vector<u32> native_parameters;
+    std::optional<u32> native_executing_macro;
+    u32 native_bind_pointer{};
+
     void ProcessLaunch();
 
     void ConsumeSinkImpl(Core::System& system) override;

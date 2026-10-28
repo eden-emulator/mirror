@@ -64,6 +64,11 @@ public:
 
     Kernel::KEvent* QueryEvent(u32 event_id) override;
 
+    NvResult MapNative4K(u32 handle, u64 address, u64 buffer_offset, u64 size, u8 kind);
+    NvResult UnmapNative4K(u64 address, u64 size);
+    NvResult GetNativeSyncpointShim(u64& address, u32& stride, u32& count);
+    NvResult ModifyNativeKind(u64 address, u64 size, u8 requested, u8 fallback);
+
     struct VaRegion {
         u64 offset;
         u32 page_size;
@@ -145,6 +150,25 @@ private:
     static_assert(sizeof(IoctlGetVaRegions) == 16 + sizeof(VaRegion) * 2,
                   "IoctlGetVaRegions is incorrect size");
 
+    struct IoctlSyncpointShimInfo {
+        u64_le address;
+        u32_le stride;
+        u32_le count;
+    };
+    static_assert(sizeof(IoctlSyncpointShimInfo) == 16);
+    NvResult GetSyncpointShimInfo(IoctlSyncpointShimInfo& params);
+
+    struct IoctlModifyKind {
+        u16_le compressed_kind;
+        u16_le uncompressed_kind;
+        u32_le reserved;
+        u64_le buffer_offset;
+        u64_le size;
+        u64_le mapping_base;
+    };
+    static_assert(sizeof(IoctlModifyKind) == 32);
+    NvResult ModifyKind(IoctlModifyKind& params);
+
     NvResult AllocAsEx(IoctlAllocAsEx& params);
     NvResult AllocateSpace(IoctlAllocSpace& params);
     NvResult Remap(std::span<IoctlRemapEntry> params);
@@ -196,6 +220,12 @@ private:
     std::map<u64, Allocation> allocation_map;
     std::mutex mutex; //!< Locks all AS operations
 
+    bool m_extended_abi{};
+    bool m_syncpoint_shim_reserved{};
+    DeviceFD m_fd{-1};
+    Kernel::KProcess* m_owner_process{};
+    std::shared_ptr<nvhost_as_gpu> m_shared_parent;
+
     struct VM {
         static constexpr u32 YUZU_PAGESIZE{0x1000};
         static constexpr u32 PAGE_SIZE_BITS{static_cast<u32>(std::countr_zero<u32>(YUZU_PAGESIZE))};
@@ -219,7 +249,7 @@ private:
 
         bool initialised{};
     } vm;
-    std::unique_ptr<Tegra::MemoryManager> gmmu;
+    std::shared_ptr<Tegra::MemoryManager> gmmu;
 };
 
 } // namespace Service::Nvidia::Devices

@@ -42,7 +42,7 @@ layout(push_constant) uniform PushConstants {
 
     uint block_depth;           // Offset 48
     uint block_depth_mask;      // Offset 52
-    int _pad;                   // Offset 56
+    uint native_tiling;                   // Offset 56
 
     ivec3 destination;          // Offset 60
 } pc;
@@ -59,6 +59,7 @@ BEGIN_PUSH_CONSTANTS
     UNIFORM(8)  uint  block_depth;
     UNIFORM(9)  uint  block_depth_mask;
     UNIFORM(10) uvec3 blocks_dim;
+    UNIFORM(11) uint native_tiling;
 END_PUSH_CONSTANTS
 #define pc // Map pc prefix to nothing for OpenGL compatibility
 #endif
@@ -103,7 +104,12 @@ uint SwizzleTable(uint pos) {
 // --- Helpers ---
 uint SwizzleOffset(uvec2 pos) {
     pos &= SWIZZLE_MASK;
-    return SwizzleTable(pos.y * 64u + pos.x);
+    uint offset = SwizzleTable(pos.y * 64 + pos.x);
+    if (pc.native_tiling != 0) {
+        uint difference = ((offset >> 5) ^ (offset >> 6)) & 1;
+        offset ^= (difference << 5) | (difference << 6);
+    }
+    return offset;
 }
 
 uvec4 ReadTexel(uint offset) {

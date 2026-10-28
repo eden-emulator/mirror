@@ -12,6 +12,7 @@
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <optional>
 
 #include "common/common_funcs.h"
 #include "common/cpu_features.h"
@@ -57,6 +58,7 @@ public:
     Kernel::KReadableEvent* GetNativeHandle(u32 type_id) override;
 
 public:
+    std::optional<Fence> GetReleasedBufferFence(s32 slot);
     Status RequestBuffer(s32 slot, std::shared_ptr<GraphicBuffer>* buf);
     Status SetBufferCount(s32 buffer_count);
     Status DequeueBuffer(s32* out_slot, android::Fence* out_fence, bool async, u32 width,

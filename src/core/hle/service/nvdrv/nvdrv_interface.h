@@ -17,6 +17,8 @@ namespace Service::Nvidia {
 class NVDRV final : public ServiceFramework<NVDRV> {
 public:
     explicit NVDRV(Core::System& system_, std::shared_ptr<Module> nvdrv_, const char* name);
+    explicit NVDRV(Core::System& system, std::shared_ptr<Module> module, const char* name,
+                   Kernel::KProcess* process, u64 aruid);
     ~NVDRV() override;
 
     std::shared_ptr<Module> GetModule() const {

@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
+#include <limits>
 #include <optional>
 #include "common/assert.h"
 #include "common/bit_util.h"
@@ -253,7 +254,10 @@ u32 Maxwell3D::GetMaxCurrentVertices() {
         const auto& limit = regs.vertex_stream_limits[index];
         const GPUVAddr gpu_addr_begin = array.Address();
         const GPUVAddr gpu_addr_end = limit.Address() + 1;
-        const u32 address_size = static_cast<u32>(gpu_addr_end - gpu_addr_begin);
+        const u64 stream_size = GetNativeMacroEngine().native_turing
+                                    ? regs.NativeVertexStreamSize(index)
+                                    : gpu_addr_end - gpu_addr_begin;
+        const u32 address_size = static_cast<u32>(std::min<u64>(stream_size, std::numeric_limits<u32>::max()));
         num_vertices = (std::max)(
             num_vertices, address_size / (std::max)(attribute.SizeInBytes(), array.stride.Value()));
         break;
@@ -305,6 +309,9 @@ void Maxwell3D::ProcessDirtyRegisters(u32 method, u32 argument) {
 }
 
 void Maxwell3D::ProcessMethodCall(u32 method, u32 argument, u32 nonshadow_argument, bool is_last_call) {
+    if (GetNativeMacroEngine().native_turing && method == MAXWELL3D_REG_INDEX(clear_surface)) {
+        LOG_INFO(HW_GPU, "Native GPU surface clear: value={:#x}", argument);
+    }
     switch (method) {
     case MAXWELL3D_REG_INDEX(wait_for_idle):
         return rasterizer->WaitForIdle();
@@ -312,9 +319,9 @@ void Maxwell3D::ProcessMethodCall(u32 method, u32 argument, u32 nonshadow_argume
         shadow_state.shadow_ram_control = static_cast<Regs::ShadowRamControl>(nonshadow_argument);
         return;
     case MAXWELL3D_REG_INDEX(load_mme.instruction_ptr):
-        return macro_engine.ClearCode(regs.load_mme.instruction_ptr);
+        return GetNativeMacroEngine().ClearCode(regs.load_mme.instruction_ptr);
     case MAXWELL3D_REG_INDEX(load_mme.instruction):
-        return macro_engine.AddCode(regs.load_mme.instruction_ptr, argument);
+        return GetNativeMacroEngine().AddCode(regs.load_mme.instruction_ptr, argument);
     case MAXWELL3D_REG_INDEX(load_mme.start_address):
         return ProcessMacroBind(argument);
     case MAXWELL3D_REG_INDEX(falcon[4]):
@@ -378,10 +385,10 @@ void Maxwell3D::CallMacroMethod(Core::System& system, u32 method, const std::vec
 
     // Lookup the macro offset
     const u32 entry =
-        ((method - MacroRegistersStart) >> 1) % static_cast<u32>(macro_positions.size());
+        ((method - MacroRegistersStart) >> 1) % static_cast<u32>(GetNativeMacroPositions().size());
 
     // Execute the current macro.
-    macro_engine.Execute(system, *this, macro_positions[entry], parameters);
+    GetNativeMacroEngine().Execute(system, *this, GetNativeMacroPositions()[entry], parameters);
     draw_manager.DrawDeferred(*this);
 }
 
@@ -453,11 +460,11 @@ void Maxwell3D::CallMultiMethod(Core::System& system, u32 method, const u32* bas
 }
 
 void Maxwell3D::ProcessMacroUpload(u32 data) {
-    macro_engine.AddCode(regs.load_mme.instruction_ptr++, data);
+    GetNativeMacroEngine().AddCode(regs.load_mme.instruction_ptr++, data);
 }
 
 void Maxwell3D::ProcessMacroBind(u32 data) {
-    macro_positions[regs.load_mme.start_address_ptr++] = data;
+    GetNativeMacroPositions()[regs.load_mme.start_address_ptr++] = data;
 }
 
 void Maxwell3D::ProcessFirmwareCall4() {
@@ -586,6 +593,9 @@ void Maxwell3D::ProcessCounterReset() {
 }
 
 void Maxwell3D::ProcessSyncPoint() {
+    if (GetNativeMacroEngine().native_turing) {
+        LOG_DEBUG(HW_GPU, "Native 3D syncpoint increment: id={}, raw={:#x}", regs.sync_info.sync_point.Value(), regs.reg_array[MAXWELL3D_REG_INDEX(sync_info)]);
+    }
     const u32 sync_point = regs.sync_info.sync_point.Value();
     [[maybe_unused]] const u32 cache_flush = regs.sync_info.clean_l2.Value();
     rasterizer->SignalSyncPoint(sync_point);

@@ -201,9 +201,17 @@ struct Values {
                                              linkage, false, "dump_audio_commands", Category::Audio, Specialization::Default, false};
 
     // Core
+#ifdef __ANDROID__
+    SwitchableSetting<bool> use_multi_core{linkage, false, "use_multi_core", Category::Core};
+#else
     SwitchableSetting<bool> use_multi_core{linkage, true, "use_multi_core", Category::Core};
+#endif
     SwitchableSetting<MemoryLayout, true> memory_layout_mode{linkage,
+#ifdef __ANDROID__
+                                                             MemoryLayout::Memory_12Gb,
+#else
                                                              MemoryLayout::Memory_4Gb,
+#endif
                                                              "memory_layout_mode",
                                                              Category::Core,
                                                              Specialization::Default,

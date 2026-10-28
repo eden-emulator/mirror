@@ -7,6 +7,7 @@
 #include "common/string_util.h"
 #include "core/core.h"
 #include "core/hle/kernel/k_client_session.h"
+#include "core/hle/kernel/k_shared_memory.h"
 #include "core/hle/result.h"
 #include "core/hle/service/acc/profile_manager.h"
 #include "core/hle/service/cmif_types.h"
@@ -182,6 +183,8 @@ public:
     explicit IUserShimScopedObject(Core::System& system_) : ServiceFramework(system_, "IUserShimScopedObject") {
         // clang-format off
         static const FunctionInfo functions[] = {
+            {1, D<&IUserShimScopedObject::GetRequiredMemorySize>, "GetRequiredMemorySize"},
+            {300, D<&IUserShimScopedObject::GetGuestHidSharedMemory>, "GetGuestHidSharedMemory"},
             {450, nullptr, "InitializeForSaveData"},
             {451, nullptr, "FinalizeForSaveData"},
             {452, D<&IUserShimScopedObject::OpenSaveData>, "OpenSaveData"},
@@ -193,6 +196,50 @@ public:
         };
         // clang-format on
         RegisterHandlers(functions);
+    }
+
+    ~IUserShimScopedObject() override {
+        if (m_guest_hid_memory) {
+            m_guest_hid_memory->Close(kernel);
+        }
+    }
+
+    struct GuestHidMemoryConfig {
+        u64 size;
+        u64 offset;
+    };
+
+    Result GetRequiredMemorySize(Out<u32> out_size, u8 type, u8 mode, s32 guest_count) {
+        LOG_INFO(Service_NGC, "GameShare work memory query type={}, mode={}, guests={}", type, mode, guest_count);
+        R_UNLESS(type <= 1 && mode == 1 && guest_count >= 0 && guest_count <= 3,
+                 IPC::ResultNotSupported);
+        // The disconnected implementation reserves one page for its session
+        // control state. Streaming/encoding work is not implemented.
+        *out_size = 0x1000;
+        R_SUCCEED();
+    }
+
+    Result GetGuestHidSharedMemory(Out<GuestHidMemoryConfig> out_config,
+                                 OutCopyHandle<Kernel::KSharedMemory> out_memory) {
+        // Three guest pad blocks, touch rings, and JCMS rings. Empty rings and
+        // zero style sets describe no connected GameShare guests.
+        constexpr u64 GuestHidMemorySize = 0x84000;
+        if (!m_guest_hid_memory) {
+            auto* memory = Kernel::KSharedMemory::Create(kernel);
+            const auto result = memory->Initialize(kernel, system.DeviceMemory(), nullptr,
+                Kernel::Svc::MemoryPermission::ReadWrite, Kernel::Svc::MemoryPermission::Read,
+                GuestHidMemorySize);
+            if (R_FAILED(result)) {
+                memory->Close(kernel);
+                R_RETURN(result);
+            }
+            Kernel::KSharedMemory::Register(kernel, memory);
+            m_guest_hid_memory = memory;
+        }
+        *out_config = GuestHidMemoryConfig{GuestHidMemorySize, 0};
+        *out_memory = m_guest_hid_memory;
+        LOG_DEBUG(Service_NGC, "GameShare guest HID memory size={:#x}, no guests connected", GuestHidMemorySize);
+        R_SUCCEED();
     }
 
     Result OpenSaveData(Account::Uid unk0, Out<SaveDataHandle> unk1) {
@@ -210,6 +257,9 @@ public:
         // to implement
         R_SUCCEED();
     }
+
+private:
+    Kernel::KSharedMemory* m_guest_hid_memory{};
 };
 
 class IUserService final : public ServiceFramework<IUserService> {

@@ -63,6 +63,14 @@ void SyncpointManager::FreeSyncpoint(u32 id) {
     syncpoint.reserved = false;
 }
 
+std::optional<u32> SyncpointManager::ReadAllocatedSyncpoint(u32 id) {
+    std::lock_guard lock(reservation_lock);
+    if (id >= SyncpointCount || !syncpoints[id].reserved) {
+        return std::nullopt;
+    }
+    return UpdateMin(id);
+}
+
 bool SyncpointManager::IsSyncpointAllocated(u32 id) const {
     return (id < SyncpointCount) && syncpoints[id].reserved;
 }
