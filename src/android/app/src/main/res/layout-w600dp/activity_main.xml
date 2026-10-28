@@ -44,4 +44,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <com.google.android.material.navigationrail.NavigationRailView
+        android:id="@+id/navigation_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:labelVisibilityMode="selected"
+        app:menu="@menu/menu_navigation"
+        tools:visibility="visible" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

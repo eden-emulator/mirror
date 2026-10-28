@@ -23,6 +23,8 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.Slider
+import org.yuzu.yuzu_emu.utils.ThemeHelper
+import androidx.appcompat.app.AppCompatActivity
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.databinding.DialogEditTextBinding
 import org.yuzu.yuzu_emu.databinding.DialogSliderBinding
@@ -390,8 +392,7 @@ class SettingsDialogFragment : DialogFragment(), DialogInterface.OnClickListener
 
                 if (scSetting.setting.key == "app_language") {
                     settingsViewModel.setShouldRecreateForLanguageChange(true)
-                    // recreate page apply language change instantly
-                    requireActivity().recreate()
+                    ThemeHelper.safeRecreate(requireActivity() as AppCompatActivity)
                 }
             }
 

@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class HomeViewModel : ViewModel() {
+    val navigationVisible: StateFlow<Pair<Boolean, Boolean>> get() = _navigationVisible
+    private val _navigationVisible = MutableStateFlow(Pair(false, false))
+
     val statusBarShadeVisible: StateFlow<Boolean> get() = _statusBarShadeVisible
     private val _statusBarShadeVisible = MutableStateFlow(true)
 
@@ -32,6 +35,13 @@ class HomeViewModel : ViewModel() {
     val checkKeys = _checkKeys.asStateFlow()
 
     var navigatedToSetup = false
+
+    fun setNavigationVisibility(visible: Boolean, animated: Boolean) {
+        if (navigationVisible.value.first == visible) {
+            return
+        }
+        _navigationVisible.value = Pair(visible, animated)
+    }
 
     fun setStatusBarShadeVisibility(visible: Boolean) {
         if (statusBarShadeVisible.value == visible) {

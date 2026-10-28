@@ -33,6 +33,11 @@ import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.YuzuApplication
 import org.yuzu.yuzu_emu.adapters.HomeSettingAdapter
 import org.yuzu.yuzu_emu.databinding.FragmentHomeSettingsBinding
+import org.yuzu.yuzu_emu.databinding.FragmentHomeSettingsLegacyBinding
+import org.yuzu.yuzu_emu.utils.LegacyUi
+import androidx.recyclerview.widget.RecyclerView
+import androidx.core.widget.NestedScrollView
+import com.google.android.material.appbar.AppBarLayout
 import org.yuzu.yuzu_emu.features.DocumentProvider
 import org.yuzu.yuzu_emu.features.fetcher.SpacingItemDecoration
 import org.yuzu.yuzu_emu.features.settings.model.Settings
@@ -49,7 +54,12 @@ import org.yuzu.yuzu_emu.utils.ViewUtils.updateMargins
 
 class HomeSettingsFragment : Fragment() {
     private var _binding: FragmentHomeSettingsBinding? = null
-    private val binding get() = _binding!!
+    private var _legacyBinding: FragmentHomeSettingsLegacyBinding? = null
+
+    private lateinit var contentRoot: View
+    private lateinit var homeSettingsList: RecyclerView
+    private var appBarHomeSettings: AppBarLayout? = null
+    private var scrollViewSettings: NestedScrollView? = null
 
     private lateinit var mainActivity: MainActivity
 
@@ -66,18 +76,37 @@ class HomeSettingsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentHomeSettingsBinding.inflate(layoutInflater)
-        return binding.root
+        if (LegacyUi.isEnabled()) {
+            _legacyBinding = FragmentHomeSettingsLegacyBinding.inflate(inflater, container, false)
+            val legacy = _legacyBinding!!
+            contentRoot = legacy.root
+            homeSettingsList = legacy.homeSettingsList
+            scrollViewSettings = legacy.scrollViewSettings
+            return legacy.root
+        }
+        _binding = FragmentHomeSettingsBinding.inflate(inflater, container, false)
+        val modern = _binding!!
+        contentRoot = modern.root
+        homeSettingsList = modern.homeSettingsList
+        appBarHomeSettings = modern.appbarHomeSettings
+        scrollViewSettings = modern.scrollViewSettings
+        return modern.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         homeViewModel.setStatusBarShadeVisibility(visible = false)
         mainActivity = requireActivity() as MainActivity
-        binding.toolbarHomeSettings.setNavigationOnClickListener {
-            findNavController().popBackStack()
+        if (LegacyUi.isEnabled()) {
+            homeViewModel.setNavigationVisibility(visible = true, animated = true)
+        } else {
+            _binding!!.toolbarHomeSettings.setNavigationOnClickListener {
+                if (!findNavController().popBackStack()) {
+                    requireActivity().onBackPressedDispatcher.onBackPressed()
+                }
+            }
+            _binding!!.toolbarHomeSettings.title = getString(R.string.preferences_settings)
         }
-        binding.toolbarHomeSettings.title = getString(R.string.preferences_settings)
 
         val optionsList: MutableList<HomeSetting> = mutableListOf<HomeSetting>().apply {
             add(
@@ -90,7 +119,7 @@ class HomeSettingsFragment : Fragment() {
                             null,
                             Settings.MenuTag.SECTION_ROOT
                         )
-                        binding.root.findNavController().navigate(action)
+                        contentRoot.findNavController().navigate(action)
                     }
                 )
             )
@@ -104,7 +133,7 @@ class HomeSettingsFragment : Fragment() {
                             null,
                             Settings.MenuTag.SECTION_APP_SETTINGS
                         )
-                        binding.root.findNavController().navigate(action)
+                        contentRoot.findNavController().navigate(action)
                     }
                 )
             )
@@ -118,7 +147,7 @@ class HomeSettingsFragment : Fragment() {
                             null,
                             Settings.MenuTag.SECTION_INPUT
                         )
-                        binding.root.findNavController().navigate(action)
+                        contentRoot.findNavController().navigate(action)
                     }
                 )
             )
@@ -132,7 +161,7 @@ class HomeSettingsFragment : Fragment() {
                             SettingsSubscreen.PROFILE_MANAGER,
                             null
                         )
-                        binding.root.findNavController().navigate(action)
+                        contentRoot.findNavController().navigate(action)
                     }
                 )
             )
@@ -146,7 +175,7 @@ class HomeSettingsFragment : Fragment() {
                             SettingsSubscreen.DRIVER_MANAGER,
                             null
                         )
-                        binding.root.findNavController().navigate(action)
+                        contentRoot.findNavController().navigate(action)
                     },
                     { true },
                     R.string.custom_driver_not_supported,
@@ -166,7 +195,7 @@ class HomeSettingsFragment : Fragment() {
                                     SettingsSubscreen.FREEDRENO_SETTINGS,
                                     null
                                 )
-                            binding.root.findNavController().navigate(action)
+                            contentRoot.findNavController().navigate(action)
                         }
                     )
                 )
@@ -181,7 +210,7 @@ class HomeSettingsFragment : Fragment() {
                             null,
                             Settings.MenuTag.SECTION_POST_PROCESSING
                         )
-                        binding.root.findNavController().navigate(action)
+                        contentRoot.findNavController().navigate(action)
                     }
                 )
             )
@@ -195,7 +224,7 @@ class HomeSettingsFragment : Fragment() {
                             SettingsSubscreen.LOSSLESS_MANAGER,
                             null
                         )
-                        binding.root.findNavController().navigate(action)
+                        contentRoot.findNavController().navigate(action)
                     },
                     { true },
                     0,
@@ -223,7 +252,7 @@ class HomeSettingsFragment : Fragment() {
                             SettingsSubscreen.APPLET_LAUNCHER,
                             null
                         )
-                        binding.root.findNavController().navigate(action)
+                        contentRoot.findNavController().navigate(action)
                     },
                     { NativeLibrary.isFirmwareAvailable() },
                     R.string.applets_error_firmware,
@@ -240,7 +269,7 @@ class HomeSettingsFragment : Fragment() {
                             SettingsSubscreen.INSTALLABLE,
                             null
                         )
-                        binding.root.findNavController().navigate(action)
+                        contentRoot.findNavController().navigate(action)
                     }
                 )
             )
@@ -254,7 +283,7 @@ class HomeSettingsFragment : Fragment() {
                             SettingsSubscreen.GAME_FOLDERS,
                             null
                         )
-                        binding.root.findNavController().navigate(action)
+                        contentRoot.findNavController().navigate(action)
                     }
                 )
             )
@@ -341,13 +370,13 @@ class HomeSettingsFragment : Fragment() {
                             SettingsSubscreen.ABOUT,
                             null
                         )
-                        binding.root.findNavController().navigate(action)
+                        contentRoot.findNavController().navigate(action)
                     }
                 )
             )
         }
 
-        binding.homeSettingsList.apply {
+        homeSettingsList.apply {
             layoutManager =
                 GridLayoutManager(requireContext(), resources.getInteger(R.integer.grid_columns))
             adapter = HomeSettingAdapter(
@@ -376,6 +405,7 @@ class HomeSettingsFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        _legacyBinding = null
     }
 
     private fun openFileManager() {
@@ -536,23 +566,43 @@ class HomeSettingsFragment : Fragment() {
     }
 
     private fun setInsets() =
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, windowInsets ->
+        ViewCompat.setOnApplyWindowInsetsListener(contentRoot) { view, windowInsets ->
             val barInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             val cutoutInsets = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout())
+            val leftInsets = barInsets.left + cutoutInsets.left
+            val rightInsets = barInsets.right + cutoutInsets.right
 
-            binding.appbarHomeSettings.updateMargins(
-                left = barInsets.left + cutoutInsets.left,
-                right = barInsets.right + cutoutInsets.right
-            )
+            val legacy = _legacyBinding
+            if (legacy != null) {
+                val spacingNavigation = resources.getDimensionPixelSize(R.dimen.spacing_navigation)
+                val spacingNavigationRail =
+                    resources.getDimensionPixelSize(R.dimen.spacing_navigation_rail)
+                val contentPaddingH = resources.getDimensionPixelSize(R.dimen.spacing_med)
 
-            binding.scrollViewSettings.updatePadding(
-                bottom = barInsets.bottom
-            )
+                legacy.scrollViewSettings.updatePadding(top = barInsets.top, bottom = barInsets.bottom)
 
-            binding.homeSettingsList.updatePadding(
-                left = barInsets.left + cutoutInsets.left,
-                right = barInsets.right + cutoutInsets.right
-            )
+                val scrollLeft: Int
+                val scrollRight: Int
+                if (ViewCompat.getLayoutDirection(view) == ViewCompat.LAYOUT_DIRECTION_LTR) {
+                    scrollLeft = leftInsets + spacingNavigationRail
+                    scrollRight = rightInsets
+                } else {
+                    scrollLeft = leftInsets
+                    scrollRight = rightInsets + spacingNavigationRail
+                }
+                legacy.scrollViewSettings.updateMargins(left = scrollLeft, right = scrollRight)
+
+                legacy.linearLayoutSettings.updatePadding(
+                    left = contentPaddingH,
+                    right = contentPaddingH,
+                    bottom = spacingNavigation,
+                )
+                return@setOnApplyWindowInsetsListener windowInsets
+            }
+
+            appBarHomeSettings?.updateMargins(left = leftInsets, right = rightInsets)
+            scrollViewSettings?.updatePadding(bottom = barInsets.bottom)
+            homeSettingsList.updatePadding(left = leftInsets, right = rightInsets)
 
             windowInsets
         }

@@ -33,6 +33,11 @@ import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.YuzuApplication
 import org.yuzu.yuzu_emu.adapters.GamePropertiesAdapter
 import org.yuzu.yuzu_emu.databinding.FragmentGamePropertiesBinding
+import org.yuzu.yuzu_emu.databinding.FragmentGamePropertiesLegacyBinding
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+import com.google.android.material.textview.MaterialTextView
+import androidx.recyclerview.widget.RecyclerView
+import org.yuzu.yuzu_emu.utils.LegacyUi
 import org.yuzu.yuzu_emu.features.DocumentProvider
 import org.yuzu.yuzu_emu.features.settings.model.Settings
 import org.yuzu.yuzu_emu.features.settings.ui.SettingsSubscreen
@@ -58,8 +63,7 @@ import java.io.BufferedOutputStream
 import java.io.File
 
 class GamePropertiesFragment : Fragment() {
-    private var _binding: FragmentGamePropertiesBinding? = null
-    private val binding get() = _binding!!
+    private var ui: GamePropertiesUi? = null
 
     private val homeViewModel: HomeViewModel by activityViewModels()
     private val gamesViewModel: GamesViewModel by activityViewModels()
@@ -80,21 +84,37 @@ class GamePropertiesFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentGamePropertiesBinding.inflate(layoutInflater)
-        return binding.root
+        ui = if (LegacyUi.isEnabled()) {
+            GamePropertiesUi.fromLegacy(
+                FragmentGamePropertiesLegacyBinding.inflate(inflater, container, false)
+            )
+        } else {
+            GamePropertiesUi.fromModern(
+                FragmentGamePropertiesBinding.inflate(inflater, container, false)
+            )
+        }
+        return ui!!.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        ui = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        homeViewModel.setStatusBarShadeVisibility(true)
+        homeViewModel.setStatusBarShadeVisibility(false)
+        if (LegacyUi.isEnabled()) {
+            homeViewModel.setNavigationVisibility(visible = false, animated = true)
+        }
 
-        binding.buttonBack.setOnClickListener {
+        ui!!.buttonBack.setOnClickListener {
             view.findNavController().popBackStack()
         }
 
         val shortcutManager = requireActivity().getSystemService(ShortcutManager::class.java)
-        binding.buttonShortcut.isEnabled = shortcutManager.isRequestPinShortcutSupported
-        binding.buttonShortcut.setOnClickListener {
+        ui!!.buttonShortcut.isEnabled = shortcutManager.isRequestPinShortcutSupported
+        ui!!.buttonShortcut.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     val shortcut = ShortcutInfo.Builder(requireContext(), args.game.title)
@@ -110,28 +130,28 @@ class GamePropertiesFragment : Fragment() {
             }
         }
 
-        GameIconUtils.loadGameIcon(args.game, binding.imageGameScreen)
-        binding.title.text = args.game.title
-        binding.title.marquee()
+        GameIconUtils.loadGameIcon(args.game, ui!!.imageGameScreen)
+        ui!!.title.text = args.game.title
+        ui!!.title.marquee()
 
         getPlayTime()
 
-        binding.buttonStart.setOnClickListener {
+        ui!!.buttonStart.setOnClickListener {
             LaunchGameDialogFragment.newInstance(args.game)
                 .show(childFragmentManager, LaunchGameDialogFragment.TAG)
         }
 
         if (GameHelper.cachedGameList.isEmpty()) {
-            binding.buttonStart.isEnabled = false
+            ui!!.buttonStart.isEnabled = false
             viewLifecycleOwner.lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     GameHelper.restoreContentForGame(args.game)
                 }
-                if (_binding == null) {
+                if (ui == null) {
                     return@launch
                 }
                 addonViewModel.onAddonsViewStarted(args.game)
-                binding.buttonStart.isEnabled = true
+                ui!!.buttonStart.isEnabled = true
             }
         }
 
@@ -158,7 +178,7 @@ class GamePropertiesFragment : Fragment() {
     }
 
     private fun getPlayTime() {
-        binding.playtime.text = buildString {
+        ui!!.playtime.text = buildString {
             val playTimeSeconds = NativeLibrary.playTimeManagerGetPlayTime(args.game.programId)
 
             val hours = playTimeSeconds / 3600
@@ -166,15 +186,24 @@ class GamePropertiesFragment : Fragment() {
             val seconds = playTimeSeconds % 60
 
             val readablePlayTime = when {
-            hours > 0 -> "$hours${getString(R.string.hours_abbr)} $minutes${getString(R.string.minutes_abbr)} $seconds${getString(R.string.seconds_abbr)}"
-            minutes > 0 -> "$minutes${getString(R.string.minutes_abbr)} $seconds${getString(R.string.seconds_abbr)}"
-            else -> "$seconds${getString(R.string.seconds_abbr)}"
-}
+                hours > 0 -> "$hours${getString(R.string.hours_abbr)} $minutes${getString(R.string.minutes_abbr)} $seconds${getString(R.string.seconds_abbr)}"
+                minutes > 0 -> "$minutes${getString(R.string.minutes_abbr)} $seconds${getString(R.string.seconds_abbr)}"
+                else -> "$seconds${getString(R.string.seconds_abbr)}"
+            }
 
-            append(getString(R.string.playtime) + " " + readablePlayTime)
+            val label = getString(R.string.playtime)
+            if (ui!!.iconLayout != null) {
+                append(label)
+                append('\n')
+                append(readablePlayTime)
+            } else {
+                append(label)
+                append(' ')
+                append(readablePlayTime)
+            }
         }
 
-        binding.playtime.setOnClickListener {
+        ui!!.playtime.setOnClickListener {
             showEditPlaytimeDialog()
         }
     }
@@ -261,7 +290,9 @@ class GamePropertiesFragment : Fragment() {
     }
 
     private fun reloadList() {
-        _binding ?: return
+        if (ui == null) {
+            return
+        }
 
         driverViewModel.updateDriverNameForGame(args.game)
         val properties = mutableListOf<GameProperty>().apply {
@@ -275,7 +306,7 @@ class GamePropertiesFragment : Fragment() {
                             SettingsSubscreen.GAME_INFO,
                             args.game
                         )
-                        binding.root.findNavController().navigate(action)
+                        ui!!.root.findNavController().navigate(action)
                     }
                 )
             )
@@ -289,7 +320,7 @@ class GamePropertiesFragment : Fragment() {
                             args.game,
                             Settings.MenuTag.SECTION_ROOT
                         )
-                        binding.root.findNavController().navigate(action)
+                        ui!!.root.findNavController().navigate(action)
                     },
                     secondaryActions = buildList {
                         val configExists = File(
@@ -345,7 +376,7 @@ class GamePropertiesFragment : Fragment() {
                                     SettingsSubscreen.ADDONS,
                                     args.game
                                 )
-                            binding.root.findNavController().navigate(action)
+                            ui!!.root.findNavController().navigate(action)
                         }
                     )
                 )
@@ -364,7 +395,7 @@ class GamePropertiesFragment : Fragment() {
                                     SettingsSubscreen.DRIVER_MANAGER,
                                     args.game
                                 )
-                            binding.root.findNavController().navigate(action)
+                            ui!!.root.findNavController().navigate(action)
                         }
                     )
                 )
@@ -379,7 +410,7 @@ class GamePropertiesFragment : Fragment() {
                             args.game,
                             Settings.MenuTag.SECTION_FRAME_GEN
                         )
-                        binding.root.findNavController().navigate(action)
+                        ui!!.root.findNavController().navigate(action)
                     }
                 )
             )
@@ -393,7 +424,7 @@ class GamePropertiesFragment : Fragment() {
                             args.game,
                             Settings.MenuTag.SECTION_POST_PROCESSING
                         )
-                        binding.root.findNavController().navigate(action)
+                        ui!!.root.findNavController().navigate(action)
                     }
                 )
             )
@@ -410,7 +441,7 @@ class GamePropertiesFragment : Fragment() {
                                     SettingsSubscreen.FREEDRENO_SETTINGS,
                                     args.game
                                 )
-                            binding.root.findNavController().navigate(action)
+                            ui!!.root.findNavController().navigate(action)
                         }
                     )
                 )
@@ -533,7 +564,7 @@ class GamePropertiesFragment : Fragment() {
                 }
             }
         }
-        binding.listProperties.apply {
+        ui!!.listProperties.apply {
             val spanCount = resources.getInteger(R.integer.grid_columns)
             val staggered = StaggeredGridLayoutManager(
                 spanCount,
@@ -548,6 +579,9 @@ class GamePropertiesFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        if (LegacyUi.isEnabled()) {
+            homeViewModel.setNavigationVisibility(visible = false, animated = false)
+        }
         driverViewModel.updateDriverNameForGame(args.game)
         getPlayTime()
         reloadList()
@@ -555,7 +589,7 @@ class GamePropertiesFragment : Fragment() {
 
     private fun setInsets() =
         ViewCompat.setOnApplyWindowInsetsListener(
-            binding.root
+            ui!!.root
         ) { _: View, windowInsets: WindowInsetsCompat ->
             val barInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             val cutoutInsets = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout())
@@ -565,27 +599,27 @@ class GamePropertiesFragment : Fragment() {
 
             val smallLayout = resources.getBoolean(R.bool.small_layout)
             if (smallLayout) {
-                binding.listAll.updateMargins(left = leftInsets, right = rightInsets)
+                ui!!.listAll.updateMargins(left = leftInsets, right = rightInsets)
             } else {
-                if (ViewCompat.getLayoutDirection(binding.root) ==
+                if (ViewCompat.getLayoutDirection(ui!!.root) ==
                     ViewCompat.LAYOUT_DIRECTION_LTR
                 ) {
-                    binding.listAll.updateMargins(right = rightInsets)
-                    binding.iconLayout!!.updateMargins(top = barInsets.top, left = leftInsets)
+                    ui!!.listAll.updateMargins(right = rightInsets)
+                    ui!!.iconLayout?.updateMargins(top = barInsets.top, left = leftInsets)
                 } else {
-                    binding.listAll.updateMargins(left = leftInsets)
-                    binding.iconLayout!!.updateMargins(top = barInsets.top, right = rightInsets)
+                    ui!!.listAll.updateMargins(left = leftInsets)
+                    ui!!.iconLayout?.updateMargins(top = barInsets.top, right = rightInsets)
                 }
             }
 
             val fabSpacing = resources.getDimensionPixelSize(R.dimen.spacing_fab)
-            binding.buttonStart.updateMargins(
+            ui!!.buttonStart.updateMargins(
                 left = leftInsets + fabSpacing,
                 right = rightInsets + fabSpacing,
                 bottom = barInsets.bottom + fabSpacing
             )
 
-            binding.layoutAll.updatePadding(
+            ui!!.layoutAll.updatePadding(
                 top = barInsets.top,
                 bottom = barInsets.bottom +
                     resources.getDimensionPixelSize(R.dimen.spacing_bottom_list_fab)
@@ -771,5 +805,49 @@ class GamePropertiesFragment : Fragment() {
                 Toast.LENGTH_SHORT
             ).show()
         }
+    }
+}
+
+private class GamePropertiesUi(
+    val root: View,
+    val buttonBack: View,
+    val buttonShortcut: View,
+    val imageGameScreen: android.widget.ImageView,
+    val title: MaterialTextView,
+    val buttonStart: ExtendedFloatingActionButton,
+    val playtime: MaterialTextView,
+    val listProperties: RecyclerView,
+    val listAll: View,
+    val iconLayout: View?,
+    val layoutAll: View
+) {
+    companion object {
+        fun fromModern(binding: FragmentGamePropertiesBinding) = GamePropertiesUi(
+            root = binding.root,
+            buttonBack = binding.buttonBack,
+            buttonShortcut = binding.buttonShortcut,
+            imageGameScreen = binding.imageGameScreen,
+            title = binding.title,
+            buttonStart = binding.buttonStart,
+            playtime = binding.playtime,
+            listProperties = binding.listProperties,
+            listAll = binding.listAll,
+            iconLayout = binding.iconLayout,
+            layoutAll = binding.layoutAll
+        )
+
+        fun fromLegacy(binding: FragmentGamePropertiesLegacyBinding) = GamePropertiesUi(
+            root = binding.root,
+            buttonBack = binding.buttonBack,
+            buttonShortcut = binding.buttonShortcut,
+            imageGameScreen = binding.imageGameScreen,
+            title = binding.title,
+            buttonStart = binding.buttonStart,
+            playtime = binding.playtime,
+            listProperties = binding.listProperties,
+            listAll = binding.listAll,
+            iconLayout = null,
+            layoutAll = binding.layoutAll
+        )
     }
 }

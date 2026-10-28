@@ -33,10 +33,12 @@ import org.yuzu.yuzu_emu.databinding.ListItemSettingsHeaderBinding
 import org.yuzu.yuzu_emu.features.input.NativeInput
 import org.yuzu.yuzu_emu.features.input.model.AnalogDirection
 import org.yuzu.yuzu_emu.features.settings.model.AbstractIntSetting
+import org.yuzu.yuzu_emu.features.settings.model.BooleanSetting
 import org.yuzu.yuzu_emu.features.settings.model.Settings
 import org.yuzu.yuzu_emu.features.settings.model.view.*
 import org.yuzu.yuzu_emu.features.settings.ui.viewholder.*
 import org.yuzu.yuzu_emu.utils.ParamPackage
+import org.yuzu.yuzu_emu.utils.ThemeHelper
 
 class SettingsAdapter(
     private val fragment: Fragment,
@@ -51,35 +53,41 @@ class SettingsAdapter(
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             SettingsItem.TYPE_HEADER -> {
-                HeaderViewHolder(ListItemSettingsHeaderBinding.inflate(inflater), this)
+                HeaderViewHolder(
+                    ListItemSettingsHeaderBinding.inflate(inflater, parent, false),
+                    this
+                )
             }
 
             SettingsItem.TYPE_SWITCH -> {
-                SwitchSettingViewHolder(ListItemSettingSwitchBinding.inflate(inflater), this)
+                SwitchSettingViewHolder(
+                    ListItemSettingSwitchBinding.inflate(inflater, parent, false),
+                    this
+                )
             }
 
             SettingsItem.TYPE_SINGLE_CHOICE, SettingsItem.TYPE_STRING_SINGLE_CHOICE -> {
-                SingleChoiceViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                SingleChoiceViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
 
             SettingsItem.TYPE_SLIDER -> {
-                SliderViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                SliderViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
 
             SettingsItem.TYPE_SPINBOX -> {
-                SpinBoxViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                SpinBoxViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
 
             SettingsItem.TYPE_SUBMENU -> {
-                SubmenuViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                SubmenuViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
 
             SettingsItem.TYPE_DATETIME_SETTING -> {
-                DateTimeViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                DateTimeViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
 
             SettingsItem.TYPE_RUNNABLE -> {
-                RunnableViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                RunnableViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
 
             SettingsItem.TYPE_INPUT -> {
@@ -87,27 +95,27 @@ class SettingsAdapter(
             }
 
             SettingsItem.TYPE_INT_SINGLE_CHOICE -> {
-                SingleChoiceViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                SingleChoiceViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
 
             SettingsItem.TYPE_INPUT_PROFILE -> {
-                InputProfileViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                InputProfileViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
 
             SettingsItem.TYPE_STRING_INPUT -> {
-                StringInputViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                StringInputViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
 
             SettingsItem.TYPE_LAUNCHABLE -> {
-                LaunchableViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                LaunchableViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
-			
+
             SettingsItem.TYPE_PATH -> {
-                PathViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                PathViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
 
             SettingsItem.TYPE_GPU_UNSWIZZLE -> {
-                GpuUnswizzleViewHolder(ListItemSettingBinding.inflate(inflater), this)
+                GpuUnswizzleViewHolder(ListItemSettingBinding.inflate(inflater, parent, false), this)
             }
 
             SettingsItem.TYPE_FX_TOOLBAR -> {
@@ -156,6 +164,9 @@ class SettingsAdapter(
 
     fun onBooleanClick(item: SwitchSetting, checked: Boolean, position: Int) {
         item.setChecked(checked)
+        if (item.setting.key == BooleanSetting.LEGACY_YUZU_UI.key) {
+            return
+        }
         notifyItemChanged(position)
         settingsViewModel.setShouldReloadSettingsList(true)
     }
@@ -484,10 +495,8 @@ class SettingsAdapter(
 
         // reset language if detected
         if (item.setting.key == "app_language") {
-            // recreate page apply language change instantly
-            fragment.requireActivity().recreate()
-
             settingsViewModel.setShouldRecreateForLanguageChange(true)
+            ThemeHelper.safeRecreate(fragment.requireActivity() as androidx.appcompat.app.AppCompatActivity)
         }
 
         return true

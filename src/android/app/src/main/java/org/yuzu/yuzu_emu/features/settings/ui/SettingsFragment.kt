@@ -34,7 +34,6 @@ import org.yuzu.yuzu_emu.features.settings.model.Settings
 import org.yuzu.yuzu_emu.features.settings.model.view.PathSetting
 import org.yuzu.yuzu_emu.fragments.MessageDialogFragment
 import org.yuzu.yuzu_emu.utils.PathUtil
-import org.yuzu.yuzu_emu.utils.ViewUtils.updateMargins
 import org.yuzu.yuzu_emu.utils.*
 import java.io.File
 import androidx.core.net.toUri
@@ -224,10 +223,17 @@ private fun getPlayerIndex(): Int =
             val leftInsets = barInsets.left + cutoutInsets.left
             val rightInsets = barInsets.right + cutoutInsets.right
 
-            binding.listSettings.updateMargins(left = leftInsets, right = rightInsets)
-            binding.listSettings.updatePadding(bottom = barInsets.bottom)
+            binding.appbarSettings.updatePadding(
+                top = barInsets.top,
+                left = leftInsets,
+                right = rightInsets
+            )
+            binding.listSettings.updatePadding(
+                left = leftInsets,
+                right = rightInsets,
+                bottom = barInsets.bottom
+            )
 
-            binding.appbarSettings.updateMargins(left = leftInsets, right = rightInsets)
             windowInsets
         }
     }

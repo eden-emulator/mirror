@@ -7,6 +7,7 @@
 package org.yuzu.yuzu_emu.features.settings.model
 
 import org.yuzu.yuzu_emu.utils.NativeConfig
+import org.yuzu.yuzu_emu.utils.ThemeHelper
 
 enum class IntSetting(override val key: String) : AbstractIntSetting {
     CPU_BACKEND("cpu_backend"),
@@ -83,6 +84,9 @@ enum class IntSetting(override val key: String) : AbstractIntSetting {
             global = false
         }
         NativeConfig.setInt(key, value)
+        if (this == THEME || this == THEME_MODE || this == STATIC_THEME_COLOR) {
+            ThemeHelper.markThemeConfigurationChanged()
+        }
     }
 
     override val defaultValue: Int by lazy { NativeConfig.getDefaultToString(key).toInt() }

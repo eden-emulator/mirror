@@ -6,6 +6,7 @@ package org.yuzu.yuzu_emu.adapters
 import android.content.DialogInterface
 import android.text.Html
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.Toast
@@ -37,6 +38,8 @@ import androidx.core.content.edit
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.yuzu.yuzu_emu.NativeLibrary
 import org.yuzu.yuzu_emu.databinding.CardGameGridCompactBinding
+import org.yuzu.yuzu_emu.databinding.CardGameBinding
+import org.yuzu.yuzu_emu.utils.LegacyUi
 import org.yuzu.yuzu_emu.features.settings.model.BooleanSetting
 import org.yuzu.yuzu_emu.features.settings.model.Settings
 
@@ -83,13 +86,21 @@ class GameAdapter(private val activity: AppCompatActivity) :
             }
 
             VIEW_TYPE_GRID -> {
-                val gridBinding = holder.binding as CardGameGridBinding
-                gridBinding.cardGameGrid.scaleX = 1f
-                gridBinding.cardGameGrid.scaleY = 1f
-                gridBinding.cardGameGrid.alpha = 1f
-                // Reset layout params to XML defaults
-                gridBinding.root.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
-                gridBinding.root.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                holder.binding.root.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+                holder.binding.root.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                when (val gridBinding = holder.binding) {
+                    is CardGameGridBinding -> {
+                        gridBinding.cardGameGrid.scaleX = 1f
+                        gridBinding.cardGameGrid.scaleY = 1f
+                        gridBinding.cardGameGrid.alpha = 1f
+                    }
+
+                    is CardGameBinding -> {
+                        gridBinding.cardGame.scaleX = 1f
+                        gridBinding.cardGame.scaleY = 1f
+                        gridBinding.cardGame.alpha = 1f
+                    }
+                }
             }
 
             VIEW_TYPE_GRID_COMPACT -> {
@@ -119,11 +130,21 @@ class GameAdapter(private val activity: AppCompatActivity) :
                 false
             )
 
-            VIEW_TYPE_GRID -> CardGameGridBinding.inflate(
-                LayoutInflater.from(parent.context),
-                parent,
-                false
-            )
+            VIEW_TYPE_GRID -> {
+                if (LegacyUi.isEnabled()) {
+                    CardGameBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false
+                    )
+                } else {
+                    CardGameGridBinding.inflate(
+                        LayoutInflater.from(parent.context),
+                        parent,
+                        false
+                    )
+                }
+            }
 
             VIEW_TYPE_GRID_COMPACT -> CardGameGridCompactBinding.inflate(
                 LayoutInflater.from(parent.context),
@@ -175,20 +196,42 @@ class GameAdapter(private val activity: AppCompatActivity) :
         }
 
         private fun bindGridView(model: Game) {
-            val gridBinding = binding as CardGameGridBinding
+            when (val gridBinding = binding) {
+                is CardGameBinding -> bindGridCard(
+                    gridBinding.imageGameScreen,
+                    gridBinding.textGameTitle,
+                    gridBinding.cardGame,
+                    gridBinding.root,
+                    model
+                )
 
-            gridBinding.imageGameScreen.scaleType = ImageView.ScaleType.CENTER_CROP
-            GameIconUtils.loadGameIcon(model, gridBinding.imageGameScreen)
+                is CardGameGridBinding -> bindGridCard(
+                    gridBinding.imageGameScreen,
+                    gridBinding.textGameTitle,
+                    gridBinding.cardGameGrid,
+                    gridBinding.root,
+                    model
+                )
 
-            gridBinding.textGameTitle.text = model.title.replace("[\\t\\n\\r]+".toRegex(), " ")
+                else -> throw IllegalStateException("Unexpected grid binding")
+            }
+        }
 
-            gridBinding.textGameTitle.marquee()
-            gridBinding.cardGameGrid.setOnClickListener { onClick(model) }
-            gridBinding.cardGameGrid.setOnLongClickListener { onLongClick(model) }
-
-            // Reset layout params to XML defaults
-            gridBinding.root.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
-            gridBinding.root.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+        private fun bindGridCard(
+            image: ImageView,
+            title: com.google.android.material.textview.MaterialTextView,
+            card: View,
+            root: View,
+            model: Game
+        ) {
+            image.scaleType = ImageView.ScaleType.CENTER_CROP
+            GameIconUtils.loadGameIcon(model, image)
+            title.text = model.title.replace("[\\t\\n\\r]+".toRegex(), " ")
+            title.marquee()
+            card.setOnClickListener { onClick(model) }
+            card.setOnLongClickListener { onLongClick(model) }
+            root.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+            root.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
         }
 
         private fun bindGridCompactView(model: Game) {

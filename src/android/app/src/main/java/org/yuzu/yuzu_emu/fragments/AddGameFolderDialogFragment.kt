@@ -1,9 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// SPDX-FileCopyrightText: 2025 Eden Emulator Project
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 package org.yuzu.yuzu_emu.fragments
 
 import android.app.Dialog
@@ -24,29 +21,33 @@ class AddGameFolderDialogFragment : DialogFragment() {
     private val gamesViewModel: GamesViewModel by activityViewModels()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val binding = DialogAddFolderBinding.inflate(layoutInflater)
         val folderUriString = requireArguments().getString(FOLDER_URI_STRING)
         if (folderUriString == null) {
-            dismiss()
+            return MaterialAlertDialogBuilder(requireContext()).create()
         }
+
+        val binding = DialogAddFolderBinding.inflate(layoutInflater)
         binding.path.text = Uri.parse(folderUriString).path
 
         return MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.add_game_folder)
             .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->
-                val newGameDir = GameDir(folderUriString!!, binding.deepScanSwitch.isChecked)
+                val newGameDir = GameDir(folderUriString, binding.deepScanSwitch.isChecked)
                 val calledFromGameFragment = requireArguments().getBoolean(
                     "calledFromGameFragment",
                     false
                 )
                 val job = gamesViewModel.addFolder(newGameDir, calledFromGameFragment)
                 job.invokeOnCompletion {
+                    if (!isAdded) {
+                        return@invokeOnCompletion
+                    }
                     homeViewModel.setGamesDirSelected(true)
                 }
             }
             .setNegativeButton(android.R.string.cancel, null)
             .setView(binding.root)
-            .show()
+            .create()
     }
 
     companion object {

@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.FragmentManager
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
@@ -39,6 +40,7 @@ import org.yuzu.yuzu_emu.model.GamesViewModel
 import org.yuzu.yuzu_emu.model.HomeViewModel
 import android.os.Build
 import org.yuzu.yuzu_emu.model.TaskViewModel
+import org.yuzu.yuzu_emu.ui.LegacyHomeShell
 import org.yuzu.yuzu_emu.utils.*
 import org.yuzu.yuzu_emu.utils.ViewUtils.setVisible
 import androidx.core.content.edit
@@ -80,6 +82,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         splashScreen.setKeepOnScreenCondition { !DirectoryInitialization.areDirectoriesReady }
 
         ThemeHelper.ThemeChangeListener(this)
+        ThemeHelper.registerForThemeUpdates(this)
         ThemeHelper.setTheme(this)
         super.onCreate(savedInstanceState)
         NativeLibrary.initMultiplayer()
@@ -98,6 +101,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         }
 
         setContentView(binding.root)
+        LegacyHomeShell.onCreate(this, binding, savedInstanceState, homeViewModel, gamesViewModel)
 
         if (savedInstanceState != null) {
             checkedDecryption = savedInstanceState.getBoolean(CHECKED_DECRYPTION)
@@ -119,30 +123,13 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         window.navigationBarColor =
             ContextCompat.getColor(applicationContext, android.R.color.transparent)
 
-        binding.statusBarShade.setBackgroundColor(
-            ThemeHelper.getColorWithOpacity(
-                MaterialColors.getColor(
-                    binding.root,
-                    com.google.android.material.R.attr.colorSurface
-                ),
-                ThemeHelper.SYSTEM_BAR_ALPHA
-            )
-        )
-        if (InsetsHelper.getSystemGestureType(applicationContext) != InsetsHelper.GESTURE_NAVIGATION) {
-            binding.navigationBarShade.setBackgroundColor(
-                ThemeHelper.getColorWithOpacity(
-                    MaterialColors.getColor(
-                        binding.root,
-                        com.google.android.material.R.attr.colorSurface
-                    ),
-                    ThemeHelper.SYSTEM_BAR_ALPHA
-                )
-            )
-        }
+        refreshSystemBarChrome()
 
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
-        setUpNavigation(navHostFragment.navController)
+        val navController = navHostFragment.navController
+        setUpNavigation(navController)
+        LegacyHomeShell.onSetUpNavigation(binding, navController)
 
         homeViewModel.statusBarShadeVisible.collect(this) { showStatusBarShade(it) }
         homeViewModel.contentToInstall.collect(
@@ -300,6 +287,11 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     }
 
     private fun checkKeys() {
+        val firstTimeSetup = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            .getBoolean(Settings.PREF_FIRST_APP_LAUNCH, true)
+        if (firstTimeSetup) {
+            return
+        }
         if (!NativeLibrary.areKeysPresent()) {
             MessageDialogFragment.newInstance(
                 titleId = R.string.keys_missing,
@@ -311,10 +303,12 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean(CHECKED_DECRYPTION, checkedDecryption)
+        LegacyHomeShell.onSaveInstanceState(outState)
     }
 
     fun finishSetup(navController: NavController) {
         navController.navigate(R.id.action_firstTimeSetupFragment_to_gamesFragment)
+        LegacyHomeShell.onFinishSetup(binding, navController)
     }
 
     private fun setUpNavigation(navController: NavController) {
@@ -328,6 +322,9 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     }
 
     private fun showStatusBarShade(visible: Boolean) {
+        if (visible) {
+            refreshSystemBarChrome()
+        }
         binding.statusBarShade.animate().apply {
             if (visible) {
                 binding.statusBarShade.setVisible(true)
@@ -348,9 +345,27 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     }
 
     override fun onResume() {
-        ThemeHelper.setCorrectTheme(this)
         super.onResume()
+        if (ThemeHelper.syncThemeConfiguration(this)) {
+            return
+        }
+        refreshSystemBarChrome()
         applyFullscreenPreference()
+    }
+
+    private fun refreshSystemBarChrome() {
+        val includeNavigationBarShade =
+            InsetsHelper.getSystemGestureType(applicationContext) != InsetsHelper.GESTURE_NAVIGATION
+        if (LegacyUi.isEnabled()) {
+            LegacyHomeShell.applyChrome(binding, includeNavigationBarShade)
+        } else {
+            ThemeHelper.applySystemBarShadeColors(
+                binding.root,
+                binding.statusBarShade,
+                binding.navigationBarShade,
+                includeNavigationBarShade
+            )
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -387,6 +402,7 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
     }
 
     override fun onDestroy() {
+        ThemeHelper.unregisterThemeChangeListener()
         EmulationActivity.stopForegroundService(this)
         super.onDestroy()
     }
@@ -405,7 +421,11 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
             }
         }
 
-    fun processGamesDir(result: Uri, calledFromGameFragment: Boolean = false) {
+    fun processGamesDir(
+        result: Uri,
+        calledFromGameFragment: Boolean = false,
+        dialogFragmentManager: FragmentManager? = null,
+    ) {
         contentResolver.takePersistableUriPermission(
             result,
             Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -422,8 +442,9 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
             return
         }
 
+        val fragmentManager = dialogFragmentManager ?: supportFragmentManager
         AddGameFolderDialogFragment.newInstance(uriString, calledFromGameFragment)
-            .show(supportFragmentManager, AddGameFolderDialogFragment.TAG)
+            .show(fragmentManager, AddGameFolderDialogFragment.TAG)
     }
 
     fun processExternalContentDir(result: Uri) {
@@ -461,13 +482,19 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         }
     }
 
-    fun processKey(result: Uri, extension: String = "keys") {
+    fun processKey(
+        result: Uri,
+        extension: String = "keys",
+        dialogFragmentManager: FragmentManager? = null,
+        reloadGameLibrary: Boolean = true,
+    ) {
         InstallableActions.processKey(
             activity = this,
-            fragmentManager = supportFragmentManager,
+            fragmentManager = dialogFragmentManager ?: supportFragmentManager,
             gamesViewModel = gamesViewModel,
             result = result,
-            extension = extension
+            extension = extension,
+            reloadGameLibrary = reloadGameLibrary,
         )
     }
 
@@ -477,10 +504,14 @@ class MainActivity : AppCompatActivity(), ThemeProvider {
         }
     }
 
-    fun processFirmware(result: Uri, onComplete: (() -> Unit)? = null) {
+    fun processFirmware(
+        result: Uri,
+        onComplete: ((success: Boolean) -> Unit)? = null,
+        dialogFragmentManager: FragmentManager? = null,
+    ) {
         InstallableActions.processFirmware(
             activity = this,
-            fragmentManager = supportFragmentManager,
+            fragmentManager = dialogFragmentManager ?: supportFragmentManager,
             homeViewModel = homeViewModel,
             result = result,
             onComplete = onComplete

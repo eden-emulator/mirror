@@ -7,9 +7,14 @@ import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlin.math.roundToInt
@@ -20,9 +25,54 @@ import org.yuzu.yuzu_emu.ui.main.ThemeProvider
 import androidx.preference.PreferenceManager
 import org.yuzu.yuzu_emu.YuzuApplication
 import org.yuzu.yuzu_emu.features.settings.model.Settings
+import android.view.View
+import com.google.android.material.color.MaterialColors
+import java.util.Collections
+import java.util.WeakHashMap
 
 object ThemeHelper {
     const val SYSTEM_BAR_ALPHA = 0.9f
+
+    @Volatile
+    private var themeConfigurationGeneration = 0
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val trackedActivities =
+        Collections.newSetFromMap(WeakHashMap<AppCompatActivity, Boolean>())
+    private val lastAppliedThemeGeneration = WeakHashMap<AppCompatActivity, Int>()
+
+    fun registerForThemeUpdates(activity: AppCompatActivity) {
+        trackedActivities.add(activity)
+        lastAppliedThemeGeneration.putIfAbsent(activity, themeConfigurationGeneration)
+        activity.lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onDestroy(owner: LifecycleOwner) {
+                    trackedActivities.remove(activity)
+                    lastAppliedThemeGeneration.remove(activity)
+                }
+            }
+        )
+    }
+
+    fun markThemeConfigurationChanged() {
+        themeConfigurationGeneration++
+        dispatchThemeUpdates()
+    }
+
+    private fun dispatchThemeUpdates() {
+        mainHandler.post {
+            trackedActivities.toList().forEach { activity ->
+                if (!activity.isFinishing &&
+                    activity.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+                ) {
+                    applyThemeConfiguration(activity)
+                }
+            }
+        }
+    }
+
+    private fun hasThemeConfigurationChanged(lastSeenGeneration: Int): Boolean =
+        themeConfigurationGeneration != lastSeenGeneration
 
     // Listener that detects if the theme keys are being changed from the setting menu and recreates the activity
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
@@ -78,12 +128,95 @@ object ThemeHelper {
         )
     }
 
-    fun setCorrectTheme(activity: AppCompatActivity) {
-        val currentTheme = (activity as ThemeProvider).themeId
-        setTheme(activity)
-        if (currentTheme != (activity as ThemeProvider).themeId) {
+    @ColorInt
+    fun getLegacyContentBackgroundColor(anchor: View): Int {
+        return MaterialColors.getColor(anchor, com.google.android.material.R.attr.colorSurface)
+    }
+
+    /** Bottom navigation bar: slight contrast from the main content. */
+    @ColorInt
+    fun getLegacyChromeBackgroundColor(anchor: View): Int {
+        return MaterialColors.layer(
+            anchor,
+            com.google.android.material.R.attr.colorSurface,
+            com.google.android.material.R.attr.colorPrimary,
+            0.12f
+        )
+    }
+
+    /** Status bar scrim matches the fragment content ([getLegacyContentBackgroundColor]). */
+    @ColorInt
+    fun getLegacyStatusBarScrimColor(anchor: View): Int {
+        return getColorWithOpacity(getLegacyContentBackgroundColor(anchor), SYSTEM_BAR_ALPHA)
+    }
+
+    /** Scrim behind the status bar (and bottom nav bar when shown). */
+    @ColorInt
+    fun getSystemBarScrimColor(anchor: View): Int {
+        if (LegacyUi.isEnabled()) {
+            return getLegacyStatusBarScrimColor(anchor)
+        }
+        return getColorWithOpacity(
+            MaterialColors.getColor(anchor, com.google.android.material.R.attr.colorSurface),
+            SYSTEM_BAR_ALPHA
+        )
+    }
+
+    fun applySystemBarShadeColors(
+        anchor: View,
+        statusBarShade: View,
+        navigationBarShade: View?,
+        includeNavigationBarShade: Boolean,
+    ) {
+        val scrim = getSystemBarScrimColor(anchor)
+        statusBarShade.setBackgroundColor(scrim)
+        if (includeNavigationBarShade && navigationBarShade != null) {
+            navigationBarShade.setBackgroundColor(scrim)
+        }
+    }
+
+    fun safeRecreate(activity: AppCompatActivity) {
+        if (activity.isFinishing) {
+            return
+        }
+        if (activity.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
             activity.recreate()
         }
+    }
+
+    /**
+     * Re-applies theme resources when settings changed in native config. Returns true if the
+     * activity is being recreated and the caller should skip further resume work.
+     */
+    fun syncThemeConfiguration(activity: AppCompatActivity): Boolean {
+        if (activity.isFinishing) {
+            return false
+        }
+
+        val lastApplied = lastAppliedThemeGeneration[activity] ?: themeConfigurationGeneration
+        val configurationChanged = hasThemeConfigurationChanged(lastApplied)
+
+        val themeProvider = activity as? ThemeProvider
+        val previousThemeId = themeProvider?.themeId ?: 0
+        setTheme(activity)
+        val themeStyleChanged =
+            themeProvider != null && previousThemeId != themeProvider.themeId
+
+        if (!configurationChanged && !themeStyleChanged) {
+            return false
+        }
+
+        if (!activity.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            return false
+        }
+
+        lastAppliedThemeGeneration[activity] = themeConfigurationGeneration
+        safeRecreate(activity)
+        return true
+    }
+
+    private fun applyThemeConfiguration(activity: AppCompatActivity) {
+        syncThemeConfiguration(activity)
     }
 
     fun setThemeMode(activity: AppCompatActivity) {
@@ -128,11 +261,16 @@ object ThemeHelper {
                 Settings.PREF_THEME_MODE,
                 Settings.PREF_BLACK_BACKGROUNDS
             )
-            if (key in relevantKeys) {
-                activity.recreate()
+            if (key in relevantKeys && !activity.isFinishing) {
+                markThemeConfigurationChanged()
             }
         }
         preferences.registerOnSharedPreferenceChangeListener(listener)
+    }
+
+    fun unregisterThemeChangeListener() {
+        listener?.let { preferences.unregisterOnSharedPreferenceChangeListener(it) }
+        listener = null
     }
 }
 

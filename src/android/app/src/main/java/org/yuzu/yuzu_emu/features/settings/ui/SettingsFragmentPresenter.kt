@@ -33,6 +33,7 @@ import org.yuzu.yuzu_emu.utils.LosslessScalingHelper
 import org.yuzu.yuzu_emu.utils.NativeConfig
 import org.yuzu.yuzu_emu.utils.NativePostProcessing
 import org.yuzu.yuzu_emu.utils.DirectoryInitialization
+import org.yuzu.yuzu_emu.utils.LegacyUi
 import org.yuzu.yuzu_emu.utils.FullscreenHelper
 import androidx.core.content.edit
 import androidx.fragment.app.FragmentActivity
@@ -1350,6 +1351,39 @@ class SettingsFragmentPresenter(
                 add(BooleanSetting.ENABLE_UPDATE_CHECKS.key)
             }
 
+            val legacyYuzuUi: AbstractBooleanSetting = object : AbstractBooleanSetting {
+                override fun getBoolean(needsGlobal: Boolean): Boolean =
+                    BooleanSetting.LEGACY_YUZU_UI.getBoolean(needsGlobal)
+
+                override fun setBoolean(value: Boolean) {
+                    val previous = BooleanSetting.LEGACY_YUZU_UI.getBoolean()
+                    BooleanSetting.LEGACY_YUZU_UI.setBoolean(value)
+                    NativeConfig.saveGlobalConfig()
+                    if (previous != value) {
+                        scheduleLegacyUiRelaunch()
+                    }
+                }
+
+                override val key: String = BooleanSetting.LEGACY_YUZU_UI.key
+                override val isRuntimeModifiable: Boolean =
+                    BooleanSetting.LEGACY_YUZU_UI.isRuntimeModifiable
+                override fun getValueAsString(needsGlobal: Boolean): String =
+                    BooleanSetting.LEGACY_YUZU_UI.getValueAsString(needsGlobal)
+                override val defaultValue: Boolean = false
+                override fun reset() {
+                    BooleanSetting.LEGACY_YUZU_UI.reset()
+                    NativeConfig.saveGlobalConfig()
+                    scheduleLegacyUiRelaunch()
+                }
+            }
+            add(
+                SwitchSetting(
+                    legacyYuzuUi,
+                    titleId = R.string.legacy_yuzu_ui,
+                    descriptionId = R.string.legacy_yuzu_ui_description,
+                )
+            )
+
             add(BooleanSetting.ENABLE_QUICK_SETTINGS.key)
             add(BooleanSetting.INVERT_CONFIRM_BACK_CONTROLLER_BUTTONS.key)
 
@@ -1592,6 +1626,18 @@ class SettingsFragmentPresenter(
                     pathSetter = { path -> NativeConfig.setSdmcDir(path) }
                 )
             )
+        }
+    }
+
+    private fun scheduleLegacyUiRelaunch() {
+        val act = activity ?: return
+        if (act.isFinishing || act.isDestroyed) {
+            return
+        }
+        act.window.decorView.post {
+            if (!act.isFinishing && !act.isDestroyed) {
+                LegacyUi.relaunchApp(act)
+            }
         }
     }
 }
