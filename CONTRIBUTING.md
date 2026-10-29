@@ -16,15 +16,14 @@ Eden is free, open-source, copyleft software, licensed under the terms of the [G
 
 ### Policies
 
-- We are trialing a slightly relaxed AI policy to allow high-quality contributors to use AI *responsibly*. Please read our [detailed AI policy](docs/policies/AI.md) for more info.
-- Usage of any form of profanity or otherwise unsavory language is generally discouraged.
-  - This is primarily because it rarely helps to actually understand what's going on.
-  - Remember that your comments should be focused and actually address what's happening. With very few exceptions, expletives are actively detrimental at best.
-- New code must follow the same general style as the surrounding codebase. Exceptions may be granted in certain cases.
+- AI usage is allowed, but we reserve the right to close and rework your PR if you don't fully understand the changes you're making.
+  - As a common courtesy, please disclose your AI usage under the PR description, as `Assisted-by: <AI model> (<how it helped>)`.
+- Usage of any form of profanity or otherwise unsavory language is discouraged but not strictly disallowed.
+- New code must follow the same style as the surrounding codebase. Exceptions may be granted in certain cases.
 - Maintainers reserve the right to change your patches and pull requests at will. We will try to avoid this.
   - You should generally respect all decisions made by the [code owners](docs/CODEOWNERS) in your particular subsystem.
   - However, if you feel they are overstepping or are incorrect, don't be afraid to stand your ground! Maintainers are not always correct.
-- While we do *not* adhere to the terms of a formal code of conduct, you will generally be expected to respect other developers, contributors, and community members.
+- While we do *not* adhere to the terms of a formal code of conduct, you are expected to treat other developers, contributors, and community members respectfully.
 - You **must** have basic knowledge of [Git](https://git-scm.com/learn). Knowing how to manage your branches and follow proper fork policies is a necessity.
 
 ### Where do I start?
@@ -38,7 +37,8 @@ You may also search for open issues on [GitHub](https://github.com/eden-emulator
 There are five primary ways to contribute.
 
 - Submit pull requests directly to our source tree
-  - You must first request an account on our Forgejo. See [Signup](#how-do-i-sign-up)
+  - You must first [create an account](https://git.eden-emu.dev/user/sign_up).
+  - You may use an internal account, or you may use a GitHub/Codeberg account linked to our instance.
 - Submit pull requests to our [GitHub mirror](https://github.com/eden-emulator/Issue-Reports)
   - Note that this is subject to being removed by DMCA, so don't rely on this.
 - Submit pull requests to our [Codeberg mirror](https://codeberg.org/eden-emu/eden)
@@ -50,31 +50,8 @@ There are five primary ways to contribute.
 
 To test your changes, ensure to read the [build documentation](./docs/Build.md) for your specific platform(s) to ensure everything compiles and works properly. You should also make sure that your branch is up-to-date with the upstream `master` branch before opening a pull request.
 
-### How do I sign up?
-
-<details>
-<summary>To sign up and begin contributing... (click to open)</summary>
-
-Email [crueter@crueter.xyz](mailto:crueter@crueter.xyz) with the following format:
-
-```txt
-Subject: [Eden Git] Registration Request
-Username: <Your Desired Username>
-Email: <Your Desired Email>
-I wish to sign up because... <your reason here>
-```
-
-Received mail that does not follow this format will be ignored.
-
-Once your request is processed, you will receive a confirmation email with your temporary password and some information on Git access and policies. If you do not receive a response within 48 hours, feel free to send another email.
-
-> [!WARNING]
-> Some email providers may place the response email in your spam/junk folder; notable offenders include Gmail and Outlook. *Always* ensure to check your Spam or Junk folder.
-
-</details>
-
 ## Non-code Contributions
 
 Alongside the other contribution methods listed up top, you can also choose to contribute through documentation, organization, or community guides. These can be done either through the code contribution methods described above, or created externally and shared via our Discord community.
 
-If you have an external tool/page that you believe would be handy to integrate/link into Eden, please additionally email our developers at [`developers@eden-emu.dev`](mailto:developers@eden-emu.dev). **Do not submit vibe-coded or AI generated tools or applications**.
+If you have an external tool/page that you believe would be handy to integrate/link into Eden, please additionally email our developers at [`developers@eden-emu.dev`](mailto:developers@eden-emu.dev).
