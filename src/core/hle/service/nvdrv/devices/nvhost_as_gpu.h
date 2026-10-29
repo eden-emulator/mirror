@@ -23,6 +23,7 @@
 #include "common/swap.h"
 #include "core/hle/service/nvdrv/core/nvmap.h"
 #include "core/hle/service/nvdrv/devices/nvdevice.h"
+#include "core/hle/service/nvdrv/devices/native_sparse_remap.h"
 
 namespace Tegra {
 class MemoryManager;
@@ -63,6 +64,16 @@ public:
     void OnClose(DeviceFD fd) override;
 
     Kernel::KEvent* QueryEvent(u32 event_id) override;
+
+    NvResult MapNative4K(u32 handle, u64 address, u64 buffer_offset, u64 size, u8 kind);
+    NvResult MapNativeImage(u32 handle, u64 buffer_offset, u64 size, u64& address);
+    NvResult UnmapNative4K(u64 address, u64 size);
+    NvResult ReserveNativeSparse4K(u64 address, u64 size);
+    NvResult GetNativeSyncpointShim(u64& address, u32& stride, u32& count);
+    NvResult ModifyNativeKind(u64 address, u64 size, u8 requested, u8 fallback);
+    NvResult RemapNativeSparse(std::span<NativeSparseRemapEntry> entries) {
+        return NativeRemap(entries);
+    }
 
     struct VaRegion {
         u64 offset;
@@ -145,9 +156,29 @@ private:
     static_assert(sizeof(IoctlGetVaRegions) == 16 + sizeof(VaRegion) * 2,
                   "IoctlGetVaRegions is incorrect size");
 
+    struct IoctlSyncpointShimInfo {
+        u64_le address;
+        u32_le stride;
+        u32_le count;
+    };
+    static_assert(sizeof(IoctlSyncpointShimInfo) == 16);
+    NvResult GetSyncpointShimInfo(IoctlSyncpointShimInfo& params);
+
+    struct IoctlModifyKind {
+        u16_le compressed_kind;
+        u16_le uncompressed_kind;
+        u32_le reserved;
+        u64_le buffer_offset;
+        u64_le size;
+        u64_le mapping_base;
+    };
+    static_assert(sizeof(IoctlModifyKind) == 32);
+    NvResult ModifyKind(IoctlModifyKind& params);
+
     NvResult AllocAsEx(IoctlAllocAsEx& params);
     NvResult AllocateSpace(IoctlAllocSpace& params);
     NvResult Remap(std::span<IoctlRemapEntry> params);
+    NvResult NativeRemap(std::span<NativeSparseRemapEntry> params);
     NvResult MapBufferEx(IoctlMapBufferEx& params);
     NvResult UnmapBuffer(IoctlUnmapBuffer& params);
     NvResult FreeSpace(IoctlFreeSpace& params);
@@ -190,11 +221,19 @@ private:
     //!< This maps the base addresses of mapped buffers to their total sizes and
     //!< mapping type, this is needed as what was originally a single buffer may
     //!< have been split into multiple GPU side buffers with the remap flag.
+    NativeSparseMappingTable native_sparse_mappings;
+    std::map<u32, DAddr> native_sparse_pins;
     std::map<u64, Mapping> mapping_map;
     //!< Holds allocations created by AllocSpace from
     //!< which fixed buffers can be mapped into
     std::map<u64, Allocation> allocation_map;
     std::mutex mutex; //!< Locks all AS operations
+
+    bool m_extended_abi{};
+    bool m_syncpoint_shim_reserved{};
+    DeviceFD m_fd{-1};
+    Kernel::KProcess* m_owner_process{};
+    std::shared_ptr<nvhost_as_gpu> m_shared_parent;
 
     struct VM {
         static constexpr u32 YUZU_PAGESIZE{0x1000};
@@ -219,7 +258,7 @@ private:
 
         bool initialised{};
     } vm;
-    std::unique_ptr<Tegra::MemoryManager> gmmu;
+    std::shared_ptr<Tegra::MemoryManager> gmmu;
 };
 
 } // namespace Service::Nvidia::Devices

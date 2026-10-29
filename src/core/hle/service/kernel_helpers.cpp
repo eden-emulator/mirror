@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdlib>
 #include "core/core.h"
 #include "core/core_timing.h"
 #include "core/hle/kernel/k_event.h"
@@ -63,6 +64,11 @@ Kernel::KEvent* ServiceContext::CreateEvent(std::string&& name) {
 
     // Register the event.
     Kernel::KEvent::Register(kernel, event);
+    // Diagnostic only: EDEN_DIAG_WAITS=1 names every service event.
+    static const bool diag_waits = std::getenv("EDEN_DIAG_WAITS") != nullptr;
+    if (diag_waits) {
+        LOG_DEBUG(Service, "diag: created service event '{}' at {}", name, static_cast<const void*>(event));
+    }
 
     return event;
 }

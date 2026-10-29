@@ -343,6 +343,8 @@ public:
     Id write_global_func_u32{};
     Id write_global_func_u32x2{};
     Id write_global_func_u32x4{};
+    std::array<Id, 11> global_atomic_funcs{}; // IAdd, SMin, UMin, SMax, UMax, And, Or, Xor, Exchange, Inc, Dec
+    Id write_global_subword_func{};
 
     bool need_input_position_indirect{};
     Id input_position{};

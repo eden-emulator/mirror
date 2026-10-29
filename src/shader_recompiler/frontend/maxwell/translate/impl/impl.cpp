@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "shader_recompiler/shader_info.h"
+
 #include "common/bit_field.h"
 #include "shader_recompiler/frontend/ir/ir_emitter.h"
 #include "shader_recompiler/frontend/maxwell/translate/impl/impl.h"
@@ -128,7 +130,7 @@ static std::pair<IR::U32, IR::U32> CbufAddr(u64 insn) {
         BitField<34, 5, u64> binding;
     } const cbuf{insn};
 
-    if (cbuf.binding >= 18) {
+    if (cbuf.binding >= Info::MAX_CBUFS) {
         throw NotImplementedException("Out of bounds constant buffer binding {}", cbuf.binding);
     }
     if (cbuf.offset >= 0x10'000) {

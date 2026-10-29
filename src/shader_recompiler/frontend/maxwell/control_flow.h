@@ -19,6 +19,10 @@
 #include "shader_recompiler/frontend/maxwell/opcodes.h"
 #include "shader_recompiler/object_pool.h"
 
+namespace Shader::Ampere {
+struct CfgBuilder;
+}
+
 namespace Shader::Maxwell::Flow {
 
 struct Block;
@@ -104,6 +108,8 @@ struct Function {
 };
 
 class CFG {
+    friend struct Shader::Ampere::CfgBuilder;
+
     enum class AnalysisState {
         Branch,
         Continue,

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <thread>
 
 #include <boost/container/static_vector.hpp>
 
@@ -123,6 +124,7 @@ public:
     void TiledCacheBarrier() override;
     void FlushCommands() override;
     void TickFrame() override;
+    void RunGpuMemDiag(std::stop_token stop);
     bool AccelerateConditionalRendering() override;
     bool HasDrawTransformFeedback() override;
     bool AccelerateSurfaceCopy(const Tegra::Engines::Fermi2D::Surface& src,
@@ -230,6 +232,8 @@ private:
     boost::container::static_vector<VkSampler, MAX_TEXTURES> sampler_handles;
 
     u32 draw_counter = 0;
+
+    std::jthread gpumem_diag_thread; ///< EDEN_DIAG_GPUMEM reporter, last so it stops first
 };
 
 } // namespace Vulkan

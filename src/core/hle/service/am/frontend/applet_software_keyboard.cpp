@@ -194,6 +194,9 @@ void SoftwareKeyboard::InitializeForeground() {
     std::memcpy(&swkbd_config_common, swkbd_config_data.data(), sizeof(SwkbdConfigCommon));
 
     switch (swkbd_applet_version) {
+    case SwkbdAppletVersion::Version1310736:
+        ASSERT(DecodeNativeSwkbdConfig(swkbd_config_data, swkbd_config_common, swkbd_config_new));
+        break;
     case SwkbdAppletVersion::Version5:
     case SwkbdAppletVersion::Version65542:
         ASSERT(swkbd_config_data.size() == sizeof(SwkbdConfigCommon) + sizeof(SwkbdConfigOld));

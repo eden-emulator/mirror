@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdio>
 #include <iterator>
 #include <utility>
 #include "common/assert.h"
@@ -33,7 +34,15 @@ namespace FS = Common::FS;
 
 namespace {
 
-constexpr size_t MaxOpenFiles = 8192;
+size_t GetMaxOpenFiles() {
+#ifdef _WIN32
+    // Leave stdio slots for logs, module files, and callers outside the VFS cache.
+    const size_t limit = static_cast<size_t>(_getmaxstdio());
+    return std::min(size_t{8192}, limit > 64 ? limit - 64 : size_t{1});
+#else
+    return 8192;
+#endif
+}
 
 bool IsWithinRoot(std::string_view root, std::string_view full_path) {
     if (root.empty())
@@ -251,7 +260,7 @@ void RealVfsFilesystem::DropReference(std::unique_ptr<FileReference>&& reference
 }
 
 void RealVfsFilesystem::EvictSingleReferenceLocked() {
-    if (num_open_files < MaxOpenFiles || open_references.empty()) {
+    if (num_open_files < GetMaxOpenFiles() || open_references.empty()) {
         return;
     }
 

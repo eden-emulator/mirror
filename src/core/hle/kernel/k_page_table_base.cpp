@@ -217,7 +217,8 @@ Result KPageTableBase::InitializeForProcess(Svc::CreateProcessFlag as_type, bool
         return KAddressSpaceInfo::GetAddressSpaceStart(m_address_space_width, type);
     };
     auto GetSpaceSize = [&](KAddressSpaceInfo::Type type) {
-        return KAddressSpaceInfo::GetAddressSpaceSize(m_address_space_width, type);
+        return KAddressSpaceInfo::GetAddressSpaceSize(
+            m_address_space_width, type, KSystemControl::Init::GetIntendedMemorySize());
     };
 
     // Set our bit width and heap/alias sizes.
@@ -2102,7 +2103,8 @@ Result KPageTableBase::SetMemoryAttribute(KProcessAddress addr, size_t size, KMe
     constexpr KMemoryAttribute AttributeTestMask =
         ~(KMemoryAttribute::SetMask | KMemoryAttribute::DeviceShared);
     const KMemoryState state_test_mask =
-        (True(mask & KMemoryAttribute::Uncached) ? KMemoryState::FlagCanChangeAttribute
+        (True(mask & (KMemoryAttribute::Uncached | KMemoryAttribute::GpuAccessible))
+             ? KMemoryState::FlagCanChangeAttribute
                                                  : KMemoryState::None) |
         (True(mask & KMemoryAttribute::PermissionLocked) ? KMemoryState::FlagCanPermissionLock
                                                          : KMemoryState::None);

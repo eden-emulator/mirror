@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "video_core/native_diagnostics.h"
+#include "video_core/native_texture_capture.h"
 #include <limits>
 #include <optional>
 #include <bit>
@@ -217,6 +219,7 @@ void TextureCache<P>::MarkModification(ImageId id) noexcept {
 
 template <class P>
 void TextureCache<P>::FillImageViews(std::span<ImageViewInOut> views, bool compute, bool blacklist) {
+    const bool capture = !compute && gpu_memory->UsesNativeTiling() && BeginNativeTextureCapture();
     bool has_blacklisted = false;
     do {
         has_deleted_images = false;
@@ -225,6 +228,13 @@ void TextureCache<P>::FillImageViews(std::span<ImageViewInOut> views, bool compu
         }
         for (ImageViewInOut& view : views) {
             view.id = VisitImageView(view.index, compute);
+            if (capture && view.id != NULL_IMAGE_VIEW_ID) {
+                const ImageViewBase& image_view = slot_image_views[view.id];
+                if (!image_view.IsBuffer() && image_view.image_id) {
+                    const auto [descriptor, unused] = channel_state->graphics_image_table.Read(*gpu_memory, view.index);
+                    CaptureNativeTexture(*gpu_memory, view.index, descriptor, image_view, slot_images[image_view.image_id]);
+                }
+            }
             if (blacklist) {
                 if (view.blacklist && view.id != NULL_IMAGE_VIEW_ID) {
                     const ImageViewBase& image_view = slot_image_views[view.id];
@@ -315,6 +325,7 @@ SamplerId TextureCache<P>::GetSamplerId(u32 index, bool compute) {
     }
     auto const map_index = index | (compute ? Common::SlotId::TAGGED_VALUE : 0);
     auto const [descriptor, is_new] = table.Read(*gpu_memory, index);
+    if (!compute && gpu_memory->UsesNativeTiling()) CaptureNativeSampler(index, descriptor);
     if (is_new) {
         auto const id = FindSampler(descriptor, compute);
         channel_state->sampler_ids.insert_or_assign(map_index, id);
@@ -610,6 +621,74 @@ bool TextureCache<P>::IsDownloadable(const ImageBase& image) const noexcept {
     }
 }
 
+// Diagnostic readback only: preserve guest memory and image modification flags.
+template <class P>
+bool TextureCache<P>::CaptureNativeGpuTexture(std::span<const ImageViewInOut> views) {
+    if (!NativeDrawDiagnosticsEnabled() || !gpu_memory->UsesNativeTiling()) return false;
+    static thread_local u32 wanted{};
+    static thread_local GPUVAddr wanted_gpu{};
+    static thread_local u32 remaining{};
+    std::ifstream request("native-gpu-texture.request");
+    if (request) {
+        wanted_gpu = 0;
+        bool valid{};
+        if (request.peek() == 'g') {
+            std::string kind;
+            valid = static_cast<bool>(request >> kind >> std::hex >> wanted_gpu) && kind == "gpu" && wanted_gpu != 0;
+        } else {
+            valid = static_cast<bool>(request >> wanted);
+        }
+        request.close();
+        std::error_code error;
+        std::filesystem::remove("native-gpu-texture.request", error);
+        remaining = valid ? 512 : 0;
+    }
+    if (!remaining) return false;
+    --remaining;
+    for (const auto& binding : views) {
+        if ((!wanted_gpu && binding.index != wanted) || binding.id == NULL_IMAGE_VIEW_ID) continue;
+        const auto& view = slot_image_views[binding.id];
+        if (view.IsBuffer() || !view.image_id) continue;
+        Image& image = slot_images[view.image_id];
+        if (wanted_gpu && image.gpu_addr != wanted_gpu) continue;
+        wanted = binding.index;
+        const auto& info = image.info;
+        // Restrict this first probe to the unchanged native image format and size.
+        if (info.num_samples != 1 || info.resources.levels != 1 || info.resources.layers != 1 ||
+            info.type != ImageType::e2D || True(image.flags & (ImageFlagBits::Converted |
+                ImageFlagBits::Rescaled | ImageFlagBits::IsDecoding)) ||
+            !image.unswizzled_size_bytes || image.unswizzled_size_bytes > 64 * 1024 * 1024) continue;
+        remaining = 0;
+        const std::string prefix = "native-gpu-texture-" + std::to_string(wanted);
+        auto map = runtime.DownloadStagingBuffer(image.unswizzled_size_bytes);
+        const auto copies = FullDownloadCopies(info);
+        image.DownloadMemory(map, copies);
+        runtime.Finish();
+        NativeTextureCapture::Write(prefix + ".linear.bin", map.mapped_span.data(), image.unswizzled_size_bytes);
+        std::ofstream metadata(prefix + ".txt");
+        metadata << "index " << wanted << "\ngpu " << std::hex << image.gpu_addr << std::dec
+                 << "\npixel_format " << static_cast<u32>(info.format)
+                 << "\nview_format " << static_cast<u32>(view.format)
+                 << "\nflags " << static_cast<u32>(image.flags)
+                 << "\nsize " << info.size.width << ' ' << info.size.height << ' ' << info.size.depth
+                 << "\nview_range " << view.range.base.level << ' ' << view.range.base.layer << ' '
+                 << view.range.extent.levels << ' ' << view.range.extent.layers << '\n';
+        if constexpr (requires { view.Swizzle(); image.Handle(); }) {
+            const auto& mapping = view.Swizzle();
+            metadata << "image_handle " << image.Handle() << "\nview_image_handle " << view.ImageHandle()
+                     << "\ncomponent_mapping " << mapping.r << ' ' << mapping.g << ' ' << mapping.b << ' ' << mapping.a << '\n';
+        }
+        for (const auto& copy : copies)
+            metadata << "copy " << copy.buffer_offset << ' ' << copy.buffer_size << ' '
+                     << copy.buffer_row_length << ' ' << copy.buffer_image_height << ' '
+                     << copy.image_subresource.base_level << ' ' << copy.image_subresource.base_layer << ' '
+                     << copy.image_subresource.num_layers << ' ' << copy.image_extent.width << ' '
+                     << copy.image_extent.height << ' ' << copy.image_extent.depth << '\n';
+        return true;
+    }
+    return false;
+}
+
 template <class P>
 void TextureCache<P>::DownloadMemory(DAddr cpu_addr, size_t size) {
     boost::container::small_vector<ImageId, 16> images;
@@ -803,6 +882,17 @@ std::pair<typename P::ImageView*, bool> TextureCache<P>::TryFindFramebufferImage
     if (it == page_table.end()) {
         return {};
     }
+    const auto view_format = [&]() {
+        switch (config.pixel_format) {
+        case Service::android::PixelFormat::Rgb565:
+            return PixelFormat::R5G6B5_UNORM;
+        case Service::android::PixelFormat::Bgra8888:
+            return PixelFormat::B8G8R8A8_UNORM;
+        default:
+            return PixelFormat::A8B8G8R8_UNORM;
+        }
+    }();
+
     const auto& image_map_ids = it->second;
     boost::container::small_vector<ImageId, 4> valid_image_ids;
     for (const ImageMapId map_id : image_map_ids) {
@@ -814,19 +904,16 @@ std::pair<typename P::ImageView*, bool> TextureCache<P>::TryFindFramebufferImage
         if (image.image_view_ids.empty()) {
             continue;
         }
+        if (!VideoCore::Surface::IsViewCompatible(image.info.format, view_format, false, true)) {
+            static u32 rejected_alias_count{};
+            if (VideoCommon::NativeDrawDiagnosticsEnabled() && rejected_alias_count++ < 8) {
+                LOG_WARNING(HW_GPU, "Ignoring incompatible framebuffer alias: address={:#x}, image={}, view={}",
+                            cpu_addr, image.info.format, view_format);
+            }
+            continue;
+        }
         valid_image_ids.push_back(map.image_id);
     }
-
-    const auto view_format = [&]() {
-        switch (config.pixel_format) {
-        case Service::android::PixelFormat::Rgb565:
-            return PixelFormat::R5G6B5_UNORM;
-        case Service::android::PixelFormat::Bgra8888:
-            return PixelFormat::B8G8R8A8_UNORM;
-        default:
-            return PixelFormat::A8B8G8R8_UNORM;
-        }
-    }();
 
     const auto GetImageViewForFramebuffer = [&](ImageId image_id) {
         ImageViewInfo info{ImageViewType::e2D, view_format};
@@ -869,6 +956,7 @@ void TextureCache<P>::CommitAsyncFlushes() {
     // This is intentionally passing the value by copy
     if constexpr (IMPLEMENTS_ASYNC_DOWNLOADS) {
         auto& download_ids = uncommitted_downloads;
+        const size_t redundant_images = DeduplicatePendingImageDownloads(download_ids, slot_images);
         if (download_ids.empty()) {
             committed_downloads.emplace_back(std::move(uncommitted_downloads));
             uncommitted_downloads.clear();
@@ -882,17 +970,32 @@ void TextureCache<P>::CommitAsyncFlushes() {
         for (PendingDownload& download_info : download_ids) {
             if (download_info.is_swizzle) {
                 total_size_bytes +=
-                    Common::AlignUp(slot_images[download_info.object_id].unswizzled_size_bytes, 64);
+                    Common::AlignUp(download_info.GetImage(slot_images).unswizzled_size_bytes, 64);
                 any_none_dma = true;
                 download_info.async_buffer_id = last_async_buffer_id;
             }
         }
 
         if (any_none_dma) {
+            if (VideoCommon::NativeDrawDiagnosticsEnabled() && total_size_bytes >= 64_MiB) {
+                LOG_WARNING(HW_GPU, "Large image readback batch: bytes={}, entries={}, duplicates_removed={}, submitted_batches={}, retained_buffers={}",
+                            total_size_bytes, download_ids.size(), redundant_images,
+                            committed_downloads.size(), async_buffers_death_ring.size());
+                size_t traced_images = 0;
+                for (const auto& download : download_ids) {
+                    if (!download.is_swizzle || traced_images++ >= 8) continue;
+                    const auto& image = download.GetImage(slot_images);
+                    LOG_WARNING(HW_GPU, "Readback image: gpu={:#x}, cpu={:#x}, format={}, size={}x{}x{}, levels={}, layers={}, layer_stride={}, guest_bytes={}, download_bytes={}",
+                                image.gpu_addr, image.cpu_addr, image.info.format,
+                                image.info.size.width, image.info.size.height, image.info.size.depth,
+                                image.info.resources.levels, image.info.resources.layers,
+                                image.info.layer_stride, image.guest_size_bytes, image.unswizzled_size_bytes);
+                }
+            }
             auto download_map = runtime.DownloadStagingBuffer(total_size_bytes, true);
             for (const PendingDownload& download_info : download_ids) {
                 if (download_info.is_swizzle) {
-                    Image& image = slot_images[download_info.object_id];
+                    Image& image = download_info.GetImage(slot_images);
                     const auto copies = FullDownloadCopies(image.info);
                     image.DownloadMemory(download_map, copies);
                     download_map.offset += Common::AlignUp(image.unswizzled_size_bytes, 64);
@@ -925,7 +1028,7 @@ void TextureCache<P>::PopAsyncFlushes() {
             auto& download_info = download_ids[i - 1];
             auto& download_buffer = download_map[download_info.async_buffer_id];
             if (download_info.is_swizzle) {
-                const ImageBase& image = slot_images[download_info.object_id];
+                const ImageBase& image = download_info.GetImage(slot_images);
                 const auto copies = FullDownloadCopies(image.info);
                 download_buffer.offset -= Common::AlignUp(image.unswizzled_size_bytes, 64);
                 std::span<u8> download_span =
@@ -954,7 +1057,7 @@ void TextureCache<P>::PopAsyncFlushes() {
         size_t total_size_bytes = 0;
         for (const PendingDownload& download_info : download_ids) {
             if (download_info.is_swizzle) {
-                total_size_bytes += slot_images[download_info.object_id].unswizzled_size_bytes;
+                total_size_bytes += download_info.GetImage(slot_images).unswizzled_size_bytes;
             }
         }
         auto download_map = runtime.DownloadStagingBuffer(total_size_bytes);
@@ -963,7 +1066,7 @@ void TextureCache<P>::PopAsyncFlushes() {
             if (!download_info.is_swizzle) {
                 continue;
             }
-            Image& image = slot_images[download_info.object_id];
+            Image& image = download_info.GetImage(slot_images);
             const auto copies = FullDownloadCopies(image.info);
             image.DownloadMemory(download_map, copies);
             download_map.offset += image.unswizzled_size_bytes;
@@ -976,7 +1079,7 @@ void TextureCache<P>::PopAsyncFlushes() {
             if (!download_info.is_swizzle) {
                 continue;
             }
-            const ImageBase& image = slot_images[download_info.object_id];
+            const ImageBase& image = download_info.GetImage(slot_images);
             const auto copies = FullDownloadCopies(image.info);
             SwizzleImage(*gpu_memory, image.gpu_addr, image.info, copies, download_span, swizzle_data_buffer);
             download_map.offset += image.unswizzled_size_bytes;
@@ -1178,7 +1281,18 @@ void TextureCache<P>::UploadImageContents(Image& image, StagingBuffer& staging) 
 }
 
 template <class P>
-ImageViewId TextureCache<P>::CreateImageView(const TICEntry& config) {
+ImageViewId TextureCache<P>::CreateImageView(const TICEntry& raw_config) {
+    const bool native = gpu_memory->UsesNativeTiling();
+    if (native && raw_config.BaseLayer() && VideoCommon::NativeDrawDiagnosticsEnabled()) {
+        static u32 texture_view_traces{};
+        if (texture_view_traces++ < 8) {
+            LOG_WARNING(HW_GPU, "Native texture view header: address={:#x}, dimensions={}x{}x{}, type={}, legacy_layer={}, raw={:016x}/{:016x}/{:016x}/{:016x}",
+                        raw_config.Address(), raw_config.Width(), raw_config.Height(), raw_config.Depth(),
+                        static_cast<u32>(raw_config.texture_type.Value()), raw_config.BaseLayer(),
+                        raw_config.raw[0], raw_config.raw[1], raw_config.raw[2], raw_config.raw[3]);
+        }
+    }
+    const TICEntry config = TextureViewHeader(raw_config, native);
     const ImageInfo info(config);
     if (info.type == ImageType::Buffer) {
         const ImageViewInfo view_info(config, 0);
@@ -1526,7 +1640,9 @@ ImageId TextureCache<P>::InsertImage(const ImageInfo& info, GPUVAddr gpu_addr,
         }
     }
     ASSERT_MSG(cpu_addr, "Tried to insert an image to an invalid gpu_addr={:#x}", gpu_addr);
-    const ImageId image_id = JoinImages(info, gpu_addr, *cpu_addr);
+    ImageInfo storage_info = info;
+    storage_info.native_tiling = gpu_memory->UsesNativeTiling();
+    const ImageId image_id = JoinImages(storage_info, gpu_addr, *cpu_addr);
     const Image& image = slot_images[image_id];
     // Using "image.gpu_addr" instead of "gpu_addr" is important because it might be different
     const auto [it, is_new] = image_allocs_table.try_emplace(image.gpu_addr);
@@ -1647,7 +1763,11 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
     for (const ImageId overlap_id : join_ignore_textures) {
         Image& overlap = slot_images[overlap_id];
         if (True(overlap.flags & ImageFlagBits::GpuModified)) {
-            UNIMPLEMENTED();
+            // An ignored overlap whose contents only exist on the GPU cannot be merged into the new image;
+            // MKW's native sparse remaps hit this (texture_cache.h assert after NativeRemap, which aborted
+            // the process). Drop the stale contents instead of aborting.
+            LOG_WARNING(HW_GPU, "Dropping GPU-modified overlapping image at {:#x} while joining images",
+                        overlap.gpu_addr);
         }
         if (True(overlap.flags & ImageFlagBits::Tracked)) {
             UntrackImage(overlap, overlap_id);
@@ -2385,7 +2505,11 @@ void TextureCache<P>::DeleteImage(ImageId image_id, bool immediate_delete) {
         }
         slot_image_views.erase(image_view_id);
     }
-    if (!immediate_delete) {
+    const bool retained = RetainPendingImageDownloads(image_id, slot_images[image_id],
+                                                       uncommitted_downloads, committed_downloads);
+    if (retained) {
+        LOG_INFO(Render_Vulkan, "Retained image for queued download: id={}", image_id.Value());
+    } else if (!immediate_delete) {
         sentenced_images.Push(std::move(slot_images[image_id]));
     }
     slot_images.erase(image_id);

@@ -13,6 +13,7 @@
 
 #include "core/core.h"
 #include "core/core_timing.h"
+#include "core/guest_clock.h"
 
 namespace {
 // Numbers are chosen randomly to make sure the correct one is given.
@@ -138,4 +139,21 @@ TEST_CASE("CoreTiming[BasicOrderNoPausing]", "[core]") {
     printf("HostTimer No Pausing Scheduling Time: %.3f %.6f\n", micro, mili);
     printf("HostTimer No Pausing Timer Time: %.3f %.6f\n", timer_time / 1000.f,
            timer_time / 1000000.f);
+}
+
+TEST_CASE("Guest counter units follow the application ABI", "[guest-clock]") {
+    using Core::Timing::GetGuestCounterFrequency;
+    using Core::Timing::GetGuestCounterTicks;
+    REQUIRE(GetGuestCounterFrequency(false) == 19'200'000);
+    REQUIRE(GetGuestCounterFrequency(true) == 31'250'000);
+    REQUIRE(GetGuestCounterTicks(0, true) == 0);
+    REQUIRE(GetGuestCounterTicks(19'200'000, true) == 31'250'000);
+    REQUIRE(GetGuestCounterTicks(9'600'000, true) == 15'625'000);
+    REQUIRE(GetGuestCounterTicks(1, true) == 1);
+    REQUIRE(GetGuestCounterTicks(2, true) == 3);
+    REQUIRE(GetGuestCounterTicks(19'199'999, true) == 31'249'998);
+    REQUIRE(GetGuestCounterTicks(19'200'001, true) == 31'250'001);
+    REQUIRE(GetGuestCounterTicks(1ULL << 60, true) == 1876499844737706666ULL);
+    REQUIRE(GetGuestCounterTicks(1ULL << 60, false) == (1ULL << 60));
+    REQUIRE(GetGuestCounterTicks(~0ULL, false) == ~0ULL);
 }

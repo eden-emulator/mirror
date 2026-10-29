@@ -33,6 +33,7 @@ UNIFORM(3) uint block_size;
 UNIFORM(4) uint x_shift;
 UNIFORM(5) uint block_height;
 UNIFORM(6) uint block_height_mask;
+UNIFORM(7) uint native_tiling;
 END_PUSH_CONSTANTS
 
 struct EncodingData {
@@ -1394,11 +1395,16 @@ void DecompressBlock(ivec3 coord) {
 }
 
 uint SwizzleOffset(uvec2 pos) {
-    return ((pos.x & 32u) << 3u) |
+    uint offset = ((pos.x & 32u) << 3u) |
            ((pos.y & 6u)  << 5u) |
            ((pos.x & 16u) << 1u) |
            ((pos.y & 1u)  << 4u) |
            (pos.x & 15u);
+    if (native_tiling != 0) {
+        const uint difference = ((offset >> 5u) ^ (offset >> 6u)) & 1u;
+        offset ^= (difference << 5u) | (difference << 6u);
+    }
+    return offset;
 }
 
 void main() {

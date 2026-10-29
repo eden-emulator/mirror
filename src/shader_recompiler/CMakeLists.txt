@@ -58,6 +58,30 @@ add_library(shader_recompiler STATIC
     frontend/ir/type.h
     frontend/ir/value.cpp
     frontend/ir/value.h
+    frontend/ampere/ampere_isa_table.h
+    frontend/ampere/cfg_builder.h
+    frontend/ampere/classify.h
+    frontend/ampere/flow.cpp
+    frontend/ampere/flow.h
+    frontend/ampere/instruction.h
+    frontend/ampere/isa.h
+    frontend/ampere/lower_to_maxwell.h
+    frontend/ampere/native.h
+    frontend/ampere/ops_alu.cpp
+    frontend/ampere/ops_attr.cpp
+    frontend/ampere/ops_convert.cpp
+    frontend/ampere/ops_float.cpp
+    frontend/ampere/ops_half.cpp
+    frontend/ampere/ops_int.cpp
+    frontend/ampere/ops_memory.cpp
+    frontend/ampere/ops_misc.cpp
+    frontend/ampere/ops_move.cpp
+    frontend/ampere/ops_texture.cpp
+    frontend/ampere/translate.cpp
+    frontend/ampere/visitor.cpp
+    frontend/ampere/visitor.h
+    frontend/ampere/program_override.h
+    frontend/ampere/program_address_map.h
     frontend/maxwell/control_flow.cpp
     frontend/maxwell/control_flow.h
     frontend/maxwell/decode.cpp
@@ -262,6 +286,12 @@ else()
         $<$<CXX_COMPILER_ID:Clang>:-fbracket-depth=1024>
         $<$<CXX_COMPILER_ID:AppleClang>:-fbracket-depth=1024>
     )
+endif()
+
+# Offline differential harness for the native Ampere frontend (not part of the emulator build).
+if (NS2_IRDIFF_SOURCE)
+    add_executable(irdiff ${NS2_IRDIFF_SOURCE})
+    target_link_libraries(irdiff PRIVATE shader_recompiler)
 endif()
 
 create_target_directory_groups(shader_recompiler)

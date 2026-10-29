@@ -17,6 +17,16 @@
 
 namespace AudioCore {
 constexpr u32 CurrentRevision = 15;
+constexpr u32 NativeCurrentRevision = 16;
+
+constexpr bool IsNativeRevision(u32 revision) {
+    return (revision & 0xffffff) == Common::MakeMagic('R', 'E', 'v', '\0');
+}
+
+constexpr u32 EncodeRevision(u32 revision, bool native) {
+    return Common::MakeMagic('R', 'E', native ? 'v' : 'V',
+                             static_cast<char>('0' + revision));
+}
 
 enum class SupportTags {
     CommandProcessingTimeEstimatorVersion4,
@@ -57,12 +67,15 @@ enum class SupportTags {
 };
 
 constexpr u32 GetRevisionNum(u32 user_revision) {
-    if (user_revision >= 0x100) {
-        user_revision -= Common::MakeMagic('R', 'E', 'V', '0');
-        user_revision >>= 24;
+    if (user_revision < 0x100) {
+        return user_revision;
     }
-
-    return user_revision;
+    if (!IsNativeRevision(user_revision) &&
+        (user_revision & 0xffffff) != Common::MakeMagic('R', 'E', 'V', '\0')) {
+        return ~u32{0};
+    }
+    const u32 encoded = user_revision >> 24;
+    return encoded >= '0' ? encoded - '0' : ~u32{0};
 };
 
 constexpr bool CheckFeatureSupported(SupportTags tag, u32 user_revision) {
@@ -108,11 +121,12 @@ constexpr bool CheckFeatureSupported(SupportTags tag, u32 user_revision) {
         return false;
     }
     user_revision = GetRevisionNum(user_revision);
-    return (*feature).second <= user_revision;
+    return user_revision != ~u32{0} && (*feature).second <= user_revision;
 }
 
 constexpr bool CheckValidRevision(u32 user_revision) {
-    return GetRevisionNum(user_revision) <= CurrentRevision;
+    return GetRevisionNum(user_revision) <=
+           (IsNativeRevision(user_revision) ? NativeCurrentRevision : CurrentRevision);
 };
 
 } // namespace AudioCore

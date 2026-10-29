@@ -9,6 +9,7 @@
 #include "dynarmic/backend/x64/emit_x64.h"
 
 #include <iterator>
+#include "dynarmic/common/crypto/qarma.h"
 
 #include "common/assert.h"
 #include <boost/variant/detail/apply_visitor_binary.hpp>
@@ -77,6 +78,12 @@ void EmitX64::EmitBreakpoint(EmitContext&, IR::Inst*) {
 constexpr bool IsWithin2G(uintptr_t ref, uintptr_t target) {
     const u64 distance = target - (ref + 5);
     return !(distance >= 0x8000'0000ULL && distance <= ~0x8000'0000ULL);
+}
+
+void EmitX64::EmitComputePACGA(EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.HostCall(code, inst, args[0], args[1], {});
+    code.CallFunction(&Common::Crypto::ComputePACGA);
 }
 
 void EmitX64::EmitCallHostFunction(EmitContext& ctx, IR::Inst* inst) {

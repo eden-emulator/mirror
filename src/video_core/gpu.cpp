@@ -23,6 +23,7 @@
 #include "core/perf_stats.h"
 #include "video_core/cdma_pusher.h"
 #include "video_core/control/channel_state.h"
+#include "video_core/native_query_trace.h"
 #include "video_core/control/scheduler.h"
 #include "video_core/dma_pusher.h"
 #include "video_core/engines/fermi_2d.h"
@@ -78,6 +79,10 @@ struct GPU::Impl {
             bound_channel = channel_id;
             current_channel = it->second.get();
             renderer->ReadRasterizer()->BindChannel(*current_channel);
+        }
+        if (current_channel->native_abi) {
+            VideoCommon::TraceNativeQuery(17, current_channel->memory_manager->GetID(),
+                                          0, 0, 0, channel_id, 0);
         }
     }
 

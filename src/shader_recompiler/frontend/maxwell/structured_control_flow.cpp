@@ -17,6 +17,7 @@
 
 #include <ranges>
 #include "shader_recompiler/environment.h"
+#include "shader_recompiler/frontend/ampere/native.h"
 #include "shader_recompiler/frontend/ir/basic_block.h"
 #include "shader_recompiler/frontend/ir/ir_emitter.h"
 #include "shader_recompiler/frontend/maxwell/structured_control_flow.h"
@@ -688,7 +689,13 @@ private:
                 break;
             case StatementType::Code: {
                 ensure_block();
-                Translate(env, current_block, stmt.block->begin.Offset(), stmt.block->end.Offset());
+                if (env.IsNativeAmpere()) {
+                    Ampere::Translate(env, current_block, stmt.block->begin.Offset(),
+                                      stmt.block->end.Offset());
+                } else {
+                    Translate(env, current_block, stmt.block->begin.Offset(),
+                              stmt.block->end.Offset());
+                }
                 break;
             }
             case StatementType::SetVariable: {

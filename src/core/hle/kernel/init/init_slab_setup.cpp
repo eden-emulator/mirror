@@ -87,7 +87,8 @@ constexpr size_t SlabCountKSession = 1133;
 constexpr size_t SlabCountKLightSession = 100;
 constexpr size_t SlabCountKObjectName = 7;
 constexpr size_t SlabCountKResourceLimit = 5;
-constexpr size_t SlabCountKDebug = Core::Hardware::NUM_CPU_CORES;
+// Kept at the Switch 1 core count so the kernel slab layout does not change with the extra emulated cores.
+constexpr size_t SlabCountKDebug = Core::Hardware::NUM_LEGACY_CPU_CORES;
 constexpr size_t SlabCountKIoPool = 1;
 constexpr size_t SlabCountKIoRegion = 6;
 constexpr size_t SlabcountKSessionRequestMappings = 40;

@@ -3,6 +3,8 @@
 
 #include "core/core.h"
 #include "core/core_timing.h"
+#include "core/guest_clock.h"
+#include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/kernel/svc.h"
 
@@ -13,7 +15,8 @@ int64_t GetSystemTick(Core::System& system) {
     LOG_TRACE(Kernel_SVC, "called");
 
     // Returns the value of cntpct_el0 (https://switchbrew.org/wiki/SVC#svcGetSystemTick)
-    return static_cast<int64_t>(system.CoreTiming().GetClockTicks());
+    return static_cast<int64_t>(Core::Timing::GetGuestCounterTicks(
+        system.CoreTiming().GetClockTicks(), GetCurrentProcess(system.Kernel()).UsesPAuthReturns()));
 }
 
 int64_t GetSystemTick64(Core::System& system) {

@@ -19,6 +19,7 @@ enum class PixelFormat : u32 {
     Bgra8888 = 5,
     Rgba5551 = 6,
     Rgba4444 = 7,
+    Rgba1010102 = 43,
 };
 
 } // namespace Service::android

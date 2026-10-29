@@ -9,6 +9,7 @@
 #include "dynarmic/backend/arm64/emit_arm64.h"
 
 #include <oaknut/oaknut.hpp>
+#include "dynarmic/common/crypto/qarma.h"
 
 #include "dynarmic/backend/arm64/abi.h"
 #include "dynarmic/backend/arm64/emit_context.h"
@@ -36,6 +37,15 @@ void EmitIR<IR::Opcode::Identity>(oaknut::CodeGenerator&, EmitContext& ctx, IR::
 template<>
 void EmitIR<IR::Opcode::Breakpoint>(oaknut::CodeGenerator& code, EmitContext&, IR::Inst*) {
     code.BRK(0);
+}
+
+template<>
+void EmitIR<IR::Opcode::ComputePACGA>(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst) {
+    auto args = ctx.reg_alloc.GetArgumentInfo(inst);
+    ctx.reg_alloc.PrepareForCall(args[0], args[1]);
+    code.MOV(Xscratch0, reinterpret_cast<u64>(&Common::Crypto::ComputePACGA));
+    code.BLR(Xscratch0);
+    ctx.reg_alloc.DefineAsRegister(inst, X0);
 }
 
 template<>

@@ -21,7 +21,9 @@
 #include "common/scope_exit.h"
 #include "common/settings.h"
 #include "core/device_memory.h"
+#include "core/hle/kernel/board/nintendo/nx/k_system_control.h"
 #include "core/device_memory_manager.h"
+#include "core/hle/dlss_trace.h"
 #include "core/memory.h"
 
 namespace Core {
@@ -172,7 +174,7 @@ template <typename Traits>
 DeviceMemoryManager<Traits>::DeviceMemoryManager(const DeviceMemory& device_memory_)
     : physical_base{uintptr_t(device_memory_.buffer.BackingBasePointer())}
     , device_inter{nullptr}
-    , compressed_device_addr(1ULL << ((Settings::values.memory_layout_mode.GetValue() == Settings::MemoryLayout::Memory_4Gb ? physical_min_bits : physical_max_bits) - Memory::YUZU_PAGEBITS))
+    , compressed_device_addr(Kernel::Board::Nintendo::Nx::KSystemControl::Init::GetIntendedMemorySize() >> Memory::YUZU_PAGEBITS)
     , tracked_entries(device_as_size >> Memory::YUZU_PAGEBITS)
 {
     impl = std::make_unique<DeviceMemoryManagerAllocator<Traits>>();
@@ -357,6 +359,7 @@ void DeviceMemoryManager<Traits>::Write(DAddr address, T value) {
     if (!ptr) [[unlikely]] {
         return;
     }
+    Core::HLE::DlssTrace::WriteWatch("DeviceMemoryManager::Write<T>", ptr, sizeof(T));
     std::memcpy(ptr, &value, sizeof(T));
 }
 
@@ -449,6 +452,7 @@ void DeviceMemoryManager<Traits>::WriteBlock(DAddr address, const void* src_poin
                 current_vaddr, address, size);
         },
         [&](size_t copy_amount, u8* const dst_ptr) {
+            Core::HLE::DlssTrace::WriteWatch("DeviceMemoryManager::WriteBlock", dst_ptr, copy_amount);
             std::memcpy(dst_ptr, src_pointer, copy_amount);
         },
         [&](const std::size_t copy_amount) {
@@ -508,6 +512,7 @@ void DeviceMemoryManager<Traits>::WriteBlockUnsafe(DAddr address, const void* sr
                 current_vaddr, address, size);
         },
         [&](size_t copy_amount, u8* const dst_ptr) {
+            Core::HLE::DlssTrace::WriteWatch("DeviceMemoryManager::WriteBlock", dst_ptr, copy_amount);
             std::memcpy(dst_ptr, src_pointer, copy_amount);
         },
         [&](const std::size_t copy_amount) {

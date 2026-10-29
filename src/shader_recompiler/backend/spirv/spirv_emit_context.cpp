@@ -1018,6 +1018,82 @@ void EmitContext::DefineGlobalMemoryFunctions(const Info& info) {
         define(&StorageDefinitions::U32x2, storage_types.U32x2, U32[2], sizeof(u32[2]));
     std::tie(load_global_func_u32x4, write_global_func_u32x4) =
         define(&StorageDefinitions::U32x4, storage_types.U32x4, U32[4], sizeof(u32[4]));
+    if (info.uses_global_atomics) {
+        // 32-bit atomics through a raw 64-bit address apply to the tracked storage buffer that holds it.
+        using Atomic = Id (Sirit::Module::*)(Id, Id, Id, Id, Id);
+        const std::array<Atomic, 9> operations{
+            &Sirit::Module::OpAtomicIAdd, &Sirit::Module::OpAtomicSMin, &Sirit::Module::OpAtomicUMin,
+            &Sirit::Module::OpAtomicSMax, &Sirit::Module::OpAtomicUMax, &Sirit::Module::OpAtomicAnd,
+            &Sirit::Module::OpAtomicOr,   &Sirit::Module::OpAtomicXor,  &Sirit::Module::OpAtomicExchange,
+        };
+        const Id scope{Const(static_cast<u32>(spv::Scope::Device))};
+        const Id increment_function{CasFunction(*this, Operation::Increment, U32[1])};
+        const Id decrement_function{CasFunction(*this, Operation::Decrement, U32[1])};
+        for (size_t kind = 0; kind < global_atomic_funcs.size(); ++kind) {
+            const Id function_type{TypeFunction(U32[1], U64, U32[1])};
+            global_atomic_funcs[kind] =
+                OpFunction(U32[1], spv::FunctionControlMask::MaskNone, function_type);
+            const Id addr{OpFunctionParameter(U64)};
+            const Id data{OpFunctionParameter(U32[1])};
+            define_body(&StorageDefinitions::U32, addr, storage_types.U32.element, 2, [&](Id ssbo_pointer) {
+                if (kind < operations.size()) {
+                    OpReturnValue((this->*operations[kind])(U32[1], ssbo_pointer, scope, u32_zero_value, data));
+                    return;
+                }
+                // Wrapping increment and decrement have no atomic instruction: compare-exchange loop.
+                const Id operation_function{kind == 9 ? increment_function : decrement_function};
+                const Id loop_header{OpLabel()};
+                const Id continue_block{OpLabel()};
+                const Id merge_block{OpLabel()};
+                OpBranch(loop_header);
+                AddLabel(loop_header);
+                OpLoopMerge(merge_block, continue_block, spv::LoopControlMask::MaskNone);
+                OpBranch(continue_block);
+                AddLabel(continue_block);
+                const Id value{OpLoad(U32[1], ssbo_pointer)};
+                const Id updated{OpFunctionCall(U32[1], operation_function, value, data)};
+                const Id previous{OpAtomicCompareExchange(U32[1], ssbo_pointer, scope, u32_zero_value,
+                                                          u32_zero_value, updated, value)};
+                OpBranchConditional(OpIEqual(U1, previous, value), merge_block, loop_header);
+                AddLabel(merge_block);
+                OpReturnValue(previous);
+            });
+            OpReturnValue(u32_zero_value);
+            OpFunctionEnd();
+        }
+    }
+    if (info.uses_global_subword_write) {
+        // 8 and 16 bit stores through a raw address replace the field inside the containing aligned
+        // word with a compare-exchange loop, so neighbouring invocations cannot lose each other's bytes.
+        const Id function_type{TypeFunction(void_id, U64, U32[1], U32[1], U32[1])};
+        write_global_subword_func = OpFunction(void_id, spv::FunctionControlMask::MaskNone, function_type);
+        const Id addr{OpFunctionParameter(U64)};
+        const Id value{OpFunctionParameter(U32[1])};
+        const Id bit_offset{OpFunctionParameter(U32[1])};
+        const Id bit_count{OpFunctionParameter(U32[1])};
+        define_body(&StorageDefinitions::U32, addr, storage_types.U32.element, 2, [&](Id ssbo_pointer) {
+            const Id begin_label{OpLabel()};
+            const Id body_label{OpLabel()};
+            const Id continue_label{OpLabel()};
+            const Id end_label{OpLabel()};
+            OpBranch(begin_label);
+            AddLabel(begin_label);
+            OpLoopMerge(end_label, continue_label, spv::LoopControlMask::MaskNone);
+            OpBranch(body_label);
+            AddLabel(body_label);
+            const Id expected{OpLoad(U32[1], ssbo_pointer)};
+            const Id desired{OpBitFieldInsert(U32[1], expected, value, bit_offset, bit_count)};
+            const Id actual{OpAtomicCompareExchange(U32[1], ssbo_pointer, Const(1u), u32_zero_value,
+                                                    u32_zero_value, desired, expected)};
+            OpBranchConditional(OpIEqual(U1, expected, actual), end_label, continue_label);
+            AddLabel(continue_label);
+            OpBranch(begin_label);
+            AddLabel(end_label);
+            OpReturn();
+        });
+        OpReturn();
+        OpFunctionEnd();
+    }
 }
 
 void EmitContext::DefineRescalingInput(const Info& info) {

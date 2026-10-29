@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include "core/core.h"
 #include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/svc.h"
@@ -12,17 +13,18 @@ namespace Kernel::Svc {
 
 /// Set the process heap to a given Size. It can both extend and shrink the heap.
 Result SetHeapSize(Core::System& system, u64* out_address, u64 size) {
-    LOG_TRACE(Kernel_SVC, "called, heap_size={:#x}", size);
+    LOG_DEBUG(Kernel_SVC, "called, heap_size={:#x}", size);
+
+    auto& process = GetCurrentProcess(system.Kernel());
 
     // Validate size.
     R_UNLESS(Common::IsAligned(size, HeapSizeAlignment), ResultInvalidSize);
-    R_UNLESS(size < MainMemorySizeMax, ResultInvalidSize);
+    R_UNLESS(size < std::max(MainMemorySizeMax, process.GetPageTable().GetHeapRegionSize()),
+             ResultInvalidSize);
 
     // Set the heap size.
     KProcessAddress address{};
-    R_TRY(GetCurrentProcess(system.Kernel())
-              .GetPageTable()
-              .SetHeapSize(std::addressof(address), size));
+    R_TRY(process.GetPageTable().SetHeapSize(std::addressof(address), size));
 
     // We succeeded.
     *out_address = GetInteger(address);

@@ -4,9 +4,17 @@
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <chrono>
+#include <thread>
+#include "common/gpumem_diag.h"
+#include "video_core/native_diagnostics.h"
 #include <algorithm>
 #include <array>
 #include <memory>
+#include <cstdlib>
+#include <fstream>
+#include <filesystem>
 #include <mutex>
 
 #include <fmt/format.h>
@@ -14,12 +22,15 @@
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
 
 #include "common/assert.h"
+#include "shader_recompiler/exception.h"
 #include "common/logging.h"
 #include "common/scope_exit.h"
 #include "common/settings.h"
+#include "video_core/textures/decoders.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/gpu_logging/gpu_logging.h"
 #include "video_core/control/channel_state.h"
+#include "video_core/native_query_trace.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/engines/kepler_compute.h"
 #include "video_core/engines/maxwell_3d.h"
@@ -225,9 +236,16 @@ RasterizerVulkan::RasterizerVulkan(Core::Frontend::EmuWindow& emu_window_, Tegra
       fence_manager(*this, gpu, texture_cache, buffer_cache, query_cache, device, scheduler),
       wfi_event(device.GetLogical().CreateEvent()) {
     scheduler.SetQueryCache(query_cache);
+    if (Common::GpuMemDiag::Enabled()) {
+        gpumem_diag_thread = std::jthread([this](std::stop_token stop) { RunGpuMemDiag(stop); });
+    }
 }
 
 RasterizerVulkan::~RasterizerVulkan() {
+    if (gpumem_diag_thread.joinable()) {
+        gpumem_diag_thread.request_stop();
+        gpumem_diag_thread.join();
+    }
     scheduler.WaitWorker();
     scheduler.Finish();
 }
@@ -238,18 +256,38 @@ void RasterizerVulkan::PrepareDraw(bool is_indexed, Func&& draw_func) {
     SCOPE_EXIT {
         gpu.TickWork();
     };
+    bool submitted = false;
+    SCOPE_EXIT {
+        auto& native = maxwell3d->GetNativeMacroEngine();
+        if (native.native_turing && !submitted) {
+            native.native_execution_failed = true;
+            // Rate-limited: the first 32, then every 1024th with the running total.
+            static std::atomic<u64> failed_draws{};
+            const u64 count = ++failed_draws;
+            if (count <= 32 || count % 1024 == 0) {
+                LOG_ERROR(HW_GPU, "Native graphics draw failed; refusing submission completion (failed draws so far: {})", count);
+            }
+        }
+    };
     FlushWork();
     gpu_memory->FlushCaching();
 
     GraphicsPipeline* const pipeline{pipeline_cache.CurrentGraphicsPipeline()};
     if (!pipeline) {
+        // A draw withheld for an asynchronous pipeline build is not a failure of the native work.
+        submitted = pipeline_cache.TakeDeferredDraw();
         return;
     }
     std::scoped_lock lock{buffer_cache.mutex, texture_cache.mutex};
+    buffer_cache.runtime.BeginStorageBatch(maxwell3d->GetNativeMacroEngine().native_turing);
     // update engine as channel may be different.
     pipeline->SetEngine(maxwell3d, gpu_memory);
-    if (!pipeline->Configure(is_indexed))
+    try {
+        if (!pipeline->Configure(is_indexed)) return;
+    } catch (const Shader::Exception& exception) {
+        LOG_ERROR(Render_Vulkan, "Graphics descriptor binding failed: {}", exception.what());
         return;
+    }
 
     UpdateDynamicStates();
 
@@ -257,6 +295,235 @@ void RasterizerVulkan::PrepareDraw(bool is_indexed, Func&& draw_func) {
     HandleTransformFeedback();
     query_cache.CounterEnable(VideoCommon::QueryType::ZPassPixelCount64, maxwell3d->regs.zpass_pixel_count_enable);
     draw_func();
+    submitted = true;
+    buffer_cache.runtime.FlushStorageWrites();
+    static u32 native_capture_count{};
+    static bool requested_capture{};
+    static u32 requested_skip{}, requested_limit{64};
+    static bool requested_targets{};
+    static u64 requested_shader_hash{};
+    static const bool draw_requests_enabled = std::getenv("EDEN_NATIVE_DRAW_DIAGNOSTICS") ||
+                                              std::getenv("EDEN_NATIVE_DRAW_ON_DEMAND");
+    if (maxwell3d->GetNativeMacroEngine().native_turing && draw_requests_enabled) {
+        std::error_code error;
+        if (std::filesystem::exists("native-draw.request", error)) {
+            u32 skip{}, count{64}, targets{};
+            std::ifstream request("native-draw.request");
+            if (!(request >> skip >> count >> targets) || skip > 16384 || !count || count > 2048 || targets > 1) {
+                skip = 0;
+                count = 64;
+                targets = 0;
+            }
+            u64 shader_hash{};
+            request >> std::hex >> shader_hash;
+            request.close();
+            if (std::filesystem::remove("native-draw.request", error)) {
+                native_capture_count = 0;
+                requested_capture = true;
+                requested_skip = skip;
+                requested_limit = count;
+                LOG_INFO(HW_GPU, "Native draw request: skip={}, count={}, targets={}", skip, count, targets);
+                requested_targets = targets != 0;
+                requested_shader_hash = shader_hash;
+                LOG_INFO(HW_GPU, "Native draw fragment filter: {:#x}", shader_hash);
+            }
+        }
+    }
+    bool matches_shader = true;
+    if (requested_capture && requested_shader_hash) {
+        const auto& regs = maxwell3d->regs;
+        const auto& config = regs.pipelines[5];
+        const GPUVAddr address = ((GPUVAddr{config.reserved[0] & 0xff} << 32) |
+                                 config.reserved[1]) + 0x80;
+        matches_shader = false;
+        if (regs.IsShaderConfigEnabled(5) && gpu_memory->IsFullyMappedRange(address, 256)) {
+            std::array<u8, 256> bytes;
+            gpu_memory->ReadBlockUnsafe(address, bytes.data(), bytes.size());
+            u64 hash = 14695981039346656037ULL;
+            for (u8 byte : bytes) hash = (hash ^ byte) * 1099511628211ULL;
+            matches_shader = hash == requested_shader_hash;
+        }
+    }
+    const bool capture_requested = requested_capture && requested_skip == 0 && matches_shader;
+    if (requested_capture && requested_skip) --requested_skip;
+    if (maxwell3d->GetNativeMacroEngine().native_turing &&
+        ((VideoCommon::NativeDrawCaptureEnabled() && native_capture_count < 16) || capture_requested)) {
+        const bool on_demand = requested_capture;
+        const u32 capture = native_capture_count++;
+        const auto prefix = fmt::format("{}{}", on_demand ? "native-requested-draw-" : "native-draw-", capture);
+        if (on_demand && native_capture_count >= requested_limit) requested_capture = false;
+        const auto dump = [&](const std::string& name, GPUVAddr address, size_t size) {
+            if (!size || !gpu_memory->IsFullyMappedRange(address, size)) return;
+            std::vector<u8> bytes(size);
+            gpu_memory->ReadBlockUnsafe(address, bytes.data(), bytes.size());
+            std::ofstream file(prefix + name + ".bin", std::ios::binary);
+            file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+            LOG_INFO(HW_GPU, "Native draw capture {}{}: address={:#x}, bytes={}, nonzero={}",
+                     capture, name, address, size,
+                     std::count_if(bytes.begin(), bytes.end(), [](u8 byte) { return byte != 0; }));
+        };
+        if (on_demand && capture == 0) {
+            std::ifstream request("native-memory.request");
+            if (request) {
+                GPUVAddr address{};
+                size_t length{};
+                for (u32 entry = 0; entry < 16 && (request >> std::hex >> address >> length); ++entry) {
+                    if (!length || length > 16 * 1024 * 1024 || address + length < address ||
+                        !gpu_memory->IsFullyMappedRange(address, length)) {
+                        LOG_ERROR(HW_GPU, "Invalid native memory capture range: address={:#x}, bytes={}", address, length);
+                        continue;
+                    }
+                    for (const auto& [segment, size] : gpu_memory->GetSubmappedRange(address, length)) {
+                        if (const auto device_address = gpu_memory->GpuToCpuAddress(segment))
+                            buffer_cache.DownloadMemory(*device_address, size);
+                    }
+                    dump(fmt::format("-memory-{}-{:x}", entry, address), address, length);
+                }
+                request.close();
+                std::error_code error;
+                std::filesystem::remove("native-memory.request", error);
+            }
+        }
+        if (on_demand && capture == 0) {
+            std::ifstream request("native-textures.request");
+            if (request) {
+                u32 index{};
+                for (u32 entry = 0; entry < 16 && (request >> index); ++entry) {
+                    if (index > maxwell3d->regs.tex_header.limit) continue;
+                    const auto& view = texture_cache.GetImageView(index);
+                    using VideoCore::Surface::PixelFormat;
+                    u32 bytes_per_pixel = 4;
+                    const char* extension = "rgba";
+                    VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+                    if (view.format == PixelFormat::R16G16B16A16_FLOAT) {
+                        bytes_per_pixel = 8;
+                        extension = "rgba16f";
+                    } else if (view.format == PixelFormat::R16G16_FLOAT) {
+                        extension = "rg16f";
+                    } else if (view.format == PixelFormat::R32_FLOAT || view.format == PixelFormat::D32_FLOAT) {
+                        extension = "r32f";
+                        if (view.format == PixelFormat::D32_FLOAT) aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+                    } else if (view.format == PixelFormat::B10G11R11_FLOAT) {
+                        extension = "r11g11b10f";
+                    } else if (!VideoCore::Surface::IsPixelFormatASTC(view.format) &&
+                               view.format != PixelFormat::A8B8G8R8_UNORM &&
+                               view.format != PixelFormat::A8B8G8R8_SRGB) {
+                        continue;
+                    }
+                    if (view.IsRescaled() ||
+                        view.type != VideoCommon::ImageViewType::e2D ||
+                        view.range.base.level != 0 || view.range.base.layer != 0 ||
+                        !view.size.width || !view.size.height ||
+                        u64{view.size.width} * view.size.height > 4 * 1024 * 1024) continue;
+                    const size_t bytes = size_t{view.size.width} * view.size.height * bytes_per_pixel;
+                    auto staging = texture_cache_runtime.DownloadStagingBuffer(bytes);
+                    scheduler.RequestOutsideRenderPassOperationContext();
+                    scheduler.Record([image = view.ImageHandle(), staging, aspect,
+                                      width = view.size.width, height = view.size.height](vk::CommandBuffer cmdbuf) {
+                        const VkImageMemoryBarrier barrier{
+                            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                            .srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT,
+                            .dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                            .oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+                            .newLayout = VK_IMAGE_LAYOUT_GENERAL,
+                            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                            .image = image,
+                            .subresourceRange = {aspect, 0, 1, 0, 1},
+                        };
+                        cmdbuf.PipelineBarrier(vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, 0, barrier);
+                        const VkBufferImageCopy copy{
+                            .bufferOffset = staging.offset,
+                            .imageSubresource = {aspect, 0, 0, 1},
+                            .imageExtent = {width, height, 1},
+                        };
+                        cmdbuf.CopyImageToBuffer(image, VK_IMAGE_LAYOUT_GENERAL, staging.buffer, copy);
+                        const VkMemoryBarrier ready{
+                            .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+                            .srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+                            .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+                        };
+                        cmdbuf.PipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                               vk::PIPELINE_STAGE_GRAPHICS_COMPUTE_TRANSFER,
+                                               0, ready);
+                    });
+                    scheduler.Finish();
+                    std::ofstream file(fmt::format("{}-texture-{}-{}x{}.{}", prefix, index,
+                                                   view.size.width, view.size.height, extension), std::ios::binary);
+                    file.write(reinterpret_cast<const char*>(staging.mapped_span.data()), bytes);
+                }
+                request.close();
+                std::error_code error;
+                std::filesystem::remove("native-textures.request", error);
+            }
+        }
+        const auto& regs = maxwell3d->regs;
+        const auto& rt = regs.rt[0];
+        const size_t size = static_cast<size_t>(rt.array_pitch) * 4;
+        LOG_INFO(HW_GPU, "Native draw {} RT0: gpu={:#x}, first_cpu={:#x}, first_addressable={}, full_addressable={}, any_backing={}, width={}, height={}, format={:#x}, stride={:#x}",
+                 capture, rt.Address(), gpu_memory->GpuToCpuAddress(rt.Address()).value_or(0),
+                 gpu_memory->IsFullyMappedRange(rt.Address(), 4096),
+                 size && gpu_memory->IsFullyMappedRange(rt.Address(), size),
+                 size && gpu_memory->GpuToCpuAddress(rt.Address(), size).has_value(),
+                 rt.width, rt.height, static_cast<u32>(rt.format), size);
+        if (!on_demand && size && size <= 64 * 1024 * 1024) {
+            if (const auto address = gpu_memory->GpuToCpuAddress(rt.Address(), size)) {
+                LOG_INFO(HW_GPU, "Native draw {} render target physical address={:#x}", capture, *address);
+                texture_cache.DownloadMemory(*address, size);
+                dump("-rt0", rt.Address(), size);
+            }
+        }
+        if (on_demand && requested_targets) {
+            for (u32 target = 0; target < regs.rt.size(); ++target) {
+                const auto& config = regs.rt[target];
+                const size_t target_size = static_cast<size_t>(config.array_pitch) * 4;
+                if (config.format == Tegra::RenderTargetFormat::NONE || !target_size ||
+                    target_size > 64 * 1024 * 1024 ||
+                    !gpu_memory->IsFullyMappedRange(config.Address(), target_size)) continue;
+                for (const auto& [address, length] : gpu_memory->GetSubmappedRange(config.Address(), target_size)) {
+                    if (const auto device_address = gpu_memory->GpuToCpuAddress(address))
+                        texture_cache.DownloadMemory(*device_address, length);
+                }
+                dump(fmt::format("-rt{}", target), config.Address(), target_size);
+            }
+        }
+        std::ofstream registers(prefix + "-registers.bin", std::ios::binary);
+        registers.write(reinterpret_cast<const char*>(&regs), sizeof(regs));
+        for (size_t stream = 0; stream < 4; ++stream) {
+            if (regs.vertex_streams[stream].IsEnabled())
+                dump(fmt::format("-vertex-{}", stream), regs.vertex_streams[stream].Address(), 128);
+        }
+        if (on_demand) {
+            dump("-tic", regs.tex_header.Address(), (std::min)(u64{regs.tex_header.limit} + 1, u64{8192}) * 32);
+            dump("-tsc", regs.tex_sampler.Address(), (std::min)(u64{regs.tex_sampler.limit} + 1, u64{8192}) * 32);
+            for (size_t stage : {1U, 5U}) {
+                if (!regs.IsShaderConfigEnabled(stage)) continue;
+                const auto& stage_config = regs.pipelines[stage];
+                const GPUVAddr address = (GPUVAddr{stage_config.reserved[0] & 0xff} << 32) | stage_config.reserved[1];
+                size_t shader_size{};
+                while (shader_size < 0x20000 &&
+                       gpu_memory->IsFullyMappedRange(address + shader_size, 0x1000))
+                    shader_size += 0x1000;
+                dump(fmt::format("-shader-{}", stage), address, shader_size);
+            }
+        }
+        for (size_t stage : {0U, 4U}) {
+            const auto& buffers = maxwell3d->state.shader_stages[stage].const_buffers;
+            for (size_t bank = 0; bank < buffers.size(); ++bank) {
+                if (!on_demand && bank != 2 && bank != 3) continue;
+                if (on_demand && Tegra::NativeRootTables::IsBank(static_cast<u32>(bank))) {
+                    const auto& words = maxwell3d->native_root_tables.Data(static_cast<u32>(bank));
+                    std::ofstream file(fmt::format("{}-cbuf-{}-{}.bin", prefix, stage, bank), std::ios::binary);
+                    file.write(reinterpret_cast<const char*>(words.data()), sizeof(words));
+                    continue;
+                }
+                const auto& cb = buffers[bank];
+                if (cb.enabled) dump(fmt::format("-cbuf-{}-{}", stage, bank), cb.address,
+                    std::min<size_t>(cb.size, on_demand ? 65536 : 128));
+            }
+        }
+    }
 }
 
 void RasterizerVulkan::Draw(bool is_indexed, u32 instance_count) {
@@ -588,11 +855,16 @@ void RasterizerVulkan::DispatchCompute() {
 
     ComputePipeline* const pipeline{pipeline_cache.CurrentComputePipeline()};
     if (!pipeline) {
+        if (kepler_compute->IsNativeMode()) throw Shader::RuntimeError("Native compute pipeline unavailable");
         return;
     }
     std::scoped_lock lock{texture_cache.mutex, buffer_cache.mutex};
+    buffer_cache.runtime.BeginStorageBatch(kepler_compute->IsNativeMode());
+    bool dispatched = false;
+    SCOPE_EXIT { if (dispatched) buffer_cache.runtime.FlushStorageWrites(); };
     if (!pipeline->Configure(*kepler_compute, *gpu_memory, scheduler, buffer_cache,
                              texture_cache)) {
+        if (kepler_compute->IsNativeMode()) throw Shader::RuntimeError("Native compute resources unavailable");
         return;
     }
 
@@ -612,6 +884,7 @@ void RasterizerVulkan::DispatchCompute() {
             }
             cmdbuf.DispatchIndirect(indirect_buffer, indirect_offset);
         });
+        dispatched = true;
         return;
     }
     const std::array<u32, 3> dim{qmd.grid_dim_x, qmd.grid_dim_y, qmd.grid_dim_z};
@@ -634,6 +907,7 @@ void RasterizerVulkan::DispatchCompute() {
         }
         cmdbuf.Dispatch(dim[0], dim[1], dim[2]);
     });
+    dispatched = true;
 
     // Log compute dispatch
     if (GPU::Logging::IsActive() &&
@@ -902,6 +1176,78 @@ void RasterizerVulkan::FlushCommands() {
     scheduler.Flush();
 }
 
+namespace {
+struct DiagProcessMemory {
+    unsigned long cb;
+    unsigned long page_fault_count;
+    size_t peak_working_set;
+    size_t working_set;
+    size_t quota_peak_paged_pool;
+    size_t quota_paged_pool;
+    size_t quota_peak_non_paged_pool;
+    size_t quota_non_paged_pool;
+    size_t pagefile_usage;
+    size_t peak_pagefile_usage;
+    size_t private_usage;
+};
+} // namespace
+
+#ifdef _WIN32
+extern "C" int __stdcall K32GetProcessMemoryInfo(void* process, DiagProcessMemory* counters,
+                                                 unsigned long size);
+#endif
+
+// Diagnostic (EDEN_DIAG_GPUMEM=1): once per second, one line with every counter that could explain
+// host memory growth. Caches are read with try_lock so a stuck GPU thread cannot block the report.
+void RasterizerVulkan::RunGpuMemDiag(std::stop_token stop) {
+    using namespace std::chrono_literals;
+    u64 sequence{};
+    while (!stop.stop_requested()) {
+        std::this_thread::sleep_for(1s);
+        u64 images{}, image_bytes{}, image_used{}, buffers{}, buffer_bytes{}, buffer_used{};
+        bool image_locked = false, buffer_locked = false;
+        if (texture_cache.mutex.try_lock()) {
+            texture_cache.DiagCounts(images, image_bytes, image_used);
+            texture_cache.mutex.unlock();
+            image_locked = true;
+        }
+        if (buffer_cache.mutex.try_lock()) {
+            buffer_cache.DiagCounts(buffers, buffer_bytes, buffer_used);
+            buffer_cache.mutex.unlock();
+            buffer_locked = true;
+        }
+        u64 vma_alloc_bytes{}, vma_block_bytes{}, vma_allocs{}, vma_blocks{};
+        {
+            VmaTotalStatistics stats{};
+            vmaCalculateStatistics(device.GetAllocator(), &stats);
+            vma_alloc_bytes = stats.total.statistics.allocationBytes;
+            vma_block_bytes = stats.total.statistics.blockBytes;
+            vma_allocs = stats.total.statistics.allocationCount;
+            vma_blocks = stats.total.statistics.blockCount;
+        }
+        u64 working_set{}, private_bytes{};
+#ifdef _WIN32
+        DiagProcessMemory memory{};
+        memory.cb = sizeof(memory);
+        if (K32GetProcessMemoryInfo(reinterpret_cast<void*>(~uintptr_t{}), &memory, memory.cb)) {
+            working_set = memory.working_set;
+            private_bytes = memory.private_usage;
+        }
+#endif
+        using namespace Common::GpuMemDiag;
+        LOG_WARNING(Render_Vulkan,
+                    "GPUMEM t={} rss={}MB private={}MB | images={}{} guest={}MB tracked={}MB | "
+                    "buffers={}{} bytes={}MB tracked={}MB | vma allocs={} {}MB blocks={} {}MB | "
+                    "guest_memories={} (created {} destroyed {}) mappings={} sparse={} nvmap={}",
+                    ++sequence, working_set >> 20, private_bytes >> 20, images,
+                    image_locked ? "" : "?", image_bytes >> 20, image_used >> 20, buffers,
+                    buffer_locked ? "" : "?", buffer_bytes >> 20, buffer_used >> 20, vma_allocs,
+                    vma_alloc_bytes >> 20, vma_blocks, vma_block_bytes >> 20, guest_memories.load(),
+                    memories_created.load(), memories_destroyed.load(), guest_mappings.load(),
+                    sparse_regions.load(), nvmap_handles.load());
+    }
+}
+
 void RasterizerVulkan::TickFrame() {
     draw_counter = 0;
     guest_descriptor_queue.TickFrame();
@@ -942,6 +1288,12 @@ Tegra::Engines::AccelerateDMAInterface& RasterizerVulkan::AccessAccelerateDMA() 
 void RasterizerVulkan::AccelerateInlineToMemory(GPUVAddr address, size_t copy_size,
                                                 std::span<const u8> memory) {
     auto cpu_addr = gpu_memory->GpuToCpuAddress(address);
+    if (gpu_memory->UsesNativeTiling()) {
+        u32 first_word{};
+        if (memory.size() >= sizeof(first_word)) std::memcpy(&first_word, memory.data(), sizeof(first_word));
+        VideoCommon::TraceNativeQuery(11, gpu_memory->GetID(), address, cpu_addr.value_or(0),
+            0, first_word, static_cast<u32>(copy_size));
+    }
     if (!cpu_addr) [[unlikely]] {
         gpu_memory->WriteBlock(address, memory.data(), copy_size);
         return;
@@ -966,10 +1318,29 @@ std::optional<FramebufferTextureInfo> RasterizerVulkan::AccelerateDisplay(
     if (!framebuffer_addr) {
         return {};
     }
-    std::scoped_lock lock{texture_cache.mutex};
+    std::scoped_lock lock{buffer_cache.mutex, texture_cache.mutex};
     const auto [image_view, scaled] =
         texture_cache.TryFindFramebufferImageView(config, framebuffer_addr);
+    static u32 display_trace_count{};
+    if (VideoCommon::NativeFrameCaptureEnabled() && display_trace_count++ < 64) {
+        LOG_INFO(HW_GPU, "Native display source: address={:#x}, offset={:#x}, dimensions={}x{}, stride={}, accelerated={}, mask={:#x}",
+                 framebuffer_addr, config.offset, config.width, config.height, pixel_stride,
+                 image_view != nullptr, config.layer_stack_mask);
+    }
     if (!image_view) {
+        if (config.native_tiling) {
+            // Native display buffers may be written through storage buffers.
+            // The CPU unswizzle fallback must observe those GPU writes.
+            const size_t size = Tegra::Texture::CalculateSize(true, 4, config.stride, config.height, 1, 4, 0);
+            const bool buffer_dirty = buffer_cache.IsRegionGpuModified(framebuffer_addr, size);
+            const bool texture_dirty = texture_cache.IsRegionGpuModified(framebuffer_addr, size);
+            static u32 fallback_trace_count{};
+            if (std::getenv("EDEN_NATIVE_FRAME_CAPTURE") && fallback_trace_count++ < 16)
+                LOG_INFO(HW_GPU, "Native display fallback: address={:#x}, bytes={}, buffer_dirty={}, texture_dirty={}",
+                         framebuffer_addr, size, buffer_dirty, texture_dirty);
+            if (texture_dirty) texture_cache.DownloadMemory(framebuffer_addr, size);
+            if (buffer_dirty) buffer_cache.DownloadMemory(framebuffer_addr, size);
+        }
         return {};
     }
 

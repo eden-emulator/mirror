@@ -21,8 +21,9 @@ GraphicBuffer::GraphicBuffer(u32 width_, u32 height_, PixelFormat format_, u32 u
     : NvGraphicBuffer(width_, height_, format_, usage_), m_nvmap(nullptr) {}
 
 GraphicBuffer::GraphicBuffer(Service::Nvidia::NvCore::NvMap& nvmap,
-                             std::shared_ptr<NvGraphicBuffer> buffer)
-    : NvGraphicBuffer(GetBuffer(buffer)), m_nvmap(std::addressof(nvmap)) {
+                             std::shared_ptr<NvGraphicBuffer> buffer, std::shared_ptr<void> backing_owner)
+    : NvGraphicBuffer(GetBuffer(buffer)), m_nvmap(std::addressof(nvmap)),
+      m_backing_owner{std::move(backing_owner)} {
     if (this->BufferId() > 0) {
         m_nvmap->DuplicateHandle(this->BufferId(), true);
         m_nvmap->PinHandle(this->BufferId(), false);

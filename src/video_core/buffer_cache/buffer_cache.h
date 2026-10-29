@@ -9,8 +9,12 @@
 #include <algorithm>
 #include <memory>
 #include <numeric>
+#include <stdexcept>
 
 #include "common/range_sets.inc"
+#include "shader_recompiler/exception.h"
+#include "video_core/buffer_cache/storage_range_groups.h"
+#include "video_core/buffer_cache/storage_buffer_size.h"
 #include "video_core/buffer_cache/buffer_cache_base.h"
 #include "video_core/guest_memory.h"
 #include "video_core/host1x/gpu_device_memory_manager.h"
@@ -456,7 +460,8 @@ bool BufferCache<P>::BindGraphicsStorageBuffer(size_t stage, size_t ssbo_index, 
     const auto& cbufs = maxwell3d->state.shader_stages[stage];
     const GPUVAddr ssbo_addr = cbufs.const_buffers[cbuf_index].address + cbuf_offset;
     channel_state->storage_buffers[stage][ssbo_index] =
-        StorageBufferBinding(ssbo_addr, cbuf_index, is_written);
+        StorageBufferBinding(ssbo_addr, cbuf_index, is_written,
+                             maxwell3d->GetNativeMacroEngine().native_turing);
     return (channel_state->storage_buffers[stage][ssbo_index].buffer_id != NULL_BUFFER_ID);
 }
 
@@ -532,7 +537,7 @@ void BufferCache<P>::BindComputeStorageBuffer(size_t ssbo_index, u32 cbuf_index,
     const auto& cbufs = launch_desc.const_buffer_config;
     const GPUVAddr ssbo_addr = cbufs[cbuf_index].Address() + cbuf_offset;
     channel_state->compute_storage_buffers[ssbo_index] =
-        StorageBufferBinding(ssbo_addr, cbuf_index, is_written);
+        StorageBufferBinding(ssbo_addr, cbuf_index, is_written, kepler_compute->IsNativeMode());
 }
 
 template <class P>
@@ -930,6 +935,23 @@ void BufferCache<P>::BindHostGraphicsUniformBuffers(size_t stage) {
 template <class P>
 void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 binding_index, bool needs_bind) {
     ++channel_state->uniform_cache_shots[0];
+    if (maxwell3d->GetNativeMacroEngine().native_turing && Tegra::NativeRootTables::IsBank(index)) {
+        const auto& words = maxwell3d->native_root_tables.Data(index);
+        const std::span<const u8> data{reinterpret_cast<const u8*>(words.data()), sizeof(words)};
+        if ((*channel_state->uniform_buffer_sizes)[stage][index] > data.size())
+            throw Shader::NotImplementedException("Native root-table access exceeds table size");
+        if constexpr (IS_OPENGL) {
+            runtime.BindFastUniformBuffer(stage, binding_index, static_cast<u32>(data.size()));
+            runtime.PushFastUniformBuffer(stage, binding_index, data);
+        } else {
+            const auto mapped = runtime.BindMappedUniformBuffer(stage, binding_index, static_cast<u32>(data.size()));
+            std::memcpy(mapped.data(), data.data(), data.size());
+        }
+        channel_state->fast_bound_uniform_buffers[stage] |= 1u << binding_index;
+        channel_state->uniform_buffer_binding_sizes[stage][binding_index] = static_cast<u32>(data.size());
+        return;
+    }
+
     const Binding& binding = channel_state->uniform_buffers[stage][index];
     const DAddr device_addr = binding.device_addr;
     const u32 size = (std::min)(binding.size, (*channel_state->uniform_buffer_sizes)[stage][index]);
@@ -1007,10 +1029,66 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
 }
 
 template <class P>
+void BufferCache<P>::PrepareGroupedStorage(std::span<const std::pair<Binding*, bool>> bindings,
+                                           std::vector<MultiRangeSegment>& pool) {
+    if constexpr (requires { runtime.UseGroupedStorage(); }) {
+        std::vector<StorageAddressRange> ranges;
+        ranges.reserve(bindings.size());
+        for (const auto& [binding, written] : bindings) {
+            if (binding->gpu_addr > std::numeric_limits<u64>::max() - binding->size)
+                throw Shader::RuntimeError("Storage address range overflow");
+            ranges.push_back({binding->gpu_addr, binding->size});
+            binding->segment_count = binding->segment_offset = binding->segment_size = 0;
+            binding->segment_written = false;
+        }
+        std::vector<std::pair<VirtualSegments, bool>> physical_groups;
+        for (const auto& group : GroupStorageRanges(ranges)) {
+            const u64 size = group.end - group.address;
+            if (size > std::numeric_limits<u32>::max())
+                throw Shader::RuntimeError("Grouped storage range exceeds supported size");
+            const VirtualSegments* found = virtual_ranges.Query(*gpu_memory, group.address, static_cast<u32>(size));
+            if (!found || found->empty()) throw Shader::RuntimeError("Unmapped grouped storage range");
+            const bool written = std::any_of(group.members.begin(), group.members.end(),
+                [&](size_t member) { return bindings[member].second; });
+            for (const auto& [previous, previous_written] : physical_groups) {
+                if (!written && !previous_written) continue;
+                for (const auto& a : previous) for (const auto& b : *found)
+                    if (a.device_addr < b.device_addr + b.size && b.device_addr < a.device_addr + a.size)
+                        throw Shader::RuntimeError("Writable storage aliases across disjoint virtual views");
+            }
+            physical_groups.emplace_back(*found, written);
+            if (found->size() == 1) {
+                for (size_t member : group.members) {
+                    auto& binding = *bindings[member].first;
+                    binding.buffer_id = FindBuffer(binding.device_addr, binding.size, false);
+                }
+                continue;
+            }
+            const VirtualSegments segments = *found;
+            const u32 first = static_cast<u32>(pool.size());
+            for (const VirtualSegment& segment : segments) {
+                const BufferId id = FindBuffer(segment.device_addr, segment.size, runtime.PrefersSparseSources());
+                if (!id) throw Shader::RuntimeError("Grouped storage segment allocation failed");
+                pool.push_back({id, segment.device_addr, segment.size});
+            }
+            for (size_t member : group.members) {
+                auto& binding = *bindings[member].first;
+                binding.segment_first = first;
+                binding.segment_count = static_cast<u32>(segments.size());
+                binding.segment_offset = static_cast<u32>(binding.gpu_addr - group.address);
+                binding.segment_size = static_cast<u32>(size);
+                binding.segment_written = written;
+            }
+        }
+    }
+}
+
+template <class P>
 void BufferCache<P>::ResolveMultiRangeStorage(Binding& binding, bool is_written,
                                               std::vector<MultiRangeSegment>& pool) {
     binding.segment_first = 0;
-    binding.segment_count = 0;
+    binding.segment_count = binding.segment_offset = binding.segment_size = 0;
+    binding.segment_written = false;
     if constexpr (requires { runtime.BindMultiRangeStorageBuffer(u64{}, bool{}); }) {
         if (binding.gpu_addr == 0 || binding.size == 0) {
             return;
@@ -1054,7 +1132,9 @@ bool BufferCache<P>::BindMultiRangeStorage(const Binding& binding, bool is_writt
         if (binding.segment_first + binding.segment_count > pool.size()) {
             return false;
         }
-        const u64 key = (static_cast<u64>(gpu_memory->GetID()) << 48) ^ binding.gpu_addr;
+        const bool grouped = binding.segment_size != 0;
+        is_written |= grouped && binding.segment_written;
+        const u64 key = (static_cast<u64>(gpu_memory->GetID()) << 48) ^ (binding.gpu_addr - binding.segment_offset);
         runtime.ResetMultiRange();
         for (u32 index = 0; index < binding.segment_count; ++index) {
             const MultiRangeSegment& segment = pool[binding.segment_first + index];
@@ -1069,6 +1149,10 @@ bool BufferCache<P>::BindMultiRangeStorage(const Binding& binding, bool is_writt
                 MarkWrittenBuffer(segment.buffer_id, segment.device_addr, segment.size);
             }
             runtime.PushMultiRangeSource(buffer, offset, segment.size);
+        }
+        if constexpr (requires { runtime.UseGroupedStorage(); }) {
+            if (grouped)
+                return runtime.BindMultiRangeStorageBuffer(key, is_written, binding.segment_offset, binding.size);
         }
         return runtime.BindMultiRangeStorageBuffer(key, is_written);
     } else {
@@ -1292,6 +1376,17 @@ void BufferCache<P>::DoUpdateGraphicsBuffers(bool is_indexed) {
         if (current_draw_indirect) {
             UpdateDrawIndirect();
         }
+        if constexpr (requires { runtime.UseGroupedStorage(); }) {
+            if (runtime.UseGroupedStorage()) {
+                std::vector<std::pair<Binding*, bool>> bindings;
+                for (size_t stage = 0; stage < NUM_STAGES; ++stage)
+                    ForEachEnabledBit(channel_state->enabled_storage_buffers[stage], [&](u32 index) {
+                        bindings.emplace_back(&channel_state->storage_buffers[stage][index],
+                            ((channel_state->written_storage_buffers[stage] >> index) & 1) != 0);
+                    });
+                PrepareGroupedStorage(bindings, graphics_segments);
+            }
+        }
     });
 }
 
@@ -1302,6 +1397,16 @@ void BufferCache<P>::DoUpdateComputeBuffers() {
         UpdateComputeUniformBuffers();
         UpdateComputeStorageBuffers();
         UpdateComputeTextureBuffers();
+        if constexpr (requires { runtime.UseGroupedStorage(); }) {
+            if (runtime.UseGroupedStorage()) {
+                std::vector<std::pair<Binding*, bool>> bindings;
+                ForEachEnabledBit(channel_state->enabled_compute_storage_buffers, [&](u32 index) {
+                    bindings.emplace_back(&channel_state->compute_storage_buffers[index],
+                        ((channel_state->written_compute_storage_buffers >> index) & 1) != 0);
+                });
+                PrepareGroupedStorage(bindings, compute_segments);
+            }
+        }
     });
 }
 
@@ -1372,7 +1477,12 @@ void BufferCache<P>::UpdateVertexBuffer(u32 index) {
     const auto& array = maxwell3d->regs.vertex_streams[index];
     const auto& limit = maxwell3d->regs.vertex_stream_limits[index];
     const GPUVAddr gpu_addr_begin = array.Address();
-    const GPUVAddr gpu_addr_end = limit.Address() + 1;
+    const bool native = maxwell3d->GetNativeMacroEngine().native_turing;
+    const u64 native_size = native ? maxwell3d->regs.NativeVertexStreamSize(index) : 0;
+    if (native && array.enable != 0 && native_size > (std::numeric_limits<u32>::max)()) {
+        throw std::runtime_error("Native vertex stream exceeds supported 32-bit buffer size");
+    }
+    const GPUVAddr gpu_addr_end = native ? gpu_addr_begin + native_size : limit.Address() + 1;
     const std::optional<DAddr> device_addr = gpu_memory->GpuToCpuAddress(gpu_addr_begin);
     const u32 address_size = static_cast<u32>(gpu_addr_end - gpu_addr_begin);
     u32 size = address_size; // TODO: Analyze stride and number of vertices
@@ -1419,6 +1529,7 @@ void BufferCache<P>::UpdateDrawIndirect() {
 template <class P>
 void BufferCache<P>::UpdateUniformBuffers(size_t stage) {
     ForEachEnabledBit(channel_state->enabled_uniform_buffer_masks[stage], [&](u32 index) {
+        if (maxwell3d->GetNativeMacroEngine().native_turing && Tegra::NativeRootTables::IsBank(index)) return;
         Binding& binding = channel_state->uniform_buffers[stage][index];
         if (binding.buffer_id) {
             // Already updated
@@ -1438,6 +1549,9 @@ void BufferCache<P>::UpdateStorageBuffers(size_t stage) {
     ForEachEnabledBit(channel_state->enabled_storage_buffers[stage], [&](u32 index) {
         // Resolve buffer
         Binding& binding = channel_state->storage_buffers[stage][index];
+        if constexpr (requires { runtime.UseGroupedStorage(); }) {
+            if (runtime.UseGroupedStorage()) { binding.buffer_id = NULL_BUFFER_ID; return; }
+        }
         const BufferId buffer_id = FindBuffer(binding.device_addr, binding.size, false);
         binding.buffer_id = buffer_id;
         const bool is_written = ((channel_state->written_storage_buffers[stage] >> index) & 1) != 0;
@@ -1504,6 +1618,9 @@ void BufferCache<P>::UpdateComputeStorageBuffers() {
     ForEachEnabledBit(channel_state->enabled_compute_storage_buffers, [&](u32 index) {
         // Resolve buffer
         Binding& binding = channel_state->compute_storage_buffers[index];
+        if constexpr (requires { runtime.UseGroupedStorage(); }) {
+            if (runtime.UseGroupedStorage()) { binding.buffer_id = NULL_BUFFER_ID; return; }
+        }
         binding.buffer_id = FindBuffer(binding.device_addr, binding.size, false);
         const bool is_written =
             ((channel_state->written_compute_storage_buffers >> index) & 1) != 0;
@@ -2032,26 +2149,24 @@ void BufferCache<P>::DeleteBuffer(BufferId buffer_id, bool do_not_mark) {
 
 template <class P>
 Binding BufferCache<P>::StorageBufferBinding(GPUVAddr ssbo_addr, u32 cbuf_index,
-                                             bool is_written) const {
+                                             bool is_written, bool native_pointer) const {
     const GPUVAddr gpu_addr = gpu_memory->Read<u64>(ssbo_addr);
 
     if (gpu_addr == 0) {
         return NULL_BINDING;
     }
 
-    const auto size = [&]() {
-        const u32 memory_layout_size =
-            static_cast<u32>(gpu_memory->GetMemoryLayoutSize(gpu_addr));
-        const u64 next_qword = gpu_memory->Read<u64>(ssbo_addr + 8);
-        const u32 packed_size = static_cast<u32>(next_qword);
-        const bool next_qword_is_size = static_cast<u32>(next_qword >> 32) == 0 &&
-                                        packed_size != 0 &&
-                                        packed_size <= memory_layout_size;
-        if (next_qword_is_size) {
-            return packed_size;
+    const u64 mapped_size = gpu_memory->GetMemoryLayoutSize(gpu_addr);
+    const u64 following_word = native_pointer ? 0 : gpu_memory->Read<u64>(ssbo_addr + 8);
+    u32 size = StorageBufferSize(mapped_size, following_word, native_pointer);
+    if (native_pointer && size && !gpu_memory->IsFullyMappedRange(gpu_addr, size)) {
+        u32 mapped_prefix = 0;
+        for (const auto& [address, length] : gpu_memory->GetSubmappedRange(gpu_addr, size)) {
+            if (address != gpu_addr + mapped_prefix) break;
+            mapped_prefix += static_cast<u32>(length);
         }
-        return (std::min)(memory_layout_size, static_cast<u32>(8_MiB));
-    }();
+        size = mapped_prefix;
+    }
 
     // Alignment only applies to the offset of the buffer
     const u32 alignment = runtime.GetStorageBufferAlignment();

@@ -136,6 +136,26 @@ Id EmitFPExp2(EmitContext& ctx, Id value) {
     return ctx.OpExp2(ctx.F32[1], value);
 }
 
+Id EmitFPTanh(EmitContext& ctx, Id value) {
+    // Avoid cancellation near zero and overflow at large magnitudes. The native
+    // approximation permits relative error up to 2^-11 and preserves subnormals.
+    const Id type = ctx.F32[1];
+    const Id bits = ctx.OpBitcast(ctx.U32[1], value);
+    const Id absolute_bits = ctx.OpBitwiseAnd(ctx.U32[1], bits, ctx.Const(0x7fffffffU));
+    const Id absolute = ctx.OpBitcast(type, absolute_bits);
+    const Id square = ctx.OpFMul(type, absolute, absolute);
+    const Id fifth = ctx.OpFAdd(type, ctx.Const(2.0f / 15.0f), ctx.OpFMul(type, square, ctx.Const(-17.0f / 315.0f)));
+    const Id third = ctx.OpFAdd(type, ctx.Const(-1.0f / 3.0f), ctx.OpFMul(type, square, fifth));
+    const Id polynomial = ctx.OpFAdd(type, absolute, ctx.OpFMul(type, ctx.OpFMul(type, absolute, square), third));
+    const Id exponential = ctx.OpExp2(type, ctx.OpFMul(type, absolute, ctx.Const(-2.8853900817779268f)));
+    const Id magnitude = ctx.OpFDiv(type, ctx.OpFSub(type, ctx.Const(1.0f), exponential), ctx.OpFAdd(type, ctx.Const(1.0f), exponential));
+    const Id small = ctx.OpULessThan(ctx.U1, absolute_bits, ctx.Const(0x3d800000U));
+    const Id selected = ctx.OpBitcast(ctx.U32[1], ctx.OpSelect(type, small, polynomial, magnitude));
+    const Id tiny = ctx.OpULessThan(ctx.U1, absolute_bits, ctx.Const(0x39800000U));
+    const Id preserved = ctx.OpSelect(ctx.U32[1], tiny, absolute_bits, selected);
+    return ctx.OpBitcast(type, ctx.OpBitwiseOr(ctx.U32[1], preserved, ctx.OpBitwiseAnd(ctx.U32[1], bits, ctx.Const(0x80000000U))));
+}
+
 Id EmitFPLog2(EmitContext& ctx, Id value) {
     return ctx.OpLog2(ctx.F32[1], value);
 }

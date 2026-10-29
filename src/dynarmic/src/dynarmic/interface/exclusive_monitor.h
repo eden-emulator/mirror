@@ -82,7 +82,7 @@ private:
 
     static constexpr VAddr RESERVATION_GRANULE_MASK = 0xFFFF'FFFF'FFFF'FFFFull;
     static constexpr VAddr INVALID_EXCLUSIVE_ADDRESS = 0xDEAD'DEAD'DEAD'DEADull;
-    static constexpr size_t MAX_NUM_CPU_CORES = 4; // Sync with src/core/hardware_properties
+    static constexpr size_t MAX_NUM_CPU_CORES = 6; // Sync with src/core/hardware_properties
     boost::container::static_vector<VAddr, MAX_NUM_CPU_CORES> exclusive_addresses;
     boost::container::static_vector<Vector, MAX_NUM_CPU_CORES> exclusive_values;
     SpinLock lock;

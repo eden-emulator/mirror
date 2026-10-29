@@ -18,8 +18,10 @@
 #include "common/logging.h"
 #include "common/scope_exit.h"
 #include "common/settings.h"
+#include "core/hle/dlss_trace.h"
 #include "video_core/engines/maxwell_3d.h"
 #include "video_core/gpu.h"
+#include "video_core/native_query_trace.h"
 #include "video_core/host1x/gpu_device_memory_manager.h"
 #include "video_core/memory_manager.h"
 #include "video_core/query_cache/bank_base.h"
@@ -246,6 +248,9 @@ void QueryCacheBase<Traits>::CounterReport(GPUVAddr addr, QueryType counter_type
         return;
     }
     DAddr cpu_addr = *cpu_addr_opt;
+    const bool native_trace = gpu_memory->UsesNativeTiling();
+    const u64 trace_asid = gpu_memory->GetID();
+    if (native_trace) TraceNativeQuery(0, trace_asid, addr, cpu_addr, static_cast<u32>(counter_type), payload, static_cast<u32>(flags));
     const size_t new_query_id = streamer->WriteCounter(cpu_addr, has_timestamp, payload, subreport);
     auto* query = streamer->GetQuery(new_query_id);
     if (is_fence) {
@@ -262,14 +267,16 @@ void QueryCacheBase<Traits>::CounterReport(GPUVAddr addr, QueryType counter_type
     u8* pointer_timestamp = impl->device_memory.template GetPointer<u8>(cpu_addr + 8);
     bool is_synced = (Settings::IsGPUFenceBehaviorDefault() ? !Settings::IsGPULevelHigh() : !Settings::IsGPUFenceBehaviorBalanced() && !Settings::IsGPUFenceBehaviorAccurate()) && is_fence;
     std::function<void()> operation([this, is_synced, streamer, query_base = query, query_location,
-                                     pointer, pointer_timestamp] {
+                                     pointer, pointer_timestamp, native_trace, trace_asid, addr, cpu_addr, counter_type] {
         if (True(query_base->flags & QueryFlagBits::IsInvalidated)) {
+            if (native_trace) TraceNativeQuery(2, trace_asid, addr, cpu_addr, static_cast<u32>(counter_type), query_base->value, static_cast<u32>(query_base->flags));
             if (!is_synced) [[likely]] {
                 impl->pending_unregister.push_back(query_location);
             }
             return;
         }
         if (False(query_base->flags & QueryFlagBits::IsFinalValueSynced)) [[unlikely]] {
+            if (native_trace) TraceNativeQuery(3, trace_asid, addr, cpu_addr, static_cast<u32>(counter_type), query_base->value, static_cast<u32>(query_base->flags));
             LOG_ERROR(HW_GPU,
                       "Query report value not synchronized. Consider increasing GPU accuracy.");
             if (!is_synced) [[likely]] {
@@ -281,12 +288,16 @@ void QueryCacheBase<Traits>::CounterReport(GPUVAddr addr, QueryType counter_type
         streamer->SetAccumulationValue(query_base->value);
         if (True(query_base->flags & QueryFlagBits::HasTimestamp)) {
             u64 timestamp = impl->gpu.GetTicks();
+            Core::HLE::DlssTrace::WriteWatch("QueryCache guest write", pointer_timestamp, sizeof(timestamp));
             std::memcpy(pointer_timestamp, &timestamp, sizeof(timestamp));
+            Core::HLE::DlssTrace::WriteWatch("QueryCache guest write", pointer, sizeof(query_base->value));
             std::memcpy(pointer, &query_base->value, sizeof(query_base->value));
         } else {
             u32 value = static_cast<u32>(query_base->value);
+            Core::HLE::DlssTrace::WriteWatch("QueryCache guest write", pointer, sizeof(value));
             std::memcpy(pointer, &value, sizeof(value));
         }
+        if (native_trace) TraceNativeQuery(1, trace_asid, addr, cpu_addr, static_cast<u32>(counter_type), query_base->value, static_cast<u32>(query_base->flags));
         if (!is_synced) [[likely]] {
             impl->pending_unregister.push_back(query_location);
         }
@@ -298,9 +309,12 @@ void QueryCacheBase<Traits>::CounterReport(GPUVAddr addr, QueryType counter_type
             if (has_timestamp) {
                 u64 timestamp = impl->gpu.GetTicks();
                 u64 value = static_cast<u64>(payload);
+                Core::HLE::DlssTrace::WriteWatch("QueryCache guest write", pointer_timestamp, sizeof(timestamp));
                 std::memcpy(pointer_timestamp, &timestamp, sizeof(timestamp));
+                Core::HLE::DlssTrace::WriteWatch("QueryCache guest write", pointer, sizeof(value));
                 std::memcpy(pointer, &value, sizeof(value));
             } else {
+                Core::HLE::DlssTrace::WriteWatch("QueryCache guest write", pointer, sizeof(payload));
                 std::memcpy(pointer, &payload, sizeof(payload));
             }
             streamer->Free(new_query_id);
@@ -568,10 +582,12 @@ bool QueryCacheBase<Traits>::SemiFlushQueryDirty(QueryCacheBase<Traits>::QueryLo
         False(query_base->flags & QueryFlagBits::IsGuestSynced)) {
         auto* ptr = impl->device_memory.template GetPointer<u8>(query_base->guest_address);
         if (True(query_base->flags & QueryFlagBits::HasTimestamp)) {
+            Core::HLE::DlssTrace::WriteWatch("QueryCache guest write", ptr, sizeof(query_base->value));
             std::memcpy(ptr, &query_base->value, sizeof(query_base->value));
             return false;
         }
         u32 value_l = static_cast<u32>(query_base->value);
+        Core::HLE::DlssTrace::WriteWatch("QueryCache guest write", ptr, sizeof(value_l));
         std::memcpy(ptr, &value_l, sizeof(value_l));
         return false;
     }

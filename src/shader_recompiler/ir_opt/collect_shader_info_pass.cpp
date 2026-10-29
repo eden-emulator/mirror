@@ -374,6 +374,16 @@ void VisitUsages(Info& info, IR::Inst& inst) {
     case IR::Opcode::WriteGlobalS8:
     case IR::Opcode::WriteGlobalU16:
     case IR::Opcode::WriteGlobalS16:
+        info.uses_global_subword_write = true;
+        break;
+    default:
+        break;
+    }
+    switch (inst.GetOpcode()) {
+    case IR::Opcode::WriteGlobalU8:
+    case IR::Opcode::WriteGlobalS8:
+    case IR::Opcode::WriteGlobalU16:
+    case IR::Opcode::WriteGlobalS16:
     case IR::Opcode::WriteGlobal32:
     case IR::Opcode::WriteGlobal64:
     case IR::Opcode::WriteGlobal128:
@@ -424,6 +434,10 @@ void VisitUsages(Info& info, IR::Inst& inst) {
     case IR::Opcode::LoadGlobal128:
         info.uses_int64 = true;
         info.uses_global_memory = true;
+        if (const IR::Opcode op{inst.GetOpcode()};
+            op >= IR::Opcode::GlobalAtomicIAdd32 && op <= IR::Opcode::GlobalAtomicExchange32) {
+            info.uses_global_atomics = true;
+        }
         info.used_constant_buffer_types |= IR::Type::U32 | IR::Type::U32x2;
         info.used_storage_buffer_types |= IR::Type::U32 | IR::Type::U32x2 | IR::Type::U32x4;
         break;

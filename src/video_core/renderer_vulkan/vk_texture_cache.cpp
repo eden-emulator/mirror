@@ -16,6 +16,7 @@
 #include <bit>
 #include <numeric>
 #include "common/bit_util.h"
+#include "common/gpumem_diag.h"
 #include "common/settings.h"
 
 #include "video_core/renderer_vulkan/vk_texture_cache.h"
@@ -1902,6 +1903,18 @@ Image::Image(TextureCacheRuntime& runtime_, const ImageInfo& info_, GPUVAddr gpu
     if (runtime->device.HasDebuggingToolAttached()) {
         original_image.SetObjectNameEXT(VideoCommon::Name(*this).c_str());
     }
+    if (Common::GpuMemDiag::Enabled() &&
+        (u64{unswizzled_size_bytes} >= (64ULL << 20) || u64{converted_size_bytes} >= (64ULL << 20) ||
+         u64{guest_size_bytes} >= (64ULL << 20))) {
+        // EDEN_DIAG_GPUMEM: very large images explain sudden VMA growth.
+        LOG_WARNING(Render_Vulkan,
+                    "GPUMEM large image {}: format={} type={} {}x{}x{} levels={} layers={} samples={} "
+                    "guest={}MB unswizzled={}MB converted={}MB gpu_addr={:#x}",
+                    VideoCommon::Name(*this), static_cast<int>(info.format), static_cast<int>(info.type),
+                    info.size.width, info.size.height, info.size.depth, info.resources.levels,
+                    info.resources.layers, info.num_samples, guest_size_bytes >> 20,
+                    unswizzled_size_bytes >> 20, converted_size_bytes >> 20, gpu_addr);
+    }
     current_image = &Image::original_image;
     storage_image_views.resize(info.resources.levels);
     if (WillUseAcceleratedAstcDecode(runtime->device, info)) {
@@ -2085,6 +2098,11 @@ void Image::DownloadMemory(VkBuffer buffer, size_t offset,
 
 void Image::DownloadMemory(std::span<VkBuffer> buffers_span, std::span<size_t> offsets_span,
                             std::span<const VideoCommon::BufferImageCopy> copies) {
+    if (!original_image) {
+        LOG_CRITICAL(Render_Vulkan, "Missing image at download: gpu={:#x}, cpu={:#x}, type={}, format={}, flags={:#x}, size={}, dimensions={}x{}",
+                     gpu_addr, cpu_addr, static_cast<u32>(info.type), static_cast<u32>(info.format),
+                     static_cast<u32>(flags), unswizzled_size_bytes, info.size.width, info.size.height);
+    }
     const bool is_rescaled = True(flags & ImageFlagBits::Rescaled);
     if (is_rescaled) {
         ScaleDown();
@@ -2601,6 +2619,7 @@ ImageView::ImageView(TextureCacheRuntime& runtime, const VideoCommon::ImageViewI
         break;
     case VideoCommon::ImageViewType::Cube:
     case VideoCommon::ImageViewType::CubeArray:
+        create(TextureType::Color2D, 1);
         create(TextureType::ColorCube, 6);
         create(TextureType::ColorArrayCube, std::nullopt);
         break;

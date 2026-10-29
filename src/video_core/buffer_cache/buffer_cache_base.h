@@ -53,7 +53,7 @@ constexpr u32 NUM_VERTEX_BUFFERS = 16;
 constexpr u32 NUM_VERTEX_BUFFERS = 32;
 #endif
 constexpr u32 NUM_TRANSFORM_FEEDBACK_BUFFERS = 4;
-constexpr u32 NUM_GRAPHICS_UNIFORM_BUFFERS = 18;
+constexpr u32 NUM_GRAPHICS_UNIFORM_BUFFERS = 32;
 constexpr u32 NUM_COMPUTE_UNIFORM_BUFFERS = 8;
 constexpr u32 NUM_STORAGE_BUFFERS = 16;
 constexpr u32 NUM_TEXTURE_BUFFERS = 32;
@@ -87,6 +87,9 @@ struct Binding {
     BufferId buffer_id;
     u32 segment_first{};
     u32 segment_count{};
+    u32 segment_offset{};
+    u32 segment_size{};
+    bool segment_written{};
 };
 
 struct MultiRangeSegment {
@@ -225,8 +228,21 @@ public:
 
     void TickFrame();
 
+    /// Diagnostic (EDEN_DIAG_GPUMEM): live buffer count, their bytes and the tracked usage.
+    void DiagCounts(u64& buffers, u64& bytes, u64& used) {
+        buffers = slot_buffers.size();
+        bytes = 0;
+        for (const auto& [id, buffer] : slot_buffers) {
+            bytes += buffer->SizeBytes();
+        }
+        used = total_used_memory;
+    }
+
     bool BindMultiRangeStorage(const Binding& binding, bool is_written,
                                std::span<const MultiRangeSegment> pool);
+
+    void PrepareGroupedStorage(std::span<const std::pair<Binding*, bool>> bindings,
+                               std::vector<MultiRangeSegment>& pool);
 
     void ResolveMultiRangeStorage(Binding& binding, bool is_written,
                                   std::vector<MultiRangeSegment>& pool);
@@ -469,7 +485,7 @@ private:
     void DeleteBuffer(BufferId buffer_id, bool do_not_mark = false);
 
     [[nodiscard]] Binding StorageBufferBinding(GPUVAddr ssbo_addr, u32 cbuf_index,
-                                               bool is_written) const;
+                                               bool is_written, bool native_pointer) const;
 
     [[nodiscard]] TextureBufferBinding GetTextureBufferBinding(GPUVAddr gpu_addr, u32 size,
                                                                PixelFormat format);

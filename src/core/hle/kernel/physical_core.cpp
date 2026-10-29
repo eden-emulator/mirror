@@ -226,6 +226,14 @@ void PhysicalCore::Idle() {
     m_on_interrupt.wait(lk, [this] { return m_is_interrupted; });
 }
 
+bool PhysicalCore::GetLiveContextForDebugging(Svc::ThreadContext& ctx) const {
+    if (m_arm_interface == nullptr) {
+        return false;
+    }
+    m_arm_interface->GetContext(ctx);
+    return true;
+}
+
 bool PhysicalCore::IsInterrupted() const {
     return m_is_interrupted;
 }

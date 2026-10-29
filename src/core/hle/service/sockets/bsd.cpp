@@ -165,6 +165,20 @@ void BSD_USA::StartMonitoring(HLERequestContext& ctx) {
     rb.Push(ResultSuccess);
 }
 
+void BSD_USA::Unknown36(HLERequestContext& ctx) {
+    // Sent once per session by nn::socket::Initialize (SDK 18+) right before StartMonitoring:
+    // in u32 (first word of the socket config) and the client pid, out u32 where non-zero fails
+    // the initialization.
+    IPC::RequestParser rp{ctx};
+    const u32 config_word = rp.Pop<u32>();
+
+    LOG_DEBUG(Service, "called. config_word={:#x}", config_word);
+
+    IPC::ResponseBuilder rb{ctx, 3};
+    rb.Push(ResultSuccess);
+    rb.Push<u32>(0);
+}
+
 void BSD_USA::Socket(HLERequestContext& ctx) {
     IPC::RequestParser rp{ctx};
     const u32 domain = rp.Pop<u32>();
@@ -522,6 +536,13 @@ void BSD_USA::ExecuteWork(HLERequestContext& ctx, Work work) {
 }
 
 std::pair<s32, Errno> BSD_USA::SocketImpl(Domain domain, Type type, Protocol protocol) {
+    // The host network layer only speaks IPv4; refuse other families like a stack without them
+    // instead of asserting in the translation tables.
+    if (domain != Domain::Unspecified && domain != Domain::INET) {
+        LOG_WARNING(Service, "Unsupported address family domain={}", static_cast<u32>(domain));
+        return {-1, Errno::AFNOSUPPORT};
+    }
+
     // user bsd:u has restrictions on SOCK_SEQPACKET and SOCK_RAW
     if (is_user && (type == Type::SEQPACKET || type == Type::RAW)) {
         if (type == Type::RAW && domain == Domain::INET && protocol == Protocol::ICMP) {
@@ -1121,7 +1142,7 @@ BSD_USA::BSD_USA(Core::System& system_, const char* name, bool is_user_)
         {33, nullptr, "RegisterClientShared"}, //10.0.0+
         {34, nullptr, "GetSocketStatistics"}, //15.0.0+
         {35, nullptr, "NifIoctl"}, //17.0.0+
-        {36, nullptr, "Unknown36"}, //18.0.0+
+        {36, &BSD_USA::Unknown36, "Unknown36"}, //18.0.0+
         {37, nullptr, "Unknown37"}, //18.0.0+
         {38, nullptr, "Unknown38"}, //18.0.0+
         {39, nullptr, "Unknown39"}, //20.0.0+

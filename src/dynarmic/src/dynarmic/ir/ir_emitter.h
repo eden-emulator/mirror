@@ -2923,6 +2923,10 @@ public:
         UNREACHABLE();
     }
 
+    U64 ComputePACGA(const U64& data, const U64& modifier) {
+        return Inst<U64>(Opcode::ComputePACGA, data, modifier);
+    }
+
     void Breakpoint() {
         Inst(Opcode::Breakpoint);
     }

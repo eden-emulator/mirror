@@ -347,6 +347,10 @@ add_library(core STATIC
     hle/kernel/physical_core.cpp
     hle/kernel/physical_core.h
     hle/kernel/slab_helpers.h
+    hle/dlss_trace.cpp
+    hle/dlss_trace.h
+    hle/guest_hooks.cpp
+    hle/guest_hooks.h
     hle/kernel/svc.cpp
     hle/kernel/svc.h
     hle/kernel/svc/svc_activity.cpp
@@ -460,6 +464,21 @@ add_library(core STATIC
     hle/service/am/service/application_proxy.h
     hle/service/am/service/application_proxy_service.cpp
     hle/service/am/service/application_proxy_service.h
+    hle/service/am/service/performance_functions.cpp
+    hle/service/am/service/performance_functions.h
+    hle/service/am/service/gpu_session.cpp
+    hle/service/am/service/gpu_session.h
+    hle/service/am/service/graphics_session.cpp
+    hle/service/am/service/graphics_session.h
+    hle/service/am/service/graphics_supervisor.cpp
+    hle/service/am/service/native_video_decoder.cpp
+    hle/service/am/service/native_video_layout.h
+    hle/service/am/service/native_video_decoder.h
+    hle/service/am/service/graphics_supervisor.h
+    hle/service/am/service/graphics_supervisor_protocol.h
+    hle/service/am/service/graphics_syncpoint_cache.h
+    hle/service/am/service/graphics_scaling_parameters_functions.cpp
+    hle/service/am/service/graphics_scaling_parameters_functions.h
     hle/service/am/service/audio_controller.cpp
     hle/service/am/service/audio_controller.h
     hle/service/am/service/common_state_getter.cpp
@@ -855,6 +874,8 @@ add_library(core STATIC
     hle/service/nvdrv/devices/nvhost_ctrl_gpu.h
     hle/service/nvdrv/devices/nvhost_gpu.cpp
     hle/service/nvdrv/devices/nvhost_gpu.h
+    hle/service/nvdrv/devices/nvhost_tsg_gpu.cpp
+    hle/service/nvdrv/devices/nvhost_tsg_gpu.h
     hle/service/nvdrv/devices/nvhost_nvdec.cpp
     hle/service/nvdrv/devices/nvhost_nvdec.h
     hle/service/nvdrv/devices/nvhost_nvdec_common.cpp
@@ -1217,7 +1238,11 @@ else()
     target_link_libraries(core PUBLIC Boost::headers)
 endif()
 
+set_source_files_properties(hle/service/am/service/native_video_decoder.cpp PROPERTIES
+    INCLUDE_DIRECTORIES "$<TARGET_PROPERTY:libgav1_static,INTERFACE_INCLUDE_DIRECTORIES>")
+
 target_link_libraries(core PRIVATE
+    "$<LINK_ONLY:libgav1_static>"
     OpenSSL::SSL
     fmt::fmt
     nlohmann_json::nlohmann_json

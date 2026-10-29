@@ -278,6 +278,7 @@ void EmitFPNeg64(EmitContext& ctx, IR::Inst& inst, std::string_view value);
 void EmitFPSin(EmitContext& ctx, IR::Inst& inst, std::string_view value);
 void EmitFPCos(EmitContext& ctx, IR::Inst& inst, std::string_view value);
 void EmitFPExp2(EmitContext& ctx, IR::Inst& inst, std::string_view value);
+void EmitFPTanh(EmitContext& ctx, IR::Inst& inst, std::string_view value);
 void EmitFPLog2(EmitContext& ctx, IR::Inst& inst, std::string_view value);
 void EmitFPRecip32(EmitContext& ctx, IR::Inst& inst, std::string_view value);
 void EmitFPRecip64(EmitContext& ctx, IR::Inst& inst, std::string_view value);

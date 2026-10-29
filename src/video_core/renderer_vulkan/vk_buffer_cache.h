@@ -198,7 +198,16 @@ public:
         multi_range_total += size;
     }
 
-    bool BindMultiRangeStorageBuffer(u64 key, bool is_written);
+    void BeginStorageBatch(bool native) {
+        grouped_storage = native;
+        storage_batch.clear();
+    }
+
+    [[nodiscard]] bool UseGroupedStorage() const noexcept { return grouped_storage; }
+
+    void FlushStorageWrites();
+
+    bool BindMultiRangeStorageBuffer(u64 key, bool is_written, u32 offset = 0, u32 size = 0);
 
     void InvalidateMultiRange(u64 key) {
         multi_range_buffers.Invalidate(key);
@@ -260,6 +269,15 @@ private:
 
     std::unique_ptr<Uint8Pass> uint8_pass;
     QuadIndexedPass quad_index_pass;
+
+    struct StorageBatchEntry {
+        u64 key{};
+        MultiRangeRef ref;
+        std::vector<MultiRangeSource> sources;
+        bool written{};
+    };
+    std::vector<StorageBatchEntry> storage_batch;
+    bool grouped_storage{};
 
     MultiRangeBufferCache multi_range_buffers;
     boost::container::small_vector<MultiRangeSource, 16> multi_range_sources;

@@ -43,6 +43,7 @@ public:
             {23, &IUser::AttachAvailabilityChangeEvent, "AttachAvailabilityChangeEvent"},
             {24, &IUser::RecreateApplicationArea, "RecreateApplicationArea"},
             {25, &IUser::StartDetection, "StartDetectionWithFilter"},
+            {300, &IUser::InitializeEx, "InitializeEx"},
         };
         // clang-format on
 

@@ -7,6 +7,8 @@
 #pragma once
 
 #include <array>
+#include <cstring>
+#include <span>
 
 #include "common/bit_field.h"
 #include "common/common_funcs.h"
@@ -23,13 +25,14 @@ constexpr std::size_t MAX_GUIDE_TEXT_LENGTH = 256;
 constexpr std::size_t STRING_BUFFER_SIZE = 0x7D4;
 
 enum class SwkbdAppletVersion : u32_le {
-    Version5 = 0x5,          // 1.0.0
-    Version65542 = 0x10006,  // 2.0.0 - 2.3.0
-    Version196615 = 0x30007, // 3.0.0 - 3.0.2
-    Version262152 = 0x40008, // 4.0.0 - 4.1.0
-    Version327689 = 0x50009, // 5.0.0 - 5.1.0
-    Version393227 = 0x6000B, // 6.0.0 - 7.0.1
-    Version524301 = 0x8000D, // 8.0.0+
+    Version5 = 0x5,            // 1.0.0
+    Version65542 = 0x10006,    // 2.0.0 - 2.3.0
+    Version196615 = 0x30007,   // 3.0.0 - 3.0.2
+    Version262152 = 0x40008,   // 4.0.0 - 4.1.0
+    Version327689 = 0x50009,   // 5.0.0 - 5.1.0
+    Version393227 = 0x6000B,   // 6.0.0 - 7.0.1
+    Version524301 = 0x8000D,   // 8.0.0+
+    Version1310736 = 0x140010, // 20.0.0 native
 };
 
 enum class SwkbdType : u32 {
@@ -183,7 +186,60 @@ struct SwkbdConfigNew {
 };
 static_assert(sizeof(SwkbdConfigNew) == 0x4C8 - sizeof(SwkbdConfigCommon),
               "SwkbdConfigNew has incorrect size.");
+struct SwkbdConfigNative {
+    std::array<u8, 0x3AA> common_prefix{};
+    bool use_utf8{};
+    bool use_blur_background{};
+    u32 max_text_length{};
+    u32 min_text_length{};
+    SwkbdPasswordMode password_mode{};
+    SwkbdTextDrawType text_draw_type{};
+    u32 initial_string_offset{};
+    u32 initial_string_length{};
+    u32 user_dictionary_offset{};
+    u32 user_dictionary_entries{};
+    std::array<u64, 24> customized_dictionary_set_entries{};
+    u8 total_customized_dictionary_set_entries{};
+    bool use_text_check{};
+    bool disable_cancel_button{};
+    u8 trigger{};
+    std::array<u32, 8> text_grouping{};
+    INSERT_PADDING_BYTES(0x80);
+};
+static_assert(sizeof(SwkbdConfigNative) == 0x530);
+static_assert(offsetof(SwkbdConfigNative, use_text_check) == 0x48D);
+static_assert(offsetof(SwkbdConfigNative, text_grouping) == 0x490);
 #pragma pack(pop)
+
+inline bool DecodeNativeSwkbdConfig(std::span<const u8> data, SwkbdConfigCommon& common,
+                                   SwkbdConfigNew& config) {
+    if (data.size() != sizeof(SwkbdConfigNative)) {
+        return false;
+    }
+    SwkbdConfigNative native{};
+    std::memcpy(&native, data.data(), sizeof(native));
+    common = {};
+    config = {};
+    // Native configuration keeps the text prefix but relocates the flags and dictionary fields.
+    std::memcpy(static_cast<void*>(&common), native.common_prefix.data(), native.common_prefix.size());
+    common.enable_return_button = native.common_prefix[0x1B] != 0;
+    common.use_utf8 = native.use_utf8;
+    common.use_blur_background = native.use_blur_background;
+    common.max_text_length = native.max_text_length;
+    common.min_text_length = native.min_text_length;
+    common.password_mode = native.password_mode;
+    common.text_draw_type = native.text_draw_type;
+    common.initial_string_offset = native.initial_string_offset;
+    common.initial_string_length = native.initial_string_length;
+    common.user_dictionary_offset = native.user_dictionary_offset;
+    common.user_dictionary_entries = native.user_dictionary_entries;
+    common.use_text_check = native.use_text_check;
+    config.text_grouping = native.text_grouping;
+    config.customized_dictionary_set_entries = native.customized_dictionary_set_entries;
+    config.total_customized_dictionary_set_entries = native.total_customized_dictionary_set_entries;
+    config.disable_cancel_button = native.disable_cancel_button;
+    return true;
+}
 
 struct SwkbdTextCheck {
     SwkbdTextCheckResult text_check_result{};

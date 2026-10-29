@@ -38,6 +38,9 @@ struct TranslationOptions {
     /// If this is false, we treat the instruction as a NOP.
     /// If this is true, we emit an ExceptionRaised instruction.
     bool hook_hint_instructions = true;
+
+    bool enable_pauth_returns = false;
+    u32 address_space_bits = 64;
 };
 
 /**

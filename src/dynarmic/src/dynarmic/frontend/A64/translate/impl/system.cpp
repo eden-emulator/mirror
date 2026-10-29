@@ -34,6 +34,74 @@ enum class SystemRegisterEncoding : u32 {
 };
 
 bool TranslatorVisitor::HINT([[maybe_unused]] Imm<4> CRm, [[maybe_unused]] Imm<3> op2) {
+    if (options.enable_pauth_returns && CRm == 0 && op2 == 7) {
+        return XPAC_1(false, Reg::R30);
+    }
+    return true;
+}
+
+bool TranslatorVisitor::XPAC_1([[maybe_unused]] bool D, Reg Rd) {
+    if (!options.enable_pauth_returns) {
+        return UnallocatedEncoding();
+    }
+    const auto bits = options.address_space_bits;
+    if (bits >= 64) {
+        return true;
+    }
+    const IR::U64 pointer = X(64, Rd);
+    const u64 address_mask = (u64{1} << bits) - 1;
+    // This compatibility model has TBI disabled; bit 55 selects the address extension.
+    const auto extension = ir.ArithmeticShiftRight(
+        ir.LogicalShiftLeft(pointer, ir.Imm8(8)), ir.Imm8(63));
+    X(64, Rd, ir.Or(ir.And(pointer, ir.Imm64(address_mask)),
+                   ir.And(extension, ir.Imm64(~address_mask))));
+    return true;
+}
+
+bool TranslatorVisitor::PACIA_1(bool Z, Reg Rn, [[maybe_unused]] Reg Rd) {
+    if (Z && Rn != Reg::ZR) return UnallocatedEncoding();
+    return options.enable_pauth_returns ? true : UnallocatedEncoding();
+}
+
+bool TranslatorVisitor::PACIB_1(bool Z, Reg Rn, [[maybe_unused]] Reg Rd) {
+    if (Z && Rn != Reg::ZR) return UnallocatedEncoding();
+    return options.enable_pauth_returns ? true : UnallocatedEncoding();
+}
+
+bool TranslatorVisitor::PACDA(bool Z, Reg Rn, [[maybe_unused]] Reg Rd) {
+    if (Z && Rn != Reg::ZR) return UnallocatedEncoding();
+    return options.enable_pauth_returns ? true : UnallocatedEncoding();
+}
+
+bool TranslatorVisitor::PACDB(bool Z, Reg Rn, [[maybe_unused]] Reg Rd) {
+    if (Z && Rn != Reg::ZR) return UnallocatedEncoding();
+    return options.enable_pauth_returns ? true : UnallocatedEncoding();
+}
+
+bool TranslatorVisitor::AUTIA_1(bool Z, Reg Rn, [[maybe_unused]] Reg Rd) {
+    if (Z && Rn != Reg::ZR) return UnallocatedEncoding();
+    return options.enable_pauth_returns ? true : UnallocatedEncoding();
+}
+
+bool TranslatorVisitor::AUTIB_1(bool Z, Reg Rn, [[maybe_unused]] Reg Rd) {
+    if (Z && Rn != Reg::ZR) return UnallocatedEncoding();
+    return options.enable_pauth_returns ? true : UnallocatedEncoding();
+}
+
+bool TranslatorVisitor::AUTDA(bool Z, Reg Rn, [[maybe_unused]] Reg Rd) {
+    if (Z && Rn != Reg::ZR) return UnallocatedEncoding();
+    return options.enable_pauth_returns ? true : UnallocatedEncoding();
+}
+
+bool TranslatorVisitor::AUTDB(bool Z, Reg Rn, [[maybe_unused]] Reg Rd) {
+    if (Z && Rn != Reg::ZR) return UnallocatedEncoding();
+    return options.enable_pauth_returns ? true : UnallocatedEncoding();
+}
+
+bool TranslatorVisitor::PACGA(Reg Rm, Reg Rn, Reg Rd) {
+    if (!options.enable_pauth_returns) return UnallocatedEncoding();
+    const IR::U64 modifier = Rm == Reg::ZR ? IR::U64{SP(64)} : IR::U64{X(64, Rm)};
+    X(64, Rd, ir.ComputePACGA(X(64, Rn), modifier));
     return true;
 }
 

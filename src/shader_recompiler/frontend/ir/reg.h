@@ -271,7 +271,8 @@ enum class Reg : u64 {
 static_assert(static_cast<int>(Reg::RZ) == 255);
 
 constexpr size_t NUM_USER_REGS = 255;
-constexpr size_t NUM_REGS = 256;
+// Native lowering keeps shadowed guest values and borrowed registers in SSA.
+constexpr size_t NUM_REGS = 768;
 
 [[nodiscard]] constexpr Reg operator+(Reg reg, int num) {
     if (reg == Reg::RZ) {
@@ -322,7 +323,7 @@ struct fmt::formatter<Shader::IR::Reg> {
     auto format(const Shader::IR::Reg& reg, FormatContext& ctx) const {
         if (reg == Shader::IR::Reg::RZ) {
             return fmt::format_to(ctx.out(), "RZ");
-        } else if (static_cast<int>(reg) >= 0 && static_cast<int>(reg) < 255) {
+        } else if (static_cast<int>(reg) >= 0 && static_cast<int>(reg) < static_cast<int>(Shader::IR::NUM_REGS)) {
             return fmt::format_to(ctx.out(), "R{}", static_cast<int>(reg));
         } else {
             throw Shader::LogicError("Invalid register with raw value {}", static_cast<int>(reg));

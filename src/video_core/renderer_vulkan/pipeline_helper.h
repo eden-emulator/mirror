@@ -14,6 +14,7 @@
 #include "common/common_types.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/shader_info.h"
+#include "shader_recompiler/exception.h"
 #include "video_core/renderer_vulkan/vk_texture_cache.h"
 #include "video_core/renderer_vulkan/vk_update_descriptor.h"
 #include "video_core/surface.h"
@@ -362,10 +363,18 @@ inline void PushImageDescriptors(TextureCache& texture_cache,
     for (const auto& desc : info.texture_descriptors) {
         bool is_rescaled{};
         for (u32 index = 0; index < desc.count; ++index) {
-            const VideoCommon::ImageViewId image_view_id{(views++)->id};
+            const auto& guest_view = *views++;
+            const VideoCommon::ImageViewId image_view_id{guest_view.id};
             const VideoCommon::SamplerId sampler_id{*(samplers++)};
             ImageView& image_view{texture_cache.GetImageView(image_view_id)};
             VkImageView vk_image_view{image_view.Handle(desc.type)};
+            if (desc.buffer_source.enabled && image_view_id != VideoCommon::NULL_IMAGE_VIEW_ID &&
+                (VideoCore::Surface::IsPixelFormatInteger(image_view.format) || vk_image_view == VK_NULL_HANDLE))
+                throw Shader::NotImplementedException(
+                    "Buffer-backed texture entry {} (CB{}+{:#x}, field {:#x}) has format {}, expected type {}, view available {}, texture index {}, guest type {}, width query {}",
+                    index, desc.cbuf_index, desc.cbuf_offset, desc.buffer_source.offset,
+                    static_cast<u32>(image_view.format), static_cast<u32>(desc.type), vk_image_view != VK_NULL_HANDLE,
+                    guest_view.index, static_cast<u32>(image_view.type), desc.buffer_source.width_query);
             if (vk_image_view == VK_NULL_HANDLE) {
                 const VkImageView null_image_view{texture_cache.GetImageView(VideoCommon::NULL_IMAGE_VIEW_ID).Handle(desc.type)};
                 if (null_image_view != VK_NULL_HANDLE) vk_image_view = null_image_view;

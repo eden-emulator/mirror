@@ -103,7 +103,8 @@ void DynarmicCallbacks32::AddTicks(u64 ticks) {
     // if not all cores are doing a similar amount of work. Instead of doing this, we should
     // device a way so that timing is consistent across all cores without increasing the ticks 4
     // times.
-    u64 amortized_ticks = ticks / Core::Hardware::NUM_CPU_CORES;
+    // Stays at the Switch 1 core count so guest time does not change with the extra emulated cores.
+    u64 amortized_ticks = ticks / Core::Hardware::NUM_LEGACY_CPU_CORES;
     // Always execute at least one tick.
     amortized_ticks = std::max<u64>(amortized_ticks, 1);
     m_parent.m_system.CoreTiming().AddTicks(amortized_ticks);

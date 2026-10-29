@@ -20,7 +20,7 @@ void ConditionalBarrierPass(IR::Program& program);
 void ConstantPropagationPass(Environment& env, IR::Program& program);
 void DeadCodeEliminationPass(IR::Program& program);
 void GeometryCompactionPass(IR::Program& program, const HostTranslateInfo& host_info);
-void GlobalMemoryToStorageBufferPass(IR::Program& program, const HostTranslateInfo& host_info);
+void GlobalMemoryToStorageBufferPass(Environment& env, IR::Program& program, const HostTranslateInfo& host_info);
 void IdentityRemovalPass(IR::Program& program);
 void LowerFp64ToFp32(IR::Program& program);
 void LowerFp16ToFp32(IR::Program& program);

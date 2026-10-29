@@ -393,6 +393,29 @@ Status BufferQueueProducer::DetachNextBuffer(std::shared_ptr<GraphicBuffer>* out
     return Status::NoError;
 }
 
+Status BufferQueueProducer::DetachReleasedBuffer(s32 slot) {
+    const std::scoped_lock lock{core->mutex};
+    if (core->is_abandoned) {
+        return Status::NoInit;
+    }
+    if (slot < 0 || static_cast<size_t>(slot) >= slots.size() ||
+        slots[slot].buffer_state != BufferState::Free) {
+        return Status::BadValue;
+    }
+    core->FreeBufferLocked(slot);
+    core->SignalDequeueCondition();
+    return Status::NoError;
+}
+
+std::optional<Fence> BufferQueueProducer::GetReleasedBufferFence(s32 slot) {
+    const std::scoped_lock lock{core->mutex};
+    if (slot < 0 || static_cast<size_t>(slot) >= slots.size() ||
+        slots[slot].buffer_state != BufferState::Free) {
+        return std::nullopt;
+    }
+    return slots[slot].fence;
+}
+
 Status BufferQueueProducer::AttachBuffer(s32* out_slot,
                                          const std::shared_ptr<GraphicBuffer>& buffer) {
     if (out_slot == nullptr) {

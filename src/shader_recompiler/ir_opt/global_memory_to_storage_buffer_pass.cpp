@@ -333,8 +333,8 @@ std::optional<LowAddrInfo> TrackLowAddress(IR::Inst* inst) {
 }
 
 /// Tries to track the storage buffer address used by a global memory instruction
-std::optional<StorageBufferAddr> Track(const IR::Value& value, const Bias* bias) {
-    const auto pred{[bias](const IR::Inst* inst) -> std::optional<StorageBufferAddr> {
+std::optional<StorageBufferAddr> Track(const IR::Value& value, const Bias* bias, Environment* native_env = nullptr) {
+    const auto pred{[bias, native_env](const IR::Inst* inst) -> std::optional<StorageBufferAddr> {
         if (inst->GetOpcode() != IR::Opcode::GetCbufU32 &&
             inst->GetOpcode() != IR::Opcode::GetCbufU32x2) {
             return std::nullopt;
@@ -364,13 +364,52 @@ std::optional<StorageBufferAddr> Track(const IR::Value& value, const Bias* bias)
             // point to them
             return std::nullopt;
         }
+        if (native_env && !native_env->IsCbufStorageBufferPointer(storage_buffer.index,
+                                                                 storage_buffer.offset)) {
+            return std::nullopt;
+        }
         return storage_buffer;
     }};
-    return BreadthFirstSearch(value, pred);
+    if (!native_env) {
+        return BreadthFirstSearch(value, pred);
+    }
+    // A base pointer survives addition and selection, but not multiplication or a
+    // predicate calculation. Searching those expressions can find strides first.
+    small_vector<const IR::Inst*, 16> pending;
+    const auto enqueue = [&](const IR::Value& candidate) {
+        if (candidate.IsImmediate()) return;
+        const auto* candidate_inst = candidate.InstRecursive();
+        if (std::ranges::find(pending, candidate_inst) == pending.end()) {
+            pending.push_back(candidate_inst);
+        }
+    };
+    enqueue(value);
+    for (size_t next = 0; next < pending.size(); ++next) {
+        const auto* inst = pending[next];
+        if (const auto result = pred(inst)) return result;
+        switch (inst->GetOpcode()) {
+        case IR::Opcode::IAdd32:
+        case IR::Opcode::Phi:
+            for (size_t arg = inst->NumArgs(); arg--;) enqueue(inst->Arg(arg));
+            break;
+        case IR::Opcode::SelectU32:
+            enqueue(inst->Arg(1));
+            enqueue(inst->Arg(2));
+            break;
+        case IR::Opcode::CompositeExtractU32x2:
+            if (inst->Arg(1).IsImmediate() && inst->Arg(1).U32() == 0) {
+                enqueue(inst->Arg(0));
+            }
+            break;
+        default:
+            break;
+        }
+    }
+    return std::nullopt;
 }
 
 /// Collects the storage buffer used by a global memory instruction and the instruction itself
-void CollectStorageBuffers(IR::Block& block, IR::Inst& inst, StorageInfo& info) {
+void CollectStorageBuffers(IR::Block& block, IR::Inst& inst, StorageInfo& info, Environment& env) {
     // NVN puts storage buffers in a specific range, we have to bias towards these addresses to
     // avoid getting false positives
     static constexpr Bias nvn_bias{
@@ -385,12 +424,15 @@ void CollectStorageBuffers(IR::Block& block, IR::Inst& inst, StorageInfo& info) 
         // Failed to track the low address, use NVN fallbacks
         return;
     }
+    const bool native = env.HasNativeRegisterCopies();
     // First try to find storage buffers in the NVN address
     const IR::U32 low_addr{low_addr_info->value};
-    std::optional<StorageBufferAddr> storage_buffer{Track(low_addr, &nvn_bias)};
+    // Native kernels use eight-byte pointer arguments, without NVN descriptor spacing.
+    // Applying the NVN bias can skip the pointer and select a dimension or stride instead.
+    std::optional<StorageBufferAddr> storage_buffer{Track(low_addr, native ? nullptr : &nvn_bias, native ? &env : nullptr)};
     if (!storage_buffer) {
         // If it fails, track without a bias
-        storage_buffer = Track(low_addr, nullptr);
+        storage_buffer = Track(low_addr, nullptr, native ? &env : nullptr);
         if (!storage_buffer) {
             // If that also fails, use NVN fallbacks
             LOG_WARNING(Shader, "Storage buffer failed to track, using global memory fallbacks");
@@ -523,14 +565,14 @@ void Replace(IR::Block& block, IR::Inst& inst, const IR::U32& storage_index,
 }
 } // Anonymous namespace
 
-void GlobalMemoryToStorageBufferPass(IR::Program& program, const HostTranslateInfo& host_info) {
+void GlobalMemoryToStorageBufferPass(Environment& env, IR::Program& program, const HostTranslateInfo& host_info) {
     StorageInfo info;
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (!IsGlobalMemory(inst)) {
                 continue;
             }
-            CollectStorageBuffers(*block, inst, info);
+            CollectStorageBuffers(*block, inst, info, env);
         }
     }
     for (const StorageBufferAddr& storage_buffer : info.set) {

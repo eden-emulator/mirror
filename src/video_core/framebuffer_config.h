@@ -37,6 +37,7 @@ struct FramebufferConfig {
     Service::android::BufferTransformFlags transform_flags{};
     Common::Rectangle<int> crop_rect{};
     BlendMode blending{};
+    bool native_tiling{};
     u32 layer_stack_mask{Service::Nvnflinger::DefaultLayerStackMask};
 };
 

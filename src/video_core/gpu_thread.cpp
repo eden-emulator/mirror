@@ -4,6 +4,9 @@
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <chrono>
+#include <thread>
+
 #include "common/assert.h"
 #include "common/scope_exit.h"
 #include "common/settings.h"
@@ -36,7 +39,15 @@ void ThreadManager::StartThread(VideoCore::RendererBase& renderer, Core::Fronten
         auto current_context = context.Acquire();
         CommandDataContainer next;
         while (!stop_token.stop_requested()) {
-            state.queue.PopWait(next, stop_token);
+            if (scheduler.HasPendingNativeChannels()) {
+                scheduler.ResumePending(system.GPU());
+                if (!state.queue.TryPop(next)) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds{1});
+                    continue;
+                }
+            } else {
+                state.queue.PopWait(next, stop_token);
+            }
             if (stop_token.stop_requested()) {
                 break;
             }

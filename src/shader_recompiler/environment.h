@@ -7,9 +7,11 @@
 #pragma once
 
 #include <array>
+#include <span>
 #include "common/container/unordered_map.h"
 
 #include "common/common_types.h"
+#include "shader_recompiler/frontend/ampere/instruction.h"
 #include "shader_recompiler/program_header.h"
 #include "shader_recompiler/shader_info.h"
 #include "shader_recompiler/stage.h"
@@ -66,6 +68,7 @@ struct ConstBufferAddr {
     IR::U32 dynamic_offset;
     u32 count;
     bool has_secondary;
+    BufferTextureSource buffer_source{};
 };
 
 class Environment {
@@ -73,6 +76,13 @@ public:
     virtual ~Environment() = default;
 
     [[nodiscard]] virtual u64 ReadInstruction(u32 address) = 0;
+
+    [[nodiscard]] virtual bool HasNativeRegisterCopies() const { return false; }
+
+    [[nodiscard]] virtual u32 TranslateProgramAddress(u32 address) const { return address; }
+
+    // Native raw-pointer layouts can mix addresses and scalar parameters.
+    [[nodiscard]] virtual bool IsCbufStorageBufferPointer(u32, u32) { return true; }
 
     [[nodiscard]] virtual u32 ReadCbufValue(u32 cbuf_index, u32 cbuf_offset) = 0;
 
@@ -98,6 +108,32 @@ public:
                                                                                u32 offset) = 0;
 
     virtual void Dump(u64 pipeline_hash, u64 shader_hash) = 0;
+
+    /// True when the program is translated by the native Ampere frontend instead of the Maxwell one.
+    [[nodiscard]] virtual bool IsNativeAmpere() const {
+        return false;
+    }
+
+    /// Native Ampere instructions of the program; only valid when IsNativeAmpere() is true.
+    [[nodiscard]] virtual std::span<const Ampere::Instruction> NativeProgram() const {
+        return {};
+    }
+
+    /// Instruction indices a native computed branch (BRX) may reach, resolved by the environment.
+    [[nodiscard]] virtual std::span<const u32> NativeIndirectTargets() const {
+        return {};
+    }
+
+    /// Instruction indices the native computed branch (BRX) at instruction `index` may reach. Environments
+    /// that capture one table per branch return it here; the default is the program-wide table.
+    [[nodiscard]] virtual std::span<const u32> NativeIndirectTargetsAt([[maybe_unused]] u32 index) const {
+        return NativeIndirectTargets();
+    }
+
+    /// Guest address of native instruction 0, relative to the program base.
+    [[nodiscard]] virtual u32 NativeSourceBase() const {
+        return 0;
+    }
 
     [[nodiscard]] const ProgramHeader& SPH() const noexcept {
         return sph;

@@ -9,6 +9,7 @@
 
 #include "common/alignment.h"
 #include "common/assert.h"
+#include "common/gpumem_diag.h"
 #include "common/logging.h"
 #include "core/hle/service/nvdrv/core/container.h"
 #include "core/hle/service/nvdrv/core/heap_mapper.h"
@@ -78,6 +79,7 @@ void NvMap::AddHandle(std::shared_ptr<Handle> handle_description) {
     std::scoped_lock lock(handles_lock);
 
     handles.emplace(handle_description->id, std::move(handle_description));
+    ++Common::GpuMemDiag::nvmap_handles;
 }
 
 void NvMap::UnmapHandle(Handle& handle_description) {
@@ -121,6 +123,7 @@ bool NvMap::TryRemoveHandle(const Handle& handle_description) {
         auto it{handles.find(handle_description.id)};
         if (it != handles.end()) {
             handles.erase(it);
+            --Common::GpuMemDiag::nvmap_handles;
         }
 
         return true;

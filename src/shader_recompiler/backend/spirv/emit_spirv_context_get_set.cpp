@@ -58,6 +58,9 @@ std::optional<OutAttr> OutputAttrPointer(EmitContext& ctx, IR::Attribute attr) {
     }
 
     switch (attr) {
+    case IR::Attribute::VprsTableIndex:
+        // The graphics pipeline validates the conservative full-pixel-rate fallback.
+        return std::nullopt;
     case IR::Attribute::PointSize:
         return ctx.output_point_size;
     case IR::Attribute::PositionX:

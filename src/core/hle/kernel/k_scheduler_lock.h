@@ -21,6 +21,14 @@ class KAbstractSchedulerLock {
 public:
     explicit KAbstractSchedulerLock(KernelCore& kernel) : m_kernel{kernel} {}
 
+    // Diagnostic only (thread dump): who holds the lock right now.
+    KThread* GetOwnerForDebugging() const {
+        return m_owner_thread.load();
+    }
+    s32 GetLockCountForDebugging() const {
+        return m_lock_count;
+    }
+
     bool IsLockedByCurrentThread() const {
         return m_owner_thread == GetCurrentThreadPointer(m_kernel);
     }

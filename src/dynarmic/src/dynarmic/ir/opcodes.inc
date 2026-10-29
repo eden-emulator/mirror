@@ -12,6 +12,7 @@
 OPCODE(Void,                                                Void,                                                                           )
 OPCODE(Identity,                                            Opaque,         Opaque                                                          )
 OPCODE(Breakpoint,                                          Void,                                                                           )
+OPCODE(ComputePACGA,                                        U64,            U64,            U64                                             )
 OPCODE(CallHostFunction,                                    Void,           U64,            Opaque,         Opaque,         Opaque          )
 
 // Hints

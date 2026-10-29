@@ -43,6 +43,11 @@ public:
                            u64 big_page_bits_ = 16, u64 page_bits_ = 12);
     ~MemoryManager();
 
+    void SetNativeSyncpointShim(GPUVAddr address);
+    void EnableNativeTiling() { native_tiling = true; }
+    bool UsesNativeTiling() const { return native_tiling; }
+    bool IsShuttingDown() const;
+
     static constexpr bool HAS_FLUSH_INVALIDATION = true;
 
     inline size_t GetID() const noexcept {
@@ -178,6 +183,7 @@ private:
         GPUVAddr gpu_addr, std::size_t size,
         boost::container::small_vector<std::pair<std::conditional_t<is_gpu_address, GPUVAddr, DAddr>, std::size_t>, 32>& result) const;
 
+    std::atomic<GPUVAddr> native_syncpoint_shim{};
     Core::System& system;
     MaxwellDeviceMemoryManager& memory;
 
@@ -220,6 +226,7 @@ private:
     boost::container::small_vector<std::pair<DAddr, std::size_t>, 32> page_stash{};
     boost::container::small_vector<std::pair<DAddr, std::size_t>, 32> page_stash2{};
 
+    bool native_tiling{};
     mutable std::mutex guard;
 
     static constexpr size_t continuous_bits = 64;

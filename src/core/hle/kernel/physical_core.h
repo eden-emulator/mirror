@@ -46,6 +46,10 @@ public:
     // Copy floating point status registers to the target thread.
     void CloneFpuStatus(KThread* dst) const;
 
+    // Diagnostic only (thread dump): the registers of the thread running right now, read without
+    // stopping the core, so they can be slightly inconsistent. False when nothing is loaded.
+    bool GetLiveContextForDebugging(Svc::ThreadContext& ctx) const;
+
     // Log backtrace of current processor state.
     void LogBacktrace(KernelCore& kernel);
 

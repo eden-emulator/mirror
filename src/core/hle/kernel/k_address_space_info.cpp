@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <array>
+#include "common/alignment.h"
 
 #include "common/assert.h"
 #include "common/literals.h"
@@ -53,7 +55,14 @@ std::size_t KAddressSpaceInfo::GetAddressSpaceStart(size_t width, KAddressSpaceI
     return GetAddressSpaceInfo(width, type).address;
 }
 
-std::size_t KAddressSpaceInfo::GetAddressSpaceSize(size_t width, KAddressSpaceInfo::Type type) {
+std::size_t KAddressSpaceInfo::GetAddressSpaceSize(size_t width, KAddressSpaceInfo::Type type,
+                                                  size_t physical_memory_size) {
+    if (width == 39 && (type == Type::Heap || type == Type::Alias)) {
+        const size_t heap_size = std::clamp(
+            Common::AlignUp(std::min(physical_memory_size, size_t{32_GiB}), size_t{1_GiB}),
+            size_t{8_GiB}, size_t{32_GiB});
+        return type == Type::Heap ? heap_size : std::min(heap_size * 8, size_t{128_GiB});
+    }
     return GetAddressSpaceInfo(width, type).size;
 }
 

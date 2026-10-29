@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <mutex>
+#include <string>
 #include "common/container/unordered_map.h"
 #include "common/common_types.h"
 #include "core/hle/service/hle_ipc.h"
@@ -25,6 +26,10 @@ class ServiceThread;
 } // namespace Kernel
 
 namespace Service {
+
+/// Diagnostic (EDEN_DIAG_SVC=1): the HLE service requests being handled or waiting for the service
+/// lock right now, for the thread dump.
+std::string DescribeInFlightRequests();
 
 namespace FileSystem {
 class FileSystemController;

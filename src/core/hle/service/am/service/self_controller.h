@@ -12,6 +12,7 @@
 
 namespace Kernel {
 class KReadableEvent;
+class KClientSession;
 }
 
 namespace Service::Capture {
@@ -30,6 +31,7 @@ public:
     ~ISelfController() override;
 
 private:
+    void GetGraphicsSupervisor(HLERequestContext& ctx);
     Result Exit();
     Result LockExit();
     Result UnlockExit();
@@ -69,7 +71,9 @@ private:
     Result SetRecordVolumeMuted(bool muted);
     Result Unknown230(u32 in_val, Out<u16> out_val);
     Result Unknown240(u32 in_val);
+    Result SetRtcScreenSharingAudioEnabled(bool enabled);
 
+    Kernel::KClientSession* m_graphics_supervisor_session{};
     Kernel::KProcess* const m_process;
     const std::shared_ptr<Applet> m_applet;
 };
