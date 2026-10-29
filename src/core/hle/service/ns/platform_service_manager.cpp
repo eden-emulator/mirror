@@ -21,6 +21,7 @@
 #include "core/file_sys/system_archive/system_archive.h"
 #include "core/hle/kernel/k_shared_memory.h"
 #include "core/hle/kernel/kernel.h"
+#include "core/hle/kernel/svc_results.h"
 #include "core/hle/service/cmif_serialization.h"
 #include "core/hle/service/filesystem/filesystem.h"
 #include "core/hle/service/ns/platform_service_manager.h"
@@ -105,6 +106,8 @@ IPlatformServiceManager::IPlatformServiceManager(Core::System& system_, const ch
         {104, nullptr, "RequestApplicationFunctionAuthorizationByProgramId"},
         {105, nullptr, "GetFunctionBlackListSystemVersionToAuthorize"},
         {106, nullptr, "GetFunctionBlackListVersion"},
+        {2000, D<&IPlatformServiceManager::GetBuiltInFontSharedMemory>, "GetBuiltInFontSharedMemory"},
+        {2010, D<&IPlatformServiceManager::GetBuiltInFontData>, "GetBuiltInFontData"},
         {1000, nullptr, "LoadNgWordDataForPlatformRegionChina"},
         {1001, nullptr, "GetNgWordDataSizeForPlatformRegionChina"},
     };
@@ -118,6 +121,7 @@ IPlatformServiceManager::IPlatformServiceManager(Core::System& system_, const ch
     std::size_t offset = 0;
     // Rebuild shared fonts from data ncas or synthesize
     for (auto& font : SHARED_FONTS) {
+        impl->shared_font_regions.push_back(EMPTY_REGION);
         FileSys::VirtualFile romfs;
         const auto nca =
             nand->GetEntry(static_cast<u64>(font.first), FileSys::ContentRecordType::Data);
@@ -152,11 +156,32 @@ IPlatformServiceManager::IPlatformServiceManager(Core::System& system_, const ch
         // Font offset and size do not account for the header
         const FontRegion region{u32(offset + 8), u32((font_data_u32.size() * sizeof(u32)) - 8)};
         DecryptSharedFont(font_data_u32, impl->shared_font, offset);
-        impl->shared_font_regions.push_back(region);
+        impl->shared_font_regions.back() = region;
     }
 }
 
 IPlatformServiceManager::~IPlatformServiceManager() = default;
+
+Result IPlatformServiceManager::GetBuiltInFontSharedMemory(
+    OutCopyHandle<Kernel::KSharedMemory> out_handle, Out<u32> out_size) {
+    R_TRY(GetSharedMemoryNativeHandle(out_handle));
+    *out_size = static_cast<u32>(impl->shared_font.size());
+    R_SUCCEED();
+}
+
+Result IPlatformServiceManager::GetBuiltInFontData(
+    Out<bool> out_available, Out<BuiltInFontDescriptor> out_descriptor, u8 type, bool option) {
+    LOG_DEBUG(Service_NS, "called, type={}, option={}", type, option);
+    *out_available = false;
+    *out_descriptor = {};
+    // The real glue module (pl:u 2010, dispatcher at 0x5904, implementation reached through vtable slot 0x90 at
+    // 0x82a0) reads the option as one bit and its implementation never uses it, so both values behave
+    // the same. Kirby Air Riders sends option=true for font 4 and aborts on the error otherwise.
+    const auto& region = impl->GetSharedFontRegion(type);
+    *out_available = DescribeBuiltInFont(*out_descriptor, type, region.offset, region.size,
+                                        impl->shared_font.size());
+    R_SUCCEED();
+}
 
 Result IPlatformServiceManager::RequestLoad(SharedFontType type) {
     // Games don't call this so all fonts should be loaded

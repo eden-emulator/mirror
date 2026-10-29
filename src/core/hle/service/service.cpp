@@ -4,12 +4,22 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <chrono>
+#include <cstdlib>
+#include <limits>
+#include <mutex>
+#include <string_view>
+#include <thread>
+#include <vector>
 #include <fmt/ranges.h>
 #include "common/assert.h"
 #include "common/logging.h"
 #include "common/settings.h"
 #include "core/core.h"
 #include "core/hle/ipc.h"
+#include "core/hle/kernel/k_process.h"
+#include "core/hle/kernel/k_thread.h"
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/service.h"
@@ -17,6 +27,79 @@
 #include "core/reporter.h"
 
 namespace Service {
+
+namespace {
+struct DiagRequest {
+    u64 id;
+    std::string service;
+    u32 command;
+    u64 since_ms;
+    bool running;
+};
+std::mutex g_diag_mutex;
+std::vector<DiagRequest> g_diag_requests;
+std::atomic<u64> g_diag_next_id{1};
+
+bool DiagServiceEnabled() {
+    static const bool enabled = [] {
+        const char* value = std::getenv("EDEN_DIAG_SVC");
+        return value != nullptr && *value == '1';
+    }();
+    return enabled;
+}
+
+u64 DiagServiceNowMs() {
+    return static_cast<u64>(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                std::chrono::steady_clock::now().time_since_epoch())
+                                .count());
+}
+
+// Registers a request while it waits for the service lock and while it runs. No-op when unset.
+class DiagRequestScope {
+public:
+    DiagRequestScope(std::string_view service, u32 command) {
+        if (!DiagServiceEnabled()) {
+            return;
+        }
+        m_id = g_diag_next_id++;
+        const std::scoped_lock lock{g_diag_mutex};
+        g_diag_requests.push_back({m_id, std::string{service}, command, DiagServiceNowMs(), false});
+    }
+    ~DiagRequestScope() {
+        if (m_id == 0) {
+            return;
+        }
+        const std::scoped_lock lock{g_diag_mutex};
+        std::erase_if(g_diag_requests, [this](const DiagRequest& r) { return r.id == m_id; });
+    }
+    void Acquired() {
+        if (m_id == 0) {
+            return;
+        }
+        const std::scoped_lock lock{g_diag_mutex};
+        for (auto& r : g_diag_requests) {
+            if (r.id == m_id) {
+                r.running = true;
+                r.since_ms = DiagServiceNowMs();
+            }
+        }
+    }
+
+private:
+    u64 m_id{};
+};
+} // namespace
+
+std::string DescribeInFlightRequests() {
+    std::string text;
+    const std::scoped_lock lock{g_diag_mutex};
+    const u64 now = DiagServiceNowMs();
+    for (const auto& r : g_diag_requests) {
+        text += fmt::format("hle request {} cmd={} {} for {} ms\n", r.service, r.command,
+                            r.running ? "RUNNING" : "waiting for service lock", now - r.since_ms);
+    }
+    return text;
+}
 
 /// @brief Creates a function string for logging, complete with the name (or header code, depending
 /// on what's passed in) the port name, and all the cmd_buf arguments.
@@ -67,6 +150,26 @@ void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx,
         fmt::format_to(std::back_inserter(buf), ", [{}]={:#x}", i, cmd_buf[i]);
     buf.push_back('}');
 
+    if (ctx.GetThread().GetOwnerProcess()->UsesPAuthReturns()) {
+        const auto& context = ctx.GetThread().GetContext();
+        LOG_DEBUG(Service, "Unsupported IPC caller pc={:#x}, lr={:#x}, sp={:#x}, fp={:#x}",
+                  context.pc, context.lr, context.sp, context.fp);
+        u64 frame = context.fp;
+        for (u32 depth = 0; depth < 8 && frame != 0; ++depth) {
+            if (frame > (std::numeric_limits<u64>::max)() - 15 ||
+                !ctx.GetMemory().IsValidVirtualAddress(frame) ||
+                !ctx.GetMemory().IsValidVirtualAddress(frame + 15)) {
+                break;
+            }
+            const u64 next = ctx.GetMemory().Read64(frame);
+            LOG_DEBUG(Service, "Unsupported IPC frame {}: return={:#x}", depth,
+                      ctx.GetMemory().Read64(frame + 8));
+            if (next <= frame) {
+                break;
+            }
+            frame = next;
+        }
+    }
     system.GetReporter().SaveUnimplementedFunctionReport(ctx, ctx.GetCommand(), function_name, service_name);
     UNIMPLEMENTED_MSG("Unknown / unimplemented {}", fmt::to_string(buf));
     if (Settings::values.use_auto_stub) {
@@ -98,7 +201,9 @@ void ServiceFrameworkBase::InvokeRequestTipc(HLERequestContext& ctx) {
 
 Result ServiceFrameworkBase::HandleSyncRequest(Kernel::KServerSession& session,
                                                HLERequestContext& ctx) {
+    DiagRequestScope diag_request{GetServiceName(), ctx.GetCommand()};
     const auto guard = LockService();
+    diag_request.Acquired();
 
     Result result = ResultSuccess;
 

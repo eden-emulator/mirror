@@ -96,6 +96,7 @@ void UtilShaders::ASTCDecode(Image& image, const StagingBufferMap& map,
         glUniform1ui(4, params.x_shift);
         glUniform1ui(5, params.block_height);
         glUniform1ui(6, params.block_height_mask);
+        glUniform1ui(7, params.native_tiling);
 
         // ASTC texture data
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, BINDING_INPUT_BUFFER, map.buffer, input_offset,

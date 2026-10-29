@@ -16,8 +16,7 @@ u32 BehaviorInfo::GetProcessRevisionNum() const {
 }
 
 u32 BehaviorInfo::GetProcessRevision() const {
-    return Common::MakeMagic('R', 'E', 'V',
-                             static_cast<char>(static_cast<u8>('0') + process_revision));
+    return EncodeRevision(process_revision, native_platform);
 }
 
 u32 BehaviorInfo::GetUserRevisionNum() const {
@@ -25,11 +24,12 @@ u32 BehaviorInfo::GetUserRevisionNum() const {
 }
 
 u32 BehaviorInfo::GetUserRevision() const {
-    return Common::MakeMagic('R', 'E', 'V',
-                             static_cast<char>(static_cast<u8>('0') + user_revision));
+    return EncodeRevision(user_revision, native_platform);
 }
 
 void BehaviorInfo::SetUserLibRevision(const u32 user_revision_) {
+    native_platform = IsNativeRevision(user_revision_);
+    process_revision = native_platform ? NativeCurrentRevision : CurrentRevision;
     user_revision = GetRevisionNum(user_revision_);
 }
 

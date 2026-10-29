@@ -143,6 +143,10 @@ void EmitFPExp2(EmitContext& ctx, IR::Inst& inst, std::string_view value) {
     ctx.AddF32("{}=exp2({});", inst, value);
 }
 
+void EmitFPTanh(EmitContext& ctx, IR::Inst& inst, std::string_view value) {
+    ctx.AddF32("{}=tanh({});", inst, value);
+}
+
 void EmitFPLog2(EmitContext& ctx, IR::Inst& inst, std::string_view value) {
     ctx.AddF32("{}=log2({});", inst, value);
 }

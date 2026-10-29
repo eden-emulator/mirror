@@ -241,6 +241,7 @@ void EmitFPNeg64(EmitContext& ctx, IR::Inst& inst, Register value);
 void EmitFPSin(EmitContext& ctx, IR::Inst& inst, ScalarF32 value);
 void EmitFPCos(EmitContext& ctx, IR::Inst& inst, ScalarF32 value);
 void EmitFPExp2(EmitContext& ctx, IR::Inst& inst, ScalarF32 value);
+void EmitFPTanh(EmitContext& ctx, IR::Inst& inst, ScalarF32 value);
 void EmitFPLog2(EmitContext& ctx, IR::Inst& inst, ScalarF32 value);
 void EmitFPRecip32(EmitContext& ctx, IR::Inst& inst, ScalarF32 value);
 void EmitFPRecip64(EmitContext& ctx, Register value);

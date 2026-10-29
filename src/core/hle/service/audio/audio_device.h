@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <unordered_map>
+
 #include "audio_core/renderer/audio_device.h"
 #include "core/hle/service/cmif_types.h"
 #include "core/hle/service/kernel_helpers.h"
@@ -48,6 +50,9 @@ private:
     Result QueryAudioDeviceSystemEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
     Result QueryAudioDeviceInputEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
     Result QueryAudioDeviceOutputEvent(OutCopyHandle<Kernel::KReadableEvent> out_event);
+    Result AcquireAudioOutputDeviceNotification(OutCopyHandle<Kernel::KReadableEvent> out_event,
+                                                u64 notification_id);
+    Result ReleaseAudioOutputDeviceNotification(u64 notification_id);
     Result GetActiveChannelCount(Out<u32> out_active_channel_count);
     Result ListAudioOutputDeviceName(
         OutArray<AudioDevice::AudioDeviceName, BufferAttr_HipcMapAlias> out_names,
@@ -58,6 +63,7 @@ private:
     KernelHelpers::ServiceContext service_context;
     std::unique_ptr<AudioCore::Renderer::AudioDevice> impl;
     Kernel::KEvent* event;
+    std::unordered_map<u64, Kernel::KEvent*> output_notifications;
 };
 
 } // namespace Service::Audio

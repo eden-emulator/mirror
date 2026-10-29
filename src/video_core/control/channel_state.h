@@ -56,12 +56,15 @@ struct ChannelState {
         Engines::Nv01Timer nv01_timer;
         DmaPusher dma_pusher;
     };
+    std::shared_ptr<NativeMacroContext> native_macro_context;
+    std::shared_ptr<MemoryManager> memory_manager_owner;
     std::optional<Payload> payload;
     MemoryManager* memory_manager = nullptr;
 
     s32 bind_id = -1;
     u64 program_id = 0;
     bool initialized = false;
+    bool native_abi = false;
 };
 
 } // namespace Control

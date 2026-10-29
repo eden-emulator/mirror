@@ -7,6 +7,7 @@
 #include "common/logging.h"
 #include "core/core.h"
 #include "core/hle/kernel/k_event.h"
+#include "core/hle/kernel/k_process.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/nfc/common/device.h"
 #include "core/hle/service/nfc/common/device_manager.h"
@@ -41,6 +42,35 @@ void NfcInterface::Initialize(HLERequestContext& ctx) {
         state = State::Initialized;
     } else {
         manager->Finalize();
+    }
+
+    IPC::ResponseBuilder rb{ctx, 2, 0};
+    rb.Push(result);
+}
+
+// Command 300 of nfp:user (real nfc module, dispatcher at 0x5ae0, handler at 0x5f48): a u32, the aruid,
+// the caller's process id (header) and an input buffer of 32-byte elements. The raw aruid must be 0 or
+// the caller's process id, else 0x60a. The element array is forwarded to the implementation with the
+// element count (size / 32) and is not validated by the dispatcher. It is handled as an Initialize;
+// the module's implementation could not be resolved further.
+void NfcInterface::InitializeEx(HLERequestContext& ctx) {
+    IPC::RequestParser rp{ctx};
+    const auto value = rp.Pop<u32>();
+    rp.Pop<u32>();
+    const auto aruid = rp.Pop<u64>();
+    const auto element_count = ctx.GetReadBufferSize(0) / 32;
+    LOG_INFO(Service_NFC, "called, value={:#x}, aruid={}, elements={}", value, aruid, element_count);
+
+    Result result = ResultSuccess;
+    if (aruid != 0 && aruid != system.ApplicationProcess()->GetProcessId()) {
+        result = Result{0x60a};
+    } else {
+        result = GetManager()->Initialize();
+        if (result.IsSuccess()) {
+            state = State::Initialized;
+        } else {
+            GetManager()->Finalize();
+        }
     }
 
     IPC::ResponseBuilder rb{ctx, 2, 0};

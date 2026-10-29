@@ -7,6 +7,7 @@
 #include <openssl/err.h>
 #include <openssl/evp.h>
 
+#include "common/logging.h"
 #include "common/scope_exit.h"
 #include "core/hle/kernel/k_process.h"
 
@@ -207,6 +208,19 @@ struct ProcessContext {
             R_SUCCEED();
         }
 
+        size_t registered = 0;
+        size_t listed = 0;
+        for (size_t i = 0; i < MaxNrrInfos; i++) {
+            if (m_nrr_in_use[i]) {
+                ++registered;
+                listed += m_nrr_infos[i].hashes.size();
+            }
+        }
+        LOG_WARNING(Service_LDR,
+                    "NRO at {:#x} (size {:#x}) is not authorized: sha256={:02x}{:02x}{:02x}{:02x}.., "
+                    "{} NRR registered with {} hashes",
+                    base_address, static_cast<u64>(nro_header->m_size), hash[0], hash[1], hash[2],
+                    hash[3], registered, listed);
         R_THROW(RO::ResultNotAuthorized);
     }
 
@@ -362,11 +376,27 @@ public:
         nrr_info->nrr_heap_address = nrr_address;
         nrr_info->nrr_heap_size = nrr_size;
 
-        // Read NRR hash list.
-        nrr_info->hashes.resize(header.GetNumHashes());
-        process->GetMemory().ReadBlock(nrr_address + header.GetHashesOffset(),
-                                       nrr_info->hashes.data(),
-                                       sizeof(Sha256Hash) * header.GetNumHashes());
+        // Read NRR hash list. Switch 2 NRRs (header bytes 5 and 6 both 1, for example Welcome Tour's
+        // /.nrr/tcn_Release.nrr) carry a longer signature area, so the program id, size, hash list
+        // offset (+0x10) and hash count (+0x14) start at 0x4b0 instead of 0x330 (real ro module
+        // 0x3d68-0x3e24).
+        size_t hashes_offset = header.GetHashesOffset();
+        size_t num_hashes = header.GetNumHashes();
+        u8 layout[8]{};
+        process->GetMemory().ReadBlock(nrr_address, layout, sizeof(layout));
+        if (layout[6] == 1) {
+            constexpr u64 LongBodyOffset = 0x4b0;
+            R_UNLESS(nrr_size >= LongBodyOffset + 0x20, RO::ResultInvalidNrr);
+            hashes_offset = process->GetMemory().Read32(nrr_address + LongBodyOffset + 0x10);
+            num_hashes = process->GetMemory().Read32(nrr_address + LongBodyOffset + 0x14);
+        }
+        R_UNLESS(hashes_offset <= nrr_size && num_hashes <= (nrr_size - hashes_offset) / sizeof(Sha256Hash),
+                 RO::ResultInvalidNrr);
+        nrr_info->hashes.resize(num_hashes);
+        process->GetMemory().ReadBlock(nrr_address + hashes_offset, nrr_info->hashes.data(),
+                                       sizeof(Sha256Hash) * num_hashes);
+        LOG_INFO(Service_LDR, "RegisterModuleInfo: nrr at {:#x} size {:#x}, {} hashes", nrr_address,
+                 nrr_size, nrr_info->hashes.size());
 
         R_SUCCEED();
     }
@@ -393,6 +423,8 @@ public:
 
     Result MapManualLoadModuleMemory(Kernel::KernelCore& kernel, u64* out_address, size_t context_id, u64 nro_address,
                                      u64 nro_size, u64 bss_address, u64 bss_size) {
+        LOG_INFO(Service_LDR, "MapManualLoadModuleMemory: nro {:#x} size {:#x}, bss {:#x} size {:#x}",
+                 nro_address, nro_size, bss_address, bss_size);
         // Get context.
         ProcessContext* context = this->GetContextById(context_id);
         ASSERT(context != nullptr);
@@ -598,6 +630,7 @@ public:
     }
 
     Result RegisterProcessHandle(ClientProcessId client_pid, InCopyHandle<Kernel::KProcess> process) {
+        LOG_INFO(Service_LDR, "RegisterProcessHandle: pid {}", *client_pid);
         // Register the process.
         R_RETURN(m_ro->RegisterProcess(system.Kernel(), std::addressof(m_context_id), process.Get(), *client_pid));
     }

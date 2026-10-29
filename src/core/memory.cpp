@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <mutex>
 #include <span>
@@ -23,11 +24,13 @@
 #include "common/settings.h"
 #include "common/swap.h"
 #include "core/core.h"
+#include "core/arm/arm_interface.h"
 #include "core/device_memory.h"
 #include "core/gpu_dirty_memory_manager.h"
 #include "core/hardware_properties.h"
 #include "core/hle/kernel/k_page_table.h"
 #include "core/hle/kernel/k_process.h"
+#include "core/hle/dlss_trace.h"
 #include "core/memory.h"
 #include "video_core/gpu.h"
 #include "video_core/host1x/gpu_device_memory_manager.h"
@@ -311,12 +314,14 @@ struct Memory::Impl {
             LOG_ERROR(HW_Memory, "Unmapped @ {:#016x} (start address = {:#016x}, size = {})", GetInteger(current_vaddr), GetInteger(addr), size);
         },
         [&](const std::size_t offset, const std::size_t copy_amount, u8* const ptr) {
+            Core::HLE::DlssTrace::WriteWatch("Memory::WriteBlock(plain)", ptr, copy_amount);
             std::memcpy(ptr, reinterpret_cast<u8 const*>(buffer) + offset, copy_amount);
         },
         [&](const Common::ProcessAddress current_vaddr, const std::size_t offset, const std::size_t copy_amount, u8* const ptr) {
             if (!unsafe) {
                 HandleRasterizerWrite(GetInteger(current_vaddr), copy_amount);
             }
+            Core::HLE::DlssTrace::WriteWatch(unsafe ? "Memory::WriteBlockUnsafe" : "Memory::WriteBlock", ptr, copy_amount);
             std::memcpy(ptr, reinterpret_cast<u8 const*>(buffer) + offset, copy_amount);
         });
     }
@@ -327,10 +332,12 @@ struct Memory::Impl {
             LOG_ERROR(HW_Memory, "Unmapped @ {:#016x} (start address = {:#016x}, size = {})", GetInteger(current_vaddr), GetInteger(addr), size);
         },
         [=](const std::size_t offset, const std::size_t copy_amount, u8* const ptr) {
+            Core::HLE::DlssTrace::WriteWatch("Memory::ZeroBlock", ptr, copy_amount);
             std::memset(ptr, 0, copy_amount);
         },
         [&](const Common::ProcessAddress current_vaddr, const std::size_t offset, const std::size_t copy_amount, u8* const ptr) {
             HandleRasterizerWrite(GetInteger(current_vaddr), copy_amount);
+            Core::HLE::DlssTrace::WriteWatch("Memory::ZeroBlock", ptr, copy_amount);
             std::memset(ptr, 0, copy_amount);
         });
     }
@@ -601,6 +608,85 @@ struct Memory::Impl {
         }
     }
 
+    /// Diagnostic only: EDEN_DUMP_NULL_FAULT=1 (with EDEN_LOG_UNMAPPED_PC=1) dumps the registers and the
+    /// memory around the objects they point to on a null-page access, to identify the object involved.
+    void DumpNullFaultObjects(const Kernel::Svc::ThreadContext& ctx) const {
+        static const bool enabled = [] {
+            const char* v = std::getenv("EDEN_DUMP_NULL_FAULT");
+            return v && *v == '1';
+        }();
+        if (!enabled) {
+            return;
+        }
+        const auto read64 = [this](u64 a, bool& mapped) {
+            u64 v{};
+            const u8* ptr = GetPointerSilent(a);
+            mapped = ptr != nullptr;
+            if (ptr) std::memcpy(&v, ptr, sizeof(v));
+            return v;
+        };
+        const auto dump = [&](const char* tag, u64 start, u64 size) {
+            for (u64 off = 0; off < size; off += 0x20) {
+                bool m0{}, m1{}, m2{}, m3{};
+                const u64 a = read64(start + off, m0), b = read64(start + off + 8, m1),
+                          c = read64(start + off + 16, m2), d = read64(start + off + 24, m3);
+                if (!m0) break;
+                LOG_ERROR(HW_Memory, "NullFault {}[{:#x}] {:016x} {:016x} {:016x} {:016x}", tag, start + off, a, b, c, d);
+            }
+        };
+        for (const size_t reg : {size_t{0}, size_t{1}, size_t{19}, size_t{20}, size_t{21}, size_t{22},
+                                 size_t{23}, size_t{24}, size_t{25}, size_t{26}, size_t{27}, size_t{28}}) {
+            const u64 base = ctx.r[reg];
+            LOG_ERROR(HW_Memory, "NullFault x{}={:#x}", reg, base);
+            if (base < 0x100000) continue;
+            if (reg == 1) dump("  ", base - 0x100, 0x300);
+            else dump("  ", base, 0xa0);
+        }
+        dump("stack", ctx.sp, 0x200);
+    }
+
+    /// Diagnostic only: EDEN_LOG_UNMAPPED_PC=1 appends the guest PC/LR and frame chain of the
+    /// faulting core to unmapped access errors.
+    void LogUnmappedGuestPC(u64 addr) const {
+        static const bool enabled = [] {
+            const char* v = std::getenv("EDEN_LOG_UNMAPPED_PC");
+            return v && *v == '1';
+        }();
+        if (!enabled) {
+            return;
+        }
+        auto* process = system.ApplicationProcess();
+        const size_t core = system.GetCurrentHostThreadID();
+        if (process == nullptr || core >= Core::Hardware::NUM_CPU_CORES) {
+            return;
+        }
+        auto* interface = process->GetArmInterface(core);
+        if (interface == nullptr) {
+            return;
+        }
+        Kernel::Svc::ThreadContext ctx{};
+        interface->GetContext(ctx);
+        LOG_ERROR(HW_Memory, "Unmapped access @ {:#x} from guest core={} pc={:#x} lr={:#x} sp={:#x}", addr,
+                  core, ctx.pc, ctx.lr, ctx.sp);
+        if (addr < 0x1000) {
+            DumpNullFaultObjects(ctx);
+        }
+        u64 fp = ctx.fp;
+        for (int depth = 0; depth < 12 && fp != 0; ++depth) {
+            const u8* frame = GetPointerSilent(fp);
+            const u8* frame_lr = GetPointerSilent(fp + 8);
+            if (frame == nullptr || frame_lr == nullptr) {
+                break;
+            }
+            u64 next_fp{};
+            u64 return_address{};
+            std::memcpy(&next_fp, frame, sizeof(next_fp));
+            std::memcpy(&return_address, frame_lr, sizeof(return_address));
+            LOG_ERROR(HW_Memory, "  frame {}: lr={:#x}", depth, return_address);
+            fp = next_fp;
+        }
+    }
+
     [[nodiscard]] u8* GetPointer(const Common::ProcessAddress vaddr) const {
         return GetPointerImpl(
             GetInteger(vaddr),
@@ -622,8 +708,9 @@ struct Memory::Impl {
     template <typename T>
     inline T Read(Common::ProcessAddress vaddr) noexcept requires(std::is_trivially_copyable_v<T>) {
         const u64 addr = GetInteger(vaddr);
-        if (auto const ptr = GetPointerImpl(addr, [addr]() {
+        if (auto const ptr = GetPointerImpl(addr, [this, addr]() {
             LOG_ERROR(HW_Memory, "Unmapped Read{} @ {:#016x}", sizeof(T) * 8, addr);
+            LogUnmappedGuestPC(addr);
         }, [&]() {
             HandleRasterizerDownload(addr, sizeof(T));
         }); ptr) [[likely]] {
@@ -643,10 +730,13 @@ struct Memory::Impl {
     template <typename T>
     inline void Write(Common::ProcessAddress vaddr, const T data) noexcept requires(std::is_trivially_copyable_v<T>) {
         const u64 addr = GetInteger(vaddr);
-        if (auto const ptr = GetPointerImpl(addr, [addr, data]() {
+        if (auto const ptr = GetPointerImpl(addr, [this, addr, data]() {
             LOG_ERROR(HW_Memory, "Unmapped Write{} @ {:#016x} = {:#016x}", sizeof(T) * 8, addr, u64(data));
-        }, [&]() { HandleRasterizerWrite(addr, sizeof(T)); }); ptr) [[likely]]
+            LogUnmappedGuestPC(addr);
+        }, [&]() { HandleRasterizerWrite(addr, sizeof(T)); }); ptr) [[likely]] {
+            Core::HLE::DlssTrace::WriteWatch("Memory::Write<T>", ptr, sizeof(T));
             std::memcpy(ptr, &data, sizeof(T));
+        }
     }
 
     template <typename T>
@@ -659,6 +749,7 @@ struct Memory::Impl {
             },
             [&]() { HandleRasterizerWrite(GetInteger(vaddr), sizeof(T)); });
         if (ptr) {
+            Core::HLE::DlssTrace::WriteWatch("Memory::WriteExclusive<T>", ptr, sizeof(T));
             return Common::AtomicCompareAndSwap(reinterpret_cast<T*>(ptr), data, expected);
         }
         return true;
@@ -673,6 +764,7 @@ struct Memory::Impl {
             },
             [&]() { HandleRasterizerWrite(GetInteger(vaddr), sizeof(u128)); });
         if (ptr) {
+            Core::HLE::DlssTrace::WriteWatch("Memory::WriteExclusive128", ptr, 16);
             return Common::AtomicCompareAndSwap(reinterpret_cast<u64*>(ptr), data, expected);
         }
         return true;

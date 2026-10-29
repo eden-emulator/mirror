@@ -4,7 +4,9 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <sstream>
 #include <fmt/ranges.h>
 
@@ -84,10 +86,17 @@ void Tas::LoadTasFiles() {
 void Tas::LoadTasFile(size_t player_index, size_t file_index) {
     commands[player_index].clear();
 
-    std::string file = Common::FS::ReadStringFromFile(
-        Common::FS::GetEdenPath(Common::FS::EdenPath::TASDir) /
-            fmt::format("script{}-{}.txt", file_index, player_index + 1),
-        Common::FS::FileType::BinaryFile);
+    auto script_path = Common::FS::GetEdenPath(Common::FS::EdenPath::TASDir) /
+                       fmt::format("script{}-{}.txt", file_index, player_index + 1);
+    // EDEN_TAS_SCRIPT=<full path> plays that file instead of script0-1.txt (unattended runs).
+    if (player_index == 0 && file_index == 0) {
+        if (const char* override_path = std::getenv("EDEN_TAS_SCRIPT");
+            override_path != nullptr && override_path[0] != '\0') {
+            script_path = std::filesystem::path{override_path};
+        }
+    }
+    std::string file =
+        Common::FS::ReadStringFromFile(script_path, Common::FS::FileType::BinaryFile);
     std::istringstream command_line(file);
     std::string line;
     int frame_no = 0;

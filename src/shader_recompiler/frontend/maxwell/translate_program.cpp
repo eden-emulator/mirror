@@ -22,6 +22,7 @@
 #include "shader_recompiler/frontend/maxwell/translate_program.h"
 #include "shader_recompiler/host_translate_info.h"
 #include "shader_recompiler/ir_opt/passes.h"
+#include "shader_recompiler/ir_opt/conditional_phi.h"
 
 namespace Shader::Maxwell {
 namespace {
@@ -387,12 +388,13 @@ IR::Program TranslateProgram(ObjectPool<IR::Inst>& inst_pool, ObjectPool<IR::Blo
         Optimization::ConditionalBarrierPass(program);
     }
     Optimization::SsaRewritePass(program);
+    Optimization::ConditionalPhi::Fold(program);
 
     Optimization::ConstantPropagationPass(env, program);
 
     Optimization::PositionPass(env, program);
 
-    Optimization::GlobalMemoryToStorageBufferPass(program, normalized_host_info);
+    Optimization::GlobalMemoryToStorageBufferPass(env, program, normalized_host_info);
     Optimization::GeometryCompactionPass(program, normalized_host_info);
     Optimization::TexturePass(env, program, normalized_host_info);
 
@@ -543,6 +545,7 @@ IR::Program GenerateGeometryPassthrough(ObjectPool<IR::Inst>& inst_pool,
     program.blocks = GenerateBlocks(program.syntax_list);
     program.post_order_blocks = PostOrder(program.syntax_list.front());
     Optimization::SsaRewritePass(program);
+    Optimization::ConditionalPhi::Fold(program);
 
     return program;
 }

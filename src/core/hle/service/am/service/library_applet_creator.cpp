@@ -25,6 +25,7 @@ namespace Service::AM {
 namespace {
 
 bool ShouldCreateGuestApplet(AppletId applet_id) {
+    applet_id = GetFrontendAppletId(applet_id);
 #define X(Name, name)                                                                              \
     if (applet_id == AppletId::Name &&                                                             \
         Settings::values.name##_applet_mode.GetValue() != Settings::AppletMode::LLE) {             \
@@ -138,7 +139,12 @@ std::shared_ptr<ILibraryAppletAccessor> CreateFrontendApplet(Core::System& syste
                                                              std::shared_ptr<Applet> caller_applet,
                                                              AppletId applet_id,
                                                              LibraryAppletMode mode) {
-    const auto program_id = static_cast<u64>(AppletIdToProgramId(applet_id));
+    const auto frontend_id = GetFrontendAppletId(applet_id);
+    const auto program_id = static_cast<u64>(AppletIdToProgramId(frontend_id));
+    if (frontend_id != applet_id) {
+        LOG_INFO(Service_AM, "Using frontend applet {:08X} for applet_id={:08X}",
+                 static_cast<u32>(frontend_id), static_cast<u32>(applet_id));
+    }
 
     auto process = std::make_unique<Process>(system);
     auto applet = std::make_shared<Applet>(system, std::move(process), false);
@@ -150,7 +156,7 @@ std::shared_ptr<ILibraryAppletAccessor> CreateFrontendApplet(Core::System& syste
     auto storage = std::make_shared<AppletDataBroker>(system);
     applet->caller_applet = caller_applet;
     applet->caller_applet_broker = storage;
-    applet->frontend = system.GetFrontendAppletHolder().GetApplet(applet, applet_id, mode);
+    applet->frontend = system.GetFrontendAppletHolder().GetApplet(applet, frontend_id, mode);
     {
         std::scoped_lock lk{caller_applet->lock};
         caller_applet->child_applets.push_back(applet);

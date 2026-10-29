@@ -108,11 +108,12 @@ class GraphicBuffer final : public NvGraphicBuffer {
 public:
     explicit GraphicBuffer(u32 width, u32 height, PixelFormat format, u32 usage);
     explicit GraphicBuffer(Service::Nvidia::NvCore::NvMap& nvmap,
-                           std::shared_ptr<NvGraphicBuffer> buffer);
+                           std::shared_ptr<NvGraphicBuffer> buffer, std::shared_ptr<void> backing_owner = {});
     ~GraphicBuffer();
 
 private:
     Service::Nvidia::NvCore::NvMap* m_nvmap{};
+    std::shared_ptr<void> m_backing_owner;
 };
 
 } // namespace Service::android

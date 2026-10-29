@@ -4,13 +4,16 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
 #include <algorithm>
 #include <array>
 #include <vector>
 #include <boost/container/small_vector.hpp>
 
 #include "common/assert.h"
+#include "common/cityhash.h"
 #include "shader_recompiler/frontend/maxwell/control_flow.h"
+#include "shader_recompiler/exception.h"
 #include "shader_recompiler/object_pool.h"
 #include "video_core/control/channel_state.h"
 #include "video_core/dirty_flags.h"
@@ -26,12 +29,14 @@ namespace VideoCommon {
 
 void ShaderCache::InvalidateRegion(VAddr addr, size_t size) {
     std::scoped_lock lock{invalidation_mutex};
+    DropRejections(addr, size);
     InvalidatePagesInRegion(addr, size);
     RemovePendingShaders();
 }
 
 void ShaderCache::OnCacheInvalidation(VAddr addr, size_t size) {
     std::scoped_lock lock{invalidation_mutex};
+    DropRejections(addr, size);
     InvalidatePagesInRegion(addr, size);
 }
 
@@ -43,7 +48,7 @@ void ShaderCache::SyncGuestHost() {
 ShaderCache::ShaderCache(Tegra::MaxwellDeviceMemoryManager& device_memory_)
     : device_memory{device_memory_} {}
 
-bool ShaderCache::RefreshStages(std::array<u64, 6>& unique_hashes) {
+bool ShaderCache::RefreshStages(std::array<u64, 6>& unique_hashes) try {
     auto& dirty{maxwell3d->dirty.flags};
     if (!dirty[VideoCommon::Dirty::Shaders]) {
         return last_shaders_valid;
@@ -51,6 +56,7 @@ bool ShaderCache::RefreshStages(std::array<u64, 6>& unique_hashes) {
     dirty[VideoCommon::Dirty::Shaders] = false;
 
     const GPUVAddr base_addr{maxwell3d->regs.program_region.Address()};
+    const bool native = maxwell3d->GetNativeMacroEngine().native_turing;
     for (size_t index = 0; index < Tegra::Engines::Maxwell3D::Regs::MaxShaderProgram; ++index) {
         if (!maxwell3d->regs.IsShaderConfigEnabled(index)) {
             unique_hashes[index] = 0;
@@ -63,7 +69,9 @@ bool ShaderCache::RefreshStages(std::array<u64, 6>& unique_hashes) {
             unique_hashes[index] = 0;
             continue;
         }
-        const GPUVAddr shader_addr{base_addr + shader_config.offset};
+        const GPUVAddr shader_addr{native
+            ? (static_cast<u64>(shader_config.reserved[0] & 0xff) << 32) | shader_config.reserved[1]
+            : base_addr + shader_config.offset};
         const std::optional<VAddr> cpu_shader_addr{gpu_memory->GpuToCpuAddress(shader_addr)};
         if (!cpu_shader_addr) {
             LOG_ERROR(HW_GPU, "Invalid GPU address for shader {:#016x}", shader_addr);
@@ -72,15 +80,37 @@ bool ShaderCache::RefreshStages(std::array<u64, 6>& unique_hashes) {
         }
         const ShaderInfo* shader_info{TryGet(*cpu_shader_addr)};
         if (!shader_info) {
-            const u32 start_address{shader_config.offset};
-            GraphicsEnvironment env{*maxwell3d, *gpu_memory, program, base_addr, start_address};
-            shader_info = MakeShaderInfo(env, *cpu_shader_addr);
+            if (native) {
+                ThrowIfRejected(*cpu_shader_addr, shader_addr);
+            }
+            const u32 start_address{native ? 0 : shader_config.offset};
+            try {
+                GraphicsEnvironment env{*maxwell3d, *gpu_memory, program, native ? shader_addr : base_addr, start_address};
+                shader_info = MakeShaderInfo(env, *cpu_shader_addr);
+            } catch (const Shader::Exception& error) {
+                if (native) {
+                    RememberRejection(*cpu_shader_addr, shader_addr, error.what());
+                }
+                throw;
+            }
         }
         shader_infos[index] = shader_info;
         unique_hashes[index] = shader_info->unique_hash;
     }
     last_shaders_valid = true;
     return true;
+} catch (const Shader::Exception& error) {
+    auto& native = maxwell3d->GetNativeMacroEngine();
+    if (!native.native_turing) throw;
+    native.native_execution_failed = true;
+    last_shaders_valid = false;
+    // Rate-limited: the first 32, then every 1024th with the running total.
+    static std::atomic<u64> rejected_native_shaders{};
+    const u64 count = ++rejected_native_shaders;
+    if (count <= 32 || count % 1024 == 0) {
+        LOG_ERROR(HW_GPU, "Native graphics shader rejected: {} (rejections so far: {})", error.what(), count);
+    }
+    return false;
 }
 
 const ShaderInfo* ShaderCache::ComputeShader() {
@@ -93,27 +123,104 @@ const ShaderInfo* ShaderCache::ComputeShader() {
         return nullptr;
     }
     if (const ShaderInfo* const shader = TryGet(*cpu_shader_addr)) {
+        if (!Shader::Ampere::VerifyTrapGuards(shader->native_trap_prefix, [&](u32 bank, u32 offset) {
+                return ReadNativeGuardConstant(*kepler_compute, *gpu_memory, bank, offset);
+            })) throw Shader::RuntimeError("Native compute trap guard failed for the current dispatch");
         return shader;
     }
-    ComputeEnvironment env{*kepler_compute, *gpu_memory, program_base, qmd.program_start};
-    return MakeShaderInfo(env, *cpu_shader_addr);
+    if (kepler_compute->IsNativeMode()) {
+        ThrowIfRejected(*cpu_shader_addr, shader_addr);
+    }
+    try {
+        ComputeEnvironment env{*kepler_compute, *gpu_memory, program_base, qmd.program_start};
+        return MakeShaderInfo(env, *cpu_shader_addr);
+    } catch (const Shader::Exception& error) {
+        if (kepler_compute->IsNativeMode()) {
+            RememberRejection(*cpu_shader_addr, shader_addr, error.what());
+        }
+        throw;
+    }
 }
 
 void ShaderCache::GetGraphicsEnvironments(GraphicsEnvironments& result,
                                           const std::array<u64, NUM_PROGRAMS>& unique_hashes) {
     size_t env_index{};
     const GPUVAddr base_addr{maxwell3d->regs.program_region.Address()};
+    const bool native = maxwell3d->GetNativeMacroEngine().native_turing;
     for (size_t index = 0; index < NUM_PROGRAMS; ++index) {
         if (unique_hashes[index] == 0) {
             continue;
         }
         const auto program{static_cast<Tegra::Engines::Maxwell3D::Regs::ShaderType>(index)};
         auto& env{result.envs[index]};
-        const u32 start_address{maxwell3d->regs.pipelines[index].offset};
-        env = GraphicsEnvironment{*maxwell3d, *gpu_memory, program, base_addr, start_address};
+        const auto& config = maxwell3d->regs.pipelines[index];
+        const u32 start_address{native ? 0 : config.offset};
+        const GPUVAddr address = native
+            ? (static_cast<u64>(config.reserved[0] & 0xff) << 32) | config.reserved[1]
+            : base_addr;
+        env = GraphicsEnvironment{*maxwell3d, *gpu_memory, program, address, start_address};
         env.SetCachedSize(shader_infos[index]->size_bytes);
         result.env_ptrs[env_index++] = &env;
     }
+}
+
+namespace {
+constexpr size_t REJECT_PREFIX_BYTES = 512;
+
+// Number of leading bytes of the shader that are mapped (0 when too little is readable to tell
+// two shaders apart).
+size_t MappedPrefix(const Tegra::MemoryManager& gpu_memory, GPUVAddr gpu_addr) {
+    size_t size = REJECT_PREFIX_BYTES;
+    while (size >= 16 && !gpu_memory.IsFullyMappedRange(gpu_addr, size)) {
+        size /= 2;
+    }
+    return size >= 16 ? size : 0;
+}
+
+u64 PrefixHash(const Tegra::MemoryManager& gpu_memory, GPUVAddr gpu_addr, size_t size) {
+    std::array<u8, REJECT_PREFIX_BYTES> bytes;
+    gpu_memory.ReadBlockUnsafe(gpu_addr, bytes.data(), size);
+    return Common::CityHash64(reinterpret_cast<const char*>(bytes.data()), size);
+}
+} // Anonymous namespace
+
+void ShaderCache::ThrowIfRejected(VAddr cpu_addr, GPUVAddr gpu_addr) {
+    std::string error;
+    {
+        std::scoped_lock lock{lookup_mutex};
+        const auto it = rejected_shaders.find(cpu_addr);
+        if (it == rejected_shaders.end()) {
+            return;
+        }
+        const size_t size = MappedPrefix(*gpu_memory, gpu_addr);
+        if (size == it->second.prefix_size && PrefixHash(*gpu_memory, gpu_addr, size) == it->second.prefix_hash) {
+            error = it->second.error;
+        } else {
+            rejected_shaders.erase(it);
+            return;
+        }
+    }
+    throw Shader::RuntimeError("{}", error);
+}
+
+void ShaderCache::DropRejections(VAddr addr, size_t size) {
+    std::scoped_lock lock{lookup_mutex};
+    for (auto it = rejected_shaders.begin(); it != rejected_shaders.end();) {
+        const auto current = it++;
+        if (current->first < addr + size && addr < current->first + current->second.prefix_size) {
+            rejected_shaders.erase(current);
+        }
+    }
+}
+
+void ShaderCache::RememberRejection(VAddr cpu_addr, GPUVAddr gpu_addr, const char* error) {
+    const size_t size = MappedPrefix(*gpu_memory, gpu_addr);
+    if (size == 0) {
+        return;
+    }
+    const u64 hash = PrefixHash(*gpu_memory, gpu_addr, size);
+    std::scoped_lock lock{lookup_mutex};
+    rejected_shaders.insert_or_assign(cpu_addr, RejectedShader{hash, size, error});
 }
 
 ShaderInfo* ShaderCache::TryGet(VAddr addr) const {
@@ -241,7 +348,8 @@ const ShaderInfo* ShaderCache::MakeShaderInfo(GenericEnvironment& env, VAddr cpu
         info->unique_hash = env.CalculateHash();
         info->size_bytes = env.ReadSizeBytes();
     }
-    const size_t size_bytes{info->size_bytes};
+    info->native_trap_prefix = env.NativeTrapPrefix();
+    const size_t size_bytes{env.SourceSizeBytes() ? env.SourceSizeBytes() : info->size_bytes};
     const ShaderInfo* const result{info.get()};
     Register(std::move(info), cpu_addr, size_bytes);
     return result;

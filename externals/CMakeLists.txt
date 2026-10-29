@@ -21,6 +21,8 @@ set(BUILD_TESTING OFF)
 # Build only static externals
 set(BUILD_SHARED_LIBS OFF)
 
+add_subdirectory(libgav1)
+
 # Skip install rules for all externals
 set_directory_properties(PROPERTIES EXCLUDE_FROM_ALL ON)
 

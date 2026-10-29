@@ -7,7 +7,7 @@
 #include "shader_recompiler/frontend/maxwell/translate/impl/impl.h"
 
 namespace Shader::Maxwell {
-namespace {
+// Exported for the native Ampere frontend.
 // https://forums.developer.nvidia.com/t/reverse-lut-for-lop3-lut/110651
 // Emulate GPU's LOP3.LUT (three-input logic op with 8-bit truth table)
 IR::U32 ApplyLUT(IR::IREmitter& ir, const IR::U32& a, const IR::U32& b, const IR::U32& c,
@@ -542,6 +542,7 @@ IR::U32 ApplyLUT(IR::IREmitter& ir, const IR::U32& a, const IR::U32& b, const IR
     }
     throw NotImplementedException("LOP3 with out of range ttbl");
 }
+namespace {
 
 IR::U32 LOP3(TranslatorVisitor& v, u64 insn, const IR::U32& op_b, const IR::U32& op_c, u64 lut) {
     union {

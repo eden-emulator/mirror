@@ -89,7 +89,7 @@ Result KCapabilities::SetCorePriorityCapability(const u32 cap) {
     ASSERT((m_core_mask & Core::Hardware::VirtualCoreMask) == m_core_mask);
 
     // Set physical core mask.
-    m_phys_core_mask = Core::Hardware::ConvertVirtualCoreMaskToPhysical(m_core_mask);
+    m_phys_core_mask = Core::Hardware::ConvertVirtualCoreMaskToPhysicalRuntime(m_core_mask);
 
     // Set priority mask.
     for (auto prio = min_prio; prio <= max_prio; prio++) {

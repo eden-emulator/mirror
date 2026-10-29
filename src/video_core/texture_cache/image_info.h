@@ -14,6 +14,17 @@ namespace VideoCommon {
 using Tegra::Texture::TICEntry;
 using VideoCore::Surface::PixelFormat;
 
+// Native descriptors address the selected view directly. The legacy NVN
+// layer-base bookkeeping is not an additional array prefix for this ABI.
+inline TICEntry TextureViewHeader(TICEntry entry, bool native) {
+    if (native) {
+        entry.layer_base_0_2.Assign(0);
+        entry.layer_base_3_7.Assign(0);
+        entry.layer_base_8_10.Assign(0);
+    }
+    return entry;
+}
+
 struct ImageInfo {
     ImageInfo() = default;
     explicit ImageInfo(const TICEntry& config) noexcept;
@@ -37,6 +48,7 @@ struct ImageInfo {
     u32 maybe_unaligned_layer_stride = 0;
     u32 num_samples = 1;
     u32 tile_width_spacing = 0;
+    bool native_tiling = false;
     bool rescaleable = false;
     bool downscaleable = false;
     bool forced_flushed = false;

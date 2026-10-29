@@ -23,4 +23,8 @@ namespace Shader::Maxwell {
 [[nodiscard]] IR::U1 FloatingPointCompare(IR::IREmitter& ir, const IR::F16F32F64& operand_1,
                                           const IR::F16F32F64& operand_2, FPCompareOp compare_op,
                                           IR::FpControl control = {});
+
+/// Evaluates a LOP3.LUT three-input logic operation (truth table with A=0xf0, B=0xcc, C=0xaa).
+[[nodiscard]] IR::U32 ApplyLUT(IR::IREmitter& ir, const IR::U32& a, const IR::U32& b,
+                               const IR::U32& c, u64 ttbl);
 } // namespace Shader::Maxwell

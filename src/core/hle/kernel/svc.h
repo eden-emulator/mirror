@@ -13,6 +13,7 @@ class System;
 }
 
 #include <span>
+#include <string>
 
 #include "common/common_types.h"
 #include "core/hle/kernel/svc_types.h"
@@ -22,6 +23,7 @@ namespace Kernel::Svc {
 Result SetHeapSize(Core::System& system, uint64_t* out_address, uint64_t size);
 Result SetMemoryPermission(Core::System& system, uint64_t address, uint64_t size, MemoryPermission perm);
 Result SetMemoryAttribute(Core::System& system, uint64_t address, uint64_t size, uint32_t mask, uint32_t attr);
+Result SetGpuMemoryAttribute(Core::System& system, uint64_t address, uint64_t size, uint32_t mask, uint32_t attr);
 Result MapMemory(Core::System& system, uint64_t dst_address, uint64_t src_address, uint64_t size);
 Result UnmapMemory(Core::System& system, uint64_t dst_address, uint64_t src_address, uint64_t size);
 Result QueryMemory(Core::System& system, uint64_t out_memory_info, PageInfo* out_page_info, uint64_t address);
@@ -504,6 +506,7 @@ enum class SvcId : u32 {
     CreateResourceLimit = 0x7d,
     SetResourceLimitLimitValue = 0x7e,
     CallSecureMonitor = 0x7f,
+    SetGpuMemoryAttribute = 0x80,
     MapInsecureMemory = 0x90,
     UnmapInsecureMemory = 0x91,
 };
@@ -530,6 +533,9 @@ void SvcWrap_SendSyncRequestLight64(Core::System& system, std::span<uint64_t, 8>
 // Defined in svc_secure_monitor_call.cpp.
 void SvcWrap_CallSecureMonitor64From32(Core::System& system, std::span<uint64_t, 8> args);
 void SvcWrap_CallSecureMonitor64(Core::System& system, std::span<uint64_t, 8> args);
+
+// Diagnostic (EDEN_DIAG_SVC=1): the SVC a guest thread is currently inside, for the thread dump.
+std::string DescribeDiagSvc(u64 thread_id);
 
 // Perform a supervisor call by index.
 void Call(Core::System& system, u32 imm);

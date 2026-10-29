@@ -29,12 +29,12 @@ constexpr u32 SWIZZLE_Y_BITS = 0b011010000;
 /// Unswizzles a block linear texture into linear memory.
 void UnswizzleTexture(std::span<u8> output, std::span<const u8> input, u32 bytes_per_pixel,
                       u32 width, u32 height, u32 depth, u32 block_height, u32 block_depth,
-                      u32 stride_alignment = 1);
+                      u32 stride_alignment = 1, bool native_tiling = false);
 
 /// Swizzles linear memory into a block linear texture.
 void SwizzleTexture(std::span<u8> output, std::span<const u8> input, u32 bytes_per_pixel, u32 width,
                     u32 height, u32 depth, u32 block_height, u32 block_depth,
-                    u32 stride_alignment = 1);
+                    u32 stride_alignment = 1, bool native_tiling = false);
 
 /// This function calculates the correct size of a texture depending if it's tiled or not.
 std::size_t CalculateSize(bool tiled, u32 bytes_per_pixel, u32 width, u32 height, u32 depth,
@@ -43,12 +43,12 @@ std::size_t CalculateSize(bool tiled, u32 bytes_per_pixel, u32 width, u32 height
 /// Copies an untiled subrectangle into a tiled surface.
 void SwizzleSubrect(std::span<u8> output, std::span<const u8> input, u32 bytes_per_pixel, u32 width,
                     u32 height, u32 depth, u32 origin_x, u32 origin_y, u32 extent_x, u32 extent_y,
-                    u32 block_height, u32 block_depth, u32 pitch_linear);
+                    u32 block_height, u32 block_depth, u32 pitch_linear, bool native_tiling = false);
 
 /// Copies a tiled subrectangle into a linear surface.
 void UnswizzleSubrect(std::span<u8> output, std::span<const u8> input, u32 bytes_per_pixel,
                       u32 width, u32 height, u32 depth, u32 origin_x, u32 origin_y, u32 extent_x,
-                      u32 extent_y, u32 block_height, u32 block_depth, u32 pitch_linear);
+                      u32 extent_y, u32 block_height, u32 block_depth, u32 pitch_linear, bool native_tiling = false);
 
 /// Obtains the offset of the gob for positions 'dst_x' & 'dst_y'
 u64 GetGOBOffset(u32 width, u32 height, u32 dst_x, u32 dst_y, u32 block_height,

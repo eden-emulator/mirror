@@ -28,6 +28,7 @@
 #include <ranges>
 #include "common/scratch_buffer.h"
 #include "common/slot_vector.h"
+#include "video_core/texture_cache/pending_download.h"
 #include "common/thread_worker.h"
 #include "video_core/compatible_formats.h"
 #include "video_core/control/channel_state_cache.h"
@@ -155,6 +156,16 @@ public:
     /// Notify the cache that a new frame has been queued
     void TickFrame();
 
+    /// Diagnostic (EDEN_DIAG_GPUMEM): live image count, their guest bytes and the tracked usage.
+    void DiagCounts(u64& images, u64& guest_bytes, u64& used) {
+        images = slot_images.size();
+        guest_bytes = 0;
+        for (const auto& [id, image] : slot_images) {
+            guest_bytes += image->guest_size_bytes;
+        }
+        used = total_used_memory;
+    }
+
     /// Return a constant reference to the given image view id
     [[nodiscard]] const ImageView& GetImageView(ImageViewId id) const noexcept;
 
@@ -169,6 +180,8 @@ public:
 
     /// Fill image_view_ids with the graphics/compute images in indices
     void FillImageViews(std::span<ImageViewInOut> views, bool compute, bool blacklist = true);
+
+    bool CaptureNativeGpuTexture(std::span<const ImageViewInOut> views);
 
     /// Handle feedback loops during draws.
     void CheckFeedbackLoop(std::span<const ImageViewInOut> views);
@@ -463,11 +476,7 @@ private:
         size_t size;
     };
 
-    struct PendingDownload {
-        bool is_swizzle;
-        size_t async_buffer_id;
-        Common::SlotId object_id;
-    };
+    using PendingDownload = PendingImageDownload<Image>;
 
     Common::SlotVector<Image> slot_images;
     Common::SlotVector<ImageMapView> slot_map_views;

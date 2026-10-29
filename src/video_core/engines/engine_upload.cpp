@@ -27,6 +27,7 @@ void State::BindRasterizer(VideoCore::RasterizerInterface* rasterizer_) {
 
 void State::ProcessExec(const bool is_linear_) {
     write_offset = 0;
+    flushed_offset = 0;
     copy_size = regs.line_length_in * regs.line_count;
     inner_buffer.resize_destructive(copy_size);
     is_linear = is_linear_;
@@ -39,10 +40,29 @@ void State::ProcessData(const u32 data, const bool is_last_call) {
     if (!is_last_call) {
         return;
     }
+    if (native_partial && is_linear && regs.line_count == 1) {
+        const u32 count = write_offset - flushed_offset;
+        if (count) {
+            rasterizer->AccelerateInlineToMemory(regs.dest.Address() + flushed_offset, count,
+                std::span<const u8>{inner_buffer.data() + flushed_offset, count});
+            flushed_offset = write_offset;
+        }
+        return;
+    }
     ProcessData(inner_buffer);
 }
 
 void State::ProcessData(const u32* data, size_t num_data) {
+    if (native_partial && is_linear && regs.line_count == 1) {
+        const auto count = std::min<size_t>(num_data * sizeof(u32), copy_size - write_offset);
+        if (count) {
+            rasterizer->AccelerateInlineToMemory(regs.dest.Address() + write_offset, count,
+                std::span<const u8>{reinterpret_cast<const u8*>(data), count});
+            write_offset += static_cast<u32>(count);
+            flushed_offset = write_offset;
+        }
+        return;
+    }
     std::span<const u8> read_buffer(reinterpret_cast<const u8*>(data), num_data * sizeof(u32));
     ProcessData(read_buffer);
 }

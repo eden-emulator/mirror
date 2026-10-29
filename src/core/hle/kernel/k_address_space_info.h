@@ -19,7 +19,8 @@ struct KAddressSpaceInfo final {
     };
 
     static std::size_t GetAddressSpaceStart(std::size_t width, Type type);
-    static std::size_t GetAddressSpaceSize(std::size_t width, Type type);
+    static std::size_t GetAddressSpaceSize(std::size_t width, Type type,
+                                               std::size_t physical_memory_size = 0);
 
     const std::size_t bit_width{};
     const std::size_t address{};

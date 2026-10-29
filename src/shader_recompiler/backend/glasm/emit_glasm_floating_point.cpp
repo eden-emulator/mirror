@@ -140,6 +140,28 @@ void EmitFPExp2(EmitContext& ctx, IR::Inst& inst, ScalarF32 value) {
     ctx.Add("EX2 {}.x,{};", inst, value);
 }
 
+void EmitFPTanh(EmitContext& ctx, IR::Inst& inst, ScalarF32 value) {
+    ctx.Add("AND.U RC.x,{1},0x7fffffff;"
+            "MUL.F RC.y,RC.x,RC.x;"
+            "MUL.F RC.z,RC.y,-0.05396825397;"
+            "ADD.F RC.z,RC.z,0.1333333333;"
+            "MAD.F RC.z,RC.z,RC.y,-0.3333333333;"
+            "MUL.F RC.y,RC.y,RC.x;"
+            "MAD.F RC.y,RC.y,RC.z,RC.x;"
+            "MUL.F RC.z,RC.x,-2.885390082;"
+            "EX2 RC.z,RC.z;"
+            "ADD.F RC.w,RC.z,1.0;"
+            "RCP RC.w,RC.w;"
+            "SUB.F RC.z,1.0,RC.z;"
+            "MUL.F RC.z,RC.z,RC.w;"
+            "SLT.U RC.w,RC.x,0x3d800000;"
+            "CMP.S RC.y,RC.w,RC.y,RC.z;"
+            "SLT.U RC.w,RC.x,0x39800000;"
+            "CMP.S RC.y,RC.w,RC.x,RC.y;"
+            "AND.U RC.x,{1},0x80000000;"
+            "OR.U {0}.x,RC.y,RC.x;", inst, value);
+}
+
 void EmitFPLog2(EmitContext& ctx, IR::Inst& inst, ScalarF32 value) {
     ctx.Add("LG2 {}.x,{};", inst, value);
 }

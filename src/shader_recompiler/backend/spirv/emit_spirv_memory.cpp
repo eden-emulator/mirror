@@ -76,22 +76,52 @@ void WriteStorageByCasLoop(EmitContext& ctx, const IR::Value& binding, const IR:
     ctx.OpFunctionCall(ctx.TypeVoid(), ctx.write_storage_cas_loop_func, pointer, value, bit_offset,
                        bit_count);
 }
+
+// Sub-word stores through a raw 64-bit address update the containing aligned word atomically.
+void WriteGlobalSubword(EmitContext& ctx, Id address, Id value, u32 bits) {
+    if (!ctx.profile.support_int64) {
+        LOG_WARNING(Shader_SPIRV, "Int64 not supported, ignoring memory operation");
+        return;
+    }
+    const Id aligned{ctx.OpBitwiseAnd(ctx.U64, address, ctx.Constant(ctx.U64, ~u64{3}))};
+    const Id low{ctx.OpUConvert(ctx.U32[1], address)};
+    const Id byte_in_word{ctx.OpBitwiseAnd(ctx.U32[1], low, ctx.Const(bits == 8 ? 3u : 2u))};
+    const Id shift{ctx.OpShiftLeftLogical(ctx.U32[1], byte_in_word, ctx.Const(3u))};
+    ctx.OpFunctionCall(ctx.void_id, ctx.write_global_subword_func, aligned, value, shift, ctx.Const(bits));
+}
+
+// Sub-word loads through a raw 64-bit address read the containing aligned word and extract the
+// element (little endian); a naturally aligned element never straddles two words.
+Id LoadGlobalSubword(EmitContext& ctx, Id address, u32 bits, bool is_signed) {
+    if (!ctx.profile.support_int64) {
+        LOG_WARNING(Shader_SPIRV, "Int64 not supported, ignoring memory operation");
+        return ctx.Const(0u);
+    }
+    const Id aligned{ctx.OpBitwiseAnd(ctx.U64, address, ctx.Constant(ctx.U64, ~u64{3}))};
+    const Id word{ctx.OpFunctionCall(ctx.U32[1], ctx.load_global_func_u32, aligned)};
+    const Id low{ctx.OpUConvert(ctx.U32[1], address)};
+    const Id byte_in_word{ctx.OpBitwiseAnd(ctx.U32[1], low, ctx.Const(bits == 8 ? 3u : 2u))};
+    const Id shift{ctx.OpShiftLeftLogical(ctx.U32[1], byte_in_word, ctx.Const(3u))};
+    const Id count{ctx.Const(bits)};
+    return is_signed ? ctx.OpBitFieldSExtract(ctx.U32[1], word, shift, count)
+                     : ctx.OpBitFieldUExtract(ctx.U32[1], word, shift, count);
+}
 } // Anonymous namespace
 
-void EmitLoadGlobalU8(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+Id EmitLoadGlobalU8(EmitContext& ctx, Id address) {
+    return LoadGlobalSubword(ctx, address, 8, false);
 }
 
-void EmitLoadGlobalS8(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+Id EmitLoadGlobalS8(EmitContext& ctx, Id address) {
+    return LoadGlobalSubword(ctx, address, 8, true);
 }
 
-void EmitLoadGlobalU16(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+Id EmitLoadGlobalU16(EmitContext& ctx, Id address) {
+    return LoadGlobalSubword(ctx, address, 16, false);
 }
 
-void EmitLoadGlobalS16(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+Id EmitLoadGlobalS16(EmitContext& ctx, Id address) {
+    return LoadGlobalSubword(ctx, address, 16, true);
 }
 
 Id EmitLoadGlobal32(EmitContext& ctx, Id address) {
@@ -118,20 +148,20 @@ Id EmitLoadGlobal128(EmitContext& ctx, Id address) {
     return ctx.Const(0u, 0u, 0u, 0u);
 }
 
-void EmitWriteGlobalU8(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+void EmitWriteGlobalU8(EmitContext& ctx, Id address, Id value) {
+    WriteGlobalSubword(ctx, address, value, 8);
 }
 
-void EmitWriteGlobalS8(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+void EmitWriteGlobalS8(EmitContext& ctx, Id address, Id value) {
+    WriteGlobalSubword(ctx, address, value, 8);
 }
 
-void EmitWriteGlobalU16(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+void EmitWriteGlobalU16(EmitContext& ctx, Id address, Id value) {
+    WriteGlobalSubword(ctx, address, value, 16);
 }
 
-void EmitWriteGlobalS16(EmitContext&) {
-    throw NotImplementedException("SPIR-V Instruction");
+void EmitWriteGlobalS16(EmitContext& ctx, Id address, Id value) {
+    WriteGlobalSubword(ctx, address, value, 16);
 }
 
 void EmitWriteGlobal32(EmitContext& ctx, Id address, Id value) {

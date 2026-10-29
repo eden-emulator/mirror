@@ -122,12 +122,21 @@ Result InfoUpdater::UpdateVoices(VoiceContext& voice_context,
                 u8 flush_wave_buffer_count;
                 u16 reserved2;
                 VoiceInfo::Flags flags;
+                u8 reserved_after_flags;
                 SrcQuality src_quality;
+                u8 crossfade_curve;
                 u32 external_ctx;
                 u32 external_ctx_size;
                 u32 reserved3[2];
             };
+            static_assert(sizeof(VoiceInParameterV2) == 0x188);
+            static_assert(offsetof(VoiceInParameterV2, crossfade_curve) == 0x177);
             const auto* vin = reinterpret_cast<const VoiceInParameterV2*>(input + i * in_stride);
+            if (behaviour.GetUserRevisionNum() >= 16 && vin->in_use && vin->crossfade_curve != 0) {
+                LOG_ERROR(Service_Audio, "Unsupported voice biquad crossfade curve {}",
+                          vin->crossfade_curve);
+                return Service::Audio::ResultInvalidUpdateInfo;
+            }
             local_in.id = vin->id;
             local_in.node_id = vin->node_id;
             local_in.is_new = vin->is_new;

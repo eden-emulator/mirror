@@ -26,7 +26,7 @@ static std::mutex vector_regions_mutex {};
 // Workaround for handling non-commited memory accessed by Dynarmic; usually result of an error
 static LONG WINAPI FakePageFaultHandler(PEXCEPTION_POINTERS info) {
     DWORD code = info->ExceptionRecord->ExceptionCode;
-    u64 exception_addr = reinterpret_cast<u64>(info->ExceptionRecord->ExceptionInformation[1]);
+    u64 exception_addr = static_cast<u64>(info->ExceptionRecord->ExceptionInformation[1]);
 
     if (code != EXCEPTION_ACCESS_VIOLATION || info->ExceptionRecord->ExceptionInformation[0] == 1) {
         // Not our problem

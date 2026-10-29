@@ -853,6 +853,10 @@ F32 IREmitter::FPExp2(const F32& value) {
     return Inst<F32>(Opcode::FPExp2, value);
 }
 
+F32 IREmitter::FPTanh(const F32& value) {
+    return Inst<F32>(Opcode::FPTanh, value);
+}
+
 F32 IREmitter::FPLog2(const F32& value) {
     return Inst<F32>(Opcode::FPLog2, value);
 }

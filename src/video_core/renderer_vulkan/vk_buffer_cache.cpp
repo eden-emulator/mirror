@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "video_core/buffer_cache/buffer_cache_base.h"
+#include "shader_recompiler/exception.h"
 #include "video_core/renderer_vulkan/vk_buffer_cache.h"
 
 #include "video_core/renderer_vulkan/maxwell_to_vk.h"
@@ -545,7 +546,66 @@ void BufferCacheRuntime::ClearBuffer(VkBuffer dest_buffer, u32 offset, size_t si
     });
 }
 
-bool BufferCacheRuntime::BindMultiRangeStorageBuffer(u64 key, bool is_written) {
+void BufferCacheRuntime::FlushStorageWrites() {
+    const bool scatter = std::any_of(storage_batch.begin(), storage_batch.end(),
+        [](const auto& entry) { return entry.written && !entry.ref.sparse; });
+    if (scatter) {
+        PreCopyBarrier();
+        for (const auto& entry : storage_batch) {
+            if (!entry.written || entry.ref.sparse) continue;
+            VkDeviceSize source_offset = 0;
+            for (const auto& source : entry.sources) {
+                const std::array<VideoCommon::BufferCopy, 1> copy{{{
+                    .src_offset = static_cast<u64>(source_offset),
+                    .dst_offset = static_cast<u64>(source.offset),
+                    .size = static_cast<size_t>(source.size),
+                }}};
+                CopyBuffer(source.handle, entry.ref.handle, copy, false);
+                source_offset += source.size;
+            }
+            multi_range_buffers.Invalidate(entry.key);
+        }
+        PostCopyBarrier();
+    }
+    storage_batch.clear();
+}
+
+bool BufferCacheRuntime::BindMultiRangeStorageBuffer(u64 key, bool is_written, u32 offset, u32 size) {
+    if (grouped_storage) {
+        if (multi_range_sources.empty() || !multi_range_total ||
+            offset % GetStorageBufferAlignment() || u64{offset} + size > multi_range_total)
+            throw Shader::RuntimeError("Invalid grouped storage view");
+        auto entry = std::find_if(storage_batch.begin(), storage_batch.end(),
+            [&](const auto& candidate) { return candidate.key == key; });
+        if (entry == storage_batch.end()) {
+            const MultiRangeRef ref = multi_range_buffers.Get(device, scheduler, memory_allocator,
+                key, multi_range_sources, multi_range_total);
+            if (ref.handle == VK_NULL_HANDLE) throw Shader::RuntimeError("Grouped storage allocation failed");
+            storage_batch.push_back({key, ref,
+                std::vector<MultiRangeSource>(multi_range_sources.begin(), multi_range_sources.end()), is_written});
+            entry = std::prev(storage_batch.end());
+            if (!ref.sparse) {
+                PreCopyBarrier();
+                VkDeviceSize destination_offset = 0;
+                for (const auto& source : entry->sources) {
+                    const std::array<VideoCommon::BufferCopy, 1> copy{{{
+                        .src_offset = static_cast<u64>(source.offset),
+                        .dst_offset = static_cast<u64>(destination_offset),
+                        .size = static_cast<size_t>(source.size),
+                    }}};
+                    CopyBuffer(ref.handle, source.handle, copy, false);
+                    destination_offset += source.size;
+                }
+                PostCopyBarrier();
+                multi_range_buffers.MarkGathered(key);
+            }
+        } else {
+            entry->written |= is_written;
+        }
+        guest_descriptor_queue.AddBuffer(entry->ref.handle, entry->ref.address, offset, size);
+        return true;
+    }
+
     if (multi_range_sources.empty() || multi_range_total == 0) {
         return false;
     }

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <utility>
 #include <memory>
 #include <optional>
 #include <string>
@@ -205,6 +206,19 @@ void RendererVulkan::Composite(std::span<const Tegra::FramebufferConfig> framebu
     SCOPE_EXIT {
         render_window.OnFrameDisplayed();
     };
+
+    // Swapchain::Create leaves the format undefined while the surface has a zero extent (for
+    // example a minimized window). Creating the present frame image with VK_FORMAT_UNDEFINED
+    // makes the NVIDIA driver divide by zero, and there is no swapchain to present to anyway.
+    // This also covers the applet capture frame, which is allocated through the same present
+    // manager.
+    if (swapchain.GetImageFormat() == VK_FORMAT_UNDEFINED) {
+        static bool logged = false;
+        if (!std::exchange(logged, true)) {
+            LOG_WARNING(Render_Vulkan, "Skipping composite while the swapchain has no format");
+        }
+        return;
+    }
 
     RenderAppletCaptureLayer(framebuffers);
 

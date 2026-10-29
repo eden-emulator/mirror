@@ -7,6 +7,8 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <vector>
 #include "common/bit_field.h"
 #include "common/common_funcs.h"
@@ -20,7 +22,10 @@ namespace Core::Memory {
 class Memory;
 }
 
+namespace Kernel { class KProcess; }
+
 namespace Tegra {
+struct NativeMacroContext;
 namespace Control {
 struct ChannelState;
 }
@@ -58,9 +63,12 @@ public:
     void OnClose(DeviceFD fd) override;
 
     Kernel::KEvent* QueryEvent(u32 event_id) override;
+    NvResult BindToTsg(DeviceFD group, Kernel::KProcess* process, std::shared_ptr<Tegra::NativeMacroContext> macros, u32 subcontext = 0);
+    void UnbindFromTsg(DeviceFD group);
 
 private:
     friend class nvhost_as_gpu;
+    bool UsesNativeAbi() const;
     enum class CtxClasses : u32_le {
         Ctx2D = 0x902D,
         Ctx3D = 0xB197,
@@ -157,6 +165,12 @@ private:
     };
     static_assert(sizeof(IoctlAllocObjCtx) == 16, "IoctlAllocObjCtx is incorrect size");
 
+    struct IoctlPreemptionModes {
+        u32_le graphics{};
+        u32_le compute{};
+    };
+    static_assert(sizeof(IoctlPreemptionModes) == 8);
+
     struct IoctlSubmitGpfifo {
         u64_le address{};     // pointer to gpfifo entry structs
         u32_le num_entries{}; // number of fence objects being submitted
@@ -185,6 +199,8 @@ private:
     std::array<std::optional<IoctlAllocObjCtx>, 6> ctxObjs{};
     u32_le channel_priority{};
     u32_le channel_timeslice{};
+    u32 graphics_preemption_mode{1};
+    u32 compute_preemption_mode{1};
 
     NvResult SetNVMAPfd(IoctlSetNvmapFD& params);
     NvResult SetClientData(IoctlClientData& params);
@@ -211,6 +227,7 @@ private:
     NvResult GetWaitbase(IoctlGetWaitbase& params);
     NvResult ChannelSetTimeout(IoctlChannelSetTimeout& params);
     NvResult ChannelSetTimeslice(IoctlSetTimeslice& params);
+    NvResult SetPreemptionModes(IoctlPreemptionModes& params);
 
     EventInterface& events_interface;
     NvCore::Container& core;
@@ -218,6 +235,10 @@ private:
     NvCore::NvMap& nvmap;
     std::shared_ptr<Tegra::Control::ChannelState> channel_state;
     ::Common::unordered_map<DeviceFD, NvCore::SessionId> sessions;
+    std::mutex tsg_mutex;
+    std::optional<DeviceFD> tsg_group;
+    u32 tsg_subcontext{};
+    u32 native_submit_logs{};
     u32 channel_syncpoint;
     std::mutex channel_mutex;
 
