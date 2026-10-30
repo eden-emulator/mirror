@@ -114,12 +114,6 @@ public:
     /// Notify rasterizer that any caches of the specified region are desync with guest
     virtual void OnCacheInvalidation(PAddr addr, u64 size) = 0;
 
-    virtual bool TryCacheInvalidation(DAddr addr, u64 size) {
-        if (MustFlushRegion(addr, size, VideoCommon::CacheType::BufferCache)) return false;
-        OnCacheInvalidation(addr, size);
-        return true;
-    }
-
     virtual bool OnCPUWrite(PAddr addr, u64 size) = 0;
 
     /// Sync memory between guest and host.
