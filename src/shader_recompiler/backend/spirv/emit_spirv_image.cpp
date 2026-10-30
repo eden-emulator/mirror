@@ -6,7 +6,6 @@
 
 #include <boost/container/static_vector.hpp>
 
-#include "common/settings.h"
 #include "shader_recompiler/backend/spirv/emit_spirv.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
@@ -590,11 +589,6 @@ Id EmitImageSampleExplicitLod(EmitContext& ctx, IR::Inst* inst, const IR::Value&
     Id result = Emit(&EmitContext::OpImageSparseSampleExplicitLod,
                      &EmitContext::OpImageSampleExplicitLod, ctx, inst, result_type,
                      Texture(ctx, info, index), coords, operands.Mask(), operands.Span());
-#ifdef __ANDROID__
-    if (!is_integer && Settings::values.fix_bloom_effects.GetValue()) {
-        result = ctx.OpVectorTimesScalar(ctx.F32[4], result, ctx.Const(0.98f));
-    }
-#endif
     return is_integer ? ctx.OpBitcast(ctx.F32[4], result) : result;
 }
 
