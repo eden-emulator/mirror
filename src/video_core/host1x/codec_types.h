@@ -312,6 +312,10 @@ struct Vp9PictureInfo {
     bool allow_high_precision_mv;
     bool segment_enabled;
     bool mode_ref_delta_enabled;
+
+    Segmentation segmentation;
+    std::array<u8, 7> seg_tree_probs;
+    std::array<u8, 3> seg_pred_probs;
 };
 
 struct Vp9FrameContainer {
@@ -377,6 +381,10 @@ struct PictureInfo {
             .allow_high_precision_mv = allow_high_precision_mv != 0,
             .segment_enabled = segmentation.enabled != 0,
             .mode_ref_delta_enabled = loop_filter.mode_ref_delta_enabled != 0,
+
+            .segmentation = segmentation,
+            .seg_tree_probs = {},
+            .seg_pred_probs = {},
         };
     }
 };

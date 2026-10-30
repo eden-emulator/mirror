@@ -331,19 +331,16 @@ void VP9::WriteMvProbabilityUpdate(VpxRangeEncoder& writer, u8 new_prob, u8 old_
 }
 
 void VP9::WriteSegmentation(VpxBitStreamWriter& writer) {
-    bool enabled = current_picture_info.segmentation.enabled != 0;
+    bool enabled = current_frame_info.segmentation.enabled != 0;
     writer.WriteBit(enabled);
     if (!enabled) {
         return;
     }
 
-    auto update_map = current_picture_info.segmentation.update_map != 0;
+    auto update_map = current_frame_info.segmentation.update_map != 0;
     writer.WriteBit(update_map);
 
     if (update_map) {
-        EntropyProbs entropy_probs{};
-        host1x.gmmu_manager.ReadBlock(regs.vp9_prob_tab_buffer_offset.Address(), &entropy_probs, sizeof(entropy_probs));
-
         auto WriteProb = [&](u8 prob) {
             bool coded = prob != 255;
             writer.WriteBit(coded);
@@ -352,55 +349,55 @@ void VP9::WriteSegmentation(VpxBitStreamWriter& writer) {
             }
         };
 
-        for (size_t i = 0; i < entropy_probs.mb_segment_tree_probs.size(); i++) {
-            WriteProb(entropy_probs.mb_segment_tree_probs[i]);
+        for (size_t i = 0; i < current_frame_info.seg_tree_probs.size(); i++) {
+            WriteProb(current_frame_info.seg_tree_probs[i]);
         }
 
-        auto temporal_update = current_picture_info.segmentation.temporal_update != 0;
+        auto temporal_update = current_frame_info.segmentation.temporal_update != 0;
         writer.WriteBit(temporal_update);
 
         if (temporal_update) {
             for (s32 i = 0; i < 3; i++) {
-                WriteProb(entropy_probs.segment_pred_probs[i]);
+                WriteProb(current_frame_info.seg_pred_probs[i]);
             }
         }
     }
 
-    if (last_segmentation == current_picture_info.segmentation) {
+    if (last_segmentation == current_frame_info.segmentation) {
         writer.WriteBit(false);
         return;
     }
 
-    last_segmentation = current_picture_info.segmentation;
+    last_segmentation = current_frame_info.segmentation;
     writer.WriteBit(true);
-    writer.WriteBit(current_picture_info.segmentation.abs_delta != 0);
+    writer.WriteBit(current_frame_info.segmentation.abs_delta != 0);
 
     constexpr s32 MAX_SEGMENTS = 8;
     constexpr std::array SegmentationFeatureBits = {8, 6, 2, 0};
 
     for (s32 i = 0; i < MAX_SEGMENTS; i++) {
-        auto q_enabled = current_picture_info.segmentation.feature_enabled[i][0] != 0;
+        auto q_enabled = current_frame_info.segmentation.feature_enabled[i][0] != 0;
         writer.WriteBit(q_enabled);
         if (q_enabled) {
-            writer.WriteS(current_picture_info.segmentation.feature_data[i][0],
+            writer.WriteS(current_frame_info.segmentation.feature_data[i][0],
                           SegmentationFeatureBits[0]);
         }
 
-        auto lf_enabled = current_picture_info.segmentation.feature_enabled[i][1] != 0;
+        auto lf_enabled = current_frame_info.segmentation.feature_enabled[i][1] != 0;
         writer.WriteBit(lf_enabled);
         if (lf_enabled) {
-            writer.WriteS(current_picture_info.segmentation.feature_data[i][1],
+            writer.WriteS(current_frame_info.segmentation.feature_data[i][1],
                           SegmentationFeatureBits[1]);
         }
 
-        auto ref_enabled = current_picture_info.segmentation.feature_enabled[i][2] != 0;
+        auto ref_enabled = current_frame_info.segmentation.feature_enabled[i][2] != 0;
         writer.WriteBit(ref_enabled);
         if (ref_enabled) {
-            writer.WriteU(current_picture_info.segmentation.feature_data[i][2],
+            writer.WriteU(current_frame_info.segmentation.feature_data[i][2],
                           SegmentationFeatureBits[2]);
         }
 
-        auto skip_enabled = current_picture_info.segmentation.feature_enabled[i][3] != 0;
+        auto skip_enabled = current_frame_info.segmentation.feature_enabled[i][3] != 0;
         writer.WriteBit(skip_enabled);
     }
 }
@@ -410,6 +407,14 @@ Vp9PictureInfo VP9::GetVp9PictureInfo() {
     Vp9PictureInfo vp9_info = current_picture_info.Convert();
 
     InsertEntropy(regs.vp9_prob_tab_buffer_offset.Address(), vp9_info.entropy);
+
+    EntropyProbs entropy_probs{};
+    host1x.gmmu_manager.ReadBlock(regs.vp9_prob_tab_buffer_offset.Address(),
+                                  &entropy_probs, sizeof(entropy_probs));
+
+    vp9_info.seg_tree_probs = entropy_probs.mb_segment_tree_probs;
+    vp9_info.seg_pred_probs = entropy_probs.segment_pred_probs;
+
 
     // surface_luma_offset[0:3] contains the address of the reference frame offsets in the following
     // order: last, golden, altref, current.
