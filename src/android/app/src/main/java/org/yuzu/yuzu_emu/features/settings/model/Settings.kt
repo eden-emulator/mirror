@@ -15,6 +15,7 @@ object Settings {
         SECTION_POST_PROCESSING(R.string.post_processing),
         SECTION_PERFORMANCE_STATS(R.string.stats_overlay_options),
         SECTION_INPUT_OVERLAY(R.string.input_overlay_options),
+        SECTION_OVERLAY_COLOR(R.string.overlay_color_customize),
         SECTION_SOC_OVERLAY(R.string.soc_overlay_options),
         SECTION_AUDIO(R.string.preferences_audio),
         SECTION_INPUT(R.string.preferences_controls),
