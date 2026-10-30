@@ -22,6 +22,7 @@ import org.yuzu.yuzu_emu.databinding.ActivitySettingsBinding
 import org.yuzu.yuzu_emu.utils.DirectoryInitialization
 import org.yuzu.yuzu_emu.utils.FullscreenHelper
 import org.yuzu.yuzu_emu.utils.InsetsHelper
+import org.yuzu.yuzu_emu.ui.main.ThemeProvider
 import org.yuzu.yuzu_emu.utils.ThemeHelper
 
 enum class SettingsSubscreen {
@@ -39,17 +40,25 @@ enum class SettingsSubscreen {
     ADDONS,
 }
 
-class SettingsSubscreenActivity : AppCompatActivity() {
+class SettingsSubscreenActivity : AppCompatActivity(), ThemeProvider {
     private lateinit var binding: ActivitySettingsBinding
 
     private val args by navArgs<SettingsSubscreenActivityArgs>()
+
+    override var themeId: Int = 0
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(YuzuApplication.applyLanguage(base))
     }
 
+    override fun setTheme(resId: Int) {
+        super.setTheme(resId)
+        themeId = resId
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeHelper.setTheme(this)
+        ThemeHelper.registerForThemeUpdates(this)
 
         super.onCreate(savedInstanceState)
 
@@ -58,14 +67,12 @@ class SettingsSubscreenActivity : AppCompatActivity() {
 
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
-        if (savedInstanceState == null) {
-            val navController = navHostFragment.navController
-            val navGraph = navController.navInflater.inflate(
-                R.navigation.settings_subscreen_navigation
-            )
-            navGraph.setStartDestination(resolveStartDestination())
-            navController.setGraph(navGraph, createStartDestinationArgs())
-        }
+        val navController = navHostFragment.navController
+        val navGraph = navController.navInflater.inflate(
+            R.navigation.settings_subscreen_navigation
+        )
+        navGraph.setStartDestination(resolveStartDestination())
+        navController.setGraph(navGraph, createStartDestinationArgs())
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
@@ -103,6 +110,9 @@ class SettingsSubscreenActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (ThemeHelper.syncThemeConfiguration(this)) {
+            return
+        }
         applyFullscreenPreference()
     }
 

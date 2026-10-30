@@ -28,10 +28,12 @@ import org.yuzu.yuzu_emu.databinding.ActivitySettingsBinding
 import org.yuzu.yuzu_emu.features.input.NativeInput
 import org.yuzu.yuzu_emu.features.settings.utils.SettingsFile
 import org.yuzu.yuzu_emu.fragments.ResetSettingsDialogFragment
+import org.yuzu.yuzu_emu.ui.main.ThemeProvider
 import org.yuzu.yuzu_emu.utils.*
 import org.yuzu.yuzu_emu.utils.collect
 
-class SettingsActivity : AppCompatActivity() {
+class SettingsActivity : AppCompatActivity(), ThemeProvider {
+    override var themeId: Int = 0
     private lateinit var binding: ActivitySettingsBinding
 
     private val args by navArgs<SettingsActivityArgs>()
@@ -42,8 +44,14 @@ class SettingsActivity : AppCompatActivity() {
         super.attachBaseContext(YuzuApplication.applyLanguage(base))
     }
 
+    override fun setTheme(resId: Int) {
+        super.setTheme(resId)
+        themeId = resId
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemeHelper.setTheme(this)
+        ThemeHelper.registerForThemeUpdates(this)
 
         super.onCreate(savedInstanceState)
 
@@ -78,7 +86,11 @@ class SettingsActivity : AppCompatActivity() {
         settingsViewModel.shouldRecreate.collect(
             this,
             resetState = { settingsViewModel.setShouldRecreate(false) }
-        ) { if (it) recreate() }
+        ) {
+            if (it) {
+                ThemeHelper.safeRecreate(this)
+            }
+        }
         settingsViewModel.shouldNavigateBack.collect(
             this,
             resetState = { settingsViewModel.setShouldNavigateBack(false) }
@@ -125,6 +137,9 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (ThemeHelper.syncThemeConfiguration(this)) {
+            return
+        }
         applyFullscreenPreference()
     }
 

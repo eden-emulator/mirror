@@ -24,6 +24,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.findNavController
 import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback
 import com.google.android.material.transition.MaterialFadeThrough
 import org.yuzu.yuzu_emu.NativeLibrary
@@ -42,13 +43,15 @@ import org.yuzu.yuzu_emu.model.SetupPage
 import org.yuzu.yuzu_emu.model.PageState
 import org.yuzu.yuzu_emu.ui.main.MainActivity
 import org.yuzu.yuzu_emu.utils.DirectoryInitialization
+import org.yuzu.yuzu_emu.utils.FirmwareHelper
+import org.yuzu.yuzu_emu.utils.GameHelper
 import org.yuzu.yuzu_emu.utils.LosslessScalingHelper
 import org.yuzu.yuzu_emu.utils.NativeConfig
 import org.yuzu.yuzu_emu.utils.ViewUtils
 import org.yuzu.yuzu_emu.utils.ViewUtils.setVisible
 import org.yuzu.yuzu_emu.utils.collect
 
-class SetupFragment : Fragment() {
+class SetupFragment : Fragment(), SetupCallback {
     private var _binding: FragmentSetupBinding? = null
     private val binding get() = _binding!!
 
@@ -61,12 +64,11 @@ class SetupFragment : Fragment() {
 
     private lateinit var pages: MutableList<SetupPage>
 
-    private lateinit var pageButtonCallback: SetupCallback
-
     companion object {
         const val KEY_NEXT_VISIBILITY = "NextButtonVisibility"
         const val KEY_BACK_VISIBILITY = "BackButtonVisibility"
         const val KEY_HAS_BEEN_WARNED = "HasBeenWarned"
+        private const val EMULATOR_DATA_PAGE_INDEX = 1
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -117,7 +119,6 @@ class SetupFragment : Fragment() {
                                     R.string.notifications,
                                     R.string.notifications_description,
                                     {
-                                        pageButtonCallback = it
                                         permissionLauncher.launch(
                                             Manifest.permission.POST_NOTIFICATIONS
                                         )
@@ -160,7 +161,6 @@ class SetupFragment : Fragment() {
                                 R.string.keys,
                                 R.string.keys_description,
                                 {
-                                    pageButtonCallback = it
                                     getProdKey.launch(arrayOf("*/*"))
                                 },
                                 {
@@ -186,11 +186,10 @@ class SetupFragment : Fragment() {
                                 R.string.firmware,
                                 R.string.firmware_description,
                                 {
-                                    pageButtonCallback = it
                                     getFirmware.launch(arrayOf("application/zip"))
                                 },
                                 {
-                                    if (NativeLibrary.isFirmwareAvailable()) {
+                                    if (FirmwareHelper.isFirmwareSetupStepComplete()) {
                                         ButtonState.BUTTON_ACTION_COMPLETE
                                     } else {
                                         ButtonState.BUTTON_ACTION_INCOMPLETE
@@ -209,7 +208,6 @@ class SetupFragment : Fragment() {
                                 R.string.lossless_scaling,
                                 R.string.lossless_scaling_setup_description,
                                 {
-                                    pageButtonCallback = it
                                     getLosslessDll.launch(arrayOf("*/*"))
                                 },
                                 {
@@ -227,8 +225,7 @@ class SetupFragment : Fragment() {
                                 R.string.games,
                                 R.string.games_description,
                                 {
-                                    pageButtonCallback = it
-                                    getGamesDirectory.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).data)
+                                    getGamesDirectory.launch(null)
                                 },
                                 {
                                     if (NativeConfig.getGameDirs().isNotEmpty()) {
@@ -250,7 +247,7 @@ class SetupFragment : Fragment() {
                             DirectoryInitialization.userDirectory + "/keys/prod.keys"
                         )
                         if (file.exists() && NativeLibrary.areKeysPresent() &&
-                            NativeLibrary.isFirmwareAvailable() && NativeConfig.getGameDirs()
+                            FirmwareHelper.isFirmwareReady() && NativeConfig.getGameDirs()
                                 .isNotEmpty()
                         ) {
                             PageState.COMPLETE
@@ -294,7 +291,7 @@ class SetupFragment : Fragment() {
         ) { if (it) checkForButtonState.invoke() }
 
         binding.viewPager2.apply {
-            adapter = SetupAdapter(requireActivity() as AppCompatActivity, pages)
+            adapter = SetupAdapter(requireActivity() as AppCompatActivity, pages, this@SetupFragment)
             offscreenPageLimit = 2
             isUserInputEnabled = false
         }
@@ -392,6 +389,12 @@ class SetupFragment : Fragment() {
         setInsets()
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (_binding != null && binding.viewPager2.currentItem == EMULATOR_DATA_PAGE_INDEX) {
+            syncSetupPageUi(animateComplete = false)
+        }
+    }
 
     override fun onStop() {
         super.onStop()
@@ -410,20 +413,35 @@ class SetupFragment : Fragment() {
         _binding = null
     }
 
-    private val checkForButtonState: () -> Unit = {
-        val page = pages[binding.viewPager2.currentItem]
-        page.pageButtons?.forEach {
-            if (it.buttonState() == ButtonState.BUTTON_ACTION_COMPLETE) {
-                pageButtonCallback.onStepCompleted(
-                    it.titleId,
-                    pageFullyCompleted = false
-                )
-            }
+    override fun onStepCompleted(pageButtonId: Int, pageFullyCompleted: Boolean) {
+        syncSetupPageUi(animateComplete = pageFullyCompleted)
+    }
 
-            if (page.pageSteps() == PageState.COMPLETE) {
-                pageButtonCallback.onStepCompleted(0, pageFullyCompleted = true)
+    private fun syncSetupPageUi(animateComplete: Boolean = true) {
+        if (_binding == null) {
+            return
+        }
+        if (binding.viewPager2.currentItem != EMULATOR_DATA_PAGE_INDEX) {
+            return
+        }
+        binding.viewPager2.post {
+            if (_binding == null) {
+                return@post
+            }
+            val recyclerView = binding.viewPager2.getChildAt(0) as? RecyclerView ?: return@post
+            val holder =
+                recyclerView.findViewHolderForAdapterPosition(EMULATOR_DATA_PAGE_INDEX)
+            if (holder is SetupAdapter.SetupPageViewHolder) {
+                holder.refreshStepUi(pages[EMULATOR_DATA_PAGE_INDEX], animateComplete)
             }
         }
+    }
+
+    private val checkForButtonState: () -> Unit = checkForButtonState@{
+        if (_binding == null) {
+            return@checkForButtonState
+        }
+        syncSetupPageUi(animateComplete = true)
     }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -447,8 +465,14 @@ class SetupFragment : Fragment() {
     val getProdKey =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { result ->
             if (result != null) {
-                mainActivity.processKey(result, "keys")
+                mainActivity.processKey(
+                    result,
+                    "keys",
+                    dialogFragmentManager = childFragmentManager,
+                    reloadGameLibrary = false,
+                )
                 if (NativeLibrary.areKeysPresent()) {
+                    NativeLibrary.initializeSystem(true)
                     checkForButtonState.invoke()
                 }
             }
@@ -457,11 +481,15 @@ class SetupFragment : Fragment() {
     val getFirmware =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { result ->
             if (result != null) {
-                mainActivity.processFirmware(result) {
-                    if (NativeLibrary.isFirmwareAvailable()) {
-                        checkForButtonState.invoke()
-                    }
-                }
+                mainActivity.processFirmware(
+                    result,
+                    onComplete = { success ->
+                        if (success) {
+                            checkForButtonState.invoke()
+                        }
+                    },
+                    dialogFragmentManager = childFragmentManager,
+                )
             }
         }
 
@@ -494,7 +522,7 @@ class SetupFragment : Fragment() {
     val getGamesDirectory =
         registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { result ->
             if (result != null) {
-                mainActivity.processGamesDir(result)
+                mainActivity.processGamesDir(result, dialogFragmentManager = childFragmentManager)
             }
         }
 
@@ -502,8 +530,14 @@ class SetupFragment : Fragment() {
         PreferenceManager.getDefaultSharedPreferences(YuzuApplication.appContext)
             .edit()
             .putBoolean(Settings.PREF_FIRST_APP_LAUNCH, false)
-            .apply()
+            .commit()
 
+        GameHelper.clearSerializedGameCache()
+        NativeConfig.saveGlobalConfig()
+        if (NativeLibrary.areKeysPresent()) {
+            NativeLibrary.reloadKeys()
+        }
+        NativeLibrary.initializeSystem(true)
         gamesViewModel.reloadGames(directoriesChanged = true, firstStartup = false)
 
         mainActivity.finishSetup(binding.root.findNavController())

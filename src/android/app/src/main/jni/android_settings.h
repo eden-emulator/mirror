@@ -216,6 +216,9 @@ namespace AndroidSettings {
                                                         "enable_quick_settings",
                                                         Settings::Category::Android, Settings::Specialization::Default, true,
                                                       false};
+        Settings::Setting<bool> legacy_yuzu_ui{linkage, false, "legacy_yuzu_ui",
+                                                Settings::Category::Android,
+                                                Settings::Specialization::Default, true, false};
     };
 
     extern Values values;

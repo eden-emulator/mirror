@@ -7,6 +7,7 @@
 package org.yuzu.yuzu_emu.features.settings.model
 
 import org.yuzu.yuzu_emu.utils.NativeConfig
+import org.yuzu.yuzu_emu.utils.ThemeHelper
 
 enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     AUDIO_MUTED("audio_muted"),
@@ -92,7 +93,8 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     GPU_LOG_MEMORY_TRACKING("gpu_log_memory_tracking"),
     GPU_LOG_DRIVER_DEBUG("gpu_log_driver_debug"),
 
-    ENABLE_QUICK_SETTINGS("enable_quick_settings");
+    ENABLE_QUICK_SETTINGS("enable_quick_settings"),
+    LEGACY_YUZU_UI("legacy_yuzu_ui");
 
     //external fun isFrameSkippingEnabled(): Boolean
     external fun isFrameInterpolationEnabled(): Boolean
@@ -105,6 +107,9 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
             global = false
         }
         NativeConfig.setBoolean(key, value)
+        if (this == BLACK_BACKGROUNDS) {
+            ThemeHelper.markThemeConfigurationChanged()
+        }
     }
 
     override val defaultValue: Boolean by lazy { NativeConfig.getDefaultToString(key).toBoolean() }

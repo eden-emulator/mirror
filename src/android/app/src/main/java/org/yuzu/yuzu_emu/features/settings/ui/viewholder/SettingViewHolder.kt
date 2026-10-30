@@ -4,7 +4,10 @@
 package org.yuzu.yuzu_emu.features.settings.ui.viewholder
 
 import android.view.View
+import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.materialswitch.MaterialSwitch
 import org.yuzu.yuzu_emu.databinding.ListItemSettingBinding
 import org.yuzu.yuzu_emu.databinding.ListItemSettingSwitchBinding
 import org.yuzu.yuzu_emu.features.settings.model.view.SettingsItem
@@ -45,10 +48,26 @@ abstract class SettingViewHolder(itemView: View, protected val adapter: Settings
     }
 
     fun setStyle(isEditable: Boolean, binding: ListItemSettingSwitchBinding) {
-        binding.switchWidget.isEnabled = isEditable
+        setStyle(
+            isEditable,
+            binding.textSettingName,
+            binding.textSettingDescription,
+            binding.switchWidget,
+            binding.buttonClear
+        )
+    }
+
+    fun setStyle(
+        isEditable: Boolean,
+        textSettingName: TextView,
+        textSettingDescription: TextView,
+        switchWidget: MaterialSwitch,
+        buttonClear: MaterialButton
+    ) {
+        switchWidget.isEnabled = isEditable
         val opacity = if (isEditable) 1.0f else 0.5f
-        binding.textSettingName.alpha = opacity
-        binding.textSettingDescription.alpha = opacity
-        binding.buttonClear.isEnabled = isEditable
+        textSettingName.alpha = opacity
+        textSettingDescription.alpha = opacity
+        buttonClear.isEnabled = isEditable
     }
 }

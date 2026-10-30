@@ -498,7 +498,7 @@
     <string name="user_data_import_failed_description">Make sure the user data folders are at the root of the zip folder and contain a config file at config/config.ini and try again.</string>
     <string name="discord_link" translatable="false">https://discord.gg/HstXbPch7X</string>
     <string name="stoat_link" translatable="false">https://stt.gg/qKgFEAbH</string>
-    <string name="x_link" translatable="false">https://nitter.poast.org/edenemuofficial</string>
+    <string name="x_link" translatable="false">https://x.com/edenemuofficial</string>
     <string name="website_link" translatable="false">https://eden-emu.dev</string>
     <string name="github_link" translatable="false">https://git.eden-emu.dev/eden-emu</string>
 
@@ -848,6 +848,12 @@
     <string name="enable_cheats_by_default_description">Enable regular cheats when a game starts</string>
     <string name="enable_quick_settings">Enable Quick Settings</string>
     <string name="enable_quick_settings_description">Allow access to quick settings menu via swipe and menu button</string>
+    <string name="legacy_yuzu_ui">Legacy Yuzu Interface</string>
+    <string name="legacy_yuzu_ui_description">Use the older interface design made by the original yuzu team</string>
+    <string name="home_games">Games</string>
+    <string name="search_retail">Retail</string>
+    <string name="search_homebrew">Homebrew</string>
+    <string name="search_and_filter_games">Search and filter games</string>
     <string name="preferences_audio">Audio</string>
     <string name="preferences_audio_description">Output engine, volume</string>
     <string name="preferences_controls">Controls</string>

@@ -23,6 +23,7 @@ object DirectoryInitialization {
     fun start() {
         if (!areDirectoriesReady) {
             initializeInternalStorage()
+            InstallCacheHelper.cleanTransientInstallCache(YuzuApplication.appContext)
             NativeConfig.initializeGlobalConfig()
             NativeLibrary.initializeSystem(false)
             NativeLibrary.reloadProfiles()

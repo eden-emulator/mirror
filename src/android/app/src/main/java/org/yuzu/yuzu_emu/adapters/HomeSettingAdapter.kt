@@ -8,10 +8,15 @@ package org.yuzu.yuzu_emu.adapters
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.viewbinding.ViewBinding
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import androidx.lifecycle.LifecycleOwner
 import org.yuzu.yuzu_emu.databinding.CardHomeOptionBinding
+import org.yuzu.yuzu_emu.databinding.CardHomeOptionLegacyTintedBinding
+import org.yuzu.yuzu_emu.utils.LegacyUi
 import org.yuzu.yuzu_emu.fragments.MessageDialogFragment
 import org.yuzu.yuzu_emu.model.HomeSetting
 import org.yuzu.yuzu_emu.utils.ViewUtils.marquee
@@ -25,16 +30,39 @@ class HomeSettingAdapter(
     options: List<HomeSetting>
 ) : AbstractListAdapter<HomeSetting, HomeSettingAdapter.HomeOptionViewHolder>(options) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HomeOptionViewHolder {
-        CardHomeOptionBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            .also { return HomeOptionViewHolder(it) }
+        val inflater = LayoutInflater.from(parent.context)
+        return if (LegacyUi.isEnabled()) {
+            val binding = CardHomeOptionLegacyTintedBinding.inflate(inflater, parent, false)
+            HomeOptionViewHolder(
+                binding,
+                binding.optionTitle,
+                binding.optionDescription,
+                binding.optionIcon,
+                binding.optionDetail
+            )
+        } else {
+            val binding = CardHomeOptionBinding.inflate(inflater, parent, false)
+            HomeOptionViewHolder(
+                binding,
+                binding.optionTitle,
+                binding.optionDescription,
+                binding.optionIcon,
+                binding.optionDetail
+            )
+        }
     }
 
-    inner class HomeOptionViewHolder(val binding: CardHomeOptionBinding) :
-        AbstractViewHolder<HomeSetting>(binding) {
+    inner class HomeOptionViewHolder(
+        binding: ViewBinding,
+        private val optionTitle: TextView,
+        private val optionDescription: TextView,
+        private val optionIcon: ImageView,
+        private val optionDetail: TextView
+    ) : AbstractViewHolder<HomeSetting>(binding) {
         override fun bind(model: HomeSetting) {
-            binding.optionTitle.text = activity.resources.getString(model.titleId)
-            binding.optionDescription.text = activity.resources.getString(model.descriptionId)
-            binding.optionIcon.setImageDrawable(
+            optionTitle.text = activity.resources.getString(model.titleId)
+            optionDescription.text = activity.resources.getString(model.descriptionId)
+            optionIcon.setImageDrawable(
                 ResourcesCompat.getDrawable(
                     activity.resources,
                     model.iconId,
@@ -43,15 +71,15 @@ class HomeSettingAdapter(
             )
 
             if (!model.isEnabled.invoke()) {
-                binding.optionTitle.alpha = 0.5f
-                binding.optionDescription.alpha = 0.5f
-                binding.optionIcon.alpha = 0.5f
+                optionTitle.alpha = 0.5f
+                optionDescription.alpha = 0.5f
+                optionIcon.alpha = 0.5f
             }
 
             model.details.collect(viewLifecycle) { updateOptionDetails(it) }
-            binding.optionDetail.marquee()
+            optionDetail.marquee()
 
-            binding.root.setOnClickListener { onClick(model) }
+            itemView.setOnClickListener { onClick(model) }
         }
 
         private fun onClick(model: HomeSetting) {
@@ -68,8 +96,8 @@ class HomeSettingAdapter(
 
         private fun updateOptionDetails(detailString: String) {
             if (detailString.isNotEmpty()) {
-                binding.optionDetail.text = detailString
-                binding.optionDetail.setVisible(true)
+                optionDetail.text = detailString
+                optionDetail.setVisible(true)
             }
         }
     }

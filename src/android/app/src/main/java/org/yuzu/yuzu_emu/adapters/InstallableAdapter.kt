@@ -4,9 +4,15 @@
 package org.yuzu.yuzu_emu.adapters
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import androidx.viewbinding.ViewBinding
+import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.databinding.CardInstallableBinding
+import org.yuzu.yuzu_emu.databinding.CardInstallableLegacyTintedBinding
 import org.yuzu.yuzu_emu.model.Installable
+import org.yuzu.yuzu_emu.utils.LegacyUi
 import org.yuzu.yuzu_emu.utils.ViewUtils.setVisible
 import org.yuzu.yuzu_emu.viewholder.AbstractViewHolder
 
@@ -16,20 +22,30 @@ class InstallableAdapter(installables: List<Installable>) :
         parent: ViewGroup,
         viewType: Int
     ): InstallableAdapter.InstallableViewHolder {
-        CardInstallableBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            .also { return InstallableViewHolder(it) }
+        val inflater = LayoutInflater.from(parent.context)
+        val binding: ViewBinding = if (LegacyUi.isEnabled()) {
+            CardInstallableLegacyTintedBinding.inflate(inflater, parent, false)
+        } else {
+            CardInstallableBinding.inflate(inflater, parent, false)
+        }
+        return InstallableViewHolder(binding)
     }
 
-    inner class InstallableViewHolder(val binding: CardInstallableBinding) :
+    inner class InstallableViewHolder(binding: ViewBinding) :
         AbstractViewHolder<Installable>(binding) {
-        override fun bind(model: Installable) {
-            binding.title.setText(model.titleId)
-            binding.description.setText(model.descriptionId)
+        private val title = binding.root.findViewById<TextView>(R.id.title)
+        private val description = binding.root.findViewById<TextView>(R.id.description)
+        private val buttonInstall = binding.root.findViewById<View>(R.id.button_install)
+        private val buttonExport = binding.root.findViewById<View>(R.id.button_export)
 
-            binding.buttonInstall.setVisible(model.install != null)
-            binding.buttonInstall.setOnClickListener { model.install?.invoke() }
-            binding.buttonExport.setVisible(model.export != null)
-            binding.buttonExport.setOnClickListener { model.export?.invoke() }
+        override fun bind(model: Installable) {
+            title.setText(model.titleId)
+            description.setText(model.descriptionId)
+
+            buttonInstall.setVisible(model.install != null)
+            buttonInstall.setOnClickListener { model.install?.invoke() }
+            buttonExport.setVisible(model.export != null)
+            buttonExport.setOnClickListener { model.export?.invoke() }
         }
     }
 }

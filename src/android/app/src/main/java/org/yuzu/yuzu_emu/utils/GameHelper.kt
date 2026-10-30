@@ -27,6 +27,16 @@ object GameHelper {
 
     var cachedGameList = mutableListOf<Game>()
 
+    fun clearSerializedGameCache() {
+        if (::preferences.isInitialized) {
+            preferences.edit { remove(KEY_GAMES) }
+        } else {
+            PreferenceManager.getDefaultSharedPreferences(YuzuApplication.appContext)
+                .edit { remove(KEY_GAMES) }
+        }
+        cachedGameList.clear()
+    }
+
     private lateinit var preferences: SharedPreferences
 
     fun getGames(): List<Game> {

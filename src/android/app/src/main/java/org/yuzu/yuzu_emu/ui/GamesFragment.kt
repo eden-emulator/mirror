@@ -24,6 +24,7 @@ import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.navOptions
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.GridLayoutManager
@@ -34,7 +35,10 @@ import org.yuzu.yuzu_emu.NativeLibrary
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.YuzuApplication
 import org.yuzu.yuzu_emu.adapters.GameAdapter
-import org.yuzu.yuzu_emu.databinding.FragmentGamesBinding
+import org.yuzu.yuzu_emu.layout.AutofitGridLayoutManager
+import org.yuzu.yuzu_emu.utils.LegacyUi
+import org.yuzu.yuzu_emu.utils.ViewUtils.updateMargins
+import com.google.android.material.color.MaterialColors
 import org.yuzu.yuzu_emu.features.settings.model.BooleanSetting
 import org.yuzu.yuzu_emu.model.AppletInfo
 import org.yuzu.yuzu_emu.model.Game
@@ -49,8 +53,8 @@ import java.util.Locale
 import androidx.core.content.edit
 
 class GamesFragment : Fragment() {
-    private var _binding: FragmentGamesBinding? = null
-    private val binding get() = _binding!!
+    private var _views: GamesFragmentViews? = null
+    private val views get() = _views!!
 
     private var originalHeaderTopMargin: Int? = null
     private var originalHeaderBottomMargin: Int? = null
@@ -66,6 +70,7 @@ class GamesFragment : Fragment() {
     companion object {
         private const val SEARCH_TEXT = "SearchText"
         private const val PREF_SORT_TYPE = "GamesSortType"
+        private const val SHELL_LEGACY_YUZU = "ShellLegacyYuzuUi"
     }
 
     private val gamesViewModel: GamesViewModel by activityViewModels()
@@ -86,8 +91,17 @@ class GamesFragment : Fragment() {
     private fun getCurrentViewType(): Int {
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val key = if (isLandscape) CarouselRecyclerView.CAROUSEL_VIEW_TYPE_LANDSCAPE else CarouselRecyclerView.CAROUSEL_VIEW_TYPE_PORTRAIT
-        val fallback = if (isLandscape) GameAdapter.VIEW_TYPE_CAROUSEL else GameAdapter.VIEW_TYPE_GRID
-        return preferences.getInt(key, fallback)
+        val fallback = if (isLandscape && !LegacyUi.isEnabled()) {
+            GameAdapter.VIEW_TYPE_CAROUSEL
+        } else {
+            GameAdapter.VIEW_TYPE_GRID
+        }
+        val stored = preferences.getInt(key, fallback)
+        return if (LegacyUi.isEnabled() && stored == GameAdapter.VIEW_TYPE_CAROUSEL) {
+            GameAdapter.VIEW_TYPE_GRID
+        } else {
+            stored
+        }
     }
 
     private fun setCurrentViewType(type: Int) {
@@ -100,8 +114,13 @@ class GamesFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentGamesBinding.inflate(inflater)
-        return binding.root
+        val legacyShell = LegacyUi.isEnabled()
+        val savedShell = savedInstanceState?.getBoolean(SHELL_LEGACY_YUZU, legacyShell) ?: legacyShell
+        if (savedInstanceState != null && savedShell != legacyShell) {
+            _views = null
+        }
+        _views = GamesFragmentViews.inflate(inflater, container, false)
+        return views.root
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -110,8 +129,15 @@ class GamesFragment : Fragment() {
         homeViewModel.setStatusBarShadeVisibility(true)
         mainActivity = requireActivity() as MainActivity
 
+        if (LegacyUi.isEnabled()) {
+            setupLegacyGamesView(savedInstanceState)
+            return
+        }
+
+        homeViewModel.setNavigationVisibility(visible = false, animated = false)
+
         if (savedInstanceState != null) {
-            binding.searchText.setText(savedInstanceState.getString(SEARCH_TEXT))
+            views.searchText?.setText(savedInstanceState.getString(SEARCH_TEXT))
         }
 
         gameAdapter = GameAdapter(
@@ -120,33 +146,33 @@ class GamesFragment : Fragment() {
 
         applyGridGamesBinding()
 
-        binding.swipeRefresh.apply {
-            (binding.swipeRefresh as? SwipeRefreshLayout)?.setOnRefreshListener {
+        views.swipeRefresh.apply {
+            (views.swipeRefresh as? SwipeRefreshLayout)?.setOnRefreshListener {
                 gamesViewModel.reloadGames(false)
             }
-            (binding.swipeRefresh as? SwipeRefreshLayout)?.setProgressBackgroundColorSchemeColor(
+            (views.swipeRefresh as? SwipeRefreshLayout)?.setProgressBackgroundColorSchemeColor(
                 com.google.android.material.color.MaterialColors.getColor(
-                    binding.swipeRefresh,
+                    views.swipeRefresh,
                     com.google.android.material.R.attr.colorPrimary
                 )
             )
-            (binding.swipeRefresh as? SwipeRefreshLayout)?.setColorSchemeColors(
+            (views.swipeRefresh as? SwipeRefreshLayout)?.setColorSchemeColors(
                 com.google.android.material.color.MaterialColors.getColor(
-                    binding.swipeRefresh,
+                    views.swipeRefresh,
                     com.google.android.material.R.attr.colorOnPrimary
                 )
             )
             post {
-                if (_binding == null) {
+                if (_views == null) {
                     return@post
                 }
-                (binding.swipeRefresh as? SwipeRefreshLayout)?.isRefreshing = gamesViewModel.isReloading.value
+                (views.swipeRefresh as? SwipeRefreshLayout)?.isRefreshing = gamesViewModel.isReloading.value
             }
         }
 
         gamesViewModel.isReloading.collect(viewLifecycleOwner) {
-            (binding.swipeRefresh as? SwipeRefreshLayout)?.isRefreshing = it
-            binding.noticeText.setVisible(
+            (views.swipeRefresh as? SwipeRefreshLayout)?.isRefreshing = it
+            views.noticeText.setVisible(
                 visible = gamesViewModel.games.value.isEmpty() && !it,
                 gone = false
             )
@@ -182,19 +208,81 @@ class GamesFragment : Fragment() {
 
         updateButtonsVisibility()
 
-        binding.addDirectory.setOnClickListener {
+        views.addDirectory?.setOnClickListener {
             getGamesDirectory.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).data)
         }
 
-        binding.launchQlaunch?.setOnClickListener {
+        views.launchQlaunch?.setOnClickListener {
             launchQLaunch()
         }
 
         setInsets()
     }
 
+    private fun setupLegacyGamesView(savedInstanceState: Bundle?) {
+        homeViewModel.setNavigationVisibility(visible = true, animated = true)
+
+        gameAdapter = GameAdapter(requireActivity() as AppCompatActivity)
+        views.gridGames.apply {
+            layoutManager = AutofitGridLayoutManager(
+                requireContext(),
+                requireContext().resources.getDimensionPixelSize(R.dimen.card_width)
+            )
+            adapter = gameAdapter
+        }
+
+        views.swipeRefresh.apply {
+            setOnRefreshListener {
+                gamesViewModel.reloadGames(false)
+            }
+            setProgressBackgroundColorSchemeColor(
+                MaterialColors.getColor(
+                    views.swipeRefresh,
+                    com.google.android.material.R.attr.colorPrimary
+                )
+            )
+            setColorSchemeColors(
+                MaterialColors.getColor(
+                    views.swipeRefresh,
+                    com.google.android.material.R.attr.colorOnPrimary
+                )
+            )
+            post {
+                if (_views == null) {
+                    return@post
+                }
+                views.swipeRefresh.isRefreshing = gamesViewModel.isReloading.value
+            }
+        }
+
+        gamesViewModel.isReloading.collect(viewLifecycleOwner) {
+            views.swipeRefresh.isRefreshing = it
+            views.noticeText.setVisible(
+                visible = gamesViewModel.games.value.isEmpty() && !it,
+                gone = false
+            )
+        }
+        gamesViewModel.games.collect(viewLifecycleOwner) {
+            gameAdapter.submitList(it)
+        }
+        gamesViewModel.shouldSwapData.collect(
+            viewLifecycleOwner,
+            resetState = { gamesViewModel.setShouldSwapData(false) }
+        ) {
+            if (it) {
+                gameAdapter.submitList(gamesViewModel.games.value)
+            }
+        }
+        gamesViewModel.shouldScrollToTop.collect(
+            viewLifecycleOwner,
+            resetState = { gamesViewModel.setShouldScrollToTop(false) }
+        ) { if (it) scrollToTop() }
+
+        setLegacyInsets()
+    }
+
     val applyGridGamesBinding = {
-        (binding.gridGames as? RecyclerView)?.apply {
+        views.gridGames.apply {
             val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             val currentViewType = getCurrentViewType()
             val savedViewType = if (isLandscape || currentViewType != GameAdapter.VIEW_TYPE_CAROUSEL) currentViewType else GameAdapter.VIEW_TYPE_GRID
@@ -235,23 +323,35 @@ class GamesFragment : Fragment() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        if (_binding != null) {
-            outState.putString(SEARCH_TEXT, binding.searchText.text.toString())
-        }
+        outState.putBoolean(SHELL_LEGACY_YUZU, LegacyUi.isEnabled())
+        _views?.searchText?.text?.toString()?.let { outState.putString(SEARCH_TEXT, it) }
     }
 
     override fun onPause() {
         super.onPause()
+        if (_views == null) {
+            return
+        }
         if (getCurrentViewType() == GameAdapter.VIEW_TYPE_CAROUSEL) {
-            gamesViewModel.lastScrollPosition = (binding.gridGames as? CarouselRecyclerView)?.getClosestChildPosition() ?: 0
+            gamesViewModel.lastScrollPosition = (views.gridGames as? CarouselRecyclerView)?.getClosestChildPosition() ?: 0
         }
     }
 
     override fun onResume() {
         super.onResume()
+        if (_views == null) {
+            return
+        }
+        if (LegacyUi.isEnabled()) {
+            val destinationId = findNavController().currentDestination?.id
+            val showNav = destinationId == R.id.gamesFragment ||
+                destinationId == R.id.searchFragment ||
+                destinationId == R.id.homeSettingsFragment
+            homeViewModel.setNavigationVisibility(visible = showNav, animated = false)
+        }
         if (getCurrentViewType() == GameAdapter.VIEW_TYPE_CAROUSEL) {
-            (binding.gridGames as? CarouselRecyclerView)?.setupCarousel(true)
-            (binding.gridGames as? CarouselRecyclerView)?.restoreScrollState(gamesViewModel.lastScrollPosition)
+            (views.gridGames as? CarouselRecyclerView)?.setupCarousel(true)
+            (views.gridGames as? CarouselRecyclerView)?.restoreScrollState(gamesViewModel.lastScrollPosition)
         }
     }
 
@@ -259,8 +359,9 @@ class GamesFragment : Fragment() {
     private var lastFilter: Int = preferences.getInt(PREF_SORT_TYPE, View.NO_ID)
 
     private fun setAdapter(games: List<Game>) {
-        val currentSearchText = binding.searchText.text.toString()
-        val currentFilter = binding.filterButton.id
+        if (_views == null) return
+        val currentSearchText = views.searchText?.text?.toString() ?: ""
+        val currentFilter = views.filterButton?.id ?: View.NO_ID
 
         val searchChanged = currentSearchText != lastSearchText
         val filterChanged = currentFilter != lastFilter
@@ -276,7 +377,7 @@ class GamesFragment : Fragment() {
     }
 
     private fun submitGameList(games: List<Game>) {
-        val adapter = (binding.gridGames as? RecyclerView)?.adapter as? GameAdapter
+        val adapter = (views.gridGames as? RecyclerView)?.adapter as? GameAdapter
         if (adapter == null) {
             schedulePostReloadListSettle()
             return
@@ -293,54 +394,68 @@ class GamesFragment : Fragment() {
 
 
     private fun schedulePostReloadListSettle() {
-        if (!pendingPostReloadListSettle || _binding == null) return
+        if (!pendingPostReloadListSettle || _views == null) return
 
-        binding.gridGames.doOnPreDraw {
-            if (!pendingPostReloadListSettle || _binding == null) return@doOnPreDraw
+        views.gridGames.doOnPreDraw {
+            if (!pendingPostReloadListSettle || _views == null) return@doOnPreDraw
             if (committedGameListSubmitGeneration < pendingPostReloadListSettleGeneration) {
                 schedulePostReloadListSettle()
                 return@doOnPreDraw
             }
             pendingPostReloadListSettle = false
 
-            (binding.gridGames as? CarouselRecyclerView)?.refreshView()
+            (views.gridGames as? CarouselRecyclerView)?.refreshView()
         }
     }
     private fun setupTopView() {
-        binding.searchText.doOnTextChanged() { text: CharSequence?, _: Int, _: Int, _: Int ->
+        val searchText = views.searchText ?: return
+        val clearButton = views.clearButton ?: return
+        views.searchBackground ?: return
+        views.viewButton ?: return
+        views.filterButton ?: return
+        views.settingsButton ?: return
+
+        searchText.doOnTextChanged { text: CharSequence?, _: Int, _: Int, _: Int ->
             if (text.toString().isNotEmpty()) {
-                binding.clearButton.visibility = View.VISIBLE
+                clearButton.visibility = View.VISIBLE
             } else {
-                binding.clearButton.visibility = View.INVISIBLE
+                clearButton.visibility = View.INVISIBLE
             }
             filterAndSearch()
         }
 
-        binding.clearButton.setOnClickListener { binding.searchText.setText("") }
-        binding.searchBackground.setOnClickListener { focusSearch() }
+        clearButton.setOnClickListener { searchText.setText("") }
+        views.searchBackground?.setOnClickListener { focusSearch() }
 
-        // Setup view button
-        binding.viewButton.setOnClickListener { showViewMenu(it) }
-
-        // Setup filter button
-        binding.filterButton.setOnClickListener { view ->
-            showFilterMenu(view)
-        }
-
-        // Setup settings button
-        binding.settingsButton.setOnClickListener { navigateToSettings() }
+        views.viewButton?.setOnClickListener { showViewMenu(it) }
+        views.filterButton?.setOnClickListener { view -> showFilterMenu(view) }
+        views.settingsButton?.setOnClickListener { navigateToSettings() }
     }
 
     private fun navigateToSettings() {
         val navController = findNavController()
-        navController.navigate(R.id.action_gamesFragment_to_homeSettingsFragment)
+        if (LegacyUi.isEnabled()) {
+            navController.navigate(
+                R.id.homeSettingsFragment,
+                null,
+                navOptions {
+                    launchSingleTop = true
+                    popUpTo(R.id.gamesFragment) {
+                        saveState = true
+                    }
+                    restoreState = true
+                }
+            )
+        } else {
+            navController.navigate(R.id.action_gamesFragment_to_homeSettingsFragment)
+        }
     }
 
     private fun showViewMenu(anchor: View) {
         val popup = PopupMenu(requireContext(), anchor)
         popup.menuInflater.inflate(R.menu.menu_game_views, popup.menu)
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        if (!isLandscape) {
+        if (!isLandscape || LegacyUi.isEnabled()) {
             popup.menu.findItem(R.id.view_carousel)?.isVisible = false
         }
 
@@ -440,7 +555,7 @@ class GamesFragment : Fragment() {
             else -> baseList
         }
 
-        val searchTerm = binding.searchText.text.toString().lowercase(Locale.getDefault())
+        val searchTerm = views.searchText?.text?.toString()?.lowercase(Locale.getDefault()) ?: ""
         if (searchTerm.isEmpty()) {
             submitGameList(filteredList)
             gamesViewModel.setFilteredGames(filteredList)
@@ -465,20 +580,25 @@ class GamesFragment : Fragment() {
     private inner class ScoredGame(val score: Double, val item: Game)
 
     private fun focusSearch() {
-        binding.searchText.requestFocus()
+        val searchText = views.searchText ?: return
+        searchText.requestFocus()
         val imm = requireActivity()
             .getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
-        imm?.showSoftInput(binding.searchText, InputMethodManager.SHOW_IMPLICIT)
+        imm?.showSoftInput(searchText, InputMethodManager.SHOW_IMPLICIT)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
+        _views = null
     }
 
     private fun scrollToTop() {
-        if (_binding != null) {
-            (binding.gridGames as? CarouselRecyclerView)?.smoothScrollToPosition(0)
+        if (_views != null) {
+            if (LegacyUi.isEnabled()) {
+                views.gridGames.smoothScrollToPosition(0)
+            } else {
+                (views.gridGames as? CarouselRecyclerView)?.smoothScrollToPosition(0)
+            }
         }
     }
 
@@ -518,21 +638,60 @@ class GamesFragment : Fragment() {
         val isFirmwareAvailable = NativeLibrary.isFirmwareAvailable()
 
         val shouldShowQLaunch = showQLaunch && isFirmwareAvailable
-        binding.launchQlaunch.visibility = if (shouldShowQLaunch) View.VISIBLE else View.GONE
+        views.launchQlaunch?.visibility = if (shouldShowQLaunch) View.VISIBLE else View.GONE
 
-        binding.addDirectory.visibility = if (showFolder) View.VISIBLE else View.GONE
+        views.addDirectory?.visibility = if (showFolder) View.VISIBLE else View.GONE
     }
+
+    private fun setLegacyInsets() =
+        ViewCompat.setOnApplyWindowInsetsListener(
+            views.root
+        ) { view: View, windowInsets: WindowInsetsCompat ->
+            val barInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val cutoutInsets = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout())
+            val extraListSpacing = resources.getDimensionPixelSize(R.dimen.spacing_large)
+            val spacingNavigation = resources.getDimensionPixelSize(R.dimen.spacing_navigation)
+            val spacingNavigationRail =
+                resources.getDimensionPixelSize(R.dimen.spacing_navigation_rail)
+
+            views.gridGames.updatePadding(
+                top = barInsets.top + extraListSpacing,
+                bottom = barInsets.bottom + spacingNavigation + extraListSpacing
+            )
+
+            views.swipeRefresh.setProgressViewEndTarget(
+                false,
+                barInsets.top + resources.getDimensionPixelSize(R.dimen.spacing_refresh_end)
+            )
+
+            val leftInsets = barInsets.left + cutoutInsets.left
+            val rightInsets = barInsets.right + cutoutInsets.right
+            val left: Int
+            val right: Int
+            if (ViewCompat.getLayoutDirection(view) == ViewCompat.LAYOUT_DIRECTION_LTR) {
+                left = leftInsets + spacingNavigationRail
+                right = rightInsets
+            } else {
+                left = leftInsets
+                right = rightInsets + spacingNavigationRail
+            }
+            views.swipeRefresh.updateMargins(left = left, right = right)
+
+            views.noticeText.updatePadding(bottom = spacingNavigation)
+
+            windowInsets
+        }
 
     private fun setInsets() =
         ViewCompat.setOnApplyWindowInsetsListener(
-            binding.root
+            views.root
         ) { _: View, windowInsets: WindowInsetsCompat ->
             val barInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             val cutoutInsets = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout())
             val spacingNavigation = resources.getDimensionPixelSize(R.dimen.spacing_navigation)
             resources.getDimensionPixelSize(R.dimen.spacing_navigation_rail)
 
-            (binding.swipeRefresh as? SwipeRefreshLayout)?.setProgressViewEndTarget(
+            (views.swipeRefresh as? SwipeRefreshLayout)?.setProgressViewEndTarget(
                 false,
                 barInsets.top + resources.getDimensionPixelSize(R.dimen.spacing_refresh_end)
             )
@@ -541,12 +700,14 @@ class GamesFragment : Fragment() {
             val rightInset = barInsets.right + cutoutInsets.right
             val topInset = maxOf(barInsets.top, cutoutInsets.top)
 
-            val mlpSwipe = binding.swipeRefresh.layoutParams as ViewGroup.MarginLayoutParams
+            val mlpSwipe = views.swipeRefresh.layoutParams as ViewGroup.MarginLayoutParams
             mlpSwipe.leftMargin = leftInset
             mlpSwipe.rightMargin = rightInset
-            binding.swipeRefresh.layoutParams = mlpSwipe
+            views.swipeRefresh.layoutParams = mlpSwipe
 
-            val mlpHeader = binding.header.layoutParams as ViewGroup.MarginLayoutParams
+            val header = views.header ?: return@setOnApplyWindowInsetsListener windowInsets
+            val addDirectory = views.addDirectory ?: return@setOnApplyWindowInsetsListener windowInsets
+            val mlpHeader = header.layoutParams as ViewGroup.MarginLayoutParams
 
             // Store original margins only once
             if (originalHeaderTopMargin == null) {
@@ -561,22 +722,22 @@ class GamesFragment : Fragment() {
             mlpHeader.topMargin = (originalHeaderTopMargin ?: 0) + topInset + resources.getDimensionPixelSize(
                 R.dimen.spacing_med
             )
-            binding.header.layoutParams = mlpHeader
+            header.layoutParams = mlpHeader
 
-            binding.noticeText.updatePadding(bottom = spacingNavigation)
+            views.noticeText.updatePadding(bottom = spacingNavigation)
 
-            binding.gridGames.updatePadding(
+            views.gridGames.updatePadding(
                 top = resources.getDimensionPixelSize(R.dimen.spacing_med)
             )
 
-            val mlpFab = binding.addDirectory.layoutParams as ViewGroup.MarginLayoutParams
+            val mlpFab = addDirectory.layoutParams as ViewGroup.MarginLayoutParams
             val fabPadding = resources.getDimensionPixelSize(R.dimen.spacing_large)
             mlpFab.leftMargin = leftInset + fabPadding
             mlpFab.bottomMargin = barInsets.bottom + fabPadding
             mlpFab.rightMargin = rightInset + fabPadding
-            binding.addDirectory.layoutParams = mlpFab
+            addDirectory.layoutParams = mlpFab
 
-            binding.launchQlaunch?.let { qlaunchButton ->
+            views.launchQlaunch?.let { qlaunchButton ->
                 val mlpQLaunch = qlaunchButton.layoutParams as ViewGroup.MarginLayoutParams
                 mlpQLaunch.leftMargin = leftInset + fabPadding
                 mlpQLaunch.bottomMargin = barInsets.bottom + fabPadding

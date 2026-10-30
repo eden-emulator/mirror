@@ -76,6 +76,7 @@ object GameIconUtils {
             add(GameIconKeyer())
             add(GameIconFetcher.Factory())
         }
+        .diskCache(null)
         .memoryCache {
             MemoryCache.Builder(YuzuApplication.appContext)
                 .maxSizePercent(0.25)

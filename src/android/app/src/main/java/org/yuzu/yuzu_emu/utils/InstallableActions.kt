@@ -21,7 +21,6 @@ import org.yuzu.yuzu_emu.model.TaskState
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.File
-import java.io.FilenameFilter
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
@@ -103,7 +102,8 @@ object InstallableActions {
         fragmentManager: FragmentManager,
         gamesViewModel: GamesViewModel,
         result: Uri,
-        extension: String = "keys"
+        extension: String = "keys",
+        reloadGameLibrary: Boolean = true,
     ) {
         activity.contentResolver.takePersistableUriPermission(
             result,
@@ -117,7 +117,9 @@ object InstallableActions {
                 R.string.keys_install_success,
                 Toast.LENGTH_SHORT
             ).show()
-            gamesViewModel.reloadGames(true)
+            if (reloadGameLibrary) {
+                gamesViewModel.reloadGames(true)
+            }
             return
         }
 
@@ -134,11 +136,12 @@ object InstallableActions {
         fragmentManager: FragmentManager,
         homeViewModel: HomeViewModel,
         result: Uri,
-        onComplete: (() -> Unit)? = null
+        onComplete: ((success: Boolean) -> Unit)? = null,
     ) {
-        val filterNCA = FilenameFilter { _, dirName -> dirName.endsWith(".nca") }
         val firmwarePath = File(NativeConfig.getNandDir() + "/system/Contents/registered/")
-        val cacheFirmwareDir = File("${activity.cacheDir.path}/registered/")
+        val cacheFirmwareDir =
+            File(activity.cacheDir, InstallCacheHelper.FIRMWARE_STAGING_DIR)
+        var installSucceeded = false
 
         ProgressDialogFragment.newInstance(
             activity,
@@ -146,15 +149,14 @@ object InstallableActions {
         ) { progressCallback, _ ->
             var messageToShow: Any
             try {
+                cacheFirmwareDir.deleteRecursively()
                 FileUtil.unzipToInternalStorage(
                     result.toString(),
                     cacheFirmwareDir,
                     progressCallback
                 )
-                val unfilteredNumOfFiles = cacheFirmwareDir.list()?.size ?: -1
-                val filteredNumOfFiles = cacheFirmwareDir.list(filterNCA)?.size ?: -2
-                messageToShow = if (unfilteredNumOfFiles != filteredNumOfFiles) {
-                    MessageDialogFragment.newInstance(
+                if (!FirmwareHelper.isValidFirmwareExtract(cacheFirmwareDir)) {
+                    messageToShow = MessageDialogFragment.newInstance(
                         activity,
                         titleId = R.string.firmware_installed_failure,
                         descriptionId = R.string.firmware_installed_failure_description
@@ -162,9 +164,13 @@ object InstallableActions {
                 } else {
                     firmwarePath.deleteRecursively()
                     cacheFirmwareDir.copyRecursively(firmwarePath, overwrite = true)
-                    NativeLibrary.initializeSystem(true)
+                    if (NativeLibrary.areKeysPresent()) {
+                        NativeLibrary.reloadKeys()
+                        NativeLibrary.initializeSystem(true)
+                    }
                     homeViewModel.setCheckKeys(true)
-                    activity.getString(R.string.save_file_imported_success)
+                    installSucceeded = true
+                    messageToShow = activity.getString(R.string.save_file_imported_success)
                 }
             } catch (_: Exception) {
                 messageToShow = activity.getString(R.string.fatal_error)
@@ -173,7 +179,7 @@ object InstallableActions {
             }
             messageToShow
         }.apply {
-            onDialogComplete = onComplete
+            onDialogComplete = { onComplete?.invoke(installSucceeded) }
         }.show(fragmentManager, ProgressDialogFragment.TAG)
     }
 

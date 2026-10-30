@@ -28,10 +28,14 @@ class GamesViewModel : ViewModel() {
     val games: StateFlow<List<Game>> get() = _games
     private val _games = MutableStateFlow(emptyList<Game>())
 
+    val searchedGames: StateFlow<List<Game>> get() = _searchedGames
+    private val _searchedGames = MutableStateFlow(emptyList<Game>())
+
     val isReloading: StateFlow<Boolean> get() = _isReloading
     private val _isReloading = MutableStateFlow(false)
 
     private val reloading = AtomicBoolean(false)
+    private val pendingReloadAfterCurrent = AtomicBoolean(false)
 
     val shouldSwapData: StateFlow<Boolean> get() = _shouldSwapData
     private val _shouldSwapData = MutableStateFlow(false)
@@ -87,12 +91,19 @@ class GamesViewModel : ViewModel() {
         _searchFocused.value = searchFocused
     }
 
+    fun setSearchedGames(games: List<Game>) {
+        _searchedGames.value = games
+    }
+
     fun setFilteredGames(games: List<Game>) {
         _filteredGames.value = games
     }
 
     fun reloadGames(directoriesChanged: Boolean, firstStartup: Boolean = false) {
         if (reloading.get()) {
+            if (directoriesChanged) {
+                pendingReloadAfterCurrent.set(true)
+            }
             return
         }
         reloading.set(true)
@@ -101,7 +112,7 @@ class GamesViewModel : ViewModel() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 try {
-                    if (firstStartup) {
+                    if (firstStartup && NativeLibrary.areKeysPresent()) {
                         // Retrieve list of cached games
                         val storedGames =
                             PreferenceManager.getDefaultSharedPreferences(YuzuApplication.appContext)
@@ -139,6 +150,9 @@ class GamesViewModel : ViewModel() {
                 } finally {
                     reloading.set(false)
                     _isReloading.value = false
+                    if (pendingReloadAfterCurrent.getAndSet(false)) {
+                        reloadGames(directoriesChanged = true, firstStartup = false)
+                    }
                 }
             }
         }

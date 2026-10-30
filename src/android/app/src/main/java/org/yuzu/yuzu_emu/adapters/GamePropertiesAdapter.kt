@@ -7,16 +7,24 @@
 package org.yuzu.yuzu_emu.adapters
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import androidx.lifecycle.LifecycleOwner
+import androidx.viewbinding.ViewBinding
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.divider.MaterialDivider
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.databinding.CardInstallableIconBinding
+import org.yuzu.yuzu_emu.databinding.CardInstallableIconLegacyTintedBinding
 import org.yuzu.yuzu_emu.databinding.CardSimpleOutlinedBinding
+import org.yuzu.yuzu_emu.databinding.CardSimpleOutlinedLegacyTintedBinding
 import org.yuzu.yuzu_emu.model.GameProperty
 import org.yuzu.yuzu_emu.model.InstallableProperty
 import org.yuzu.yuzu_emu.model.SubmenuProperty
+import org.yuzu.yuzu_emu.utils.LegacyUi
 import org.yuzu.yuzu_emu.utils.ViewUtils.marquee
 import org.yuzu.yuzu_emu.utils.ViewUtils.setVisible
 import org.yuzu.yuzu_emu.utils.collect
@@ -33,22 +41,22 @@ class GamePropertiesAdapter(
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             PropertyType.Submenu.ordinal -> {
-                SubmenuPropertyViewHolder(
-                    CardSimpleOutlinedBinding.inflate(
-                        inflater,
-                        parent,
-                        false
-                    )
-                )
+                val binding: ViewBinding = if (LegacyUi.isEnabled()) {
+                    CardSimpleOutlinedLegacyTintedBinding.inflate(inflater, parent, false)
+                } else {
+                    CardSimpleOutlinedBinding.inflate(inflater, parent, false)
+                }
+                SubmenuPropertyViewHolder(binding)
             }
 
-            else -> InstallablePropertyViewHolder(
-                CardInstallableIconBinding.inflate(
-                    inflater,
-                    parent,
-                    false
-                )
-            )
+            else -> {
+                val binding: ViewBinding = if (LegacyUi.isEnabled()) {
+                    CardInstallableIconLegacyTintedBinding.inflate(inflater, parent, false)
+                } else {
+                    CardInstallableIconBinding.inflate(inflater, parent, false)
+                }
+                InstallablePropertyViewHolder(binding)
+            }
         }
     }
 
@@ -59,89 +67,105 @@ class GamePropertiesAdapter(
         }
     }
 
-    inner class SubmenuPropertyViewHolder(val binding: CardSimpleOutlinedBinding) :
+    inner class SubmenuPropertyViewHolder(binding: ViewBinding) :
         AbstractViewHolder<GameProperty>(binding) {
+        private val root = binding.root
+        private val title = root.findViewById<TextView>(R.id.title)
+        private val description = root.findViewById<TextView>(R.id.description)
+        private val icon = root.findViewById<ImageView>(R.id.icon)
+        private val details = root.findViewById<TextView>(R.id.details)
+        private val dividerSecondaryActions =
+            root.findViewById<MaterialDivider>(R.id.dividerSecondaryActions)
+        private val layoutSecondaryActions =
+            root.findViewById<ViewGroup>(R.id.layoutSecondaryActions)
+
         override fun bind(model: GameProperty) {
             val submenuProperty = model as SubmenuProperty
 
-            binding.root.setOnClickListener {
+            root.setOnClickListener {
                 submenuProperty.action.invoke()
             }
 
-            binding.title.setText(submenuProperty.titleId)
-            binding.description.setText(submenuProperty.descriptionId)
-            binding.icon.setImageDrawable(
+            title.setText(submenuProperty.titleId)
+            description.setText(submenuProperty.descriptionId)
+            icon.setImageDrawable(
                 ResourcesCompat.getDrawable(
-                    binding.icon.context.resources,
+                    icon.context.resources,
                     submenuProperty.iconId,
-                    binding.icon.context.theme
+                    icon.context.theme
                 )
             )
 
-            binding.details.marquee()
+            details.marquee()
             if (submenuProperty.details != null) {
-                binding.details.setVisible(true)
-                binding.details.text = submenuProperty.details.invoke()
+                details.setVisible(true)
+                details.text = submenuProperty.details.invoke()
             } else if (submenuProperty.detailsFlow != null) {
-                binding.details.setVisible(true)
-                submenuProperty.detailsFlow.collect(viewLifecycle) { binding.details.text = it }
+                details.setVisible(true)
+                submenuProperty.detailsFlow.collect(viewLifecycle) { details.text = it }
             } else {
-                binding.details.setVisible(false)
+                details.setVisible(false)
             }
 
-
             val hasVisibleActions = submenuProperty.secondaryActions?.any { it.isShown } == true
-            binding.layoutSecondaryActions.removeAllViews()
-            binding.dividerSecondaryActions.setVisible(false)
+            layoutSecondaryActions.removeAllViews()
+            dividerSecondaryActions.setVisible(false)
 
             if (hasVisibleActions) {
-                binding.layoutSecondaryActions.setVisible(true)
+                layoutSecondaryActions.setVisible(true)
 
                 val visibleActions = submenuProperty.secondaryActions!!.filter { it.isShown }
-                val inflater = LayoutInflater.from(binding.root.context)
+                val inflater = LayoutInflater.from(root.context)
                 visibleActions.forEachIndexed { index, secondaryAction ->
                     val button = inflater.inflate(
                         R.layout.item_secondary_action_button,
-                        binding.layoutSecondaryActions,
+                        layoutSecondaryActions,
                         false
                     ) as MaterialButton
                     button.setIconResource(secondaryAction.iconId)
                     button.text = ""
-                    button.contentDescription = binding.root.context
+                    button.contentDescription = root.context
                         .getString(secondaryAction.descriptionId)
-                    button.tooltipText = binding.root.context
+                    button.tooltipText = root.context
                         .getString(secondaryAction.descriptionId)
                     if (index == visibleActions.lastIndex) {
                         (button.layoutParams as ViewGroup.MarginLayoutParams).marginEnd = 0
                     }
                     button.setOnClickListener { secondaryAction.action.invoke() }
-                    binding.layoutSecondaryActions.addView(button)
+                    layoutSecondaryActions.addView(button)
                 }
             } else {
-                binding.layoutSecondaryActions.setVisible(false)
+                layoutSecondaryActions.setVisible(false)
             }
         }
     }
 
-    inner class InstallablePropertyViewHolder(val binding: CardInstallableIconBinding) :
+    inner class InstallablePropertyViewHolder(binding: ViewBinding) :
         AbstractViewHolder<GameProperty>(binding) {
+        private val root = binding.root
+        private val title = root.findViewById<TextView>(R.id.title)
+        private val description = root.findViewById<TextView>(R.id.description)
+        private val icon = root.findViewById<ImageView>(R.id.icon)
+        private val buttonInstall = root.findViewById<View>(R.id.button_install)
+        private val buttonExport = root.findViewById<View>(R.id.button_export)
+
         override fun bind(model: GameProperty) {
             val installableProperty = model as InstallableProperty
 
-            binding.title.setText(installableProperty.titleId)
-            binding.description.setText(installableProperty.descriptionId)
-            binding.icon.setImageDrawable(
+            title.setText(installableProperty.titleId)
+            description.setText(installableProperty.descriptionId)
+            icon.setImageDrawable(
                 ResourcesCompat.getDrawable(
-                    binding.icon.context.resources,
+                    icon.context.resources,
                     installableProperty.iconId,
-                    binding.icon.context.theme
+                    icon.context.theme
                 )
             )
 
-            binding.buttonInstall.setVisible(installableProperty.install != null)
-            binding.buttonInstall.setOnClickListener { installableProperty.install?.invoke() }
-            binding.buttonExport.setVisible(installableProperty.export != null)
-            binding.buttonExport.setOnClickListener { installableProperty.export?.invoke() }
+            buttonInstall.setVisible(installableProperty.install != null)
+            buttonInstall.setOnClickListener { installableProperty.install?.invoke() }
+            buttonExport.setVisible(installableProperty.export != null)
+            buttonExport.setOnClickListener { installableProperty.export?.invoke() }
         }
     }
 

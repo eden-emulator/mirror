@@ -38,8 +38,9 @@
 
     <LinearLayout
         android:id="@+id/icon_layout"
-        android:layout_width="wrap_content"
+        android:layout_width="207dp"
         android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
         android:orientation="vertical"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -112,8 +113,11 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
             android:layout_marginBottom="8dp"
+            android:gravity="center_horizontal"
             android:textAlignment="center"
-            tools:text="Game Playtime" />
+            android:maxLines="2"
+            android:ellipsize="end"
+            tools:text="Playtime:\n1h 2m 3s" />
 
     </LinearLayout>
 

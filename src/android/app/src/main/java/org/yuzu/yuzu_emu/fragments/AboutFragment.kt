@@ -28,10 +28,17 @@ import org.yuzu.yuzu_emu.features.settings.ui.SettingsSubscreen
 import org.yuzu.yuzu_emu.model.HomeViewModel
 import org.yuzu.yuzu_emu.utils.ViewUtils.updateMargins
 import org.yuzu.yuzu_emu.NativeLibrary
+import androidx.viewbinding.ViewBinding
+import android.widget.TextView
+import com.google.android.material.appbar.MaterialToolbar
+import org.yuzu.yuzu_emu.databinding.FragmentAboutLegacyBinding
+import org.yuzu.yuzu_emu.utils.LegacyUi
 
 class AboutFragment : Fragment() {
-    private var _binding: FragmentAboutBinding? = null
+    private var _binding: ViewBinding? = null
     private val binding get() = _binding!!
+
+    private fun <T : View> find(id: Int): T = binding.root.findViewById(id)
 
     private val homeViewModel: HomeViewModel by activityViewModels()
 
@@ -47,18 +54,22 @@ class AboutFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentAboutBinding.inflate(layoutInflater)
+        _binding = if (LegacyUi.isEnabled()) {
+            FragmentAboutLegacyBinding.inflate(layoutInflater)
+        } else {
+            FragmentAboutBinding.inflate(layoutInflater)
+        }
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         homeViewModel.setStatusBarShadeVisibility(visible = false)
-        binding.toolbarAbout.setNavigationOnClickListener {
+        find<MaterialToolbar>(R.id.toolbar_about).setNavigationOnClickListener {
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
 
-        binding.imageLogo.setOnLongClickListener {
+        find<View>(R.id.image_logo).setOnLongClickListener {
             Toast.makeText(
                 requireContext(),
                 R.string.gaia_is_not_real,
@@ -67,12 +78,12 @@ class AboutFragment : Fragment() {
             true
         }
 
-        binding.buttonContributors.setOnClickListener {
+        find<View>(R.id.button_contributors).setOnClickListener {
             openLink(
                 getString(R.string.contributors_link)
             )
         }
-        binding.buttonLicenses.setOnClickListener {
+        find<View>(R.id.button_licenses).setOnClickListener {
             val action = HomeNavigationDirections.actionGlobalSettingsSubscreenActivity(
                 SettingsSubscreen.LICENSES,
                 null
@@ -84,8 +95,8 @@ class AboutFragment : Fragment() {
         val buildVersion = NativeLibrary.getBuildVersion()
         val fullVersionText = "$buildName ($buildVersion)"
 
-        binding.textVersionName.text = fullVersionText
-        binding.buttonVersionName.setOnClickListener {
+        find<TextView>(R.id.text_version_name).text = fullVersionText
+        find<View>(R.id.button_version_name).setOnClickListener {
             val clipBoard =
                 requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText(getString(R.string.build), fullVersionText)
@@ -100,11 +111,11 @@ class AboutFragment : Fragment() {
             }
         }
 
-        binding.buttonDiscord.setOnClickListener { openLink(getString(R.string.discord_link)) }
-        binding.buttonStoat.setOnClickListener { openLink(getString(R.string.stoat_link)) }
-        binding.buttonX.setOnClickListener { openLink(getString(R.string.x_link)) }
-        binding.buttonWebsite.setOnClickListener { openLink(getString(R.string.website_link)) }
-        binding.buttonGithub.setOnClickListener { openLink(getString(R.string.github_link)) }
+        find<View>(R.id.button_discord).setOnClickListener { openLink(getString(R.string.discord_link)) }
+        find<View>(R.id.button_stoat).setOnClickListener { openLink(getString(R.string.stoat_link)) }
+        find<View>(R.id.button_x).setOnClickListener { openLink(getString(R.string.x_link)) }
+        find<View>(R.id.button_website).setOnClickListener { openLink(getString(R.string.website_link)) }
+        find<View>(R.id.button_github).setOnClickListener { openLink(getString(R.string.github_link)) }
 
         setInsets()
     }
@@ -124,10 +135,10 @@ class AboutFragment : Fragment() {
             val leftInsets = barInsets.left + cutoutInsets.left
             val rightInsets = barInsets.right + cutoutInsets.right
 
-            binding.toolbarAbout.updateMargins(left = leftInsets, right = rightInsets)
-            binding.scrollAbout.updateMargins(left = leftInsets, right = rightInsets)
+            find<View>(R.id.toolbar_about).updateMargins(left = leftInsets, right = rightInsets)
+            find<View>(R.id.scroll_about).updateMargins(left = leftInsets, right = rightInsets)
 
-            binding.contentAbout.updatePadding(bottom = barInsets.bottom)
+            find<View>(R.id.content_about).updatePadding(bottom = barInsets.bottom)
 
             windowInsets
         }

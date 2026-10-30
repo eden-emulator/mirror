@@ -4,19 +4,29 @@
 package org.yuzu.yuzu_emu.features.settings.ui.viewholder
 
 import android.view.View
+import android.widget.TextView
 import org.yuzu.yuzu_emu.databinding.ListItemSettingsHeaderBinding
 import org.yuzu.yuzu_emu.features.settings.model.view.SettingsItem
 import org.yuzu.yuzu_emu.features.settings.ui.SettingsAdapter
 
-class HeaderViewHolder(val binding: ListItemSettingsHeaderBinding, adapter: SettingsAdapter) :
-    SettingViewHolder(binding.root, adapter) {
+class HeaderViewHolder private constructor(
+    private val titleView: TextView,
+    adapter: SettingsAdapter,
+    itemView: View
+) : SettingViewHolder(itemView, adapter) {
+
+    constructor(binding: ListItemSettingsHeaderBinding, adapter: SettingsAdapter) : this(
+        binding.textHeaderName,
+        adapter,
+        binding.root
+    )
 
     init {
         itemView.setOnClickListener(null)
     }
 
     override fun bind(item: SettingsItem) {
-        binding.textHeaderName.text = item.title
+        titleView.text = item.title
     }
 
     override fun onClick(clicked: View) {
@@ -24,7 +34,6 @@ class HeaderViewHolder(val binding: ListItemSettingsHeaderBinding, adapter: Sett
     }
 
     override fun onLongClick(clicked: View): Boolean {
-        // no-op
         return true
     }
 }

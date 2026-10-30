@@ -5,41 +5,64 @@ package org.yuzu.yuzu_emu.features.settings.ui.viewholder
 
 import android.view.View
 import android.widget.CompoundButton
+import android.widget.TextView
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.materialswitch.MaterialSwitch
 import org.yuzu.yuzu_emu.databinding.ListItemSettingSwitchBinding
 import org.yuzu.yuzu_emu.features.settings.model.view.SettingsItem
 import org.yuzu.yuzu_emu.features.settings.model.view.SwitchSetting
 import org.yuzu.yuzu_emu.features.settings.ui.SettingsAdapter
 import org.yuzu.yuzu_emu.utils.ViewUtils.setVisible
 
-class SwitchSettingViewHolder(val binding: ListItemSettingSwitchBinding, adapter: SettingsAdapter) :
-    SettingViewHolder(binding.root, adapter) {
+class SwitchSettingViewHolder private constructor(
+    private val textSettingName: TextView,
+    private val textSettingDescription: TextView,
+    private val switchWidget: MaterialSwitch,
+    private val buttonClear: MaterialButton,
+    adapter: SettingsAdapter,
+    itemView: View
+) : SettingViewHolder(itemView, adapter) {
+
+    constructor(binding: ListItemSettingSwitchBinding, adapter: SettingsAdapter) : this(
+        binding.textSettingName,
+        binding.textSettingDescription,
+        binding.switchWidget,
+        binding.buttonClear,
+        adapter,
+        binding.root
+    )
 
     private lateinit var setting: SwitchSetting
 
     override fun bind(item: SettingsItem) {
         setting = item as SwitchSetting
-        binding.textSettingName.text = setting.title
-        binding.textSettingDescription.setVisible(setting.description.isNotEmpty())
-        binding.textSettingDescription.text = setting.description
+        textSettingName.text = setting.title
+        textSettingDescription.setVisible(setting.description.isNotEmpty())
+        textSettingDescription.text = setting.description
 
-        // TODO(alekpop): A race condition occurs here if the button is clicked too fast
-        binding.switchWidget.setOnCheckedChangeListener(null)
-        binding.switchWidget.isChecked = setting.getIsChecked(setting.needsRuntimeGlobal)
-        binding.switchWidget.setOnCheckedChangeListener { _: CompoundButton, _: Boolean ->
-            adapter.onBooleanClick(setting, binding.switchWidget.isChecked, bindingAdapterPosition)
+        switchWidget.setOnCheckedChangeListener(null)
+        switchWidget.isChecked = setting.getIsChecked(setting.needsRuntimeGlobal)
+        switchWidget.setOnCheckedChangeListener { _: CompoundButton, _: Boolean ->
+            adapter.onBooleanClick(setting, switchWidget.isChecked, bindingAdapterPosition)
         }
 
-        binding.buttonClear.setVisible(setting.clearable)
-        binding.buttonClear.setOnClickListener {
+        buttonClear.setVisible(setting.clearable)
+        buttonClear.setOnClickListener {
             adapter.onClearClick(setting, bindingAdapterPosition)
         }
 
-        setStyle(setting.isEditable, binding)
+        setStyle(
+            setting.isEditable,
+            textSettingName,
+            textSettingDescription,
+            switchWidget,
+            buttonClear
+        )
     }
 
     override fun onClick(clicked: View) {
         if (setting.isEditable) {
-            binding.switchWidget.toggle()
+            switchWidget.toggle()
         }
     }
 

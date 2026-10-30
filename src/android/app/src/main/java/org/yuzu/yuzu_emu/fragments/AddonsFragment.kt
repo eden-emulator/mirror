@@ -203,9 +203,14 @@ class AddonsFragment : Fragment() {
             val leftInsets = barInsets.left + cutoutInsets.left
             val rightInsets = barInsets.right + cutoutInsets.right
 
-            binding.toolbarAddons.updateMargins(left = leftInsets, right = rightInsets)
-            binding.listAddons.updateMargins(left = leftInsets, right = rightInsets)
+            binding.appbarAddons.updatePadding(
+                top = barInsets.top,
+                left = leftInsets,
+                right = rightInsets
+            )
             binding.listAddons.updatePadding(
+                left = leftInsets,
+                right = rightInsets,
                 bottom = barInsets.bottom +
                     resources.getDimensionPixelSize(R.dimen.spacing_bottom_list_fab)
             )

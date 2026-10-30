@@ -7,11 +7,12 @@
 package org.yuzu.yuzu_emu.adapters
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import org.yuzu.yuzu_emu.databinding.ListItemAddonBinding
+import org.yuzu.yuzu_emu.model.AddonViewModel
 import org.yuzu.yuzu_emu.model.Patch
 import org.yuzu.yuzu_emu.model.PatchType
-import org.yuzu.yuzu_emu.model.AddonViewModel
 import org.yuzu.yuzu_emu.viewholder.AbstractViewHolder
 
 class AddonAdapter(val addonViewModel: AddonViewModel) :
@@ -29,8 +30,9 @@ class AddonAdapter(val addonViewModel: AddonViewModel) :
             }
             binding.title.text = model.name
             binding.version.text = model.version
-            binding.addonSwitch.isChecked = model.enabled
 
+            binding.addonSwitch.setOnCheckedChangeListener(null)
+            binding.addonSwitch.isChecked = model.enabled
             binding.addonSwitch.setOnCheckedChangeListener { _, checked ->
                 if (PatchType.from(model.type) == PatchType.Update && checked) {
                     addonViewModel.enableOnlyThisUpdate(model)
