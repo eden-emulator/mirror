@@ -46,6 +46,7 @@ enum class ResultStatus : u16;
 
 namespace Core::Memory {
 struct CheatEntry;
+struct RuntimeCheatInfo;
 class Memory;
 } // namespace Core::Memory
 
@@ -342,6 +343,8 @@ public:
     void RegisterCheatList(const std::vector<Memory::CheatEntry>& list,
                            const std::array<u8, 0x20>& build_id, u64 main_region_begin,
                            u64 main_region_size);
+    [[nodiscard]] std::vector<Memory::RuntimeCheatInfo> GetRuntimeCheats() const;
+    bool SetCheatEnabled(u32 cheat_id, bool enabled);
 
     void SetFrontendAppletSet(Service::AM::Frontend::FrontendAppletSet&& set);
 

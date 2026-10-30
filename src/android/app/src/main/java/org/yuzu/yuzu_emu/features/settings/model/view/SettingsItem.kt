@@ -317,6 +317,13 @@ abstract class SettingsItem(
                 )
             )
             put(
+                SwitchSetting(
+                    BooleanSetting.ENABLE_CHEATS_BY_DEFAULT,
+                    titleId = R.string.enable_cheats_by_default,
+                    descriptionId = R.string.enable_cheats_by_default_description
+                )
+            )
+            put(
                 SingleChoiceSetting(
                     IntSetting.REGION_INDEX,
                     titleId = R.string.emulated_region,

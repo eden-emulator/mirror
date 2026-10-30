@@ -67,6 +67,7 @@ extern "C" {
 #include "core/file_sys/submission_package.h"
 #include "core/file_sys/vfs/vfs.h"
 #include "core/file_sys/vfs/vfs_real.h"
+#include "core/memory/dmnt_cheat_types.h"
 #include "core/frontend/applets/cabinet.h"
 #include "core/frontend/applets/controller.h"
 #include "core/frontend/applets/error.h"
@@ -944,6 +945,31 @@ jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_isRunning(JNIEnv* env, jclass cla
 
 jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_isPaused(JNIEnv* env, jclass clazz) {
     return static_cast<jboolean>(EmulationSession::GetInstance().IsPaused());
+}
+
+jobjectArray Java_org_yuzu_yuzu_1emu_NativeLibrary_getRuntimeCheats(JNIEnv* env, jclass clazz) {
+    const auto cheats = EmulationSession::GetInstance().System().GetRuntimeCheats();
+    const auto runtime_cheat_class = env->FindClass("org/yuzu/yuzu_emu/NativeLibrary$RuntimeCheat");
+    const auto constructor = env->GetMethodID(runtime_cheat_class, "<init>", "(ILjava/lang/String;ZZ)V");
+    auto result = env->NewObjectArray(static_cast<jsize>(cheats.size()), runtime_cheat_class, nullptr);
+    for (jsize i = 0; i < static_cast<jsize>(cheats.size()); ++i) {
+        const auto& cheat = cheats[i];
+        const auto name = Common::Android::ToJString(env, cheat.name);
+        const auto item = env->NewObject(runtime_cheat_class, constructor, static_cast<jint>(cheat.id), name,
+                                         static_cast<jboolean>(cheat.enabled),
+                                         static_cast<jboolean>(cheat.is_master));
+        env->SetObjectArrayElement(result, i, item);
+        env->DeleteLocalRef(name);
+        env->DeleteLocalRef(item);
+    }
+    env->DeleteLocalRef(runtime_cheat_class);
+    return result;
+}
+
+jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_setRuntimeCheatEnabled(JNIEnv* env, jclass clazz,
+                                                                      jint id, jboolean enabled) {
+    return static_cast<jboolean>(EmulationSession::GetInstance().System().SetCheatEnabled(
+        static_cast<u32>(id), static_cast<bool>(enabled)));
 }
 
 jbyteArray Java_org_yuzu_yuzu_1emu_NativeLibrary_getAppletCaptureBuffer(JNIEnv* env, jclass clazz) {

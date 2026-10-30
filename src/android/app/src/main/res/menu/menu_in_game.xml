@@ -43,6 +43,10 @@
         android:icon="@drawable/ic_nfc"
         android:title="@string/load_amiibo" />
 
+    <item
+        android:id="@+id/menu_cheats"
+        android:icon="@drawable/ic_code"
+        android:title="@string/cheats" />
 
     <item
         android:id="@+id/menu_overlay_controls"

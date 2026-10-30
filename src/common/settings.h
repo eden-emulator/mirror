@@ -247,6 +247,7 @@ struct Values {
 
     SwitchableSetting<bool> sync_core_speed{linkage, false, "sync_core_speed", Category::Core,
                                             Specialization::Default};
+    SwitchableSetting<bool> enable_cheats_by_default{linkage, true, "enable_cheats_by_default", Category::Core};
 
     // Cpu
     SwitchableSetting<CpuBackend, true> cpu_backend{linkage,

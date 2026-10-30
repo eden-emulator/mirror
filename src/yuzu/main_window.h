@@ -176,6 +176,9 @@ public:
 
     std::filesystem::path GetShortcutPath(QtCommon::Game::ShortcutTarget target);
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 signals:
 
     /**
@@ -264,6 +267,8 @@ private:
     void ConnectWidgetEvents();
     void ConnectMenuEvents();
     void UpdateMenuState();
+    void RefreshRuntimeCheats();
+    void ClearRuntimeCheats();
 
     void SetupPrepareForSleep();
 
@@ -552,6 +557,7 @@ private:
     QString startup_icon_theme;
 
     QActionGroup* game_size_actions;
+    std::vector<QAction*> runtime_cheat_actions;
 
     // Debugger panes
     ControllerDialog* controller_dialog = nullptr;

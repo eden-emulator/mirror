@@ -786,6 +786,17 @@ void System::RegisterCheatList(const std::vector<Memory::CheatEntry>& list,
     impl->cheat_engine->SetMainMemoryParameters(main_region_begin, main_region_size);
 }
 
+std::vector<Memory::RuntimeCheatInfo> System::GetRuntimeCheats() const {
+    if (!impl->cheat_engine) {
+        return {};
+    }
+    return impl->cheat_engine->GetCheats();
+}
+
+bool System::SetCheatEnabled(u32 cheat_id, bool enabled) {
+    return impl->cheat_engine && impl->cheat_engine->SetCheatEnabled(cheat_id, enabled);
+}
+
 void System::SetFrontendAppletSet(Service::AM::Frontend::FrontendAppletSet&& set) {
     impl->frontend_applets.SetFrontendAppletSet(std::move(set));
 }

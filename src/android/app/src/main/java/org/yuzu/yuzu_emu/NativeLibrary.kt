@@ -35,6 +35,13 @@ import org.yuzu.yuzu_emu.applets.web.WebBrowser
  */
 object NativeLibrary {
     @Keep
+    class RuntimeCheat(
+        val id: Int,
+        val name: String,
+        val enabled: Boolean,
+        val isMaster: Boolean
+    )
+    @Keep
     data class UpdateResult(
         var tag: String = "",
         var title: String = "",
@@ -196,6 +203,9 @@ object NativeLibrary {
      * Returns true if emulation is paused.
      */
     external fun isPaused(): Boolean
+
+    external fun getRuntimeCheats(): Array<RuntimeCheat>
+    external fun setRuntimeCheatEnabled(id: Int, enabled: Boolean): Boolean
 
     /**
      * Returns the performance stats for the current game

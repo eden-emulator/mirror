@@ -4,8 +4,11 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cctype>
 #include <locale>
 #include "common/hex_util.h"
+#include "common/logging.h"
+#include "common/settings.h"
 #include "common/swap.h"
 #include "core/arm/debug.h"
 #include "core/core.h"
@@ -28,11 +31,11 @@ constexpr auto CHEAT_ENGINE_NS = std::chrono::nanoseconds{1000000000 / 12};
 std::string_view ExtractName(std::size_t& out_name_size, std::string_view data,
                              std::size_t start_index, char match) {
     auto end_index = start_index;
-    while (data[end_index] != match) {
+    while (end_index < data.size() && data[end_index] != match) {
         ++end_index;
-        if (end_index > data.size()) {
-            return {};
-        }
+    }
+    if (end_index == data.size()) {
+        return {};
     }
 
     out_name_size = end_index - start_index;
@@ -130,6 +133,11 @@ void StandardVmCallbacks::CommandLog(std::string_view data) {
               data.back() == '\n' ? data.substr(0, data.size() - 1) : data);
 }
 
+bool StandardVmCallbacks::IsCommandLogEnabled() const {
+    return Common::Log::IsMessageEnabled(Common::Log::Class::CheatEngine,
+                                         Common::Log::Level::Debug);
+}
+
 bool StandardVmCallbacks::IsAddressInRange(VAddr in) const {
     if ((in < metadata.main_nso_extents.base ||
          in >= metadata.main_nso_extents.base + metadata.main_nso_extents.size) &&
@@ -166,8 +174,9 @@ std::vector<CheatEntry> TextCheatParser::Parse(std::string_view data) const {
 
         if (data[i] == '{') {
             current_entry = 0;
+            out[*current_entry].is_master = true;
 
-            if (out[*current_entry].definition.num_opcodes > 0) {
+            if (!out[*current_entry].definition.opcodes.empty()) {
                 return {};
             }
 
@@ -203,32 +212,33 @@ std::vector<CheatEntry> TextCheatParser::Parse(std::string_view data) const {
                 '\0';
 
             i += name_size + 1;
-        } else if (::isxdigit(data[i])) {
-            if (!current_entry || out[*current_entry].definition.num_opcodes >=
-                                      out[*current_entry].definition.opcodes.size()) {
+        } else if (std::isxdigit(static_cast<unsigned char>(data[i]))) {
+            if (!current_entry || data.size() - i < 8) {
                 return {};
             }
 
             const auto hex = std::string(data.substr(i, 8));
-            if (!std::all_of(hex.begin(), hex.end(), ::isxdigit)) {
+            if (!std::all_of(hex.begin(), hex.end(), [](char value) {
+                    return std::isxdigit(static_cast<unsigned char>(value));
+                })) {
                 return {};
             }
 
             const auto value = static_cast<u32>(std::strtoul(hex.c_str(), nullptr, 0x10));
-            out[*current_entry].definition.opcodes[out[*current_entry].definition.num_opcodes++] =
-                value;
+            out[*current_entry].definition.opcodes.push_back(value);
 
-            i += 8;
+            i += 7;
         } else {
             return {};
         }
     }
 
-    out[0].enabled = out[0].definition.num_opcodes > 0;
+    out[0].enabled = out[0].is_master && !out[0].definition.opcodes.empty();
     out[0].cheat_id = 0;
 
     for (u32 i = 1; i < out.size(); ++i) {
-        out[i].enabled = out[i].definition.num_opcodes > 0;
+        out[i].enabled = Settings::values.enable_cheats_by_default.GetValue() &&
+                         !out[i].definition.opcodes.empty();
         out[i].cheat_id = i;
     }
 
@@ -240,6 +250,10 @@ CheatEngine::CheatEngine(System& system_, std::vector<CheatEntry> cheats_,
     : vm{std::make_unique<StandardVmCallbacks>(system_, metadata)},
       cheats(std::move(cheats_)), core_timing{system_.CoreTiming()}, system{system_} {
     metadata.main_nso_build_id = build_id_;
+    for (u32 i = 0; i < cheats.size(); ++i) {
+        cheats[i].cheat_id = i;
+        cheats[i].enabled = cheats[i].is_master || cheats[i].enabled;
+    }
 }
 
 CheatEngine::~CheatEngine() {
@@ -286,12 +300,56 @@ void CheatEngine::SetMainMemoryParameters(VAddr main_region_begin, u64 main_regi
 }
 
 void CheatEngine::Reload(std::vector<CheatEntry> reload_cheats) {
-    cheats = std::move(reload_cheats);
-    is_pending_reload.exchange(true);
+    {
+        std::scoped_lock lock{cheats_mutex};
+        cheats = std::move(reload_cheats);
+        for (u32 i = 0; i < cheats.size(); ++i) {
+            cheats[i].cheat_id = i;
+            cheats[i].enabled = cheats[i].is_master || cheats[i].enabled;
+        }
+    }
+    is_pending_reload.store(true);
+}
+
+std::vector<RuntimeCheatInfo> CheatEngine::GetCheats() const {
+    std::scoped_lock lock{cheats_mutex};
+    std::vector<RuntimeCheatInfo> result;
+    result.reserve(cheats.size());
+    for (const auto& cheat : cheats) {
+        if (cheat.definition.opcodes.empty()) {
+            continue;
+        }
+        result.push_back({
+            .id = cheat.cheat_id,
+            .name = cheat.definition.readable_name.data(),
+            .enabled = cheat.enabled || cheat.is_master,
+            .is_master = cheat.is_master,
+        });
+    }
+    return result;
+}
+
+bool CheatEngine::SetCheatEnabled(u32 cheat_id, bool enabled) {
+    std::scoped_lock lock{cheats_mutex};
+    const auto entry = std::find_if(cheats.begin(), cheats.end(), [cheat_id](const auto& cheat) {
+        return cheat.cheat_id == cheat_id && !cheat.definition.opcodes.empty();
+    });
+    if (entry == cheats.end()) {
+        return false;
+    }
+    if (entry->is_master) {
+        return enabled;
+    }
+    if (entry->enabled != enabled) {
+        entry->enabled = enabled;
+        is_pending_reload.store(true);
+    }
+    return true;
 }
 
 void CheatEngine::FrameCallback(std::chrono::nanoseconds ns_late) {
     if (is_pending_reload.exchange(false)) {
+        std::scoped_lock lock{cheats_mutex};
         vm.LoadProgram(cheats);
     }
 

@@ -840,6 +840,12 @@
     <string name="preferences_graphics">Graphics</string>
     <string name="preferences_graphics_description">Accuracy level, resolution, shader cache</string>
     <string name="quick_settings">Quick Settings</string>
+    <string name="cheats">Cheats</string>
+    <string name="enable_all_cheats">Enable All Cheats</string>
+    <string name="disable_all_cheats">Disable All Cheats</string>
+    <string name="unnamed_cheat">Unnamed Cheat</string>
+    <string name="enable_cheats_by_default">Enable cheats by default</string>
+    <string name="enable_cheats_by_default_description">Enable regular cheats when a game starts</string>
     <string name="enable_quick_settings">Enable Quick Settings</string>
     <string name="enable_quick_settings_description">Allow access to quick settings menu via swipe and menu button</string>
     <string name="preferences_audio">Audio</string>

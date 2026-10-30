@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
@@ -281,9 +281,9 @@ public:
 
         virtual void DebugLog(u8 id, u64 value) = 0;
         virtual void CommandLog(std::string_view data) = 0;
+        [[nodiscard]] virtual bool IsCommandLogEnabled() const = 0;
     };
 
-    static constexpr std::size_t MaximumProgramOpcodeCount = 0x400;
     static constexpr std::size_t NumRegisters = 0x10;
     static constexpr std::size_t NumReadableStaticRegisters = 0x80;
     static constexpr std::size_t NumWritableStaticRegisters = 0x80;
@@ -294,7 +294,7 @@ public:
     ~DmntCheatVm();
 
     std::size_t GetProgramSize() const {
-        return this->num_opcodes;
+        return program.size();
     }
 
     bool LoadProgram(const std::vector<CheatEntry>& cheats);
@@ -303,11 +303,10 @@ public:
 private:
     std::unique_ptr<Callbacks> callbacks;
 
-    std::size_t num_opcodes = 0;
     std::size_t instruction_ptr = 0;
     std::size_t condition_depth = 0;
     bool decode_success = false;
-    std::array<u32, MaximumProgramOpcodeCount> program{};
+    std::vector<u32> program;
     std::array<u64, NumRegisters> registers{};
     std::array<u64, NumRegisters> saved_values{};
     std::array<u64, NumStaticRegisters> static_registers{};

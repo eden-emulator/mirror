@@ -91,6 +91,14 @@
     <addaction name="action_Configure"/>
     <addaction name="action_Configure_Current_Game"/>
    </widget>
+    <widget class="QMenu" name="menu_Cheats">
+     <property name="visible">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>&amp;Cheats</string>
+     </property>
+    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
      <string>&amp;View</string>
@@ -241,6 +249,7 @@
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Emulation"/>
+   <addaction name="menu_Cheats"/>
    <addaction name="menu_View"/>
    <addaction name="menu_Tools"/>
    <addaction name="menu_Multiplayer"/>

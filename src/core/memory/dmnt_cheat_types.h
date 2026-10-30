@@ -1,7 +1,13 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+
+#include <string>
+#include <vector>
 
 #include "common/common_types.h"
 
@@ -24,14 +30,21 @@ struct CheatProcessMetadata {
 
 struct CheatDefinition {
     std::array<char, 0x40> readable_name{};
-    u32 num_opcodes{};
-    std::array<u32, 0x100> opcodes{};
+    std::vector<u32> opcodes;
 };
 
 struct CheatEntry {
     bool enabled{};
+    bool is_master{};
     u32 cheat_id{};
     CheatDefinition definition{};
+};
+
+struct RuntimeCheatInfo {
+    u32 id{};
+    std::string name;
+    bool enabled{};
+    bool is_master{};
 };
 
 } // namespace Core::Memory

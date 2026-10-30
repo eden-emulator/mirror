@@ -510,6 +510,7 @@ class SettingsFragmentPresenter(
             add(IntSetting.FAST_CPU_TIME.key)
             add(IntSetting.FAST_GPU_TIME.key)
             add(BooleanSetting.CORE_SYNC_CORE_SPEED.key)
+            add(BooleanSetting.ENABLE_CHEATS_BY_DEFAULT.key)
 
             add(IntSetting.MEMORY_LAYOUT.key)
             add(BooleanSetting.USE_CUSTOM_CPU_TICKS.key)

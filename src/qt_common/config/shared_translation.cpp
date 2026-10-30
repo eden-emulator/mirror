@@ -86,6 +86,10 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
            tr("Synchronizes CPU core speed with the game's maximum rendering speed to boost FPS "
               "without affecting game speed (animations, physics, etc.).\n"
               "Can help reduce stuttering at lower framerates."));
+    INSERT(Settings, enable_cheats_by_default, tr("Enable cheats by default"),
+           tr("Enables regular cheats when a game starts. Master Code entries are always enabled. "
+              "Individual cheats can still be toggled from Cheats in the menu bar while the game is "
+              "running."));
 
     // Cpu
     INSERT(Settings, cpu_accuracy, tr("Accuracy:"),
