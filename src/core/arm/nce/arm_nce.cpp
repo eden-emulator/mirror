@@ -234,7 +234,7 @@ HaltReason ArmNce::RunThread(Kernel::KThread* thread) {
         hr = ReturnToRunCodeByExceptionLevelChange(m_thread_id, thread_params);  // Android: Use "process handle SIGUSR2 -n true -p true -s false" (and SIGURG) in LLDB when debugging
     }
 
-    // Critical section for thread cleanup
+    // Critical section for thread cleanup.
     std::atomic_thread_fence(std::memory_order_acquire);
 
     // Cache values before releasing thread
