@@ -1061,6 +1061,8 @@ add_library(core STATIC
     hle/service/sm/sm_controller.h
     hle/service/sockets/bsd.cpp
     hle/service/sockets/bsd.h
+    hle/service/sockets/socket_descriptor_table.cpp
+    hle/service/sockets/socket_descriptor_table.h
     hle/service/sockets/nsd.cpp
     hle/service/sockets/nsd.h
     hle/service/sockets/sfdnsres.cpp
@@ -1080,6 +1082,7 @@ add_library(core STATIC
     hle/service/ssl/ssl.cpp
     hle/service/ssl/ssl.h
     hle/service/ssl/ssl_backend.h
+    hle/service/ssl/ssl_connection.h
     hle/service/ssl/ssl_types.h
     hle/service/tma/tma.cpp
     hle/service/tma/tma.h

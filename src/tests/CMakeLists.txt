@@ -18,6 +18,8 @@ add_executable(tests
     common/unique_function.cpp
     core/core_timing.cpp
     core/internal_network/network.cpp
+    core/internal_network/socket_lifecycle.cpp
+    core/internal_network/ssl_lifecycle.cpp
     video_core/memory_tracker.cpp
     input_common/calibration_configuration_job.cpp
 )
@@ -26,6 +28,9 @@ create_target_directory_groups(tests)
 
 target_link_libraries(tests PRIVATE common core input_common video_core)
 target_link_libraries(tests PRIVATE ${PLATFORM_LIBRARIES} Catch2::Catch2WithMain Threads::Threads)
+target_link_libraries(tests PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+target_compile_definitions(tests PRIVATE
+    NETWORK_TEST_CERT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/core/internal_network/fixtures")
 
 add_test(NAME tests COMMAND tests)
 
