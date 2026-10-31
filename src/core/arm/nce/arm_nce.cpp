@@ -165,9 +165,12 @@ bool ArmNce::HandleGuestAccessFault(GuestContext* guest_ctx, void* raw_info, voi
     const Common::ProcessAddress addr =
         (reinterpret_cast<u64>(info->si_addr) & ~Memory::YUZU_PAGEMASK);
     auto& memory = guest_ctx->parent->m_running_thread->GetOwnerProcess()->GetMemory();
-    if (memory.InvalidateNCE(addr, Memory::YUZU_PAGESIZE)) {
-        // We handled the access successfully and are returning to guest code.
+    const auto result = memory.InvalidateNCE(addr, Memory::YUZU_PAGESIZE);
+    if (result == Memory::NCEAccessFaultAction::Retry) {
         return true;
+    }
+    if (result == Memory::NCEAccessFaultAction::Instruction) {
+        return HandleGuestAlignmentFault(guest_ctx, raw_info, raw_context);
     }
 
     // We couldn't handle the access.
