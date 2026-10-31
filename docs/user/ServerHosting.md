@@ -21,7 +21,7 @@ This guide explains how to set up a public/private self hosted Eden server/lobby
 
 - (Optional) Install Eden AppImage: `chmod +x Eden-Linux*.AppImage` This step is optional and only needed if you want to manage Eden locally on a VPS.
 
-- Now, we configure the lobby itself. Run the server: `docker run -d --name eden-lobby --restart unless-stopped -p 24872:24872/udp ikuzen/yuzu-hdr-multiplayer-dedicated --room-name "My Eden Room" --password "MySecurePass2025" --max-members 8 --preferred-game "Mario Kart 8 Deluxe" --preferred-game-id "01000ABF0C84C000" --web-api-url "api.ynet-fun.xyz"` This command starts the server in the background, maps the UDP port, and sets your room settings.
+- Now, we configure the lobby itself. Run the server: `docker run -d --name eden-lobby --restart unless-stopped -p 24872:24872/udp ikuzen/yuzu-hdr-multiplayer-dedicated --room-name "My Eden Room" --password "MySecurePass2025" --max_members 8 --preferred-game "Mario Kart 8 Deluxe" --preferred-game-id "01000ABF0C84C000" --web-api-url "api.ynet-fun.xyz"` This command starts the server in the background, maps the UDP port, and sets your room settings.
 
 - Now you can try verifying the server: `docker ps` You should see: `eden-lobby   Up   0.0.0.0:24872->24872/udp`
 
@@ -29,4 +29,4 @@ This guide explains how to set up a public/private self hosted Eden server/lobby
 
 - Managing the Docker container: Stop the server: `docker stop eden-lobby`, Start it again: `docker start eden-lobby`, Remove it: `docker rm -f eden-lobby` if you want to change the name of your lobby, you must first stop the server via: docker stop eden-lobby, then remove it via: docker rm -f eden-lobby. Then edit the server name and just repaste the updated command.
 
-- Notes: Only UDP port 24872 is strictly required. You can customize room name, password, max members, and preferred game. Optional parameters from the original Outcaster guide include: `--room-description` (Adds a room description in the lobby), `--allowed-name-suffix` (Restricts usernames), `--moderator-password` (Adds a moderator role), `--allow-non-preferred-game` (Allows games other than the preferred game)
+- Notes: Only UDP port 24872 is strictly required. You can customize room name, password, max members, and preferred game. Optional parameters from the original Outcaster guide include: `--room-description` (Adds a room description in the lobby), `--allowed-name-suffix` (Restricts usernames), `--moderator-password` (Adds a moderator role), `--allow-non-prefered-game` (Allows games other than the preferred game)
