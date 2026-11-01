@@ -13,7 +13,7 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <iphlpapi.h>
-#elif defined(__linux__) || defined(__ANDROID__)
+#elif defined(__linux__) || defined(__ANDROID__) || defined(__APPLE__)
 #include <cerrno>
 #include <ifaddrs.h>
 #include <net/if.h>
@@ -33,6 +33,13 @@
 #include <netinet/if_ether.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+// Darwin doesn't define this for some very odd reason
+// See https://stackoverflow.com/questions/5390164/getting-routing-table-on-macosx-programmatically
+#ifndef SA_SIZE
+#define SA_SIZE(sa) \
+    ((!(sa) || ((struct sockaddr *)(sa))->sa_len == 0) ? sizeof(long) \
+        : 1 + ( (((struct sockaddr *)(sa))->sa_len - 1) | (sizeof(long) - 1) ) )
+#endif
 #endif
 
 #include "common/common_types.h"
@@ -104,7 +111,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
 #else
 
 std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
-#if defined(__ANDROID__) || defined(__linux__)
+#if defined(__ANDROID__) || defined(__linux__) || defined(__APPLE__) || defined(__managarm__)
     struct ifaddrs* ifaddr = nullptr;
     if (getifaddrs(&ifaddr) != 0) {
         LOG_ERROR(Network, "getifaddrs: {}", std::strerror(errno));
@@ -119,8 +126,9 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
         u32 flags;
     };
     std::vector<RoutingEntry> routes{};
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || defined(__APPLE__)
     // Even through Linux based, we can't reliably obtain routing information from there :(
+    // macOS not Linux based and would murder us if we attempt to access /proc
 #else
     if (std::ifstream file("/proc/net/route"); file.is_open()) {
         file.ignore((std::numeric_limits<std::streamsize>::max)(), '\n'); //ignore header
@@ -138,7 +146,10 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
     std::vector<Network::NetworkInterface> ifaces;
     for (auto ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
         if (ifa->ifa_addr == nullptr || ifa->ifa_netmask == nullptr /* Have a netmask and address */
+        // Apple hates human beings so lets pretend all families are fine
+#if !defined(__APPLE__) && !defined(__managarm__)
         || ifa->ifa_addr->sa_family != AF_INET /* Must be of kind AF_INET */
+#endif
         || (ifa->ifa_flags & IFF_UP) == 0 || (ifa->ifa_flags & IFF_LOOPBACK) != 0) /* Not loopback */
             continue;
         // Just use 0 as the gateway address if not found OR routes are empty :)
@@ -158,7 +169,7 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
     }
     freeifaddrs(ifaddr);
     return ifaces;
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__APPLE__)
     std::vector<Network::NetworkInterface> ifaces;
     int fd = ::socket(PF_ROUTE, SOCK_RAW, AF_UNSPEC);
     if (fd < 0) {
@@ -198,11 +209,15 @@ std::vector<Network::NetworkInterface> GetAvailableNetworkInterfaces() {
                     if (msglen == 0 || msglen < SA_SIZE(sa))
                         break;
                     if (i == RTA_NETMASK && sa->sa_family == AF_LINK) {
-                        size_t namelen = 0;
                         struct sockaddr_dl const* sdl = reinterpret_cast<struct sockaddr_dl const*>(sa);
+#if defined(__FreeBSD__) && __FreeBSD__ < 15
+                        iface.name = std::string{::link_ntoa(sdl)};
+#else
+                        size_t namelen = 0;
                         ::link_ntoa_r(sdl, nullptr, &namelen);
                         iface.name = std::string(namelen, ' ');
                         ::link_ntoa_r(sdl, iface.name.data(), &namelen);
+#endif
                         std::memcpy(&iface.ip_address, sa, sizeof(struct sockaddr_in));
                     }
                     msglen -= SA_SIZE(sa);
