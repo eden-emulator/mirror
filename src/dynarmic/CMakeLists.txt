@@ -11,33 +11,14 @@ set(dynarmic_VERSION ${dynarmic_VERSION_MAJOR}.${dynarmic_VERSION_MINOR}.${dynar
 
 project(dynarmic LANGUAGES C CXX ASM VERSION ${dynarmic_VERSION})
 
-# Determine if we're built as a subproject (using add_subdirectory)
-# or if this is the master project.
-set(MASTER_PROJECT OFF)
-if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-  set(MASTER_PROJECT ON)
-endif()
-
-if (MASTER_PROJECT)
-    include(CTest)
-endif()
-
-# Dynarmic project options
-option(DYNARMIC_ENABLE_CPU_FEATURE_DETECTION "Turning this off causes dynarmic to assume the host CPU doesn't support anything later than SSE3" ON)
-
 if (OPENBSD OR DRAGONFLY OR NETBSD)
     set(REQUIRE_WX ON)
 else()
     set(REQUIRE_WX OFF)
 endif()
 option(DYNARMIC_ENABLE_NO_EXECUTE_SUPPORT "Enables support for systems that require W^X" ${REQUIRE_WX})
-
-option(DYNARMIC_IGNORE_ASSERTS "Ignore asserts" ON)
 option(DYNARMIC_TESTS_USE_UNICORN "Enable fuzzing tests against unicorn" OFF)
 CMAKE_DEPENDENT_OPTION(DYNARMIC_USE_LLVM "Support disassembly of jitted x86_64 code using LLVM" OFF "NOT YUZU_DISABLE_LLVM" OFF)
-
-option(DYNARMIC_INSTALL "Install dynarmic headers and CMake files" OFF)
-option(DYNARMIC_USE_BUNDLED_EXTERNALS "Use all bundled externals (useful when e.g. cross-compiling)" OFF)
 
 # Set hard requirements for C++
 set(CMAKE_CXX_STANDARD 20)
@@ -88,7 +69,7 @@ if (MSVC)
              -Wno-missing-braces)
     endif()
 else()
-    set(DYNARMIC_CXX_FLAGS
+    list(APPEND DYNARMIC_CXX_FLAGS
         -Wall
         -Wextra
         -Wcast-qual
@@ -103,37 +84,35 @@ else()
         # to Address& after first checking isMEM(), and that code is inlined in a situation where
         # GCC knows that the variable is actually a Reg64.  isMEM() will never return true for a
         # Reg64, but GCC doesn't know that.
-        list(APPEND DYNARMIC_CXX_FLAGS -Wno-array-bounds)
-        list(APPEND DYNARMIC_CXX_FLAGS -Wstack-usage=4096)
+        list(APPEND DYNARMIC_CXX_FLAGS
+            -Wno-array-bounds
+            -Wstack-usage=4096)
     endif()
     if (CXX_CLANG)
-        # Bracket depth determines maximum size of a fold expression in Clang since 9c9974c3ccb6.
-        # And this in turns limits the size of a std::array.
-        list(APPEND DYNARMIC_CXX_FLAGS -fbracket-depth=1024)
-        # Clang mistakenly blames CMake for using unused arguments during compilation
-        list(APPEND DYNARMIC_CXX_FLAGS -Wno-unused-command-line-argument)
+        list(APPEND DYNARMIC_CXX_FLAGS
+            # Bracket depth determines maximum size of a fold expression in Clang since 9c9974c3ccb6.
+            # And this in turns limits the size of a std::array.
+            -fbracket-depth=1024
+            # Clang mistakenly blames CMake for using unused arguments during compilation
+            -Wno-unused-command-line-argument)
     endif()
 endif()
 
 if (NOT Boost_FOUND)
     find_package(Boost 1.57 REQUIRED)
 endif()
-
 find_package(fmt 8 CONFIG)
 
-if ("arm64" IN_LIST ARCHITECTURE OR DYNARMIC_TESTS)
+if (ARCHITECTURE_arm64)
     find_package(oaknut 2.0.1 CONFIG)
 endif()
-
-if ("riscv64" IN_LIST ARCHITECTURE)
+if (ARCHITECTURE_riscv64)
     find_package(biscuit 0.9.1 REQUIRED)
 endif()
-
-if ("loongarch64" IN_LIST ARCHITECTURE)
+if (ARCHITECTURE_loongarch64)
     find_package(lagoon REQUIRED)
 endif()
-
-if ("x86_64" IN_LIST ARCHITECTURE)
+if (ARCHITECTURE_x86_64)
     find_package(xbyak 7 CONFIG)
 endif()
 
@@ -142,44 +121,12 @@ if (DYNARMIC_USE_LLVM)
     separate_arguments(LLVM_DEFINITIONS)
 endif()
 
+# Dynarmic project files
+add_subdirectory(src/dynarmic)
 if (DYNARMIC_TESTS)
     find_package(Catch2 3 CONFIG)
     if (DYNARMIC_TESTS_USE_UNICORN)
         find_package(Unicorn REQUIRED)
     endif()
-endif()
-
-# Dynarmic project files
-add_subdirectory(src/dynarmic)
-if (DYNARMIC_TESTS)
     add_subdirectory(tests)
-endif()
-
-#
-# Install
-#
-if (DYNARMIC_INSTALL)
-    include(GNUInstallDirs)
-    include(CMakePackageConfigHelpers)
-
-    install(TARGETS dynarmic EXPORT dynarmicTargets)
-    install(EXPORT dynarmicTargets
-        NAMESPACE dynarmic::
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/dynarmic"
-    )
-
-    configure_package_config_file(CMakeModules/dynarmicConfig.cmake.in
-        dynarmicConfig.cmake
-        INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/dynarmic"
-    )
-    write_basic_package_version_file(dynarmicConfigVersion.cmake
-        COMPATIBILITY SameMajorVersion
-    )
-    install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/dynarmicConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/dynarmicConfigVersion.cmake"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/dynarmic"
-    )
-
-    install(DIRECTORY src/dynarmic TYPE INCLUDE FILES_MATCHING PATTERN "*.h")
 endif()
