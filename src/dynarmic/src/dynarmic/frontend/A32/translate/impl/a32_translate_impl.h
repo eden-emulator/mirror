@@ -9,6 +9,7 @@
 #pragma once
 
 #include "common/assert.h"
+#include "dynarmic/interface/A32/config.h"
 #include "dynarmic/mcl/bit.hpp"
 
 #include "dynarmic/frontend/A32/a32_ir_emitter.h"
@@ -25,12 +26,14 @@ enum class Exception;
 struct TranslatorVisitor final {
     using instruction_return_type = bool;
 
-    explicit TranslatorVisitor(IR::Block& block, LocationDescriptor descriptor, const TranslationOptions& options)
-            : ir(block, descriptor, options.arch_version), options(options) {}
+    explicit TranslatorVisitor(IR::Block& block, LocationDescriptor descriptor, const A32::UserConfig& conf)
+        : ir(block, descriptor, conf.arch_version)
+        , conf(conf)
+    {}
 
     A32::IREmitter ir;
     ConditionalState cond_state = ConditionalState::None;
-    TranslationOptions options;
+    A32::UserConfig const& conf;
 
     size_t current_instruction_size;
 

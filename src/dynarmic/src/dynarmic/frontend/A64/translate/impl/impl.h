@@ -15,17 +15,20 @@
 #include "dynarmic/frontend/A64/a64_types.h"
 #include "dynarmic/frontend/A64/translate/a64_translate.h"
 #include "dynarmic/frontend/imm.h"
+#include "dynarmic/interface/A64/config.h"
 
 namespace Dynarmic::A64 {
 
 struct TranslatorVisitor final {
     using instruction_return_type = bool;
 
-    explicit TranslatorVisitor(IR::Block& block, LocationDescriptor descriptor, TranslationOptions options)
-            : ir(block, descriptor), options(std::move(options)) {}
+    explicit TranslatorVisitor(IR::Block& block, LocationDescriptor descriptor, A64::UserConfig const& conf)
+        : ir(block, descriptor)
+        , conf(conf)
+    {}
 
     A64::IREmitter ir;
-    TranslationOptions options;
+    A64::UserConfig const& conf;
 
     bool UnpredictableInstruction();
     bool DecodeError();

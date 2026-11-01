@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /* This file is part of the dynarmic project.
  * Copyright (c) 2019 MerryMage
  * SPDX-License-Identifier: 0BSD
@@ -9,7 +12,7 @@
 namespace Dynarmic::A32 {
 
 bool TranslatorVisitor::arm_PLD_imm(bool /*add*/, bool R, Reg /*n*/, Imm<12> /*imm12*/) {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
 
@@ -18,7 +21,7 @@ bool TranslatorVisitor::arm_PLD_imm(bool /*add*/, bool R, Reg /*n*/, Imm<12> /*i
 }
 
 bool TranslatorVisitor::arm_PLD_reg(bool /*add*/, bool R, Reg /*n*/, Imm<5> /*imm5*/, ShiftType /*shift*/, Reg /*m*/) {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
 
@@ -27,7 +30,7 @@ bool TranslatorVisitor::arm_PLD_reg(bool /*add*/, bool R, Reg /*n*/, Imm<5> /*im
 }
 
 bool TranslatorVisitor::arm_SEV() {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
 
@@ -35,7 +38,7 @@ bool TranslatorVisitor::arm_SEV() {
 }
 
 bool TranslatorVisitor::arm_SEVL() {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
 
@@ -43,7 +46,7 @@ bool TranslatorVisitor::arm_SEVL() {
 }
 
 bool TranslatorVisitor::arm_WFE() {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
 
@@ -51,7 +54,7 @@ bool TranslatorVisitor::arm_WFE() {
 }
 
 bool TranslatorVisitor::arm_WFI() {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
 
@@ -59,7 +62,7 @@ bool TranslatorVisitor::arm_WFI() {
 }
 
 bool TranslatorVisitor::arm_YIELD() {
-    if (!options.hook_hint_instructions) {
+    if (!conf.hook_hint_instructions) {
         return true;
     }
 
