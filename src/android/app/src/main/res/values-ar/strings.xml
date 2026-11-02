@@ -351,7 +351,7 @@
     <string name="frame_generation_unsupported">غير مدعوم (لا يتوفر نموذج ذاكرة Vulkan أو float16)</string>
     <string name="lossless_scaling">Lossless Scaling</string>
     <string name="lossless_scaling_description">قم بتوفير نسختك الخاصة من ملف Lossless.dll لتفعيل توليد الإطارات</string>
-    <string name="lossless_scaling_installed">مثبت</string>
+    <string name="lossless_scaling_installed">تم التثبيت</string>
     <string name="lossless_scaling_not_installed">غير مثبت</string>
     <string name="lossless_scaling_replace">استبدل</string>
     <string name="lossless_scaling_remove">إزالة</string>
@@ -501,9 +501,9 @@
     <string name="frame_limit_enable_description">يحدد سرعة المحاكاة بنسبة مئوية محددة من السرعة العادية.</string>
     <string name="frame_limit_slider">نسبة الحد الأقصى للسرعة</string>
     <string name="frame_limit_slider_description">يحدد النسبة المئوية للحد من سرعة المحاكاة. %100 هي السرعة الطبيعية. القيم الأعلى أو الأقل ستزيد أو تقلل من الحد الأقصى للسرعة.</string>
-    <string name="turbo_speed_limit">سرعة تيربو</string>
+    <string name="turbo_speed_limit">السرعة الفائقة</string>
     <string name="turbo_speed_limit_description">عند تفعيل وضع التيربو، سيتم تشغيل المحاكاة بهذه السرعة.</string>
-    <string name="slow_speed_limit">سرعة بطيئة</string>
+    <string name="slow_speed_limit">السرعة البطيئة</string>
     <string name="slow_speed_limit_description">عند تفعيل الوضع البطيء، سيتم تشغيل المحاكاة بهذه السرعة.</string>
     <string name="cpu_backend">خلفية وحدة المعالجة المركزية</string>
     <string name="cpu_accuracy">دقة وحدة المعالجة المركزية</string>
@@ -514,7 +514,7 @@
 
     <!-- System settings strings -->
     <string name="device_name">اسم الجهاز</string>
-    <string name="use_docked_mode">وضع الإرساء</string>
+    <string name="use_docked_mode">وضع المنصة</string>
     <string name="use_docked_mode_description">يزيد الدقة ويقلل الأداء. يتم استخدام الوضع المحمول عند تعطيله، مما يقلل الدقة ويزيد الأداء.</string>
     <string name="emulated_region">المنطقة التي تمت محاكاتها</string>
     <string name="emulated_language">لغة المحاكاة</string>
@@ -543,7 +543,7 @@
     <string name="network">الشبكة</string>
 
     <!-- Graphics settings strings -->
-    <string name="renderer_resolution">الدقة (الإرساء/محمول)</string>
+    <string name="renderer_resolution">الدقة (المنصة/محمول)</string>
     <string name="renderer_vsync">VSync وضع</string>
     <string name="renderer_scaling_filter">مرشح ملائم للنافذة</string>
     <string name="fsr_sharpness">حدة FSR/SGSR</string>
@@ -588,7 +588,7 @@
     <string name="skip_cpu_inner_invalidation">تخطي إبطال صلاحية وحدة المعالجة المركزية الداخلية</string>
     <string name="skip_cpu_inner_invalidation_description">يتخطى بعض عمليات إبطال ذاكرة التخزين المؤقتة من جانب وحدة المعالجة المركزية أثناء تحديثات الذاكرة، مما يقلل من استخدام وحدة المعالجة المركزية ويحسن أداءها. قد يتسبب ذلك في حدوث أعطال أو تعطل في بعض الألعاب.</string>
     <string name="fix_bloom_effects">إصلاح تأثيرات التوهج</string>
-    <string name="fix_bloom_effects_description">يقلل من ضبابية التوهج في LA/EOW  (Adreno A6XX - A7XX/ Turnip)، ويزيل التوهج في Burnout. تحذير: قد يسبب تشوهات رسومية في ألعاب أخرى.</string>
+    <string name="fix_bloom_effects_description">يزيل تأثير التوهج في لعبة Burnout.</string>
     <string name="emulate_bgr565">محاكاة BGR565</string>
     <string name="emulate_bgr565_description">يُصلح مشاكل انعكاس الألوان في الألعاب أو ظهور تشوهات غريبة أو ظلال غريبة.</string>
     <string name="rescale_hack">تفعيل ميزة إعادة التحجيم القديمة</string>
@@ -694,7 +694,7 @@
     <string name="control_stick">عصا التحكم</string>
     <string name="right_stick">العصا اليمنى</string>
     <string name="c_stick">عصا-C</string>
-    <string name="pressed">مضغوط</string>
+    <string name="pressed">ضغط العصا</string>
     <string name="range">النطاق</string>
     <string name="deadzone">المنطقة الميتة</string>
     <string name="modifier">معدل</string>
@@ -821,10 +821,16 @@
     <!-- Preferences Screen -->
     <string name="preferences_settings">الإعدادات</string>
     <string name="preferences_system">النظام</string>
-    <string name="preferences_system_description">وضع الإرساء، المنطقة، اللغة</string>
+    <string name="preferences_system_description">وضع المنصة، المنطقة، اللغة</string>
     <string name="preferences_graphics">الرسومات</string>
     <string name="preferences_graphics_description">مستوى دقة المحاكاة، الدقة، ذاكرة التخزين المؤقتة للتظليل</string>
     <string name="quick_settings">الإعدادات السريعة</string>
+    <string name="cheats">رموز الغش</string>
+    <string name="enable_all_cheats">تفعيل جميع رموز الغش</string>
+    <string name="disable_all_cheats">تعطيل جميع رموز الغش</string>
+    <string name="unnamed_cheat">رمز الغش بدون اسم</string>
+    <string name="enable_cheats_by_default">تفعيل رموز الغش بشكل افتراضي</string>
+    <string name="enable_cheats_by_default_description">تفعيل رموز الغش الاعتيادية عند بدء اللعبة</string>
     <string name="enable_quick_settings">تفعيل الإعدادات السريعة</string>
     <string name="enable_quick_settings_description">السماح بالوصول إلى قائمة الإعدادات السريعة عن طريق التمرير و زر القائمة</string>
     <string name="preferences_audio">الصوت</string>
@@ -869,12 +875,12 @@
     <string name="copy_details">نسخ التفاصيل</string>
     <string name="add_ons">الإضافات</string>
     <string name="add_ons_description">تفعيل/تعطيل التعديلات، التحديثات، المحتوى القابل للتنزيل</string>
-    <string name="playtime">زمن اللعب:</string>
-    <string name="reset_playtime">مسح زمن اللعب</string>
-    <string name="reset_playtime_description">إعادة تعيين زمن اللعب للعبة الحالية إلى 0 ثانية</string>
-    <string name="reset_playtime_warning_description">سيؤدي هذا إلى مسح بيانات زمن اللعب الحالية للعبة. هل أنت متأكد؟</string>
-    <string name="playtime_reset_successfully">تمت إعادة تعيين زمن اللعب</string>
-    <string name="edit_playtime">تعديل زمن اللعب</string>
+    <string name="playtime">وقت اللعب:</string>
+    <string name="reset_playtime">مسح وقت اللعب</string>
+    <string name="reset_playtime_description">إعادة تعيين وقت لعب اللعبة الحالية إلى 0 ثانية</string>
+    <string name="reset_playtime_warning_description">سيؤدي هذا إلى مسح بيانات وقت اللعب للعبة الحالية. هل أنت متأكد؟</string>
+    <string name="playtime_reset_successfully">تمت إعادة تعيين وقت اللعب</string>
+    <string name="edit_playtime">تعديل وقت اللعب</string>
     <string name="hours">ساعات</string>
     <string name="minutes">دقائق</string>
     <string name="hours_abbr">س</string>
@@ -883,7 +889,7 @@
     <string name="hours_must_be_between_0_and_9999">يجب أن تكون الساعات بين 0 و 9999</string>
     <string name="minutes_must_be_between_0_and_59">يجب أن تكون الدقائق بين 0 و 59</string>
     <string name="seconds_must_be_between_0_and_59">يجب أن تكون الثواني بين 0 و 59</string>
-    <string name="playtime_updated_successfully">تم تحديث زمن اللعب بنجاح</string>
+    <string name="playtime_updated_successfully">تم تحديث وقت اللعب بنجاح</string>
     <string name="clear_shader_cache">مسح ذاكرة التخزين المؤقتة للتظليل</string>
     <string name="clear_shader_cache_description">يزيل جميع التظليلات التي تم إنشاؤها أثناء لعب هذه اللعبة</string>
     <string name="clear_shader_cache_warning_description">ستواجه المزيد من التقطع مع إعادة إنشاء ذاكرة التخزين المؤقتة للتظلل</string>
