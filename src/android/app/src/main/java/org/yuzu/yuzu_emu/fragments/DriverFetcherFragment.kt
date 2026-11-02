@@ -79,9 +79,8 @@ class DriverFetcherFragment : Fragment() {
         IntRange(100, 599) to "Unsupported",
         IntRange(600, 639) to "Mr. Purple EOL-24.3.4",
         IntRange(640, 699) to "Mr. Purple T19",
-        IntRange(700, 710) to "KIMCHI 25.2.0_r5",
-        IntRange(711, 799) to "Mr. Purple T23",
-        IntRange(800, 899) to "GameHub Adreno 8xx",
+        IntRange(700, 710) to "Mr. Purple T29",
+        IntRange(711, 899) to "Mr. Purple T30",
         IntRange(900, Int.MAX_VALUE) to "Unsupported"
     )
 

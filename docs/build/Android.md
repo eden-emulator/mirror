@@ -33,10 +33,9 @@ Eden by default will be cloned into:
 ## Building with Terminal
 
 1. Download the SDK and NDK from Android Studio.
-2. Navigate to SDK and NDK paths.
-3. Then set ANDROID_SDK_ROOT and ANDROID_NDK_ROOT in terminal via
-`export ANDROID_SDK_ROOT=path/to/sdk`
-`export ANDROID_NDK_ROOT=path/to/ndk`.
+2. Navigate to SDK path.
+3. Then set ANDROID_HOME in terminal via
+`export ANDROID_HOME=path/to/sdk`
 4. Navigate to `eden/src/android`.
 5. Then Build with `./gradlew assembleRelWithDebInfo`.
 6. To build the optimised build use `./gradlew assembleGenshinSpoofRelWithDebInfo`.
