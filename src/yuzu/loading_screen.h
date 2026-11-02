@@ -12,6 +12,8 @@
 #include <QWidget>
 #include <QtGlobal>
 
+#include "common/container/unordered_map.h"
+
 #if !QT_CONFIG(movie)
 #define YUZU_QT_MOVIE_MISSING 1
 #endif
@@ -91,7 +93,3 @@ private:
     std::chrono::steady_clock::time_point previous_time;
     std::size_t slow_shader_first_value = 0;
 };
-
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-Q_DECLARE_METATYPE(VideoCore::LoadCallbackStage);
-#endif

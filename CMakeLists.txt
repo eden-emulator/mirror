@@ -594,7 +594,7 @@ if (ENABLE_QT)
         list(APPEND CMAKE_PREFIX_PATH "${Qt6_DIR}")
     endif()
 
-    find_package(Qt6 REQUIRED COMPONENTS Core)
+    find_package(Qt6 6.5 REQUIRED COMPONENTS Core)
 
     if (NOT DEFINED QT_TARGET_PATH)
         get_target_property(qtcore_path Qt6::Core LOCATION_Release)

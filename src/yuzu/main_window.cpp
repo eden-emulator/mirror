@@ -64,9 +64,7 @@
 // Qt Stuff //
 #define QT_NO_OPENGL
 
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
 #include <QStyleHints>
-#endif
 
 #include <QActionGroup>
 #include <QCheckBox>
@@ -345,17 +343,9 @@ QString GetTranslatedGameIconSize(size_t index) {
 } // namespace
 
 #ifndef _WIN32
-// TODO(crueter): carboxyl does this, is it needed in qml?
 inline static bool isDarkMode() {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     const auto scheme = QGuiApplication::styleHints()->colorScheme();
     return scheme == Qt::ColorScheme::Dark;
-#else
-    const QPalette defaultPalette;
-    const auto text = defaultPalette.color(QPalette::WindowText);
-    const auto window = defaultPalette.color(QPalette::Window);
-    return text.lightness() > window.lightness();
-#endif // QT_VERSION
 }
 #endif // _WIN32
 

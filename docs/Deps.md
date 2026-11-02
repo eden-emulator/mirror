@@ -25,7 +25,7 @@ The following additional tools are also required:
     * `tools/windows/install-vulkan-sdk.ps1` (for PowerShell 5+)
     * `tools/windows/install-vulkan-sdk.sh` (for Git Bash, etc)
 
-If you are on desktop and plan to use the Qt frontend, you *must* install Qt 6, and optionally Qt Creator (the **RECOMMENDED** IDE for building)
+If you are on desktop and plan to use the Qt frontend, you *must* install Qt >=6.6, and optionally Qt Creator (the **RECOMMENDED** IDE for building)
 
 * On Linux, *BSD and macOS, this can be done by the package manager
   * If you wish to use Qt Creator, append `qtcreator` or `qt-creator` to the commands seen below.
