@@ -345,10 +345,6 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
 
     // Linux
     INSERT(UISettings, enable_gamemode, tr("Enable Gamemode"), QString());
-#ifdef __unix__
-    INSERT(UISettings, gui_force_x11, tr("Force X11 as Graphics Backend"), QString());
-    INSERT(UISettings, gui_hide_backend_warning, QString(), QString());
-#endif
 
     // Ui Debugging
 

@@ -148,11 +148,6 @@ struct Values {
                                             false,
 #endif
                                             "enable_gamemode", Category::UiGeneral};
-#ifdef __unix__
-    SwitchableSetting<bool> gui_force_x11{linkage, false, "gui_force_x11", Category::UiGeneral};
-    Setting<bool> gui_hide_backend_warning{linkage, false, "gui_hide_backend_warning",
-                                           Category::UiGeneral};
-#endif
 
     // Discord RPC
     Setting<bool> enable_discord_presence{linkage, false, "enable_discord_presence", Category::Ui};

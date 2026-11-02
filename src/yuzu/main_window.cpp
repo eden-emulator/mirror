@@ -184,7 +184,6 @@ static FileSys::VirtualFile VfsDirectoryCreateFileWrapper(const FileSys::Virtual
 #include <csignal>
 #include <QSocketNotifier>
 #include <sys/socket.h>
-#include "qt_common/gui_settings.h"
 
 #endif
 
@@ -451,10 +450,6 @@ MainWindow::MainWindow(bool has_broken_vulkan)
 
     // Gen keys if necessary
     OnCheckFirmwareDecryption();
-
-#ifdef __unix__
-    OnCheckGraphicsBackend();
-#endif
 
     // Check for orphaned profiles and reset profile data if necessary
     QtCommon::Content::FixProfiles();
@@ -3475,9 +3470,6 @@ void MainWindow::OnConfigure() {
     const bool old_discord_presence = UISettings::values.enable_discord_presence.GetValue();
     const auto old_language_index = Settings::values.language_index.GetValue();
     const bool old_gamemode = UISettings::values.enable_gamemode.GetValue();
-#ifdef __unix__
-    const bool old_force_x11 = UISettings::values.gui_force_x11.GetValue();
-#endif
 
     Settings::SetConfiguringGlobal(true);
     ConfigureDialog configure_dialog(this, hotkey_registry, input_subsystem.get(),
@@ -3542,11 +3534,6 @@ void MainWindow::OnConfigure() {
     if (UISettings::values.enable_gamemode.GetValue() != old_gamemode) {
         SetGamemodeEnabled(UISettings::values.enable_gamemode.GetValue());
     }
-#ifdef __unix__
-    if (UISettings::values.gui_force_x11.GetValue() != old_force_x11) {
-        GraphicsBackend::SetForceX11(UISettings::values.gui_force_x11.GetValue());
-    }
-#endif
 
     if (!multiplayer_state->IsHostingPublicRoom()) {
         multiplayer_state->UpdateCredentials();
@@ -4429,56 +4416,6 @@ void MainWindow::OnCheckFirmwareDecryption() {
     SetFirmwareVersion();
     UpdateMenuState();
 }
-
-#ifdef __unix__
-void MainWindow::OnCheckGraphicsBackend() {
-    const QString platformName = QGuiApplication::platformName();
-    const QByteArray qtPlatform = qgetenv("QT_QPA_PLATFORM");
-
-    if (platformName == QStringLiteral("xcb") || qtPlatform == "xcb")
-        return;
-
-    const bool isWayland =
-        platformName.startsWith(QStringLiteral("wayland"), Qt::CaseInsensitive) ||
-        qtPlatform.startsWith("wayland");
-    if (!isWayland)
-        return;
-
-    const bool currently_hidden = UISettings::values.gui_hide_backend_warning.GetValue();
-    if (currently_hidden)
-        return;
-
-    QMessageBox msgbox(this);
-    msgbox.setWindowTitle(tr("Wayland Detected!"));
-    msgbox.setText(
-        tr("Wayland is known to have significant performance issues and mysterious bugs.\n"
-           "It's recommended to use X11 instead.\n\n"
-           "Would you like to force it for future launches?"));
-    msgbox.setIcon(QMessageBox::Warning);
-
-    QPushButton* okButton = msgbox.addButton(tr("Use X11"), QMessageBox::AcceptRole);
-    msgbox.addButton(tr("Continue with Wayland"), QMessageBox::RejectRole);
-    msgbox.setDefaultButton(okButton);
-
-    QCheckBox* cb = new QCheckBox(tr("Don't show again"), &msgbox);
-    cb->setChecked(currently_hidden);
-    msgbox.setCheckBox(cb);
-
-    msgbox.exec();
-
-    const bool hide = cb->isChecked();
-    if (hide != currently_hidden) {
-        UISettings::values.gui_hide_backend_warning.SetValue(hide);
-    }
-
-    if (msgbox.clickedButton() == okButton) {
-        UISettings::values.gui_force_x11.SetValue(true);
-        GraphicsBackend::SetForceX11(true);
-        QMessageBox::information(this, tr("Restart Required"),
-                                 tr("Restart Eden to apply the X11 backend."));
-    }
-}
-#endif
 
 bool MainWindow::CheckFirmwarePresence() {
     return FirmwareManager::CheckFirmwarePresence(*QtCommon::system.get());

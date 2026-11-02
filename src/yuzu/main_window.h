@@ -427,9 +427,6 @@ private slots:
     void OnCreateHomeMenuApplicationMenuShortcut();
     void OnCaptureScreenshot();
     void OnCheckFirmwareDecryption();
-#ifdef __unix__
-    void OnCheckGraphicsBackend();
-#endif
     void OnLanguageChanged(const QString& locale);
     void OnMouseActivity();
     bool OnShutdownBegin();
