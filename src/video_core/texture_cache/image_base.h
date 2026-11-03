@@ -63,6 +63,11 @@ struct ImageBase {
 
     [[nodiscard]] std::optional<SubresourceBase> TryFindBase(GPUVAddr other_addr) const noexcept;
 
+    /// Expresses a CPU address of the same memory in this image's GPU address space.
+    [[nodiscard]] GPUVAddr TranslateAddress(VAddr other_cpu_addr) const noexcept {
+        return gpu_addr + (other_cpu_addr - cpu_addr);
+    }
+
     [[nodiscard]] ImageViewId FindView(const ImageViewInfo& view_info) const noexcept;
 
     void InsertView(const ImageViewInfo& view_info, ImageViewId image_view_id);

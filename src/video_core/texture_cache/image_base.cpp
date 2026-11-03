@@ -164,7 +164,8 @@ bool AddImageAlias(ImageBase& lhs, ImageBase& rhs, ImageId lhs_id, ImageId rhs_i
         // We are passing relaxed formats as an option, having broken views/bgr or not won't matter
         static constexpr bool broken_views = false;
         static constexpr bool native_bgr = true;
-        base = FindSubresource(rhs.info, lhs, rhs.gpu_addr, OPTIONS, broken_views, native_bgr);
+        base = FindSubresource(rhs.info, lhs, lhs.TranslateAddress(rhs.cpu_addr), OPTIONS,
+                               broken_views, native_bgr);
     }
     if (!base) {
         LOG_ERROR(HW_GPU, "Image alias should have been flipped");

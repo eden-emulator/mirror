@@ -1570,8 +1570,14 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
         }
         join_overlaps_found.insert(overlap_id);
         constexpr bool strict_size = true;
-        const std::optional<OverlapResult> solution = ResolveOverlap(
-            new_info, gpu_addr, cpu_addr, overlap, strict_size, broken_views, native_bgr);
+        // Overlap resolution assumes the GPU address delta is the memory delta. Aliased GPU
+        // mappings break that assumption, so they must be handled through the alias path.
+        const bool same_mapping = (gpu_addr - overlap.gpu_addr) == (cpu_addr - overlap.cpu_addr);
+        std::optional<OverlapResult> solution;
+        if (same_mapping) {
+            solution = ResolveOverlap(new_info, gpu_addr, cpu_addr, overlap, strict_size,
+                                      broken_views, native_bgr);
+        }
         if (solution) {
             gpu_addr = solution->gpu_addr;
             cpu_addr = solution->cpu_addr;
@@ -1582,11 +1588,13 @@ ImageId TextureCache<P>::JoinImages(const ImageInfo& info, GPUVAddr gpu_addr, DA
         }
         constexpr auto options = RelaxedOptions::Size | RelaxedOptions::Format;
         const ImageBase new_image_base(new_info, gpu_addr, cpu_addr);
-        if (IsSubresource(new_info, overlap, gpu_addr, options, broken_views, native_bgr)) {
+        if (IsSubresource(new_info, overlap, overlap.TranslateAddress(cpu_addr), options,
+                          broken_views, native_bgr)) {
             join_left_aliased_ids.push_back(overlap_id);
             overlap.flags |= ImageFlagBits::Alias;
             join_copies_to_do.emplace_back(JoinCopy{true, overlap_id});
-        } else if (IsSubresource(overlap.info, new_image_base, overlap.gpu_addr, options,
+        } else if (IsSubresource(overlap.info, new_image_base,
+                                 new_image_base.TranslateAddress(overlap.cpu_addr), options,
                                  broken_views, native_bgr)) {
             join_right_aliased_ids.push_back(overlap_id);
             overlap.flags |= ImageFlagBits::Alias;
