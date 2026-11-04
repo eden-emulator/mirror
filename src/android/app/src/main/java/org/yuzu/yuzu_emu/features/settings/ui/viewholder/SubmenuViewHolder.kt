@@ -5,6 +5,7 @@ package org.yuzu.yuzu_emu.features.settings.ui.viewholder
 
 import android.view.View
 import androidx.core.content.res.ResourcesCompat
+import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.databinding.ListItemSettingBinding
 import org.yuzu.yuzu_emu.features.settings.model.view.SettingsItem
 import org.yuzu.yuzu_emu.features.settings.model.view.SubmenuSetting
@@ -31,7 +32,19 @@ class SubmenuViewHolder(val binding: ListItemSettingBinding, adapter: SettingsAd
         binding.textSettingName.text = setting.title
         binding.textSettingDescription.setVisible(setting.description.isNotEmpty())
         binding.textSettingDescription.text = setting.description
-        binding.textSettingValue.setVisible(false)
+        if (setting.showChevron) {
+            binding.textSettingValue.setVisible(true)
+            binding.textSettingValue.text = ""
+            binding.textSettingValue.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                0,
+                0,
+                R.drawable.ic_arrow_forward,
+                0
+            )
+        } else {
+            binding.textSettingValue.setVisible(false)
+            binding.textSettingValue.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0)
+        }
         binding.buttonClear.setVisible(false)
     }
 

@@ -27,7 +27,11 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialSharedAxis
+import android.app.Activity
+import androidx.appcompat.app.AppCompatActivity
 import org.yuzu.yuzu_emu.R
+import org.yuzu.yuzu_emu.overlay.OverlayColorConfigTransfer
+import org.yuzu.yuzu_emu.overlay.OverlayPresetLibrary
 import org.yuzu.yuzu_emu.databinding.FragmentSettingsBinding
 import org.yuzu.yuzu_emu.features.input.NativeInput
 import org.yuzu.yuzu_emu.features.settings.model.Settings
@@ -49,6 +53,24 @@ class SettingsFragment : Fragment() {
     private val args by navArgs<SettingsFragmentArgs>()
 
     private val settingsViewModel: SettingsViewModel by activityViewModels()
+
+    private lateinit var overlayColorConfigTransfer: OverlayColorConfigTransfer
+
+    private val overlayColorImportLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            overlayColorConfigTransfer.handleImportUri(uri)
+        }
+    }
+
+    private val overlayColorExportLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument(OverlayPresetLibrary.EXPORT_MIME_TYPE)
+    ) { uri ->
+        if (uri != null) {
+            overlayColorConfigTransfer.handleExportUri(uri)
+        }
+    }
 
     private val requestAllFilesPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -97,6 +119,25 @@ class SettingsFragment : Fragment() {
             args.menuTag,
             activity
         )
+        overlayColorConfigTransfer = OverlayColorConfigTransfer(
+            requireActivity() as AppCompatActivity,
+            binding.root,
+            onImportApplied = {
+                if (this::presenter.isInitialized) {
+                    presenter.loadSettingsList(true)
+                }
+            }
+        )
+        presenter.launchOverlayColorImport = {
+            overlayColorConfigTransfer.launchImport { types ->
+                overlayColorImportLauncher.launch(types)
+            }
+        }
+        presenter.launchOverlayColorExport = {
+            overlayColorConfigTransfer.launchExport { filename ->
+                overlayColorExportLauncher.launch(filename)
+            }
+        }
 
         val toolbarTitle = resolveToolbarTitle()
         configureToolbar(toolbarTitle)

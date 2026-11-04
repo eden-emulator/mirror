@@ -74,6 +74,13 @@ SPDX-License-Identifier: GPL-3.0-or-later
             android:label="@string/preferences_settings"/>
 
         <activity
+            android:name="org.yuzu.yuzu_emu.overlay.OverlayColorActivity"
+            android:theme="@style/Theme.Yuzu.Main"
+            android:label="@string/overlay_color"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"/>
+
+        <activity
             android:name="org.yuzu.yuzu_emu.features.settings.ui.SettingsSubscreenActivity"
             android:theme="@style/Theme.Yuzu.Main"
             android:label="@string/preferences_settings"/>

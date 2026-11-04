@@ -19,4 +19,6 @@
     <dimen name="elevated_app_bar">3dp</dimen>
 
     <dimen name="mapping_anim_size">75dp</dimen>
+    <dimen name="overlay_preset_grid_min_column_width">320dp</dimen>
+    <dimen name="overlay_preset_preview_max_height_land">128dp</dimen>
 </resources>

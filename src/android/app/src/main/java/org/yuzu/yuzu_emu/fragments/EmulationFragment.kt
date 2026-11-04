@@ -78,6 +78,8 @@ import org.yuzu.yuzu_emu.features.settings.model.IntSetting
 import org.yuzu.yuzu_emu.features.settings.model.Settings
 import org.yuzu.yuzu_emu.features.settings.model.Settings.EmulationOrientation
 import org.yuzu.yuzu_emu.features.settings.model.Settings.EmulationVerticalAlignment
+import org.yuzu.yuzu_emu.overlay.OverlayColorActivity
+import org.yuzu.yuzu_emu.overlay.OverlayColors
 import org.yuzu.yuzu_emu.features.settings.model.ShortSetting
 import org.yuzu.yuzu_emu.features.settings.utils.SettingsFile
 import org.yuzu.yuzu_emu.model.DriverViewModel
@@ -156,6 +158,13 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     var shouldUseCustom = false
     private var isQuickSettingsMenuOpen = false
     private val quickSettings = QuickSettings(this)
+
+    private val overlayColorLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            if (_binding != null) {
+                binding.surfaceInputOverlay.refreshControls()
+            }
+        }
 
     private val loadAmiiboLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -1564,6 +1573,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     private fun resetInputOverlay() {
         IntSetting.OVERLAY_SCALE.reset()
         IntSetting.OVERLAY_OPACITY.reset()
+        resetOverlayColors()
         binding.surfaceInputOverlay.post {
             binding.surfaceInputOverlay.resetLayoutVisibilityAndPlacement()
             binding.surfaceInputOverlay.resetIndividualControlScale()
@@ -2120,6 +2130,12 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                     true
                 }
 
+                R.id.menu_overlay_color -> {
+                    binding.drawerLayout.close()
+                    overlayColorLauncher.launch(OverlayColorActivity.createIntent(requireContext()))
+                    true
+                }
+
                 R.id.menu_toggle_controls -> {
                     val overlayControlData = NativeConfig.getOverlayControlData()
                     val optionsArray = BooleanArray(overlayControlData.size)
@@ -2266,7 +2282,9 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
             .setNeutralButton(R.string.slider_default) { _: DialogInterface?, _: Int ->
                 setControlScale(50)
                 setControlOpacity(100)
+                resetOverlayColors()
                 binding.surfaceInputOverlay.resetIndividualControlScale()
+                NativeConfig.saveGlobalConfig()
             }
             .show()
     }
@@ -2278,6 +2296,11 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
 
     private fun setControlOpacity(opacity: Int) {
         IntSetting.OVERLAY_OPACITY.setInt(opacity)
+        binding.surfaceInputOverlay.refreshControls()
+    }
+
+    private fun resetOverlayColors() {
+        OverlayColors.write(OverlayColors.DEFAULT_COLOR, emptyMap())
         binding.surfaceInputOverlay.refreshControls()
     }
 
