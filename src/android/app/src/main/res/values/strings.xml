@@ -1279,6 +1279,8 @@
     <!-- Buttons -->
     <string name="enable_folder_button">Folder</string>
     <string name="enable_folder_button_description">Show the button to add game folders</string>
+    <string name="galaxy_fold_gyro_fix">Galaxy Fold gyro fix</string>
+    <string name="galaxy_fold_gyro_fix_description">Correct motion axes on the unfolded screen of supported Galaxy Fold devices.</string>
     <string name="enable_qlaunch_button">QLaunch</string>
     <string name="enable_qlaunch_button_description">Show the button to launch QLaunch</string>
 
