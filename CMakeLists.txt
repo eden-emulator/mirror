@@ -144,6 +144,9 @@ if (YUZU_STATIC_BUILD)
         set(fmt_FORCE_BUNDLED ON)
         set(SPIRV-Headers_FORCE_BUNDLED ON)
         set(zstd_FORCE_BUNDLED ON)
+
+        # broken, idk why
+        set(lz4_FORCE_BUNDLED ON)
     endif()
 endif()
 
