@@ -192,7 +192,25 @@ static void EmitAddCycles(oaknut::CodeGenerator& code, EmitContext& ctx, std::si
     }
 }
 
-EmittedBlockInfo EmitArm64(oaknut::CodeGenerator& code, IR::Block block, const EmitConfig& conf, FastmemManager& fastmem_manager) {
+namespace {
+
+// Out-of-line paths queued in deferred_emits are reached via B.cond/CBZ/CBNZ, which only have a
+// +/-1 MiB range. Flush them inline (behind a branch) once the pending window grows past this.
+constexpr std::ptrdiff_t deferred_emit_flush_threshold = 64 * 1024;
+// Upper bound for what is emitted after the last IR instruction (terminal and pending deferred code).
+constexpr std::size_t block_tail_reserve = 512 * 1024;
+
+void FlushDeferredEmits(oaknut::CodeGenerator& code, EmitContext& ctx) {
+    oaknut::Label skip;
+    code.B(skip);
+    for (const auto& deferred_emit : ctx.deferred_emits) {
+        deferred_emit();
+    }
+    ctx.deferred_emits.clear();
+    code.l(skip);
+}
+
+EmittedBlockInfo EmitArm64Impl(oaknut::CodeGenerator& code, IR::Block& block, const EmitConfig& conf, FastmemManager& fastmem_manager, std::size_t max_size, IR::Inst*& current_inst) {
     if (conf.very_verbose_debugging_output) {
         std::puts(IR::DumpBlock(block).c_str());
     }
@@ -204,6 +222,7 @@ EmittedBlockInfo EmitArm64(oaknut::CodeGenerator& code, IR::Block block, const E
     EmitContext ctx{block, reg_alloc, conf, ebi, fpsr_manager, fastmem_manager, {}};
 
     ebi.entry_point = code.xptr<CodePtr>();
+    const std::ptrdiff_t start_offset = code.offset();
 
     if (ctx.block.GetCondition() == IR::Cond::AL) {
         ASSERT(!ctx.block.HasConditionFailedLocation());
@@ -218,8 +237,11 @@ EmittedBlockInfo EmitArm64(oaknut::CodeGenerator& code, IR::Block block, const E
         code.l(pass);
     }
 
+    std::ptrdiff_t deferred_window_start = code.offset();
+
     for (auto iter = block.instructions.begin(); iter != block.instructions.end(); ++iter) {
         IR::Inst* inst = &*iter;
+        current_inst = inst;
 
         switch (inst->GetOpcode()) {
 #define OPCODE(name, type, ...)                    \
@@ -248,7 +270,19 @@ EmittedBlockInfo EmitArm64(oaknut::CodeGenerator& code, IR::Block block, const E
         if (conf.very_verbose_debugging_output) {
             EmitVerboseDebuggingOutput(code, ctx);
         }
+
+        if (ctx.deferred_emits.empty()) {
+            deferred_window_start = code.offset();
+        } else if (code.offset() - deferred_window_start >= deferred_emit_flush_threshold) {
+            FlushDeferredEmits(code, ctx);
+            deferred_window_start = code.offset();
+        }
+
+        if (static_cast<std::size_t>(code.offset() - start_offset) + block_tail_reserve > max_size) {
+            throw CodeBufferExhausted{};
+        }
     }
+    current_inst = nullptr;
 
     fpsr_manager.Spill();
 
@@ -264,7 +298,23 @@ EmittedBlockInfo EmitArm64(oaknut::CodeGenerator& code, IR::Block block, const E
     code.BRK(0);
 
     ebi.size = code.xptr<CodePtr>() - ebi.entry_point;
+    ASSERT(ebi.size <= max_size);
     return ebi;
+}
+
+}  // namespace
+
+EmittedBlockInfo EmitArm64(oaknut::CodeGenerator& code, IR::Block block, const EmitConfig& conf, FastmemManager& fastmem_manager, std::size_t max_size) {
+    IR::Inst* current_inst = nullptr;
+    const std::ptrdiff_t start_offset = code.offset();
+    try {
+        return EmitArm64Impl(code, block, conf, fastmem_manager, max_size, current_inst);
+    } catch (const oaknut::OaknutException& e) {
+        // Unwinding through JIT frames is not possible, so report as much as we can here.
+        UNREACHABLE_MSG("dynarmic: failed to emit host code ({}) for opcode {} after {} bytes\n{}",
+                        e.what(), current_inst ? IR::GetNameOf(current_inst->GetOpcode()) : std::string_view{"<terminal/deferred>"},
+                        code.offset() - start_offset, IR::DumpBlock(block));
+    }
 }
 
 void EmitRelocation(oaknut::CodeGenerator& code, EmitContext& ctx, LinkTarget link_target) {

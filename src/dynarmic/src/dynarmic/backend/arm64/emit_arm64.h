@@ -169,7 +169,10 @@ struct EmitConfig {
     bool very_verbose_debugging_output;
 };
 
-EmittedBlockInfo EmitArm64(oaknut::CodeGenerator& code, IR::Block block, const EmitConfig& emit_conf, FastmemManager& fastmem_manager);
+// Thrown by EmitArm64 when the block would not fit in max_size bytes of code buffer.
+struct CodeBufferExhausted {};
+
+EmittedBlockInfo EmitArm64(oaknut::CodeGenerator& code, IR::Block block, const EmitConfig& emit_conf, FastmemManager& fastmem_manager, std::size_t max_size);
 
 template<IR::Opcode op>
 void EmitIR(oaknut::CodeGenerator& code, EmitContext& ctx, IR::Inst* inst);
