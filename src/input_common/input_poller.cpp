@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -557,9 +559,9 @@ private:
 class InputFromMotion final : public Common::Input::InputDevice {
 public:
     explicit InputFromMotion(PadIdentifier identifier_, int motion_sensor_, float gyro_threshold_,
-                             InputEngine* input_engine_)
+                             int turn_, InputEngine* input_engine_)
         : identifier(identifier_), motion_sensor(motion_sensor_), gyro_threshold(gyro_threshold_),
-          input_engine(input_engine_) {
+          turn(turn_), input_engine(input_engine_) {
         UpdateCallback engine_callback{[this]() { OnChange(); }};
         const InputIdentifier input_identifier{
             .identifier = identifier,
@@ -589,6 +591,17 @@ public:
         status.gyro.x = {.raw_value = basic_motion.gyro_x, .properties = properties};
         status.gyro.y = {.raw_value = basic_motion.gyro_y, .properties = properties};
         status.gyro.z = {.raw_value = basic_motion.gyro_z, .properties = properties};
+        // Turned a quarter about the face for a controller standing in for a sideways Joy-Con
+        // (1: clockwise, as a right one; -1: the other way): the Joy-Con's x is the
+        // controller's -y, its y the controller's x (the left one: y, and -x)
+        if (turn != 0) {
+            for (auto* axes : {&status.accel, &status.gyro}) {
+                const float x = axes->x.raw_value;
+                const float y = axes->y.raw_value;
+                axes->x.raw_value = turn > 0 ? -y : y;
+                axes->y.raw_value = turn > 0 ? x : -x;
+            }
+        }
         status.delta_timestamp = basic_motion.delta_timestamp;
         return status;
     }
@@ -606,6 +619,7 @@ private:
     const PadIdentifier identifier;
     const int motion_sensor;
     const float gyro_threshold;
+    const int turn;
     int callback_key;
     InputEngine* input_engine;
 };
@@ -1069,9 +1083,10 @@ std::unique_ptr<Common::Input::InputDevice> InputFactory::CreateMotionDevice(
     if (params.Has("motion")) {
         const auto motion_sensor = params.Get("motion", 0);
         const auto gyro_threshold = params.Get("threshold", 0.007f);
+        const auto turn = std::clamp(params.Get("turn", 0), -1, 1);
         input_engine->PreSetController(identifier);
         input_engine->PreSetMotion(identifier, motion_sensor);
-        return std::make_unique<InputFromMotion>(identifier, motion_sensor, gyro_threshold,
+        return std::make_unique<InputFromMotion>(identifier, motion_sensor, gyro_threshold, turn,
                                                  input_engine.get());
     }
 

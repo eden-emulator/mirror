@@ -1,6 +1,21 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstdlib>
+#include <mutex>
+
+#include <QComboBox>
+#include <QGroupBox>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QTimer>
+#include <QVBoxLayout>
+
+#include "common/controller_console_state.h"
 #include "common/settings.h"
 #include "core/core.h"
 #include "ui_configure_applets.h"
@@ -47,6 +62,16 @@ void ConfigureApplets::Setup(const ConfigurationShared::Builder& builder) {
     push(Settings::values.linkage.by_category[Settings::Category::LibraryApplet]);
 
     for (auto setting : settings) {
+        // The Modern Console options are the Controllers tab's (and a game's Modern Console
+        // tab). Skipped before they are built: building registers how to apply them.
+        if (setting->Id() == Settings::values.console_debug_overlay.Id() ||
+            setting->Id() == Settings::values.console_hints.Id() ||
+            setting->Id() == Settings::values.console_joycon_auto.Id() ||
+            setting->Id() == Settings::values.console_pause_disconnect.Id() ||
+            setting->Id() == Settings::values.console_player_lights.Id() ||
+            setting->Id() == Settings::values.console_button_labels.Id()) {
+            continue;
+        }
         ConfigurationShared::Widget* widget = builder.BuildWidget(setting, apply_funcs);
 
         if (widget == nullptr) {

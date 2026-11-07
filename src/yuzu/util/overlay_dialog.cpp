@@ -12,6 +12,7 @@
 #include "hid_core/hid_types.h"
 #include "ui_overlay_dialog.h"
 #include "yuzu/util/overlay_dialog.h"
+#include "yuzu/util/gamescope.h"
 
 namespace {
 
@@ -29,8 +30,12 @@ OverlayDialog::OverlayDialog(QWidget* parent, Core::System& system, const QStrin
     : QDialog(parent), ui{std::make_unique<Ui::OverlayDialog>()}, use_rich_text{use_rich_text_} {
     ui->setupUi(this);
 
+    // Under gamescope only one normal window shows at a time: a window bypassing the window
+    // manager is drawn over the game instead of in its place
+    const bool gamescope = Gamescope::IsRunningUnder();
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowTitleHint |
-                   Qt::WindowSystemMenuHint | Qt::CustomizeWindowHint);
+                   Qt::WindowSystemMenuHint | Qt::CustomizeWindowHint |
+                   (gamescope ? Qt::X11BypassWindowManagerHint : Qt::WindowFlags{}));
     setWindowModality(Qt::WindowModal);
     setAttribute(Qt::WA_TranslucentBackground);
 

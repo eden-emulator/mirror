@@ -76,12 +76,50 @@ GameList::GameList(FileSys::VirtualFilesystem vfs_, FileSys::ManualContentProvid
                 if (system.IsPoweredOn()) {
                     return;
                 }
+                if (controller_context_menu) {
+                    // A submenu is its own popup window (isAncestorOf stops at windows)
+                    QWidget* popup = QApplication::activePopupWidget();
+                    bool ours = false;
+                    for (QWidget* w = popup; w != nullptr && !ours; w = w->parentWidget()) {
+                        ours = w == controller_context_menu;
+                    }
+                    if (ours) {
+                        QCoreApplication::postEvent(
+                            popup, new QKeyEvent(QEvent::KeyPress, key, Qt::NoModifier));
+                    }
+                    return;
+                }
+                if (QApplication::activePopupWidget() || QApplication::activeModalWidget()) {
+                    return;
+                }
                 if (!this->isActiveWindow()) {
                     return;
                 }
                 QKeyEvent* event = new QKeyEvent(QEvent::KeyPress, key, Qt::NoModifier);
                 QCoreApplication::postEvent(m_currentView, event);
             });
+
+    connect(
+        controller_navigation, &ControllerNavigation::TriggerContextMenu, this,
+        [this] {
+            if (system.IsPoweredOn() || !isActiveWindow() || QApplication::activePopupWidget() ||
+                QApplication::activeModalWidget() || controller_context_menu) {
+                return;
+            }
+            const QModelIndex current = m_currentView->currentIndex();
+            const QModelIndex selected = current.sibling(current.row(), 0);
+            if (!selected.isValid() ||
+                selected.data(GameListItem::TypeRole).value<GameListItemType>() !=
+                    GameListItemType::Game) {
+                return;
+            }
+            m_currentView->scrollTo(current);
+            const QRect rect = m_currentView->visualRect(current);
+            if (rect.isValid()) {
+                PopupContextMenu(rect.center());
+            }
+        },
+        Qt::QueuedConnection);
 
     connect(item_model, &GameListModel::PopulatingCompleted, this,
             &GameList::OnPopulatingCompleted);
@@ -443,7 +481,9 @@ void GameList::PopupContextMenu(const QPoint& menu_location) {
     default:
         break;
     }
+    controller_context_menu = &context_menu;
     context_menu.exec(m_currentView->viewport()->mapToGlobal(menu_location));
+    controller_context_menu = nullptr;
 }
 
 void GameList::AddGamePopup(QMenu& context_menu, u64 program_id, const std::string& path) {

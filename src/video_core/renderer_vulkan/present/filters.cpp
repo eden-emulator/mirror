@@ -30,29 +30,29 @@
 
 namespace Vulkan {
 
-std::unique_ptr<WindowAdaptPass> MakeNearestNeighbor(const Device& device, VkFormat frame_format) {
-    return std::make_unique<WindowAdaptPass>(device, frame_format, CreateNearestNeighborSampler(device),
+std::unique_ptr<WindowAdaptPass> MakeNearestNeighbor(const Device& device, MemoryAllocator& memory_allocator, VkFormat frame_format) {
+    return std::make_unique<WindowAdaptPass>(device, memory_allocator, frame_format, CreateNearestNeighborSampler(device),
         BuildShader(device, VULKAN_PRESENT_FRAG_SPV));
 }
 
-std::unique_ptr<WindowAdaptPass> MakeBilinear(const Device& device, VkFormat frame_format) {
-    return std::make_unique<WindowAdaptPass>(device, frame_format, CreateBilinearSampler(device),
+std::unique_ptr<WindowAdaptPass> MakeBilinear(const Device& device, MemoryAllocator& memory_allocator, VkFormat frame_format) {
+    return std::make_unique<WindowAdaptPass>(device, memory_allocator, frame_format, CreateBilinearSampler(device),
         BuildShader(device, VULKAN_PRESENT_FRAG_SPV));
 }
 
-std::unique_ptr<WindowAdaptPass> MakeSpline1(const Device& device, VkFormat frame_format) {
-    return std::make_unique<WindowAdaptPass>(device, frame_format, CreateBilinearSampler(device),
+std::unique_ptr<WindowAdaptPass> MakeSpline1(const Device& device, MemoryAllocator& memory_allocator, VkFormat frame_format) {
+    return std::make_unique<WindowAdaptPass>(device, memory_allocator, frame_format, CreateBilinearSampler(device),
         BuildShader(device, PRESENT_SPLINE1_FRAG_SPV));
 }
 
-std::unique_ptr<WindowAdaptPass> MakeBicubic(const Device& device, VkFormat frame_format, VkCubicFilterWeightsQCOM qcom_weights) {
+std::unique_ptr<WindowAdaptPass> MakeBicubic(const Device& device, MemoryAllocator& memory_allocator, VkFormat frame_format, VkCubicFilterWeightsQCOM qcom_weights) {
     // No need for handrolled shader -- if the VK impl can do it for us ;)
     // Catmull-Rom is default bicubic for all implementations...
     if (device.IsExtFilterCubicSupported() && (device.IsQcomFilterCubicWeightsSupported() || qcom_weights == VK_CUBIC_FILTER_WEIGHTS_CATMULL_ROM_QCOM)) {
-        return std::make_unique<WindowAdaptPass>(device, frame_format, CreateCubicSampler(device,
+        return std::make_unique<WindowAdaptPass>(device, memory_allocator, frame_format, CreateCubicSampler(device,
             qcom_weights), BuildShader(device, VULKAN_PRESENT_FRAG_SPV));
     } else {
-        return std::make_unique<WindowAdaptPass>(device, frame_format, CreateBilinearSampler(device), [&](){
+        return std::make_unique<WindowAdaptPass>(device, memory_allocator, frame_format, CreateBilinearSampler(device), [&](){
             switch (qcom_weights) {
             case VK_CUBIC_FILTER_WEIGHTS_CATMULL_ROM_QCOM:
                 return BuildShader(device, PRESENT_BICUBIC_FRAG_SPV);
@@ -69,32 +69,32 @@ std::unique_ptr<WindowAdaptPass> MakeBicubic(const Device& device, VkFormat fram
     }
 }
 
-std::unique_ptr<WindowAdaptPass> MakeGaussian(const Device& device, VkFormat frame_format) {
-    return std::make_unique<WindowAdaptPass>(device, frame_format, CreateBilinearSampler(device),
+std::unique_ptr<WindowAdaptPass> MakeGaussian(const Device& device, MemoryAllocator& memory_allocator, VkFormat frame_format) {
+    return std::make_unique<WindowAdaptPass>(device, memory_allocator, frame_format, CreateBilinearSampler(device),
         BuildShader(device, PRESENT_GAUSSIAN_FRAG_SPV));
 }
 
-std::unique_ptr<WindowAdaptPass> MakeLanczos(const Device& device, VkFormat frame_format) {
-    return std::make_unique<WindowAdaptPass>(device, frame_format, CreateBilinearSampler(device),
+std::unique_ptr<WindowAdaptPass> MakeLanczos(const Device& device, MemoryAllocator& memory_allocator, VkFormat frame_format) {
+    return std::make_unique<WindowAdaptPass>(device, memory_allocator, frame_format, CreateBilinearSampler(device),
         BuildShader(device, PRESENT_LANCZOS_FRAG_SPV));
 }
 
-std::unique_ptr<WindowAdaptPass> MakeScaleForce(const Device& device, VkFormat frame_format) {
+std::unique_ptr<WindowAdaptPass> MakeScaleForce(const Device& device, MemoryAllocator& memory_allocator, VkFormat frame_format) {
     auto const select_fn = [&]() {
         return device.IsFloat16Supported()
             ? BuildShader(device, VULKAN_PRESENT_SCALEFORCE_FP16_FRAG_SPV)
             : BuildShader(device, VULKAN_PRESENT_SCALEFORCE_FP32_FRAG_SPV);
     };
-    return std::make_unique<WindowAdaptPass>(device, frame_format, CreateBilinearSampler(device), select_fn());
+    return std::make_unique<WindowAdaptPass>(device, memory_allocator, frame_format, CreateBilinearSampler(device), select_fn());
 }
 
-std::unique_ptr<WindowAdaptPass> MakeArea(const Device& device, VkFormat frame_format) {
-    return std::make_unique<WindowAdaptPass>(device, frame_format, CreateBilinearSampler(device),
+std::unique_ptr<WindowAdaptPass> MakeArea(const Device& device, MemoryAllocator& memory_allocator, VkFormat frame_format) {
+    return std::make_unique<WindowAdaptPass>(device, memory_allocator, frame_format, CreateBilinearSampler(device),
         BuildShader(device, PRESENT_AREA_FRAG_SPV));
 }
 
-std::unique_ptr<WindowAdaptPass> MakeMmpx(const Device& device, VkFormat frame_format) {
-    return std::make_unique<WindowAdaptPass>(device, frame_format, CreateNearestNeighborSampler(device),
+std::unique_ptr<WindowAdaptPass> MakeMmpx(const Device& device, MemoryAllocator& memory_allocator, VkFormat frame_format) {
+    return std::make_unique<WindowAdaptPass>(device, memory_allocator, frame_format, CreateNearestNeighborSampler(device),
                                              BuildShader(device, PRESENT_MMPX_FRAG_SPV));
 }
 

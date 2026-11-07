@@ -43,6 +43,8 @@ add_executable(yuzu
     configuration/configure_applets.cpp
     configuration/configure_applets.h
     configuration/configure_applets.ui
+    configuration/configure_modern_per_game.cpp
+    configuration/configure_modern_per_game.h
     configuration/configure_audio.cpp
     configuration/configure_audio.h
     configuration/configure_audio.ui
@@ -90,6 +92,8 @@ add_executable(yuzu
     configuration/configure_input_advanced.cpp
     configuration/configure_input_advanced.h
     configuration/configure_input_advanced.ui
+    configuration/configure_player_assignment.cpp
+    configuration/configure_player_assignment.h
     configuration/configure_input_per_game.cpp
     configuration/configure_input_per_game.h
     configuration/configure_input_per_game.ui
@@ -194,6 +198,8 @@ add_executable(yuzu
     multiplayer/state.cpp
     multiplayer/state.h
     multiplayer/validation.h
+    overlay_panel.cpp
+    overlay_panel.h
     startup_checks.cpp
     startup_checks.h
     set_play_time_dialog.cpp
@@ -204,6 +210,8 @@ add_executable(yuzu
     util/controller_navigation.h
     util/limitable_input_dialog.cpp
     util/limitable_input_dialog.h
+    util/gamescope.cpp
+    util/gamescope.h
     util/overlay_dialog.cpp
     util/overlay_dialog.h
     util/overlay_dialog.ui

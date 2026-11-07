@@ -202,6 +202,66 @@ struct Values {
 
     // Core
     SwitchableSetting<bool> use_multi_core{linkage, true, "use_multi_core", Category::Core};
+
+    /// Show the controller debug overlay (the real pad state plus the logic's actions)
+    SwitchableSetting<bool> console_debug_overlay{linkage, true, "console_debug_overlay",
+                                                  Category::LibraryApplet,
+                                                  Specialization::Default, true, true};
+    /// Modern Console: each player's starting input profile, comma-separated in player order
+    Setting<std::string> modern_seat_profiles{linkage, std::string{}, "modern_seat_profiles",
+                                              Category::LibraryApplet};
+    /// Name a controller on screen for a moment when it takes a player or leaves one
+    SwitchableSetting<bool> console_hints{linkage, true, "console_hints", Category::LibraryApplet,
+                                          Specialization::Default, true, true};
+    /// The overlay's button history: shown, how many inputs it keeps, how long each lasts (in
+    /// seconds), and the time between inputs
+    SwitchableSetting<bool> console_history{linkage, true, "console_history",
+                                            Category::LibraryApplet};
+    SwitchableSetting<int, true> console_history_size{
+        linkage, 10, 5, 20, "console_history_size", Category::LibraryApplet};
+    SwitchableSetting<int, true> console_history_seconds{
+        linkage, 5, 1, 30, "console_history_seconds", Category::LibraryApplet};
+    SwitchableSetting<bool> console_history_gaps{linkage, false, "console_history_gaps",
+                                                 Category::LibraryApplet};
+    /// Under Steam: Eden reads the real controllers instead of Steam's virtual ones. At startup.
+    SwitchableSetting<bool> console_bypass_steam{linkage, false, "console_bypass_steam",
+                                                 Category::LibraryApplet};
+    /// Modern Console: when a game only takes Joy-Cons, controllers act as Joy-Cons
+    SwitchableSetting<bool> console_joycon_auto{linkage, true, "console_joycon_auto",
+                                                Category::LibraryApplet};
+    /// Modern Console: pause when a player's controller is turned off or gone for 3 seconds,
+    /// resume when a controller takes the player again
+    SwitchableSetting<bool> console_pause_disconnect{linkage, true, "console_pause_disconnect",
+                                                     Category::LibraryApplet};
+    /// Modern Console: controllers' player lights and light bars show their player
+    SwitchableSetting<bool> console_player_lights{linkage, true, "console_player_lights",
+                                                  Category::LibraryApplet};
+    /// Modern Console: Xbox and PlayStation style buttons by label instead of position
+    SwitchableSetting<bool> console_button_labels{linkage, false, "console_button_labels",
+                                                  Category::LibraryApplet};
+    /// Detailed controller traces in the log, for bug reports
+    SwitchableSetting<bool> console_debug_probes{linkage, false, "console_debug_probes",
+                                                 Category::LibraryApplet};
+
+    /// The user picked the handheld's own pad (picker or Identify): auto-detect keeps it
+    SwitchableSetting<bool> builtin_pad_manual{linkage, false, "builtin_pad_manual",
+                                               Category::Core};
+
+    /// The handheld's own pad identity, latched when Handheld Console Mode engages
+    SwitchableSetting<std::string> builtin_pad_identity{linkage, std::string{},
+                                                        "builtin_pad_identity", Category::Core};
+
+    /// A controller the user removed as the handheld's own (Steam handle, else identity):
+    /// auto-detect skips it until it is allowed again
+    SwitchableSetting<std::string> builtin_pad_blocked{linkage, std::string{},
+                                                       "builtin_pad_blocked", Category::Core};
+    /// Under Steam, the handheld's own pad's Steam handle: stable across sessions, unlike the
+    /// virtual pads' shared GUID
+    SwitchableSetting<std::string> builtin_pad_steam_handle{
+        linkage, std::string{}, "builtin_pad_steam_handle", Category::Core};
+    /// The user picked the Steam handle (picker or Identify): kept whatever the pad reports
+    SwitchableSetting<bool> builtin_pad_steam_manual{linkage, false, "builtin_pad_steam_manual",
+                                                     Category::Core};
     SwitchableSetting<MemoryLayout, true> memory_layout_mode{linkage,
                                                              MemoryLayout::Memory_4Gb,
                                                              "memory_layout_mode",

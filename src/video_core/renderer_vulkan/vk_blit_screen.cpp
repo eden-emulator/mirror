@@ -44,44 +44,44 @@ void BlitScreen::SetWindowAdaptPass(const Device& device) {
 
     switch (scaling_filter) {
     case Settings::ScalingFilter::NearestNeighbor:
-        window_adapt = MakeNearestNeighbor(device, swapchain_view_format);
+        window_adapt = MakeNearestNeighbor(device, memory_allocator, swapchain_view_format);
         break;
     case Settings::ScalingFilter::Bicubic:
-        window_adapt = MakeBicubic(device, swapchain_view_format, VK_CUBIC_FILTER_WEIGHTS_CATMULL_ROM_QCOM);
+        window_adapt = MakeBicubic(device, memory_allocator, swapchain_view_format, VK_CUBIC_FILTER_WEIGHTS_CATMULL_ROM_QCOM);
         break;
     case Settings::ScalingFilter::ZeroTangent:
-        window_adapt = MakeBicubic(device, swapchain_view_format, VK_CUBIC_FILTER_WEIGHTS_ZERO_TANGENT_CARDINAL_QCOM);
+        window_adapt = MakeBicubic(device, memory_allocator, swapchain_view_format, VK_CUBIC_FILTER_WEIGHTS_ZERO_TANGENT_CARDINAL_QCOM);
         break;
     case Settings::ScalingFilter::BSpline:
-        window_adapt = MakeBicubic(device, swapchain_view_format, VK_CUBIC_FILTER_WEIGHTS_B_SPLINE_QCOM);
+        window_adapt = MakeBicubic(device, memory_allocator, swapchain_view_format, VK_CUBIC_FILTER_WEIGHTS_B_SPLINE_QCOM);
         break;
     case Settings::ScalingFilter::Mitchell:
-        window_adapt = MakeBicubic(device, swapchain_view_format, VK_CUBIC_FILTER_WEIGHTS_MITCHELL_NETRAVALI_QCOM);
+        window_adapt = MakeBicubic(device, memory_allocator, swapchain_view_format, VK_CUBIC_FILTER_WEIGHTS_MITCHELL_NETRAVALI_QCOM);
         break;
     case Settings::ScalingFilter::Spline1:
-        window_adapt = MakeSpline1(device, swapchain_view_format);
+        window_adapt = MakeSpline1(device, memory_allocator, swapchain_view_format);
         break;
     case Settings::ScalingFilter::Gaussian:
-        window_adapt = MakeGaussian(device, swapchain_view_format);
+        window_adapt = MakeGaussian(device, memory_allocator, swapchain_view_format);
         break;
     case Settings::ScalingFilter::Lanczos:
-        window_adapt = MakeLanczos(device, swapchain_view_format);
+        window_adapt = MakeLanczos(device, memory_allocator, swapchain_view_format);
         break;
     case Settings::ScalingFilter::ScaleForce:
-        window_adapt = MakeScaleForce(device, swapchain_view_format);
+        window_adapt = MakeScaleForce(device, memory_allocator, swapchain_view_format);
         break;
     case Settings::ScalingFilter::Area:
-        window_adapt = MakeArea(device, swapchain_view_format);
+        window_adapt = MakeArea(device, memory_allocator, swapchain_view_format);
         break;
     case Settings::ScalingFilter::Mmpx:
-        window_adapt = MakeMmpx(device, swapchain_view_format);
+        window_adapt = MakeMmpx(device, memory_allocator, swapchain_view_format);
         break;
     case Settings::ScalingFilter::Fsr:
     case Settings::ScalingFilter::Sgsr:
     case Settings::ScalingFilter::SgsrEdge:
     case Settings::ScalingFilter::Bilinear:
     default:
-        window_adapt = MakeBilinear(device, swapchain_view_format);
+        window_adapt = MakeBilinear(device, memory_allocator, swapchain_view_format);
         break;
     }
 }
@@ -155,7 +155,8 @@ void BlitScreen::DrawToFrame(const Device& device, RasterizerVulkan& rasterizer,
         }
     }
 
-    window_adapt->Draw(device, rasterizer, scheduler, image_index, layers, framebuffers, layout, frame);
+    window_adapt->Draw(device, rasterizer, scheduler, image_index, layers, framebuffers, layout, frame,
+                       overlay_panels);
 
     if (++image_index >= image_count) {
         image_index = 0;

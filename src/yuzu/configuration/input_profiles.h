@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include "common/container/unordered_map.h"
 
@@ -31,6 +32,11 @@ public:
     bool DeleteProfile(const std::string& profile_name);
     bool LoadProfile(const std::string& profile_name, std::size_t player_index);
     bool SaveProfile(const std::string& profile_name, std::size_t player_index);
+    bool RenameProfile(const std::string& profile_name, const std::string& new_name);
+    bool DuplicateProfile(const std::string& profile_name, const std::string& new_name);
+    /// A profile's player values, read without touching the player they are read through
+    std::optional<Settings::PlayerInput> PeekProfile(const std::string& profile_name,
+                                                     std::size_t player_index);
 
 private:
     bool ProfileExistsInMap(const std::string& profile_name) const;

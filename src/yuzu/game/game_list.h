@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QList>
+#include <QPointer>
 #include <QPushButton>
 #include <QStandardItemModel>
 #include <QString>
@@ -40,6 +41,7 @@ enum class StartGameType;
 class GameCarousel;
 
 class QAbstractItemView;
+class QMenu;
 namespace Core {
 class System;
 }
@@ -155,6 +157,7 @@ private:
     Settings::GameListMode game_list_mode;
 
     ControllerNavigation* controller_navigation = nullptr;
+    QPointer<QMenu> controller_context_menu;
 
     QVariantAnimation* vertical_scroll = nullptr;
     QVariantAnimation* horizontal_scroll = nullptr;

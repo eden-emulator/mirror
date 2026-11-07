@@ -6,12 +6,17 @@
 
 #pragma once
 
+#include <QString>
 #include <QWidget>
 #include "yuzu/configuration/configuration_shared.h"
 
 class QCheckBox;
-class QLineEdit;
+class QComboBox;
 class QDateTimeEdit;
+class QLabel;
+class QLineEdit;
+class QPushButton;
+class QTimer;
 namespace Core {
 class System;
 }

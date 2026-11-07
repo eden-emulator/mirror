@@ -121,6 +121,23 @@ ConfigureDialog::~ConfigureDialog() = default;
 
 void ConfigureDialog::SetConfiguration() {}
 
+void ConfigureDialog::OpenPlayerTab(int player) {
+    QWidget* tab = input_tab->PlayerTab(player);
+    if (!tab) {
+        return;
+    }
+    // Controls is the page whose tabs are the input tab's
+    for (int row = 0; row < ui->selectorList->count(); ++row) {
+        const auto tabs =
+            qvariant_cast<QList<QWidget*>>(ui->selectorList->item(row)->data(Qt::UserRole));
+        if (tabs.contains(tab)) {
+            ui->selectorList->setCurrentRow(row);
+            ui->tabWidget->setCurrentWidget(tab);
+            return;
+        }
+    }
+}
+
 void ConfigureDialog::ApplyConfiguration() {
     general_tab->ApplyConfiguration();
     ui_tab->ApplyConfiguration();

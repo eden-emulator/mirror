@@ -30,9 +30,41 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
 
     // A setting can be ignored by giving it a blank name
 
+    // Toggled from View > Show Controller Overlay
+    INSERT(Settings, console_debug_overlay, tr("Controller overlay"),
+           tr("The players, their controllers and their last buttons in the top-left corner."));
+    INSERT(Settings, console_hints, tr("Controller hints"),
+           tr("Names a controller in the bottom-left corner when it joins or leaves."));
+    INSERT(Settings, console_history, QString(), QString());
+    INSERT(Settings, console_history_size, QString(), QString());
+    INSERT(Settings, console_history_seconds, QString(), QString());
+    INSERT(Settings, console_history_gaps, QString(), QString());
+    INSERT(Settings, console_debug_probes, QString(), QString());
+    INSERT(Settings, console_bypass_steam, QString(), QString());
+    INSERT(Settings, console_joycon_auto, tr("Use any controller as Joy-Cons"),
+           tr("When the game only takes Joy-Cons, controllers act as Joy-Cons."));
+    INSERT(Settings, console_pause_disconnect, tr("Pause when a controller disconnects"),
+           tr("Pauses when a player's controller is turned off, or has been gone for 3 seconds. "
+              "+ on another controller goes on without that player."));
+    INSERT(Settings, console_player_lights, tr("Player lights"),
+           tr("Controllers' player lights show their player."));
+    INSERT(Settings, console_button_labels, tr("Button layout by label"),
+           tr("Xbox and PlayStation style controllers' buttons by their labels instead of their "
+              "positions."));
+    INSERT(Settings, modern_seat_profiles, QString(), QString());
+    INSERT(Settings, builtin_pad_identity, QString(), QString());
+    INSERT(Settings, builtin_pad_steam_handle, QString(), QString());
+    INSERT(Settings, builtin_pad_blocked, QString(), QString());
+    INSERT(Settings, builtin_pad_manual, QString(), QString());
+    INSERT(Settings, builtin_pad_steam_manual, QString(), QString());
+
     // Applets
     INSERT(Settings, cabinet_applet_mode, tr("Amiibo editor"), QString());
-    INSERT(Settings, controller_applet_mode, tr("Controller configuration"), QString());
+    // Chosen in Controls > Players ("Assign players")
+    INSERT(Settings, controller_applet_mode, tr("Controller configuration"),
+           tr("How games get their players: Modern Console and Handheld Console assign them "
+              "automatically; Custom Frontend and Real Hardware show a controller applet; "
+              "Disabled uses the players set in each player's tab."));
     INSERT(Settings, data_erase_applet_mode, tr("Data erase"), QString());
     INSERT(Settings, error_applet_mode, tr("Error"), QString());
     INSERT(Settings, net_connect_applet_mode, tr("Net connect"), QString());
@@ -369,9 +401,11 @@ std::unique_ptr<ComboboxTranslationMap> ComboboxEnumeration(QObject* parent) {
     // Intentionally skipping VSyncMode to let the UI fill that one out
     translations->insert({Settings::EnumMetadata<Settings::AppletMode>::Index(),
                           {
-                              PAIR(AppletMode, HLE, tr("Custom frontend")),
-                              PAIR(AppletMode, LLE, tr("Real applet")),
+                              PAIR(AppletMode, HLE, tr("Custom Frontend")),
+                              PAIR(AppletMode, LLE, tr("Real Hardware")),
                               PAIR(AppletMode, Disabled, tr("Disabled")),
+                              PAIR(AppletMode, ConsoleMode, tr("Modern Console")),
+                              PAIR(AppletMode, HandheldConsoleMode, tr("Handheld Console")),
                           }});
 
     translations->insert({Settings::EnumMetadata<Settings::SpirvOptimizeMode>::Index(),

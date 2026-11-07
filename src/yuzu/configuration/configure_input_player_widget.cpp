@@ -230,6 +230,14 @@ void PlayerControlPreview::paintEvent(QPaintEvent* event) {
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
     const QPointF center = rect().center();
+    // The drawings need about 450x330: a smaller frame (the Steam Deck's 800-pixel screen) gets
+    // them scaled down to fit instead of cut off at the bottom
+    const qreal fit = std::min({1.0, width() / 450.0, height() / 330.0});
+    if (fit < 1.0) {
+        p.translate(center);
+        p.scale(fit, fit);
+        p.translate(-center);
+    }
 
     switch (controller_type) {
     case Core::HID::NpadStyleIndex::Handheld:

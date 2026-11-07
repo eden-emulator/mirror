@@ -6,13 +6,21 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
+#include <string>
 #include <utility>
+#include <QComboBox>
+#include <QGroupBox>
+#include <QHBoxLayout>
 #include <QInputDialog>
 #include <QMenu>
 #include <QMessageBox>
 #include <QMouseEvent>
 #include <QTimer>
+#include <QToolButton>
+#include <QVBoxLayout>
 #include "common/assert.h"
+#include "common/controller_console_state.h"
 #include "common/param_package.h"
 #include "hid_core/frontend/emulated_controller.h"
 #include "hid_core/hid_core.h"
@@ -26,6 +34,7 @@
 #include "yuzu/configuration/configure_input_player.h"
 #include "yuzu/configuration/configure_input_player_widget.h"
 #include "yuzu/configuration/configure_mouse_panning.h"
+#include "yuzu/configuration/configure_player_assignment.h"
 #include "yuzu/configuration/input_profiles.h"
 #include "yuzu/util/limitable_input_dialog.h"
 
@@ -288,6 +297,42 @@ QString ConfigureInputPlayer::AnalogToText(const Common::ParamPackage& param,
 
     return QObject::tr("[unknown]");
 }
+
+namespace {
+
+/// The SDL controller (guid, port) a player's bindings point at
+std::optional<std::pair<std::string, int>> SdlDevice(const Settings::PlayerInput& player) {
+    for (const std::string& raw : player.buttons) {
+        const Common::ParamPackage param{raw};
+        if (!raw.empty() && param.Get("engine", "") == "sdl") {
+            return std::pair<std::string, int>{param.Get("guid", ""), param.Get("port", 0)};
+        }
+    }
+    return std::nullopt;
+}
+
+/// Points a player's SDL bindings at one controller, leaving other engines alone
+void KeepSdlDevice(Settings::PlayerInput& player, const std::pair<std::string, int>& device) {
+    const auto keep = [&device](auto& params) {
+        for (std::string& raw : params) {
+            Common::ParamPackage param{raw};
+            if (raw.empty() || param.Get("engine", "") != "sdl") {
+                continue;
+            }
+            if (param.Has("guid2") && param.Get("guid2", "") == param.Get("guid", "")) {
+                param.Set("guid2", device.first);
+            }
+            param.Set("guid", device.first);
+            param.Set("port", device.second);
+            raw = param.Serialize();
+        }
+    };
+    keep(player.buttons);
+    keep(player.analogs);
+    keep(player.motions);
+}
+
+} // Anonymous namespace
 
 ConfigureInputPlayer::ConfigureInputPlayer(QWidget* parent, std::size_t player_index_,
                                            QWidget* bottom_row_,
@@ -901,6 +946,552 @@ void ConfigureInputPlayer::ConnectPlayer(bool connected) {
     }
 }
 
+void ConfigureInputPlayer::RefreshFromController() {
+    UpdateUI();
+    UpdateInputDeviceCombobox();
+    ApplyJoyConLock();
+}
+
+void ConfigureInputPlayer::ApplyJoyConLock() {
+    int held = 0;
+    {
+        auto& state = Common::GetControllerConsoleState();
+        std::scoped_lock lock{state.mutex};
+        if (state.engine_active && player_index < state.joycon_held.size()) {
+            held = state.joycon_held[player_index];
+        }
+    }
+    const bool locked = held != 0;
+    const bool changed = locked != joycon_locked;
+    joycon_locked = locked;
+    for (auto* button : button_map) {
+        if (button) {
+            button->setEnabled(!locked);
+        }
+    }
+    for (std::size_t i = 0; i < analog_map_buttons.size(); ++i) {
+        for (auto* button : analog_map_buttons[i]) {
+            if (button) {
+                button->setEnabled(!locked);
+            }
+        }
+        for (QWidget* widget : std::initializer_list<QWidget*>{
+                 analog_map_modifier_button[i], analog_map_deadzone_slider[i],
+                 analog_map_modifier_slider[i], analog_map_range_spinbox[i]}) {
+            if (widget) {
+                widget->setEnabled(!locked);
+            }
+        }
+    }
+    // (Saving would keep the Joy-Con's arrangement as the player's own mapping)
+    if (card_save) {
+        card_save->setEnabled(!locked);
+        card_save_new->setEnabled(!locked);
+    }
+    if (joycon_note) {
+        joycon_note->setVisible(locked);
+        if (locked) {
+            joycon_note->setText(
+                (held == 1 ? tr("P%1 plays as a sideways Joy-Con for this game")
+                           : tr("P%1 plays as an upright Joy-Con for this game"))
+                    .arg(player_index + 1) +
+                tr(": its controls are set automatically. Pick a controller type to set them "
+                   "yourself."));
+        }
+    }
+    if (card_status) {
+        card_status->setVisible(!locked);
+    }
+    if (changed && !locked && profile_card && profile_card->isVisible()) {
+        UpdateProfileCard();
+    }
+}
+
+void ConfigureInputPlayer::SetConnectionLocked(bool locked) {
+    const bool changed = connection_locked != locked || !style_applied;
+    connection_locked = locked;
+    style_applied = true;
+    // The automatic modes draw the tab like the Controllers tab, keeping the spacing (the page
+    // fills the Deck's screen exactly)
+    if (changed) {
+        setStyleSheet(
+            locked ? ConfigurePlayerAssignment::Themed(QStringLiteral(
+                         "QLabel { background: transparent; }"
+                         "QGroupBox { border: 1px solid palette(mid); border-radius: 8px; "
+                         "margin-top: 1.1em; padding-bottom: 5px; "
+                         "background: palette(alternate-base); }"
+                         "QGroupBox::title { subcontrol-origin: margin; "
+                         "subcontrol-position: top center; padding: 0 3px; }"
+                         "QGroupBox QGroupBox { border: none; background: transparent; "
+                         "padding-bottom: 0px; }"
+                         "QGroupBox QGroupBox::title { padding: 0px; }"
+                         // The single-button boxes carry their label inside, above the button
+                         "QGroupBox#buttonShoulderButtonsButtonZLGroup, "
+                         "QGroupBox#buttonShoulderButtonsButtonLGroup, "
+                         "QGroupBox#buttonMiscButtonsMinusGroup, "
+                         "QGroupBox#buttonMiscButtonsPlusGroup, "
+                         "QGroupBox#buttonShoulderButtonsZRGroup, "
+                         "QGroupBox#buttonShoulderButtonsRGroup, "
+                         "QGroupBox#buttonMiscButtonsHomeGroup, "
+                         "QGroupBox#buttonMiscButtonsScreenshotGroup { margin-top: 0px; "
+                         "padding-top: 1.3em; }"
+                         // The top row starts level with the section cards beside it
+                         "QGroupBox#buttonShoulderButtonsButtonZLGroup, "
+                         "QGroupBox#buttonShoulderButtonsButtonLGroup, "
+                         "QGroupBox#buttonMiscButtonsMinusGroup, "
+                         "QGroupBox#buttonMiscButtonsPlusGroup, "
+                         "QGroupBox#buttonShoulderButtonsZRGroup, "
+                         "QGroupBox#buttonShoulderButtonsRGroup { margin-top: 1.1em; }"
+                         "QGroupBox#buttonShoulderButtonsButtonZLGroup::title, "
+                         "QGroupBox#buttonShoulderButtonsButtonLGroup::title, "
+                         "QGroupBox#buttonMiscButtonsMinusGroup::title, "
+                         "QGroupBox#buttonMiscButtonsPlusGroup::title, "
+                         "QGroupBox#buttonShoulderButtonsZRGroup::title, "
+                         "QGroupBox#buttonShoulderButtonsRGroup::title, "
+                         "QGroupBox#buttonMiscButtonsHomeGroup::title, "
+                         "QGroupBox#buttonMiscButtonsScreenshotGroup::title { "
+                         "subcontrol-origin: padding; subcontrol-position: top center; "
+                         "top: 3px; padding: 0px; }"
+                         "QPushButton { border: 1px solid palette(mid); border-radius: 6px; "
+                         "padding: 2px 6px; background: palette(base); }"
+                         "QPushButton:hover { border-color: palette(highlight); }"
+                         "QPushButton:pressed, QPushButton:checked { "
+                         "background: palette(highlight); color: palette(highlighted-text); }")) +
+                         ConfigurePlayerAssignment::ModernComboStyle()
+                   : QString{});
+        if (!locked) {
+            // The manual modes get the tab exactly as it was
+            if (home_centred) {
+                home_centred = false;
+                ui->miscButtons->setStretch(0, 0);
+                delete ui->miscButtons->takeAt(ui->miscButtons->count() - 1);
+            }
+            if (shoulders_raised) {
+                shoulders_raised = false;
+                for (QPushButton* button :
+                     {ui->buttonL, ui->buttonR, ui->buttonMinus, ui->buttonPlus}) {
+                    if (auto* box = qobject_cast<QBoxLayout*>(
+                            button->parentWidget() ? button->parentWidget()->layout() : nullptr)) {
+                        delete box->takeAt(box->count() - 1);
+                    }
+                }
+            }
+            if (QLayout* connect = ui->groupConnectedController->layout()) {
+                connect->setAlignment(ui->comboControllerType, Qt::Alignment{});
+            }
+            // Back to the inherited fonts
+            for (QGroupBox* box : bolded_boxes) {
+                if (box) {
+                    box->setFont(QFont());
+                    for (QWidget* child : box->findChildren<QWidget*>(Qt::FindDirectChildrenOnly)) {
+                        child->setFont(QFont());
+                    }
+                }
+            }
+            bolded_boxes.clear();
+        }
+        if (locked) {
+            ConfigurePlayerAssignment::ModernizeCombos(this);
+            // Bold section titles (a style sheet can't bold only a title)
+            QFont normal = font();
+            normal.setBold(false); // explicit, or the box's bold is inherited after all
+            QFont bold = normal;
+            bold.setBold(true);
+            for (QGroupBox* box : findChildren<QGroupBox*>()) {
+                // No box around a section
+                bool inside_box = false;
+                for (QWidget* up = box->parentWidget(); up && up != this; up = up->parentWidget()) {
+                    inside_box = inside_box || qobject_cast<QGroupBox*>(up) != nullptr;
+                }
+                const bool section =
+                    !inside_box && !box->objectName().startsWith(QStringLiteral("buttonMisc")) &&
+                    !box->objectName().startsWith(QStringLiteral("buttonShoulderButtons"));
+                if (!section) {
+                    continue;
+                }
+                box->setFont(bold);
+                for (QWidget* child : box->findChildren<QWidget*>(Qt::FindDirectChildrenOnly)) {
+                    child->setFont(normal);
+                }
+                bolded_boxes.push_back(box);
+            }
+            // Home centred under the controller
+            if (!home_centred) {
+                home_centred = true;
+                ui->miscButtons->setStretch(0, 1);
+                ui->miscButtons->addStretch(1);
+            }
+            // Connect Controller's drop-down level with the profile card's
+            if (QLayout* connect = ui->groupConnectedController->layout()) {
+                connect->setAlignment(ui->comboControllerType, Qt::AlignTop);
+            }
+            // L, R, Minus and Plus line up with ZL and ZR: a fixed space the size of ZL's
+            // trigger slider under each
+            if (!shoulders_raised) {
+                shoulders_raised = true;
+                const int slider = ui->sliderZLThreshold->sizeHint().height();
+                for (QPushButton* button :
+                     {ui->buttonL, ui->buttonR, ui->buttonMinus, ui->buttonPlus}) {
+                    if (auto* box = qobject_cast<QBoxLayout*>(
+                            button->parentWidget() ? button->parentWidget()->layout() : nullptr)) {
+                        box->addSpacerItem(new QSpacerItem(
+                            0, slider + box->spacing(), QSizePolicy::Minimum, QSizePolicy::Fixed));
+                    }
+                }
+            }
+        }
+    }
+    if (!profile_card && locked) {
+        BuildProfileCard();
+    }
+    ui->profilesGroup->setVisible(!locked);
+    if (profile_card) {
+        profile_card->setVisible(locked);
+        if (locked) {
+            card_timer->start();
+            UpdateProfileCard();
+        } else {
+            card_timer->stop();
+        }
+    }
+    ApplyJoyConLock();
+    ui->devicesGroup->setVisible(!locked);
+    // The automatic modes bind motion themselves (the controller's own, or its real device's)
+    ui->buttonMotionLeftGroup->setVisible(!locked);
+    ui->buttonMotionRightGroup->setVisible(!locked);
+    if (ui->groupConnectedController->isCheckable() == !locked) {
+        return;
+    }
+    const bool blocked = ui->groupConnectedController->blockSignals(true);
+    ui->groupConnectedController->setCheckable(!locked);
+    if (!locked) {
+        ui->groupConnectedController->setChecked(emulated_controller->IsConnected(true));
+    }
+    ui->groupConnectedController->blockSignals(blocked);
+}
+
+namespace {
+
+/// A binding without its controller (guid, port), its fields in a fixed order
+std::string MappingKey(const std::string& raw) {
+    if (raw.empty()) {
+        return {};
+    }
+    Common::ParamPackage param{raw};
+    if (param.Get("engine", "") == "sdl") {
+        param.Erase("guid");
+        param.Erase("guid2");
+        param.Erase("port");
+    }
+    std::vector<std::string> fields;
+    std::string field;
+    for (const char c : param.Serialize() + ",") {
+        if (c != ',') {
+            field += c;
+            continue;
+        }
+        fields.push_back(field);
+        field.clear();
+    }
+    std::sort(fields.begin(), fields.end());
+    std::string out;
+    for (const auto& f : fields) {
+        out += f + ';';
+    }
+    return out;
+}
+
+/// Asks the engine to put a profile on a player's controller ("" drops it): the engine owns the
+/// mappings in the automatic modes
+void RequestProfile(std::size_t player, const QString& name, bool restore = false) {
+    auto& state = Common::GetControllerConsoleState();
+    std::scoped_lock lock{state.mutex};
+    state.profile_requests.push_back({static_cast<int>(player), name.toStdString(), restore});
+}
+
+/// The box layout that holds a widget, searched from a top layout down
+QBoxLayout* LayoutHolding(QLayout* layout, QWidget* widget) {
+    if (!layout) {
+        return nullptr;
+    }
+    if (layout->indexOf(widget) >= 0) {
+        return qobject_cast<QBoxLayout*>(layout);
+    }
+    for (int i = 0; i < layout->count(); ++i) {
+        if (auto* found = LayoutHolding(layout->itemAt(i)->layout(), widget)) {
+            return found;
+        }
+    }
+    return nullptr;
+}
+
+} // Anonymous namespace
+
+void ConfigureInputPlayer::BuildProfileCard() {
+    profile_card = new QGroupBox(tr("Mapping Profile"), this);
+    auto* column = new QVBoxLayout(profile_card);
+    // Connect Controller's margins, so the two drop-downs are level
+    if (const QLayout* connect = ui->groupConnectedController->layout()) {
+        column->setContentsMargins(connect->contentsMargins());
+    }
+    auto* row = new QHBoxLayout;
+    card_profiles = new QComboBox(profile_card);
+    card_profiles->setPlaceholderText(tr("No profile"));
+    ConfigurePlayerAssignment::ModernizeCombos(profile_card);
+    // Fills the row up to its buttons, which end at the card's edge
+    card_profiles->setMinimumWidth(160);
+    card_profiles->setToolTip(tr("Picking a profile applies it to this player at once."));
+    card_save = new QPushButton(tr("Save"), profile_card);
+    card_save->setDefault(false);
+    card_save->setAutoDefault(false);
+    // The profile's actions, all in view beside Save (Defaults, below the drawing, resets)
+    const auto action = [this](const QString& text, const QString& tip) {
+        auto* button = new QPushButton(text, profile_card);
+        button->setAutoDefault(false);
+        button->setToolTip(tip);
+        return button;
+    };
+    card_save_new = action(tr("Save as New"), tr("Keep this mapping as a new profile"));
+    card_rename = action(tr("Rename"), tr("Rename the selected profile"));
+    card_duplicate = action(tr("Duplicate"), tr("Copy the selected profile under a new name"));
+    card_delete = action(tr("Delete"), tr("Delete the selected profile; this player keeps its "
+                                          "current mapping"));
+    // (Inside the drop-down) takes the profile off: the mappings from before it come back
+    card_remove = ConfigurePlayerAssignment::AddClearButton(card_profiles);
+    card_remove->setToolTip(tr("Remove the profile from this player"));
+    row->addWidget(card_profiles, 1);
+    row->addWidget(card_save);
+    row->addWidget(card_save_new);
+    row->addWidget(card_rename);
+    row->addWidget(card_duplicate);
+    row->addWidget(card_delete);
+    column->addLayout(row);
+    card_status = new QLabel(profile_card);
+    card_status->setWordWrap(true);
+    column->addWidget(card_status);
+    joycon_note = new QLabel(profile_card);
+    joycon_note->setWordWrap(true);
+    joycon_note->setVisible(false);
+    column->addWidget(joycon_note);
+    // No taller than its rows: the drawing below gets the height
+    profile_card->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
+
+    connect(card_save_new, &QPushButton::clicked, this, [this] {
+        const int count = ui->comboProfiles->count();
+        CreateProfile();
+        if (ui->comboProfiles->count() > count) {
+            RequestProfile(player_index, ui->comboProfiles->currentText());
+        }
+        RememberProfileMapping();
+        UpdateProfileCard();
+    });
+    connect(card_rename, &QPushButton::clicked, this, &ConfigureInputPlayer::RenameProfile);
+    connect(card_duplicate, &QPushButton::clicked, this, &ConfigureInputPlayer::DuplicateProfile);
+    connect(card_delete, &QPushButton::clicked, this, &ConfigureInputPlayer::DeleteProfileAsked);
+
+    // The engine owns the mappings here: picking or saving a profile goes through it
+    connect(card_profiles, qOverload<int>(&QComboBox::activated), this, [this](int index) {
+        ui->comboProfiles->setCurrentIndex(index);
+        RequestProfile(player_index, ui->comboProfiles->currentText());
+        RememberProfileMapping();
+        UpdateProfileCard();
+    });
+    connect(card_remove, &QToolButton::clicked, this, [this] {
+        RequestProfile(player_index, {}, true);
+        ui->comboProfiles->setCurrentIndex(-1);
+        RememberProfileMapping();
+        UpdateProfileCard();
+    });
+    connect(card_save, &QPushButton::clicked, this, [this] {
+        if (ui->comboProfiles->currentIndex() < 0) {
+            CreateProfile();
+        } else {
+            SaveProfile();
+        }
+        // (A new profile left unnamed leaves nothing selected)
+        if (ui->comboProfiles->currentIndex() >= 0) {
+            RequestProfile(player_index, ui->comboProfiles->currentText());
+        }
+        RememberProfileMapping();
+        UpdateProfileCard();
+    });
+
+    // Mapping edits come from many places (polling, menus, defaults): look again now and then
+    card_timer = new QTimer(this);
+    card_timer->setInterval(500);
+    connect(card_timer, &QTimer::timeout, this, &ConfigureInputPlayer::UpdateProfileCard);
+
+    if (auto* layout = LayoutHolding(this->layout(), ui->profilesGroup)) {
+        layout->insertWidget(layout->indexOf(ui->profilesGroup) + 1, profile_card, 1);
+    }
+    // A bold title like the other sections, with its contents in the normal font
+    QFont normal = font();
+    normal.setBold(false); // explicit, or the card's bold is inherited after all
+    QFont bold = normal;
+    bold.setBold(true);
+    profile_card->setFont(bold);
+    for (QWidget* child : profile_card->findChildren<QWidget*>(Qt::FindDirectChildrenOnly)) {
+        child->setFont(normal);
+    }
+    profile_card->setVisible(false);
+}
+
+void ConfigureInputPlayer::UpdateProfileCard() {
+    if (!profile_card || !profile_card->isVisible()) {
+        return;
+    }
+    // Mirror the profile list the rest of the tab keeps in comboProfiles
+    bool same = card_profiles->count() == ui->comboProfiles->count();
+    for (int i = 0; same && i < card_profiles->count(); ++i) {
+        same = card_profiles->itemText(i) == ui->comboProfiles->itemText(i);
+    }
+    if (!same || card_profiles->currentIndex() != ui->comboProfiles->currentIndex()) {
+        const bool blocked = card_profiles->blockSignals(true);
+        card_profiles->clear();
+        for (int i = 0; i < ui->comboProfiles->count(); ++i) {
+            card_profiles->addItem(ui->comboProfiles->itemText(i));
+        }
+        card_profiles->setCurrentIndex(ui->comboProfiles->currentIndex());
+        card_profiles->blockSignals(blocked);
+    }
+    // The engine changes the player's profile too (a swap, the Controllers tab): follow it
+    const QString carried =
+        QString::fromStdString(Settings::values.players.GetValue()[player_index].profile_name);
+    if (carried != card_engine_profile) {
+        card_engine_profile = carried;
+        const bool blocked = ui->comboProfiles->blockSignals(true);
+        ui->comboProfiles->setCurrentIndex(ui->comboProfiles->findText(carried));
+        ui->comboProfiles->blockSignals(blocked);
+        card_profiles->setCurrentIndex(ui->comboProfiles->currentIndex());
+    }
+    const QString name = ui->comboProfiles->currentText();
+    if (ui->comboProfiles->currentIndex() >= 0 && name != card_profile_name) {
+        RememberProfileMapping();
+    }
+
+    const QString follows = tr("Applies to this player's controller, whichever one it is.");
+    const bool selected = ui->comboProfiles->currentIndex() >= 0;
+    card_remove->setVisible(selected);
+    card_rename->setEnabled(selected);
+    card_duplicate->setEnabled(selected);
+    card_delete->setEnabled(selected);
+    if (ui->comboProfiles->currentIndex() < 0) {
+        card_save->setToolTip(tr("Keep this mapping as a new profile (asks for its name)"));
+        // In Modern Console a remap lasts the session; a profile is what keeps controls
+        card_status->setText(tr("No profile: this player uses its usual controls. Changes made "
+                                "here last for this session; Save as New keeps them."));
+        card_status->setPalette(palette());
+        return;
+    }
+    card_save->setToolTip(tr("Save this mapping to \u201c%1\u201d").arg(name));
+    QPalette status = palette();
+    if (CurrentMappingKey() != card_profile_key) {
+        card_status->setText(tr("\u25cf Unsaved changes \u00b7 %1").arg(follows));
+        status.setColor(QPalette::WindowText, QColor(208, 138, 30));
+    } else {
+        card_status->setText(tr("\u2713 Saved \u00b7 %1").arg(follows));
+        status.setColor(QPalette::WindowText, status.color(QPalette::PlaceholderText));
+    }
+    card_status->setPalette(status);
+}
+
+std::string ConfigureInputPlayer::CurrentMappingKey() const {
+    // Motion is the engine's while players are assigned automatically, so it is left out
+    std::string key;
+    for (int i = 0; i < Settings::NativeButton::NumButtons; ++i) {
+        key += MappingKey(emulated_controller->GetButtonParam(i).Serialize()) + '|';
+    }
+    for (int i = 0; i < Settings::NativeAnalog::NumAnalogs; ++i) {
+        key += MappingKey(emulated_controller->GetStickParam(i).Serialize()) + '|';
+    }
+    return key;
+}
+
+void ConfigureInputPlayer::RememberProfileMapping() {
+    card_profile_name = ui->comboProfiles->currentText();
+    // The player keeps its profile's name, so the card shows it the next time too
+    Settings::values.players.GetValue()[player_index].profile_name =
+        ui->comboProfiles->currentIndex() < 0 ? std::string{} : card_profile_name.toStdString();
+    card_profile_key.clear();
+    if (ui->comboProfiles->currentIndex() < 0) {
+        return;
+    }
+    const auto read = profiles->PeekProfile(card_profile_name.toStdString(), player_index);
+    if (!read) {
+        return;
+    }
+    for (const auto& button : read->buttons) {
+        card_profile_key += MappingKey(button) + '|';
+    }
+    for (const auto& analog : read->analogs) {
+        card_profile_key += MappingKey(analog) + '|';
+    }
+}
+
+void ConfigureInputPlayer::SelectProfile(const QString& name) {
+    UpdateInputProfiles();
+    ui->comboProfiles->setCurrentIndex(ui->comboProfiles->findText(name));
+    emit RefreshInputProfiles(player_index);
+    RequestProfile(player_index, name);
+    RememberProfileMapping();
+    UpdateProfileCard();
+}
+
+void ConfigureInputPlayer::RenameProfile() {
+    const QString old_name = ui->comboProfiles->currentText();
+    if (ui->comboProfiles->currentIndex() < 0) {
+        return;
+    }
+    const auto new_name =
+        LimitableInputDialog::GetText(this, tr("Rename Profile"), tr("Enter a new name:"), 1, 30,
+                                      LimitableInputDialog::InputLimiter::Filesystem);
+    if (new_name.isEmpty() || new_name == old_name) {
+        return;
+    }
+    if (!InputProfiles::IsProfileNameValid(new_name.toStdString()) ||
+        !profiles->RenameProfile(old_name.toStdString(), new_name.toStdString())) {
+        QMessageBox::critical(
+            this, tr("Rename Input Profile"),
+            tr("Could not rename \u201c%1\u201d to \u201c%2\u201d.").arg(old_name, new_name));
+        return;
+    }
+    SelectProfile(new_name);
+}
+
+void ConfigureInputPlayer::DuplicateProfile() {
+    const QString name = ui->comboProfiles->currentText();
+    if (ui->comboProfiles->currentIndex() < 0) {
+        return;
+    }
+    QString copy = tr("%1 copy").arg(name);
+    for (int n = 2; ui->comboProfiles->findText(copy) >= 0; ++n) {
+        copy = tr("%1 copy %2").arg(name).arg(n);
+    }
+    if (!profiles->DuplicateProfile(name.toStdString(), copy.toStdString())) {
+        QMessageBox::critical(this, tr("Duplicate Input Profile"),
+                              tr("Could not duplicate \u201c%1\u201d.").arg(name));
+        return;
+    }
+    SelectProfile(copy);
+}
+
+void ConfigureInputPlayer::DeleteProfileAsked() {
+    const QString name = ui->comboProfiles->currentText();
+    if (ui->comboProfiles->currentIndex() < 0) {
+        return;
+    }
+    if (QMessageBox::question(this, tr("Delete Input Profile"),
+                              tr("Delete the profile \u201c%1\u201d? This player keeps its "
+                                 "current mapping.")
+                                  .arg(name)) != QMessageBox::Yes) {
+        return;
+    }
+    DeleteProfile();
+    RequestProfile(player_index, {});
+    RememberProfileMapping();
+    UpdateProfileCard();
+}
+
 void ConfigureInputPlayer::UpdateInputDeviceCombobox() {
     // Skip input device persistence if "Input Devices" is set to "Any".
     if (ui->comboDevices->currentIndex() == 0) {
@@ -978,10 +1569,76 @@ void ConfigureInputPlayer::UpdateInputDeviceCombobox() {
 }
 
 void ConfigureInputPlayer::RestoreDefaults() {
+    if (joycon_locked) {
+        return;
+    }
+    // In the automatic modes the device list is hidden (and may say "Any"): the defaults are
+    // those of the controller the bindings point at, or pointed at before Clear
+    if (connection_locked) {
+        if (const auto device = CurrentSdlDevice()) {
+            locked_device = device;
+        }
+        if (locked_device) {
+            const auto it = std::find_if(
+                input_devices.begin(), input_devices.end(), [this](const auto& param) {
+                    return param.Get("engine", "") == "sdl" &&
+                           param.Get("guid", "") == locked_device->first &&
+                           param.Get("port", 0) == locked_device->second;
+                });
+            if (it != input_devices.end()) {
+                ui->comboDevices->setCurrentIndex(
+                    static_cast<int>(std::distance(input_devices.begin(), it)));
+            }
+        }
+    }
+    // (Motion is the engine's in these modes, and hidden: a DSU binding stays)
+    const auto motions = KeptMotions();
     UpdateMappingWithDefaults();
+    RestoreMotions(motions);
+}
+
+std::optional<std::pair<std::string, int>> ConfigureInputPlayer::CurrentSdlDevice() const {
+    for (int button_id = 0; button_id < Settings::NativeButton::NumButtons; ++button_id) {
+        const auto param = emulated_controller->GetButtonParam(button_id);
+        if (param.Get("engine", "") == "sdl") {
+            return std::pair<std::string, int>{param.Get("guid", ""), param.Get("port", 0)};
+        }
+    }
+    return std::nullopt;
+}
+
+std::vector<Common::ParamPackage> ConfigureInputPlayer::KeptMotions() const {
+    std::vector<Common::ParamPackage> motions;
+    if (connection_locked) {
+        for (int motion_id = 0; motion_id < Settings::NativeMotion::NumMotions; ++motion_id) {
+            motions.push_back(
+                emulated_controller->GetMotionParam(static_cast<std::size_t>(motion_id)));
+        }
+    }
+    return motions;
+}
+
+void ConfigureInputPlayer::RestoreMotions(const std::vector<Common::ParamPackage>& motions) {
+    for (std::size_t motion_id = 0; motion_id < motions.size(); ++motion_id) {
+        emulated_controller->SetMotionParam(motion_id, motions[motion_id]);
+    }
 }
 
 void ConfigureInputPlayer::ClearAll() {
+    if (joycon_locked) {
+        return;
+    }
+    // (The controller is remembered, for Defaults afterwards)
+    if (const auto device = CurrentSdlDevice()) {
+        locked_device = device;
+    }
+    // (Motion is the engine's in the automatic modes, and hidden: a DSU binding stays)
+    const auto motions = KeptMotions();
+    ClearMappings();
+    RestoreMotions(motions);
+}
+
+void ConfigureInputPlayer::ClearMappings() {
     for (int button_id = 0; button_id < Settings::NativeButton::NumButtons; ++button_id) {
         const auto* const button = button_map[button_id];
         if (button == nullptr) {
@@ -1634,12 +2291,20 @@ void ConfigureInputPlayer::LoadProfile() {
 
     ApplyConfiguration();
 
+    // In the automatic modes the profile goes onto the player's current controller (the one
+    // saved with it would read as a swap)
+    auto& player = Settings::values.players.GetValue()[player_index];
+    const auto device = connection_locked ? SdlDevice(player) : std::nullopt;
+
     if (!profiles->LoadProfile(profile_name.toStdString(), player_index)) {
         QMessageBox::critical(this, tr("Load Input Profile"),
                               tr("Failed to load the input profile \"%1\"").arg(profile_name));
         UpdateInputProfiles();
         emit RefreshInputProfiles(player_index);
         return;
+    }
+    if (device) {
+        KeepSdlDevice(player, *device);
     }
 
     LoadConfiguration();

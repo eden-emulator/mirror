@@ -16,9 +16,12 @@ namespace FS = Common::FS;
 
 namespace {
 
+std::filesystem::path ProfilePath(std::string_view profile_name) {
+    return FS::GetEdenPath(FS::EdenPath::ConfigDir) / "input" / fmt::format("{}.ini", profile_name);
+}
+
 bool ProfileExistsInFilesystem(std::string_view profile_name) {
-    return FS::Exists(FS::GetEdenPath(FS::EdenPath::ConfigDir) / "input" /
-                      fmt::format("{}.ini", profile_name));
+    return FS::Exists(ProfilePath(profile_name));
 }
 
 bool IsINI(const std::filesystem::path& filename) {
@@ -130,6 +133,46 @@ bool InputProfiles::SaveProfile(const std::string& profile_name, std::size_t pla
 
     map_profiles[profile_name]->SaveQtControlPlayerValues(player_index);
     return true;
+}
+
+bool InputProfiles::RenameProfile(const std::string& profile_name, const std::string& new_name) {
+    if (!ProfileExistsInMap(profile_name) || ProfileExistsInMap(new_name) ||
+        ProfileExistsInFilesystem(new_name) ||
+        !FS::RenameFile(ProfilePath(profile_name), ProfilePath(new_name))) {
+        return false;
+    }
+    map_profiles.erase(profile_name);
+    map_profiles.insert_or_assign(
+        new_name, std::make_unique<QtConfig>(new_name, Config::ConfigType::InputProfile));
+    return true;
+}
+
+bool InputProfiles::DuplicateProfile(const std::string& profile_name, const std::string& new_name) {
+    if (!ProfileExistsInMap(profile_name) || ProfileExistsInMap(new_name) ||
+        ProfileExistsInFilesystem(new_name)) {
+        return false;
+    }
+    std::error_code error;
+    std::filesystem::copy_file(ProfilePath(profile_name), ProfilePath(new_name), error);
+    if (error) {
+        return false;
+    }
+    map_profiles.insert_or_assign(
+        new_name, std::make_unique<QtConfig>(new_name, Config::ConfigType::InputProfile));
+    return true;
+}
+
+std::optional<Settings::PlayerInput> InputProfiles::PeekProfile(const std::string& profile_name,
+                                                                std::size_t player_index) {
+    if (!ProfileExistsInMap(profile_name)) {
+        return std::nullopt;
+    }
+    auto& player = Settings::values.players.GetValue()[player_index];
+    const auto kept = player;
+    map_profiles[profile_name]->ReadQtControlPlayerValues(player_index);
+    auto read = player;
+    player = kept;
+    return read;
 }
 
 bool InputProfiles::ProfileExistsInMap(const std::string& profile_name) const {

@@ -25,10 +25,25 @@ public:
     using Button = std::unique_ptr<Common::Input::InputDevice>;
 
     Stick(Button up_, Button down_, Button left_, Button right_, Button modifier_, Button updater_,
-          float modifier_scale_, float modifier_angle_)
+          Button stick_, float modifier_scale_, float modifier_angle_)
         : up(std::move(up_)), down(std::move(down_)), left(std::move(left_)),
           right(std::move(right_)), modifier(std::move(modifier_)), updater(std::move(updater_)),
-          modifier_scale(modifier_scale_), modifier_angle(modifier_angle_) {
+          stick(std::move(stick_)), modifier_scale(modifier_scale_),
+          modifier_angle(modifier_angle_) {
+        // A real stick alongside the buttons: it moves the stick while no button is held
+        stick_status.x.properties = properties;
+        stick_status.y.properties = properties;
+        if (stick) {
+            stick->SetCallback({
+                .on_change =
+                    [this](const Common::Input::CallbackStatus& callback_) {
+                        stick_status = callback_.stick_status;
+                        if (amplitude == 0) {
+                            SoftUpdate();
+                        }
+                    },
+            });
+        }
         up->SetCallback({
             .on_change =
                 [this](const Common::Input::CallbackStatus& callback_) {
@@ -220,6 +235,9 @@ public:
         left->ForceUpdate();
         right->ForceUpdate();
         modifier->ForceUpdate();
+        if (stick) {
+            stick->ForceUpdate();
+        }
     }
 
     void SoftUpdate() {
@@ -237,6 +255,9 @@ public:
     }
 
     Common::Input::StickStatus GetStatus() const {
+        if (stick && amplitude == 0) {
+            return stick_status;
+        }
         Common::Input::StickStatus status{};
         status.x.properties = properties;
         status.y.properties = properties;
@@ -270,6 +291,8 @@ private:
     Button right;
     Button modifier;
     Button updater;
+    Button stick;
+    Common::Input::StickStatus stick_status{};
     float modifier_scale{};
     float modifier_angle{};
     float angle{};
@@ -296,9 +319,13 @@ std::unique_ptr<Common::Input::InputDevice> StickFromButton::Create(
     auto updater = Common::Input::CreateInputDeviceFromString("engine:updater,button:0");
     auto modifier_scale = params.Get("modifier_scale", 0.5f);
     auto modifier_angle = params.Get("modifier_angle", 5.5f);
+    // (Optional: a real stick the buttons move alongside)
+    Stick::Button stick = params.Has("stick")
+                       ? Common::Input::CreateInputDeviceFromString(params.Get("stick", ""))
+                       : nullptr;
     return std::make_unique<Stick>(std::move(up), std::move(down), std::move(left),
                                    std::move(right), std::move(modifier), std::move(updater),
-                                   modifier_scale, modifier_angle);
+                                   std::move(stick), modifier_scale, modifier_angle);
 }
 
 } // namespace InputCommon

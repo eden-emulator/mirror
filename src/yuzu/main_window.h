@@ -9,7 +9,16 @@
 #include <memory>
 #include <optional>
 
+#include <array>
+#include <bitset>
+#include <chrono>
+#include <deque>
 #include <filesystem>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QPushButton>
@@ -19,6 +28,7 @@
 
 #include "common/common_types.h"
 #include "common/settings_enums.h"
+#include "common/settings_input.h"
 #include "frontend_common/content_manager.h"
 #include "input_common/drivers/tas_input.h"
 #include "qt_common/config/qt_config.h"
@@ -49,6 +59,7 @@ class LoadingScreen;
 class OverlayDialog;
 class ControllerDialog;
 class QLabel;
+class QShortcut;
 class MultiplayerState;
 class QPushButton;
 class QProgressDialog;
@@ -175,9 +186,6 @@ public:
     void AcceptDropEvent(QDropEvent* event);
 
     std::filesystem::path GetShortcutPath(QtCommon::Game::ShortcutTarget target);
-
-protected:
-    bool eventFilter(QObject* watched, QEvent* event) override;
 
 signals:
 
@@ -556,6 +564,256 @@ private:
     QActionGroup* game_size_actions;
     std::vector<QAction*> runtime_cheat_actions;
 
+    /// The console modes' engine: assigns the connected controllers to players, on a timer
+    QTimer console_mode_timer;
+    /// Eden is closing: the engine stops (it would reload the inputs closeEvent unloaded)
+    bool closing = false;
+    void ApplyConsoleControllerMode();
+    /// connection instance -> player slot; kept after a disconnect so the pad reclaims its player
+    std::map<u32, int> pad_slots;
+    /// Per connection: its controller's Bluetooth address, the player it started as, and
+    /// whether its player was a guess on a reconnect
+    std::map<u32, std::string> inst_address;
+    std::map<u32, int> pad_origin;
+    std::set<u32> pad_guessed;
+    /// Returning pads waiting a moment for their Bluetooth address before they claim a player
+    std::map<u32, std::chrono::steady_clock::time_point> claim_wait_since;
+    /// Players taken by a guess, kept for the Bluetooth controller that held them
+    struct AddressClaim {
+        int slot;
+        int origin;
+        std::chrono::steady_clock::time_point at;
+    };
+    std::map<std::string, AddressClaim> address_claims;
+    /// Each Bluetooth controller's starting player, by address: kept through Turn Off and
+    /// reconnects
+    std::map<std::string, int> address_origin;
+    /// Names given to controllers ("bt:<address>", "handheld" or "id:<identity>"). Never saved:
+    /// owners can't tell identical controllers apart in a later session
+    std::map<std::string, std::string> controller_names;
+    /// The mode and each player's refused controller type as last logged
+    std::optional<Settings::AppletMode> logged_mode;
+    std::array<std::string, 8> refused_logged{};
+    /// When the deck's controller was last asked to turn its motion sensors back on
+    qint64 deck_motion_asked_at = 0;
+    /// Pads whose player was removed: they sit out until they reconnect (connection instance)
+    std::set<u32> benched_pads;
+    /// When each player's controller was last turned off (Turn Off)
+    std::array<qint64, 10> turned_off_at{};
+    /// Each pad's Bluetooth address by BluetoothKey ("" none or unknown), and the pads not yet
+    /// told apart from others of their model
+    std::map<std::string, std::string> pad_bluetooth;
+    std::set<std::string> pad_bt_pending;
+    void LearnBluetoothPads();
+    /// Reads the pads' and the real controllers' inputs
+    void WatchSteamPadInputs();
+    /// The last time a pad had input together with exactly one real controller: when Steam
+    /// then moves a controller to that pad, that is the one
+    struct LoneInput {
+        u32 pad;
+        std::string controller;
+        std::chrono::steady_clock::time_point at;
+    };
+    std::optional<LoneInput> last_lone_input;
+    /// connection instance -> stable identity (serial, else model GUID), to match a returning pad
+    std::map<u32, std::string> pad_identity;
+    /// identity -> the binding set the controller carries, so its mappings follow it
+    std::map<std::string, int> pad_sets;
+    /// player -> the set its controller carries, as of the last tick
+    std::array<int, 10> slot_set{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    /// set -> the controller whose default mapping it holds (0: the user's, or empty); a set
+    /// holding a gone controller's defaults is rebuilt for the one taking it
+    std::array<u32, 10> set_default_of{};
+    /// This session's binding sets: profiles and remaps stay here, so the user's own setup
+    /// (the manual modes') is never touched
+    std::optional<std::array<Settings::PlayerInput, 10>> session_sets;
+    /// The set a change goes to: the session's, or a game's own profile set
+    Settings::PlayerInput& SessionSet(int set);
+    /// The profile each seat (player number) starts a session with
+    void ApplySeatProfiles();
+    void SetSeatProfile(int player, const std::string& name);
+    /// A set's mappings before this session's first profile on it, for taking the profile off
+    std::map<int, Settings::PlayerInput> set_before_profile;
+    /// The handheld's own pad: never a player while other pads are connected
+    u32 builtin_pad_id = 0;
+    /// The built-in's stable identity: the exclusion must survive its instance changing
+    std::string builtin_identity;
+    /// Latched once the built-in has been identified
+    bool builtin_seen_first = false;
+    /// Warn once per engagement when the built-in cannot be identified
+    bool builtin_warned = false;
+    /// Overlay rows per player: when it appeared, when its pad left, and its name
+    std::array<qint64, 10> overlay_row_since{};
+    std::array<qint64, 10> overlay_row_gone{};
+    std::array<QString, 10> overlay_row_name{};
+    /// Per player: the controller behind the row (its identity), and its flash (1 green, 2 red)
+    /// with when it began; a red then green keeps the green's start in overlay_green_at
+    std::array<std::string, 10> overlay_row_ident{};
+    /// The key each player's input history is kept under (identical controllers can share an
+    /// identity)
+    std::array<std::string, 10> overlay_row_history{};
+    std::array<int, 10> overlay_flash{};
+    std::array<qint64, 10> overlay_flash_since{};
+    std::array<qint64, 10> overlay_green_at{};
+    /// Per player: the real device its motion comes from under Steam (0: none)
+    std::array<u32, 10> overlay_motion_source{};
+    /// The overlay's rows as the last assignment tick left them: flash 1 green, 2 red
+    struct OverlayRow {
+        int player;
+        QString text;
+        u32 pad;
+        int flash;
+        qint64 flash_since;
+        /// The player its controller started as (-1: this one), and whether it was a guess
+        int origin = -1;
+        bool guessed = false;
+        /// Its controller's battery (percent, -1 unknown) and whether it charges
+        int battery = -1;
+        bool charging = false;
+    };
+    std::vector<OverlayRow> overlay_rows;
+    std::vector<bool> overlay_blink;
+    /// The room the players panel had last: redrawn when a top-right panel changes
+    float overlay_room = 0.0f;
+    std::set<u32> overlay_active_pads;
+    /// Polls controller input faster than the assignment tick, for the blue highlight
+    QTimer console_activity_timer;
+    /// The overlay's player rows as drawn, for the mouse
+    std::vector<std::pair<int, QRect>> overlay_hits;
+    int overlay_drag_player = -1;
+    int overlay_drag_dy = 0;
+    bool overlay_dragging = false;
+    QPoint overlay_press;
+    /// The row under the mouse (-1: none) and its buttons as drawn: swap above (-1) or below
+    /// (1), Turn Off (0), Config (2), rename (3); while naming apply (4), remove (5), cancel (6)
+    int overlay_hover_player = -1;
+    bool overlay_button_down = false;
+    struct OverlayButton {
+        QRect rect;
+        int player;
+        int action;
+        int target;
+    };
+    std::vector<OverlayButton> overlay_buttons;
+    bool HandleOverlayMouse(QEvent* event);
+    /// Each player's given name as shown, and the name being typed (player -1: none)
+    std::array<std::string, 10> overlay_custom_name{};
+    /// The name of the controller that last left each player, for its hint
+    std::array<QString, 10> overlay_left_name{};
+    /// Batteries, read at most every 10 seconds, and the controllers already warned of a low one
+    struct Battery {
+        int percent = -1;
+        bool charging = false;
+        bool wired = false;
+    };
+    std::map<u32, std::pair<qint64, Battery>> battery_read;
+    /// A controller's first BlueZ battery reading and when, by address (BlueZ says 50% at first)
+    std::map<std::string, std::pair<qint64, int>> bluez_first;
+    /// Whose controller each pad's battery reading is (Steam handle or identity, handheld or not)
+    std::map<u32, std::string> battery_whose;
+    std::set<std::string> battery_low_told;
+    /// Use Any Controller as Joy-Cons: each player's type before the engine changed it, and the
+    /// type it set
+    std::array<std::optional<Settings::ControllerType>, 10> joycon_auto_from{};
+    std::array<std::optional<Settings::ControllerType>, 10> joycon_auto_set{};
+    /// A single Joy-Con set by it: held sideways (else upright), as the game holds it
+    std::array<bool, 10> joycon_auto_sideways{};
+    /// Pause When a Controller Disconnects: since when each player waits (0 none), and the
+    /// players a pause is for
+    std::array<qint64, 10> waiting_since{};
+    std::set<int> disconnect_paused;
+    /// A handover pause: the player (-1 none) the handheld's controls took over mid-game when
+    /// the last external controller left (it may be docked). Goes on at a press on the handheld
+    /// or when an external controller returns. Also who held each player at the last tick.
+    int handover_paused = -1;
+    bool handover_pressed = false;
+    std::array<bool, 10> held_by_external{};
+    /// Whether the handheld's controls held a player at the last tick (in Modern Console they
+    /// may have played all along: no handover)
+    bool handheld_was_playing = false;
+    /// What BlueZ last said of a controller (by address): connected, and when asked and answered
+    struct BluezConnection {
+        bool connected = true;
+        qint64 asked_ms = 0;
+        qint64 answered_ms = 0;
+    };
+    std::map<std::string, BluezConnection> bluez_connected;
+    /// What BlueZ last said of a controller's battery (by address; -1 nothing yet), and when
+    struct BluezBattery {
+        int percent = -1;
+        qint64 asked_ms = 0;
+    };
+    std::map<std::string, BluezBattery> bluez_battery;
+    /// The pause for a disconnect is about to come (its notice is drawn first)
+    bool disconnect_pause_pending = false;
+    /// The game was seen paused (until then, running isn't a resume by hand)
+    bool disconnect_pause_seen = false;
+    /// + is held on another controller during that pause: on without those players once let go
+    bool disconnect_continue_held = false;
+    std::set<int> pause_done;
+    /// Player Lights: the player each controller's lights were last set to (by connection)
+    std::map<u32, int> lights_player;
+    int overlay_edit_player = -1;
+    QString overlay_edit_text;
+    /// The player whose tab the next settings dialog opens on (-1: as usual)
+    int open_player_tab = -1;
+    /// Under gamescope, makes a window fill the screen (see the definition)
+    void FitToScreenUnderGamescope(QWidget* window);
+    void RenderControllerOverlay();
+    void PollControllerActivity();
+    /// The last buttons each controller pressed, as the game sees them, newest last; by
+    /// controller, so the history follows a swap
+    struct ButtonPress {
+        int button;
+        qint64 at;
+    };
+    std::map<std::string, std::deque<ButtonPress>> press_history;
+    /// The controller each player's buttons were last read for (a new one records no presses)
+    std::array<std::string, 10> history_ident{};
+    std::array<std::bitset<32>, 10> buttons_down{};
+    /// Stick moves in the history: StickMoveButton + stick * 4 + direction (left, up, right,
+    /// down), stick 0 the left one
+    static constexpr int StickMoveButton = 64;
+    /// The direction each player's sticks point, plus one (0 at rest)
+    std::array<std::array<int, 2>, 10> stick_direction{};
+    /// Reads the players' buttons; true when the history changed (a press, or one expiring)
+    bool PollButtonHistory();
+    /// A controller named on screen for a moment: it joined as a player, or left one
+    struct ControllerHint {
+        QString name;
+        int player;
+        bool joined;
+        qint64 at;
+        /// Left because Turn Off turned its controller off
+        bool turned_off = false;
+        /// Said instead of joined / left ("" none): how the player's controller changed
+        QString note;
+        /// Says the game is paused for a disconnect: kept while it is, shown with hints off too
+        bool pause_notice = false;
+    };
+    std::vector<ControllerHint> controller_hints;
+    /// A game running with no controller: since when (0 none), and whether it was said
+    qint64 no_controller_since = 0;
+    bool no_controller_told = false;
+    /// The flashes already turned into hints, per player (green, red)
+    std::array<qint64, 10> hinted_join{};
+    std::array<qint64, 10> hinted_leave{};
+    /// True while the overlay animates (hints fading, history entries shrinking away)
+    bool OverlayAnimating() const;
+    /// The user's own players while a console mode drives them: what the config file sees, and
+    /// what leaving the mode puts back
+    std::optional<std::array<Settings::PlayerInput, 10>> console_profile;
+    /// The running game's own players, when it has input profiles of its own
+    std::optional<std::array<Settings::PlayerInput, 10>> game_profiles;
+    /// The binding sets the pads carry: the user's own, with a game's input profiles on top
+    std::array<Settings::PlayerInput, 10> ConsoleBindingSets() const;
+    /// Saves the configuration, writing the user's own players while a console mode runs
+    void SaveAllConfigValues();
+    /// Puts the user's own players back (leaving a console mode, or before the config saves)
+    void RestoreConsoleProfile();
+    /// Folds edits made in the Controls tab during a console mode into the user's profile
+    void MergeConsoleProfileEdits(const std::array<Settings::PlayerInput, 10>& before);
+
     // Debugger panes
     ControllerDialog* controller_dialog = nullptr;
 
@@ -603,6 +861,7 @@ private:
                         std::string arguments, const bool needs_title);
 
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void dropEvent(QDropEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dragMoveEvent(QDragMoveEvent* event) override;

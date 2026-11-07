@@ -45,6 +45,8 @@ NPad::NPad(Core::HID::HIDCore& hid_core_, KernelHelpers::ServiceContext& service
         AbstractPad{hid_core_.kernel},
     }}
 {
+    // (A new game holds its Joy-Cons upright until it says otherwise)
+    hid_core.SetJoyHoldHorizontal(false);
     for (std::size_t aruid_index = 0; aruid_index < AruidIndexMax; ++aruid_index) {
         for (std::size_t i = 0; i < controller_data[aruid_index].size(); ++i) {
             auto& controller = controller_data[aruid_index][i];
@@ -147,6 +149,18 @@ void NPad::ControllerUpdate(Kernel::KernelCore& kernel, Core::HID::ControllerTri
     if (type == Core::HID::ControllerTriggerType::All) {
         ControllerUpdate(kernel, Core::HID::ControllerTriggerType::Connected, controller_idx);
         ControllerUpdate(kernel, Core::HID::ControllerTriggerType::Battery, controller_idx);
+        return;
+    }
+    // Only connection and battery changes concern the npad here. Motion arrives hundreds of
+    // times a second from its own thread (a DSU server's socket), and the callbacks are live
+    // from the constructor on, before SetNpadExternals provides the applet resource: an update
+    // in that window during boot dereferenced a null applet resource (SIGSEGV).
+    if (type != Core::HID::ControllerTriggerType::Connected &&
+        type != Core::HID::ControllerTriggerType::Disconnected &&
+        type != Core::HID::ControllerTriggerType::Battery) {
+        return;
+    }
+    if (!applet_resource_holder.applet_resource) {
         return;
     }
 
@@ -703,7 +717,11 @@ Result NPad::SetSupportedNpadIdType(Kernel::KernelCore& kernel, u64 aruid, std::
 
 Result NPad::SetNpadJoyHoldType(u64 aruid, NpadJoyHoldType hold_type) {
     std::scoped_lock lock{mutex};
-    return npad_resource.SetNpadJoyHoldType(aruid, hold_type);
+    const Result result = npad_resource.SetNpadJoyHoldType(aruid, hold_type);
+    if (result.IsSuccess()) {
+        hid_core.SetJoyHoldHorizontal(hold_type == NpadJoyHoldType::Horizontal);
+    }
+    return result;
 }
 
 Result NPad::GetNpadJoyHoldType(u64 aruid, NpadJoyHoldType& out_hold_type) const {

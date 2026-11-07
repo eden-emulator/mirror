@@ -442,6 +442,23 @@ std::vector<Common::ParamPackage> InputSubsystem::GetInputDevices() const {
     return impl->GetInputDevices();
 }
 
+std::optional<std::pair<std::string, int>> InputSubsystem::GetSDLBinding(u32 sdl_instance) const {
+#ifdef HAVE_SDL3
+    return impl->sdl->GetBindingForSDLID(static_cast<SDL_JoystickID>(sdl_instance));
+#else
+    return std::nullopt;
+#endif
+}
+
+std::optional<std::chrono::steady_clock::time_point> InputSubsystem::GetSDLLastActivity(
+    u32 sdl_instance) const {
+#ifdef HAVE_SDL3
+    return impl->sdl->GetLastActivity(static_cast<SDL_JoystickID>(sdl_instance));
+#else
+    return std::nullopt;
+#endif
+}
+
 AnalogMapping InputSubsystem::GetAnalogMappingForDevice(const Common::ParamPackage& device) const {
     return impl->GetAnalogMappingForDevice(device);
 }
