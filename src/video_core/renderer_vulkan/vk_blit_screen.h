@@ -62,6 +62,12 @@ public:
 
     void PrepareFrame(const Device& device, Frame* frame, const Layout::FramebufferLayout& layout);
 
+    /// Draws the overlay panels on top (the screen's pass only: never in a screenshot or the
+    /// applets' capture)
+    void DrawOverlayPanels(bool draw) {
+        overlay_panels = draw;
+    }
+
     [[nodiscard]] vk::Framebuffer CreateFramebuffer(const Device& device, const Layout::FramebufferLayout& layout,
                                                     VkImageView image_view,
                                                     VkFormat current_view_format);
@@ -83,6 +89,7 @@ private:
 
     Settings::ScalingFilter scaling_filter{};
     std::unique_ptr<WindowAdaptPass> window_adapt{};
+    bool overlay_panels = false;
     std::list<Layer> layers{};
 };
 

@@ -91,6 +91,14 @@
     <addaction name="action_Configure"/>
     <addaction name="action_Configure_Current_Game"/>
    </widget>
+    <widget class="QMenu" name="menu_Cheats">
+     <property name="visible">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>&amp;Cheats</string>
+     </property>
+    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
      <string>&amp;View</string>
@@ -148,6 +156,8 @@
     <addaction name="action_Show_Filter_Bar"/>
     <addaction name="action_Show_Status_Bar"/>
     <addaction name="action_Show_Performance_Overlay"/>
+    <addaction name="action_Show_Controller_Overlay"/>
+    <addaction name="action_Show_Controller_Hints"/>
     <addaction name="action_Post_Processing_Shaders"/>
     <addaction name="separator"/>
     <addaction name="menu_Reset_Window_Size"/>
@@ -241,6 +251,7 @@
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Emulation"/>
+   <addaction name="menu_Cheats"/>
    <addaction name="menu_View"/>
    <addaction name="menu_Tools"/>
    <addaction name="menu_Multiplayer"/>
@@ -603,6 +614,22 @@
    </property>
    <property name="text">
     <string>Show &amp;Performance Overlay</string>
+   </property>
+  </action>
+  <action name="action_Show_Controller_Overlay">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show &amp;Controller Overlay</string>
+   </property>
+  </action>
+  <action name="action_Show_Controller_Hints">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Controller &amp;Hints</string>
    </property>
   </action>
   <action name="action_Post_Processing_Shaders">

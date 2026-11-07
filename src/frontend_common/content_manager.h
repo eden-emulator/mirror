@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: 2024 yuzu Emulator Project
@@ -163,7 +163,9 @@ inline InstallResult InstallNSP(Core::System& system, FileSys::VfsFilesystem& vf
 
     std::shared_ptr<FileSys::NSP> nsp;
     FileSys::VirtualFile file = vfs.OpenFile(filename, FileSys::OpenMode::Read);
-    if (boost::to_lower_copy(file->GetName()).ends_with("nsp")) {
+    const auto lower_name = boost::to_lower_copy(file->GetName());
+
+    if (lower_name.ends_with("nsp") || lower_name.ends_with("nsz")) {
         nsp = std::make_shared<FileSys::NSP>(file);
         if (nsp->IsExtractedType()) {
             return InstallResult::Failure;

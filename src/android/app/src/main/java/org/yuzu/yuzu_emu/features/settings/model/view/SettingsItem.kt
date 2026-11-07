@@ -317,6 +317,13 @@ abstract class SettingsItem(
                 )
             )
             put(
+                SwitchSetting(
+                    BooleanSetting.ENABLE_CHEATS_BY_DEFAULT,
+                    titleId = R.string.enable_cheats_by_default,
+                    descriptionId = R.string.enable_cheats_by_default_description
+                )
+            )
+            put(
                 SingleChoiceSetting(
                     IntSetting.REGION_INDEX,
                     titleId = R.string.emulated_region,
@@ -857,13 +864,6 @@ abstract class SettingsItem(
                     BooleanSetting.SKIP_CPU_INNER_INVALIDATION,
                     titleId = R.string.skip_cpu_inner_invalidation,
                     descriptionId = R.string.skip_cpu_inner_invalidation_description
-                )
-            )
-            put(
-                SwitchSetting(
-                    BooleanSetting.NCE_INVALIDATION_GPU_READBACK,
-                    titleId = R.string.nce_invalidation_gpu_readback,
-                    descriptionId = R.string.nce_invalidation_gpu_readback_description
                 )
             )
             put(

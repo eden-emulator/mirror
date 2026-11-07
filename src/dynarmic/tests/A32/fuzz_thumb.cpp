@@ -180,7 +180,7 @@ static void RunInstance(size_t run_number, ThumbTestEnv& test_env, A32::UserConf
         while (num_insts < instructions_to_execute_count) {
             A32::LocationDescriptor descriptor = {u32(num_insts * 4), cpsr, A32::FPSCR{}};
             ir_block.Reset(descriptor);
-            A32::Translate(ir_block, descriptor, &test_env, {});
+            A32::Translate(ir_block, descriptor, config);
             Optimization::Optimize(ir_block, config, {});
             printf("\n\nIR:\n%s", IR::DumpBlock(ir_block).c_str());
             printf("\n\nx86_64:\n");

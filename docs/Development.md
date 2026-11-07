@@ -24,25 +24,6 @@ If the work is licensed/vendored from other people or projects, you may omit the
 
 For more information on the license header script, run `.ci/license-header.sh -h`.
 
-## Pull Requests
-
-Pull requests are only to be merged by core developers when properly tested and discussions conclude on Discord or other communication channels. Labels are recommended but not required. However, all PRs MUST be namespaced and optionally typed:
-
-```txt
-[cmake] refactor: CPM over submodules
-[desktop] feat: implement firmware install from ZIP
-[hle] stub fw20 functions
-[core] test: raise maximum CPU cores to 6
-[cmake, core] Unbreak FreeBSD Building Process
-```
-
-- The level of namespacing is generally left to the committer's choice.
-- However, we never recommend going more than two levels *except* in `hle`, in which case you may go as many as four levels depending on the specificity of your changes.
-- Ocassionally, up to two additional namespaces may be provided for more clarity.
-  - Changes that affect the entire project (sans CMake changes) should be namespaced as `meta`.
-- Maintainers are permitted to change namespaces at will.
-- Commits within PRs are not required to be namespaced, but it is highly recommended.
-
 ## Adding new settings
 
 When adding new settings, use `tr("Setting:")` if the setting is meant to be a field, otherwise use `tr("Setting")` if the setting is meant to be a Yes/No or checkmark type of setting, see [this short style guide](https://learn.microsoft.com/en-us/style-guide/punctuation/colons#in-ui).

@@ -375,7 +375,9 @@ QMenuBar::item {
 }
 
 QMenuBar::item:selected {
-  background: transparent;
+  /* A hovered menu stays readable */
+  background-color: #1464A0;
+  color: #F0F0F0;
   border: 0px solid #32414B;
 }
 

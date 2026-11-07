@@ -102,6 +102,11 @@ endfunction()
 # the rest exist, but are probably less popular than ia64
 
 detect_architecture_symbols(
+    ARCH wasm
+    SYMBOLS
+        "__EMSCRIPTEN__")
+
+detect_architecture_symbols(
     ARCH arm64
     SYMBOLS
         "__ARM64__"
@@ -202,11 +207,6 @@ detect_architecture_symbols(
     SYMBOLS
         "__loongarch__"
         "__loongarch64")
-
-detect_architecture_symbols(
-    ARCH wasm
-    SYMBOLS
-        "__EMSCRIPTEN__")
 
 # "generic" target
 # If you have reached this point, you're on some as-of-yet unsupported architecture.

@@ -45,12 +45,13 @@ Another option would be to launch the game in Eden and close it - then go into t
     ***INFO***: Make sure you select the correct directory or it will not work, the screen should show the **cheats** sub-directory.
     
     </aside>
-2. You should now see the cheat appear in the **Add-ons** screen.
-3. Launch the game and confirm that the cheat is applied.
+
+9. You should now see the cheat appear in the **Add-ons** screen.
+10. Launch the game and confirm that the cheat is applied.
 
 ### Step 2: Multiple Cheats
 
-In order to install multiple cheats, you must repeat the steps above with the new cheat, creating a new directory with the name of the cheat and cheats directory.  You **cannot** install multiple cheats with a single file.
+In order to install multiple cheats, you must repeat the steps above with the new cheat, creating a new directory with the name of the cheat and cheats directory.
 
 Community Member [Ninjistix](https://github.com/Ninjistix) created a utility (Windows or anything that can run Python) that can take a file with multiple cheats and create the files/structure for you with a provided Build ID.  To download and run it, see the [GitHub Project](https://github.com/Ninjistix/nxCheat_Splitter) page.
 
@@ -122,7 +123,7 @@ Another option would be to launch the game in Eden and close it - then go into t
 
 ### Step 2: Multiple Cheats
 
-In order to install multiple cheats, you must repeat the steps above with the new cheat, creating a new directory with the name of the cheat and cheats directory.  You **cannot** install multiple cheats with a single file.
+In order to install multiple cheats, you must repeat the steps above with the new cheat, creating a new directory with the name of the cheat and cheats directory.
 
 Community Member [Ninjistix](https://github.com/Ninjistix) created a utility (Windows or anything that can run Python) that can take a file with multiple cheats and create the files/structure for you with a provided Build ID.  To download and run it, see the [GitHub Project](https://github.com/Ninjistix/nxCheat_Splitter) page.
 
@@ -154,3 +155,11 @@ Cheats are enabled by default, but can be disabled so they don't affect gameplay
 3. *Select/Deselect* the name of the cheat you wish to enable/disable.
 4. Click **OK** to close the window.
 5. Launch the game to confirm the cheat is/is not active.
+
+### Runtime Cheat Controls
+
+* While a game is running, open **Cheats** from the menu bar to toggle individual entries from the loaded cheat files. The menu stays open while toggling entries and is hidden when the running game has no cheats. Runtime changes apply to the current game session only.
+
+* Use **Configure > System > Core > Enable cheats by default** to choose whether regular cheats start enabled. The setting can also be overridden for an individual game from its **System** settings.
+
+* Master Code entries (`{}` blocks) are always enabled and appear as disabled and checked items in the runtime menu.

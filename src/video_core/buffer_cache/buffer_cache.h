@@ -1738,36 +1738,64 @@ void BufferCache<P>::TouchBuffer(Buffer& buffer, BufferId buffer_id) noexcept {
 
 template <class P>
 bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 size) {
-    upload_copies.clear();
-    u64 total_size_bytes = 0;
-    u64 largest_copy = 0;
-    const DAddr buffer_start = buffer.cpu_addr_cached;
-    const auto add_upload = [&](DAddr start, DAddr end) {
-        if (start == end) return;
-        const u64 range_size = end - start;
-        upload_copies.push_back(BufferCopy{
-            .src_offset = total_size_bytes,
-            .dst_offset = start - buffer_start,
-            .size = range_size,
+#ifdef __ANDROID__
+    const bool use_optimized_vertex_buffers = Settings::values.use_optimized_vertex_buffers.GetValue();
+#else
+    constexpr bool use_optimized_vertex_buffers = true;
+#endif
+
+    if (use_optimized_vertex_buffers) {
+        upload_copies.clear();
+        u64 total_size_bytes = 0;
+        u64 largest_copy = 0;
+        const DAddr buffer_start = buffer.cpu_addr_cached;
+        const auto add_upload = [&](DAddr start, DAddr end) {
+            if (start == end) return;
+            const u64 range_size = end - start;
+            upload_copies.push_back(BufferCopy{
+                .src_offset = total_size_bytes,
+                .dst_offset = start - buffer_start,
+                .size = range_size,
+            });
+            total_size_bytes += range_size;
+            largest_copy = (std::max)(largest_copy, range_size);
+        };
+        memory_tracker.ForEachUploadRange(device_addr, size, [&](u64 device_addr_out, u64 range_size) {
+            DAddr upload_start = device_addr_out;
+            gpu_modified_ranges.ForEachInRange(device_addr_out, range_size, [&](DAddr gpu_start, DAddr gpu_end) {
+                add_upload(upload_start, gpu_start);
+                upload_start = gpu_end;
+            });
+            add_upload(upload_start, device_addr_out + range_size);
         });
-        total_size_bytes += range_size;
-        largest_copy = (std::max)(largest_copy, range_size);
-    };
-    memory_tracker.ForEachUploadRange(device_addr, size, [&](u64 device_addr_out, u64 range_size) {
-        DAddr upload_start = device_addr_out;
-        gpu_modified_ranges.ForEachInRange(device_addr_out, range_size, [&](DAddr gpu_start, DAddr gpu_end) {
-            add_upload(upload_start, gpu_start);
-            upload_start = gpu_end;
+        if (total_size_bytes == 0) {
+            return true;
+        }
+        const std::span<BufferCopy> copies_span(upload_copies.data(), upload_copies.size());
+        UploadMemory(buffer, total_size_bytes, largest_copy, copies_span);
+        any_buffer_uploaded = true;
+        return false;
+    } else {
+        boost::container::small_vector<BufferCopy, 4> copies;
+        u64 total_size_bytes = 0;
+        u64 largest_copy = 0;
+        DAddr buffer_start = buffer.CpuAddr();
+        memory_tracker.ForEachUploadRange(device_addr, size, [&](u64 device_addr_out, u64 range_size) {
+            copies.push_back(BufferCopy{
+                .src_offset = total_size_bytes,
+                .dst_offset = device_addr_out - buffer_start,
+                .size = range_size,
+            });
+            total_size_bytes += range_size;
+            largest_copy = (std::max)(largest_copy, range_size);
         });
-        add_upload(upload_start, device_addr_out + range_size);
-    });
-    if (total_size_bytes == 0) {
-        return true;
+        if (total_size_bytes == 0) {
+            return true;
+        }
+        const std::span<BufferCopy> copies_span(copies.data(), copies.size());
+        UploadMemory(buffer, total_size_bytes, largest_copy, copies_span);
+        return false;
     }
-    const std::span<BufferCopy> copies_span(upload_copies.data(), upload_copies.size());
-    UploadMemory(buffer, total_size_bytes, largest_copy, copies_span);
-    any_buffer_uploaded = true;
-    return false;
 }
 
 template <class P>

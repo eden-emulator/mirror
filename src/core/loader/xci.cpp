@@ -54,7 +54,8 @@ FileType AppLoader_XCI::IdentifyType(const FileSys::VirtualFile& xci_file) {
     // Identify XCI as a valid container even when it does not include a bootable Program NCA.
     // Bootability is handled by AppLoader_XCI::Load().
     if (xci.GetSecurePartitionNSP() != nullptr) {
-        return FileType::XCI;
+        return xci_file->GetName().ends_with(".xcz") ? FileType::XCZ
+                                                     : FileType::XCI;
     }
 
     return FileType::Error;

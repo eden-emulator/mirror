@@ -9,6 +9,7 @@
 #include <atomic>
 #include <chrono>
 #include <memory>
+#include <mutex>
 #include <vector>
 #include "common/common_types.h"
 #include "core/memory/dmnt_cheat_types.h"
@@ -41,6 +42,7 @@ public:
     void ResumeProcess() override;
     void DebugLog(u8 id, u64 value) override;
     void CommandLog(std::string_view data) override;
+    [[nodiscard]] bool IsCommandLogEnabled() const override;
 
 private:
     bool IsAddressInRange(VAddr address) const;
@@ -81,6 +83,8 @@ public:
     void SetMainMemoryParameters(VAddr main_region_begin, u64 main_region_size);
 
     void Reload(std::vector<CheatEntry> reload_cheats);
+    [[nodiscard]] std::vector<RuntimeCheatInfo> GetCheats() const;
+    bool SetCheatEnabled(u32 cheat_id, bool enabled);
 
 private:
     void FrameCallback(std::chrono::nanoseconds ns_late);
@@ -89,6 +93,7 @@ private:
     CheatProcessMetadata metadata;
 
     std::vector<CheatEntry> cheats;
+    mutable std::mutex cheats_mutex;
     std::atomic_bool is_pending_reload{false};
 
     std::shared_ptr<Core::Timing::EventType> event;

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2016 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -10,6 +13,7 @@
 #include <string>
 #include <vector>
 
+#include <QPointer>
 #include <QWidget>
 
 #include "common/param_package.h"
@@ -17,6 +21,8 @@
 #include "ui_configure_input.h"
 
 class QCheckBox;
+class QComboBox;
+class QGroupBox;
 class QKeyEvent;
 class QLabel;
 class QPushButton;
@@ -24,6 +30,7 @@ class QSlider;
 class QSpinBox;
 class QString;
 class QTimer;
+class QToolButton;
 class QWidget;
 
 class InputProfiles;
@@ -65,6 +72,18 @@ public:
     /// Update the input devices combobox.
     void UpdateInputDeviceCombobox();
 
+    /// Redraws the tab from its emulated controller after the engine reloaded it
+    void RefreshFromController();
+
+    /// Use Any Controller as Joy-Cons: while this player plays as a single Joy-Con its mapping
+    /// is set automatically, and read-only here (with a note why)
+    [[nodiscard]] bool JoyConLocked() const {
+        return joycon_locked;
+    }
+
+    /// In the automatic modes the tab hides the connection, device and motion choices
+    void SetConnectionLocked(bool locked);
+
     /// Updates the list of controller profiles.
     void UpdateInputProfiles();
 
@@ -73,6 +92,15 @@ public:
 
     /// Clear all input configuration.
     void ClearAll();
+
+    /// The SDL controller (guid, port) the player's bindings point at now, if any
+    [[nodiscard]] std::optional<std::pair<std::string, int>> CurrentSdlDevice() const;
+    /// Clear's work: every binding emptied
+    void ClearMappings();
+    /// The player's motion bindings, kept across Clear and Defaults in the automatic modes
+    /// (motion is hidden there); none otherwise
+    [[nodiscard]] std::vector<Common::ParamPackage> KeptMotions() const;
+    void RestoreMotions(const std::vector<Common::ParamPackage>& motions);
 
 signals:
     /// Emitted when this controller is (dis)connected by the user.
@@ -172,6 +200,44 @@ private:
     std::size_t player_index;
     bool debug;
     bool is_powered_on;
+    /// Players are assigned automatically: the connection and controller are not this tab's
+    bool connection_locked{};
+    /// The SDL controller (guid, port) the bindings last pointed at, for Defaults after Clear
+    std::optional<std::pair<std::string, int>> locked_device;
+    bool style_applied{};
+    bool home_centred{};
+    bool shoulders_raised{};
+    /// The section boxes given a bold title in the automatic modes
+    std::vector<QPointer<QGroupBox>> bolded_boxes;
+
+    /// The profile card shown instead of the Profile group in the automatic modes (comboProfiles
+    /// stays the selection)
+    void BuildProfileCard();
+    void UpdateProfileCard();
+    /// The selected profile's mapping, kept to tell when the tab's mapping differs from it
+    void RememberProfileMapping();
+    std::string CurrentMappingKey() const;
+    void SelectProfile(const QString& name);
+    void RenameProfile();
+    void DuplicateProfile();
+    void DeleteProfileAsked();
+    QGroupBox* profile_card{};
+    QComboBox* card_profiles{};
+    QPushButton* card_save{};
+    QToolButton* card_remove{};
+    QPushButton* card_save_new{};
+    QPushButton* card_rename{};
+    QPushButton* card_duplicate{};
+    QPushButton* card_delete{};
+    QLabel* card_status{};
+    QLabel* joycon_note{};
+    bool joycon_locked = false;
+    void ApplyJoyConLock();
+    QTimer* card_timer{};
+    std::string card_profile_key;
+    QString card_profile_name;
+    /// The profile the engine last reported for this player
+    QString card_engine_profile;
 
     InputCommon::InputSubsystem* input_subsystem;
 

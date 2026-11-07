@@ -180,6 +180,8 @@ try
     , frame_gen(memory_allocator, scheduler)
 #endif
 {
+    // The overlay panels go on the screen only: not in screenshots or the applets' capture
+    blit_swapchain.DrawOverlayPanels(true);
 
     if (Settings::values.renderer_force_max_clock.GetValue() && device.ShouldBoostClocks()) {
         turbo_mode.emplace(instance, dld);

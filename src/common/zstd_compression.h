@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -41,5 +44,16 @@ namespace Common::Compression {
  * @return the decompressed data.
  */
 [[nodiscard]] std::vector<u8> DecompressDataZSTD(std::span<const u8> compressed);
+
+/**
+ * Decompresses a single Zstandard frame into a caller-provided buffer of known size.
+ *
+ * @param compressed the compressed source memory region.
+ * @param output     the destination buffer. Its size is the maximum number of bytes to write.
+ *
+ * @return the number of bytes written, or 0 if the frame is invalid or doesn't fit. An empty
+ *         frame also returns 0.
+ */
+[[nodiscard]] std::size_t DecompressDataZSTD(std::span<const u8> compressed, std::span<u8> output);
 
 } // namespace Common::Compression

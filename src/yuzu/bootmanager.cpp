@@ -131,7 +131,8 @@ GRenderWindow::GRenderWindow(MainWindow* parent,
     strict_context_required = QGuiApplication::platformName() == QStringLiteral("wayland") ||
                               QGuiApplication::platformName() == QStringLiteral("wayland-egl");
 
-    connect(this, &GRenderWindow::FirstFrameDisplayed, parent, &MainWindow::OnLoadComplete);
+    connect(this, &GRenderWindow::FirstFrameDisplayed, parent, &MainWindow::OnLoadComplete,
+            Qt::QueuedConnection);
     connect(this, &GRenderWindow::ExecuteProgramSignal, parent, &MainWindow::OnExecuteProgram,
             Qt::QueuedConnection);
     connect(this, &GRenderWindow::ExitSignal, parent, &MainWindow::OnExit, Qt::QueuedConnection);
@@ -178,11 +179,6 @@ bool GRenderWindow::IsShown() const {
     return !isMinimized();
 }
 
-// On Qt 5.0+, this correctly gets the size of the framebuffer (pixels).
-//
-// Older versions get the window size (density independent pixels),
-// and hence, do not support DPI scaling ("retina" displays).
-// The result will be a viewport that is smaller than the extent of the window.
 void GRenderWindow::OnFramebufferSizeChanged() {
     // Screen changes potentially incur a change in screen DPI, hence we should update the
     // framebuffer size

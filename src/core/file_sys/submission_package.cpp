@@ -12,6 +12,7 @@
 #include "common/hex_util.h"
 #include "common/logging.h"
 #include "core/crypto/key_manager.h"
+#include "core/crypto/ncz_decompressor.h"
 #include "core/file_sys/common_funcs.h"
 #include "core/file_sys/content_archive.h"
 #include "core/file_sys/nca_metadata.h"
@@ -245,6 +246,17 @@ void NSP::ReadNCAs(const std::vector<VirtualFile>& files) {
             for (const auto& rec : cnmt.GetContentRecords()) {
                 const auto id_string = Common::HexToString(rec.nca_id, false);
                 auto next_file = pfs->GetFile(fmt::format("{}.nca", id_string));
+
+                if (next_file == nullptr) {
+                    auto ncz_file = pfs->GetFile(fmt::format("{}.ncz", id_string));
+                    if (ncz_file != nullptr) {
+                        next_file = Core::Crypto::DecompressNCZ(ncz_file, fmt::format("{}.nca", id_string));
+                        if (next_file == nullptr) {
+                            LOG_DEBUG(Service_FS, "Skipping solid or unsupported NCZ content {}.ncz", id_string);
+                            continue;
+                        }
+                    }
+                }
 
                 if (next_file == nullptr) {
                     if (rec.type != ContentRecordType::DeltaFragment) {

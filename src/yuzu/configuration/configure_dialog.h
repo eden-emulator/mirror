@@ -55,6 +55,9 @@ public:
                              Core::System& system_, bool enable_web_config = true);
     ~ConfigureDialog() override;
 
+    /// Opens on a player's tab of the Controls page (0-based player)
+    void OpenPlayerTab(int player);
+
     void ApplyConfiguration();
 
 private slots:

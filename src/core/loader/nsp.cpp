@@ -56,6 +56,17 @@ AppLoader_NSP::AppLoader_NSP(FileSys::VirtualFile file_,
 AppLoader_NSP::~AppLoader_NSP() = default;
 
 FileType AppLoader_NSP::IdentifyType(const FileSys::VirtualFile& nsp_file) {
+    // .nsz is NSP-compatible; return NSZ so the game list shows the right type.
+    if (nsp_file->GetName().ends_with(".nsz")) {
+        return FileType::NSZ;
+    }
+
+    // PFS0-shaped .xcz containers are handled by this loader too; report XCZ so the game
+    // list does not show them as NSP. XCI-shaped .xcz is identified by AppLoader_XCI.
+    if (nsp_file->GetName().ends_with(".xcz")) {
+        return FileType::XCZ;
+    }
+
     const FileSys::NSP nsp(nsp_file);
 
     if (nsp.GetStatus() != ResultStatus::Success) {

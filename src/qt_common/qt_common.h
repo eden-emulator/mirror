@@ -42,6 +42,9 @@ void Init(QWidget* root);
 void SetupContentProviders();
 void SetupHID();
 
+// setup env vars, scaling, and app attributes
+void SetupApplication();
+
 const QString tr(const char* str);
 const QString tr(const std::string& str);
 

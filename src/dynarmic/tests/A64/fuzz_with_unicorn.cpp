@@ -268,7 +268,7 @@ static void RunTestInstance(Dynarmic::A64::Jit& jit, A64Unicorn& uni, A64TestEnv
     //     const auto get_code = [&jit_env](u64 vaddr) { return jit_env.MemoryReadCode(vaddr); };
     //     const A64::LocationDescriptor location{instructions_start, FP::FPCR{fpcr}};
     //     IR::Block ir_block{location};
-    //     A64::Translate(ir_block, location, get_code, {});
+    //     A64::Translate(ir_block, location, config);
     //     fmt::print("IR:\n{}\n", IR::DumpBlock(ir_block));
     //     Optimization::Optimize(ir_block, conf, {});
     //     fmt::print("Optimized IR:\n{}\n", IR::DumpBlock(ir_block));

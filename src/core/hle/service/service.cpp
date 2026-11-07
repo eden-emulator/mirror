@@ -4,16 +4,12 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <chrono>
 #include <fmt/ranges.h>
-#include <string_view>
-#include <thread>
 #include "common/assert.h"
 #include "common/logging.h"
 #include "common/settings.h"
 #include "core/core.h"
 #include "core/hle/ipc.h"
-#include "core/hle/kernel/k_process.h"
 #include "core/hle/kernel/kernel.h"
 #include "core/hle/service/ipc_helpers.h"
 #include "core/hle/service/service.h"
@@ -38,7 +34,6 @@ ServiceFrameworkBase::ServiceFrameworkBase(Core::System& system_, const char* se
     : SessionRequestHandler(system_.Kernel(), service_name_)
     , system{system_}
     , service_name{service_name_}
-    , is_i_storage{std::string_view{service_name_} == "IStorage"}
     , handler_invoker{handler_invoker_}
     , max_sessions{max_sessions_}
 {}
@@ -87,7 +82,6 @@ void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx, c
 }
 
 void ServiceFrameworkBase::InvokeRequest(HLERequestContext& ctx) {
-    const bool is_cmd_read = ctx.GetCommand() == 0;
     auto const info = FindRequest(ctx.GetCommand());
     if (!info.has_value() || info->handler_callback == nullptr)
         return ReportUnimplementedFunction(ctx, &*info, false);
@@ -99,12 +93,6 @@ void ServiceFrameworkBase::InvokeRequest(HLERequestContext& ctx) {
 
     LOG_TRACE(Service, "{}", MakeFunctionString(info->name, GetServiceName(), ctx.CommandBuffer()));
     handler_invoker(this, info->handler_callback, ctx);
-    if (is_i_storage && is_cmd_read) {
-        const auto* const process = ctx.GetThread().GetOwnerProcess();
-        if (process != nullptr && system.IsNVDECActiveForProcess(process->GetId())) {
-            std::this_thread::sleep_for(std::chrono::microseconds{600});
-        }
-    }
 }
 
 void ServiceFrameworkBase::InvokeRequestTipc(HLERequestContext& ctx) {

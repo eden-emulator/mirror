@@ -27,7 +27,6 @@
 #include <QMessageBox>
 
 #include <thread>
-#include <JlCompress.h>
 #include <QPainter>
 
 #if !defined(WIN32) && !defined(__APPLE__)
@@ -37,7 +36,6 @@
 #endif
 
 #ifdef _WIN32
-#include <QApplication>
 #include <QSettings>
 #include <windows.h>
 #include "common/windows/timer_resolution.h"
@@ -57,7 +55,8 @@ std::unique_ptr<EmuThread> emu_thread = nullptr;
 
 const QStringList supported_file_extensions = {QStringLiteral("nro"), QStringLiteral("nso"),
                                                QStringLiteral("nca"), QStringLiteral("xci"),
-                                               QStringLiteral("nsp"), QStringLiteral("kip")};
+                                               QStringLiteral("xcz"), QStringLiteral("nsp"),
+                                               QStringLiteral("nsz"), QStringLiteral("kip")};
 
 Core::Frontend::WindowSystemType GetWindowSystemType() {
     // Determine WSI type based on Qt platform.
@@ -276,6 +275,14 @@ void Init(QWidget* root) {
 
     // Remove cached contents generated during the previous session
     RemoveCachedContents();
+
+    // Platform checks
+    const auto qpa = QGuiApplication::platformName();
+    LOG_INFO(Frontend, "Qt Platform Backend: {}", qpa.toStdString());
+    if (qpa == QStringLiteral("wayland"))
+        LOG_WARNING(
+            Frontend,
+            "Platform backend is set to Wayland, which may cause performance/stability issues");
 }
 
 std::filesystem::path GetEdenCommand() {
@@ -322,6 +329,49 @@ QPixmap CreateCirclePixmapFromColor(const QColor& color) {
     painter.setBrush(color);
     painter.drawEllipse({circle_pixmap.width() / 2.0, circle_pixmap.height() / 2.0}, 7.0, 7.0);
     return circle_pixmap;
+}
+
+#ifdef _WIN32
+static void OverrideWindowsFont() {
+    // Qt chooses these fonts on Windows and they have fairly ugly alphanumeric/cyrillic characters
+    // Asking to use "MS Shell Dlg 2" gives better other chars while leaving the Chinese Characters.
+    // https://github.com/qt/qtbase/blob/v6.12.0/src/gui/text/windows/qwindowsfontdatabasebase.cpp#L970-L1020
+    const QString startup_font = QGuiApplication::font().family();
+    const QStringList ugly_fonts = {QStringLiteral("SimSun"), QStringLiteral("PMingLiU")};
+    if (ugly_fonts.contains(startup_font)) {
+        QGuiApplication::setFont(QFont(QStringLiteral("MS Shell Dlg 2"), 9, QFont::Normal));
+    }
+}
+#endif
+
+void SetupApplication() {
+    // Init settings params
+    QCoreApplication::setOrganizationName(QStringLiteral("eden"));
+    QCoreApplication::setApplicationName(QStringLiteral("eden"));
+
+#ifdef __unix__
+    // Set the DISPLAY variable in order to open web browsers
+    // TODO (lat9nq): Find a better solution for AppImages to start external applications
+    if (QString::fromLocal8Bit(qgetenv("DISPLAY")).isEmpty()) {
+        qputenv("DISPLAY", ":0");
+    }
+
+    // Always prefer X11 but allow Wayland if the user is missing X11 for some reason.
+    if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))
+        qputenv("QT_QPA_PLATFORM", "xcb;wayland");
+
+    // Fix the Wayland appId. This needs to match the name of the .desktop file without the .desktop
+    // suffix.
+    QGuiApplication::setDesktopFileName(QStringLiteral("dev.eden_emu.eden"));
+#endif
+
+    // Enables the core to make the qt created contexts current on std::threads
+    QCoreApplication::setAttribute(Qt::AA_DontCheckOpenGLContextThreadAffinity);
+
+    // Make the app look a little better.
+#ifdef _WIN32
+    OverrideWindowsFont();
+#endif
 }
 
 } // namespace QtCommon

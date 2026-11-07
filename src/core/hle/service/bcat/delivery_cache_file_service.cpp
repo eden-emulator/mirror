@@ -39,7 +39,7 @@ Result IDeliveryCacheFileService::Open(const DirectoryName& dir_name_raw,
     LOG_DEBUG(Service_BCAT, "called, dir_name={}, file_name={}", dir_name, file_name);
 
     R_TRY(VerifyNameValidDir(dir_name_raw));
-    R_TRY(VerifyNameValidDir(file_name_raw));
+    R_TRY(VerifyNameValidFile(file_name_raw));
     R_UNLESS(current_file == nullptr, ResultEntityAlreadyOpen);
 
     const auto dir = root->GetSubdirectory(dir_name);

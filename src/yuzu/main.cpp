@@ -8,12 +8,11 @@
 #include <cstring>
 #include "dedicated_room/yuzu_room.h"
 #endif
-#ifdef __unix__
-#include "qt_common/gui_settings.h"
-#endif
 
 #ifndef _WIN32
 #include <sys/resource.h>
+#else
+#include <QScreen>
 #endif
 
 #if defined(__APPLE__)
@@ -24,20 +23,7 @@
 
 #include "main_window.h"
 
-#ifdef _WIN32
-#include <QScreen>
-
-static void OverrideWindowsFont() {
-    // Qt5 chooses these fonts on Windows and they have fairly ugly alphanumeric/cyrillic characters
-    // Asking to use "MS Shell Dlg 2" gives better other chars while leaving the Chinese Characters.
-    const QString startup_font = QApplication::font().family();
-    const QStringList ugly_fonts = {QStringLiteral("SimSun"), QStringLiteral("PMingLiU")};
-    if (ugly_fonts.contains(startup_font)) {
-        QApplication::setFont(QFont(QStringLiteral("MS Shell Dlg 2"), 9, QFont::Normal));
-    }
-}
-#endif
-
+// TODO(crueter): This is very annoying, see if there are any other solutions.
 static Qt::HighDpiScaleFactorRoundingPolicy GetHighDpiRoundingPolicy() {
 #ifdef _WIN32
     // For Windows, we want to avoid scaling artifacts on fractional scaling ratios.
@@ -107,10 +93,6 @@ int main(int argc, char* argv[]) {
     Breakpad::InstallCrashHandler();
 #endif
 
-    // Init settings params
-    QCoreApplication::setOrganizationName(QStringLiteral("eden"));
-    QCoreApplication::setApplicationName(QStringLiteral("eden"));
-
     // Increases the maximum open file limit.
     // TODO: This should be common to all frontends.
 #ifdef _WIN32
@@ -149,52 +131,16 @@ int main(int argc, char* argv[]) {
     chdir(Common::FS::PathToUTF8String(bin_path).c_str());
 #endif
 
-#ifdef __unix__
-    // Set the DISPLAY variable in order to open web browsers
-    // TODO (lat9nq): Find a better solution for AppImages to start external applications
-    if (QString::fromLocal8Bit(qgetenv("DISPLAY")).isEmpty()) {
-        qputenv("DISPLAY", ":0");
-    }
-
-    if (GraphicsBackend::GetForceX11() && qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM"))
-        qputenv("QT_QPA_PLATFORM", "xcb");
-
-    // Fix the Wayland appId. This needs to match the name of the .desktop file without the .desktop
-    // suffix.
-    QGuiApplication::setDesktopFileName(QStringLiteral("dev.eden_emu.eden"));
-#endif
+    QtCommon::SetupApplication();
 
     auto rounding_policy = GetHighDpiRoundingPolicy();
-    QApplication::setHighDpiScaleFactorRoundingPolicy(rounding_policy);
-
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    // Disables the "?" button on all dialogs. Disabled by default on Qt6.
-    QCoreApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton);
-#endif
-
-    // Enables the core to make the qt created contexts current on std::threads
-    QCoreApplication::setAttribute(Qt::AA_DontCheckOpenGLContextThreadAffinity);
+    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(rounding_policy);
 
 #ifdef _WIN32
     QApplication::setStyle(QStringLiteral("windowsvista"));
 #endif
 
     QApplication app(argc, argv);
-
-#ifdef _WIN32
-    OverrideWindowsFont();
-#endif
-
-    // Workaround for QTBUG-85409, for Suzhou numerals the number 1 is actually \u3021
-    // so we can see if we get \u3008 instead
-    // TL;DR all other number formats are consecutive in unicode code points
-    // This bug is fixed in Qt6, specifically 6.0.0-alpha1
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-    const QLocale locale = QLocale::system();
-    if (QStringLiteral("\u3008") == locale.toString(1)) {
-        QLocale::setDefault(QLocale::system().name());
-    }
-#endif
 
     // Qt changes the locale and causes issues in float conversion using std::to_string() when
     // generating shaders

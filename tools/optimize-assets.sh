@@ -8,3 +8,8 @@ NPROC=$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n 
 
 # shellcheck disable=SC2038
 find . -type f -iname '*.png' | xargs -P "$NPROC" -I {} optipng -o7 {}
+
+which svgo || exit
+
+# shellcheck disable=SC2038
+find . -type f -iname '*.svg' | xargs -P "$NPROC" -I {} svgo {}

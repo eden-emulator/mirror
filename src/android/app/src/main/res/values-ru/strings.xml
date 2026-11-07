@@ -577,7 +577,6 @@
     <string name="skip_cpu_inner_invalidation">Пропустить внутреннюю инвалидацию ЦП</string>
     <string name="skip_cpu_inner_invalidation_description">Пропускает некоторые инвалидации кэша на стороне ЦП при обновлениях памяти, уменьшая нагрузку на процессор и повышая производительность. Может вызывать сбои в некоторых играх.</string>
     <string name="fix_bloom_effects">Исправить эффекты размытия</string>
-    <string name="fix_bloom_effects_description">Частично убирает размытие в LA/EOW (Adreno A6XX - A7XX/ Turnip), полностью отключает его в Burnout. Внимание: может вызывать графические артефакты в других играх.</string>
     <string name="emulate_bgr565">Эмулировать BGR565</string>
     <string name="emulate_bgr565_description">Исправляет проблемы с инвертированными цветами в играх, а также со странными артефактами или некорректными тенями.</string>
     <string name="rescale_hack">Включить старый метод изменения разрешения</string>

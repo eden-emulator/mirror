@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -233,7 +236,7 @@ bool DmntCheatVm::DecodeNextOpcode(CheatVmOpcode& out) {
 
     // Helper function for getting instruction dwords.
     const auto GetNextDword = [&] {
-        if (instruction_ptr >= num_opcodes) {
+        if (instruction_ptr >= program.size()) {
             valid = false;
             return static_cast<u32>(0);
         }
@@ -709,20 +712,20 @@ void DmntCheatVm::ResetState() {
 }
 
 bool DmntCheatVm::LoadProgram(const std::vector<CheatEntry>& entries) {
-    // Reset opcode count.
-    num_opcodes = 0;
+    program.clear();
 
-    for (std::size_t i = 0; i < entries.size(); i++) {
-        if (entries[i].enabled) {
-            // Bounds check.
-            if (entries[i].definition.num_opcodes + num_opcodes > MaximumProgramOpcodeCount) {
-                num_opcodes = 0;
-                return false;
-            }
+    std::size_t program_size{};
+    for (const auto& entry : entries) {
+        if (entry.enabled || entry.is_master) {
+            program_size += entry.definition.opcodes.size();
+        }
+    }
+    program.reserve(program_size);
 
-            for (std::size_t n = 0; n < entries[i].definition.num_opcodes; n++) {
-                program[num_opcodes++] = entries[i].definition.opcodes[n];
-            }
+    for (const auto& entry : entries) {
+        if (entry.enabled || entry.is_master) {
+            program.insert(program.end(), entry.definition.opcodes.begin(),
+                           entry.definition.opcodes.end());
         }
     }
 
@@ -735,27 +738,35 @@ void DmntCheatVm::Execute(const CheatProcessMetadata& metadata) {
     // Get Keys down.
     u64 kDown = callbacks->HidKeysDown();
 
-    callbacks->CommandLog("Started VM execution.");
-    callbacks->CommandLog(fmt::format("Main NSO:  {:012X}", metadata.main_nso_extents.base));
-    callbacks->CommandLog(fmt::format("Heap:      {:012X}", metadata.main_nso_extents.base));
-    callbacks->CommandLog(fmt::format("Keys Down: {:08X}", static_cast<u32>(kDown & 0x0FFFFFFF)));
+    const bool command_log_enabled = callbacks->IsCommandLogEnabled();
+    if (command_log_enabled) {
+        callbacks->CommandLog("Started VM execution.");
+        callbacks->CommandLog(fmt::format("Main NSO:  {:012X}", metadata.main_nso_extents.base));
+        callbacks->CommandLog(fmt::format("Heap:      {:012X}", metadata.main_nso_extents.base));
+        callbacks->CommandLog(
+            fmt::format("Keys Down: {:08X}", static_cast<u32>(kDown & 0x0FFFFFFF)));
+    }
 
     // Clear VM state.
     ResetState();
 
     // Loop until program finishes.
     while (DecodeNextOpcode(cur_opcode)) {
-        callbacks->CommandLog(
-            fmt::format("Instruction Ptr: {:04X}", static_cast<u32>(instruction_ptr)));
+        if (command_log_enabled) {
+            callbacks->CommandLog(
+                fmt::format("Instruction Ptr: {:04X}", static_cast<u32>(instruction_ptr)));
 
-        for (std::size_t i = 0; i < NumRegisters; i++) {
-            callbacks->CommandLog(fmt::format("Registers[{:02X}]: {:016X}", i, registers[i]));
-        }
+            for (std::size_t i = 0; i < NumRegisters; i++) {
+                callbacks->CommandLog(fmt::format("Registers[{:02X}]: {:016X}", i,
+                                                  registers[i]));
+            }
 
-        for (std::size_t i = 0; i < NumRegisters; i++) {
-            callbacks->CommandLog(fmt::format("SavedRegs[{:02X}]: {:016X}", i, saved_values[i]));
+            for (std::size_t i = 0; i < NumRegisters; i++) {
+                callbacks->CommandLog(fmt::format("SavedRegs[{:02X}]: {:016X}", i,
+                                                  saved_values[i]));
+            }
+            LogOpcode(cur_opcode);
         }
-        LogOpcode(cur_opcode);
 
         // Increment conditional depth, if relevant.
         if (cur_opcode.begin_conditional_block) {

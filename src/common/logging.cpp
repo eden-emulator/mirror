@@ -418,6 +418,10 @@ void SetGlobalFilter(const Filter& filter) {
         logging_instance->filter = filter;
 }
 
+bool IsMessageEnabled(Class log_class, Level log_level) {
+    return logging_instance && logging_instance->filter.CheckMessage(log_class, log_level);
+}
+
 void SetColorConsoleBackendEnabled(bool enabled) {
     if (logging_instance)
         logging_instance->color_console_backend.enabled = enabled;

@@ -78,7 +78,6 @@ void ProtectMemory(const void* base, size_t size, bool is_executable) {
 
 static const HostFeature features = []() {
     HostFeature f{};
-#ifdef DYNARMIC_ENABLE_CPU_FEATURE_DETECTION
     using Cpu = Xbyak::util::Cpu;
     Xbyak::util::Cpu cpu_info{};
     if (cpu_info.has(Cpu::tSSSE3)) f |= HostFeature::SSSE3;
@@ -121,7 +120,6 @@ static const HostFeature features = []() {
         }
     }
     return f;
-#endif
 }();
 HostFeature GetHostFeatures() {
     return features;

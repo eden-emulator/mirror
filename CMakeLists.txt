@@ -144,6 +144,9 @@ if (YUZU_STATIC_BUILD)
         set(fmt_FORCE_BUNDLED ON)
         set(SPIRV-Headers_FORCE_BUNDLED ON)
         set(zstd_FORCE_BUNDLED ON)
+
+        # broken, idk why
+        set(lz4_FORCE_BUNDLED ON)
     endif()
 endif()
 
@@ -594,7 +597,7 @@ if (ENABLE_QT)
         list(APPEND CMAKE_PREFIX_PATH "${Qt6_DIR}")
     endif()
 
-    find_package(Qt6 REQUIRED COMPONENTS Core)
+    find_package(Qt6 6.5 REQUIRED COMPONENTS Core)
 
     if (NOT DEFINED QT_TARGET_PATH)
         get_target_property(qtcore_path Qt6::Core LOCATION_Release)

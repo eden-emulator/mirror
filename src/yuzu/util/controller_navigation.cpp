@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -70,6 +73,12 @@ void ControllerNavigation::ControllerUpdateButton() {
     case Core::HID::NpadStyleIndex::JoyconDual:
     case Core::HID::NpadStyleIndex::Handheld:
     case Core::HID::NpadStyleIndex::GameCube:
+        if ((button_values[Settings::NativeButton::Minus].value &&
+             !button_values[Settings::NativeButton::Minus].locked) ||
+            (button_values[Settings::NativeButton::Plus].value &&
+             !button_values[Settings::NativeButton::Plus].locked)) {
+            emit TriggerContextMenu();
+        }
         TriggerButton(Settings::NativeButton::A, Qt::Key_Enter);
         TriggerButton(Settings::NativeButton::B, Qt::Key_Escape);
         TriggerButton(Settings::NativeButton::DDown, Qt::Key_Down);
@@ -78,10 +87,18 @@ void ControllerNavigation::ControllerUpdateButton() {
         TriggerButton(Settings::NativeButton::DUp, Qt::Key_Up);
         break;
     case Core::HID::NpadStyleIndex::JoyconLeft:
+        if (button_values[Settings::NativeButton::Minus].value &&
+            !button_values[Settings::NativeButton::Minus].locked) {
+            emit TriggerContextMenu();
+        }
         TriggerButton(Settings::NativeButton::DDown, Qt::Key_Enter);
         TriggerButton(Settings::NativeButton::DLeft, Qt::Key_Escape);
         break;
     case Core::HID::NpadStyleIndex::JoyconRight:
+        if (button_values[Settings::NativeButton::Plus].value &&
+            !button_values[Settings::NativeButton::Plus].locked) {
+            emit TriggerContextMenu();
+        }
         TriggerButton(Settings::NativeButton::X, Qt::Key_Enter);
         TriggerButton(Settings::NativeButton::A, Qt::Key_Escape);
         break;

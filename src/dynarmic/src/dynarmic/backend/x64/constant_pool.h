@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <span>
 #include <utility>
+#include <boost/functional/hash.hpp>
 
 #include "common/common_types.h"
 #include "common/container/unordered_map.h"
@@ -21,31 +22,17 @@ namespace Dynarmic::Backend::X64 {
 
 class BlockOfCode;
 
-/// ConstantPool allocates a block of memory from BlockOfCode.
+/// @brief ConstantPool allocates a block of memory from BlockOfCode.
 /// It places constants into this block of memory, returning the address
 /// of the memory location where the constant is placed. If the constant
 /// already exists, its memory location is reused.
 class ConstantPool final {
 public:
-    ConstantPool(BlockOfCode& code, size_t size);
-
-    Xbyak::Address GetConstant(BlockOfCode& code, const Xbyak::AddressFrame& frame, u64 lower, u64 upper = 0);
-
-private:
-    static constexpr size_t align_size = 16;  // bytes
-
-    using ConstantT = std::pair<u64, u64>;
-    static_assert(sizeof(ConstantT) == align_size);
-
-    struct ConstantHash {
-        std::size_t operator()(const ConstantT& constant) const noexcept {
-            return constant.first ^ std::rotl<u64>(constant.second, 1);
-        }
-    };
-
-    ::Common::unordered_map<ConstantT, void*, ConstantHash> constant_info;
-    std::span<ConstantT> pool;
-    std::size_t insertion_point;
+    ConstantPool(BlockOfCode& code, size_t size) noexcept;
+    Xbyak::Address GetConstant(BlockOfCode& code, const Xbyak::AddressFrame& frame, u64 lower, u64 upper = 0) noexcept;
+    // key = identity hash, value = offset from pool.data()
+    ::Common::unordered_map<std::pair<u64, u64>, u32, boost::hash<std::pair<u64, u64>>> constant_info;
+    std::span<u128> pool;
 };
 
 }  // namespace Dynarmic::Backend::X64

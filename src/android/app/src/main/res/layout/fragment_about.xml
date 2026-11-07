@@ -259,7 +259,7 @@
                     android:layout_height="56dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    app:icon="@drawable/ic_github"
+                    app:icon="@drawable/ic_forgejo"
                     app:iconSize="24dp"
                     app:iconGravity="textStart"
                     app:iconPadding="0dp"
