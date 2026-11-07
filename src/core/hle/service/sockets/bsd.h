@@ -6,14 +6,16 @@
 
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <span>
-#include <vector>
 #include <variant>
+#include <vector>
 
 #include "common/common_types.h"
 #include "common/socket_types.h"
 #include "core/hle/service/service.h"
+#include "core/hle/service/sockets/socket_descriptor_table.h"
 #include "core/hle/service/sockets/sockets.h"
 #include "network/network.h"
 
@@ -41,15 +43,6 @@ public:
     std::optional<std::shared_ptr<Network::SocketBase>> GetSocket(s32 fd);
 
 private:
-    /// Maximum number of file descriptors
-    static constexpr size_t MAX_FD = 128;
-
-    struct FileDescriptor {
-        std::shared_ptr<Network::SocketBase> socket;
-        s32 flags = 0;
-        bool is_connection_based = false;
-    };
-
     struct PollWork {
         void Execute(BSD_USA* bsd);
         void Response(HLERequestContext& ctx);
@@ -175,12 +168,10 @@ private:
     std::pair<s32, Errno> SendToImpl(s32 fd, u32 flags, std::span<const u8> message,
                                      std::span<const u8> addr);
 
-    s32 FindFreeFileDescriptorHandle() noexcept;
-    bool IsFileDescriptorValid(s32 fd) const noexcept;
-
     void BuildErrnoResponse(HLERequestContext& ctx, Errno bsd_errno) const noexcept;
 
-    static inline std::array<std::optional<FileDescriptor>, MAX_FD> file_descriptors{};
+    static inline SocketDescriptorTable file_descriptors;
+    static inline std::atomic<size_t> live_instances{0};
 
     /// Callback to parse and handle a received wifi packet.
     void OnProxyPacketReceived(const Network::ProxyPacket& packet);

@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+
 #include "common/string_util.h"
 
 #include "core/core.h"
@@ -17,6 +19,7 @@
 #include "core/hle/service/ssl/cert_store.h"
 #include "core/hle/service/ssl/ssl.h"
 #include "core/hle/service/ssl/ssl_backend.h"
+#include "core/hle/service/ssl/ssl_connection.h"
 #include "core/internal_network/network.h"
 #include "core/internal_network/sockets.h"
 
@@ -38,14 +41,6 @@ enum class ContextOption : u32 {
 enum class IoMode : u32 {
     Blocking = 1,
     NonBlocking = 2,
-};
-
-// This is nn::ssl::sf::OptionType
-enum class OptionType : u32 {
-    DoNotCloseSocket = 0,
-    GetServerCertChain = 1,
-    SkipDefaultVerify = 2,
-    EnableAlpn = 3,
 };
 
 // This is nn::ssl::sf::RenegotiationMode
@@ -78,7 +73,7 @@ public:
                             std::shared_ptr<SslContextSharedData>& shared_data_in,
                             std::unique_ptr<SSLConnectionBackend>&& backend_in)
         : ServiceFramework{system_in, "ISslConnection"}, ssl_version{ssl_version_in},
-          shared_data{shared_data_in}, backend{std::move(backend_in)} {
+          shared_data{shared_data_in}, connection{std::move(backend_in)} {
         // clang-format off
         static const FunctionInfo functions[] = {
             {0, D<&ISslConnection::SetSocketDescriptor>, "SetSocketDescriptor"},
@@ -122,36 +117,34 @@ public:
 
         RegisterHandlers(functions);
 
-        backend->SetVerifyOption(verify_option);
+        connection.Backend().SetVerifyOption(verify_option);
 
         shared_data->connection_count++;
+        LOG_DEBUG(Service_SSL, "Created connection={} count={} verify_option={}", connection_id,
+                  shared_data->connection_count, verify_option);
     }
 
     ~ISslConnection() {
         shared_data->connection_count--;
-        if (fd_to_close.has_value()) {
-            const s32 fd = *fd_to_close;
-            if (!do_not_close_socket) {
-                LOG_ERROR(Service_SSL,
-                          "do_not_close_socket was changed after setting socket; is this right?");
-            } else {
-                auto bsd = system.ServiceManager().GetService<Service::Sockets::BSD_USA>("bsd:u");
-                if (bsd) {
-                    auto err = bsd->CloseImpl(fd);
-                    if (err != Service::Sockets::Errno::SUCCESS) {
-                        LOG_ERROR(Service_SSL, "Failed to close duplicated socket: {}", err);
-                    }
-                }
-            }
-        }
+        LOG_DEBUG(Service_SSL,
+                  "Destroy connection={} fd={} has_socket={} did_handshake={} "
+                  "handshake_attempts={} socket_owners={} remaining_connections={}",
+                  connection_id, connection.GetSocketDescriptor(), bool(connection.GetSocket()),
+                  connection.DidHandshake(), handshake_attempts, connection.GetSocket().use_count(),
+                  shared_data->connection_count);
     }
 
 private:
     Result DoHandshakeImpl() {
-        ASSERT_OR_EXECUTE(!did_handshake && socket, { return ResultNoSocket; });
-        Result res = backend->DoHandshake();
-        did_handshake = res.IsSuccess();
-        return res;
+        ++handshake_attempts;
+        LOG_DEBUG(Service_SSL,
+                  "DoHandshake enter connection={} attempt={} fd={} has_socket={} did_handshake={}",
+                  connection_id, handshake_attempts, connection.GetSocketDescriptor(),
+                  bool(connection.GetSocket()), connection.DidHandshake());
+        const Result result = connection.DoHandshake();
+        LOG_DEBUG(Service_SSL, "DoHandshake exit connection={} result={:#010x} did_handshake={}",
+                  connection_id, result.raw, connection.DidHandshake());
+        return result;
     }
 
     std::vector<u8> SerializeServerCerts(const std::vector<std::vector<u8>>& certs) {
@@ -164,7 +157,7 @@ private:
             u32 size;
             u32 offset;
         };
-        if (!get_server_cert_chain) {
+        if (!connection.GetOption(OptionType::GetServerCertChain)) {
             // Just return the first one, unencoded.
             ASSERT_OR_EXECUTE_MSG(!certs.empty(), { return {}; }, "Should be at least one server cert");
             return certs[0];
@@ -185,72 +178,83 @@ private:
     }
 
     Result SetSocketDescriptor(s32 in_fd, Out<s32> out_fd) {
-        LOG_DEBUG(Service_SSL, "called, fd={}", in_fd);
-        ASSERT(!did_handshake);
+        LOG_DEBUG(Service_SSL, "SetSocketDescriptor enter connection={} fd={} do_not_close={}",
+                  connection_id, in_fd, connection.GetDoNotCloseSocket());
         auto bsd = system.ServiceManager().GetService<Service::Sockets::BSD_USA>("bsd:u");
-        ASSERT_OR_EXECUTE(bsd, { return ResultInternalError; });
-
-        auto const res_v = bsd->DuplicateSocketImpl(in_fd);
-        if (auto *res = std::get_if<s32>(&res_v)) {
-            const s32 dup_fd = *res;
-            *out_fd = do_not_close_socket ? dup_fd : -1;
-            if (!do_not_close_socket)
-                fd_to_close = dup_fd;
-            auto const sock = bsd->GetSocket(dup_fd);
-            if (!sock.has_value()) {
-                LOG_ERROR(Service_SSL, "invalid socket fd {} after duplication", dup_fd);
-                return ResultInvalidSocket;
-            }
-            socket = std::move(*sock);
-            backend->SetSocket(std::move(socket));
-            return ResultSuccess;
+        Result result = ResultInternalError;
+        if (bsd) {
+            auto sock = bsd->GetSocket(in_fd);
+            result = sock ? connection.SetSocketDescriptor(in_fd, std::move(*sock), out_fd)
+                          : ResultInvalidSocket;
         }
-        LOG_ERROR(Service_SSL, "Failed to duplicate socket with fd {}", in_fd);
-        return ResultInvalidSocket;
+        LOG_DEBUG(Service_SSL,
+                  "SetSocketDescriptor exit connection={} result={:#010x} out_fd={} "
+                  "saved_fd={} has_socket={} socket_owners={}",
+                  connection_id, result.raw, *out_fd, connection.GetSocketDescriptor(),
+                  bool(connection.GetSocket()), connection.GetSocket().use_count());
+        return result;
     }
 
     Result SetHostName(InBuffer<BufferAttr_HipcMapAlias> buf) {
         auto const hostname = Common::StringFromBuffer(buf);
-        LOG_DEBUG(Service_SSL, "called. hostname={}", hostname);
-        ASSERT(!did_handshake);
-        return backend->SetHostName(hostname.c_str());
+        LOG_DEBUG(Service_SSL,
+                  "SetHostName enter connection={} fd={} buffer_size={} hostname={} "
+                  "verify_option={} has_socket={}",
+                  connection_id, connection.GetSocketDescriptor(), buf.size(), hostname,
+                  verify_option, bool(connection.GetSocket()));
+        ASSERT(!connection.DidHandshake());
+        const Result result = connection.Backend().SetHostName(hostname.c_str());
+        LOG_DEBUG(Service_SSL, "SetHostName exit connection={} result={:#010x}", connection_id,
+                  result.raw);
+        return result;
     }
 
     Result SetVerifyOption(u32 option) {
-        LOG_DEBUG(Service_SSL, "called. option={} (forcing 0)", option);
-        ASSERT(!did_handshake);
-        verify_option = 0;
-        backend->SetVerifyOption(0);
+        LOG_DEBUG(Service_SSL, "SetVerifyOption enter connection={} option={}", connection_id,
+                  option);
+        ASSERT(!connection.DidHandshake());
+        verify_option = option;
+        connection.Backend().SetVerifyOption(option);
+        LOG_DEBUG(Service_SSL, "SetVerifyOption exit connection={} result={:#010x}", connection_id,
+                  ResultSuccess.raw);
         R_SUCCEED();
     }
 
     Result SetIoMode(u32 input_mode) {
         auto mode = IoMode(input_mode);
-        ASSERT(mode == IoMode::Blocking || mode == IoMode::NonBlocking);
-        R_UNLESS(socket, ResultNoSocket);
-        const bool non_block = mode == IoMode::NonBlocking;
-        const Network::Errno error = socket->SetNonBlock(non_block);
-        if (error != Network::Errno::SUCCESS) {
-            LOG_ERROR(Service_SSL, "Failed to set native socket non-block flag to {}", non_block);
-        }
-        R_SUCCEED();
+        const Result result = mode == IoMode::Blocking || mode == IoMode::NonBlocking
+                                  ? connection.SetIoMode(mode == IoMode::NonBlocking)
+                                  : ResultInternalError;
+        LOG_DEBUG(Service_SSL, "SetIoMode connection={} mode={} fd={} result={:#010x}",
+                  connection_id, input_mode, connection.GetSocketDescriptor(), result.raw);
+        return result;
     }
 
     Result GetSocketDescriptor(Out<u32> out_fd) {
-        LOG_WARNING(Service_SSL, "(STUBBED)");
-        *out_fd = uint32_t(socket->GetFD());
-        R_SUCCEED();
+        const Result result = connection.GetSocket() ? ResultSuccess : ResultNoSocket;
+        if (result.IsSuccess()) {
+            *out_fd = static_cast<u32>(connection.GetSocketDescriptor());
+        }
+        LOG_DEBUG(Service_SSL, "GetSocketDescriptor connection={} result={:#010x} out_fd={}",
+                  connection_id, result.raw, *out_fd);
+        return result;
     }
 
     Result GetHostName(OutBuffer<BufferAttr_HipcMapAlias> data, Out<u32> out_size) {
         LOG_WARNING(Service_SSL, "(STUBBED)");
-        ASSERT(!did_handshake);
-        return backend->GetHostName(std::span<u8>{data.begin(), data.end()}, out_size);
+        ASSERT(!connection.DidHandshake());
+        return connection.Backend().GetHostName(std::span<u8>{data.begin(), data.end()}, out_size);
     }
 
     Result GetIoMode(Out<u32> out_mode) {
-        LOG_WARNING(Service_SSL, "(STUBBED)");
-        R_SUCCEED();
+        const Result result = connection.GetSocket() ? ResultSuccess : ResultNoSocket;
+        if (result.IsSuccess()) {
+            *out_mode = static_cast<u32>(connection.IsNonBlocking() ? IoMode::NonBlocking
+                                                                    : IoMode::Blocking);
+        }
+        LOG_DEBUG(Service_SSL, "GetIoMode connection={} result={:#010x} out_mode={}", connection_id,
+                  result.raw, *out_mode);
+        return result;
     }
 
     Result DoHandshake() {
@@ -268,7 +272,7 @@ private:
         OutputParameters out{};
         if (res == ResultSuccess) {
             std::vector<std::vector<u8>> certs;
-            res = backend->GetServerCerts(&certs);
+            res = connection.Backend().GetServerCerts(&certs);
             if (res == ResultSuccess) {
                 const std::vector<u8> certs_buf = SerializeServerCerts(certs);
                 if (ctx.CanWriteBuffer()) {
@@ -294,31 +298,31 @@ private:
     }
 
     Result Read(OutBuffer<BufferAttr_HipcMapAlias> data, Out<u32> out_size) {
-        R_UNLESS(did_handshake, ResultInternalError);
+        R_UNLESS(connection.DidHandshake(), ResultInternalError);
         size_t tmp{};
-        auto const res = backend->Read(&tmp, data);
+        auto const res = connection.Backend().Read(&tmp, data);
         *out_size = u32(tmp);
         return res;
     }
 
     Result Write(InBuffer<BufferAttr_HipcMapAlias> data, Out<u32> out_size) {
-        R_UNLESS(did_handshake, ResultInternalError);
+        R_UNLESS(connection.DidHandshake(), ResultInternalError);
         size_t tmp{};
-        auto const res = backend->Write(&tmp, data);
+        auto const res = connection.Backend().Write(&tmp, data);
         *out_size = u32(tmp);
         return res;
     }
 
     Result Pending(Out<s32> out_pending_size) {
         LOG_WARNING(Service_SSL, "(STUBBED)");
-        *out_pending_size = s32(backend->Pending());
+        *out_pending_size = s32(connection.Backend().Pending());
         R_SUCCEED();
     }
 
     Result Peek(OutBuffer<BufferAttr_HipcMapAlias> data, Out<u32> out_size) {
         LOG_WARNING(Service_SSL, "(STUBBED)");
         size_t tmp{};
-        auto const res = backend->Peek(&tmp, data);
+        auto const res = connection.Backend().Peek(&tmp, data);
         *out_size = u32(tmp);
         return res;
     }
@@ -340,76 +344,60 @@ private:
 
     Result SetSessionCacheMode(u32 mode) {
         LOG_WARNING(Service_SSL, "(STUBBED) called. value={}", mode);
-        R_UNLESS(!did_handshake, ResultInternalError);
-        R_SUCCEED();
+        const Result result = connection.DidHandshake() ? ResultInternalError : ResultSuccess;
+        LOG_DEBUG(Service_SSL, "SetSessionCacheMode connection={} mode={} result={:#010x}",
+                  connection_id, mode, result.raw);
+        return result;
     }
 
     Result GetSessionCacheMode(Out<u32> mode) {
         LOG_WARNING(Service_SSL, "(STUBBED)");
-        R_UNLESS(!did_handshake, ResultInternalError);
+        R_UNLESS(!connection.DidHandshake(), ResultInternalError);
         R_SUCCEED();
     }
 
     Result FlushSessionCache() {
         LOG_WARNING(Service_SSL, "(STUBBED)");
-        R_UNLESS(!did_handshake, ResultInternalError);
+        R_UNLESS(!connection.DidHandshake(), ResultInternalError);
         R_SUCCEED();
     }
 
     Result SetRenegotiationMode(RenegotiationMode mode) {
         LOG_WARNING(Service_SSL, "(STUBBED)");
-        backend->SetRenegotiationMode(u32(mode));
+        connection.Backend().SetRenegotiationMode(u32(mode));
         R_SUCCEED();
     }
 
     Result GetRenegotiationMode(Out<RenegotiationMode> mode) {
         LOG_WARNING(Service_SSL, "(STUBBED)");
         u32 tmp{};
-        auto const res = backend->GetRenegotiationMode(&tmp);
+        auto const res = connection.Backend().GetRenegotiationMode(&tmp);
         *mode = RenegotiationMode(tmp);
         return res;
     }
 
-    Result SetOption(OptionType option, s32 value) {
-        switch (option) {
-        case OptionType::DoNotCloseSocket:
-            do_not_close_socket = bool(value);
-            break;
-        case OptionType::GetServerCertChain:
-            get_server_cert_chain = bool(value);
-            break;
-        case OptionType::SkipDefaultVerify:
-            skip_default_verify = bool(value);
-            break;
-        case OptionType::EnableAlpn:
-            enable_alpn = bool(value);
-            break;
-        default:
-            LOG_WARNING(Service_SSL, "Unknown option={}, value={}", option, value);
+    Result SetOption(SetOptionParameters parameters) {
+        const Result result = connection.SetOption(parameters);
+        LOG_DEBUG(Service_SSL,
+                  "SetOption connection={} option={} value={} fd={} has_socket={} "
+                  "result={:#010x} do_not_close={}",
+                  connection_id, static_cast<u32>(parameters.option), parameters.value,
+                  connection.GetSocketDescriptor(), bool(connection.GetSocket()), result.raw,
+                  connection.GetDoNotCloseSocket());
+        if (static_cast<u32>(parameters.option) > static_cast<u32>(OptionType::EnableAlpn)) {
+            LOG_WARNING(Service_SSL, "Unknown option={}, value={}", u32(parameters.option),
+                        parameters.value);
         }
-        R_SUCCEED();
+        return result;
     }
 
     Result GetOption(OptionType option, Out<u8> value) {
-        switch (option) {
-        case OptionType::DoNotCloseSocket:
-            *value = u8(do_not_close_socket);
-            break;
-        case OptionType::GetServerCertChain:
-            *value = u8(get_server_cert_chain);
-            break;
-        case OptionType::SkipDefaultVerify:
-            *value = u8(skip_default_verify);
-            break;
-        case OptionType::EnableAlpn:
-            *value = u8(enable_alpn);
-            break;
-        default:
+        *value = u8(connection.GetOption(option));
+        if (static_cast<u32>(option) > static_cast<u32>(OptionType::EnableAlpn)) {
             LOG_WARNING(Service_SSL, "Unknown option={}", u32(option));
-            *value = 0;
-            break;
         }
-        LOG_DEBUG(Service_SSL, "GetOption called, option={}, ret value={}", u32(option), *value);
+        LOG_DEBUG(Service_SSL, "GetOption connection={} option={} result={:#010x} out_value={}",
+                  connection_id, u32(option), ResultSuccess.raw, *value);
         R_SUCCEED();
     }
 
@@ -433,18 +421,13 @@ private:
     }
 
     SslVersion ssl_version;
+    static inline std::atomic<u64> next_connection_id{1};
+    const u64 connection_id{next_connection_id.fetch_add(1, std::memory_order_relaxed)};
+    u32 handshake_attempts = 0;
     std::shared_ptr<SslContextSharedData> shared_data;
-    std::unique_ptr<SSLConnectionBackend> backend;
-    std::optional<int> fd_to_close;
-    std::shared_ptr<Network::SocketBase> socket;
+    Connection connection;
     std::vector<u8> next_alpn_proto;
-    u32 verify_option = 0;
-
-    bool do_not_close_socket = false;
-    bool get_server_cert_chain = false;
-    bool skip_default_verify = false;
-    bool enable_alpn = false;
-    bool did_handshake = false;
+    u32 verify_option = 3;
 };
 
 class ISslContext final : public ServiceFramework<ISslContext> {
@@ -508,6 +491,8 @@ private:
 
         std::unique_ptr<SSLConnectionBackend> backend;
         const Result res = CreateSSLConnectionBackend(&backend);
+        LOG_DEBUG(Service_SSL, "CreateConnection backend result={:#010x} current_count={}", res.raw,
+                  shared_data->connection_count);
 
         IPC::ResponseBuilder rb{ctx, 2, 0, 1};
         rb.Push(res);
@@ -517,7 +502,8 @@ private:
     }
 
     void GetConnectionCount(HLERequestContext& ctx) {
-        LOG_DEBUG(Service_SSL, "connection_count={}", shared_data->connection_count);
+        LOG_DEBUG(Service_SSL, "result={:#010x} connection_count={}", ResultSuccess.raw,
+                  shared_data->connection_count);
 
         IPC::ResponseBuilder rb{ctx, 3};
         rb.Push(ResultSuccess);
@@ -598,6 +584,8 @@ private:
         const auto parameters = rp.PopRaw<Parameters>();
 
         LOG_WARNING(Service_SSL, "(STUBBED) called, api_version={}, pid_placeholder={}", parameters.ssl_version.api_version, parameters.pid_placeholder);
+        LOG_DEBUG(Service_SSL, "CreateContext client_pid={} pid_placeholder={} result={:#010x}",
+                  ctx.GetPID(), parameters.pid_placeholder, ResultSuccess.raw);
 
         IPC::ResponseBuilder rb{ctx, 2, 0, 1};
         rb.Push(ResultSuccess);
@@ -766,8 +754,8 @@ class ISslServiceForSystem final : public ServiceFramework<ISslServiceForSystem>
             // TODO (jarrodnorwell)
 
             return ResultSuccess;
-        };
     };
+};
 
 void LoopProcess(Core::System& system) {
     auto server_manager = std::make_unique<ServerManager>(system);

@@ -58,60 +58,45 @@ struct scope_exit {
   }
 
   ~scope_exit() {
-    if (execute_on_destruction) { this->exit_function(); }
+      if (execute_on_destruction) {
+          this->exit_function();
+      }
   }
 
-  void release() { this->execute_on_destruction = false; }
+  void release() {
+      this->execute_on_destruction = false;
+  }
 
 private:
-  scope_exit(const scope_exit &) = delete;
-  void operator=(const scope_exit &) = delete;
-  scope_exit &operator=(scope_exit &&) = delete;
+    scope_exit(const scope_exit&) = delete;
+    void operator=(const scope_exit&) = delete;
+    scope_exit& operator=(scope_exit&&) = delete;
 
-  std::function<void(void)> exit_function;
-  bool execute_on_destruction;
+    std::function<void(void)> exit_function;
+    bool execute_on_destruction;
 };
 
-inline X509_STORE *CreateCaCertStore(const char *ca_cert,
-                                                    std::size_t size) {
-    auto mem = BIO_new_mem_buf(ca_cert, static_cast<int>(size));
-    auto se = scope_exit([&] { BIO_free_all(mem); });
-    if (!mem) { return nullptr; }
-
-    auto inf = PEM_X509_INFO_read_bio(mem, nullptr, nullptr, nullptr);
-    if (!inf) { return nullptr; }
-
-    auto cts = X509_STORE_new();
-    if (cts) {
-        for (auto i = 0; i < static_cast<int>(sk_X509_INFO_num(inf)); i++) {
-            auto itmp = sk_X509_INFO_value(inf, i);
-            if (!itmp) { continue; }
-
-            if (itmp->x509) { X509_STORE_add_cert(cts, itmp->x509); }
-            if (itmp->crl) { X509_STORE_add_crl(cts, itmp->crl); }
+inline void LoadCaCertStore(SSL_CTX* ctx, const char* ca_cert, std::size_t size) {
+    auto* mem = BIO_new_mem_buf(ca_cert, static_cast<int>(size));
+    auto cleanup = scope_exit([&] { BIO_free_all(mem); });
+    if (!mem) {
+        return;
+    }
+    auto* certificates = PEM_X509_INFO_read_bio(mem, nullptr, nullptr, nullptr);
+    if (!certificates) {
+        return;
+    }
+    auto* store = SSL_CTX_get_cert_store(ctx);
+    for (int i = 0; i < sk_X509_INFO_num(certificates); ++i) {
+        const auto* info = sk_X509_INFO_value(certificates, i);
+        if (info->x509) {
+            X509_STORE_add_cert(store, info->x509);
+        }
+        if (info->crl) {
+            X509_STORE_add_crl(store, info->crl);
         }
     }
-
-    sk_X509_INFO_pop_free(inf, X509_INFO_free);
-    return cts;
-}
-
-inline void SetCaCertStore(SSL_CTX *ctx, X509_STORE *ca_cert_store) {
-    if (ca_cert_store) {
-        if (ctx) {
-            if (SSL_CTX_get_cert_store(ctx) != ca_cert_store) {
-                // Free memory allocated for old cert and use new store `ca_cert_store`
-                SSL_CTX_set_cert_store(ctx, ca_cert_store);
-            }
-        } else {
-            X509_STORE_free(ca_cert_store);
-        }
-    }
-}
-
-inline void LoadCaCertStore(SSL_CTX* ctx, const char* ca_cert, std::size_t size)
-{
-    SetCaCertStore(ctx, CreateCaCertStore(ca_cert, size));
+    sk_X509_INFO_pop_free(certificates, X509_INFO_free);
 }
 #endif
 
@@ -120,10 +105,6 @@ inline void LoadCaCertStore(SSL_CTX* ctx, const char* ca_cert, std::size_t size)
 class SSLConnectionBackendOpenSSL final : public SSLConnectionBackend {
 public:
     Result Init() {
-        // on bundled OpenSSL, load ca cert store
-#ifdef YUZU_BUNDLED_OPENSSL
-        LoadCaCertStore(ssl_ctx, kCert, sizeof(kCert));
-#endif
         std::call_once(one_time_init_flag, OneTimeInit);
 
         if (!one_time_init_success) {
@@ -158,7 +139,8 @@ public:
     }
 
     Result SetHostName(const char* hostname) override {
-        if (!skip_cert_verification) {
+        host_name = hostname;
+        if ((verify_option & 2) != 0) {
             if (!SSL_set1_host(ssl, hostname)) {
                 LOG_ERROR(Service_SSL, "SSL_set1_host({}) failed", hostname);
                 return CheckOpenSSLErrors();
@@ -184,6 +166,7 @@ public:
     }
 
     void SetVerifyOption(u32 option) override {
+        verify_option = option;
         skip_cert_verification = (option == 0);
         LOG_WARNING(Service_SSL, "option={} skip_verification={}", option,
                     skip_cert_verification);
@@ -193,11 +176,15 @@ public:
             SSL_set_hostflags(ssl, 0);
         } else {
             SSL_set_verify(ssl, SSL_VERIFY_PEER, nullptr);
+            if (!SSL_set1_host(ssl,
+                               (option & 2) && !host_name.empty() ? host_name.c_str() : nullptr)) {
+                LOG_ERROR(Service_SSL, "Failed to update certificate hostname verification");
+            }
         }
     }
 
     Result DoHandshake() override {
-        SSL_set_verify_result(ssl, X509_V_OK);
+        ERR_clear_error();
         const int ret = SSL_do_handshake(ssl);
 
         if (!skip_cert_verification) {
@@ -221,18 +208,22 @@ public:
     }
 
     Result Read(size_t* out_size, std::span<u8> data) override {
+        *out_size = 0;
+        ERR_clear_error();
         const int ret = SSL_read_ex(ssl, data.data(), data.size(), out_size);
         return HandleReturn("SSL_read_ex", out_size, ret);
     }
 
     Result Peek(size_t* out_size, std::span<u8> data) override {
-        auto const n = (std::min)(data.size(), *out_size);
-        const int ret = SSL_peek(ssl, data.data(), int(n));
-        *out_size = n;
-        return HandleReturn("SSL_write_ex", out_size, ret);
+        *out_size = 0;
+        ERR_clear_error();
+        const int ret = SSL_peek_ex(ssl, data.data(), data.size(), out_size);
+        return HandleReturn("SSL_peek_ex", out_size, ret);
     }
 
     Result Write(size_t* out_size, std::span<const u8> data) override {
+        *out_size = 0;
+        ERR_clear_error();
         const int ret = SSL_write_ex(ssl, data.data(), data.size(), out_size);
         return HandleReturn("SSL_write_ex", out_size, ret);
     }
@@ -246,7 +237,9 @@ public:
         case SSL_ERROR_ZERO_RETURN:
             LOG_DEBUG(Service_SSL, "{} => SSL_ERROR_ZERO_RETURN", what);
             // DoHandshake special-cases this, but for Read and Write:
-            *actual = 0;
+            if (actual) {
+                *actual = 0;
+            }
             return ResultSuccess;
         case SSL_ERROR_WANT_READ:
             LOG_DEBUG(Service_SSL, "{} => SSL_ERROR_WANT_READ", what);
@@ -257,7 +250,9 @@ public:
         default:
             if (ssl_err == SSL_ERROR_SYSCALL && got_read_eof) {
                 LOG_DEBUG(Service_SSL, "{} => SSL_ERROR_SYSCALL because server hung up", what);
-                *actual = 0;
+                if (actual) {
+                    *actual = 0;
+                }
                 return ResultSuccess;
             }
             LOG_ERROR(Service_SSL, "{} => other SSL_get_error return value {}", what, ssl_err);
@@ -385,6 +380,8 @@ public:
     BIO* bio = nullptr;
     bool got_read_eof = false;
     bool skip_cert_verification = false;
+    u32 verify_option = 3;
+    std::string host_name;
 
     std::shared_ptr<Network::SocketBase> socket;
 };
@@ -445,6 +442,10 @@ void OneTimeInit() {
         CheckOpenSSLErrors();
         return;
     }
+
+#ifdef YUZU_BUNDLED_OPENSSL
+    LoadCaCertStore(ssl_ctx, kCert, sizeof(kCert));
+#endif
 
     OneTimeInitLogFile();
 
