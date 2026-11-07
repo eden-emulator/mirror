@@ -985,6 +985,13 @@ abstract class SettingsItem(
             )
             put(
                 SwitchSetting(
+                    BooleanSetting.GALAXY_FOLD_GYRO_FIX,
+                    titleId = R.string.galaxy_fold_gyro_fix,
+                    descriptionId = R.string.galaxy_fold_gyro_fix_description,
+                )
+            )
+            put(
+                SwitchSetting(
                     BooleanSetting.ENABLE_QLAUNCH_BUTTON,
                     titleId = R.string.enable_qlaunch_button,
                     descriptionId = R.string.enable_qlaunch_button_description,

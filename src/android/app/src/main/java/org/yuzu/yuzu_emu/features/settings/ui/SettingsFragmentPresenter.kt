@@ -1505,6 +1505,8 @@ class SettingsFragmentPresenter(
                 )
             )
 
+            add(BooleanSetting.GALAXY_FOLD_GYRO_FIX.key)
+
             add(HeaderSetting(R.string.buttons))
             add(BooleanSetting.ENABLE_FOLDER_BUTTON.key)
             add(BooleanSetting.ENABLE_QLAUNCH_BUTTON.key)

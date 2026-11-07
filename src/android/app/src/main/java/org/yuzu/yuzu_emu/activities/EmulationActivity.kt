@@ -83,6 +83,7 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
     private val accel = FloatArray(3)
     private var motionTimestamp: Long = 0
     private var flipMotionOrientation: Boolean = false
+    private var galaxyFoldGyroFix: Boolean = false
 
     private val actionPause = "ACTION_EMULATOR_PAUSE"
     private val actionPlay = "ACTION_EMULATOR_PLAY"
@@ -246,6 +247,7 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
     override fun onResume() {
         super.onResume()
         nfcReader.startScanning()
+        galaxyFoldGyroFix = BooleanSetting.GALAXY_FOLD_GYRO_FIX.getBoolean()
         startMotionSensorListener()
         InputHandler.updateControllerData()
         notifyPhysicalControllerState()
@@ -497,6 +499,12 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
         }
 
         val rotation = this.display?.rotation
+        val foldMotionSign = when {
+            !galaxyFoldGyroFix -> 0
+            rotation == Surface.ROTATION_0 -> 1
+            rotation == Surface.ROTATION_180 -> -1
+            else -> 0
+        }
         if (rotation == Surface.ROTATION_90) {
             flipMotionOrientation = true
         }
@@ -505,7 +513,10 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
         }
 
         if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
-            if (flipMotionOrientation) {
+            if (foldMotionSign != 0) {
+                accel[0] = foldMotionSign * event.values[0] / SensorManager.GRAVITY_EARTH
+                accel[1] = foldMotionSign * event.values[1] / SensorManager.GRAVITY_EARTH
+            } else if (flipMotionOrientation) {
                 accel[0] = event.values[1] / SensorManager.GRAVITY_EARTH
                 accel[1] = -event.values[0] / SensorManager.GRAVITY_EARTH
             } else {
@@ -516,7 +527,11 @@ class EmulationActivity : AppCompatActivity(), SensorEventListener, InputManager
         }
         if (event.sensor.type == Sensor.TYPE_GYROSCOPE) {
             // Investigate why sensor value is off by 6x
-            if (flipMotionOrientation) {
+            if (foldMotionSign != 0) {
+                // The unfolded display needs the opposite pitch sign.
+                gyro[0] = foldMotionSign * event.values[0] / 6.0f
+                gyro[1] = -foldMotionSign * event.values[1] / 6.0f
+            } else if (flipMotionOrientation) {
                 gyro[0] = -event.values[1] / 6.0f
                 gyro[1] = event.values[0] / 6.0f
             } else {
