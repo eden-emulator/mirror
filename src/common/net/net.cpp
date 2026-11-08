@@ -34,7 +34,7 @@ std::vector<NamedAsset> GetPlatformAssets(const Release& r) {
     // TODO(crueter): Need better handling for this as a whole.
 #ifdef NIGHTLY_BUILD
     std::vector<std::string> result;
-    boost::algorithm::split(result, tag, boost::is_any_of("."));
+    boost::algorithm::split(result, r.tag_name, boost::is_any_of("."));
     if (result.size() != 2)
         return {};
     const auto ref = result.at(1);
