@@ -71,9 +71,9 @@ public:
     }
 
     /// Mark region as CPU modified, notifying the device_tracker about this change
-    void MarkRegionAsCpuModified(VAddr dirty_cpu_addr, u64 query_size) {
-        IteratePages<true>(dirty_cpu_addr, query_size, [](Manager* manager, u64 offset, size_t size) {
-            manager->ChangeRegionState(Type::CPU, true, manager->cpu_addr + offset, size);
+    void MarkRegionAsCpuModified(VAddr dirty_cpu_addr, u64 query_size, bool keep_tracking = false) {
+        IteratePages<true>(dirty_cpu_addr, query_size, [keep_tracking](Manager* manager, u64 offset, size_t size) {
+            manager->ChangeRegionState(Type::CPU, true, manager->cpu_addr + offset, size, keep_tracking);
         });
     }
 

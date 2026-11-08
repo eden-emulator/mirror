@@ -254,6 +254,9 @@ public:
     /// sensible, false otherwise, addr and size must be a valid combination
     bool OnCPUWrite(DAddr addr, u64 size);
 
+    /// Check whether this range still has GPU writes that must be flushed to CPU memory.
+    bool MustFlushRegion(DAddr addr, u64 size);
+
     /// Notify rasterizer that any caches of the specified region should be flushed and invalidated
     void FlushAndInvalidateRegion(DAddr addr, u64 size);
 

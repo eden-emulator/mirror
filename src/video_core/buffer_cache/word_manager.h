@@ -115,19 +115,20 @@ struct WordManager {
     /// @param enable        If enabling or disabling
     /// @param dirty_addr    Base address to mark or unmark as modified
     /// @param size          Size in bytes to mark or unmark as modified
-    void ChangeRegionState(Type type, bool enable, u64 dirty_addr, u64 size) noexcept {
+    /// @param keep_tracking Keep CPU-modified pages protected for subsequent native writes.
+    void ChangeRegionState(Type type, bool enable, u64 dirty_addr, u64 size, bool keep_tracking = false) noexcept {
         std::span<u64> state_words = Span(type);
         [[maybe_unused]] std::span<u64> untracked_words = Span(Type::Untracked);
         [[maybe_unused]] std::span<u64> cached_words = Span(Type::CachedCPU);
         std::vector<std::pair<VAddr, u64>> ranges;
         IterateWords(dirty_addr - cpu_addr, size, [&](size_t index, u64 mask) {
             if (type == Type::CPU || type == Type::CachedCPU) {
-                CollectChangedRanges(!enable, index, untracked_words[index], mask, ranges);
+                CollectChangedRanges(!enable || keep_tracking, index, untracked_words[index], mask, ranges);
             }
             if (enable) {
                 state_words[index] |= mask;
                 if (type == Type::CPU || type == Type::CachedCPU)
-                    untracked_words[index] |= mask;
+                    untracked_words[index] = (untracked_words[index] & ~mask) | (keep_tracking ? u64{0} : mask);
                 if (type == Type::CPU)
                     cached_words[index] &= ~mask;
             } else {
@@ -139,7 +140,7 @@ struct WordManager {
             }
         });
         if (!ranges.empty()) {
-            ApplyCollectedRanges(ranges, (!enable) ? 1 : -1);
+            ApplyCollectedRanges(ranges, (!enable || keep_tracking) ? 1 : -1);
         }
     }
 
