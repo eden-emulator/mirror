@@ -37,7 +37,6 @@ Written in C++, with builds for Windows, Linux, macOS, Android, FreeBSD and more
   <a href="#contribute">Contribute</a> |
   <a href="#building">Building</a> |
   <a href="#download">Download</a> |
-  <a href="#support">Support</a> |
   <a href="#license">License</a>
 </p>
 
