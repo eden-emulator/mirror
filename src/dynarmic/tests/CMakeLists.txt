@@ -132,3 +132,8 @@ target_compile_options(dynarmic_tests PRIVATE ${DYNARMIC_CXX_FLAGS})
 target_compile_definitions(dynarmic_tests PRIVATE FMT_USE_USER_DEFINED_LITERALS=1)
 
 add_test(NAME dynarmic_tests COMMAND dynarmic_tests --durations yes)
+if (DYNARMIC_HOST_FEATURE_OVERRIDE AND "x86_64" IN_LIST ARCHITECTURE)
+    # Every host feature hidden, as on an SSE2-only host, so the x64 fallbacks run.
+    add_test(NAME dynarmic_tests_sse2 COMMAND dynarmic_tests "~[unicorn]" --durations yes)
+    set_tests_properties(dynarmic_tests_sse2 PROPERTIES ENVIRONMENT DYNARMIC_HOST_FEATURES=0)
+endif()

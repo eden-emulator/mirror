@@ -1054,8 +1054,8 @@ void EmitX64::EmitFPRecipStepFused64(EmitContext& ctx, IR::Inst* inst) {
 /// 8-15   exact (!= 0)
 template<typename FPT>
 static u64 EmitFPRoundThunk(u64 input, FP::FPSR& fpsr, FP::FPCR fpcr, u32 extra_args) {
-    auto const exact = ((extra_args >> 16) & 0xff) != 0;
-    auto const rounding_mode = FP::RoundingMode((extra_args >> 8) & 0xff);
+    auto const exact = ((extra_args >> 8) & 0xff) != 0;
+    auto const rounding_mode = FP::RoundingMode((extra_args >> 0) & 0xff);
     return FP::FPRoundInt<FPT>(FPT(input), fpcr, rounding_mode, exact, fpsr);
 }
 

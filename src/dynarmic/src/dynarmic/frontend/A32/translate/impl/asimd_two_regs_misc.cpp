@@ -241,6 +241,44 @@ bool TranslatorVisitor::v8_AESMC(bool D, size_t sz, size_t Vd, bool M, size_t Vm
     return true;
 }
 
+bool TranslatorVisitor::v8_SHA1H(bool D, size_t sz, size_t Vd, bool M, size_t Vm) {
+    if (sz != 0b10 || mcl::bit::get_bit<0>(Vd) || mcl::bit::get_bit<0>(Vm)) {
+        return UndefinedInstruction();
+    }
+
+    const auto d = ToVector(true, Vd, D);
+    const auto m = ToVector(true, Vm, M);
+
+    // Qd = ZeroExtend(ROL(Qm<31:0>, 30))
+    const IR::U32 word = ir.VectorGetElement(32, ir.GetVector(m), 0);
+    const IR::U32 rotated = ir.RotateRight(word, ir.Imm8(2));
+
+    ir.SetVector(d, ir.ZeroExtendToQuad(rotated));
+    return true;
+}
+
+bool TranslatorVisitor::v8_SHA1SU1(bool D, size_t sz, size_t Vd, bool M, size_t Vm) {
+    if (sz != 0b10 || mcl::bit::get_bit<0>(Vd) || mcl::bit::get_bit<0>(Vm)) {
+        return UndefinedInstruction();
+    }
+
+    const auto d = ToVector(true, Vd, D);
+    const auto m = ToVector(true, Vm, M);
+
+    const IR::U128 x = ir.GetVector(d);
+    const IR::U128 y = ir.GetVector(m);
+
+    // T = X EOR LSR(Y, 32); every word of T rotated left by one, the top one also EOR ROL(T<31:0>, 2)
+    const IR::U128 y_down = ir.VectorSetElement(32, ir.VectorRotateWholeVectorRight(y, 32), 3, ir.Imm32(0));
+    const IR::U128 t = ir.VectorEor(x, y_down);
+    const IR::U128 rotated_t = ir.VectorRotateLeft(32, t, 1);
+    const IR::U32 low_t_rol2 = ir.RotateRight(ir.VectorGetElement(32, rotated_t, 0), ir.Imm8(31));
+    const IR::U32 high = ir.Eor(low_t_rol2, ir.VectorGetElement(32, rotated_t, 3));
+
+    ir.SetVector(d, ir.VectorSetElement(32, rotated_t, 3, high));
+    return true;
+}
+
 bool TranslatorVisitor::v8_SHA256SU0(bool D, size_t sz, size_t Vd, bool M, size_t Vm) {
     if (sz != 0b10 || mcl::bit::get_bit<0>(Vd) || mcl::bit::get_bit<0>(Vm)) {
         return UndefinedInstruction();

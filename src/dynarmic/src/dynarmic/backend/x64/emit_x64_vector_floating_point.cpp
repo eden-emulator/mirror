@@ -2158,7 +2158,8 @@ void EmitFPVectorToFixed(BlockOfCode& code, EmitContext& ctx, IR::Inst* inst) {
     ROUNDING_MODE_CASE(CASE, 0x3c) \
     ROUNDING_MODE_CASE(CASE, 0x3d) \
     ROUNDING_MODE_CASE(CASE, 0x3e) \
-    ROUNDING_MODE_CASE(CASE, 0x3f)
+    ROUNDING_MODE_CASE(CASE, 0x3f) \
+    ROUNDING_MODE_CASE(CASE, 0x40)
 
         ROUNDING_MODE_SWITCH(ToNearest_TieEven)
         ROUNDING_MODE_SWITCH(TowardsPlusInfinity)

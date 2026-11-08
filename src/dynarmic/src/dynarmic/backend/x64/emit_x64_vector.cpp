@@ -903,7 +903,8 @@ void EmitX64::EmitVectorCountLeadingZeros16(EmitContext& ctx, IR::Inst* inst) {
         // then subtract 16-bit cuz of the zext32
         /*4*/ code.vpmovzxwd(tmp0.cvt256(), tmp0);
         /*4*/ code.vplzcntd(tmp0.cvt256(), tmp0.cvt256());
-        /*1*/ code.vpxor(tmp1, tmp1, tmp1);
+        // an XMM vpackusdw reads only the low half of the YMM: bring lanes 4-7 down for it
+        /*3*/ code.vextracti128(tmp1, tmp0.cvt256(), 1);
         /*1*/ code.vpackusdw(tmp0, tmp0, tmp1);
         /*1*/ code.vpaddw(tmp0, tmp0, code.BConst<16>(xword, 65520));
         /*4*/ code.vzeroupper();
@@ -5139,9 +5140,9 @@ static bool VectorSignedSaturatedShiftLeftUnsigned(VectorArray<T>& dst, const Ve
     bool qc_flag = false;
     for (size_t i = 0; i < dst.size(); i++) {
         auto const element = data[i];
-        auto const shifted = U(element) << U(T(shift_amount));
+        U const shifted = U(U(element) << U(T(shift_amount)));
         auto const shifted_test = shifted >> U(T(shift_amount));
-        auto result = 0;
+        T result = 0;
         if (element > 0 && shifted_test != U(element))
             result = T((std::numeric_limits<U>::max)());
         if (element > 0 && shifted_test == U(element))

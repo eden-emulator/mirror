@@ -67,4 +67,7 @@ constexpr HostFeature operator&=(HostFeature& result, HostFeature f) {
     return result = (result & f);
 }
 
+/// What the JIT uses: the host's features, less any that DYNARMIC_HOST_FEATURES hides.
+HostFeature GetHostFeatures();
+
 }  // namespace Dynarmic::Backend::X64

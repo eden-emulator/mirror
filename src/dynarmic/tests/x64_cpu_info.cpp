@@ -10,10 +10,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <utility>
 
 #include <catch2/catch_test_macros.hpp>
+#include "dynarmic/backend/x64/host_feature.h"
 #include "dynarmic/backend/x64/xbyak.h"
 
 TEST_CASE("Host CPU supports", "[a64]") {
@@ -114,4 +116,12 @@ TEST_CASE("Host CPU supports", "[a64]") {
         }
     }
     std::putchar('\n');
+}
+
+TEST_CASE("x64: DYNARMIC_HOST_FEATURES hides host features", "[x64]") {
+    const char* mask = std::getenv("DYNARMIC_HOST_FEATURES");
+    if (!mask || !*mask)
+        SKIP("set DYNARMIC_HOST_FEATURES in a build with DYNARMIC_HOST_FEATURE_OVERRIDE");
+    const auto seen = static_cast<std::uint64_t>(Dynarmic::Backend::X64::GetHostFeatures());
+    REQUIRE((seen & ~std::uint64_t(std::strtoull(mask, nullptr, 16))) == 0);
 }

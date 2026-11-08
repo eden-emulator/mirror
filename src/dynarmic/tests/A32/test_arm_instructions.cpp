@@ -6,6 +6,8 @@
  * SPDX-License-Identifier: 0BSD
  */
 
+#include <array>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include "dynarmic/tests/A32/testenv.h"
@@ -706,4 +708,210 @@ TEST_CASE("arm: tbx", "[arm][A32]") {
 
     REQUIRE(jit.ExtRegs()[19 * 2 + 0] == 0x05'02'01'00);
     REQUIRE(jit.ExtRegs()[19 * 2 + 1] == 0x20'1F'10'0F);
+}
+
+
+TEST_CASE("arm: SHA-1 of one block with the crypto extension", "[arm][A32]") {
+    // SHA-1("abc"), one padded block, through SHA1C/P/M, SHA1H, SHA1SU0 and SHA1SU1: the state in
+    // q0 and s4, a copy in q2 and s12, the message in q8-q11, the round constants in q12-q15.
+    ArmTestEnv test_env;
+    A32::Jit jit{GetUserConfig(&test_env)};
+    test_env.code_mem = {
+        0xf22088e8,  // vadd.i32 q4, q8, q12
+        0xf2720ce4,  // sha1su0.32 q8, q9, q10
+        0xf3fa03a6,  // sha1su1.32 q8, q11
+        0xf3b9a2c0,  // sha1h.32 q5, q0
+        0xf2020c48,  // sha1c.32 q0, q1, q4
+        0xf22288e8,  // vadd.i32 q4, q9, q12
+        0xf2742ce6,  // sha1su0.32 q9, q10, q11
+        0xf3fa23a0,  // sha1su1.32 q9, q8
+        0xf3b922c0,  // sha1h.32 q1, q0
+        0xf20a0c48,  // sha1c.32 q0, q5, q4
+        0xf22488e8,  // vadd.i32 q4, q10, q12
+        0xf2764ce0,  // sha1su0.32 q10, q11, q8
+        0xf3fa43a2,  // sha1su1.32 q10, q9
+        0xf3b9a2c0,  // sha1h.32 q5, q0
+        0xf2020c48,  // sha1c.32 q0, q1, q4
+        0xf22688e8,  // vadd.i32 q4, q11, q12
+        0xf2706ce2,  // sha1su0.32 q11, q8, q9
+        0xf3fa63a4,  // sha1su1.32 q11, q10
+        0xf3b922c0,  // sha1h.32 q1, q0
+        0xf20a0c48,  // sha1c.32 q0, q5, q4
+        0xf22088e8,  // vadd.i32 q4, q8, q12
+        0xf2720ce4,  // sha1su0.32 q8, q9, q10
+        0xf3fa03a6,  // sha1su1.32 q8, q11
+        0xf3b9a2c0,  // sha1h.32 q5, q0
+        0xf2020c48,  // sha1c.32 q0, q1, q4
+        0xf22288ea,  // vadd.i32 q4, q9, q13
+        0xf2742ce6,  // sha1su0.32 q9, q10, q11
+        0xf3fa23a0,  // sha1su1.32 q9, q8
+        0xf3b922c0,  // sha1h.32 q1, q0
+        0xf21a0c48,  // sha1p.32 q0, q5, q4
+        0xf22488ea,  // vadd.i32 q4, q10, q13
+        0xf2764ce0,  // sha1su0.32 q10, q11, q8
+        0xf3fa43a2,  // sha1su1.32 q10, q9
+        0xf3b9a2c0,  // sha1h.32 q5, q0
+        0xf2120c48,  // sha1p.32 q0, q1, q4
+        0xf22688ea,  // vadd.i32 q4, q11, q13
+        0xf2706ce2,  // sha1su0.32 q11, q8, q9
+        0xf3fa63a4,  // sha1su1.32 q11, q10
+        0xf3b922c0,  // sha1h.32 q1, q0
+        0xf21a0c48,  // sha1p.32 q0, q5, q4
+        0xf22088ea,  // vadd.i32 q4, q8, q13
+        0xf2720ce4,  // sha1su0.32 q8, q9, q10
+        0xf3fa03a6,  // sha1su1.32 q8, q11
+        0xf3b9a2c0,  // sha1h.32 q5, q0
+        0xf2120c48,  // sha1p.32 q0, q1, q4
+        0xf22288ea,  // vadd.i32 q4, q9, q13
+        0xf2742ce6,  // sha1su0.32 q9, q10, q11
+        0xf3fa23a0,  // sha1su1.32 q9, q8
+        0xf3b922c0,  // sha1h.32 q1, q0
+        0xf21a0c48,  // sha1p.32 q0, q5, q4
+        0xf22488ec,  // vadd.i32 q4, q10, q14
+        0xf2764ce0,  // sha1su0.32 q10, q11, q8
+        0xf3fa43a2,  // sha1su1.32 q10, q9
+        0xf3b9a2c0,  // sha1h.32 q5, q0
+        0xf2220c48,  // sha1m.32 q0, q1, q4
+        0xf22688ec,  // vadd.i32 q4, q11, q14
+        0xf2706ce2,  // sha1su0.32 q11, q8, q9
+        0xf3fa63a4,  // sha1su1.32 q11, q10
+        0xf3b922c0,  // sha1h.32 q1, q0
+        0xf22a0c48,  // sha1m.32 q0, q5, q4
+        0xf22088ec,  // vadd.i32 q4, q8, q14
+        0xf2720ce4,  // sha1su0.32 q8, q9, q10
+        0xf3fa03a6,  // sha1su1.32 q8, q11
+        0xf3b9a2c0,  // sha1h.32 q5, q0
+        0xf2220c48,  // sha1m.32 q0, q1, q4
+        0xf22288ec,  // vadd.i32 q4, q9, q14
+        0xf2742ce6,  // sha1su0.32 q9, q10, q11
+        0xf3fa23a0,  // sha1su1.32 q9, q8
+        0xf3b922c0,  // sha1h.32 q1, q0
+        0xf22a0c48,  // sha1m.32 q0, q5, q4
+        0xf22488ec,  // vadd.i32 q4, q10, q14
+        0xf2764ce0,  // sha1su0.32 q10, q11, q8
+        0xf3fa43a2,  // sha1su1.32 q10, q9
+        0xf3b9a2c0,  // sha1h.32 q5, q0
+        0xf2220c48,  // sha1m.32 q0, q1, q4
+        0xf22688ee,  // vadd.i32 q4, q11, q15
+        0xf2706ce2,  // sha1su0.32 q11, q8, q9
+        0xf3fa63a4,  // sha1su1.32 q11, q10
+        0xf3b922c0,  // sha1h.32 q1, q0
+        0xf21a0c48,  // sha1p.32 q0, q5, q4
+        0xf22088ee,  // vadd.i32 q4, q8, q15
+        0xf3b9a2c0,  // sha1h.32 q5, q0
+        0xf2120c48,  // sha1p.32 q0, q1, q4
+        0xf22288ee,  // vadd.i32 q4, q9, q15
+        0xf3b922c0,  // sha1h.32 q1, q0
+        0xf21a0c48,  // sha1p.32 q0, q5, q4
+        0xf22488ee,  // vadd.i32 q4, q10, q15
+        0xf3b9a2c0,  // sha1h.32 q5, q0
+        0xf2120c48,  // sha1p.32 q0, q1, q4
+        0xf22688ee,  // vadd.i32 q4, q11, q15
+        0xf3b922c0,  // sha1h.32 q1, q0
+        0xf21a0c48,  // sha1p.32 q0, q5, q4
+        0xf2200844,  // vadd.i32 q0, q0, q2
+        0xf2222846,  // vadd.i32 q1, q1, q3
+        0xeafffffe,  // b +#0
+    };
+
+    const std::array<u32, 16> message{0x61626380, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x18};
+    const std::array<u32, 4> constants{0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xca62c1d6};
+    const std::array<u32, 4> abcd{0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476};
+    const u32 e = 0xc3d2e1f0;
+    for (size_t i = 0; i < message.size(); i++) {
+        jit.ExtRegs()[32 + i] = message[i];
+    }
+    for (size_t i = 0; i < 16; i++) {
+        jit.ExtRegs()[48 + i] = constants[i / 4];
+    }
+    for (size_t i = 0; i < 4; i++) {
+        jit.ExtRegs()[0 + i] = abcd[i];
+        jit.ExtRegs()[8 + i] = abcd[i];
+    }
+    jit.ExtRegs()[4] = e;
+    jit.ExtRegs()[12] = e;
+
+    jit.SetCpsr(0x000001d0);  // User-mode
+
+    test_env.ticks_left = test_env.code_mem.size();
+    CheckedRun([&]() { jit.Run(); });
+
+    REQUIRE(jit.ExtRegs()[0] == 0xa9993e36);
+    REQUIRE(jit.ExtRegs()[1] == 0x4706816a);
+    REQUIRE(jit.ExtRegs()[2] == 0xba3e2571);
+    REQUIRE(jit.ExtRegs()[3] == 0x7850c26c);
+    REQUIRE(jit.ExtRegs()[4] == 0x9cd0d89d);
+}
+
+TEST_CASE("arm: SHA1H clears the rest of the destination", "[arm][A32]") {
+    ArmTestEnv test_env;
+    A32::Jit jit{GetUserConfig(&test_env)};
+    test_env.code_mem = {
+        0xf3b9a2c0,  // sha1h.32 q5, q0
+        0xeafffffe,  // b +#0
+    };
+
+    jit.ExtRegs()[0] = 0x80000001;
+    for (size_t i = 20; i < 24; i++) {
+        jit.ExtRegs()[i] = 0xdeadbeef;
+    }
+
+    jit.SetCpsr(0x000001d0);  // User-mode
+
+    test_env.ticks_left = 2;
+    CheckedRun([&]() { jit.Run(); });
+
+    REQUIRE(jit.ExtRegs()[20] == 0x60000000);
+    REQUIRE(jit.ExtRegs()[21] == 0);
+    REQUIRE(jit.ExtRegs()[22] == 0);
+    REQUIRE(jit.ExtRegs()[23] == 0);
+}
+
+TEST_CASE("arm: sdiv and udiv by zero", "[arm][A32]") {
+    ArmTestEnv test_env;
+    A32::Jit jit{GetUserConfig(&test_env)};
+    test_env.code_mem = {
+        0xe712f011,  // sdiv r2, r1, r0
+        0xe733f011,  // udiv r3, r1, r0
+        0xeafffffe,  // b +#0
+    };
+
+    jit.Regs()[0] = 0;
+    jit.Regs()[1] = 0x12345678;
+    jit.Regs()[2] = 0xdeadbeef;
+    jit.Regs()[3] = 0xdeadbeef;
+
+    jit.SetCpsr(0x000001d0);  // User-mode
+
+    test_env.ticks_left = 3;
+    CheckedRun([&]() { jit.Run(); });
+
+    REQUIRE(jit.Regs()[2] == 0);
+    REQUIRE(jit.Regs()[3] == 0);
+}
+
+TEST_CASE("arm: vrintx and vrinta through the soft-float fallback", "[arm][A32]") {
+    ArmTestEnv test_env;
+    A32::Jit jit{GetUserConfig(&test_env)};
+    test_env.code_mem = {
+        0xeeb70b41,  // vrintx.f64 d0, d1
+        0xfeb82b43,  // vrinta.f64 d2, d3
+        0xeafffffe,  // b +#0
+    };
+
+    jit.ExtRegs()[2] = 0x33333333;  // d1 = 0.3
+    jit.ExtRegs()[3] = 0x3fd33333;
+    jit.ExtRegs()[6] = 0x00000000;  // d3 = 2.5
+    jit.ExtRegs()[7] = 0x40040000;
+    jit.SetFpscr(0);  // round to nearest
+
+    jit.SetCpsr(0x000001d0);  // User-mode
+
+    test_env.ticks_left = 3;
+    CheckedRun([&]() { jit.Run(); });
+
+    REQUIRE(jit.ExtRegs()[0] == 0);  // 0.0
+    REQUIRE(jit.ExtRegs()[1] == 0);
+    REQUIRE(jit.ExtRegs()[4] == 0);  // 3.0, ties away from zero
+    REQUIRE(jit.ExtRegs()[5] == 0x40080000);
 }

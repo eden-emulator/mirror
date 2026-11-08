@@ -1204,6 +1204,7 @@ void EmitX64::EmitSignedDiv32(EmitContext& ctx, IR::Inst* inst) {
     auto const divisor = ctx.reg_alloc.UseGpr(code, args[1]).cvt32();
     Xbyak::Label end, ok;
     code.test(divisor, divisor);
+    code.cmovz(eax, divisor); // x / 0 == 0
     code.jz(end, code.T_NEAR);
     code.cmp(divisor, u32(-1)); // is sign extended
     code.jne(ok, code.T_NEAR);

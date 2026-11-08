@@ -244,6 +244,58 @@ bool WideInstruction(TranslatorVisitor& v, bool U, bool D, size_t sz, size_t Vn,
 
 // ASIMD Three registers of the same length
 
+namespace {
+IR::U32 SHA1Choose(IREmitter& ir, IR::U32 x, IR::U32 y, IR::U32 z) {
+    return ir.Eor(ir.And(ir.Eor(y, z), x), z);
+}
+
+IR::U32 SHA1Majority(IREmitter& ir, IR::U32 x, IR::U32 y, IR::U32 z) {
+    return ir.Or(ir.And(x, y), ir.And(ir.Or(x, y), z));
+}
+
+IR::U32 SHA1Parity(IREmitter& ir, IR::U32 x, IR::U32 y, IR::U32 z) {
+    return ir.Eor(ir.Eor(y, z), x);
+}
+
+using SHA1HashUpdateFunction = IR::U32(IREmitter&, IR::U32, IR::U32, IR::U32);
+
+// Four rounds of SHA1C, SHA1M or SHA1P: X is Qd, Y the low word of Qn, W is Qm. Same
+// computation as the A64 translation.
+bool SHA1HashUpdate(TranslatorVisitor& v, bool D, size_t Vn, size_t Vd, bool N, bool Q, bool M, size_t Vm, SHA1HashUpdateFunction fn) {
+    if (!Q || mcl::bit::get_bit<0>(Vd) || mcl::bit::get_bit<0>(Vn) || mcl::bit::get_bit<0>(Vm)) {
+        return v.UndefinedInstruction();
+    }
+
+    const auto d = ToVector(Q, Vd, D);
+    const auto n = ToVector(Q, Vn, N);
+    const auto m = ToVector(Q, Vm, M);
+
+    IR::U128 x = v.ir.GetVector(d);
+    IR::U32 y = v.ir.VectorGetElement(32, v.ir.GetVector(n), 0);
+    const IR::U128 w = v.ir.GetVector(m);
+
+    for (size_t i = 0; i < 4; i++) {
+        const IR::U32 low_x = v.ir.VectorGetElement(32, x, 0);
+        const IR::U32 after_low_x = v.ir.VectorGetElement(32, x, 1);
+        const IR::U32 before_high_x = v.ir.VectorGetElement(32, x, 2);
+        const IR::U32 high_x = v.ir.VectorGetElement(32, x, 3);
+        const IR::U32 t = fn(v.ir, after_low_x, before_high_x, high_x);
+        const IR::U32 w_segment = v.ir.VectorGetElement(32, w, i);
+
+        y = v.ir.Add(v.ir.Add(v.ir.Add(y, v.ir.RotateRight(low_x, v.ir.Imm8(27))), t), w_segment);
+        x = v.ir.VectorSetElement(32, x, 1, v.ir.RotateRight(after_low_x, v.ir.Imm8(2)));
+
+        // <Y, X> = ROL(Y:X, 32): every word of X moves up one, Y becomes the lowest.
+        const IR::U128 shuffled_x = v.ir.VectorRotateWholeVectorRight(x, 96);
+        x = v.ir.VectorSetElement(32, shuffled_x, 0, y);
+        y = high_x;
+    }
+
+    v.ir.SetVector(d, x);
+    return true;
+}
+}  // Anonymous namespace
+
 bool TranslatorVisitor::asimd_VHADD(bool U, bool D, size_t sz, size_t Vn, size_t Vd, bool N, bool Q, bool M, size_t Vm) {
     if (Q && (mcl::bit::get_bit<0>(Vd) || mcl::bit::get_bit<0>(Vn) || mcl::bit::get_bit<0>(Vm))) {
         return UndefinedInstruction();
@@ -840,6 +892,39 @@ bool TranslatorVisitor::asimd_VRSQRTS(bool D, bool sz, size_t Vn, size_t Vd, boo
     return FloatingPointInstruction(*this, D, sz, Vn, Vd, N, Q, M, Vm, [this](const auto&, const auto& reg_n, const auto& reg_m) {
         return ir.FPVectorRSqrtStepFused(32, reg_n, reg_m, false);
     });
+}
+
+bool TranslatorVisitor::v8_SHA1C(bool D, size_t Vn, size_t Vd, bool N, bool Q, bool M, size_t Vm) {
+    return SHA1HashUpdate(*this, D, Vn, Vd, N, Q, M, Vm, SHA1Choose);
+}
+
+bool TranslatorVisitor::v8_SHA1P(bool D, size_t Vn, size_t Vd, bool N, bool Q, bool M, size_t Vm) {
+    return SHA1HashUpdate(*this, D, Vn, Vd, N, Q, M, Vm, SHA1Parity);
+}
+
+bool TranslatorVisitor::v8_SHA1M(bool D, size_t Vn, size_t Vd, bool N, bool Q, bool M, size_t Vm) {
+    return SHA1HashUpdate(*this, D, Vn, Vd, N, Q, M, Vm, SHA1Majority);
+}
+
+bool TranslatorVisitor::v8_SHA1SU0(bool D, size_t Vn, size_t Vd, bool N, bool Q, bool M, size_t Vm) {
+    if (!Q || mcl::bit::get_bit<0>(Vd) || mcl::bit::get_bit<0>(Vn) || mcl::bit::get_bit<0>(Vm)) {
+        return UndefinedInstruction();
+    }
+
+    const auto d = ToVector(Q, Vd, D);
+    const auto n = ToVector(Q, Vn, N);
+    const auto m = ToVector(Q, Vm, M);
+
+    const IR::U128 x = ir.GetVector(d);
+    const IR::U128 y = ir.GetVector(n);
+    const IR::U128 z = ir.GetVector(m);
+
+    // op2 = Qn<63:0> : Qd<127:64>
+    const IR::U128 high_d = ir.VectorSetElement(64, ir.ZeroVector(), 0, ir.VectorGetElement(64, x, 1));
+    const IR::U128 op2 = ir.VectorSetElement(64, high_d, 1, ir.VectorGetElement(64, y, 0));
+
+    ir.SetVector(d, ir.VectorEor(ir.VectorEor(op2, x), z));
+    return true;
 }
 
 bool TranslatorVisitor::v8_SHA256H(bool D, size_t Vn, size_t Vd, bool N, bool Q, bool M, size_t Vm) {
