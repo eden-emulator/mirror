@@ -1446,7 +1446,7 @@ static void VerificationPass(const IR::Block& block) {
 void Optimize(IR::Block& block, const A32::UserConfig& conf, const Optimization::PolyfillOptions& polyfill_options) {
     Optimization::PolyfillPass(block, polyfill_options);
     Optimization::NamingPass(block);
-    if (conf.HasOptimization(OptimizationFlag::GetSetElimination)) {
+    if (conf.HasOptimization(OptimizationFlag::GetSetElimination) && !conf.check_halt_on_memory_access) {
         Optimization::A32GetSetElimination(block, {.convert_nzc_to_nz = true});
         Optimization::DeadCodeElimination(block);
     }

@@ -9,6 +9,8 @@ add_executable(dynarmic_tests
     # A32
     A32/test_arm_instructions.cpp
     A32/test_coprocessor.cpp
+    A32/test_invalidation.cpp
+    A32/test_mem_abort_context.cpp
     A32/test_svc.cpp
     A32/test_thumb_instructions.cpp
     A32/testenv.h
