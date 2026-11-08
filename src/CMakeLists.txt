@@ -7,6 +7,9 @@
 # Enable modules to include each other's files
 include_directories(.)
 
+# Stuff in here may or may not use modules.
+set(CMAKE_CXX_SCAN_FOR_MODULES ON)
+
 # Dynarmic
 if ((ARCHITECTURE_x86_64 OR ARCHITECTURE_arm64 OR ARCHITECTURE_riscv64 OR ARCHITECTURE_loongarch64) AND NOT YUZU_STATIC_ROOM)
     add_subdirectory(dynarmic)
@@ -54,7 +57,7 @@ if (NOT BUILD_ID)
     endif()
 endif()
 
-add_compile_definitions(BUILD_ID="${BUILD_ID}")
+add_compile_definitions(EDEN_BUILD_ID="${BUILD_ID}")
 
 # Set compilation flags
 if (MSVC AND NOT CXX_CLANG)
@@ -153,6 +156,8 @@ else()
             $<$<COMPILE_LANGUAGE:C,CXX>:-pipe>
             # Disable RTTI (C++ only)
             $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>)
+    else()
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:/GR->)
     endif()
 
     if (ENABLE_WERROR)
@@ -169,9 +174,9 @@ else()
             $<$<COMPILE_LANGUAGE:C,CXX>:-Wmissing-declarations>
             $<$<COMPILE_LANGUAGE:C,CXX>:-Wshadow>
             $<$<COMPILE_LANGUAGE:C,CXX>:-Wunused>
-            # Some compilers could particularly misbehave :)
             $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-error-all>)
     endif()
+
     add_compile_options(
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-attributes>
         $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-invalid-offsetof>
@@ -209,7 +214,10 @@ else()
         add_compile_options(
             $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-array-bounds>
             $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-stringop-overread>
-            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-stringop-overflow>)
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-stringop-overflow>
+            # Particularly bugged on GCC 16
+            $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-maybe-uninitialized>
+        )
     endif()
 
     # Set file offset size to 64 bits.
@@ -246,6 +254,49 @@ else()
         set(CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qcTP <TARGET> <LINK_FLAGS> <OBJECTS>")
         set(CMAKE_CXX_ARCHIVE_APPEND "<CMAKE_AR> qTP  <TARGET> <LINK_FLAGS> <OBJECTS>")
     endif()
+endif()
+
+# These externals need their compiler flags to match the rest of the world
+# C++20 modules are sad sometimes
+
+# Jacinth (json)
+AddJsonPackage(jacinth)
+
+# Hydrocarbon (http)
+AddJsonPackage(hydrocarbon)
+
+# Disable rtti, enable fwrapv, link POSIX threads
+macro(fix_modules target type)
+    if (MSVC)
+        set(flags /GR-)
+    else()
+        set(flags -fno-rtti -fwrapv)
+    endif()
+
+    target_link_libraries(${target} ${type} Threads::Threads)
+
+    # apply to imported modules
+    if (type STREQUAL INTERFACE)
+        set_property(TARGET ${target} PROPERTY
+            IMPORTED_CXX_MODULES_COMPILE_OPTIONS ${flags})
+    else()
+        # apply to compile target
+        target_compile_options(${target} ${type} ${flags})
+    endif()
+endmacro()
+
+# enable POSIX threads
+if (jacinth_ADDED)
+    fix_modules(jacinth PRIVATE)
+else()
+    fix_modules(jacinth::jacinth INTERFACE)
+endif()
+
+# ditto, hydrocarbon
+if (hydrocarbon_ADDED)
+    fix_modules(hydrocarbon PRIVATE)
+else()
+    fix_modules(hydro::carbon INTERFACE)
 endif()
 
 add_subdirectory(common)

@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // import android.annotation.SuppressLint
-import com.android.build.gradle.api.ApplicationVariant
 import kotlin.collections.setOf
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 import com.github.triplet.gradle.androidpublisher.ReleaseStatus
@@ -36,7 +35,7 @@ android {
     namespace = "org.yuzu.yuzu_emu"
 
     compileSdkVersion = "android-36"
-    ndkVersion = "28.2.13676358"
+    ndkVersion = "30.0.16248370"
 
     val isNightly =
         providers.gradleProperty("nightly").orNull?.toBooleanStrictOrNull() ?: false
@@ -81,7 +80,6 @@ android {
                         "-DENABLE_QT=0", // Don't use QT
                         "-DENABLE_WEB_SERVICE=1", // Enable web service
                         "-DANDROID_ARM_NEON=true", // cryptopp requires Neon to work
-                        "-DYUZU_USE_CPM=ON",
                         "-DCPMUTIL_FORCE_BUNDLED=ON",
                         "-DYUZU_USE_BUNDLED_FFMPEG=ON",
                         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
@@ -153,6 +151,7 @@ android {
         // builds a release build that doesn't need signing
         // Attaches 'debug' suffix to version and package name, allowing installation alongside the release build.
         register("relWithDebInfo") {
+            manifestPlaceholders += mapOf("appNameSuffix" to " Debug Release")
             isDefault = true
             signingConfig = signingConfigs.getByName("default")
             isDebuggable = true
@@ -160,8 +159,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-
-            manifestPlaceholders += mapOf("appNameSuffix" to " Debug Release")
 
             versionNameSuffix = "-relWithDebInfo"
             applicationIdSuffix = ".relWithDebInfo"
@@ -171,13 +168,12 @@ android {
         // Signed by debug key disallowing distribution on Play Store.
         // Attaches 'debug' suffix to version and package name, allowing installation alongside the release build.
         debug {
+            manifestPlaceholders += mapOf("appNameSuffix" to " Debug")
             signingConfig = signingConfigs.getByName("default")
             isDebuggable = true
             isJniDebuggable = true
             versionNameSuffix = "-debug"
             applicationIdSuffix = ".debug"
-
-            manifestPlaceholders += mapOf("appNameSuffix" to " Debug")
         }
     }
 
@@ -186,11 +182,11 @@ android {
     flavorDimensions.add("version")
     productFlavors {
         create("mainline") {
+            manifestPlaceholders += mapOf("appNameBase" to "Eden")
             dimension = "version"
             isDefault = true
             minSdk = 33
 
-            manifestPlaceholders += mapOf("appNameBase" to "Eden")
             resValue("string", "app_name_suffixed", "Eden")
 
             ndk {
@@ -199,9 +195,9 @@ android {
         }
 
         create("genshinSpoof") {
+            manifestPlaceholders += mapOf("appNameBase" to "Eden Optimized")
             dimension = "version"
             minSdk = 35
-            manifestPlaceholders += mapOf("appNameBase" to "Eden Optimized")
             resValue("string", "app_name_suffixed", "Eden Optimized")
             applicationId = "com.miHoYo.Yuanshen"
 
@@ -217,9 +213,9 @@ android {
         }
 
         create("legacy") {
+            manifestPlaceholders += mapOf("appNameBase" to "Eden Legacy")
             dimension = "version"
             minSdk = 29
-            manifestPlaceholders += mapOf("appNameBase" to "Eden Legacy")
             resValue("string", "app_name_suffixed", "Eden Legacy")
             applicationId = "dev.legacy.eden_emulator"
 
@@ -241,8 +237,8 @@ android {
         }
 
         create("chromeOS") {
-            dimension = "version"
             manifestPlaceholders += mapOf("appNameBase" to "Eden ChromeOS")
+            dimension = "version"
             resValue("string", "app_name_suffixed", "Eden ChromeOS")
 
             ndk {
@@ -259,7 +255,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            version = "3.31.5"
+            version = "3.31.6"
             path = file("${edenDir}/CMakeLists.txt")
         }
     }

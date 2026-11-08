@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "common/net/net.h"
-#include "common/scm_rev.h"
 #include "core/hle/service/bcat/news/builtin_news.h"
 #include "core/hle/service/bcat/news/msgpack.h"
 #include "core/hle/service/bcat/news/news_storage.h"
@@ -14,12 +13,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/regex.hpp>
 #include <boost/regex/v5/regex_replace.hpp>
-#include <fmt/format.h>
-#include <nlohmann/json.hpp>
 
-#include "common/httplib.h"
-
-#include <chrono>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -27,10 +21,6 @@
 #include <mutex>
 #include <optional>
 #include <thread>
-
-#ifdef YUZU_BUNDLED_OPENSSL
-#include <openssl/cert.h>
-#endif
 
 namespace Service::News {
 namespace {
@@ -55,7 +45,7 @@ std::filesystem::path GetDefaultLogoPath(bool large) {
 }
 
 std::filesystem::path GetNewsImagePath(std::string_view news_id, bool large) {
-    const std::string filename = fmt::format("{}_{}.jpg", news_id, large ? "large" : "small");
+    const std::string filename = std::format("{}_{}.jpg", news_id, large ? "large" : "small");
     return Common::FS::GetEdenPath(Common::FS::EdenPath::CacheDir) / "news" / "images" / filename;
 }
 
@@ -81,24 +71,16 @@ std::vector<u8> TryLoadFromDisk(const std::filesystem::path& path) {
 
 // TODO(crueter): Migrate to use Common::Net
 std::vector<u8> DownloadImage(const std::string& url_path, const std::filesystem::path& cache_path) {
+    const auto url = std::format("https://eden-emu.dev{}", url_path);
     LOG_DEBUG(Service_BCAT, "Downloading image: https://eden-emu.dev{}", url_path);
     try {
-        httplib::Client cli("https://eden-emu.dev");
-        cli.set_follow_location(true);
-        cli.set_connection_timeout(std::chrono::seconds(2));
-        cli.set_read_timeout(std::chrono::seconds(2));
-
-#ifdef YUZU_BUNDLED_OPENSSL
-        cli.load_ca_cert_store(kCert, sizeof(kCert));
-#endif
-
-        if (auto res = cli.Get(url_path); res && res->status == 200 && !res->body.empty()) {
-            std::vector<u8> data(res->body.begin(), res->body.end());
+        if (auto body = Common::Net::MakeRequest(url)) {
+            std::vector<u8> data(body->begin(), body->end());
 
             std::error_code ec;
             std::filesystem::create_directories(cache_path.parent_path(), ec);
             if (std::ofstream out(cache_path, std::ios::binary); out) {
-                out.write(res->body.data(), static_cast<std::streamsize>(res->body.size()));
+                out.write(body->data(), static_cast<std::streamsize>(body->size()));
             }
             return data;
         }
@@ -141,7 +123,7 @@ std::vector<u8> GetNewsImage(std::string_view news_id, bool large) {
     auto data = TryLoadFromDisk(cache_path);
 
     if (data.empty()) {
-        const std::string url = fmt::format("/news/{}_{}.jpg", id_str, large ? "large" : "small");
+        const std::string url = std::format("/news/{}_{}.jpg", id_str, large ? "large" : "small");
         data = DownloadImage(url, cache_path);
     }
 
@@ -163,7 +145,7 @@ void PreloadNewsImages(const std::vector<u32>& news_ids) {
     futures.reserve(news_ids.size() * 2);
 
     for (const u32 id : news_ids) {
-        const std::string id_str = fmt::format("{}", id);
+        const std::string id_str = std::format("{}", id);
 
         {
             std::lock_guard lock{images_mutex};
@@ -292,24 +274,47 @@ std::string FormatBody(std::string body, const std::string_view &title) {
     return body;
 }
 
+static inline u64 ParseIsoTimestamp(const std::string& iso) {
+    if (iso.empty())
+        return 0;
+
+    std::string buf = iso;
+    if (buf.back() == 'Z')
+        buf.pop_back();
+
+    std::tm tm{};
+    std::istringstream ss(buf);
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+    if (ss.fail())
+        return 0;
+
+#ifdef _WIN32
+    return static_cast<u64>(_mkgmtime(&tm));
+#else
+    return static_cast<u64>(timegm(&tm));
+#endif
+}
+
 void ImportReleases(const std::vector<Common::Net::Release> &releases) {
     std::vector<u32> news_ids;
     for (const auto& rel : releases) {
-        const u32 news_id = u32(rel.id & 0x7FFFFFFF);
+        std::hash<std::string> hash;
+        const u32 news_id = u32(hash(rel.name) & 0x7FFFFFFF);
         news_ids.push_back(news_id);
     }
 
     PreloadNewsImages(news_ids);
 
     for (const auto& rel : releases) {
-        const std::string title = rel.title;
+        const std::string title = rel.name;
         const std::string body = rel.body;
         const std::string html_url = rel.html_url;
 
-        const u32 news_id = u32(rel.id & 0x7FFFFFFF);
-        const u64 published = rel.published;
+        std::hash<std::string> hash;
+        const u32 news_id = u32(hash(rel.name) & 0x7FFFFFFF);
+        const u64 published = rel.published_at ? ParseIsoTimestamp(rel.published_at.value()) : 0;
         const u64 pickup_limit = published + 600000000;
-        const u32 priority = rel.prerelease ? 1500 : 2500;
+        const u32 priority = 2500;
 
         std::string author = "Eden";
 
@@ -317,7 +322,7 @@ void ImportReleases(const std::vector<Common::Net::Release> &releases) {
                                     pickup_limit, priority, {"en"}, author, {},
                                     html_url, news_id);
 
-        const std::string news_id_str = fmt::format("LA{:020}", rel.id);
+        const std::string news_id_str = std::format("LA{:020}", news_id);
 
         GithubNewsMeta meta{
             .news_id = news_id_str,
@@ -352,7 +357,7 @@ std::vector<u8> BuildMsgpack(std::string_view title, std::string_view body,
     MsgPack::Writer w;
 
     const u32 news_id = override_id.value_or(HashToNewsId(title.empty() ? "eden" : title));
-    const std::string news_id_str = fmt::format("{}", news_id);
+    const std::string news_id_str = std::format("{}", news_id);
 
     const auto img_small = GetNewsImage(news_id_str, false);
     const auto img_large = GetNewsImage(news_id_str, true);
@@ -462,8 +467,8 @@ void EnsureBuiltinNewsLoaded() {
         LoadDefaultLogos();
 
         if (const auto cached = ReadCachedJson()) {
-            const std::string_view body = cached.value();
-            const auto releases = Common::Net::Release::ListFromJson(body, Common::g_build_auto_update_stable_api, Common::g_build_auto_update_stable_repo);
+            const std::string body = cached.value();
+            const auto releases = Common::Net::GetReleasesFromJson(body);
             ImportReleases(releases);
 
             LOG_INFO(Service_BCAT, "news: {} entries loaded from cache", NewsStorage::Instance().ListAll().size());
@@ -471,9 +476,9 @@ void EnsureBuiltinNewsLoaded() {
 
         std::thread([] {
             if (const auto fresh = Common::Net::GetReleasesBody()) {
-                const std::string_view body = fresh.value();
+                const std::string body = fresh.value();
                 WriteCachedJson(body);
-                const auto releases = Common::Net::Release::ListFromJson(body, Common::g_build_auto_update_stable_api, Common::g_build_auto_update_stable_repo);
+                const auto releases = Common::Net::GetReleasesFromJson(body);
                 ImportReleases(releases);
 
                 LOG_INFO(Service_BCAT, "news: {} entries updated from Forgejo", NewsStorage::Instance().ListAll().size());

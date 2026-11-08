@@ -285,6 +285,14 @@ void Init(QWidget* root) {
             "Platform backend is set to Wayland, which may cause performance/stability issues");
 }
 
+void Shutdown() {
+    emu_thread.reset();
+    system.reset();
+    provider.reset();
+    vfs.reset();
+    rootObject = nullptr;
+}
+
 std::filesystem::path GetEdenCommand() {
     std::filesystem::path command;
 

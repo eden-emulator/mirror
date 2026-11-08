@@ -12,6 +12,7 @@
 #include "common/common_funcs.h"
 #include "common/common_types.h"
 #include "hid_core/hid_types.h"
+#include <vector>
 
 namespace Core::HID {
 class EmulatedController;

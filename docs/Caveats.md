@@ -1,17 +1,19 @@
 # Caveats
 
 <!-- TOC -->
-- [Arch Linux](#arch-linux)
-- [Gentoo Linux](#gentoo-linux)
-- [macOS](#macos)
-- [OpenIndiana](#openindiana)
-- [OmniOS](#omnios)
-- [HaikuOS](#haikuos)
-- [OpenBSD](#openbsd)
-- [FreeBSD](#freebsd)
-- [NetBSD](#netbsd)
-- [MSYS2](#msys2)
-- [RedoxOS](#redoxos)
+- [Caveats](#caveats)
+  - [Arch Linux](#arch-linux)
+  - [Gentoo Linux](#gentoo-linux)
+  - [macOS](#macos)
+  - [OpenIndiana](#openindiana)
+  - [OmniOS](#omnios)
+  - [HaikuOS](#haikuos)
+  - [OpenBSD](#openbsd)
+  - [FreeBSD](#freebsd)
+  - [NetBSD](#netbsd)
+  - [DragonFlyBSD](#dragonflybsd)
+  - [MSYS2](#msys2)
+  - [RedoxOS](#redoxos)
 <!-- /TOC -->
 
 ## Arch Linux
@@ -186,12 +188,12 @@ If build hangs, use `hammer2 bulkfree`.
 
 ## MSYS2
 
-Only the `MINGW64` environment is tested (or `CLANGARM64` on ARM); however, all of the others should work (in theory) sans `MINGW32`.
+Only the `UCRT64` and `CLANGARM64` environments are tested. You are recommended to use `-DYUZU_USE_BUNDLED_QT=ON` and `-DYUZU_STATIC_BUILD=ON`.
 
 When packaging an MSYS2 build that is NOT fully static, you will need to copy all dependent DLLs recursively alongside the `windeployqt6`; for example:
 
 ```sh
-# MSYS_TOOLCHAIN is typically just mingw64
+# MSYS_TOOLCHAIN is typically just ucrt64
 # since Windows is case-insensitive, you can set this to $MSYSTEM
 # or, if cross-compiling from Linux, set it to usr/x86_64-w64-mingw32
 export PATH="/${MSYS_TOOLCHAIN}/bin:$PATH"

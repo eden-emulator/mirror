@@ -5,11 +5,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
+#include <chrono>
+#include <format>
 #include <mutex>
 #include <string>
-
-#include <fmt/ranges.h>
-#include "common/httplib.h"
+#include <utility>
 
 #ifdef YUZU_BUNDLED_OPENSSL
 #include <openssl/cert.h>
@@ -19,11 +19,11 @@
 #include "web_service/web_backend.h"
 #include "web_service/web_result.h"
 
+import hydrocarbon;
+
 namespace WebService {
 
 constexpr std::array<const char, 1> API_VERSION{'1'};
-
-constexpr std::size_t TIMEOUT_SECONDS = 30;
 
 struct Client::Impl {
     Impl(std::string host_, std::string username_, std::string token_)
@@ -72,72 +72,53 @@ struct Client::Impl {
                              const std::string& data, const std::string& accept,
                              const std::string& jwt_ = "", const std::string& username_ = "",
                              const std::string& token_ = "") {
-        if (cli == nullptr) {
-            cli = std::make_unique<httplib::Client>(host.c_str());
-            cli->set_connection_timeout(TIMEOUT_SECONDS);
-            cli->set_read_timeout(TIMEOUT_SECONDS);
-            cli->set_write_timeout(TIMEOUT_SECONDS);
+        hydro::RequestOptions opts;
 #ifdef YUZU_BUNDLED_OPENSSL
-            cli->load_ca_cert_store(kCert, sizeof(kCert));
+        opts.connect.cert = std::string{kCert};
 #endif
-        }
-        if (!cli->is_valid()) {
-            LOG_ERROR(WebService, "Invalid URL {}", host + path);
-            return WebResult{WebResult::Code::InvalidURL, "Invalid URL", ""};
-        }
 
-        httplib::Headers params;
+        opts.connect.connectionTimeout = std::chrono::milliseconds{10000};
+
         if (!jwt_.empty()) {
-            params = {
-                {std::string("Authorization"), fmt::format("Bearer {}", jwt_)},
-            };
+            opts.headers.add("Authorization", std::format("Bearer {}", jwt_));
         } else if (!username_.empty()) {
-            params = {
-                {std::string("x-username"), username_},
-                {std::string("x-token"), token_},
-            };
+            opts.headers.add("x-username", username_);
+            opts.headers.add("x-token", token_);
         }
 
-        params.emplace(std::string("api-version"),
-                       std::string(API_VERSION.begin(), API_VERSION.end()));
+        opts.headers.add("api-version", std::string(API_VERSION.begin(), API_VERSION.end()));
         if (method != "GET") {
-            params.emplace(std::string("Content-Type"), std::string("application/json"));
+            opts.headers.add("Content-Type", "application/json");
         }
 
-        httplib::Request request;
-        request.method = method;
-        request.path = path;
-        request.headers = params;
-        request.body = data;
+        opts.body = data;
 
-        httplib::Result result = cli->send(request);
+        auto res = hydro::post(std::format("{}{}", host, path), opts);
 
-        if (!result) {
-            LOG_ERROR(WebService, "{} to {} returned null", method, host + path);
+        if (!res) {
+            LOG_ERROR(WebService, "{} to {} returned error {}", method, host + path, res.error());
             return WebResult{WebResult::Code::LibError, "Null response", ""};
         }
 
-        httplib::Response response = result.value();
-
-        if (response.status >= 400) {
+        if (res->status_code >= hydro::Status::BadRequest) {
             LOG_ERROR(WebService, "{} to {} returned error status code: {}", method, host + path,
-                      response.status);
-            return WebResult{WebResult::Code::HttpError, std::to_string(response.status), ""};
+                      std::to_underlying(res->status_code));
+            return WebResult{WebResult::Code::HttpError, std::to_string(std::to_underlying(res->status_code)), ""};
         }
 
-        auto content_type = response.headers.find("content-type");
+        auto content_type = res->headers.get("content-type");
 
-        if (content_type == response.headers.end()) {
+        if (!content_type) {
             LOG_ERROR(WebService, "{} to {} returned no content", method, host + path);
             return WebResult{WebResult::Code::WrongContent, "", ""};
         }
 
-        if (content_type->second.find(accept) == std::string::npos) {
+        if (content_type->find(accept) == std::string::npos) {
             LOG_ERROR(WebService, "{} to {} returned wrong content: {}", method, host + path,
-                      content_type->second);
+                      content_type.value());
             return WebResult{WebResult::Code::WrongContent, "Wrong content", ""};
         }
-        return WebResult{WebResult::Code::Success, "", response.body};
+        return WebResult{WebResult::Code::Success, "", res->body};
     }
 
     // Retrieve a new JWT from given username and token
@@ -161,7 +142,6 @@ struct Client::Impl {
     std::string username;
     std::string token;
     std::string jwt;
-    std::unique_ptr<httplib::Client> cli;
 
     struct JWTCache {
         std::mutex mutex;
@@ -199,7 +179,7 @@ WebResult Client::GetImage(const std::string& path, bool allow_anonymous) {
 }
 
 WebResult Client::GetExternalJWT(const std::string& audience) {
-    return impl->GenericRequest("POST", fmt::format("/jwt/external/{}", audience), "", false,
+    return impl->GenericRequest("POST", std::format("/jwt/external/{}", audience), "", false,
                                 "text/html");
 }
 

@@ -3,12 +3,13 @@
 ## Dependencies
 
 * [Android Studio](https://developer.android.com/studio)
-* [NDK 27+ and CMake 3.22.1](https://developer.android.com/studio/projects/install-ndk#default-version)
+* [NDK 30+ and CMake 3.31.6](https://developer.android.com/studio/projects/install-ndk#default-version)
+  * `$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "cmake;3.31.6" "ndk;30.0.16138531"`
 * [Git](https://git-scm.com/download)
 
 ## WINDOWS ONLY - Additional Dependencies
 
-* **[Visual Studio 2022 Community](https://visualstudio.microsoft.com/downloads/)** - **Make sure to select "Desktop development with C++" support in the installer. Make sure to update to the latest version if already installed.**
+* **[Visual Studio](https://visualstudio.microsoft.com/downloads/)** - **Make sure to select "Desktop development with C++" support in the installer. Make sure to update to the latest version if already installed.**
 * **[Vulkan SDK](https://vulkan.lunarg.com/sdk/home#windows)** - **Make sure to select Latest SDK.**
   * A convenience script to install the latest SDK is provided in `.ci\windows\install-vulkan-sdk.ps1`.
 

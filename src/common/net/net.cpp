@@ -2,27 +2,35 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <optional>
+#include <utility>
+
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-#include <fmt/format.h>
 #include "common/scm_rev.h"
 #include "net.h"
 
 #include "common/logging.h"
 
-#include "common/httplib.h"
-
 #ifdef YUZU_BUNDLED_OPENSSL
 #include <openssl/cert.h>
 #endif
 
-#define QT_TR_NOOP(x) x
+#ifdef _WIN32
+#include <filesystem>
+#include "common/fs/path_util.h"
+#endif
+
+import jacinth;
+import hydrocarbon;
 
 namespace Common::Net {
 
-std::vector<Asset> Release::GetPlatformAssets() const {
+// static constexpr auto DefaultTimeout = std::chrono::seconds{30};
+static constexpr auto DefaultConnectTimeout = std::chrono::milliseconds{10000};
+
+std::vector<NamedAsset> GetPlatformAssets(const Release& r) {
     // TODO(crueter): Need better handling for this as a whole.
 #ifdef NIGHTLY_BUILD
     std::vector<std::string> result;
@@ -31,46 +39,48 @@ std::vector<Asset> Release::GetPlatformAssets() const {
         return {};
     const auto ref = result.at(1);
 #else
-    const auto ref = tag;
+    const auto ref = r.tag_name;
 #endif
 
-    std::vector<Asset> found_assets;
+    std::vector<NamedAsset> found_assets;
 
-    // FIXME: This is mildly inefficient.
-    // Finds assets based on a hierarchy of regex search strings.
-    const auto find_asset = [&found_assets, ref, this](const std::string& name,
-                                                       const std::vector<std::string>& suffixes) {
-        for (const std::string& asset : assets) {
-            for (const auto& suffix : suffixes) {
-                if (asset.ends_with(suffix)) {
-                    const std::string_view asset_sv = asset;
-                    const size_t pos = asset_sv.find_last_of('/');
-                    const std::string_view filename =
-                        (pos != std::string_view::npos) ? asset_sv.substr(pos + 1) : asset_sv;
-
-                    found_assets.emplace_back(Asset{
-                        .name = name,
-                        .url = host,
-                        .path = asset,
-                        .filename = std::string{filename},
+    [[maybe_unused]] const auto find_asset =
+        [&r, &found_assets](const std::string& name, const std::vector<std::string>& suffixes) {
+            const auto& assets = r.assets;
+            for (const auto& s : suffixes) {
+                const auto it = std::ranges::find_if(
+                    assets, [&s](const Asset& a) -> bool {
+                        return a.name.ends_with(s);
                     });
-                    return;
+
+                if (it != assets.end()) {
+                    auto asset = Asset(*it);
+                    found_assets.emplace_back(NamedAsset{.name = name, .asset = asset});
                 }
             }
-        }
-    };
+        };
 
 #ifdef _WIN32
+    // system.txt is (will be) installed in the same directory as the installed executable
+    const std::filesystem::path cwd = Common::FS::GetExeDirectory();
+    const auto is_system = std::filesystem::exists(cwd / "system.txt");
+    std::string ext;
+    if (is_system) {
+        ext = "exe";
+    } else {
+        ext = "zip";
+    }
+
 #ifdef ARCHITECTURE_x86_64
 #ifdef _MSC_VER
-    find_asset("Standard", {"amd64-msvc-standard.exe", "amd64-msvc-standard.zip"});
-#else // _MSC_VER
-    find_asset("Standard", {BUILD_ID "-gcc-standard.exe", BUILD_ID "-gcc-standard.zip"});
-    find_asset("PGO", {BUILD_ID "-clang-pgo.exe", BUILD_ID "-clang-pgo.zip"});
+    find_asset("Standard", {std::format("amd64-msvc-standard.{}", ext)});
+#else  // _MSC_VER
+    find_asset("Standard", {std::format(EDEN_BUILD_ID "-gcc-standard.{}", ext)});
+    find_asset("PGO", {std::format(EDEN_BUILD_ID "-clang-pgo.{}", ext)});
 #endif // _MSC_VER
 #elif defined(ARCHITECTURE_arm64)
-    find_asset("Standard", {"arm64-clang-standard.exe", "arm64-clang-standard.zip"});
-    find_asset("PGO", {"arm64-clang-pgo.exe", "arm64-clang-pgo.zip"});
+    find_asset("Standard", {std::format("arm64-clang-standard.{}", ext)});
+    find_asset("PGO", {std::format("arm64-clang-pgo.{}", ext)});
 #endif // ARCHITECTURE_arm64
 #elif defined(__APPLE__)
 #ifdef ARCHITECTURE_arm64
@@ -93,164 +103,29 @@ std::vector<Asset> Release::GetPlatformAssets() const {
     return found_assets;
 }
 
-static inline u64 ParseIsoTimestamp(const std::string& iso) {
-    if (iso.empty())
-        return 0;
-
-    std::string buf = iso;
-    if (buf.back() == 'Z')
-        buf.pop_back();
-
-    std::tm tm{};
-    std::istringstream ss(buf);
-    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
-    if (ss.fail())
-        return 0;
-
-#ifdef _WIN32
-    return static_cast<u64>(_mkgmtime(&tm));
-#else
-    return static_cast<u64>(timegm(&tm));
-#endif
-}
-
-std::optional<Release> Release::FromJson(const nlohmann::json& json, const std::string& host,
-                                         const std::string& repo) {
-    Release rel;
-    if (!json.is_object())
-        return std::nullopt;
-
-    rel.tag = json.value("tag_name", std::string{});
-    if (rel.tag.empty())
-        return std::nullopt;
-
-    rel.title = json.value("name", rel.tag);
-    rel.id = json.value("id", std::hash<std::string>{}(rel.title));
-
-    rel.published = ParseIsoTimestamp(json.value("published_at", std::string{}));
-    rel.prerelease = json.value("prerelease", false);
-
-    auto body = json.value("body", rel.title);
-    boost::replace_all(body, "\\r", "");
-    boost::replace_all(body, "\\n", "\n");
-    rel.body = body;
-
-    rel.host = host;
-
-    const auto release_base =
-        fmt::format("{}/{}/releases", Common::g_build_auto_update_website, repo);
-    const auto fallback_html = fmt::format("{}/tag/{}", release_base, rel.tag);
-    rel.html_url = json.value("html_url", fallback_html);
-
-    // This is our own "fake" API.
-    if (json.contains("base")) {
-        const auto base = json.value("base", fmt::format("https://{}", Common::g_build_auto_update_api));
-        rel.base_download_url = fmt::format("{}/{}", base, rel.tag);
-
-        // Assets are easy :)
-        rel.assets = json.value("assets", std::vector<std::string>{});
-    } else {
-        const auto base_download_url = fmt::format("/{}/releases/download/{}", repo, rel.tag);
-
-        rel.base_download_url = base_download_url;
-
-        // assets are a bit more complex here. :(
-        std::vector<std::string> assets;
-        const nlohmann::json& arr = json["assets"];
-        for (const auto &obj : arr) {
-            const auto url = obj.value("browser_download_url", std::string{});
-            assets.emplace_back(url);
-        }
-
-        rel.assets = assets;
-    }
-
-    return rel;
-}
-
-std::optional<Release> Release::FromJson(const std::string_view& json, const std::string& host,
-                                         const std::string& repo) {
-    try {
-        return FromJson(nlohmann::json::parse(json), host, repo);
-    } catch (std::exception& e) {
-        LOG_WARNING(Common, "Failed to parse JSON: {}", e.what());
-    }
-
-    return {};
-}
-
-std::vector<Release> Release::ListFromJson(const nlohmann::json& json, const std::string& host,
-                                           const std::string& repo) {
-    if (!json.is_array())
-        return {};
-
-    std::vector<Release> releases;
-    for (const auto& obj : json) {
-        auto rel = Release::FromJson(obj, host, repo);
-        if (rel)
-            releases.emplace_back(rel.value());
-    }
-    return releases;
-}
-
-std::vector<Release> Release::ListFromJson(const std::string_view& json, const std::string& host,
-                                           const std::string& repo) {
-    try {
-        return ListFromJson(nlohmann::json::parse(json), host, repo);
-    } catch (std::exception& e) {
-        LOG_WARNING(Common, "Failed to parse JSON: {}", e.what());
-    }
-
-    return {};
-}
-
-std::optional<std::string> MakeRequest(const std::string& url, const std::string& path) {
-    try {
-        constexpr std::size_t timeout_seconds = 15;
-
-        std::unique_ptr<httplib::Client> client = std::make_unique<httplib::Client>(url);
-        client->set_connection_timeout(timeout_seconds);
-        client->set_read_timeout(timeout_seconds);
-        client->set_write_timeout(timeout_seconds);
-
+std::optional<std::string> MakeRequest(const std::string& url) {
+    hydro::RequestOptions opts;
 #ifdef YUZU_BUNDLED_OPENSSL
-        client->load_ca_cert_store(kCert, sizeof(kCert));
+    opts.connect.cert = std::string{kCert};
 #endif
 
-        if (client == nullptr) {
-            LOG_ERROR(Common, "Invalid URL {}{}", url, path);
-            return {};
-        }
+    opts.connect.connectionTimeout = DefaultConnectTimeout;
 
-        httplib::Request request{
-            .method = "GET",
-            .path = path,
-        };
+    auto res = hydro::get(url, opts);
 
-        client->set_follow_location(true);
-        httplib::Result result = client->send(request);
-
-        if (!result) {
-            LOG_ERROR(Common, "GET to {}{} returned null", url, path);
-            return {};
-        }
-
-        const auto& response = result.value();
-        if (response.status >= 400) {
-            LOG_ERROR(Common, "GET to {}{} returned error status code: {}", url, path,
-                      response.status);
-            return {};
-        }
-        if (!response.has_header("content-type")) {
-            LOG_ERROR(Common, "GET to {}{} returned no content", url, path);
-            return {};
-        }
-
-        return response.body;
-    } catch (std::exception& e) {
-        LOG_ERROR(Common, "GET to {}{} failed during update check: {}", url, path, e.what());
+    if (!res) {
+        LOG_ERROR(Frontend, "Failed to download {}: {}", url, res.error());
+        return std::nullopt;
+    } else if (res->status_code < hydro::Status::Ok || res->status_code >= hydro::Status::MultipleChoices) {
+        LOG_ERROR(Frontend, "Received status code {} for {}", std::to_underlying(res->status_code), url);
         return std::nullopt;
     }
+
+    return res->body;
+}
+
+std::optional<std::string> MakeRequest(const std::string_view url) {
+    return MakeRequest(std::string(url));
 }
 
 std::vector<Release> GetReleases() {
@@ -261,32 +136,70 @@ std::vector<Release> GetReleases() {
         return {};
     }
 
-    const std::string_view body_str = body.value();
-    const auto url = fmt::format("https://{}", Common::g_build_auto_update_stable_api);
-    return Release::ListFromJson(body_str, url, Common::g_build_auto_update_stable_repo);
+    return GetReleasesFromJson(body.value());
 }
 
 std::optional<Release> GetLatestRelease() {
-    const auto releases_path =  Common::g_build_auto_update_api_path;
-    const auto url = fmt::format("https://{}", Common::g_build_auto_update_api);
+    const auto releases_path = Common::g_build_auto_update_api_path;
+    const auto url = std::format("https://{}{}", std::string{Common::g_build_auto_update_api}, releases_path);
 
-    const auto body = MakeRequest(url, releases_path);
+    const auto body = MakeRequest(url);
     if (!body) {
         LOG_WARNING(Common, "Failed to get latest release");
         return std::nullopt;
     }
 
     const std::string_view body_str = body.value();
-    return Release::FromJson(body_str, url, Common::g_build_auto_update_repo);
+    auto ec = jacinth::doc::try_read<Release>(body_str);
+
+    if (!ec) {
+        LOG_CRITICAL(Common, "Failed to parse latest release: {}", ec.error().message());
+        return std::nullopt;
+    }
+
+    return ec.value();
 }
 
 std::optional<std::string> GetReleasesBody() {
     const auto releases_path =
-        fmt::format("/{}/{}/releases", Common::g_build_auto_update_stable_api_path,
-                    Common::g_build_auto_update_stable_repo);
-    const auto url = fmt::format("https://{}", Common::g_build_auto_update_stable_api);
+        std::format("/{}/{}/releases", std::string{Common::g_build_auto_update_stable_api_path},
+                    std::string{Common::g_build_auto_update_stable_repo});
+    const auto url = std::format("https://{}{}", std::string{Common::g_build_auto_update_stable_api}, releases_path);
 
-    return MakeRequest(url, releases_path);
+    return MakeRequest(url);
+}
+
+std::vector<Release> GetReleasesFromJson(const std::string& body) {
+    auto ec = jacinth::doc::try_read<std::vector<Release>>(body);
+
+    if (!ec) {
+        LOG_CRITICAL(Common, "Release JSON parse error: {}", ec.error().message());
+        return {};
+    }
+
+    return ec.value();
+}
+
+bool HeadRequest(const std::string& url) {
+    // TODO: add timeouts
+    hydro::RequestOptions opts;
+#ifdef YUZU_BUNDLED_OPENSSL
+    opts.connect.cert = std::string{kCert};
+#endif
+
+    opts.connect.connectionTimeout = DefaultConnectTimeout;
+
+    auto res = hydro::head(url, opts);
+
+    if (!res) {
+        LOG_ERROR(Frontend, "Failed to download {}: {}", url, res.error());
+        return false;
+    } else if (res->status_code < hydro::Status::Ok || res->status_code >= hydro::Status::MultipleChoices) {
+        LOG_ERROR(Frontend, "Received status code {} for {}", std::to_underlying(res->status_code), url);
+        return false;
+    }
+
+    return true;
 }
 
 } // namespace Common::Net

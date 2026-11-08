@@ -264,6 +264,7 @@ function(get_latest_tag out)
         # same as above
         string(REGEX REPLACE "[^0-9.-]" "" numeric_tag "${tag_name}")
         string(REGEX REPLACE "-$|^-" "" numeric_tag "${numeric_tag}")
+        string(REGEX REPLACE "_" "." numeric_tag "${numeric_tag}")
 
         if (numeric_tag VERSION_GREATER_EQUAL greatest_version_numeric)
             set(greatest_version_numeric ${numeric_tag})

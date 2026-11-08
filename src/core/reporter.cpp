@@ -5,12 +5,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <ctime>
+#include <format>
 #include <fstream>
 #include <iomanip>
-
-#include <fmt/chrono.h>
-#include <fmt/ranges.h>
-#include <nlohmann/json.hpp>
+#include <map>
+#include <ranges>
+#include <vector>
 
 #include "common/fs/file.h"
 #include "common/fs/fs.h"
@@ -18,21 +18,133 @@
 #include "common/hex_util.h"
 #include "common/scm_rev.h"
 #include "common/settings.h"
-#include "core/arm/arm_interface.h"
 #include "core/core.h"
 #include "core/hle/ipc.h"
-#include "core/hle/kernel/k_page_table.h"
-#include "core/hle/kernel/k_process.h"
 #include "core/hle/result.h"
 #include "core/hle/service/hle_ipc.h"
 #include "core/memory.h"
 #include "core/reporter.h"
 
+import jacinth;
+
+struct YuzuVersionData {
+    std::string scm_rev;
+    std::string scm_branch;
+    std::string scm_desc;
+    std::string build_name;
+    std::string build_date;
+    std::string build_fullname;
+    std::string build_version;
+};
+
+struct ReportCommonData {
+    std::string title_id;
+    std::string result_raw;
+    std::string result_module;
+    std::string result_description;
+    std::string timestamp;
+    std::optional<std::string> user_id;
+};
+
+struct ProcessorStateData {
+    std::string entry_point;
+    std::string sp;
+    std::string pc;
+    std::string pstate;
+    std::string architecture;
+    std::map<std::string, std::string> registers;
+    std::optional<std::vector<std::string>> backtrace;
+};
+
+struct CrashReport {
+    YuzuVersionData yuzu_version;
+    ReportCommonData report_common;
+    ProcessorStateData processor_state;
+};
+
+struct SvcBreakData {
+    std::string type;
+    std::string signal_debugger;
+    std::string info1;
+    std::string info2;
+    std::optional<std::string> debug_buffer;
+};
+
+struct SvcBreakReport {
+    YuzuVersionData yuzu_version;
+    ReportCommonData report_common;
+    SvcBreakData svc_break;
+};
+
+struct BufferDescriptorEntry {
+    std::string address;
+    std::string size;
+    std::optional<std::string> data;
+};
+
+struct HLERequestContextData {
+    std::vector<std::string> command_buffer;
+    std::vector<BufferDescriptorEntry> buffer_descriptor_a;
+    std::vector<BufferDescriptorEntry> buffer_descriptor_b;
+    std::vector<BufferDescriptorEntry> buffer_descriptor_c;
+    std::vector<BufferDescriptorEntry> buffer_descriptor_x;
+    std::optional<u32> command_id;
+    std::optional<std::string> function_name;
+    std::optional<std::string> service_name;
+};
+
+struct UnimplementedFunctionReport {
+    YuzuVersionData yuzu_version;
+    ReportCommonData report_common;
+    HLERequestContextData function;
+};
+
+struct AppletCommonArgs {
+    std::string applet_id;
+    std::string common_args_version;
+    std::string library_version;
+    std::string theme_color;
+    std::string startup_sound;
+    std::string system_tick;
+};
+
+struct UnimplementedAppletReport {
+    YuzuVersionData yuzu_version;
+    ReportCommonData report_common;
+    AppletCommonArgs applet_common_args;
+    std::vector<std::string> applet_normal_data;
+    std::vector<std::string> applet_interactive_data;
+};
+
+struct PlayReport {
+    YuzuVersionData yuzu_version;
+    ReportCommonData report_common;
+    std::optional<std::string> play_report_process_id;
+    std::string play_report_type;
+    std::vector<std::string> play_report_data;
+};
+
+struct ErrorCustomText {
+    std::string main;
+    std::string detail;
+};
+
+struct ErrorReport {
+    YuzuVersionData yuzu_version;
+    ReportCommonData report_common;
+    ErrorCustomText error_custom_text;
+};
+
+struct FullDataAuto {
+    YuzuVersionData yuzu_version;
+    ReportCommonData report_common;
+};
+
 namespace {
 
 std::filesystem::path GetPath(std::string_view type, u64 title_id, std::string_view timestamp) {
     return Common::FS::GetEdenPath(Common::FS::EdenPath::LogDir) / type /
-           fmt::format("{:016X}_{}.json", title_id, timestamp);
+           std::format("{:016X}_{}.json", title_id, timestamp);
 }
 
 std::string GetTimestamp() {
@@ -42,125 +154,123 @@ std::string GetTimestamp() {
     return oss.str();
 }
 
-using namespace nlohmann;
-
-void SaveToFile(const json& json, const std::filesystem::path& filename) {
+template <typename T>
+void SaveToFile(const T& data, const std::filesystem::path& filename) {
     if (!Common::FS::CreateParentDirs(filename)) {
         LOG_ERROR(Core, "Failed to create path for '{}' to save report!",
                   Common::FS::PathToUTF8String(filename));
         return;
     }
 
+    const auto buffer = jacinth::json::dump(data, {.pretty = true});
+
     std::ofstream file;
     Common::FS::OpenFileStream(file, filename, std::ios_base::out | std::ios_base::trunc);
-
-    file << std::setw(4) << json << std::endl;
+    file << buffer << std::endl;
 }
 
-json GetYuzuVersionData() {
+YuzuVersionData GetYuzuVersionData() {
     return {
-        {"scm_rev", std::string(Common::g_scm_rev)},
-        {"scm_branch", std::string(Common::g_scm_branch)},
-        {"scm_desc", std::string(Common::g_scm_desc)},
-        {"build_name", std::string(Common::g_build_name)},
-        {"build_date", std::string(Common::g_build_date)},
-        {"build_fullname", std::string(Common::g_build_fullname)},
-        {"build_version", std::string(Common::g_build_version)},
+        .scm_rev = std::string(Common::g_scm_rev),
+        .scm_branch = std::string(Common::g_scm_branch),
+        .scm_desc = std::string(Common::g_scm_desc),
+        .build_name = std::string(Common::g_build_name),
+        .build_date = std::string(Common::g_build_date),
+        .build_fullname = std::string(Common::g_build_fullname),
+        .build_version = std::string(Common::g_build_version),
     };
 }
 
-json GetReportCommonData(u64 title_id, Result result, const std::string& timestamp,
-                         std::optional<u128> user_id = {}) {
-    auto out = json{
-        {"title_id", fmt::format("{:016X}", title_id)},
-        {"result_raw", fmt::format("{:08X}", result.raw)},
-        {"result_module", fmt::format("{:08X}", static_cast<u32>(result.GetModule()))},
-        {"result_description", fmt::format("{:08X}", result.GetDescription())},
-        {"timestamp", timestamp},
+ReportCommonData GetReportCommonData(u64 title_id, Result result, const std::string& timestamp,
+                                     std::optional<u128> user_id = {}) {
+    auto out = ReportCommonData{
+        .title_id = std::format("{:016X}", title_id),
+        .result_raw = std::format("{:08X}", result.raw),
+        .result_module = std::format("{:08X}", static_cast<u32>(result.GetModule())),
+        .result_description = std::format("{:08X}", result.GetDescription()),
+        .timestamp = timestamp,
     };
 
     if (user_id.has_value()) {
-        out["user_id"] = fmt::format("{:016X}{:016X}", (*user_id)[1], (*user_id)[0]);
+        out.user_id = std::format("{:016X}{:016X}", (*user_id)[1], (*user_id)[0]);
     }
 
     return out;
 }
 
-json GetProcessorStateData(const std::string& architecture, u64 entry_point, u64 sp, u64 pc,
-                           u64 pstate, const std::array<u64, 31>& registers,
-                           const std::optional<std::array<u64, 32>>& backtrace = {}) {
-    auto out = json{
-        {"entry_point", fmt::format("{:016X}", entry_point)},
-        {"sp", fmt::format("{:016X}", sp)},
-        {"pc", fmt::format("{:016X}", pc)},
-        {"pstate", fmt::format("{:016X}", pstate)},
-        {"architecture", architecture},
-    };
-
-    auto registers_out = json::object();
+ProcessorStateData GetProcessorStateData(const std::string& architecture, u64 entry_point, u64 sp,
+                                         u64 pc, u64 pstate,
+                                         const std::array<u64, 31>& registers,
+                                         const std::optional<std::array<u64, 32>>& backtrace = {}) {
+    std::map<std::string, std::string> registers_out;
     for (std::size_t i = 0; i < registers.size(); ++i) {
-        registers_out[fmt::format("X{:02d}", i)] = fmt::format("{:016X}", registers[i]);
+        registers_out[std::format("X{:02d}", i)] = std::format("{:016X}", registers[i]);
     }
 
-    out["registers"] = std::move(registers_out);
-
+    std::optional<std::vector<std::string>> backtrace_out;
     if (backtrace.has_value()) {
-        auto backtrace_out = json::array();
-        for (const auto& entry : *backtrace) {
-            backtrace_out.push_back(fmt::format("{:016X}", entry));
-        }
-        out["backtrace"] = std::move(backtrace_out);
+        backtrace_out = (*backtrace) | std::ranges::views::transform([](u64 entry) {
+                            return std::format("{:016X}", entry);
+                        }) |
+                        std::ranges::to<std::vector<std::string>>();
     }
 
-    return out;
+    return {
+        .entry_point = std::format("{:016X}", entry_point),
+        .sp = std::format("{:016X}", sp),
+        .pc = std::format("{:016X}", pc),
+        .pstate = std::format("{:016X}", pstate),
+        .architecture = architecture,
+        .registers = std::move(registers_out),
+        .backtrace = std::move(backtrace_out),
+    };
 }
 
-json GetFullDataAuto(const std::string& timestamp, u64 title_id, Core::System& system) {
-    json out;
-
-    out["yuzu_version"] = GetYuzuVersionData();
-    out["report_common"] = GetReportCommonData(title_id, ResultSuccess, timestamp);
-
-    return out;
+FullDataAuto GetFullDataAuto(const std::string& timestamp, u64 title_id, Core::System& system) {
+    return {
+        .yuzu_version = GetYuzuVersionData(),
+        .report_common = GetReportCommonData(title_id, ResultSuccess, timestamp),
+    };
 }
 
 template <bool read_value, typename DescriptorType>
-json GetHLEBufferDescriptorData(const boost::container::static_vector<DescriptorType, IPC::MAX_BUFFER_DESCRIPTORS>& buffer, Core::Memory::Memory& memory) {
-    auto buffer_out = json::array();
+std::vector<BufferDescriptorEntry> GetHLEBufferDescriptorData(
+    const boost::container::static_vector<DescriptorType, IPC::MAX_BUFFER_DESCRIPTORS>& buffer,
+    Core::Memory::Memory& memory) {
+    std::vector<BufferDescriptorEntry> out;
+    out.reserve(buffer.size());
     for (const auto& desc : buffer) {
-        auto entry = json{
-            {"address", fmt::format("{:016X}", desc.Address())},
-            {"size", fmt::format("{:016X}", desc.Size())},
+        BufferDescriptorEntry entry{
+            .address = std::format("{:016X}", desc.Address()),
+            .size = std::format("{:016X}", desc.Size()),
         };
 
         if constexpr (read_value) {
             std::vector<u8> data(desc.Size());
             memory.ReadBlock(desc.Address(), data.data(), desc.Size());
-            entry["data"] = Common::HexToString(data);
+            entry.data = Common::HexToString(data);
         }
 
-        buffer_out.push_back(std::move(entry));
+        out.push_back(std::move(entry));
     }
-
-    return buffer_out;
+    return out;
 }
 
-json GetHLERequestContextData(Service::HLERequestContext& ctx, Core::Memory::Memory& memory) {
-    json out;
-
-    auto cmd_buf = json::array();
+HLERequestContextData GetHLERequestContextData(Service::HLERequestContext& ctx,
+                                               Core::Memory::Memory& memory) {
+    std::vector<std::string> cmd_buf;
+    cmd_buf.reserve(IPC::COMMAND_BUFFER_LENGTH);
     for (std::size_t i = 0; i < IPC::COMMAND_BUFFER_LENGTH; ++i) {
-        cmd_buf.push_back(fmt::format("{:08X}", ctx.CommandBuffer()[i]));
+        cmd_buf.push_back(std::format("{:08X}", ctx.CommandBuffer()[i]));
     }
 
-    out["command_buffer"] = std::move(cmd_buf);
-
-    out["buffer_descriptor_a"] = GetHLEBufferDescriptorData<true>(ctx.BufferDescriptorA(), memory);
-    out["buffer_descriptor_b"] = GetHLEBufferDescriptorData<false>(ctx.BufferDescriptorB(), memory);
-    out["buffer_descriptor_c"] = GetHLEBufferDescriptorData<false>(ctx.BufferDescriptorC(), memory);
-    out["buffer_descriptor_x"] = GetHLEBufferDescriptorData<true>(ctx.BufferDescriptorX(), memory);
-
-    return out;
+    return {
+        .command_buffer = std::move(cmd_buf),
+        .buffer_descriptor_a = GetHLEBufferDescriptorData<true>(ctx.BufferDescriptorA(), memory),
+        .buffer_descriptor_b = GetHLEBufferDescriptorData<false>(ctx.BufferDescriptorB(), memory),
+        .buffer_descriptor_c = GetHLEBufferDescriptorData<false>(ctx.BufferDescriptorC(), memory),
+        .buffer_descriptor_x = GetHLEBufferDescriptorData<true>(ctx.BufferDescriptorX(), memory),
+    };
 }
 
 } // Anonymous namespace
@@ -183,21 +293,21 @@ void Reporter::SaveCrashReport(u64 title_id, Result result, u64 set_flags, u64 e
     }
 
     const auto timestamp = GetTimestamp();
-    json out;
 
-    out["yuzu_version"] = GetYuzuVersionData();
-    out["report_common"] = GetReportCommonData(title_id, result, timestamp);
+    CrashReport out{
+        .yuzu_version = GetYuzuVersionData(),
+        .report_common = GetReportCommonData(title_id, result, timestamp),
+        .processor_state = GetProcessorStateData(arch, entry_point, sp, pc, pstate, registers,
+                                                 backtrace),
+    };
 
-    auto proc_out = GetProcessorStateData(arch, entry_point, sp, pc, pstate, registers, backtrace);
-    proc_out["set_flags"] = fmt::format("{:016X}", set_flags);
-    proc_out["afsr0"] = fmt::format("{:016X}", afsr0);
-    proc_out["afsr1"] = fmt::format("{:016X}", afsr1);
-    proc_out["esr"] = fmt::format("{:016X}", esr);
-    proc_out["far"] = fmt::format("{:016X}", far);
-    proc_out["backtrace_size"] = fmt::format("{:08X}", backtrace_size);
-    proc_out["unknown_10"] = fmt::format("{:08X}", unk10);
-
-    out["processor_state"] = std::move(proc_out);
+    out.processor_state.registers["set_flags"] = std::format("{:016X}", set_flags);
+    out.processor_state.registers["afsr0"] = std::format("{:016X}", afsr0);
+    out.processor_state.registers["afsr1"] = std::format("{:016X}", afsr1);
+    out.processor_state.registers["esr"] = std::format("{:016X}", esr);
+    out.processor_state.registers["far"] = std::format("{:016X}", far);
+    out.processor_state.registers["backtrace_size"] = std::format("{:08X}", backtrace_size);
+    out.processor_state.registers["unknown_10"] = std::format("{:08X}", unk10);
 
     SaveToFile(out, GetPath("crash_report", title_id, timestamp));
 }
@@ -210,20 +320,21 @@ void Reporter::SaveSvcBreakReport(u32 type, bool signal_debugger, u64 info1, u64
 
     const auto timestamp = GetTimestamp();
     const auto title_id = system.GetApplicationProcessProgramID();
-    auto out = GetFullDataAuto(timestamp, title_id, system);
 
-    auto break_out = json{
-        {"type", fmt::format("{:08X}", type)},
-        {"signal_debugger", fmt::format("{}", signal_debugger)},
-        {"info1", fmt::format("{:016X}", info1)},
-        {"info2", fmt::format("{:016X}", info2)},
+    SvcBreakReport out{
+        .yuzu_version = GetYuzuVersionData(),
+        .report_common = GetReportCommonData(title_id, ResultSuccess, timestamp),
+        .svc_break = SvcBreakData{
+            .type = std::format("{:08X}", type),
+            .signal_debugger = std::format("{}", signal_debugger),
+            .info1 = std::format("{:016X}", info1),
+            .info2 = std::format("{:016X}", info2),
+        },
     };
 
     if (resolved_buffer.has_value()) {
-        break_out["debug_buffer"] = Common::HexToString(*resolved_buffer);
+        out.svc_break.debug_buffer = Common::HexToString(*resolved_buffer);
     }
-
-    out["svc_break"] = std::move(break_out);
 
     SaveToFile(out, GetPath("svc_break_report", title_id, timestamp));
 }
@@ -237,14 +348,16 @@ void Reporter::SaveUnimplementedFunctionReport(Service::HLERequestContext& ctx, 
 
     const auto timestamp = GetTimestamp();
     const auto title_id = system.GetApplicationProcessProgramID();
-    auto out = GetFullDataAuto(timestamp, title_id, system);
 
-    auto function_out = GetHLERequestContextData(ctx, ctx.GetMemory());
-    function_out["command_id"] = command_id;
-    function_out["function_name"] = name;
-    function_out["service_name"] = service_name;
+    UnimplementedFunctionReport out{
+        .yuzu_version = GetYuzuVersionData(),
+        .report_common = GetReportCommonData(title_id, ResultSuccess, timestamp),
+        .function = GetHLERequestContextData(ctx, ctx.GetMemory()),
+    };
 
-    out["function"] = std::move(function_out);
+    out.function.command_id = command_id;
+    out.function.function_name = name;
+    out.function.service_name = service_name;
 
     SaveToFile(out, GetPath("unimpl_func_report", title_id, timestamp));
 }
@@ -259,29 +372,30 @@ void Reporter::SaveUnimplementedAppletReport(
 
     const auto timestamp = GetTimestamp();
     const auto title_id = system.GetApplicationProcessProgramID();
-    auto out = GetFullDataAuto(timestamp, title_id, system);
 
-    out["applet_common_args"] = {
-        {"applet_id", fmt::format("{:02X}", applet_id)},
-        {"common_args_version", fmt::format("{:08X}", common_args_version)},
-        {"library_version", fmt::format("{:08X}", library_version)},
-        {"theme_color", fmt::format("{:08X}", theme_color)},
-        {"startup_sound", fmt::format("{}", startup_sound)},
-        {"system_tick", fmt::format("{:016X}", system_tick)},
+    UnimplementedAppletReport out{
+        .yuzu_version = GetYuzuVersionData(),
+        .report_common = GetReportCommonData(title_id, ResultSuccess, timestamp),
+        .applet_common_args = AppletCommonArgs{
+            .applet_id = std::format("{:02X}", applet_id),
+            .common_args_version = std::format("{:08X}", common_args_version),
+            .library_version = std::format("{:08X}", library_version),
+            .theme_color = std::format("{:08X}", theme_color),
+            .startup_sound = std::format("{}", startup_sound),
+            .system_tick = std::format("{:016X}", system_tick),
+        },
     };
 
-    auto normal_out = json::array();
-    for (const auto& data : normal_channel) {
-        normal_out.push_back(Common::HexToString(data));
-    }
+    out.applet_normal_data = normal_channel | std::ranges::views::transform([](const auto& data) {
+                                 return Common::HexToString(data);
+                             }) |
+                             std::ranges::to<std::vector<std::string>>();
 
-    auto interactive_out = json::array();
-    for (const auto& data : interactive_channel) {
-        interactive_out.push_back(Common::HexToString(data));
-    }
-
-    out["applet_normal_data"] = std::move(normal_out);
-    out["applet_interactive_data"] = std::move(interactive_out);
+    out.applet_interactive_data =
+        interactive_channel | std::ranges::views::transform([](const auto& data) {
+            return Common::HexToString(data);
+        }) |
+        std::ranges::to<std::vector<std::string>>();
 
     SaveToFile(out, GetPath("unimpl_applet_report", title_id, timestamp));
 }
@@ -294,22 +408,22 @@ void Reporter::SavePlayReport(PlayReportType type, u64 title_id,
     }
 
     const auto timestamp = GetTimestamp();
-    json out;
 
-    out["yuzu_version"] = GetYuzuVersionData();
-    out["report_common"] = GetReportCommonData(title_id, ResultSuccess, timestamp, user_id);
+    PlayReport out{
+        .yuzu_version = GetYuzuVersionData(),
+        .report_common = GetReportCommonData(title_id, ResultSuccess, timestamp, user_id),
+    };
 
-    auto data_out = json::array();
-    for (const auto& d : data) {
-        data_out.push_back(Common::HexToString(d));
-    }
+    out.play_report_data = data | std::ranges::views::transform([](const auto& d) {
+                               return Common::HexToString(d);
+                           }) |
+                           std::ranges::to<std::vector<std::string>>();
 
     if (process_id.has_value()) {
-        out["play_report_process_id"] = fmt::format("{:016X}", *process_id);
+        out.play_report_process_id = std::format("{:016X}", *process_id);
     }
 
-    out["play_report_type"] = fmt::format("{:02}", static_cast<u8>(type));
-    out["play_report_data"] = std::move(data_out);
+    out.play_report_type = std::format("{:02}", static_cast<u8>(type));
 
     SaveToFile(out, GetPath("play_report", title_id, timestamp));
 }
@@ -322,14 +436,14 @@ void Reporter::SaveErrorReport(u64 title_id, Result result,
     }
 
     const auto timestamp = GetTimestamp();
-    json out;
 
-    out["yuzu_version"] = GetYuzuVersionData();
-    out["report_common"] = GetReportCommonData(title_id, result, timestamp);
-
-    out["error_custom_text"] = {
-        {"main", custom_text_main.value_or("")},
-        {"detail", custom_text_detail.value_or("")},
+    ErrorReport out{
+        .yuzu_version = GetYuzuVersionData(),
+        .report_common = GetReportCommonData(title_id, result, timestamp),
+        .error_custom_text = ErrorCustomText{
+            .main = custom_text_main.value_or(""),
+            .detail = custom_text_detail.value_or(""),
+        },
     };
 
     SaveToFile(out, GetPath("error_report", title_id, timestamp));

@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#define HAS_RESHADE 1
+
 #include <array>
 #include <memory>
 #include <string>
 
 #include <jni.h>
-#include <nlohmann/json.hpp>
 
 #include "common/android/android_common.h"
 #ifdef HAS_RESHADE
@@ -15,6 +16,8 @@
 #include "common/settings.h"
 #include "video_core/post_processing/fx_effect.h"
 #include "video_core/post_processing/fx_preset.h"
+
+import jacinth;
 
 extern std::unique_ptr<AndroidConfig> per_game_config;
 #endif
@@ -31,29 +34,6 @@ void BeginFxEdit() {
         return;
     }
     VideoCore::UsePerGameFxSettings();
-}
-
-nlohmann::json SerializeUniform(const VideoCore::FxUniformDesc& uniform) {
-    nlohmann::json out;
-    out["name"] = uniform.name;
-    out["label"] = uniform.label;
-    out["tooltip"] = uniform.tooltip;
-    out["category"] = uniform.category;
-    out["kind"] = static_cast<int>(uniform.kind);
-    out["uiType"] = static_cast<int>(uniform.ui_type);
-    out["components"] = uniform.components;
-    out["min"] = uniform.ui_min;
-    out["max"] = uniform.ui_max;
-    out["step"] = uniform.ui_step;
-    out["items"] = uniform.items;
-
-    nlohmann::json defaults = nlohmann::json::array();
-    for (u32 i = 0; i < uniform.components; ++i) {
-        defaults.push_back(uniform.default_value[i]);
-    }
-    out["defaults"] = defaults;
-
-    return out;
 }
 
 std::array<f32, 4> DefaultValueOf(size_t index, const std::string& uniform) {
@@ -79,50 +59,21 @@ extern "C" {
 
 jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getCatalogJson(JNIEnv* env,
                                                                          jobject obj) {
-    nlohmann::json out = nlohmann::json::array();
+    jacinth::json out;
 
 #ifdef HAS_RESHADE
     VideoCore::FxChain::Instance().DropUnknownEntries();
-
-    for (const auto& effect : VideoCore::GetFxCatalog()) {
-        nlohmann::json entry;
-        entry["file"] = effect.file;
-        entry["name"] = effect.name;
-        entry["label"] = effect.label;
-        entry["description"] = effect.description;
-        entry["error"] = effect.error;
-        entry["techniques"] = effect.techniques;
-
-        nlohmann::json uniforms = nlohmann::json::array();
-        for (const auto& uniform : effect.uniforms) {
-            uniforms.push_back(SerializeUniform(uniform));
-        }
-        entry["uniforms"] = uniforms;
-
-        out.push_back(entry);
-    }
+    out = VideoCore::GetFxCatalog();
 #endif
 
     return Common::Android::ToJString(env, out.dump());
 }
 
 jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getChainJson(JNIEnv* env, jobject obj) {
-    nlohmann::json out = nlohmann::json::array();
+    jacinth::json out;
 
 #ifdef HAS_RESHADE
-    for (const auto& entry : VideoCore::FxChain::Instance().Entries()) {
-        nlohmann::json item;
-        item["file"] = entry.file;
-        item["technique"] = entry.technique;
-
-        nlohmann::json values = nlohmann::json::object();
-        for (const auto& [name, value] : entry.values) {
-            values[name] = {value[0], value[1], value[2], value[3]};
-        }
-        item["values"] = values;
-
-        out.push_back(item);
-    }
+    out = VideoCore::FxChain::Instance().Entries();
 #endif
 
     return Common::Android::ToJString(env, out.dump());
@@ -247,17 +198,11 @@ jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getShaderDirectory(JN
 
 jstring Java_org_yuzu_yuzu_1emu_utils_NativePostProcessing_getPresetsJson(JNIEnv* env,
                                                                           jobject obj) {
-    nlohmann::json out = nlohmann::json::array();
+    jacinth::json out;
 #ifdef HAS_RESHADE
     VideoCore::ReloadFxPresetCatalog();
 
-    for (const auto& preset : VideoCore::GetFxPresetCatalog()) {
-        nlohmann::json entry;
-        entry["name"] = preset.name;
-        entry["description"] = preset.description;
-        entry["bundled"] = preset.bundled;
-        out.push_back(entry);
-    }
+    out = VideoCore::GetFxPresetCatalog();
 #endif
     return Common::Android::ToJString(env, out.dump());
 }

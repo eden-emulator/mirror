@@ -226,9 +226,7 @@ function(CPMAddPackage)
     list(APPEND fetchContentDeclareExtraArgs EXCLUDE_FROM_ALL)
   endif()
 
-  if(CPM_ARGS_SYSTEM)
-    list(APPEND fetchContentDeclareExtraArgs SYSTEM)
-  endif()
+  list(APPEND fetchContentDeclareExtraArgs SYSTEM)
 
   if(DEFINED CPM_ARGS_SOURCE_SUBDIR)
     list(APPEND fetchContentDeclareExtraArgs

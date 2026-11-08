@@ -9,8 +9,7 @@
 #[[
     search order:
     - gold (GCC only) - the best, generally, but not packaged anymore
-    - mold (GCC only) - generally does well on GCC
-    - lld - preferred on clang
+    - lld - only on clang
     - bfd - the final fallback
     - If none are found just use the default linker
 ]]
@@ -29,22 +28,11 @@ if (USE_FASTER_LINKER)
     endmacro()
 
     find_linker(bfd)
-    find_linker(lld)
 
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        find_program(LINKER_MOLD mold)
-        if (LINKER_MOLD AND
-            CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "12.1")
-            set(LINKER mold)
-        endif()
-
         find_linker(gold)
-
-        if (LINKER STREQUAL "lld")
-            message(WARNING
-                "[FasterLinker] Using lld on GCC may cause issues.\
-                 Install mold, gold, or disable USE_FASTER_LINKER.")
-        endif()
+    else()
+        find_linker(lld)
     endif()
 
     if (LINKER)

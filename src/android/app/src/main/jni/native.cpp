@@ -1904,14 +1904,14 @@ JNIEXPORT jobject JNICALL Java_org_yuzu_yuzu_1emu_NativeLibrary_checkForUpdate(
     std::optional<Common::Net::Release> release = UpdateChecker::GetUpdate();
     if (!release) return nullptr;
 
-    const std::string tag = release->tag;
-    const std::string title = release->title;
+    const std::string tag = release->tag_name;
+    const std::string title = release->name;
     const std::string body = release->body;
     const std::string url = release->html_url;
 
     // Android *should* only ever define a single asset.
     // If not, something has gone wrong, but the Kotlin side can handle it.
-    const auto assets = release->GetPlatformAssets();
+    const auto assets = Common::Net::GetPlatformAssets(release.value());
 
     jclass updateResultClass = env->FindClass("org/yuzu/yuzu_emu/NativeLibrary$UpdateResult");
     if (!updateResultClass) {
@@ -1951,9 +1951,10 @@ JNIEXPORT jobject JNICALL Java_org_yuzu_yuzu_1emu_NativeLibrary_checkForUpdate(
     env->CallVoidMethod(updateResult, setUrl, jurl);
 
     // TODO(crueter): Handling for multiple assets?
+    // TODO(crueter): Digest verification
     // Maybe another data class x(
-    for (const Common::Net::Asset &a : assets) {
-        const auto jaurl = env->NewStringUTF(a.path.c_str());
+    for (const Common::Net::NamedAsset &a : assets) {
+        const auto jaurl = env->NewStringUTF(a.asset.browser_download_url.c_str());
         env->CallVoidMethod(updateResult, addAsset, jaurl);
         env->DeleteLocalRef(jaurl);
     }

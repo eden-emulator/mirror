@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstring>
 #include <string>
+#include "hid_core/hid_core.h"
 
 #ifdef HAS_OPENGL
 #include <glad/glad.h>
@@ -155,6 +156,9 @@ void GRenderWindow::Exit() {
 }
 
 GRenderWindow::~GRenderWindow() {
+    if (QtCommon::system)
+        QtCommon::system->HIDCore().UnloadInputDevices();
+
     input_subsystem->Shutdown();
 }
 

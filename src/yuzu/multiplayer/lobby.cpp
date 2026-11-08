@@ -272,7 +272,7 @@ void Lobby::OnRefreshLobby() {
             QString::fromStdString(room.information.preferred_game.name), smdh_icon);
         auto row = QList<QStandardItem*>({
             first_item,
-            new LobbyItemName(room.has_password, QString::fromStdString(room.information.name)),
+            new LobbyItemName(room.hasPassword, QString::fromStdString(room.information.name)),
             new LobbyItemMemberList(members, room.information.member_slots),
             new LobbyItemHost(QString::fromStdString(room.information.host_username),
                               QString::fromStdString(room.ip), room.information.port,

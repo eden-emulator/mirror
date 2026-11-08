@@ -146,10 +146,17 @@ int main(int argc, char* argv[]) {
     // generating shaders
     setlocale(LC_ALL, "C");
 
-    MainWindow main_window{has_broken_vulkan};
-    // After settings have been loaded by GMainWindow, apply the filter
-    main_window.show();
+    int result = 0;
+    {
+        MainWindow main_window{has_broken_vulkan};
+        // After settings have been loaded by MainWindow, apply the filter
+        main_window.show();
 
-    app.connect(&app, &QGuiApplication::applicationStateChanged, &main_window, &MainWindow::OnAppFocusStateChanged);
-    return app.exec();
+        app.connect(&app, &QGuiApplication::applicationStateChanged, &main_window, &MainWindow::OnAppFocusStateChanged);
+        result = app.exec();
+    }
+
+    // forcefully tear down core before static destructors run
+    QtCommon::Shutdown();
+    return result;
 }

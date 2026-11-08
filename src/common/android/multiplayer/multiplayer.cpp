@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "common/android/id_cache.h"
@@ -387,7 +387,7 @@ std::vector<std::string> AndroidMultiplayer::NetPlayGetPublicRooms() {
         auto rooms = session->GetRoomList();
         for (const auto &room: rooms) {
             room_list.push_back(room.information.name + "|" +
-                                (room.has_password ? "1" : "0") + "|" +
+                                (room.hasPassword ? "1" : "0") + "|" +
                                 std::to_string(room.information.member_slots) + "|" +
                                 room.ip + "|" +
                                 std::to_string(room.information.port) + "|" +

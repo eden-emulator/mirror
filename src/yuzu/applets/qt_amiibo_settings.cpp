@@ -1,27 +1,36 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <algorithm>
-#include <thread>
-#include <fmt/ranges.h>
-#include <nlohmann/json.hpp>
-
-#include "common/assert.h"
 #include "common/string_util.h"
 #include "core/hle/service/nfc/common/device.h"
-#include "core/hle/service/nfp/nfp_result.h"
 #include "input_common/drivers/virtual_amiibo.h"
 #include "input_common/main.h"
 #include "ui_qt_amiibo_settings.h"
 #include "web_service/web_result.h"
+
 #ifdef ENABLE_WEB_SERVICE
 #include "web_service/web_backend.h"
 #endif
+
 #include "yuzu/applets/qt_amiibo_settings.h"
 #include "yuzu/main_window.h"
+
+import jacinth;
+
+struct Amiibo {
+    std::string amiiboSeries;
+    std::string name;
+    std::string image;
+    std::string type;
+};
+
+// TODO(crueter): get rid of this
+struct AmiiboData {
+    Amiibo amiibo;
+};
 
 QtAmiiboSettingsDialog::QtAmiiboSettingsDialog(QWidget* parent,
                                                Core::Frontend::CabinetParameters parameters_,
@@ -84,9 +93,9 @@ void QtAmiiboSettingsDialog::LoadAmiiboInfo() {
     }
 
     const auto amiibo_id =
-        fmt::format("{:04x}{:02x}{:02x}{:04x}{:02x}02", Common::swap16(model_info.character_id),
-                    model_info.character_variant, model_info.amiibo_type, model_info.model_number,
-                    model_info.series);
+        std::format("{:04x}{:02x}{:02x}{:04x}{:02x}02", Common::swap16(model_info.character_id),
+                    model_info.character_variant, u8(model_info.amiibo_type), model_info.model_number,
+                    u8(model_info.series));
 
     LOG_DEBUG(Frontend, "Loading amiibo id {}", amiibo_id);
     // Note: This function is not being used until we host the images on our server
@@ -100,7 +109,7 @@ void QtAmiiboSettingsDialog::LoadAmiiboApiInfo(std::string_view amiibo_id) {
     // TODO: Host this data on our website
     WebService::Client client{"https://amiiboapi.com", {}, {}};
     WebService::Client image_client{"https://raw.githubusercontent.com", {}, {}};
-    const auto url_path = fmt::format("/api/amiibo/?id={}", amiibo_id);
+    const auto url_path = std::format("/api/amiibo/?id={}", amiibo_id);
 
     const auto amiibo_json = client.GetJson(url_path, true).returned_data;
     if (amiibo_json.empty()) {
@@ -109,26 +118,24 @@ void QtAmiiboSettingsDialog::LoadAmiiboApiInfo(std::string_view amiibo_id) {
         return;
     }
 
-    std::string amiibo_series{};
-    std::string amiibo_name{};
-    std::string amiibo_image_url{};
-    std::string amiibo_type{};
+    auto amiiboData = jacinth::doc::try_read<AmiiboData>(amiibo_json);
 
-    const auto parsed_amiibo_json_json = nlohmann::json::parse(amiibo_json).at("amiibo");
-    parsed_amiibo_json_json.at("amiiboSeries").get_to(amiibo_series);
-    parsed_amiibo_json_json.at("name").get_to(amiibo_name);
-    parsed_amiibo_json_json.at("image").get_to(amiibo_image_url);
-    parsed_amiibo_json_json.at("type").get_to(amiibo_type);
+    if (!amiiboData) {
+        LOG_WARNING(Frontend, "Failed to parse amiibo data");
+        return;
+    }
 
-    ui->amiiboSeriesValue->setText(QString::fromStdString(amiibo_series));
-    ui->amiiboNameValue->setText(QString::fromStdString(amiibo_name));
-    ui->amiiboTypeValue->setText(QString::fromStdString(amiibo_type));
+    auto amiibo = amiiboData->amiibo;
 
-    if (amiibo_image_url.size() < 34) {
+    ui->amiiboSeriesValue->setText(QString::fromStdString(amiibo.amiiboSeries));
+    ui->amiiboNameValue->setText(QString::fromStdString(amiibo.name));
+    ui->amiiboTypeValue->setText(QString::fromStdString(amiibo.type));
+
+    if (amiibo.image.size() < 34) {
         ui->amiiboImageLabel->setVisible(false);
     }
 
-    const auto image_url_path = amiibo_image_url.substr(34, amiibo_image_url.size() - 34);
+    const auto image_url_path = amiibo.image.substr(34, amiibo.image.size() - 34);
     const auto image_data = image_client.GetImage(image_url_path, true).returned_data;
 
     if (image_data.empty()) {
@@ -225,7 +232,7 @@ void QtAmiiboSettingsDialog::SetGameDataName(u32 application_area_id) {
         }
     }
 
-    const auto application_area_string = fmt::format("{:016x}", application_area_id);
+    const auto application_area_string = std::format("{:016x}", application_area_id);
     ui->gameIdValue->setText(QString::fromStdString(application_area_string));
 }
 

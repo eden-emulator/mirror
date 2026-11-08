@@ -227,13 +227,13 @@ object NativePostProcessing {
                     tooltip = obj.optString("tooltip"),
                     category = obj.optString("category"),
                     kind = obj.optInt("kind", KIND_FLOAT),
-                    uiType = obj.optInt("uiType", UI_HIDDEN),
                     components = obj.optInt("components", 1),
-                    min = obj.optDouble("min", 0.0).toFloat(),
-                    max = obj.optDouble("max", 1.0).toFloat(),
-                    step = obj.optDouble("step", 0.01).toFloat(),
+                    uiType = obj.optInt("ui_type", UI_HIDDEN),
+                    min = obj.optDouble("ui_min", 0.0).toFloat(),
+                    max = obj.optDouble("ui_max", 1.0).toFloat(),
+                    step = obj.optDouble("ui_step", 0.01).toFloat(),
                     items = obj.optJSONArray("items").toStringList(),
-                    defaults = obj.optJSONArray("defaults").toFloatList()
+                    defaults = obj.optJSONArray("default_value").toFloatList()
                 )
             )
         }

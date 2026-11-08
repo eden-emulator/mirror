@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "audio_core/sink/sink.h"
 #include "audio_core/sink/sink_details.h"
 #ifdef HAVE_CUBEB
 #include "audio_core/sink/cubeb_sink.h"

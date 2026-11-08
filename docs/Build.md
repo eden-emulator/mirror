@@ -65,43 +65,37 @@ Hit "Configure Project", then wait for CMake to finish configuring (may take a w
 > [!WARNING]
 >For all systems:
 >
->- *CMake* **MUST** be in your PATH (and also *ninja*, if you are using it as `<GENERATOR>`)
->- You *MUST* be in the cloned *Eden* directory
+>- `cmake` and `ninja` must be in your PATH
+>- You must be in the cloned `eden` directory
 >
 >On Windows:
 >
-> - It's recommended to install **[Ninja](https://ninja-build.org/)**
-> - You must load **Visual C++ development environment**, this can be done by running our convenience script:
->   - `tools/windows/load-msvc-env.ps1` (for PowerShell 5+)
->   - `tools/windows/load-msvc-env.sh` (for MSYS2, Git Bash, etc)
+> - You must install **[Ninja](https://ninja-build.org/)**
+> - You must load the **Visual C++ development environment**. This can be done by searching "x64 dev tools" in the start menu.
 
-Available `<GENERATOR>`:
 
-- MSYS2: `MSYS Makefiles`
-- MSVC: `Ninja` (preferred) or `Visual Studio 17 2022`
-- macOS: `Ninja` (preferred) or `Xcode`
-- Others: `Ninja` (preferred) or `UNIX Makefiles`
-
-Available `<BUILD_TYPE>`:
+Available build types:
 
 - `Release` (default)
 - `RelWithDebInfo` (debug symbols--compiled executable will be large)
 - `Debug` (if you are using a debugger and annoyed with stuff getting optimized out)
 
-Caveat for Debug Builds:
-
-- If you're building with CCache, you will need to add the environment variable `CL` with the `/FS` flag ([Reference](https://learn.microsoft.com/pt-br/cpp/build/reference/fs-force-synchronous-pdb-writes?view=msvc-170))
-
 Also see the root CMakeLists.txt for more build options. Usually the default will provide the best experience, however.
 
 ```sh
-cmake -S . -B build -G "<GENERATOR>" -DCMAKE_BUILD_TYPE=<BUILD_TYPE> -DYUZU_TESTS=OFF
+cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=<BUILD_TYPE>
 ```
 
 If you are on Windows and prefer to use Clang:
 
 ```sh
-cmake -S . -B build -G "<GENERATOR>" -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
+cmake -S . -B build -GNinja -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
+```
+
+If you are on macOS, you **must** use Homebrew's Clang, as Apple Clang is unsupported:
+
+```sh
+cmake -S . -B build -GNinja -DCMAKE_C_COMPILER="$(brew --prefix llvm)/bin/clang" -DCMAKE_CXX_COMPILER="$(brew --prefix llvm)/bin/clang++"
 ```
 
 </details>
@@ -178,8 +172,6 @@ Simply hit Ctrl+B, or the "hammer" icon in the bottom left. To run, hit the "pla
 
 ### On Command Line
 
-If you are using the `UNIX Makefiles` or `Visual Studio 17 2022` as `<GENERATOR>`, you should also add `--parallel` for faster build times.
-
 ```sh
 cmake --build build
 ```
@@ -188,8 +180,9 @@ Your compiled executable will be in:
 
 - `build/bin/eden.exe` for Windows,
 - `build/bin/eden.app/Contents/MacOS/eden` for macOS,
+  - You can also use `open build/bin/eden.app`, or open `build/bin` in Finder
 - and `build/bin/eden` for others.
 
 ## Scripts
 
-Take a look at our [CI scripts](https://github.com/Eden-CI/Workflow). You can use `.ci/common/configure.sh` on any POSIX-compliant shell, but you are heavily encouraged to instead write your own based. It's not really that hard, provided you can read CMake.
+Take a look at our [CI scripts](https://github.com/Eden-CI/Workflow). You can use `.ci/common/configure.sh` on any POSIX-compliant shell, but you are heavily encouraged to instead write your own based on that template. It's not really that hard, provided you can read CMake.

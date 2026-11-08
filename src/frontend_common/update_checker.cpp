@@ -10,7 +10,6 @@
 #include <boost/algorithm/string/split.hpp>
 #endif
 
-#include <fmt/format.h>
 #include "common/net/net.h"
 #include "common/scm_rev.h"
 #include "update_checker.h"
@@ -21,12 +20,12 @@ std::optional<Common::Net::Release> UpdateChecker::GetUpdate() {
     const auto latest = Common::Net::GetLatestRelease();
     if (!latest) return std::nullopt;
 
-    LOG_INFO(Frontend, "Received update {}", latest->title);
+    LOG_INFO(Frontend, "Received update {}", latest->name);
 
 #ifdef NIGHTLY_BUILD
     std::vector<std::string> result;
 
-    boost::split(result, latest->tag, boost::is_any_of("."));
+    boost::split(result, latest->tag_name, boost::is_any_of("."));
     if (result.size() != 2)
         return std::nullopt;
 
@@ -38,7 +37,7 @@ std::optional<Common::Net::Release> UpdateChecker::GetUpdate() {
 
     const std::string build = result[0];
 #else
-    const std::string tag = latest->tag;
+    const std::string tag = latest->tag_name;
     const std::string build = Common::g_build_version;
 #endif
 

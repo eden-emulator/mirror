@@ -15,6 +15,10 @@ option(DYNARMIC_TESTS "Build tests" ${BUILD_TESTING})
 # some of its variables, which is only possible in 3.13+
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
+# None of our externals have modules (yet)
+# Jacinth does, but that is defined in src so it inherits compiler flags
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+
 # Disable tests/tools in all externals supporting the standard option name
 set(BUILD_TESTING OFF)
 
@@ -49,9 +53,9 @@ if (NOT TARGET stb::headers)
 endif()
 
 AddJsonPackage(NAME zbic DOWNLOAD_ONLY)
-set(ZBIC_INCLUDE_DIR
-    "${zbic_SOURCE_DIR}/src"
-    PARENT_SCOPE)
+add_library(zbic INTERFACE)
+target_include_directories(zbic INTERFACE ${zbic_SOURCE_DIR}/src)
+add_library(zbic::zbic ALIAS zbic)
 
 # ItaniumDemangle (Windows only)
 if (WIN32 AND NOT TARGET LLVM::Demangle)
@@ -62,12 +66,6 @@ if (WIN32 AND NOT TARGET LLVM::Demangle)
     endif()
     add_library(LLVM::Demangle ALIAS demangle)
 endif()
-
-# httplib
-if (IOS)
-    set(HTTPLIB_USE_BROTLI_IF_AVAILABLE OFF)
-endif()
-AddJsonPackage(httplib)
 
 if (YUZU_STATIC_ROOM)
     return()

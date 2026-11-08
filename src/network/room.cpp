@@ -1108,7 +1108,7 @@ std::vector<Member> Room::GetRoomMemberList() const {
         member.nickname = member_impl.nickname;
         member.username = member_impl.user_data.username;
         member.display_name = member_impl.user_data.display_name;
-        member.avatar_url = member_impl.user_data.avatar_url;
+        member.avatarUrl = member_impl.user_data.avatar_url;
         member.fake_ip = member_impl.fake_ip;
         member.game = member_impl.game_info;
         member_list.push_back(member);

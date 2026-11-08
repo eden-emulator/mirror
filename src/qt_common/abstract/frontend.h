@@ -71,13 +71,13 @@ StandardButton ShowMessage(Icon icon, const QString& title, const QString& text,
                            StandardButtons buttons = StandardButton::NoButton,
                            QObject* parent = nullptr);
 
-#define UTIL_OVERRIDES(level)                                                                      \
+#define UTIL_OVERRIDES(level, defaultButtons)                                                      \
     inline StandardButton level(QObject* parent, const QString& title, const QString& text,        \
                                 StandardButtons buttons) {                                         \
         return ShowMessage(Icon::level, title, text, buttons, parent);                             \
     }                                                                                              \
     inline StandardButton level(QObject* parent, const QString& title, const QString& text,        \
-                                int buttons = StandardButton::Ok) {                                \
+                                int buttons = defaultButtons) {                                    \
         return ShowMessage(Icon::level, title, text, StandardButtons(buttons), parent);            \
     }                                                                                              \
     inline StandardButton level(const QString title, const QString& text,                          \
@@ -85,14 +85,14 @@ StandardButton ShowMessage(Icon icon, const QString& title, const QString& text,
         return ShowMessage(Icon::level, title, text, buttons, rootObject);                         \
     }                                                                                              \
     inline StandardButton level(const QString& title, const QString& text,                         \
-                                int buttons = StandardButton::Ok) {                                \
+                                int buttons = defaultButtons) {                                    \
         return ShowMessage(Icon::level, title, text, StandardButtons(buttons), rootObject);        \
     }
 
-UTIL_OVERRIDES(Information)
-UTIL_OVERRIDES(Warning)
-UTIL_OVERRIDES(Critical)
-UTIL_OVERRIDES(Question)
+UTIL_OVERRIDES(Information, StandardButton::Ok)
+UTIL_OVERRIDES(Warning, StandardButton::Ok)
+UTIL_OVERRIDES(Critical, StandardButton::Ok)
+UTIL_OVERRIDES(Question, StandardButton::Yes | StandardButton::No)
 
 const QString GetOpenFileName(const QString& title, const QString& dir, const QString& filter,
                               QString* selectedFilter = nullptr);

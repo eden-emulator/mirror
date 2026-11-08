@@ -315,7 +315,7 @@ void CreateEdenPaths() {
 
 #ifdef _WIN32
 
-fs::path GetExeDirectory() {
+fs::path GetExePath() {
     wchar_t exe_path[MAX_PATH];
 
     if (GetModuleFileNameW(nullptr, exe_path, MAX_PATH) == 0) {
@@ -323,7 +323,11 @@ fs::path GetExeDirectory() {
                   "Failed to get the path to the executable of the current process");
     }
 
-    return fs::path{exe_path}.parent_path();
+    return fs::path{exe_path};
+}
+
+fs::path GetExeDirectory() {
+    return GetExePath().parent_path();
 }
 
 fs::path GetAppDataRoamingDirectory() {

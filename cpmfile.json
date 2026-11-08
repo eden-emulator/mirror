@@ -7,9 +7,9 @@
     },
     "boost": {
         "artifact": "boost-%VERSION%.tar.zst",
-        "find_args": "CONFIG OPTIONAL_COMPONENTS headers context system fiber filesystem",
+        "find_args": "CONFIG OPTIONAL_COMPONENTS headers context system fiber filesystem process",
         "hash": "681d97be4386767662e230b2e7c9754d45e709cc5db4e747c23c27d1f5b0e87770bdf19b0bc44dcb0e8349324887bbb8fffb432098f4d0ce74a5043021a90afc",
-        "min_version": "1.57",
+        "min_version": "1.87",
         "package": "Boost",
         "repo": "eden-emulator/ext-boost",
         "version": "1.92.0"
@@ -34,9 +34,6 @@
         "find_args": "CONFIG",
         "hash": "d11cbd5ddb3197b4c5ca15679bcd76a49963e7b530b7dd132db91e042925efa20dfb2c24ccfbe7ef82a7012af80deff0f72ee25851312ae80381a462df8534b8",
         "min_version": "1.4",
-        "options": [
-            "CPP_JWT_USE_VENDORED_NLOHMANN_JSON OFF"
-        ],
         "patches": [
             "0001-fix-missing-decl.patch"
         ],
@@ -100,18 +97,16 @@
         "repo": "FeralInteractive/gamemode",
         "version": "ce6fe122f3"
     },
-    "httplib": {
-        "find_args": "MODULE GLOBAL",
-        "hash": "159ed94965018f2a371d45a3bfc1961e5fb1549e501ded70a6b4532d7fe99d0579c18b5195aff6e35f96f399b426cea2650ec9fb75ef80d4c9edeccb51f2e6c9",
-        "options": [
-            "HTTPLIB_REQUIRE_OPENSSL ON",
-            "HTTPLIB_DISABLE_MACOSX_AUTOMATIC_ROOT_CERTIFICATES ON"
-        ],
-        "patches": [
-            "0001-mingw.patch"
-        ],
-        "repo": "yhirose/cpp-httplib",
-        "version": "v0.46.0"
+    "hydrocarbon": {
+        "hash": "e08520daa8acc6dcb3c181b1311f3386858907965eca1df5ff70b9f2b729bdacec3b54e5c852e89864d3e5dde6f83eb2b14e8f601b11d6b21963386e0a051d93",
+        "min_version": "0.1.1",
+        "repo": "crueter/hydrocarbon",
+        "version": "f4ec2a3754"
+    },
+    "jacinth": {
+        "hash": "bba5f830724013b334043b0fc783ced7e478c8d2691d2ee6dafc92ce5df4866b2d656a1ee5ffe3e4b75d11e4ae3a4dc86b7578f9a73c438909fd54775540e6af",
+        "repo": "crueter/jacinth",
+        "version": "0.1.0"
     },
     "lagoon": {
         "hash": "b9380f99c6effaeccc6d8f81d4942e852c11ad28613df637e155451556ae5826f93765bee57a5c87a9740d2bd1db463ad0f55a947772fe9d57eeabae3efa373e",
@@ -119,12 +114,12 @@
         "version": "1.0.0"
     },
     "libadrenotools": {
-        "hash": "f6526620cb752876edc5ed4c0925d57b873a8218ee09ad10859ee476e9333259784f61c1dcc55a2bcba597352d18aff22cd2e4c1925ec2ae94074e09d7da2265",
+        "hash": "191b8dad7ec39c4431ee155ca74ffb51d9c9b085e6f44d631bc03a34b09894dff6b7e1dd153b6eaac95647662b851ccc5ebb7ef54e6f57a6ee114a9516cf7282",
         "patches": [
             "0001-use-cpmfile-def-for-linkernsbypass.patch"
         ],
         "repo": "eden-emulator/libadrenotools",
-        "version": "8ba23b42d7"
+        "version": "6727fe4218"
     },
     "libusb": {
         "find_args": "MODULE",
@@ -149,11 +144,11 @@
         "version": "20250828"
     },
     "lz4": {
-        "hash": "35c21a5d9cfb5bbf314a5321d02b36819491d2ee3cf8007030ca09d13ca4dae672247b7aeab553e973093604fc48221cb03dc92197c6efe8fc3746891363fdab",
+        "hash": "5638a9ca76f333bea718b457588eadafd8dddbc4c8afcd8e21992805afff7af283283642558e52d1f1d4655dbe26f2aa85fa89dc365041ca621baf79c552f364",
         "name": "lz4",
         "repo": "lz4/lz4",
         "source_subdir": "build/cmake",
-        "version": "ebb370ca83"
+        "version": "v1.11.0"
     },
     "moltenvk": {
         "artifact": "MoltenVK-macOS.tar",
@@ -161,13 +156,6 @@
         "hash": "5695b36ca5775819a71791557fcb40a4a5ee4495be6b8442e0b666d0c436bec02aae68cc6210183f7a5c986bdbec0e117aecfad5396e496e9c2fd5c89133a347",
         "repo": "V380-Ori/Ryujinx.MoltenVK",
         "version": "v1.4.1-ryujinx"
-    },
-    "nlohmann": {
-        "hash": "6cc1e86261f8fac21cc17a33da3b6b3c3cd5c116755651642af3c9e99bb3538fd42c1bd50397a77c8fb6821bc62d90e6b91bcdde77a78f58f2416c62fc53b97d",
-        "min_version": "3.8",
-        "package": "nlohmann_json",
-        "repo": "nlohmann/json",
-        "version": "v3.12.0"
     },
     "oaknut": {
         "hash": "9697e80a7d5d9bcb3ce51051a9a24962fb90ca79d215f1f03ae6b58da8ba13a63b5dda1b4dde3d26ac6445029696b8ef2883f4e5a777b342bba01283ed293856",
@@ -187,10 +175,11 @@
     },
     "openssl-ci": {
         "ci": true,
+        "hash": "35001a02c98b32a53fafa22ab1fd94554701ad3de0a847a87a04c665f48908adc3ba5acced98e048c27ed8c5a4e2d804e759721de76be5316f3f3f3ea4cebc38",
         "name": "openssl",
         "package": "OpenSSL",
         "repo": "crueter-ci/OpenSSL",
-        "version": "4.0.1-1788234794-b64f68a94e"
+        "version": "4.0.1-1789774337-b64f68a94e"
     },
     "openssl-cmake": {
         "bundled": true,
@@ -344,7 +333,8 @@
         "min_version": "1.2",
         "options": [
             "ZLIB_BUILD_SHARED OFF",
-            "ZLIB_INSTALL OFF"
+            "ZLIB_INSTALL OFF",
+            "ZLIB_BUILD_TESTING OFF"
         ],
         "package": "ZLIB",
         "repo": "madler/zlib",
@@ -355,7 +345,8 @@
         "hash": "2b006c3c110c38bd2f5896b42d36a38931c8eae261f30552f9a9fd04458d218d8f1a1425f117fd12af545ed77042e4b2d1a1a9b6286c4d0b9d74ef79f20a8f08",
         "min_version": "1.5",
         "options": [
-            "ZSTD_BUILD_SHARED OFF"
+            "ZSTD_BUILD_SHARED OFF",
+            "ZSTD_BUILD_PROGRAMS OFF"
         ],
         "repo": "facebook/zstd",
         "source_subdir": "build/cmake",

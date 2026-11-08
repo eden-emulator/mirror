@@ -10,16 +10,19 @@
 #include <string>
 #include "common/container/unordered_map.h"
 
-#include <fmt/format.h>
-#include <nlohmann/json.hpp>
-
 #include "common/fs/fs.h"
-#include "common/fs/file.h"
 #include "common/fs/path_util.h"
 #include "common/logging.h"
 
+import jacinth;
+
 namespace Core::LaunchTimestampCache {
 namespace {
+
+struct CacheEntry {
+    s64 timestamp = 0;
+    u64 launch_count = 0;
+};
 
 using CacheMap = ::Common::unordered_map<u64, s64>;
 using CountMap = ::Common::unordered_map<u64, u64>;
@@ -75,29 +78,25 @@ void Load() {
     }
 
     try {
-        const auto json = nlohmann::json::parse(data->data(), data->data() + data->size());
-        if (!json.is_object()) {
+        const auto json = jacinth::doc::read(data.value());
+        if (!json.is_object())
             return;
-        }
-        for (auto it = json.begin(); it != json.end(); ++it) {
-            const auto key_str = it.key();
-            const auto value = it.value();
+
+        for (auto [key_str, value] : json.as_object()) {
             u64 key{};
             try {
-                key = std::stoull(key_str, nullptr, 16);
+                key = std::stoull(std::string{key_str}, nullptr, 16);
             } catch (...) {
                 continue;
             }
             if (value.is_object()) {
-                if (value.contains("timestamp") && value["timestamp"].is_number_integer()) {
-                    g_cache[key] = value["timestamp"].get<s64>();
-                }
-                if (value.contains("launch_count") && value["launch_count"].is_number_unsigned()) {
-                    g_counts[key] = value["launch_count"].get<u64>();
-                }
-            } else if (value.is_number_integer()) {
+                CacheEntry entry = value;
+                // these will just be 0 if not present
+                g_cache[key] = entry.timestamp;
+                g_counts[key] = entry.launch_count;
+            } else {
                 // Legacy format: raw timestamp only
-                g_cache[key] = value.get<s64>();
+                g_cache[key] = value;
             }
         }
     } catch (const std::exception& e) {
@@ -106,17 +105,16 @@ void Load() {
 }
 
 void Save() {
-    nlohmann::json json = nlohmann::json::object();
+    jacinth::json json;
     for (const auto& [key, value] : g_cache) {
-        nlohmann::json entry = nlohmann::json::object();
-        entry["timestamp"] = value;
         const auto count_it = g_counts.find(key);
-        entry["launch_count"] = count_it != g_counts.end() ? count_it->second : 0;
-        json[fmt::format("{:016X}", key)] = entry;
+        const CacheEntry entry{value, count_it != g_counts.end() ? count_it->second : 0};
+        json[std::format("{:016X}", key)] = entry;
     }
 
     const auto path = GetCachePath();
-    if (!WriteStringToFile(path, json.dump(4))) {
+
+    if (!WriteStringToFile(path, json.dump({.pretty = true}))) {
         LOG_WARNING(Core, "Failed to write launch timestamp cache: {}",
                     Common::FS::PathToUTF8String(path));
     }

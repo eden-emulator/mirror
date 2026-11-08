@@ -242,7 +242,6 @@ add_executable(yuzu
     configuration/addon/mod_select_dialog.h configuration/addon/mod_select_dialog.cpp configuration/addon/mod_select_dialog.ui
 
     render/performance_overlay.h render/performance_overlay.cpp render/performance_overlay.ui
-    updater/update_dialog.h updater/update_dialog.cpp updater/update_dialog.ui
     game/common.h
     game/carousel.h game/carousel.cpp
 )
@@ -274,6 +273,9 @@ file(GLOB_RECURSE THEMES ${PROJECT_SOURCE_DIR}/dist/qt_themes/*)
 
 if (ENABLE_UPDATE_CHECKER)
     target_compile_definitions(yuzu PUBLIC ENABLE_UPDATE_CHECKER)
+    target_sources(yuzu PRIVATE
+        updater/update_dialog.h updater/update_dialog.cpp updater/update_dialog.ui)
+    target_link_libraries(yuzu PRIVATE QuaZip::QuaZip)
 endif()
 
 if (ENABLE_QT_TRANSLATION)
@@ -409,7 +411,7 @@ elseif(WIN32)
     endif()
 endif()
 
-target_link_libraries(yuzu PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(yuzu PRIVATE hydro::carbon jacinth::jacinth)
 target_link_libraries(yuzu PRIVATE common core input_common frontend_common network video_core qt_common)
 target_link_libraries(yuzu PRIVATE Boost::headers Qt6::Widgets Qt6::Charts Qt6::Concurrent)
 target_link_libraries(yuzu PRIVATE ${PLATFORM_LIBRARIES} Threads::Threads)
@@ -465,3 +467,22 @@ endif()
 target_link_libraries(yuzu PRIVATE OpenSSL::SSL OpenSSL::Crypto SDL3::SDL3)
 
 create_target_directory_groups(yuzu)
+
+# Small updater shim.
+if (WIN32 AND ENABLE_UPDATE_CHECKER)
+    add_executable(updater updater/updater.cpp)
+    set_target_properties(updater PROPERTIES OUTPUT_NAME "eden-updater")
+    target_link_libraries(updater PRIVATE Boost::process Boost::asio ws2_32)
+
+    # need to link to stdc++exp (on glibc++ only) for std::print on mingw
+    if (MINGW)
+        include(CheckCXXSymbolExists)
+
+        check_cxx_symbol_exists(__GLIBCXX__ "version" HAS_LIBSTDCXX)
+
+        if(HAS_LIBSTDCXX)
+            message(STATUS "MinGW libstdc++ needs stdc++exp")
+            target_link_libraries(updater PUBLIC stdc++exp)
+        endif()
+    endif()
+endif()
