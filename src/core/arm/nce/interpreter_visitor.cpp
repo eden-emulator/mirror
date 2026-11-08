@@ -151,6 +151,10 @@ u128 InterpreterVisitor::GetVec(Vec v) {
 }
 
 u64 InterpreterVisitor::GetReg(Reg r) {
+    // R31 is the zero register here; the stack pointer is accessed through GetSp.
+    if (r == Reg::ZR) {
+        return 0;
+    }
     return m_regs[static_cast<u32>(r)];
 }
 
@@ -167,6 +171,9 @@ void InterpreterVisitor::SetVec(Vec v, u128 value) {
 }
 
 void InterpreterVisitor::SetReg(Reg r, u64 value) {
+    if (r == Reg::ZR) {
+        return;
+    }
     m_regs[static_cast<u32>(r)] = value;
 }
 
