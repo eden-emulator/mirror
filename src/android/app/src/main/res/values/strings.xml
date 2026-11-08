@@ -1424,7 +1424,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     </string>
     <string name="license_dynarmic" translatable="false">Dynarmic</string>
     <string name="license_dynarmic_description" translatable="false">An ARM dynamic recompiler</string>
-    <string name="license_dynarmic_link" translatable="false">https://github.com/merryhime/dynarmic</string>
+    <string name="license_dynarmic_link" translatable="false">https://git.eden-emu.dev/eden-emu/dynarmic</string>
     <string name="license_dynarmic_copyright" translatable="false">Copyright © 2017 merryhime</string>
     <string name="license_dynarmic_text" translatable="false">
 Permission to use, copy, modify, and/or distribute this software for
