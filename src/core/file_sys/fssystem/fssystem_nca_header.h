@@ -25,7 +25,7 @@ struct Hash {
     std::array<u8, Size> value;
 };
 static_assert(sizeof(Hash) == Hash::Size);
-static_assert(std::is_trivial_v<Hash>);
+static_assert(std::is_trivially_default_constructible_v<Hash> && std::is_trivially_copyable_v<Hash>);
 
 using NcaDigest = Hash;
 
@@ -72,7 +72,7 @@ struct NcaHeader {
         u32 reserved;
     };
     static_assert(sizeof(FsInfo) == 0x10);
-    static_assert(std::is_trivial_v<FsInfo>);
+    static_assert(std::is_trivially_default_constructible_v<FsInfo> && std::is_trivially_copyable_v<FsInfo>);
 
     static constexpr u32 Magic0 = Common::MakeMagic('N', 'C', 'A', '0');
     static constexpr u32 Magic1 = Common::MakeMagic('N', 'C', 'A', '1');
@@ -126,7 +126,7 @@ struct NcaHeader {
     u8 GetProperKeyGeneration() const;
 };
 static_assert(sizeof(NcaHeader) == NcaHeader::Size);
-static_assert(std::is_trivial_v<NcaHeader>);
+static_assert(std::is_trivially_default_constructible_v<NcaHeader> && std::is_trivially_copyable_v<NcaHeader>);
 
 struct NcaBucketInfo {
     static constexpr size_t HeaderSize = 0x10;
@@ -134,7 +134,7 @@ struct NcaBucketInfo {
     Int64 size;
     std::array<u8, HeaderSize> header;
 };
-static_assert(std::is_trivial_v<NcaBucketInfo>);
+static_assert(std::is_trivially_default_constructible_v<NcaBucketInfo> && std::is_trivially_copyable_v<NcaBucketInfo>);
 
 struct NcaPatchInfo {
     static constexpr size_t Size = 0x40;
@@ -150,7 +150,7 @@ struct NcaPatchInfo {
     bool HasIndirectTable() const;
     bool HasAesCtrExTable() const;
 };
-static_assert(std::is_trivial_v<NcaPatchInfo>);
+static_assert(std::is_trivially_default_constructible_v<NcaPatchInfo> && std::is_trivially_copyable_v<NcaPatchInfo>);
 
 union NcaAesCtrUpperIv {
     u64 value;
@@ -159,7 +159,7 @@ union NcaAesCtrUpperIv {
         u32 secure_value;
     } part;
 };
-static_assert(std::is_trivial_v<NcaAesCtrUpperIv>);
+static_assert(std::is_trivially_default_constructible_v<NcaAesCtrUpperIv> && std::is_trivially_copyable_v<NcaAesCtrUpperIv>);
 
 struct NcaSparseInfo {
     NcaBucketInfo bucket;
@@ -181,20 +181,20 @@ struct NcaSparseInfo {
         return sparse_upper_iv;
     }
 };
-static_assert(std::is_trivial_v<NcaSparseInfo>);
+static_assert(std::is_trivially_default_constructible_v<NcaSparseInfo> && std::is_trivially_copyable_v<NcaSparseInfo>);
 
 struct NcaCompressionInfo {
     NcaBucketInfo bucket;
     std::array<u8, 8> resreved;
 };
-static_assert(std::is_trivial_v<NcaCompressionInfo>);
+static_assert(std::is_trivially_default_constructible_v<NcaCompressionInfo> && std::is_trivially_copyable_v<NcaCompressionInfo>);
 
 struct NcaMetaDataHashDataInfo {
     Int64 offset;
     Int64 size;
     Hash hash;
 };
-static_assert(std::is_trivial_v<NcaMetaDataHashDataInfo>);
+static_assert(std::is_trivially_default_constructible_v<NcaMetaDataHashDataInfo> && std::is_trivially_copyable_v<NcaMetaDataHashDataInfo>);
 
 struct NcaFsHeader {
     static constexpr size_t Size = 0x200;
@@ -204,7 +204,7 @@ struct NcaFsHeader {
         Int64 offset;
         Int64 size;
     };
-    static_assert(std::is_trivial_v<Region>);
+    static_assert(std::is_trivially_default_constructible_v<Region> && std::is_trivially_copyable_v<Region>);
 
     enum class FsType : u8 {
         RomFs = 0,
@@ -246,7 +246,7 @@ struct NcaFsHeader {
             s32 hash_layer_count;
             std::array<Region, HashLayerCountMax> hash_layer_region;
         } hierarchical_sha256_data;
-        static_assert(std::is_trivial_v<HierarchicalSha256Data>);
+        static_assert(std::is_trivially_default_constructible_v<HierarchicalSha256Data> && std::is_trivially_copyable_v<HierarchicalSha256Data>);
 
         struct IntegrityMetaInfo {
             static const size_t MasterHashOffset;
@@ -279,7 +279,7 @@ struct NcaFsHeader {
 
             Hash master_hash;
         } integrity_meta_info;
-        static_assert(std::is_trivial_v<IntegrityMetaInfo>);
+        static_assert(std::is_trivially_default_constructible_v<IntegrityMetaInfo> && std::is_trivially_copyable_v<IntegrityMetaInfo>);
 
         std::array<u8, NcaPatchInfo::Offset - HashDataOffset> padding;
     };
@@ -325,7 +325,7 @@ struct NcaFsHeader {
     }
 };
 static_assert(sizeof(NcaFsHeader) == NcaFsHeader::Size);
-static_assert(std::is_trivial_v<NcaFsHeader>);
+static_assert(std::is_trivially_default_constructible_v<NcaFsHeader> && std::is_trivially_copyable_v<NcaFsHeader>);
 static_assert(offsetof(NcaFsHeader, patch_info) == NcaPatchInfo::Offset);
 
 inline constexpr const size_t NcaFsHeader::HashData::HierarchicalSha256Data::MasterHashOffset =
@@ -339,6 +339,6 @@ struct NcaMetaDataHashData {
 };
 static_assert(sizeof(NcaMetaDataHashData) ==
               sizeof(NcaFsHeader::HashData::IntegrityMetaInfo) + sizeof(s64));
-static_assert(std::is_trivial_v<NcaMetaDataHashData>);
+static_assert(std::is_trivially_default_constructible_v<NcaMetaDataHashData> && std::is_trivially_copyable_v<NcaMetaDataHashData>);
 
 } // namespace FileSys

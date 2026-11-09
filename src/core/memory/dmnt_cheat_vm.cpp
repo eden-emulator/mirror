@@ -23,155 +23,155 @@ void DmntCheatVm::DebugLog(u32 log_id, u64 value) {
 void DmntCheatVm::LogOpcode(const CheatVmOpcode& opcode) {
     if (auto store_static = std::get_if<StoreStaticOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Store Static");
-        callbacks->CommandLog(fmt::format("Bit Width: {:X}", store_static->bit_width));
+        callbacks->CommandLog(std::format("Bit Width: {:X}", store_static->bit_width));
         callbacks->CommandLog(
-            fmt::format("Mem Type:  {:X}", static_cast<u32>(store_static->mem_type)));
-        callbacks->CommandLog(fmt::format("Reg Idx:   {:X}", store_static->offset_register));
-        callbacks->CommandLog(fmt::format("Rel Addr:  {:X}", store_static->rel_address));
-        callbacks->CommandLog(fmt::format("Value:     {:X}", store_static->value.bit64));
+            std::format("Mem Type:  {:X}", static_cast<u32>(store_static->mem_type)));
+        callbacks->CommandLog(std::format("Reg Idx:   {:X}", store_static->offset_register));
+        callbacks->CommandLog(std::format("Rel Addr:  {:X}", store_static->rel_address));
+        callbacks->CommandLog(std::format("Value:     {:X}", store_static->value.bit64));
     } else if (auto begin_cond = std::get_if<BeginConditionalOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Begin Conditional");
-        callbacks->CommandLog(fmt::format("Bit Width: {:X}", begin_cond->bit_width));
+        callbacks->CommandLog(std::format("Bit Width: {:X}", begin_cond->bit_width));
         callbacks->CommandLog(
-            fmt::format("Mem Type:  {:X}", static_cast<u32>(begin_cond->mem_type)));
+            std::format("Mem Type:  {:X}", static_cast<u32>(begin_cond->mem_type)));
         callbacks->CommandLog(
-            fmt::format("Cond Type: {:X}", static_cast<u32>(begin_cond->cond_type)));
-        callbacks->CommandLog(fmt::format("Rel Addr:  {:X}", begin_cond->rel_address));
-        callbacks->CommandLog(fmt::format("Value:     {:X}", begin_cond->value.bit64));
+            std::format("Cond Type: {:X}", static_cast<u32>(begin_cond->cond_type)));
+        callbacks->CommandLog(std::format("Rel Addr:  {:X}", begin_cond->rel_address));
+        callbacks->CommandLog(std::format("Value:     {:X}", begin_cond->value.bit64));
     } else if (std::holds_alternative<EndConditionalOpcode>(opcode.opcode)) {
         callbacks->CommandLog("Opcode: End Conditional");
     } else if (auto ctrl_loop = std::get_if<ControlLoopOpcode>(&opcode.opcode)) {
         if (ctrl_loop->start_loop) {
             callbacks->CommandLog("Opcode: Start Loop");
-            callbacks->CommandLog(fmt::format("Reg Idx:   {:X}", ctrl_loop->reg_index));
-            callbacks->CommandLog(fmt::format("Num Iters: {:X}", ctrl_loop->num_iters));
+            callbacks->CommandLog(std::format("Reg Idx:   {:X}", ctrl_loop->reg_index));
+            callbacks->CommandLog(std::format("Num Iters: {:X}", ctrl_loop->num_iters));
         } else {
             callbacks->CommandLog("Opcode: End Loop");
-            callbacks->CommandLog(fmt::format("Reg Idx:   {:X}", ctrl_loop->reg_index));
+            callbacks->CommandLog(std::format("Reg Idx:   {:X}", ctrl_loop->reg_index));
         }
     } else if (auto ldr_static = std::get_if<LoadRegisterStaticOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Load Register Static");
-        callbacks->CommandLog(fmt::format("Reg Idx:   {:X}", ldr_static->reg_index));
-        callbacks->CommandLog(fmt::format("Value:     {:X}", ldr_static->value));
+        callbacks->CommandLog(std::format("Reg Idx:   {:X}", ldr_static->reg_index));
+        callbacks->CommandLog(std::format("Value:     {:X}", ldr_static->value));
     } else if (auto ldr_memory = std::get_if<LoadRegisterMemoryOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Load Register Memory");
-        callbacks->CommandLog(fmt::format("Bit Width: {:X}", ldr_memory->bit_width));
-        callbacks->CommandLog(fmt::format("Reg Idx:   {:X}", ldr_memory->reg_index));
+        callbacks->CommandLog(std::format("Bit Width: {:X}", ldr_memory->bit_width));
+        callbacks->CommandLog(std::format("Reg Idx:   {:X}", ldr_memory->reg_index));
         callbacks->CommandLog(
-            fmt::format("Mem Type:  {:X}", static_cast<u32>(ldr_memory->mem_type)));
-        callbacks->CommandLog(fmt::format("From Reg:  {:d}", ldr_memory->load_from_reg));
-        callbacks->CommandLog(fmt::format("Rel Addr:  {:X}", ldr_memory->rel_address));
+            std::format("Mem Type:  {:X}", static_cast<u32>(ldr_memory->mem_type)));
+        callbacks->CommandLog(std::format("From Reg:  {:d}", ldr_memory->load_from_reg));
+        callbacks->CommandLog(std::format("Rel Addr:  {:X}", ldr_memory->rel_address));
     } else if (auto str_static = std::get_if<StoreStaticToAddressOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Store Static to Address");
-        callbacks->CommandLog(fmt::format("Bit Width: {:X}", str_static->bit_width));
-        callbacks->CommandLog(fmt::format("Reg Idx:   {:X}", str_static->reg_index));
+        callbacks->CommandLog(std::format("Bit Width: {:X}", str_static->bit_width));
+        callbacks->CommandLog(std::format("Reg Idx:   {:X}", str_static->reg_index));
         if (str_static->add_offset_reg) {
-            callbacks->CommandLog(fmt::format("O Reg Idx: {:X}", str_static->offset_reg_index));
+            callbacks->CommandLog(std::format("O Reg Idx: {:X}", str_static->offset_reg_index));
         }
-        callbacks->CommandLog(fmt::format("Incr Reg:  {:d}", str_static->increment_reg));
-        callbacks->CommandLog(fmt::format("Value:     {:X}", str_static->value));
+        callbacks->CommandLog(std::format("Incr Reg:  {:d}", str_static->increment_reg));
+        callbacks->CommandLog(std::format("Value:     {:X}", str_static->value));
     } else if (auto perform_math_static =
                    std::get_if<PerformArithmeticStaticOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Perform Static Arithmetic");
-        callbacks->CommandLog(fmt::format("Bit Width: {:X}", perform_math_static->bit_width));
-        callbacks->CommandLog(fmt::format("Reg Idx:   {:X}", perform_math_static->reg_index));
+        callbacks->CommandLog(std::format("Bit Width: {:X}", perform_math_static->bit_width));
+        callbacks->CommandLog(std::format("Reg Idx:   {:X}", perform_math_static->reg_index));
         callbacks->CommandLog(
-            fmt::format("Math Type: {:X}", static_cast<u32>(perform_math_static->math_type)));
-        callbacks->CommandLog(fmt::format("Value:     {:X}", perform_math_static->value));
+            std::format("Math Type: {:X}", static_cast<u32>(perform_math_static->math_type)));
+        callbacks->CommandLog(std::format("Value:     {:X}", perform_math_static->value));
     } else if (auto begin_keypress_cond =
                    std::get_if<BeginKeypressConditionalOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Begin Keypress Conditional");
-        callbacks->CommandLog(fmt::format("Key Mask:  {:X}", begin_keypress_cond->key_mask));
+        callbacks->CommandLog(std::format("Key Mask:  {:X}", begin_keypress_cond->key_mask));
     } else if (auto perform_math_reg =
                    std::get_if<PerformArithmeticRegisterOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Perform Register Arithmetic");
-        callbacks->CommandLog(fmt::format("Bit Width: {:X}", perform_math_reg->bit_width));
-        callbacks->CommandLog(fmt::format("Dst Idx:   {:X}", perform_math_reg->dst_reg_index));
-        callbacks->CommandLog(fmt::format("Src1 Idx:  {:X}", perform_math_reg->src_reg_1_index));
+        callbacks->CommandLog(std::format("Bit Width: {:X}", perform_math_reg->bit_width));
+        callbacks->CommandLog(std::format("Dst Idx:   {:X}", perform_math_reg->dst_reg_index));
+        callbacks->CommandLog(std::format("Src1 Idx:  {:X}", perform_math_reg->src_reg_1_index));
         if (perform_math_reg->has_immediate) {
-            callbacks->CommandLog(fmt::format("Value:     {:X}", perform_math_reg->value.bit64));
+            callbacks->CommandLog(std::format("Value:     {:X}", perform_math_reg->value.bit64));
         } else {
             callbacks->CommandLog(
-                fmt::format("Src2 Idx:  {:X}", perform_math_reg->src_reg_2_index));
+                std::format("Src2 Idx:  {:X}", perform_math_reg->src_reg_2_index));
         }
     } else if (auto str_register = std::get_if<StoreRegisterToAddressOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Store Register to Address");
-        callbacks->CommandLog(fmt::format("Bit Width: {:X}", str_register->bit_width));
-        callbacks->CommandLog(fmt::format("S Reg Idx: {:X}", str_register->str_reg_index));
-        callbacks->CommandLog(fmt::format("A Reg Idx: {:X}", str_register->addr_reg_index));
-        callbacks->CommandLog(fmt::format("Incr Reg:  {:d}", str_register->increment_reg));
+        callbacks->CommandLog(std::format("Bit Width: {:X}", str_register->bit_width));
+        callbacks->CommandLog(std::format("S Reg Idx: {:X}", str_register->str_reg_index));
+        callbacks->CommandLog(std::format("A Reg Idx: {:X}", str_register->addr_reg_index));
+        callbacks->CommandLog(std::format("Incr Reg:  {:d}", str_register->increment_reg));
         switch (str_register->ofs_type) {
         case StoreRegisterOffsetType::None:
             break;
         case StoreRegisterOffsetType::Reg:
-            callbacks->CommandLog(fmt::format("O Reg Idx: {:X}", str_register->ofs_reg_index));
+            callbacks->CommandLog(std::format("O Reg Idx: {:X}", str_register->ofs_reg_index));
             break;
         case StoreRegisterOffsetType::Imm:
-            callbacks->CommandLog(fmt::format("Rel Addr:  {:X}", str_register->rel_address));
+            callbacks->CommandLog(std::format("Rel Addr:  {:X}", str_register->rel_address));
             break;
         case StoreRegisterOffsetType::MemReg:
             callbacks->CommandLog(
-                fmt::format("Mem Type:  {:X}", static_cast<u32>(str_register->mem_type)));
+                std::format("Mem Type:  {:X}", static_cast<u32>(str_register->mem_type)));
             break;
         case StoreRegisterOffsetType::MemImm:
         case StoreRegisterOffsetType::MemImmReg:
             callbacks->CommandLog(
-                fmt::format("Mem Type:  {:X}", static_cast<u32>(str_register->mem_type)));
-            callbacks->CommandLog(fmt::format("Rel Addr:  {:X}", str_register->rel_address));
+                std::format("Mem Type:  {:X}", static_cast<u32>(str_register->mem_type)));
+            callbacks->CommandLog(std::format("Rel Addr:  {:X}", str_register->rel_address));
             break;
         }
     } else if (auto begin_reg_cond = std::get_if<BeginRegisterConditionalOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Begin Register Conditional");
-        callbacks->CommandLog(fmt::format("Bit Width: {:X}", begin_reg_cond->bit_width));
+        callbacks->CommandLog(std::format("Bit Width: {:X}", begin_reg_cond->bit_width));
         callbacks->CommandLog(
-            fmt::format("Cond Type: {:X}", static_cast<u32>(begin_reg_cond->cond_type)));
-        callbacks->CommandLog(fmt::format("V Reg Idx: {:X}", begin_reg_cond->val_reg_index));
+            std::format("Cond Type: {:X}", static_cast<u32>(begin_reg_cond->cond_type)));
+        callbacks->CommandLog(std::format("V Reg Idx: {:X}", begin_reg_cond->val_reg_index));
         switch (begin_reg_cond->comp_type) {
         case CompareRegisterValueType::StaticValue:
             callbacks->CommandLog("Comp Type: Static Value");
-            callbacks->CommandLog(fmt::format("Value:     {:X}", begin_reg_cond->value.bit64));
+            callbacks->CommandLog(std::format("Value:     {:X}", begin_reg_cond->value.bit64));
             break;
         case CompareRegisterValueType::OtherRegister:
             callbacks->CommandLog("Comp Type: Other Register");
-            callbacks->CommandLog(fmt::format("X Reg Idx: {:X}", begin_reg_cond->other_reg_index));
+            callbacks->CommandLog(std::format("X Reg Idx: {:X}", begin_reg_cond->other_reg_index));
             break;
         case CompareRegisterValueType::MemoryRelAddr:
             callbacks->CommandLog("Comp Type: Memory Relative Address");
             callbacks->CommandLog(
-                fmt::format("Mem Type:  {:X}", static_cast<u32>(begin_reg_cond->mem_type)));
-            callbacks->CommandLog(fmt::format("Rel Addr:  {:X}", begin_reg_cond->rel_address));
+                std::format("Mem Type:  {:X}", static_cast<u32>(begin_reg_cond->mem_type)));
+            callbacks->CommandLog(std::format("Rel Addr:  {:X}", begin_reg_cond->rel_address));
             break;
         case CompareRegisterValueType::MemoryOfsReg:
             callbacks->CommandLog("Comp Type: Memory Offset Register");
             callbacks->CommandLog(
-                fmt::format("Mem Type:  {:X}", static_cast<u32>(begin_reg_cond->mem_type)));
-            callbacks->CommandLog(fmt::format("O Reg Idx: {:X}", begin_reg_cond->ofs_reg_index));
+                std::format("Mem Type:  {:X}", static_cast<u32>(begin_reg_cond->mem_type)));
+            callbacks->CommandLog(std::format("O Reg Idx: {:X}", begin_reg_cond->ofs_reg_index));
             break;
         case CompareRegisterValueType::RegisterRelAddr:
             callbacks->CommandLog("Comp Type: Register Relative Address");
-            callbacks->CommandLog(fmt::format("A Reg Idx: {:X}", begin_reg_cond->addr_reg_index));
-            callbacks->CommandLog(fmt::format("Rel Addr:  {:X}", begin_reg_cond->rel_address));
+            callbacks->CommandLog(std::format("A Reg Idx: {:X}", begin_reg_cond->addr_reg_index));
+            callbacks->CommandLog(std::format("Rel Addr:  {:X}", begin_reg_cond->rel_address));
             break;
         case CompareRegisterValueType::RegisterOfsReg:
             callbacks->CommandLog("Comp Type: Register Offset Register");
-            callbacks->CommandLog(fmt::format("A Reg Idx: {:X}", begin_reg_cond->addr_reg_index));
-            callbacks->CommandLog(fmt::format("O Reg Idx: {:X}", begin_reg_cond->ofs_reg_index));
+            callbacks->CommandLog(std::format("A Reg Idx: {:X}", begin_reg_cond->addr_reg_index));
+            callbacks->CommandLog(std::format("O Reg Idx: {:X}", begin_reg_cond->ofs_reg_index));
             break;
         }
     } else if (auto save_restore_reg = std::get_if<SaveRestoreRegisterOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Save or Restore Register");
-        callbacks->CommandLog(fmt::format("Dst Idx:   {:X}", save_restore_reg->dst_index));
-        callbacks->CommandLog(fmt::format("Src Idx:   {:X}", save_restore_reg->src_index));
+        callbacks->CommandLog(std::format("Dst Idx:   {:X}", save_restore_reg->dst_index));
+        callbacks->CommandLog(std::format("Src Idx:   {:X}", save_restore_reg->src_index));
         callbacks->CommandLog(
-            fmt::format("Op Type:   {:d}", static_cast<u32>(save_restore_reg->op_type)));
+            std::format("Op Type:   {:d}", static_cast<u32>(save_restore_reg->op_type)));
     } else if (auto save_restore_regmask =
                    std::get_if<SaveRestoreRegisterMaskOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Save or Restore Register Mask");
         callbacks->CommandLog(
-            fmt::format("Op Type:   {:d}", static_cast<u32>(save_restore_regmask->op_type)));
+            std::format("Op Type:   {:d}", static_cast<u32>(save_restore_regmask->op_type)));
         for (std::size_t i = 0; i < NumRegisters; i++) {
             callbacks->CommandLog(
-                fmt::format("Act[{:02X}]:   {:d}", i, save_restore_regmask->should_operate[i]));
+                std::format("Act[{:02X}]:   {:d}", i, save_restore_regmask->should_operate[i]));
         }
     } else if (auto rw_static_reg = std::get_if<ReadWriteStaticRegisterOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Read/Write Static Register");
@@ -180,44 +180,44 @@ void DmntCheatVm::LogOpcode(const CheatVmOpcode& opcode) {
         } else {
             callbacks->CommandLog("Op Type: WriteStaticRegister");
         }
-        callbacks->CommandLog(fmt::format("Reg Idx   {:X}", rw_static_reg->idx));
-        callbacks->CommandLog(fmt::format("Stc Idx   {:X}", rw_static_reg->static_idx));
+        callbacks->CommandLog(std::format("Reg Idx   {:X}", rw_static_reg->idx));
+        callbacks->CommandLog(std::format("Stc Idx   {:X}", rw_static_reg->static_idx));
     } else if (auto debug_log = std::get_if<DebugLogOpcode>(&opcode.opcode)) {
         callbacks->CommandLog("Opcode: Debug Log");
-        callbacks->CommandLog(fmt::format("Bit Width: {:X}", debug_log->bit_width));
-        callbacks->CommandLog(fmt::format("Log ID:    {:X}", debug_log->log_id));
+        callbacks->CommandLog(std::format("Bit Width: {:X}", debug_log->bit_width));
+        callbacks->CommandLog(std::format("Log ID:    {:X}", debug_log->log_id));
         callbacks->CommandLog(
-            fmt::format("Val Type:  {:X}", static_cast<u32>(debug_log->val_type)));
+            std::format("Val Type:  {:X}", static_cast<u32>(debug_log->val_type)));
         switch (debug_log->val_type) {
         case DebugLogValueType::RegisterValue:
             callbacks->CommandLog("Val Type:  Register Value");
-            callbacks->CommandLog(fmt::format("X Reg Idx: {:X}", debug_log->val_reg_index));
+            callbacks->CommandLog(std::format("X Reg Idx: {:X}", debug_log->val_reg_index));
             break;
         case DebugLogValueType::MemoryRelAddr:
             callbacks->CommandLog("Val Type:  Memory Relative Address");
             callbacks->CommandLog(
-                fmt::format("Mem Type:  {:X}", static_cast<u32>(debug_log->mem_type)));
-            callbacks->CommandLog(fmt::format("Rel Addr:  {:X}", debug_log->rel_address));
+                std::format("Mem Type:  {:X}", static_cast<u32>(debug_log->mem_type)));
+            callbacks->CommandLog(std::format("Rel Addr:  {:X}", debug_log->rel_address));
             break;
         case DebugLogValueType::MemoryOfsReg:
             callbacks->CommandLog("Val Type:  Memory Offset Register");
             callbacks->CommandLog(
-                fmt::format("Mem Type:  {:X}", static_cast<u32>(debug_log->mem_type)));
-            callbacks->CommandLog(fmt::format("O Reg Idx: {:X}", debug_log->ofs_reg_index));
+                std::format("Mem Type:  {:X}", static_cast<u32>(debug_log->mem_type)));
+            callbacks->CommandLog(std::format("O Reg Idx: {:X}", debug_log->ofs_reg_index));
             break;
         case DebugLogValueType::RegisterRelAddr:
             callbacks->CommandLog("Val Type:  Register Relative Address");
-            callbacks->CommandLog(fmt::format("A Reg Idx: {:X}", debug_log->addr_reg_index));
-            callbacks->CommandLog(fmt::format("Rel Addr:  {:X}", debug_log->rel_address));
+            callbacks->CommandLog(std::format("A Reg Idx: {:X}", debug_log->addr_reg_index));
+            callbacks->CommandLog(std::format("Rel Addr:  {:X}", debug_log->rel_address));
             break;
         case DebugLogValueType::RegisterOfsReg:
             callbacks->CommandLog("Val Type:  Register Offset Register");
-            callbacks->CommandLog(fmt::format("A Reg Idx: {:X}", debug_log->addr_reg_index));
-            callbacks->CommandLog(fmt::format("O Reg Idx: {:X}", debug_log->ofs_reg_index));
+            callbacks->CommandLog(std::format("A Reg Idx: {:X}", debug_log->addr_reg_index));
+            callbacks->CommandLog(std::format("O Reg Idx: {:X}", debug_log->ofs_reg_index));
             break;
         }
     } else if (auto instr = std::get_if<UnrecognizedInstruction>(&opcode.opcode)) {
-        callbacks->CommandLog(fmt::format("Unknown opcode: {:X}", static_cast<u32>(instr->opcode)));
+        callbacks->CommandLog(std::format("Unknown opcode: {:X}", static_cast<u32>(instr->opcode)));
     }
 }
 
@@ -741,10 +741,10 @@ void DmntCheatVm::Execute(const CheatProcessMetadata& metadata) {
     const bool command_log_enabled = callbacks->IsCommandLogEnabled();
     if (command_log_enabled) {
         callbacks->CommandLog("Started VM execution.");
-        callbacks->CommandLog(fmt::format("Main NSO:  {:012X}", metadata.main_nso_extents.base));
-        callbacks->CommandLog(fmt::format("Heap:      {:012X}", metadata.main_nso_extents.base));
+        callbacks->CommandLog(std::format("Main NSO:  {:012X}", metadata.main_nso_extents.base));
+        callbacks->CommandLog(std::format("Heap:      {:012X}", metadata.main_nso_extents.base));
         callbacks->CommandLog(
-            fmt::format("Keys Down: {:08X}", static_cast<u32>(kDown & 0x0FFFFFFF)));
+            std::format("Keys Down: {:08X}", static_cast<u32>(kDown & 0x0FFFFFFF)));
     }
 
     // Clear VM state.
@@ -754,15 +754,15 @@ void DmntCheatVm::Execute(const CheatProcessMetadata& metadata) {
     while (DecodeNextOpcode(cur_opcode)) {
         if (command_log_enabled) {
             callbacks->CommandLog(
-                fmt::format("Instruction Ptr: {:04X}", static_cast<u32>(instruction_ptr)));
+                std::format("Instruction Ptr: {:04X}", static_cast<u32>(instruction_ptr)));
 
             for (std::size_t i = 0; i < NumRegisters; i++) {
-                callbacks->CommandLog(fmt::format("Registers[{:02X}]: {:016X}", i,
+                callbacks->CommandLog(std::format("Registers[{:02X}]: {:016X}", i,
                                                   registers[i]));
             }
 
             for (std::size_t i = 0; i < NumRegisters; i++) {
-                callbacks->CommandLog(fmt::format("SavedRegs[{:02X}]: {:016X}", i,
+                callbacks->CommandLog(std::format("SavedRegs[{:02X}]: {:016X}", i,
                                                   saved_values[i]));
             }
             LogOpcode(cur_opcode);

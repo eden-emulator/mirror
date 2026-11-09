@@ -1,10 +1,11 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <numbers>
+#include <cmath>
 
 #include "audio_core/adsp/apps/audio_renderer/command_list_processor.h"
 #include "audio_core/renderer/command/effect/i3dl2_reverb.h"
@@ -399,13 +400,13 @@ static void ApplyI3dl2ReverbEffect(const I3dl2ReverbInfo::ParameterVersion1& par
 
 void I3dl2ReverbCommand::Dump([[maybe_unused]] const AudioRenderer::CommandListProcessor& processor,
                               std::string& string) {
-    string += fmt::format("I3dl2ReverbCommand\n\tenabled {} \n\tinputs: ", effect_enabled);
+    string += std::format("I3dl2ReverbCommand\n\tenabled {} \n\tinputs: ", effect_enabled);
     for (u32 i = 0; i < parameter.channel_count; i++) {
-        string += fmt::format("{:02X}, ", inputs[i]);
+        string += std::format("{:02X}, ", inputs[i]);
     }
     string += "\n\toutputs: ";
     for (u32 i = 0; i < parameter.channel_count; i++) {
-        string += fmt::format("{:02X}, ", outputs[i]);
+        string += std::format("{:02X}, ", outputs[i]);
     }
     string += "\n";
 }

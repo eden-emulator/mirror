@@ -7,7 +7,7 @@
 #include <random>
 #include <utility>
 #include <boost/asio.hpp>
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/logging.h"
 #include "common/param_package.h"
@@ -365,7 +365,7 @@ Common::UUID UDPClient::GetHostUUID(const std::string& host) const {
         LOG_ERROR(Input, "Invalid IPv4 address \"{}\" provided", host);
         ip = boost::asio::ip::address_v4{};
     }
-    auto const hex_host = fmt::format("00000000-0000-0000-0000-0000{:06x}", ip.to_uint());
+    auto const hex_host = std::format("00000000-0000-0000-0000-0000{:06x}", ip.to_uint());
     return Common::UUID{hex_host};
 }
 
@@ -396,7 +396,7 @@ std::vector<Common::ParamPackage> UDPClient::GetInputDevices() const {
             const auto pad_identifier = GetPadIdentifier(pad_index);
             Common::ParamPackage identifier{};
             identifier.Set("engine", GetEngineName());
-            identifier.Set("display", fmt::format("UDP Controller {}", pad_identifier.pad));
+            identifier.Set("display", std::format("UDP Controller {}", pad_identifier.pad));
             identifier.Set("guid", pad_identifier.guid.RawString());
             identifier.Set("port", static_cast<int>(pad_identifier.port));
             identifier.Set("pad", static_cast<int>(pad_identifier.pad));

@@ -775,7 +775,7 @@ void KeyManager::WriteKeyToFile(KeyCategory category, std::string_view keyname, 
             "# If you are experiencing issues involving keys, it may help to delete this file\n"));
     }
 
-    void(file.WriteString(fmt::format("\n{} = {}", keyname, Common::HexToString(key))));
+    void(file.WriteString(std::format("\n{} = {}", keyname, Common::HexToString(key))));
     LoadFromFile(path, category == KeyCategory::Title);
 }
 
@@ -810,21 +810,21 @@ void KeyManager::SetKey(S128KeyType id, Key128 key, u64 field1, u64 field2) {
             "key_area_key_ocean_{:02X}",
             "key_area_key_system_{:02X}",
         };
-        WriteKeyToFile(category, fmt::format(fmt::runtime(kak_names.at(field2)), field1), key);
+        WriteKeyToFile(category, std::vformat(kak_names.at(field2), std::make_format_args(field1)), key);
     } else if (id == S128KeyType::Master) {
-        WriteKeyToFile(category, fmt::format("master_key_{:02X}", field1), key);
+        WriteKeyToFile(category, std::format("master_key_{:02X}", field1), key);
     } else if (id == S128KeyType::Package1) {
-        WriteKeyToFile(category, fmt::format("package1_key_{:02X}", field1), key);
+        WriteKeyToFile(category, std::format("package1_key_{:02X}", field1), key);
     } else if (id == S128KeyType::Package2) {
-        WriteKeyToFile(category, fmt::format("package2_key_{:02X}", field1), key);
+        WriteKeyToFile(category, std::format("package2_key_{:02X}", field1), key);
     } else if (id == S128KeyType::Titlekek) {
-        WriteKeyToFile(category, fmt::format("titlekek_{:02X}", field1), key);
+        WriteKeyToFile(category, std::format("titlekek_{:02X}", field1), key);
     } else if (id == S128KeyType::Keyblob) {
-        WriteKeyToFile(category, fmt::format("keyblob_key_{:02X}", field1), key);
+        WriteKeyToFile(category, std::format("keyblob_key_{:02X}", field1), key);
     } else if (id == S128KeyType::KeyblobMAC) {
-        WriteKeyToFile(category, fmt::format("keyblob_mac_key_{:02X}", field1), key);
+        WriteKeyToFile(category, std::format("keyblob_mac_key_{:02X}", field1), key);
     } else if (id == S128KeyType::Source && field1 == u64(SourceKeyType::Keyblob)) {
-        WriteKeyToFile(category, fmt::format("keyblob_key_source_{:02X}", field2), key);
+        WriteKeyToFile(category, std::format("keyblob_key_source_{:02X}", field2), key);
     }
 
     s128_keys[{id, field1, field2}] = key;
@@ -954,7 +954,7 @@ void KeyManager::DeriveBase() {
         // Decrypt keyblob
         if (keyblobs[i] == std::array<u8, 0x90>{}) {
             keyblobs[i] = DecryptKeyblob(encrypted_keyblobs[i], key);
-            WriteKeyToFile<0x90>(KeyCategory::Console, fmt::format("keyblob_{:02X}", i),
+            WriteKeyToFile<0x90>(KeyCategory::Console, std::format("keyblob_{:02X}", i),
                                  keyblobs[i]);
         }
 
@@ -1089,7 +1089,7 @@ void KeyManager::PopulateFromPartitionData(PartitionDataManager& data) {
         for (size_t i = 0; i < encrypted_keyblobs.size(); ++i) {
             if (encrypted_keyblobs[i] == std::array<u8, 0xB0>{}) {
                 encrypted_keyblobs[i] = data.GetEncryptedKeyblob(i);
-                WriteKeyToFile<0xB0>(KeyCategory::Console, fmt::format("encrypted_keyblob_{:02X}", i), encrypted_keyblobs[i]);
+                WriteKeyToFile<0xB0>(KeyCategory::Console, std::format("encrypted_keyblob_{:02X}", i), encrypted_keyblobs[i]);
             }
         }
 

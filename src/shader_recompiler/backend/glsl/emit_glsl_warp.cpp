@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include <string_view>
 
 #include "shader_recompiler/backend/glsl/emit_glsl_instructions.h"
@@ -25,17 +26,17 @@ void SetInBoundsFlag(EmitContext& ctx, IR::Inst& inst) {
 }
 
 std::string ComputeMinThreadId(std::string_view thread_id, std::string_view segmentation_mask) {
-    return fmt::format("({}&{})", thread_id, segmentation_mask);
+    return std::format("({}&{})", thread_id, segmentation_mask);
 }
 
 std::string ComputeMaxThreadId(std::string_view min_thread_id, std::string_view clamp,
                                std::string_view not_seg_mask) {
-    return fmt::format("({})|({}&{})", min_thread_id, clamp, not_seg_mask);
+    return std::format("({})|({}&{})", min_thread_id, clamp, not_seg_mask);
 }
 
 std::string GetMaxThreadId(std::string_view thread_id, std::string_view clamp,
                            std::string_view segmentation_mask) {
-    const auto not_seg_mask{fmt::format("(~{})", segmentation_mask)};
+    const auto not_seg_mask{std::format("(~{})", segmentation_mask)};
     const auto min_thread_id{ComputeMinThreadId(thread_id, segmentation_mask)};
     return ComputeMaxThreadId(min_thread_id, clamp, not_seg_mask);
 }
@@ -43,7 +44,7 @@ std::string GetMaxThreadId(std::string_view thread_id, std::string_view clamp,
 void UseShuffleNv(EmitContext& ctx, IR::Inst& inst, std::string_view shfl_op,
                   std::string_view value, std::string_view index,
                   [[maybe_unused]] std::string_view clamp, std::string_view segmentation_mask) {
-    const auto width{fmt::format("32u>>(bitCount({}&31u))", segmentation_mask)};
+    const auto width{std::format("32u>>(bitCount({}&31u))", segmentation_mask)};
     ctx.AddU32("{}={}({},{},{},shfl_in_bounds);", inst, shfl_op, value, index, width);
     SetInBoundsFlag(ctx, inst);
 }
@@ -57,7 +58,7 @@ std::string_view BallotIndex(EmitContext& ctx) {
 
 std::string GetMask(EmitContext& ctx, std::string_view mask) {
     const auto ballot_index{BallotIndex(ctx)};
-    return fmt::format("uint(uvec2({}){})", mask, ballot_index);
+    return std::format("uint(uvec2({}){})", mask, ballot_index);
 }
 } // Anonymous namespace
 
@@ -71,8 +72,8 @@ void EmitVoteAll(EmitContext& ctx, IR::Inst& inst, std::string_view pred) {
         return;
     }
     const auto ballot_index{BallotIndex(ctx)};
-    const auto active_mask{fmt::format("uvec2(ballotARB(true)){}", ballot_index)};
-    const auto ballot{fmt::format("uvec2(ballotARB({})){}", pred, ballot_index)};
+    const auto active_mask{std::format("uvec2(ballotARB(true)){}", ballot_index)};
+    const auto ballot{std::format("uvec2(ballotARB({})){}", pred, ballot_index)};
     ctx.AddU1("{}=({}&{})=={};", inst, ballot, active_mask, active_mask);
 }
 
@@ -82,8 +83,8 @@ void EmitVoteAny(EmitContext& ctx, IR::Inst& inst, std::string_view pred) {
         return;
     }
     const auto ballot_index{BallotIndex(ctx)};
-    const auto active_mask{fmt::format("uvec2(ballotARB(true)){}", ballot_index)};
-    const auto ballot{fmt::format("uvec2(ballotARB({})){}", pred, ballot_index)};
+    const auto active_mask{std::format("uvec2(ballotARB(true)){}", ballot_index)};
+    const auto ballot{std::format("uvec2(ballotARB({})){}", pred, ballot_index)};
     ctx.AddU1("{}=({}&{})!=0u;", inst, ballot, active_mask, active_mask);
 }
 
@@ -93,9 +94,9 @@ void EmitVoteEqual(EmitContext& ctx, IR::Inst& inst, std::string_view pred) {
         return;
     }
     const auto ballot_index{BallotIndex(ctx)};
-    const auto active_mask{fmt::format("uvec2(ballotARB(true)){}", ballot_index)};
-    const auto ballot{fmt::format("uvec2(ballotARB({})){}", pred, ballot_index)};
-    const auto value{fmt::format("({}^{})", ballot, active_mask)};
+    const auto active_mask{std::format("uvec2(ballotARB(true)){}", ballot_index)};
+    const auto ballot{std::format("uvec2(ballotARB({})){}", pred, ballot_index)};
+    const auto value{std::format("({}^{})", ballot, active_mask)};
     ctx.AddU1("{}=({}==0)||({}=={});", inst, value, value, active_mask);
 }
 
@@ -132,16 +133,16 @@ void EmitShuffleIndex(EmitContext& ctx, IR::Inst& inst, std::string_view value,
     }
     const bool big_warp{ctx.profile.warp_size_potentially_larger_than_guest};
     const auto is_upper_partition{"int(gl_SubGroupInvocationARB)>=32"};
-    const auto upper_index{fmt::format("{}?{}+32:{}", is_upper_partition, index, index)};
-    const auto upper_clamp{fmt::format("{}?{}+32:{}", is_upper_partition, clamp, clamp)};
+    const auto upper_index{std::format("{}?{}+32:{}", is_upper_partition, index, index)};
+    const auto upper_clamp{std::format("{}?{}+32:{}", is_upper_partition, clamp, clamp)};
 
-    const auto not_seg_mask{fmt::format("(~{})", seg_mask)};
+    const auto not_seg_mask{std::format("(~{})", seg_mask)};
     const auto min_thread_id{ComputeMinThreadId(THREAD_ID, seg_mask)};
     const auto max_thread_id{
         ComputeMaxThreadId(min_thread_id, big_warp ? upper_clamp : clamp, not_seg_mask)};
 
-    const auto lhs{fmt::format("({}&{})", big_warp ? upper_index : index, not_seg_mask)};
-    const auto src_thread_id{fmt::format("({})|({})", lhs, min_thread_id)};
+    const auto lhs{std::format("({}&{})", big_warp ? upper_index : index, not_seg_mask)};
+    const auto src_thread_id{std::format("({})|({})", lhs, min_thread_id)};
     ctx.Add("shfl_in_bounds=int({})<=int({});", src_thread_id, max_thread_id);
     SetInBoundsFlag(ctx, inst);
     ctx.Add("shfl_result=readInvocationARB({},{});", value, src_thread_id);
@@ -156,10 +157,10 @@ void EmitShuffleUp(EmitContext& ctx, IR::Inst& inst, std::string_view value, std
     }
     const bool big_warp{ctx.profile.warp_size_potentially_larger_than_guest};
     const auto is_upper_partition{"int(gl_SubGroupInvocationARB)>=32"};
-    const auto upper_clamp{fmt::format("{}?{}+32:{}", is_upper_partition, clamp, clamp)};
+    const auto upper_clamp{std::format("{}?{}+32:{}", is_upper_partition, clamp, clamp)};
 
     const auto max_thread_id{GetMaxThreadId(THREAD_ID, big_warp ? upper_clamp : clamp, seg_mask)};
-    const auto src_thread_id{fmt::format("({}-{})", THREAD_ID, index)};
+    const auto src_thread_id{std::format("({}-{})", THREAD_ID, index)};
     ctx.Add("shfl_in_bounds=int({})>=int({});", src_thread_id, max_thread_id);
     SetInBoundsFlag(ctx, inst);
     ctx.Add("shfl_result=readInvocationARB({},{});", value, src_thread_id);
@@ -174,10 +175,10 @@ void EmitShuffleDown(EmitContext& ctx, IR::Inst& inst, std::string_view value,
     }
     const bool big_warp{ctx.profile.warp_size_potentially_larger_than_guest};
     const auto is_upper_partition{"int(gl_SubGroupInvocationARB)>=32"};
-    const auto upper_clamp{fmt::format("{}?{}+32:{}", is_upper_partition, clamp, clamp)};
+    const auto upper_clamp{std::format("{}?{}+32:{}", is_upper_partition, clamp, clamp)};
 
     const auto max_thread_id{GetMaxThreadId(THREAD_ID, big_warp ? upper_clamp : clamp, seg_mask)};
-    const auto src_thread_id{fmt::format("({}+{})", THREAD_ID, index)};
+    const auto src_thread_id{std::format("({}+{})", THREAD_ID, index)};
     ctx.Add("shfl_in_bounds=int({})<=int({});", src_thread_id, max_thread_id);
     SetInBoundsFlag(ctx, inst);
     ctx.Add("shfl_result=readInvocationARB({},{});", value, src_thread_id);
@@ -193,10 +194,10 @@ void EmitShuffleButterfly(EmitContext& ctx, IR::Inst& inst, std::string_view val
     }
     const bool big_warp{ctx.profile.warp_size_potentially_larger_than_guest};
     const auto is_upper_partition{"int(gl_SubGroupInvocationARB)>=32"};
-    const auto upper_clamp{fmt::format("{}?{}+32:{}", is_upper_partition, clamp, clamp)};
+    const auto upper_clamp{std::format("{}?{}+32:{}", is_upper_partition, clamp, clamp)};
 
     const auto max_thread_id{GetMaxThreadId(THREAD_ID, big_warp ? upper_clamp : clamp, seg_mask)};
-    const auto src_thread_id{fmt::format("({}^{})", THREAD_ID, index)};
+    const auto src_thread_id{std::format("({}^{})", THREAD_ID, index)};
     ctx.Add("shfl_in_bounds=int({})<=int({});", src_thread_id, max_thread_id);
     SetInBoundsFlag(ctx, inst);
     ctx.Add("shfl_result=readInvocationARB({},{});", value, src_thread_id);
@@ -205,21 +206,21 @@ void EmitShuffleButterfly(EmitContext& ctx, IR::Inst& inst, std::string_view val
 
 void EmitQuadBroadcast(EmitContext& ctx, IR::Inst& inst, std::string_view value,
                        std::string_view lane) {
-    const auto src_thread_id{fmt::format("(({}&~3)|({}& 3))", THREAD_ID, lane)};
+    const auto src_thread_id{std::format("(({}&~3)|({}& 3))", THREAD_ID, lane)};
     ctx.AddU32("{}=readInvocationARB({},{});", inst, value, src_thread_id);
 }
 
 void EmitQuadSwap(EmitContext& ctx, IR::Inst& inst, std::string_view value,
                   std::string_view direction) {
-    const auto src_thread_id{fmt::format("({}^({}+1))", THREAD_ID, direction)};
+    const auto src_thread_id{std::format("({}^({}+1))", THREAD_ID, direction)};
     ctx.AddU32("{}=readInvocationARB({},{});", inst, value, src_thread_id);
 }
 
 void EmitFSwizzleAdd(EmitContext& ctx, IR::Inst& inst, std::string_view op_a, std::string_view op_b,
                      std::string_view swizzle) {
-    const auto mask{fmt::format("({}>>((gl_SubGroupInvocationARB&3)<<1))&3", swizzle)};
-    const std::string modifier_a = fmt::format("FSWZ_A[{}]", mask);
-    const std::string modifier_b = fmt::format("FSWZ_B[{}]", mask);
+    const auto mask{std::format("({}>>((gl_SubGroupInvocationARB&3)<<1))&3", swizzle)};
+    const std::string modifier_a = std::format("FSWZ_A[{}]", mask);
+    const std::string modifier_b = std::format("FSWZ_B[{}]", mask);
     ctx.AddF32("{}=({}*{})+({}*{});", inst, op_a, modifier_a, op_b, modifier_b);
 }
 

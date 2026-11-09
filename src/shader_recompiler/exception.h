@@ -7,6 +7,7 @@
 #pragma once
 
 #include <exception>
+#include <format>
 #include <string>
 #include <utility>
 
@@ -38,21 +39,21 @@ class LogicError : public Exception {
 public:
     template <typename... Args>
     explicit LogicError(const char* message, Args&&... args)
-        : Exception{fmt::format(fmt::runtime(message), std::forward<Args>(args)...)} {}
+        : Exception{std::vformat(message, std::make_format_args(args...))} {}
 };
 
 class RuntimeError : public Exception {
 public:
     template <typename... Args>
     explicit RuntimeError(const char* message, Args&&... args)
-        : Exception{fmt::format(fmt::runtime(message), std::forward<Args>(args)...)} {}
+        : Exception{std::vformat(message, std::make_format_args(args...))} {}
 };
 
 class NotImplementedException : public Exception {
 public:
     template <typename... Args>
     explicit NotImplementedException(const char* message, Args&&... args)
-        : Exception{fmt::format(fmt::runtime(message), std::forward<Args>(args)...)} {
+        : Exception{std::vformat(message, std::make_format_args(args...))} {
         Append(" is not implemented");
     }
 };
@@ -61,7 +62,7 @@ class InvalidArgument : public Exception {
 public:
     template <typename... Args>
     explicit InvalidArgument(const char* message, Args&&... args)
-        : Exception{fmt::format(fmt::runtime(message), std::forward<Args>(args)...)} {}
+        : Exception{std::vformat(message, std::make_format_args(args...))} {}
 };
 
 } // namespace Shader

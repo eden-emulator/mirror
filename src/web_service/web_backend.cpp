@@ -102,8 +102,8 @@ struct Client::Impl {
 
         if (res->status_code >= hydro::Status::BadRequest) {
             LOG_ERROR(WebService, "{} to {} returned error status code: {}", method, host + path,
-                      std::to_underlying(res->status_code));
-            return WebResult{WebResult::Code::HttpError, std::to_string(std::to_underlying(res->status_code)), ""};
+                      res->status_code);
+            return WebResult{WebResult::Code::HttpError, std::format("{}", res->status_code), ""};
         }
 
         auto content_type = res->headers.get("content-type");

@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include <fmt/format.h>
+#include <format>
 #include "common/common_types.h"
 
 namespace Dynarmic::IR {
@@ -656,7 +656,7 @@ constexpr bool MayGetNZCVFromOp(const Opcode op) noexcept {
 }  // namespace Dynarmic::IR
 
 template<>
-struct fmt::formatter<Dynarmic::IR::Opcode> : fmt::formatter<std::string_view> {
+struct std::formatter<Dynarmic::IR::Opcode> : std::formatter<std::string_view> {
     template<typename FormatContext>
     auto format(Dynarmic::IR::Opcode op, FormatContext& ctx) const {
         return formatter<std::string_view>::format(GetNameOf(op), ctx);

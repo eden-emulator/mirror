@@ -112,7 +112,7 @@ Buffer::Buffer(BufferCacheRuntime& runtime, DAddr cpu_addr_, u64 size_bytes_,
       tracker{SizeBytes()} {
     sparse_compatible = sparse_compatible_;
     if (runtime.device.HasDebuggingToolAttached()) {
-        buffer.SetObjectNameEXT(fmt::format("Buffer {:#x}", CpuAddr()).c_str());
+        buffer.SetObjectNameEXT(std::format("Buffer {:#x}", CpuAddr()).c_str());
     }
     if (device->IsBufferDeviceAddressSupported()) {
         device_address = device->GetLogical().GetBufferDeviceAddress(*buffer);

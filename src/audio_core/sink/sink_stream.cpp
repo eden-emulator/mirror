@@ -9,6 +9,7 @@
 #include <memory>
 #include <span>
 #include <vector>
+#include <cmath>
 
 #include "audio_core/audio_core.h"
 #include "audio_core/common/common.h"

@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include <string_view>
 
 #include "shader_recompiler/backend/glsl/emit_glsl_instructions.h"
@@ -16,7 +20,7 @@ constexpr char cas_loop[]{"for(;;){{uint old_value={};uint "
 
 void SsboWriteCas(EmitContext& ctx, const IR::Value& binding, std::string_view offset_var,
                   std::string_view value, std::string_view bit_offset, u32 num_bits) {
-    const auto ssbo{fmt::format("{}_ssbo{}[{}>>2]", ctx.stage_name, binding.U32(), offset_var)};
+    const auto ssbo{std::format("{}_ssbo{}[{}>>2]", ctx.stage_name, binding.U32(), offset_var)};
     ctx.Add(cas_loop, ssbo, ssbo, ssbo, value, bit_offset, num_bits);
 }
 } // Anonymous namespace
@@ -152,28 +156,28 @@ void EmitLoadStorage128(EmitContext& ctx, IR::Inst& inst, const IR::Value& bindi
 void EmitWriteStorageU8(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                         std::string_view value) {
     const auto offset_var{ctx.var_alloc.Consume(offset)};
-    const auto bit_offset{fmt::format("int({}%4)*8", offset_var)};
+    const auto bit_offset{std::format("int({}%4)*8", offset_var)};
     SsboWriteCas(ctx, binding, offset_var, value, bit_offset, 8);
 }
 
 void EmitWriteStorageS8(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                         std::string_view value) {
     const auto offset_var{ctx.var_alloc.Consume(offset)};
-    const auto bit_offset{fmt::format("int({}%4)*8", offset_var)};
+    const auto bit_offset{std::format("int({}%4)*8", offset_var)};
     SsboWriteCas(ctx, binding, offset_var, value, bit_offset, 8);
 }
 
 void EmitWriteStorageU16(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                          std::string_view value) {
     const auto offset_var{ctx.var_alloc.Consume(offset)};
-    const auto bit_offset{fmt::format("int(({}>>1)%2)*16", offset_var)};
+    const auto bit_offset{std::format("int(({}>>1)%2)*16", offset_var)};
     SsboWriteCas(ctx, binding, offset_var, value, bit_offset, 16);
 }
 
 void EmitWriteStorageS16(EmitContext& ctx, const IR::Value& binding, const IR::Value& offset,
                          std::string_view value) {
     const auto offset_var{ctx.var_alloc.Consume(offset)};
-    const auto bit_offset{fmt::format("int(({}>>1)%2)*16", offset_var)};
+    const auto bit_offset{std::format("int(({}>>1)%2)*16", offset_var)};
     SsboWriteCas(ctx, binding, offset_var, value, bit_offset, 16);
 }
 

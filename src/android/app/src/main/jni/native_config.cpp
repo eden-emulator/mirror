@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <string>
+#include <format>
 
 #include <jni.h>
 
@@ -72,7 +73,7 @@ void Java_org_yuzu_yuzu_1emu_utils_NativeConfig_initializePerGameConfig(JNIEnv* 
                                                                         jstring jfileName) {
     auto program_id = EmulationSession::GetProgramId(env, jprogramId);
     auto file_name = Common::Android::GetJString(env, jfileName);
-    const auto config_file_name = program_id == 0 ? file_name : fmt::format("{:016X}", program_id);
+    const auto config_file_name = program_id == 0 ? file_name : std::format("{:016X}", program_id);
     per_game_config =
         std::make_unique<AndroidConfig>(config_file_name, Config::ConfigType::PerGameConfig);
 }

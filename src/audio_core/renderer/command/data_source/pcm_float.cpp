@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -10,7 +13,7 @@ namespace AudioCore::Renderer {
 void PcmFloatDataSourceVersion1Command::Dump(const AudioRenderer::CommandListProcessor& processor,
                                              std::string& string) {
     string +=
-        fmt::format("PcmFloatDataSourceVersion1Command\n\toutput_index {:02X} channel {} "
+        std::format("PcmFloatDataSourceVersion1Command\n\toutput_index {:02X} channel {} "
                     "channel count {} source sample rate {} target sample rate {} src quality {}\n",
                     output_index, channel_index, channel_count, sample_rate,
                     processor.target_sample_rate, src_quality);
@@ -56,7 +59,7 @@ bool PcmFloatDataSourceVersion1Command::Verify(
 void PcmFloatDataSourceVersion2Command::Dump(const AudioRenderer::CommandListProcessor& processor,
                                              std::string& string) {
     string +=
-        fmt::format("PcmFloatDataSourceVersion2Command\n\toutput_index {:02X} channel {} "
+        std::format("PcmFloatDataSourceVersion2Command\n\toutput_index {:02X} channel {} "
                     "channel count {} source sample rate {} target sample rate {} src quality {}\n",
                     output_index, channel_index, channel_count, sample_rate,
                     processor.target_sample_rate, src_quality);

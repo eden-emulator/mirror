@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cstdlib>
 
-#include <fmt/format.h>
+#include <format>
 
 #include "common/settings.h"
 #include "video_core/post_processing/fx_chain.h"
@@ -94,7 +94,7 @@ std::string SerializeFxChain(std::span<const FxChainEntry> entries) {
         if (!out.empty()) {
             out += ';';
         }
-        out += fmt::format("{}|{}|", entry.file, entry.technique);
+        out += std::format("{}|{}|", entry.file, entry.technique);
 
         bool first = true;
         for (const auto& [name, value] : entry.values) {
@@ -111,7 +111,7 @@ std::string SerializeFxChain(std::span<const FxChainEntry> entries) {
                 if (i > 0) {
                     out += '/';
                 }
-                out += fmt::format("{}", value[i]);
+                out += std::format("{}", value[i]);
             }
         }
     }

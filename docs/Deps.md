@@ -51,7 +51,6 @@ All other dependencies will be downloaded and built by CPM, but will always use 
 
 - [Boost](https://www.boost.org/users/download/) 1.87.0+
 - [Catch2](https://github.com/catchorg/Catch2) 3.0.1 if `YUZU_TESTS` or `DYNARMIC_TESTS` are on
-- [fmt](https://fmt.dev/) 8.0.1+
 - [lz4](http://www.lz4.org)
 - [OpenSSL](https://www.openssl.org/source/) 3+
 - [ZLIB](https://www.zlib.net/) 1.2+
@@ -114,7 +113,7 @@ Now, install all deps:
 ```sh
 sudo emerge -a \
     app-arch/lz4 app-arch/zstd app-arch/unzip \
-    dev-libs/libfmt dev-libs/libusb dev-libs/mcl dev-libs/sirit \
+    dev-libs/libusb dev-libs/mcl dev-libs/sirit \
     dev-libs/boost dev-libs/openssl dev-libs/discord-rpc \
     dev-util/spirv-tools dev-util/spirv-headers dev-util/vulkan-headers \
     dev-util/vulkan-utility-libraries dev-util/glslang \
@@ -148,7 +147,7 @@ Required USE flags:
 <summary>Arch Linux</summary>
 
 ```sh
-sudo pacman -Syu --needed base-devel boost catch2 cmake enet ffmpeg fmt git glslang libzip lz4 ninja openssl opus qt6-base qt6-multimedia qt6-charts sdl3 zlib zstd zip unzip vulkan-headers vulkan-utility-libraries libusb spirv-tools spirv-headers
+sudo pacman -Syu --needed base-devel boost catch2 cmake enet ffmpeg git glslang libzip lz4 ninja openssl opus qt6-base qt6-multimedia qt6-charts sdl3 zlib zstd zip unzip vulkan-headers vulkan-utility-libraries libusb spirv-tools spirv-headers
 ```
 
 - Building with QT Web Engine requires `qt6-webengine` as well.
@@ -161,7 +160,7 @@ sudo pacman -Syu --needed base-devel boost catch2 cmake enet ffmpeg fmt git glsl
 <summary>Ubuntu, Debian, Mint Linux</summary>
 
 ```sh
-sudo apt-get install autoconf cmake g++ gcc git glslang-tools libglu1-mesa-dev libhidapi-dev libpulse-dev libtool libudev-dev libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxext-dev libxkbcommon-x11-0 mesa-common-dev nasm ninja-build qt6-base-private-dev catch2 libfmt-dev liblz4-dev libzstd-dev libssl-dev libavfilter-dev libavcodec-dev libswscale-dev pkg-config zlib1g-dev libva-dev libvdpau-dev qt6-tools-dev qt6-charts-dev libvulkan-dev spirv-tools spirv-headers libusb-1.0-0-dev libxbyak-dev libboost-dev libboost-fiber-dev libboost-context-dev libsdl3-dev libopus-dev libasound2t64 vulkan-utility-libraries-dev
+sudo apt-get install autoconf cmake g++ gcc git glslang-tools libglu1-mesa-dev libhidapi-dev libpulse-dev libtool libudev-dev libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-xkb1 libxext-dev libxkbcommon-x11-0 mesa-common-dev nasm ninja-build qt6-base-private-dev catch2 liblz4-dev libzstd-dev libssl-dev libavfilter-dev libavcodec-dev libswscale-dev pkg-config zlib1g-dev libva-dev libvdpau-dev qt6-tools-dev qt6-charts-dev libvulkan-dev spirv-tools spirv-headers libusb-1.0-0-dev libxbyak-dev libboost-dev libboost-fiber-dev libboost-context-dev libsdl3-dev libopus-dev libasound2t64 vulkan-utility-libraries-dev
 ```
 
 - Ubuntu 26.04, Linux Mint 22.3, or Debian 13 or later is required.
@@ -175,7 +174,7 @@ sudo apt-get install autoconf cmake g++ gcc git glslang-tools libglu1-mesa-dev l
 Fedora:
 
 ```sh
-sudo dnf install autoconf cmake fmt-devel gcc{,-c++} glslang hidapi-devel json-devel libtool libusb1-devel libzstd-devel lz4-devel nasm ninja-build openssl-devel pulseaudio-libs-devel qt6-linguist qt6-qtbase{-private,}-devel qt6-qtwebengine-devel qt6-qtmultimedia-devel qt6-charts-devel speexdsp-devel wayland-devel zlib-devel ffmpeg-devel libXext-devel boost jq
+sudo dnf install autoconf cmake gcc{,-c++} glslang hidapi-devel json-devel libtool libusb1-devel libzstd-devel lz4-devel nasm ninja-build openssl-devel pulseaudio-libs-devel qt6-linguist qt6-qtbase{-private,}-devel qt6-qtwebengine-devel qt6-qtmultimedia-devel qt6-charts-devel speexdsp-devel wayland-devel zlib-devel ffmpeg-devel libXext-devel boost jq
 ```
 
 AlmaLinux (use `YUZU_USE_CPM=ON`):
@@ -191,7 +190,7 @@ sudo dnf config-manager --enable crb
 sudo dnf install qt6-qtbase-private-devel
 ```
 
-For systems like OpenEuler or derivates, don't forget to also install: `SDL3-devel pkg-config fmt-dev`.
+For systems like OpenEuler or derivates, don't forget to also install: `SDL3-devel pkg-config`.
 
 - [RPM Fusion](https://rpmfusion.org/Configuration) is required for `ffmpeg-devel`
 - Fedora 42 or later is required.
@@ -215,7 +214,7 @@ apk add g++ git cmake make mesa-dev qt6-qtbase-dev qt6-qtbase-private-dev libqua
 <summary>Void Linux</summary>
 
 ```sh
-xbps-install -Su git make cmake clang pkg-config patch SPIRV-Tools-devel SPIRV-Headers lz4 liblz4-devel boost-devel ffmpeg6-devel catch2 Vulkan-Utility-Libraries Vulkan-Headers glslang openssl-devel SDL3-devel quazip-qt6-devel qt6-base-devel qt6-charts-devel fmt-devel libenet-devel libusb-devel
+xbps-install -Su git make cmake clang pkg-config patch SPIRV-Tools-devel SPIRV-Headers lz4 liblz4-devel boost-devel ffmpeg6-devel catch2 Vulkan-Utility-Libraries Vulkan-Headers glslang openssl-devel SDL3-devel quazip-qt6-devel qt6-base-devel qt6-charts-devel libenet-devel libusb-devel
 ```
 
 </details>
@@ -234,7 +233,7 @@ If you're going for a pure build (i.e no downloaded deps), use `-DYUZU_USE_CPM=O
 Install dependencies from **[Homebrew](https://brew.sh/)**
 
 ```sh
-brew install autoconf automake boost ffmpeg fmt glslang hidapi libtool libusb lz4 ninja openssl pkg-config qt@6 sdl3 speexdsp zlib zstd cmake Catch2 molten-vk vulkan-loader spirv-tools
+brew install autoconf automake boost ffmpeg glslang hidapi libtool libusb lz4 ninja openssl pkg-config qt@6 sdl3 speexdsp zlib zstd cmake Catch2 molten-vk vulkan-loader spirv-tools
 ```
 
 If you are compiling on Intel Mac, or are using a Rosetta Homebrew installation, you must replace all references of `/opt/homebrew` with `/usr/local`.
@@ -254,7 +253,7 @@ brew install molten-vk
 As root run:
 
 ```sh
-pkg install devel/cmake devel/sdl3 devel/boost-libs devel/catch2 devel/libfmt devel/ninja devel/nasm devel/autoconf devel/pkgconf devel/qt6-base x11-toolkits/qt6-charts devel/simpleini net/enet multimedia/ffnvcodec-headers multimedia/ffmpeg audio/opus archivers/liblz4 lang/gcc16 graphics/glslang graphics/vulkan-utility-libraries graphics/spirv-tools graphics/vulkan-utility-libraries graphics/vulkan-headers graphics/spirv-headers quazip-qt6
+pkg install devel/cmake devel/sdl3 devel/boost-libs devel/catch2 devel/ninja devel/nasm devel/autoconf devel/pkgconf devel/qt6-base x11-toolkits/qt6-charts devel/simpleini net/enet multimedia/ffnvcodec-headers multimedia/ffmpeg audio/opus archivers/liblz4 lang/gcc16 graphics/glslang graphics/vulkan-utility-libraries graphics/spirv-tools graphics/vulkan-utility-libraries graphics/vulkan-headers graphics/spirv-headers quazip-qt6
 ```
 
 FreeBSD 15 or later is required.
@@ -268,7 +267,7 @@ FreeBSD 15 or later is required.
 For NetBSD +10.1:
 
 ```sh
-pkgin install git cmake boost fmtlib SDL3 catch2 libjwt spirv-headers spirv-tools ffmpeg7 libva jq libopus qt6-qtbase qt6-qtcharts qt6-qtmultimedia qt6-qttools lz4 vulkan-headers nasm autoconf enet pkg-config libusb1 libcxx frozen
+pkgin install git cmake boost SDL3 catch2 libjwt spirv-headers spirv-tools ffmpeg7 libva jq libopus qt6-qtbase qt6-qtcharts qt6-qtmultimedia qt6-qttools lz4 vulkan-headers nasm autoconf enet pkg-config libusb1 libcxx frozen
 ```
 
 [Caveats](./Caveats.md#netbsd).
@@ -279,7 +278,7 @@ pkgin install git cmake boost fmtlib SDL3 catch2 libjwt spirv-headers spirv-tool
 
 ```sh
 pkg_add -u
-pkg_add cmake nasm git boost unzip--iconv autoconf-2.72p0 bash ffmpeg glslang gmake qt6 jq fmt enet boost vulkan-utility-libraries vulkan-headers spirv-headers spirv-tools catch2 sdl3 libusb1-1.0.29 quazip-qt6
+pkg_add cmake nasm git boost unzip--iconv autoconf-2.72p0 bash ffmpeg glslang gmake qt6 jq enet boost vulkan-utility-libraries vulkan-headers spirv-headers spirv-tools catch2 sdl3 libusb1-1.0.29 quazip-qt6
 ```
 
 [Caveats](./Caveats.md#openbsd).
@@ -289,7 +288,7 @@ pkg_add cmake nasm git boost unzip--iconv autoconf-2.72p0 bash ffmpeg glslang gm
 <summary>DragonFlyBSD</summary>
 
 ```sh
-pkg install gcc16 git cmake unzip nasm autoconf bash pkgconf ffmpeg glslang gmake jq enet spirv-tools sdl3 vulkan-utility-libraries vulkan-headers catch2 libfmt openssl liblz4 boost-libs qt6-base qt6-charts quazip-qt6 libva-vdpau-driver libva-utils libva-intel-driver
+pkg install gcc16 git cmake unzip nasm autoconf bash pkgconf ffmpeg glslang gmake jq enet spirv-tools sdl3 vulkan-utility-libraries vulkan-headers catch2 openssl liblz4 boost-libs qt6-base qt6-charts quazip-qt6 libva-vdpau-driver libva-utils libva-intel-driver
 ```
 
 [Caveats](./Caveats.md#dragonflybsd).
@@ -301,7 +300,7 @@ pkg install gcc16 git cmake unzip nasm autoconf bash pkgconf ffmpeg glslang gmak
 OpenIndiana is currently unsupported due to its GCC version being too old. When GCC 16 gets added to the main repositories:
 
 ```sh
-sudo pkg install git cmake qt6 boost glslang libzip library/lz4 libusb-1 openssl opus sdl3 zlib compress/zstd unzip pkg-config nasm autoconf mesa library/libdrm header-drm developer/fmt gcc-16
+sudo pkg install git cmake qt6 boost glslang libzip library/lz4 libusb-1 openssl opus sdl3 zlib compress/zstd unzip pkg-config nasm autoconf mesa library/libdrm header-drm gcc-16
 ```
 
 [Caveats](./Caveats.md#openindiana).
@@ -328,7 +327,7 @@ sudo pkgin install git cmake autoconf build-essential libusb-1 nasm gcc16
 ```sh
 pacman -Syu
 pacman -S --needed git make autoconf libtool automake-wrapper jq patch pactoys
-pacboy -S --needed qt6-base qt6-charts qt6-tools qt6-translations qt6-svg cmake toolchain clang python-pip openssl vulkan-memory-allocator vulkan-devel glslang boost fmt lz4 zlib zstd enet opus libusb openssl SDL3
+pacboy -S --needed qt6-base qt6-charts qt6-tools qt6-translations qt6-svg cmake toolchain clang python-pip openssl vulkan-memory-allocator vulkan-devel glslang boost lz4 zlib zstd enet opus libusb openssl SDL3
 ```
 
 - Notes:
@@ -345,7 +344,7 @@ pacboy -S --needed qt6-base qt6-charts qt6-tools qt6-translations qt6-svg cmake 
 <summary>HaikuOS</summary>
 
 ```sh
-pkgman install git cmake patch libfmt_devel lz4_devel opus_devel boost1.90_devel vulkan_devel qt6_base_devel qt6_declarative_devel libsdl3_devel ffmpeg7_devel libx11_devel enet_devel catch2_devel quazip1_qt5_devel qt6_5compat_devel glslang qt6_devel qt6_charts_devel cubeb_devel simpleini quazip_qt6_devel
+pkgman install git cmake patch lz4_devel opus_devel boost1.90_devel vulkan_devel qt6_base_devel qt6_declarative_devel libsdl3_devel ffmpeg7_devel libx11_devel enet_devel catch2_devel quazip1_qt5_devel qt6_5compat_devel glslang qt6_devel qt6_charts_devel cubeb_devel simpleini quazip_qt6_devel
 ```
 
 [Caveats](./Caveats.md#haikuos).

@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/logging.h"
 #include <ranges>
@@ -78,7 +78,7 @@ constexpr VkExtent3D CaptureImageExtent{
 constexpr VkFormat CaptureFormat = VK_FORMAT_A8B8G8R8_UNORM_PACK32;
 
 std::string GetReadableVersion(u32 version) {
-    return fmt::format("{}.{}.{}", VK_VERSION_MAJOR(version), VK_VERSION_MINOR(version),
+    return std::format("{}.{}.{}", VK_VERSION_MAJOR(version), VK_VERSION_MINOR(version),
                        VK_VERSION_PATCH(version));
 }
 
@@ -92,19 +92,28 @@ std::string GetDriverVersion(const Device& device) {
         const u32 minor = (version >> 14) & 0x0ff;
         const u32 secondary = (version >> 6) & 0x0ff;
         const u32 tertiary = version & 0x003f;
-        return fmt::format("{}.{}.{}.{}", major, minor, secondary, tertiary);
+        return std::format("{}.{}.{}.{}", major, minor, secondary, tertiary);
     }
     if (device.GetDriverID() == VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS) {
         const u32 major = version >> 14;
         const u32 minor = version & 0x3fff;
-        return fmt::format("{}.{}", major, minor);
+        return std::format("{}.{}", major, minor);
     }
     return GetReadableVersion(version);
 }
 
 std::string BuildCommaSeparatedExtensions(
     const std::set<std::string, std::less<>>& available_extensions) {
-    return fmt::format("{}", fmt::join(available_extensions, ","));
+    std::string joined;
+
+    for (const auto &s : available_extensions) {
+        if (joined.empty())
+            joined += ',';
+
+        joined += s;
+    }
+
+    return joined;
 }
 
 } // Anonymous namespace
@@ -195,7 +204,7 @@ try
     Report();
 } catch (const vk::Exception& exception) {
     LOG_ERROR(Render_Vulkan, "Vulkan initialization failed with error: {}", exception.what());
-    throw std::runtime_error{fmt::format("Vulkan initialization error {}", exception.what())};
+    throw std::runtime_error{std::format("Vulkan initialization error {}", exception.what())};
 }
 
 RendererVulkan::~RendererVulkan() {
@@ -255,7 +264,7 @@ void RendererVulkan::Report() const {
     const std::string vendor_name{device.GetVendorName()};
     const std::string model_name{device.GetModelName()};
     const std::string driver_version = GetDriverVersion(device);
-    const std::string driver_name = fmt::format("{} {}", vendor_name, driver_version);
+    const std::string driver_name = std::format("{} {}", vendor_name, driver_version);
 
     const std::string api_version = GetReadableVersion(device.ApiVersion());
 

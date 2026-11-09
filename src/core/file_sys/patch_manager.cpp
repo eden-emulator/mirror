@@ -60,9 +60,9 @@ std::string FormatTitleVersion(u32 version,
     }
 
     if (format == TitleVersionFormat::FourElements) {
-        return fmt::format("v{}.{}.{}.{}", bytes[3], bytes[2], bytes[1], bytes[0]);
+        return std::format("v{}.{}.{}.{}", bytes[3], bytes[2], bytes[1], bytes[0]);
     }
-    return fmt::format("v{}.{}.{}", bytes[3], bytes[2], bytes[1]);
+    return std::format("v{}.{}.{}", bytes[3], bytes[2], bytes[1]);
 }
 
 // Returns a directory with name matching name case-insensitive. Returns nullptr if directory
@@ -87,7 +87,7 @@ std::optional<std::vector<Core::Memory::CheatEntry>> ReadCheatFileFromFolder(
     u64 title_id, const PatchManager::BuildID& build_id_, const VirtualDir& base_path, bool upper) {
     const auto build_id_raw = Common::HexToString(build_id_, upper);
     const auto build_id = build_id_raw.substr(0, sizeof(u64) * 2);
-    const auto file = base_path->GetFile(fmt::format("{}.txt", build_id));
+    const auto file = base_path->GetFile(std::format("{}.txt", build_id));
 
     if (file == nullptr) {
         LOG_INFO(Common_Filesystem, "No cheats file found for title_id={:016X}, build_id={}",
@@ -120,7 +120,7 @@ bool IsDirValidAndNonEmpty(const VirtualDir& dir) {
 }
 
 bool IsVersionedExternalUpdateDisabled(const std::vector<std::string>& disabled, u32 version) {
-    const std::string disabled_key = fmt::format("Update@{}", version);
+    const std::string disabled_key = std::format("Update@{}", version);
     return std::find(disabled.cbegin(), disabled.cend(), disabled_key) != disabled.cend() ||
            std::find(disabled.cbegin(), disabled.cend(), "Update") != disabled.cend();
 }
@@ -373,7 +373,7 @@ VirtualDir PatchManager::PatchExeFS(VirtualDir exefs) const {
 
 std::vector<VirtualFile> PatchManager::CollectPatches(const std::vector<VirtualDir>& patch_dirs, const std::string& build_id) const {
     const auto disabled = GetDisabledAddons();
-    const auto nso_build_id = fmt::format("{:0<64}", build_id);
+    const auto nso_build_id = std::format("{:0<64}", build_id);
 
     std::vector<VirtualFile> out;
     out.reserve(patch_dirs.size());
@@ -386,7 +386,7 @@ std::vector<VirtualFile> PatchManager::CollectPatches(const std::vector<VirtualD
             for (const auto& file : exefs_dir->GetFiles()) {
                 if (file->GetExtension() == "ips") {
                     auto name = file->GetName();
-                    const auto this_build_id = fmt::format("{:0<64}", name.substr(0, name.find('.')));
+                    const auto this_build_id = std::format("{:0<64}", name.substr(0, name.find('.')));
                     if (nso_build_id == this_build_id)
                         out.push_back(file);
                 } else if (file->GetExtension() == "pchtxt") {
@@ -422,7 +422,7 @@ std::vector<u8> PatchManager::PatchNSO(const std::vector<u8>& nso, const std::st
         const auto dump_dir = fs_controller.GetModificationDumpRoot(title_id);
         if (dump_dir != nullptr) {
             const auto nso_dir = GetOrCreateDirectoryRelative(dump_dir, "/nso");
-            const auto file = nso_dir->CreateFile(fmt::format("{}-{}.nso", name, build_id));
+            const auto file = nso_dir->CreateFile(std::format("{}-{}.nso", name, build_id));
 
             file->Resize(nso.size());
             file->WriteBytes(nso);
@@ -605,7 +605,7 @@ void PatchManager::ApplyLayeredFS(VirtualFile& romfs, ContentRecordType type) co
 VirtualFile PatchManager::PatchRomFS(const NCA* base_nca, VirtualFile base_romfs,
                                      ContentRecordType type, VirtualFile packed_update_raw,
                                      bool apply_layeredfs) const {
-    const auto log_string = fmt::format("Patching RomFS for title_id={:016X}, type={:02X}",
+    const auto log_string = std::format("Patching RomFS for title_id={:016X}, type={:02X}",
                                         title_id, static_cast<u8>(type));
     if (type == ContentRecordType::Program || type == ContentRecordType::Data) {
         LOG_INFO(Loader, "{}", log_string);
@@ -1068,9 +1068,9 @@ std::vector<Patch> PatchManager::GetPatches(VirtualFile update_raw) const {
 
         std::string list;
         for (size_t i = 0; i < dlc_match.size() - 1; ++i)
-            list += fmt::format("{}, ", dlc_match[i].title_id & 0x7FF);
+            list += std::format("{}, ", dlc_match[i].title_id & 0x7FF);
 
-        list += fmt::format("{}", dlc_match.back().title_id & 0x7FF);
+        list += std::format("{}", dlc_match.back().title_id & 0x7FF);
 
         const auto dlc_disabled =
             std::find(disabled.begin(), disabled.end(), "DLC") != disabled.end();

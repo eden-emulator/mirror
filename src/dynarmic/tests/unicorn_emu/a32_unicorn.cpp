@@ -7,11 +7,13 @@
  */
 
 #include <type_traits>
-#include <fmt/format.h>
+#include <format>
 #include "dynarmic/mcl/bit.hpp"
 #include "dynarmic/tests/unicorn_emu/a32_unicorn.h"
 #include "common/assert.h"
 #include "dynarmic/tests/A32/testenv.h"
+
+#include <print>
 
 #define CHECKED(expr) do if ((expr)) ASSERT(false && "Call " #expr " failed with error\n"); while (0)
 
@@ -47,7 +49,7 @@ void A32Unicorn<TestEnvironment>::Run() {
             return;
         }
         if (auto cerr_ = uc_emu_start(uc, pc, END_ADDRESS, 0, 1)) {
-            fmt::print("uc_emu_start failed @ {:08x} (code = {:08x}) with error {} ({})", pc, *testenv.MemoryReadCode(pc), static_cast<size_t>(cerr_), uc_strerror(cerr_));
+            std::print("uc_emu_start failed @ {:08x} (code = {:08x}) with error {} ({})", pc, *testenv.MemoryReadCode(pc), static_cast<size_t>(cerr_), uc_strerror(cerr_));
             throw "A32Unicorn::Run() failure";
         }
         testenv.ticks_left--;
@@ -268,7 +270,7 @@ void A32Unicorn<TestEnvironment>::InterruptHook(uc_engine* /*uc*/, u32 int_numbe
         this_->testenv.CallSVC(iss);
         break;
     default:
-        this_->testenv.interrupts.emplace_back(fmt::format("Unhandled interrupt: int_number: {:#x}, esr: {:#x} (ec: {:#x}, iss: {:#x})", int_number, esr, ec, iss));
+        this_->testenv.interrupts.emplace_back(std::format("Unhandled interrupt: int_number: {:#x}, esr: {:#x} (ec: {:#x}, iss: {:#x})", int_number, esr, ec, iss));
         break;
     }
 }

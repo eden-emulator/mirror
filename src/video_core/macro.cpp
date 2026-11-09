@@ -1326,7 +1326,7 @@ static void Dump(u64 hash, std::span<const u32> code, bool decompiled = false) {
         return;
     }
     const char* const variant_suffix = decompiled ? "jit" : "raw";
-    const auto name{dump_dir / fmt::format("{:016x}_{:016x}_{}.macro",
+    const auto name{dump_dir / std::format("{:016x}_{:016x}_{}.macro",
                                            Settings::GetCurrentProgramID(), hash, variant_suffix)};
 
     std::fstream macro_file(name, std::ios::out | std::ios::binary);

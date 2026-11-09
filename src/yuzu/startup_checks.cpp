@@ -20,7 +20,7 @@
 #include <unistd.h>
 #endif
 
-#include <fmt/core.h>
+#include <print>
 #include "video_core/vulkan_common/vulkan_instance.h"
 #include "video_core/vulkan_common/vulkan_library.h"
 #include "yuzu/startup_checks.h"
@@ -34,7 +34,7 @@ void CheckVulkan() {
             Vulkan::CreateInstance(*library, dld, VK_API_VERSION_1_1);
 
     } catch (const Vulkan::vk::Exception& exception) {
-        fmt::print(stderr, "Failed to initialize Vulkan: {}\n", exception.what());
+        std::print(stderr, "Failed to initialize Vulkan: {}\n", exception.what());
     }
 }
 
@@ -56,7 +56,7 @@ bool CheckEnvVars(bool* is_child) {
         *is_child = true;
         return false;
     } else if (!SetEnvironmentVariableA(IS_CHILD_ENV_VAR, ENV_VAR_ENABLED_TEXT)) {
-        fmt::print(stderr, "SetEnvironmentVariableA failed to set {} with error {}\n",
+        std::print(stderr, "SetEnvironmentVariableA failed to set {} with error {}\n",
                    IS_CHILD_ENV_VAR, GetLastError());
         return true;
     }
@@ -76,7 +76,7 @@ bool StartupChecks(const char* arg0, bool* has_broken_vulkan, bool perform_vulka
     // Set the startup variable for child processes
     const bool env_var_set = SetEnvironmentVariableA(STARTUP_CHECK_ENV_VAR, ENV_VAR_ENABLED_TEXT);
     if (!env_var_set) {
-        fmt::print(stderr, "SetEnvironmentVariableA failed to set {} with error {}\n",
+        std::print(stderr, "SetEnvironmentVariableA failed to set {} with error {}\n",
                    STARTUP_CHECK_ENV_VAR, GetLastError());
         return false;
     }
@@ -95,22 +95,22 @@ bool StartupChecks(const char* arg0, bool* has_broken_vulkan, bool perform_vulka
         DWORD exit_code = STILL_ACTIVE;
         const int err = GetExitCodeProcess(process_info.hProcess, &exit_code);
         if (err == 0) {
-            fmt::print(stderr, "GetExitCodeProcess failed with error {}\n", GetLastError());
+            std::print(stderr, "GetExitCodeProcess failed with error {}\n", GetLastError());
         }
 
         // Vulkan is broken if the child crashed (return value is not zero)
         *has_broken_vulkan = (exit_code != 0);
 
         if (CloseHandle(process_info.hProcess) == 0) {
-            fmt::print(stderr, "CloseHandle failed with error {}\n", GetLastError());
+            std::print(stderr, "CloseHandle failed with error {}\n", GetLastError());
         }
         if (CloseHandle(process_info.hThread) == 0) {
-            fmt::print(stderr, "CloseHandle failed with error {}\n", GetLastError());
+            std::print(stderr, "CloseHandle failed with error {}\n", GetLastError());
         }
     }
 
     if (!SetEnvironmentVariableA(STARTUP_CHECK_ENV_VAR, nullptr)) {
-        fmt::print(stderr, "SetEnvironmentVariableA failed to clear {} with error {}\n",
+        std::print(stderr, "SetEnvironmentVariableA failed to clear {} with error {}\n",
                    STARTUP_CHECK_ENV_VAR, GetLastError());
     }
 
@@ -118,7 +118,7 @@ bool StartupChecks(const char* arg0, bool* has_broken_vulkan, bool perform_vulka
     const int env_var_set = setenv(STARTUP_CHECK_ENV_VAR, ENV_VAR_ENABLED_TEXT, 1);
     if (env_var_set == -1) {
         const int err = errno;
-        fmt::print(stderr, "setenv failed to set {} with error {}\n", STARTUP_CHECK_ENV_VAR, err);
+        std::print(stderr, "setenv failed to set {} with error {}\n", STARTUP_CHECK_ENV_VAR, err);
         return false;
     }
 
@@ -133,7 +133,7 @@ bool StartupChecks(const char* arg0, bool* has_broken_vulkan, bool perform_vulka
         const int r_val = waitpid(pid, &status, 0);
         if (r_val == -1) {
             const int err = errno;
-            fmt::print(stderr, "wait failed with error {}\n", err);
+            std::print(stderr, "wait failed with error {}\n", err);
             return false;
         }
         // Vulkan is broken if the child crashed (return value is not zero)
@@ -143,7 +143,7 @@ bool StartupChecks(const char* arg0, bool* has_broken_vulkan, bool perform_vulka
     const int env_var_cleared = unsetenv(STARTUP_CHECK_ENV_VAR);
     if (env_var_cleared == -1) {
         const int err = errno;
-        fmt::print(stderr, "unsetenv failed to clear {} with error {}\n", STARTUP_CHECK_ENV_VAR,
+        std::print(stderr, "unsetenv failed to clear {} with error {}\n", STARTUP_CHECK_ENV_VAR,
                    err);
     }
 #endif
@@ -173,7 +173,7 @@ bool SpawnChild(const char* arg0, PROCESS_INFORMATION* pi, int flags) {
                                                 pi             // lpProcessInformation
     );
     if (!process_created) {
-        fmt::print(stderr, "CreateProcessA failed with error {}\n", GetLastError());
+        std::print(stderr, "CreateProcessA failed with error {}\n", GetLastError());
         return false;
     }
 
@@ -186,13 +186,13 @@ pid_t SpawnChild(const char* arg0) {
     if (pid == -1) {
         // error
         const int err = errno;
-        fmt::print(stderr, "fork failed with error {}\n", err);
+        std::print(stderr, "fork failed with error {}\n", err);
         return pid;
     } else if (pid == 0) {
         // child
         execlp(arg0, arg0, nullptr);
         const int err = errno;
-        fmt::print(stderr, "execl failed with error {}\n", err);
+        std::print(stderr, "execl failed with error {}\n", err);
         _exit(0);
     }
 

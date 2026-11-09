@@ -11,7 +11,7 @@
 #include <bit>
 
 #include <biscuit/assembler.hpp>
-#include <fmt/ostream.h>
+#include <format>
 #include "dynarmic/mcl/bit.hpp"
 
 #include "dynarmic/backend/riscv64/a32_jitstate.h"

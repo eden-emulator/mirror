@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <format>
 #include <map>
 #include <string>
 #include <utility>
@@ -136,7 +137,7 @@ public:
             const std::array<QString, 4> row_data{{
                 QString::fromStdString(filename),
                 data(FileTypeRole).toString(),
-                QString::fromStdString(fmt::format("{:#016x}", data(ProgramIdRole).toULongLong())),
+                QString::fromStdString(std::format("{:#016x}", data(ProgramIdRole).toULongLong())),
                 data(TitleRole).toString(),
             }};
 

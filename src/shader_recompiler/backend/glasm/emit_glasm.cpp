@@ -1,7 +1,11 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <format>
 #include <string>
 #include <tuple>
 
@@ -407,10 +411,10 @@ std::string EmitGLASM(const Profile& profile, const RuntimeInfo& runtime_info, I
     SetupOptions(program, profile, runtime_info, header);
     switch (program.stage) {
     case Stage::TessellationControl:
-        header += fmt::format("VERTICES_OUT {};", program.invocations);
+        header += std::format("VERTICES_OUT {};", program.invocations);
         break;
     case Stage::TessellationEval:
-        header += fmt::format("TESS_MODE {};"
+        header += std::format("TESS_MODE {};"
                               "TESS_SPACING {};"
                               "TESS_VERTEX_ORDER {};",
                               GetTessMode(runtime_info.tess_primitive),
@@ -418,12 +422,12 @@ std::string EmitGLASM(const Profile& profile, const RuntimeInfo& runtime_info, I
                               runtime_info.tess_clockwise ? "CW" : "CCW");
         break;
     case Stage::Geometry:
-        header += fmt::format("PRIMITIVE_IN {};", InputPrimitive(runtime_info.input_topology));
+        header += std::format("PRIMITIVE_IN {};", InputPrimitive(runtime_info.input_topology));
         if (program.is_geometry_passthrough) {
             if (profile.support_geometry_shader_passthrough) {
                 for (size_t index = 0; index < IR::NUM_GENERICS; ++index) {
                     if (program.info.passthrough.Generic(index)) {
-                        header += fmt::format("PASSTHROUGH result.attrib[{}];", index);
+                        header += std::format("PASSTHROUGH result.attrib[{}];", index);
                     }
                 }
                 if (program.info.passthrough.AnyComponent(IR::Attribute::PositionX)) {
@@ -434,21 +438,21 @@ std::string EmitGLASM(const Profile& profile, const RuntimeInfo& runtime_info, I
             }
         } else {
             header +=
-                fmt::format("VERTICES_OUT {};"
+                std::format("VERTICES_OUT {};"
                             "PRIMITIVE_OUT {};",
                             program.output_vertices, OutputPrimitive(program.output_topology));
         }
         break;
     case Stage::Compute:
-        header += fmt::format("GROUP_SIZE {} {} {};", program.workgroup_size[0],
+        header += std::format("GROUP_SIZE {} {} {};", program.workgroup_size[0],
                               program.workgroup_size[1], program.workgroup_size[2]);
         break;
     default:
         break;
     }
     if (program.shared_memory_size > 0) {
-        header += fmt::format("SHARED_MEMORY {};", program.shared_memory_size);
-        header += fmt::format("SHARED shared_mem[]={{program.sharedmem}};");
+        header += std::format("SHARED_MEMORY {};", program.shared_memory_size);
+        header += std::format("SHARED shared_mem[]={{program.sharedmem}};");
     }
     if (program.info.uses_rescaling_uniform) {
         header += "PARAM scaling[1]={program.local[0..0]};";
@@ -458,22 +462,22 @@ std::string EmitGLASM(const Profile& profile, const RuntimeInfo& runtime_info, I
     }
     header += "TEMP ";
     for (size_t index = 0; index < ctx.reg_alloc.NumUsedRegisters(); ++index) {
-        header += fmt::format("R{},", index);
+        header += std::format("R{},", index);
     }
     if (program.local_memory_size > 0) {
-        header += fmt::format("lmem[{}],", Common::DivCeil(program.local_memory_size, 4U));
+        header += std::format("lmem[{}],", Common::DivCeil(program.local_memory_size, 4U));
     }
     if (program.info.uses_fswzadd) {
         header += "FSWZA[4],FSWZB[4],";
     }
     const u32 num_safety_loop_vectors{Common::DivCeil(ctx.num_safety_loop_vars, 4u)};
     for (u32 index = 0; index < num_safety_loop_vectors; ++index) {
-        header += fmt::format("loop{},", index);
+        header += std::format("loop{},", index);
     }
     header += "RC;"
               "LONG TEMP ";
     for (size_t index = 0; index < ctx.reg_alloc.NumUsedLongRegisters(); ++index) {
-        header += fmt::format("D{},", index);
+        header += std::format("D{},", index);
     }
     header += "DC;";
     if (program.info.uses_fswzadd) {
@@ -487,7 +491,7 @@ std::string EmitGLASM(const Profile& profile, const RuntimeInfo& runtime_info, I
                   "MOV.F FSWZB[3],-1;";
     }
     for (u32 index = 0; index < num_safety_loop_vectors; ++index) {
-        header += fmt::format("MOV.S loop{},{{0x2000,0x2000,0x2000,0x2000}};", index);
+        header += std::format("MOV.S loop{},{{0x2000,0x2000,0x2000,0x2000}};", index);
     }
     if (ctx.uses_y_direction) {
         header += "PARAM y_direction[1]={state.material.front.ambient};";

@@ -14,7 +14,7 @@
 #include <string>
 
 #include <variant>
-#include <fmt/ranges.h>
+#include <format>
 #include "common/common_funcs.h"
 #include "common/common_types.h"
 #include "core/crypto/partition_data_manager.h"
@@ -241,7 +241,7 @@ struct KeyIndex {
         u8 key_size = 16;
         if constexpr (std::is_same_v<KeyType, S256KeyType>)
             key_size = 32;
-        return fmt::format("key_size={:02X}, key={:02X}, field1={:016X}, field2={:016X}", key_size,
+        return std::format("key_size={:02X}, key={:02X}, field1={:016X}, field2={:016X}", key_size,
                            static_cast<u8>(type), field1, field2);
     }
 };

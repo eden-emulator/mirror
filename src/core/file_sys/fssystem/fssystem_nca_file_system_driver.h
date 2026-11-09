@@ -54,12 +54,12 @@ struct NcaCryptoConfiguration {
     bool is_plaintext_header_available;
     bool is_available_sw_key;
 };
-static_assert(std::is_trivial_v<NcaCryptoConfiguration>);
+static_assert(std::is_trivially_default_constructible_v<NcaCryptoConfiguration> && std::is_trivially_copyable_v<NcaCryptoConfiguration>);
 
 struct NcaCompressionConfiguration {
     GetDecompressorFunction get_decompressor;
 };
-static_assert(std::is_trivial_v<NcaCompressionConfiguration>);
+static_assert(std::is_trivially_default_constructible_v<NcaCompressionConfiguration> && std::is_trivially_copyable_v<NcaCompressionConfiguration>);
 
 constexpr inline s32 KeyAreaEncryptionKeyCount =
     NcaCryptoConfiguration::KeyAreaEncryptionKeyIndexCount *

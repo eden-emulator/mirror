@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include "shader_recompiler/backend/glasm/emit_glasm_instructions.h"
 #include "shader_recompiler/backend/glasm/glasm_emit_context.h"
 #include "shader_recompiler/frontend/ir/value.h"
@@ -14,8 +18,8 @@ void CompositeConstruct(EmitContext& ctx, IR::Inst& inst, Values&&... elements) 
                             [](const IR::Value& value) { return value.IsImmediate(); })) {
         using Type = std::invoke_result_t<decltype(read_imm), IR::Value>;
         const std::array<Type, 4> values{(elements.IsImmediate() ? (elements.*read_imm)() : 0)...};
-        ctx.Add("MOV.{} {},{{{},{},{},{}}};", type, ret, fmt::to_string(values[0]),
-                fmt::to_string(values[1]), fmt::to_string(values[2]), fmt::to_string(values[3]));
+        ctx.Add("MOV.{} {},{{{},{},{},{}}};", type, ret, std::format("{}", values[0]),
+                std::format("{}", values[1]), std::format("{}", values[2]), std::format("{}", values[3]));
     }
     size_t index{};
     for (const IR::Value& element : {elements...}) {

@@ -10,9 +10,10 @@
 #include <initializer_list>
 #include <tuple>
 #include <utility>
+#include <iostream>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <format>
+#include <print>
 #include "dynarmic/mcl/integer_of_size.hpp"
 #include "dynarmic/backend/x64/xbyak.h"
 
@@ -217,7 +218,7 @@ void A64EmitX64::GenFastmemFallbacks() {
                     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLocRegIdx(value_idx));
                     code.ZeroExtendFrom(bitsize, Xbyak::Reg64{value_idx});
                     code.ret();
-                    PerfMapRegister(read_fallbacks[std::make_tuple(ordered, bitsize, vaddr_idx, value_idx)], code.getCurr(), fmt::format("a64_read_fallback_{}", bitsize));
+                    PerfMapRegister(read_fallbacks[std::make_tuple(ordered, bitsize, vaddr_idx, value_idx)], code.getCurr(), std::format("a64_read_fallback_{}", bitsize));
                 }
 
                 for (const auto& [bitsize, callback] : write_callbacks) {
@@ -246,7 +247,7 @@ void A64EmitX64::GenFastmemFallbacks() {
                     if (ordered) code.mfence();
                     ABI_PopCallerSaveRegistersAndAdjustStack(code);
                     code.ret();
-                    PerfMapRegister(write_fallbacks[std::make_tuple(ordered, bitsize, vaddr_idx, value_idx)], code.getCurr(), fmt::format("a64_write_fallback_{}", bitsize));
+                    PerfMapRegister(write_fallbacks[std::make_tuple(ordered, bitsize, vaddr_idx, value_idx)], code.getCurr(), std::format("a64_write_fallback_{}", bitsize));
                 }
 
                 for (const auto& [bitsize, callback] : exclusive_write_callbacks) {
@@ -274,7 +275,7 @@ void A64EmitX64::GenFastmemFallbacks() {
                     callback.EmitCall(code);
                     ABI_PopCallerSaveRegistersAndAdjustStackExcept(code, HostLoc::RAX);
                     code.ret();
-                    PerfMapRegister(exclusive_write_fallbacks[std::make_tuple(ordered, bitsize, vaddr_idx, value_idx)], code.getCurr(), fmt::format("a64_exclusive_write_fallback_{}", bitsize));
+                    PerfMapRegister(exclusive_write_fallbacks[std::make_tuple(ordered, bitsize, vaddr_idx, value_idx)], code.getCurr(), std::format("a64_exclusive_write_fallback_{}", bitsize));
                 }
             }
         }

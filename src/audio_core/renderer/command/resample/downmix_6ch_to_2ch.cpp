@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -8,13 +11,13 @@ namespace AudioCore::Renderer {
 
 void DownMix6chTo2chCommand::Dump(
     [[maybe_unused]] const AudioRenderer::CommandListProcessor& processor, std::string& string) {
-    string += fmt::format("DownMix6chTo2chCommand\n\tinputs:  ");
+    string += std::format("DownMix6chTo2chCommand\n\tinputs:  ");
     for (u32 i = 0; i < MaxChannels; i++) {
-        string += fmt::format("{:02X}, ", inputs[i]);
+        string += std::format("{:02X}, ", inputs[i]);
     }
     string += "\n\toutputs: ";
     for (u32 i = 0; i < MaxChannels; i++) {
-        string += fmt::format("{:02X}, ", outputs[i]);
+        string += std::format("{:02X}, ", outputs[i]);
     }
     string += "\n";
 }

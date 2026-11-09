@@ -13,7 +13,7 @@
 #include "core/hle/service/acc/profile_manager.h"
 #include "play_time_manager.h"
 
-#include <fmt/format.h>
+#include <format>
 #include <algorithm>
 
 namespace PlayTime {
@@ -167,20 +167,20 @@ void PlayTimeManager::ResetProgramPlayTime(u64 program_id) {
 }
 
 std::string PlayTimeManager::GetReadablePlayTime(u64 t) {
-    return t > 0 ? fmt::format("{:02}:{:02}:{:02}", t / 3600, (t / 60) % 60, t % 60)
+    return t > 0 ? std::format("{:02}:{:02}:{:02}", t / 3600, (t / 60) % 60, t % 60)
         : std::string{};
 }
 
 std::string PlayTimeManager::GetPlayTimeHours(u64 time_seconds) {
-    return fmt::format("{}", time_seconds / 3600);
+    return std::format("{}", time_seconds / 3600);
 }
 
 std::string PlayTimeManager::GetPlayTimeMinutes(u64 time_seconds) {
-    return fmt::format("{}", (time_seconds % 3600) / 60);
+    return std::format("{}", (time_seconds % 3600) / 60);
 }
 
 std::string PlayTimeManager::GetPlayTimeSeconds(u64 time_seconds) {
-    return fmt::format("{}", time_seconds % 60);
+    return std::format("{}", time_seconds % 60);
 }
 
 } // namespace PlayTime

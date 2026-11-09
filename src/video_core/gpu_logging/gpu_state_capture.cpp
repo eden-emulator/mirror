@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "video_core/gpu_logging/gpu_state_capture.h"
-#include <fmt/format.h>
+#include <format>
 
 namespace GPU::Logging {
 
@@ -15,12 +15,12 @@ std::string GPUStateCapture::SerializeState(const GPUStateSnapshot& snapshot) {
 
     result += "=== GPU STATE SNAPSHOT ===\n\n";
 
-    result += fmt::format("Driver: {}\n", static_cast<int>(snapshot.driver_type));
-    result += fmt::format("Recent Calls: {}\n\n", snapshot.recent_calls.size());
+    result += std::format("Driver: {}\n", static_cast<int>(snapshot.driver_type));
+    result += std::format("Recent Calls: {}\n\n", snapshot.recent_calls.size());
 
     result += "=== RECENT VULKAN CALLS ===\n";
     for (const auto& call : snapshot.recent_calls) {
-        result += fmt::format("{}: {}({}) -> {}\n", call.timestamp.count(), call.call_name,
+        result += std::format("{}: {}({}) -> {}\n", call.timestamp.count(), call.call_name,
                              call.parameters, call.result);
     }
 

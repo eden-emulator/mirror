@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <format>
 #include <initializer_list>
 #include <map>
 
@@ -56,9 +57,9 @@ void Block::AddBranch(Block* block) {
 static std::string BlockToIndex(const std::map<const Block*, size_t>& block_to_index,
                                 Block* block) {
     if (const auto it{block_to_index.find(block)}; it != block_to_index.end()) {
-        return fmt::format("{{Block ${}}}", it->second);
+        return std::format("{{Block ${}}}", it->second);
     }
-    return fmt::format("$<unknown block {:016x}>", reinterpret_cast<u64>(block));
+    return std::format("$<unknown block {:016x}>", reinterpret_cast<u64>(block));
 }
 
 static size_t InstIndex(std::map<const Inst*, size_t>& inst_to_index, size_t& inst_index,
@@ -76,27 +77,27 @@ static std::string ArgToIndex(std::map<const Inst*, size_t>& inst_to_index, size
         return "<null>";
     }
     if (!arg.IsImmediate() || arg.IsIdentity()) {
-        return fmt::format("%{}", InstIndex(inst_to_index, inst_index, arg.Inst()));
+        return std::format("%{}", InstIndex(inst_to_index, inst_index, arg.Inst()));
     }
     switch (arg.Type()) {
     case Type::U1:
-        return fmt::format("#{}", arg.U1() ? "true" : "false");
+        return std::format("#{}", arg.U1() ? "true" : "false");
     case Type::U8:
-        return fmt::format("#{}", arg.U8());
+        return std::format("#{}", arg.U8());
     case Type::U16:
-        return fmt::format("#{}", arg.U16());
+        return std::format("#{}", arg.U16());
     case Type::U32:
-        return fmt::format("#{}", arg.U32());
+        return std::format("#{}", arg.U32());
     case Type::U64:
-        return fmt::format("#{}", arg.U64());
+        return std::format("#{}", arg.U64());
     case Type::F32:
-        return fmt::format("#{}", arg.F32());
+        return std::format("#{}", arg.F32());
     case Type::Reg:
-        return fmt::format("{}", arg.Reg());
+        return std::format("{}", arg.Reg());
     case Type::Pred:
-        return fmt::format("{}", arg.Pred());
+        return std::format("{}", arg.Pred());
     case Type::Attribute:
-        return fmt::format("{}", arg.Attribute());
+        return std::format("{}", arg.Attribute());
     default:
         return "<unknown immediate type>";
     }
@@ -112,16 +113,16 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
                       std::map<const Inst*, size_t>& inst_to_index, size_t& inst_index) {
     std::string ret{"Block"};
     if (const auto it{block_to_index.find(&block)}; it != block_to_index.end()) {
-        ret += fmt::format(" ${}", it->second);
+        ret += std::format(" ${}", it->second);
     }
     ret += '\n';
     for (const Inst& inst : block) {
         const Opcode op{inst.GetOpcode()};
-        ret += fmt::format("[{:016x}] ", reinterpret_cast<u64>(&inst));
+        ret += std::format("[{:016x}] ", reinterpret_cast<u64>(&inst));
         if (TypeOf(op) != Type::Void) {
-            ret += fmt::format("%{:<5} = {}", InstIndex(inst_to_index, inst_index, &inst), op);
+            ret += std::format("%{:<5} = {}", InstIndex(inst_to_index, inst_index, &inst), op);
         } else {
-            ret += fmt::format("         {}", op); // '%00000 = ' -> 1 + 5 + 3 = 9 spaces
+            ret += std::format("         {}", op); // '%00000 = ' -> 1 + 5 + 3 = 9 spaces
         }
         const size_t arg_count{inst.NumArgs()};
         for (size_t arg_index = 0; arg_index < arg_count; ++arg_index) {
@@ -129,7 +130,7 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
             const std::string arg_str{ArgToIndex(inst_to_index, inst_index, arg)};
             ret += arg_index != 0 ? ", " : " ";
             if (op == Opcode::Phi) {
-                ret += fmt::format("[ {}, {} ]", arg_str,
+                ret += std::format("[ {}, {} ]", arg_str,
                                    BlockToIndex(block_to_index, inst.PhiBlock(arg_index)));
             } else {
                 ret += arg_str;
@@ -138,12 +139,12 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
                 const Type actual_type{arg.Type()};
                 const Type expected_type{ArgTypeOf(op, arg_index)};
                 if (!AreTypesCompatible(actual_type, expected_type)) {
-                    ret += fmt::format("<type error: {} != {}>", actual_type, expected_type);
+                    ret += std::format("<type error: {} != {}>", actual_type, expected_type);
                 }
             }
         }
         if (TypeOf(op) != Type::Void) {
-            ret += fmt::format(" (uses: {})\n", inst.UseCount());
+            ret += std::format(" (uses: {})\n", inst.UseCount());
         } else {
             ret += '\n';
         }

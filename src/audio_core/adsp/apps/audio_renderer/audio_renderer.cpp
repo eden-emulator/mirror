@@ -122,7 +122,7 @@ u64 AudioRenderer::GetRenderingStartTick(s32 session_id) const noexcept {
 void AudioRenderer::CreateSinkStreams() {
     u32 channels{sink.GetDeviceChannels()};
     for (u32 i = 0; i < MaxRendererSessions; i++) {
-        std::string name{fmt::format("ADSP_RenderStream-{}", i)};
+        std::string name{std::format("ADSP_RenderStream-{}", i)};
         streams[i] =
             sink.AcquireSinkStream(system, channels, name, ::AudioCore::Sink::StreamType::Render);
         streams[i]->SetRingSize(4);

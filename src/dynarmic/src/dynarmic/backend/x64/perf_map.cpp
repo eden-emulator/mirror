@@ -8,7 +8,7 @@
 
 #include <cstddef>
 #include <string>
-#include <fmt/format.h>
+#include <format>
 
 #include "dynarmic/backend/x64/perf_map.h"
 #include "common/common_types.h"
@@ -33,7 +33,7 @@ void OpenFile() {
     }
 
     const pid_t pid = getpid();
-    const std::string filename = fmt::format("{:s}/perf-{:d}.map", perf_dir, pid);
+    const std::string filename = std::format("{:s}/perf-{:d}.map", perf_dir, pid);
 
     file = std::fopen(filename.c_str(), "w");
     if (!file) {
@@ -60,7 +60,7 @@ void PerfMapRegister(const void* start, const void* end, std::string_view friend
         }
     }
 
-    const std::string line = fmt::format("{:016x} {:016x} {:s}\n", reinterpret_cast<u64>(start), reinterpret_cast<u64>(end) - reinterpret_cast<u64>(start), friendly_name);
+    const std::string line = std::format("{:016x} {:016x} {:s}\n", reinterpret_cast<u64>(start), reinterpret_cast<u64>(end) - reinterpret_cast<u64>(start), friendly_name);
     std::fwrite(line.data(), sizeof *line.data(), line.size(), file);
 }
 }  // namespace detail

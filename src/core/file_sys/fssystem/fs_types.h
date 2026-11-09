@@ -39,7 +39,7 @@ struct HashSalt {
 
     std::array<u8, Size> value;
 };
-static_assert(std::is_trivial_v<HashSalt>);
+static_assert(std::is_trivially_default_constructible_v<HashSalt> && std::is_trivially_copyable_v<HashSalt>);
 static_assert(sizeof(HashSalt) == HashSalt::Size);
 
 constexpr inline size_t IntegrityMinLayerCount = 2;

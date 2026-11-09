@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <cstring>
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/fs/file.h"
 #include "common/fs/fs.h"

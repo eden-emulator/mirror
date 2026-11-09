@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <format>
+
 #include <boost/algorithm/string.hpp>
 #include "common/common_types.h"
 #include "common/literals.h"
@@ -329,9 +331,9 @@ inline std::vector<std::string> VerifyInstalledContents(
 
             if (title_id > 0) {
                 failed.push_back(
-                    fmt::format("{} ({:016X}) ({})", nca_file->GetName(), title_id, title_name));
+                    std::format("{} ({:016X}) ({})", nca_file->GetName(), title_id, title_name));
             } else {
-                failed.push_back(fmt::format("{} (unknown)", nca_file->GetName()));
+                failed.push_back(std::format("{} (unknown)", nca_file->GetName()));
             }
         }
 

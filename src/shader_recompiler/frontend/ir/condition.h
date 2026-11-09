@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -5,7 +8,7 @@
 
 #include <string>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/common_types.h"
 #include "shader_recompiler/frontend/ir/flow_test.h"
@@ -47,12 +50,12 @@ std::string NameOf(Condition condition);
 } // namespace Shader::IR
 
 template <>
-struct fmt::formatter<Shader::IR::Condition> {
+struct std::formatter<Shader::IR::Condition> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     template <typename FormatContext>
     auto format(const Shader::IR::Condition& cond, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{}", Shader::IR::NameOf(cond));
+        return std::format_to(ctx.out(), "{}", Shader::IR::NameOf(cond));
     }
 };

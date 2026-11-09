@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include <string_view>
 
 #include "shader_recompiler/backend/glsl/emit_glsl_instructions.h"
@@ -27,7 +31,7 @@ bool IsInputArray(Stage stage) {
 }
 
 std::string InputVertexIndex(EmitContext& ctx, std::string_view vertex) {
-    return IsInputArray(ctx.stage) ? fmt::format("[{}]", vertex) : "";
+    return IsInputArray(ctx.stage) ? std::format("[{}]", vertex) : "";
 }
 
 std::string_view OutputVertexIndex(EmitContext& ctx) {
@@ -36,10 +40,10 @@ std::string_view OutputVertexIndex(EmitContext& ctx) {
 
 std::string ChooseCbuf(EmitContext& ctx, const IR::Value& binding, std::string_view index) {
     if (binding.IsImmediate()) {
-        return fmt::format("{}_cbuf{}[{}]", ctx.stage_name, binding.U32(), index);
+        return std::format("{}_cbuf{}[{}]", ctx.stage_name, binding.U32(), index);
     } else {
         const auto binding_var{ctx.var_alloc.Consume(binding)};
-        return fmt::format("GetCbufIndirect({},{})", binding_var, index);
+        return std::format("GetCbufIndirect({},{})", binding_var, index);
     }
 }
 
@@ -58,25 +62,25 @@ void GetCbuf(EmitContext& ctx, std::string_view ret, const IR::Value& binding,
         }
     }
     const auto offset_var{ctx.var_alloc.Consume(offset)};
-    const auto index{is_immediate ? fmt::format("{}", offset.U32() / 16)
-                                  : fmt::format("{}>>4", offset_var)};
-    const auto swizzle{is_immediate ? fmt::format(".{}", OffsetSwizzle(offset.U32()))
-                                    : fmt::format("[({}>>2)%4]", offset_var)};
+    const auto index{is_immediate ? std::format("{}", offset.U32() / 16)
+                                  : std::format("{}>>4", offset_var)};
+    const auto swizzle{is_immediate ? std::format(".{}", OffsetSwizzle(offset.U32()))
+                                    : std::format("[({}>>2)%4]", offset_var)};
 
     const auto cbuf{ChooseCbuf(ctx, binding, index)};
-    const auto cbuf_cast{fmt::format("{}({}{{}})", cast, cbuf)};
+    const auto cbuf_cast{std::format("{}({}{{}})", cast, cbuf)};
     const auto extraction{num_bits == 32 ? cbuf_cast
-                                         : fmt::format("bitfieldExtract({},int({}),{})", cbuf_cast,
+                                         : std::format("bitfieldExtract({},int({}),{})", cbuf_cast,
                                                        bit_offset, num_bits)};
     if (!component_indexing_bug) {
-        const auto result{fmt::format(fmt::runtime(extraction), swizzle)};
+        const auto result{std::vformat(extraction, std::make_format_args(swizzle))};
         ctx.Add("{}={};", ret, result);
         return;
     }
-    const auto cbuf_offset{fmt::format("{}>>2", offset_var)};
+    const auto cbuf_offset{std::format("{}>>2", offset_var)};
     for (u32 i = 0; i < 4; ++i) {
-        const auto swizzle_string{fmt::format(".{}", "xyzw"[i])};
-        const auto result{fmt::format(fmt::runtime(extraction), swizzle_string)};
+        const auto swizzle_string{std::format(".{}", "xyzw"[i])};
+        const auto result{std::vformat(extraction, std::make_format_args(swizzle_string))};
         ctx.Add("if(({}&3)=={}){}={};", cbuf_offset, i, ret, result);
     }
 }
@@ -85,11 +89,11 @@ void GetCbuf8(EmitContext& ctx, IR::Inst& inst, const IR::Value& binding, const 
               std::string_view cast) {
     const auto ret{ctx.var_alloc.Define(inst, GlslVarType::U32)};
     if (offset.IsImmediate()) {
-        const auto bit_offset{fmt::format("{}", (offset.U32() % 4) * 8)};
+        const auto bit_offset{std::format("{}", (offset.U32() % 4) * 8)};
         GetCbuf(ctx, ret, binding, offset, 8, cast, bit_offset);
     } else {
         const auto offset_var{ctx.var_alloc.Consume(offset)};
-        const auto bit_offset{fmt::format("({}%4)*8", offset_var)};
+        const auto bit_offset{std::format("({}%4)*8", offset_var)};
         GetCbuf(ctx, ret, binding, offset, 8, cast, bit_offset);
     }
 }
@@ -98,11 +102,11 @@ void GetCbuf16(EmitContext& ctx, IR::Inst& inst, const IR::Value& binding, const
                std::string_view cast) {
     const auto ret{ctx.var_alloc.Define(inst, GlslVarType::U32)};
     if (offset.IsImmediate()) {
-        const auto bit_offset{fmt::format("{}", ((offset.U32() / 2) % 2) * 16)};
+        const auto bit_offset{std::format("{}", ((offset.U32() / 2) % 2) * 16)};
         GetCbuf(ctx, ret, binding, offset, 16, cast, bit_offset);
     } else {
         const auto offset_var{ctx.var_alloc.Consume(offset)};
-        const auto bit_offset{fmt::format("(({}>>1)%2)*16", offset_var)};
+        const auto bit_offset{std::format("(({}>>1)%2)*16", offset_var)};
         GetCbuf(ctx, ret, binding, offset, 16, cast, bit_offset);
     }
 }
@@ -150,7 +154,7 @@ void EmitGetCbufU32x2(EmitContext& ctx, IR::Inst& inst, const IR::Value& binding
                       const IR::Value& offset) {
     const auto cast{ctx.profile.has_gl_cbuf_ftou_bug ? "" : "ftou"};
     if (offset.IsImmediate()) {
-        const auto cbuf{fmt::format("{}_cbuf{}", ctx.stage_name, binding.U32())};
+        const auto cbuf{std::format("{}_cbuf{}", ctx.stage_name, binding.U32())};
         static constexpr u32 cbuf_size{0x10000};
         const u32 u32_offset{offset.U32()};
         const s32 signed_offset{static_cast<s32>(offset.U32())};
@@ -170,14 +174,14 @@ void EmitGetCbufU32x2(EmitContext& ctx, IR::Inst& inst, const IR::Value& binding
         return;
     }
     const auto offset_var{ctx.var_alloc.Consume(offset)};
-    const auto cbuf{ChooseCbuf(ctx, binding, fmt::format("{}>>4", offset_var))};
+    const auto cbuf{ChooseCbuf(ctx, binding, std::format("{}>>4", offset_var))};
     if (!ctx.profile.has_gl_component_indexing_bug) {
         ctx.AddU32x2("{}=uvec2({}({}[({}>>2)%4]),{}({}[(({}+4)>>2)%4]));", inst, cast, cbuf,
                      offset_var, cast, cbuf, offset_var);
         return;
     }
     const auto ret{ctx.var_alloc.Define(inst, GlslVarType::U32x2)};
-    const auto cbuf_offset{fmt::format("{}>>2", offset_var)};
+    const auto cbuf_offset{std::format("{}>>2", offset_var)};
     for (u32 swizzle = 0; swizzle < 4; ++swizzle) {
         ctx.Add("if(({}&3)=={}){}=uvec2({}({}.{}),{}({}.{}));", cbuf_offset, swizzle, ret, cast,
                 cbuf, "xyzw"[swizzle], cast, cbuf, "xyzw"[(swizzle + 1) % 4]);
@@ -213,7 +217,7 @@ void EmitGetAttribute(EmitContext& ctx, IR::Inst& inst, IR::Attribute attr,
     case IR::Attribute::PositionZ:
     case IR::Attribute::PositionW: {
         const bool is_array{IsInputArray(ctx.stage)};
-        const auto input_decorator{is_array ? fmt::format("gl_in[{}].", vertex) : ""};
+        const auto input_decorator{is_array ? std::format("gl_in[{}].", vertex) : ""};
         ctx.AddF32("{}={}{}.{};", inst, input_decorator, ctx.position_name, swizzle);
         break;
     }
@@ -347,7 +351,7 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, std::string_view val
 void EmitGetAttributeIndexed(EmitContext& ctx, IR::Inst& inst, std::string_view offset,
                              std::string_view vertex) {
     const bool is_array{ctx.stage == Stage::Geometry};
-    const auto vertex_arg{is_array ? fmt::format(",{}", vertex) : ""};
+    const auto vertex_arg{is_array ? std::format(",{}", vertex) : ""};
     ctx.AddF32("{}=IndexedAttrLoad(int({}){});", inst, offset, vertex_arg);
 }
 

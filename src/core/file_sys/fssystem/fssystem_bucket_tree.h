@@ -44,7 +44,7 @@ public:
         void Format(s32 entry_count);
         Result Verify() const;
     };
-    static_assert(std::is_trivial_v<Header>);
+    static_assert(std::is_trivially_default_constructible_v<Header> && std::is_trivially_copyable_v<Header>);
     static_assert(sizeof(Header) == 0x10);
 
     struct NodeHeader {
@@ -54,7 +54,7 @@ public:
 
         Result Verify(s32 node_index, size_t node_size, size_t entry_size) const;
     };
-    static_assert(std::is_trivial_v<NodeHeader>);
+    static_assert(std::is_trivially_default_constructible_v<NodeHeader> && std::is_trivially_copyable_v<NodeHeader>);
     static_assert(sizeof(NodeHeader) == 0x10);
 
     struct Offsets {
@@ -69,7 +69,7 @@ public:
             return size > 0 && this->start_offset <= offset && size <= (this->end_offset - offset);
         }
     };
-    static_assert(std::is_trivial_v<Offsets>);
+    static_assert(std::is_trivially_default_constructible_v<Offsets> && std::is_trivially_copyable_v<Offsets>);
     static_assert(sizeof(Offsets) == 0x10);
 
     struct OffsetCache {
@@ -184,7 +184,7 @@ private:
 
         template <typename T>
         T* Get() const {
-            static_assert(std::is_trivial_v<T>);
+            static_assert(std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T>);
             static_assert(sizeof(T) == sizeof(NodeHeader));
             return reinterpret_cast<T*>(m_header);
         }
@@ -405,9 +405,9 @@ private:
             s64 end;
             s64 start;
         } info;
-        static_assert(std::is_trivial_v<Info>);
+        static_assert(std::is_trivially_default_constructible_v<Info> && std::is_trivially_copyable_v<Info>);
     };
-    static_assert(std::is_trivial_v<EntrySetHeader>);
+    static_assert(std::is_trivially_default_constructible_v<EntrySetHeader> && std::is_trivially_copyable_v<EntrySetHeader>);
 
     const BucketTree* m_tree;
     BucketTree::Offsets m_offsets;

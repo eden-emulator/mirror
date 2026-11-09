@@ -414,12 +414,12 @@ bool UpdateDialog::downloadFile(
                 .arg(QString::fromStdString(url), QString::fromStdString(std::format("{}", res.error()))));
         return false;
     } else if (res->status_code < hydro::Status::Ok || res->status_code >= hydro::Status::MultipleChoices) {
-        LOG_ERROR(Frontend, "URL {} returned status {}", url, std::to_underlying(res->status_code));
+        LOG_ERROR(Frontend, "URL {} returned status {}", url, res->status_code);
 
         QtCommon::Frontend::Critical(
             tr("Failed to download file"),
             tr("URL %1 returned status code %2.")
-                .arg(QString::fromStdString(url), QString::number(std::to_underlying(res->status_code))));
+                .arg(QString::fromStdString(url), QString::fromStdString(std::format("{}", res->status_code))));
         return false;
     }
 

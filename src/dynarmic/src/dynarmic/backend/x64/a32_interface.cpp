@@ -11,7 +11,7 @@
 #include <mutex>
 
 #include <boost/icl/interval_set.hpp>
-#include <fmt/format.h>
+#include <format>
 #include "common/assert.h"
 #include <bit>
 #include "common/common_types.h"

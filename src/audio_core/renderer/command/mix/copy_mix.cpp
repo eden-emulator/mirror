@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -8,7 +11,7 @@ namespace AudioCore::Renderer {
 
 void CopyMixBufferCommand::Dump(
     [[maybe_unused]] const AudioRenderer::CommandListProcessor& processor, std::string& string) {
-    string += fmt::format("CopyMixBufferCommand\n\tinput {:02X} output {:02X}\n", input_index,
+    string += std::format("CopyMixBufferCommand\n\tinput {:02X} output {:02X}\n", input_index,
                           output_index);
 }
 

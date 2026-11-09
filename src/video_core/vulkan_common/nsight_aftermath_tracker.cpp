@@ -13,7 +13,7 @@
 #include <utility>
 #include <vector>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/common_types.h"
 #include "common/fs/file.h"
@@ -93,7 +93,7 @@ void NsightAftermathTracker::SaveShader(std::span<const u32> spirv) const {
         return;
     }
 
-    const auto shader_file = dump_dir / fmt::format("source_{:016x}.spv", hash.hash);
+    const auto shader_file = dump_dir / std::format("source_{:016x}.spv", hash.hash);
 
     Common::FS::IOFile file{shader_file, Common::FS::FileAccessMode::Write,
                             Common::FS::FileType::BinaryFile};
@@ -143,7 +143,7 @@ void NsightAftermathTracker::OnGpuCrashDumpCallback(const void* gpu_crash_dump,
         if (id == 0) {
             return dump_dir / "crash.nv-gpudmp";
         } else {
-            return dump_dir / fmt::format("crash_{}.nv-gpudmp", id);
+            return dump_dir / std::format("crash_{}.nv-gpudmp", id);
         }
     }();
 
@@ -173,7 +173,7 @@ void NsightAftermathTracker::OnShaderDebugInfoCallback(const void* shader_debug_
     }
 
     const auto path =
-        dump_dir / fmt::format("shader_{:016x}{:016x}.nvdbg", identifier.id[0], identifier.id[1]);
+        dump_dir / std::format("shader_{:016x}{:016x}.nvdbg", identifier.id[0], identifier.id[1]);
     Common::FS::IOFile file{path, Common::FS::FileAccessMode::Write,
                             Common::FS::FileType::BinaryFile};
     if (!file.IsOpen()) {

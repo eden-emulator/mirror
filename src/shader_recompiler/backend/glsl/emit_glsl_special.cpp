@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include "shader_recompiler/backend/glsl/emit_glsl_instructions.h"
 #include "shader_recompiler/backend/glsl/glsl_emit_context.h"
 #include "shader_recompiler/frontend/ir/program.h"
@@ -29,7 +33,7 @@ void InitializeOutputVaryings(EmitContext& ctx) {
         size_t element{};
         while (element < info_array.size()) {
             const auto& info{info_array.at(element)};
-            const auto varying_name{fmt::format("{}{}", info.name, output_decorator)};
+            const auto varying_name{std::format("{}{}", info.name, output_decorator)};
             switch (info.num_components) {
             case 1: {
                 const char value{element == 3 ? '1' : '0'};

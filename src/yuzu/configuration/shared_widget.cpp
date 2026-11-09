@@ -37,7 +37,7 @@
 #include <QVariant>
 #include <QtCore/qglobal.h>
 #include <QtCore/qobjectdefs.h>
-#include <fmt/core.h>
+#include <format>
 #include <qglobal.h>
 #include <qnamespace.h>
 
@@ -64,7 +64,7 @@ static QString DefaultSuffix(QWidget* parent, Settings::BasicSetting& setting) {
 
     if ((setting.Specialization() & Settings::SpecializationAttributeMask) ==
         Settings::Specialization::Percentage) {
-        std::string context{fmt::format("{} percentage (e.g. 50%)", setting.GetLabel())};
+        std::string context{std::format("{} percentage (e.g. 50%)", setting.GetLabel())};
         return tr("%", context.c_str());
     }
 
@@ -438,7 +438,7 @@ QWidget* Widget::CreateDoubleSpinBox(const QString& given_suffix,
     double_spinbox->setSuffix(suffix);
     double_spinbox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
-    serializer = [this]() { return fmt::format("{:f}", double_spinbox->value()); };
+    serializer = [this]() { return std::format("{:f}", double_spinbox->value()); };
 
     restore_func = [this]() {
         auto value{std::strtod(RelevantDefault(setting).c_str(), nullptr)};
@@ -468,7 +468,7 @@ QWidget* Widget::CreateHexEdit(std::function<std::string()>& serializer,
 
     auto to_hex = [=](const std::string& input) {
         return QString::fromStdString(
-            fmt::format("{:08x}", std::strtoul(input.c_str(), nullptr, 0)));
+            std::format("{:08x}", std::strtoul(input.c_str(), nullptr, 0)));
     };
 
     QRegularExpressionValidator* regex = new QRegularExpressionValidator(

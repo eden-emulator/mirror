@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
@@ -208,7 +208,7 @@ std::string GetThreadState(const Kernel::KThread* thread) {
     case Kernel::ThreadState::Initialized:
         return "Initialized";
     case Kernel::ThreadState::Waiting:
-        return fmt::format("Waiting ({})", GetThreadWaitReason(thread));
+        return std::format("Waiting ({})", GetThreadWaitReason(thread));
     case Kernel::ThreadState::Runnable:
         return "Runnable";
     case Kernel::ThreadState::Terminated:

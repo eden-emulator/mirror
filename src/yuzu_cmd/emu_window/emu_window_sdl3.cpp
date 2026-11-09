@@ -33,7 +33,7 @@ EmuWindow_SDL3::EmuWindow_SDL3(InputCommon::InputSubsystem* input_subsystem_, Co
     titlebar_timer = SDL_AddTimer(2000, [](void *userdata, SDL_TimerID, Uint32) -> Uint32 {
         auto* this_ = (EmuWindow_SDL3*)userdata;
         auto const results = this_->system.GetAndResetPerfStats();
-        auto const title = fmt::format("{} | {}-{} | FPS: {:.0f} ({:.0f}%)", Common::g_build_fullname, Common::g_scm_branch, Common::g_scm_desc, results.average_game_fps, results.emulation_speed * 100.0f);
+        auto const title = std::format("{} | {}-{} | FPS: {:.0f} ({:.0f}%)", std::string_view{Common::g_build_fullname}, std::string_view{Common::g_scm_branch}, std::string_view{Common::g_scm_desc}, results.average_game_fps, results.emulation_speed * 100.0f);
         SDL_SetWindowTitle(this_->render_window, title.c_str());
         return 2000;
     }, this);

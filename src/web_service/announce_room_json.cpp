@@ -83,7 +83,7 @@ WebService::WebResult RoomJson::Update() {
     }
     jacinth::json json;
     json["players"] = room.members;
-    return client.PostJson(fmt::format("/lobby/{}", room_id), json.dump(), false);
+    return client.PostJson(std::format("/lobby/{}", room_id), json.dump(), false);
 }
 
 WebService::WebResult RoomJson::Register() {
@@ -120,7 +120,7 @@ void RoomJson::Delete() {
         // Once the thread finishes it will stay resident on the vector -- destroyed and freed by dtor()
         // this is still valid while in dtor, so... yeah
         detached_tasks.emplace_back([this](std::stop_token stop_token) {
-            client.DeleteJson(fmt::format("/lobby/{}", room_id), "", false);
+            client.DeleteJson(std::format("/lobby/{}", room_id), "", false);
         });
     }
 }

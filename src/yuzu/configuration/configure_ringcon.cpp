@@ -9,7 +9,7 @@
 #include <QMenu>
 #include <QMessageBox>
 #include <QTimer>
-#include <fmt/ranges.h>
+#include <format>
 
 #include "hid_core/frontend/emulated_controller.h"
 #include "hid_core/hid_core.h"
@@ -329,7 +329,7 @@ void ConfigureRingController::ControllerUpdate(Core::HID::ControllerTriggerType 
     }
 
     const auto value = emulated_controller->GetRingSensorValues();
-    const auto tex_value = QString::fromStdString(fmt::format("{:.3f}", value.raw_value));
+    const auto tex_value = QString::fromStdString(std::format("{:.3f}", value.raw_value));
     ui->ring_controller_sensor_value->setText(tex_value);
 }
 

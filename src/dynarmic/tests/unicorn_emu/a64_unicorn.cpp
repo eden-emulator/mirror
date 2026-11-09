@@ -6,7 +6,7 @@
  * SPDX-License-Identifier: 0BSD
  */
 
-#include <fmt/format.h>
+#include <format>
 #include "dynarmic/tests/unicorn_emu/a64_unicorn.h"
 #include "common/assert.h"
 
@@ -177,7 +177,7 @@ void A64Unicorn::InterruptHook(uc_engine* uc, u32 int_number, void* user_data) {
         this_->testenv.CallSVC(iss);
         break;
     default:
-        this_->testenv.interrupts.emplace_back(fmt::format("Unhandled interrupt: int_number: {:#x}, esr: {:#x} (ec: {:#x}, iss: {:#x})", int_number, esr, ec, iss));
+        this_->testenv.interrupts.emplace_back(std::format("Unhandled interrupt: int_number: {:#x}, esr: {:#x} (ec: {:#x}, iss: {:#x})", int_number, esr, ec, iss));
         break;
     }
 }

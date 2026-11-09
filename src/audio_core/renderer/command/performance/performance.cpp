@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -10,7 +13,7 @@ namespace AudioCore::Renderer {
 
 void PerformanceCommand::Dump([[maybe_unused]] const AudioRenderer::CommandListProcessor& processor,
                               std::string& string) {
-    string += fmt::format("PerformanceCommand\n\tstate {}\n", static_cast<u32>(state));
+    string += std::format("PerformanceCommand\n\tstate {}\n", static_cast<u32>(state));
 }
 
 void PerformanceCommand::Process(const AudioRenderer::CommandListProcessor& processor) {

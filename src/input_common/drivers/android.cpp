@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <format>
 #include <set>
 #include <common/settings_input.h>
 #include <common/thread.h>
@@ -97,7 +98,7 @@ std::vector<Common::ParamPackage> Android::GetInputDevices() const {
         auto name_object = static_cast<jstring>(
             env->CallObjectMethod(value, Common::Android::GetYuzuDeviceGetName()));
         const std::string name =
-            fmt::format("{} {}", Common::Android::GetJString(env, name_object), key.port);
+            std::format("{} {}", Common::Android::GetJString(env, name_object), key.port);
         devices.emplace_back(Common::ParamPackage{
             {"engine", GetEngineName()},
             {"display", std::move(name)},

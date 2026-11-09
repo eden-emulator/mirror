@@ -12,7 +12,7 @@
 #include <string_view>
 #include <vector>
 
-#include <fmt/format.h>
+#include <print>
 #include "common/common_types.h"
 
 #include "./A32/testenv.h"
@@ -58,7 +58,7 @@ u64 ParseHex(std::string_view hex) {
         } else if (hex.front() == ':') {
             return result;
         } else {
-            fmt::print("Character {} is not a valid hex character\n", hex.front());
+            std::print("Character {} is not a valid hex character\n", hex.front());
         }
         hex.remove_prefix(1);
     }
@@ -109,54 +109,54 @@ void RunTestInstance(Dynarmic::A32::Jit& jit,
         jit.Run();
     }
 
-    fmt::print("instructions:");
+    std::print("instructions:");
     for (auto instruction : instructions) {
         if constexpr (sizeof(decltype(instruction)) == 2) {
-            fmt::print(" {:04x}", instruction);
+            std::print(" {:04x}", instruction);
         } else {
-            fmt::print(" {:08x}", instruction);
+            std::print(" {:08x}", instruction);
         }
     }
-    fmt::print("\n");
+    std::print("\n");
 
-    fmt::print("initial_regs:");
+    std::print("initial_regs:");
     for (u32 i : regs) {
-        fmt::print(" {:08x}", i);
+        std::print(" {:08x}", i);
     }
-    fmt::print("\n");
-    fmt::print("initial_vecs:");
+    std::print("\n");
+    std::print("initial_vecs:");
     for (u32 i : vecs) {
-        fmt::print(" {:08x}", i);
+        std::print(" {:08x}", i);
     }
-    fmt::print("\n");
-    fmt::print("initial_cpsr: {:08x}\n", cpsr);
-    fmt::print("initial_fpcr: {:08x}\n", fpscr);
+    std::print("\n");
+    std::print("initial_cpsr: {:08x}\n", cpsr);
+    std::print("initial_fpcr: {:08x}\n", fpscr);
 
-    fmt::print("final_regs:");
+    std::print("final_regs:");
     for (u32 i : jit.Regs()) {
-        fmt::print(" {:08x}", i);
+        std::print(" {:08x}", i);
     }
-    fmt::print("\n");
-    fmt::print("final_vecs:");
+    std::print("\n");
+    std::print("final_vecs:");
     for (u32 i : jit.ExtRegs()) {
-        fmt::print(" {:08x}", i);
+        std::print(" {:08x}", i);
     }
-    fmt::print("\n");
-    fmt::print("final_cpsr: {:08x}\n", jit.Cpsr());
-    fmt::print("final_fpsr: {:08x}\n", mask_fpsr_cum_bits ? jit.Fpscr() & 0xffffff00 : jit.Fpscr());
+    std::print("\n");
+    std::print("final_cpsr: {:08x}\n", jit.Cpsr());
+    std::print("final_fpsr: {:08x}\n", mask_fpsr_cum_bits ? jit.Fpscr() & 0xffffff00 : jit.Fpscr());
 
-    fmt::print("mod_mem: ");
+    std::print("mod_mem: ");
     for (auto [addr, value] : jit_env.modified_memory) {
-        fmt::print("{:08x}:{:02x} ", addr, value);
+        std::print("{:08x}:{:02x} ", addr, value);
     }
-    fmt::print("\n");
+    std::print("\n");
 
-    fmt::print("interrupts:\n");
+    std::print("interrupts:\n");
     for (const auto& i : jit_env.interrupts) {
         std::puts(i.c_str());
     }
 
-    fmt::print("===\n");
+    std::print("===\n");
 }
 
 A64::UserConfig GetA64UserConfig(A64TestEnv& jit_env, bool noopt) {
@@ -205,54 +205,54 @@ void RunTestInstance(A64::Jit& jit,
         jit.Run();
     }
 
-    fmt::print("instructions:");
+    std::print("instructions:");
     for (u32 instruction : instructions) {
-        fmt::print(" {:08x}", instruction);
+        std::print(" {:08x}", instruction);
     }
-    fmt::print("\n");
+    std::print("\n");
 
-    fmt::print("initial_regs:");
+    std::print("initial_regs:");
     for (u64 i : regs) {
-        fmt::print(" {:016x}", i);
+        std::print(" {:016x}", i);
     }
-    fmt::print("\n");
-    fmt::print("initial_vecs:");
+    std::print("\n");
+    std::print("initial_vecs:");
     for (auto i : vecs) {
-        fmt::print(" {:016x}:{:016x}", i[0], i[1]);
+        std::print(" {:016x}:{:016x}", i[0], i[1]);
     }
-    fmt::print("\n");
-    fmt::print("initial_sp: {:016x}\n", initial_sp);
-    fmt::print("initial_pstate: {:08x}\n", pstate);
-    fmt::print("initial_fpcr: {:08x}\n", fpcr);
+    std::print("\n");
+    std::print("initial_sp: {:016x}\n", initial_sp);
+    std::print("initial_pstate: {:08x}\n", pstate);
+    std::print("initial_fpcr: {:08x}\n", fpcr);
 
-    fmt::print("final_regs:");
+    std::print("final_regs:");
     for (u64 i : jit.GetRegisters()) {
-        fmt::print(" {:016x}", i);
+        std::print(" {:016x}", i);
     }
-    fmt::print("\n");
-    fmt::print("final_vecs:");
+    std::print("\n");
+    std::print("final_vecs:");
     for (auto i : jit.GetVectors()) {
-        fmt::print(" {:016x}:{:016x}", i[0], i[1]);
+        std::print(" {:016x}:{:016x}", i[0], i[1]);
     }
-    fmt::print("\n");
-    fmt::print("final_sp: {:016x}\n", jit.GetSP());
-    fmt::print("final_pc: {:016x}\n", jit.GetPC());
-    fmt::print("final_pstate: {:08x}\n", jit.GetPstate());
-    fmt::print("final_fpcr: {:08x}\n", jit.GetFpcr());
-    fmt::print("final_qc : {}\n", FP::FPSR{jit.GetFpsr()}.QC());
+    std::print("\n");
+    std::print("final_sp: {:016x}\n", jit.GetSP());
+    std::print("final_pc: {:016x}\n", jit.GetPC());
+    std::print("final_pstate: {:08x}\n", jit.GetPstate());
+    std::print("final_fpcr: {:08x}\n", jit.GetFpcr());
+    std::print("final_qc : {}\n", FP::FPSR{jit.GetFpsr()}.QC());
 
-    fmt::print("mod_mem:");
+    std::print("mod_mem:");
     for (auto [addr, value] : jit_env.modified_memory) {
-        fmt::print(" {:08x}:{:02x}", addr, value);
+        std::print(" {:08x}:{:02x}", addr, value);
     }
-    fmt::print("\n");
+    std::print("\n");
 
-    fmt::print("interrupts:\n");
+    std::print("interrupts:\n");
     for (const auto& i : jit_env.interrupts) {
         std::puts(i.c_str());
     }
 
-    fmt::print("===\n");
+    std::print("===\n");
 }
 
 void RunThumb(bool noopt) {
@@ -408,7 +408,7 @@ void RunA64(bool noopt) {
 
 int main(int argc, char** argv) {
     if (argc < 2 || argc > 3) {
-        fmt::print("Usage: {} <thumb|arm|a64> [noopt]\n", argv[0]);
+        std::print("Usage: {} <thumb|arm|a64> [noopt]\n", argv[0]);
         return 1;
     }
 
@@ -421,7 +421,7 @@ int main(int argc, char** argv) {
     } else if (strcmp(argv[1], "a64") == 0) {
         RunA64(noopt);
     } else {
-        fmt::print("unrecognized instruction class\n");
+        std::print("unrecognized instruction class\n");
         return 1;
     }
 

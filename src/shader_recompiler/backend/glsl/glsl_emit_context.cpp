@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include "common/div_ceil.h"
 #include "shader_recompiler/backend/bindings.h"
 #include "shader_recompiler/backend/glsl/glsl_emit_context.h"
@@ -59,7 +60,7 @@ bool StoresPerVertexAttributes(Stage stage) {
 std::string OutputDecorator(Stage stage, u32 size) {
     switch (stage) {
     case Stage::TessellationControl:
-        return fmt::format("[{}]", size);
+        return std::format("[{}]", size);
     default:
         return "";
     }
@@ -286,17 +287,17 @@ EmitContext::EmitContext(IR::Program& program, Bindings& bindings, const Profile
         break;
     case Stage::TessellationControl:
         stage_name = "tcs";
-        header += fmt::format("layout(vertices={})out;", program.invocations);
+        header += std::format("layout(vertices={})out;", program.invocations);
         break;
     case Stage::TessellationEval:
         stage_name = "tes";
-        header += fmt::format("layout({},{},{})in;", GetTessMode(runtime_info.tess_primitive),
+        header += std::format("layout({},{},{})in;", GetTessMode(runtime_info.tess_primitive),
                               GetTessSpacing(runtime_info.tess_spacing),
                               runtime_info.tess_clockwise ? "cw" : "ccw");
         break;
     case Stage::Geometry:
         stage_name = "gs";
-        header += fmt::format("layout({})in;", InputPrimitive(runtime_info.input_topology));
+        header += std::format("layout({})in;", InputPrimitive(runtime_info.input_topology));
         if (uses_geometry_passthrough) {
             // Passthru REQUIRES the layout to be defined with a corresponding name, for our sanity
             // we will just use `gl_in[]`, if you don't the driver will complain with:
@@ -306,7 +307,7 @@ EmitContext::EmitContext(IR::Program& program, Bindings& bindings, const Profile
         } else if (program.is_geometry_passthrough && !profile.support_geometry_shader_passthrough) {
             LOG_WARNING(Shader_GLSL, "Passthrough geometry program used but not supported");
         }
-        header += fmt::format(
+        header += std::format(
             "layout({},max_vertices={})out;in gl_PerVertex{{vec4 gl_Position;}}gl_in[];",
             OutputPrimitive(program.output_topology), program.output_vertices);
         break;
@@ -322,7 +323,7 @@ EmitContext::EmitContext(IR::Program& program, Bindings& bindings, const Profile
         const u32 local_x{(std::max)(program.workgroup_size[0], 1u)};
         const u32 local_y{(std::max)(program.workgroup_size[1], 1u)};
         const u32 local_z{(std::max)(program.workgroup_size[2], 1u)};
-        header += fmt::format("layout(local_size_x={},local_size_y={},local_size_z={}) in;",
+        header += std::format("layout(local_size_x={},local_size_y={},local_size_z={}) in;",
                               local_x, local_y, local_z);
         break;
     }
@@ -334,8 +335,8 @@ EmitContext::EmitContext(IR::Program& program, Bindings& bindings, const Profile
             continue;
         }
         const auto qualifier{uses_geometry_passthrough ? "passthrough"
-                                                       : fmt::format("location={}", index)};
-        header += fmt::format("layout({}){}in vec4 in_attr{}{};", qualifier,
+                                                       : std::format("location={}", index)};
+        header += std::format("layout({}){}in vec4 in_attr{}{};", qualifier,
                               InterpDecorator(info.interpolation[index]), index,
                               InputArrayDecorator(stage));
     }
@@ -344,14 +345,14 @@ EmitContext::EmitContext(IR::Program& program, Bindings& bindings, const Profile
             continue;
         }
         const auto qualifier{stage == Stage::TessellationControl ? "out" : "in"};
-        header += fmt::format("layout(location={})patch {} vec4 patch{};", index, qualifier, index);
+        header += std::format("layout(location={})patch {} vec4 patch{};", index, qualifier, index);
     }
     if (stage == Stage::Fragment) {
         for (size_t index = 0; index < info.stores_frag_color.size(); ++index) {
             if (!info.stores_frag_color[index] && !profile.need_declared_frag_colors) {
                 continue;
             }
-            header += fmt::format("layout(location={})out vec4 frag_color{};", index, index);
+            header += std::format("layout(location={})out vec4 frag_color{};", index, index);
         }
     }
     for (size_t index = 0; index < IR::NUM_GENERICS; ++index) {
@@ -439,7 +440,7 @@ void EmitContext::DefineConstantBuffers(Bindings& bindings) {
         const auto cbuf_type{profile.has_gl_cbuf_ftou_bug ? "uvec4" : "vec4"};
         const u32 cbuf_used_size{Common::DivCeil(info.constant_buffer_used_sizes[desc.index], 16U)};
         const u32 cbuf_binding_size{info.uses_global_memory ? 0x1000U : cbuf_used_size};
-        header += fmt::format("layout(std140,binding={}) uniform {}_cbuf_{}{{{} {}_cbuf{}[{}];}};",
+        header += std::format("layout(std140,binding={}) uniform {}_cbuf_{}{{{} {}_cbuf{}[{}];}};",
                               bindings.uniform_buffer, stage_name, desc.index, cbuf_type,
                               stage_name, desc.index, cbuf_binding_size);
         bindings.uniform_buffer += desc.count;
@@ -458,7 +459,7 @@ void EmitContext::DefineConstantBufferIndirect() {
 
     for (const auto& desc : info.constant_buffer_descriptors) {
         header +=
-            fmt::format("case {}:return {}_cbuf{}[offset];", desc.index, stage_name, desc.index);
+            std::format("case {}:return {}_cbuf{}[offset];", desc.index, stage_name, desc.index);
     }
 
     header += "}}";
@@ -470,7 +471,7 @@ void EmitContext::DefineStorageBuffers(Bindings& bindings) {
     }
     u32 index{};
     for (const auto& desc : info.storage_buffers_descriptors) {
-        header += fmt::format("layout(std430,binding={}) buffer {}_ssbo_{}{{uint {}_ssbo{}[];}};",
+        header += std::format("layout(std430,binding={}) buffer {}_ssbo_{}{{uint {}_ssbo{}[];}};",
                               bindings.storage_buffer, stage_name, bindings.storage_buffer,
                               stage_name, index);
         bindings.storage_buffer += desc.count;
@@ -483,7 +484,7 @@ void EmitContext::DefineGenericOutput(size_t index, u32 invocations) {
     const size_t base_index{static_cast<size_t>(IR::Attribute::Generic0X) + index * 4};
     u32 element{0};
     while (element < 4) {
-        std::string definition{fmt::format("layout(location={}", index)};
+        std::string definition{std::format("layout(location={}", index)};
         const u32 remainder{4 - element};
         const TransformFeedbackVarying* xfb_varying{};
         const size_t xfb_varying_index{base_index + element};
@@ -493,19 +494,19 @@ void EmitContext::DefineGenericOutput(size_t index, u32 invocations) {
         }
         const u32 num_components{xfb_varying ? xfb_varying->components : remainder};
         if (element > 0) {
-            definition += fmt::format(",component={}", element);
+            definition += std::format(",component={}", element);
         }
         if (xfb_varying) {
             definition +=
-                fmt::format(",xfb_buffer={},xfb_stride={},xfb_offset={}", xfb_varying->buffer,
+                std::format(",xfb_buffer={},xfb_stride={},xfb_offset={}", xfb_varying->buffer,
                             xfb_varying->stride, xfb_varying->offset);
         }
-        std::string name{fmt::format("out_attr{}", index)};
+        std::string name{std::format("out_attr{}", index)};
         if (num_components < 4 || element > 0) {
-            name += fmt::format("_{}", swizzle.substr(element, num_components));
+            name += std::format("_{}", swizzle.substr(element, num_components));
         }
-        const auto type{num_components == 1 ? "float" : fmt::format("vec{}", num_components)};
-        definition += fmt::format(")out {} {}{};", type, name, OutputDecorator(stage, invocations));
+        const auto type{num_components == 1 ? "float" : std::format("vec{}", num_components)};
+        definition += std::format(")out {} {}{};", type, name, OutputDecorator(stage, invocations));
         header += definition;
 
         const GenericElementInfo element_info{
@@ -569,12 +570,12 @@ void EmitContext::DefineHelperFunctions() {
         const bool is_array{stage == Stage::Geometry};
         const auto vertex_arg{is_array ? ",uint vertex" : ""};
         std::string func{
-            fmt::format("float IndexedAttrLoad(int offset{}){{int base_index=offset>>2;uint "
+            std::format("float IndexedAttrLoad(int offset{}){{int base_index=offset>>2;uint "
                         "masked_index=uint(base_index)&3u;switch(base_index>>2){{",
                         vertex_arg)};
         if (info.loads.AnyComponent(IR::Attribute::PositionX)) {
             const auto position_idx{is_array ? "gl_in[vertex]." : ""};
-            func += fmt::format("case {}:return {}{}[masked_index];",
+            func += std::format("case {}:return {}{}[masked_index];",
                                 static_cast<u32>(IR::Attribute::PositionX) >> 2, position_idx,
                                 position_name);
         }
@@ -584,7 +585,7 @@ void EmitContext::DefineHelperFunctions() {
                 continue;
             }
             const auto vertex_idx{is_array ? "[vertex]" : ""};
-            func += fmt::format("case {}:return in_attr{}{}[masked_index];",
+            func += std::format("case {}:return in_attr{}{}[masked_index];",
                                 base_attribute_value + index, index, vertex_idx);
         }
         func += "default: return 0.0;}}";
@@ -599,31 +600,31 @@ std::string EmitContext::DefineGlobalMemoryFunctions() {
     const auto define_body{[&](std::string& func, size_t index, std::string_view return_statement) {
         const auto& ssbo{info.storage_buffers_descriptors[index]};
         const u32 size_cbuf_offset{ssbo.cbuf_offset + 8};
-        const auto ssbo_addr{fmt::format("ssbo_addr{}", index)};
-        const auto cbuf{fmt::format("{}_cbuf{}", stage_name, ssbo.cbuf_index)};
+        const auto ssbo_addr{std::format("ssbo_addr{}", index)};
+        const auto cbuf{std::format("{}_cbuf{}", stage_name, ssbo.cbuf_index)};
         std::array<std::string, 2> addr_xy;
         std::array<std::string, 2> size_xy;
         for (size_t i = 0; i < addr_xy.size(); ++i) {
             const auto addr_loc{ssbo.cbuf_offset + 4 * i};
             const auto size_loc{size_cbuf_offset + 4 * i};
-            addr_xy[i] = fmt::format("ftou({}[{}].{})", cbuf, addr_loc / 16, Swizzle(addr_loc));
-            size_xy[i] = fmt::format("ftou({}[{}].{})", cbuf, size_loc / 16, Swizzle(size_loc));
+            addr_xy[i] = std::format("ftou({}[{}].{})", cbuf, addr_loc / 16, Swizzle(addr_loc));
+            size_xy[i] = std::format("ftou({}[{}].{})", cbuf, size_loc / 16, Swizzle(size_loc));
         }
         const u32 ssbo_align_mask{~(static_cast<u32>(profile.min_ssbo_alignment) - 1U)};
-        const auto aligned_low_addr{fmt::format("{}&{}", addr_xy[0], ssbo_align_mask)};
-        const auto aligned_addr{fmt::format("uvec2({},{})", aligned_low_addr, addr_xy[1])};
-        const auto addr_pack{fmt::format("packUint2x32({})", aligned_addr)};
-        const auto addr_statement{fmt::format("uint64_t {}={};", ssbo_addr, addr_pack)};
+        const auto aligned_low_addr{std::format("{}&{}", addr_xy[0], ssbo_align_mask)};
+        const auto aligned_addr{std::format("uvec2({},{})", aligned_low_addr, addr_xy[1])};
+        const auto addr_pack{std::format("packUint2x32({})", aligned_addr)};
+        const auto addr_statement{std::format("uint64_t {}={};", ssbo_addr, addr_pack)};
         func += addr_statement;
 
-        const auto size_vec{fmt::format("uvec2({},{})", size_xy[0], size_xy[1])};
-        const auto comp_lhs{fmt::format("(addr>={})", ssbo_addr)};
-        const auto comp_rhs{fmt::format("(addr<({}+uint64_t({})))", ssbo_addr, size_vec)};
-        const auto comparison{fmt::format("if({}&&{}){{", comp_lhs, comp_rhs)};
+        const auto size_vec{std::format("uvec2({},{})", size_xy[0], size_xy[1])};
+        const auto comp_lhs{std::format("(addr>={})", ssbo_addr)};
+        const auto comp_rhs{std::format("(addr<({}+uint64_t({})))", ssbo_addr, size_vec)};
+        const auto comparison{std::format("if({}&&{}){{", comp_lhs, comp_rhs)};
         func += comparison;
 
-        const auto ssbo_name{fmt::format("{}_ssbo{}", stage_name, index)};
-        func += fmt::format(fmt::runtime(return_statement), ssbo_name, ssbo_addr);
+        const auto ssbo_name{std::format("{}_ssbo{}", stage_name, index)};
+        func += std::vformat(return_statement, std::make_format_args(ssbo_name, ssbo_addr));
     }};
     std::string write_func{"void WriteGlobal32(uint64_t addr,uint data){"};
     std::string write_func_64{"void WriteGlobal64(uint64_t addr,uvec2 data){"};
@@ -664,8 +665,8 @@ void EmitContext::SetupImages(Bindings& bindings) {
         image_buffers.push_back({bindings.image, desc.count});
         const auto format{ImageFormatString(desc.format)};
         const auto qualifier{ImageAccessQualifier(desc.is_written, desc.is_read)};
-        const auto array_decorator{desc.count > 1 ? fmt::format("[{}]", desc.count) : ""};
-        header += fmt::format("layout(binding={}{}) uniform {}uimageBuffer img{}{};",
+        const auto array_decorator{desc.count > 1 ? std::format("[{}]", desc.count) : ""};
+        header += std::format("layout(binding={}{}) uniform {}uimageBuffer img{}{};",
                               bindings.image, format, qualifier, bindings.image, array_decorator);
         bindings.image += desc.count;
     }
@@ -675,8 +676,8 @@ void EmitContext::SetupImages(Bindings& bindings) {
         const auto format{ImageFormatString(desc.format)};
         const auto image_type{ImageType(desc.type)};
         const auto qualifier{ImageAccessQualifier(desc.is_written, desc.is_read)};
-        const auto array_decorator{desc.count > 1 ? fmt::format("[{}]", desc.count) : ""};
-        header += fmt::format("layout(binding={}{})uniform {}{} img{}{};", bindings.image, format,
+        const auto array_decorator{desc.count > 1 ? std::format("[{}]", desc.count) : ""};
+        header += std::format("layout(binding={}{})uniform {}{} img{}{};", bindings.image, format,
                               qualifier, image_type, bindings.image, array_decorator);
         bindings.image += desc.count;
     }
@@ -687,8 +688,8 @@ void EmitContext::SetupTextures(Bindings& bindings) {
     for (const auto& desc : info.texture_buffer_descriptors) {
         texture_buffers.push_back({bindings.texture, desc.count});
         const auto sampler_type{ColorSamplerType(TextureType::Buffer)};
-        const auto array_decorator{desc.count > 1 ? fmt::format("[{}]", desc.count) : ""};
-        header += fmt::format("layout(binding={}) uniform {} tex{}{};", bindings.texture,
+        const auto array_decorator{desc.count > 1 ? std::format("[{}]", desc.count) : ""};
+        header += std::format("layout(binding={}) uniform {} tex{}{};", bindings.texture,
                               sampler_type, bindings.texture, array_decorator);
         bindings.texture += desc.count;
     }
@@ -697,8 +698,8 @@ void EmitContext::SetupTextures(Bindings& bindings) {
         textures.push_back({bindings.texture, desc.count});
         const auto sampler_type{desc.is_depth ? DepthSamplerType(desc.type)
                                               : ColorSamplerType(desc.type, desc.is_multisample)};
-        const auto array_decorator{desc.count > 1 ? fmt::format("[{}]", desc.count) : ""};
-        header += fmt::format("layout(binding={}) uniform {} tex{}{};", bindings.texture,
+        const auto array_decorator{desc.count > 1 ? std::format("[{}]", desc.count) : ""};
+        header += std::format("layout(binding={}) uniform {} tex{}{};", bindings.texture,
                               sampler_type, bindings.texture, array_decorator);
         bindings.texture += desc.count;
     }

@@ -424,10 +424,10 @@ Result AlbumManager::SaveImage(ApplicationAlbumEntry& out_entry, std::span<const
     const auto screenshot_path =
         Common::FS::GetEdenPathString(Common::FS::EdenPath::ScreenshotsDir);
     const std::string formatted_date =
-        fmt::format("{:04}-{:02}-{:02}_{:02}-{:02}-{:02}-{:03}", u16(date.year), u8(date.month), u8(date.day),
+        std::format("{:04}-{:02}-{:02}_{:02}-{:02}-{:02}-{:03}", u16(date.year), u8(date.month), u8(date.day),
                     u8(date.hour), u8(date.minute), u8(date.second), 0);
     const std::string file_path =
-        fmt::format("{}/{:016x}_{}.png", screenshot_path, title_id, formatted_date);
+        std::format("{}/{:016x}_{}.png", screenshot_path, title_id, formatted_date);
 
     const Common::FS::IOFile db_file{file_path, Common::FS::FileAccessMode::Write,
                                      Common::FS::FileType::BinaryFile};

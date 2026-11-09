@@ -207,7 +207,7 @@ void WindowAdaptPass::Draw(const Device& device, RasterizerVulkan& rasterizer, S
         }
     }
 
-    scheduler.Record([=](vk::CommandBuffer cmdbuf) {
+    scheduler.Record([=, this](vk::CommandBuffer cmdbuf) {
         const f32 bg_red = Settings::values.bg_red.GetValue() / 255.0f;
         const f32 bg_green = Settings::values.bg_green.GetValue() / 255.0f;
         const f32 bg_blue = Settings::values.bg_blue.GetValue() / 255.0f;

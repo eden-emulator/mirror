@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -30,10 +33,10 @@ static void ApplyMix(std::span<s32> output, std::span<const s32> input, const f3
 
 void MixCommand::Dump([[maybe_unused]] const AudioRenderer::CommandListProcessor& processor,
                       std::string& string) {
-    string += fmt::format("MixCommand");
-    string += fmt::format("\n\tinput {:02X}", input_index);
-    string += fmt::format("\n\toutput {:02X}", output_index);
-    string += fmt::format("\n\tvolume {:.8f}", volume);
+    string += std::format("MixCommand");
+    string += std::format("\n\tinput {:02X}", input_index);
+    string += std::format("\n\toutput {:02X}", output_index);
+    string += std::format("\n\tvolume {:.8f}", volume);
     string += "\n";
 }
 

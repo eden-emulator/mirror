@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-#include <fmt/format.h>
+#include <format>
 
 #include "common/assert.h"
 #include "common/fs/fs.h"
@@ -1735,26 +1735,26 @@ void Device::InitializeGPULogging() {
 
         // Device information
         const auto& props = properties.properties;
-        driver_info += fmt::format("Device: {}\n", props.deviceName);
-        driver_info += fmt::format("Driver Name: {}\n", properties.driver.driverName);
-        driver_info += fmt::format("Driver Info: {}\n", properties.driver.driverInfo);
+        driver_info += std::format("Device: {}\n", props.deviceName);
+        driver_info += std::format("Driver Name: {}\n", properties.driver.driverName);
+        driver_info += std::format("Driver Info: {}\n", properties.driver.driverInfo);
 
         // Version information
         const u32 driver_version = props.driverVersion;
         const u32 api_version = props.apiVersion;
-        driver_info += fmt::format("Driver Version: {}.{}.{}\n",
+        driver_info += std::format("Driver Version: {}.{}.{}\n",
             VK_API_VERSION_MAJOR(driver_version),
             VK_API_VERSION_MINOR(driver_version),
             VK_API_VERSION_PATCH(driver_version));
-        driver_info += fmt::format("Vulkan API Version: {}.{}.{}\n",
+        driver_info += std::format("Vulkan API Version: {}.{}.{}\n",
             VK_API_VERSION_MAJOR(api_version),
             VK_API_VERSION_MINOR(api_version),
             VK_API_VERSION_PATCH(api_version));
-        driver_info += fmt::format("Driver ID: {}\n", static_cast<u32>(driver_id));
+        driver_info += std::format("Driver ID: {}\n", static_cast<u32>(driver_id));
 
         // Vendor and device IDs
-        driver_info += fmt::format("Vendor ID: {:#04x}\n", props.vendorID);
-        driver_info += fmt::format("Device ID: {:#04x}\n", props.deviceID);
+        driver_info += std::format("Vendor ID: {:#04x}\n", props.vendorID);
+        driver_info += std::format("Device ID: {:#04x}\n", props.deviceID);
 
         // Extensions - separate QCOM extensions from others
         driver_info += "\n=== Loaded Vulkan Extensions ===\n";
@@ -1773,7 +1773,7 @@ void Device::InitializeGPULogging() {
         if (!qcom_exts.empty()) {
             driver_info += "\nQualcomm Proprietary Extensions:\n";
             for (const auto& ext : qcom_exts) {
-                driver_info += fmt::format("  - {}\n", ext);
+                driver_info += std::format("  - {}\n", ext);
             }
         }
 
@@ -1781,11 +1781,11 @@ void Device::InitializeGPULogging() {
         if (!other_exts.empty()) {
             driver_info += "\nStandard Extensions:\n";
             for (const auto& ext : other_exts) {
-                driver_info += fmt::format("  - {}\n", ext);
+                driver_info += std::format("  - {}\n", ext);
             }
         }
 
-        driver_info += fmt::format("\nTotal Extensions Loaded: {}\n", loaded_extensions.size());
+        driver_info += std::format("\nTotal Extensions Loaded: {}\n", loaded_extensions.size());
 
         GPU::Logging::GPULogger::GetInstance().LogDriverDebugInfo(driver_info);
     }

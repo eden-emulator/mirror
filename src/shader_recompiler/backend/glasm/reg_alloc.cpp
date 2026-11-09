@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/ranges.h>
+#include <format>
 #include <bit>
 #include "shader_recompiler/backend/glasm/reg_alloc.h"
 #include "shader_recompiler/exception.h"

@@ -60,7 +60,7 @@ static void Shuffle(EmitContext& ctx, IR::Inst& inst, ScalarU32 value, ScalarU32
     }
     std::string mask;
     if (clamp.IsImmediate() && segmentation_mask.IsImmediate()) {
-        mask = fmt::to_string(clamp.U32() | (segmentation_mask.U32() << 8));
+        mask = std::to_string(clamp.U32() | (segmentation_mask.U32() << 8));
     } else {
         mask = "RC";
         ctx.Add("BFI.U RC.x,{{5,8,0,0}},{},{};",

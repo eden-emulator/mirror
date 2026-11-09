@@ -618,7 +618,7 @@ void PipelineCache::LoadDiskResources(u64 title_id, std::stop_token stop_loading
     }
 
     const auto shader_dir{Common::FS::GetEdenPath(Common::FS::EdenPath::ShaderDir)};
-    const auto base_dir{shader_dir / fmt::format("{:016x}", title_id)};
+    const auto base_dir{shader_dir / std::format("{:016x}", title_id)};
     if (!Common::FS::CreateDir(shader_dir) || !Common::FS::CreateDir(base_dir)) {
         LOG_ERROR(Common_Filesystem, "Failed to create pipeline cache directories");
         return;
@@ -889,9 +889,9 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
         const bool should_dump = Settings::values.gpu_log_shader_dumps.GetValue();
         if (should_log || should_dump) {
             static constexpr std::array stage_names{"vertex", "tess_control", "tess_eval", "geometry", "fragment"};
-            const std::string shader_name = fmt::format("shader_{:016x}_{}", key.unique_hashes[index], stage_names[stage_index]);
+            const std::string shader_name = std::format("shader_{:016x}_{}", key.unique_hashes[index], stage_names[stage_index]);
             if (should_log) {
-                const std::string shader_info = fmt::format("SPIR-V size: {} bytes, hash: {:016x}",
+                const std::string shader_info = std::format("SPIR-V size: {} bytes, hash: {:016x}",
                     code.size() * sizeof(u32), key.unique_hashes[index]);
                 GPU::Logging::GPULogger::GetInstance().LogShaderCompilation(shader_name, shader_info);
             }
@@ -902,7 +902,7 @@ std::unique_ptr<GraphicsPipeline> PipelineCache::CreateGraphicsPipeline(
         }
 
         if (device.HasDebuggingToolAttached()) {
-            const std::string name{fmt::format("Shader {:016x}", key.unique_hashes[index])};
+            const std::string name{std::format("Shader {:016x}", key.unique_hashes[index])};
             modules[stage_index].SetObjectNameEXT(name.c_str());
         }
         previous_stage = &program;
@@ -1015,9 +1015,9 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline(
     const bool should_log = GPU::Logging::IsActive();
     const bool should_dump = Settings::values.gpu_log_shader_dumps.GetValue();
     if (should_log || should_dump) {
-        const std::string shader_name = fmt::format("shader_{:016x}_compute", key.unique_hash);
+        const std::string shader_name = std::format("shader_{:016x}_compute", key.unique_hash);
         if (should_log) {
-            const std::string shader_info = fmt::format("SPIR-V size: {} bytes, hash: {:016x}",
+            const std::string shader_info = std::format("SPIR-V size: {} bytes, hash: {:016x}",
                 code.size() * sizeof(u32), key.unique_hash);
             GPU::Logging::GPULogger::GetInstance().LogShaderCompilation(shader_name, shader_info);
         }
@@ -1028,7 +1028,7 @@ std::unique_ptr<ComputePipeline> PipelineCache::CreateComputePipeline(
     }
 
     if (device.HasDebuggingToolAttached()) {
-        const auto name{fmt::format("Shader {:016x}", key.unique_hash)};
+        const auto name{std::format("Shader {:016x}", key.unique_hash)};
         spv_module.SetObjectNameEXT(name.c_str());
     }
     Common::ThreadWorker* const thread_worker{build_in_parallel ? &workers : nullptr};

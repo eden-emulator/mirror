@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 /* This file is part of the dynarmic project.
  * Copyright (c) 2018 MerryMage
  * SPDX-License-Identifier: 0BSD
@@ -8,7 +11,7 @@
 #include <array>
 #include <ostream>
 
-#include <fmt/format.h>
+#include <format>
 
 namespace Dynarmic::A64 {
 
@@ -23,11 +26,11 @@ std::string RegToString(Reg reg) {
     if (reg == Reg::R31) {
         return "sp|zr";
     }
-    return fmt::format("r{}", static_cast<size_t>(reg));
+    return std::format("r{}", static_cast<size_t>(reg));
 }
 
 std::string VecToString(Vec vec) {
-    return fmt::format("v{}", static_cast<size_t>(vec));
+    return std::format("v{}", static_cast<size_t>(vec));
 }
 
 }  // namespace Dynarmic::A64

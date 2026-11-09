@@ -447,7 +447,7 @@ struct FirmwareVersionFormat {
     std::array<char, 0x80> display_title;
 };
 static_assert(sizeof(FirmwareVersionFormat) == 0x100, "FirmwareVersionFormat is an invalid size");
-static_assert(std::is_trivial_v<FirmwareVersionFormat>,
+static_assert(std::is_trivially_default_constructible_v<FirmwareVersionFormat> && std::is_trivially_copyable_v<FirmwareVersionFormat>,
               "FirmwareVersionFormat type must be trivially copyable.");
 
 /// This is nn::settings::system::HomeMenuScheme

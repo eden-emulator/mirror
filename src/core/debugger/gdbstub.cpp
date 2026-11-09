@@ -12,6 +12,7 @@
 #include <numeric>
 #include <optional>
 #include <thread>
+#include <ranges>
 
 #include "common/hex_util.h"
 #include "common/logging.h"
@@ -76,7 +77,7 @@ static std::string EscapeXML(std::string_view data) {
         case '>': escaped += "&gt;"; break;
         default:
             if (c > 0x7f) {
-                escaped += fmt::format("&#{};", u32(c));
+                escaped += std::format("&#{};", u32(c));
             } else {
                 escaped += char(c);
             }
@@ -109,14 +110,14 @@ void GDBStub::Watchpoint(Kernel::KThread* thread, const Kernel::DebugWatchpoint&
 
     switch (watch.type) {
     case Kernel::DebugWatchpointType::Read:
-        SendReply(fmt::format("{}rwatch:{:x};", status, GetInteger(watch.start_address)));
+        SendReply(std::format("{}rwatch:{:x};", status, GetInteger(watch.start_address)));
         break;
     case Kernel::DebugWatchpointType::Write:
-        SendReply(fmt::format("{}watch:{:x};", status, GetInteger(watch.start_address)));
+        SendReply(std::format("{}watch:{:x};", status, GetInteger(watch.start_address)));
         break;
     case Kernel::DebugWatchpointType::ReadOrWrite:
     default:
-        SendReply(fmt::format("{}awatch:{:x};", status, GetInteger(watch.start_address)));
+        SendReply(std::format("{}awatch:{:x};", status, GetInteger(watch.start_address)));
         break;
     }
 }
@@ -395,9 +396,9 @@ static std::string PaginateBuffer(std::string_view buffer, std::string_view requ
     const auto amount_val{static_cast<u64>(strtoll(amount.data(), nullptr, 16))};
 
     if (offset_val + amount_val > buffer.size()) {
-        return fmt::format("l{}", buffer.substr(offset_val));
+        return std::format("l{}", buffer.substr(offset_val));
     } else {
-        return fmt::format("m{}", buffer.substr(offset_val, amount_val));
+        return std::format("m{}", buffer.substr(offset_val, amount_val));
     }
 }
 
@@ -413,14 +414,14 @@ void GDBStub::HandleQuery(std::string_view sv) {
         SendReply(PaginateBuffer(target_xml, sv.substr(30)));
     } else if (sv.starts_with("Offsets")) {
         const auto main_offset = Core::FindMainModuleEntrypoint(debug_process);
-        SendReply(fmt::format("TextSeg={:x}", GetInteger(main_offset)));
+        SendReply(std::format("TextSeg={:x}", GetInteger(main_offset)));
     } else if (sv.starts_with("Xfer:libraries:read::")) {
         auto modules = Core::FindModules(debug_process);
         std::string buffer;
         buffer += R"(<?xml version="1.0"?>)";
         buffer += "<library-list>";
         for (const auto& [base, name] : modules) {
-            buffer += fmt::format(R"(<library name="{}"><segment address="{:#x}"/></library>)",
+            buffer += std::format(R"(<library name="{}"><segment address="{:#x}"/></library>)",
                                   EscapeXML(name), base);
         }
         buffer += "</library-list>";
@@ -431,8 +432,18 @@ void GDBStub::HandleQuery(std::string_view sv) {
         const auto& threads = debug_process->GetThreadList();
         std::vector<std::string> thread_ids;
         for (const auto& thread : threads)
-            thread_ids.push_back(fmt::format("{:x}", thread.GetThreadId()));
-        SendReply(fmt::format("m{}", fmt::join(thread_ids, ",")));
+            thread_ids.push_back(std::format("{:x}", thread.GetThreadId()));
+
+        std::string joined;
+        bool first = true;
+        for (const auto& id : thread_ids) {
+            if (!first) {
+                joined += ',';
+            }
+            joined += id;
+            first = false;
+        }
+        SendReply(std::format("m{}", joined));
     } else if (sv.starts_with("sThreadInfo")) {
         // end of list
         SendReply("l");
@@ -445,10 +456,10 @@ void GDBStub::HandleQuery(std::string_view sv) {
         for (const auto& thread : threads) {
             auto thread_name{Core::GetThreadName(&thread)};
             if (!thread_name) {
-                thread_name = fmt::format("Thread {:d}", thread.GetThreadId());
+                thread_name = std::format("Thread {:d}", thread.GetThreadId());
             }
 
-            buffer += fmt::format(R"(<thread id="{:x}" core="{:d}" name="{}">{}</thread>)",
+            buffer += std::format(R"(<thread id="{:x}" core="{:d}" name="{}">{}</thread>)",
                                   thread.GetThreadId(), thread.GetActiveCore(),
                                   EscapeXML(*thread_name), GetThreadState(&thread));
         }
@@ -664,7 +675,7 @@ void GDBStub::HandleRcmd(const std::vector<u8>& command) {
             const auto region_bits = impl.current_address_space_width_in_bits;
             const auto region_size = 1ULL << region_bits;
 
-            reply = fmt::format("Region bits:  {}\n"
+            reply = std::format("Region bits:  {}\n"
                                 "Host address: {:#x} - {:#x}\n",
                                 region_bits, region, region + region_size - 1);
         } else {
@@ -673,12 +684,12 @@ void GDBStub::HandleRcmd(const std::vector<u8>& command) {
     } else if (command_str == "info" || command_str == "get info") {
         auto modules = Core::FindModules(debug_process);
 
-        reply = fmt::format("Process:     {:#x} ({})\n"
+        reply = std::format("Process:     {:#x} ({})\n"
                             "Program Id:  {:#018x}\n",
                             debug_process->GetProcessId(),
                             debug_process->GetName(),
                             debug_process->GetProgramId());
-        reply += fmt::format(
+        reply += std::format(
             "Layout:\n"
             "  Alias: {:#012x} - {:#012x}\n"
             "  Heap:  {:#012x} - {:#012x}\n"
@@ -695,7 +706,7 @@ void GDBStub::HandleRcmd(const std::vector<u8>& command) {
             GetInteger(page_table.GetStackRegionStart()) + page_table.GetStackRegionSize() - 1);
 
         for (const auto& [vaddr, name] : modules)
-            reply += fmt::format("  {:#012x} - {:#012x} {}\n", vaddr, GetInteger(Core::GetModuleEnd(debug_process, vaddr)), name);
+            reply += std::format("  {:#012x} - {:#012x} {}\n", vaddr, GetInteger(Core::GetModuleEnd(debug_process, vaddr)), name);
     } else if (command_str == "mappings" || command_str == "get mappings") {
         reply = "Mappings:\n";
         VAddr cur_addr = 0;
@@ -720,7 +731,7 @@ void GDBStub::HandleRcmd(const std::vector<u8>& command) {
                 const char u = True(svc_mem_info.attribute & MemoryAttribute::Uncached) ? 'U' : '-';
                 const char p =True(svc_mem_info.attribute & MemoryAttribute::PermissionLocked) ? 'P' : '-';
 
-                reply += fmt::format(
+                reply += std::format(
                     "  {:#012x} - {:#012x} {} {} {}{}{}{}{} [{}, {}]\n", svc_mem_info.base_address,
                     svc_mem_info.base_address + svc_mem_info.size - 1, perm, state, l, i, d, u, p,
                     svc_mem_info.ipc_count, svc_mem_info.device_count);
@@ -784,7 +795,7 @@ std::optional<std::string> GDBStub::DetachCommand() {
 
 void GDBStub::SendReply(std::string_view data) {
     const auto escaped = EscapeGDB(data);
-    const auto output = fmt::format("{}{}{}{:02x}", GDB_STUB_START, escaped, GDB_STUB_END, CalculateChecksum(escaped));
+    const auto output = std::format("{}{}{}{:02x}", GDB_STUB_START, escaped, GDB_STUB_END, CalculateChecksum(escaped));
     LOG_TRACE(Debug_GDBStub, "Writing reply: {}", output);
 
     // C++ string support is complete rubbish

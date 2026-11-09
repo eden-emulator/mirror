@@ -18,7 +18,7 @@
 #include <vector>
 #include <bit>
 
-#include <fmt/format.h>
+#include <print>
 #include "common/assert.h"
 #include "common/common_types.h"
 
@@ -113,18 +113,18 @@ void MachHandler::MessagePump() {
     while (true) {
         mr = mach_msg(&request.head, MACH_RCV_MSG | MACH_RCV_LARGE, 0, sizeof(request), server_port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
         if (mr != MACH_MSG_SUCCESS) {
-            fmt::print(stderr, "dynarmic: macOS MachHandler: Failed to receive mach message. error: {:#08x} ({})\n", mr, mach_error_string(mr));
+            std::print(stderr, "dynarmic: macOS MachHandler: Failed to receive mach message. error: {:#08x} ({})\n", mr, mach_error_string(mr));
             return;
         }
 
         if (!mach_exc_server(&request.head, &reply.head)) {
-            fmt::print(stderr, "dynarmic: macOS MachHandler: Unexpected mach message\n");
+            std::print(stderr, "dynarmic: macOS MachHandler: Unexpected mach message\n");
             return;
         }
 
         mr = mach_msg(&reply.head, MACH_SEND_MSG, reply.head.msgh_size, 0, MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
         if (mr != MACH_MSG_SUCCESS) {
-            fmt::print(stderr, "dynarmic: macOS MachHandler: Failed to send mach message. error: {:#08x} ({})\n", mr, mach_error_string(mr));
+            std::print(stderr, "dynarmic: macOS MachHandler: Failed to send mach message. error: {:#08x} ({})\n", mr, mach_error_string(mr));
             return;
         }
     }
@@ -136,7 +136,7 @@ kern_return_t MachHandler::HandleRequest(x86_thread_state64_t* ts) {
 
     const auto iter = FindCodeBlockInfo(ts->__rip);
     if (iter == code_block_infos.end()) {
-        fmt::print(stderr, "Unhandled EXC_BAD_ACCESS at rip {:#016x}\n", ts->__rip);
+        std::print(stderr, "Unhandled EXC_BAD_ACCESS at rip {:#016x}\n", ts->__rip);
         return KERN_FAILURE;
     }
 
@@ -154,7 +154,7 @@ kern_return_t MachHandler::HandleRequest(arm_thread_state64_t* ts) {
 
     const auto iter = FindCodeBlockInfo(ts->__pc);
     if (iter == code_block_infos.end()) {
-        fmt::print(stderr, "Unhandled EXC_BAD_ACCESS at pc {:#016x}\n", ts->__pc);
+        std::print(stderr, "Unhandled EXC_BAD_ACCESS at pc {:#016x}\n", ts->__pc);
         return KERN_FAILURE;
     }
 
@@ -197,12 +197,12 @@ void RegisterHandler() {
 }  // anonymous namespace
 
 mig_external kern_return_t catch_mach_exception_raise(mach_port_t, mach_port_t, mach_port_t, exception_type_t, mach_exception_data_t, mach_msg_type_number_t) {
-    fmt::print(stderr, "dynarmic: Unexpected mach message: mach_exception_raise\n");
+    std::print(stderr, "dynarmic: Unexpected mach message: mach_exception_raise\n");
     return KERN_FAILURE;
 }
 
 mig_external kern_return_t catch_mach_exception_raise_state_identity(mach_port_t, mach_port_t, mach_port_t, exception_type_t, mach_exception_data_t, mach_msg_type_number_t, int*, thread_state_t, mach_msg_type_number_t, thread_state_t, mach_msg_type_number_t*) {
-    fmt::print(stderr, "dynarmic: Unexpected mach message: mach_exception_raise_state_identity\n");
+    std::print(stderr, "dynarmic: Unexpected mach message: mach_exception_raise_state_identity\n");
     return KERN_FAILURE;
 }
 
@@ -217,15 +217,15 @@ mig_external kern_return_t catch_mach_exception_raise_state(
     thread_state_t new_state,
     mach_msg_type_number_t* new_stateCnt) {
     if (!flavor || !new_stateCnt) {
-        fmt::print(stderr, "dynarmic: catch_mach_exception_raise_state: Invalid arguments.\n");
+        std::print(stderr, "dynarmic: catch_mach_exception_raise_state: Invalid arguments.\n");
         return KERN_INVALID_ARGUMENT;
     }
     if (*flavor != THREAD_STATE || old_stateCnt != THREAD_STATE_COUNT || *new_stateCnt < THREAD_STATE_COUNT) {
-        fmt::print(stderr, "dynarmic: catch_mach_exception_raise_state: Unexpected flavor.\n");
+        std::print(stderr, "dynarmic: catch_mach_exception_raise_state: Unexpected flavor.\n");
         return KERN_INVALID_ARGUMENT;
     }
     if (exception != EXC_BAD_ACCESS) {
-        fmt::print(stderr, "dynarmic: catch_mach_exception_raise_state: Unexpected exception type.\n");
+        std::print(stderr, "dynarmic: catch_mach_exception_raise_state: Unexpected exception type.\n");
         return KERN_FAILURE;
     }
 

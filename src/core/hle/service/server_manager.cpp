@@ -247,7 +247,7 @@ Result ServerManager::ManageDeferral(Kernel::KEvent** out_event) {
 
 void ServerManager::StartAdditionalHostThreads(const char* name, size_t num_threads) {
     for (size_t i = 0; i < num_threads; i++) {
-        auto thread_name = fmt::format("{}:{}", name, i + 1);
+        auto thread_name = std::format("{}:{}", name, i + 1);
         m_threads.emplace_back(m_system.Kernel().RunOnHostCoreThread(
             std::move(thread_name), [&] { this->LoopProcessImpl(); }));
     }

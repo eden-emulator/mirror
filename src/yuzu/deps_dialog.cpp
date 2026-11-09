@@ -7,7 +7,7 @@
 #include <QPainter>
 #include <QTableWidget>
 #include <QTextEdit>
-#include <fmt/ranges.h>
+#include <format>
 #include "dep_hashes.h"
 #include "ui_deps_dialog.h"
 #include "yuzu/deps_dialog.h"
@@ -31,7 +31,7 @@ DepsDialog::DepsDialog(QWidget* parent) : QDialog(parent), ui{std::make_unique<U
         const std::string sha = Common::dep_hashes.at(i);
         const std::string url = Common::dep_urls.at(i);
 
-        std::string dependency = fmt::format("<a href=\"{}\">{}</a>", url, name);
+        std::string dependency = std::format("<a href=\"{}\">{}</a>", url, name);
 
         QTableWidgetItem* nameItem = new QTableWidgetItem(QString::fromStdString(dependency));
         QTableWidgetItem* shaItem = new QTableWidgetItem(QString::fromStdString(sha));

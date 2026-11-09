@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include <string>
 
-#include <fmt/ranges.h>
-
+#include "common/logging.h"
 #include "shader_recompiler/frontend/ir/condition.h"
 
 namespace Shader::IR {
@@ -12,7 +15,7 @@ namespace Shader::IR {
 std::string NameOf(Condition condition) {
     std::string ret;
     if (condition.GetFlowTest() != FlowTest::T) {
-        ret = fmt::to_string(condition.GetFlowTest());
+        ret = std::format("{}", condition.GetFlowTest());
     }
     const auto [pred, negated]{condition.GetPred()};
     if (!ret.empty()) {
@@ -21,7 +24,7 @@ std::string NameOf(Condition condition) {
     if (negated) {
         ret += '!';
     }
-    ret += fmt::to_string(pred);
+    ret += std::format("{}", pred);
     return ret;
 }
 

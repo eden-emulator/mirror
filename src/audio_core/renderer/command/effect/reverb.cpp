@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
@@ -6,6 +6,7 @@
 
 #include <numbers>
 #include <ranges>
+#include <cmath>
 
 #include "audio_core/adsp/apps/audio_renderer/command_list_processor.h"
 #include "audio_core/renderer/command/effect/reverb.h"
@@ -434,15 +435,15 @@ static void ApplyReverbEffect(const ReverbInfo::ParameterVersion2& params, Rever
 
 void ReverbCommand::Dump([[maybe_unused]] const AudioRenderer::CommandListProcessor& processor,
                          std::string& string) {
-    string += fmt::format(
+    string += std::format(
         "ReverbCommand\n\tenabled {} long_size_pre_delay_supported {}\n\tinputs: ", effect_enabled,
         long_size_pre_delay_supported);
     for (u32 i = 0; i < MaxChannels; i++) {
-        string += fmt::format("{:02X}, ", inputs[i]);
+        string += std::format("{:02X}, ", inputs[i]);
     }
     string += "\n\toutputs: ";
     for (u32 i = 0; i < MaxChannels; i++) {
-        string += fmt::format("{:02X}, ", outputs[i]);
+        string += std::format("{:02X}, ", outputs[i]);
     }
     string += "\n";
 }

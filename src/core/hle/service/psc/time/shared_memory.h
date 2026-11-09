@@ -47,7 +47,7 @@ static_assert(offsetof(SharedMemoryStruct, continuous_adjustment_time_points) ==
               "continuous_adjustment_time_points are in the wrong place!");
 static_assert(sizeof(SharedMemoryStruct) == 0x1000,
               "Time's SharedMemoryStruct has the wrong size!");
-static_assert(std::is_trivial_v<SharedMemoryStruct>);
+static_assert(std::is_trivially_default_constructible_v<SharedMemoryStruct> && std::is_trivially_copyable_v<SharedMemoryStruct>);
 
 class SharedMemory {
 public:

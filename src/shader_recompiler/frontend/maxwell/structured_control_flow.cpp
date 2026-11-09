@@ -11,7 +11,7 @@
 #include <utility>
 #include <vector>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include <boost/intrusive/list.hpp>
 
@@ -154,15 +154,15 @@ struct Statement : ListBaseHook {
 std::string DumpExpr(const Statement* stmt) {
     switch (stmt->type) {
     case StatementType::Identity:
-        return fmt::format("{}", stmt->guest_cond);
+        return std::format("{}", stmt->guest_cond);
     case StatementType::Not:
-        return fmt::format("!{}", DumpExpr(stmt->op));
+        return std::format("!{}", DumpExpr(stmt->op));
     case StatementType::Or:
-        return fmt::format("{} || {}", DumpExpr(stmt->op_a), DumpExpr(stmt->op_b));
+        return std::format("{} || {}", DumpExpr(stmt->op_a), DumpExpr(stmt->op_b));
     case StatementType::Variable:
-        return fmt::format("goto_L{}", stmt->id);
+        return std::format("goto_L{}", stmt->id);
     case StatementType::IndirectBranchCond:
-        return fmt::format("(indirect_branch == {:x})", stmt->location);
+        return std::format("(indirect_branch == {:x})", stmt->location);
     default:
         return "<invalid type>";
     }
@@ -174,44 +174,44 @@ std::string DumpExpr(const Statement* stmt) {
     for (auto stmt = tree.begin(); stmt != tree.end(); ++stmt) {
         switch (stmt->type) {
         case StatementType::Code:
-            ret += fmt::format("{}    Block {:04x} -> {:04x} ({:#016x});\n", indent,
+            ret += std::format("{}    Block {:04x} -> {:04x} ({:#016x});\n", indent,
                                stmt->block->begin.Offset(), stmt->block->end.Offset(),
                                reinterpret_cast<uintptr_t>(stmt->block));
             break;
         case StatementType::Goto:
-            ret += fmt::format("{}    if ({}) goto L{};\n", indent, DumpExpr(stmt->cond),
+            ret += std::format("{}    if ({}) goto L{};\n", indent, DumpExpr(stmt->cond),
                                stmt->label->id);
             break;
         case StatementType::Label:
-            ret += fmt::format("{}L{}:\n", indent, stmt->id);
+            ret += std::format("{}L{}:\n", indent, stmt->id);
             break;
         case StatementType::If:
-            ret += fmt::format("{}    if ({}) {{\n", indent, DumpExpr(stmt->cond));
+            ret += std::format("{}    if ({}) {{\n", indent, DumpExpr(stmt->cond));
             ret += DumpTree(stmt->children, indentation + 4);
-            ret += fmt::format("{}    }}\n", indent);
+            ret += std::format("{}    }}\n", indent);
             break;
         case StatementType::Loop:
-            ret += fmt::format("{}    do {{\n", indent);
+            ret += std::format("{}    do {{\n", indent);
             ret += DumpTree(stmt->children, indentation + 4);
-            ret += fmt::format("{}    }} while ({});\n", indent, DumpExpr(stmt->cond));
+            ret += std::format("{}    }} while ({});\n", indent, DumpExpr(stmt->cond));
             break;
         case StatementType::Break:
-            ret += fmt::format("{}    if ({}) break;\n", indent, DumpExpr(stmt->cond));
+            ret += std::format("{}    if ({}) break;\n", indent, DumpExpr(stmt->cond));
             break;
         case StatementType::Return:
-            ret += fmt::format("{}    return;\n", indent);
+            ret += std::format("{}    return;\n", indent);
             break;
         case StatementType::Kill:
-            ret += fmt::format("{}    kill;\n", indent);
+            ret += std::format("{}    kill;\n", indent);
             break;
         case StatementType::Unreachable:
-            ret += fmt::format("{}    unreachable;\n", indent);
+            ret += std::format("{}    unreachable;\n", indent);
             break;
         case StatementType::SetVariable:
-            ret += fmt::format("{}    goto_L{} = {};\n", indent, stmt->id, DumpExpr(stmt->op));
+            ret += std::format("{}    goto_L{} = {};\n", indent, stmt->id, DumpExpr(stmt->op));
             break;
         case StatementType::SetIndirectBranchVariable:
-            ret += fmt::format("{}    indirect_branch = {} + {};\n", indent, stmt->branch_reg,
+            ret += std::format("{}    indirect_branch = {} + {};\n", indent, stmt->branch_reg,
                                stmt->branch_offset);
             break;
         case StatementType::Function:

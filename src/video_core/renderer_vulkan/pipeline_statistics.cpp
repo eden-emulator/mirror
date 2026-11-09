@@ -6,7 +6,7 @@
 
 #include <string_view>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/common_types.h"
 #include "common/logging.h"
@@ -81,7 +81,8 @@ void PipelineStatistics::Report() const {
     std::string report;
     const auto add = [&](const char* fmt, u64 value) {
         if (value > 0) {
-            report += fmt::format(fmt::runtime(fmt), static_cast<double>(value) / num);
+            auto rep_num = double(value) / num;
+            report += std::vformat(fmt, std::make_format_args(rep_num));
         }
     };
     add("Code size:      {:9.03f}\n", total.code_size);

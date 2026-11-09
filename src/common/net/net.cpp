@@ -117,7 +117,7 @@ std::optional<std::string> MakeRequest(const std::string& url) {
         LOG_ERROR(Frontend, "Failed to download {}: {}", url, res.error());
         return std::nullopt;
     } else if (res->status_code < hydro::Status::Ok || res->status_code >= hydro::Status::MultipleChoices) {
-        LOG_ERROR(Frontend, "Received status code {} for {}", std::to_underlying(res->status_code), url);
+        LOG_ERROR(Frontend, "Received status code {} for {}", res->status_code, url);
         return std::nullopt;
     }
 
@@ -195,7 +195,7 @@ bool HeadRequest(const std::string& url) {
         LOG_ERROR(Frontend, "Failed to download {}: {}", url, res.error());
         return false;
     } else if (res->status_code < hydro::Status::Ok || res->status_code >= hydro::Status::MultipleChoices) {
-        LOG_ERROR(Frontend, "Received status code {} for {}", std::to_underlying(res->status_code), url);
+        LOG_ERROR(Frontend, "Received status code {} for {}", res->status_code, url);
         return false;
     }
 

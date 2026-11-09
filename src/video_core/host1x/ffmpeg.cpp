@@ -154,20 +154,22 @@ Frame::~Frame() {
     av_frame_free(&m_frame);
 }
 
+static AVCodecID GetAVCodec(Tegra::Host1x::NvdecCommon::VideoCodec codec) {
+    switch (codec) {
+    case Tegra::Host1x::NvdecCommon::VideoCodec::H264:
+        return AV_CODEC_ID_H264;
+    case Tegra::Host1x::NvdecCommon::VideoCodec::VP8:
+        return AV_CODEC_ID_VP8;
+    case Tegra::Host1x::NvdecCommon::VideoCodec::VP9:
+        return AV_CODEC_ID_VP9;
+    default:
+        UNIMPLEMENTED_MSG("Unknown codec {}", codec);
+        return AV_CODEC_ID_NONE;
+    }
+}
+
 Decoder::Decoder(Tegra::Host1x::NvdecCommon::VideoCodec codec) {
-    const AVCodecID av_codec = [&] {
-        switch (codec) {
-        case Tegra::Host1x::NvdecCommon::VideoCodec::H264:
-            return AV_CODEC_ID_H264;
-        case Tegra::Host1x::NvdecCommon::VideoCodec::VP8:
-            return AV_CODEC_ID_VP8;
-        case Tegra::Host1x::NvdecCommon::VideoCodec::VP9:
-            return AV_CODEC_ID_VP9;
-        default:
-            UNIMPLEMENTED_MSG("Unknown codec {}", codec);
-            return AV_CODEC_ID_NONE;
-        }
-    }();
+    const AVCodecID av_codec = GetAVCodec(codec);
 
 #if defined(__ANDROID__)
     if (Settings::values.nvdec_emulation.GetValue() == Settings::NvdecEmulation::Gpu) {

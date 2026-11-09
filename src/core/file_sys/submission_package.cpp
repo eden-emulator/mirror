@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <cstring>
 
-#include <fmt/ostream.h>
+#include <format>
 
 #include "common/hex_util.h"
 #include "common/logging.h"
@@ -245,12 +245,12 @@ void NSP::ReadNCAs(const std::vector<VirtualFile>& files) {
 
             for (const auto& rec : cnmt.GetContentRecords()) {
                 const auto id_string = Common::HexToString(rec.nca_id, false);
-                auto next_file = pfs->GetFile(fmt::format("{}.nca", id_string));
+                auto next_file = pfs->GetFile(std::format("{}.nca", id_string));
 
                 if (next_file == nullptr) {
-                    auto ncz_file = pfs->GetFile(fmt::format("{}.ncz", id_string));
+                    auto ncz_file = pfs->GetFile(std::format("{}.ncz", id_string));
                     if (ncz_file != nullptr) {
-                        next_file = Core::Crypto::DecompressNCZ(ncz_file, fmt::format("{}.nca", id_string));
+                        next_file = Core::Crypto::DecompressNCZ(ncz_file, std::format("{}.nca", id_string));
                         if (next_file == nullptr) {
                             LOG_DEBUG(Service_FS, "Skipping solid or unsupported NCZ content {}.ncz", id_string);
                             continue;

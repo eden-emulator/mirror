@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <format>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -187,16 +188,16 @@ void DefineVariables(const EmitContext& ctx, std::string& header) {
         const auto precise{!has_precise_bug && IsPreciseType(type) ? "precise " : ""};
         // Temps/return types that are never used are stored at index 0
         if (tracker.uses_temp) {
-            header += fmt::format("{}{} t{}={}(0);", precise, type_name,
+            header += std::format("{}{} t{}={}(0);", precise, type_name,
                                   ctx.var_alloc.Representation(0, type), type_name);
         }
         for (u32 index = 0; index < tracker.num_used; ++index) {
-            header += fmt::format("{}{} {}={}(0);", precise, type_name,
+            header += std::format("{}{} {}={}(0);", precise, type_name,
                                   ctx.var_alloc.Representation(index, type), type_name);
         }
     }
     for (u32 i = 0; i < ctx.num_safety_loop_vars; ++i) {
-        header += fmt::format("int loop{}=0x2000;", i);
+        header += std::format("int loop{}=0x2000;", i);
     }
 }
 } // Anonymous namespace
@@ -206,7 +207,7 @@ std::string EmitGLSL(const Profile& profile, const RuntimeInfo& runtime_info, IR
     EmitContext ctx{program, bindings, profile, runtime_info};
     Precolor(program);
     EmitCode(ctx, program);
-    const std::string version{fmt::format("#version 460{}\n", GlslVersionSpecifier(ctx))};
+    const std::string version{std::format("#version 460{}\n", GlslVersionSpecifier(ctx))};
     ctx.header.insert(0, version);
     if (program.shared_memory_size > 0) {
         const auto requested_size{program.shared_memory_size};
@@ -217,11 +218,11 @@ std::string EmitGLSL(const Profile& profile, const RuntimeInfo& runtime_info, IR
                         requested_size, max_size);
         }
         const auto smem_size{needs_clamp ? max_size : requested_size};
-        ctx.header += fmt::format("shared uint smem[{}];", Common::DivCeil(smem_size, 4U));
+        ctx.header += std::format("shared uint smem[{}];", Common::DivCeil(smem_size, 4U));
     }
     ctx.header += "void main(){\n";
     if (program.local_memory_size > 0) {
-        ctx.header += fmt::format("uint lmem[{}];", Common::DivCeil(program.local_memory_size, 4U));
+        ctx.header += std::format("uint lmem[{}];", Common::DivCeil(program.local_memory_size, 4U));
     }
     DefineVariables(ctx, ctx.header);
     if (ctx.uses_cc_carry) {

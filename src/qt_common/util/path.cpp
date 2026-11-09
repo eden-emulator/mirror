@@ -4,7 +4,7 @@
 #include <QDesktopServices>
 #include <QString>
 #include <QUrl>
-#include <fmt/format.h>
+#include <format>
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
 #include "qt_common/abstract/frontend.h"
@@ -14,7 +14,7 @@ namespace QtCommon::Path {
 
 bool OpenShaderCache(u64 program_id, QObject* parent) {
     const auto shader_cache_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::ShaderDir);
-    const auto shader_cache_folder_path{shader_cache_dir / fmt::format("{:016x}", program_id)};
+    const auto shader_cache_folder_path{shader_cache_dir / std::format("{:016x}", program_id)};
     if (!Common::FS::CreateDirs(shader_cache_folder_path)) {
         QtCommon::Frontend::Warning(tr("Error Opening Shader Cache"),
                                     tr("Failed to create or open shader cache for this title, "

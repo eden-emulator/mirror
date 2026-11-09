@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/assert.h"
 #include "hid_core/frontend/emulated_devices.h"

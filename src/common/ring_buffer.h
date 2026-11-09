@@ -23,7 +23,7 @@ namespace Common {
 /// @tparam T            Element type
 /// @tparam capacity     Number of slots in ring buffer
 template <typename T, std::size_t capacity>
-    requires std::is_trivial_v<T>
+    requires std::is_trivially_default_constructible_v<T> && std::is_trivially_copyable_v<T>
 class RingBuffer {
     /// A "slot" is made of a single `T`.
     static constexpr std::size_t slot_size = sizeof(T);

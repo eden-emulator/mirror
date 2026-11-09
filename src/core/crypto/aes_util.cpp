@@ -52,7 +52,7 @@ static inline const std::string GetCipherName(Mode mode, u32 key_size) {
     default:
         UNREACHABLE();
     }
-    return fmt::format("AES-{}-{}", effective_bits, cipher);
+    return std::format("AES-{}-{}", effective_bits, cipher);
 };
 
 static EVP_CIPHER *GetCipher(Mode mode, u32 key_size) {

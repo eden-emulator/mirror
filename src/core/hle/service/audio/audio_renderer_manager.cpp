@@ -76,12 +76,12 @@ Result IAudioRendererManager::GetWorkBufferSize(Out<u64> out_size,
     R_TRY(impl->GetWorkBufferSize(params, *out_size))
 
     std::string output_info{};
-    output_info += fmt::format("\tRevision {}", AudioCore::GetRevisionNum(params.revision));
+    output_info += std::format("\tRevision {}", AudioCore::GetRevisionNum(params.revision));
     output_info +=
-        fmt::format("\n\tSample Rate {}, Sample Count {}", params.sample_rate, params.sample_count);
-    output_info += fmt::format("\n\tExecution Mode {}, Voice Drop Enabled {}",
+        std::format("\n\tSample Rate {}, Sample Count {}", params.sample_rate, params.sample_count);
+    output_info += std::format("\n\tExecution Mode {}, Voice Drop Enabled {}",
                                static_cast<u32>(params.execution_mode), params.voice_drop_enabled);
-    output_info += fmt::format(
+    output_info += std::format(
         "\n\tSizes: Effects {:04X}, Mixes {:04X}, Sinks {:04X}, Submixes {:04X}, Splitter Infos "
         "{:04X}, Splitter Destinations {:04X}, Voices {:04X}, Performance Frames {:04X} External "
         "Context {:04X}",

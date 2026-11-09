@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
-#include <fmt/ranges.h>
+#include <format>
 
 namespace Shader::Maxwell {
 
@@ -18,12 +21,12 @@ const char* NameOf(Opcode opcode);
 } // namespace Shader::Maxwell
 
 template <>
-struct fmt::formatter<Shader::Maxwell::Opcode> {
+struct std::formatter<Shader::Maxwell::Opcode> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     template <typename FormatContext>
     auto format(const Shader::Maxwell::Opcode& opcode, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{}", NameOf(opcode));
+        return std::format_to(ctx.out(), "{}", NameOf(opcode));
     }
 };

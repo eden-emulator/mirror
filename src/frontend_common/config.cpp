@@ -29,7 +29,7 @@ Config::Config(const ConfigType config_type)
 
 void Config::Initialize(const std::string& config_name) {
     const std::filesystem::path fs_config_loc = FS::GetEdenPath(FS::EdenPath::ConfigDir);
-    const auto config_file = fmt::format("{}.ini", config_name);
+    const auto config_file = std::format("{}.ini", config_name);
 
     switch (type) {
     case ConfigType::GlobalConfig:

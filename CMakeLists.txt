@@ -75,7 +75,6 @@ if (YUZU_STATIC_ROOM)
     set(OpenSSL_FORCE_SYSTEM ON)
 
     set(zstd_FORCE_BUNDLED ON)
-    set(fmt_FORCE_BUNDLED ON)
 endif()
 
 # qt stuff
@@ -147,7 +146,6 @@ if (YUZU_STATIC_BUILD)
         set(YUZU_USE_BUNDLED_OPENSSL ON)
 
         # these libs do not properly provide static libs/let you do it with cmake
-        set(fmt_FORCE_BUNDLED ON)
         set(SPIRV-Headers_FORCE_BUNDLED ON)
         set(zstd_FORCE_BUNDLED ON)
 
@@ -439,9 +437,6 @@ if (Boost_ADDED)
             $<$<COMPILE_LANGUAGE:C,CXX>:-Wno-implicit-fallthrough>)
     endif()
 endif()
-
-# fmt
-AddJsonPackage(fmt)
 
 # lz4
 AddJsonPackage(lz4)

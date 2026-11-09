@@ -44,6 +44,8 @@ private:
     u8 arg0 = 0;
     u8 arg1 = 0;
     u8 arg2 = 0;
+
+    void unimplementedLog();
 };
 
 enum class PhotoViewerAppletMode : u8 {

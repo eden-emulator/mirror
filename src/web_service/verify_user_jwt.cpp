@@ -40,7 +40,7 @@ VerifyUserJWT::VerifyUserJWT(const std::string& host) : pub_key(GetPublicKey(hos
 
 Network::VerifyUser::UserData VerifyUserJWT::LoadUserData(const std::string& verify_uid,
                                                           const std::string& token) {
-    const std::string audience = fmt::format("external-{}", verify_uid);
+    const std::string audience = std::format("external-{}", verify_uid);
     using namespace jwt::params;
     std::error_code error;
 

@@ -6,9 +6,8 @@
 
 #pragma once
 
-#include <compare>
 #include <type_traits>
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/common_types.h"
 
@@ -260,35 +259,35 @@ constexpr inline uint64_t GetInteger(Common::TypedAddress<Virtual, T> address) {
 }
 
 template <>
-struct fmt::formatter<Common::PhysicalAddress> {
-    constexpr auto parse(fmt::format_parse_context& ctx) {
+struct std::formatter<Common::PhysicalAddress> {
+    constexpr auto parse(std::format_parse_context& ctx) {
         return ctx.begin();
     }
     template <typename FormatContext>
     auto format(const Common::PhysicalAddress& addr, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{:#x}", static_cast<u64>(addr.GetValue()));
+        return std::format_to(ctx.out(), "{:#x}", static_cast<u64>(addr.GetValue()));
     }
 };
 
 template <>
-struct fmt::formatter<Common::ProcessAddress> {
-    constexpr auto parse(fmt::format_parse_context& ctx) {
+struct std::formatter<Common::ProcessAddress> {
+    constexpr auto parse(std::format_parse_context& ctx) {
         return ctx.begin();
     }
     template <typename FormatContext>
     auto format(const Common::ProcessAddress& addr, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{:#x}", static_cast<u64>(addr.GetValue()));
+        return std::format_to(ctx.out(), "{:#x}", static_cast<u64>(addr.GetValue()));
     }
 };
 
 template <>
-struct fmt::formatter<Common::VirtualAddress> {
-    constexpr auto parse(fmt::format_parse_context& ctx) {
+struct std::formatter<Common::VirtualAddress> {
+    constexpr auto parse(std::format_parse_context& ctx) {
         return ctx.begin();
     }
     template <typename FormatContext>
     auto format(const Common::VirtualAddress& addr, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{:#x}", static_cast<u64>(addr.GetValue()));
+        return std::format_to(ctx.out(), "{:#x}", static_cast<u64>(addr.GetValue()));
     }
 };
 

@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2017 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/ranges.h>
+#include <format>
 #include "common/logging.h"
 #include "core/arm/dynarmic/arm_dynarmic_32.h"
 #include "core/arm/dynarmic/dynarmic_cp15.h"
@@ -20,13 +20,13 @@ using CallbackOrAccessOneWord = Dynarmic::A32::Coprocessor::CallbackOrAccessOneW
 using CallbackOrAccessTwoWords = Dynarmic::A32::Coprocessor::CallbackOrAccessTwoWords;
 
 template <>
-struct fmt::formatter<Dynarmic::A32::CoprocReg> {
+struct std::formatter<Dynarmic::A32::CoprocReg> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     template <typename FormatContext>
     auto format(const Dynarmic::A32::CoprocReg& reg, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "cp{}", static_cast<size_t>(reg));
+        return std::format_to(ctx.out(), "cp{}", static_cast<size_t>(reg));
     }
 };
 

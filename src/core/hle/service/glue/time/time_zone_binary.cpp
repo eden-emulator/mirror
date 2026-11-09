@@ -84,7 +84,7 @@ void TimeZoneBinary::GetListPath(std::string& out_path) {
     if (time_zone_binary_mount_result != ResultSuccess) {
         return;
     }
-    // out_path = fmt::format("{}:/binaryList.txt", "TimeZoneBinary");
+    // out_path = std::format("{}:/binaryList.txt", "TimeZoneBinary");
     out_path = "/binaryList.txt";
 }
 
@@ -92,7 +92,7 @@ void TimeZoneBinary::GetVersionPath(std::string& out_path) {
     if (time_zone_binary_mount_result != ResultSuccess) {
         return;
     }
-    // out_path = fmt::format("{}:/version.txt", "TimeZoneBinary");
+    // out_path = std::format("{}:/version.txt", "TimeZoneBinary");
     out_path = "/version.txt";
 }
 
@@ -101,8 +101,8 @@ void TimeZoneBinary::GetTimeZonePath(std::string& out_path,
     if (time_zone_binary_mount_result != ResultSuccess) {
         return;
     }
-    // out_path = fmt::format("{}:/zoneinfo/{}", "TimeZoneBinary", name);
-    out_path = fmt::format("/zoneinfo/{}", name.data());
+    // out_path = std::format("{}:/zoneinfo/{}", "TimeZoneBinary", name);
+    out_path = std::format("/zoneinfo/{}", name.data());
 }
 
 bool TimeZoneBinary::IsValid(const Service::PSC::Time::LocationName& name) {

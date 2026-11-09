@@ -7,7 +7,7 @@
 #include <array>
 #include <string>
 
-#include <fmt/ostream.h>
+#include <format>
 
 #include "common/logging.h"
 #include "core/crypto/key_manager.h"

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -5,7 +8,7 @@
 
 #include <string>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/common_funcs.h"
 #include "shader_recompiler/exception.h"
@@ -49,12 +52,12 @@ DECLARE_ENUM_FLAG_OPERATORS(Type)
 } // namespace Shader::IR
 
 template <>
-struct fmt::formatter<Shader::IR::Type> {
+struct std::formatter<Shader::IR::Type> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     template <typename FormatContext>
     auto format(const Shader::IR::Type& type, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{}", NameOf(type));
+        return std::format_to(ctx.out(), "{}", NameOf(type));
     }
 };

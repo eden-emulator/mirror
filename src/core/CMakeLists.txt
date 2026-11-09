@@ -1220,7 +1220,6 @@ endif()
 target_link_libraries(core PRIVATE
     OpenSSL::SSL
     OpenSSL::Crypto
-    fmt::fmt
     RenderDoc::API
     jacinth::jacinth
     ZLIB::ZLIB)

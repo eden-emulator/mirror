@@ -69,5 +69,5 @@ std::string GetProfileIDString() {
 
     auto user_id = uuid->AsU128();
 
-    return fmt::format("{:016X}{:016X}", user_id[1], user_id[0]);
+    return std::format("{:016X}{:016X}", user_id[1], user_id[0]);
 }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
@@ -7,7 +7,7 @@
 #pragma once
 
 #include <array>
-#include <fmt/ranges.h>
+#include <format>
 #include "common/common_funcs.h"
 #include "common/common_types.h"
 
@@ -132,7 +132,7 @@ struct SaveDataAttribute {
     }
 
     std::string DebugInfo() const {
-        return fmt::format(
+        return std::format(
             "[title_id={:016X}, user_id={:016X}{:016X}, save_id={:016X}, type={:02X}, "
             "rank={}, index={}]",
             program_id, user_id[1], user_id[0], system_save_data_id, static_cast<u8>(type),

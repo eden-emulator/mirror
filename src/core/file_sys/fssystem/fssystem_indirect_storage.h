@@ -51,7 +51,7 @@ public:
             return offset;
         }
     };
-    static_assert(std::is_trivial_v<Entry>);
+    static_assert(std::is_trivially_default_constructible_v<Entry> && std::is_trivially_copyable_v<Entry>);
     static_assert(sizeof(Entry) == 0x14);
 
     struct EntryData {
@@ -65,7 +65,7 @@ public:
             this->storage_index = entry.storage_index;
         }
     };
-    static_assert(std::is_trivial_v<EntryData>);
+    static_assert(std::is_trivially_default_constructible_v<EntryData> && std::is_trivially_copyable_v<EntryData>);
 
 public:
     IndirectStorage() : m_table(), m_data_storage() {}
@@ -158,7 +158,7 @@ private:
             return this->entry.storage_index != 0;
         }
     };
-    static_assert(std::is_trivial_v<ContinuousReadingEntry>);
+    static_assert(std::is_trivially_default_constructible_v<ContinuousReadingEntry> && std::is_trivially_copyable_v<ContinuousReadingEntry>);
 
 private:
     mutable BucketTree m_table;

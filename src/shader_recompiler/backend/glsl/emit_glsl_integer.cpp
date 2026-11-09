@@ -1,9 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include "shader_recompiler/backend/glsl/emit_glsl_instructions.h"
 #include "shader_recompiler/backend/glsl/glsl_emit_context.h"
 #include "shader_recompiler/frontend/ir/value.h"
@@ -43,9 +44,9 @@ void EmitIAdd32(EmitContext& ctx, IR::Inst& inst, std::string_view a, std::strin
     if (IR::Inst * overflow{inst.GetAssociatedPseudoOperation(IR::Opcode::GetOverflowFromOp)}) {
         // https://stackoverflow.com/questions/55468823/how-to-detect-integer-overflow-in-c
         constexpr u32 s32_max{static_cast<u32>((std::numeric_limits<s32>::max)())};
-        const auto sub_a{fmt::format("{}u-{}", s32_max, a)};
-        const auto positive_result{fmt::format("int({})>int({})", b, sub_a)};
-        const auto negative_result{fmt::format("int({})<int({})", b, sub_a)};
+        const auto sub_a{std::format("{}u-{}", s32_max, a)};
+        const auto positive_result{std::format("int({})>int({})", b, sub_a)};
+        const auto negative_result{std::format("int({})<int({})", b, sub_a)};
         ctx.AddU1("{}=int({})>=0?{}:{};", *overflow, a, positive_result, negative_result);
         overflow->Invalidate();
     }

@@ -162,7 +162,7 @@ void IPSwitchCompiler::Parse(std::span<u8 const> bytes) {
             // yes, @nsobid too -- NSO Build ID Specifier
             case 'n':
             case 'N':
-                nso_build_id = Common::HexStringToArray<0x20>(fmt::format("{:0<64}", line.substr(8)));
+                nso_build_id = Common::HexStringToArray<0x20>(std::format("{:0<64}", line.substr(8)));
                 break;
             // @stop
             case 's':

@@ -46,7 +46,7 @@ struct KPageProperties {
     bool uncached;
     DisableMergeAttribute disable_merge_attributes;
 };
-static_assert(std::is_trivial_v<KPageProperties>);
+static_assert(std::is_trivially_default_constructible_v<KPageProperties> && std::is_trivially_copyable_v<KPageProperties>);
 static_assert(sizeof(KPageProperties) == sizeof(u32));
 
 class KResourceLimit;
@@ -121,7 +121,7 @@ protected:
             Node* m_next;
             std::array<u8, PageSize - sizeof(Node*)> m_buffer;
         };
-        static_assert(std::is_trivial_v<Node>);
+        static_assert(std::is_trivially_default_constructible_v<Node> && std::is_trivially_copyable_v<Node>);
 
     private:
         Node* m_root{};

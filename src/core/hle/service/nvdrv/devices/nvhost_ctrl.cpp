@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <fmt/ranges.h>
+#include <format>
 #include "common/assert.h"
 #include "common/logging.h"
 #include "common/scope_exit.h"
@@ -332,7 +332,7 @@ void nvhost_ctrl::CreateNvEvent(u32 event_id) {
     ASSERT(!event.kevent);
     ASSERT(!event.registered);
     ASSERT(!event.IsBeingUsed());
-    event.kevent = events_interface.CreateEvent(fmt::format("NVCTRL::NvEvent_{}", event_id));
+    event.kevent = events_interface.CreateEvent(std::format("NVCTRL::NvEvent_{}", event_id));
     event.status = EventState::Available;
     event.registered = true;
     const u64 mask = 1ULL << event_id;

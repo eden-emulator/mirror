@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
@@ -203,14 +203,14 @@ static void SrcProcessFrame(std::span<s32> output, std::span<const s32> input,
 
 auto UpsampleCommand::Dump([[maybe_unused]] const AudioRenderer::CommandListProcessor& processor,
                            std::string& string) -> void {
-    string += fmt::format("UpsampleCommand\n\tsource_sample_count {} source_sample_rate {}",
+    string += std::format("UpsampleCommand\n\tsource_sample_count {} source_sample_rate {}",
                           source_sample_count, source_sample_rate);
     const auto upsampler{reinterpret_cast<UpsamplerInfo*>(upsampler_info)};
     if (upsampler != nullptr) {
-        string += fmt::format("\n\tUpsampler\n\t\tenabled {} sample count {}\n\tinputs: ",
+        string += std::format("\n\tUpsampler\n\t\tenabled {} sample count {}\n\tinputs: ",
                               upsampler->enabled, upsampler->sample_count);
         for (u32 i = 0; i < upsampler->input_count; i++) {
-            string += fmt::format("{:02X}, ", upsampler->inputs[i]);
+            string += std::format("{:02X}, ", upsampler->inputs[i]);
         }
     }
     string += "\n";

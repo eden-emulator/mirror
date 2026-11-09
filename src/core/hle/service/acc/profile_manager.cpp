@@ -10,7 +10,7 @@
 
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/find.hpp>
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/fs/file.h"
 #include "common/fs/fs.h"
@@ -507,7 +507,7 @@ std::vector<std::string> ProfileManager::FindExistingProfileStrings()
 
     for (const UUID &uuid : uuids) {
         auto user_id = uuid.AsU128();
-        uuid_strings.emplace_back(fmt::format("{:016X}{:016X}", user_id[1], user_id[0]));
+        uuid_strings.emplace_back(std::format("{:016X}{:016X}", user_id[1], user_id[0]));
     }
 
     return uuid_strings;

@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/param_package.h"
 #include <ranges>
@@ -595,7 +595,7 @@ std::vector<Common::ParamPackage> Joycons::GetInputDevices() const {
             return;
         }
         auto param = GetParamPackage(device->GetDevicePort(), device->GetHandleDeviceType());
-        std::string name = fmt::format("{} {}", JoyconName(device->GetHandleDeviceType()),
+        std::string name = std::format("{} {}", JoyconName(device->GetHandleDeviceType()),
                                        device->GetDevicePort() + 1);
         param.Set("display", std::move(name));
         devices.emplace_back(param);
@@ -622,7 +622,7 @@ std::vector<Common::ParamPackage> Joycons::GetInputDevices() const {
         auto main_param = GetParamPackage(i, left_joycons[i]->GetHandleDeviceType());
         const auto second_param = GetParamPackage(i, right_joycons[i]->GetHandleDeviceType());
         const auto type = Joycon::ControllerType::Dual;
-        std::string name = fmt::format("{} {}", JoyconName(type), i + 1);
+        std::string name = std::format("{} {}", JoyconName(type), i + 1);
 
         main_param.Set("display", std::move(name));
         main_param.Set("guid2", second_param.Get("guid", ""));

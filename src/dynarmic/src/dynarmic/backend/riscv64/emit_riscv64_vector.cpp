@@ -7,7 +7,7 @@
  */
 
 #include <biscuit/assembler.hpp>
-#include <fmt/ostream.h>
+#include <format>
 
 #include "dynarmic/backend/riscv64/a32_jitstate.h"
 #include "dynarmic/backend/riscv64/abi.h"

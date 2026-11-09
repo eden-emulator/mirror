@@ -18,7 +18,8 @@
 #include <shared_mutex>
 
 #include "common/container/unordered_map.h"
-#include <fmt/format.h>
+#include <format>
+#include <print>
 #include <sys/mman.h>
 
 #include "common/assert.h"
@@ -71,7 +72,7 @@ public:
         signal_stack.ss_size = stack_size;
         signal_stack.ss_flags = 0;
         if (sigaltstack(&signal_stack, nullptr) != 0) {
-            fmt::print(stderr, "dynarmic: POSIX SigHandler: init failure at sigaltstack\n");
+            std::print(stderr, "dynarmic: POSIX SigHandler: init failure at sigaltstack\n");
             supports_fast_mem = false;
             return;
         }
@@ -82,13 +83,13 @@ public:
         sa.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_RESTART;
         sigemptyset(&sa.sa_mask);
         if (sigaction(SIGSEGV, &sa, &old_sa_segv) != 0) {
-            fmt::print(stderr, "dynarmic: POSIX SigHandler: could not set SIGSEGV handler\n");
+            std::print(stderr, "dynarmic: POSIX SigHandler: could not set SIGSEGV handler\n");
             supports_fast_mem = false;
             return;
         }
 #if defined(__APPLE__)
         if (sigaction(SIGBUS, &sa, &old_sa_bus) != 0) {
-            fmt::print(stderr, "dynarmic: POSIX SigHandler: could not set SIGBUS handler\n");
+            std::print(stderr, "dynarmic: POSIX SigHandler: could not set SIGBUS handler\n");
             supports_fast_mem = false;
             return;
         }

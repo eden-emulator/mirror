@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/ranges.h>
+#include <format>
 #include "common/common_types.h"
 #include "core/file_sys/system_archive/ng_word.h"
 #include "core/file_sys/vfs/vfs_vector.h"
@@ -27,7 +30,7 @@ VirtualDir NgWord1() {
     files.reserve(NgWord1Data::NUMBER_WORD_TXT_FILES);
 
     for (std::size_t i = 0; i < files.size(); ++i) {
-        files.push_back(MakeArrayFile(NgWord1Data::WORD_TXT, fmt::format("{}.txt", i)));
+        files.push_back(MakeArrayFile(NgWord1Data::WORD_TXT, std::format("{}.txt", i)));
     }
 
     files.push_back(MakeArrayFile(NgWord1Data::WORD_TXT, "common.txt"));
@@ -57,9 +60,9 @@ VirtualDir NgWord2() {
     files.reserve(NgWord2Data::NUMBER_AC_NX_FILES * 3);
 
     for (std::size_t i = 0; i < NgWord2Data::NUMBER_AC_NX_FILES; ++i) {
-        files.push_back(MakeArrayFile(NgWord2Data::AC_NX_DATA, fmt::format("ac_{}_b1_nx", i)));
-        files.push_back(MakeArrayFile(NgWord2Data::AC_NX_DATA, fmt::format("ac_{}_b2_nx", i)));
-        files.push_back(MakeArrayFile(NgWord2Data::AC_NX_DATA, fmt::format("ac_{}_not_b_nx", i)));
+        files.push_back(MakeArrayFile(NgWord2Data::AC_NX_DATA, std::format("ac_{}_b1_nx", i)));
+        files.push_back(MakeArrayFile(NgWord2Data::AC_NX_DATA, std::format("ac_{}_b2_nx", i)));
+        files.push_back(MakeArrayFile(NgWord2Data::AC_NX_DATA, std::format("ac_{}_not_b_nx", i)));
     }
 
     files.push_back(MakeArrayFile(NgWord2Data::AC_NX_DATA, "ac_common_b1_nx"));

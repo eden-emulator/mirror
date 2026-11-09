@@ -11,7 +11,7 @@ pkgs.mkShellNoCC {
     # essential programs
     git cmake clang gnumake patch jq pkg-config
     # libraries
-    openssl boost fmt lz4 zlib zstd
+    openssl boost lz4 zlib zstd
     enet vulkan-headers vulkan-utility-libraries
     spirv-tools spirv-headers vulkan-loader unzip
     glslang python3 cpp-jwt ffmpeg-headless

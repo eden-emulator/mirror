@@ -234,7 +234,7 @@ static FileSys::VirtualFile VfsDirectoryCreateFileWrapper(const FileSys::Virtual
 
 #include <QPlatformSurfaceEvent>
 #include <dwmapi.h>
-#include <fmt/format.h>
+#include <format>
 #include <windows.h>
 #ifdef _MSC_VER
 #pragma comment(lib, "Dwmapi.lib")
@@ -2928,16 +2928,16 @@ Uint64 PadSteamHandle(SDL_JoystickID id) {
 /// controller between virtual pads), else the connection instance
 std::string BluetoothKey(SDL_JoystickID id) {
     if (const Uint64 handle = PadSteamHandle(id)) {
-        return fmt::format("steamhandle:{:#x}", handle);
+        return std::format("steamhandle:{:#x}", handle);
     }
-    return fmt::format("inst:{}", id);
+    return std::format("inst:{}", id);
 }
 
 /// How a pad is stored as the handheld's: Steam handle under Steam, else its identity
 std::string PadKey(SDL_JoystickID id, const std::string& ident) {
     if (Common::SteamPadsInUse()) {
         if (const Uint64 handle = PadSteamHandle(id)) {
-            return fmt::format("steamhandle:{:#x}", handle);
+            return std::format("steamhandle:{:#x}", handle);
         }
     }
     return ident;
@@ -3122,7 +3122,7 @@ std::string BindingMapping(const std::string& raw) {
             char* end = nullptr;
             const float number = std::strtof(value.c_str(), &end);
             if (!value.empty() && end && *end == '\0') {
-                field = field.substr(0, colon + 1) + fmt::format("{}", number);
+                field = field.substr(0, colon + 1) + std::format("{}", number);
             }
         }
         fields.push_back(field);
@@ -3424,7 +3424,7 @@ void MainWindow::MergeConsoleProfileEdits(const std::array<Settings::PlayerInput
         LOG_INFO(Frontend, "console-mode: Controls swap: inst={} P{} -> P{}{}", pad,
                  from >= 0 ? from + 1 : 0, i + 1,
                  holder
-                     ? fmt::format(", inst={} P{} -> P{}", holder, i + 1, from >= 0 ? from + 1 : 0)
+                     ? std::format(", inst={} P{} -> P{}", holder, i + 1, from >= 0 ? from + 1 : 0)
                      : std::string{});
     }
 }
@@ -4425,7 +4425,7 @@ void MainWindow::LearnBluetoothPads() {
                     last_many = now_steady;
                     std::string which;
                     for (const auto& [id, key] : pressed_pads) {
-                        which += fmt::format(" inst={}({})", id, key);
+                        which += std::format(" inst={}({})", id, key);
                     }
                     LOG_INFO(Frontend,
                              "console-mode: {} pads of model {:04x}:{:04x} pressed at once, "
@@ -4444,7 +4444,7 @@ void MainWindow::LearnBluetoothPads() {
                 last = now;
                 std::string nodes;
                 for (const auto& controller : controllers) {
-                    nodes += fmt::format(" {}[{}]", controller.address,
+                    nodes += std::format(" {}[{}]", controller.address,
                                          controller.events.empty()
                                              ? std::string{"no input node"}
                                              : controller.events.front().toStdString());
@@ -4892,7 +4892,7 @@ void MainWindow::ApplyConsoleControllerMode() {
                         if (ids[k] != id && IsSteamVirtualPad(ids[k]) &&
                             PadVendor(ids[k]) == vendor &&
                             PadProduct(ids[k]) == product) {
-                            twins += fmt::format("{} ", ids[k]);
+                            twins += std::format("{} ", ids[k]);
                         }
                     }
                     if (Common::ControllerProbes()) {
@@ -4908,7 +4908,7 @@ void MainWindow::ApplyConsoleControllerMode() {
             std::string ident = PadIdentity(id);
             if (Common::SteamPadsInUse() && IsSteamVirtualPad(id)) {
                 if (const Uint64 handle = PadSteamHandle(id)) {
-                    ident = fmt::format("steamhandle:{:#x}", handle);
+                    ident = std::format("steamhandle:{:#x}", handle);
                 } else if (now - first_seen[id] < std::chrono::seconds{3}) {
                     continue;
                 }
@@ -5080,7 +5080,7 @@ void MainWindow::ApplyConsoleControllerMode() {
             // Under Steam the entries carry the Steam handle (every pad shares one GUID)
             const Uint64 handle = Common::SteamPadsInUse() ? PadSteamHandle(id) : 0;
             auto entry = std::pair{PadName(id).toStdString(),
-                                   handle ? fmt::format("steamhandle:{:#x}", handle) : ident};
+                                   handle ? std::format("steamhandle:{:#x}", handle) : ident};
             if (IsPlainlyStandalone(id)) {
                 standalone.push_back(std::move(entry));
             } else {
@@ -5113,7 +5113,7 @@ void MainWindow::ApplyConsoleControllerMode() {
                         if (Common::SteamPadsInUse()) {
                             if (handle) {
                                 Settings::values.builtin_pad_steam_handle.SetValue(
-                                    fmt::format("{:#x}", handle));
+                                    std::format("{:#x}", handle));
                                 Settings::values.builtin_pad_steam_manual.SetValue(true);
                             }
                         } else {
@@ -5138,7 +5138,7 @@ void MainWindow::ApplyConsoleControllerMode() {
         if (declared.starts_with(prefix)) {
             const std::string handle = declared.substr(prefix.size());
             for (const auto& [id, ident] : live) {
-                if (fmt::format("{:#x}", PadSteamHandle(id)) == handle) {
+                if (std::format("{:#x}", PadSteamHandle(id)) == handle) {
                     builtin_pad_id = id;
                     break;
                 }
@@ -5287,7 +5287,7 @@ void MainWindow::ApplyConsoleControllerMode() {
         std::string trace;
         for (const auto& [id, ident] : live) {
             const auto it = pad_slots.find(id);
-            trace += fmt::format("\n  pad inst={} slot={} idx={} name={} path={} ident={}", id,
+            trace += std::format("\n  pad inst={} slot={} idx={} name={} path={} ident={}", id,
                                  it == pad_slots.end() ? -1 : static_cast<int>(it->second),
                                  PadPlayerIndex(id), PadName(id).toStdString(),
                                  PadPath(id).toStdString(), ident);
@@ -5300,7 +5300,7 @@ void MainWindow::ApplyConsoleControllerMode() {
         // Steam fills a virtual pad's handle, type and name a moment after it appears: traced
         static std::map<u32, std::string> traced_steam;
         for (const auto& [id, ident] : live) {
-            const std::string desc = fmt::format(
+            const std::string desc = std::format(
                 "steam_handle={:#x} type={} name={}", PadSteamHandle(id),
                 static_cast<int>(PadType(id)), PadName(id).toStdString());
             auto& last = traced_steam[id];
@@ -5443,7 +5443,7 @@ void MainWindow::ApplyConsoleControllerMode() {
         u32 holder = 0;
         if (!want.empty()) {
             for (const auto& [id, ident] : live) {
-                if (fmt::format("{:#x}", PadSteamHandle(id)) != want || is_blocked(id)) {
+                if (std::format("{:#x}", PadSteamHandle(id)) != want || is_blocked(id)) {
                     continue;
                 }
                 if (!Settings::values.builtin_pad_steam_manual.GetValue() &&
@@ -5490,7 +5490,7 @@ void MainWindow::ApplyConsoleControllerMode() {
             }
         }
         if (adopted) {
-            const std::string handle = fmt::format("{:#x}", PadSteamHandle(holder));
+            const std::string handle = std::format("{:#x}", PadSteamHandle(holder));
             if (handle != want) {
                 Settings::values.builtin_pad_steam_handle.SetValue(handle);
                 Settings::values.builtin_pad_steam_manual.SetValue(false);
@@ -5502,7 +5502,7 @@ void MainWindow::ApplyConsoleControllerMode() {
         }
         static std::string last_resolved;
         const std::string resolved =
-            count == 1 ? fmt::format("inst={}", holder) : fmt::format("{} matches", count);
+            count == 1 ? std::format("inst={}", holder) : std::format("{} matches", count);
         if (resolved != last_resolved) {
             last_resolved = resolved;
             if (Common::ControllerProbes()) {
@@ -5544,7 +5544,7 @@ void MainWindow::ApplyConsoleControllerMode() {
             Settings::values.builtin_pad_steam_handle.GetValue().empty()) {
             // Latch the handheld's Steam handle as soon as Steam has filled it in
             if (const Uint64 handle = PadSteamHandle(builtin_match_id)) {
-                Settings::values.builtin_pad_steam_handle.SetValue(fmt::format("{:#x}", handle));
+                Settings::values.builtin_pad_steam_handle.SetValue(std::format("{:#x}", handle));
                 LOG_INFO(Frontend, "console-mode: builtin Steam handle latched {:#x} inst={}",
                          handle, builtin_match_id);
             }
@@ -6773,7 +6773,7 @@ void MainWindow::ApplyConsoleControllerMode() {
             const auto style = controller->GetNpadStyleIndex();
             const bool taken = StyleSupported(style, supported);
             const std::string what = taken ? std::string{}
-                                           : fmt::format("{}/{:#x}", static_cast<int>(style),
+                                           : std::format("{}/{:#x}", static_cast<int>(style),
                                                          static_cast<u32>(supported.raw));
             auto& logged = refused_logged[static_cast<std::size_t>(i)];
             if (what != logged) {
@@ -6926,7 +6926,7 @@ void MainWindow::ApplyConsoleControllerMode() {
                     std::any_of(live.begin(), live.end(), [&](const auto& entry) {
                         return entry.first != pad && entry.second == live[pad];
                     })) {
-                    history_key += fmt::format("#{}", pad);
+                    history_key += std::format("#{}", pad);
                 }
                 overlay_row_history[i] = std::move(history_key);
             } else if (since != 0 && gone == 0) {
@@ -7523,7 +7523,7 @@ bool MainWindow::LoadROM(const QString& filename, Service::AM::FrontendAppletPar
             if (result > Core::SystemResultStatus::ErrorLoader) {
                 const u16 loader_id = static_cast<u16>(Core::SystemResultStatus::ErrorLoader);
                 const u16 error_id = static_cast<u16>(result) - loader_id;
-                const std::string error_code = fmt::format("({:04X}-{:04X})", loader_id, error_id);
+                const std::string error_code = std::format("({:04X}-{:04X})", loader_id, error_id);
                 LOG_CRITICAL(Frontend, "Failed to load ROM! {}", error_code);
 
                 const auto title =
@@ -7595,7 +7595,7 @@ void MainWindow::BootGame(const QString& filename, Service::AM::FrontendAppletPa
             std::filesystem::path{Common::U16StringFromBuffer(filename.utf16(), filename.size())};
         const auto config_file_name = title_id == 0
                                           ? Common::FS::PathToUTF8String(file_path.filename())
-                                          : fmt::format("{:016X}", title_id);
+                                          : std::format("{:016X}", title_id);
         QtConfig per_game_config(config_file_name, Config::ConfigType::PerGameConfig);
         QtCommon::system->HIDCore().ReloadInputDevices();
         QtCommon::system->ApplySettings();
@@ -7991,7 +7991,7 @@ void MainWindow::OnGameListOpenFolder(u64 program_id, GameListOpenTarget target,
     case GameListOpenTarget::ModData: {
         open_target = tr("Mod Data");
         path = Common::FS::GetEdenPath(Common::FS::EdenPath::LoadDir) /
-               fmt::format("{:016X}", program_id);
+               std::format("{:016X}", program_id);
         break;
     }
     default:
@@ -8228,7 +8228,7 @@ void MainWindow::OnGameListDumpRomFS(u64 program_id, const std::string& game_pat
         target == DumpRomFSTarget::Normal
             ? Common::FS::GetEdenPath(Common::FS::EdenPath::DumpDir)
             : Common::FS::GetEdenPath(Common::FS::EdenPath::SDMCDir) / "atmosphere" / "contents";
-    const auto romfs_dir = fmt::format("{:016X}/romfs", title_id);
+    const auto romfs_dir = std::format("{:016X}/romfs", title_id);
 
     const auto path = Common::FS::PathToUTF8String(dump_dir / romfs_dir);
 
@@ -8305,13 +8305,13 @@ void MainWindow::OnGameListVerifyIntegrity(const std::string& game_path) {
 
 void MainWindow::OnGameListCopyTID(u64 program_id) {
     QClipboard* clipboard = QGuiApplication::clipboard();
-    clipboard->setText(QString::fromStdString(fmt::format("{:016X}", program_id)));
+    clipboard->setText(QString::fromStdString(std::format("{:016X}", program_id)));
 }
 
 void MainWindow::OnGameListCreateShortcut(u64 program_id, const std::string& game_path,
                                           const QtCommon::Game::ShortcutTarget target) {
     // Create shortcu
-    std::string arguments = fmt::format("-g \"{:s}\"", game_path);
+    std::string arguments = std::format("-g \"{:s}\"", game_path);
 
     QtCommon::Game::CreateShortcut(game_path, program_id, "", target, arguments, true);
 }
@@ -8403,7 +8403,7 @@ void MainWindow::OnLinkToRyujinx(const u64& program_id) {
     if (user_id.empty())
         return;
 
-    const std::string hex_program = fmt::format("{:016X}", program_id);
+    const std::string hex_program = std::format("{:016X}", program_id);
 
     const fs::path eden_dir = FrontendCommon::DataManager::GetDataDir(
                                   FrontendCommon::DataManager::DataDir::Saves, user_id) /
@@ -9783,7 +9783,7 @@ void MainWindow::OnApplicationChanged(u64 program_id) {
         title_name = metadata.first->GetApplicationName();
     }
     if (title_name.empty()) {
-        title_name = fmt::format("{:016X}", program_id);
+        title_name = std::format("{:016X}", program_id);
     }
 
     if (const auto* process = QtCommon::system->Kernel().ApplicationProcess(); process != nullptr) {
@@ -9808,21 +9808,21 @@ void MainWindow::UpdateWindowTitle(std::string_view title_name, std::string_view
                                    std::string_view gpu_vendor) {
     static const std::string build_id = std::string{Common::g_build_id};
     static const std::string yuzu_title =
-        fmt::format("{} | {} | {}", std::string{Common::g_build_name},
+        std::format("{} | {} | {}", std::string{Common::g_build_name},
                     std::string{Common::g_build_version}, std::string{Common::g_compiler_id});
 
-    const auto override_title =
-        fmt::format(fmt::runtime(std::string(Common::g_title_bar_format_idle)), build_id);
-    const auto window_title = override_title.empty() ? yuzu_title : override_title;
+    const auto override_build = std::vformat(std::string_view(Common::g_title_bar_format_idle),
+                                             std::make_format_args(build_id));
+    const auto window_title = override_build.empty() ? yuzu_title : override_build;
 
     if (title_name.empty()) {
         setWindowTitle(QString::fromStdString(window_title));
     } else {
         const auto run_title = [window_title, title_name, title_version, gpu_vendor]() {
             if (title_version.empty()) {
-                return fmt::format("{} | {} | {}", window_title, title_name, gpu_vendor);
+                return std::format("{} | {} | {}", window_title, title_name, gpu_vendor);
             }
-            return fmt::format("{} | {} | {} | {}", window_title, title_name, title_version,
+            return std::format("{} | {} | {} | {}", window_title, title_name, title_version,
                                gpu_vendor);
         }();
         setWindowTitle(QString::fromStdString(run_title));
@@ -10148,7 +10148,7 @@ bool MainWindow::SelectRomFSDumpTarget(const FileSys::ContentProvider& installed
     if (available_title_ids.size() > 1) {
         QStringList list;
         for (auto& [title_id, title_type, record_type] : available_title_ids) {
-            const auto hex_title_id = QString::fromStdString(fmt::format("{:X}", title_id));
+            const auto hex_title_id = QString::fromStdString(std::format("{:X}", title_id));
             if (record_type == FileSys::ContentRecordType::Program) {
                 list.push_back(QStringLiteral("Program [%1]").arg(hex_title_id));
             } else if (record_type == FileSys::ContentRecordType::HtmlDocument) {
@@ -10200,7 +10200,7 @@ void MainWindow::closeEvent(QCloseEvent* event) {
     if (Common::ControllerProbes() && !overlay_rows.empty()) {
         std::string players_now;
         for (const auto& row : overlay_rows) {
-            players_now += fmt::format("\n  P{} {} ident={} profile=\"{}\"{}", row.player + 1,
+            players_now += std::format("\n  P{} {} ident={} profile=\"{}\"{}", row.player + 1,
                                        overlay_row_name[row.player].toStdString(),
                                        overlay_row_ident[row.player],
                                        ConsoleBindingSets()[slot_set[row.player]].profile_name,

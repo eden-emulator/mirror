@@ -1,8 +1,12 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
+#include <format>
 #include <string>
 
 #include "common/assert.h"
@@ -12,7 +16,7 @@ namespace OpenGL {
 
 static inline void ReplaceInclude(std::string& shader_source, std::string_view include_name,
                                   std::string_view include_content) {
-    const std::string include_string = fmt::format("#include \"{}\"", include_name);
+    const std::string include_string = std::format("#include \"{}\"", include_name);
     const std::size_t pos = shader_source.find(include_string);
     ASSERT(pos != std::string::npos);
     shader_source.replace(pos, include_string.size(), include_content);

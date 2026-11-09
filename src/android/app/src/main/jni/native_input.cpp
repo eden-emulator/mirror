@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
+
 #include <common/fs/fs.h>
 #include <common/fs/path_util.h>
 #include <common/settings.h>
@@ -48,7 +50,7 @@ bool IsProfileNameValid(std::string_view profile_name) {
 
 bool ProfileExistsInFilesystem(std::string_view profile_name) {
     return Common::FS::Exists(Common::FS::GetEdenPath(Common::FS::EdenPath::ConfigDir) / "input" /
-                              fmt::format("{}.ini", profile_name));
+                              std::format("{}.ini", profile_name));
 }
 
 bool ProfileExistsInMap(const std::string& profile_name) {

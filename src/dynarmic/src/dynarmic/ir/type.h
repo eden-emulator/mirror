@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include <fmt/format.h>
+#include <format>
 #include "common/common_types.h"
 
 namespace Dynarmic::IR {
@@ -55,7 +55,7 @@ bool AreTypesCompatible(Type t1, Type t2);
 }  // namespace Dynarmic::IR
 
 template<>
-struct fmt::formatter<Dynarmic::IR::Type> : fmt::formatter<std::string> {
+struct std::formatter<Dynarmic::IR::Type> : std::formatter<std::string> {
     template<typename FormatContext>
     auto format(Dynarmic::IR::Type type, FormatContext& ctx) const {
         return formatter<std::string>::format(Dynarmic::IR::GetNameOf(type), ctx);

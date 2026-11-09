@@ -528,11 +528,11 @@ void WebBrowser::InitializeOffline() {
     };
 
     offline_cache_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::CacheDir) /
-                        fmt::format("offline_web_applet_{}/{:016X}",
+                        std::format("offline_web_applet_{}/{:016X}",
                                     RESOURCE_TYPES[static_cast<u32>(document_kind) - 1], title_id);
 
     offline_document = Common::FS::ConcatPathSafe(
-        offline_cache_dir, fmt::format("{}/{}", additional_paths, document_path));
+        offline_cache_dir, std::format("{}/{}", additional_paths, document_path));
 }
 
 void WebBrowser::InitializeShare() {}

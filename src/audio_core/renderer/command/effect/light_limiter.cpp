@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
@@ -138,13 +138,13 @@ static void ApplyLightLimiterEffect(const LightLimiterInfo::ParameterVersion2& p
 
 void LightLimiterVersion1Command::Dump(
     [[maybe_unused]] const AudioRenderer::CommandListProcessor& processor, std::string& string) {
-    string += fmt::format("LightLimiterVersion1Command\n\tinputs: ");
+    string += std::format("LightLimiterVersion1Command\n\tinputs: ");
     for (u32 i = 0; i < MaxChannels; i++) {
-        string += fmt::format("{:02X}, ", inputs[i]);
+        string += std::format("{:02X}, ", inputs[i]);
     }
     string += "\n\toutputs: ";
     for (u32 i = 0; i < MaxChannels; i++) {
-        string += fmt::format("{:02X}, ", outputs[i]);
+        string += std::format("{:02X}, ", outputs[i]);
     }
     string += "\n";
 }
@@ -181,13 +181,13 @@ bool LightLimiterVersion1Command::Verify(const AudioRenderer::CommandListProcess
 
 void LightLimiterVersion2Command::Dump(
     [[maybe_unused]] const AudioRenderer::CommandListProcessor& processor, std::string& string) {
-    string += fmt::format("LightLimiterVersion2Command\n\tinputs: \n");
+    string += std::format("LightLimiterVersion2Command\n\tinputs: \n");
     for (u32 i = 0; i < MaxChannels; i++) {
-        string += fmt::format("{:02X}, ", inputs[i]);
+        string += std::format("{:02X}, ", inputs[i]);
     }
     string += "\n\toutputs: ";
     for (u32 i = 0; i < MaxChannels; i++) {
-        string += fmt::format("{:02X}, ", outputs[i]);
+        string += std::format("{:02X}, ", outputs[i]);
     }
     string += "\n";
 }

@@ -65,7 +65,7 @@ NAX::NAX(VirtualFile file_)
 
     const std::string two_dir = Common::ToUpper(std::string{match[1]});
     const std::string nca_id = Common::ToLower(std::string{match[2]});
-    status = Parse(fmt::format("/registered/{}/{}.nca", two_dir, nca_id));
+    status = Parse(std::format("/registered/{}/{}.nca", two_dir, nca_id));
 }
 
 NAX::NAX(VirtualFile file_, std::array<u8, 0x10> nca_id)
@@ -78,7 +78,7 @@ NAX::NAX(VirtualFile file_, std::array<u8, 0x10> nca_id)
 
     LOG_DEBUG(Loader, "Decoded {} bytes, nca id {}", hash_len, nca_id);
 
-    status = Parse(fmt::format("/registered/000000{:02X}/{}.nca", hash[0],
+    status = Parse(std::format("/registered/000000{:02X}/{}.nca", hash[0],
                                Common::HexToString(nca_id, false)));
 }
 

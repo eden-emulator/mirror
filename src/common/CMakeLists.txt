@@ -245,7 +245,7 @@ if (lz4_ADDED)
     target_include_directories(common PRIVATE ${lz4_SOURCE_DIR}/lib)
 endif()
 
-target_link_libraries(common PUBLIC fmt::fmt stb::headers Threads::Threads)
+target_link_libraries(common PUBLIC stb::headers Threads::Threads)
 target_link_libraries(common PRIVATE lz4::lz4 zstd::zstd)
 
 # Please refer to src/common/demangle.cpp

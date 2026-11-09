@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
@@ -17,7 +17,7 @@ namespace FS = Common::FS;
 namespace {
 
 std::filesystem::path ProfilePath(std::string_view profile_name) {
-    return FS::GetEdenPath(FS::EdenPath::ConfigDir) / "input" / fmt::format("{}.ini", profile_name);
+    return FS::GetEdenPath(FS::EdenPath::ConfigDir) / "input" / std::format("{}.ini", profile_name);
 }
 
 bool ProfileExistsInFilesystem(std::string_view profile_name) {

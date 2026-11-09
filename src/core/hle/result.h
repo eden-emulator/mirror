@@ -258,7 +258,7 @@ union Result {
         return GetInnerValue() == result.GetInnerValue();
     }
 };
-static_assert(std::is_trivial_v<Result>);
+static_assert(std::is_trivially_default_constructible_v<Result> && std::is_trivially_copyable_v<Result>);
 
 [[nodiscard]] constexpr bool operator==(const Result& a, const Result& b) {
     return a.raw == b.raw;

@@ -8,7 +8,7 @@
 
 #include "dynarmic/backend/arm64/verbose_debugging_output.h"
 
-#include <fmt/format.h>
+#include <print>
 #include <oaknut/oaknut.hpp>
 
 #include "dynarmic/backend/arm64/emit_context.h"
@@ -55,7 +55,7 @@ void EmitVerboseDebuggingOutput(oaknut::CodeGenerator& code, EmitContext& ctx) {
 }
 
 void PrintVerboseDebuggingOutputLine(RegisterData& reg_data, HostLocType reg_type, std::size_t reg_index, std::size_t inst_index, IR::Type inst_type) {
-    fmt::print("dynarmic debug: %{:05} = ", inst_index);
+    std::print("dynarmic debug: %{:05} = ", inst_index);
 
     Vector value = [&]() -> Vector {
         switch (reg_type) {
@@ -68,27 +68,27 @@ void PrintVerboseDebuggingOutputLine(RegisterData& reg_data, HostLocType reg_typ
         case HostLocType::Spill:
             return (*reg_data.spill)[reg_index];
         }
-        fmt::print("invalid reg_type! ");
+        std::print("invalid reg_type! ");
         return {0, 0};
     }();
 
     switch (inst_type) {
     case IR::Type::U1:
     case IR::Type::U8:
-        fmt::print("{:02x}", value[0] & 0xff);
+        std::print("{:02x}", value[0] & 0xff);
         break;
     case IR::Type::U16:
-        fmt::print("{:04x}", value[0] & 0xffff);
+        std::print("{:04x}", value[0] & 0xffff);
         break;
     case IR::Type::U32:
     case IR::Type::NZCVFlags:
-        fmt::print("{:08x}", value[0] & 0xffffffff);
+        std::print("{:08x}", value[0] & 0xffffffff);
         break;
     case IR::Type::U64:
-        fmt::print("{:016x}", value[0]);
+        std::print("{:016x}", value[0]);
         break;
     case IR::Type::U128:
-        fmt::print("{:016x}{:016x}", value[1], value[0]);
+        std::print("{:016x}{:016x}", value[1], value[0]);
         break;
     case IR::Type::A32Reg:
     case IR::Type::A32ExtReg:
@@ -101,11 +101,11 @@ void PrintVerboseDebuggingOutputLine(RegisterData& reg_data, HostLocType reg_typ
     case IR::Type::AccType:
     case IR::Type::Opaque:
     default:
-        fmt::print("invalid inst_type!");
+        std::print("invalid inst_type!");
         break;
     }
 
-    fmt::print("\n");
+    std::print("\n");
 }
 
 }  // namespace Dynarmic::Backend::Arm64

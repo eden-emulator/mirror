@@ -16,6 +16,8 @@
 #include <QStandardPaths>
 #include <QUrl>
 
+#include <print>
+
 #ifdef _WIN32
 #include <shlobj.h>
 #include <windows.h>
@@ -24,7 +26,6 @@
 #include "common/fs/file.h"
 #else
 #include <fstream>
-#include "fmt/ostream.h"
 #endif
 
 namespace QtCommon::Game {
@@ -105,24 +106,24 @@ bool CreateShortcutLink(const std::filesystem::path& shortcut_path, const std::s
         LOG_ERROR(Frontend, "Failed to create shortcut");
         return false;
     }
-    // TODO: Migrate fmt::print to std::print in futures STD C++ 23.
-    fmt::print(shortcut_stream, "[Desktop Entry]\n");
-    fmt::print(shortcut_stream, "Type=Application\n");
-    fmt::print(shortcut_stream, "Version=1.0\n");
-    fmt::print(shortcut_stream, "Name={}\n", name);
+
+    std::print(shortcut_stream, "[Desktop Entry]\n");
+    std::print(shortcut_stream, "Type=Application\n");
+    std::print(shortcut_stream, "Version=1.0\n");
+    std::print(shortcut_stream, "Name={}\n", name);
     if (!comment.empty()) {
-        fmt::print(shortcut_stream, "Comment={}\n", comment);
+        std::print(shortcut_stream, "Comment={}\n", comment);
     }
     if (std::filesystem::is_regular_file(icon_path)) {
-        fmt::print(shortcut_stream, "Icon={}\n", icon_path.string());
+        std::print(shortcut_stream, "Icon={}\n", icon_path.string());
     }
-    fmt::print(shortcut_stream, "TryExec={}\n", command.string());
-    fmt::print(shortcut_stream, "Exec={} {}\n", command.string(), arguments);
+    std::print(shortcut_stream, "TryExec={}\n", command.string());
+    std::print(shortcut_stream, "Exec={} {}\n", command.string(), arguments);
     if (!categories.empty()) {
-        fmt::print(shortcut_stream, "Categories={}\n", categories);
+        std::print(shortcut_stream, "Categories={}\n", categories);
     }
     if (!keywords.empty()) {
-        fmt::print(shortcut_stream, "Keywords={}\n", keywords);
+        std::print(shortcut_stream, "Keywords={}\n", keywords);
     }
     return true;
 #else                                                                   // Unsupported platform
@@ -150,8 +151,8 @@ bool MakeShortcutIcoPath(const u64 program_id, const std::string_view game_file_
     }
 
     // Create icon file path
-    out_icon_path /= (program_id == 0 ? fmt::format("eden-{}.{}", game_file_name, ico_extension)
-                                      : fmt::format("eden-{:016X}.{}", program_id, ico_extension));
+    out_icon_path /= (program_id == 0 ? std::format("eden-{}.{}", game_file_name, ico_extension)
+                                      : std::format("eden-{:016X}.{}", program_id, ico_extension));
     return true;
 }
 
@@ -251,7 +252,7 @@ void RemoveTransferableShaderCache(u64 program_id, GameListRemoveTarget target) 
         }
     }();
     const auto shader_cache_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::ShaderDir);
-    const auto shader_cache_folder_path = shader_cache_dir / fmt::format("{:016x}", program_id);
+    const auto shader_cache_folder_path = shader_cache_dir / std::format("{:016x}", program_id);
     const auto target_file = shader_cache_folder_path / target_file_name;
 
     if (!Common::FS::Exists(target_file)) {
@@ -272,7 +273,7 @@ void RemoveVulkanDriverPipelineCache(u64 program_id) {
     static constexpr std::string_view target_file_name = "vulkan_pipelines.bin";
 
     const auto shader_cache_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::ShaderDir);
-    const auto shader_cache_folder_path = shader_cache_dir / fmt::format("{:016x}", program_id);
+    const auto shader_cache_folder_path = shader_cache_dir / std::format("{:016x}", program_id);
     const auto target_file = shader_cache_folder_path / target_file_name;
 
     if (!Common::FS::Exists(target_file)) {
@@ -286,7 +287,7 @@ void RemoveVulkanDriverPipelineCache(u64 program_id) {
 
 void RemoveAllTransferableShaderCaches(u64 program_id) {
     const auto shader_cache_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::ShaderDir);
-    const auto program_shader_cache_dir = shader_cache_dir / fmt::format("{:016x}", program_id);
+    const auto program_shader_cache_dir = shader_cache_dir / std::format("{:016x}", program_id);
 
     if (!Common::FS::Exists(program_shader_cache_dir)) {
         QtCommon::Frontend::Warning(tr("Error Removing Transferable Shader Caches"),
@@ -308,7 +309,7 @@ void RemoveCustomConfiguration(u64 program_id, const std::string& game_path) {
     const auto file_path = std::filesystem::path(Common::FS::ToU8String(game_path));
     const auto config_file_name =
         program_id == 0 ? Common::FS::PathToUTF8String(file_path.filename()).append(".ini")
-                        : fmt::format("{:016X}.ini", program_id);
+                        : std::format("{:016X}.ini", program_id);
     const auto custom_config_file_path =
         Common::FS::GetEdenPath(Common::FS::EdenPath::ConfigDir) / "custom" / config_file_name;
 
@@ -427,7 +428,7 @@ void CreateShortcut(const std::string& game_path, const u64 program_id,
 
     // Delete illegal characters from title
     if (needs_title) {
-        game_title = fmt::format("{:016X}", program_id);
+        game_title = std::format("{:016X}", program_id);
         if (control.first != nullptr) {
             game_title = control.first->GetApplicationName();
         } else {
@@ -482,7 +483,7 @@ void CreateShortcut(const std::string& game_path, const u64 program_id,
     if (CreateShortcutMessagesGUI(ShortcutMessages::Fullscreen, qgame_title)) {
         arguments = "-f " + arguments;
     }
-    const std::string comment = fmt::format("Start {:s} with the Eden Emulator", game_title);
+    const std::string comment = std::format("Start {:s} with the Eden Emulator", game_title);
     const std::string categories = "Game;Emulator;Qt;";
     const std::string keywords = "Switch;Nintendo;";
 

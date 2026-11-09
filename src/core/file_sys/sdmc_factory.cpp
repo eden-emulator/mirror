@@ -35,7 +35,7 @@ VirtualDir SDMCFactory::GetSDMCModificationLoadRoot(u64 title_id) const {
     if (title_id == 0 || (title_id & 0xFFF) == 0x800) {
         return nullptr;
     }
-    return GetOrCreateDirectoryRelative(sd_mod_dir, fmt::format("/{:016X}", title_id));
+    return GetOrCreateDirectoryRelative(sd_mod_dir, std::format("/{:016X}", title_id));
 }
 
 VirtualDir SDMCFactory::GetSDMCContentDirectory() const {

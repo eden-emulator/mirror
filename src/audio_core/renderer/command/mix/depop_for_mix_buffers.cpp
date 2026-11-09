@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
@@ -41,7 +41,7 @@ static s32 ApplyDepopMix(std::span<s32> output, const s32 depop_sample,
 
 void DepopForMixBuffersCommand::Dump(
     [[maybe_unused]] const AudioRenderer::CommandListProcessor& processor, std::string& string) {
-    string += fmt::format("DepopForMixBuffersCommand\n\tinput {:02X} count {} decay {}\n", input,
+    string += std::format("DepopForMixBuffersCommand\n\tinput {:02X} count {} decay {}\n", input,
                           count, decay.to_float());
 }
 

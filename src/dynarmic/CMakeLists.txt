@@ -22,7 +22,7 @@ option(DYNARMIC_HOST_FEATURE_OVERRIDE "Let DYNARMIC_HOST_FEATURES=<hex mask> hid
 CMAKE_DEPENDENT_OPTION(DYNARMIC_USE_LLVM "Support disassembly of jitted x86_64 code using LLVM" OFF "NOT YUZU_DISABLE_LLVM" OFF)
 
 # Set hard requirements for C++
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -102,7 +102,6 @@ endif()
 if (NOT Boost_FOUND)
     find_package(Boost 1.57 REQUIRED)
 endif()
-find_package(fmt 8 CONFIG)
 
 if (ARCHITECTURE_arm64)
     find_package(oaknut 2.0.1 CONFIG)

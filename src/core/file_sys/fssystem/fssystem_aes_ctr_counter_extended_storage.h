@@ -57,7 +57,7 @@ public:
     };
     static_assert(sizeof(Entry) == 0x10);
     static_assert(alignof(Entry) == 4);
-    static_assert(std::is_trivial_v<Entry>);
+    static_assert(std::is_trivially_default_constructible_v<Entry> && std::is_trivially_copyable_v<Entry>);
 
 public:
     static constexpr s64 QueryHeaderStorageSize() {

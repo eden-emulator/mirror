@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/ranges.h>
+#include <format>
 #include "common/fs/path_util.h"
 #include "core/file_sys/bis_factory.h"
 #include "core/file_sys/registered_cache.h"
@@ -55,13 +58,13 @@ VirtualDir BISFactory::GetModificationLoadRoot(u64 title_id) const {
     // LayeredFS doesn't work on updates and title id-less homebrew
     if (title_id == 0 || (title_id & 0xFFF) == 0x800)
         return nullptr;
-    return GetOrCreateDirectoryRelative(load_root, fmt::format("/{:016X}", title_id));
+    return GetOrCreateDirectoryRelative(load_root, std::format("/{:016X}", title_id));
 }
 
 VirtualDir BISFactory::GetModificationDumpRoot(u64 title_id) const {
     if (title_id == 0)
         return nullptr;
-    return GetOrCreateDirectoryRelative(dump_root, fmt::format("/{:016X}", title_id));
+    return GetOrCreateDirectoryRelative(dump_root, std::format("/{:016X}", title_id));
 }
 
 VirtualDir BISFactory::OpenPartition(BisPartitionId id) const {
@@ -138,7 +141,7 @@ u64 BISFactory::GetFullNANDTotalSpace() const {
 
 VirtualDir BISFactory::GetBCATDirectory(u64 title_id) const {
     return GetOrCreateDirectoryRelative(nand_root,
-                                        fmt::format("/system/save/bcat/{:016X}", title_id));
+                                        std::format("/system/save/bcat/{:016X}", title_id));
 }
 
 } // namespace FileSys

@@ -12,17 +12,6 @@
 #include <cstdlib> // for exit
 #include "common/common_types.h"
 
-#ifndef __cpp_lib_to_underlying
-namespace std {
-// https://en.cppreference.com/cpp/utility/to_underlying
-template<class T>
-    requires std::is_enum_v<T>
-constexpr std::underlying_type_t<T> to_underlying(T e) noexcept {
-    return std::underlying_type_t<T>(e);
-}
-}
-#endif
-
 /// Textually concatenates two tokens. The double-expansion is required by the C preprocessor.
 #define CONCAT2(x, y) DO_CONCAT2(x, y)
 #define DO_CONCAT2(x, y) x##y

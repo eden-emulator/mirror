@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include <fmt/format.h>
+#include <format>
 #include "common/assert.h"
 #include "common/common_types.h"
 
@@ -129,7 +129,7 @@ inline Vec operator+(Vec vec, size_t number) {
 }  // namespace Dynarmic::A64
 
 template<>
-struct fmt::formatter<Dynarmic::A64::Reg> : fmt::formatter<std::string> {
+struct std::formatter<Dynarmic::A64::Reg> : std::formatter<std::string> {
     template<typename FormatContext>
     auto format(Dynarmic::A64::Reg reg, FormatContext& ctx) const {
         return formatter<std::string>::format(Dynarmic::A64::RegToString(reg), ctx);
@@ -137,7 +137,7 @@ struct fmt::formatter<Dynarmic::A64::Reg> : fmt::formatter<std::string> {
 };
 
 template<>
-struct fmt::formatter<Dynarmic::A64::Vec> : fmt::formatter<std::string> {
+struct std::formatter<Dynarmic::A64::Vec> : std::formatter<std::string> {
     template<typename FormatContext>
     auto format(Dynarmic::A64::Vec vec, FormatContext& ctx) const {
         return formatter<std::string>::format(Dynarmic::A64::VecToString(vec), ctx);

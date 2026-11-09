@@ -7,7 +7,7 @@
 #pragma once
 
 #include <type_traits>
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/common_funcs.h"
 #include "common/common_types.h"
@@ -267,7 +267,7 @@ struct NetworkInfo {
     LdnNetworkInfo ldn;
 };
 static_assert(sizeof(NetworkInfo) == 0x480, "NetworkInfo is an invalid size");
-static_assert(std::is_trivial_v<NetworkInfo>, "NetworkInfo type must be trivially copyable.");
+static_assert(std::is_trivially_default_constructible_v<NetworkInfo> && std::is_trivially_copyable_v<NetworkInfo>, "NetworkInfo type must be trivially copyable.");
 
 struct SecurityConfig {
     SecurityMode security_mode;

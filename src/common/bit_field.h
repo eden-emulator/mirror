@@ -11,6 +11,8 @@
 #include <limits>
 #include <type_traits>
 #include <climits>
+#include <format>
+
 #include "common/swap.h"
 
 /*
@@ -169,7 +171,12 @@ private:
 template <std::size_t Position, std::size_t Bits, typename T>
 using BitFieldBE = BitField<Position, Bits, T, BETag>;
 
-template <std::size_t Position, std::size_t Bits, typename T, typename EndianTag = LETag>
-inline auto format_as(BitField<Position, Bits, T, EndianTag> bitfield) {
-    return bitfield.Value();
-}
+template <std::size_t Position, std::size_t Bits, typename T, typename EndianTag>
+struct std::formatter<BitField<Position, Bits, T, EndianTag>> : std::formatter<T> {
+    using std::formatter<T>::parse;
+    template <typename FormatContext>
+    auto format(const BitField<Position, Bits, T, EndianTag>& bitfield, FormatContext& ctx) const
+        -> decltype(ctx.out()) {
+        return std::formatter<T>::format(bitfield.Value(), ctx);
+    }
+};

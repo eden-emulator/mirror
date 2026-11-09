@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/alignment.h"
 #include "common/assert.h"
@@ -225,7 +225,7 @@ StagingBufferRef StagingBufferPool::CreateStagingBuffer(size_t size, MemoryUsage
     vk::Buffer buffer = memory_allocator.CreateBuffer(buffer_ci, usage);
     if (device.HasDebuggingToolAttached()) {
         ++buffer_index;
-        buffer.SetObjectNameEXT(fmt::format("Staging Buffer {}", buffer_index).c_str());
+        buffer.SetObjectNameEXT(std::format("Staging Buffer {}", buffer_index).c_str());
     }
     const std::span<u8> mapped_span = buffer.Mapped();
     const VkDeviceAddress buffer_address =

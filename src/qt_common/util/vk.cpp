@@ -70,7 +70,7 @@ void PopulateRecords(std::vector<Record>& records, QWindow* window) try {
         if (driver_string.empty())
             driver_string = "Unknown";
 
-        name = fmt::format("{} ({})", name, driver_string);
+        name = std::format("{} ({})", name, driver_string);
 
         records.push_back(VkDeviceInfo::Record(name, present_modes, has_broken_compute));
     }

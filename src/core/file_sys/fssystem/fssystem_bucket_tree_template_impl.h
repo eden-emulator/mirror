@@ -16,7 +16,7 @@ namespace FileSys {
 template <typename EntryType>
 Result BucketTree::ScanContinuousReading(ContinuousReadingInfo* out_info,
                                          const ContinuousReadingParam<EntryType>& param) const {
-    static_assert(std::is_trivial_v<ContinuousReadingParam<EntryType>>);
+    static_assert(std::is_trivially_default_constructible_v<ContinuousReadingParam<EntryType>> && std::is_trivially_copyable_v<ContinuousReadingParam<EntryType>>);
 
     // Validate our preconditions.
     ASSERT(this->IsInitialized());
@@ -140,7 +140,7 @@ Result BucketTree::ScanContinuousReading(ContinuousReadingInfo* out_info,
 template <typename EntryType>
 Result BucketTree::Visitor::ScanContinuousReading(ContinuousReadingInfo* out_info, s64 offset,
                                                   size_t size) const {
-    static_assert(std::is_trivial_v<EntryType>);
+    static_assert(std::is_trivially_default_constructible_v<EntryType> && std::is_trivially_copyable_v<EntryType>);
     ASSERT(this->IsValid());
 
     // Create our parameters.

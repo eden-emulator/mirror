@@ -9,7 +9,7 @@
 #include <thread>
 #include <utility>
 
-#include <fmt/format.h>
+#include <format>
 
 #include "video_core/renderer_vulkan/vk_query_cache.h"
 
@@ -103,7 +103,7 @@ void Scheduler::BeginRenderPassImpl(const Framebuffer* framebuffer, VkRenderPass
 
     if (GPU::Logging::IsActive() && Settings::values.gpu_log_vulkan_calls.GetValue()) {
         const std::string render_pass_info =
-            fmt::format("renderArea={}x{}, numImages={}", render_area.width, render_area.height,
+            std::format("renderArea={}x{}, numImages={}", render_area.width, render_area.height,
                         framebuffer->NumImages());
         GPU::Logging::GPULogger::GetInstance().LogRenderPassBegin(render_pass_info);
     }

@@ -7,7 +7,7 @@
 #include <array>
 #include <cstring>
 #include <ctime>
-#include <fmt/chrono.h>
+#include <format>
 #include "common/logging.h"
 #include "common/scm_rev.h"
 #include "common/swap.h"
@@ -68,37 +68,37 @@ enum class FatalType : u32 {
 
 static void GenerateErrorReport(Core::System& system, Result error_code, const FatalInfo& info) {
     const auto title_id = system.GetApplicationProcessProgramID();
-    std::string crash_report = fmt::format(
+    std::string crash_report = std::format(
         "Eden {}-{} crash report\n"
         "Title ID:                        {:016x}\n"
         "Result:                          {:#x} ({:04}-{:04d})\n"
         "Set flags:                       {:#16X}\n"
         "Program entry point:             {:#16X}\n"
         "\n",
-        Common::g_scm_branch, Common::g_scm_desc, title_id, error_code.raw,
+        std::string_view{Common::g_scm_branch}, std::string_view{Common::g_scm_desc}, title_id, error_code.raw,
         2000 + static_cast<u32>(error_code.GetModule()),
         static_cast<u32>(error_code.GetDescription()), info.set_flags, info.program_entry_point);
     if (info.backtrace_size != 0x0) {
         crash_report += "Registers:\n";
         for (size_t i = 0; i < info.registers.size(); i++) {
             crash_report +=
-                fmt::format("    X[{:02d}]:                       {:016x}\n", i, info.registers[i]);
+                std::format("    X[{:02d}]:                       {:016x}\n", i, info.registers[i]);
         }
-        crash_report += fmt::format("    SP:                          {:016x}\n", info.sp);
-        crash_report += fmt::format("    PC:                          {:016x}\n", info.pc);
-        crash_report += fmt::format("    PSTATE:                      {:016x}\n", info.pstate);
-        crash_report += fmt::format("    AFSR0:                       {:016x}\n", info.afsr0);
-        crash_report += fmt::format("    AFSR1:                       {:016x}\n", info.afsr1);
-        crash_report += fmt::format("    ESR:                         {:016x}\n", info.esr);
-        crash_report += fmt::format("    FAR:                         {:016x}\n", info.far);
+        crash_report += std::format("    SP:                          {:016x}\n", info.sp);
+        crash_report += std::format("    PC:                          {:016x}\n", info.pc);
+        crash_report += std::format("    PSTATE:                      {:016x}\n", info.pstate);
+        crash_report += std::format("    AFSR0:                       {:016x}\n", info.afsr0);
+        crash_report += std::format("    AFSR1:                       {:016x}\n", info.afsr1);
+        crash_report += std::format("    ESR:                         {:016x}\n", info.esr);
+        crash_report += std::format("    FAR:                         {:016x}\n", info.far);
         crash_report += "\nBacktrace:\n";
         for (u32 i = 0; i < std::min<u32>(info.backtrace_size, 32); i++) {
             crash_report +=
-                fmt::format("    Backtrace[{:02d}]:               {:016x}\n", i, info.backtrace[i]);
+                std::format("    Backtrace[{:02d}]:               {:016x}\n", i, info.backtrace[i]);
         }
 
-        crash_report += fmt::format("Architecture:                    {}\n", info.ArchAsString());
-        crash_report += fmt::format("Unknown 10:                      {:#016x}\n", info.unk10);
+        crash_report += std::format("Architecture:                    {}\n", info.ArchAsString());
+        crash_report += std::format("Unknown 10:                      {:#016x}\n", info.unk10);
     }
 
     LOG_ERROR(Service_Fatal, "{}", crash_report);

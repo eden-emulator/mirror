@@ -45,9 +45,9 @@ std::string GetFutureSaveDataPath(SaveDataSpaceId space_id, SaveDataType type, u
     // Only detect account/device saves from the future location.
     switch (type) {
     case SaveDataType::Account:
-        return fmt::format("{}/account/{}/{:016X}/0", space_id_path, uuid.RawString(), title_id);
+        return std::format("{}/account/{}/{:016X}/0", space_id_path, uuid.RawString(), title_id);
     case SaveDataType::Device:
-        return fmt::format("{}/device/{:016X}/0", space_id_path, title_id);
+        return std::format("{}/device/{:016X}/0", space_id_path, title_id);
     default:
         return "";
     }
@@ -127,19 +127,19 @@ std::string SaveDataFactory::GetFullPath(ProgramId program_id, VirtualDir dir,
 
     switch (type) {
     case SaveDataType::System:
-        return fmt::format("{}save/{:016X}/{:016X}{:016X}", out, save_id, user_id[1], user_id[0]);
+        return std::format("{}save/{:016X}/{:016X}{:016X}", out, save_id, user_id[1], user_id[0]);
     case SaveDataType::Account:
     case SaveDataType::Device:
-        return fmt::format("{}save/{:016X}/{:016X}{:016X}/{:016X}", out, 0, user_id[1], user_id[0],
+        return std::format("{}save/{:016X}/{:016X}{:016X}/{:016X}", out, 0, user_id[1], user_id[0],
                            title_id);
     case SaveDataType::Temporary:
-        return fmt::format("{}{:016X}/{:016X}{:016X}/{:016X}", out, 0, user_id[1], user_id[0],
+        return std::format("{}{:016X}/{:016X}{:016X}/{:016X}", out, 0, user_id[1], user_id[0],
                            title_id);
     case SaveDataType::Cache:
-        return fmt::format("{}save/cache/{:016X}", out, title_id);
+        return std::format("{}save/cache/{:016X}", out, title_id);
     default:
         ASSERT_MSG(false, "Unrecognized SaveDataType: {:02X}", static_cast<u8>(type));
-        return fmt::format("{}save/unknown_{:X}/{:016X}", out, static_cast<u8>(type), title_id);
+        return std::format("{}save/unknown_{:X}/{:016X}", out, static_cast<u8>(type), title_id);
     }
 }
 
@@ -147,9 +147,9 @@ std::string SaveDataFactory::GetUserGameSaveDataRoot(u128 user_id, bool future) 
     if (future) {
         Common::UUID uuid;
         std::memcpy(uuid.uuid.data(), user_id.data(), sizeof(Common::UUID));
-        return fmt::format("/user/save/account/{}", uuid.RawString());
+        return std::format("/user/save/account/{}", uuid.RawString());
     }
-    return fmt::format("/user/save/{:016X}/{:016X}{:016X}", 0, user_id[1], user_id[0]);
+    return std::format("/user/save/{:016X}/{:016X}{:016X}", 0, user_id[1], user_id[0]);
 }
 
 SaveDataSize SaveDataFactory::ReadSaveDataSize(SaveDataType type, u64 title_id,

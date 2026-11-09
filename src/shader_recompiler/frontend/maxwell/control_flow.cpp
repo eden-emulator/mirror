@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -10,7 +10,7 @@
 #include <string>
 #include <utility>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include <ranges>
 #include "shader_recompiler/exception.h"
@@ -130,9 +130,9 @@ bool HasFlowTest(Opcode opcode) {
 
 std::string NameOf(const Block& block) {
     if (block.begin.IsVirtual()) {
-        return fmt::format("\"Virtual {}\"", block.begin);
+        return std::format("\"Virtual {}\"", block.begin);
     } else {
-        return fmt::format("\"{}\"", block.begin);
+        return std::format("\"{}\"", block.begin);
     }
 }
 } // Anonymous namespace
@@ -567,19 +567,19 @@ std::string CFG::Dot() const {
 
     std::string dot{"digraph shader {\n"};
     for (const Function& function : functions) {
-        dot += fmt::format("\tsubgraph cluster_{} {{\n", function.entrypoint);
-        dot += fmt::format("\t\tnode [style=filled];\n");
+        dot += std::format("\tsubgraph cluster_{} {{\n", function.entrypoint);
+        dot += std::format("\t\tnode [style=filled];\n");
         for (const Block& block : function.blocks) {
             const std::string name{NameOf(block)};
             const auto add_branch = [&](Block* branch, bool add_label) {
-                dot += fmt::format("\t\t{}->{}", name, NameOf(*branch));
+                dot += std::format("\t\t{}->{}", name, NameOf(*branch));
                 if (add_label && block.cond != IR::Condition{true} &&
                     block.cond != IR::Condition{false}) {
-                    dot += fmt::format(" [label=\"{}\"]", block.cond);
+                    dot += std::format(" [label=\"{}\"]", block.cond);
                 }
                 dot += '\n';
             };
-            dot += fmt::format("\t\t{};\n", name);
+            dot += std::format("\t\t{};\n", name);
             switch (block.end_class) {
             case EndClass::Branch:
                 if (block.cond != IR::Condition{false}) {
@@ -595,37 +595,37 @@ std::string CFG::Dot() const {
                 }
                 break;
             case EndClass::Call:
-                dot += fmt::format("\t\t{}->N{};\n", name, node_uid);
-                dot += fmt::format("\t\tN{}->{};\n", node_uid, NameOf(*block.return_block));
-                dot += fmt::format("\t\tN{} [label=\"Call {}\"][shape=square][style=stripped];\n",
+                dot += std::format("\t\t{}->N{};\n", name, node_uid);
+                dot += std::format("\t\tN{}->{};\n", node_uid, NameOf(*block.return_block));
+                dot += std::format("\t\tN{} [label=\"Call {}\"][shape=square][style=stripped];\n",
                                    node_uid, block.function_call);
                 dot += '\n';
                 ++node_uid;
                 break;
             case EndClass::Exit:
-                dot += fmt::format("\t\t{}->N{};\n", name, node_uid);
-                dot += fmt::format("\t\tN{} [label=\"Exit\"][shape=square][style=stripped];\n",
+                dot += std::format("\t\t{}->N{};\n", name, node_uid);
+                dot += std::format("\t\tN{} [label=\"Exit\"][shape=square][style=stripped];\n",
                                    node_uid);
                 ++node_uid;
                 break;
             case EndClass::Return:
-                dot += fmt::format("\t\t{}->N{};\n", name, node_uid);
-                dot += fmt::format("\t\tN{} [label=\"Return\"][shape=square][style=stripped];\n",
+                dot += std::format("\t\t{}->N{};\n", name, node_uid);
+                dot += std::format("\t\tN{} [label=\"Return\"][shape=square][style=stripped];\n",
                                    node_uid);
                 ++node_uid;
                 break;
             case EndClass::Kill:
-                dot += fmt::format("\t\t{}->N{};\n", name, node_uid);
-                dot += fmt::format("\t\tN{} [label=\"Kill\"][shape=square][style=stripped];\n",
+                dot += std::format("\t\t{}->N{};\n", name, node_uid);
+                dot += std::format("\t\tN{} [label=\"Kill\"][shape=square][style=stripped];\n",
                                    node_uid);
                 ++node_uid;
                 break;
             }
         }
         if (function.entrypoint == 8) {
-            dot += fmt::format("\t\tlabel = \"main\";\n");
+            dot += std::format("\t\tlabel = \"main\";\n");
         } else {
-            dot += fmt::format("\t\tlabel = \"Function {}\";\n", function.entrypoint);
+            dot += std::format("\t\tlabel = \"Function {}\";\n", function.entrypoint);
         }
         dot += "\t}\n";
     }
@@ -634,9 +634,9 @@ std::string CFG::Dot() const {
         if (function.blocks.empty()) {
             dot += "Start;\n";
         } else {
-            dot += fmt::format("\tStart -> {};\n", NameOf(*function.blocks.begin()));
+            dot += std::format("\tStart -> {};\n", NameOf(*function.blocks.begin()));
         }
-        dot += fmt::format("\tStart [shape=diamond];\n");
+        dot += std::format("\tStart [shape=diamond];\n");
     }
     dot += "}\n";
     return dot;

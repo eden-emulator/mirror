@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -8,7 +8,7 @@
 
 #include <bitset>
 #include <bit>
-#include <fmt/ranges.h>
+#include <format>
 #include <numeric>
 
 #include "common/bit_field.h"
@@ -160,21 +160,21 @@ auto FormatTo(FormatContext& ctx, Id id) {
     }
     if constexpr (scalar) {
         if (id.is_null != 0) {
-            return fmt::format_to(ctx.out(), "{}", id.is_long != 0 ? "DC.x" : "RC.x");
+            return std::format_to(ctx.out(), "{}", id.is_long != 0 ? "DC.x" : "RC.x");
         }
         if (id.is_long != 0) {
-            return fmt::format_to(ctx.out(), "D{}.x", id.index.Value());
+            return std::format_to(ctx.out(), "D{}.x", id.index.Value());
         } else {
-            return fmt::format_to(ctx.out(), "R{}.x", id.index.Value());
+            return std::format_to(ctx.out(), "R{}.x", id.index.Value());
         }
     } else {
         if (id.is_null != 0) {
-            return fmt::format_to(ctx.out(), "{}", id.is_long != 0 ? "DC" : "RC");
+            return std::format_to(ctx.out(), "{}", id.is_long != 0 ? "DC" : "RC");
         }
         if (id.is_long != 0) {
-            return fmt::format_to(ctx.out(), "D{}", id.index.Value());
+            return std::format_to(ctx.out(), "D{}", id.index.Value());
         } else {
-            return fmt::format_to(ctx.out(), "R{}", id.index.Value());
+            return std::format_to(ctx.out(), "R{}", id.index.Value());
         }
     }
 }
@@ -182,7 +182,7 @@ auto FormatTo(FormatContext& ctx, Id id) {
 } // namespace Shader::Backend::GLASM
 
 template <>
-struct fmt::formatter<Shader::Backend::GLASM::Id> {
+struct std::formatter<Shader::Backend::GLASM::Id> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
@@ -193,7 +193,7 @@ struct fmt::formatter<Shader::Backend::GLASM::Id> {
 };
 
 template <>
-struct fmt::formatter<Shader::Backend::GLASM::Register> {
+struct std::formatter<Shader::Backend::GLASM::Register> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
@@ -207,7 +207,7 @@ struct fmt::formatter<Shader::Backend::GLASM::Register> {
 };
 
 template <>
-struct fmt::formatter<Shader::Backend::GLASM::ScalarRegister> {
+struct std::formatter<Shader::Backend::GLASM::ScalarRegister> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
@@ -221,7 +221,7 @@ struct fmt::formatter<Shader::Backend::GLASM::ScalarRegister> {
 };
 
 template <>
-struct fmt::formatter<Shader::Backend::GLASM::ScalarU32> {
+struct std::formatter<Shader::Backend::GLASM::ScalarU32> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
@@ -233,7 +233,7 @@ struct fmt::formatter<Shader::Backend::GLASM::ScalarU32> {
         case Shader::Backend::GLASM::Type::Register:
             return Shader::Backend::GLASM::FormatTo<true>(ctx, value.id);
         case Shader::Backend::GLASM::Type::U32:
-            return fmt::format_to(ctx.out(), "{}", value.imm_u32);
+            return std::format_to(ctx.out(), "{}", value.imm_u32);
         case Shader::Backend::GLASM::Type::U64:
             break;
         }
@@ -242,7 +242,7 @@ struct fmt::formatter<Shader::Backend::GLASM::ScalarU32> {
 };
 
 template <>
-struct fmt::formatter<Shader::Backend::GLASM::ScalarS32> {
+struct std::formatter<Shader::Backend::GLASM::ScalarS32> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
@@ -254,7 +254,7 @@ struct fmt::formatter<Shader::Backend::GLASM::ScalarS32> {
         case Shader::Backend::GLASM::Type::Register:
             return Shader::Backend::GLASM::FormatTo<true>(ctx, value.id);
         case Shader::Backend::GLASM::Type::U32:
-            return fmt::format_to(ctx.out(), "{}", static_cast<s32>(value.imm_u32));
+            return std::format_to(ctx.out(), "{}", static_cast<s32>(value.imm_u32));
         case Shader::Backend::GLASM::Type::U64:
             break;
         }
@@ -263,7 +263,7 @@ struct fmt::formatter<Shader::Backend::GLASM::ScalarS32> {
 };
 
 template <>
-struct fmt::formatter<Shader::Backend::GLASM::ScalarF32> {
+struct std::formatter<Shader::Backend::GLASM::ScalarF32> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
@@ -275,7 +275,7 @@ struct fmt::formatter<Shader::Backend::GLASM::ScalarF32> {
         case Shader::Backend::GLASM::Type::Register:
             return Shader::Backend::GLASM::FormatTo<true>(ctx, value.id);
         case Shader::Backend::GLASM::Type::U32:
-            return fmt::format_to(ctx.out(), "{}", std::bit_cast<f32>(value.imm_u32));
+            return std::format_to(ctx.out(), "{}", std::bit_cast<f32>(value.imm_u32));
         case Shader::Backend::GLASM::Type::U64:
             break;
         }
@@ -284,7 +284,7 @@ struct fmt::formatter<Shader::Backend::GLASM::ScalarF32> {
 };
 
 template <>
-struct fmt::formatter<Shader::Backend::GLASM::ScalarF64> {
+struct std::formatter<Shader::Backend::GLASM::ScalarF64> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
@@ -298,7 +298,7 @@ struct fmt::formatter<Shader::Backend::GLASM::ScalarF64> {
         case Shader::Backend::GLASM::Type::U32:
             break;
         case Shader::Backend::GLASM::Type::U64:
-            return fmt::format_to(ctx.out(), "{}", std::bit_cast<f64>(value.imm_u64));
+            return std::format_to(ctx.out(), "{}", std::bit_cast<f64>(value.imm_u64));
         }
         throw Shader::InvalidArgument("Invalid value type {}", value.type);
     }

@@ -154,14 +154,14 @@ std::shared_ptr<IOFile> FileOpen(const fs::path& path, FileAccessMode mode, File
 
         LOG_ERROR(Common_Filesystem,
                   "Failed to open the file at path={} with mode={}, type={}, flag={}",
-                  PathToUTF8String(path), mode, type, flag);
+                  PathToUTF8String(path), s64(mode), s64(type), s64(flag));
 
         return nullptr;
     }
 
     LOG_DEBUG(Common_Filesystem,
               "Successfully opened the file at path={} with mode={}, type={}, flag={}",
-              PathToUTF8String(path), mode, type, flag);
+              PathToUTF8String(path), s64(mode), s64(type), s64(flag));
 
     return io_file;
 }

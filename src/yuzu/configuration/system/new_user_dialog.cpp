@@ -18,7 +18,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QStyle>
-#include <fmt/format.h>
+#include <format>
 #include <qnamespace.h>
 #include <qregularexpression.h>
 #include <qvalidator.h>
@@ -36,7 +36,7 @@ QPixmap NewUserDialog::DefaultAvatar() {
 QString NewUserDialog::GetImagePath(const Common::UUID& uuid) {
     const auto path =
         Common::FS::GetEdenPath(Common::FS::EdenPath::NANDDir) /
-        fmt::format("system/save/8000000000000010/su/avators/{}.jpg", uuid.FormattedString());
+        std::format("system/save/8000000000000010/su/avators/{}.jpg", uuid.FormattedString());
     return QString::fromStdString(Common::FS::PathToUTF8String(path));
 }
 

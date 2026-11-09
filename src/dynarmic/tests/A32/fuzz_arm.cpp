@@ -13,6 +13,7 @@
 #include <tuple>
 #include <type_traits>
 #include <vector>
+#include <print>
 
 #include <catch2/catch_test_macros.hpp>
 #include "dynarmic/mcl/bit.hpp"
@@ -36,8 +37,7 @@
 #include "dynarmic/ir/opcodes.h"
 
 // Must be declared last for all necessary operator<< to be declared prior to this.
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <format>
 
 namespace {
 using namespace Dynarmic;
@@ -341,62 +341,62 @@ static void RunTestInstance(Dynarmic::A32::Jit& jit,
     uni.Run();
 
     // SCOPE_FAIL {
-    //     fmt::print("Instruction Listing:\n");
-    //     fmt::print("{}\n", Common::DisassembleAArch32(std::is_same_v<TestEnv, ThumbTestEnv>, initial_pc, (const u8*)instructions.data(), instructions.size() * sizeof(instructions[0])));
+    //     std::print("Instruction Listing:\n");
+    //     std::print("{}\n", Common::DisassembleAArch32(std::is_same_v<TestEnv, ThumbTestEnv>, initial_pc, (const u8*)instructions.data(), instructions.size() * sizeof(instructions[0])));
 
-    //     fmt::print("Initial register listing:\n");
+    //     std::print("Initial register listing:\n");
     //     for (size_t i = 0; i < regs.size(); ++i) {
-    //         fmt::print("{:3s}: {:08x}\n", static_cast<A32::Reg>(i), regs[i]);
+    //         std::print("{:3s}: {:08x}\n", static_cast<A32::Reg>(i), regs[i]);
     //     }
     //     for (size_t i = 0; i < vecs.size(); ++i) {
-    //         fmt::print("{:3s}: {:08x}\n", static_cast<A32::ExtReg>(i), vecs[i]);
+    //         std::print("{:3s}: {:08x}\n", static_cast<A32::ExtReg>(i), vecs[i]);
     //     }
-    //     fmt::print("cpsr {:08x}\n", cpsr);
-    //     fmt::print("fpcr {:08x}\n", fpscr);
-    //     fmt::print("fpcr.AHP   {}\n", FP::FPCR{fpscr}.AHP());
-    //     fmt::print("fpcr.DN    {}\n", FP::FPCR{fpscr}.DN());
-    //     fmt::print("fpcr.FZ    {}\n", FP::FPCR{fpscr}.FZ());
-    //     fmt::print("fpcr.RMode {}\n", static_cast<size_t>(FP::FPCR{fpscr}.RMode()));
-    //     fmt::print("fpcr.FZ16  {}\n", FP::FPCR{fpscr}.FZ16());
-    //     fmt::print("\n");
+    //     std::print("cpsr {:08x}\n", cpsr);
+    //     std::print("fpcr {:08x}\n", fpscr);
+    //     std::print("fpcr.AHP   {}\n", FP::FPCR{fpscr}.AHP());
+    //     std::print("fpcr.DN    {}\n", FP::FPCR{fpscr}.DN());
+    //     std::print("fpcr.FZ    {}\n", FP::FPCR{fpscr}.FZ());
+    //     std::print("fpcr.RMode {}\n", static_cast<size_t>(FP::FPCR{fpscr}.RMode()));
+    //     std::print("fpcr.FZ16  {}\n", FP::FPCR{fpscr}.FZ16());
+    //     std::print("\n");
 
-    //     fmt::print("Final register listing:\n");
-    //     fmt::print("     unicorn  dynarmic\n");
+    //     std::print("Final register listing:\n");
+    //     std::print("     unicorn  dynarmic\n");
     //     const auto uni_regs = uni.GetRegisters();
     //     for (size_t i = 0; i < regs.size(); ++i) {
-    //         fmt::print("{:3s}: {:08x} {:08x} {}\n", static_cast<A32::Reg>(i), uni_regs[i], jit.Regs()[i], uni_regs[i] != jit.Regs()[i] ? "*" : "");
+    //         std::print("{:3s}: {:08x} {:08x} {}\n", static_cast<A32::Reg>(i), uni_regs[i], jit.Regs()[i], uni_regs[i] != jit.Regs()[i] ? "*" : "");
     //     }
     //     const auto uni_ext_regs = uni.GetExtRegs();
     //     for (size_t i = 0; i < vecs.size(); ++i) {
-    //         fmt::print("s{:2d}: {:08x} {:08x} {}\n", static_cast<size_t>(i), uni_ext_regs[i], jit.ExtRegs()[i], uni_ext_regs[i] != jit.ExtRegs()[i] ? "*" : "");
+    //         std::print("s{:2d}: {:08x} {:08x} {}\n", static_cast<size_t>(i), uni_ext_regs[i], jit.ExtRegs()[i], uni_ext_regs[i] != jit.ExtRegs()[i] ? "*" : "");
     //     }
-    //     fmt::print("cpsr {:08x} {:08x} {}\n", uni.GetCpsr(), jit.Cpsr(), uni.GetCpsr() != jit.Cpsr() ? "*" : "");
-    //     fmt::print("fpsr {:08x} {:08x} {}\n", uni.GetFpscr(), jit.Fpscr(), (uni.GetFpscr() & 0xF0000000) != (jit.Fpscr() & 0xF0000000) ? "*" : "");
-    //     fmt::print("\n");
+    //     std::print("cpsr {:08x} {:08x} {}\n", uni.GetCpsr(), jit.Cpsr(), uni.GetCpsr() != jit.Cpsr() ? "*" : "");
+    //     std::print("fpsr {:08x} {:08x} {}\n", uni.GetFpscr(), jit.Fpscr(), (uni.GetFpscr() & 0xF0000000) != (jit.Fpscr() & 0xF0000000) ? "*" : "");
+    //     std::print("\n");
 
-    //     fmt::print("Modified memory:\n");
-    //     fmt::print("                 uni dyn\n");
+    //     std::print("Modified memory:\n");
+    //     std::print("                 uni dyn\n");
     //     auto uni_iter = uni_env.modified_memory.begin();
     //     auto jit_iter = jit_env.modified_memory.begin();
     //     while (uni_iter != uni_env.modified_memory.end() || jit_iter != jit_env.modified_memory.end()) {
     //         if (uni_iter == uni_env.modified_memory.end() || (jit_iter != jit_env.modified_memory.end() && uni_iter->first > jit_iter->first)) {
-    //             fmt::print("{:08x}:    {:02x} *\n", jit_iter->first, jit_iter->second);
+    //             std::print("{:08x}:    {:02x} *\n", jit_iter->first, jit_iter->second);
     //             jit_iter++;
     //         } else if (jit_iter == jit_env.modified_memory.end() || jit_iter->first > uni_iter->first) {
-    //             fmt::print("{:08x}: {:02x}    *\n", uni_iter->first, uni_iter->second);
+    //             std::print("{:08x}: {:02x}    *\n", uni_iter->first, uni_iter->second);
     //             uni_iter++;
     //         } else if (uni_iter->first == jit_iter->first) {
-    //             fmt::print("{:08x}: {:02x} {:02x} {}\n", uni_iter->first, uni_iter->second, jit_iter->second, uni_iter->second != jit_iter->second ? "*" : "");
+    //             std::print("{:08x}: {:02x} {:02x} {}\n", uni_iter->first, uni_iter->second, jit_iter->second, uni_iter->second != jit_iter->second ? "*" : "");
     //             uni_iter++;
     //             jit_iter++;
     //         }
     //     }
-    //     fmt::print("\n");
+    //     std::print("\n");
 
-    //     fmt::print("x86_64:\n");
-    //     fmt::print("{}", jit.Disassemble());
+    //     std::print("x86_64:\n");
+    //     std::print("{}", jit.Disassemble());
 
-    //     fmt::print("Interrupts:\n");
+    //     std::print("Interrupts:\n");
     //     for (const auto& i : uni_env.interrupts) {
     //         std::puts(i.c_str());
     //     }
@@ -418,7 +418,7 @@ static void RunTestInstance(Dynarmic::A32::Jit& jit,
     if (uni.GetRegisters()[15] > jit.Regs()[15]) {
         int trials = 0;
         while (jit.Regs()[15] >= initial_pc && jit.Regs()[15] < expected_end_pc && trials++ < 100 && uni.GetRegisters()[15] != jit.Regs()[15]) {
-            fmt::print("Warning: Possible unicorn overrrun, attempt recovery\n");
+            std::print("Warning: Possible unicorn overrrun, attempt recovery\n");
             jit.Step();
         }
     }

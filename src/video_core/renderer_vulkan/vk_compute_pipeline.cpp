@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <boost/container/small_vector.hpp>
-#include <fmt/format.h>
+#include <format>
 
 #include "video_core/renderer_vulkan/pipeline_helper.h"
 #include "video_core/renderer_vulkan/pipeline_statistics.h"

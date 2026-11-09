@@ -13,11 +13,11 @@
 #include <iostream>
 #include <map>
 #include <optional>
+#include <ranges>
 #include <string>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-#include <fmt/ranges.h>
+#include <format>
+#include <print>
 #include "dynarmic/frontend/A32/translate/translate_callbacks.h"
 #include "dynarmic/mcl/bit.hpp"
 #include "common/common_types.h"
@@ -58,39 +58,39 @@ std::string_view GetNameOfA64Instruction(u32 instruction) {
 }
 
 void PrintA32Instruction(u32 instruction) {
-    fmt::print("{:08x} {}\n", instruction, Dynarmic::Common::DisassembleAArch32(false, 0, (u8*)&instruction, sizeof(instruction)));
-    fmt::print("Name: {}\n", GetNameOfA32Instruction(instruction));
+    std::print("{:08x} {}\n", instruction, Dynarmic::Common::DisassembleAArch32(false, 0, (u8*)&instruction, sizeof(instruction)));
+    std::print("Name: {}\n", GetNameOfA32Instruction(instruction));
 
     const A32::LocationDescriptor location{0, {}, {}};
     IR::Block ir_block{location};
     const bool should_continue = A32::TranslateSingleInstruction(ir_block, location, instruction);
-    fmt::print("should_continue: {}\n\n", should_continue);
-    fmt::print("IR:\n");
-    fmt::print("{}\n", IR::DumpBlock(ir_block));
+    std::print("should_continue: {}\n\n", should_continue);
+    std::print("IR:\n");
+    std::print("{}\n", IR::DumpBlock(ir_block));
     ArmTestEnv jit_env{};
     Dynarmic::A32::UserConfig jit_user_config{};
     jit_user_config.callbacks = &jit_env;
     Optimization::Optimize(ir_block, jit_user_config, {});
-    fmt::print("Optimized IR:\n");
-    fmt::print("{}\n", IR::DumpBlock(ir_block));
+    std::print("Optimized IR:\n");
+    std::print("{}\n", IR::DumpBlock(ir_block));
 }
 
 void PrintA64Instruction(u32 instruction) {
-    fmt::print("{:08x} {}\n", instruction, Dynarmic::Common::DisassembleAArch64(instruction));
-    fmt::print("Name: {}\n", GetNameOfA64Instruction(instruction));
+    std::print("{:08x} {}\n", instruction, Dynarmic::Common::DisassembleAArch64(instruction));
+    std::print("Name: {}\n", GetNameOfA64Instruction(instruction));
 
     const A64::LocationDescriptor location{0, {}};
     IR::Block ir_block{location};
     const bool should_continue = A64::TranslateSingleInstruction(ir_block, location, instruction);
-    fmt::print("should_continue: {}\n\n", should_continue);
-    fmt::print("IR:\n");
-    fmt::print("{}\n", IR::DumpBlock(ir_block));
+    std::print("should_continue: {}\n\n", should_continue);
+    std::print("IR:\n");
+    std::print("{}\n", IR::DumpBlock(ir_block));
     A64TestEnv jit_env{};
     Dynarmic::A64::UserConfig jit_user_config{};
     jit_user_config.callbacks = &jit_env;
     Optimization::Optimize(ir_block, jit_user_config, {});
-    fmt::print("Optimized IR:\n");
-    fmt::print("{}\n", IR::DumpBlock(ir_block));
+    std::print("Optimized IR:\n");
+    std::print("{}\n", IR::DumpBlock(ir_block));
 }
 
 void PrintThumbInstruction(u32 instruction) {
@@ -98,20 +98,20 @@ void PrintThumbInstruction(u32 instruction) {
     if (inst_size == 4)
         instruction = mcl::bit::swap_halves_32(instruction);
 
-    fmt::print("{:08x} {}\n", instruction, Dynarmic::Common::DisassembleAArch32(true, 0, (u8*)&instruction, inst_size));
+    std::print("{:08x} {}\n", instruction, Dynarmic::Common::DisassembleAArch32(true, 0, (u8*)&instruction, inst_size));
 
     const A32::LocationDescriptor location{0, A32::PSR{0x1F0}, {}};
     IR::Block ir_block{location};
     const bool should_continue = A32::TranslateSingleInstruction(ir_block, location, instruction);
-    fmt::print("should_continue: {}\n\n", should_continue);
-    fmt::print("IR:\n");
-    fmt::print("{}\n", IR::DumpBlock(ir_block));
+    std::print("should_continue: {}\n\n", should_continue);
+    std::print("IR:\n");
+    std::print("{}\n", IR::DumpBlock(ir_block));
     ThumbTestEnv jit_env{};
     Dynarmic::A32::UserConfig jit_user_config{};
     jit_user_config.callbacks = &jit_env;
     Optimization::Optimize(ir_block, jit_user_config, {});
-    fmt::print("Optimized IR:\n");
-    fmt::print("{}\n", IR::DumpBlock(ir_block));
+    std::print("Optimized IR:\n");
+    std::print("{}\n", IR::DumpBlock(ir_block));
 }
 
 class ExecEnv final : public Dynarmic::A32::UserCallbacks {
@@ -163,10 +163,10 @@ public:
     }
 
     void CallSVC(std::uint32_t swi) override {
-        fmt::print("> CallSVC({})\n", swi);
+        std::print("> CallSVC({})\n", swi);
     }
     void ExceptionRaised(u32 pc, Dynarmic::A32::Exception exception) override {
-        fmt::print("> ExceptionRaised({:08x}, {})", pc, static_cast<size_t>(exception));
+        std::print("> ExceptionRaised({:08x}, {})", pc, static_cast<size_t>(exception));
     }
 
     void AddTicks(std::uint64_t ticks) override {
@@ -194,10 +194,10 @@ void ExecuteA32Instruction(u32 instruction) {
     const std::map<std::string, u32*> name_map = [&regs, &ext_regs, &cpsr, &fpscr] {
         std::map<std::string, u32*> name_map;
         for (size_t i = 0; i < regs.size(); i++) {
-            name_map[fmt::format("r{}", i)] = &regs[i];
+            name_map[std::format("r{}", i)] = &regs[i];
         }
         for (size_t i = 0; i < ext_regs.size(); i++) {
-            name_map[fmt::format("s{}", i)] = &ext_regs[i];
+            name_map[std::format("s{}", i)] = &ext_regs[i];
         }
         name_map["sp"] = &regs[13];
         name_map["lr"] = &regs[14];
@@ -230,28 +230,28 @@ void ExecuteA32Instruction(u32 instruction) {
     };
 
     while (std::cin) {
-        fmt::print("register: ");
+        std::print("register: ");
         const std::string reg_name = get_line();
         if (const auto iter = name_map.find(reg_name); iter != name_map.end()) {
-            fmt::print("value: ");
+            std::print("value: ");
             if (const auto value = get_value()) {
                 *(iter->second) = *value;
-                fmt::print("> {} = {:#08x}\n", reg_name, *value);
+                std::print("> {} = {:#08x}\n", reg_name, *value);
             }
         } else if (reg_name.starts_with("m")) {
-            fmt::print("address: ");
+            std::print("address: ");
             if (const auto address = get_value()) {
-                fmt::print("value: ");
+                std::print("value: ");
                 if (const auto value = get_value()) {
                     env.MemoryWrite(*address, *value, sizeof(u32));
-                    fmt::print("> mem[{:#08x}] = {:#08x}\n", *address, *value);
+                    std::print("> mem[{:#08x}] = {:#08x}\n", *address, *value);
                 }
             }
         } else if (reg_name == "exit" || reg_name == "end" || reg_name.starts_with("q")) {
             break;
         }
     }
-    fmt::print("\n\n");
+    std::print("\n\n");
 
     cpu.Regs() = regs;
     cpu.ExtRegs() = ext_regs;
@@ -263,34 +263,34 @@ void ExecuteA32Instruction(u32 instruction) {
     env.MemoryWrite(initial_pc + 4, 0xEAFFFFFE, sizeof(u32));  // B +0
 
     cpu.Run();
-    fmt::print("{}", fmt::join(cpu.Disassemble(), "\n"));
+    std::print("{}", cpu.Disassemble());
 
-    fmt::print("Registers modified:\n");
+    std::print("Registers modified:\n");
     for (size_t i = 0; i < regs.size(); ++i) {
         if (regs[i] != cpu.Regs()[i]) {
-            fmt::print("{:3s}: {:08x}\n", static_cast<A32::Reg>(i), cpu.Regs()[i]);
+            std::print("{:3s}: {:08x}\n", static_cast<A32::Reg>(i), cpu.Regs()[i]);
         }
     }
     for (size_t i = 0; i < ext_regs.size(); ++i) {
         if (ext_regs[i] != cpu.ExtRegs()[i]) {
-            fmt::print("{:3s}: {:08x}\n", static_cast<A32::ExtReg>(i), cpu.Regs()[i]);
+            std::print("{:3s}: {:08x}\n", static_cast<A32::ExtReg>(i), cpu.Regs()[i]);
         }
     }
     if (cpsr != cpu.Cpsr()) {
-        fmt::print("cpsr {:08x}\n", cpu.Cpsr());
+        std::print("cpsr {:08x}\n", cpu.Cpsr());
     }
     if (fpscr != cpu.Fpscr()) {
-        fmt::print("fpscr{:08x}\n", cpu.Fpscr());
+        std::print("fpscr{:08x}\n", cpu.Fpscr());
     }
-    fmt::print("Modified memory:\n");
+    std::print("Modified memory:\n");
     for (auto iter = env.memory.begin(); iter != env.memory.end(); ++iter) {
-        fmt::print("{:08x} {:02x}\n", iter->first, iter->second);
+        std::print("{:08x} {:02x}\n", iter->first, iter->second);
     }
 }
 
 int main(int argc, char** argv) {
     if (argc < 3 || argc > 4) {
-        fmt::print("usage: {} <a32/a64/thumb> <instruction_in_hex> [-exec]\n", argv[0]);
+        std::print("usage: {} <a32/a64/thumb> <instruction_in_hex> [-exec]\n", argv[0]);
         return 1;
     }
 
@@ -300,7 +300,7 @@ int main(int argc, char** argv) {
         return s;
     }();
     if (strlen(hex_instruction) > 8) {
-        fmt::print("hex string too long\n");
+        std::print("hex string too long\n");
         return 1;
     }
 
@@ -312,18 +312,18 @@ int main(int argc, char** argv) {
     } else if (strcmp(argv[1], "t32") == 0 || strcmp(argv[1], "t16") == 0 || strcmp(argv[1], "thumb") == 0) {
         PrintThumbInstruction(instruction);
     } else {
-        fmt::print("Invalid mode: {}\nValid values: a32, a64, thumb\n", argv[1]);
+        std::print("Invalid mode: {}\nValid values: a32, a64, thumb\n", argv[1]);
         return 1;
     }
     if (argc == 4) {
         if (strcmp(argv[3], "-exec") != 0) {
-            fmt::print("Invalid option {}\n", argv[3]);
+            std::print("Invalid option {}\n", argv[3]);
             return 1;
         }
         if (strcmp(argv[1], "a32") == 0) {
             ExecuteA32Instruction(instruction);
         } else {
-            fmt::print("Executing in this mode not currently supported\n");
+            std::print("Executing in this mode not currently supported\n");
             return 1;
         }
     }

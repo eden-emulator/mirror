@@ -1,11 +1,11 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "ryujinx_compat.h"
 #include "common/fs/path_util.h"
 #include <cstddef>
 #include <cstring>
-#include <fmt/ranges.h>
+#include <format>
 #include <fstream>
 
 namespace Common::FS {
@@ -33,7 +33,7 @@ fs::path GetRyuSavePath(const u64 &save_id)
 }
 
 std::filesystem::path GetRyuSavePath(const std::filesystem::path& path, const u64& save_id) {
-    std::string hex = fmt::format("{:016x}", save_id);
+    std::string hex = std::format("{:016x}", save_id);
 
            // TODO: what's the difference between 0 and 1?
     return path / "bis" / "user" / "save" / hex / "0";

@@ -36,7 +36,7 @@ public:
 
     /// Write multiple values to the register identified by method.
     void CallMultiMethod(Core::System& system, u32 method, const u32* base_start, u32 amount, u32 methods_pending) override {
-        LOG_DEBUG(HW_GPU, "method={}, base_start={}, amount={}, pending={}", method, fmt::ptr(base_start), amount, methods_pending);
+        LOG_DEBUG(HW_GPU, "method={}, base_start={:P}, amount={}, pending={}", method, (const void*) base_start, amount, methods_pending);
     }
 
     struct Regs {

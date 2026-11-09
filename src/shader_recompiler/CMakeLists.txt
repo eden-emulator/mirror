@@ -246,7 +246,7 @@ if (ENABLE_OPENGL)
         backend/glsl/var_alloc.h)
 endif()
 
-target_link_libraries(shader_recompiler PUBLIC common fmt::fmt sirit::sirit)
+target_link_libraries(shader_recompiler PUBLIC common sirit::sirit)
 
 if (MSVC)
     target_compile_options(shader_recompiler PRIVATE

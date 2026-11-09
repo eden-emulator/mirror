@@ -8,6 +8,7 @@
 #include <limits>
 #include <random>
 #include <regex>
+#include <utility>
 #include <openssl/evp.h>
 #include "common/assert.h"
 #include "common/fs/path_util.h"
@@ -34,7 +35,7 @@ namespace FileSys {
 constexpr size_t VFS_RC_LARGE_COPY_BLOCK = 0x400000;
 
 std::string ContentProviderEntry::DebugInfo() const {
-    return fmt::format("title_id={:016X}, content_type={:02X}", title_id, static_cast<u8>(type));
+    return std::format("title_id={:016X}, content_type={:02X}", title_id, static_cast<u8>(type));
 }
 
 bool operator<(const ContentProviderEntry& lhs, const ContentProviderEntry& rhs) {
@@ -69,20 +70,16 @@ static std::string GetRelativePathFromNcaID(const std::array<u8, 16>& nca_id, bo
     const auto nca_str = Common::HexToString(nca_id, second_hex_upper);
 
     if (!within_two_digit) {
-        const auto format_str = fmt::runtime(cnmt_suffix ? "{}.cnmt.nca" : "/{}.nca");
-        return fmt::format(format_str, nca_str);
+        return cnmt_suffix ? std::format("{}.cnmt.nca", nca_str) : std::format("/{}.nca", nca_str);
     }
 
     Core::Crypto::SHA256Hash hash{};
     u32 hash_len = 0;
     EVP_Digest(nca_id.data(), nca_id.size(), hash.data(), &hash_len, EVP_sha256(), nullptr);
 
-    const auto format_str =
-        fmt::runtime(cnmt_suffix ? "/000000{:02X}/{}.cnmt.nca" : "/000000{:02X}/{}.nca");
-
     LOG_DEBUG(Loader, "Decoded {} bytes, nca id {}", hash_len, nca_str);
 
-    return fmt::format(format_str, hash[0], nca_str);
+    return cnmt_suffix ? std::format("/000000{:02X}/{}.cnmt.nca", hash[0], nca_str) : std::format("/000000{:02X}/{}.nca", hash[0], nca_str);
 }
 
 static std::string GetCNMTName(TitleType type, u64 title_id) {
@@ -104,7 +101,7 @@ static std::string GetCNMTName(TitleType type, u64 title_id) {
         index -= static_cast<std::size_t>(TitleType::Application) -
                  static_cast<std::size_t>(TitleType::FirmwarePackageB);
     }
-    return fmt::format("{}_{:016x}.cnmt", TITLE_TYPE_NAMES[index], title_id);
+    return std::format("{}_{:016x}.cnmt", TITLE_TYPE_NAMES[index], title_id);
 }
 
 static std::shared_ptr<NSP> OpenContainerAsNsp(const VirtualFile& file, Loader::FileType type) {
@@ -400,14 +397,14 @@ bool PlaceholderCache::Create(const NcaID& id, u64 size) const {
 
     LOG_DEBUG(Loader, "Decoded {} bytes, nca id {}", hash_len, id);
 
-    const auto dirname = fmt::format("000000{:02X}", hash[0]);
+    const auto dirname = std::format("000000{:02X}", hash[0]);
 
     const auto dir2 = GetOrCreateDirectoryRelative(dir, dirname);
 
     if (dir2 == nullptr)
         return false;
 
-    const auto file = dir2->CreateFile(fmt::format("{}.nca", Common::HexToString(id, false)));
+    const auto file = dir2->CreateFile(std::format("{}.nca", Common::HexToString(id, false)));
 
     if (file == nullptr)
         return false;
@@ -428,11 +425,11 @@ bool PlaceholderCache::Delete(const NcaID& id) const {
 
     LOG_DEBUG(Loader, "Decoded {} bytes, nca id {}", hash_len, id);
 
-    const auto dirname = fmt::format("000000{:02X}", hash[0]);
+    const auto dirname = std::format("000000{:02X}", hash[0]);
 
     const auto dir2 = GetOrCreateDirectoryRelative(dir, dirname);
 
-    const auto res = dir2->DeleteFile(fmt::format("{}.nca", Common::HexToString(id, false)));
+    const auto res = dir2->DeleteFile(std::format("{}.nca", Common::HexToString(id, false)));
 
     return res;
 }
@@ -561,11 +558,11 @@ VirtualFile RegisteredCache::OpenFileOrDirectoryConcat(const VirtualDir& open_di
     std::vector<VirtualFile> concat;
     // Since the files are a two-digit hex number, max is FF.
     for (std::size_t i = 0; i < 0x100; ++i) {
-        auto next = nca_dir->GetFile(fmt::format("{:02X}", i));
+        auto next = nca_dir->GetFile(std::format("{:02X}", i));
         if (next != nullptr) {
             concat.push_back(std::move(next));
         } else {
-            next = nca_dir->GetFile(fmt::format("{:02x}", i));
+            next = nca_dir->GetFile(std::format("{:02x}", i));
             if (next != nullptr) {
                 concat.push_back(std::move(next));
             } else {
@@ -832,11 +829,11 @@ std::vector<ContentProviderEntry> RegisteredCache::ListEntriesFilter(
 
 static std::shared_ptr<NCA> GetNCAFromNSPForID(const NSP& nsp, const NcaID& id) {
     const auto id_string = Common::HexToString(id, false);
-    auto file = nsp.GetFile(fmt::format("{}.nca", id_string));
+    auto file = nsp.GetFile(std::format("{}.nca", id_string));
     if (file == nullptr) {
-        if (auto ncz_file = nsp.GetFile(fmt::format("{}.ncz", id_string))) {
+        if (auto ncz_file = nsp.GetFile(std::format("{}.ncz", id_string))) {
             file = Core::Crypto::DecompressNCZForInstall(
-                ncz_file, fmt::format("{}.nca", id_string));
+                ncz_file, std::format("{}.nca", id_string));
         }
     }
     if (file == nullptr) {

@@ -12,7 +12,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
-#include <fmt/ranges.h>
+#include <format>
 #include "common/common_types.h"
 #include "common/settings_common.h"
 #include "common/settings_enums.h"
@@ -134,7 +134,7 @@ protected:
         } else if constexpr (std::is_same_v<Type, bool>) {
             return value_ ? "true" : "false";
         } else if constexpr (std::is_floating_point_v<Type>) {
-            return fmt::format("{:f}", value_);
+            return std::format("{:f}", value_);
         } else if constexpr (std::is_enum_v<Type>) {
             return std::to_string(std::underlying_type_t<Type>(value_));
         } else {

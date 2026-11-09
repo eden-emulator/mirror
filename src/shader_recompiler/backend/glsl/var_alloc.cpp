@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -7,7 +7,7 @@
 #include <string>
 #include <string_view>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "shader_recompiler/backend/glsl/var_alloc.h"
 #include "shader_recompiler/exception.h"
@@ -68,26 +68,26 @@ std::string FormatFloat(std::string_view value, IR::Type type) {
     if (value.find_first_of('e') != std::string_view::npos) {
         // scientific notation
         const auto cast{type == IR::Type::F32 ? "float" : "double"};
-        return fmt::format("{}({})", cast, value);
+        return std::format("{}({})", cast, value);
     }
     const bool needs_dot{value.find_first_of('.') == std::string_view::npos};
     const bool needs_suffix{!value.ends_with('f')};
     const auto suffix{type == IR::Type::F32 ? "f" : "lf"};
-    return fmt::format("{}{}{}", value, needs_dot ? "." : "", needs_suffix ? suffix : "");
+    return std::format("{}{}{}", value, needs_dot ? "." : "", needs_suffix ? suffix : "");
 }
 
 std::string MakeImm(const IR::Value& value) {
     switch (value.Type()) {
     case IR::Type::U1:
-        return fmt::format("{}", value.U1() ? "true" : "false");
+        return std::format("{}", value.U1() ? "true" : "false");
     case IR::Type::U32:
-        return fmt::format("{}u", value.U32());
+        return std::format("{}u", value.U32());
     case IR::Type::F32:
-        return FormatFloat(fmt::format("{}", value.F32()), IR::Type::F32);
+        return FormatFloat(std::format("{}", value.F32()), IR::Type::F32);
     case IR::Type::U64:
-        return fmt::format("{}ul", value.U64());
+        return std::format("{}ul", value.U64());
     case IR::Type::F64:
-        return FormatFloat(fmt::format("{}", value.F64()), IR::Type::F64);
+        return FormatFloat(std::format("{}", value.F64()), IR::Type::F64);
     case IR::Type::Void:
         return "";
     default:
@@ -98,7 +98,7 @@ std::string MakeImm(const IR::Value& value) {
 
 std::string VarAlloc::Representation(u32 index, GlslVarType type) const {
     const auto prefix{TypePrefix(type)};
-    return fmt::format("{}{}", prefix, index);
+    return std::format("{}{}", prefix, index);
 }
 
 std::string VarAlloc::Representation(Id id) const {

@@ -15,7 +15,7 @@ namespace {
 
 using Node = impl::BucketTreeNode<const s64*>;
 static_assert(sizeof(Node) == sizeof(BucketTree::NodeHeader));
-static_assert(std::is_trivial_v<Node>);
+static_assert(std::is_trivially_default_constructible_v<Node> && std::is_trivially_copyable_v<Node>);
 
 constexpr inline s32 NodeHeaderSize = sizeof(BucketTree::NodeHeader);
 

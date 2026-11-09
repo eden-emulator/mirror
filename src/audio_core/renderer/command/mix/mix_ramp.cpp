@@ -39,12 +39,12 @@ template s32 ApplyMixRamp<23>(std::span<s32>, std::span<const s32>, f32, f32, u3
 void MixRampCommand::Dump(const AudioRenderer::CommandListProcessor& processor,
                           std::string& string) {
     const auto ramp{(volume - prev_volume) / static_cast<f32>(processor.sample_count)};
-    string += fmt::format("MixRampCommand");
-    string += fmt::format("\n\tinput {:02X}", input_index);
-    string += fmt::format("\n\toutput {:02X}", output_index);
-    string += fmt::format("\n\tvolume {:.8f}", volume);
-    string += fmt::format("\n\tprev_volume {:.8f}", prev_volume);
-    string += fmt::format("\n\tramp {:.8f}", ramp);
+    string += std::format("MixRampCommand");
+    string += std::format("\n\tinput {:02X}", input_index);
+    string += std::format("\n\toutput {:02X}", output_index);
+    string += std::format("\n\tvolume {:.8f}", volume);
+    string += std::format("\n\tprev_volume {:.8f}", prev_volume);
+    string += std::format("\n\tramp {:.8f}", ramp);
     string += "\n";
 }
 

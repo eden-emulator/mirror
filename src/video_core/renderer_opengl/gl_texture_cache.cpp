@@ -521,7 +521,7 @@ TextureCacheRuntime::TextureCacheRuntime(const Device& device_, ProgramManager& 
     }
     const auto set_view = [this](Shader::TextureType type, GLuint handle) {
         if (device.HasDebuggingToolAttached()) {
-            const std::string name = fmt::format("NullImage {}", type);
+            const std::string name = std::format("NullImage {}", type);
             glObjectLabel(GL_TEXTURE, handle, static_cast<GLsizei>(name.size()), name.data());
         }
         null_image_views[static_cast<size_t>(type)] = handle;

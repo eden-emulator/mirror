@@ -7,7 +7,7 @@
  */
 
 #include <string>
-#include <fmt/format.h>
+#include <format>
 
 #ifdef DYNARMIC_USE_LLVM
 #    include <llvm-c/Disassembler.h>
@@ -37,7 +37,7 @@ std::string DisassembleX64(const void* begin, const void* end) {
         size_t inst_size = LLVMDisasmInstruction(llvm_ctx, const_cast<u8*>(pos), remaining, reinterpret_cast<u64>(pos), buffer, sizeof(buffer));
         ASSERT(inst_size);
         for (const u8* i = pos; i < pos + inst_size; i++)
-            result += fmt::format("{:02x} ", *i);
+            result += std::format("{:02x} ", *i);
         for (size_t i = inst_size; i < 10; i++)
             result += "   ";
         result += buffer;
@@ -50,7 +50,7 @@ std::string DisassembleX64(const void* begin, const void* end) {
     LLVMDisasmDispose(llvm_ctx);
     return result;
 #else
-    return fmt::format(
+    return std::format(
         "(recompile with DYNARMIC_USE_LLVM=ON to disassemble the generated x86_64 code)\n"
         "start: {:016x}, end: {:016x}\n", std::bit_cast<u64>(begin), std::bit_cast<u64>(end));
 #endif
@@ -73,10 +73,10 @@ std::string DisassembleAArch32([[maybe_unused]] bool is_thumb, [[maybe_unused]] 
         if (inst_size == 0)
             inst_size = is_thumb ? 2 : 4;
 
-        result += fmt::format("{:08x}    ", pc);
+        result += std::format("{:08x}    ", pc);
         for (size_t i = 0; i < 4; i++) {
             if (i < inst_size) {
-                result += fmt::format("{:02x}", instructions[inst_size - i - 1]);
+                result += std::format("{:02x}", instructions[inst_size - i - 1]);
             } else {
                 result += "  ";
             }
@@ -95,7 +95,7 @@ std::string DisassembleAArch32([[maybe_unused]] bool is_thumb, [[maybe_unused]] 
     LLVMDisasmDispose(llvm_ctx);
     return result;
 #else
-    return fmt::format("(disassembly disabled)\n");
+    return std::format("(disassembly disabled)\n");
 #endif
 }
 
@@ -110,14 +110,14 @@ std::string DisassembleAArch64([[maybe_unused]] u32 instruction, [[maybe_unused]
 
     char buffer[80];
     size_t inst_size = LLVMDisasmInstruction(llvm_ctx, (u8*)&instruction, sizeof(instruction), pc, buffer, sizeof(buffer));
-    result = fmt::format("{:016x}  {:08x} ", pc, instruction);
+    result = std::format("{:016x}  {:08x} ", pc, instruction);
     result += inst_size > 0 ? buffer : "<invalid instruction>";
     result += '\n';
 
     LLVMDisasmDispose(llvm_ctx);
     return result;
 #else
-    return fmt::format("(disassembly disabled)\n");
+    return std::format("(disassembly disabled)\n");
 #endif
 }
 

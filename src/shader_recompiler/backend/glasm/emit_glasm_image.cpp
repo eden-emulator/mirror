@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include <utility>
 
 #include "shader_recompiler/backend/glasm/emit_glasm_instructions.h"
@@ -43,9 +47,9 @@ std::string Texture(EmitContext& ctx, IR::TextureInstInfo info,
                     [[maybe_unused]] const IR::Value& index) {
     // FIXME: indexed reads
     if (info.type == TextureType::Buffer) {
-        return fmt::format("texture[{}]", ctx.texture_buffer_bindings.at(info.descriptor_index));
+        return std::format("texture[{}]", ctx.texture_buffer_bindings.at(info.descriptor_index));
     } else {
-        return fmt::format("texture[{}]", ctx.texture_bindings.at(info.descriptor_index));
+        return std::format("texture[{}]", ctx.texture_bindings.at(info.descriptor_index));
     }
 }
 
@@ -53,9 +57,9 @@ std::string Image(EmitContext& ctx, IR::TextureInstInfo info,
                   [[maybe_unused]] const IR::Value& index) {
     // FIXME: indexed reads
     if (info.type == TextureType::Buffer) {
-        return fmt::format("image[{}]", ctx.image_buffer_bindings.at(info.descriptor_index));
+        return std::format("image[{}]", ctx.image_buffer_bindings.at(info.descriptor_index));
     } else {
-        return fmt::format("image[{}]", ctx.image_bindings.at(info.descriptor_index));
+        return std::format("image[{}]", ctx.image_bindings.at(info.descriptor_index));
     }
 }
 
@@ -115,7 +119,7 @@ std::string Offset(EmitContext& ctx, const IR::Value& offset) {
     if (offset.IsEmpty()) {
         return "";
     }
-    return fmt::format(",offset({})", Register{ctx.reg_alloc.Consume(offset)});
+    return std::format(",offset({})", Register{ctx.reg_alloc.Consume(offset)});
 }
 
 std::pair<ScopedRegister, ScopedRegister> AllocOffsetsRegs(EmitContext& ctx,
@@ -157,9 +161,9 @@ std::string GradOffset(const IR::Value& offset) {
     }
     switch (vector->NumArgs()) {
     case 1:
-        return fmt::format(",({})", static_cast<s32>(vector->Arg(0).U32()));
+        return std::format(",({})", static_cast<s32>(vector->Arg(0).U32()));
     case 2:
-        return fmt::format(",({},{})", static_cast<s32>(vector->Arg(0).U32()),
+        return std::format(",({},{})", static_cast<s32>(vector->Arg(0).U32()),
                            static_cast<s32>(vector->Arg(1).U32()));
     default:
         throw LogicError("Invalid number of gradient offsets {}", vector->NumArgs());
@@ -170,9 +174,9 @@ std::pair<std::string, ScopedRegister> Coord(EmitContext& ctx, const IR::Value& 
     if (coord.IsImmediate()) {
         ScopedRegister scoped_reg(ctx.reg_alloc);
         ctx.Add("MOV.U {}.x,{};", scoped_reg.reg, ScalarU32{ctx.reg_alloc.Consume(coord)});
-        return {fmt::to_string(scoped_reg.reg), std::move(scoped_reg)};
+        return {std::format("{}", scoped_reg.reg), std::move(scoped_reg)};
     }
-    std::string coord_vec{fmt::to_string(Register{ctx.reg_alloc.Consume(coord)})};
+    std::string coord_vec{std::format("{}", Register{ctx.reg_alloc.Consume(coord)})};
     if (coord.InstRecursive()->HasUses()) {
         // Move non-dead coords to a separate register, although this should never happen because
         // vectors are only assembled for immediate texture instructions
@@ -489,15 +493,15 @@ void EmitImageGatherDref(EmitContext& ctx, IR::Inst& inst, const IR::Value& inde
     switch (info.type) {
     case TextureType::Color2D:
         ctx.Add("MOV.F {}.z,{};", coord_vec, dref_value);
-        args = fmt::to_string(coord_vec);
+        args = std::format("{}", coord_vec);
         break;
     case TextureType::ColorArray2D:
     case TextureType::ColorCube:
         ctx.Add("MOV.F {}.w,{};", coord_vec, dref_value);
-        args = fmt::to_string(coord_vec);
+        args = std::format("{}", coord_vec);
         break;
     case TextureType::ColorArrayCube:
-        args = fmt::format("{},{}", coord_vec, dref_value);
+        args = std::format("{},{}", coord_vec, dref_value);
         break;
     default:
         throw NotImplementedException("Invalid type {}", info.type.Value());

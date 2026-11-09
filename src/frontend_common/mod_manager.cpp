@@ -3,7 +3,7 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <fmt/format.h>
+#include <format>
 #include "common/fs/fs.h"
 #include "common/fs/fs_types.h"
 #include "common/logging.h"
@@ -40,7 +40,7 @@ std::vector<std::filesystem::path> GetModFolder(const std::string& root) {
 }
 
 ModInstallResult InstallMod(const std::filesystem::path& path, const u64 program_id, const bool copy) {
-    const auto program_id_string = fmt::format("{:016X}", program_id);
+    const auto program_id_string = std::format("{:016X}", program_id);
     const auto mod_name = path.filename();
     const auto mod_dir =
         DataManager::GetDataDir(DataManager::DataDir::Mods) / program_id_string / mod_name;

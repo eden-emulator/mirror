@@ -17,7 +17,7 @@
 #include <string_view>
 #include <type_traits>
 #include <deque>
-#include <fmt/core.h>
+#include <format>
 
 #include "common/settings_enums.h"
 #include "common/assert.h"
@@ -120,15 +120,15 @@ void LogSettings() {
             // Hide the token secret, for security reasons.
             if (setting->Id() != values.eden_token.Id()) {
                 auto const is_default = setting->ToString() == setting->DefaultToString();
-                auto const name = fmt::format(
+                auto const name = std::format(
                     "{:c}{:c} {}.{}",
                     is_default ? '-' : 'M',
                     setting->UsingGlobal() ? '-' : 'C', TranslateCategory(category),
                     setting->GetLabel());
                 if (is_default)
-                    settings_list.push_back(fmt::format("{}: {}", name, setting->Canonicalize()));
+                    settings_list.push_back(std::format("{}: {}", name, setting->Canonicalize()));
                 else
-                    settings_list.push_front(fmt::format("{}: {}", name, setting->Canonicalize()));
+                    settings_list.push_front(std::format("{}: {}", name, setting->Canonicalize()));
             }
         }
     }

@@ -12,8 +12,7 @@
 #include <optional>
 #include <utility>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <format>
 #include "common/assert.h"
 #include "dynarmic/mcl/bit.hpp"
 #include "common/common_types.h"
@@ -1131,7 +1130,7 @@ void A32EmitX64::EmitA32CoprocStoreWords(A32EmitContext& ctx, IR::Inst* inst) {
 
 std::string A32EmitX64::LocationDescriptorToFriendlyName(const IR::LocationDescriptor& ir_descriptor) const {
     const A32::LocationDescriptor descriptor{ir_descriptor};
-    return fmt::format("a32_{}{:08X}_{}_fpcr{:08X}",
+    return std::format("a32_{}{:08X}_{}_fpcr{:08X}",
                        descriptor.TFlag() ? "t" : "a",
                        descriptor.PC(),
                        descriptor.EFlag() ? "be" : "le",

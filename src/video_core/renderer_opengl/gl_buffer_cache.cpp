@@ -56,7 +56,7 @@ Buffer::Buffer(BufferCacheRuntime& runtime, DAddr cpu_addr_, u64 size_bytes_, bo
     : VideoCommon::BufferBase(cpu_addr_, size_bytes_) {
     buffer.Create();
     if (runtime.device.HasDebuggingToolAttached()) {
-        const std::string name = fmt::format("Buffer {:#x}", CpuAddr());
+        const std::string name = std::format("Buffer {:#x}", CpuAddr());
         glObjectLabel(GL_BUFFER, buffer.handle, static_cast<GLsizei>(name.size()), name.data());
     }
     glNamedBufferData(buffer.handle, SizeBytes(), nullptr, GL_DYNAMIC_DRAW);

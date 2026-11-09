@@ -194,7 +194,7 @@ void PhotoViewer::Execute() {
         frontend.ShowAllPhotos(callback);
         break;
     default:
-        UNIMPLEMENTED_MSG("Unimplemented PhotoViewer applet mode={:02X}!", mode);
+        UNIMPLEMENTED_MSG("Unimplemented PhotoViewer applet mode={:02X}!",mode);
         break;
     }
 }

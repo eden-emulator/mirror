@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include <string_view>
 
 #include "shader_recompiler/backend/glsl/emit_glsl_instructions.h"
@@ -14,15 +18,15 @@ namespace {
 std::string Texture(EmitContext& ctx, const IR::TextureInstInfo& info, const IR::Value& index) {
     const auto def{info.type == TextureType::Buffer ? ctx.texture_buffers.at(info.descriptor_index)
                                                     : ctx.textures.at(info.descriptor_index)};
-    const auto index_offset{def.count > 1 ? fmt::format("[{}]", ctx.var_alloc.Consume(index)) : ""};
-    return fmt::format("tex{}{}", def.binding, index_offset);
+    const auto index_offset{def.count > 1 ? std::format("[{}]", ctx.var_alloc.Consume(index)) : ""};
+    return std::format("tex{}{}", def.binding, index_offset);
 }
 
 std::string Image(EmitContext& ctx, const IR::TextureInstInfo& info, const IR::Value& index) {
     const auto def{info.type == TextureType::Buffer ? ctx.image_buffers.at(info.descriptor_index)
                                                     : ctx.images.at(info.descriptor_index)};
-    const auto index_offset{def.count > 1 ? fmt::format("[{}]", ctx.var_alloc.Consume(index)) : ""};
-    return fmt::format("img{}{}", def.binding, index_offset);
+    const auto index_offset{def.count > 1 ? std::format("[{}]", ctx.var_alloc.Consume(index)) : ""};
+    return std::format("img{}{}", def.binding, index_offset);
 }
 
 bool IsTextureMsaa(EmitContext& ctx, const IR::TextureInstInfo& info) {
@@ -36,16 +40,16 @@ std::string CastToIntVec(std::string_view value, const IR::TextureInstInfo& info
     switch (info.type) {
     case TextureType::Color1D:
     case TextureType::Buffer:
-        return fmt::format("int({})", value);
+        return std::format("int({})", value);
     case TextureType::ColorArray1D:
     case TextureType::Color2D:
     case TextureType::ColorArray2D:
-        return fmt::format("ivec2({})", value);
+        return std::format("ivec2({})", value);
     case TextureType::Color3D:
     case TextureType::ColorCube:
-        return fmt::format("ivec3({})", value);
+        return std::format("ivec3({})", value);
     case TextureType::ColorArrayCube:
-        return fmt::format("ivec4({})", value);
+        return std::format("ivec4({})", value);
     default:
         throw NotImplementedException("Integer cast for TextureType {}", info.type.Value());
     }
@@ -55,16 +59,16 @@ std::string CoordsCastToInt(std::string_view value, const IR::TextureInstInfo& i
     switch (info.type) {
     case TextureType::Color1D:
     case TextureType::Buffer:
-        return fmt::format("int({})", value);
+        return std::format("int({})", value);
     case TextureType::ColorArray1D:
     case TextureType::Color2D:
-        return fmt::format("ivec2({})", value);
+        return std::format("ivec2({})", value);
     case TextureType::ColorArray2D:
     case TextureType::Color3D:
     case TextureType::ColorCube:
-        return fmt::format("ivec3({})", value);
+        return std::format("ivec3({})", value);
     case TextureType::ColorArrayCube:
-        return fmt::format("ivec4({})", value);
+        return std::format("ivec4({})", value);
     default:
         throw NotImplementedException("TexelFetchCast type {}", info.type.Value());
     }
@@ -83,18 +87,18 @@ bool NeedsShadowLodExt(TextureType type) {
 
 std::string GetOffsetVec(EmitContext& ctx, const IR::Value& offset) {
     if (offset.IsImmediate()) {
-        return fmt::format("int({})", offset.U32());
+        return std::format("int({})", offset.U32());
     }
     IR::Inst* const inst{offset.InstRecursive()};
     if (inst->AreAllArgsImmediates()) {
         switch (inst->GetOpcode()) {
         case IR::Opcode::CompositeConstructU32x2:
-            return fmt::format("ivec2({},{})", inst->Arg(0).U32(), inst->Arg(1).U32());
+            return std::format("ivec2({},{})", inst->Arg(0).U32(), inst->Arg(1).U32());
         case IR::Opcode::CompositeConstructU32x3:
-            return fmt::format("ivec3({},{},{})", inst->Arg(0).U32(), inst->Arg(1).U32(),
+            return std::format("ivec3({},{},{})", inst->Arg(0).U32(), inst->Arg(1).U32(),
                                inst->Arg(2).U32());
         case IR::Opcode::CompositeConstructU32x4:
-            return fmt::format("ivec4({},{},{},{})", inst->Arg(0).U32(), inst->Arg(1).U32(),
+            return std::format("ivec4({},{},{},{})", inst->Arg(0).U32(), inst->Arg(1).U32(),
                                inst->Arg(2).U32(), inst->Arg(3).U32());
         default:
             break;
@@ -107,13 +111,13 @@ std::string GetOffsetVec(EmitContext& ctx, const IR::Value& offset) {
     const auto offset_str{has_var_aoffi ? ctx.var_alloc.Consume(offset) : "0"};
     switch (offset.Type()) {
     case IR::Type::U32:
-        return fmt::format("int({})", offset_str);
+        return std::format("int({})", offset_str);
     case IR::Type::U32x2:
-        return fmt::format("ivec2({})", offset_str);
+        return std::format("ivec2({})", offset_str);
     case IR::Type::U32x3:
-        return fmt::format("ivec3({})", offset_str);
+        return std::format("ivec3({})", offset_str);
     case IR::Type::U32x4:
-        return fmt::format("ivec4({})", offset_str);
+        return std::format("ivec4({})", offset_str);
     default:
         throw NotImplementedException("Offset type {}", offset.Type());
     }
@@ -131,7 +135,7 @@ std::string PtpOffsets(const IR::Value& offset, const IR::Value& offset2) {
     }
     auto read{[&](unsigned int a, unsigned int b) { return values[a]->Arg(b).U32(); }};
 
-    return fmt::format("ivec2[](ivec2({},{}),ivec2({},{}),ivec2({},{}),ivec2({},{}))", read(0, 0),
+    return std::format("ivec2[](ivec2({},{}),ivec2({},{}),ivec2({},{}),ivec2({},{}))", read(0, 0),
                        read(0, 1), read(0, 2), read(0, 3), read(1, 0), read(1, 1), read(1, 2),
                        read(1, 3));
 }
@@ -149,10 +153,10 @@ std::string ImageGatherSubpixelOffset(const IR::TextureInstInfo& info, std::stri
     switch (info.type) {
     case TextureType::Color2D:
     case TextureType::Color2DRect:
-        return fmt::format("{}+vec2(0.001953125)/vec2(textureSize({}, 0))", coords, texture);
+        return std::format("{}+vec2(0.001953125)/vec2(textureSize({}, 0))", coords, texture);
     case TextureType::ColorArray2D:
     case TextureType::ColorCube:
-        return fmt::format("vec3({0}.xy+vec2(0.001953125)/vec2(textureSize({1}, 0)),{0}.z)", coords,
+        return std::format("vec3({0}.xy+vec2(0.001953125)/vec2(textureSize({1}, 0)),{0}.z)", coords,
                            texture);
     default:
         return std::string{coords};
@@ -168,7 +172,7 @@ void EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst& inst, const IR::Valu
         throw NotImplementedException("EmitImageSampleImplicitLod Lod clamp samples");
     }
     const auto texture{Texture(ctx, info, index)};
-    const auto bias{info.has_bias ? fmt::format(",{}", bias_lc) : ""};
+    const auto bias{info.has_bias ? std::format(",{}", bias_lc) : ""};
     const auto texel{ctx.var_alloc.Define(inst, GlslVarType::F32x4)};
     const auto sparse_inst{PrepareSparse(inst)};
     const bool supports_sparse{ctx.profile.support_gl_sparse_textures};
@@ -254,7 +258,7 @@ void EmitImageSampleDrefImplicitLod(EmitContext& ctx, IR::Inst& inst, const IR::
         throw NotImplementedException("EmitImageSampleDrefImplicitLod Lod clamp samples");
     }
     const auto texture{Texture(ctx, info, index)};
-    const auto bias{info.has_bias ? fmt::format(",{}", bias_lc) : ""};
+    const auto bias{info.has_bias ? std::format(",{}", bias_lc) : ""};
     const bool needs_shadow_ext{NeedsShadowLodExt(info.type)};
     const auto cast{needs_shadow_ext ? "vec4" : "vec3"};
     const bool use_grad{!ctx.profile.support_gl_texture_shadow_lod &&
@@ -501,7 +505,7 @@ void EmitImageQueryDimensions(EmitContext& ctx, IR::Inst& inst, const IR::Value&
     const auto texture{Texture(ctx, info, index)};
     const bool is_msaa{IsTextureMsaa(ctx, info)};
     const bool skip_mips{skip_mips_val.U1()};
-    const auto mips{skip_mips ? "0u" : fmt::format("uint(textureQueryLevels({}))", texture)};
+    const auto mips{skip_mips ? "0u" : std::format("uint(textureQueryLevels({}))", texture)};
     if (is_msaa && !skip_mips) {
         throw NotImplementedException("EmitImageQueryDimensions MSAA QueryLevels");
     }
@@ -509,7 +513,7 @@ void EmitImageQueryDimensions(EmitContext& ctx, IR::Inst& inst, const IR::Value&
         throw NotImplementedException("EmitImageQueryDimensions TextureType::Buffer QueryLevels");
     }
     const bool uses_lod{!is_msaa && info.type != TextureType::Buffer};
-    const auto lod_str{uses_lod ? fmt::format(",int({})", lod) : ""};
+    const auto lod_str{uses_lod ? std::format(",int({})", lod) : ""};
     switch (info.type) {
     case TextureType::Color1D:
         return ctx.AddU32x4("{}=uvec4(uint(textureSize({}{})),0u,0u,{});", inst, texture, lod_str,

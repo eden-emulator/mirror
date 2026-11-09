@@ -11,7 +11,7 @@
 
 #include <boost/container/static_vector.hpp>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/common_types.h"
 #include "common/div_ceil.h"
@@ -184,9 +184,9 @@ void DefineGenericOutput(EmitContext& ctx, size_t index, std::optional<u32> invo
         }
         if (num_components < 4 || element > 0) {
             const std::string_view subswizzle{swizzle.substr(element, num_components)};
-            ctx.Name(id, fmt::format("out_attr{}_{}", index, subswizzle));
+            ctx.Name(id, std::format("out_attr{}_{}", index, subswizzle));
         } else {
-            ctx.Name(id, fmt::format("out_attr{}", index));
+            ctx.Name(id, std::format("out_attr{}", index));
         }
         const GenericElementInfo info{
             .id = id,
@@ -263,9 +263,10 @@ std::string_view StageName(Stage stage) {
 
 template <typename... Args>
 void Name(EmitContext& ctx, Id object, std::string_view format_str, Args&&... args) {
-    ctx.Name(object, fmt::format(fmt::runtime(format_str), StageName(ctx.stage),
-                                 std::forward<Args>(args)...)
-                         .c_str());
+    const auto stage_name = StageName(ctx.stage);
+    const auto name = std::vformat(format_str, std::make_format_args(stage_name, args...));
+
+    ctx.Name(object, name);
 }
 
 void DefineConstBuffers(EmitContext& ctx, const Info& info, Id UniformDefinitions::*member_type,
@@ -287,7 +288,7 @@ void DefineConstBuffers(EmitContext& ctx, const Info& info, Id UniformDefinition
         const Id id{ctx.AddGlobalVariable(struct_pointer_type, spv::StorageClass::Uniform)};
         ctx.Decorate(id, spv::Decoration::Binding, binding);
         ctx.Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        ctx.Name(id, fmt::format("c{}", desc.index));
+        ctx.Name(id, std::format("c{}", desc.index));
         for (size_t i = 0; i < desc.count; ++i) {
             ctx.cbufs[desc.index + i].*member_type = id;
         }
@@ -317,7 +318,7 @@ void DefineSsbos(EmitContext& ctx, StorageTypeDefinition& type_def,
         const Id id{ctx.AddGlobalVariable(struct_pointer, spv::StorageClass::StorageBuffer)};
         ctx.Decorate(id, spv::Decoration::Binding, binding);
         ctx.Decorate(id, spv::Decoration::DescriptorSet, 0U);
-        ctx.Name(id, fmt::format("ssbo{}", index));
+        ctx.Name(id, std::format("ssbo{}", index));
         if (ctx.profile.supported_spirv >= 0x00010400) {
             ctx.interfaces.push_back(id);
         }
@@ -430,10 +431,10 @@ Id CasLoop(EmitContext& ctx, Operation operation, Id array_pointer, Id element_p
 template <typename Desc>
 std::string NameOf(Stage stage, const Desc& desc, std::string_view prefix) {
     if (desc.count > 1) {
-        return fmt::format("{}_{}{}_{:02x}x{}", StageName(stage), prefix, desc.cbuf_index,
+        return std::format("{}_{}{}_{:02x}x{}", StageName(stage), prefix, desc.cbuf_index,
                            desc.cbuf_offset, desc.count);
     } else {
-        return fmt::format("{}_{}{}_{:02x}", StageName(stage), prefix, desc.cbuf_index,
+        return std::format("{}_{}{}_{:02x}", StageName(stage), prefix, desc.cbuf_index,
                            desc.cbuf_offset);
     }
 }
@@ -455,8 +456,8 @@ void VectorTypes::Define(Sirit::Module& sirit_ctx, Id base_type, std::string_vie
     for (int i = 1; i < 4; ++i) {
         const std::string_view def_name_view(
             def_name.data(),
-            fmt::format_to_n(def_name.data(), def_name.size(), "{}x{}", name, i + 1).size);
-        defs[static_cast<size_t>(i)] =
+            std::size_t(std::format_to_n(def_name.data(), def_name.size(), "{}x{}", name, i + 1).size));
+        defs[std::size_t(i)] =
             sirit_ctx.Name(sirit_ctx.TypeVector(base_type, i + 1), def_name_view);
     }
 }
@@ -1575,7 +1576,7 @@ void EmitContext::DefineInputs(const IR::Program& program) {
         const Id type{GetAttributeType(*this, input_type)};
         const Id id{DefineInput(*this, type, true)};
         Decorate(id, spv::Decoration::Location, static_cast<u32>(index));
-        Name(id, fmt::format("in_attr{}", index));
+        Name(id, std::format("in_attr{}", index));
         input_generics[index] = GetAttributeInfo(*this, input_type, id);
 
         if (info.passthrough.Generic(index) && profile.support_geometry_shader_passthrough) {
@@ -1705,7 +1706,7 @@ void EmitContext::DefineOutputs(const IR::Program& program) {
                 Name(frag_color[index], index == 0 ? "frag_color0" : "frag_color0_secondary");
             } else {
                 Decorate(frag_color[index], spv::Decoration::Location, index);
-                Name(frag_color[index], fmt::format("frag_color{}", index));
+                Name(frag_color[index], std::format("frag_color{}", index));
             }
         }
         if (info.stores_frag_depth) {

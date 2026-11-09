@@ -11,7 +11,7 @@
 
 #include <boost/container/small_vector.hpp>
 #include <boost/container/static_vector.hpp>
-#include <fmt/format.h>
+#include <format>
 
 #include "video_core/renderer_vulkan/pipeline_helper.h"
 
@@ -619,7 +619,7 @@ bool GraphicsPipeline::ConfigureDraw(const RescalingPushConstant& rescaling,
     // Log graphics pipeline binding
     if (bind_pipeline && GPU::Logging::IsActive() &&
         Settings::values.gpu_log_vulkan_calls.GetValue()) {
-        const std::string pipeline_info = fmt::format("hash={:#016x}", key.Hash());
+        const std::string pipeline_info = std::format("hash={:#016x}", key.Hash());
         GPU::Logging::GPULogger::GetInstance().LogPipelineBind(false, pipeline_info);
     }
 
@@ -1103,7 +1103,7 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
 
     // Log graphics pipeline creation
     if (GPU::Logging::IsActive()) {
-        const std::string pipeline_info = fmt::format(
+        const std::string pipeline_info = std::format(
             "GraphicsPipeline created: stages={}, attachments={}",
             shader_stages.size(),
             color_blend_ci.attachmentCount

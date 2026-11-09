@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <format>
 #include "shader_recompiler/backend/glasm/emit_glasm_instructions.h"
 #include "shader_recompiler/backend/glasm/glasm_emit_context.h"
 #include "shader_recompiler/frontend/ir/program.h"
@@ -77,7 +81,7 @@ void Write(EmitContext& ctx, const IR::Value& binding, ScalarU32 offset, ValueTy
     if (ctx.runtime_info.glasm_use_storage_buffers) {
         ctx.Add("STB.{} {},ssbo{}[{}];", size, value, binding.U32(), offset);
     } else {
-        StorageOp(ctx, binding, offset, fmt::format("STORE.{} {},DC.x;", size, value));
+        StorageOp(ctx, binding, offset, std::format("STORE.{} {},DC.x;", size, value));
     }
 }
 
@@ -87,27 +91,27 @@ void Load(EmitContext& ctx, IR::Inst& inst, const IR::Value& binding, ScalarU32 
     if (ctx.runtime_info.glasm_use_storage_buffers) {
         ctx.Add("LDB.{} {},ssbo{}[{}];", size, ret, binding.U32(), offset);
     } else {
-        StorageOp(ctx, binding, offset, fmt::format("LOAD.{} {},DC.x;", size, ret),
-                  fmt::format("MOV.U {},{{0,0,0,0}};", ret));
+        StorageOp(ctx, binding, offset, std::format("LOAD.{} {},DC.x;", size, ret),
+                  std::format("MOV.U {},{{0,0,0,0}};", ret));
     }
 }
 
 template <typename ValueType>
 void GlobalWrite(EmitContext& ctx, Register address, ValueType value, std::string_view size) {
     if (ctx.runtime_info.glasm_use_storage_buffers) {
-        GlobalStorageOp(ctx, address, false, fmt::format("STB.{} {}", size, value));
+        GlobalStorageOp(ctx, address, false, std::format("STB.{} {}", size, value));
     } else {
-        GlobalStorageOp(ctx, address, true, fmt::format("STORE.{} {},DC.x;", size, value));
+        GlobalStorageOp(ctx, address, true, std::format("STORE.{} {},DC.x;", size, value));
     }
 }
 
 void GlobalLoad(EmitContext& ctx, IR::Inst& inst, Register address, std::string_view size) {
     const Register ret{ctx.reg_alloc.Define(inst)};
     if (ctx.runtime_info.glasm_use_storage_buffers) {
-        GlobalStorageOp(ctx, address, false, fmt::format("LDB.{} {}", size, ret));
+        GlobalStorageOp(ctx, address, false, std::format("LDB.{} {}", size, ret));
     } else {
-        GlobalStorageOp(ctx, address, true, fmt::format("LOAD.{} {},DC.x;", size, ret),
-                        fmt::format("MOV.S {},0;", ret));
+        GlobalStorageOp(ctx, address, true, std::format("LOAD.{} {},DC.x;", size, ret),
+                        std::format("MOV.S {},0;", ret));
     }
 }
 
@@ -120,7 +124,7 @@ void Atom(EmitContext& ctx, IR::Inst& inst, const IR::Value& binding, ScalarU32 
                 offset);
     } else {
         StorageOp(ctx, binding, offset,
-                  fmt::format("ATOM.{}.{} {},{},DC.x;", operation, size, ret, value));
+                  std::format("ATOM.{}.{} {},{},DC.x;", operation, size, ret, value));
     }
 }
 } // Anonymous namespace

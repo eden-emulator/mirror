@@ -26,7 +26,7 @@ struct Offset {
 private:
     u32 offset;
 };
-static_assert(std::is_trivial_v<Offset>, "Offset must be trivial");
+static_assert(std::is_trivially_default_constructible_v<Offset> && std::is_trivially_copyable_v<Offset>, "Offset must be trivial");
 static_assert(sizeof(Offset) == 0x4, "Offset has the wrong size!");
 
 struct H264ParameterSet {

@@ -109,7 +109,7 @@ struct UUID {
     friend constexpr bool operator==(const UUID& lhs, const UUID& rhs) = default;
 };
 static_assert(sizeof(UUID) == 0x10, "UUID has incorrect size.");
-static_assert(std::is_trivial_v<UUID>);
+static_assert(std::is_trivially_default_constructible_v<UUID> && std::is_trivially_copyable_v<UUID>);
 
 /// An invalid UUID. This UUID has all its bytes set to 0.
 constexpr UUID InvalidUUID = {};

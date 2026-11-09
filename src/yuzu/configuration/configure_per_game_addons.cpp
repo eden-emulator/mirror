@@ -8,7 +8,7 @@
 #include <memory>
 #include <utility>
 
-#include <fmt/format.h>
+#include <format>
 
 #include <QDesktopServices>
 #include <QHeaderView>
@@ -113,7 +113,7 @@ void ConfigurePerGameAddons::ApplyConfiguration() {
             if (userData.isValid() && userData.canConvert<quint32>() &&
                 item.front()->text() == QStringLiteral("Update")) {
                 quint32 numeric_version = userData.toUInt();
-                disabled_addons.push_back(fmt::format("Update@{}", numeric_version));
+                disabled_addons.push_back(std::format("Update@{}", numeric_version));
             } else {
                 disabled_addons.push_back(item.front()->text().toStdString());
             }
@@ -125,7 +125,7 @@ void ConfigurePerGameAddons::ApplyConfiguration() {
     std::sort(current.begin(), current.end());
     if (disabled_addons != current) {
         Common::FS::RemoveFile(Common::FS::GetEdenPath(Common::FS::EdenPath::CacheDir) /
-                               "game_list" / fmt::format("{:016X}.pv.txt", title_id));
+                               "game_list" / std::format("{:016X}.pv.txt", title_id));
     }
 
     Settings::values.disabled_addons[title_id] = disabled_addons;
@@ -335,7 +335,7 @@ void ConfigurePerGameAddons::LoadConfiguration() {
 
         bool patch_disabled = false;
         if (is_external_update) {
-            std::string disabled_key = fmt::format("Update@{}", patch.numeric_version);
+            std::string disabled_key = std::format("Update@{}", patch.numeric_version);
             patch_disabled =
                 std::find(disabled.begin(), disabled.end(), disabled_key) != disabled.end();
         } else {

@@ -36,7 +36,7 @@ public:
             return this->phys_size;
         }
     };
-    static_assert(std::is_trivial_v<Entry>);
+    static_assert(std::is_trivially_default_constructible_v<Entry> && std::is_trivially_copyable_v<Entry>);
     static_assert(sizeof(Entry) == 0x18);
 
 public:
@@ -679,7 +679,7 @@ private:
                 return this->virtual_offset + this->virtual_size;
             }
         };
-        static_assert(std::is_trivial_v<AccessRange>);
+        static_assert(std::is_trivially_default_constructible_v<AccessRange> && std::is_trivially_copyable_v<AccessRange>);
 
     public:
         CacheManager() = default;

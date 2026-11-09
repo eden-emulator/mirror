@@ -559,7 +559,7 @@ bool IOFile::Seek(s64 offset, SeekOrigin origin) const {
         if (!seek_result) {
             const auto ec = std::error_code{errno, std::generic_category()};
             LOG_ERROR(Common_Filesystem, "Failed to seek the file at path={}, offset={}, origin={}, ec_message={}",
-                PathToUTF8String(file_path), offset, origin, ec.message());
+                PathToUTF8String(file_path), offset, s64(origin), ec.message());
         }
         return seek_result;
     }

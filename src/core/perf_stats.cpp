@@ -11,8 +11,7 @@
 #include <numeric>
 #include <sstream>
 #include <thread>
-#include <fmt/chrono.h>
-#include <fmt/ranges.h>
+#include <format>
 #include "common/fs/file.h"
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
@@ -44,7 +43,7 @@ PerfStats::~PerfStats() {
 
     const auto path = Common::FS::GetEdenPath(Common::FS::EdenPath::LogDir);
     // %F Date format expanded is "%Y-%m-%d"
-    const auto filename = fmt::format("{}_{:016X}.csv",
+    const auto filename = std::format("{}_{:016X}.csv",
         [&] {
             std::ostringstream oss;
             oss << std::put_time(std::localtime(&t), "%F-%H-%M");

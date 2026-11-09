@@ -26,20 +26,20 @@ void ArmInterface::LogBacktrace(Kernel::KProcess* process) const {
         ctx.r[28], ctx.fp, ctx.lr, ctx.sp,
     };
 
-    std::string msg = fmt::format("Backtrace @ PC={:016X}\n", ctx.pc);
+    std::string msg = std::format("Backtrace @ PC={:016X}\n", ctx.pc);
     for (size_t i = 0; i < 32; i += 4)
-        msg += fmt::format("R{:02}={:016X} R{:02}={:016X} R{:02}={:016X} R{:02}={:016X}\n",
+        msg += std::format("R{:02}={:016X} R{:02}={:016X} R{:02}={:016X} R{:02}={:016X}\n",
             i + 0, xreg[i + 0], i + 1, xreg[i + 1],
             i + 2, xreg[i + 2], i + 3, xreg[i + 3]);
     for (size_t i = 0; i < 32; i += 2)
-        msg += fmt::format("V{:02}={:016X}_{:016X} V{:02}={:016X}_{:016X}\n",
+        msg += std::format("V{:02}={:016X}_{:016X} V{:02}={:016X}_{:016X}\n",
             i + 0, ctx.v[i + 0][0], ctx.v[i + 0][1],
             i + 1, ctx.v[i + 1][0], ctx.v[i + 1][1]);
-    msg += fmt::format("PSTATE={:08X} FPCR={:08X} FPSR={:08X} TPIDR={:016X}\n", ctx.pstate, ctx.fpcr, ctx.fpsr, ctx.tpidr);
-    msg += fmt::format("{:20}{:20}{:20}{:20}{}\n", "Module", "Address", "Original Address", "Offset", "Symbol");
+    msg += std::format("PSTATE={:08X} FPCR={:08X} FPSR={:08X} TPIDR={:016X}\n", ctx.pstate, ctx.fpcr, ctx.fpsr, ctx.tpidr);
+    msg += std::format("{:20}{:20}{:20}{:20}{}\n", "Module", "Address", "Original Address", "Offset", "Symbol");
     auto const backtrace = GetBacktraceFromContext(process, ctx);
     for (auto const& entry : backtrace)
-        msg += fmt::format("{:20}{:016X}    {:016X}    {:016X}    {}\n", entry.module, entry.address, entry.original_address, entry.offset, entry.name);
+        msg += std::format("{:20}{:016X}    {:016X}    {:016X}    {}\n", entry.module, entry.address, entry.original_address, entry.offset, entry.name);
     LOG_ERROR(Core_ARM, "{}", msg);
 }
 

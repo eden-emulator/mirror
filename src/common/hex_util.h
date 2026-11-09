@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2013 Dolphin Emulator Project
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -6,9 +9,10 @@
 
 #include <array>
 #include <cstddef>
+#include <iterator>
 #include <string>
 #include <vector>
-#include <fmt/ranges.h>
+#include <format>
 #include "common/assert.h"
 #include "common/common_types.h"
 
@@ -55,9 +59,11 @@ template <typename ContiguousContainer>
     std::string out;
     out.reserve(std::size(data) * pad_width);
 
-    const auto format_str = fmt::runtime(upper ? "{:02X}" : "{:02x}");
     for (const u8 c : data) {
-        out += fmt::format(format_str, c);
+        if (upper)
+            std::format_to(std::back_inserter(out), "{:02X}", c);
+        else
+            std::format_to(std::back_inserter(out), "{:02x}", c);
     }
 
     return out;

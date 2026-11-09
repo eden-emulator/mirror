@@ -34,10 +34,10 @@ static void ApplyUniformGain(std::span<s32> output, std::span<const s32> input, 
 
 void VolumeCommand::Dump([[maybe_unused]] const AudioRenderer::CommandListProcessor& processor,
                          std::string& string) {
-    string += fmt::format("VolumeCommand");
-    string += fmt::format("\n\tinput {:02X}", input_index);
-    string += fmt::format("\n\toutput {:02X}", output_index);
-    string += fmt::format("\n\tvolume {:.8f}", volume);
+    string += std::format("VolumeCommand");
+    string += std::format("\n\tinput {:02X}", input_index);
+    string += std::format("\n\toutput {:02X}", output_index);
+    string += std::format("\n\tvolume {:.8f}", volume);
     string += "\n";
 }
 

@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/logging.h"
 #include "common/scm_rev.h"
@@ -22,10 +22,10 @@
 EmuWindow_SDL3_VK::EmuWindow_SDL3_VK(InputCommon::InputSubsystem* input_subsystem_,
                                      Core::System& system_, bool fullscreen)
     : EmuWindow_SDL3{input_subsystem_, system_} {
-    const std::string window_title = fmt::format("Eden {} | {}-{} (Vulkan)",
-                                                 Common::g_build_name,
-                                                 Common::g_scm_branch,
-                                                 Common::g_scm_desc);
+    const std::string window_title = std::format("Eden {} | {}-{} (Vulkan)",
+                                                 std::string_view{Common::g_build_name},
+                                                 std::string_view{Common::g_scm_branch},
+                                                 std::string_view{Common::g_scm_desc});
     render_window =
         SDL_CreateWindow(window_title.c_str(), Layout::ScreenUndocked::Width,
                          Layout::ScreenUndocked::Height,
@@ -88,8 +88,8 @@ EmuWindow_SDL3_VK::EmuWindow_SDL3_VK(InputCommon::InputSubsystem* input_subsyste
     OnResize();
     OnMinimalClientAreaChangeRequest(GetActiveConfig().min_client_area_size);
     SDL_PumpEvents();
-    LOG_INFO(Frontend, "Eden Version: {} | {}-{} (Vulkan)", Common::g_build_name,
-             Common::g_scm_branch, Common::g_scm_desc);
+    LOG_INFO(Frontend, "Eden Version: {} | {}-{} (Vulkan)", std::string_view{Common::g_build_name},
+             std::string_view{Common::g_scm_branch}, std::string_view{Common::g_scm_desc});
 }
 
 EmuWindow_SDL3_VK::~EmuWindow_SDL3_VK() = default;

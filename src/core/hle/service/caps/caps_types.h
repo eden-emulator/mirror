@@ -156,7 +156,7 @@ struct ApplicationData {
     u32 data_size;
 };
 static_assert(sizeof(ApplicationData) == 0x404, "ApplicationData is an invalid size");
-static_assert(std::is_trivial_v<ApplicationData>,
+static_assert(std::is_trivially_default_constructible_v<ApplicationData> && std::is_trivially_copyable_v<ApplicationData>,
               "ApplicationData type must be trivially copyable.");
 
 struct ScreenShotAttribute {
@@ -167,7 +167,7 @@ struct ScreenShotAttribute {
     INSERT_PADDING_BYTES_NOINIT(0x30);
 };
 static_assert(sizeof(ScreenShotAttribute) == 0x40, "ScreenShotAttribute is an invalid size");
-static_assert(std::is_trivial_v<ScreenShotAttribute>,
+static_assert(std::is_trivially_default_constructible_v<ScreenShotAttribute> && std::is_trivially_copyable_v<ScreenShotAttribute>,
               "ScreenShotAttribute type must be trivially copyable.");
 
 struct ScreenShotDecodeOption {
@@ -184,7 +184,7 @@ struct LoadAlbumScreenShotImageOutput {
 };
 static_assert(sizeof(LoadAlbumScreenShotImageOutput) == 0x450,
               "LoadAlbumScreenShotImageOutput is an invalid size");
-static_assert(std::is_trivial_v<LoadAlbumScreenShotImageOutput>,
+static_assert(std::is_trivially_default_constructible_v<LoadAlbumScreenShotImageOutput> && std::is_trivially_copyable_v<LoadAlbumScreenShotImageOutput>,
               "LoadAlbumScreenShotImageOutput type must be trivially copyable.");
 
 struct LoadAlbumScreenShotImageOutputForApplication {

@@ -102,7 +102,7 @@ static void DumpImpl(u64 /*pipeline_hash*/, u64 shader_hash, std::span<const u64
     }
     const auto prefix = StageToPrefix(stage);
     const auto name{dump_dir /
-                    fmt::format("{:016x}_{:016x}_{}.ash",
+                    std::format("{:016x}_{:016x}_{}.ash",
                                 Settings::GetCurrentProgramID(), shader_hash, prefix)};
     std::fstream shader_file(name, std::ios::out | std::ios::binary);
     ASSERT(initial_offset % sizeof(u64) == 0);

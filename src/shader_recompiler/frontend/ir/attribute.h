@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/common_types.h"
 #include "shader_recompiler/exception.h"
@@ -266,7 +266,7 @@ constexpr size_t NUM_FIXEDFNCTEXTURE = 10;
     SRIR_ATTRIBUTE_LIST
 #undef SRIR_ATTRIBUTE_ELEM
     default:
-        return fmt::format("<reserved attribute {}>", int(attribute));
+        return std::format("<reserved attribute {}>", int(attribute));
     }
 }
 
@@ -277,12 +277,12 @@ constexpr size_t NUM_FIXEDFNCTEXTURE = 10;
 } // namespace Shader::IR
 
 template <>
-struct fmt::formatter<Shader::IR::Attribute> {
+struct std::formatter<Shader::IR::Attribute> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     template <typename FormatContext>
     auto format(const Shader::IR::Attribute& attribute, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{}", Shader::IR::NameOf(attribute));
+        return std::format_to(ctx.out(), "{}", Shader::IR::NameOf(attribute));
     }
 };

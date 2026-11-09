@@ -30,25 +30,25 @@ std::string Name(const ImageBase& image) {
         const auto [samples_x, samples_y] = VideoCommon::SamplesLog2(image.info.num_samples);
         width >>= samples_x;
         height >>= samples_y;
-        resource += fmt::format(":{}xMSAA", image.info.num_samples);
+        resource += std::format(":{}xMSAA", image.info.num_samples);
     }
     if (num_layers > 1) {
-        resource += fmt::format(":L{}", num_layers);
+        resource += std::format(":L{}", num_layers);
     }
     if (num_levels > 1) {
-        resource += fmt::format(":M{}", num_levels);
+        resource += std::format(":M{}", num_levels);
     }
     switch (image.info.type) {
     case ImageType::e1D:
-        return fmt::format("Image 1D {:#x} {}{}", gpu_addr, width, resource);
+        return std::format("Image 1D {:#x} {}{}", gpu_addr, width, resource);
     case ImageType::e2D:
-        return fmt::format("Image 2D {:#x} {}x{}{}", gpu_addr, width, height, resource);
+        return std::format("Image 2D {:#x} {}x{}{}", gpu_addr, width, height, resource);
     case ImageType::e3D:
-        return fmt::format("Image 2D {:#x} {}x{}x{}{}", gpu_addr, width, height, depth, resource);
+        return std::format("Image 2D {:#x} {}x{}x{}{}", gpu_addr, width, height, depth, resource);
     case ImageType::Linear:
-        return fmt::format("Image Linear {:#x} {}x{}", gpu_addr, width, height);
+        return std::format("Image Linear {:#x} {}x{}", gpu_addr, width, height);
     case ImageType::Buffer:
-        return fmt::format("Buffer {:#x} {}", image.gpu_addr, image.info.size.width);
+        return std::format("Buffer {:#x} {}", image.gpu_addr, image.info.size.width);
     }
     return "Invalid";
 }
@@ -60,28 +60,28 @@ std::string Name(const ImageViewBase& image_view, GPUVAddr addr) {
     const u32 num_levels = image_view.range.extent.levels;
     const u32 num_layers = image_view.range.extent.layers;
 
-    const std::string level = num_levels > 1 ? fmt::format(":{}", num_levels) : "";
+    const std::string level = num_levels > 1 ? std::format(":{}", num_levels) : "";
     switch (image_view.type) {
     case ImageViewType::e1D:
-        return fmt::format("ImageView 1D {:#x} {}{}", addr, width, level);
+        return std::format("ImageView 1D {:#x} {}{}", addr, width, level);
     case ImageViewType::e2D:
-        return fmt::format("ImageView 2D {:#x} {}x{}{}", addr, width, height, level);
+        return std::format("ImageView 2D {:#x} {}x{}{}", addr, width, height, level);
     case ImageViewType::Cube:
-        return fmt::format("ImageView Cube {:#x} {}x{}{}", addr, width, height, level);
+        return std::format("ImageView Cube {:#x} {}x{}{}", addr, width, height, level);
     case ImageViewType::e3D:
-        return fmt::format("ImageView 3D {:#x} {}x{}x{}{}", addr, width, height, depth, level);
+        return std::format("ImageView 3D {:#x} {}x{}x{}{}", addr, width, height, depth, level);
     case ImageViewType::e1DArray:
-        return fmt::format("ImageView 1DArray {:#x} {}{}|{}", addr, width, level, num_layers);
+        return std::format("ImageView 1DArray {:#x} {}{}|{}", addr, width, level, num_layers);
     case ImageViewType::e2DArray:
-        return fmt::format("ImageView 2DArray {:#x} {}x{}{}|{}", addr, width, height, level,
+        return std::format("ImageView 2DArray {:#x} {}x{}{}|{}", addr, width, height, level,
                            num_layers);
     case ImageViewType::CubeArray:
-        return fmt::format("ImageView CubeArray {:#x} {}x{}{}|{}", addr, width, height, level,
+        return std::format("ImageView CubeArray {:#x} {}x{}{}|{}", addr, width, height, level,
                            num_layers);
     case ImageViewType::Rect:
-        return fmt::format("ImageView Rect {:#x} {}x{}{}", addr, width, height, level);
+        return std::format("ImageView Rect {:#x} {}x{}{}", addr, width, height, level);
     case ImageViewType::Buffer:
-        return fmt::format("BufferView {:#x} {}", addr, width);
+        return std::format("BufferView {:#x} {}", addr, width);
     }
     return "Invalid";
 }
@@ -97,10 +97,10 @@ std::string Name(const RenderTargets& render_targets) {
     }
     const Extent2D size = render_targets.size;
     if (num_color > 0) {
-        return fmt::format("Framebuffer {}{} {}x{}", debug_prefix, num_color, size.width,
+        return std::format("Framebuffer {}{} {}x{}", debug_prefix, num_color, size.width,
                            size.height);
     } else {
-        return fmt::format("Framebuffer {} {}x{}", debug_prefix, size.width, size.height);
+        return std::format("Framebuffer {} {}x{}", debug_prefix, size.width, size.height);
     }
 }
 

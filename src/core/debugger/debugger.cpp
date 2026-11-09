@@ -32,7 +32,7 @@
 
 template <typename Readable, typename Buffer, typename Callback>
 static void AsyncReceiveInto(Readable& r, Buffer& buffer, Callback&& c) {
-    static_assert(std::is_trivial_v<Buffer>);
+    static_assert(std::is_trivially_default_constructible_v<Buffer> && std::is_trivially_copyable_v<Buffer>);
     auto boost_buffer{boost::asio::buffer(&buffer, sizeof(Buffer))};
     r.async_read_some(
         boost_buffer, [&, c](const boost::system::error_code& error, size_t bytes_read) {
@@ -57,7 +57,7 @@ static void AsyncAccept(boost::asio::ip::tcp::acceptor& acceptor, Callback&& c) 
 
 template <typename Readable, typename Buffer>
 static std::span<const u8> ReceiveInto(Readable& r, Buffer& buffer) {
-    static_assert(std::is_trivial_v<Buffer>);
+    static_assert(std::is_trivially_default_constructible_v<Buffer> && std::is_trivially_copyable_v<Buffer>);
     auto boost_buffer{boost::asio::buffer(&buffer, sizeof(Buffer))};
     size_t bytes_read = r.read_some(boost_buffer);
     const u8* buffer_start = reinterpret_cast<const u8*>(&buffer);

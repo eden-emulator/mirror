@@ -26,6 +26,7 @@
 
 #include <QMessageBox>
 
+#include <format>
 #include <thread>
 #include <QPainter>
 
@@ -231,9 +232,9 @@ void Init(QWidget* root) {
     const auto description = std::string(Common::g_scm_desc);
     const auto build_id = std::string(Common::g_build_id);
 
-    const auto yuzu_build = fmt::format("Eden Development Build | {}-{}", branch_name, description);
-    const auto override_build =
-        fmt::format(fmt::runtime(std::string(Common::g_title_bar_format_idle)), build_id);
+    const auto yuzu_build = std::format("Eden Development Build | {}-{}", branch_name, description);
+    const auto override_build = std::vformat(std::string_view(Common::g_title_bar_format_idle),
+                                             std::make_format_args(build_id));
     const auto yuzu_build_version = override_build.empty() ? yuzu_build : override_build;
     const auto processor_count = std::thread::hardware_concurrency();
 

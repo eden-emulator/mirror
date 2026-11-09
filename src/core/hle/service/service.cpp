@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/ranges.h>
+#include <format>
 #include "common/assert.h"
 #include "common/logging.h"
 #include "common/settings.h"
@@ -23,9 +23,9 @@ namespace Service {
 [[maybe_unused]] static std::string MakeFunctionString(std::string_view name, std::string_view port_name, const u32* cmd_buf) {
     // Number of params == bits 0-5 + bits 6-11
     int num_params = (cmd_buf[0] & 0x3F) + ((cmd_buf[0] >> 6) & 0x3F);
-    std::string function_string = fmt::format("fn '{}': port={}", name, port_name);
+    std::string function_string = std::format("fn '{}': port={}", name, port_name);
     for (int i = 1; i <= num_params; ++i)
-        function_string += fmt::format(", cmd_buf[{}]={:#x}", i, cmd_buf[i]);
+        function_string += std::format(", cmd_buf[{}]={:#x}", i, cmd_buf[i]);
     return function_string;
 }
 
@@ -61,14 +61,16 @@ void ServiceFrameworkBase::ReportUnimplementedFunction(HLERequestContext& ctx,
     auto cmd_buf = ctx.CommandBuffer();
     std::string function_name = info == nullptr ? "<unknown>" : info->name;
 
-    fmt::memory_buffer buf;
-    fmt::format_to(std::back_inserter(buf), "function '{}({})': port='{}' cmd_buf={{[0]={:#x}", ctx.GetCommand(), function_name, service_name, cmd_buf[0]);
+    std::string buf;
+    buf.reserve(256);
+
+    std::format_to(std::back_inserter(buf), "function '{}({})': port='{}' cmd_buf={{[0]={:#x}", ctx.GetCommand(), function_name, service_name, cmd_buf[0]);
     for (int i = 1; i <= 8; ++i)
-        fmt::format_to(std::back_inserter(buf), ", [{}]={:#x}", i, cmd_buf[i]);
+        std::format_to(std::back_inserter(buf), ", [{}]={:#x}", i, cmd_buf[i]);
     buf.push_back('}');
 
     system.GetReporter().SaveUnimplementedFunctionReport(ctx, ctx.GetCommand(), function_name, service_name);
-    UNIMPLEMENTED_MSG("Unknown / unimplemented {}", fmt::to_string(buf));
+    UNIMPLEMENTED_MSG("Unknown / unimplemented {}", buf);
     if (Settings::values.use_auto_stub) {
         LOG_WARNING(Service, "Using auto stub fallback!");
         IPC::ResponseBuilder rb{ctx, 2};

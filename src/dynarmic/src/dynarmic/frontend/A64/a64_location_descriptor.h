@@ -12,7 +12,7 @@
 #include <string>
 #include <tuple>
 
-#include <fmt/format.h>
+#include <format>
 #include "dynarmic/mcl/bit.hpp"
 #include "common/common_types.h"
 
@@ -110,7 +110,7 @@ struct hash<Dynarmic::A64::LocationDescriptor> {
 }  // namespace std
 
 template<>
-struct fmt::formatter<Dynarmic::A64::LocationDescriptor> : fmt::formatter<std::string> {
+struct std::formatter<Dynarmic::A64::LocationDescriptor> : std::formatter<std::string> {
     template<typename FormatContext>
     auto format(Dynarmic::A64::LocationDescriptor descriptor, FormatContext& ctx) const {
         return formatter<std::string>::format(Dynarmic::A64::ToString(descriptor), ctx);

@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <utility>
 #include "common/assert.h"
 #include "common/logging.h"
 #include "common/settings.h"
@@ -36,7 +37,7 @@ void Puller::ProcessBindMethod(DmaPusher& dma_pusher, const MethodCall& method_c
         engine &= Gf100BindClassMask;
     }
 
-    const auto engine_id = static_cast<EngineID>(engine);
+    const auto engine_id = EngineID(engine);
     bound_engines[method_call.subchannel] = engine_id;
     switch (engine_id) {
     case EngineID::FERMI_TWOD_A:
@@ -140,7 +141,7 @@ void Puller::ProcessSemaphoreAcquire(DmaPusher& dma_pusher) {
 /// Calls a GPU puller method.
 void Puller::CallPullerMethod(DmaPusher& dma_pusher, const MethodCall& method_call) {
     regs.reg_array[method_call.method] = method_call.argument;
-    const auto method = static_cast<BufferMethods>(method_call.method);
+    const auto method = BufferMethods(method_call.method);
 
     switch (method) {
     case BufferMethods::BindObject: {

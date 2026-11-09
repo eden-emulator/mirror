@@ -9,31 +9,29 @@
 #include <chrono>
 #include <algorithm>
 #include <type_traits>
-#include <fmt/ranges.h>
+#include <format>
 #include "common/swap.h"
 
 // adapted from https://github.com/fmtlib/fmt/issues/2704
 // a generic formatter for enum classes
-#if FMT_VERSION >= 80100
 template <typename T>
-struct fmt::formatter<T, std::enable_if_t<std::is_enum_v<T>, char>>
+struct std::formatter<T, std::enable_if_t<std::is_enum_v<T>, char>>
     : formatter<std::underlying_type_t<T>> {
     template <typename FormatContext>
     auto format(const T& value, FormatContext& ctx) const -> decltype(ctx.out()) {
-        return fmt::formatter<std::underlying_type_t<T>>::format(
+        return std::formatter<std::underlying_type_t<T>>::format(
             static_cast<std::underlying_type_t<T>>(value), ctx);
     }
 };
-#endif
 
 template <typename T, typename U>
-struct fmt::formatter<SwapStructT<T, U>> {
+struct std::formatter<SwapStructT<T, U>> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     template <typename FormatContext>
     auto format(const SwapStructT<T, U>& reg, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{}", T(reg));
+        return std::format_to(ctx.out(), "{}", T(reg));
     }
 };
 
@@ -85,11 +83,11 @@ enum class Class : u8 {
 };
 
 /// Logs a message to the global logger, using fmt
-void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename, unsigned int line_num, const char* function, fmt::string_view format, const fmt::format_args& args);
+void FmtLogMessageImpl(Class log_class, Level log_level, const char* filename, unsigned int line_num, const char* function, std::string_view format, const std::format_args& args);
 
 template <typename... Args>
-void FmtLogMessage(Class log_class, Level log_level, const char* filename, unsigned int line_num, const char* function, fmt::format_string<Args...> format, const Args&... args) {
-    FmtLogMessageImpl(log_class, log_level, filename, line_num, function, format.get(), fmt::make_format_args(args...));
+void FmtLogMessage(Class log_class, Level log_level, const char* filename, unsigned int line_num, const char* function, std::format_string<Args...> format, const Args&... args) {
+    FmtLogMessageImpl(log_class, log_level, filename, line_num, function, format.get(), std::make_format_args(args...));
 }
 
 /// Implements a log message filter which allows different log classes to have different minimum

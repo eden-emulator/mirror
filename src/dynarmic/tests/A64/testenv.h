@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "common/container/unordered_map.h"
 #include "common/assert.h"
 #include "common/common_types.h"
@@ -20,6 +22,7 @@ class A64TestEnv : public Dynarmic::A64::UserCallbacks {
 public:
     ::Common::unordered_map<u64, u8> modified_memory;
     std::vector<u32> code_mem;
+    std::vector<std::string> interrupts;
     u64 ticks_left = 0;
     u64 code_mem_start_address = 0;
     bool code_mem_modified_by_guest = false;

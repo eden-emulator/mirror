@@ -16,7 +16,7 @@ IAudioDevice::IAudioDevice(Core::System& system_, u64 applet_resource_user_id, u
                            u32 device_num)
     : ServiceFramework{system_, "IAudioDevice"}, service_context{system_, "IAudioDevice"},
       impl{std::make_unique<AudioDevice>(system_, applet_resource_user_id, revision)},
-      event{service_context.CreateEvent(fmt::format("IAudioDeviceEvent-{}", device_num))} {
+      event{service_context.CreateEvent(std::format("IAudioDeviceEvent-{}", device_num))} {
     static const FunctionInfo functions[] = {
         {0, D<&IAudioDevice::ListAudioDeviceName>, "ListAudioDeviceName"},
         {1, D<&IAudioDevice::SetAudioDeviceOutputVolume>, "SetAudioDeviceOutputVolume"},

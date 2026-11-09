@@ -8,7 +8,7 @@
 #include <optional>
 #include <random>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/assert.h"
 #include "common/tiny_mt.h"
@@ -146,7 +146,7 @@ std::array<u8, 0x10> ConstructUUID(std::string_view uuid_string) {
 UUID::UUID(std::string_view uuid_string) : uuid{ConstructUUID(uuid_string)} {}
 
 std::string UUID::RawString() const {
-    return fmt::format("{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}"
+    return std::format("{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}"
                        "{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
                        uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
                        uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14],
@@ -154,7 +154,7 @@ std::string UUID::RawString() const {
 }
 
 std::string UUID::FormattedString() const {
-    return fmt::format("{:02x}{:02x}{:02x}{:02x}"
+    return std::format("{:02x}{:02x}{:02x}{:02x}"
                        "-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-"
                        "{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
                        uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],

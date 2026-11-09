@@ -15,6 +15,7 @@
 #include <optional>
 #include <tuple>
 #include <vector>
+#include <print>
 
 #include "dynarmic/mcl/bit.hpp"
 #include "common/common_types.h"
@@ -40,8 +41,7 @@
 #include "dynarmic/ir/opcodes.h"
 
 // Must be declared last for all necessary operator<< to be declared prior to this.
-#include <fmt/format.h>
-#include <fmt/ostream.h>
+#include <format>
 
 constexpr bool mask_fpsr_cum_bits = true;
 
@@ -410,27 +410,27 @@ void RunTestInstance(Dynarmic::A32::Jit& jit,
     const u32 code_mem_size = num_words + static_cast<u32>(instructions.size());
 
     if (show_disas) {
-        fmt::print("instructions:\n");
+        std::print("instructions:\n");
         auto current_pc = initial_pc;
         for (auto instruction : instructions) {
             if constexpr (sizeof(decltype(instruction)) == 2) {
-                fmt::print("{:04x} ?\n", instruction);
+                std::print("{:04x} ?\n", static_cast<unsigned>(instruction));
             } else {
-                fmt::print("{}", Dynarmic::Common::DisassembleAArch64(instruction, current_pc));
+                std::print("{}", Dynarmic::Common::DisassembleAArch64(instruction, current_pc));
             }
             current_pc += sizeof(decltype(instruction));
         }
 
-        fmt::print("initial_regs:");
+        std::print("initial_regs:");
         for (u32 i : regs)
-            fmt::print(" {:08x}", i);
-        fmt::print("\n");
-        fmt::print("initial_vecs:");
+            std::print(" {:08x}", i);
+        std::print("\n");
+        std::print("initial_vecs:");
         for (u32 i : vecs)
-            fmt::print(" {:08x}", i);
-        fmt::print("\n");
-        fmt::print("initial_cpsr: {:08x}\n", cpsr);
-        fmt::print("initial_fpcr: {:08x}\n", fpscr);
+            std::print(" {:08x}", i);
+        std::print("\n");
+        std::print("initial_cpsr: {:08x}\n", cpsr);
+        std::print("initial_fpcr: {:08x}\n", fpscr);
     }
 
     jit.ClearCache();
@@ -453,29 +453,29 @@ void RunTestInstance(Dynarmic::A32::Jit& jit,
     }
 
     if (show_disas) {
-        fmt::print("final_regs:");
+        std::print("final_regs:");
         for (u32 i : jit.Regs()) {
-            fmt::print(" {:08x}", i);
+            std::print(" {:08x}", i);
         }
-        fmt::print("\n");
-        fmt::print("final_vecs:");
+        std::print("\n");
+        std::print("final_vecs:");
         for (u32 i : jit.ExtRegs()) {
-            fmt::print(" {:08x}", i);
+            std::print(" {:08x}", i);
         }
-        fmt::print("\n");
-        fmt::print("final_cpsr: {:08x}\n", jit.Cpsr());
-        fmt::print("final_fpsr: {:08x}\n", mask_fpsr_cum_bits ? jit.Fpscr() & 0xffffff00 : jit.Fpscr());
-        fmt::print("mod_mem: ");
+        std::print("\n");
+        std::print("final_cpsr: {:08x}\n", jit.Cpsr());
+        std::print("final_fpsr: {:08x}\n", mask_fpsr_cum_bits ? jit.Fpscr() & 0xffffff00 : jit.Fpscr());
+        std::print("mod_mem: ");
         for (auto [addr, value] : jit_env.modified_memory) {
-            fmt::print("{:08x}:{:02x} ", addr, value);
+            std::print("{:08x}:{:02x} ", addr, value);
         }
-        fmt::print("\n");
-        fmt::print("interrupts:\n");
+        std::print("\n");
+        std::print("interrupts:\n");
         for (const auto& i : jit_env.interrupts) {
             std::puts(i.c_str());
         }
-        fmt::print("===\n");
-        fmt::print("{}", jit.Disassemble());
+        std::print("===\n");
+        std::print("{}", jit.Disassemble());
     }
 }
 
@@ -526,23 +526,23 @@ void RunTestInstance(Dynarmic::A64::Jit& jit,
     }
 
     if (show_disas) {
-        fmt::print("instructions:\n");
+        std::print("instructions:\n");
         auto current_pc = start_address;
         for (u32 instruction : instructions) {
-            fmt::print("{}", Dynarmic::Common::DisassembleAArch64(instruction, current_pc));
+            std::print("{}", Dynarmic::Common::DisassembleAArch64(instruction, current_pc));
             current_pc += 4;
         }
 
-        fmt::print("initial_regs:");
+        std::print("initial_regs:");
         for (u64 i : regs)
-            fmt::print(" {:016x}", i);
-        fmt::print(
+            std::print(" {:016x}", i);
+        std::print(
             "\n"
             "initial_vecs:"
         );
         for (auto i : vecs)
-            fmt::print(" {:016x}:{:016x}", i[0], i[1]);
-        fmt::print(
+            std::print(" {:016x}:{:016x}", i[0], i[1]);
+        std::print(
             "\n"
             "initial_sp: {:016x}\n"
             "initial_pstate: {:08x}\n"
@@ -553,14 +553,14 @@ void RunTestInstance(Dynarmic::A64::Jit& jit,
             , fpcr
         );
         for (u64 i : jit.GetRegisters())
-            fmt::print(" {:016x}", i);
-        fmt::print(
+            std::print(" {:016x}", i);
+        std::print(
             "\n"
             "final_vecs:"
         );
         for (auto i : jit.GetVectors())
-            fmt::print(" {:016x}:{:016x}", i[0], i[1]);
-        fmt::print(
+            std::print(" {:016x}:{:016x}", i[0], i[1]);
+        std::print(
             "\n"
             "final_sp: {:016x}\n"
             "final_pc: {:016x}\n"
@@ -575,8 +575,8 @@ void RunTestInstance(Dynarmic::A64::Jit& jit,
             , FP::FPSR{jit.GetFpsr()}.QC()
         );
         for (auto [addr, value] : jit_env.modified_memory)
-            fmt::print(" {:08x}:{:02x}", addr, value);
-        fmt::print(
+            std::print(" {:08x}:{:02x}", addr, value);
+        std::print(
             "\n"
             "===\n"
             "{}"
@@ -682,7 +682,7 @@ static std::optional<size_t> str2sz(char const* s) {
 
 int main(int argc, char* argv[]) {
     if (argc < 5 || argc > 6) {
-        fmt::print("Usage: {} <thumb|arm|a64> <seed> <instruction_count> <iteration_count> [noopt]\n", argv[0]);
+        std::print("Usage: {} <thumb|arm|a64> <seed> <instruction_count> <iteration_count> [noopt]\n", argv[0]);
         return 1;
     }
 
@@ -693,7 +693,7 @@ int main(int argc, char* argv[]) {
     const bool show_disas = argc == 6 && (strcmp(argv[5], "disas") == 0);
 
     if (!seed || !instruction_count || !iterator_count) {
-        fmt::print("invalid numeric arguments\n");
+        std::print("invalid numeric arguments\n");
         return 1;
     }
 
@@ -706,7 +706,7 @@ int main(int argc, char* argv[]) {
     } else if (strcmp(argv[1], "a64") == 0) {
         TestA64(*instruction_count, *iterator_count, noopt, show_disas);
     } else {
-        fmt::print("unrecognized instruction class\n");
+        std::print("unrecognized instruction class\n");
         return 1;
     }
 

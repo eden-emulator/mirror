@@ -6,7 +6,7 @@
 
 #include <cstring>
 #include <sstream>
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/fs/file.h"
 #include "common/fs/fs_types.h"
@@ -86,7 +86,7 @@ void Tas::LoadTasFile(size_t player_index, size_t file_index) {
 
     std::string file = Common::FS::ReadStringFromFile(
         Common::FS::GetEdenPath(Common::FS::EdenPath::TASDir) /
-            fmt::format("script{}-{}.txt", file_index, player_index + 1),
+            std::format("script{}-{}.txt", file_index, player_index + 1),
         Common::FS::FileType::BinaryFile);
     std::istringstream command_line(file);
     std::string line;
@@ -136,7 +136,7 @@ void Tas::WriteTasFile(std::u8string_view file_name) {
     std::string output_text;
     for (size_t frame = 0; frame < record_commands.size(); frame++) {
         const TASCommand& line = record_commands[frame];
-        output_text += fmt::format("{} {} {} {}\n", frame, WriteCommandButtons(line.buttons),
+        output_text += std::format("{} {} {} {}\n", frame, WriteCommandButtons(line.buttons),
                                    WriteCommandAxis(line.l_axis), WriteCommandAxis(line.r_axis));
     }
 
@@ -285,14 +285,14 @@ std::string Tas::WriteCommandButtons(u64 buttons) const {
     std::string returns;
     for (const auto& [text_button, tas_button] : text_to_tas_button) {
         if ((buttons & static_cast<u64>(tas_button)) != 0) {
-            returns += fmt::format("{};", text_button);
+            returns += std::format("{};", text_button);
         }
     }
     return returns.empty() ? "NONE" : returns;
 }
 
 std::string Tas::WriteCommandAxis(TasAnalog analog) const {
-    return fmt::format("{};{}", analog.x * 32767, analog.y * 32767);
+    return std::format("{};{}", analog.x * 32767, analog.y * 32767);
 }
 
 void Tas::SetTasAxis(const PadIdentifier& identifier, TasAxis axis, f32 value) {

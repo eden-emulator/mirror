@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -11,13 +14,13 @@ void MixRampGroupedCommand::Dump(const AudioRenderer::CommandListProcessor& proc
                                  std::string& string) {
     string += "MixRampGroupedCommand";
     for (u32 i = 0; i < buffer_count; i++) {
-        string += fmt::format("\n\t{}", i);
+        string += std::format("\n\t{}", i);
         const auto ramp{(volumes[i] - prev_volumes[i]) / static_cast<f32>(processor.sample_count)};
-        string += fmt::format("\n\t\tinput {:02X}", inputs[i]);
-        string += fmt::format("\n\t\toutput {:02X}", outputs[i]);
-        string += fmt::format("\n\t\tvolume {:.8f}", volumes[i]);
-        string += fmt::format("\n\t\tprev_volume {:.8f}", prev_volumes[i]);
-        string += fmt::format("\n\t\tramp {:.8f}", ramp);
+        string += std::format("\n\t\tinput {:02X}", inputs[i]);
+        string += std::format("\n\t\toutput {:02X}", outputs[i]);
+        string += std::format("\n\t\tvolume {:.8f}", volumes[i]);
+        string += std::format("\n\t\tprev_volume {:.8f}", prev_volumes[i]);
+        string += std::format("\n\t\tramp {:.8f}", ramp);
         string += "\n";
     }
 }

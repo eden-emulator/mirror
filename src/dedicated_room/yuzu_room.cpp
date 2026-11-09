@@ -72,8 +72,9 @@ static void PrintHelp(const char* argv0) {
 }
 
 static void PrintVersion() {
-    LOG_INFO(Network, "Eden dedicated room {} {} Libnetwork: {}", Common::g_scm_branch,
-             Common::g_scm_desc, Network::network_version);
+    LOG_INFO(Network, "Eden dedicated room {} {} Libnetwork: {}",
+             std::string_view{Common::g_scm_branch}, std::string_view{Common::g_scm_desc},
+             Network::network_version);
 }
 
 /// The magic text at the beginning of a yuzu-room ban list file.

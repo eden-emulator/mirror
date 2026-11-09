@@ -552,7 +552,7 @@ static void SetArg64(std::span<uint64_t, 8> args, int n, uint64_t result) {
 // Like bit_cast, but handles the case when the source and dest
 // are differently-sized.
 template <typename To, typename From>
-    requires(std::is_trivial_v<To> && std::is_trivially_copyable_v<From>)
+    requires(std::is_trivially_default_constructible_v<To> && std::is_trivially_copyable_v<To> && std::is_trivially_copyable_v<From>)
 static To Convert(const From& from) {
     To to{};
     if constexpr (sizeof(To) >= sizeof(From))

@@ -72,7 +72,7 @@ add_executable(dynarmic_print_info
     print_info.cpp
 )
 create_target_directory_groups(dynarmic_print_info)
-target_link_libraries(dynarmic_print_info PRIVATE dynarmic fmt::fmt)
+target_link_libraries(dynarmic_print_info PRIVATE dynarmic)
 if (BOOST_NO_HEADERS)
     target_link_libraries(dynarmic_print_info PRIVATE Boost::variant Boost::icl Boost::pool)
 else()
@@ -80,7 +80,6 @@ else()
 endif()
 target_include_directories(dynarmic_print_info PRIVATE . ../src)
 target_compile_options(dynarmic_print_info PRIVATE ${DYNARMIC_CXX_FLAGS})
-target_compile_definitions(dynarmic_print_info PRIVATE FMT_USE_USER_DEFINED_LITERALS=1)
 
 #
 # dynarmic_test_generator
@@ -93,7 +92,7 @@ add_executable(dynarmic_test_generator
 
 create_target_directory_groups(dynarmic_test_generator)
 
-target_link_libraries(dynarmic_test_generator PRIVATE dynarmic fmt::fmt)
+target_link_libraries(dynarmic_test_generator PRIVATE dynarmic)
 if (BOOST_NO_HEADERS)
     target_link_libraries(dynarmic_test_generator PRIVATE Boost::variant Boost::icl Boost::pool)
 else()
@@ -101,7 +100,6 @@ else()
 endif()
 target_include_directories(dynarmic_test_generator PRIVATE . ../src)
 target_compile_options(dynarmic_test_generator PRIVATE ${DYNARMIC_CXX_FLAGS})
-target_compile_definitions(dynarmic_test_generator PRIVATE FMT_USE_USER_DEFINED_LITERALS=1)
 
 #
 # dynarmic_test_reader
@@ -110,7 +108,7 @@ add_executable(dynarmic_test_reader
     test_reader.cpp
 )
 create_target_directory_groups(dynarmic_test_reader)
-target_link_libraries(dynarmic_test_reader PRIVATE dynarmic fmt::fmt)
+target_link_libraries(dynarmic_test_reader PRIVATE dynarmic)
 if (BOOST_NO_HEADERS)
     target_link_libraries(dynarmic_test_reader PRIVATE Boost::variant Boost::icl Boost::pool)
 else()
@@ -118,12 +116,11 @@ else()
 endif()
 target_include_directories(dynarmic_test_reader PRIVATE . ../src)
 target_compile_options(dynarmic_test_reader PRIVATE ${DYNARMIC_CXX_FLAGS})
-target_compile_definitions(dynarmic_test_reader PRIVATE FMT_USE_USER_DEFINED_LITERALS=1)
 
 #
 create_target_directory_groups(dynarmic_tests)
 
-target_link_libraries(dynarmic_tests PRIVATE dynarmic Catch2::Catch2WithMain fmt::fmt)
+target_link_libraries(dynarmic_tests PRIVATE dynarmic Catch2::Catch2WithMain)
 if (BOOST_NO_HEADERS)
     target_link_libraries(dynarmic_tests PRIVATE Boost::variant Boost::icl Boost::pool)
 else()
@@ -131,7 +128,6 @@ else()
 endif()
 target_include_directories(dynarmic_tests PRIVATE . ../src)
 target_compile_options(dynarmic_tests PRIVATE ${DYNARMIC_CXX_FLAGS})
-target_compile_definitions(dynarmic_tests PRIVATE FMT_USE_USER_DEFINED_LITERALS=1)
 
 add_test(NAME dynarmic_tests COMMAND dynarmic_tests --durations yes)
 if (DYNARMIC_HOST_FEATURE_OVERRIDE AND "x86_64" IN_LIST ARCHITECTURE)

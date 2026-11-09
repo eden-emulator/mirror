@@ -754,7 +754,7 @@ void LogMotionHardware() {
             mount = read_line(dir / "in_accel_mount_matrix");
         }
         const fs::path device = fs::canonical(dir / "device", ignored);
-        sensors += fmt::format("\n  {} name={} gyro={} accel={} mount=[{}] at={}",
+        sensors += std::format("\n  {} name={} gyro={} accel={} mount=[{}] at={}",
                                dir.filename().string(), read_line(dir / "name"), gyro, accel, mount,
                                ignored ? std::string{"?"} : device.string());
     }
@@ -775,13 +775,13 @@ void LogMotionHardware() {
                 // bus:vendor:product, each zero-padded to 8 hex digits
                 unsigned bus = 0, vendor = 0, product = 0;
                 if (std::sscanf(line.c_str() + 7, "%x:%x:%x", &bus, &vendor, &product) == 3) {
-                    id = fmt::format("{:04x}:{:04x} bus={}", vendor, product, bus);
+                    id = std::format("{:04x}:{:04x} bus={}", vendor, product, bus);
                 }
             } else if (line.starts_with("HID_NAME=")) {
                 name = line.substr(9);
             }
         }
-        hid += fmt::format("\n  {} {} name={}", entry.path().filename().string(), id, name);
+        hid += std::format("\n  {} {} name={}", entry.path().filename().string(), id, name);
     }
     LOG_INFO(Input, "HID devices:{}", hid.empty() ? std::string{" none"} : hid);
 #endif
@@ -959,7 +959,7 @@ std::vector<Common::ParamPackage> SDLDriver::GetInputDevices() const {
                 continue;
             }
             const std::string name =
-                fmt::format("{} {}{}", joystick->GetControllerName(), joystick->GetPort(),
+                std::format("{} {}{}", joystick->GetControllerName(), joystick->GetPort(),
                             steam_virtual ? " (Steam)" : "");
             devices.emplace_back(Common::ParamPackage{
                 {"engine", GetEngineName()},
@@ -984,7 +984,7 @@ std::vector<Common::ParamPackage> SDLDriver::GetInputDevices() const {
                 const auto joystick2 = joycon_pairs.at(joystick->GetPort());
 
                 const std::string name =
-                    fmt::format("{} {}", "Nintendo Dual Joy-Con", joystick->GetPort());
+                    std::format("{} {}", "Nintendo Dual Joy-Con", joystick->GetPort());
                 devices.emplace_back(Common::ParamPackage{
                     {"engine", GetEngineName()},
                     {"display", std::move(name)},

@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <array>
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include <ranges>
 #include "shader_recompiler/frontend/ir/type.h"
@@ -86,12 +86,12 @@ extern u8 NUM_ARGS[534];
 } // namespace Shader::IR
 
 template <>
-struct fmt::formatter<Shader::IR::Opcode> {
+struct std::formatter<Shader::IR::Opcode> {
     constexpr auto parse(format_parse_context& ctx) {
         return ctx.begin();
     }
     template <typename FormatContext>
     auto format(const Shader::IR::Opcode& op, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{}", Shader::IR::NameOf(op));
+        return std::format_to(ctx.out(), "{}", Shader::IR::NameOf(op));
     }
 };

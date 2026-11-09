@@ -9,7 +9,7 @@
 #pragma once
 
 #include <string>
-#include <fmt/format.h>
+#include <format>
 #include "common/assert.h"
 #include "common/common_types.h"
 #include "dynarmic/interface/A32/coprocessor_util.h"
@@ -139,7 +139,7 @@ inline ExtReg ToVector(bool Q, size_t base, bool bit) {
 }  // namespace Dynarmic::A32
 
 template<>
-struct fmt::formatter<Dynarmic::A32::Reg> : fmt::formatter<const char*> {
+struct std::formatter<Dynarmic::A32::Reg> : std::formatter<const char*> {
     template<typename FormatContext>
     auto format(Dynarmic::A32::Reg reg, FormatContext& ctx) const {
         return formatter<const char*>::format(Dynarmic::A32::RegToString(reg), ctx);
@@ -147,7 +147,7 @@ struct fmt::formatter<Dynarmic::A32::Reg> : fmt::formatter<const char*> {
 };
 
 template<>
-struct fmt::formatter<Dynarmic::A32::ExtReg> : fmt::formatter<const char*> {
+struct std::formatter<Dynarmic::A32::ExtReg> : std::formatter<const char*> {
     template<typename FormatContext>
     auto format(Dynarmic::A32::ExtReg reg, FormatContext& ctx) const {
         return formatter<const char*>::format(Dynarmic::A32::ExtRegToString(reg), ctx);
@@ -155,7 +155,7 @@ struct fmt::formatter<Dynarmic::A32::ExtReg> : fmt::formatter<const char*> {
 };
 
 template<>
-struct fmt::formatter<Dynarmic::A32::CoprocReg> : fmt::formatter<const char*> {
+struct std::formatter<Dynarmic::A32::CoprocReg> : std::formatter<const char*> {
     template<typename FormatContext>
     auto format(Dynarmic::A32::CoprocReg reg, FormatContext& ctx) const {
         return formatter<const char*>::format(Dynarmic::A32::CoprocRegToString(reg), ctx);
@@ -163,7 +163,7 @@ struct fmt::formatter<Dynarmic::A32::CoprocReg> : fmt::formatter<const char*> {
 };
 
 template<>
-struct fmt::formatter<Dynarmic::A32::RegList> : fmt::formatter<std::string> {
+struct std::formatter<Dynarmic::A32::RegList> : std::formatter<std::string> {
     template<typename FormatContext>
     auto format(Dynarmic::A32::RegList reg_list, FormatContext& ctx) const {
         return formatter<std::string>::format(Dynarmic::A32::RegListToString(reg_list), ctx);

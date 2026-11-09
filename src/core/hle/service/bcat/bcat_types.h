@@ -64,7 +64,7 @@ struct DeliveryCacheProgressImpl {
 };
 static_assert(sizeof(DeliveryCacheProgressImpl) == 0x200,
               "DeliveryCacheProgressImpl has incorrect size.");
-static_assert(std::is_trivial_v<DeliveryCacheProgressImpl>,
+static_assert(std::is_trivially_default_constructible_v<DeliveryCacheProgressImpl> && std::is_trivially_copyable_v<DeliveryCacheProgressImpl>,
               "DeliveryCacheProgressImpl type must be trivially copyable.");
 
 } // namespace Service::BCAT

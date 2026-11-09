@@ -26,7 +26,7 @@ public:
     struct BlockHash {
         std::array<u8, HashSize> hash;
     };
-    static_assert(std::is_trivial_v<BlockHash>);
+    static_assert(std::is_trivially_default_constructible_v<BlockHash> && std::is_trivially_copyable_v<BlockHash>);
 
 public:
     IntegrityVerificationStorage()

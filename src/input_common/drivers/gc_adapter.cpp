@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2014 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/ranges.h>
+#include <format>
 #include <libusb.h>
 
 #include "common/logging.h"
@@ -407,7 +407,7 @@ std::vector<Common::ParamPackage> GCAdapter::GetInputDevices() const {
         }
         Common::ParamPackage identifier{};
         identifier.Set("engine", GetEngineName());
-        identifier.Set("display", fmt::format("Gamecube Controller {}", port + 1));
+        identifier.Set("display", std::format("Gamecube Controller {}", port + 1));
         identifier.Set("port", static_cast<int>(port));
         devices.emplace_back(identifier);
     }

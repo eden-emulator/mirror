@@ -142,7 +142,7 @@ Common::Input::DriverResult NfcProtocol::GetTagInfo(Joycon::TagInfo& tag_info) {
 
         std::string uuid_string;
         for (auto& content : tag_data.uuid) {
-            uuid_string += fmt::format(" {:02x}", content);
+            uuid_string += std::format(" {:02x}", content);
         }
         LOG_INFO(Input, "Tag detected, type={}, uuid={}", tag_data.type, uuid_string);
     }

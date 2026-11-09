@@ -36,7 +36,7 @@ Result DeviceSession::Initialize(std::string_view name_, SampleFormat sample_for
     if (stream) {
         Finalize();
     }
-    name = fmt::format("{}-{}", name_, session_id_);
+    name = std::format("{}-{}", name_, session_id_);
     type = type_;
     sample_format = sample_format_;
     channel_count = channel_count_;

@@ -78,12 +78,6 @@
         "repo": "crueter-ci/FFmpeg",
         "version": "9.0.2-1790726865-946fcce07b"
     },
-    "fmt": {
-        "hash": "f0da82c545b01692e9fd30fdfb613dbb8dd9716983dcd0ff19ac2a8d36f74beb5540ef38072fdecc1e34191b3682a8542ecbf3a61ef287dbba0a2679d4e023f2",
-        "min_version": "8",
-        "repo": "fmtlib/fmt",
-        "version": "12.1.0"
-    },
     "frozen": {
         "hash": "b8dfe741c82bc178dfc9749d4ab5a130cee718d9ee7b71d9b547cf5f7f23027ed0152ad250012a8546399fcc1e12187efc68d89d6731256c4d2df7d04eef8d5c",
         "package": "frozen",

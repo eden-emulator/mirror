@@ -17,7 +17,7 @@
 #pragma warning(pop)
 #endif
 
-#include <fmt/ranges.h>
+#include <format>
 
 #include "common/fs/file.h"
 #include "common/fs/fs.h"
@@ -1265,9 +1265,14 @@ Result NfcDevice::HasBackup(const UniqueSerialNumber& uid, std::size_t uuid_size
     ASSERT_MSG(uuid_size < sizeof(UniqueSerialNumber), "Invalid UUID size");
     constexpr auto backup_dir = "backup";
     const auto yuzu_amiibo_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::AmiiboDir);
-    const auto file_name =
-        fmt::format("{0:02x}.bin", fmt::join(uid.begin(), uid.begin() + uuid_size, ""));
 
+    std::string hex_uid;
+    hex_uid.reserve(uuid_size * 2);
+    for (std::size_t i = 0; i < uuid_size; ++i) {
+        std::format_to(std::back_inserter(hex_uid), "{:02x}", uid[i]);
+    }
+
+    const auto file_name = std::format("{}.bin", hex_uid);
     if (!Common::FS::Exists(yuzu_amiibo_dir / backup_dir / file_name)) {
         return ResultUnableToAccessBackupFile;
     }
@@ -1286,8 +1291,14 @@ Result NfcDevice::ReadBackupData(const UniqueSerialNumber& uid, std::size_t uuid
     ASSERT_MSG(uuid_size < sizeof(UniqueSerialNumber), "Invalid UUID size");
     constexpr auto backup_dir = "backup";
     const auto yuzu_amiibo_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::AmiiboDir);
-    const auto file_name =
-        fmt::format("{0:02x}.bin", fmt::join(uid.begin(), uid.begin() + uuid_size, ""));
+
+    std::string hex_uid;
+    hex_uid.reserve(uuid_size * 2);
+    for (std::size_t i = 0; i < uuid_size; ++i) {
+        std::format_to(std::back_inserter(hex_uid), "{:02x}", uid[i]);
+    }
+
+    const auto file_name = std::format("{}.bin", hex_uid);
 
     const Common::FS::IOFile keys_file{yuzu_amiibo_dir / backup_dir / file_name,
                                        Common::FS::FileAccessMode::Read,
@@ -1317,8 +1328,14 @@ Result NfcDevice::WriteBackupData(const UniqueSerialNumber& uid, std::size_t uui
     ASSERT_MSG(uuid_size < sizeof(UniqueSerialNumber), "Invalid UUID size");
     constexpr auto backup_dir = "backup";
     const auto yuzu_amiibo_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::AmiiboDir);
-    const auto file_name =
-        fmt::format("{0:02x}.bin", fmt::join(uid.begin(), uid.begin() + uuid_size, ""));
+
+    std::string hex_uid;
+    hex_uid.reserve(uuid_size * 2);
+    for (std::size_t i = 0; i < uuid_size; ++i) {
+        std::format_to(std::back_inserter(hex_uid), "{:02x}", uid[i]);
+    }
+
+    const auto file_name = std::format("{}.bin", hex_uid);
 
     if (HasBackup(uid, uuid_size).IsError()) {
         if (!Common::FS::CreateDir(yuzu_amiibo_dir / backup_dir)) {

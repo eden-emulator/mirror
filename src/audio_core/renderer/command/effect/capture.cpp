@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
@@ -123,7 +123,7 @@ static u32 WriteAuxBufferDsp(Core::Memory::Memory& memory, const CpuAddr send_in
 
 void CaptureCommand::Dump([[maybe_unused]] const AudioRenderer::CommandListProcessor& processor,
                           std::string& string) {
-    string += fmt::format("CaptureCommand\n\tenabled {} input {:02X} output {:02X}", effect_enabled,
+    string += std::format("CaptureCommand\n\tenabled {} input {:02X} output {:02X}", effect_enabled,
                           input, output);
 }
 

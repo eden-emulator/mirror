@@ -17,7 +17,7 @@
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <SDL3/SDL_main.h>
 
-#include <fmt/ostream.h>
+#include <format>
 
 #include "common/logging.h"
 #include "common/scm_rev.h"
@@ -140,15 +140,15 @@ static void OnStatusMessageReceived(const Network::StatusMessageEntry& msg) {
     std::string message = [&]() {
         switch (msg.type) {
         case Network::IdMemberJoin:
-            return fmt::format("{} has joined", msg.nickname);
+            return std::format("{} has joined", msg.nickname);
         case Network::IdMemberLeave:
-            return fmt::format("{} has left", msg.nickname);
+            return std::format("{} has left", msg.nickname);
         case Network::IdMemberKicked:
-            return fmt::format("{} has been kicked", msg.nickname);
+            return std::format("{} has been kicked", msg.nickname);
         case Network::IdMemberBanned:
-            return fmt::format("{} has been banned", msg.nickname);
+            return std::format("{} has been banned", msg.nickname);
         case Network::IdAddressUnbanned:
-            return fmt::format("{} has been unbanned", msg.nickname);
+            return std::format("{} has been unbanned", msg.nickname);
         default:
             return std::string{};
         }

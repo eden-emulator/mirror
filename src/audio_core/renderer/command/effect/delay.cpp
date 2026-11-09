@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -196,13 +199,13 @@ static void ApplyDelayEffect(const DelayInfo::ParameterVersion1& params, DelayIn
 
 void DelayCommand::Dump([[maybe_unused]] const AudioRenderer::CommandListProcessor& processor,
                         std::string& string) {
-    string += fmt::format("DelayCommand\n\tenabled {} \n\tinputs: ", effect_enabled);
+    string += std::format("DelayCommand\n\tenabled {} \n\tinputs: ", effect_enabled);
     for (u32 i = 0; i < MaxChannels; i++) {
-        string += fmt::format("{:02X}, ", inputs[i]);
+        string += std::format("{:02X}, ", inputs[i]);
     }
     string += "\n\toutputs: ";
     for (u32 i = 0; i < MaxChannels; i++) {
-        string += fmt::format("{:02X}, ", outputs[i]);
+        string += std::format("{:02X}, ", outputs[i]);
     }
     string += "\n";
 }

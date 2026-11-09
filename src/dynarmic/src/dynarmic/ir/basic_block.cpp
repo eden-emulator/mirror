@@ -13,7 +13,7 @@
 #include <map>
 #include <string>
 
-#include <fmt/format.h>
+#include <format>
 #include "common/assert.h"
 #include "dynarmic/frontend/A32/a32_types.h"
 #include "dynarmic/frontend/A64/a64_types.h"
@@ -81,10 +81,10 @@ static std::string TerminalToString(const Term::Terminal& terminal_variant) noex
     //         return "ReturnToDispatch{}";
     //     }
     //     std::string operator()(const Term::LinkBlock& terminal) const {
-    //         return fmt::format("LinkBlock{{{}}}", terminal.next);
+    //         return std::format("LinkBlock{{{}}}", terminal.next);
     //     }
     //     std::string operator()(const Term::LinkBlockFast& terminal) const {
-    //         return fmt::format("LinkBlockFast{{{}}}", terminal.next);
+    //         return std::format("LinkBlockFast{{{}}}", terminal.next);
     //     }
     //     std::string operator()(const Term::PopRSBHint&) const {
     //         return "PopRSBHint{}";
@@ -93,62 +93,62 @@ static std::string TerminalToString(const Term::Terminal& terminal_variant) noex
     //         return "FastDispatchHint{}";
     //     }
     //     std::string operator()(const Term::If& terminal) const {
-    //         return fmt::format("If{{{}, {}, {}}}", A64::CondToString(terminal.if_), TerminalToString(terminal.then_), TerminalToString(terminal.else_));
+    //         return std::format("If{{{}, {}, {}}}", A64::CondToString(terminal.if_), TerminalToString(terminal.then_), TerminalToString(terminal.else_));
     //     }
     //     std::string operator()(const Term::CheckBit& terminal) const {
-    //         return fmt::format("CheckBit{{{}, {}}}", TerminalToString(terminal.then_), TerminalToString(terminal.else_));
+    //         return std::format("CheckBit{{{}, {}}}", TerminalToString(terminal.then_), TerminalToString(terminal.else_));
     //     }
     //     std::string operator()(const Term::CheckHalt& terminal) const {
-    //         return fmt::format("CheckHalt{{{}}}", TerminalToString(terminal.else_));
+    //         return std::format("CheckHalt{{{}}}", TerminalToString(terminal.else_));
     //     }
     // } visitor;
     // return boost::apply_visitor(visitor, terminal_variant);
     return "";
 }
 
-std::string DumpBlock(const IR::Block& block) noexcept {
-    std::string ret = fmt::format("Block: location={}-{}\n", block.Location(), block.EndLocation())
-        + fmt::format("cycles={}", block.CycleCount())
-        + fmt::format(", entry_cond={}", A64::CondToString(block.GetCondition()));
-    if (block.GetCondition() != Cond::AL)
-        ret += fmt::format(", cond_fail={}", block.ConditionFailedLocation());
-    ret += '\n';
+static std::string ArgToString(const IR::Value& arg) {
+    if (arg.IsEmpty()) {
+        return "<null>";
+    } else if (!arg.IsImmediate()) {
+        if (auto const name = arg.GetInst()->GetName())
+            return std::format("%{}", name);
+        return std::format("%<unnamed inst {:016x}>", u64(arg.GetInst()));
+    }
+    switch (arg.GetType()) {
+    case Type::U1: return std::format("#{}", arg.GetU1() ? '1' : '0');
+    case Type::U8: return std::format("#{}", arg.GetU8());
+    case Type::U16: return std::format("#{:#x}", u32(arg.GetU16()));
+    case Type::U32: return std::format("#{:#x}", arg.GetU32());
+    case Type::U64: return std::format("#{:#x}", arg.GetU64());
+    case Type::U128: return std::format("#<u128 imm>");
+    case Type::A32Reg: return A32::RegToString(arg.GetA32RegRef());
+    case Type::A32ExtReg: return A32::ExtRegToString(arg.GetA32ExtRegRef());
+    case Type::A64Reg: return A64::RegToString(arg.GetA64RegRef());
+    case Type::A64Vec: return A64::VecToString(arg.GetA64VecRef());
+    case Type::CoprocInfo: return std::format("$coproc{}", arg.GetCoprocInfo()[0]);
+    case Type::NZCVFlags: return std::format("$nzcv");
+    case Type::Cond: return std::format("$cond={}", A32::CondToString(arg.GetCond()));
+    case Type::Table: return std::format("$table");
+    case Type::AccType: return std::format("$acc-type={}", u32(arg.GetAccType()));
+    default: return std::format("<unknown immediate type {}>", arg.GetType());
+    }
+};
 
-    const auto arg_to_string = [](const IR::Value& arg) -> std::string {
-        if (arg.IsEmpty()) {
-            return "<null>";
-        } else if (!arg.IsImmediate()) {
-            if (auto const name = arg.GetInst()->GetName())
-                return fmt::format("%{}", name);
-            return fmt::format("%<unnamed inst {:016x}>", u64(arg.GetInst()));
-        }
-        switch (arg.GetType()) {
-        case Type::U1: return fmt::format("#{}", arg.GetU1() ? '1' : '0');
-        case Type::U8: return fmt::format("#{}", arg.GetU8());
-        case Type::U16: return fmt::format("#{:#x}", arg.GetU16());
-        case Type::U32: return fmt::format("#{:#x}", arg.GetU32());
-        case Type::U64: return fmt::format("#{:#x}", arg.GetU64());
-        case Type::U128: return fmt::format("#<u128 imm>");
-        case Type::A32Reg: return A32::RegToString(arg.GetA32RegRef());
-        case Type::A32ExtReg: return A32::ExtRegToString(arg.GetA32ExtRegRef());
-        case Type::A64Reg: return A64::RegToString(arg.GetA64RegRef());
-        case Type::A64Vec: return A64::VecToString(arg.GetA64VecRef());
-        case Type::CoprocInfo: return fmt::format("$coproc{}", arg.GetCoprocInfo()[0]);
-        case Type::NZCVFlags: return fmt::format("$nzcv");
-        case Type::Cond: return fmt::format("$cond={}", A32::CondToString(arg.GetCond()));
-        case Type::Table: return fmt::format("$table");
-        case Type::AccType: return fmt::format("$acc-type={}", u32(arg.GetAccType()));
-        default: return fmt::format("<unknown immediate type {}>", arg.GetType());
-        }
-    };
+std::string DumpBlock(const IR::Block& block) noexcept {
+    std::string ret = std::format("Block: location={}-{}\n", block.Location(), block.EndLocation())
+        + std::format("cycles={}", block.CycleCount())
+        + std::format(", entry_cond={}", A64::CondToString(block.GetCondition()));
+    if (block.GetCondition() != Cond::AL)
+        ret += std::format(", cond_fail={}", block.ConditionFailedLocation());
+    ret += '\n';
 
     for (const auto& inst : block.instructions) {
         const Opcode op = inst.GetOpcode();
 
-        ret += fmt::format("[{:016x}] ", reinterpret_cast<u64>(&inst));
+        ret += std::format("[{:016x}] ", reinterpret_cast<u64>(&inst));
         if (GetTypeOf(op) != Type::Void) {
             if (inst.GetName()) {
-                ret += fmt::format("%{:<5} = ", inst.GetName());
+                ret += std::format("%{:<5} = ", inst.GetName());
             } else {
                 ret += "noname = ";
             }
@@ -163,16 +163,16 @@ std::string DumpBlock(const IR::Block& block) noexcept {
             const Value arg = inst.GetArg(arg_index);
 
             ret += arg_index != 0 ? ", " : " ";
-            ret += arg_to_string(arg);
+            ret += ArgToString(arg);
 
             Type actual_type = arg.GetType();
             Type expected_type = GetArgTypeOf(op, arg_index);
             if (!AreTypesCompatible(actual_type, expected_type)) {
-                ret += fmt::format("<type error: {} != {}>", GetNameOf(actual_type), GetNameOf(expected_type));
+                ret += std::format("<type error: {} != {}>", GetNameOf(actual_type), GetNameOf(expected_type));
             }
         }
 
-        ret += fmt::format(" (uses: {})", inst.UseCount()) + '\n';
+        ret += std::format(" (uses: {})", inst.UseCount()) + '\n';
     }
     ret += "terminal = " + TerminalToString(block.GetTerminal()) + '\n';
     return ret;

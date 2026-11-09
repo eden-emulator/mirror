@@ -25,7 +25,7 @@ ISender::~ISender() = default;
 Result ISender::Send(const OverlayNotification& notification, MessageFlags flags) {
     std::string data;
     for (const auto m : notification) {
-        data += fmt::format("{:016X} ", m);
+        data += std::format("{:016X} ", m);
     }
 
     LOG_WARNING(Service_PSC, "(STUBBED) called, flags={} notification={}", flags.raw, data);

@@ -3,7 +3,7 @@
 
 #include "video_core/gpu_logging/gpu_logging.h"
 
-#include <fmt/format.h>
+#include <format>
 #include <mutex>
 #include <thread>
 
@@ -107,7 +107,7 @@ void GPULogger::Initialize(LogLevel level, DriverType driver) {
         break;
     }
 
-    const auto header = fmt::format(
+    const auto header = std::format(
         "=== Eden GPU Logging Started ===\n"
         "Timestamp: {}\n"
         "Log Level: {}\n"
@@ -134,7 +134,7 @@ void GPULogger::Shutdown() {
     }
 
     // Write statistics
-    const auto stats = fmt::format(
+    const auto stats = std::format(
         "\n=== GPU Logging Statistics ===\n"
         "Total Vulkan Calls: {}\n"
         "Total Memory Allocations: {}\n"
@@ -203,7 +203,7 @@ void GPULogger::LogVulkanCall(const std::string& call_name, const std::string& p
 
     // Log to file
     const auto log_entry =
-        fmt::format("[{}] [Vulkan] [Thread:{}] {}({}) -> {}\n", FormatTimestamp(timestamp),
+        std::format("[{}] [Vulkan] [Thread:{}] {}({}) -> {}\n", FormatTimestamp(timestamp),
                     thread_id, call_name, params, result);
     WriteToLog(log_entry);
 }
@@ -241,7 +241,7 @@ void GPULogger::LogMemoryAllocation(uintptr_t memory, u64 size, u32 memory_flags
         }
     }
 
-    const auto log_entry = fmt::format(
+    const auto log_entry = std::format(
         "[{}] [Memory] Allocated {} at {:#x} (Device:{}, Host:{})\n", FormatTimestamp(timestamp),
         FormatMemorySize(size), memory, is_device_local ? "Yes" : "No",
         is_host_visible ? "Yes" : "No");
@@ -274,7 +274,7 @@ void GPULogger::LogMemoryDeallocation(uintptr_t memory) {
 
     if (size > 0) {
         const auto log_entry =
-            fmt::format("[{}] [Memory] Deallocated {} at {:#x}\n", FormatTimestamp(timestamp),
+            std::format("[{}] [Memory] Deallocated {} at {:#x}\n", FormatTimestamp(timestamp),
                         FormatMemorySize(size), memory);
         WriteToLog(log_entry);
     }
@@ -293,7 +293,7 @@ void GPULogger::LogShaderCompilation(const std::string& shader_name,
     const auto timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now().time_since_epoch());
 
-    const auto log_entry = fmt::format("[{}] [Shader] Compiled: {} ({})\n",
+    const auto log_entry = std::format("[{}] [Shader] Compiled: {} ({})\n",
                                        FormatTimestamp(timestamp), shader_name, shader_info);
     WriteToLog(log_entry);
 }
@@ -316,7 +316,7 @@ void DumpSpirvShader(u64 shader_hash, std::span<const u32> spirv_code) {
         [[maybe_unused]] const bool created = CreateDir(dump_dir);
     });
 
-    const auto shader_path = dump_dir / fmt::format("{:016x}_{:016x}.spv",
+    const auto shader_path = dump_dir / std::format("{:016x}_{:016x}.spv",
                                                     Settings::GetCurrentProgramID(), shader_hash);
     Common::FS::IOFile shader_file(shader_path, FileAccessMode::Write, FileType::BinaryFile);
     if (!shader_file.IsOpen()) {
@@ -345,7 +345,7 @@ void GPULogger::LogPipelineStateChange(const std::string& state_info) {
         std::chrono::steady_clock::now().time_since_epoch());
 
     const auto log_entry =
-        fmt::format("[{}] [Pipeline] State change: {}\n", FormatTimestamp(timestamp), state_info);
+        std::format("[{}] [Pipeline] State change: {}\n", FormatTimestamp(timestamp), state_info);
     WriteToLog(log_entry);
 }
 
@@ -368,7 +368,7 @@ void GPULogger::LogDriverDebugInfo(const std::string& debug_info) {
         std::chrono::steady_clock::now().time_since_epoch());
 
     const auto log_entry =
-        fmt::format("[{}] [Driver] {}\n", FormatTimestamp(timestamp), debug_info);
+        std::format("[{}] [Driver] {}\n", FormatTimestamp(timestamp), debug_info);
     WriteToLog(log_entry);
 }
 
@@ -388,13 +388,13 @@ void GPULogger::LogExtensionUsage(const std::string& extension_name, const std::
     }
 
     if (is_first_use) {
-        const auto log_entry = fmt::format("[{}] [Extension] First use of {} in {}\n",
+        const auto log_entry = std::format("[{}] [Extension] First use of {} in {}\n",
             FormatTimestamp(timestamp), extension_name, function_name);
         WriteToLog(log_entry);
         LOG_INFO(Render_Vulkan, "[GPU Logging] First use of extension {} in {}",
                  extension_name, function_name);
     } else if (current_level >= LogLevel::Verbose) {
-        const auto log_entry = fmt::format("[{}] [Extension] {} used in {}\n",
+        const auto log_entry = std::format("[{}] [Extension] {} used in {}\n",
             FormatTimestamp(timestamp), extension_name, function_name);
         WriteToLog(log_entry);
     }
@@ -412,7 +412,7 @@ void GPULogger::LogRenderPassBegin(const std::string& render_pass_info) {
     const auto timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now().time_since_epoch());
 
-    const auto log_entry = fmt::format("[{}] [RenderPass] Begin: {}\n",
+    const auto log_entry = std::format("[{}] [RenderPass] Begin: {}\n",
         FormatTimestamp(timestamp), render_pass_info);
     WriteToLog(log_entry);
 }
@@ -429,7 +429,7 @@ void GPULogger::LogRenderPassEnd() {
     const auto timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now().time_since_epoch());
 
-    const auto log_entry = fmt::format("[{}] [RenderPass] End\n", FormatTimestamp(timestamp));
+    const auto log_entry = std::format("[{}] [RenderPass] End\n", FormatTimestamp(timestamp));
     WriteToLog(log_entry);
 }
 
@@ -446,7 +446,7 @@ void GPULogger::LogPipelineBind(bool is_compute, const std::string& pipeline_inf
         std::chrono::steady_clock::now().time_since_epoch());
 
     const char* pipeline_type = is_compute ? "Compute" : "Graphics";
-    const auto log_entry = fmt::format("[{}] [Pipeline] Bind {} pipeline: {}\n",
+    const auto log_entry = std::format("[{}] [Pipeline] Bind {} pipeline: {}\n",
         FormatTimestamp(timestamp), pipeline_type, pipeline_info);
     WriteToLog(log_entry);
 }
@@ -463,7 +463,7 @@ void GPULogger::LogDescriptorSetBind(const std::string& descriptor_info) {
     const auto timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now().time_since_epoch());
 
-    const auto log_entry = fmt::format("[{}] [Descriptor] Bind: {}\n",
+    const auto log_entry = std::format("[{}] [Descriptor] Bind: {}\n",
         FormatTimestamp(timestamp), descriptor_info);
     WriteToLog(log_entry);
 }
@@ -480,7 +480,7 @@ void GPULogger::LogPipelineBarrier(const std::string& barrier_info) {
     const auto timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now().time_since_epoch());
 
-    const auto log_entry = fmt::format("[{}] [Barrier] {}\n",
+    const auto log_entry = std::format("[{}] [Barrier] {}\n",
         FormatTimestamp(timestamp), barrier_info);
     WriteToLog(log_entry);
 }
@@ -497,7 +497,7 @@ void GPULogger::LogImageOperation(const std::string& operation, const std::strin
     const auto timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now().time_since_epoch());
 
-    const auto log_entry = fmt::format("[{}] [Image] {}: {}\n",
+    const auto log_entry = std::format("[{}] [Image] {}: {}\n",
         FormatTimestamp(timestamp), operation, image_info);
     WriteToLog(log_entry);
 }
@@ -514,7 +514,7 @@ void GPULogger::LogClearOperation(const std::string& clear_info) {
     const auto timestamp = std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::steady_clock::now().time_since_epoch());
 
-    const auto log_entry = fmt::format("[{}] [Clear] {}\n",
+    const auto log_entry = std::format("[{}] [Clear] {}\n",
         FormatTimestamp(timestamp), clear_info);
     WriteToLog(log_entry);
 }
@@ -548,7 +548,7 @@ GPUStateSnapshot GPULogger::GetCurrentSnapshot() {
     // Capture memory status
     {
         std::lock_guard lock(memory_mutex);
-        snapshot.memory_status = fmt::format(
+        snapshot.memory_status = std::format(
             "Total Allocations: {}\n"
             "Current Usage: {}\n"
             "Peak Usage: {}\n"
@@ -579,7 +579,7 @@ void GPULogger::DumpStateToFile(const std::string& crash_reason) {
     const auto now = std::chrono::system_clock::now();
     const auto timestamp = std::chrono::duration_cast<std::chrono::seconds>(
         now.time_since_epoch()).count();
-    const auto crash_dump_path = crashes_dir / fmt::format("crash_{}.gpu-dump", timestamp);
+    const auto crash_dump_path = crashes_dir / std::format("crash_{}.gpu-dump", timestamp);
 
     auto crash_file =
         std::make_unique<Common::FS::IOFile>(crash_dump_path, FileAccessMode::Write, FileType::TextFile);
@@ -605,7 +605,7 @@ void GPULogger::DumpStateToFile(const std::string& crash_reason) {
     }
 
     // Write crash dump header
-    const auto header = fmt::format(
+    const auto header = std::format(
         "=== GPU CRASH DUMP ===\n"
         "Timestamp: {}\n"
         "Reason: {}\n"
@@ -615,11 +615,11 @@ void GPULogger::DumpStateToFile(const std::string& crash_reason) {
     static_cast<void>(crash_file->WriteString(header));
 
     // Write recent Vulkan calls
-    static_cast<void>(crash_file->WriteString(fmt::format("=== RECENT VULKAN API CALLS (Last {}) ===\n",
+    static_cast<void>(crash_file->WriteString(std::format("=== RECENT VULKAN API CALLS (Last {}) ===\n",
                                         snapshot.recent_calls.size())));
     for (const auto& call : snapshot.recent_calls) {
         const auto call_str =
-            fmt::format("[{}] [Thread:{}] {}({}) -> {}\n", FormatTimestamp(call.timestamp),
+            std::format("[{}] [Thread:{}] {}({}) -> {}\n", FormatTimestamp(call.timestamp),
                         call.thread_id, call.call_name, call.parameters, call.result);
         static_cast<void>(crash_file->WriteString(call_str));
     }
@@ -680,7 +680,7 @@ DriverType GPULogger::GetDriverType() const {
 
 std::string GPULogger::GetStatistics() const {
     std::lock_guard lock(memory_mutex);
-    return fmt::format(
+    return std::format(
         "Vulkan Calls: {}, Allocations: {}, Deallocations: {}, "
         "Current Memory: {}, Peak Memory: {}",
         total_vulkan_calls, total_allocations, total_deallocations,
@@ -709,19 +709,19 @@ void GPULogger::WriteToLog(const std::string& message) {
 std::string GPULogger::FormatTimestamp(std::chrono::microseconds timestamp) const {
     const auto seconds = timestamp.count() / 1000000;
     const auto microseconds = timestamp.count() % 1000000;
-    return fmt::format("{:4d}.{:06d}", seconds, microseconds);
+    return std::format("{:4d}.{:06d}", seconds, microseconds);
 }
 
 std::string GPULogger::FormatMemorySize(u64 bytes) const {
     using namespace Common::Literals;
     if (bytes >= 1_GiB) {
-        return fmt::format("{:.2f} GiB", static_cast<double>(bytes) / (1_GiB));
+        return std::format("{:.2f} GiB", static_cast<double>(bytes) / (1_GiB));
     } else if (bytes >= 1_MiB) {
-        return fmt::format("{:.2f} MiB", static_cast<double>(bytes) / (1_MiB));
+        return std::format("{:.2f} MiB", static_cast<double>(bytes) / (1_MiB));
     } else if (bytes >= 1_KiB) {
-        return fmt::format("{:.2f} KiB", static_cast<double>(bytes) / (1_KiB));
+        return std::format("{:.2f} KiB", static_cast<double>(bytes) / (1_KiB));
     } else {
-        return fmt::format("{} B", bytes);
+        return std::format("{} B", bytes);
     }
 }
 

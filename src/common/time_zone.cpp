@@ -10,8 +10,7 @@
 #include <map>
 #include <sstream>
 #include <stdexcept>
-#include <fmt/chrono.h>
-#include <fmt/core.h>
+#include <format>
 
 #include "common/logging.h"
 #include "common/time_zone.h"
@@ -96,12 +95,12 @@ std::string FindSystemTimeZone() {
     // -6 hours instead of +6 hours, so these signs are purposefully reversed to fix it.
     std::string postfix{""};
     if (hours > 0) {
-        postfix = fmt::format("-{:d}", std::abs(hours));
+        postfix = std::format("-{:d}", std::abs(hours));
     } else if (hours < 0) {
-        postfix = fmt::format("+{:d}", std::abs(hours));
+        postfix = std::format("+{:d}", std::abs(hours));
     }
 
-    return fmt::format("Etc/GMT{:s}", postfix);
+    return std::format("Etc/GMT{:s}", postfix);
 }
 
 } // namespace Common::TimeZone
