@@ -63,7 +63,7 @@
     <string name="show_bat_temperature">顯示電池溫度</string>
     <string name="bat_temperature_unit">電池溫度單位</string>
     <string name="show_power_info">顯示電池資訊</string>
-    <string name="show_power_info_description">顯示當前功耗和電池可續航時間</string>
+    <string name="show_power_info_description">顯示目前功耗和電池可續航時間</string>
     <string name="show_shaders_building">當著色器在編譯時顯示</string>
     <string name="show_shaders_building_description">顯示正在編譯的著色器數量</string>
     <string name="pipeline_worker_cores">管線工作執行緒</string>
@@ -1159,7 +1159,7 @@
     <string name="app_settings">Eden 介面設定</string>
     <string name="theme_and_color">主題和顏色</string>
     <string name="fullscreen_mode">全螢幕模式</string>
-    <string name="fullscreen_mode_description">在使用 Eden 時隱藏 Android 系統的導覽列，在直向時從螢幕底部往上滑以暫時顯示它們；橫向時則從螢幕側邊往內滑動</string>
+    <string name="fullscreen_mode_description">在使用 Eden 時隱藏 Android 系統的導覽列及狀態列，在直向時從螢幕底部或頂部往內滑以暫時顯示它們；橫向時則從螢幕側邊往內滑動</string>
 
     <!-- Theme Modes -->
     <string name="change_theme_mode">變更主題模式</string>

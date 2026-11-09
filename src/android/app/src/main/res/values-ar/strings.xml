@@ -1042,12 +1042,12 @@
     <string name="memory_8gb">8 جيجابايت (غير آمن)</string>
 
     <!-- CPU clock levels -->
-    <string name="clock_normal">طبيعي</string>
-    <string name="clock_boost">طبيعي</string>
+    <string name="clock_normal">قياسي</string>
+    <string name="clock_boost">تعزيز</string>
     <string name="clock_fast">كسر السرعة</string>
 
     <!-- GPU clock levels -->
-    <string name="fast_gpu_normal">طبيعي</string>
+    <string name="fast_gpu_normal">قياسي</string>
     <string name="fast_gpu_medium">تعزيز</string>
     <string name="fast_gpu_high">كسر السرعة</string>
 
@@ -1115,12 +1115,12 @@
     <string name="anti_aliasing_none">لا شيء</string>
     <!-- Screen Layouts -->
     <string name="screen_layout_auto">تلقائي</string>
-    <string name="screen_layout_sensor_landscape">منظر مستشعرات</string>
-    <string name="screen_layout_landscape">منظر طبيعي</string>
-    <string name="screen_layout_reverse_landscape">منظر عكسي</string>
-    <string name="screen_layout_sensor_portrait">صورة المستشعر</string>
-    <string name="screen_layout_portrait">عمودي</string>
-    <string name="screen_layout_reverse_portrait">صورة عكسية</string>
+    <string name="screen_layout_sensor_landscape">الوضع الأفقي المستشعر</string>
+    <string name="screen_layout_landscape">الوضع الأفقي</string>
+    <string name="screen_layout_reverse_landscape">الوضع الأفقي المقلوب</string>
+    <string name="screen_layout_sensor_portrait">الوضع العمودي المستشعر</string>
+    <string name="screen_layout_portrait">الوضع العمودي</string>
+    <string name="screen_layout_reverse_portrait">الوضع العمودي المقلوب</string>
 
     <string name="ratio_stretch">تمديد إلى النافذة</string>
 

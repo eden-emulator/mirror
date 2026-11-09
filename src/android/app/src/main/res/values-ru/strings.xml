@@ -577,6 +577,7 @@
     <string name="skip_cpu_inner_invalidation">Пропустить внутреннюю инвалидацию ЦП</string>
     <string name="skip_cpu_inner_invalidation_description">Пропускает некоторые инвалидации кэша на стороне ЦП при обновлениях памяти, уменьшая нагрузку на процессор и повышая производительность. Может вызывать сбои в некоторых играх.</string>
     <string name="fix_bloom_effects">Исправить эффекты размытия</string>
+    <string name="fix_bloom_effects_description">Убирает эффект размытия в Burnout.</string>
     <string name="emulate_bgr565">Эмулировать BGR565</string>
     <string name="emulate_bgr565_description">Исправляет проблемы с инвертированными цветами в играх, а также со странными артефактами или некорректными тенями.</string>
     <string name="rescale_hack">Включить старый метод изменения разрешения</string>
@@ -813,6 +814,12 @@
     <string name="preferences_graphics">Графика</string>
     <string name="preferences_graphics_description">Уровень точности, разрешение, кэш шейдеров</string>
     <string name="quick_settings">Быстрые настройки</string>
+    <string name="cheats">Читы</string>
+    <string name="enable_all_cheats">Включить все читы</string>
+    <string name="disable_all_cheats">Отключить все читы</string>
+    <string name="unnamed_cheat">Безымянный чит</string>
+    <string name="enable_cheats_by_default">Включить читы по умолчанию</string>
+    <string name="enable_cheats_by_default_description">Включить стандартные читы при запуске игры</string>
     <string name="enable_quick_settings">Включить быстрые настройки</string>
     <string name="enable_quick_settings_description">Разрешить открывать меню быстрых настроек свайпом и кнопкой меню</string>
     <string name="preferences_audio">Аудио</string>
