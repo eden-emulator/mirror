@@ -268,6 +268,13 @@ GraphicsPipeline::GraphicsPipeline(
         if (!info) {
             continue;
         }
+        has_side_effects |= info->stores_global_memory ||
+                            std::ranges::any_of(info->storage_buffers_descriptors,
+                                                [](const auto& d) { return d.is_written; }) ||
+                            std::ranges::any_of(info->image_buffer_descriptors,
+                                                [](const auto& d) { return d.is_written; }) ||
+                            std::ranges::any_of(info->image_descriptors,
+                                                [](const auto& d) { return d.is_written; });
         stage_infos[stage] = *info;
         enabled_uniform_buffer_masks[stage] = info->constant_buffer_mask;
         std::ranges::copy(info->constant_buffer_used_sizes, uniform_buffer_sizes[stage].begin());
@@ -884,6 +891,16 @@ void GraphicsPipeline::MakePipeline(VkRenderPass render_pass) {
     }
     if (device.IsExtProvokingVertexSupported()) {
         provoking_vertex.pNext = std::exchange(rasterization_ci.pNext, &provoking_vertex);
+    }
+    VkPipelineRasterizationDepthClipStateCreateInfoEXT depth_clip{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_DEPTH_CLIP_STATE_CREATE_INFO_EXT,
+        .pNext = nullptr,
+        .flags = 0,
+        .depthClipEnable =
+            static_cast<VkBool32>(dynamic.depth_clip_disabled == 0 ? VK_TRUE : VK_FALSE),
+    };
+    if (device.IsExtDepthClipEnableSupported()) {
+        depth_clip.pNext = std::exchange(rasterization_ci.pNext, &depth_clip);
     }
 
     const bool supports_alpha_output = fragment_has_color0_output;

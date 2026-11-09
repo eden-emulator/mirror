@@ -1343,6 +1343,10 @@ void Device::RemoveUnsuitableExtensions() {
     RemoveExtensionFeatureIfUnsuitable(extensions.depth_clip_control, features.depth_clip_control,
                                        VK_EXT_DEPTH_CLIP_CONTROL_EXTENSION_NAME);
 
+    extensions.depth_clip_enable = features.depth_clip_enable.depthClipEnable;
+    RemoveExtensionFeatureIfUnsuitable(extensions.depth_clip_enable, features.depth_clip_enable,
+                                       VK_EXT_DEPTH_CLIP_ENABLE_EXTENSION_NAME);
+
     // VK_EXT_descriptor_buffer
     extensions.descriptor_buffer = features.descriptor_buffer.descriptorBuffer;
     RemoveExtensionFeatureIfUnsuitable(extensions.descriptor_buffer, features.descriptor_buffer,

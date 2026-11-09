@@ -133,6 +133,11 @@ public:
         return is_built.load(std::memory_order::relaxed);
     }
 
+    /// A stage writes memory (storage buffers, images, global memory)
+    [[nodiscard]] bool HasSideEffects() const noexcept {
+        return has_side_effects;
+    }
+
     template <typename Spec>
     static auto MakeConfigureSpecFunc() {
         return [](GraphicsPipeline* pl, bool is_indexed) { return pl->ConfigureImpl<Spec>(is_indexed); };
@@ -190,6 +195,7 @@ private:
 
     DescriptorBufferLayout descriptor_buffer_layout;
     std::vector<DescriptorUpdateEntry> last_descriptor_payload;
+    bool has_side_effects{false};
     VkDeviceSize last_descriptor_buffer_offset{};
     u32 last_descriptor_buffer_chunk{};
     u64 last_descriptor_buffer_generation{};

@@ -30,6 +30,7 @@ struct DynamicFeatures {
     bool has_extended_dynamic_state_3_blend;
     bool has_extended_dynamic_state_3_enables;
     bool has_dynamic_state3_depth_clamp_enable;
+    bool has_depth_clip_enable;
     bool has_dynamic_state3_logic_op_enable;
     bool has_dynamic_state3_line_stipple_enable;
     bool has_dynamic_vertex_input;
@@ -39,6 +40,12 @@ struct DynamicFeatures {
     bool has_provoking_vertex_last_mode;
     bool has_provoking_vertex_tf_preserve;
 };
+
+struct DepthClampClip {
+    bool clamp;
+    bool clip;
+};
+[[nodiscard]] DepthClampClip MaxwellDepthClampClip(const Maxwell& regs, bool has_depth_clip_enable);
 
 struct FixedPipelineState {
     static u32 PackComparisonOp(Maxwell::ComparisonOp op) noexcept;
@@ -165,6 +172,7 @@ struct FixedPipelineState {
             BitField<10, 1, u32> logic_op_enable;
             BitField<11, 1, u32> depth_clamp_disabled;
             BitField<12, 1, u32> line_stipple_enable;
+            BitField<13, 1, u32> depth_clip_disabled;
         };
         union {
             u32 raw2;

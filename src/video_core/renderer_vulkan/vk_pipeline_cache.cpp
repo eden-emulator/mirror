@@ -63,7 +63,7 @@ using VideoCommon::FileEnvironment;
 using VideoCommon::GenericEnvironment;
 using VideoCommon::GraphicsEnvironment;
 
-constexpr u32 CACHE_VERSION = 18;
+constexpr u32 CACHE_VERSION = 19;
 constexpr size_t VULKAN_CACHE_FLUSH_PIPELINES = 128;
 constexpr size_t VULKAN_CACHE_FLUSH_MIN_SECONDS = 30;
 constexpr std::array<char, 8> VULKAN_CACHE_MAGIC_NUMBER{'y', 'u', 'z', 'u', 'v', 'k', 'c', 'h'};
@@ -537,6 +537,7 @@ PipelineCache::PipelineCache(Tegra::MaxwellDeviceMemoryManager& device_memory_,
     dynamic_features.has_dynamic_state3_depth_clamp_enable =
         dynamic_features.has_extended_dynamic_state_3_enables &&
         device.SupportsDynamicState3DepthClampEnable();
+    dynamic_features.has_depth_clip_enable = device.IsExtDepthClipEnableSupported();
     dynamic_features.has_dynamic_state3_logic_op_enable =
         dynamic_features.has_extended_dynamic_state_3_enables &&
         device.SupportsDynamicState3LogicOpEnable();
@@ -790,9 +791,25 @@ GraphicsPipeline* PipelineCache::BuiltPipeline(GraphicsPipeline* pipeline) const
     if (!use_asynchronous_shaders) {
         return pipeline;
     }
+    {
+        const auto& rt0 = maxwell3d->regs.rt[0];
+        const u64 area = u64{rt0.width} * u64{rt0.height};
+        if (rt0.width != 0 && area < u64{640} * 360) {
+            return pipeline;
+        }
+    }
+    // A draw that writes memory (vertex data computed in a vertex shader, transform feedback, a
+    // draw with the rasterizer off) is used by later draws: skipping it breaks them for the
+    // session, not one frame (Super Mario Party Jamboree's characters after a fresh shader cache).
+    const auto& regs = maxwell3d->regs;
+    const bool side_effects{pipeline->HasSideEffects() || regs.transform_feedback_enabled != 0 ||
+                            regs.rasterize_enable == 0};
+    if (side_effects) {
+        return pipeline;
+    }
     // If something is using depth, we can assume that games are not rendering anything which
     // will be used one time.
-    if (maxwell3d->regs.zeta_enable) {
+    if (regs.zeta_enable) {
         return nullptr;
     }
     // If games are using a small index count, we can assume these are full screen quads.
