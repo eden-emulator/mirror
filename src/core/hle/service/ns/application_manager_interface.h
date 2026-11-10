@@ -71,6 +71,20 @@ public:
                                   OutBuffer<BufferAttr_HipcMapAlias> out_buffer,
                                   u64 application_id,
                                   InBuffer<BufferAttr_HipcMapAlias> logo_path_buffer);
+    Result Unknown3250(OutCopyHandle<Kernel::KReadableEvent> out_event);
+    Result Unknown3251(Out<s64> out_count, OutBuffer<BufferAttr_HipcMapAlias> out_buffer);
+    Result Unknown3253(Out<s64> out_count, OutBuffer<BufferAttr_HipcMapAlias> out_buffer,
+                       u64 arg);
+    Result Unknown3254(Out<s64> out_count, OutBuffer<BufferAttr_HipcMapAlias> out_buffer);
+    Result Unknown3255(u8 arg, u64 id);
+    Result Unknown3256(std::array<u8, 0x48> args);
+    Result Unknown3257(u64 id);
+    Result Unknown3258(Out<s64> out_count, OutBuffer<BufferAttr_HipcMapAlias> out_buffer,
+                       u64 arg);
+    Result Unknown3259(bool flag, u64 id);
+    Result Unknown3260(bool flag1, bool flag2, u64 arg1, u64 arg2);
+    Result Unknown3261(Out<bool> out_result, u64 arg);
+    Result Unknown3262(Out<s64> out_count, OutBuffer<BufferAttr_HipcMapAlias> out_buffer);
     Result Unknown4022(OutCopyHandle<Kernel::KReadableEvent> out_event);
     Result Unknown4023(Out<u64> out_result);
     Result Unknown4042(OutInterface<IAsyncResult> out_interface,
@@ -95,6 +109,7 @@ private:
     Event gamecard_mount_failure_event;
     Event gamecard_waken_ready_event;
     Event unknown_event;
+    Event present_event;
 };
 
 } // namespace Service::NS

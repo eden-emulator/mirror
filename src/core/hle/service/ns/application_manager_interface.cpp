@@ -31,7 +31,8 @@ IApplicationManagerInterface::IApplicationManagerInterface(Core::System& system_
       record_update_system_event{service_context}, sd_card_mount_status_event{service_context},
       gamecard_update_detection_event{service_context},
       gamecard_mount_status_event{service_context}, gamecard_mount_failure_event{service_context},
-      gamecard_waken_ready_event{service_context}, unknown_event{service_context} {
+      gamecard_waken_ready_event{service_context}, unknown_event{service_context},
+      present_event{service_context} {
     // clang-format off
     static const FunctionInfo functions[] = {
         {0, D<&IApplicationManagerInterface::ListApplicationRecord>, "ListApplicationRecord"},
@@ -388,6 +389,19 @@ IApplicationManagerInterface::IApplicationManagerInterface(Core::System& system_
         {3050, nullptr, "ListAssignELicenseTaskResult"},
         {3104, nullptr, "GetApplicationNintendoLogo"}, //18.0.0+
         {3105, nullptr, "GetApplicationStartupMovie"}, //18.0.0+
+        {3250, D<&IApplicationManagerInterface::Unknown3250>, "Unknown3250"}, //23.5.0+
+        {3251, D<&IApplicationManagerInterface::Unknown3251>, "Unknown3251"}, //23.5.0+
+        {3252, nullptr, "Unknown3252"}, //23.5.0+
+        {3253, D<&IApplicationManagerInterface::Unknown3253>, "Unknown3253"}, //23.5.0+
+        {3254, D<&IApplicationManagerInterface::Unknown3254>, "Unknown3254"}, //23.5.0+
+        {3255, D<&IApplicationManagerInterface::Unknown3255>, "Unknown3255"}, //23.5.0+
+        {3256, D<&IApplicationManagerInterface::Unknown3256>, "Unknown3256"}, //23.5.0+
+        {3257, D<&IApplicationManagerInterface::Unknown3257>, "Unknown3257"}, //23.5.0+
+        {3258, D<&IApplicationManagerInterface::Unknown3258>, "Unknown3258"}, //23.5.0+
+        {3259, D<&IApplicationManagerInterface::Unknown3259>, "Unknown3259"}, //23.5.0+
+        {3260, D<&IApplicationManagerInterface::Unknown3260>, "Unknown3260"}, //23.5.0+
+        {3261, D<&IApplicationManagerInterface::Unknown3261>, "Unknown3261"}, //23.5.0+
+        {3262, D<&IApplicationManagerInterface::Unknown3262>, "Unknown3262"}, //23.5.0+
         {4000, nullptr, "Unknown4000"}, //20.0.0+
         {4004, nullptr, "Unknown4004"}, //20.0.0+
         {4006, nullptr, "Unknown4006"}, //20.0.0+
@@ -851,6 +865,82 @@ Result IApplicationManagerInterface::RequestDownloadApplicationControlDataInBack
              control_source, application_id);
 
     unknown_event.Signal(system.Kernel());
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3250(
+    OutCopyHandle<Kernel::KReadableEvent> out_event) {
+    LOG_WARNING(Service_NS, "(STUBBED) called");
+    *out_event = present_event.GetHandle();
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3251(Out<s64> out_count,
+                                                 OutBuffer<BufferAttr_HipcMapAlias> out_buffer) {
+    LOG_WARNING(Service_NS, "(STUBBED) called");
+    *out_count = 0;
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3253(Out<s64> out_count,
+                                                 OutBuffer<BufferAttr_HipcMapAlias> out_buffer,
+                                                 u64 arg) {
+    LOG_WARNING(Service_NS, "(STUBBED) called, arg={:016X}", arg);
+    *out_count = 0;
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3254(Out<s64> out_count,
+                                                 OutBuffer<BufferAttr_HipcMapAlias> out_buffer) {
+    LOG_WARNING(Service_NS, "(STUBBED) called");
+    *out_count = 0;
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3255(u8 arg, u64 id) {
+    LOG_WARNING(Service_NS, "(STUBBED) called, id={:016X}, arg={}", id, arg);
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3256(std::array<u8, 0x48> args) {
+    LOG_WARNING(Service_NS, "(STUBBED) called");
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3257(u64 id) {
+    LOG_WARNING(Service_NS, "(STUBBED) called, id={:016X}", id);
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3258(Out<s64> out_count,
+                                                 OutBuffer<BufferAttr_HipcMapAlias> out_buffer,
+                                                 u64 arg) {
+    LOG_WARNING(Service_NS, "(STUBBED) called, arg={:016X}", arg);
+    *out_count = 0;
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3259(bool flag, u64 id) {
+    LOG_WARNING(Service_NS, "(STUBBED) called, id={:016X}, flag={}", id, flag);
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3260(bool flag1, bool flag2, u64 arg1, u64 arg2) {
+    LOG_WARNING(Service_NS, "(STUBBED) called, arg1={:016X}, arg2={:016X}, flag1={}, flag2={}",
+                arg1, arg2, flag1, flag2);
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3261(Out<bool> out_result, u64 arg) {
+    LOG_WARNING(Service_NS, "(STUBBED) called, arg={:016X}", arg);
+    *out_result = false;
+    R_SUCCEED();
+}
+
+Result IApplicationManagerInterface::Unknown3262(Out<s64> out_count,
+                                                 OutBuffer<BufferAttr_HipcMapAlias> out_buffer) {
+    LOG_WARNING(Service_NS, "(STUBBED) called");
+    *out_count = 0;
     R_SUCCEED();
 }
 
