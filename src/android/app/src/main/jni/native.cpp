@@ -606,15 +606,16 @@ constexpr CpuPartInfo s_cpu_list[] = {
     {0x51, 0xc00, "Falkor"},
     {0x51, 0xc01, "Saphira"},
     {0x51, 0x001, "Oryon"},
+    {0x51, 0x002, "Oryon"},
 };
 
-const char* find_cpu_name(u32 vendor, u32 part) {
+std::string find_cpu_name(u32 vendor, u32 part) {
     for (const auto& cpu : s_cpu_list) {
         if (cpu.vendor == vendor && cpu.part == part) {
             return cpu.name;
         }
     }
-    return nullptr;
+    return std::format("Unknown (vendor={:#04x}, part={:#03x})", vendor, part);
 }
 
 u64 read_midr_sysfs(u32 cpu_id) {
