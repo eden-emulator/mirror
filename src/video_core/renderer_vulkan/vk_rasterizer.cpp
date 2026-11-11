@@ -81,7 +81,7 @@ VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t in
                           src.swizzle.y == Maxwell::ViewportSwizzle::NegativeY;
 
     if (lower_left) {
-        // min() fixes 2D games (Unepic, Aggelos); full-surface viewports unchanged.
+        // min() fixes 2D games (Unepic, Aggelos); otherwise flip by surface clip height.
         const float clip_height = conv(static_cast<f32>(regs.surface_clip.height));
         const float flip_height = std::min(height, clip_height);
         y += flip_height;
