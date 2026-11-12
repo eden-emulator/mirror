@@ -16,7 +16,7 @@ AMD64 systems are almost always limited by the CPU. For example, a Zen 5/RX 6600
 
 Computers on Linux will almost always run Eden strictly better than an equivalent machine on Windows. This is largely due to the way the Linux kernel handles memory management (and the lack of Microsoft spyware).
 
-Intel Macs are believed to be supported, but no CI is provided for them. Performance will likely be awful on all but the highest-end iMacs and Pro-level Macs, and the MoltenVK requirement generally means Vulkan compatibility will suffer.
+Intel Macs not supported. Performance will likely be awful on all Macs except for the highest-end iMacs and Pro-level models, and the MoltenVK requirement generally means Vulkan compatibility will suffer.
 
 ## aarch64
 
