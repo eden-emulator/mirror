@@ -83,7 +83,7 @@ VkViewport GetViewportState(const Device& device, const Maxwell& regs, size_t in
     if (lower_left) {
         // min() fixes 2D games (Unepic, Aggelos); otherwise flip by surface clip height.
         const float clip_height = conv(static_cast<f32>(regs.surface_clip.height));
-        const float flip_height = std::min(height, clip_height);
+        const float flip_height = (height < clip_height) ? height : clip_height;
         y += flip_height;
         height = -height;
     }
