@@ -46,12 +46,6 @@ constexpr std::size_t YUZU_PAGEBITS = 12;
 constexpr u64 YUZU_PAGESIZE = 1ULL << YUZU_PAGEBITS;
 constexpr u64 YUZU_PAGEMASK = YUZU_PAGESIZE - 1;
 
-enum class NCEAccessFaultAction {
-    Unmapped,
-    Retry,
-    Instruction,
-};
-
 /// Virtual user-space memory regions
 enum : u64 {
     /// TLS (Thread-Local Storage) related.
@@ -499,7 +493,7 @@ public:
 
     void SetGPUDirtyManagers(std::span<Core::GPUDirtyMemoryManager> managers);
 
-    NCEAccessFaultAction InvalidateNCE(Common::ProcessAddress vaddr, size_t size);
+    bool InvalidateNCE(Common::ProcessAddress vaddr, size_t size);
 
     bool InvalidateSeparateHeap(void* fault_address);
 
