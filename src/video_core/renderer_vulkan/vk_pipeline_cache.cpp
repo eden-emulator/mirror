@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <fstream>
 #include <iostream>
@@ -245,6 +246,10 @@ Shader::RuntimeInfo MakeRuntimeInfo(std::span<const Shader::IR::Program> program
         info.convert_depth_mode = gl_ndc;
         break;
     case Shader::Stage::Fragment: {
+        if (key.state.depth_range_scale != 0 && !info.previous_stage_stores[Shader::IR::Attribute::ViewportIndex] &&
+            (key.state.depth_enabled || program.info.loads[Shader::IR::Attribute::PositionZ])) {
+            info.depth_range = std::array{std::bit_cast<float>(key.state.depth_range_scale), std::bit_cast<float>(key.state.depth_range_offset)};
+        }
         info.alpha_test_func = MaxwellToCompareFunction(
             key.state.UnpackComparisonOp(key.state.alpha_test_func.Value()));
         info.alpha_test_reference = std::bit_cast<float>(key.state.alpha_test_ref);
@@ -573,6 +578,26 @@ GraphicsPipeline* PipelineCache::CurrentGraphicsPipeline() {
         return nullptr;
     }
     graphics_key.state.Refresh(*maxwell3d, dynamic_features);
+    graphics_key.state.depth_range_scale = 0;
+    graphics_key.state.depth_range_offset = 0;
+    const auto& regs = maxwell3d->regs;
+    const auto polygon_offset = regs.polygon_offset_point_enable || regs.polygon_offset_line_enable || regs.polygon_offset_fill_enable;
+    if (!device.IsExtDepthRangeUnrestrictedSupported() && regs.viewport_scale_offset_enabled && !polygon_offset
+        && regs.anti_alias_samples_mode == Tegra::Texture::MsaaMode::Msaa1x1 && !graphics_key.state.early_z) {
+        const auto& viewport = regs.viewport_transform[0];
+        const float min_depth = viewport.translate_z - viewport.scale_z * graphics_key.state.ndc_minus_one_to_one.Value();
+        const float max_depth = viewport.translate_z + viewport.scale_z;
+        const float clamped_min = std::clamp(min_depth, 0.0f, 1.0f);
+        const float clamped_max = std::clamp(max_depth, 0.0f, 1.0f);
+        if ((min_depth != clamped_min || max_depth != clamped_max) && clamped_min != clamped_max) {
+            const float scale = (max_depth - min_depth) / (clamped_max - clamped_min);
+            const float offset = min_depth - scale * clamped_min;
+            if (std::isfinite(scale) && std::isfinite(offset)) {
+                graphics_key.state.depth_range_scale = std::bit_cast<u32>(scale);
+                graphics_key.state.depth_range_offset = std::bit_cast<u32>(offset);
+            }
+        }
+    }
 
     if (current_pipeline) {
         GraphicsPipeline* const next{current_pipeline->Next(graphics_key)};

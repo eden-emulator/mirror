@@ -1500,7 +1500,7 @@ void EmitContext::DefineInputs(const IR::Program& program) {
         layer = DefineInput(*this, U32[1], false, spv::BuiltIn::Layer);
         Decorate(layer, spv::Decoration::Flat);
     }
-    if (loads.AnyComponent(IR::Attribute::PositionX)) {
+    if (loads.AnyComponent(IR::Attribute::PositionX) || runtime_info.depth_range) {
         const bool is_fragment{stage == Stage::Fragment};
         if (!is_fragment && profile.has_broken_spirv_position_input) {
             need_input_position_indirect = true;
@@ -1709,7 +1709,7 @@ void EmitContext::DefineOutputs(const IR::Program& program) {
                 Name(frag_color[index], std::format("frag_color{}", index));
             }
         }
-        if (info.stores_frag_depth) {
+        if (info.stores_frag_depth || runtime_info.depth_range) {
             frag_depth = DefineOutput(*this, F32[1], std::nullopt);
             Decorate(frag_depth, spv::Decoration::BuiltIn, spv::BuiltIn::FragDepth);
         }

@@ -246,6 +246,8 @@ struct FixedPipelineState {
     u32 driver_version;
     u32 alpha_test_ref;
     u32 point_size;
+    u32 depth_range_scale;
+    u32 depth_range_offset;
 
     std::array<u16, Maxwell::NumViewports> viewport_swizzles;
     union {

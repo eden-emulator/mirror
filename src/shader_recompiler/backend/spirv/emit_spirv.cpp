@@ -317,7 +317,7 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
         } else {
             ctx.AddExecutionMode(main, spv::ExecutionMode::OriginUpperLeft);
         }
-        if (program.info.stores_frag_depth) {
+        if (program.info.stores_frag_depth || ctx.runtime_info.depth_range) {
             ctx.AddExecutionMode(main, spv::ExecutionMode::DepthReplacing);
         }
         if (ctx.runtime_info.force_early_z) {

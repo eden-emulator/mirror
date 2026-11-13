@@ -89,6 +89,7 @@ struct RuntimeInfo {
 
     bool convert_depth_mode{};
     bool force_early_z{};
+    std::optional<std::array<float, 2>> depth_range;
 
     TessPrimitive tess_primitive{};
     TessSpacing tess_spacing{};
