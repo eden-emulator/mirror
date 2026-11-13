@@ -21,7 +21,7 @@ Before touching the settings, see the game boots with stock options. We try our 
 - `Debug/Enable Auto Stub`: May help to "fix" some games by just lying and saying that everything they do returns "success" instead of outright crashing for any function/service that is NOT implemented.
 - `Debug/Show log in console`: Does as said, note that the program may need to be reopened (Windows) for changes to take effect.
 - `Debug/Flush log output`: Classically, every write to the log is "buffered", that is, changes aren't written to the disk UNTIL the program has decided it is time to write, until then it keeps data in a buffer which resides on RAM. If the program crashes, the OS will automatically discard said buffer (any RAM associated with a dead process is automatically discarded/reused for some other purpose); this means critical data may not be logged to the disk on time, which may lead to missing log lines. Use this if you're wanting to remove that factor when debugging, sometimes a hard crash may "eat" some of the log lines IF this option isn't enabled.
-- `Debug/Disable Macro HLE:` The emulator has HLE emulation of macro programs for Maxwell, this means that some details are purpousefully skipped; this option forces all macro programs to be ran without skipping anything.
+- `Debug/Disable Macro HLE:` The emulator has HLE emulation of macro programs for Maxwell, this means that some details are purposefully skipped; this option forces all macro programs to be run without skipping anything.
 
 ## System
 

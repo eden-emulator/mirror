@@ -265,7 +265,7 @@ If you are packaging a project that uses CPMUtil, read this!
 
 ### Network Sandbox
 
-For sandboxed environments (e.g. Gentoo, nixOS) you must install all dependencies to the system beforehand and set `-DCPMUTIL_FORCE_SYSTEM=ON`. If a dependency is missing, get creating!
+For sandboxed environments (e.g. Gentoo, nixOS) you must install all dependencies to the system beforehand and set `-DCPMUTIL_FORCE_SYSTEM=ON`. If a dependency is missing, start packaging it!
 
 Alternatively, if CPMUtil pulls in a package that has no suitable way to install or use a system version, download it separately and pass `-D<PackageName>_CUSTOM_DIR=/path/to/downloaded/dir`.
 
@@ -344,10 +344,10 @@ Then, call `find_package(Qt6 ...)` and it will pull Qt from your downloaded sour
 
 ## Addendum: Package-Specific Overrides
 
-There are three variables that CPMUtil defines for each package; these can be overriden by the user or in your CMake. `package` refers either to the `package` value in the JSON, or the package's JSON key if unset (see `package` in [Common Properties](#common-properties)):
+There are three variables that CPMUtil defines for each package; these can be overridden by the user or in your CMake. `package` refers either to the `package` value in the JSON, or the package's JSON key if unset (see `package` in [Common Properties](#common-properties)):
 
 - `<package>_FORCE_BUNDLED`: Forcefully bundle the package. This has the same effect as `CPMUTIL_FORCE_BUNDLED`, but only for this package.
-- `<package>_FORCE_BUNDLED`: Forcefully use the system package, failing if it can't be found. This has the same effect as `SYSTEM`, but only for this package.
+- `<package>_FORCE_SYSTEM`: Forcefully use the system package, failing if it can't be found. This has the same effect as `CPMUTIL_FORCE_SYSTEM`, but only for this package.
 - `<package>_CUSTOM_DIR`: Path to an extracted copy of the package. CPMUtil will not attempt to download the package and will instead use the custom directory.
   - For an example, see [CPMUtil's test case](https://git.crueter.xyz/CMake/CPMUtil/src/branch/master/tests/dir/CMakeLists.txt)
 
@@ -359,7 +359,7 @@ Many package managers suffer from the issue of supply chain security, specifical
 
 ### Checksumming
 
-CPMUtil *requires* SHA512 checksums for standard packages, and soon will for CI packages as well. If an attacker or compromised account slides a tag, overwrites a release artifact, or otherwise attempts to compromise anything that CPMUtil may fetch, **CPMUtil will not allow the download to continue!** This means that consumers of your build system can **only** download an artifact if the contents of the artifact are *exactly* indentical to what it was when it was configured--any changes at all will be rejected by CPMUtil.
+CPMUtil *requires* SHA512 checksums for standard packages, and soon will for CI packages as well. If an attacker or compromised account slides a tag, overwrites a release artifact, or otherwise attempts to compromise anything that CPMUtil may fetch, **CPMUtil will not allow the download to continue!** This means that consumers of your build system can **only** download an artifact if the contents of the artifact are *exactly* identical to what it was when it was configured--any changes at all will be rejected by CPMUtil.
 
 ### Caching
 

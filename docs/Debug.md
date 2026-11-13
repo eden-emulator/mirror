@@ -47,7 +47,7 @@ Type `c` (for continue) and then if it crashes just do a `bt` (backtrace) and `l
 ### gdb cheatsheet
 
 - `mo <cmd>`: Monitor commands, `get info`, `get fastmem` and `get mappings` are available. Type `mo help` for more info.
-- `detach`: Detach from remote (i.e restarting the emulator).
+- `detach`: Detach from remote (i.e., when restarting the emulator).
 - `c`: Continue
 - `p <expr>`: Print variable, `p/x <expr>` for hexadecimal.
 - `r`: Run
@@ -106,7 +106,7 @@ Here is a short checklist of items to look at to make sure are appropriate:
 
 - Draw call counts are correct (aka not zero, or if rendering many triangles, not 3)
 - Vertex buffers are bound
-- vertex attributes are correct - Make sure the size & offset of each attribute matches what should it should be
+- vertex attributes are correct - Make sure the size & offset of each attribute matches what it should be
 - Any bound push constants and descriptors have the right data - including:
   - Matrices have correct values - double check the model, view, & projection matrices are uploaded correctly
 - Pipeline state is correct

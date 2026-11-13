@@ -1,6 +1,6 @@
 # User Handbook - Graphics
 
-Graphical enhancements and visual quality improvments. This doesn't cover texture mods.
+Graphical enhancements and visual quality improvements. This doesn't cover texture mods.
 
 ## Visual Enhancements
 
@@ -9,7 +9,7 @@ Graphical enhancements and visual quality improvments. This doesn't cover textur
 Enhancements aimed at removing jagged lines/sharp edges and/or masking artifacts.
 
 - **No AA**: Default, provides no anti-aliasing.
-- **FXAA**: Fast Anti-Aliasing, an implementation as described on [this blog post](https://web.archive.org/web/20110831051323/http://timothylottes.blogspot.com/2011/03/nvidia-fxaa.html). Generally fast but with some innocuos artifacts.
+- **FXAA**: Fast Anti-Aliasing, an implementation as described on [this blog post](https://web.archive.org/web/20110831051323/http://timothylottes.blogspot.com/2011/03/nvidia-fxaa.html). Generally fast but with some innocuous artifacts.
 - **SMAA**: Subpixel Morphological Anti-Aliasing, an implementation as described on [this article](https://web.archive.org/web/20250000000000*/https://www.iryoku.com/smaa/).
 
 ### Filters
@@ -37,7 +37,7 @@ Various graphical filters exist - each of them aimed at a specific target/image 
   - **Pros**: Relatively fast.
 - **FSR**: Uses AMD FidelityFX Super Resolution to enhance image quality.
   - **Pros**: Great for upscaling, and offers sharper visual quality.
-  - **Cons**: Somewhat slow, and may be offputtingly sharp.
+  - **Cons**: Somewhat slow, and may be off-puttingly sharp.
 - **Area**: Area interpolation (high kernel count).
   - **Pros**: Best for downscaling (internal resolution > display resolution).
   - **Cons**: Costly and slow.
@@ -73,9 +73,9 @@ While stock shaders offer a basic subset of options for most users, programs suc
 2. Progress to a point with a flickering shader.
 3. Hit the Home key on keyboard (or change binds if you don't have one).
 4. Navigate to the add on tab at the top of the ReShade menu.
-5. At the bottom where Shader Toggler is at open the drop down and max out the slider that says "# of fames collected" then select change shaders while staring at the flickering shader.
+5. At the bottom where Shader Toggler is at open the drop down and max out the slider that says "# of frames collected" then select change shaders while staring at the flickering shader.
 6. When the Shader Toggler finishes collecting frames in the top left hit Numpad 2 till it turns off the flickering lines.
-7. Hit Numpad 3 to add it the group of shaders to turn off and hit done and save all toggle groups.
+7. Hit Numpad 3 to add it to the group of shaders to turn off and hit done and save all toggle groups.
 8. Hit the edit button and select "active at startup" for the shader to be turned off on every game launch.
 9. Caps lock to manually turn on and off the shader (default key you can change it with the previous edit button) 
 
@@ -91,7 +91,7 @@ Unstable multithreaded optimisations are offered by the stock proprietary NVIDIA
 
 ### swrast/LLVMpipe crashes under high load
 
-The OpenGL backend would invoke behaviour that would result in swarst/LLVMpipe writing an invalid SSA IR (on old versions of Mesa), and then proceeding to crash. The solution is using a script found in [tools/llvmpipe-run.sh](../../tools/llvmpipe-run.sh).
+The OpenGL backend would invoke behaviour that would result in swrast/LLVMpipe writing an invalid SSA IR (on old versions of Mesa), and then proceeding to crash. The solution is using a script found in [tools/llvmpipe-run.sh](../../tools/llvmpipe-run.sh).
 
 ### HaikuOS compatibility
 

@@ -1,6 +1,6 @@
 # Eden Quick Start
 
-Use this guide to get starting using the Eden emulator.
+Use this guide to get started using the Eden emulator.
 
 **[See here](https://evilperson1337.notion.site/Eden-Quick-Start-2b057c2edaf6817b9859d8bcdb474017) for an illustrated guide.**
 

@@ -33,7 +33,7 @@ The method to access save data is simple:
 
 One of the best ways to keep a gallery of archives is using a ZFS pool compressed with zstd.
 ```sh
-sudo zfs create zroot/switch`
+sudo zfs create zroot/switch
 sudo zfs set compression=zstd zroot/switch
 ```
-A new ZFS dataset will then be available on `/zroot/switch`. From which then can be added as a normal game directory. Remember to ensure proper permissions with `chmod 755 /zroot/switch/*`.
+A new ZFS dataset will then be available on `/zroot/switch`. It can then be added as a normal game directory. Remember to ensure proper permissions with `chmod 755 /zroot/switch/*`.

@@ -29,10 +29,10 @@ That depends entirely on what your goal is and your level of technical ability, 
 1. Join a Public Lobby.
     1. If you just want to play *Mario Kart 8 Deluxe* with other people and don't care how it works or about latency - this is the option for you. See the *Joining a Multiplayer Room* section for instructions on how to do this.
 2. Host Your Own Room.
-    1. This option will require you to be comfortable with accessing your router's configuration, altering firewall rules, and troubleshooting when things (inevitably) don't work out perfectly on the first try.  Use this option if you want to control the room entirely, are concerned about latency issues, or just want to run something for your friends. See the *Hosting a Multiplayer Room* section for next steps*.*
+    1. This option will require you to be comfortable with accessing your router's configuration, altering firewall rules, and troubleshooting when things (inevitably) don't work out perfectly on the first try.  Use this option if you want to control the room entirely, are concerned about latency issues, or just want to run something for your friends. See the *Hosting a Multiplayer Room* section for next steps.
 
 ### Can Other Platforms Play Together?
-Yes - the platform you choose to run the emulator on does not matter.  Steam Deck users can play with Windows users, Android users can play with MacOS users, etc.  Furthermore different emulators can play together as well (Eden/Citron/Ryubing, etc.) - but be you may want to all go to the same one if you are having issues.
+Yes - the platform you choose to run the emulator on does not matter.  Steam Deck users can play with Windows users, Android users can play with MacOS users, etc.  Furthermore different emulators can play together as well (Eden/Citron/Ryubing, etc.) - but you may want to all go to the same one if you are having issues.
 
 ### What Pitfalls Should I Look Out For?
 While it would be nice if everything always worked perfectly - that is not reality.  Here are some things you should watch out for when attempting to play multiplayer.
@@ -160,9 +160,9 @@ Remember you can't have one port open for multiple devices at the same time - yo
     </aside>
     
 
-Using a Tunnelling service may be the solution to avoid port forward, but also avoid worrying about your users setup. A tunnelling service works by having a lightweight client run on the machine that hosts the game server. That client immediately opens an **outbound** encrypted connection (typically over TLS/QUIC) to a relay node operated by the tunnel provider's cloud infrastructure. Because outbound traffic is almost always allowed through NAT routers and ISP firewalls, the tunnel can be established even when the host sits behind carrier-grade NAT or a strict firewall. The tunnel provider then assigns a public address (e.g., `mygame.playit.gg:12345`). When a remote player connects to that address, the traffic reaches the the tunnel provider relay, which forwards it through the already-established tunnel back to the client on the private network, and finally onto the local game server's port. In effect, the server appears to the Internet as if it were listening on the public address, while the host never needs to configure port-forwarding rules or expose its own IP directly.
+Using a Tunnelling service may be the solution to avoid port forward, but also avoid worrying about your users' setup. A tunnelling service works by having a lightweight client run on the machine that hosts the game server. That client immediately opens an **outbound** encrypted connection (typically over TLS/QUIC) to a relay node operated by the tunnel provider's cloud infrastructure. Because outbound traffic is almost always allowed through NAT routers and ISP firewalls, the tunnel can be established even when the host sits behind carrier-grade NAT or a strict firewall. The tunnel provider then assigns a public address (e.g., `mygame.playit.gg:12345`). When a remote player connects to that address, the traffic reaches the tunnel provider relay, which forwards it through the already-established tunnel back to the client on the private network, and finally onto the local game server's port. In effect, the server appears to the Internet as if it were listening on the public address, while the host never needs to configure port-forwarding rules or expose its own IP directly.
 
-For our purposes we would spawn the listener for the port that way chose when hosting our room.  The user would connect to our assigned public address/port combination, and it would be routed to our machine.  The tunnel must remain active for as long as you want the connection to remain open.  Closing the terminal will kill the tunnel and disconnect the users.
+For our purposes we would spawn the listener for the port you chose when hosting our room.  The user would connect to our assigned public address/port combination, and it would be routed to our machine.  The tunnel must remain active for as long as you want the connection to remain open.  Closing the terminal will kill the tunnel and disconnect the users.
 
 **Recommended Services:**
 - [*Playit.GG*](https://playit.gg/)
@@ -205,7 +205,7 @@ Use this guide when you need to determine the connection information for the Pub
 1. Open Eden and Connect to the room you want to identify.
     1. See the *Joining a Multiplayer Room* section for instructions on how to do so if you need them.
 2. Go to *File > Open Eden Folder*, then open the **config** folder.
-3. Open the the **qt-config.ini** file in a text editor.
+3. Open the **qt-config.ini** file in a text editor.
 4. Search for the following keys: 
     1. `Multiplayer\ip=` 
     2. `Multiplayer\port=`
@@ -236,7 +236,7 @@ Use this guide when you need to determine the connection information for the Pub
     #}
     ```
     
-    #### CURL Command [MacOS/Linux Users] **Requires jq*
+    #### CURL Command [MacOS/Linux Users] **Requires jq**
     
     ```bash
     # Calls the API to get the address and port information

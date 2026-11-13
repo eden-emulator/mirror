@@ -1,7 +1,7 @@
 # Dynarmic Design Documentation
 
 Dynarmic is a dynamic recompiler for the ARMv6K architecture. Future plans for Dynarmic include
-support for other versions of the ARM architecture, having a interpreter mode, and adding support
+support for other versions of the ARM architecture, having an interpreter mode, and adding support
 for other architectures.
 
 Users of this library interact with it primarily through the interface provided in
@@ -192,7 +192,7 @@ This follows ARM semantics. Note `shift_amount` is not masked to 5 bits (like `S
 
 ### Calculation: LogicalShiftRight
 
-    (<u32> result, <u1> carry_out) LogicalShiftLeft(<u32> operand, <u8> shift_amount, <u1> carry_in)
+    (<u32> result, <u1> carry_out) LogicalShiftRight(<u32> operand, <u8> shift_amount, <u1> carry_in)
 
 Pseudocode:
 
@@ -224,7 +224,7 @@ Pseudocode:
 
 This follows ARM semantics. Note `shift_amount` is not masked to 5 bits (like `SAR` does on x64).
 
-### Calcuation: RotateRight
+### Calculation: RotateRight
 
     (<u32> result, <u1> carry_out) RotateRight(<u32> operand, <u8> shift_amount, <u1> carry_in)
 
@@ -312,7 +312,7 @@ SetTerm(IR::Term::LinkBlockFast{next})
 ```
 
 This terminal instruction jumps to the basic block described by `next` unconditionally.
-This promises guarantees that must be held at runtime - i.e that the program wont hang,
+These are guarantees that must be held at runtime - i.e that the program wont hang,
 
 ### Terminal: PopRSBHint
 
@@ -387,7 +387,7 @@ which one of the above functions is called. `UseGpr` places it in an unused GPR,
 in an unused XMM register, `UseOpArg` might be in a register or might be a memory location, and `Use` allows
 you to specify a specific register (GPR or XMM) to use.
 
-This register **must not** have it's value changed.
+This register **must not** have its value changed.
 
 ### `UseScratch`
 
@@ -407,7 +407,7 @@ You are free to modify the value in the register. The register is discarded at t
 
 ### `Define` as register
 
-A `Define` is the defintion of a value. This is the only time when a value may be set.
+A `Define` is the definition of a value. This is the only time when a value may be set.
 
 ```cpp
 void DefineValue(IR::Inst* inst, const Xbyak::Reg& reg);
@@ -550,14 +550,14 @@ In pseudocode:
         goto label;
     rsb_ptr++;
     rsb_ptr %= RSB_SIZE;
-    rsb_location_desciptors[rsb_ptr] = imm64; //< The UniqueHash
+    rsb_location_descriptors[rsb_ptr] = imm64; //< The UniqueHash
     rsb_codeptr[rsb_ptr] = /* codeptr corresponding to the UniqueHash */;
 label:
 ```
 
 ## RSB Pop
 
-To check if a predicition is in the RSB, we linearly scan the RSB.
+To check if a prediction is in the RSB, we linearly scan the RSB.
 
 ```cpp
 void EmitX64::EmitTerminalPopRSBHint(IR::Term::PopRSBHint, IR::LocationDescriptor initial_location) {
@@ -595,7 +595,7 @@ goto rax
 
 The main way of accessing memory in JITed programs is via an invoked function, say "Read()" and "Write()". On our translator, such functions usually take a sizable amounts of code space (push + call + pop). Trash the i-cache (due to an indirect call) and overall make code emission more bloated.
 
-The solution? Delegate invalid accesses to a dedicated arena, similar to a swap. The main idea behind such mechanism is to allow the OS to transmit page faults from invalid accesses into the JIT translator directly, bypassing address space calls, while this sacrifices i-cache coherency, it allows for smaller code-size and "faster" throguhput.
+The solution? Delegate invalid accesses to a dedicated arena, similar to a swap. The main idea behind such mechanism is to allow the OS to transmit page faults from invalid accesses into the JIT translator directly, bypassing address space calls, while this sacrifices i-cache coherency, it allows for smaller code-size and "faster" throughput.
 
 Many kernels however, do not support fast signal dispatching (Solaris, OpenBSD, FreeBSD). Only Linux and Windows support relatively "fast" signal dispatching. Hence this feature is better suited for them only.
 
@@ -609,4 +609,4 @@ Most modern OSes implement kernel-page-table-isolation, which means a set of sys
 
 Signal dispatching takes a performance hit from reloading `%cr3` - but Linux does something more clever to avoid reloads:  VDSO will take care of the entire thing in the same address space. Making dispatching as costly as an indirect call - without the hazards of increased code size.
 
-The main downside from this is the constant i-cache trashing and pipeline hazards introduced by the VDSO signal handlers. However on most benchmarks fastmem does perform faster than without (Linux only). This also abuses the fact of continous address space emulation by using an arena - which can then be potentially transparently mapped into a hugepage, reducing TLB walk times.
+The main downside from this is the constant i-cache trashing and pipeline hazards introduced by the VDSO signal handlers. However on most benchmarks fastmem does perform faster than without (Linux only). This also abuses the fact of continuous address space emulation by using an arena - which can then be potentially transparently mapped into a hugepage, reducing TLB walk times.

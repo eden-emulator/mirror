@@ -44,7 +44,7 @@ Use this guide when you want to install Updates or DLC for your games in Eden.
 
 ## Disabling Updates/DLC
 
-Upon occasion you may find that you want to disable a certain DLC or Update (incompatibility with a mod, causes significant regression, etc.). Luckily the process if very easy to do so.
+Upon occasion you may find that you want to disable a certain DLC or Update (incompatibility with a mod, causes significant regression, etc.). Luckily the process is very easy to do so.
 
 1. *Right-Click* the game for which you want to disable the additional content.
 2. Select *Configure Game.*

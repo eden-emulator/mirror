@@ -16,7 +16,7 @@ Use this guide for when you want to install an Atmosphere-based mod for use in E
 ## Steps
 
 1. Right-Click the game you want to apply the mod to and select **Open Mod Data Location.**
-2. Create new folder inside the mod directory with the name of the mod.
+2. Create a new folder inside the mod directory with the name of the mod.
 3. Extract the downloaded mod (if applicable) to a temporary directory.
 4. Locate the ***exefs*** and ***romfs*** folders inside the extracted mod - usually *atmosphere/contents/<TITLE_ID>*.
 5. Copy the ***exefs*** and ***romfs*** folders into the mod folder you created earlier.

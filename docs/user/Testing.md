@@ -1,6 +1,6 @@
 # Testing
 
-When you're testing a pull request (PR) and encounter unexpected behavior, it's important to determine whether the issue was introduced by the PR or if it already exists in the base code. To do this, compare the behavior against the based master branch.
+When you're testing a pull request (PR) and encounter unexpected behavior, it's important to determine whether the issue was introduced by the PR or if it already exists in the base code. To do this, compare the behavior against the base master branch.
 
 Even before an issue occurs, it is best practice to keep the same settings and delete the shader cache. Using an already made shader cache can make the PR look like it is having a regression in some rare cases.
 
@@ -17,7 +17,7 @@ Think of the source code as a "tree", with the "trunk" of that tree being our `m
 Here's some terminology you may want to familiarize yourself with:
 
 - PR: Pull request, a change in the codebase; from which the author of said change (the programmer) requests a pull of that branch into master (make it so the new code makes it into a release basically).
-- Bisect: Bilinear method of searching regressions, some regressions may be sporadic and can't be bisected, but the overwhelming majority are.
+- Bisect: Binary search method for finding regressions, some regressions may be sporadic and can't be bisected, but the overwhelming majority are.
 - WIP: Work-in-progress.
 - Regression: A new bug/glitch caused by new code, i.e "Zelda broke in android after commit xyz".
 - Master: The "root" branch, this is where all merged code goes to, traditionally called `main`, `trunk` or just `master`, it contains all the code that eventually make it to stable releases.
@@ -47,33 +47,33 @@ If an issue sporadically appears, try to do multiple runs, try if possible, to c
 
 If you notice something odd during testing:
 
-- Reproduce the issue using the based master branch.
+- Reproduce the issue using the base master branch.
 - Observe whether the same behavior occurs.
 
 From there onwards there can be two possible outcomes:
 
-- If the issue exists in the based master: This means the problem was already present before the PR. The PR most likely did not introduce the regression.
-- If the issue does not exist in the based master: This suggests the PR most likely introduced the regression and needs further investigation.
+- If the issue exists in the base master: This means the problem was already present before the PR. The PR most likely did not introduce the regression.
+- If the issue does not exist in the base master: This suggests the PR most likely introduced the regression and needs further investigation.
 
 ## Reporting Your Findings
 
 When you report your results:
 
-- Clearly state whether the behavior was observed in the based master.
+- Clearly state whether the behavior was observed in the base master.
 - Indicate whether the result is good (expected behavior) or bad (unexpected or broken behavior). Without mentioning if your post/report/log is good or bad it may confuse the developer of the PR.
 
 For example:
 
-1. "Bad result for PR: Tested on based master - issue not present. Likely regression introduced."
-2. "Good result for PR: Tested on based master - issue already present. Not a regression."
+1. "Bad result for PR: Tested on base master - issue not present. Likely regression introduced."
+2. "Good result for PR: Tested on base master - issue already present. Not a regression."
 
 This approach helps maintain clarity and accountability in the testing process and ensures regressions are caught and addressed efficiently.
 
-If the behavior seems normal for a certain game/feature then it may not be always required to check against the based master.
+If the behavior seems normal for a certain game/feature then it may not be always required to check against the base master.
 
-This approach helps maintain clarity and accountability in the testing process and ensures regressions are caught and addressed efficiently. If the behavior seems normal for a certain game/feature then it may not be always required to check against the based master.
+This approach helps maintain clarity and accountability in the testing process and ensures regressions are caught and addressed efficiently. If the behavior seems normal for a certain game/feature then it may not be always required to check against the base master.
 
-If a master build for the PR' based master does not exist. It will be helpful to just test past and future builds nearby. That would help with gathering more information about the problem.
+If a master build for the PR's base master does not exist. It will be helpful to just test past and future builds nearby. That would help with gathering more information about the problem.
 
 **Always include [debugging info](../Debug.md) as needed**.
 

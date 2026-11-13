@@ -66,7 +66,7 @@ Dependencies are the same [as normal Gentoo](./Deps.md#Commands); simply replace
 
 #### Enabling GURU
 
-Since Crossdev sysroots are effectively isolated from the system w.r.t Portage, you must manually enable GURU in your sysroot. Run the following as root:
+Since Crossdev sysroots are effectively isolated from the system w.r.t. Portage, you must manually enable GURU in your sysroot. Run the following as root:
 
 ```sh
 mkdir -p /usr/aarch64-unknown-linux-gnu/etc/portage/repos.conf
@@ -80,7 +80,7 @@ EOF
 
 #### Package Errata
 
-Crossdev is not perfect, and you may face some challenges with package that are not properly keyworded or have issues on specific architectures. These behaviors are, unfortunately, not well documented, and certain build systems such as Meson--and certain troublesome packages like GTK--are generally unfriendly towards cross-compilation.
+Crossdev is not perfect, and you may face some challenges with packages that are not properly keyworded or have issues on specific architectures. These behaviors are, unfortunately, not well documented, and certain build systems such as Meson--and certain troublesome packages like GTK--are generally unfriendly towards cross-compilation.
 
 Thus, it may be desirable to emerge a minimal set of dependencies and allow Eden's build system to handle the rest for you. At a minimum, you *only* need standard system libraries (Crossdev does this for you) and Qt:
 

@@ -1,6 +1,6 @@
 # AGENTS
 
-Read and follow the [contribution guidelines](./CONTRIBUTING.md) and our [site policy](https://git.eden-emu.dev/eden-emu/site-policy/src/branch/master)..
+Read and follow the [contribution guidelines](./CONTRIBUTING.md) and our [site policy](https://git.eden-emu.dev/eden-emu/site-policy/src/branch/master).
 
 Do not, under any circumstances, ever:
 

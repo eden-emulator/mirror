@@ -3,7 +3,7 @@
 > [!WARNING]
 > This guide is intended for developers ONLY. If you're looking for configuring the emulator itself, read **[the user handbook](./user/README.md)**.
 
-Settings on the emulator are very important, toggles and such can be used to guard and/or add branches to paths where some games may crash while others won't, and viceversa.
+Settings on the emulator are very important, toggles and such can be used to guard and/or add branches to paths where some games may crash while others won't, and vice versa.
 
 However, this process can be tedious for those unfamiliar; this document serves as an outline/documentation for the settings subsystem.
 
@@ -152,7 +152,7 @@ Example: `src/android/app/src/main/res/values/strings.xml`
 
 ### Step 4 - Use Your Toggle!
 
-Now the UI part is done find a place in the code for the toggle,
+Now that the UI part is done, find a place in the code for the toggle,
 And use it to your heart's desire!
 
 Example:
@@ -179,7 +179,7 @@ Use `if (!your_value) {` instead of `if (your_value) {`.
 * Order - Place related settings near each other.
 * Testing - Always test on both PC and Android before committing when possible.
 
-Thank you for reading, I hope this guide helped you making your toggle!
+Thank you for reading, I hope this guide helped you make your toggle!
 
 ## Adding Debug Knobs
 
@@ -257,7 +257,7 @@ There are two main confusions when talking about knobs:
 
 #### Whether it's zero-based or one-based
 
-Sometimes when an user reports: knobs 1 and 2 gets better performance, dev may get confuse whether he means the knobs 1 and 2 literally, or the 1st and 2nd knobs (knobs 0 and 1).
+Sometimes when a user reports: knobs 1 and 2 get better performance, a dev may get confused whether he means the knobs 1 and 2 literally, or the 1st and 2nd knobs (knobs 0 and 1).
 
 Debug knobs are **zero-based**, which means:
 
@@ -266,7 +266,7 @@ Debug knobs are **zero-based**, which means:
 
 #### Whether one is talking about the knob itself or about the entire parameter value (which represents all knobs)
 
-Sometimes when an user reports: knob 3 results, it's unclear whether he's referring to knob setting with value 3 (which means both knob 0 and 1 are enabled), or to knob(3) specifically.
+Sometimes when a user reports: knob 3 results, it's unclear whether he's referring to knob setting with value 3 (which means both knob 0 and 1 are enabled), or to knob(3) specifically.
 Whenever you're instructing tests or reporting results, be precise about whether one you're talking to avoid confusion:
 
 #### Setting based terminology

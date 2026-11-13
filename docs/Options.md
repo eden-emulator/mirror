@@ -7,7 +7,7 @@ To change these options, add `-DOPTION_NAME=NEWVALUE` to the command line.
 Notes:
 
 - Defaults are marked per-platform.
-- "Non-UNIX" just means Windows/MSVC and Android (yes, macOS is UNIX
+- "Non-UNIX" just means Windows/MSVC and Android (yes, macOS is UNIX)
 - Android generally doesn't need to change anything; if you do, go to `src/android/app/build.gradle.kts`
 - To set a boolean variable to on, use `ON` for the value; to turn it off, use `OFF`
 - If a variable is mentioned as being e.g. "ON" for a specific platform(s), that means it is defaulted to OFF on others
@@ -36,7 +36,7 @@ These options control dependencies.
 - `ENABLE_WEB_SERVICE` (ON) Enable multiplayer service
 - `ENABLE_WIFI_SCAN` (OFF) Enable WiFi scanning (requires iw on Linux) - experimental
 - `ENABLE_CUBEB` (ON) Enables the cubeb audio backend
-  - This option is subject for removal.
+  - This option is subject to removal.
 - `YUZU_TESTS` (ON) Compile tests - requires Catch2
 - `ENABLE_LTO` (OFF) Enable link-time optimization
   - Not recommended on Windows
@@ -102,4 +102,4 @@ The following options were a part of Eden at one point, but have since been reti
   - If you want to *force* the usage of system dependencies, use `-DCPMUTIL_FORCE_SYSTEM=ON`.
 - `YUZU_USE_EXTERNAL_SDL` - This is now handled automatically. It was included even after CPM for purposes that have not applied for a very long time.
 
-See `src/dynarmic/CMakeLists.txt` for additional options--usually, these don't need changed
+See `src/dynarmic/CMakeLists.txt` for additional options--usually, these don't need to be changed

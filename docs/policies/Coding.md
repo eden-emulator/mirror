@@ -1,6 +1,6 @@
 # Coding guidelines
 
-These are **not** stylistic guidelines, they're, for the most part, suggestions on how to architecture new systems or improve upon the existing codebase.
+These are **not** stylistic guidelines, they're, for the most part, suggestions on how to architect new systems or improve upon the existing codebase.
 
 ## Foreword
 
@@ -31,7 +31,7 @@ Everyone has their own way of viewing good/bad C++ practices, my general outline
   - If your code is slow, don't blame `mem*`, blame your code.
 - Try to avoid using `virtual` since vtable indirection has a cost
 - Avoid `dynamic_cast` and `typeid` at all costs.
-  - The reason is because the project has `-fno-rtti` disabled by default, due to the costs of dynamic polymorphism.
+  - The project uses `-fno-rtti` by default, which disables RTTI due to the costs of dynamic polymorphism.
 - Always copy-on-value for objects with `sizeof(void *) >= sizeof(T) * 2`, i.e objects sized as 2 pointers or less, for bigger objects you can use ref/pointer as usual.
 - Try using move semantics instead of references, whenever possible.
 - Function parameters are cheap. Don't be afraid to use as many as needed (API usability permitting).
@@ -40,7 +40,7 @@ Everyone has their own way of viewing good/bad C++ practices, my general outline
     ```cpp
     struct Child {
         Parent& parent;
-        void Mehod() {
+        void Method() {
             parent.Something();
         }
     };
@@ -50,7 +50,7 @@ Everyone has their own way of viewing good/bad C++ practices, my general outline
 
     ```cpp
     struct Child {
-        void Mehod(Parent& parent) {
+        void Method(Parent& parent) {
             parent.Something();
         }
     };

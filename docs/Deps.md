@@ -35,7 +35,7 @@ If you are on desktop and plan to use the Qt frontend, you *must* install Qt >=6
 - For help setting up Qt Creator, run `./install.sh -h qtcreator`
 
 - If you're using clang-cl and want to still use MSVC
-  - Check the option to add "C++ clang compiler for Windows" on Visual Studio installer and uncheck "x64/x86 build tool for MSVC" while selecting "C++ desktop developement tools" and change Visual Studio to 2026, from 2022.
+  - Check the option to add "C++ clang compiler for Windows" on Visual Studio installer and uncheck "x64/x86 build tool for MSVC" while selecting "C++ desktop development tools" and change Visual Studio to 2026, from 2022.
   - For Qt Creator, ensure the generator is set to Ninja, and your selected kit uses clang-cl.
   - Finally, to use clang-cl: `cmake -S . -B build -G Ninja -T ClangCL`
 

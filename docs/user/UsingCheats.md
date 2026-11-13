@@ -16,7 +16,7 @@ Use this guide when you want to add cheats into a game to alter gameplay for use
 
 ***TIP***: The easiest way I have found to find the Build ID is by Right-Clicking the game **IN RYUJINX ON PC** and hitting **Manage Cheats**.  Your Build ID will be displayed at the top.
 
-Another option would be to launch the game in Eden and close it - then go into the log and look for a line like this - the first 16 characters if your Build ID. Make sure that it is the MAIN line.
+Another option would be to launch the game in Eden and close it - then go into the log and look for a line like this - the first 16 characters of your Build ID. Make sure that it is the MAIN line.
 [ 27.098382] Loader <Info> core/file_sys/patch_manager.cpp:HasNSOPatch:304: Querying NSO patch existence for build_id=AEE6DCCC06D9C05B42061E2019123A61, name=main
 
 </aside>
@@ -96,7 +96,7 @@ Cheats are enabled by default, but can be disabled so they don't affect gameplay
 
 ***TIP***: The easiest way I have found to find the Build ID is by Right-Clicking the game **IN RYUJINX** and hitting **Manage Cheats**.  Your Build ID will be displayed at the top. 
 
-Another option would be to launch the game in Eden and close it - then go into the log and look for a line like this - the first 16 characters if your Build ID. **Make sure that it is the MAIN line**.
+Another option would be to launch the game in Eden and close it - then go into the log and look for a line like this - the first 16 characters of your Build ID. **Make sure that it is the MAIN line**.
 `[  27.098382] Loader <Info> core/file_sys/patch_manager.cpp:HasNSOPatch:304: Querying NSO patch existence for build_id=AEE6DCCC06D9C05B42061E2019123A61, name=main`
 
 </aside>
@@ -118,7 +118,7 @@ Another option would be to launch the game in Eden and close it - then go into t
 4. Create a folder inside of the file explorer window with the name of the cheat.  This name does not matter and only affects how it appears in the game properties inside of Eden.
 5. Navigate inside of this folder and create another folder called **cheats.**
 6. Move the txt file you created earlier into this **cheats** folder. (e.g. `<mod_location>/Time 999/cheats/AEE6DCCC06D9C05B.txt` )
-7. Go back to Eden and *right-click* the game.  Select *Configure Game* and you should now see the cheat you created appear in the **Add-Ons** section with the name of the folder from step 6.
+7. Go back to Eden and *right-click* the game.  Select *Configure Game* and you should now see the cheat you created appear in the **Add-Ons** section with the name of the folder from step 4.
 8. Launch the game to verify that the cheat is enabled.
 
 ### Step 2: Multiple Cheats

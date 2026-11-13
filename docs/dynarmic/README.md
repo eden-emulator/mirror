@@ -3,7 +3,7 @@ Dynarmic
 
 A dynamic recompiler for ARM.
 
-*Note that an adversarial guest program [can determine if it's being ran under Dynarmic](#disadvantages-of-dynarmic). Preventing this is not a goal of this project.*
+*Note that an adversarial guest program [can determine if it's being run under Dynarmic](#disadvantages-of-dynarmic). Preventing this is not a goal of this project.*
 
 Cortex-A57 (32 and 64 bit) is the emulated guest target. See [ArchVersion](../../src/dynarmic/src/dynarmic/interface/A32/arch_version.h).
 
@@ -35,7 +35,7 @@ Disadvantages of Dynarmic
 -------------------------
 
 In the pursuit of speed, some behavior not commonly depended upon is elided. Hence this emulator doesn't match spec.
-Note that this would mean that a guest application can easily determine if it's being ran under instrumentation.
+Note that this would mean that a guest application can easily determine if it's being run under instrumentation.
 
 Known examples:
 

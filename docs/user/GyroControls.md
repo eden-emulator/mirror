@@ -20,7 +20,7 @@ Use this guide when you want to use the Steam Deck's native gyro functionality f
     a. Alternatively you can install [SteamDeckGyroDSU](https://github.com/kmicki/SteamDeckGyroDSU/releases) manually following the GitHub page instructions. 
 3. Upon completion of the installation. You will need to reboot your Steam Deck.  Do so before continuing on.
 4. Go back into the Steam Deck Desktop Mode and open the Dolphin File Explorer.
-5. Navigate to the following directory to see you controller configuration: `/home/deck/.config/Eden`
+5. Navigate to the following directory to see your controller configuration: `/home/deck/.config/Eden`
 6. *Right-Click* the **qt-config.ini** file and open it with ***Kate***
 7. Look for the following line: `player_0_motionleft=[empty]`.
 8. Change the line to now say: `player_0_motionleft="motion:0,pad:0,port:26760,guid:0000000000000000000000007f000001,engine:cemuhookudp"`

@@ -7,7 +7,7 @@ There are two main applications, an SDL-based app (`eden-cli`) and a Qt based ap
 - `--config/-c`: Specify alternate configuration file.
 - `--fullscreen/-f`: Use fullscreen.
 - `--help/-h`: Display help.
-- `--game/-g <path>`: Alternate way to specify what to load, overrides. However let it be noted that arguments that use `-` will be treated as options/ignored, if your game, for some reason, starts with `-`, in order to safely handle it you may need to specify it as an argument.
+- `--game/-g <path>`: Alternate way to specify what to load; overrides other arguments. However let it be noted that arguments that use `-` will be treated as options/ignored, if your game, for some reason, starts with `-`, in order to safely handle it you may need to specify it as an argument.
 - `--multiplayer/-m`: Specify multiplayer options.
 - `--program/-p`: Specify the program arguments to pass (optional).
 - `--user/-u <number>`: Specify the user index.

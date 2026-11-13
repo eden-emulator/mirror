@@ -32,8 +32,8 @@ When adding new settings, use `tr("Setting:")` if the setting is meant to be a f
 - Debug settings must never be turned on by default.
 - Provide reasonable bounds (for example, a setting controlling the amount of VRAM should never be 0).
 - The description of the setting must be short and concise, if the setting "does a lot of things" consider splitting the setting into multiple if possible.
-- Try to avoid excessive/redundant explainations "recommended for most users and games" can just be "(recommended)".
-- Try to not write "slow/fast" options unless it clearly degrades/increases performance for a given case, as most options may modify behaviour that result in different metrics accross different systems. If for example the option is an "accuracy" option, writing "High" is sufficient to imply "Slow". No need to write "High (Slow)".
+- Try to avoid excessive/redundant explanations "recommended for most users and games" can just be "(recommended)".
+- Try to not write "slow/fast" options unless it clearly degrades/increases performance for a given case, as most options may modify behaviour that results in different metrics across different systems. If for example the option is an "accuracy" option, writing "High" is sufficient to imply "Slow". No need to write "High (Slow)".
 
 Some examples:
 

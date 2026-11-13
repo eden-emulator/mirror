@@ -53,7 +53,7 @@ Use this guide when you want to set up specific controller profiles for specific
 #### Steps
 
 1. *Right-Click* the game you want to apply the profile to in the main window and select **Properties.**
-2. Navigate to the **Input Profiles** tab in the window that appears. Drop down on *Player 1 profile* (or whatever player profile you want to apply it to) and select the profile you want.
+2. Navigate to the **Input Profiles** tab in the window that appears. Use the drop-down for *Player 1 profile* (or whatever player profile you want to apply it to) and select the profile you want.
 
     <aside>
 

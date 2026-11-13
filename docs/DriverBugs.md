@@ -2,7 +2,7 @@
 
 Non-exhaustive list of known drivers bugs.
 
-See also: [Dolphin emulator](hhttps://github.com/dolphin-emu/dolphin/blob/cdbea8867df3d0a6fc375e78726dae95612fb1fd/Source/Core/VideoCommon/DriverDetails.h#L84) own list of driver bugs (which are also included here).
+See also: [Dolphin emulator](https://github.com/dolphin-emu/dolphin/blob/cdbea8867df3d0a6fc375e78726dae95612fb1fd/Source/Core/VideoCommon/DriverDetails.h#L84) own list of driver bugs (which are also included here).
 
 ## Vulkan
 
@@ -19,16 +19,16 @@ See also: [Dolphin emulator](hhttps://github.com/dolphin-emu/dolphin/blob/cdbea8
 | NVIDIA | All | Proprietary | >=510.0.0 | Versions >= 510 do not support MSAA->MSAA image blits. |
 | NVIDIA | All | Proprietary | ? | Shader stencil export not supported. |
 | NVIDIA | All | Proprietary | ? | Doesn't properly support conditional barriers. |
-| NVIDIA | All | Proprietary | ? | GPUs pre-turing doesn't properly work with push descriptors. |
-| NVIDIA | All | All | ? | Calling `vkCmdClearAttachments` with a partial rect, or specifying a render area in a render pass with the load op set to clear can cause the GPU to lock up, or raise a bounds violation. This only occurs on MSAA framebuffers, and it seems when there are multiple clears in a single command buffer. Worked around by back to the slow path (drawing quads) when MSAA is enabled. |
-| Intel | All | Proprietary | <27.20.100.0 | Intel Windows versions before 27.20.100.0 has broken `VK_EXT_vertex_input_dynamic_state`. |
+| NVIDIA | All | Proprietary | ? | GPUs pre-Turing don't properly work with push descriptors. |
+| NVIDIA | All | All | ? | Calling `vkCmdClearAttachments` with a partial rect, or specifying a render area in a render pass with the load op set to clear can cause the GPU to lock up, or raise a bounds violation. This only occurs on MSAA framebuffers, and it seems when there are multiple clears in a single command buffer. Worked around by falling back to the slow path (drawing quads) when MSAA is enabled. |
+| Intel | All | Proprietary | <27.20.100.0 | Intel Windows versions before 27.20.100.0 have broken `VK_EXT_vertex_input_dynamic_state`. |
 | Intel | All | Proprietary | ? | Intel proprietary drivers do not support MSAA->MSAA image blits. |
 | Intel | All | Proprietary | 0.405.0<br>until<br>0.405.286 | Intel proprietary drivers 0.405.0 until 0.405.286 have broken compute. |
 | Intel | macOS | Proprietary | ? | Using dynamic sampler indexing locks up the GPU. |
 | Intel | macOS | Proprietary | ? | Using subgroupMax in a shader that can discard results in garbage data. |
 | Intel | All | Mesa | ? | Broken lines in geometry shaders when writing to `gl_ClipDistance` in the vertex shader. |
 | Qualcomm | All | Proprietary | ? | Using too many samplers (on A8XX is `65536`) can cause heap exhaustion, recommended to use 75% of total available samplers. |
-| Qualcomm | All | Proprietary | ? | Qualcomm Adreno GPUs doesn't handle scaled vertex attributes `VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME`. |
+| Qualcomm | All | Proprietary | ? | Qualcomm Adreno GPUs don't handle scaled vertex attributes `VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME`. |
 | Qualcomm | All | Proprietary | ? | 64-bit integer extensions (`VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME`) cause nondescriptive crashes and stability issues. |
 | Qualcomm | All | All | ? | Driver requires higher-than-reported binding limits (32). |
 | Qualcomm | All | All | ? | On Adreno, enabling rasterizer discard somehow corrupts the viewport state; a workaround is forcing it to be updated on next use. |
