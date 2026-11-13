@@ -7,6 +7,7 @@
 #pragma once
 
 #include <deque>
+#include <optional>
 #include <span>
 
 #include "video_core/engines/fermi_2d.h"
@@ -78,9 +79,12 @@ public:
                    Tegra::Engines::Fermi2D::Filter filter,
                    Tegra::Engines::Fermi2D::Operation operation);
 
+    /// @param scissor Optional clip rectangle in framebuffer pixels (DrawTexture honours the
+    ///                guest scissor like any other draw).
     void BlitColor(const Framebuffer* dst_framebuffer, VkImageView src_image_view,
                    VkImage src_image, VkSampler src_sampler, const Region2D& dst_region,
-                   const Region2D& src_region, const Extent3D& src_size);
+                   const Region2D& src_region, const Extent3D& src_size,
+                   const std::optional<VkRect2D>& scissor = std::nullopt);
 
     void BlitColorMSAA(const Framebuffer* dst_framebuffer, const ImageView& src_image_view,
                        const Region2D& dst_region, const Region2D& src_region);

@@ -40,6 +40,12 @@ bool IsConnectionBased(Type type) {
     }
 }
 
+// Size of a real BSD sockaddr_in. The guest SockAddrIn struct is padded to 0x100 so that longer
+// input addresses can be read, but an address handed back to the game is always this long.
+// Reporting 0x100 lets a game that trusts the length copy 240 bytes past its 16-byte sockaddr
+// (suspected cause of Crysis Remastered crashing ~30 s after its getsockname() call).
+constexpr size_t GuestSockAddrInSize = 16;
+
 template <typename T>
 T GetValue(std::span<const u8> buffer) {
     T t{};
@@ -655,6 +661,9 @@ std::pair<s32, Errno> BSD_USA::AcceptImpl(s32 fd, std::vector<u8>& write_buffer)
     new_descriptor.is_connection_based = descriptor.is_connection_based;
 
     const SockAddrIn guest_addr_in = Translate(result.sockaddr_in);
+    if (write_buffer.size() > GuestSockAddrInSize) {
+        write_buffer.resize(GuestSockAddrInSize);
+    }
     PutValue(write_buffer, guest_addr_in);
 
     return {new_fd, Errno::SUCCESS};
@@ -714,8 +723,8 @@ Errno BSD_USA::GetPeerNameImpl(s32 fd, std::vector<u8>& write_buffer) {
     }
     const SockAddrIn guest_addrin = Translate(addr_in);
 
-    ASSERT(write_buffer.size() >= sizeof(guest_addrin));
-    write_buffer.resize(sizeof(guest_addrin));
+    // The reported length must be that of a real sockaddr_in, not of the padded guest struct.
+    write_buffer.resize(GuestSockAddrInSize);
     PutValue(write_buffer, guest_addrin);
     return Translate(bsd_errno);
 }
@@ -736,8 +745,8 @@ Errno BSD_USA::GetSockNameImpl(s32 fd, std::vector<u8>& write_buffer) {
     }
     const SockAddrIn guest_addrin = Translate(addr_in);
 
-    ASSERT(write_buffer.size() >= sizeof(guest_addrin));
-    write_buffer.resize(sizeof(guest_addrin));
+    // The reported length must be that of a real sockaddr_in, not of the padded guest struct.
+    write_buffer.resize(GuestSockAddrInSize);
     PutValue(write_buffer, guest_addrin);
     return Translate(bsd_errno);
 }
@@ -949,8 +958,9 @@ std::pair<s32, Errno> BSD_USA::RecvFromImpl(s32 fd, u32 flags, std::vector<u8>& 
         if (ret < 0) {
             addr.clear();
         } else {
-            ASSERT(addr.size() >= 16);
+            ASSERT(addr.size() >= GuestSockAddrInSize);
             const SockAddrIn result = Translate(addr_in);
+            addr.resize(GuestSockAddrInSize);
             PutValue(addr, result);
         }
     }
