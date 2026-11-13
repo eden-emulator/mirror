@@ -23,10 +23,7 @@ namespace Kernel {
 
 class KernelCore;
 
-class KHandleTable {
-    YUZU_NON_COPYABLE(KHandleTable);
-    YUZU_NON_MOVEABLE(KHandleTable);
-
+class KHandleTable : Common::NonCopyable, Common::NonMoveable {
 public:
     static constexpr size_t MaxTableSize = 1024;
 

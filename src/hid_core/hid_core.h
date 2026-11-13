@@ -25,13 +25,10 @@ class EmulatedDevices;
 
 namespace Core::HID {
 
-class HIDCore {
+class HIDCore : Common::NonCopyable, Common::NonMoveable {
 public:
     explicit HIDCore(Kernel::KernelCore& kernel);
     ~HIDCore();
-
-    YUZU_NON_COPYABLE(HIDCore);
-    YUZU_NON_MOVEABLE(HIDCore);
 
     EmulatedController* GetEmulatedController(NpadIdType npad_id_type);
     const EmulatedController* GetEmulatedController(NpadIdType npad_id_type) const;

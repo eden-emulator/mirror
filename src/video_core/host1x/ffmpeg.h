@@ -46,11 +46,8 @@ class DecoderContext;
 class DeinterlaceFilter;
 
 // Wraps an AVPacket, a container for compressed bitstream data.
-class Packet {
+class Packet : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(Packet);
-    YUZU_NON_MOVEABLE(Packet);
-
     explicit Packet(std::span<const u8> data);
     ~Packet();
 
@@ -63,11 +60,8 @@ private:
 };
 
 // Wraps an AVFrame, a container for audio and video stream data.
-class Frame {
+class Frame : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(Frame);
-    YUZU_NON_MOVEABLE(Frame);
-
     explicit Frame();
     ~Frame();
 
@@ -128,11 +122,8 @@ private:
 };
 
 // Wraps an AVCodec, a type containing information about a codec.
-class Decoder {
+class Decoder : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(Decoder);
-    YUZU_NON_MOVEABLE(Decoder);
-
     explicit Decoder(Tegra::Host1x::NvdecCommon::VideoCodec codec);
     ~Decoder() = default;
 
@@ -147,11 +138,8 @@ private:
 };
 
 // Wraps AVBufferRef for an accelerated decoder.
-class HardwareContext {
+class HardwareContext : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(HardwareContext);
-    YUZU_NON_MOVEABLE(HardwareContext);
-
     static std::vector<AVHWDeviceType> GetSupportedDeviceTypes();
 
     explicit HardwareContext() = default;
@@ -170,11 +158,8 @@ private:
 };
 
 // Wraps an AVCodecContext.
-class DecoderContext {
+class DecoderContext : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(DecoderContext);
-    YUZU_NON_MOVEABLE(DecoderContext);
-
     explicit DecoderContext(const Decoder& decoder);
     ~DecoderContext();
 
@@ -210,11 +195,8 @@ struct FrameDimensions {
     s32 height{};
 };
 
-class DecodeApi {
+class DecodeApi : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(DecodeApi);
-    YUZU_NON_MOVEABLE(DecodeApi);
-
     DecodeApi() = default;
     ~DecodeApi() = default;
 

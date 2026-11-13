@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -10,12 +13,9 @@
 
 namespace Kernel {
 
-class KSpinLock {
+class KSpinLock : Common::NonCopyable, Common::NonMoveable {
 public:
     explicit KSpinLock() = default;
-
-    YUZU_NON_COPYABLE(KSpinLock);
-    YUZU_NON_MOVEABLE(KSpinLock);
 
     void Lock();
     void Unlock();

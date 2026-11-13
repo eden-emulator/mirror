@@ -32,11 +32,8 @@ struct RendererSettings {
     Service::Nvnflinger::LayerStackId screenshot_layer_stack{Service::Nvnflinger::LayerStackId::Default};
 };
 
-class RendererBase {
+class RendererBase : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(RendererBase);
-    YUZU_NON_MOVEABLE(RendererBase);
-
     explicit RendererBase(Core::Frontend::EmuWindow& window,
                           std::unique_ptr<Core::Frontend::GraphicsContext> context);
     virtual ~RendererBase();

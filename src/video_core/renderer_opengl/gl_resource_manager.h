@@ -1,19 +1,19 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2015 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
-#include <string_view>
 #include <utility>
 #include <glad/glad.h>
 #include "common/common_funcs.h"
 
 namespace OpenGL {
 
-class OGLRenderbuffer final {
+class OGLRenderbuffer final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLRenderbuffer);
-
     OGLRenderbuffer() = default;
 
     OGLRenderbuffer(OGLRenderbuffer&& o) noexcept : handle(std::exchange(o.handle, 0)) {}
@@ -37,10 +37,8 @@ public:
     GLuint handle = 0;
 };
 
-class OGLTexture final {
+class OGLTexture final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLTexture);
-
     OGLTexture() = default;
 
     OGLTexture(OGLTexture&& o) noexcept : handle(std::exchange(o.handle, 0)) {}
@@ -64,10 +62,8 @@ public:
     GLuint handle = 0;
 };
 
-class OGLTextureView final {
+class OGLTextureView final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLTextureView);
-
     OGLTextureView() = default;
 
     OGLTextureView(OGLTextureView&& o) noexcept : handle(std::exchange(o.handle, 0)) {}
@@ -91,10 +87,8 @@ public:
     GLuint handle = 0;
 };
 
-class OGLSampler final {
+class OGLSampler final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLSampler);
-
     OGLSampler() = default;
 
     OGLSampler(OGLSampler&& o) noexcept : handle(std::exchange(o.handle, 0)) {}
@@ -118,10 +112,8 @@ public:
     GLuint handle = 0;
 };
 
-class OGLShader final {
+class OGLShader final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLShader);
-
     OGLShader() = default;
 
     OGLShader(OGLShader&& o) noexcept : handle(std::exchange(o.handle, 0)) {}
@@ -141,10 +133,8 @@ public:
     GLuint handle = 0;
 };
 
-class OGLProgram final {
+class OGLProgram final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLProgram);
-
     OGLProgram() = default;
 
     OGLProgram(OGLProgram&& o) noexcept : handle(std::exchange(o.handle, 0)) {}
@@ -165,10 +155,8 @@ public:
     GLuint handle = 0;
 };
 
-class OGLAssemblyProgram final {
+class OGLAssemblyProgram final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLAssemblyProgram);
-
     OGLAssemblyProgram() = default;
 
     OGLAssemblyProgram(OGLAssemblyProgram&& o) noexcept : handle(std::exchange(o.handle, 0)) {}
@@ -189,10 +177,8 @@ public:
     GLuint handle = 0;
 };
 
-class OGLPipeline final {
+class OGLPipeline final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLPipeline);
-
     OGLPipeline() = default;
     OGLPipeline(OGLPipeline&& o) noexcept : handle{std::exchange<GLuint>(o.handle, 0)} {}
 
@@ -213,10 +199,8 @@ public:
     GLuint handle = 0;
 };
 
-class OGLBuffer final {
+class OGLBuffer final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLBuffer);
-
     OGLBuffer() = default;
 
     OGLBuffer(OGLBuffer&& o) noexcept : handle(std::exchange(o.handle, 0)) {}
@@ -240,10 +224,8 @@ public:
     GLuint handle = 0;
 };
 
-class OGLSync final {
+class OGLSync final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLSync);
-
     OGLSync() = default;
 
     OGLSync(OGLSync&& o) noexcept : handle(std::exchange(o.handle, nullptr)) {}
@@ -269,10 +251,8 @@ public:
     GLsync handle = 0;
 };
 
-class OGLFramebuffer final {
+class OGLFramebuffer final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLFramebuffer);
-
     OGLFramebuffer() = default;
 
     OGLFramebuffer(OGLFramebuffer&& o) noexcept : handle(std::exchange(o.handle, 0)) {}
@@ -296,10 +276,8 @@ public:
     GLuint handle = 0;
 };
 
-class OGLQuery final {
+class OGLQuery final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLQuery);
-
     OGLQuery() = default;
 
     OGLQuery(OGLQuery&& o) noexcept : handle(std::exchange(o.handle, 0)) {}
@@ -323,10 +301,8 @@ public:
     GLuint handle = 0;
 };
 
-class OGLTransformFeedback final {
+class OGLTransformFeedback final : Common::NonCopyable {
 public:
-    YUZU_NON_COPYABLE(OGLTransformFeedback);
-
     OGLTransformFeedback() = default;
 
     OGLTransformFeedback(OGLTransformFeedback&& o) noexcept : handle(std::exchange(o.handle, 0)) {}

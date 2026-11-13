@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -14,11 +17,8 @@ namespace Kernel {
 class KernelCore;
 class KProcess;
 
-class KAutoObjectWithListContainer {
+class KAutoObjectWithListContainer : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(KAutoObjectWithListContainer);
-    YUZU_NON_MOVEABLE(KAutoObjectWithListContainer);
-
     using ListType = boost::intrusive::rbtree<KAutoObjectWithList>;
 
     KAutoObjectWithListContainer(KernelCore& kernel) : m_lock(), m_object_list() {}

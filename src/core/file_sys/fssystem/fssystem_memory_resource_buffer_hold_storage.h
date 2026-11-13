@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -8,9 +11,6 @@
 namespace FileSys {
 
 class MemoryResourceBufferHoldStorage : public IStorage {
-    YUZU_NON_COPYABLE(MemoryResourceBufferHoldStorage);
-    YUZU_NON_MOVEABLE(MemoryResourceBufferHoldStorage);
-
 public:
     MemoryResourceBufferHoldStorage(VirtualFile storage, size_t buffer_size)
         : m_storage(std::move(storage)), m_buffer(::operator new(buffer_size)),

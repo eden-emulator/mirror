@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: 2023 yuzu Emulator Project
@@ -23,13 +23,10 @@ using ProgramId = u64;
 using PlayTime = u64;
 using PlayTimeDatabase = std::map<ProgramId, PlayTime>;
 
-class PlayTimeManager {
+class PlayTimeManager : Common::NonCopyable, Common::NonMoveable {
 public:
     explicit PlayTimeManager();
     ~PlayTimeManager();
-
-    YUZU_NON_COPYABLE(PlayTimeManager);
-    YUZU_NON_MOVEABLE(PlayTimeManager);
 
     u64 GetPlayTime(u64 program_id) const;
     void ResetProgramPlayTime(u64 program_id);

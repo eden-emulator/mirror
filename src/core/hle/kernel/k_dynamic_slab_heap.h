@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -5,7 +8,6 @@
 
 #include <atomic>
 
-#include "common/common_funcs.h"
 #include "core/hle/kernel/k_dynamic_page_manager.h"
 #include "core/hle/kernel/k_slab_heap.h"
 
@@ -13,9 +15,6 @@ namespace Kernel {
 
 template <typename T, bool ClearNode = false>
 class KDynamicSlabHeap : protected impl::KSlabHeapImpl {
-    YUZU_NON_COPYABLE(KDynamicSlabHeap);
-    YUZU_NON_MOVEABLE(KDynamicSlabHeap);
-
 public:
     constexpr KDynamicSlabHeap() = default;
 

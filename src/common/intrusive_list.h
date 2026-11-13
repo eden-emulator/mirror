@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -15,8 +18,7 @@ class IntrusiveListImpl;
 
 }
 
-class IntrusiveListNode {
-    YUZU_NON_COPYABLE(IntrusiveListNode);
+class IntrusiveListNode : Common::NonCopyable {
 
 private:
     friend class impl::IntrusiveListImpl;
@@ -95,8 +97,7 @@ private:
 
 namespace impl {
 
-class IntrusiveListImpl {
-    YUZU_NON_COPYABLE(IntrusiveListImpl);
+class IntrusiveListImpl : Common::NonCopyable {
 
 private:
     IntrusiveListNode m_root_node;
@@ -301,8 +302,7 @@ private:
 } // namespace impl
 
 template <class T, class Traits>
-class IntrusiveList {
-    YUZU_NON_COPYABLE(IntrusiveList);
+class IntrusiveList : Common::NonCopyable {
 
 private:
     impl::IntrusiveListImpl m_impl;

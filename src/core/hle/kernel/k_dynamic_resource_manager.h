@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2022 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -11,10 +14,7 @@
 namespace Kernel {
 
 template <typename T, bool ClearNode = false>
-class KDynamicResourceManager {
-    YUZU_NON_COPYABLE(KDynamicResourceManager);
-    YUZU_NON_MOVEABLE(KDynamicResourceManager);
-
+class KDynamicResourceManager : Common::NonCopyable, Common::NonMoveable {
 public:
     using DynamicSlabType = KDynamicSlabHeap<T, ClearNode>;
 

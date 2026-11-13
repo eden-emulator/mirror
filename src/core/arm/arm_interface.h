@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -45,11 +48,8 @@ enum class Architecture {
 };
 
 /// Generic ARMv8 CPU interface
-class ArmInterface {
+class ArmInterface : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(ArmInterface);
-    YUZU_NON_MOVEABLE(ArmInterface);
-
     explicit ArmInterface(bool uses_wall_clock) : m_uses_wall_clock{uses_wall_clock} {}
     virtual ~ArmInterface() = default;
 

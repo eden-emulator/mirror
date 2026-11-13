@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2024 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -14,9 +17,7 @@
 namespace FileSys {
 class DirectoryPathParser;
 
-class Path {
-    YUZU_NON_COPYABLE(Path);
-    YUZU_NON_MOVEABLE(Path);
+class Path : Common::NonCopyable, Common::NonMoveable {
 
 private:
     static constexpr const char* EmptyPath = "";
@@ -26,8 +27,7 @@ private:
     friend class DirectoryPathParser;
 
 public:
-    class WriteBuffer {
-        YUZU_NON_COPYABLE(WriteBuffer);
+    class WriteBuffer : Common::NonCopyable {
 
     private:
         char* m_buffer;

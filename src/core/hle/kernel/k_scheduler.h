@@ -34,11 +34,8 @@ class KScopedDisableDispatch;
 class KScopedSchedulerLock;
 class KScopedSchedulerLockAndSleep;
 
-class KScheduler final {
+class KScheduler final : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(KScheduler);
-    YUZU_NON_MOVEABLE(KScheduler);
-
     using LockType = KAbstractSchedulerLock<KScheduler>;
 
     explicit KScheduler(KernelCore& kernel);

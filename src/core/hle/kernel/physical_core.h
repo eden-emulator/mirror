@@ -24,13 +24,10 @@ class System;
 
 namespace Kernel {
 
-class PhysicalCore {
+class PhysicalCore : Common::NonCopyable, Common::NonMoveable {
 public:
     PhysicalCore(KernelCore& kernel, std::size_t core_index);
     ~PhysicalCore();
-
-    YUZU_NON_COPYABLE(PhysicalCore);
-    YUZU_NON_MOVEABLE(PhysicalCore);
 
     // Execute guest code running on the given thread.
     void RunThread(KernelCore& kernel, KThread* thread);

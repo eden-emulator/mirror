@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -16,8 +19,7 @@ class IntrusiveRedBlackTreeImpl;
 }
 
 #pragma pack(push, 4)
-struct IntrusiveRedBlackTreeNode {
-    YUZU_NON_COPYABLE(IntrusiveRedBlackTreeNode);
+struct IntrusiveRedBlackTreeNode : Common::NonCopyable {
 
 public:
     using RBEntry = freebsd::RBEntry<IntrusiveRedBlackTreeNode>;
@@ -48,8 +50,7 @@ class IntrusiveRedBlackTree;
 
 namespace impl {
 
-class IntrusiveRedBlackTreeImpl {
-    YUZU_NON_COPYABLE(IntrusiveRedBlackTreeImpl);
+class IntrusiveRedBlackTreeImpl : Common::NonCopyable {
 
 private:
     template <class, class, class>
@@ -260,8 +261,7 @@ template <typename T, typename Default>
 using RedBlackKeyType = std::remove_pointer_t<decltype(impl::GetRedBlackKeyType<T, Default>())>;
 
 template <class T, class Traits, class Comparator>
-class IntrusiveRedBlackTree {
-    YUZU_NON_COPYABLE(IntrusiveRedBlackTree);
+class IntrusiveRedBlackTree : Common::NonCopyable {
 
 public:
     using ImplType = impl::IntrusiveRedBlackTreeImpl;

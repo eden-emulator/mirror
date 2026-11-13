@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -7,16 +10,11 @@
 
 #include "core/crypto/aes_util.h"
 #include "core/crypto/key_manager.h"
-#include "core/file_sys/errors.h"
 #include "core/file_sys/fssystem/fs_i_storage.h"
-#include "core/file_sys/vfs/vfs.h"
 
 namespace FileSys {
 
 class AesCtrStorage : public IStorage {
-    YUZU_NON_COPYABLE(AesCtrStorage);
-    YUZU_NON_MOVEABLE(AesCtrStorage);
-
 public:
     static constexpr size_t BlockSize = 0x10;
     static constexpr size_t KeySize = 0x10;

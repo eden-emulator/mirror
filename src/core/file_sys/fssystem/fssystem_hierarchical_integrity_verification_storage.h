@@ -10,7 +10,6 @@
 #include "common/alignment.h"
 #include "core/file_sys/fssystem/fs_i_storage.h"
 #include "core/file_sys/fssystem/fs_types.h"
-#include "core/file_sys/fssystem/fssystem_alignment_matching_storage.h"
 #include "core/file_sys/fssystem/fssystem_integrity_verification_storage.h"
 #include "core/file_sys/vfs/vfs_offset.h"
 
@@ -61,9 +60,6 @@ struct HierarchicalIntegrityVerificationSizeSet {
 static_assert(std::is_trivially_default_constructible_v<HierarchicalIntegrityVerificationSizeSet> && std::is_trivially_copyable_v<HierarchicalIntegrityVerificationSizeSet>);
 
 class HierarchicalIntegrityVerificationStorage : public IReadOnlyStorage {
-    YUZU_NON_COPYABLE(HierarchicalIntegrityVerificationStorage);
-    YUZU_NON_MOVEABLE(HierarchicalIntegrityVerificationStorage);
-
 public:
     using GenerateRandomFunction = void (*)(void* dst, size_t size);
 

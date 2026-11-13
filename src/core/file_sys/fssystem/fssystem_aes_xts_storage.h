@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -13,9 +16,6 @@
 namespace FileSys {
 
 class AesXtsStorage : public IReadOnlyStorage {
-    YUZU_NON_COPYABLE(AesXtsStorage);
-    YUZU_NON_MOVEABLE(AesXtsStorage);
-
 public:
     static constexpr size_t AesBlockSize = 0x10;
     static constexpr size_t KeySize = 0x20;

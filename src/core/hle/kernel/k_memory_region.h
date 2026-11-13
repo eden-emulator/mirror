@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2021 yuzu Emulator Project
@@ -16,13 +16,11 @@ namespace Kernel {
 
 class KMemoryRegionAllocator;
 
-class KMemoryRegion final : public Common::IntrusiveRedBlackTreeBaseNode<KMemoryRegion> {
+class KMemoryRegion final : public Common::IntrusiveRedBlackTreeBaseNode<KMemoryRegion>,
+                            Common::NonMoveable {
     friend class KMemoryRegionTree;
 
 public:
-    YUZU_NON_COPYABLE(KMemoryRegion);
-    YUZU_NON_MOVEABLE(KMemoryRegion);
-
     constexpr KMemoryRegion() = default;
     constexpr KMemoryRegion(u64 address, u64 last_address)
         : m_address{address}, m_last_address{last_address} {}
@@ -120,15 +118,12 @@ private:
     u32 m_type_id{};
 };
 
-class KMemoryRegionTree final {
+class KMemoryRegionTree final : Common::NonCopyable, Common::NonMoveable {
 private:
     using TreeType =
         Common::IntrusiveRedBlackTreeBaseTraits<KMemoryRegion>::TreeType<KMemoryRegion>;
 
 public:
-    YUZU_NON_COPYABLE(KMemoryRegionTree);
-    YUZU_NON_MOVEABLE(KMemoryRegionTree);
-
     using value_type = TreeType::value_type;
     using size_type = TreeType::size_type;
     using difference_type = TreeType::difference_type;
@@ -328,11 +323,8 @@ private:
     KMemoryRegionAllocator& m_memory_region_allocator;
 };
 
-class KMemoryRegionAllocator final {
+class KMemoryRegionAllocator final : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(KMemoryRegionAllocator);
-    YUZU_NON_MOVEABLE(KMemoryRegionAllocator);
-
     static constexpr size_t MaxMemoryRegions = 200;
 
     constexpr KMemoryRegionAllocator() = default;

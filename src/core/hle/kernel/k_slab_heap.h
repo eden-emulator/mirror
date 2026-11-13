@@ -7,6 +7,7 @@
 #pragma once
 
 #include <atomic>
+#include <mutex>
 
 #include "common/assert.h"
 #include "common/atomic_ops.h"
@@ -19,10 +20,7 @@ class KernelCore;
 
 namespace impl {
 
-class KSlabHeapImpl {
-    YUZU_NON_COPYABLE(KSlabHeapImpl);
-    YUZU_NON_MOVEABLE(KSlabHeapImpl);
-
+class KSlabHeapImpl : Common::NonCopyable, Common::NonMoveable {
 public:
     struct Node {
         Node* next{};
@@ -74,9 +72,6 @@ private:
 
 template <bool SupportDynamicExpansion>
 class KSlabHeapBase : protected impl::KSlabHeapImpl {
-    YUZU_NON_COPYABLE(KSlabHeapBase);
-    YUZU_NON_MOVEABLE(KSlabHeapBase);
-
 private:
     size_t m_obj_size{};
     uintptr_t m_peak{};

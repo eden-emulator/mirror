@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
@@ -14,9 +14,6 @@ namespace FileSys {
 
 template <size_t DataAlign_, size_t BufferAlign_>
 class AlignmentMatchingStorage : public IStorage {
-    YUZU_NON_COPYABLE(AlignmentMatchingStorage);
-    YUZU_NON_MOVEABLE(AlignmentMatchingStorage);
-
 public:
     static constexpr size_t DataAlign = DataAlign_;
     static constexpr size_t BufferAlign = BufferAlign_;
@@ -78,9 +75,6 @@ public:
 
 template <size_t BufferAlign_>
 class AlignmentMatchingStoragePooledBuffer : public IStorage {
-    YUZU_NON_COPYABLE(AlignmentMatchingStoragePooledBuffer);
-    YUZU_NON_MOVEABLE(AlignmentMatchingStoragePooledBuffer);
-
 public:
     static constexpr size_t BufferAlign = BufferAlign_;
 

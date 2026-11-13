@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include <optional>
 #include <type_traits>
 
 #include "common/literals.h"
@@ -18,9 +17,6 @@ namespace FileSys {
 using namespace Common::Literals;
 
 class AesCtrCounterExtendedStorage : public IReadOnlyStorage {
-    YUZU_NON_COPYABLE(AesCtrCounterExtendedStorage);
-    YUZU_NON_MOVEABLE(AesCtrCounterExtendedStorage);
-
 public:
     static constexpr size_t BlockSize = 0x10;
     static constexpr size_t KeySize = 0x10;

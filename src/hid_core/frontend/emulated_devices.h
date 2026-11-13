@@ -75,7 +75,7 @@ struct InterfaceUpdateCallback {
     std::function<void(DeviceTriggerType)> on_change;
 };
 
-class EmulatedDevices {
+class EmulatedDevices : Common::NonCopyable, Common::NonMoveable {
 public:
     /**
      * Contains all input data related to external devices that aren't necessarily a controller
@@ -83,9 +83,6 @@ public:
      */
     explicit EmulatedDevices();
     ~EmulatedDevices();
-
-    YUZU_NON_COPYABLE(EmulatedDevices);
-    YUZU_NON_MOVEABLE(EmulatedDevices);
 
     /// Removes all callbacks created from input devices
     void UnloadInput();

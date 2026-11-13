@@ -74,16 +74,13 @@ struct ConsoleUpdateCallback {
     std::function<void(ConsoleTriggerType)> on_change;
 };
 
-class EmulatedConsole {
+class EmulatedConsole : Common::NonCopyable, Common::NonMoveable {
 public:
     /**
      * Contains all input data within the emulated switch console tablet such as touch and motion
      */
     explicit EmulatedConsole();
     ~EmulatedConsole();
-
-    YUZU_NON_COPYABLE(EmulatedConsole);
-    YUZU_NON_MOVEABLE(EmulatedConsole);
 
     /// Removes all callbacks created from input devices
     void UnloadInput();

@@ -52,10 +52,7 @@ static_assert(sizeof(KPageProperties) == sizeof(u32));
 class KResourceLimit;
 class KSystemResource;
 
-class KPageTableBase {
-    YUZU_NON_COPYABLE(KPageTableBase);
-    YUZU_NON_MOVEABLE(KPageTableBase);
-
+class KPageTableBase : Common::NonCopyable, Common::NonMoveable {
 public:
     using TraversalEntry = Common::PageTable::TraversalEntry;
     using TraversalContext = Common::PageTable::TraversalContext;

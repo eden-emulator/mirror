@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
@@ -20,7 +20,7 @@ namespace Network {
 
 struct ProxyPacket;
 
-class SocketBase {
+class SocketBase : Common::NonCopyable, Common::NonMoveable {
 public:
 #ifndef _WIN32
     using SOCKET = int;
@@ -36,9 +36,6 @@ public:
     SocketBase() = default;
     explicit SocketBase(SOCKET fd_) : fd{fd_} {}
     virtual ~SocketBase() = default;
-
-    YUZU_NON_COPYABLE(SocketBase);
-    YUZU_NON_MOVEABLE(SocketBase);
 
     virtual Errno Initialize(Domain domain, Type type, Protocol protocol) = 0;
 

@@ -175,7 +175,7 @@ struct ControllerUpdateCallback {
     bool is_npad_service;
 };
 
-class EmulatedController {
+class EmulatedController : Common::NonCopyable, Common::NonMoveable {
 public:
     /**
      * Contains all input data (buttons, joysticks, vibration, and motion) within this controller.
@@ -183,9 +183,6 @@ public:
      */
     explicit EmulatedController(NpadIdType npad_id_type_);
     ~EmulatedController();
-
-    YUZU_NON_COPYABLE(EmulatedController);
-    YUZU_NON_MOVEABLE(EmulatedController);
 
     /// Converts the controller type from settings to npad type
     static NpadStyleIndex MapSettingsTypeToNPad(Settings::ControllerType type);

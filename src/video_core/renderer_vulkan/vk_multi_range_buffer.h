@@ -39,14 +39,12 @@ struct MultiRangeRef {
     bool needs_gather{};
 };
 
-class MultiRangeBufferCache final {
+class MultiRangeBufferCache final : Common::NonCopyable {
 public:
     static constexpr VkDeviceSize DEFAULT_BLOCK_SIZE = 64 * 1024;
     static constexpr size_t MAX_RETIRED = 256;
 
     explicit MultiRangeBufferCache(const Device& device);
-
-    YUZU_NON_COPYABLE(MultiRangeBufferCache);
 
     [[nodiscard]] MultiRangeRef Get(const Device& device, Scheduler& scheduler,
                                     MemoryAllocator& memory_allocator, u64 key,

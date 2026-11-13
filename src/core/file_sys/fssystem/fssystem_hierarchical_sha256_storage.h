@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -5,16 +8,11 @@
 
 #include <mutex>
 
-#include "core/file_sys/errors.h"
 #include "core/file_sys/fssystem/fs_i_storage.h"
-#include "core/file_sys/vfs/vfs.h"
 
 namespace FileSys {
 
 class HierarchicalSha256Storage : public IReadOnlyStorage {
-    YUZU_NON_COPYABLE(HierarchicalSha256Storage);
-    YUZU_NON_MOVEABLE(HierarchicalSha256Storage);
-
 public:
     static constexpr s32 LayerCount = 3;
     static constexpr size_t HashSize = 256 / 8;

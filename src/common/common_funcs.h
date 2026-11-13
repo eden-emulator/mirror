@@ -75,15 +75,22 @@
         return std::to_underlying(key) == 0;                                                       \
     }
 
-#define YUZU_NON_COPYABLE(cls)                                                                     \
-    cls(const cls&) = delete;                                                                      \
-    cls& operator=(const cls&) = delete
-
-#define YUZU_NON_MOVEABLE(cls)                                                                     \
-    cls(cls&&) = delete;                                                                           \
-    cls& operator=(cls&&) = delete
-
 namespace Common {
+
+class NonCopyable {
+protected:
+    NonCopyable() = default;
+    ~NonCopyable() = default;
+    NonCopyable(const NonCopyable&) = delete;
+    NonCopyable& operator=(const NonCopyable&) = delete;
+};
+class NonMoveable {
+protected:
+    NonMoveable() = default;
+    ~NonMoveable() = default;
+    NonMoveable(NonMoveable&&) = delete;
+    NonMoveable& operator=(NonMoveable&&) = delete;
+};
 
 [[nodiscard]] constexpr u32 MakeMagic(char a, char b, char c, char d) {
     return u32(a) | u32(b) << 8 | u32(c) << 16 | u32(d) << 24;
