@@ -8,37 +8,37 @@
 
 // yuzu data directories
 
-#define EDEN_DIR "eden"
-#define PORTABLE_DIR "user"
+inline constexpr const char *EDEN_DIR = "eden";
+inline constexpr const char *PORTABLE_DIR = "user";
 
 // Sub-directories contained within a yuzu data directory
-#define AMIIBO_DIR "amiibo"
-#define CACHE_DIR "cache"
-#define CONFIG_DIR "config"
-#define CRASH_DUMPS_DIR "crash_dumps"
-#define DUMP_DIR "dump"
-#define KEYS_DIR "keys"
-#define LOAD_DIR "load"
-#define LOG_DIR "log"
-#define LOSSLESS_DIR "lossless"
-#define NAND_DIR "nand"
-#define PLAY_TIME_DIR "play_time"
-#define POST_PRESET_DIR "post_presets"
-#define POST_SHADER_DIR "post_shaders"
-#define SCREENSHOTS_DIR "screenshots"
-#define SDMC_DIR "sdmc"
-#define SHADER_DIR "shader"
-#define TAS_DIR "tas"
-#define ICONS_DIR "icons"
+inline constexpr const char *AMIIBO_DIR = "amiibo";
+inline constexpr const char *CACHE_DIR = "cache";
+inline constexpr const char *CONFIG_DIR = "config";
+inline constexpr const char *CRASH_DUMPS_DIR = "crash_dumps";
+inline constexpr const char *DUMP_DIR = "dump";
+inline constexpr const char *KEYS_DIR = "keys";
+inline constexpr const char *LOAD_DIR = "load";
+inline constexpr const char *LOG_DIR = "log";
+inline constexpr const char *LOSSLESS_DIR = "lossless";
+inline constexpr const char *NAND_DIR = "nand";
+inline constexpr const char *PLAY_TIME_DIR = "play_time";
+inline constexpr const char *POST_PRESET_DIR = "post_presets";
+inline constexpr const char *POST_SHADER_DIR = "post_shaders";
+inline constexpr const char *SCREENSHOTS_DIR = "screenshots";
+inline constexpr const char *SDMC_DIR = "sdmc";
+inline constexpr const char *SHADER_DIR = "shader";
+inline constexpr const char *TAS_DIR = "tas";
+inline constexpr const char *ICONS_DIR = "icons";
 
 // Compatibility with other emulators
-#define CITRON_DIR "citron"
-#define SUDACHI_DIR "sudachi"
-#define YUZU_DIR "yuzu"
-#define SUYU_DIR "suyu"
-#define RYUJINX_DIR "Ryujinx"
+inline constexpr const char *CITRON_DIR = "citron";
+inline constexpr const char *SUDACHI_DIR = "sudachi";
+inline constexpr const char *YUZU_DIR = "yuzu";
+inline constexpr const char *SUYU_DIR = "suyu";
+inline constexpr const char *RYUJINX_DIR = "Ryujinx";
 
 // yuzu-specific files
-#define LOG_FILE "eden_log.txt"
-#define LOSSLESS_DLL_FILE "Lossless.dll"
-#define LOSSLESS_CACHE_FILE "lsfg_spirv.cache"
+inline constexpr const char *LOG_FILE = "eden_log.txt";
+inline constexpr const char *LOSSLESS_DLL_FILE = "Lossless.dll";
+inline constexpr const char *LOSSLESS_CACHE_FILE = "lsfg_spirv.cache";
