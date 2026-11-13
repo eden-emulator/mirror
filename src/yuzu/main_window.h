@@ -67,6 +67,7 @@ class QSlider;
 class QHBoxLayout;
 class WaitTreeWidget;
 class PerformanceOverlay;
+class RuntimeCheatMenu;
 #ifdef HAS_RESHADE
 class ConfigurePostProcessing;
 #endif
@@ -562,7 +563,7 @@ private:
     QString startup_icon_theme;
 
     QActionGroup* game_size_actions;
-    std::vector<QAction*> runtime_cheat_actions;
+    std::unique_ptr<RuntimeCheatMenu> runtime_cheat_menu;
 
     /// The console modes' engine: assigns the connected controllers to players, on a timer
     QTimer console_mode_timer;

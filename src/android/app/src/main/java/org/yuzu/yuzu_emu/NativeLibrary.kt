@@ -39,8 +39,17 @@ object NativeLibrary {
         val id: Int,
         val name: String,
         val enabled: Boolean,
-        val isMaster: Boolean
-    )
+        val isMaster: Boolean,
+        val type: Int,
+        val parentId: Int
+    ) {
+        companion object {
+            const val CHEAT = 0
+            const val SUBMENU = 1
+            const val ROOT = -1
+        }
+    }
+
     @Keep
     data class UpdateResult(
         var tag: String = "",
@@ -205,6 +214,10 @@ object NativeLibrary {
     external fun isPaused(): Boolean
 
     external fun getRuntimeCheats(): Array<RuntimeCheat>
+
+    /**
+     * Toggles a cheat, or every regular cheat in a group or in the whole list ([RuntimeCheat.ROOT]).
+     */
     external fun setRuntimeCheatEnabled(id: Int, enabled: Boolean): Boolean
 
     /**

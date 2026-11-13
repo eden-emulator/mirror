@@ -52,6 +52,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.navArgs
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import androidx.window.layout.WindowLayoutInfo
@@ -69,7 +70,9 @@ import org.yuzu.yuzu_emu.HomeNavigationDirections
 import org.yuzu.yuzu_emu.NativeLibrary
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.activities.EmulationActivity
+import org.yuzu.yuzu_emu.adapters.RuntimeCheatAdapter
 import org.yuzu.yuzu_emu.databinding.DialogOverlayAdjustBinding
+import org.yuzu.yuzu_emu.databinding.DialogListBinding
 import org.yuzu.yuzu_emu.databinding.FragmentEmulationBinding
 import org.yuzu.yuzu_emu.dialogs.QuickSettings
 import org.yuzu.yuzu_emu.features.input.NativeInput
@@ -706,6 +709,8 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                 emulationViewModel.setDrawerOpen(true)
                 updateQuickOverlayMenuEntry(BooleanSetting.SHOW_INPUT_OVERLAY.getBoolean())
                 if (drawerView == binding.inGameMenu) {
+                    // The application changes when e.g. qlaunch launches a game.
+                    updateCheatsMenuEntry()
                     binding.drawerLayout.closeDrawer(binding.quickSettingsSheet)
                 } else if (drawerView == binding.quickSettingsSheet) {
                     binding.drawerLayout.closeDrawer(binding.inGameMenu)
@@ -969,8 +974,7 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
 
                 emulationState.updateSurface()
 
-                binding.inGameMenu.menu.findItem(R.id.menu_cheats)?.isVisible =
-                    NativeLibrary.getRuntimeCheats().isNotEmpty()
+                updateCheatsMenuEntry()
                 updateShowStatsOverlay()
                 updateSocOverlay()
 
@@ -1133,37 +1137,26 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
         val cheats = NativeLibrary.getRuntimeCheats()
         if (cheats.isEmpty()) return
 
-        val names = cheats.map { it.name.ifEmpty { getString(R.string.unnamed_cheat) } }.toTypedArray()
-        lateinit var dialog: androidx.appcompat.app.AlertDialog
-        dialog = MaterialAlertDialogBuilder(requireContext())
+        val adapter = RuntimeCheatAdapter(cheats.toList())
+        val dialogBinding = DialogListBinding.inflate(layoutInflater)
+        dialogBinding.dialogList.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            this.adapter = adapter
+        }
+        val dialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.cheats)
-            .setMultiChoiceItems(names, cheats.map { it.enabled }.toBooleanArray()) { _, which, enabled ->
-                if (cheats[which].isMaster) {
-                    dialog.listView.setItemChecked(which, true)
-                } else if (!NativeLibrary.setRuntimeCheatEnabled(cheats[which].id, enabled)) {
-                    dialog.listView.setItemChecked(which, !enabled)
-                }
-            }
-            .setNegativeButton(R.string.disable_all_cheats) { _, _ ->
-                cheats.forEach {
-                    if (!it.isMaster) NativeLibrary.setRuntimeCheatEnabled(it.id, false)
-                }
-            }
-            .setNeutralButton(R.string.enable_all_cheats) { _, _ ->
-                cheats.forEach {
-                    if (!it.isMaster) NativeLibrary.setRuntimeCheatEnabled(it.id, true)
-                }
-            }
+            .setView(dialogBinding.root)
+            .setNegativeButton(R.string.disable_all_cheats, null)
+            .setNeutralButton(R.string.enable_all_cheats, null)
             .setPositiveButton(R.string.done, null)
             .create()
         dialog.setOnShowListener {
-            val listView = dialog.listView
-            fun updateMasterVisuals() = repeat(listView.childCount) { index ->
-                listView.getChildAt(index).alpha =
-                    if (cheats[listView.firstVisiblePosition + index].isMaster) 0.38f else 1f
+            dialog.getButton(DialogInterface.BUTTON_NEGATIVE).setOnClickListener {
+                adapter.setAllEnabled(false)
             }
-            listView.setOnScrollChangeListener { _, _, _, _, _ -> updateMasterVisuals() }
-            updateMasterVisuals()
+            dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener {
+                adapter.setAllEnabled(true)
+            }
         }
         dialog.show()
     }
@@ -1310,6 +1303,12 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
     private fun openQuickSettingsMenu() {
         binding.drawerLayout.closeDrawer(binding.inGameMenu)
         binding.drawerLayout.openDrawer(binding.quickSettingsSheet)
+    }
+
+    private fun updateCheatsMenuEntry() {
+        val b = _binding ?: return
+        b.inGameMenu.menu.findItem(R.id.menu_cheats)?.isVisible =
+            NativeLibrary.getRuntimeCheats().isNotEmpty()
     }
 
     private fun updateQuickOverlayMenuEntry(isVisible: Boolean) {

@@ -163,3 +163,37 @@ Cheats are enabled by default, but can be disabled so they don't affect gameplay
 * Use **Configure > System > Core > Enable cheats by default** to choose whether regular cheats start enabled. The setting can also be overridden for an individual game from its **System** settings.
 
 * Master Code entries (`{}` blocks) are always enabled and appear as disabled and checked items in the runtime menu.
+
+### EdiZon Submenus and Zing Outline Groups
+
+Cheat files can group their entries with EdiZon Overlay sections or Zing outlines. Groups appear as submenus in the **Cheats** menu and as collapsible rows on Android. Checking a group toggles every cheat inside it.
+
+* [EdiZon Overlay submenus](https://github.com/proferabg/EdiZon-Overlay/blob/main/README.md#how-to-use-submenus) wrap a group of cheats in matching section markers:
+    ```text
+    [--SectionStart:Item Codes--]
+    00000000 00000000 00000000
+
+    [Some Item Cheat Codes]
+    ...
+
+    [--SectionEnd:Item Codes--]
+    00000000 00000000 00000000
+    ```
+    - Sections can be nested. A section ends at the `SectionEnd` entry with the same name.
+    - Add `[--DisableSubmenus--]` followed by `00000000 00000000 00000000` at the top of a file to display that file's cheats without groups.
+
+* [Zing outline groups](https://github.com/tomvita/Zing/blob/master/README.md#creating-outline) start at an entry whose first code is `20000000` and end at an entry whose first code is `20000001`. They are displayed the same way as EdiZon submenus.
+    ```text
+    [Item Codes]
+    20000000
+
+    [Some Item Cheat Codes]
+    ...
+
+    [End Item Codes]
+    20000001
+    ```
+    - Outline groups cannot be nested. A new start entry ends the current group, and so does entering or leaving an EdiZon section.
+    - The end entry is not displayed.
+
+* Section, outline and `--DisableSubmenus--` entries only describe the menu: their codes never reach the cheat VM. The cheats inside a group run as usual. The Master Code is never treated as one of these entries.

@@ -240,9 +240,10 @@ std::optional<VAddr> AppLoader_NSO::LoadModule(Kernel::KProcess& process, Core::
         if (name == "main")
             system.SetApplicationProcessBuildID(nso_header.build_id);
 
-        const auto cheats = pm->CreateCheatList(nso_header.build_id);
-        if (!cheats.empty()) {
-            system.RegisterCheatList(cheats, nso_header.build_id, load_base, image_size);
+        auto cheat_list = pm->CreateCheatList(nso_header.build_id);
+        if (!cheat_list.cheats.empty()) {
+            system.RegisterCheatList(process, std::move(cheat_list), nso_header.build_id, load_base,
+                                     image_size);
         }
     }
 

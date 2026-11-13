@@ -844,6 +844,8 @@
     <string name="enable_all_cheats">Enable All Cheats</string>
     <string name="disable_all_cheats">Disable All Cheats</string>
     <string name="unnamed_cheat">Unnamed Cheat</string>
+    <string name="cheat_submenu_expanded">Expanded</string>
+    <string name="cheat_submenu_collapsed">Collapsed</string>
     <string name="enable_cheats_by_default">Enable cheats by default</string>
     <string name="enable_cheats_by_default_description">Enable regular cheats when a game starts</string>
     <string name="enable_quick_settings">Enable Quick Settings</string>

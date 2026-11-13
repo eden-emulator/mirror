@@ -215,6 +215,8 @@ add_executable(yuzu
     util/overlay_dialog.cpp
     util/overlay_dialog.h
     util/overlay_dialog.ui
+    util/runtime_cheat_menu.cpp
+    util/runtime_cheat_menu.h
     util/sequence_dialog/sequence_dialog.cpp
     util/sequence_dialog/sequence_dialog.h
     util/url_request_interceptor.cpp

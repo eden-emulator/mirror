@@ -65,6 +65,7 @@
 #include "util/controller_navigation.h"
 #include "util/gamescope.h"
 #include "util/overlay_dialog.h"
+#include "util/runtime_cheat_menu.h"
 
 #include "multiplayer/state.h"
 
@@ -1861,7 +1862,6 @@ void MainWindow::OnAppFocusStateChanged(Qt::ApplicationState state) {
 }
 
 void MainWindow::ConnectWidgetEvents() {
-    ui->menu_Cheats->installEventFilter(this);
     ui->menu_Cheats->menuAction()->setVisible(false);
 
     connect(game_list, &GameList::BootGame, this, &MainWindow::BootGameFromList);
@@ -1915,49 +1915,17 @@ void MainWindow::ConnectWidgetEvents() {
 void MainWindow::RefreshRuntimeCheats() {
     ClearRuntimeCheats();
 
-    const auto cheats = QtCommon::system->GetRuntimeCheats();
-    auto* disable_all = ui->menu_Cheats->addAction(tr("Disable All Cheats"));
-    connect(disable_all, &QAction::triggered, this, [this] {
-        for (auto* action : runtime_cheat_actions) {
-            if (action->isEnabled()) {
-                action->setChecked(false);
-            }
-        }
-    });
-
-    auto* enable_all = ui->menu_Cheats->addAction(tr("Enable All Cheats"));
-    connect(enable_all, &QAction::triggered, this, [this] {
-        for (auto* action : runtime_cheat_actions) {
-            if (action->isEnabled()) {
-                action->setChecked(true);
-            }
-        }
-    });
-
-    ui->menu_Cheats->addSeparator();
-    runtime_cheat_actions.reserve(cheats.size());
-    for (const auto& cheat : cheats) {
-        const QString name = cheat.name.empty() ? tr("Unnamed Cheat")
-                                                : QString::fromUtf8(cheat.name);
-        auto* action = ui->menu_Cheats->addAction(name);
-        action->setCheckable(true);
-        action->setChecked(cheat.enabled || cheat.is_master);
-        action->setEnabled(!cheat.is_master);
-        connect(action, &QAction::toggled, this, [action, id = cheat.id](bool enabled) {
-            if (!QtCommon::system->SetCheatEnabled(id, enabled)) {
-                const QSignalBlocker blocker{action};
-                action->setChecked(!enabled);
-            }
-        });
-        runtime_cheat_actions.push_back(action);
+    auto cheats = QtCommon::system->GetRuntimeCheats();
+    if (!cheats.empty()) {
+        runtime_cheat_menu = std::make_unique<RuntimeCheatMenu>(*ui->menu_Cheats, *QtCommon::system,
+                                                                std::move(cheats));
     }
-
-    ui->menu_Cheats->menuAction()->setVisible(!runtime_cheat_actions.empty());
+    ui->menu_Cheats->menuAction()->setVisible(runtime_cheat_menu != nullptr);
 }
 
 void MainWindow::ClearRuntimeCheats() {
+    runtime_cheat_menu.reset();
     ui->menu_Cheats->clear();
-    runtime_cheat_actions.clear();
     ui->menu_Cheats->menuAction()->setVisible(false);
 }
 
@@ -7133,15 +7101,6 @@ bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
     if (watched == render_window && HandleOverlayMouse(event)) {
         return true;
     }
-    if (watched == ui->menu_Cheats && event->type() == QEvent::MouseButtonRelease) {
-        const auto* mouse_event = static_cast<QMouseEvent*>(event);
-        auto* action = ui->menu_Cheats->actionAt(mouse_event->pos());
-        if (mouse_event->button() == Qt::LeftButton && action && action->isEnabled() &&
-            action->isCheckable()) {
-            action->trigger();
-            return true;
-        }
-    }
     return QMainWindow::eventFilter(watched, event);
 }
 
@@ -9772,6 +9731,8 @@ void MainWindow::OnEmulatorUpdateAvailable() {
 void MainWindow::OnApplicationChanged(u64 program_id) {
     if (!emulation_running || program_id == 0)
         return;
+
+    RefreshRuntimeCheats();
 
     std::string title_name;
     std::string title_version;

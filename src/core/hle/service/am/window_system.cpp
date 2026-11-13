@@ -406,6 +406,9 @@ bool WindowSystem::RestartAppletProcessLocked(Applet* applet) {
     applet->launch_reason.flag = 1;
 
     m_event_observer->TrackAppletProcess(*applet);
+
+    // The application process must not keep pointing at the terminated process.
+    this->UpdateCurrentApplicationLocked();
     return true;
 }
 

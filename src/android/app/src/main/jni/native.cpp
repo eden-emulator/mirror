@@ -952,14 +952,16 @@ jboolean Java_org_yuzu_yuzu_1emu_NativeLibrary_isPaused(JNIEnv* env, jclass claz
 jobjectArray Java_org_yuzu_yuzu_1emu_NativeLibrary_getRuntimeCheats(JNIEnv* env, jclass clazz) {
     const auto cheats = EmulationSession::GetInstance().System().GetRuntimeCheats();
     const auto runtime_cheat_class = env->FindClass("org/yuzu/yuzu_emu/NativeLibrary$RuntimeCheat");
-    const auto constructor = env->GetMethodID(runtime_cheat_class, "<init>", "(ILjava/lang/String;ZZ)V");
+    const auto constructor = env->GetMethodID(runtime_cheat_class, "<init>", "(ILjava/lang/String;ZZII)V");
     auto result = env->NewObjectArray(static_cast<jsize>(cheats.size()), runtime_cheat_class, nullptr);
     for (jsize i = 0; i < static_cast<jsize>(cheats.size()); ++i) {
         const auto& cheat = cheats[i];
         const auto name = Common::Android::ToJString(env, cheat.name);
         const auto item = env->NewObject(runtime_cheat_class, constructor, static_cast<jint>(cheat.id), name,
                                          static_cast<jboolean>(cheat.enabled),
-                                         static_cast<jboolean>(cheat.is_master));
+                                         static_cast<jboolean>(cheat.is_master),
+                                         static_cast<jint>(cheat.type),
+                                         static_cast<jint>(cheat.parent_id));
         env->SetObjectArrayElement(result, i, item);
         env->DeleteLocalRef(name);
         env->DeleteLocalRef(item);

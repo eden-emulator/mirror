@@ -1155,6 +1155,8 @@ add_library(core STATIC
     memory.h
     memory/cheat_engine.cpp
     memory/cheat_engine.h
+    memory/cheat_parser.cpp
+    memory/cheat_parser.h
     memory/dmnt_cheat_types.h
     memory/dmnt_cheat_vm.cpp
     memory/dmnt_cheat_vm.h

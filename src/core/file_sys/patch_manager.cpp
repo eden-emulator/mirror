@@ -33,7 +33,7 @@
 #include "core/hle/service/set/settings_server.h"
 #include "core/loader/loader.h"
 #include "core/loader/nso.h"
-#include "core/memory/cheat_engine.h"
+#include "core/memory/cheat_parser.h"
 
 namespace FileSys {
 namespace {
@@ -83,7 +83,7 @@ VirtualDir FindSubdirectoryCaseless(const VirtualDir dir, std::string_view name)
 #endif
 }
 
-std::optional<std::vector<Core::Memory::CheatEntry>> ReadCheatFileFromFolder(
+std::optional<Core::Memory::CheatList> ReadCheatFileFromFolder(
     u64 title_id, const PatchManager::BuildID& build_id_, const VirtualDir& base_path, bool upper) {
     const auto build_id_raw = Common::HexToString(build_id_, upper);
     const auto build_id = build_id_raw.substr(0, sizeof(u64) * 2);
@@ -102,7 +102,7 @@ std::optional<std::vector<Core::Memory::CheatEntry>> ReadCheatFileFromFolder(
         return std::nullopt;
     }
 
-    const Core::Memory::TextCheatParser parser;
+    const Core::Memory::TextCheatParser parser{Settings::values.enable_cheats_by_default.GetValue()};
     return parser.Parse(std::string_view(reinterpret_cast<const char*>(data.data()), data.size()));
 }
 
@@ -487,7 +487,7 @@ bool PatchManager::HasNSOPatch(const BuildID& build_id_, std::string_view name) 
     return !CollectPatches(patch_dirs, build_id).empty();
 }
 
-std::vector<Core::Memory::CheatEntry> PatchManager::CreateCheatList(const BuildID& build_id_) const {
+Core::Memory::CheatList PatchManager::CreateCheatList(const BuildID& build_id_) const {
     const auto load_dir = GetModificationLoadRoot();
     if (load_dir == nullptr) {
         LOG_ERROR(Loader, "Cannot load mods for invalid title_id={:016X}", title_id);
@@ -499,14 +499,14 @@ std::vector<Core::Memory::CheatEntry> PatchManager::CreateCheatList(const BuildI
     std::sort(patch_dirs.begin(), patch_dirs.end(), [](auto const& l, auto const& r) { return l->GetName() < r->GetName(); });
 
     // <mod dir> / <folder> / cheats / <build id>.txt
-    std::vector<Core::Memory::CheatEntry> out;
+    Core::Memory::CheatList out;
     for (const auto& subdir : patch_dirs) {
         if (std::find(disabled.cbegin(), disabled.cend(), subdir->GetName()) == disabled.cend()) {
             if (auto cheats_dir = FindSubdirectoryCaseless(subdir, "cheats"); cheats_dir != nullptr) {
-                if (auto const res = ReadCheatFileFromFolder(title_id, build_id_, cheats_dir, true)) {
-                    std::copy(res->begin(), res->end(), std::back_inserter(out));
-                } else if (auto const lower_res = ReadCheatFileFromFolder(title_id, build_id_, cheats_dir, false)) {
-                    std::copy(lower_res->begin(), lower_res->end(), std::back_inserter(out));
+                if (auto res = ReadCheatFileFromFolder(title_id, build_id_, cheats_dir, true)) {
+                    out.Append(std::move(*res));
+                } else if (auto lower_res = ReadCheatFileFromFolder(title_id, build_id_, cheats_dir, false)) {
+                    out.Append(std::move(*lower_res));
                 }
             }
         }
@@ -518,9 +518,8 @@ std::vector<Core::Memory::CheatEntry> PatchManager::CreateCheatList(const BuildI
         if (name.starts_with("cheat_") && std::find(disabled.cbegin(), disabled.cend(), name) == disabled.cend()) {
             std::vector<u8> data(f->GetSize());
             if (f->Read(data.data(), data.size()) == data.size()) {
-                const Core::Memory::TextCheatParser parser;
-                auto const res = parser.Parse(std::string_view(reinterpret_cast<const char*>(data.data()), data.size()));
-                std::copy(res.begin(), res.end(), std::back_inserter(out));
+                const Core::Memory::TextCheatParser parser { Settings::values.enable_cheats_by_default.GetValue() };
+                out.Append(parser.Parse(std::string_view(reinterpret_cast<const char*>(data.data()), data.size())));
             } else {
                 LOG_INFO(Common_Filesystem, "Failed to read cheats file for title_id={:016X}", title_id);
             }

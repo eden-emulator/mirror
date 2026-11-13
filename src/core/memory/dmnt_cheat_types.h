@@ -40,11 +40,20 @@ struct CheatEntry {
     CheatDefinition definition{};
 };
 
+enum class CheatMenuEntryType : u32 {
+    Cheat,
+    Submenu,
+};
+
+constexpr u32 CHEAT_MENU_ROOT = 0xFFFFFFFF;
+
 struct RuntimeCheatInfo {
     u32 id{};
     std::string name;
     bool enabled{};
     bool is_master{};
+    CheatMenuEntryType type{CheatMenuEntryType::Cheat};
+    u32 parent_id{CHEAT_MENU_ROOT};
 };
 
 } // namespace Core::Memory

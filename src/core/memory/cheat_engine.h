@@ -6,12 +6,10 @@
 
 #pragma once
 
-#include <atomic>
-#include <chrono>
-#include <memory>
-#include <mutex>
+#include <array>
 #include <vector>
 #include "common/common_types.h"
+#include "core/memory/cheat_parser.h"
 #include "core/memory/dmnt_cheat_types.h"
 #include "core/memory/dmnt_cheat_vm.h"
 
@@ -23,16 +21,11 @@ namespace Kernel {
 class KProcess;
 }
 
-namespace Core::Timing {
-class CoreTiming;
-struct EventType;
-} // namespace Core::Timing
-
 namespace Core::Memory {
 
 class StandardVmCallbacks : public DmntCheatVm::Callbacks {
 public:
-    StandardVmCallbacks(System& system_, const CheatProcessMetadata& metadata_);
+    StandardVmCallbacks(System& system_, Kernel::KProcess& process_, const CheatProcessMetadata& metadata_);
     ~StandardVmCallbacks() override;
 
     void MemoryReadUnsafe(VAddr address, void* data, u64 size) override;
@@ -47,58 +40,35 @@ public:
 private:
     bool IsAddressInRange(VAddr address) const;
 
-    Kernel::KProcess* GetProcess() const;
-
     const CheatProcessMetadata& metadata;
     Core::System& system;
-    mutable Kernel::KProcess* cached_process{};
-    mutable u64 cached_process_id{};
+    Kernel::KProcess& process;
 };
 
-// Intermediary class that parses a text file or other disk format for storing cheats into a
-// CheatList object, that can be used for execution.
-class CheatParser {
-public:
-    virtual ~CheatParser();
-
-    [[nodiscard]] virtual std::vector<CheatEntry> Parse(std::string_view data) const = 0;
-};
-
-// CheatParser implementation that parses text files
-class TextCheatParser final : public CheatParser {
-public:
-    ~TextCheatParser() override;
-
-    [[nodiscard]] std::vector<CheatEntry> Parse(std::string_view data) const override;
-};
-
-// Class that encapsulates a CheatList and manages its interaction with memory and CoreTiming
+// Runs a CheatList against the process that loaded it. Not thread-safe: System serializes every
+// call and drives Execute from CoreTiming.
 class CheatEngine final {
 public:
-    CheatEngine(System& system_, std::vector<CheatEntry> cheats_,
-                const std::array<u8, 0x20>& build_id_);
-    ~CheatEngine();
+    CheatEngine(System& system_, Kernel::KProcess& process_, CheatList cheats_,
+                const std::array<u8, 0x20>& build_id_, VAddr main_region_begin,
+                u64 main_region_size);
 
-    void Initialize();
-    void SetMainMemoryParameters(VAddr main_region_begin, u64 main_region_size);
-
-    void Reload(std::vector<CheatEntry> reload_cheats);
     [[nodiscard]] std::vector<RuntimeCheatInfo> GetCheats() const;
-    bool SetCheatEnabled(u32 cheat_id, bool enabled);
+    // Accepts a cheat, a submenu or CHEAT_MENU_ROOT; groups toggle every regular cheat inside.
+    bool SetCheatEnabled(u32 id, bool enabled);
+    // Runs one cheat frame against the process, if it is running.
+    void Execute();
 
 private:
-    void FrameCallback(std::chrono::nanoseconds ns_late);
-
     DmntCheatVm vm;
     CheatProcessMetadata metadata;
 
     std::vector<CheatEntry> cheats;
-    mutable std::mutex cheats_mutex;
-    std::atomic_bool is_pending_reload{false};
+    // Read-only GUI metadata indexed by menu id; enabled states are tracked in `cheats` only.
+    std::vector<RuntimeCheatInfo> menu;
+    bool is_pending_reload{true};
 
-    std::shared_ptr<Core::Timing::EventType> event;
-    Core::Timing::CoreTiming& core_timing;
-    Core::System& system;
+    Kernel::KProcess& process;
 };
 
 } // namespace Core::Memory
