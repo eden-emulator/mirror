@@ -20,6 +20,7 @@ import kotlinx.serialization.json.Json
 import org.yuzu.yuzu_emu.NativeLibrary
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.YuzuApplication
+import org.yuzu.yuzu_emu.utils.GameFolderOperations
 import org.yuzu.yuzu_emu.utils.GameHelper
 import org.yuzu.yuzu_emu.utils.NativeConfig
 import java.util.concurrent.atomic.AtomicBoolean
@@ -152,7 +153,8 @@ class GamesViewModel : ViewModel() {
                         NativeConfig.addGameDir(gameDir)
                         val isFirstTimeSetup = PreferenceManager.getDefaultSharedPreferences(YuzuApplication.appContext)
                             .getBoolean(org.yuzu.yuzu_emu.features.settings.model.Settings.PREF_FIRST_APP_LAUNCH, true)
-                        getGameDirsAndExternalContent(!isFirstTimeSetup)
+                        val shouldReloadList = !isFirstTimeSetup || savedFromGameFragment
+                        getGameDirsAndExternalContent(shouldReloadList)
                     }
                     DirectoryType.EXTERNAL_CONTENT -> {
                         addExternalContentDir(gameDir.uriString)
@@ -176,7 +178,9 @@ class GamesViewModel : ViewModel() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val gameDirs = _folders.value.toMutableList()
-                val removedDirIndex = gameDirs.indexOf(gameDir)
+                val removedDirIndex = gameDirs.indexOfFirst {
+                    it.uriString == gameDir.uriString && it.type == gameDir.type
+                }
                 if (removedDirIndex != -1) {
                     gameDirs.removeAt(removedDirIndex)
                     when (gameDir.type) {
@@ -188,6 +192,7 @@ class GamesViewModel : ViewModel() {
                         }
                     }
                     getGameDirsAndExternalContent()
+                    GameFolderOperations.markGameFoldersChanged()
                 }
             }
         }
@@ -200,6 +205,10 @@ class GamesViewModel : ViewModel() {
                 getGameDirsAndExternalContent()
             }
         }
+
+    fun syncFoldersFromNativeConfig() {
+        getGameDirsAndExternalContent(reloadList = false)
+    }
 
     fun onOpenGameFoldersFragment() =
         viewModelScope.launch {

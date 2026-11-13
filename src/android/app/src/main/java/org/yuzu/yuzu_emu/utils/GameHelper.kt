@@ -81,8 +81,8 @@ object GameHelper {
                 gameDirs.removeAt(it - offset)
                 offset++
             }
+            NativeConfig.setGameDirs(gameDirs.toTypedArray())
         }
-        NativeConfig.setGameDirs(gameDirs.toTypedArray())
 
         // Cache list of games found on disk
         val serializedGames = mutableSetOf<String>()

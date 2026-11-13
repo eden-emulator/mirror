@@ -48,7 +48,9 @@ class GameFolderPropertiesDialogFragment : DialogFragment() {
             .setView(binding.root)
             .setTitle(R.string.game_folder_properties)
             .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->
-                val folderIndex = gamesViewModel.folders.value.indexOf(gameDir)
+                val folderIndex = gamesViewModel.folders.value.indexOfFirst {
+                    it.uriString == gameDir.uriString && it.type == gameDir.type
+                }
                 if (folderIndex != -1) {
                     if (gameDir.type == DirectoryType.GAME) {
                         gamesViewModel.folders.value[folderIndex].deepScan =
