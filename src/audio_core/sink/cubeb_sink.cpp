@@ -124,34 +124,16 @@ public:
         cubeb_stream_destroy(stream_backend);
     }
 
-    /**
-     * Start the sink stream.
-     *
-     * @param resume - Set to true if this is resuming the stream a previously-active stream.
-     *                 Default false.
-     */
-    void Start(bool resume = false) override {
-        if (!ctx || !paused) {
+protected:
+    void SetRunning(bool running) override {
+        if (!ctx) {
             return;
         }
 
-        paused = false;
-        if (cubeb_stream_start(stream_backend) != CUBEB_OK) {
-            LOG_CRITICAL(Audio_Sink, "Error starting cubeb stream");
-        }
-    }
-
-    /**
-     * Stop the sink stream.
-     */
-    void Stop() override {
-        if (!ctx || paused) {
-            return;
-        }
-
-        SignalPause();
-        if (cubeb_stream_stop(stream_backend) != CUBEB_OK) {
-            LOG_CRITICAL(Audio_Sink, "Error stopping cubeb stream");
+        const auto result = running ? cubeb_stream_start(stream_backend)
+                                    : cubeb_stream_stop(stream_backend);
+        if (result != CUBEB_OK) {
+            LOG_CRITICAL(Audio_Sink, "Error {} cubeb stream", running ? "starting" : "stopping");
         }
     }
 
@@ -258,15 +240,18 @@ CubebSink::~CubebSink() {
 
 SinkStream* CubebSink::AcquireSinkStream(Core::System& system, u32 system_channels_,
                                          const std::string& name, StreamType type) {
+    std::scoped_lock lk{stream_mutex};
     system_channels = system_channels_;
     SinkStreamPtr& stream = sink_streams.emplace_back(std::make_unique<CubebSinkStream>(
         ctx, device_channels, system_channels, output_device, input_device, name, type, system));
     stream->SetDeviceVolume(device_volume);
+    stream->SetSystemPaused(system_paused);
 
     return stream.get();
 }
 
 void CubebSink::CloseStream(SinkStream* stream) {
+    std::scoped_lock lk{stream_mutex};
     for (size_t i = 0; i < sink_streams.size(); i++) {
         if (sink_streams[i].get() == stream) {
             sink_streams[i].reset();
@@ -277,7 +262,16 @@ void CubebSink::CloseStream(SinkStream* stream) {
 }
 
 void CubebSink::CloseStreams() {
+    std::scoped_lock lk{stream_mutex};
     sink_streams.clear();
+}
+
+void CubebSink::SetSystemPaused(bool is_paused) {
+    std::scoped_lock lk{stream_mutex};
+    system_paused = is_paused;
+    for (auto& stream : sink_streams) {
+        stream->SetSystemPaused(is_paused);
+    }
 }
 
 f32 CubebSink::GetDeviceVolume() const {

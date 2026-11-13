@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -53,6 +54,8 @@ public:
      */
     void CloseStreams() override;
 
+    void SetSystemPaused(bool is_paused) override;
+
     /**
      * Get the device volume. Set from calls to the IAudioDevice service.
      *
@@ -75,6 +78,9 @@ public:
     void SetSystemVolume(f32 volume) override;
 
 private:
+    std::mutex stream_mutex;
+    bool system_paused{};
+
     /// Name of the output device used by streams
     std::string output_device;
     /// Name of the input device used by streams
