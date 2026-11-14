@@ -14,6 +14,7 @@ namespace AudioCore {
 AudioCore::AudioCore(Core::System& system) {
     audio_manager.emplace();
     CreateSinks();
+    SetSystemPaused(system.IsPaused());
     // Must be created after the sinks
     adsp.emplace(system, *output_sink);
 }
@@ -33,6 +34,11 @@ void AudioCore::CreateSinks() {
 
 void AudioCore::Shutdown() {
     audio_manager->Shutdown();
+}
+
+void AudioCore::SetSystemPaused(bool is_paused) {
+    output_sink->SetSystemPaused(is_paused);
+    input_sink->SetSystemPaused(is_paused);
 }
 
 AudioManager& AudioCore::GetAudioManager() {
