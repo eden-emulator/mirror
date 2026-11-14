@@ -15,4 +15,6 @@ if (YUZU_STATIC_ROOM)
     target_link_options(yuzu_room_standalone PRIVATE "-static")
 endif()
 
+RemovePGO(yuzu_room_standalone)
+
 create_target_directory_groups(yuzu_room_standalone)

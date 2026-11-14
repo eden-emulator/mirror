@@ -476,6 +476,8 @@ if (WIN32 AND ENABLE_UPDATE_CHECKER)
     set_target_properties(updater PROPERTIES OUTPUT_NAME "eden-updater")
     target_link_libraries(updater PRIVATE Boost::process Boost::asio ws2_32)
 
+    RemovePGO(updater)
+
     # need to link to stdc++exp (on glibc++ only) for std::print on mingw
     if (MINGW)
         include(CheckCXXSymbolExists)
