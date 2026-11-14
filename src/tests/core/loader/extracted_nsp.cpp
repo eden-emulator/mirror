@@ -22,11 +22,8 @@ using FileSys::Tests::MakeNpdm;
 using FileSys::Tests::Put32;
 using FileSys::Tests::Put64;
 
-class TestNand {
+class TestNand : Common::NonCopyable, Common::NonMoveable {
 public:
-    YUZU_NON_COPYABLE(TestNand);
-    YUZU_NON_MOVEABLE(TestNand);
-
     TestNand()
         : previous(Common::FS::GetEdenPath(Common::FS::EdenPath::NANDDir)),
           temporary_parent(std::filesystem::canonical(std::filesystem::temp_directory_path())) {
