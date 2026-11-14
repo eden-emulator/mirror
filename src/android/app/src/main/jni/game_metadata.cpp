@@ -18,6 +18,8 @@ struct RomMetadata {
     std::string developer;
     std::string version;
     std::vector<u8> icon;
+    std::vector<u8> banner;
+    std::vector<u8> logo;
     bool isHomebrew;
 };
 static ::Common::unordered_map<std::string, RomMetadata> m_rom_metadata_cache;
@@ -30,6 +32,8 @@ static RomMetadata CacheRomMetadata(const std::string& path) {
         loader->ReadTitle(entry.title);
         loader->ReadProgramId(entry.programId);
         loader->ReadIcon(entry.icon);
+        loader->ReadBanner(entry.banner);
+        loader->ReadLogo(entry.logo);
 
         const FileSys::PatchManager pm{
             entry.programId,
@@ -108,6 +112,20 @@ jbyteArray Java_org_yuzu_yuzu_1emu_utils_GameMetadata_getIcon(JNIEnv* env, jobje
     jbyteArray icon = env->NewByteArray(jsize(icon_data.size()));
     env->SetByteArrayRegion(icon, 0, env->GetArrayLength(icon), reinterpret_cast<jbyte*>(icon_data.data()));
     return icon;
+}
+
+jbyteArray Java_org_yuzu_yuzu_1emu_utils_GameMetadata_getBanner(JNIEnv* env, jobject obj, jstring jpath) {
+    auto banner_data = GetRomMetadata(Common::Android::GetJString(env, jpath)).banner;
+    jbyteArray banner = env->NewByteArray(jsize(banner_data.size()));
+    env->SetByteArrayRegion(banner, 0, env->GetArrayLength(banner), reinterpret_cast<jbyte*>(banner_data.data()));
+    return banner;
+}
+
+jbyteArray Java_org_yuzu_yuzu_1emu_utils_GameMetadata_getLogo(JNIEnv* env, jobject obj, jstring jpath) {
+    auto logo_data = GetRomMetadata(Common::Android::GetJString(env, jpath)).logo;
+    jbyteArray logo = env->NewByteArray(jsize(logo_data.size()));
+    env->SetByteArrayRegion(logo, 0, env->GetArrayLength(logo), reinterpret_cast<jbyte*>(logo_data.data()));
+    return logo;
 }
 
 jboolean Java_org_yuzu_yuzu_1emu_utils_GameMetadata_getIsHomebrew(JNIEnv* env, jobject obj, jstring jpath) {

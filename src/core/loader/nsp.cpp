@@ -265,14 +265,23 @@ ResultStatus AppLoader_NSP::ReadManualRomFS(FileSys::VirtualFile& out_file) {
 }
 
 ResultStatus AppLoader_NSP::ReadBanner(std::vector<u8>& buffer) {
+    if (secondary_loader == nullptr) {
+        return ResultStatus::ErrorNotInitialized;
+    }
     return secondary_loader->ReadBanner(buffer);
 }
 
 ResultStatus AppLoader_NSP::ReadLogo(std::vector<u8>& buffer) {
+    if (secondary_loader == nullptr) {
+        return ResultStatus::ErrorNotInitialized;
+    }
     return secondary_loader->ReadLogo(buffer);
 }
 
 ResultStatus AppLoader_NSP::ReadNSOModules(Modules& modules) {
+    if (secondary_loader == nullptr) {
+        return ResultStatus::ErrorNotInitialized;
+    }
     return secondary_loader->ReadNSOModules(modules);
 }
 

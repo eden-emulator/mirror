@@ -28,6 +28,31 @@
                 android:focusableInTouchMode="false"
                 android:defaultFocusHighlightEnabled="false" />
 
+            <ImageView
+                android:id="@+id/loading_nintendo_logo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:layout_marginStart="22dp"
+                android:layout_marginTop="22dp"
+                android:adjustViewBounds="true"
+                android:background="@color/yuzu_transparent_black"
+                android:clickable="false"
+                android:longClickable="false" />
+
+            <ImageView
+                android:id="@+id/loading_switch_animation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_marginEnd="22dp"
+                android:layout_marginBottom="22dp"
+                android:adjustViewBounds="true"
+                android:background="@color/yuzu_transparent_black"
+                android:clickable="false"
+                android:cropToPadding="false"
+                android:longClickable="false" />
+
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/loading_indicator"
                 style="?attr/materialCardViewOutlinedStyle"
@@ -177,9 +202,9 @@
                 android:layout_height="wrap_content"
                 android:clickable="false"
                 android:focusable="false"
-                android:textColor="@android:color/white"
                 android:shadowColor="@android:color/black"
                 android:shadowRadius="3"
+                android:textColor="@android:color/white"
                 tools:ignore="RtlHardcoded" />
 
             <com.google.android.material.textview.MaterialTextView
@@ -189,9 +214,9 @@
                 android:layout_height="wrap_content"
                 android:clickable="false"
                 android:focusable="false"
-                android:textColor="@android:color/white"
                 android:shadowColor="@android:color/black"
                 android:shadowRadius="3"
+                android:textColor="@android:color/white"
                 tools:ignore="RtlHardcoded" />
 
         </FrameLayout>

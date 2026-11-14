@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2023 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -15,6 +18,10 @@ object GameMetadata {
     external fun getVersion(path: String, reload: Boolean): String
 
     external fun getIcon(path: String): ByteArray
+
+    external fun getBanner(path: String): ByteArray
+
+    external fun getLogo(path: String): ByteArray
 
     external fun getIsHomebrew(path: String): Boolean
 
