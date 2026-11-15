@@ -3,28 +3,31 @@
 
 package org.yuzu.yuzu_emu.utils
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
+import android.util.TypedValue
 import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.appcompat.view.ContextThemeWrapper
+import com.google.android.material.R as MaterialR
 import kotlin.math.roundToInt
 import org.yuzu.yuzu_emu.R
+import org.yuzu.yuzu_emu.YuzuApplication
 import org.yuzu.yuzu_emu.features.settings.model.BooleanSetting
 import org.yuzu.yuzu_emu.features.settings.model.IntSetting
+import org.yuzu.yuzu_emu.features.settings.model.Settings
 import org.yuzu.yuzu_emu.ui.main.ThemeProvider
 import androidx.preference.PreferenceManager
-import org.yuzu.yuzu_emu.YuzuApplication
-import org.yuzu.yuzu_emu.features.settings.model.Settings
 
 object ThemeHelper {
     const val SYSTEM_BAR_ALPHA = 0.9f
 
-    // Listener that detects if the theme keys are being changed from the setting menu and recreates the activity
     private var listener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private val preferences = PreferenceManager.getDefaultSharedPreferences(
         YuzuApplication.appContext
@@ -33,25 +36,22 @@ object ThemeHelper {
     fun setTheme(activity: AppCompatActivity) {
         setThemeMode(activity)
         when (Theme.from(IntSetting.THEME.getInt())) {
-            Theme.Default -> activity.setTheme(getSelectedStaticThemeColor())
+            Theme.Default -> activity.setTheme(getSelectedStaticThemeStyle())
             Theme.MaterialYou -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     activity.setTheme(R.style.Theme_Yuzu_Main_MaterialYou)
                 } else {
-                    activity.setTheme(getSelectedStaticThemeColor())
+                    activity.setTheme(getSelectedStaticThemeStyle())
                 }
             }
         }
 
-        // Using a specific night mode check because this could apply incorrectly when using the
-        // light app mode, dark system mode, and black backgrounds. Launching the settings activity
-        // will then show light mode colors/navigation bars but with black backgrounds.
         if (BooleanSetting.BLACK_BACKGROUNDS.getBoolean() && isNightMode(activity)) {
             activity.setTheme(R.style.ThemeOverlay_Yuzu_Dark)
         }
     }
 
-    private fun getSelectedStaticThemeColor(): Int {
+    fun getSelectedStaticThemeStyle(): Int {
         val themeIndex = IntSetting.STATIC_THEME_COLOR.getInt(false)
         val themes = arrayOf(
             R.style.Theme_Eden_Main,
@@ -65,7 +65,57 @@ object ThemeHelper {
             R.style.Theme_Yuzu_Main_Pink,
             R.style.Theme_Yuzu_Main_Gray
         )
-        return themes[themeIndex]
+        return themes[themeIndex.coerceIn(0, themes.lastIndex)]
+    }
+
+    fun activeThemeStyleRes(): Int {
+        return when (Theme.from(IntSetting.THEME.getInt())) {
+            Theme.MaterialYou -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    R.style.Theme_Yuzu_Main_MaterialYou
+                } else {
+                    getSelectedStaticThemeStyle()
+                }
+            }
+            Theme.Default -> getSelectedStaticThemeStyle()
+        }
+    }
+
+    /**
+     * Context with the same theme style and light/dark configuration as the main app UI
+     * (so Material You dynamic colors and night resources resolve correctly).
+     */
+    fun themedContext(base: Context = YuzuApplication.appContext): Context {
+        val style = activeThemeStyleRes()
+        val configuration = Configuration(base.resources.configuration)
+        when (IntSetting.THEME_MODE.getInt()) {
+            AppCompatDelegate.MODE_NIGHT_NO ->
+                configuration.uiMode = configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv() or
+                    Configuration.UI_MODE_NIGHT_NO
+            AppCompatDelegate.MODE_NIGHT_YES ->
+                configuration.uiMode = configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv() or
+                    Configuration.UI_MODE_NIGHT_YES
+        }
+        val configured = base.createConfigurationContext(configuration)
+        return ContextThemeWrapper(configured, style)
+    }
+
+    @ColorInt
+    fun resolveColorPrimary(context: Context = YuzuApplication.appContext): Int =
+        resolveThemeColor(context, MaterialR.attr.colorPrimary)
+
+    @ColorInt
+    fun resolveColorSecondary(context: Context = YuzuApplication.appContext): Int =
+        resolveThemeColor(context, MaterialR.attr.colorSecondary)
+
+    @ColorInt
+    private fun resolveThemeColor(context: Context, attr: Int): Int {
+        val themed = themedContext(context)
+        val typedValue = TypedValue()
+        if (!themed.theme.resolveAttribute(attr, typedValue, true)) {
+            return Color.WHITE
+        }
+        return typedValue.data
     }
 
     @ColorInt
@@ -124,6 +174,7 @@ object ThemeHelper {
     fun ThemeChangeListener(activity: AppCompatActivity) {
         listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             val relevantKeys = listOf(
+                Settings.PREF_THEME,
                 Settings.PREF_STATIC_THEME_COLOR,
                 Settings.PREF_THEME_MODE,
                 Settings.PREF_BLACK_BACKGROUNDS

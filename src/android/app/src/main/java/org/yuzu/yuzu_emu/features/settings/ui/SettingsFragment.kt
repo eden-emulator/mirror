@@ -27,6 +27,7 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialSharedAxis
+import android.app.Activity
 import org.yuzu.yuzu_emu.R
 import org.yuzu.yuzu_emu.databinding.FragmentSettingsBinding
 import org.yuzu.yuzu_emu.features.input.NativeInput
@@ -97,7 +98,6 @@ class SettingsFragment : Fragment() {
             args.menuTag,
             activity
         )
-
         val toolbarTitle = resolveToolbarTitle()
         configureToolbar(toolbarTitle)
 

@@ -60,6 +60,13 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
 
     private var inEditMode = false
     private var gamelessMode = false
+    private var staticPreviewMode = false
+    private var previewBody = OverlayColors.ORIGINAL_COLOR
+    private var previewOverrides: Map<String, Int> = emptyMap()
+    private var previewControlData: List<OverlayControlData>? = null
+    private var previewLayoutWidth = 0
+    private var previewLayoutHeight = 0
+    private var previewControlsDirty = true
     private var buttonBeingConfigured: InputOverlayDrawableButton? = null
     private var dpadBeingConfigured: InputOverlayDrawableDpad? = null
     private var joystickBeingConfigured: InputOverlayDrawableJoystick? = null
@@ -143,6 +150,22 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
 
+        if (staticPreviewMode) {
+            previewControlData = previewControlData
+                ?: OverlayPresetThumbnailCache.snapshotControlData()
+            val w = right - left
+            val h = bottom - top
+            if (previewControlsDirty || w != previewLayoutWidth || h != previewLayoutHeight) {
+                previewLayoutWidth = w
+                previewLayoutHeight = h
+                previewControlsDirty = false
+                refreshControls(gameless = true)
+            }
+            setWillNotDraw(false)
+            isClickable = false
+            return
+        }
+
         windowInsets = rootWindowInsets
 
         val overlayControlData = NativeConfig.getOverlayControlData()
@@ -163,6 +186,34 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
 
         // Request focus for the overlay so it has priority on presses.
         requestFocus()
+    }
+
+
+    fun applyStaticPreview(body: Int, face: String, overrides: Map<String, Int>) {
+        staticPreviewMode = true
+        gamelessMode = true
+        val (resolvedBody, resolvedOverrides) = OverlayColors.resolveForPreview(context, body, overrides)
+        previewBody = resolvedBody
+        previewOverrides = resolvedOverrides
+        previewControlData = null
+        previewControlsDirty = true
+        previewLayoutWidth = 0
+        previewLayoutHeight = 0
+        BitmapTintState.tintFor = { id -> previewOverrides[id] ?: previewBody }
+        BitmapTintState.minScreenDimension = { min(measuredWidth, measuredHeight).coerceAtLeast(1) }
+        BitmapTintState.controlData = OverlayPresetThumbnailCache.snapshotControlData()
+        BitmapTintState.staticPreview = true
+        layout = OverlayLayout.Landscape
+        isClickable = false
+        isFocusable = false
+        isFocusableInTouchMode = false
+        setOnTouchListener(null)
+        if (measuredWidth > 0 && measuredHeight > 0) {
+            refreshControls(gameless = true)
+        } else {
+            requestLayout()
+        }
+        invalidate()
     }
 
     override fun draw(canvas: Canvas) {
@@ -223,7 +274,18 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
         }
     }
 
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (staticPreviewMode) {
+            return false
+        }
+        return super.dispatchTouchEvent(event)
+    }
+
     override fun onTouch(v: View, event: MotionEvent): Boolean {
+        if (staticPreviewMode) {
+            return false
+        }
+
         try {
             touchEventListener?.invoke(event)
         } catch (e: Exception) {}
@@ -541,7 +603,11 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
 
     private fun addOverlayControls(layout: OverlayLayout) {
         val windowSize = getSafeScreenSize(context, Pair(measuredWidth, measuredHeight))
-        val overlayControlData = NativeConfig.getOverlayControlData()
+        val overlayControlData: List<OverlayControlData> = if (staticPreviewMode) {
+            previewControlData ?: emptyList()
+        } else {
+            NativeConfig.getOverlayControlData().toList()
+        }
         for (data in overlayControlData) {
             if (!data.enabled) {
                 continue
@@ -798,6 +864,9 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
         if (gameless) {
             gamelessMode = true
         }
+        if (!staticPreviewMode) {
+            BitmapTintState.reset()
+        }
 
         // Remove all the overlay buttons from the HashSet.
         overlayButtons.clear()
@@ -1002,6 +1071,19 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
     }
 
     companion object {
+        private object BitmapTintState {
+            var staticPreview = false
+            var tintFor: (String) -> Int = { OverlayColors.colorFor(it) }
+            var minScreenDimension: () -> Int = { 1 }
+            var controlData: List<OverlayControlData> = emptyList()
+            fun reset() {
+                staticPreview = false
+                tintFor = { OverlayColors.colorFor(it) }
+                minScreenDimension = { 1 }
+                controlData = emptyList()
+            }
+        }
+
 
         // Increase this number every time there is a breaking change to every overlay layout
         const val OVERLAY_VERSION = 1
@@ -1024,7 +1106,12 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
          * @param scale         The scale factor for the bitmap.
          * @return The scaled [Bitmap]
          */
-        private fun getBitmap(context: Context, drawableId: Int, scale: Float): Bitmap {
+        private fun getBitmap(
+            context: Context,
+            drawableId: Int,
+            scale: Float,
+            controlId: String
+        ): Bitmap {
             val vectorDrawable = ContextCompat.getDrawable(context, drawableId) as VectorDrawable
 
             val bitmap = Bitmap.createBitmap(
@@ -1034,7 +1121,11 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
             )
 
             val dm = context.resources.displayMetrics
-            val minScreenDimension = min(dm.widthPixels, dm.heightPixels)
+            val minScreenDimension = if (BitmapTintState.staticPreview) {
+                BitmapTintState.minScreenDimension()
+            } else {
+                min(dm.widthPixels, dm.heightPixels)
+            }
 
             val maxBitmapDimension = max(bitmap.width, bitmap.height)
             val bitmapScale = scale * minScreenDimension / maxBitmapDimension
@@ -1045,11 +1136,19 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
                 (bitmap.height * bitmapScale).toInt(),
                 true
             )
+            if (bitmap !== scaledBitmap) {
+                bitmap.recycle()
+            }
 
             val canvas = Canvas(scaledBitmap)
             vectorDrawable.setBounds(0, 0, canvas.width, canvas.height)
             vectorDrawable.draw(canvas)
-            return scaledBitmap
+            val tint = if (BitmapTintState.staticPreview) {
+                BitmapTintState.tintFor(controlId)
+            } else {
+                OverlayColors.colorFor(controlId)
+            }
+            return OverlayBitmapTint.apply(scaledBitmap, tint)
         }
 
         /**
@@ -1063,6 +1162,9 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
             context: Context,
             screenSize: Pair<Int, Int>
         ): Pair<Point, Point> {
+            if (BitmapTintState.staticPreview) {
+                return Pair(Point(0, 0), Point(screenSize.first, screenSize.second))
+            }
             // Get screen size
             val windowMetrics = WindowMetricsCalculator.getOrCreate()
                 .computeCurrentWindowMetrics(context as Activity)
@@ -1178,8 +1280,8 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
             scale *= overlayControlData.individualScale.let { if (it > 0f) it else 1f }
 
             // Initialize the InputOverlayDrawableButton.
-            val defaultStateBitmap = getBitmap(context, defaultResId, scale)
-            val pressedStateBitmap = getBitmap(context, pressedResId, scale)
+            val defaultStateBitmap = getBitmap(context, defaultResId, scale, overlayControlData.id)
+            val pressedStateBitmap = getBitmap(context, pressedResId, scale, overlayControlData.id)
             val overlayDrawable = InputOverlayDrawableButton(
                 res,
                 defaultStateBitmap,
@@ -1239,9 +1341,12 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
             // Resources handle for fetching the initial Drawable resource.
             val res = context.resources
 
-            // Get the dpad control data for individual scale
-            val overlayControlData = NativeConfig.getOverlayControlData()
-            val dpadData = overlayControlData.firstOrNull { it.id == OverlayControl.COMBINED_DPAD.id }
+            val controlList = if (BitmapTintState.staticPreview) {
+                BitmapTintState.controlData
+            } else {
+                NativeConfig.getOverlayControlData().toList()
+            }
+            val dpadData = controlList.firstOrNull { it.id == OverlayControl.COMBINED_DPAD.id }
 
             // Decide scale based on button ID and user preference
             var scale = 0.25f
@@ -1254,11 +1359,13 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
             }
 
             // Initialize the InputOverlayDrawableDpad.
+            val dpadId = OverlayControl.COMBINED_DPAD.id
             val defaultStateBitmap =
-                getBitmap(context, defaultResId, scale)
-            val pressedOneDirectionStateBitmap = getBitmap(context, pressedOneDirectionResId, scale)
+                getBitmap(context, defaultResId, scale, dpadId)
+            val pressedOneDirectionStateBitmap =
+                getBitmap(context, pressedOneDirectionResId, scale, dpadId)
             val pressedTwoDirectionsStateBitmap =
-                getBitmap(context, pressedTwoDirectionsResId, scale)
+                getBitmap(context, pressedTwoDirectionsResId, scale, dpadId)
 
             val overlayDrawable = InputOverlayDrawableDpad(
                 res,
@@ -1330,9 +1437,9 @@ class InputOverlay(context: Context, attrs: AttributeSet?) :
             scale *= overlayControlData.individualScale.let { if (it > 0f) it else 1f }
 
             // Initialize the InputOverlayDrawableJoystick.
-            val bitmapOuter = getBitmap(context, resOuter, scale)
-            val bitmapInnerDefault = getBitmap(context, defaultResInner, 1.0f)
-            val bitmapInnerPressed = getBitmap(context, pressedResInner, 1.0f)
+            val bitmapOuter = getBitmap(context, resOuter, scale, overlayControlData.id)
+            val bitmapInnerDefault = getBitmap(context, defaultResInner, 1.0f, overlayControlData.id)
+            val bitmapInnerPressed = getBitmap(context, pressedResInner, 1.0f, overlayControlData.id)
 
             // Get the minimum and maximum coordinates of the screen where the button can be placed.
             val min = windowSize.first

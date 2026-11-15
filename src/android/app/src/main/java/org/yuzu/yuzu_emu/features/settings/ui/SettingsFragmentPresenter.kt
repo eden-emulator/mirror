@@ -37,6 +37,7 @@ import org.yuzu.yuzu_emu.utils.FullscreenHelper
 import androidx.core.content.edit
 import androidx.fragment.app.FragmentActivity
 import org.yuzu.yuzu_emu.fragments.MessageDialogFragment
+import org.yuzu.yuzu_emu.overlay.OverlayColorActivity
 
 class SettingsFragmentPresenter(
     private val settingsViewModel: SettingsViewModel,
@@ -176,6 +177,7 @@ class SettingsFragmentPresenter(
             MenuTag.SECTION_PERFORMANCE_STATS -> addPerformanceOverlaySettings(sl)
             MenuTag.SECTION_SOC_OVERLAY -> addSocOverlaySettings(sl)
             MenuTag.SECTION_INPUT_OVERLAY -> addInputOverlaySettings(sl)
+            MenuTag.SECTION_OVERLAY_COLOR -> addOverlayColorSettings(sl)
             MenuTag.SECTION_AUDIO -> addAudioSettings(sl)
             MenuTag.SECTION_INPUT -> addInputSettings(sl)
             MenuTag.SECTION_INPUT_PLAYER_ONE -> addInputPlayer(sl, 0)
@@ -603,6 +605,13 @@ class SettingsFragmentPresenter(
             add(IntSetting.OVERLAY_GRID_SIZE.key)
             add(
                 LaunchableSetting(
+                    titleId = R.string.overlay_color_customize,
+                    descriptionId = R.string.overlay_color_customize_summary,
+                    launchIntent = { host -> OverlayColorActivity.createIntent(host) }
+                )
+            )
+            add(
+                LaunchableSetting(
                     titleId = R.string.edit_overlay_layout,
                     descriptionId = R.string.edit_overlay_layout_description,
                     launchIntent = { context ->
@@ -615,6 +624,16 @@ class SettingsFragmentPresenter(
             add(IntSetting.INPUT_OVERLAY_AUTO_HIDE.key)
             add(BooleanSetting.HIDE_OVERLAY_ON_CONTROLLER_INPUT.key)
         }
+    }
+
+    private fun addOverlayColorSettings(sl: ArrayList<SettingsItem>) {
+        sl.add(
+            LaunchableSetting(
+                titleId = R.string.overlay_color_customize,
+                descriptionId = R.string.overlay_color_customize_summary,
+                launchIntent = { host -> OverlayColorActivity.createIntent(host) }
+            )
+        )
     }
 
     private fun addSocOverlaySettings(sl: ArrayList<SettingsItem>) {
