@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <deque>
 #include <memory>
 #include <mutex>
@@ -170,6 +171,8 @@ struct QueryCacheBase<Traits>::QueryCacheBaseImpl {
     std::mutex flush_guard;
     std::deque<u64> flushes_pending;
     std::vector<QueryCacheBase<Traits>::QueryLocation> pending_unregister;
+    std::atomic<u32> pending_occlusion_reports{};
+    std::atomic<u32> pending_visibility_completions{};
 };
 
 template <typename Traits>
@@ -260,9 +263,19 @@ void QueryCacheBase<Traits>::CounterReport(GPUVAddr addr, QueryType counter_type
     };
     u8* pointer = impl->device_memory.template GetPointer<u8>(cpu_addr);
     u8* pointer_timestamp = impl->device_memory.template GetPointer<u8>(cpu_addr + 8);
-    bool is_synced = (Settings::IsGPUFenceBehaviorDefault() ? !Settings::IsGPULevelHigh() : !Settings::IsGPUFenceBehaviorBalanced() && !Settings::IsGPUFenceBehaviorAccurate()) && is_fence;
-    std::function<void()> operation([this, is_synced, streamer, query_base = query, query_location,
-                                     pointer, pointer_timestamp] {
+    const bool is_occlusion = counter_type == QueryType::ZPassPixelCount64;
+    if (is_occlusion) impl->pending_occlusion_reports.fetch_add(1, std::memory_order_relaxed);
+    const bool is_synced = is_fence && (Settings::IsGPUFenceBehaviorDefault() ? !Settings::IsGPULevelHigh() : !Settings::IsGPUFenceBehaviorBalanced() && !Settings::IsGPUFenceBehaviorAccurate());
+    const bool order_payload = is_synced && counter_type == QueryType::Payload && (impl->pending_visibility_completions.load(std::memory_order_acquire) != 0 || impl->pending_occlusion_reports.load(std::memory_order_acquire) != 0);
+    if (order_payload) impl->pending_visibility_completions.fetch_add(1, std::memory_order_relaxed);
+    std::function<void()> operation([this, is_synced, streamer, query_base = query, query_location, pointer, pointer_timestamp, is_occlusion, order_payload, new_query_id] {
+        SCOPE_EXIT {
+            if (is_occlusion) impl->pending_occlusion_reports.fetch_sub(1, std::memory_order_release);
+            if (order_payload) {
+                streamer->Free(new_query_id);
+                impl->pending_visibility_completions.fetch_sub(1, std::memory_order_release);
+            }
+        };
         if (True(query_base->flags & QueryFlagBits::IsInvalidated)) {
             if (!is_synced) [[likely]] {
                 impl->pending_unregister.push_back(query_location);
@@ -292,6 +305,11 @@ void QueryCacheBase<Traits>::CounterReport(GPUVAddr addr, QueryType counter_type
         }
     });
     if (is_fence) {
+        if (order_payload) {
+            impl->rasterizer.SyncOperation(std::move(operation));
+            impl->rasterizer.SignalReference();
+            return;
+        }
         impl->rasterizer.SignalFence(std::move(operation));
     } else {
         if (!Settings::IsGPULevelHigh() && counter_type == QueryType::Payload) {
