@@ -37,6 +37,8 @@ add_executable(yuzu
     applets/qt_web_browser_scripts.h
     bootmanager.cpp
     bootmanager.h
+    cheat_overlay.cpp
+    cheat_overlay.h
     configuration/configuration_shared.cpp
     configuration/configuration_shared.h
     configuration/configure.ui
@@ -173,6 +175,8 @@ add_executable(yuzu
     loading_screen.ui
 
     main.cpp
+    memory_scanner.cpp
+    memory_scanner.h
 
     multiplayer/chat_room.cpp
     multiplayer/chat_room.h

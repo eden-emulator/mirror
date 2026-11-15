@@ -32,6 +32,11 @@ void Publish(Common::OverlayPanel& panel, const QImage* image) {
     ++panel.version;
 }
 
+bool Shown(Common::OverlayPanel& panel) {
+    std::scoped_lock lock{panel.mutex};
+    return panel.enabled;
+}
+
 Cursor CursorOn(Common::OverlayPanel& panel, const GRenderWindow& window) {
     const auto& layout = window.GetFramebufferLayout();
     Common::OverlayRect place{};
@@ -77,6 +82,18 @@ void Pill(QPainter& painter, const QRectF& rect, const QColor& fill) {
     painter.setPen(Qt::NoPen);
     painter.setBrush(fill);
     painter.drawRoundedRect(rect, rect.height() / 2.0, rect.height() / 2.0);
+}
+
+void Switch(QPainter& painter, const QRectF& rect, bool on, bool locked) {
+    QColor track = on ? QColor(45, 160, 80, 230) : QColor(255, 255, 255, 45);
+    if (locked) {
+        track.setAlpha(110);
+    }
+    Pill(painter, rect, track);
+    const qreal knob = rect.height() - 4;
+    const qreal x = on ? rect.right() - 2 - knob : rect.left() + 2;
+    painter.setBrush(locked ? QColor(230, 230, 230, 150) : QColor(245, 245, 245));
+    painter.drawEllipse(QRectF(x, rect.top() + 2, knob, knob));
 }
 
 } // namespace Style

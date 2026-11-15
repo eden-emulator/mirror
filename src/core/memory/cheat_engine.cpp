@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: Copyright 2018 yuzu Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
+#include <cstring>
 #include <utility>
 #include "common/logging.h"
 #include "common/swap.h"
@@ -54,9 +56,59 @@ void StandardVmCallbacks::MemoryWriteUnsafe(VAddr address, const void* data, u64
         return;
     }
 
-    if (process.GetMemory().WriteBlock(address, data, size)) {
+    // Cheats write the same values over and over (12 times a second): a write that changes nothing
+    // has nothing to write or to invalidate
+    std::array<u8, 16> current{};
+    const bool have_current =
+        size <= current.size() && process.GetMemory().ReadBlock(address, current.data(), size);
+    if (have_current && std::memcmp(current.data(), data, size) == 0) {
+        return;
+    }
+    const auto is_executable = [this](VAddr page_address) {
+        Kernel::KMemoryInfo info{};
+        Kernel::Svc::PageInfo page_info{};
+        if (process.GetPageTable().QueryInfo(&info, &page_info, page_address) != ResultSuccess) {
+            return true;
+        }
+        return True(info.GetPermission() & Kernel::KMemoryPermission::UserExecute);
+    };
+    const bool code = is_executable(address) || is_executable(address + size - 1);
+    // A change to code is kept as it was first, to put it back when the cheat is turned off
+    // (cheat writes are 1 to 8 bytes, so the bytes read above are the originals)
+    if (code && have_current) {
+        for (u64 i = 0; i < size; ++i) {
+            original_code.try_emplace(address + i, current[i]);
+        }
+    }
+    if (!process.GetMemory().WriteBlock(address, data, size)) {
+        return;
+    }
+    // Only code needs the translated code dropped. Invalidating on every data write halted every
+    // emulated core and searched its translated blocks, at a cost that grows as more code is
+    // translated (Tears of the Kingdom with cheats: ~480 invalidations a second, the frame rate
+    // falling over the session).
+    if (code) {
         Core::InvalidateInstructionCacheRange(&process, address, size);
     }
+}
+
+void StandardVmCallbacks::RestoreOriginalCode() {
+    std::size_t restored = 0;
+    for (auto it = original_code.begin(); it != original_code.end();) {
+        // One run of neighbouring bytes at a time
+        const VAddr start = it->first;
+        std::vector<u8> run;
+        for (VAddr next = start; it != original_code.end() && it->first == next; ++it, ++next) {
+            run.push_back(it->second);
+        }
+        if (process.GetMemory().IsValidVirtualAddress(start) &&
+            process.GetMemory().WriteBlock(start, run.data(), run.size())) {
+            Core::InvalidateInstructionCacheRange(&process, start, run.size());
+            restored += run.size();
+        }
+    }
+    original_code.clear();
+    LOG_INFO(CheatEngine, "A cheat was turned off: put back {} bytes of the game's code", restored);
 }
 
 u64 StandardVmCallbacks::HidKeysDown() {
@@ -178,6 +230,7 @@ bool CheatEngine::SetCheatEnabled(u32 id, bool enabled) {
         if (!cheat.is_master && cheat.enabled != enabled && IsInGroup(menu, cheat.cheat_id, id)) {
             cheat.enabled = enabled;
             is_pending_reload = true;
+            is_pending_restore = is_pending_restore || !enabled;
         }
     }
     return true;
@@ -193,6 +246,10 @@ void CheatEngine::Execute() {
         return;
     }
 
+    // (Before the reload: the cheats still on write their changes again on this tick)
+    if (std::exchange(is_pending_restore, false)) {
+        static_cast<StandardVmCallbacks*>(vm.GetCallbacks())->RestoreOriginalCode();
+    }
     if (std::exchange(is_pending_reload, false)) {
         vm.LoadProgram(cheats);
     }

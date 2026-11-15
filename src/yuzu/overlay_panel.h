@@ -21,6 +21,9 @@ namespace GameOverlay {
 /// Shows an image as the panel (copied), or hides the panel (nullptr)
 void Publish(Common::OverlayPanel& panel, const QImage* image);
 
+/// Whether the panel is drawn now
+[[nodiscard]] bool Shown(Common::OverlayPanel& panel);
+
 /// The cursor in a panel's image, and whether it is over the panel (which must be shown)
 struct Cursor {
     QPoint at;
@@ -50,6 +53,8 @@ inline const QColor DimText{255, 255, 255, 120};
 /// A pill: a rounded rectangle with fully round ends
 void Pill(QPainter& painter, const QRectF& rect, const QColor& fill);
 
+/// A switch: on (green), off (grey) or locked (on, dimmed)
+void Switch(QPainter& painter, const QRectF& rect, bool on, bool locked);
 
 } // namespace Style
 

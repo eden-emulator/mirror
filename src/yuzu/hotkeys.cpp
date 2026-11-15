@@ -79,6 +79,11 @@ ControllerShortcut* HotkeyRegistry::GetControllerHotkey(const std::string& group
     return hk.controller_shortcut;
 }
 
+std::string HotkeyRegistry::GetControllerKeySequence(const std::string& group,
+                                                     const std::string& action) {
+    return hotkey_groups[group][action].controller_keyseq;
+}
+
 QKeySequence HotkeyRegistry::GetKeySequence(const std::string& group, const std::string& action) {
     return hotkey_groups[group][action].keyseq;
 }

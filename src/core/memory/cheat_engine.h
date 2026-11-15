@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <map>
 #include <vector>
 #include "common/common_types.h"
 #include "core/memory/cheat_parser.h"
@@ -37,12 +38,19 @@ public:
     void CommandLog(std::string_view data) override;
     [[nodiscard]] bool IsCommandLogEnabled() const override;
 
+    /// Puts back the game's code that cheats changed, so a cheat turned off stops working; the
+    /// cheats still on write theirs again on the same tick. Data (health, ammo) is never kept or
+    /// put back: the game owns it. On the cheat engine's tick, like every cheat write.
+    void RestoreOriginalCode();
+
 private:
     bool IsAddressInRange(VAddr address) const;
 
     const CheatProcessMetadata& metadata;
     Core::System& system;
     Kernel::KProcess& process;
+    /// Each code byte a cheat changed, as it was before the first change (address -> byte)
+    std::map<VAddr, u8> original_code;
 };
 
 // Runs a CheatList against the process that loaded it. Not thread-safe: System serializes every
@@ -67,6 +75,8 @@ private:
     // Read-only GUI metadata indexed by menu id; enabled states are tracked in `cheats` only.
     std::vector<RuntimeCheatInfo> menu;
     bool is_pending_reload{true};
+    /// A cheat was turned off: put back the code cheats changed
+    bool is_pending_restore{false};
 
     Kernel::KProcess& process;
 };

@@ -54,6 +54,7 @@ class QtConfig;
 class EmuThread;
 class GameList;
 class GImageInfo;
+class CheatOverlay;
 class GRenderWindow;
 class LoadingScreen;
 class OverlayDialog;
@@ -188,6 +189,9 @@ public:
 
     std::filesystem::path GetShortcutPath(QtCommon::Game::ShortcutTarget target);
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 signals:
 
     /**
@@ -263,8 +267,9 @@ public slots:
 
 private:
     /// Updates an action's shortcut and text to reflect an updated hotkey from the hotkey registry.
+    /// (Without its controller combo: the caller connects that itself)
     void LinkActionShortcut(QAction* action, const QString& action_name,
-                            const bool tas_allowed = false);
+                            const bool tas_allowed = false, bool with_controller = true);
 
     void InitializeWidgets();
     void InitializeDebugWidgets();
@@ -278,6 +283,18 @@ private:
     void UpdateMenuState();
     void RefreshRuntimeCheats();
     void ClearRuntimeCheats();
+    /// Shows the running game's cheats over the game, or hides them
+    void UpdateCheatOverlay();
+    /// The overlay's rows: the menu ids of the cheats (not their groups), in menu order
+    std::vector<u32> CheatOverlayIds() const;
+    /// The cheat overlay's controller combo: the controllers take the overlay (opened out, and
+    /// shown when it was off), or give it back to the game
+    void OnCheatOverlayCombo();
+    /// The controllers take the cheat overlay, or give it back: while they have it the game
+    /// gets no input from them (only the combo does this; the mouse never does)
+    void SetCheatOverlayFocus(bool focused);
+    /// Reads the controllers' buttons while they have the cheat overlay
+    void PollCheatOverlayFocus();
 
     void SetupPrepareForSleep();
 
@@ -564,6 +581,19 @@ private:
 
     QActionGroup* game_size_actions;
     std::unique_ptr<RuntimeCheatMenu> runtime_cheat_menu;
+    std::unique_ptr<CheatOverlay> cheat_overlay;
+    /// While the controllers have the cheat overlay: the controllers this froze for the game
+    /// (only those are given back), the buttons each held as it began (ignored until let go),
+    /// the buttons held at the last read, the combo's buttons, and the up/down repeat
+    QTimer cheat_focus_timer;
+    std::vector<Core::HID::EmulatedController*> cheat_focus_frozen;
+    std::set<int> cheat_focus_ignored;
+    std::set<int> cheat_focus_held;
+    std::vector<int> cheat_focus_combo;
+    int cheat_focus_repeat_dir = 0;
+    std::chrono::steady_clock::time_point cheat_focus_repeat_at{};
+    /// The combo showed the overlay (it was off): hidden again when the controllers give it back
+    bool cheat_focus_showed = false;
 
     /// The console modes' engine: assigns the connected controllers to players, on a timer
     QTimer console_mode_timer;
@@ -814,6 +844,8 @@ private:
     void RestoreConsoleProfile();
     /// Folds edits made in the Controls tab during a console mode into the user's profile
     void MergeConsoleProfileEdits(const std::array<Settings::PlayerInput, 10>& before);
+    /// Title id of the running game, used to persist its cheat states
+    u64 current_title_id = 0;
 
     // Debugger panes
     ControllerDialog* controller_dialog = nullptr;
@@ -862,7 +894,6 @@ private:
                         std::string arguments, const bool needs_title);
 
 protected:
-    bool eventFilter(QObject* watched, QEvent* event) override;
     void dropEvent(QDropEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dragMoveEvent(QDragMoveEvent* event) override;

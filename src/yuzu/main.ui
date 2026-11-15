@@ -158,6 +158,7 @@
     <addaction name="action_Show_Performance_Overlay"/>
     <addaction name="action_Show_Controller_Overlay"/>
     <addaction name="action_Show_Controller_Hints"/>
+    <addaction name="action_Show_Cheat_Overlay"/>
     <addaction name="action_Post_Processing_Shaders"/>
     <addaction name="separator"/>
     <addaction name="menu_Reset_Window_Size"/>
@@ -630,6 +631,14 @@
    </property>
    <property name="text">
     <string>Show Controller &amp;Hints</string>
+   </property>
+  </action>
+  <action name="action_Show_Cheat_Overlay">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show C&amp;heat Overlay</string>
    </property>
   </action>
   <action name="action_Post_Processing_Shaders">

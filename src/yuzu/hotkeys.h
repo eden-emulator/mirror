@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2014 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -91,6 +94,8 @@ public:
     QShortcut* GetHotkey(const std::string& group, const std::string& action, QWidget* widget);
     ControllerShortcut* GetControllerHotkey(const std::string& group, const std::string& action,
                                             Core::HID::EmulatedController* controller);
+    /// A hotkey's controller combo as configured ("Left_Stick+Right_Stick"; "" none)
+    std::string GetControllerKeySequence(const std::string& group, const std::string& action);
 
     /**
      * Returns a QKeySequence object whose signal can be connected to QAction::setShortcut.

@@ -44,6 +44,7 @@
 #include "ryujinx_dialog.h"
 #include "set_play_time_dialog.h"
 #include "util/util.h"
+#include "yuzu/cheat_overlay.h"
 #include "yuzu/game/game_list.h"
 #include "yuzu/overlay_panel.h"
 
@@ -225,6 +226,7 @@ static FileSys::VirtualFile VfsDirectoryCreateFileWrapper(const FileSys::Virtual
 #include <QImage>
 #include <QPainter>
 #include <QSettings>
+#include "common/hex_util.h"
 #include "common/overlay_panels.h"
 #include "common/param_package.h"
 #include "qt_common/gamemode.h"
@@ -1673,7 +1675,7 @@ void MainWindow::InitializeRecentFileMenuActions() {
 }
 
 void MainWindow::LinkActionShortcut(QAction* action, const QString& action_name,
-                                    const bool tas_allowed) {
+                                    const bool tas_allowed, bool with_controller) {
     static const auto main_window = std::string("Main Window");
     action->setShortcut(hotkey_registry.GetKeySequence(main_window, action_name.toStdString()));
     action->setShortcutContext(
@@ -1681,6 +1683,9 @@ void MainWindow::LinkActionShortcut(QAction* action, const QString& action_name,
     action->setAutoRepeat(false);
 
     this->addAction(action);
+    if (!with_controller) {
+        return;
+    }
 
     auto* controller =
         QtCommon::system->HIDCore().GetEmulatedController(Core::HID::NpadIdType::Player1);
@@ -1713,6 +1718,15 @@ void MainWindow::InitializeHotkeys() {
                        QStringLiteral("Toggle Performance Overlay"));
     LinkActionShortcut(ui->action_Show_Controller_Overlay,
                        QStringLiteral("Toggle Controller Overlay"));
+    // The keys toggle the cheat overlay like the View menu; its controller combo gives the
+    // overlay to the controllers instead
+    LinkActionShortcut(ui->action_Show_Cheat_Overlay, QStringLiteral("Toggle Cheat Overlay"), false,
+                       false);
+    connect(hotkey_registry.GetControllerHotkey(
+                "Main Window", "Toggle Cheat Overlay",
+                QtCommon::system->HIDCore().GetEmulatedController(Core::HID::NpadIdType::Player1)),
+            &ControllerShortcut::Activated, this, &MainWindow::OnCheatOverlayCombo,
+            static_cast<Qt::ConnectionType>(Qt::QueuedConnection | Qt::UniqueConnection));
     LinkActionShortcut(ui->action_Fullscreen, QStringLiteral("Fullscreen"));
     LinkActionShortcut(ui->action_Capture_Screenshot, QStringLiteral("Capture Screenshot"));
     LinkActionShortcut(ui->action_TAS_Start, QStringLiteral("TAS Start/Stop"), true);
@@ -1824,6 +1838,7 @@ void MainWindow::RestoreUIState() {
     ui->action_Show_Controller_Overlay->setChecked(
         Settings::values.console_debug_overlay.GetValue());
     ui->action_Show_Controller_Hints->setChecked(Settings::values.console_hints.GetValue());
+    ui->action_Show_Cheat_Overlay->setChecked(Settings::values.cheat_overlay.GetValue());
     if (perf_overlay)
         perf_overlay->setVisible(ui->action_Show_Performance_Overlay->isChecked());
     Debugger::ToggleConsole();
@@ -1899,12 +1914,27 @@ void MainWindow::ConnectWidgetEvents() {
     connect(this, &MainWindow::EmulationStarting, this, &MainWindow::SoftwareKeyboardExit);
     connect(this, &MainWindow::EmulationStopping, this, &MainWindow::SoftwareKeyboardExit);
     connect(this, &MainWindow::EmulationStarting, this, &MainWindow::RefreshRuntimeCheats);
-    connect(this, &MainWindow::EmulationStopping, this, &MainWindow::ClearRuntimeCheats);
     connect(&console_mode_timer, &QTimer::timeout, this, &MainWindow::ApplyConsoleControllerMode);
     connect(&console_activity_timer, &QTimer::timeout, this, &MainWindow::PollControllerActivity);
     console_activity_timer.start(std::chrono::milliseconds{40});
     // 250ms: instant to the user, negligible cost (the input reload only runs on changes)
     console_mode_timer.start(std::chrono::milliseconds{250});
+    connect(this, &MainWindow::EmulationStopping, this, &MainWindow::ClearRuntimeCheats);
+    connect(&cheat_focus_timer, &QTimer::timeout, this, &MainWindow::PollCheatOverlayFocus);
+    // A cheat turned on or off over the game goes through the cheat menu, like a click there
+    cheat_overlay = std::make_unique<CheatOverlay>(
+        [this](int index) {
+            const auto ids = CheatOverlayIds();
+            if (index >= 0 && index < static_cast<int>(ids.size())) {
+                runtime_cheat_menu->Toggle(ids[static_cast<std::size_t>(index)]);
+            }
+        },
+        [this](double current) -> std::optional<double> {
+            bool ok = false;
+            const double value = QInputDialog::getDouble(this, tr("Memory editor"), tr("Value:"),
+                                                         current, 0, 1.8e19, 2, &ok);
+            return ok ? std::optional<double>{value} : std::nullopt;
+        });
 
     connect(&status_bar_update_timer, &QTimer::timeout, this, &MainWindow::UpdateStatusBar);
 
@@ -1912,22 +1942,16 @@ void MainWindow::ConnectWidgetEvents() {
             &MultiplayerState::UpdateThemedIcons);
 }
 
-void MainWindow::RefreshRuntimeCheats() {
-    ClearRuntimeCheats();
+namespace {
 
-    auto cheats = QtCommon::system->GetRuntimeCheats();
-    if (!cheats.empty()) {
-        runtime_cheat_menu = std::make_unique<RuntimeCheatMenu>(*ui->menu_Cheats, *QtCommon::system,
-                                                                std::move(cheats));
-    }
-    ui->menu_Cheats->menuAction()->setVisible(runtime_cheat_menu != nullptr);
+/// Cheat enabled states are remembered per game and per cheat path (its groups and name): paths
+/// are the stable identity across sessions (the runtime ids are per-session indices).
+QString CheatStateFile() {
+    return QString::fromStdString(Common::FS::PathToUTF8String(
+        Common::FS::GetEdenPath(Common::FS::EdenPath::ConfigDir) / "cheat_state.ini"));
 }
 
-void MainWindow::ClearRuntimeCheats() {
-    runtime_cheat_menu.reset();
-    ui->menu_Cheats->clear();
-    ui->menu_Cheats->menuAction()->setVisible(false);
-}
+} // Anonymous namespace
 
 namespace {
 
@@ -7096,7 +7120,353 @@ void MainWindow::ApplyConsoleControllerMode() {
     ++state.generation;
 }
 
+void MainWindow::RefreshRuntimeCheats() {
+    ClearRuntimeCheats();
+
+    auto cheats = QtCommon::system->GetRuntimeCheats();
+    if (!cheats.empty()) {
+        using Core::Memory::CheatMenuEntryType;
+        using Core::Memory::RuntimeCheatInfo;
+        const QString title_group =
+            QStringLiteral("cheats_%1")
+                .arg(QtCommon::system->GetApplicationProcessProgramID(), 16, 16, QChar(u'0'));
+        // The remembered states go to the runtime first, so the menu opens with them
+        QSettings cheat_state{CheatStateFile(), QSettings::IniFormat};
+        cheat_state.beginGroup(title_group);
+        bool restored = false;
+        for (const auto& cheat : cheats) {
+            const QString key = CheatPath(cheats, cheat.id);
+            if (cheat.type == CheatMenuEntryType::Cheat && !cheat.is_master &&
+                cheat_state.contains(key)) {
+                restored |=
+                    QtCommon::system->SetCheatEnabled(cheat.id, cheat_state.value(key).toBool());
+            }
+        }
+        cheat_state.endGroup();
+        if (restored) {
+            cheats = QtCommon::system->GetRuntimeCheats();
+        }
+        // Every change is saved at once, so Enable All, Disable All and groups persist too
+        const auto changed = [this, title_group](const std::vector<RuntimeCheatInfo>& now) {
+            QSettings state{CheatStateFile(), QSettings::IniFormat};
+            state.beginGroup(title_group);
+            for (const auto& cheat : now) {
+                if (cheat.type == CheatMenuEntryType::Cheat && !cheat.is_master) {
+                    state.setValue(CheatPath(now, cheat.id), cheat.enabled);
+                }
+            }
+            UpdateCheatOverlay();
+        };
+        runtime_cheat_menu = std::make_unique<RuntimeCheatMenu>(*ui->menu_Cheats, *QtCommon::system,
+                                                                std::move(cheats), changed);
+    }
+    ui->menu_Cheats->menuAction()->setVisible(runtime_cheat_menu != nullptr);
+    // (The game's own value: its configuration is read by now)
+    ui->action_Show_Cheat_Overlay->setChecked(Settings::values.cheat_overlay.GetValue());
+    UpdateCheatOverlay();
+}
+
+void MainWindow::ClearRuntimeCheats() {
+    runtime_cheat_menu.reset();
+    ui->menu_Cheats->clear();
+    ui->menu_Cheats->menuAction()->setVisible(false);
+    UpdateCheatOverlay();
+}
+
+std::vector<u32> MainWindow::CheatOverlayIds() const {
+    std::vector<u32> ids;
+    if (runtime_cheat_menu) {
+        for (const auto& cheat : runtime_cheat_menu->Cheats()) {
+            if (cheat.type == Core::Memory::CheatMenuEntryType::Cheat) {
+                ids.push_back(cheat.id);
+            }
+        }
+    }
+    return ids;
+}
+
+void MainWindow::UpdateCheatOverlay() {
+    if (!cheat_overlay) {
+        return;
+    }
+    const bool shown = Settings::values.cheat_overlay.GetValue() && QtCommon::system &&
+                       QtCommon::system->IsPoweredOn();
+    std::vector<CheatOverlay::Cheat> cheats;
+    QString game_id;
+    QString build_id;
+    QString version;
+    if (shown) {
+        // The cheats themselves, a group's name before each of its cheats
+        for (const u32 id : CheatOverlayIds()) {
+            const auto& cheat = runtime_cheat_menu->Cheats()[id];
+            cheats.push_back(
+                {CheatPath(runtime_cheat_menu->Cheats(), id), cheat.enabled, cheat.is_master});
+        }
+        game_id = QStringLiteral("%1")
+                      .arg(QtCommon::system->GetApplicationProcessProgramID(), 16, 16, QChar(u'0'))
+                      .toUpper();
+        // (What the game's cheat files are named after: the first half of its build id)
+        build_id = QString::fromStdString(
+            Common::HexToString(QtCommon::system->GetApplicationProcessBuildID(), true)
+                .substr(0, 16));
+        // The version the game runs as (its update's), looked up once per game
+        static u64 version_of = 0;
+        static QString version_text;
+        const u64 program_id = QtCommon::system->GetApplicationProcessProgramID();
+        if (version_of != program_id) {
+            version_of = program_id;
+            const FileSys::PatchManager pm{program_id, QtCommon::system->GetFileSystemController(),
+                                           QtCommon::system->GetContentProvider()};
+            const auto control = pm.GetControlMetadata();
+            version_text = control.first ? QString::fromStdString(control.first->GetVersionString())
+                                         : QString{};
+        }
+        version = version_text;
+    }
+    // The combo that gives it to the controllers, as a player knows the buttons
+    QStringList combo;
+    const std::string sequence =
+        hotkey_registry.GetControllerKeySequence("Main Window", "Toggle Cheat Overlay");
+    for (const QString& part :
+         QString::fromStdString(sequence).split(QLatin1Char('+'), Qt::SkipEmptyParts)) {
+        static const std::map<QString, QString> names{
+            {QStringLiteral("Left_Stick"), QStringLiteral("L3")},
+            {QStringLiteral("Right_Stick"), QStringLiteral("R3")},
+            {QStringLiteral("Dpad_Up"), QStringLiteral("\u2191")},
+            {QStringLiteral("Dpad_Down"), QStringLiteral("\u2193")},
+            {QStringLiteral("Dpad_Left"), QStringLiteral("\u2190")},
+            {QStringLiteral("Dpad_Right"), QStringLiteral("\u2192")},
+            {QStringLiteral("Screenshot"), QStringLiteral("Capture")},
+        };
+        const auto name = names.find(part);
+        combo.push_back(name != names.end() ? name->second : part);
+    }
+    cheat_overlay->SetCombo(combo.join(QLatin1Char('+')));
+    cheat_overlay->Update(shown, game_id, build_id, version, std::move(cheats));
+    // Hidden, or nothing left in it: the controllers go back to the game
+    if (!cheat_overlay->Showing()) {
+        SetCheatOverlayFocus(false);
+    }
+}
+
+void MainWindow::OnCheatOverlayCombo() {
+    if (!cheat_overlay || !QtCommon::system || !QtCommon::system->IsPoweredOn()) {
+        return;
+    }
+    if (!cheat_focus_frozen.empty()) {
+        SetCheatOverlayFocus(false);
+        return;
+    }
+    if (!Settings::values.cheat_overlay.GetValue()) {
+        cheat_focus_showed = true;
+        ui->action_Show_Cheat_Overlay->setChecked(true);
+    }
+    SetCheatOverlayFocus(true);
+}
+
+namespace {
+
+/// A controller button for the cheat overlay's focus: a native button, or the left stick
+/// pushed up, down, left or right
+constexpr int StickUp = 1000;
+constexpr int StickDown = 1001;
+constexpr int StickLeft = 1002;
+constexpr int StickRight = 1003;
+
+/// The buttons held on the controllers given
+std::set<int> HeldButtons(const std::vector<Core::HID::EmulatedController*>& controllers) {
+    std::set<int> held;
+    for (const auto* controller : controllers) {
+        const auto buttons = controller->GetButtonsValues();
+        for (int b = 0; b < Settings::NativeButton::NumButtons; ++b) {
+            if (buttons[static_cast<std::size_t>(b)].value) {
+                held.insert(b);
+            }
+        }
+        // (A copy: indexing the returned temporary directly would dangle)
+        const auto sticks = controller->GetSticksValues();
+        const auto& stick = sticks[Settings::NativeAnalog::LStick];
+        if (stick.y.value > 0.5f) {
+            held.insert(StickUp);
+        } else if (stick.y.value < -0.5f) {
+            held.insert(StickDown);
+        }
+        if (stick.x.value > 0.5f) {
+            held.insert(StickRight);
+        } else if (stick.x.value < -0.5f) {
+            held.insert(StickLeft);
+        }
+    }
+    return held;
+}
+
+/// A controller combo's buttons, as native buttons
+std::vector<int> ComboButtons(const ControllerButtonSequence& sequence) {
+    using namespace Settings::NativeButton;
+    const auto& npad = sequence.npad;
+    const std::pair<bool, int> parts[] = {
+        {npad.a != 0, A},
+        {npad.b != 0, B},
+        {npad.x != 0, X},
+        {npad.y != 0, Y},
+        {npad.l != 0, L},
+        {npad.r != 0, R},
+        {npad.zl != 0, ZL},
+        {npad.zr != 0, ZR},
+        {npad.plus != 0, Plus},
+        {npad.minus != 0, Minus},
+        {npad.left != 0, DLeft},
+        {npad.up != 0, DUp},
+        {npad.right != 0, DRight},
+        {npad.down != 0, DDown},
+        {npad.stick_l != 0, LStick},
+        {npad.stick_r != 0, RStick},
+        {sequence.home.home != 0, Home},
+        {sequence.capture.capture != 0, Screenshot},
+    };
+    std::vector<int> buttons;
+    for (const auto& [in, button] : parts) {
+        if (in) {
+            buttons.push_back(button);
+        }
+    }
+    return buttons;
+}
+
+} // Anonymous namespace
+
+void MainWindow::SetCheatOverlayFocus(bool focused) {
+    if (!cheat_overlay) {
+        return;
+    }
+    if (!focused) {
+        if (cheat_focus_frozen.empty()) {
+            return;
+        }
+        cheat_focus_timer.stop();
+        for (auto* controller : cheat_focus_frozen) {
+            if (controller->IsConfiguring()) {
+                controller->DisableConfiguration();
+            }
+        }
+        cheat_focus_frozen.clear();
+        cheat_focus_ignored.clear();
+        cheat_focus_held.clear();
+        cheat_focus_repeat_dir = 0;
+        LOG_INFO(Frontend, "cheat overlay: the controllers are back with the game");
+        cheat_overlay->SetFocused(false);
+        // Out of the way of the game: tucked away, or hidden again when the combo showed it
+        if (std::exchange(cheat_focus_showed, false)) {
+            ui->action_Show_Cheat_Overlay->setChecked(false);
+        } else {
+            cheat_overlay->Collapse();
+        }
+        return;
+    }
+    if (!cheat_focus_frozen.empty() || !cheat_overlay->Showing() || !QtCommon::system ||
+        !QtCommon::system->IsPoweredOn()) {
+        return;
+    }
+    // Every connected controller, the handheld's own too; one being set up in the settings is
+    // left alone (it is not the game's meanwhile anyway)
+    auto& hid = QtCommon::system->HIDCore();
+    for (std::size_t i = 0; i <= 8; ++i) {
+        auto* controller = hid.GetEmulatedControllerByIndex(i);
+        if (controller && controller->IsConnected() && !controller->IsConfiguring()) {
+            controller->EnableConfiguration();
+            cheat_focus_frozen.push_back(controller);
+        }
+    }
+    if (cheat_focus_frozen.empty()) {
+        return;
+    }
+    // (The combo's own buttons are still held: they count once let go and pressed again)
+    cheat_focus_ignored = HeldButtons(cheat_focus_frozen);
+    cheat_focus_held = cheat_focus_ignored;
+    cheat_focus_combo = ComboButtons(
+        hotkey_registry
+            .GetControllerHotkey("Main Window", "Toggle Cheat Overlay",
+                                 hid.GetEmulatedController(Core::HID::NpadIdType::Player1))
+            ->ButtonSequence());
+    cheat_focus_repeat_dir = 0;
+    LOG_INFO(Frontend, "cheat overlay: the controllers have it ({} paused for the game)",
+             cheat_focus_frozen.size());
+    cheat_overlay->SetFocused(true);
+    cheat_focus_timer.start(16);
+}
+
+void MainWindow::PollCheatOverlayFocus() {
+    if (!cheat_overlay || !cheat_overlay->Showing()) {
+        SetCheatOverlayFocus(false);
+        return;
+    }
+    std::set<int> held = HeldButtons(cheat_focus_frozen);
+    std::erase_if(cheat_focus_ignored, [&](int b) { return !held.contains(b); });
+    for (const int b : cheat_focus_ignored) {
+        held.erase(b);
+    }
+    const auto pressed = [&](int b) { return held.contains(b) && !cheat_focus_held.contains(b); };
+    const bool combo = !cheat_focus_combo.empty() &&
+                       std::all_of(cheat_focus_combo.begin(), cheat_focus_combo.end(),
+                                   [&](int b) { return held.contains(b); }) &&
+                       std::any_of(cheat_focus_combo.begin(), cheat_focus_combo.end(), pressed);
+    // The combo again: back to the game. B steps back (editing, choosing, a page to the menu),
+    // and from the menu goes back to the game.
+    if (combo || (pressed(Settings::NativeButton::B) && !cheat_overlay->Back())) {
+        SetCheatOverlayFocus(false);
+        return;
+    }
+    using Move = CheatOverlay::Move;
+    if (pressed(Settings::NativeButton::A)) {
+        cheat_overlay->Navigate(Move::Activate);
+    }
+    if (pressed(Settings::NativeButton::Y)) {
+        cheat_overlay->Navigate(Move::Choose);
+    }
+    if (pressed(Settings::NativeButton::X)) {
+        cheat_overlay->Navigate(Move::Menu);
+    }
+    // (The d-pad or the left stick)
+    if (pressed(Settings::NativeButton::DLeft) || pressed(StickLeft)) {
+        cheat_overlay->Navigate(Move::Left);
+    }
+    if (pressed(Settings::NativeButton::DRight) || pressed(StickRight)) {
+        cheat_overlay->Navigate(Move::Right);
+    }
+    // Tucked away with its arrow button: the controllers go back to the game
+    if (cheat_overlay->Collapsed()) {
+        SetCheatOverlayFocus(false);
+        return;
+    }
+    cheat_overlay->Tick();
+    if (pressed(Settings::NativeButton::L)) {
+        cheat_overlay->Navigate(Move::PageUp);
+    }
+    if (pressed(Settings::NativeButton::R)) {
+        cheat_overlay->Navigate(Move::PageDown);
+    }
+    // Up and down, again and again while held
+    const int dir = held.contains(Settings::NativeButton::DUp) || held.contains(StickUp)       ? -1
+                    : held.contains(Settings::NativeButton::DDown) || held.contains(StickDown) ? 1
+                                                                                               : 0;
+    const auto now = std::chrono::steady_clock::now();
+    if (dir == 0) {
+        cheat_focus_repeat_dir = 0;
+    } else if (dir != cheat_focus_repeat_dir || now >= cheat_focus_repeat_at) {
+        cheat_overlay->Navigate(dir < 0 ? Move::Up : Move::Down);
+        cheat_focus_repeat_at =
+            now + std::chrono::milliseconds{dir != cheat_focus_repeat_dir ? 350 : 90};
+        cheat_focus_repeat_dir = dir;
+    }
+    cheat_focus_held = std::move(held);
+}
+
 bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
+    // The cheats over the game take the mouse over their panel (top right)
+    if (watched == render_window && cheat_overlay &&
+        cheat_overlay->HandleMouse(event, *render_window)) {
+        return true;
+    }
     // The controller overlay takes the mouse over its rows (drag to swap, click to rumble)
     if (watched == render_window && HandleOverlayMouse(event)) {
         return true;
@@ -7139,6 +7509,10 @@ void MainWindow::ConnectMenuEvents() {
             [](bool shown) { Settings::values.console_debug_overlay.SetValue(shown); });
     connect(ui->action_Show_Controller_Hints, &QAction::toggled, this,
             [](bool shown) { Settings::values.console_hints.SetValue(shown); });
+    connect(ui->action_Show_Cheat_Overlay, &QAction::toggled, this, [this](bool shown) {
+        Settings::values.cheat_overlay.SetValue(shown);
+        UpdateCheatOverlay();
+    });
 #ifdef HAS_RESHADE
     connect_menu(ui->action_Post_Processing_Shaders, &MainWindow::OnPostProcessingShaders);
 #else
@@ -8716,6 +9090,8 @@ bool MainWindow::ConfirmShutdownGame() {
 
 void MainWindow::OnLoadComplete() {
     loading_screen->OnLoadComplete();
+    // (The cheat overlay works for any game: up to date now that it runs)
+    UpdateCheatOverlay();
 
     perf_overlay = new PerformanceOverlay(this);
     perf_overlay->setVisible(ui->action_Show_Performance_Overlay->isChecked());
@@ -9052,6 +9428,8 @@ void MainWindow::ToggleShowGameName() {
 }
 
 void MainWindow::OnConfigure() {
+    // (The Controls tab sets controllers up itself: the overlay gives them back first)
+    SetCheatOverlayFocus(false);
     const auto old_theme = UISettings::values.theme;
     const bool old_discord_presence = UISettings::values.enable_discord_presence.GetValue();
     const auto old_language_index = Settings::values.language_index.GetValue();
@@ -9122,6 +9500,8 @@ void MainWindow::OnConfigure() {
     ui->action_Show_Controller_Overlay->setChecked(
         Settings::values.console_debug_overlay.GetValue());
     ui->action_Show_Controller_Hints->setChecked(Settings::values.console_hints.GetValue());
+    ui->action_Show_Cheat_Overlay->setChecked(Settings::values.cheat_overlay.GetValue());
+    UpdateCheatOverlay();
     InitializeHotkeys();
 
     if (UISettings::values.theme != old_theme) {
@@ -9355,6 +9735,7 @@ void MainWindow::OnConfigurePerGame() {
 }
 
 void MainWindow::OpenPerGameConfiguration(u64 title_id, const std::string& file_name) {
+    SetCheatOverlayFocus(false);
     const auto v_file = Core::GetGameFileFromPath(QtCommon::vfs, file_name);
 
     Settings::SetConfiguringGlobal(false);
@@ -9386,6 +9767,8 @@ void MainWindow::OpenPerGameConfiguration(u64 title_id, const std::string& file_
             ui->action_Show_Controller_Overlay->setChecked(
                 Settings::values.console_debug_overlay.GetValue());
             ui->action_Show_Controller_Hints->setChecked(Settings::values.console_hints.GetValue());
+            ui->action_Show_Cheat_Overlay->setChecked(Settings::values.cheat_overlay.GetValue());
+            UpdateCheatOverlay();
         }
     }
 

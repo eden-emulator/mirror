@@ -122,6 +122,9 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
            tr("Enables regular cheats when a game starts. Master Code entries are always enabled. "
               "Individual cheats can still be toggled from Cheats in the menu bar while the game is "
               "running."));
+    INSERT(Settings, cheat_overlay, tr("Show In-Game Cheat Overlay"),
+           tr("Shows the game's cheats over the game, top right, to turn them on and off while "
+              "playing (also in Steam's Game Mode). Its menu button tucks it away to the right."));
 
     // Cpu
     INSERT(Settings, cpu_accuracy, tr("Accuracy:"),

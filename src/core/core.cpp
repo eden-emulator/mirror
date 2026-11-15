@@ -411,13 +411,17 @@ struct System::Impl {
         kernel.SuspendEmulation(true);
         kernel.CloseServices();
         kernel.ShutdownCores();
-        services.reset();
-        service_manager.reset();
-        fs_controller.Reset();
+        // Before the services: the cheat tick still runs on the timing thread here, and reads the
+        // controllers through the service manager (it crashed in a freed mutex when a game with
+        // cheats was stopped). The tick takes the same lock, so a running one finishes first and
+        // the later ones find no engine.
         {
             std::scoped_lock lock{cheat_engines_mutex};
             cheat_engines.clear();
         }
+        services.reset();
+        service_manager.reset();
+        fs_controller.Reset();
         core_timing.ClearPendingEvents();
         app_loader.reset();
         audio_core.reset();

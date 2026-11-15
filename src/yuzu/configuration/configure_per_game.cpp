@@ -48,6 +48,34 @@
 #include "yuzu/configuration/configure_system.h"
 #include "yuzu/util/util.h"
 
+#include <cstddef>
+#include "common/hex_util.h"
+#include "core/file_sys/content_archive.h"
+#include "core/file_sys/registered_cache.h"
+#include "core/loader/nso.h"
+
+namespace {
+/// The build id of the game's main module as it runs (the update applied), "" when it has
+/// none (homebrew): what its cheat files are named after
+QString ReadBuildId(Core::System& system, u64 title_id) {
+    const auto nca =
+        system.GetContentProvider().GetEntry(title_id, FileSys::ContentRecordType::Program);
+    if (!nca || !nca->GetExeFS()) {
+        return {};
+    }
+    const FileSys::PatchManager pm{title_id, system.GetFileSystemController(),
+                                   system.GetContentProvider()};
+    const auto exefs = pm.PatchExeFS(nca->GetExeFS());
+    const auto main = exefs ? exefs->GetFile("main") : nullptr;
+    std::array<u8, 0x20> build_id{};
+    if (!main || main->ReadBytes(build_id.data(), build_id.size(),
+                                 offsetof(Loader::NSOHeader, build_id)) != build_id.size()) {
+        return {};
+    }
+    return QString::fromStdString(Common::HexToString(build_id, true));
+}
+} // Anonymous namespace
+
 ConfigurePerGame::ConfigurePerGame(QWidget* parent, u64 title_id_, const std::string& file_name,
                                    std::vector<VkDeviceInfo::Record>& vk_device_records,
                                    Core::System& system_)
@@ -157,6 +185,20 @@ void ConfigurePerGame::LoadConfiguration() {
     }
 
     addons_tab->LoadFromFile(file);
+
+    const QString build_id = ReadBuildId(system, title_id);
+    // The first 16 characters, which name the cheat files; the whole id (without its zero
+    // padding) when hovered
+    ui->display_build_id->setText(build_id.isEmpty() ? QStringLiteral("\u2014")
+                                                     : build_id.left(16));
+    if (!build_id.isEmpty()) {
+        QString full = build_id;
+        while (full.endsWith(QLatin1Char('0')) && full.size() > 16) {
+            full.chop(1);
+        }
+        ui->display_build_id->setToolTip(
+            tr("Build ID: %1\nCheat files for it: %2.txt").arg(full, build_id.left(16)));
+    }
 
     ui->display_title_id->setText(
         QStringLiteral("%1").arg(title_id, 16, 16, QLatin1Char{'0'}).toUpper());

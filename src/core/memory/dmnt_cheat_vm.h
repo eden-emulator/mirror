@@ -300,6 +300,10 @@ public:
     bool LoadProgram(const std::vector<CheatEntry>& cheats);
     void Execute(const CheatProcessMetadata& metadata);
 
+    [[nodiscard]] Callbacks* GetCallbacks() const {
+        return callbacks.get();
+    }
+
 private:
     std::unique_ptr<Callbacks> callbacks;
 
