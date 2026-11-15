@@ -5,6 +5,8 @@
 // SPDX-FileCopyrightText: Copyright 2023 merryhime <https://mary.rs>
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
+#include <cstring>
 #include <numeric>
 #include "core/arm/nce/interpreter_visitor.h"
 
@@ -13,7 +15,7 @@ namespace Core {
 namespace {
 // Prefetch tuning parameters
 [[maybe_unused]] constexpr size_t CACHE_LINE_SIZE = 64;
-[[maybe_unused]] constexpr size_t PREFETCH_STRIDE = 128; // 2 cache lines ahead
+[[maybe_unused]] constexpr size_t PREFETCH_STRIDE = 128; //2 cache lines ahead
 [[maybe_unused]] constexpr size_t SIMD_PREFETCH_THRESHOLD = 32; // Bytes
 } // namespace
 
@@ -179,6 +181,46 @@ void InterpreterVisitor::SetReg(Reg r, u64 value) {
 
 void InterpreterVisitor::SetSp(u64 value) {
     m_sp = value;
+}
+
+bool InterpreterVisitor::STx_mult_1(bool Q, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt) {
+    return StoreMultipleStructures(Q, opcode, size, Rn, Vt) != 0;
+}
+
+bool InterpreterVisitor::STx_mult_2(bool Q, Reg Rm, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt) {
+    const u64 address = Rn == Reg::SP ? this->GetSp() : this->GetReg(Rn);
+    const u64 increment = Rm == Reg::SP ? 0 : this->GetReg(Rm);
+    const size_t written = StoreMultipleStructures(Q, opcode, size, Rn, Vt);
+    if (written == 0) return false;
+    const u64 next_address = address + (Rm == Reg::SP ? written : increment);
+    if (Rn == Reg::SP) this->SetSp(next_address);
+    else this->SetReg(Rn, next_address);
+    return true;
+}
+
+size_t InterpreterVisitor::StoreMultipleStructures(bool Q, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt) {
+    static constexpr std::array<u8, 16> register_counts{4, 0, 4, 0, 3, 0, 3, 1, 2, 0, 2, 0, 0, 0, 0, 0};
+    static constexpr std::array<u8, 16> structure_counts{4, 0, 1, 0, 3, 0, 1, 1, 2, 0, 1, 0, 0, 0, 0, 0};
+    const size_t registers = register_counts[opcode.ZeroExtend()];
+    const size_t structures = structure_counts[opcode.ZeroExtend()];
+    if (registers == 0 || (size == 0b11 && !Q && structures != 1)) return 0;
+    const size_t vector_bytes = Q ? 16 : 8;
+    const size_t element_bytes = size_t{1} << size.ZeroExtend();
+    std::array<u8, 64> data;
+    size_t offset = 0;
+    for (size_t r = 0; r < registers / structures; ++r) {
+        for (size_t e = 0; e < vector_bytes / element_bytes; ++e) {
+            for (size_t s = 0; s < structures; ++s) {
+                const Vec reg = static_cast<Vec>((static_cast<size_t>(Vt) + r * structures + s) % 32);
+                const u128 value = this->GetVec(reg);
+                std::memcpy(data.data() + offset, reinterpret_cast<const u8*>(&value) + e * element_bytes, element_bytes);
+                offset += element_bytes;
+            }
+        }
+    }
+    const u64 address = Rn == Reg::SP ? this->GetSp() : this->GetReg(Rn);
+    m_memory.WriteBlock(address, data.data(), offset);
+    return offset;
 }
 
 bool InterpreterVisitor::Ordered(size_t size, bool L, bool o0, Reg Rn, Reg Rt) {
