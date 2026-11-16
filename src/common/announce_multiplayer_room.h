@@ -21,10 +21,7 @@ struct GameInfo {
 };
 
 struct Member {
-    std::string username;
     std::string nickname;
-    std::string display_name;
-    std::string avatarUrl;
     Network::IPv4Address fake_ip;
     GameInfo game;
 };

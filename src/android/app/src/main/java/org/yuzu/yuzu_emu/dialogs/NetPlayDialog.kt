@@ -191,24 +191,23 @@ class NetPlayDialog(context: Context) : BottomSheetDialog(context) {
         inner class ButtonViewHolder(private val binding: ItemButtonNetplayBinding) :
             NetPlayViewHolder(binding.root) {
             private lateinit var netPlayItems: NetPlayItems
-            private val isModerator = NetPlayManager.netPlayIsModerator()
 
             init {
-                binding.itemButtonMore.apply {
-                    visibility = View.VISIBLE
-                    setOnClickListener { showPopupMenu(it) }
-                }
+                binding.itemButtonMore.setOnClickListener { showPopupMenu(it) }
             }
 
             override fun onClick(clicked: View) {}
 
             private fun showPopupMenu(view: View) {
+                val isModerator = NetPlayManager.netPlayIsModerator()
+                val isSelf = netPlayItems.name == StringSetting.WEB_USERNAME.getString()
+                if (!isModerator || isSelf) {
+                    return
+                }
                 PopupMenu(view.context, view).apply {
                     menuInflater.inflate(R.menu.menu_netplay_member, menu)
-                    menu.findItem(R.id.action_kick).isEnabled = isModerator &&
-                        netPlayItems.name != StringSetting.WEB_USERNAME.getString()
-                    menu.findItem(R.id.action_ban).isEnabled = isModerator &&
-                        netPlayItems.name != StringSetting.WEB_USERNAME.getString()
+                    menu.findItem(R.id.action_kick).isEnabled = true
+                    menu.findItem(R.id.action_ban).isEnabled = true
                     setOnMenuItemClickListener { item ->
                         if (item.itemId == R.id.action_kick) {
                             NetPlayManager.netPlayKickUser(netPlayItems.name)
@@ -227,6 +226,10 @@ class NetPlayDialog(context: Context) : BottomSheetDialog(context) {
             override fun bind(item: NetPlayItems) {
                 netPlayItems = item
                 binding.itemButtonNetplayName.text = netPlayItems.name
+                val isModerator = NetPlayManager.netPlayIsModerator()
+                val isSelf = netPlayItems.name == StringSetting.WEB_USERNAME.getString()
+                binding.itemButtonMore.visibility =
+                    if (isModerator && !isSelf) View.VISIBLE else View.GONE
             }
         }
 
@@ -416,16 +419,6 @@ class NetPlayDialog(context: Context) : BottomSheetDialog(context) {
             }
         }
 
-        val visibilityWatcher = object : TextValidatorWatcher(
-            binding.btnConfirm,
-            binding.lobbyVisibility,
-            context.getString(R.string.multiplayer_token_required)
-        ) {
-            override fun validate(s: String): Boolean {
-                return NetDataValidators.roomVisibility(s, context)
-            }
-        }
-
         val ipWatcher = object : TextValidatorWatcher(
             binding.btnConfirm,
             binding.layoutIpAddress,
@@ -459,7 +452,6 @@ class NetPlayDialog(context: Context) : BottomSheetDialog(context) {
         if (isCreateRoom) {
             binding.roomName.addTextChangedListener(roomNameWatcher)
             binding.dropdownPreferredGameName.addTextChangedListener(preferredWatcher)
-            binding.dropdownLobbyVisibility.addTextChangedListener(visibilityWatcher)
 
             binding.dropdownPreferredGameName.apply {
                 setAdapter(
@@ -472,7 +464,7 @@ class NetPlayDialog(context: Context) : BottomSheetDialog(context) {
             }
 
             binding.dropdownLobbyVisibility.setText(
-                context.getString(R.string.multiplayer_unlisted_visibility)
+                context.getString(R.string.multiplayer_public_visibility)
             )
 
             binding.dropdownLobbyVisibility.apply {

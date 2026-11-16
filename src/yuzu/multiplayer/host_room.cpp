@@ -26,9 +26,6 @@
 #include "yuzu/multiplayer/message.h"
 #include "yuzu/multiplayer/state.h"
 #include "yuzu/multiplayer/validation.h"
-#ifdef ENABLE_WEB_SERVICE
-#include "web_service/verify_user_jwt.h"
-#endif
 
 HostRoomWindow::HostRoomWindow(QWidget* parent, QStandardItemModel* list,
                                std::shared_ptr<Core::AnnounceMultiplayerSession> session,
@@ -95,22 +92,6 @@ void HostRoomWindow::RetranslateUi() {
     ui->retranslateUi(this);
 }
 
-std::unique_ptr<Network::VerifyUser::Backend> HostRoomWindow::CreateVerifyBackend(
-    bool use_validation) const {
-    std::unique_ptr<Network::VerifyUser::Backend> verify_backend;
-    if (use_validation) {
-#ifdef ENABLE_WEB_SERVICE
-        verify_backend =
-            std::make_unique<WebService::VerifyUserJWT>(Settings::values.web_api_url.GetValue());
-#else
-        verify_backend = std::make_unique<Network::VerifyUser::NullBackend>();
-#endif
-    } else {
-        verify_backend = std::make_unique<Network::VerifyUser::NullBackend>();
-    }
-    return verify_backend;
-}
-
 void HostRoomWindow::Host() {
     if (!Network::GetSelectedNetworkInterface()) {
         NetworkMessage::ErrorManager::ShowError(
@@ -166,8 +147,8 @@ void HostRoomWindow::Host() {
             const bool created =
                 room->Create(ui->room_name->text().toStdString(),
                              ui->room_description->toPlainText().toStdString(), "", port, password,
-                             ui->max_player->value(), Settings::values.eden_username.GetValue(),
-                             game, CreateVerifyBackend(is_public), ban_list);
+                             ui->max_player->value(), ui->username->text().toStdString(),
+                             game, ban_list);
             if (!created) {
                 NetworkMessage::ErrorManager::ShowError(
                     NetworkMessage::ErrorManager::COULD_NOT_CREATE_ROOM);
@@ -201,25 +182,10 @@ void HostRoomWindow::Host() {
                 LOG_ERROR(Network, "Starting announce session failed");
             }
         }
-        std::string token;
-#ifdef ENABLE_WEB_SERVICE
-        if (is_public) {
-            WebService::Client client(Settings::values.web_api_url.GetValue(),
-                                      Settings::values.eden_username.GetValue(),
-                                      Settings::values.eden_token.GetValue());
-            if (auto room = Network::GetRoom().lock()) {
-                token = client.GetExternalJWT(room->GetVerifyUID()).returned_data;
-            }
-            if (token.empty()) {
-                LOG_ERROR(WebService, "Could not get external JWT, verification may fail");
-            } else {
-                LOG_INFO(WebService, "Successfully requested external JWT: size={}", token.size());
-            }
-        }
-#endif
+
         // TODO: Check what to do with this
         member->Join(ui->username->text().toStdString(), "127.0.0.1", port, 0,
-                     Network::NoPreferredIP, password, token);
+                     Network::NoPreferredIP, password, "");
 
         // Store settings
         UISettings::values.multiplayer_room_nickname = ui->username->text().toStdString();

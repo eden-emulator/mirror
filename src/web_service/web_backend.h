@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: 2017 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -12,7 +15,7 @@ struct WebResult;
 
 class Client {
 public:
-    Client(std::string host, std::string username, std::string token);
+    Client(std::string host, std::string username);
     ~Client();
 
     /**
@@ -22,7 +25,7 @@ public:
      * @param allow_anonymous If true, allow anonymous unauthenticated requests.
      * @return the result of the request.
      */
-    WebResult PostJson(const std::string& path, const std::string& data, bool allow_anonymous);
+    WebResult PostJson(const std::string& path, const std::string& data);
 
     /**
      * Gets JSON from the specified path.
@@ -30,7 +33,7 @@ public:
      * @param allow_anonymous If true, allow anonymous unauthenticated requests.
      * @return the result of the request.
      */
-    WebResult GetJson(const std::string& path, bool allow_anonymous);
+    WebResult GetJson(const std::string& path);
 
     /**
      * Deletes JSON to the specified path.
@@ -39,7 +42,7 @@ public:
      * @param allow_anonymous If true, allow anonymous unauthenticated requests.
      * @return the result of the request.
      */
-    WebResult DeleteJson(const std::string& path, const std::string& data, bool allow_anonymous);
+    WebResult DeleteJson(const std::string& path, const std::string& data);
 
     /**
      * Gets a plain string from the specified path.
@@ -47,7 +50,7 @@ public:
      * @param allow_anonymous If true, allow anonymous unauthenticated requests.
      * @return the result of the request.
      */
-    WebResult GetPlain(const std::string& path, bool allow_anonymous);
+    WebResult GetPlain(const std::string& path);
 
     /**
      * Gets an PNG image from the specified path.
@@ -55,14 +58,7 @@ public:
      * @param allow_anonymous If true, allow anonymous unauthenticated requests.
      * @return the result of the request.
      */
-    WebResult GetImage(const std::string& path, bool allow_anonymous);
-
-    /**
-     * Requests an external JWT for the specific audience provided.
-     * @param audience the audience of the JWT requested.
-     * @return the result of the request.
-     */
-    WebResult GetExternalJWT(const std::string& audience);
+    WebResult GetImage(const std::string& path);
 
 private:
     struct Impl;

@@ -17,7 +17,6 @@
 #include "enet/enet.h"
 #include "network/packet.h"
 #include "network/room.h"
-#include "network/verify_user.h"
 
 namespace Network {
 
@@ -37,8 +36,6 @@ public:
         std::string nickname; ///< The nickname of the member.
         GameInfo game_info;   ///< The current game of the member
         IPv4Address fake_ip;  ///< The assigned fake ip address of the member.
-        /// Data of the user, often including authenticated forum username.
-        VerifyUser::UserData user_data;
         ENetPeer* peer; ///< The remote peer.
     };
     using MemberList = std::vector<Member>;
@@ -53,9 +50,6 @@ public:
 
     /// Thread that receives and dispatches network packets
     std::optional<std::jthread> room_thread;
-
-    /// Verification backend of the room
-    std::unique_ptr<VerifyUser::Backend> verify_backend;
 
     void StartLoop();
 
@@ -352,23 +346,14 @@ void Room::RoomImpl::HandleJoinRequest(const ENetEvent* event) {
         std::lock_guard lock(verify_uid_mutex);
         uid = verify_uid;
     }
-
-    if (verify_backend != nullptr)
-     member.user_data = verify_backend->LoadUserData(uid, token);
-
-    if (nickname == room_information.host_username) {
-        member.user_data.moderator = true;
-        LOG_INFO(Network, "User {} is a moderator", std::string(room_information.host_username));
-    }
-
     std::string ip;
     {
         std::lock_guard lock(ban_list_mutex);
 
         // Check username ban
-        if (!member.user_data.username.empty() &&
+        if (!member.nickname.empty() &&
             std::find(username_ban_list.begin(), username_ban_list.end(),
-                      member.user_data.username) != username_ban_list.end()) {
+                      member.nickname) != username_ban_list.end()) {
 
             SendUserBanned(event->peer);
             return;
@@ -386,7 +371,7 @@ void Room::RoomImpl::HandleJoinRequest(const ENetEvent* event) {
     }
 
     // Notify everyone that the user has joined.
-    SendStatusMessage(IdMemberJoin, member.nickname, member.user_data.username, ip);
+    SendStatusMessage(IdMemberJoin, member.nickname, "", ip);
 
     {
         std::lock_guard lock(member_mutex);
@@ -415,7 +400,7 @@ void Room::RoomImpl::HandleModKickPacket(const ENetEvent* event) {
     std::string nickname;
     packet.Read(nickname);
 
-    std::string username, ip;
+    std::string ip;
     {
         std::lock_guard lock(member_mutex);
         const auto target_member =
@@ -429,8 +414,6 @@ void Room::RoomImpl::HandleModKickPacket(const ENetEvent* event) {
         // Notify the kicked member
         SendUserKicked(target_member->peer);
 
-        username = target_member->user_data.username;
-
         std::array<char, 256> ip_raw{};
         enet_address_get_host_ip(&target_member->peer->address, ip_raw.data(), sizeof(ip_raw) - 1);
         ip = ip_raw.data();
@@ -440,7 +423,7 @@ void Room::RoomImpl::HandleModKickPacket(const ENetEvent* event) {
     }
 
     // Announce the change to all clients.
-    SendStatusMessage(IdMemberKicked, nickname, username, ip);
+    SendStatusMessage(IdMemberKicked, nickname, "", ip);
     BroadcastRoomInformation();
 }
 
@@ -457,7 +440,7 @@ void Room::RoomImpl::HandleModBanPacket(const ENetEvent* event) {
     std::string nickname;
     packet.Read(nickname);
 
-    std::string username, ip;
+    std::string ip;
     {
         std::lock_guard lock(member_mutex);
         const auto target_member =
@@ -472,7 +455,6 @@ void Room::RoomImpl::HandleModBanPacket(const ENetEvent* event) {
         SendUserBanned(target_member->peer);
 
         nickname = target_member->nickname;
-        username = target_member->user_data.username;
 
         std::array<char, 256> ip_raw{};
         enet_address_get_host_ip(&target_member->peer->address, ip_raw.data(), sizeof(ip_raw) - 1);
@@ -485,12 +467,10 @@ void Room::RoomImpl::HandleModBanPacket(const ENetEvent* event) {
     {
         std::lock_guard lock(ban_list_mutex);
 
-        if (!username.empty()) {
-            // Ban the forum username
-            if (std::find(username_ban_list.begin(), username_ban_list.end(), username) ==
+        if (!nickname.empty()) {
+            if (std::find(username_ban_list.begin(), username_ban_list.end(), nickname) ==
                 username_ban_list.end()) {
-
-                username_ban_list.emplace_back(username);
+                username_ban_list.emplace_back(nickname);
             }
         }
 
@@ -501,7 +481,7 @@ void Room::RoomImpl::HandleModBanPacket(const ENetEvent* event) {
     }
 
     // Announce the change to all clients.
-    SendStatusMessage(IdMemberBanned, nickname, username, ip);
+    SendStatusMessage(IdMemberBanned, nickname, "", ip);
     BroadcastRoomInformation();
 }
 
@@ -578,12 +558,9 @@ bool Room::RoomImpl::HasModPermission(const ENetPeer* client) const {
     if (sending_member == members.end()) {
         return false;
     }
-    if (sending_member->user_data.moderator) { // Community moderator
 
-        return true;
-    }
     if (!room_information.host_username.empty() &&
-        sending_member->user_data.username == room_information.host_username) { // Room host
+        sending_member->nickname == room_information.host_username) { // Room host
 
         return true;
     }
@@ -791,9 +768,9 @@ void Room::RoomImpl::BroadcastRoomInformation() {
             packet.Write(member.game_info.name);
             packet.Write(member.game_info.id);
             packet.Write(member.game_info.version);
-            packet.Write(member.user_data.username);
-            packet.Write(member.user_data.display_name);
-            packet.Write(member.user_data.avatar_url);
+            packet.Write("");
+            packet.Write("");
+            packet.Write("");
         }
     }
 
@@ -951,7 +928,7 @@ void Room::RoomImpl::HandleChatPacket(const ENetEvent* event) {
     Packet out_packet;
     out_packet.Write(static_cast<u8>(IdChatMessage));
     out_packet.Write(sending_member->nickname);
-    out_packet.Write(sending_member->user_data.username);
+    out_packet.Write(sending_member->nickname);
     out_packet.Write(message);
 
     ENetPacket* enet_packet = enet_packet_create(out_packet.GetData(), out_packet.GetDataSize(),
@@ -970,12 +947,7 @@ void Room::RoomImpl::HandleChatPacket(const ENetEvent* event) {
 
     enet_host_flush(server);
 
-    if (sending_member->user_data.username.empty()) {
-        LOG_INFO(Network, "{}: {}", sending_member->nickname, message);
-    } else {
-        LOG_INFO(Network, "{} ({}): {}", sending_member->nickname,
-                 sending_member->user_data.username, message);
-    }
+    LOG_INFO(Network, "{}: {}", sending_member->nickname, message);
 }
 
 void Room::RoomImpl::HandleGameInfoPacket(const ENetEvent* event) {
@@ -997,15 +969,10 @@ void Room::RoomImpl::HandleGameInfoPacket(const ENetEvent* event) {
         if (member != members.end()) {
             member->game_info = game_info;
 
-            const std::string display_name =
-                member->user_data.username.empty()
-                    ? member->nickname
-                    : std::format("{} ({})", member->nickname, member->user_data.username);
-
             if (game_info.name.empty()) {
-                LOG_INFO(Network, "{} is not playing", display_name);
+                LOG_INFO(Network, "{} is not playing", member->nickname);
             } else {
-                LOG_INFO(Network, "{} is playing {} ({})", display_name, game_info.name,
+                LOG_INFO(Network, "{} is playing {} ({})", member->nickname, game_info.name,
                          game_info.version);
             }
         }
@@ -1015,7 +982,7 @@ void Room::RoomImpl::HandleGameInfoPacket(const ENetEvent* event) {
 
 void Room::RoomImpl::HandleClientDisconnection(ENetPeer* client) {
     // Remove the client from the members list.
-    std::string nickname, username, ip;
+    std::string nickname, ip;
     {
         std::lock_guard lock(member_mutex);
         auto member =
@@ -1024,7 +991,6 @@ void Room::RoomImpl::HandleClientDisconnection(ENetPeer* client) {
             });
         if (member != members.end()) {
             nickname = member->nickname;
-            username = member->user_data.username;
 
             std::array<char, 256> ip_raw{};
             enet_address_get_host_ip(&member->peer->address, ip_raw.data(), sizeof(ip_raw) - 1);
@@ -1037,7 +1003,7 @@ void Room::RoomImpl::HandleClientDisconnection(ENetPeer* client) {
     // Announce the change to all clients.
     enet_peer_disconnect(client, 0);
     if (!nickname.empty())
-        SendStatusMessage(IdMemberLeave, nickname, username, ip);
+        SendStatusMessage(IdMemberLeave, nickname, "", ip);
     BroadcastRoomInformation();
 }
 
@@ -1050,7 +1016,6 @@ bool Room::Create(const std::string& name, const std::string& description,
                   const std::string& server_address, u16 server_port, const std::string& password,
                   const u32 max_connections, const std::string& host_username,
                   const GameInfo preferred_game,
-                  std::unique_ptr<VerifyUser::Backend> verify_backend,
                   const Room::BanList& ban_list) {
     ENetAddress address;
     address.host = ENET_HOST_ANY;
@@ -1074,7 +1039,6 @@ bool Room::Create(const std::string& name, const std::string& description,
     room_impl->room_information.preferred_game = preferred_game;
     room_impl->room_information.host_username = host_username;
     room_impl->password = password;
-    room_impl->verify_backend = std::move(verify_backend);
     room_impl->username_ban_list = ban_list.first;
     room_impl->ip_ban_list = ban_list.second;
 
@@ -1106,9 +1070,6 @@ std::vector<Member> Room::GetRoomMemberList() const {
     for (const auto& member_impl : room_impl->members) {
         Member member;
         member.nickname = member_impl.nickname;
-        member.username = member_impl.user_data.username;
-        member.display_name = member_impl.user_data.display_name;
-        member.avatarUrl = member_impl.user_data.avatar_url;
         member.fake_ip = member_impl.fake_ip;
         member.game = member_impl.game_info;
         member_list.push_back(member);

@@ -140,11 +140,9 @@
     <string name="multiplayer_lobby_type">جۆری لۆبی</string>
     <string name="multiplayer_room_name_error">دەبێت لە نێوان 3 بۆ 20 پیت بێت</string>
     <string name="multiplayer_required">پێویستە</string>
-    <string name="multiplayer_token_required">تۆکنی وێب پێویستە، بڕۆ بۆ ڕێکخستنە پێشکەوتووەکان -> سیستەم -> تۆڕ</string>
     <string name="multiplayer_ip_error">فۆرماتی IP نادروستە</string>
     <string name="multiplayer_username_error">پێویستە ٤-٢٠ پیت بێت (تەنها پیت و ژمارە و خاڵ و خط و خەتەکێشە و بۆشایی)</string>
     <string name="multiplayer_nickname_invalid">ناوی بەکارهێنەری نادروست، دڵنیا بەرەوە کە بە شێوەیەکی دروست دانراوە لە سیستەم → تۆڕ</string>
-    <string name="multiplayer_token_error">دەبێت 48 پیت بێت، و تەنها پیتی بچووکی a-z</string>
     <string name="multiplayer_port_error">دەبێت لە نێوان 1 بۆ 65535 بێت</string>
     <string name="cancel">پاشگەزبوونەوە</string>
     <string name="ok">باشە</string>
@@ -318,8 +316,6 @@
     <string name="generate">بەرهەم هێنان</string>
 
     <!-- Network settings strings -->
-    <string name="web_token">نیشانەی وێب</string>
-    <string name="web_token_description">نیشانەی وێب بۆ دروستکردنی ژوورە گشتییەکان. زنجیرەیەکی 48 پیتییە تەنها پیتی a-z بچووک لەخۆدەگرێت.</string>
     <string name="web_username">ناوی بەکارهێنەری وێب</string>
     <string name="web_username_description">ناوی بەکارهێنەر کە لە ژوورەکانی فرە یاریزاندا پیشان دەدرێت. پێویستە ٤-٢٠ پیت بێت (تەنها پیت و ژمارە و خاڵ و خط و خەتەکێشە و بۆشایی).</string>
     <string name="network">تۆڕ</string>

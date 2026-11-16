@@ -186,11 +186,9 @@
     <string name="multiplayer_lobby_type">大廳類型</string>
     <string name="multiplayer_room_name_error">長度需為 3-20 個字元</string>
     <string name="multiplayer_required">請填寫這個欄位</string>
-    <string name="multiplayer_token_required">需要 Web 令牌，請前往進階設定 -&gt; 系統 -&gt; 網路</string>
     <string name="multiplayer_ip_error">IP 格式無效</string>
     <string name="multiplayer_username_error">必須介於 4-20 個字元之間，並且僅能使用英文字母、數字、句點、破折號、底線和空格（標點符號須為英文格式）</string>
     <string name="multiplayer_nickname_invalid">使用者名稱無效，請在系統 -&gt; 網路中檢查設定</string>
-    <string name="multiplayer_token_error">必須為 48 個字元，且僅包含小寫字母 a-z</string>
     <string name="multiplayer_port_error">埠號需為 1-65535</string>
     <string name="cancel">取消</string>
     <string name="ok">確定</string>
@@ -526,8 +524,6 @@
     <string name="generate">生成</string>
 
     <!-- Network settings strings -->
-    <string name="web_token">網路令牌</string>
-    <string name="web_token_description">用於建立公開大廳的網路令牌，由 48 個小寫字母 a-z 組成</string>
     <string name="web_username">網路使用者名稱</string>
     <string name="web_username_description">多人遊戲房間中顯示的使用者名稱。必須為 4-20 個字元，僅能使用英文字母、數字、句點、破折號、底線和空格（標點符號須為英文格式）</string>
     <string name="network">網路</string>

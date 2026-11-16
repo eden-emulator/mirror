@@ -140,11 +140,9 @@
     <string name="multiplayer_lobby_type">Loại phòng</string>
     <string name="multiplayer_room_name_error">3-20 ký tự</string>
     <string name="multiplayer_required">Bắt buộc</string>
-    <string name="multiplayer_token_required">Yêu cầu mã web, hãy vào Cài đặt nâng cao -> Hệ thống -> Mạng</string>
     <string name="multiplayer_ip_error">Sai định dạng IP</string>
     <string name="multiplayer_username_error">Phải có 4-20 ký tự (chỉ chữ số, dấu chấm, dấu gạch ngang, dấu gạch dưới và khoảng trắng)</string>
     <string name="multiplayer_nickname_invalid">Tên người dùng không hợp lệ, hãy đảm bảo đã đặt đúng trong Hệ thống → Mạng</string>
-    <string name="multiplayer_token_error">Phải có 48 ký tự và chỉ chữ thường a-z</string>
     <string name="multiplayer_port_error">1-65535</string>
     <string name="cancel">Hủy</string>
     <string name="ok">OK</string>
@@ -316,8 +314,6 @@
     <string name="generate">Tạo</string>
 
     <!-- Network settings strings -->
-    <string name="web_token">Token web</string>
-    <string name="web_token_description">Token web dùng để tạo phòng công khai. Đây là chuỗi 48 ký tự chỉ chứa chữ thường a-z.</string>
     <string name="web_username">Tên người dùng web</string>
     <string name="web_username_description">Tên người dùng hiển thị trong phòng chơi nhiều người. Phải có 4-20 ký tự (chỉ chữ số, dấu gạch ngang, dấu chấm, dấu gạch dưới và khoảng trắng).</string>
     <string name="network">Mạng</string>

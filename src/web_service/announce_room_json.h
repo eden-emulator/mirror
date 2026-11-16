@@ -21,8 +21,8 @@ namespace WebService {
  */
 class RoomJson : public AnnounceMultiplayerRoom::Backend {
 public:
-    RoomJson(const std::string& host_, const std::string& username_, const std::string& token_)
-        : client(host_, username_, token_), host(host_), username(username_), token(token_) {}
+    RoomJson(const std::string& host_, const std::string& username_)
+        : client(host_, username_), host(host_), username(username_) {}
     ~RoomJson() = default;
     void SetRoomInformation(const std::string& name, const std::string& description, const u16 port,
                             const u32 max_player, const u32 net_version, const bool has_password,
@@ -40,7 +40,6 @@ private:
     Client client;
     std::string host;
     std::string username;
-    std::string token;
     std::string room_id;
 };
 

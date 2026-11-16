@@ -12,7 +12,6 @@
 
 #include "common/settings.h"
 #include "web_service/web_backend.h"
-#include "web_service/verify_user_jwt.h"
 #include "web_service/web_result.h"
 
 #include <thread>
@@ -180,8 +179,7 @@ NetPlayStatus AndroidMultiplayer::NetPlayCreateRoom(const std::string &ipaddress
     port = (port == 0) ? Network::DefaultRoomPort : static_cast<u16>(port);
 
     if (!room->Create(room_name, "", ipaddress, static_cast<u16>(port), password,
-                      static_cast<u32>(std::min(max_players, 16)), username, game,
-                      CreateVerifyBackend(isPublic), {})) {
+                      static_cast<u32>(std::min(max_players, 16)), username, game, {})) {
         return NetPlayStatus::CREATE_ROOM_ERROR;
     }
 
@@ -203,29 +201,15 @@ NetPlayStatus AndroidMultiplayer::NetPlayCreateRoom(const std::string &ipaddress
     // Failsafe timer to avoid joining before creation
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    std::string token;
     // TODO(alekpop): properly handle the compile definition, it's not working right
 #ifdef ENABLE_WEB_SERVICE
     LOG_INFO(WebService, "Web Service enabled");
-    if (isPublic) {
-        WebService::Client client(Settings::values.web_api_url.GetValue(),
-                                  Settings::values.eden_username.GetValue(),
-                                  Settings::values.eden_token.GetValue());
-
-        token = client.GetExternalJWT(room->GetVerifyUID()).returned_data;
-
-        if (token.empty()) {
-            LOG_ERROR(WebService, "Could not get external JWT, verification may fail");
-        } else {
-            LOG_INFO(WebService, "Successfully requested external JWT: size={}", token.size());
-        }
-    }
 #else
     LOG_ERROR(WebService, "Web Service disabled");
 #endif
 
     member->Join(username, ipaddress.c_str(), static_cast<u16>(port), 0, Network::NoPreferredIP,
-                 password, token);
+                 password, "");
 
     // Failsafe timer to avoid joining before creation
     for (int i = 0; i < 5; i++) {
@@ -249,9 +233,7 @@ NetPlayStatus AndroidMultiplayer::NetPlayJoinRoom(const std::string &ipaddress, 
         return NetPlayStatus::NETWORK_ERROR;
     }
 
-    port =
-            (port == 0) ? Network::DefaultRoomPort : static_cast<u16>(port);
-
+    port = (port == 0) ? Network::DefaultRoomPort : static_cast<u16>(port);
 
     if (member->GetState() == Network::RoomMember::State::Joining || member->IsConnected()) {
         return NetPlayStatus::ALREADY_IN_ROOM;
@@ -399,7 +381,6 @@ std::vector<std::string> AndroidMultiplayer::NetPlayGetPublicRooms() {
 
             for (const auto &member: room.members) {
                 room_list.push_back("MEMBER|" + room.information.name + "|" +
-                                    member.username + "|" +
                                     member.nickname + "|" +
                                     std::to_string(member.game.id) + "|" +
                                     member.game.name);
@@ -427,19 +408,4 @@ std::vector<std::string> AndroidMultiplayer::NetPlayGetBanList() {
         }
     }
     return ban_list;
-}
-
-std::unique_ptr<Network::VerifyUser::Backend> AndroidMultiplayer::CreateVerifyBackend(bool use_validation) {
-    std::unique_ptr<Network::VerifyUser::Backend> verify_backend;
-    if (use_validation) {
-#ifdef ENABLE_WEB_SERVICE
-        verify_backend =
-            std::make_unique<WebService::VerifyUserJWT>(Settings::values.web_api_url.GetValue());
-#else
-        verify_backend = std::make_unique<Network::VerifyUser::NullBackend>();
-#endif
-    } else {
-        verify_backend = std::make_unique<Network::VerifyUser::NullBackend>();
-    }
-    return verify_backend;
 }

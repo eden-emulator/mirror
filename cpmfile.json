@@ -30,16 +30,6 @@
         "repo": "catchorg/Catch2",
         "version": "v3.13.0"
     },
-    "cpp-jwt": {
-        "find_args": "CONFIG",
-        "hash": "d11cbd5ddb3197b4c5ca15679bcd76a49963e7b530b7dd132db91e042925efa20dfb2c24ccfbe7ef82a7012af80deff0f72ee25851312ae80381a462df8534b8",
-        "min_version": "1.4",
-        "patches": [
-            "0001-fix-missing-decl.patch"
-        ],
-        "repo": "arun11299/cpp-jwt",
-        "version": "7f24eb4c32"
-    },
     "cubeb": {
         "find_args": "CONFIG",
         "hash": "8a4bcb2f83ba590f52c66626e895304a73eb61928dbc57777e1822e55378e3568366f17f9da4b80036cc2ef4ea9723c32abf6e7d9bbe00fb03654f0991596ab0",

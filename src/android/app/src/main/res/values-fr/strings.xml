@@ -182,11 +182,9 @@
     <string name="multiplayer_lobby_type">Type de lobby</string>
     <string name="multiplayer_room_name_error">Doit contenir entre 3 et 20 caractères</string>
     <string name="multiplayer_required">Requis</string>
-    <string name="multiplayer_token_required">Token web requis, allez dans Paramètres avancés -> Système -> Réseau</string>
     <string name="multiplayer_ip_error">Format IP invalide</string>
     <string name="multiplayer_username_error">Doit contenir 4-20 caractères alphanumériques, points, tirets, underscores et espaces uniquement</string>
     <string name="multiplayer_nickname_invalid">Nom d\'utilisateur invalide, vérifiez le dans Système → Réseau</string>
-    <string name="multiplayer_token_error">Doit contenir 48 caractères, uniquement des lettres minuscules a-z</string>
     <string name="multiplayer_port_error">Doit être entre 1 et 65535</string>
     <string name="cancel">Annuler</string>
     <string name="ok">OK</string>
@@ -439,8 +437,6 @@
     <string name="generate">Générer</string>
 
     <!-- Network settings strings -->
-    <string name="web_token">Jeton Web</string>
-    <string name="web_token_description">Jeton Web utilisé pour créer des salles publiques. Il s\'agit d\'une chaîne de 48 caractères ne contenant que des lettres minuscules a-z.</string>
     <string name="web_username">Nom d\'utilisateur web</string>
     <string name="web_username_description">Nom d\'utilisateur affiché dans les salles multijoueur. Doit contenir 4-20 caractères alphanumériques, tirets, points, underscores et espaces uniquement.</string>
     <string name="network">Réseau</string>

@@ -275,11 +275,6 @@ if (VulkanMemoryAllocator_ADDED)
     endif()
 endif()
 
-# cpp-jwt
-if (ENABLE_WEB_SERVICE OR ENABLE_UPDATE_CHECKER)
-    AddJsonPackage(cpp-jwt)
-endif()
-
 # FFMpeg
 if (YUZU_USE_EXTERNAL_FFMPEG OR YUZU_USE_BUNDLED_FFMPEG)
     add_subdirectory(ffmpeg)

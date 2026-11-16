@@ -76,7 +76,6 @@ System packages *can* be used for these libraries, but many are either not packa
 - [libusb](https://github.com/libusb/libusb)
 - [VulkanMemoryAllocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
 - [sirit](https://github.com/eden-emulator/sirit)
-- [cpp-jwt](https://github.com/arun11299/cpp-jwt) 1.4+ - if `ENABLE_WEB_SERVICE` is on
 
 On amd64:
 
@@ -122,7 +121,7 @@ sudo emerge -a \
     media-libs/VulkanMemoryAllocator media-libs/libsdl3 media-libs/cubeb \
     net-libs/enet \
     sys-libs/zlib \
-    dev-cpp/simpleini dev-cpp/cpp-jwt dev-cpp/jacinth dev-cpp/hydrocarbon \
+    dev-cpp/simpleini dev-cpp/jacinth dev-cpp/hydrocarbon \
     games-util/gamemode \
     net-wireless/wireless-tools \
     dev-qt/qtbase:6 dev-libs/quazip \
@@ -266,7 +265,7 @@ FreeBSD 15 or later is required.
 For NetBSD +10.1:
 
 ```sh
-pkgin install git cmake boost SDL3 catch2 libjwt spirv-headers spirv-tools ffmpeg7 libva jq libopus qt6-qtbase qt6-qtcharts qt6-qtmultimedia qt6-qttools lz4 vulkan-headers nasm autoconf enet pkg-config libusb1 libcxx frozen
+pkgin install git cmake boost SDL3 catch2 spirv-headers spirv-tools ffmpeg7 libva jq libopus qt6-qtbase qt6-qtcharts qt6-qtmultimedia qt6-qttools lz4 vulkan-headers nasm autoconf enet pkg-config libusb1 libcxx frozen
 ```
 
 [Caveats](./Caveats.md#netbsd).

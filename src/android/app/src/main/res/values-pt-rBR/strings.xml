@@ -169,11 +169,9 @@
     <string name="multiplayer_lobby_type">Tipo de Sala Pública</string>
     <string name="multiplayer_room_name_error">Deve ter entre 3 e 20 caracteres.</string>
     <string name="multiplayer_required">Obrigatório</string>
-    <string name="multiplayer_token_required">Web Token necessário, vá para Configurações Avançadas -&gt; Sistema -&gt; Rede</string>
     <string name="multiplayer_ip_error">Formato de IP inválido</string>
     <string name="multiplayer_username_error">Deve ter entre 4 e 20 caracteres e conter apenas letras, números, pontos, traços, sublinhados e espaços.</string>
     <string name="multiplayer_nickname_invalid">Nome de usuário inválido. Certifique-se de configurá-lo corretamente em Sistema -&gt; Rede</string>
-    <string name="multiplayer_token_error">Deve ter 48 caracteres, usando apenas letras minúsculas de a-z</string>
     <string name="multiplayer_port_error">Deve ser entre 1 e 65535</string>
     <string name="cancel">Cancelar</string>
     <string name="ok">Ok</string>
@@ -416,8 +414,6 @@
     <string name="generate">Gerar</string>
 
     <!-- Network settings strings -->
-    <string name="web_token">Web Token</string>
-    <string name="web_token_description">Web Token usado para criar Salas Públicas. É uma sequência de 48 caracteres contendo apenas letras minúsculas de a-z.</string>
     <string name="web_username">Nome de usuário web</string>
     <string name="web_username_description">Nome de usuário a ser exibido nas Salas Públicas. Deve ter entre 4 e 20 caracteres, contendo apenas letras, números, traços, pontos, sublinhados e espaços.</string>
     <string name="network">Rede</string>

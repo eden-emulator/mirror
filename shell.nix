@@ -14,7 +14,7 @@ pkgs.mkShellNoCC {
     openssl boost lz4 zlib zstd
     enet vulkan-headers vulkan-utility-libraries
     spirv-tools spirv-headers vulkan-loader unzip
-    glslang python3 cpp-jwt ffmpeg-headless
+    glslang python3 ffmpeg-headless
     libusb1 cubeb
     # eden
     qt6.qtbase qt6.qtmultimedia qt6.qtwayland qt6.qttools

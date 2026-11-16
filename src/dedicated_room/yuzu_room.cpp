@@ -35,11 +35,6 @@
 #include "network/announce_multiplayer_session.h"
 #include "network/network.h"
 #include "network/room.h"
-#include "network/verify_user.h"
-
-#ifdef ENABLE_WEB_SERVICE
-#include "web_service/verify_user_jwt.h"
-#endif
 
 #undef _UNICODE
 #include <getopt.h>
@@ -62,8 +57,7 @@ static void PrintHelp(const char* argv0) {
              "-g, --preferred-game    The preferred game for this room\n"
              "-i, --preferred-game-id The preferred game-id for this room\n"
              "-u, --username          The username used for announce\n"
-             "-t, --token             The token used for announce\n"
-             "-a, --web-api-url       yuzu Web API url\n"
+             "-a, --web-api-url       Eden Web API url\n"
              "-b, --ban-list-file     The file for storing the room ban list\n"
              "-l, --log-file          The file for storing the room log\n"
              "-h, --help              Display this help and exit\n"
@@ -79,37 +73,6 @@ static void PrintVersion() {
 
 /// The magic text at the beginning of a yuzu-room ban list file.
 static constexpr char BanListMagic[] = "YuzuRoom-BanList-1";
-
-static constexpr char token_delimiter{':'};
-
-static void PadToken(std::string& token) {
-    std::array<unsigned char, 512> output{};
-    std::array<unsigned char, 2048> roundtrip{};
-    for (size_t i = 0; i < 3; i++) {
-        EVP_DecodeBlock(output.data(), reinterpret_cast<const unsigned char*>(token.c_str()), token.size());
-        EVP_EncodeBlock(output.data(), roundtrip.data(), roundtrip.size());
-        if (memcmp(roundtrip.data(), token.data(), token.size()) == 0) {
-            break;
-        }
-        token.push_back('=');
-    }
-}
-
-static std::string UsernameFromDisplayToken(const std::string& display_token) {
-    std::size_t outlen = 4 * ((display_token.length() + 2) / 3);
-    std::array<unsigned char, 512> output{};
-    EVP_DecodeBlock(output.data(), reinterpret_cast<const unsigned char*>(display_token.c_str()), display_token.length());
-    std::string decoded_display_token(reinterpret_cast<char*>(&output), outlen);
-    return decoded_display_token.substr(0, decoded_display_token.find(token_delimiter));
-}
-
-static std::string TokenFromDisplayToken(const std::string& display_token) {
-    std::size_t outlen = 4 * ((display_token.length() + 2) / 3);
-    std::array<unsigned char, 512> output{};
-    EVP_DecodeBlock(output.data(), reinterpret_cast<const unsigned char*>(display_token.c_str()), display_token.length());
-    std::string decoded_display_token(reinterpret_cast<char*>(&output), outlen);
-    return decoded_display_token.substr(decoded_display_token.find(token_delimiter) + 1);
-}
 
 static Network::Room::BanList LoadBanList(const std::string& path) {
     std::ifstream file;
@@ -186,7 +149,6 @@ void LaunchRoom(int argc, char** argv, bool called_by_option) {
     std::string password;
     std::string preferred_game;
     std::string username;
-    std::string token;
     std::string web_api_url;
     std::string ban_list_file;
     std::string log_file = "eden-room.log";
@@ -205,7 +167,6 @@ void LaunchRoom(int argc, char** argv, bool called_by_option) {
         {"preferred-game", required_argument, 0, 'g'},
         {"preferred-game-id", required_argument, 0, 'i'},
         {"username", optional_argument, 0, 'u'},
-        {"token", required_argument, 0, 't'},
         {"web-api-url", required_argument, 0, 'a'},
         {"ban-list-file", required_argument, 0, 'b'},
         {"log-file", required_argument, 0, 'l'},
@@ -252,9 +213,6 @@ void LaunchRoom(int argc, char** argv, bool called_by_option) {
                 break;
             case 'u':
                 username.assign(optarg);
-                break;
-            case 't':
-                token.assign(optarg);
                 break;
             case 'a':
                 web_api_url.assign(optarg);
@@ -313,28 +271,14 @@ void LaunchRoom(int argc, char** argv, bool called_by_option) {
                   "list.\nSet with --ban-list-file <file>");
     }
     bool announce = true;
-    if (token.empty() && announce) {
-        announce = false;
-        LOG_INFO(Network, "Token is empty: Hosting a private room");
-    }
     if (web_api_url.empty() && announce) {
         announce = false;
         LOG_INFO(Network, "Endpoint url is empty: Hosting a private room");
     }
     if (announce) {
-        if (username.empty()) {
-            LOG_INFO(Network, "Hosting a public room");
-            Settings::values.web_api_url = web_api_url;
-            PadToken(token);
-            Settings::values.eden_username = UsernameFromDisplayToken(token);
-            username = Settings::values.eden_username.GetValue();
-            Settings::values.eden_token = TokenFromDisplayToken(token);
-        } else {
-            LOG_INFO(Network, "Hosting a public room");
-            Settings::values.web_api_url = web_api_url;
-            Settings::values.eden_username = username;
-            Settings::values.eden_token = token;
-        }
+        LOG_INFO(Network, "Hosting a public room");
+        Settings::values.web_api_url = web_api_url;
+        Settings::values.eden_username = username;
     }
 
     // Load the ban list
@@ -343,27 +287,12 @@ void LaunchRoom(int argc, char** argv, bool called_by_option) {
         ban_list = LoadBanList(ban_list_file);
     }
 
-    std::unique_ptr<Network::VerifyUser::Backend> verify_backend;
-    if (announce) {
-#ifdef ENABLE_WEB_SERVICE
-        verify_backend =
-            std::make_unique<WebService::VerifyUserJWT>(Settings::values.web_api_url.GetValue());
-#else
-        LOG_INFO(Network,
-                 "Eden Web Services is not available with this build: validation is disabled.");
-        verify_backend = std::make_unique<Network::VerifyUser::NullBackend>();
-#endif
-    } else {
-        verify_backend = std::make_unique<Network::VerifyUser::NullBackend>();
-    }
-
     Network::Init();
     if (auto room = Network::GetRoom().lock()) {
         AnnounceMultiplayerRoom::GameInfo preferred_game_info{.name = preferred_game,
                                                               .id = preferred_game_id};
         if (!room->Create(room_name, room_description, bind_address, static_cast<u16>(port),
-                          password, max_members, username, preferred_game_info,
-                          std::move(verify_backend), ban_list)) {
+                          password, max_members, username, preferred_game_info, ban_list)) {
             LOG_INFO(Network, "Failed to create room: ");
             std::exit(-1);
         }

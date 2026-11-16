@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 package org.yuzu.yuzu_emu.network
@@ -17,20 +17,12 @@ object NetDataValidators {
         return s.isNotEmpty()
     }
 
-    fun token(s: String?): Boolean {
-        return s?.matches(Regex("[a-z]{48}")) == true
-    }
-
-    fun token(): Boolean {
-        return token(StringSetting.WEB_TOKEN.getString())
-    }
-
     fun roomVisibility(s: String, context: Context): Boolean {
         if (s != context.getString(R.string.multiplayer_public_visibility)) {
             return true
         }
 
-        return token()
+        return true
     }
 
     fun ipAddress(s: String): Boolean {

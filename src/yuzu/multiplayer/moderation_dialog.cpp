@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: Copyright 2018 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -82,7 +82,7 @@ void ModerationDialog::PopulateBanList(const Network::Room::BanList& ban_list) {
     model->removeRows(0, model->rowCount());
     for (const auto& username : ban_list.first) {
         QStandardItem* subject_item = new QStandardItem(QString::fromStdString(username));
-        QStandardItem* type_item = new QStandardItem(tr("Forum Username"));
+        QStandardItem* type_item = new QStandardItem(tr("Username"));
         model->invisibleRootItem()->appendRow({subject_item, type_item});
     }
     for (const auto& ip : ban_list.second) {

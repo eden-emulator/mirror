@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2017 Citra Emulator Project
@@ -13,7 +13,6 @@
 #include "common/announce_multiplayer_room.h"
 #include "common/common_types.h"
 #include "common/socket_types.h"
-#include "network/verify_user.h"
 
 namespace Network {
 
@@ -125,7 +124,6 @@ public:
                 const std::string& password = "",
                 const u32 max_connections = MaxConcurrentConnections,
                 const std::string& host_username = "", const GameInfo = {},
-                std::unique_ptr<VerifyUser::Backend> verify_backend = nullptr,
                 const BanList& ban_list = {});
 
     /**
@@ -134,7 +132,7 @@ public:
     void SetVerifyUID(const std::string& uid);
 
     /**
-     * Gets the ban list (including banned forum usernames and IPs) of the room.
+     * Gets the ban list (including banned usernames and IPs) of the room.
      */
     BanList GetBanList() const;
 

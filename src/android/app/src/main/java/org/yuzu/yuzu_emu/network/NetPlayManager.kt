@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 package org.yuzu.yuzu_emu.network
@@ -84,13 +84,13 @@ object NetPlayManager {
         for (data in roomData) {
             val parts = data.split("|")
 
-            if (parts[0] == "MEMBER" && parts.size >= 6) {
+            if (parts[0] == "MEMBER" && parts.size >= 5) {
                 val roomName = parts[1]
                 val member = RoomMember(
                     username = parts[2],
-                    nickname = parts[3],
-                    gameId = parts[4].toLongOrNull() ?: 0L,
-                    gameName = parts[5]
+                    nickname = parts[2],
+                    gameId = parts[3].toLongOrNull() ?: 0L,
+                    gameName = parts[4]
                 )
                 rooms[roomName]?.members?.add(member)
             } else if (parts.size >= 9) {

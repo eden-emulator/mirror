@@ -998,9 +998,6 @@ struct Values {
                                      Category::WebService};
     Setting<std::string> eden_username{linkage, "Eden", "eden_username",
                                        Category::WebService};
-    Setting<std::string> eden_token{linkage, "",
-                                    "eden_token", Category::WebService};
-
     // Add-Ons
     std::map<u64, std::vector<std::string>> disabled_addons;
 

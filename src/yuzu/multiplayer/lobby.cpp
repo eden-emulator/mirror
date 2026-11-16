@@ -186,24 +186,8 @@ void Lobby::OnJoinRoom(const QModelIndex& source) {
 
     // attempt to connect in a different thread
     QFuture<void> f = QtConcurrent::run([nickname, ip, port, password, verify_uid] {
-        std::string token;
-#ifdef ENABLE_WEB_SERVICE
-        if (!Settings::values.eden_username.GetValue().empty() &&
-            !Settings::values.eden_token.GetValue().empty()) {
-            WebService::Client client(Settings::values.web_api_url.GetValue(),
-                                      Settings::values.eden_username.GetValue(),
-                                      Settings::values.eden_token.GetValue());
-            token = client.GetExternalJWT(verify_uid).returned_data;
-            if (token.empty()) {
-                LOG_ERROR(WebService, "Could not get external JWT, verification may fail");
-            } else {
-                LOG_INFO(WebService, "Successfully requested external JWT: size={}", token.size());
-            }
-        }
-#endif
         if (auto room_member = Network::GetRoomMember().lock()) {
-            room_member->Join(nickname, ip.c_str(), port, 0, Network::NoPreferredIP, password,
-                              token);
+            room_member->Join(nickname, ip.c_str(), port, 0, Network::NoPreferredIP, password, "");
         }
     });
     watcher->setFuture(f);
@@ -261,7 +245,7 @@ void Lobby::OnRefreshLobby() {
         QList<QVariant> members;
         for (auto member : room.members) {
             QVariant var;
-            var.setValue(LobbyMember{QString::fromStdString(member.username),
+            var.setValue(LobbyMember{QString{},
                                      QString::fromStdString(member.nickname), member.game.id,
                                      QString::fromStdString(member.game.name)});
             members.append(var);

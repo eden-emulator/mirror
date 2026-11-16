@@ -41,7 +41,6 @@ static void from_json(const jacinth::value& json, Room& room)
         room.information.description = json.get("description");
     }
 
-    room.information.host_username = json.get("owner");
     room.information.port = json.get("port");
     room.information.preferred_game.name = json.get("preferredGameName");
     room.information.preferred_game.id = json.get("preferredGameId");
@@ -56,6 +55,14 @@ static void from_json(const jacinth::value& json, Room& room)
 }
 
 } // namespace AnnounceMultiplayerRoom
+
+// member meta spec
+template <>
+inline constexpr jacinth::obj jacinth::meta<AnnounceMultiplayerRoom::Member> = {
+    jacinth::include("nickname"),
+    jacinth::from("gameName", [](auto &t) -> auto & { return t.game.name; }),
+    jacinth::from("gameId", [](auto &t) -> auto & { return t.game.id; }),
+};
 
 namespace WebService {
 
@@ -83,12 +90,12 @@ WebService::WebResult RoomJson::Update() {
     }
     jacinth::json json;
     json["players"] = room.members;
-    return client.PostJson(std::format("/lobby/{}", room_id), json.dump(), false);
+    return client.PostJson(std::format("/lobby/{}", room_id), json.dump());
 }
 
 WebService::WebResult RoomJson::Register() {
     jacinth::json json = room;
-    auto result = client.PostJson("/lobby", json.dump(), false);
+    auto result = client.PostJson("/lobby", json.dump());
     if (result.result_code != WebService::WebResult::Code::Success) {
         return result;
     }
@@ -105,7 +112,7 @@ void RoomJson::ClearPlayers() {
 }
 
 AnnounceMultiplayerRoom::RoomList RoomJson::GetRoomList() {
-    auto reply = client.GetJson("/lobby", true).returned_data;
+    auto reply = client.GetJson("/lobby").returned_data;
     if (reply.empty()) {
         return {};
     }
@@ -120,7 +127,7 @@ void RoomJson::Delete() {
         // Once the thread finishes it will stay resident on the vector -- destroyed and freed by dtor()
         // this is still valid while in dtor, so... yeah
         detached_tasks.emplace_back([this](std::stop_token stop_token) {
-            client.DeleteJson(std::format("/lobby/{}", room_id), "", false);
+            client.DeleteJson(std::format("/lobby/{}", room_id), "");
         });
     }
 }

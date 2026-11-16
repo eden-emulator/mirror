@@ -346,19 +346,6 @@ abstract class SettingsItem(
                     descriptionId = R.string.use_custom_rtc_description
                 )
             )
-            put(
-                StringInputSetting(
-                    StringSetting.WEB_TOKEN,
-                    titleId = R.string.web_token,
-                    descriptionId = R.string.web_token_description,
-                    onGenerate = {
-                        val chars = "abcdefghijklmnopqrstuvwxyz"
-                        (1..48).map { chars.random() }.joinToString("")
-                    },
-                    validator = NetDataValidators::token,
-                    errorId = R.string.multiplayer_token_error
-                )
-            )
 
             put(
                 StringInputSetting(

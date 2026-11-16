@@ -520,7 +520,6 @@ class SettingsFragmentPresenter(
 
             if (!NativeConfig.isPerGameConfigLoaded()) {
                 add(HeaderSetting(R.string.network))
-                add(StringSetting.WEB_TOKEN.key)
                 add(StringSetting.WEB_USERNAME.key)
             }
         }

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: Copyright 2017 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
@@ -28,10 +28,6 @@ class ComboBoxProxyModel;
 
 class ChatMessage;
 
-namespace Network::VerifyUser {
-class Backend;
-};
-
 class HostRoomWindow : public QDialog {
     Q_OBJECT
 
@@ -53,7 +49,6 @@ signals:
 
 private:
     void Host();
-    std::unique_ptr<Network::VerifyUser::Backend> CreateVerifyBackend(bool use_validation) const;
 
     std::unique_ptr<Ui::HostRoom> ui;
     std::weak_ptr<Core::AnnounceMultiplayerSession> announce_multiplayer_session;

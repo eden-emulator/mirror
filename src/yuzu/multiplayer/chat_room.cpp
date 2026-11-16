@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
+
 // SPDX-FileCopyrightText: Copyright 2017 Citra Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -283,8 +284,7 @@ void ChatRoom::OnChatReceive(const Network::ChatEntry& chat) {
         auto members = room->GetMemberInformation();
         auto it = std::find_if(members.begin(), members.end(),
                                [&chat](const Network::RoomMember::MemberInformation& member) {
-                                   return member.nickname == chat.nickname &&
-                                          member.username == chat.username;
+                                   return member.nickname == chat.nickname;
                                });
         if (it == members.end()) {
             LOG_INFO(Network, "Chat message received from unknown player. Ignoring it.");
@@ -387,38 +387,6 @@ void ChatRoom::SetPlayerList(const Network::RoomMember::MemberList& member_list)
         QStandardItem* name_item = new PlayerListItem(member.nickname, member.username,
                                                       member.avatar_url, member.game_info);
 
-#ifdef ENABLE_WEB_SERVICE
-        if (!icon_cache.count(member.avatar_url) && !member.avatar_url.empty()) {
-            // Start a request to get the member's avatar
-            const QUrl url(QString::fromStdString(member.avatar_url));
-            QFuture<std::string> future = QtConcurrent::run([url] {
-                WebService::Client client(
-                    QStringLiteral("%1://%2").arg(url.scheme(), url.host()).toStdString(), "", "");
-                auto result = client.GetImage(url.path().toStdString(), true);
-                if (result.returned_data.empty()) {
-                    LOG_ERROR(WebService, "Failed to get avatar");
-                }
-                return result.returned_data;
-            });
-            auto* future_watcher = new QFutureWatcher<std::string>(this);
-            connect(future_watcher, &QFutureWatcher<std::string>::finished, this,
-                    [this, future_watcher, avatar_url = member.avatar_url] {
-                        const std::string result = future_watcher->result();
-                        if (result.empty())
-                            return;
-                        QPixmap pixmap;
-                        if (!pixmap.loadFromData(reinterpret_cast<const u8*>(result.data()),
-                                                 static_cast<uint>(result.size())))
-                            return;
-                        icon_cache[avatar_url] =
-                            pixmap.scaled(48, 48, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-                        // Update all the displayed icons with the new icon_cache
-                        UpdateIconDisplay();
-                    });
-            future_watcher->setFuture(future);
-        }
-#endif
-
         player_list->invisibleRootItem()->appendRow(name_item);
     }
     UpdateIconDisplay();
@@ -440,15 +408,6 @@ void ChatRoom::PopupContextMenu(const QPoint& menu_location) {
         player_list->item(item.row())->data(PlayerListItem::NicknameRole).toString().toStdString();
 
     QMenu context_menu;
-
-    QString username = player_list->item(item.row())->data(PlayerListItem::UsernameRole).toString();
-    if (!username.isEmpty()) {
-        QAction* view_profile_action = context_menu.addAction(tr("View Profile"));
-        connect(view_profile_action, &QAction::triggered, [username] {
-            QDesktopServices::openUrl(
-                QUrl(QStringLiteral("https://community.citra-emu.org/u/%1").arg(username)));
-        });
-    }
 
     std::string cur_nickname;
     if (auto room = Network::GetRoomMember().lock()) {
@@ -496,7 +455,7 @@ void ChatRoom::PopupContextMenu(const QPoint& menu_location) {
             QMessageBox::StandardButton result = QMessageBox::question(
                 this, tr("Ban Player"),
                 tr("Are you sure you would like to <b>kick and ban</b> %1?\n\nThis would "
-                   "ban both their forum username and their IP address.")
+                   "ban both their username and their IP address.")
                     .arg(QString::fromStdString(nickname)),
                 QMessageBox::Yes | QMessageBox::No);
             if (result == QMessageBox::Yes)

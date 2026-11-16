@@ -184,11 +184,9 @@
     <string name="multiplayer_lobby_type">Tipo de sala</string>
     <string name="multiplayer_room_name_error">Debe tener entre 3 y 20 caracteres</string>
     <string name="multiplayer_required">Requerido</string>
-    <string name="multiplayer_token_required">Token web requerido, ve a Configuración avanzada -> Sistema -> Red</string>
     <string name="multiplayer_ip_error">Formato de IP inválido</string>
     <string name="multiplayer_username_error">Debe tener entre 4 y 20 caracteres y contener únicamente caracteres alfanuméricos, puntos, guiones, guiones bajos y espacios.</string>
     <string name="multiplayer_nickname_invalid">Nombre de usuario no válido, asegúrese de que esté configurado correctamente en Sistema -&gt; Red</string>
-    <string name="multiplayer_token_error">Debe tener 48 caracteres, solo letras minúsculas a-z</string>
     <string name="multiplayer_port_error">Debe ser entre 1 y 65535</string>
     <string name="cancel">Cancelar</string>
     <string name="ok">Aceptar</string>
@@ -482,8 +480,6 @@
     <string name="generate">Generar</string>
 
     <!-- Network settings strings -->
-    <string name="web_token">Identificador web</string>
-    <string name="web_token_description">El identificador web se usa para crear salas públicas. Es una cadena de 48 caracteres que solo contiene letras minúsculas a-z.</string>
     <string name="web_username">Nombre de usuario web</string>
     <string name="web_username_description">Nombre de usuario que se mostrará en las salas multijugador. Debe tener entre 4–20 caracteres y contener solo caracteres alfanuméricos, guiones, puntos, barra bajas y espacios.</string>
     <string name="network">Red</string>
