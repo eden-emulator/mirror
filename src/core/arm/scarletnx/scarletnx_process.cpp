@@ -68,10 +68,13 @@ void FaultHandler(int sig, siginfo_t* info, void* raw_context) {
     const u64 guest_address = u64(addr - scope->arena);
     if (guest_address != scope->last_fault) {
         scope->last_fault = guest_address;
-        if (scope->memory->InvalidateNCE(guest_address & ~Memory::YUZU_PAGEMASK, Memory::YUZU_PAGESIZE)) {
+
+        const auto result = scope->memory->InvalidateNCE(guest_address & ~Memory::YUZU_PAGEMASK, Memory::YUZU_PAGESIZE);
+        if (result != Memory::NCEAccessFaultAction::Unmapped) {
             return;
         }
     }
+
     scope->fault_address = guest_address;
     siglongjmp(scope->env, 1);
 }
