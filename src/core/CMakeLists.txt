@@ -1234,6 +1234,22 @@ if (ENABLE_WEB_SERVICE)
     target_link_libraries(core PUBLIC web_service)
 endif()
 
+if (HAS_HYPERVISOR)
+    target_sources(core PRIVATE
+        arm/hypervisor/arm_hypervisor.cpp
+        arm/hypervisor/arm_hypervisor.h
+        arm/hypervisor/hv_machine.cpp
+        arm/hypervisor/hv_machine.h
+        arm/hypervisor/hv_page_table.cpp
+        arm/hypervisor/hv_page_table.h
+        arm/hypervisor/hv_exclusive_monitor.cpp
+        arm/hypervisor/hv_exclusive_monitor.h
+        arm/nce/interpreter_visitor.cpp
+        arm/nce/interpreter_visitor.h
+        arm/nce/visitor_base.h)
+    target_link_libraries(core PRIVATE "-framework Hypervisor")
+endif()
+
 if (HAS_NCE)
     enable_language(C ASM)
     set(CMAKE_ASM_FLAGS "${CFLAGS} -x assembler-with-cpp")

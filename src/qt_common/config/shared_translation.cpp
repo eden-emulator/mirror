@@ -310,6 +310,24 @@ std::unique_ptr<TranslationMap> InitializeTranslations(QObject* parent) {
               "quality and performance consistency in some games."));
     INSERT(Settings, fix_bloom_effects, tr("Fix bloom effects"), tr("Removes bloom in Burnout."));
 
+    INSERT(Settings, metal_pipeline_archive, tr("Cache compiled shaders"),
+           tr("Stores compiled pipelines on disk so they are not rebuilt every launch.\n"
+              "The shader cache already remembers which shaders a game needs; this remembers"));
+    INSERT(Settings, metal_validation, tr("Enable Metal validation layers"),
+           tr("Turns on Metal's API and shader validation layers, which report API misuse Metal "
+              "otherwise accepts silently.\nNote: Needs also ENV variable MTL_DEBUG_LAYER=1"));
+
+    INSERT(Settings, metal_geometry_emulation, tr("Emulate geometry shaders"),
+           tr("Runs geometry shaders as compute kernels. Metal has no geometry stage, so without "
+              "this the stage is skipped and whatever it would have drawn is missing."));
+
+    INSERT(Settings, metal_indirect_compute, tr("GPU-driven compute dispatch"),
+           tr("Runs compute shaders whose size the GPU itself decides."));
+
+    INSERT(Settings, metal_transform_feedback, tr("Emulate transform feedback"),
+           tr("Captures shader output back into memory with a compute shader. Metal cannot do "
+              "this natively."));
+
     // Renderer (Extensions)
     INSERT(Settings, dyna_state, tr("Extended Dynamic State"),
            tr("Controls the number of features that can be used in Extended Dynamic State.\n"
@@ -445,13 +463,17 @@ std::unique_ptr<ComboboxTranslationMap> ComboboxEnumeration(QObject* parent) {
                           }});
     translations->insert(
         {Settings::EnumMetadata<Settings::RendererBackend>::Index(),
-         {PAIR(RendererBackend, Vulkan, tr("Vulkan")),
-#ifdef HAS_OPENGL
-          PAIR(RendererBackend, OpenGL_GLSL, tr("OpenGL GLSL")),
-          PAIR(RendererBackend, OpenGL_GLASM, tr("OpenGL GLASM (Assembly Shaders, NVIDIA Only)")),
-          PAIR(RendererBackend, OpenGL_SPIRV, tr("OpenGL SPIR-V (Experimental, AMD/Mesa Only)")),
+         {
+#ifdef HAS_METAL
+             PAIR(RendererBackend, Metal, tr("Metal")),
 #endif
-          PAIR(RendererBackend, Null, tr("Null"))}});
+             PAIR(RendererBackend, Vulkan, tr("Vulkan")),
+#ifdef HAS_OPENGL
+             PAIR(RendererBackend, OpenGL_GLSL, tr("OpenGL GLSL")),
+             PAIR(RendererBackend, OpenGL_GLASM, tr("OpenGL GLASM (Assembly Shaders, NVIDIA Only)")),
+             PAIR(RendererBackend, OpenGL_SPIRV, tr("OpenGL SPIR-V (Experimental, AMD/Mesa Only)")),
+#endif
+             PAIR(RendererBackend, Null, tr("Null"))}});
     translations->insert({Settings::EnumMetadata<Settings::GpuAccuracy>::Index(),
                           {
                               PAIR(GpuAccuracy, Low, tr("Fast")),
@@ -483,6 +505,9 @@ std::unique_ptr<ComboboxTranslationMap> ComboboxEnumeration(QObject* parent) {
                           {
                               PAIR(CpuBackend, Dynarmic, tr("Dynarmic")),
                               PAIR(CpuBackend, Nce, tr("NCE")),
+#ifdef HAS_HYPERVISOR
+                              PAIR(CpuBackend, Hypervisor, tr("Hypervisor")),
+#endif
                           }});
     translations->insert({Settings::EnumMetadata<Settings::FullscreenMode>::Index(),
                           {
@@ -529,6 +554,9 @@ std::unique_ptr<ComboboxTranslationMap> ComboboxEnumeration(QObject* parent) {
                               PAIR(ScalingFilter, Spline1, tr("Spline-1")),
                               PAIR(ScalingFilter, Sgsr, tr("Snapdragon Game Super Resolution")),
                               PAIR(ScalingFilter, SgsrEdge, tr("Snapdragon Game Super Resolution EdgeDir")),
+#ifdef HAS_METAL
+                              PAIR(ScalingFilter, MetalFx, tr("MetalFX (Metal only)")),
+#endif
                           }});
     translations->insert({Settings::EnumMetadata<Settings::AntiAliasing>::Index(),
                           {

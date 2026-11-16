@@ -505,8 +505,13 @@ void GameList::AddGamePopup(QMenu& context_menu, u64 program_id, const std::stri
     QAction* remove_dlc = remove_menu->addAction(tr("Remove All Installed DLC"));
     QAction* remove_custom_config = remove_menu->addAction(tr("Remove Custom Configuration"));
     QAction* remove_cache_storage = remove_menu->addAction(tr("Remove Cache Storage"));
+#ifdef HAS_OPENGL
     QAction* remove_gl_shader_cache = remove_menu->addAction(tr("Remove OpenGL Pipeline Cache"));
+#endif
     QAction* remove_vk_shader_cache = remove_menu->addAction(tr("Remove Vulkan Pipeline Cache"));
+#ifdef HAS_METAL
+    QAction* remove_mtl_shader_cache = remove_menu->addAction(tr("Remove Metal Pipeline Cache"));
+#endif
     remove_menu->addSeparator();
     QAction* remove_shader_cache = remove_menu->addAction(tr("Remove All Pipeline Caches"));
     QAction* remove_all_content = remove_menu->addAction(tr("Remove All Installed Contents"));
@@ -535,8 +540,13 @@ void GameList::AddGamePopup(QMenu& context_menu, u64 program_id, const std::stri
     open_transferable_shader_cache->setVisible(program_id != 0);
     remove_update->setVisible(program_id != 0);
     remove_dlc->setVisible(program_id != 0);
+#ifdef HAS_OPENGL
     remove_gl_shader_cache->setVisible(program_id != 0);
+#endif
     remove_vk_shader_cache->setVisible(program_id != 0);
+#ifdef HAS_METAL
+    remove_mtl_shader_cache->setVisible(program_id != 0);
+#endif
     remove_shader_cache->setVisible(program_id != 0);
     remove_all_content->setVisible(program_id != 0);
 
@@ -564,14 +574,22 @@ void GameList::AddGamePopup(QMenu& context_menu, u64 program_id, const std::stri
         emit RemoveInstalledEntryRequested(program_id,
                                            QtCommon::Game::InstalledEntryType::AddOnContent);
     });
+#ifdef HAS_OPENGL
     connect(remove_gl_shader_cache, &QAction::triggered, this, [this, program_id, path]() {
         emit RemoveFileRequested(program_id, QtCommon::Game::GameListRemoveTarget::GlShaderCache,
                                  path);
     });
+#endif
     connect(remove_vk_shader_cache, &QAction::triggered, this, [this, program_id, path]() {
         emit RemoveFileRequested(program_id, QtCommon::Game::GameListRemoveTarget::VkShaderCache,
                                  path);
     });
+#ifdef HAS_METAL
+    connect(remove_mtl_shader_cache, &QAction::triggered, this, [this, program_id, path]() {
+        emit RemoveFileRequested(program_id, QtCommon::Game::GameListRemoveTarget::MtlShaderCache,
+                                 path);
+    });
+#endif
     connect(remove_shader_cache, &QAction::triggered, this, [this, program_id, path]() {
         emit RemoveFileRequested(program_id, QtCommon::Game::GameListRemoveTarget::AllShaderCache,
                                  path);

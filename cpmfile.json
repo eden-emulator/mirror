@@ -134,6 +134,12 @@
         "source_subdir": "build/cmake",
         "version": "v1.11.0"
     },
+    "metal-cpp": {
+        "bundled": true,
+        "hash": "382fd7ee37be98906482a8ef6100aca0a3eb0143d8c69bf9f50f6849f9c7da12ed3ffcf1e7787fd07975a4ac3faa7e7d33fe2ef289b3ab33a14e0bcbff7429c9",
+        "repo": "apple/metal-cpp",
+        "version": "release/metal-cpp_macOS27_iOS27"
+    },
     "moltenvk": {
         "artifact": "MoltenVK-macOS.tar",
         "bundled": true,
@@ -253,6 +259,27 @@
         "package": "sirit",
         "repo": "eden-emulator/sirit",
         "version": "v1.0.7"
+    },
+    "spirv-cross": {
+        "find_args": "CONFIG",
+        "hash": "57904efacecb1e5266caa27f34f5d8693d4f357233c727b2e0e58d182287dfea5a71b1ac81fb33b9e30e5eb1c4cbf5aeeb7ca2f0865a74e32347b96f9f453ee6",
+        "options": [
+            "SPIRV_CROSS_SHARED OFF",
+            "SPIRV_CROSS_STATIC ON",
+            "SPIRV_CROSS_CLI OFF",
+            "SPIRV_CROSS_ENABLE_TESTS OFF",
+            "SPIRV_CROSS_ENABLE_GLSL ON",
+            "SPIRV_CROSS_ENABLE_MSL ON",
+            "SPIRV_CROSS_ENABLE_HLSL OFF",
+            "SPIRV_CROSS_ENABLE_CPP OFF",
+            "SPIRV_CROSS_ENABLE_REFLECT OFF",
+            "SPIRV_CROSS_ENABLE_C_API OFF",
+            "SPIRV_CROSS_ENABLE_UTIL ON",
+            "SPIRV_CROSS_SKIP_INSTALL ON"
+        ],
+        "package": "spirv_cross_core",
+        "repo": "KhronosGroup/SPIRV-Cross",
+        "version": "vulkan-sdk-1.4.341.0"
     },
     "spirv-headers": {
         "hash": "d624371dd455c66a300344c89812598ffe11b5eedba555779f789e85c29dc67317741858c60e0744a1e6755cc0d2759b8659f0674f4cc31479c4cb6fc25ed23b",

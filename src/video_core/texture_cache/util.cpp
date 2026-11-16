@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
@@ -29,6 +29,7 @@
 #include "video_core/memory_manager.h"
 #include "video_core/surface.h"
 #include "video_core/texture_cache/decode_bc.h"
+#include "video_core/texture_cache/expand_format.h"
 #include "video_core/texture_cache/format_lookup_table.h"
 #include "video_core/texture_cache/formatter.h"
 #include "video_core/texture_cache/samples_helper.h"
@@ -943,7 +944,12 @@ void ConvertImage(std::span<const u8> input, const ImageInfo& info, std::span<u8
         const auto recompression_setting = Settings::values.astc_recompression.GetValue();
         const bool astc = IsPixelFormatASTC(info.format);
 
-        if (astc && recompression_setting == Settings::AstcRecompression::Uncompressed) {
+        if (IsPixelFormatExpanded(info.format)) {
+            ExpandPixelFormat(input_offset, output.subspan(output_offset), copy, info.format);
+            output_offset += copy.image_extent.width * copy.image_extent.height *
+                             copy.image_extent.depth * copy.image_subresource.num_layers *
+                             ConvertedBytesPerBlock(info.format);
+        } else if (astc && recompression_setting == Settings::AstcRecompression::Uncompressed) {
             Tegra::Texture::ASTC::Decompress(
                 input_offset, copy.image_extent.width, copy.image_extent.height,
                 copy.image_subresource.num_layers * copy.image_extent.depth, tile_size.width,

@@ -26,6 +26,7 @@ enum class Category : u32 {
     RendererAdvanced,
     RendererHacks,
     RendererExtensions,
+    RendererMetal,
     RendererDebug,
     System,
     SystemAudio,

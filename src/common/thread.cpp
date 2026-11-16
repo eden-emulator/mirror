@@ -17,6 +17,7 @@
 #include "common/thread.h"
 #ifdef __APPLE__
 #include <mach/mach.h>
+#include <pthread/qos.h>
 #elif defined(__HAIKU__)
 #include <kernel/OS.h>
 #elif defined(_WIN32)
@@ -546,6 +547,9 @@ void SetCurrentThreadToPerformanceCores() {
         return;
     }
     SetCurrentThreadCoreGroup(CoreGroup::Performance);
+#elif defined(__APPLE__)
+    // macOS picks performance or efficiency cores from the thread's QoS class.
+    pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
 #endif
 }
 
@@ -556,6 +560,8 @@ void SetCurrentThreadToEfficiencyCores() {
         return;
     }
     SetCurrentThreadCoreGroup(CoreGroup::Efficiency);
+#elif defined(__APPLE__)
+    pthread_set_qos_class_self_np(QOS_CLASS_UTILITY, 0);
 #endif
 }
 
@@ -563,6 +569,8 @@ void SetCurrentThreadToBackgroundWork() {
 #if defined(__ANDROID__)
     ADPF::AddCurrentThread(ADPF::Session::Background);
     SetCurrentThreadCoreGroup(CoreGroup::Unrestricted);
+#elif defined(__APPLE__)
+    pthread_set_qos_class_self_np(QOS_CLASS_BACKGROUND, 0);
 #endif
 }
 

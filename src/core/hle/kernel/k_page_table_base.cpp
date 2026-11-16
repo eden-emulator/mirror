@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/scope_exit.h"
+#include "core/arm/arm_interface.h"
+#include "core/hardware_properties.h"
 #include "common/settings.h"
 #include "core/core.h"
 #include "core/hle/kernel/k_address_space_info.h"
@@ -81,6 +83,23 @@ void InvalidateInstructionCache(KernelCore& kernel, KPageTableBase* table, Addre
             auto* interface = process->GetArmInterface(i);
             if (interface) {
                 interface->InvalidateCacheRange(GetInteger(addr), size);
+            }
+        }
+    }
+}
+
+template <typename AddressType>
+void InvalidateGuestMapping(KernelCore& kernel, KPageTableBase* table, AddressType addr, u64 size) {
+    if (!Core::ArmInterface::AnyBackendWantsMappingNotifications()) {
+        return;
+    }
+    for (auto& process : kernel.GetProcessList()) {
+        if (std::addressof(process->GetPageTable().GetBasePageTable()) != table) {
+            continue;
+        }
+        for (size_t i = 0; i < Core::Hardware::NUM_CPU_CORES; i++) {
+            if (auto* const interface = process->GetArmInterface(i)) {
+                interface->InvalidateMapping(GetInteger(addr), size);
             }
         }
     }
@@ -5727,6 +5746,13 @@ Result KPageTableBase::Operate(PageLinkedList* page_list, KProcessAddress virt_a
     // As we don't allocate page entries in guest memory, we don't need to allocate them from
     // or free them to the page list, and so it goes unused (along with page properties).
 
+    InvalidateGuestMapping(m_system.Kernel(), this, virt_addr, num_pages * PageSize);
+    const KProcessAddress notify_addr = virt_addr;
+    const size_t notify_size = num_pages * PageSize;
+    SCOPE_EXIT {
+        InvalidateGuestMapping(m_system.Kernel(), this, notify_addr, notify_size);
+    };
+
     switch (operation) {
     case OperationType::Unmap:
     case OperationType::UnmapPhysical: {
@@ -5786,6 +5812,13 @@ Result KPageTableBase::Operate(PageLinkedList* page_list, KProcessAddress virt_a
 
     // As we don't allocate page entries in guest memory, we don't need to allocate them from
     // the page list, and so it goes unused (along with page properties).
+
+    InvalidateGuestMapping(m_system.Kernel(), this, virt_addr, num_pages * PageSize);
+    const KProcessAddress notify_addr = virt_addr;
+    const size_t notify_size = num_pages * PageSize;
+    SCOPE_EXIT {
+        InvalidateGuestMapping(m_system.Kernel(), this, notify_addr, notify_size);
+    };
 
     switch (operation) {
     case OperationType::MapGroup:

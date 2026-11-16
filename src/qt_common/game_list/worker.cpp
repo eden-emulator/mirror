@@ -14,6 +14,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSettings>
+#include <QThreadPool>
 
 #include "common/fs/fs.h"
 #include "common/fs/path_util.h"
@@ -237,13 +238,16 @@ GameListWorker::GameListWorker(FileSys::VirtualFilesystem vfs_,
 }
 
 GameListWorker::~GameListWorker() {
+    *alive = false;
     this->disconnect();
     stop_requested.store(true);
     processing_completed.Wait();
 }
 
 void GameListWorker::ProcessEvents(GameListModel* model) {
-    while (true) {
+    // Held locally, a function below may destroy this worker.
+    const std::shared_ptr<bool> still_alive = alive;
+    while (*still_alive) {
         std::function<void(GameListModel*)> func;
         {
             // Lock queue to protect concurrent modification.

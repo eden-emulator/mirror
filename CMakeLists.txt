@@ -252,6 +252,9 @@ cmake_dependent_option(ENABLE_LIBUSB "Enable the use of LibUSB" ON "WIN32 OR LIN
 cmake_dependent_option(ENABLE_OPENGL "Enable OpenGL" ON "NOT (WIN32 AND ARCHITECTURE_arm64) AND NOT APPLE AND NOT ANDROID" OFF)
 mark_as_advanced(FORCE ENABLE_OPENGL)
 
+cmake_dependent_option(ENABLE_METAL "Enable Metal" ON "APPLE" OFF)
+mark_as_advanced(FORCE ENABLE_METAL)
+
 option(ENABLE_WEB_SERVICE "Enable web services (multiplayer, etc.)" ON)
 option(ENABLE_WIFI_SCAN "Enable WiFi scanning" OFF)
 
@@ -310,6 +313,12 @@ endif()
 if (ARCHITECTURE_arm64 AND (ANDROID OR LINUX))
     set(HAS_NCE 1)
     add_compile_definitions(HAS_NCE=1)
+endif()
+
+# Hypervisor.framework CPU backend. Not available to third-party apps on iOS.
+if (ARCHITECTURE_arm64 AND APPLE AND NOT IOS)
+    set(HAS_HYPERVISOR 1)
+    add_compile_definitions(HAS_HYPERVISOR=1)
 endif()
 
 if (YUZU_ROOM)
@@ -512,7 +521,14 @@ endfunction()
 # =============================================
 
 if (APPLE)
-    foreach(fw Carbon Metal Cocoa IOKit CoreVideo CoreMedia Security UniformTypeIdentifiers Foundation)
+    set(APPLE_FRAMEWORKS Carbon Metal Cocoa QuartzCore Foundation CoreGraphics
+        IOKit CoreVideo CoreMedia Security UniformTypeIdentifiers)
+    if (ENABLE_METAL)
+        # Maufeat: VERY EXPERIMENTAL
+        list(APPEND APPLE_FRAMEWORKS MetalFX)
+    endif()
+
+    foreach(fw ${APPLE_FRAMEWORKS})
         find_library(${fw}_LIBRARY ${fw} REQUIRED)
         list(APPEND PLATFORM_LIBRARIES ${${fw}_LIBRARY})
     endforeach()

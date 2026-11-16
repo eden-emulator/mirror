@@ -211,6 +211,21 @@ bool IsNceEnabled() {
     return is_nce_enabled;
 }
 
+static bool is_hypervisor_enabled = false;
+
+void SetHypervisorEnabled(bool is_39bit) {
+    const bool is_selected = values.cpu_backend.GetValue() == CpuBackend::Hypervisor;
+    if (is_selected && !is_39bit) {
+        LOG_WARNING(Common,
+                    "Program does not use a 39-bit address space, falling back to Dynarmic");
+    }
+    is_hypervisor_enabled = is_selected && is_39bit;
+}
+
+bool IsHypervisorEnabled() {
+    return is_hypervisor_enabled;
+}
+
 static u64 current_program_id = 0;
 
 void SetCurrentProgramID(u64 program_id) {
@@ -251,6 +266,7 @@ const char* TranslateCategory(Category category) {
     case Category::RendererHacks:
     case Category::RendererDebug:
     case Category::RendererExtensions:
+    case Category::RendererMetal:
         return "Renderer";
     case Category::System:
     case Category::SystemAudio:
@@ -475,6 +491,10 @@ bool IsOpenGL() {
     default:
         return false;
     }
+}
+
+bool IsMetal() {
+    return Settings::values.renderer_backend.GetValue() == RendererBackend::Metal;
 }
 
 } // namespace Settings

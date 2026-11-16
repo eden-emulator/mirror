@@ -24,6 +24,15 @@ else()
     set(OPENGL_SOURCES "")
 endif()
 
+if (ENABLE_METAL)
+    list(APPEND METAL_SOURCES
+        emu_window/emu_window_sdl3_mtl.cpp
+        emu_window/emu_window_sdl3_mtl.h
+    )
+else()
+    set(METAL_SOURCES "")
+endif()
+
 add_executable(yuzu-cmd
     emu_window/emu_window_sdl3.cpp
     emu_window/emu_window_sdl3.h
@@ -36,6 +45,7 @@ add_executable(yuzu-cmd
     yuzu.cpp
     yuzu.rc
     ${OPENGL_SOURCES}
+    ${METAL_SOURCES}
 )
 
 target_link_libraries(yuzu-cmd PRIVATE common core input_common frontend_common video_core)

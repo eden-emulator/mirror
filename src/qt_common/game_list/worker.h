@@ -92,6 +92,9 @@ private:
     std::deque<std::function<void(GameListModel*)>> queued_events;
     std::atomic_bool stop_requested = false;
     Common::Event processing_completed;
+    /// Cleared on destruction. A queued event can repopulate the list, which destroys this
+    /// worker while ProcessEvents is still running.
+    std::shared_ptr<bool> alive = std::make_shared<bool>(true);
 
     Core::System& system;
 };

@@ -259,9 +259,12 @@ struct BufferCacheParams {
     static constexpr bool NEEDS_BIND_STORAGE_INDEX = true;
     static constexpr bool USE_MEMORY_MAPS = true;
     static constexpr bool SEPARATE_IMAGE_BUFFER_BINDINGS = true;
+    static constexpr bool NEEDS_UNIFORM_OVER_READ_PROTECTION = false;
 
     // TODO: Investigate why OpenGL seems to perform worse with persistently mapped buffer uploads
     static constexpr bool USE_MEMORY_MAPS_FOR_UPLOADS = false;
+    static constexpr bool STREAM_DIRTY_UNIFORM_BUFFERS = false;
+    static constexpr bool NEEDS_STORAGE_OVERRUN_ROOM = false;
 };
 
 using BufferCache = VideoCommon::BufferCache<BufferCacheParams>;

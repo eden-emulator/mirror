@@ -190,6 +190,10 @@ class BufferCache : public VideoCommon::ChannelSetupCaches<BufferCacheChannelInf
     static constexpr bool USE_MEMORY_MAPS = P::USE_MEMORY_MAPS;
     static constexpr bool SEPARATE_IMAGE_BUFFERS_BINDINGS = P::SEPARATE_IMAGE_BUFFER_BINDINGS;
     static constexpr bool USE_MEMORY_MAPS_FOR_UPLOADS = P::USE_MEMORY_MAPS_FOR_UPLOADS;
+    static constexpr bool STREAM_DIRTY_UNIFORM_BUFFERS = P::STREAM_DIRTY_UNIFORM_BUFFERS;
+    /// Shaders index storage buffers past the size the guest declares, and without robust
+    /// buffer access an access off the end of the host buffer faults the GPU.
+    static constexpr bool NEEDS_STORAGE_OVERRUN_ROOM = P::NEEDS_STORAGE_OVERRUN_ROOM;
 
 #ifdef YUZU_LEGACY
     static constexpr s64 TARGET_THRESHOLD = 3_GiB;
@@ -403,6 +407,9 @@ private:
 
     void BindHostGraphicsUniformBuffers(size_t stage);
 
+    [[nodiscard]] bool ShouldStreamDirtyUniformBuffer(Buffer& buffer, bool has_host_buffer,
+                                                      DAddr device_addr, u32 offset, u32 size);
+
     void BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 binding_index, bool needs_bind);
 
     void BindHostGraphicsStorageBuffers(size_t stage);
@@ -450,6 +457,8 @@ private:
     void MarkWrittenBuffer(BufferId buffer_id, DAddr device_addr, u32 size, bool needs_sync = false);
 
     [[nodiscard]] BufferId FindBuffer(DAddr device_addr, u32 size, bool sparse_compatible);
+
+    [[nodiscard]] BufferId FindStorageBuffer(const Binding& binding);
 
     void SynchronizeBufferWrites(Buffer& buffer);
 

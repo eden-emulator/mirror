@@ -243,6 +243,7 @@ static bool LoadNroImpl(Core::System& system, Kernel::KProcess& process,
 
     // NROs always have a 39-bit address space.
     Settings::SetNceEnabled(true);
+    Settings::SetHypervisorEnabled(true);
 
     // Create NCE patcher
     Core::NCE::Patcher patch{};

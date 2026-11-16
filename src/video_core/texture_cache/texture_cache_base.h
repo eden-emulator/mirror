@@ -397,6 +397,10 @@ private:
     /// Mark an image as modified from the GPU
     void MarkModification(ImageBase& image) noexcept;
 
+    /// Queues a download of a GPU-modified image the CPU has read back before, so it reaches
+    /// guest memory at the next fence. Once per fence period at most.
+    void QueuePreemptiveDownload(ImageId image_id, ImageBase& image);
+
     /// Synchronize image aliases, copying data if needed
     void SynchronizeAliases(ImageId image_id);
 
@@ -512,6 +516,7 @@ private:
     Common::ScratchBuffer<u8> unswizzle_data_buffer;
 
     u64 modification_tick = 0;
+    u64 async_flush_epoch = 0;
     u64 frame_tick = 0;
 
     Common::ThreadWorker texture_decode_worker{1, "TextureDecoder", {},

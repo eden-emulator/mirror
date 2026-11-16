@@ -55,6 +55,7 @@ static const std::map<Settings::ScalingFilter, QString> scaling_filter_texts_map
     {Settings::ScalingFilter::Mmpx, QStringLiteral(QT_TRANSLATE_NOOP("MainWindow", "MMPX"))},
     {Settings::ScalingFilter::Sgsr, QStringLiteral(QT_TRANSLATE_NOOP("MainWindow", "SGSR"))},
     {Settings::ScalingFilter::SgsrEdge, QStringLiteral(QT_TRANSLATE_NOOP("MainWindow", "SGSR EdgeDir"))},
+    {Settings::ScalingFilter::MetalFx, QStringLiteral(QT_TRANSLATE_NOOP("MainWindow", "MetalFX"))},
 };
 
 static const std::map<Settings::ConsoleMode, QString> use_docked_mode_texts_map = {
@@ -75,6 +76,7 @@ static const std::map<Settings::RendererBackend, QString> renderer_backend_texts
      QStringLiteral(QT_TRANSLATE_NOOP("MainWindow", "OpenGL SPIRV"))},
     {Settings::RendererBackend::OpenGL_GLASM,
      QStringLiteral(QT_TRANSLATE_NOOP("MainWindow", "OpenGL GLASM"))},
+    {Settings::RendererBackend::Metal, QStringLiteral(QT_TRANSLATE_NOOP("MainWindow", "Metal"))},
     {Settings::RendererBackend::Null, QStringLiteral(QT_TRANSLATE_NOOP("MainWindow", "Null"))},
 };
 

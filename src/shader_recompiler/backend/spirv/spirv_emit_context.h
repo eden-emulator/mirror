@@ -344,6 +344,23 @@ public:
     Id write_global_func_u32x2{};
     Id write_global_func_u32x4{};
 
+    bool gs_as_compute{};
+    u32 gs_input_stride{};
+    u32 gs_input_position_index{};
+    std::array<u8, 32> gs_input_attr_index{};
+    u32 gs_output_stride{};
+    u32 gs_output_capacity{};
+    Id gs_input_buffer{};
+    Id gs_output_buffer{};
+    Id gs_vec4_ptr{};
+    Id gs_emitted{};
+    Id gs_written{};
+    Id gs_prev0{};
+    Id gs_prev1{};
+    Id gs_prev2{};
+    Id gs_primitive{};
+    Id gs_global_id{};
+
     bool need_input_position_indirect{};
     Id input_position{};
     std::array<InputGenericInfo, 32> input_generics{};
@@ -379,6 +396,9 @@ public:
     bool uses_nonuniform_storage_texel_buffer{};
 
 private:
+    void SetupGeometryAsCompute(const IR::Program& program);
+    void DefineGeometryAsComputeBuffers();
+
     void DefineCommonTypes(const Info& info);
     void DefineCommonConstants();
     void DefineInterfaces(const IR::Program& program);

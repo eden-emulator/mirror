@@ -123,6 +123,10 @@ public:
 
     void UpdatePagesCachedCount(DAddr addr, size_t size, s32 delta);
 
+    /// Tells the CPU side of each process mapping the range that the GPU wrote it or is about
+    /// to read it.
+    void NotifyGpuAccess(DAddr addr, size_t size);
+
     // New batch API to update multiple ranges with a single lock acquisition.
     void UpdatePagesCachedBatch(std::span<const std::pair<DAddr, size_t>> ranges, s32 delta);
 

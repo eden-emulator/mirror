@@ -213,6 +213,21 @@ typename P::ImageView& TextureCache<P>::GetImageView(u32 index) noexcept {
 template <class P>
 void TextureCache<P>::MarkModification(ImageId id) noexcept {
     MarkModification(slot_images[id]);
+    QueuePreemptiveDownload(id, slot_images[id]);
+}
+
+template <class P>
+void TextureCache<P>::QueuePreemptiveDownload(ImageId image_id, ImageBase& image) {
+    // Only backends that see the guest's first read of a page and nothing after, which keeps a
+    // read-back target current through these downloads rather than a wait on every read.
+    if constexpr (IMPLEMENTS_ASYNC_DOWNLOADS &&
+                  requires { requires P::PREEMPTIVE_DOWNLOAD_ON_MODIFICATION; }) {
+        if (!image.info.forced_flushed || image.preemptive_download_epoch == async_flush_epoch) {
+            return;
+        }
+        image.preemptive_download_epoch = async_flush_epoch;
+        uncommitted_downloads.emplace_back(PendingDownload{true, 0, image_id});
+    }
 }
 
 template <class P>
@@ -896,6 +911,7 @@ bool TextureCache<P>::ShouldWaitAsyncFlushes() const noexcept {
 
 template <class P>
 void TextureCache<P>::CommitAsyncFlushes() {
+    ++async_flush_epoch;
     // This is intentionally passing the value by copy
     if constexpr (IMPLEMENTS_ASYNC_DOWNLOADS) {
         auto& download_ids = uncommitted_downloads;
@@ -2565,6 +2581,7 @@ void TextureCache<P>::PrepareImage(ImageId image_id, bool is_modification, bool 
     }
     if (is_modification) {
         MarkModification(image);
+        QueuePreemptiveDownload(image_id, image);
     }
     lru_cache.Touch(image.lru_index, frame_tick);
 }

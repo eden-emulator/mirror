@@ -20,6 +20,7 @@
 #include "common/div_ceil.h"
 #include "common/scope_exit.h"
 #include "common/settings.h"
+#include "core/arm/arm_interface.h"
 #include "core/device_memory.h"
 #include "core/device_memory_manager.h"
 #include "core/memory.h"
@@ -612,6 +613,38 @@ void DeviceMemoryManager<Traits>::UpdatePagesCachedCountNoLock(DAddr addr, size_
         }
     }
     release_pending();
+}
+
+template <typename Traits>
+void DeviceMemoryManager<Traits>::NotifyGpuAccess(DAddr addr, size_t size) {
+    if (!ArmInterface::AnyWatchedPages() || size == 0) {
+        return;
+    }
+    Memory::Memory* run_memory = nullptr;
+    VAddr run_begin = 0;
+    VAddr run_end = 0;
+    const auto release = [&] {
+        if (run_memory != nullptr && run_end > run_begin) {
+            run_memory->RasterizerNotifyGpuAccess(run_begin, run_end - run_begin);
+        }
+        run_memory = nullptr;
+    };
+    const size_t page_end = Common::DivCeil(addr + size, Memory::YUZU_PAGESIZE);
+    for (size_t page = addr >> Memory::YUZU_PAGEBITS; page != page_end; ++page) {
+        const auto [asid, vaddr] = ExtractCPUBacking(page);
+        Memory::Memory* const memory = vaddr != 0 ? registered_processes[asid.id] : nullptr;
+        if (memory == nullptr) {
+            release();
+            continue;
+        }
+        if (memory != run_memory || vaddr != run_end) {
+            release();
+            run_memory = memory;
+            run_begin = vaddr;
+        }
+        run_end = vaddr + Memory::YUZU_PAGESIZE;
+    }
+    release();
 }
 
 template <typename Traits>

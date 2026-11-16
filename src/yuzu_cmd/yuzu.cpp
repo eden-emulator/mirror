@@ -43,6 +43,9 @@
 #ifdef HAS_OPENGL
 #include "yuzu_cmd/emu_window/emu_window_sdl3_gl.h"
 #endif
+#ifdef HAS_METAL
+#include "yuzu_cmd/emu_window/emu_window_sdl3_mtl.h"
+#endif
 #include "yuzu_cmd/emu_window/emu_window_sdl3_null.h"
 #include "yuzu_cmd/emu_window/emu_window_sdl3_vk.h"
 
@@ -222,6 +225,11 @@ extern "C" SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     case Settings::RendererBackend::Vulkan:
         state->emu_window = std::make_unique<EmuWindow_SDL3_VK>(&state->input_subsystem, state->system, lp.fullscreen);
         break;
+#ifdef HAS_METAL
+    case Settings::RendererBackend::Metal:
+        state->emu_window = std::make_unique<EmuWindow_SDL3_MTL>(&state->input_subsystem, state->system, lp.fullscreen);
+        break;
+#endif
     case Settings::RendererBackend::Null:
         state->emu_window = std::make_unique<EmuWindow_SDL3_Null>(&state->input_subsystem, state->system, lp.fullscreen);
         break;

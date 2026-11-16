@@ -1611,7 +1611,9 @@ void MainWindow::InitializeWidgets() {
     UpdateAPIText();
     renderer_status_button->setCheckable(true);
     renderer_status_button->setChecked(Settings::values.renderer_backend.GetValue() ==
-                                       Settings::RendererBackend::Vulkan);
+                                       Settings::RendererBackend::Vulkan
+                                       || Settings::values.renderer_backend.GetValue() ==
+                                       Settings::RendererBackend::Metal);
     renderer_status_button->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(renderer_status_button, &QPushButton::customContextMenuRequested,
             [this](const QPoint& menu_location) {
@@ -1622,6 +1624,11 @@ void MainWindow::InitializeWidgets() {
                     if (renderer_backend_pair.first == Settings::RendererBackend::Null) {
                         continue;
                     }
+#ifndef HAS_METAL
+                    if (renderer_backend_pair.first == Settings::RendererBackend::Metal) {
+                        continue;
+                    }
+#endif
                     context_menu.addAction(
                         renderer_backend_pair.second, [this, renderer_backend_pair] {
                             Settings::values.renderer_backend.SetValue(renderer_backend_pair.first);
@@ -8460,6 +8467,8 @@ void MainWindow::OnGameListRemoveFile(u64 program_id, QtCommon::Game::GameListRe
             return tr("Delete OpenGL Transferable Shader Cache?");
         case QtCommon::Game::GameListRemoveTarget::VkShaderCache:
             return tr("Delete Vulkan Transferable Shader Cache?");
+        case QtCommon::Game::GameListRemoveTarget::MtlShaderCache:
+            return tr("Delete Metal Transferable Shader Cache?");
         case QtCommon::Game::GameListRemoveTarget::AllShaderCache:
             return tr("Delete All Transferable Shader Caches?");
         case QtCommon::Game::GameListRemoveTarget::CustomConfiguration:
@@ -8481,6 +8490,10 @@ void MainWindow::OnGameListRemoveFile(u64 program_id, QtCommon::Game::GameListRe
         QtCommon::Game::RemoveVulkanDriverPipelineCache(program_id);
         [[fallthrough]];
     case QtCommon::Game::GameListRemoveTarget::GlShaderCache:
+        QtCommon::Game::RemoveTransferableShaderCache(program_id, target);
+        break;
+    case QtCommon::Game::GameListRemoveTarget::MtlShaderCache:
+        QtCommon::Game::RemoveMetalPipelineArchive(program_id);
         QtCommon::Game::RemoveTransferableShaderCache(program_id, target);
         break;
     case QtCommon::Game::GameListRemoveTarget::AllShaderCache:
@@ -9718,14 +9731,24 @@ void MainWindow::OnToggleGraphicsAPI() {
         api = Settings::RendererBackend::Null;
         break;
 #endif
-    case Settings::RendererBackend::Null:
+#ifdef HAS_METAL
+    case Settings::RendererBackend::Metal:
         api = Settings::RendererBackend::Vulkan;
+        break;
+#endif
+    case Settings::RendererBackend::Null:
+#ifdef HAS_METAL
+        api = Settings::RendererBackend::Metal;
+#else
+        api = Settings::RendererBackend::Vulkan;
+#endif
         break;
     default:
         break;
     }
     Settings::values.renderer_backend.SetValue(api);
-    renderer_status_button->setChecked(api == Settings::RendererBackend::Vulkan);
+    renderer_status_button->setChecked(api == Settings::RendererBackend::Vulkan ||
+        api == Settings::RendererBackend::Metal);
     UpdateAPIText();
 }
 
@@ -10351,7 +10374,9 @@ void MainWindow::UpdateVolumeUI() {
 
 void MainWindow::UpdateStatusButtons() {
     renderer_status_button->setChecked(Settings::values.renderer_backend.GetValue() ==
-                                       Settings::RendererBackend::Vulkan);
+                                       Settings::RendererBackend::Vulkan ||
+                                       Settings::values.renderer_backend.GetValue() ==
+                                       Settings::RendererBackend::Metal);
     UpdateAPIText();
     UpdateGPUAccuracyButton();
     UpdateDockedButton();

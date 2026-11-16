@@ -913,6 +913,23 @@ void BufferCache<P>::BindHostDrawIndirectBuffers() {
 }
 
 template <class P>
+bool BufferCache<P>::ShouldStreamDirtyUniformBuffer(Buffer& buffer, bool has_host_buffer,
+                                                    DAddr device_addr, u32 offset, u32 size) {
+    if constexpr (STREAM_DIRTY_UNIFORM_BUFFERS) {
+        // Past the streamed size limit, a range the current frame already read can only be
+        // synchronised with an in-order copy, and on a tiler that ends the open render pass.
+        if (!has_host_buffer || memory_tracker.IsRegionGpuModified(device_addr, size) ||
+            !memory_tracker.IsRegionCpuModified(device_addr, size)) {
+            return false;
+        }
+        const std::array copies{BufferCopy{.src_offset = 0, .dst_offset = offset, .size = size}};
+        return !runtime.CanReorderUpload(buffer, copies);
+    } else {
+        return false;
+    }
+}
+
+template <class P>
 void BufferCache<P>::BindHostGraphicsUniformBuffers(size_t stage) {
     u32 dirty = ~0U;
     if constexpr (HAS_PERSISTENT_UNIFORM_BUFFER_BINDINGS) {
@@ -933,7 +950,8 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
     ++channel_state->uniform_cache_shots[0];
     const Binding& binding = channel_state->uniform_buffers[stage][index];
     const DAddr device_addr = binding.device_addr;
-    const u32 size = (std::min)(binding.size, (*channel_state->uniform_buffer_sizes)[stage][index]);
+    const u32 shader_size = (*channel_state->uniform_buffer_sizes)[stage][index];
+    u32 size = (std::min)(binding.size, shader_size);
     Buffer& buffer = slot_buffers[binding.buffer_id];
     TouchBuffer(buffer, binding.buffer_id);
     const bool has_host_buffer = binding.buffer_id != NULL_BUFFER_ID;
@@ -953,10 +971,20 @@ void BufferCache<P>::BindHostGraphicsUniformBuffer(size_t stage, u32 index, u32 
     // buffer, which ends the current render pass. Read it from the stream buffer instead.
     static constexpr u32 MAX_STREAMED_UNIFORM_BYTES = static_cast<u32>(16_KiB);
     const bool use_fast_buffer = needs_alignment_stream
+        || ShouldStreamDirtyUniformBuffer(buffer, has_host_buffer, device_addr, offset, size)
         || (has_host_buffer && !memory_tracker.IsRegionGpuModified(device_addr, size)
             && (size <= channel_state->uniform_buffer_skip_cache_size
                 || (size <= MAX_STREAMED_UNIFORM_BYTES
                     && memory_tracker.IsRegionCpuModified(device_addr, size))));
+    if constexpr (P::NEEDS_UNIFORM_OVER_READ_PROTECTION) {
+        if (has_host_buffer && shader_size > size) {
+            const u32 available = static_cast<u32>(buffer.SizeBytes()) - offset;
+            const u32 wanted = (std::min)(shader_size, available);
+            if (wanted > size && !memory_tracker.IsRegionGpuModified(device_addr + size, wanted - size)) {
+                size = wanted;
+            }
+        }
+    }
     if (use_fast_buffer) {
         if constexpr (IS_OPENGL) {
             if (runtime.HasFastBufferSubData()) {
@@ -1201,7 +1229,9 @@ void BufferCache<P>::BindHostComputeUniformBuffers() {
             }
         }();
         if constexpr (!IS_OPENGL) {
-            if (needs_alignment_stream) {
+            if (needs_alignment_stream ||
+                ShouldStreamDirtyUniformBuffer(buffer, has_host_buffer, binding.device_addr,
+                                               offset, size)) {
                 const std::span<u8> span =
                     runtime.BindMappedUniformBuffer(0, binding_index, size);
                 device_memory.ReadBlockUnsafe(binding.device_addr, span.data(), size);
@@ -1444,7 +1474,7 @@ void BufferCache<P>::UpdateStorageBuffers(size_t stage) {
     ForEachEnabledBit(channel_state->enabled_storage_buffers[stage], [&](u32 index) {
         // Resolve buffer
         Binding& binding = channel_state->storage_buffers[stage][index];
-        const BufferId buffer_id = FindBuffer(binding.device_addr, binding.size, false);
+        const BufferId buffer_id = FindStorageBuffer(binding);
         binding.buffer_id = buffer_id;
         const bool is_written = ((channel_state->written_storage_buffers[stage] >> index) & 1) != 0;
         ResolveMultiRangeStorage(binding, is_written, graphics_segments);
@@ -1510,7 +1540,7 @@ void BufferCache<P>::UpdateComputeStorageBuffers() {
     ForEachEnabledBit(channel_state->enabled_compute_storage_buffers, [&](u32 index) {
         // Resolve buffer
         Binding& binding = channel_state->compute_storage_buffers[index];
-        binding.buffer_id = FindBuffer(binding.device_addr, binding.size, false);
+        binding.buffer_id = FindStorageBuffer(binding);
         const bool is_written =
             ((channel_state->written_compute_storage_buffers >> index) & 1) != 0;
         ResolveMultiRangeStorage(binding, is_written, compute_segments);
@@ -1526,6 +1556,21 @@ void BufferCache<P>::UpdateComputeTextureBuffers() {
 }
 
 template <class P>
+BufferId BufferCache<P>::FindStorageBuffer(const Binding& binding) {
+    if constexpr (NEEDS_STORAGE_OVERRUN_ROOM) {
+        // Only the host buffer grows. The binding keeps the declared size, so uploads,
+        // downloads and GPU write tracking are unchanged.
+        constexpr u64 OVERRUN_ROOM = 1_MiB;
+        if (binding.device_addr != 0 && binding.size != 0 && binding.gpu_addr != 0) {
+            const u64 mapped = gpu_memory->MaxContinuousRange(binding.gpu_addr, OVERRUN_ROOM);
+            const u32 size = static_cast<u32>((std::max)(u64{binding.size}, mapped));
+            return FindBuffer(binding.device_addr, size, false);
+        }
+    }
+    return FindBuffer(binding.device_addr, binding.size, false);
+}
+
+template <class P>
 void BufferCache<P>::MarkWrittenBuffer(BufferId buffer_id, DAddr device_addr, u32 size, bool needs_sync) {
     if constexpr (!IS_OPENGL) {
         if (needs_sync) {
@@ -1533,9 +1578,20 @@ void BufferCache<P>::MarkWrittenBuffer(BufferId buffer_id, DAddr device_addr, u3
             buffer.setWriteTick(runtime.CurrentTick());
         }
     }
+    // Once per write after the CPU last read the range back, not once per draw.
+    const bool newly_modified = !memory_tracker.IsRegionGpuModified(device_addr, size);
     memory_tracker.MarkRegionAsGpuModified(device_addr, size);
+    // A download still in flight holds what was there before this write. Landing it would
+    // put the old bytes in guest memory and drop the range from gpu_modified_ranges, so the
+    // next upload overwrites this write with them.
+    if (!async_downloads.Empty()) {
+        async_downloads.DeleteAll(device_addr, size);
+    }
     gpu_modified_ranges.Add(device_addr, size);
     uncommitted_gpu_modified_ranges.Add(device_addr, size);
+    if (newly_modified) {
+        device_memory.NotifyGpuAccess(device_addr, size);
+    }
 }
 
 template <class P>
@@ -1817,6 +1873,10 @@ bool BufferCache<P>::SynchronizeBuffer(Buffer& buffer, DAddr device_addr, u32 si
 template <class P>
 void BufferCache<P>::UploadMemory(Buffer& buffer, u64 total_size_bytes, u64 largest_copy,
                                   std::span<BufferCopy> copies) {
+    // Before the guest bytes are read, so a store racing the upload is seen again.
+    for (const BufferCopy& copy : copies) {
+        device_memory.NotifyGpuAccess(buffer.CpuAddr() + copy.dst_offset, copy.size);
+    }
     if constexpr (USE_MEMORY_MAPS_FOR_UPLOADS) {
         MappedUploadMemory(buffer, total_size_bytes, copies);
     } else {

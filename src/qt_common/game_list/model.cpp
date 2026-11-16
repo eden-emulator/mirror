@@ -158,6 +158,11 @@ void GameListModel::RemoveFavorite(u64 program_id) {
 }
 
 void GameListModel::Repopulate() {
+    // The running title reads the content providers CreateFactories replaces, and the
+    // watched NAND and SD directories change while it boots.
+    if (QtCommon::system->IsPoweredOn()) {
+        return;
+    }
     current_worker.reset();
     QtCommon::system->GetFileSystemController().CreateFactories(*QtCommon::vfs);
     PopulateAsync(UISettings::values.game_dirs);

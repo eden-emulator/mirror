@@ -25,6 +25,7 @@
 #include "core/core.h"
 #include "core/device_memory.h"
 #include "core/gpu_dirty_memory_manager.h"
+#include "core/arm/arm_interface.h"
 #include "core/hardware_properties.h"
 #include "core/hle/kernel/k_page_table.h"
 #include "core/hle/kernel/k_process.h"
@@ -684,7 +685,28 @@ struct Memory::Impl {
         if (!gpu_device_memory) [[unlikely]] {
             gpu_device_memory = &system.Host1x().MemoryManager();
         }
-        const size_t core = system.GetCurrentHostThreadID();
+        // Host thread ids 0-3 are the core threads, everything else (services,
+        // GPU, audio) gets an id above that. Both arrays here are NUM_CPU_CORES
+        // long so the raw id ran off the end of them: read_areas[4] lands in
+        // rasterizer_write_areas and eats another core's dirty state, and
+        // scratch_buffers[4] lands on gpu_dirty_managers and sys_core_guard,
+        // where a resize would free a pointer read out of the span.
+        //
+        // HandleRasterizerWrite and InvalidateGPUMemory already clamp, this one
+        // was missed.
+        constexpr size_t sys_core = Core::Hardware::NUM_CPU_CORES - 1;
+        const size_t core = (std::min)(system.GetCurrentHostThreadID(), sys_core);
+
+        // Guard on sys_core: every non-core thread now shares that one slot.
+        if (core == sys_core) [[unlikely]] {
+            sys_core_guard.lock();
+        }
+        SCOPE_EXIT {
+            if (core == sys_core) [[unlikely]] {
+                sys_core_guard.unlock();
+            }
+        };
+
         auto& current_area = rasterizer_read_areas[core];
         gpu_device_memory->ApplyOpOnPointer(p, scratch_buffers[core], [&](DAddr address) {
             const DAddr end_address = address + size;
@@ -738,6 +760,35 @@ struct Memory::Impl {
     struct GPUDirtyState {
         PAddr last_address;
     };
+
+    /// What a JIT load or store of the range does to the GPU caches, for a backend that runs
+    /// guest code natively and only sees its first access to a page.
+    void SynchronizeGPUMemoryForAccess(const u8* p, size_t size, bool for_write) {
+        constexpr size_t sys_core = Core::Hardware::NUM_CPU_CORES - 1;
+        const size_t core = (std::min)(system.GetCurrentHostThreadID(), sys_core);
+        if (!gpu_device_memory) [[unlikely]] {
+            gpu_device_memory = &system.Host1x().MemoryManager();
+        }
+        if (core == sys_core) [[unlikely]] {
+            sys_core_guard.lock();
+        }
+        SCOPE_EXIT {
+            if (core == sys_core) [[unlikely]] {
+                sys_core_guard.unlock();
+            }
+        };
+        auto& gpu = system.GPU();
+        gpu_device_memory->ApplyOpOnPointer(p, scratch_buffers[core], [&](DAddr address) {
+            if (for_write) {
+                // The CPU write wins and nothing is downloaded, as for a collected JIT store.
+                gpu.InvalidateRegion(address, size);
+            } else {
+                // Waits for what the GPU wrote only the first time; the image is downloaded
+                // at every fence after that. The caches keep their copy, unlike a store.
+                static_cast<void>(gpu.OnCPURead(address, size));
+            }
+        });
+    }
 
     bool TryInvalidateGPUMemory(const u8* p, size_t size) {
         constexpr size_t sys_core = Core::Hardware::NUM_CPU_CORES - 1;
@@ -957,12 +1008,60 @@ Result Memory::FlushDataCache(Common::ProcessAddress dest_addr, const std::size_
     return impl->FlushDataCache(dest_addr, size);
 }
 
+void Memory::RasterizerNotifyGpuAccess(Common::ProcessAddress vaddr, u64 size) {
+    if (!ArmInterface::AnyWatchedPages()) {
+        return;
+    }
+    auto* const process = system.ApplicationProcess();
+    if (process == nullptr) {
+        return;
+    }
+    for (size_t i = 0; i < Core::Hardware::NUM_CPU_CORES; i++) {
+        if (auto* const interface = process->GetArmInterface(i)) {
+            interface->OnGpuAccess(GetInteger(vaddr), size);
+        }
+    }
+}
+
+bool Memory::IsRasterizerCached(Common::ProcessAddress vaddr) const {
+    bool cached = false;
+    [[maybe_unused]] const u8* const ignored =
+        impl->GetPointerImpl(GetInteger(vaddr), [] {}, [&] { cached = true; });
+    return cached;
+}
+
 void Memory::RasterizerMarkRegionCached(Common::ProcessAddress vaddr, u64 size, bool cached) {
     impl->RasterizerMarkRegionCached(GetInteger(vaddr), size, cached);
+
+    if (!ArmInterface::AnyBackendWantsMappingNotifications() ||
+        !ArmInterface::WantsRasterizerTracking()) {
+        return;
+    }
+    auto* const process = system.ApplicationProcess();
+    if (process == nullptr) {
+        return;
+    }
+    for (size_t i = 0; i < Core::Hardware::NUM_CPU_CORES; i++) {
+        if (auto* const interface = process->GetArmInterface(i)) {
+            interface->InvalidateMapping(GetInteger(vaddr), size);
+        }
+    }
 }
 
 void Memory::MarkRegionDebug(Common::ProcessAddress vaddr, u64 size, bool debug) {
     impl->MarkRegionDebug(GetInteger(vaddr), size, debug);
+}
+
+bool Memory::SynchronizeRasterizerMemoryForAccess(Common::ProcessAddress vaddr, size_t size,
+                                                  bool for_write) {
+    bool mapped = true;
+    bool rasterizer = false;
+    u8* const ptr = impl->GetPointerImpl(
+        GetInteger(vaddr), [&] { mapped = false; }, [&] { rasterizer = true; });
+    if (rasterizer) {
+        impl->SynchronizeGPUMemoryForAccess(ptr, size, for_write);
+    }
+    return mapped && ptr != nullptr;
 }
 
 NCEAccessFaultAction Memory::InvalidateNCE(Common::ProcessAddress vaddr, size_t size) {

@@ -40,6 +40,7 @@
 #include "yuzu/configuration/configure_graphics.h"
 #include "yuzu/configuration/configure_graphics_advanced.h"
 #include "yuzu/configuration/configure_graphics_extensions.h"
+#include "yuzu/configuration/configure_graphics_metal.h"
 #include "yuzu/configuration/configure_input_per_game.h"
 #include "yuzu/configuration/configure_modern_per_game.h"
 #include "yuzu/configuration/configure_network.h"
@@ -94,6 +95,7 @@ ConfigurePerGame::ConfigurePerGame(QWidget* parent, u64 title_id_, const std::st
         std::make_unique<ConfigureGraphicsAdvanced>(system_, tab_group, *builder, this);
     graphics_extensions_tab =
         std::make_unique<ConfigureGraphicsExtensions>(system_, tab_group, *builder, this);
+    graphics_metal_tab = std::make_unique<ConfigureGraphicsMetal>(system_, tab_group, *builder, this);
     graphics_tab = std::make_unique<ConfigureGraphics>(
         system_, vk_device_records, [&]() { graphics_advanced_tab->ExposeComputeOption(); },
         [](Settings::AspectRatio, Settings::ResolutionSetup) {}, tab_group, *builder, this);
@@ -111,6 +113,7 @@ ConfigurePerGame::ConfigurePerGame(QWidget* parent, u64 title_id_, const std::st
     ui->tabWidget->addTab(graphics_tab.get(), tr("Graphics"));
     ui->tabWidget->addTab(graphics_advanced_tab.get(), tr("Adv. Graphics"));
     ui->tabWidget->addTab(graphics_extensions_tab.get(), tr("Ext. Graphics"));
+    ui->tabWidget->addTab(graphics_metal_tab.get(), tr("Metal"));
     ui->tabWidget->addTab(audio_tab.get(), tr("Audio"));
     ui->tabWidget->addTab(input_tab.get(), tr("Input Profiles"));
     ui->tabWidget->addTab(network_tab.get(), tr("Network"));

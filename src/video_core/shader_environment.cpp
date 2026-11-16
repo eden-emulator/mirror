@@ -40,6 +40,12 @@ static u64 MakeCbufKey(u32 index, u32 offset) {
 }
 
 static Shader::TextureType ConvertTextureType(const Tegra::Texture::TICEntry& entry) {
+    // A descriptor the guest has not written yet reads as zero, and type zero is 1D. Baking
+    // that into the shader makes its size queries return a height of one for the 2D
+    // texture bound later, which smears whole passes into vertical streaks.
+    if (entry.Address() == 0 && entry.texture_type == Tegra::Texture::TextureType::Texture1D) {
+        return Shader::TextureType::Color2D;
+    }
     switch (entry.texture_type) {
     case Tegra::Texture::TextureType::Texture1D:
         return Shader::TextureType::Color1D;
@@ -458,7 +464,7 @@ u32 ComputeEnvironment::ReadViewportTransformState() {
     return viewport_transform_state;
 }
 
-void FileEnvironment::Deserialize(std::ifstream& file) {
+void FileEnvironment::Deserialize(std::ifstream& file, u64 end) {
     u64 code_size{};
     u64 num_texture_types{};
     u64 num_texture_pixel_formats{};
@@ -478,6 +484,23 @@ void FileEnvironment::Deserialize(std::ifstream& file) {
         .read(reinterpret_cast<char*>(&read_highest), sizeof(read_highest))
         .read(reinterpret_cast<char*>(&viewport_transform_state), sizeof(viewport_transform_state))
         .read(reinterpret_cast<char*>(&stage), sizeof(stage));
+
+    const auto position = file.tellg();
+    if (position < 0) {
+        throw std::ios_base::failure("Unreadable shader environment in pipeline cache");
+    }
+    const u64 remaining = end - static_cast<u64>(position);
+    const u64 claimed = code_size + num_texture_types * (sizeof(u32) + sizeof(Shader::TextureType)) +
+                        num_texture_pixel_formats * (sizeof(u32) + sizeof(Shader::TexturePixelFormat)) +
+                        num_cbuf_values * (sizeof(u64) + sizeof(u32)) +
+                        num_cbuf_replacement_values * (sizeof(u64) + sizeof(Shader::ReplaceConstant));
+    if (claimed > remaining) {
+        LOG_ERROR(Common_Filesystem,
+                  "Shader environment claims {} bytes with {} left in the pipeline cache",
+                  claimed, remaining);
+        throw std::ios_base::failure("Corrupt shader environment in pipeline cache");
+    }
+
     code.resize(Common::DivCeil(code_size, sizeof(u64)));
     file.read(reinterpret_cast<char*>(code.data()), code_size);
     for (size_t i = 0; i < num_texture_types; ++i) {
@@ -662,9 +685,24 @@ void LoadPipelines(
         }
         u32 num_envs{};
         file.read(reinterpret_cast<char*>(&num_envs), sizeof(num_envs));
+
+        constexpr u64 MINIMUM_ENVIRONMENT_BYTES = 32;
+        const u64 remaining = static_cast<u64>(end - file.tellg());
+        if (num_envs == 0 || num_envs > remaining / MINIMUM_ENVIRONMENT_BYTES) {
+            LOG_ERROR(Common_Filesystem,
+                      "Pipeline cache claims {} shader environments with {} bytes left; treating it as corrupt",
+                      num_envs, remaining);
+            file.close();
+            if (!Common::FS::RemoveFile(filename)) {
+                LOG_ERROR(Common_Filesystem, "Failed to delete pipeline cache file {}",
+                          Common::FS::PathToUTF8String(filename));
+            }
+            return;
+        }
+
         std::vector<FileEnvironment> envs(num_envs);
         for (FileEnvironment& env : envs) {
-            env.Deserialize(file);
+            env.Deserialize(file, static_cast<u64>(end));
         }
         if (envs.front().ShaderStage() == Shader::Stage::Compute) {
             load_compute(file, std::move(envs.front()));

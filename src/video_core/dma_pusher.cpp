@@ -74,16 +74,24 @@ bool DmaPusher::Step() {
     }
 
     if (header.size > 0) {
+        bool gpu_written_macro_payload = false;
         if (subchannels[dma_state.subchannel] && dma_state.method_count) {
             const auto engine = subchannel_type[dma_state.subchannel];
             const bool kepler_payload = engine == Engines::EngineTypes::KeplerCompute && dma_state.method == ComputeInline && dma_state.non_incrementing;
             const bool macro_payload = engine == Engines::EngineTypes::Maxwell3D && dma_state.method >= MacroRegistersStart;
             if (kepler_payload || macro_payload) {
                 const size_t words = std::min<size_t>(dma_state.method_count, header.size);
-                subchannels[dma_state.subchannel]->current_dirty = memory_manager.IsMemoryDirty(dma_state.dma_get, words * sizeof(u32));
+                const bool dirty = memory_manager.IsMemoryDirty(dma_state.dma_get, words * sizeof(u32));
+                subchannels[dma_state.subchannel]->current_dirty = dirty;
+                gpu_written_macro_payload = macro_payload && dirty;
             }
         }
-        const bool use_safe = Settings::IsDMALevelDefault() ? Settings::IsGPULevelHigh() : Settings::IsDMALevelSafe();
+        // Macro parameters the GPU wrote, typically indirect draw arguments. The HLE macros
+        // read them on the GPU and every other path calls RefreshParameters, which reads
+        // them back itself, so flushing here only drains the GPU once per command list.
+        const bool use_safe = !gpu_written_macro_payload &&
+                              (Settings::IsDMALevelDefault() ? Settings::IsGPULevelHigh()
+                                                             : Settings::IsDMALevelSafe());
         if (use_safe) {
             Tegra::Memory::GpuGuestMemory<Tegra::CommandHeader, Tegra::Memory::GuestMemoryFlags::SafeRead>headers(memory_manager, dma_state.dma_get, header.size, &command_headers);
             ProcessCommands(headers);

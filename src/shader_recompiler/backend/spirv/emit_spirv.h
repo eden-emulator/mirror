@@ -33,6 +33,33 @@ constexpr u32 RESCALING_LAYOUT_WORDS_OFFSET = offsetof(RescalingLayout, rescalin
 constexpr u32 RESCALING_LAYOUT_DOWN_FACTOR_OFFSET = offsetof(RescalingLayout, down_factor);
 constexpr u32 RENDERAREA_LAYOUT_OFFSET = offsetof(RenderAreaLayout, render_area);
 
+constexpr u32 GEOMETRY_AS_COMPUTE_LOCAL_SIZE = 32;
+constexpr u32 GEOMETRY_AS_COMPUTE_DESCRIPTOR_SET = 1;
+
+[[nodiscard]] constexpr u32 GeometryAsComputeOutputStride(u32 generic_count) noexcept {
+    return 1 + generic_count;
+}
+
+[[nodiscard]] constexpr u32 GeometryAsComputeOutputCapacity(u32 output_vertices) noexcept {
+    return ((output_vertices < 3 ? 3 : output_vertices) - 2) * 3;
+}
+
+[[nodiscard]] constexpr u32 GeometryAsComputeInputVertices(InputTopology topology) noexcept {
+    switch (topology) {
+    case InputTopology::Lines:
+        return 2;
+    case InputTopology::LinesAdjacency:
+        return 4;
+    case InputTopology::Triangles:
+        return 3;
+    case InputTopology::TrianglesAdjacency:
+        return 6;
+    case InputTopology::Points:
+    default:
+        return 1;
+    }
+}
+
 [[nodiscard]] std::vector<u32> EmitSPIRV(const Profile& profile, const RuntimeInfo& runtime_info, IR::Program& program, Bindings& bindings);
 [[nodiscard]] inline std::vector<u32> EmitSPIRV(const Profile& profile, IR::Program& program) {
     Bindings binding;

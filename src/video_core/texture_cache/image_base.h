@@ -105,6 +105,8 @@ struct ImageBase {
     VAddr cpu_addr_end = 0;
 
     u64 modification_tick = 0;
+    /// Async flush period this image was last queued for a preemptive download in.
+    u64 preemptive_download_epoch = ~u64{0};
     size_t lru_index = SIZE_MAX;
 
     std::array<u32, MAX_MIP_LEVELS> mip_level_offsets{};

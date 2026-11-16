@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 Eden Emulator Project
+// SPDX-FileCopyrightText: Copyright 2026 Eden Emulator Project
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
@@ -11,6 +11,7 @@
 
 #include "common/common_types.h"
 #include "video_core/texture_cache/decode_bc.h"
+#include "video_core/texture_cache/expand_format.h"
 
 namespace VideoCommon {
 
@@ -47,6 +48,9 @@ constexpr u32 BlockSize(PixelFormat pixel_format) {
 } // Anonymous namespace
 
 u32 ConvertedBytesPerBlock(VideoCore::Surface::PixelFormat pixel_format) {
+    if (IsPixelFormatExpanded(pixel_format)) {
+        return ExpandedBytesPerTexel(pixel_format);
+    }
     switch (pixel_format) {
     case PixelFormat::BC4_SNORM:
     case PixelFormat::BC4_UNORM:

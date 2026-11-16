@@ -100,6 +100,11 @@ Id ImageType(EmitContext& ctx, const ImageDescriptor& desc, Id sampled_type) {
 
 Id DefineVariable(EmitContext& ctx, Id type, std::optional<spv::BuiltIn> builtin,
                   spv::StorageClass storage_class, std::optional<Id> initializer = std::nullopt) {
+    if (ctx.gs_as_compute && (storage_class == spv::StorageClass::Input ||
+                              storage_class == spv::StorageClass::Output)) {
+        const Id private_pointer{ctx.TypePointer(spv::StorageClass::Private, type)};
+        return ctx.AddGlobalVariable(private_pointer, spv::StorageClass::Private, initializer);
+    }
     const Id pointer_type{ctx.TypePointer(storage_class, type)};
     const Id id{ctx.AddGlobalVariable(pointer_type, storage_class, initializer)};
     if (builtin) {
@@ -473,8 +478,15 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
     u32& texture_binding{is_unified ? bindings.unified : bindings.texture};
     u32& image_binding{is_unified ? bindings.unified : bindings.image};
     AddCapability(spv::Capability::Shader);
+    gs_as_compute = profile.emulate_geometry_as_compute && stage == Stage::Geometry;
+    if (gs_as_compute) {
+        SetupGeometryAsCompute(program);
+    }
     DefineCommonTypes(program.info);
     DefineCommonConstants();
+    if (gs_as_compute) {
+        DefineGeometryAsComputeBuffers();
+    }
     DefineInterfaces(program);
     DefineLocalMemory(program);
     DefineSharedMemory(program);
@@ -491,6 +503,95 @@ EmitContext::EmitContext(const Profile& profile_, const RuntimeInfo& runtime_inf
     DefineGlobalMemoryFunctions(program.info);
     DefineRescalingInput(program.info);
     DefineRenderArea(program.info);
+}
+
+void EmitContext::SetupGeometryAsCompute(const IR::Program& program) {
+    gs_input_attr_index.fill(0xff);
+    u32 next{0};
+    for (u32 location = 0; location < 32; ++location) {
+        const auto attribute{static_cast<IR::Attribute>(
+            static_cast<u32>(IR::Attribute::Generic0X) + location * 4)};
+        if (runtime_info.previous_stage_stores.AnyComponent(attribute)) {
+            gs_input_attr_index[location] = static_cast<u8>(next++);
+        }
+    }
+    gs_input_position_index = next;
+    gs_input_stride = next + 1;
+
+    u32 generic_count{0};
+    for (u32 location = 0; location < 32; ++location) {
+        if (program.info.stores.Generic(location)) {
+            generic_count = location + 1;
+        }
+    }
+
+    gs_output_stride = GeometryAsComputeOutputStride(generic_count);
+    gs_output_capacity = GeometryAsComputeOutputCapacity(program.output_vertices);
+}
+
+void EmitContext::DefineGeometryAsComputeBuffers() {
+    AddExtension("SPV_KHR_storage_buffer_storage_class");
+
+    gs_vec4_ptr = TypePointer(spv::StorageClass::StorageBuffer, F32[4]);
+
+    const auto define_buffer{[&](std::string_view name, u32 binding, bool readonly) {
+        const Id array_type{TypeRuntimeArray(F32[4])};
+        Decorate(array_type, spv::Decoration::ArrayStride, 16U);
+        const Id struct_type{TypeStruct(array_type)};
+        Name(struct_type, name);
+        Decorate(struct_type, spv::Decoration::Block);
+        MemberName(struct_type, 0, "data");
+        MemberDecorate(struct_type, 0, spv::Decoration::Offset, 0U);
+        const Id pointer{TypePointer(spv::StorageClass::StorageBuffer, struct_type)};
+        const Id id{AddGlobalVariable(pointer, spv::StorageClass::StorageBuffer)};
+        Decorate(id, spv::Decoration::Binding, binding);
+        // Descriptor set 1, deliberately: the guest's own resources live in set
+        // 0 and go through an argument buffer. Set 1 is marked discrete on the
+        // MSL side so these two get plain buffer bindings the backend can bind
+        // directly, without having to build an argument buffer for them.
+        Decorate(id, spv::Decoration::DescriptorSet, 1U);
+        if (readonly) {
+            Decorate(id, spv::Decoration::NonWritable);
+        }
+        interfaces.push_back(id);
+        return id;
+    }};
+
+    gs_input_buffer = define_buffer("gs_captured_vertices", 0, true);
+    gs_output_buffer = define_buffer("gs_emitted_vertices", 1, false);
+
+    // Declared here rather than through DefineInput: that redirects Input to
+    // Private for this lowering, which is right for the guest's varyings and
+    // wrong for the one builtin the kernel genuinely needs.
+    const Id global_id_ptr{TypePointer(spv::StorageClass::Input, U32[3])};
+    gs_global_id = AddGlobalVariable(global_id_ptr, spv::StorageClass::Input);
+    Decorate(gs_global_id, spv::Decoration::BuiltIn,
+             static_cast<unsigned>(spv::BuiltIn::GlobalInvocationId));
+    Name(gs_global_id, "gs_global_id");
+    interfaces.push_back(gs_global_id);
+
+    const Id private_vec4{TypePointer(spv::StorageClass::Private, F32[4])};
+    const auto private_uint{[&] {
+        return AddGlobalVariable(private_u32, spv::StorageClass::Private, u32_zero_value);
+    }};
+    gs_emitted = private_uint();
+    gs_written = private_uint();
+    gs_primitive = private_uint();
+    Name(gs_emitted, "gs_emitted");
+    Name(gs_written, "gs_written");
+    Name(gs_primitive, "gs_primitive");
+
+    // The three most recently emitted vertices, kept so a strip can be
+    // flattened into independent triangles as it is produced.
+    const Id vertex_array{TypeArray(F32[4], Const(gs_output_stride))};
+    const Id vertex_array_ptr{TypePointer(spv::StorageClass::Private, vertex_array)};
+    gs_prev0 = AddGlobalVariable(vertex_array_ptr, spv::StorageClass::Private);
+    gs_prev1 = AddGlobalVariable(vertex_array_ptr, spv::StorageClass::Private);
+    gs_prev2 = AddGlobalVariable(vertex_array_ptr, spv::StorageClass::Private);
+    Name(gs_prev0, "gs_prev0");
+    Name(gs_prev1, "gs_prev1");
+    Name(gs_prev2, "gs_prev2");
+    static_cast<void>(private_vec4);
 }
 
 EmitContext::~EmitContext() = default;
@@ -544,12 +645,20 @@ void EmitContext::DefineCommonTypes(const Info& info) {
 
     private_u32 = Name(TypePointer(spv::StorageClass::Private, U32[1]), "private_u32");
 
-    input_f32 = Name(TypePointer(spv::StorageClass::Input, F32[1]), "input_f32");
-    input_u32 = Name(TypePointer(spv::StorageClass::Input, U32[1]), "input_u32");
-    input_s32 = Name(TypePointer(spv::StorageClass::Input, TypeInt(32, true)), "input_s32");
+    // DefineVariable redirects Input/Output globals to Private when a geometry
+    // program is being lowered to compute, so the element pointer types every
+    // access chain is built with have to follow, or nothing type-checks.
+    const spv::StorageClass in_class{gs_as_compute ? spv::StorageClass::Private
+                                                   : spv::StorageClass::Input};
+    const spv::StorageClass out_class{gs_as_compute ? spv::StorageClass::Private
+                                                    : spv::StorageClass::Output};
 
-    output_f32 = Name(TypePointer(spv::StorageClass::Output, F32[1]), "output_f32");
-    output_u32 = Name(TypePointer(spv::StorageClass::Output, U32[1]), "output_u32");
+    input_f32 = Name(TypePointer(in_class, F32[1]), "input_f32");
+    input_u32 = Name(TypePointer(in_class, U32[1]), "input_u32");
+    input_s32 = Name(TypePointer(in_class, TypeInt(32, true)), "input_s32");
+
+    output_f32 = Name(TypePointer(out_class, F32[1]), "output_f32");
+    output_u32 = Name(TypePointer(out_class, U32[1]), "output_u32");
 
     if (info.uses_int8 && profile.support_int8) {
         AddCapability(spv::Capability::Int8);
@@ -946,6 +1055,12 @@ void EmitContext::DefineGlobalMemoryFunctions(const Info& info) {
     }
     using DefPtr = Id StorageDefinitions::*;
     const Id zero{u32_zero_value};
+    // Pointer to a single word of the vec4-only constant buffer view; see the
+    // no-aliasing branch in define_body below. Sirit dedupes types, so asking
+    // for it here costs nothing when it already exists.
+    const Id uniform_u32_pointer{profile.support_descriptor_aliasing
+                                     ? Id{}
+                                     : TypePointer(spv::StorageClass::Uniform, U32[1])};
     const auto define_body{[&](DefPtr ssbo_member, Id addr, Id element_pointer, u32 shift,
                                auto&& callback) {
         AddLabel();
@@ -955,17 +1070,39 @@ void EmitContext::DefineGlobalMemoryFunctions(const Info& info) {
                 continue;
             }
             const auto& ssbo{info.storage_buffers_descriptors[index]};
-            const Id ssbo_addr_cbuf_offset{Const(ssbo.cbuf_offset / 8)};
-            const Id ssbo_size_cbuf_offset{Const(ssbo.cbuf_offset / 4 + 2)};
-            const Id ssbo_addr_pointer{OpAccessChain(
-                uniform_types.U32x2, cbufs[ssbo.cbuf_index].U32x2, zero, ssbo_addr_cbuf_offset)};
-            const Id ssbo_size_pointer{OpAccessChain(uniform_types.U32, cbufs[ssbo.cbuf_index].U32,
-                                                     zero, ssbo_size_cbuf_offset)};
-
             const u64 ssbo_align_mask{~(profile.min_ssbo_alignment - 1U)};
-            const Id unaligned_addr{OpBitcast(U64, OpLoad(U32[2], ssbo_addr_pointer))};
+            Id unaligned_addr{};
+            Id ssbo_size{};
+            if (profile.support_descriptor_aliasing) {
+                const Id ssbo_addr_cbuf_offset{Const(ssbo.cbuf_offset / 8)};
+                const Id ssbo_size_cbuf_offset{Const(ssbo.cbuf_offset / 4 + 2)};
+                const Id ssbo_addr_pointer{OpAccessChain(uniform_types.U32x2,
+                                                         cbufs[ssbo.cbuf_index].U32x2, zero,
+                                                         ssbo_addr_cbuf_offset)};
+                const Id ssbo_size_pointer{OpAccessChain(
+                    uniform_types.U32, cbufs[ssbo.cbuf_index].U32, zero, ssbo_size_cbuf_offset)};
+                unaligned_addr = OpBitcast(U64, OpLoad(U32[2], ssbo_addr_pointer));
+                ssbo_size = OpUConvert(U64, OpLoad(U32[1], ssbo_size_pointer));
+            } else {
+                // Without descriptor aliasing the constant buffer exists ONLY as
+                // a vec4 array - DefineConstantBuffers returns right after
+                // defining U32x4 - so cbufs[].U32x2 and cbufs[].U32 are invalid
+                // ids. Passing an invalid id to OpAccessChain aborts inside
+                // Sirit and takes the process with it, which killed the emulator
+                // on Metal for every shader reaching the global-memory fallback.
+                // Read the same words as components of the vec4 view instead.
+                const auto load_cbuf_u32{[&](u32 byte_offset) {
+                    const Id pointer{OpAccessChain(
+                        uniform_u32_pointer, cbufs[ssbo.cbuf_index].U32x4, zero,
+                        Const(byte_offset / 16), Const((byte_offset % 16) / 4))};
+                    return OpLoad(U32[1], pointer);
+                }};
+                const Id addr_low{load_cbuf_u32(ssbo.cbuf_offset)};
+                const Id addr_high{load_cbuf_u32(ssbo.cbuf_offset + 4)};
+                unaligned_addr = OpBitcast(U64, OpCompositeConstruct(U32[2], addr_low, addr_high));
+                ssbo_size = OpUConvert(U64, load_cbuf_u32(ssbo.cbuf_offset + 8));
+            }
             const Id ssbo_addr{OpBitwiseAnd(U64, unaligned_addr, Constant(U64, ssbo_align_mask))};
-            const Id ssbo_size{OpUConvert(U64, OpLoad(U32[1], ssbo_size_pointer))};
             const Id ssbo_end{OpIAdd(U64, ssbo_addr, ssbo_size)};
             const Id cond{OpLogicalAnd(U1, OpUGreaterThanEqual(U1, addr, ssbo_addr),
                                        OpULessThan(U1, addr, ssbo_end))};
@@ -1013,12 +1150,62 @@ void EmitContext::DefineGlobalMemoryFunctions(const Info& info) {
             const Id write_func{define_write(ssbo_member, element_type, type, shift)};
             return std::make_pair(load_func, write_func);
         }};
+    // A backend without descriptor aliasing declares every storage buffer as a
+    // U32 array and nothing else: DefineStorageBuffers narrows used_types to
+    // IR::Type::U32, so storage_types.U32x2 and .U32x4 are never defined and
+    // their element ids stay invalid. Building the wide accessors from them fed
+    // OpAccessChain an invalid id, which aborts inside Sirit and takes the whole
+    // process down - on Metal (support_descriptor_aliasing = false) that killed
+    // the emulator for every shader reaching the global-memory fallback.
+    // Synthesize them from the 32-bit accessors instead, which are always
+    // defined because used_types is unconditionally OR'd with U32.
+    const auto define_wide_from_u32{[&](Id type, u32 num_components) {
+        const Id load_function_type{TypeFunction(type, U64)};
+        const Id load_func{
+            OpFunction(type, spv::FunctionControlMask::MaskNone, load_function_type)};
+        const Id load_addr{OpFunctionParameter(U64)};
+        AddLabel();
+        std::array<Id, 4> components{};
+        for (u32 i = 0; i < num_components; ++i) {
+            const Id offset{Constant(U64, static_cast<u64>(i) * sizeof(u32))};
+            components[i] = OpFunctionCall(U32[1], load_global_func_u32,
+                                           OpIAdd(U64, load_addr, offset));
+        }
+        OpReturnValue(num_components == 2
+                          ? OpCompositeConstruct(type, components[0], components[1])
+                          : OpCompositeConstruct(type, components[0], components[1],
+                                                 components[2], components[3]));
+        OpFunctionEnd();
+
+        const Id write_function_type{TypeFunction(void_id, U64, type)};
+        const Id write_func{
+            OpFunction(void_id, spv::FunctionControlMask::MaskNone, write_function_type)};
+        const Id write_addr{OpFunctionParameter(U64)};
+        const Id data{OpFunctionParameter(type)};
+        AddLabel();
+        for (u32 i = 0; i < num_components; ++i) {
+            const Id offset{Constant(U64, static_cast<u64>(i) * sizeof(u32))};
+            OpFunctionCall(void_id, write_global_func_u32, OpIAdd(U64, write_addr, offset),
+                           OpCompositeExtract(U32[1], data, i));
+        }
+        OpReturn();
+        OpFunctionEnd();
+        return std::make_pair(load_func, write_func);
+    }};
+    const auto define_wide{[&](DefPtr ssbo_member, const StorageTypeDefinition& type_def, Id type,
+                               size_t size, u32 num_components) {
+        if (!Sirit::ValidId(type_def.element)) {
+            return define_wide_from_u32(type, num_components);
+        }
+        return define(ssbo_member, type_def, type, size);
+    }};
+
     std::tie(load_global_func_u32, write_global_func_u32) =
         define(&StorageDefinitions::U32, storage_types.U32, U32[1], sizeof(u32));
     std::tie(load_global_func_u32x2, write_global_func_u32x2) =
-        define(&StorageDefinitions::U32x2, storage_types.U32x2, U32[2], sizeof(u32[2]));
+        define_wide(&StorageDefinitions::U32x2, storage_types.U32x2, U32[2], sizeof(u32[2]), 2);
     std::tie(load_global_func_u32x4, write_global_func_u32x4) =
-        define(&StorageDefinitions::U32x4, storage_types.U32x4, U32[4], sizeof(u32[4]));
+        define_wide(&StorageDefinitions::U32x4, storage_types.U32x4, U32[4], sizeof(u32[4]), 4);
 }
 
 void EmitContext::DefineRescalingInput(const Info& info) {

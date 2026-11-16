@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <random>
+#include "common/logging.h"
 #include "common/scope_exit.h"
 #include "common/settings.h"
 #include "core/arm/dynarmic/arm_dynarmic.h"
@@ -22,6 +23,9 @@
 #include "core/arm/dynarmic/arm_dynarmic_64.h"
 #ifdef HAS_NCE
 #include "core/arm/nce/arm_nce.h"
+#endif
+#ifdef HAS_HYPERVISOR
+#include "core/arm/hypervisor/arm_hypervisor.h"
 #endif
 
 namespace Kernel {
@@ -1306,6 +1310,25 @@ void KProcess::InitializeInterfaces(KernelCore& kernel) {
     m_exclusive_monitor =
         Core::MakeExclusiveMonitor(this->GetMemory(), Core::Hardware::NUM_CPU_CORES);
 
+#ifdef HAS_HYPERVISOR
+    const bool wants_hypervisor =
+        this->IsApplication() && this->Is64Bit() && Settings::IsHypervisorEnabled();
+    if (wants_hypervisor && !kernel.IsMulticore()) {
+        LOG_WARNING(Kernel, "Hypervisor backend requires multicore; falling back to dynarmic");
+    }
+    const bool use_hypervisor =
+        wants_hypervisor && kernel.IsMulticore() && Core::ArmHypervisor::IsAvailable();
+    if (wants_hypervisor && kernel.IsMulticore() && !use_hypervisor) {
+        LOG_ERROR(Kernel,
+                  "Hypervisor backend was selected but is unavailable; running dynarmic instead");
+    }
+    if (use_hypervisor) {
+        for (size_t i = 0; i < Core::Hardware::NUM_CPU_CORES; i++) {
+            m_arm_interfaces[i] = std::make_unique<Core::ArmHypervisor>(
+                kernel.System(), kernel.IsMulticore(), this, i);
+        }
+    } else
+#endif
 #ifdef HAS_NCE
     if (this->IsApplication() && Settings::IsNceEnabled()) {
         for (size_t i = 0; i < Core::Hardware::NUM_CPU_CORES; i++)

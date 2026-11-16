@@ -469,6 +469,9 @@ void ConfigureGraphics::ApplyConfiguration() {
             Settings::values.vulkan_device.SetGlobal(Settings::IsConfiguringGlobal());
             Settings::values.vulkan_device.SetValue(vulkan_device_combobox->currentIndex());
             break;
+        case Settings::RendererBackend::Metal:
+            // NOTE: Metal  reuses vulkan_device as a generic GPU index and always picks device 0.
+            // So, Multi-GPU Mac selection does not work but I think that is not necessary?
         case Settings::RendererBackend::OpenGL_GLSL:
         case Settings::RendererBackend::OpenGL_SPIRV:
         case Settings::RendererBackend::OpenGL_GLASM:

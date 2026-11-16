@@ -101,6 +101,20 @@ public:
     // _1: No offset variant, _2: Post-index variant
     bool STx_mult_1(bool Q, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt) override;
     bool STx_mult_2(bool Q, Reg Rm, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt) override;
+    bool ST1_sngl_1(bool Q, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn, Vec Vt) override;
+    bool ST1_sngl_2(bool Q, Reg Rm, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn,
+                    Vec Vt) override;
+    bool ST2_sngl_1(bool Q, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn, Vec Vt) override;
+    bool ST2_sngl_2(bool Q, Reg Rm, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn,
+                    Vec Vt) override;
+    bool ST3_sngl_1(bool Q, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn, Vec Vt) override;
+    bool ST3_sngl_2(bool Q, Reg Rm, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn,
+                    Vec Vt) override;
+    bool ST4_sngl_1(bool Q, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn, Vec Vt) override;
+    bool ST4_sngl_2(bool Q, Reg Rm, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn,
+                    Vec Vt) override;
+    bool StoreSingleStructure(bool wback, Reg Rm, size_t selem, bool Q, Imm<2> upper_opcode,
+                              bool S, Imm<2> size, Reg Rn, Vec Vt);
 
 private:
     size_t StoreMultipleStructures(bool Q, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt);
@@ -111,7 +125,14 @@ private:
     const u64& m_pc;
 };
 
+std::optional<u64> MatchAndExecuteOneInstruction(Core::Memory::Memory& memory,
+                                                 std::span<u64, 31> regs,
+                                                 std::span<u128, 32> fpsimd_regs, u64& sp,
+                                                 u64 pc);
+
+#ifdef __linux__
 std::optional<u64> MatchAndExecuteOneInstruction(Core::Memory::Memory& memory, mcontext_t* context,
                                                  fpsimd_context* fpsimd_context);
+#endif
 
 } // namespace Core

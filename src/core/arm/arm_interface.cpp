@@ -11,6 +11,10 @@
 
 namespace Core {
 
+std::atomic<bool> ArmInterface::s_wants_mapping_notifications{false};
+std::atomic<bool> ArmInterface::s_wants_rasterizer_tracking{false};
+std::atomic<s64> ArmInterface::s_watched_pages{0};
+
 void ArmInterface::LogBacktrace(Kernel::KProcess* process) const {
     Kernel::Svc::ThreadContext ctx;
     this->GetContext(ctx);

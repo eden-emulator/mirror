@@ -263,6 +263,12 @@ void DefineEntryPoint(const IR::Program& program, EmitContext& ctx, Id main) {
                                        : spv::ExecutionMode::VertexOrderCcw);
         break;
     case Stage::Geometry:
+        if (ctx.gs_as_compute) {
+            execution_model = spv::ExecutionModel::GLCompute;
+            ctx.AddExecutionMode(main, spv::ExecutionMode::LocalSize,
+                                 GEOMETRY_AS_COMPUTE_LOCAL_SIZE, 1u, 1u);
+            break;
+        }
         execution_model = spv::ExecutionModel::Geometry;
         ctx.AddCapability(spv::Capability::Geometry);
         if (ctx.profile.support_geometry_streams) {

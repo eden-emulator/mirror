@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <span>
 #include <string>
 #include <vector>
@@ -72,6 +73,39 @@ public:
     // Clear a range of the instruction cache for this CPU.
     virtual void InvalidateCacheRange(u64 addr, std::size_t size) = 0;
 
+    // Drop any cached translation of a guest range whose mapping or tracking changed. Only
+    // backends that map guest memory themselves need it, see SetWantsMappingNotifications.
+    virtual void InvalidateMapping(u64 addr, std::size_t size) {}
+
+    [[nodiscard]] static bool AnyBackendWantsMappingNotifications() {
+        return s_wants_mapping_notifications.load(std::memory_order_relaxed);
+    }
+
+    [[nodiscard]] static bool WantsRasterizerTracking() {
+        return s_wants_rasterizer_tracking.load(std::memory_order_relaxed);
+    }
+
+    static void SetWantsMappingNotifications() {
+        s_wants_mapping_notifications.store(true, std::memory_order_relaxed);
+    }
+
+    static void SetWantsRasterizerTracking() {
+        s_wants_rasterizer_tracking.store(true, std::memory_order_relaxed);
+    }
+
+    // The GPU wrote a range, or is about to read what the guest wrote to it. A backend that
+    // left such pages accessible without watching them drops them here, so the next access is
+    // seen again: a read gets the GPU's new data, a write marks the range dirty.
+    virtual void OnGpuAccess(u64 addr, std::size_t size) {}
+
+    [[nodiscard]] static bool AnyWatchedPages() {
+        return s_watched_pages.load(std::memory_order_relaxed) != 0;
+    }
+
+    static void AddWatchedPages(s64 delta) {
+        s_watched_pages.fetch_add(delta, std::memory_order_relaxed);
+    }
+
     // Get the current architecture.
     // This returns AArch64 when PSTATE.nRW == 0 and AArch32 when PSTATE.nRW == 1.
     virtual Architecture GetArchitecture() const = 0;
@@ -108,6 +142,9 @@ protected:
 protected:
     const WatchpointArray* m_watchpoints{};
     bool m_uses_wall_clock{};
+    static std::atomic<bool> s_wants_mapping_notifications;
+    static std::atomic<bool> s_wants_rasterizer_tracking;
+    static std::atomic<s64> s_watched_pages;
 };
 
 } // namespace Core

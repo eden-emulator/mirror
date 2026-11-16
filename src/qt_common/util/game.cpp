@@ -16,6 +16,7 @@
 #include <QStandardPaths>
 #include <QUrl>
 
+#include <format>
 #include <print>
 
 #ifdef _WIN32
@@ -247,6 +248,8 @@ void RemoveTransferableShaderCache(u64 program_id, GameListRemoveTarget target) 
             return "opengl.bin";
         case GameListRemoveTarget::VkShaderCache:
             return "vulkan.bin";
+        case GameListRemoveTarget::MtlShaderCache:
+            return "metal.bin";
         default:
             return "";
         }
@@ -285,9 +288,24 @@ void RemoveVulkanDriverPipelineCache(u64 program_id) {
     }
 }
 
+void RemoveMetalPipelineArchive(u64 program_id) {
+    const auto archive_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::ShaderDir) / "metal4" /
+                             std::format("{:016x}", program_id);
+
+    if (!Common::FS::Exists(archive_dir)) {
+        return;
+    }
+    if (!Common::FS::RemoveDirRecursively(archive_dir)) {
+        QtCommon::Frontend::Warning(tr("Error Removing Metal Pipeline Cache"),
+                                    tr("Failed to remove the Metal pipeline archive."));
+    }
+}
+
 void RemoveAllTransferableShaderCaches(u64 program_id) {
     const auto shader_cache_dir = Common::FS::GetEdenPath(Common::FS::EdenPath::ShaderDir);
     const auto program_shader_cache_dir = shader_cache_dir / std::format("{:016x}", program_id);
+
+    RemoveMetalPipelineArchive(program_id);
 
     if (!Common::FS::Exists(program_shader_cache_dir)) {
         QtCommon::Frontend::Warning(tr("Error Removing Transferable Shader Caches"),

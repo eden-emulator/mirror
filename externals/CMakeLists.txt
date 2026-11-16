@@ -440,4 +440,17 @@ if (APPLE)
 
         set(MOLTENVK_LIBRARY "${moltenvk_SOURCE_DIR}/MoltenVK/dylib/macOS/libMoltenVK.dylib" CACHE STRING "" FORCE)
     endif()
+
+    if (ENABLE_METAL)
+        AddJsonPackage(NAME metal-cpp DOWNLOAD_ONLY)
+
+        if (NOT TARGET Apple::MetalCpp)
+            add_library(metal-cpp INTERFACE)
+            target_include_directories(metal-cpp SYSTEM INTERFACE ${metal-cpp_SOURCE_DIR})
+            target_compile_features(metal-cpp INTERFACE cxx_std_17)
+            add_library(Apple::MetalCpp ALIAS metal-cpp)
+        endif()
+
+        AddJsonPackage(spirv-cross)
+    endif()
 endif()

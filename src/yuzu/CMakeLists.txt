@@ -85,6 +85,9 @@ add_executable(yuzu
     configuration/configure_graphics_extensions.cpp
     configuration/configure_graphics_extensions.h
     configuration/configure_graphics_extensions.ui
+    configuration/configure_graphics_metal.cpp
+    configuration/configure_graphics_metal.h
+    configuration/configure_graphics_metal.ui
     configuration/configure_hotkeys.cpp
     configuration/configure_hotkeys.h
     configuration/configure_hotkeys.ui
@@ -396,6 +399,22 @@ if (APPLE)
 
     set_target_properties(yuzu PROPERTIES MACOSX_BUNDLE TRUE)
     set_target_properties(yuzu PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
+
+    # Hypervisor.framework refuses an unsigned process or one without the entitlement
+    # (hv_vm_create returns HV_DENIED).
+    if (HAS_HYPERVISOR)
+        set(_entitlements "${CMAKE_SOURCE_DIR}/dist/eden.entitlements")
+        if (CMAKE_GENERATOR MATCHES "Xcode")
+            set_target_properties(yuzu PROPERTIES
+                XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${_entitlements}")
+        else()
+            add_custom_command(TARGET yuzu POST_BUILD
+                COMMAND codesign --sign - --force --entitlements "${_entitlements}"
+                        "$<TARGET_BUNDLE_DIR:yuzu>"
+                COMMENT "Signing eden with the Hypervisor entitlement"
+                VERBATIM)
+        endif()
+    endif()
 
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib")
     find_library(MOLTENVK_LIBRARY MoltenVK REQUIRED)

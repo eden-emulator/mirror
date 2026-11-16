@@ -399,6 +399,8 @@ struct Values {
     SwitchableSetting<RendererBackend, true> renderer_backend{linkage,
 #if defined(__sun__) || defined(__managarm__)
         RendererBackend::OpenGL_GLSL,
+#elif defined(__APPLE__)
+        RendererBackend::Metal,
 #else
         RendererBackend::Vulkan,
 #endif
@@ -711,6 +713,17 @@ struct Values {
 
     SwitchableSetting<bool> fix_bloom_effects{linkage, false, "fix_bloom_effects",
                                                      Category::RendererHacks};
+
+    SwitchableSetting<bool> metal_pipeline_archive{linkage, true, "metal_pipeline_archive",
+                                                   Category::RendererMetal};
+    SwitchableSetting<bool> metal_validation{linkage, false, "metal_validation",
+                                             Category::RendererMetal};
+    SwitchableSetting<bool> metal_geometry_emulation{linkage, false, "metal_geometry_emulation",
+                                                     Category::RendererMetal};
+    SwitchableSetting<bool> metal_indirect_compute{linkage, false, "metal_indirect_compute",
+                                                   Category::RendererMetal};
+    SwitchableSetting<bool> metal_transform_feedback{linkage, true, "metal_transform_feedback",
+                                                     Category::RendererMetal};
 
     SwitchableSetting<bool> emulate_bgr565{linkage, false, "emulate_bgr565",
                                             Category::RendererHacks};
@@ -1033,10 +1046,15 @@ bool IsFastmemEnabled();
 void SetNceEnabled(bool is_64bit);
 bool IsNceEnabled();
 
+void SetHypervisorEnabled(bool is_39bit);
+bool IsHypervisorEnabled();
+
 void SetCurrentProgramID(u64 program_id);
 u64 GetCurrentProgramID();
 
 bool IsOpenGL();
+
+bool IsMetal();
 
 bool IsDockedMode();
 

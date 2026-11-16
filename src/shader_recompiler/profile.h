@@ -66,6 +66,8 @@ struct Profile {
     bool support_uniform_texel_buffer_array_nonuniform_indexing{};
     bool support_storage_texel_buffer_array_nonuniform_indexing{};
 
+    bool emulate_geometry_as_compute{};
+
     bool warp_size_potentially_larger_than_guest{};
 
     bool lower_left_origin_mode{};

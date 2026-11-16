@@ -198,6 +198,102 @@ bool InterpreterVisitor::STx_mult_2(bool Q, Reg Rm, Imm<4> opcode, Imm<2> size, 
     return true;
 }
 
+bool InterpreterVisitor::StoreSingleStructure(bool wback, Reg Rm, size_t selem, bool Q,
+                                              Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn,
+                                              Vec Vt) {
+    // One lane of selem consecutive registers, lane size and index as in the Arm ARM.
+    size_t scale = upper_opcode.ZeroExtend<size_t>();
+    size_t index = 0;
+    switch (scale) {
+    case 0:
+        index = (size_t{Q} << 3) | (size_t{S} << 2) | size.ZeroExtend<size_t>();
+        break;
+    case 1:
+        if (size.Bit<0>()) {
+            return false;
+        }
+        index = (size_t{Q} << 2) | (size_t{S} << 1) | size.Bit<1>();
+        break;
+    case 2:
+        if (size.Bit<1>()) {
+            return false;
+        }
+        if (size.Bit<0>()) {
+            if (S) {
+                return false;
+            }
+            index = Q;
+            scale = 3;
+        } else {
+            index = (size_t{Q} << 1) | size_t{S};
+        }
+        break;
+    default:
+        // Replicating forms only exist for loads.
+        return false;
+    }
+    const size_t element_bytes = size_t{1} << scale;
+    std::array<u8, 32> data{};
+    for (size_t s = 0; s < selem; ++s) {
+        const Vec reg = static_cast<Vec>((static_cast<size_t>(Vt) + s) % 32);
+        const u128 value = this->GetVec(reg);
+        std::memcpy(data.data() + s * element_bytes,
+                    reinterpret_cast<const u8*>(&value) + index * element_bytes, element_bytes);
+    }
+    const size_t total = selem * element_bytes;
+    const u64 address = Rn == Reg::SP ? this->GetSp() : this->GetReg(Rn);
+    m_memory.WriteBlock(address, data.data(), total);
+    if (wback) {
+        const u64 next = address + (Rm == Reg::SP ? total : this->GetReg(Rm));
+        if (Rn == Reg::SP) {
+            this->SetSp(next);
+        } else {
+            this->SetReg(Rn, next);
+        }
+    }
+    return true;
+}
+
+bool InterpreterVisitor::ST1_sngl_1(bool Q, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn,
+                                    Vec Vt) {
+    return StoreSingleStructure(false, Reg::SP, 1, Q, upper_opcode, S, size, Rn, Vt);
+}
+
+bool InterpreterVisitor::ST1_sngl_2(bool Q, Reg Rm, Imm<2> upper_opcode, bool S, Imm<2> size,
+                                    Reg Rn, Vec Vt) {
+    return StoreSingleStructure(true, Rm, 1, Q, upper_opcode, S, size, Rn, Vt);
+}
+
+bool InterpreterVisitor::ST2_sngl_1(bool Q, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn,
+                                    Vec Vt) {
+    return StoreSingleStructure(false, Reg::SP, 2, Q, upper_opcode, S, size, Rn, Vt);
+}
+
+bool InterpreterVisitor::ST2_sngl_2(bool Q, Reg Rm, Imm<2> upper_opcode, bool S, Imm<2> size,
+                                    Reg Rn, Vec Vt) {
+    return StoreSingleStructure(true, Rm, 2, Q, upper_opcode, S, size, Rn, Vt);
+}
+
+bool InterpreterVisitor::ST3_sngl_1(bool Q, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn,
+                                    Vec Vt) {
+    return StoreSingleStructure(false, Reg::SP, 3, Q, upper_opcode, S, size, Rn, Vt);
+}
+
+bool InterpreterVisitor::ST3_sngl_2(bool Q, Reg Rm, Imm<2> upper_opcode, bool S, Imm<2> size,
+                                    Reg Rn, Vec Vt) {
+    return StoreSingleStructure(true, Rm, 3, Q, upper_opcode, S, size, Rn, Vt);
+}
+
+bool InterpreterVisitor::ST4_sngl_1(bool Q, Imm<2> upper_opcode, bool S, Imm<2> size, Reg Rn,
+                                    Vec Vt) {
+    return StoreSingleStructure(false, Reg::SP, 4, Q, upper_opcode, S, size, Rn, Vt);
+}
+
+bool InterpreterVisitor::ST4_sngl_2(bool Q, Reg Rm, Imm<2> upper_opcode, bool S, Imm<2> size,
+                                    Reg Rn, Vec Vt) {
+    return StoreSingleStructure(true, Rm, 4, Q, upper_opcode, S, size, Rn, Vt);
+}
+
 size_t InterpreterVisitor::StoreMultipleStructures(bool Q, Imm<4> opcode, Imm<2> size, Reg Rn, Vec Vt) {
     static constexpr std::array<u8, 16> register_counts{4, 0, 4, 0, 3, 0, 3, 1, 2, 0, 2, 0, 0, 0, 0, 0};
     static constexpr std::array<u8, 16> structure_counts{4, 0, 1, 0, 3, 0, 1, 1, 2, 0, 1, 0, 0, 0, 0, 0};
@@ -810,12 +906,9 @@ bool InterpreterVisitor::LDR_reg_fpsimd(Imm<2> size, Imm<1> opc_1, Reg Rm, Imm<3
     return this->SIMDOffset(scale, shift, opc_0, Rm, option, Rn, Vt);
 }
 
-std::optional<u64> MatchAndExecuteOneInstruction(Core::Memory::Memory& memory, mcontext_t* context, fpsimd_context* fpsimd_context) {
-    std::span<u64, 31> regs(reinterpret_cast<u64*>(context->regs), 31);
-    std::span<u128, 32> vregs(reinterpret_cast<u128*>(fpsimd_context->vregs), 32);
-    u64& sp = *reinterpret_cast<u64*>(&context->sp);
-    const u64& pc = *reinterpret_cast<u64*>(&context->pc);
-
+std::optional<u64> MatchAndExecuteOneInstruction(Core::Memory::Memory& memory,
+                                                 std::span<u64, 31> regs,
+                                                 std::span<u128, 32> vregs, u64& sp, u64 pc) {
     InterpreterVisitor visitor(memory, regs, vregs, sp, pc);
     u32 instruction = memory.Read32(pc);
     bool was_executed = false;
@@ -828,5 +921,15 @@ std::optional<u64> MatchAndExecuteOneInstruction(Core::Memory::Memory& memory, m
     }
     return was_executed ? std::optional<u64>(pc + 4) : std::nullopt;
 }
+
+#ifdef __linux__
+std::optional<u64> MatchAndExecuteOneInstruction(Core::Memory::Memory& memory, mcontext_t* context, fpsimd_context* fpsimd_context) {
+    std::span<u64, 31> regs(reinterpret_cast<u64*>(context->regs), 31);
+    std::span<u128, 32> vregs(reinterpret_cast<u128*>(fpsimd_context->vregs), 32);
+    u64& sp = *reinterpret_cast<u64*>(&context->sp);
+    const u64 pc = *reinterpret_cast<u64*>(&context->pc);
+    return MatchAndExecuteOneInstruction(memory, regs, vregs, sp, pc);
+}
+#endif
 
 } // namespace Core
