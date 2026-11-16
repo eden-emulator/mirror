@@ -7,8 +7,6 @@
 #include <memory>
 
 #include "common/logging.h"
-#include <fmt/format.h>
-
 #include "common/settings.h"
 #include "core/core.h"
 #include "core/frontend/emu_window.h"
