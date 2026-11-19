@@ -523,9 +523,14 @@ endfunction()
 if (APPLE)
     set(APPLE_FRAMEWORKS Carbon Metal Cocoa QuartzCore Foundation CoreGraphics
         IOKit CoreVideo CoreMedia Security UniformTypeIdentifiers)
+
     if (ENABLE_METAL)
         # Maufeat: VERY EXPERIMENTAL
         list(APPEND APPLE_FRAMEWORKS MetalFX)
+    endif()
+
+    if (HAS_HYPERVISOR)
+        list(APPEND APPLE_FRAMEWORKS Hypervisor)
     endif()
 
     foreach(fw ${APPLE_FRAMEWORKS})

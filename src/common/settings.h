@@ -311,15 +311,20 @@ struct Values {
     SwitchableSetting<bool> cheat_overlay{linkage, false, "cheat_overlay", Category::Core};
 
     // Cpu
+    // FIXME: NCE should not show up in hypervisor builds. Probably needs to be filtered out at the frontend.
     SwitchableSetting<CpuBackend, true> cpu_backend{linkage,
 #ifdef HAS_NCE
                                                     CpuBackend::Nce,
+#elif defined(HAS_HYPERVISOR)
+                                                    CpuBackend::Hypervisor,
 #else
                                                     CpuBackend::Dynarmic,
 #endif
                                                     CpuBackend::Dynarmic,
 #ifdef HAS_NCE
                                                     CpuBackend::Nce,
+#elif defined(HAS_HYPERVISOR)
+                                                    CpuBackend::Hypervisor,
 #else
                                                     CpuBackend::Dynarmic,
 #endif

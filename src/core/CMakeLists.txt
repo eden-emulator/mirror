@@ -1247,7 +1247,6 @@ if (HAS_HYPERVISOR)
         arm/nce/interpreter_visitor.cpp
         arm/nce/interpreter_visitor.h
         arm/nce/visitor_base.h)
-    target_link_libraries(core PRIVATE "-framework Hypervisor")
 endif()
 
 if (HAS_NCE)

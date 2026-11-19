@@ -442,7 +442,7 @@ if (APPLE)
     endif()
 
     if (ENABLE_METAL)
-        AddJsonPackage(NAME metal-cpp DOWNLOAD_ONLY)
+        AddJsonPackage(metal-cpp)
 
         if (NOT TARGET Apple::MetalCpp)
             add_library(metal-cpp INTERFACE)
