@@ -57,6 +57,11 @@ public:
             }
             return TurnPage(menu, event);
         }
+        if (event->type() == QEvent::Resize && watched->isWidgetType() &&
+            watched->property("gamescope_fit").isValid()) {
+            LogResize(static_cast<QWidget*>(watched));
+            return false;
+        }
         if (event->type() == QEvent::LayoutRequest && watched->isWidgetType() &&
             watched->property("gamescope_fit").isValid()) {
             // A message box fixes its own size on every layout change: it lays itself out, then
@@ -64,6 +69,7 @@ public:
             // (Taken over here, so the layout is activated first, as Qt would before event())
             auto* widget = static_cast<QWidget*>(watched);
             if (QLayout* layout = widget->layout()) {
+                FreeLayout(widget, layout);
                 layout->activate();
             }
             static_cast<QObject*>(widget)->event(event);
@@ -104,6 +110,49 @@ public:
     }
 
 private:
+    // A dialog is held at the screen's size, so its layout no longer sizes it: a layout needing
+    // more than the screen (a card's margins around a tall page, or a page taller than the
+    // screen) grew the dialog past it, and it was put back. With a page that keeps asking for a
+    // new layout the dialog shook; a page that grows as it's shown (Controls > Controllers) made
+    // it jump once, as showing a widget lays the dialog out at once, before a layout request.
+    // (Each time: a message box rebuilds its layout on a style change)
+    static void FreeLayout(QWidget* dialog, QLayout* layout) {
+        if (layout->sizeConstraint() == QLayout::SetNoConstraint) {
+            return;
+        }
+        layout->setSizeConstraint(QLayout::SetNoConstraint);
+        QScreen* screen = dialog->screen();
+        const QSize needed = layout->totalMinimumSize();
+        if (screen && Settings::values.console_debug_probes.GetValue() &&
+            (needed.width() > screen->geometry().width() ||
+             needed.height() > screen->geometry().height())) {
+            LOG_INFO(Frontend, "gamescope: {} needs {}x{}, the screen is {}x{}",
+                     dialog->metaObject()->className(), needed.width(), needed.height(),
+                     screen->geometry().width(), screen->geometry().height());
+        }
+    }
+
+    // Debug Probes: a fitted dialog resized to anything but the screen's size (its first few)
+    static void LogResize(QWidget* dialog) {
+        QScreen* screen = dialog->screen();
+        if (!Settings::values.console_debug_probes.GetValue() || !screen ||
+            dialog->size() == screen->geometry().size()) {
+            return;
+        }
+        const int count = dialog->property("gamescope_resizes").toInt() + 1;
+        dialog->setProperty("gamescope_resizes", count);
+        if (count > 5) {
+            return;
+        }
+        const QLayout* layout = dialog->layout();
+        const QSize needed = layout ? layout->totalMinimumSize() : QSize{};
+        LOG_INFO(Frontend,
+                 "gamescope: {} resized to {}x{} (its layout needs {}x{}, the screen is {}x{})",
+                 dialog->metaObject()->className(), dialog->width(), dialog->height(),
+                 needed.width(), needed.height(), screen->geometry().width(),
+                 screen->geometry().height());
+    }
+
     static void FitDialog(QWidget* dialog) {
         QScreen* screen = dialog->screen() ? dialog->screen() : QGuiApplication::primaryScreen();
         if (!screen) {
@@ -117,7 +166,11 @@ private:
         dialog->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
         dialog->setGeometry(area);
         QLayout* layout = dialog->layout();
-        if (!first || !layout) {
+        if (!layout) {
+            return;
+        }
+        FreeLayout(dialog, layout);
+        if (!first) {
             return;
         }
         // A smaller dialog keeps its size, a card in the middle; it can be expanded to fill the
