@@ -16,14 +16,6 @@ import org.yuzu.yuzu_emu.utils.Log
 
 @Keep
 object DiskShaderCacheProgress {
-    private lateinit var emulationViewModel: EmulationViewModel
-
-    private fun prepareViewModel() {
-        emulationViewModel =
-            ViewModelProvider(
-                NativeLibrary.sEmulationActivity.get() as EmulationActivity
-            )[EmulationViewModel::class.java]
-    }
 
     @JvmStatic
     fun loadProgress(stage: Int, progress: Int, max: Int) {
@@ -34,9 +26,12 @@ object DiskShaderCacheProgress {
         }
 
         emulationActivity.runOnUiThread {
+            // Always prepareViewModel() before doing anything else
+            val emulationViewModel = ViewModelProvider(emulationActivity)[EmulationViewModel::class.java]
+
             when (LoadCallbackStage.values()[stage]) {
                 LoadCallbackStage.Prepare -> {
-                    prepareViewModel()
+                    emulationViewModel.setAreShadersBuilt(false)
                 }
                 LoadCallbackStage.Build -> emulationViewModel.updateProgress(
                     emulationActivity.getString(R.string.building_shaders),
