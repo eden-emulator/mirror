@@ -45,6 +45,7 @@ enum class BooleanSetting(override val key: String) : AbstractBooleanSetting {
     INVERT_CONFIRM_BACK_CONTROLLER_BUTTONS("invert_confirm_back_controller_buttons"),
 
     ENABLE_FOLDER_BUTTON("enable_folder_button"),
+    GALAXY_FOLD_GYRO_FIX("galaxy_fold_gyro_fix"),
     ENABLE_QLAUNCH_BUTTON("enable_qlaunch_button"),
 
     ENABLE_UPDATE_CHECKS("enable_update_checks"),
