@@ -401,10 +401,11 @@ class EmulationFragment : Fragment(), SurfaceHolder.Callback {
                         getString(R.string.searching_for_game),
                         Toast.LENGTH_SHORT
                     ).show()
-                    val foundGame = CustomSettingsHandler.findGameByTitleId(
-                        titleId,
-                        requireContext()
-                    )
+                    // A cache miss scans the whole library, keep it off the main thread
+                    val appContext = requireContext().applicationContext
+                    val foundGame = withContext(Dispatchers.IO) {
+                        CustomSettingsHandler.findGameByTitleId(titleId, appContext)
+                    }
                     if (foundGame == null) {
                         Log.error("[EmulationFragment] Game not found for title ID: $titleId")
                         Toast.makeText(
